@@ -326,10 +326,16 @@ pre.expectation {
 }
 
 td.master-name {
-    font-style: italic;
-    background-color: ghostwhite;
+    font-weight: bold;
+    background-color: darkgrey;
 }
 
 td.builder-name {
     padding-left: 15px;
+}
+
+tr.fyi > td {
+    font-style: italic;
+    background-color: lightgrey;
+    color: #999;
 }

@@ -783,16 +783,17 @@ function linkifyBugs(bugs)
     return html;
 }
 
-function htmlForSingleTestRow(test, showBuilderNames, revisions)
+function htmlForSingleTestRow(test, showBuilderNames, revisions, isFyi)
 {
     var headers = tableHeaders();
     var html = '';
     for (var i = 0; i < headers.length; i++) {
         var header = headers[i];
+        var rowClass = isFyi ? ' class="fyi"' : '';
         if (string.startsWith(header, 'test') || string.startsWith(header, 'builder')) {
             var testCellClassName = 'test-link' + (showBuilderNames ? ' builder-name' : '');
             var testCellHTML = showBuilderNames ? test.builder.builderName : '<span class="link" onclick="g_history.setQueryParameter(\'tests\',\'' + test.test +'\');">' + test.test + '</span>';
-            html += '<tr builder="' + test.builder.key() + '" test="' + test.test + '">';
+            html += '<tr builder="' + test.builder.key() + '" test="' + test.test + '"' + rowClass + '>';
             html += '<td class="' + testCellClassName + '">' + testCellHTML;
         } else if (string.startsWith(header, 'bugs'))
             // FIXME: linkify bugs.
@@ -978,13 +979,26 @@ function htmlForIndividualTestOnAllBuilders(test)
     var html = '';
     var shownBuilderKeys = [];
     var revisions = collapsedRevisionList(testResults);
-    Object.keys(masters).sort().forEach(function(masterName) {
-        html += '<tr><td class="master-name" colspan=5>' + masterName + '</td></tr>';
+    var sortedMasters = Object.keys(masters).sort(function(a, b) {
+      // FYI masters sort after other masters, sort alphanumerically otherwise.
+      var aFyi = (a.indexOf('.fyi') != -1);
+      var bFyi = (b.indexOf('.fyi') != -1);
+      if (aFyi == bFyi) {
+        return (a < b) ?  -1 : (a > b ? 1 : 0);
+      }
+      return aFyi ? 1 : -1;
+    })
+    sortedMasters.forEach(function(masterName) {
+        var isFyi = (masterName.indexOf('.fyi') != -1);
+        var rowClass = isFyi ? ' class="fyi"' : '';
+        html += '<tr' + rowClass + '><td class="master-name" colspan=5>' +
+            masterName + '</td></tr>';
         var masterResults = masters[masterName];
         for (var j = 0; j < masterResults.length; j++) {
             shownBuilderKeys.push(masterResults[j].builder.key());
             var showBuilderNames = true;
-            html += htmlForSingleTestRow(masterResults[j], showBuilderNames, revisions);
+            html += htmlForSingleTestRow(
+                masterResults[j], showBuilderNames, revisions, isFyi);
         }
     });
 
@@ -1456,7 +1470,7 @@ function generatePageForBuilder(builder)
         var showBuilderNames = false;
         var revisions = collapsedRevisionList(filteredResults);
         for (var i = 0; i < filteredResults.length; i++)
-            tableRowsHTML += htmlForSingleTestRow(filteredResults[i], showBuilderNames, revisions);
+            tableRowsHTML += htmlForSingleTestRow(filteredResults[i], showBuilderNames, revisions, false);
         testsHTML = htmlForTestTable(tableRowsHTML);
     } else {
         if (g_history.isLayoutTestResults())
