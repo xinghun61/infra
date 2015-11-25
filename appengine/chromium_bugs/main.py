@@ -75,6 +75,24 @@ MISSING_TOKEN_HTML = (
     '</body></html>'
     )
 
+# The continue_url must start with one of these.
+ALLOWED_CONTINUE_DOMAINS = [
+  'http://localhost:8080/',
+  'https://code.google.com/',
+  'https://bugs.chromium.org/',
+  'https://bugs-staging.chromium.org/',
+  ]
+
+INVALID_CONTINUE_HTML = (
+    '<html><body>'
+    '<h1>Invalid continue parameter</h1>'
+    '<p>This wizard can only be used with '
+    'code.google.com and bugs.chromium.org.</p>'
+    ''
+    '</body></html>'
+    )
+
+
 class MainHandler(webapp2.RequestHandler):
 
   def get(self):
@@ -84,15 +102,22 @@ class MainHandler(webapp2.RequestHandler):
     token = self.request.get('token')
 
     if continue_url and not token:
+      logging.info('Missing token')
       self.response.out.write(MISSING_TOKEN_HTML)
       return
 
     if not continue_url:
-      continue_url = 'http://code.google.com/p/chromium/issues/entry.do'
+      continue_url = 'https://code.google.com/p/chromium/issues/entry.do'
 
     # Special case, chromium-os issues are now being tracked in /p/chromium.
     if '//code.google.com/p/chromium-os/issues/entry.do' in continue_url:
-      continue_url = 'http://code.google.com/p/chromium/issues/entry.do'
+      continue_url = 'https://code.google.com/p/chromium/issues/entry.do'
+
+    if not any(continue_url.startswith(domain)
+               for domain in ALLOWED_CONTINUE_DOMAINS):
+      logging.info('Bad continue param: %r', continue_url)
+      self.response.out.write(INVALID_CONTINUE_HTML)
+      return
 
     if '?' in continue_url:
       # Codesite includes contextual parameters for search terms, etc.
@@ -100,8 +125,8 @@ class MainHandler(webapp2.RequestHandler):
     else:
       validate_url = continue_url
 
-    if (not validate_url.startswith('http') or
-        not validate_url.endswith('.do')):
+    if not validate_url.endswith('.do'):
+      logging.info('validate_url does not end in .do: %r', validate_url)
       self.response.out.write(
         'Malformed "continue" query string parameter: %r' %
         urllib.quote(validate_url))
