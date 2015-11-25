@@ -33,6 +33,8 @@ REOPENED_DESCRIPTION_TEMPLATE = (
     'This flaky test/step was previously tracked in issue %(old_issue)d.')
 MAX_UPDATED_ISSUES_PER_DAY = 50
 MAX_FLAKY_RUNS_PER_UPDATE = 20
+MAX_TIME_DIFFERENCE_SECONDS = 12 * 60 * 60
+MIN_REQUIRED_FLAKY_RUNS = 5
 FLAKES_URL_TEMPLATE = (
     'https://chromium-try-flakes.appspot.com/all_flake_occurrences?key=%s')
 
@@ -50,10 +52,17 @@ class ProcessIssue(webapp2.RequestHandler):
     FlakeUpdate(parent=self._get_flake_update_singleton_key()).put()
 
   @ndb.non_transactional
+  def _time_difference(self, flaky_run):
+    return (flaky_run.success_run.get().time_finished -
+            flaky_run.failure_run_time_finished).total_seconds()
+
+  @ndb.non_transactional
   def _get_flaky_runs(self, flake):
     num_runs = min(len(flake.occurrences) - flake.num_reported_flaky_runs,
                    MAX_FLAKY_RUNS_PER_UPDATE)
-    return ndb.get_multi(flake.occurrences[-num_runs:])
+    flaky_runs = ndb.get_multi(flake.occurrences[-num_runs:])
+    return [flaky_run for flaky_run in flaky_runs
+            if self._time_difference(flaky_run) <= MAX_TIME_DIFFERENCE_SECONDS]
 
   @ndb.non_transactional
   def _format_flaky_runs_msg(self, test_name, new_flaky_runs):
@@ -74,14 +83,8 @@ class ProcessIssue(webapp2.RequestHandler):
                   queue_name='issue-updates', transactional=True)
 
   @ndb.transactional
-  def _update_issue(self, api, flake, now):
+  def _update_issue(self, api, flake, new_flaky_runs, now):
     """Updates an issue on the issue tracker."""
-    # Retrieve flaky runs outside of the transaction, because we are not
-    # planning to modify them and because there could be more of them than the
-    # number of groups supported by cross-group transactions on AppEngine.
-    new_flaky_runs = self._get_flaky_runs(flake)
-    flake.num_reported_flaky_runs = len(flake.occurrences)
-
     flake_issue = api.getIssue(flake.issue_id)
 
     # Handle cases when an issue has been closed. We need to do this in a loop
@@ -113,6 +116,7 @@ class ProcessIssue(webapp2.RequestHandler):
     api.update(flake_issue, comment=new_flaky_runs_msg)
     logging.info('Updated issue %d for flake %s with %d flake runs',
                  flake.issue_id, flake.name, len(new_flaky_runs))
+    flake.num_reported_flaky_runs = len(flake.occurrences)
     flake.issue_last_updated = now
 
   @ndb.transactional
@@ -152,17 +156,24 @@ class ProcessIssue(webapp2.RequestHandler):
 
     now = datetime.datetime.utcnow()
     flake = ndb.Key(urlsafe=urlsafe_key).get()
+    # Only update/file issues if there are new flaky runs.
+    if flake.num_reported_flaky_runs == len(flake.occurrences):
+      return
+
+    # Retrieve flaky runs outside of the transaction, because we are not
+    # planning to modify them and because there could be more of them than the
+    # number of groups supported by cross-group transactions on AppEngine.
+    new_flaky_runs = self._get_flaky_runs(flake)
+
+    if len(new_flaky_runs) < MIN_REQUIRED_FLAKY_RUNS:
+      return
 
     if flake.issue_id > 0:
       # Update issues at most once a day.
       if flake.issue_last_updated > now - datetime.timedelta(days=1):
         return
 
-      # Only update issues if there are new flaky runs.
-      if flake.num_reported_flaky_runs == len(flake.occurrences):
-        return
-
-      self._update_issue(api, flake, now)
+      self._update_issue(api, flake, new_flaky_runs, now)
       self._increment_update_counter()
     else:
       self._create_issue(api, flake)

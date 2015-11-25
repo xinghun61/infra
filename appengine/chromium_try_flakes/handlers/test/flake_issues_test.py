@@ -66,6 +66,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     for patcher in self.patchers:
       patcher.start()
 
+
   def tearDown(self):
     super(FlakeIssuesTestCase, self).tearDown()
     for patcher in self.patchers:
@@ -73,26 +74,42 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
 
   def _create_flake(self):
     tf = datetime.datetime.utcnow()
+    ts = tf - datetime.timedelta(hours=1)
+    tf2 = tf - datetime.timedelta(days=1)
+    ts2 = tf2 - datetime.timedelta(hours=1)
     p = PatchsetBuilderRuns(issue=123456, patchset=1, master='tryserver.test',
                             builder='test-builder').put()
-    br_f1 = BuildRun(parent=p, buildnumber=1, result=2, time_finished=tf).put()
-    br_s1 = BuildRun(parent=p, buildnumber=2, result=0, time_finished=tf).put()
-    br_f2 = BuildRun(parent=p, buildnumber=3, result=4, time_finished=tf).put()
-    br_s2 = BuildRun(parent=p, buildnumber=4, result=0, time_finished=tf).put()
-    occ_key1 = FlakyRun(failure_run=br_f1, success_run=br_s1,
+    br_f0 = BuildRun(parent=p, buildnumber=0, result=2, time_started=ts2,
+                     time_finished=tf2).put()
+    br_f1 = BuildRun(parent=p, buildnumber=1, result=2, time_started=ts,
+                     time_finished=tf).put()
+    br_s1 = BuildRun(parent=p, buildnumber=2, result=0, time_started=ts,
+                     time_finished=tf).put()
+    br_f2 = BuildRun(parent=p, buildnumber=3, result=4, time_started=ts,
+                     time_finished=tf).put()
+    br_s2 = BuildRun(parent=p, buildnumber=4, result=0, time_started=ts,
+                     time_finished=tf).put()
+    occ_key1 = FlakyRun(failure_run=br_f0, success_run=br_s2,
+                        failure_run_time_started=ts2,
+                        failure_run_time_finished=tf2).put()
+    occ_key2 = FlakyRun(failure_run=br_f1, success_run=br_s1,
+                        failure_run_time_started=ts,
                         failure_run_time_finished=tf).put()
-    occ_key2 = FlakyRun(failure_run=br_f2, success_run=br_s2,
+    occ_key3 = FlakyRun(failure_run=br_f2, success_run=br_s2,
+                        failure_run_time_started=ts,
                         failure_run_time_finished=tf).put()
-    return Flake(name='foo.bar', count_day=10, occurrences=[occ_key1, occ_key2])
+    return Flake(name='foo.bar', count_day=10,
+                 occurrences=[occ_key1, occ_key2, occ_key3])
 
 
   def test_creates_issue_for_new_flake(self):
-    flake = self._create_flake()
-    flake.key = ndb.Key('Flake', 'test-flake-key')
-    flake.put()
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      flake = self._create_flake()
+      flake.key = ndb.Key('Flake', 'test-flake-key')
+      flake.put()
 
-    response = self.test_app.post('/issues/process/%s' % flake.key.urlsafe())
-    self.assertEqual(200, response.status_int)
+      response = self.test_app.post('/issues/process/%s' % flake.key.urlsafe())
+      self.assertEqual(200, response.status_int)
 
     self.assertEqual(len(self.mock_api.issues), 1)
     self.assertIn(100000, self.mock_api.issues)
@@ -125,20 +142,23 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     flake_key = flake.put()
     issue.updated = now - datetime.timedelta(days=2)
 
-    response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
-    self.assertEqual(200, response.status_int)
-    tasks = self.taskqueue_stub.get_filtered_tasks(queue_names='issue-updates')
-    self.assertEqual(len(tasks), 0)
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+      self.assertEqual(200, response.status_int)
+      tasks = self.taskqueue_stub.get_filtered_tasks(
+          queue_names='issue-updates')
+      self.assertEqual(len(tasks), 0)
 
-    flake.num_reported_flaky_runs = 0
-    issue.updated = now - datetime.timedelta(days=4)
-    flake_key = flake.put()
-    response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
-    self.assertEqual(200, response.status_int)
-    tasks = self.taskqueue_stub.get_filtered_tasks(queue_names='issue-updates')
-    self.assertEqual(len(tasks), 1)
-    response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
-    self.assertEqual(200, response.status_int)
+      flake.num_reported_flaky_runs = 0
+      issue.updated = now - datetime.timedelta(days=4)
+      flake_key = flake.put()
+      response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+      self.assertEqual(200, response.status_int)
+      tasks = self.taskqueue_stub.get_filtered_tasks(
+          queue_names='issue-updates')
+      self.assertEqual(len(tasks), 1)
+      response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+      self.assertEqual(200, response.status_int)
 
     self.assertEqual(len(self.mock_api.issues), 2)
     self.assertEqual(self.mock_api.issues.keys(), [100000, 100001])
@@ -155,15 +175,16 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     flake.num_reported_flaky_runs = 0
     flake_key = flake.put()
 
-    self.assertEqual(len(issue.comments), 0)
-    response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
-    self.assertEqual(200, response.status_int)
-    self.assertEqual(len(issue.comments), 0)
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      self.assertEqual(len(issue.comments), 0)
+      response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+      self.assertEqual(200, response.status_int)
+      self.assertEqual(len(issue.comments), 0)
 
-    flake.issue_last_updated = now - datetime.timedelta(hours=25)
-    flake_key = flake.put()
-    response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
-    self.assertEqual(200, response.status_int)
+      flake.issue_last_updated = now - datetime.timedelta(hours=25)
+      flake_key = flake.put()
+      response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+      self.assertEqual(200, response.status_int)
     self.assertEqual(len(issue.comments), 1)
     self.assertEqual(
         issue.comments[0],
@@ -187,26 +208,28 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     flake = self._create_flake()
     flake.issue_id = issue.id
     flake.issue_last_updated = now - datetime.timedelta(days=2)
-    flake.num_reported_flaky_runs = 2
+    flake.num_reported_flaky_runs = 3
     flake_key = flake.put()
 
-    self.assertEqual(len(issue.comments), 0)
-    response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
-    self.assertEqual(200, response.status_int)
-    self.assertEqual(len(issue.comments), 0)
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      self.assertEqual(len(issue.comments), 0)
+      response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+      self.assertEqual(200, response.status_int)
+      self.assertEqual(len(issue.comments), 0)
 
-    flake.num_reported_flaky_runs = 0
-    flake_key = flake.put()
-    response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
-    self.assertEqual(200, response.status_int)
-    self.assertEqual(len(issue.comments), 1)
+      flake.num_reported_flaky_runs = 0
+      flake_key = flake.put()
+      response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+      self.assertEqual(200, response.status_int)
+      self.assertEqual(len(issue.comments), 1)
 
   def test_does_not_create_too_many_issues(self):
     with mock.patch('handlers.flake_issues.MAX_UPDATED_ISSUES_PER_DAY', 5):
-      for _ in range(10):
-        key = self._create_flake().put()
-        response = self.test_app.post('/issues/process/%s' % key.urlsafe())
-        self.assertEqual(200, response.status_int)
+      with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+        for _ in range(10):
+          key = self._create_flake().put()
+          response = self.test_app.post('/issues/process/%s' % key.urlsafe())
+          self.assertEqual(200, response.status_int)
 
     issue_ids = [flake.issue_id for flake in Flake.query() if flake.issue_id]
     self.assertEqual(len(issue_ids), 5)
@@ -215,11 +238,12 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
   def test_does_not_post_too_many_flaky_runs_in_an_update(self):
     issue = self.mock_api.create(MockIssue({}))
     with mock.patch('handlers.flake_issues.MAX_FLAKY_RUNS_PER_UPDATE', 1):
-      flake = self._create_flake()
-      flake.issue_id = issue.id
-      key = flake.put()
-      response = self.test_app.post('/issues/process/%s' % key.urlsafe())
-      self.assertEqual(200, response.status_int)
+      with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 1):
+        flake = self._create_flake()
+        flake.issue_id = issue.id
+        key = flake.put()
+        response = self.test_app.post('/issues/process/%s' % key.urlsafe())
+        self.assertEqual(200, response.status_int)
 
     self.assertEqual(len(self.mock_api.issues), 1)
     self.assertIn(100000, self.mock_api.issues)
@@ -233,6 +257,14 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
                    'test-builder/builds/4.\n\n'
         'This message was automatically generated by the chromium-try-flakes '
         'app.')
+
+  def test_does_require_minimum_flaky_runs(self):
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 3):
+      flake = self._create_flake()
+      key = flake.put()
+      response = self.test_app.post('/issues/process/%s' % key.urlsafe())
+      self.assertEqual(200, response.status_int)
+    self.assertEqual(len(self.mock_api.issues), 0)
 
   def test_handles_issues_marked_as_duplicates_correctly(self):
     issue1 = self.mock_api.create(MockIssue({}))
@@ -252,8 +284,9 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     flake.num_reported_flaky_runs = 0
     flake_key = flake.put()
 
-    response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
-    self.assertEqual(200, response.status_int)
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+      self.assertEqual(200, response.status_int)
 
     self.assertEqual(flake_key.get().issue_id, issue3.id)
 
@@ -278,11 +311,13 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     flake.num_reported_flaky_runs = 0
     flake_key = flake.put()
 
-    self.assertEqual(len(self.mock_api.issues), 3)
-    response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
-    self.assertEqual(200, response.status_int)
-    tasks = self.taskqueue_stub.get_filtered_tasks(queue_names='issue-updates')
-    self.assertEqual(len(tasks), 1)
-    response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
-    self.assertEqual(200, response.status_int)
-    self.assertEqual(len(self.mock_api.issues), 4)
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      self.assertEqual(len(self.mock_api.issues), 3)
+      response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+      self.assertEqual(200, response.status_int)
+      tasks = self.taskqueue_stub.get_filtered_tasks(
+          queue_names='issue-updates')
+      self.assertEqual(len(tasks), 1)
+      response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+      self.assertEqual(200, response.status_int)
+      self.assertEqual(len(self.mock_api.issues), 4)
