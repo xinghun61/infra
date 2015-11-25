@@ -136,6 +136,7 @@ class PubSubMonitor(Monitor):
     if not self._check_initialize():
       return
     proto = self._wrap_proto(metric_pb)
+    logging.debug('ts_mon: sending %d metrics to PubSub', len(proto.data))
     body = {
         'messages': [
           {'data': base64.b64encode(proto.SerializeToString())},
