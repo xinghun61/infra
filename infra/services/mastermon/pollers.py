@@ -136,6 +136,10 @@ class FilePoller(Poller):
       growth_factor=10**0.05, num_finite_buckets=100)
   cycle_times = ts_mon.CumulativeDistributionMetric(
       'buildbot/master/builders/builds/durations', bucketer=bucketer)
+  pending_times = ts_mon.CumulativeDistributionMetric(
+      'buildbot/master/builders/builds/pending_durations', bucketer=bucketer)
+  total_times = ts_mon.CumulativeDistributionMetric(
+      'buildbot/master/builders/builds/total_durations', bucketer=bucketer)
 
   def poll(self):
     LOGGER.info('Collecting results from %s', self._url)
@@ -165,3 +169,7 @@ class FilePoller(Poller):
     self.result_count.increment(fields)
     if 'duration_s' in data:
       self.cycle_times.add(data['duration_s'], fields)
+    if 'pending_s' in data:
+      self.pending_times.add(data['pending_s'], fields)
+    if 'total_s' in data:
+      self.total_times.add(data['total_s'], fields)

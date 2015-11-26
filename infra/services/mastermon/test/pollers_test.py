@@ -187,6 +187,8 @@ class FilePollerTest(unittest.TestCase):
     data1['random'] = 'value'  # Extra field, should be ignored.
     del data2['project_id']    # Missing field, should become 'unknown'.
     data2['duration_s'] = 5
+    data2['pending_s'] = 1
+    data2['total_s'] = data2['pending_s'] + data2['duration_s']
     with temporary_directory(prefix='poller-test-') as tempdir:
       filename = self.create_data_file(tempdir, [data1, data2])
       p = pollers.FilePoller(filename, {})
@@ -194,6 +196,8 @@ class FilePollerTest(unittest.TestCase):
       fake_increment.assert_any_call(result1)
       fake_increment.assert_any_call(result2)
       fake_add.assert_any_call(data2['duration_s'], result2)
+      fake_add.assert_any_call(data2['pending_s'], result2)
+      fake_add.assert_any_call(data2['total_s'], result2)
       self.assertFalse(os.path.isfile(filename))
       # Make sure the rotated file is still there - for debugging.
       self.assertTrue(os.path.isfile(pollers.rotated_filename(filename)))
