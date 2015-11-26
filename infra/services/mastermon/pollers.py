@@ -45,7 +45,8 @@ class Poller(object):
     LOGGER.info('Requesting %s', self._url)
 
     try:
-      response = instrumented_requests.get(self.__class__.__name__, self._url)
+      response = instrumented_requests.get(self.__class__.__name__, self._url,
+                                           timeout=10)
     except requests.exceptions.RequestException:
       LOGGER.exception('Request for %s failed', self._url)
       return False
