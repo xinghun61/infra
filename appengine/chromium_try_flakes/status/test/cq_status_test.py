@@ -434,6 +434,7 @@ class CQStatusTestCase(testing.AppengineTestCase):
     ]
 
     flake_occurrences = fr_key.get().flakes
+    print flake_occurrences
     self.assertEqual(len(flake_occurrences), len(expected_flakes))
     actual_flake_occurrences = [
         (fo.name, fo.failure) for fo in flake_occurrences]

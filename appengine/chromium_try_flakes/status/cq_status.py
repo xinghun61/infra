@@ -203,6 +203,8 @@ def get_flakes(step):
 def get_flaky_run_reason(flaky_run_key):
   flaky_run = flaky_run_key.get()
   failure_run = flaky_run.failure_run.get()
+  success_time = flaky_run.success_run.get().time_finished
+  failure_time = flaky_run.failure_run_time_finished
   patchset_builder_runs = failure_run.key.parent().get()
   url = ('http://build.chromium.org/p/' + patchset_builder_runs.master +
          '/json/builders/' + patchset_builder_runs.builder +'/builds/' +
@@ -229,12 +231,19 @@ def get_flaky_run_reason(flaky_run_key):
     step_name = step['name']
     # The following step failures are ignored:
     #  - steps: always red when any other step is red (not actual failure)
-    #  - [swarming] ...: summary step would also be red (do not double count) 
+    #  - [swarming] ...: summary step would also be red (do not double count)
     #  - presubmit: typically red due to missing OWNERs LGTM, not a flake
     #  - recipe failure reason: always red when build fails (not actual failure)
+    #  - Patch failure: if success run was before failure run, it is
+    #    likely a legitimate failure. For example it often happens that
+    #    developers use CQ dry run and then wait for a review. Once getting LGTM
+    #    they check CQ checkbox, but the patch does not cleanly apply anymore.
+    #  - bot_update PATCH FAILED: Corresponds to 'Patch failure' step.
     #  - test results: always red when another step is red (not actual failure)
     if (step_name == 'steps' or step_name.startswith('[swarming]') or
         step_name == 'presubmit' or step_name == 'recipe failure reason' or
+        (step_name == 'Patch failure' and success_time < failure_time) or
+        (step_name == 'bot_update' and 'PATCH FAILED' in step['text']) or
         step_name == 'test results'):
       continue
     failed_steps.append(step)
@@ -387,7 +396,8 @@ def parse_cq_data(json_data):
                                   str(previous_run.buildnumber))
           else:
             # We saw the pass and then the failure. Could happen when fetching
-            # historical data.
+            # historical data, or for the bot_update step (patch can't be
+            # applied cleanly anymore).
             flaky_run = FlakyRun(
                 failure_run=build_run.key,
                 failure_run_time_started=build_run.time_started,
