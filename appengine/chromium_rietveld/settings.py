@@ -62,6 +62,7 @@ MIDDLEWARE_CLASSES = (
     'codereview.middleware.AddHSTSHeaderMiddleware',
     'codereview.middleware.AddUserToRequestMiddleware',
     'codereview.middleware.PropagateExceptionMiddleware',
+    'codereview.middleware.FrameBustingMiddleware',
     # TODO: figure how/when to re-enable these redirects.
     #'codereview.middleware.RedirectDotVersionMiddleware',
 )

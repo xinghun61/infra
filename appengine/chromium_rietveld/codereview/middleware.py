@@ -120,3 +120,11 @@ class RedirectToHTTPSMiddleware(object):
       host = request.get_host().split(':')[0]
       return HttpResponsePermanentRedirect(
           'https://%s%s' % (host, request.get_full_path()))
+
+
+class FrameBustingMiddleware(object):
+  """Prevent other origins from framing content."""
+  # pylint: disable=unused-argument
+  def process_response(self, unused_request, response):
+    response['X-Frame-Options'] = 'SAMEORIGIN'
+    return response
