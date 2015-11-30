@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import datetime
-import itertools
 import json
 import logging
 import urlparse
@@ -19,6 +18,7 @@ from google.appengine.ext import ndb
 import acl
 import errors
 import model
+import swarming
 
 
 MAX_RETURN_BUILDS = 100
@@ -156,7 +156,18 @@ class BuildBucketService(object):
       build.lease_expiration_date = lease_expiration_date
       build.leasee = auth.get_current_identity()
       build.regenerate_lease_key()
-    yield build.put_async()
+
+    for_swarming = yield swarming.is_for_swarming_async(build)
+    if for_swarming:  # pragma: no cover
+      yield swarming.create_task_async(build)
+
+    try:
+      yield build.put_async()
+    except:  # pragma: no cover
+      # Best effort.
+      if for_swarming:
+        yield swarming.cancel_task_async(build)
+      raise
     logging.info(
         'Build %s was created by %s', build.key.id(), identity.to_bytes())
 
@@ -381,11 +392,6 @@ class BuildBucketService(object):
           'lease_key for build %s is incorrect. Your lease might be expired.' %
           build.key.id())
 
-  def _clear_lease(self, build):
-    """Clears build's lease attributes."""
-    build.lease_key = None
-    build.lease_expiration_date = None
-    build.leasee = None
 
   @ndb.transactional
   def reset(self, build_id):
@@ -403,7 +409,7 @@ class BuildBucketService(object):
       raise errors.BuildIsCompletedError('Cannot reset a completed build')
     build.status = model.BuildStatus.SCHEDULED
     build.status_changed_time = utils.utcnow()
-    self._clear_lease(build)
+    build.clear_lease()
     build.url = None
     build.put()
     logging.info(
@@ -547,7 +553,7 @@ class BuildBucketService(object):
       build.url = url
     build.result_details = result_details
     build.failure_reason = failure_reason
-    self._clear_lease(build)
+    build.clear_lease()
     build.put()
     logging.info(
         'Build %s was completed. Status: %s. Result: %s',
@@ -614,7 +620,7 @@ class BuildBucketService(object):
     build.result = model.BuildResult.CANCELED
     build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
     build.complete_time = now
-    self._clear_lease(build)
+    build.clear_lease()
     build.put()
     logging.info(
         'Build %s was cancelled by %s', build.key.id(),
@@ -632,7 +638,7 @@ class BuildBucketService(object):
 
     assert build.status != model.BuildStatus.COMPLETED, (
         'Completed build is leased')
-    self._clear_lease(build)
+    build.clear_lease()
     build.status = model.BuildStatus.SCHEDULED
     build.status_changed_time = utils.utcnow()
     build.url = None
@@ -645,7 +651,7 @@ class BuildBucketService(object):
     if not build or build.status == model.BuildStatus.COMPLETED:
       return  # pragma: no cover
 
-    self._clear_lease(build)
+    build.clear_lease()
     build.status = model.BuildStatus.COMPLETED
     build.status_changed_time = utils.utcnow()
     build.result = model.BuildResult.CANCELED

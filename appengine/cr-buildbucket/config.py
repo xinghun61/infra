@@ -47,6 +47,38 @@ def validate_identity(identity, ctx):
     ctx.error(ex)
 
 
+def validate_swarming_tag(tag, ctx):
+  # a valid swarming tag is a string that contains ":"
+  if ':' not in tag:
+    ctx.error('does not have ":": %s', tag)
+
+
+def validate_swarming_builder(builder, ctx):
+  if not builder.name:
+    ctx.error('name unspecified')
+  for i, t in enumerate(builder.swarming_tags):
+    with ctx.prefix('tag #%d: ', i + 1):
+      validate_swarming_tag(t, ctx)
+
+  if not builder.HasField('recipe'):
+    ctx.error('recipe unspecified')
+  elif not builder.recipe.name:
+    ctx.error('recipe name unspecified')
+  if builder.priority < 0 or builder.priority > 200:
+    ctx.error('priority must be in [0, 200] range; got %d', builder.priority)
+
+
+def validate_swarming(swarming, ctx):
+  if not swarming.hostname:
+    ctx.error('hostname unspecified')
+  for i, t in enumerate(swarming.common_swarming_tags):
+    with ctx.prefix('common tag #%d: ', i + 1):
+      validate_swarming_tag(t, ctx)
+  for i, b in enumerate(swarming.builders):
+    with ctx.prefix('builder %s: ' % (b.name or '#%s' % (i + 1))):
+      validate_swarming_builder(b, ctx)
+
+
 @validation.project_config_rule(cfg_path(), project_config_pb2.BuildbucketCfg)
 def validate_buildbucket_cfg(cfg, ctx):
   is_sorted = True
@@ -83,6 +115,9 @@ def validate_buildbucket_cfg(cfg, ctx):
             validate_identity(acl.identity, ctx)
           else:
             ctx.error('group or identity must be set')
+      if bucket.HasField('swarming'):
+        with ctx.prefix('swarming: '):
+          validate_swarming(bucket.swarming, ctx)
   if not is_sorted:
     ctx.warning('Buckets are not sorted by name')
 

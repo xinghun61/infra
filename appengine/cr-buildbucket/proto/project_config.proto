@@ -28,6 +28,41 @@ message Acl {
   optional string identity = 3;
 }
 
+// Configuration of buildbucket-swarming integration for one bucket.
+message Swarming {
+  message Recipe {
+    // Name of the recipe to run.
+    optional string name = 1;
+  }
+
+  message Builder {
+    // Name of the builder
+    optional string name = 1;
+    // Will be become to swarming task tags.
+    // Each tag will end up in "swarming_tag" buildbucket tag, for example
+    // "swarming_tag:builder:release"
+    repeated string swarming_tags = 2;
+    // Specifies that a recipe to run.
+    optional Recipe recipe = 3;
+    // Swarming task priority.
+    optional int32 priority = 4;
+  }
+
+  // Hostname of the swarming instance, e.g. "chromium-swarm.appspot.com".
+  optional string hostname = 1;
+  // Used to generate a URL for Build, may contain parameters
+  // {swarming_hostname}, {task_id}, {bucket} and {builder}. Defaults to:
+  // https://{swarming_hostname}/user/task/{task_id}
+  optional string url_format = 2;
+
+  // Will be put to all swarming tasks.
+  repeated string common_swarming_tags = 3;
+
+  // Configuration for each builder.
+  // Swarming tasks are created only for builds for builders that are not
+  // explicitly specified.
+  repeated Builder builders = 4;
+}
 
 // Defines one bucket in buildbucket.cfg
 message Bucket {
@@ -37,6 +72,8 @@ message Bucket {
   optional string name = 1;
   // List of access control rules for the bucket.
   repeated Acl acls = 2;
+  // Buildbucket-swarming integration.
+  optional Swarming swarming = 3;
 }
 
 // Schema of buildbucket.cfg file, a project config.

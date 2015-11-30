@@ -136,6 +136,10 @@ class Build(ndb.Model):
   cancelation_reason = msgprop.EnumProperty(CancelationReason)
   failure_reason = msgprop.EnumProperty(FailureReason)
 
+  # Swarming integration
+  swarming_hostname = ndb.StringProperty()
+  swarming_task_id = ndb.StringProperty()
+
   def _pre_put_hook(self):
     """Checks Build invariants before putting."""
     super(Build, self)._pre_put_hook()
@@ -158,6 +162,12 @@ class Build(ndb.Model):
       if new_key != self.lease_key:  # pragma: no branch
         self.lease_key = new_key
         break
+
+  def clear_lease(self):  # pragma: no cover
+    """Clears build's lease attributes."""
+    self.lease_key = None
+    self.lease_expiration_date = None
+    self.leasee = None
 
 
 def new_build_id():

@@ -18,6 +18,7 @@ import webapp2
 
 import api
 import handlers
+import swarming
 
 
 def create_html_app():  # pragma: no cover
@@ -33,8 +34,9 @@ def create_endpoints_app():  # pragma: no cover
 
 def create_backend_app():  # pragma: no cover
   """Returns WSGI app for backend."""
+  routes = handlers.get_backend_routes() + swarming.get_routes()
   return webapp2.WSGIApplication(
-      handlers.get_backend_routes(), debug=utils.is_local_dev_server())
+      routes, debug=utils.is_local_dev_server())
 
 
 def initialize():  # pragma: no cover

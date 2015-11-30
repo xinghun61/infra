@@ -4,7 +4,6 @@
 
 import contextlib
 import datetime
-import json
 
 from components import auth
 from components import utils
@@ -18,6 +17,7 @@ import acl
 import errors
 import model
 import service
+import swarming
 
 
 class BuildBucketServiceTest(testing.AppengineTestCase):
@@ -48,6 +48,10 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.mock(auth, 'get_current_identity', lambda: self.current_identity)
     self.mock(acl, 'can_async', lambda *_: future(True))
     self.mock(utils, 'utcnow', lambda: datetime.datetime(2015, 1, 1))
+    self.mock(swarming, 'is_for_swarming_async', mock.Mock())
+    swarming.is_for_swarming_async.return_value = ndb.Future()
+    swarming.is_for_swarming_async.return_value.set_result(False)
+
 
   def put_many_builds(self):
     for _ in xrange(100):
@@ -106,7 +110,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       self.service.add('bucket', parameters=[])
 
-  #################################### GET #####################################
+
+#################################### GET #####################################
 
   def test_get(self):
     self.test_build.put()
