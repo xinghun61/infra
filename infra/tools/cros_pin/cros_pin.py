@@ -92,6 +92,8 @@ def checkout_for_args(args):
   Args:
     args (argparse.Options): Parsed option list.
   """
+  LOGGER.warning('Checking out temporary repositories. This may take a few '
+                 'minutes.')
   return checkout.Checkout.use(
       path=args.checkout_path)
 
@@ -196,7 +198,7 @@ def subcommand_add_release(args):
 
     # Regenerate slave pools for affected masters.
     tracker.update()
-    LOGGER.warning('Created issues:\n%s', '\n'.join(tracker.issues))
+    LOGGER.info('Created issues:\n%s', '\n'.join(tracker.issues))
   return 0
 
 
@@ -291,8 +293,8 @@ class UpdateTracker(object):
       LOGGER.warning('No changes in repository; refusing to commit.')
       return
 
-    LOGGER.debug('Creating commit in [%s] with message:\n%s',
-                 repo_path, commit_msg)
+    LOGGER.warning('Creating commit in [%s] with message:\n%s',
+                   repo_path, commit_msg)
     execute.check_call(
         ['git', 'checkout', '-b', '_cros_pin'],
         cwd=repo_path)
@@ -312,7 +314,7 @@ class UpdateTracker(object):
       print 'Commit? [Y/n]:',
       input_string = raw_input()
       if input_string != '' and not distutils.util.strtobool(input_string):
-        LOGGER.info('User opted not to commit; aborting.')
+        LOGGER.warning('User opted not to commit; aborting.')
         return
       args.append('--use-commit-queue')
     if not self._reviewers:
