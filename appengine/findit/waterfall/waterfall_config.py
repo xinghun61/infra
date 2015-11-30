@@ -35,10 +35,29 @@ def StepIsSupportedForMaster(step_name, master_name):
     True if Findit supports analyzing the failure, False otherwise. If a master
     is not supported, then neither are any of its steps.
   """
-  conf = wf_config.Settings()
-  masters_to_blacklisted_steps = conf.masters_to_blacklisted_steps
+  config = wf_config.Settings()
+  masters_to_blacklisted_steps = config.masters_to_blacklisted_steps
   blacklisted_steps = masters_to_blacklisted_steps.get(master_name)
   if blacklisted_steps is None:
     return False
 
   return step_name not in blacklisted_steps
+
+
+def GetTrybotForWaterfallBuilder(wf_mastername, wf_buildername):
+  """Returns trybot mastername and buildername for the given waterfall builder.
+
+  Args:
+    wf_mastername: The mastername of a waterfall builder.
+    wf_buildername: The buildername of a waterfall builder.
+
+  Returns:
+    (tryserver_mastername, tryserver_buildername)
+    The trybot mastername and buildername to re-run compile in exactly the same
+    configuration as the given waterfall builder. If the given waterfall builder
+    is not supported yet, (None, None) is returned instead.
+  """
+  config = wf_config.Settings()
+  trybot_config = config.builders_to_trybots.get(
+      wf_mastername, {}).get(wf_buildername, {})
+  return trybot_config.get('mastername'), trybot_config.get('buildername')

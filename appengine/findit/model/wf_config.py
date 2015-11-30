@@ -15,6 +15,14 @@ class FinditConfig(config.GlobalConfig):
   # A Dict mapping supported masters to lists of unsupported steps.
   masters_to_blacklisted_steps = ndb.JsonProperty(indexed=False, default={})
 
+  # Mapping of waterfall builders to try-server trybots, which are used to
+  # re-run compile to identify culprits for compile failures.
+  builders_to_trybots = ndb.JsonProperty(indexed=False, default={})
+
+  @property
+  def VersionNumber(self):  # pragma: no cover
+    return datastore_utils.HIGH_KEY_ID - self.key.integer_id()
+
 
 def Settings(fresh=False):  # pragma: no cover
   if fresh:
@@ -25,7 +33,3 @@ def Settings(fresh=False):  # pragma: no cover
 def Update(new_config_dict):  # pragma: no cover
   conf = Settings()
   conf.modify(**new_config_dict)
-
-
-def GetCurrentVersionNumber():  # pragma: no cover
-  return datastore_utils.HIGH_KEY_ID - Settings().key.integer_id()

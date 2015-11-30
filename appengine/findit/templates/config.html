@@ -80,7 +80,7 @@
     function showUnsupportedSteps(e)
     {
       var selectedMaster = $('#supported-masters-list').val();
-      
+
       var unsupportedStepsList = findit.mastersToBlacklistedSteps[selectedMaster];
       clearList('unsupported-steps-list');
 
@@ -121,8 +121,14 @@
     function save(e) {
       var newConfig = {
         'masters_to_blacklisted_steps': findit.mastersToBlacklistedSteps,
-      }
-      $.post('/config', { data: JSON.stringify(newConfig) });
+        'builders_to_trybots': JSON.parse($('#builders-to-trybots').val()),
+      };
+      $.post('/config', { data: JSON.stringify(newConfig) }).done(function(){
+        window.location.reload();  // Reload after successful saving.
+      }).fail(function(xhr){
+        // Replace the whole page with errors from server side.
+        document.body.outerHTML = xhr.responseText;
+      });
       e.preventDefault();
     }
 
@@ -168,6 +174,10 @@
       <button id="add-new-step-button">Add</button>
       <span>&nbsp;</span>
     </div>
+  </div>
+  <div>
+    Waterfall Builders to Try-server trybots:<br>
+    <textarea id="builders-to-trybots" rows="10" cols="80">{{ builders | tojson | safe }}</textarea>
   </div>
   <br>
   <button type="submit" id="save-button">Save</button>

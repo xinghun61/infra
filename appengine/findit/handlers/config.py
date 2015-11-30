@@ -42,9 +42,25 @@ def _SupportedMastersConfigIsValid(masters_to_blacklisted_steps):
   return True
 
 
+def _ValidateTrybotMapping(builders_to_trybots):
+  if not isinstance(builders_to_trybots, dict):
+    return False
+  for builders in builders_to_trybots.values():
+    if not isinstance(builders, dict):
+      return False
+    for trybot_config in builders.values():
+      if not isinstance(trybot_config, dict):
+        return False
+      if (not trybot_config.get('mastername') or
+          not trybot_config.get('buildername')):
+        return False
+  return True
+
+
+# Maps config properties to their validation functions.
 _CONFIG_VALIDATION_FUNCTIONS = {
-    # Maps config properties to their validation functions.
     'masters_to_blacklisted_steps': _SupportedMastersConfigIsValid,
+    'builders_to_trybots': _ValidateTrybotMapping,
 }
 
 
@@ -83,12 +99,12 @@ class Configuration(BaseHandler):
   PERMISSION_LEVEL = Permission.ADMIN
 
   def HandleGet(self):
-    masters = wf_config.Settings().masters_to_blacklisted_steps
-    version_number = wf_config.GetCurrentVersionNumber()
+    settings = wf_config.Settings()
 
     data = {
-        'masters': masters,
-        'version': version_number,
+        'masters': settings.masters_to_blacklisted_steps,
+        'builders': settings.builders_to_trybots,
+        'version': settings.VersionNumber,
     }
 
     return {'template': 'config.html', 'data': data}
@@ -98,7 +114,9 @@ class Configuration(BaseHandler):
     new_config_dict = json.loads(data)
 
     if not _ConfigurationDictIsValid(new_config_dict):  # pragma: no cover
-      raise ValueError('New configuration settings is not properly formatted.')
+      return self.CreateError(
+          'New configuration settings is not properly formatted.', 400)
 
     wf_config.Update(new_config_dict)
+
     return self.HandleGet()

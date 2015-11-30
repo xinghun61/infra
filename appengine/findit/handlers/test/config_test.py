@@ -16,6 +16,15 @@ _MOCK_MASTERS_TO_BLACKLISTED_STEPS = {
     'master2': ['unsupported_step3', 'unsupported_step4'],
 }
 
+_MOCK_BUILDERS_TO_TRYBOTS = {
+    'master1': {
+        'builder1': {
+            'mastername': 'tryserver1',
+            'buildername': 'trybot1',
+        }
+    }
+}
+
 _MOCK_VERSION_NUMBER = 12
 
 
@@ -27,16 +36,16 @@ class ConfigTest(testing.AppengineTestCase):
   def testGetConfigurationSettings(self):
     class MockFinditConfig():
       masters_to_blacklisted_steps = _MOCK_MASTERS_TO_BLACKLISTED_STEPS
+      builders_to_trybots = _MOCK_BUILDERS_TO_TRYBOTS
+
+      @property
+      def VersionNumber(self):
+        return _MOCK_VERSION_NUMBER
 
     def MockSettings():
-      return MockFinditConfig
+      return MockFinditConfig()
 
-    def MockGetCurrentVersionNumber():
-      return _MOCK_VERSION_NUMBER
-
-    self.mock(wf_config, 'FinditConfig', MockFinditConfig)
     self.mock(wf_config, 'Settings', MockSettings)
-    self.mock(wf_config, 'GetCurrentVersionNumber', MockGetCurrentVersionNumber)
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
     response = self.test_app.get('/config', params={'format': 'json'})
@@ -44,6 +53,7 @@ class ConfigTest(testing.AppengineTestCase):
 
     expected_response = {
         'masters': _MOCK_MASTERS_TO_BLACKLISTED_STEPS,
+        'builders': _MOCK_BUILDERS_TO_TRYBOTS,
         'version': _MOCK_VERSION_NUMBER,
     }
 
@@ -65,6 +75,20 @@ class ConfigTest(testing.AppengineTestCase):
         'a': ['b', 'c', 'd']
     }]))
 
+  def testValidateTrybotMapping(self):
+    self.assertTrue(config._ValidateTrybotMapping({
+        'master1': {
+            'builder1': {
+                'mastername': 'tryserver1',
+                'buildername': 'trybot1',
+            }
+        }
+    }))
+    self.assertFalse(config._ValidateTrybotMapping(['a']))
+    self.assertFalse(config._ValidateTrybotMapping({'a': ['b']}))
+    self.assertFalse(config._ValidateTrybotMapping({'a': {'b':['1']}}))
+    self.assertFalse(config._ValidateTrybotMapping({'a': {'b': {}}}))
+
   def testConfigurationDictIsValid(self):
     self.assertTrue(config._ConfigurationDictIsValid({
         'masters_to_blacklisted_steps': {
@@ -82,23 +106,24 @@ class ConfigTest(testing.AppengineTestCase):
       masters_to_blacklisted_steps = {
           'a': [],
       }
+      builders_to_trybots = {}
 
       def modify(self, **kwargs):
         for k, v in kwargs.iteritems():
           setattr(self, k, v)
+
+      @property
+      def VersionNumber(self):
+        return _MOCK_VERSION_NUMBER
 
     mock_config = MockFinditConfig()
 
     def MockSettings():
       return mock_config
 
-    def MockGetCurrentVersionNumber():
-      return _MOCK_VERSION_NUMBER
-
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     self.mock(wf_config, 'FinditConfig', MockFinditConfig)
     self.mock(wf_config, 'Settings', MockSettings)
-    self.mock(wf_config, 'GetCurrentVersionNumber', MockGetCurrentVersionNumber)
 
     params = {
         'format': 'json',
@@ -106,7 +131,8 @@ class ConfigTest(testing.AppengineTestCase):
             'masters_to_blacklisted_steps': {
                 'a': ['1', '2', '3'],
                 'b': []
-            }
+            },
+            'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
         })
     }
 
@@ -115,6 +141,7 @@ class ConfigTest(testing.AppengineTestCase):
             'a': ['1', '2', '3'],
             'b': []
         },
+        'builders': _MOCK_BUILDERS_TO_TRYBOTS,
         'version': _MOCK_VERSION_NUMBER,
     }
 
