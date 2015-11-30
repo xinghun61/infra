@@ -137,7 +137,7 @@ class MainHandler(webapp2.RequestHandler):
     user = users.get_current_user()
     if role or (user and re.match(
         r".*?@chromium\.org\Z", user.email(), re.DOTALL | re.IGNORECASE)):
-      self.redirect(issue_entry_page_url)
+      self.redirect(unicode.encode(issue_entry_page_url, 'utf8'))
       return
 
     ua = httpagentparser.detect(uas)
@@ -214,7 +214,7 @@ class MainHandler(webapp2.RequestHandler):
         chrome_version, os_version, detectable_phrase, chrome_ua)
       url = (issue_entry_page_url + '?template=' + template_name + '&' +
              urllib.urlencode({'comment': comment}))
-      self.redirect(url)
+      self.redirect(unicode.encode(url, 'utf8'))
       return
 
     channel_guess_os_name = {
