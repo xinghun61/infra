@@ -257,20 +257,27 @@ CTFailures.prototype._populateSuspectedCLs = function(suspectedCLGroup, analysis
       };
     }
     var buildUrl = masterUrl + '/builders/' + builderName + '/builds/' + buildNumber;
-    suspectedCLGroup[cl.repo_name][cl.revision].builds.push(buildUrl);
+    if (suspectedCLGroup[cl.repo_name][cl.revision].builds.indexOf(buildUrl) == -1){
+      suspectedCLGroup[cl.repo_name][cl.revision].builds.push(buildUrl);
+    }
   });
 };
 
 CTFailures.prototype._filterOutsuspectedCLForStepFailure = function(suspectedCLGroup, stepFailure, analysisResults) {
   var stepName = stepFailure.step;
+  var testName = stepFailure.testName;
 
-  // FIXME: filter with test name when Findit supports test-level analysis.
   Object.keys(stepFailure.resultNodesByBuilder, function(builderName, failure) {
     analysisResults.forEach(function(analysisResult) {
       if (stepName != analysisResult.step_name ||
           failure.lastFailingBuild != analysisResult.build_number ||
           builderName != analysisResult.builder_name ||
           failure.masterUrl != analysisResult.master_url)
+        return;
+
+      // Filters with test name if findit has done a test level analysis.
+      // If either stepFailrue or findit result doesn't have test name, don't filter with test name.
+      if (testName && analysisResult.test_name && testName != analysisResult.test_name)
         return;
 
       this._populateSuspectedCLs(suspectedCLGroup, analysisResult, failure.masterUrl, builderName, failure.lastFailingBuild);

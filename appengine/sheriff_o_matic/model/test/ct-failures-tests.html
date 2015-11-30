@@ -220,7 +220,7 @@ describe('ct-failures', function() {
       assert.deepEqual(suspectedCLsByRepo, {});
     });
 
-    it('should return matched analysis results', function() {
+    it('should return analysis results if master_url, builder_name and build_number are matched, no need to filter test_name if not provided in analysis results.', function() {
       var analysisResults = [
         {
           'master_url': 'https://build.chromium.org/p/chromium',
@@ -260,6 +260,323 @@ describe('ct-failures', function() {
       ];
 
       var suspectedCLsByRepo = analyzer._processAnalysisResultsForStepFailureGroup(failures, analysisResults);
+
+      assert.deepEqual(suspectedCLsByRepo, {
+        'chromium': [
+          {
+            'commitPosition': 3,
+            'revision': 'git_hash3',
+            'builds': ['https://build.chromium.org/p/chromium/builders/Linux/builds/5']
+          },
+        ],
+        'v8': [
+          {
+            'commitPosition': 5,
+            'revision': 'git_hash5',
+            'builds': ['https://build.chromium.org/p/chromium/builders/Linux/builds/5']
+          },
+        ]
+      });
+    });
+
+    it('should return an empty object because test names do not match.', function() {
+      var analysisResults = [
+        {
+          'master_url': 'https://build.chromium.org/p/chromium',
+          'builder_name': 'Linux',
+          'build_number': 5,
+          'step_name': 'unit_tests',
+          'is_sub_test': true,
+          'test_name': 'suite1.anothertest',
+          'first_known_failed_build_number': 3,
+          'suspected_cls': [
+            {
+              'revision': 'git_hash3',
+              'commit_position': 3,
+              'repo_name': 'chromium'
+            },
+            {
+              'revision': 'git_hash5',
+              'commit_position': 5,
+              'repo_name': 'v8'
+            }
+          ]
+        },
+        {
+          'master_url': 'https://build.chromium.org/p/chromium',
+          'builder_name': 'Linux',
+          'build_number': 5,
+          'step_name': 'browser_tests',
+          'is_sub_test': false,
+          'first_known_failed_build_number': 2,
+          'suspected_cls': [
+            {
+              'revision': 'git_hash2',
+              'commit_position': 2,
+              'repo_name': 'chromium'
+            }
+          ]
+        },
+      ];
+      var suspectedCLsByRepo = analyzer._processAnalysisResultsForStepFailureGroup(failures, analysisResults);
+      assert.deepEqual(suspectedCLsByRepo, {});
+    });
+
+    it('should return matched analysis results without filtering test_name because analysis results does not contain test name info.', function() {
+      var analysisResults = [
+        {
+          'master_url': 'https://build.chromium.org/p/chromium',
+          'builder_name': 'Linux',
+          'build_number': 5,
+          'step_name': 'unit_tests',
+          'is_sub_test': true,
+          'test_name': null,
+          'first_known_failed_build_number': 3,
+          'suspected_cls': [
+            {
+              'revision': 'git_hash3',
+              'commit_position': 3,
+              'repo_name': 'chromium'
+            },
+            {
+              'revision': 'git_hash5',
+              'commit_position': 5,
+              'repo_name': 'v8'
+            }
+          ]
+        },
+        {
+          'master_url': 'https://build.chromium.org/p/chromium',
+          'builder_name': 'Linux',
+          'build_number': 5,
+          'step_name': 'browser_tests',
+          'is_sub_test': false,
+          'first_known_failed_build_number': 2,
+          'suspected_cls': [
+            {
+              'revision': 'git_hash2',
+              'commit_position': 2,
+              'repo_name': 'chromium'
+            }
+          ]
+        },
+      ];
+
+      var suspectedCLsByRepo = analyzer._processAnalysisResultsForStepFailureGroup(failures, analysisResults);
+
+      assert.deepEqual(suspectedCLsByRepo, {
+        'chromium': [
+          {
+            'commitPosition': 3,
+            'revision': 'git_hash3',
+            'builds': ['https://build.chromium.org/p/chromium/builders/Linux/builds/5']
+          },
+        ],
+        'v8': [
+          {
+            'commitPosition': 5,
+            'revision': 'git_hash5',
+            'builds': ['https://build.chromium.org/p/chromium/builders/Linux/builds/5']
+          },
+        ]
+      });
+    });
+
+    it('should return matched analysis results because test_names are matched', function() {
+      var analysisResults = [
+        {
+          'master_url': 'https://build.chromium.org/p/chromium',
+          'builder_name': 'Linux',
+          'build_number': 5,
+          'step_name': 'unit_tests',
+          'is_sub_test': true,
+          'test_name': 'suite1.test1',
+          'first_known_failed_build_number': 3,
+          'suspected_cls': [
+            {
+              'revision': 'git_hash3',
+              'commit_position': 3,
+              'repo_name': 'chromium'
+            },
+            {
+              'revision': 'git_hash5',
+              'commit_position': 5,
+              'repo_name': 'v8'
+            }
+          ]
+        },
+        {
+          'master_url': 'https://build.chromium.org/p/chromium',
+          'builder_name': 'Linux',
+          'build_number': 5,
+          'step_name': 'browser_tests',
+          'is_sub_test': false,
+          'first_known_failed_build_number': 2,
+          'suspected_cls': [
+            {
+              'revision': 'git_hash2',
+              'commit_position': 2,
+              'repo_name': 'chromium'
+            }
+          ]
+        },
+      ];
+
+      var suspectedCLsByRepo = analyzer._processAnalysisResultsForStepFailureGroup(failures, analysisResults);
+
+      assert.deepEqual(suspectedCLsByRepo, {
+        'chromium': [
+          {
+            'commitPosition': 3,
+            'revision': 'git_hash3',
+            'builds': ['https://build.chromium.org/p/chromium/builders/Linux/builds/5']
+          },
+        ],
+        'v8': [
+          {
+            'commitPosition': 5,
+            'revision': 'git_hash5',
+            'builds': ['https://build.chromium.org/p/chromium/builders/Linux/builds/5']
+          },
+        ]
+      });
+    });
+
+    it('should return matched analysis results without duplicates because there are only one suspected CL which is responsible for multiple test failures.', function() {
+      var new_failures = [];
+      new_failures.push(
+        new CTStepFailure('unit_tests', 'suite1.test1', {
+          'Linux': {
+            'key': 'failure_key1',
+            'actual': 'failure_type1',
+            'lastFailingBuild': 5,
+            'masterUrl': 'https://build.chromium.org/p/chromium',
+            'failingBuildCount': 1,
+            'annotation': null,
+            'isTreeCloser': false,
+          }
+        })
+      );
+      new_failures.push(
+        new CTStepFailure('unit_tests', 'suite1.test2', {
+          'Linux': {
+            'key': 'failure_key1',
+            'actual': 'failure_type1',
+            'lastFailingBuild': 5,
+            'masterUrl': 'https://build.chromium.org/p/chromium',
+            'failingBuildCount': 1,
+            'annotation': null,
+            'isTreeCloser': false,
+          }
+        })
+      );
+
+      var analysisResults = [
+        {
+          'master_url': 'https://build.chromium.org/p/chromium',
+          'builder_name': 'Linux',
+          'build_number': 5,
+          'step_name': 'unit_tests',
+          'is_sub_test': true,
+          'test_name': 'suite1.test1',
+          'first_known_failed_build_number': 3,
+          'suspected_cls': [
+            {
+              'revision': 'git_hash3',
+              'commit_position': 3,
+              'repo_name': 'chromium'
+            },
+            {
+              'revision': 'git_hash5',
+              'commit_position': 5,
+              'repo_name': 'v8'
+            }
+          ]
+        },
+        {
+          'master_url': 'https://build.chromium.org/p/chromium',
+          'builder_name': 'Linux',
+          'build_number': 5,
+          'step_name': 'unit_tests',
+          'is_sub_test': true,
+          'test_name': 'suite1.test2',
+          'first_known_failed_build_number': 3,
+          'suspected_cls': [
+            {
+              'revision': 'git_hash3',
+              'commit_position': 3,
+              'repo_name': 'chromium'
+            },
+            {
+              'revision': 'git_hash5',
+              'commit_position': 5,
+              'repo_name': 'v8'
+            }
+          ]
+        },
+      ];
+
+      var suspectedCLsByRepo = analyzer._processAnalysisResultsForStepFailureGroup(new_failures, analysisResults);
+
+      assert.deepEqual(suspectedCLsByRepo, {
+        'chromium': [
+          {
+            'commitPosition': 3,
+            'revision': 'git_hash3',
+            'builds': ['https://build.chromium.org/p/chromium/builders/Linux/builds/5']
+          },
+        ],
+        'v8': [
+          {
+            'commitPosition': 5,
+            'revision': 'git_hash5',
+            'builds': ['https://build.chromium.org/p/chromium/builders/Linux/builds/5']
+          },
+        ]
+      });
+    });
+
+    it('should return matched analysis results without filtering the test name because there is no test info in failures.', function() {
+      var new_failures_no_test = [];
+      new_failures_no_test.push(
+        new CTStepFailure('unit_tests', null, {
+          'Linux': {
+            'key': 'failure_key1',
+            'actual': 'failure_type1',
+            'lastFailingBuild': 5,
+            'masterUrl': 'https://build.chromium.org/p/chromium',
+            'failingBuildCount': 1,
+            'annotation': null,
+            'isTreeCloser': false,
+          }
+        })
+      );
+
+      var analysisResults = [
+        {
+          'master_url': 'https://build.chromium.org/p/chromium',
+          'builder_name': 'Linux',
+          'build_number': 5,
+          'step_name': 'unit_tests',
+          'is_sub_test': true,
+          'test_name': 'suite1.test1',
+          'first_known_failed_build_number': 3,
+          'suspected_cls': [
+            {
+              'revision': 'git_hash3',
+              'commit_position': 3,
+              'repo_name': 'chromium'
+            },
+            {
+              'revision': 'git_hash5',
+              'commit_position': 5,
+              'repo_name': 'v8'
+            }
+          ]
+        },
+      ];
+
+      var suspectedCLsByRepo = analyzer._processAnalysisResultsForStepFailureGroup(new_failures_no_test, analysisResults);
 
       assert.deepEqual(suspectedCLsByRepo, {
         'chromium': [
