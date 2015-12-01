@@ -38,7 +38,8 @@ def main(argv):
 
   LOGGER.info('Fetching Chrome...')
   cache_dir = os.path.expanduser('~/.cached_browsers')
-  chrome, _ = fetch_browser.run('chrome', cache_dir, sys.platform, 'stable')
+  chrome, _ = fetch_browser.run(
+      'chrome', cache_dir, sys.platform, '46.0.2490.86')
 
   if sys.platform == 'linux2':
     with testjs.get_display() as display:
