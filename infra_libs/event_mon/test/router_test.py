@@ -109,7 +109,7 @@ class HttpRouterTests(unittest.TestCase):
     event.event_code = 1
     event.event_flow_id = 2
     self.assertFalse(r.push_event(event))
-    self.assertEquals(len(sleep.call_args_list), 0)
+    self.assertEquals(len(sleep.call_args_list), 2)
 
 
 class TextStreamRouterTests(unittest.TestCase):

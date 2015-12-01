@@ -213,10 +213,11 @@ class _HttpRouter(_Router):
 
     logging.info('event_mon: POSTing events to %s', self.endpoint)
 
+    attempt = 0  # silencing pylint
     for attempt in xrange(self.try_num - 1):  # pragma: no branch
-      # Set this time at the very last moment
+      # (re)set this time at the very last moment
       events.request_time_ms = time_ms()
-
+      response = None
       try:
         if self._dry_run:
           logging.info('Http requests disabled. Not sending anything')
@@ -232,10 +233,10 @@ class _HttpRouter(_Router):
           return True
       except Exception:
         logging.exception('exception when POSTing data')
-        break
 
-      logging.error('failed to POST data to %s Status: %d (attempt %d)',
-                    self.endpoint, response.status, attempt)
+      if response:
+        logging.error('failed to POST data to %s Status: %d (attempt %d)',
+                      self.endpoint, response.status, attempt)
 
       if attempt == 0:
         logging.error('data: %s', str(events)[:200])
@@ -243,5 +244,5 @@ class _HttpRouter(_Router):
       self._sleep_fn(backoff_time(attempt, retry_backoff=self.retry_backoff))
 
     logging.error('failed to POST data after %d attempts, giving up.',
-                  self.try_num)
+                  attempt+1)
     return False
