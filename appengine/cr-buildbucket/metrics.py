@@ -35,6 +35,15 @@ METRIC_LEASE_BUILD_LATENCY = metrics.Descriptor(
     value_type='double',
     labels=COMMON_LABELS,
 )
+METRIC_SCHEDULING_LATENCY = metrics.Descriptor(
+    name='buildbucket/builds/scheduling_latency',
+    description=(
+        'Average number of seconds for a scheduled build '
+        'to remain in SCHEDULED leased state'
+    ),
+    value_type='double',
+    labels=COMMON_LABELS,
+)
 
 
 def set_gauge(buf, bucket, metric, value):
@@ -52,14 +61,18 @@ def send_build_status_metric(buf, bucket, metric, status):
 
 
 @ndb.tasklet
-def send_build_lease_latency(buf, bucket):
+def send_build_latency(buf, metric, bucket, must_be_never_leased):
   q = model.Build.query(
       model.Build.bucket == bucket,
       model.Build.status == model.BuildStatus.SCHEDULED,
-      model.Build.never_leased == True,
   )
-  now = utils.utcnow()
+  if must_be_never_leased:
+    q = q.filter(model.Build.never_leased == True)
+  else:
+    # Reuse the index that has never_leased
+    q = q.filter(model.Build.never_leased.IN((True, False)))
 
+  now = utils.utcnow()
   avg_latency = 0.0
   count = 0
   for e in q.iter(projection=[model.Build.create_time]):
@@ -67,7 +80,7 @@ def send_build_lease_latency(buf, bucket):
     count += 1
   if count > 0:
     avg_latency /= count
-    set_gauge(buf, bucket, METRIC_LEASE_BUILD_LATENCY, avg_latency)
+  set_gauge(buf, bucket, metric, avg_latency)
 
 
 def send_all_metrics():
@@ -79,7 +92,8 @@ def send_all_metrics():
             buf, b.name, METRIC_PENDING_BUILDS, model.BuildStatus.SCHEDULED),
         send_build_status_metric(
             buf, b.name, METRIC_RUNNING_BUILDS, model.BuildStatus.STARTED),
-        send_build_lease_latency(buf, b.name),
+        send_build_latency(buf, METRIC_LEASE_BUILD_LATENCY, b.name, True),
+        send_build_latency(buf, METRIC_SCHEDULING_LATENCY, b.name, False),
     ])
   ndb.Future.wait_all(futures)
   buf.flush()

@@ -21,7 +21,7 @@ indexes:
   - name: status
   - name: create_time
 
-# Build lease latency monitoring.
+# Build lease/start latency monitoring.
 - kind: Build
   properties:
   - name: bucket

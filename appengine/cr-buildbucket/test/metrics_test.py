@@ -76,7 +76,8 @@ class MerticsTest(testing.AppengineTestCase):
           create_time=datetime.datetime(2015, 1, 3)
         ),
     ])
-    metrics.send_build_lease_latency(buf, 'chromium').get_result()
+    metrics.send_build_latency(
+        buf, metrics.METRIC_LEASE_BUILD_LATENCY, 'chromium', True).get_result()
     buf.set_gauge.assert_called_once_with(
         metrics.METRIC_LEASE_BUILD_LATENCY,
         2.0 * 24 * 3600,  # 2 days,
