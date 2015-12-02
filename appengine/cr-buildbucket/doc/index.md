@@ -22,7 +22,7 @@ A Build JSON object may have the following keys:
 *   `bucket`: a string that defines what project/subproject a build belongs to.
     Required.
 *   `tags`: indexed key-value pairs, such as
-    `["buildername:Release", "requester:cq"]`. Builds can be searched by tags.
+    `["buildername:Release", "user_agent:cq"]`. Builds can be searched by tags.
     Also see tag [conventions](#Conventions).
 *   `parameters_json`: an immutable JSON blob passed by a build requester,
     represents build parameters. The format is specific to a build-system.
