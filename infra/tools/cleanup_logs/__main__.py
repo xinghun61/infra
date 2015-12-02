@@ -9,23 +9,26 @@ import time
 
 import infra_libs
 
+DEFAULT_MAX_AGE_SECS = 2 * 24 * 60 * 60  # 2 days
+
+# platform -> (directory, pattern, max age in secs)
 DIRECTORIES = {
   'linux2': [
-    ('/tmp', '*.log.*'),
-    ('/var/log/chrome-infra', '*.log.*'),
+    ('/tmp', '*.log.*', None),
+    ('/var/log/chrome-infra', '*.log.*', None),
+    ('/home/chrome-bot/.config/chromium/Crash Reports', None, 10 * 3600),
   ],
   'darwin': [
-    ('/tmp', '*.log.*'),
-    ('/Users/chrome-bot/Library/Logs/CoreSimulator', None),
-    ('/var/log/chrome-infra', '*.log.*'),
+    ('/tmp', '*.log.*', None),
+    ('/Users/chrome-bot/Library/Logs/CoreSimulator', None, None),
+    ('/var/log/chrome-infra', '*.log.*', None),
   ],
   'win32': [
-    ('C:\\chrome-infra-logs', '*.log.*'),
-    ('E:\\chrome-infra-logs', '*.log.*'),
+    ('C:\\chrome-infra-logs', '*.log.*', None),
+    ('E:\\chrome-infra-logs', '*.log.*', None),
+    ('C:\\Users\\chrome-bot\\AppData\\Local\\Temp', None, 10 * 3600),
   ],
 }
-
-MAX_AGE_SECS = 2 * 24 * 60 * 60  # 2 days
 
 
 class CleanupLogs(infra_libs.BaseApplication):
@@ -38,16 +41,19 @@ class CleanupLogs(infra_libs.BaseApplication):
         help='Just print the files that would otherwise be deleted.')
 
   def process_argparse_options(self, options):
+    # TODO(pgervais,http://crbug.com/564737): having metrics would be useful
     # Don't call the base class so we don't initialise logs or ts_mon.
     pass
 
   def main(self, opts):
-    delete_before = time.time() - MAX_AGE_SECS
+    for path, pattern, max_age_secs in DIRECTORIES[sys.platform]:
+      max_age_secs = max_age_secs or DEFAULT_MAX_AGE_SECS
+      delete_before = time.time() - max_age_secs
 
-    for path, pattern in DIRECTORIES[sys.platform]:
       if not os.path.isdir(path):
         continue
 
+      # TODO(pgervais,http://crbug.com/564743): make this recursive
       names = os.listdir(path)
       if pattern is not None:
         names = fnmatch.filter(names, pattern)
