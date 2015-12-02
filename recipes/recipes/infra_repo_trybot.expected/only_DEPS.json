@@ -119,6 +119,15 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
+      "testjs.py"
+    ],
+    "cwd": "[SLAVE_BUILD]/infra",
+    "name": "js tests"
+  },
+  {
+    "cmd": [
       "make",
       "-C",
       "appengine/chromium_rietveld",
