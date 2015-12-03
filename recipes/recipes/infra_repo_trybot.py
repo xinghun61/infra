@@ -45,11 +45,11 @@ def RunSteps(api):
 
     api.python('python tests', 'test.py', ['test'], cwd=api.path['checkout'])
 
-    if any(f.startswith('infra/glyco/') for f in files):
-      api.python(
-        'glyco tests',
-        api.path['checkout'].join('glyco', 'tests', 'run_all_tests.py'),
-        [], cwd=api.path['checkout'])
+    # if any(f.startswith('infra/glyco/') for f in files):
+    #   api.python(
+    #     'glyco tests',
+    #     api.path['checkout'].join('glyco', 'tests', 'run_all_tests.py'),
+    #     [], cwd=api.path['checkout'])
 
     # Note: env.py knows how to expand 'python' into sys.executable.
     api.python(
