@@ -12,8 +12,8 @@ from components import utils
 from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
-import endpoints
 
+import endpoints
 import errors
 import model
 import service
@@ -29,10 +29,10 @@ class ErrorReason(messages.Enum):
 
 
 ERROR_REASON_MAP = {
-    errors.BuildNotFoundError: ErrorReason.BUILD_NOT_FOUND,
-    errors.LeaseExpiredError: ErrorReason.LEASE_EXPIRED,
-    errors.InvalidInputError: ErrorReason.INVALID_INPUT,
-    errors.BuildIsCompletedError: ErrorReason.BUILD_IS_COMPLETED,
+  errors.BuildNotFoundError: ErrorReason.BUILD_NOT_FOUND,
+  errors.LeaseExpiredError: ErrorReason.LEASE_EXPIRED,
+  errors.InvalidInputError: ErrorReason.INVALID_INPUT,
+  errors.BuildIsCompletedError: ErrorReason.BUILD_IS_COMPLETED,
 }
 
 
@@ -44,8 +44,8 @@ class ErrorMessage(messages.Message):
 def exception_to_error_message(ex):
   assert isinstance(ex, errors.Error)
   return ErrorMessage(
-      reason=ERROR_REASON_MAP[type(ex)],
-      message=ex.message,
+    reason=ERROR_REASON_MAP[type(ex)],
+    message=ex.message,
   )
 
 
@@ -91,27 +91,27 @@ def build_to_message(build, include_lease_key=False):
   assert build.key.id()
 
   msg = BuildMessage(
-      id=build.key.id(),
-      bucket=build.bucket,
-      tags=build.tags,
-      parameters_json=json.dumps(build.parameters or {}, sort_keys=True),
-      status=build.status,
-      result=build.result,
-      result_details_json=json.dumps(build.result_details),
-      cancelation_reason=build.cancelation_reason,
-      failure_reason=build.failure_reason,
-      lease_key=build.lease_key if include_lease_key else None,
-      url=build.url,
-      created_ts=datetime_to_timestamp_safe(build.create_time),
-      updated_ts=datetime_to_timestamp_safe(build.update_time),
-      completed_ts=datetime_to_timestamp_safe(build.complete_time),
-      created_by=build.created_by.to_bytes() if build.created_by else None,
-      status_changed_ts=datetime_to_timestamp_safe(build.status_changed_time),
-      utcnow_ts=datetime_to_timestamp_safe(utils.utcnow()),
+    id=build.key.id(),
+    bucket=build.bucket,
+    tags=build.tags,
+    parameters_json=json.dumps(build.parameters or {}, sort_keys=True),
+    status=build.status,
+    result=build.result,
+    result_details_json=json.dumps(build.result_details),
+    cancelation_reason=build.cancelation_reason,
+    failure_reason=build.failure_reason,
+    lease_key=build.lease_key if include_lease_key else None,
+    url=build.url,
+    created_ts=datetime_to_timestamp_safe(build.create_time),
+    updated_ts=datetime_to_timestamp_safe(build.update_time),
+    completed_ts=datetime_to_timestamp_safe(build.complete_time),
+    created_by=build.created_by.to_bytes() if build.created_by else None,
+    status_changed_ts=datetime_to_timestamp_safe(build.status_changed_time),
+    utcnow_ts=datetime_to_timestamp_safe(utils.utcnow()),
   )
   if build.lease_expiration_date is not None:
     msg.lease_expiration_ts = utils.datetime_to_timestamp(
-        build.lease_expiration_date)
+      build.lease_expiration_date)
   return msg
 
 
@@ -121,8 +121,8 @@ def build_to_response_message(build, include_lease_key=False):
 
 def id_resource_container(body_message_class=message_types.VoidMessage):
   return endpoints.ResourceContainer(
-      body_message_class,
-      id=messages.IntegerField(1, required=True),
+    body_message_class,
+    id=messages.IntegerField(1, required=True),
   )
 
 
@@ -131,7 +131,7 @@ def buildbucket_api_method(
   """Extends auth.endpoints_method by converting service errors."""
 
   endpoints_decorator = auth.endpoints_method(
-      request_message_class, response_message_class, **kwargs)
+    request_message_class, response_message_class, **kwargs)
 
   def decorator(fn):
     @functools.wraps(fn)
@@ -141,7 +141,9 @@ def buildbucket_api_method(
       except errors.Error as ex:
         assert hasattr(response_message_class, 'error')
         return response_message_class(error=exception_to_error_message(ex))
+
     return endpoints_decorator(decorated)
+
   return decorator
 
 
@@ -161,7 +163,7 @@ def parse_datetime(timestamp):
     return utils.timestamp_to_datetime(timestamp)
   except OverflowError:
     raise errors.InvalidInputError(
-        'Could not parse timestamp: %s' % timestamp)
+      'Could not parse timestamp: %s' % timestamp)
 
 
 def datetime_to_timestamp_safe(value):
@@ -171,8 +173,8 @@ def datetime_to_timestamp_safe(value):
 
 
 @auth.endpoints_api(
-    name='buildbucket', version='v1',
-    title='Build Bucket Service')
+  name='buildbucket', version='v1',
+  title='Build Bucket Service')
 class BuildBucketApi(remote.Service):
   """API for scheduling builds."""
   _service = None
@@ -188,8 +190,8 @@ class BuildBucketApi(remote.Service):
   ###################################  GET  ####################################
 
   @buildbucket_api_method(
-      id_resource_container(), BuildResponseMessage,
-      path='builds/{id}', http_method='GET')
+    id_resource_container(), BuildResponseMessage,
+    path='builds/{id}', http_method='GET')
   @auth.public
   def get(self, request):
     """Returns a build by id."""
@@ -201,17 +203,17 @@ class BuildBucketApi(remote.Service):
   ###################################  PUT  ####################################
 
   @buildbucket_api_method(
-      PutRequestMessage, BuildResponseMessage,
-      path='builds', http_method='PUT')
+    PutRequestMessage, BuildResponseMessage,
+    path='builds', http_method='PUT')
   @auth.public
   def put(self, request):
     """Creates a new build."""
     build = self.service.add(
-        bucket=request.bucket,
-        tags=request.tags,
-        parameters=parse_json(request.parameters_json, 'parameters_json'),
-        lease_expiration_date=parse_datetime(request.lease_expiration_ts),
-        client_operation_id=request.client_operation_id,
+      bucket=request.bucket,
+      tags=request.tags,
+      parameters=parse_json(request.parameters_json, 'parameters_json'),
+      lease_expiration_date=parse_datetime(request.lease_expiration_ts),
+      client_operation_id=request.client_operation_id,
     )
     return build_to_response_message(build, include_lease_key=True)
 
@@ -225,23 +227,24 @@ class BuildBucketApi(remote.Service):
       client_operation_id = messages.StringField(1)
       build = messages.MessageField(BuildMessage, 2)
       error = messages.MessageField(ErrorMessage, 3)
+
     results = messages.MessageField(OneResult, 1, repeated=True)
 
   @buildbucket_api_method(
-      PutBatchRequestMessage, PutBatchResponseMessage,
-      path='builds/batch', http_method='PUT')
+    PutBatchRequestMessage, PutBatchResponseMessage,
+    path='builds/batch', http_method='PUT')
   @auth.public
   def put_batch(self, request):
     """Creates builds."""
     build_futures = [
-        self.service.add_async(
-            bucket=put_req.bucket,
-            tags=put_req.tags,
-            parameters=parse_json(put_req.parameters_json, 'parameters_json'),
-            lease_expiration_date=parse_datetime(put_req.lease_expiration_ts),
-            client_operation_id=put_req.client_operation_id,
-        )
-        for put_req in request.builds
+      self.service.add_async(
+        bucket=put_req.bucket,
+        tags=put_req.tags,
+        parameters=parse_json(put_req.parameters_json, 'parameters_json'),
+        lease_expiration_date=parse_datetime(put_req.lease_expiration_ts),
+        client_operation_id=put_req.client_operation_id,
+      )
+      for put_req in request.builds
     ]
 
     res = self.PutBatchResponseMessage()
@@ -256,25 +259,25 @@ class BuildBucketApi(remote.Service):
       return one_res
 
     res.results = [
-        to_msg(req, build)
-        for req, build in zip(request.builds, build_futures)]
+      to_msg(req, build)
+      for req, build in zip(request.builds, build_futures)]
     return res
 
   ##################################  SEARCH   #################################
 
 
   SEARCH_REQUEST_RESOURCE_CONTAINER = endpoints.ResourceContainer(
-      message_types.VoidMessage,
-      start_cursor=messages.StringField(1),
-      bucket=messages.StringField(2, repeated=True),
-      # All specified tags must be present in a build.
-      tag=messages.StringField(3, repeated=True),
-      status=messages.EnumField(model.BuildStatus, 4),
-      result=messages.EnumField(model.BuildResult, 5),
-      cancelation_reason=messages.EnumField(model.CancelationReason, 6),
-      failure_reason=messages.EnumField(model.FailureReason, 7),
-      created_by=messages.StringField(8),
-      max_builds=messages.IntegerField(9, variant=messages.Variant.INT32),
+    message_types.VoidMessage,
+    start_cursor=messages.StringField(1),
+    bucket=messages.StringField(2, repeated=True),
+    # All specified tags must be present in a build.
+    tag=messages.StringField(3, repeated=True),
+    status=messages.EnumField(model.BuildStatus, 4),
+    result=messages.EnumField(model.BuildResult, 5),
+    cancelation_reason=messages.EnumField(model.CancelationReason, 6),
+    failure_reason=messages.EnumField(model.FailureReason, 7),
+    created_by=messages.StringField(8),
+    max_builds=messages.IntegerField(9, variant=messages.Variant.INT32),
   )
 
   class SearchResponseMessage(messages.Message):
@@ -283,51 +286,51 @@ class BuildBucketApi(remote.Service):
     error = messages.MessageField(ErrorMessage, 3)
 
   @buildbucket_api_method(
-      SEARCH_REQUEST_RESOURCE_CONTAINER, SearchResponseMessage,
-      path='search', http_method='GET')
+    SEARCH_REQUEST_RESOURCE_CONTAINER, SearchResponseMessage,
+    path='search', http_method='GET')
   @auth.public
   def search(self, request):
     """Searches for builds."""
     assert isinstance(request.tag, list)
     builds, next_cursor = self.service.search(
-        buckets=request.bucket,
-        tags=request.tag,
-        status=request.status,
-        result=request.result,
-        failure_reason=request.failure_reason,
-        cancelation_reason=request.cancelation_reason,
-        max_builds=request.max_builds,
-        created_by=request.created_by,
-        start_cursor=request.start_cursor)
+      buckets=request.bucket,
+      tags=request.tag,
+      status=request.status,
+      result=request.result,
+      failure_reason=request.failure_reason,
+      cancelation_reason=request.cancelation_reason,
+      max_builds=request.max_builds,
+      created_by=request.created_by,
+      start_cursor=request.start_cursor)
     return self.SearchResponseMessage(
-        builds=map(build_to_message, builds),
-        next_cursor=next_cursor,
+      builds=map(build_to_message, builds),
+      next_cursor=next_cursor,
     )
 
   ###################################  PEEK  ###################################
 
   PEEK_REQUEST_RESOURCE_CONTAINER = endpoints.ResourceContainer(
-      message_types.VoidMessage,
-      bucket=messages.StringField(1, repeated=True),
-      max_builds=messages.IntegerField(2, variant=messages.Variant.INT32),
-      start_cursor=messages.StringField(3),
+    message_types.VoidMessage,
+    bucket=messages.StringField(1, repeated=True),
+    max_builds=messages.IntegerField(2, variant=messages.Variant.INT32),
+    start_cursor=messages.StringField(3),
   )
 
   @buildbucket_api_method(
-      PEEK_REQUEST_RESOURCE_CONTAINER, SearchResponseMessage,
-      path='peek', http_method='GET')
+    PEEK_REQUEST_RESOURCE_CONTAINER, SearchResponseMessage,
+    path='peek', http_method='GET')
   @auth.public
   def peek(self, request):
     """Returns available builds."""
     assert isinstance(request.bucket, list)
     builds, next_cursor = self.service.peek(
-        request.bucket,
-        max_builds=request.max_builds,
-        start_cursor=request.start_cursor,
+      request.bucket,
+      max_builds=request.max_builds,
+      start_cursor=request.start_cursor,
     )
     return self.SearchResponseMessage(
-        builds=map(build_to_message, builds),
-        next_cursor=next_cursor)
+      builds=map(build_to_message, builds),
+      next_cursor=next_cursor)
 
   ##################################  LEASE  ###################################
 
@@ -335,8 +338,8 @@ class BuildBucketApi(remote.Service):
     lease_expiration_ts = messages.IntegerField(1)
 
   @buildbucket_api_method(
-      id_resource_container(LeaseRequestBodyMessage), BuildResponseMessage,
-      path='builds/{id}/lease', http_method='POST')
+    id_resource_container(LeaseRequestBodyMessage), BuildResponseMessage,
+    path='builds/{id}/lease', http_method='POST')
   @auth.public
   def lease(self, request):
     """Leases a build.
@@ -344,13 +347,13 @@ class BuildBucketApi(remote.Service):
     Response may contain an error.
     """
     success, build = self.service.lease(
-        request.id,
-        lease_expiration_date=parse_datetime(request.lease_expiration_ts),
+      request.id,
+      lease_expiration_date=parse_datetime(request.lease_expiration_ts),
     )
     if not success:
       return BuildResponseMessage(error=ErrorMessage(
-          message='Could not lease build',
-          reason=ErrorReason.CANNOT_LEASE_BUILD,
+        message='Could not lease build',
+        reason=ErrorReason.CANNOT_LEASE_BUILD,
       ))
 
     assert build.lease_key is not None
@@ -359,8 +362,8 @@ class BuildBucketApi(remote.Service):
   #################################  RESET  ####################################
 
   @buildbucket_api_method(
-      id_resource_container(), BuildResponseMessage,
-      path='builds/{id}/reset', http_method='POST')
+    id_resource_container(), BuildResponseMessage,
+    path='builds/{id}/reset', http_method='POST')
   @auth.public
   def reset(self, request):
     """Forcibly unleases a build and resets its state to SCHEDULED."""
@@ -374,8 +377,8 @@ class BuildBucketApi(remote.Service):
     url = messages.StringField(2)
 
   @buildbucket_api_method(
-      id_resource_container(StartRequestBodyMessage), BuildResponseMessage,
-      path='builds/{id}/start', http_method='POST')
+    id_resource_container(StartRequestBodyMessage), BuildResponseMessage,
+    path='builds/{id}/start', http_method='POST')
   @auth.public
   def start(self, request):
     """Marks a build as started."""
@@ -389,14 +392,14 @@ class BuildBucketApi(remote.Service):
     lease_expiration_ts = messages.IntegerField(2, required=True)
 
   @buildbucket_api_method(
-      id_resource_container(HeartbeatRequestBodyMessage), BuildResponseMessage,
-      path='builds/{id}/heartbeat', http_method='POST')
+    id_resource_container(HeartbeatRequestBodyMessage), BuildResponseMessage,
+    path='builds/{id}/heartbeat', http_method='POST')
   @auth.public
   def heartbeat(self, request):
     """Updates build lease."""
     build = self.service.heartbeat(
-        request.id, request.lease_key,
-        parse_datetime(request.lease_expiration_ts))
+      request.id, request.lease_key,
+      parse_datetime(request.lease_expiration_ts))
     return build_to_response_message(build)
 
   class HeartbeatBatchRequestMessage(messages.Message):
@@ -404,6 +407,7 @@ class BuildBucketApi(remote.Service):
       build_id = messages.IntegerField(1, required=True)
       lease_key = messages.IntegerField(2, required=True)
       lease_expiration_ts = messages.IntegerField(3, required=True)
+
     heartbeats = messages.MessageField(OneHeartbeat, 1, repeated=True)
 
   class HeartbeatBatchResponseMessage(messages.Message):
@@ -411,28 +415,29 @@ class BuildBucketApi(remote.Service):
       build_id = messages.IntegerField(1, required=True)
       lease_expiration_ts = messages.IntegerField(2)
       error = messages.MessageField(ErrorMessage, 3)
+
     results = messages.MessageField(OneHeartbeatResult, 1, repeated=True)
 
   @buildbucket_api_method(
-      HeartbeatBatchRequestMessage, HeartbeatBatchResponseMessage,
-      path='heartbeat', http_method='POST')
+    HeartbeatBatchRequestMessage, HeartbeatBatchResponseMessage,
+    path='heartbeat', http_method='POST')
   @auth.public
   def heartbeat_batch(self, request):
     """Updates multiple build leases."""
     heartbeats = [
-        {
-            'build_id': h.build_id,
-            'lease_key': h.lease_key,
-            'lease_expiration_date': parse_datetime(h.lease_expiration_ts),
-        } for h in request.heartbeats
+      {
+        'build_id': h.build_id,
+        'lease_key': h.lease_key,
+        'lease_expiration_date': parse_datetime(h.lease_expiration_ts),
+      } for h in request.heartbeats
     ]
 
     def to_message((build_id, build, ex)):
       msg = self.HeartbeatBatchResponseMessage.OneHeartbeatResult(
-          build_id=build_id)
+        build_id=build_id)
       if build:
         msg.lease_expiration_ts = utils.datetime_to_timestamp(
-            build.lease_expiration_date)
+          build.lease_expiration_date)
       else:
         if not isinstance(ex, errors.Error):
           logging.error(ex.message, exc_info=ex)
@@ -440,8 +445,8 @@ class BuildBucketApi(remote.Service):
 
         assert type(ex) in ERROR_REASON_MAP
         msg.error = ErrorMessage(
-            reason=ERROR_REASON_MAP[type(ex)],
-            message=ex.message,
+          reason=ERROR_REASON_MAP[type(ex)],
+          message=ex.message,
         )
 
       return msg
@@ -457,16 +462,16 @@ class BuildBucketApi(remote.Service):
     url = messages.StringField(3)
 
   @buildbucket_api_method(
-      id_resource_container(SucceedRequestBodyMessage), BuildResponseMessage,
-      path='builds/{id}/succeed', http_method='POST')
+    id_resource_container(SucceedRequestBodyMessage), BuildResponseMessage,
+    path='builds/{id}/succeed', http_method='POST')
   @auth.public
   def succeed(self, request):
     """Marks a build as succeeded."""
     build = self.service.succeed(
-        request.id, request.lease_key,
-        result_details=parse_json(
-            request.result_details_json, 'result_details_json'),
-        url=request.url)
+      request.id, request.lease_key,
+      result_details=parse_json(
+        request.result_details_json, 'result_details_json'),
+      url=request.url)
     return build_to_response_message(build)
 
   ###################################  FAIL  ###################################
@@ -478,25 +483,25 @@ class BuildBucketApi(remote.Service):
     url = messages.StringField(4)
 
   @buildbucket_api_method(
-      id_resource_container(FailRequestBodyMessage), BuildResponseMessage,
-      path='builds/{id}/fail', http_method='POST')
+    id_resource_container(FailRequestBodyMessage), BuildResponseMessage,
+    path='builds/{id}/fail', http_method='POST')
   @auth.public
   def fail(self, request):
     """Marks a build as failed."""
     build = self.service.fail(
-        request.id, request.lease_key,
-        result_details=parse_json(
-            request.result_details_json, 'result_details_json'),
-        failure_reason=request.failure_reason,
-        url=request.url,
+      request.id, request.lease_key,
+      result_details=parse_json(
+        request.result_details_json, 'result_details_json'),
+      failure_reason=request.failure_reason,
+      url=request.url,
     )
     return build_to_response_message(build)
 
   ##################################  CANCEL  ##################################
 
   @buildbucket_api_method(
-      id_resource_container(), BuildResponseMessage,
-      path='builds/{id}/cancel', http_method='POST')
+    id_resource_container(), BuildResponseMessage,
+    path='builds/{id}/cancel', http_method='POST')
   @auth.public
   def cancel(self, request):
     """Cancels a build."""
@@ -513,11 +518,12 @@ class BuildBucketApi(remote.Service):
       build_id = messages.IntegerField(1, required=True)
       build = messages.MessageField(BuildMessage, 2)
       error = messages.MessageField(ErrorMessage, 3)
+
     results = messages.MessageField(OneResult, 1, repeated=True)
 
   @buildbucket_api_method(
-      CancelBatchRequestMessage, CancelBatchResponseMessage,
-      path='builds/cancel', http_method='POST')
+    CancelBatchRequestMessage, CancelBatchResponseMessage,
+    path='builds/cancel', http_method='POST')
   @auth.public
   def cancel_batch(self, request):
     """Cancels builds."""
@@ -535,18 +541,18 @@ class BuildBucketApi(remote.Service):
   ########################  DELETE_SCHEDULED_BUILDS  ###########################
 
   @buildbucket_api_method(
-      endpoints.ResourceContainer(
-          message_types.VoidMessage,
-          bucket=messages.StringField(1, required=True),
-          # All specified tags must be present in a build.
-          tag=messages.StringField(2, repeated=True),
-          created_by=messages.StringField(3),
-      ),
+    endpoints.ResourceContainer(
       message_types.VoidMessage,
-      path='bucket/{bucket}/delete-scheduled', http_method='POST')
+      bucket=messages.StringField(1, required=True),
+      # All specified tags must be present in a build.
+      tag=messages.StringField(2, repeated=True),
+      created_by=messages.StringField(3),
+    ),
+    message_types.VoidMessage,
+    path='bucket/{bucket}/delete-scheduled', http_method='POST')
   @auth.public
   def delete_scheduled_builds(self, request):
     """Deletes scheduled builds."""
     self.service.delete_scheduled_builds(
-        request.bucket, tags=request.tag[:], created_by=request.created_by)
+      request.bucket, tags=request.tag[:], created_by=request.created_by)
     return message_types.VoidMessage()

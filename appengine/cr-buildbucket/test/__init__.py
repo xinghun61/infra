@@ -4,6 +4,7 @@
 
 from google.appengine.ext import ndb
 
+
 def future(result):  # pragma: no coverage
   f = ndb.Future()
   f.set_result(result)

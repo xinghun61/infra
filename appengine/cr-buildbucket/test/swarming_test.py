@@ -13,15 +13,16 @@ from components import net
 from components import utils
 from google.appengine.ext import ndb
 from testing_utils import testing
+from webob import exc
 import mock
 import webapp2
-from webob import exc
 
 from proto import project_config_pb2
 import config
 import errors
 import model
 import swarming
+
 
 def futuristic(result):
   f = ndb.Future()
@@ -68,12 +69,12 @@ class SwarmingTest(testing.AppengineTestCase):
     }
     self.mock(config_component, 'get_self_config_async', mock.Mock())
     config_component.get_self_config_async.return_value = (
-        futuristic((None, json.dumps(task_template))))
+      futuristic((None, json.dumps(task_template))))
 
   def test_is_for_swarming(self):
     build = model.Build(
-        bucket='bucket',
-        parameters={'builder_name': 'builder'}
+      bucket='bucket',
+      parameters={'builder_name': 'builder'}
     )
     self.assertTrue(swarming.is_for_swarming_async(build).get_result())
 
@@ -88,7 +89,7 @@ class SwarmingTest(testing.AppengineTestCase):
     self.assertTrue(swarming.is_for_swarming_async(build).get_result())
 
     config_component.get_self_config_async.return_value = futuristic(
-        (None, None))
+      (None, None))
     self.assertFalse(swarming.is_for_swarming_async(build).get_result())
 
   def test_create_task_async(self):
@@ -106,14 +107,14 @@ class SwarmingTest(testing.AppengineTestCase):
     })))
 
     build = model.Build(
-        bucket='bucket',
-        parameters={'builder_name': 'builder'},
+      bucket='bucket',
+      parameters={'builder_name': 'builder'},
     )
     swarming.create_task_async(build).get_result()
 
     self.assertEqual(
-        net.json_request_async.call_args[0][0],
-        'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new')
+      net.json_request_async.call_args[0][0],
+      'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new')
 
     self.assertIn('swarming_hostname:chromium-swarm.appspot.com', build.tags)
     self.assertIn('swarming_task_id:deadbeef', build.tags)
@@ -121,8 +122,7 @@ class SwarmingTest(testing.AppengineTestCase):
     self.assertIn('swarming_tag:buildertag:yes', build.tags)
     self.assertIn('swarming_tag:priority:108', build.tags)
     self.assertEqual(
-        build.url, 'https://example.com/chromium-swarm.appspot.com/deadbeef')
-
+      build.url, 'https://example.com/chromium-swarm.appspot.com/deadbeef')
 
   def test_create_task_async_on_leased_build(self):
     build = model.Build(
@@ -142,11 +142,11 @@ class SwarmingTest(testing.AppengineTestCase):
     )
     swarming.cancel_task_async(build).get_result()
     net.json_request_async.assert_called_with(
-        ('https://chromium-swarm.appspot.com/'
-         '_ah/api/swarming/v1/task/deadbeef/cancel'),
-        method='POST',
-        scopes=net.EMAIL_SCOPE,
-        payload=None)
+      ('https://chromium-swarm.appspot.com/'
+       '_ah/api/swarming/v1/task/deadbeef/cancel'),
+      method='POST',
+      scopes=net.EMAIL_SCOPE,
+      payload=None)
 
   def test_update_build_success(self):
     cases = [

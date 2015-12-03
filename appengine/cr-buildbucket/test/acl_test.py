@@ -2,10 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import datetime
-
 from components import auth
-from components import utils
 from testing_utils import testing
 import mock
 
@@ -32,40 +29,41 @@ class AclTest(testing.AppengineTestCase):
     bucket_a = Bucket(
       name='a',
       acls=[
-          Acl(role=Acl.WRITER, group='a-writers'),
-          Acl(role=Acl.READER, group='a-readers'),
+        Acl(role=Acl.WRITER, group='a-writers'),
+        Acl(role=Acl.READER, group='a-readers'),
       ])
     bucket_b = Bucket(
       name='b',
       acls=[
-          Acl(role=Acl.WRITER, group='b-writers'),
-          Acl(role=Acl.READER, group='b-readers'),
+        Acl(role=Acl.WRITER, group='b-writers'),
+        Acl(role=Acl.READER, group='b-readers'),
       ])
     bucket_c = Bucket(
       name='c',
       acls=[
-          Acl(role=Acl.READER, group='c-readers'),
-          Acl(role=Acl.READER, identity='user:a@example.com'),
-          Acl(role=Acl.WRITER, group='c-writers'),
+        Acl(role=Acl.READER, group='c-readers'),
+        Acl(role=Acl.READER, identity='user:a@example.com'),
+        Acl(role=Acl.WRITER, group='c-writers'),
       ])
     all_buckets = [bucket_a, bucket_b, bucket_c]
     config.get_buckets_async.return_value = future(all_buckets)
-    bucket_map = {b.name:b for b in all_buckets}
+    bucket_map = {b.name: b for b in all_buckets}
 
     self.mock(
-        config, 'get_bucket_async', lambda name: future(bucket_map.get(name)))
+      config, 'get_bucket_async', lambda name: future(bucket_map.get(name)))
 
   def mock_is_group_member(self, groups):
     # pylint: disable=unused-argument
     def is_group_member(group, identity=None):
       return group in groups
+
     self.mock(auth, 'is_group_member', is_group_member)
 
   def test_has_any_of_roles(self):
     self.mock_is_group_member(['a-readers'])
 
     has_any_of_roles = (
-        lambda *args: acl.has_any_of_roles_async(*args).get_result())
+      lambda *args: acl.has_any_of_roles_async(*args).get_result())
 
     self.assertTrue(has_any_of_roles('a', [Acl.READER]))
     self.assertTrue(has_any_of_roles('a', [Acl.READER, Acl.WRITER]))
@@ -87,45 +85,47 @@ class AclTest(testing.AppengineTestCase):
 
     config.get_buckets_async.return_value = future([
       Bucket(
-          name='available_bucket1',
-          acls=[
-              Acl(role=Acl.READER, group='xxx'),
-              Acl(role=Acl.WRITER, group='yyy')
-          ],
+        name='available_bucket1',
+        acls=[
+          Acl(role=Acl.READER, group='xxx'),
+          Acl(role=Acl.WRITER, group='yyy')
+        ],
       ),
       Bucket(
-          name='available_bucket2',
-          acls=[
-              Acl(role=Acl.READER, group='xxx'),
-              Acl(role=Acl.WRITER, group='zzz')
-          ],
+        name='available_bucket2',
+        acls=[
+          Acl(role=Acl.READER, group='xxx'),
+          Acl(role=Acl.WRITER, group='zzz')
+        ],
       ),
       Bucket(
-          name='available_bucket3',
-          acls=[
-              Acl(role=Acl.READER, identity='user:a@example.com'),
-          ],
+        name='available_bucket3',
+        acls=[
+          Acl(role=Acl.READER, identity='user:a@example.com'),
+        ],
       ),
       Bucket(
-          name='not_available_bucket',
-          acls=[
-            Acl(role=Acl.WRITER, group='zzz')],
+        name='not_available_bucket',
+        acls=[
+          Acl(role=Acl.WRITER, group='zzz')],
       ),
     ])
 
     availble_buckets = acl.get_available_buckets()
     availble_buckets = acl.get_available_buckets()  # memcache coverage.
     self.assertEqual(
-        availble_buckets,
-        {'available_bucket1', 'available_bucket2', 'available_bucket3'})
+      availble_buckets,
+      {'available_bucket1', 'available_bucket2', 'available_bucket3'})
 
     self.mock(auth, 'is_admin', lambda *_: True)
     self.assertIsNone(acl.get_available_buckets())
 
   def mock_has_any_of_roles(self, current_identity_roles):
     current_identity_roles = set(current_identity_roles)
+
     def has_any_of_roles_async(_bucket, roles):
       return future(current_identity_roles.intersection(roles))
+
     self.mock(acl, 'has_any_of_roles_async', has_any_of_roles_async)
 
   def test_can(self):

@@ -39,7 +39,6 @@ import config
 import errors
 import model
 
-
 PUBSUB_TOPIC = 'swarming'
 BUILDER_PARAMETER = 'builder_name'
 DEFAULT_URL_FORMAT = 'https://{swarming_hostname}/user/task/{task_id}'
@@ -58,12 +57,12 @@ def get_task_template_async():
   It is stored in luci-config, services/<appid>:swarming_task_template.json.
   """
   _, text = yield component_config.get_self_config_async(
-      'swarming_task_template.json', store_last_good=True)
+    'swarming_task_template.json', store_last_good=True)
   raise ndb.Return(json.loads(text) if text else None)
 
 
 @utils.memcache_async(
-    'swarming/is_for_swarming', ['bucket_name', 'builder_name'], time=10 * 60)
+  'swarming/is_for_swarming', ['bucket_name', 'builder_name'], time=10 * 60)
 @ndb.tasklet
 def _is_for_swarming_async(bucket_name, builder_name):
   """Returns True if swarming is configured for |builder_name|."""
@@ -112,8 +111,8 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
   _extend_unique(tags, build.tags)
 
   task['pubsub_topic'] = (
-      'projects/%s/topics/%s' %
-      (app_identity.get_application_id(), PUBSUB_TOPIC))
+    'projects/%s/topics/%s' %
+    (app_identity.get_application_id(), PUBSUB_TOPIC))
   task['pubsub_auth_token'] = TaskToken.generate()
   task['pubsub_userdata'] = json.dumps({
     'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
@@ -130,7 +129,7 @@ def create_task_async(build):
   """
   if build.lease_key:
     raise errors.InvalidInputError(
-        'swarming builders do not support creation of leased builds')
+      'swarming builders do not support creation of leased builds')
   builder_name = build.parameters[BUILDER_PARAMETER]
   bucket_cfg = yield config.get_bucket_async(build.bucket)
   builder_cfg = None
@@ -142,7 +141,7 @@ def create_task_async(build):
 
   task = yield create_task_def_async(bucket_cfg.swarming, builder_cfg, build)
   res = yield _call_api_async(
-      bucket_cfg.swarming.hostname, 'tasks/new', method='POST', payload=task)
+    bucket_cfg.swarming.hostname, 'tasks/new', method='POST', payload=task)
   task_id = res['task_id']
   logging.info('Created a swarming task %s: %r', task_id, res)
 
@@ -180,9 +179,9 @@ def cancel_task_async(build):
   assert build.swarming_hostname
   assert build.swarming_task_id
   return _call_api_async(
-      build.swarming_hostname,
-      'task/%s/cancel' % build.swarming_task_id,
-      method='POST')
+    build.swarming_hostname,
+    'task/%s/cancel' % build.swarming_task_id,
+    method='POST')
 
 
 ################################################################################
@@ -258,7 +257,7 @@ class SubNotify(webapp2.RequestHandler):
   """Handles PubSub messages from swarming."""
 
   bad_message = False
-  
+
   def unpack_msg(self, msg):
     """Extracts swarming hostname, creation time and task id from |msg|.
 
@@ -288,7 +287,6 @@ class SubNotify(webapp2.RequestHandler):
     except ValueError as ex:
       self.stop('created_ts in userdata is invalid: %s', ex)
 
-
     task_id = data.get('task_id')
     if not task_id:
       self.stop('task_id not found in message data')
@@ -311,8 +309,8 @@ class SubNotify(webapp2.RequestHandler):
 
     # Load build and task result concurrently.
     build_q = model.Build.query(
-        model.Build.swarming_hostname == hostname,
-        model.Build.swarming_task_id == task_id,
+      model.Build.swarming_hostname == hostname,
+      model.Build.swarming_task_id == task_id,
     )
     builds_fut = build_q.fetch_async(1)
     result_fut = _load_task_result_async(hostname, task_id)
@@ -322,8 +320,8 @@ class SubNotify(webapp2.RequestHandler):
     if not builds:
       if utils.utcnow() < created_time + datetime.timedelta(minutes=5):
         self.stop(
-            'Build for task %s/%s not found yet.',
-            hostname, task_id, redeliver=True)
+          'Build for task %s/%s not found yet.',
+          hostname, task_id, redeliver=True)
       else:
         self.stop('Build for task %s/%s not found.', hostname, task_id)
     build = builds[0]
@@ -404,19 +402,19 @@ class CronUpdateBuilds(webapp2.RequestHandler):
   @decorators.require_cronjob
   def get(self):  # pragma: no cover
     q = model.Build.query(
-        model.Build.status == model.BuildStatus.STARTED,
-        model.Build.swarming_task_id != None)
+      model.Build.status == model.BuildStatus.STARTED,
+      model.Build.swarming_task_id != None)
     q.map_async(self.update_build_async).get_result()
 
 
 def get_routes():  # pragma: no cover
   return [
     webapp2.Route(
-        r'/internal/cron/swarming/update_builds',
-        CronUpdateBuilds),
+      r'/internal/cron/swarming/update_builds',
+      CronUpdateBuilds),
     webapp2.Route(
-        r'/swarming/notify',
-        SubNotify),
+      r'/swarming/notify',
+      SubNotify),
   ]
 
 
@@ -428,7 +426,7 @@ def _call_api_async(hostname, path, method='GET', payload=None):
   # TODO(nodir): impersonate current identity.
   url = 'https://%s/_ah/api/swarming/v1/%s' % (hostname, path)
   return net.json_request_async(
-      url, method=method, scopes=net.EMAIL_SCOPE, payload=payload)
+    url, method=method, scopes=net.EMAIL_SCOPE, payload=payload)
 
 
 @utils.cache
@@ -439,6 +437,7 @@ def _self_identity():
 
 def format_obj(obj, params):
   """Evaluates all strings in a JSON-like object as a template."""
+
   def transform(obj):
     if isinstance(obj, list):
       return map(transform, obj)
@@ -448,6 +447,7 @@ def format_obj(obj, params):
       return string.Template(obj).safe_substitute(params)
     else:
       return obj
+
   return transform(obj)
 
 

@@ -9,12 +9,10 @@ See Acl message in proto/project_config.proto.
 
 import collections
 import logging
-
 from google.appengine.api import memcache
 from google.appengine.ext import ndb
 from components import auth
 from protorpc import messages
-
 from proto import project_config_pb2
 import config
 import errors
@@ -46,28 +44,27 @@ class Action(messages.Enum):
 
 _action_dict = Action.to_dict()
 
-
 READER_ROLE_ACTIONS = [
-    Action.VIEW_BUILD,
-    Action.SEARCH_BUILDS,
+  Action.VIEW_BUILD,
+  Action.SEARCH_BUILDS,
 ]
 SCHEDULER_ROLE_ACTIONS = READER_ROLE_ACTIONS + [
-    Action.ADD_BUILD,
-    Action.CANCEL_BUILD,
+  Action.ADD_BUILD,
+  Action.CANCEL_BUILD,
 ]
 WRITER_ROLE_ACTIONS = SCHEDULER_ROLE_ACTIONS + [
-    Action.LEASE_BUILD,
-    Action.RESET_BUILD,
-    Action.DELETE_SCHEDULED_BUILDS,
+  Action.LEASE_BUILD,
+  Action.RESET_BUILD,
+  Action.DELETE_SCHEDULED_BUILDS,
 ]
 ACTIONS_FOR_ROLE = {
-    project_config_pb2.Acl.READER: set(READER_ROLE_ACTIONS),
-    project_config_pb2.Acl.SCHEDULER: set(SCHEDULER_ROLE_ACTIONS),
-    project_config_pb2.Acl.WRITER: set(WRITER_ROLE_ACTIONS),
+  project_config_pb2.Acl.READER: set(READER_ROLE_ACTIONS),
+  project_config_pb2.Acl.SCHEDULER: set(SCHEDULER_ROLE_ACTIONS),
+  project_config_pb2.Acl.WRITER: set(WRITER_ROLE_ACTIONS),
 }
 ROLES_FOR_ACTION = {
-    a: set(r for r, actions in ACTIONS_FOR_ROLE.items() if a in actions)
-    for a in Action
+  a: set(r for r, actions in ACTIONS_FOR_ROLE.items() if a in actions)
+  for a in Action
 }
 
 
@@ -165,7 +162,7 @@ def get_available_buckets():
   if available_buckets is not None:
     return available_buckets
   logging.info(
-      'Computing a list of available buckets for %s' % identity)
+    'Computing a list of available buckets for %s' % identity)
   group_buckets_map = collections.defaultdict(set)
   available_buckets = set()
   all_buckets = config.get_buckets_async().get_result()

@@ -4,7 +4,6 @@
 
 import re
 
-
 BUCKET_NAME_REGEX = re.compile(r'^[0-9a-z_\.\-/]{1,100}$')
 
 
@@ -34,8 +33,8 @@ def validate_bucket_name(bucket):
     raise InvalidInputError('Bucket not specified')
   if not isinstance(bucket, basestring):
     raise InvalidInputError(
-        'Bucket must be a string. It is %s.' % type(bucket).__name__)
+      'Bucket must be a string. It is %s.' % type(bucket).__name__)
   if not BUCKET_NAME_REGEX.match(bucket):
     raise InvalidInputError(
-        'Bucket name "%s" does not match regular expression %s' %
-        (bucket, BUCKET_NAME_REGEX.pattern))
+      'Bucket name "%s" does not match regular expression %s' %
+      (bucket, BUCKET_NAME_REGEX.pattern))

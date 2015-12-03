@@ -28,20 +28,21 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def mock_cannot(self, action):
     def can_async(_bucket, requested_action, _identity=None):
       return future(action != requested_action)
+
     self.mock(acl, 'can_async', can_async)
 
   def setUp(self):
     super(BuildBucketServiceTest, self).setUp()
     self.service = service.BuildBucketService()
     self.test_build = model.Build(
-        bucket='chromium',
-        parameters={
-            'buildername': 'infra',
-            'changes': [{
-                'author': 'nodir@google.com',
-                'message': 'buildbucket: initial commit'
-            }]
-        }
+      bucket='chromium',
+      parameters={
+        'buildername': 'infra',
+        'changes': [{
+          'author': 'nodir@google.com',
+          'message': 'buildbucket: initial commit'
+        }]
+      }
     )
 
     self.current_identity = auth.Identity('service', 'unittest')
@@ -51,7 +52,6 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.mock(swarming, 'is_for_swarming_async', mock.Mock())
     swarming.is_for_swarming_async.return_value = ndb.Future()
     swarming.is_for_swarming_async.return_value.set_result(False)
-
 
   def put_many_builds(self):
     for _ in xrange(100):
@@ -63,8 +63,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_add(self):
     params = {'buildername': 'linux_rel'}
     build = self.service.add(
-        bucket='chromium',
-        parameters=params,
+      bucket='chromium',
+      parameters=params,
     )
     self.assertIsNotNone(build.key)
     self.assertIsNotNone(build.key.id())
@@ -74,14 +74,14 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_add_with_client_operation_id(self):
     build = self.service.add(
-        bucket='chromium',
-        parameters={'buildername': 'linux_rel'},
-        client_operation_id='1',
+      bucket='chromium',
+      parameters={'buildername': 'linux_rel'},
+      client_operation_id='1',
     )
     build2 = self.service.add(
-        bucket='chromium',
-        parameters={'buildername': 'linux_rel'},
-        client_operation_id='1',
+      bucket='chromium',
+      parameters={'buildername': 'linux_rel'},
+      client_operation_id='1',
     )
     self.assertIsNotNone(build.key)
     self.assertEqual(build, build2)
@@ -94,8 +94,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_add_with_leasing(self):
     build = self.service.add(
-        bucket='chromium',
-        lease_expiration_date=utils.utcnow () + datetime.timedelta(seconds=10),
+      bucket='chromium',
+      lease_expiration_date=utils.utcnow() + datetime.timedelta(seconds=10),
     )
     self.assertTrue(build.is_leased)
     self.assertGreater(build.lease_expiration_date, utils.utcnow())
@@ -110,8 +110,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       self.service.add('bucket', parameters=[])
 
-
-#################################### GET #####################################
+  #################################### GET #####################################
 
   def test_get(self):
     self.test_build.put()
@@ -137,7 +136,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(build.complete_time, utils.utcnow())
     self.assertEqual(build.result, model.BuildResult.CANCELED)
     self.assertEqual(
-        build.cancelation_reason, model.CancelationReason.CANCELED_EXPLICITLY)
+      build.cancelation_reason, model.CancelationReason.CANCELED_EXPLICITLY)
 
   def test_cancel_is_idempotent(self):
     self.test_build.put()
@@ -175,8 +174,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.tags = ['important:true']
     self.test_build.put()
     builds, _ = self.service.search(
-        buckets=[self.test_build.bucket],
-        tags=self.test_build.tags,
+      buckets=[self.test_build.bucket],
+      tags=self.test_build.tags,
     )
     self.assertEqual(builds, [self.test_build])
 
@@ -206,15 +205,15 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.tags = ['important:true', 'author:ivan']
     self.test_build.put()
     build2 = model.Build(
-        bucket=self.test_build.bucket,
-        tags=self.test_build.tags[:1],  # only one of two tags.
+      bucket=self.test_build.bucket,
+      tags=self.test_build.tags[:1],  # only one of two tags.
     )
     build2.put()
 
     # Search by both tags.
     builds, _ = self.service.search(
-        tags=self.test_build.tags,
-        buckets=[self.test_build.bucket],
+      tags=self.test_build.tags,
+      buckets=[self.test_build.bucket],
     )
     self.assertEqual(builds, [self.test_build])
 
@@ -223,8 +222,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.put()
 
     build2 = model.Build(
-        bucket='secret.bucket',
-        tags=self.test_build.tags,  # only one of two tags.
+      bucket='secret.bucket',
+      tags=self.test_build.tags,  # only one of two tags.
     )
     build2.put()
 
@@ -236,7 +235,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_search_bucket(self):
     self.test_build.put()
     build2 = model.Build(
-        bucket='other bucket',
+      bucket='other bucket',
     )
     build2.put()
 
@@ -246,33 +245,33 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_search_by_status(self):
     self.test_build.put()
     build2 = model.Build(
-        bucket=self.test_build.bucket,
-        status=model.BuildStatus.COMPLETED,
-        result=model.BuildResult.SUCCESS,
+      bucket=self.test_build.bucket,
+      status=model.BuildStatus.COMPLETED,
+      result=model.BuildResult.SUCCESS,
     )
     build2.put()
 
     builds, _ = self.service.search(
-        buckets=[self.test_build.bucket],
-        status=model.BuildStatus.SCHEDULED)
+      buckets=[self.test_build.bucket],
+      status=model.BuildStatus.SCHEDULED)
     self.assertEqual(builds, [self.test_build])
 
     builds, _ = self.service.search(
-        buckets=[self.test_build.bucket],
-        status=model.BuildStatus.COMPLETED,
-        result=model.BuildResult.FAILURE)
+      buckets=[self.test_build.bucket],
+      status=model.BuildStatus.COMPLETED,
+      result=model.BuildResult.FAILURE)
     self.assertEqual(builds, [])
 
   def test_search_by_created_by(self):
     self.test_build.put()
     build2 = model.Build(
-        bucket=self.test_build.bucket,
-        created_by = auth.Identity.from_bytes('user:x@chromium.org')
+      bucket=self.test_build.bucket,
+      created_by=auth.Identity.from_bytes('user:x@chromium.org')
     )
     build2.put()
 
     builds, _ = self.service.search(
-        created_by='x@chromium.org', buckets=[self.test_build.bucket])
+      created_by='x@chromium.org', buckets=[self.test_build.bucket])
     self.assertEqual(builds, [build2])
 
   def test_search_by_created_by_with_bad_string(self):
@@ -283,16 +282,16 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.put_many_builds()
 
     first_page, next_cursor = self.service.search(
-        buckets=[self.test_build.bucket],
-        max_builds=10,
+      buckets=[self.test_build.bucket],
+      max_builds=10,
     )
     self.assertEqual(len(first_page), 10)
     self.assertTrue(next_cursor)
 
     second_page, _ = self.service.search(
-        buckets=[self.test_build.bucket],
-        max_builds=10,
-        start_cursor=next_cursor)
+      buckets=[self.test_build.bucket],
+      max_builds=10,
+      start_cursor=next_cursor)
     self.assertEqual(len(second_page), 10)
     self.assertTrue(any(new not in first_page for new in second_page))
 
@@ -300,6 +299,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     def test_bad_tag(tags):
       with self.assertRaises(errors.InvalidInputError):
         self.service.search(buckets=['bucket'], tags=tags)
+
     test_bad_tag(['x'])
     test_bad_tag([1])
     test_bad_tag({})
@@ -341,12 +341,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_peek_with_paging(self):
     self.put_many_builds()
     first_page, next_cursor = self.service.peek(
-        buckets=[self.test_build.bucket])
+      buckets=[self.test_build.bucket])
     self.assertTrue(first_page)
     self.assertTrue(next_cursor)
 
     second_page, _ = self.service.peek(
-        buckets=[self.test_build.bucket], start_cursor=next_cursor)
+      buckets=[self.test_build.bucket], start_cursor=next_cursor)
 
     self.assertTrue(all(b not in second_page for b in first_page))
 
@@ -383,8 +383,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     if self.test_build.key is None:
       self.test_build.put()
     success, self.test_build = self.service.lease(
-        self.test_build.key.id(),
-        lease_expiration_date=lease_expiration_date,
+      self.test_build.key.id(),
+      lease_expiration_date=lease_expiration_date,
     )
     return success
 
@@ -415,7 +415,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_cannot_lease_for_whole_day(self):
     with self.assertRaises(errors.InvalidInputError):
       self.lease(
-          lease_expiration_date=utils.utcnow() + datetime.timedelta(days=1))
+        lease_expiration_date=utils.utcnow() + datetime.timedelta(days=1))
 
   def test_cannot_set_expiration_date_to_past(self):
     with self.assertRaises(errors.InvalidInputError):
@@ -490,9 +490,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def start(self, url=None, lease_key=None):
     self.test_build = self.service.start(
-        self.test_build.key.id(),
-        lease_key or self.test_build.lease_key,
-        url=url)
+      self.test_build.key.id(),
+      lease_key or self.test_build.lease_key,
+      url=url)
 
   def test_start(self):
     self.lease()
@@ -529,15 +529,15 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   @contextlib.contextmanager
   def callback_test(self):
     self.test_build.callback = model.Callback(
-        url = '/tasks/notify',
-        queue_name='default',
+      url='/tasks/notify',
+      queue_name='default',
     )
     self.test_build.put()
     yield
     taskq = self.testbed.get_stub(testbed.TASKQUEUE_SERVICE_NAME)
     tasks = taskq.GetTasks('default')
     self.assertTrue(
-        any(t.get('url') == self.test_build.callback.url for t in tasks))
+      any(t.get('url') == self.test_build.callback.url for t in tasks))
 
   def test_start_creates_notification_task(self):
     self.lease()
@@ -550,47 +550,46 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.lease()
     new_expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
     build = self.service.heartbeat(
-        self.test_build.key.id(), self.test_build.lease_key,
-        lease_expiration_date=new_expiration_date)
+      self.test_build.key.id(), self.test_build.lease_key,
+      lease_expiration_date=new_expiration_date)
     self.assertEqual(build.lease_expiration_date, new_expiration_date)
-
 
   def test_heartbeat_completed(self):
     self.test_build.status = model.BuildStatus.COMPLETED
     self.test_build.result = model.BuildResult.CANCELED
     self.test_build.cancelation_reason = (
-        model.CancelationReason.CANCELED_EXPLICITLY)
+      model.CancelationReason.CANCELED_EXPLICITLY)
     self.test_build.put()
 
     new_expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
     with self.assertRaises(errors.BuildIsCompletedError):
       self.service.heartbeat(
-          self.test_build.key.id(), 0,
-          lease_expiration_date=new_expiration_date)
+        self.test_build.key.id(), 0,
+        lease_expiration_date=new_expiration_date)
 
   def test_heartbeat_batch(self):
     self.lease()
     new_expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
     results = self.service.heartbeat_batch(
-        [
-            {
-                'build_id': self.test_build.key.id(),
-                'lease_key': self.test_build.lease_key,
-                'lease_expiration_date': new_expiration_date
-            },
-            {
-                'build_id': 42,
-                'lease_key': 42,
-                'lease_expiration_date': new_expiration_date,
-            },
-        ])
+      [
+        {
+          'build_id': self.test_build.key.id(),
+          'lease_key': self.test_build.lease_key,
+          'lease_expiration_date': new_expiration_date
+        },
+        {
+          'build_id': 42,
+          'lease_key': 42,
+          'lease_expiration_date': new_expiration_date,
+        },
+      ])
 
     self.assertEqual(len(results), 2)
 
     self.test_build = self.test_build.key.get()
     self.assertEqual(
-        results[0],
-        (self.test_build.key.id(), self.test_build, None))
+      results[0],
+      (self.test_build.key.id(), self.test_build, None))
 
     self.assertIsNone(results[1][1])
     self.assertTrue(isinstance(results[1][2], errors.BuildNotFoundError))
@@ -599,14 +598,14 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.lease()
     with self.assertRaises(errors.InvalidInputError):
       self.service.heartbeat(
-          self.test_build.key.id(), self.test_build.lease_key,
-          lease_expiration_date=None)
+        self.test_build.key.id(), self.test_build.lease_key,
+        lease_expiration_date=None)
 
   ################################### COMPLETE #################################
 
   def succeed(self, **kwargs):
     self.test_build = self.service.succeed(
-        self.test_build.key.id(), self.test_build.lease_key, **kwargs)
+      self.test_build.key.id(), self.test_build.lease_key, **kwargs)
 
   def test_succeed(self):
     self.lease()
@@ -637,7 +636,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.lease()
     self.start()
     self.test_build = self.service.fail(
-        self.test_build.key.id(), self.test_build.lease_key)
+      self.test_build.key.id(), self.test_build.lease_key)
     self.assertEqual(self.test_build.status, model.BuildStatus.COMPLETED)
     self.assertEqual(self.test_build.status_changed_time, utils.utcnow())
     self.assertEqual(self.test_build.result, model.BuildResult.FAILURE)
@@ -648,8 +647,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.start()
     result_details = {'transient_failure': True}
     self.test_build = self.service.fail(
-        self.test_build.key.id(), self.test_build.lease_key,
-        result_details=result_details)
+      self.test_build.key.id(), self.test_build.lease_key,
+      result_details=result_details)
     self.assertEqual(self.test_build.result_details, result_details)
 
   def test_complete_with_url(self):
@@ -706,9 +705,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_delete_scheduled_builds(self):
     self.test_build.put()
     completed_build = model.Build(
-        bucket=self.test_build.bucket,
-        status=model.BuildStatus.COMPLETED,
-        result=model.BuildResult.SUCCESS,
+      bucket=self.test_build.bucket,
+      status=model.BuildStatus.COMPLETED,
+      result=model.BuildResult.SUCCESS,
     )
     completed_build.put()
     self.assertIsNotNone(self.test_build.key.get())

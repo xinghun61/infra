@@ -19,7 +19,6 @@ from components import auth
 from components import config
 from components import utils
 from components.config import validation
-
 from proto import project_config_pb2
 import errors
 
@@ -177,7 +176,7 @@ def get_bucket_async(name):
 def cron_update_buckets():
   """Synchronizes Bucket entities with configs fetched from luci-config."""
   config_map = config.get_project_configs(
-      cfg_path(), project_config_pb2.BuildbucketCfg)
+    cfg_path(), project_config_pb2.BuildbucketCfg)
 
   buckets_of_project = {
     pid: set(b.name for b in pcfg.buckets)
@@ -187,7 +186,7 @@ def cron_update_buckets():
   for project_id, (revision, project_cfg) in config_map.iteritems():
     # revision is None in file-system mode. Use SHA1 of the config as revision.
     revision = revision or 'sha1:%s' % hashlib.sha1(
-        project_cfg.SerializeToString()).hexdigest()
+      project_cfg.SerializeToString()).hexdigest()
     for bucket_cfg in project_cfg.buckets:
       bucket = Bucket.get_by_id(bucket_cfg.name)
       if (bucket and
@@ -206,9 +205,9 @@ def cron_update_buckets():
           # Does bucket.project_id still claim this bucket?
           if bucket_cfg.name in buckets_of_project.get(bucket.project_id, []):
             logging.error(
-                'Failed to reserve bucket %s for project %s: '
-                'already reserved by %s',
-                bucket_cfg.name, project_id, bucket.project_id)
+              'Failed to reserve bucket %s for project %s: '
+              'already reserved by %s',
+              bucket_cfg.name, project_id, bucket.project_id)
             return
         if (bucket and
             bucket.project_id == project_id and
@@ -217,16 +216,16 @@ def cron_update_buckets():
 
         report_reservation = bucket is None or bucket.project_id != project_id
         Bucket(
-            id=bucket_cfg.name,
-            project_id=project_id,
-            revision=revision,
-            config_content=protobuf.text_format.MessageToString(bucket_cfg),
-            ).put()
+          id=bucket_cfg.name,
+          project_id=project_id,
+          revision=revision,
+          config_content=protobuf.text_format.MessageToString(bucket_cfg),
+        ).put()
         if report_reservation:
           logging.warning(
-              'Reserved bucket %s for project %s', bucket_cfg.name, project_id)
+            'Reserved bucket %s for project %s', bucket_cfg.name, project_id)
         logging.info(
-            'Updated bucket %s to revision %s', bucket_cfg.name, revision)
+          'Updated bucket %s to revision %s', bucket_cfg.name, revision)
 
       update_bucket()
 
@@ -240,5 +239,5 @@ def cron_update_buckets():
   to_delete = set(all_bucket_keys).difference(existing_bucket_keys)
   if to_delete:
     logging.warning(
-        'Deleting buckets: %s', ', '.join(k.id() for k in to_delete))
+      'Deleting buckets: %s', ', '.join(k.id() for k in to_delete))
     ndb.delete_multi(to_delete)

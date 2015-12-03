@@ -3,19 +3,17 @@
 # found in the LICENSE file.
 
 import mock
-from testing_utils import testing
 
-import acl
+from testing_utils import testing
 import handlers
 import main
 import service
-import test
 
 
 class HandlersTestCase(testing.AppengineTestCase):
   def test_create_service(self):
     self.assertTrue(
-        isinstance(handlers.create_service(), service.BuildBucketService))
+      isinstance(handlers.create_service(), service.BuildBucketService))
 
 
 class BuildBucketBackendHandlersTest(testing.AppengineTestCase):

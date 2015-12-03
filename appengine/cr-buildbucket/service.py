@@ -6,7 +6,6 @@ import datetime
 import json
 import logging
 import urlparse
-
 from components import auth
 from components import utils
 from google.appengine.api import taskqueue
@@ -14,18 +13,15 @@ from google.appengine.api import modules
 from google.appengine.ext import db
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
-
 import acl
 import errors
 import model
 import swarming
 
-
 MAX_RETURN_BUILDS = 100
 MAX_LEASE_DURATION = datetime.timedelta(hours=2)
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
 BUILD_TIMEOUT = datetime.timedelta(days=1)
-
 
 validate_bucket_name = errors.validate_bucket_name
 
@@ -41,14 +37,14 @@ def validate_lease_expiration_date(expiration_date):
     return
   if not isinstance(expiration_date, datetime.datetime):
     raise errors.InvalidInputError(
-        'Lease expiration date must be datetime.datetime')
+      'Lease expiration date must be datetime.datetime')
   duration = expiration_date - utils.utcnow()
   if duration <= datetime.timedelta(0):
     raise errors.InvalidInputError(
-        'Lease expiration date cannot be in the past')
+      'Lease expiration date cannot be in the past')
   if duration > MAX_LEASE_DURATION:
     raise errors.InvalidInputError(
-        'Lease duration cannot exceed %s' % MAX_LEASE_DURATION)
+      'Lease duration cannot exceed %s' % MAX_LEASE_DURATION)
 
 
 def validate_url(url):
@@ -61,7 +57,7 @@ def validate_url(url):
     raise errors.InvalidInputError('url must be absolute')
   if parsed.scheme.lower() not in ('http', 'https'):
     raise errors.InvalidInputError(
-        'Unexpected url scheme: "%s"' % parsed.scheme)
+      'Unexpected url scheme: "%s"' % parsed.scheme)
 
 
 def fix_max_builds(max_builds):
@@ -135,8 +131,8 @@ class BuildBucketService(object):
 
     if client_operation_id is not None:
       client_operation_cache_key = (
-          'client_op/%s/%s/add_build' % (
-              identity.to_bytes(), client_operation_id))
+        'client_op/%s/%s/add_build' % (
+          identity.to_bytes(), client_operation_id))
       build_id = yield ctx.memcache_get(client_operation_cache_key)
       if build_id:
         build = yield model.Build.get_by_id_async(build_id)
@@ -144,13 +140,13 @@ class BuildBucketService(object):
           raise ndb.Return(build)
 
     build = model.Build(
-        id=model.new_build_id(),
-        bucket=bucket,
-        tags=tags,
-        parameters=parameters,
-        status=model.BuildStatus.SCHEDULED,
-        created_by=identity,
-        never_leased=lease_expiration_date is None,
+      id=model.new_build_id(),
+      bucket=bucket,
+      tags=tags,
+      parameters=parameters,
+      status=model.BuildStatus.SCHEDULED,
+      created_by=identity,
+      never_leased=lease_expiration_date is None,
     )
     if lease_expiration_date is not None:
       build.lease_expiration_date = lease_expiration_date
@@ -169,7 +165,7 @@ class BuildBucketService(object):
         yield swarming.cancel_task_async(build)
       raise
     logging.info(
-        'Build %s was created by %s', build.key.id(), identity.to_bytes())
+      'Build %s was created by %s', build.key.id(), identity.to_bytes())
 
     if client_operation_id is not None:
       yield ctx.memcache_set(client_operation_cache_key, build.key.id(), 60)
@@ -206,7 +202,7 @@ class BuildBucketService(object):
         raise errors.InvalidInputError(msg)
 
     query_iter = query.iter(
-        start_cursor=curs, produce_cursors=True, batch_size=page_size)
+      start_cursor=curs, produce_cursors=True, batch_size=page_size)
     entities = []
     for entity in query_iter:
       if predicate is None or predicate(entity):  # pragma: no branch
@@ -290,17 +286,19 @@ class BuildBucketService(object):
     q = q.order(model.Build.key)
 
     local_predicate = None
+
     def local_status_and_bucket_check(build):
       if status is not None and build.status != status:  # pragma: no coverage
         return False
       if buckets and build.bucket not in buckets:
         return False
       return True
+
     if status is not None or (buckets and check_buckets_locally):
       local_predicate = local_status_and_bucket_check
 
     return self._fetch_page(
-        q, max_builds, start_cursor, predicate=local_predicate)
+      q, max_builds, start_cursor, predicate=local_predicate)
 
   def peek(self, buckets, max_builds=None, start_cursor=None):
     """Returns builds available for leasing in the specified |buckets|.
@@ -323,11 +321,11 @@ class BuildBucketService(object):
     max_builds = fix_max_builds(max_builds)
 
     q = model.Build.query(
-        model.Build.status == model.BuildStatus.SCHEDULED,
-        model.Build.is_leased == False,
-        model.Build.bucket.IN(buckets),
+      model.Build.status == model.BuildStatus.SCHEDULED,
+      model.Build.is_leased == False,
+      model.Build.bucket.IN(buckets),
     )
-    q = q.order(-model.Build.key) # oldest first.
+    q = q.order(-model.Build.key)  # oldest first.
 
     # Check once again locally because an ndb query may return an entity not
     # satisfying the query.
@@ -337,7 +335,7 @@ class BuildBucketService(object):
               b.bucket in buckets)
 
     return self._fetch_page(
-        q, max_builds, start_cursor, predicate=local_predicate)
+      q, max_builds, start_cursor, predicate=local_predicate)
 
   def _get_leasable_build(self, build_id):
     build = model.Build.get_by_id(build_id)
@@ -381,7 +379,7 @@ class BuildBucketService(object):
       build.never_leased = False
       build.put()
       logging.info(
-          'Build %s was leased by %s', build.key.id(), build.leasee.to_bytes())
+        'Build %s was leased by %s', build.key.id(), build.leasee.to_bytes())
       return True, build
 
     return try_lease()
@@ -389,9 +387,8 @@ class BuildBucketService(object):
   def _check_lease(self, build, lease_key):
     if lease_key != build.lease_key:
       raise errors.LeaseExpiredError(
-          'lease_key for build %s is incorrect. Your lease might be expired.' %
-          build.key.id())
-
+        'lease_key for build %s is incorrect. Your lease might be expired.' %
+        build.key.id())
 
   @ndb.transactional
   def reset(self, build_id):
@@ -413,8 +410,8 @@ class BuildBucketService(object):
     build.url = None
     build.put()
     logging.info(
-        'Build %s was reset by %s',
-        build.key.id(), auth.get_current_identity().to_bytes())
+      'Build %s was reset by %s',
+      build.key.id(), auth.get_current_identity().to_bytes())
     return build
 
   @staticmethod
@@ -424,11 +421,11 @@ class BuildBucketService(object):
     if not build.callback:
       return
     task = taskqueue.Task(
-        url=build.callback.url,
-        headers=build.callback.headers,
-        payload=json.dumps({
-            'build_id': build.key.id(),
-        }),
+      url=build.callback.url,
+      headers=build.callback.headers,
+      payload=json.dumps({
+        'build_id': build.key.id(),
+      }),
     )
     add_kwargs = {}
     if build.callback.queue_name:  # pragma: no branch
@@ -527,8 +524,8 @@ class BuildBucketService(object):
 
   @ndb.transactional
   def _complete(
-        self, build_id, lease_key, result, result_details, failure_reason=None,
-        url=None):
+      self, build_id, lease_key, result, result_details, failure_reason=None,
+      url=None):
     """Marks a build as completed. Used by succeed and fail methods."""
     validate_lease_key(lease_key)
     validate_url(url)
@@ -542,7 +539,7 @@ class BuildBucketService(object):
           build.url == url):
         return build
       raise errors.BuildIsCompletedError(
-          'Build %s has already completed' % build_id)
+        'Build %s has already completed' % build_id)
     self._check_lease(build, lease_key)
 
     build.status = model.BuildStatus.COMPLETED
@@ -556,8 +553,8 @@ class BuildBucketService(object):
     build.clear_lease()
     build.put()
     logging.info(
-        'Build %s was completed. Status: %s. Result: %s',
-        build.key.id(), build.status, build.result)
+      'Build %s was completed. Status: %s. Result: %s',
+      build.key.id(), build.status, build.result)
     self._enqueue_callback_task_if_needed(build)
     return build
 
@@ -573,11 +570,11 @@ class BuildBucketService(object):
       The succeeded Build.
     """
     return self._complete(
-        build_id, lease_key, model.BuildResult.SUCCESS, result_details, url=url)
+      build_id, lease_key, model.BuildResult.SUCCESS, result_details, url=url)
 
   def fail(
-        self, build_id, lease_key, result_details=None, failure_reason=None,
-        url=None):
+      self, build_id, lease_key, result_details=None, failure_reason=None,
+      url=None):
     """Marks a build as failed. Idempotent.
 
     Args:
@@ -592,8 +589,8 @@ class BuildBucketService(object):
     """
     failure_reason = failure_reason or model.FailureReason.BUILD_FAILURE
     return self._complete(
-        build_id, lease_key, model.BuildResult.FAILURE, result_details,
-        failure_reason, url=url)
+      build_id, lease_key, model.BuildResult.FAILURE, result_details,
+      failure_reason, url=url)
 
   @ndb.transactional
   def cancel(self, build_id):
@@ -623,8 +620,8 @@ class BuildBucketService(object):
     build.clear_lease()
     build.put()
     logging.info(
-        'Build %s was cancelled by %s', build.key.id(),
-        auth.get_current_identity().to_bytes())
+      'Build %s was cancelled by %s', build.key.id(),
+      auth.get_current_identity().to_bytes())
     return build
 
   @ndb.transactional_tasklet
@@ -637,7 +634,7 @@ class BuildBucketService(object):
       return
 
     assert build.status != model.BuildStatus.COMPLETED, (
-        'Completed build is leased')
+      'Completed build is leased')
     build.clear_lease()
     build.status = model.BuildStatus.SCHEDULED
     build.status_changed_time = utils.utcnow()
@@ -664,18 +661,18 @@ class BuildBucketService(object):
     futures = []
 
     q = model.Build.query(
-        model.Build.is_leased == True,
-        model.Build.lease_expiration_date <= datetime.datetime.utcnow(),
+      model.Build.is_leased == True,
+      model.Build.lease_expiration_date <= datetime.datetime.utcnow(),
     )
     for key in q.iter(keys_only=True):
       futures.append(self._reset_expired_build_async(key.id()))
 
     too_long_ago = utils.utcnow() - BUILD_TIMEOUT
     q = model.Build.query(
-        model.Build.create_time < too_long_ago,
-        # Cannot use >1 inequality fitlers per query.
-        model.Build.status.IN(
-            [model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED]),
+      model.Build.create_time < too_long_ago,
+      # Cannot use >1 inequality fitlers per query.
+      model.Build.status.IN(
+        [model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED]),
     )
     for key in q.iter(keys_only=True):
       futures.append(self._timeout_async(key.id()))
@@ -688,18 +685,18 @@ class BuildBucketService(object):
     # Validate created_by prior scheduled a push task.
     created_by = parse_identity(created_by)
     deferred.defer(
-        delete_scheduled_builds,
-        bucket,
-        tags=tags,
-        created_by=created_by,
-        # Schedule it on the backend module of the same version.
-        # This assumes that both frontend and backend are uploaded together.
-        _target='%s.backend' % modules.get_current_version_name(),
-        # Retry immediatelly.
-        _retry_options=taskqueue.TaskRetryOptions(
-            min_backoff_seconds=0,
-            max_backoff_seconds=1,
-        ),
+      delete_scheduled_builds,
+      bucket,
+      tags=tags,
+      created_by=created_by,
+      # Schedule it on the backend module of the same version.
+      # This assumes that both frontend and backend are uploaded together.
+      _target='%s.backend' % modules.get_current_version_name(),
+      # Retry immediatelly.
+      _retry_options=taskqueue.TaskRetryOptions(
+        min_backoff_seconds=0,
+        max_backoff_seconds=1,
+      ),
     )
 
 
@@ -711,11 +708,12 @@ def delete_scheduled_builds(bucket, tags=None, created_by=None):
     if build and build.status == scheduled:  # pragma: no branch
       yield key.delete_async()
       logging.debug('Deleted %s', key.id())
+
   tags = tags or []
   created_by = parse_identity(created_by)
   q = model.Build.query(
-      model.Build.bucket == bucket,
-      model.Build.status == model.BuildStatus.SCHEDULED)
+    model.Build.bucket == bucket,
+    model.Build.status == model.BuildStatus.SCHEDULED)
   for t in tags:
     q = q.filter(model.Build.tags == t)
   if created_by:
