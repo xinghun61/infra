@@ -7,6 +7,7 @@ import contextlib
 import datetime
 import json
 
+from components import auth
 from components import config as config_component
 from components import net
 from components import utils
@@ -81,8 +82,8 @@ class SwarmingTest(testing.AppengineTestCase):
 
   def test_is_for_swarming_no_template(self):
     build = model.Build(
-      bucket='bucket',
-      parameters={'builder_name': 'builder'}
+        bucket='bucket',
+        parameters={'builder_name': 'builder'}
     )
     self.assertTrue(swarming.is_for_swarming_async(build).get_result())
 
@@ -146,80 +147,6 @@ class SwarmingTest(testing.AppengineTestCase):
         method='POST',
         scopes=net.EMAIL_SCOPE,
         payload=None)
-
-
-class SubNotifyTest(testing.AppengineTestCase):
-  def setUp(self):
-    super(SubNotifyTest, self).setUp()
-    self.mock(utils, 'utcnow', lambda: datetime.datetime(2015, 11, 30))
-    self.handler = swarming.SubNotify(response=webapp2.Response())
-
-  def test_unpack_msg(self):
-    self.assertEqual(
-      self.handler.unpack_msg({
-        'data': b64json({
-          'task_id': 'deadbeef',
-          'userdata': json.dumps({
-            'created_ts': 1448841600000000,
-            'swarming_hostname': 'chromium-swarm.appspot.com',
-          })
-        })
-      }),
-      (
-        'chromium-swarm.appspot.com',
-        datetime.datetime(2015, 11, 30),
-        'deadbeef')
-    )
-
-  def test_unpack_msg_with_err(self):
-    with self.assert_bad_message():
-      self.handler.unpack_msg({})
-    with self.assert_bad_message():
-      self.handler.unpack_msg({'data': b64json([])})
-
-    bad_data = [
-      # Bad task id.
-      {
-        'userdata': json.dumps({
-          'created_ts': 1448841600000,
-          'swarming_hostname': 'chromium-swarm.appspot.com',
-        })
-      },
-
-      # Bad swarming hostname.
-      {
-        'task_id': 'deadbeef',
-      },
-      {
-        'task_id': 'deadbeef',
-        'userdata': '{}',
-      },
-      {
-        'task_id': 'deadbeef',
-        'userdata': json.dumps({
-          'swarming_hostname': 1,
-        })
-      },
-
-      # Bad creation time
-      {
-        'task_id': 'deadbeef',
-        'userdata': json.dumps({
-          'swarming_hostname': 'chromium-swarm.appspot.com',
-        })
-      },
-      {
-        'task_id': 'deadbeef',
-        'userdata': json.dumps({
-          'created_ts': 'foo',
-          'swarming_hostname': 'chromium-swarm.appspot.com',
-        })
-      },
-    ]
-
-    for data in bad_data:
-      with self.assert_bad_message():
-        self.handler.unpack_msg({'data': b64json(data)})
 
   def test_update_build_success(self):
     cases = [
@@ -304,13 +231,87 @@ class SubNotifyTest(testing.AppengineTestCase):
     ]
 
     for case in cases:
-      build = model.Build()
-      self.handler.update_build(build, case['task_result'])
+      build = model.Build(bucket='bucket')
+      build.put()
+      swarming._update_build(build, case['task_result'])
       self.assertEqual(build.status, case['status'])
       self.assertEqual(build.result, case.get('result'))
       self.assertEqual(build.failure_reason, case.get('failure_reason'))
       self.assertEqual(build.cancelation_reason, case.get('cancelation_reason'))
 
+
+class SubNotifyTest(testing.AppengineTestCase):
+  def setUp(self):
+    super(SubNotifyTest, self).setUp()
+    self.mock(utils, 'utcnow', lambda: datetime.datetime(2015, 11, 30))
+    self.handler = swarming.SubNotify(response=webapp2.Response())
+
+  def test_unpack_msg(self):
+    self.assertEqual(
+      self.handler.unpack_msg({
+        'data': b64json({
+          'task_id': 'deadbeef',
+          'userdata': json.dumps({
+            'created_ts': 1448841600000000,
+            'swarming_hostname': 'chromium-swarm.appspot.com',
+          })
+        })
+      }),
+      (
+        'chromium-swarm.appspot.com',
+        datetime.datetime(2015, 11, 30),
+        'deadbeef')
+    )
+
+  def test_unpack_msg_with_err(self):
+    with self.assert_bad_message():
+      self.handler.unpack_msg({})
+    with self.assert_bad_message():
+      self.handler.unpack_msg({'data': b64json([])})
+
+    bad_data = [
+      # Bad task id.
+      {
+        'userdata': json.dumps({
+          'created_ts': 1448841600000,
+          'swarming_hostname': 'chromium-swarm.appspot.com',
+        })
+      },
+
+      # Bad swarming hostname.
+      {
+        'task_id': 'deadbeef',
+      },
+      {
+        'task_id': 'deadbeef',
+        'userdata': '{}',
+      },
+      {
+        'task_id': 'deadbeef',
+        'userdata': json.dumps({
+          'swarming_hostname': 1,
+        })
+      },
+
+      # Bad creation time
+      {
+        'task_id': 'deadbeef',
+        'userdata': json.dumps({
+          'swarming_hostname': 'chromium-swarm.appspot.com',
+        })
+      },
+      {
+        'task_id': 'deadbeef',
+        'userdata': json.dumps({
+          'created_ts': 'foo',
+          'swarming_hostname': 'chromium-swarm.appspot.com',
+        })
+      },
+    ]
+
+    for data in bad_data:
+      with self.assert_bad_message():
+        self.handler.unpack_msg({'data': b64json(data)})
 
   def test_post(self):
     build = model.Build(
@@ -338,8 +339,8 @@ class SubNotifyTest(testing.AppengineTestCase):
         })
       }
     })
-    self.mock(self.handler, 'load_task_result_async', mock.Mock())
-    self.handler.load_task_result_async.return_value = futuristic({
+    self.mock(swarming, '_load_task_result_async', mock.Mock())
+    swarming._load_task_result_async.return_value = futuristic({
       'task_id': 'deadbeef',
       'state': 'COMPLETED',
     })
@@ -381,8 +382,8 @@ class SubNotifyTest(testing.AppengineTestCase):
         'data': b64json(msg_data)
       }
     })
-    self.mock(self.handler, 'load_task_result_async', mock.Mock())
-    self.handler.load_task_result_async.return_value = futuristic({
+    self.mock(swarming, '_load_task_result_async', mock.Mock())
+    swarming._load_task_result_async.return_value = futuristic({
       'task_id': 'deadbeef',
       'state': 'COMPLETED',
     })
@@ -403,6 +404,51 @@ class SubNotifyTest(testing.AppengineTestCase):
     with self.assertRaises(err):
       yield
     self.assertTrue(self.handler.bad_message)
+
+
+class CronUpdateTest(testing.AppengineTestCase):
+  def setUp(self):
+    super(CronUpdateTest, self).setUp()
+    self.build = model.Build(
+      bucket='bucket',
+      parameters={
+        'builder_name': 'release',
+      },
+      swarming_hostname='chromium-swarm.appsot.com',
+      swarming_task_id='deadeef',
+      status=model.BuildStatus.STARTED,
+      lease_key=123,
+      lease_expiration_date=utils.utcnow() + datetime.timedelta(minutes=5),
+      leasee=auth.Anonymous,
+    )
+    self.build.put()
+
+  def test_update_build_async(self):
+    self.mock(swarming, '_load_task_result_async', mock.Mock())
+    swarming._load_task_result_async.return_value = futuristic({
+      'state': 'COMPLETED',
+    })
+
+    build = self.build
+    swarming.CronUpdateBuilds().update_build_async(build).get_result()
+    build = build.key.get()
+    self.assertEqual(build.status, model.BuildStatus.COMPLETED)
+    self.assertEqual(build.result, model.BuildResult.SUCCESS)
+    self.assertIsNone(build.lease_key)
+    self.assertIsNotNone(build.complete_time)
+
+  def test_update_build_async_no_task(self):
+    self.mock(swarming, '_load_task_result_async', mock.Mock())
+    swarming._load_task_result_async.return_value = futuristic(None)
+
+    build = self.build
+    swarming.CronUpdateBuilds().update_build_async(build).get_result()
+    self.assertEqual(build.status, model.BuildStatus.COMPLETED)
+    self.assertEqual(build.result, model.BuildResult.FAILURE)
+    self.assertEqual(build.failure_reason, model.FailureReason.INFRA_FAILURE)
+    self.assertIsNotNone(build.result_details)
+    self.assertIsNone(build.lease_key)
+    self.assertIsNotNone(build.complete_time)
 
 
 def b64json(data):

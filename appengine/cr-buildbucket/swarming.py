@@ -14,6 +14,9 @@ of the task is computed by merging global and build-specific config values.
 When creating a task, a PubSub topic is specified. Swarming will notify on
 task status updates to the topic and buildbucket will sync its state.
 Eventually both swarming task and buildbucket build will complete.
+
+Swarming does not guarantee notification delivery, so there is also a cron job
+that checks task results of all incomplete builds every 10 min.
 """
 
 import base64
@@ -24,6 +27,7 @@ import string
 
 from components import auth
 from components import config as component_config
+from components import decorators
 from components import net
 from components import utils
 from components.auth import tokens
@@ -182,8 +186,73 @@ def cancel_task_async(build):
 
 
 ################################################################################
-# Handler for PubSub messages.
+# Update builds.
 
+
+def _load_task_result_async(hostname, task_id):  # pragma: no cover
+  return _call_api_async(hostname, 'task/%s/result' % task_id)
+
+
+def _update_build(build, result):
+  """Syncs |build| state with swarming task |result|."""
+  # Task result docs:
+  # https://github.com/luci/luci-py/blob/985821e9f13da2c93cb149d9e1159c68c72d58da/appengine/swarming/server/task_result.py#L239
+  if build.status == model.BuildStatus.COMPLETED:  # pragma: no cover
+    # Completed builds are immutable.
+    return False
+
+  old_status = build.status
+  build.status = None
+  build.result = None
+  build.failure_reason = None
+  build.cancelation_reason = None
+
+  state = result.get('state')
+  terminal_states = (
+    'EXPIRED',
+    'TIMED_OUT',
+    'BOT_DIED',
+    'CANCELED',
+    'COMPLETED'
+  )
+  if state in ('PENDING', 'RUNNING'):
+    build.status = model.BuildStatus.STARTED
+  elif state in terminal_states:
+    build.status = model.BuildStatus.COMPLETED
+    if state == 'CANCELED':
+      build.result = model.BuildResult.CANCELED
+      build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
+    elif state in ('TIMED_OUT', 'EXPIRED'):
+      build.result = model.BuildResult.CANCELED
+      build.cancelation_reason = model.CancelationReason.TIMEOUT
+    elif state == 'BOT_DIED' or result.get('internal_failure'):
+      build.result = model.BuildResult.FAILURE
+      build.failure_reason = model.FailureReason.INFRA_FAILURE
+    elif result.get('failure'):
+      build.result = model.BuildResult.FAILURE
+      build.failure_reason = model.FailureReason.BUILD_FAILURE
+    else:
+      assert state == 'COMPLETED'
+      build.result = model.BuildResult.SUCCESS
+  else:  # pragma: no cover
+    assert False, 'Unexpected task state: %s' % state
+
+  if build.status == old_status:  # pragma: no cover
+    return False
+  logging.info(
+      'Build %s status: %s -> %s', build.key.id(), old_status, build.status)
+  now = utils.utcnow()
+  build.status_changed_time = now
+  if build.status == model.BuildStatus.COMPLETED:
+    logging.info('Build %s result: %s', build.key.id(), build.result)
+    build.clear_lease()
+    build.complete_time = now
+    build.result_details = {
+      'swarming': {
+        'task_result': result,
+      }
+    }
+  return True
 
 class SubNotify(webapp2.RequestHandler):
   """Handles PubSub messages from swarming."""
@@ -226,63 +295,6 @@ class SubNotify(webapp2.RequestHandler):
 
     return hostname, created_time, task_id
 
-  def update_build(self, build, result):
-    """Syncs |build| state with swarming task |result|."""
-    # Task result docs:
-    # https://github.com/luci/luci-py/blob/985821e9f13da2c93cb149d9e1159c68c72d58da/appengine/swarming/server/task_result.py#L239
-    old_status = build.status
-    build.status = None
-    build.result = None
-    build.failure_reason = None
-    build.cancelation_reason = None
-
-    state = result.get('state')
-    terminal_states = (
-      'EXPIRED',
-      'TIMED_OUT',
-      'BOT_DIED',
-      'CANCELED',
-      'COMPLETED'
-    )
-    if state in ('PENDING', 'RUNNING'):
-      build.status = model.BuildStatus.STARTED
-    elif state in terminal_states:
-      build.status = model.BuildStatus.COMPLETED
-      if state == 'CANCELED':
-        build.result = model.BuildResult.CANCELED
-        build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
-      elif state in ('TIMED_OUT', 'EXPIRED'):
-        build.result = model.BuildResult.CANCELED
-        build.cancelation_reason = model.CancelationReason.TIMEOUT
-      elif state == 'BOT_DIED' or result.get('internal_failure'):
-        build.result = model.BuildResult.FAILURE
-        build.failure_reason = model.FailureReason.INFRA_FAILURE
-      elif result.get('failure'):
-        build.result = model.BuildResult.FAILURE
-        build.failure_reason = model.FailureReason.BUILD_FAILURE
-      else:
-        assert state == 'COMPLETED'
-        build.result = model.BuildResult.SUCCESS
-    else:  # pragma: no cover
-      logging.error('Unexpected task state: %s', state)
-      self.abort(500)
-
-    if build.status == old_status:  # pragma: no cover
-      return False
-    logging.info('Build status: %s -> %s', old_status, build.status)
-    now = utils.utcnow()
-    build.status_changed_time = now
-    if build.status == model.BuildStatus.COMPLETED:
-      logging.info('Result: %s', build.result)
-      build.clear_lease()
-      build.complete_time = now
-      build.result_details = {
-        'swarming': {
-          'task_result': result,
-        }
-      }
-    return True
-
   def post(self):
     msg = (self.request.json or {}).get('message', {})
     logging.info('Received message: %r', msg)
@@ -303,7 +315,7 @@ class SubNotify(webapp2.RequestHandler):
         model.Build.swarming_task_id == task_id,
     )
     builds_fut = build_q.fetch_async(1)
-    result_fut = self.load_task_result_async(hostname, task_id)
+    result_fut = _load_task_result_async(hostname, task_id)
 
     # Check build exists.
     builds = builds_fut.get_result()
@@ -320,11 +332,8 @@ class SubNotify(webapp2.RequestHandler):
 
     # Update build.
     result = result_fut.get_result()
-    if self.update_build(build, result):  # pragma: no branch
+    if _update_build(build, result):  # pragma: no branch
       build.put()
-
-  def load_task_result_async(self, hostname, task_id):  # pragma: no cover
-    return _call_api_async(hostname, 'task/%s/result' % task_id)
 
   def stop(self, msg, *args, **kwargs):
     """Logs error, responds with HTTP 200 and stops request processing.
@@ -354,8 +363,57 @@ class SubNotify(webapp2.RequestHandler):
       self.stop('%s is not a valid JSON object: %r', name, text)
 
 
+class CronUpdateBuilds(webapp2.RequestHandler):
+  """Updates builds that are associated with swarming tasks."""
+
+  @ndb.tasklet
+  def update_build_async(self, build):
+    result = yield _load_task_result_async(
+        build.swarming_hostname, build.swarming_task_id)
+
+    @ndb.transactional_tasklet
+    def txn():
+      build_txn = build.key.get()
+      if build.status != model.BuildStatus.STARTED:  # pragma: no cover
+        return
+
+      if not result:
+        logging.error(
+            'Task %s/%s referenced by build %s is not found',
+            build.swarming_hostname, build.swarming_task_id, build.key.id())
+        build.status = model.BuildStatus.COMPLETED
+        now = utils.utcnow()
+        build.status_changed_time = now
+        build.complete_time = now
+        build.result = model.BuildResult.FAILURE
+        build.failure_reason = model.FailureReason.INFRA_FAILURE
+        build.result_details = {
+          'error': {
+            'message': (
+              'Swarming task %s on server %s unexpectedly disappeared' %
+              (build.swarming_task_id, build.swarming_task_id)),
+          }
+        }
+        build.clear_lease()
+        build.put()
+      elif _update_build(build_txn, result):  # pragma: no branch
+        yield build_txn.put_async()
+
+    yield txn()
+
+  @decorators.require_cronjob
+  def get(self):  # pragma: no cover
+    q = model.Build.query(
+        model.Build.status == model.BuildStatus.STARTED,
+        model.Build.swarming_task_id != None)
+    q.map_async(self.update_build_async).get_result()
+
+
 def get_routes():  # pragma: no cover
   return [
+    webapp2.Route(
+        r'/internal/cron/swarming/update_builds',
+        CronUpdateBuilds),
     webapp2.Route(
         r'/swarming/notify',
         SubNotify),
