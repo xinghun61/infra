@@ -34,19 +34,13 @@ class ConfigTest(testing.AppengineTestCase):
   ], debug=True)
 
   def testGetConfigurationSettings(self):
-    class MockFinditConfig():
-      masters_to_blacklisted_steps = _MOCK_MASTERS_TO_BLACKLISTED_STEPS
-      builders_to_trybots = _MOCK_BUILDERS_TO_TRYBOTS
-
-      @property
-      def VersionNumber(self):
-        return _MOCK_VERSION_NUMBER
-
-    def MockSettings():
-      return MockFinditConfig()
-
-    self.mock(wf_config, 'Settings', MockSettings)
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+
+    config_data = {
+        'masters_to_blacklisted_steps': _MOCK_MASTERS_TO_BLACKLISTED_STEPS,
+        'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
+    }
+    wf_config.FinditConfig.Get().Update(**config_data)
 
     response = self.test_app.get('/config', params={'format': 'json'})
     self.assertEquals(response.status_int, 200)
@@ -54,7 +48,7 @@ class ConfigTest(testing.AppengineTestCase):
     expected_response = {
         'masters': _MOCK_MASTERS_TO_BLACKLISTED_STEPS,
         'builders': _MOCK_BUILDERS_TO_TRYBOTS,
-        'version': _MOCK_VERSION_NUMBER,
+        'version': 1,
     }
 
     self.assertEquals(expected_response, response.json_body)
@@ -101,36 +95,14 @@ class ConfigTest(testing.AppengineTestCase):
     }))
 
   def testPostConfigurationSettings(self):
-
-    class MockFinditConfig():
-      masters_to_blacklisted_steps = {
-          'a': [],
-      }
-      builders_to_trybots = {}
-
-      def modify(self, **kwargs):
-        for k, v in kwargs.iteritems():
-          setattr(self, k, v)
-
-      @property
-      def VersionNumber(self):
-        return _MOCK_VERSION_NUMBER
-
-    mock_config = MockFinditConfig()
-
-    def MockSettings():
-      return mock_config
-
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    self.mock(wf_config, 'FinditConfig', MockFinditConfig)
-    self.mock(wf_config, 'Settings', MockSettings)
 
     params = {
         'format': 'json',
         'data': json.dumps({
             'masters_to_blacklisted_steps': {
                 'a': ['1', '2', '3'],
-                'b': []
+                'b': [],
             },
             'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
         })
@@ -142,7 +114,7 @@ class ConfigTest(testing.AppengineTestCase):
             'b': []
         },
         'builders': _MOCK_BUILDERS_TO_TRYBOTS,
-        'version': _MOCK_VERSION_NUMBER,
+        'version': 1,
     }
 
     response = self.test_app.post('/config', params=params)

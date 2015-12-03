@@ -99,12 +99,12 @@ class Configuration(BaseHandler):
   PERMISSION_LEVEL = Permission.ADMIN
 
   def HandleGet(self):
-    settings = wf_config.Settings()
+    settings = wf_config.FinditConfig.Get()
 
     data = {
         'masters': settings.masters_to_blacklisted_steps,
         'builders': settings.builders_to_trybots,
-        'version': settings.VersionNumber,
+        'version': settings.version,
     }
 
     return {'template': 'config.html', 'data': data}
@@ -117,6 +117,6 @@ class Configuration(BaseHandler):
       return self.CreateError(
           'New configuration settings is not properly formatted.', 400)
 
-    wf_config.Update(new_config_dict)
+    wf_config.FinditConfig.Get().Update(**new_config_dict)
 
     return self.HandleGet()

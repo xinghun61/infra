@@ -4,7 +4,7 @@
 
 from testing_utils import testing
 
-from model import wf_config
+from model.wf_config import FinditConfig
 from waterfall import waterfall_config
 
 
@@ -13,22 +13,25 @@ class MastersTest(testing.AppengineTestCase):
 
   def setUp(self):
     super(MastersTest, self).setUp()
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
-    class MockSettings():
-      masters_to_blacklisted_steps = {
-          'master1': ['step1', 'step2', 'step3'],
-          'master2': ['step4', 'step5', 'step6']
-      }
-      builders_to_trybots = {
-          'master1': {
-              'builder1': {
-                  'mastername': 'tryserver1',
-                  'buildername': 'trybot1',
-              }
-          }
-      }
+    config_data = {
+        'masters_to_blacklisted_steps': {
+            'master1': ['step1', 'step2', 'step3'],
+            'master2': ['step4', 'step5', 'step6']
+        },
+        'builders_to_trybots': {
+            'master1': {
+                'builder1': {
+                    'mastername': 'tryserver1',
+                    'buildername': 'trybot1',
+                }
+            }
+        }
+    }
 
-    self.mock(wf_config, 'Settings', MockSettings)
+    FinditConfig.Get().Update(**config_data)
+
 
   def testMasterIsSupported(self):
     self.assertTrue(waterfall_config.MasterIsSupported('master1'))
