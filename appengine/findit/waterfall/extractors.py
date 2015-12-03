@@ -105,22 +105,64 @@ class GeneralExtractor(Extractor):
 
 
 class CompileStepExtractor(Extractor):
-  """For compile step, extracts files."""
-
+  """For compile step, extracts files and identifies failed targets."""
   FAILURE_START_LINE_PREFIX = 'FAILED: '
+  LINUX_FAILED_SOURCE_TARGET_PATTERN = re.compile(
+      r'(?:-c ([^\s-]+))? -o ([^\s-]+)')
+  WINDOWS_FAILED_SOURCE_TARGET_PATTERN = re.compile(
+      r'/c ([^\s-]+)\s+/Fo([^\s-]+)')
+  WINDOWS_LINK_FAILURE_PATTERN = re.compile(r'/OUT:([^\s-]+)')
+
   NINJA_FAILURE_END_LINE_PREFIX = 'ninja: build stopped'
   NINJA_ERROR_LINE_PREFIX = 'ninja: error'
-  ERROR_LINE_END_PATTERN = re.compile(
-      '^\d+ errors? generated.')
+  ERROR_LINE_END_PATTERN = re.compile(r'^\d+ errors? generated.')
   IOS_ERROR_LINE_START_PREFIX = 'CompileC'
 
   IOS_BUILDER_NAMES_FOR_COMPILE = ['iOS_Simulator_(dbg)', 'iOS_Device']
   MAC_MASTER_NAME_FOR_COMPILE = 'chromium.mac'
 
+  def GetFailedTarget(self, line, signal):
+    match = self.LINUX_FAILED_SOURCE_TARGET_PATTERN.search(line)
+
+    if match:
+      # Try parsing the failure line as a linux build.
+      source_file = match.group(1)
+      target = match.group(2)
+
+      if source_file:
+        # Failure is a compile failure.
+        signal.AddTarget({
+            'target': target,
+            'source': source_file
+        })
+      else:
+        # Failure is a linker error.
+        signal.AddTarget({
+            'target': target
+        })
+    else:
+      # If no match was found using Linux pattern matching, fallback to Windows.
+      match = self.WINDOWS_FAILED_SOURCE_TARGET_PATTERN.search(line)
+
+      if match:
+        # Failure is a compile failure.
+        source_file = match.group(1)
+        object_file = match.group(2)
+        signal.AddTarget({
+            'target': object_file,
+            'source': source_file
+        })
+      else:
+        match = self.WINDOWS_LINK_FAILURE_PATTERN.search(line)
+        if match:
+          # Failure is a linker error.
+          target = match.group(1)
+          signal.AddTarget({'target': target})
+
   def Extract(self, failure_log, test_name, step_name, bot_name, master_name):
     signal = FailureSignal()
-
     failure_started = False
+
     if (master_name == self.MAC_MASTER_NAME_FOR_COMPILE and
         bot_name in self.IOS_BUILDER_NAMES_FOR_COMPILE):
       error_lines = []
@@ -138,10 +180,10 @@ class CompileStepExtractor(Extractor):
             error_lines = []
           else:
             error_lines.append(line)
-
     else:
       for line in failure_log.splitlines():
         if line.startswith(self.FAILURE_START_LINE_PREFIX):
+          self.GetFailedTarget(line, signal)
           if not failure_started:
             failure_started = True
           continue  # pragma: no cover
@@ -150,7 +192,6 @@ class CompileStepExtractor(Extractor):
         elif failure_started and line.startswith(
             self.NINJA_FAILURE_END_LINE_PREFIX):  # pragma: no cover
           break
-
         if failure_started or line.startswith(self.NINJA_ERROR_LINE_PREFIX):
           # either within the compile errors or is a ninja error.
           self.ExtractFiles(line, signal)

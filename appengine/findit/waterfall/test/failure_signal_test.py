@@ -8,6 +8,7 @@ from waterfall.failure_signal import FailureSignal
 
 
 class FailureSignalTest(unittest.TestCase):
+
   def testAddFileWithLineNumber(self):
     signal = FailureSignal()
     signal.AddFile('a.cc', 1)
@@ -28,6 +29,16 @@ class FailureSignalTest(unittest.TestCase):
     signal.AddKeyword('a')
     self.assertEqual({'a': 2, 'b': 1}, signal.keywords)
 
+  def testAddTarget(self):
+    signal = FailureSignal()
+    signal.AddTarget({'target': 'a.exe'})
+    signal.AddTarget({'target': 'b.o', 'source': 'b.cpp'})
+    signal.AddTarget({'target': 'b.o', 'source': 'b.cpp'})
+    self.assertEqual(
+        [{'target': 'a.exe'},
+         {'target': 'b.o', 'source': 'b.cpp'}],
+        signal.failed_targets)
+
   def testToFromDict(self):
     data = {
         'files': {
@@ -41,6 +52,25 @@ class FailureSignalTest(unittest.TestCase):
     signal = FailureSignal.FromDict(data)
     self.assertEqual(data, signal.ToDict())
 
+  def testToFromDictWithFailedTargets(self):
+    data = {
+        'files': {
+            'a.cc': [2],
+            'd.cc': []
+        },
+        'keywords': {
+            'k1': 3
+        },
+        'failed_targets': [
+            {
+                'target': 'a.o',
+                'source': 'b/a.cc'
+            }
+        ]
+    }
+    signal = FailureSignal.FromDict(data)
+    self.assertEqual(data, signal.ToDict())
+
   def testMergeFrom(self):
     test_signals = [
         {
@@ -48,7 +78,17 @@ class FailureSignalTest(unittest.TestCase):
                 'a.cc': [2],
                 'd.cc': []
             },
-            'keywords': {}
+            'keywords': {},
+            'failed_targets': [
+                {
+                    'target': 'a.o',
+                    'source': 'a.cc'
+                },
+                {
+                    'target': 'b.o',
+                    'source': 'b.cc'
+                }
+            ]
         },
         {
             'files': {
@@ -56,7 +96,16 @@ class FailureSignalTest(unittest.TestCase):
                 'b.cc': [],
                 'd.cc': [1]
             },
-            'keywords': {}
+            'keywords': {},
+            'failed_targets': [
+                {
+                    'target': 'a.o',
+                    'source': 'a.cc'
+                },
+                {
+                    'target': 'c.exe'
+                }
+            ]
         },
     ]
     step_signal = FailureSignal()
@@ -69,5 +118,19 @@ class FailureSignalTest(unittest.TestCase):
         'd.cc': [1],
         'b.cc': []
     }
+    expected_step_failed_targets = [
+        {
+            'target': 'a.o',
+            'source': 'a.cc'
+        },
+        {
+            'target': 'b.o',
+            'source': 'b.cc'
+        },
+        {
+            'target': 'c.exe'
+        }
+    ]
 
     self.assertEqual(expected_step_signal_files, step_signal.files)
+    self.assertEqual(expected_step_failed_targets, step_signal.failed_targets)

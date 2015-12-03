@@ -285,14 +285,14 @@ Note:You can safely ignore the above warning unless this call should not happen.
     failure_log = textwrap.dedent("""
         [1832/2467 | 117.498] CXX obj/a/b/test.file.o
         blabla...
-        FAILED: /b/build/goma/gomacc ... ../../a/b/c.cc -o obj/a/b/test.c.o
+        FAILED: /b/build/goma/gomacc ... ../../a/b/c.cc ... obj/a/b/test.c.o
         ../../a/b/c.cc:307:44: error: no member 'kEnableExtensionInfoDialog' ...
         1 error generated.
         x/y/not_in_signal.cc
-        FAILED: /b/build/goma/gomacc ... ../../a/b/x.cc -o obj/a/b/test.c.o
+        FAILED: /b/build/goma/gomacc ... ../../a/b/x.cc ... obj/a/b/test.c.o
         ../../a/b/d.cc:123:44: error: no member 'kEnableExtensionInfoDialog' ...
         blabla...
-        FAILED: /b/build/goma/gomacc ... ../../a/b/x.cc -o obj/a/b/test.c.o
+        FAILED: /b/build/goma/gomacc ... ../../a/b/x.cc ... obj/a/b/test.c.o
         ../../a/b/e.cc:79:44: error: no member 'kEnableExtensionInfoDialog' ...
         blabla...
         ninja: build stopped: subcommand failed.
@@ -306,6 +306,110 @@ Note:You can safely ignore the above warning unless this call should not happen.
             'a/b/e.cc': [79]
         },
         'keywords': {}
+    }
+
+    self._RunTest(
+        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+
+  def testCompileStepExtractorExtractFailedCompileTargetsLinux(self):
+    failure_log = textwrap.dedent("""
+        [1832/2467 | 117.498] CXX obj/a/b/test.file.o
+        blabla...
+        FAILED: /b/build/goma/gomacc ... -c ../../a/b/c.cc -o obj/a/b/c.o
+        ../../a/b/c.cc:307:44: error: no member 'kEnableExtensionInfoDialog' ...
+        1 error generated.
+        x/y/not_in_signal.cc
+        FAILED: /b/build/goma/gomacc ... -c ../../a/b/x.cc -o obj/a/b/x.o
+        ../../a/b/d.cc:123:44: error: no member 'kEnableExtensionInfoDialog' ...
+        blabla...
+        FAILED: /b/build/goma/gomacc ... -c ../../a/b/x.cc -o obj/a/b/x.o
+        ../../a/b/e.cc:79:44: error: no member 'kEnableExtensionInfoDialog' ...
+        blabla...
+        ninja: build stopped: subcommand failed.
+
+        /b/build/goma/goma_ctl.sh stat
+        blabla...""")
+    expected_signal_json = {
+        'files': {
+            'a/b/c.cc': [307],
+            'a/b/d.cc': [123],
+            'a/b/e.cc': [79]
+        },
+        'keywords': {},
+        'failed_targets': [
+            {
+                'source': '../../a/b/c.cc',
+                'target': 'obj/a/b/c.o',
+            },
+            {
+                'source': '../../a/b/x.cc',
+                'target': 'obj/a/b/x.o',
+            },
+        ]
+    }
+
+    self._RunTest(
+        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+
+  def testCompileStepExtractorExtractFailedLinkTargetsLinux(self):
+    failure_log = textwrap.dedent("""
+        [5430/5600] blabla
+        FAILED: python blabla -o a/b.nexe blabla   
+        blabla
+        blabla.Error: FAILED with blabla
+        ninja: build stopped: subcommand failed.""")
+    expected_signal_json = {
+        'files': {},
+        'keywords': {},
+        'failed_targets': [
+            {
+                'target': 'a/b.nexe'
+            }
+        ]
+    }
+
+    self._RunTest(
+        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+
+  def testCompileStepExtractorExtractFailedCompileTargetsWindows(self):
+    failure_log = textwrap.dedent("""
+        [4576/31353] blabla
+        FAILED: ninja blabla /c ..\\..\\a\\b\\c.cc /Foa\\b.c.obj blabla 
+        blabla
+        FAILED: ninja blabla /c ..\\..\\d\\e\\f.cc /Fod\\e\\f\\a.b.obj blabla 
+        blabla
+        ninja: build stopped: subcommand failed.""")
+    expected_signal_json = {
+        'files': {},
+        'keywords': {},
+        'failed_targets': [
+            {
+                'source': '..\\..\\a\\b\\c.cc',
+                'target': 'a\\b.c.obj',
+            },
+            {
+                'source': '..\\..\\d\\e\\f.cc',
+                'target': 'd\\e\\f\\a.b.obj'
+            },
+        ]
+    }
+
+    self._RunTest(failure_log, extractors.CompileStepExtractor,
+                  expected_signal_json)
+
+  def testCompileStepExtractorExtractFailedLinkTargetsWindows(self):
+    failure_log = textwrap.dedent("""
+        [11428/27088] blabla
+        FAILED: blabla link.exe /OUT:test.exe @test.exe.rsp blabla
+        ninja: build stopped: subcommand failed.""")
+    expected_signal_json = {
+        'files': {},
+        'keywords': {},
+        'failed_targets': [
+            {
+                'target': 'test.exe'
+            }
+        ]
     }
 
     self._RunTest(

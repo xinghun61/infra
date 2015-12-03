@@ -27,6 +27,7 @@ SUPPORTED_FILE_EXTENSIONS = [
     'm',
     'mm',
     'mojom',
+    'nexe',
     'o',
     'obj',
     'py',
