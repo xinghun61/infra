@@ -4,9 +4,10 @@
 
 import argparse
 import glob
+import json
 import logging
 import os
-import json
+import re
 import sys
 
 from infra_libs import event_mon
@@ -62,8 +63,8 @@ def get_arguments(argv):
   service_group = parser.add_argument_group('Service event options')
   type_group = service_group.add_mutually_exclusive_group()
   type_group.add_argument('--service-event-type',
-                      choices=event_mon.EVENT_TYPES,
-                      help='Kind of event to send.')
+                          choices=event_mon.EVENT_TYPES,
+                          help='Kind of event to send.')
 
   type_group.add_argument('--service-event-stack-trace',
                           metavar='STACK_TRACE',
@@ -125,6 +126,12 @@ def get_arguments(argv):
                            metavar='FILENAME',
                            help='File containing a serialized GomaStats '
                            'protobuf.')
+  build_group.add_argument('--build-event-goma-error',
+                           choices=event_mon.GOMA_ERROR_TYPES,
+                           help='Reason for no GomaStats protobuf.')
+  build_group.add_argument('--build-event-goma-crash-report-id-path',
+                           metavar='FILENAME',
+                           help='File containing a crash report id.')
 
   # Read events from file
   file_group = parser.add_argument_group('Read events from file')
@@ -297,6 +304,15 @@ def send_build_event(args):
                        args.build_event_goma_stats_path)
       raise
 
+  goma_crash_report_id = None
+  if args.build_event_goma_crash_report_id_path:
+    try:
+      with open(args.build_event_goma_crash_report_id_path, 'r') as f:
+        goma_crash_report_id = f.read().strip()
+    except Exception:  # pragma: no cover
+      LOGGER.exception('Failure when reading/parsing file %s',
+                       args.build_event_goma_crash_report_id_path)
+      raise
 
   return bool(event_mon.send_build_event(
     args.build_event_type,
@@ -310,7 +326,9 @@ def send_build_event(args):
     extra_result_code=args.build_event_extra_result_code,
     timestamp_kind=args.event_mon_timestamp_kind,
     event_timestamp=args.event_mon_event_timestamp,
-    goma_stats=goma_stats))
+    goma_stats=goma_stats,
+    goma_error=args.build_event_goma_error,
+    goma_crash_report_id=goma_crash_report_id))
 
 
 def send_events_from_file(args):

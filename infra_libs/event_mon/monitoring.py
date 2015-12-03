@@ -18,6 +18,8 @@ BUILD_EVENT_TYPES = ('SCHEDULER', 'BUILD', 'STEP')
 BUILD_RESULTS = ('UNKNOWN', 'SUCCESS', 'FAILURE', 'INFRA_FAILURE',
                  'WARNING', 'SKIPPED', 'RETRY')
 TIMESTAMP_KINDS = ('UNKNOWN', 'POINT', 'BEGIN', 'END')
+GOMA_ERROR_TYPES = ('GOMA_ERROR_OK', 'GOMA_ERROR_UNKNOWN', 'GOMA_ERROR_CRASHED',
+                    'GOMA_ERROR_LOG_FATAL')
 
 # Maximum size of stack trace sent in an event, in characters.
 STACK_TRACE_MAX_SIZE = 1000
@@ -265,7 +267,9 @@ def get_build_event(event_type,
                     timestamp_kind=None,
                     event_timestamp=None,
                     service_name=None,
-                    goma_stats=None):
+                    goma_stats=None,
+                    goma_error=None,
+                    goma_crash_report_id=None):
   """Compute a ChromeInfraEvent filled with a BuildEvent.
 
   Arguments are identical to those in send_build_event(), please refer
@@ -391,6 +395,17 @@ def get_build_event(event_type,
     else:
       logging.error('expected goma_stats to be an instance of GomaStats, '
                     'got %s', type(goma_stats))
+  if goma_error:
+    if goma_stats:
+      logging.error('Only one of goma_error and goma_stats can be provided. '
+                    'Got %s and %s.', goma_error, goma_stats)
+    event.build_event.goma_error = BuildEvent.GomaErrorType.Value(goma_error)
+    if goma_crash_report_id:
+      event.build_event.goma_crash_report_id = goma_crash_report_id
+      if goma_error != 'GOMA_ERROR_CRASHED':
+        logging.error('A crash report id (%s) was provided for GomaErrorType '
+                      '(%s).  This is only accepted for GOMA_ERROR_CRASHED '
+                      'type.', goma_crash_report_id, goma_error)
 
   return event_wrapper
 
@@ -406,7 +421,9 @@ def send_build_event(event_type,
                      extra_result_code=None,
                      timestamp_kind=None,
                      event_timestamp=None,
-                     goma_stats=None):
+                     goma_stats=None,
+                     goma_error=None,
+                     goma_crash_report_id=None):
   """Send a ChromeInfraEvent filled with a BuildEvent
 
   Args:
@@ -430,6 +447,8 @@ def send_build_event(event_type,
     extra_result_code (string or list of): arbitrary strings intended to provide
       more fine-grained information about the result.
     goma_stats (goma_stats_pb2.GomaStats): statistics output by the Goma proxy.
+    goma_error (string): goma error type defined as GomaErrorType.
+    goma_crash_report_id (string): id of goma crash report.
 
   Returns:
     success (bool): False if some error happened.
@@ -445,7 +464,9 @@ def send_build_event(event_type,
                          extra_result_code=extra_result_code,
                          timestamp_kind=timestamp_kind,
                          event_timestamp=event_timestamp,
-                         goma_stats=goma_stats).send()
+                         goma_stats=goma_stats,
+                         goma_error=goma_error,
+                         goma_crash_report_id=goma_crash_report_id).send()
 
 
 def send_events(events):

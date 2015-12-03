@@ -1018,6 +1018,115 @@ class GetBuildEventTest(unittest.TestCase):
     self.assertEquals(event.event_source.service_name, service_name)
     self.assertFalse(event.build_event.HasField('goma_stats'))
 
+  def test_get_build_event_with_goma_error_unknown(self):
+    hostname = 'bot.host.name'
+    build_name = 'build_name'
+    service_name = 'my nice service'
+    goma_error = 'GOMA_ERROR_UNKNOWN'
+
+    log_event = monitoring.get_build_event(
+      'BUILD', hostname, build_name, service_name=service_name,
+      goma_error=goma_error).log_event()
+
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+    self.assertTrue(log_event.HasField('event_time_ms'))
+    self.assertTrue(log_event.HasField('source_extension'))
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.BUILD)
+    self.assertEquals(event.build_event.host_name, hostname)
+    self.assertEquals(event.build_event.build_name, build_name)
+    self.assertEquals(event.event_source.service_name, service_name)
+    self.assertEquals(event.build_event.goma_error,
+                      BuildEvent.GOMA_ERROR_UNKNOWN)
+
+  def test_get_build_event_with_goma_error_crash(self):
+    hostname = 'bot.host.name'
+    build_name = 'build_name'
+    service_name = 'my nice service'
+    goma_error = 'GOMA_ERROR_CRASHED'
+    goma_crash_report_id = '0123456789abcdef'
+
+    log_event = monitoring.get_build_event(
+      'BUILD', hostname, build_name, service_name=service_name,
+      goma_error=goma_error, goma_crash_report_id=goma_crash_report_id
+    ).log_event()
+
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+    self.assertTrue(log_event.HasField('event_time_ms'))
+    self.assertTrue(log_event.HasField('source_extension'))
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.BUILD)
+    self.assertEquals(event.build_event.host_name, hostname)
+    self.assertEquals(event.build_event.build_name, build_name)
+    self.assertEquals(event.event_source.service_name, service_name)
+    self.assertEquals(event.build_event.goma_error,
+                      BuildEvent.GOMA_ERROR_CRASHED)
+    self.assertEquals(event.build_event.goma_crash_report_id,
+                      goma_crash_report_id)
+
+  def test_get_build_event_with_goma_error_non_crash_with_crash_id(self):
+    hostname = 'bot.host.name'
+    build_name = 'build_name'
+    service_name = 'my nice service'
+    goma_error = 'GOMA_ERROR_UNKNOWN'
+    goma_crash_report_id = '0123456789abcdef'
+
+    log_event = monitoring.get_build_event(
+      'BUILD', hostname, build_name, service_name=service_name,
+      goma_error=goma_error, goma_crash_report_id=goma_crash_report_id
+    ).log_event()
+
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+    self.assertTrue(log_event.HasField('event_time_ms'))
+    self.assertTrue(log_event.HasField('source_extension'))
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.BUILD)
+    self.assertEquals(event.build_event.host_name, hostname)
+    self.assertEquals(event.build_event.build_name, build_name)
+    self.assertEquals(event.event_source.service_name, service_name)
+    self.assertEquals(event.build_event.goma_error,
+                      BuildEvent.GOMA_ERROR_UNKNOWN)
+    self.assertEquals(event.build_event.goma_crash_report_id,
+                      goma_crash_report_id)
+
+  def test_get_build_event_with_both_goma_error_and_stats(self):
+    hostname = 'bot.host.name'
+    build_name = 'build_name'
+    service_name = 'my nice service'
+    goma_error = 'GOMA_ERROR_UNKNOWN'
+    goma_stats = GomaStats()
+    goma_stats.request_stats.total = 42
+
+    log_event = monitoring.get_build_event(
+      'BUILD', hostname, build_name, service_name=service_name,
+      goma_stats=goma_stats, goma_error=goma_error,
+    ).log_event()
+
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+    self.assertTrue(log_event.HasField('event_time_ms'))
+    self.assertTrue(log_event.HasField('source_extension'))
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.BUILD)
+    self.assertEquals(event.build_event.host_name, hostname)
+    self.assertEquals(event.build_event.build_name, build_name)
+    self.assertEquals(event.event_source.service_name, service_name)
+    # warns but allow to have both.
+    self.assertEquals(event.build_event.goma_error,
+                      BuildEvent.GOMA_ERROR_UNKNOWN)
+    self.assertEquals(event.build_event.goma_stats, goma_stats)
+
 
 class SendBuildEventTest(unittest.TestCase):
   def setUp(self):
