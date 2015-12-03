@@ -7,18 +7,16 @@ import json
 from testing_utils import testing
 
 from common import buildbucket_client
-from components import net
 
 
-class _DeferredResult(object):
-  def __init__(self, result):
-    self._result = result
+class BuildBucketClientTest(testing.AppengineTestCase):
+  def setUp(self):
+    super(BuildBucketClientTest, self).setUp()
+    self.auth_token = '2234567'
 
-  def get_result(self):
-    return self._result
+    with self.mock_urlfetch() as urlfetch:
+      self.mocked_urlfetch = urlfetch
 
-
-class BuilcBucketClientTest(testing.AppengineTestCase):
   def testGetBucketName(self):
     mapping = {
         'a': 'master.a',
@@ -70,32 +68,33 @@ class BuilcBucketClientTest(testing.AppengineTestCase):
     parameters = json.loads(request_json['parameters_json'])
     self.assertEqual(expceted_parameters, parameters)
 
-  def _Mock_json_request_async_for_put(self, requests, responses):
-    def Mocked_json_request_async(
-       url, method=None, payload=None, scopes=None, *_, **__):
-      self.assertEqual(buildbucket_client._BUILDBUCKET_PUT_GET_ENDPOINT, url)
-      self.assertEqual('PUT', method)
-      self.assertEqual(net.EMAIL_SCOPE, scopes)
-      requests.append(payload)
-      return _DeferredResult(responses.pop())
-    self.mock(net, 'json_request_async', Mocked_json_request_async)
+  def _MockUrlFetch(self, build_id, try_job_request, content, status_code=200):
+    base_url = (
+        'https://cr-buildbucket.appspot.com/_ah/api/buildbucket/v1/builds')
+    headers = {
+        'Content-Type': 'application/json; charset=UTF-8'
+    }
+    if build_id:
+      url = base_url + '/' + build_id
+      self.mocked_urlfetch.register_handler(
+          url, content, status_code=status_code, headers=headers)
+    else:
+      self.mocked_urlfetch.register_handler(
+          base_url, content, status_code=status_code,
+          headers=headers, data=try_job_request)
 
   def testTriggerTryJobsSuccess(self):
-    requests = []
-    responses = [
-        {
-          'build': {
-              'id': '1',
-              'url': 'url',
-              'status': 'SCHEDULED',
-          }
-        }
-    ]
-    self._Mock_json_request_async_for_put(requests, responses)
+    response = {
+      'build': {
+          'id': '1',
+          'url': 'url',
+          'status': 'SCHEDULED',
+      }
+    }
     try_job = buildbucket_client.TryJob('m', 'b', 'r', {'a': 'b'}, [])
-    results = buildbucket_client.TriggerTryJobs([try_job])
-    self.assertEqual(1, len(requests))
-    self.assertEqual(requests[0], try_job.ToBuildbucketRequest())
+    self._MockUrlFetch(
+        None, json.dumps(try_job.ToBuildbucketRequest()), json.dumps(response))
+    results = buildbucket_client.TriggerTryJobs([try_job], self.auth_token)
     self.assertEqual(1, len(results))
     error, build = results[0]
     self.assertIsNone(error)
@@ -105,20 +104,16 @@ class BuilcBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('SCHEDULED', build.status)
 
   def testTriggerTryJobsFailure(self):
-    requests = []
-    responses = [
-        {
-          'error': {
-              'reason': 'error',
-              'message': 'message',
-          }
-        }
-    ]
-    self._Mock_json_request_async_for_put(requests, responses)
+    response = {
+      'error': {
+          'reason': 'error',
+          'message': 'message',
+      }
+    }
     try_job = buildbucket_client.TryJob('m', 'b', 'r', {}, [])
-    results = buildbucket_client.TriggerTryJobs([try_job])
-    self.assertEqual(1, len(requests))
-    self.assertEqual(requests[0], try_job.ToBuildbucketRequest())
+    self._MockUrlFetch(
+        None, json.dumps(try_job.ToBuildbucketRequest()), json.dumps(response))
+    results = buildbucket_client.TriggerTryJobs([try_job], self.auth_token)
     self.assertEqual(1, len(results))
     error, build = results[0]
     self.assertIsNotNone(error)
@@ -126,33 +121,34 @@ class BuilcBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('message', error.message)
     self.assertIsNone(build)
 
-  def _Mock_json_request_async_for_get(self):
-    def Mocked_json_request_async(url, method=None, scopes=None, *_, **__):
-      url,  build_id = url.rsplit('/', 1)
-      self.assertEqual(buildbucket_client._BUILDBUCKET_PUT_GET_ENDPOINT, url)
-      self.assertEqual('GET', method)
-      self.assertEqual(net.EMAIL_SCOPE, scopes)
-      data = {
-          '1': {
-              'build': {
-                  'id': '1',
-                  'url': 'url',
-                  'status': 'STARTED',
-              }
-          },
-          '2': {
-              'error': {
-                  'reason': 'BUILD_NOT_FOUND',
-                  'message': 'message',
-              }
-          }
-      }
-      return _DeferredResult(data.get(build_id))
-    self.mock(net, 'json_request_async', Mocked_json_request_async)
+  def testTriggerTryJobsRequestFailure(self):
+    response = 'Not Found'
+    try_job = buildbucket_client.TryJob('m', 'b', 'r', {}, [])
+    self._MockUrlFetch(
+        None, json.dumps(try_job.ToBuildbucketRequest()),
+        response, 404)
+    results = buildbucket_client.TriggerTryJobs([try_job], self.auth_token)
+    self.assertEqual(1, len(results))
+    error, build = results[0]
+    self.assertIsNotNone(error)
+    self.assertEqual(404, error.reason)
+    self.assertEqual('Not Found', error.message)
+    self.assertIsNone(build)
 
   def testGetTryJobsSuccess(self):
-    self._Mock_json_request_async_for_get()
-    results = buildbucket_client.GetTryJobs(['1'])
+    response = {
+        'build': {
+            'id': '1',
+            'url': 'url',
+            'status': 'STARTED',
+            'result_details_json':(
+                '{"properties": {"result": [["rev1", "passed"],'
+                ' ["rev2", "failed"]]}}')
+        }
+    }
+    self._MockUrlFetch(
+        '1', None, json.dumps(response))
+    results = buildbucket_client.GetTryJobs(['1'], self.auth_token)
     self.assertEqual(1, len(results))
     error, build = results[0]
     self.assertIsNone(error)
@@ -161,12 +157,37 @@ class BuilcBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('url', build.url)
     self.assertEqual('STARTED', build.status)
 
+    expected_result = [
+        ['rev1', 'passed'],
+        ['rev2', 'failed']
+    ]
+    self.assertEqual(expected_result, build.result)
+
   def testGetTryJobsFailure(self):
-    self._Mock_json_request_async_for_get()
-    results = buildbucket_client.GetTryJobs(['2'])
+    response = {
+        'error': {
+            'reason': 'BUILD_NOT_FOUND',
+            'message': 'message',
+        }
+    }
+    self._MockUrlFetch(
+        '2', None, json.dumps(response))
+    results = buildbucket_client.GetTryJobs(['2'], self.auth_token)
     self.assertEqual(1, len(results))
     error, build = results[0]
     self.assertIsNotNone(error)
     self.assertEqual('BUILD_NOT_FOUND', error.reason)
     self.assertEqual('message', error.message)
+    self.assertIsNone(build)
+
+  def testGetTryJobsRequestFailure(self):
+    response = 'Not Found'
+    self._MockUrlFetch(
+        '3', None, response, 404)
+    results = buildbucket_client.GetTryJobs(['3'], self.auth_token)
+    self.assertEqual(1, len(results))
+    error, build = results[0]
+    self.assertIsNotNone(error)
+    self.assertEqual(404, error.reason)
+    self.assertEqual('Not Found', error.message)
     self.assertIsNone(build)

@@ -84,6 +84,9 @@ class SwarmingHttpClient(RetryHttpClient):
       return 200, self.post_responses[data['digest']]
     return 404, 'Download Failed!'
 
+  def _Put(self, *_):  # pragma: no cover
+    pass
+
 
 class SwarmingUtilTest(testing.AppengineTestCase):
   def setUp(self):

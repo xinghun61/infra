@@ -42,6 +42,17 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
     else:
       return self.failure_status, 'failure - POST'
 
+  def _Put(self, url, data, timeout_seconds, headers=None):
+    self.requests.append({
+        'url': url,
+        'timeout_seconds': timeout_seconds,
+    })
+    self.request_count += 1
+    if self.request_count > self.simulated_failures:
+      return 200, 'success - PUT'
+    else:
+      return self.failure_status, 'failure - PUT'
+
 class HttpClientTest(testing.AppengineTestCase):
   def testRequestWithTimeout(self):
     url = 'http://test'
@@ -147,3 +158,32 @@ class HttpClientTest(testing.AppengineTestCase):
     self.assertEquals(3, dummy_http_client.request_count)
     self.assertEquals(503, status_code)
     self.assertEquals('failure - POST', content)
+
+  def testPutFailure(self):
+    dummy_http_client = DummyHttpClient(1, 404)
+    status_code, content = dummy_http_client.Put('http://test', {'data': 0})
+    self.assertEquals(404, status_code)
+    self.assertEquals('failure - PUT', content)
+
+  def testPutSuccess(self):
+    dummy_http_client = DummyHttpClient(0, 404)
+    status_code, content = dummy_http_client.Put('http://test', {'data': 0})
+    self.assertEquals(200, status_code)
+    self.assertEquals('success - PUT', content)
+
+  def testNoRetryForSpecificHttpStatusCodePut(self):
+    for expected_status_code in (302, 401, 403, 404, 501):
+      dummy_http_client = DummyHttpClient(20000000, expected_status_code)
+
+      status_code, content = dummy_http_client.Put('http://test', {'data': 0})
+      self.assertEquals(1, dummy_http_client.request_count)
+      self.assertEquals(expected_status_code, status_code)
+      self.assertEquals('failure - PUT', content)
+
+  def testRetryForPut(self):
+    dummy_http_client = DummyHttpClient(5, 503)
+    status_code, content = dummy_http_client.Put('http://test', {'data': 0},
+                                                  max_retries=3)
+    self.assertEquals(3, dummy_http_client.request_count)
+    self.assertEquals(503, status_code)
+    self.assertEquals('failure - PUT', content)

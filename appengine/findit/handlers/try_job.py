@@ -5,6 +5,8 @@
 import json
 import logging
 
+from google.appengine.api.app_identity import app_identity
+
 from base_handler import BaseHandler
 from base_handler import Permission
 from common import buildbucket_client
@@ -16,6 +18,12 @@ class TryJob(BaseHandler):
   No testing is added for this module as it is not for production.
   """
   PERMISSION_LEVEL = Permission.ADMIN
+
+  def _GetAuthToken(self):
+    """Gets auth token for requests to swarming server and isolated server."""
+    auth_token, _ = app_identity.get_access_token(
+        'https://www.googleapis.com/auth/userinfo.email')
+    return auth_token
 
   def _SplitValues(self, values_str):
     values = []
@@ -33,7 +41,7 @@ class TryJob(BaseHandler):
     if api == 'get': # Retrieve build info.
       build_ids_str = self.request.get('ids')
       build_ids = self._SplitValues(build_ids_str)
-      builds = buildbucket_client.GetTryJobs(build_ids)
+      builds = buildbucket_client.GetTryJobs(build_ids, self._GetAuthToken())
       results = dict(zip(build_ids, builds))
     elif api == 'put': # Trigger try-jobs.
       master_name = self.request.get('master', 'tryserver.chromium.linux')
@@ -73,7 +81,7 @@ class TryJob(BaseHandler):
             master_name, builder_name, revision, properties, tags)
         try_jobs.append(try_job)
 
-      builds = buildbucket_client.TriggerTryJobs(try_jobs)
+      builds = buildbucket_client.TriggerTryJobs(try_jobs, self._GetAuthToken())
       results = dict(zip(revisions, builds))
 
     if results is not None:

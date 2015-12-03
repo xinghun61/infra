@@ -26,6 +26,9 @@ class _MockedHttpClient(RetryHttpClient):
   def _Post(self, *_):  # pragma: no cover
     pass
 
+  def _Put(self, *_):  # pragma: no cover
+    pass
+
 
 class MonitorAlertsTest(testing.AppengineTestCase):
   app_module = webapp2.WSGIApplication([

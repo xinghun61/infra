@@ -8,7 +8,7 @@ import collections
 import json
 import logging
 
-from components import net
+from common.http_client_appengine import HttpClientAppengine as HttpClient
 
 
 # TODO: save these settings in datastore and create a role account.
@@ -79,6 +79,9 @@ class BuildbucketBuild(object):
     self.id = raw_json_data.get('id')
     self.url = raw_json_data.get('url')
     self.status = raw_json_data.get('status')
+    result_details_json = json.loads(
+        raw_json_data.get('result_details_json', '{}')) or {}
+    self.result = result_details_json.get('properties', {}).get('result', [])
 
 
 class BuildbucketError(object):
@@ -93,72 +96,95 @@ class BuildbucketError(object):
     self.message = raw_json_data.get('message')
 
 
-def _ConvertFuturesToResults(futures):
+def _ConvertFuturesToResults(json_results):
   """Converts the given futures to results.
 
   Args:
-    futures (dict): a map from a key (either build id or revision) to a future
-        of response for the put or get request to Buildbucket.
+    json_results (dict): a map from a key (either build id or revision) to a
+    response for the put or get request to Buildbucket.
 
   Returns:
-    A list of tuple (error, build) in the same order as the given futures.
+    A list of tuple (error, build) in the same order as the given results.
       error: an instance of BuildbucketError. None if no error occurred.
       build: an instance of BuildbucketBuild. None if error occurred.
   """
   results = []
-  for future in futures:
-    result_json = future.get_result()
-    logging.info('Try-job result:\n%s', json.dumps(result_json, indent=2))
-    error = result_json.get('error')
+  for json_result in json_results:
+    logging.info('Try-job result:\n%s', json.dumps(json_result, indent=2))
+    error = json_result.get('error')
     if error:
       results.append((BuildbucketError(error), None))
     else:
-      results.append((None, BuildbucketBuild(result_json.get('build'))))
+      results.append((None, BuildbucketBuild(json_result.get('build'))))
   return results
 
 
-def TriggerTryJobs(try_jobs):
+def TriggerTryJobs(try_jobs, auth_token):
   """Triggers try-job in a batch.
 
   Args:
     try_jobs (list): a list of TryJob instances.
+    auth_token (str): an authentication token to access Buildbucket.
 
   Returns:
     A list of tuple (error, build) in the same order as the given try-jobs.
       error: an instance of BuildbucketError. None if no error occurred.
       build: an instance of BuildbucketBuild. None if error occurred.
   """
-  futures = []
+  json_results = []
+  headers = {
+      'Authorization': 'Bearer ' + auth_token,
+      'Content-Type': 'application/json; charset=UTF-8'
+  }
 
   for try_job in try_jobs:
-    futures.append(net.json_request_async(
+    status_code, content = HttpClient().Put(
         _BUILDBUCKET_PUT_GET_ENDPOINT,
-        method='PUT',
-        payload=try_job.ToBuildbucketRequest(),
-        scopes=net.EMAIL_SCOPE,
-        deadline=20))
+        json.dumps(try_job.ToBuildbucketRequest()), headers=headers)
+    if status_code == 200:  # pragma: no cover
+      json_results.append(json.loads(content))
+    else:
+      error_content = {
+        'error':{
+          'reason': status_code,
+          'message': content
+        }
+      }
+      json_results.append(error_content)
 
-  return _ConvertFuturesToResults(futures)
+  return _ConvertFuturesToResults(json_results)
 
 
-def GetTryJobs(build_ids):
+def GetTryJobs(build_ids, auth_token):
   """Returns the try-job builds for the given build ids.
 
   Args:
     build_ids (list): a list of build ids returned by Buildbucket.
+    auth_token (str): an authentication token to access Buildbucket.
 
   Returns:
     A list of tuple (error, build) in the same order as given build ids.
       error: an instance of BuildbucketError. None if no error occurred.
       build: an instance of BuildbucketBuild. None if error occurred.
   """
-  futures = []
+  json_results = []
+  headers = {
+      'Authorization': 'Bearer ' + auth_token,
+      'Content-Type': 'application/json; charset=UTF-8'
+  }
 
   for build_id in build_ids:
-    futures.append(net.json_request_async(
-        _BUILDBUCKET_PUT_GET_ENDPOINT + '/' + build_id,
-        method='GET',
-        scopes=net.EMAIL_SCOPE,
-        deadline=20))
+    status_code, content = HttpClient().Get(
+        _BUILDBUCKET_PUT_GET_ENDPOINT + '/' + build_id, headers=headers)
+    if status_code == 200:  # pragma: no cover
+      json_results.append(json.loads(content))
+    else:
+      error_content = {
+        'error':{
+          'reason': status_code,
+          'message': content
+        }
+      }
+      json_results.append(error_content)
 
-  return _ConvertFuturesToResults(futures)
+  return _ConvertFuturesToResults(json_results)

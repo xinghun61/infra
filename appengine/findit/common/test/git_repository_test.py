@@ -254,6 +254,9 @@ class HttpClientForGit(retry_http_client.RetryHttpClient):
   def _Post(self, *_):  # pragma: no cover
     pass
 
+  def _Put(self, *_):  # pragma: no cover
+    pass
+
 
 class GitRepositoryTest(testing.AppengineTestCase):
 

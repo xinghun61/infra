@@ -21,7 +21,7 @@ class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
     # We wanted to validate certificate to avoid the man in the middle.
     if not headers:
       headers = {}
-    if method == urlfetch.POST:
+    if method in (urlfetch.POST, urlfetch.PUT):
       result = urlfetch.fetch(
           url, payload=data, method=method,
           headers=headers, deadline=timeout, validate_certificate=True)
@@ -40,3 +40,6 @@ class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
 
   def _Post(self, url, data, timeout, headers):
     return self._SendRequest(url, urlfetch.POST, data, timeout, headers)
+
+  def _Put(self, url, data, timeout, headers):
+    return self._SendRequest(url, urlfetch.PUT, data, timeout, headers)

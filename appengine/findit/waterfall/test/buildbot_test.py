@@ -28,6 +28,9 @@ class DummyHttpClient(RetryHttpClient):
   def _Post(self, *_):  # pragma: no cover
     pass
 
+  def _Put(self, *_):  # pragma: no cover
+    pass
+
 
 class BuildBotTest(unittest.TestCase):
 
