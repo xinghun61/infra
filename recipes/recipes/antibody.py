@@ -9,9 +9,9 @@ DEPS = [
   'bot_update',
   'gclient',
   'gsutil',
-  'path',
-  'properties',
-  'python',
+  'recipe_engine/path',
+  'recipe_engine/properties',
+  'recipe_engine/python',
 ]
 
 

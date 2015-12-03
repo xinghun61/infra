@@ -8,10 +8,10 @@ from recipe_engine import recipe_api
 DEPS = [
   'bot_update',
   'gclient',
-  'path',
-  'properties',
-  'python',
-  'step',
+  'recipe_engine/path',
+  'recipe_engine/properties',
+  'recipe_engine/python',
+  'recipe_engine/step',
 ]
 
 

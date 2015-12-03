@@ -5,7 +5,7 @@
 DEPS = [
   'bot_update',
   'gclient',
-  'properties',
+  'recipe_engine/properties',
 ]
 
 
