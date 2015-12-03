@@ -11,11 +11,14 @@ project repositories: `projects/<project_id>:<buildbucket-app-id>.cfg`.
 import hashlib
 import logging
 
+# import components.auth first because it modifies sys.path
+# and makes google.protobuf importable.
+from components import auth
+
 from google import protobuf
 from google.appengine.api import app_identity
 from google.appengine.ext import ndb
 
-from components import auth
 from components import config
 from components import utils
 from components.config import validation
