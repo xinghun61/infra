@@ -22,6 +22,12 @@ import urllib2
 GO_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
+# These packages must not be moved due to breaking changes.
+MUST_BE_PINNED = [
+  'github.com/op/go-logging', # https://github.com/op/go-logging/issues/69
+]
+
+
 def parse_goop_line(line):
   """Line of Goop file -> (package name, ref, mirror repo or None)."""
   chunks = [c.strip() for c in line.split()]
@@ -137,7 +143,11 @@ def main():
     if ref == latest:
       print '%s is up-to-date' % pkg
     else:
-      print '%s %s -> %s' % (pkg, ref, latest)
+      if pkg in MUST_BE_PINNED:
+        print '%s has newer version we ignore (%s)' % (pkg, latest)
+        latest = ref
+      else:
+        print '%s %s -> %s' % (pkg, ref, latest)
     if mirror:
       filtered.append('%s #%s !%s' % (pkg, latest, mirror))
     else:
