@@ -85,6 +85,12 @@ class TryJobPipelineTest(testing.AppengineTestCase):
     self._Mock_GetTryJobs(['1'])
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.results = [
+        {
+            'result': None,
+            'url': 'url'
+        }
+    ]
     try_job.put()
 
     root_pipeline = TryJobPipeline(
