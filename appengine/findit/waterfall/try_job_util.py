@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import json
+import logging
 
 from google.appengine.api import modules
 from google.appengine.ext import ndb
@@ -28,6 +29,7 @@ def _CheckFailureForTryJobKey(
   new_try_job_key = '%s/%s/%s' % (master_name, builder_name, build_number)
   if failure['current_failure'] == failure['first_failure']:
     failure_result_map[step_name] = new_try_job_key
+    logging.info('First-time failure')
     return True  # A new try_job is needed.
   else:
     # TODO(chanli): Need to handle cases where first failure is actually
@@ -36,6 +38,7 @@ def _CheckFailureForTryJobKey(
     try_job_key = '%s/%s/%s' % (
         master_name, builder_name, failure['first_failure'])
     failure_result_map[step_name] = try_job_key
+    logging.info('Not first-time failure')
     return False
 
 
@@ -49,10 +52,9 @@ def _NeedANewTryJob(
   for step_name, step in failed_steps.iteritems():
     # TODO(chanli): support test failures when the recipe is ready.
     if step_name =='compile':
-      result = _CheckFailureForTryJobKey(
+      need_new_try_job = _CheckFailureForTryJobKey(
           master_name, builder_name, build_number,
           failure_result_map, step_name, step)
-      need_new_try_job = result or need_new_try_job
 
       if need_new_try_job:
         try_job =  WfTryJob.Get(
@@ -79,6 +81,7 @@ def ScheduleTryJobIfNeeded(
   tryserver_mastername, tryserver_buildername = (
       waterfall_config.GetTrybotForWaterfallBuilder(master_name, builder_name))
   if not tryserver_mastername or not tryserver_buildername:
+    logging.info('%s, %s is not supported yet.', master_name, builder_name)
     return {}
 
   need_new_try_job, failure_result_map =_NeedANewTryJob(
@@ -90,5 +93,8 @@ def ScheduleTryJobIfNeeded(
     new_try_job_pipeline.target = (
         '%s.build-failure-analysis' % modules.get_current_version_name())
     new_try_job_pipeline.start(queue_name=TRY_JOB_PIPELINE_QUEUE_NAME)
+    logging.info('Try-job was scheduled for build %s, %s, %s: %s',
+                 master_name, builder_name, build_number,
+                 new_try_job_pipeline.pipeline_status_path)
 
   return failure_result_map

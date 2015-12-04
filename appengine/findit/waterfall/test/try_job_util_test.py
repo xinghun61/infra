@@ -22,6 +22,10 @@ class _MockRootPipeline(object):
   def start(self, *_, **__):
     _MockRootPipeline.STARTED = True
 
+  @property
+  def pipeline_status_path(self):
+    return 'path'
+
 
 class TryJobUtilTest(testing.AppengineTestCase):
 
