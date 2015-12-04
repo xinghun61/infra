@@ -5,8 +5,6 @@
 import base64
 import json
 
-from google.appengine.api.app_identity import app_identity
-
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
@@ -15,6 +13,7 @@ from pipeline_wrapper import BasePipeline
 from waterfall import buildbot
 from waterfall import build_util
 from waterfall import swarming_util
+from waterfall import try_job_util
 
 
 _MAX_BUILDS_TO_CHECK = 20
@@ -146,12 +145,6 @@ class DetectFirstFailurePipeline(BasePipeline):
           # All failed steps passed in this build cycle.
           return
 
-  def _GetAuthToken(self):
-    """Gets auth token for requests to swarming server and isolated server."""
-    auth_token, _ = app_identity.get_access_token(
-        'https://www.googleapis.com/auth/userinfo.email')
-    return auth_token
-
   def _ConcatenateTestLog(self, string1, string2):
     """Concatenates the base64 encoded log.
 
@@ -217,11 +210,11 @@ class DetectFirstFailurePipeline(BasePipeline):
 
   def _StartTestLevelCheckForFirstFailure(
       self, master_name, builder_name, build_number, step_name, failed_step,
-      http_client, auth_token):
+      http_client):
     """Downloads test results and initiates first failure info at test level."""
     list_isolated_data = failed_step['list_isolated_data']
     result_log = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
-        list_isolated_data, http_client, auth_token)
+        list_isolated_data, http_client)
 
     if (not result_log or not result_log.get('per_iteration_data') or
         result_log['per_iteration_data'] == 'invalid'):  # pragma: no cover
@@ -234,7 +227,7 @@ class DetectFirstFailurePipeline(BasePipeline):
 
   def _GetSameStepFromBuild(
       self, master_name, builder_name, build_number, step_name,
-      http_client, auth_token):
+      http_client):
     """Downloads swarming test results for a step from previous build."""
     step = WfStep.Get(
         master_name, builder_name, build_number, step_name)
@@ -246,13 +239,13 @@ class DetectFirstFailurePipeline(BasePipeline):
     # Sends request to swarming server for isolated data.
     step_isolated_data = swarming_util.GetIsolatedDataForStep(
         master_name, builder_name, build_number, step_name,
-        http_client, auth_token)
+        http_client)
 
     if not step_isolated_data:  # pragma: no cover
       return None
 
     result_log = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
-        step_isolated_data, http_client, auth_token)
+        step_isolated_data, http_client)
 
     if (not result_log or not result_log.get('per_iteration_data') or
         result_log['per_iteration_data'] == 'invalid'):  # pragma: no cover
@@ -293,7 +286,7 @@ class DetectFirstFailurePipeline(BasePipeline):
 
   def _UpdateFirstFailureOnTestLevel(
       self, master_name, builder_name, current_build_number, step_name,
-      failed_step, http_client, auth_token):
+      failed_step, http_client):
     """Iterates backwards through builds to get first failure at test level."""
     farthest_first_failure = failed_step['first_failure']
     if failed_step.get('last_pass'):
@@ -304,7 +297,7 @@ class DetectFirstFailurePipeline(BasePipeline):
         current_build_number - 1 , farthest_first_failure - 1, -1):
       step = self._GetSameStepFromBuild(
           master_name, builder_name, build_number, step_name,
-          http_client, auth_token)
+          http_client)
 
       if not step:  # pragma: no cover
         raise pipeline.Retry(
@@ -347,13 +340,12 @@ class DetectFirstFailurePipeline(BasePipeline):
   def _CheckFirstKnownFailureForSwarmingTests(
       self, master_name, builder_name, build_number, failed_steps, builds):
     """Uses swarming test results to update first failure info at test level."""
-    auth_token = self._GetAuthToken()
     http_client = HttpClient()
 
     # Identifies swarming tests and saves isolated data to them.
     result = swarming_util.GetIsolatedDataForFailedBuild(
         master_name, builder_name, build_number, failed_steps,
-        http_client, auth_token)
+        http_client)
     if not result:
       return
 
@@ -364,15 +356,16 @@ class DetectFirstFailurePipeline(BasePipeline):
       # Checks tests in one step and updates failed_step info if swarming.
       result = self._StartTestLevelCheckForFirstFailure(
           master_name, builder_name, build_number, step_name,
-          failed_step, http_client, auth_token)
+          failed_step, http_client)
 
       if result:  # pragma: no cover
         # Iterates backwards to get a more precise failed_steps info.
         self._UpdateFirstFailureOnTestLevel(
             master_name, builder_name, build_number, step_name,
-            failed_step, http_client, auth_token)
+            failed_step, http_client)
 
     self._UpdateFailureInfoBuilds(failed_steps, builds)
+
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number):
@@ -425,10 +418,6 @@ class DetectFirstFailurePipeline(BasePipeline):
     if not build_info:  # pragma: no cover
       raise pipeline.Retry('Failed to extract build info.')
 
-    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    analysis.not_passed_steps = build_info.not_passed_steps
-    analysis.put()
-
     failure_info = {
         'failed': True,
         'master_name': master_name,
@@ -436,7 +425,7 @@ class DetectFirstFailurePipeline(BasePipeline):
         'build_number': build_number,
         'chromium_revision': build_info.chromium_revision,
         'builds': {},
-        'failed_steps': [],
+        'failed_steps': {},
     }
 
     if (build_info.result == buildbot.SUCCESS or
@@ -459,4 +448,16 @@ class DetectFirstFailurePipeline(BasePipeline):
 
     failure_info['builds'] = builds
     failure_info['failed_steps'] = failed_steps
+
+    # Starts a new try_job if needed.
+    failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
+        master_name, builder_name, build_number,
+        failure_info['failed_steps'],
+        failure_info['builds'][build_number]['blame_list'])
+
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    analysis.not_passed_steps = build_info.not_passed_steps
+    analysis.failure_result_map = failure_result_map
+    analysis.put()
+
     return failure_info

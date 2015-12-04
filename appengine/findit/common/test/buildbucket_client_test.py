@@ -12,7 +12,6 @@ from common import buildbucket_client
 class BuildBucketClientTest(testing.AppengineTestCase):
   def setUp(self):
     super(BuildBucketClientTest, self).setUp()
-    self.auth_token = '2234567'
 
     with self.mock_urlfetch() as urlfetch:
       self.mocked_urlfetch = urlfetch
@@ -94,7 +93,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     try_job = buildbucket_client.TryJob('m', 'b', 'r', {'a': 'b'}, [])
     self._MockUrlFetch(
         None, json.dumps(try_job.ToBuildbucketRequest()), json.dumps(response))
-    results = buildbucket_client.TriggerTryJobs([try_job], self.auth_token)
+    results = buildbucket_client.TriggerTryJobs([try_job])
     self.assertEqual(1, len(results))
     error, build = results[0]
     self.assertIsNone(error)
@@ -113,7 +112,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     try_job = buildbucket_client.TryJob('m', 'b', 'r', {}, [])
     self._MockUrlFetch(
         None, json.dumps(try_job.ToBuildbucketRequest()), json.dumps(response))
-    results = buildbucket_client.TriggerTryJobs([try_job], self.auth_token)
+    results = buildbucket_client.TriggerTryJobs([try_job])
     self.assertEqual(1, len(results))
     error, build = results[0]
     self.assertIsNotNone(error)
@@ -127,7 +126,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self._MockUrlFetch(
         None, json.dumps(try_job.ToBuildbucketRequest()),
         response, 404)
-    results = buildbucket_client.TriggerTryJobs([try_job], self.auth_token)
+    results = buildbucket_client.TriggerTryJobs([try_job])
     self.assertEqual(1, len(results))
     error, build = results[0]
     self.assertIsNotNone(error)
@@ -148,7 +147,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     }
     self._MockUrlFetch(
         '1', None, json.dumps(response))
-    results = buildbucket_client.GetTryJobs(['1'], self.auth_token)
+    results = buildbucket_client.GetTryJobs(['1'])
     self.assertEqual(1, len(results))
     error, build = results[0]
     self.assertIsNone(error)
@@ -172,7 +171,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     }
     self._MockUrlFetch(
         '2', None, json.dumps(response))
-    results = buildbucket_client.GetTryJobs(['2'], self.auth_token)
+    results = buildbucket_client.GetTryJobs(['2'])
     self.assertEqual(1, len(results))
     error, build = results[0]
     self.assertIsNotNone(error)
@@ -184,7 +183,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     response = 'Not Found'
     self._MockUrlFetch(
         '3', None, response, 404)
-    results = buildbucket_client.GetTryJobs(['3'], self.auth_token)
+    results = buildbucket_client.GetTryJobs(['3'])
     self.assertEqual(1, len(results))
     error, build = results[0]
     self.assertIsNotNone(error)

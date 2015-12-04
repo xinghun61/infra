@@ -9,6 +9,7 @@ import json
 import logging
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
+from waterfall import auth_util
 
 
 # TODO: save these settings in datastore and create a role account.
@@ -119,12 +120,11 @@ def _ConvertFuturesToResults(json_results):
   return results
 
 
-def TriggerTryJobs(try_jobs, auth_token):
+def TriggerTryJobs(try_jobs):
   """Triggers try-job in a batch.
 
   Args:
     try_jobs (list): a list of TryJob instances.
-    auth_token (str): an authentication token to access Buildbucket.
 
   Returns:
     A list of tuple (error, build) in the same order as the given try-jobs.
@@ -133,7 +133,7 @@ def TriggerTryJobs(try_jobs, auth_token):
   """
   json_results = []
   headers = {
-      'Authorization': 'Bearer ' + auth_token,
+      'Authorization': 'Bearer ' + auth_util.GetAuthToken(),
       'Content-Type': 'application/json; charset=UTF-8'
   }
 
@@ -155,12 +155,11 @@ def TriggerTryJobs(try_jobs, auth_token):
   return _ConvertFuturesToResults(json_results)
 
 
-def GetTryJobs(build_ids, auth_token):
+def GetTryJobs(build_ids):
   """Returns the try-job builds for the given build ids.
 
   Args:
     build_ids (list): a list of build ids returned by Buildbucket.
-    auth_token (str): an authentication token to access Buildbucket.
 
   Returns:
     A list of tuple (error, build) in the same order as given build ids.
@@ -169,7 +168,7 @@ def GetTryJobs(build_ids, auth_token):
   """
   json_results = []
   headers = {
-      'Authorization': 'Bearer ' + auth_token,
+      'Authorization': 'Bearer ' + auth_util.GetAuthToken(),
       'Content-Type': 'application/json; charset=UTF-8'
   }
 

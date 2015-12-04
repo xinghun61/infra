@@ -20,6 +20,7 @@ from waterfall import buildbot
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 from waterfall import lock_util
 from waterfall import swarming_util
+from waterfall import try_job_util
 
 
 class DetectFirstFailureTest(testing.AppengineTestCase):
@@ -35,6 +36,11 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
       return True
 
     self.mock(lock_util, 'WaitUntilDownloadAllowed', _WaitUntilDownloadAllowed)
+
+    def Mocked_ScheduleTryJobIfNeeded(*_):
+      pass
+    self.mock(
+        try_job_util, 'ScheduleTryJobIfNeeded', Mocked_ScheduleTryJobIfNeeded)
 
   def _TimeBeforeNowBySeconds(self, seconds):
     return datetime.datetime.utcnow() - datetime.timedelta(0, seconds, 0)
@@ -114,6 +120,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
 
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number, wf_analysis_status.ANALYZING)
+
     # Setup build data for builds:
     # 100: net_unitests failed, unit_tests failed.
     # 99: net_unitests passed, unit_tests failed.
@@ -215,9 +222,6 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     }
 
     self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
-
-  def _MockGetAuthToken(self):
-    return '123456'
 
   def _GetSwarmingData(self, data_type, file_name=None, build_number=None):
     file_name_map = {
@@ -358,8 +362,6 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     step.isolated = True
     step.put()
 
-    self.mock(
-      DetectFirstFailurePipeline, '_GetAuthToken', self._MockGetAuthToken)
     def MockGetIsolatedDataForFailedBuild(*_):
       return True
     self.mock(
@@ -401,8 +403,6 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
         }
     }
 
-    self.mock(
-      DetectFirstFailurePipeline, '_GetAuthToken', self._MockGetAuthToken)
     for n in xrange(222, 220, -1):
       # Mock retrieving data from swarming server for a single step.
       self._MockUrlFetchWithSwarmingData(
@@ -435,7 +435,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     pipeline = DetectFirstFailurePipeline()
     pipeline._UpdateFirstFailureOnTestLevel(
         master_name, builder_name, build_number, step_name, failed_step,
-        HttpClient(), '1234567')
+        HttpClient())
 
     expected_failed_step = {
         'current_failure': 223,
@@ -470,8 +470,6 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
             }
         }
     }
-    self.mock(
-      DetectFirstFailurePipeline, '_GetAuthToken', self._MockGetAuthToken)
     step = WfStep.Create(master_name, builder_name, 222, step_name)
     step.isolated = True
     step.log_data = 'flaky'
@@ -480,7 +478,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     pipeline = DetectFirstFailurePipeline()
     pipeline._UpdateFirstFailureOnTestLevel(
         master_name, builder_name, build_number, step_name, failed_step,
-        HttpClient(), '1234567')
+        HttpClient())
 
     expected_failed_step = {
         'current_failure': 223,
@@ -574,8 +572,6 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number, wf_analysis_status.ANALYZING)
 
-    self.mock(
-      DetectFirstFailurePipeline, '_GetAuthToken', self._MockGetAuthToken)
     # Mock data for retrieving data from swarming server for a build.
     self._MockUrlFetchWithSwarmingData(master_name, builder_name, 223)
 

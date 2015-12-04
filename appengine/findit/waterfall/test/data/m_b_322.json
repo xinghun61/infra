@@ -1,0 +1,33 @@
+{
+  "properties": [
+    [
+      "got_revision",
+      "5934404dc5392ab3ae2c82b52b366889fb858d91",
+      "Change"
+    ]
+  ],
+  "results": 0,
+  "sourceStamp": {
+    "changes": [
+      {
+        "revision": "2fe8767f011a20ed8079d3aba7008acd95842f79"
+      },
+      {
+        "revision": "c0ed134137c98c2935bf32e85f74d4e94c2b980d"
+      },
+      {
+        "revision": "63820a74b4b5a3e6707ab89f92343e7fae7104f0"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "isFinished": true,
+      "name": "compile"
+    }
+  ],
+  "times": [
+    1420229169.688624,
+    1420230469.714636
+  ]
+}

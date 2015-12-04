@@ -11,11 +11,12 @@ import zlib
 from google.appengine.ext import ndb
 
 from model.wf_step import WfStep
+from waterfall import auth_util
 
 
-def _SendRequestToServer(url, http_client, auth_token, post_data=None):
+def _SendRequestToServer(url, http_client, post_data=None):
   """Sends GET/POST request to arbitrary url and returns response content."""
-  headers = {'Authorization': 'Bearer ' + auth_token}
+  headers = {'Authorization': 'Bearer ' + auth_util.GetAuthToken()}
   if post_data:
     post_data = json.dumps(post_data, sort_keys=True, separators=(',', ':'))
     headers['Content-Type'] = 'application/json; charset=UTF-8'
@@ -33,8 +34,7 @@ def _SendRequestToServer(url, http_client, auth_token, post_data=None):
 
 
 def _DownloadSwarmingTasksData(
-    master_name, builder_name, build_number, http_client, auth_token,
-    step_name=None):
+    master_name, builder_name, build_number, http_client, step_name=None):
   """Downloads tasks data from swarming server."""
   base_url = ('https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/'
               'list?tags=%s&tags=%s&tags=%s') % (
@@ -53,7 +53,7 @@ def _DownloadSwarmingTasksData(
       url = base_url
     else:
       url = base_url + '&cursor=%s' % urllib.quote(cursor)
-    new_data = _SendRequestToServer(url, http_client, auth_token)
+    new_data = _SendRequestToServer(url, http_client)
     if not new_data:
       break
 
@@ -70,15 +70,14 @@ def _DownloadSwarmingTasksData(
 
 
 def GetIsolatedDataForFailedBuild(
-    master_name, builder_name, build_number, failed_steps,
-    http_client, auth_token):
+    master_name, builder_name, build_number, failed_steps, http_client):
   """Checks failed step_names in swarming log for the build.
 
   Searches each failed step_name to identify swarming/non-swarming tests
   and keeps track of isolated data for each failed swarming steps.
   """
   data = _DownloadSwarmingTasksData(
-      master_name, builder_name, build_number, http_client, auth_token)
+      master_name, builder_name, build_number, http_client)
   if not data:
     return False
 
@@ -116,11 +115,11 @@ def GetIsolatedDataForFailedBuild(
 
 def GetIsolatedDataForStep(
     master_name, builder_name, build_number, step_name,
-    http_client, auth_token):
+    http_client):
   """Returns the isolated data for a specific step."""
   step_isolated_data = []
   data = _DownloadSwarmingTasksData(master_name, builder_name, build_number,
-                                    http_client, auth_token, step_name)
+                                    http_client, step_name)
   if not data:
     return step_isolated_data
 
@@ -139,7 +138,7 @@ def GetIsolatedDataForStep(
 
 
 def _FetchOutputJsonInfoFromIsolatedServer(
-    isolated_data, http_client, auth_token):
+    isolated_data, http_client):
   """Sends POST request to isolated server and returns response content.
 
   This function is used for fetching
@@ -152,7 +151,7 @@ def _FetchOutputJsonInfoFromIsolatedServer(
   }
   url = '%s/_ah/api/isolateservice/v2/retrieve' %(
       isolated_data['isolatedserver'])
-  content = _SendRequestToServer(url, http_client, auth_token, post_data)
+  content = _SendRequestToServer(url, http_client, post_data)
   return content
 
 
@@ -173,18 +172,18 @@ def _GetOutputJsonHash(content):
 
 
 def _DownloadOutputJsonFileFromTheUrlInResponse(
-    output_json_content, http_client, auth_token):
+    output_json_content, http_client):
   """Downloads output.json file from isolated server."""
   output_json_url = json.loads(output_json_content).get('url')
-  get_content = _SendRequestToServer(output_json_url, http_client, auth_token)
+  get_content = _SendRequestToServer(output_json_url, http_client)
   return json.loads(zlib.decompress(get_content)) if get_content else None
 
 
-def _DownloadTestResults(isolated_data, http_client, auth_token):
+def _DownloadTestResults(isolated_data, http_client):
   """Downloads the output.json file and returns the json object."""
   # First POST request to get hash for the output.json file.
   content = _FetchOutputJsonInfoFromIsolatedServer(
-      isolated_data, http_client, auth_token)
+      isolated_data, http_client)
   if not content:
     return None
   output_json_hash = _GetOutputJsonHash(content)
@@ -198,13 +197,13 @@ def _DownloadTestResults(isolated_data, http_client, auth_token):
     'isolatedserver': isolated_data['isolatedserver']
   }
   output_json_content = _FetchOutputJsonInfoFromIsolatedServer(
-      data_for_output_json, http_client, auth_token)
+      data_for_output_json, http_client)
   if not output_json_content:
     return None
 
   # GET Request to get output.json file.
   return _DownloadOutputJsonFileFromTheUrlInResponse(
-      output_json_content, http_client, auth_token)
+      output_json_content, http_client)
 
 
 def _MergeListsOfDicts(merged, shard):
@@ -263,11 +262,11 @@ def _MergeSwarmingTestShards(shard_results):
 
 
 def RetrieveShardedTestResultsFromIsolatedServer(
-    list_isolated_data, http_client, auth_token):
+    list_isolated_data, http_client):
   """Gets test results from isolated server and merge the results."""
   shard_results = []
   for isolated_data in list_isolated_data:
-    output_json = _DownloadTestResults(isolated_data, http_client, auth_token)
+    output_json = _DownloadTestResults(isolated_data, http_client)
     if not output_json:
       return None
     shard_results.append(output_json)

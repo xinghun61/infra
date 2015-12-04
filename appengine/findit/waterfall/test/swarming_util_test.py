@@ -91,7 +91,6 @@ class SwarmingHttpClient(RetryHttpClient):
 class SwarmingUtilTest(testing.AppengineTestCase):
   def setUp(self):
     super(SwarmingUtilTest, self).setUp()
-    self.auth_token = '2234567'
     self.http_client = SwarmingHttpClient()
 
   def testGetIsolatedDataForFailedBuild(self):
@@ -117,7 +116,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         master_name, builder_name, build_number)
     result = swarming_util.GetIsolatedDataForFailedBuild(
         master_name, builder_name, build_number, failed_steps,
-        self.http_client, self.auth_token)
+        self.http_client)
 
     expected_failed_steps = {
         'a_tests': {
@@ -183,7 +182,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
 
     result = swarming_util.GetIsolatedDataForFailedBuild(
         master_name, builder_name, build_number, failed_steps,
-        self.http_client, self.auth_token)
+        self.http_client)
     expected_failed_steps = {
         'a_tests': {
             'current_failure': 2,
@@ -207,7 +206,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         master_name, builder_name, build_number, step_name)
     data = swarming_util.GetIsolatedDataForStep(
         master_name, builder_name, build_number, step_name,
-        self.http_client, self.auth_token)
+        self.http_client)
     expected_data = [
         {
             'digest': 'isolatedhashunittests',
@@ -227,7 +226,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         master_name, builder_name, build_number, step_name)
     task_ids = swarming_util.GetIsolatedDataForStep(
         master_name, builder_name, build_number, step_name,
-        self.http_client, self.auth_token)
+        self.http_client)
     expected_task_ids = []
 
     self.assertEqual(expected_task_ids, task_ids)
@@ -245,7 +244,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         'shard1')
 
     result = swarming_util._DownloadTestResults(
-        isolated_data, self.http_client, self.auth_token)
+        isolated_data, self.http_client)
 
     expected_result = json.loads(zlib.decompress(
         self.http_client._GetData('isolated', 'shard1')))
@@ -259,7 +258,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     }
 
     result = swarming_util._DownloadTestResults(
-        isolated_data, self.http_client, self.auth_token)
+        isolated_data, self.http_client)
 
     self.assertIsNone(result)
 
@@ -273,7 +272,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
 
     self.http_client._SetResponseForPostRequest('not found')
     result = swarming_util._DownloadTestResults(
-        isolated_data, self.http_client, self.auth_token)
+        isolated_data, self.http_client)
 
     self.assertIsNone(result)
 
@@ -285,7 +284,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     }
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     result = swarming_util._DownloadTestResults(
-        isolated_data, self.http_client, self.auth_token)
+        isolated_data, self.http_client)
 
     self.assertIsNone(result)
 
@@ -299,7 +298,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
     result = swarming_util._DownloadTestResults(
-        isolated_data, self.http_client, self.auth_token)
+        isolated_data, self.http_client)
 
     self.assertIsNone(result)
 
@@ -338,7 +337,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         'shard3')
 
     result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
-        isolated_data, self.http_client, self.auth_token)
+        isolated_data, self.http_client)
     expected_results_file = os.path.join(
         os.path.dirname(__file__), 'data', 'expected_collect_results')
     with open(expected_results_file, 'r') as f:
@@ -361,7 +360,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         'shard1')
 
     result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
-        isolated_data, self.http_client, self.auth_token)
+        isolated_data, self.http_client)
 
     expected_result = json.loads(zlib.decompress(
         self.http_client._GetData('isolated', 'shard1')))
@@ -377,6 +376,6 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     ]
 
     result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
-        isolated_data, self.http_client, self.auth_token)
+        isolated_data, self.http_client)
 
     self.assertIsNone(result)
