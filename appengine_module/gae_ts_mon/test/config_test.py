@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
 import os
 import time
 import unittest
@@ -15,6 +16,7 @@ from infra_libs.ts_mon import memcache_metric_store
 from infra_libs.ts_mon.common import http_metrics
 from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import monitors
+from infra_libs.ts_mon.common import targets
 from infra_libs.ts_mon.common.test import stubs
 from testing_utils import testing
 
@@ -24,6 +26,7 @@ class InitializeTest(testing.AppengineTestCase):
     super(InitializeTest, self).setUp()
 
     self.mock_state = stubs.MockState()
+    self.mock_state.metrics = copy.copy(interface.state.metrics)
     mock.patch('infra_libs.ts_mon.common.interface.state',
         new=self.mock_state).start()
 
@@ -57,6 +60,7 @@ class InitializeTest(testing.AppengineTestCase):
     self.assertIsInstance(self.mock_state.global_monitor, monitors.DebugMonitor)
 
   def test_already_configured(self):
+    self.mock_state.metrics = {}
     self.mock_state.global_monitor = monitors.DebugMonitor()
     self.mock_state.store = memcache_metric_store.MemcacheMetricStore(
         self.mock_state)

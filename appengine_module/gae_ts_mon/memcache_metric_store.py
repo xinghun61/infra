@@ -7,6 +7,7 @@ import copy
 import functools
 import logging
 import operator
+import random
 import threading
 
 from google.appengine.api import memcache
@@ -37,6 +38,7 @@ class MemcacheMetricStore(metric_store.MetricStore):
 
   CAS_RETRIES = 10
   BASE_NAMESPACE = 'ts_mon_py'
+  SHARDS_PER_METRIC = 10
 
   METRICS_EXCLUDED_FROM_INDEX = (appengine_default_version,)
 
@@ -54,7 +56,7 @@ class MemcacheMetricStore(metric_store.MetricStore):
     return '%s_%s' % (self.BASE_NAMESPACE, job_name)
 
   def _target_key(self):
-    return (self._state.target.hostname, self._state.target.task_num)
+    return self._state.target.hostname
 
   def _client(self):
     """Returns a google.appengine.api.memcache.Client.
@@ -66,6 +68,25 @@ class MemcacheMetricStore(metric_store.MetricStore):
     except AttributeError:
       self._thread_local.client = memcache.Client()
       return self._thread_local.client
+
+  def _is_metric_sharded(self, metric):
+    if isinstance(metric, (metrics.CounterMetric, metrics.CumulativeMetric)):
+      return True
+    if isinstance(metric, metrics.DistributionMetric) and metric.is_cumulative:
+      return True
+    return False
+
+  def _random_shard(self, metric, select_shard=random.randint):
+    if not self._is_metric_sharded(metric):
+      return metric.name
+    return '%s-%d' % (metric.name, select_shard(1, self.SHARDS_PER_METRIC))
+
+  def _all_shards(self, metric):
+    if not self._is_metric_sharded(metric):
+      return [metric.name]
+    return [
+        '%s-%d' % (metric.name, shard)
+        for shard in xrange(1, self.SHARDS_PER_METRIC + 1)]
 
   def update_metric_index(self):
     entities = [
@@ -79,13 +100,26 @@ class MemcacheMetricStore(metric_store.MetricStore):
     ndb.put_multi(entities)
 
   def get(self, name, fields, default=None):
-    entry = self._client().get(name, namespace=self._namespace_for_job())
-    if entry is None:
+    if name not in self._state.metrics:
       return default
 
-    _, targets_values = entry
+    keys = self._all_shards(self._state.metrics[name])
+    entries = self._client().get_multi([(None, x) for x in keys],
+                                       namespace=self._namespace_for_job())
+    values = []
+    for entry in entries.values():
+      _, targets_values = entry
+      values.append(targets_values.get(self._target_key(), {})
+                                  .get(fields, default))
 
-    return targets_values.get(self._target_key(), {}).get(fields, default)
+    if not values:
+      return default
+    if len(values) == 1:
+      return values[0]
+    if not all(isinstance(x, (int, float)) for x in values):
+      raise TypeError(
+          'get() is not supported on sharded cumulative distribution metrics')
+    return sum(values)
 
   def get_all(self):
     if self.report_module_versions:
@@ -105,30 +139,50 @@ class MemcacheMetricStore(metric_store.MetricStore):
     target = copy.copy(self._state.target)
 
     # Fetch the metric index from datastore.
-    entities = collections.defaultdict(dict)
+    all_entities = collections.defaultdict(dict)
     for entity in MetricIndexEntry.query():
-      entities[entity.job_name][entity.name] = entity
+      all_entities[entity.job_name][entity.name] = entity
 
-    for job_name, entities in entities.iteritems():
+    for job_name, entities in all_entities.iteritems():
       target.job_name = job_name
+
+      # Create the list of keys to fetch.  Sharded metrics (counters) are
+      # spread across multiple keys in memcache.
+      keys = []
+      shard_map = {}  # key -> (index, metric name)
+      for name, entity in entities.iteritems():
+        if self._is_metric_sharded(entity.metric):
+          for i, sharded_key in enumerate(self._all_shards(entity.metric)):
+            keys.append(sharded_key)
+            shard_map[sharded_key] = (i, name)
+        else:
+          keys.append(name)
 
       # Fetch all the keys in this namespace.
       values = self._client().get_multi(
-          entities.keys(), namespace=self._namespace_for_job(job_name))
+          keys, namespace=self._namespace_for_job(job_name))
 
-      for name, (start_time, targets_values) in values.iteritems():
-        for (hostname, task_num), fields_values in targets_values.iteritems():
+      for key, (start_time, targets_values) in values.iteritems():
+        for hostname, fields_values in targets_values.iteritems():
           target.hostname = hostname
-          target.task_num = task_num
-          yield (copy.copy(target), entities[name].metric, start_time,
+          if key in shard_map:
+            # This row is one shard of a sharded metric - put the shard number
+            # in the task number.
+            target.task_num, metric_name = shard_map[key]
+          else:
+            target.task_num, metric_name = 0, key
+
+          yield (copy.copy(target), entities[metric_name].metric, start_time,
                  fields_values)
 
-  def _compare_and_set(self, name, modify_fn, namespace):
+  def _compare_and_set(self, metric, modify_fn, namespace):
     client = self._client()
 
     for _ in xrange(self.CAS_RETRIES):
-      entry = client.get(name, for_cas=True, namespace=namespace)
+      # Pick one of the shards to modify.
+      name = self._random_shard(metric)
 
+      entry = client.get(name, for_cas=True, namespace=namespace)
       if entry is None:
         success = client.add(name, modify_fn(entry), namespace=namespace)
       else:
@@ -159,7 +213,8 @@ class MemcacheMetricStore(metric_store.MetricStore):
       values[fields] = modify_value_fn(values.get(fields, 0), delta)
 
       return entry
-    self._compare_and_set(name, modify_fn, self._namespace_for_job())
+    self._compare_and_set(
+        self._state.metrics[name], modify_fn, self._namespace_for_job())
 
   def set(self, name, fields, value, enforce_ge=False):
     def modify_fn(old_value, _delta):
