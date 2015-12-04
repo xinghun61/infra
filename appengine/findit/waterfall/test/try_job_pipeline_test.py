@@ -33,7 +33,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
       return results
     self.mock(buildbucket_client, 'TriggerTryJobs', Mocked_TriggerTryJobs)
 
-  def _Mock_GetTryJobs(self, build_ids):
+  def _Mock_GetTryJobs(self, build_id):
     def Mocked_GetTryJobs(*_):
       data = {
           '1': {
@@ -54,14 +54,13 @@ class TryJobPipelineTest(testing.AppengineTestCase):
           }
       }
       results = []
-      for build_id in build_ids:
-        build_error = data.get(build_id)
-        if build_error.get('error'):  # pragma: no cover
-          results.append((
-              buildbucket_client.BuildbucketError(build_error['error']), None))
-        else:
-          results.append((
-              None, buildbucket_client.BuildbucketBuild(build_error['build'])))
+      build_error = data.get(build_id)
+      if build_error.get('error'):  # pragma: no cover
+        results.append((
+            buildbucket_client.BuildbucketError(build_error['error']), None))
+      else:
+        results.append((
+            None, buildbucket_client.BuildbucketBuild(build_error['build'])))
       return results
     self.mock(buildbucket_client, 'GetTryJobs', Mocked_GetTryJobs)
 
@@ -82,13 +81,14 @@ class TryJobPipelineTest(testing.AppengineTestCase):
     ]
     self._Mock_GetTrybotForWaterfallBuilder(master_name, builder_name)
     self._Mock_TriggerTryJobs(responses)
-    self._Mock_GetTryJobs(['1'])
+    self._Mock_GetTryJobs('1')
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.results = [
         {
             'result': None,
-            'url': 'url'
+            'url': 'url',
+            'try_job_id': '1',
         }
     ]
     try_job.put()
@@ -106,7 +106,8 @@ class TryJobPipelineTest(testing.AppengineTestCase):
                 ['rev1', 'passed'],
                 ['rev2', 'failed']
             ],
-            'url': 'url'
+            'url': 'url',
+            'try_job_id': '1',
         }
     ]
     self.assertEqual(expected_results, try_job.results)

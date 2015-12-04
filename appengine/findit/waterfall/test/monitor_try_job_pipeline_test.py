@@ -9,7 +9,7 @@ from model.wf_try_job import WfTryJob
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 
 class MonitorTryJobPipelineTest(testing.AppengineTestCase):
-  def _Mock_GetTryJobs(self, build_ids):
+  def _Mock_GetTryJobs(self, build_id):
     def Mocked_GetTryJobs(*_):
       data = {
           '1': {
@@ -30,14 +30,13 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
           }
       }
       results = []
-      for build_id in build_ids:
-        build_error = data.get(build_id)
-        if build_error.get('error'):  # pragma: no cover
-          results.append((
-              buildbucket_client.BuildbucketError(build_error['error']), None))
-        else:
-          results.append((
-              None, buildbucket_client.BuildbucketBuild(build_error['build'])))
+      build_error = data.get(build_id)
+      if build_error.get('error'):  # pragma: no cover
+        results.append((
+            buildbucket_client.BuildbucketError(build_error['error']), None))
+      else:
+        results.append((
+            None, buildbucket_client.BuildbucketBuild(build_error['build'])))
       return results
     self.mock(buildbucket_client, 'GetTryJobs', Mocked_GetTryJobs)
 
@@ -45,21 +44,22 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
-    try_job_ids = ['1']
+    try_job_id = '1'
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.results = [
         {
             'result': None,
-            'url': 'url'
+            'url': 'url',
+            'try_job_id': '1',
         }
     ]
     try_job.put()
-    self._Mock_GetTryJobs(try_job_ids)
+    self._Mock_GetTryJobs(try_job_id)
 
     pipeline = MonitorTryJobPipeline()
     results = pipeline.run(
-      master_name, builder_name, build_number, try_job_ids)
+        master_name, builder_name, build_number, try_job_id)
 
     expected_results = [
         {
@@ -67,7 +67,8 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
                 ['rev1', 'passed'],
                 ['rev2', 'failed']
             ],
-            'url': 'url'
+            'url': 'url',
+            'try_job_id': '1',
         }
     ]
     self.assertEqual(expected_results, results)
