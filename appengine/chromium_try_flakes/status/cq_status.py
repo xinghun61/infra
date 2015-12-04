@@ -229,6 +229,7 @@ def get_flaky_run_reason(flaky_run_key):
     if not build_result.isResultFailure(result):
       continue
     step_name = step['name']
+    step_text = ' '.join(step['text'])
     # The following step failures are ignored:
     #  - steps: always red when any other step is red (not actual failure)
     #  - [swarming] ...: summary step would also be red (do not double count)
@@ -240,11 +241,13 @@ def get_flaky_run_reason(flaky_run_key):
     #    they check CQ checkbox, but the patch does not cleanly apply anymore.
     #  - bot_update PATCH FAILED: Corresponds to 'Patch failure' step.
     #  - test results: always red when another step is red (not actual failure)
+    #  - Uncaught Exception: summary step referring to an exception in another
+    #    step (e.g. bot_update)
     if (step_name == 'steps' or step_name.startswith('[swarming]') or
         step_name == 'presubmit' or step_name == 'recipe failure reason' or
         (step_name == 'Patch failure' and success_time < failure_time) or
-        (step_name == 'bot_update' and 'PATCH FAILED' in step['text']) or
-        step_name == 'test results'):
+        (step_name == 'bot_update' and 'PATCH FAILED' in step_text) or
+        step_name == 'test results' or step_name == 'Uncaught Exception'):
       continue
     failed_steps.append(step)
 

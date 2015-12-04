@@ -57,12 +57,19 @@ class ProcessIssue(webapp2.RequestHandler):
             flaky_run.failure_run_time_finished).total_seconds()
 
   @ndb.non_transactional
+  def _is_same_day(self, flaky_run):
+    time_since_finishing = (
+        datetime.datetime.utcnow() - flaky_run.failure_run_time_finished)
+    return time_since_finishing <= datetime.timedelta(days=1)
+
+  @ndb.non_transactional
   def _get_flaky_runs(self, flake):
     num_runs = min(len(flake.occurrences) - flake.num_reported_flaky_runs,
                    MAX_FLAKY_RUNS_PER_UPDATE)
     flaky_runs = ndb.get_multi(flake.occurrences[-num_runs:])
     return [flaky_run for flaky_run in flaky_runs
-            if self._time_difference(flaky_run) <= MAX_TIME_DIFFERENCE_SECONDS]
+            if self._is_same_day(flaky_run) and
+            self._time_difference(flaky_run) <= MAX_TIME_DIFFERENCE_SECONDS]
 
   @ndb.non_transactional
   def _format_flaky_runs_msg(self, test_name, new_flaky_runs):

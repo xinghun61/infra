@@ -54,6 +54,8 @@ TEST_BUILDBOT_JSON_REPLY = json.dumps({
     {'results': [2], 'name': 'presubmit', 'text': ['bar12']},
     {'results': [2], 'name': 'recipe failure reason', 'text': ['bar12a']},
     {'results': [2], 'name': 'test results', 'text': ['bar12b']},
+    {'results': [2], 'name': 'Uncaught Exception', 'text': ['bar12c']},
+    {'results': [2], 'name': 'bot_update', 'text': ['bot_update PATCH FAILED']},
 
     # Only count first step (with patch) and ignore summary step.
     {'results': [2], 'name': 'foo8 (with patch)', 'text': ['bar13']},
