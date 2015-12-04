@@ -10,6 +10,7 @@ from google.appengine.ext import ndb
 from model import wf_analysis_status
 from model.wf_try_job import WfTryJob
 from waterfall import try_job_pipeline
+from waterfall import waterfall_config
 
 TRY_JOB_PIPELINE_QUEUE_NAME = 'try-job-queue'
 
@@ -73,15 +74,21 @@ def _NeedANewTryJob(
   return need_new_try_job, failure_result_map
 
 
-
 def ScheduleTryJobIfNeeded(
     master_name, builder_name, build_number, failed_steps, revisions):
+  tryserver_mastername, tryserver_buildername = (
+      waterfall_config.GetTrybotForWaterfallBuilder(master_name, builder_name))
+  if not tryserver_mastername or not tryserver_buildername:
+    return {}
+
   need_new_try_job, failure_result_map =_NeedANewTryJob(
       master_name, builder_name, build_number, failed_steps)
+
   if need_new_try_job:
     new_try_job_pipeline = try_job_pipeline.TryJobPipeline(
         master_name, builder_name, build_number, revisions)
     new_try_job_pipeline.target = (
         '%s.build-failure-analysis' % modules.get_current_version_name())
     new_try_job_pipeline.start(TRY_JOB_PIPELINE_QUEUE_NAME)
+
   return failure_result_map

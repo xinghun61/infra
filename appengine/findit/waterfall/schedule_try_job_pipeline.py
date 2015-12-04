@@ -33,4 +33,4 @@ class ScheduleTryJobPipeline(BasePipeline):
     if error:  # pragma: no cover
       raise pipeline.Retry(
           'Error "%s" orrurs. Reason: "%s"' % (error.message, error.reason))
-    return [build.id]
+    return build.id

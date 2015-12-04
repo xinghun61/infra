@@ -32,7 +32,7 @@ class VersionedModel(ndb.Model):
 
   @property
   def version(self):
-    return self.key.integer_id()
+    return self.key.integer_id() if self.key else 0
 
   @classmethod
   def GetMostRecentVersion(cls):

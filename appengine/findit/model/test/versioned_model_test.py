@@ -21,6 +21,10 @@ class VersionedModelTest(testing.AppengineTestCase):
     self.assertTrue(issubclass(root_model_class, ndb.Model))
     self.assertEqual(3, root_model_class(current=3).current)
 
+  def testDefaultVersionIsZero(self):
+    entity = _Entity()
+    self.assertEqual(0, entity.version)
+
   def testGetMostRecentVersionWhenNoData(self):
     entity = _Entity.GetMostRecentVersion()
     self.assertIsNone(entity)

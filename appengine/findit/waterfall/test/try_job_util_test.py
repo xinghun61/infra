@@ -10,6 +10,7 @@ from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
 from model.wf_try_job import WfTryJob
 from waterfall import try_job_util
+from waterfall import waterfall_config
 
 
 class _MockRootPipeline(object):
@@ -23,7 +24,45 @@ class _MockRootPipeline(object):
 
 
 class TryJobUtilTest(testing.AppengineTestCase):
-  def testNotNeedANewTryJob(self):
+
+  def setUp(self):
+    super(TryJobUtilTest, self).setUp()
+
+    def Mocked_GetTrybotForWaterfallBuilder(*_):
+      return 'tryserver.master', 'tryserver.builder'
+    self.mock(waterfall_config, 'GetTrybotForWaterfallBuilder',
+              Mocked_GetTrybotForWaterfallBuilder)
+
+  def testNotNeedANewTryJobIfBuilderIsNotSupportedYet(self):
+    def Mocked_GetTrybotForWaterfallBuilder(*_):
+      return None, None
+    self.mock(waterfall_config, 'GetTrybotForWaterfallBuilder',
+              Mocked_GetTrybotForWaterfallBuilder)
+
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    revisions = ['rev1', 'rev2']
+    failed_steps = {
+        'compile': {
+            'current_failure': 221,
+            'first_failure': 221,
+            'last_pass': 220
+        }
+    }
+
+    self.mock(
+        try_job_util.try_job_pipeline, 'TryJobPipeline', _MockRootPipeline)
+    _MockRootPipeline.STARTED = False
+
+    failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
+        master_name, builder_name, build_number, failed_steps,
+        revisions)
+
+    self.assertFalse(_MockRootPipeline.STARTED)
+    self.assertEqual({}, failure_result_map)
+
+  def testNotNeedANewTryJobIfNotFirstTimeFailure(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -35,9 +74,6 @@ class TryJobUtilTest(testing.AppengineTestCase):
             'last_pass': 220
         }
     }
-
-    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.put()
 
     self.mock(
         try_job_util.try_job_pipeline, 'TryJobPipeline', _MockRootPipeline)
@@ -61,9 +97,6 @@ class TryJobUtilTest(testing.AppengineTestCase):
         }
     }
 
-    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.put()
-
     new_try_job_needed, failure_result_map = try_job_util._NeedANewTryJob(
         master_name, builder_name, build_number, failed_steps)
 
@@ -82,8 +115,6 @@ class TryJobUtilTest(testing.AppengineTestCase):
         }
     }
 
-    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.put()
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.result = [['rev', 'failed']]
     try_job.status = wf_analysis_status.ANALYZED
@@ -111,8 +142,6 @@ class TryJobUtilTest(testing.AppengineTestCase):
         }
     }
 
-    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.put()
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.status = wf_analysis_status.ERROR
     try_job.put()
@@ -138,9 +167,6 @@ class TryJobUtilTest(testing.AppengineTestCase):
             'last_pass': 222
         }
     }
-
-    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.put()
 
     self.mock(
         try_job_util.try_job_pipeline, 'TryJobPipeline', _MockRootPipeline)

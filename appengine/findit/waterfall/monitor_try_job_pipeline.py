@@ -25,7 +25,7 @@ class MonitorTryJobPipeline(BasePipeline):
     deadline = time.time() + timeout_seconds
 
     while True:
-      error, build = buildbucket_client.GetTryJobs(try_job_id)[0]
+      error, build = buildbucket_client.GetTryJobs([try_job_id])[0]
       if error:  # pragma: no cover
         try_job_result.status = wf_analysis_status.ERROR
         try_job_result.put()
@@ -55,7 +55,7 @@ class MonitorTryJobPipeline(BasePipeline):
           try_job_result.put()
         time.sleep(60)
       if time.time() > deadline:  # pragma: no cover
-        logging.error('Try job %s timed out.' % try_job_id[0])
+        logging.error('Try job %s timed out.', try_job_id)
         try_job_result.status = wf_analysis_status.ERROR
         try_job_result.put()
         return None

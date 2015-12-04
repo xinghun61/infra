@@ -48,7 +48,7 @@ class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
     self._Mock_TriggerTryJobs(responses)
 
     try_job_pipeline = ScheduleTryJobPipeline()
-    try_job_ids = try_job_pipeline.run(
+    try_job_id = try_job_pipeline.run(
         master_name, builder_name, revisions)
 
-    self.assertEqual(['1'], try_job_ids)
+    self.assertEqual('1', try_job_id)
