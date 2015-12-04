@@ -19,7 +19,7 @@ class _MockRootPipeline(object):
   def __init__(self, *_):
     pass
 
-  def start(self, _):
+  def start(self, *_, **__):
     _MockRootPipeline.STARTED = True
 
 

@@ -89,6 +89,6 @@ def ScheduleTryJobIfNeeded(
         master_name, builder_name, build_number, revisions)
     new_try_job_pipeline.target = (
         '%s.build-failure-analysis' % modules.get_current_version_name())
-    new_try_job_pipeline.start(TRY_JOB_PIPELINE_QUEUE_NAME)
+    new_try_job_pipeline.start(queue_name=TRY_JOB_PIPELINE_QUEUE_NAME)
 
   return failure_result_map
