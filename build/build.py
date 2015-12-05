@@ -178,11 +178,14 @@ def read_yaml(py_venv, path):
   else:
     python_venv_path = ('bin', 'python')
   executable = os.path.join(py_venv, *python_venv_path)
+  env = os.environ.copy()
+  env.pop('PYTHONPATH', None)
   proc = subprocess.Popen(
       [executable, '-c', oneliner],
       executable=executable,
       stdin=subprocess.PIPE,
-      stdout=subprocess.PIPE)
+      stdout=subprocess.PIPE,
+      env=env)
   with open(path, 'r') as f:
     out, _ = proc.communicate(f.read())
   if proc.returncode:
