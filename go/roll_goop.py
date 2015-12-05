@@ -23,9 +23,7 @@ GO_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 # These packages must not be moved due to breaking changes.
-MUST_BE_PINNED = [
-  'github.com/op/go-logging', # https://github.com/op/go-logging/issues/69
-]
+MUST_BE_PINNED = []
 
 
 def parse_goop_line(line):
