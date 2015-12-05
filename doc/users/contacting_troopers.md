@@ -1,6 +1,6 @@
 # Contacting troopers
 
-[go/bug-a-trooper]
+[g.co/bugatrooper]
 
 Have an issue with a piece of build infrastructure?
 Our troopers are here to help.
