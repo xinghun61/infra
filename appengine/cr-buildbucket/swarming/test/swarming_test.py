@@ -17,11 +17,11 @@ from webob import exc
 import mock
 import webapp2
 
+from swarming import swarming
 from proto import project_config_pb2
 import config
 import errors
 import model
-import swarming
 
 
 def futuristic(result):
@@ -33,17 +33,27 @@ def futuristic(result):
 class SwarmingTest(testing.AppengineTestCase):
   def setUp(self):
     super(SwarmingTest, self).setUp()
+    self.mock(utils, 'utcnow', lambda: datetime.datetime(2015, 11, 30))
     bucket_cfg = project_config_pb2.Bucket(
       name='bucket',
       swarming=project_config_pb2.Swarming(
         hostname='chromium-swarm.appspot.com',
         url_format='https://example.com/{swarming_hostname}/{task_id}',
         common_swarming_tags=['commontag:yes'],
+        common_dimensions=[
+          project_config_pb2.Swarming.Dimension(key='cores', value='8'),
+        ],
         builders=[
           project_config_pb2.Swarming.Builder(
             name='builder',
             swarming_tags=['buildertag:yes'],
-            recipe=project_config_pb2.Swarming.Recipe(name='recipe'),
+            dimensions=[
+              project_config_pb2.Swarming.Dimension(key='os', value='Linux'),
+            ],
+            recipe=project_config_pb2.Swarming.Recipe(
+              repository='https://example.com/repo',
+              name='recipe',
+            ),
             priority=108,
           ),
         ],
@@ -62,10 +72,9 @@ class SwarmingTest(testing.AppengineTestCase):
           'namespace': 'default-gzip',
           'isolated': 'cbacbdcbabcd'
         },
-        'extra_args': ['$recipe'],
-
-        'numerical_value_for_coverage_in_transform': 42,
+        'extra_args': ['$recipe in $repository @ $revision'],
       },
+      'numerical_value_for_coverage_in_format_obj': 42,
     }
     self.mock(config_component, 'get_self_config_async', mock.Mock())
     config_component.get_self_config_async.return_value = (
@@ -92,35 +101,117 @@ class SwarmingTest(testing.AppengineTestCase):
       (None, None))
     self.assertFalse(swarming.is_for_swarming_async(build).get_result())
 
+  def test_validate_swarming_param(self):
+    swarming.validate_swarming_param(None)
+    swarming.validate_swarming_param({})
+    swarming.validate_swarming_param({'recipe': {}})
+    swarming.validate_swarming_param({'recipe': {'revision': 'deadbeef'}})
+
+    bad = [
+      [],
+      {'junk': 1},
+      {'recipe': []},
+      {'recipe': {'junk': 1}},
+      {'recipe': {'revision': 1}},
+    ]
+    for p in bad:
+      with self.assertRaises(errors.InvalidInputError):
+        swarming.validate_swarming_param(p)
+
   def test_create_task_async(self):
+    build = model.Build(
+      bucket='bucket',
+      tags=['builder:builder'],
+      parameters={
+        'builder_name': 'builder',
+        'swarming': {
+          'recipe': {'revision': 'badcoffee'},
+        },
+      },
+    )
+
     self.mock(net, 'json_request_async', mock.Mock(return_value=futuristic({
       'task_id': 'deadbeef',
       'request': {
+        'properties': {
+          'dimensions': [
+            {'key': 'cores', 'value': '8'},
+            {'key': 'os', 'value': 'Linux'},
+          ],
+        },
         'tags': [
           'builder:builder',
-          'master:master.bucket',
-          'commontag:yes',
           'buildertag:yes',
-          'priority:108'
+          'commontag:yes',
+          'master:master.bucket',
+          'priority:108',
+          'recipe_name:recipe',
+          'recipe_repository:https://example.com/repo',
+          'recipe_revision:badcoffee',
         ]
       }
     })))
 
-    build = model.Build(
-      bucket='bucket',
-      parameters={'builder_name': 'builder'},
-    )
     swarming.create_task_async(build).get_result()
 
+    # Test swarming request.
     self.assertEqual(
       net.json_request_async.call_args[0][0],
       'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new')
+    actual_task_def = net.json_request_async.call_args[1]['payload']
+    del actual_task_def['pubsub_auth_token']
+    self.maxDiff =24566
+    expected_task_def = {
+      'name': 'buildbucket-bucket-builder',
+      'priority': 108,
+      'expiration_secs': '3600',
+      'tags': [
+        'buildbucket_bucket:bucket',
+        'buildbucket_hostname:None',
+        'builder:builder',
+        'buildertag:yes',
+        'commontag:yes',
+        'recipe_name:recipe',
+        'recipe_repository:https://example.com/repo',
+        'recipe_revision:badcoffee',
+      ],
+      'properties': {
+        'execution_timeout_secs': '3600',
+        'inputs_ref': {
+          'isolatedserver': 'https://isolateserver.appspot.com',
+          'namespace': 'default-gzip',
+          'isolated': 'cbacbdcbabcd'
+        },
+        'extra_args': ['recipe in https://example.com/repo @ badcoffee'],
+        'dimensions': [
+          {'key': 'cores', 'value': '8'},
+          {'key': 'os', 'value': 'Linux'},
+        ],
+      },
+      'pubsub_topic': 'projects/testbed-test/topics/swarming',
+      'pubsub_userdata': json.dumps({
+        'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
+        'swarming_hostname': 'chromium-swarm.appspot.com',
+      }, sort_keys=True),
+      'numerical_value_for_coverage_in_format_obj': 42,
+    }
+    self.assertEqual(actual_task_def, expected_task_def)
 
-    self.assertIn('swarming_hostname:chromium-swarm.appspot.com', build.tags)
-    self.assertIn('swarming_task_id:deadbeef', build.tags)
-    self.assertIn('swarming_tag:commontag:yes', build.tags)
-    self.assertIn('swarming_tag:buildertag:yes', build.tags)
-    self.assertIn('swarming_tag:priority:108', build.tags)
+    self.assertEqual(set(build.tags), {
+      'builder:builder',
+      'swarming_dimension:cores:8',
+      'swarming_dimension:os:Linux',
+      'swarming_hostname:chromium-swarm.appspot.com',
+      'swarming_tag:builder:builder',
+      'swarming_tag:buildertag:yes',
+      'swarming_tag:commontag:yes',
+      'swarming_tag:master:master.bucket',
+      'swarming_tag:priority:108',
+      'swarming_tag:recipe_name:recipe',
+      'swarming_tag:recipe_repository:https://example.com/repo',
+      'swarming_tag:recipe_revision:badcoffee',
+      'swarming_task_id:deadbeef',
+    })
     self.assertEqual(
       build.url, 'https://example.com/chromium-swarm.appspot.com/deadbeef')
 

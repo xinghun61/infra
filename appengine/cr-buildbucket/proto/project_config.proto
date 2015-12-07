@@ -31,8 +31,15 @@ message Acl {
 // Configuration of buildbucket-swarming integration for one bucket.
 message Swarming {
   message Recipe {
+    // Repository URL of the recipe package.
+    optional string repository = 1;
     // Name of the recipe to run.
-    optional string name = 1;
+    optional string name = 2;
+  }
+
+  message Dimension {
+    optional string key = 1;
+    optional string value = 2;
   }
 
   message Builder {
@@ -42,10 +49,11 @@ message Swarming {
     // Each tag will end up in "swarming_tag" buildbucket tag, for example
     // "swarming_tag:builder:release"
     repeated string swarming_tags = 2;
+    repeated Dimension dimensions = 3;
     // Specifies that a recipe to run.
-    optional Recipe recipe = 3;
+    optional Recipe recipe = 4;
     // Swarming task priority.
-    optional int32 priority = 4;
+    optional int32 priority = 5;
   }
 
   // Hostname of the swarming instance, e.g. "chromium-swarm.appspot.com".
@@ -58,10 +66,13 @@ message Swarming {
   // Will be put to all swarming tasks.
   repeated string common_swarming_tags = 3;
 
+  // Will be put to all swarming tasks.
+  repeated Dimension common_dimensions = 4;
+
   // Configuration for each builder.
   // Swarming tasks are created only for builds for builders that are not
   // explicitly specified.
-  repeated Builder builders = 4;
+  repeated Builder builders = 5;
 }
 
 // Defines one bucket in buildbucket.cfg

@@ -9,7 +9,13 @@ is mapped to a recipe. If build is scheduled for a bucket/builder
 with swarming configuration, the integration overrides the default behavior.
 
 Prior adding Build to the datastore, a swarming task is created. The definition
-of the task is computed by merging global and build-specific config values.
+of the task definition is rendered from a global template. The parameters of the
+template are defined by the bucket config and build parameters.
+
+A build may have "swarming" parameter which is a JSON object with keys:
+  recipe: JSON object
+    revision: revision of the recipe. Will be available in the task template
+              as $revision parameter.
 
 When creating a task, a PubSub topic is specified. Swarming will notify on
 task status updates to the topic and buildbucket will sync its state.
@@ -20,6 +26,7 @@ that checks task results of all incomplete builds every 10 min.
 """
 
 import base64
+import copy
 import datetime
 import json
 import logging
@@ -86,15 +93,60 @@ def is_for_swarming_async(build):
   raise ndb.Return(result)
 
 
+def validate_swarming_param(swarming):
+  """Raises errors.InvalidInputError if |swarming| build parameter is invalid.
+  """
+  if swarming is None:
+    return
+  if not isinstance(swarming, dict):
+    raise errors.InvalidInputError('swarming param must be an object')
+
+  swarming = copy.deepcopy(swarming)
+  if 'recipe' in swarming:
+    recipe = swarming.pop('recipe')
+    if not isinstance(recipe, dict):
+      raise errors.InvalidInputError('swarming.recipe param must be an object')
+    if 'revision' in recipe:
+      revision = recipe.pop('revision')
+      if not isinstance(revision, basestring):
+        raise errors.InvalidInputError(
+          'swarming.recipe.revision must be a string')
+    if recipe:
+      raise errors.InvalidInputError(
+        'Unrecognized keys in swarming.recipe: %r' % recipe)
+
+  if swarming:
+    raise errors.InvalidInputError('Unrecognized keys: %r', swarming)
+
+
 @ndb.tasklet
 def create_task_def_async(swarming_cfg, builder_cfg, build):
-  """Creates a swarming task definition for the |build|."""
+  """Creates a swarming task definition for the |build|.
+
+  Raises:
+    errors.InvalidInputError if build.parameters['swarming'] is invalid.
+  """
+  swarming_param = build.parameters.get('swarming') or {}
+  validate_swarming_param(swarming_param)
+
+  # Render task template.
   task_template = yield get_task_template_async()
-  task = format_obj(task_template, {
+  task_template_params = {
     'bucket': build.bucket,
     'builder': builder_cfg.name,
-    'recipe': builder_cfg.recipe.name if builder_cfg.recipe else '',
-  })
+  }
+  is_recipe = builder_cfg.HasField('recipe')
+  if is_recipe:  # pragma: no branch
+    recipe = builder_cfg.recipe
+    revision = swarming_param.get('recipe', {}).get('revision') or ''
+    task_template_params.update({
+      'repository': recipe.repository,
+      'revision': revision,
+      'recipe': recipe.name,
+    })
+  task_template_params = {
+    k: v or '' for k, v in task_template_params.iteritems()}
+  task = format_obj(task_template, task_template_params)
 
   if builder_cfg.priority > 0:  # pragma: no branch
     task['priority'] = builder_cfg.priority
@@ -104,11 +156,20 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
     'buildbucket_hostname:%s' % app_identity.get_default_version_hostname(),
     'buildbucket_bucket:%s' % build.bucket,
   ])
-  if builder_cfg.recipe:  # pragma: no branch
-    _extend_unique(tags, ['recipe:%s' % builder_cfg.recipe.name])
+  if is_recipe:  # pragma: no branch
+    _extend_unique(tags, [
+      'recipe_repository:%s' % recipe.repository,
+      'recipe_revision:%s' % revision,
+      'recipe_name:%s' % recipe.name,
+    ])
   _extend_unique(tags, swarming_cfg.common_swarming_tags)
   _extend_unique(tags, builder_cfg.swarming_tags)
   _extend_unique(tags, build.tags)
+  tags.sort()
+
+  dimensions = task.setdefault('properties', {}).setdefault('dimensions', [])
+  for ds in (swarming_cfg.common_dimensions, builder_cfg.dimensions):
+    _extend_unique(dimensions, [{'key': d.key, 'value': d.value} for d in ds])
 
   task['pubsub_topic'] = (
     'projects/%s/topics/%s' %
@@ -117,7 +178,7 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
   task['pubsub_userdata'] = json.dumps({
     'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
     'swarming_hostname': swarming_cfg.hostname,
-  })
+  }, sort_keys=True)
   raise ndb.Return(task)
 
 
@@ -152,9 +213,11 @@ def create_task_async(build):
     'swarming_hostname:%s' % bucket_cfg.swarming.hostname,
     'swarming_task_id:%s' % task_id,
   ])
-  for t in res.get('request', {}).get('tags', []):
-    if t not in build.tags:  # pragma: no branch
-      build.tags.append('swarming_tag:%s' % t)
+  task_req = res.get('request', {})
+  for t in task_req.get('tags', []):
+    build.tags.append('swarming_tag:%s' % t)
+  for d in task_req.get('properties', {}).get('dimensions', []):
+    build.tags.append('swarming_dimension:%s:%s' % (d['key'], d['value']))
 
   # Mark the build as leased.
   assert 'expiration_secs' in task, task
@@ -252,6 +315,7 @@ def _update_build(build, result):
       }
     }
   return True
+
 
 class SubNotify(webapp2.RequestHandler):
   """Handles PubSub messages from swarming."""

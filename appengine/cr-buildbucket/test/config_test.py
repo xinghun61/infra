@@ -437,58 +437,6 @@ class ConfigTest(testing.AppengineTestCase):
       ]
     )
 
-  def test_validate_swarming(self):
-    cfg = project_config_pb2.BuildbucketCfg(
-      buckets=[
-        project_config_pb2.Bucket(
-          name='a',
-          swarming=project_config_pb2.Swarming(
-            hostname='chromium-swam.appspot.com',
-            common_swarming_tags=['master:master.a'],
-            builders=[
-              project_config_pb2.Swarming.Builder(
-                name='release',
-                swarming_tags=['builder:release'],
-                recipe=project_config_pb2.Swarming.Recipe(
-                  name='foo')
-              ),
-            ],
-          )),
-        project_config_pb2.Bucket(
-          name='b',
-          swarming=project_config_pb2.Swarming()),
-        project_config_pb2.Bucket(
-          name='c',
-          swarming=project_config_pb2.Swarming(
-            common_swarming_tags=['wrong'],
-            builders=[
-              project_config_pb2.Swarming.Builder(
-                swarming_tags=['wrong2'],
-              ),
-              project_config_pb2.Swarming.Builder(
-                name='b2',
-                recipe=project_config_pb2.Swarming.Recipe(),
-                priority=-1,
-              ),
-            ],
-          )),
-        project_config_pb2.Bucket(name='d'),
-      ],
-    )
-    errors = [
-      'Bucket b: swarming: hostname unspecified',
-      'Bucket c: swarming: hostname unspecified',
-      'Bucket c: swarming: common tag #1: does not have ":": wrong',
-      'Bucket c: swarming: builder #1: name unspecified',
-      ('Bucket c: swarming: builder #1: tag #1: '
-       'does not have ":": wrong2'),
-      'Bucket c: swarming: builder #1: recipe unspecified',
-      'Bucket c: swarming: builder b2: recipe name unspecified',
-      ('Bucket c: swarming: builder b2: '
-       'priority must be in [0, 200] range; got -1'),
-    ]
-    self.cfg_validation_test(cfg, map(errmsg, errors))
-
 
 def errmsg(text):
   return validation_context.Message(severity=logging.ERROR, text=text)
