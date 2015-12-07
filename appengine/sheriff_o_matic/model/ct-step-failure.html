@@ -43,7 +43,7 @@ CTStepFailure.prototype.flakinessDashboardURL = function() {
   if (testType == 'webkit_tests')
       testType = 'layout-tests';
 
-  return 'http://test-results.appspot.com/dashboards/flakiness_dashboard.html#' +
+  return 'https://test-results.appspot.com/dashboards/flakiness_dashboard.html#' +
     Object.toQueryString({
       tests: this.testName,
       testType: testType,
