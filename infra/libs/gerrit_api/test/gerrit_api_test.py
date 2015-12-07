@@ -315,8 +315,9 @@ class GerritAgentTestCase(unittest.TestCase):
   def test_query(self, mock_method):
     mock_method.return_value = _create_mock_return(
         '%s%s' % (GERRIT_JSON_HEADER, json.dumps([TEST_CHANGE_INFO])), 200)
-    result = self.gerrit.query(project='test', with_labels=False,
-                                with_revisions=False, owner='test@chromium.org')
+    result = self.gerrit.query(project='test',
+                               with_labels=False, with_revisions=False,
+                               owner='test@chromium.org')
     mock_method.assert_called_once_with(
         data=None,
         method='GET',
@@ -335,7 +336,7 @@ class GerritAgentTestCase(unittest.TestCase):
         data=None,
         method='GET',
         params={'q':'project:test query:pending_cls owner:1012155',
-                'o': ['MESSAGES', 'LABELS', 'ALL_REVISIONS']},
+                'o': ['MESSAGES', 'LABELS', 'CURRENT_REVISION']},
         url='https://chromium-review.googlesource.com/a/changes/',
         headers=HEADERS)
     self.assertEquals(result, [TEST_CHANGE_INFO])
