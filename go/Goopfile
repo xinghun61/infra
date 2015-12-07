@@ -2,7 +2,7 @@ github.com/coreos/etcd #5a4a5998a3f73e53d6acc525fe5743fe30e1373d !https://chromi
 github.com/dustin/go-humanize #8929fe90cee4b2cb9deb468b51fb34eba64d1bf0 !https://chromium.googlesource.com/external/github.com/dustin/go-humanize.git
 github.com/golang/glog #fca8c8854093a154ff1eb580aae10276ad6b1b5f !https://chromium.googlesource.com/external/github.com/golang/glog.git
 github.com/golang/lint #32a87160691b3c96046c0c678fe57c5bef761456 !https://chromium.googlesource.com/external/github.com/golang/lint.git
-github.com/golang/protobuf #087949061006daa57b3a3be58d77092cf65f6cf7 !https://chromium.googlesource.com/external/github.com/golang/protobuf.git
+github.com/golang/protobuf #221834dcb89c96e4b057ed8bb878bfe569dfacf4 !https://chromium.googlesource.com/external/github.com/golang/protobuf.git
 github.com/google/google-api-go-client/google-api-go-generator #ece7143efeb53ec1839b960a0849db4e57d3cfa2 !https://code.googlesource.com/google-api-go-client.git
 github.com/GoogleCloudPlatform/go-endpoints/endpoints #30cbe84e0d7ff4253cd6f89c39a53d3e60b98088 !https://chromium.googlesource.com/external/github.com/GoogleCloudPlatform/go-endpoints.git
 github.com/gorhill/cronexpr #a557574d6c024ed6e36acc8b610f5f211c91568a !https://chromium.googlesource.com/external/github.com/gorhill/cronexpr.git
