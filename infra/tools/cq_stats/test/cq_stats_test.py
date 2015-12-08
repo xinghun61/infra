@@ -416,7 +416,7 @@ class TestCQStats(auto_stub.TestCase):
   def test_derive_patch_stats(self):
     time_obj = {'time': 1415150492.4}
     def attempt(message, commit=False, supported=True, reason='', retry=False,
-                verifier_pass=True, files=None):
+                verifier_pass=True, files=None, job_updates=None):
       time_obj['time'] += 1.37  # Trick python to use global var.
       entries = []
       entries.append({'fields': {'action': 'patch_start', 'files': files},
@@ -425,6 +425,13 @@ class TestCQStats(auto_stub.TestCase):
       if not supported:
         entries.append({'fields': {'action': 'verifier_custom_trybots'},
                         'timestamp': time_obj['time']})
+      time_obj['time'] += 1.37
+      if job_updates:
+        for update in job_updates:
+          entries.append({
+              'fields': {'action': 'verifier_jobs_update', 'jobs': update},
+              'timestamp': time_obj['time']
+          })
       time_obj['time'] += 1.37
       if retry:
         entries.append({'fields': {'action': 'verifier_retry'},
@@ -467,6 +474,12 @@ class TestCQStats(auto_stub.TestCase):
         # This also checks for the combination of failed-jobs and no
         # failed jobs list supplied.
         attempt('Custom trybots', supported=False, reason='failed-jobs'),
+        attempt('job timeout', job_updates=[{'JOB_TIMED_OUT': [{}]}]),
+        attempt('job failure', job_updates=[{'JOB_FAILED': [{'result': 2}]}]),
+        attempt('job failure reason', job_updates=[{'JOB_FAILED': [
+            {'result': 2, 'build_properties': {'failure_type': 'TEST_FAILURE'}}
+        ]}]),
+        attempt('job exception', job_updates=[{'JOB_FAILED': [{'result': 4}]}]),
         attempt('Retrying', retry=True),
         attempt('CLs for remote refs other than refs/heads/master'),
         attempt('Try jobs failed:\n test_dbg', reason='failed-jobs',

@@ -11,6 +11,8 @@
   "  This includes:",
   "",
   "False Rejections:",
+  "   0 attempts (0.0% of 0 attempts) were false rejections in 0 committed patches",
+  "   0 attempts (0.0% of 0 attempts) were infra false rejections in 0 committed patches",
   "  False rejections include:",
   "  Other rejections in committed patches for valid reasons:",
   "",

@@ -30,6 +30,7 @@
   "failed-to-trigger": [],
   "failed-unknown": [],
   "false-rejections": [],
+  "infra-false-rejections": [],
   "invalid-delimiter": [],
   "issue-count": 0,
   "manual-cancel": [],

@@ -463,6 +463,7 @@ def default_stats():
       'attempt-reject-count': 0,  # Num. of rejected attempts
       'attempt-false-reject-count': 0,  # Num. of falsely rejected attempts
       'false-rejections': [],  # patches with falsely rejected attempts
+      'infra-false-rejections': [],
       'rejections': [],        # patches with rejected attempts
       'rejected-patches': set(),  # Patches that never committed
       'patchset-commit-count': 0,
@@ -576,6 +577,8 @@ def _derive_stats_from_patch_stats(stats):
       p for p in patch_stats if not patch_stats[p]['committed'])
   stats['false-rejections'] = stats_by_count(
       patch_stats, 'false-rejections', REASONS)
+  stats['infra-false-rejections'] = stats_by_count(
+      patch_stats, 'infra-false-rejections', REASONS)
   stats['rejections'] = stats_by_count(patch_stats, 'rejections', REASONS)
   for r in REASONS:
     stats[r] = stats_by_count(patch_stats, r, set(REASONS) - set([r]))
@@ -712,6 +715,7 @@ def derive_patch_stats(args, begin_date, end_date, patch_id):
         'tryjob-retries': 0,
         'global-retry-quota': 0,
         'supported': True,
+        'infra-failure': False,
     }
     for reason in REASONS:
       attempt_empty[reason] = False
@@ -835,6 +839,20 @@ def derive_patch_stats(args, begin_date, end_date, patch_id):
       attempt['global-retry-quota'] = max(
           attempt['global-retry-quota'],
           result['fields'].get('global_retry_quota', 0))
+    if action == 'verifier_jobs_update':
+      jobs = result['fields'].get('jobs', {})
+      if 'JOB_TIMED_OUT' in jobs:
+        attempt['infra-failure'] = True
+      for job in jobs.get('JOB_FAILED', []):
+        # Buildbot result code for non-infra failure is 2 (red). There's
+        # a different code for infra failures (exception, purple).
+        if job.get('result') != 2:
+          attempt['infra-failure'] = True
+
+        # Apply a conservative policy - if we can't attribute the failure
+        # to any other cause, assume it was caused by infra.
+        if 'failure_type' not in job.get('build_properties', {}):
+          attempt['infra-failure'] = True
 
   stats = {}
   committed_set = set(a['id'] for a in attempts if a['committed'])
@@ -842,6 +860,7 @@ def derive_patch_stats(args, begin_date, end_date, patch_id):
   stats['attempts'] = len(attempts)
   stats['rejections'] = stats['attempts'] - stats['committed']
   stats['supported'] = all(a['supported'] for a in attempts)
+  stats['infra-failure'] = any(a['infra-failure'] for a in attempts)
 
   logging.info('derive_patch_stats: %s has %d attempts, committed=%d',
                patch_url(patch_id), len(attempts), stats['committed'])
@@ -858,9 +877,15 @@ def derive_patch_stats(args, begin_date, end_date, patch_id):
   stats['failed-jobs-details'] = failing_builders
 
   stats['false-rejections'] = 0
+  stats['infra-false-rejections'] = 0
   if stats['committed']:
     stats['false-rejections'] = len(
-        set(a['id'] for a in attempts) - committed_set - valid_reasons_set)
+        set(a['id'] for a in attempts)
+        - committed_set - valid_reasons_set)
+    stats['infra-false-rejections'] = len(
+        set(a['id'] for a in attempts if a['infra-failure'])
+        - committed_set - valid_reasons_set)
+
   # Sum of attempt duration.
   stats['patchset-duration'] = sum(a['duration'] for a in attempts)
   if attempts:
@@ -1298,7 +1323,12 @@ def print_stats(args, stats):
   output('False Rejections:')
   if args.use_logs:
     print_attempt_counts(stats, 'false-rejections', 'were false rejections',
-                         item_name='flakes', committed=True)
+                         item_name='flakes', committed=True,
+                         print_zero=True)
+    print_attempt_counts(stats, 'infra-false-rejections',
+                         'were infra false rejections',
+                         item_name='infra-flakes', committed=True,
+                         print_zero=True)
   else:
     output(
         '  %4d attempts (%.1f%% of %d attempts) were false rejections',
