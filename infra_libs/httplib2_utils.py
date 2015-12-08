@@ -19,6 +19,9 @@ from infra_libs.ts_mon.common import http_metrics
 
 DEFAULT_SCOPES = ['email']
 
+# default timeout for http requests, in seconds
+DEFAULT_TIMEOUT = 30
+
 # This is part of the API.
 if sys.platform.startswith('win'): # pragma: no cover
   SERVICE_ACCOUNTS_CREDS_ROOT = 'C:\\creds\\service_accounts'
@@ -126,7 +129,7 @@ def get_authenticated_http(credentials_filename,
                            scope=None,
                            service_accounts_creds_root=None,
                            http_identifier=None,
-                           timeout=30):
+                           timeout=DEFAULT_TIMEOUT):
   """Creates an httplib2.Http wrapped with a service account authenticator.
 
   Args:
@@ -162,7 +165,8 @@ def get_authenticated_http(credentials_filename,
 class InstrumentedHttp(httplib2.Http):
   """A httplib2.Http object that reports ts_mon metrics about its requests."""
 
-  def __init__(self, name, time_fn=time.time, **kwargs):
+  def __init__(self, name, time_fn=time.time, timeout=DEFAULT_TIMEOUT,
+               **kwargs):
     """
     Args:
       name: An identifier for the HTTP requests made by this object.
@@ -170,7 +174,7 @@ class InstrumentedHttp(httplib2.Http):
         purposes only.
     """
 
-    super(InstrumentedHttp, self).__init__(**kwargs)
+    super(InstrumentedHttp, self).__init__(timeout=timeout, **kwargs)
     self.fields = {'name': name, 'client': 'httplib2'}
     self.time_fn = time_fn
 
