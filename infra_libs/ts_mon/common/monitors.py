@@ -64,6 +64,8 @@ class PubSubMonitor(Monitor):
       'https://www.googleapis.com/auth/pubsub',
   ]
 
+  TIMEOUT = 10  # seconds
+
   def _load_credentials(self, credentials_file_path):
     if credentials_file_path == GCE_CREDENTIALS:
       return gce.AppAssertionCredentials(self._SCOPES)
@@ -120,9 +122,10 @@ class PubSubMonitor(Monitor):
     self._api = None
     self._use_instrumented_http = use_instrumented_http
     if use_instrumented_http:
-      self._http = httplib2_utils.InstrumentedHttp('acq-mon-api-pubsub')
+      self._http = httplib2_utils.InstrumentedHttp(
+          'acq-mon-api-pubsub', timeout=self.TIMEOUT)
     else:
-      self._http = httplib2.Http()
+      self._http = httplib2.Http(timeout=self.TIMEOUT)
     self._credsfile = credsfile
     self._topic = 'projects/%s/topics/%s' % (project, topic)
     self._check_initialize()
