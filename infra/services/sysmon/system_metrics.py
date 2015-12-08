@@ -32,6 +32,8 @@ net_err_up = ts_mon.CounterMetric('dev/net/err/up', start_time=START_TIME)
 net_err_down = ts_mon.CounterMetric('dev/net/err/down', start_time=START_TIME)
 net_drop_up = ts_mon.CounterMetric('dev/net/drop/up', start_time=START_TIME)
 net_drop_down = ts_mon.CounterMetric('dev/net/drop/down', start_time=START_TIME)
+disk_read = ts_mon.CounterMetric('dev/disk/read', start_time=START_TIME)
+disk_write = ts_mon.CounterMetric('dev/disk/write', start_time=START_TIME)
 
 proc_count = ts_mon.GaugeMetric('dev/proc/count')
 
@@ -58,7 +60,7 @@ def get_disk_info(mountpoints=None):
     mountpoints = [disk.mountpoint for disk in psutil.disk_partitions()]
 
   for mountpoint in mountpoints:
-    labels = {'path': mountpoint}
+    fields = {'path': mountpoint}
 
     try:
       usage = psutil.disk_usage(mountpoint)
@@ -69,14 +71,19 @@ def get_disk_info(mountpoints=None):
         continue
       raise  # pragma: no cover
 
-    disk_free.set(usage.free, labels)
-    disk_total.set(usage.total, labels)
+    disk_free.set(usage.free, fields=fields)
+    disk_total.set(usage.total, fields=fields)
 
     # inode counts are only available on Unix.
     if os.name == 'posix':  # pragma: no cover
       stats = os.statvfs(mountpoint)
-      inodes_free.set(stats.f_favail, labels)
-      inodes_total.set(stats.f_files, labels)
+      inodes_free.set(stats.f_favail, fields=fields)
+      inodes_total.set(stats.f_files, fields=fields)
+
+  for disk, counters in psutil.disk_io_counters(perdisk=True).iteritems():
+    fields = {'disk': disk}
+    disk_read.set(counters.read_bytes, fields=fields)
+    disk_write.set(counters.write_bytes, fields=fields)
 
 
 def get_mem_info():
@@ -98,10 +105,10 @@ def get_net_info():
 
   nics = psutil.net_io_counters(pernic=True)
   for nic, counters in nics.iteritems():
-    labels = {'interface': nic}
+    fields = {'interface': nic}
     for metric, counter_name in metric_counter_names:
       try:
-        metric.set(getattr(counters, counter_name), labels)
+        metric.set(getattr(counters, counter_name), fields=fields)
       except ts_mon.MonitoringDecreasingValueError as ex:  # pragma: no cover
         # This normally shouldn't happen, but might if the network driver module
         # is reloaded, so log an error and continue instead of raising an
