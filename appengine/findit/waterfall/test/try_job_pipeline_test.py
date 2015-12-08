@@ -68,7 +68,8 @@ class TryJobPipelineTest(testing.AppengineTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
-    revisions = '[]'
+    good_revision = 'rev1'
+    bad_revision = 'rev2'
 
     responses = [
         {
@@ -94,7 +95,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
     try_job.put()
 
     root_pipeline = TryJobPipeline(
-        master_name, builder_name, build_number, revisions)
+        master_name, builder_name, build_number, good_revision, bad_revision)
     root_pipeline.start()
     self.execute_queued_tasks()
 

@@ -46,12 +46,29 @@ class TryJobUtilTest(testing.AppengineTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
-    revisions = ['rev1', 'rev2']
     failed_steps = {
         'compile': {
             'current_failure': 221,
             'first_failure': 221,
             'last_pass': 220
+        }
+    }
+    builds = {
+        220: {
+            'blame_list': ['220-1', '220-2'],
+            'chromium_revision': '220-2'
+        },
+        221: {
+            'blame_list': ['221-1', '221-2'],
+            'chromium_revision': '221-2'
+        },
+        222: {
+            'blame_list': ['222-1'],
+            'chromium_revision': '222-1'
+        },
+        223: {
+            'blame_list': ['223-1', '223-2', '223-3'],
+            'chromium_revision': '223-3'
         }
     }
 
@@ -61,7 +78,7 @@ class TryJobUtilTest(testing.AppengineTestCase):
 
     failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
         master_name, builder_name, build_number, failed_steps,
-        revisions)
+        builds)
 
     self.assertFalse(_MockRootPipeline.STARTED)
     self.assertEqual({}, failure_result_map)
@@ -70,12 +87,29 @@ class TryJobUtilTest(testing.AppengineTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
-    revisions = ['rev1', 'rev2']
     failed_steps = {
         'compile': {
             'current_failure': 223,
             'first_failure': 221,
             'last_pass': 220
+        }
+    }
+    builds = {
+        220: {
+            'blame_list': ['220-1', '220-2'],
+            'chromium_revision': '220-2'
+        },
+        221: {
+            'blame_list': ['221-1', '221-2'],
+            'chromium_revision': '221-2'
+        },
+        222: {
+            'blame_list': ['222-1'],
+            'chromium_revision': '222-1'
+        },
+        223: {
+            'blame_list': ['223-1', '223-2', '223-3'],
+            'chromium_revision': '223-3'
         }
     }
 
@@ -85,7 +119,7 @@ class TryJobUtilTest(testing.AppengineTestCase):
 
     try_job_util.ScheduleTryJobIfNeeded(
         master_name, builder_name, build_number, failed_steps,
-        revisions)
+        builds)
 
     self.assertFalse(_MockRootPipeline.STARTED)
 
@@ -101,11 +135,12 @@ class TryJobUtilTest(testing.AppengineTestCase):
         }
     }
 
-    new_try_job_needed, failure_result_map = try_job_util._NeedANewTryJob(
+    need_try_job, failure_result_map, last_pass = try_job_util._NeedANewTryJob(
         master_name, builder_name, build_number, failed_steps)
 
-    self.assertFalse(new_try_job_needed)
+    self.assertFalse(need_try_job)
     self.assertEqual({}, failure_result_map)
+    self.assertIsNone(last_pass)
 
   def testNotNeedANewTryJobIfOneWithResultExists(self):
     master_name = 'm'
@@ -115,7 +150,7 @@ class TryJobUtilTest(testing.AppengineTestCase):
         'compile': {
             'current_failure': 223,
             'first_failure': 223,
-            'last_pass': 222
+            'last_pass': 220
         }
     }
 
@@ -124,15 +159,16 @@ class TryJobUtilTest(testing.AppengineTestCase):
     try_job.status = wf_analysis_status.ANALYZED
     try_job.put()
 
-    new_try_job_needed, failure_result_map = try_job_util._NeedANewTryJob(
+    need_try_job, failure_result_map, last_pass = try_job_util._NeedANewTryJob(
         master_name, builder_name, build_number, failed_steps)
 
     expected_failure_result_map = {
         'compile': 'm/b/223'
     }
 
-    self.assertFalse(new_try_job_needed)
+    self.assertFalse(need_try_job)
     self.assertEqual(expected_failure_result_map, failure_result_map)
+    self.assertEqual(220, last_pass)
 
   def testNeedANewTryJobIfExistingOneHasError(self):
     master_name = 'm'
@@ -142,7 +178,7 @@ class TryJobUtilTest(testing.AppengineTestCase):
         'compile': {
             'current_failure': 223,
             'first_failure': 223,
-            'last_pass': 222
+            'last_pass': 220
         }
     }
 
@@ -150,25 +186,57 @@ class TryJobUtilTest(testing.AppengineTestCase):
     try_job.status = wf_analysis_status.ERROR
     try_job.put()
 
-    new_try_job_needed, failure_result_map = try_job_util._NeedANewTryJob(
+    need_try_job, failure_result_map, last_pass = try_job_util._NeedANewTryJob(
         master_name, builder_name, build_number, failed_steps)
 
     expected_failure_result_map = {
         'compile': 'm/b/223'
     }
-    self.assertTrue(new_try_job_needed)
+    self.assertTrue(need_try_job)
     self.assertEqual(expected_failure_result_map, failure_result_map)
+    self.assertEqual(220, last_pass)
+
+  def testNotNeedANewTryJobIfLastPassCannotDetermine(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    failed_steps = {
+        'compile': {
+            'current_failure': 223,
+            'first_failure': 223
+        }
+    }
+
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.status = wf_analysis_status.ERROR
+    try_job.put()
+
+    need_try_job, failure_result_map, last_pass = try_job_util._NeedANewTryJob(
+        master_name, builder_name, build_number, failed_steps)
+
+    self.assertFalse(need_try_job)
+    self.assertEqual({}, failure_result_map)
+    self.assertIsNone(last_pass)
 
   def testNeedANewTryJob(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
-    revisions = ['rev1', 'rev2']
     failed_steps = {
         'compile': {
             'current_failure': 223,
             'first_failure': 223,
             'last_pass': 222
+        }
+    }
+    builds = {
+        222: {
+            'blame_list': ['222-1'],
+            'chromium_revision': '222-1'
+        },
+        223: {
+            'blame_list': ['223-1', '223-2', '223-3'],
+            'chromium_revision': '223-3'
         }
     }
 
@@ -178,7 +246,7 @@ class TryJobUtilTest(testing.AppengineTestCase):
 
     try_job_util.ScheduleTryJobIfNeeded(
         master_name, builder_name, build_number, failed_steps,
-        revisions)
+        builds)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
 

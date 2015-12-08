@@ -33,7 +33,8 @@ class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
   def testSuccessfullyScheduleNewTryJob(self):
     master_name = 'm'
     builder_name = 'b'
-    revisions = '[]'
+    good_revision = 'rev1'
+    bad_revision = 'rev2'
 
     responses = [
         {
@@ -49,6 +50,6 @@ class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
 
     try_job_pipeline = ScheduleTryJobPipeline()
     try_job_id = try_job_pipeline.run(
-        master_name, builder_name, revisions)
+        master_name, builder_name, good_revision, bad_revision)
 
     self.assertEqual('1', try_job_id)

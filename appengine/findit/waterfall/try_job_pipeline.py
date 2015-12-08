@@ -10,8 +10,10 @@ from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 class TryJobPipeline(BasePipeline):
   """Root pipeline to start a tryjob on current build."""
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, revisions):
+  def run(
+      self, master_name, builder_name, build_number,
+      good_revision, bad_revision):
     tryjob_ids = yield ScheduleTryJobPipeline(
-        master_name, builder_name, revisions)
+        master_name, builder_name, good_revision, bad_revision)
     yield MonitorTryJobPipeline(
         master_name, builder_name, build_number, tryjob_ids)

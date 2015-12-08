@@ -451,9 +451,7 @@ class DetectFirstFailurePipeline(BasePipeline):
 
     # Starts a new try_job if needed.
     failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
-        master_name, builder_name, build_number,
-        failure_info['failed_steps'],
-        failure_info['builds'][build_number]['blame_list'])
+        master_name, builder_name, build_number, failed_steps, builds)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.not_passed_steps = build_info.not_passed_steps

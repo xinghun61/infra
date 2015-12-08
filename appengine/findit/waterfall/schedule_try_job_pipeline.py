@@ -15,14 +15,15 @@ class ScheduleTryJobPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(
-      self, master_name, builder_name, revisions):
+      self, master_name, builder_name, good_revision, bad_revision):
     tryserver_mastername, tryserver_buildername = (
         waterfall_config.GetTrybotForWaterfallBuilder(master_name, builder_name)
     )
     recipe = 'findit/chromium/compile'
     properties = {
         'recipe': recipe,
-        'root_solution_revisions': revisions,
+        'good_revision': good_revision,
+        'bad_revision': bad_revision,
         'target_mastername': master_name,
         'target_buildername': builder_name
     }
