@@ -17,11 +17,13 @@ DIRECTORIES = {
     ('/tmp', '*.log.*', None),
     ('/var/log/chrome-infra', '*.log.*', None),
     ('/home/chrome-bot/.config/chromium/Crash Reports', None, 10 * 3600),
+    ('/b/build/slave', 'twistd.log.*', None),
   ],
   'darwin': [
     ('/tmp', '*.log.*', None),
     ('/Users/chrome-bot/Library/Logs/CoreSimulator', None, None),
     ('/var/log/chrome-infra', '*.log.*', None),
+    ('/b/build/slave', 'twistd.log.*', None),
   ],
   'win32': [
     ('C:\\chrome-infra-logs', '*.log.*', None),
