@@ -104,3 +104,13 @@ class MonitoringNoConfiguredTargetError(MonitoringError):
 
   def __str__(self):
     return 'Metric "%s" was sent with no Target configured.' % (self.metric)
+
+
+class UnknownModificationTypeError(MonitoringError):
+  """Raised when using a Modification with an unknown type value."""
+
+  def __init__(self, mod_type):
+    self.mod_type = mod_type
+
+  def __str__(self):
+    return 'Unknown modification type "%s"' % self.mod_type

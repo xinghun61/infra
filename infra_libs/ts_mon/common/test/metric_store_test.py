@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import functools
+import operator
 import time
 import unittest
 
@@ -33,14 +34,17 @@ class MetricStoreTestBase(object):
     self.mock_time = mock.create_autospec(time.time, spec_set=True)
     self.mock_time.return_value = 1234
 
-    self.state = stubs.MockState(store_ctor=functools.partial(
-        self.METRIC_STORE_CLASS, time_fn=self.mock_time))
+    self.state = stubs.MockState(store_ctor=self.create_store)
     mock.patch('infra_libs.ts_mon.common.interface.state',
         new=self.state).start()
 
     self.store = self.state.store
 
     self.metric = metrics.Metric('foo')
+
+  def create_store(self, *args, **kwargs):
+    kwargs['time_fn'] = self.mock_time
+    return self.METRIC_STORE_CLASS(*args, **kwargs)
 
   def tearDown(self):
     super(MetricStoreTestBase, self).tearDown()
@@ -130,3 +134,52 @@ class MetricStoreTestBase(object):
 class InProcessMetricStoreTest(MetricStoreTestBase, unittest.TestCase):
   METRIC_STORE_CLASS = metric_store.InProcessMetricStore
 
+
+class CombineModificationsTest(unittest.TestCase):
+  def test_set_set(self):
+    self.assertEqual(
+        metric_store.Modification('two', (), 'set', (2, False)),
+        metric_store.combine_modifications(
+            metric_store.Modification('one', (), 'set', (1, False)),
+            metric_store.Modification('two', (), 'set', (2, False))))
+
+  def test_set_incr(self):
+    self.assertEqual(
+        metric_store.Modification('one', (), 'set', (3, False)),
+        metric_store.combine_modifications(
+            metric_store.Modification('one', (), 'set', (1, False)),
+            metric_store.Modification('two', (), 'incr', (2, operator.add))))
+
+  def test_incr_set(self):
+    self.assertEqual(
+        metric_store.Modification('two', (), 'set', (2, False)),
+        metric_store.combine_modifications(
+            metric_store.Modification('one', (), 'incr', (1, operator.add)),
+            metric_store.Modification('two', (), 'set', (2, False))))
+
+  def test_incr_incr(self):
+    self.assertEqual(
+        metric_store.Modification('one', (), 'incr', (3, operator.add)),
+        metric_store.combine_modifications(
+            metric_store.Modification('one', (), 'incr', (1, operator.add)),
+            metric_store.Modification('two', (), 'incr', (2, operator.add))))
+
+  def test_none_set(self):
+    self.assertEqual(
+        metric_store.Modification('two', (), 'set', (2, False)),
+        metric_store.combine_modifications(
+            None,
+            metric_store.Modification('two', (), 'set', (2, False))))
+
+  def test_none_incr(self):
+    self.assertEqual(
+        metric_store.Modification('two', (), 'incr', (2, operator.add)),
+        metric_store.combine_modifications(
+            None,
+            metric_store.Modification('two', (), 'incr', (2, operator.add))))
+
+  def test_bad_type(self):
+    with self.assertRaises(errors.UnknownModificationTypeError):
+      metric_store.combine_modifications(
+          metric_store.Modification('one', (), 'set', (1, False)),
+          metric_store.Modification('two', (), 'bad', (2, False)))

@@ -41,6 +41,8 @@ class MemcacheMetricStore(metric_store.MetricStore):
   SHARDS_PER_METRIC = 10
 
   METRICS_EXCLUDED_FROM_INDEX = (appengine_default_version,)
+  METRIC_NAMES_EXCLUDED_FROM_INDEX = set(
+      [x.name for x in METRICS_EXCLUDED_FROM_INDEX])
 
   def __init__(self, state, time_fn=None, report_module_versions=False):
     super(MemcacheMetricStore, self).__init__(state, time_fn=time_fn)
@@ -175,29 +177,77 @@ class MemcacheMetricStore(metric_store.MetricStore):
           yield (copy.copy(target), entities[metric_name].metric, start_time,
                  fields_values)
 
-  def _compare_and_set(self, metric, modify_fn, namespace):
+  def _apply_all(self, callables, arg):
+    ret = arg
+    for fn in callables:
+      ret = fn(ret)
+    return ret
+
+  def _compare_and_set(self, metric_modify_fns, namespace):
     client = self._client()
 
+    # Metrics that we haven't updated yet.  Metrics are removed from this dict
+    # when they're successfully updated - if there are any left they will be
+    # retried 10 times until everything has been updated.
+    # We might have more than one modify_fn for a metric if different field
+    # values were updated.
+    metrics = {}
+    remaining = collections.defaultdict(list)
+    for metric, modify_fns in metric_modify_fns:
+      metrics[metric.name] = metric
+      remaining[metric.name].append(modify_fns)
+
     for _ in xrange(self.CAS_RETRIES):
-      # Pick one of the shards to modify.
-      name = self._random_shard(metric)
+      keys = []
+      key_map = {}  # key -> metric name (for sharded metrics)
 
-      entry = client.get(name, for_cas=True, namespace=namespace)
-      if entry is None:
-        success = client.add(name, modify_fn(entry), namespace=namespace)
-      else:
-        success = client.cas(name, modify_fn(entry), namespace=namespace)
+      for name in remaining:
+        # Pick one of the shards to modify.
+        key = self._random_shard(metrics[name])
+        keys.append(key)
+        key_map[key] = name
 
-      if success:
+      # Get all existing entries.
+      cas_mapping = {}  # key -> new value (for existing entries)
+      add_mapping = {}  # key -> new value (for new entries)
+
+      entries = client.get_multi(keys, for_cas=True, namespace=namespace)
+      for key, entry in entries.iteritems():
+        cas_mapping[key] = self._apply_all(remaining[key_map[key]], entry)
+
+      for key in keys:
+        if key not in entries:
+          add_mapping[key] = self._apply_all(remaining[key_map[key]], None)
+
+      # Add entries that weren't present before.
+      failed_keys = []
+      if add_mapping:
+        failed_keys.extend(client.add_multi(add_mapping, namespace=namespace))
+
+      # Compare-and-set entries that were present before.
+      if cas_mapping:
+        failed_keys.extend(client.cas_multi(cas_mapping, namespace=namespace))
+
+      if not failed_keys:
         return
+
+      # Retry only failed keys.
+      still_remaining = {}
+      for failed_key in failed_keys:
+        name = key_map[failed_key]
+        still_remaining[name] = remaining[name]
+      remaining = still_remaining
     else:
       logging.warning(
-          'Memcache compare-and-set failed %d times for key %s in namespace %s',
-          self.CAS_RETRIES, name, namespace)
+          'Memcache compare-and-set failed %d times for keys %s in namespace %s',
+          self.CAS_RETRIES, remaining.keys(), namespace)
 
-  def _compare_and_set_metric(self, name, fields, modify_value_fn, delta):
-    if any(name == m.name for m in self.METRICS_EXCLUDED_FROM_INDEX):
-      raise errors.MonitoringError('Metric %s is magical, can\'t set it' % name)
+  def _create_modify_metric_fn(self, name, fields, modify_value_fn, delta):
+    """Returns a function that modifies a memcache row value.
+
+    Calls modify_value_fn(old_value, delta) and puts the result back in the
+    memcache row.
+    """
 
     def modify_fn(entry):
       if entry is None:
@@ -213,22 +263,52 @@ class MemcacheMetricStore(metric_store.MetricStore):
       values[fields] = modify_value_fn(values.get(fields, 0), delta)
 
       return entry
-    self._compare_and_set(
-        self._state.metrics[name], modify_fn, self._namespace_for_job())
+    return modify_fn
 
-  def set(self, name, fields, value, enforce_ge=False):
+  def _compare_and_set_metrics(self, modifications):
+    if any(name in self.METRIC_NAMES_EXCLUDED_FROM_INDEX
+           for name, fields, modify_value_fn, delta in modifications):
+      raise errors.MonitoringError('Metric is magical, can\'t set it')
+
+    metric_modify_fns = [
+        (self._state.metrics[name],
+         self._create_modify_metric_fn(name, fields, modify_value_fn, delta))
+        for name, fields, modify_value_fn, delta in modifications]
+    self._compare_and_set(metric_modify_fns, self._namespace_for_job())
+
+  def _create_set_value_fn(self, name, value, enforce_ge):
     def modify_fn(old_value, _delta):
       if enforce_ge and old_value is not None and value < old_value:
         raise errors.MonitoringDecreasingValueError(name, old_value, value)
       return value
+    return modify_fn
 
-    self._compare_and_set_metric(name, fields, modify_fn, None)
+  def set(self, name, fields, value, enforce_ge=False):
+    modify_fn = self._create_set_value_fn(name, value, enforce_ge)
+    self._compare_and_set_metrics([(name, fields, modify_fn, None)])
 
   def incr(self, name, fields, delta, modify_fn=operator.add):
     if delta < 0:
       raise errors.MonitoringDecreasingValueError(name, None, delta)
+    self._compare_and_set_metrics([(name, fields, modify_fn, delta)])
 
-    self._compare_and_set_metric(name, fields, modify_fn, delta)
+  def modify_multi(self, modifications):
+    mods = []
+    for mod in modifications:
+      if mod.mod_type == 'set':
+        value, enforce_ge = mod.args
+        modify_fn = self._create_set_value_fn(mod.name, value, enforce_ge)
+        delta = None
+      elif mod.mod_type == 'incr':
+        delta, modify_fn = mod.args
+        if delta < 0:
+          raise errors.MonitoringDecreasingValueError(mod.name, None, delta)
+      else:
+        raise errors.UnknownModificationTypeError(mod.mod_type)
+
+      mods.append((mod.name, mod.fields, modify_fn, delta))
+
+    self._compare_and_set_metrics(mods)
 
   def reset_for_unittest(self, name=None):
     if name is None:

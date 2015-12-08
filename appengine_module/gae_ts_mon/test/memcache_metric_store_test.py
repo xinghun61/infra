@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import operator
 import random
 import unittest
 
@@ -13,6 +14,7 @@ from google.appengine.api.memcache import memcache_service_pb
 
 from infra_libs.ts_mon import memcache_metric_store
 from infra_libs.ts_mon.common import errors
+from infra_libs.ts_mon.common import metric_store
 from infra_libs.ts_mon.common import metrics
 from infra_libs.ts_mon.common import targets
 from infra_libs.ts_mon.common.test import metric_store_test
@@ -77,8 +79,7 @@ class MemcacheMetricStoreTest(metric_store_test.MetricStoreTestBase,
         len(self.store._all_shards(self.cumulative_metric)))
     self.assertEquals(
         memcache_metric_store.MemcacheMetricStore.SHARDS_PER_METRIC,
-        len(self.store._all_shards(
-        self.cumulative_dist_metric)))
+        len(self.store._all_shards(self.cumulative_dist_metric)))
     self.assertEquals(1, len(self.store._all_shards(self.str_metric)))
     self.assertEquals(1, len(self.store._all_shards(self.gauge_metric)))
     self.assertEquals(1, len(self.store._all_shards(self.dist_metric)))
@@ -137,3 +138,52 @@ class MemcacheMetricStoreTest(metric_store_test.MetricStoreTestBase,
 
     with self.assertRaises(TypeError):
       self.store.get(self.cumulative_dist_metric.name, ())
+
+  def test_modify_multi_set(self):
+    self.store.modify_multi([
+        metric_store.Modification(
+            self.str_metric.name, (), 'set', ('foo', False)),
+        metric_store.Modification(
+            self.gauge_metric.name, (), 'set', (123, False))])
+
+    self.assertEqual('foo', self.str_metric.get())
+    self.assertEqual(123, self.gauge_metric.get())
+
+  def test_modify_multi_set_negative(self):
+    self.gauge_metric.set(42)
+
+    with self.assertRaises(errors.MonitoringDecreasingValueError):
+      self.store.modify_multi([
+          metric_store.Modification(
+              self.gauge_metric.name, (), 'set', (41, True))])
+
+  def test_modify_multi_incr(self):
+    self.gauge_metric.set(42)
+
+    self.store.modify_multi([
+        metric_store.Modification(
+            self.gauge_metric.name, (), 'incr', (4, operator.add))])
+
+    self.assertEqual(46, self.gauge_metric.get())
+
+  def test_modify_multi_incr_negative(self):
+    with self.assertRaises(errors.MonitoringDecreasingValueError):
+      self.store.modify_multi([
+          metric_store.Modification(
+              self.gauge_metric.name, (), 'incr', (-1, operator.add))])
+
+  def test_modify_multi_bad_type(self):
+    with self.assertRaises(errors.UnknownModificationTypeError):
+      self.store.modify_multi([
+          metric_store.Modification(
+              self.gauge_metric.name, (), 'bad', (-1, operator.add))])
+
+  def test_modify_multi_with_fields(self):
+    self.store.modify_multi([
+        metric_store.Modification(
+            self.gauge_metric.name, (('f', 1),), 'set', (41, False)),
+        metric_store.Modification(
+            self.gauge_metric.name, (('f', 2),), 'set', (42, False))])
+
+    self.assertEqual(41, self.gauge_metric.get({'f': 1}))
+    self.assertEqual(42, self.gauge_metric.get({'f': 2}))

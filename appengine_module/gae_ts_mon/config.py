@@ -12,6 +12,7 @@ import webapp2
 from google.appengine.api import modules
 from google.appengine.api.app_identity import app_identity
 
+from infra_libs.ts_mon import deferred_metric_store
 from infra_libs.ts_mon import memcache_metric_store
 from infra_libs.ts_mon.common import http_metrics
 from infra_libs.ts_mon.common import interface
@@ -38,8 +39,8 @@ def initialize(app=None, is_local_unittest=None):
   if interface.state.global_monitor is not None:
     # Even if ts_mon was already initialized in this instance we should update
     # the metric index in case any new metrics have been registered.
-    if isinstance(interface.state.store,  # pragma: no cover
-                  memcache_metric_store.MemcacheMetricStore):
+    if hasattr(interface.state.store,
+               'update_metric_index'):  # pragma: no cover
       interface.state.store.update_metric_index()
     return
 
@@ -61,8 +62,11 @@ def initialize(app=None, is_local_unittest=None):
   if is_local_unittest:  # pragma: no cover
     interface.state.store = metric_store.InProcessMetricStore(interface.state)
   else:
-    interface.state.store = memcache_metric_store.MemcacheMetricStore(
+    memcache_store = memcache_metric_store.MemcacheMetricStore(
         interface.state, report_module_versions=not is_local_unittest)
+    interface.state.store = deferred_metric_store.DeferredMetricStore(
+        interface.state, memcache_store)
+
 
   # Don't send metrics when running on the dev appserver.
   if (is_local_unittest or
@@ -82,6 +86,7 @@ def initialize(app=None, is_local_unittest=None):
 def _instrumented_dispatcher(dispatcher, request, response, time_fn=time.time):
   start_time = time_fn()
   response_status = 0
+  interface.state.store.initialize_context()
   try:
     ret = dispatcher(request, response)
   except webapp2.HTTPException as ex:
@@ -117,6 +122,11 @@ def _instrumented_dispatcher(dispatcher, request, response, time_fn=time.time):
     if response.content_length is not None:  # pragma: no cover
       http_metrics.server_response_bytes.add(response.content_length,
                                              fields=fields)
+
+    try:
+      interface.state.store.finalize_context()
+    except Exception:  # pragma: no cover
+      logging.exception('metric store finalize failed')
 
   return ret
 
