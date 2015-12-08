@@ -128,6 +128,7 @@ VENDORED_TOOLS = [
   'golang.org/x/tools/cmd/gorename',
   'golang.org/x/tools/cmd/oracle',
   'golang.org/x/tools/cmd/stringer',
+  'google.golang.org/appengine/cmd/aedeploy',
 ]
 
 
