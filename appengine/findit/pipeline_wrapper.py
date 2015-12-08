@@ -22,5 +22,9 @@ class BasePipeline(pipelines.AppenginePipeline):  # pragma: no cover
   def callback(self, **kwargs):
     pass
 
+  def pipeline_status_path(self):
+    """Returns an absolute path to look up the status of the pipeline."""
+    return '/_ah/pipeline/status?root=%s&auto=false' % self.root_pipeline_id
+
   def run(self, *args, **kwargs):
     raise NotImplementedError()

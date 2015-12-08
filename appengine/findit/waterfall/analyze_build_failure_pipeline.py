@@ -42,10 +42,6 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
   def finalized(self):
     self._LogUnexpectedAborting(self.was_aborted)
 
-  def pipeline_status_path(self):
-    """Returns an absolute path to look up the status of the pipeline."""
-    return '/_ah/pipeline/status?root=%s&auto=false' % self.root_pipeline_id
-
   def _ResetAnalysis(self, master_name, builder_name, build_number):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.pipeline_status_path = self.pipeline_status_path()

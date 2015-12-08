@@ -13,7 +13,8 @@ from model.wf_try_job import WfTryJob
 from waterfall import try_job_pipeline
 from waterfall import waterfall_config
 
-TRY_JOB_PIPELINE_QUEUE_NAME = 'try-job-queue'
+# TODO(chanli): Need to figure out why try-job-queue doesn't work.
+TRY_JOB_PIPELINE_QUEUE_NAME = 'build-failure-analysis-queue'
 
 
 def _CheckFailureForTryJobKey(
