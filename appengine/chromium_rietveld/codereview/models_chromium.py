@@ -71,24 +71,6 @@ ndb.Model.to_dict = to_dict
 
 class TryserverBuilders(ndb.Model):
   JSON_SOURCES = {
-    'tryserver.blink': [
-      'http://build.chromium.org/p/tryserver.blink/json/builders'
-    ],
-    'tryserver.chromium.android': [
-      'http://build.chromium.org/p/tryserver.chromium.android/json/builders'
-    ],
-    'tryserver.chromium.mac': [
-      'http://build.chromium.org/p/tryserver.chromium.mac/json/builders'
-    ],
-    'tryserver.chromium.linux': [
-      'http://build.chromium.org/p/tryserver.chromium.linux/json/builders'
-    ],
-    'tryserver.chromium.win': [
-      'http://build.chromium.org/p/tryserver.chromium.win/json/builders'
-    ],
-    'tryserver.infra': [
-      'http://build.chromium.org/p/tryserver.infra/json/builders'
-    ],
     'client.gyp': [
       'http://build.chromium.org/p/client.gyp/json/builders?trybots=true'
     ],
@@ -104,14 +86,35 @@ class TryserverBuilders(ndb.Model):
     'client.skia.fyi': [
       'http://build.chromium.org/p/client.skia.fyi/json/trybots'
     ],
+    'tryserver.blink': [
+      'http://build.chromium.org/p/tryserver.blink/json/builders'
+    ],
+    'tryserver.chromium.android': [
+      'http://build.chromium.org/p/tryserver.chromium.android/json/builders'
+    ],
+    'tryserver.chromium.mac': [
+      'http://build.chromium.org/p/tryserver.chromium.mac/json/builders'
+    ],
+    'tryserver.chromium.linux': [
+      'http://build.chromium.org/p/tryserver.chromium.linux/json/builders'
+    ],
+    'tryserver.chromium.win': [
+      'http://build.chromium.org/p/tryserver.chromium.win/json/builders'
+    ],
+    'tryserver.client.mojo': [
+      'http://build.chromium.org/p/tryserver.client.mojo/json/builders'
+    ],
+    'tryserver.client.syzygy': [
+      'http://build.chromium.org/p/tryserver.client.syzygy/json/builders'
+    ],
+    'tryserver.infra': [
+      'http://build.chromium.org/p/tryserver.infra/json/builders'
+    ],
     'tryserver.v8': [
       'http://build.chromium.org/p/tryserver.v8/json/builders'
     ],
     'tryserver.webrtc': [
       'http://build.chromium.org/p/tryserver.webrtc/json/builders'
-    ],
-    'tryserver.client.mojo': [
-      'http://build.chromium.org/p/tryserver.client.mojo/json/builders'
     ],
   }
 
