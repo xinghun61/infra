@@ -25,6 +25,8 @@ appengine_default_version = metrics.StringMetric(
     'appengine/default_version',
     description='Name of the version currently marked as default.')
 
+cas_failures = metrics.CounterMetric('appengine/memcache_cas_failures')
+
 
 class MetricIndexEntry(ndb.Model):
   name = ndb.StringProperty()
@@ -197,6 +199,8 @@ class MemcacheMetricStore(metric_store.MetricStore):
       metrics[metric.name] = metric
       remaining[metric.name].append(modify_fns)
 
+    failed_keys_count = 0
+
     for _ in xrange(self.CAS_RETRIES):
       keys = []
       key_map = {}  # key -> metric name (for sharded metrics)
@@ -229,7 +233,8 @@ class MemcacheMetricStore(metric_store.MetricStore):
         failed_keys.extend(client.cas_multi(cas_mapping, namespace=namespace))
 
       if not failed_keys:
-        return
+        break
+      failed_keys_count += len(failed_keys)
 
       # Retry only failed keys.
       still_remaining = {}
@@ -239,8 +244,16 @@ class MemcacheMetricStore(metric_store.MetricStore):
       remaining = still_remaining
     else:
       logging.warning(
-          'Memcache compare-and-set failed %d times for keys %s in namespace %s',
+          'Memcache compare-and-set failed %d times for keys %s in '
+          'namespace %s',
           self.CAS_RETRIES, remaining.keys(), namespace)
+
+    # Update the cas_failures metric with the number of failed keys, but don't
+    # do so recursively.
+    if (failed_keys_count and
+        any(metric.name != cas_failures.name
+            for metric, _ in metric_modify_fns)):
+      cas_failures.increment_by(failed_keys_count)
 
   def _create_modify_metric_fn(self, name, fields, modify_value_fn, delta):
     """Returns a function that modifies a memcache row value.

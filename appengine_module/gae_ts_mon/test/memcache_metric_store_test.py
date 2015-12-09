@@ -14,6 +14,7 @@ from google.appengine.api.memcache import memcache_service_pb
 
 from infra_libs.ts_mon import memcache_metric_store
 from infra_libs.ts_mon.common import errors
+from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import metric_store
 from infra_libs.ts_mon.common import metrics
 from infra_libs.ts_mon.common import targets
@@ -42,6 +43,8 @@ class MemcacheMetricStoreTest(metric_store_test.MetricStoreTestBase,
   def test_compare_and_set_failed(self):
     def fake_set(request, response):
       response.add_set_status(memcache_service_pb.MemcacheSetResponse.ERROR)
+
+    interface.register(memcache_metric_store.cas_failures)
 
     memcache_stub = self.testbed.get_stub(testbed.MEMCACHE_SERVICE_NAME)
     memcache_stub._Dynamic_Set = fake_set

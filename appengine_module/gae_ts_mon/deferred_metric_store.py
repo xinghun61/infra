@@ -31,10 +31,12 @@ class DeferredMetricStore(metric_store.MetricStore):
     except AttributeError:
       raise FinalizeWithoutInitializeError()
     else:
+      del self._thread_local.deferred
+      self._thread_local.finalizing = True
       try:
         self._base_store.modify_multi(deferred.itervalues())
       finally:
-        del self._thread_local.deferred
+        self._thread_local.finalizing = False
 
   def update_metric_index(self):
     self._base_store.update_metric_index()
@@ -49,9 +51,11 @@ class DeferredMetricStore(metric_store.MetricStore):
     try:
       deferred = self._thread_local.deferred
     except AttributeError:
-      logging.warning(
-          'DeferredMetricStore is used without a context.  Have you wrapped '
-          'your WSGIApplication with gae_ts_mon.initialize?')
+      if not getattr(
+          self._thread_local, 'finalizing', False):  # pragma: no cover
+        logging.warning(
+            'DeferredMetricStore is used without a context.  Have you wrapped '
+            'your WSGIApplication with gae_ts_mon.initialize?')
       self._base_store.set(name, fields, value, enforce_ge)
     else:
       key = (name, fields)
@@ -63,9 +67,11 @@ class DeferredMetricStore(metric_store.MetricStore):
     try:
       deferred = self._thread_local.deferred
     except AttributeError:
-      logging.warning(
-          'DeferredMetricStore is used without a context.  Have you wrapped '
-          'your WSGIApplication with gae_ts_mon.initialize?')
+      if not getattr(
+          self._thread_local, 'finalizing', False):  # pragma: no cover
+        logging.warning(
+            'DeferredMetricStore is used without a context.  Have you wrapped '
+            'your WSGIApplication with gae_ts_mon.initialize?')
       self._base_store.incr(name, fields, delta, modify_fn)
     else:
       key = (name, fields)
