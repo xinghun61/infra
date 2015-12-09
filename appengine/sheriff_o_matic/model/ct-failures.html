@@ -102,9 +102,43 @@ CTFailures.prototype._mungeAlerts = function(alerts) {
   });
 };
 
+CTFailures.prototype._processSheriffData = function (data, annotations) {
+  var newFailures = {};
+
+  var lastPosted = (data.last_posted || data.date) * 1000;
+  this.lastUpdateDate = new Date(lastPosted);
+  this.alertsHistoryKey = data.key;
+
+  this._mungeAlerts(data.alerts);
+
+  // FIXME: Change builder_alerts to expose the alerts as a map instead of an array.
+  var alertsByKey = {}
+  data.alerts.forEach(function(alert) {
+    alertsByKey[alert.key] = alert;
+  });
+  // Update |failures| with the appropriate CTFailureGroup's for each
+  // tree.
+  data.range_groups.forEach(function(rangeGroup) {
+    this._processFailuresForRangeGroup(newFailures, rangeGroup, alertsByKey, annotations, data.suspected_cls);
+  }.bind(this));
+
+  data.stale_builder_alerts.forEach(function(alert) {
+    this._processBuilderFailure(newFailures, alert, annotations);
+  }.bind(this));
+
+  // Sort failure groups so that newer failures are shown at the top
+  // of the UI.
+  Object.keys(newFailures, function (tree, failuresByTree) {
+    failuresByTree.sort(this._failureByTreeListComparator.bind(this, tree));
+  }.bind(this));
+
+  return newFailures;
+}
+
 CTFailures.prototype.update = function() {
   var annotationPromise = CTFailureGroup.fetchAnnotations();
   var alertsUrl = 'https://sheriff-o-matic.appspot.com/alerts';
+  var internalAlertsUrl = '/internal-alerts';
 
   if (window.location.search) {
     var parts = window.location.search.split('&');
@@ -119,6 +153,13 @@ CTFailures.prototype.update = function() {
   this.rotations = {}
   var reqs =[annotationPromise,
       net.json(alertsUrl),
+      net.json(internalAlertsUrl).catch(function(reason) {
+        // We allow forbidden errors, since we try to get this page always, but
+        // it only works if you're logged in as a Googler (for now).
+        if (reason.message != "Forbidden") {
+          console.log(reason);
+        }
+      }),
       net.json('https://trooper-o-matic.appspot.com/alerts'),
       net.json('/api/v1/alerts/chromium'),
       net.json('/api/v1/alerts/blink'),
@@ -127,42 +168,25 @@ CTFailures.prototype.update = function() {
   return Promise.all(reqs).then(function(data_array) {
     var annotations = data_array[0];
     var sheriff_data = data_array[1];
-    var trooper_data = data_array[2];
+    var internal_sheriff_data = data_array[2];
+    var trooper_data = data_array[3];
     this.alerts = {
-      'chromium': data_array[3],
-      'blink': data_array[4],
-      'chromium.perf': data_array[5]
+      'chromium': data_array[4],
+      'blink': data_array[5],
+      'chromium.perf': data_array[6],
     };
 
-    var newFailures = {};
-
-    var lastPosted = (sheriff_data.last_posted || sheriff_data.date) * 1000;
-    this.lastUpdateDate = new Date(lastPosted);
-    this.alertsHistoryKey = sheriff_data.key;
-
-    this._mungeAlerts(sheriff_data.alerts);
-    // FIXME: Change builder_alerts to expose the alerts as a map instead of an array.
-    var alertsByKey = {}
-    sheriff_data.alerts.forEach(function(alert) {
-      alertsByKey[alert.key] = alert;
-    });
-    // Update |failures| with the appropriate CTFailureGroup's for each
-    // tree.
-    sheriff_data.range_groups.forEach(function(rangeGroup) {
-      this._processFailuresForRangeGroup(newFailures, rangeGroup, alertsByKey, annotations, sheriff_data.suspected_cls);
-    }.bind(this));
-
-    sheriff_data.stale_builder_alerts.forEach(function(alert) {
-      this._processBuilderFailure(newFailures, alert, annotations);
-    }.bind(this));
-
-    // Sort failure groups so that newer failures are shown at the top
-    // of the UI.
-    Object.keys(newFailures, function (tree, failuresByTree) {
-      failuresByTree.sort(this._failureByTreeListComparator.bind(this, tree));
-    }.bind(this));
+    var newFailures = this._processSheriffData(sheriff_data, annotations);
+    if (internal_sheriff_data !== undefined) {
+      var internalFailures = this._processSheriffData(internal_sheriff_data, annotations);
+      Object.keys(internalFailures, function (key) {
+          newFailures[key] = updateUtil.updateLeft(newFailures[key], internalFailures[key]);
+        }
+      )
+    }
 
     this.failures = updateUtil.updateLeft(this.failures, newFailures);
+
     this._processTrooperFailures(newFailures, trooper_data);
   }.bind(this), function(reject) {
     window.console.log(['rejected', reject]);
