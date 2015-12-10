@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import dateutil.parser
 import logging
 import json
 import time
@@ -215,7 +216,7 @@ def get_flaky_run_reason(flaky_run_key):
   try:
     json_result = json.loads(result)
   except ValueError:
-    logging.error('couldnt decode json for ' + url)
+    logging.exception('couldnt decode json for %s', url)
     return
   steps = json_result['steps']
 
@@ -334,8 +335,9 @@ def parse_cq_data(json_data):
           master = job['master']
           builder = job['builder']
           result = job['result']
-          timestamp = datetime.datetime.strptime(job['timestamp'],
-                                                 '%Y-%m-%d %H:%M:%S.%f')
+          timestamp_tz = dateutil.parser.parse(job['timestamp'])
+          # We assume timestamps from chromium-cq-status are already in UTC.
+          timestamp = timestamp_tz.replace(tzinfo=None)
         except KeyError:
           continue
 
@@ -501,9 +503,8 @@ def fetch_cq_status():
           logging.info('got DeadlineExceededError during parse_cq_data, '
                        'catching to not show up as error')
           return
-
       except ValueError:
-        logging.info('couldnt decode json for ' + url)
+        logging.exception('failed to parse CQ data from %s', url)
         if 'DeadlineExceededError' in result:
           logging.error('got deadline exceeded, trying again after 1s')
           time.sleep(1)

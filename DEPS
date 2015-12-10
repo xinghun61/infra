@@ -83,6 +83,10 @@ deps = {
     ("https://chromium.googlesource.com/external/code.google.com/p/gae-pytz/"
      "@4d72fd095c91f874aaafb892859acbe3f927b3cd"),
 
+  "infra/appengine/third_party/dateutil":
+    ("https://chromium.googlesource.com/external/code.launchpad.net/dateutil/"
+     "@8c6026ba09716a4e164f5420120bfe2ebb2d9d82"),
+
   ## For ease of development. These are pulled in as wheels for run.py/test.py
   "expect_tests":
     "https://chromium.googlesource.com/infra/testing/expect_tests.git",
