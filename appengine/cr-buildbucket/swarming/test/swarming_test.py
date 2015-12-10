@@ -72,7 +72,13 @@ class SwarmingTest(testing.AppengineTestCase):
           'namespace': 'default-gzip',
           'isolated': 'cbacbdcbabcd'
         },
-        'extra_args': ['$recipe in $repository @ $revision'],
+        'extra_args': [
+          'cook',
+          '-repository', '$repository',
+          '-revision', '$revision',
+          '-recipe', '$recipe',
+          '-properties', '$properties_json',
+        ],
       },
       'numerical_value_for_coverage_in_format_obj': 42,
     }
@@ -130,6 +136,9 @@ class SwarmingTest(testing.AppengineTestCase):
         'swarming': {
           'recipe': {'revision': 'badcoffee'},
         },
+        'properties': {
+          'a': 'b',
+        }
       },
     )
 
@@ -185,7 +194,13 @@ class SwarmingTest(testing.AppengineTestCase):
           'namespace': 'default-gzip',
           'isolated': 'cbacbdcbabcd'
         },
-        'extra_args': ['recipe in https://example.com/repo @ badcoffee'],
+        'extra_args': [
+          'cook',
+          '-repository', 'https://example.com/repo',
+          '-revision', 'badcoffee',
+          '-recipe', 'recipe',
+          '-properties', '{"a": "b"}',
+        ],
         'dimensions': [
           {'key': 'cores', 'value': '8'},
           {'key': 'os', 'value': 'Linux'},

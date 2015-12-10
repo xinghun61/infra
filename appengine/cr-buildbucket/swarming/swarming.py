@@ -48,6 +48,7 @@ import model
 
 PUBSUB_TOPIC = 'swarming'
 BUILDER_PARAMETER = 'builder_name'
+PROPERTIES_PARAMETER = 'properties'
 DEFAULT_URL_FORMAT = 'https://{swarming_hostname}/user/task/{task_id}'
 
 
@@ -143,6 +144,8 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
       'repository': recipe.repository,
       'revision': revision,
       'recipe': recipe.name,
+      'properties_json': json.dumps(
+          build.parameters.get(PROPERTIES_PARAMETER) or {}, sort_keys=True),
     })
   task_template_params = {
     k: v or '' for k, v in task_template_params.iteritems()}
