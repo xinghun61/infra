@@ -486,17 +486,33 @@ def get_routes():  # pragma: no cover
 # Utility functions
 
 
+@ndb.tasklet
 def _call_api_async(hostname, path, method='GET', payload=None):
-  # TODO(nodir): impersonate current identity.
+  cur_identity = auth.get_current_identity()
+  delegation_token = yield auth.delegate_async(
+    audience=[_self_identity()],
+    impersonate=cur_identity,
+  )
   url = 'https://%s/_ah/api/swarming/v1/%s' % (hostname, path)
-  return net.json_request_async(
-    url, method=method, scopes=net.EMAIL_SCOPE, payload=payload)
+  try:
+    res = yield net.json_request_async(
+      url,
+      method=method,
+      payload=payload,
+      scopes=net.EMAIL_SCOPE,
+      delegation_token=delegation_token,
+    )
+    raise ndb.Return(res)
+  except net.AuthError as ex:
+    raise auth.AuthorizationError(
+      'Auth error while calling swarming on behalf of %s: %s' % (
+        cur_identity.to_bytes(), ex
+      ))
 
 
 @utils.cache
 def _self_identity():
-  email = '%s@appspot.gserviceaccount.com' % app_identity.get_application_id()
-  return auth.Identity('user', email)
+  return auth.Identity('user', app_identity.get_service_account_name())
 
 
 def format_obj(obj, params):
