@@ -220,7 +220,7 @@ def main(argv):
       # the same file.
       lkgr = lkgr_lib.ReadLKGR(args.write_to_file)
       if lkgr is None:
-        if args.email_errors:
+        if args.email_errors and 'error_recipients' in config:
           lkgr_lib.SendMail(config['error_recipients'],
                             'Failed to read %s LKGR. Please seed an initial '
                             'LKGR in file %s' %
@@ -232,7 +232,7 @@ def main(argv):
     else:
       lkgr = lkgr_lib.FetchLKGR(config['status_url'] + repo.status_path)
       if lkgr is None:
-        if args.email_errors:
+        if args.email_errors and 'error_recipients' in config:
           lkgr_lib.SendMail(config['error_recipients'],
                             'Failed to fetch %s LKGR' % args.project,
                             '\n'.join(lkgr_lib.RunLogger.log), args.dry_run)
@@ -240,7 +240,7 @@ def main(argv):
         return 1
 
     if not repo.check_rev(lkgr):
-      if args.email_errors:
+      if args.email_errors and 'error_recipients' in config:
         lkgr_lib.SendMail(config['error_recipients'],
                           'Fetched bad current %s LKGR' % args.project,
                           '\n'.join(lkgr_lib.RunLogger.log), args.dry_run)
@@ -279,7 +279,7 @@ def main(argv):
       LOGGER.info('LKGR is %d revisions behind', rev_behind)
 
       if rev_behind > config['allowed_gap']:
-        if args.email_errors:
+        if args.email_errors and 'error_recipients' in config:
           lkgr_lib.SendMail(
               config['error_recipients'],
               '%s LKGR (%s) > %s revisions behind' % (
@@ -295,7 +295,7 @@ def main(argv):
       if not lkgr_lib.CheckLKGRLag(time_behind, rev_behind,
                                    config['allowed_lag'],
                                    config['allowed_gap']):
-        if args.email_errors:
+        if args.email_errors and 'error_recipients' in config:
           lkgr_lib.SendMail(
               config['error_recipients'],
               '%s LKGR (%s) exceeds lag threshold' % (args.project, lkgr),
