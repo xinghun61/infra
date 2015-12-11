@@ -13,6 +13,7 @@ from testing_utils import testing
 import api
 import errors
 import model
+import service
 
 
 class BuildBucketApiTest(testing.EndpointsTestCase):
@@ -20,8 +21,8 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
   def setUp(self):
     super(BuildBucketApiTest, self).setUp()
-    self.service = mock.Mock()
-    self.mock(api.BuildBucketApi, 'service_factory', lambda _: self.service)
+    for a in dir(service):
+      self.mock(service, a, mock.Mock())
 
     self.future_date = utils.utcnow() + datetime.timedelta(minutes=1)
     # future_ts is str because INT64 values are formatted as strings.
@@ -53,10 +54,10 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.test_build.lease_expiration_date = self.future_date
 
     build_id = self.test_build.key.id()
-    self.service.get.return_value = self.test_build
+    service.get.return_value = self.test_build
 
     resp = self.call_api('get', {'id': build_id}).json_body
-    self.service.get.assert_called_once_with(build_id)
+    service.get.assert_called_once_with(build_id)
     self.assertEqual(resp['build']['id'], str(build_id))
     self.assertEqual(resp['build']['bucket'], self.test_build.bucket)
     self.assertEqual(resp['build']['lease_expiration_ts'], self.future_ts)
@@ -65,20 +66,20 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
       resp['build']['parameters_json'], '{"buildername": "linux_rel"}')
 
   def test_get_nonexistent_build(self):
-    self.service.get.return_value = None
+    service.get.return_value = None
     self.expect_error('get', {'id': 1}, 'BUILD_NOT_FOUND')
 
   ##################################### PUT ####################################
 
   def test_put(self):
     self.test_build.tags = ['owner:ivan']
-    self.service.add.return_value = self.test_build
+    service.add.return_value = self.test_build
     req = {
       'bucket': self.test_build.bucket,
       'tags': self.test_build.tags,
     }
     resp = self.call_api('put', req).json_body
-    self.service.add.assert_called_once_with(
+    service.add.assert_called_once_with(
       bucket=self.test_build.bucket,
       tags=req['tags'],
       parameters=None,
@@ -90,7 +91,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.assertEqual(resp['build']['tags'], req['tags'])
 
   def test_put_with_parameters(self):
-    self.service.add.return_value = self.test_build
+    service.add.return_value = self.test_build
     req = {
       'bucket': self.test_build.bucket,
       'parameters_json': json.dumps(self.test_build.parameters),
@@ -100,13 +101,13 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
   def test_put_with_leasing(self):
     self.test_build.lease_expiration_date = self.future_date
-    self.service.add.return_value = self.test_build
+    service.add.return_value = self.test_build
     req = {
       'bucket': self.test_build.bucket,
       'lease_expiration_ts': self.future_ts,
     }
     resp = self.call_api('put', req).json_body
-    self.service.add.assert_called_once_with(
+    service.add.assert_called_once_with(
       bucket=self.test_build.bucket,
       tags=[],
       parameters=None,
@@ -137,7 +138,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     bad_build_future = ndb.Future()
     bad_build_future.set_exception(errors.InvalidInputError('Just bad'))
 
-    self.service.add_async.side_effect = [
+    service.add_async.side_effect = [
       build1_future, build2_future, bad_build_future]
     req = {
       'builds': [
@@ -157,14 +158,14 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
       ],
     }
     resp = self.call_api('put_batch', req).json_body
-    self.service.add_async.assert_any_call(
+    service.add_async.assert_any_call(
       bucket=self.test_build.bucket,
       tags=self.test_build.tags,
       parameters=None,
       lease_expiration_date=None,
       client_operation_id='0',
     )
-    self.service.add_async.assert_any_call(
+    service.add_async.assert_any_call(
       bucket=build2.bucket,
       tags=[],
       parameters=None,
@@ -193,7 +194,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
   def test_search(self):
     self.test_build.put()
-    self.service.search.return_value = ([self.test_build], 'the cursor')
+    service.search.return_value = ([self.test_build], 'the cursor')
     req = {
       'bucket': ['chromium'],
       'cancelation_reason': 'CANCELED_EXPLICITLY',
@@ -205,7 +206,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
     res = self.call_api('search', req).json_body
 
-    self.service.search.assert_called_once_with(
+    service.search.assert_called_once_with(
       buckets=req['bucket'],
       tags=req['tag'],
       status=model.BuildStatus.COMPLETED,
@@ -223,10 +224,10 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
   def test_peek(self):
     self.test_build.put()
-    self.service.peek.return_value = ([self.test_build], 'the cursor')
+    service.peek.return_value = ([self.test_build], 'the cursor')
     req = {'bucket': [self.test_build.bucket]}
     res = self.call_api('peek', req).json_body
-    self.service.peek.assert_called_once_with(
+    service.peek.assert_called_once_with(
       req['bucket'],
       max_builds=None,
       start_cursor=None,
@@ -241,14 +242,14 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   def test_lease(self):
     self.test_build.lease_expiration_date = self.future_date
     self.test_build.lease_key = 42
-    self.service.lease.return_value = True, self.test_build
+    service.lease.return_value = True, self.test_build
 
     req = {
       'id': self.test_build.key.id(),
       'lease_expiration_ts': self.future_ts,
     }
     res = self.call_api('lease', req).json_body
-    self.service.lease.assert_called_once_with(
+    service.lease.assert_called_once_with(
       self.test_build.key.id(),
       lease_expiration_date=self.future_date,
     )
@@ -268,7 +269,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
   def test_lease_unsuccessful(self):
     self.test_build.put()
-    self.service.lease.return_value = (False, self.test_build)
+    service.lease.return_value = (False, self.test_build)
     req = {
       'id': self.test_build.key.id(),
       'lease_expiration_ts': self.future_ts,
@@ -278,12 +279,12 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   #################################### RESET ###################################
 
   def test_reset(self):
-    self.service.reset.return_value = self.test_build
+    service.reset.return_value = self.test_build
     req = {
       'id': self.test_build.key.id(),
     }
     res = self.call_api('reset', req).json_body
-    self.service.reset.assert_called_once_with(self.test_build.key.id())
+    service.reset.assert_called_once_with(self.test_build.key.id())
     self.assertIsNone(res.get('error'))
     self.assertEqual(res['build']['id'], str(self.test_build.key.id()))
     self.assertFalse('lease_key' in res['build'])
@@ -292,20 +293,20 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
   def test_start(self):
     self.test_build.url = 'http://localhost/build/1'
-    self.service.start.return_value = self.test_build
+    service.start.return_value = self.test_build
     req = {
       'id': self.test_build.key.id(),
       'lease_key': 42,
       'url': self.test_build.url,
     }
     res = self.call_api('start', req).json_body
-    self.service.start.assert_called_once_with(
+    service.start.assert_called_once_with(
       req['id'], req['lease_key'], url=req['url'])
     self.assertEqual(int(res['build']['id']), req['id'])
     self.assertEqual(res['build']['url'], req['url'])
 
   def test_start_completed_build(self):
-    self.service.start.side_effect = errors.BuildIsCompletedError
+    service.start.side_effect = errors.BuildIsCompletedError
     req = {
       'id': self.test_build.key.id(),
       'lease_key': 42,
@@ -317,14 +318,14 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
   def test_heartbeat(self):
     self.test_build.lease_expiration_date = self.future_date
-    self.service.heartbeat.return_value = self.test_build
+    service.heartbeat.return_value = self.test_build
     req = {
       'id': self.test_build.key.id(),
       'lease_key': 42,
       'lease_expiration_ts': self.future_ts,
     }
     res = self.call_api('heartbeat', req).json_body
-    self.service.heartbeat.assert_called_once_with(
+    service.heartbeat.assert_called_once_with(
       req['id'], req['lease_key'], self.future_date)
     self.assertEqual(int(res['build']['id']), req['id'])
     self.assertEqual(
@@ -339,7 +340,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
       lease_expiration_date=self.future_date,
     )
 
-    self.service.heartbeat_batch.return_value = [
+    service.heartbeat_batch.return_value = [
       (self.test_build.key.id(), self.test_build, None),
       (build2.key.id(), None, errors.LeaseExpiredError())
     ]
@@ -356,9 +357,9 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
       }],
     }
     res = self.call_api('heartbeat_batch', req).json_body
-    self.service.heartbeat_batch.assert_called_any_with(
+    service.heartbeat_batch.assert_called_any_with(
       self.test_build.key.id(), 42, self.future_date)
-    self.service.heartbeat_batch.assert_called_any_with(
+    service.heartbeat_batch.assert_called_any_with(
       build2.key.id(), 42, self.future_date)
 
     result1 = res['results'][0]
@@ -372,7 +373,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   def test_heartbeat_batch_with_internal_server_error(self):
     self.test_build.lease_expiration_date = self.future_date
 
-    self.service.heartbeat_batch.return_value = [
+    service.heartbeat_batch.return_value = [
       (self.test_build.key.id(), None, ValueError())
     ]
 
@@ -389,26 +390,26 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   ################################## SUCCEED ###################################
 
   def test_succeed(self):
-    self.service.succeed.return_value = self.test_build
+    service.succeed.return_value = self.test_build
     req = {
       'id': self.test_build.key.id(),
       'lease_key': 42,
     }
     res = self.call_api('succeed', req).json_body
-    self.service.succeed.assert_called_once_with(
+    service.succeed.assert_called_once_with(
       req['id'], req['lease_key'], result_details=None, url=None)
     self.assertEqual(int(res['build']['id']), req['id'])
 
   def test_succeed_with_result_details(self):
     self.test_build.result_details = {'test_coverage': 100}
-    self.service.succeed.return_value = self.test_build
+    service.succeed.return_value = self.test_build
     req = {
       'id': self.test_build.key.id(),
       'lease_key': 42,
       'result_details_json': json.dumps(self.test_build.result_details),
     }
     res = self.call_api('succeed', req).json_body
-    _, kwargs = self.service.succeed.call_args
+    _, kwargs = service.succeed.call_args
     self.assertEqual(
       kwargs['result_details'], self.test_build.result_details)
     self.assertEqual(
@@ -419,7 +420,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   def test_infra_failure(self):
     self.test_build.result_details = {'transient_error': True}
     self.test_build.failure_reason = model.FailureReason.INFRA_FAILURE
-    self.service.fail.return_value = self.test_build
+    service.fail.return_value = self.test_build
     req = {
       'id': self.test_build.key.id(),
       'lease_key': 42,
@@ -427,7 +428,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
       'result_details_json': json.dumps(self.test_build.result_details),
     }
     res = self.call_api('fail', req).json_body
-    self.service.fail.assert_called_once_with(
+    service.fail.assert_called_once_with(
       req['id'], req['lease_key'],
       result_details=self.test_build.result_details,
       failure_reason=model.FailureReason.INFRA_FAILURE,
@@ -440,18 +441,18 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   #################################### CANCEL ##################################
 
   def test_cancel(self):
-    self.service.cancel.return_value = self.test_build
+    service.cancel.return_value = self.test_build
     req = {
       'id': self.test_build.key.id(),
     }
     res = self.call_api('cancel', req).json_body
-    self.service.cancel.assert_called_once_with(req['id'])
+    service.cancel.assert_called_once_with(req['id'])
     self.assertEqual(int(res['build']['id']), req['id'])
 
   ################################# CANCEL_BATCH ###############################
 
   def test_cancel_batch(self):
-    self.service.cancel.side_effect = [
+    service.cancel.side_effect = [
       self.test_build, errors.BuildIsCompletedError]
 
     req = {
@@ -462,12 +463,12 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     res0 = res['results'][0]
     self.assertEqual(int(res0['build_id']), self.test_build.key.id())
     self.assertEqual(int(res0['build']['id']), self.test_build.key.id())
-    self.service.cancel.assert_any_call(self.test_build.key.id())
+    service.cancel.assert_any_call(self.test_build.key.id())
 
     res1 = res['results'][1]
     self.assertEqual(int(res1['build_id']), 2)
     self.assertEqual(res1['error']['reason'], 'BUILD_IS_COMPLETED')
-    self.service.cancel.assert_any_call(2)
+    service.cancel.assert_any_call(2)
 
   ########################  DELETE_SCHEDULED_BUILDS  ###########################
 
@@ -482,7 +483,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   #################################### ERRORS ##################################
 
   def error_test(self, error_class, reason):
-    self.service.get.side_effect = error_class
+    service.get.side_effect = error_class
     self.expect_error('get', {'id': 123}, reason)
 
   def test_build_not_found_error(self):

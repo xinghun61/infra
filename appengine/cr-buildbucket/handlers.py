@@ -15,10 +15,6 @@ README_MD = (
   'appengine/cr-buildbucket/README.md')
 
 
-def create_service():
-  return service.BuildBucketService()
-
-
 class MainHandler(webapp2.RequestHandler):  # pragma: no cover
   """Redirects to README.md."""
 
@@ -31,7 +27,7 @@ class CronResetExpiredBuilds(webapp2.RequestHandler):
 
   @decorators.require_cronjob
   def get(self):
-    create_service().reset_expired_builds()
+    service.reset_expired_builds()
 
 
 class CronSendMetrics(webapp2.RequestHandler):  # pragma: no cover

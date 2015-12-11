@@ -177,15 +177,6 @@ def datetime_to_timestamp_safe(value):
   title='Build Bucket Service')
 class BuildBucketApi(remote.Service):
   """API for scheduling builds."""
-  _service = None
-  # Handy to mock.
-  service_factory = service.BuildBucketService
-
-  @property
-  def service(self):
-    if not self._service:  # pragma: no branch
-      self._service = self.service_factory()
-    return self._service
 
   ###################################  GET  ####################################
 
@@ -195,7 +186,7 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def get(self, request):
     """Returns a build by id."""
-    build = self.service.get(request.id)
+    build = service.get(request.id)
     if build is None:
       raise errors.BuildNotFoundError()
     return build_to_response_message(build)
@@ -208,7 +199,7 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def put(self, request):
     """Creates a new build."""
-    build = self.service.add(
+    build = service.add(
       bucket=request.bucket,
       tags=request.tags,
       parameters=parse_json(request.parameters_json, 'parameters_json'),
@@ -237,7 +228,7 @@ class BuildBucketApi(remote.Service):
   def put_batch(self, request):
     """Creates builds."""
     build_futures = [
-      self.service.add_async(
+      service.add_async(
         bucket=put_req.bucket,
         tags=put_req.tags,
         parameters=parse_json(put_req.parameters_json, 'parameters_json'),
@@ -292,7 +283,7 @@ class BuildBucketApi(remote.Service):
   def search(self, request):
     """Searches for builds."""
     assert isinstance(request.tag, list)
-    builds, next_cursor = self.service.search(
+    builds, next_cursor = service.search(
       buckets=request.bucket,
       tags=request.tag,
       status=request.status,
@@ -323,7 +314,7 @@ class BuildBucketApi(remote.Service):
   def peek(self, request):
     """Returns available builds."""
     assert isinstance(request.bucket, list)
-    builds, next_cursor = self.service.peek(
+    builds, next_cursor = service.peek(
       request.bucket,
       max_builds=request.max_builds,
       start_cursor=request.start_cursor,
@@ -346,7 +337,7 @@ class BuildBucketApi(remote.Service):
 
     Response may contain an error.
     """
-    success, build = self.service.lease(
+    success, build = service.lease(
       request.id,
       lease_expiration_date=parse_datetime(request.lease_expiration_ts),
     )
@@ -367,7 +358,7 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def reset(self, request):
     """Forcibly unleases a build and resets its state to SCHEDULED."""
-    build = self.service.reset(request.id)
+    build = service.reset(request.id)
     return build_to_response_message(build)
 
   #################################  STARTED  ##################################
@@ -382,7 +373,7 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def start(self, request):
     """Marks a build as started."""
-    build = self.service.start(request.id, request.lease_key, url=request.url)
+    build = service.start(request.id, request.lease_key, url=request.url)
     return build_to_response_message(build)
 
   #################################  HEARTBEAT  ################################
@@ -397,7 +388,7 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def heartbeat(self, request):
     """Updates build lease."""
-    build = self.service.heartbeat(
+    build = service.heartbeat(
       request.id, request.lease_key,
       parse_datetime(request.lease_expiration_ts))
     return build_to_response_message(build)
@@ -451,7 +442,7 @@ class BuildBucketApi(remote.Service):
 
       return msg
 
-    results = self.service.heartbeat_batch(heartbeats)
+    results = service.heartbeat_batch(heartbeats)
     return self.HeartbeatBatchResponseMessage(results=map(to_message, results))
 
   #################################  SUCCEED  ##################################
@@ -467,7 +458,7 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def succeed(self, request):
     """Marks a build as succeeded."""
-    build = self.service.succeed(
+    build = service.succeed(
       request.id, request.lease_key,
       result_details=parse_json(
         request.result_details_json, 'result_details_json'),
@@ -488,7 +479,7 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def fail(self, request):
     """Marks a build as failed."""
-    build = self.service.fail(
+    build = service.fail(
       request.id, request.lease_key,
       result_details=parse_json(
         request.result_details_json, 'result_details_json'),
@@ -505,7 +496,7 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def cancel(self, request):
     """Cancels a build."""
-    build = self.service.cancel(request.id)
+    build = service.cancel(request.id)
     return build_to_response_message(build)
 
   ###############################  CANCEL_BATCH  ###############################
@@ -531,7 +522,7 @@ class BuildBucketApi(remote.Service):
     for build_id in request.build_ids:
       one_res = res.OneResult(build_id=build_id)
       try:
-        build = self.service.cancel(build_id)
+        build = service.cancel(build_id)
         one_res.build = build_to_message(build)
       except errors.Error as ex:
         one_res.error = exception_to_error_message(ex)
@@ -553,6 +544,6 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def delete_scheduled_builds(self, request):
     """Deletes scheduled builds."""
-    self.service.delete_scheduled_builds(
+    service.delete_scheduled_builds(
       request.bucket, tags=request.tag[:], created_by=request.created_by)
     return message_types.VoidMessage()
