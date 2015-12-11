@@ -51,12 +51,11 @@ class CancelationReason(messages.Enum):
   TIMEOUT = 2
 
 
-class Callback(ndb.Model):
+class PubSubCallback(ndb.Model):
   """Parameters for a callack push task."""
-  url = ndb.StringProperty(required=True, indexed=False)
-  headers = ndb.JsonProperty()
-  method = ndb.StringProperty(indexed=False)
-  queue_name = ndb.StringProperty(indexed=False)
+  topic = ndb.StringProperty(required=True, indexed=False)
+  auth_token = ndb.StringProperty(indexed=False)
+  user_data = ndb.StringProperty(indexed=False)
 
 
 class Build(ndb.Model):
@@ -93,7 +92,8 @@ class Build(ndb.Model):
     tags (list of string): a list of tags, where each tag is a string with ":"
       symbol. The first occurance of ":" splits tag name and tag value.
     parameters (dict): immutable arbitrary build parameters.
-    callback (Callback): push task parameters for build status changes.
+    pubsub_callback (PubSubCallback): PubSub message parameters for build status
+      change notifications.
     lease_expiration_date (datetime): current lease expiration date.
       The moment the build is leased, |lease_expiration_date| is set to
       (utcnow + lease_duration).
@@ -117,7 +117,7 @@ class Build(ndb.Model):
   bucket = ndb.StringProperty(required=True)
   tags = ndb.StringProperty(repeated=True)
   parameters = ndb.JsonProperty()
-  callback = ndb.StructuredProperty(Callback, indexed=False)
+  pubsub_callback = ndb.StructuredProperty(PubSubCallback, indexed=False)
 
   # Lease-time attributes.
   lease_expiration_date = ndb.DateTimeProperty()

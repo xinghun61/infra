@@ -7,6 +7,7 @@ import datetime
 
 from components import auth
 from components import utils
+from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 from testing_utils import testing
@@ -527,16 +528,24 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   @contextlib.contextmanager
   def callback_test(self):
-    self.test_build.callback = model.Callback(
-      url='/tasks/notify',
-      queue_name='default',
+    self.mock(deferred, 'defer', mock.Mock())
+    self.test_build.pubsub_callback = model.PubSubCallback(
+      topic='projects/example/topic/buildbucket',
+      user_data='hello',
+      auth_token='secret',
     )
     self.test_build.put()
     yield
-    taskq = self.testbed.get_stub(testbed.TASKQUEUE_SERVICE_NAME)
-    tasks = taskq.GetTasks('default')
-    self.assertTrue(
-      any(t.get('url') == self.test_build.callback.url for t in tasks))
+
+    deferred.defer.assert_called_with(
+      service._publish_pubsub_message,
+      self.test_build.key.id(),
+      'projects/example/topic/buildbucket',
+      'hello',
+      'secret',
+      _transactional=True,
+      _retry_options=mock.ANY,
+    )
 
   def test_start_creates_notification_task(self):
     self.lease()
@@ -661,7 +670,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.lease()
     self.succeed()
 
-  def test_completion_callback_works(self):
+  def test_completion_creates_notification_task(self):
     self.lease()
     self.start()
     with self.callback_test():

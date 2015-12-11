@@ -77,6 +77,11 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     req = {
       'bucket': self.test_build.bucket,
       'tags': self.test_build.tags,
+      'pubsub_callback': {
+        'topic': 'projects/foo/topic/bar',
+        'user_data': 'hello',
+        'auth_token': 'secret',
+      }
     }
     resp = self.call_api('put', req).json_body
     service.add.assert_called_once_with(
@@ -85,6 +90,11 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
       parameters=None,
       lease_expiration_date=None,
       client_operation_id=None,
+      pubsub_callback=model.PubSubCallback(
+        topic='projects/foo/topic/bar',
+        user_data='hello',
+        auth_token='secret',
+      ),
     )
     self.assertEqual(resp['build']['id'], str(self.test_build.key.id()))
     self.assertEqual(resp['build']['bucket'], req['bucket'])
@@ -113,6 +123,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
       parameters=None,
       lease_expiration_date=self.future_date,
       client_operation_id=None,
+      pubsub_callback=None,
     )
     self.assertEqual(
       resp['build']['lease_expiration_ts'], req['lease_expiration_ts'])
@@ -164,6 +175,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
       parameters=None,
       lease_expiration_date=None,
       client_operation_id='0',
+      pubsub_callback=None,
     )
     service.add_async.assert_any_call(
       bucket=build2.bucket,
@@ -171,6 +183,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
       parameters=None,
       lease_expiration_date=None,
       client_operation_id='1',
+      pubsub_callback=None,
     )
 
     res0 = resp['results'][0]

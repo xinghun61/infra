@@ -7,6 +7,7 @@ import json
 import logging
 import urlparse
 from components import auth
+from components import pubsub
 from components import utils
 from google.appengine.api import taskqueue
 from google.appengine.api import modules
@@ -91,7 +92,7 @@ def current_identity_cannot(action_format, *args):
 @ndb.tasklet
 def add_async(
     bucket, tags=None, parameters=None, lease_expiration_date=None,
-    client_operation_id=None):
+    client_operation_id=None, pubsub_callback=None):
   """Adds the build entity to the build bucket.
 
   Requires the current user to have permissions to add builds to the
@@ -104,6 +105,7 @@ def add_async(
       build creation.
     lease_expiration_date (datetime.datetime): if not None, the build is
       created as leased and its lease_key is not None.
+    pubsub_callback (model.PubsubCallback): callback parameters.
     client_operation_id (str): client-supplied operation id. If an
       a build with the same client operation id was added during last minute,
       it will be returned instead.
@@ -146,6 +148,7 @@ def add_async(
     status=model.BuildStatus.SCHEDULED,
     created_by=identity,
     never_leased=lease_expiration_date is None,
+    pubsub_callback=pubsub_callback,
   )
   if lease_expiration_date is not None:
     build.lease_expiration_date = lease_expiration_date
@@ -424,22 +427,33 @@ def reset(build_id):
   return build
 
 
+def _publish_pubsub_message(
+    build_id, topic, user_data, auth_token):  # pragma: no cover
+  message = json.dumps({
+    'build_id': build_id,
+    'user_data': user_data,
+  }, sort_keys=True)
+  attrs = {
+    'build_id': str(build_id),
+    'auth_token': auth_token,
+  }
+  pubsub.publish(topic, message, attrs)
+
+
 def _enqueue_callback_task_if_needed(build):
   assert ndb.in_transaction()
   assert build
-  if not build.callback:
-    return
-  task = taskqueue.Task(
-    url=build.callback.url,
-    headers=build.callback.headers,
-    payload=json.dumps({
-      'build_id': build.key.id(),
-    }),
-  )
-  add_kwargs = {}
-  if build.callback.queue_name:  # pragma: no branch
-    add_kwargs['queue_name'] = build.callback.queue_name
-  task.add(transactional=True, **add_kwargs)
+  if build.pubsub_callback:
+    deferred.defer(
+      _publish_pubsub_message,
+      build.key.id(),
+      build.pubsub_callback.topic,
+      build.pubsub_callback.user_data,
+      build.pubsub_callback.auth_token,
+      _transactional=True,
+      _retry_options=taskqueue.TaskRetryOptions(
+        task_age_limit=BUILD_TIMEOUT.total_seconds()),
+    )
 
 
 @ndb.transactional

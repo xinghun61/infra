@@ -49,12 +49,29 @@ def exception_to_error_message(ex):
   )
 
 
+class PubSubCallbackMessage(messages.Message):
+  topic = messages.StringField(1, required=True)
+  user_data = messages.StringField(2)
+  auth_token = messages.StringField(3)
+
+
+def pubsub_callback_from_message(msg):
+  if msg is None:
+    return None
+  return model.PubSubCallback(
+    topic=msg.topic,
+    user_data=msg.user_data,
+    auth_token=msg.auth_token,
+  )
+
+
 class PutRequestMessage(messages.Message):
   client_operation_id = messages.StringField(1)
   bucket = messages.StringField(2, required=True)
   tags = messages.StringField(3, repeated=True)
   parameters_json = messages.StringField(4)
   lease_expiration_ts = messages.IntegerField(5)
+  pubsub_callback = messages.MessageField(PubSubCallbackMessage, 6)
 
 
 class BuildMessage(messages.Message):
@@ -205,6 +222,7 @@ class BuildBucketApi(remote.Service):
       parameters=parse_json(request.parameters_json, 'parameters_json'),
       lease_expiration_date=parse_datetime(request.lease_expiration_ts),
       client_operation_id=request.client_operation_id,
+      pubsub_callback=pubsub_callback_from_message(request.pubsub_callback),
     )
     return build_to_response_message(build, include_lease_key=True)
 
@@ -234,6 +252,7 @@ class BuildBucketApi(remote.Service):
         parameters=parse_json(put_req.parameters_json, 'parameters_json'),
         lease_expiration_date=parse_datetime(put_req.lease_expiration_ts),
         client_operation_id=put_req.client_operation_id,
+        pubsub_callback=pubsub_callback_from_message(put_req.pubsub_callback),
       )
       for put_req in request.builds
     ]
