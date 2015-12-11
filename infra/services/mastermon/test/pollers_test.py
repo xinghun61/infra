@@ -189,9 +189,6 @@ class FilePollerTest(unittest.TestCase):
     data2['duration_s'] = 5
     data2['pending_s'] = 1
     data2['total_s'] = data2['pending_s'] + data2['duration_s']
-    data2['steps'] = [
-      {'step_name': 'compile', 'duration_s': 2, 'result': 'r1'},
-    ]
     with temporary_directory(prefix='poller-test-') as tempdir:
       filename = self.create_data_file(tempdir, [data1, data2])
       p = pollers.FilePoller(filename, {})

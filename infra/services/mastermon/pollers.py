@@ -141,11 +141,6 @@ class FilePoller(Poller):
   total_times = ts_mon.CumulativeDistributionMetric(
       'buildbot/master/builders/builds/total_durations', bucketer=bucketer)
 
-  step_result_count = ts_mon.CounterMetric(
-      'buildbot/master/builders/steps/results/count')
-  step_times = ts_mon.CumulativeDistributionMetric(
-      'buildbot/master/builders/steps/durations', bucketer=bucketer)
-
   def poll(self):
     LOGGER.info('Collecting results from %s', self._url)
 
@@ -178,14 +173,3 @@ class FilePoller(Poller):
       self.pending_times.add(data['pending_s'], fields)
     if 'total_s' in data:
       self.total_times.add(data['total_s'], fields)
-
-    if 'steps' in data:
-      for step in data['steps']:
-        step_fields = copy.copy(fields)
-        step_fields.update({
-          'step_name': step['step_name'],
-          'result': step['result'],
-        })
-
-        self.step_result_count.increment(step_fields)
-        self.step_times.add(step['duration_s'], step_fields)
