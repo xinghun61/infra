@@ -351,6 +351,31 @@ Note:You can safely ignore the above warning unless this call should not happen.
     self._RunTest(
         failure_log, extractors.CompileStepExtractor, expected_signal_json)
 
+  def testCompileStepExtractorExtractFailedTargetsLinuxOutsideFailure(self):
+    failure_log = textwrap.dedent("""
+        [1780/30023] blabla
+        FAILED: blabla
+        blabla
+        1 error generated.
+        FAILED with 1: blabla -c a/b.cc -o c/d.o blabla
+        blabla
+        Error: FAILED with 1: blabla
+        ninja: build stopped: subcommand failed.
+        blabla.""")
+    expected_signal_json = {
+        'files': {},
+        'keywords': {},
+        'failed_targets': [
+            {
+                'source': 'a/b.cc',
+                'target': 'c/d.o'
+            }
+        ]
+    }
+
+    self._RunTest(
+        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+
   def testCompileStepExtractorExtractFailedLinkTargetsLinux(self):
     failure_log = textwrap.dedent("""
         [5430/5600] blabla

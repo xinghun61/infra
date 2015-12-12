@@ -107,6 +107,7 @@ class GeneralExtractor(Extractor):
 class CompileStepExtractor(Extractor):
   """For compile step, extracts files and identifies failed targets."""
   FAILURE_START_LINE_PREFIX = 'FAILED: '
+  FAILURE_WITH_ERROR_PATTERN = re.compile(r'FAILED with \d+:')
   LINUX_FAILED_SOURCE_TARGET_PATTERN = re.compile(
       r'(?:-c ([^\s-]+))? -o ([^\s-]+)')
   WINDOWS_FAILED_SOURCE_TARGET_PATTERN = re.compile(
@@ -187,6 +188,11 @@ class CompileStepExtractor(Extractor):
           if not failure_started:
             failure_started = True
           continue  # pragma: no cover
+        elif self.FAILURE_WITH_ERROR_PATTERN.match(line):
+          # It is possible the target and source file associated with a compile
+          # failure is logged outside a 'FAILED: ... 1 error generated' block,
+          # so extract regardless of failure_started.
+          self.GetFailedTarget(line, signal)
         elif failure_started and self.ERROR_LINE_END_PATTERN.match(line):
           failure_started = False
         elif failure_started and line.startswith(
