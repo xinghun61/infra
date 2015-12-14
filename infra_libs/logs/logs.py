@@ -258,6 +258,9 @@ def _add_file_handlers(options, logger):  # pragma: no cover
   # running locally on developers' workstations.
   logs_directory = tempfile.gettempdir()
   for directory in options.logs_directory.split(os.pathsep):
+    if not os.path.isdir(directory):
+      continue
+
     try:
       with tempfile.TemporaryFile(dir=directory):
         pass
