@@ -717,7 +717,7 @@ def reset_expired_builds():
 def delete_many_builds(bucket, status, tags=None, created_by=None):
   if status not in (model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED):
     raise errors.InvalidInputError(
-      'status can STARTED or SCHEDULED, not %s' % status)
+      'status can be STARTED or SCHEDULED, not %s' % status)
   if not acl.can_delete_scheduled_builds(bucket):
     raise current_identity_cannot('delete scheduled builds of %s', bucket)
   # Validate created_by prior scheduled a push task.
@@ -740,7 +740,7 @@ def delete_many_builds(bucket, status, tags=None, created_by=None):
 
 def _task_delete_many_builds(bucket, status, tags=None, created_by=None):
   @ndb.transactional_tasklet
-  def del_if_scheduled(key):
+  def del_if_unchanged(key):
     build = yield key.get_async()
     if build and build.status == status:  # pragma: no branch
       yield key.delete_async()
@@ -756,7 +756,7 @@ def _task_delete_many_builds(bucket, status, tags=None, created_by=None):
     q = q.filter(model.Build.tags == t)
   if created_by:
     q = q.filter(model.Build.created_by == created_by)
-  q.map(del_if_scheduled, keys_only=True)
+  q.map(del_if_unchanged, keys_only=True)
 
 
 def parse_identity(identity):
