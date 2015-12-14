@@ -9,7 +9,6 @@ from components import auth
 from components import utils
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
-from google.appengine.ext import testbed
 from testing_utils import testing
 import mock
 
@@ -710,7 +709,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   ########################## RESET EXPIRED BUILDS ##############################
 
-  def test_delete_scheduled_builds(self):
+  def test_delete_many_scheduled_builds(self):
     self.test_build.put()
     completed_build = model.Build(
       bucket=self.test_build.bucket,
@@ -720,37 +719,68 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     completed_build.put()
     self.assertIsNotNone(self.test_build.key.get())
     self.assertIsNotNone(completed_build.key.get())
-    service._task_delete_scheduled_builds(self.test_build.bucket)
+    service._task_delete_many_builds(
+      self.test_build.bucket, model.BuildStatus.SCHEDULED)
     self.assertIsNone(self.test_build.key.get())
     self.assertIsNotNone(completed_build.key.get())
 
-  def test_delete_scheduled_builds_with_tags(self):
+  def test_delete_many_started_builds(self):
+    self.test_build.put()
+
+    started_build = model.Build(
+      bucket=self.test_build.bucket,
+      status=model.BuildStatus.STARTED,
+    )
+    started_build.put()
+
+    completed_build = model.Build(
+      bucket=self.test_build.bucket,
+      status=model.BuildStatus.COMPLETED,
+      result=model.BuildResult.SUCCESS,
+    )
+    completed_build.put()
+
+    service._task_delete_many_builds(
+      self.test_build.bucket, model.BuildStatus.STARTED)
+    self.assertIsNotNone(self.test_build.key.get())
+    self.assertIsNone(started_build.key.get())
+    self.assertIsNotNone(completed_build.key.get())
+
+  def test_delete_many_builds_with_tags(self):
     self.test_build.tags = ['tag:1']
     self.test_build.put()
 
-    service._task_delete_scheduled_builds(
-      self.test_build.bucket, tags=['tag:0'])
+    service._task_delete_many_builds(
+      self.test_build.bucket, model.BuildStatus.SCHEDULED, tags=['tag:0'])
     self.assertIsNotNone(self.test_build.key.get())
 
-    service._task_delete_scheduled_builds(
-      self.test_build.bucket, tags=['tag:1'])
+    service._task_delete_many_builds(
+      self.test_build.bucket, model.BuildStatus.SCHEDULED, tags=['tag:1'])
     self.assertIsNone(self.test_build.key.get())
 
-  def test_delete_scheduled_builds_created_by(self):
+  def test_delete_many_builds_created_by(self):
     self.test_build.created_by = auth.Identity('user', 'nodir@google.com')
     self.test_build.put()
     other_build = model.Build(bucket=self.test_build.bucket)
     other_build.put()
 
-    service._task_delete_scheduled_builds(
-      self.test_build.bucket, created_by='nodir@google.com')
+    service._task_delete_many_builds(
+      self.test_build.bucket, model.BuildStatus.SCHEDULED,
+      created_by='nodir@google.com')
     self.assertIsNone(self.test_build.key.get())
     self.assertIsNotNone(other_build.key.get())
 
-  def test_delete_scheduled_builds_auth_error(self):
+  def test_delete_many_builds_auth_error(self):
     self.mock_cannot(acl.Action.DELETE_SCHEDULED_BUILDS)
     with self.assertRaises(auth.AuthorizationError):
-      service.delete_scheduled_builds(self.test_build.bucket)
+      service.delete_many_builds(
+        self.test_build.bucket, model.BuildStatus.SCHEDULED)
 
-  def test_delete_scheduled_builds_schedule_task(self):
-    service.delete_scheduled_builds(self.test_build.bucket)
+  def test_delete_many_builds_schedule_task(self):
+    service.delete_many_builds(
+      self.test_build.bucket, model.BuildStatus.SCHEDULED)
+
+  def test_delete_many_completed_builds(self):
+    with self.assertRaises(errors.InvalidInputError):
+      service.delete_many_builds(
+        self.test_build.bucket, model.BuildStatus.COMPLETED)

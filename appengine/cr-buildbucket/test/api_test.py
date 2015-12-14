@@ -483,15 +483,16 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.assertEqual(res1['error']['reason'], 'BUILD_IS_COMPLETED')
     service.cancel.assert_any_call(2)
 
-  ########################  DELETE_SCHEDULED_BUILDS  ###########################
+  ##########################  DELETE_MANY_BUILDS  #############################
 
-  def test_delete_scheduled_builds(self):
+  def test_delete_many_builds(self):
     req = {
       'bucket': 'chromium',
+      'status': 'SCHEDULED',
       'tags': ['tag:0'],
       'created_by': 'nodir@google.com',
     }
-    self.call_api('delete_scheduled_builds', req)
+    self.call_api('delete_many_builds', req)
 
   #################################### ERRORS ##################################
 
