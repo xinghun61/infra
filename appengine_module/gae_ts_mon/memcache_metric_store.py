@@ -99,7 +99,9 @@ class MemcacheMetricStore(metric_store.MetricStore):
             name=name,
             job_name=self._state.target.job_name,
             metric=metric)
-        for name, metric in self._state.metrics.iteritems()
+        # Iterate over a copy of metrics in case another thread registers a
+        # metric and modifies the dict.
+        for name, metric in self._state.metrics.items()
         if metric not in self.METRICS_EXCLUDED_FROM_INDEX]
     ndb.put_multi(entities)
 
