@@ -177,7 +177,7 @@ CTFailures.prototype.update = function() {
     };
 
     var newFailures = this._processSheriffData(sheriff_data, annotations);
-    if (internal_sheriff_data !== undefined) {
+    if (internal_sheriff_data && internal_sheriff_data.alerts !== undefined) {
       var internalFailures = this._processSheriffData(internal_sheriff_data, annotations);
       Object.keys(internalFailures, function (key) {
           newFailures[key] = updateUtil.updateLeft(newFailures[key], internalFailures[key]);
