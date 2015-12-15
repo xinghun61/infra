@@ -39,15 +39,6 @@ class HandlersTest(testing.AppengineTestCase):
     self.assertEqual(response.status_int, 403)
     self.assertFalse(interface.flush.called)
 
-  def test_uninitialized(self):
-    request = webapp2.Request.blank('/internal/cron/ts_mon/send')
-    request.headers['X-Appengine-Cron'] = 'true'
-    response = request.get_response(handlers.app)
-
-    self.assertEqual(response.status_int, 200)
-    config.initialize.assert_called_once_with()
-    interface.flush.assert_called_once_with()
-
   def test_initialized(self):
     request = webapp2.Request.blank('/internal/cron/ts_mon/send')
     request.headers['X-Appengine-Cron'] = 'true'

@@ -15,12 +15,10 @@ class SendHandler(webapp2.RequestHandler):
     if self.request.headers.get('X-Appengine-Cron') != 'true':
       self.abort(403)
 
-    if interface.state.global_monitor is None:
-      config.initialize()
-
     interface.flush()
 
 
 app = webapp2.WSGIApplication([
     (r'/internal/cron/ts_mon/send', SendHandler),
 ], debug=True)
+config.initialize(app)
