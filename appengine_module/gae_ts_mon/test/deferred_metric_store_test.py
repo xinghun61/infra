@@ -130,3 +130,18 @@ class DeferredMetricStoreTest(metric_store_test.MetricStoreTestBase,
 
     self.assertEqual(41, self.gauge_metric.get({'f': 1}))
     self.assertEqual(42, self.gauge_metric.get({'f': 2}))
+
+  def test_deferred_distribution_incr(self):
+    self.store.initialize_context()
+    self.cumulative_dist_metric.add(6)
+    self.store.finalize_context()
+
+    self.assertEquals(6, self.cumulative_dist_metric.get().sum)
+
+  def test_deferred_distribution_incr_then_incr(self):
+    self.store.initialize_context()
+    self.cumulative_dist_metric.add(4)
+    self.cumulative_dist_metric.add(1)
+    self.store.finalize_context()
+
+    self.assertEquals(5, self.cumulative_dist_metric.get().sum)

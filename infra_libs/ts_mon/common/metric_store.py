@@ -39,7 +39,7 @@ def combine_modifications(old, new):
     # the delta to the set value.
     return Modification(
         old.name, old.fields, old.mod_type,
-        (new.args[1](old.args[0], new.args[0]), old.args[1]))
+        (old.args[0] + new.args[0], old.args[1]))
   else:
     raise errors.UnknownModificationTypeError(new.mod_type)
 
