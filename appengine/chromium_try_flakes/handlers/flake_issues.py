@@ -136,6 +136,7 @@ class ProcessIssue(webapp2.RequestHandler):
                                         'Via-TryFlakes', 'Sheriff-Chromium']})
     flake_issue = api.create(new_issue)
     flake.issue_id = flake_issue.id
+    flake.num_reported_flaky_runs = len(flake.occurrences)
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
                  flake.name)
 
