@@ -91,7 +91,7 @@ class AlertsHandler(webapp2.RequestHandler):
 
   def post_to_gcs(self, data):
     # Create a GCS file with GCS client.
-    filename = datetime.datetime.utcnow().strftime("%Y/%M/%d/%H.%M.%S.%f")
+    filename = datetime.datetime.utcnow().strftime("%Y/%m/%d/%H.%M.%S.%f")
     with contextlib.closing(gcs.open(
         "/" + app_identity.get_default_gcs_bucket_name() +
         "/history/" + self.ALERT_TYPE + "/" + filename, 'w')) as f:
