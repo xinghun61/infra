@@ -1,6 +1,7 @@
 import collections
 from google.appengine.ext import db
 import json
+import logging
 import urllib2
 import webapp2
 
@@ -17,18 +18,21 @@ class MainPage(webapp2.RequestHandler):
 
 class BuildersMap(webapp2.RequestHandler):
   def get(self):
-    MASTERS_URL = ('https://chrome-infra-stats.appspot.com/_ah/api/stats/v1'
-                   '/masters')
+    MASTERS_URL = ('http://chrome-build-extract.appspot.com/get_masters?json=1')
     master_names = json.load(urllib2.urlopen(MASTERS_URL))['masters']
 
     builder_to_masters = collections.defaultdict(list)
 
     for master_name in master_names:
+      logging.info('Fetching builders for %s', master_name)
       url_pattern = 'https://chrome-build-extract.appspot.com/get_master/%s'
       master_url = url_pattern % master_name
-      master_json = json.load(urllib2.urlopen(master_url))
-      for builder_name in master_json['builders']:
-        builder_to_masters[builder_name].append(master_name)
+      try:
+        master_json = json.load(urllib2.urlopen(master_url))
+        for builder_name in master_json['builders']:
+          builder_to_masters[builder_name].append(master_name)
+      except urllib2.HTTPError:
+        logging.exception('Failed to fetch builders for %s', master_name)
     b_map = Map(content = json.dumps(builder_to_masters),
                 key_name = 'builder_to_master')
     b_map.put()
