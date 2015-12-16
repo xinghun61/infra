@@ -50,8 +50,8 @@ header .ui-actions {
     margin: 0 5px 0.5em 16px;
 }
 
-.trigger-dry-run {
-    margin: 0 0px 0.5em 5px;
+.retry-failed-try-jobs, .trigger-dry-run {
+    margin: 0 0 .5em 5px;
 }
 
 #try-job-results h2 {

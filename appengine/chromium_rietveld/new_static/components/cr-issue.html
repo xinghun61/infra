@@ -21,7 +21,7 @@ found in the LICENSE file. -->
 <link rel="import" href="cr-try-dialog.html">
 <link rel="import" href="cr-try-results.html">
 
-<polymer-element name="cr-issue" attributes="issue" on-butterbar-update="{{ updateButterbar }}" on-show-try-dialog="{{ handleShowTryDialog }}" on-set-flags="{{ setFlags }}">
+<polymer-element name="cr-issue" attributes="issue" on-butterbar-update="{{ updateButterbar }}" on-show-try-dialog="{{ handleShowTryDialog }}" on-retry-failed-try-jobs="{{ retryFailedTryJobs }}" on-set-flags="{{ setFlags }}">
     <template>
         <cr-view-handler></cr-view-handler>
         <link rel="stylesheet" href="../common/common.css">
@@ -288,6 +288,9 @@ found in the LICENSE file. -->
             },
             handleShowTryDialog: function() {
                 this.showTryDialog();
+            },
+            retryFailedTryJobs: function(e, detail) {
+                this.issue.setFlags({builders: this.servers.createFlagValue(detail.builders)});
             },
             publish: function(options) {
                 this.butterbarMessage = "Saving...";

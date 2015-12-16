@@ -60,6 +60,10 @@ found in the LICENSE file. -->
                 </template>
                 <template if="{{ patchset.mostRecent && !patchset.issue.closed && !patchset.issue.commit }}">
                     <a class="choose-trybots" is="cr-action" on-tap="{{ handleAddMore }}">Choose try jobs</a>
+                    <template if="{{ failedBuilders && failedBuilders.length }}">
+                      /
+                      <a class="retry-failed-try-jobs" is="cr-action" on-tap="{{ handleRetryFailedTryJobs }}">Retry failed try jobs</a>
+                    </template>
                     <template if="{{ patchset.issue.offer_cq }}">
                       /
                       <a class="trigger-dry-run" is="cr-action" on-tap="{{ showDryRunDialog }}">CQ dry run</a>
@@ -100,6 +104,7 @@ found in the LICENSE file. -->
             created: function() {
                 this.patchset = null;
                 this.tryJobResults = null;
+                this.failedBuilders = null;
             },
             showDryRunDialog: function() {
               if (this.patchset.issue.closed)
@@ -119,6 +124,12 @@ found in the LICENSE file. -->
                 var list = new TryJobResultList(this.patchset);
                 list.loadResults().then(function(results) {
                     self.tryJobResults = results;
+                    self.failedBuilders = [];
+                    for (var tryJobResultSet of self.tryJobResults) {
+                        // Group 5 comes from the mapping in TryJobResult.GROUPS.
+                        if (tryJobResultSet.results[tryJobResultSet.results.length - 1].group == 5)
+                            self.failedBuilders.push(tryJobResultSet.builder);
+                    }
                 }).catch(function(e) {
                     // TODO(esprehn): Show an error.
                     console.log(e);
@@ -143,6 +154,10 @@ found in the LICENSE file. -->
             },
             handleAddMore: function() {
                 this.fire("show-try-dialog");
+            },
+            handleRetryFailedTryJobs: function() {
+                if (this.failedBuilders)
+                    this.fire("retry-failed-try-jobs", { builders: this.failedBuilders });
             },
         });
     </script>
