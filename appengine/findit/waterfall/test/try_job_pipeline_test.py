@@ -5,6 +5,7 @@
 from testing_utils import testing
 
 from common import buildbucket_client
+from model import wf_analysis_status
 from model.wf_try_job import WfTryJob
 from pipeline_wrapper import pipeline_handlers
 from waterfall.try_job_pipeline import TryJobPipeline
@@ -112,3 +113,30 @@ class TryJobPipelineTest(testing.AppengineTestCase):
         }
     ]
     self.assertEqual(expected_compile_results, try_job.compile_results)
+
+  def testPipelineAbortedWithTryJobResult(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+
+    WfTryJob.Create(master_name, builder_name, build_number).put()
+
+    root_pipeline = TryJobPipeline(
+        master_name, builder_name, build_number, 'rev1', 'rev2')
+    root_pipeline._LogUnexpectedAbort(True)
+
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(wf_analysis_status.ERROR, try_job.status)
+
+  def testPipelineAbortedWithOutTryJobResult(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+
+    root_pipeline = TryJobPipeline(
+        master_name, builder_name, build_number, 'rev1', 'rev2')
+    root_pipeline._LogUnexpectedAbort(True)
+
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+
+    self.assertIsNone(try_job)
