@@ -54,16 +54,8 @@
     }
   ],
   {
-    "bot_commits": 2,
-    "bot_committers": 1,
-    "bot_manual_commits": 1,
     "committers": 4,
     "cq_commits": 3,
-    "manual_commits": 2,
-    "manual_committers": 2,
-    "manual_only_committers": {
-      "someone@chromium.org": 1
-    },
     "total_commits": 5,
     "users": 3
   }

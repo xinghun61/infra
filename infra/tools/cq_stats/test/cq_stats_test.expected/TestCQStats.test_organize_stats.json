@@ -121,46 +121,10 @@
     "size": 1
   },
   "patchset-count": 0,
-  "patchset-durations": {
-    "10": 0.0,
-    "25": 0.0,
-    "50": 0.0,
-    "75": 0.0,
-    "90": 0.0,
-    "95": 0.0,
-    "99": 0.0,
-    "max": 0,
-    "mean": 0.0,
-    "min": 0,
-    "raw": [
-      0
-    ],
-    "size": 1
-  },
   "patchset-false-reject-count": 0,
-  "patchset-total-commit-queue-durations": {
-    "10": 0.0,
-    "25": 0.0,
-    "50": 0.0,
-    "75": 0.0,
-    "90": 0.0,
-    "95": 0.0,
-    "99": 0.0,
-    "max": 0,
-    "mean": 0.0,
-    "min": 0,
-    "raw": [
-      0
-    ],
-    "size": 1
-  },
   "rejected-patches": [],
   "rejections": [],
   "retry-quota-exceeded": [],
-  "tree": {
-    "open": 0.0,
-    "total": 0.0
-  },
   "trybot-bot-false-reject-count": 2,
   "trybot-bot-pass-count": 1,
   "usage": {}

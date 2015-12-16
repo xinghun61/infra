@@ -128,30 +128,6 @@ class TestCQStats(auto_stub.TestCase):
     self.mock(cq_stats.session, 'get', lambda url: MockResponse())
     self.assertEqual(cq_stats.fetch_json('foo'), {})
 
-  def test_fetch_tree_status(self):
-    # Invalid result
-    self.mock(cq_stats, 'fetch_json', lambda url: {})
-    self.assertEqual([], cq_stats.fetch_tree_status(
-        'chromium', datetime.datetime(2014, 10, 15)))
-    # Valid result
-    res = [{'date': '2014-10-01 14:54:44.553',
-            'general_state': 'open'},
-           {'date': '2014-10-14 10:54:44',
-            'general_state': 'closed'},
-           {'date': '2014-10-16 10:54:44',
-            'general_state': 'closed'},
-          ]
-    self.mock(cq_stats, 'fetch_json', lambda url: res)
-
-    status1 = cq_stats.fetch_tree_status(
-        'chromium', datetime.datetime(2014, 10, 15))
-
-    status2 = cq_stats.fetch_tree_status(
-        'chromium', datetime.datetime(2014, 10, 17),
-        start_date= datetime.datetime(2014, 10, 15))
-
-    return map(ensure_serializable, [status1, status2])
-
   def test_fetch_git_page(self):
     self.mock(urllib2, 'urlopen', urlopen_mock(['{([bad json']))
     self.assertEqual({}, cq_stats.fetch_git_page('url'))
@@ -554,46 +530,6 @@ class TestCQStats(auto_stub.TestCase):
         datetime.datetime(2014, 10, 15),
         patch_id)
 
-
-  def test_derive_tree_stats(self):
-    def makeDate(days=0, hours=0, minutes=0, seconds=0):
-      start_date = datetime.datetime(2014, 10, 1, 15, 20, 12, 345)
-      return start_date + datetime.timedelta(
-          days=days, seconds=hours*3600+minutes*60+seconds)
-
-    events =  [
-        {'date': makeDate(-1),
-         'open': True},
-        {'date': makeDate(0, 12, 35, 11),
-         'open': False},
-        {'date': makeDate(0, 12, 45, 53),
-         'open': True},
-        {'date': makeDate(0, 23, 59, 51),
-         'open': False},
-        {'date': makeDate(0, 23, 59, 55),
-         'open': True},
-        {'date': makeDate(1, 3, 43, 32),
-         'open': False},
-    ]
-    # pylint: disable=unused-argument
-    def mock_fetch(_project, end_date, _start_date=None, limit=1000):
-      return [e for e in events if e['date'] <= end_date]
-
-    self.mock(cq_stats, 'fetch_tree_status', mock_fetch)
-    self.assertEqual(
-        cq_stats.derive_tree_stats('project', makeDate(0), makeDate(1)),
-        {'open': 85754.0, 'total': 3600.0 * 24})
-    self.assertEqual(
-        cq_stats.derive_tree_stats('project', makeDate(0), makeDate(2)),
-        {'open': 99166.0, 'total': 3600.0 * 24 * 2})
-
-    def empty_fetch(_project, end_date, _start_date=None, limit=1000):
-      return []
-    self.mock(cq_stats, 'fetch_tree_status', empty_fetch)
-    self.assertEqual(
-        cq_stats.derive_tree_stats('project', makeDate(0), makeDate(1)),
-        {'open': 0.0, 'total': 3600.0 * 24})
-
   def test_print_attempt_counts(self):
     self.mock(cq_stats, 'output', self.print_mock)
 
@@ -623,20 +559,11 @@ class TestCQStats(auto_stub.TestCase):
 
     return self.expectations
 
-  def test_print_duration(self):
-    self.mock(cq_stats, 'output', self.print_mock)
-
-    cq_stats.print_duration('mean', cq_stats.default_stats(), None)
-    return self.expectations
-
   def test_print_usage(self):
     self.mock(cq_stats, 'output', self.print_mock)
 
     stats = cq_stats.default_stats()
-    stats['usage'] = cq_stats.derive_log_stats([], [])
-    cq_stats.print_usage(stats)
-
-    stats['usage']['bot_manual_commits'] += 1
+    stats['usage'] = cq_stats.derive_log_stats([])
     cq_stats.print_usage(stats)
 
     return self.expectations
@@ -803,8 +730,6 @@ class TestCQStats(auto_stub.TestCase):
             'latest': cq_stats.default_stats(),
             'previous': cq_stats.default_stats()})
     self.mock(cq_stats, 'derive_stats', lambda *_args, **_kwargs: {})
-    self.mock(cq_stats, 'derive_tree_stats',
-        lambda *_: {'open': 0.0, 'total': 3600.0})
     self.mock(cq_stats, 'derive_git_stats', lambda *_: {})
 
     cq_stats.acquire_stats(Args(project='chromium', bots=[]),
