@@ -26,7 +26,8 @@ DESCRIPTION_TEMPLATE = (
     'Please find the right owner to fix the respective test/step and assign '
     'this issue to them. If the step/test is infrastructure-related, please '
     'add Infra-Troopers label and change issue status to Untriaged.\n\n'
-    'List of all flakes for this test/step can be found at %(flakes_url)s.')
+    'We have detected %(flakes_count)d recent flakes. List of all flakes can '
+    'be found at %(flakes_url)s.')
 REOPENED_DESCRIPTION_TEMPLATE = (
     '%(description)s\n\n'
     'This flaky test/step was previously tracked in issue %(old_issue)d.')
@@ -118,11 +119,12 @@ class ProcessIssue(webapp2.RequestHandler):
     flake.issue_last_updated = now
 
   @ndb.transactional
-  def _create_issue(self, api, flake):
+  def _create_issue(self, api, flake, flakes_count):
     summary = SUMMARY_TEMPLATE % {'name': flake.name}
     description = DESCRIPTION_TEMPLATE % {
         'summary': summary,
-        'flakes_url': FLAKES_URL_TEMPLATE % flake.key.urlsafe()}
+        'flakes_url': FLAKES_URL_TEMPLATE % flake.key.urlsafe(),
+        'flakes_count': flakes_count}
     if flake.old_issue_id:
       description = REOPENED_DESCRIPTION_TEMPLATE % {
           'description': description, 'old_issue': flake.old_issue_id}
@@ -172,7 +174,7 @@ class ProcessIssue(webapp2.RequestHandler):
       self._update_issue(api, flake, new_flakes_count, now)
       self._increment_update_counter()
     else:
-      self._create_issue(api, flake)
+      self._create_issue(api, flake, new_flakes_count)
       # Don't update the issue just yet, this may fail, and we need the
       # transaction to succeed in order to avoid filing duplicate bugs.
       self._increment_update_counter()

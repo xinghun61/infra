@@ -122,7 +122,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
         'respective test/step and assign this issue to them. If the step/test '
         'is infrastructure-related, please add Infra-Troopers label and change '
         'issue status to Untriaged.\n\n'
-        'List of all flakes for this test/step can be found at '
+        'We have detected 2 recent flakes. List of all flakes can be found at '
         'https://chromium-try-flakes.appspot.com/all_flake_occurrences?key='
         'agx0ZXN0YmVkLXRlc3RyGQsSBUZsYWtlIg50ZXN0LWZsYWtlLWtleQw.')
     self.assertEqual(issue.status, 'Untriaged')
