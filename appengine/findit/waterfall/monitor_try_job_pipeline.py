@@ -13,9 +13,14 @@ from pipeline_wrapper import pipeline
 
 
 class MonitorTryJobPipeline(BasePipeline):
-  """A piepline for monitoring a tryjob and recording results when it's done."""
+  """A piepline for monitoring a tryjob and recording results when it's done.
+
+  The result will be stored to compile_results or test_results according to
+  which type of build failure we are running try job for.
+  """
 
   # Arguments number differs from overridden method - pylint: disable=W0221
+  # TODO(chanli): Handle try job for test failures later.
   def run(self, master_name, builder_name, build_number, try_job_id):
     assert try_job_id
 
@@ -36,27 +41,27 @@ class MonitorTryJobPipeline(BasePipeline):
           'url': build.url,
           'try_job_id': try_job_id,
         }
-        if (try_job_result.results and
-            try_job_result.results[-1]['try_job_id'] == try_job_id):
-          try_job_result.results[-1].update(result)
+        if (try_job_result.compile_results and
+            try_job_result.compile_results[-1]['try_job_id'] == try_job_id):
+          try_job_result.compile_results[-1].update(result)
         else:  # pragma: no cover
-          try_job_result.results.append(result)
+          try_job_result.compile_results.append(result)
 
         try_job_result.status = wf_analysis_status.ANALYZED
         try_job_result.put()
-        return try_job_result.results
+        return try_job_result.compile_results
       else:  # pragma: no cover
         if build.status == 'STARTED' and not already_set_started:
           try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
-          if (not try_job_result.results or
-              try_job_result.results[-1]['try_job_id'] != try_job_id):
+          if (not try_job_result.compile_results or
+              try_job_result.compile_results[-1]['try_job_id'] != try_job_id):
             try_job_result.status = wf_analysis_status.ANALYZING
             result = {
               'result': None,
               'url': build.url,
               'try_job_id': try_job_id,
             }
-            try_job_result.results.append(result)
+            try_job_result.compile_results.append(result)
             try_job_result.put()
           already_set_started = True
 

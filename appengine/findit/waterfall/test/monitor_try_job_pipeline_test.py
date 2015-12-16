@@ -29,25 +29,25 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
               }
           }
       }
-      results = []
+      compile_results = []
       build_error = data.get(build_id)
       if build_error.get('error'):  # pragma: no cover
-        results.append((
+        compile_results.append((
             buildbucket_client.BuildbucketError(build_error['error']), None))
       else:
-        results.append((
+        compile_results.append((
             None, buildbucket_client.BuildbucketBuild(build_error['build'])))
-      return results
+      return compile_results
     self.mock(buildbucket_client, 'GetTryJobs', Mocked_GetTryJobs)
 
-  def testGetTryJobsSuccess(self):
+  def testGetTryJobsForCompileSuccess(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
     try_job_id = '1'
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.results = [
+    try_job.compile_results = [
         {
             'result': None,
             'url': 'url',
@@ -58,10 +58,10 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
     self._Mock_GetTryJobs(try_job_id)
 
     pipeline = MonitorTryJobPipeline()
-    results = pipeline.run(
+    compile_results = pipeline.run(
         master_name, builder_name, build_number, try_job_id)
 
-    expected_results = [
+    expected_compile_results = [
         {
             'result': [
                 ['rev1', 'passed'],
@@ -71,7 +71,7 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
             'try_job_id': '1',
         }
     ]
-    self.assertEqual(expected_results, results)
+    self.assertEqual(expected_compile_results, compile_results)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
-    self.assertEqual(expected_results, try_job.results)
+    self.assertEqual(expected_compile_results, try_job.compile_results)

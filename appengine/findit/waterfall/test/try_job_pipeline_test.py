@@ -22,15 +22,15 @@ class TryJobPipelineTest(testing.AppengineTestCase):
 
   def _Mock_TriggerTryJobs(self, responses):
     def Mocked_TriggerTryJobs(*_):
-      results = []
+      compile_results = []
       for response in responses:
         if response.get('error'):  # pragma: no cover
-          results.append((
+          compile_results.append((
               buildbucket_client.BuildbucketError(response['error']), None))
         else:
-          results.append((
+          compile_results.append((
               None, buildbucket_client.BuildbucketBuild(response['build'])))
-      return results
+      return compile_results
     self.mock(buildbucket_client, 'TriggerTryJobs', Mocked_TriggerTryJobs)
 
   def _Mock_GetTryJobs(self, build_id):
@@ -53,15 +53,15 @@ class TryJobPipelineTest(testing.AppengineTestCase):
               }
           }
       }
-      results = []
+      compile_results = []
       build_error = data.get(build_id)
       if build_error.get('error'):  # pragma: no cover
-        results.append((
+        compile_results.append((
             buildbucket_client.BuildbucketError(build_error['error']), None))
       else:
-        results.append((
+        compile_results.append((
             None, buildbucket_client.BuildbucketBuild(build_error['build'])))
-      return results
+      return compile_results
     self.mock(buildbucket_client, 'GetTryJobs', Mocked_GetTryJobs)
 
   def testSuccessfullyScheduleNewTryJob(self):
@@ -85,7 +85,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
     self._Mock_GetTryJobs('1')
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.results = [
+    try_job.compile_results = [
         {
             'result': None,
             'url': 'url',
@@ -101,7 +101,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
 
-    expected_results = [
+    expected_compile_results = [
         {
             'result': [
                 ['rev1', 'passed'],
@@ -111,4 +111,4 @@ class TryJobPipelineTest(testing.AppengineTestCase):
             'try_job_id': '1',
         }
     ]
-    self.assertEqual(expected_results, try_job.results)
+    self.assertEqual(expected_compile_results, try_job.compile_results)

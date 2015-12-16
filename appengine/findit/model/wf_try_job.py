@@ -13,8 +13,10 @@ class WfTryJob(BaseBuildModel):
 
   'Wf' is short for waterfall.
   """
-  # A list of dict containing results and urls of each tryjob.
-  results = ndb.JsonProperty(default=[], indexed=False, compressed=True)
+  # A list of dict containing results and urls of each tryjob for compile.
+  compile_results = ndb.JsonProperty(default=[], indexed=False, compressed=True)
+  # TODO(chanli): Add test_results when add support for tryjobs for test.
+
   # The status of the try job.
   status = ndb.IntegerProperty(
       default=wf_analysis_status.PENDING, indexed=False)

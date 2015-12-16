@@ -155,7 +155,7 @@ class TryJobUtilTest(testing.AppengineTestCase):
     }
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.result = [['rev', 'failed']]
+    try_job.compile_results = [['rev', 'failed']]
     try_job.status = wf_analysis_status.ANALYZED
     try_job.put()
 
