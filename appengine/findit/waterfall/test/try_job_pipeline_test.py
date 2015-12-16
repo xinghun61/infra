@@ -65,7 +65,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
       return compile_results
     self.mock(buildbucket_client, 'GetTryJobs', Mocked_GetTryJobs)
 
-  def testSuccessfullyScheduleNewTryJob(self):
+  def testSuccessfullyScheduleNewTryJobForCompile(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -85,15 +85,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
     self._Mock_TriggerTryJobs(responses)
     self._Mock_GetTryJobs('1')
 
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.compile_results = [
-        {
-            'result': None,
-            'url': 'url',
-            'try_job_id': '1',
-        }
-    ]
-    try_job.put()
+    WfTryJob.Create(master_name, builder_name, build_number).put()
 
     root_pipeline = TryJobPipeline(
         master_name, builder_name, build_number, good_revision, bad_revision)

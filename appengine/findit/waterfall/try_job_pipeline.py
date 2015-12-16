@@ -45,6 +45,6 @@ class TryJobPipeline(BasePipeline):
       self, master_name, builder_name, build_number,
       good_revision, bad_revision):
     tryjob_ids = yield ScheduleTryJobPipeline(
-        master_name, builder_name, good_revision, bad_revision)
+        master_name, builder_name, build_number, good_revision, bad_revision)
     yield MonitorTryJobPipeline(
         master_name, builder_name, build_number, tryjob_ids)

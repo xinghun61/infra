@@ -5,6 +5,7 @@
 from testing_utils import testing
 
 from common import buildbucket_client
+from model.wf_try_job import WfTryJob
 from pipeline_wrapper import pipeline
 from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 from waterfall import waterfall_config
@@ -30,9 +31,10 @@ class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
       return results
     self.mock(buildbucket_client, 'TriggerTryJobs', Mocked_TriggerTryJobs)
 
-  def testSuccessfullyScheduleNewTryJob(self):
+  def testSuccessfullyScheduleNewTryJobForCompile(self):
     master_name = 'm'
     builder_name = 'b'
+    build_number = 223
     good_revision = 'rev1'
     bad_revision = 'rev2'
 
@@ -48,8 +50,12 @@ class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
     self._Mock_GetTrybotForWaterfallBuilder(master_name, builder_name)
     self._Mock_TriggerTryJobs(responses)
 
+    WfTryJob.Create(master_name, builder_name, build_number).put()
+
     try_job_pipeline = ScheduleTryJobPipeline()
     try_job_id = try_job_pipeline.run(
-        master_name, builder_name, good_revision, bad_revision)
+        master_name, builder_name, build_number, good_revision, bad_revision)
 
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual('1', try_job_id)
+    self.assertEqual('1', try_job.compile_results[-1]['try_job_id'])

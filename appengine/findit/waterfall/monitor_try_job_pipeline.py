@@ -34,13 +34,13 @@ class MonitorTryJobPipeline(BasePipeline):
         raise pipeline.Retry(
             'Error "%s" occurred. Reason: "%s"' % (error.message, error.reason))
       elif build.status == 'COMPLETED':
-        try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
-
         result = {
-          'result': build.result,
-          'url': build.url,
-          'try_job_id': try_job_id,
+            'result': build.result,
+            'url': build.url,
+            'try_job_id': try_job_id,
         }
+
+        try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
         if (try_job_result.compile_results and
             try_job_result.compile_results[-1]['try_job_id'] == try_job_id):
           try_job_result.compile_results[-1].update(result)
@@ -52,17 +52,23 @@ class MonitorTryJobPipeline(BasePipeline):
         return try_job_result.compile_results
       else:  # pragma: no cover
         if build.status == 'STARTED' and not already_set_started:
-          try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
-          if (not try_job_result.compile_results or
-              try_job_result.compile_results[-1]['try_job_id'] != try_job_id):
-            try_job_result.status = wf_analysis_status.ANALYZING
-            result = {
+          result = {
               'result': None,
               'url': build.url,
               'try_job_id': try_job_id,
-            }
+          }
+
+          try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
+          if (try_job_result.compile_results and
+              try_job_result.compile_results[-1]['try_job_id'] == try_job_id):
+            try_job_result.compile_results[-1].update(result)
+          else:  # pragma: no cover
+            # Normally result for current try job should've been saved in
+            # schedule_try_job_pipeline, so this branch shouldn't be reached.
             try_job_result.compile_results.append(result)
-            try_job_result.put()
+
+          try_job_result.status = wf_analysis_status.ANALYZING
+          try_job_result.put()
           already_set_started = True
 
         time.sleep(60)

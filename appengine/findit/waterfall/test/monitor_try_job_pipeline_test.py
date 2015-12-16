@@ -5,6 +5,7 @@
 from testing_utils import testing
 
 from common import buildbucket_client
+from model import wf_analysis_status
 from model.wf_try_job import WfTryJob
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 
@@ -75,3 +76,4 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(expected_compile_results, try_job.compile_results)
+    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
