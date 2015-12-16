@@ -162,9 +162,12 @@ class TryserverBuilders(ndb.Model):
     tryserver_json = memcache.get(cls.MEMCACHE_TRYSERVERS_KEY)
     if tryserver_json is not None:
       return tryserver_json
-
-    tryserver_json = []
     tryserver_dict = json.loads(cls.get_instance().json_contents)
+    return cls._prepare_and_cache_curated_tryservers(tryserver_dict)
+
+  @classmethod
+  def _prepare_and_cache_curated_tryservers(cls, tryserver_dict):
+    tryserver_json = []
     for tryserver in sorted(tryserver_dict):
       categories = tryserver_dict[tryserver]
       builders_arr = []
@@ -203,3 +206,4 @@ class TryserverBuilders(ndb.Model):
     instance = cls.get_instance()
     instance.json_contents = json.dumps(new_json_contents)
     instance.put()
+    cls._prepare_and_cache_curated_tryservers(new_json_contents)
