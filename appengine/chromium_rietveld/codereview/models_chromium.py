@@ -110,6 +110,9 @@ class TryserverBuilders(ndb.Model):
     'tryserver.infra': [
       'http://build.chromium.org/p/tryserver.infra/json/builders'
     ],
+    'tryserver.libyuv': [
+      'http://build.chromium.org/p/tryserver.libyuv/json/builders'
+    ],
     'tryserver.v8': [
       'http://build.chromium.org/p/tryserver.v8/json/builders'
     ],
