@@ -136,7 +136,7 @@ def fields_for(build, **extra):
   if build:  # pragma: no branch
     tags = dict(t.split(':', 1) for t in build.tags)
     for t in TAG_FIELDS:
-      fields.setdefault(t, tags.get(t))
+      fields.setdefault(t, tags.get(t, ''))
   return fields
 
 
