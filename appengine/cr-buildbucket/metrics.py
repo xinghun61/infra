@@ -4,7 +4,6 @@
 
 import logging
 
-from google.appengine.api import app_identity
 from google.appengine.ext import ndb
 
 from components import metrics
@@ -57,67 +56,47 @@ METRIC_SCHEDULING_LATENCY = metrics.Descriptor(
 
 # gae_ts_mon
 FIELD_BUCKET = 'bucket'
-COMMON_FIELDS = {
-  'buildbucket_hostname': app_identity.get_default_version_hostname(),
-}
 
-
-def _def_metric(metric_type, name, description):
-  return metric_type(
-    'buildbucket/%s' % name,
-    fields=COMMON_FIELDS,
-    description=description)
-
-
-CREATE_COUNT = _def_metric(
-  gae_ts_mon.CounterMetric,
-  'builds/created',
-  'Build creation',
+CREATE_COUNT = gae_ts_mon.CounterMetric(
+  'buildbucket/builds/created',
+  description='Build creation',
 )
-START_COUNT = _def_metric(
-  gae_ts_mon.CounterMetric,
-  'builds/started',
-  'Build start',
+START_COUNT = gae_ts_mon.CounterMetric(
+  'buildbucket/builds/started',
+  description='Build start',
 )
-COMPLETE_COUNT = _def_metric(
-  gae_ts_mon.CounterMetric,
+COMPLETE_COUNT = gae_ts_mon.CounterMetric(
   'builds/completed',
-  'Build completion, including success, failure and cancellation'
+  description='Build completion, including success, failure and cancellation',
 )
-HEARTBEAT_COUNT = _def_metric(
-  gae_ts_mon.CounterMetric,
-  'builds/heartbeats',
-  'Failures to extend a build lease'
+HEARTBEAT_COUNT = gae_ts_mon.CounterMetric(
+  'buildbucket/builds/heartbeats',
+  description='Failures to extend a build lease'
 )
-LEASE_COUNT = _def_metric(
-  gae_ts_mon.CounterMetric,
-  'builds/leases',
-  'Successful build lease extension',
+LEASE_COUNT = gae_ts_mon.CounterMetric(
+  'buildbucket/builds/leases',
+  description='Successful build lease extension',
 )
-LEASE_EXPIRATION_COUNT = _def_metric(
-  gae_ts_mon.CounterMetric,
-  'builds/lease_expired',
-  'Build lease expirations'
+LEASE_EXPIRATION_COUNT = gae_ts_mon.CounterMetric(
+  'buildbucket/builds/lease_expired',
+  description='Build lease expirations'
 )
-CURRENTLY_PENDING = _def_metric(
-  gae_ts_mon.GaugeMetric,
-  'builds/pending',
-  'Number of pending builds',
+CURRENTLY_PENDING = gae_ts_mon.GaugeMetric(
+  'buildbucket/builds/pending',
+  description='Number of pending builds',
 )
-CURRENTLY_RUNNING = _def_metric(
-  gae_ts_mon.GaugeMetric,
-  'builds/running',
-  'Number of running builds'
+CURRENTLY_RUNNING = gae_ts_mon.GaugeMetric(
+  'buildbucket/builds/running',
+  description='Number of running builds'
 )
-LEASE_LATENCY = _def_metric(
-  gae_ts_mon.NonCumulativeDistributionMetric,
-  'builds/never_leased_duration',
-  'Duration between a build is created and it is leased for the first time',
+LEASE_LATENCY = gae_ts_mon.NonCumulativeDistributionMetric(
+  'buildbucket/builds/never_leased_duration',
+  description=(
+    'Duration between a build is created and it is leased for the first time'),
 )
-SCHEDULING_LATENCY = _def_metric(
-  gae_ts_mon.NonCumulativeDistributionMetric,
-  'builds/scheduling_duration',
-  'Duration of a build remaining in SCHEDULED state',
+SCHEDULING_LATENCY = gae_ts_mon.NonCumulativeDistributionMetric(
+  'buildbucket/builds/scheduling_duration',
+  description='Duration of a build remaining in SCHEDULED state',
 )
 
 
