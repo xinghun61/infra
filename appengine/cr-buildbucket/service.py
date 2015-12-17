@@ -16,6 +16,7 @@ from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 import acl
 import errors
+import metrics
 import model
 import swarming
 
@@ -168,6 +169,7 @@ def add_async(
     raise
   logging.info(
     'Build %s was created by %s', build.key.id(), identity.to_bytes())
+  metrics.increment(metrics.CREATE_COUNT, build)
 
   if client_operation_id is not None:
     yield ctx.memcache_set(client_operation_cache_key, build.key.id(), 60)
@@ -388,11 +390,14 @@ def lease(build_id, lease_expiration_date=None):
     build.leasee = auth.get_current_identity()
     build.never_leased = False
     build.put()
-    logging.info(
-      'Build %s was leased by %s', build.key.id(), build.leasee.to_bytes())
     return True, build
 
-  return try_lease()
+  leased, build = try_lease()
+  if leased:
+    logging.info(
+      'Build %s was leased by %s', build.key.id(), build.leasee.to_bytes())
+    metrics.increment(metrics.LEASE_COUNT, build)
+  return leased, build
 
 
 def _check_lease(build, lease_key):
@@ -456,7 +461,6 @@ def _enqueue_callback_task_if_needed(build):
     )
 
 
-@ndb.transactional
 def start(build_id, lease_key, url=None):
   """Marks build as STARTED. Idempotent.
 
@@ -470,28 +474,35 @@ def start(build_id, lease_key, url=None):
   """
   validate_lease_key(lease_key)
   validate_url(url)
-  build = _get_leasable_build(build_id)
 
-  if build.status == model.BuildStatus.STARTED:
-    if build.url != url:
-      build.url = url
-      build.put()
+  @ndb.transactional
+  def txn():
+    build = _get_leasable_build(build_id)
+
+    if build.status == model.BuildStatus.STARTED:
+      if build.url != url:
+        build.url = url
+        build.put()
+      return build
+    elif build.status == model.BuildStatus.COMPLETED:
+      raise errors.BuildIsCompletedError('Cannot start a completed build')
+    assert build.status == model.BuildStatus.SCHEDULED
+    _check_lease(build, lease_key)
+
+    build.status = model.BuildStatus.STARTED
+    build.status_changed_time = utils.utcnow()
+    build.url = url
+    build.put()
+    _enqueue_callback_task_if_needed(build)
     return build
-  elif build.status == model.BuildStatus.COMPLETED:
-    raise errors.BuildIsCompletedError('Cannot start a completed build')
-  assert build.status == model.BuildStatus.SCHEDULED
-  _check_lease(build, lease_key)
 
-  build.status = model.BuildStatus.STARTED
-  build.status_changed_time = utils.utcnow()
-  build.url = url
-  build.put()
+  build = txn()
   logging.info('Build %s was started. URL: %s', build.key.id(), url)
-  _enqueue_callback_task_if_needed(build)
+  metrics.increment(metrics.START_COUNT, build)
   return build
 
 
-@ndb.transactional_tasklet
+@ndb.tasklet
 def heartbeat_async(build_id, lease_key, lease_expiration_date):
   """Extends build lease.
 
@@ -503,7 +514,8 @@ def heartbeat_async(build_id, lease_key, lease_expiration_date):
   Returns:
     The updated Build as Future.
   """
-  try:
+  @ndb.transactional_tasklet
+  def txn():
     validate_lease_key(lease_key)
     if lease_expiration_date is None:
       raise errors.InvalidInputError('Lease expiration date not specified')
@@ -516,8 +528,14 @@ def heartbeat_async(build_id, lease_key, lease_expiration_date):
     _check_lease(build, lease_key)
     build.lease_expiration_date = lease_expiration_date
     yield build.put_async()
+    raise ndb.Return(build)
+
+  build = None
+  try:
+    build = yield txn()
   except Exception as ex:
     logging.warning('Heartbeat for build %s failed: %s', build_id, ex)
+    metrics.increment(metrics.HEARTBEAT_COUNT, build, status='FAILURE')
     raise
   raise ndb.Return(build)
 
@@ -550,7 +568,6 @@ def heartbeat_batch(heartbeats):
   return [get_result(h, f) for h, f in futures]
 
 
-@ndb.transactional
 def _complete(
     build_id, lease_key, result, result_details, failure_reason=None,
     url=None):
@@ -558,32 +575,45 @@ def _complete(
   validate_lease_key(lease_key)
   validate_url(url)
   assert result in (model.BuildResult.SUCCESS, model.BuildResult.FAILURE)
-  build = _get_leasable_build(build_id)
 
-  if build.status == model.BuildStatus.COMPLETED:
-    if (build.result == result and
-        build.failure_reason == failure_reason and
-        build.result_details == result_details and
-        build.url == url):
-      return build
-    raise errors.BuildIsCompletedError(
-      'Build %s has already completed' % build_id)
-  _check_lease(build, lease_key)
+  @ndb.transactional
+  def txn():
+    build = _get_leasable_build(build_id)
 
-  build.status = model.BuildStatus.COMPLETED
-  build.status_changed_time = utils.utcnow()
-  build.complete_time = utils.utcnow()
-  build.result = result
-  if url is not None:  # pragma: no branch
-    build.url = url
-  build.result_details = result_details
-  build.failure_reason = failure_reason
-  build.clear_lease()
-  build.put()
+    if build.status == model.BuildStatus.COMPLETED:
+      if (build.result == result and
+          build.failure_reason == failure_reason and
+          build.result_details == result_details and
+          build.url == url):
+        return build
+      raise errors.BuildIsCompletedError(
+        'Build %s has already completed' % build_id)
+    _check_lease(build, lease_key)
+
+    build.status = model.BuildStatus.COMPLETED
+    build.status_changed_time = utils.utcnow()
+    build.complete_time = utils.utcnow()
+    build.result = result
+    if url is not None:  # pragma: no branch
+      build.url = url
+    build.result_details = result_details
+    build.failure_reason = failure_reason
+    build.clear_lease()
+    build.put()
+    _enqueue_callback_task_if_needed(build)
+    return build
+
+  build = txn()
   logging.info(
     'Build %s was completed. Status: %s. Result: %s',
     build.key.id(), build.status, build.result)
-  _enqueue_callback_task_if_needed(build)
+  metrics.increment(
+    metrics.COMPLETE_COUNT,
+    build,
+    result=str(result),
+    failure_reason=str(failure_reason),
+    cancelation_reason='',
+  )
   return build
 
 
@@ -623,7 +653,6 @@ def fail(
     failure_reason, url=url)
 
 
-@ndb.transactional
 def cancel(build_id):
   """Cancels build. Does not require a lease key.
 
@@ -633,46 +662,64 @@ def cancel(build_id):
   Returns:
     Canceled Build.
   """
-  build = model.Build.get_by_id(build_id)
-  if build is None:
-    raise errors.BuildNotFoundError()
-  if not acl.can_cancel_build(build):
-    raise current_identity_cannot('cancel build %s', build.key.id())
-  if build.status == model.BuildStatus.COMPLETED:
-    if build.result == model.BuildResult.CANCELED:
-      return build
-    raise errors.BuildIsCompletedError('Cannot cancel a completed build')
-  now = utils.utcnow()
-  build.status = model.BuildStatus.COMPLETED
-  build.status_changed_time = now
-  build.result = model.BuildResult.CANCELED
-  build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
-  build.complete_time = now
-  build.clear_lease()
-  build.put()
+  @ndb.transactional
+  def txn():
+    build = model.Build.get_by_id(build_id)
+    if build is None:
+      raise errors.BuildNotFoundError()
+    if not acl.can_cancel_build(build):
+      raise current_identity_cannot('cancel build %s', build.key.id())
+    if build.status == model.BuildStatus.COMPLETED:
+      if build.result == model.BuildResult.CANCELED:
+        return build
+      raise errors.BuildIsCompletedError('Cannot cancel a completed build')
+    now = utils.utcnow()
+    build.status = model.BuildStatus.COMPLETED
+    build.status_changed_time = now
+    build.result = model.BuildResult.CANCELED
+    build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
+    build.complete_time = now
+    build.clear_lease()
+    build.put()
+    return build
+
+  build = txn()
   logging.info(
     'Build %s was cancelled by %s', build.key.id(),
     auth.get_current_identity().to_bytes())
+  metrics.increment(
+    metrics.COMPLETE_COUNT,
+    build,
+    result=str(build.result),
+    failure_reason='',
+    cancelation_reason=str(build.cancelation_reason),
+  )
   return build
 
 
-@ndb.transactional_tasklet
+@ndb.tasklet
 def _reset_expired_build_async(build_id):
-  build = yield model.Build.get_by_id_async(build_id)
-  if not build or build.lease_expiration_date is None:  # pragma: no cover
-    return
-  is_expired = build.lease_expiration_date <= utils.utcnow()
-  if not is_expired:  # pragma: no cover
-    return
+  @ndb.transactional_tasklet
+  def txn():
+    build = yield model.Build.get_by_id_async(build_id)
+    if not build or build.lease_expiration_date is None:  # pragma: no cover
+      return
+    is_expired = build.lease_expiration_date <= utils.utcnow()
+    if not is_expired:  # pragma: no cover
+      return
 
-  assert build.status != model.BuildStatus.COMPLETED, (
-    'Completed build is leased')
-  build.clear_lease()
-  build.status = model.BuildStatus.SCHEDULED
-  build.status_changed_time = utils.utcnow()
-  build.url = None
-  yield build.put_async()
+    assert build.status != model.BuildStatus.COMPLETED, (
+      'Completed build is leased')
+    build.clear_lease()
+    build.status = model.BuildStatus.SCHEDULED
+    build.status_changed_time = utils.utcnow()
+    build.url = None
+    yield build.put_async()
+    raise ndb.Return(build)
+
+  build = yield txn()
   logging.info('Expired build %s was reset', build_id)
+  metrics.increment(metrics.LEASE_EXPIRATION_COUNT, build)
 
 
 @ndb.transactional_tasklet

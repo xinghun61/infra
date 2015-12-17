@@ -92,3 +92,18 @@ class MerticsTest(testing.AppengineTestCase):
       buf, 'x', metrics.METRIC_PENDING_BUILDS, model.BuildStatus.SCHEDULED)
     metrics.send_build_status_metric.assert_any_call(
       buf, 'x', metrics.METRIC_RUNNING_BUILDS, model.BuildStatus.STARTED)
+
+  def test_fields_for(self):
+    self.assertEqual(
+      metrics.fields_for(
+        model.Build(
+          bucket='master.x',
+          tags=['builder:release', 'user_agent:cq', 'something:else']),
+        result='SUCCESS'),
+      {
+        'bucket': 'master.x',
+        'builder': 'release',
+        'user_agent': 'cq',
+        'result': 'SUCCESS',
+      }
+    )

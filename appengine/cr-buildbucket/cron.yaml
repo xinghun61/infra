@@ -40,3 +40,10 @@ cron:
   target: backend
   url: /internal/cron/swarming/update_builds
   schedule: every 10 minutes
+
+### gae_ts_mon
+
+- description: Send ts_mon metrics
+  target: backend
+  url: /internal/cron/ts_mon/send
+  schedule: every 1 minutes

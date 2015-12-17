@@ -18,6 +18,7 @@ includes:
 - components/auth
 - components/config
 - components/ereporter2
+- gae_ts_mon
 
 libraries:
 - name: endpoints

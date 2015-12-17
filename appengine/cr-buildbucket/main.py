@@ -14,6 +14,7 @@ from components import config
 from components import ereporter2
 from components import utils
 import endpoints
+import gae_ts_mon
 import webapp2
 
 import api
@@ -23,8 +24,10 @@ import swarming
 
 def create_html_app():  # pragma: no cover
   """Returns WSGI app that serves HTML pages."""
-  return webapp2.WSGIApplication(
+  app = webapp2.WSGIApplication(
     handlers.get_frontend_routes(), debug=utils.is_local_dev_server())
+  gae_ts_mon.initialize(app)
+  return app
 
 
 def create_endpoints_app():  # pragma: no cover
@@ -35,8 +38,9 @@ def create_endpoints_app():  # pragma: no cover
 def create_backend_app():  # pragma: no cover
   """Returns WSGI app for backend."""
   routes = handlers.get_backend_routes() + swarming.get_routes()
-  return webapp2.WSGIApplication(
-    routes, debug=utils.is_local_dev_server())
+  app = webapp2.WSGIApplication(routes, debug=utils.is_local_dev_server())
+  gae_ts_mon.initialize(app)
+  return app
 
 
 def initialize():  # pragma: no cover
