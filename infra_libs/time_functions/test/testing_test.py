@@ -44,6 +44,17 @@ class TestFreezeTime(unittest.TestCase):
     d += datetime.timedelta(days=5)
     self.assertEqual(d, datetime.date(2015, 10, 6))
 
+    # Check that isinstance method works as expected.
+    dt = datetime.datetime.utcnow()  # dt is _MockDateTime
+    self.assertTrue(isinstance(dt, datetime.datetime))
+    dt += datetime.timedelta(hours=1)  # dt is vanilla datatime.datetime
+    self.assertTrue(isinstance(dt, datetime.datetime))
+    d = datetime.datetime.today()  # d is _MockDate
+    self.assertTrue(isinstance(d, datetime.date))
+    d += datetime.timedelta(days=1)  # d is vanilla datatime.date
+    self.assertTrue(isinstance(d, datetime.date))
+
+
   @mock_datetime_utc(2015, 11, 24, 7, 0, 0)
   def test_nested_mock_works(self):
     self.assertEqual(datetime.datetime.utcnow().hour, 7)

@@ -12,9 +12,6 @@ import pytz
 import tzlocal
 
 
-original_datetime = datetime.datetime
-
-
 def mock_datetime_utc(*dec_args, **dec_kwargs):
   """Overrides built-in datetime and date classes to always return a given time.
 
@@ -36,7 +33,21 @@ def mock_datetime_utc(*dec_args, **dec_kwargs):
       local_dt = datetime.datetime.now()
       self.assertEqual(local_dt, datetime.datetime(2015, 10, 11, 12, 0, 0))
   """
-  class _MockDateTime(datetime.datetime):
+  # We record original values currently stored in the datetime.datetime and
+  # datetime.date here. Note that they are no necessarily vanilla Python types
+  # and can already be mock classes - this can happen if nested mocking is used.
+  original_datetime = datetime.datetime
+  original_date = datetime.date
+
+  # Our metaclass must be derived from the parent class metaclass, but if the
+  # parent class doesn't have one, we use 'type' type.
+  class MockDateTimeMeta(original_datetime.__dict__.get('__metaclass__', type)):
+    @classmethod
+    def __instancecheck__(cls, instance):
+      return isinstance(instance, original_datetime)
+
+  class _MockDateTime(original_datetime):
+    __metaclass__ = MockDateTimeMeta
     mock_utcnow = original_datetime(*dec_args, **dec_kwargs)
   
     @classmethod
@@ -61,7 +72,16 @@ def mock_datetime_utc(*dec_args, **dec_kwargs):
       tzaware_dt = pytz.utc.localize(cls.utcfromtimestamp(timestamp))
       return tz.normalize(tzaware_dt.astimezone(tz)).replace(tzinfo=None)
   
-  class _MockDate(datetime.date):
+  # Our metaclass must be derived from the parent class metaclass, but if the
+  # parent class doesn't have one, we use 'type' type.
+  class MockDateMeta(original_date.__dict__.get('__metaclass__', type)):
+    @classmethod
+    def __instancecheck__(cls, instance):
+      return isinstance(instance, original_date)
+
+  class _MockDate(original_date):
+    __metaclass__ = MockDateMeta
+
     @classmethod
     def today(cls):
       return _MockDateTime.today()
