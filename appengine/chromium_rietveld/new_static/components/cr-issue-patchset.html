@@ -127,7 +127,7 @@ found in the LICENSE file. -->
                     self.failedBuilders = [];
                     for (var tryJobResultSet of self.tryJobResults) {
                         // Group 5 comes from the mapping in TryJobResult.GROUPS.
-                        if (tryJobResultSet.results[tryJobResultSet.results.length - 1].group == 5)
+                        if (tryJobResultSet.results[tryJobResultSet.results.length - 1].resultGroup == 5)
                             self.failedBuilders.push(tryJobResultSet.builder);
                     }
                 }).catch(function(e) {

@@ -290,7 +290,12 @@ found in the LICENSE file. -->
                 this.showTryDialog();
             },
             retryFailedTryJobs: function(e, detail) {
-                this.issue.setFlags({builders: this.servers.createFlagValue(detail.builders)});
+                var self = this;
+                new TryServers().loadDetails().then(function(servers) {
+                    self.issue.setFlags({builders: servers.createFlagValue(detail.builders)});
+                }).catch(function(e) {
+                    console.log(e);
+                });
             },
             publish: function(options) {
                 this.butterbarMessage = "Saving...";
