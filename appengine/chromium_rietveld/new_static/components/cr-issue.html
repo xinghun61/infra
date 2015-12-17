@@ -292,7 +292,9 @@ found in the LICENSE file. -->
             retryFailedTryJobs: function(e, detail) {
                 var self = this;
                 new TryServers().loadDetails().then(function(servers) {
-                    self.issue.setFlags({builders: servers.createFlagValue(detail.builders)});
+                    return self.issue.setFlags({builders: servers.createFlagValue(detail.builders)});
+                }).then(function() {
+                    self.fire('issue-refresh');
                 }).catch(function(e) {
                     console.log(e);
                 });
