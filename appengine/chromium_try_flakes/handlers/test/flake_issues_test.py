@@ -12,6 +12,7 @@ import main
 from model.flake import Flake, FlakyRun
 from model.build_run import PatchsetBuilderRuns, BuildRun
 from testing_utils import testing
+from time_functions.testing import mock_datetime_utc
 
 
 class MockIssue(object):
@@ -102,6 +103,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
                  occurrences=[occ_key1, occ_key2, occ_key3])
 
 
+  @mock_datetime_utc(2015, 11, 10, 10, 11, 0)
   def test_creates_issue_for_new_flake(self):
     with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
       flake = self._create_flake()
@@ -129,6 +131,13 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     self.assertEqual(issue.labels, ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky',
                                     'Via-TryFlakes', 'Sheriff-Chromium'])
     self.assertEqual(len(issue.comments), 0)
+
+    # Check that flake in datastore was properly updated.
+    updated_flake = flake.key.get()
+    self.assertEqual(updated_flake.issue_id, 100000)
+    self.assertEqual(updated_flake.num_reported_flaky_runs, 3)
+    self.assertEqual(updated_flake.issue_last_updated,
+                     datetime.datetime(2015, 11, 10, 10, 11, 0))
 
   def test_recreates_issue_after_a_week(self):
     issue = self.mock_api.create(MockIssue({}))
@@ -215,6 +224,26 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
       response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
       self.assertEqual(200, response.status_int)
       self.assertEqual(len(issue.comments), 1)
+
+  @mock_datetime_utc(2015, 11, 10, 12, 13, 14)
+  def test_updates_flake_in_datastore_after_updating_issue(self):
+    issue = self.mock_api.create(MockIssue({}))
+
+    flake = self._create_flake()
+    flake.issue_id = issue.id
+    flake.issue_last_updated = datetime.datetime(2015, 11, 8, 12, 13, 14)
+    flake.num_reported_flaky_runs = 0
+    flake_key = flake.put()
+
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+      self.assertEqual(200, response.status_int)
+
+    updated_flake = flake.key.get()
+    self.assertEqual(updated_flake.issue_id, 100000)
+    self.assertEqual(updated_flake.num_reported_flaky_runs, 3)
+    self.assertEqual(updated_flake.issue_last_updated,
+                     datetime.datetime(2015, 11, 10, 12, 13, 14))
 
   def test_does_not_create_too_many_issues(self):
     with mock.patch('handlers.flake_issues.MAX_UPDATED_ISSUES_PER_DAY', 5):

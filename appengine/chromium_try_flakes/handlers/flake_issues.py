@@ -119,7 +119,7 @@ class ProcessIssue(webapp2.RequestHandler):
     flake.issue_last_updated = now
 
   @ndb.transactional
-  def _create_issue(self, api, flake, flakes_count):
+  def _create_issue(self, api, flake, flakes_count, now):
     summary = SUMMARY_TEMPLATE % {'name': flake.name}
     description = DESCRIPTION_TEMPLATE % {
         'summary': summary,
@@ -137,6 +137,7 @@ class ProcessIssue(webapp2.RequestHandler):
     flake_issue = api.create(new_issue)
     flake.issue_id = flake_issue.id
     flake.num_reported_flaky_runs = len(flake.occurrences)
+    flake.issue_last_updated = now
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
                  flake.name)
 
@@ -175,7 +176,7 @@ class ProcessIssue(webapp2.RequestHandler):
       self._update_issue(api, flake, new_flakes_count, now)
       self._increment_update_counter()
     else:
-      self._create_issue(api, flake, new_flakes_count)
+      self._create_issue(api, flake, new_flakes_count, now)
       # Don't update the issue just yet, this may fail, and we need the
       # transaction to succeed in order to avoid filing duplicate bugs.
       self._increment_update_counter()
