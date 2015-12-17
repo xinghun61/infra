@@ -55,25 +55,24 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
             'try_job_id': '1',
         }
     ]
+    try_job.status = wf_analysis_status.ANALYZING
     try_job.put()
     self._Mock_GetTryJobs(try_job_id)
 
     pipeline = MonitorTryJobPipeline()
-    compile_results = pipeline.run(
+    compile_result = pipeline.run(
         master_name, builder_name, build_number, try_job_id)
 
-    expected_compile_results = [
-        {
-            'result': [
-                ['rev1', 'passed'],
-                ['rev2', 'failed']
-            ],
-            'url': 'url',
-            'try_job_id': '1',
-        }
-    ]
-    self.assertEqual(expected_compile_results, compile_results)
+    expected_compile_result = {
+        'result': [
+            ['rev1', 'passed'],
+            ['rev2', 'failed']
+        ],
+        'url': 'url',
+        'try_job_id': '1',
+    }
+    self.assertEqual(expected_compile_result, compile_result)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
-    self.assertEqual(expected_compile_results, try_job.compile_results)
-    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
+    self.assertEqual(expected_compile_result, try_job.compile_results[-1])
+    self.assertEqual(wf_analysis_status.ANALYZING, try_job.status)

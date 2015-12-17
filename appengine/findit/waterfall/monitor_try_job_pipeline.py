@@ -47,9 +47,8 @@ class MonitorTryJobPipeline(BasePipeline):
         else:  # pragma: no cover
           try_job_result.compile_results.append(result)
 
-        try_job_result.status = wf_analysis_status.ANALYZED
         try_job_result.put()
-        return try_job_result.compile_results
+        return try_job_result.compile_results[-1]
       else:  # pragma: no cover
         if build.status == 'STARTED' and not already_set_started:
           result = {

@@ -6,7 +6,6 @@ from testing_utils import testing
 
 from common import buildbucket_client
 from model.wf_try_job import WfTryJob
-from pipeline_wrapper import pipeline
 from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 from waterfall import waterfall_config
 

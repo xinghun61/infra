@@ -5,6 +5,8 @@
 from pipeline_wrapper import BasePipeline
 from model import wf_analysis_status
 from model.wf_try_job import WfTryJob
+from waterfall.identify_try_job_culprit_pipeline import (
+    IdentifyTryJobCulpritPipeline)
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 
@@ -44,7 +46,9 @@ class TryJobPipeline(BasePipeline):
   def run(
       self, master_name, builder_name, build_number,
       good_revision, bad_revision):
-    tryjob_ids = yield ScheduleTryJobPipeline(
+    try_job_id = yield ScheduleTryJobPipeline(
         master_name, builder_name, build_number, good_revision, bad_revision)
-    yield MonitorTryJobPipeline(
-        master_name, builder_name, build_number, tryjob_ids)
+    compile_result = yield MonitorTryJobPipeline(
+        master_name, builder_name, build_number, try_job_id)
+    yield IdentifyTryJobCulpritPipeline(
+        master_name, builder_name, build_number, try_job_id, compile_result)
