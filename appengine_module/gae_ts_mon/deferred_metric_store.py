@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import logging
-import operator
 import threading
 
 from infra_libs.ts_mon.common import metric_store
@@ -23,7 +22,7 @@ class DeferredMetricStore(metric_store.MetricStore):
     self._thread_local = threading.local()
 
   def initialize_context(self):
-    self._thread_local.deferred = {}
+    self._thread_local.deferred = []
 
   def finalize_context(self):
     try:
@@ -34,7 +33,7 @@ class DeferredMetricStore(metric_store.MetricStore):
       del self._thread_local.deferred
       self._thread_local.finalizing = True
       try:
-        self._base_store.modify_multi(deferred.itervalues())
+        self._base_store.modify_multi(deferred)
       finally:
         self._thread_local.finalizing = False
 
@@ -58,12 +57,10 @@ class DeferredMetricStore(metric_store.MetricStore):
             'your WSGIApplication with gae_ts_mon.initialize?')
       self._base_store.set(name, fields, value, enforce_ge)
     else:
-      key = (name, fields)
-      deferred[key] = metric_store.combine_modifications(
-          deferred.get(key),
+      deferred.append(
           metric_store.Modification(name, fields, 'set', (value, enforce_ge)))
 
-  def incr(self, name, fields, delta, modify_fn=operator.add):
+  def incr(self, name, fields, delta, modify_fn=None):
     try:
       deferred = self._thread_local.deferred
     except AttributeError:
@@ -74,9 +71,7 @@ class DeferredMetricStore(metric_store.MetricStore):
             'your WSGIApplication with gae_ts_mon.initialize?')
       self._base_store.incr(name, fields, delta, modify_fn)
     else:
-      key = (name, fields)
-      deferred[key] = metric_store.combine_modifications(
-          deferred.get(key),
+      deferred.append(
           metric_store.Modification(name, fields, 'incr', (delta, modify_fn)))
 
   def reset_for_unittest(self, name=None):
@@ -87,6 +82,7 @@ class DeferredMetricStore(metric_store.MetricStore):
     except AttributeError:
       pass
     else:
-      for key in deferred.keys():
-        if name is None or key[0] == name:
-          del deferred[key]
+      if name is None:
+        self._thread_local.deferred = []
+      else:
+        self._thread_local.deferred = [x for x in deferred if x.name != name]

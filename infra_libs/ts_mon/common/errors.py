@@ -13,7 +13,7 @@ class MonitoringDecreasingValueError(MonitoringError):
   """Raised when setting a metric value that should increase but doesn't."""
 
   def __init__(self, metric, old_value, new_value):
-    self.metric = metric,
+    self.metric = metric
     self.old_value = old_value
     self.new_value = new_value
 

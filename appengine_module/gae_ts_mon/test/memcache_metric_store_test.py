@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import operator
 import random
 import unittest
 
@@ -165,7 +164,7 @@ class MemcacheMetricStoreTest(metric_store_test.MetricStoreTestBase,
 
     self.store.modify_multi([
         metric_store.Modification(
-            self.gauge_metric.name, (), 'incr', (4, operator.add))])
+            self.gauge_metric.name, (), 'incr', (4, None))])
 
     self.assertEqual(46, self.gauge_metric.get())
 
@@ -173,13 +172,13 @@ class MemcacheMetricStoreTest(metric_store_test.MetricStoreTestBase,
     with self.assertRaises(errors.MonitoringDecreasingValueError):
       self.store.modify_multi([
           metric_store.Modification(
-              self.gauge_metric.name, (), 'incr', (-1, operator.add))])
+              self.gauge_metric.name, (), 'incr', (-1, None))])
 
   def test_modify_multi_bad_type(self):
     with self.assertRaises(errors.UnknownModificationTypeError):
       self.store.modify_multi([
           metric_store.Modification(
-              self.gauge_metric.name, (), 'bad', (-1, operator.add))])
+              self.gauge_metric.name, (), 'bad', (-1, None))])
 
   def test_modify_multi_with_fields(self):
     self.store.modify_multi([

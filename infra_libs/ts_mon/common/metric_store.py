@@ -4,7 +4,6 @@
 
 import collections
 import logging
-import operator
 import threading
 import time
 
@@ -24,24 +23,12 @@ Modification = collections.namedtuple(
     'Modification', ['name', 'fields', 'mod_type', 'args'])
 
 
-def combine_modifications(old, new):
-  """Combines two modifications into one.
-
-  The returned modification will be the result as if the second modification had
-  been applied after the first.
-  """
-
-  if old is None or new.mod_type == 'set':
-    # A 'set' will override any previous value.
-    return new
-  elif new.mod_type == 'incr':
-    # For two 'incr's sum their delta args, for an 'incr' on top of a 'set' add
-    # the delta to the set value.
-    return Modification(
-        old.name, old.fields, old.mod_type,
-        (old.args[0] + new.args[0], old.args[1]))
-  else:
-    raise errors.UnknownModificationTypeError(new.mod_type)
+def default_modify_fn(name):
+  def _modify_fn(value, delta):
+    if delta < 0:
+      raise errors.MonitoringDecreasingValueError(name, None, delta)
+    return value + delta
+  return _modify_fn
 
 
 class MetricStore(object):
@@ -110,7 +97,7 @@ class MetricStore(object):
     """
     raise NotImplementedError
 
-  def incr(self, name, fields, delta, modify_fn=operator.add):
+  def incr(self, name, fields, delta, modify_fn=None):
     """Increments the metric's value.
 
     Args:
@@ -190,9 +177,12 @@ class InProcessMetricStore(MetricStore):
 
       self._entry(name)[1][fields] = value
 
-  def incr(self, name, fields, delta, modify_fn=operator.add):
+  def incr(self, name, fields, delta, modify_fn=None):
     if delta < 0:
       raise errors.MonitoringDecreasingValueError(name, None, delta)
+
+    if modify_fn is None:
+      modify_fn = default_modify_fn(name)
 
     with self._thread_lock:
       self._entry(name)[1][fields] = modify_fn(self.get(name, fields, 0), delta)

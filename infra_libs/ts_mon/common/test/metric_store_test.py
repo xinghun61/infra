@@ -15,6 +15,19 @@ from infra_libs.ts_mon.common import metrics
 from infra_libs.ts_mon.common.test import stubs
 
 
+class DefaultModifyFnTest(unittest.TestCase):
+  def test_adds(self):
+    fn = metric_store.default_modify_fn('foo')
+    self.assertEquals(5, fn(2, 3))
+    self.assertEquals(5, fn(3, 2))
+
+  def test_negative(self):
+    fn = metric_store.default_modify_fn('foo')
+    with self.assertRaises(errors.MonitoringDecreasingValueError) as cm:
+      fn(2, -1)
+    self.assertIn('"foo"', str(cm.exception))
+
+
 class MetricStoreTestBase(object):
   """Abstract base class for testing MetricStore implementations.
 
@@ -133,53 +146,3 @@ class MetricStoreTestBase(object):
 
 class InProcessMetricStoreTest(MetricStoreTestBase, unittest.TestCase):
   METRIC_STORE_CLASS = metric_store.InProcessMetricStore
-
-
-class CombineModificationsTest(unittest.TestCase):
-  def test_set_set(self):
-    self.assertEqual(
-        metric_store.Modification('two', (), 'set', (2, False)),
-        metric_store.combine_modifications(
-            metric_store.Modification('one', (), 'set', (1, False)),
-            metric_store.Modification('two', (), 'set', (2, False))))
-
-  def test_set_incr(self):
-    self.assertEqual(
-        metric_store.Modification('one', (), 'set', (3, False)),
-        metric_store.combine_modifications(
-            metric_store.Modification('one', (), 'set', (1, False)),
-            metric_store.Modification('two', (), 'incr', (2, operator.add))))
-
-  def test_incr_set(self):
-    self.assertEqual(
-        metric_store.Modification('two', (), 'set', (2, False)),
-        metric_store.combine_modifications(
-            metric_store.Modification('one', (), 'incr', (1, operator.add)),
-            metric_store.Modification('two', (), 'set', (2, False))))
-
-  def test_incr_incr(self):
-    self.assertEqual(
-        metric_store.Modification('one', (), 'incr', (3, operator.add)),
-        metric_store.combine_modifications(
-            metric_store.Modification('one', (), 'incr', (1, operator.add)),
-            metric_store.Modification('two', (), 'incr', (2, operator.add))))
-
-  def test_none_set(self):
-    self.assertEqual(
-        metric_store.Modification('two', (), 'set', (2, False)),
-        metric_store.combine_modifications(
-            None,
-            metric_store.Modification('two', (), 'set', (2, False))))
-
-  def test_none_incr(self):
-    self.assertEqual(
-        metric_store.Modification('two', (), 'incr', (2, operator.add)),
-        metric_store.combine_modifications(
-            None,
-            metric_store.Modification('two', (), 'incr', (2, operator.add))))
-
-  def test_bad_type(self):
-    with self.assertRaises(errors.UnknownModificationTypeError):
-      metric_store.combine_modifications(
-          metric_store.Modification('one', (), 'set', (1, False)),
-          metric_store.Modification('two', (), 'bad', (2, False)))

@@ -193,7 +193,7 @@ class Metric(object):
     interface.state.store.set(self.name, self._normalize_fields(fields), value,
                               enforce_ge=enforce_ge)
 
-  def _incr(self, fields, delta, modify_fn=operator.add):
+  def _incr(self, fields, delta, modify_fn=None):
     interface.state.store.incr(self.name, self._normalize_fields(fields), delta,
                                modify_fn=modify_fn)
 

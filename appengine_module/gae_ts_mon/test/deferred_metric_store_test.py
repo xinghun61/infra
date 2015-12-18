@@ -116,11 +116,11 @@ class DeferredMetricStoreTest(metric_store_test.MetricStoreTestBase,
 
   def test_deferred_set_then_set(self):
     self.store.initialize_context()
-    self.counter_metric.set(42)
     self.counter_metric.set(12)
+    self.counter_metric.set(42)
     self.store.finalize_context()
 
-    self.assertEquals(12, self.counter_metric.get())
+    self.assertEquals(42, self.counter_metric.get())
 
   def test_deferred_set_with_fields(self):
     self.store.initialize_context()
@@ -144,4 +144,7 @@ class DeferredMetricStoreTest(metric_store_test.MetricStoreTestBase,
     self.cumulative_dist_metric.add(1)
     self.store.finalize_context()
 
-    self.assertEquals(5, self.cumulative_dist_metric.get().sum)
+    dist = self.cumulative_dist_metric.get()
+    self.assertEquals(5, dist.sum)
+    self.assertEquals(2, dist.count)
+    self.assertEquals([2, 5], sorted(dist.buckets.keys()))
