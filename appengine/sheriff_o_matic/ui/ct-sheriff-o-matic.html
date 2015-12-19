@@ -149,7 +149,7 @@ found in the LICENSE file.
         <div valueattr="id" id="main_menu">
           <core-menu id="menu" valueattr="id">
             <core-item icon="folder" label="Trees" notap="true"></core-item>
-            <template repeat="{{ t in treeList.trees }}">
+            <template repeat="{{ t in trees }}">
               <paper-item id="{{ t.name }}" label="{{ t.displayName }}" on-tap="{{ itemSelected }}" horizontal center layout>
                 {{ t.displayName }}
               </paper-item>
@@ -243,7 +243,7 @@ found in the LICENSE file.
     Polymer({
       page_title: "Chromium",
       tree: '',
-      treeList: null,
+      trees: null,
       examinedFailureGroup: null,
       alertsHistoryKey: null,
       _pendingFailureGroupKey: '',
@@ -306,9 +306,14 @@ found in the LICENSE file.
       },
 
       created: function() {
-        this.treeList = new CTTreeList();
-        this._defaultPath = '/' + this.treeList.defaultValue();
-        this.repositories  = new CTRepositories();
+        CTTreeList.getInstance().update().then(function (trees) {
+          this.trees = trees;
+        }.bind(this))
+        CTTreeList.defaultValue().then(function(value) {
+          this._defaultPath = '/' + value;
+        }.bind(this));
+
+        this.repositories = new CTRepositories();
         this.failures = new CTFailures(this.repositories);
         this.bugQueue = new CTBugQueue();
         this._updater = new CTScheduledUpdater(this.update.bind(this), kUpdateFrequency);

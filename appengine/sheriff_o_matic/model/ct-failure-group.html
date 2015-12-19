@@ -13,14 +13,15 @@ function CTFailureGroup(tree, data, category) {
   this.tree = tree;
   this.examineUrl = this.tree + '/failure/' + encodeURIComponent(this.key);
   this.data = data;
-  var cTree = CTTreeList.getTree(tree);
-  if (cTree) {
-    this.data.bugLabels = cTree.bugLabels;
-  }
+  var cTree = CTTreeList.getTree(tree).then(function (cTree) {
+    if (cTree) {
+      this.data.bugLabels = cTree.bugLabels;
+    }
 
-  this._annotation = CTFailureGroup._mergeAnnotations(data.getAnnotations());
-  this._originalCategory = category || 'default';
-  this._computeProperties();
+    this._annotation = CTFailureGroup._mergeAnnotations(data.getAnnotations());
+    this._originalCategory = category || 'default';
+    this._computeProperties();
+  }.bind(this))
 }
 
 CTFailureGroup.prototype.snoozeUntil = function(time) {

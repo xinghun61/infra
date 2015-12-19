@@ -34,7 +34,7 @@ class LastUpdated(ndb.Model):
   haddiff = ndb.BooleanProperty()
 
 
-class AlertsHandler(webapp2.RequestHandler):
+class AlertsHandler(webapp2.RequestHandler): # pragma: no cover
   ALERT_TYPE = 'alerts'
   # Max number of bytes that AppEngine allows writing to Memcache
   MAX_JSON_SIZE = 10**6 - 10**5
@@ -189,7 +189,7 @@ class AlertsHandler(webapp2.RequestHandler):
     self.update_alerts()
 
 
-class NewAlertsHandler(AlertsHandler):
+class NewAlertsHandler(AlertsHandler): # pragma: no cover
   # pylint: disable=arguments-differ
   def get(self, tree):
     self.ALERT_TYPE = 'new-alerts/%s' % tree

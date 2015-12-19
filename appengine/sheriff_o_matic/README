@@ -84,6 +84,15 @@ If you're unsure about whether you might have broken things, before
 step 4, you can click on the link for that version to see that
 version of the server before you make it the default.
 
+# Tree List
+
+The list of trees on the left-hand side of the app is stored in the datastore.
+To add a new tree, or a new bug label to a tree, go to
+http://sheriff-o-matic.appspot.com/_ah/api/explorer, and look at the "Tree
+Service" methods.
+To view the current list of trees (including internal ones), look at the app
+engine datastore page. You can do some manual edits there as well.
+
 # LIBRARIES
 
 sugar: Provides generic syntactic sugar for JavaScript, mostly by extending

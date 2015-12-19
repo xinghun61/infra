@@ -27,6 +27,14 @@ handlers:
   script: internal_alerts.app
   secure: always
 
+- url: /tree-list
+  script: tree.list_app
+  secure: always
+
+- url: /_ah/spi/.*
+  script: tree.endpoints_app
+  secure: always
+
 - url: /ts-alerts
   script: ts_alerts.app
   secure: always
@@ -116,10 +124,14 @@ includes:
 - components/static_third_party.yaml
 
 libraries:
-- name: webapp2
-  version: "latest"
 - name: pycrypto
   version: "latest"
 - name: jinja2
   version: "latest"
+- name: webapp2
+  version: "2.5.2"
+- name: webob
+  version: "1.2.3"
+- name: endpoints
+  version: 1.0
 

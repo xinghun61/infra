@@ -8,15 +8,7 @@ found in the LICENSE file.
 
 <script>
 function CTTreeList() {
-    this.trees = [
-        new CTTree('chromium', 'Chromium'),  // First entry is the default.
-        new CTTree('blink', 'Blink', ['gardening-blink', 'Pri-2']),
-        new CTTree('trooper', 'Trooper'),
-        new CTTree('trooper-fyi', 'Trooper Miscellaneous'),
-        new CTTree('time-series-alerts', 'Time Series Alerts'),
-        new CTTree('chromium.perf', 'Chromium Perf',
-            ['Performance-Sheriff', 'Performance-Waterfall', 'Pri-0', 'OS-?']),
-    ];
+  this.update();
 }
 
 CTTreeList.getInstance = function() {
@@ -26,13 +18,29 @@ CTTreeList.getInstance = function() {
   return CTTreeList.instance;
 };
 
+CTTreeList.prototype.update = function() {
+  this._promise = net.json("/tree-list").then(function (data) {
+    return data.trees.map(function(t) {
+      return new CTTree(t.name, t.display_name, t.bug_labels);
+    });
+  }).catch(function (err) {
+    console.error("error occurred while getting the tree list:", err);
+  });
+  return this._promise
+}
+
 CTTreeList.getTree = function(treeName) {
-  return CTTreeList.getInstance().trees.filter(function(t) {
-    return t.name == treeName;
-  })[0];
+  return CTTreeList.getInstance()._promise.then(function (trees) {
+    return trees.filter(function(t) {
+      return t.name == treeName;
+    })[0];
+  })
 };
 
-CTTreeList.prototype.defaultValue = function() {
-    return this.trees[0].name;
+CTTreeList.defaultValue = function() {
+  return CTTreeList.getInstance()._promise.then(function (trees) {
+    return trees[0].name;
+  })
 };
+
 </script>

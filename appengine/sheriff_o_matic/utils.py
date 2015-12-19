@@ -20,7 +20,7 @@ from google.appengine.api import users
 from components import auth
 
 
-def is_googler():
+def is_googler(): # pragma: no cover
   user = users.get_current_user()
   if user:
     email = user.email()
@@ -28,13 +28,12 @@ def is_googler():
   return False
 
 
-def is_trooper_or_admin():
+def is_trooper_or_admin(): # pragma: no cover
   return (auth.is_group_member("mdb/chrome-troopers") or
       users.is_current_user_admin())
 
 
-class DateTimeEncoder(json.JSONEncoder):
-
+class DateTimeEncoder(json.JSONEncoder): # pragma: no cover
   def default(self, obj):  # pylint: disable=E0202
     if isinstance(obj, datetime.datetime):
       return calendar.timegm(obj.timetuple())
@@ -42,7 +41,7 @@ class DateTimeEncoder(json.JSONEncoder):
     return json.JSONEncoder.default(self, obj)
 
 
-def convert_to_secs(duration_str):
+def convert_to_secs(duration_str): # pragma: no cover
   duration_str = duration_str.strip()
   if duration_str[-1] == 's':
     return int(duration_str[:-1])
@@ -58,7 +57,7 @@ def convert_to_secs(duration_str):
     raise Exception('Invalid duration_str ' + duration_str[-1])
 
 
-def secs_ago(time_string, time_now=None):
+def secs_ago(time_string, time_now=None): # pragma: no cover
   try:
     time_sent = dt.strptime(time_string, '%Y-%m-%d %H:%M:%S %Z')
   except ValueError:
@@ -68,11 +67,11 @@ def secs_ago(time_string, time_now=None):
   return latency
 
 
-def hash_string(input_str):
+def hash_string(input_str): # pragma: no cover
   return hashlib.sha1(input_str).hexdigest()
 
 
-def generate_json_dump(alerts, human_readable=True):
+def generate_json_dump(alerts, human_readable=True): # pragma: no cover
   if human_readable:
     return json.dumps(alerts, cls=DateTimeEncoder,
                               indent=2,
