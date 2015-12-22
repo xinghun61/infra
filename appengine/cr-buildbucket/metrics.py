@@ -124,6 +124,18 @@ def increment(metric, build, **fields):  # pragma: no cover
   metric.increment(fields_for(build, **fields))
 
 
+def increment_complete_count(build):  # pragma: no cover
+  assert build
+  assert build.status == model.BuildStatus.COMPLETED
+  increment(
+    COMPLETE_COUNT,
+    build,
+    result=str(build.result),
+    failure_reason=str(build.failure_reason or ''),
+    cancelation_reason=str(build.cancelation_reason or ''),
+  )
+
+
 def set_gauge(buf, bucket, metric, value):
   logging.info('Bucket %s: %s = %d', bucket, metric.name, value)
   buf.set_gauge(metric, value, {LABEL_BUCKET: bucket})

@@ -427,6 +427,7 @@ def reset(build_id):
   build.clear_lease()
   build.url = None
   build.put()
+  notifications.enqueue_callback_task_if_needed(build)
   logging.info(
     'Build %s was reset by %s',
     build.key.id(), auth.get_current_identity().to_bytes())
@@ -579,13 +580,7 @@ def _complete(
   logging.info(
     'Build %s was completed. Status: %s. Result: %s',
     build.key.id(), build.status, build.result)
-  metrics.increment(
-    metrics.COMPLETE_COUNT,
-    build,
-    result=str(result),
-    failure_reason=str(failure_reason),
-    cancelation_reason='',
-  )
+  metrics.increment_complete_count(build)
   return build
 
 
@@ -653,19 +648,14 @@ def cancel(build_id):
     build.complete_time = now
     build.clear_lease()
     build.put()
+    notifications.enqueue_callback_task_if_needed(build)
     return build
 
   build = txn()
   logging.info(
     'Build %s was cancelled by %s', build.key.id(),
     auth.get_current_identity().to_bytes())
-  metrics.increment(
-    metrics.COMPLETE_COUNT,
-    build,
-    result=str(build.result),
-    failure_reason='',
-    cancelation_reason=str(build.cancelation_reason),
-  )
+  metrics.increment_complete_count(build)
   return build
 
 
@@ -707,6 +697,8 @@ def _timeout_async(build_id):
   build.cancelation_reason = model.CancelationReason.TIMEOUT
   yield build.put_async()
   logging.info('Build %s: timeout', build_id)
+  notifications.enqueue_callback_task_if_needed(build)
+  metrics.increment_complete_count(build)
 
 
 def reset_expired_builds():
