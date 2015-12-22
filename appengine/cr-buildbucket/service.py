@@ -3,27 +3,28 @@
 # found in the LICENSE file.
 
 import datetime
-import json
 import logging
 import urlparse
-from components import auth
-from components import pubsub
-from components import utils
+
 from google.appengine.api import taskqueue
 from google.appengine.api import modules
 from google.appengine.ext import db
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
+
+from components import auth
+from components import utils
+
 import acl
 import errors
 import metrics
 import model
+import notifications
 import swarming
 
 MAX_RETURN_BUILDS = 100
 MAX_LEASE_DURATION = datetime.timedelta(hours=2)
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
-BUILD_TIMEOUT = datetime.timedelta(days=1)
 
 validate_bucket_name = errors.validate_bucket_name
 
@@ -432,35 +433,6 @@ def reset(build_id):
   return build
 
 
-def _publish_pubsub_message(
-    build_id, topic, user_data, auth_token):  # pragma: no cover
-  message = json.dumps({
-    'build_id': build_id,
-    'user_data': user_data,
-  }, sort_keys=True)
-  attrs = {
-    'build_id': str(build_id),
-    'auth_token': auth_token,
-  }
-  pubsub.publish(topic, message, attrs)
-
-
-def _enqueue_callback_task_if_needed(build):
-  assert ndb.in_transaction()
-  assert build
-  if build.pubsub_callback:
-    deferred.defer(
-      _publish_pubsub_message,
-      build.key.id(),
-      build.pubsub_callback.topic,
-      build.pubsub_callback.user_data,
-      build.pubsub_callback.auth_token,
-      _transactional=True,
-      _retry_options=taskqueue.TaskRetryOptions(
-        task_age_limit=BUILD_TIMEOUT.total_seconds()),
-    )
-
-
 def start(build_id, lease_key, url=None):
   """Marks build as STARTED. Idempotent.
 
@@ -493,7 +465,7 @@ def start(build_id, lease_key, url=None):
     build.status_changed_time = utils.utcnow()
     build.url = url
     build.put()
-    _enqueue_callback_task_if_needed(build)
+    notifications.enqueue_callback_task_if_needed(build)
     return build
 
   build = txn()
@@ -600,7 +572,7 @@ def _complete(
     build.failure_reason = failure_reason
     build.clear_lease()
     build.put()
-    _enqueue_callback_task_if_needed(build)
+    notifications.enqueue_callback_task_if_needed(build)
     return build
 
   build = txn()
@@ -748,7 +720,7 @@ def reset_expired_builds():
   for key in q.iter(keys_only=True):
     futures.append(_reset_expired_build_async(key.id()))
 
-  too_long_ago = utils.utcnow() - BUILD_TIMEOUT
+  too_long_ago = utils.utcnow() - model.BUILD_TIMEOUT
   q = model.Build.query(
     model.Build.create_time < too_long_ago,
     # Cannot use >1 inequality fitlers per query.

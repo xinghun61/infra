@@ -7,7 +7,6 @@ import datetime
 
 from components import auth
 from components import utils
-from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 from testing_utils import testing
 import mock
@@ -16,6 +15,7 @@ from test import future
 import acl
 import errors
 import model
+import notifications
 import service
 import swarming
 
@@ -527,7 +527,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   @contextlib.contextmanager
   def callback_test(self):
-    self.mock(deferred, 'defer', mock.Mock())
+    self.mock(notifications, 'enqueue_callback_task_if_needed', mock.Mock())
     self.test_build.pubsub_callback = model.PubSubCallback(
       topic='projects/example/topic/buildbucket',
       user_data='hello',
@@ -535,16 +535,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     self.test_build.put()
     yield
-
-    deferred.defer.assert_called_with(
-      service._publish_pubsub_message,
-      self.test_build.key.id(),
-      'projects/example/topic/buildbucket',
-      'hello',
-      'secret',
-      _transactional=True,
-      _retry_options=mock.ANY,
-    )
+    self.assertTrue(notifications.enqueue_callback_task_if_needed.called)
 
   def test_start_creates_notification_task(self):
     self.lease()

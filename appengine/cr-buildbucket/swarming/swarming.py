@@ -45,6 +45,7 @@ import webapp2
 import config
 import errors
 import model
+import notifications
 
 PUBSUB_TOPIC = 'swarming'
 BUILDER_PARAMETER = 'builder_name'
@@ -254,8 +255,10 @@ def cancel_task_async(build):
 # Update builds.
 
 
-def _load_task_result_async(hostname, task_id):  # pragma: no cover
-  return _call_api_async(hostname, 'task/%s/result' % task_id)
+def _load_task_result_async(
+    hostname, task_id, identity=None):  # pragma: no cover
+  return _call_api_async(
+    hostname, 'task/%s/result' % task_id, identity=identity)
 
 
 def _update_build(build, result):
@@ -374,18 +377,14 @@ class SubNotify(webapp2.RequestHandler):
     hostname, created_time, task_id = self.unpack_msg(msg)
     logging.info('Task id: %s', task_id)
 
-    # Load build and task result concurrently.
+    # Load build.
     build_q = model.Build.query(
       model.Build.swarming_hostname == hostname,
       model.Build.swarming_task_id == task_id,
     )
-    builds_fut = build_q.fetch_async(1)
-    result_fut = _load_task_result_async(hostname, task_id)
-
-    # Check build exists.
-    builds = builds_fut.get_result()
+    builds = build_q.fetch(1)
     if not builds:
-      if utils.utcnow() < created_time + datetime.timedelta(minutes=5):
+      if utils.utcnow() < created_time + datetime.timedelta(minutes=20):
         self.stop(
           'Build for task %s/%s not found yet.',
           hostname, task_id, redeliver=True)
@@ -396,9 +395,21 @@ class SubNotify(webapp2.RequestHandler):
     assert build.parameters
 
     # Update build.
-    result = result_fut.get_result()
-    if _update_build(build, result):  # pragma: no branch
-      build.put()
+    result = _load_task_result_async(
+      hostname, task_id, identity=build.created_by).get_result()
+
+    @ndb.transactional
+    def txn(build_key):
+      build = build_key.get()
+      if build is None:  # pragma: no cover
+        return
+      if _update_build(build, result):  # pragma: no branch
+        build.put()
+        if build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
+          notifications.enqueue_callback_task_if_needed(build)
+
+    txn(build.key)
+
 
   def stop(self, msg, *args, **kwargs):
     """Logs error, responds with HTTP 200 and stops request processing.
@@ -490,11 +501,11 @@ def get_routes():  # pragma: no cover
 
 
 @ndb.tasklet
-def _call_api_async(hostname, path, method='GET', payload=None):
-  cur_identity = auth.get_current_identity()
+def _call_api_async(hostname, path, method='GET', payload=None, identity=None):
+  identity = identity or auth.get_current_identity()
   delegation_token = yield auth.delegate_async(
     audience=[_self_identity()],
-    impersonate=cur_identity,
+    impersonate=identity,
   )
   url = 'https://%s/_ah/api/swarming/v1/%s' % (hostname, path)
   try:
@@ -509,7 +520,7 @@ def _call_api_async(hostname, path, method='GET', payload=None):
   except net.AuthError as ex:
     raise auth.AuthorizationError(
       'Auth error while calling swarming on behalf of %s: %s' % (
-        cur_identity.to_bytes(), ex
+        identity.to_bytes(), ex
       ))
 
 

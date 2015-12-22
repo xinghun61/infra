@@ -13,6 +13,7 @@ from google.appengine.ext.ndb import msgprop
 from protorpc import messages
 
 BEGINING_OF_THE_WORLD = datetime.datetime(2010, 1, 1, 0, 0, 0, 0)
+BUILD_TIMEOUT = datetime.timedelta(days=1)
 
 
 class BuildStatus(messages.Enum):
