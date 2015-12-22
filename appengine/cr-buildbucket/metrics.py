@@ -66,7 +66,7 @@ START_COUNT = gae_ts_mon.CounterMetric(
   description='Build start',
 )
 COMPLETE_COUNT = gae_ts_mon.CounterMetric(
-  'builds/completed',
+  'buildbucket/builds/completed',
   description='Build completion, including success, failure and cancellation',
 )
 HEARTBEAT_COUNT = gae_ts_mon.CounterMetric(
