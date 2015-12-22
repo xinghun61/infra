@@ -226,7 +226,8 @@ def create_task_async(build):
   # Mark the build as leased.
   assert 'expiration_secs' in task, task
   task_expiration = datetime.timedelta(seconds=int(task['expiration_secs']))
-  build.lease_expiration_date = utils.utcnow() + task_expiration
+  extra_time = datetime.timedelta(hours=1)
+  build.lease_expiration_date = utils.utcnow() + task_expiration + extra_time
   build.regenerate_lease_key()
   build.leasee = _self_identity()
   build.never_leased = False
@@ -448,8 +449,8 @@ class CronUpdateBuilds(webapp2.RequestHandler):
         build.swarming_hostname, build.swarming_task_id)
 
     @ndb.transactional_tasklet
-    def txn():
-      build_txn = build.key.get()
+    def txn(build_key):
+      build = yield build_key.get_async()
       if build.status != model.BuildStatus.STARTED:  # pragma: no cover
         return
 
@@ -471,11 +472,11 @@ class CronUpdateBuilds(webapp2.RequestHandler):
           }
         }
         build.clear_lease()
-        build.put()
-      elif _update_build(build_txn, result):  # pragma: no branch
-        yield build_txn.put_async()
+        yield build.put_async()
+      elif _update_build(build, result):  # pragma: no branch
+        yield build.put_async()
 
-    yield txn()
+    yield txn(build.key)
 
   @decorators.require_cronjob
   def get(self):  # pragma: no cover

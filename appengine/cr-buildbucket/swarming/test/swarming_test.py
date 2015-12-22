@@ -567,6 +567,7 @@ class CronUpdateTest(testing.AppengineTestCase):
 
     build = self.build
     swarming.CronUpdateBuilds().update_build_async(build).get_result()
+    build = build.key.get()
     self.assertEqual(build.status, model.BuildStatus.COMPLETED)
     self.assertEqual(build.result, model.BuildResult.FAILURE)
     self.assertEqual(build.failure_reason, model.FailureReason.INFRA_FAILURE)
