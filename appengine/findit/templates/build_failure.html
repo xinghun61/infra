@@ -107,18 +107,18 @@
       return clString;
     }
 
-    function addRowToResultTable(stepIndex, testIndex, failure, type){
+    function addRowToResultTable(stepIndex, testIndex, failure, type) {
       var rowString;
       var failureWithLink;
-      if (type == 'step'){
+      if (type == 'step') {
         rowString = '<tr id="' + stepIndex.toString() +'">';
         var stepUrl = findit.buildUrl + '/steps/' + failure.step_name;
         var arrowImg = '';
-        if (failure.tests && failure.suspected_cls.length > 0){
+        if (failure.tests && failure.suspected_cls.length > 0) {
           arrowImg = '<a class="collapsed"> <img class="toggle-img" src="https://www.gstatic.com/images/icons/material/system/1x/keyboard_arrow_right_black_24dp.png"> </a>';
         }
 
-        if (findit.showDebugInfo){
+        if (findit.showDebugInfo) {
           failureWithLink = arrowImg + '<a href="./failure-log?url=' + stepUrl + '"><font class="valign-middle">' + failure.step_name + '</font></a>';
         } else {
           failureWithLink = arrowImg + '<a href="' + stepUrl + '">' + failure.step_name + '</a>';
@@ -132,18 +132,18 @@
       var rowsSpan = failure.suspected_cls.length > 0 ? failure.suspected_cls.length : 1;
       rowString += '<td valigh="middle" rowspan="' + rowsSpan + '">' + failureWithLink + '</td>';
       rowString += '<td rowspan="' + rowsSpan + '"><a href="' + findit.builderUrl + '/builds/' + failure.first_failure + '">' + failure.first_failure + '</a></td>';
-      if (failure.last_pass){
+      if (failure.last_pass) {
         rowString += '<td rowspan="' + rowsSpan + '"><a href="' + findit.builderUrl + '/builds/' + failure.last_pass + '">' + failure.last_pass + '</a></td>';
       } else {
         rowString += '<td>N/A</td>';
       }
-      if (failure.suspected_cls.length > 0){
+      if (failure.suspected_cls.length > 0) {
         clString = generateStringForSingleCL(failure.suspected_cls[0]);
         rowString += clString + '</tr>';
         $('#failures tbody').append(rowString);
 
-        for (var i = 1; i < failure.suspected_cls.length; i++){
-          if (type == 'step'){
+        for (var i = 1; i < failure.suspected_cls.length; i++) {
+          if (type == 'step') {
             rowString = '<tr>';
           } else {
             rowString = '<tr id="' + stepIndex.toString() + '-' + testIndex.toString() + '-' + i.toString() + '">';
@@ -155,7 +155,7 @@
         }
       } else {
         rowString += '<td colspan="5">';
-        if(type == 'step' && failure.supported == false){
+        if(type == 'step' && failure.supported == false) {
           rowString += 'Not Supported</td>';
         } else {
           rowString += 'Not Found</td>';
@@ -164,14 +164,14 @@
         $('#failures tbody').append(rowString);
       }
 
-      if(type == 'step' && failure.suspected_cls.length > 0 && failure.tests && failure.tests.length > 0){
+      if(type == 'step' && failure.suspected_cls.length > 0 && failure.tests && failure.tests.length > 0) {
         $.each(failure.tests, function(testIndex, value) {
           addRowToResultTable(stepIndex, testIndex, value, 'test');
         });
       }
     }
 
-    function displayAnalysisResult(){
+    function displayAnalysisResult() {
       $.each(findit.analysisResult.failures, function(index, value) {
         addRowToResultTable(index, -1, value, 'step');
       });
@@ -232,7 +232,7 @@
       var imgDirection;
       var rowAddedClass;
       var rowRemovedClass;
-      if (thisobj.hasClass("collapsed")){
+      if (thisobj.hasClass("collapsed")) {
         thisobj.removeClass("collapsed").addClass("expanded");
         imgDirection = 'down';
         rowAddedClass = "displayed-row";
@@ -247,10 +247,10 @@
       var stepRowId = thisobj.closest("tr").attr("id");
       var testRowId = stepRowId + "-" + "0";
       var i = 0;
-      while ($("#" + testRowId + "-" + "0").length){
+      while ($("#" + testRowId + "-" + "0").length) {
         var clRowId = testRowId + "-" + "0";
         var j = 0;
-        while ($("#" + clRowId).length){
+        while ($("#" + clRowId).length) {
           $( "#" + clRowId ).addClass(rowAddedClass).removeClass(rowRemovedClass);
           j++;
           clRowId = testRowId + "-" + j;
@@ -258,6 +258,41 @@
         i++;
         testRowId = stepRowId + "-" + i;
       }
+    }
+
+    function displayTryJobResult() {
+      $.getJSON('try-job-result?url=' + findit.buildUrl, function(data) {
+          if (! jQuery.isEmptyObject(data)) {
+            $('#try_job_status').html(data.status);
+            if (data.status == 'Error') {
+              $('#try_job_status').addClass('error');
+            } else if(data.status == 'Analyzed') {
+              $('#try_job_status').addClass('completed');
+            } else {
+              $('#try_job_status').append(', will refresh in 1 minute...');
+              $('#try_job_status').addClass('running');
+            }
+            if ('try_job_url' in data) {
+              $('#try_job_url').html(' <a href="' + data.try_job_url + '">try job url</a>');
+            }
+
+            var tryJobStr = '';
+            var repeatStatusList = ["Pending", "Analyzing"]
+            if (repeatStatusList.indexOf(data.status) > -1) {
+              $('#try_job_result').addClass('not-display');
+              setTimeout(displayTryJobResult, 60000);
+            } else if (data.status == 'Analyzed' && 'review_url' in data) {
+              tryJobStr += '<br>culprit: <a href="' + data.review_url + '">';
+              tryJobStr += data.commit_position || data.revision + '</a>';
+              $('#try_job_result').html(tryJobStr);
+              $('#try_job_result').removeClass('not-display');
+            } else {
+              $('#try_job_result').addClass('not-display');
+            }
+          } else {
+            $('#try_job').addClass('not-display');
+          }
+      });
     }
 
     $(document).ready(function() {
@@ -271,32 +306,34 @@
           window.location.href = 'build-failure?url=' + findit.buildUrl;
           {% endif %}
         }, 5000);
-      } else if (findit.analysisFailed) {
-        $('#status_message').text('error');
-        $('#status_message').attr('class', 'error');
       } else {
-        // TODO: use another style when no culprit CL is found.
-        $('#status_message').text('completed');
-        $('#status_message').attr('class', 'completed');
-
-        $('.triage').click(triageAnalysisResult);
-
-        if (findit.analysisResult.failures.length > 0){
-          displayAnalysisResult();
+        if (findit.analysisFailed) {
+          $('#status_message').text('error');
+          $('#status_message').attr('class', 'error');
         } else {
-          $('#triage-and-table').text('no failure is found');
-        }
-        $(document).on("click",".expanded, .collapsed",function() {
-          toggle($(this));
-        });
+          // TODO: use another style when no culprit CL is found.
+          $('#status_message').text('completed');
+          $('#status_message').attr('class', 'completed');
 
-        if (findit.showTriageHelpButton){
-          $('#triage_help_button').click(triageHelp);
-        }
-        if (findit.analysisCorrect == 'True') {
-          $('.thumb-up').addClass('triaged').removeClass('triage');
-        } else if (findit.analysisCorrect == 'False') {
-          $('.thumb-down').addClass('triaged').removeClass('triage');
+          $('.triage').click(triageAnalysisResult);
+
+          if (findit.analysisResult.failures.length > 0) {
+            displayAnalysisResult();
+          } else {
+            $('#triage-and-table').text('no failure is found');
+          }
+          $(document).on("click",".expanded, .collapsed",function() {
+            toggle($(this));
+          });
+
+          if (findit.showTriageHelpButton) {
+            $('#triage_help_button').click(triageHelp);
+          }
+          if (findit.analysisCorrect == 'True') {
+            $('.thumb-up').addClass('triaged').removeClass('triage');
+          } else if (findit.analysisCorrect == 'False') {
+            $('.thumb-down').addClass('triaged').removeClass('triage');
+          }
         }
       }
 
@@ -308,6 +345,9 @@
       $('#score-info').click(function() {
         $('#score-explanation-dialog').dialog('open');
       });
+
+      // Display Try Job Result if any.
+      displayTryJobResult();
     });
   </script>
 </head>
@@ -321,6 +361,15 @@
     Master: {{master_name}}<br>
     Builder: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}">{{builder_name}}</a><br>
     Build Number: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}">{{build_number}}</a>
+  </div>
+  <br>
+
+  <div id='try_job'>
+    <b> Try Job Result:</b>
+    <br>
+    status: <span id='try_job_status'></span><span id="try_job_url"></span>
+    <span id='try_job_result'></span>
+    <br>
   </div>
   <br>
 
@@ -378,6 +427,7 @@
       </div>
     {% endif %}
   {% endif %}
+
   {% if show_triage_help_button %}
     <br><br>
     <div id="triage_help">
@@ -387,6 +437,7 @@
       </div>
     </div>
   {% endif %}
+
   {% if triage_history %}
     <br>
     <b>Triage History:</b>
@@ -406,6 +457,7 @@
       </table>
     </div>
   {% endif %}
+
   <div id="score-explanation-dialog" title="Score Explanation">
     The total score is a sum of scores for all hints.<br>
     Rules to set a score to an hint:
