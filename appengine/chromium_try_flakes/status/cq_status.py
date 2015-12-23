@@ -14,6 +14,7 @@ from google.appengine.api import urlfetch
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 from google.appengine.runtime import DeadlineExceededError
+from handlers.flake_issues import MIN_REQUIRED_FLAKY_RUNS
 from model.build_run import BuildRun
 from model.build_run import PatchsetBuilderRuns
 from model.fetch_status import FetchStatus
@@ -132,7 +133,8 @@ def update_flake_month_counter():  # pragma: no cover
 def update_issue_tracker():
   """File/update issues for flakes on issue_tracker."""
   # Only process flakes that happened at least 5 times in the last 24 hours.
-  for flake in Flake.query(Flake.count_day >= 5, projection=[Flake.count_day]):
+  for flake in Flake.query(Flake.count_day >= MIN_REQUIRED_FLAKY_RUNS,
+                           projection=[Flake.count_day]):
     taskqueue.add(queue_name='issue-updates',
                   url='/issues/process/%s' % flake.key.urlsafe())
 

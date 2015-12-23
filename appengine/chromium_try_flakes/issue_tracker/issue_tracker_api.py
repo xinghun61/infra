@@ -64,8 +64,12 @@ class IssueTrackerAPI(object):  # pragma: no cover
   def __init__(self, project_name, use_monorail):
     self.project_name = project_name
     self.use_monorail = use_monorail
-    discovery_url = ('https://www.googleapis.com/discovery/v1/apis/{api}/'
-                     '{apiVersion}/rest')
+    if use_monorail:
+      discovery_url = ('https://monorail-prod.appspot.com/_ah/api/discovery/v1/'
+                       'apis/{api}/{apiVersion}/rest')
+    else:
+      discovery_url = ('https://www.googleapis.com/discovery/v1/apis/{api}/'
+                       '{apiVersion}/rest')
     api_name = 'monorail' if use_monorail else 'projecthosting'
     api_version = 'v1' if use_monorail else 'v2'
     self.client = _buildClient(api_name, api_version,
