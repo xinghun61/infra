@@ -22,7 +22,7 @@ from handlers.index import Index
 from handlers.post_comment import PostComment
 from handlers.all_flake_occurrences import AllFlakeOccurrences
 from handlers.search import Search
-from handlers.flake_issues import ProcessIssue
+from handlers.flake_issues import ProcessIssue, UpdateIfStaleIssue
 
 handlers = [
   (r'/', Index),
@@ -31,6 +31,7 @@ handlers = [
   (r'/search', Search),
   (r'/cron/(.*)', CronDispatch),
   (r'/issues/process/(.*)', ProcessIssue),
+  (r'/issues/update-if-stale/(.*)', UpdateIfStaleIssue),
 ]
 
 app = webapp2.WSGIApplication(handlers, debug=True)

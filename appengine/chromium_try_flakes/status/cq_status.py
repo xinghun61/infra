@@ -139,6 +139,13 @@ def update_issue_tracker():
                   url='/issues/process/%s' % flake.key.urlsafe())
 
 
+def update_stale_issues():
+  for flake in Flake.query(Flake.issue_id > 0, projection=[Flake.issue_id],
+                           distinct=True):
+    taskqueue.add(queue_name='issue-updates',
+                  url='/issues/update-if-stale/%s' % flake.issue_id)
+
+
 @ndb.transactional(xg=True)  # pylint: disable=no-value-for-parameter
 def add_failure_to_flake(name, flaky_run):
   flake = Flake.get_by_id(name)

@@ -8,13 +8,20 @@ import datetime
 import logging
 import webapp2
 
+from google.appengine.api import app_identity
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
 from issue_tracker import issue_tracker_api, issue
-from model.flake import FlakeUpdateSingleton, FlakeUpdate
+from model.flake import FlakeUpdateSingleton, FlakeUpdate, Flake
 
 
+MAX_UPDATED_ISSUES_PER_DAY = 50
+MAX_TIME_DIFFERENCE_SECONDS = 12 * 60 * 60
+MIN_REQUIRED_FLAKY_RUNS = 5
+DAYS_TILL_STALE = 3
+USE_MONORAIL = False
+DAYS_TO_REOPEN_ISSUE = 3
 FLAKY_RUNS_TEMPLATE = (
     'Detected %(new_flakes_count)d new flakes for test/step "%(name)s". To see '
     'the actual flakes, please visit %(flakes_url)s. This message was posted '
@@ -25,17 +32,26 @@ DESCRIPTION_TEMPLATE = (
     'This issue was created automatically by the chromium-try-flakes app. '
     'Please find the right owner to fix the respective test/step and assign '
     'this issue to them. If the step/test is infrastructure-related, please '
-    'add Infra-Troopers label and change issue status to Untriaged.\n\n'
+    'add Infra-Troopers label and change issue status to Untriaged. When done, '
+    'please remove the issue from Sheriff Bug Queue by removing the '
+    'Sheriff-Chromium label.\n\n'
     'We have detected %(flakes_count)d recent flakes. List of all flakes can '
     'be found at %(flakes_url)s.')
 REOPENED_DESCRIPTION_TEMPLATE = (
     '%(description)s\n\n'
     'This flaky test/step was previously tracked in issue %(old_issue)d.')
-MAX_UPDATED_ISSUES_PER_DAY = 50
-MAX_TIME_DIFFERENCE_SECONDS = 12 * 60 * 60
-MIN_REQUIRED_FLAKY_RUNS = 5
 FLAKES_URL_TEMPLATE = (
     'https://chromium-try-flakes.appspot.com/all_flake_occurrences?key=%s')
+BACK_TO_SHERIFF_MESSAGE = (
+    'There has been no update on this issue for over %d days, therefore it has '
+    'been moved back into the Sheriff queue (unless it was already there). '
+    'Sheriffs, please make sure that owner is aware of the issue and assign to '
+    'another owner if necessary. If the flaky test/step has already been '
+    'fixed, please close this issue.' % DAYS_TILL_STALE)
+VERY_STALE_FLAKES_MESSAGE = (
+    'Reporting to stale-flakes-reports@google.com to investigate why this '
+    'issue is not being processed by Sheriffs.')
+
 
 
 class ProcessIssue(webapp2.RequestHandler):
@@ -102,9 +118,11 @@ class ProcessIssue(webapp2.RequestHandler):
           return
       else:  # Fixed, WontFix, Verified, Archived, custom status
         # If the issue was closed, we do not update it. This allows changes made
-        # to reduce flakiness to propagate and take effect. If after 3 days we
-        # still see flakiness, we will create a new issue.
-        if flake_issue.updated < now - datetime.timedelta(days=3):
+        # to reduce flakiness to propagate and take effect. If after
+        # DAYS_TO_REOPEN_ISSUE days we still detect flakiness, we will create a
+        # new issue.
+        recent_cutoff = now - datetime.timedelta(days=DAYS_TO_REOPEN_ISSUE)
+        if flake_issue.updated < recent_cutoff:
           self._recreate_issue_for_flake(flake)
         return
 
@@ -143,7 +161,8 @@ class ProcessIssue(webapp2.RequestHandler):
 
   @ndb.transactional(xg=True)  # pylint: disable=E1120
   def post(self, urlsafe_key):
-    api = issue_tracker_api.IssueTrackerAPI('chromium', use_monorail=False)
+    api = issue_tracker_api.IssueTrackerAPI(
+        'chromium', use_monorail=USE_MONORAIL)
 
     # Check if we should stop processing this issue because we've posted too
     # many updates to issue tracker today already.
@@ -187,3 +206,67 @@ class ProcessIssue(webapp2.RequestHandler):
     # 1, therefore there should be no contention for updating this issue's
     # entity.
     flake.put()
+
+
+class UpdateIfStaleIssue(webapp2.RequestHandler):
+  def _remove_issue_from_flakes(self, issue_id):
+    for flake in Flake.query(Flake.issue_id == issue_id):
+      logging.info('Removing issue_id %s from %s', issue_id, flake.key)
+      flake.old_issue_id = issue_id
+      flake.issue_id = 0
+      flake.put()
+
+  def post(self, issue_id):
+    """Check if an issue is stale and report it back to sheriff.
+
+    Check if the issue is stale, i.e. has not been updated by anyone else than
+    this app in the last DAYS_TILL_STALE days, and if this is the case, then
+    move it back to the Sheriff queue. Also if the issue is stale for 7 days,
+    report it to stale-flakes-reports@google.com to investigate why it is not
+    being processed by sheriffs.
+    """
+    issue_id = int(issue_id)
+    api = issue_tracker_api.IssueTrackerAPI(
+        'chromium', use_monorail=USE_MONORAIL)
+    flake_issue = api.getIssue(issue_id)
+    now = datetime.datetime.utcnow()
+
+    if not flake_issue.open:
+      # Remove issue_id from all flakes unless it has recently been updated. We
+      # should not remove issue_id too soon, otherwise issues will get reopened
+      # before changes made will propogate and reduce flakiness.
+      recent_cutoff = now - datetime.timedelta(days=DAYS_TO_REOPEN_ISSUE)
+      if flake_issue.updated < recent_cutoff:
+        self._remove_issue_from_flakes(issue_id)
+      return
+
+    # Find the last update, which defaults to when issue was created if no third
+    # party updates were posted.
+    comments = api.getComments(issue_id)
+    last_third_party_update = flake_issue.created
+    for comment in sorted(comments, key=lambda c: c.created, reverse=True):
+      if comment.author != app_identity.get_service_account_name():
+        last_third_party_update = comment.created
+        break
+
+    # Compute stale deadline (in the past). Issues without updates after it
+    # should be considered stale. Only consider weekdays to avoid bringing
+    # issues back that were filed shortly before weekend.
+    stale_deadline = now - datetime.timedelta(days=DAYS_TILL_STALE)
+    if stale_deadline.weekday() > 4:  # on weekend
+      stale_deadline -= datetime.timedelta(days=2)
+
+    # Put back into Sheriff Bug Queue if stale and unless already there.
+    if (last_third_party_update < stale_deadline and
+        'Sheriff-Chromium' not in flake_issue.labels):
+      flake_issue.labels.append('Sheriff-Chromium')
+      logging.info('Moving issue %s back to Sheriff Bug queue', flake_issue.id)
+      api.update(flake_issue, comment=BACK_TO_SHERIFF_MESSAGE)
+      return
+
+    # Report to stale-flakes-reports@ if the issue has no updates for 7 days.
+    week_ago = now - datetime.timedelta(days=7)
+    if last_third_party_update < week_ago:
+      flake_issue.cc.append('stale-flakes-reports@google.com')
+      logging.info('Reporting issue %s to stale-flakes-reports', flake_issue.id)
+      api.update(flake_issue, comment=VERY_STALE_FLAKES_MESSAGE)

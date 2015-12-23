@@ -386,6 +386,24 @@ class CQStatusTestCase(testing.AppengineTestCase):
     self.assertEqual(tasks[1].url, '/issues/process/%s' % key3.urlsafe())
     self.assertEqual(tasks[2].url, '/issues/process/%s' % key5.urlsafe())
 
+  def test_create_tasks_to_update_stale_issues(self):
+    Flake(name='foo1', issue_id=123).put()
+    Flake(name='foo2', issue_id=234).put()
+    Flake(name='foo3', issue_id=234).put()
+    Flake(name='foo4', issue_id=345).put()
+    Flake(name='foo5', issue_id=345).put()
+    Flake(name='foo6', issue_id=234).put()
+
+    path = '/cron/update_stale_issues'
+    response = self.test_app.get(path, headers={'X-AppEngine-Cron': 'true'})
+    self.assertEqual(200, response.status_int)
+
+    tasks = self.taskqueue_stub.get_filtered_tasks(queue_names='issue-updates')
+    self.assertEqual(len(tasks), 3)
+    self.assertEqual(tasks[0].url, '/issues/update-if-stale/123')
+    self.assertEqual(tasks[1].url, '/issues/update-if-stale/234')
+    self.assertEqual(tasks[2].url, '/issues/update-if-stale/345')
+
   def _create_flaky_run(self, ts, tf):
     pbr = PatchsetBuilderRuns(
         issue=123456789, patchset=20001, master='test.master',

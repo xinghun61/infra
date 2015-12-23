@@ -15,15 +15,23 @@ from testing_utils import testing
 from time_functions.testing import mock_datetime_utc
 
 
+class MockComment(object):
+  def __init__(self, created, author, comment=None):
+    self.created = created
+    self.author = author
+    self.comment = comment
+
 class MockIssue(object):
   def __init__(self, issue_entry):
+    self.created = issue_entry.get('created')
     self.summary = issue_entry.get('summary')
     self.description = issue_entry.get('description')
     self.status = issue_entry.get('status')
-    self.labels = issue_entry.get('labels')
+    self.labels = issue_entry.get('labels', [])
     self.open = True
     self.updated = datetime.datetime.utcnow()
     self.comments = []
+    self.cc = []
     self.merged_into = None
 
 
@@ -41,9 +49,13 @@ class MockIssueTrackerAPI(object):
   def getIssue(self, issue_id):
     return self.issues[issue_id]
 
+  def getComments(self, issue_id):
+    return self.issues[issue_id].comments
+
   def update(self, issue, comment):
     self.issues[issue.id] = issue
-    issue.comments.append(comment)
+    issue.comments.append(
+        MockComment(datetime.datetime.utcnow(), 'app@ae.org', comment))
 
 
 class FlakeIssuesTestCase(testing.AppengineTestCase):
@@ -63,6 +75,8 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
         mock.patch('issue_tracker.issue_tracker_api.IssueTrackerAPI',
                    lambda *args, **kwargs: self.mock_api),
         mock.patch('issue_tracker.issue.Issue', MockIssue),
+        mock.patch('google.appengine.api.app_identity.get_service_account_name',
+                   lambda *args, **kwargs: 'app@ae.org')
     ]
     for patcher in self.patchers:
       patcher.start()
@@ -123,7 +137,8 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
         'chromium-try-flakes app. Please find the right owner to fix the '
         'respective test/step and assign this issue to them. If the step/test '
         'is infrastructure-related, please add Infra-Troopers label and change '
-        'issue status to Untriaged.\n\n'
+        'issue status to Untriaged. When done, please remove the issue from '
+        'Sheriff Bug Queue by removing the Sheriff-Chromium label.\n\n'
         'We have detected 2 recent flakes. List of all flakes can be found at '
         'https://chromium-try-flakes.appspot.com/all_flake_occurrences?key='
         'agx0ZXN0YmVkLXRlc3RyGQsSBUZsYWtlIg50ZXN0LWZsYWtlLWtleQw.')
@@ -196,7 +211,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
       self.assertEqual(200, response.status_int)
     self.assertEqual(len(issue.comments), 1)
     self.assertEqual(
-        issue.comments[0],
+        issue.comments[0].comment,
         'Detected 2 new flakes for test/step "foo.bar". To see the actual '
         'flakes, please visit https://chromium-try-flakes.appspot.com/'
         'all_flake_occurrences?key=agx0ZXN0YmVkLXRlc3RyCwsSBUZsYWtlGAoM. This '
@@ -320,3 +335,122 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
       response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
       self.assertEqual(200, response.status_int)
       self.assertEqual(len(self.mock_api.issues), 4)
+
+  @mock_datetime_utc(2015, 12, 4, 15, 0, 0)
+  def test_correctly_computes_stale_deadline_based_on_created_time(self):
+    issue = self.mock_api.create(MockIssue({}))
+    issue.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
+    self.test_app.post('/issues/update-if-stale/%s' % issue.id)
+    self.assertIn('Sheriff-Chromium', issue.labels)
+
+    issue = self.mock_api.create(MockIssue({}))
+    issue.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
+    issue.comments = [
+        MockComment(datetime.datetime(2015, 12, 3, 11, 0, 0), 'app@ae.org'),
+        MockComment(datetime.datetime(2015, 12, 4, 11, 0, 0), 'app@ae.org'),
+    ]
+    self.test_app.post('/issues/update-if-stale/%s' % issue.id)
+    self.assertIn('Sheriff-Chromium', issue.labels)
+
+    issue = self.mock_api.create(MockIssue({}))
+    issue.created = datetime.datetime(2015, 12, 3, 11, 0, 0)
+    self.test_app.post('/issues/update-if-stale/%s' % issue.id)
+    self.assertNotIn('Sheriff-Chromium', issue.labels)
+
+  @mock_datetime_utc(2015, 12, 4, 15, 0, 0)
+  def test_correctly_computes_stale_deadline(self):
+    # Creation date here is set to a later datetime than some comments for
+    # testing purposes. This allows to make sure it's not used and instead an
+    # earlier datetime from comment is used ot determine if an issue is stale.
+    issue = self.mock_api.create(MockIssue({}))
+    issue.created = datetime.datetime(2015, 12, 3, 11, 0, 0)
+    issue.comments = [
+        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 0), 'test@a.org'),
+        MockComment(datetime.datetime(2015, 12, 3, 11, 0, 0), 'app@ae.org'),
+    ]
+    self.test_app.post('/issues/update-if-stale/%s' % issue.id)
+    self.assertIn('Sheriff-Chromium', issue.labels)
+
+    issue = self.mock_api.create(MockIssue({}))
+    issue.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
+    issue.comments = [
+        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 0), 'test@a.org'),
+        MockComment(datetime.datetime(2015, 12, 3, 11, 0, 0), 'test@b.org'),
+    ]
+    self.test_app.post('/issues/update-if-stale/%s' % issue.id)
+    self.assertNotIn('Sheriff-Chromium', issue.labels)
+
+  @mock_datetime_utc(2015, 12, 1, 15, 0, 0)
+  def test_does_not_count_weekends_towards_staleness(self):
+    issue = self.mock_api.create(MockIssue({}))
+    issue.created = datetime.datetime(2015, 11, 27, 11, 0, 0)
+    self.test_app.post('/issues/update-if-stale/%s' % issue.id)
+    self.assertNotIn('Sheriff-Chromium', issue.labels)
+
+  @mock_datetime_utc(2015, 12, 4, 15, 0, 0)
+  def test_posts_comment_when_moving_to_bug_queue(self):
+    issue = self.mock_api.create(MockIssue({}))
+    issue.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
+    self.test_app.post('/issues/update-if-stale/%s' % issue.id)
+    self.assertIn('Sheriff-Chromium', issue.labels)
+    self.assertEqual(len(issue.comments), 1)
+    self.assertEqual(
+        issue.comments[0].comment,
+        'There has been no update on this issue for over 3 days, therefore it '
+        'has been moved back into the Sheriff queue (unless it was already '
+        'there). Sheriffs, please make sure that owner is aware of the issue '
+        'and assign to another owner if necessary. If the flaky test/step has '
+        'already been fixed, please close this issue.')
+
+  @mock_datetime_utc(2015, 12, 4, 15, 0, 0)
+  def test_ignores_closed_issues_when_checking_staleness(self):
+    issue = self.mock_api.create(MockIssue({}))
+    issue.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
+    issue.open = False
+    self.test_app.post('/issues/update-if-stale/%s' % issue.id)
+    self.assertNotIn('Sheriff-Chromium', issue.labels)
+
+  @mock_datetime_utc(2015, 12, 8, 15, 0, 0)
+  def test_cc_stale_flakes_reports_when_stale_for_7_days(self):
+    issue = self.mock_api.create(MockIssue({}))
+    issue.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
+    issue.labels = ['Sheriff-Chromium']
+    self.test_app.post('/issues/update-if-stale/%s' % issue.id)
+    self.assertIn('stale-flakes-reports@google.com', issue.cc)
+    self.assertEqual(len(issue.comments), 1)
+    self.assertEqual(
+        issue.comments[0].comment,
+        'Reporting to stale-flakes-reports@google.com to investigate why this '
+        'issue is not being processed by Sheriffs.')
+
+  @mock_datetime_utc(2015, 12, 8, 15, 0, 0)
+  def test_removes_closed_issue_id_from_old_flakes(self):
+    issue = self.mock_api.create(MockIssue({}))
+    issue.updated = datetime.datetime(2015, 12, 3, 15, 0, 0)
+    issue.open = False
+
+    flake = self._create_flake()
+    flake.issue_id = issue.id
+    flake_key = flake.put()
+
+    self.test_app.post('/issues/update-if-stale/%s' % issue.id)
+
+    updated_flake = flake_key.get()
+    self.assertEqual(updated_flake.issue_id, 0)
+    self.assertEqual(updated_flake.old_issue_id, issue.id)
+
+  @mock_datetime_utc(2015, 12, 8, 15, 0, 0)
+  def test_does_not_remove_closed_issue_id_for_recently_updated_issues(self):
+    issue = self.mock_api.create(MockIssue({}))
+    issue.updated = datetime.datetime(2015, 12, 7, 15, 0, 0)
+    issue.open = False
+
+    flake = self._create_flake()
+    flake.issue_id = issue.id
+    flake_key = flake.put()
+
+    self.test_app.post('/issues/update-if-stale/%s' % issue.id)
+
+    updated_flake = flake_key.get()
+    self.assertEqual(updated_flake.issue_id, issue.id)
+    self.assertEqual(updated_flake.old_issue_id, 0)
