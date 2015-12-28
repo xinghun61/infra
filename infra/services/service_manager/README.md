@@ -37,3 +37,65 @@ Example:
       ],
       "stop_time": 5
     }
+
+
+Example of a cron task:
+
+    {
+      "name": "cleanup_logs",
+      "root_directory": "/opt/infra-python",
+      "tool": "infra.tools.cleanup_logs",
+      // alternative: "cmd": "./run.py infra.tools.cleanup_logs",
+      "args": []
+      // All times are UTC
+      "scheduling": [
+          "every month offset 2d8h30m",
+          "every workday offset 8h30m",
+          "every monday every hour offset 30m",
+          "every 5m offset 1m"
+      ]
+      "timeout": "2h"
+    }
+
+# Example equivalence with Unix Cron:
+
+    */30 * * * * chrome-bot
+    every 30m
+    
+    * * * * * chrome-bot
+    every 1m   # implicitly: @ 0m
+    
+    0-59/10 0,10-23 * * * chrome-bot
+    every 10m every 1d @ 10:00-01:00
+    
+    0-59/10 1-9 * * * chrome-bot
+    every 10m every 1d @ 01:00-10:00
+    
+    1-59/10 * * * * chrome-bot
+    every 10m @ 1m
+    
+    2-59/10 * * * * chrome-bot
+    every 10m @ 2m
+    
+    15 4 * * * chrome-bot
+    every 1d @ 04:15    # shorten to "@ 04:15" ?
+    
+    0 1 * * *  chrome-bot
+    every 1d @ 01:00
+    
+    00,10,20,30,40,50 * * * * chrome-bot
+    every 10m
+    every 1h @ 0m, 10m, 20m, 40m, 50m  # alternative
+    
+    06,16,26,36,46,56 * * * * chrome-bot
+    every 10m @ 6m
+    
+    50 * * * * chrome-bot
+    every 1h @ 50m
+    
+    */5 * * * * chrome-bot
+    every 5m
+    
+    * 1 * * * chrome-bot
+    every 1m every 1d @ 01:00-02:00
+
