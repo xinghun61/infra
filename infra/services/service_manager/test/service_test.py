@@ -118,8 +118,8 @@ class ServiceTest(TestBase):
             'stop_time': '86',
         },
         None,
-        time_fn=self.mock_time,
-        sleep_fn=self.mock_sleep)
+        _time_fn=self.mock_time,
+        _sleep_fn=self.mock_sleep)
 
     if sys.platform == 'win32':  # pragma: no cover
       self.mock_fork = mock.Mock()
@@ -379,8 +379,8 @@ class ServiceTest(TestBase):
             'stop_time': '86',
         },
         '/cloudtail',
-        time_fn=self.mock_time,
-        sleep_fn=self.mock_sleep)
+        _time_fn=self.mock_time,
+        _sleep_fn=self.mock_sleep)
 
     self.assertIn('/cloudtail', self.s.cloudtail_args)
     self.assertIn('foo', self.s.cloudtail_args)

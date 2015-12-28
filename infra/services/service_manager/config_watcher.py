@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import collections
 import glob
 import json
 import logging
@@ -35,7 +34,7 @@ class ConfigWatcher(object):
   def __init__(self, config_directory, config_poll_interval,
                service_poll_interval, state_directory, root_directory,
                cloudtail_path,
-               sleep_fn=time.sleep):
+               _sleep_fn=time.sleep):
     """
     Args:
       config_directory: Directory containing .json config files to monitor.
@@ -59,7 +58,7 @@ class ConfigWatcher(object):
     self._services = {}  # Service name -> Filename
     self._stop = False
 
-    self._sleep_fn = sleep_fn
+    self._sleep_fn = _sleep_fn
 
     self._own_service = service.OwnService(state_directory, root_directory)
 
@@ -118,6 +117,26 @@ class ConfigWatcher(object):
       LOGGER.exception('Error opening or parsing %s', filename)
       return None
 
+    # Make sure we have all the required keys to help the unwary user.
+    error_occurred = False
+    if 'name' not in config:
+      LOGGER.error("Service name must be specified in the 'name' "
+                   "field. File: %s", filename)
+      error_occurred = True
+
+    if 'root_directory' not in config:
+      LOGGER.error("Working directory must be specified in the "
+                   "'root_directory' field. File: %s", filename)
+      error_occurred = True
+
+    if 'tool' not in config:
+      LOGGER.error("Command to run must be specified in the 'tool' "
+                   "field. File: %s", filename)
+      error_occurred = True
+
+    # 'args', 'stop_time' are optional.
+    if error_occurred:
+      return None
     return config
 
   def _config_added(self, filename, mtime):

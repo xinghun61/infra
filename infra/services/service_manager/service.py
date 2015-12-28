@@ -209,7 +209,7 @@ class Service(object):
   """
 
   def __init__(self, state_directory, service_config, cloudtail_path,
-               time_fn=time.time, sleep_fn=time.sleep):
+               _time_fn=time.time, _sleep_fn=time.sleep):
     """
     Args:
       state_directory: A file will be created in this directory (with the same
@@ -239,8 +239,8 @@ class Service(object):
       ]
 
     self._state_file = os.path.join(state_directory, self.name)
-    self._time_fn = time_fn
-    self._sleep_fn = sleep_fn
+    self._time_fn = _time_fn
+    self._sleep_fn = _sleep_fn
 
     self._process_creator = ProcessCreator.for_platform(self)
 
