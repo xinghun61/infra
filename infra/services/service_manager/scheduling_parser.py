@@ -3,9 +3,12 @@
 # found in the LICENSE file.
 
 import collections
+import datetime
+import itertools
 import logging
 import re
 
+import pytz
 
 LOGGER = logging.getLogger(__name__)
 
@@ -18,9 +21,60 @@ DAYNAME_RE = re.compile('^(?P<day>mon|tue|wed|thu|fri|sat|sun)$')
 DAYNAME_NUM = {'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4,
                'sat': 5, 'sun': 6}
 UNITS_ORDER = ('w', 'd', 'h', 'm')
+EPOCH = datetime.datetime(2007, 1, 1, 0, 0, 0).replace(tzinfo=pytz.UTC)
 
 
-class JobTimes(object):  # pragma: no cover
+def _add_utc_tz(utc_dt):
+  """Add UTC timezone information to the datetime object.
+
+  Args:
+    utc_dt (datetime.datetime): arbitrary timestamp.
+
+  Raises:
+    ValueError: if dt is not naive nor already UTC.
+
+  Returns:
+   utc_dt (datetime.datetime): timestamp with timezone information set to UTC.
+  """
+  if utc_dt.tzinfo is None or utc_dt.tzinfo.utcoffset(utc_dt) is None:
+    return utc_dt.replace(tzinfo=pytz.UTC)
+
+  raise ValueError("datetime object must be utc or naive. Got %s",
+                   utc_dt.tzinfo)
+
+
+def snapped_datetime(utc_dt, period, offset):
+  """Compute the last timestamp preceding utc_dt that matches period/offset.
+
+  The list of timestamps specified by period and offset is given by:
+  EPOCH + n*60*period + offset
+  where n is any integer.
+
+  EPOCH is 2007-01-01T00:00:00Z
+
+  Args:
+    utc_dt (datetime.datetime): arbitrary UTC or naive timestamp.
+    period (int): period, in minutes
+    offset (int): offset, in *seconds*
+
+  Returns
+    rounded_dt (datetime.datetime): rounded datetime, strictly smaller
+      than utc_dt.
+  """
+  utc_dt = _add_utc_tz(utc_dt)
+  seconds = (utc_dt - EPOCH).total_seconds()
+
+  period_s = period * 60
+  snapped = period_s * ((seconds - offset) // period_s) + offset
+
+  snapped_dt = EPOCH + datetime.timedelta(seconds=snapped)
+  if snapped_dt == utc_dt:
+    snapped_dt -= datetime.timedelta(minutes=period)
+
+  return snapped_dt
+
+
+class JobTimes(object):
   def __init__(self, period, offsets, jitter):
     """This object computes a sequence of timestamps.
 
@@ -36,7 +90,7 @@ class JobTimes(object):  # pragma: no cover
     Ex: period = 5, offsets = [0, 3] would output 08:00, 08:03, 08:05,
       08:08, 08:10, 08:13, etc.
 
-    The starting point for all offsets is Monday 2006-01-01T00:00:00Z.
+    The starting point for all offsets is Monday 2007-01-01T00:00:00Z.
 
     Args:
       period (int): time separating two timestamps, in minutes
@@ -48,24 +102,28 @@ class JobTimes(object):  # pragma: no cover
     # allows to start on a Monday (1970-1-1 is a Thursday), which simplifies
     # computations when weeks are involved.
     self.period = period
-    self.offsets = offsets or [0]
-    self.jitter = jitter
+    if offsets:
+      self.offsets_s = [60*offset + jitter for offset in offsets]
+    else:
+      self.offsets_s = [jitter]
 
-  def next_time(self, utc_dt):
-    # returns the closest future scheduling time after utc_dt.
-    # utc_dt: datetime.datetime. Naive is interpreted as UTC, non-naive non-UTC
-    # raise ValueError.
-    pass
+  def next_times(self, utc_dt, num=10):
+    """Compute the closest future scheduling time at or after utc_dt.
 
-  def next_times(self, utc_dt, num):
-    # Returns a list of future scheduling times after utc_dt
-    # Like next_time(), but returns a list instead of a single value.
-    times = []
-    for _ in xrange(num):
-      utc_dt = self.next_time(utc_dt)
-      times.append(utc_dt)
+    Args:
+      utc_dt (datetime.datetime): Naive is interpreted as UTC, non-naive non-UTC
+        raises ValueError.
+    Returns:
+      scheduling_time (datetime.datetime): UTC datetime.
+    """
+    # Compute next times for all series, then pick up the 'num' smallest ones.
+    starts = [snapped_datetime(utc_dt, self.period, offset)
+              for offset in self.offsets_s]
 
-    return times
+    instants = [start + datetime.timedelta(minutes=n*self.period)
+                for n, start in itertools.product(xrange(1, num+1), starts)]
+    instants.sort()
+    return instants[:num]
 
 
 def parse_time_offsets(s):
