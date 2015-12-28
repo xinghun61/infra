@@ -125,7 +125,7 @@
         }
 
       } else {
-        rowString = '<tr id="' + stepIndex.toString() + '-' + testIndex.toString() + '-0"  class="hidden-row">';
+        rowString = '<tr id="' + stepIndex.toString() + '-' + testIndex.toString() + '-0" class="hidden-row">';
         failureWithLink = '<i>' + failure.test_name + '</i>';
       }
 
@@ -135,7 +135,7 @@
       if (failure.last_pass) {
         rowString += '<td rowspan="' + rowsSpan + '"><a href="' + findit.builderUrl + '/builds/' + failure.last_pass + '">' + failure.last_pass + '</a></td>';
       } else {
-        rowString += '<td>N/A</td>';
+        rowString += '<td rowspan="' + rowsSpan + '">N/A</td>';
       }
       if (failure.suspected_cls.length > 0) {
         clString = generateStringForSingleCL(failure.suspected_cls[0]);
@@ -146,7 +146,7 @@
           if (type == 'step') {
             rowString = '<tr>';
           } else {
-            rowString = '<tr id="' + stepIndex.toString() + '-' + testIndex.toString() + '-' + i.toString() + '">';
+            rowString = '<tr id="' + stepIndex.toString() + '-' + testIndex.toString() + '-' + i.toString() + '" class="hidden-row">';
           }
 
           clString = generateStringForSingleCL(failure.suspected_cls[i]);
