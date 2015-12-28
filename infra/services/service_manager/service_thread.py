@@ -115,7 +115,7 @@ class ServiceThread(threading.Thread):
           self._started = False
         elif state.should_run == True:
           try:
-            state = self._service.get_running_process_state()
+            proc_state = self._service.get_running_process_state()
           except service.UnexpectedProcessStateError:
             self.failures.increment(fields={'service': self._service.name})
             logging.exception('Unexpected error getting state for service %s',
@@ -131,15 +131,16 @@ class ServiceThread(threading.Thread):
               LOGGER.info('Starting service %s for the first time (%r)',
                           self._service.name, ex)
           else:
-            if self._service.has_version_changed(state):
+            if self._service.has_version_changed(proc_state):
               self.upgrades.increment(fields={'service': self._service.name})
               LOGGER.info('Service %s has a new package version, restarting',
                           self._service.name)
               self._service.stop()
-            elif self._service.has_args_changed(state):
+            elif self._service.has_args_changed(proc_state):
               self.reconfigs.increment(fields={'service': self._service.name})
-              LOGGER.info('Service %s has new args: was %s, restarting with %s',
-                          self._service.name, state.args, self._service.args)
+              LOGGER.info(
+                'Service %s has new args: was %s, restarting with %s',
+                self._service.name, proc_state.args, self._service.args)
               self._service.stop()
 
           # Ensure the service is running.
