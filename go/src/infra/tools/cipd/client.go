@@ -857,7 +857,7 @@ func (client *clientImpl) EnsurePackages(pins []common.Pin, dryRun bool) (action
 	// Figure out what needs to be updated and deleted, log it.
 	actions = buildActionPlan(pins, existing)
 	if actions.Empty() {
-		client.Logger.Infof("Everything is up-to-date.")
+		client.Logger.Debugf("Everything is up-to-date.")
 		return actions, nil
 	}
 	if len(actions.ToInstall) != 0 {
