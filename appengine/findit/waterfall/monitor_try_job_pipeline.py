@@ -24,8 +24,8 @@ class MonitorTryJobPipeline(BasePipeline):
   def run(self, master_name, builder_name, build_number, try_job_id):
     assert try_job_id
 
-    timeout_seconds = 2*60*60  # Timeout after 2 hours.
-    deadline = time.time() + timeout_seconds
+    timeout_hours = 5  # Timeout after 5 hours.
+    deadline = time.time() + timeout_hours * 60 * 60
 
     already_set_started = False
     while True:
@@ -73,7 +73,9 @@ class MonitorTryJobPipeline(BasePipeline):
         time.sleep(60)
 
       if time.time() > deadline:  # pragma: no cover
-        logging.error('Try job %s timed out.', try_job_id)
         try_job_result.status = wf_analysis_status.ERROR
         try_job_result.put()
-        return None
+        # Explicitly abort the whole pipeline.
+        raise pipeline.Abort(
+            'Try job %s timed out after %d hours.' % (
+                try_job_id, timeout_hours))
