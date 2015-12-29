@@ -23,18 +23,41 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     mock_change_logs['rev2'] = MockedChangeLog('2', 'url_2')
     return mock_change_logs.get(revision)
 
-  def testIdentifyCulpritForCompileReturnNoneIfNoTryJobResult(self):
+  def testIdentifyCulpritForCompileReturnNoneIfNoCompileResult(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
     try_job_id = '1'
     compile_result = None
 
+    WfTryJob.Create(master_name, builder_name, build_number).put()
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit = pipeline.run(
         master_name, builder_name, build_number, try_job_id, compile_result)
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
 
     self.assertIsNone(culprit)
+    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
+
+  def testIdentifyCulpritForCompileReturnNoneIfNoTryJobResultForCompile(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '1'
+    compile_result = {
+        'result': [],
+        'url': 'url',
+        'try_job_id': '1',
+    }
+    WfTryJob.Create(master_name, builder_name, build_number).put()
+
+    pipeline = IdentifyTryJobCulpritPipeline()
+    culprit = pipeline.run(
+        master_name, builder_name, build_number, try_job_id, compile_result)
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+
+    self.assertIsNone(culprit)
+    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
 
   def testIdentifyCulpritForCompileReturnNoneIfAllPassed(self):
     master_name = 'm'
@@ -49,13 +72,15 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         'url': 'url',
         'try_job_id': '1',
     }
+    WfTryJob.Create(master_name, builder_name, build_number).put()
 
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit = pipeline.run(
         master_name, builder_name, build_number, try_job_id, compile_result)
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
 
     self.assertIsNone(culprit)
-
+    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
 
   def testIdentifyCulpritForCompileReturnNoneIfNoChangeLog(self):
     master_name = 'm'
@@ -71,12 +96,15 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     }
 
     self.mock(GitRepository, 'GetChangeLog', self._MockGetChangeLog)
+    WfTryJob.Create(master_name, builder_name, build_number).put()
 
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit = pipeline.run(
         master_name, builder_name, build_number, try_job_id, compile_result)
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
 
     self.assertIsNone(culprit)
+    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
 
   def testIdentifyCulpritForCompileTryJobSuccess(self):
     master_name = 'm'
