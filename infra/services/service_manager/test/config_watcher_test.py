@@ -23,9 +23,11 @@ class ConfigWatcherTest(unittest.TestCase):
     self.mock_sleep = mock.create_autospec(time.sleep, spec_set=True)
 
     self.mock_ownservice_ctor = mock.patch(
-        'infra.services.service_manager.service.OwnService').start()
+        'infra.services.service_manager.service.OwnService',
+        autospec=True).start()
     self.mock_thread_ctor = mock.patch(
-        'infra.services.service_manager.service_thread.ServiceThread').start()
+        'infra.services.service_manager.service_thread.ServiceThread',
+        autospec=True).start()
     self.mock_thread = self.mock_thread_ctor.return_value
     self.mock_ownservice = self.mock_ownservice_ctor.return_value
     self.mock_ownservice.start.return_value = True
@@ -55,7 +57,7 @@ class ConfigWatcherTest(unittest.TestCase):
   def _remove_config(self, name):
     os.unlink(os.path.join(self.config_directory, name))
 
-  @mock.patch('os._exit')
+  @mock.patch('os._exit', autospec=True)
   def test_already_running(self, mock_exit):
     self.mock_ownservice.start.return_value = False
     mock_exit.side_effect = SystemExit

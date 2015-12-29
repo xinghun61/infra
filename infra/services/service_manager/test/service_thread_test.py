@@ -50,7 +50,8 @@ class ServiceThreadTest(unittest.TestCase):
     service_thread.ServiceThread.upgrades.reset()
 
     self.mock_service_ctor = mock.patch(
-        'infra.services.service_manager.service.Service').start()
+        'infra.services.service_manager.service.Service',
+        autospec=True).start()
     self.mock_service = self.mock_service_ctor.return_value
     self.mock_service.name = 'foo'
 

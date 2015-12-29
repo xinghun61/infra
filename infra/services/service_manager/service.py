@@ -226,7 +226,7 @@ class Service(object):
     self.root_directory = service_config['root_directory']
     self.tool = service_config['tool']
 
-    self.args = service_config.get('args', [])
+    self._args = service_config.get('args', [])
     self.stop_time = int(service_config.get('stop_time', 10))
 
     if cloudtail_path is None:
@@ -243,6 +243,11 @@ class Service(object):
     self._sleep_fn = _sleep_fn
 
     self._process_creator = ProcessCreator.for_platform(self)
+
+  # Defining 'args' as a property to be able to use autospec=True in mock.patch.
+  @property
+  def args(self):
+    return self._args
 
   def get_running_process_state(self):
     """Returns a ProcessState object about about the process.
@@ -267,7 +272,7 @@ class Service(object):
     if state.args is None:
       return False
 
-    return state.args != self.args
+    return state.args != self._args
 
   def start(self):
     """Starts the service if it's not running already.
@@ -318,7 +323,7 @@ class Service(object):
           'Failed to start %s: daemon process exited (%r)' % (self.name, ex))
 
     state.version = version_finder.find_version(self.config)
-    state.args = self.args
+    state.args = self._args
     state.write_to_file(self._state_file)
 
   def _signal_and_wait(self, state, sig, wait_timeout):

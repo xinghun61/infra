@@ -24,9 +24,11 @@ class RootSetupTest(unittest.TestCase):
     root_setup.UPSTART_CONFIG_FILENAME = os.path.join(self.temp_path, 'config')
     root_setup.SERVICES_DIRECTORY = os.path.join(self.temp_path, 'services')
 
-    self.mock_getuid = mock.patch('os.getuid').start()
-    self.mock_check_call = mock.patch('subprocess.check_call').start()
-    self.mock_check_output = mock.patch('subprocess.check_output').start()
+    self.mock_getuid = mock.patch('os.getuid', autospec=True).start()
+    self.mock_check_call = mock.patch('subprocess.check_call',
+                                      autospec=True).start()
+    self.mock_check_output = mock.patch('subprocess.check_output',
+                                        autospec=True).start()
 
     self.mock_getuid.return_value = 0
     self.mock_check_output.return_value = ''

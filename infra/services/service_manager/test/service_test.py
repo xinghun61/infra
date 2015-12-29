@@ -5,7 +5,6 @@
 import errno
 import json
 import os
-import shutil
 import signal
 import sys
 import tempfile
@@ -24,13 +23,15 @@ class TestBase(unittest.TestCase):
   def setUp(self):
     self.state_directory = tempfile.mkdtemp()
 
-    self.mock_getpid = mock.patch('os.getpid').start()
+    self.mock_getpid = mock.patch('os.getpid', autospec=True).start()
     self.mock_getpid.return_value = 7
     self.mock_find_version = mock.patch(
-        'infra.services.service_manager.version_finder.find_version').start()
+        'infra.services.service_manager.version_finder.find_version',
+        autospec=True).start()
 
     self.mock_read_starttime = (mock.patch(
-        'infra.services.service_manager.service._read_starttime')
+        'infra.services.service_manager.service._read_starttime',
+         autospec=True)
         .start())
     self.mock_read_starttime.return_value = None
 
@@ -124,19 +125,19 @@ class ServiceTest(TestBase):
     if sys.platform == 'win32':  # pragma: no cover
       self.mock_fork = mock.Mock()
     else:
-      self.mock_fork = mock.patch('os.fork').start()
+      self.mock_fork = mock.patch('os.fork', autospec=True).start()
 
-    self.mock_pipe = mock.patch('os.pipe').start()
-    self.mock_close = mock.patch('os.close').start()
-    self.mock_exit = mock.patch('os._exit').start()
-    self.mock_fdopen = mock.patch('os.fdopen').start()
-    self.mock_waitpid = mock.patch('os.waitpid').start()
-    self.mock_execv = mock.patch('os.execv').start()
-    self.mock_kill = mock.patch('os.kill').start()
+    self.mock_pipe = mock.patch('os.pipe', autospec=True).start()
+    self.mock_close = mock.patch('os.close', autospec=True).start()
+    self.mock_exit = mock.patch('os._exit', autospec=True).start()
+    self.mock_fdopen = mock.patch('os.fdopen', autospec=True).start()
+    self.mock_waitpid = mock.patch('os.waitpid', autospec=True).start()
+    self.mock_execv = mock.patch('os.execv', autospec=True).start()
+    self.mock_kill = mock.patch('os.kill', autospec=True).start()
     self.mock_become_daemon = mock.patch(
-        'infra.libs.service_utils.daemon.become_daemon').start()
+        'infra.libs.service_utils.daemon.become_daemon', autospec=True).start()
     self.mock_close_all_fds = mock.patch(
-        'infra.libs.service_utils.daemon.close_all_fds').start()
+        'infra.libs.service_utils.daemon.close_all_fds', autospec=True).start()
 
   def test_start_already_running(self):
     self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
@@ -388,7 +389,7 @@ class ServiceTest(TestBase):
 
 class ProcessCreatorTest(unittest.TestCase):
   def setUp(self):
-    self.mock_popen = mock.patch('subprocess.Popen').start()
+    self.mock_popen = mock.patch('subprocess.Popen', autospec=True).start()
     self.mock_service = mock.create_autospec('service.Service', instance=True)
     self.mock_service.name = 'foo'
     self.c = service.ProcessCreator(self.mock_service)
@@ -408,12 +409,12 @@ class ProcessCreatorTest(unittest.TestCase):
   def test_open_output_fh(self):
     self.mock_service.cloudtail_args = [1, 2, 3]
     self.mock_popen.return_value.pid = 1234
-    fh = self.c._open_output_fh({'foo': 'bar'})
+    fh = self.c._open_output_fh({'cwd': 'blah'})
     try:
       self.assertEquals(1, self.mock_popen.call_count)
       self.assertEquals([1, 2, 3], self.mock_popen.call_args[0][0])
       kwargs = self.mock_popen.call_args[1]
-      self.assertIn('foo', kwargs)
+      self.assertIn('cwd', kwargs)
       self.assertIn('stdin', kwargs)
       self.assertIn('stdout', kwargs)
       self.assertIn('stderr', kwargs)
@@ -430,7 +431,7 @@ class ProcessCreatorTest(unittest.TestCase):
   def test_open_output_fh_not_found(self):
     self.mock_service.cloudtail_args = [1, 2, 3]
     self.mock_popen.side_effect = OSError()
-    fh = self.c._open_output_fh({'foo': 'bar'})
+    fh = self.c._open_output_fh({})
     try:
       self.assertEquals(1, self.mock_popen.call_count)
       kwargs = self.mock_popen.call_args[1]
@@ -453,7 +454,7 @@ class OwnServiceTest(TestBase):
         self.root_directory)
 
     self.mock_flock = mock.patch(
-        'infra.libs.service_utils.daemon.flock').start()
+        'infra.libs.service_utils.daemon.flock', autospec=True).start()
 
   def tearDown(self):
     super(OwnServiceTest, self).tearDown()
