@@ -43,7 +43,7 @@ golang.org/x/text #cf4986612c83df6c55578ba198316d1684a9a287
 golang.org/x/tools #2dff1e88eb92a374a989dd38e3402481f498ffa2
 google.golang.org/api #dc6d2353af16e2a2b0ff6986af051d473a4ed468
 google.golang.org/appengine #58c0e2a2044a8d1abd8dd1d97939cd74497d0806 !https://chromium.googlesource.com/external/github.com/golang/appengine.git
-google.golang.org/cloud #6fdcab499d2c45e2939521c4047855f12a745a1d
+google.golang.org/cloud #2375e186ca77be721a7c9c7b13a659738a8511d2
 google.golang.org/grpc #78905999da08d7f87d5dd11608fa79ff8700daa8 !https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
 gopkg.in/fsnotify.v1 #508915b7500b6e42a87132e4afeb4729cebc7cbb !https://chromium.googlesource.com/external/github.com/go-fsnotify/fsnotify.git
 gopkg.in/natefinch/npipe.v2 #0938d701e50e580f5925c773055eb6d6b32a0cbc !https://chromium.googlesource.com/external/github.com/natefinch/npipe.git

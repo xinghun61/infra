@@ -1,4 +1,4 @@
-github.com/coreos/etcd #73230f9603ea227a4f05e543c0c72bacec80660d !https://chromium.googlesource.com/external/github.com/coreos/etcd.git
+github.com/coreos/etcd #41771d9522f001edcc747d3313deac2a3f20aedc !https://chromium.googlesource.com/external/github.com/coreos/etcd.git
 github.com/dustin/go-humanize #8929fe90cee4b2cb9deb468b51fb34eba64d1bf0 !https://chromium.googlesource.com/external/github.com/dustin/go-humanize.git
 github.com/golang/glog #fca8c8854093a154ff1eb580aae10276ad6b1b5f !https://chromium.googlesource.com/external/github.com/golang/glog.git
 github.com/golang/lint #32a87160691b3c96046c0c678fe57c5bef761456 !https://chromium.googlesource.com/external/github.com/golang/lint.git
@@ -19,7 +19,7 @@ github.com/kr/pty #f7ee69f31298ecbe5d2b349c711e2547a617d398 !https://chromium.go
 github.com/kr/text #bb797dc4fb8320488f47bf11de07a733d7233e1f !https://chromium.googlesource.com/external/github.com/kr/text.git
 github.com/luci/gkvlite #33184d2edd2d39ef71c3ed883e8ff752c4a18213 !https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
 github.com/luci/go-render #fb5bbe650634bbf7a13ac505ccd52e910cd9001d !https://chromium.googlesource.com/external/github.com/luci/go-render.git
-github.com/maruel/panicparse #27e7430acbec1bd00c6ae28c89bfd0bd23d67df7 !https://chromium.googlesource.com/external/github.com/maruel/panicparse.git
+github.com/maruel/panicparse #229136247b49fd086ec51f2625e5c136c878fefd !https://chromium.googlesource.com/external/github.com/maruel/panicparse.git
 github.com/maruel/pre-commit-go #75e3c74cbda623eaf7d88231ef860fca02457e56 !https://chromium.googlesource.com/external/github.com/maruel/pre-commit-go.git
 github.com/maruel/subcommands #a4141cc8723941ce5b7a9ab87b77f397a80e2be6 !https://chromium.googlesource.com/external/github.com/maruel/subcommands.git
 github.com/maruel/ut #e40308333492fd122d9a2c88576bcddffb90cafe !https://chromium.googlesource.com/external/github.com/maruel/ut.git
@@ -43,7 +43,7 @@ golang.org/x/text #cf4986612c83df6c55578ba198316d1684a9a287
 golang.org/x/tools #2dff1e88eb92a374a989dd38e3402481f498ffa2
 google.golang.org/api #dc6d2353af16e2a2b0ff6986af051d473a4ed468
 google.golang.org/appengine #58c0e2a2044a8d1abd8dd1d97939cd74497d0806 !https://chromium.googlesource.com/external/github.com/golang/appengine.git
-google.golang.org/cloud #6fdcab499d2c45e2939521c4047855f12a745a1d
+google.golang.org/cloud #2375e186ca77be721a7c9c7b13a659738a8511d2
 google.golang.org/grpc #78905999da08d7f87d5dd11608fa79ff8700daa8 !https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
 gopkg.in/fsnotify.v1 #508915b7500b6e42a87132e4afeb4729cebc7cbb !https://chromium.googlesource.com/external/github.com/go-fsnotify/fsnotify.git
 gopkg.in/natefinch/npipe.v2 #0938d701e50e580f5925c773055eb6d6b32a0cbc !https://chromium.googlesource.com/external/github.com/natefinch/npipe.git
