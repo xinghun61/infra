@@ -13,6 +13,10 @@ from infra.libs.service_utils import outer_loop
 from infra.services.mastermon import monitor
 from infra_libs import ts_mon
 
+# Running this here because it sometimes returns the unqualified name when run
+# from inside Application(). No explanation so far.
+FQDN = socket.getfqdn()
+
 
 class Application(outer_loop.Application):
   def __init__(self):
@@ -36,7 +40,7 @@ class Application(outer_loop.Application):
         'be used with --url')
 
     parser.add_argument('--hostname',
-        default=socket.getfqdn(),
+        default=FQDN,
         help='override local hostname (currently %(default)s). Used with '
         '--build-dir to get the list of all buildbot masters on this host to '
         'monitor')
