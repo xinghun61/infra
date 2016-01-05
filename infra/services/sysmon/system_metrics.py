@@ -80,10 +80,17 @@ def get_disk_info(mountpoints=None):
       inodes_free.set(stats.f_favail, fields=fields)
       inodes_total.set(stats.f_files, fields=fields)
 
-  for disk, counters in psutil.disk_io_counters(perdisk=True).iteritems():
-    fields = {'disk': disk}
-    disk_read.set(counters.read_bytes, fields=fields)
-    disk_write.set(counters.write_bytes, fields=fields)
+  try:
+    for disk, counters in psutil.disk_io_counters(perdisk=True).iteritems():
+      fields = {'disk': disk}
+      disk_read.set(counters.read_bytes, fields=fields)
+      disk_write.set(counters.write_bytes, fields=fields)
+  except RuntimeError as ex:
+    if "couldn't find any physical disk" in str(ex):
+      # Disk performance counters aren't enabled on Windows.
+      pass
+    else:
+      raise
 
 
 def get_mem_info():

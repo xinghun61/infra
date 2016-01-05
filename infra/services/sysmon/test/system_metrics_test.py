@@ -2,11 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import collections
 import errno
 import os
 import sys
 import time
 import unittest
+
+import mock
 
 from infra.services.sysmon import system_metrics
 
@@ -61,6 +64,35 @@ class SystemMetricsTest(unittest.TestCase):
 
     self.assertIs(None, system_metrics.disk_free.get({'path': path}))
     self.assertIs(None, system_metrics.disk_total.get({'path': path}))
+
+  @mock.patch('psutil.disk_io_counters')
+  def test_disk_counters(self, mock_counters):
+    iostat = collections.namedtuple('iostat', ['read_bytes', 'write_bytes'])
+    mock_counters.return_value = {'sda': iostat(123, 456)}
+
+    system_metrics.get_disk_info()
+
+    self.assertTrue(mock_counters.called)
+    self.assertEqual(123, system_metrics.disk_read.get({'disk': 'sda'}))
+    self.assertEqual(456, system_metrics.disk_write.get({'disk': 'sda'}))
+
+  @mock.patch('psutil.disk_io_counters')
+  def test_disk_counters_no_disks(self, mock_counters):
+    mock_counters.side_effect = RuntimeError("couldn't find any physical disk")
+
+    # Should swallow the exception.
+    system_metrics.get_disk_info()
+
+    self.assertTrue(mock_counters.called)
+    self.assertIs(None, system_metrics.disk_read.get({'disk': 'sda'}))
+    self.assertIs(None, system_metrics.disk_write.get({'disk': 'sda'}))
+
+  @mock.patch('psutil.disk_io_counters')
+  def test_disk_counters_other_exception(self, mock_counters):
+    mock_counters.side_effect = RuntimeError('different message')
+
+    with self.assertRaises(RuntimeError):
+      system_metrics.get_disk_info()
 
   def test_mem_info(self):
     system_metrics.get_mem_info()
