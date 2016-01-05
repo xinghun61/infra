@@ -2,11 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
-
 from testing_utils import testing
 
-from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
 from model.wf_try_job import WfTryJob
 from waterfall import try_job_util

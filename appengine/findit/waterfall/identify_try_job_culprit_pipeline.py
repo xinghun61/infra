@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import datetime
-
 from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from model import wf_analysis_status

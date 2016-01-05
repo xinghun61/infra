@@ -10,8 +10,6 @@ TODO: support strict mode, 'target_os', 'target_os_only', 'use_relative_paths',
       both forms of recursion, both forms of hooks, 'allowed_hosts', etc.
 """
 
-import collections
-
 from common import dependency
 
 

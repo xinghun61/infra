@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import os
 import logging
 
 from testing_utils import testing
@@ -11,8 +10,6 @@ from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
 from pipeline_wrapper import pipeline_handlers
 from waterfall import build_failure_analysis_pipelines
-from waterfall import buildbot
-from waterfall import lock_util
 
 
 class _MockRootPipeline(object):

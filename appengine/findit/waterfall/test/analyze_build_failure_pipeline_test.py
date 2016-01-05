@@ -12,7 +12,6 @@ from model import wf_analysis_status
 from pipeline_wrapper import pipeline_handlers
 from waterfall import buildbot
 from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline
-from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 from waterfall import lock_util
 from waterfall import waterfall_config
 

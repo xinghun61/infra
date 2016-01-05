@@ -10,9 +10,7 @@ import zlib
 from testing_utils import testing
 
 from common.retry_http_client import RetryHttpClient
-from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
-from waterfall import buildbot
 from waterfall import swarming_util
 
 

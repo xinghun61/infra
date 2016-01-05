@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 from datetime import datetime
-import logging
 import os
 
 from google.appengine.api import users
