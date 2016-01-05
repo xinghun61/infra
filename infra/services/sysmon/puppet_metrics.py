@@ -24,11 +24,6 @@ times = ts_mon.FloatMetric('puppet/times')
 age = ts_mon.FloatMetric('puppet/age')
 
 
-def reset_metrics_for_unittest():
-  for metric in (config_version, puppet_version, events, resources, times, age):
-    metric.reset()
-
-
 def _lastrunfile():  # pragma: no cover
   if sys.platform == 'win32':
     return os.path.join(puppet_metrics_win32.common_appdata_path(),

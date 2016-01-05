@@ -11,11 +11,12 @@ import unittest
 import mock
 
 from infra.services.sysmon import puppet_metrics
+from infra_libs import ts_mon
 
 
 class PuppetMetricsTest(unittest.TestCase):
   def setUp(self):
-    puppet_metrics.reset_metrics_for_unittest()
+    ts_mon.reset_for_unittest()
 
     self.tempdir = tempfile.mkdtemp()
     self.filename = os.path.join(self.tempdir, 'last_run_summary.yaml')

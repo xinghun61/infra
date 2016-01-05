@@ -38,17 +38,6 @@ disk_write = ts_mon.CounterMetric('dev/disk/write', start_time=START_TIME)
 proc_count = ts_mon.GaugeMetric('dev/proc/count')
 
 
-def reset_metrics_for_unittest():
-  metrics = [cpu_time, disk_free, disk_total, mem_free, mem_total, net_up,
-             net_down, net_err_up, net_err_down, net_drop_up, net_drop_down,
-             proc_count]
-  if os.name == 'posix':  # pragma: no cover
-    metrics.extend([inodes_free, inodes_total])
-
-  for metric in metrics:
-    metric.reset()
-
-
 def get_cpu_info():
   times = psutil.cpu_times_percent()
   for mode in ('user', 'system', 'idle'):

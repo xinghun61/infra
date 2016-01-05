@@ -12,11 +12,12 @@ import unittest
 import mock
 
 from infra.services.sysmon import system_metrics
+from infra_libs import ts_mon
 
 
 class SystemMetricsTest(unittest.TestCase):
   def setUp(self):
-    system_metrics.reset_metrics_for_unittest()
+    ts_mon.reset_for_unittest()
 
   def assertBetween(self, lower, upper, value):
     self.assertGreaterEqual(value, lower)
