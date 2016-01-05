@@ -70,7 +70,7 @@ class Cacher(object):
 class MemCacher(Cacher):
   """An memcache-backed implementation of the interface Cacher.
 
-  The data to be cached should be picklable.
+  The data to be cached should be pickleable.
   """
   def Get(self, key):
     return memcache.get(key)
@@ -119,10 +119,10 @@ def Cached(namespace=None,
 
   The usage of this decorator requires that:
   - If the default key generator is used, parameters passed to the decorated
-    function should be picklable, or each of the parameter has an identifier
-    property or method which returns picklable results.
+    function should be pickleable, or each of the parameter has an identifier
+    property or method which returns pickleable results.
   - If the default cacher is used, the returned results of the decorated
-    function should be picklable.
+    function should be pickleable.
 
   Args:
     namespace (str): A prefix to the key for the cache. Default to the

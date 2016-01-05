@@ -44,7 +44,7 @@ class ChangeLog(object):
     self.reverted_revision = reverted_revision
 
   def ToDict(self):
-    """Returns the change log as a Json object."""
+    """Returns the change log as a JSON object."""
     json_data = {
       'author_name': self.author_name,
       'author_email': self.author_email,
@@ -66,7 +66,7 @@ class ChangeLog(object):
 
   @staticmethod
   def FromDict(info):
-    """Returns a ChangeLog instance represented by the given Json info."""
+    """Returns a ChangeLog instance represented by the given JSON info."""
     touched_files = []
     for touched_file_info in info['touched_files']:
       touched_files.append(FileChangeInfo.FromDict(touched_file_info))

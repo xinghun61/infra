@@ -52,14 +52,14 @@ def _ModifyStatusIfDuplicate(analysis):
   below conditions:
     1. the build failure is in a series of continuous failures with same step
         failure
-    2. all the faliures share the same suspected CL(s)
+    2. all the failures share the same suspected CL(s)
     3. the first and the last result of these failures have been triaged
     4. the first and the last result are both correct or incorrect
   Mark the result as 'FOUND_CORRECT_DUPLICATE' or 'FOUND_INCORRECT_DUPLICATE'.
   """
   if analysis.result_status != wf_analysis_result_status.FOUND_UNTRIAGED:
     # It may have been taken care of when we check duplicates for previous
-    # result in the serie.
+    # result in the series.
     return
 
   master_name = analysis.master_name
@@ -70,7 +70,7 @@ def _ModifyStatusIfDuplicate(analysis):
                                         builder_name, build_number-1)
 
   if not first_build_analysis:
-    # Current build is not within a serie of continuous build failures.
+    # Current build is not within a series of continuous build failures.
     return
 
   if first_build_analysis.result_status not in (
@@ -113,7 +113,7 @@ def _ModifyStatusIfDuplicate(analysis):
       if not _AnalysesForDuplicateFailures(
           first_build_analysis, build_analysis_cursor):
         # The build is not the same failure as the one we begin with
-        # so it breaks the continuous serie of builds.
+        # so it breaks the continuous series of builds.
         return
 
       build_analyses.append(build_analysis_cursor)
@@ -123,7 +123,7 @@ def _ModifyStatusIfDuplicate(analysis):
 
     else:
       # If the build analysis' result_status is other status, such as
-      # NOT_FOUND_CORRECT, there will be no continuous build failurs.
+      # NOT_FOUND_CORRECT, there will be no continuous build failures.
       return
 
   for build_analysis in build_analyses:
@@ -150,7 +150,7 @@ class CheckDuplicateFailures(BaseHandler):
         key=lambda x : (x.master_name, x.builder_name, x.build_number))
 
   def HandleGet(self):
-    """Checks the untriaged results and mark them as duplcates if they are."""
+    """Checks the untriaged results and mark them as duplicates if they are."""
     analyses = CheckDuplicateFailures._FetchAndSortUntriagedAnalyses()
 
     for analysis in analyses:

@@ -12,7 +12,7 @@ from waterfall import waterfall_config
 
 
 class ScheduleTryJobPipeline(BasePipeline):
-  """A piepline for sechduling a new tryjob for current build."""
+  """A pipeline for scheduling a new tryjob for current build."""
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(

@@ -23,13 +23,13 @@ class ListAnalyses(BaseHandler):
     By default the page will display all the results under status FOUND_CORRECT,
     FOUND_INCORRECT and NOT_FOUND_INCORRECT.
 
-    Avaliable parameters:
+    Available parameters:
       count: Parameter for number of analysis result to be displayed.
       result_status: Parameter to specify the result_status of the results.
       triage: Parameter for internal use. The page will display analysis results
         under status FOUND_INCORRECT, NOT_FOUND_INCORRECT, FOUND_UNTRIAGED and
         NOT_FOUND_UNTRIAGED.
-      days: Parameter to decide only display results within a fixed amount of 
+      days: Parameter to decide only display results within a fixed amount of
         days. This parameter will turn off triage parameter and display all the
         results regardless of result_status.
     """

@@ -547,11 +547,11 @@ class ListAnalysesTest(testing.AppengineTestCase):
     self.assertEqual(expected_result, response_json.json_body)
 
   def DisplayAggregatedBuildAnalysisResultsStatusDays(self):  # pragma: no cover
-    """Test for parameter combination dyas and result status.
+    """Test for parameter combination days and result status.
 
     This test case will only run locally, because it may cause flaky failure.
     """
-    expected_result = {  
+    expected_result = {
         'analyses': [
             {
                 'master_name': 'chromium.linux',

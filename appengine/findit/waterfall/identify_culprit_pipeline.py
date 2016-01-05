@@ -14,7 +14,7 @@ from waterfall import build_failure_analysis
 def _GetResultAnalysisStatus(analysis_result):
   """Returns the status of the analysis result.
 
-  We can dicide the status based on:
+  We can decide the status based on:
     1. whether we found any suspected CL(s).
     2. whether we have triaged the failure.
     3. whether our analysis result is the same as triaged result.

@@ -29,7 +29,7 @@ class TryJobPipeline(BasePipeline):
 
     Args:
       was_aborted (bool): True if the pipeline was aborted due to some error
-      or excetion, otherwise False.
+      or exception, otherwise False.
     """
     if was_aborted:
       try_job_result = WfTryJob.Get(

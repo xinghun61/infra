@@ -118,7 +118,7 @@ class RetryHttpClient(object):
           url should not include any parameter in it.
       data (dict): The data to send for post request.
       timeout_seconds (int): The timeout for read/write of the http request.
-      max_retries (int): The maxmium times of retries for the request when the
+      max_retries (int): The maximum times of retries for the request when the
           returning http status code is not in 200, 302, 401, 403, 404, or 501.
       retry_backoff (float): The base backoff in seconds for retry.
 
@@ -139,7 +139,7 @@ class RetryHttpClient(object):
           url should not include any parameter in it.
       data (dict): The data to send for post request.
       timeout_seconds (int): The timeout for read/write of the http request.
-      max_retries (int): The maxmium times of retries for the request when the
+      max_retries (int): The maximum times of retries for the request when the
           returning http status code is not in 200, 302, 401, 403, 404, or 501.
       retry_backoff (float): The base backoff in seconds for retry.
 

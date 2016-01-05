@@ -118,7 +118,7 @@ JAVA_STACK_TRACE_FRAME_PATTERN = re.compile(
     r'(?P<method><?\w+>?)\((?:(?P<filename>\w+\.java):'
     r'(?P<line_number>\d+)\))?)')
 
-# The numbert of stack frames for a Java stacktrace to extract.
+# The number of stack frames for a Java stacktrace to extract.
 JAVA_MAXIMUM_NUMBER_STACK_FRAMES = 4
 
 # Match the file path relative to the root src of a chromium repo checkout.
