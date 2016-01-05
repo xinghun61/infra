@@ -7,12 +7,102 @@ import json
 import logging
 import os
 import os.path
+import sys
 import time
 
 from infra.services.service_manager import service
 from infra.services.service_manager import service_thread
 
 LOGGER = logging.getLogger(__name__)
+
+
+def parse_config(content, filename='<unknown>'):
+  """Check that the content of a config file is valid.
+
+  Args:
+    content(str): content of config file, as a json string.
+  Keyword Args:
+    filename(str): filename from which the content has been read. Used to
+      display useful messages to the user.
+
+  Returns:
+    config(dict): result of parsing 'content'.
+  """
+  config = json.loads(content)
+
+  # Make sure we have all the required keys to help the unwary user.
+  error_occurred = False
+  if 'name' not in config:
+    LOGGER.error("Service name must be specified in the 'name' "
+                 "field. File: %s", filename)
+    error_occurred = True
+
+  if 'root_directory' not in config:
+    LOGGER.error("Working directory must be specified in the "
+                 "'root_directory' field. File: %s", filename)
+    error_occurred = True
+
+  if 'tool' not in config and 'cmd' not in config:
+    LOGGER.error("Command to run must be specified in the 'cmd' "
+                 "field. File: %s", filename)
+    error_occurred = True
+
+  if 'cmd' in config and ('tool' in config or 'args' in config):
+    LOGGER.error("Command to run must be specified with the 'tool' and "
+                 "'args' fields OR with the 'cmd' field, not both. "
+                 "File: %s", filename)
+    error_occurred = True
+
+  if 'cmd' in config and not isinstance(config['cmd'], list):
+    LOGGER.error("'cmd' must be a list with executable name and arguments. "
+                 "File: %s", filename)
+    error_occurred = True
+
+  # 'args', 'stop_time' are optional
+
+  # We gathered enough errors, bail out.
+  if error_occurred:
+    return None
+
+  ### Past this point, 'config' contains all required fields. ###
+  ### i.e. name, root_directory, (tool(args)*)|cmd            ###
+
+  # TODO(pgervais): this is deprecated. Remove when all configs have been
+  #    ported to the new system.
+  if 'tool' in config:
+    LOGGER.warning("The 'tool' field is deprecated. Use 'cmd' instead. "
+                   "File: %s", filename)
+    # Convert to the new format.
+    # This is compatibility code, os-specific parts were originally living in
+    # service.py.
+    executable = [os.path.join(config['root_directory'], 'run.py'),
+                  config['tool']]
+    if sys.platform == 'win32':  # pragma: no cover
+      # Prepend the path to the Python interpreter on windows.
+      executable.insert(
+        0, os.path.join(config['root_directory'],
+                        os.path.join('ENV', 'Scripts', 'python.exe')))
+
+    # Using unicode for the key so as to be consistent with json.load
+    config[u'cmd'] = executable + config.get('args', [])
+    del config['tool']
+    if 'args' in config:
+      del config['args']
+
+  assert 'cmd' in config
+  assert 'args' not in config
+  assert 'tool' not in config
+  return config
+
+
+def load_config(filename):
+  try:
+    with open(filename) as fh:
+      config = parse_config(fh.read(), filename=filename)
+  except Exception:
+    LOGGER.exception('Error opening or parsing %s', filename)
+    return None
+  return config
 
 
 class _Metadata(object):
@@ -37,15 +127,16 @@ class ConfigWatcher(object):
                _sleep_fn=time.sleep):
     """
     Args:
-      config_directory: Directory containing .json config files to monitor.
-      config_poll_interval: How often (in seconds) to poll config_directory
+      config_directory(str): Directory containing .json config files to monitor.
+      config_poll_interval(int): How often (in seconds) to poll config_directory
           for changes.
-      service_poll_interval: How often (in seconds) to restart failed services.
-      state_directory: A file will be created in this directory (with the same
-          name as the service) when it is running containing its PID and
+      service_poll_interval(int): How often (in seconds) to restart failed
+          services.
+      state_directory(str): A file will be created in this directory (with the
+          same name as the service) when it is running containing its PID and
           starttime.
-      cloudtail_path: Path to the cloudtail binary to use for logging, or None
-          if logging is disabled.
+      cloudtail_path (str): Path to the cloudtail binary to use for logging, or
+          None if logging is disabled.
     """
 
     self._config_glob = os.path.join(config_directory, '*.json')
@@ -109,38 +200,8 @@ class ConfigWatcher(object):
       if metadata.thread is not None:
         metadata.thread.stop()
 
-  def _load_config(self, filename):
-    try:
-      with open(filename) as fh:
-        config = json.load(fh)
-    except Exception:
-      LOGGER.exception('Error opening or parsing %s', filename)
-      return None
-
-    # Make sure we have all the required keys to help the unwary user.
-    error_occurred = False
-    if 'name' not in config:
-      LOGGER.error("Service name must be specified in the 'name' "
-                   "field. File: %s", filename)
-      error_occurred = True
-
-    if 'root_directory' not in config:
-      LOGGER.error("Working directory must be specified in the "
-                   "'root_directory' field. File: %s", filename)
-      error_occurred = True
-
-    if 'tool' not in config:
-      LOGGER.error("Command to run must be specified in the 'tool' "
-                   "field. File: %s", filename)
-      error_occurred = True
-
-    # 'args', 'stop_time' are optional.
-    if error_occurred:
-      return None
-    return config
-
   def _config_added(self, filename, mtime):
-    config = self._load_config(filename)
+    config = load_config(filename)
 
     if config is None:
       # Add a bad metadata entry so we don't call _config_added again every
@@ -169,7 +230,7 @@ class ConfigWatcher(object):
     if metadata.config is not None:
       del self._services[metadata.config['name']]
 
-    metadata.config = self._load_config(filename)
+    metadata.config = load_config(filename)
     metadata.mtime = new_mtime
 
     if (metadata.config is not None and

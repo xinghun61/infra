@@ -140,7 +140,7 @@ class ServiceThread(threading.Thread):
               self.reconfigs.increment(fields={'service': self._service.name})
               LOGGER.info(
                 'Service %s has new args: was %s, restarting with %s',
-                self._service.name, proc_state.args, self._service.args)
+                self._service.name, proc_state.args, self._service.cmd)
               self._service.stop()
 
           # Ensure the service is running.

@@ -2,9 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
 import os.path
 import shutil
+import sys
 import tempfile
 import time
 import unittest
@@ -77,17 +77,84 @@ class ConfigWatcherTest(unittest.TestCase):
   def test_add(self):
     self._set_config(
       'foo.json',
-      '{"name": "foo", "root_directory": "bar", "tool": "baz"}')
+      '{"name": "foo", "root_directory": "bar", "cmd": ["baz"]}')
 
     self.cw._iteration()
 
     self.mock_thread_ctor.assert_called_once_with(
         43,
         '/state',
-        {'name': 'foo', 'root_directory': 'bar', 'tool': 'baz'},
+        {'name': 'foo', 'root_directory': 'bar', 'cmd': ['baz']},
         '/cloudtail')
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
+
+  def test_add_deprecated_field_tool(self):
+    # 'tool' and 'args' are deprecated.
+    self._set_config(
+      'foo.json',
+      '{"name": "foo", "root_directory": "bar", "tool": "baz"}')
+
+    self.cw._iteration()
+    cmd = [os.path.join('bar','run.py'), 'baz']
+
+    if sys.platform == 'win32':  # pragma: no cover
+      cmd.insert(0, os.path.join('bar', 'ENV', 'Scripts', 'python.exe' ))
+
+    self.mock_thread_ctor.assert_called_once_with(
+        43,
+        '/state',
+        {'name': 'foo',
+         'root_directory': 'bar',
+         'cmd': cmd},
+        '/cloudtail')
+    self.mock_thread.start.assert_called_once_with()
+    self.mock_thread.start_service.assert_called_once_with()
+
+  def test_add_deprecated_field_tool_args(self):
+    # 'tool' and 'args' are deprecated.
+    self._set_config(
+      'foo.json',
+      '{"name": "foo", "root_directory": "bar", '
+          '"tool": "baz", "args": ["arg"]}')
+
+    self.cw._iteration()
+    cmd = [os.path.join('bar','run.py'), 'baz', 'arg']
+
+    if sys.platform == 'win32':  # pragma: no cover
+      cmd.insert(0, os.path.join('bar', 'ENV', 'Scripts', 'python.exe' ))
+
+    self.mock_thread_ctor.assert_called_once_with(
+        43,
+        '/state',
+        {'name': 'foo',
+         'root_directory': 'bar',
+         'cmd': cmd},
+        '/cloudtail')
+    self.mock_thread.start.assert_called_once_with()
+    self.mock_thread.start_service.assert_called_once_with()
+
+  def test_invalid_cmd(self):
+    self._set_config(
+      'foo.json',
+      '{"name": "foo", "root_directory": "bar", "cmd": "foo"}')
+    self.cw._iteration()
+    self.assertFalse(self.mock_thread_ctor.called)
+
+  def test_invalid_fields_combination_cmd_tool(self):
+    self._set_config(
+      'foo.json',
+      '{"name": "foo", "root_directory": "bar", '
+          '"cmd": ["foo"], "tool": "foo"}')
+    self.cw._iteration()
+    self.assertFalse(self.mock_thread_ctor.called)
+
+  def test_invalid_fields_combination_cmd_args(self):
+    self._set_config(
+      'foo.json',
+      '{"name": "foo", "root_directory": "bar", "cmd": ["foo"], "args": ["1"]}')
+    self.cw._iteration()
+    self.assertFalse(self.mock_thread_ctor.called)
 
   def test_add_invalid_json(self):
     self._set_config('foo.json', '{"name": ')
@@ -103,14 +170,14 @@ class ConfigWatcherTest(unittest.TestCase):
   def test_add_filename_does_not_match_name(self):
     self._set_config(
       'foo.json',
-      '{"name": "bar", "root_directory": "foo", "tool": "baz"}')
+      '{"name": "bar", "root_directory": "foo", "cmd": ["baz"]}')
 
     self.cw._iteration()
 
     self.mock_thread_ctor.assert_called_once_with(
         43,
         '/state',
-        {'name': 'bar', 'root_directory': 'foo', 'tool': 'baz'},
+        {'name': 'bar', 'root_directory': 'foo', 'cmd': ['baz']},
         '/cloudtail')
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
@@ -118,13 +185,13 @@ class ConfigWatcherTest(unittest.TestCase):
   def test_add_duplicate_name(self):
     self._set_config(
       'foo.json',
-      '{"name": "foo", "root_directory": "bar", "tool": "baz"}')
+      '{"name": "foo", "root_directory": "bar", "cmd": ["baz"]}')
     self.cw._iteration()
     self.assertEqual(1, self.mock_thread_ctor.call_count)
 
     self._set_config(
       'bar.json',
-      '{"name": "foo", "root_directory": "bar", "tool": "baz"}')
+      '{"name": "foo", "root_directory": "bar", "cmd": ["baz"]}')
     self.cw._iteration()
     self.assertEqual(1, self.mock_thread_ctor.call_count)
 
@@ -133,7 +200,7 @@ class ConfigWatcherTest(unittest.TestCase):
       'foo.json',
       """{"name": "foo",
           "root_directory": "whatever",
-          "tool": "whatever.tool"
+          "cmd": ["whatever.tool"]
          }
       """,
       100)
@@ -144,15 +211,14 @@ class ConfigWatcherTest(unittest.TestCase):
         '/state',
         {'name': 'foo',
          'root_directory': 'whatever',
-         'tool': 'whatever.tool'},
+         'cmd': ['whatever.tool']},
         '/cloudtail')
 
     self._set_config(
       'foo.json',
       """{"name": "foo",
           "root_directory": "whatever",
-          "tool": "whatever.tool",
-          "args": [1, 2, 3]
+          "cmd": ["whatever.tool", "1", "2", "3"]
          }
       """,
       200)
@@ -160,15 +226,14 @@ class ConfigWatcherTest(unittest.TestCase):
     self.cw._iteration()
     self.mock_thread.restart_with_new_config.assert_called_once_with(
         {'name': 'foo',
-         'args': [1, 2, 3],
          'root_directory': 'whatever',
-         'tool': 'whatever.tool'}
+         'cmd': ['whatever.tool', '1', '2', '3']}
     )
 
   def test_change_duplicate_name(self):
     self._set_config(
       'foo.json',
-      '{"name": "foo", "root_directory": "bar", "tool": "baz"}',
+      '{"name": "foo", "root_directory": "bar", "cmd": ["baz"]}',
       100)
     self.cw._iteration()
     self.assertEqual(1, self.mock_thread_ctor.call_count)
@@ -177,7 +242,7 @@ class ConfigWatcherTest(unittest.TestCase):
 
     self._set_config(
       'bar.json',
-      '{"name": "bar", "root_directory": "foo", "tool": "baz"}',
+      '{"name": "bar", "root_directory": "foo", "cmd": ["baz"]}',
       200)
     self.cw._iteration()
     self.assertEqual(2, self.mock_thread_ctor.call_count)
@@ -186,7 +251,7 @@ class ConfigWatcherTest(unittest.TestCase):
 
     self._set_config(
       'bar.json',
-      '{"name": "foo", "root_directory": "bar", "tool": "baz"}',
+      '{"name": "foo", "root_directory": "bar", "cmd": ["baz"]}',
       300)
     self.cw._iteration()
     self.assertEqual(2, self.mock_thread_ctor.call_count)
@@ -201,14 +266,14 @@ class ConfigWatcherTest(unittest.TestCase):
 
     self._set_config(
       'foo.json',
-      '{"name": "foo", "root_directory": "bar", "tool": "baz"}',
+      '{"name": "foo", "root_directory": "bar", "cmd": ["baz"]}',
       200)
 
     self.cw._iteration()
     self.mock_thread_ctor.assert_called_once_with(
         43,
         '/state',
-        {'name': 'foo', 'root_directory': 'bar', 'tool': 'baz'},
+        {'name': 'foo', 'root_directory': 'bar', 'cmd': ['baz']},
         '/cloudtail')
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
@@ -227,14 +292,14 @@ class ConfigWatcherTest(unittest.TestCase):
   def test_add_good_config_then_make_bad(self):
     self._set_config(
       'foo.json',
-      '{"name": "foo", "root_directory": "bar", "tool": "baz"}',
+      '{"name": "foo", "root_directory": "bar", "cmd": ["baz"]}',
       100)
 
     self.cw._iteration()
     self.mock_thread_ctor.assert_called_once_with(
         43,
         '/state',
-        {'name': 'foo', 'root_directory': 'bar', 'tool': 'baz'},
+        {'name': 'foo', 'root_directory': 'bar', 'cmd': ['baz']},
         '/cloudtail')
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
@@ -258,7 +323,7 @@ class ConfigWatcherTest(unittest.TestCase):
   def test_remove_config(self):
     self._set_config(
       'foo.json',
-      '{"name": "foo", "root_directory": "bar", "tool": "baz"}',
+      '{"name": "foo", "root_directory": "bar", "cmd": ["baz"]}',
       100)
 
     self.cw._iteration()
@@ -267,7 +332,7 @@ class ConfigWatcherTest(unittest.TestCase):
         '/state',
         {'name': 'foo',
          'root_directory': 'bar',
-         'tool': 'baz'
+         'cmd': ['baz']
         },
         '/cloudtail')
     self.mock_thread.start.assert_called_once_with()
@@ -281,7 +346,7 @@ class ConfigWatcherTest(unittest.TestCase):
   def test_remove_and_add_config_again(self):
     self._set_config(
       'foo.json',
-      '{"name": "foo", "root_directory": "bar", "tool": "baz"}',
+      '{"name": "foo", "root_directory": "bar", "cmd": ["baz"]}',
       100)
 
     self.cw._iteration()
@@ -289,7 +354,7 @@ class ConfigWatcherTest(unittest.TestCase):
         43, '/state',
         {'name': 'foo',
          'root_directory': 'bar',
-         'tool': 'baz'
+         'cmd': ['baz']
         },
         '/cloudtail')
     self.mock_thread.start.assert_called_once_with()
@@ -302,7 +367,7 @@ class ConfigWatcherTest(unittest.TestCase):
 
     self._set_config(
       'foo.json',
-      '{"name": "foo", "root_directory": "bar", "tool": "baz"}',
+      '{"name": "foo", "root_directory": "bar", "cmd": ["baz"]}',
       100)
 
     self.cw._iteration()
@@ -311,20 +376,20 @@ class ConfigWatcherTest(unittest.TestCase):
     self.mock_thread.restart_with_new_config.assert_called_once_with(
         {'name': 'foo',
          'root_directory': 'bar',
-         'tool': 'baz'
+         'cmd': ['baz']
         })
 
   def test_run_stop(self):
     self._set_config(
       'foo.json',
-      '{"name": "foo", "root_directory": "bar", "tool": "baz"}',
+      '{"name": "foo", "root_directory": "bar", "cmd": ["baz"]}',
       100)
 
     self.cw._iteration()
     self.mock_thread_ctor.assert_called_once_with(
         43,
         '/state',
-        {'name': 'foo', 'root_directory': 'bar', 'tool': 'baz'},
+        {'name': 'foo', 'root_directory': 'bar', 'cmd': ['baz']},
         '/cloudtail')
 
     def sleep_impl(_duration):

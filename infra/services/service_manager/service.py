@@ -224,9 +224,8 @@ class Service(object):
     self.config = service_config
     self.name = service_config['name']
     self.root_directory = service_config['root_directory']
-    self.tool = service_config['tool']
+    self._cmd = service_config['cmd']
 
-    self._args = service_config.get('args', [])
     self.stop_time = int(service_config.get('stop_time', 10))
 
     if cloudtail_path is None:
@@ -244,10 +243,10 @@ class Service(object):
 
     self._process_creator = ProcessCreator.for_platform(self)
 
-  # Defining 'args' as a property to be able to use autospec=True in mock.patch.
+  # Defining 'cmd' as a property to be able to use autospec=True in mock.patch.
   @property
-  def args(self):
-    return self._args
+  def cmd(self):
+    return self._cmd
 
   def get_running_process_state(self):
     """Returns a ProcessState object about about the process.
@@ -265,6 +264,7 @@ class Service(object):
 
     return state.version != version_finder.find_version(self.config)
 
+  # TODO(pgervais): rename to 'has_cmd_changed'
   def has_args_changed(self, state):
     """Returns True if the args in the config are different to when the process
     started."""
@@ -272,7 +272,7 @@ class Service(object):
     if state.args is None:
       return False
 
-    return state.args != self._args
+    return state.args != self._cmd
 
   def start(self):
     """Starts the service if it's not running already.
@@ -323,7 +323,7 @@ class Service(object):
           'Failed to start %s: daemon process exited (%r)' % (self.name, ex))
 
     state.version = version_finder.find_version(self.config)
-    state.args = self._args
+    state.args = self._cmd
     state.write_to_file(self._state_file)
 
   def _signal_and_wait(self, state, sig, wait_timeout):
@@ -381,7 +381,7 @@ class OwnService(Service):
   def __init__(self, state_directory, root_directory, **kwargs):
     super(OwnService, self).__init__(state_directory, {
         'name': 'service_manager',
-        'tool': '',
+        'cmd': [],
         'root_directory': root_directory,
     }, None, '', **kwargs)
     self._state_directory = state_directory
@@ -414,7 +414,6 @@ class UnixProcessCreator(ProcessCreator):  # pragma: no cover
 
   Forks twice and sends the PID of the service over a pipe to the parent.
   """
-
   def start(self):
     control_r, control_w = os.pipe()
     child_pid = os.fork()
@@ -454,8 +453,7 @@ class UnixProcessCreator(ProcessCreator):  # pragma: no cover
     daemon.close_all_fds(keep_fds={1, 2})
 
     # Exec the service.
-    runpy = os.path.join(self.service.root_directory, 'run.py')
-    os.execv(runpy, [runpy, self.service.tool] + self.service.args)
+    os.execv(self.service.cmd[0], self.service.cmd)
 
   def _start_parent(self, pipe, child_pid):
     """The part of start() that runs in the parent process.
@@ -495,15 +493,10 @@ class WindowsProcessCreator(ProcessCreator):  # pragma: no cover
     output_fh = self._open_output_fh({'creationflags': self.CREATE_NO_WINDOW})
     try:
       handle = subprocess.Popen(
+          self.service.cmd,
           creationflags=self.CREATE_NO_WINDOW,
           stderr=output_fh,
           stdout=output_fh,
-          args=[
-              os.path.join(self.service.root_directory,
-                           'ENV/Scripts/python.exe'),
-              os.path.join(self.service.root_directory, 'run.py'),
-              self.service.tool,
-          ] + self.service.args,
       )
     finally:
       output_fh.close()

@@ -14,6 +14,7 @@ import unittest
 import mock
 
 from infra.libs.service_utils import daemon
+from infra.services.service_manager import config_watcher
 from infra.services.service_manager import service
 from infra.services.service_manager import version_finder
 import infra_libs
@@ -111,13 +112,14 @@ class ServiceTest(TestBase):
 
     self.s = service.Service(
         self.state_directory,
-        {
-            'name': 'foo',
-            'root_directory': '/rootdir',
-            'tool': 'bar',
-            'args': ['one', 'two'],
-            'stop_time': '86',
-        },
+        config_watcher.parse_config(
+          """
+          {
+              "name": "foo",
+              "root_directory": "/rootdir",
+              "cmd": ["bar", "one", "two"],
+              "stop_time": 86
+          }"""),
         None,
         _time_fn=self.mock_time,
         _sleep_fn=self.mock_sleep)
@@ -175,7 +177,7 @@ class ServiceTest(TestBase):
           'pid': 777,
           'starttime': 888,
           'version': {'foo': 'bar'},
-          'args': ['one', 'two'],
+          'args': ['bar', 'one', 'two'],
       }, json.load(fh))
 
   @unittest.skipIf(sys.platform == 'win32', 'windows')
@@ -246,8 +248,7 @@ class ServiceTest(TestBase):
     self.mock_close_all_fds.assert_called_once_with(keep_fds={1, 2})
     self.assertEqual('{"pid": 555}', self._all_writes(mock_pipe_object))
     mock_pipe_object.close.assert_called_once_with()
-    self.mock_execv.assert_called_once_with('/rootdir/run.py', [
-        '/rootdir/run.py',
+    self.mock_execv.assert_called_once_with('bar', [
         'bar',
         'one',
         'two',
@@ -355,7 +356,7 @@ class ServiceTest(TestBase):
 
   def test_has_args_changed_no(self):
     state = service.ProcessState(
-        pid=1234, starttime=5678, version=1, args=['one', 'two'])
+        pid=1234, starttime=5678, version=1, args=['bar', 'one', 'two'])
     self.assertFalse(self.s.has_args_changed(state))
 
   def test_has_args_changed_yes(self):
@@ -372,13 +373,14 @@ class ServiceTest(TestBase):
 
     self.s = service.Service(
         self.state_directory,
-        {
-            'name': 'foo',
-            'root_directory': '/rootdir',
-            'tool': 'bar',
-            'args': ['one', 'two'],
-            'stop_time': '86',
-        },
+        config_watcher.parse_config(
+          """
+          {
+            "name": "foo",
+            "root_directory": "/rootdir",
+            "cmd": ["bar", "one", "two"],
+            "stop_time": 86
+          }"""),
         '/cloudtail',
         _time_fn=self.mock_time,
         _sleep_fn=self.mock_sleep)
