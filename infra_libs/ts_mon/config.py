@@ -117,7 +117,7 @@ def add_argparse_options(parser):
   parser.add_argument(
       '--ts-mon-device-hostname',
       default=host,
-      help='name of this device, (default: %(default)s')
+      help='name of this device, (default: %(default)s)')
   parser.add_argument(
       '--ts-mon-device-region',
       default=region,
@@ -125,7 +125,7 @@ def add_argparse_options(parser):
   parser.add_argument(
       '--ts-mon-device-role',
       default='default',
-      help='Role of the device. (default: "%(default)s")')
+      help='Role of the device. (default: %(default)s)')
   parser.add_argument(
       '--ts-mon-device-network',
       default=network,
