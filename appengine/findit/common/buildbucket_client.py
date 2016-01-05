@@ -145,7 +145,7 @@ def TriggerTryJobs(try_jobs):
       json_results.append(json.loads(content))
     else:
       error_content = {
-        'error':{
+        'error': {
           'reason': status_code,
           'message': content
         }
@@ -179,7 +179,7 @@ def GetTryJobs(build_ids):
       json_results.append(json.loads(content))
     else:
       error_content = {
-        'error':{
+        'error': {
           'reason': status_code,
           'message': content
         }

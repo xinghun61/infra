@@ -30,12 +30,12 @@ class TryJob(BaseHandler):
 
     results = None
 
-    if api == 'get': # Retrieve build info.
+    if api == 'get':  # Retrieve build info.
       build_ids_str = self.request.get('ids')
       build_ids = self._SplitValues(build_ids_str)
       builds = buildbucket_client.GetTryJobs(build_ids)
       results = dict(zip(build_ids, builds))
-    elif api == 'put': # Trigger try-jobs.
+    elif api == 'put':  # Trigger try-jobs.
       master_name = self.request.get('master', 'tryserver.chromium.linux')
       builder_name = self.request.get('builder', 'linux_chromium_rel_ng')
       recipe_name = self.request.get('recipe', 'chromium_trybot')

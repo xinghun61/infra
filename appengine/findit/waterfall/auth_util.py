@@ -9,4 +9,3 @@ def GetAuthToken():  # pragma: no cover
   auth_token, _ = app_identity.get_access_token(
       'https://www.googleapis.com/auth/userinfo.email')
   return auth_token
-

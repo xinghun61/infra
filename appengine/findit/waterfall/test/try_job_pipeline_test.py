@@ -42,7 +42,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
                   'id': '1',
                   'url': 'url',
                   'status': 'COMPLETED',
-                  'result_details_json':(
+                  'result_details_json': (
                       '{"properties": {"result": [["rev1", "passed"],'
                       ' ["rev2", "failed"]]}}')
               }

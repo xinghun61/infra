@@ -379,7 +379,7 @@ Note:You can safely ignore the above warning unless this call should not happen.
   def testCompileStepExtractorExtractFailedLinkTargetsLinux(self):
     failure_log = textwrap.dedent("""
         [5430/5600] blabla
-        FAILED: python blabla -o a/b.nexe blabla   
+        FAILED: python blabla -o a/b.nexe blabla
         blabla
         blabla.Error: FAILED with blabla
         ninja: build stopped: subcommand failed.""")
@@ -399,9 +399,9 @@ Note:You can safely ignore the above warning unless this call should not happen.
   def testCompileStepExtractorExtractFailedCompileTargetsWindows(self):
     failure_log = textwrap.dedent("""
         [4576/31353] blabla
-        FAILED: ninja blabla /c ..\\..\\a\\b\\c.cc /Foa\\b.c.obj blabla 
+        FAILED: ninja blabla /c ..\\..\\a\\b\\c.cc /Foa\\b.c.obj blabla
         blabla
-        FAILED: ninja blabla /c ..\\..\\d\\e\\f.cc /Fod\\e\\f\\a.b.obj blabla 
+        FAILED: ninja blabla /c ..\\..\\d\\e\\f.cc /Fod\\e\\f\\a.b.obj blabla
         blabla
         ninja: build stopped: subcommand failed.""")
     expected_signal_json = {

@@ -15,7 +15,7 @@ from waterfall import buildbot
 
 class TryJobResultTest(testing.AppengineTestCase):
   app_module = webapp2.WSGIApplication([
-      ('/try-job-result', try_job_result.TryJobResult),], debug=True)
+      ('/try-job-result', try_job_result.TryJobResult), ], debug=True)
 
   def setUp(self):
     super(TryJobResultTest, self).setUp()
@@ -214,7 +214,7 @@ class TryJobResultTest(testing.AppengineTestCase):
   def testTryJobResultHandler(self):
     build_url = buildbot.CreateBuildUrl(
         self.master_name, self.builder_name, self.build_number)
-    response = self.test_app.get('/try-job-result', params={'url':build_url})
+    response = self.test_app.get('/try-job-result', params={'url': build_url})
     expected_results = {}
 
     self.assertEqual(200, response.status_int)

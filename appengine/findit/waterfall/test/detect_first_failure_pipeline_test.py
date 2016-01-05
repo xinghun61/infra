@@ -234,7 +234,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     with open(swarming_tasks_file, 'r') as f:
       if build_number:
         return json.dumps(json.loads(f.read())[str(build_number)])
-      if data_type =='isolated':
+      if data_type == 'isolated':
         return zlib.compress(f.read())
       return f.read()
 
@@ -269,7 +269,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
       self, isolated_data=None, file_url=None,
       file_name=None, build_number=None):  # pragma: no cover
     if isolated_data:  # Mocks POST requests to isolated server.
-      url = '%s/_ah/api/isolateservice/v2/retrieve' %(
+      url = '%s/_ah/api/isolateservice/v2/retrieve' % (
           isolated_data['isolatedserver'])
       post_data = {
           'digest': isolated_data['digest'],
@@ -287,7 +287,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
 
     self.mocked_urlfetch.register_handler(
         url, content,
-        data=(json.dumps(post_data, sort_keys=True,separators=(',', ':'))
+        data=(json.dumps(post_data, sort_keys=True, separators=(',', ':'))
             if post_data else None))
 
   def testAnalyzeSwarmingTestResultsInitiateLastPassForTests(self):
@@ -311,12 +311,12 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     expected_failed_step = {
         'current_failure': 223,
         'first_failure': 221,
-        'tests':{
-            'Unittest2.Subtest1':{
+        'tests': {
+            'Unittest2.Subtest1': {
               'current_failure': 223,
               'first_failure': 223
             },
-            'Unittest3.Subtest2':{
+            'Unittest3.Subtest2': {
               'current_failure': 223,
               'first_failure': 223,
             }
@@ -334,7 +334,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
         'abc_test': {
             'current_failure': 221,
             'first_failure': 221,
-            'list_isolated_data':[
+            'list_isolated_data': [
                 {
                     'isolatedserver': 'https://isolateserver.appspot.com',
                     'namespace': 'default-gzip',
@@ -344,15 +344,15 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
         }
     }
     builds = {
-        '221':{
+        '221': {
             'blame_list': ['commit1'],
             'chromium_revision': 'commit1'
         },
-        '222':{
+        '222': {
             'blame_list': ['commit2'],
             'chromium_revision': 'commit2'
         },
-        '223':{
+        '223': {
             'blame_list': ['commit3', 'commit4'],
             'chromium_revision': 'commit4'
         }
@@ -390,13 +390,13 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     failed_step = {
         'current_failure': 223,
         'first_failure': 221,
-        'tests':{
-            'Unittest2.Subtest1':{
+        'tests': {
+            'Unittest2.Subtest1': {
                 'current_failure': 223,
                 'first_failure': 223,
                 'last_pass': 223
             },
-            'Unittest3.Subtest2':{
+            'Unittest3.Subtest2': {
                 'current_failure': 223,
                 'first_failure': 223
             }
@@ -440,13 +440,13 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     expected_failed_step = {
         'current_failure': 223,
         'first_failure': 221,
-        'tests':{
-            'Unittest2.Subtest1':{
+        'tests': {
+            'Unittest2.Subtest1': {
                 'current_failure': 223,
                 'first_failure': 222,
                 'last_pass': 221
             },
-            'Unittest3.Subtest2':{
+            'Unittest3.Subtest2': {
                 'current_failure': 223,
                 'first_failure': 221
             }
@@ -462,8 +462,8 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     failed_step = {
         'current_failure': 223,
         'first_failure': 221,
-        'tests':{
-            'Unittest2.Subtest1':{
+        'tests': {
+            'Unittest2.Subtest1': {
                 'current_failure': 223,
                 'first_failure': 223,
                 'last_pass': 223
@@ -484,8 +484,8 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
         'current_failure': 223,
         'first_failure': 223,
         'last_pass': 222,
-        'tests':{
-            'Unittest2.Subtest1':{
+        'tests': {
+            'Unittest2.Subtest1': {
                 'current_failure': 223,
                 'first_failure': 223,
                 'last_pass': 222
@@ -505,20 +505,20 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
             'current_failure': 223,
             'first_failure': 222,
             'last_pass': 221,
-            'list_isolated_data':[
+            'list_isolated_data': [
                 {
                     'isolatedserver': 'https://isolateserver.appspot.com',
                     'namespace': 'default-gzip',
                     'digest': 'isolatedhashabctest-223'
                 }
             ],
-            'tests':{
-                'Unittest2.Subtest1':{
+            'tests': {
+                'Unittest2.Subtest1': {
                   'current_failure': 223,
                   'first_failure': 222,
                   'last_pass': 221
                 },
-                'Unittest3.Subtest2':{
+                'Unittest3.Subtest2': {
                   'current_failure': 223,
                   'first_failure': 222,
                   'last_pass': 221
@@ -528,19 +528,19 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     }
 
     builds = {
-        '220':{
+        '220': {
             'blame_list': ['commit0'],
             'chromium_revision': 'commit0'
         },
-        '221':{
+        '221': {
             'blame_list': ['commit1'],
             'chromium_revision': 'commit1'
         },
-        '222':{
+        '222': {
             'blame_list': ['commit2'],
             'chromium_revision': 'commit2'
         },
-        '223':{
+        '223': {
             'blame_list': ['commit3', 'commit4'],
             'chromium_revision': 'commit4'
         }
@@ -549,15 +549,15 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     pipeline = DetectFirstFailurePipeline()
     pipeline._UpdateFailureInfoBuilds(failed_steps, builds)
     expected_builds = {
-        '221':{
+        '221': {
             'blame_list': ['commit1'],
             'chromium_revision': 'commit1'
         },
-        '222':{
+        '222': {
             'blame_list': ['commit2'],
             'chromium_revision': 'commit2'
         },
-        '223':{
+        '223': {
             'blame_list': ['commit3', 'commit4'],
             'chromium_revision': 'commit4'
         }
@@ -575,7 +575,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     # Mock data for retrieving data from swarming server for a build.
     self._MockUrlFetchWithSwarmingData(master_name, builder_name, 223)
 
-    for n in xrange(223, 219, -1):  #pragma: no cover
+    for n in xrange(223, 219, -1):  # pragma: no cover
       # Setup build data for builds:
       self._MockUrlfetchWithBuildData(master_name, builder_name, n)
       if n == 220:
@@ -628,20 +628,20 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
             'current_failure': 223,
             'first_failure': 222,
             'last_pass': 221,
-            'list_isolated_data':[
+            'list_isolated_data': [
                 {
                     'isolatedserver': 'https://isolateserver.appspot.com',
                     'namespace': 'default-gzip',
                     'digest': 'isolatedhashabctest-223'
                 }
             ],
-            'tests':{
-                'Unittest2.Subtest1':{
+            'tests': {
+                'Unittest2.Subtest1': {
                   'current_failure': 223,
                   'first_failure': 222,
                   'last_pass': 221
                 },
-                'Unittest3.Subtest2':{
+                'Unittest3.Subtest2': {
                   'current_failure': 223,
                   'first_failure': 222,
                   'last_pass': 221

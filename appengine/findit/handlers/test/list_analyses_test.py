@@ -16,7 +16,7 @@ from waterfall import identify_culprit_pipeline
 
 class ListAnalysesTest(testing.AppengineTestCase):
   app_module = webapp2.WSGIApplication(
-      [('/list-analyses', list_analyses.ListAnalyses),], debug=True)
+      [('/list-analyses', list_analyses.ListAnalyses), ], debug=True)
 
   def setUp(self):
     super(ListAnalysesTest, self).setUp()
@@ -228,7 +228,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                'step_name': 'b',
                'first_failure': 10,
                'last_pass': None,
-               'suspected_cls': [                   {
+               'suspected_cls': [{
                        'build_number': 10,
                        'repo_name': 'chromium',
                        'revision': 'r99_10',
@@ -262,7 +262,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
 
   def testDisplayAggregatedBuildAnalysisResults(self):
     """Basic test case, no parameters."""
-    expected_result = {  
+    expected_result = {
         'analyses': [
             {
                 'master_name': 'chromium.linux',
@@ -288,7 +288,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_start_time': None,
                 'status': 70,
                 'status_description': 'Analyzed',
-                'suspected_cls':[
+                'suspected_cls': [
                     {
                         'repo_name': 'chromium',
                         'revision': 'r99_1',
@@ -305,7 +305,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_start_time': None,
                 'status': 70,
                 'status_description': 'Analyzed',
-                'suspected_cls':[],
+                'suspected_cls': [],
                 'result_status': 'Incorrect - Not Found'
             }
         ],
@@ -321,7 +321,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
 
   def testDisplayAggregatedBuildAnalysisResultsTriage(self):
     """Test for parameter triage."""
-    expected_result = {  
+    expected_result = {
         'analyses': [
             {
                 'master_name': 'm',
@@ -330,7 +330,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_start_time': None,
                 'status': 70,
                 'status_description': 'Analyzed',
-                'suspected_cls':[
+                'suspected_cls': [
                     {
                         'repo_name': 'chromium',
                         'revision': 'r99_1',
@@ -347,7 +347,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_start_time': None,
                 'status': 70,
                 'status_description': 'Analyzed',
-                'suspected_cls':[],
+                'suspected_cls': [],
                 'result_status': 'Incorrect - Not Found'
             },
             {
@@ -420,7 +420,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
 
   def testDisplayAggregatedBuildAnalysisResultsCount(self):
     """Test for parameter count."""
-    expected_result = {  
+    expected_result = {
         'analyses': [
             {
                 'master_name': 'chromium.linux',
@@ -446,7 +446,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_start_time': None,
                 'status': 70,
                 'status_description': 'Analyzed',
-                'suspected_cls':[
+                'suspected_cls': [
                     {
                         'repo_name': 'chromium',
                         'revision': 'r99_1',
@@ -469,7 +469,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
 
   def testDisplayAggregatedBuildAnalysisResultsResultStatus(self):
     """Test for parameter result_status."""
-    expected_result = {  
+    expected_result = {
         'analyses': [
             {
                 'master_name': 'm',
@@ -478,7 +478,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_start_time': None,
                 'status': 70,
                 'status_description': 'Analyzed',
-                'suspected_cls':[
+                'suspected_cls': [
                     {
                         'repo_name': 'chromium',
                         'revision': 'r99_1',
@@ -505,7 +505,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
 
     This test case will only run locally, because it may cause flaky failure.
     """
-    expected_result = {  
+    expected_result = {
         'analyses': [
             {
                 'master_name': 'm',

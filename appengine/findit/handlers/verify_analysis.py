@@ -9,7 +9,7 @@ from base_handler import Permission
 class VerifyAnalysis(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
-  def HandleGet(self):  #pylint: disable=R0201
+  def HandleGet(self):  # pylint: disable=R0201
     """Checks for revert or fix of CLs in a failed build cycle.
 
     Later it will be extended for coverage analysis.

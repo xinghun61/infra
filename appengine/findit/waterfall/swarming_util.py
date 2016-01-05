@@ -149,7 +149,7 @@ def _FetchOutputJsonInfoFromIsolatedServer(
       'digest': isolated_data['digest'],
       'namespace': isolated_data['namespace']
   }
-  url = '%s/_ah/api/isolateservice/v2/retrieve' %(
+  url = '%s/_ah/api/isolateservice/v2/retrieve' % (
       isolated_data['isolatedserver'])
   content = _SendRequestToServer(url, http_client, post_data)
   return content
@@ -254,7 +254,7 @@ def _MergeSwarmingTestShards(shard_results):
   }
   for shard_result in shard_results:
     merged_results['all_tests'].update(shard_result.get('all_tests', []))
-    merged_results['per_iteration_data'] =  _MergeListsOfDicts(
+    merged_results['per_iteration_data'] = _MergeListsOfDicts(
             merged_results['per_iteration_data'],
             shard_result.get('per_iteration_data', []))
   merged_results['all_tests'] = sorted(merged_results['all_tests'])

@@ -70,7 +70,7 @@ class BuildFailureTest(testing.AppengineTestCase):
         webtest.app.AppError,
         re.compile('.*501 Not Implemented.*Url &#34;%s&#34; '
                    'is not pointing to a build.*' % build_url,
-                   re.MULTILINE|re.DOTALL),
+                   re.MULTILINE | re.DOTALL),
         self.test_app.get, '/build-failure', params={'url': build_url})
 
   def testNonAdminCanViewAnalysisOfFailureOnUnsupportedMaster(self):
@@ -109,7 +109,7 @@ class BuildFailureTest(testing.AppengineTestCase):
         webtest.app.AppError,
         re.compile('.*501 Not Implemented.*Master &#34;%s&#34; '
                    'is not supported yet.*' % master_name,
-                   re.MULTILINE|re.DOTALL),
+                   re.MULTILINE | re.DOTALL),
         self.test_app.get, '/build-failure', params={'url': build_url})
 
   def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(self):

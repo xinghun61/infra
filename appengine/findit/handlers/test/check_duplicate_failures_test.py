@@ -15,12 +15,12 @@ from model import wf_analysis_result_status
 class CheckDuplicateFailuresTest(testing.AppengineTestCase):
   app_module = webapp2.WSGIApplication(
       [('/check-duplicate-failures',
-      check_duplicate_failures.CheckDuplicateFailures),], debug=True)
+      check_duplicate_failures.CheckDuplicateFailures), ], debug=True)
 
   def _CreateAnalyses(self, master_name, builder_name, count):
     analyses = []
     for i in range(0, count):
-      analysis = WfAnalysis.Create(master_name,  builder_name, i)
+      analysis = WfAnalysis.Create(master_name, builder_name, i)
       analysis.result = {
           'failures': [
               {
@@ -360,7 +360,7 @@ class CheckDuplicateFailuresTest(testing.AppengineTestCase):
     check_duplicate_failures._ModifyStatusIfDuplicate(analyses[1])
 
     # Use data in datastore rather than in memory.
-    analysis_two =  WfAnalysis.Get('m', 'b', 1)
+    analysis_two = WfAnalysis.Get('m', 'b', 1)
     self.assertEqual(wf_analysis_result_status.FOUND_INCORRECT_DUPLICATE,
                      analysis_two.result_status)
 
@@ -552,5 +552,5 @@ class CheckDuplicateFailuresTest(testing.AppengineTestCase):
         check_duplicate_failures.CheckDuplicateFailures.
         _FetchAndSortUntriagedAnalyses())
     for analysis, expected_result in zip(analyses, expected_results):
-      self.assertEqual(expected_result,(
+      self.assertEqual(expected_result, (
           analysis.master_name, analysis.builder_name, analysis.build_number))

@@ -66,7 +66,7 @@ def _ModifyStatusIfDuplicate(analysis):
   build_number = analysis.build_number
 
   first_build_analysis = WfAnalysis.Get(master_name,
-                                        builder_name, build_number-1)
+                                        builder_name, build_number - 1)
 
   if not first_build_analysis:
     # Current build is not within a series of continuous build failures.
@@ -142,11 +142,11 @@ class CheckDuplicateFailures(BaseHandler):
   @staticmethod
   def _FetchAndSortUntriagedAnalyses():
     query = WfAnalysis.query(
-    WfAnalysis.result_status==wf_analysis_result_status.FOUND_UNTRIAGED)
+    WfAnalysis.result_status == wf_analysis_result_status.FOUND_UNTRIAGED)
     analyses = query.fetch()
     return sorted(
         analyses,
-        key=lambda x : (x.master_name, x.builder_name, x.build_number))
+        key=lambda x: (x.master_name, x.builder_name, x.build_number))
 
   def HandleGet(self):
     """Checks the untriaged results and mark them as duplicates if they are."""

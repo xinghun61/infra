@@ -294,7 +294,7 @@ class DetectFirstFailurePipeline(BasePipeline):
 
     unfinished_tests = failed_step['tests'].keys()
     for build_number in range(
-        current_build_number - 1 , farthest_first_failure - 1, -1):
+        current_build_number - 1, farthest_first_failure - 1, -1):
       step = self._GetSameStepFromBuild(
           master_name, builder_name, build_number, step_name,
           http_client)

@@ -80,7 +80,7 @@ class ConfigTest(testing.AppengineTestCase):
     }))
     self.assertFalse(config._ValidateTrybotMapping(['a']))
     self.assertFalse(config._ValidateTrybotMapping({'a': ['b']}))
-    self.assertFalse(config._ValidateTrybotMapping({'a': {'b':['1']}}))
+    self.assertFalse(config._ValidateTrybotMapping({'a': {'b': ['1']}}))
     self.assertFalse(config._ValidateTrybotMapping({'a': {'b': {}}}))
 
   def testConfigurationDictIsValid(self):

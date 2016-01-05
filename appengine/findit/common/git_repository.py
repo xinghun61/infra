@@ -25,6 +25,7 @@ CODE_REVIEW_URL_PATTERN = re.compile('^Review URL: (.*\d+).*$')
 REVERTED_REVISION_PATTERN = re.compile(
     '^> Committed: https://.+/([0-9a-fA-F]{40})$')
 TIMEZONE_PATTERN = re.compile('[-+]\d{4}$')
+CACHE_EXPIRE_TIME_SECONDS = 24 * 60 * 60
 
 
 class GitRepository(Repository):
@@ -41,7 +42,7 @@ class GitRepository(Repository):
   def identifier(self):
     return self.repo_url
 
-  @Cached(namespace='Gitiles-json-view', expire_time=24*60*60)
+  @Cached(namespace='Gitiles-json-view', expire_time=CACHE_EXPIRE_TIME_SECONDS)
   def _SendRequestForJsonResponse(self, url, params=None):
     if params is None:  # pragma: no cover
       params = {}
@@ -58,7 +59,7 @@ class GitRepository(Repository):
 
     return json.loads(content[len(prefix):])
 
-  @Cached(namespace='Gitiles-text-view', expire_time=24*60*60)
+  @Cached(namespace='Gitiles-text-view', expire_time=CACHE_EXPIRE_TIME_SECONDS)
   def _SendRequestForTextResponse(self, url):
     status_code, content = self.http_client.Get(url, {'format': 'text'})
     if status_code != 200:

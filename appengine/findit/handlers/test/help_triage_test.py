@@ -176,7 +176,7 @@ class HelpTriageTest(testing.AppengineTestCase):
     analysis = WfAnalysis.Create(
         self.master_name, self.builder_name, build_number)
     analysis.result = {
-      'failures':[
+      'failures': [
         {
           'last_pass': last_pass,
           'first_failure': first_failure,
@@ -236,7 +236,7 @@ class HelpTriageTest(testing.AppengineTestCase):
         self.master_name, self.builder_name, 121)
     analysis = WfAnalysis.Create(self.master_name, self.builder_name, 121)
     analysis.result = {
-      'failures':[
+      'failures': [
         {
           'last_pass': None,
           'first_failure': 120,
@@ -247,7 +247,7 @@ class HelpTriageTest(testing.AppengineTestCase):
     }
     analysis.put()
 
-    response = self.test_app.get('/help-triage', params={'url':build_url})
+    response = self.test_app.get('/help-triage', params={'url': build_url})
 
     self.assertEqual(200, response.status_int)
     self.assertEqual(EXPECTED_RESULTS_121, response.json_body)
@@ -259,7 +259,7 @@ class HelpTriageTest(testing.AppengineTestCase):
     build.data = self._GetBuildInfo(self.master_name, self.builder_name, 123)
     build.put()
 
-    response = self.test_app.get('/help-triage', params={'url':build_url})
+    response = self.test_app.get('/help-triage', params={'url': build_url})
     expected_results = {}
 
     self.assertEqual(200, response.status_int)

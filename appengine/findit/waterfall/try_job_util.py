@@ -56,13 +56,13 @@ def _NeedANewTryJob(
 
   for step_name, step in failed_steps.iteritems():
     # TODO(chanli): support test failures when the recipe is ready.
-    if step_name =='compile':
+    if step_name == 'compile':
       need_new_try_job, last_pass = _CheckFailureForTryJobKey(
           master_name, builder_name, build_number,
           failure_result_map, step_name, step)
 
       if need_new_try_job:
-        try_job =  WfTryJob.Get(
+        try_job = WfTryJob.Get(
             master_name, builder_name, build_number)
 
         if try_job:
@@ -89,7 +89,7 @@ def ScheduleTryJobIfNeeded(
     logging.info('%s, %s is not supported yet.', master_name, builder_name)
     return {}
 
-  need_new_try_job, failure_result_map, last_pass =_NeedANewTryJob(
+  need_new_try_job, failure_result_map, last_pass = _NeedANewTryJob(
       master_name, builder_name, build_number, failed_steps)
 
   if need_new_try_job:

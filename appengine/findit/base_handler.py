@@ -66,7 +66,7 @@ class BaseHandler(webapp2.RequestHandler):
         'return_code': return_code,
     }
 
-  def HandleGet(self):  #pylint: disable=R0201
+  def HandleGet(self):  # pylint: disable=R0201
     """Handles a GET request.
 
     Returns:
@@ -82,7 +82,7 @@ class BaseHandler(webapp2.RequestHandler):
     """
     return BaseHandler.CreateError('Not implemented yet!', 501)
 
-  def HandlePost(self):  #pylint: disable=R0201
+  def HandlePost(self):  # pylint: disable=R0201
     """Handles a POST request.
 
     Returns:

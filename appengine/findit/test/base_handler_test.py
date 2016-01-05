@@ -33,7 +33,7 @@ class PermissionTest(testing.AppengineTestCase):
     self.assertRaisesRegexp(
         webtest.app.AppError,
         re.compile('.*401 Unauthorized.*Either not login or no permission.*',
-                   re.MULTILINE|re.DOTALL),
+                   re.MULTILINE | re.DOTALL),
         self.test_app.get, '/permission')
 
   def _VerifyAuthorizedAccess(self, mocked_user_email=None, is_admin=False,
@@ -99,7 +99,7 @@ class PermissionTest(testing.AppengineTestCase):
     self.assertRaisesRegexp(
         webtest.app.AppError,
         re.compile('.*401 Unauthorized.*%s.*' % re.escape(login_url),
-                   re.MULTILINE|re.DOTALL),
+                   re.MULTILINE | re.DOTALL),
         self.test_app.get, '/permission', headers={'referer': referer_url})
 
   def testLoginLinkWithRequestedUrl(self):
@@ -110,7 +110,7 @@ class PermissionTest(testing.AppengineTestCase):
     self.assertRaisesRegexp(
         webtest.app.AppError,
         re.compile('.*401 Unauthorized.*%s.*' % re.escape(login_url),
-                   re.MULTILINE|re.DOTALL),
+                   re.MULTILINE | re.DOTALL),
         self.test_app.get, request_url)
 
 
@@ -214,7 +214,7 @@ class ResultFormatTest(testing.AppengineTestCase):
 
   def testPrettyJson(self):
     SetResultHandler.RESULT = {
-        'data': {'z':[1, 2, 3], 'a': 'b', 'b': '1' * 200}}
+        'data': {'z': [1, 2, 3], 'a': 'b', 'b': '1' * 200}}
     response = self.test_app.get('/format?format=json&pretty=1')
     self.assertEquals(200, response.status_int)
     self.assertEquals('application/json', response.content_type)
@@ -241,5 +241,5 @@ class InternalExceptionTest(testing.AppengineTestCase):
     self.assertRaisesRegexp(
         webtest.app.AppError,
         re.compile('.*500 Internal Server Error.*An internal error occurred.*',
-                   re.MULTILINE|re.DOTALL),
+                   re.MULTILINE | re.DOTALL),
         self.test_app.get, '/exception')

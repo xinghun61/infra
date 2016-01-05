@@ -24,7 +24,7 @@ class FailureLogTest(testing.AppengineTestCase):
   app_module = webapp2.WSGIApplication([
       ('/failure-log', failure_log.FailureLog),
   ], debug=True)
-  
+
   def testInvalidStepUrl(self):
     step_url = 'abcde'
     self.mock_current_user(user_email='test@google.com', is_admin=True)
@@ -32,7 +32,7 @@ class FailureLogTest(testing.AppengineTestCase):
         webtest.app.AppError,
         re.compile('.*501 Not Implemented.*Url &#34;%s&#34; '
                    'is not pointing to a step.*' % step_url,
-                   re.MULTILINE|re.DOTALL),
+                   re.MULTILINE | re.DOTALL),
         self.test_app.get, '/failure-log', params={'url': step_url})
 
   def testFailureLogNotFound(self):
@@ -42,14 +42,14 @@ class FailureLogTest(testing.AppengineTestCase):
     step_name = 'compile'
     step_url = buildbot.CreateStdioLogUrl(
         master_name, builder_name, build_number, step_name)
-   
+
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     self.assertRaisesRegexp(
         webtest.app.AppError,
         re.compile('.*404 Not Found.*No failure log available.*',
-                   re.MULTILINE|re.DOTALL),
-        self.test_app.get, '/failure-log', params={'url': step_url, 
+                   re.MULTILINE | re.DOTALL),
+        self.test_app.get, '/failure-log', params={'url': step_url,
                                                    'format': 'json'})
 
   def testFailureLogFetched(self):
@@ -66,7 +66,7 @@ class FailureLogTest(testing.AppengineTestCase):
 
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
-    response = self.test_app.get('/failure-log', params={'url': step_url, 
+    response = self.test_app.get('/failure-log', params={'url': step_url,
                                                          'format': 'json'})
     expected_response = {
         'master_name': 'm',
@@ -99,7 +99,7 @@ class FailureLogTest(testing.AppengineTestCase):
 
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
-    response = self.test_app.get('/failure-log', params={'url': step_url, 
+    response = self.test_app.get('/failure-log', params={'url': step_url,
                                                          'format': 'json'})
     expected_response = {
         'master_name': 'm',

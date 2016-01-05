@@ -178,28 +178,28 @@ class DepsParserTest(unittest.TestCase):
         (
             # OS doesn't need module.
             {'foo': 'default_foo'},
-            {'os1': { 'foo': None } },
+            {'os1': {'foo': None}},
             ['os1'],
             {'foo': None}
         ),
         (
             # OS wants a different version of module.
             {'foo': 'default_foo'},
-            {'os1': { 'foo': 'os1_foo'} },
+            {'os1': {'foo': 'os1_foo'}},
             ['os1'],
             {'foo': 'os1_foo'}
         ),
         (
             # OS with no overrides at all.
             {'foo': 'default_foo'},
-            {'os1': { 'foo': None } },
+            {'os1': {'foo': None}},
             ['os2'],
             {'foo': 'default_foo'}
         ),
         (
             # One OS doesn't need module, one OS wants the default.
             {'foo': 'default_foo'},
-            {'os1': { 'foo': None },
+            {'os1': {'foo': None},
              'os2': {}},
             ['os1', 'os2'],
             {'foo': 'default_foo'}
@@ -207,15 +207,15 @@ class DepsParserTest(unittest.TestCase):
         (
             # One OS doesn't need module, another OS wants a special version.
             {'foo': 'default_foo'},
-            {'os1': { 'foo': None },
-             'os2': { 'foo': 'os2_foo'}},
+            {'os1': {'foo': None},
+             'os2': {'foo': 'os2_foo'}},
             ['os1', 'os2'],
             {'foo': 'os2_foo'}
         ),
         (
             # One OS wants to add a module.
             {'foo': 'default_foo'},
-            {'os1': { 'bar': 'os1_bar' }},
+            {'os1': {'bar': 'os1_bar'}},
             ['os1'],
             {'foo': 'default_foo',
              'bar': 'os1_bar'}
@@ -223,7 +223,7 @@ class DepsParserTest(unittest.TestCase):
         (
             # One OS wants to add a module. One doesn't care.
             {'foo': 'default_foo'},
-            {'os1': { 'bar': 'os1_bar' }},
+            {'os1': {'bar': 'os1_bar'}},
             ['os1', 'os2'],
             {'foo': 'default_foo',
              'bar': 'os1_bar'}
@@ -231,8 +231,8 @@ class DepsParserTest(unittest.TestCase):
         (
             # Two OSes want to add a module with the same definition.
             {'foo': 'default_foo'},
-            {'os1': { 'bar': 'os12_bar' },
-             'os2': { 'bar': 'os12_bar' }},
+            {'os1': {'bar': 'os12_bar'},
+             'os2': {'bar': 'os12_bar'}},
             ['os1', 'os2'],
             {'foo': 'default_foo',
              'bar': 'os12_bar'}
@@ -240,8 +240,8 @@ class DepsParserTest(unittest.TestCase):
         (
             # Two OSes want different versions of the same module.
             {'foo': 'default_foo'},
-            {'os1': { 'bar': 'os_bar1' },
-             'os2': { 'bar': 'os_bar2' }},
+            {'os1': {'bar': 'os_bar1'},
+             'os2': {'bar': 'os_bar2'}},
             ['os2', 'os1'],
             {'foo': 'default_foo',
              'bar': 'os_bar1'}

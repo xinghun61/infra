@@ -104,7 +104,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
             'current_failure': 2,
             'first_failure': 0
         },
-        'compile':{
+        'compile': {
             'current_failure': 2,
             'first_failure': 0
         }
@@ -144,7 +144,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
                 }
             ]
         },
-        'compile':{
+        'compile': {
             'current_failure': 2,
             'first_failure': 0
         }
