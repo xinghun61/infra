@@ -38,6 +38,7 @@ class SysMon(outer_loop.Application):
 
   def task(self):
     try:
+      system_metrics.get_uptime()
       system_metrics.get_cpu_info()
       system_metrics.get_disk_info()
       system_metrics.get_mem_info()

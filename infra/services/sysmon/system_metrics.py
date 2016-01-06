@@ -5,6 +5,7 @@
 import errno
 import os
 import logging
+import time
 
 import psutil
 
@@ -12,30 +13,67 @@ from infra_libs import ts_mon
 from infra_libs.ts_mon.common.metrics import MICROSECONDS_PER_SECOND
 
 
-cpu_time = ts_mon.FloatMetric('dev/cpu/time')
+cpu_time = ts_mon.FloatMetric('dev/cpu/time',
+                              description='percentage of time spent by the CPU'
+                                  ' in different states.')
 
-disk_free = ts_mon.GaugeMetric('dev/disk/free')
-disk_total = ts_mon.GaugeMetric('dev/disk/total')
+disk_free = ts_mon.GaugeMetric('dev/disk/free',
+                               description='Available bytes on disk partition.')
+disk_total = ts_mon.GaugeMetric('dev/disk/total',
+                                description='Total bytes on disk partition.')
 
 # inode counts are only available on Unix.
 if os.name == 'posix':  # pragma: no cover
-  inodes_free = ts_mon.GaugeMetric('dev/inodes/free')
-  inodes_total = ts_mon.GaugeMetric('dev/inodes/total')
+  inodes_free = ts_mon.GaugeMetric('dev/inodes/free',
+                                   description='Number of available inodes on '
+                                       'disk partition (unix only).')
+  inodes_total = ts_mon.GaugeMetric('dev/inodes/total',
+                                    description='Number of possible inodes on '
+                                        'disk partition (unix only)')
 
-mem_free = ts_mon.GaugeMetric('dev/mem/free')
-mem_total = ts_mon.GaugeMetric('dev/mem/total')
+mem_free = ts_mon.GaugeMetric('dev/mem/free',
+                              description='Amount of memory available to a '
+                                  'process (in Bytes). Buffers are considered '
+                                  'free memory.')
+
+mem_total = ts_mon.GaugeMetric('dev/mem/total',
+                               description='Total physical memory in Bytes.')
 
 START_TIME = psutil.boot_time()
-net_up = ts_mon.CounterMetric('dev/net/bytes/up', start_time=START_TIME)
-net_down = ts_mon.CounterMetric('dev/net/bytes/down', start_time=START_TIME)
-net_err_up = ts_mon.CounterMetric('dev/net/err/up', start_time=START_TIME)
-net_err_down = ts_mon.CounterMetric('dev/net/err/down', start_time=START_TIME)
-net_drop_up = ts_mon.CounterMetric('dev/net/drop/up', start_time=START_TIME)
-net_drop_down = ts_mon.CounterMetric('dev/net/drop/down', start_time=START_TIME)
-disk_read = ts_mon.CounterMetric('dev/disk/read', start_time=START_TIME)
-disk_write = ts_mon.CounterMetric('dev/disk/write', start_time=START_TIME)
+net_up = ts_mon.CounterMetric('dev/net/bytes/up', start_time=START_TIME,
+                              description='Number of bytes sent on interface.')
+net_down = ts_mon.CounterMetric('dev/net/bytes/down', start_time=START_TIME,
+                                description='Number of Bytes received on '
+                                    'interface.')
+net_err_up = ts_mon.CounterMetric('dev/net/err/up', start_time=START_TIME,
+                                  description='Total number of errors when '
+                                      'sending (per interface).')
+net_err_down = ts_mon.CounterMetric('dev/net/err/down', start_time=START_TIME,
+                                    description='Total number of errors when '
+                                        'receiving (per interface).')
+net_drop_up = ts_mon.CounterMetric('dev/net/drop/up', start_time=START_TIME,
+                                   description='Total number of outgoing '
+                                       'packets that have been dropped.')
+net_drop_down = ts_mon.CounterMetric('dev/net/drop/down', start_time=START_TIME,
+                                     description='Total number of incoming '
+                                         'packets that have been dropped.')
 
-proc_count = ts_mon.GaugeMetric('dev/proc/count')
+disk_read = ts_mon.CounterMetric('dev/disk/read', start_time=START_TIME,
+                                 description='Number of Bytes read on disk.')
+disk_write = ts_mon.CounterMetric('dev/disk/write', start_time=START_TIME,
+                                  description='Number of Bytes written on '
+                                      'disk.')
+
+uptime = ts_mon.GaugeMetric('dev/uptime',
+                            description='Machine uptime, in seconds.')
+
+proc_count = ts_mon.GaugeMetric('dev/proc/count',
+                                description='Number of processes currently '
+                                    'running.')
+
+
+def get_uptime():
+  uptime.set(int(time.time() - START_TIME))
 
 
 def get_cpu_info():

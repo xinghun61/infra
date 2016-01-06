@@ -3,10 +3,8 @@
 # found in the LICENSE file.
 
 import collections
-import errno
 import os
 import sys
-import time
 import unittest
 
 import mock
@@ -22,6 +20,12 @@ class SystemMetricsTest(unittest.TestCase):
   def assertBetween(self, lower, upper, value):
     self.assertGreaterEqual(value, lower)
     self.assertLessEqual(value, upper)
+
+  def test_uptime(self):
+    system_metrics.get_uptime()
+    uptime = system_metrics.uptime.get()
+    self.assertIsNotNone(uptime)
+    self.assertGreater(uptime, 0)
 
   def test_cpu_info(self):
     system_metrics.get_cpu_info()
