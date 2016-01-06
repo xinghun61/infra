@@ -136,11 +136,11 @@ class ServiceThread(threading.Thread):
               LOGGER.info('Service %s has a new package version, restarting',
                           self._service.name)
               self._service.stop()
-            elif self._service.has_args_changed(proc_state):
+            elif self._service.has_cmd_changed(proc_state):
               self.reconfigs.increment(fields={'service': self._service.name})
               LOGGER.info(
                 'Service %s has new args: was %s, restarting with %s',
-                self._service.name, proc_state.args, self._service.cmd)
+                self._service.name, proc_state.cmd, self._service.cmd)
               self._service.stop()
 
           # Ensure the service is running.

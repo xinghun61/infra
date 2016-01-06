@@ -178,6 +178,7 @@ class ServiceTest(TestBase):
           'starttime': 888,
           'version': {'foo': 'bar'},
           'args': ['bar', 'one', 'two'],
+          'cmd': ['bar', 'one', 'two'],
       }, json.load(fh))
 
   @unittest.skipIf(sys.platform == 'win32', 'windows')
@@ -350,23 +351,23 @@ class ServiceTest(TestBase):
     self.mock_find_version.return_value = 2
     self.assertFalse(self.s.has_version_changed(state))
 
-  def test_has_args_changed_not_running(self):
+  def test_has_cmd_changed_not_running(self):
     state = service.ProcessState()
-    self.assertFalse(self.s.has_args_changed(state))
+    self.assertFalse(self.s.has_cmd_changed(state))
 
-  def test_has_args_changed_no(self):
+  def test_has_cmd_changed_no(self):
     state = service.ProcessState(
-        pid=1234, starttime=5678, version=1, args=['bar', 'one', 'two'])
-    self.assertFalse(self.s.has_args_changed(state))
+        pid=1234, starttime=5678, version=1, cmd=['bar', 'one', 'two'])
+    self.assertFalse(self.s.has_cmd_changed(state))
 
-  def test_has_args_changed_yes(self):
+  def test_has_cmd_changed_yes(self):
     state = service.ProcessState(
-        pid=1234, starttime=5678, version=1, args=['one'])
-    self.assertTrue(self.s.has_args_changed(state))
+        pid=1234, starttime=5678, version=1, cmd=['one'])
+    self.assertTrue(self.s.has_cmd_changed(state))
 
-  def test_has_args_changed_not_written(self):
+  def test_has_cmd_changed_not_written(self):
     state = service.ProcessState(pid=1234, starttime=5678, version=1)
-    self.assertFalse(self.s.has_args_changed(state))
+    self.assertFalse(self.s.has_cmd_changed(state))
 
   def test_cloudtail_args(self):
     self.assertIsNone(self.s.cloudtail_args)
@@ -491,7 +492,7 @@ class OwnServiceTest(TestBase):
     self.assertEqual(1234, state.pid)
     self.assertEqual(5678, state.starttime)
     self.assertEqual(42, state.version)
-    self.assertEqual([], state.args)
+    self.assertEqual([], state.cmd)
 
   def test_stop(self):
     with self.assertRaises(NotImplementedError):

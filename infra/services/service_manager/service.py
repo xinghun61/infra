@@ -79,7 +79,7 @@ class ProcessState(object):
   accessible using the 'pid', 'starttime', etc. attributes.
   """
 
-  def __init__(self, pid=None, starttime=None, version=None, args=None):
+  def __init__(self, pid=None, starttime=None, version=None, cmd=None):
     self.pid = None
     if pid is not None:
       self.pid = int(pid)
@@ -89,7 +89,7 @@ class ProcessState(object):
       self.starttime = int(starttime)
 
     self.version = version
-    self.args = args
+    self.cmd = cmd
 
   @classmethod
   def from_file(cls, filename):
@@ -115,10 +115,11 @@ class ProcessState(object):
       raise ProcessHasDifferentStartTime(
           filename, pid, pid_state.starttime, starttime)
 
+    # TODO(pgervais): get rid of 'args' when all services have been restarted.
     return cls(pid=pid,
                starttime=starttime,
                version=data.get('version'),
-               args=data.get('args'))
+               cmd=data.get('cmd', data.get('args')))
 
   @classmethod
   def from_pid(cls, pid):
@@ -139,7 +140,8 @@ class ProcessState(object):
         'pid': self.pid,
         'starttime': self.starttime,
         'version': self.version,
-        'args': self.args,
+        'cmd': self.cmd,
+        'args': self.cmd,  # ensuring backward-compatibility.
     })
     LOGGER.info('Writing state file %s: %s', filename, contents)
 
@@ -265,14 +267,14 @@ class Service(object):
     return state.version != version_finder.find_version(self.config)
 
   # TODO(pgervais): rename to 'has_cmd_changed'
-  def has_args_changed(self, state):
+  def has_cmd_changed(self, state):
     """Returns True if the args in the config are different to when the process
     started."""
 
-    if state.args is None:
+    if state.cmd is None:
       return False
 
-    return state.args != self._cmd
+    return state.cmd != self._cmd
 
   def start(self):
     """Starts the service if it's not running already.
@@ -323,7 +325,7 @@ class Service(object):
           'Failed to start %s: daemon process exited (%r)' % (self.name, ex))
 
     state.version = version_finder.find_version(self.config)
-    state.args = self._cmd
+    state.cmd = self._cmd
     state.write_to_file(self._state_file)
 
   def _signal_and_wait(self, state, sig, wait_timeout):
