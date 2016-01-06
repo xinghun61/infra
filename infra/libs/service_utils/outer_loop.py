@@ -6,7 +6,6 @@
 
 import collections
 import logging
-import sys
 import time
 
 from infra_libs import ts_mon

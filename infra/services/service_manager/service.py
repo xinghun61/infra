@@ -259,14 +259,26 @@ class Service(object):
     return ProcessState.from_file(self._state_file)
 
   def has_version_changed(self, state):
-    """Returns True if the version has changed since the process started."""
+    """Returns True if the version has changed since the process started.
+
+    Args:
+      state(ProcessState): a process state.
+
+    Returns:
+      changed(bool): True if the running version does not match the one
+        deployed on disk.
+    """
 
     if state.version is None:
       return False
 
-    return state.version != version_finder.find_version(self.config)
+    deployed_version = version_finder.find_version(self.config)
+    if state.version != deployed_version:
+      LOGGER.info('Version changed: %s -> %s. (cmd: %s)'
+                  % (state.version, deployed_version, str(state.cmd)))
+      return True
+    return False
 
-  # TODO(pgervais): rename to 'has_cmd_changed'
   def has_cmd_changed(self, state):
     """Returns True if the args in the config are different to when the process
     started."""

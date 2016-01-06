@@ -139,7 +139,7 @@ class ServiceThread(threading.Thread):
             elif self._service.has_cmd_changed(proc_state):
               self.reconfigs.increment(fields={'service': self._service.name})
               LOGGER.info(
-                'Service %s has new args: was %s, restarting with %s',
+                'Service %s has new command: was %s, restarting with %s',
                 self._service.name, proc_state.cmd, self._service.cmd)
               self._service.stop()
 
