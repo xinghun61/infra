@@ -81,7 +81,7 @@ class Poller(object):
 class VarzPoller(Poller):
   endpoint = '/varz'
 
-  uptime = ts_mon.FloatMetric('uptime')
+  uptime = ts_mon.FloatMetric('buildbot/master/uptime')
   accepting_builds = ts_mon.BooleanMetric('buildbot/master/accepting_builds')
 
   connected = ts_mon.GaugeMetric('buildbot/master/builders/connected_slaves')
