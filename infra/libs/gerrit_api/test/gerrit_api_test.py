@@ -4,6 +4,7 @@
 
 """Tests for gerrit_api.py"""
 
+import copy
 import json
 import mock
 import requests
@@ -367,7 +368,66 @@ class GerritAgentTestCase(unittest.TestCase):
     self.assertEquals(result, info_without_revisions)
 
   @mock.patch.object(requests.Session, 'request')
-  def test_get_issue_with_revisions(self, mock_method):
+  def test_get_issue_with_files(self, mock_method):
+    info_with_files = copy.deepcopy(TEST_CHANGE_INFO)
+    current = info_with_files['current_revision']
+    info_with_files['revisions'][current]['files'] = {
+        "first.py": {
+          "lines_deleted": 8,
+          "size_delta": -412,
+          "size": 7782
+        },
+        "first.java": {
+          "lines_inserted": 1,
+          "size_delta": 23,
+          "size": 6762
+        },
+    }
+    mock_method.return_value = _create_mock_return(
+        '%s%s' % (GERRIT_JSON_HEADER, json.dumps(info_with_files)), 200)
+    result = self.gerrit.get_issue('test/project~weird/branch~hash',
+                                   current_files=True)
+    mock_method.assert_called_once_with(
+        data=None,
+        method='GET',
+        params={'o': ['CURRENT_FILES', 'CURRENT_REVISION']},
+        url=('https://chromium-review.googlesource.com/a/changes/'
+             'test%2Fproject~weird%2Fbranch~hash/detail'),
+        headers=HEADERS)
+    self.assertEquals(result, info_with_files)
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_get_issue_with_files_and_revisions(self, mock_method):
+    info = copy.deepcopy(TEST_CHANGE_INFO)
+    current = info['current_revision']
+    info['revisions'][current]['files'] = {
+        "first.py": {
+          "lines_deleted": 8,
+          "size_delta": -412,
+          "size": 7782
+        },
+        "first.java": {
+          "lines_inserted": 1,
+          "size_delta": 23,
+          "size": 6762
+        },
+    }
+    mock_method.return_value = _create_mock_return(
+        '%s%s' % (GERRIT_JSON_HEADER, json.dumps(info)), 200)
+    result = self.gerrit.get_issue('test/project~weird/branch~hash',
+                                   current_files=True,
+                                   revisions='ALL_REVISIONS')
+    mock_method.assert_called_once_with(
+        data=None,
+        method='GET',
+        params={'o': ['CURRENT_FILES', 'ALL_REVISIONS']},
+        url=('https://chromium-review.googlesource.com/a/changes/'
+             'test%2Fproject~weird%2Fbranch~hash/detail'),
+        headers=HEADERS)
+    self.assertEquals(result, info)
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_get_issue_with_all_revisions(self, mock_method):
     mock_method.return_value = _create_mock_return(
         '%s%s' % (GERRIT_JSON_HEADER, json.dumps(TEST_CHANGE_INFO)), 200)
     result = self.gerrit.get_issue('test/project~weird/branch~hash',
@@ -375,7 +435,7 @@ class GerritAgentTestCase(unittest.TestCase):
     mock_method.assert_called_once_with(
         data=None,
         method='GET',
-        params={'o': 'ALL_REVISIONS'},
+        params={'o': ['ALL_REVISIONS']},
         url=('https://chromium-review.googlesource.com/a/changes/'
              'test%2Fproject~weird%2Fbranch~hash/detail'),
         headers=HEADERS)
