@@ -243,6 +243,8 @@ found in the LICENSE file. -->
                     return;
                 var dialog = document.createElement("cr-issue-revert-dialog");
                 dialog.patchset = this.issue.patchsets.last();
+                dialog.landed_days_ago = this.issue.landed_days_ago;
+                dialog.revert_will_skip_checks = this.issue.revert_will_skip_checks;
                 this.showDialog(dialog);
                 dialog.addEventListener("close", function() {
                     var path = window.location.pathname;

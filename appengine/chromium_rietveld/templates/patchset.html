@@ -183,6 +183,9 @@
             Enter the reason for reverting this patchset (Please be descriptive, include what broke and what needs to be done to reland):<br/>
             <textarea rows="10" cols="50" id="revert_reason_textarea" name="revert_reason_textarea"></textarea><br/>
             Automatically send Revert CL to CQ: <input type="checkbox" id="check_cq" name="check_cq" checked/><br/>
+            {%if not revert_will_skip_checks %}
+              Note: CQ checks will <b>not</b> be skipped because this CL landed {{landed_days_ago}} days ago.<br/>
+            {% endif %}
             <input type="button" value="Cancel" onclick="M_toggleRevertReasonPopup(false);"/>
             <input type="submit" value="Submit">
           </div>
