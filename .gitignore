@@ -16,3 +16,4 @@ build_cache
 go/src/github.com
 recipes-py
 !/cipd/README.md
+reasons.sqlite
