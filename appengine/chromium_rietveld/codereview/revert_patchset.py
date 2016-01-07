@@ -14,7 +14,6 @@
 
 """Contains the revert_patchset view."""
 
-import datetime
 import hashlib
 import re
 
@@ -35,7 +34,6 @@ from django.http import HttpResponseRedirect
 # Constants for patch checks.
 LARGE_PATCH_CHARS_THRESHOLD = 500000
 MAX_LARGE_PATCHES_REVERSIBLE = 5
-
 
 ERROR_MSG_POSTPEND = ' Please revert manually.\nSorry for the inconvenience.'
 
@@ -65,23 +63,12 @@ def _get_revert_description(request, revert_reason, reviewers, original_issue,
   revert_description.append('')  # Extra new line to separate sections.
   revert_description.append('TBR=%s' % ','.join(
       [str(reviewer) for reviewer in reviewers]))
-
-  can_skip_checks, _ = original_issue.get_skip_checks_on_revert_and_landed_age()
-  if can_skip_checks:
-    revert_description.append(
-        '# Skipping CQ checks because original CL landed less than '
-        '%d days ago.' % models.REVERT_MAX_AGE_FOR_CHECKS_BYPASSING.days)
-    # Do not run presubmit on the revert CL.
-    revert_description.append('NOPRESUBMIT=true')
-    # Skip tree status checks.
-    revert_description.append('NOTREECHECKS=true')
-    # Do not run trybots on the revert CL.
-    revert_description.append('NOTRY=true')
-  else:
-    revert_description.append(
-        '# Not skipping CQ checks because original CL landed more than '
-        '%d days ago.' % models.REVERT_MAX_AGE_FOR_CHECKS_BYPASSING.days)
-
+  # Do not run presubmit on the revert CL.
+  revert_description.append('NOPRESUBMIT=true')
+  # Skip tree status checks.
+  revert_description.append('NOTREECHECKS=true')
+  # Do not run trybots on the revert CL.
+  revert_description.append('NOTRY=true')
   # Check to see if the original description contains "BUG=" if it does then
   # use it in the revert description.
   match_bugline = re.search(

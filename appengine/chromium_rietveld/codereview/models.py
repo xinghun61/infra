@@ -47,14 +47,6 @@ CONTEXT_CHOICES = (3, 10, 25, 50, 75, 100)
 PRIVILEGED_USER_DOMAINS = ('@chromium.org', '@google.com', '@webrtc.org')
 AVAILABLE_CQS_MEMCACHE_KEY = 'available_cqs'
 
-# When reverted, CLs older than this will not skip CQ checks.
-# Please ensure this value is always in multiple of days or change
-# the templates accordingly.
-REVERT_MAX_AGE_FOR_CHECKS_BYPASSING = datetime.timedelta(days=1)
-
-# Poor man way to find when a CL was landed.
-COMMITTED_MSG_RE = re.compile(
-    r'Committed patchset #(\d)+ \(id:(\d)+\)( manually)?( as)?')
 
 def format_reviewer(reviewer, required_reviewers, reviewer_func=None):
   """Adds the required prefix if the reviewer is a required reviewer."""
@@ -486,30 +478,6 @@ class Issue(ndb.Model):
       # Reduce memory usage (see above comment).
       for patchset in patchsets:
         patchset.parsed_patches = None
-
-  def get_landed_date(self):
-    """Returns approximate date when original_issue was landed or None."""
-    for message in reversed(list(self.messages)):
-      if not message.issue_was_closed:
-        continue
-      for l in message.text.splitlines():
-        if COMMITTED_MSG_RE.match(l):
-          return message.date
-    return None
-
-  def get_time_since_landed(self):
-    """Returns approximate time since issue was landed or None."""
-    landed = self.get_landed_date()
-    if landed:
-      return datetime.datetime.now() - landed
-    return None
-
-
-def can_skip_checks_on_revert(landed_age):
-  """Returns whether CQ checks on revert can be skipped."""
-  if landed_age is None:
-    return False
-  return landed_age < REVERT_MAX_AGE_FOR_CHECKS_BYPASSING
 
 
 def _calculate_delta(patch, patchset_id, patchsets):

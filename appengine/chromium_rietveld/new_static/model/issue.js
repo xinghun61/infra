@@ -33,8 +33,6 @@ function Issue(id)
     this.approvalCount = 0;
     this.disapprovalCount = 0;
     this.recentActivity = false;
-    this.revert_will_skip_checks = false;
-    this.landed_days_ago = "unknown";
     Object.preventExtensions(this);
 }
 
@@ -114,8 +112,6 @@ Issue.prototype.parseData = function(data)
     this.description = data.description || "";
     this.lastModified = Date.utc.create(data.modified);
     this.offer_cq = data.offer_cq;
-    this.revert_will_skip_checks = data.revert_will_skip_checks;
-    this.landed_days_ago = data.landed_days_ago;
     this.owner = User.forName(data.owner, data.owner_email);
     this.private = data.private;
     this.subject = data.subject || "";
