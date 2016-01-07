@@ -18,10 +18,8 @@ import (
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
-	"github.com/luci/luci-go/common/tsmon"
 	"github.com/maruel/subcommands"
 	gol "github.com/op/go-logging"
-	"golang.org/x/net/context"
 
 	"infra/libs/cipd"
 	"infra/tools/cloudtail"
@@ -47,7 +45,6 @@ const (
 
 type commonOptions struct {
 	authFlags     authcli.Flags
-	tsmonFlags    tsmon.Flags
 	localLogLevel logging.Level
 	debug         bool
 
@@ -64,7 +61,7 @@ type state struct {
 }
 
 // registerFlags adds all CLI flags to the flag set.
-func (opts *commonOptions) registerFlags(f *flag.FlagSet, defaultAutoFlush bool) {
+func (opts *commonOptions) registerFlags(f *flag.FlagSet) {
 	// Default log level.
 	opts.localLogLevel = logging.Warning
 
@@ -78,14 +75,6 @@ func (opts *commonOptions) registerFlags(f *flag.FlagSet, defaultAutoFlush bool)
 	f.StringVar(&opts.resourceType, "resource-type", "machine", "What kind of entity produces the log (e.g. 'master')")
 	f.StringVar(&opts.resourceID, "resource-id", "", "Identifier of the entity producing the log")
 	f.StringVar(&opts.logID, "log-id", "default", "ID of the log")
-
-	opts.tsmonFlags = tsmon.NewFlags()
-	opts.tsmonFlags.Target.TargetType = "task"
-	opts.tsmonFlags.Target.TaskServiceName = "cloudtail"
-	if defaultAutoFlush {
-		opts.tsmonFlags.Flush = "auto"
-	}
-	opts.tsmonFlags.Register(f)
 }
 
 // processFlags validates flags, creates and configures logger, client, etc.
@@ -98,7 +87,6 @@ func (opts *commonOptions) processFlags() (state, error) {
 		logging.Error:   gol.ERROR,
 	}
 	logger := gologger.New(os.Stderr, logLevels[opts.localLogLevel])
-	ctx := logging.Set(context.Background(), logger)
 
 	// Auth options.
 	authOpts, err := opts.authFlags.Options()
@@ -113,15 +101,6 @@ func (opts *commonOptions) processFlags() (state, error) {
 		if opts.projectID == "" {
 			return state{}, fmt.Errorf("-project-id is required")
 		}
-	}
-
-	// Tsmon options.
-	if opts.tsmonFlags.Target.TaskJobName == "" {
-		opts.tsmonFlags.Target.TaskJobName = fmt.Sprintf(
-			"%s-%s-%s", opts.logID, opts.resourceType, opts.resourceID)
-	}
-	if err := tsmon.InitializeFromFlags(ctx, &opts.tsmonFlags); err != nil {
-		return state{}, err
 	}
 
 	// Client.
@@ -223,7 +202,7 @@ var cmdSend = &subcommands.Command{
 	LongDesc:  "Sends a single entry to a cloud log.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &sendRun{}
-		c.commonOptions.registerFlags(&c.Flags, false)
+		c.commonOptions.registerFlags(&c.Flags)
 		c.Flags.Var(&c.severity, "severity", "Log entry severity")
 		c.Flags.StringVar(&c.text, "text", "", "Log entry to send")
 		return c
@@ -268,10 +247,6 @@ func (c *sendRun) Run(a subcommands.Application, args []string) int {
 		fmt.Fprintln(os.Stderr, err.Error())
 		return 1
 	}
-	ctx := logging.Set(context.Background(), state.logger)
-	if err := tsmon.Flush(ctx); err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-	}
 	return 0
 }
 
@@ -284,7 +259,7 @@ var cmdPipe = &subcommands.Command{
 	LongDesc:  "Sends each line of stdin as a separate log entry",
 	CommandRun: func() subcommands.CommandRun {
 		c := &pipeRun{}
-		c.commonOptions.registerFlags(&c.Flags, true)
+		c.commonOptions.registerFlags(&c.Flags)
 		return c
 	},
 }
@@ -332,7 +307,7 @@ var cmdTail = &subcommands.Command{
 	LongDesc:  "Tails a file and sends each line as a log entry. Stops by SIGINT.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &tailRun{}
-		c.commonOptions.registerFlags(&c.Flags, true)
+		c.commonOptions.registerFlags(&c.Flags)
 		c.Flags.StringVar(&c.path, "path", "", "Path to a file to tail")
 		return c
 	},

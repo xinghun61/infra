@@ -12,9 +12,6 @@ import (
 	"time"
 
 	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/tsmon/field"
-	"github.com/luci/luci-go/common/tsmon/metric"
-	"golang.org/x/net/context"
 	cloudlog "google.golang.org/api/logging/v1beta3"
 )
 
@@ -74,11 +71,6 @@ type ClientOptions struct {
 	Debug bool
 }
 
-var (
-	entriesCounter = metric.NewCounter("cloudtail/entries", field.String("severity"))
-	writesCounter  = metric.NewCounter("cloudtail/writes", field.String("result"))
-)
-
 // NewClient returns new object that knows how to push log entries to a single
 // log in Cloud Logging.
 func NewClient(opts ClientOptions) (Client, error) {
@@ -109,7 +101,6 @@ func NewClient(opts ClientOptions) (Client, error) {
 	service.UserAgent = opts.UserAgent
 	return &loggingClient{
 		opts: opts,
-		ctx:  logging.Set(context.Background(), opts.Logger),
 		commonLabels: map[string]string{
 			"compute.googleapis.com/resource_id":   opts.ResourceID,
 			"compute.googleapis.com/resource_type": opts.ResourceType,
@@ -136,7 +127,6 @@ type writeFunc func(projID, logID string, req *cloudlog.WriteLogEntriesRequest) 
 
 type loggingClient struct {
 	opts ClientOptions
-	ctx  context.Context
 
 	// These are passed to Cloud Logging API as is.
 	commonLabels map[string]string
@@ -169,13 +159,6 @@ func (c *loggingClient) PushEntries(entries []Entry) error {
 			TextPayload:   e.TextPayload,
 			StructPayload: e.StructPayload,
 		}
-		entriesCounter.Add(c.ctx, 1, metadata.Severity)
 	}
-	if err := c.writeFunc(c.opts.ProjectID, c.opts.LogID, &req); err != nil {
-		writesCounter.Add(c.ctx, 1, "failure")
-		return err
-	}
-
-	writesCounter.Add(c.ctx, 1, "success")
-	return nil
+	return c.writeFunc(c.opts.ProjectID, c.opts.LogID, &req)
 }
