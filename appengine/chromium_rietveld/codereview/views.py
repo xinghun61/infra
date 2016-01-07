@@ -1827,6 +1827,8 @@ def show(request):
     try_job_loading_error = True
 
   auto_open_revert = request.issue.closed and request.path.endswith('/revert')
+  revert_will_skip_checks, landed_days_ago = (
+      get_skip_checks_on_revert_and_landed_days(request.issue))
   return respond(request, 'issue.html', {
     'default_builders':
       models_chromium.TryserverBuilders.get_builders(),
@@ -1847,6 +1849,8 @@ def show(request):
     'display_exp_tryjob_results': display_exp_tryjob_results,
     'offer_cq': request.issue.is_cq_available,
     'auto_open_revert': auto_open_revert,
+    'revert_will_skip_checks': revert_will_skip_checks,
+    'landed_days_ago': landed_days_ago,
   })
 
 
@@ -2412,8 +2416,22 @@ def download_patch(request):
   return HttpTextResponse(request.patch.text)
 
 
+def get_skip_checks_on_revert_and_landed_days(issue):
+  landed_age = issue.get_time_since_landed()
+  if models.can_skip_checks_on_revert(landed_age):
+    assert landed_age
+    return True, landed_age.days
+  else:
+    if landed_age is None:
+      return False, 'unknown'
+    else:
+      return False, landed_age.days
+
+
 def _issue_as_dict(issue, messages, request=None):
   """Converts an issue into a dict."""
+  revert_will_skip_checks, landed_days_ago = (
+      get_skip_checks_on_revert_and_landed_days(issue))
   values = {
     'offer_cq': issue.is_cq_available,
     'owner': library.get_nickname(issue.owner, True, request),
@@ -2436,6 +2454,8 @@ def _issue_as_dict(issue, messages, request=None):
     'commit': issue.commit,
     'cq_dry_run': issue.cq_dry_run,
     'cq_dry_run_last_triggered_by': issue.cq_dry_run_last_triggered_by,
+    'revert_will_skip_checks': revert_will_skip_checks,
+    'landed_days_ago': landed_days_ago,
   }
   if messages:
     values['messages'] = sorted(
