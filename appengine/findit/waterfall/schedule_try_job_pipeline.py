@@ -12,14 +12,9 @@ from waterfall import waterfall_config
 class ScheduleTryJobPipeline(BasePipeline):
   """A pipeline for scheduling a new tryjob for current build."""
 
-  # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(
-      self, master_name, builder_name, build_number,
-      good_revision, bad_revision):
-    tryserver_mastername, tryserver_buildername = (
-        waterfall_config.GetTrybotForWaterfallBuilder(master_name, builder_name)
-    )
-    recipe = 'findit/chromium/compile'
+  def _getBuildProperties(self, recipe, master_name, builder_name,
+                          good_revision, bad_revision, compile_targets):
+
     properties = {
         'recipe': recipe,
         'good_revision': good_revision,
@@ -28,13 +23,31 @@ class ScheduleTryJobPipeline(BasePipeline):
         'target_buildername': builder_name
     }
 
+    if compile_targets:
+      properties['compile_targets'] = compile_targets
+
+    return properties
+
+  # Arguments number differs from overridden method - pylint: disable=W0221
+  def run(
+      self, master_name, builder_name, build_number,
+      good_revision, bad_revision, compile_targets):
+    tryserver_mastername, tryserver_buildername = (
+        waterfall_config.GetTrybotForWaterfallBuilder(
+            master_name, builder_name))
+
+    recipe = 'findit/chromium/compile'
+    properties = self._getBuildProperties(
+        recipe, master_name, builder_name, good_revision, bad_revision,
+        compile_targets)
+
     try_job = buildbucket_client.TryJob(
         tryserver_mastername, tryserver_buildername, None, properties, [])
     error, build = buildbucket_client.TriggerTryJobs([try_job])[0]
 
     if error:  # pragma: no cover
       raise pipeline.Retry(
-          'Error "%s" orrurs. Reason: "%s"' % (error.message, error.reason))
+          'Error "%s" occurred. Reason: "%s"' % (error.message, error.reason))
 
     try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
     try_job_result.compile_results.append({'try_job_id': build.id})

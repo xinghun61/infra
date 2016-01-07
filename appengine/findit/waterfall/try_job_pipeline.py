@@ -15,14 +15,16 @@ class TryJobPipeline(BasePipeline):
   """Root pipeline to start a tryjob on current build."""
 
   def __init__(self, master_name, builder_name, build_number,
-      good_revision, bad_revision):
+               good_revision, bad_revision, compile_targets):
     super(TryJobPipeline, self).__init__(
-        master_name, builder_name, build_number, good_revision, bad_revision)
+        master_name, builder_name, build_number, good_revision, bad_revision,
+        compile_targets)
     self.master_name = master_name
     self.builder_name = builder_name
     self.build_number = build_number
     self.good_revision = good_revision
     self.bad_revision = bad_revision
+    self.compile_targets = compile_targets
 
   def _LogUnexpectedAbort(self, was_aborted):
     """Marks the WfTryJob status as error, indicating that it was aborted.
@@ -45,9 +47,10 @@ class TryJobPipeline(BasePipeline):
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(
       self, master_name, builder_name, build_number,
-      good_revision, bad_revision):
+      good_revision, bad_revision, compile_targets):
     try_job_id = yield ScheduleTryJobPipeline(
-        master_name, builder_name, build_number, good_revision, bad_revision)
+        master_name, builder_name, build_number, good_revision, bad_revision,
+        compile_targets)
     compile_result = yield MonitorTryJobPipeline(
         master_name, builder_name, build_number, try_job_id)
     yield IdentifyTryJobCulpritPipeline(

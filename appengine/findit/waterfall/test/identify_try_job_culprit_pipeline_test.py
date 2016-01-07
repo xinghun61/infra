@@ -15,6 +15,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
 
   def _MockGetChangeLog(self, revision):
     class MockedChangeLog(object):
+
       def __init__(self, commit_position, code_review_url):
         self.commit_position = commit_position
         self.code_review_url = code_review_url

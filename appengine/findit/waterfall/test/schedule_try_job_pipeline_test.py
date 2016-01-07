@@ -6,11 +6,12 @@ from testing_utils import testing
 
 from common import buildbucket_client
 from model.wf_try_job import WfTryJob
-from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 from waterfall import waterfall_config
+from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 
 
 class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
+
   def _Mock_GetTrybotForWaterfallBuilder(self, *_):
     def Mocked_GetTrybotForWaterfallBuilder(*_):
       return 'linux_chromium_variable', 'master.tryserver.chromium.linux'
@@ -30,6 +31,26 @@ class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
       return results
     self.mock(buildbucket_client, 'TriggerTryJobs', Mocked_TriggerTryJobs)
 
+  def testGetBuildPropertiesWithCompileTargets(self):
+    master_name = 'm'
+    builder_name = 'b'
+    recipe = 'a/b/recipe'
+    compile_targets = ['a.exe']
+
+    expected_properties = {
+        'recipe': recipe,
+        'good_revision': 1,
+        'bad_revision': 2,
+        'target_mastername': master_name,
+        'target_buildername': 'b',
+        'compile_targets': compile_targets
+    }
+    try_job_pipeline = ScheduleTryJobPipeline()
+    properties = try_job_pipeline._getBuildProperties(
+        recipe, master_name, builder_name, 1, 2, compile_targets)
+
+    self.assertEqual(properties, expected_properties)
+
   def testSuccessfullyScheduleNewTryJobForCompile(self):
     master_name = 'm'
     builder_name = 'b'
@@ -39,11 +60,11 @@ class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
 
     responses = [
         {
-          'build': {
-              'id': '1',
-              'url': 'url',
-              'status': 'SCHEDULED',
-          }
+            'build': {
+                'id': '1',
+                'url': 'url',
+                'status': 'SCHEDULED',
+            }
         }
     ]
     self._Mock_GetTrybotForWaterfallBuilder(master_name, builder_name)
@@ -53,7 +74,8 @@ class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
 
     try_job_pipeline = ScheduleTryJobPipeline()
     try_job_id = try_job_pipeline.run(
-        master_name, builder_name, build_number, good_revision, bad_revision)
+        master_name, builder_name, build_number, good_revision, bad_revision,
+        [])
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual('1', try_job_id)

@@ -8,8 +8,8 @@ from common import buildbucket_client
 from model import wf_analysis_status
 from model.wf_try_job import WfTryJob
 from pipeline_wrapper import pipeline_handlers
-from waterfall.try_job_pipeline import TryJobPipeline
 from waterfall import waterfall_config
+from waterfall.try_job_pipeline import TryJobPipeline
 
 
 class TryJobPipelineTest(testing.AppengineTestCase):
@@ -74,11 +74,11 @@ class TryJobPipelineTest(testing.AppengineTestCase):
 
     responses = [
         {
-          'build': {
-              'id': '1',
-              'url': 'url',
-              'status': 'SCHEDULED',
-          }
+            'build': {
+                'id': '1',
+                'url': 'url',
+                'status': 'SCHEDULED',
+            }
         }
     ]
     self._Mock_GetTrybotForWaterfallBuilder(master_name, builder_name)
@@ -88,7 +88,8 @@ class TryJobPipelineTest(testing.AppengineTestCase):
     WfTryJob.Create(master_name, builder_name, build_number).put()
 
     root_pipeline = TryJobPipeline(
-        master_name, builder_name, build_number, good_revision, bad_revision)
+        master_name, builder_name, build_number, good_revision, bad_revision,
+        [])
     root_pipeline.start()
     self.execute_queued_tasks()
 
@@ -114,7 +115,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
     WfTryJob.Create(master_name, builder_name, build_number).put()
 
     root_pipeline = TryJobPipeline(
-        master_name, builder_name, build_number, 'rev1', 'rev2')
+        master_name, builder_name, build_number, 'rev1', 'rev2', [])
     root_pipeline._LogUnexpectedAbort(True)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
@@ -126,7 +127,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
     build_number = 1
 
     root_pipeline = TryJobPipeline(
-        master_name, builder_name, build_number, 'rev1', 'rev2')
+        master_name, builder_name, build_number, 'rev1', 'rev2', [])
     root_pipeline._LogUnexpectedAbort(True)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)

@@ -5,6 +5,7 @@
 from testing_utils import testing
 
 from model import wf_analysis_status
+from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from waterfall import try_job_util
 from waterfall import waterfall_config
@@ -43,29 +44,34 @@ class TryJobUtilTest(testing.AppengineTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
-    failed_steps = {
-        'compile': {
-            'current_failure': 221,
-            'first_failure': 221,
-            'last_pass': 220
-        }
-    }
-    builds = {
-        220: {
-            'blame_list': ['220-1', '220-2'],
-            'chromium_revision': '220-2'
+    failure_info = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failed_steps': {
+            'compile': {
+                'current_failure': 221,
+                'first_failure': 221,
+                'last_pass': 220
+            }
         },
-        221: {
-            'blame_list': ['221-1', '221-2'],
-            'chromium_revision': '221-2'
-        },
-        222: {
-            'blame_list': ['222-1'],
-            'chromium_revision': '222-1'
-        },
-        223: {
-            'blame_list': ['223-1', '223-2', '223-3'],
-            'chromium_revision': '223-3'
+        'builds': {
+            '220': {
+                'blame_list': ['220-1', '220-2'],
+                'chromium_revision': '220-2'
+            },
+            '221': {
+                'blame_list': ['221-1', '221-2'],
+                'chromium_revision': '221-2'
+            },
+            '222': {
+                'blame_list': ['222-1'],
+                'chromium_revision': '222-1'
+            },
+            '223': {
+                'blame_list': ['223-1', '223-2', '223-3'],
+                'chromium_revision': '223-3'
+            }
         }
     }
 
@@ -73,9 +79,7 @@ class TryJobUtilTest(testing.AppengineTestCase):
         try_job_util.try_job_pipeline, 'TryJobPipeline', _MockRootPipeline)
     _MockRootPipeline.STARTED = False
 
-    failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
-        master_name, builder_name, build_number, failed_steps,
-        builds)
+    failure_result_map = try_job_util.ScheduleTryJobIfNeeded(failure_info)
 
     self.assertFalse(_MockRootPipeline.STARTED)
     self.assertEqual({}, failure_result_map)
@@ -84,29 +88,34 @@ class TryJobUtilTest(testing.AppengineTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
-    failed_steps = {
-        'compile': {
-            'current_failure': 223,
-            'first_failure': 221,
-            'last_pass': 220
-        }
-    }
-    builds = {
-        220: {
-            'blame_list': ['220-1', '220-2'],
-            'chromium_revision': '220-2'
+    failure_info = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failed_steps': {
+            'compile': {
+                'current_failure': 223,
+                'first_failure': 221,
+                'last_pass': 220
+            }
         },
-        221: {
-            'blame_list': ['221-1', '221-2'],
-            'chromium_revision': '221-2'
-        },
-        222: {
-            'blame_list': ['222-1'],
-            'chromium_revision': '222-1'
-        },
-        223: {
-            'blame_list': ['223-1', '223-2', '223-3'],
-            'chromium_revision': '223-3'
+        'builds': {
+            '220': {
+                'blame_list': ['220-1', '220-2'],
+                'chromium_revision': '220-2'
+            },
+            '221': {
+                'blame_list': ['221-1', '221-2'],
+                'chromium_revision': '221-2'
+            },
+            '222': {
+                'blame_list': ['222-1'],
+                'chromium_revision': '222-1'
+            },
+            '223': {
+                'blame_list': ['223-1', '223-2', '223-3'],
+                'chromium_revision': '223-3'
+            }
         }
     }
 
@@ -114,9 +123,7 @@ class TryJobUtilTest(testing.AppengineTestCase):
         try_job_util.try_job_pipeline, 'TryJobPipeline', _MockRootPipeline)
     _MockRootPipeline.STARTED = False
 
-    try_job_util.ScheduleTryJobIfNeeded(
-        master_name, builder_name, build_number, failed_steps,
-        builds)
+    try_job_util.ScheduleTryJobIfNeeded(failure_info)
 
     self.assertFalse(_MockRootPipeline.STARTED)
 
@@ -219,21 +226,26 @@ class TryJobUtilTest(testing.AppengineTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
-    failed_steps = {
-        'compile': {
-            'current_failure': 223,
-            'first_failure': 223,
-            'last_pass': 222
-        }
-    }
-    builds = {
-        222: {
-            'blame_list': ['222-1'],
-            'chromium_revision': '222-1'
+    failure_info = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failed_steps': {
+            'compile': {
+                'current_failure': 223,
+                'first_failure': 223,
+                'last_pass': 222
+            }
         },
-        223: {
-            'blame_list': ['223-1', '223-2', '223-3'],
-            'chromium_revision': '223-3'
+        'builds': {
+            '222': {
+                'blame_list': ['222-1'],
+                'chromium_revision': '222-1'
+            },
+            '223': {
+                'blame_list': ['223-1', '223-2', '223-3'],
+                'chromium_revision': '223-3'
+            }
         }
     }
 
@@ -241,11 +253,25 @@ class TryJobUtilTest(testing.AppengineTestCase):
         try_job_util.try_job_pipeline, 'TryJobPipeline', _MockRootPipeline)
     _MockRootPipeline.STARTED = False
 
-    try_job_util.ScheduleTryJobIfNeeded(
-        master_name, builder_name, build_number, failed_steps,
-        builds)
+    try_job_util.ScheduleTryJobIfNeeded(failure_info)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
 
     self.assertTrue(_MockRootPipeline.STARTED)
     self.assertIsNotNone(try_job)
+
+  def testGetFailedTargetsFromSignals(self):
+    self.assertEqual(try_job_util._GetFailedTargetsFromSignals({}), [])
+
+    signals = {
+        'compile': {
+            'failed_targets': [
+                {'target': 'a.exe'},
+                {'source': 'b.cc',
+                 'target': 'b.o'}]
+        }
+    }
+
+    self.assertEqual(
+        try_job_util._GetFailedTargetsFromSignals(signals), ['a.exe'])
+

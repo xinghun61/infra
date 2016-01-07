@@ -16,9 +16,8 @@ from waterfall import waterfall_config
 TRY_JOB_PIPELINE_QUEUE_NAME = 'build-failure-analysis-queue'
 
 
-def _CheckFailureForTryJobKey(
-  master_name, builder_name, build_number,
-  failure_result_map, step_name, failure):
+def _CheckFailureForTryJobKey(master_name, builder_name, build_number,
+                              failure_result_map, step_name, failure):
   """Compares the current_failure and first_failure for each failed_step/test.
 
   If equal, a new try_job needs to start;
@@ -81,8 +80,29 @@ def _NeedANewTryJob(
   return need_new_try_job, failure_result_map, last_pass
 
 
-def ScheduleTryJobIfNeeded(
-    master_name, builder_name, build_number, failed_steps, builds):
+def _GetFailedTargetsFromSignals(signals):
+  compile_targets = []
+
+  if not signals or 'compile' not in signals:
+    return compile_targets
+
+  for source_target in signals['compile']['failed_targets']:
+    # Link failures have only targets but no source. TODO(lijeffrey):
+    # Currently only link failures on linux are supported. Add support for
+    # compile failures and other platforms as well.
+    if not source_target.get('source'):
+      compile_targets.append(source_target.get('target'))
+
+  return compile_targets
+
+
+def ScheduleTryJobIfNeeded(failure_info, signals=None):
+  master_name = failure_info['master_name']
+  builder_name = failure_info['builder_name']
+  build_number = failure_info['build_number']
+  failed_steps = failure_info.get('failed_steps', [])
+  builds = failure_info.get('builds', {})
+
   tryserver_mastername, tryserver_buildername = (
       waterfall_config.GetTrybotForWaterfallBuilder(master_name, builder_name))
   if not tryserver_mastername or not tryserver_buildername:
@@ -93,10 +113,14 @@ def ScheduleTryJobIfNeeded(
       master_name, builder_name, build_number, failed_steps)
 
   if need_new_try_job:
+    compile_targets = _GetFailedTargetsFromSignals(signals)
+
     new_try_job_pipeline = try_job_pipeline.TryJobPipeline(
         master_name, builder_name, build_number,
-        builds[last_pass]['chromium_revision'],
-        builds[build_number]['chromium_revision'])
+        builds[str(last_pass)]['chromium_revision'],
+        builds[str(build_number)]['chromium_revision'],
+        compile_targets)
+
     new_try_job_pipeline.target = (
         '%s.build-failure-analysis' % modules.get_current_version_name())
     new_try_job_pipeline.start(queue_name=TRY_JOB_PIPELINE_QUEUE_NAME)

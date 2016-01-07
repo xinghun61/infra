@@ -17,10 +17,9 @@ from model.wf_build import WfBuild
 from model.wf_step import WfStep
 from pipeline_wrapper import pipeline_handlers
 from waterfall import buildbot
-from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 from waterfall import lock_util
 from waterfall import swarming_util
-from waterfall import try_job_util
+from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 
 
 class DetectFirstFailureTest(testing.AppengineTestCase):
@@ -36,11 +35,6 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
       return True
 
     self.mock(lock_util, 'WaitUntilDownloadAllowed', _WaitUntilDownloadAllowed)
-
-    def Mocked_ScheduleTryJobIfNeeded(*_):
-      pass
-    self.mock(
-        try_job_util, 'ScheduleTryJobIfNeeded', Mocked_ScheduleTryJobIfNeeded)
 
   def _TimeBeforeNowBySeconds(self, seconds):
     return datetime.datetime.utcnow() - datetime.timedelta(0, seconds, 0)
@@ -253,11 +247,11 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
       response = self._GetSwarmingData('build')
 
     cursor_swarming_data = {
-      'cursor': None,
-      'items': [],
-      'state': 'all',
-      'limit': 100,
-      'sort': 'created_ts'
+        'cursor': None,
+        'items': [],
+        'state': 'all',
+        'limit': 100,
+        'sort': 'created_ts'
     }
     cursor_url = ('%s&cursor=thisisacursor') % url
 
@@ -288,7 +282,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     self.mocked_urlfetch.register_handler(
         url, content,
         data=(json.dumps(post_data, sort_keys=True, separators=(',', ':'))
-            if post_data else None))
+              if post_data else None))
 
   def testAnalyzeSwarmingTestResultsInitiateLastPassForTests(self):
     json_data = json.loads(
@@ -313,12 +307,12 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
         'first_failure': 221,
         'tests': {
             'Unittest2.Subtest1': {
-              'current_failure': 223,
-              'first_failure': 223
+                'current_failure': 223,
+                'first_failure': 223
             },
             'Unittest3.Subtest2': {
-              'current_failure': 223,
-              'first_failure': 223,
+                'current_failure': 223,
+                'first_failure': 223,
             }
         }
     }
@@ -514,14 +508,14 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
             ],
             'tests': {
                 'Unittest2.Subtest1': {
-                  'current_failure': 223,
-                  'first_failure': 222,
-                  'last_pass': 221
+                    'current_failure': 223,
+                    'first_failure': 222,
+                    'last_pass': 221
                 },
                 'Unittest3.Subtest2': {
-                  'current_failure': 223,
-                  'first_failure': 222,
-                  'last_pass': 221
+                    'current_failure': 223,
+                    'first_failure': 222,
+                    'last_pass': 221
                 }
             }
         }
@@ -637,14 +631,14 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
             ],
             'tests': {
                 'Unittest2.Subtest1': {
-                  'current_failure': 223,
-                  'first_failure': 222,
-                  'last_pass': 221
+                    'current_failure': 223,
+                    'first_failure': 222,
+                    'last_pass': 221
                 },
                 'Unittest3.Subtest2': {
-                  'current_failure': 223,
-                  'first_failure': 222,
-                  'last_pass': 221
+                    'current_failure': 223,
+                    'first_failure': 222,
+                    'last_pass': 221
                 }
             }
         }
@@ -660,7 +654,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
               'MxLmNjOjU2NzogRmFpbHVyZVxuRVJST1I6WzJdOiAyNTk0NzM1MDAwIGJvZ28tb'
               'Wljcm9zZWNvbmRzXG5FUlJPUjp4X3Rlc3QuY2M6MTIzNAphL2IvdTJzMS5jYzo1'
               'Njc6IEZhaWx1cmUK", '
-             '"Unittest3.Subtest2": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="}'),
+              '"Unittest3.Subtest2": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="}'),
         221: '{"Unittest3.Subtest3": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="}'
     }
 

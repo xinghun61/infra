@@ -10,14 +10,16 @@ import logging
 from google.appengine.api.urlfetch import ResponseTooLargeError
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
+from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
 from pipeline_wrapper import BasePipeline
 from pipeline_wrapper import pipeline
 from waterfall import buildbot
 from waterfall import extractors
 from waterfall import lock_util
-from waterfall.failure_signal import FailureSignal
+from waterfall import try_job_util
 from waterfall import waterfall_config
+from waterfall.failure_signal import FailureSignal
 
 
 class ExtractSignalPipeline(BasePipeline):
@@ -114,6 +116,7 @@ class ExtractSignalPipeline(BasePipeline):
     master_name = failure_info['master_name']
     builder_name = failure_info['builder_name']
     build_number = failure_info['build_number']
+
     for step_name in failure_info.get('failed_steps', []):
       if not waterfall_config.StepIsSupportedForMaster(step_name, master_name):
         # Bail out if the step is not supported.
@@ -186,5 +189,13 @@ class ExtractSignalPipeline(BasePipeline):
       else:
         signals[step_name] = extractors.ExtractSignal(
             master_name, builder_name, step_name, None, failure_log).ToDict()
+
+    # Starts a new try_job if needed.
+    failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
+        failure_info, signals)
+
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    analysis.failure_result_map = failure_result_map
+    analysis.put()
 
     return signals

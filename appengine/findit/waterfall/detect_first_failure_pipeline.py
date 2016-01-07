@@ -8,12 +8,11 @@ import json
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
-from pipeline_wrapper import pipeline
 from pipeline_wrapper import BasePipeline
-from waterfall import buildbot
+from pipeline_wrapper import pipeline
 from waterfall import build_util
+from waterfall import buildbot
 from waterfall import swarming_util
-from waterfall import try_job_util
 
 
 _MAX_BUILDS_TO_CHECK = 20
@@ -52,7 +51,8 @@ class DetectFirstFailurePipeline(BasePipeline):
     return build_info
 
   def _SaveBlamelistAndChromiumRevisionIntoDict(self, build_info, builds):
-    """
+    """Saves blame list and chromium revision info for each build.
+
     Args:
       build_info (BuildInfo): a BuildInfo instance which contains blame list and
           chromium revision.
@@ -197,7 +197,7 @@ class DetectFirstFailurePipeline(BasePipeline):
           failed_test_log[test_name] = ''
           for test in iteration[test_name]:
             failed_test_log[test_name] = self._ConcatenateTestLog(
-              failed_test_log[test_name], test['output_snippet_base64'])
+                failed_test_log[test_name], test['output_snippet_base64'])
 
     step.log_data = json.dumps(failed_test_log) if failed_test_log else 'flaky'
     step.put()
@@ -281,7 +281,7 @@ class DetectFirstFailurePipeline(BasePipeline):
 
     if ((not failed_step.get('last_pass') and earliest_test_last_pass >= 0) or
         (failed_step.get('last_pass') and
-        earliest_test_last_pass > failed_step['last_pass'])):
+         earliest_test_last_pass > failed_step['last_pass'])):
       failed_step['last_pass'] = earliest_test_last_pass
 
   def _UpdateFirstFailureOnTestLevel(
@@ -366,7 +366,6 @@ class DetectFirstFailurePipeline(BasePipeline):
 
     self._UpdateFailureInfoBuilds(failed_steps, builds)
 
-
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number):
     """
@@ -449,13 +448,8 @@ class DetectFirstFailurePipeline(BasePipeline):
     failure_info['builds'] = builds
     failure_info['failed_steps'] = failed_steps
 
-    # Starts a new try_job if needed.
-    failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
-        master_name, builder_name, build_number, failed_steps, builds)
-
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.not_passed_steps = build_info.not_passed_steps
-    analysis.failure_result_map = failure_result_map
     analysis.put()
 
     return failure_info

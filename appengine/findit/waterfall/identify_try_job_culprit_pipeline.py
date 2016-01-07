@@ -18,9 +18,9 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
       compile_result):
     culprit = None
 
-    if compile_result and compile_result['result']:
-      # For compile failure, try job will stop if one revision fails,
-      # so culprit will be the last in the result.
+    if compile_result and len(compile_result.get('result', [])) > 0:
+      # For compile failures, the try job will stop if one revision fails, so
+      # the culprit will be the last revision in the result.
       result_for_last_checked_revision = compile_result['result'][-1]
       failed_revision = (
           result_for_last_checked_revision[0] if
