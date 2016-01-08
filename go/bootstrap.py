@@ -114,7 +114,6 @@ GAE_HACK_PKGS = frozenset(('appengine_internal/init',))
 VENDORED_TOOLS = [
   'github.com/golang/lint/golint',
   'github.com/golang/protobuf/protoc-gen-go',
-  'github.com/google/google-api-go-client/google-api-go-generator',
   'github.com/kisielk/errcheck',
   'github.com/maruel/panicparse/cmd/pp',
   'github.com/maruel/pre-commit-go/cmd/covg',
@@ -128,6 +127,7 @@ VENDORED_TOOLS = [
   'golang.org/x/tools/cmd/gorename',
   'golang.org/x/tools/cmd/oracle',
   'golang.org/x/tools/cmd/stringer',
+  'google.golang.org/api/google-api-go-generator',
   'google.golang.org/appengine/cmd/aedeploy',
 ]
 
