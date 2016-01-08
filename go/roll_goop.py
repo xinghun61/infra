@@ -25,7 +25,9 @@ GO_DIR = os.path.dirname(os.path.abspath(__file__))
 # These packages must not be moved due to breaking changes.
 MUST_BE_PINNED = [
     "github.com/golang/protobuf",  # https://github.com/luci/luci-go/issues/7
-    "google.golang.org/cloud",
+    "google.golang.org/cloud",     # same
+    "github.com/kisielk/errcheck", # requires Go 1.5+, we are stuck on 1.4
+    "golang.org/x/tools",          # same
 ]
 
 
