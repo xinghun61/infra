@@ -1,0 +1,252 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[cipd]\\resources\\bootstrap.py",
+      "--platform",
+      "windows-amd64",
+      "--dest-directory",
+      "[SLAVE_BUILD]\\cipd",
+      "--json-output",
+      "/path/to/tmp/json"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "install cipd",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@cipd instance_id: 40-chars-fake-of-the-package-instance_id@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"executable\": \"[SLAVE_BUILD]\\\\cipd\\\\cipd\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"instance_id\": \"40-chars-fake-of-the-package-instance_id\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport os, sys\nfrom common import chromium_utils\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
+      "[SLAVE_BUILD]\\conda_staging_dir"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "rmtree cleaning staging dir",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import os, sys@@@",
+      "@@@STEP_LOG_LINE@python.inline@from common import chromium_utils@@@",
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@if os.path.exists(sys.argv[1]):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  chromium_utils.RemoveDirectory(sys.argv[1])@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[BUILD]\\scripts\\tools\\pycurl.py",
+      "https://repo.continuum.io/miniconda/Miniconda2-3.18.3-Windows-x86_64.exe",
+      "--outfile",
+      "[TMP_BASE]\\conda_tmp_1\\Miniconda2-3.18.3-Windows-x86_64.exe",
+      "--attempts",
+      "5"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "fetch miniconda installer"
+  },
+  {
+    "cmd": [
+      "[TMP_BASE]\\conda_tmp_1\\Miniconda2-3.18.3-Windows-x86_64.exe",
+      "/InstallationType=JustMe",
+      "/AddToPath=0",
+      "/RegisterPython=0",
+      "/S",
+      "/D=[SLAVE_BUILD]\\conda_staging_dir"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "env": {
+      "PYTHONPATH": ""
+    },
+    "name": "install miniconda"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport os, sys\nfrom common import chromium_utils\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
+      "[TMP_BASE]\\conda_tmp_1"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "rmtree remove miniconda installer",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import os, sys@@@",
+      "@@@STEP_LOG_LINE@python.inline@from common import chromium_utils@@@",
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@if os.path.exists(sys.argv[1]):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  chromium_utils.RemoveDirectory(sys.argv[1])@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]\\conda_staging_dir\\Scripts\\conda.exe",
+      "install",
+      "matplotlib",
+      "--yes"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "env": {
+      "PYTHONPATH": null
+    },
+    "name": "conda install matplotlib"
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]\\conda_staging_dir\\Scripts\\conda.exe",
+      "install",
+      "numpy",
+      "--yes"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "env": {
+      "PYTHONPATH": null
+    },
+    "name": "conda install numpy"
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]\\conda_staging_dir\\Scripts\\conda.exe",
+      "install",
+      "scipy",
+      "--yes"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "env": {
+      "PYTHONPATH": null
+    },
+    "name": "conda install scipy"
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]\\conda_staging_dir\\Scripts\\conda.exe",
+      "clean",
+      "--tarballs",
+      "--index-cache",
+      "--packages",
+      "--yes"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "env": {
+      "PYTHONPATH": null
+    },
+    "name": "conda clean --tarballs --index-cache --packages"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[conda]\\resources\\butcher_conda.py",
+      "[SLAVE_BUILD]\\conda_staging_dir"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "make conda env location independent"
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]\\cipd\\cipd",
+      "pkg-build",
+      "--in",
+      "[SLAVE_BUILD]\\conda_staging_dir",
+      "--name",
+      "infra/conda_python/scientific/windows-amd64",
+      "--out",
+      "[SLAVE_BUILD]\\conda_python.cipd",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--install-mode",
+      "copy"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "build windows-amd64",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/conda_python/scientific/windows-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]\\cipd\\cipd",
+      "pkg-register",
+      "[SLAVE_BUILD]\\conda_python.cipd",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--service-account-json",
+      "C:\\creds\\service_accounts\\service-account-cipd-builder.json",
+      "--ref",
+      "latest",
+      "--tag",
+      "buildbot_build:chromium.testing.master/TestBuilder/571",
+      "--tag",
+      "conda:Miniconda2-3-18-3"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "register infra/conda_python/scientific/windows-amd64",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/conda_python/scientific/windows-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport os\nimport sys\nos.remove(sys.argv[1])\n",
+      "[SLAVE_BUILD]\\conda_python.cipd"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "remove *.cipd file",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import os@@@",
+      "@@@STEP_LOG_LINE@python.inline@import sys@@@",
+      "@@@STEP_LOG_LINE@python.inline@os.remove(sys.argv[1])@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport os, sys\nfrom common import chromium_utils\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
+      "[SLAVE_BUILD]\\conda_staging_dir"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "rmtree removing conda",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import os, sys@@@",
+      "@@@STEP_LOG_LINE@python.inline@from common import chromium_utils@@@",
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@if os.path.exists(sys.argv[1]):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  chromium_utils.RemoveDirectory(sys.argv[1])@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]
