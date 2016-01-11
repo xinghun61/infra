@@ -23,6 +23,10 @@ cron:
   url: /cron/update_issue_tracker
   schedule: every 30 minutes
 
+- description: Update issues for flaky tests/steps that are stale.
+  url: /cron/update_stale_issues
+  schedule: every 12 hours
+
 - description: Send ts_mon metrics
   url: /internal/cron/ts_mon/send
   schedule: every 1 minutes
