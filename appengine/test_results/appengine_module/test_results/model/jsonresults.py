@@ -265,6 +265,16 @@ class JsonResults(object):
         results = [[1, NO_DATA]]
         times = [[1, 0]]
 
+      # Check that the test data is present and reset it if either results or
+      # times are missing. This shouldn't happen but it has at least once.
+      # See crbug.com/573343.
+      if TIMES_KEY not in aggregated_test or RESULTS_KEY not in aggregated_test:
+        aggregated_json[test_name] = {
+            RESULTS_KEY: results,
+            TIMES_KEY: times,
+        }
+        continue
+
       cls._insert_item_run_length_encoded(
           results, aggregated_test[RESULTS_KEY], num_runs)
       cls._insert_item_run_length_encoded(
