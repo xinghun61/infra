@@ -51,6 +51,8 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
       "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
       "fetch"
     ],
@@ -59,6 +61,8 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
       "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
       "simulation_test"
     ],

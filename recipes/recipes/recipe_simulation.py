@@ -8,7 +8,7 @@ DEPS = [
   'gclient',
   'recipe_engine/path',
   'recipe_engine/properties',
-  'recipe_engine/step',
+  'recipe_engine/python',
 ]
 
 
@@ -16,8 +16,8 @@ def RunSteps(api):
   api.gclient.set_config('build')
   api.bot_update.ensure_checkout(force=True)
   recipes_py = api.path['checkout'].join('scripts', 'slave', 'recipes.py')
-  api.step('recipe fetch deps', [recipes_py, 'fetch'])
-  api.step('recipe simulation test', [recipes_py, 'simulation_test'])
+  api.python('recipe fetch deps', recipes_py, ['fetch'])
+  api.python('recipe simulation test', recipes_py, ['simulation_test'])
 
 
 def GenTests(api):
