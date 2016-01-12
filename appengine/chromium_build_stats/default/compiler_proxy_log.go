@@ -78,6 +78,10 @@ var (
  <tr><td>{{$i}} <td>{{$d}}
 {{end}}
 </table>
+
+<h2>Compiler Proxy Histogram</h2>
+<pre>{{.CompilerProxyLog.Histogram}}</pre>
+
 </body>
 </html>
 `))

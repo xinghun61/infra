@@ -14,15 +14,16 @@ import (
 )
 
 var (
-	gomaRevisionRE = regexp.MustCompile(`.*goma built revision (.*)`)
-	gomaVersionRE  = regexp.MustCompile(`.*goma version:(.*)`)
-	gomaFlagsRE    = regexp.MustCompile(`.*goma flags:(.*)`)
-	gomaLimitsRE   = regexp.MustCompile(`.*(max incoming:.*)`)
-	crashDumpRE    = regexp.MustCompile(`.* Crash Dump (.*)`)
-	dumpStatsRE    = regexp.MustCompile(`.* Dumping stats...(.*)`)
-	taskRE         = regexp.MustCompile(`Task:(\d+) (.*)`)
-	startRE        = regexp.MustCompile(`Start (.*)`)
-	replyRE        = regexp.MustCompile(`ReplyResponse: (.*)`)
+	gomaRevisionRE  = regexp.MustCompile(`.*goma built revision (.*)`)
+	gomaVersionRE   = regexp.MustCompile(`.*goma version:(.*)`)
+	gomaFlagsRE     = regexp.MustCompile(`.*goma flags:(.*)`)
+	gomaLimitsRE    = regexp.MustCompile(`.*(max incoming:.*)`)
+	crashDumpRE     = regexp.MustCompile(`.* Crash Dump (.*)`)
+	dumpStatsRE     = regexp.MustCompile(`.* Dumping stats...(.*)`)
+	dumpHistogramRE = regexp.MustCompile(`.* Dumping histogram...(.*)`)
+	taskRE          = regexp.MustCompile(`Task:(\d+) (.*)`)
+	startRE         = regexp.MustCompile(`Start (.*)`)
+	replyRE         = regexp.MustCompile(`ReplyResponse: (.*)`)
 )
 
 // CompileMode is mode of compilation.
@@ -237,6 +238,9 @@ type CompilerProxyLog struct {
 	// Stats is compiler_proxy stats.
 	Stats string
 
+	// Histogram is compiler_proxy histogram.
+	Histogram string
+
 	// tasks is a map of TaskLogs by task id.
 	tasks map[string]*TaskLog
 }
@@ -254,14 +258,17 @@ func Parse(fname string, rd io.Reader) (*CompilerProxyLog, error) {
 	cpl.Created = gp.Created
 	cpl.Machine = gp.Machine
 
-	parseSpecial := func(field *string, re *regexp.Regexp) func([]string) bool {
+	parseSpecial := func(field *string, re *regexp.Regexp, skipFirstLine bool) func([]string) bool {
 		return func(logtext []string) bool {
 			if *field != "" {
 				return false
 			}
 			m := re.FindStringSubmatch(logtext[0])
 			if m != nil {
-				lines := []string{m[1]}
+				var lines []string
+				if !skipFirstLine {
+					lines = []string{m[1]}
+				}
 				lines = append(lines, logtext[1:]...)
 				*field = strings.Join(lines, "\n")
 				return true
@@ -270,12 +277,13 @@ func Parse(fname string, rd io.Reader) (*CompilerProxyLog, error) {
 		}
 	}
 	parseSpecials := []func([]string) bool{
-		parseSpecial(&cpl.GomaRevision, gomaRevisionRE),
-		parseSpecial(&cpl.GomaVersion, gomaVersionRE),
-		parseSpecial(&cpl.GomaFlags, gomaFlagsRE),
-		parseSpecial(&cpl.GomaLimits, gomaLimitsRE),
-		parseSpecial(&cpl.CrashDump, crashDumpRE),
-		parseSpecial(&cpl.Stats, dumpStatsRE),
+		parseSpecial(&cpl.GomaRevision, gomaRevisionRE, false),
+		parseSpecial(&cpl.GomaVersion, gomaVersionRE, false),
+		parseSpecial(&cpl.GomaFlags, gomaFlagsRE, false),
+		parseSpecial(&cpl.GomaLimits, gomaLimitsRE, false),
+		parseSpecial(&cpl.CrashDump, crashDumpRE, false),
+		parseSpecial(&cpl.Stats, dumpStatsRE, true),
+		parseSpecial(&cpl.Histogram, dumpHistogramRE, true),
 	}
 Lines:
 	for gp.Next() {

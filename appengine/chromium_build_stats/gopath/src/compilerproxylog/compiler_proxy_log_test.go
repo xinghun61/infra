@@ -64,8 +64,21 @@ I0911 17:44:18.263380  5788 compile_task.cc:1741] Task:2 finished aborted in cal
 I0911 17:44:18.263375  5787 compile_task.cc:1741] Task:1 finished aborted in call exec state=CALL_EXEC abort=1
 I0911 17:44:18.263375  5796 compile_task.cc:1741] Task:6 finished aborted in call exec state=CALL_EXEC abort=1
 I0911 17:44:18.264058  5790 compile_task.cc:1741] Task:3 finished aborted in call exec state=CALL_EXEC abort=1
-`
+I0911 17:44:56.478301 14018 compiler_proxy.cc:1375] Dumping stats...
+request: total=0 success=0 failure=0
+I0911 17:44:56.478324 14018 worker_thread_manager.cc:339] thread[140693330720512]  tick=17 idle: 0 descriptors: poll_interval=500: PriLow[0 pendings  q=0 w=0] PriMed[0 pendings  q=0 w=6.9e-05] PriHigh[0 pendings  q=0 w=0] PriImmediate[0 pendings  q=0 w=0] : delayed=0: periodic=0
+I0911 17:44:56.480223 14018 compiler_proxy.cc:1383] Dumping histogram...
+ThreadpoolHttpServerRequestSize:  Basic stats: count: 4 min: 124 max: 232 mean: 178 stddev: 53
+[ 64-128]: ##################################################2
+[128-256]: ##################################################2
 
+ThreadpoolHttpServerResponseSize:  Basic stats: count: 4 min: 21 max: 96 mean: 69 stddev: 28
+[16- 32]: ################1
+[32- 64]:
+[64-128]: ##################################################3
+I1124 14:32:56.480244 14018 compiler_proxy.cc:1391] Dumping serverz...
+Frontend / Count
+`
 	cpl, err := Parse("compiler_proxy.INFO", strings.NewReader(logcontent))
 	if err != nil {
 		t.Fatalf(`Parse("compiler_proxy.INFO")=%v, %v; want=_, <nil>`, cpl, err)
@@ -99,6 +112,19 @@ GOMA_USE_SSL=true`; got != want {
 	}
 	if got, want := cpl.CrashDump, ""; got != want {
 		t.Errorf("cpl.CrashDump=%q, want=%q", got, want)
+	}
+	if got, want := cpl.Stats, "request: total=0 success=0 failure=0"; got != want {
+		t.Errorf("cpl.Stats=%q, want=%q", got, want)
+	}
+	if got, want := cpl.Histogram, `ThreadpoolHttpServerRequestSize:  Basic stats: count: 4 min: 124 max: 232 mean: 178 stddev: 53
+[ 64-128]: ##################################################2
+[128-256]: ##################################################2
+
+ThreadpoolHttpServerResponseSize:  Basic stats: count: 4 min: 21 max: 96 mean: 69 stddev: 28
+[16- 32]: ################1
+[32- 64]:
+[64-128]: ##################################################3`; got != want {
+		t.Errorf("cpl.Histogram=%q, want=%q", got, want)
 	}
 
 	wants := map[string]struct {
