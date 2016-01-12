@@ -108,6 +108,7 @@ class CompileStepExtractor(Extractor):
   """For compile step, extracts files and identifies failed targets."""
   FAILURE_START_LINE_PREFIX = 'FAILED: '
   FAILURE_WITH_ERROR_PATTERN = re.compile(r'FAILED with \d+:')
+  LINUX_BUILD_COMMAND_PATTERN = re.compile(r'gomacc|clang\+\+')
   LINUX_FAILED_SOURCE_TARGET_PATTERN = re.compile(
       r'(?:-c ([^\s-]+))? -o ([^\s-]+)')
   WINDOWS_FAILED_SOURCE_TARGET_PATTERN = re.compile(
@@ -126,7 +127,17 @@ class CompileStepExtractor(Extractor):
     match = self.LINUX_FAILED_SOURCE_TARGET_PATTERN.search(line)
 
     if match:
-      # Try parsing the failure line as a linux build.
+      # For non-windows builds, build lines should contain either gomacc or
+      # clang++, so only search forbsource/target files after the call to
+      # gomacc/clang++ to avoid extracting false positives in the failure line.
+      build_line_match = self.LINUX_BUILD_COMMAND_PATTERN.search(line)
+      if not build_line_match:
+        return
+
+      # Only begin extracting the targets starting from the index of gomacc or
+      # clang++ showing up in the line.
+      start = build_line_match.start()
+      match = self.LINUX_FAILED_SOURCE_TARGET_PATTERN.search(line[start:])
       source_file = match.group(1)
       target = match.group(2)
 

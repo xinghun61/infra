@@ -325,6 +325,9 @@ Note:You can safely ignore the above warning unless this call should not happen.
         FAILED: /b/build/goma/gomacc ... -c ../../a/b/x.cc -o obj/a/b/x.o
         ../../a/b/e.cc:79:44: error: no member 'kEnableExtensionInfoDialog' ...
         blabla...
+        FAILED: blabla -o not_this blabla gomacc ... -o target.exe
+        blabla...
+        FAILED: blabla -o not_this blabla -c not_this.cc -o not_this.o
         ninja: build stopped: subcommand failed.
 
         /b/build/goma/goma_ctl.sh stat
@@ -345,6 +348,9 @@ Note:You can safely ignore the above warning unless this call should not happen.
                 'source': '../../a/b/x.cc',
                 'target': 'obj/a/b/x.o',
             },
+            {
+                'target': 'target.exe'
+            }
         ]
     }
 
@@ -357,7 +363,7 @@ Note:You can safely ignore the above warning unless this call should not happen.
         FAILED: blabla
         blabla
         1 error generated.
-        FAILED with 1: blabla -c a/b.cc -o c/d.o blabla
+        FAILED with 1: blabla gomacc -c a/b.cc -o c/d.o blabla
         blabla
         Error: FAILED with 1: blabla
         ninja: build stopped: subcommand failed.
@@ -379,7 +385,7 @@ Note:You can safely ignore the above warning unless this call should not happen.
   def testCompileStepExtractorExtractFailedLinkTargetsLinux(self):
     failure_log = textwrap.dedent("""
         [5430/5600] blabla
-        FAILED: python blabla -o a/b.nexe blabla
+        FAILED: python blabla clang++ -o a/b.nexe blabla
         blabla
         blabla.Error: FAILED with blabla
         ninja: build stopped: subcommand failed.""")
