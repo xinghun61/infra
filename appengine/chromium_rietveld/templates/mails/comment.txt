@@ -1,5 +1,5 @@
-{%if message%}{{message|wordwrap:"80"}}
+{%autoescape off%}{%if message%}{{message|wordwrap:"80"}}
 
 {%endif%}{%if details%}{{details|wordwrap:"72"}}
 
-{%endif%}{{url}}
+{%endif%}{{url}}{%endautoescape%}
