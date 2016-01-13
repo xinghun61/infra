@@ -63,7 +63,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/build/scripts/slave/unittest/recipe_simulation_test.py",
+      "[SLAVE_BUILD]/build/scripts/slave/unittests/recipe_simulation_test.py",
       "test"
     ],
     "cwd": "[SLAVE_BUILD]",

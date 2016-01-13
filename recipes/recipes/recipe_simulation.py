@@ -21,7 +21,7 @@ def RunSteps(api):
   # coverage module (http://crbug.com/577049).
   # api.python('recipe simulation test', recipes_py, ['simulation_test'])
   recipe_simulation_test = api.path['checkout'].join(
-      'scripts', 'slave', 'unittest', 'recipe_simulation_test.py')
+      'scripts', 'slave', 'unittests', 'recipe_simulation_test.py')
   api.python('recipe simulation test', recipe_simulation_test, ['test'])
 
 
