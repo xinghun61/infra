@@ -109,8 +109,14 @@ class CompileStepExtractor(Extractor):
   FAILURE_START_LINE_PREFIX = 'FAILED: '
   FAILURE_WITH_ERROR_PATTERN = re.compile(r'FAILED with \d+:')
   LINUX_BUILD_COMMAND_PATTERN = re.compile(r'gomacc|clang\+\+')
+
+  # TODO(lijeffrey): In some cases on mac, the target may have quotes wrapped
+  # around the target, i.e. "Chromium Framework" and we will need to determine
+  # whether or not the quotes should be included. If so, then this todo/comment
+  # can be removed, but if not then we want to replace the target group with
+  # ("([^"]+)"|([^\s-]+)) instead.
   LINUX_FAILED_SOURCE_TARGET_PATTERN = re.compile(
-      r'(?:-c ([^\s-]+))? -o ([^\s-]+)')
+      r'(?:-c ([^\s-]+))? -o (("[^"]+")|([^\s-]+))')
   WINDOWS_FAILED_SOURCE_TARGET_PATTERN = re.compile(
       r'/c ([^\s-]+)\s+/Fo([^\s-]+)')
   WINDOWS_LINK_FAILURE_PATTERN = re.compile(r'/OUT:([^\s-]+)')
@@ -128,7 +134,7 @@ class CompileStepExtractor(Extractor):
 
     if match:
       # For non-windows builds, build lines should contain either gomacc or
-      # clang++, so only search forbsource/target files after the call to
+      # clang++, so only search for source/target files after the call to
       # gomacc/clang++ to avoid extracting false positives in the failure line.
       build_line_match = self.LINUX_BUILD_COMMAND_PATTERN.search(line)
       if not build_line_match:

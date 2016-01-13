@@ -388,6 +388,7 @@ Note:You can safely ignore the above warning unless this call should not happen.
         FAILED: python blabla clang++ -o a/b.nexe blabla
         blabla
         blabla.Error: FAILED with blabla
+        FAILED: blabla gomacc -o "target with spaces and quotes" blabla
         ninja: build stopped: subcommand failed.""")
     expected_signal_json = {
         'files': {},
@@ -395,6 +396,9 @@ Note:You can safely ignore the above warning unless this call should not happen.
         'failed_targets': [
             {
                 'target': 'a/b.nexe'
+            },
+            {
+                'target': '"target with spaces and quotes"'
             }
         ]
     }
