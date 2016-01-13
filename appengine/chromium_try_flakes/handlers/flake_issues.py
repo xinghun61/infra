@@ -51,6 +51,7 @@ BACK_TO_SHERIFF_MESSAGE = (
 VERY_STALE_FLAKES_MESSAGE = (
     'Reporting to stale-flakes-reports@google.com to investigate why this '
     'issue is not being processed by Sheriffs.')
+STALE_FLAKES_ML = 'stale-flakes-reports@google.com'
 
 
 
@@ -266,7 +267,8 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
 
     # Report to stale-flakes-reports@ if the issue has no updates for 7 days.
     week_ago = now - datetime.timedelta(days=7)
-    if last_third_party_update < week_ago:
-      flake_issue.cc.append('stale-flakes-reports@google.com')
-      logging.info('Reporting issue %s to stale-flakes-reports', flake_issue.id)
+    if (last_third_party_update < week_ago and
+        STALE_FLAKES_ML not in flake_issue.cc):
+      flake_issue.cc.append(STALE_FLAKES_ML)
+      logging.info('Reporting issue %s to %s', flake_issue.id, STALE_FLAKES_ML)
       api.update(flake_issue, comment=VERY_STALE_FLAKES_MESSAGE)
