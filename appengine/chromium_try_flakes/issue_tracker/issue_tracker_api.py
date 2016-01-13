@@ -12,10 +12,6 @@ from issue_tracker.comment import Comment
 from oauth2client.appengine import AppAssertionCredentials
 
 
-# The scope needed for the credentials to access the projecthosting api.
-PROJECT_HOSTING_SCOPE = 'https://www.googleapis.com/auth/projecthosting'
-
-
 # TODO(akuegel): Do we want to use a different timeout? Do we want to use a
 # cache? See documentation here:
 # https://github.com/jcgregorio/httplib2/blob/master/python2/httplib2/__init__.py#L1142
@@ -64,17 +60,19 @@ class IssueTrackerAPI(object):  # pragma: no cover
   def __init__(self, project_name, use_monorail):
     self.project_name = project_name
     self.use_monorail = use_monorail
+
     if use_monorail:
-      discovery_url = ('https://monorail-prod.appspot.com/_ah/api/discovery/v1/'
-                       'apis/{api}/{apiVersion}/rest')
+      self.client = _buildClient(
+          'monorail', 'v1',
+          _createHttpObject('https://www.googleapis.com/auth/userinfo.email'),
+          'https://monorail-prod.appspot.com/_ah/api/discovery/v1/apis/{api}/'
+          '{apiVersion}/rest')
     else:
-      discovery_url = ('https://www.googleapis.com/discovery/v1/apis/{api}/'
-                       '{apiVersion}/rest')
-    api_name = 'monorail' if use_monorail else 'projecthosting'
-    api_version = 'v1' if use_monorail else 'v2'
-    self.client = _buildClient(api_name, api_version,
-                               _createHttpObject(PROJECT_HOSTING_SCOPE),
-                               discovery_url)
+      self.client = _buildClient(
+          'projecthosting', 'v2',
+          _createHttpObject('https://www.googleapis.com/auth/projecthosting'),
+          'https://www.googleapis.com/discovery/v1/apis/{api}/{apiVersion}/'
+          'rest')
 
   def _retry_api_call(self, request, num_retries=5):
     retries = 0
