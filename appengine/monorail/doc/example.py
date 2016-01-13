@@ -3,7 +3,6 @@
 
 import apiclient
 import httplib2
-import json
 
 from oauth2client.file import Storage
 
