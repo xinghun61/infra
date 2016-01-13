@@ -22,6 +22,9 @@ For fastest response, please use the provided templates:
 *   [ChromeOS Waterfall Pin Bumps / Restarts]
 *   [General requests]
 
+Also make sure to include the machine name (e.g. build11-m1)
+as well as the waterfall name (Builder: Win).
+
 ## Priority Levels
 
 Priorities are set using the `Pri=N` label. Use the following as your guideline:
