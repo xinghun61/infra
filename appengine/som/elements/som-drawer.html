@@ -1,0 +1,34 @@
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-menu/paper-menu.html">
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<dom-module id="som-drawer">
+  <template>
+    <paper-menu attr-for-selected="value" selected="{{selectedAlertsGroup}}" id="menu">
+      <template is="dom-repeat" items="[[_alertsGroups]]" as="alertsGroup">
+        <paper-item value="[[alertsGroup]]">[[alertsGroup]]</paper-item>
+      </template>
+    </paper-menu>
+  </template>
+  <script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'som-drawer',
+
+      properties: {
+        selectedAlertsGroup: {
+           type: String,
+           value: '',
+           notify: true
+        },
+        _alertsGroups: {
+           type: Array,
+           value: ['chromium', 'blink', 'chromium.perf']
+        }
+      },
+    });
+  })();
+  </script>
+</dom-module>

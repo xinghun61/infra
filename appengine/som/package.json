@@ -1,0 +1,19 @@
+{
+  "name": "som",
+  "version": "1.0.0",
+  "description": "polymer/go sheriff-o-matic skeleton",
+  "main": "index.html",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "polylint": "^2.9.0",
+    "web-component-tester": "^4.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "mocha"
+  },
+  "author": "",
+  "license": "ISC"
+}

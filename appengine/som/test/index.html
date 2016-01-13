@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="../bower_components/webcomponentsjs/webcomponents.min.js"></script>
+<script src="../bower_components/web-component-tester/browser.js"></script>
+<style>
+  body {
+    font-family: sans-serif;
+  }
+</style>
+<script>
+  var testFiles = [];
+  ['som-app-test.html',
+    'som-alert-card-test.html',
+  ].forEach((file) => {
+    testFiles.push(file);
+    testFiles.push(`${file}?dom=shadow`);
+   });
+
+  WCT.loadSuites(testFiles);
+</script>

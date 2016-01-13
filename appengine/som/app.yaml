@@ -1,0 +1,19 @@
+runtime: go
+api_version: go1
+
+handlers:
+- url: /bower_components
+  static_dir: bower_components
+  secure: always
+
+- url: /elements
+  static_dir: elements
+  secure: always
+
+- url: /test
+  static_dir: test
+  secure: always
+
+- url: /.*
+  script: _go_app
+  secure: always

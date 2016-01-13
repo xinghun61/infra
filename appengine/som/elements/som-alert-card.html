@@ -1,0 +1,78 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-icons/hardware-icons.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="som-extension-build-failure.html">
+
+<dom-module id="som-alert-card">
+  <template>
+    <style>
+      paper-card {
+        width: 100%;
+        margin-bottom: 16px;
+      }
+      .link-arrow {
+        float: right;
+      }
+    </style>
+    <paper-card heading="[[alert.title]]">
+      <div class="card-content">
+        <div class="alert-body">[[alert.body]]</div>
+        <div hidden$="[[!_isBuildFailure(alert.type)]]">
+          <som-extension-build-failure extension="[[alert.extension]]"></som-extension-build-failure>
+        </div>
+      </div>
+      <div class="card-actions">
+        <paper-button>Examine</paper-button>
+        <paper-button>Snooze</paper-button>
+        <paper-button>Link Bug</paper-button>
+        <span hidden$="[[!alert.links]]">
+          <paper-icon-button
+              id="toggleLinks"
+              icon="hardware:keyboard-arrow-down"
+              title="Links to more information about this alert"
+              on-tap="_toggleLinks"
+              class="link-arrow">
+          </paper-icon-button>
+          <iron-collapse id="links">
+            <div class="card-links">
+              <ul>
+                 <template is="dom-repeat" items="[[alert.links]]" as="link">
+                   <li><a target="_blank" href$="[[link.href]]">[[link.title]]</a></li>
+                 </template>
+              </ul>
+            </div>
+          </iron-collapse>
+        </span>
+      </div>
+    </paper-card>
+  </template>
+  <script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'som-alert-card',
+
+      properties: {
+        alert: Object,
+      },
+
+      _isBuildFailure: function(type) {
+        return type == 'buildfailure';
+      },
+
+      _toggleLinks: function(evt) {
+        var iconButton = Polymer.dom(evt).localTarget;
+        iconButton.icon = this.$.links.opened ? 'hardware:keyboard-arrow-down'
+            : 'hardware:keyboard-arrow-up';
+        this.$.links.toggle();
+      }
+    });
+  })();
+  </script>
+</dom-module>

@@ -1,0 +1,114 @@
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-icons/hardware-icons.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-page-url/iron-page-url.html">
+<link rel="import" href="../bower_components/paper-drawer-panel/paper-drawer-panel.html">
+<link rel="import" href="../bower_components/paper-header-panel/paper-header-panel.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../elements/som-alert-card.html">
+<link rel="import" href="../elements/som-drawer.html">
+
+<dom-module id="som-app">
+  <template>
+    <style>
+      paper-toolbar {
+        --paper-toolbar-background: black;
+      }
+      .last-updated {
+        font-size: smaller;
+        text-align: right;
+      }
+      #alerts {
+        @apply(--layout-vertical);
+        @apply(--center-justified);
+        max-width: 600px;
+        margin: 0 auto;
+      }
+    </style>
+    <iron-page-url id="url" path="{{_path}}"></iron-page-url>
+    <iron-ajax
+        auto
+        loading="{{_networkActive}}"
+        url="https://sheriff-o-matic-staging.appspot.com/api/v1/alerts/[[_alertsGroup]]"
+        handle-as="json"
+        last-response="{{_alertsJson}}"
+        debounce-duration="300"></iron-ajax>
+    <paper-drawer-panel>
+      <paper-header-panel drawer>
+        <paper-toolbar>
+          <paper-spinner active="[[_networkActive]]"></paper-spinner>
+        </paper-toolbar>
+        <som-drawer id="drawer" selected-alerts-group="{{_alertsGroup}}"></som-drawer>
+      </paper-header-panel>
+      <paper-header-panel main>
+        <paper-toolbar>
+          <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+          <div class="layout horizontal flex">
+            <div class="flex">Sheriff-o-Matic: [[_alertsGroup]]</div>
+            <div class="last-updated">Last updated: [[_lastUpdated]]</div>
+          </div>
+        </paper-toolbar>
+
+        <div id="alerts" class="layout vertical">
+          <template is="dom-repeat" items="[[_alertsJson.alerts]]" as="alert">
+            <som-alert-card alert="[[alert]]"></som-alert-card>
+          </template>
+        </div>
+      </paper-header-panel>
+    </paper-drawer-panel>
+  </template>
+  <script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'som-app',
+
+      attached: function() {
+        this._alertsGroup = this.$.url.path.split('/')[1];
+      },
+
+      properties: {
+        _alertsGroup: {
+          type: String,
+          value: 'chromium',
+          observer: '_handleAlertsGroupChange',
+        },
+        _path: {
+          type: String,
+          value: '/chromium',
+          observer: '_handlePathChange'
+        },
+        _alertsJson: {
+          type: Object,
+          value: function() { return {}; }
+        },
+        _lastUpdated: {
+          type: Date,
+          computed: '_computeLastUpdated(_alertsJson.last_posted)'
+        },
+        _networkActive: {
+          type: Boolean,
+          value: false
+        }
+      },
+
+      _handleAlertsGroupChange: function(newVal) {
+        this._path = '/' + newVal;
+      },
+
+      _handlePathChange: function(newVal) {
+        this._alertsGroup = newVal.split('/')[1];
+      },
+
+      _computeLastUpdated: function(lastPosted) {
+        return new Date(lastPosted * 1000);
+      }
+    });
+  })();
+  </script>
+</dom-module>

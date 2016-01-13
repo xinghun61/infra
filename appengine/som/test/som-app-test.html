@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="../bower_components/webcomponentsjs/webcomponents.min.js"></script>
+<script src="../bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="../bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="../elements/som-app.html">
+<test-fixture id="basic">
+  <template>
+    <som-app></som-app>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('renders bare minimum', function() {
+      element._alertsJson = {
+        alerts:[],
+        last_posted: 0
+      };
+
+      assert.equal(
+          'Last updated: Wed Dec 31 1969 16:00:00 GMT-0800 (PST)',
+          element.$$('.last-updated').textContent);
+    });
+  });
+
+  suite('navigation', function() {
+    var element;
+
+    setup(function() {
+      element = fixture('basic');
+      element._alertsGroup = 'chromium';
+      element.$.drawer.selectedAlertsGroup = 'chromium';
+      element.$.url.path = '/chromium';
+    });
+
+    test('sync iron-page-url to alertsGroup and drawer selection', function() {
+      element.$.url.path = '/chromium.perf';
+      assert.equal('chromium.perf', element._alertsGroup);
+      assert.equal('chromium.perf', element.$.drawer.selectedAlertsGroup);
+    });
+
+    test('sync alertsGroup to iron-page-url and drawer selection', function() {
+      element._alertsGroup = 'blink';
+      assert.equal('/blink', element.$.url.path);
+      assert.equal('blink', element.$.drawer.selectedAlertsGroup);
+    });
+
+    test('sync drawer selection to alertsGroup to iron-page-url', function() {
+      element.$.drawer.selectedAlertsGroup = 'chromium.perf';
+      assert.equal('/chromium.perf', element.$.url.path);
+      assert.equal('chromium.perf', element._alertsGroup);
+    });
+  });
+})();
+</script>

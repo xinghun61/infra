@@ -1,0 +1,141 @@
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-icons/hardware-icons.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-page-url/iron-page-url.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../bower_components/paper-drawer-panel/paper-drawer-panel.html">
+<link rel="import" href="../bower_components/paper-header-panel/paper-header-panel.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-progress/paper-progress.html">
+<link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<dom-module id="som-extension-build-failure">
+  <template>
+    <style>
+      paper-card {
+        width: 100%;
+        margin-bottom: 16px;
+      }
+      #builderToggleArrow,
+      #reasonToggleArrow,
+      #regressionRangeToggleArrow {
+        float: right;
+      }
+	  </style>
+    <div hidden$="[[!extension.builders]]">
+      <paper-item on-tap="_toggleBuilders">
+        Builders ([[extension.builders.length]])
+        <paper-icon-button
+            id="builderToggleArrow"
+            icon="hardware:keyboard-arrow-down"
+            title="Builders">
+      </paper-icon-button>
+      </paper-item>
+    </div>
+    <iron-collapse id="builderList">
+      <template is="dom-repeat" items="[[extension.builders]]" as="builder">
+        <paper-item>
+          <a href="[[builder.url]]">[[builder.name]]</a>:
+              [[builder.first_failure]] - [[builder.latest_failure]]
+        </paper-item>
+      </template>
+    </iron-collapse>
+
+    <div hidden$="[[!extension.reasons]]">
+      <paper-item on-tap="_toggleReasons">
+        Reasons ([[extension.reasons.length]])
+        <paper-icon-button
+            id="reasonToggleArrow"
+            icon="hardware:keyboard-arrow-down"
+            title="Reasons">
+      </paper-icon-button>
+      </paper-item>
+    </div>
+    <iron-collapse id="reasonList">
+      <template is="dom-repeat" items="[[extension.reasons]]" as="reason">
+        <paper-item>
+          <a href$="[[reason.url]]">[[reason.step]]</a>: [[reason.test_name]]
+        </paper-item>
+      </template>
+    </iron-collapse>
+
+    <div hidden$="[[!extension.regression_ranges]]">
+      <paper-item on-tap="_toggleRegressionRanges">
+        Repos with Regression Ranges ([[extension.regression_ranges.length]])
+        <paper-icon-button
+            id="regressionRangeToggleArrow"
+            icon="hardware:keyboard-arrow-down"
+            title="Regression ranges">
+      </paper-icon-button>
+      </paper-item>
+    </div>
+    <iron-collapse id="regressionRangeList">
+      <template is="dom-repeat" items="[[extension.regression_ranges]]" as="regressionRange">
+        <paper-item>
+          <div hidden$="[[!regressionRange.positions.length]]">
+            <paper-item class="layout vertical">
+              [[regressionRange.repo]] Positions
+              <div>
+                <template is="dom-repeat" items="[[regressionRange.positions]]" as="position">
+                  [[position]]<br/>
+                </template>
+              </div>
+            </paper-item>
+          </div>
+          <div hidden$="[[!regressionRange.revisions.length]]">
+            <paper-item class="layout vertical">
+              [[regressionRange.repo]] Revisions
+              <div>
+                <template is="dom-repeat" items="[[regressionRange.revisions]]" as="revision">
+                 <div>[[revision]]</div>
+                </template>
+              </div>
+            </paper-item>
+          </div>
+        </paper-item>
+      </template>
+    </iron-collapse>
+  </template>
+  <script>
+  (function() {
+    'use strict';
+
+     Polymer({
+      is: 'som-extension-build-failure',
+
+      properties: {
+        extension: {
+          type: Object,
+          value: null
+        }
+      },
+
+      _toggleBuilders: function(evt, detail) {
+        this.$.builderToggleArrow.icon =
+            this.$.builderList.opened ? 'hardware:keyboard-arrow-down'
+                : 'hardware:keyboard-arrow-up';
+        this.$.builderList.toggle();
+      },
+
+      _toggleReasons: function(evt, detail) {
+        this.$.reasonToggleArrow =
+            this.$.reasonList.opened ? 'hardware:keyboard-arrow-down'
+                : 'hardware:keyboard-arrow-up';
+        this.$.reasonList.toggle();
+      },
+
+      _toggleRegressionRanges: function(evt, detail) {
+        this.$.regressionRangeToggleArrow.icon =
+            this.$.regressionRangeList.opened ? 'hardware:keyboard-arrow-down'
+                : 'hardware:keyboard-arrow-up';
+        this.$.regressionRangeList.toggle();
+      }
+    });
+  })();
+  </script>
+</dom-module>

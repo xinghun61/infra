@@ -1,0 +1,61 @@
+<meta charset="utf-8">
+<script src="../bower_components/webcomponentsjs/webcomponents.min.js"></script>
+<script src="../bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="../bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="../elements/som-alert-card.html">
+<test-fixture id="basic">
+  <template>
+    <som-alert-card></som-alert-card>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('renders bare minimum', function() {
+      element.alert = {
+        title: 'test title',
+        body: 'test body',
+      };
+      assert.equal(
+          'test title',
+          element.$$('paper-card').heading);
+      assert.equal(
+          'test body',
+          element.$$('.alert-body').textContent);
+    });
+  });
+
+  suite('interaction', function() {
+    var element;
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('open/close links', function() {
+      element.alert = {
+        title: 'test title',
+        body: 'test body',
+        links: [
+          {title: 'link 1', href: 'http://link1'},
+          {title: 'link 2', href: 'http://link2'},
+          {title: 'link 3', href: 'http://link3'},
+        ]
+      };
+      assert.isFalse(element.$.links.opened);
+      MockInteractions.tap(element.$.toggleLinks);
+      assert.isTrue(element.$.links.opened);
+      MockInteractions.tap(element.$.toggleLinks);
+      assert.isFalse(element.$.links.opened);
+    });
+  });
+})();
+</script>
