@@ -3706,8 +3706,25 @@ def make_message(request, issue, message, comments=None, send_mail=False,
           logging.error('Key %s is not valid unicode. value: %r' % (key, value))
           # The content failed to be decoded as utf-8. Enforce it as ASCII.
           context[key] = value.decode('ascii', 'replace')
-    body = django.template.loader.render_to_string(
-      template, context, context_instance=RequestContext(request))
+
+    # Add the template we are wrapping to the context and create text and html
+    # versions of the body.
+    context['wrapped_template'] = template
+    # The text version does not autoescape HTML.
+    text_body = django.template.loader.render_to_string(
+      'mails/text_wrapper.txt', context,
+      context_instance=RequestContext(request))
+
+    # The HTML version adds the following:
+    # * Mark up that enables GMail/Inbox to display a convenient link that
+    #   takes users to the CL directly from the inbox without having to click
+    #   on the email.
+    #   Documentation for this schema.org markup is here:
+    #     https://developers.google.com/gmail/markup/reference/go-to-action
+    # * All HTML in the body is autoescaped.
+    html_body = django.template.loader.render_to_string(
+      'mails/html_wrapper.txt', context,
+      context_instance=RequestContext(request))
 
     # Add +owner, +reviewer, or +cc to addresses based on the role the account
     # plays in the issue and user preferences.
@@ -3732,8 +3749,10 @@ def make_message(request, issue, message, comments=None, send_mail=False,
     send_args = {'sender': sender,
                  'to': [_encode_safely(address) for address in to],
                  'subject': _encode_safely(subject),
-                 'body': _encode_safely(body),
-                 'reply_to': _encode_safely(reply_to)}
+                 'body': _encode_safely(text_body),
+                 'reply_to': _encode_safely(reply_to),
+                 'html': _encode_safely(html_body),
+                }
     if cc:
       send_args['cc'] = [_encode_safely(address) for address in cc]
     if patch:

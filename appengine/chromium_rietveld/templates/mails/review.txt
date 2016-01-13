@@ -1,4 +1,4 @@
-{%autoescape off%}Reviewers: {{reviewer_nicknames}}
+Reviewers: {{reviewer_nicknames}}
 CL: {{url}}
 
 {%if message%}Message:
@@ -16,4 +16,4 @@ Affected files (+{{added_lines}}, -{{removed_lines}} lines):
 {% endfor %}
 {%endif%}{%if patch%}
 {{patch}}
-{%endif%}{%endautoescape%}
+{%endif%}
