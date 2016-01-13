@@ -17,7 +17,12 @@ def RunSteps(api):
   api.bot_update.ensure_checkout(force=True)
   recipes_py = api.path['checkout'].join('scripts', 'slave', 'recipes.py')
   api.python('recipe fetch deps', recipes_py, ['fetch'])
-  api.python('recipe simulation test', recipes_py, ['simulation_test'])
+  # In theory, this should work too. But in practice, this fails to import
+  # coverage module (http://crbug.com/577049).
+  # api.python('recipe simulation test', recipes_py, ['simulation_test'])
+  recipe_simulation_test = api.path['checkout'].join(
+      'scripts', 'slave', 'unittest', 'recipe_simulation_test.py')
+  api.python('recipe simulation test', recipe_simulation_test, ['test'])
 
 
 def GenTests(api):
