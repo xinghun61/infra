@@ -7,9 +7,6 @@ import imp
 import os
 import sys
 
-# Adds itself to sys.path so the packages inside work.
-from . import third_party
-
 # Add the gae_ts_mon/protobuf directory into the path for the google package, so
 # "import google.protobuf" works.
 protobuf_dir = os.path.join(os.path.dirname(__file__), 'protobuf')
