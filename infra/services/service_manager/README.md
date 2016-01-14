@@ -5,6 +5,7 @@ machine.  Any tool runnable by `infra/run.py` can be made into a service
 controlled by `service_manager`.
 
 Services are configured with JSON config files in `/etc/infra-services`.
+or `C:/chrome-infra/service-config` on Windows.
 
 Each config file defines one service.  A service will be started immediately
 when its config file is added to that directory, will be stopped when the config
