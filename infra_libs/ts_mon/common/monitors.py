@@ -9,7 +9,7 @@ import base64
 import json
 import logging
 
-from googleapiclient import discovery
+from apiclient import discovery
 from oauth2client import gce
 from oauth2client.client import GoogleCredentials
 from oauth2client.file import Storage

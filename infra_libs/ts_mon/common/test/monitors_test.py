@@ -82,7 +82,7 @@ class PubSubMonitorTest(unittest.TestCase):
 
   @mock.patch('infra_libs.ts_mon.common.monitors.PubSubMonitor.'
               '_load_credentials', autospec=True)
-  @mock.patch('googleapiclient.discovery.build', autospec=True)
+  @mock.patch('apiclient.discovery.build', autospec=True)
   def test_send(self, _discovery, _load_creds):
     mon = monitors.PubSubMonitor('/path/to/creds.p8.json', 'myproject',
                                  'mytopic')
@@ -111,7 +111,7 @@ class PubSubMonitorTest(unittest.TestCase):
 
   @mock.patch('infra_libs.ts_mon.common.monitors.PubSubMonitor.'
               '_load_credentials', autospec=True)
-  @mock.patch('googleapiclient.discovery.build', autospec=True)
+  @mock.patch('apiclient.discovery.build', autospec=True)
   def test_send_uninitialized(self, discovery, _load_creds):
     """Test initialization retry logic, and also un-instrumented http path."""
     discovery.side_effect = EnvironmentError()  # Fail initialization.
