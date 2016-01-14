@@ -411,7 +411,6 @@ class SubNotify(webapp2.RequestHandler):
 
     txn(build.key)
 
-
   def stop(self, msg, *args, **kwargs):
     """Logs error, responds with HTTP 200 and stops request processing.
 
@@ -446,7 +445,8 @@ class CronUpdateBuilds(webapp2.RequestHandler):
   @ndb.tasklet
   def update_build_async(self, build):
     result = yield _load_task_result_async(
-        build.swarming_hostname, build.swarming_task_id)
+      build.swarming_hostname, build.swarming_task_id,
+      identity=build.created_by)
 
     @ndb.transactional_tasklet
     def txn(build_key):
