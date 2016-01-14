@@ -85,6 +85,31 @@ class GlobalsTest(unittest.TestCase):
     self.assertEqual(1000, data_lengths[0])
     self.assertEqual(1, data_lengths[1])
 
+  def test_send_modifies_metric_values(self):
+    interface.state.global_monitor = stubs.MockMonitor()
+    interface.state.target = stubs.MockTarget()
+
+    # pylint: disable=unused-argument
+    def serialize_to(pb, start_time, fields, value, target):
+      pb.data.add().name = 'foo'
+
+    fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
+    fake_metric.name = 'fake'
+    fake_metric.serialize_to.side_effect = serialize_to
+    interface.register(fake_metric)
+
+    # Setting this will modify store._values in the middle of iteration.
+    delayed_metric = metrics.CounterMetric('foo')
+    def send(proto):
+      delayed_metric.increment_by(1)
+    interface.state.global_monitor.send.side_effect = send
+
+    for i in xrange(1001):
+      interface.state.store.set('fake', ('field', i), 123)
+
+    # Shouldn't raise an exception.
+    interface.flush()
+
   def test_register_unregister(self):
     fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
     self.assertEqual(0, len(interface.state.metrics))

@@ -76,10 +76,9 @@ class Metric(object):
     return self._start_time
 
   def __eq__(self, other):
-    name = self._name == other._name
-    field = self._fields == other._fields
-    instance_type = type(self) == type(other)
-    return name and field and instance_type
+    return (self.name == other.name and
+            self._fields == other._fields and
+            type(self) == type(other))
 
   def unregister(self):
     interface.unregister(self)

@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import collections
+import copy
 import logging
 import threading
 import time
@@ -163,8 +164,13 @@ class InProcessMetricStore(MetricStore):
     return self._entry(name)[1].get(fields, default)
 
   def get_all(self):
+    # Make a copy of the metric values in case another thread (or this
+    # generator's consumer) modifies them while we're iterating.
+    with self._thread_lock:
+      values = copy.copy(self._values)
+
     state = self._state
-    for name, (start_time, fields_values) in self._values.iteritems():
+    for name, (start_time, fields_values) in values.iteritems():
       if name in state.metrics:  # pragma: no cover
         yield state.target, state.metrics[name], start_time, fields_values
 
