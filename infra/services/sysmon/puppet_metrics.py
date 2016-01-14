@@ -4,6 +4,7 @@
 
 import logging
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -31,6 +32,14 @@ def _lastrunfile():  # pragma: no cover
   return '/var/lib/puppet_last_run_summary.yaml'
 
 
+def _is_ccompute():  # pragma: no cover
+  try:
+    return socket.getfqdn().endswith('.c.chromecompute.google.com.internal')
+  except socket.error:
+    logging.exception('getfqdn() call failed, assuming its not ccompute')
+    return False
+
+
 def get_puppet_summary(time_fn=time.time):
   path = _lastrunfile()
 
@@ -43,6 +52,11 @@ def get_puppet_summary(time_fn=time.time):
   except yaml.YAMLError:
     # This is less fine - the file exists but is invalid.
     logging.exception('Failed to read puppet lastrunfile %s', path)
+    return
+
+  # TODO(vadimsh): Puppet on ccompute is not fully working yet. Disable metrics
+  # for now. See crbug.com/449243.
+  if _is_ccompute():
     return
 
   if not isinstance(data, dict):

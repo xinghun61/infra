@@ -26,6 +26,10 @@ class PuppetMetricsTest(unittest.TestCase):
         'infra.services.sysmon.puppet_metrics._lastrunfile').start()
     self.mock_lastrunfile.return_value = self.filename
 
+    self.mock_is_ccompute = mock.patch(
+        'infra.services.sysmon.puppet_metrics._is_ccompute').start()
+    self.mock_is_ccompute.return_value = False
+
   def tearDown(self):
     mock.patch.stopall()
 
@@ -33,6 +37,14 @@ class PuppetMetricsTest(unittest.TestCase):
     shutil.rmtree(self.tempdir)
 
   def test_empty_file(self):
+    puppet_metrics.get_puppet_summary()
+
+    self.assertIs(None, puppet_metrics.config_version.get())
+    self.assertIs(None, puppet_metrics.puppet_version.get())
+
+  def test_skipped_on_ccompute(self):
+    self.mock_is_ccompute.return_value = True
+
     puppet_metrics.get_puppet_summary()
 
     self.assertIs(None, puppet_metrics.config_version.get())
