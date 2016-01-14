@@ -95,13 +95,10 @@ def install_latest_gae_sdk(root_path, fetch_go, dry_run):
   gae_path = os.path.join(root_path, rootdir)
   print('Looking up path %s' % gae_path)
   version = get_gae_sdk_version(gae_path)
-  # TODO(estaab): Revert this after appengine fixes their 403 links.
   if version:
     print('Found installed version %s' % version)
-    return 0
   else:
     print('Didn\'t find an SDK')
-    return 1
 
   url, new_version = get_latest_gae_sdk_url(name)
   print('New version is %s' % new_version)
