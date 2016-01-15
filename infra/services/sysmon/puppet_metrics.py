@@ -5,7 +5,6 @@
 import logging
 import os
 import socket
-import subprocess
 import sys
 import time
 
@@ -18,11 +17,13 @@ if sys.platform == 'win32':  # pragma: no cover
 
 
 config_version = ts_mon.GaugeMetric('puppet/version/config')
-puppet_version = ts_mon.StringMetric('puppet/version/puppet')
+puppet_version = ts_mon.StringMetric(
+  'puppet/version/puppet',
+  description='Version of puppet client installed.')
 events = ts_mon.GaugeMetric('puppet/events')
 resources = ts_mon.GaugeMetric('puppet/resources')
 times = ts_mon.FloatMetric('puppet/times')
-age = ts_mon.FloatMetric('puppet/age')
+age = ts_mon.FloatMetric('puppet/age', description='Time since last run')
 
 
 def _lastrunfile():  # pragma: no cover

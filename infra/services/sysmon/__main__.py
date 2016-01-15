@@ -11,6 +11,7 @@ import time
 import psutil
 
 from infra.libs.service_utils import outer_loop
+from infra.services.sysmon import cipd_metrics
 from infra.services.sysmon import puppet_metrics
 from infra.services.sysmon import root_setup
 from infra.services.sysmon import system_metrics
@@ -45,6 +46,7 @@ class SysMon(outer_loop.Application):
       system_metrics.get_net_info()
       system_metrics.get_proc_info()
       puppet_metrics.get_puppet_summary()
+      cipd_metrics.get_cipd_summary()
     finally:
       ts_mon.flush()
     return True
