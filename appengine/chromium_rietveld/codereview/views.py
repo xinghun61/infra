@@ -2458,7 +2458,6 @@ def _issue_as_dict(issue, messages, request=None):
     'revert_will_skip_checks': revert_will_skip_checks,
     'landed_days_ago': landed_days_ago,
   }
-
   if messages:
     values['messages'] = sorted(
       ({
