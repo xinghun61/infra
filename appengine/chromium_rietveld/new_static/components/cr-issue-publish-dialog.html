@@ -159,7 +159,7 @@ found in the LICENSE file. -->
                 <template if="{{ !issue.closed }}">
                     <template if="{{ !issue.owner.isCurrentUser }}">
                         <button is="cr-button" on-tap="{{ handleLgtm }}">LGTM</button>
-                        <template if="{{ !issue.commit }}">
+                        <template if="{{ !issue.commit && issue.editAllowed }}">
                             <button is="cr-button" on-tap="{{ handleLgtmAndCommit }}">LGTM + CQ</button>
                         </template>
                     </template>

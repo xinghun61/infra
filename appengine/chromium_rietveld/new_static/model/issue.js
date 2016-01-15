@@ -16,6 +16,7 @@ function Issue(id)
     this.messageCount = 0;
     this.draftCount = 0;
     this.owner = null; // User
+    this.editAllowed = false;
     this.offer_cq = true;
     this.private = false;
     this.baseUrl = "";
@@ -109,6 +110,7 @@ Issue.prototype.parseData = function(data)
     this.targetRef = data.target_ref || "";
     this.closed = data.closed || false;
     this.commit = data.commit || false;
+    this.editAllowed = data.is_editor || false;
     this.cqDryRun = data.cq_dry_run || false;
     this.created = Date.utc.create(data.created);
     this.description = data.description || "";

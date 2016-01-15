@@ -2436,6 +2436,7 @@ def _issue_as_dict(issue, messages, request=None):
     'offer_cq': issue.is_cq_available,
     'owner': library.get_nickname(issue.owner, True, request),
     'owner_email': issue.owner.email(),
+    'is_editor': issue.edit_allowed,
     'modified': str(issue.modified),
     'created': str(issue.created),
     'closed': issue.closed,
@@ -2457,6 +2458,7 @@ def _issue_as_dict(issue, messages, request=None):
     'revert_will_skip_checks': revert_will_skip_checks,
     'landed_days_ago': landed_days_ago,
   }
+
   if messages:
     values['messages'] = sorted(
       ({
@@ -3395,7 +3397,8 @@ def publish(request):
   issue.reviewers = reviewers
   issue.required_reviewers = required_reviewers
   issue.cc = cc
-  if form.cleaned_data['commit'] and not issue.closed and issue.is_cq_available:
+  if (form.cleaned_data['commit'] and issue.edit_allowed and not issue.closed
+      and issue.is_cq_available):
     issue.commit = True
     commit_checked_msg = 'The CQ bit was checked by %s' % (
         request.user.email().lower())
