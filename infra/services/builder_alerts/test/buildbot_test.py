@@ -490,6 +490,25 @@ class FetchBuildJsonTest(TestCaseWithDiskCache):
     finally:
       buildbot.fetch_and_cache_build = _real_fetch_and_cache_build
 
+  def test_fetch_from_internal_master(self):
+    # If both the cache and CBE fall through, go straight to the master.
+    # If 'internal' is in the name of the master, use a different base URL.
+    def _mock_fetch_and_cache_build(cache, url, cache_key):
+      if buildbot.CBE_BASE in url:
+        return None
+      if 'master7.golo.chromium.org' in url:  # pragma: no branch
+        return {'Can you hear': 'the thunder'}
+    _real_fetch_and_cache_build = buildbot.fetch_and_cache_build
+
+    try:
+      buildbot.fetch_and_cache_build = _mock_fetch_and_cache_build
+      build, source = buildbot.fetch_build_json(
+          self.cache, 'internal.foo', 'bar', 1)
+      self.assertEqual(build, {'Can you hear': 'the thunder'})
+      self.assertEqual(source, 'master')
+    finally:
+      buildbot.fetch_and_cache_build = _real_fetch_and_cache_build
+
 
 class RevisionsForMasterTest(TestCaseWithDiskCache):
   def test_builder_info_for_master(self):

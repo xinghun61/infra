@@ -173,8 +173,12 @@ def fetch_build_json(cache, master_url, builder_name, build_number):  # pragma: 
     build = fetch_and_cache_build(cache, cbe_url, cache_key)
 
   if not build:
-    buildbot_url = ('https://build.chromium.org/p/%s/json/builders/'
-                    '%s/builds/%s') % (master_name, builder_name, build_number)
+    buildbot_base = 'https://build.chromium.org/p'
+    if 'internal' in master_name:
+      buildbot_base = 'http://master7.golo.chromium.org/i'
+
+    buildbot_url = ('%s/%s/json/builders/%s/builds/%s') % (
+                      buildbot_base, master_name, builder_name, build_number)
     build = fetch_and_cache_build(cache, buildbot_url, cache_key)
     build_source = 'master'
 
