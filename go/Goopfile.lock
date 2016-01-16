@@ -19,7 +19,7 @@ github.com/kr/text #bb797dc4fb8320488f47bf11de07a733d7233e1f !https://chromium.g
 github.com/luci/gkvlite #33184d2edd2d39ef71c3ed883e8ff752c4a18213 !https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
 github.com/luci/go-render #fb5bbe650634bbf7a13ac505ccd52e910cd9001d !https://chromium.googlesource.com/external/github.com/luci/go-render.git
 github.com/maruel/panicparse #57b03f49c00cf730bef3e1f2b8abe9bb1d20758c !https://chromium.googlesource.com/external/github.com/maruel/panicparse.git
-github.com/maruel/pre-commit-go #75e3c74cbda623eaf7d88231ef860fca02457e56 !https://chromium.googlesource.com/external/github.com/maruel/pre-commit-go.git
+github.com/maruel/pre-commit-go #279e9552a98052da270ca82274007a8974ff8d76 !https://chromium.googlesource.com/external/github.com/maruel/pre-commit-go.git
 github.com/maruel/subcommands #a4141cc8723941ce5b7a9ab87b77f397a80e2be6 !https://chromium.googlesource.com/external/github.com/maruel/subcommands.git
 github.com/maruel/ut #e40308333492fd122d9a2c88576bcddffb90cafe !https://chromium.googlesource.com/external/github.com/maruel/ut.git
 github.com/mattn/go-colorable #3dac7b4f76f6e17fb39b768b89e3783d16e237fe !https://chromium.googlesource.com/external/github.com/mattn/go-colorable.git
