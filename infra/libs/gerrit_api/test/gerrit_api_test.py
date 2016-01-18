@@ -337,7 +337,7 @@ class GerritAgentTestCase(unittest.TestCase):
         data=None,
         method='GET',
         params={'q':'project:test query:pending_cls owner:1012155',
-                'o': ['MESSAGES', 'LABELS', 'CURRENT_REVISION']},
+                'o': ['CURRENT_REVISION', 'LABELS', 'MESSAGES']},
         url='https://chromium-review.googlesource.com/a/changes/',
         headers=HEADERS)
     self.assertEquals(result, [TEST_CHANGE_INFO])

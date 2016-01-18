@@ -335,6 +335,7 @@ class Gerrit(object):
       with_messages=True,
       with_labels='LABELS',
       with_revisions='CURRENT_REVISION',
+      option_params=None,
       **kwargs):
     """Queries the Gerrit API changes endpoint. Returns a list of ChangeInfo
     dictionaries.
@@ -348,6 +349,7 @@ class Gerrit(object):
       with_labels: either False, 'LABELS' (default), or 'DETAILED'.
       with_revisions: either False, 'CURRENT_REVISION' (default), or
         'ALL_REVISIONS'.
+      option_params: (iterable of str) iterable of option params.
       kwargs: Allows to specify additional query parameters.
     """
 
@@ -356,18 +358,19 @@ class Gerrit(object):
 
     if query_name:
       query_params += ' query:%s' % query_name
-    for operator,value in kwargs.iteritems():
+    for operator, value in kwargs.iteritems():
       query_params += ' %s:%s' % (operator, value)
 
-    option_params = []
+    option_params = set(option_params or [])
     if with_messages:
-      option_params.append('MESSAGES')
+      option_params.add('MESSAGES')
     if with_labels:
       assert with_labels in ('LABELS', 'DETAILED_LABELS')
-      option_params.append(with_labels)
+      option_params.add(with_labels)
     if with_revisions:
       assert with_revisions in ('ALL_REVISIONS', 'CURRENT_REVISION')
-      option_params.append(with_revisions)
+      option_params.add(with_revisions)
+    option_params = sorted(option_params)
 
     # The requests library takes care of url encoding the params. For example
     # the spaces above in query_params will be replaced by '+'.
