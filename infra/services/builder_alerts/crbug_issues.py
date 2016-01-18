@@ -14,10 +14,6 @@ from oauth2client import client
 from infra_libs import ts_mon
 
 
-PROJECT_HOSTING_SCOPE = 'https://www.googleapis.com/auth/projecthosting'
-DISCOVERY_URL = ('https://www.googleapis.com/discovery/v1/apis/{api}/'
-                 '{apiVersion}/rest')
-
 # Dictionary mapping whitelisted lower-case labels to corresponding tree names.
 WHITELISTED_LABELS = {'sheriff-chromium': 'chromium',
                       'sheriff-blink': 'blink',
@@ -30,14 +26,24 @@ def _build_crbug_service(crbug_service_account,
   with open(crbug_service_account) as crbug_sa_file:
     service_account = json.load(crbug_sa_file)
 
+  if use_monorail:
+    api_name = 'monorail'
+    api_version = 'v1'
+    scope = 'https://www.googleapis.com/auth/userinfo.email'
+    discovery_url = ('https://monorail-prod.appspot.com/_ah/api/discovery/v1/'
+                     'apis/{api}/{apiVersion}/rest')
+  else:
+    api_name = 'projecthosting'
+    api_version = 'v2'
+    scope = 'https://www.googleapis.com/auth/projecthosting'
+    discovery_url = ('https://www.googleapis.com/discovery/v1/apis/{api}/'
+                     '{apiVersion}/rest')
+
   creds = client.SignedJwtAssertionCredentials(
-      service_account['client_email'], service_account['private_key'],
-      PROJECT_HOSTING_SCOPE)
+      service_account['client_email'], service_account['private_key'], scope)
   http = creds.authorize(httplib2.Http())
-  api_name = 'monorail' if use_monorail else 'projecthosting'
-  api_version = 'v1' if use_monorail else 'v2'
   return discovery.build(
-      api_name, api_version, discoveryServiceUrl=DISCOVERY_URL, http=http)
+      api_name, api_version, discoveryServiceUrl=discovery_url, http=http)
 
 
 def _list_issues(crbug_service_account, use_monorail):
