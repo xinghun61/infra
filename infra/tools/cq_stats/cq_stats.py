@@ -1176,23 +1176,7 @@ def acquire_stats(args, add_tree_stats=True):
                'logs' if args.use_logs else 'cache')
   end_date = args.date + datetime.timedelta(minutes=INTERVALS[args.range])
   if args.use_logs:
-    init_stats = default_stats()
-    assert args.date
-    # For weekly stats, collect job flakiness from daily cached stats.
-    if args.range == 'week':
-      for day in range(7):
-        d = args.date + datetime.timedelta(minutes=INTERVALS['day']*day)
-        raw_stats = fetch_stats(args, d, 'day')
-        init_stats = organize_stats(raw_stats, init=init_stats)
-    elif args.range == 'day':
-      for hour in range(24):
-        d = args.date + datetime.timedelta(minutes=INTERVALS['hour']*hour)
-        raw_stats = fetch_stats(args, d, 'hour')
-        init_stats = organize_stats(raw_stats, init=init_stats)
-    else:
-      init_stats = organize_stats(fetch_stats(args))
-    stats = derive_stats(
-        args, args.date, init_stats=init_stats)
+    stats = derive_stats(args, args.date)
   else:
     stats = organize_stats(fetch_stats(args))
 
