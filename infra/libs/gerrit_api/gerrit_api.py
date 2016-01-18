@@ -418,7 +418,7 @@ class Gerrit(object):
 
   @_not_read_only
   def set_review(self, change_id, revision_id, message=None, labels=None,
-                 notify=NOTIFY_NONE):
+                 notify=NOTIFY_NONE, max_message=300):
     """Uses the Set Review endpoint of the Gerrit API to add messages and/or set
     labels for a patchset.
     Documentation:
@@ -432,7 +432,6 @@ class Gerrit(object):
       notify: (str) Who should get a notification.
     """
     if message:
-      max_message = 300
       tail = u'\n(message too large)'
       if len(message) > max_message:
         message = message[:max_message-len(tail)] + tail # pragma: no cover
