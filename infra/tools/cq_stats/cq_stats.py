@@ -7,6 +7,7 @@
 import argparse
 import calendar
 import collections
+import copy
 import datetime
 import dateutil.parser
 import dateutil.tz
@@ -872,6 +873,13 @@ def output(fmt='', *args):
   print fmt % args
 
 
+def _get_patches_by_reason(stats, name, committed=None):
+  return [
+      p for p in stats[name]
+      if committed is None or
+      bool(stats['patch_stats'][p['patch_id']]['committed']) is committed]
+
+
 def print_attempt_counts(stats, name, message, item_name='',
                          details=False, committed=None, indent=0):
   """Print a summary of a ``name`` slice of attempts.
@@ -880,10 +888,7 @@ def print_attempt_counts(stats, name, message, item_name='',
    rejected patches."""
   if not item_name:
     item_name = message
-  patches = [
-      p for p in stats[name]
-      if committed is None or
-      bool(stats['patch_stats'][p['patch_id']]['committed']) is committed]
+  patches = _get_patches_by_reason(stats, name, committed)
   count = sum(p['count'] for p in patches)
 
   failing_builders = {}
@@ -1155,6 +1160,26 @@ def print_stats(args, stats):
            stats['patchset-committed-tryjob-retries'][p],
            stats['patchset-committed-global-retry-quota'][p])
 
+  if 'per-day' in stats:
+    output()
+    output('Per-day stats:')
+    for day_stats in stats['per-day']:
+      false_rejections = _get_patches_by_reason(
+          day_stats, 'false-rejections', committed=True)
+      infra_false_rejections = _get_patches_by_reason(
+          day_stats, 'infra-false-rejections', committed=True)
+
+      output('  %s: %4d attempts; 50%% %4.1f; 90%% %4.1f; '
+             'false rejections %.1f%% (%.1f%% infra)',
+             day_stats['begin'].date(),
+             day_stats['attempt-count'],
+             day_stats['patchset-committed-durations']['50'] / 3600.0,
+             day_stats['patchset-committed-durations']['90'] / 3600.0,
+             percentage(sum(p['count'] for p in false_rejections),
+                        stats['attempt-count']),
+             percentage(sum(p['count'] for p in infra_false_rejections),
+                        stats['attempt-count']))
+
   output()
   output('Slowest CLs:')
   slowest_cls = sorted(
@@ -1177,6 +1202,14 @@ def acquire_stats(args, add_tree_stats=True):
   end_date = args.date + datetime.timedelta(minutes=INTERVALS[args.range])
   if args.use_logs:
     stats = derive_stats(args, args.date)
+    if args.range == 'week':
+      new_args = copy.copy(args)
+      new_args.range = 'day'
+
+      stats['per-day'] = []
+      for day in range(7):
+        d = new_args.date + datetime.timedelta(minutes=INTERVALS['day'] * day)
+        stats['per-day'].append(derive_stats(new_args, d))
   else:
     stats = organize_stats(fetch_stats(args))
 

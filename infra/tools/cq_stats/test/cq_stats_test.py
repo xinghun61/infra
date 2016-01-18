@@ -703,6 +703,12 @@ class TestCQStats(auto_stub.TestCase):
     cq_stats.print_stats(args, stats_set)
     cq_stats.print_stats(args, swapped_stats)
 
+    stats_set['per-day'] = [
+      copy.copy(stats_set),
+      copy.copy(stats_set),
+      copy.copy(stats_set),
+    ]
+
     args = Args()
     args.path_filter_include = ['third_party/WebKit']
     cq_stats.print_stats(args, stats_set)
