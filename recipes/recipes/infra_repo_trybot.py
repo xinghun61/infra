@@ -51,6 +51,9 @@ def RunSteps(api):
     #     api.path['checkout'].join('glyco', 'tests', 'run_all_tests.py'),
     #     [], cwd=api.path['checkout'])
 
+    # Ensure go is bootstrapped as a separate step.
+    api.python('go bootstrap', api.path['checkout'].join('go', 'env.py'))
+
     # Note: env.py knows how to expand 'python' into sys.executable.
     api.python(
         'go tests', api.path['checkout'].join('go', 'env.py'),
