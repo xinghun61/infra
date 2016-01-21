@@ -52,13 +52,6 @@ def parse_desired_state(data):
   return desired_state
 
 
-def parse_transition_time(transition_time):
-  """Parses an int, float, or Zulu time. Returns a float timestamp or None."""
-  if isinstance(transition_time, (int, float)):
-    return float(transition_time)
-  return zulu.parse_zulu_ts(transition_time)
-
-
 def validate_desired_master_state(desired_state):
   """Verify that the desired_master_state file is valid."""
   now = timestamp.utcnow_ts()
@@ -87,11 +80,8 @@ def validate_desired_master_state(desired_state):
                 state['desired_state'],
                 buildbot_state.STATES['desired_buildbot_state']))
 
-      # Verify the timestamp is a number or Zulu time.
-      if parse_transition_time(state['transition_time_utc']) is None:
-        raise InvalidDesiredMasterState(
-            'transition_time_utc \'%s\' is not an int, float, or Zulu time' % (
-                state['transition_time_utc']))
+      # Verify the timestamp is Zulu time. Will raise an exception if invalid.
+      state_time(state)
 
     # Verify the list is properly sorted.
     sorted_states = sorted(
@@ -146,7 +136,7 @@ def get_master_state(states, now=None):
   """
   now = now or timestamp.utcnow_ts()
 
-  times = [parse_transition_time(x['transition_time_utc']) for x in states]
+  times = [state_time(x) for x in states]
   index = bisect.bisect_left(times, now)
   if index > 0:  # An index of 0 means all timestamps are in the future.
     return states[index - 1]
@@ -195,3 +185,55 @@ def get_masters_for_host(desired_state, build_dir, hostname):
     else:
       ignored_masters.add(mastername)
   return triggered_masters, ignored_masters
+
+
+def state_time(state):
+  """Returns the transition time as float or raises an exception if invalid."""
+  zt = zulu.parse_zulu_ts(state['transition_time_utc'])
+  if zt is None:
+    raise InvalidDesiredMasterState(
+        'transition_time_utc \'%s\' is not Zulu time' % (
+            state['transition_time_utc']))
+  return zt
+
+
+def prune_desired_state(desired_state, buffer_secs=3600):
+  """Prune old desired_state entries.
+
+  buffer_secs specifies how many seconds of buffer, only entries at least this
+  many seconds in the past are considered for pruning.
+  """
+  cutoff = timestamp.utcnow_ts() - buffer_secs
+
+  new_desired_state = {}
+
+  for mastername, states in desired_state.iteritems():
+    states_before_cutoff = []
+    states_after_cutoff = []
+    for state in states:
+      # Verify the timestamp is a Zulu time.
+      parsed_time = state_time(state)
+      if parsed_time <= cutoff:
+        states_before_cutoff.append(state)
+      else:
+        states_after_cutoff.append(state)
+
+      # Verify there is at least one state in the past.
+      if not states_before_cutoff:
+        raise InvalidDesiredMasterState(
+            'master %s does not have a state older than %s (%d secs ago)' % (
+                mastername, cutoff, buffer_secs))
+
+      new_desired_state[mastername] = (
+          [max(states_before_cutoff, key=state_time)]
+          + sorted(states_after_cutoff, key=state_time))
+
+  return new_desired_state
+
+
+def write_master_state(desired_state, filename):
+  """Write a desired state file, removing old entries."""
+  new_desired_state = prune_desired_state(desired_state)
+  with open(filename, 'w') as f:
+    json.dump(
+        new_desired_state, f, sort_keys=True, indent=2, separators=(',', ':'))

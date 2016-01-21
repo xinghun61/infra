@@ -2,7 +2,8 @@
   "version": "1",
   "master_states": {
     "master.chromium.fyi": [
-      {"desired_state": "running", "transition_time_utc": 4000}
+      {"desired_state": "running",
+       "transition_time_utc": "1970-01-01T01:06:40Z"}
     ]
   },
   "master_params": {

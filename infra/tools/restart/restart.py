@@ -16,7 +16,7 @@ import sys
 import tempfile
 
 
-from infra_libs.time_functions import zulu
+from infra.libs.time_functions import zulu
 from infra.services.master_manager_launcher import desired_state_parser
 
 
@@ -175,10 +175,8 @@ def run(masters, restart_time, reviewers, bug, force, no_commit):
       entries += 1
 
     LOGGER.info('Writing back to JSON file, %d new entries' % (entries,))
-    with open(master_state_json, 'w') as f:
-      json.dump(
-          desired_master_state, f, sort_keys=True, indent=2,
-          separators=(',', ':'))
+    desired_state_parser.write_master_state(
+        desired_master_state, master_state_json)
 
     # Step 3: Send the patch to Rietveld and commit it via the CQ.
     if no_commit:
