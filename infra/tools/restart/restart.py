@@ -16,7 +16,7 @@ import sys
 import tempfile
 
 
-from infra.libs.time_functions import zulu
+from infra_libs.time_functions import zulu
 from infra.services.master_manager_launcher import desired_state_parser
 
 

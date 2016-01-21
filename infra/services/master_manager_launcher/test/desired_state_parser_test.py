@@ -288,61 +288,77 @@ class TestWritingState(auto_stub.TestCase):
     with temporary_directory() as dirname:
       filename = os.path.join(dirname, 'desired_state.json')
       desired_state_parser.write_master_state({
-        'master.chromium.fyi': [
-          {'desired_state': 'running',
-           'transition_time_utc': UNIX_TIMESTAMP_0500},
-          {'desired_state': 'running',
-           'transition_time_utc': UNIX_TIMESTAMP_1000},
-          {'desired_state': 'running',
-           'transition_time_utc': UNIX_TIMESTAMP_4000},
-          {'desired_state': 'offline',
-           'transition_time_utc': UNIX_TIMESTAMP_6000},
-          {'desired_state': 'offline',
-           'transition_time_utc': UNIX_TIMESTAMP_7000},
-      ]}, filename)
-
-      with open(filename) as f:
-        parsed_data = json.load(f)
-
-      self.assertEqual(parsed_data, {
-        'master.chromium.fyi': [
-          {'desired_state': 'running',
-           'transition_time_utc': UNIX_TIMESTAMP_1000},
-          {'desired_state': 'running',
-           'transition_time_utc': UNIX_TIMESTAMP_4000},
-          {'desired_state': 'offline',
-           'transition_time_utc': UNIX_TIMESTAMP_6000},
-          {'desired_state': 'offline',
-           'transition_time_utc': UNIX_TIMESTAMP_7000},
-        ]})
-
-  def testInvalidState(self):
-    with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
-      with temporary_directory() as dirname:
-        filename = os.path.join(dirname, 'desired_state.json')
-        desired_state_parser.write_master_state({
+        'master_states': {
           'master.chromium.fyi': [
             {'desired_state': 'running',
-             'transition_time_utc': 'toast'},
+             'transition_time_utc': UNIX_TIMESTAMP_0500},
+            {'desired_state': 'running',
+             'transition_time_utc': UNIX_TIMESTAMP_1000},
             {'desired_state': 'running',
              'transition_time_utc': UNIX_TIMESTAMP_4000},
             {'desired_state': 'offline',
              'transition_time_utc': UNIX_TIMESTAMP_6000},
             {'desired_state': 'offline',
              'transition_time_utc': UNIX_TIMESTAMP_7000},
-        ]}, filename)
+          ]},
+        'master_params': {},
+        'version': desired_state_parser.VERSION,
+      }, filename)
+
+      with open(filename) as f:
+        parsed_data = json.load(f)
+
+      self.assertEqual(parsed_data, {
+        'master_states': {
+          'master.chromium.fyi': [
+            {'desired_state': 'running',
+             'transition_time_utc': UNIX_TIMESTAMP_1000},
+            {'desired_state': 'running',
+             'transition_time_utc': UNIX_TIMESTAMP_4000},
+            {'desired_state': 'offline',
+             'transition_time_utc': UNIX_TIMESTAMP_6000},
+            {'desired_state': 'offline',
+             'transition_time_utc': UNIX_TIMESTAMP_7000},
+          ]},
+        'master_params': {},
+        'version': desired_state_parser.VERSION,
+      }, filename)
+
+  def testInvalidState(self):
+    with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
+      with temporary_directory() as dirname:
+        filename = os.path.join(dirname, 'desired_state.json')
+        desired_state_parser.write_master_state({
+          'master_states': {
+            'master.chromium.fyi': [
+              {'desired_state': 'running',
+               'transition_time_utc': 'toast'},
+              {'desired_state': 'running',
+               'transition_time_utc': UNIX_TIMESTAMP_4000},
+              {'desired_state': 'offline',
+               'transition_time_utc': UNIX_TIMESTAMP_6000},
+              {'desired_state': 'offline',
+               'transition_time_utc': UNIX_TIMESTAMP_7000},
+            ]},
+          'master_params': {},
+          'version': desired_state_parser.VERSION,
+        }, filename)
 
   def testNothingInPast(self):
     with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
       with temporary_directory() as dirname:
         filename = os.path.join(dirname, 'desired_state.json')
         desired_state_parser.write_master_state({
-          'master.chromium.fyi': [
-            {'desired_state': 'offline',
-             'transition_time_utc': UNIX_TIMESTAMP_6000},
-            {'desired_state': 'offline',
-             'transition_time_utc': UNIX_TIMESTAMP_7000},
-        ]}, filename)
+          'master_states': {
+            'master.chromium.fyi': [
+              {'desired_state': 'offline',
+               'transition_time_utc': UNIX_TIMESTAMP_6000},
+              {'desired_state': 'offline',
+               'transition_time_utc': UNIX_TIMESTAMP_7000},
+            ]},
+          'master_params': {},
+          'version': desired_state_parser.VERSION,
+        }, filename)
 
   def testNothing(self):
     with temporary_directory() as dirname:
@@ -352,4 +368,8 @@ class TestWritingState(auto_stub.TestCase):
       with open(filename) as f:
         parsed_data = json.load(f)
 
-      self.assertEqual(parsed_data, {})
+      self.assertEqual(parsed_data, {
+          'master_states': {},
+          'master_params': {},
+          'version': desired_state_parser.VERSION,
+      })

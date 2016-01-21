@@ -233,7 +233,12 @@ def prune_desired_state(desired_state, buffer_secs=3600):
 
 def write_master_state(desired_state, filename):
   """Write a desired state file, removing old entries."""
-  new_desired_state = prune_desired_state(desired_state)
+  new_desired_state = {
+      'master_params': desired_state.get('master_params', {}),
+      'master_states': prune_desired_state(
+          desired_state.get('master_states', {})),
+      'version': VERSION,
+  }
   with open(filename, 'w') as f:
     json.dump(
         new_desired_state, f, sort_keys=True, indent=2, separators=(',', ':'))
