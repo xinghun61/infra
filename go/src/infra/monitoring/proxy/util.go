@@ -40,15 +40,17 @@ var backoffPolicyKey backoffPolicyKeyType
 // implements exponential backoff.
 //
 // It's used for all external service calls.
-func backoffPolicy(ctx context.Context) retry.Iterator {
+func backoffPolicy(ctx context.Context) retry.Factory {
 	if !backoffTestMode {
-		return &retry.ExponentialBackoff{
-			Limited: retry.Limited{
-				Delay:   200 * time.Millisecond,
-				Retries: 5,
-			},
-			Multiplier: 3,
+		return func() retry.Iterator {
+			return &retry.ExponentialBackoff{
+				Limited: retry.Limited{
+					Delay:   200 * time.Millisecond,
+					Retries: 5,
+				},
+				Multiplier: 3,
+			}
 		}
 	}
-	return ctx.Value(backoffPolicyKey).(func() retry.Iterator)()
+	return ctx.Value(backoffPolicyKey).(func() retry.Iterator)
 }
