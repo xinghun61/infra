@@ -7,6 +7,8 @@ import os
 import traceback
 import unittest
 
+import mock
+
 import infra_libs
 from infra_libs import event_mon
 from infra_libs.event_mon import config, router
@@ -78,6 +80,16 @@ class ConfigTest(unittest.TestCase):
     self.assertTrue(event.event_source.HasField('host_name'))
     self.assertFalse(event.event_source.HasField('service_name'))
     self.assertFalse(event.event_source.HasField('appengine_name'))
+
+  @mock.patch('os.environ')
+  def test_logging_on_appengine(self, environ):
+    environ.get.return_value = 'Google App Engine/1.2.3'
+    event_mon.setup_monitoring()
+    self.assertIsInstance(config._router, router._LoggingStreamRouter)
+
+    environ.get.return_value = 'Development/1.2'
+    event_mon.setup_monitoring()
+    self.assertIsInstance(config._router, router._LoggingStreamRouter)
 
   def test_default_event_with_values(self):
     # The protobuf structure is actually an API not an implementation detail

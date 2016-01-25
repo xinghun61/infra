@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 import os
 import random
 import StringIO
@@ -201,3 +202,51 @@ class BackoffTest(unittest.TestCase):
   def test_backoff_time_max_value(self):
     t = router.backoff_time(attempt=10, retry_backoff=2., max_delay=5)
     self.assertTrue(abs(t - 5.) < 0.0001)
+
+
+class LoggingStreamRouterTests(unittest.TestCase):
+  @mock.patch('logging.log')
+  def test_events_are_logged_correctly(self, log_mock):
+    logger = router._LoggingStreamRouter()
+    events = []
+    for i in range(3):
+      event = LogRequestLite.LogEventLite()
+      event.event_time_ms = router.time_ms()
+      event.event_code = 1
+      event.event_flow_id = 2
+      infra_event = ChromeInfraEvent()
+      infra_event.cq_event.issue = str(i + 1)
+      event.source_extension = infra_event.SerializeToString()
+      events.append(event)
+
+    self.assertTrue(logger.push_event(events))
+
+    expected_calls = [
+        ((logging.INFO,
+          'Sending event_mon event:\ncq_event {\n  issue: "1"\n}\n'),),
+        ((logging.INFO,
+          'Sending event_mon event:\ncq_event {\n  issue: "2"\n}\n'),),
+        ((logging.INFO,
+          'Sending event_mon event:\ncq_event {\n  issue: "3"\n}\n'),)]
+    self.assertEqual(log_mock.call_args_list, expected_calls)
+
+  @mock.patch('logging.log')
+  def test_events_are_logged_with_specified_severity(self, log_mock):
+    logger = router._LoggingStreamRouter(logging.WARN)
+    event = LogRequestLite.LogEventLite()
+    event.event_time_ms = router.time_ms()
+    event.event_code = 1
+    event.event_flow_id = 2
+    self.assertTrue(logger.push_event(event))
+    self.assertEqual(log_mock.call_args[0], (logging.WARN, mock.ANY))
+
+  @mock.patch('logging.exception')
+  def test_fails_to_log(self, exception_mock):
+    logger = router._LoggingStreamRouter(logging.WARN)
+    event = LogRequestLite.LogEventLite()
+    event.event_time_ms = router.time_ms()
+    event.event_code = 1
+    event.event_flow_id = 2
+    event.source_extension = 'not-a-message'
+    self.assertFalse(logger.push_event(event))
+    self.assertEqual(exception_mock.call_args[0], ('Unable to log the events',))
