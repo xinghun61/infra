@@ -898,6 +898,8 @@ ul.errorlist li {
   color: #333333;
   border-radius: 3px;
   padding: 1px 0;
+  line-height: 20px;
+  margin-right: 5px;
 }
 
 .build-status-color-exception {
