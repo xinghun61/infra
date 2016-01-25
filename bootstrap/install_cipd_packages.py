@@ -13,10 +13,8 @@ import platform
 import re
 import socket
 import ssl
-import stat
 import subprocess
 import sys
-import tempfile
 import time
 import urllib
 import urllib2
@@ -45,16 +43,16 @@ DEFAULT_CERT_FILE = os.path.join(ROOT, 'data', 'cacert.pem')
 # CIPD server round-trip lookup. This can be obtained for a given package via:
 # $ cipd resolve \
 #      infra/tools/cipd/ \
-#     -version=git_revision:d3cc535e1c811fe57042800e5ec0ec36d0bcb334
+#     -version=git_revision:40a69b87c6c49c529bc3a1e57f099bddad71e38a
 ARCH_CONFIG_MAP = {
   ('Linux', 'x86_64'): {
     'cipd_package': 'infra/tools/cipd/linux-amd64',
-    'cipd_package_version': '6e439f7c688155aeae9402d4acaaa47cc89a76cd',
+    'cipd_package_version': 'ec815bd831e9d2117620bb890af9edd9a8a3e4e4',
     'cipd_install_list': 'cipd_linux_amd64.txt',
   },
   ('Darwin', 'x86_64'): {
     'cipd_package': 'infra/tools/cipd/mac-amd64',
-    'cipd_package_version': '8fd063ffec757ef24fd9fa2d783345f295a62d38',
+    'cipd_package_version': '65a72d248166409c2db79e5c2f2a44044834454a',
     'cipd_install_list': 'cipd_mac_amd64.txt',
   },
 }
