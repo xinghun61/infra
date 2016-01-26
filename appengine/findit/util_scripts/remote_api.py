@@ -12,7 +12,6 @@ For detail on usage of Remote API, please refer to:
   https://cloud.google.com/appengine/docs/python/tools/remoteapi
 """
 
-import getpass
 import os
 import socket
 import sys
@@ -39,17 +38,6 @@ from google.appengine.ext import ndb
 from google.appengine.ext.remote_api import remote_api_stub
 
 
-def _AuthFunction():
-  """Helper function which provides credentials."""
-  default_username = '%s@chromium.org' % getpass.getuser()
-  sys.stdout.write('Username[%s]:' % default_username)
-  username = sys.stdin.readline().strip()
-  if not username:
-    username = default_username
-  password = getpass.getpass('Password for %s:' % username)
-  return (username, password)
-
-
 def SetTimeoutForUrlOperations(url_blocking_operations_timeout=600):
   """Set timeout for url operations (socket, appengine db)."""
   socket.setdefaulttimeout(url_blocking_operations_timeout)
@@ -67,10 +55,9 @@ def EnableRemoteApi(app_id='findit-for-me'):
 
   SetTimeoutForUrlOperations()
 
-  remote_api_stub.ConfigureRemoteApi(None,
-                                     '/_ah/remote_api',
-                                     _AuthFunction,
-                                     servername='%s.appspot.com' % app_id,
-                                     secure=True,
-                                     save_cookies=True)
+  remote_api_stub.ConfigureRemoteApiForOAuth(
+      '%s.appspot.com' % app_id,
+      '/_ah/remote_api',
+      secure=True,
+      save_cookies=True)
   setattr(EnableRemoteApi, app_id, True)
