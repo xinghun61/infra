@@ -34,7 +34,8 @@
 1.  Give your app's service account permission to send metrics to the API.  You
     can find the name of your service account on the `Permissions` page of your
     project in the cloud console - it'll look something like
-    `app-id@appspot.gserviceaccount.com`.  Add it as a "Publisher" of the
+    `app-id@appspot.gserviceaccount.com`.  Or search the default module's logs
+    for `"Initializing with service account"`.  Add it as a "Publisher" of the
     "monacq" PubSub topic in the
     [chrome-infra-mon-pubsub project](https://pantheon.corp.google.com/project/chrome-infra-mon-pubsub/cloudpubsub/topicList)
     by selecting it from the list and clicking "Permissions". If you see an
