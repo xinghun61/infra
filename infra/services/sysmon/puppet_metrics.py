@@ -65,11 +65,19 @@ def get_puppet_summary(time_fn=time.time):
 
   try:
     config_version.set(data['version']['config'])
+  except ts_mon.MonitoringInvalidValueTypeError:
+    # https://crbug.com/581749
+    logging.exception('lastrunfile contains invalid "config" value. '
+                      'Please fix Puppet.')
   except KeyError:
     logging.warning('version/config not found in %s', path)
 
   try:
     puppet_version.set(data['version']['puppet'])
+  except ts_mon.MonitoringInvalidValueTypeError:
+    # https://crbug.com/581749
+    logging.exception('lastrunfile contains invalid puppet version. '
+                      'Please fix Puppet.')
   except KeyError:
     logging.warning('version/puppet not found in %s', path)
 

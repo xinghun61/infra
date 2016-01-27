@@ -164,3 +164,19 @@ class PuppetMetricsTest(unittest.TestCase):
 
     self.assertEqual(None, puppet_metrics.config_version.get())
     self.assertEqual(None, puppet_metrics.puppet_version.get())
+
+  def test_summary_missing_values(self):
+    self.fh.write("""\
+---
+  version:
+    config:
+    puppet:
+""")
+    self.fh.close()
+
+    mock_time = mock.create_autospec(time.time, spec_set=True)
+    mock_time.return_value = 1440132466 + 123
+    puppet_metrics.get_puppet_summary(time_fn=mock_time)
+
+    self.assertEqual(None, puppet_metrics.config_version.get())
+    self.assertEqual(None, puppet_metrics.puppet_version.get())
