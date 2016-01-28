@@ -8,8 +8,8 @@ from google.appengine.ext import ndb
 
 from model.build_run import BuildRun
 
-# A particular occurance of a single flake occuring.
-class FlakeOccurance(ndb.Model):
+# A particular occurrence of a single flake occuring.
+class FlakeOccurrence(ndb.Model):
   # step name, i.e. browser_tests
   name = ndb.StringProperty(required=True)
   # failre, i.e. FooTest.Bar
@@ -18,7 +18,7 @@ class FlakeOccurance(ndb.Model):
 
 # Represents a patchset with a successful and failed try run for a particular
 # builder. The flaky failed run can have multiple different flakes that cause
-# it to turn red, each represented by a FlakeOccurance.
+# it to turn red, each represented by a FlakeOccurrence.
 class FlakyRun(ndb.Model):
   failure_run = ndb.KeyProperty(BuildRun, required=True)
   # A copy of failure_run.time_started to reduce lookups.
@@ -26,7 +26,7 @@ class FlakyRun(ndb.Model):
   # A copy of failure_run.time_finished to reduce lookups.
   failure_run_time_finished = ndb.DateTimeProperty(required=True)
   success_run = ndb.KeyProperty(BuildRun, required=True)
-  flakes = ndb.StructuredProperty(FlakeOccurance, repeated=True)
+  flakes = ndb.StructuredProperty(FlakeOccurrence, repeated=True)
   comment = ndb.StringProperty()
 
 

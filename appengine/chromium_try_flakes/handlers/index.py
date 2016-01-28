@@ -41,7 +41,7 @@ def GetFilteredOccurences(flake, time_formatter,
       r.formatted_time = time_formatter(r.time_finished)
       filtered_occurrences.append(r)
 
-  # Do simple sorting of occurances by builder to make reading easier.
+  # Do simple sorting of occurrences by builder to make reading easier.
   return sorted(filtered_occurrences, key=FlakeSortFunction)
 
 

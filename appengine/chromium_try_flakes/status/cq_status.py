@@ -19,7 +19,7 @@ from model.build_run import BuildRun
 from model.build_run import PatchsetBuilderRuns
 from model.fetch_status import FetchStatus
 from model.flake import Flake
-from model.flake import FlakeOccurance
+from model.flake import FlakeOccurrence
 from model.flake import FlakyRun
 from status import build_result
 import time_functions.timestamp
@@ -60,20 +60,20 @@ def is_last_month(date):
 
 
 # Updates a Flake object, which spans all the instances of one flake, with the
-# time of an occurance of that flake.
-def add_occurance_time_to_flake(flake, occurance_time):  # pragma: no cover
-  if occurance_time > flake.last_time_seen:
-    flake.last_time_seen = occurance_time
-  if is_last_hour(occurance_time):
+# time of an occurrence of that flake.
+def add_occurrence_time_to_flake(flake, occurrence_time):  # pragma: no cover
+  if occurrence_time > flake.last_time_seen:
+    flake.last_time_seen = occurrence_time
+  if is_last_hour(occurrence_time):
     flake.count_hour += 1
     flake.last_hour = True
-  if is_last_day(occurance_time):
+  if is_last_day(occurrence_time):
     flake.count_day += 1
     flake.last_day = True
-  if is_last_week(occurance_time):
+  if is_last_week(occurrence_time):
     flake.count_week += 1
     flake.last_week = True
-  if is_last_month(occurance_time):
+  if is_last_month(occurrence_time):
     flake.count_month += 1
     flake.last_month = True
   flake.count_all += 1
@@ -93,7 +93,7 @@ def update_flake_counters(flake):  # pragma: no cover
   flake.last_month = False
   flake.last_time_seen = datetime.datetime.min
   for o in occurrences:
-    add_occurance_time_to_flake(flake, o.failure_run_time_finished)
+    add_occurrence_time_to_flake(flake, o.failure_run_time_finished)
   flake.put()
 
 
@@ -156,7 +156,7 @@ def add_failure_to_flake(name, flaky_run):
   flake.occurrences.append(flaky_run.key)
 
   flaky_run_time = flaky_run.failure_run.get().time_finished
-  add_occurance_time_to_flake(flake, flaky_run_time)
+  add_occurrence_time_to_flake(flake, flaky_run_time)
 
   flake.put()
 
@@ -293,8 +293,8 @@ def get_flaky_run_reason(flaky_run_key):
     if not flakes:
       continue
     for flake in flakes:
-      flake_occurance = FlakeOccurance(name=step_name, failure=flake)
-      flaky_run.flakes.append(flake_occurance)
+      flake_occurrence = FlakeOccurrence(name=step_name, failure=flake)
+      flaky_run.flakes.append(flake_occurrence)
 
       add_failure_to_flake(flake, flaky_run)
   flaky_run.put()
