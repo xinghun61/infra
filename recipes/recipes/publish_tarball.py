@@ -7,11 +7,11 @@ from recipe_engine import recipe_api
 import contextlib
 
 DEPS = [
-  'depot_tools/bot_update',
+  'bot_update',
   'chromium',
   'file',
-  'depot_tools/gclient',
-  'depot_tools/git',
+  'gclient',
+  'git',
   'gsutil',
   'omahaproxy',
   'recipe_engine/path',

@@ -13,9 +13,9 @@ patches with the new baselines.
 """
 
 DEPS = [
-  'depot_tools/bot_update',
-  'depot_tools/gclient',
-  'depot_tools/git',
+  'bot_update',
+  'gclient',
+  'git',
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
