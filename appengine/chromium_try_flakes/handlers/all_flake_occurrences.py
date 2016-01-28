@@ -12,6 +12,10 @@ import logging
 import time
 import webapp2
 
+
+MAX_GROUP_DISTANCE = datetime.timedelta(days=3)
+
+
 def RunsSortFunction(s):  # pragma: no cover
   return s.time_finished
 
@@ -39,9 +43,20 @@ def show_all_flakes(flake, bug_friendly):  # pragma: no cover
   # Do simple sorting to make reading easier.
   failure_runs = sorted(failure_runs, key=RunsSortFunction, reverse=True)
 
+  grouped_runs = []
+  if failure_runs:
+    current_group = [failure_runs[0]]
+    for f in failure_runs[1:]:
+      if current_group[-1].time_finished - f.time_finished < MAX_GROUP_DISTANCE:
+        current_group.append(f)
+      else:
+        grouped_runs.append(current_group)
+        current_group = [f]
+    grouped_runs.append(current_group)
+
   values = {
     'flake': flake,
-    'failure_runs': failure_runs,
+    'grouped_runs': grouped_runs,
     'bug_friendly': bug_friendly,
     'time_now': datetime.datetime.utcnow(),
   }

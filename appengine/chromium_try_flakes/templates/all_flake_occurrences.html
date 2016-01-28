@@ -4,6 +4,7 @@
 <tr>
 <td colspan="3">all flaky occurrences of <b>{{flake.name}}</b></td>
 </tr>
+{% for failure_runs in grouped_runs %}
 {% for f in failure_runs %}
 <tr>
 
@@ -18,7 +19,12 @@
 </tr>
 {% endfor %}
 
-</tr><tr><td>&nbsp;</td></tr>
+<tr>
+<td>&nbsp;</td>
+</tr>
+
+{% endfor %}
+
 </table>
 {% if not bug_friendly %}
 <a href="/all_flake_occurrences?key={{flake.key.urlsafe}}&bug_friendly=1">
