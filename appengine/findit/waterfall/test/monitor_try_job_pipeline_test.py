@@ -9,7 +9,9 @@ from model import wf_analysis_status
 from model.wf_try_job import WfTryJob
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 
+
 class MonitorTryJobPipelineTest(testing.AppengineTestCase):
+
   def _Mock_GetTryJobs(self, build_id):
     def Mocked_GetTryJobs(*_):
       data = {
@@ -50,7 +52,7 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.compile_results = [
         {
-            'result': None,
+            'report': None,
             'url': 'url',
             'try_job_id': '1',
         }
@@ -64,7 +66,7 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
         master_name, builder_name, build_number, try_job_id)
 
     expected_compile_result = {
-        'result': [
+        'report': [
             ['rev1', 'passed'],
             ['rev2', 'failed']
         ],

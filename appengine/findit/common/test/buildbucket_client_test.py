@@ -84,11 +84,11 @@ class BuildBucketClientTest(testing.AppengineTestCase):
 
   def testTriggerTryJobsSuccess(self):
     response = {
-      'build': {
-          'id': '1',
-          'url': 'url',
-          'status': 'SCHEDULED',
-      }
+        'build': {
+            'id': '1',
+            'url': 'url',
+            'status': 'SCHEDULED',
+        }
     }
     try_job = buildbucket_client.TryJob('m', 'b', 'r', {'a': 'b'}, [])
     self._MockUrlFetch(
@@ -104,10 +104,10 @@ class BuildBucketClientTest(testing.AppengineTestCase):
 
   def testTriggerTryJobsFailure(self):
     response = {
-      'error': {
-          'reason': 'error',
-          'message': 'message',
-      }
+        'error': {
+            'reason': 'error',
+            'message': 'message',
+        }
     }
     try_job = buildbucket_client.TryJob('m', 'b', 'r', {}, [])
     self._MockUrlFetch(
@@ -156,11 +156,11 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('url', build.url)
     self.assertEqual('STARTED', build.status)
 
-    expected_result = [
+    expected_report = [
         ['rev1', 'passed'],
         ['rev2', 'failed']
     ]
-    self.assertEqual(expected_result, build.result)
+    self.assertEqual(expected_report, build.report)
 
   def testGetTryJobsFailure(self):
     response = {

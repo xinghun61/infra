@@ -82,7 +82,8 @@ class BuildbucketBuild(object):
     self.status = raw_json_data.get('status')
     result_details_json = json.loads(
         raw_json_data.get('result_details_json', '{}')) or {}
-    self.result = result_details_json.get('properties', {}).get('result', [])
+    self.report = (result_details_json.get('properties', {}).get('result') or
+                   result_details_json.get('properties', {}).get('report', {}))
 
 
 class BuildbucketError(object):
@@ -145,10 +146,10 @@ def TriggerTryJobs(try_jobs):
       json_results.append(json.loads(content))
     else:
       error_content = {
-        'error': {
-          'reason': status_code,
-          'message': content
-        }
+          'error': {
+              'reason': status_code,
+              'message': content
+          }
       }
       json_results.append(error_content)
 
@@ -179,10 +180,10 @@ def GetTryJobs(build_ids):
       json_results.append(json.loads(content))
     else:
       error_content = {
-        'error': {
-          'reason': status_code,
-          'message': content
-        }
+          'error': {
+              'reason': status_code,
+              'message': content
+          }
       }
       json_results.append(error_content)
 

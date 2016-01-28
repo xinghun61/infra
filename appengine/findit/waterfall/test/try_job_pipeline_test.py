@@ -97,7 +97,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
 
     expected_compile_results = [
         {
-            'result': [
+            'report': [
                 ['rev1', 'passed'],
                 ['rev2', 'failed']
             ],

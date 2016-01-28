@@ -34,7 +34,7 @@ class MonitorTryJobPipeline(BasePipeline):
             'Error "%s" occurred. Reason: "%s"' % (error.message, error.reason))
       elif build.status == 'COMPLETED':
         result = {
-            'result': build.result,
+            'report': build.report,
             'url': build.url,
             'try_job_id': try_job_id,
         }
@@ -51,7 +51,7 @@ class MonitorTryJobPipeline(BasePipeline):
       else:  # pragma: no cover
         if build.status == 'STARTED' and not already_set_started:
           result = {
-              'result': None,
+              'report': None,
               'url': build.url,
               'try_job_id': try_job_id,
           }

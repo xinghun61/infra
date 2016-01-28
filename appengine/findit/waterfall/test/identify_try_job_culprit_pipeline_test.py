@@ -24,88 +24,90 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     mock_change_logs['rev2'] = MockedChangeLog('2', 'url_2')
     return mock_change_logs.get(revision)
 
-  def testIdentifyCulpritForCompileReturnNoneIfNoCompileResult(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-    try_job_id = '1'
-    compile_result = None
+  def testGetFailedRevisionFromResultsDict(self):
+    self.assertIsNone(
+        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromResultsDict({}))
+    self.assertEqual(
+        None,
+        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromResultsDict(
+            {'rev1': 'passed'}))
+    self.assertEqual(
+        'rev1',
+        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromResultsDict(
+            {'rev1': 'failed'}))
+    self.assertEqual(
+        'rev2',
+        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromResultsDict(
+            {'rev1': 'passed', 'rev2': 'failed'}))
 
-    WfTryJob.Create(master_name, builder_name, build_number).put()
-    pipeline = IdentifyTryJobCulpritPipeline()
-    culprit = pipeline.run(
-        master_name, builder_name, build_number, try_job_id, compile_result)
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+  def testGetFailedRevisionFromCompileResult(self):
+    self.assertIsNone(
+        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromCompileResult(
+            None))
+    self.assertIsNone(
+        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromCompileResult(
+            {'report': {}}))
+    self.assertIsNone(
+        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromCompileResult(
+            {
+                'report': {
+                    'result': {
+                        'rev1': 'passed'
+                    }
+                }
+            }))
+    self.assertEqual(
+        'rev2',
+        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromCompileResult(
+            {
+                'report': {
+                    'result': {
+                        'rev1': 'passed',
+                        'rev2': 'failed'
+                    }
+                }
+            }))
+    self.assertEqual(
+        'rev2',
+        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromCompileResult(
+            {
+                'report': [
+                    ['rev1', 'passed'],
+                    ['rev2', 'failed']
+                ]
+            }))
 
-    self.assertIsNone(culprit)
-    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
-
-  def testIdentifyCulpritForCompileReturnNoneIfNoTryJobResultForCompile(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-    try_job_id = '1'
-    compile_result = {
-        'result': [],
-        'url': 'url',
-        'try_job_id': '1',
-    }
-    WfTryJob.Create(master_name, builder_name, build_number).put()
-
-    pipeline = IdentifyTryJobCulpritPipeline()
-    culprit = pipeline.run(
-        master_name, builder_name, build_number, try_job_id, compile_result)
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
-
-    self.assertIsNone(culprit)
-    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
-
-  def testIdentifyCulpritForCompileReturnNoneIfAllPassed(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-    try_job_id = '1'
-    compile_result = {
-        'result': [
-            ['rev1', 'passed'],
-            ['rev2', 'passed']
-        ],
-        'url': 'url',
-        'try_job_id': '1',
-    }
-    WfTryJob.Create(master_name, builder_name, build_number).put()
-
-    pipeline = IdentifyTryJobCulpritPipeline()
-    culprit = pipeline.run(
-        master_name, builder_name, build_number, try_job_id, compile_result)
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
-
-    self.assertIsNone(culprit)
-    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
-
-  def testIdentifyCulpritForCompileReturnNoneIfNoChangeLog(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-    try_job_id = '1'
-    compile_result = {
-        'result': [
-            ['rev1', 'failed']
-        ],
-        'url': 'url',
-        'try_job_id': '1',
-    }
-
+  def testGetCulpritFromFailedRevision(self):
     self.mock(GitRepository, 'GetChangeLog', self._MockGetChangeLog)
-    WfTryJob.Create(master_name, builder_name, build_number).put()
+    self.assertIsNone(
+        IdentifyTryJobCulpritPipeline._GetCulpritFromFailedRevision(None))
+    self.assertIsNone(
+        IdentifyTryJobCulpritPipeline._GetCulpritFromFailedRevision(
+            'revision_with_no_change_log'))
+    self.assertEqual(
+        {
+            'revision': 'rev2',
+            'commit_position': '2',
+            'review_url': 'url_2'
+        },
+        IdentifyTryJobCulpritPipeline._GetCulpritFromFailedRevision('rev2'))
+
+  def testIdentifyCulpritForCompileTryJobNoCulprit(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '1'
+
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.put()
 
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit = pipeline.run(
-        master_name, builder_name, build_number, try_job_id, compile_result)
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+        master_name, builder_name, build_number, try_job_id, None)
 
-    self.assertIsNone(culprit)
     self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
+    self.assertEqual([], try_job.compile_results)
+    self.assertIsNone(culprit)
 
   def testIdentifyCulpritForCompileTryJobSuccess(self):
     master_name = 'm'
@@ -113,7 +115,63 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     build_number = 1
     try_job_id = '1'
     compile_result = {
-        'result': [
+        'report': {
+            'result': {
+                'rev1': 'passed',
+                'rev2': 'failed'
+            }
+        },
+    }
+
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.status = wf_analysis_status.ANALYZING
+    try_job.compile_results = [{
+        'report': {
+            'result': {
+                'rev1': 'passed',
+                'rev2': 'failed'
+            },
+        },
+        'try_job_id': '1',
+    }]
+    try_job.put()
+
+    self.mock(GitRepository, 'GetChangeLog', self._MockGetChangeLog)
+
+    pipeline = IdentifyTryJobCulpritPipeline()
+    culprit = pipeline.run(
+        master_name, builder_name, build_number, try_job_id, compile_result)
+
+    expected_compile_result = {
+        'report': {
+            'result': {
+                'rev1': 'passed',
+                'rev2': 'failed'
+            }
+        },
+        'try_job_id': '1',
+        'culprit': {
+            'revision': 'rev2',
+            'commit_position': '2',
+            'review_url': 'url_2'
+        }
+    }
+
+    self.assertEqual(expected_compile_result['culprit'], culprit)
+
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(expected_compile_result, try_job.compile_results[-1])
+    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
+
+  # TODO(lijeffrey): Deprecate all tests with compile_results whose 'result'
+  # key is a list once it is returned as a dict from the recipe.
+  def testIdentifyCulpritForCompileListTryJobSuccess(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '1'
+    compile_result = {
+        'report': [
             ['rev1', 'passed'],
             ['rev2', 'failed']
         ],
@@ -124,7 +182,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.status = wf_analysis_status.ANALYZING
     try_job.compile_results = [{
-        'result': [
+        'report': [
             ['rev1', 'passed'],
             ['rev2', 'failed']
         ],
@@ -140,7 +198,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         master_name, builder_name, build_number, try_job_id, compile_result)
 
     expected_compile_result = {
-        'result': [
+        'report': [
             ['rev1', 'passed'],
             ['rev2', 'failed']
         ],

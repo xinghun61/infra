@@ -51,7 +51,7 @@ class TryJobPipeline(BasePipeline):
     try_job_id = yield ScheduleTryJobPipeline(
         master_name, builder_name, build_number, good_revision, bad_revision,
         compile_targets)
-    compile_result = yield MonitorTryJobPipeline(
+    try_job_result = yield MonitorTryJobPipeline(
         master_name, builder_name, build_number, try_job_id)
     yield IdentifyTryJobCulpritPipeline(
-        master_name, builder_name, build_number, try_job_id, compile_result)
+        master_name, builder_name, build_number, try_job_id, try_job_result)
