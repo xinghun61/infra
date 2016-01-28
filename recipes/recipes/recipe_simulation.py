@@ -4,8 +4,8 @@
 """A continious builder for build repo which simulates recipes."""
 
 DEPS = [
-  'bot_update',
-  'gclient',
+  'depot_tools/bot_update',
+  'depot_tools/gclient',
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',

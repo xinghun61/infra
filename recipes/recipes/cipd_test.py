@@ -9,10 +9,10 @@ is down, this will fail.
 """
 
 DEPS = [
-  'bot_update',
+  'depot_tools/bot_update',
   'cipd',
   'file',
-  'gclient',
+  'depot_tools/gclient',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -20,7 +20,7 @@ DEPS = [
   'recipe_engine/python',
   'recipe_engine/raw_io',
   'recipe_engine/step',
-  'tryserver'
+  'depot_tools/tryserver'
 ]
 
 # Credentials to register the cipd package.
