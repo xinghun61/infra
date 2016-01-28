@@ -78,8 +78,7 @@ def synthesize_master_manager_cmd(master_dict, hostname, prod=False):
       'infra.tools.master_manager',
       master_dict['fulldir'],
       str(state['desired_state']),
-      str(desired_state_parser.parse_transition_time(
-          state['transition_time_utc'])),
+      str(desired_state_parser.state_time(state)),
       '--hostname', hostname,
       '--enable-gclient-sync',
       '--verbose',
