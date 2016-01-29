@@ -8,6 +8,7 @@ import mock
 from google.appengine.datastore import datastore_stub_util
 from google.appengine.ext import ndb
 
+from handlers.flake_issues import ProcessIssue
 import main
 from model.flake import Flake, FlakyRun
 from model.build_run import PatchsetBuilderRuns, BuildRun
@@ -454,3 +455,28 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     updated_flake = flake_key.get()
     self.assertEqual(updated_flake.issue_id, issue.id)
     self.assertEqual(updated_flake.old_issue_id, 0)
+
+  def test_correctly_finds_first_flake(self):
+    fake_run = ndb.Key('BuildRun', 'fake')
+    def flaky_run(dt):
+      return FlakyRun(failure_run=fake_run, success_run=fake_run,
+                      failure_run_time_finished=dt).put()
+
+    fr1 = flaky_run(datetime.datetime(2015, 10, 12, 8, 0, 0))
+    fr2 = flaky_run(datetime.datetime(2015, 10, 12, 12, 0, 0))
+    fr3 = flaky_run(datetime.datetime(2015, 10, 18, 8, 0, 0))
+    fr4 = flaky_run(datetime.datetime(2015, 10, 19, 8, 0, 0))
+    fr5 = flaky_run(datetime.datetime(2015, 10, 19, 11, 0, 0))
+
+    self.assertEqual(
+        ProcessIssue._get_first_flake_occurrence_time(
+          Flake(name='foo', occurrences=[fr1, fr2, fr3, fr4, fr5])),
+        datetime.datetime(2015, 10, 18, 8, 0, 0))
+    self.assertEqual(
+        ProcessIssue._get_first_flake_occurrence_time(
+          Flake(name='foo', occurrences=[fr1, fr2])),
+        datetime.datetime(2015, 10, 12, 8, 0, 0))
+    self.assertEqual(
+        ProcessIssue._get_first_flake_occurrence_time(
+          Flake(name='foo', occurrences=[fr5])),
+        datetime.datetime(2015, 10, 19, 11, 0, 0))

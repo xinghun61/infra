@@ -14,6 +14,7 @@ from google.appengine.ext import ndb
 
 from issue_tracker import issue_tracker_api, issue
 from model.flake import FlakeUpdateSingleton, FlakeUpdate, Flake
+from infra_libs import ts_mon
 
 
 MAX_UPDATED_ISSUES_PER_DAY = 50
@@ -52,10 +53,16 @@ VERY_STALE_FLAKES_MESSAGE = (
     'Reporting to stale-flakes-reports@google.com to investigate why this '
     'issue is not being processed by Sheriffs.')
 STALE_FLAKES_ML = 'stale-flakes-reports@google.com'
+MAX_GAP_FOR_FLAKINESS_PERIOD = datetime.timedelta(days=3)
 
 
 
 class ProcessIssue(webapp2.RequestHandler):
+  reporting_delay = ts_mon.FloatMetric(
+      'flaky_issues_pipeline/reporting_delay', description='The delay in '
+      'seconds from the moment first flake occurrence in this flakiness period '
+      'happens and until the time an issue is created to track it.')
+
   @ndb.transactional
   def _get_flake_update_singleton_key(self):
     singleton_key = ndb.Key('FlakeUpdateSingleton', 'singleton')
@@ -86,6 +93,19 @@ class ProcessIssue(webapp2.RequestHandler):
       flaky_run for flaky_run in flaky_runs
       if self._is_same_day(flaky_run) and
          self._time_difference(flaky_run) <= MAX_TIME_DIFFERENCE_SECONDS])
+
+  @staticmethod
+  @ndb.non_transactional
+  def _get_first_flake_occurrence_time(flake):
+    assert flake.occurrences, 'Flake entity has no occurrences'
+    rev_occ = sorted(flake.occurrences, reverse=True)
+    last_occ_time = rev_occ[0].get().failure_run_time_finished
+    for occ in rev_occ[1:]:
+      occ_time = occ.get().failure_run_time_finished
+      if last_occ_time - occ_time > MAX_GAP_FOR_FLAKINESS_PERIOD:
+        break
+      last_occ_time = occ_time
+    return last_occ_time
 
   @ndb.transactional
   def _recreate_issue_for_flake(self, flake):
@@ -159,6 +179,9 @@ class ProcessIssue(webapp2.RequestHandler):
     flake.issue_last_updated = now
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
                  flake.name)
+
+    self.reporting_delay.set(
+        (now - self._get_first_flake_occurrence_time(flake)).total_seconds())
 
   @ndb.transactional(xg=True)  # pylint: disable=E1120
   def post(self, urlsafe_key):
