@@ -13,7 +13,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='project_config.proto',
   package='buildbucket',
-  serialized_pb='\n\x14project_config.proto\x12\x0b\x62uildbucket\"z\n\x03\x41\x63l\x12#\n\x04role\x18\x01 \x01(\x0e\x32\x15.buildbucket.Acl.Role\x12\r\n\x05group\x18\x02 \x01(\t\x12\x10\n\x08identity\x18\x03 \x01(\t\"-\n\x04Role\x12\n\n\x06READER\x10\x00\x12\r\n\tSCHEDULER\x10\x01\x12\n\n\x06WRITER\x10\x02\"\xb6\x03\n\x08Swarming\x12\x10\n\x08hostname\x18\x01 \x01(\t\x12\x12\n\nurl_format\x18\x02 \x01(\t\x12\x1c\n\x14\x63ommon_swarming_tags\x18\x03 \x03(\t\x12:\n\x11\x63ommon_dimensions\x18\x04 \x03(\x0b\x32\x1f.buildbucket.Swarming.Dimension\x12/\n\x08\x62uilders\x18\x05 \x03(\x0b\x32\x1d.buildbucket.Swarming.Builder\x1a*\n\x06Recipe\x12\x12\n\nrepository\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x1a\'\n\tDimension\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\x1a\xa3\x01\n\x07\x42uilder\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\rswarming_tags\x18\x02 \x03(\t\x12\x33\n\ndimensions\x18\x03 \x03(\x0b\x32\x1f.buildbucket.Swarming.Dimension\x12,\n\x06recipe\x18\x04 \x01(\x0b\x32\x1c.buildbucket.Swarming.Recipe\x12\x10\n\x08priority\x18\x05 \x01(\x05\"_\n\x06\x42ucket\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1e\n\x04\x61\x63ls\x18\x02 \x03(\x0b\x32\x10.buildbucket.Acl\x12\'\n\x08swarming\x18\x03 \x01(\x0b\x32\x15.buildbucket.Swarming\"6\n\x0e\x42uildbucketCfg\x12$\n\x07\x62uckets\x18\x01 \x03(\x0b\x32\x13.buildbucket.Bucket')
+  serialized_pb='\n\x14project_config.proto\x12\x0b\x62uildbucket\"z\n\x03\x41\x63l\x12#\n\x04role\x18\x01 \x01(\x0e\x32\x15.buildbucket.Acl.Role\x12\r\n\x05group\x18\x02 \x01(\t\x12\x10\n\x08identity\x18\x03 \x01(\t\"-\n\x04Role\x12\n\n\x06READER\x10\x00\x12\r\n\tSCHEDULER\x10\x01\x12\n\n\x06WRITER\x10\x02\"\xca\x03\n\x08Swarming\x12\x10\n\x08hostname\x18\x01 \x01(\t\x12\x12\n\nurl_format\x18\x02 \x01(\t\x12\x1c\n\x14\x63ommon_swarming_tags\x18\x03 \x03(\t\x12:\n\x11\x63ommon_dimensions\x18\x04 \x03(\x0b\x32\x1f.buildbucket.Swarming.Dimension\x12/\n\x08\x62uilders\x18\x05 \x03(\x0b\x32\x1d.buildbucket.Swarming.Builder\x1a>\n\x06Recipe\x12\x12\n\nrepository\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x12\n\nproperties\x18\x03 \x03(\t\x1a\'\n\tDimension\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\x1a\xa3\x01\n\x07\x42uilder\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\rswarming_tags\x18\x02 \x03(\t\x12\x33\n\ndimensions\x18\x03 \x03(\x0b\x32\x1f.buildbucket.Swarming.Dimension\x12,\n\x06recipe\x18\x04 \x01(\x0b\x32\x1c.buildbucket.Swarming.Recipe\x12\x10\n\x08priority\x18\x05 \x01(\x05\"_\n\x06\x42ucket\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1e\n\x04\x61\x63ls\x18\x02 \x03(\x0b\x32\x10.buildbucket.Acl\x12\'\n\x08swarming\x18\x03 \x01(\x0b\x32\x15.buildbucket.Swarming\"6\n\x0e\x42uildbucketCfg\x12$\n\x07\x62uckets\x18\x01 \x03(\x0b\x32\x13.buildbucket.Bucket')
 
 
 
@@ -107,6 +107,13 @@ _SWARMING_RECIPE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='properties', full_name='buildbucket.Swarming.Recipe.properties', index=2,
+      number=3, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -117,7 +124,7 @@ _SWARMING_RECIPE = _descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=351,
-  serialized_end=393,
+  serialized_end=413,
 )
 
 _SWARMING_DIMENSION = _descriptor.Descriptor(
@@ -150,8 +157,8 @@ _SWARMING_DIMENSION = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=395,
-  serialized_end=434,
+  serialized_start=415,
+  serialized_end=454,
 )
 
 _SWARMING_BUILDER = _descriptor.Descriptor(
@@ -205,8 +212,8 @@ _SWARMING_BUILDER = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=437,
-  serialized_end=600,
+  serialized_start=457,
+  serialized_end=620,
 )
 
 _SWARMING = _descriptor.Descriptor(
@@ -261,7 +268,7 @@ _SWARMING = _descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=162,
-  serialized_end=600,
+  serialized_end=620,
 )
 
 
@@ -302,8 +309,8 @@ _BUCKET = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=602,
-  serialized_end=697,
+  serialized_start=622,
+  serialized_end=717,
 )
 
 
@@ -330,8 +337,8 @@ _BUILDBUCKETCFG = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=699,
-  serialized_end=753,
+  serialized_start=719,
+  serialized_end=773,
 )
 
 _ACL.fields_by_name['role'].enum_type = _ACL_ROLE

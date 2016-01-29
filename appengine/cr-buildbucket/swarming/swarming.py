@@ -137,17 +137,23 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
     'bucket': build.bucket,
     'builder': builder_cfg.name,
   }
+
   is_recipe = builder_cfg.HasField('recipe')
   if is_recipe:  # pragma: no branch
     recipe = builder_cfg.recipe
     revision = swarming_param.get('recipe', {}).get('revision') or ''
+
+    build_properties = dict(
+      p.split(':', 1) for p in builder_cfg.recipe.properties or [])
+    build_properties.update(build.parameters.get(PROPERTIES_PARAMETER) or {})
+
     task_template_params.update({
       'repository': recipe.repository,
       'revision': revision,
       'recipe': recipe.name,
-      'properties_json': json.dumps(
-          build.parameters.get(PROPERTIES_PARAMETER) or {}, sort_keys=True),
+      'properties_json': json.dumps(build_properties, sort_keys=True),
     })
+
   task_template_params = {
     k: v or '' for k, v in task_template_params.iteritems()}
   task = format_obj(task_template, task_template_params)

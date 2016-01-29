@@ -53,6 +53,7 @@ class SwarmingTest(testing.AppengineTestCase):
             recipe=project_config_pb2.Swarming.Recipe(
               repository='https://example.com/repo',
               name='recipe',
+              properties=['predefined-property:x'],
             ),
             priority=108,
           ),
@@ -199,7 +200,7 @@ class SwarmingTest(testing.AppengineTestCase):
           '-repository', 'https://example.com/repo',
           '-revision', 'badcoffee',
           '-recipe', 'recipe',
-          '-properties', '{"a": "b"}',
+          '-properties', '{"a": "b", "predefined-property": "x"}',
         ],
         'dimensions': [
           {'key': 'cores', 'value': '8'},

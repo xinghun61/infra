@@ -20,6 +20,14 @@ def validate_recipe_cfg(recipe, ctx):
     ctx.error('name unspecified')
   if not recipe.repository:
     ctx.error('repository unspecified')
+  for i, p in enumerate(recipe.properties):
+    with ctx.prefix('property #%d: ', i + 1):
+      if ':' not in p:
+        ctx.error('does not have colon')
+      else:
+        key, _ = p.split(':', 1)
+        if not key:
+          ctx.error('key not specified')
 
 
 def validate_builder_cfg(builder, ctx):

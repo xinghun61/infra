@@ -34,7 +34,9 @@ class SwarmingCfgTest(testing.AppengineTestCase):
           dimensions=[Swarming.Dimension(key='os', value='Linux')],
           recipe=Swarming.Recipe(
             repository='https://x.com',
-            name='foo')
+            name='foo',
+            properties=['a:b'],
+          )
         ),
       ],
     )
@@ -52,7 +54,12 @@ class SwarmingCfgTest(testing.AppengineTestCase):
         ),
         Swarming.Builder(
           name='b2',
-          recipe=Swarming.Recipe(),
+          recipe=Swarming.Recipe(
+            properties=[
+              '',
+              ':'
+            ],
+          ),
           priority=-1,
         ),
       ],
@@ -69,5 +76,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
       'builder #1: recipe unspecified',
       'builder b2: recipe: name unspecified',
       'builder b2: recipe: repository unspecified',
+      'builder b2: recipe: property #1: does not have colon',
+      'builder b2: recipe: property #2: key not specified',
       'builder b2: priority must be in [0, 200] range; got -1',
     ])
