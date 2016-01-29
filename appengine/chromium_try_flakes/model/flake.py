@@ -14,6 +14,8 @@ class FlakeOccurrence(ndb.Model):
   name = ndb.StringProperty(required=True)
   # failre, i.e. FooTest.Bar
   failure = ndb.StringProperty(required=True)
+  # issue in which this occurrence was reported
+  issue_id = ndb.IntegerProperty(default=0)
 
 
 # Represents a patchset with a successful and failed try run for a particular

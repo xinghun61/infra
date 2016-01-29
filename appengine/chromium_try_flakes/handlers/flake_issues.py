@@ -86,13 +86,13 @@ class ProcessIssue(webapp2.RequestHandler):
     return time_since_finishing <= datetime.timedelta(days=1)
 
   @ndb.non_transactional
-  def _get_new_flakes_count(self, flake):
+  def _get_new_flakes(self, flake):
     num_runs = len(flake.occurrences) - flake.num_reported_flaky_runs
     flaky_runs = ndb.get_multi(flake.occurrences[-num_runs:])
-    return len([
+    return [
       flaky_run for flaky_run in flaky_runs
       if self._is_same_day(flaky_run) and
-         self._time_difference(flaky_run) <= MAX_TIME_DIFFERENCE_SECONDS])
+         self._time_difference(flaky_run) <= MAX_TIME_DIFFERENCE_SECONDS]
 
   @staticmethod
   @ndb.non_transactional
@@ -115,8 +115,21 @@ class ProcessIssue(webapp2.RequestHandler):
     taskqueue.add(url='/issues/process/%s' % flake.key.urlsafe(),
                   queue_name='issue-updates', transactional=True)
 
+  @staticmethod
+  @ndb.non_transactional
+  def _update_new_occurrences_with_issue_id(name, new_flaky_runs, issue_id):
+    # TODO(sergiyb): Find a way to do this asynchronously to avoid block
+    # transaction-bound method calling this. Possible solutions are to use
+    # put_multi_sync (need to find a way to test this) or to use deferred
+    # execution.
+    for fr in new_flaky_runs:
+      for occ in fr.flakes:
+        if occ.failure == name:
+          occ.issue_id = issue_id
+    ndb.put_multi(new_flaky_runs)
+
   @ndb.transactional
-  def _update_issue(self, api, flake, new_flakes_count, now):
+  def _update_issue(self, api, flake, new_flakes, now):
     """Updates an issue on the issue tracker."""
     flake_issue = api.getIssue(flake.issue_id)
 
@@ -149,21 +162,23 @@ class ProcessIssue(webapp2.RequestHandler):
 
     new_flaky_runs_msg = FLAKY_RUNS_TEMPLATE % {
         'name': flake.name,
-        'new_flakes_count': new_flakes_count,
+        'new_flakes_count': len(new_flakes),
         'flakes_url': FLAKES_URL_TEMPLATE % flake.key.urlsafe()}
     api.update(flake_issue, comment=new_flaky_runs_msg)
     logging.info('Updated issue %d for flake %s with %d flake runs',
-                 flake.issue_id, flake.name, new_flakes_count)
+                 flake.issue_id, flake.name, len(new_flakes))
+    self._update_new_occurrences_with_issue_id(
+        flake.name, new_flakes, flake_issue.id)
     flake.num_reported_flaky_runs = len(flake.occurrences)
     flake.issue_last_updated = now
 
   @ndb.transactional
-  def _create_issue(self, api, flake, flakes_count, now):
+  def _create_issue(self, api, flake, new_flakes, now):
     summary = SUMMARY_TEMPLATE % {'name': flake.name}
     description = DESCRIPTION_TEMPLATE % {
         'summary': summary,
         'flakes_url': FLAKES_URL_TEMPLATE % flake.key.urlsafe(),
-        'flakes_count': flakes_count}
+        'flakes_count': len(new_flakes)}
     if flake.old_issue_id:
       description = REOPENED_DESCRIPTION_TEMPLATE % {
           'description': description, 'old_issue': flake.old_issue_id}
@@ -175,6 +190,8 @@ class ProcessIssue(webapp2.RequestHandler):
                                         'Via-TryFlakes', 'Sheriff-Chromium']})
     flake_issue = api.create(new_issue)
     flake.issue_id = flake_issue.id
+    self._update_new_occurrences_with_issue_id(
+        flake.name, new_flakes, flake_issue.id)
     flake.num_reported_flaky_runs = len(flake.occurrences)
     flake.issue_last_updated = now
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
@@ -206,9 +223,9 @@ class ProcessIssue(webapp2.RequestHandler):
     # Retrieve flaky runs outside of the transaction, because we are not
     # planning to modify them and because there could be more of them than the
     # number of groups supported by cross-group transactions on AppEngine.
-    new_flakes_count = self._get_new_flakes_count(flake)
+    new_flakes = self._get_new_flakes(flake)
 
-    if new_flakes_count < MIN_REQUIRED_FLAKY_RUNS:
+    if len(new_flakes) < MIN_REQUIRED_FLAKY_RUNS:
       return
 
     if flake.issue_id > 0:
@@ -216,10 +233,10 @@ class ProcessIssue(webapp2.RequestHandler):
       if flake.issue_last_updated > now - datetime.timedelta(days=1):
         return
 
-      self._update_issue(api, flake, new_flakes_count, now)
+      self._update_issue(api, flake, new_flakes, now)
       self._increment_update_counter()
     else:
-      self._create_issue(api, flake, new_flakes_count, now)
+      self._create_issue(api, flake, new_flakes, now)
       # Don't update the issue just yet, this may fail, and we need the
       # transaction to succeed in order to avoid filing duplicate bugs.
       self._increment_update_counter()

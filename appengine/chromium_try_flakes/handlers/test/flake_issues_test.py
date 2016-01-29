@@ -10,7 +10,7 @@ from google.appengine.ext import ndb
 
 from handlers.flake_issues import ProcessIssue
 import main
-from model.flake import Flake, FlakyRun
+from model.flake import Flake, FlakyRun, FlakeOccurrence
 from model.build_run import PatchsetBuilderRuns, BuildRun
 from testing_utils import testing
 from time_functions.testing import mock_datetime_utc
@@ -154,6 +154,42 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     self.assertEqual(updated_flake.num_reported_flaky_runs, 3)
     self.assertEqual(updated_flake.issue_last_updated,
                      datetime.datetime(2015, 11, 10, 10, 11, 0))
+
+  def test_updates_new_occurrences_with_issue_id(self):
+    flake = self._create_flake()
+    flake.num_reported_flaky_runs = 1
+    flake.put()
+
+    # Already reported occurrences should not be updated.
+    fr1 = flake.occurrences[0].get()
+    fr1.flakes = [FlakeOccurrence(name='', failure='foo.bar')]
+    fr1.put()
+
+    fr2 = flake.occurrences[1].get()
+    fr2.flakes = [
+        # Occurrences for other flakes should not be updated.
+        FlakeOccurrence(name='', failure='bar.foo'),
+        # This occurrence should be updated.
+        FlakeOccurrence(name='', failure='foo.bar'),
+    ]
+    fr2.put()
+
+    # Only flakes that are reported should be updated. This flake has too large
+    # distance between failure and success runs.
+    fr3 = flake.occurrences[2].get()
+    fr3.flakes = [FlakeOccurrence(name='', failure='foo.bar')]
+    fr3.failure_run_time_finished = (
+        fr3.success_run.get().time_finished - datetime.timedelta(hours=13))
+    fr3.put()
+
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 1):
+      response = self.test_app.post('/issues/process/%s' % flake.key.urlsafe())
+      self.assertEqual(200, response.status_int)
+
+    self.assertEqual(flake.occurrences[0].get().flakes[0].issue_id, 0)
+    self.assertEqual(flake.occurrences[1].get().flakes[0].issue_id, 0)
+    self.assertEqual(flake.occurrences[1].get().flakes[1].issue_id, 100000)
+    self.assertEqual(flake.occurrences[2].get().flakes[0].issue_id, 0)
 
   def test_recreates_issue_after_a_week(self):
     issue = self.mock_api.create(MockIssue({}))
