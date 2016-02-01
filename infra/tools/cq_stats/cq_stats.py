@@ -1170,15 +1170,15 @@ def print_stats(args, stats):
           day_stats, 'infra-false-rejections', committed=True)
 
       output('  %s: %4d attempts; 50%% %4.1f; 90%% %4.1f; '
-             'false rejections %.1f%% (%.1f%% infra)',
+             'false rejections %4.1f%% (%4.1f%% infra)',
              day_stats['begin'].date(),
              day_stats['attempt-count'],
              day_stats['patchset-committed-durations']['50'] / 3600.0,
              day_stats['patchset-committed-durations']['90'] / 3600.0,
              percentage(sum(p['count'] for p in false_rejections),
-                        stats['attempt-count']),
+                        day_stats['attempt-count']),
              percentage(sum(p['count'] for p in infra_false_rejections),
-                        stats['attempt-count']))
+                        day_stats['attempt-count']))
 
   output()
   output('Slowest CLs:')
