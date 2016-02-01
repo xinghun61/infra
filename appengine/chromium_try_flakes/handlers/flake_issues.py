@@ -68,9 +68,10 @@ KNOWN_TROOPER_FAILURES = [
 
 class ProcessIssue(webapp2.RequestHandler):
   reporting_delay = ts_mon.FloatMetric(
-      'flaky_issues_pipeline/reporting_delay', description='The delay in '
-      'seconds from the moment first flake occurrence in this flakiness period '
-      'happens and until the time an issue is created to track it.')
+      'flakiness_pipeline/reporting_delay',
+      description='The delay in seconds from the moment first flake occurrence '
+                  'in this flakiness period happens and until the time an '
+                  'issue is created to track it.')
 
   @ndb.transactional
   def _get_flake_update_singleton_key(self):
