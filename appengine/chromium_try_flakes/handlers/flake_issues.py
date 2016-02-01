@@ -32,12 +32,18 @@ DESCRIPTION_TEMPLATE = (
     '%(summary)s.\n\n'
     'This issue was created automatically by the chromium-try-flakes app. '
     'Please find the right owner to fix the respective test/step and assign '
-    'this issue to them. If the step/test is infrastructure-related, please '
-    'add Infra-Troopers label and change issue status to Untriaged. When done, '
-    'please remove the issue from Sheriff Bug Queue by removing the '
-    'Sheriff-Chromium label.\n\n'
+    'this issue to them. %(other_queue_msg)s\n\n'
     'We have detected %(flakes_count)d recent flakes. List of all flakes can '
     'be found at %(flakes_url)s.')
+SHERIFF_QUEUE_MSG = (
+    'If the step/test is infrastructure-related, please add Infra-Troopers '
+    'label and change issue status to Untriaged. When done, please remove the '
+    'issue from Sheriff Bug Queue by removing the Sheriff-Chromium label.')
+TROOPER_QUEUE_MSG = (
+    'If the step/test is not infrastructure-related (e.g. flaky test), please '
+    'add Sheriff-Chromium label and change issue status to Untriaged. When '
+    'done, please remove the issue from Trooper Bug Queue by removing the '
+    'Infra-Troopers label.')
 REOPENED_DESCRIPTION_TEMPLATE = (
     '%(description)s\n\n'
     'This flaky test/step was previously tracked in issue %(old_issue)d.')
@@ -54,6 +60,9 @@ VERY_STALE_FLAKES_MESSAGE = (
     'issue is not being processed by Sheriffs.')
 STALE_FLAKES_ML = 'stale-flakes-reports@google.com'
 MAX_GAP_FOR_FLAKINESS_PERIOD = datetime.timedelta(days=3)
+KNOWN_TROOPER_FAILURES = [
+    'compile (with patch)', 'gclient runhooks (with patch)', 'analyze',
+    'device_status_check', 'Patch failure', 'process_dumps']
 
 
 
@@ -172,13 +181,25 @@ class ProcessIssue(webapp2.RequestHandler):
     flake.num_reported_flaky_runs = len(flake.occurrences)
     flake.issue_last_updated = now
 
+  def _is_trooper_issue(self, flake):
+    return flake.name in KNOWN_TROOPER_FAILURES
+
   @ndb.transactional
   def _create_issue(self, api, flake, new_flakes, now):
+    labels = ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky', 'Via-TryFlakes']
+    if self._is_trooper_issue(flake):
+      labels.append('Infra-Troopers')
+      other_queue_msg = TROOPER_QUEUE_MSG
+    else:
+      labels.append('Sheriff-Chromium')
+      other_queue_msg = SHERIFF_QUEUE_MSG
+
     summary = SUMMARY_TEMPLATE % {'name': flake.name}
     description = DESCRIPTION_TEMPLATE % {
         'summary': summary,
         'flakes_url': FLAKES_URL_TEMPLATE % flake.key.urlsafe(),
-        'flakes_count': len(new_flakes)}
+        'flakes_count': len(new_flakes),
+        'other_queue_msg': other_queue_msg}
     if flake.old_issue_id:
       description = REOPENED_DESCRIPTION_TEMPLATE % {
           'description': description, 'old_issue': flake.old_issue_id}
@@ -186,8 +207,7 @@ class ProcessIssue(webapp2.RequestHandler):
     new_issue = issue.Issue({'summary': summary,
                              'description': description,
                              'status': 'Untriaged',
-                             'labels': ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky',
-                                        'Via-TryFlakes', 'Sheriff-Chromium']})
+                             'labels': labels})
     flake_issue = api.create(new_issue)
     flake.issue_id = flake_issue.id
     self._update_new_occurrences_with_issue_id(

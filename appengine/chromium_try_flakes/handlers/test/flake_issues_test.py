@@ -155,6 +155,29 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     self.assertEqual(updated_flake.issue_last_updated,
                      datetime.datetime(2015, 11, 10, 10, 11, 0))
 
+  @mock_datetime_utc(2015, 11, 10, 10, 11, 0)
+  def test_creates_issue_for_troopers(self):
+    flake = self._create_flake()
+    flake.name = 'compile (with patch)'
+    flake.put()
+
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      response = self.test_app.post('/issues/process/%s' % flake.key.urlsafe())
+
+    self.assertEqual(200, response.status_int)
+
+    # Only check what differentiates a trooper issue from a sheriff issue. The
+    # rest of the properties are checked in test_creates_issue_for_new_flake.
+    self.assertIn(100000, self.mock_api.issues)
+    issue = self.mock_api.issues[100000]
+    self.assertIn(
+        'If the step/test is not infrastructure-related (e.g. flaky test), '
+        'please add Sheriff-Chromium label and change issue status to '
+        'Untriaged. When done, please remove the issue from Trooper Bug Queue '
+        'by removing the Infra-Troopers label.', issue.description)
+    self.assertEqual(issue.labels, ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky',
+                                    'Via-TryFlakes', 'Infra-Troopers'])
+
   def test_updates_new_occurrences_with_issue_id(self):
     flake = self._create_flake()
     flake.num_reported_flaky_runs = 1
