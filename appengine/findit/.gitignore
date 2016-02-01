@@ -1,1 +1,5 @@
+# no file in .tmp/
 .tmp
+
+# no file in util_scripts/tmp
+util_scripts/tmp
