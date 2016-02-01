@@ -62,7 +62,7 @@ STALE_FLAKES_ML = 'stale-flakes-reports@google.com'
 MAX_GAP_FOR_FLAKINESS_PERIOD = datetime.timedelta(days=3)
 KNOWN_TROOPER_FAILURES = [
     'compile (with patch)', 'gclient runhooks (with patch)', 'analyze',
-    'device_status_check', 'Patch failure', 'process_dumps']
+    'device_status_check', 'Patch failure', 'process_dumps', 'compile']
 
 
 
