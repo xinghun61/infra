@@ -9,13 +9,13 @@ from model import wf_analysis_status
 
 
 class WfTryJob(BaseBuildModel):
-  """Represents a tryjob results for a failed build.
+  """Represents a try job results for a failed build.
 
   'Wf' is short for waterfall.
   """
-  # A list of dict containing results and urls of each tryjob for compile.
+  # A list of dict containing results and urls of each try job for compile.
   compile_results = ndb.JsonProperty(default=[], indexed=False, compressed=True)
-  # TODO(chanli): Add test_results when add support for tryjobs for test.
+  # TODO(chanli): Add test_results when add support for try jobs for test.
 
   # The status of the try job.
   status = ndb.IntegerProperty(

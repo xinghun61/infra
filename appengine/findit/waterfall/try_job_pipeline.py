@@ -12,7 +12,7 @@ from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 
 
 class TryJobPipeline(BasePipeline):
-  """Root pipeline to start a tryjob on current build."""
+  """Root pipeline to start a try job on current build."""
 
   def __init__(self, master_name, builder_name, build_number,
                good_revision, bad_revision, compile_targets):

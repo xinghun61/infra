@@ -11,24 +11,24 @@ from model.wf_try_job import WfTryJob
 class WfTryJobTest(unittest.TestCase):
   def testWfTryJobStatusIsCompleted(self):
     for status in (wf_analysis_status.ANALYZED, wf_analysis_status.ERROR):
-      tryjob = WfTryJob.Create('m', 'b', 123)
-      tryjob.status = status
-      self.assertTrue(tryjob.completed)
+      try_job = WfTryJob.Create('m', 'b', 123)
+      try_job.status = status
+      self.assertTrue(try_job.completed)
 
   def testWfTryJobStatusIsNotCompleted(self):
     for status in (wf_analysis_status.PENDING, wf_analysis_status.ANALYZING):
-      tryjob = WfTryJob.Create('m', 'b', 123)
-      tryjob.status = status
-      self.assertFalse(tryjob.completed)
+      try_job = WfTryJob.Create('m', 'b', 123)
+      try_job.status = status
+      self.assertFalse(try_job.completed)
 
   def testWfTryJobStatusIsFailed(self):
-    tryjob = WfTryJob.Create('m', 'b', 123)
-    tryjob.status = wf_analysis_status.ERROR
-    self.assertTrue(tryjob.failed)
+    try_job = WfTryJob.Create('m', 'b', 123)
+    try_job.status = wf_analysis_status.ERROR
+    self.assertTrue(try_job.failed)
 
   def testWfTryJobStatusIsNotFailed(self):
     for status in (wf_analysis_status.PENDING, wf_analysis_status.ANALYZING,
                    wf_analysis_status.ANALYZED):
-      tryjob = WfTryJob.Create('m', 'b', 123)
-      tryjob.status = status
-      self.assertFalse(tryjob.failed)
+      try_job = WfTryJob.Create('m', 'b', 123)
+      try_job.status = status
+      self.assertFalse(try_job.failed)

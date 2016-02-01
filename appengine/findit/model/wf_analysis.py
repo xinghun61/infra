@@ -112,7 +112,7 @@ class WfAnalysis(BaseBuildModel):
   result = ndb.JsonProperty(indexed=False, compressed=True)
   # Suspected CLs we found.
   suspected_cls = ndb.JsonProperty(indexed=False, compressed=True)
-  # Record the id of tryjob results of each failure.
+  # Record the id of try job results of each failure.
   failure_result_map = ndb.JsonProperty(indexed=False, compressed=True)
 
   # The actual culprit CLs that are responsible for the failures.

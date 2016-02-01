@@ -10,7 +10,7 @@ from waterfall import waterfall_config
 
 
 class ScheduleTryJobPipeline(BasePipeline):
-  """A pipeline for scheduling a new tryjob for current build."""
+  """A pipeline for scheduling a new try job for current build."""
 
   def _getBuildProperties(self, recipe, master_name, builder_name,
                           good_revision, bad_revision, compile_targets):

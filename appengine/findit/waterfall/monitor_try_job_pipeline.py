@@ -12,7 +12,7 @@ from pipeline_wrapper import pipeline
 
 
 class MonitorTryJobPipeline(BasePipeline):
-  """A pipeline for monitoring a tryjob and recording results when it's done.
+  """A pipeline for monitoring a try job and recording results when it's done.
 
   The result will be stored to compile_results or test_results according to
   which type of build failure we are running try job for.
