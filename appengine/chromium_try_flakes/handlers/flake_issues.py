@@ -61,9 +61,9 @@ VERY_STALE_FLAKES_MESSAGE = (
 STALE_FLAKES_ML = 'stale-flakes-reports@google.com'
 MAX_GAP_FOR_FLAKINESS_PERIOD = datetime.timedelta(days=3)
 KNOWN_TROOPER_FAILURES = [
-    'compile (with patch)', 'gclient runhooks (with patch)', 'analyze',
-    'device_status_check', 'Patch failure', 'process_dumps', 'compile']
-
+    'analyze', 'bot_update', 'compile (with patch)', 'compile',
+    'device_status_check', 'gclient runhooks (with patch)', 'Patch failure',
+    'process_dumps', 'provision_devices', 'update_scripts']
 
 
 class ProcessIssue(webapp2.RequestHandler):
