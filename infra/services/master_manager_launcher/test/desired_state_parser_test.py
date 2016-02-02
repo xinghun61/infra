@@ -201,17 +201,6 @@ class TestDesiredStateValidation(auto_stub.TestCase):
       desired_state_parser.load_desired_state_file(
           os.path.join(DATA_DIR, 'broken.json'))
 
-  def testIllegallyManaged(self):
-    with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
-      desired_state_parser.validate_desired_master_state(self._stateConfig([
-          {'desired_state': 'running',
-           'transition_time_utc': UNIX_TIMESTAMP_4000},
-          {'desired_state': 'offline',
-           'transition_time_utc': UNIX_TIMESTAMP_6000},
-        ],
-        manually_managed='someone_important@example.net',
-      ))
-
 
 class TestMasterStateLookup(unittest.TestCase):
   STATE_CONFIG = [
