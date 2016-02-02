@@ -218,8 +218,9 @@ class ProcessIssue(webapp2.RequestHandler):
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
                  flake.name)
 
-    self.reporting_delay.set(
-        (now - self._get_first_flake_occurrence_time(flake)).total_seconds())
+    delay = (now - self._get_first_flake_occurrence_time(flake)).total_seconds()
+    self.reporting_delay.set(delay)
+    logging.info('Reported reporting_delay %d for flake %s', delay, flake.name)
 
   @ndb.transactional(xg=True)  # pylint: disable=E1120
   def post(self, urlsafe_key):
