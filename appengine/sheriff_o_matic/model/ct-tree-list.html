@@ -19,7 +19,7 @@ CTTreeList.getInstance = function() {
 };
 
 CTTreeList.prototype.update = function() {
-  this._promise = net.json("/tree-list").then(function (data) {
+  this._promise = net.json("/tree-list").then(function(data) {
     return data.trees.map(function(t) {
       return new CTTree(t.name, t.display_name, t.bug_labels);
     });
@@ -30,7 +30,7 @@ CTTreeList.prototype.update = function() {
 }
 
 CTTreeList.getTree = function(treeName) {
-  return CTTreeList.getInstance()._promise.then(function (trees) {
+  return CTTreeList.getInstance()._promise.then(function(trees) {
     return trees.filter(function(t) {
       return t.name == treeName;
     })[0];
@@ -38,7 +38,7 @@ CTTreeList.getTree = function(treeName) {
 };
 
 CTTreeList.defaultValue = function() {
-  return CTTreeList.getInstance()._promise.then(function (trees) {
+  return CTTreeList.getInstance()._promise.then(function(trees) {
     return trees[0].name;
   })
 };
