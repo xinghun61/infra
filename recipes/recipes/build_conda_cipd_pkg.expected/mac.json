@@ -3,7 +3,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build.cipd]/resources/bootstrap.py",
+      "RECIPE_MODULE[cipd]/resources/bootstrap.py",
       "--platform",
       "mac-amd64",
       "--dest-directory",
@@ -146,7 +146,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build.conda]/resources/butcher_conda.py",
+      "RECIPE_MODULE[conda]/resources/butcher_conda.py",
       "[SLAVE_BUILD]/conda_staging_dir"
     ],
     "cwd": "[SLAVE_BUILD]",
