@@ -24,6 +24,8 @@ function CTFailureGroup(tree, data, category) {
   }.bind(this))
 }
 
+CTFailureGroup.transientProperties = ['category', 'snoozed', 'bug', 'bugLabel'];
+
 CTFailureGroup.prototype.snoozeUntil = function(time) {
   return this._annotate({
     snoozeTime: time,

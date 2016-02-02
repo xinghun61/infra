@@ -45,8 +45,7 @@ function canUpdateLeft(target, source) {
 //
 // You have to call this as "target = updateLeft(target, source);" because it
 // won't always update |target| in-place.
-updateUtil.updateLeft = function(target, source)
-{
+updateUtil.updateLeft = function(target, source) {
   if (!canUpdateLeft(target, source)) {
     return source;
   }

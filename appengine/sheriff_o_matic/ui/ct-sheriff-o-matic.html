@@ -144,11 +144,11 @@ found in the LICENSE file.
         right: 0px;
       }
     </style>
-      <div id="top_bar">
-        <div id="title_bar" horizontal layout>
-          <div flex>Sheriff-O-Matic: {{ page_title }}</div>
-            <paper-spinner id="spinner" active="true"></paper-spinner>
-            <a id="historyLink" href="{{tree}}?history={{ alertsHistoryKey }}"><paper-icon-button id="historyLinkButton" icon="link" title="permalink to this set of alerts" hidden?="{{ !alertsHistoryKey }}"></paper-icon-button></a>
+    <div id="top_bar">
+      <div id="title_bar" horizontal layout>
+        <div flex>Sheriff-O-Matic: {{ page_title }}</div>
+          <paper-spinner id="spinner" active="true"></paper-spinner>
+          <a id="historyLink" href="{{tree}}?history={{ alertsHistoryKey }}"><paper-icon-button id="historyLinkButton" icon="link" title="permalink to this set of alerts" hidden?="{{ !alertsHistoryKey }}"></paper-icon-button></a>
           <ct-last-updated date="{{ failures.lastUpdateDate }}"></ct-last-updated>
         </div>
         <ct-banner id="trooperBanner"></ct-banner>
@@ -167,7 +167,7 @@ found in the LICENSE file.
             <paper-item id="help_links" label="Useful Links" on-tap="{{ itemSelected }}" horizontal center layout>Useful Links</paper-item>
             <paper-item id="help_calendar" label="Rotation Calendar" on-tap="{{ itemSelected }}" horizontal center layout>Rotation Calendar</paper-item>
             <paper-item id="health" label="System Health" on-tap="{{ itemSelected }}" horizontal center layout>System Health</paper-item>
-           <paper-item id="prefs" label="Preferences" on-tap="{{ itemSelected }}" horizontal center layout>Preferences</paper-item>
+            <paper-item id="prefs" label="Preferences" on-tap="{{ itemSelected }}" horizontal center layout>Preferences</paper-item>
           </core-menu>
           <div flex vertical layout center>
             <paper-button id="feedback_button" on-click="{{ fileSoMBug }}" raised="" role="button">
@@ -178,7 +178,6 @@ found in the LICENSE file.
 
         <!-- main content area -->
         <div id="main_content">
-
           <app-router id="router" trailingSlash="ignore" mode="pushstate">
             <app-route path="/help_links" >
               <template>
@@ -192,9 +191,7 @@ found in the LICENSE file.
             </app-route>
 
             <app-route path="/help_calendar" >
-              <template>
                 <iframe src="https://chromium-build.appspot.com/static/rotations.html" width="100%" height="600px"></iframe>
-              </template>
             </app-route>
 
             <app-route path="/health" on-before-data-binding="{{ bindHealth }}">
@@ -210,21 +207,15 @@ found in the LICENSE file.
             </app-route>
 
             <app-route path="/new-alerts/:tree" on-before-data-binding="{{ bindGenericAlerts }}">
-              <template>
                 <ct-alerts tree="{{ tree }}" alerts="{{ failures.alerts }}"></ct-alerts>
-              </template>
             </app-route>
 
             <app-route path="/:tree" on-before-data-binding="{{ modifyTreeModel }}">
-              <template>
                 <ct-unexpected-failures id="unexpected" tree="{{ tree }}" repositories="{{ repositories }}" failures="{{ failures }}" bugQueue="{{ bugQueue }}"></ct-unexpected-failures>
-              </template>
             </app-route>
 
             <app-route path="/:tree/failure/:failureGroupKey" fit on-before-data-binding="{{ modifyFailureGroupModel }}">
-              <template>
               <ct-results-panel fit id="resultsPanel" group="{{ examinedFailureGroup }}" failureGroupKey="{{ failureGroupKey }}" tree="{{ tree || 'chromium' }}"></ct-results-panel>
-              </template>
             </app-route>
 
             <app-route path="/" redirect="/chromium"></app-route>
@@ -232,6 +223,7 @@ found in the LICENSE file.
           </app-router>
         </div>
       </div>
+    </div>
   </template>
   <script>
     var kUpdateFrequency = 1000 * 30;
