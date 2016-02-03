@@ -3,7 +3,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[bot_update]/resources/bot_update.py",
+      "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--master",
       "chromium.testing.master",
       "--builder",
@@ -126,7 +126,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[chromium]/resources/export_tarball.py",
+      "RECIPE_MODULE[build::chromium]/resources/export_tarball.py",
       "--remove-nonessential-files",
       "chromium-38.0.2125.122",
       "--verbose",
@@ -141,7 +141,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[gsutil]/resources/gsutil_wrapper.py",
+      "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
       "[DEPOT_TOOLS]/gsutil.py",
       "----",
@@ -161,7 +161,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[chromium]/resources/generate_hashes.py",
+      "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
       "[TMP_BASE]/export_tarball_tmp_1/chromium-38.0.2125.122.tar.xz",
       "/path/to/tmp/"
     ],
@@ -172,7 +172,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[gsutil]/resources/gsutil_wrapper.py",
+      "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
       "[DEPOT_TOOLS]/gsutil.py",
       "----",
@@ -214,7 +214,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[chromium]/resources/export_tarball.py",
+      "RECIPE_MODULE[build::chromium]/resources/export_tarball.py",
       "--test-data",
       "chromium-38.0.2125.122",
       "--verbose",
@@ -229,7 +229,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[gsutil]/resources/gsutil_wrapper.py",
+      "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
       "[DEPOT_TOOLS]/gsutil.py",
       "----",
@@ -249,7 +249,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[chromium]/resources/generate_hashes.py",
+      "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
       "[TMP_BASE]/export_tarball_tmp_2/chromium-38.0.2125.122.tar.xz",
       "/path/to/tmp/"
     ],
@@ -260,7 +260,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[gsutil]/resources/gsutil_wrapper.py",
+      "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
       "[DEPOT_TOOLS]/gsutil.py",
       "----",
@@ -1040,7 +1040,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[chromium]/resources/export_tarball.py",
+      "RECIPE_MODULE[build::chromium]/resources/export_tarball.py",
       "--remove-nonessential-files",
       "chromium-38.0.2125.122",
       "--verbose",
@@ -1055,7 +1055,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[gsutil]/resources/gsutil_wrapper.py",
+      "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
       "[DEPOT_TOOLS]/gsutil.py",
       "----",
@@ -1075,7 +1075,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[chromium]/resources/generate_hashes.py",
+      "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
       "[TMP_BASE]/export_tarball_tmp_4/chromium-38.0.2125.122.tar.xz",
       "/path/to/tmp/"
     ],
@@ -1086,7 +1086,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[gsutil]/resources/gsutil_wrapper.py",
+      "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
       "[DEPOT_TOOLS]/gsutil.py",
       "----",
@@ -1175,7 +1175,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[chromium]/resources/export_tarball.py",
+      "RECIPE_MODULE[build::chromium]/resources/export_tarball.py",
       "--remove-nonessential-files",
       "chromium-38.0.2125.122",
       "--verbose",
@@ -1190,7 +1190,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[gsutil]/resources/gsutil_wrapper.py",
+      "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
       "[DEPOT_TOOLS]/gsutil.py",
       "----",
@@ -1210,7 +1210,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[chromium]/resources/generate_hashes.py",
+      "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
       "[TMP_BASE]/export_tarball_tmp_6/chromium-38.0.2125.122.tar.xz",
       "/path/to/tmp/"
     ],
@@ -1221,7 +1221,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[gsutil]/resources/gsutil_wrapper.py",
+      "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
       "[DEPOT_TOOLS]/gsutil.py",
       "----",
