@@ -18,7 +18,7 @@ from infra.libs.process_invocation import multiprocess
 from infra.libs.service_utils import daemon
 from infra.services.master_manager_launcher import desired_state_parser
 from infra_libs import logs
-from infra_libs import ts_mon
+
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 RUNPY = os.path.abspath(os.path.join(
@@ -29,10 +29,6 @@ def parse_args():
   parser = argparse.ArgumentParser(
       description='Launches master_manager for every master on a host. NOTE: '
                   'does not perform any action unless --prod is set.')
-
-  ts_mon.add_argparse_options(parser)
-  logs.add_argparse_options(parser)
-
   parser.add_argument('build_dir', nargs='?',
       help='location of the tools/build directory')
   parser.add_argument('--hostname',
@@ -54,14 +50,9 @@ def parse_args():
       default=16, type=int,
       help='maximum number of master_manager processes to run simultaneously '
            '(default %(default)d)')
-
-  parser.set_defaults(
-    ts_mon_target_type='task',
-    ts_mon_task_service_name='master_manager_launcher',
-  )
+  logs.add_argparse_options(parser)
 
   args = parser.parse_args()
-  ts_mon.process_argparse_options(args)
   logs.process_argparse_options(args)
 
   if args.json_file and args.json_gitiles:
