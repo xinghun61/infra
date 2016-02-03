@@ -30,9 +30,6 @@
       "[SLAVE_BUILD]\\conda_staging_dir"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "env": {
-      "PYTHONPATH": ".;%(PYTHONPATH)s"
-    },
     "name": "rmtree cleaning staging dir",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -81,9 +78,6 @@
       "[TMP_BASE]\\conda_tmp_1"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "env": {
-      "PYTHONPATH": ".;%(PYTHONPATH)s"
-    },
     "name": "rmtree remove miniconda installer",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -239,9 +233,6 @@
       "[SLAVE_BUILD]\\conda_staging_dir"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "env": {
-      "PYTHONPATH": ".;%(PYTHONPATH)s"
-    },
     "name": "rmtree removing conda",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",

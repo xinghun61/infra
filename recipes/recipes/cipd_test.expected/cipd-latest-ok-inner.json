@@ -278,9 +278,6 @@
       "[SLAVE_BUILD]/cipd_test_package/.cipd"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "env": {
-      "PYTHONPATH": ".:%(PYTHONPATH)s"
-    },
     "name": "rmtree .cipd package directory",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
