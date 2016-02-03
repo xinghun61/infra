@@ -165,6 +165,9 @@
       "[SLAVE_BUILD]/infra/go/bin"
     ],
     "cwd": "[SLAVE_BUILD]",
+    "env": {
+      "PYTHONPATH": ".:%(PYTHONPATH)s"
+    },
     "name": "rmcontents clean go bin",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",

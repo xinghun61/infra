@@ -196,6 +196,9 @@
       "[TMP_BASE]/export_tarball_tmp_1"
     ],
     "cwd": "[SLAVE_BUILD]",
+    "env": {
+      "PYTHONPATH": ".:%(PYTHONPATH)s"
+    },
     "name": "rmtree temp dir",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -281,6 +284,9 @@
       "[TMP_BASE]/export_tarball_tmp_2"
     ],
     "cwd": "[SLAVE_BUILD]",
+    "env": {
+      "PYTHONPATH": ".:%(PYTHONPATH)s"
+    },
     "name": "rmtree temp dir (2)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -1104,6 +1110,9 @@
       "[TMP_BASE]/export_tarball_tmp_4"
     ],
     "cwd": "[SLAVE_BUILD]",
+    "env": {
+      "PYTHONPATH": ".:%(PYTHONPATH)s"
+    },
     "name": "rmtree temp dir (3)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -1123,6 +1132,9 @@
       "[TMP_BASE]/tmp_tmp_3"
     ],
     "cwd": "[SLAVE_BUILD]",
+    "env": {
+      "PYTHONPATH": ".:%(PYTHONPATH)s"
+    },
     "name": "rmtree temp dir (4)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -1233,6 +1245,9 @@
       "[TMP_BASE]/export_tarball_tmp_6"
     ],
     "cwd": "[SLAVE_BUILD]",
+    "env": {
+      "PYTHONPATH": ".:%(PYTHONPATH)s"
+    },
     "name": "rmtree temp dir (5)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -1252,6 +1267,9 @@
       "[TMP_BASE]/tmp_tmp_5"
     ],
     "cwd": "[SLAVE_BUILD]",
+    "env": {
+      "PYTHONPATH": ".:%(PYTHONPATH)s"
+    },
     "name": "rmtree temp dir (6)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
