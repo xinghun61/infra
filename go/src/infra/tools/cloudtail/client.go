@@ -75,8 +75,16 @@ type ClientOptions struct {
 }
 
 var (
-	entriesCounter = metric.NewCounter("cloudtail/entries", field.String("severity"))
-	writesCounter  = metric.NewCounter("cloudtail/writes", field.String("result"))
+	entriesCounter = metric.NewCounter("cloudtail/log_entries",
+		field.String("log"),
+		field.String("resource_type"),
+		field.String("resource_id"),
+		field.String("severity"))
+	writesCounter = metric.NewCounter("cloudtail/api_writes",
+		field.String("log"),
+		field.String("resource_type"),
+		field.String("resource_id"),
+		field.String("result"))
 )
 
 // NewClient returns new object that knows how to push log entries to a single
@@ -169,13 +177,13 @@ func (c *loggingClient) PushEntries(entries []Entry) error {
 			TextPayload:   e.TextPayload,
 			StructPayload: e.StructPayload,
 		}
-		entriesCounter.Add(c.ctx, 1, metadata.Severity)
+		entriesCounter.Add(c.ctx, 1, c.opts.LogID, c.opts.ResourceType, c.opts.ResourceID, metadata.Severity)
 	}
 	if err := c.writeFunc(c.opts.ProjectID, c.opts.LogID, &req); err != nil {
-		writesCounter.Add(c.ctx, 1, "failure")
+		writesCounter.Add(c.ctx, 1, c.opts.LogID, c.opts.ResourceType, c.opts.ResourceID, "failure")
 		return err
 	}
 
-	writesCounter.Add(c.ctx, 1, "success")
+	writesCounter.Add(c.ctx, 1, c.opts.LogID, c.opts.ResourceType, c.opts.ResourceID, "success")
 	return nil
 }
