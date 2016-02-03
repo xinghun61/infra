@@ -5,16 +5,20 @@
 """Task queue endpoints for creating and updating issues on issue tracker."""
 
 import datetime
+import json
 import logging
 import webapp2
 
 from google.appengine.api import app_identity
 from google.appengine.api import taskqueue
+from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
 
-from issue_tracker import issue_tracker_api, issue
-from model.flake import FlakeUpdateSingleton, FlakeUpdate, Flake
 from infra_libs import ts_mon
+from issue_tracker import issue_tracker_api, issue
+from model.flake import (
+    Flake, FlakeOccurrence, FlakeUpdate, FlakeUpdateSingleton, FlakyRun)
+from status import build_result, util
 
 
 MAX_UPDATED_ISSUES_PER_DAY = 50
@@ -334,3 +338,176 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
       flake_issue.cc.append(STALE_FLAKES_ML)
       logging.info('Reporting issue %s to %s', flake_issue.id, STALE_FLAKES_ML)
       api.update(flake_issue, comment=VERY_STALE_FLAKES_MESSAGE)
+
+
+class CreateFlakyRun(webapp2.RequestHandler):
+  # We execute below method in an indepedent transaction since otherwise we
+  # would exceed the maximum number of entities allowed within a single
+  # transaction.
+  @staticmethod
+  # pylint: disable=E1120
+  @ndb.transactional(xg=True, propagation=ndb.TransactionOptions.INDEPENDENT)
+  def add_failure_to_flake(name, flaky_run_key, failure_time):
+    flake = Flake.get_by_id(name)
+    if not flake:
+      flake = Flake(name=name, id=name, last_time_seen=datetime.datetime.min)
+      flake.put()
+
+    flake.occurrences.append(flaky_run_key)
+    util.add_occurrence_time_to_flake(flake, failure_time)
+    flake.put()
+
+  # see examples:
+  # compile http://build.chromium.org/p/tryserver.chromium.mac/json/builders/
+  #         mac_chromium_compile_dbg/builds/11167?as_text=1
+  # gtest http://build.chromium.org/p/tryserver.chromium.win/json/builders/
+  #       win_chromium_x64_rel_swarming/builds/4357?as_text=1
+  # TODO(jam): get specific problem with compile so we can use that as name
+  # TODO(jam): It's unfortunate to have to parse this html. Can we get it from
+  # another place instead of the tryserver's json?
+  @staticmethod
+  def get_flakes(step):
+    combined = ' '.join(step['text'])
+
+    # If test results were invalid, report whole step as flaky.
+    if 'TEST RESULTS WERE INVALID' in combined:
+      return [combined]
+
+    #gtest
+    gtest_search_str = 'failures:<br/>'
+    gtest_search_index = combined.find(gtest_search_str)
+    if gtest_search_index != -1:
+      failures = combined[gtest_search_index + len(gtest_search_str):]
+      failures = failures.split('<br/>')
+      results = []
+      for failure in failures:
+        if not failure:
+          continue
+        if failure == 'ignored:':
+          break  # layout test output
+        results.append(failure)
+      return results
+
+    #gpu
+    gpu_search_str = '&tests='
+    gpu_search_index = combined.find(gpu_search_str)
+    if gpu_search_index != -1:
+      failures = combined[gpu_search_index + len(gpu_search_str):]
+      end_index = failures.find('">')
+      failures = failures[:end_index  ]
+      failures = failures.split(',')
+      results = []
+      for failure in failures:
+        if not failure:
+          continue
+        results.append(failure)
+      return results
+
+    return [combined]
+
+  @ndb.transactional(xg=True)  # pylint: disable=E1120
+  def post(self):
+    if (not self.request.get('failure_run_key') or
+        not self.request.get('success_run_key')):
+      self.response.set_status(400, 'Invalid request parameters')
+      return
+
+    failure_run = ndb.Key(urlsafe=self.request.get('failure_run_key')).get()
+    success_run = ndb.Key(urlsafe=self.request.get('success_run_key')).get()
+
+    flaky_run = FlakyRun(
+        failure_run=failure_run.key,
+        failure_run_time_started=failure_run.time_started,
+        failure_run_time_finished=failure_run.time_finished,
+        success_run=success_run.key)
+
+    success_time = success_run.time_finished
+    failure_time = failure_run.time_finished
+    patchset_builder_runs = failure_run.key.parent().get()
+    url = ('http://build.chromium.org/p/' + patchset_builder_runs.master +
+           '/json/builders/' + patchset_builder_runs.builder +'/builds/' +
+           str(failure_run.buildnumber))
+    urlfetch.set_default_fetch_deadline(60)
+    logging.info('get_flaky_run_reason ' + url)
+    result = urlfetch.fetch(url).content
+    try:
+      json_result = json.loads(result)
+    except ValueError:
+      logging.exception('couldnt decode json for %s', url)
+      return
+    steps = json_result['steps']
+
+    failed_steps = []
+    passed_steps = []
+    for step in steps:
+      result = step['results'][0]
+      if build_result.isResultSuccess(result):
+        passed_steps.append(step)
+        continue
+      if not build_result.isResultFailure(result):
+        continue
+      step_name = step['name']
+      step_text = ' '.join(step['text'])
+      # The following step failures are ignored:
+      #  - steps: always red when any other step is red (not a failure)
+      #  - [swarming] ...: summary step would also be red (do not double count)
+      #  - presubmit: typically red due to missing OWNERs LGTM, not a flake
+      #  - recipe failure reason: always red when build fails (not a failure)
+      #  - Patch failure: if success run was before failure run, it is
+      #    likely a legitimate failure. For example it often happens that
+      #    developers use CQ dry run and then wait for a review. Once getting
+      #    LGTM they check CQ checkbox, but the patch does not cleanly apply
+      #    anymore.
+      #  - bot_update PATCH FAILED: Corresponds to 'Patch failure' step.
+      #  - test results: always red when another step is red (not a failure)
+      #  - Uncaught Exception: summary step referring to an exception in another
+      #    step (e.g. bot_update)
+      if (step_name == 'steps' or step_name.startswith('[swarming]') or
+          step_name == 'presubmit' or step_name == 'recipe failure reason' or
+          (step_name == 'Patch failure' and success_time < failure_time) or
+          (step_name == 'bot_update' and 'PATCH FAILED' in step_text) or
+          step_name == 'test results' or step_name == 'Uncaught Exception'):
+        continue
+      failed_steps.append(step)
+
+    steps_to_ignore = []
+    for step in failed_steps:
+      step_name = step['name']
+      if ' (with patch)' in step_name:
+        # Android instrumentation tests add a prefix before the step name, which
+        # doesn't appear on the summary step (without suffixes). To make sure we
+        # correctly ignore duplicate failures, we remove the prefix.
+        step_name = step_name.replace('Instrumentation test ', '')
+
+        step_name_with_no_modifier = step_name.replace(' (with patch)', '')
+        for other_step in failed_steps:
+          # A step which fails, and then is retried and also fails, will have
+          # its name without the ' (with patch)' again. Don't double count.
+          if other_step['name'] == step_name_with_no_modifier:
+            steps_to_ignore.append(other_step['name'])
+
+        # If a step fails without the patch, then the tree is busted. Don't
+        # count as flake.
+        step_name_without_patch = (
+            '%s (without patch)' % step_name_with_no_modifier)
+        for other_step in failed_steps:
+          if other_step['name'] == step_name_without_patch:
+            steps_to_ignore.append(step['name'])
+            steps_to_ignore.append(other_step['name'])
+
+    flakes_to_update = []
+    for step in failed_steps:
+      step_name = step['name']
+      if step_name in steps_to_ignore:
+        continue
+      flakes = self.get_flakes(step)
+      if not flakes:
+        continue
+      for flake in flakes:
+        flake_occurrence = FlakeOccurrence(name=step_name, failure=flake)
+        flaky_run.flakes.append(flake_occurrence)
+        flakes_to_update.append(flake)
+
+    flaky_run_key = flaky_run.put()
+    for flake in flakes_to_update:
+      self.add_failure_to_flake(flake, flaky_run_key, failure_time)

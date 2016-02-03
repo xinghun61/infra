@@ -22,7 +22,7 @@ from handlers.index import Index
 from handlers.post_comment import PostComment
 from handlers.all_flake_occurrences import AllFlakeOccurrences
 from handlers.search import Search
-from handlers.flake_issues import ProcessIssue, UpdateIfStaleIssue
+from handlers import flake_issues
 
 handlers = [
   (r'/', Index),
@@ -30,8 +30,9 @@ handlers = [
   (r'/all_flake_occurrences', AllFlakeOccurrences),
   (r'/search', Search),
   (r'/cron/(.*)', CronDispatch),
-  (r'/issues/process/(.*)', ProcessIssue),
-  (r'/issues/update-if-stale/(.*)', UpdateIfStaleIssue),
+  (r'/issues/process/(.*)', flake_issues.ProcessIssue),
+  (r'/issues/update-if-stale/(.*)', flake_issues.UpdateIfStaleIssue),
+  (r'/issues/create_flaky_run', flake_issues.CreateFlakyRun),
 ]
 
 app = webapp2.WSGIApplication(handlers, debug=True)

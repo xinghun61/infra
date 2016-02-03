@@ -7,10 +7,10 @@ from google.appengine.ext import ndb
 from google.appengine.ext.webapp import template
 
 from model.flake import Flake
-from status.cq_status import is_last_hour
-from status.cq_status import is_last_day
-from status.cq_status import is_last_week
-from status.cq_status import is_last_month
+from status.util import is_last_hour
+from status.util import is_last_day
+from status.util import is_last_week
+from status.util import is_last_month
 
 import datetime
 import logging

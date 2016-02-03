@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import json
 import mock
 
 from google.appengine.datastore import datastore_stub_util
@@ -14,6 +15,59 @@ from model.flake import Flake, FlakyRun, FlakeOccurrence
 from model.build_run import PatchsetBuilderRuns, BuildRun
 from testing_utils import testing
 from time_functions.testing import mock_datetime_utc
+
+
+TEST_BUILDBOT_JSON_REPLY = json.dumps({
+  'steps': [
+    # Simple case.
+    {'results': [2], 'name': 'foo1', 'text': ['bar1']},
+
+    # Invalid test results.
+    {'results': [2], 'name': 'foo2', 'text': ['TEST RESULTS WERE INVALID']},
+
+    # GTest tests.
+    {
+      'results': [2],
+      'name': 'foo3',
+      'text': ['failures:<br/>bar2<br/>bar3<br/><br/>ignored:<br/>bar4']
+    },
+
+    # GPU tests.
+    {
+      'results': [2],
+      'name': 'foo4',
+      'text': ['<"http://url/path?query&tests=bar5,bar6,,bar7">']
+    },
+
+    # Ignore non-success non-failure results (7 is TRY_PENDING).
+    {'results': [7], 'name': 'foo5', 'text': ['bar8']},
+
+    # Ignore steps that are failing without patch too (ToT is broken).
+    {'results': [2], 'name': 'foo6 (with patch)', 'text': ['bar9']},
+    {'results': [2], 'name': 'foo6 (without patch)', 'text': ['bar9']},
+
+    # Ignore steps that are duplicating error in another step.
+    {'results': [2], 'name': 'steps', 'text': ['bar10']},
+    {'results': [2], 'name': '[swarming] foo7', 'text': ['bar11']},
+    {'results': [2], 'name': 'presubmit', 'text': ['bar12']},
+    {'results': [2], 'name': 'recipe failure reason', 'text': ['bar12a']},
+    {'results': [2], 'name': 'test results', 'text': ['bar12b']},
+    {'results': [2], 'name': 'Uncaught Exception', 'text': ['bar12c']},
+    {'results': [2], 'name': 'bot_update', 'text': ['bot_update PATCH FAILED']},
+
+    # Only count first step (with patch) and ignore summary step.
+    {'results': [2], 'name': 'foo8 (with patch)', 'text': ['bar13']},
+    {'results': [0], 'name': 'foo8 (without patch)', 'text': ['bar14']},
+    {'results': [2], 'name': 'foo8', 'text': ['bar15']},
+
+    # GTest without flakes.
+    {
+      'results': [2],
+      'name': 'foo9',
+      'text': ['failures:<br/><br/><br/>']
+    },
+  ]
+})
 
 
 class MockComment(object):
@@ -539,3 +593,90 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
         ProcessIssue._get_first_flake_occurrence_time(
           Flake(name='foo', occurrences=[fr5])),
         datetime.datetime(2015, 10, 19, 11, 0, 0))
+
+class CreateFlakyRunTestCase(testing.AppengineTestCase):
+  app_module = main.app
+
+  # This is needed to be able to test handlers using cross-group transactions.
+  datastore_stub_consistency_policy = (
+      datastore_stub_util.PseudoRandomHRConsistencyPolicy(probability=1))
+
+  def _create_build_runs(self, ts, tf):
+    pbr = PatchsetBuilderRuns(
+        issue=123456789, patchset=20001, master='test.master',
+        builder='test-builder').put()
+    br_f = BuildRun(parent=pbr, buildnumber=100, result=2, time_started=ts,
+                    time_finished=tf).put()
+    br_s = BuildRun(parent=pbr, buildnumber=101, result=0, time_started=ts,
+                    time_finished=tf).put()
+    return br_f, br_s
+
+  def test_get_flaky_run_reason_ignores_invalid_json(self):
+    now = datetime.datetime.utcnow()
+    br_f, br_s = self._create_build_runs(now - datetime.timedelta(hours=1), now)
+
+    urlfetch_mock = mock.Mock()
+    urlfetch_mock.return_value.content = 'invalid-json'
+
+    with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
+      self.test_app.post('/issues/create_flaky_run',
+                         {'failure_run_key': br_f.urlsafe(),
+                          'success_run_key': br_s.urlsafe()})
+
+  def test_handles_incorrect_parameters(self):
+    self.test_app.post('/issues/create_flaky_run', {}, status=400)
+
+  def test_get_flaky_run_reason(self):
+    now = datetime.datetime.utcnow()
+    br_f, br_s = self._create_build_runs(now - datetime.timedelta(hours=1), now)
+
+    urlfetch_mock = mock.Mock()
+    urlfetch_mock.return_value.content = TEST_BUILDBOT_JSON_REPLY
+
+    # We also create one Flake to test that it is correctly updated. Other Flake
+    # entities will be created automatically.
+    Flake(id='bar5', name='bar5', occurrences=[],
+          last_time_seen=datetime.datetime.min).put()
+
+    with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
+      self.test_app.post('/issues/create_flaky_run',
+                         {'failure_run_key': br_f.urlsafe(),
+                          'success_run_key': br_s.urlsafe()})
+
+    flaky_runs = FlakyRun.query().fetch(100)
+    self.assertEqual(len(flaky_runs), 1)
+    flaky_run = flaky_runs[0]
+    self.assertEqual(flaky_run.failure_run, br_f)
+    self.assertEqual(flaky_run.success_run, br_s)
+    self.assertEqual(flaky_run.failure_run_time_finished, now)
+    self.assertEqual(flaky_run.failure_run_time_started,
+                     now - datetime.timedelta(hours=1))
+
+    # Verify that we've used correct URL to access buildbot JSON endpoint.
+    urlfetch_mock.assert_called_once_with(
+        'http://build.chromium.org/p/test.master/json/builders/test-builder/'
+        'builds/100')
+
+    # Expected flakes to be found: list of (step_name, test_name).
+    expected_flakes = [
+        ('foo1', 'bar1'), ('foo2', 'TEST RESULTS WERE INVALID'),
+        ('foo3', 'bar2'), ('foo3', 'bar3'), ('foo4', 'bar5'), ('foo4', 'bar6'),
+        ('foo4', 'bar7'), ('foo8 (with patch)', 'bar13'),
+    ]
+
+    flake_occurrences = flaky_run.flakes
+    self.assertEqual(len(flake_occurrences), len(expected_flakes))
+    actual_flake_occurrences = [
+        (fo.name, fo.failure) for fo in flake_occurrences]
+    self.assertEqual(expected_flakes, actual_flake_occurrences)
+
+    # We compare sets below, because order of flakes returned by datastore
+    # doesn't have to be same as steps above.
+    flakes = Flake.query().fetch()
+    self.assertEqual(len(flakes), len(expected_flakes))
+    expected_flake_names = set([ef[1] for ef in expected_flakes])
+    actual_flake_names = set([f.name for f in flakes])
+    self.assertEqual(expected_flake_names, actual_flake_names)
+
+    for flake in flakes:
+      self.assertEqual(flake.occurrences, [flaky_run.key])
