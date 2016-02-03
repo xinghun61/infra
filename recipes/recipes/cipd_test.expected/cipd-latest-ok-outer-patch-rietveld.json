@@ -16,6 +16,8 @@
       "build",
       "--revision_mapping_file",
       "{\"build\": \"got_revision\"}",
+      "--git-cache-dir",
+      "[GIT_CACHE]",
       "--issue",
       "12853011",
       "--patchset",

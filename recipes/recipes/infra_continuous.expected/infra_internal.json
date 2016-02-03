@@ -16,6 +16,8 @@
       "infra_internal",
       "--revision_mapping_file",
       "{\"infra_internal\": \"got_revision\"}",
+      "--git-cache-dir",
+      "[GIT_CACHE]",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",

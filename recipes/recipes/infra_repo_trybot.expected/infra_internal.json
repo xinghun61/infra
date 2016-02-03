@@ -16,6 +16,8 @@
       "infra_internal",
       "--revision_mapping_file",
       "{\"infra_internal\": \"got_revision\"}",
+      "--git-cache-dir",
+      "[GIT_CACHE]",
       "--issue",
       "12853011",
       "--patchset",

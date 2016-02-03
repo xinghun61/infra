@@ -16,6 +16,8 @@
       "gerrit-test-cq-normal",
       "--revision_mapping_file",
       "{}",
+      "--git-cache-dir",
+      "[GIT_CACHE]",
       "--gerrit_repo",
       "https://chromium.googlesource.com/playground/gerrit-cq/normal",
       "--gerrit_ref",
