@@ -80,6 +80,9 @@ class BuildbucketBuild(object):
     self.id = raw_json_data.get('id')
     self.url = raw_json_data.get('url')
     self.status = raw_json_data.get('status')
+    self.request_time = raw_json_data.get('created_ts')
+    self.updated_time = raw_json_data.get('updated_ts')
+    self.end_time = raw_json_data.get('completed_ts')
     result_details_json = json.loads(
         raw_json_data.get('result_details_json', '{}')) or {}
     self.report = (result_details_json.get('properties', {}).get('result') or

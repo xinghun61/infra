@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
+
 from testing_utils import testing
 
 from common import buildbucket_client
@@ -42,9 +44,19 @@ class TryJobPipelineTest(testing.AppengineTestCase):
                   'id': '1',
                   'url': 'url',
                   'status': 'COMPLETED',
-                  'result_details_json': (
-                      '{"properties": {"result": [["rev1", "passed"],'
-                      ' ["rev2", "failed"]]}}')
+                  'result_details_json': json.dumps({
+                      'properties': {
+                          'report': {
+                              'result': {
+                                  'rev1': 'passed',
+                                  'rev2': 'failed'
+                              },
+                              'metadata': {
+                                  'regression_range_size': 2
+                              }
+                          }
+                      }
+                  })
               }
           },
           '3': {
@@ -97,10 +109,15 @@ class TryJobPipelineTest(testing.AppengineTestCase):
 
     expected_compile_results = [
         {
-            'report': [
-                ['rev1', 'passed'],
-                ['rev2', 'failed']
-            ],
+            'report': {
+                'result': {
+                    'rev1': 'passed',
+                    'rev2': 'failed'
+                },
+                'metadata': {
+                    'regression_range_size': 2
+                }
+            },
             'url': 'url',
             'try_job_id': '1',
         }

@@ -21,6 +21,9 @@ class WfTryJob(BaseBuildModel):
   status = ndb.IntegerProperty(
       default=wf_analysis_status.PENDING, indexed=False)
 
+  # A list of try job IDs associated with each try job for collecting metadata.
+  try_job_ids = ndb.JsonProperty(default=[], indexed=False, compressed=True)
+
   @staticmethod
   def _CreateKey(master_name, builder_name, build_number):  # pragma: no cover
     return ndb.Key('WfTryJob',

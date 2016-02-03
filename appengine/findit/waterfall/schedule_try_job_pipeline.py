@@ -51,6 +51,7 @@ class ScheduleTryJobPipeline(BasePipeline):
 
     try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
     try_job_result.compile_results.append({'try_job_id': build.id})
+    try_job_result.try_job_ids.append(build.id)
     try_job_result.put()
 
     return build.id

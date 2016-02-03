@@ -6,6 +6,7 @@ from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from model import wf_analysis_status
 from model.wf_try_job import WfTryJob
+from model.wf_try_job_data import WfTryJobData
 from pipeline_wrapper import BasePipeline
 
 
@@ -129,6 +130,13 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
 
     # Store try job results.
     try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
+    try_job_data = WfTryJobData.Get(try_job_id)
+
+    # TODO(lijeffrey): Add support for documenting test culprits.
+    if failed_revision:
+      try_job_data.culprits = {'compile': failed_revision}
+      try_job_data.put()
+
     if culprit:
       compile_result['culprit'] = culprit
       if (try_job_result.compile_results and

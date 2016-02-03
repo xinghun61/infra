@@ -78,5 +78,8 @@ class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
         [])
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
-    self.assertEqual('1', try_job_id)
-    self.assertEqual('1', try_job.compile_results[-1]['try_job_id'])
+    expected_try_job_id = '1'
+    self.assertEqual(expected_try_job_id, try_job_id)
+    self.assertEqual(
+        expected_try_job_id, try_job.compile_results[-1]['try_job_id'])
+    self.assertTrue(expected_try_job_id in try_job.try_job_ids)

@@ -7,6 +7,7 @@ from testing_utils import testing
 from common.git_repository import GitRepository
 from model import wf_analysis_status
 from model.wf_try_job import WfTryJob
+from model.wf_try_job_data import WfTryJobData
 from waterfall.identify_try_job_culprit_pipeline import(
     IdentifyTryJobCulpritPipeline)
 
@@ -100,6 +101,8 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.put()
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.put()
 
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit = pipeline.run(
@@ -108,20 +111,25 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
     self.assertEqual([], try_job.compile_results)
     self.assertIsNone(culprit)
+    self.assertIsNone(try_job_data.culprits)
 
   def testIdentifyCulpritForCompileTryJobSuccess(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
     try_job_id = '1'
+
     compile_result = {
         'report': {
             'result': {
                 'rev1': 'passed',
                 'rev2': 'failed'
-            }
+            },
         },
     }
+
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.put()
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.status = wf_analysis_status.ANALYZING
@@ -142,6 +150,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     culprit = pipeline.run(
         master_name, builder_name, build_number, try_job_id, compile_result)
 
+    expected_culprit = 'rev2'
     expected_compile_result = {
         'report': {
             'result': {
@@ -151,7 +160,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         },
         'try_job_id': '1',
         'culprit': {
-            'revision': 'rev2',
+            'revision': expected_culprit,
             'commit_position': '2',
             'review_url': 'url_2'
         }
@@ -163,56 +172,5 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     self.assertEqual(expected_compile_result, try_job.compile_results[-1])
     self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
 
-  # TODO(lijeffrey): Deprecate all tests with compile_results whose 'result'
-  # key is a list once it is returned as a dict from the recipe.
-  def testIdentifyCulpritForCompileListTryJobSuccess(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-    try_job_id = '1'
-    compile_result = {
-        'report': [
-            ['rev1', 'passed'],
-            ['rev2', 'failed']
-        ],
-        'url': 'url',
-        'try_job_id': '1',
-    }
-
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = wf_analysis_status.ANALYZING
-    try_job.compile_results = [{
-        'report': [
-            ['rev1', 'passed'],
-            ['rev2', 'failed']
-        ],
-        'url': 'url',
-        'try_job_id': '1',
-    }]
-    try_job.put()
-
-    self.mock(GitRepository, 'GetChangeLog', self._MockGetChangeLog)
-
-    pipeline = IdentifyTryJobCulpritPipeline()
-    culprit = pipeline.run(
-        master_name, builder_name, build_number, try_job_id, compile_result)
-
-    expected_compile_result = {
-        'report': [
-            ['rev1', 'passed'],
-            ['rev2', 'failed']
-        ],
-        'url': 'url',
-        'try_job_id': '1',
-        'culprit': {
-            'revision': 'rev2',
-            'commit_position': '2',
-            'review_url': 'url_2'
-        }
-    }
-
-    self.assertEqual(expected_compile_result['culprit'], culprit)
-
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
-    self.assertEqual(expected_compile_result, try_job.compile_results[-1])
-    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
+    try_job_data = WfTryJobData.Get(try_job_id)
+    self.assertEqual({'compile': expected_culprit}, try_job_data.culprits)
