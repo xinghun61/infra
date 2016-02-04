@@ -150,9 +150,11 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         },
         'try_job_id': try_job_id,
         'culprit': {
-            'revision': expected_culprit,
-            'commit_position': '2',
-            'review_url': 'url_2'
+            'compile': {
+                'revision': 'rev2',
+                'commit_position': '2',
+                'review_url': 'url_2'
+            }
         }
     }
 

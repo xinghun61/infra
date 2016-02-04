@@ -197,7 +197,9 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
         failed_revisions = [failed_revision] if failed_revision else []
         culprits = self._GetCulpritInfo(failed_revisions)
         if culprits:
-          result['culprit'] = culprits[failed_revision]
+          result['culprit'] = {
+              'compile': culprits[failed_revision]
+          }
           try_job_data.culprits = {'compile': failed_revision}
       else:  # try_job_type is 'test'.
         culprit_map, failed_revisions = self._FindCulpritForEachTestFailure(

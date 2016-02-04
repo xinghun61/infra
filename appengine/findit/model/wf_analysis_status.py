@@ -10,10 +10,17 @@ ANALYZED = 70
 ERROR = 80
 
 
-
 STATUS_TO_DESCRIPTION = {
     PENDING: 'Pending',
     ANALYZING: 'Analyzing',
     ANALYZED: 'Analyzed',
+    ERROR: 'Error'
+}
+
+
+TRY_JOB_STATUS_TO_DESCRIPTION = {
+    PENDING: 'Pending',
+    ANALYZING: 'Running',
+    ANALYZED: 'Completed',
     ERROR: 'Error'
 }

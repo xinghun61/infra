@@ -263,34 +263,37 @@
     function displayTryJobResult() {
       $.getJSON('try-job-result?url=' + findit.buildUrl, function(data) {
           if (! jQuery.isEmptyObject(data)) {
-            $('#try_job_status').html(data.status);
-            if (data.status == 'Error') {
-              $('#try_job_status').addClass('error');
-            } else if(data.status == 'Analyzed') {
-              $('#try_job_status').addClass('completed');
-            } else {
-              $('#try_job_status').append(', will refresh in 1 minute...');
-              $('#try_job_status').addClass('running');
-            }
-            if ('try_job_url' in data) {
-              $('#try_job_url').html(' <a href="' + data.try_job_url + '">try job url</a>');
-            }
-
-            var tryJobStr = '';
-            var repeatStatusList = ["Pending", "Analyzing"]
-            if (repeatStatusList.indexOf(data.status) > -1) {
-              $('#try_job_result').addClass('not-display');
-              setTimeout(displayTryJobResult, 60000);
-            } else if (data.status == 'Analyzed' && 'review_url' in data) {
-              tryJobStr += '<br>culprit: <a href="' + data.review_url + '">';
-              tryJobStr += data.commit_position || data.revision + '</a>';
-              $('#try_job_result').html(tryJobStr);
-              $('#try_job_result').removeClass('not-display');
-            } else {
-              $('#try_job_result').addClass('not-display');
-            }
-          } else {
-            $('#try_job').addClass('not-display');
+            var tableString = '<table><tr><th>Step</th><th>Test</th><th>Try Job</th><th>Status</th><th>Culprit</th></tr>';
+            $.each(data, function(key, value) {
+              tableString += '<tr>';
+              tableString += '<td>' + value.step + '</td>';
+              tableString += '<td>' + value.test + '</td>';
+              if (value.try_job_url) {
+                tableString += '<td><a href="' + value.try_job_url + '">' + value.try_job_build_number + '</a></td>';
+              } else {
+                tableString += '<td></td>';
+              }
+              if (value.status == 'Completed') {
+                status_class = 'completed';
+              } else if (value.status == 'Error') {
+                status_class = 'error';
+              } else {
+                // If status is either 'Scheduled' or 'Running', add 'running' style.
+                status_class = 'running';
+              }
+              tableString += '<td><span class="' + status_class + '">' + value.status + '</span></td>';
+              if (value.review_url) {
+                tableString += '<td><a href="' + value.review_url + '">' + value.commit_position || value.revision + '</a></td>';
+              } else if (value.revision) {
+                tableString += '<td>' + value.revision + '</td>';
+              } else {
+                tableString += '<td>Not Found</td>';
+              }
+              tableString += '</tr>';
+            });
+            tableString += '</table>';
+            $('#try_job_result').html(tableString);
+            $('#try_job').removeClass('not-display');
           }
       });
     }
@@ -364,11 +367,9 @@
   </div>
   <br>
 
-  <div id='try_job'>
+  <div id='try_job' class='not-display'>
     <b> Try Job Result:</b>
-    <br>
-    status: <span id='try_job_status'></span><span id="try_job_url"></span>
-    <span id='try_job_result'></span>
+    <div id='try_job_result'></div>
     <br>
   </div>
   <br>

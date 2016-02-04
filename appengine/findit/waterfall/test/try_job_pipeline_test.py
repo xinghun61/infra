@@ -133,9 +133,11 @@ class TryJobPipelineTest(testing.AppengineTestCase):
             'url': 'url',
             'try_job_id': '1',
             'culprit': {
-                'revision': 'rev2',
-                'commit_position': '2',
-                'review_url': 'url_2'
+                'compile': {
+                    'revision': 'rev2',
+                    'commit_position': '2',
+                    'review_url': 'url_2'
+                }
             }
         }
     ]
