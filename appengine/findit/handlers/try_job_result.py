@@ -44,9 +44,10 @@ def _GetCulpritInfoForTryJobResult(try_job_key, culprits_info):
         try_job_culprits = try_job_result['culprit']
         step = culprit_info['step']
         test = culprit_info['test']
-        if not try_job_culprits.get(step, {}).get('tests'):
-          # Only step level
-          culprit = try_job_culprits[step]
+        if not try_job_culprits.get(step, {}).get('tests'):  # Only step level
+          # For historical culprit found by try job for compile,
+          # step name is not recorded.
+          culprit = try_job_culprits.get(step) or try_job_culprits
         elif test in try_job_culprits.get(step).get('tests'):
           culprit = try_job_culprits[step]['tests'][test]
         else:   # pragma: no cover
