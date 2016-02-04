@@ -9,6 +9,7 @@ from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from waterfall import try_job_util
 from waterfall import waterfall_config
+from waterfall.try_job_type import TryJobType
 
 
 class _MockRootPipeline(object):
@@ -127,25 +128,6 @@ class TryJobUtilTest(testing.AppengineTestCase):
 
     self.assertFalse(_MockRootPipeline.STARTED)
 
-  def testNotNeedANewTryJobIfNotCompileFailure(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 223
-    failed_steps = {
-        'a': {
-            'current_failure': 223,
-            'first_failure': 223,
-            'last_pass': 222
-        }
-    }
-
-    need_try_job, failure_result_map, last_pass = try_job_util._NeedANewTryJob(
-        master_name, builder_name, build_number, failed_steps)
-
-    self.assertFalse(need_try_job)
-    self.assertEqual({}, failure_result_map)
-    self.assertIsNone(last_pass)
-
   def testNotNeedANewTryJobIfOneWithResultExists(self):
     master_name = 'm'
     builder_name = 'b'
@@ -163,8 +145,10 @@ class TryJobUtilTest(testing.AppengineTestCase):
     try_job.status = wf_analysis_status.ANALYZED
     try_job.put()
 
-    need_try_job, failure_result_map, last_pass = try_job_util._NeedANewTryJob(
-        master_name, builder_name, build_number, failed_steps)
+    failure_result_map = {}
+    need_try_job, last_pass, try_job_type, targeted_tests = (
+        try_job_util._NeedANewTryJob(master_name, builder_name, build_number,
+                                     failed_steps, failure_result_map))
 
     expected_failure_result_map = {
         'compile': 'm/b/223'
@@ -173,6 +157,8 @@ class TryJobUtilTest(testing.AppengineTestCase):
     self.assertFalse(need_try_job)
     self.assertEqual(expected_failure_result_map, failure_result_map)
     self.assertEqual(220, last_pass)
+    self.assertEqual(TryJobType.COMPILE, try_job_type)
+    self.assertIsNone(targeted_tests)
 
   def testNeedANewTryJobIfExistingOneHasError(self):
     master_name = 'm'
@@ -190,8 +176,10 @@ class TryJobUtilTest(testing.AppengineTestCase):
     try_job.status = wf_analysis_status.ERROR
     try_job.put()
 
-    need_try_job, failure_result_map, last_pass = try_job_util._NeedANewTryJob(
-        master_name, builder_name, build_number, failed_steps)
+    failure_result_map = {}
+    need_try_job, last_pass, try_job_type, targeted_tests = (
+        try_job_util._NeedANewTryJob(master_name, builder_name, build_number,
+                                     failed_steps, failure_result_map))
 
     expected_failure_result_map = {
         'compile': 'm/b/223'
@@ -199,6 +187,8 @@ class TryJobUtilTest(testing.AppengineTestCase):
     self.assertTrue(need_try_job)
     self.assertEqual(expected_failure_result_map, failure_result_map)
     self.assertEqual(220, last_pass)
+    self.assertEqual(TryJobType.COMPILE, try_job_type)
+    self.assertIsNone(targeted_tests)
 
   def testNotNeedANewTryJobIfLastPassCannotDetermine(self):
     master_name = 'm'
@@ -215,12 +205,126 @@ class TryJobUtilTest(testing.AppengineTestCase):
     try_job.status = wf_analysis_status.ERROR
     try_job.put()
 
-    need_try_job, failure_result_map, last_pass = try_job_util._NeedANewTryJob(
-        master_name, builder_name, build_number, failed_steps)
+    failure_result_map = {}
+    need_try_job, last_pass, try_job_type, targeted_tests = (
+        try_job_util._NeedANewTryJob(master_name, builder_name, build_number,
+                                     failed_steps, failure_result_map))
 
     self.assertFalse(need_try_job)
     self.assertEqual({}, failure_result_map)
     self.assertIsNone(last_pass)
+    self.assertEqual(TryJobType.COMPILE, try_job_type)
+    self.assertIsNone(targeted_tests)
+
+  def testNeedANewTryJobIfTestFailureNonSwarming(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    failed_steps = {
+        'a': {
+            'current_failure': 223,
+            'first_failure': 223,
+            'last_pass': 222
+        },
+        'b': {
+            'current_failure': 223,
+            'first_failure': 222,
+            'last_pass': 221
+        }
+    }
+
+    failure_result_map = {}
+    need_try_job, last_pass, try_job_type, targeted_tests = (
+        try_job_util._NeedANewTryJob(master_name, builder_name, build_number,
+                                     failed_steps, failure_result_map))
+
+    expected_failure_result_map = {
+        'a': 'm/b/223',
+        'b': 'm/b/222'
+    }
+
+    expected_targeted_tests = {
+        'a': []
+    }
+
+    self.assertTrue(need_try_job)
+    self.assertEqual(expected_failure_result_map, failure_result_map)
+    self.assertEqual(222, last_pass)
+    self.assertEqual('test', try_job_type)
+    self.assertEqual(expected_targeted_tests, targeted_tests)
+
+  def testNeedANewTryJobIfTestFailureSwarming(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    failed_steps = {
+        'a': {
+            'current_failure': 223,
+            'first_failure': 222,
+            'last_pass': 221,
+            'tests': {
+                'a.t1': {
+                    'current_failure': 223,
+                    'first_failure': 223,
+                    'last_pass': 221
+                },
+                'a.t2': {
+                    'current_failure': 223,
+                    'first_failure': 222,
+                    'last_pass': 221
+                },
+                'a.t3': {
+                    'current_failure': 223,
+                    'first_failure': 223,
+                    'last_pass': 222
+                }
+            }
+        },
+        'b': {
+            'current_failure': 223,
+            'first_failure': 222,
+            'last_pass': 221,
+            'tests': {
+                'b.t1': {
+                    'current_failure': 223,
+                    'first_failure': 222,
+                    'last_pass': 221
+                },
+                'b.t2': {
+                    'current_failure': 223,
+                    'first_failure': 222,
+                    'last_pass': 221
+                }
+            }
+        }
+    }
+
+    failure_result_map = {}
+    need_try_job, last_pass, try_job_type, targeted_tests = (
+        try_job_util._NeedANewTryJob(master_name, builder_name, build_number,
+                                     failed_steps, failure_result_map))
+
+    expected_failure_result_map = {
+        'a': {
+            'a.t1': 'm/b/223',
+            'a.t2': 'm/b/222',
+            'a.t3': 'm/b/223'
+        },
+        'b': {
+            'b.t1': 'm/b/222',
+            'b.t2': 'm/b/222'
+        },
+    }
+
+    expected_targeted_tests = {
+        'a': ['a.t1', 'a.t3']
+    }
+
+    self.assertTrue(need_try_job)
+    self.assertEqual(expected_failure_result_map, failure_result_map)
+    self.assertEqual(221, last_pass)
+    self.assertEqual('test', try_job_type)
+    self.assertEqual(expected_targeted_tests, targeted_tests)
 
   def testNeedANewTryJob(self):
     master_name = 'm'
@@ -274,4 +378,3 @@ class TryJobUtilTest(testing.AppengineTestCase):
 
     self.assertEqual(
         try_job_util._GetFailedTargetsFromSignals(signals), ['a.exe'])
-
