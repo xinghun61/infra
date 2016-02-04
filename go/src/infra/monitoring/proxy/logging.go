@@ -318,7 +318,7 @@ func (l *cloudLogging) buildLogEntry(e *logEntry, streamIndex, logIndex int64) *
 
 	text := fmt.Sprintf(e.fmt, e.args...)
 	if len(e.fields) > 0 {
-		text = strings.Join([]string{text, e.fields.FieldString(true)}, " ")
+		text = strings.Join([]string{text, e.fields.String()}, " ")
 	}
 
 	return &cloudlog.LogEntry{
