@@ -68,6 +68,19 @@ def greet(active_master):
   res = yield my_service.api.greet('John', body={'message': 'hi'})
 ```
 
+## Using gsutil.py from a recipe
+
+`api.gsutil` also requires authentication through a service account, however
+this is managed differently.  To use `api.gsutil` do the following:
+
+1. Add `mdb.chrome-troopers@google.com` as an editor on the cloud project
+associated with the cloud storage bucket you wish to upload to.
+2. File an issue at http://crbug.com/ and add the `Infra-Labs` label.  Mention
+your the account owning the cloud storage bucket as well as the master/slaves
+you wish to have authenticated.
+3. Infra Labs will create the necessary service accounts and add them to the
+slaves in question.  They will also be able to roll credentials when necessary.
+
 ## Creating a service account - guide for admins
 
 See [Pupper service accounts](https://sites.google.com/a/google.com/chrome-infrastructure/systems/puppet/puppet-service-accounts)
