@@ -111,7 +111,7 @@
     "cmd": [
       "python",
       "-u",
-      "[DEPOT_TOOLS]/gclient.py",
+      "RECIPE_PACKAGE[depot_tools]/gclient.py",
       "sync",
       "-D",
       "--nohooks"
