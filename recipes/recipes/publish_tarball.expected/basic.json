@@ -117,6 +117,9 @@
       "--nohooks"
     ],
     "cwd": "[SLAVE_BUILD]/src",
+    "env": {
+      "PATH": "%(PATH)s:RECIPE_PACKAGE[depot_tools]"
+    },
     "name": "gclient sync"
   },
   {
