@@ -58,9 +58,9 @@ type commonOptions struct {
 }
 
 type state struct {
-	logger logging.Logger
-	client cloudtail.Client
-	buffer cloudtail.PushBuffer
+	context context.Context
+	client  cloudtail.Client
+	buffer  cloudtail.PushBuffer
 }
 
 // registerFlags adds all CLI flags to the flag set.
@@ -97,15 +97,15 @@ func (opts *commonOptions) processFlags() (state, error) {
 		logging.Warning: gol.WARNING,
 		logging.Error:   gol.ERROR,
 	}
-	logger := gologger.New(os.Stderr, logLevels[opts.localLogLevel])
-	ctx := logging.Set(context.Background(), logger)
+	ctx := context.Background()
+	ctx = logging.Set(ctx, gologger.New(os.Stderr, logLevels[opts.localLogLevel]))
 
 	// Auth options.
 	authOpts, err := opts.authFlags.Options()
 	if err != nil {
 		return state{}, err
 	}
-	authOpts.Logger = logger
+	authOpts.Context = ctx
 	if opts.projectID == "" {
 		if authOpts.ServiceAccountJSONPath != "" {
 			opts.projectID = projectIDFromServiceAccountJSON(authOpts.ServiceAccountJSONPath)
@@ -131,7 +131,7 @@ func (opts *commonOptions) processFlags() (state, error) {
 	}
 	client, err := cloudtail.NewClient(cloudtail.ClientOptions{
 		Client:       httpClient,
-		Logger:       logger,
+		Logger:       logging.Get(ctx),
 		ProjectID:    opts.projectID,
 		ResourceType: opts.resourceType,
 		ResourceID:   opts.resourceID,
@@ -145,10 +145,10 @@ func (opts *commonOptions) processFlags() (state, error) {
 	// Buffer.
 	buffer := cloudtail.NewPushBuffer(cloudtail.PushBufferOptions{
 		Client: client,
-		Logger: logger,
+		Logger: logging.Get(ctx),
 	})
 
-	return state{logger, client, buffer}, nil
+	return state{ctx, client, buffer}, nil
 }
 
 // defaultServiceAccountJSON returns path to a default service account
@@ -247,11 +247,14 @@ func (c *sendRun) Run(a subcommands.Application, args []string) int {
 		fmt.Fprintln(os.Stderr, "-text is required")
 		return 1
 	}
+
 	state, err := c.commonOptions.processFlags()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		return 1
 	}
+	defer tsmon.Shutdown(state.context)
+
 	state.buffer.Add([]cloudtail.Entry{
 		{
 			Timestamp:   time.Now(),
@@ -267,10 +270,6 @@ func (c *sendRun) Run(a subcommands.Application, args []string) int {
 	if err := state.buffer.Stop(abort); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		return 1
-	}
-	ctx := logging.Set(context.Background(), state.logger)
-	if err := tsmon.Flush(ctx); err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
 	}
 	return 0
 }
@@ -299,12 +298,16 @@ func (c *pipeRun) Run(a subcommands.Application, args []string) int {
 		fmt.Fprintln(os.Stderr, "This tool doesn't accept positional command line arguments")
 		return 1
 	}
+
 	state, err := c.commonOptions.processFlags()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	err1 := cloudtail.PipeFromReader(os.Stdin, cloudtail.StdParser(), state.buffer, state.logger)
+	defer tsmon.Shutdown(state.context)
+
+	err1 := cloudtail.PipeFromReader(
+		os.Stdin, cloudtail.StdParser(), state.buffer, logging.Get(state.context))
 	if err1 != nil {
 		fmt.Fprintln(os.Stderr, err1)
 	}
@@ -360,12 +363,13 @@ func (c *tailRun) Run(a subcommands.Application, args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
+	defer tsmon.Shutdown(state.context)
 
 	tailer, err := cloudtail.NewTailer(cloudtail.TailerOptions{
 		Path:       c.path,
 		Parser:     cloudtail.StdParser(),
 		PushBuffer: state.buffer,
-		Logger:     state.logger,
+		Logger:     logging.Get(state.context),
 		SeekToEnd:  true,
 	})
 	if err != nil {
