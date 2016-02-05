@@ -169,8 +169,13 @@ class ExtractSignalPipeline(BasePipeline):
 
       # TODO: save result in datastore?
       if step.isolated:
-        json_failure_log = (
-            json.loads(failure_log) if failure_log != 'flaky' else {})
+        try:
+          json_failure_log = (
+              json.loads(failure_log) if failure_log != 'flaky' else {})
+        except ValueError:  # pragma: no cover
+          json_failure_log = {}
+          logging.warning('failure_log %s is not valid JSON.' % failure_log)
+
         signals[step_name] = {
             'tests': {}
         }

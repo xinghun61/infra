@@ -171,11 +171,20 @@ def _GetOutputJsonHash(content):
   return json_result.get('files', {}).get('output.json', {}).get('h')
 
 
-def _DownloadOutputJsonFileFromTheUrlInResponse(
-    output_json_content, http_client):
-  """Downloads output.json file from isolated server."""
-  output_json_url = json.loads(output_json_content).get('url')
-  get_content = _SendRequestToServer(output_json_url, http_client)
+def _RetrieveOutputJsonFile(output_json_content, http_client):
+  """Downloads output.json file from isolated server or process it directly.
+
+  If there is a url provided, send get request to that url to download log;
+  else the log would be in content so use it directly.
+  """
+  json_content = json.loads(output_json_content)
+  output_json_url = json_content.get('url')
+  if output_json_url:
+    get_content = _SendRequestToServer(output_json_url, http_client)
+  elif json_content.get('content'):
+    get_content = base64.b64decode(json_content['content'])
+  else:  # pragma: no cover
+    get_content = None  # Just for precausion.
   return json.loads(zlib.decompress(get_content)) if get_content else None
 
 
@@ -202,7 +211,7 @@ def _DownloadTestResults(isolated_data, http_client):
     return None
 
   # GET Request to get output.json file.
-  return _DownloadOutputJsonFileFromTheUrlInResponse(
+  return _RetrieveOutputJsonFile(
       output_json_content, http_client)
 
 

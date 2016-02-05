@@ -377,3 +377,17 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         isolated_data, self.http_client)
 
     self.assertIsNone(result)
+
+  def testRetrieveOutputJsonFileGetDirectly(self):
+    output_json_content = ('{"content": "eJyrVkpLzMwpLUotVrKKVgpJLS4xV'
+                           'IrVUVAqS8zJTFGyUigpKk2tBQDr9wxZ"}')
+
+    failure_log = swarming_util._RetrieveOutputJsonFile(
+        output_json_content, self.http_client)
+
+    expected_failure_log = {
+        'failures': ['Test1'],
+        'valid': True
+    }
+
+    self.assertEqual(expected_failure_log, failure_log)

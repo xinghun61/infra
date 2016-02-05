@@ -197,7 +197,8 @@ class DetectFirstFailurePipeline(BasePipeline):
           failed_test_log[test_name] = ''
           for test in iteration[test_name]:
             failed_test_log[test_name] = self._ConcatenateTestLog(
-                failed_test_log[test_name], test['output_snippet_base64'])
+                failed_test_log[test_name], test.get(
+                    'output_snippet_base64', ''))
 
     step.log_data = json.dumps(failed_test_log) if failed_test_log else 'flaky'
     step.put()
