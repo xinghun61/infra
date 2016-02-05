@@ -99,6 +99,9 @@ class MonitorTryJobPipeline(BasePipeline):
     deadline = time.time() + timeout_hours * 60 * 60
     try_job_data = (WfTryJobData.Get(try_job_id) or
                     WfTryJobData.Create(try_job_id))
+    try_job_data.master_name = master_name
+    try_job_data.builder_name = builder_name
+    try_job_data.try_job_type = try_job_type
 
     already_set_started = False
     start_time = None

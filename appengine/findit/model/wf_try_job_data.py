@@ -7,12 +7,18 @@ from google.appengine.ext import ndb
 
 class WfTryJobData(ndb.Model):
   """Represents a tryjob's data for a completed try job."""
+  # The original master on which the build was detected to have failed.
+  master_name = ndb.StringProperty(indexed=True)
+  # The original buildername on which the build was detected to have failed.
+  builder_name = ndb.StringProperty(indexed=True)
+  # The type of try job, such as 'compile' or 'test'.
+  try_job_type = ndb.StringProperty(indexed=True)
   # When the try job was created.
-  request_time = ndb.DateTimeProperty(indexed=False)
+  request_time = ndb.DateTimeProperty(indexed=True)
   # When the try job began executing.
-  start_time = ndb.DateTimeProperty(indexed=False)
+  start_time = ndb.DateTimeProperty(indexed=True)
   # When the try job completed.
-  end_time = ndb.DateTimeProperty(indexed=False)
+  end_time = ndb.DateTimeProperty(indexed=True)
   # Number of commits in the revision range.
   regression_range_size = ndb.IntegerProperty(indexed=False)
   # Number of commits analyzed to determine a culprit if any.
