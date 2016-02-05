@@ -1,5 +1,5 @@
 {
-  "version": "2",
+  "version": "1",
   "master_states": {
     "master.chromium.fyi": [
       {"desired_state": "running",
@@ -9,9 +9,6 @@
   "master_params": {
     "master.chromium.fyi": {
       "drain_timeout_sec": 60
-    },
-    "master.chromium.manual": {
-      "manually_managed": "cool-people@chromium.org"
     }
   }
 }

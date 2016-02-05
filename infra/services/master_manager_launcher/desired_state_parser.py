@@ -24,7 +24,10 @@ LOGGER = logging.getLogger(__name__)
 # A string that uniquely identifies the structure of a master state
 # configuration file. Any changes made to the structure that are not backwards-
 # compatible MUST update this value.
-VERSION = '1'
+VERSION = '2'
+
+# Remove transition once crbug.com/583441 is resolved.
+PREV_VERSION = '1'
 
 
 class InvalidDesiredMasterState(ValueError):
@@ -57,9 +60,11 @@ def validate_desired_master_state(desired_state):
   now = timestamp.utcnow_ts()
 
   version = desired_state.get('version', None)
-  if version != VERSION:
+  # Remove transition once crbug.com/583441 is resolved.
+  acceptible_versions = [PREV_VERSION, VERSION]
+  if version not in acceptible_versions:
     raise InvalidDesiredMasterState(
-        "State version doesn't match current (%s != %s)" % (version, VERSION))
+        "State version %s is not in %s" % (version, acceptible_versions))
 
   master_states = desired_state.get('master_states', {})
   for mastername, states in master_states.iteritems():
@@ -98,16 +103,21 @@ def validate_desired_master_state(desired_state):
       raise InvalidDesiredMasterState(
           'master %s does not have a state older than %s' % (mastername, now))
 
+  manually_managed = {}
   master_params = desired_state.get('master_params', {})
   for mastername, params in master_params.iteritems():
     allowed_config_keys = set((
-        'drain_timeout_sec',
         'builder_filters',
-        ))
+        'drain_timeout_sec',
+        'manually_managed',
+    ))
     extra_configs = set(params.iterkeys()) - allowed_config_keys
     if extra_configs:
       raise InvalidDesiredMasterState(
           'found unsupported configuration keys: %s' % (sorted(extra_configs),))
+
+    if params.get('manually_managed'):
+      manually_managed[mastername] = params['manually_managed']
 
     if params.get('drain_timeout_sec') is not None:
       try:
@@ -124,6 +134,14 @@ def validate_desired_master_state(desired_state):
         raise InvalidDesiredMasterState(
             'invalid "builder_filters" entry for %s (%s): %s' % (
                 mastername, builder_filter, e))
+
+  illegally_managed = set(manually_managed).intersection(set(master_states))
+  if illegally_managed:
+    emails = set(manually_managed[master] for master in illegally_managed)
+    raise InvalidDesiredMasterState(
+        'cannot restart the following masters via master manager: %s. '
+        'please contact %s' % (','.join(illegally_managed), ','.join(emails)))
+
 
 
 def get_master_state(states, now=None):
@@ -237,8 +255,12 @@ def write_master_state(desired_state, filename):
       'master_params': desired_state.get('master_params', {}),
       'master_states': prune_desired_state(
           desired_state.get('master_states', {})),
-      'version': VERSION,
+      # Remove transition once crbug.com/583441 is resolved.
+      'version': PREV_VERSION,
   }
+  # Remove transition once crbug.com/583441 is resolved.
+  new_desired_state['master_params'].pop('manually_managed', None)
+
   with open(filename, 'w') as f:
     json.dump(
         new_desired_state, f, sort_keys=True, indent=2, separators=(',', ':'))

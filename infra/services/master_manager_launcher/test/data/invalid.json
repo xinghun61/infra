@@ -1,5 +1,5 @@
 {
-  "version": "1",
+  "version": "2",
   "master_states": {
     "master.chromium.fyi": [
       {"desired_state": "bananas", "transition_time_utc": 4000}
