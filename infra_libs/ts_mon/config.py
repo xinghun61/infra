@@ -168,7 +168,6 @@ def process_argparse_options(args):
   Args:
     args (argparse.Namespace): the result of parsing the command line arguments
   """
-
   # Parse the config file if it exists.
   config = load_machine_config(args.ts_mon_config_file)
   endpoint = config.get('endpoint', '')
@@ -185,19 +184,21 @@ def process_argparse_options(args):
   if endpoint.startswith('file://'):
     interface.state.global_monitor = monitors.DebugMonitor(
         endpoint[len('file://'):])
-  elif credentials:
-    if endpoint.startswith('pubsub://'):
+  elif endpoint.startswith('pubsub://'):
+    if credentials:
       url = urlparse.urlparse(endpoint)
       project = url.netloc
       topic = url.path.strip('/')
       interface.state.global_monitor = monitors.PubSubMonitor(
           credentials, project, topic, use_instrumented_http=True)
     else:
-      logging.error('Monitoring is disabled because the endpoint provided is '
-                    'invalid or not supported: %s', endpoint)
+      logging.error('ts_mon monitoring is disabled because credentials are not '
+                    'available')
+  elif endpoint.lower() == 'none':
+    logging.info('ts_mon monitoring has been explicitly disabled')
   else:
-    logging.error('Monitoring is disabled because credentials are not '
-                  'available')
+    logging.error('ts_mon monitoring is disabled because the endpoint provided'
+                  ' is invalid or not supported: %s', endpoint)
 
   if args.ts_mon_target_type == 'device':
     interface.state.target = targets.DeviceTarget(

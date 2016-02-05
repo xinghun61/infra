@@ -22,6 +22,9 @@ from infra_libs.ts_mon.common.test import stubs
 import infra_libs
 
 
+DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
+
+
 class GlobalsTest(auto_stub.TestCase):
 
   def setUp(self):
@@ -107,6 +110,21 @@ class GlobalsTest(auto_stub.TestCase):
 
   @mock.patch('requests.get', autospec=True)
   @mock.patch('socket.getfqdn', autospec=True)
+  def test_explicit_disable_args(self, fake_fqdn, fake_get):
+    fake_fqdn.return_value = 'foo'
+    fake_get.return_value.side_effect = requests.exceptions.ConnectionError
+    p = argparse.ArgumentParser()
+    config.add_argparse_options(p)
+    args = p.parse_args([
+        '--ts-mon-credentials', '/path/to/creds.p8.json',
+        '--ts-mon-endpoint', 'none'])
+    config.process_argparse_options(args)
+
+    self.assertIsInstance(interface.state.global_monitor,
+                          monitors.NullMonitor)
+
+  @mock.patch('requests.get', autospec=True)
+  @mock.patch('socket.getfqdn', autospec=True)
   def test_manual_flush(self, fake_fqdn, fake_get):
     fake_fqdn.return_value = 'foo'
     fake_get.return_value.side_effect = requests.exceptions.ConnectionError
@@ -130,6 +148,20 @@ class GlobalsTest(auto_stub.TestCase):
         '/path/to/creds.p8.json', 'mytopic', 'myproject',
         use_instrumented_http=True)
     self.assertIs(interface.state.global_monitor, singleton)
+
+  @mock.patch('infra_libs.ts_mon.common.monitors.PubSubMonitor', autospec=True)
+  def test_pubsub_without_credentials(self, fake_monitor):
+    # safety net, not supposed to be called.
+    singleton = mock.Mock()
+    fake_monitor.return_value = singleton
+
+    p = argparse.ArgumentParser()
+    config.add_argparse_options(p)
+    args = p.parse_args(['--ts-mon-config-file',
+                         os.path.join(DATA_DIR, 'empty-config-file.json'),
+                         '--ts-mon-endpoint', 'pubsub://mytopic/myproject'])
+    config.process_argparse_options(args)
+    self.assertIsInstance(interface.state.global_monitor, monitors.NullMonitor)
 
   @mock.patch('infra_libs.ts_mon.common.monitors.DebugMonitor', auto_spec=True)
   def test_dryrun_args(self, fake_monitor):
