@@ -23,7 +23,7 @@ JINJA_ENV = jinja2.Environment(
   autoescape=True)
 
 
-REGEX_STEP_CURSOR = re.compile(r'^@@@STEP_CURSOR (.+)@@@$')
+REGEX_STEP_CURSOR = re.compile(r'^@@@STEP_CURSOR[@ ](.+)@@@$')
 
 
 Property = collections.namedtuple('Property', ['name', 'value', 'source'])
@@ -77,12 +77,22 @@ def parse_datetime(datetime_string):
   return datetime.datetime.strptime(datetime_string, '%Y-%m-%d %H:%M:%S')
 
 
+def access_allowed(task_metadata):
+  # TODO(phajdan.jr): Remove the user-specific logic when no longer needed.
+  if task_metadata.get('user') == 'phajdan@google.com':
+    return True
+
+  if 'allow_milo:1' in task_metadata.get('tags', []):
+    return True
+
+  return False
+
+
 class SwarmingBuildHandler(webapp2.RequestHandler):
   def get(self, task_id):
     task_metadata = fetch_swarming_task_metadata(task_id)
 
-    # TODO(phajdan.jr): allow all tasks marked as running a recipe on swarming.
-    if task_metadata.get('user') != 'phajdan@google.com':
+    if not access_allowed(task_metadata):
       self.abort(403)
 
     data = fetch_swarming_task_output(task_id)
@@ -149,6 +159,11 @@ class SwarmingBuildHandler(webapp2.RequestHandler):
 
 class SwarmingStepHandler(webapp2.RequestHandler):
   def get(self, task_id, step_id_base64):
+    task_metadata = fetch_swarming_task_metadata(task_id)
+
+    if not access_allowed(task_metadata):
+      self.abort(403)
+
     step_id = base64.urlsafe_b64decode(step_id_base64)
 
     self.response.headers['Content-Type'] = 'text/plain'
@@ -162,7 +177,8 @@ class SwarmingStepHandler(webapp2.RequestHandler):
         if line == '@@@STEP_CLOSED@@@':
           break
         step_lines.append(line)
-      elif line == '@@@STEP_CURSOR %s@@@' % step_id:
+      elif line in ['@@@STEP_CURSOR@%s@@@' % step_id,
+                    '@@@STEP_CURSOR %s@@@' % step_id]:
         inside_step = True
 
     self.response.write('\n'.join(step_lines))
