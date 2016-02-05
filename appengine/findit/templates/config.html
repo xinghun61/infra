@@ -18,6 +18,7 @@
   <script>
     var findit = {};
     findit.mastersToBlacklistedSteps = {{ masters | tojson | safe }};
+    findit.builders = {{ builders | tojson | safe }};
 
     function optionExistsInSelect(option, selectId) {
       var selectObject = $('#' + selectId + ' option');
@@ -142,6 +143,8 @@
       $('#remove-step-button').click(removeSelectedStepFromMaster);
       $('#save-button').click(save);
       $('#supported-masters-list').on('change', showUnsupportedSteps);
+
+      $('#builders-to-trybots').val(JSON.stringify(findit.builders, null, '  '));
     });
   </script>
 </head>
@@ -177,7 +180,7 @@
   </div>
   <div>
     Waterfall Builders to Try-server trybots:<br>
-    <textarea id="builders-to-trybots" rows="10" cols="80">{{ builders | tojson | safe }}</textarea>
+    <textarea id="builders-to-trybots" rows="10" cols="80"></textarea>
   </div>
   <br>
   <button type="submit" id="save-button">Save</button>
