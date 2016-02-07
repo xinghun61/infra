@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from recipe_engine.recipe_api import Property
+
 DEPS = [
   'depot_tools/bot_update',
   'file',
@@ -15,7 +17,7 @@ DEPS = [
 ]
 
 
-def build_cipd_packages(api, repo, rev):
+def build_cipd_packages(api, repo, rev, mastername, buildername, buildnumber):
   # Path to a service account credentials to use to talk to CIPD backend.
   # Deployed by Puppet.
   if api.platform.is_win:
@@ -36,10 +38,7 @@ def build_cipd_packages(api, repo, rev):
 
   # Upload them, attach tags.
   tags = [
-    'buildbot_build:%s/%s/%s' % (
-        api.properties['mastername'],
-        api.properties['buildername'],
-        api.properties['buildnumber']),
+    'buildbot_build:%s/%s/%s' % (mastername, buildername, buildnumber),
     'git_repository:%s' % repo,
     'git_revision:%s' % rev,
   ]
@@ -86,17 +85,22 @@ def build_luci(api):
     api.step.active_result.presentation.step_text = sha1
 
 
-def RunSteps(api):
-  builder_name = api.properties.get('buildername')
-  if builder_name.startswith('infra-internal-continuous'):
+PROPERTIES = {
+  'mastername': Property(),
+  'buildername': Property(),
+  'buildnumber': Property(default=-1, kind=int),
+}
+
+def RunSteps(api, mastername, buildername, buildnumber):
+  if buildername.startswith('infra-internal-continuous'):
     project_name = 'infra_internal'
     repo_name = 'https://chrome-internal.googlesource.com/infra/infra_internal'
-  elif builder_name.startswith('infra-continuous'):
+  elif buildername.startswith('infra-continuous'):
     project_name = 'infra'
     repo_name = 'https://chromium.googlesource.com/infra/infra'
   else:  # pragma: no cover
     raise ValueError(
-        'This recipe is not intended for builder %s. ' % builder_name)
+        'This recipe is not intended for builder %s. ' % buildername)
 
   api.gclient.set_config(project_name)
   bot_update_step = api.bot_update.ensure_checkout(force=True)
@@ -138,10 +142,15 @@ def RunSteps(api):
         api.path['checkout'].join('go', 'env.py'),
         ['python', api.path['checkout'].join('go', 'test.py')])
 
-  build_cipd_packages(api, repo_name, rev)
+  if buildnumber != -1:
+    build_cipd_packages(api, repo_name, rev, mastername, buildername,
+                        buildnumber)
+  else:
+    result = api.step('cipd - not building packages', None)
+    result.presentation.status = api.step.WARNING
 
   # Only build luci-go executables on 64 bits, public CI.
-  if project_name == 'infra' and builder_name.endswith('-64'):
+  if project_name == 'infra' and buildername.endswith('-64'):
     build_luci(api)
 
 
@@ -197,6 +206,16 @@ def GenTests(api):
     api.properties.git_scheduled(
         buildername='infra-continuous-64',
         buildnumber=123,
+        mastername='chromium.infra',
+        repository='https://chromium.googlesource.com/infra/infra',
+    )
+  )
+
+  yield (
+    api.test('infra_swarming') +
+    api.properties.git_scheduled(
+        buildername='infra-continuous-32',
+        buildnumber=-1,
         mastername='chromium.infra',
         repository='https://chromium.googlesource.com/infra/infra',
     )
