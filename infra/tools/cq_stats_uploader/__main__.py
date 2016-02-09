@@ -49,6 +49,10 @@ class StatsArgs(object):
     self.use_message_parsing = False
 
   def __getattr__(self, name):
+    # We need to support returning builtin methods of StatsArgs like
+    # __reduce_ex__ used by copy.copy in order to make shallow copies.
+    if name[0:2] == '__' and name[-2:] == '__':
+      raise AttributeError, name
     logging.warn('StatsArgs: returning None for undefined attribute %r' % name)
     return None
 
