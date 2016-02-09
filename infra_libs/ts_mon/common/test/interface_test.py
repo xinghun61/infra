@@ -14,13 +14,16 @@ from testing_support import auto_stub
 from infra_libs.ts_mon.common import errors
 from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import metrics
+from infra_libs.ts_mon.common import targets
 from infra_libs.ts_mon.common.test import stubs
 
 
 class GlobalsTest(unittest.TestCase):
 
   def setUp(self):
-    self.mock_state = stubs.MockState()
+    target = targets.TaskTarget('test_service', 'test_job',
+                                'test_region', 'test_host')
+    self.mock_state = interface.State(target=target)
     self.state_patcher = mock.patch('infra_libs.ts_mon.common.interface.state',
                                     new=self.mock_state)
     self.state_patcher.start()
@@ -44,7 +47,7 @@ class GlobalsTest(unittest.TestCase):
     fake_metric.name = 'fake'
     fake_metric.serialize_to.side_effect = serialize_to
     interface.register(fake_metric)
-    interface.state.store.set('fake', (), 123)
+    interface.state.store.set('fake', (), None, 123)
 
     interface.flush()
     interface.state.global_monitor.send.assert_called_once()
@@ -78,7 +81,7 @@ class GlobalsTest(unittest.TestCase):
     interface.register(fake_metric)
 
     for i in xrange(1001):
-      interface.state.store.set('fake', ('field', i), 123)
+      interface.state.store.set('fake', ('field', i), None, 123)
 
     interface.flush()
     self.assertEquals(2, interface.state.global_monitor.send.call_count)
@@ -105,7 +108,7 @@ class GlobalsTest(unittest.TestCase):
     interface.state.global_monitor.send.side_effect = send
 
     for i in xrange(1001):
-      interface.state.store.set('fake', ('field', i), 123)
+      interface.state.store.set('fake', ('field', i), None, 123)
 
     # Shouldn't raise an exception.
     interface.flush()

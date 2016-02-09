@@ -9,7 +9,9 @@ import unittest
 
 import mock
 
+from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import monitors
+from infra_libs.ts_mon.common import targets
 from infra_libs.ts_mon.protos import metrics_pb2
 import infra_libs
 
@@ -24,6 +26,11 @@ class MonitorTest(unittest.TestCase):
 
 
 class PubSubMonitorTest(unittest.TestCase):
+
+  def setUp(self):
+    super(PubSubMonitorTest, self).setUp()
+    interface.state.target = targets.TaskTarget(
+        'test_service', 'test_job', 'test_region', 'test_host')
 
   @mock.patch('infra_libs.httplib2_utils.InstrumentedHttp', autospec=True)
   @mock.patch('infra_libs.ts_mon.common.monitors.discovery', autospec=True)

@@ -174,10 +174,7 @@ class GlobalsTest(auto_stub.TestCase):
     fake_monitor.assert_called_once_with('foo.txt')
     self.assertIs(interface.state.global_monitor, singleton)
 
-  @mock.patch('infra_libs.ts_mon.common.targets.DeviceTarget', autospec=True)
-  def test_device_args(self, fake_target):
-    singleton = mock.Mock()
-    fake_target.return_value = singleton
+  def test_device_args(self):
     p = argparse.ArgumentParser()
     config.add_argparse_options(p)
     args = p.parse_args(['--ts-mon-credentials', '/path/to/creds.p8.json',
@@ -187,13 +184,12 @@ class GlobalsTest(auto_stub.TestCase):
                          '--ts-mon-device-network', 'net',
                          '--ts-mon-device-hostname', 'host'])
     config.process_argparse_options(args)
-    fake_target.assert_called_once_with('reg', 'role', 'net', 'host')
-    self.assertIs(interface.state.target, singleton)
+    self.assertEqual(interface.state.target.region, 'reg')
+    self.assertEqual(interface.state.target.role, 'role')
+    self.assertEqual(interface.state.target.network, 'net')
+    self.assertEqual(interface.state.target.hostname, 'host')
 
-  @mock.patch('infra_libs.ts_mon.common.targets.TaskTarget', autospec=True)
-  def test_task_args(self, fake_target):
-    singleton = mock.Mock()
-    fake_target.return_value = singleton
+  def test_task_args(self):
     p = argparse.ArgumentParser()
     config.add_argparse_options(p)
     args = p.parse_args(['--ts-mon-credentials', '/path/to/creds.p8.json',
@@ -204,8 +200,11 @@ class GlobalsTest(auto_stub.TestCase):
                          '--ts-mon-task-hostname', 'host',
                          '--ts-mon-task-number', '1'])
     config.process_argparse_options(args)
-    fake_target.assert_called_once_with('serv', 'job', 'reg', 'host', 1)
-    self.assertIs(interface.state.target, singleton)
+    self.assertEqual(interface.state.target.service_name, 'serv')
+    self.assertEqual(interface.state.target.job_name, 'job')
+    self.assertEqual(interface.state.target.region, 'reg')
+    self.assertEqual(interface.state.target.hostname, 'host')
+    self.assertEqual(interface.state.target.task_num, 1)
 
   @mock.patch('infra_libs.ts_mon.common.monitors.NullMonitor', autospec=True)
   def test_no_args(self, fake_monitor):
