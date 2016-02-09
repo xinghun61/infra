@@ -8,6 +8,7 @@ PENDING = 0
 ANALYZING = 10
 ANALYZED = 70
 ERROR = 80
+FLAKY = 100
 
 
 STATUS_TO_DESCRIPTION = {
@@ -19,6 +20,15 @@ STATUS_TO_DESCRIPTION = {
 
 
 TRY_JOB_STATUS_TO_DESCRIPTION = {
+    PENDING: 'Pending',
+    ANALYZING: 'Running',
+    ANALYZED: 'Completed',
+    ERROR: 'Error',
+    FLAKY: 'Flaky'
+}
+
+
+SWARMING_TASK_STATUS_TO_DESCRIPTION = {
     PENDING: 'Pending',
     ANALYZING: 'Running',
     ANALYZED: 'Completed',
