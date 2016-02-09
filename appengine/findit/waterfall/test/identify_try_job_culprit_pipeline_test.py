@@ -199,6 +199,8 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertIsNone(try_job_data.culprits)
 
+  # TODO(lijeffrey): Remove legacy tests once test try job recipe is updated to
+  # return results in a report dict containing 'result' as its own dict.
   def testIdentifyCulpritForTestTryJobReturnNoneIfNoTryJobResult(self):
     master_name = 'm'
     builder_name = 'b'
@@ -305,6 +307,157 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     self.assertEqual(expected_culprit_data, try_job_data.culprits)
 
   def testIdentifyCulpritForTestTryJobSuccess(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '1'
+
+    test_result = {
+        'report': {
+            'result': {
+                'rev1': {
+                    'a_test': {
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': ['a_test1']
+                    },
+                    'b_test': {
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': ['b_test1']
+                    },
+                    'c_test': {
+                        'status': 'passed',
+                        'valid': True
+                    }
+                },
+                'rev2': {
+                    'a_test': {
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': ['a_test1', 'a_test2']
+                    },
+                    'b_test': {
+                        'status': 'passed',
+                        'valid': True
+                    },
+                    'c_test': {
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': []
+                    }
+                }
+            }
+        },
+        'url': 'url',
+        'try_job_id': try_job_id
+    }
+
+    WfTryJobData.Create(try_job_id).put()
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.status = wf_analysis_status.ANALYZING
+    try_job.test_results = [test_result]
+    try_job.put()
+
+    self.mock(GitRepository, 'GetChangeLog', self._MockGetChangeLog)
+
+    pipeline = IdentifyTryJobCulpritPipeline()
+    culprit = pipeline.run(
+        master_name, builder_name, build_number, ['rev1', 'rev2'],
+        TryJobType.TEST, '1', test_result)
+
+    expected_test_result = {
+        'report': {
+            'result': {
+                'rev1': {
+                    'a_test': {
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': ['a_test1']
+                    },
+                    'b_test': {
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': ['b_test1']
+                    },
+                    'c_test': {
+                        'status': 'passed',
+                        'valid': True
+                    }
+                },
+                'rev2': {
+                    'a_test': {
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': ['a_test1', 'a_test2']
+                    },
+                    'b_test': {
+                        'status': 'passed',
+                        'valid': True
+                    },
+                    'c_test': {
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': []
+                    }
+                }
+            }
+        },
+        'url': 'url',
+        'try_job_id': try_job_id,
+        'culprit': {
+            'a_test': {
+                'tests': {
+                    'a_test1': {
+                        'revision': 'rev1',
+                        'commit_position': '1',
+                        'review_url': 'url_1'
+                    },
+                    'a_test2': {
+                        'revision': 'rev2',
+                        'commit_position': '2',
+                        'review_url': 'url_2'
+                    }
+                }
+            },
+            'b_test': {
+                'tests': {
+                    'b_test1': {
+                        'revision': 'rev1',
+                        'commit_position': '1',
+                        'review_url': 'url_1'
+                    }
+                }
+            },
+            'c_test': {
+                'revision': 'rev2',
+                'commit_position': '2',
+                'review_url': 'url_2',
+                'tests': {}
+            }
+        }
+    }
+
+    self.assertEqual(expected_test_result['culprit'], culprit)
+
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(expected_test_result, try_job.test_results[-1])
+    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
+
+    try_job_data = WfTryJobData.Get(try_job_id)
+    expected_culprit_data = {
+        'a_test': {
+            'a_test1': 'rev1',
+            'a_test2': 'rev2',
+        },
+        'b_test': {
+            'b_test1': 'rev1',
+        },
+        'c_test': 'rev2'
+        }
+    self.assertEqual(expected_culprit_data, try_job_data.culprits)
+
+  def testIdentifyCulpritForTestTryJobSuccessOldFormat(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1

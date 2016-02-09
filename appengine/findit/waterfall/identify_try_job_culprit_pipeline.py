@@ -129,9 +129,16 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     culprit_map = {}
     failed_revisions = []
     for revision in blame_list:
-      for step, step_result in result['report'][revision].iteritems():
-        if (not step_result['valid'] or
-            not step_result['status'] == 'failed'):  # pragma: no cover
+      # For backwards compatibility, result['report'] is a single-layer dict
+      # that contains the revision results directly.
+      # TODO(lijeffrey): Remove backwards compatibility support after updating
+      # the test recipe to return results in a dict under called 'result'
+      # under result['report'] and update try_job_result_format.md accordingly.
+      test_results = result['report'].get('result', result['report'])
+
+      for step, test_result in test_results[revision].iteritems():
+        if (not test_result['valid'] or
+            test_result['status'] != 'failed'):  # pragma: no cover
           continue
 
         if revision not in failed_revisions:
@@ -142,17 +149,18 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
               'tests': {}
           }
 
-        if (not step_result['failures'] and
+        if (not test_result['failures'] and
             not culprit_map[step].get('revision')):
           # Non swarming test failures, only have step level failure info.
           culprit_map[step]['revision'] = revision
 
-        for failed_test in step_result['failures']:
+        for failed_test in test_result['failures']:
           # Swarming tests, gets first failed revision for each test.
           if failed_test not in culprit_map[step]['tests']:
             culprit_map[step]['tests'][failed_test] = {
                 'revision': revision
             }
+
     return culprit_map, failed_revisions
 
   def _UpdateCulpritMapWithCulpritInfo(self, culprit_map, culprits):
