@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/luci/luci-go/client/authcli"
 	"github.com/luci/luci-go/common/auth"
@@ -455,6 +456,20 @@ func (opts *TagsOptions) registerFlags(f *flag.FlagSet) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// UploadOptions mixin.
+
+// UploadOptions defines command line options for commands that upload packages.
+type UploadOptions struct {
+	verificationTimeout time.Duration
+}
+
+func (opts *UploadOptions) registerFlags(f *flag.FlagSet) {
+	f.DurationVar(
+		&opts.verificationTimeout, "verification-timeout",
+		cipd.CASFinalizationTimeout, "Maximum time to wait for backend-side package hash verification.")
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Support for running operations concurrently.
 
 // batchOperation defines what to do with a packages matching a prefix.
@@ -587,6 +602,7 @@ var cmdCreate = &subcommands.Command{
 		c.RefsOptions.registerFlags(&c.Flags)
 		c.TagsOptions.registerFlags(&c.Flags)
 		c.ServiceOptions.registerFlags(&c.Flags)
+		c.UploadOptions.registerFlags(&c.Flags)
 		return c
 	},
 }
@@ -597,16 +613,18 @@ type createRun struct {
 	RefsOptions
 	TagsOptions
 	ServiceOptions
+	UploadOptions
 }
 
 func (c *createRun) Run(a subcommands.Application, args []string) int {
 	if !c.init(args, 0, 0) {
 		return 1
 	}
-	return c.done(buildAndUploadInstance(c.InputOptions, c.RefsOptions, c.TagsOptions, c.ServiceOptions))
+	return c.done(buildAndUploadInstance(c.InputOptions, c.RefsOptions, c.TagsOptions, c.ServiceOptions, c.UploadOptions))
 }
 
-func buildAndUploadInstance(inputOpts InputOptions, refsOpts RefsOptions, tagsOpts TagsOptions, serviceOpts ServiceOptions) (common.Pin, error) {
+func buildAndUploadInstance(inputOpts InputOptions, refsOpts RefsOptions,
+	tagsOpts TagsOptions, serviceOpts ServiceOptions, uploadOpts UploadOptions) (common.Pin, error) {
 	f, err := ioutil.TempFile("", "cipd_pkg")
 	if err != nil {
 		return common.Pin{}, err
@@ -619,7 +637,7 @@ func buildAndUploadInstance(inputOpts InputOptions, refsOpts RefsOptions, tagsOp
 	if err != nil {
 		return common.Pin{}, err
 	}
-	return registerInstanceFile(f.Name(), refsOpts, tagsOpts, serviceOpts)
+	return registerInstanceFile(f.Name(), refsOpts, tagsOpts, serviceOpts, uploadOpts)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1514,6 +1532,7 @@ var cmdRegister = &subcommands.Command{
 		c.RefsOptions.registerFlags(&c.Flags)
 		c.TagsOptions.registerFlags(&c.Flags)
 		c.ServiceOptions.registerFlags(&c.Flags)
+		c.UploadOptions.registerFlags(&c.Flags)
 		return c
 	},
 }
@@ -1523,16 +1542,18 @@ type registerRun struct {
 	RefsOptions
 	TagsOptions
 	ServiceOptions
+	UploadOptions
 }
 
 func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	if !c.init(args, 1, 1) {
 		return 1
 	}
-	return c.done(registerInstanceFile(args[0], c.RefsOptions, c.TagsOptions, c.ServiceOptions))
+	return c.done(registerInstanceFile(args[0], c.RefsOptions, c.TagsOptions, c.ServiceOptions, c.UploadOptions))
 }
 
-func registerInstanceFile(instanceFile string, refsOpts RefsOptions, tagsOpts TagsOptions, serviceOpts ServiceOptions) (common.Pin, error) {
+func registerInstanceFile(instanceFile string, refsOpts RefsOptions,
+	tagsOpts TagsOptions, serviceOpts ServiceOptions, uploadOpts UploadOptions) (common.Pin, error) {
 	inst, err := local.OpenInstanceFile(instanceFile, "")
 	if err != nil {
 		return common.Pin{}, err
@@ -1544,7 +1565,7 @@ func registerInstanceFile(instanceFile string, refsOpts RefsOptions, tagsOpts Ta
 	}
 	defer client.Close()
 	inspectInstance(inst, false)
-	err = client.RegisterInstance(inst)
+	err = client.RegisterInstance(inst, uploadOpts.verificationTimeout)
 	if err != nil {
 		return common.Pin{}, err
 	}

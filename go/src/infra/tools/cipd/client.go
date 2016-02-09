@@ -64,11 +64,11 @@ const (
 	RevokeRole PackageACLChangeAction = "REVOKE"
 
 	// CASFinalizationTimeout is how long to wait for CAS service to finalize the upload.
-	CASFinalizationTimeout = 1 * time.Minute
+	CASFinalizationTimeout = 5 * time.Minute
 	// SetRefTimeout is how long to wait for an instance to be processed when setting a ref.
-	SetRefTimeout = 1 * time.Minute
+	SetRefTimeout = 3 * time.Minute
 	// TagAttachTimeout is how long to wait for an instance to be processed when attaching tags.
-	TagAttachTimeout = 1 * time.Minute
+	TagAttachTimeout = 3 * time.Minute
 
 	// UserAgent is HTTP user agent string for CIPD client.
 	UserAgent = "cipd 1.1"
@@ -239,7 +239,7 @@ type Client interface {
 	// 'session' is nil) or as a part of more high level upload process (in that
 	// case upload session can be opened elsewhere and its properties passed here
 	// via 'session' argument). Returns nil on successful upload.
-	UploadToCAS(sha1 string, data io.ReadSeeker, session *UploadSession) error
+	UploadToCAS(sha1 string, data io.ReadSeeker, session *UploadSession, timeout time.Duration) error
 
 	// ResolveVersion converts an instance ID, a tag or a ref into a concrete Pin
 	// by contacting the backend.
@@ -247,8 +247,11 @@ type Client interface {
 
 	// RegisterInstance makes the package instance available for clients by
 	// uploading it to the storage and registering it in the package repository.
+	//
 	// 'instance' is a package instance to register.
-	RegisterInstance(instance local.PackageInstance) error
+	// 'timeout' is how long to wait for backend-side package hash
+	//     verification to succeed (pass zero for some sensible default).
+	RegisterInstance(instance local.PackageInstance, timeout time.Duration) error
 
 	// SetRefWhenReady moves a ref to point to a package instance, retrying on
 	// "not yet processed" responses.
@@ -498,7 +501,7 @@ func (client *clientImpl) ListPackages(path string, recursive bool) ([]string, e
 	return allPkgs, nil
 }
 
-func (client *clientImpl) UploadToCAS(sha1 string, data io.ReadSeeker, session *UploadSession) error {
+func (client *clientImpl) UploadToCAS(sha1 string, data io.ReadSeeker, session *UploadSession, timeout time.Duration) error {
 	// Open new upload session if an existing is not provided.
 	var err error
 	if session == nil {
@@ -525,6 +528,9 @@ func (client *clientImpl) UploadToCAS(sha1 string, data io.ReadSeeker, session *
 	}
 
 	// Finalize the upload, wait until server verifies and publishes the file.
+	if timeout == 0 {
+		timeout = CASFinalizationTimeout
+	}
 	started := client.clock.now()
 	delay := time.Second
 	for {
@@ -537,7 +543,7 @@ func (client *clientImpl) UploadToCAS(sha1 string, data io.ReadSeeker, session *
 			client.Logger.Infof("cipd: successfully uploaded %s", sha1)
 			return nil
 		}
-		if client.clock.now().Sub(started) > CASFinalizationTimeout {
+		if client.clock.now().Sub(started) > timeout {
 			client.Logger.Warningf("cipd: upload of %s failed: timeout", sha1)
 			return ErrFinalizationTimeout
 		}
@@ -579,7 +585,7 @@ func (client *clientImpl) ResolveVersion(packageName, version string) (common.Pi
 	return pin, nil
 }
 
-func (client *clientImpl) RegisterInstance(instance local.PackageInstance) error {
+func (client *clientImpl) RegisterInstance(instance local.PackageInstance, timeout time.Duration) error {
 	// Attempt to register.
 	client.Logger.Infof("cipd: registering %s", instance.Pin())
 	result, err := client.remote.registerInstance(instance.Pin())
@@ -589,7 +595,7 @@ func (client *clientImpl) RegisterInstance(instance local.PackageInstance) error
 
 	// Asked to upload the package file to CAS first?
 	if result.uploadSession != nil {
-		err = client.UploadToCAS(instance.Pin().InstanceID, instance.DataReader(), result.uploadSession)
+		err = client.UploadToCAS(instance.Pin().InstanceID, instance.DataReader(), result.uploadSession, timeout)
 		if err != nil {
 			return err
 		}

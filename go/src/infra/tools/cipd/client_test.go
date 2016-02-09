@@ -43,7 +43,7 @@ func TestUploadToCAS(t *testing.T) {
 			},
 		})
 		client.storage = &mockedStorage{c, nil}
-		err := client.UploadToCAS("abc", nil, nil)
+		err := client.UploadToCAS("abc", nil, nil, time.Minute)
 		So(err, ShouldBeNil)
 	})
 
@@ -65,7 +65,7 @@ func TestUploadToCAS(t *testing.T) {
 		}
 		client := mockClient(c, "", calls)
 		client.storage = &mockedStorage{c, nil}
-		err := client.UploadToCAS("abc", nil, nil)
+		err := client.UploadToCAS("abc", nil, nil, time.Minute)
 		So(err, ShouldEqual, ErrFinalizationTimeout)
 	})
 }
@@ -171,7 +171,7 @@ func TestRegisterInstance(t *testing.T) {
 				},
 			})
 			client.storage = &mockedStorage{c, nil}
-			err = client.RegisterInstance(inst)
+			err = client.RegisterInstance(inst, time.Minute)
 			So(err, ShouldBeNil)
 		})
 
@@ -194,7 +194,7 @@ func TestRegisterInstance(t *testing.T) {
 				},
 			})
 			client.storage = &mockedStorage{c, nil}
-			err = client.RegisterInstance(inst)
+			err = client.RegisterInstance(inst, time.Minute)
 			So(err, ShouldBeNil)
 		})
 	})
@@ -234,7 +234,7 @@ func TestSetRefWhenReady(t *testing.T) {
 
 	Convey("SetRefWhenReady timeout", t, func(c C) {
 		calls := []expectedHTTPCall{}
-		for i := 0; i < 12; i++ {
+		for i := 0; i < 36; i++ {
 			calls = append(calls, expectedHTTPCall{
 				Method: "POST",
 				Path:   "/_ah/api/repo/v1/ref",
@@ -290,7 +290,7 @@ func TestAttachTagsWhenReady(t *testing.T) {
 
 	Convey("AttachTagsWhenReady timeout", t, func(c C) {
 		calls := []expectedHTTPCall{}
-		for i := 0; i < 12; i++ {
+		for i := 0; i < 36; i++ {
 			calls = append(calls, expectedHTTPCall{
 				Method: "POST",
 				Path:   "/_ah/api/repo/v1/tags",
