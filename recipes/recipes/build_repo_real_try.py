@@ -43,6 +43,7 @@ def execute_inner(api, name, **properties):
         '--properties-file',
         api.json.input(properties),
       ],
+      allow_subannotations=True,
   )
 
 

@@ -58,6 +58,7 @@
     ]
   },
   {
+    "allow_subannotations": true,
     "cmd": [
       "python",
       "-u",
@@ -71,6 +72,7 @@
     "name": "ci actual execute_inner"
   },
   {
+    "allow_subannotations": true,
     "cmd": [
       "python",
       "-u",
