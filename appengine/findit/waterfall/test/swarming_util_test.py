@@ -16,7 +16,13 @@ from waterfall import swarming_util
 from waterfall.swarming_task_request import SwarmingTaskRequest
 
 
+#TODO(chanli): Add below to findit config.
+ISOLATED_SERVER = 'https://isolateserver.appspot.com'
+ISOLATED_STORAGE_URL = 'isolateserver.storage.googleapis.com'
+
+
 class SwarmingHttpClient(RetryHttpClient):
+
   def __init__(self):
     self.get_responses = dict()
     self.post_responses = dict()
@@ -24,7 +30,8 @@ class SwarmingHttpClient(RetryHttpClient):
   def _GetData(self, data_type, file_name=None):
     file_name_map = {
         'build': 'sample_swarming_build_tasks.json',
-        'step': 'sample_swarming_build_step_tasks.json'
+        'step': 'sample_swarming_build_step_tasks.json',
+        'task': 'sample_swarming_task.json'
     }
     file_name = file_name_map.get(data_type, file_name)
 
@@ -36,13 +43,14 @@ class SwarmingHttpClient(RetryHttpClient):
   def _SetResponseForGetRequestIsolated(self, url, file_hash):
     self.get_responses[url] = self._GetData('isolated', file_hash)
 
-  def _SetResponseForGetRequestSwarming(
+  def _SetResponseForGetRequestSwarmingList(
       self, master_name, builder_name, build_number, step_name=None):
     if builder_name == 'download_failed':
       return
 
-    url = ('https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/'
+    url = ('https://%s/_ah/api/swarming/v1/tasks/'
            'list?tags=%s&tags=%s&tags=%s') % (
+               swarming_util.SWARMING_SERVER_HOST,
                urllib.quote('master:%s' % master_name),
                urllib.quote('buildername:%s' % builder_name),
                urllib.quote('buildnumber:%d' % build_number))
@@ -64,6 +72,13 @@ class SwarmingHttpClient(RetryHttpClient):
 
     self.get_responses[url] = response
     self.get_responses[cursor_url] = json.dumps(cursor_swarming_data)
+
+  def _SetResponseForGetRequestSwarmingResult(self, task_id):
+    url = ('https://%s/_ah/api/swarming/v1/task/%s/result') % (
+        swarming_util.SWARMING_SERVER_HOST, task_id)
+
+    response = self._GetData('task')
+    self.get_responses[url] = response
 
   def _SetResponseForPostRequest(self, isolated_hash):
     if isolated_hash == 'not found':
@@ -89,6 +104,7 @@ class SwarmingHttpClient(RetryHttpClient):
 
 
 class _LoggedHttpClient(RetryHttpClient):
+
   def __init__(self):
     self.responses = collections.defaultdict(dict)
     self.requests = {}
@@ -112,6 +128,7 @@ class _LoggedHttpClient(RetryHttpClient):
 
 
 class SwarmingUtilTest(testing.AppengineTestCase):
+
   def setUp(self):
     super(SwarmingUtilTest, self).setUp()
     self.http_client = SwarmingHttpClient()
@@ -221,7 +238,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         }
     }
 
-    self.http_client._SetResponseForGetRequestSwarming(
+    self.http_client._SetResponseForGetRequestSwarmingList(
         master_name, builder_name, build_number)
     result = swarming_util.GetIsolatedDataForFailedBuild(
         master_name, builder_name, build_number, failed_steps,
@@ -235,7 +252,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
                 {
                     'digest': 'isolatedhashatests',
                     'namespace': 'default-gzip',
-                    'isolatedserver': 'https://isolateserver.appspot.com'
+                    'isolatedserver': ISOLATED_SERVER
                 }
             ]
         },
@@ -246,12 +263,12 @@ class SwarmingUtilTest(testing.AppengineTestCase):
                 {
                     'digest': 'isolatedhashunittests',
                     'namespace': 'default-gzip',
-                    'isolatedserver': 'https://isolateserver.appspot.com'
+                    'isolatedserver': ISOLATED_SERVER
                 },
                 {
                     'digest': 'isolatedhashunittests1',
                     'namespace': 'default-gzip',
-                    'isolatedserver': 'https://isolateserver.appspot.com'
+                    'isolatedserver': ISOLATED_SERVER
                 }
             ]
         },
@@ -286,7 +303,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         }
     }
 
-    self.http_client._SetResponseForGetRequestSwarming(
+    self.http_client._SetResponseForGetRequestSwarmingList(
         master_name, builder_name, build_number)
 
     result = swarming_util.GetIsolatedDataForFailedBuild(
@@ -311,7 +328,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     build_number = 223
     step_name = 'unit_tests'
 
-    self.http_client._SetResponseForGetRequestSwarming(
+    self.http_client._SetResponseForGetRequestSwarmingList(
         master_name, builder_name, build_number, step_name)
     data = swarming_util.GetIsolatedDataForStep(
         master_name, builder_name, build_number, step_name,
@@ -320,7 +337,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         {
             'digest': 'isolatedhashunittests',
             'namespace': 'default-gzip',
-            'isolatedserver': 'https://isolateserver.appspot.com'
+            'isolatedserver': ISOLATED_SERVER
         }
     ]
     self.assertEqual(expected_data, data)
@@ -331,7 +348,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     build_number = 223
     step_name = 's1'
 
-    self.http_client._SetResponseForGetRequestSwarming(
+    self.http_client._SetResponseForGetRequestSwarmingList(
         master_name, builder_name, build_number, step_name)
     task_ids = swarming_util.GetIsolatedDataForStep(
         master_name, builder_name, build_number, step_name,
@@ -344,13 +361,12 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     isolated_data = {
         'digest': 'shard1_isolated',
         'namespace': 'default-gzip',
-        'isolatedserver': 'https://isolateserver.appspot.com'
+        'isolatedserver': ISOLATED_SERVER
     }
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
     self.http_client._SetResponseForGetRequestIsolated(
-        'https://isolateserver.storage.googleapis.com/default-gzip/shard1',
-        'shard1')
+        'https://%s/default-gzip/shard1' % ISOLATED_STORAGE_URL, 'shard1')
 
     result = swarming_util._DownloadTestResults(
         isolated_data, self.http_client)
@@ -363,7 +379,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     isolated_data = {
         'digest': 'not found',
         'namespace': 'default-gzip',
-        'isolatedserver': 'https://isolateserver.appspot.com'
+        'isolatedserver': ISOLATED_SERVER
     }
 
     result = swarming_util._DownloadTestResults(
@@ -371,12 +387,11 @@ class SwarmingUtilTest(testing.AppengineTestCase):
 
     self.assertIsNone(result)
 
-
   def testDownloadTestResultsFailedForParsingSecondHash(self):
     isolated_data = {
         'digest': 'not found',
         'namespace': 'default-gzip',
-        'isolatedserver': 'https://isolateserver.appspot.com'
+        'isolatedserver': ISOLATED_SERVER
     }
 
     self.http_client._SetResponseForPostRequest('not found')
@@ -389,7 +404,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     isolated_data = {
         'digest': 'shard1_isolated',
         'namespace': 'default-gzip',
-        'isolatedserver': 'https://isolateserver.appspot.com'
+        'isolatedserver': ISOLATED_SERVER
     }
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     result = swarming_util._DownloadTestResults(
@@ -397,12 +412,11 @@ class SwarmingUtilTest(testing.AppengineTestCase):
 
     self.assertIsNone(result)
 
-
   def testDownloadTestResultsFailedForFile(self):
     isolated_data = {
         'digest': 'shard1_isolated',
         'namespace': 'default-gzip',
-        'isolatedserver': 'https://isolateserver.appspot.com'
+        'isolatedserver': ISOLATED_SERVER
     }
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
@@ -416,34 +430,31 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         {
             'digest': 'shard1_isolated',
             'namespace': 'default-gzip',
-            'isolatedserver': 'https://isolateserver.appspot.com'
+            'isolatedserver': ISOLATED_SERVER
         },
         {
             'digest': 'shard2_isolated',
             'namespace': 'default-gzip',
-            'isolatedserver': 'https://isolateserver.appspot.com'
+            'isolatedserver': ISOLATED_SERVER
         },
         {
             'digest': 'shard3_isolated',
             'namespace': 'default-gzip',
-            'isolatedserver': 'https://isolateserver.appspot.com'
+            'isolatedserver': ISOLATED_SERVER
         }
     ]
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
     self.http_client._SetResponseForGetRequestIsolated(
-        'https://isolateserver.storage.googleapis.com/default-gzip/shard1',
-        'shard1')
+        'https://%s/default-gzip/shard1' % ISOLATED_STORAGE_URL, 'shard1')
     self.http_client._SetResponseForPostRequest('shard2_isolated')
     self.http_client._SetResponseForPostRequest('shard2_url')
     self.http_client._SetResponseForGetRequestIsolated(
-        'https://isolateserver.storage.googleapis.com/default-gzip/shard2',
-        'shard2')
+        'https://%s/default-gzip/shard2' % ISOLATED_STORAGE_URL, 'shard2')
     self.http_client._SetResponseForPostRequest('shard3_isolated')
     self.http_client._SetResponseForPostRequest('shard3_url')
     self.http_client._SetResponseForGetRequestIsolated(
-        'https://isolateserver.storage.googleapis.com/default-gzip/shard3',
-        'shard3')
+        'https://%s/default-gzip/shard3' % ISOLATED_STORAGE_URL, 'shard3')
 
     result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
         isolated_data, self.http_client)
@@ -459,14 +470,13 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         {
             'digest': 'shard1_isolated',
             'namespace': 'default-gzip',
-            'isolatedserver': 'https://isolateserver.appspot.com'
+            'isolatedserver': ISOLATED_SERVER
         }
     ]
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
     self.http_client._SetResponseForGetRequestIsolated(
-        'https://isolateserver.storage.googleapis.com/default-gzip/shard1',
-        'shard1')
+        'https://%s/default-gzip/shard1' % ISOLATED_STORAGE_URL, 'shard1')
 
     result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
         isolated_data, self.http_client)
@@ -480,7 +490,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         {
             'digest': 'shard1_isolated',
             'namespace': 'default-gzip',
-            'isolatedserver': 'https://isolateserver.appspot.com'
+            'isolatedserver': ISOLATED_SERVER
         }
     ]
 
@@ -488,6 +498,42 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         isolated_data, self.http_client)
 
     self.assertIsNone(result)
+
+  def testGetSwarmingTaskResultById(self):
+    task_id = '2944afa502297110'
+
+    self.http_client._SetResponseForGetRequestSwarmingResult(task_id)
+
+    status, outputs_ref = swarming_util.GetSwarmingTaskResultById(
+        task_id, self.http_client)
+
+    expected_outputs_ref = {
+        'isolatedserver': ISOLATED_SERVER,
+        'namespace': 'default-gzip',
+        'isolated': 'shard1_isolated'
+    }
+
+    self.assertEqual('COMPLETED', status)
+    self.assertEqual(expected_outputs_ref, outputs_ref)
+
+  def testGetSwarmingTaskFailureLog(self):
+    outputs_ref = {
+        'isolatedserver': ISOLATED_SERVER,
+        'namespace': 'default-gzip',
+        'isolated': 'shard1_isolated'
+    }
+
+    self.http_client._SetResponseForPostRequest('shard1_isolated')
+    self.http_client._SetResponseForPostRequest('shard1_url')
+    self.http_client._SetResponseForGetRequestIsolated(
+        'https://%s/default-gzip/shard1' % ISOLATED_STORAGE_URL, 'shard1')
+
+    result = swarming_util.GetSwarmingTaskFailureLog(
+        outputs_ref, self.http_client)
+
+    expected_result = json.loads(zlib.decompress(
+        self.http_client._GetData('isolated', 'shard1')))
+    self.assertEqual(expected_result, result)
 
   def testRetrieveOutputJsonFileGetDirectly(self):
     output_json_content = ('{"content": "eJyrVkpLzMwpLUotVrKKVgpJLS4xV'

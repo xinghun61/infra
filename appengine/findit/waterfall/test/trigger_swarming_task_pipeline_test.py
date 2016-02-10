@@ -23,10 +23,10 @@ class TriggerSwarmingTaskPipelineTest(testing.AppengineTestCase):
     step_name = 's'
     tests = ['a.b']
 
-    def MockedDownloadSwarmingTaskData(*_):
+    def MockedListSwarmingTasksDataByTags(*_):
       raise Exception('Fail.')  # pragma: no cover. Should never be reached.
-    self.mock(swarming_util, 'DownloadSwarmingTasksData',
-              MockedDownloadSwarmingTaskData)
+    self.mock(swarming_util, 'ListSwarmingTasksDataByTags',
+              MockedListSwarmingTasksDataByTags)
     swarming_task = WfSwarmingTask.Create(
       master_name, builder_name, build_number, step_name)
     swarming_task.status = wf_analysis_status.ANALYZING
@@ -67,7 +67,7 @@ class TriggerSwarmingTaskPipelineTest(testing.AppengineTestCase):
   def testTriggerANewSwarmingTask(self):
     def MockedDownloadSwarmingTaskData(*_):
       return [{'task_id': '1'}, {'task_id': '2'}]
-    self.mock(swarming_util, 'DownloadSwarmingTasksData',
+    self.mock(swarming_util, 'ListSwarmingTasksDataByTags',
               MockedDownloadSwarmingTaskData)
 
     def MockedGetSwarmingTaskRequest(ref_task_id, *_):

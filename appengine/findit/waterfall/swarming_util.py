@@ -17,6 +17,10 @@ from waterfall.swarming_task_request import SwarmingTaskRequest
 
 # TODO (http://crbug.com/583144): Move this to config saved in datastore.
 SWARMING_SERVER_HOST = 'chromium-swarm.appspot.com'
+STATES_RUNNING = ('RUNNING', 'PENDING')
+STATE_COMPLETED = 'COMPLETED'
+STATES_NOT_RUNNING = (
+    'EXPIRED', 'TIMED_OUT', 'BOT_DIED', 'CANCELED', 'COMPLETED')
 
 
 def _SendRequestToServer(url, http_client, post_data=None):
@@ -67,7 +71,7 @@ def TriggerSwarmingTask(request, http_client):
   return json.loads(response_data)['task_id']
 
 
-def DownloadSwarmingTasksData(
+def ListSwarmingTasksDataByTags(
     master_name, builder_name, build_number, http_client, step_name=None):
   """Downloads tasks data from swarming server."""
   base_url = ('https://%s/_ah/api/swarming/v1/tasks/'
@@ -104,6 +108,30 @@ def DownloadSwarmingTasksData(
   return items
 
 
+def _GenerateIsolatedData(outputs_ref):
+  return {
+      'digest': outputs_ref['isolated'],
+      'namespace': outputs_ref['namespace'],
+      'isolatedserver': outputs_ref['isolatedserver']
+  }
+
+
+def GetSwarmingTaskResultById(task_id, http_client):
+  """Gets swarming result, checks state and returns outputs ref if needed."""
+  base_url = ('https://%s/_ah/api/swarming/v1/task/%s/result') % (
+      SWARMING_SERVER_HOST, task_id)
+  data = _SendRequestToServer(base_url, http_client)
+  json_data = json.loads(data)
+
+  return json_data['state'], json_data.get('outputs_ref')
+
+
+def GetSwarmingTaskFailureLog(outputs_ref, http_client):
+  """Downloads failure log from isolated server."""
+  isolated_data = _GenerateIsolatedData(outputs_ref)
+  return _DownloadTestResults(isolated_data, http_client)
+
+
 def GetIsolatedDataForFailedBuild(
     master_name, builder_name, build_number, failed_steps, http_client):
   """Checks failed step_names in swarming log for the build.
@@ -111,7 +139,7 @@ def GetIsolatedDataForFailedBuild(
   Searches each failed step_name to identify swarming/non-swarming tests
   and keeps track of isolated data for each failed swarming steps.
   """
-  data = DownloadSwarmingTasksData(
+  data = ListSwarmingTasksDataByTags(
       master_name, builder_name, build_number, http_client)
   if not data:
     return False
@@ -127,11 +155,7 @@ def GetIsolatedDataForFailedBuild(
           swarming_step_name = tag[len(step_name_prefix):]
           break
       if swarming_step_name in failed_steps:
-        isolated_data = {
-            'digest': item['outputs_ref']['isolated'],
-            'namespace': item['outputs_ref']['namespace'],
-            'isolatedserver': item['outputs_ref']['isolatedserver']
-        }
+        isolated_data = _GenerateIsolatedData(item['outputs_ref'])
         build_isolated_data[swarming_step_name].append(isolated_data)
 
   new_steps = []
@@ -153,8 +177,8 @@ def GetIsolatedDataForStep(
     http_client):
   """Returns the isolated data for a specific step."""
   step_isolated_data = []
-  data = DownloadSwarmingTasksData(master_name, builder_name, build_number,
-                                   http_client, step_name)
+  data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
+                                     http_client, step_name)
   if not data:
     return step_isolated_data
 
@@ -162,18 +186,13 @@ def GetIsolatedDataForStep(
     if item['failure'] and not item['internal_failure']:
       # Only retrieves test results from tasks which have failures and
       # the failure should not be internal infrastructure failure.
-      isolated_data = {
-          'digest': item['outputs_ref']['isolated'],
-          'namespace': item['outputs_ref']['namespace'],
-          'isolatedserver': item['outputs_ref']['isolatedserver']
-      }
+      isolated_data = _GenerateIsolatedData(item['outputs_ref'])
       step_isolated_data.append(isolated_data)
 
   return step_isolated_data
 
 
-def _FetchOutputJsonInfoFromIsolatedServer(
-    isolated_data, http_client):
+def _FetchOutputJsonInfoFromIsolatedServer(isolated_data, http_client):
   """Sends POST request to isolated server and returns response content.
 
   This function is used for fetching
