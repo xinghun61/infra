@@ -66,6 +66,7 @@ def outer(api):
         '--properties-file',
         api.json.input(properties),
       ],
+      allow_subannotations=True,
   )
 
 
