@@ -13,19 +13,20 @@ from model.wf_try_job import WfTryJob
 from pipeline_wrapper import pipeline_handlers
 from waterfall import waterfall_config
 from waterfall.try_job_pipeline import TryJobPipeline
+from waterfall.try_job_type import TryJobType
 
 
 class TryJobPipelineTest(testing.AppengineTestCase):
   app_module = pipeline_handlers._APP
 
-  def _Mock_GetTrybotForWaterfallBuilder(self, *_):
-    def Mocked_GetTrybotForWaterfallBuilder(*_):
+  def _MockGetTrybotForWaterfallBuilder(self, *_):
+    def MockedGetTrybotForWaterfallBuilder(*_):
       return 'linux_chromium_variable', 'master.tryserver.chromium.linux'
     self.mock(waterfall_config, 'GetTrybotForWaterfallBuilder',
-              Mocked_GetTrybotForWaterfallBuilder)
+              MockedGetTrybotForWaterfallBuilder)
 
   def _Mock_TriggerTryJobs(self, responses):
-    def Mocked_TriggerTryJobs(*_):
+    def MockedTriggerTryJobs(*_):
       try_job_results = []
       for response in responses:
         if response.get('error'):  # pragma: no cover
@@ -35,10 +36,10 @@ class TryJobPipelineTest(testing.AppengineTestCase):
           try_job_results.append((
               None, buildbucket_client.BuildbucketBuild(response['build'])))
       return try_job_results
-    self.mock(buildbucket_client, 'TriggerTryJobs', Mocked_TriggerTryJobs)
+    self.mock(buildbucket_client, 'TriggerTryJobs', MockedTriggerTryJobs)
 
   def _Mock_GetTryJobs(self, build_id):
-    def Mocked_GetTryJobs(*_):
+    def MockedGetTryJobs(*_):
       data = {
           '1': {
               'build': {
@@ -76,10 +77,10 @@ class TryJobPipelineTest(testing.AppengineTestCase):
         try_job_results.append((
             None, buildbucket_client.BuildbucketBuild(build_error['build'])))
       return try_job_results
-    self.mock(buildbucket_client, 'GetTryJobs', Mocked_GetTryJobs)
+    self.mock(buildbucket_client, 'GetTryJobs', MockedGetTryJobs)
 
   def _Mock_GetChangeLog(self, revision):
-    def Mocked_GetChangeLog(*_):
+    def MockedGetChangeLog(*_):
       class MockedChangeLog(object):
         def __init__(self, commit_position, code_review_url):
           self.commit_position = commit_position
@@ -88,7 +89,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
       mock_change_logs = {}
       mock_change_logs['rev2'] = MockedChangeLog('2', 'url_2')
       return mock_change_logs.get(revision)
-    self.mock(GitRepository, 'GetChangeLog', Mocked_GetChangeLog)
+    self.mock(GitRepository, 'GetChangeLog', MockedGetChangeLog)
 
   def testSuccessfullyScheduleNewTryJobForCompile(self):
     master_name = 'm'
@@ -104,7 +105,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
             }
         }
     ]
-    self._Mock_GetTrybotForWaterfallBuilder(master_name, builder_name)
+    self._MockGetTrybotForWaterfallBuilder(master_name, builder_name)
     self._Mock_TriggerTryJobs(responses)
     self._Mock_GetTryJobs('1')
     self._Mock_GetChangeLog('rev2')
@@ -113,7 +114,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
 
     root_pipeline = TryJobPipeline(
         master_name, builder_name, build_number, 'rev1', 'rev2', ['rev2'],
-        'compile', [])
+        TryJobType.COMPILE, [])
     root_pipeline.start()
     self.execute_queued_tasks()
 
@@ -152,7 +153,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
 
     root_pipeline = TryJobPipeline(
         master_name, builder_name, build_number, 'rev1', 'rev2', ['rev2'],
-        'compile', [])
+        TryJobType.COMPILE, [])
     root_pipeline._LogUnexpectedAbort(True)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
@@ -165,7 +166,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
 
     root_pipeline = TryJobPipeline(
         master_name, builder_name, build_number, 'rev1', 'rev2', ['rev2'],
-        'compile', [])
+        TryJobType.COMPILE, [])
     root_pipeline._LogUnexpectedAbort(True)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
