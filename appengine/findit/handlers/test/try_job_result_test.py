@@ -1,7 +1,7 @@
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-import json
+
 import webapp2
 
 from testing_utils import testing
@@ -470,6 +470,4 @@ class TryJobResultTest(testing.AppengineTestCase):
                 'builders/linux_chromium_variable/builds/122')
         }
     }
-    print json.dumps(result, indent=4, sort_keys=True)
-    print json.dumps(expected_result, indent=4, sort_keys=True)
     self.assertEqual(expected_result, result)
