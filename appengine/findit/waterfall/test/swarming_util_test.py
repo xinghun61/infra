@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import collections
 import json
 import os
 import urllib
@@ -12,6 +13,7 @@ from testing_utils import testing
 from common.retry_http_client import RetryHttpClient
 from model.wf_step import WfStep
 from waterfall import swarming_util
+from waterfall.swarming_task_request import SwarmingTaskRequest
 
 
 class SwarmingHttpClient(RetryHttpClient):
@@ -52,11 +54,11 @@ class SwarmingHttpClient(RetryHttpClient):
       response = self._GetData('build')
 
     cursor_swarming_data = {
-      'cursor': None,
-      'items': [],
-      'state': 'all',
-      'limit': 100,
-      'sort': 'created_ts'
+        'cursor': None,
+        'items': [],
+        'state': 'all',
+        'limit': 100,
+        'sort': 'created_ts'
     }
     cursor_url = ('%s&cursor=thisisacursor') % url
 
@@ -86,10 +88,119 @@ class SwarmingHttpClient(RetryHttpClient):
     pass
 
 
+class _LoggedHttpClient(RetryHttpClient):
+  def __init__(self):
+    self.responses = collections.defaultdict(dict)
+    self.requests = {}
+
+  def _Get(self, url, _, headers):
+    self.requests[url] = ('get', None, headers)
+    return self.responses.get('get', {}).get(url)
+
+  def _Post(self, url, responses, _, headers):
+    self.requests[url] = ('post', responses, headers)
+    return self.responses.get('post', {}).get(url, (None, 404))
+
+  def _Put(self, *_):  # pragma: no cover
+    pass
+
+  def SetResponse(self, method, url, content=None, status_code=200):
+    self.responses[method][url] = (status_code, content)
+
+  def GetRequest(self, url):
+    return self.requests.get(url)
+
+
 class SwarmingUtilTest(testing.AppengineTestCase):
   def setUp(self):
     super(SwarmingUtilTest, self).setUp()
     self.http_client = SwarmingHttpClient()
+    self.logged_http_client = _LoggedHttpClient()
+
+  def testGetSwarmingTaskRequest(self):
+    task_request_json = {
+        'expiration_secs': 2,
+        'name': 'name',
+        'parent_task_id': 'pti',
+        'priority': 1,
+        'properties': {
+            'command': 'cmd',
+            'dimensions': [{'key': 'd', 'value': 'dv'}],
+            'env': [{'key': 'e', 'value': 'ev'}],
+            'execution_timeout_secs': 4,
+            'extra_args': ['--flag'],
+            'grace_period_secs': 5,
+            'idempotent': True,
+            'inputs_ref': {
+                'isolated': 'i',
+                'isolatedserver': 'is',
+                'namespace': 'ns',
+            },
+            'io_timeout_secs': 3,
+        },
+        'tags': ['tag'],
+        'user': 'user',
+    }
+    task_id = '1'
+    url = ('https://chromium-swarm.appspot.com/'
+           '_ah/api/swarming/v1/task/%s/request' % task_id)
+    self.logged_http_client.SetResponse(
+        'get', url, json.dumps(task_request_json), 200)
+
+    task_request = swarming_util.GetSwarmingTaskRequest(
+        task_id, self.logged_http_client)
+
+    self.assertEqual(task_request_json, task_request.Serialize())
+
+  def testTriggerSwarmingTask(self):
+    request = SwarmingTaskRequest()
+    request.expiration_secs = 2
+    request.name = 'name'
+    request.parent_task_id = 'pti'
+    request.priority = 1
+    request.tags = ['tag']
+    request.user = 'user'
+    request.command = 'cmd'
+    request.dimensions = [{'key': 'd', 'value': 'dv'}]
+    request.env = [{'key': 'e', 'value': 'ev'}]
+    request.execution_timeout_secs = 4
+    request.extra_args = ['--flag']
+    request.grace_period_secs = 5
+    request.idempotent = True
+    request.inputs_ref = {'isolated': 'i'}
+    request.io_timeout_secs = 3
+
+    url = 'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new'
+    self.logged_http_client.SetResponse(
+        'post', url, json.dumps({'task_id': '1'}), 200)
+
+    expected_task_request_json = {
+        'expiration_secs': 72000,
+        'name': 'name',
+        'parent_task_id': 'pti',
+        'priority': 150,
+        'properties': {
+            'command': 'cmd',
+            'dimensions': [{'key': 'd', 'value': 'dv'}],
+            'env': [{'key': 'e', 'value': 'ev'}],
+            'execution_timeout_secs': 4,
+            'extra_args': ['--flag'],
+            'grace_period_secs': 5,
+            'idempotent': True,
+            'inputs_ref': {'isolated': 'i'},
+            'io_timeout_secs': 3,
+        },
+        'tags': ['tag', 'findit:1', 'project:Chromium', 'purpose:post-commit'],
+        'user': 'user',
+    }
+
+    task_id = swarming_util.TriggerSwarmingTask(
+        request, self.logged_http_client)
+    self.assertEqual('1', task_id)
+
+    method, data, _ = self.logged_http_client.GetRequest(url)
+    self.assertEqual('post', method)
+    self.assertEqual(expected_task_request_json, json.loads(data))
 
   def testGetIsolatedDataForFailedBuild(self):
     master_name = 'm'

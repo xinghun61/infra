@@ -12,6 +12,11 @@ from google.appengine.ext import ndb
 
 from model.wf_step import WfStep
 from waterfall import auth_util
+from waterfall.swarming_task_request import SwarmingTaskRequest
+
+
+# TODO (http://crbug.com/583144): Move this to config saved in datastore.
+SWARMING_SERVER_HOST = 'chromium-swarm.appspot.com'
 
 
 def _SendRequestToServer(url, http_client, post_data=None):
@@ -33,11 +38,41 @@ def _SendRequestToServer(url, http_client, post_data=None):
   return content
 
 
-def _DownloadSwarmingTasksData(
+def GetSwarmingTaskRequest(task_id, http_client):
+  """Returns an instance of SwarmingTaskRequest representing the given task."""
+  url = ('https://%s/_ah/api/swarming/v1/task/%s/request') % (
+      SWARMING_SERVER_HOST, task_id)
+  json_data = json.loads(_SendRequestToServer(url, http_client))
+  return SwarmingTaskRequest.Deserialize(json_data)
+
+
+def TriggerSwarmingTask(request, http_client):
+  """Triggers a new Swarming task for the given request.
+
+  The Swarming task priority will be overwritten, and extra tags might be added.
+  Args:
+    request (SwarmingTaskRequest): A Swarming task request.
+    http_client (RetryHttpClient): An http client with automatic retry.
+  """
+  # Use a priority much lower than CQ for now (CQ's priority is 30).
+  # Later we might use a higher priority -- a lower value here.
+  # Note: the smaller value, the higher priority.
+  request.priority = 150
+  request.expiration_secs = 20 * 60 * 60  # 20 hours.
+
+  request.tags.extend(['findit:1', 'project:Chromium', 'purpose:post-commit'])
+
+  url = 'https://%s/_ah/api/swarming/v1/tasks/new' % SWARMING_SERVER_HOST
+  response_data = _SendRequestToServer(url, http_client, request.Serialize())
+  return json.loads(response_data)['task_id']
+
+
+def DownloadSwarmingTasksData(
     master_name, builder_name, build_number, http_client, step_name=None):
   """Downloads tasks data from swarming server."""
-  base_url = ('https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/'
+  base_url = ('https://%s/_ah/api/swarming/v1/tasks/'
               'list?tags=%s&tags=%s&tags=%s') % (
+                  SWARMING_SERVER_HOST,
                   urllib.quote('master:%s' % master_name),
                   urllib.quote('buildername:%s' % builder_name),
                   urllib.quote('buildnumber:%d' % build_number))
@@ -76,7 +111,7 @@ def GetIsolatedDataForFailedBuild(
   Searches each failed step_name to identify swarming/non-swarming tests
   and keeps track of isolated data for each failed swarming steps.
   """
-  data = _DownloadSwarmingTasksData(
+  data = DownloadSwarmingTasksData(
       master_name, builder_name, build_number, http_client)
   if not data:
     return False
@@ -118,8 +153,8 @@ def GetIsolatedDataForStep(
     http_client):
   """Returns the isolated data for a specific step."""
   step_isolated_data = []
-  data = _DownloadSwarmingTasksData(master_name, builder_name, build_number,
-                                    http_client, step_name)
+  data = DownloadSwarmingTasksData(master_name, builder_name, build_number,
+                                   http_client, step_name)
   if not data:
     return step_isolated_data
 
@@ -201,9 +236,9 @@ def _DownloadTestResults(isolated_data, http_client):
 
   # Second POST request to get the redirect url for the output.json file.
   data_for_output_json = {
-    'digest': output_json_hash,
-    'namespace': isolated_data['namespace'],
-    'isolatedserver': isolated_data['isolatedserver']
+      'digest': output_json_hash,
+      'namespace': isolated_data['namespace'],
+      'isolatedserver': isolated_data['isolatedserver']
   }
   output_json_content = _FetchOutputJsonInfoFromIsolatedServer(
       data_for_output_json, http_client)
@@ -258,14 +293,14 @@ def _MergeSwarmingTestShards(shard_results):
     }
   """
   merged_results = {
-    'all_tests': set(),
-    'per_iteration_data': []
+      'all_tests': set(),
+      'per_iteration_data': []
   }
   for shard_result in shard_results:
     merged_results['all_tests'].update(shard_result.get('all_tests', []))
     merged_results['per_iteration_data'] = _MergeListsOfDicts(
-            merged_results['per_iteration_data'],
-            shard_result.get('per_iteration_data', []))
+        merged_results['per_iteration_data'],
+        shard_result.get('per_iteration_data', []))
   merged_results['all_tests'] = sorted(merged_results['all_tests'])
   return merged_results
 
