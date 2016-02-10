@@ -13,6 +13,9 @@ class WfSwarmingTask(BaseBuildModel):
 
   'Wf' is short for waterfall.
   """
+  # The id of the Swarming task scheduled or running on Swarming Server.
+  task_id = ndb.StringProperty(indexed=False)
+
   # A dict to keep track of running information for each test:
   # number of total runs, number of each status( such as 'SUCCESS' or 'FAILED')
   tests_statuses = ndb.JsonProperty(default={}, indexed=False, compressed=True)

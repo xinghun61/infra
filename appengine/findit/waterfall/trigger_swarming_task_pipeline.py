@@ -4,8 +4,13 @@
 
 import copy
 from datetime import datetime
+import time
+
+from google.appengine.ext import ndb
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
+from model import wf_analysis_status
+from model.wf_swarming_task import WfSwarmingTask
 from pipeline_wrapper import BasePipeline
 from waterfall import swarming_util
 from waterfall.swarming_task_request import SwarmingTaskRequest
@@ -57,6 +62,40 @@ def _CreateNewSwarmingTaskRequest(
   return new_request
 
 
+@ndb.transactional
+def _NeedANewSwarmingTask(master_name, builder_name, build_number, step_name):
+  swarming_task = WfSwarmingTask.Get(
+      master_name, builder_name, build_number, step_name)
+
+  if not swarming_task:
+    swarming_task = WfSwarmingTask.Create(
+      master_name, builder_name, build_number, step_name)
+    swarming_task.status = wf_analysis_status.PENDING
+    swarming_task.put()
+    return True
+  else:
+    # TODO(http://crbug.com/585676): Rerun the Swarming task if it runs into
+    # unexpected infra errors.
+    return False
+
+
+def _GetSwarmingTaskId(master_name, builder_name, build_number, step_name):
+  deadline = time.time() + 5 * 60  # Wait for 5 minutes.
+  while time.time() < deadline:
+    swarming_task = WfSwarmingTask.Get(
+        master_name, builder_name, build_number, step_name)
+
+    if not swarming_task:  # pragma: no cover. Pipeline will retry.
+      raise Exception('Swarming task was deleted unexpectedly!!!')
+
+    if swarming_task.task_id:
+      return swarming_task.task_id
+
+    time.sleep(10)  # Wait for the existing pipeline to start the Swarming task.
+
+  raise Exception('Time out!')  # pragma: no cover. Pipeline will retry.
+
+
 class TriggerSwarmingTaskPipeline(BasePipeline):
   """A pipeline to trigger a Swarming task to re-run selected tests of a step.
 
@@ -78,6 +117,12 @@ class TriggerSwarmingTaskPipeline(BasePipeline):
     Returns:
       task_id (str): The new Swarming task that re-run the given tests.
     """
+    # Check if a new Swarming Task is really needed.
+    if not _NeedANewSwarmingTask(
+        master_name, builder_name, build_number, step_name):
+      return _GetSwarmingTaskId(
+          master_name, builder_name, build_number, step_name)
+
     assert tests
 
     http_client = HttpClient()
@@ -98,4 +143,12 @@ class TriggerSwarmingTaskPipeline(BasePipeline):
         step_name, tests)
 
     # 3. Trigger a new Swarming task to re-run the failed tests.
-    return swarming_util.TriggerSwarmingTask(new_request, http_client)
+    task_id = swarming_util.TriggerSwarmingTask(new_request, http_client)
+
+    # Save the task id.
+    swarming_task = WfSwarmingTask.Get(
+        master_name, builder_name, build_number, step_name)
+    swarming_task.task_id = task_id
+    swarming_task.put()
+
+    return task_id
