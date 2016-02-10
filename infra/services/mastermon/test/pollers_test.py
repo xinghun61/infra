@@ -189,6 +189,7 @@ class FilePollerTest(unittest.TestCase):
     data2['duration_s'] = 5
     data2['pending_s'] = 1
     data2['total_s'] = data2['pending_s'] + data2['duration_s']
+    data2['pre_test_time_s'] = 2
     with temporary_directory(prefix='poller-test-') as tempdir:
       filename = self.create_data_file(tempdir, [data1, data2])
       p = pollers.FilePoller(filename, {})

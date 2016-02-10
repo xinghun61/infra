@@ -141,6 +141,9 @@ class FilePoller(Poller):
   total_times = ts_mon.CumulativeDistributionMetric(
       'buildbot/master/builders/builds/total_durations', bucketer=bucketer)
 
+  pre_test_times = ts_mon.CumulativeDistributionMetric(
+      'buildbot/master/builders/builds/pre_test_durations', bucketer=bucketer)
+
   def poll(self):
     LOGGER.info('Collecting results from %s', self._url)
 
@@ -173,3 +176,5 @@ class FilePoller(Poller):
       self.pending_times.add(data['pending_s'], fields)
     if 'total_s' in data:
       self.total_times.add(data['total_s'], fields)
+    if 'pre_test_time_s' in data:
+      self.pre_test_times.add(data['pre_test_time_s'], fields)
