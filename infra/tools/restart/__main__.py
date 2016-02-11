@@ -38,7 +38,8 @@ def main(argv):
     restart_time = restart.get_restart_time_delta(args.minutes_in_future)
 
   return restart.run(args.masters, restart_time,
-                     args.reviewer, args.bug, args.force, args.no_commit)
+                     args.reviewer, args.bug, args.force, args.no_commit,
+                     args.desired_state)
 
 
 if __name__ == '__main__':

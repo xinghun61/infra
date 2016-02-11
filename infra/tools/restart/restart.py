@@ -17,6 +17,7 @@ import tempfile
 
 
 from infra_libs.time_functions import zulu
+from infra.services.master_lifecycle import buildbot_state
 from infra.services.master_manager_launcher import desired_state_parser
 
 
@@ -52,6 +53,11 @@ def add_argparse_options(parser):
   parser.add_argument(
       '-n', '--no-commit', action='store_true',
       help='update the file, but refrain from performing the actual commit')
+  parser.add_argument(
+      '-s', '--desired-state', default='running',
+      choices=buildbot_state.STATES['desired_buildbot_state'],
+      help='which desired state to put the buildbot master in '
+           '(default %(default)s)')
 
 
 def get_restart_time_eod():
@@ -81,9 +87,14 @@ def get_master_state_checkout():
 
 def commit(
     target, masters, reviewers, bug, restart_time, restart_time_str, force,
-    no_commit):
+    no_commit, desired_state):
   """Commits the local CL via the CQ."""
-  desc = 'Restarting master(s) %s\n' % ', '.join(masters)
+  if desired_state == 'running':
+    action = 'Restarting'
+  else:
+    action = desired_state.title() + 'ing'
+  desc = '%s master(s) %s\n' % (
+      action, ', '.join(masters))
   if bug:
     desc += '\nBUG=%s' % bug
   if reviewers:
@@ -94,8 +105,8 @@ def commit(
   delta = restart_time - datetime.datetime.utcnow()
 
   print
-  print 'Restarting the following masters in %d minutes (%s)' % (
-      delta.total_seconds() / 60, restart_time_str)
+  print '%s the following masters in %d minutes (%s)' % (
+      action, delta.total_seconds() / 60, restart_time_str)
   for master in sorted(masters):
     print '  %s' % master
   print
@@ -138,7 +149,8 @@ def commit(
   subprocess.check_call(upload_cmd, cwd=target)
 
 
-def run(masters, restart_time, reviewers, bug, force, no_commit):
+def run(masters, restart_time, reviewers, bug, force, no_commit,
+        desired_state):
   """Restart all the masters in the list of masters.
 
   Schedules the restart for restart_time.
@@ -150,6 +162,8 @@ def run(masters, restart_time, reviewers, bug, force, no_commit):
     bug - an integer bug number to include in the review or None
     force - a bool which causes commit not to prompt if true
     no_commit - doesn't set the CQ bit on upload
+    desired_state - nominally 'running', picks which desired_state
+                    to put the buildbot in
   """
   # Step 1: Acquire a clean master state checkout.
   # This repo is too small to consider caching.
@@ -182,7 +196,7 @@ def run(masters, restart_time, reviewers, bug, force, no_commit):
         raise MasterNotFoundException(msg)
 
       master_states.setdefault(master, []).append({
-          'desired_state': 'running',
+          'desired_state': desired_state,
           'transition_time_utc': restart_time_str,
       })
       entries += 1
@@ -194,4 +208,4 @@ def run(masters, restart_time, reviewers, bug, force, no_commit):
     # Step 3: Send the patch to Rietveld and commit it via the CQ.
     LOGGER.info('Committing back into repository')
     commit(master_state_dir, masters, reviewers, bug, restart_time,
-           restart_time_str, force, no_commit)
+           restart_time_str, force, no_commit, desired_state)
