@@ -200,7 +200,7 @@ def _internal_callback():
                                   target_fields=target_fields)
 
 
-def initialize(app=None, is_local_unittest=None):
+def initialize(app=None, enable=True, is_local_unittest=None):
   if is_local_unittest is None:  # pragma: no cover
     # Since gae_ts_mon.initialize is called at module-scope by appengine apps,
     # AppengineTestCase.setUp() won't have run yet and none of the appengine
@@ -208,7 +208,7 @@ def initialize(app=None, is_local_unittest=None):
     # application ID will fail.
     is_local_unittest = ('expect_tests' in sys.argv[0])
 
-  if app is not None:
+  if enable and app is not None:
     instrument_wsgi_application(app)
 
   # Use the application ID as the service name and the module name as the job
