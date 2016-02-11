@@ -24,13 +24,14 @@ from status import build_result, util
 MAX_UPDATED_ISSUES_PER_DAY = 50
 MAX_TIME_DIFFERENCE_SECONDS = 12 * 60 * 60
 MIN_REQUIRED_FLAKY_RUNS = 5
-DAYS_TILL_STALE = 3
+DAYS_TILL_STALE = 30
 USE_MONORAIL = False
 DAYS_TO_REOPEN_ISSUE = 3
 FLAKY_RUNS_TEMPLATE = (
     'Detected %(new_flakes_count)d new flakes for test/step "%(name)s". To see '
     'the actual flakes, please visit %(flakes_url)s. This message was posted '
-    'automatically by the chromium-try-flakes app.')
+    'automatically by the chromium-try-flakes app. Since flakiness is ongoing, '
+    'the issue was moved back into Sheriff Bug Queue (unless already there).')
 SUMMARY_TEMPLATE = '"%(name)s" is flaky'
 DESCRIPTION_TEMPLATE = (
     '%(summary)s.\n\n'
@@ -55,7 +56,7 @@ FLAKES_URL_TEMPLATE = (
     'https://chromium-try-flakes.appspot.com/all_flake_occurrences?key=%s')
 BACK_TO_SHERIFF_MESSAGE = (
     'There has been no update on this issue for over %d days, therefore it has '
-    'been moved back into the Sheriff queue (unless it was already there). '
+    'been moved back into the Sheriff Bug Queue (unless already there). '
     'Sheriffs, please make sure that owner is aware of the issue and assign to '
     'another owner if necessary. If the flaky test/step has already been '
     'fixed, please close this issue.' % DAYS_TILL_STALE)
@@ -173,6 +174,10 @@ class ProcessIssue(webapp2.RequestHandler):
         if flake_issue.updated < recent_cutoff:
           self._recreate_issue_for_flake(flake)
         return
+
+    # Make sure issue is in the Sheriff Bug Queue since flakiness is ongoing.
+    if 'Sheriff-Chromium' not in flake_issue.labels:
+      flake_issue.labels.append('Sheriff-Chromium')
 
     new_flaky_runs_msg = FLAKY_RUNS_TEMPLATE % {
         'name': flake.name,
@@ -331,9 +336,11 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
       api.update(flake_issue, comment=BACK_TO_SHERIFF_MESSAGE)
       return
 
-    # Report to stale-flakes-reports@ if the issue has no updates for 7 days.
+    # Report to stale-flakes-reports@ if the issue has been in sheriff-queue
+    # without any updates for 7 days.
     week_ago = now - datetime.timedelta(days=7)
     if (last_third_party_update < week_ago and
+        'Sheriff-Chromium' in flake_issue.labels and
         STALE_FLAKES_ML not in flake_issue.cc):
       flake_issue.cc.append(STALE_FLAKES_ML)
       logging.info('Reporting issue %s to %s', flake_issue.id, STALE_FLAKES_ML)

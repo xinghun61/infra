@@ -305,6 +305,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
 
   def test_updates_issue_only_once_a_day(self):
     issue = self.mock_api.create(MockIssue({}))
+    issue.labels = ['Sheriff-Chromium']
 
     now = datetime.datetime.utcnow()
     flake = self._create_flake()
@@ -329,8 +330,25 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
         'Detected 2 new flakes for test/step "foo.bar". To see the actual '
         'flakes, please visit https://chromium-try-flakes.appspot.com/'
         'all_flake_occurrences?key=agx0ZXN0YmVkLXRlc3RyCwsSBUZsYWtlGAoM. This '
-        'message was posted automatically by the chromium-try-flakes app.'
+        'message was posted automatically by the chromium-try-flakes app. '
+        'Since flakiness is ongoing, the issue was moved back into Sheriff Bug '
+        'Queue (unless already there).'
     )
+
+  def test_adds_sheriff_label_when_updating_issue(self):
+    issue = self.mock_api.create(MockIssue({}))
+
+    now = datetime.datetime.utcnow()
+    flake = self._create_flake()
+    flake.issue_id = issue.id
+    flake.num_reported_flaky_runs = 0
+    flake.issue_last_updated = now - datetime.timedelta(hours=25)
+    flake_key = flake.put()
+
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+
+    self.assertIn('Sheriff-Chromium', issue.labels)
 
   def test_updates_issue_only_if_there_are_new_flakes(self):
     issue = self.mock_api.create(MockIssue({}))
@@ -453,12 +471,12 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
   @mock_datetime_utc(2015, 12, 4, 15, 0, 0)
   def test_correctly_computes_stale_deadline_based_on_created_time(self):
     issue = self.mock_api.create(MockIssue({}))
-    issue.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
+    issue.created = datetime.datetime(2015, 11, 1, 11, 0, 0)
     self.test_app.post('/issues/update-if-stale/%s' % issue.id)
     self.assertIn('Sheriff-Chromium', issue.labels)
 
     issue = self.mock_api.create(MockIssue({}))
-    issue.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
+    issue.created = datetime.datetime(2015, 11, 1, 11, 0, 0)
     issue.comments = [
         MockComment(datetime.datetime(2015, 12, 3, 11, 0, 0), 'app@ae.org'),
         MockComment(datetime.datetime(2015, 12, 4, 11, 0, 0), 'app@ae.org'),
@@ -467,7 +485,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     self.assertIn('Sheriff-Chromium', issue.labels)
 
     issue = self.mock_api.create(MockIssue({}))
-    issue.created = datetime.datetime(2015, 12, 3, 11, 0, 0)
+    issue.created = datetime.datetime(2015, 11, 13, 11, 0, 0)
     self.test_app.post('/issues/update-if-stale/%s' % issue.id)
     self.assertNotIn('Sheriff-Chromium', issue.labels)
 
@@ -479,7 +497,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     issue = self.mock_api.create(MockIssue({}))
     issue.created = datetime.datetime(2015, 12, 3, 11, 0, 0)
     issue.comments = [
-        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 0), 'test@a.org'),
+        MockComment(datetime.datetime(2015, 11, 1, 11, 0, 0), 'test@a.org'),
         MockComment(datetime.datetime(2015, 12, 3, 11, 0, 0), 'app@ae.org'),
     ]
     self.test_app.post('/issues/update-if-stale/%s' % issue.id)
@@ -488,8 +506,8 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     issue = self.mock_api.create(MockIssue({}))
     issue.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
     issue.comments = [
-        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 0), 'test@a.org'),
-        MockComment(datetime.datetime(2015, 12, 3, 11, 0, 0), 'test@b.org'),
+        MockComment(datetime.datetime(2015, 11, 1, 11, 0, 0), 'test@a.org'),
+        MockComment(datetime.datetime(2015, 11, 13, 11, 0, 0), 'test@b.org'),
     ]
     self.test_app.post('/issues/update-if-stale/%s' % issue.id)
     self.assertNotIn('Sheriff-Chromium', issue.labels)
@@ -504,14 +522,14 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
   @mock_datetime_utc(2015, 12, 4, 15, 0, 0)
   def test_posts_comment_when_moving_to_bug_queue(self):
     issue = self.mock_api.create(MockIssue({}))
-    issue.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
+    issue.created = datetime.datetime(2015, 11, 1, 11, 0, 0)
     self.test_app.post('/issues/update-if-stale/%s' % issue.id)
     self.assertIn('Sheriff-Chromium', issue.labels)
     self.assertEqual(len(issue.comments), 1)
     self.assertEqual(
         issue.comments[0].comment,
-        'There has been no update on this issue for over 3 days, therefore it '
-        'has been moved back into the Sheriff queue (unless it was already '
+        'There has been no update on this issue for over 30 days, therefore it '
+        'has been moved back into the Sheriff Bug Queue (unless already '
         'there). Sheriffs, please make sure that owner is aware of the issue '
         'and assign to another owner if necessary. If the flaky test/step has '
         'already been fixed, please close this issue.')
