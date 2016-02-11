@@ -63,31 +63,8 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     """Determines the failed revision given compile_result.
 
     Args:
-      compile_result: A dict containing the results from a compile. Curently two
-        formats are supported.
-
-        The old format:
-        {
-            'report': [
-                ['rev1', 'passed'],
-                ['rev2', 'failed']
-            ],
-            'url': try job url,
-            'try_job_id': try job id
-        }
-
-        The new format:
-        {
-            'report': {
-                'result': {
-                    'rev1': 'passed',
-                    'rev2': 'failed',
-                },
-                ... (other metadata from the compile result)
-            },
-            'url': try job url,
-            'try_job_id': try job id
-        }
+      compile_result: A dict containing the results from a compile. Please refer
+      to try_job_result_format.md for format check.
 
     Returns:
       The failed revision from compile_results, or None if not found.
@@ -100,27 +77,8 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     if not report:
       return None
 
-    failed_revision = None
-
-    if isinstance(report, list):
-      # TODO(lijeffrey): The format for the result of the compile will change
-      # from a list to a dict. This branch is for backwards compatibility and
-      # should be removed once result is returned as a dict from the compile
-      # recipe. The test recipe may need to be considered as well.
-
-      # For compile failures, the try job will stop if one revision fails, so
-      # the culprit will be the last revision in the result.
-      result_for_last_checked_revision = report[-1]
-      failed_revision = (
-          result_for_last_checked_revision[0] if
-          result_for_last_checked_revision[1].lower() == 'failed' else None)
-    else:
-      revision_results = report.get('result', {})
-      failed_revision = (
-          IdentifyTryJobCulpritPipeline._GetFailedRevisionFromResultsDict(
-              revision_results))
-
-    return failed_revision
+    return IdentifyTryJobCulpritPipeline._GetFailedRevisionFromResultsDict(
+        report.get('result', {}))
 
   def _FindCulpritForEachTestFailure(self, blame_list, result):
     # For test failures, the try job will run against every revision,
@@ -129,12 +87,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     culprit_map = {}
     failed_revisions = []
     for revision in blame_list:
-      # For backwards compatibility, result['report'] is a single-layer dict
-      # that contains the revision results directly.
-      # TODO(lijeffrey): Remove backwards compatibility support after updating
-      # the test recipe to return results in a dict under called 'result'
-      # under result['report'] and update try_job_result_format.md accordingly.
-      test_results = result['report'].get('result', result['report'])
+      test_results = result['report'].get('result')
 
       for step, test_result in test_results[revision].iteritems():
         if (not test_result['valid'] or

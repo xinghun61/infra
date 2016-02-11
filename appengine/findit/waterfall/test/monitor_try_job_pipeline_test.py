@@ -50,11 +50,27 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
                   'id': '3',
                   'url': 'url',
                   'status': 'COMPLETED',
-                  'result_details_json': (
-                      '{"properties": {"result": {"rev1": {"a_test": {"status":'
-                      ' "passed", "valid": true}}, "rev2": {"a_test": '
-                      '{"status": "failed", "valid": true, "failures": ["test1"'
-                      ', "test2"]}}}}}')
+                  'result_details_json': json.dumps({
+                      'properties': {
+                          'report': {
+                              'result': {
+                                  'rev1': {
+                                      'a_test': {
+                                          'status': 'passed',
+                                          'valid': True
+                                      }
+                                  },
+                                  'rev2': {
+                                      'a_test': {
+                                          'status': 'failed',
+                                          'valid': True,
+                                          'failures': ['test1', 'test2']
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  })
               }
           }
       }
@@ -204,17 +220,19 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
 
     expected_test_result = {
         'report': {
-            'rev1': {
-                'a_test': {
-                    'status': 'passed',
-                    'valid': True
-                }
-            },
-            'rev2': {
-                'a_test': {
-                    'status': 'failed',
-                    'valid': True,
-                    'failures': ['test1', 'test2']
+            'result': {
+                'rev1': {
+                    'a_test': {
+                        'status': 'passed',
+                        'valid': True
+                    }
+                },
+                'rev2': {
+                    'a_test': {
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': ['test1', 'test2']
+                    }
                 }
             }
         },

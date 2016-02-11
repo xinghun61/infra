@@ -1,24 +1,22 @@
 The format for recipe result for compile failures is:
-
     {
-        'report': {
-            'result': {
-                'rev1': 'passed',
-                'rev2': 'failed'
-            }
-        }
+        'result': {
+            'rev1': 'passed',
+            'rev2': 'failed'
+        },
+        'metadata': {}
     }
 
 
 The format for final try-job result for compile failures saved in WfTryJob.compile_results is:
-
     [
         {
             'report': {
                 'result': {
                     'rev1': 'passed',
                     'rev2': 'failed'
-                }
+                },
+                'metadata': {}
             },
             'url': 'url',
             'try_job_id': '1',
@@ -33,81 +31,84 @@ The format for final try-job result for compile failures saved in WfTryJob.compi
 
 
 The format for recipe result for test failures is:
-TODO(chanli): update the format after the changes on test recipe.
-
-    'result': {
-        'rev1': {
-            'a_test': {
-                'status': 'failed',
-                'valid': True,
-                'failures': ['a_test1']
+    {
+        'result': {
+            'rev1': {
+                'a_test': {
+                    'status': 'failed',
+                    'valid': True,
+                    'failures': ['a_test1']
+                },
+                'b_test': {
+                    'status': 'failed',
+                    'valid': True,
+                    'failures': ['b_test1']
+                },
+                'c_test': {
+                    'status': 'passed',
+                    'valid': True
+                }
             },
-            'b_test': {
-                'status': 'failed',
-                'valid': True,
-                'failures': ['b_test1']
-            },
-            'c_test': {
-                'status': 'passed',
-                'valid': True
+            'rev2': {
+                'a_test': {
+                    'status': 'failed',
+                    'valid': True,
+                    'failures': ['a_test1', 'a_test2']
+                },
+                'b_test': {
+                    'status': 'passed',
+                    'valid': True
+                },
+                'c_test': {
+                    'status': 'failed',
+                    'valid': True,
+                    'failures': []
+                }
             }
         },
-        'rev2': {
-            'a_test': {
-                'status': 'failed',
-                'valid': True,
-                'failures': ['a_test1', 'a_test2']
-            },
-            'b_test': {
-                'status': 'passed',
-                'valid': True
-            },
-            'c_test': {
-                'status': 'failed',
-                'valid': True,
-                'failures': []
-            }
-        }
+        'metadata': {}
     }
 
 
 The format for final try-job result for test failures saved in WfTryJob.test_results is:
-
     [
         {
-            'result': {
-                'rev1': {
-                    'a_test': {
-                        'status': 'failed',
-                        'valid': True,
-                        'failures': ['a_test1']
+            'report': {
+                'result': {
+                    'rev1': {
+                        'a_test': {
+                            'status': 'failed',
+                            'valid': True,
+                            'failures': ['a_test1']
+                        },
+                        'b_test': {
+                            'status': 'failed',
+                            'valid': True,
+                            'failures': ['b_test1']
+                        },
+                        'c_test': {
+                            'status': 'passed',
+                            'valid': True
+                        }
                     },
-                    'b_test': {
-                        'status': 'failed',
-                        'valid': True,
-                        'failures': ['b_test1']
-                    },
-                    'c_test': {
-                        'status': 'passed',
-                        'valid': True
+                    'rev2': {
+                        'a_test': {
+                            'status': 'failed',
+                            'valid': True,
+                            'failures': ['a_test1', 'a_test2']
+                        },
+                        'b_test': {
+                            'status': 'passed',
+                            'valid': True
+                        },
+                        'c_test': {
+                            'status': 'failed',
+                            'valid': True,
+                            'failures': []
+                        }
                     }
                 },
-                'rev2': {
-                    'a_test': {
-                        'status': 'failed',
-                        'valid': True,
-                        'failures': ['a_test1', 'a_test2']
-                    },
-                    'b_test': {
-                        'status': 'passed',
-                        'valid': True
-                    },
-                    'c_test': {
-                        'status': 'failed',
-                        'valid': True,
-                        'failures': []
-                    }
-                }
+                'metadata': {}
             },
             'url': 'url',
             'try_job_id': '1',

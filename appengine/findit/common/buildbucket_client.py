@@ -85,8 +85,7 @@ class BuildbucketBuild(object):
     self.end_time = raw_json_data.get('completed_ts')
     result_details_json = json.loads(
         raw_json_data.get('result_details_json', '{}')) or {}
-    self.report = (result_details_json.get('properties', {}).get('result') or
-                   result_details_json.get('properties', {}).get('report', {}))
+    self.report = result_details_json.get('properties', {}).get('report', {})
 
 
 class BuildbucketError(object):

@@ -10,6 +10,7 @@ from common import buildbucket_client
 
 
 class BuildBucketClientTest(testing.AppengineTestCase):
+
   def setUp(self):
     super(BuildBucketClientTest, self).setUp()
 
@@ -140,9 +141,16 @@ class BuildBucketClientTest(testing.AppengineTestCase):
             'id': '1',
             'url': 'url',
             'status': 'STARTED',
-            'result_details_json': (
-                '{"properties": {"result": [["rev1", "passed"],'
-                ' ["rev2", "failed"]]}}')
+            'result_details_json': json.dumps({
+                'properties': {
+                    'report': {
+                        'result': {
+                            'rev1': 'passed',
+                            'rev2': 'failed'
+                        }
+                    }
+                }
+            })
         }
     }
     self._MockUrlFetch(
@@ -156,10 +164,13 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('url', build.url)
     self.assertEqual('STARTED', build.status)
 
-    expected_report = [
-        ['rev1', 'passed'],
-        ['rev2', 'failed']
-    ]
+    expected_report = {
+        'result': {
+            'rev1': 'passed',
+            'rev2': 'failed'
+        }
+    }
+
     self.assertEqual(expected_report, build.report)
 
   def testGetTryJobsFailure(self):
