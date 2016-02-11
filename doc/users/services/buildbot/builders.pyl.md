@@ -260,6 +260,11 @@ left-to-right in ascending order, and for display any initial number is
 stripped.  So categories will often be specified like `"0builders"`,
 `"1testers"`, etc.
 
+### builder_timeout_s
+
+If set, forcibly kill builds that run longer than this many seconds. If unset
+(or None), builds may run indefinitely.
+
 ## Per-scheduler configurations
 
 ### type
