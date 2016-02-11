@@ -80,7 +80,8 @@ def get_master_state_checkout():
 
 
 def commit(
-    target, masters, reviewers, bug, restart_time, restart_time_str, force):
+    target, masters, reviewers, bug, restart_time, restart_time_str, force,
+    no_commit):
   """Commits the local CL via the CQ."""
   desc = 'Restarting master(s) %s\n' % ', '.join(masters)
   if bug:
@@ -100,11 +101,19 @@ def commit(
   print
 
   print "This will upload a CL for master_manager.git, TBR an owner, and "
-  print "commit the CL through the CQ."
+  if no_commit:
+    print "wait for you to manually commit."
+  else:
+    print "commit the CL through the CQ."
   print
 
+
+
   if not force:
-    print 'Commit? [Y/n]:',
+    if no_commit:
+      print 'Upload CL? (will not set CQ bit) [Y/n]:',
+    else:
+      print 'Commit? [Y/n]:',
     input_string = raw_input()
     if input_string != '' and not distutils.util.strtobool(input_string):
       print 'Aborting.'
@@ -118,10 +127,14 @@ def commit(
       'git', 'cl', 'upload',
       '-m', desc,
       '-t', desc, # Title becomes the message of CL. TBR and BUG must be there.
-      '-c', '-f',
+      '-f',
   ]
   if not reviewers:
     upload_cmd.append('--tbr-owners')
+  if not no_commit:
+    upload_cmd.append('-c')
+  else:
+    LOGGER.info('CQ bit not set, please commit manually. (--no-commit)')
   subprocess.check_call(upload_cmd, cwd=target)
 
 
@@ -136,7 +149,7 @@ def run(masters, restart_time, reviewers, bug, force, no_commit):
     reviewers - a list(str) of reviewers for the CL (may be empty)
     bug - an integer bug number to include in the review or None
     force - a bool which causes commit not to prompt if true
-    no_commit - aborts before running the commit process
+    no_commit - doesn't set the CQ bit on upload
   """
   # Step 1: Acquire a clean master state checkout.
   # This repo is too small to consider caching.
@@ -179,10 +192,6 @@ def run(masters, restart_time, reviewers, bug, force, no_commit):
         desired_master_state, master_state_json)
 
     # Step 3: Send the patch to Rietveld and commit it via the CQ.
-    if no_commit:
-      LOGGER.info('Refraining from committing back to repository (--no-commit)')
-      return 0
-
     LOGGER.info('Committing back into repository')
     commit(master_state_dir, masters, reviewers, bug, restart_time,
-           restart_time_str, force)
+           restart_time_str, force, no_commit)
