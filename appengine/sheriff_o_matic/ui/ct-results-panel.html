@@ -47,7 +47,6 @@ found in the LICENSE file.
       }
 
       .results {
-        flex: 1;
         overflow: auto;
         /* Stay below the box shadow of the core-menu. */
         padding-top: 6px;
@@ -72,11 +71,11 @@ found in the LICENSE file.
           </template>
         </core-menu>
       </template>
-      <div class="results" layout vertical>
+      <div class="results">
         <template if="{{ group.data.failures[selected].testName }}">
-          <ct-embedded-flakiness-dashboard flex layout vertical test="{{ group.data.failures[selected] }}"></ct-embedded-flakiness-dashboard>
+          <ct-embedded-flakiness-dashboard test="{{ group.data.failures[selected] }}"></ct-embedded-flakiness-dashboard>
         </template>
-        <ct-results-by-builder flex layout vertical failure="{{ group.data.failures[selected] }}"></ct-results-by-builder>
+        <ct-results-by-builder failure="{{ group.data.failures[selected] }}"></ct-results-by-builder>
         <ct-commit-list commitList="{{ group.data.commitList }}" detailed="true"></ct-commit-list>
       </div>
     </template>
