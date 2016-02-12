@@ -60,6 +60,7 @@ def parse_args():
     ts_mon_target_type='task',
     ts_mon_task_job_name=socket.getfqdn().split(".")[0],
     ts_mon_task_service_name='master_manager_launcher',
+    ts_mon_flush_mode='manual',
   )
 
   args = parser.parse_args()
@@ -123,6 +124,9 @@ def log_triggered_ignored(triggered, ignored, hostname):
 
 def main():
   args = parse_args()
+  # Flushing metrics here to be sure the presence/up got sent even if the
+  # program runs for less than a minute.
+  ts_mon.flush()
 
   if args.json_file:
     desired_state = desired_state_parser.load_desired_state_file(
