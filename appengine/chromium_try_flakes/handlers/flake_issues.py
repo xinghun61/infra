@@ -39,7 +39,11 @@ DESCRIPTION_TEMPLATE = (
     'Please find the right owner to fix the respective test/step and assign '
     'this issue to them. %(other_queue_msg)s\n\n'
     'We have detected %(flakes_count)d recent flakes. List of all flakes can '
-    'be found at %(flakes_url)s.')
+    'be found at %(flakes_url)s.\n\n'
+    'Flaky tests should be disabled within 30 minutes unless culprit CL is '
+    'found and reverted. Please see more details here: '
+    'https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/'
+    'sheriffing-bug-queues#triaging-auto-filed-flakiness-bugs')
 SHERIFF_QUEUE_MSG = (
     'If the step/test is infrastructure-related, please add Infra-Troopers '
     'label and change issue status to Untriaged. When done, please remove the '

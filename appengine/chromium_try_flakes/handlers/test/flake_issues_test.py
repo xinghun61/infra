@@ -196,7 +196,11 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
         'Sheriff Bug Queue by removing the Sheriff-Chromium label.\n\n'
         'We have detected 2 recent flakes. List of all flakes can be found at '
         'https://chromium-try-flakes.appspot.com/all_flake_occurrences?key='
-        'agx0ZXN0YmVkLXRlc3RyGQsSBUZsYWtlIg50ZXN0LWZsYWtlLWtleQw.')
+        'agx0ZXN0YmVkLXRlc3RyGQsSBUZsYWtlIg50ZXN0LWZsYWtlLWtleQw.\n\n'
+        'Flaky tests should be disabled within 30 minutes unless culprit CL is '
+        'found and reverted. Please see more details here: '
+        'https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/'
+        'sheriffing-bug-queues#triaging-auto-filed-flakiness-bugs')
     self.assertEqual(issue.status, 'Untriaged')
     self.assertEqual(issue.labels, ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky',
                                     'Via-TryFlakes', 'Sheriff-Chromium'])
