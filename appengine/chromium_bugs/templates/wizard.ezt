@@ -326,6 +326,7 @@
   <input type="hidden" name="status" id="post_status" value="Unconfirmed" />
   <input type="hidden" name="owner" id="post_owner" value="" />
   <input type="hidden" name="cc" id="post_cc" value="" />
+  <input type="hidden" name="components" id="post_components" value="" />
   <input type="hidden" name="label" id="post_label1" value="" />
   <input type="hidden" name="label" id="post_label2"  value="" />
   <input type="hidden" name="label" id="post_label3"  value="" />

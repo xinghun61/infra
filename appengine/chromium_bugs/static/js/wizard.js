@@ -228,6 +228,8 @@ function preformatValues() {
 
 }
 
+CR_PREFIX = 'Cr-';
+
 /** Examine the fields that the user entered and copy them into the
  *  id="post_*" form fields that are posted to the actual issue tracker
  *  form handler.
@@ -255,6 +257,21 @@ function stuffDataAndSubmit() {
 
     while ($('attachmentarea').hasChildNodes()) {
 	$('submit_attachmentarea').appendChild($('attachmentarea').firstChild);
+    }
+
+    // If the wizard is not posting to codesite this time, convert label1
+    // to a component value.
+    // TODO(jrobbins): after chromium is migrated to monorail, simplify
+    // this logic and use a components field all the time instad of label1.
+    $("post_components").value = "";
+    var isMonorail = !location.search.includes('code.google.com');
+    var compLabelEl = document.forms[0].label1;
+    if (isMonorail && compLabelEl && compLabelEl.value.startsWith(CR_PREFIX)) {
+	var compValue = compLabelEl.value;
+	compValue = compValue.substring(CR_PREFIX.length);
+	compValue = compValue.replace(/-/g, '>');
+	$("post_components").value = compValue;
+	$("post_label1").value = "";
     }
 
     $("submit_form").submit();
