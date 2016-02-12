@@ -114,7 +114,7 @@
         rowString = '<tr id="' + stepIndex.toString() +'">';
         var stepUrl = findit.buildUrl + '/steps/' + failure.step_name;
         var arrowImg = '';
-        if (failure.tests && failure.suspected_cls.length > 0) {
+        if (failure.tests && failure.tests.length > 0) {
           arrowImg = '<a class="collapsed"> <img class="toggle-img" src="https://www.gstatic.com/images/icons/material/system/1x/keyboard_arrow_right_black_24dp.png"> </a>';
         }
 
@@ -164,7 +164,7 @@
         $('#failures tbody').append(rowString);
       }
 
-      if(type == 'step' && failure.suspected_cls.length > 0 && failure.tests && failure.tests.length > 0) {
+      if(type == 'step' && failure.tests && failure.tests.length > 0) {
         $.each(failure.tests, function(testIndex, value) {
           addRowToResultTable(stepIndex, testIndex, value, 'test');
         });
@@ -286,6 +286,9 @@
                 tableString += '<td><a href="' + value.review_url + '">' + value.commit_position || value.revision + '</a></td>';
               } else if (value.revision) {
                 tableString += '<td>' + value.revision + '</td>';
+              } else if (value.status != 'Completed') {
+                // Makes the cell empty when the try job is not completed.
+                tableString += '<td></td>';
               } else {
                 tableString += '<td>Not Found</td>';
               }
