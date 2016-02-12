@@ -614,52 +614,6 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/gles2_book",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "cwd": "[SLAVE_BUILD]",
-    "name": "prune third_party/gles2_book"
-  },
-  {
-    "cmd": [
-      "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/gold",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "cwd": "[SLAVE_BUILD]",
-    "name": "prune third_party/gold"
-  },
-  {
-    "cmd": [
-      "find",
       "[TMP_BASE]/tmp_tmp_3/src/third_party/icu",
       "-type",
       "f",
@@ -679,75 +633,6 @@
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/icu"
-  },
-  {
-    "cmd": [
-      "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/launchpad_translations",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "cwd": "[SLAVE_BUILD]",
-    "name": "prune third_party/launchpad_translations"
-  },
-  {
-    "cmd": [
-      "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/libc++",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "cwd": "[SLAVE_BUILD]",
-    "name": "prune third_party/libc++"
-  },
-  {
-    "cmd": [
-      "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/libevent",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "cwd": "[SLAVE_BUILD]",
-    "name": "prune third_party/libevent"
   },
   {
     "cmd": [
@@ -775,29 +660,6 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/libmtp",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "cwd": "[SLAVE_BUILD]",
-    "name": "prune third_party/libmtp"
-  },
-  {
-    "cmd": [
-      "find",
       "[TMP_BASE]/tmp_tmp_3/src/third_party/libxml/src",
       "-type",
       "f",
@@ -817,29 +679,6 @@
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/libxml/src"
-  },
-  {
-    "cmd": [
-      "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/openssl",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "cwd": "[SLAVE_BUILD]",
-    "name": "prune third_party/openssl"
   },
   {
     "cmd": [
@@ -867,52 +706,6 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/stp",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "cwd": "[SLAVE_BUILD]",
-    "name": "prune third_party/stp"
-  },
-  {
-    "cmd": [
-      "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/trace-viewer/third_party/v8",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "cwd": "[SLAVE_BUILD]",
-    "name": "prune third_party/trace-viewer/third_party/v8"
-  },
-  {
-    "cmd": [
-      "find",
       "[TMP_BASE]/tmp_tmp_3/src/third_party/webgl",
       "-type",
       "f",
@@ -932,29 +725,6 @@
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/webgl"
-  },
-  {
-    "cmd": [
-      "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/webgl_conformance",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "cwd": "[SLAVE_BUILD]",
-    "name": "prune third_party/webgl_conformance"
   },
   {
     "cmd": [
@@ -1001,29 +771,6 @@
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "prune tools/win"
-  },
-  {
-    "cmd": [
-      "find",
-      "[TMP_BASE]/tmp_tmp_3/src/v8/third_party/icu",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "cwd": "[SLAVE_BUILD]",
-    "name": "prune v8/third_party/icu"
   },
   {
     "cmd": [
