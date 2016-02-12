@@ -174,6 +174,11 @@ def RunSteps(api):
 
   version = api.properties['version']
 
+  ls_result = api.gsutil(['ls', 'gs://chromium-browser-official/'],
+                         stdout=api.raw_io.output()).stdout
+  if 'chromium-%s.tar.xz' % version in ls_result:
+    return
+
   api.gclient.set_config('chromium')
   solution = api.gclient.c.solutions[0]
   solution.revision = 'refs/tags/%s' % version
@@ -222,7 +227,16 @@ def GenTests(api):
   yield (
     api.test('basic') +
     api.properties.generic(version='38.0.2125.122') +
-    api.platform('linux', 64)
+    api.platform('linux', 64) +
+    api.step_data('gsutil ls', stdout=api.raw_io.output(''))
+  )
+
+  yield (
+    api.test('dupe') +
+    api.properties.generic(version='38.0.2125.122') +
+    api.platform('linux', 64) +
+    api.step_data('gsutil ls', stdout=api.raw_io.output(
+        'chromium-38.0.2125.122.tar.xz'))
   )
 
   yield (

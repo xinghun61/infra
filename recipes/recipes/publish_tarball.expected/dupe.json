@@ -1,0 +1,22 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
+      "--",
+      "[DEPOT_TOOLS]/gsutil.py",
+      "----",
+      "ls",
+      "gs://chromium-browser-official/"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "gsutil ls",
+    "stdout": "/path/to/tmp/"
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]
