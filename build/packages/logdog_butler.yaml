@@ -1,0 +1,12 @@
+package: infra/tools/luci/logdog/butler/${platform}
+description: logdog_butler is the LogDog client log streamer.
+builders:
+  - infra-continuous-mac-10.9-64
+  - infra-continuous-precise-32
+  - infra-continuous-precise-64
+  - infra-continuous-win-32
+  - infra-continuous-win-64
+root: ../../go/bin
+data:
+  - file: logdog_butler${exe_suffix}
+  - version_file: .versions/logdog_butler${exe_suffix}.cipd_version

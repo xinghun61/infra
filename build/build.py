@@ -460,7 +460,11 @@ def build_infra():
         os.path.join(ROOT, 'ENV'),
       ])
   # Go side.
-  build_go(os.path.join(ROOT, 'go'), ['infra/...'])
+  build_go(os.path.join(ROOT, 'go'), [
+    'infra/...',
+    'github.com/luci/luci-go/client/...',
+    'github.com/luci/luci-go/tools/...',
+    ])
 
 
 def main(
