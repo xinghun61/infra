@@ -431,6 +431,11 @@ class CreateFlakyRun(webapp2.RequestHandler):
     success_time = success_run.time_finished
     failure_time = failure_run.time_finished
     patchset_builder_runs = failure_run.key.parent().get()
+
+    # TODO(sergiyb): The parsing logic below is very fragile and will break with
+    # any changes to step names and step text. We should move away from parsing
+    # buildbot to tools like flakiness dashboard (test-results.appspot.com),
+    # which uses a standartized JSON format.
     url = ('http://build.chromium.org/p/' + patchset_builder_runs.master +
            '/json/builders/' + patchset_builder_runs.builder +'/builds/' +
            str(failure_run.buildnumber))
@@ -469,11 +474,14 @@ class CreateFlakyRun(webapp2.RequestHandler):
       #  - test results: always red when another step is red (not a failure)
       #  - Uncaught Exception: summary step referring to an exception in another
       #    step (e.g. bot_update)
+      #  - ... (retry summary): this is an artificial step to fail the build due
+      #    to another step that has failed earlier (do not double count).
       if (step_name == 'steps' or step_name.startswith('[swarming]') or
           step_name == 'presubmit' or step_name == 'recipe failure reason' or
           (step_name == 'Patch failure' and success_time < failure_time) or
           (step_name == 'bot_update' and 'PATCH FAILED' in step_text) or
-          step_name == 'test results' or step_name == 'Uncaught Exception'):
+          step_name == 'test results' or step_name == 'Uncaught Exception' or
+          step_name.endswith(' (retry summary)')):
         continue
       failed_steps.append(step)
 
@@ -486,15 +494,9 @@ class CreateFlakyRun(webapp2.RequestHandler):
         # correctly ignore duplicate failures, we remove the prefix.
         step_name = step_name.replace('Instrumentation test ', '')
 
-        step_name_with_no_modifier = step_name.replace(' (with patch)', '')
-        for other_step in failed_steps:
-          # A step which fails, and then is retried and also fails, will have
-          # its name without the ' (with patch)' again. Don't double count.
-          if other_step['name'] == step_name_with_no_modifier:
-            steps_to_ignore.append(other_step['name'])
-
         # If a step fails without the patch, then the tree is busted. Don't
         # count as flake.
+        step_name_with_no_modifier = step_name.replace(' (with patch)', '')
         step_name_without_patch = (
             '%s (without patch)' % step_name_with_no_modifier)
         for other_step in failed_steps:

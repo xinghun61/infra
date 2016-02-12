@@ -58,7 +58,7 @@ TEST_BUILDBOT_JSON_REPLY = json.dumps({
     # Only count first step (with patch) and ignore summary step.
     {'results': [2], 'name': 'foo8 (with patch)', 'text': ['bar13']},
     {'results': [0], 'name': 'foo8 (without patch)', 'text': ['bar14']},
-    {'results': [2], 'name': 'foo8', 'text': ['bar15']},
+    {'results': [2], 'name': 'foo8 (retry summary)', 'text': ['bar15']},
 
     # GTest without flakes.
     {
