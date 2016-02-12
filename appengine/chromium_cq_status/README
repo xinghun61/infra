@@ -66,10 +66,7 @@ debug.
 
 # PUSHING
 
-0. cd appengine/chromium_cq_status:
-1. (optional) reduce the size of the upload
-    $ rm -r third_party/catapult/tracing/third_party
-    $ rm -r third_party/catapult/tracing/tracing/test_data
+1. cd appengine/chromium_cq_status:
 2. make deploy
 3. Test the newly deployed version: visit
    http://<version>-dot-chromium-cq-status.appspot.com, make sure the
