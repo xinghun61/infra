@@ -103,9 +103,6 @@ class GatekeeperExtrasTest(unittest.TestCase):
 
   def test_tree_for_master_returns_tree_name(self):
     gatekeeper_trees = {
-        'blink': {'masters': [
-            'https://build.chromium.org/p/chromium.webkit'
-        ]},
         'chromium': {'masters': [
             'https://build.chromium.org/p/chromium.linux',
             'https://build.chromium.org/p/chromium.gpu',
@@ -117,23 +114,8 @@ class GatekeeperExtrasTest(unittest.TestCase):
 
     self.assertEqual('chromium', gatekeeper_extras.tree_for_master(
         'https://build.chromium.org/p/chromium.gpu', gatekeeper_trees))
-    self.assertEqual('blink', gatekeeper_extras.tree_for_master(
-        'https://build.chromium.org/p/chromium.webkit', gatekeeper_trees))
     self.assertEqual('non-closers', gatekeeper_extras.tree_for_master(
         'https://build.chromium.org/p/chromium.lkgr', gatekeeper_trees))
-
-  def test_chromium_webkit_is_always_on_blink_tab(self):
-    gatekeeper_trees = {
-        # This reflects the state needed for blink merge, that
-        # chromium and blink tree statuses are unified.
-        # The chromium.webkit alerts should still show on the blink
-        # sheriff-o-matic tab though.
-        'chromium': {'masters': [
-            'https://build.chromium.org/p/chromium.webkit'
-        ]},
-    }
-    self.assertEqual('blink', gatekeeper_extras.tree_for_master(
-        'https://build.chromium.org/p/chromium.webkit', gatekeeper_trees))
 
   @mock.patch( # pragma: no cover (decorators are run before coverage is loaded)
       'infra.services.builder_alerts.buildbot.master_name_from_url',
