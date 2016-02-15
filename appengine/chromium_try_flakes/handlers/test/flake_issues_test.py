@@ -666,23 +666,24 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     self.test_app.post('/issues/create_flaky_run', {}, status=400)
 
 
-  @mock.patch('logging.exception')
-  def test_handles_http_errors_correctly(self, exception_mock):
-    urlfetch_mock = mock.Mock(side_effect = [
-        # GTest JSON is not available. Normal, should just use info logging.
-        urllib2.HTTPError('url', 404, 'msg', [], None),
-        # Access Denied. Not normal, should use exception logging.
-        urllib2.HTTPError('url', 403, 'msg', [], None),
-    ])
-
+  def test_logs_info_for_http_404_errors(self):
+    urlfetch_mock = mock.Mock()
+    urlfetch_mock.return_value.status_code = 404
     with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
-      mock_step = {'name': 'step', 'text': 'step'}
       with mock.patch('logging.info') as info_mock:
-        CreateFlakyRun.get_flakes('master.test', 'builder-test', 123, mock_step)
+        CreateFlakyRun.get_flakes(
+            'master.test', 'builder-test', 123,
+            {'name': 'step', 'text': 'step'})
         self.assertEqual(info_mock.call_count, 1)
 
+  def test_logs_exception_for_other_http_errors(self):
+    urlfetch_mock = mock.Mock()
+    urlfetch_mock.return_value.status_code = 403
+    with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
       with mock.patch('logging.exception') as exception_mock:
-        CreateFlakyRun.get_flakes('master.test', 'builder-test', 123, mock_step)
+        CreateFlakyRun.get_flakes(
+            'master.test', 'builder-test', 123,
+            {'name': 'step', 'text': 'step'})
         self.assertEqual(exception_mock.call_count, 1)
 
   def test_get_flaky_run_reason(self):
@@ -690,11 +691,12 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     br_f, br_s = self._create_build_runs(now - datetime.timedelta(hours=1), now)
 
     urlfetch_mock = mock.Mock(side_effect = [
-        mock.Mock(content=TEST_BUILDBOT_JSON_REPLY),
+        # JSON results for the build.
+        mock.Mock(status_code=200, content=TEST_BUILDBOT_JSON_REPLY),
         # JSON results for step "foo1".
-        mock.Mock(content=TEST_TEST_RESULTS_REPLY),
+        mock.Mock(status_code=200, content=TEST_TEST_RESULTS_REPLY),
         # For step "foo8 xx (with patch)", something failed while parsing JSON,
-        # step text (bar13) should be reported as flake.
+        # step text ("bar13") should be reported as flake.
         Exception(),
     ])
 

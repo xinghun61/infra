@@ -476,14 +476,16 @@ class CreateFlakyRun(webapp2.RequestHandler):
     }
 
     try:
-      result = urlfetch.fetch(url).content
-      json_result = json.loads(result)
+      result = urlfetch.fetch(url)
 
-      _, failed, _ = cls._flatten_tests(
-          json_result.get('tests', {}), json_result.get('path_delimiter'))
-      return failed
-    except urllib2.HTTPError as e:
-      if e.code == 404:
+      if result.status_code >= 200 and result.status_code < 400:
+        json_result = json.loads(result.content)
+
+        _, failed, _ = cls._flatten_tests(
+            json_result.get('tests', {}), json_result.get('path_delimiter'))
+        return failed
+
+      if result.status_code == 404:
         # This is quite a common case (only some failing steps are actually
         # running tests and reporting results to flakiness dashboard).
         logging.info('Failed to retrieve JSON from %s', url)
