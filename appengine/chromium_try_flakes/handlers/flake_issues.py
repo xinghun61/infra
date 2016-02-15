@@ -7,6 +7,7 @@
 import datetime
 import json
 import logging
+import urllib2
 import webapp2
 
 from google.appengine.api import app_identity
@@ -58,6 +59,10 @@ REOPENED_DESCRIPTION_TEMPLATE = (
     'This flaky test/step was previously tracked in issue %(old_issue)d.')
 FLAKES_URL_TEMPLATE = (
     'https://chromium-try-flakes.appspot.com/all_flake_occurrences?key=%s')
+TEST_RESULTS_URL_TEMPLATE = (
+    'http://test-results.appspot.com/testfile?builder=%(buildername)s&name='
+    'full_results.json&master=%(mastername)s&testtype=%(stepname)s&buildnumber='
+    '%(buildnumber)s')
 BACK_TO_SHERIFF_MESSAGE = (
     'There has been no update on this issue for over %d days, therefore it has '
     'been moved back into the Sheriff Bug Queue (unless already there). '
@@ -368,53 +373,126 @@ class CreateFlakyRun(webapp2.RequestHandler):
     util.add_occurrence_time_to_flake(flake, failure_time)
     flake.put()
 
+  # TODO(sergiyb): Reuse code from infra/appengine/test_results/
+  # appengine_module/test_results/handlers/util.py to avoid code duplication.
+  @staticmethod
+  def _normalize_step_name(test_type):
+    """Clean extra details added to the test type.
+
+    Args:
+      test_type: String, step name containing test type.
+
+    Returns:
+      Test type without platforms and other noise.
+    """
+    # We allow (with patch) as a separate test_type for now since executions of
+    # uncommitted code should be treated differently.
+    clean_test_type = test_type.replace(' (with patch)', '', 1)
+    patched = len(clean_test_type) != len(test_type)
+
+    # Clean out any platform noise. For simplicity and based on current data
+    # we just keep everything before the first space, e.g. base_unittests.
+    first_space = clean_test_type.find(' ')
+    if first_space != -1:
+      clean_test_type = clean_test_type[:first_space]
+
+    if patched:
+      return '%s (with patch)' % clean_test_type
+    return clean_test_type
+
+  @classmethod
+  def _flatten_tests(cls, tests, delimiter='/', prefix=None):
+    """Flattens hierarchical GTest JSON test structure.
+
+    The hiearchical GTest JSON test structure is described in
+    https://www.chromium.org/developers/the-json-test-results-format (see
+    top-level 'tests' key).
+
+    We only return 3 test types:
+     - passed, i.e. expected is "PASS" and last actual run is "PASS"
+     - failed, i.e. expected is "PASS" and last actual run is "FAIL", "TIMEOUT"
+       or "CRASH"
+     - skipped, i.e. expected and actual are both "SKIP"
+
+    We do not classify or return any other tests, in particular:
+     - known flaky, i.e. expected to have varying results, e.g. "PASS FAIL".
+     - known failing, i.e. expected is "FAIL", "TIMEOUT" or "CRASH".
+     - unexpected flakiness, i.e. failures than hapeneed before last PASS.
+
+    Args:
+      prefix: Prefix to be added before test names if this is a parent node.
+      delimiter: Delimiter to use for concatenating parts of test name.
+      tests: Any non-leaf node of the hierarchical GTest JSON test structure.
+
+    Returns:
+      A tuple (passed, failed, skpped), where each is a list of test names.
+    """
+    passed = []
+    failed = []
+    skipped = []
+    for node_name, node in tests.iteritems():
+      # Compute current node name, which would be a test name for leaf nodes or
+      # new prefix for parent nodes.
+      test_name = prefix + delimiter + node_name if prefix else node_name
+
+      # Check if it is a leaf node first.
+      if 'actual' in node and 'expected' in node:
+        if node['expected'] == 'PASS':
+          actual_results = node['actual'].split(' ')
+          if actual_results[-1] == 'PASS':
+            passed.append(test_name)
+          elif actual_results[-1] in ('FAIL', 'TIMEOUT', 'CRASH'):
+            failed.append(test_name)
+        elif node['expected'] == 'SKIP' and node['actual'] == 'SKIP':
+          skipped.append(test_name)
+      else:
+        node_passed, node_failed, node_skipped = cls._flatten_tests(
+            node, delimiter, test_name)
+        passed.extend(node_passed)
+        failed.extend(node_failed)
+        skipped.extend(node_skipped)
+
+    return passed, failed, skipped
+
   # see examples:
   # compile http://build.chromium.org/p/tryserver.chromium.mac/json/builders/
   #         mac_chromium_compile_dbg/builds/11167?as_text=1
   # gtest http://build.chromium.org/p/tryserver.chromium.win/json/builders/
   #       win_chromium_x64_rel_swarming/builds/4357?as_text=1
   # TODO(jam): get specific problem with compile so we can use that as name
-  # TODO(jam): It's unfortunate to have to parse this html. Can we get it from
-  # another place instead of the tryserver's json?
-  @staticmethod
-  def get_flakes(step):
-    combined = ' '.join(step['text'])
-
+  @classmethod
+  def get_flakes(cls, mastername, buildername, buildnumber, step):
     # If test results were invalid, report whole step as flaky.
-    if 'TEST RESULTS WERE INVALID' in combined:
-      return [combined]
+    steptext = ' '.join(step['text'])
+    stepname = cls._normalize_step_name(step['name'])
+    if 'TEST RESULTS WERE INVALID' in steptext:
+      return [steptext]
 
-    #gtest
-    gtest_search_str = 'failures:<br/>'
-    gtest_search_index = combined.find(gtest_search_str)
-    if gtest_search_index != -1:
-      failures = combined[gtest_search_index + len(gtest_search_str):]
-      failures = failures.split('<br/>')
-      results = []
-      for failure in failures:
-        if not failure:
-          continue
-        if failure == 'ignored:':
-          break  # layout test output
-        results.append(failure)
-      return results
+    url = TEST_RESULTS_URL_TEMPLATE % {
+      'mastername': urllib2.quote(mastername),
+      'buildername': urllib2.quote(buildername),
+      'buildnumber': urllib2.quote(str(buildnumber)),
+      'stepname': urllib2.quote(stepname),
+    }
 
-    #gpu
-    gpu_search_str = '&tests='
-    gpu_search_index = combined.find(gpu_search_str)
-    if gpu_search_index != -1:
-      failures = combined[gpu_search_index + len(gpu_search_str):]
-      end_index = failures.find('">')
-      failures = failures[:end_index  ]
-      failures = failures.split(',')
-      results = []
-      for failure in failures:
-        if not failure:
-          continue
-        results.append(failure)
-      return results
+    try:
+      result = urlfetch.fetch(url).content
+      json_result = json.loads(result)
 
-    return [combined]
+      _, failed, _ = cls._flatten_tests(
+          json_result.get('tests', {}), json_result.get('path_delimiter'))
+      return failed
+    except urllib2.HTTPError as e:
+      if e.code == 404:
+        # This is quite a common case (only some failing steps are actually
+        # running tests and reporting results to flakiness dashboard).
+        logging.info('Failed to retrieve JSON from %s', url)
+      else:
+        logging.exception('Failed to retrieve JSON from %s', url)
+    except Exception:
+      logging.exception('Failed to retrieve or parse JSON from %s', url)
+
+    return [steptext]
 
   @ndb.transactional(xg=True)  # pylint: disable=E1120
   def post(self):
@@ -513,9 +591,9 @@ class CreateFlakyRun(webapp2.RequestHandler):
       step_name = step['name']
       if step_name in steps_to_ignore:
         continue
-      flakes = self.get_flakes(step)
-      if not flakes:
-        continue
+      flakes = self.get_flakes(
+          patchset_builder_runs.master, patchset_builder_runs.builder,
+          failure_run.buildnumber, step)
       for flake in flakes:
         flake_occurrence = FlakeOccurrence(name=step_name, failure=flake)
         flaky_run.flakes.append(flake_occurrence)

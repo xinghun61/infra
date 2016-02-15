@@ -5,16 +5,54 @@
 import datetime
 import json
 import mock
+import urllib2
 
 from google.appengine.datastore import datastore_stub_util
 from google.appengine.ext import ndb
 
-from handlers.flake_issues import ProcessIssue
+from handlers.flake_issues import ProcessIssue, CreateFlakyRun
 import main
 from model.flake import Flake, FlakyRun, FlakeOccurrence
 from model.build_run import PatchsetBuilderRuns, BuildRun
 from testing_utils import testing
 from time_functions.testing import mock_datetime_utc
+
+
+TEST_TEST_RESULTS_REPLY = json.dumps({
+  'tests': {
+    'test1': {
+      'expected': 'PASS',
+      'actual': 'FAIL FAIL PASS',
+    },
+    'test2': {
+      'a': {
+        'expected': 'PASS',
+        'actual': 'FAIL',
+      },
+      'b': {
+        'expected': 'SKIP',
+        'actual': 'SKIP',
+      },
+      'c': {
+        'expected': 'PASS FAIL',
+        'actual': 'PASS',
+      },
+      'd': {
+        'expected': 'PASS',
+        'actual': 'TIMEOUT FAIL TIMEOUT',
+      },
+      'e': {
+        'expected': 'TIMEOUT',
+        'actual': 'TIMEOUT',
+      },
+      'f': {
+        'expected': 'PASS',
+        'actual': 'SKIP',
+      },
+    },
+  },
+  'path_delimiter': '.',
+})
 
 
 TEST_BUILDBOT_JSON_REPLY = json.dumps({
@@ -24,20 +62,6 @@ TEST_BUILDBOT_JSON_REPLY = json.dumps({
 
     # Invalid test results.
     {'results': [2], 'name': 'foo2', 'text': ['TEST RESULTS WERE INVALID']},
-
-    # GTest tests.
-    {
-      'results': [2],
-      'name': 'foo3',
-      'text': ['failures:<br/>bar2<br/>bar3<br/><br/>ignored:<br/>bar4']
-    },
-
-    # GPU tests.
-    {
-      'results': [2],
-      'name': 'foo4',
-      'text': ['<"http://url/path?query&tests=bar5,bar6,,bar7">']
-    },
 
     # Ignore non-success non-failure results (7 is TRY_PENDING).
     {'results': [7], 'name': 'foo5', 'text': ['bar8']},
@@ -56,16 +80,9 @@ TEST_BUILDBOT_JSON_REPLY = json.dumps({
     {'results': [2], 'name': 'bot_update', 'text': ['bot_update PATCH FAILED']},
 
     # Only count first step (with patch) and ignore summary step.
-    {'results': [2], 'name': 'foo8 (with patch)', 'text': ['bar13']},
-    {'results': [0], 'name': 'foo8 (without patch)', 'text': ['bar14']},
-    {'results': [2], 'name': 'foo8 (retry summary)', 'text': ['bar15']},
-
-    # GTest without flakes.
-    {
-      'results': [2],
-      'name': 'foo9',
-      'text': ['failures:<br/><br/><br/>']
-    },
+    {'results': [2], 'name': 'foo8 xx (with patch)', 'text': ['bar13']},
+    {'results': [0], 'name': 'foo8 xx (without patch)', 'text': ['bar14']},
+    {'results': [2], 'name': 'foo8 xx (retry summary)', 'text': ['bar15']},
   ]
 })
 
@@ -648,16 +665,42 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
   def test_handles_incorrect_parameters(self):
     self.test_app.post('/issues/create_flaky_run', {}, status=400)
 
+
+  @mock.patch('logging.exception')
+  def test_handles_http_errors_correctly(self, exception_mock):
+    urlfetch_mock = mock.Mock(side_effect = [
+        # GTest JSON is not available. Normal, should just use info logging.
+        urllib2.HTTPError('url', 404, 'msg', [], None),
+        # Access Denied. Not normal, should use exception logging.
+        urllib2.HTTPError('url', 403, 'msg', [], None),
+    ])
+
+    with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
+      mock_step = {'name': 'step', 'text': 'step'}
+      with mock.patch('logging.info') as info_mock:
+        CreateFlakyRun.get_flakes('master.test', 'builder-test', 123, mock_step)
+        self.assertEqual(info_mock.call_count, 1)
+
+      with mock.patch('logging.exception') as exception_mock:
+        CreateFlakyRun.get_flakes('master.test', 'builder-test', 123, mock_step)
+        self.assertEqual(exception_mock.call_count, 1)
+
   def test_get_flaky_run_reason(self):
     now = datetime.datetime.utcnow()
     br_f, br_s = self._create_build_runs(now - datetime.timedelta(hours=1), now)
 
-    urlfetch_mock = mock.Mock()
-    urlfetch_mock.return_value.content = TEST_BUILDBOT_JSON_REPLY
+    urlfetch_mock = mock.Mock(side_effect = [
+        mock.Mock(content=TEST_BUILDBOT_JSON_REPLY),
+        # JSON results for step "foo1".
+        mock.Mock(content=TEST_TEST_RESULTS_REPLY),
+        # For step "foo8 xx (with patch)", something failed while parsing JSON,
+        # step text (bar13) should be reported as flake.
+        Exception(),
+    ])
 
     # We also create one Flake to test that it is correctly updated. Other Flake
     # entities will be created automatically.
-    Flake(id='bar5', name='bar5', occurrences=[],
+    Flake(id='bar13', name='bar13', occurrences=[],
           last_time_seen=datetime.datetime.min).put()
 
     with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
@@ -674,16 +717,27 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     self.assertEqual(flaky_run.failure_run_time_started,
                      now - datetime.timedelta(hours=1))
 
-    # Verify that we've used correct URL to access buildbot JSON endpoint.
-    urlfetch_mock.assert_called_once_with(
+    urlfetch_mock.assert_has_calls([
+      # Verify that we've used correct URL to access buildbot JSON endpoint.
+      mock.call(
         'http://build.chromium.org/p/test.master/json/builders/test-builder/'
-        'builds/100')
+        'builds/100'),
+      # Verify that we've used correct URLs to retrieve test-results GTest JSON.
+      mock.call(
+        'http://test-results.appspot.com/testfile?builder=test-builder&'
+        'name=full_results.json&master=test.master&testtype=foo1&'
+        'buildnumber=100'),
+      mock.call(
+        'http://test-results.appspot.com/testfile?builder=test-builder&'
+        'name=full_results.json&master=test.master&'
+        'testtype=foo8%20%28with%20patch%29&buildnumber=100')])
 
     # Expected flakes to be found: list of (step_name, test_name).
     expected_flakes = [
-        ('foo1', 'bar1'), ('foo2', 'TEST RESULTS WERE INVALID'),
-        ('foo3', 'bar2'), ('foo3', 'bar3'), ('foo4', 'bar5'), ('foo4', 'bar6'),
-        ('foo4', 'bar7'), ('foo8 (with patch)', 'bar13'),
+        ('foo1', 'test2.a'),
+        ('foo1', 'test2.d'),
+        ('foo2', 'TEST RESULTS WERE INVALID'),
+        ('foo8 xx (with patch)', 'bar13'),
     ]
 
     flake_occurrences = flaky_run.flakes
@@ -702,3 +756,10 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
 
     for flake in flakes:
       self.assertEqual(flake.occurrences, [flaky_run.key])
+
+  def test_flattens_tests_correctly(self):
+    passed, failed, skipped = CreateFlakyRun._flatten_tests(
+        json.loads(TEST_TEST_RESULTS_REPLY)['tests'], '/')
+    self.assertEqual(set(passed), set(['test1']))
+    self.assertEqual(set(failed), set(['test2/a', 'test2/d']))
+    self.assertEqual(set(skipped), set(['test2/b']))
