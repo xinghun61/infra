@@ -57,8 +57,6 @@ def show_all_flakes(flake, bug_friendly):  # pragma: no cover
       set([f.issue_id for f in flakes[index] if f.issue_id > 0]),
       fr.time_finished,
     ))
-    logging.debug('flakes: %s', list(flakes[index]))
-    logging.debug('fr: %s', failure_runs_extended[-1].issue_ids)
 
   # Do simple sorting to make reading easier.
   failure_runs_extended = sorted(
