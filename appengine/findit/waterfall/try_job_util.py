@@ -9,7 +9,7 @@ from google.appengine.ext import ndb
 
 from model import wf_analysis_status
 from model.wf_try_job import WfTryJob
-from waterfall import try_job_pipeline
+from waterfall import swarming_tasks_to_try_job_pipeline
 from waterfall import waterfall_config
 from waterfall.try_job_type import TryJobType
 
@@ -155,18 +155,32 @@ def ScheduleTryJobIfNeeded(failure_info, signals=None):
     compile_targets = (_GetFailedTargetsFromSignals(signals)
                        if try_job_type == TryJobType.COMPILE else None)
 
-    new_try_job_pipeline = try_job_pipeline.TryJobPipeline(
-        master_name, builder_name, build_number,
-        builds[str(last_pass)]['chromium_revision'],
-        builds[str(build_number)]['chromium_revision'],
-        builds[str(build_number)]['blame_list'],
-        try_job_type, compile_targets, targeted_tests)
+    pipeline = (
+        swarming_tasks_to_try_job_pipeline.SwarmingTasksToTryJobPipeline(
+            master_name, builder_name, build_number,
+            builds[str(last_pass)]['chromium_revision'],
+            builds[str(build_number)]['chromium_revision'],
+            builds[str(build_number)]['blame_list'],
+            try_job_type, compile_targets, targeted_tests))
 
-    new_try_job_pipeline.target = (
+    pipeline.target = (
         '%s.build-failure-analysis' % modules.get_current_version_name())
-    new_try_job_pipeline.start(queue_name=TRY_JOB_PIPELINE_QUEUE_NAME)
-    logging.info('Try-job was scheduled for build %s, %s, %s: %s',
-                 master_name, builder_name, build_number,
-                 new_try_job_pipeline.pipeline_status_path)
+    pipeline.start(
+        queue_name=TRY_JOB_PIPELINE_QUEUE_NAME)
+
+    if try_job_type == TryJobType.TEST:  # pragma: no cover
+      logging_str = (
+          'Swarming task was scheduled for build %s, %s, %s: %s because of'
+          ' %s failure. A try job may be triggered if some reliable failure'
+          ' is detected in the task.') % (
+              master_name, builder_name, build_number,
+              pipeline.pipeline_status_path, try_job_type)
+    else:  # pragma: no cover
+      logging_str = (
+          'Try job was scheduled for build %s, %s, %s: %s because of %s '
+          'failure.') % (
+              master_name, builder_name, build_number,
+              pipeline.pipeline_status_path, try_job_type)
+    logging.info(logging_str)
 
   return failure_result_map

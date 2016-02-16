@@ -66,7 +66,7 @@ class SwarmingTaskRequest(object):  # pragma: no cover. Tested indirectly.
 
     task_request.command = data['properties'].get('command')
     task_request.dimensions = data['properties']['dimensions']
-    task_request.env = data['properties']['env'] or []
+    task_request.env = data['properties'].get('env') or []
     task_request.execution_timeout_secs = data[
         'properties']['execution_timeout_secs']
     task_request.grace_period_secs = data['properties']['grace_period_secs']

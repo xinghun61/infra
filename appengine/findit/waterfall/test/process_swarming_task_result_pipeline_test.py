@@ -146,7 +146,7 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
         self.build_number, self.step_name).put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
-    tests_statuses = pipeline.run(
+    step_name, tests_statuses = pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name, task_id)
 
@@ -157,6 +157,7 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
 
     self.assertEqual(wf_analysis_status.ANALYZED, task.status)
     self.assertEqual(_EXPECTED_TESTS_STATUESE, task.tests_statuses)
+    self.assertEqual(self.step_name, step_name)
 
   def testProcessSwarmingTaskResultPipelineTaskNotRunning(self):
     task_id = 'task_id2'
@@ -169,7 +170,7 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
         self.build_number, self.step_name).put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
-    tests_statuses = pipeline.run(
+    step_name, tests_statuses = pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name, task_id)
 
@@ -180,3 +181,29 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
 
     self.assertEqual(wf_analysis_status.ERROR, task.status)
     self.assertEqual({}, task.tests_statuses)
+    self.assertEqual(self.step_name, step_name)
+
+  def testProcessSwarmingTaskResultPipelineTaskTimeOut(self):
+    task_id = 'task_id2'
+    self.mock(ProcessSwarmingTaskResultPipeline, 'TIMEOUT_HOURS', -1)
+
+    self.mock(swarming_util, 'GetSwarmingTaskResultById',
+              self._MockedGetSwarmingTaskResultById)
+
+    WfSwarmingTask.Create(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name).put()
+
+    pipeline = ProcessSwarmingTaskResultPipeline()
+    step_name, tests_statuses = pipeline.run(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name, task_id)
+
+    self.assertEqual({}, tests_statuses)
+
+    task = WfSwarmingTask.Get(
+        self.master_name, self.builder_name,self.build_number, self.step_name)
+
+    self.assertEqual(wf_analysis_status.ERROR, task.status)
+    self.assertEqual({}, task.tests_statuses)
+    self.assertEqual(self.step_name, step_name)

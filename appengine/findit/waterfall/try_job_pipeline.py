@@ -25,7 +25,6 @@ class TryJobPipeline(BasePipeline):
     self.builder_name = builder_name
     self.build_number = build_number
 
-
   def _LogUnexpectedAbort(self, was_aborted):
     """Marks the WfTryJob status as error, indicating that it was aborted.
 

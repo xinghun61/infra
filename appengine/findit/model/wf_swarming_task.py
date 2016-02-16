@@ -17,7 +17,7 @@ class WfSwarmingTask(BaseBuildModel):
   task_id = ndb.StringProperty(indexed=False)
 
   # A dict to keep track of running information for each test:
-  # number of total runs, number of each status( such as 'SUCCESS' or 'FAILED')
+  # number of total runs, number of each status (such as 'SUCCESS' or 'FAILED')
   tests_statuses = ndb.JsonProperty(default={}, indexed=False, compressed=True)
 
   # The status of the swarming task.

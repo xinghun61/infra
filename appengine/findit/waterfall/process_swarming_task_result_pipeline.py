@@ -9,6 +9,7 @@ import time
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from model import wf_analysis_status
 from model.wf_swarming_task import WfSwarmingTask
+from model.wf_try_job import WfTryJob
 from pipeline_wrapper import BasePipeline
 from pipeline_wrapper import pipeline
 from waterfall import swarming_util
@@ -101,9 +102,14 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
 
         time.sleep(self.SWARMING_QUERY_INTERVAL_SECONDS)
 
-      if time.time() > deadline:  # pragma: no cover
-        # Explicitly abort the whole pipeline.
-        raise pipeline.Abort('Swarming pipeline timed out after %d hours.' % (
+      if time.time() > deadline:
+        # Updates status as ERROR.
+        task = WfSwarmingTask.Get(
+            master_name, builder_name, build_number, step_name)
+        task.status = wf_analysis_status.ERROR
+        task.put()
+        logging.error('Swarming task timed out after %d hours.' % (
             self.TIMEOUT_HOURS))
+        break  # Stops the loop and return.
 
-    return tests_statuses
+    return step_name, tests_statuses

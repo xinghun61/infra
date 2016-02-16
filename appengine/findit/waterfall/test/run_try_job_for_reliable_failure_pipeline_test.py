@@ -120,6 +120,15 @@ class RunTryJobForReliableFailurePipelineTest(testing.AppengineTestCase):
 
     self.assertEqual(expected_reliable_tests, reliable_tests)
 
+  def testGetReliableTargetedTestsNoStatuses(self):
+    reliable_tests = (
+        run_try_job_for_reliable_failure_pipeline._GetReliableTargetedTests(
+            {'step1': ['step1_test1']}, {'step1': {}}))
+
+    expected_reliable_tests = {}
+
+    self.assertEqual(expected_reliable_tests, reliable_tests)
+
   def testSuccessfullyScheduleNewTryJobForCompile(self):
     self.mock(
         run_try_job_for_reliable_failure_pipeline.try_job_pipeline,
@@ -129,11 +138,12 @@ class RunTryJobForReliableFailurePipelineTest(testing.AppengineTestCase):
     pipeline = RunTryJobForReliableFailurePipeline()
     pipeline.run(
         self.master_name, self.builder_name, self.build_number, 'rev1', 'rev2',
-        ['rev2'], TryJobType.COMPILE, [], None, {})
+        ['rev2'], TryJobType.COMPILE, [], None, [])
 
     self.assertTrue(_MockTryJobPipeline.STARTED)
 
   def testSuccessfullyScheduleNewTryJobForTest(self):
+
     self.mock(
         run_try_job_for_reliable_failure_pipeline.try_job_pipeline,
         'TryJobPipeline', _MockTryJobPipeline)
@@ -143,6 +153,6 @@ class RunTryJobForReliableFailurePipelineTest(testing.AppengineTestCase):
     pipeline.run(
         self.master_name, self.builder_name, self.build_number, 'rev1', 'rev2',
         ['rev2'], TryJobType.TEST, None, _SAMPLE_TARGETED_TESTS,
-        _SAMPLE_STEPS_STATUSES['1'])
+        *tuple(_SAMPLE_STEPS_STATUSES['1'].iteritems()))
 
     self.assertTrue(_MockTryJobPipeline.STARTED)

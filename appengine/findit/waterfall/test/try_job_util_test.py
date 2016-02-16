@@ -77,7 +77,8 @@ class TryJobUtilTest(testing.AppengineTestCase):
     }
 
     self.mock(
-        try_job_util.try_job_pipeline, 'TryJobPipeline', _MockRootPipeline)
+        try_job_util.swarming_tasks_to_try_job_pipeline,
+        'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
     _MockRootPipeline.STARTED = False
 
     failure_result_map = try_job_util.ScheduleTryJobIfNeeded(failure_info)
@@ -121,7 +122,8 @@ class TryJobUtilTest(testing.AppengineTestCase):
     }
 
     self.mock(
-        try_job_util.try_job_pipeline, 'TryJobPipeline', _MockRootPipeline)
+        try_job_util.swarming_tasks_to_try_job_pipeline,
+        'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
     _MockRootPipeline.STARTED = False
 
     try_job_util.ScheduleTryJobIfNeeded(failure_info)
@@ -354,7 +356,8 @@ class TryJobUtilTest(testing.AppengineTestCase):
     }
 
     self.mock(
-        try_job_util.try_job_pipeline, 'TryJobPipeline', _MockRootPipeline)
+        try_job_util.swarming_tasks_to_try_job_pipeline,
+        'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
     _MockRootPipeline.STARTED = False
 
     try_job_util.ScheduleTryJobIfNeeded(failure_info)
