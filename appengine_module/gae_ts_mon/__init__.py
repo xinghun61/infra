@@ -35,10 +35,11 @@ import infra_libs.ts_mon.httplib2_utils
 sys.modules['infra_libs'].httplib2_utils = infra_libs.ts_mon.httplib2_utils
 sys.modules['infra_libs.httplib2_utils'] = infra_libs.ts_mon.httplib2_utils
 
-from infra_libs.ts_mon.config import register_global_metrics
-from infra_libs.ts_mon.config import register_global_metrics_callback
 from infra_libs.ts_mon.config import initialize
+from infra_libs.ts_mon.config import reset_for_unittest
 from infra_libs.ts_mon.handlers import app
+from infra_libs.ts_mon.shared import register_global_metrics
+from infra_libs.ts_mon.shared import register_global_metrics_callback
 
 # The remaining lines are copied from infra_libs/ts_mon/__init__.py.
 from infra_libs.ts_mon.common.distribution import Distribution
@@ -59,7 +60,6 @@ from infra_libs.ts_mon.common.helpers import ScopedIncrementCounter
 
 from infra_libs.ts_mon.common.interface import close
 from infra_libs.ts_mon.common.interface import flush
-from infra_libs.ts_mon.common.interface import reset_for_unittest
 
 from infra_libs.ts_mon.common.metrics import BooleanMetric
 from infra_libs.ts_mon.common.metrics import CounterMetric

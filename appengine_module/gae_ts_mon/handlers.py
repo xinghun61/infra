@@ -9,7 +9,7 @@ import webapp2
 
 from google.appengine.ext import ndb
 
-from infra_libs.ts_mon import config
+from infra_libs.ts_mon import shared
 from infra_libs.ts_mon.common import interface
 
 
@@ -35,8 +35,8 @@ def _assign_task_num(time_fn=datetime.datetime.utcnow):
   used_task_nums = []
   time_now = time_fn()
   expired_time = time_now - datetime.timedelta(
-      seconds=config.INSTANCE_EXPIRE_SEC)
-  for entity in config.Instance.query():
+      seconds=shared.INSTANCE_EXPIRE_SEC)
+  for entity in shared.Instance.query():
     # Don't reassign expired task_num right away to avoid races.
     if entity.task_num >= 0:
       used_task_nums.append(entity.task_num)
@@ -68,10 +68,10 @@ class SendHandler(webapp2.RequestHandler):
     if self.request.headers.get('X-Appengine-Cron') != 'true':
       self.abort(403)
 
-    with config.instance_namespace_context():
+    with shared.instance_namespace_context():
       _assign_task_num()
 
-    for name, callback in config.flush_callbacks.iteritems():
+    for name, callback in shared.global_metrics_callbacks.iteritems():
       logging.debug('Invoking callback %s', name)
       callback()
 
@@ -79,4 +79,3 @@ class SendHandler(webapp2.RequestHandler):
 app = webapp2.WSGIApplication([
     (r'/internal/cron/ts_mon/send', SendHandler),
 ], debug=True)
-config.initialize(app)

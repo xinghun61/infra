@@ -11,6 +11,7 @@ import webapp2
 
 from infra_libs.ts_mon import config
 from infra_libs.ts_mon import handlers
+from infra_libs.ts_mon import shared
 from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import targets
 from infra_libs.ts_mon.common.test import stubs
@@ -52,21 +53,21 @@ class HandlersTest(testing.AppengineTestCase):
   def test_assign_task_num(self):
     time_now = datetime.datetime(2016, 2, 8, 1, 0, 0)
     time_current = time_now - datetime.timedelta(
-        seconds=config.INSTANCE_EXPIRE_SEC-1)
+        seconds=shared.INSTANCE_EXPIRE_SEC-1)
     time_expired = time_now - datetime.timedelta(
-        seconds=config.INSTANCE_EXPIRE_SEC+1)
+        seconds=shared.INSTANCE_EXPIRE_SEC+1)
 
-    config.Instance(id='expired', task_num=0, last_updated=time_expired).put()
-    config.Instance(id='inactive', task_num=-1, last_updated=time_expired).put()
-    config.Instance(id='new', task_num=-1, last_updated=time_current).put()
-    config.Instance(id='current', task_num=2, last_updated=time_current).put()
+    shared.Instance(id='expired', task_num=0, last_updated=time_expired).put()
+    shared.Instance(id='inactive', task_num=-1, last_updated=time_expired).put()
+    shared.Instance(id='new', task_num=-1, last_updated=time_current).put()
+    shared.Instance(id='current', task_num=2, last_updated=time_current).put()
 
     handlers._assign_task_num(time_fn=lambda: time_now)
 
-    self.assertIsNone(config.Instance.get_by_id('expired'))
-    self.assertIsNone(config.Instance.get_by_id('inactive'))
-    new = config.Instance.get_by_id('new')
-    current = config.Instance.get_by_id('current')
+    self.assertIsNone(shared.Instance.get_by_id('expired'))
+    self.assertIsNone(shared.Instance.get_by_id('inactive'))
+    new = shared.Instance.get_by_id('new')
+    current = shared.Instance.get_by_id('current')
     self.assertIsNotNone(new)
     self.assertIsNotNone(current)
     self.assertEqual(2, current.task_num)
@@ -82,7 +83,7 @@ class HandlersTest(testing.AppengineTestCase):
     def callback(): # pragma: no cover
       pass
     callback_mock = mock.Mock(callback, set_auto=True)
-    config.register_global_metrics_callback('cb', callback_mock)
+    shared.register_global_metrics_callback('cb', callback_mock)
 
     request = webapp2.Request.blank('/internal/cron/ts_mon/send')
     request.headers['X-Appengine-Cron'] = 'true'

@@ -13,6 +13,7 @@ import mock
 import webapp2
 
 from infra_libs.ts_mon import config
+from infra_libs.ts_mon import shared
 from infra_libs.ts_mon.common import http_metrics
 from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import monitors
@@ -38,7 +39,7 @@ class InitializeTest(testing.AppengineTestCase):
 
   def tearDown(self):
     config.reset_for_unittest()
-    self.assertEqual([], list(config.flush_callbacks))
+    self.assertEqual([], list(shared.global_metrics_callbacks))
     mock.patch.stopall()
     super(InitializeTest, self).tearDown()
 
@@ -91,14 +92,6 @@ class InitializeTest(testing.AppengineTestCase):
     fields = {'name': '^/$', 'status': 200, 'is_robot': False}
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
 
-  def test_unregister_global_metrics_callback(self):
-    config.register_global_metrics_callback('test', 'callback')
-    self.assertEqual(['test'], list(config.flush_callbacks))
-    config.register_global_metrics_callback('nonexistent', None)
-    self.assertEqual(['test'], list(config.flush_callbacks))
-    config.register_global_metrics_callback('test', None)
-    self.assertEqual([], list(config.flush_callbacks))
-
   def test_reset_cumulative_metrics(self):
     gauge = gae_ts_mon.GaugeMetric('gauge')
     counter = gae_ts_mon.CounterMetric('counter')
@@ -116,7 +109,7 @@ class InitializeTest(testing.AppengineTestCase):
     time_now = datetime.datetime(2016, 2, 8, 1, 0)
     more_than_min_ago = time_now - datetime.timedelta(seconds=61)
     interface.state.last_flushed = more_than_min_ago
-    entity = config._get_instance_entity()
+    entity = shared.get_instance_entity()
     entity.task_num = -1
     interface.state.target.task_num = -1
     self.assertFalse(config.flush_metrics_if_needed(time_fn=lambda: time_now))
@@ -125,9 +118,9 @@ class InitializeTest(testing.AppengineTestCase):
     # We are not assigned task_num for too long; cannot send metrics.
     time_now = datetime.datetime(2016, 2, 8, 1, 0)
     too_long_ago = time_now - datetime.timedelta(
-        seconds=config.INSTANCE_EXPECTED_TO_HAVE_TASK_NUM_SEC+1)
+        seconds=shared.INSTANCE_EXPECTED_TO_HAVE_TASK_NUM_SEC+1)
     interface.state.last_flushed = too_long_ago
-    entity = config._get_instance_entity()
+    entity = shared.get_instance_entity()
     entity.task_num = -1
     entity.last_updated = too_long_ago
     interface.state.target.task_num = -1
@@ -138,7 +131,7 @@ class InitializeTest(testing.AppengineTestCase):
     time_now = datetime.datetime(2016, 2, 8, 1, 0)
     more_than_min_ago = time_now - datetime.timedelta(seconds=61)
     interface.state.last_flushed = more_than_min_ago
-    entity = config._get_instance_entity()
+    entity = shared.get_instance_entity()
     entity.task_num = -1
     interface.state.target.task_num = 2
     self.assertFalse(config.flush_metrics_if_needed(time_fn=lambda: time_now))
@@ -148,7 +141,7 @@ class InitializeTest(testing.AppengineTestCase):
     time_now = datetime.datetime(2016, 2, 8, 1, 0)
     less_than_min_ago = time_now - datetime.timedelta(seconds=59)
     interface.state.last_flushed = less_than_min_ago
-    entity = config._get_instance_entity()
+    entity = shared.get_instance_entity()
     entity.task_num = 2
     self.assertFalse(config.flush_metrics_if_needed(time_fn=lambda: time_now))
 
@@ -158,12 +151,12 @@ class InitializeTest(testing.AppengineTestCase):
     time_now = datetime.datetime(2016, 2, 8, 1, 0)
     more_than_min_ago = time_now - datetime.timedelta(seconds=61)
     interface.state.last_flushed = more_than_min_ago
-    entity = config._get_instance_entity()
+    entity = shared.get_instance_entity()
     entity.task_num = 2
     # Global metrics must be erased after flush.
     test_global_metric = gae_ts_mon.GaugeMetric('test')
     test_global_metric.set(42)
-    config.register_global_metrics([test_global_metric])
+    shared.register_global_metrics([test_global_metric])
     self.assertEqual(42, test_global_metric.get())
     self.assertTrue(config.flush_metrics_if_needed(time_fn=lambda: time_now))
     self.assertEqual(None, test_global_metric.get())
@@ -172,22 +165,22 @@ class InitializeTest(testing.AppengineTestCase):
   @mock.patch('gae_ts_mon.config.flush_metrics_if_needed', autospec=True,
               return_value=True)
   def test_shutdown_hook_flushed(self, _mock_flush):
-    id = config._get_instance_entity().key.id()
-    with config.instance_namespace_context():
-      self.assertIsNotNone(config.Instance.get_by_id(id))
+    id = shared.get_instance_entity().key.id()
+    with shared.instance_namespace_context():
+      self.assertIsNotNone(shared.Instance.get_by_id(id))
     config._shutdown_hook()
-    with config.instance_namespace_context():
-      self.assertIsNone(config.Instance.get_by_id(id))
+    with shared.instance_namespace_context():
+      self.assertIsNone(shared.Instance.get_by_id(id))
 
   @mock.patch('gae_ts_mon.config.flush_metrics_if_needed', autospec=True,
               return_value=False)
   def test_shutdown_hook_not_flushed(self, _mock_flush):
-    id = config._get_instance_entity().key.id()
-    with config.instance_namespace_context():
-      self.assertIsNotNone(config.Instance.get_by_id(id))
+    id = shared.get_instance_entity().key.id()
+    with shared.instance_namespace_context():
+      self.assertIsNotNone(shared.Instance.get_by_id(id))
     config._shutdown_hook()
-    with config.instance_namespace_context():
-      self.assertIsNone(config.Instance.get_by_id(id))
+    with shared.instance_namespace_context():
+      self.assertIsNone(shared.Instance.get_by_id(id))
 
   def test_internal_callback(self):
     # Smoke test.
