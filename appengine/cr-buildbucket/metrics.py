@@ -56,6 +56,12 @@ METRIC_SCHEDULING_LATENCY = metrics.Descriptor(
 
 # gae_ts_mon
 FIELD_BUCKET = 'bucket'
+# Override default target fields for app-global metrics.
+GLOBAL_TARGET_FIELDS = {
+    'job_name':  '',  # module name
+    'hostname': '',  # version
+    'task_num':  0,  # instance ID
+}
 
 CREATE_COUNT = gae_ts_mon.CounterMetric(
   'buildbucket/builds/created',
@@ -141,7 +147,8 @@ def set_gauge(buf, bucket, metric, value):
   buf.set_gauge(metric, value, {LABEL_BUCKET: bucket})
   gae_ts_mon_metric = GAUGE_OF_CLOUD_METRIC.get(metric)
   if gae_ts_mon_metric:
-    gae_ts_mon_metric.set(value, {FIELD_BUCKET: bucket})
+    gae_ts_mon_metric.set(
+        value, {FIELD_BUCKET: bucket}, target_fields=GLOBAL_TARGET_FIELDS)
 
 
 @ndb.tasklet
@@ -177,7 +184,8 @@ def send_build_latency(buf, metric, bucket, must_be_never_leased):
   if count > 0:
     avg_latency /= count
   set_gauge(buf, bucket, metric, avg_latency)
-  DISTRIBUTION_OF_CLOUD_METRIC[metric].set(dist, {FIELD_BUCKET: bucket})
+  DISTRIBUTION_OF_CLOUD_METRIC[metric].set(
+      dist, {FIELD_BUCKET: bucket}, target_fields=GLOBAL_TARGET_FIELDS)
 
 
 def send_all_metrics():

@@ -30,14 +30,6 @@ class CronResetExpiredBuilds(webapp2.RequestHandler):
     service.reset_expired_builds()
 
 
-class CronSendMetrics(webapp2.RequestHandler):  # pragma: no cover
-  """Resets expired builds."""
-
-  @decorators.require_cronjob
-  def get(self):
-    metrics.send_all_metrics()
-
-
 class CronUpdateBuckets(webapp2.RequestHandler):  # pragma: no cover
   """Updates buckets from configs."""
 
@@ -66,9 +58,6 @@ def get_backend_routes():
     webapp2.Route(
       r'/internal/cron/buildbucket/reset_expired_builds',
       CronResetExpiredBuilds),
-    webapp2.Route(
-      r'/internal/cron/buildbucket/send_metrics',
-      CronSendMetrics),
     webapp2.Route(
       r'/internal/cron/buildbucket/update_buckets',
       CronUpdateBuckets),
