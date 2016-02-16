@@ -32,7 +32,7 @@ FLAKY_RUNS_TEMPLATE = (
     'Detected %(new_flakes_count)d new flakes for test/step "%(name)s". To see '
     'the actual flakes, please visit %(flakes_url)s. This message was posted '
     'automatically by the chromium-try-flakes app. Since flakiness is ongoing, '
-    'the issue was moved back into Sheriff Bug Queue (unless already there).')
+    'the issue was moved back into %(queue_name)s (unless already there).')
 SUMMARY_TEMPLATE = '"%(name)s" is flaky'
 DESCRIPTION_TEMPLATE = (
     '%(summary)s.\n\n'
@@ -63,21 +63,32 @@ TEST_RESULTS_URL_TEMPLATE = (
     'http://test-results.appspot.com/testfile?builder=%(buildername)s&name='
     'full_results.json&master=%(mastername)s&testtype=%(stepname)s&buildnumber='
     '%(buildnumber)s')
-BACK_TO_SHERIFF_MESSAGE = (
-    'There has been no update on this issue for over %d days, therefore it has '
-    'been moved back into the Sheriff Bug Queue (unless already there). '
-    'Sheriffs, please make sure that owner is aware of the issue and assign to '
+BACK_TO_QUEUE_MESSAGE = (
+    'There has been no update on this issue for over %(stale_days)d days, '
+    'therefore it has been moved back into the %(queue_name)s (unless already '
+    'there). Please make sure that owner is aware of the issue and assign to '
     'another owner if necessary. If the flaky test/step has already been '
-    'fixed, please close this issue.' % DAYS_TILL_STALE)
+    'fixed, please close this issue.')
 VERY_STALE_FLAKES_MESSAGE = (
     'Reporting to stale-flakes-reports@google.com to investigate why this '
-    'issue is not being processed by Sheriffs.')
+    'issue is not being processed despite being in an appropriate queue.')
 STALE_FLAKES_ML = 'stale-flakes-reports@google.com'
 MAX_GAP_FOR_FLAKINESS_PERIOD = datetime.timedelta(days=3)
 KNOWN_TROOPER_FAILURES = [
     'analyze', 'bot_update', 'compile (with patch)', 'compile',
     'device_status_check', 'gclient runhooks (with patch)', 'Patch failure',
     'process_dumps', 'provision_devices', 'update_scripts']
+
+
+def is_trooper_flake(flake_name):
+  return flake_name in KNOWN_TROOPER_FAILURES
+
+
+def get_queue_details(flake_name):
+  if is_trooper_flake(flake_name):
+    return 'Trooper Bug Queue', 'Infra-Troopers'
+  else:
+    return 'Sheriff Bug Queue', 'Sheriff-Chromium'
 
 
 class ProcessIssue(webapp2.RequestHandler):
@@ -187,14 +198,16 @@ class ProcessIssue(webapp2.RequestHandler):
           self._recreate_issue_for_flake(flake)
         return
 
-    # Make sure issue is in the Sheriff Bug Queue since flakiness is ongoing.
-    if 'Sheriff-Chromium' not in flake_issue.labels:
-      flake_issue.labels.append('Sheriff-Chromium')
+    # Make sure issue is in the appropriate bug queue as flakiness is ongoing.
+    queue_name, expected_label = get_queue_details(flake.name)
+    if expected_label not in flake_issue.labels:
+      flake_issue.labels.append(expected_label)
 
     new_flaky_runs_msg = FLAKY_RUNS_TEMPLATE % {
         'name': flake.name,
         'new_flakes_count': len(new_flakes),
-        'flakes_url': FLAKES_URL_TEMPLATE % flake.key.urlsafe()}
+        'flakes_url': FLAKES_URL_TEMPLATE % flake.key.urlsafe(),
+        'queue_name': queue_name}
     api.update(flake_issue, comment=new_flaky_runs_msg)
     self.issue_updates.increment_by(1, {'operation': 'update'})
     logging.info('Updated issue %d for flake %s with %d flake runs',
@@ -204,17 +217,13 @@ class ProcessIssue(webapp2.RequestHandler):
     flake.num_reported_flaky_runs = len(flake.occurrences)
     flake.issue_last_updated = now
 
-  def _is_trooper_issue(self, flake):
-    return flake.name in KNOWN_TROOPER_FAILURES
-
   @ndb.transactional
   def _create_issue(self, api, flake, new_flakes, now):
-    labels = ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky', 'Via-TryFlakes']
-    if self._is_trooper_issue(flake):
-      labels.append('Infra-Troopers')
+    _, qlabel = get_queue_details(flake.name)
+    labels = ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky', 'Via-TryFlakes', qlabel]
+    if is_trooper_flake(flake.name):
       other_queue_msg = TROOPER_QUEUE_MSG
     else:
-      labels.append('Sheriff-Chromium')
       other_queue_msg = SHERIFF_QUEUE_MSG
 
     summary = SUMMARY_TEMPLATE % {'name': flake.name}
@@ -303,13 +312,13 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
       flake.put()
 
   def post(self, issue_id):
-    """Check if an issue is stale and report it back to sheriff.
+    """Check if an issue is stale and report it back to appropriate queue.
 
     Check if the issue is stale, i.e. has not been updated by anyone else than
     this app in the last DAYS_TILL_STALE days, and if this is the case, then
-    move it back to the Sheriff queue. Also if the issue is stale for 7 days,
-    report it to stale-flakes-reports@google.com to investigate why it is not
-    being processed by sheriffs.
+    move it back to the appropriate queue. Also if the issue is stale for 7
+    days, report it to stale-flakes-reports@google.com to investigate why it is
+    not being processed despite being in the appropriate queue.
     """
     issue_id = int(issue_id)
     api = issue_tracker_api.IssueTrackerAPI(
@@ -335,26 +344,27 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
         last_third_party_update = comment.created
         break
 
-    # Compute stale deadline (in the past). Issues without updates after it
-    # should be considered stale. Only consider weekdays to avoid bringing
-    # issues back that were filed shortly before weekend.
-    stale_deadline = now - datetime.timedelta(days=DAYS_TILL_STALE)
-    if stale_deadline.weekday() > 4:  # on weekend
-      stale_deadline -= datetime.timedelta(days=2)
+    # Parse the flake name from the first comment (which we post ourselves).
+    original_summary = comments[0].comment.splitlines()[0]
+    flake_name = original_summary[len('"'):-len('" is flaky')]
+    queue_name, expected_label = get_queue_details(flake_name)
 
-    # Put back into Sheriff Bug Queue if stale and unless already there.
+    # Put back into appropriate queue if stale and unless already there.
+    stale_deadline = now - datetime.timedelta(days=DAYS_TILL_STALE)
     if (last_third_party_update < stale_deadline and
-        'Sheriff-Chromium' not in flake_issue.labels):
-      flake_issue.labels.append('Sheriff-Chromium')
-      logging.info('Moving issue %s back to Sheriff Bug queue', flake_issue.id)
-      api.update(flake_issue, comment=BACK_TO_SHERIFF_MESSAGE)
+        expected_label not in flake_issue.labels):
+      flake_issue.labels.append(expected_label)
+      logging.info('Moving issue %s back to %s', flake_issue.id, queue_name)
+      message = BACK_TO_QUEUE_MESSAGE % {'stale_days': DAYS_TILL_STALE,
+                                         'queue_name': queue_name}
+      api.update(flake_issue, comment=message)
       return
 
-    # Report to stale-flakes-reports@ if the issue has been in sheriff-queue
+    # Report to stale-flakes-reports@ if the issue has been in appropriate queue
     # without any updates for 7 days.
     week_ago = now - datetime.timedelta(days=7)
     if (last_third_party_update < week_ago and
-        'Sheriff-Chromium' in flake_issue.labels and
+        expected_label in flake_issue.labels and
         STALE_FLAKES_ML not in flake_issue.cc):
       flake_issue.cc.append(STALE_FLAKES_ML)
       logging.info('Reporting issue %s to %s', flake_issue.id, STALE_FLAKES_ML)

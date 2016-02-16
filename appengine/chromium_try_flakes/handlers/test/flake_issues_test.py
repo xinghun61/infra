@@ -493,12 +493,18 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
   def test_correctly_computes_stale_deadline_based_on_created_time(self):
     issue = self.mock_api.create(MockIssue({}))
     issue.created = datetime.datetime(2015, 11, 1, 11, 0, 0)
+    issue.comments = [
+        MockComment(datetime.datetime(2015, 11, 1, 11, 0, 1), 'app@ae.org',
+                    '"update_scripts" is flaky\n\nmore text...'),
+    ]
     self.test_app.post('/issues/update-if-stale/%s' % issue.id)
-    self.assertIn('Sheriff-Chromium', issue.labels)
+    self.assertIn('Infra-Troopers', issue.labels)
 
     issue = self.mock_api.create(MockIssue({}))
     issue.created = datetime.datetime(2015, 11, 1, 11, 0, 0)
     issue.comments = [
+        MockComment(datetime.datetime(2015, 11, 1, 11, 0, 1), 'app@ae.org',
+                    '"foo.bar" is flaky\n\nmore text...'),
         MockComment(datetime.datetime(2015, 12, 3, 11, 0, 0), 'app@ae.org'),
         MockComment(datetime.datetime(2015, 12, 4, 11, 0, 0), 'app@ae.org'),
     ]
@@ -507,6 +513,10 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
 
     issue = self.mock_api.create(MockIssue({}))
     issue.created = datetime.datetime(2015, 11, 13, 11, 0, 0)
+    issue.comments = [
+        MockComment(datetime.datetime(2015, 11, 13, 11, 0, 1), 'app@ae.org',
+                    '"foo.bar" is flaky\n\nmore text...'),
+    ]
     self.test_app.post('/issues/update-if-stale/%s' % issue.id)
     self.assertNotIn('Sheriff-Chromium', issue.labels)
 
@@ -518,6 +528,8 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     issue = self.mock_api.create(MockIssue({}))
     issue.created = datetime.datetime(2015, 12, 3, 11, 0, 0)
     issue.comments = [
+        MockComment(datetime.datetime(2015, 12, 3, 11, 0, 1), 'app@ae.org',
+                    '"foo.bar" is flaky\n\nmore text...'),
         MockComment(datetime.datetime(2015, 11, 1, 11, 0, 0), 'test@a.org'),
         MockComment(datetime.datetime(2015, 12, 3, 11, 0, 0), 'app@ae.org'),
     ]
@@ -527,16 +539,11 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     issue = self.mock_api.create(MockIssue({}))
     issue.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
     issue.comments = [
+        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 1), 'app@ae.org',
+                    '"foo.bar" is flaky\n\nmore text...'),
         MockComment(datetime.datetime(2015, 11, 1, 11, 0, 0), 'test@a.org'),
         MockComment(datetime.datetime(2015, 11, 13, 11, 0, 0), 'test@b.org'),
     ]
-    self.test_app.post('/issues/update-if-stale/%s' % issue.id)
-    self.assertNotIn('Sheriff-Chromium', issue.labels)
-
-  @mock_datetime_utc(2015, 12, 1, 15, 0, 0)
-  def test_does_not_count_weekends_towards_staleness(self):
-    issue = self.mock_api.create(MockIssue({}))
-    issue.created = datetime.datetime(2015, 11, 27, 11, 0, 0)
     self.test_app.post('/issues/update-if-stale/%s' % issue.id)
     self.assertNotIn('Sheriff-Chromium', issue.labels)
 
@@ -544,16 +551,20 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
   def test_posts_comment_when_moving_to_bug_queue(self):
     issue = self.mock_api.create(MockIssue({}))
     issue.created = datetime.datetime(2015, 11, 1, 11, 0, 0)
+    issue.comments = [
+        MockComment(datetime.datetime(2015, 11, 1, 11, 0, 1), 'app@ae.org',
+                    '"foo.bar" is flaky\n\nmore text...'),
+    ]
     self.test_app.post('/issues/update-if-stale/%s' % issue.id)
     self.assertIn('Sheriff-Chromium', issue.labels)
-    self.assertEqual(len(issue.comments), 1)
+    self.assertEqual(len(issue.comments), 2)
     self.assertEqual(
-        issue.comments[0].comment,
+        issue.comments[1].comment,
         'There has been no update on this issue for over 30 days, therefore it '
         'has been moved back into the Sheriff Bug Queue (unless already '
-        'there). Sheriffs, please make sure that owner is aware of the issue '
-        'and assign to another owner if necessary. If the flaky test/step has '
-        'already been fixed, please close this issue.')
+        'there). Please make sure that owner is aware of the issue and assign '
+        'to another owner if necessary. If the flaky test/step has already '
+        'been fixed, please close this issue.')
 
   @mock_datetime_utc(2015, 12, 4, 15, 0, 0)
   def test_ignores_closed_issues_when_checking_staleness(self):
@@ -568,13 +579,17 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     issue = self.mock_api.create(MockIssue({}))
     issue.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
     issue.labels = ['Sheriff-Chromium']
+    issue.comments = [
+        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 1), 'app@ae.org',
+                    '"foo.bar" is flaky\n\nmore text...'),
+    ]
     self.test_app.post('/issues/update-if-stale/%s' % issue.id)
     self.assertIn('stale-flakes-reports@google.com', issue.cc)
-    self.assertEqual(len(issue.comments), 1)
+    self.assertEqual(len(issue.comments), 2)
     self.assertEqual(
-        issue.comments[0].comment,
+        issue.comments[1].comment,
         'Reporting to stale-flakes-reports@google.com to investigate why this '
-        'issue is not being processed by Sheriffs.')
+        'issue is not being processed despite being in an appropriate queue.')
 
   @mock_datetime_utc(2015, 12, 8, 15, 0, 0)
   def test_removes_closed_issue_id_from_old_flakes(self):
