@@ -43,11 +43,13 @@ def _assign_task_num(time_fn=datetime.datetime.utcnow):
     # At the same time, don't assign task_num to expired entities.
     if entity.last_updated < expired_time:
       expired_keys.append(entity.key)
+      shared.expired_counter.increment()
       logging.debug(
           'Expiring %s task_num %d, inactive for %s',
           entity.key.id(), entity.task_num,
           time_now - entity.last_updated)
     elif entity.task_num < 0:
+      shared.started_counter.increment()
       unassigned.append(entity)
 
   logging.debug('Found %d expired and %d unassigned instances',

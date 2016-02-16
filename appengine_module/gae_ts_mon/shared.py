@@ -29,6 +29,10 @@ started_counter = metrics.CounterMetric(
 shutdown_counter = metrics.CounterMetric(
     'appengine/instances/shutdown',
     description='Count the number of GAE instance shutdowns.')
+expired_counter = metrics.CounterMetric(
+    'appengine/instances/expired',
+    description=('Count the number of GAE instance expirations '
+                 'due to inactivity.'))
 
 
 global_metrics = {}

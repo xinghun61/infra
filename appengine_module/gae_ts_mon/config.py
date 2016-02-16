@@ -77,6 +77,7 @@ def _flush_metrics_if_needed_locked(time_now):
 
 
 def _shutdown_hook():
+  shared.shutdown_counter.increment()
   if flush_metrics_if_needed():
     logging.info('Shutdown hook: deleting %s, metrics were flushed.',
                  shared.instance_key_id())
