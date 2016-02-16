@@ -107,6 +107,7 @@ This API provides the following methods to read/write user/issue/comment objects
 			* blockedOn(list of string): The ID of the issues on which the current issue is blocked.
 			* blocking(list of string): The ID of the issues which the current issue is blocking.
 			* mergedInto(string): The ID of the issue to merge into.
+			* components(list of string): The components to add/remove.
 * Return message:
 	* author(dict):
 		* htmlLink(string): The link to the author profile.
@@ -183,6 +184,7 @@ This API provides the following methods to read/write user/issue/comment objects
 	* projectId(string): The name of the project.
 	* canComment(boolean): Whether the requester can comment on this issue.
 	* canEdit(boolean): Whether the requester can edit this issue.
+	* components(list of string): Components of the issue.
 * Error code:
 	* 403: The requester has no permission to view this issue.
 	* 404: The issue does not exist.
@@ -203,6 +205,7 @@ This API provides the following methods to read/write user/issue/comment objects
 		* owner(dict): The owner of this issue.
 		* status(string): Status of this issue.
 		* summary(string): Summary of this issue.
+		* components(list of string): Components of this issue.
 * Return message:
 	* id(int): ID of this issue.
 	* summary(string): Summary of this issue.
@@ -222,6 +225,7 @@ This API provides the following methods to read/write user/issue/comment objects
 	* projectId(string): The name of the project.
 	* canComment(boolean): Whether the requester can comment on this issue.
 	* canEdit(boolean): Whether the requester can edit this issue.
+	* components(list of string): Components of this issue.
 * Error code:
 	* 403: The requester has no permission to create a issue.
 
@@ -284,3 +288,88 @@ This API provides the following methods to read/write user/issue/comment objects
 		* role(string): Role of the user in this project.
 		* issuesConfig(dict): Issue configurations.
 * Error code: None.
+
+## monorail.components.create
+
+* Description:  Create a component.
+* Permission: The requester needs permission to edit the requested project.
+* Parameters:
+	* projectId(required, string): The name of the project.
+	* componentName(required, string): The leaf name of the component to create.
+	* body(dict):
+		* parentPath(string): Full path of the parent component.
+		* description(string): Description of the new component.
+		* admin(list of string): A list of user emails who can administer this component.
+		* cc(list of string): A list of user emails who will be added to cc list when this component is added to an issue.
+		* deprecated(boolean): A flag indicating whether this component is deprecated. The default is False.
+* Return message:
+	* componentId(int): The ID of the new component.
+	* projectName(string): The name of the project this new component belongs to.
+	* componentPath(string): The full path of the component.
+	* description(string): Description of the new component.
+	* admin(list of string): A list of user emails who can administer this component.
+	* cc(list of string): A list of user emails who will be added to cc list when this component is added to an issue.
+	* deprecated(boolean): A flag indicating whether this component is deprecated.
+	* created(datetime): Created datetime.
+	* creator(string): Email of the creator.
+	* modified(datetime): Last modified datetime.
+	* modifier(string): Email of last modifier.
+* Error code:
+	* 400: The component name is invalid or already in use.
+	* 403: The requester has no permission to create components in the project.
+	* 404: The parent component does not exist, or the project does not exist.
+
+## monorail.components.delete
+
+* Description:  Delete a component.
+* Permission: The requester needs permission to edit the requested component.
+* Parameters:
+	* projectId(required, string): The name of the project.
+	* componentPath(required, string): The full path of the component to delete.
+* Return message: None.
+* Error code:
+	* 403: The requester has no permission to delete this component, or tries to delete component that has subcomponents.
+	* 404: The component does not exist, or the project does not exist.
+
+## monorail.components.list
+
+* Description:  List all components of a given project.
+* Permission: None.
+* Parameters:
+	* projectId(required, string): The name of the project.
+* Return message:
+	* components(list of dict):
+		* componentId(int): The ID of the new component.
+		* projectName(string): The name of the project this new component belongs to.
+		* componentPath(string): The full path of the component.
+		* description(string): Description of the new component.
+		* admin(list of string): A list of user emails who can administer this component.
+		* cc(list of string): A list of user emails who will be added to cc list when this component is added to an issue.
+		* deprecated(boolean): A flag indicating whether this component is deprecated.
+		* created(datetime): Created datetime.
+		* creator(string): Email of the creator.
+		* modified(datetime): Last modified datetime.
+		* modifier(string): Email of last modifier.
+* Error code:
+	* 403: The requester has no permission to delete this component, or tries to delete component that has subcomponents.
+	* 404: The project does not exist.
+
+## monorail.components.update
+
+* Description:  Update a component.
+* Permission: The requester needs permission to edit the requested component.
+* Parameters:
+	* projectId(required, string): The name of the project.
+	* componentPath(required, string): The full path of the component to delete.
+	* updates(list of dict):
+		* field(required, string): Component field to update. Available options are 'LEAF_NAME', 'DESCRIPTION', 'ADMIN', 'CC' and 'DEPRECATED'.
+		* leafName(string): The new leaf name of the component.
+		* description(string): The new description of the component.
+		* admin(list of string): The new list of user emails who can administer this component.
+		* cc (list of string): The new list of user emails who will be added to cc list when this component is added to an issue.
+		* deprecated(boolean): The new boolean value indicating whether this component is deprecated.
+* Return message: None.
+* Error code:
+	* 400: The new component name is invalid or already in use.
+	* 403: The requester has no permission to edit this component.
+	* 404: The component does not exist, or the project does not exist.
