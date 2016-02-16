@@ -86,6 +86,9 @@ class ProcessIssue(webapp2.RequestHandler):
       description='The delay in seconds from the moment first flake occurrence '
                   'in this flakiness period happens and until the time an '
                   'issue is created to track it.')
+  issue_updates = ts_mon.CounterMetric(
+      'flakiness_pipeline/issue_updates',
+      description='Number of issues updated/created.')
 
   @ndb.transactional
   def _get_flake_update_singleton_key(self):
@@ -193,6 +196,7 @@ class ProcessIssue(webapp2.RequestHandler):
         'new_flakes_count': len(new_flakes),
         'flakes_url': FLAKES_URL_TEMPLATE % flake.key.urlsafe()}
     api.update(flake_issue, comment=new_flaky_runs_msg)
+    self.issue_updates.increment_by(1, {'operation': 'update'})
     logging.info('Updated issue %d for flake %s with %d flake runs',
                  flake.issue_id, flake.name, len(new_flakes))
     self._update_new_occurrences_with_issue_id(
@@ -233,6 +237,7 @@ class ProcessIssue(webapp2.RequestHandler):
         flake.name, new_flakes, flake_issue.id)
     flake.num_reported_flaky_runs = len(flake.occurrences)
     flake.issue_last_updated = now
+    self.issue_updates.increment_by(1, {'operation': 'create'})
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
                  flake.name)
 
