@@ -99,7 +99,7 @@ class ProcessIssue(webapp2.RequestHandler):
                   'issue is created to track it.')
   issue_updates = ts_mon.CounterMetric(
       'flakiness_pipeline/issue_updates',
-      description='Number of issues updated/created.')
+      description='Issues updated/created')
 
   @ndb.transactional
   def _get_flake_update_singleton_key(self):
@@ -372,6 +372,10 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
 
 
 class CreateFlakyRun(webapp2.RequestHandler):
+  flaky_runs = ts_mon.CounterMetric(
+      'flakiness_pipeline/flake_occurrences_recorded',
+      description='Recorded flake occurrences.')
+
   # We execute below method in an indepedent transaction since otherwise we
   # would exceed the maximum number of entities allowed within a single
   # transaction.
@@ -619,3 +623,4 @@ class CreateFlakyRun(webapp2.RequestHandler):
     flaky_run_key = flaky_run.put()
     for flake in flakes_to_update:
       self.add_failure_to_flake(flake, flaky_run_key, failure_time)
+    self.flaky_runs.increment_by(1)
