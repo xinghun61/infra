@@ -28,14 +28,14 @@ def initialize(service_name):
     appengine_name = 'unittest'
     service_name = 'unittest'
     hostname = 'unittest'
-  else:
+  else:  # pragma: no cover
     appengine_name = app_identity.get_application_id()
     hostname = '%s, %s' % (modules.get_current_module_name(),
                            modules.get_current_version_name())
 
   # Only send events if we are running on the actual AppEngine.
   if os.environ.get('SERVER_SOFTWARE', '').startswith('Google App Engine'):
-    run_type = 'prod'
+    run_type = 'prod'  # pragma: no cover
   else:
     run_type = 'dry'
 
