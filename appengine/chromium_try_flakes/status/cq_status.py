@@ -15,6 +15,7 @@ from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 from google.appengine.runtime import DeadlineExceededError
 from handlers.flake_issues import MIN_REQUIRED_FLAKY_RUNS
+from infra_libs import ts_mon
 from model.build_run import BuildRun
 from model.build_run import PatchsetBuilderRuns
 from model.fetch_status import FetchStatus
@@ -23,6 +24,14 @@ from model.flake import FlakeOccurrence
 from model.flake import FlakyRun
 from status import build_result, util
 import time_functions.timestamp
+
+
+requests_metric = ts_mon.CounterMetric(
+    'flakiness_pipeline/cq_status/requests',
+    description='Requests made to the chromium-cq-status API')
+flakes_metric = ts_mon.CounterMetric(
+    'flakiness_pipeline/flake_occurrences_detected',
+    description='Detected flake occurrences')
 
 
 @ndb.transactional
@@ -226,6 +235,7 @@ def parse_cq_data(json_data):
                                 str(failure_run.buildnumber))
 
           # Queue a task to fetch the error of this failure and create FlakyRun.
+          flakes_metric.increment_by(1)
           taskqueue.add(
               queue_name='issue-updates',
               url='/issues/create_flaky_run',
@@ -321,6 +331,7 @@ def fetch_cq_status():
                        'catching to not show up as error')
           return
       except ValueError:
+        requests_metric.increment_by(1, fields={'status': 'parse_error'})
         logging.exception('failed to parse CQ data from %s', url)
         if 'DeadlineExceededError' in result:
           logging.error('got deadline exceeded, trying again after 1s')
@@ -335,6 +346,8 @@ def fetch_cq_status():
           logging.error('giving up and will count current fetch as done')
           # Don't want to continue this as could be a bad cursor.
           more = False
+      else:
+        requests_metric.increment_by(1, fields={'status': 'success'})
 
       if not fetch_status:
         fetch_status = FetchStatus()
@@ -354,4 +367,5 @@ def fetch_cq_status():
       if not more:
         return  # finish the cron job and wait for next iteration
     except urllib2.URLError, e:
+      requests_metric.increment_by(1, fields={'status': 'fetch_error'})
       logging.warning('Failed to fetch CQ status: %s', e.reason)

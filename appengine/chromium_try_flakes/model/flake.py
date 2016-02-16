@@ -12,7 +12,7 @@ from model.build_run import BuildRun
 class FlakeOccurrence(ndb.Model):
   # step name, i.e. browser_tests
   name = ndb.StringProperty(required=True)
-  # failre, i.e. FooTest.Bar
+  # failure, i.e. FooTest.Bar
   failure = ndb.StringProperty(required=True)
   # issue in which this occurrence was reported
   issue_id = ndb.IntegerProperty(default=0)
@@ -41,7 +41,7 @@ class Flake(ndb.Model):
   occurrences = ndb.KeyProperty(FlakyRun, repeated=True)
   comment = ndb.StringProperty(default='')
 
-  # Used so we can quickly query and sort by number of occurrances per time
+  # Used so we can quickly query and sort by number of occurrences per time
   # range.
   count_hour = ndb.IntegerProperty(default=0)
   count_day = ndb.IntegerProperty(default=0)
