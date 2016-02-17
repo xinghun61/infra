@@ -9,6 +9,7 @@ import (
 
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
+	"golang.org/x/net/context"
 )
 
 // Default config for PushBuffer if none is provided.
@@ -19,6 +20,8 @@ const (
 	DefaultPushRetryDelay  = 1 * time.Second
 	DefaultStopTimeout     = 10 * time.Second
 )
+
+var bctx = context.Background()
 
 // PushBufferOptions defines configuration for a new PushBuffer instance.
 type PushBufferOptions struct {
@@ -90,7 +93,7 @@ func NewPushBuffer(opts PushBufferOptions) PushBuffer {
 		PushBufferOptions: opts,
 		input:             make(chan []Entry),
 		output:            make(chan error),
-		timer:             opts.Clock.NewTimer(),
+		timer:             opts.Clock.NewTimer(bctx),
 		stopCh:            make(chan struct{}, 1),
 	}
 	go buf.loop()
@@ -125,7 +128,7 @@ func (b *pushBufferImpl) Stop(abort <-chan struct{}) error {
 	go func() {
 		select {
 		case <-abort:
-		case <-b.Clock.After(b.StopTimeout):
+		case <-b.Clock.After(bctx, b.StopTimeout):
 		}
 		close(b.stopCh)
 	}()
@@ -223,7 +226,7 @@ func (b *pushBufferImpl) pushWithRetries(entries []Entry) error {
 		select {
 		case <-b.stopCh:
 			return err
-		case <-b.Clock.After(b.PushRetryDelay):
+		case <-b.Clock.After(bctx, b.PushRetryDelay):
 		}
 	}
 }

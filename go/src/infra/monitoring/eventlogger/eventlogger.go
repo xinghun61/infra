@@ -142,12 +142,23 @@ func (l *evtLogger) start(ctx context.Context) error {
 	// multiple simultaneous flush operations can stack up.
 	// - If flush operation fail, there is no retry mechanism (yet) and they
 	// will just log an error locally.
-	ticker := clck.After(l.cfg.Interval)
+	ticker := clck.After(ctx, l.cfg.Interval)
 	for {
 		select {
 		case evt := <-l.evtCh:
 			evtBuf = append(evtBuf, evt)
-		case <-ticker:
+		case ar := <-ticker:
+			if ar.Incomplete() {
+				// Context canceled.
+				if len(evtBuf) > 0 {
+					if err := flush(evtBuf); err != nil {
+						logging.Errorf(ctx, "Error flushing: %v", err.Error())
+					}
+				}
+				logging.Infof(ctx, "Event logger exiting.")
+				return nil
+			}
+
 			if len(evtBuf) > 0 {
 				// Flush in a separate goroutine so we can free this
 				// one up to keep reading off of l.evtCh and not block
@@ -163,15 +174,7 @@ func (l *evtLogger) start(ctx context.Context) error {
 				// we can now reset it safely.
 				evtBuf = []*crit_event.LogRequestLite_LogEventLite{}
 			}
-			ticker = clck.After(time.Second)
-		case <-ctx.Done():
-			if len(evtBuf) > 0 {
-				if err := flush(evtBuf); err != nil {
-					logging.Errorf(ctx, "Error flushing: %v", err.Error())
-				}
-			}
-			logging.Infof(ctx, "Event logger exiting.")
-			return nil
+			ticker = clck.After(ctx, time.Second)
 		}
 	}
 }

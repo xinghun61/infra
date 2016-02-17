@@ -34,7 +34,7 @@ func Run(ctx context.Context, f Runner, cycle time.Duration, maxErrs int, c cloc
 	// TODO: ts_mon stuff.
 	ret = &Results{Success: true}
 
-	tmr := c.NewTimer()
+	tmr := c.NewTimer(ctx)
 	defer tmr.Stop()
 
 	nextCycle := cycle
@@ -69,9 +69,7 @@ func Run(ctx context.Context, f Runner, cycle time.Duration, maxErrs int, c cloc
 		}
 
 		nextCycle = cycle - dur
-		if tmr.Reset(nextCycle) {
-			log.Errorf("Timer was still active")
-		}
+		tmr.Reset(nextCycle)
 	}
 
 	// Run f at least once.
@@ -79,15 +77,12 @@ func Run(ctx context.Context, f Runner, cycle time.Duration, maxErrs int, c cloc
 
 	// Keep running f until ctx is done.
 	for {
-		select {
-		case <-ctx.Done():
-			tmr.Stop()
+		if ar := <-tmr.GetC(); ar.Incomplete() {
 			return ret
-		case <-tmr.GetC():
-			run()
-			if !ret.Success {
-				return ret
-			}
+		}
+		run()
+		if !ret.Success {
+			return ret
 		}
 	}
 }
