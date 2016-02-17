@@ -34,6 +34,7 @@ import (
 
 var (
 	alertsBaseURL       = flag.String("base-url", "", "Base URL where alerts are stored. Will be appended with the tree name.")
+	login               = flag.Bool("login", false, "interactive login")
 	masterFilter        = flag.String("master-filter", "", "Filter out masters that contain this string")
 	masterOnly          = flag.String("master", "", "Only check this master")
 	mastersOnly         = flag.Bool("masters-only", false, "Just check for master alerts, not builders")
@@ -223,9 +224,17 @@ func main() {
 		},
 	}
 
-	transport, err := auth.NewAuthenticator(auth.SilentLogin, authOptions).Transport()
+	mode := auth.SilentLogin
+	if *login {
+		mode = auth.InteractiveLogin
+	}
+
+	transport, err := auth.NewAuthenticator(mode, authOptions).Transport()
 	if err != nil {
 		log.Errorf("AuthenticatedTransport: %v", err)
+		if !*login {
+			log.Errorf("Consider re-running with -login")
+		}
 		os.Exit(1)
 	}
 
