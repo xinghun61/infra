@@ -27,7 +27,7 @@ def create_html_app():  # pragma: no cover
   """Returns WSGI app that serves HTML pages."""
   app = webapp2.WSGIApplication(
     handlers.get_frontend_routes(), debug=utils.is_local_dev_server())
-  gae_ts_mon.initialize(app)
+  gae_ts_mon.initialize(app, cron_module='backend')
   return app
 
 
@@ -40,7 +40,7 @@ def create_backend_app():  # pragma: no cover
   """Returns WSGI app for backend."""
   routes = handlers.get_backend_routes() + swarming.get_routes()
   app = webapp2.WSGIApplication(routes, debug=utils.is_local_dev_server())
-  gae_ts_mon.initialize(app)
+  gae_ts_mon.initialize(app, cron_module='backend')
   gae_ts_mon.register_global_metrics([
       metrics.CURRENTLY_PENDING,
       metrics.CURRENTLY_RUNNING,
