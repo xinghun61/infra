@@ -101,6 +101,9 @@ class MainHandler(webapp2.RequestHandler):
     continue_url = self.request.get('continue')
     token = self.request.get('token')
 
+    self.response.headers.add(
+        'Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+
     if continue_url and not token:
       logging.info('Missing token')
       self.response.out.write(MISSING_TOKEN_HTML)
