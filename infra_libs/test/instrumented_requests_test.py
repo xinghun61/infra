@@ -23,8 +23,7 @@ class InstrumentedRequestsTest(unittest.TestCase):
     self.response.request = requests.PreparedRequest()
     self.response.request.prepare_headers(None)
 
-    self.hook = instrumented_requests.instrumentation_hook({
-        'name': 'foo', 'client': 'requests'})
+    self.hook = instrumented_requests.instrumentation_hook('foo')
 
   def tearDown(self):
     super(InstrumentedRequestsTest, self).tearDown()
