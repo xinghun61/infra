@@ -16,6 +16,8 @@ import urllib
 
 from requests.packages import urllib3
 
+from infra_libs import instrumented_requests
+
 
 LOGGER = logging.getLogger(__name__)
 NOTIFY_NONE = 'NONE'
@@ -81,6 +83,10 @@ class Gerrit(object):
                                       status_forcelist=[500, 503])
     self.session.mount(self._url_base, requests.adapters.HTTPAdapter(
         max_retries=retry_config))
+    # Instrumentation hooks cache indexed by method.
+    self._instrumentation_hooks = {
+      'response': instrumented_requests.instrumentation_hook('gerrit')
+    }
 
   def _sleep(self, time_since_last_call):
     time.sleep(self._throttle - time_since_last_call) # pragma: no cover
@@ -128,7 +134,8 @@ class Gerrit(object):
         url=full_url,
         params=params,
         data=body,
-        headers=headers)
+        headers=headers,
+        hooks=self._instrumentation_hooks)
 
     # Gerrit prepends )]}' to response.
     prefix = ')]}\'\n'
