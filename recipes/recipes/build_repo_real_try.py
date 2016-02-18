@@ -36,12 +36,12 @@ def execute_inner(api, name, **properties):
   properties['actual_run'] = 'True'
   return api.python(
       name=name,
-      script=api.path['checkout'].join('scripts', 'tools', 'run_recipe.py'),
+      script=api.path['checkout'].join('scripts', 'slave', 'recipes.py'),
       args=[
-        'infra/build_repo_real_try',
-        '--master-overrides-slave',
+        'run',
         '--properties-file',
         api.json.input(properties),
+        'infra/build_repo_real_try',
       ],
       allow_subannotations=True,
   )

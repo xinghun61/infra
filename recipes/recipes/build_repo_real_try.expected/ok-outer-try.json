@@ -68,11 +68,11 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/build/scripts/tools/run_recipe.py",
-      "infra/build_repo_real_try",
-      "--master-overrides-slave",
+      "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
+      "run",
       "--properties-file",
-      "{\"actual_run\": \"True\", \"buildername\": \"build_repo_real\", \"buildnumber\": 571, \"mastername\": \"tryserver.infra\", \"slavename\": \"TestSlavename\"}"
+      "{\"actual_run\": \"True\", \"buildername\": \"build_repo_real\", \"buildnumber\": 571, \"mastername\": \"tryserver.infra\", \"slavename\": \"TestSlavename\"}",
+      "infra/build_repo_real_try"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "ci actual execute_inner"
@@ -82,11 +82,11 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/build/scripts/tools/run_recipe.py",
-      "infra/build_repo_real_try",
-      "--master-overrides-slave",
+      "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
+      "run",
       "--properties-file",
-      "{\"actual_run\": \"True\", \"buildername\": \"build_repo_real\", \"buildnumber\": 571, \"issue\": \"1662543002\", \"mastername\": \"tryserver.infra\", \"patch_project\": \"build\", \"patch_storage\": \"rietveld\", \"patchset\": \"1\", \"reason\": \"CQ\", \"rietveld\": \"https://codereview.chromium.org\", \"slavename\": \"TestSlavename\"}"
+      "{\"actual_run\": \"True\", \"buildername\": \"build_repo_real\", \"buildnumber\": 571, \"issue\": \"1662543002\", \"mastername\": \"tryserver.infra\", \"patch_project\": \"build\", \"patch_storage\": \"rietveld\", \"patchset\": \"1\", \"reason\": \"CQ\", \"rietveld\": \"https://codereview.chromium.org\", \"slavename\": \"TestSlavename\"}",
+      "infra/build_repo_real_try"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "try patch from Rietveld"
