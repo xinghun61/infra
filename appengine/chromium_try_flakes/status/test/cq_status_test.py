@@ -12,9 +12,10 @@ from google.appengine.ext import ndb
 from google.appengine.runtime import DeadlineExceededError
 
 import main
+from infra_libs import ts_mon
+from model.build_run import BuildRun, PatchsetBuilderRuns
 from model.fetch_status import FetchStatus
 from model.flake import Flake
-from model.build_run import BuildRun, PatchsetBuilderRuns
 from status import cq_status
 from testing_utils import testing
 
@@ -316,6 +317,10 @@ class CQStatusTestCase(testing.AppengineTestCase):
   # Needed to read queues from queue.yaml in the root of the app.
   taskqueue_stub_root_path = ''
 
+  def setUp(self):
+    super(CQStatusTestCase, self).setUp()
+    ts_mon.reset_for_unittest()
+
   def test_create_tasks_to_update_issue_tracker(self):
     Flake(name='foo1', count_day=1).put()
     key2 = Flake(name='foo2', count_day=5).put()
@@ -546,3 +551,41 @@ class CQStatusTestCase(testing.AppengineTestCase):
       with mock.patch('logging.info') as logging_info_mock:
         cq_status.fetch_cq_status()
         logging_info_mock.assert_any_call(' current fetch has time of foo')
+
+  def put_flake(self, attr, count):
+    flake = Flake(name='foo')
+    setattr(flake, 'last_%s' % attr, True)
+    setattr(flake, 'count_%s' % attr, count)
+    flake.put()
+
+  def test_update_histograms(self):
+    self.put_flake('day', 2)
+    self.put_flake('day', 8)
+    self.put_flake('day', 9)
+
+    self.put_flake('week', 1)
+    self.put_flake('week', 7)
+    self.put_flake('week', 12)
+
+    self.put_flake('month', 4)
+    self.put_flake('month', 13)
+    self.put_flake('month', 15)
+
+    path = '/cron/update_histograms'
+    response = self.test_app.get(path, headers={'X-AppEngine-Cron': 'true'})
+    self.assertEqual(200, response.status_int)
+
+    dist = cq_status.occurrences_per_flake_day.get()
+    self.assertEqual({3: 1, 9: 1, 10: 1}, dist.buckets)
+    self.assertEqual(19, dist.sum)
+    self.assertEqual(3, dist.count)
+
+    dist = cq_status.occurrences_per_flake_week.get()
+    self.assertEqual({2: 1, 8: 1, 11: 1}, dist.buckets)
+    self.assertEqual(20, dist.sum)
+    self.assertEqual(3, dist.count)
+
+    dist = cq_status.occurrences_per_flake_month.get()
+    self.assertEqual({5: 1, 11: 2}, dist.buckets)
+    self.assertEqual(32, dist.sum)
+    self.assertEqual(3, dist.count)

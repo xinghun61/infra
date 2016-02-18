@@ -32,6 +32,18 @@ requests_metric = ts_mon.CounterMetric(
 flakes_metric = ts_mon.CounterMetric(
     'flakiness_pipeline/flake_occurrences_detected',
     description='Detected flake occurrences')
+occurrences_per_flake_day = ts_mon.NonCumulativeDistributionMetric(
+    'flakiness_pipeline/occurrences_per_flake/day',
+    description='Distribution of flake occurrence counts, calculated over all '
+                'flakes in the last day')
+occurrences_per_flake_week = ts_mon.NonCumulativeDistributionMetric(
+    'flakiness_pipeline/occurrences_per_flake/week',
+    description='Distribution of flake occurrence counts, calculated over all '
+                'flakes in the last week')
+occurrences_per_flake_month = ts_mon.NonCumulativeDistributionMetric(
+    'flakiness_pipeline/occurrences_per_flake/month',
+    description='Distribution of flake occurrence counts, calculated over all '
+                'flakes in the last month')
 
 
 @ndb.transactional
@@ -70,6 +82,22 @@ def update_flake_counters(flake):  # pragma: no cover
   for o in occurrences:
     util.add_occurrence_time_to_flake(flake, o.failure_run_time_finished)
   flake.put()
+
+
+def update_histogram(query, count_attribute, metric):
+  dist = ts_mon.Distribution(ts_mon.FixedWidthBucketer(1, 10))
+  for flake in query:
+    dist.add(getattr(flake, count_attribute))
+  metric.set(dist)
+
+
+def update_histograms():
+  update_histogram(Flake.query().filter(Flake.last_day == True),
+                   'count_day', occurrences_per_flake_day)
+  update_histogram(Flake.query().filter(Flake.last_week == True),
+                   'count_week', occurrences_per_flake_week)
+  update_histogram(Flake.query().filter(Flake.last_month == True),
+                   'count_month', occurrences_per_flake_month)
 
 
 # The following four functions are cron jobs which update the counters for
