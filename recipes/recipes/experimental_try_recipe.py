@@ -26,7 +26,7 @@ DEPS = [
 ]
 
 
-def execute_inner(api, name, recipe, level, **properties):
+def execute_recipe(api, name, recipe, level, **properties):
   properties.setdefault('exp_try_level', level + 1)
   for attr in ['buildername', 'mastername', 'buildnumber', 'slavename']:
     properties.setdefault(attr, api.properties.get(attr))
@@ -53,14 +53,15 @@ def RunSteps(api):
   # Escaping multiple layers of json is hell, so wrap them with base64.
   b64properties = api.properties.get('exp_try_props', base64.b64encode('{}'))
   properties = json.loads(base64.b64decode(b64properties))
+  properties = dict((str(k), str(v)) for k, v in properties.iteritems())
 
   step = api.step('YOUR RECIPE STARTS BELOW (%d)' % level, cmd=None)
   step.presentation.logs['properties'] = [
-      '%s: %s' % (k, v) for k, v in properties.iteritems()]
+      '%s: %s' % (k, v) for k, v in sorted(properties.iteritems())]
   step.presentation.status = api.step.WARNING
   try:
-    execute_inner(api, '%s run' % (recipe.replace('/', '.')),
-                  recipe, level, **properties)
+    execute_recipe(api, '%s run' % (recipe.replace('/', '.')),
+                   recipe, level, **properties)
   finally:
     step = api.step('YOUR RECIPE ENDED ABOVE (%d)' % level, cmd=None)
     step.presentation.status = api.step.WARNING
