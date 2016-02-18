@@ -13,4 +13,4 @@
 ## User guides
 
 * [The builders.pyl file format for masters](services/buildbot/builders.pyl.md)
-* [Recipes user guide](https://chromium.googlesource.com/external/github.com/luci/recipes-py/+/master/doc/user_guide.md)
+* [Recipes](recipes.md)

@@ -13,7 +13,7 @@ sequences of subprocess calls in a cross-platform and testable way.
 
 ## Recipe Roller
 
-[Builder page](https://uberchromegw.corp.google.com/i/internal.infra.cron/builders/recipe-roller).
+[Builder page (internal link)](https://uberchromegw.corp.google.com/i/internal.infra.cron/builders/recipe-roller).
 
 The recipe roller is a service that ensures that the pinned dependencies between
 recipe repositories are kept up to date.  At the time of writing, the
@@ -74,5 +74,5 @@ something is usually wrong.  This can be that a dirty CL was sent and hasn't
 been committed -- the author may need a ping -- or that something else is going
 wrong when trying to land the change.
 
-luqui@ is the owner of the roller and can help find problems. martiniss@ and
-iannucci@ also have some familiarity.
+martiniss@chromium.org is the owner of the roller and can help find problems.
+iannucci@chromium.org also has some familiarity.
