@@ -241,7 +241,7 @@ class BuildBotTest(unittest.TestCase):
   def testGetBuildStartTimeWhenStartStopTimesAvailable(self):
     start_time = 1417470720.763887
     stop_time = 1417570720.763887
-    expected_build_start_time = datetime.fromtimestamp(start_time)
+    expected_build_start_time = datetime.utcfromtimestamp(start_time)
 
     build_start_time = buildbot.GetBuildStartTime({
         'times': [start_time, stop_time]})
@@ -256,7 +256,7 @@ class BuildBotTest(unittest.TestCase):
     master_name = 'a'
     builder_name = 'b'
     build_number = 632
-    expected_build_start_time = datetime.fromtimestamp(1417470720.763887)
+    expected_build_start_time = datetime.utcfromtimestamp(1417470720.763887)
     expected_chromium_revision = '449cdbd05616de91fcf7e8b4282e300336d6d7c5'
     expected_completed = False
     expected_result = None
@@ -371,7 +371,7 @@ class BuildBotTest(unittest.TestCase):
     master_name = 'a'
     builder_name = 'b'
     build_number = 632
-    expected_build_start_time = datetime.fromtimestamp(1417470720.763887)
+    expected_build_start_time = datetime.utcfromtimestamp(1417470720.763887)
     expected_chromium_revision = '449cdbd05616de91fcf7e8b4282e300336d6d7c5'
     expected_completed = True
     expected_result = None

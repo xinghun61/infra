@@ -87,7 +87,7 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
 
   def testMicrosecondsToDatetime(self):
     self.assertEqual(
-        datetime(2016, 2, 1, 14, 59, 34, 0),
+        datetime(2016, 2, 1, 22, 59, 34),
         MonitorTryJobPipeline._MicrosecondsToDatetime(1454367574000000))
     self.assertIsNone(MonitorTryJobPipeline._MicrosecondsToDatetime(None))
 
@@ -135,9 +135,9 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
     self.assertIsNone(try_job_data.error)
     self.assertEqual(try_job_data.regression_range_size, 2)
     self.assertEqual(try_job_data.number_of_commits_analyzed, 2)
-    self.assertEqual(try_job_data.end_time, datetime(2016, 2, 1, 14, 59, 34, 0))
+    self.assertEqual(try_job_data.end_time, datetime(2016, 2, 1, 22, 59, 34))
     self.assertEqual(try_job_data.request_time,
-                     datetime(2016, 2, 1, 14, 59, 30))
+                     datetime(2016, 2, 1, 22, 59, 30))
     self.assertEqual(try_job_data.try_job_url, url)
 
     MonitorTryJobPipeline._UpdateTryJobMetadataForCompletedBuild(

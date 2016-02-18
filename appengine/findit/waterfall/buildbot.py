@@ -179,7 +179,7 @@ def GetBuildStartTime(build_data_json):
   if not times:
     return None
   # TODO: convert to PST time?
-  return datetime.fromtimestamp(times[0])
+  return datetime.utcfromtimestamp(times[0])
 
 
 def GetBuildResult(build_data_json):

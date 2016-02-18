@@ -29,7 +29,7 @@ class MonitorTryJobPipeline(BasePipeline):
   def _MicrosecondsToDatetime(microseconds):
     """Returns a datetime given the number of microseconds, or None."""
     if microseconds:
-      return datetime.fromtimestamp(float(microseconds) / 1000000)
+      return datetime.utcfromtimestamp(float(microseconds) / 1000000)
     return None
 
   @staticmethod
