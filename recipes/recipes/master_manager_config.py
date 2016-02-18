@@ -25,8 +25,8 @@ def RunSteps(api):
              api.path['slave_build'].join('infra', 'run.py'),
              ['infra.services.master_manager_launcher',
               '--verify',
-              '--json-file',
               '--ts-mon-endpoint=none',
+              '--json-file',
              api.path['slave_build'].join(
                  'infra-data-master-manager',
                  'desired_master_state.json')])

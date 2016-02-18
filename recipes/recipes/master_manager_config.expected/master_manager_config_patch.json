@@ -85,8 +85,8 @@
       "[SLAVE_BUILD]/infra/run.py",
       "infra.services.master_manager_launcher",
       "--verify",
-      "--json-file",
       "--ts-mon-endpoint=none",
+      "--json-file",
       "[SLAVE_BUILD]/infra-data-master-manager/desired_master_state.json"
     ],
     "cwd": "[SLAVE_BUILD]",
