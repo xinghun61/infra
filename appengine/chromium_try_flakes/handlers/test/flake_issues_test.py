@@ -717,7 +717,7 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
 
     # We also create one Flake to test that it is correctly updated. Other Flake
     # entities will be created automatically.
-    Flake(id='bar13', name='bar13', occurrences=[],
+    Flake(id='foo2', name='foo2', occurrences=[],
           last_time_seen=datetime.datetime.min).put()
 
     with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
@@ -753,8 +753,8 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     expected_flakes = [
         ('foo1', 'test2.a'),
         ('foo1', 'test2.d'),
-        ('foo2', 'TEST RESULTS WERE INVALID'),
-        ('foo8 xx (with patch)', 'bar13'),
+        ('foo2', 'foo2'),
+        ('foo8 xx (with patch)', 'foo8 (with patch)'),
     ]
 
     flake_occurrences = flaky_run.flakes

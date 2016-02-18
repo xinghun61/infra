@@ -485,7 +485,7 @@ class CreateFlakyRun(webapp2.RequestHandler):
     steptext = ' '.join(step['text'])
     stepname = cls._normalize_step_name(step['name'])
     if 'TEST RESULTS WERE INVALID' in steptext:
-      return [steptext]
+      return [stepname]
 
     url = TEST_RESULTS_URL_TEMPLATE % {
       'mastername': urllib2.quote(mastername),
@@ -513,7 +513,7 @@ class CreateFlakyRun(webapp2.RequestHandler):
     except Exception:
       logging.exception('Failed to retrieve or parse JSON from %s', url)
 
-    return [steptext]
+    return [stepname]
 
   @ndb.transactional(xg=True)  # pylint: disable=E1120
   def post(self):
