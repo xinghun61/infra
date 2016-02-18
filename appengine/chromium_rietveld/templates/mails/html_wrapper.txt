@@ -9,7 +9,7 @@
     "name": "Open CL",
     "url": "{{url}}"
   },
-  "description": "Direct link to the Rietveld CL"
+  "description": ""
 }
 </script>
 
