@@ -32,12 +32,12 @@ def execute_recipe(api, name, recipe, level, **properties):
     properties.setdefault(attr, api.properties.get(attr))
   return api.python(
       name=name,
-      script=api.path['checkout'].join('scripts', 'tools', 'run_recipe.py'),
+      script=api.path['checkout'].join('scripts', 'slave', 'recipes.py'),
       args=[
-        recipe,
-        '--master-overrides-slave',
+        'run',
         '--properties-file',
         api.json.input(properties),
+        recipe,
       ],
       allow_subannotations=True,
   )
