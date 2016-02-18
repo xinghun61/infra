@@ -48,7 +48,7 @@ def RunSteps(api):
   api.gclient.set_config('build')
   api.bot_update.ensure_checkout(force=True, patch_root='build')
 
-  recipe = api.properties['exp_try_recipe']
+  recipe = str(api.properties['exp_try_recipe'])
   level = int(api.properties.get('exp_try_level', '0'))
   # Escaping multiple layers of json is hell, so wrap them with base64.
   b64properties = api.properties.get('exp_try_props', base64.b64encode('{}'))
