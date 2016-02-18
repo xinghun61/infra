@@ -64,6 +64,17 @@
     ]
   },
   {
+    "cmd": [],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "YOUR RECIPE STARTS BELOW (0)",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@properties@prop1: value1@@@",
+      "@@@STEP_LOG_LINE@properties@prop2: value2@@@",
+      "@@@STEP_LOG_END@properties@@@",
+      "@@@STEP_WARNINGS@@@"
+    ]
+  },
+  {
     "allow_subannotations": true,
     "cmd": [
       "python",
@@ -72,18 +83,15 @@
       "infra/build_repo_real_try",
       "--master-overrides-slave",
       "--properties-file",
-      "{\"actual_run\": \"True\", \"buildername\": \"recipe_try\", \"buildnumber\": 571, \"mastername\": \"tryserver.infra\", \"prop1\": \"value1\", \"prop2\": \"value2\", \"slavename\": \"TestSlavename\"}"
+      "{\"buildername\": \"recipe_try\", \"buildnumber\": 571, \"exp_try_level\": 1, \"mastername\": \"tryserver.infra\", \"prop1\": \"value1\", \"prop2\": \"value2\", \"slavename\": \"TestSlavename\"}"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "YOUR RECIPE STARTS BELOW. YELLOW FOR VISIBILITY",
-    "~followup_annotations": [
-      "@@@STEP_WARNINGS@@@"
-    ]
+    "name": "infra.build_repo_real_try run"
   },
   {
     "cmd": [],
     "cwd": "[SLAVE_BUILD]",
-    "name": "YOUR RECIPE ENDED ABOVE. YELLOW FOR VISIBILITY",
+    "name": "YOUR RECIPE ENDED ABOVE (0)",
     "~followup_annotations": [
       "@@@STEP_WARNINGS@@@"
     ]

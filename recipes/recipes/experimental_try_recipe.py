@@ -8,6 +8,7 @@ The idea is to actually execute some common recipe things so as to prevent
 major outages.
 """
 
+import base64
 import json
 
 DEPS = [
@@ -25,17 +26,10 @@ DEPS = [
 ]
 
 
-def RunSteps(api):
-  if api.properties.get('actual_run'):
-    inner(api)
-  else:
-    outer(api)
-
-
-def execute_inner(api, name, recipe, **properties):
+def execute_inner(api, name, recipe, level, **properties):
+  properties.setdefault('exp_try_level', level + 1)
   for attr in ['buildername', 'mastername', 'buildnumber', 'slavename']:
     properties.setdefault(attr, api.properties.get(attr))
-  properties['actual_run'] = 'True'
   return api.python(
       name=name,
       script=api.path['checkout'].join('scripts', 'tools', 'run_recipe.py'),
@@ -49,48 +43,52 @@ def execute_inner(api, name, recipe, **properties):
   )
 
 
-def outer(api):
+def RunSteps(api):
   """Check out itself, maybe apply patch, and then execute_inner real itself."""
   api.gclient.set_config('build')
   api.bot_update.ensure_checkout(force=True, patch_root='build')
 
-  recipe = api.properties['experimental_try_recipe']
-  properties = api.properties.get('experimental_try_recipe_properties', '{}')
-  properties = json.loads(properties)
+  recipe = api.properties['exp_try_recipe']
+  level = int(api.properties.get('exp_try_level', '0'))
+  # Escaping multiple layers of json is hell, so wrap them with base64.
+  b64properties = api.properties.get('exp_try_props', base64.b64encode('{}'))
+  properties = json.loads(base64.b64decode(b64properties))
 
-  step = execute_inner(api, 'YOUR RECIPE STARTS BELOW. YELLOW FOR VISIBILITY',
-                       recipe, **properties)
+  step = api.step('YOUR RECIPE STARTS BELOW (%d)' % level, cmd=None)
+  step.presentation.logs['properties'] = [
+      '%s: %s' % (k, v) for k, v in properties.iteritems()]
   step.presentation.status = api.step.WARNING
-  step = api.step('YOUR RECIPE ENDED ABOVE. YELLOW FOR VISIBILITY', cmd=None)
-  step.presentation.status = api.step.WARNING
-
-
-def inner(api):
-  """Actually performs basic tasks common to most recipes."""
-  api.gclient.set_config('build')
-  api.bot_update.ensure_checkout(force=True, patch_root='build')
+  try:
+    execute_inner(api, '%s run' % (recipe.replace('/', '.')),
+                  recipe, level, **properties)
+  finally:
+    step = api.step('YOUR RECIPE ENDED ABOVE (%d)' % level, cmd=None)
+    step.presentation.status = api.step.WARNING
 
 
 def GenTests(api):
   yield (
-      api.test('outer') +
+      api.test('default') +
       api.properties.tryserver(
           mastername='tryserver.infra',
           buildername='recipe_try',
-          experimental_try_recipe='infra/build_repo_real_try',
-          experimental_try_recipe_properties=json.dumps({
+          exp_try_recipe='infra/build_repo_real_try',
+          exp_try_props=base64.b64encode(json.dumps({
             'prop1': 'value1',
             'prop2': 'value2',
-          })
+          }))
       )
   )
   yield (
-      api.test('inner') +
-      api.properties.generic(
+      api.test('level-5') +
+      api.properties.tryserver(
           mastername='tryserver.infra',
-          buildername='build_repo_real_try',
-          actual_run='True',
-          prop1='value1',
-          prop2='value2',
+          buildername='recipe_try',
+          exp_try_recipe='infra/build_repo_real_try',
+          exp_try_level='5',
+          exp_try_props=base64.b64encode(json.dumps({
+            'prop1': 'value1',
+            'prop2': 'value2',
+          }))
       )
   )
