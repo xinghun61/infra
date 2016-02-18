@@ -90,6 +90,10 @@ class VarzPoller(Poller):
   state = ts_mon.StringMetric('buildbot/master/builders/state')
   total = ts_mon.GaugeMetric('buildbot/master/builders/total_slaves')
 
+  pool_queue = ts_mon.GaugeMetric('buildbot/master/thread_pool/queue')
+  pool_waiting = ts_mon.GaugeMetric('buildbot/master/thread_pool/waiting')
+  pool_working = ts_mon.GaugeMetric('buildbot/master/thread_pool/working')
+
   def handle_response(self, data):
     self.uptime.set(data['server_uptime'], fields=self.fields())
     self.accepting_builds.set(data['accepting_builds'], self.fields())
@@ -104,6 +108,12 @@ class VarzPoller(Poller):
           builder_info.get('pending_builds', 0), fields=fields)
       self.state.set(builder_info.get('state', 'unknown'), fields=fields)
       self.total.set(builder_info.get('total_slaves', 0), fields=fields)
+
+      if 'db_thread_pool' in builder_info:
+        db_thread_pool = builder_info['db_thread_pool']
+        self.pool_queue = db_thread_pool.get('queue', 0)
+        self.pool_waiting = db_thread_pool.get('waiting', 0)
+        self.pool_working = db_thread_pool.get('working', 0)
 
 
 def safe_remove(filename):
