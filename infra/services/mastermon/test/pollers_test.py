@@ -11,6 +11,7 @@ import mock
 import requests
 
 from infra_libs import temporary_directory
+from infra_libs import ts_mon
 from infra.services.mastermon import pollers
 
 
@@ -82,6 +83,11 @@ class PollerTest(unittest.TestCase):
 
 
 class VarzPollerTest(unittest.TestCase):
+  def setUp(self):
+    super(VarzPollerTest, self).setUp()
+
+    ts_mon.reset_for_unittest()
+
   def test_response(self):
     p = pollers.VarzPoller('', {'x': 'y'})
 
