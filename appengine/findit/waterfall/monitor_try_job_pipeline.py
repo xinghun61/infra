@@ -22,7 +22,8 @@ class MonitorTryJobPipeline(BasePipeline):
   which type of build failure we are running try job for.
   """
 
-  BUILDBUCKET_CLIENT_QUERY_INTERVAL_SECONDS = 60
+  INITIAL_PIPELINE_WAIT_SECONDS = 120
+  ALLOWED_RESPONSE_ERROR_TIMES = 5
   TIMEOUT = 'TIMEOUT'
 
   @staticmethod
@@ -96,6 +97,11 @@ class MonitorTryJobPipeline(BasePipeline):
     assert try_job_id
 
     timeout_hours = 5
+    pipeline_wait_seconds = self.INITIAL_PIPELINE_WAIT_SECONDS
+    allowed_response_error_times = self.ALLOWED_RESPONSE_ERROR_TIMES
+
+    # TODO(chanli): Make sure total wait time equals to timeout_hours
+    # regardless of retries.
     deadline = time.time() + timeout_hours * 60 * 60
     try_job_data = (WfTryJobData.Get(try_job_id) or
                     WfTryJobData.Create(try_job_id))
@@ -108,9 +114,15 @@ class MonitorTryJobPipeline(BasePipeline):
     while True:
       error, build = buildbucket_client.GetTryJobs([try_job_id])[0]
       if error:  # pragma: no cover
-        self._UpdateTryJobMetadataForBuildError(try_job_data, error)
-        raise pipeline.Retry(
-            'Error "%s" occurred. Reason: "%s"' % (error.message, error.reason))
+        if allowed_response_error_times > 0:
+          allowed_response_error_times -= 1
+          pipeline_wait_seconds += self.INITIAL_PIPELINE_WAIT_SECONDS
+        else:
+          # Buildbucket has responded error more than 5 times, retry pipeline.
+          self._UpdateTryJobMetadataForBuildError(try_job_data, error)
+          raise pipeline.Retry(
+              'Error "%s" occurred. Reason: "%s"' % (error.message,
+                                                     error.reason))
       elif build.status == BuildbucketBuild.COMPLETED:
         self._UpdateTryJobMetadataForCompletedBuild(
             try_job_data, build, start_time)
@@ -119,6 +131,10 @@ class MonitorTryJobPipeline(BasePipeline):
             try_job_type, try_job_id, build.url, build.report)
         return result_to_update[-1]
       else:  # pragma: no cover
+        if allowed_response_error_times < self.ALLOWED_RESPONSE_ERROR_TIMES:
+          # Recovers from errors.
+          allowed_response_error_times = self.ALLOWED_RESPONSE_ERROR_TIMES
+          pipeline_wait_seconds = self.INITIAL_PIPELINE_WAIT_SECONDS
         if build.status == BuildbucketBuild.STARTED and not already_set_started:
           # It is possible this branch is skipped if a fast build goes from
           # 'SCHEDULED' to 'COMPLETED' between queries, so start_time may be
@@ -129,15 +145,12 @@ class MonitorTryJobPipeline(BasePipeline):
               try_job_type, try_job_id, build.url)
           already_set_started = True
 
-        time.sleep(self.BUILDBUCKET_CLIENT_QUERY_INTERVAL_SECONDS)
-
       if time.time() > deadline:  # pragma: no cover
-        try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
-        try_job_result.status = wf_analysis_status.ERROR
-        try_job_result.put()
         self._UpdateTryJobMetadataForCompletedBuild(
             try_job_data, build, start_time, timed_out=True)
         # Explicitly abort the whole pipeline.
         raise pipeline.Abort(
             'Try job %s timed out after %d hours.' % (
                 try_job_id, timeout_hours))
+
+      time.sleep(pipeline_wait_seconds)  # pragma: no cover
