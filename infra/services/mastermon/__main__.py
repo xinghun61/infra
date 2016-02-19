@@ -61,8 +61,6 @@ class Application(outer_loop.Application):
     )
 
   def process_argparse_options(self, options):
-    super(Application, self).process_argparse_options(options)
-
     if options.ts_mon_task_job_name == '(default)':
       # The ts_mon job name defaults to either the hostname when monitoring all
       # masters on a host, or the name of the master extracted from the URL.
@@ -75,6 +73,8 @@ class Application(outer_loop.Application):
           options.ts_mon_task_job_name = path_components[-1]
         else:
           options.ts_mon_task_job_name = parsed_url.netloc
+
+    super(Application, self).process_argparse_options(options)
 
   def main(self, opts):
     if opts.url:
