@@ -96,7 +96,7 @@ class VarzPoller(Poller):
 
   def handle_response(self, data):
     self.uptime.set(data['server_uptime'], fields=self.fields())
-    self.accepting_builds.set(data['accepting_builds'], self.fields())
+    self.accepting_builds.set(data['accepting_builds'], fields=self.fields())
 
     for builder_name, builder_info in data['builders'].iteritems():
       fields = self.fields({'builder': builder_name})
@@ -111,9 +111,10 @@ class VarzPoller(Poller):
 
     if 'db_thread_pool' in data:
       db_thread_pool = data['db_thread_pool']
-      self.pool_queue.set(db_thread_pool.get('queue', 0))
-      self.pool_waiting.set(db_thread_pool.get('waiting', 0))
-      self.pool_working.set(db_thread_pool.get('working', 0))
+      fields = self.fields()
+      self.pool_queue.set(db_thread_pool.get('queue', 0), fields=fields)
+      self.pool_waiting.set(db_thread_pool.get('waiting', 0), fields=fields)
+      self.pool_working.set(db_thread_pool.get('working', 0), fields=fields)
 
 
 def safe_remove(filename):

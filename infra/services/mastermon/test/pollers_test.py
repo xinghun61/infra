@@ -125,9 +125,9 @@ class VarzPollerTest(unittest.TestCase):
     self.assertEqual(7, p.pending_builds.get({'builder': 'bar', 'x': 'y'}))
     self.assertEqual(8, p.total.get({'builder': 'bar', 'x': 'y'}))
     self.assertEqual('idle', p.state.get({'builder': 'bar', 'x': 'y'}))
-    self.assertEqual(9, p.pool_queue.get())
-    self.assertEqual(10, p.pool_waiting.get())
-    self.assertEqual(11, p.pool_working.get())
+    self.assertEqual(9, p.pool_queue.get({'x': 'y'}))
+    self.assertEqual(10, p.pool_waiting.get({'x': 'y'}))
+    self.assertEqual(11, p.pool_working.get({'x': 'y'}))
 
   def test_response_with_missing_data(self):
     p = pollers.VarzPoller('', {'x': 'y'})
@@ -160,9 +160,9 @@ class VarzPollerTest(unittest.TestCase):
     self.assertEqual(7, p.pending_builds.get({'builder': 'bar', 'x': 'y'}))
     self.assertEqual(0, p.total.get({'builder': 'bar', 'x': 'y'}))
     self.assertEqual('unknown', p.state.get({'builder': 'bar', 'x': 'y'}))
-    self.assertIsNone(p.pool_queue.get())
-    self.assertIsNone(p.pool_waiting.get())
-    self.assertIsNone(p.pool_working.get())
+    self.assertIsNone(p.pool_queue.get({'x': 'y'}))
+    self.assertIsNone(p.pool_waiting.get({'x': 'y'}))
+    self.assertIsNone(p.pool_working.get({'x': 'y'}))
 
 
 class FilePollerTest(unittest.TestCase):
