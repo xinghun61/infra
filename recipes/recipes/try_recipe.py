@@ -60,8 +60,8 @@ def RunSteps(api):
     properties.setdefault(attr, api.properties.get(attr))
 
   step = api.step('properties (%d)' % level, cmd=None)
-  step.presentation.logs['properties'] = json.dumps(properties,
-                                                    sort_keys=True, indent=2)
+  step.presentation.logs['properties'] = (
+      json.dumps(properties, sort_keys=True, indent=2)).splitlines()
   return api.python(
       name='%s run' % (recipe.replace('/', '.')),
       script=api.path['checkout'].join('scripts', 'tools',
