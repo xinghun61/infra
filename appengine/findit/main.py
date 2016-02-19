@@ -13,6 +13,7 @@ from handlers import failure_log
 from handlers import help_triage
 from handlers import list_analyses
 from handlers import monitor_alerts
+from handlers import swarming_task
 from handlers import triage_analysis
 from handlers import try_job
 from handlers import try_job_result
@@ -31,6 +32,7 @@ web_pages_handler_mappings = [
     ('/help-triage', help_triage.HelpTriage),
     ('/list-analyses', list_analyses.ListAnalyses),
     ('/monitor-alerts', monitor_alerts.MonitorAlerts),
+    ('/swarming-task', swarming_task.SwarmingTask),
     ('/triage-analysis', triage_analysis.TriageAnalysis),
     ('/try-job', try_job.TryJob),
     ('/try-job-result', try_job_result.TryJobResult),

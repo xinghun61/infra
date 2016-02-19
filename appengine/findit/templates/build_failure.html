@@ -260,10 +260,40 @@
       }
     }
 
+    function displaySwarmingTask() {
+      $.getJSON('swarming-task?url=' + findit.buildUrl, function(data) {
+          if (! jQuery.isEmptyObject(data)) {
+            var tableString = '<table><tr><th>Step</th><th>Status</th><th>Task</th></tr>';
+            $.each(data, function(step, task) {
+              tableString += '<tr>';
+              tableString += '<td>' + step + '</td>';
+              if (task.status == 'Completed') {
+                status_class = 'completed';
+              } else if (task.status == 'Error') {
+                status_class = 'error';
+              } else {
+                // If status is either 'Pending' or 'Running', add 'running' style.
+                status_class = 'running';
+              }
+              tableString += '<td><span class="' + status_class + '">' + task.status + '</span></td>';
+              if (task.task_id) {
+                tableString += '<td><a href="' + task.task_url + '">' + task.task_id + '</a></td>';
+              } else {
+                tableString += '<td></td>';
+              }
+              tableString += '</tr>';
+            });
+            tableString += '</table>';
+            $('#swarming_task_table').html(tableString);
+            $('#swarming_task').removeClass('not-display');
+          }
+      });
+    }
+
     function displayTryJobResult() {
       $.getJSON('try-job-result?url=' + findit.buildUrl, function(data) {
           if (! jQuery.isEmptyObject(data)) {
-            var tableString = '<table><tr><th>Step</th><th>Test</th><th>Try Job</th><th>Status</th><th>Culprit</th></tr>';
+            var tableString = '<table><tr><th>Step</th><th>Test</th><th>Link</th><th>Status</th><th>Culprit</th></tr>';
             $.each(data, function(key, value) {
               tableString += '<tr>';
               tableString += '<td>' + value.step + '</td>';
@@ -273,6 +303,16 @@
               } else {
                 tableString += '<td></td>';
               }
+              if (value.status == 'Flaky') {
+                var status = '';
+                var revision = 'Flaky';
+              } else if (value.status == 'Completed'){
+                var status = value.status;
+                var revision = value.commit_position || value.revision || 'Not Found';
+              } else {
+                var status = value.status;
+                var revision = '';
+              }
               if (value.status == 'Completed') {
                 status_class = 'completed';
               } else if (value.status == 'Error') {
@@ -281,16 +321,11 @@
                 // If status is either 'Scheduled' or 'Running', add 'running' style.
                 status_class = 'running';
               }
-              tableString += '<td><span class="' + status_class + '">' + value.status + '</span></td>';
+              tableString += '<td><span class="' + status_class + '">' + status + '</span></td>';
               if (value.review_url) {
-                tableString += '<td><a href="' + value.review_url + '">' + value.commit_position || value.revision + '</a></td>';
-              } else if (value.revision) {
-                tableString += '<td>' + value.revision + '</td>';
-              } else if (value.status != 'Completed') {
-                // Makes the cell empty when the try job is not completed.
-                tableString += '<td></td>';
+                tableString += '<td><a href="' + value.review_url + '">' + revision + '</a></td>';
               } else {
-                tableString += '<td>Not Found</td>';
+                tableString += '<td>' + revision + '</td>';
               }
               tableString += '</tr>';
             });
@@ -352,7 +387,10 @@
         $('#score-explanation-dialog').dialog('open');
       });
 
-      // Display Try Job Result if any.
+      // Displays Swarming task if any.
+      displaySwarmingTask();
+
+      // Displays Try Job Result if any.
       displayTryJobResult();
     });
   </script>
@@ -370,8 +408,15 @@
   </div>
   <br>
 
+  <div id='swarming_task' class='not-display'>
+    <b> Swarming Task:</b>
+    <div id='swarming_task_table'></div>
+    <br>
+  </div>
+  <br>
+
   <div id='try_job' class='not-display'>
-    <b> Try Job Result:</b>
+    <b> Try job Result:</b>
     <div id='try_job_result'></div>
     <br>
   </div>
