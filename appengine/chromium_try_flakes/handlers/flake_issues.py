@@ -26,7 +26,7 @@ MAX_UPDATED_ISSUES_PER_DAY = 50
 MAX_TIME_DIFFERENCE_SECONDS = 12 * 60 * 60
 MIN_REQUIRED_FLAKY_RUNS = 4
 DAYS_TILL_STALE = 30
-USE_MONORAIL = False
+USE_MONORAIL = True
 DAYS_TO_REOPEN_ISSUE = 3
 FLAKY_RUNS_TEMPLATE = (
     'Detected %(new_flakes_count)d new flakes for test/step "%(name)s". To see '

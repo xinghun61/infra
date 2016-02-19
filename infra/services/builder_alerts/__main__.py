@@ -307,39 +307,38 @@ def inner_loop(args):
                     resp.status_code, resp.reason, resp.content, e)
       ret = False
 
-  # Disabled until Chromium migration to Monorail is over. 
-  ## Query sheriff issues and post them to the new API endpoint.
-  #if args.crbug_service_account:
-  #  global issue_tracker_last_poll
-  #  seconds_since_last_poll = (
-  #      datetime.datetime.utcnow() - issue_tracker_last_poll).total_seconds()
-  #  if seconds_since_last_poll > ISSUE_TRACKER_POLLING_FREQUENCY_SEC:
-  #    issue_tracker_last_poll = datetime.datetime.utcnow()
-  #    issues_per_tree = crbug_issues.query(args.crbug_service_account,
-  #                                         args.use_monorail)
-  #    for tree, issues in issues_per_tree.iteritems():
-  #      json_data = {'alerts': issues}
-  #      gzipped_data = gzipped(json.dumps(json_data))
-  #      if args.api_endpoint_prefix:
-  #        new_api_endpoint = string_helpers.slash_join(
-  #            args.api_endpoint_prefix, 'api/v1/alerts', tree)
-  #        logging.info('POST %s alerts (%s bytes compressed) to %s',
-  #            len(issues), len(gzipped_data), new_api_endpoint)
-  #        resp = requests.post(new_api_endpoint, data=gzipped_data,
-  #                             headers={'content-encoding': 'gzip'})
-  #        try:
-  #          resp.raise_for_status()
-  #        except requests.HTTPError:
-  #          logging.exception('POST to %s failed! %d %s, %s', new_api_endpoint,
-  #                            resp.status_code, resp.reason, resp.content)
-  #          ret = False
-  #      else:
-  #        with open('builder_alerts_%s.json' % tree, 'w') as f:
-  #          f.write(json.dumps(json_data, indent=1))
-  #else:
-  #  logging.error(
-  #      '--crbug-service-account was not specified, can not get crbug issues')
-  #  ret = False
+  # Query sheriff issues and post them to the new API endpoint.
+  if args.crbug_service_account:
+    global issue_tracker_last_poll
+    seconds_since_last_poll = (
+        datetime.datetime.utcnow() - issue_tracker_last_poll).total_seconds()
+    if seconds_since_last_poll > ISSUE_TRACKER_POLLING_FREQUENCY_SEC:
+      issue_tracker_last_poll = datetime.datetime.utcnow()
+      issues_per_tree = crbug_issues.query(args.crbug_service_account,
+                                           args.use_monorail)
+      for tree, issues in issues_per_tree.iteritems():
+        json_data = {'alerts': issues}
+        gzipped_data = gzipped(json.dumps(json_data))
+        if args.api_endpoint_prefix:
+          new_api_endpoint = string_helpers.slash_join(
+              args.api_endpoint_prefix, 'api/v1/alerts', tree)
+          logging.info('POST %s alerts (%s bytes compressed) to %s',
+              len(issues), len(gzipped_data), new_api_endpoint)
+          resp = requests.post(new_api_endpoint, data=gzipped_data,
+                               headers={'content-encoding': 'gzip'})
+          try:
+            resp.raise_for_status()
+          except requests.HTTPError:
+            logging.exception('POST to %s failed! %d %s, %s', new_api_endpoint,
+                              resp.status_code, resp.reason, resp.content)
+            ret = False
+        else:
+          with open('builder_alerts_%s.json' % tree, 'w') as f:
+            f.write(json.dumps(json_data, indent=1))
+  else:
+    logging.error(
+        '--crbug-service-account was not specified, can not get crbug issues')
+    ret = False
 
   return ret
 
