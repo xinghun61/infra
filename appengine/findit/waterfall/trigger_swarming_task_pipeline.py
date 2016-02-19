@@ -16,6 +16,10 @@ from waterfall import swarming_util
 from waterfall.swarming_task_request import SwarmingTaskRequest
 
 
+# TODO(stgao): save in as config in datastore.
+ITERATIONS_TO_RERUN = 10
+
+
 def _GetSwarmingTaskName(ref_task_id):  # pragma: no cover.
   """Returns a unique task name.
 
@@ -27,7 +31,7 @@ def _GetSwarmingTaskName(ref_task_id):  # pragma: no cover.
 
 def _CreateNewSwarmingTaskRequest(
     ref_task_id, ref_request, master_name, builder_name, build_number,
-    step_name, tests):
+    step_name, tests, iterations):
   """Returns a SwarmingTaskRequest instance to run the given tests only."""
   # Make a copy of the referred request and drop or overwrite some fields.
   new_request = copy.deepcopy(ref_request)
@@ -39,6 +43,7 @@ def _CreateNewSwarmingTaskRequest(
   new_request.idempotent = False
 
   # Set the gtest_filter to run the given tests only.
+  new_request.extra_args.append('--gtest_repeat=%s' % iterations)
   new_request.extra_args = [
       a for a in new_request.extra_args if not a.startswith('--gtest_filter')
   ]
@@ -140,7 +145,7 @@ class TriggerSwarmingTaskPipeline(BasePipeline):
     # 2. Update/Overwrite parameters for the re-run.
     new_request = _CreateNewSwarmingTaskRequest(
         ref_task_id, ref_request, master_name, builder_name, build_number,
-        step_name, tests)
+        step_name, tests, ITERATIONS_TO_RERUN)
 
     # 3. Trigger a new Swarming task to re-run the failed tests.
     task_id = swarming_util.TriggerSwarmingTask(new_request, http_client)
