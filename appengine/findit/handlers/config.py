@@ -139,10 +139,30 @@ def _ValidateTrybotMapping(builders_to_trybots):
   return True
 
 
+def _ValidateTryJobSettings(settings):
+  return (isinstance(settings, dict) and
+          isinstance(settings.get('server_query_interval_seconds'), int) and
+          isinstance(settings.get('job_timeout_hours'), int))
+
+
+def _ValidateSwarmingSettings(settings):
+  return (isinstance(settings, dict) and
+          isinstance(settings.get('server_host'), basestring) and
+          isinstance(settings.get('default_request_priority'), int) and
+          isinstance(settings.get('request_expiration_hours'), int) and
+          isinstance(settings.get('server_query_interval_seconds'), int) and
+          isinstance(settings.get('task_timeout_hours'), int) and
+          isinstance(settings.get('isolated_server'), basestring) and
+          isinstance(settings.get('isolated_storage_url'), basestring) and
+          isinstance(settings.get('iterations_to_rerun'), int))
+
+
 # Maps config properties to their validation functions.
 _CONFIG_VALIDATION_FUNCTIONS = {
     'steps_for_masters_rules': _ValidateMastersAndStepsRulesMapping,
     'builders_to_trybots': _ValidateTrybotMapping,
+    'try_job_settings': _ValidateTryJobSettings,
+    'swarming_settings': _ValidateSwarmingSettings
 }
 
 
@@ -185,6 +205,8 @@ class Configuration(BaseHandler):
     data = {
         'masters': waterfall_config.GetStepsForMastersRules(),
         'builders': settings.builders_to_trybots,
+        'try_job_settings': settings.try_job_settings,
+        'swarming_settings': settings.swarming_settings,
         'version': settings.version,
     }
 

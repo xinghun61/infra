@@ -49,6 +49,22 @@ _MOCK_BUILDERS_TO_TRYBOTS = {
     }
 }
 
+_MOCK_TRY_JOB_SETTINGS = {
+    'server_query_interval_seconds': 60,
+    'job_timeout_hours': 5
+}
+
+_MOCK_SWARMING_SETTINGS = {
+    'server_host': 'chromium-swarm.appspot.com',
+    'default_request_priority': 150,
+    'request_expiration_hours': 20,
+    'server_query_interval_seconds': 60,
+    'task_timeout_hours': 23,
+    'isolated_server': 'https://isolateserver.appspot.com',
+    'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+    'iterations_to_rerun': 10
+}
+
 _MOCK_VERSION_NUMBER = 12
 
 
@@ -63,6 +79,8 @@ class ConfigTest(testing.AppengineTestCase):
     config_data = {
         'steps_for_masters_rules': _MOCK_STEPS_FOR_MASTERS_RULES,
         'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
+        'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
+        'swarming_settings': _MOCK_SWARMING_SETTINGS
     }
     wf_config.FinditConfig.Get().Update(**config_data)
 
@@ -72,6 +90,8 @@ class ConfigTest(testing.AppengineTestCase):
     expected_response = {
         'masters': _MOCK_STEPS_FOR_MASTERS_RULES,
         'builders': _MOCK_BUILDERS_TO_TRYBOTS,
+        'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
+        'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'version': 1,
     }
 
@@ -320,6 +340,117 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertFalse(config._ValidateTrybotMapping({'a': {'b': ['1']}}))
     self.assertFalse(config._ValidateTrybotMapping({'a': {'b': {}}}))
 
+  def testValidateTryJobSettings(self):
+    self.assertFalse(config._ValidateTryJobSettings([]))
+    self.assertFalse(config._ValidateTryJobSettings({}))
+    self.assertFalse(config._ValidateTryJobSettings({
+        'server_query_interval_seconds': '1',  # Should be an int.
+        'job_timeout_hours': 1
+    }))
+    self.assertFalse(config._ValidateTryJobSettings({
+        'server_query_interval_seconds': 1,
+        'job_timeout_hours': '1'  # Should be an int.
+    }))
+    self.assertTrue(config._ValidateTryJobSettings({
+        'server_query_interval_seconds': 1,
+        'job_timeout_hours': 1
+    }))
+    self.assertTrue(config._ValidateSwarmingSettings(_MOCK_SWARMING_SETTINGS))
+
+  def testValidateSwarmingSettings(self):
+    self.assertFalse(config._ValidateSwarmingSettings([]))
+    self.assertFalse(config._ValidateSwarmingSettings({}))
+    self.assertFalse(config._ValidateSwarmingSettings({
+        'server_host': ['chromium-swarm.appspot.com'],  # Should be a string.
+        'default_request_priority': 150,
+        'request_expiration_hours': 20,
+        'server_query_interval_seconds': 60,
+        'task_timeout_hours': 23,
+        'isolated_server': 'https://isolateserver.appspot.com',
+        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+        'iterations_to_rerun': 10
+    }))
+    self.assertFalse(config._ValidateSwarmingSettings({
+        'server_host': 'chromium-swarm.appspot.com',
+        'default_request_priority': '150',  # Should be an int.
+        'request_expiration_hours': 20,
+        'server_query_interval_seconds': 60,
+        'task_timeout_hours': 23,
+        'isolated_server': 'https://isolateserver.appspot.com',
+        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+        'iterations_to_rerun': 10
+    }))
+    self.assertFalse(config._ValidateSwarmingSettings({
+        'server_host': 'chromium-swarm.appspot.com',
+        'default_request_priority': 150,
+        'request_expiration_hours': {},  # Should be an int.
+        'server_query_interval_seconds': 60,
+        'task_timeout_hours': 23,
+        'isolated_server': 'https://isolateserver.appspot.com',
+        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+        'iterations_to_rerun': 10
+    }))
+    self.assertFalse(config._ValidateSwarmingSettings({
+        'server_host': 'chromium-swarm.appspot.com',
+        'default_request_priority': 150,
+        'request_expiration_hours': 20,
+        'server_query_interval_seconds': [],  # Should be an int.
+        'task_timeout_hours': 23,
+        'isolated_server': 'https://isolateserver.appspot.com',
+        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+        'iterations_to_rerun': 10
+    }))
+    self.assertFalse(config._ValidateSwarmingSettings({
+        'server_host': 'chromium-swarm.appspot.com',
+        'default_request_priority': 150,
+        'request_expiration_hours': 20,
+        'server_query_interval_seconds': 60,
+        'task_timeout_hours': None,  # should be an int.
+        'isolated_server': 'https://isolateserver.appspot.com',
+        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+        'iterations_to_rerun': 10
+    }))
+    self.assertFalse(config._ValidateSwarmingSettings({
+        'server_host': 'chromium-swarm.appspot.com',
+        'default_request_priority': 150,
+        'request_expiration_hours': 20,
+        'server_query_interval_seconds': 60,
+        'task_timeout_hours': 23,
+        'isolated_server': 1,  # Should be a string.
+        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+        'iterations_to_rerun': 10
+    }))
+    self.assertFalse(config._ValidateSwarmingSettings({
+        'server_host': 'chromium-swarm.appspot.com',
+        'default_request_priority': 150,
+        'request_expiration_hours': 20,
+        'server_query_interval_seconds': 60,
+        'task_timeout_hours': 23,
+        'isolated_server': 'https://isolateserver.appspot.com',
+        'isolated_storage_url': 3.2,  # Should be a string.
+        'iterations_to_rerun': 10
+    }))
+    self.assertFalse(config._ValidateSwarmingSettings({
+        'server_host': 'chromium-swarm.appspot.com',
+        'default_request_priority': 150,
+        'request_expiration_hours': 20,
+        'server_query_interval_seconds': 60,
+        'task_timeout_hours': 23,
+        'isolated_server': 'https://isolateserver.appspot.com',
+        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+        'iterations_to_rerun': 1.0  # Should be an int.
+    }))
+    self.assertTrue(config._ValidateSwarmingSettings({
+        'server_host': 'chromium-swarm.appspot.com',
+        'default_request_priority': 150,
+        'request_expiration_hours': 20,
+        'server_query_interval_seconds': 60,
+        'task_timeout_hours': 23,
+        'isolated_server': 'https://isolateserver.appspot.com',
+        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+        'iterations_to_rerun': 10
+    }))
+
   def testConfigurationDictIsValid(self):
     self.assertTrue(config._ConfigurationDictIsValid({
         'steps_for_masters_rules': {
@@ -366,6 +497,8 @@ class ConfigTest(testing.AppengineTestCase):
                 }
             },
             'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
+            'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
+            'swarming_settings': _MOCK_SWARMING_SETTINGS
         })
     }
 
@@ -388,6 +521,8 @@ class ConfigTest(testing.AppengineTestCase):
             }
         },
         'builders': _MOCK_BUILDERS_TO_TRYBOTS,
+        'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
+        'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'version': 1,
     }
 

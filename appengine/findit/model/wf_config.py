@@ -50,3 +50,23 @@ class FinditConfig(VersionedConfig):
   # Mapping of waterfall builders to try-server trybots, which are used to
   # re-run compile to identify culprits for compile failures.
   builders_to_trybots = ndb.JsonProperty(indexed=False, default={})
+
+  # A dict containing common settings for try jobs. For example,
+  # {
+  #     'server_query_interval_seconds': 60,
+  #     'job_timeout_hours': 5
+  # }
+  try_job_settings = ndb.JsonProperty(indexed=False, default={})
+
+  # A dict containing common settings for swarming tasks. For example,
+  # {
+  #     'server_host': 'chromium-swarm.appspot.com',
+  #     'default_request_priority': 150,
+  #     'request_expiration_hours': 20,
+  #     'server_query_interval_seconds': 60,
+  #     'task_timeout_hours': 23,
+  #     'isolated_server': 'https://isolateserver.appspot.com',
+  #     'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+  #     'iterations_to_rerun': 10
+  # }
+  swarming_settings = ndb.JsonProperty(indexed=False, default={})
