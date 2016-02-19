@@ -36,9 +36,9 @@ from google.appengine.ext import testbed
 
 TEST_DATA = [
     # master, builder, test_type, build_number, name, data; order matters.
-    ['ChromiumWebKit', 'WebKit Linux', 'layout-tests',
+    ['ChromiumWebKit', 'WebKit Linux', 'webkit_tests',
      1, 'webkit_linux_results.json', 'a'],
-    ['ChromiumWebKit', 'WebKit Win7', 'layout-tests',
+    ['ChromiumWebKit', 'WebKit Win7', 'webkit_tests',
      2, 'webkit_win7_results.json', 'b'],
     ['ChromiumWin', 'Win7 (Dbg)', 'unittests', 3,
      'win7_dbg_unittests.json', 'c'],
@@ -114,16 +114,16 @@ class DataStoreFileTest(unittest.TestCase):
   def testDeleteFile(self):
     file_contents = 'x' * datastorefile.MAX_ENTRY_LEN * 2
     file_data = ['ChromiumWebKit', 'WebKit Linux',
-                 'layout-tests', 1, 'results.json', file_contents]
+                 'webkit_tests', 1, 'results.json', file_contents]
     self._addFileAndAssert(file_data)
 
     ndeleted = testfile.TestFile.delete_file(None, 'ChromiumWebKit',
-        'WebKit Linux', 'layout-tests', 1, 'results.json', None, None)
+        'WebKit Linux', 'webkit_tests', 1, 'results.json', None, None)
     self.assertEqual(
         1, ndeleted, 'Expected exactly one file to have been deleted.')
 
     ndeleted = testfile.TestFile.delete_file(None, 'ChromiumWebKit',
-        'WebKit Linux', 'layout-tests', 'invalid', 'results.json', None, None)
+        'WebKit Linux', 'webkit_tests', 'invalid', 'results.json', None, None)
     self.assertEqual(
         0, ndeleted, 'Expected exactly zero files to have been deleted.')
 

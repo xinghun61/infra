@@ -88,7 +88,7 @@ LOAD_BUILDBOT_DATA({
                         "Android Tests (dbg)"
                     ]
                 },
-                "layout-tests": {
+                "webkit_tests": {
                     "builders": [
                         "WebKit Android (Nexus4)",
                         "WebKit Linux",

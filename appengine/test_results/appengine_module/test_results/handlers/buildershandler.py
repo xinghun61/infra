@@ -163,9 +163,6 @@ def fetch_buildbot_data(masters=None):  # pragma: no cover
         if match:
           step_name = match.group(1)
 
-        if step_name == 'webkit_tests':
-          step_name = 'layout-tests'
-
         # Aggressively skip all steps that dont have test in the first
         # word (before first space) and remove all platform cruft. This rule
         # is based on a manual audit of valid and invalid test types populated

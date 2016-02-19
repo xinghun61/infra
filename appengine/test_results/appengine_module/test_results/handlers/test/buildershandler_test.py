@@ -113,7 +113,7 @@ class BuildersHandlerTest(unittest.TestCase):
               'tests': {
                   'browser_tests': {'builders': ['WebKit Linux', 'WebKit Mac']},
                   'mini_installer_test': {'builders': ['WebKit Linux', 'WebKit Mac', 'WebKit Win']},
-                  'layout-tests': {'builders': ['WebKit Linux', 'WebKit Win']},
+                  'webkit_tests': {'builders': ['WebKit Linux', 'WebKit Win']},
                   'swarming_gtest_tests': {'builders': ['WebKit Linux']},
                   'duplicate_builders_test': {'builders': ['WebKit Linux']}},
               'name': 'ChromiumWebkit',

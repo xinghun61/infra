@@ -38,11 +38,6 @@ CTStepFailure.prototype.isTreeCloser = function() {
 CTStepFailure.prototype.flakinessDashboardURL = function() {
   var testType = this.step;
 
-  // FIXME: Remove this once the flakiness dashboard stops having webkit_tests
-  // masquerade as layout-tests.
-  if (testType == 'webkit_tests')
-      testType = 'layout-tests';
-
   return 'https://test-results.appspot.com/dashboards/flakiness_dashboard.html#' +
     Object.toQueryString({
       tests: this.testName,

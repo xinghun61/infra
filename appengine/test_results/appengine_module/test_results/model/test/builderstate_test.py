@@ -25,7 +25,7 @@ TEST_BUILDERS = {
         'tests': {
             'browser_tests': {'builders': ['WebKit Linux', 'WebKit Mac']},
             'mini_installer_test': {'builders': ['WebKit Linux', 'WebKit Mac', 'WebKit Win']},
-            'layout-tests': {'builders': ['WebKit Linux', 'WebKit Win']}},
+            'webkit_tests': {'builders': ['WebKit Linux', 'WebKit Win']}},
         'name': 'ChromiumWebkit',
         'url_name': 'chromium.webkit',
         'groups': ['@ToT Chromium', '@ToT Blink'],
@@ -40,7 +40,7 @@ TEST_BUILDER_STATE = {
             'mini_installer_test': {'builders': {'WebKit Linux': None,
                                                  'WebKit Mac': None,
                                                  'WebKit Win': None}},
-            'layout-tests': {'builders': {'WebKit Linux': None, 'WebKit Win': None}}},
+            'webkit_tests': {'builders': {'WebKit Linux': None, 'WebKit Win': None}}},
         'name': 'ChromiumWebkit',
         'url_name': 'chromium.webkit',
         'groups': ['@ToT Chromium', '@ToT Blink'],

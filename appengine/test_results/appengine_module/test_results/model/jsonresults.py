@@ -357,7 +357,7 @@ class JsonResults(object):
   def _convert_gtest_json_to_aggregate_results_format(cls,
         json_dict):  # pragma: no cover
     # FIXME: Change gtests over to uploading the full results format like
-    # layout-tests so we don't have to do this normalizing.
+    # webkit_tests so we don't have to do this normalizing.
     # http://crbug.com/247192.
 
     if FAILURES_BY_TYPE_KEY in json_dict:

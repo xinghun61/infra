@@ -33,7 +33,7 @@ var history = history || {};
 
 history.DEFAULT_CROSS_DASHBOARD_STATE_VALUES = {
     showAllRuns: false,
-    testType: 'layout-tests',
+    testType: 'webkit_tests',
     useTestData: false,
 }
 
@@ -122,7 +122,7 @@ history.History.prototype = {
     },
     isLayoutTestResults: function()
     {
-        return this.crossDashboardState.testType == 'layout-tests';
+        return this.crossDashboardState.testType == 'webkit_tests';
     },
     isGPUTestResults: function()
     {

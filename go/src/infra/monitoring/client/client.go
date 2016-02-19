@@ -187,11 +187,6 @@ func (r *reader) LatestBuilds(master, builder string) ([]*messages.Build, error)
 }
 
 func (r *reader) TestResults(masterName, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
-	// This substitution is done in the existing builder_alerts python code.
-	if stepName == "webkit_tests" {
-		stepName = "layout-tests"
-	}
-
 	v := url.Values{}
 	v.Add("name", "full_results.json")
 	v.Add("master", masterName)

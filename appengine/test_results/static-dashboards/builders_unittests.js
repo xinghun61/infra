@@ -46,7 +46,7 @@ test('builders.getBuilders', 4, function() {
     resetGlobals();
 
     var builderKeys = [];
-    var allBuilders = builders.getBuilders('layout-tests');
+    var allBuilders = builders.getBuilders('webkit_tests');
     allBuilders.forEach(function(builder) {
         builderKeys.push(builder.key());
     });

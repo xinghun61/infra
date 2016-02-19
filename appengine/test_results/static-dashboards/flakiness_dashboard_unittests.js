@@ -50,7 +50,7 @@ function resetGlobals()
             name: 'ChromiumWebkit',
             url_name: "chromium.webkit",
             tests: {
-                'layout-tests': {'builders': ['WebKit Linux', 'WebKit Linux (dbg)', 'WebKit Linux (deps)', 'WebKit Mac10.7', 'WebKit Win', 'WebKit Win (dbg)']},
+                'webkit_tests': {'builders': ['WebKit Linux', 'WebKit Linux (dbg)', 'WebKit Linux (deps)', 'WebKit Mac10.7', 'WebKit Win', 'WebKit Win (dbg)']},
                 'unit_tests': {'builders': ['Linux Tests']},
             },
             groups: ['@ToT Chromium', '@ToT Blink'],
