@@ -27,6 +27,11 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     mock_change_logs['rev2'] = MockedChangeLog('2', 'url_2')
     return mock_change_logs.get(revision)
 
+  def setUp(self):
+    super(IdentifyTryJobCulpritPipelineTest, self).setUp()
+
+    self.mock(GitRepository, 'GetChangeLog', self._MockGetChangeLog)
+
   def testGetFailedRevisionFromResultsDict(self):
     self.assertIsNone(
         IdentifyTryJobCulpritPipeline._GetFailedRevisionFromResultsDict({}))
@@ -123,8 +128,6 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         'try_job_id': try_job_id,
     }]
     try_job.put()
-
-    self.mock(GitRepository, 'GetChangeLog', self._MockGetChangeLog)
 
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit = pipeline.run(
@@ -351,8 +354,6 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     try_job.status = wf_analysis_status.ANALYZING
     try_job.test_results = [test_result]
     try_job.put()
-
-    self.mock(GitRepository, 'GetChangeLog', self._MockGetChangeLog)
 
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit = pipeline.run(
