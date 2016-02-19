@@ -88,6 +88,7 @@
       "[SLAVE_BUILD]/build/scripts/tools/annotee_indenter.py",
       "--base-level",
       "2",
+      "--use-python-executable",
       "--",
       "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
       "run",

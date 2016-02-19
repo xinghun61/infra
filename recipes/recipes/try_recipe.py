@@ -9,7 +9,8 @@ Usage:
   $ # hack, hack, commit.
   $ git cl upload
   $ git cl try -m tryserver.infra -b <BOT> -p try_recipe=<YOUR_RECIPE> \
-        -p try_props=$(echo '{"abc":"cde"}' | gzip | base64)
+        -p try_props=$(echo '{"abc":"cde"}' | python -c "import zlib, sys,
+        base64; print base64.b64encode(zlib.compress(sys.stdin.read()))")
 
   You may repeat -b <BOT> for each bot you want.
   Available bots are currently on master.tryserver.infra.
@@ -68,6 +69,7 @@ def RunSteps(api):
                                        'annotee_indenter.py'),
       args=[
         '--base-level', str(level + 1),
+        '--use-python-executable',
         '--',
         api.path['checkout'].join('scripts', 'slave', 'recipes.py'),
         'run',
