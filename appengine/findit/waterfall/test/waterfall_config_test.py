@@ -8,7 +8,6 @@ from model.wf_config import FinditConfig
 from waterfall import waterfall_config
 
 
-
 class MastersTest(testing.AppengineTestCase):
 
   def setUp(self):
@@ -16,9 +15,26 @@ class MastersTest(testing.AppengineTestCase):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
     config_data = {
-        'masters_to_blacklisted_steps': {
-            'master1': ['step1', 'step2', 'step3'],
-            'master2': ['step4', 'step5', 'step6']
+        'steps_for_masters_rules': {
+            'supported_masters': {
+                'master1': {
+                    # supported_steps override global.
+                    'supported_steps': ['step6'],
+                    'unsupported_steps': ['step1', 'step2', 'step3'],
+                },
+                'master2': {
+                    # Only supports step4 and step5 regardless of global.
+                    'supported_steps': ['step4', 'step5'],
+                    'check_global': False
+                },
+                'master3': {
+                    # Supports everything not blacklisted in global.
+                },
+            },
+            'global': {
+                # Blacklists all listed steps for all masters unless overridden.
+                'unsupported_steps': ['step6', 'step7'],
+            }
         },
         'builders_to_trybots': {
             'master1': {
@@ -32,6 +48,23 @@ class MastersTest(testing.AppengineTestCase):
 
     FinditConfig.Get().Update(**config_data)
 
+  def testConvertOldMastersFormatToNew(self):
+    self.assertEqual(
+        {
+            'supported_masters': {
+                'master1': {
+                    'unsupported_steps': ['1', '2']
+                },
+                'master2': {}
+            },
+            'global': {}
+        },
+        waterfall_config._ConvertOldMastersFormatToNew(
+            {
+                'master1': ['1', '2'],
+                'master2': {}
+
+            }))
 
   def testMasterIsSupported(self):
     self.assertTrue(waterfall_config.MasterIsSupported('master1'))
@@ -42,8 +75,28 @@ class MastersTest(testing.AppengineTestCase):
         waterfall_config.StepIsSupportedForMaster('step1', 'master1'))
     self.assertTrue(
         waterfall_config.StepIsSupportedForMaster('step4', 'master1'))
+    self.assertTrue(
+        waterfall_config.StepIsSupportedForMaster('step4', 'master2'))
     self.assertFalse(
         waterfall_config.StepIsSupportedForMaster('blabla', 'blabla'))
+    self.assertTrue(
+        waterfall_config.StepIsSupportedForMaster('step4', 'master2'))
+    self.assertTrue(
+        waterfall_config.StepIsSupportedForMaster('blabla', 'master3'))
+    self.assertTrue(
+        waterfall_config.StepIsSupportedForMaster('step5', 'master1'))
+    self.assertTrue(
+        waterfall_config.StepIsSupportedForMaster('step5', 'master2'))
+    self.assertFalse(
+        waterfall_config.StepIsSupportedForMaster('step7', 'master2'))
+    self.assertTrue(
+        waterfall_config.StepIsSupportedForMaster('step6', 'master1'))
+    self.assertFalse(
+        waterfall_config.StepIsSupportedForMaster('step6', 'master2'))
+    self.assertFalse(
+        waterfall_config.StepIsSupportedForMaster('step6', 'master3'))
+    self.assertFalse(
+        waterfall_config.StepIsSupportedForMaster('step7', 'master3'))
 
   def testGetTrybotForWaterfallBuilder(self):
     self.assertEqual(

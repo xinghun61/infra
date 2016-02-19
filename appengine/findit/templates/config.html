@@ -17,112 +17,21 @@
   </style>
   <script>
     var findit = {};
-    findit.mastersToBlacklistedSteps = {{ masters | tojson | safe }};
+    findit.stepsForMastersRules = {{ masters | tojson | safe }};
     findit.builders = {{ builders | tojson | safe }};
 
-    function optionExistsInSelect(option, selectId) {
-      var selectObject = $('#' + selectId + ' option');
-      for (var i = 0; i < selectObject.size(); i ++) {
-        if (option == selectObject[i].value) {
-          alert(option + ' already exists');
-          return true;
-        }
-      }
-      return false;
+    function getJsonOfTextarea(textId) {
+      return JSON.parse($('#' + textId).val());
     }
 
-    function addNewMaster(e) {
-      var masterName = $('#add-new-master-textfield').val().trim();
-
-      if (masterName.length == 0) {
-        return;
-      }
-
-      var exists = optionExistsInSelect(masterName, 'supported-masters-list');
-
-      if (!exists) {
-        findit.mastersToBlacklistedSteps[masterName] = [];
-        addOptionToSelect(masterName, 'supported-masters-list');
-      }
-      e.preventDefault();
-    }
-
-    function addNewStepForMaster(e) {
-      e.preventDefault();
-
-      var newStepName = $('#add-unsupported-step-textfield').val().trim();
-
-      if (newStepName.length == 0) {
-        return;
-      }
-
-      if (!$('#supported-masters-list').val()) {
-        alert('Please select a master to add a step to');
-        return;
-      }
-
-      var exists = optionExistsInSelect(newStepName, 'unsupported-steps-list');
-
-      if (!exists) {
-        var masterName = $('#supported-masters-list').val();
-        findit.mastersToBlacklistedSteps[masterName].push(newStepName);
-        addOptionToSelect(newStepName, 'unsupported-steps-list');
-      }
-    }
-
-    function removeSelectedOptionFromSelect(selectId) {
-      $('#' + selectId + ' option:selected').remove();
-    }
-
-    function clearList(listId) {
-      $('#' + listId).find('option').remove().end();
-    }
-
-    function showUnsupportedSteps(e)
-    {
-      var selectedMaster = $('#supported-masters-list').val();
-
-      var unsupportedStepsList = findit.mastersToBlacklistedSteps[selectedMaster];
-      clearList('unsupported-steps-list');
-
-      for (var index in unsupportedStepsList) {
-          var option = unsupportedStepsList[index];
-          addOptionToSelect(option, 'unsupported-steps-list');
-      }
-
-      e.preventDefault();
-    }
-
-    function removeSelectedMaster(e) {
-      delete findit.mastersToBlacklistedSteps[$('#supported-masters-list').val()];
-      removeSelectedOptionFromSelect('supported-masters-list');
-      clearList('unsupported-steps-list');
-      e.preventDefault();
-    }
-
-    function removeSelectedStepFromMaster(e) {
-      var selectedMaster = $('#supported-masters-list').val();
-      var stepToRemove = $('#unsupported-steps-list').val();
-
-      var unsupportedSteps = findit.mastersToBlacklistedSteps[selectedMaster];
-      var stepIndex = unsupportedSteps.indexOf(stepToRemove);
-
-      if (stepIndex > -1) {
-        unsupportedSteps.splice(stepIndex, 1);
-      }
-
-      removeSelectedOptionFromSelect('unsupported-steps-list');
-      e.preventDefault();
-    }
-
-    function addOptionToSelect(option, selectId) {
-      $('#' + selectId).append($('<option></option>').attr("value", option).text(option));
+    function getStringFromJson(json) {
+      return JSON.stringify(json, null, '  ');
     }
 
     function save(e) {
       var newConfig = {
-        'masters_to_blacklisted_steps': findit.mastersToBlacklistedSteps,
-        'builders_to_trybots': JSON.parse($('#builders-to-trybots').val()),
+        'steps_for_masters_rules': getJsonOfTextarea('steps-for-masters-rules'),
+        'builders_to_trybots': getJsonOfTextarea('builders-to-trybots'),
       };
       $.post('/config', { data: JSON.stringify(newConfig) }).done(function(){
         window.location.reload();  // Reload after successful saving.
@@ -134,17 +43,9 @@
     }
 
     $(document).ready(function() {
-      for (var master in findit.mastersToBlacklistedSteps) {
-        addOptionToSelect(master, 'supported-masters-list');
-      }
-      $('#add-new-master-button').click(addNewMaster);
-      $('#add-new-step-button').click(addNewStepForMaster);
-      $('#remove-selected-master-button').click(removeSelectedMaster);
-      $('#remove-step-button').click(removeSelectedStepFromMaster);
       $('#save-button').click(save);
-      $('#supported-masters-list').on('change', showUnsupportedSteps);
-
-      $('#builders-to-trybots').val(JSON.stringify(findit.builders, null, '  '));
+      $('#steps-for-masters-rules').val(getStringFromJson(findit.stepsForMastersRules));
+      $('#builders-to-trybots').val(getStringFromJson(findit.builders));
     });
   </script>
 </head>
@@ -153,34 +54,12 @@
   <div>Configuration version: {{ version }}</div>
   <br>
   <div>
-    <div id="supported-masters" class="support">
-      Supported masters:<br>
-      <select id="supported-masters-list" size="10" class="supported-masters">
-      </select>
-      <br>
-      <button id="remove-selected-master-button">Remove</button>
-      <br>
-      <br>Add new master:<br>
-      <input type="text" id="add-new-master-textfield"</input>
-      <button id="add-new-master-button">Add</button>
-      <span>&nbsp;</span>
-    </div>
-    <div>
-      Unspported Steps:<br>
-      <select id="unsupported-steps-list" size="10" class="unsupported-steps">
-      </select>
-      <br>
-      <button id="remove-step-button">Remove</button>
-      <br>
-      <br>Add step:<br>
-      <input type="text" id="add-unsupported-step-textfield"</input>
-      <button id="add-new-step-button">Add</button>
-      <span>&nbsp;</span>
-    </div>
+    Steps for Masters Rules:<br>
+    <textarea id="steps-for-masters-rules" rows="20" cols="80"></textarea>
   </div>
   <div>
     Waterfall Builders to Try-server trybots:<br>
-    <textarea id="builders-to-trybots" rows="10" cols="80"></textarea>
+    <textarea id="builders-to-trybots" rows="20" cols="80"></textarea>
   </div>
   <br>
   <button type="submit" id="save-button">Save</button>

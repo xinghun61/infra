@@ -9,35 +9,117 @@ import json
 from base_handler import BaseHandler
 from base_handler import Permission
 from model import wf_config
+from waterfall import waterfall_config
 
 
-def _SupportedMastersConfigIsValid(masters_to_blacklisted_steps):
+def _RemoveDuplicatesAndSort(elements):
+  return list(set(elements))
+
+
+def _IsListOfType(elements, element_type):
+  """Determines whether or not elements is a list of unique elements of type."""
+  if not elements or not isinstance(elements, list):
+    return False
+
+  return all(isinstance(s, element_type) for s in elements)
+
+
+def _ValidateMastersAndStepsRulesMapping(steps_for_masters_rules):
   """Checks that a masters configuration dict is properly formatted.
 
   Args:
-      masters_to_blacklisted_steps: A dictionary expected to map master names
-      to lists of strings representing their list of unsupported steps. For
-      example,
-
-      masters_to_blacklisted_steps = {
-          'master': ['unsupported step', 'another unsupported step', ...],
-          'another master': ['unsupported step', ...],
-          ...
-      }
+    steps_for_masters_rules: A dictionary containing supported masters and
+    global settings. For example:
+    {
+        'supported_masters': {
+            master1: {
+                'supported_steps': [steps],
+                'unsupported_steps': [steps],
+                'check_global': True or False.
+            }
+        },
+        'global': {
+            'unsupported_steps': [steps]
+        }
+    }
 
   Returns:
-      True if masters_to_blacklisted_steps is in the proper format, False
-      otherwise.
+    True if steps_for_masters_rules is in the proper format, False
+    otherwise.
+
+  Rules:
+    1.  The root-level dict must have both 'supported_masters' and 'global' as
+        keys whose values are dicts.
+    2.  'supported_masters' must have masters as string keys whose values are
+        dicts.
+    3.  'global' is a dict for settings that apply to all masters unless
+        otherwise specified by the master.
+    4.  'supported_steps' is an optional key whose value is a list of supported
+        steps that override anything specified under 'global'.
+    5.  'unsupported_steps' is an optional key whose value is a list of
+        unsupported steps.
+    6.  'check_global' is an optional key whose value is either True or False,
+        True by default.
+    7.  'check_global' = False disallows both 'supported_steps' and
+        'unsupported_steps' to exist under the same master.
+    8.  Steps in 'supported_steps' and 'unsupported_steps' under the same master
+        may never overlap.
+    9.  Lists will be sorted and duplicates removed at runtime.
+    10. Lists should never be empty.
   """
-  if not isinstance(masters_to_blacklisted_steps, dict):
+  if not isinstance(steps_for_masters_rules, dict):
     return False
 
-  for unsupported_steps_list in masters_to_blacklisted_steps.itervalues():
-    if not isinstance(unsupported_steps_list, list):
+  # 'supported_masters' is mandatory and must be a dict.
+  supported_masters = steps_for_masters_rules.get('supported_masters')
+  if not isinstance(supported_masters, dict):
+    return False
+
+  for supported_master, rules in supported_masters.iteritems():
+    # Masters must be strings, rules must be dicts.
+    if (not isinstance(supported_master, basestring) or
+        not isinstance(rules, dict)):
       return False
-    for unsupported_step in unsupported_steps_list:
-      if not isinstance(unsupported_step, basestring):
+
+    # If 'check_global' is specified, it must be a bool.
+    check_global = rules.get('check_global')
+    if check_global is not None and not isinstance(check_global, bool):
+      return False
+
+    supported_steps = rules.get('supported_steps')
+    if supported_steps is not None:
+      if not _IsListOfType(supported_steps, basestring):
         return False
+
+      supported_steps = _RemoveDuplicatesAndSort(supported_steps)
+
+    unsupported_steps = rules.get('unsupported_steps')
+    if unsupported_steps is not None:
+      # If check global is False, disallow 'unsupported_steps'.
+      if check_global is False:
+        return False
+
+      if not _IsListOfType(unsupported_steps, basestring):
+        return False
+
+      # 'supported_list' and 'unsupported_list' must not overlap.
+      if (supported_steps and
+          not set(supported_steps).isdisjoint(unsupported_steps)):
+        return False
+
+      unsupported_steps = _RemoveDuplicatesAndSort(unsupported_steps)
+
+  # Check format of 'global'.
+  global_rules = steps_for_masters_rules.get('global')
+  if not isinstance(global_rules, dict):
+    return False
+
+  global_unsupported_steps = global_rules.get('unsupported_steps')
+  if global_unsupported_steps is not None:
+    if not _IsListOfType(global_unsupported_steps, basestring):
+      return False
+    global_unsupported_steps = _RemoveDuplicatesAndSort(
+        global_unsupported_steps)
 
   return True
 
@@ -59,7 +141,7 @@ def _ValidateTrybotMapping(builders_to_trybots):
 
 # Maps config properties to their validation functions.
 _CONFIG_VALIDATION_FUNCTIONS = {
-    'masters_to_blacklisted_steps': _SupportedMastersConfigIsValid,
+    'steps_for_masters_rules': _ValidateMastersAndStepsRulesMapping,
     'builders_to_trybots': _ValidateTrybotMapping,
 }
 
@@ -88,7 +170,6 @@ def _ConfigurationDictIsValid(configuration_dict):
   for configurable_property, configuration in configuration_dict.iteritems():
     validation_function = _CONFIG_VALIDATION_FUNCTIONS.get(
         configurable_property)
-
     if validation_function is None or not validation_function(configuration):
       return False
 
@@ -102,7 +183,7 @@ class Configuration(BaseHandler):
     settings = wf_config.FinditConfig.Get()
 
     data = {
-        'masters': settings.masters_to_blacklisted_steps,
+        'masters': waterfall_config.GetStepsForMastersRules(),
         'builders': settings.builders_to_trybots,
         'version': settings.version,
     }
@@ -112,7 +193,6 @@ class Configuration(BaseHandler):
   def HandlePost(self):
     data = self.request.params.get('data')
     new_config_dict = json.loads(data)
-
     if not _ConfigurationDictIsValid(new_config_dict):  # pragma: no cover
       return self.CreateError(
           'New configuration settings is not properly formatted.', 400)

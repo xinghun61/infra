@@ -19,9 +19,50 @@ _UNSUPPORTED_MASTERS = [
 ]
 
 
+def _ConvertOldMastersFormatToNew(masters_to_blacklisted_steps):
+  """Converts the old masters format to the new rules dict.
+
+  Args:
+    masters_to_blacklisted_steps: A dict in the format:
+    {
+        'master1': ['step1', 'step2', ...],
+        'master2': ['step3', 'step4', ...]
+    }
+
+  Returns:
+    A dict in the latest rules dict format:
+    {
+        'supported_masters': {
+            'master1': {
+                'unsupported_steps: ['step1', 'step2', ...], (if any)
+            }
+        },
+        'global': {}
+    }
+  """
+  supported_masters = {}
+  steps_for_masters_rules_in_latest_format = {
+      'supported_masters': supported_masters,
+      'global': {}
+  }
+
+  for master, unsupported_steps in masters_to_blacklisted_steps.iteritems():
+    supported_masters[master] = {}
+    if unsupported_steps:
+      supported_masters[master]['unsupported_steps'] = unsupported_steps
+
+  return steps_for_masters_rules_in_latest_format
+
+
+def GetStepsForMastersRules():
+  settings = FinditConfig.Get()
+  return (settings.steps_for_masters_rules or
+          _ConvertOldMastersFormatToNew(settings.masters_to_blacklisted_steps))
+
+
 def MasterIsSupported(master_name):
   """Return True if the given master is supported, otherwise False."""
-  return master_name in FinditConfig.Get().masters_to_blacklisted_steps.keys()
+  return master_name in GetStepsForMastersRules()['supported_masters']
 
 
 def StepIsSupportedForMaster(step_name, master_name):
@@ -32,15 +73,42 @@ def StepIsSupportedForMaster(step_name, master_name):
     master_name: The name of the build master to check.
 
   Returns:
-    True if Findit supports analyzing the failure, False otherwise. If a master
-    is not supported, then neither are any of its steps.
+    True if Findit supports analyzing the failure, False otherwise.
+    Rules:
+      1. If a master is not supported, then neither are any of its steps.
+      2. If a master specifies check_global = True, then all of its steps are
+         supported except those according to those blacklisted under global.
+      3. If a master specifies check_global = True, but also specifies a
+         supported_steps, then supported_steps is to override any blacklisted
+         steps under global.
+      4. If a master specifies check_global = True, but also species its own
+         unsupported_list, those unsupported_steps are in addition to those
+         under global.
+      5. If a master specifies check_global = False, then all steps under
+         'supported_steps' are always supported and nothing else.
+         'unsupported_steps' is not allowed.
   """
-  masters_to_blacklisted_steps = FinditConfig.Get().masters_to_blacklisted_steps
-  blacklisted_steps = masters_to_blacklisted_steps.get(master_name)
-  if blacklisted_steps is None:
+  if not MasterIsSupported(master_name):
     return False
 
-  return step_name not in blacklisted_steps
+  steps_for_masters_rules = GetStepsForMastersRules()
+  supported_masters = steps_for_masters_rules['supported_masters']
+
+  supported_master = supported_masters[master_name]
+  check_global = supported_master.get('check_global', True)
+
+  if not check_global:
+    supported_steps = supported_master['supported_steps']
+    return step_name in supported_steps
+
+  supported_steps = supported_master.get('supported_steps', [])
+  unsupported_steps = supported_master.get('unsupported_steps', [])
+  global_unsupported_steps = (
+      steps_for_masters_rules['global'].get('unsupported_steps', []))
+
+  return (step_name in supported_steps or
+          (step_name not in unsupported_steps and
+           step_name not in global_unsupported_steps))
 
 
 def GetTrybotForWaterfallBuilder(wf_mastername, wf_buildername):
