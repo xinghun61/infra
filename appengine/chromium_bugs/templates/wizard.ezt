@@ -12,18 +12,18 @@
  <tr style="height: 58px;">
  
  <td id="plogo">
- <img src="https://code.google.com/p/chromium/logo"
+ <img src="/static/images/product_logo_64.png"
  alt="Logo" itemprop="image" width="48" height="48">
  </td>
  
  <td style="padding-left: 0.5em"> 
  <div id="pname">
- <a href="http://code.google.com/p/chromium/">chromium</a>
+ <a href="https://bugs.chromium.org/p/chromium/">chromium</a>
  </div>
  
  <div id="psum">
  <a id="project_summary_link"
- href="http://code.google.com/p/chromium/">An open-source browser project to help move the web forward.</a> 
+ href="https://bugs.chromium.org/p/chromium/">An open-source browser project to help move the web forward.</a>
  </div>
  
  </td> 
@@ -108,7 +108,7 @@
 		 aria-label="I searched for existing issues that already report this problem"/>
 	  <label for="already_searched">
 	    I searched for 
-	    <a href="http://code.google.com/p/chromium/issues/list">existing issues</a>
+	    <a href="https://bugs.chromium.org/p/chromium/issues/list">existing issues</a>
 		that already report this problem.
 	  </label>
 	</p>        
@@ -120,7 +120,7 @@
         <span>Step 1 of 3</span>
         <input type="button" value="Next" onclick="goStep(2)" aria-label="Next" 
 	       id="next1"/>
-	<a href="https://groups.google.com/a/chromium.org/group/chromium-dev/browse_thread/thread/5e48f707acf100dd#" class="feedback">Report a problem with this wizard</a>
+	<a href="https://bugs.chromium.org/p/monorail/" class="feedback">Report a problem with this wizard</a>
 
       </div>
 
