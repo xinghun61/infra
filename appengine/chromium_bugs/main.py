@@ -59,7 +59,6 @@ possible.
 %s
 """
 
-CORE_BUG_URL = 'https://code.google.com/p/chromium/issues/entry'
 DEFAULT_BUG_TEMPLATE_NAME = 'Defect%20report%20from%20user'
 MAC_BUG_TEMPLATE_NAME = 'Defect%20on%20Mac%20OS'
 LINUX_BUG_TEMPLATE_NAME = 'Defect%20on%20Linux'
@@ -69,7 +68,7 @@ WINDOWS_BUG_TEMPLATE_NAME = 'Defect%20on%20Windows'
 MISSING_TOKEN_HTML = (
     '<html><body>'
     '<h1>Not signed in</h1>'
-    '<p>Please go back and sign in to code.google.com before '
+    '<p>Please go back and sign in to bugs.chromium.org before '
     'using this wizard.</p>'
     ''
     '</body></html>'
@@ -87,7 +86,7 @@ INVALID_CONTINUE_HTML = (
     '<html><body>'
     '<h1>Invalid continue parameter</h1>'
     '<p>This wizard can only be used with '
-    'code.google.com and bugs.chromium.org.</p>'
+    'bugs.chromium.org.</p>'
     ''
     '</body></html>'
     )
@@ -110,11 +109,11 @@ class MainHandler(webapp2.RequestHandler):
       return
 
     if not continue_url:
-      continue_url = 'https://code.google.com/p/chromium/issues/entry.do'
+      continue_url = 'https://bugs.chromium.org/p/chromium/issues/entry.do'
 
     # Special case, chromium-os issues are now being tracked in /p/chromium.
     if '//code.google.com/p/chromium-os/issues/entry.do' in continue_url:
-      continue_url = 'https://code.google.com/p/chromium/issues/entry.do'
+      continue_url = 'https://bugs.chromium.org/p/chromium/issues/entry.do'
 
     if not any(continue_url.startswith(domain)
                for domain in ALLOWED_CONTINUE_DOMAINS):
@@ -210,7 +209,7 @@ class MainHandler(webapp2.RequestHandler):
     if not token or self.ShouldDoLegacyBehavior(browser, browser_version):
       # Allow us to measure number of users who came through new.crbug.com
       # by putting in a phrase that we can query for: "instead of that".
-      # Also, when code.google.com is in a scheduled read-only period, direct
+      # Also, when bugs.chromium.org is in a scheduled read-only period, direct
       # users straight to the classic issue entry page.
       detectable_phrase = '' if token else ' of that'
       comment = legacy_template % (
