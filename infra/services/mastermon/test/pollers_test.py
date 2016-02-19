@@ -97,11 +97,6 @@ class VarzPollerTest(unittest.TestCase):
             'total_slaves': 4,
             'recent_finished_build_times': [1, 2, 3],
             'recent_successful_build_times': [1, 2, 3],
-            'db_thread_pool': {
-              'queue': 9,
-              'waiting': 10,
-              'working': 11,
-            },
           },
           'bar': {
             'connected_slaves': 5,
@@ -109,12 +104,12 @@ class VarzPollerTest(unittest.TestCase):
             'pending_builds': 7,
             'state': "idle",
             'total_slaves': 8,
-            'db_thread_pool': {
-              'queue': 12,
-              'waiting': 13,
-              'working': 14,
-            },
           },
+        },
+        'db_thread_pool': {
+          'queue': 9,
+          'waiting': 10,
+          'working': 11,
         },
     })
 
@@ -130,6 +125,9 @@ class VarzPollerTest(unittest.TestCase):
     self.assertEqual(7, p.pending_builds.get({'builder': 'bar', 'x': 'y'}))
     self.assertEqual(8, p.total.get({'builder': 'bar', 'x': 'y'}))
     self.assertEqual('idle', p.state.get({'builder': 'bar', 'x': 'y'}))
+    self.assertEqual(9, p.pool_queue.get())
+    self.assertEqual(10, p.pool_waiting.get())
+    self.assertEqual(11, p.pool_working.get())
 
   def test_response_with_missing_data(self):
     p = pollers.VarzPoller('', {'x': 'y'})
@@ -157,17 +155,14 @@ class VarzPollerTest(unittest.TestCase):
     self.assertEqual(0, p.pending_builds.get({'builder': 'foo', 'x': 'y'}))
     self.assertEqual(4, p.total.get({'builder': 'foo', 'x': 'y'}))
     self.assertEqual('offline', p.state.get({'builder': 'foo', 'x': 'y'}))
-    self.assertIsNone(p.pool_queue.get({'builder': 'foo', 'x': 'y'}))
-    self.assertIsNone(p.pool_waiting.get({'builder': 'foo', 'x': 'y'}))
-    self.assertIsNone(p.pool_working.get({'builder': 'foo', 'x': 'y'}))
     self.assertEqual(5, p.connected.get({'builder': 'bar', 'x': 'y'}))
     self.assertEqual(6, p.current_builds.get({'builder': 'bar', 'x': 'y'}))
     self.assertEqual(7, p.pending_builds.get({'builder': 'bar', 'x': 'y'}))
     self.assertEqual(0, p.total.get({'builder': 'bar', 'x': 'y'}))
     self.assertEqual('unknown', p.state.get({'builder': 'bar', 'x': 'y'}))
-    self.assertIsNone(p.pool_queue.get({'builder': 'bar', 'x': 'y'}))
-    self.assertIsNone(p.pool_waiting.get({'builder': 'bar', 'x': 'y'}))
-    self.assertIsNone(p.pool_working.get({'builder': 'bar', 'x': 'y'}))
+    self.assertIsNone(p.pool_queue.get())
+    self.assertIsNone(p.pool_waiting.get())
+    self.assertIsNone(p.pool_working.get())
 
 
 class FilePollerTest(unittest.TestCase):

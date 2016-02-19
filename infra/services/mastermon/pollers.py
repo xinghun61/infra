@@ -109,11 +109,11 @@ class VarzPoller(Poller):
       self.state.set(builder_info.get('state', 'unknown'), fields=fields)
       self.total.set(builder_info.get('total_slaves', 0), fields=fields)
 
-      if 'db_thread_pool' in builder_info:
-        db_thread_pool = builder_info['db_thread_pool']
-        self.pool_queue = db_thread_pool.get('queue', 0)
-        self.pool_waiting = db_thread_pool.get('waiting', 0)
-        self.pool_working = db_thread_pool.get('working', 0)
+    if 'db_thread_pool' in data:
+      db_thread_pool = data['db_thread_pool']
+      self.pool_queue.set(db_thread_pool.get('queue', 0))
+      self.pool_waiting.set(db_thread_pool.get('waiting', 0))
+      self.pool_working.set(db_thread_pool.get('working', 0))
 
 
 def safe_remove(filename):
