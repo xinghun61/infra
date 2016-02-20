@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import json
-import logging
 
 from base_handler import BaseHandler
 from base_handler import Permission
@@ -51,9 +50,6 @@ class TriggerAnalyses(BaseHandler):
 
   PERMISSION_LEVEL = Permission.ADMIN
 
-  def HandleGet(self):  # pragma: no cover.
-    self.HandlePost()
-
   def HandlePost(self):
-    builds = json.loads(self.request.get('builds', '[]'))
+    builds = json.loads(self.request.body).get('builds', [])
     _TriggerNewAnalysesOnDemand(builds)

@@ -109,7 +109,9 @@ class TriggerAnalyseseTest(testing.AppengineTestCase):
         re.compile('.*401 Unauthorized.*'
                    'Error: Either not login or no permission.*',
                    re.MULTILINE | re.DOTALL),
-        self.test_app.post, '/trigger-analyses', params={'builds': '[]'})
+        self.test_app.post,
+        '/trigger-analyses',
+        params=json.dumps({'builds': []}))
 
   def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(self):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
@@ -135,7 +137,8 @@ class TriggerAnalyseseTest(testing.AppengineTestCase):
     ]
 
     response = self.test_app.post(
-        '/trigger-analyses', params={'builds': json.dumps(builds)})
+        '/trigger-analyses',
+        params=json.dumps({'builds': builds}))
     self.assertEquals(200, response.status_int)
     self.assertEqual(1, len(requests))
     self.assertTrue(requests[0][1]['build_completed'])
