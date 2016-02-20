@@ -21,7 +21,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
   def setUp(self):
     super(ExtractSignalPipelineTest, self).setUp()
 
-    def Mocked_ScheduleTryJobIfNeeded(*_):
+    def Mocked_ScheduleTryJobIfNeeded(*_, **__):
       pass
     self.mock(
         try_job_util, 'ScheduleTryJobIfNeeded', Mocked_ScheduleTryJobIfNeeded)
@@ -99,7 +99,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
         master_name, builder_name, build_number)
 
     pipeline = ExtractSignalPipeline(self.FAILURE_INFO)
-    signals = pipeline.run(self.FAILURE_INFO)
+    signals = pipeline.run(self.FAILURE_INFO, False)
 
     self.assertEqual(self.FAILURE_SIGNALS, signals)
 
@@ -119,7 +119,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number)
 
-    pipeline = ExtractSignalPipeline(self.FAILURE_INFO)
+    pipeline = ExtractSignalPipeline(self.FAILURE_INFO, False)
     pipeline.start()
     self.execute_queued_tasks()
 
@@ -207,7 +207,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
               MockStepIsSupportedForMaster)
 
     pipeline = ExtractSignalPipeline(self.FAILURE_INFO)
-    signals = pipeline.run(self.FAILURE_INFO)
+    signals = pipeline.run(self.FAILURE_INFO, False)
 
     step = WfStep.Get(master_name, builder_name, build_number, step_name)
 
@@ -252,7 +252,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
               MockStepIsSupportedForMaster)
 
     pipeline = ExtractSignalPipeline()
-    signals = pipeline.run(failure_info)
+    signals = pipeline.run(failure_info, False)
 
     step = WfStep.Get(master_name, builder_name, build_number, step_name)
 
@@ -293,7 +293,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
               MockStepIsSupportedForMaster)
 
     pipeline = ExtractSignalPipeline()
-    signals = pipeline.run(failure_info)
+    signals = pipeline.run(failure_info, False)
 
     step = WfStep.Get(master_name, builder_name, build_number, step_name)
 
@@ -312,7 +312,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     expected_signals = {}
 
     pipeline = ExtractSignalPipeline()
-    signals = pipeline.run(failure_info)
+    signals = pipeline.run(failure_info, False)
     self.assertEqual(expected_signals, signals)
 
   def testBailOutIfNoValidChromiumRevision(self):
@@ -323,7 +323,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     expected_signals = {}
 
     pipeline = ExtractSignalPipeline()
-    signals = pipeline.run(failure_info)
+    signals = pipeline.run(failure_info, False)
     self.assertEqual(expected_signals, signals)
 
   def testExtractSignalsForTests(self):
@@ -402,7 +402,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
         master_name, builder_name, build_number)
 
     pipeline = ExtractSignalPipeline()
-    signals = pipeline.run(failure_info)
+    signals = pipeline.run(failure_info, False)
     self.assertEqual(expected_signals, signals)
 
   def testExtractSignalsForTestsFlaky(self):
@@ -458,7 +458,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
         master_name, builder_name, build_number)
 
     pipeline = ExtractSignalPipeline()
-    signals = pipeline.run(failure_info)
+    signals = pipeline.run(failure_info, False)
     self.assertEqual(expected_signals, signals)
 
   def testBailOutForUnsupportedStep(self):
@@ -498,5 +498,5 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
         master_name, builder_name, build_number)
 
     pipeline = ExtractSignalPipeline()
-    signals = pipeline.run(failure_info)
+    signals = pipeline.run(failure_info, False)
     self.assertEqual(self.FAILURE_SIGNALS, signals)

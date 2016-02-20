@@ -95,11 +95,12 @@ class ExtractSignalPipeline(BasePipeline):
     return failed_test_log
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, failure_info):
+  def run(self, failure_info, build_completed):
     """Extracts failure signals from failed steps.
 
     Args:
       failure_info (dict): Output of pipeline DetectFirstFailurePipeline.run().
+      build_completed (bool): Whether the build is completed.
 
     Returns:
       A dict like below:
@@ -197,7 +198,7 @@ class ExtractSignalPipeline(BasePipeline):
 
     # Starts a new try_job if needed.
     failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
-        failure_info, signals)
+        failure_info, signals=signals, build_completed=build_completed)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.failure_result_map = failure_result_map

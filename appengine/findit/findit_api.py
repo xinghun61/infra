@@ -9,24 +9,28 @@ Current APIs include:
    Analyzes build failures and detects suspected CLs.
 """
 
+import json
 import logging
 
 import endpoints
+from google.appengine.api import taskqueue
 from protorpc import messages
 from protorpc import remote
 
-from waterfall import build_failure_analysis_pipelines
+from common import appengine_util
+from model.wf_analysis import WfAnalysis
 from waterfall import buildbot
 from waterfall import waterfall_config
-
-
-_BUILD_FAILURE_ANALYSIS_TASKQUEUE = 'build-failure-analysis-queue'
 
 
 # This is used by the underlying ProtoRpc when creating names for the ProtoRPC
 # messages below. This package name will show up as a prefix to the message
 # class names in the discovery doc and client libraries.
 package = 'FindIt'
+
+
+_REQUEST_PROCESS_QUEUE = 'request-process-queue'
+_REQUEST_HANDLER_URL = '/trigger-analyses'
 
 
 # These subclasses of Message are basically definitions of Protocol RPC
@@ -68,6 +72,15 @@ class _BuildFailureAnalysisResult(messages.Message):
 class _BuildFailureAnalysisResultCollection(messages.Message):
   """Represents a response to the client, eg. builder_alerts."""
   results = messages.MessageField(_BuildFailureAnalysisResult, 1, repeated=True)
+
+
+def _TriggerNewAnalysesOnDemand(builds_to_check):
+  """Pushes a task to run on the backend to trigger new analyses on demand."""
+  target = appengine_util.GetTargetNameForModule('build-failure-analysis')
+  payload = json.dumps({'builds': builds_to_check})
+  taskqueue.add(
+      url=_REQUEST_HANDLER_URL, payload=payload, target=target,
+      queue_name=_REQUEST_PROCESS_QUEUE)
 
 
 # Create a Cloud Endpoints API.
@@ -112,22 +125,28 @@ class FindItApi(remote.Service):
       A list of analysis results for the given build failures.
     """
     results = []
-
-    logging.info('%d build failure(s).', len(request.builds))
+    builds_to_check = []
 
     for build in request.builds:
       master_name = buildbot.GetMasterNameFromUrl(build.master_url)
       if not (master_name and waterfall_config.MasterIsSupported(master_name)):
         continue
 
+      builds_to_check.append({
+          'master_name': master_name,
+          'builder_name': build.builder_name,
+          'build_number': build.build_number,
+          'failed_steps': build.failed_steps,
+      })
+
       # If the build failure was already analyzed and a new analysis is
       # scheduled to analyze new failed steps, the returned WfAnalysis will
       # still have the result from last completed analysis.
-      analysis = build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
-          master_name, build.builder_name, build.build_number,
-          failed_steps=build.failed_steps,
-          force=False,
-          queue_name=_BUILD_FAILURE_ANALYSIS_TASKQUEUE)
+      # If there is no analysis yet, no result is returned.
+      analysis = WfAnalysis.Get(
+          master_name, build.builder_name, build.build_number)
+      if not analysis:
+        continue
 
       if analysis.failed or not analysis.result:
         # Bail out if the analysis failed or there is no result yet.
@@ -149,5 +168,14 @@ class FindItApi(remote.Service):
           results.append(self._GenerateBuildFailureAnalysisResult(
               build, failure['suspected_cls'], failure['step_name'],
               failure['first_failure']))
+
+    logging.info('%d build failure(s), while %d are supported',
+                 len(request.builds), len(builds_to_check))
+    try:
+      _TriggerNewAnalysesOnDemand(builds_to_check)
+    except Exception:  # pragma: no cover.
+      # If we fail to post a task to the task queue, we ignore and wait for next
+      # request.
+      logging.exception('Failed to trigger new analyses on demand.')
 
     return _BuildFailureAnalysisResultCollection(results=results)

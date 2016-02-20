@@ -90,7 +90,7 @@ class BuildFailureTest(testing.AppengineTestCase):
     analysis.put()
 
     response = self.test_app.get('/build-failure',
-                                 params={'url': build_url, 'force': '1'})
+                                 params={'url': build_url})
     self.assertEquals(200, response.status_int)
     self.assertEqual(0, len(self.taskqueue_stub.get_filtered_tasks()))
 

@@ -5,8 +5,7 @@
 from collections import defaultdict
 import logging
 
-from google.appengine.api import modules
-
+from common import appengine_util
 from model import wf_analysis_status
 from model.wf_try_job import WfTryJob
 from pipeline_wrapper import BasePipeline
@@ -80,8 +79,8 @@ class RunTryJobForReliableFailurePipeline(BasePipeline):
           bad_revision, blame_list, try_job_type, compile_targets,
           targeted_tests)
 
-      new_try_job_pipeline.target = (
-          '%s.build-failure-analysis' % modules.get_current_version_name())
+      new_try_job_pipeline.target = appengine_util.GetTargetNameForModule(
+          'build-failure-analysis')
       new_try_job_pipeline.start()
       logging.info('Try-job was scheduled for build %s, %s, %s: %s',
                    master_name, builder_name, build_number,

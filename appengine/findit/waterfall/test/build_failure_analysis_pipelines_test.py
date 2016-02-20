@@ -15,7 +15,7 @@ from waterfall import build_failure_analysis_pipelines
 class _MockRootPipeline(object):
   STARTED = False
 
-  def __init__(self, master_name, builder_name, build_number):
+  def __init__(self, master_name, builder_name, build_number, build_completed):
     pass
 
   def pipeline_status_path(self):
@@ -30,10 +30,12 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
   app_module = pipeline_handlers._APP
 
   def _CreateAndSaveWfAnalysis(
-      self, master_name, builder_name, build_number, not_passed_steps, status):
+      self, master_name, builder_name, build_number, not_passed_steps, status,
+      build_completed=True):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.not_passed_steps = not_passed_steps
     analysis.status = status
+    analysis.build_completed = build_completed
     analysis.put()
 
   def testAnalysisIsNeededWhenBuildWasNeverAnalyzed(self):
@@ -43,7 +45,7 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
     failed_steps = ['a']
 
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
-        master_name, builder_name, build_number, failed_steps, False)
+        master_name, builder_name, build_number, failed_steps, False, False)
 
     self.assertTrue(need_analysis)
 
@@ -57,7 +59,7 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     failed_steps = ['a', 'b']
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
-        master_name, builder_name, build_number, failed_steps, False)
+        master_name, builder_name, build_number, failed_steps, False, False)
 
     self.assertFalse(need_analysis)
 
@@ -72,7 +74,7 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     failed_steps = ['a']
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
-        master_name, builder_name, build_number, failed_steps, True)
+        master_name, builder_name, build_number, failed_steps, False, True)
 
     self.assertFalse(need_analysis)
 
@@ -87,7 +89,7 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     failed_steps = ['a']
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
-        master_name, builder_name, build_number, failed_steps, True)
+        master_name, builder_name, build_number, failed_steps, False, True)
 
     self.assertTrue(need_analysis)
 
@@ -102,7 +104,7 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     failed_steps = None
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
-        master_name, builder_name, build_number, failed_steps, False)
+        master_name, builder_name, build_number, failed_steps, False, False)
 
     self.assertFalse(need_analysis)
 
@@ -117,7 +119,7 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     failed_steps = ['a', 'b']
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
-        master_name, builder_name, build_number, failed_steps, False)
+        master_name, builder_name, build_number, failed_steps, False, False)
 
     self.assertFalse(need_analysis)
 
@@ -132,7 +134,22 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     failed_steps = ['a', 'b']
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
-        master_name, builder_name, build_number, failed_steps, False)
+        master_name, builder_name, build_number, failed_steps, False, False)
+
+    self.assertTrue(need_analysis)
+
+  def testNewAnalysisIsNeededWhenBuildCompletedAfterLastAnalysis(self):
+    master_name = 'm'
+    builder_name = 'b 1'
+    build_number = 123
+    not_passed_steps = ['a']
+    self._CreateAndSaveWfAnalysis(
+        master_name, builder_name, build_number,
+        not_passed_steps, wf_analysis_status.ANALYZED, build_completed=False)
+
+    failed_steps = ['a']
+    need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
+        master_name, builder_name, build_number, failed_steps, True, False)
 
     self.assertTrue(need_analysis)
 
@@ -147,8 +164,8 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
     _MockRootPipeline.STARTED = False
 
     build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
-        master_name, builder_name, build_number,
-        failed_steps=['a'], force=False, queue_name='default')
+        master_name, builder_name, build_number, failed_steps=['a'],
+        build_completed=False, force=False, queue_name='default')
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
 
@@ -171,7 +188,7 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
     _MockRootPipeline.STARTED = False
 
     build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
-        master_name, builder_name, build_number,
-        failed_steps=['a'], force=False, queue_name='default')
+        master_name, builder_name, build_number, failed_steps=['a'],
+        build_completed=True, force=False, queue_name='default')
 
     self.assertFalse(_MockRootPipeline.STARTED)

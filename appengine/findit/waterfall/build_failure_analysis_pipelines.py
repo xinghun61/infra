@@ -5,16 +5,17 @@
 from datetime import datetime
 import logging
 
-from google.appengine.api import modules
 from google.appengine.ext import ndb
 
+from common import appengine_util
 from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
 from waterfall import analyze_build_failure_pipeline
 
 @ndb.transactional
 def NeedANewAnalysis(
-    master_name, builder_name, build_number, failed_steps, force):
+    master_name, builder_name, build_number, failed_steps,
+    build_completed, force):
   """Checks status of analysis for the build and decides if a new one is needed.
 
   A WfAnalysis entity for the given build will be created if none exists.
@@ -58,18 +59,20 @@ def NeedANewAnalysis(
       analysis.put()
       return True
 
-    return False
-  else:
-    # TODO: support following cases
-    # 1. Automatically retry if last analysis failed with errors.
-    # 2. Start another analysis if the build cycle wasn't completed in last
-    #    analysis request.
-    # 3. Analysis is not complete and no update in the last 5 minutes.
-    return False
+  # Start a new analysis if the build cycle wasn't completed in last analysis,
+  # but now it is completed. This will potentially trigger a try-job run.
+  if analysis.completed and not analysis.build_completed and build_completed:
+    return True
+
+  # TODO: support following cases
+  # * Automatically retry if last analysis failed with errors.
+  # * Analysis is not complete and no update in the last 5 minutes.
+  return False
 
 
 def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
                              failed_steps=None,
+                             build_completed=False,
                              force=False,
                              queue_name='default'):
   """Schedules an analysis if needed and returns the build analysis.
@@ -82,6 +85,7 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
     builder_name (str): The builder name of the failed build.
     build_number (int): The build number of the failed build.
     failed_steps (list): The names of all failed steps reported for the build.
+    build_completed (bool): Indicate whether the build is completed.
     force (bool): If True, a fresh new analysis will be triggered even when an
         old one was completed already; otherwise bail out.
     queue_name (str): The task queue to be used for pipeline tasks.
@@ -90,9 +94,10 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
     A WfAnalysis instance.
   """
   if NeedANewAnalysis(
-      master_name, builder_name, build_number, failed_steps, force):
+      master_name, builder_name, build_number, failed_steps,
+      build_completed, force):
     pipeline_job = analyze_build_failure_pipeline.AnalyzeBuildFailurePipeline(
-                       master_name, builder_name, build_number)
+        master_name, builder_name, build_number, build_completed)
     # Explicitly run analysis in the backend module "build-failure-analysis".
     # Note: Just setting the target in queue.yaml does NOT work for pipeline
     # when deployed to App Engine, but it does work in dev-server locally.
@@ -100,8 +105,8 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
     # specified explicitly, and the default target is used rather than the one
     # in the queue.yaml file, but this contradicts the documentation in
     # https://cloud.google.com/appengine/docs/python/taskqueue/tasks#Task.
-    pipeline_job.target = ('%s.build-failure-analysis' %
-        modules.get_current_version_name())
+    pipeline_job.target = appengine_util.GetTargetNameForModule(
+        'build-failure-analysis')
     pipeline_job.start(queue_name=queue_name)
 
     logging.info('An analysis was scheduled for build %s, %s, %s: %s',

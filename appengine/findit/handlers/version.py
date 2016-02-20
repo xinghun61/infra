@@ -2,10 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from google.appengine.api import modules
-
 from base_handler import BaseHandler
 from base_handler import Permission
+from common import appengine_util
 
 
 class Version(BaseHandler):
@@ -13,4 +12,4 @@ class Version(BaseHandler):
 
   def HandleGet(self):
     """Responses the deployed version of this app."""
-    self.response.write(modules.get_current_version_name())
+    self.response.write(appengine_util.GetCurrentVersion())

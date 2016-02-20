@@ -113,7 +113,8 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
 
     root_pipeline = AnalyzeBuildFailurePipeline(master_name,
                                                 builder_name,
-                                                build_number)
+                                                build_number,
+                                                False)
     root_pipeline.start(queue_name='default')
     self.execute_queued_tasks()
 
@@ -157,7 +158,8 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
 
     root_pipeline = AnalyzeBuildFailurePipeline(master_name,
                                                 builder_name,
-                                                build_number)
+                                                build_number,
+                                                False)
     root_pipeline._ResetAnalysis(master_name, builder_name, build_number)
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
@@ -173,7 +175,8 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
 
     root_pipeline = AnalyzeBuildFailurePipeline(master_name,
                                                 builder_name,
-                                                build_number)
+                                                build_number,
+                                                False)
     root_pipeline._LogUnexpectedAborting(True)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
@@ -188,7 +191,8 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
 
     root_pipeline = AnalyzeBuildFailurePipeline(master_name,
                                                 builder_name,
-                                                build_number)
+                                                build_number,
+                                                False)
     root_pipeline._LogUnexpectedAborting(True)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
@@ -203,7 +207,8 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
 
     root_pipeline = AnalyzeBuildFailurePipeline(master_name,
                                                 builder_name,
-                                                build_number)
+                                                build_number,
+                                                False)
     root_pipeline._LogUnexpectedAborting(False)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)

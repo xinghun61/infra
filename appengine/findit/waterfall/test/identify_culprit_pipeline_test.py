@@ -225,13 +225,14 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
               'AnalyzeBuildFailure', MockAnalyzeBuildFailure)
 
     pipeline = identify_culprit_pipeline.IdentifyCulpritPipeline(
-        failure_info, change_logs, deps_info, signals)
+        failure_info, change_logs, deps_info, signals, True)
     pipeline.start()
     self.execute_queued_tasks()
 
     expected_suspected_cls = []
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertTrue(analysis.build_completed)
     self.assertIsNotNone(analysis)
     self.assertEqual(dummy_result, analysis.result)
     self.assertEqual(wf_analysis_status.ANALYZED, analysis.status)

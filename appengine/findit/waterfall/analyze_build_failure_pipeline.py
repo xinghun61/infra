@@ -4,8 +4,7 @@
 
 from datetime import datetime
 
-from google.appengine.api import modules
-
+from common import appengine_util
 from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
 from pipeline_wrapper import BasePipeline
@@ -18,9 +17,9 @@ from waterfall.pull_changelog_pipeline import PullChangelogPipeline
 
 class AnalyzeBuildFailurePipeline(BasePipeline):
 
-  def __init__(self, master_name, builder_name, build_number):
+  def __init__(self, master_name, builder_name, build_number, build_completed):
     super(AnalyzeBuildFailurePipeline, self).__init__(
-        master_name, builder_name, build_number)
+        master_name, builder_name, build_number, build_completed)
     self.master_name = master_name
     self.builder_name = builder_name
     self.build_number = build_number
@@ -48,12 +47,12 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     analysis.status = wf_analysis_status.ANALYZING
     analysis.result_status = None
     analysis.start_time = datetime.utcnow()
-    analysis.version = modules.get_current_version_name()
+    analysis.version = appengine_util.GetCurrentVersion()
     analysis.end_time = None
     analysis.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number):
+  def run(self, master_name, builder_name, build_number, build_completed):
     self._ResetAnalysis(master_name, builder_name, build_number)
 
     # The yield statements below return PipelineFutures, which allow subsequent
@@ -63,6 +62,6 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
         master_name, builder_name, build_number)
     change_logs = yield PullChangelogPipeline(failure_info)
     deps_info = yield ExtractDEPSInfoPipeline(failure_info, change_logs)
-    signals = yield ExtractSignalPipeline(failure_info)
+    signals = yield ExtractSignalPipeline(failure_info, build_completed)
     yield IdentifyCulpritPipeline(
-        failure_info, change_logs, deps_info, signals)
+        failure_info, change_logs, deps_info, signals, build_completed)

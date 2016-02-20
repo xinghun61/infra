@@ -90,6 +90,7 @@ class WfAnalysis(BaseBuildModel):
 
   # When the build cycle started.
   build_start_time = ndb.DateTimeProperty(indexed=True)
+  build_completed = ndb.BooleanProperty(default=False, indexed=False)
 
   # The url path to the pipeline status page.
   pipeline_status_path = ndb.StringProperty(indexed=False)

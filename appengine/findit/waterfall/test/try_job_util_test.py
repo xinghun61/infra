@@ -36,6 +36,18 @@ class TryJobUtilTest(testing.AppengineTestCase):
     self.mock(waterfall_config, 'GetTrybotForWaterfallBuilder',
               Mocked_GetTrybotForWaterfallBuilder)
 
+  def testNotNeedANewTryJobIfBuildIsNotCompletedYet(self):
+    self.mock(
+        try_job_util.swarming_tasks_to_try_job_pipeline,
+        'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
+    _MockRootPipeline.STARTED = False
+
+    failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
+        {}, build_completed=False)
+
+    self.assertFalse(_MockRootPipeline.STARTED)
+    self.assertEqual({}, failure_result_map)
+
   def testNotNeedANewTryJobIfBuilderIsNotSupportedYet(self):
     def Mocked_GetTrybotForWaterfallBuilder(*_):
       return None, None
@@ -81,7 +93,8 @@ class TryJobUtilTest(testing.AppengineTestCase):
         'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
     _MockRootPipeline.STARTED = False
 
-    failure_result_map = try_job_util.ScheduleTryJobIfNeeded(failure_info)
+    failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
+        failure_info, build_completed=True)
 
     self.assertFalse(_MockRootPipeline.STARTED)
     self.assertEqual({}, failure_result_map)
@@ -126,7 +139,7 @@ class TryJobUtilTest(testing.AppengineTestCase):
         'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
     _MockRootPipeline.STARTED = False
 
-    try_job_util.ScheduleTryJobIfNeeded(failure_info)
+    try_job_util.ScheduleTryJobIfNeeded(failure_info, build_completed=True)
 
     self.assertFalse(_MockRootPipeline.STARTED)
 
@@ -360,7 +373,7 @@ class TryJobUtilTest(testing.AppengineTestCase):
         'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
     _MockRootPipeline.STARTED = False
 
-    try_job_util.ScheduleTryJobIfNeeded(failure_info)
+    try_job_util.ScheduleTryJobIfNeeded(failure_info, build_completed=True)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
 

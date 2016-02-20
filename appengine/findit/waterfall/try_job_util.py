@@ -133,7 +133,11 @@ def _GetFailedTargetsFromSignals(signals):
   return compile_targets
 
 
-def ScheduleTryJobIfNeeded(failure_info, signals=None):
+def ScheduleTryJobIfNeeded(failure_info, signals=None, build_completed=False):
+  # Do not schedule try-jobs or Swarming tasks until the build is completed.
+  if not build_completed:
+    return {}
+
   master_name = failure_info['master_name']
   builder_name = failure_info['builder_name']
   build_number = failure_info['build_number']

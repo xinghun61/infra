@@ -15,6 +15,7 @@ from handlers import list_analyses
 from handlers import monitor_alerts
 from handlers import swarming_task
 from handlers import triage_analysis
+from handlers import trigger_analyses
 from handlers import try_job
 from handlers import try_job_result
 from handlers import verify_analysis
@@ -22,7 +23,7 @@ from handlers import version
 from pipeline_wrapper import pipeline_status_ui
 
 
-# This is for web pages.
+# This is for web pages in the frontend.
 web_pages_handler_mappings = [
     ('/build-failure', build_failure.BuildFailure),
     ('/check-duplicate-failures',
@@ -56,3 +57,11 @@ pipeline_status_handler_mappings = [
 ]
 pipeline_status_application = webapp2.WSGIApplication(
     pipeline_status_handler_mappings, debug=False)
+
+
+# This is for task queue running in the backend.
+backend_handler_mappings = [
+    ('/trigger-analyses', trigger_analyses.TriggerAnalyses),
+]
+backend_application = webapp2.WSGIApplication(
+    backend_handler_mappings, debug=False)

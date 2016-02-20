@@ -54,7 +54,7 @@ class IdentifyCulpritPipeline(BasePipeline):
   """A pipeline to identify culprit CLs for a build failure."""
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, failure_info, change_logs, deps_info, signals):
+  def run(self, failure_info, change_logs, deps_info, signals, build_completed):
     """Identifies culprit CL.
 
     Args:
@@ -73,6 +73,7 @@ class IdentifyCulpritPipeline(BasePipeline):
     analysis_result = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs, deps_info, signals)
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    analysis.build_completed = build_completed
     analysis.result = analysis_result
     analysis.status = wf_analysis_status.ANALYZED
     analysis.result_status = _GetResultAnalysisStatus(analysis_result)

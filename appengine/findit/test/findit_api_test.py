@@ -2,10 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
+
 import endpoints
+from google.appengine.api import taskqueue
 
 from testing_utils import testing
 
+import findit_api
 from findit_api import FindItApi
 from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
@@ -14,6 +18,13 @@ from waterfall import waterfall_config
 
 class FinditApiTest(testing.EndpointsTestCase):
   api_service_cls = FindItApi
+
+  def setUp(self):
+    super(FinditApiTest, self).setUp()
+    self.taskqueue_requests = []
+    def Mocked_taskqueue_add(**kwargs):
+      self.taskqueue_requests.append(kwargs)
+    self.mock(taskqueue, 'add', Mocked_taskqueue_add)
 
   def _MockMasterIsSupported(self, supported):
     def MockMasterIsSupported(*_):
@@ -56,6 +67,30 @@ class FinditApiTest(testing.EndpointsTestCase):
     response = self.call_api('AnalyzeBuildFailures', body=builds)
     self.assertEqual(200, response.status_int)
     self.assertEqual(expected_results, response.json_body.get('results', []))
+
+  def testNothingIsReturnedWhenNoAnalysisWasRun(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 5
+
+    master_url = 'https://build.chromium.org/p/%s' % master_name
+    builds = {
+        'builds': [
+            {
+                'master_url': master_url,
+                'builder_name': builder_name,
+                'build_number': build_number
+            }
+        ]
+    }
+
+    expected_result = []
+
+    self._MockMasterIsSupported(supported=True)
+
+    response = self.call_api('AnalyzeBuildFailures', body=builds)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual(expected_result, response.json_body.get('results', []))
 
   def testFailedAnalysisIsNotReturnedEvenWhenItHasResults(self):
     master_name = 'm'
@@ -479,3 +514,42 @@ class FinditApiTest(testing.EndpointsTestCase):
     response = self.call_api('AnalyzeBuildFailures', body=builds)
     self.assertEqual(200, response.status_int)
     self.assertEqual(expected_results, response.json_body.get('results'))
+
+  def testAnalysisRequestQueuedAsExpected(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 5
+
+    master_url = 'https://build.chromium.org/p/%s' % master_name
+    builds = {
+        'builds': [
+            {
+                'master_url': master_url,
+                'builder_name': builder_name,
+                'build_number': build_number
+            }
+        ]
+    }
+
+    expected_result = []
+
+    self._MockMasterIsSupported(supported=True)
+
+    response = self.call_api('AnalyzeBuildFailures', body=builds)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual(expected_result, response.json_body.get('results', []))
+    self.assertEqual(1, len(self.taskqueue_requests))
+
+    expected_payload_json = {
+        'builds': [
+            {
+                'master_name': master_name,
+                'builder_name': builder_name,
+                'build_number': build_number,
+                'failed_steps': [],
+            },
+        ]
+    }
+    self.assertEqual(
+        expected_payload_json,
+        json.loads(self.taskqueue_requests[0].get('payload')))

@@ -85,10 +85,15 @@ class BuildFailure(BaseHandler):
             'Master "%s" is not supported yet.' % master_name, 501)
 
     if not analysis:
-      force = self.request.get('force') == '1'
+      # Only allow admin to force a re-run and set the build_completed.
+      force = (users.is_current_user_admin() and
+               self.request.get('force') == '1')
+      build_completed = (users.is_current_user_admin() and
+                         self.request.get('build_completed') == '1')
       analysis = build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
           master_name, builder_name, build_number,
-          force=force, queue_name=BUILD_FAILURE_ANALYSIS_TASKQUEUE)
+          build_completed=build_completed, force=force,
+          queue_name=BUILD_FAILURE_ANALYSIS_TASKQUEUE)
 
     data = {
         'master_name': analysis.master_name,
