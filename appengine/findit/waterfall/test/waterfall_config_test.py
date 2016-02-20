@@ -43,6 +43,21 @@ class MastersTest(testing.AppengineTestCase):
                     'buildername': 'trybot1',
                 }
             }
+        },
+        'try_job_settings': {
+            'server_query_interval_seconds': 60,
+            'job_timeout_hours': 5,
+            'allowed_response_error_times': 1
+        },
+        'swarming_settings': {
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 10
         }
     }
 
@@ -105,3 +120,26 @@ class MastersTest(testing.AppengineTestCase):
     self.assertEqual(
         (None, None),
         waterfall_config.GetTrybotForWaterfallBuilder('master2', 'builder2'))
+
+  def testGetTryJobSettings(self):
+    self.assertEqual(
+        {
+            'server_query_interval_seconds': 60,
+            'job_timeout_hours': 5,
+            'allowed_response_error_times': 1
+        },
+        waterfall_config.GetTryJobSettings())
+
+  def testGetSwarmingSettings(self):
+    self.assertEqual(
+        {
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 10
+        },
+        waterfall_config.GetSwarmingSettings())

@@ -82,6 +82,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
   def _Mock_GetChangeLog(self, revision):
     def MockedGetChangeLog(*_):
       class MockedChangeLog(object):
+
         def __init__(self, commit_position, code_review_url):
           self.commit_position = commit_position
           self.code_review_url = code_review_url
@@ -90,6 +91,15 @@ class TryJobPipelineTest(testing.AppengineTestCase):
       mock_change_logs['rev2'] = MockedChangeLog('2', 'url_2')
       return mock_change_logs.get(revision)
     self.mock(GitRepository, 'GetChangeLog', MockedGetChangeLog)
+
+  def _MockGetTryJobSettings(self):
+    def _GetMockTryJobSettings():
+      return {
+          'server_query_interval_seconds': 60,
+          'job_timeout_hours': 5,
+          'allowed_response_error_times': 1
+      }
+    self.mock(waterfall_config, 'GetTryJobSettings', _GetMockTryJobSettings)
 
   def testSuccessfullyScheduleNewTryJobForCompile(self):
     master_name = 'm'
@@ -109,6 +119,7 @@ class TryJobPipelineTest(testing.AppengineTestCase):
     self._Mock_TriggerTryJobs(responses)
     self._Mock_GetTryJobs('1')
     self._Mock_GetChangeLog('rev2')
+    self._MockGetTryJobSettings()
 
     WfTryJob.Create(master_name, builder_name, build_number).put()
 

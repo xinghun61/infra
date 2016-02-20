@@ -13,12 +13,20 @@ from testing_utils import testing
 from common.retry_http_client import RetryHttpClient
 from model.wf_step import WfStep
 from waterfall import swarming_util
+from waterfall import waterfall_config
 from waterfall.swarming_task_request import SwarmingTaskRequest
 
 
-#TODO(chanli): Add below to findit config.
-ISOLATED_SERVER = 'https://isolateserver.appspot.com'
-ISOLATED_STORAGE_URL = 'isolateserver.storage.googleapis.com'
+_MOCK_SWARMING_SETTINGS = {
+    'task_timeout_hours': 23,
+    'server_query_interval_seconds': 60,
+    'iterations_to_rerun': 10,
+    'server_host': 'chromium-swarm.appspot.com',
+    'default_request_priority': 150,
+    'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+    'isolated_server': 'https://isolateserver.appspot.com',
+    'request_expiration_hours': 20
+}
 
 
 class SwarmingHttpClient(RetryHttpClient):
@@ -50,7 +58,7 @@ class SwarmingHttpClient(RetryHttpClient):
 
     url = ('https://%s/_ah/api/swarming/v1/tasks/'
            'list?tags=%s&tags=%s&tags=%s') % (
-               swarming_util.SWARMING_SERVER_HOST,
+               _MOCK_SWARMING_SETTINGS.get('server_host'),
                urllib.quote('master:%s' % master_name),
                urllib.quote('buildername:%s' % builder_name),
                urllib.quote('buildnumber:%d' % build_number))
@@ -75,7 +83,7 @@ class SwarmingHttpClient(RetryHttpClient):
 
   def _SetResponseForGetRequestSwarmingResult(self, task_id):
     url = ('https://%s/_ah/api/swarming/v1/task/%s/result') % (
-        swarming_util.SWARMING_SERVER_HOST, task_id)
+        _MOCK_SWARMING_SETTINGS.get('server_host'), task_id)
 
     response = self._GetData('task')
     self.get_responses[url] = response
@@ -133,6 +141,11 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     super(SwarmingUtilTest, self).setUp()
     self.http_client = SwarmingHttpClient()
     self.logged_http_client = _LoggedHttpClient()
+
+    def _MockGetSwarmingSettings():
+      return _MOCK_SWARMING_SETTINGS
+
+    self.mock(waterfall_config, 'GetSwarmingSettings', _MockGetSwarmingSettings)
 
   def testGetSwarmingTaskRequest(self):
     task_request_json = {
@@ -252,7 +265,9 @@ class SwarmingUtilTest(testing.AppengineTestCase):
                 {
                     'digest': 'isolatedhashatests',
                     'namespace': 'default-gzip',
-                    'isolatedserver': ISOLATED_SERVER
+                    'isolatedserver': (
+                        waterfall_config.GetSwarmingSettings().get(
+                            'isolated_server'))
                 }
             ]
         },
@@ -263,12 +278,16 @@ class SwarmingUtilTest(testing.AppengineTestCase):
                 {
                     'digest': 'isolatedhashunittests',
                     'namespace': 'default-gzip',
-                    'isolatedserver': ISOLATED_SERVER
+                    'isolatedserver': (
+                        waterfall_config.GetSwarmingSettings().get(
+                            'isolated_server'))
                 },
                 {
                     'digest': 'isolatedhashunittests1',
                     'namespace': 'default-gzip',
-                    'isolatedserver': ISOLATED_SERVER
+                    'isolatedserver': (
+                        waterfall_config.GetSwarmingSettings().get(
+                            'isolated_server'))
                 }
             ]
         },
@@ -337,7 +356,8 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         {
             'digest': 'isolatedhashunittests',
             'namespace': 'default-gzip',
-            'isolatedserver': ISOLATED_SERVER
+            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
+                'isolated_server')
         }
     ]
     self.assertEqual(expected_data, data)
@@ -361,12 +381,15 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     isolated_data = {
         'digest': 'shard1_isolated',
         'namespace': 'default-gzip',
-        'isolatedserver': ISOLATED_SERVER
+        'isolatedserver': waterfall_config.GetSwarmingSettings().get(
+            'isolated_server')
     }
+    isolated_storage_url = waterfall_config.GetSwarmingSettings().get(
+        'isolated_storage_url')
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
     self.http_client._SetResponseForGetRequestIsolated(
-        'https://%s/default-gzip/shard1' % ISOLATED_STORAGE_URL, 'shard1')
+        'https://%s/default-gzip/shard1' % isolated_storage_url, 'shard1')
 
     result = swarming_util._DownloadTestResults(
         isolated_data, self.http_client)
@@ -379,7 +402,8 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     isolated_data = {
         'digest': 'not found',
         'namespace': 'default-gzip',
-        'isolatedserver': ISOLATED_SERVER
+        'isolatedserver': waterfall_config.GetSwarmingSettings().get(
+            'isolated_server')
     }
 
     result = swarming_util._DownloadTestResults(
@@ -391,7 +415,8 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     isolated_data = {
         'digest': 'not found',
         'namespace': 'default-gzip',
-        'isolatedserver': ISOLATED_SERVER
+        'isolatedserver': waterfall_config.GetSwarmingSettings().get(
+            'isolated_server')
     }
 
     self.http_client._SetResponseForPostRequest('not found')
@@ -404,7 +429,8 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     isolated_data = {
         'digest': 'shard1_isolated',
         'namespace': 'default-gzip',
-        'isolatedserver': ISOLATED_SERVER
+        'isolatedserver': waterfall_config.GetSwarmingSettings().get(
+            'isolated_server')
     }
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     result = swarming_util._DownloadTestResults(
@@ -416,7 +442,8 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     isolated_data = {
         'digest': 'shard1_isolated',
         'namespace': 'default-gzip',
-        'isolatedserver': ISOLATED_SERVER
+        'isolatedserver': waterfall_config.GetSwarmingSettings().get(
+            'isolated_server')
     }
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
@@ -430,31 +457,36 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         {
             'digest': 'shard1_isolated',
             'namespace': 'default-gzip',
-            'isolatedserver': ISOLATED_SERVER
+            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
+                'isolated_server')
         },
         {
             'digest': 'shard2_isolated',
             'namespace': 'default-gzip',
-            'isolatedserver': ISOLATED_SERVER
+            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
+                'isolated_server')
         },
         {
             'digest': 'shard3_isolated',
             'namespace': 'default-gzip',
-            'isolatedserver': ISOLATED_SERVER
+            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
+                'isolated_server')
         }
     ]
+    isolated_storage_url = waterfall_config.GetSwarmingSettings().get(
+        'isolated_storage_url')
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
     self.http_client._SetResponseForGetRequestIsolated(
-        'https://%s/default-gzip/shard1' % ISOLATED_STORAGE_URL, 'shard1')
+        'https://%s/default-gzip/shard1' % isolated_storage_url, 'shard1')
     self.http_client._SetResponseForPostRequest('shard2_isolated')
     self.http_client._SetResponseForPostRequest('shard2_url')
     self.http_client._SetResponseForGetRequestIsolated(
-        'https://%s/default-gzip/shard2' % ISOLATED_STORAGE_URL, 'shard2')
+        'https://%s/default-gzip/shard2' % isolated_storage_url, 'shard2')
     self.http_client._SetResponseForPostRequest('shard3_isolated')
     self.http_client._SetResponseForPostRequest('shard3_url')
     self.http_client._SetResponseForGetRequestIsolated(
-        'https://%s/default-gzip/shard3' % ISOLATED_STORAGE_URL, 'shard3')
+        'https://%s/default-gzip/shard3' % isolated_storage_url, 'shard3')
 
     result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
         isolated_data, self.http_client)
@@ -470,13 +502,16 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         {
             'digest': 'shard1_isolated',
             'namespace': 'default-gzip',
-            'isolatedserver': ISOLATED_SERVER
+            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
+                'isolated_server')
         }
     ]
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
     self.http_client._SetResponseForGetRequestIsolated(
-        'https://%s/default-gzip/shard1' % ISOLATED_STORAGE_URL, 'shard1')
+        'https://%s/default-gzip/shard1' %
+        waterfall_config.GetSwarmingSettings().get('isolated_storage_url'),
+        'shard1')
 
     result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
         isolated_data, self.http_client)
@@ -490,7 +525,8 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         {
             'digest': 'shard1_isolated',
             'namespace': 'default-gzip',
-            'isolatedserver': ISOLATED_SERVER
+            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
+                'isolated_server')
         }
     ]
 
@@ -508,7 +544,8 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         task_id, self.http_client)
 
     expected_outputs_ref = {
-        'isolatedserver': ISOLATED_SERVER,
+        'isolatedserver': waterfall_config.GetSwarmingSettings().get(
+            'isolated_server'),
         'namespace': 'default-gzip',
         'isolated': 'shard1_isolated'
     }
@@ -518,7 +555,8 @@ class SwarmingUtilTest(testing.AppengineTestCase):
 
   def testGetSwarmingTaskFailureLog(self):
     outputs_ref = {
-        'isolatedserver': ISOLATED_SERVER,
+        'isolatedserver': waterfall_config.GetSwarmingSettings().get(
+            'isolated_server'),
         'namespace': 'default-gzip',
         'isolated': 'shard1_isolated'
     }
@@ -526,7 +564,9 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
     self.http_client._SetResponseForGetRequestIsolated(
-        'https://%s/default-gzip/shard1' % ISOLATED_STORAGE_URL, 'shard1')
+        'https://%s/default-gzip/shard1' % (
+            waterfall_config.GetSwarmingSettings().get('isolated_storage_url')),
+        'shard1')
 
     result = swarming_util.GetSwarmingTaskFailureLog(
         outputs_ref, self.http_client)

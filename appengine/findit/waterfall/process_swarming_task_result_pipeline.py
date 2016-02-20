@@ -10,10 +10,9 @@ import time
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from model import wf_analysis_status
 from model.wf_swarming_task import WfSwarmingTask
-from model.wf_try_job import WfTryJob
 from pipeline_wrapper import BasePipeline
-from pipeline_wrapper import pipeline
 from waterfall import swarming_util
+from waterfall import waterfall_config
 
 
 def _CheckTestsRunStatuses(output_json):
@@ -62,10 +61,6 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
   """
 
   HTTP_CLIENT = HttpClient()
-  # TODO(chanli): move these settings to findit config.
-  SWARMING_QUERY_INTERVAL_SECONDS = 60
-  TIMEOUT_HOURS = 23
-
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number, step_name, task_id):
     """
@@ -81,8 +76,12 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
     """
 
     assert task_id
+    timeout_hours = waterfall_config.GetSwarmingSettings().get(
+        'task_timeout_hours')
+    deadline = time.time() + timeout_hours * 60 * 60
+    server_query_interval_seconds = waterfall_config.GetSwarmingSettings().get(
+        'server_query_interval_seconds')
 
-    deadline = time.time() + self.TIMEOUT_HOURS * 60 * 60
     task_started = False
     task_completed = False
     tests_statuses = {}
@@ -118,7 +117,7 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
           task.status = wf_analysis_status.ANALYZING
           task.put()
 
-        time.sleep(self.SWARMING_QUERY_INTERVAL_SECONDS)
+        time.sleep(server_query_interval_seconds)
 
       if time.time() > deadline:
         # Updates status as ERROR.
@@ -126,8 +125,7 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
             master_name, builder_name, build_number, step_name)
         task.status = wf_analysis_status.ERROR
         task.put()
-        logging.error('Swarming task timed out after %d hours.' % (
-            self.TIMEOUT_HOURS))
+        logging.error('Swarming task timed out after %d hours.' % timeout_hours)
         break  # Stops the loop and return.
 
     # Update swarming task metadate.

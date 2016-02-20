@@ -54,7 +54,8 @@ class FinditConfig(VersionedConfig):
   # A dict containing common settings for try jobs. For example,
   # {
   #     'server_query_interval_seconds': 60,
-  #     'job_timeout_hours': 5
+  #     'job_timeout_hours': 5,
+  #     'allowed_response_error_times': 5
   # }
   try_job_settings = ndb.JsonProperty(indexed=False, default={})
 

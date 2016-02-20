@@ -12,6 +12,7 @@ from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from pipeline_wrapper import BasePipeline
 from pipeline_wrapper import pipeline
+from waterfall import waterfall_config
 from waterfall.try_job_type import TryJobType
 
 
@@ -22,8 +23,6 @@ class MonitorTryJobPipeline(BasePipeline):
   which type of build failure we are running try job for.
   """
 
-  INITIAL_PIPELINE_WAIT_SECONDS = 120
-  ALLOWED_RESPONSE_ERROR_TIMES = 5
   TIMEOUT = 'TIMEOUT'
 
   @staticmethod
@@ -96,9 +95,12 @@ class MonitorTryJobPipeline(BasePipeline):
       self, master_name, builder_name, build_number, try_job_type, try_job_id):
     assert try_job_id
 
-    timeout_hours = 5
-    pipeline_wait_seconds = self.INITIAL_PIPELINE_WAIT_SECONDS
-    allowed_response_error_times = self.ALLOWED_RESPONSE_ERROR_TIMES
+    timeout_hours = waterfall_config.GetTryJobSettings().get(
+        'job_timeout_hours')
+    pipeline_wait_seconds = waterfall_config.GetTryJobSettings().get(
+        'server_query_interval_seconds')
+    allowed_response_error_times = waterfall_config.GetTryJobSettings().get(
+        'allowed_response_error_times')
 
     # TODO(chanli): Make sure total wait time equals to timeout_hours
     # regardless of retries.

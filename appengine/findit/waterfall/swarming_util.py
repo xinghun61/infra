@@ -12,11 +12,10 @@ from google.appengine.ext import ndb
 
 from model.wf_step import WfStep
 from waterfall import auth_util
+from waterfall import waterfall_config
 from waterfall.swarming_task_request import SwarmingTaskRequest
 
 
-# TODO (http://crbug.com/583144): Move this to config saved in datastore.
-SWARMING_SERVER_HOST = 'chromium-swarm.appspot.com'
 STATES_RUNNING = ('RUNNING', 'PENDING')
 STATE_COMPLETED = 'COMPLETED'
 STATES_NOT_RUNNING = (
@@ -44,8 +43,10 @@ def _SendRequestToServer(url, http_client, post_data=None):
 
 def GetSwarmingTaskRequest(task_id, http_client):
   """Returns an instance of SwarmingTaskRequest representing the given task."""
+  swarming_server_host = waterfall_config.GetSwarmingSettings().get(
+      'server_host')
   url = ('https://%s/_ah/api/swarming/v1/task/%s/request') % (
-      SWARMING_SERVER_HOST, task_id)
+      swarming_server_host, task_id)
   json_data = json.loads(_SendRequestToServer(url, http_client))
   return SwarmingTaskRequest.Deserialize(json_data)
 
@@ -61,12 +62,15 @@ def TriggerSwarmingTask(request, http_client):
   # Use a priority much lower than CQ for now (CQ's priority is 30).
   # Later we might use a higher priority -- a lower value here.
   # Note: the smaller value, the higher priority.
-  request.priority = 150
-  request.expiration_secs = 20 * 60 * 60  # 20 hours.
+  swarming_settings = waterfall_config.GetSwarmingSettings()
+  request_expiration_hours = swarming_settings.get('request_expiration_hours')
+  request.priority = max(100, swarming_settings.get('default_request_priority'))
+  request.expiration_secs = request_expiration_hours * 60 * 60
 
   request.tags.extend(['findit:1', 'project:Chromium', 'purpose:post-commit'])
 
-  url = 'https://%s/_ah/api/swarming/v1/tasks/new' % SWARMING_SERVER_HOST
+  url = 'https://%s/_ah/api/swarming/v1/tasks/new' % swarming_settings.get(
+      'server_host')
   response_data = _SendRequestToServer(url, http_client, request.Serialize())
   return json.loads(response_data)['task_id']
 
@@ -76,13 +80,12 @@ def ListSwarmingTasksDataByTags(
   """Downloads tasks data from swarming server."""
   base_url = ('https://%s/_ah/api/swarming/v1/tasks/'
               'list?tags=%s&tags=%s&tags=%s') % (
-                  SWARMING_SERVER_HOST,
+                  waterfall_config.GetSwarmingSettings().get('server_host'),
                   urllib.quote('master:%s' % master_name),
                   urllib.quote('buildername:%s' % builder_name),
                   urllib.quote('buildnumber:%d' % build_number))
   if step_name:
     base_url += '&tags=%s' % urllib.quote('stepname:%s' % step_name)
-
 
   items = []
   cursor = None
@@ -119,7 +122,7 @@ def _GenerateIsolatedData(outputs_ref):
 def GetSwarmingTaskResultById(task_id, http_client):
   """Gets swarming result, checks state and returns outputs ref if needed."""
   base_url = ('https://%s/_ah/api/swarming/v1/task/%s/result') % (
-      SWARMING_SERVER_HOST, task_id)
+      waterfall_config.GetSwarmingSettings().get('server_host'), task_id)
   data = _SendRequestToServer(base_url, http_client)
   json_data = json.loads(data)
 

@@ -13,11 +13,7 @@ from model import wf_analysis_status
 from model.wf_swarming_task import WfSwarmingTask
 from pipeline_wrapper import BasePipeline
 from waterfall import swarming_util
-from waterfall.swarming_task_request import SwarmingTaskRequest
-
-
-# TODO(stgao): save in as config in datastore.
-ITERATIONS_TO_RERUN = 10
+from waterfall import waterfall_config
 
 
 def _GetSwarmingTaskName(ref_task_id):  # pragma: no cover.
@@ -74,7 +70,7 @@ def _NeedANewSwarmingTask(master_name, builder_name, build_number, step_name):
 
   if not swarming_task:
     swarming_task = WfSwarmingTask.Create(
-      master_name, builder_name, build_number, step_name)
+        master_name, builder_name, build_number, step_name)
     swarming_task.status = wf_analysis_status.PENDING
     swarming_task.put()
     return True
@@ -143,9 +139,11 @@ class TriggerSwarmingTaskPipeline(BasePipeline):
         ref_task_id, http_client)
 
     # 2. Update/Overwrite parameters for the re-run.
+    iterations_to_rerun = waterfall_config.GetSwarmingSettings().get(
+        'iterations_to_rerun')
     new_request = _CreateNewSwarmingTaskRequest(
         ref_task_id, ref_request, master_name, builder_name, build_number,
-        step_name, tests, ITERATIONS_TO_RERUN)
+        step_name, tests, iterations_to_rerun)
 
     # 3. Trigger a new Swarming task to re-run the failed tests.
     task_id = swarming_util.TriggerSwarmingTask(new_request, http_client)

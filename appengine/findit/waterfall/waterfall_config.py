@@ -127,3 +127,11 @@ def GetTrybotForWaterfallBuilder(wf_mastername, wf_buildername):
   trybot_config = FinditConfig.Get().builders_to_trybots.get(
       wf_mastername, {}).get(wf_buildername, {})
   return trybot_config.get('mastername'), trybot_config.get('buildername')
+
+
+def GetTryJobSettings():
+  return FinditConfig().Get().try_job_settings
+
+
+def GetSwarmingSettings():
+  return FinditConfig().Get().swarming_settings

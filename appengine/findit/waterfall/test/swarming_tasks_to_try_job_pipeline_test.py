@@ -8,7 +8,6 @@ from testing_utils import testing
 
 from common import buildbucket_client
 from common.git_repository import GitRepository
-from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
 from pipeline_wrapper import pipeline_handlers
 from waterfall import swarming_util
@@ -83,6 +82,23 @@ _SAMPLE_FAILURE_LOG = {
     ]
 }
 
+_MOCK_SWARMING_SETTINGS = {
+    'task_timeout_hours': 23,
+    'server_query_interval_seconds': 60,
+    'iterations_to_rerun': 10,
+    'server_host': 'chromium-swarm.appspot.com',
+    'default_request_priority': 150,
+    'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+    'isolated_server': 'https://isolateserver.appspot.com',
+    'request_expiration_hours': 20
+}
+
+_MOCK_TRY_JOB_SETTINGS = {
+    'server_query_interval_seconds': 60,
+    'job_timeout_hours': 5,
+    'allowed_response_error_times': 1
+}
+
 
 class SwarmingTasksToTryJobPipelineTest(testing.AppengineTestCase):
   app_module = pipeline_handlers._APP
@@ -105,6 +121,16 @@ class SwarmingTasksToTryJobPipelineTest(testing.AppengineTestCase):
               None, buildbucket_client.BuildbucketBuild(response['build'])))
       return try_job_results
     self.mock(buildbucket_client, 'TriggerTryJobs', MockedTriggerTryJobs)
+
+  def _MockGetSwarmingSettings(self):
+    def _GetMockSwarmingSettings():
+      return _MOCK_SWARMING_SETTINGS
+    self.mock(waterfall_config, 'GetSwarmingSettings', _GetMockSwarmingSettings)
+
+  def _MockGetTryJobSettings(self):
+    def _GetMockTryJobSettings():
+      return _MOCK_TRY_JOB_SETTINGS
+    self.mock(waterfall_config, 'GetTryJobSettings', _GetMockTryJobSettings)
 
   def _MockGetTryJobs(self, build_id):
     def MockedGetTryJobs(*_):
@@ -204,6 +230,7 @@ class SwarmingTasksToTryJobPipelineTest(testing.AppengineTestCase):
     self._MockTriggerTryJobs(responses)
     self._MockGetTryJobs('1')
     self._MockGetChangeLog('rev2')
+    self._MockGetTryJobSettings()
 
     WfTryJob.Create(master_name, builder_name, build_number).put()
 
@@ -246,6 +273,9 @@ class SwarmingTasksToTryJobPipelineTest(testing.AppengineTestCase):
     targeted_tests = {
         'a_test': ['TestSuite1.test1', 'TestSuite1.test3']
     }
+
+    self._MockGetSwarmingSettings()
+    self._MockGetTryJobSettings()
 
     # Mocks for TriggerSwarmingTaskPipeline.
     def MockedDownloadSwarmingTaskData(*_):

@@ -10,6 +10,7 @@ from common import buildbucket_client
 from model import wf_analysis_status
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
+from waterfall import waterfall_config
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall.try_job_type import TryJobType
 
@@ -84,6 +85,15 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
             None, buildbucket_client.BuildbucketBuild(build_error['build'])))
       return try_job_results
     self.mock(buildbucket_client, 'GetTryJobs', Mocked_GetTryJobs)
+
+  def _MockGetTryJobSettings(self):
+    def _GetMockTryJobSettings():
+      return {
+          'server_query_interval_seconds': 60,
+          'job_timeout_hours': 5,
+          'allowed_response_error_times': 5
+      }
+    self.mock(waterfall_config, 'GetTryJobSettings', _GetMockTryJobSettings)
 
   def testMicrosecondsToDatetime(self):
     self.assertEqual(
@@ -166,6 +176,7 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
     try_job.status = wf_analysis_status.ANALYZING
     try_job.put()
     self._Mock_GetTryJobs(try_job_id)
+    self._MockGetTryJobSettings()
 
     pipeline = MonitorTryJobPipeline()
     compile_result = pipeline.run(
@@ -212,6 +223,7 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
     try_job.status = wf_analysis_status.ANALYZING
     try_job.put()
     self._Mock_GetTryJobs(try_job_id)
+    self._MockGetTryJobSettings()
 
     pipeline = MonitorTryJobPipeline()
     test_result = pipeline.run(
