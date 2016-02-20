@@ -6,6 +6,7 @@ from common import buildbucket_client
 from model.wf_try_job import WfTryJob
 from pipeline_wrapper import BasePipeline
 from pipeline_wrapper import pipeline
+from waterfall import buildbot
 from waterfall import waterfall_config
 from waterfall.try_job_type import TryJobType
 
@@ -14,13 +15,15 @@ class ScheduleTryJobPipeline(BasePipeline):
   """A pipeline for scheduling a new try job for current build."""
 
   def _GetBuildProperties(
-      self, master_name, builder_name, good_revision, bad_revision,
-      try_job_type, compile_targets, targeted_tests):
+      self, master_name, builder_name, build_number, good_revision,
+      bad_revision, try_job_type, compile_targets, targeted_tests):
     properties = {
         'recipe': 'findit/chromium/%s' % try_job_type,
         'good_revision': good_revision,
         'bad_revision': bad_revision,
-        'target_mastername': master_name
+        'target_mastername': master_name,
+        'referenced_build_url': buildbot.CreateBuildUrl(
+            master_name, builder_name, build_number)
     }
 
     if try_job_type == TryJobType.COMPILE:
@@ -43,7 +46,7 @@ class ScheduleTryJobPipeline(BasePipeline):
             master_name, builder_name))
 
     properties = self._GetBuildProperties(
-        master_name, builder_name, good_revision, bad_revision,
+        master_name, builder_name, build_number, good_revision, bad_revision,
         try_job_type, compile_targets, targeted_tests)
 
     try_job = buildbucket_client.TryJob(

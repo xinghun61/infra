@@ -35,6 +35,7 @@ class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
   def testGetBuildPropertiesWithCompileTargets(self):
     master_name = 'm'
     builder_name = 'b'
+    build_number = 1
     compile_targets = ['a.exe']
 
     expected_properties = {
@@ -43,11 +44,14 @@ class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
         'bad_revision': 2,
         'target_mastername': master_name,
         'target_buildername': 'b',
-        'compile_targets': compile_targets
+        'compile_targets': compile_targets,
+        'referenced_build_url': ('https://build.chromium.org/p/%s/builders'
+                                 '/%s/builds/%s') % (
+                                     master_name, builder_name, build_number)
     }
     try_job_pipeline = ScheduleTryJobPipeline()
     properties = try_job_pipeline._GetBuildProperties(
-        master_name, builder_name, 1, 2, TryJobType.COMPILE,
+        master_name, builder_name, build_number, 1, 2, TryJobType.COMPILE,
         compile_targets, None)
 
     self.assertEqual(properties, expected_properties)
@@ -55,6 +59,7 @@ class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
   def testGetBuildPropertiesForTestFailure(self):
     master_name = 'm'
     builder_name = 'b'
+    build_number = 1
     targeted_tests = {'a': []}
 
     expected_properties = {
@@ -63,11 +68,14 @@ class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
         'bad_revision': 2,
         'target_mastername': master_name,
         'target_testername': 'b',
-        'tests': targeted_tests
+        'tests': targeted_tests,
+        'referenced_build_url': ('https://build.chromium.org/p/%s/builders'
+                                 '/%s/builds/%s') % (
+                                     master_name, builder_name, build_number)
     }
     try_job_pipeline = ScheduleTryJobPipeline()
     properties = try_job_pipeline._GetBuildProperties(
-        master_name, builder_name, 1, 2, TryJobType.TEST,
+        master_name, builder_name, build_number, 1, 2, TryJobType.TEST,
         None, targeted_tests)
 
     self.assertEqual(properties, expected_properties)
