@@ -305,7 +305,7 @@ class SwarmingTasksToTryJobPipelineTest(testing.AppengineTestCase):
           }
       }
       mocked_result = swarming_task_results.get(task_id)
-      return mocked_result['state'], mocked_result['outputs_ref']
+      return mocked_result
     self.mock(swarming_util, 'GetSwarmingTaskResultById',
               MockedGetSwarmingTaskResultById)
 

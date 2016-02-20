@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
+
 from testing_utils import testing
 
 from model import wf_analysis_status
@@ -93,12 +95,37 @@ _EXPECTED_TESTS_STATUESE = {
 
 
 class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
+
+  def _MockedGetSwarmingTaskResultById(self, task_id, _):
+    swarming_task_results = {
+        'task_id1': {
+            'state': 'COMPLETED',
+            'outputs_ref': {
+                'isolatedserver': _ISOLATED_SERVER,
+                'namespace': 'default-gzip',
+                'isolated': 'shard1_isolated'
+            },
+            'created_ts': '2016-02-10T18:32:06.538220',
+            'started_ts': '2016-02-10T18:32:09.090550',
+            'completed_ts': '2016-02-10T18:33:09'
+        },
+        'task_id2': {
+            'state': 'TIMED_OUT',
+            'outputs_ref': None
+        }
+    }
+
+    mocked_result = swarming_task_results[task_id]
+    return mocked_result
+
   def setUp(self):
     super(ProcessSwarmingTaskResultPipelineTest, self).setUp()
     self.master_name = 'm'
     self.builder_name = 'b'
     self.build_number = 121
     self.step_name = 'abc_tests'
+    self.mock(swarming_util, 'GetSwarmingTaskResultById',
+              self._MockedGetSwarmingTaskResultById)
 
   def testCheckTestsRunStatusesNoOutPutJson(self):
     tests_statuses = (
@@ -111,33 +138,12 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
             _SAMPLE_FAILURE_LOG))
     self.assertEqual(_EXPECTED_TESTS_STATUESE, tests_statuses)
 
-  def _MockedGetSwarmingTaskResultById(self, task_id, _):
-    swarming_task_results = {
-        'task_id1': {
-            'state': 'COMPLETED',
-            'outputs_ref': {
-                'isolatedserver': _ISOLATED_SERVER,
-                'namespace': 'default-gzip',
-                'isolated': 'shard1_isolated'
-            }
-        },
-        'task_id2': {
-            'state': 'TIMED_OUT',
-            'outputs_ref': None
-        }
-    }
-
-    mocked_result = swarming_task_results[task_id]
-    return mocked_result['state'], mocked_result['outputs_ref']
-
   def _MockedGetSwarmingTaskFailureLog(self, *_):
     return _SAMPLE_FAILURE_LOG
 
   def testProcessSwarmingTaskResultPipeline(self):
     task_id = 'task_id1'
 
-    self.mock(swarming_util, 'GetSwarmingTaskResultById',
-              self._MockedGetSwarmingTaskResultById)
     self.mock(swarming_util, 'GetSwarmingTaskFailureLog',
               self._MockedGetSwarmingTaskFailureLog)
 
@@ -155,15 +161,20 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
     task = WfSwarmingTask.Get(
         self.master_name, self.builder_name,self.build_number, self.step_name)
 
+    self.assertEqual(self.step_name, step_name)
     self.assertEqual(wf_analysis_status.ANALYZED, task.status)
     self.assertEqual(_EXPECTED_TESTS_STATUESE, task.tests_statuses)
-    self.assertEqual(self.step_name, step_name)
+    self.assertEqual(datetime.datetime(2016, 2, 10, 18, 32, 6, 538220),
+                     task.created_time)
+    self.assertEqual(datetime.datetime(2016, 2, 10, 18, 32, 9, 90550),
+                     task.started_time)
+    self.assertEqual(datetime.datetime(2016, 2, 10, 18, 33, 9),
+                     task.completed_time)
+
 
   def testProcessSwarmingTaskResultPipelineTaskNotRunning(self):
     task_id = 'task_id2'
 
-    self.mock(swarming_util, 'GetSwarmingTaskResultById',
-              self._MockedGetSwarmingTaskResultById)
 
     WfSwarmingTask.Create(
         self.master_name, self.builder_name,
@@ -186,9 +197,6 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
   def testProcessSwarmingTaskResultPipelineTaskTimeOut(self):
     task_id = 'task_id2'
     self.mock(ProcessSwarmingTaskResultPipeline, 'TIMEOUT_HOURS', -1)
-
-    self.mock(swarming_util, 'GetSwarmingTaskResultById',
-              self._MockedGetSwarmingTaskResultById)
 
     WfSwarmingTask.Create(
         self.master_name, self.builder_name,

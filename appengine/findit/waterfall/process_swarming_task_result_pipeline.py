@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import collections
+import datetime
 import logging
 import time
 
@@ -36,6 +37,21 @@ def _CheckTestsRunStatuses(output_json):
           tests_statuses[test_name][test['status']] += 1
 
   return tests_statuses
+
+
+def _ConvertDateTime(time_string):
+  """Convert UTC time string to datetime.datetime."""
+  # Match the time convertion with swarming.py.
+  # According to swarming.py,
+  # when microseconds are 0, the '.123456' suffix is elided.
+  if not time_string:
+    return None
+  for fmt in ('%Y-%m-%dT%H:%M:%S.%f', '%Y-%m-%dT%H:%M:%S'):
+    try:
+      return datetime.datetime.strptime(time_string, fmt)
+    except ValueError:
+      pass
+  raise ValueError('Failed to parse %s' % time_string)  # pragma: no cover
 
 
 class ProcessSwarmingTaskResultPipeline(BasePipeline):
@@ -73,13 +89,15 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
 
     while not task_completed:
       # Keeps monitoring the swarming task, waits for it to complete.
-      task_state, outputs_ref = swarming_util.GetSwarmingTaskResultById(
+      data = swarming_util.GetSwarmingTaskResultById(
           task_id, self.HTTP_CLIENT)
+      task_state = data['state']
       if task_state not in swarming_util.STATES_RUNNING:
         task_completed = True
         task = WfSwarmingTask.Get(
             master_name, builder_name, build_number, step_name)
         if task_state == swarming_util.STATE_COMPLETED:
+          outputs_ref = data.get('outputs_ref')
           output_json = swarming_util.GetSwarmingTaskFailureLog(
               outputs_ref, self.HTTP_CLIENT)
           tests_statuses = _CheckTestsRunStatuses(output_json)
@@ -111,5 +129,13 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
         logging.error('Swarming task timed out after %d hours.' % (
             self.TIMEOUT_HOURS))
         break  # Stops the loop and return.
+
+    # Update swarming task metadate.
+    task = WfSwarmingTask.Get(
+        master_name, builder_name, build_number, step_name)
+    task.created_time = _ConvertDateTime(data.get('created_ts'))
+    task.started_time = _ConvertDateTime(data.get('started_ts'))
+    task.completed_time = _ConvertDateTime(data.get('completed_ts'))
+    task.put()
 
     return step_name, tests_statuses

@@ -504,7 +504,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
 
     self.http_client._SetResponseForGetRequestSwarmingResult(task_id)
 
-    status, outputs_ref = swarming_util.GetSwarmingTaskResultById(
+    data = swarming_util.GetSwarmingTaskResultById(
         task_id, self.http_client)
 
     expected_outputs_ref = {
@@ -513,8 +513,8 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         'isolated': 'shard1_isolated'
     }
 
-    self.assertEqual('COMPLETED', status)
-    self.assertEqual(expected_outputs_ref, outputs_ref)
+    self.assertEqual('COMPLETED', data['state'])
+    self.assertEqual(expected_outputs_ref, data['outputs_ref'])
 
   def testGetSwarmingTaskFailureLog(self):
     outputs_ref = {

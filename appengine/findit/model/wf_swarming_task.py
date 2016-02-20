@@ -27,6 +27,13 @@ class WfSwarmingTask(BaseBuildModel):
   # The revision of the failed build.
   build_revision = ndb.StringProperty(indexed=False)
 
+  # Time when the task is created.
+  created_time = ndb.DateTimeProperty(indexed=True)
+  # Time when the task is started.
+  started_time = ndb.DateTimeProperty(indexed=False)
+  # Time when the task is completed.
+  completed_time = ndb.DateTimeProperty(indexed=False)
+
   @staticmethod
   def _CreateKey(
       master_name, builder_name, build_number, step_name):  # pragma: no cover

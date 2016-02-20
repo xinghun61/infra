@@ -123,7 +123,7 @@ def GetSwarmingTaskResultById(task_id, http_client):
   data = _SendRequestToServer(base_url, http_client)
   json_data = json.loads(data)
 
-  return json_data['state'], json_data.get('outputs_ref')
+  return json_data
 
 
 def GetSwarmingTaskFailureLog(outputs_ref, http_client):
