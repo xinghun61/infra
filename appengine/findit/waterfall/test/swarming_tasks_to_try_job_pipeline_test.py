@@ -169,7 +169,12 @@ class SwarmingTasksToTryJobPipelineTest(testing.AppengineTestCase):
                                           'status': 'failed',
                                           'valid': True,
                                           'failures': ['TestSuite1.test3']
-                                      }
+                                      },
+                                      'b_test': {
+                                          'status': 'passed',
+                                          'valid': True,
+                                          'failures': [],
+                                      },
                                   }
                               },
                               'metadata': {
@@ -271,7 +276,8 @@ class SwarmingTasksToTryJobPipelineTest(testing.AppengineTestCase):
     builder_name = 'b'
     build_number = 1
     targeted_tests = {
-        'a_test': ['TestSuite1.test1', 'TestSuite1.test3']
+        'a_test': ['TestSuite1.test1', 'TestSuite1.test3'],
+        'b_test': [],  # Non-swarming test.
     }
 
     self._MockGetSwarmingSettings()
@@ -313,6 +319,7 @@ class SwarmingTasksToTryJobPipelineTest(testing.AppengineTestCase):
 
     new_request_json = {}
     def MockedTriggerSwarmingTask(new_request, *_):
+      self.assertEqual({}, new_request_json)
       new_request_json.update(new_request.Serialize())
       return 'task_id1'
     self.mock(swarming_util, 'TriggerSwarmingTask', MockedTriggerSwarmingTask)
@@ -378,7 +385,12 @@ class SwarmingTasksToTryJobPipelineTest(testing.AppengineTestCase):
                             'status': 'failed',
                             'valid': True,
                             'failures': ['TestSuite1.test3']
-                        }
+                        },
+                        'b_test': {
+                            'status': 'passed',
+                            'valid': True,
+                            'failures': [],
+                        },
                     }
                 },
                 'metadata': {

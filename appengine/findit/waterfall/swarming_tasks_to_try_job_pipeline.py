@@ -27,6 +27,8 @@ class SwarmingTasksToTryJobPipeline(BasePipeline):
 
     if try_job_type == TryJobType.TEST:
       for step_name, tests in targeted_tests.iteritems():
+        if not tests:  # Skip non-swarming tests.
+          continue
         task_id = yield TriggerSwarmingTaskPipeline(
             master_name, builder_name, build_number, step_name, tests)
         step_future = yield ProcessSwarmingTaskResultPipeline(
