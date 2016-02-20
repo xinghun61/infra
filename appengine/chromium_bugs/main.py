@@ -19,6 +19,7 @@ import logging
 import os
 import re
 import urllib
+import urlparse
 import webapp2
 
 from google.appengine.api import users
@@ -74,12 +75,12 @@ MISSING_TOKEN_HTML = (
     '</body></html>'
     )
 
-# The continue_url must start with one of these.
+# The continue_url domain must match with one of these.
 ALLOWED_CONTINUE_DOMAINS = [
-  'http://localhost:8080/',
-  'https://code.google.com/',
-  'https://bugs.chromium.org/',
-  'https://bugs-staging.chromium.org/',
+  re.compile('^localhost:8080$'),
+  re.compile('^code.google.com$'),
+  re.compile('^bugs(-staging)?.chromium.org$'),
+  re.compile('^([-a-z0-9.]+-dot-)?monorail-(prod|staging).appspot.com$'),
   ]
 
 INVALID_CONTINUE_HTML = (
@@ -115,8 +116,10 @@ class MainHandler(webapp2.RequestHandler):
     if '//code.google.com/p/chromium-os/issues/entry.do' in continue_url:
       continue_url = 'https://bugs.chromium.org/p/chromium/issues/entry.do'
 
-    if not any(continue_url.startswith(domain)
-               for domain in ALLOWED_CONTINUE_DOMAINS):
+    parsed = urlparse.urlparse(continue_url)
+    continue_is_allowed = any(
+        regex.match(parsed.netloc) for regex in ALLOWED_CONTINUE_DOMAINS)
+    if not continue_is_allowed:
       logging.info('Bad continue param: %r', continue_url)
       self.response.out.write(INVALID_CONTINUE_HTML)
       return
