@@ -4,6 +4,7 @@
 
 import copy
 from datetime import datetime
+import logging
 import time
 
 from google.appengine.ext import ndb
@@ -154,4 +155,5 @@ class TriggerSwarmingTaskPipeline(BasePipeline):
     swarming_task.task_id = task_id
     swarming_task.put()
 
+    logging.info('A Swarming task was triggered:%s', task_id)
     return task_id

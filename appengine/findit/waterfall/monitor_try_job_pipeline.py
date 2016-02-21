@@ -97,10 +97,12 @@ class MonitorTryJobPipeline(BasePipeline):
 
     timeout_hours = waterfall_config.GetTryJobSettings().get(
         'job_timeout_hours')
-    pipeline_wait_seconds = waterfall_config.GetTryJobSettings().get(
+    default_pipeline_wait_seconds = waterfall_config.GetTryJobSettings().get(
         'server_query_interval_seconds')
-    allowed_response_error_times = waterfall_config.GetTryJobSettings().get(
+    max_error_times = waterfall_config.GetTryJobSettings().get(
         'allowed_response_error_times')
+    pipeline_wait_seconds = default_pipeline_wait_seconds
+    allowed_response_error_times = max_error_times
 
     # TODO(chanli): Make sure total wait time equals to timeout_hours
     # regardless of retries.
@@ -118,7 +120,7 @@ class MonitorTryJobPipeline(BasePipeline):
       if error:  # pragma: no cover
         if allowed_response_error_times > 0:
           allowed_response_error_times -= 1
-          pipeline_wait_seconds += self.INITIAL_PIPELINE_WAIT_SECONDS
+          pipeline_wait_seconds += default_pipeline_wait_seconds
         else:
           # Buildbucket has responded error more than 5 times, retry pipeline.
           self._UpdateTryJobMetadataForBuildError(try_job_data, error)
@@ -133,10 +135,10 @@ class MonitorTryJobPipeline(BasePipeline):
             try_job_type, try_job_id, build.url, build.report)
         return result_to_update[-1]
       else:  # pragma: no cover
-        if allowed_response_error_times < self.ALLOWED_RESPONSE_ERROR_TIMES:
+        if allowed_response_error_times < max_error_times:
           # Recovers from errors.
-          allowed_response_error_times = self.ALLOWED_RESPONSE_ERROR_TIMES
-          pipeline_wait_seconds = self.INITIAL_PIPELINE_WAIT_SECONDS
+          allowed_response_error_times = max_error_times
+          pipeline_wait_seconds = default_pipeline_wait_seconds
         if build.status == BuildbucketBuild.STARTED and not already_set_started:
           # It is possible this branch is skipped if a fast build goes from
           # 'SCHEDULED' to 'COMPLETED' between queries, so start_time may be
