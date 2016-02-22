@@ -11,12 +11,9 @@ function LinkTextParser(callback)
 }
 
 LinkTextParser.CODESITE_TRACKERS = [
-    "chromium",
-    "chromium-os",
     "chrome-os-partner",
-    "gyp",
-    "skia",
-    "v8"
+    "chromium-os",
+    "libyuv"
 ];
 
 LinkTextParser.GITHUB_TRACKERS = [
@@ -28,9 +25,14 @@ LinkTextParser.GITHUB_TRACKER_PROJECT_PATHS = {
 };
 
 LinkTextParser.MONORAIL_TRACKERS = [
+    "chromium",
     "crashpad",
+    "gyp",
     "monorail",
-    "pdfium"
+    "pdfium",
+    "skia",
+    "v8",
+    "webrtc"
 ]
 
 LinkTextParser.prototype.addText = function(text, href)
@@ -65,7 +67,7 @@ LinkTextParser.prototype.addBugText = function(text, tracker, bugId)
     }
     // If there's a bug number, but no tracker, assume Chromium.
     if (!tracker) {
-        var href = "https://code.google.com/p/chromium/issues/detail?id={1}".assign(
+        var href = "https://bugs.chromium.org/p/chromium/issues/detail?id={1}".assign(
             encodeURIComponent(bugId));
         this.addText(text, href);
         return;

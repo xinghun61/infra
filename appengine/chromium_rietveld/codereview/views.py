@@ -1700,11 +1700,11 @@ def _remove_blocked_emails(emails):
 
 def replace_bug(message):
   dit_base_tracker_url = 'http://code.google.com/p/%s/issues/detail?id=%s'
-  dit_valid_trackers = ('chromium', 'chromium-os', 'chrome-os-partner', 'gyp',
-                        'skia', 'v8', 'webrtc', 'libyuv')
+  dit_valid_trackers = ('chrome-os-partner', 'chromium-os', 'libyuv')
   monorail_base_tracker_url = (
       'https://bugs.chromium.org/p/%s/issues/detail?id=%s')
-  monorail_valid_trackers = ('crashpad', 'monorail', 'pdfium')
+  monorail_valid_trackers = ('chromium', 'crashpad', 'gyp', 'monorail',
+                             'pdfium', 'skia', 'v8', 'webrtc')
 
   bugs = re.split(r"[\s,]+", message.group(1))
   urls = []
@@ -1719,12 +1719,11 @@ def replace_bug(message):
         continue
     else:
       bug_id = bug
-    # Temporary check to support both Monorail and Codesite. After Monorail's
-    # launch all projects will be on monorail by default.
-    if tracker in monorail_valid_trackers:
-      base_tracker_url = monorail_base_tracker_url
-    else:
+    # If a project is not specified then use Monorail by default.
+    if tracker in dit_valid_trackers:
       base_tracker_url = dit_base_tracker_url
+    else:
+      base_tracker_url = monorail_base_tracker_url
     url = '<a href="' + base_tracker_url % (tracker, bug_id) + '">'
     urls.append(url + bug + '</a>')
 
