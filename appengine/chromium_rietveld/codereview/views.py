@@ -3726,7 +3726,8 @@ def make_message(request, issue, message, comments=None, send_mail=False,
     # * All other HTML in the body is autoescaped.
     raw_body = django.template.loader.render_to_string(
         template, context, context_instance=RequestContext(request))
-    html_context= {'wrapped_body': mark_safe(_add_HTML_tags(raw_body))}
+    html_context= {'url': url,
+                   'wrapped_body': mark_safe(_add_HTML_tags(raw_body))}
     html_body = django.template.loader.render_to_string(
         'mails/html_wrapper.txt', html_context,
         context_instance=RequestContext(request))
