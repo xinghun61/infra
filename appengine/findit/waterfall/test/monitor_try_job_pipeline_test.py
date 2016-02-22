@@ -5,6 +5,7 @@
 from datetime import datetime
 import json
 from testing_utils import testing
+import time
 
 from common import buildbucket_client
 from model import wf_analysis_status
@@ -15,85 +16,123 @@ from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall.try_job_type import TryJobType
 
 
+# A counter to enable different responses to requests in a loop.
+REQUEST_COUNTER = {
+    '1': 0,
+    '2': 0,
+    '3': 0
+}
+
+
 class MonitorTryJobPipelineTest(testing.AppengineTestCase):
 
-  def _Mock_GetTryJobs(self, build_id):
+  def _MockGetTryJobs(self, build_id):
     def Mocked_GetTryJobs(*_):
       data = {
-          '1': {
-              'build': {
-                  'id': '1',
-                  'url': 'url',
-                  'status': 'COMPLETED',
-                  'result_details_json': json.dumps({
-                      'properties': {
-                          'report': {
-                              'result': {
-                                  'rev1': 'passed',
-                                  'rev2': 'failed'
-                              },
-                              'metadata': {
-                                  'regression_range_size': 2
+          '1': [
+              {
+                  'build': {
+                      'id': '1',
+                      'url': 'url',
+                      'status': 'COMPLETED',
+                      'result_details_json': json.dumps({
+                          'properties': {
+                              'report': {
+                                  'result': {
+                                      'rev1': 'passed',
+                                      'rev2': 'failed'
+                                  },
+                                  'metadata': {
+                                      'regression_range_size': 2
+                                  }
                               }
                           }
-                      }
-                  })
+                      })
+                  }
               }
-          },
-          '2': {
-              'error': {
-                  'reason': 'BUILD_NOT_FOUND',
-                  'message': 'message',
-              }
-          },
-          '3': {
-              'build': {
-                  'id': '3',
-                  'url': 'url',
-                  'status': 'COMPLETED',
-                  'result_details_json': json.dumps({
-                      'properties': {
-                          'report': {
-                              'result': {
-                                  'rev1': {
-                                      'a_test': {
-                                          'status': 'passed',
-                                          'valid': True
-                                      }
-                                  },
-                                  'rev2': {
-                                      'a_test': {
-                                          'status': 'failed',
-                                          'valid': True,
-                                          'failures': ['test1', 'test2']
+          ],
+          '3': [
+              {
+                  'build': {
+                      'id': '3',
+                      'url': 'url',
+                      'status': 'STARTED'
+                  }
+              },
+              {
+                  'error': {
+                      'reason': 'BUILD_NOT_FOUND',
+                      'message': 'message',
+                  }
+              },
+              {
+                  'build': {
+                      'id': '3',
+                      'url': 'url',
+                      'status': 'STARTED'
+                  }
+              },
+              {
+                  'error': {
+                      'reason': 'BUILD_NOT_FOUND',
+                      'message': 'message',
+                  }
+              },
+              {
+                  'build': {
+                      'id': '3',
+                      'url': 'url',
+                      'status': 'COMPLETED',
+                      'result_details_json': json.dumps({
+                          'properties': {
+                              'report': {
+                                  'result': {
+                                      'rev1': {
+                                          'a_test': {
+                                              'status': 'passed',
+                                              'valid': True
+                                          }
+                                      },
+                                      'rev2': {
+                                          'a_test': {
+                                              'status': 'failed',
+                                              'valid': True,
+                                              'failures': ['test1', 'test2']
+                                          }
                                       }
                                   }
                               }
                           }
-                      }
-                  })
+                      })
+                  }
               }
-          }
+          ]
       }
       try_job_results = []
-      build_error = data.get(build_id)
-      if build_error.get('error'):  # pragma: no cover
+      build_error = data.get(build_id)[REQUEST_COUNTER[build_id]]
+      if build_error.get('error'):
         try_job_results.append((
             buildbucket_client.BuildbucketError(build_error['error']), None))
       else:
         try_job_results.append((
             None, buildbucket_client.BuildbucketBuild(build_error['build'])))
+      REQUEST_COUNTER[build_id] += 1
       return try_job_results
+
     self.mock(buildbucket_client, 'GetTryJobs', Mocked_GetTryJobs)
 
   def _MockGetTryJobSettings(self):
-    def _GetMockTryJobSettings():
-      return {
-          'server_query_interval_seconds': 60,
-          'job_timeout_hours': 5,
-          'allowed_response_error_times': 5
-      }
-    self.mock(waterfall_config, 'GetTryJobSettings', _GetMockTryJobSettings)
+    return {
+        'server_query_interval_seconds': 60,
+        'job_timeout_hours': 5,
+        'allowed_response_error_times': 5
+    }
+
+  def setUp(self):
+    super(MonitorTryJobPipelineTest, self).setUp()
+    self.mock(
+        waterfall_config, 'GetTryJobSettings', self._MockGetTryJobSettings)
+    self.mock(time, 'sleep', lambda x: None)
 
   def testMicrosecondsToDatetime(self):
     self.assertEqual(
@@ -175,7 +214,7 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
     ]
     try_job.status = wf_analysis_status.ANALYZING
     try_job.put()
-    self._Mock_GetTryJobs(try_job_id)
+    self._MockGetTryJobs(try_job_id)
     self._MockGetTryJobSettings()
 
     pipeline = MonitorTryJobPipeline()
@@ -222,7 +261,7 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
     ]
     try_job.status = wf_analysis_status.ANALYZING
     try_job.put()
-    self._Mock_GetTryJobs(try_job_id)
+    self._MockGetTryJobs(try_job_id)
     self._MockGetTryJobSettings()
 
     pipeline = MonitorTryJobPipeline()
@@ -255,4 +294,19 @@ class MonitorTryJobPipelineTest(testing.AppengineTestCase):
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(expected_test_result, try_job.test_results[-1])
+    self.assertEqual(wf_analysis_status.ANALYZING, try_job.status)
+
+  def testUpdateTryJobResultAnalyzing(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '3'
+
+    try_job = WfTryJob.Create(master_name, builder_name, build_number).put()
+
+    pipeline = MonitorTryJobPipeline()
+    pipeline._UpdateTryJobResult(
+        buildbucket_client.BuildbucketBuild.STARTED, master_name, builder_name,
+        build_number, TryJobType.TEST, try_job_id, 'url')
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(wf_analysis_status.ANALYZING, try_job.status)

@@ -51,7 +51,7 @@ class MonitorTryJobPipeline(BasePipeline):
         build.end_time)
     try_job_data.number_of_commits_analyzed = len(
         build.report.get('result', {}))
-    try_job_data.try_job_url = build.url  # pragma: no cover
+    try_job_data.try_job_url = build.url
     try_job_data.regression_range_size = build.report.get(
         'metadata', {}).get('regression_range_size')
     if timed_out:
@@ -84,7 +84,7 @@ class MonitorTryJobPipeline(BasePipeline):
       # schedule_try_job_pipeline, so this branch shouldn't be reached.
       result_to_update.append(result)
 
-    if status == BuildbucketBuild.STARTED:  # pragma: no cover
+    if status == BuildbucketBuild.STARTED:
       try_job_result.status = wf_analysis_status.ANALYZING
     try_job_result.put()
     return result_to_update
@@ -117,11 +117,11 @@ class MonitorTryJobPipeline(BasePipeline):
     start_time = None
     while True:
       error, build = buildbucket_client.GetTryJobs([try_job_id])[0]
-      if error:  # pragma: no cover
+      if error:
         if allowed_response_error_times > 0:
           allowed_response_error_times -= 1
           pipeline_wait_seconds += default_pipeline_wait_seconds
-        else:
+        else:  # pragma: no cover
           # Buildbucket has responded error more than 5 times, retry pipeline.
           self._UpdateTryJobMetadataForBuildError(try_job_data, error)
           raise pipeline.Retry(
@@ -134,7 +134,7 @@ class MonitorTryJobPipeline(BasePipeline):
             BuildbucketBuild.COMPLETED, master_name, builder_name, build_number,
             try_job_type, try_job_id, build.url, build.report)
         return result_to_update[-1]
-      else:  # pragma: no cover
+      else:
         if allowed_response_error_times < max_error_times:
           # Recovers from errors.
           allowed_response_error_times = max_error_times
