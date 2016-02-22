@@ -13,8 +13,8 @@
 }
 </script>
 
-<pre style="font-family: arial, sans-serif">
-{%autoescape on%}{% include wrapped_template %}{%endautoescape%}
-</pre>
+<div style="font-family: arial, sans-serif">
+{%autoescape on%}{{wrapped_body}}{%endautoescape%}
+</div>
 </body>
 </html>

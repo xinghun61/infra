@@ -44,6 +44,17 @@ class MockRequest(HttpRequest):
     self.issue = issue
 
 
+class TestUtilities(TestCase):
+  """Test utility functions."""
+
+  def test_AddHTMLTags(self):
+    body = '\n\ngoogle.com\n\nhttp://gmail.com\ngoogle.notalink'
+    self.assertEquals(
+        '<br/><br/><a href="http://google.com">google.com</a><br/><br/>' +
+        '<a href="http://gmail.com">http://gmail.com</a><br/>google.notalink',
+        views._add_HTML_tags(body))
+
+
 class TestPublish(TestCase):
   """Test publish functions."""
 

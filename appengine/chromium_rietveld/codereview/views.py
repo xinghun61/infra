@@ -3709,13 +3709,12 @@ def make_message(request, issue, message, comments=None, send_mail=False,
           # The content failed to be decoded as utf-8. Enforce it as ASCII.
           context[key] = value.decode('ascii', 'replace')
 
-    # Add the template we are wrapping to the context and create text and html
-    # versions of the body.
-    context['wrapped_template'] = template
+    # Create text and html versions of the body.
     # The text version does not autoescape HTML.
+    context['wrapped_template'] = template
     text_body = django.template.loader.render_to_string(
-      'mails/text_wrapper.txt', context,
-      context_instance=RequestContext(request))
+        'mails/text_wrapper.txt', context,
+        context_instance=RequestContext(request))
 
     # The HTML version adds the following:
     # * Mark up that enables GMail/Inbox to display a convenient link that
@@ -3723,10 +3722,15 @@ def make_message(request, issue, message, comments=None, send_mail=False,
     #   on the email.
     #   Documentation for this schema.org markup is here:
     #     https://developers.google.com/gmail/markup/reference/go-to-action
-    # * All HTML in the body is autoescaped.
+    # * Converts "\n" into "<br/>".
+    # * Puts <a href>s around links.
+    # * All other HTML in the body is autoescaped.
+    raw_body = django.template.loader.render_to_string(
+        template, context, context_instance=RequestContext(request))
+    html_context= {'wrapped_body': mark_safe(_add_HTML_tags(raw_body))}
     html_body = django.template.loader.render_to_string(
-      'mails/html_wrapper.txt', context,
-      context_instance=RequestContext(request))
+        'mails/html_wrapper.txt', html_context,
+        context_instance=RequestContext(request))
 
     # Add +owner, +reviewer, or +cc to addresses based on the role the account
     # plays in the issue and user preferences.
@@ -3788,6 +3792,22 @@ def make_message(request, issue, message, comments=None, send_mail=False,
       logging.warning("Retried sending email %s times", attempts)
 
   return msg
+
+
+def _add_HTML_tags(body):
+  """Adds HMTL tags in the specified email body.
+
+  Specifically does the following:
+  * Detects links and adds <a href>s around the link.
+  * Substitutes <br/> for all occurrences of "\n".
+
+  See crbug.com/582463 for context.
+  """
+  # Convert all URLs into clickable links.
+  body = urlize(body)
+  # Convert all "\n"s into "<br/>"s.
+  body = body.replace("\n", "<br/>")
+  return body
 
 
 def _add_plus_addr(addr, accounts, issue):
