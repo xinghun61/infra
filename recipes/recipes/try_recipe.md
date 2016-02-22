@@ -1,6 +1,6 @@
 # Try your recipe before committing
 
-*aka [go/test](http://go/try-recipe)*
+*aka [go/try-recipe](http://go/try-recipe)*
 
 ## tl;dr
 
