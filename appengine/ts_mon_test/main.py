@@ -15,7 +15,8 @@ import gae_ts_mon
 
 from google.appengine.api.modules import modules
 
-metric = gae_ts_mon.CounterMetric('test/dsansome/loadtest')
+metric = gae_ts_mon.CounterMetric('test/dsansome/loadtest',
+    description='Dummy metric for testing ts_mon on Appengine')
 
 
 class IncrementHandler(webapp2.RequestHandler):

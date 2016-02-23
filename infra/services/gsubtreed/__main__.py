@@ -19,6 +19,9 @@ from infra_libs import ts_mon
 # Return value of parse_args.
 Options = collections.namedtuple('Options', 'repo loop_opts json_output')
 
+commits_counter = ts_mon.CounterMetric('gsubtreed/commit_count',
+    description='Number of commits processed by gsubtreed')
+
 
 def parse_args(args):  # pragma: no cover
   def check_url(s):
@@ -67,7 +70,6 @@ def parse_args(args):  # pragma: no cover
 
 def main(args):  # pragma: no cover
   opts = parse_args(args)
-  commits_counter = ts_mon.CounterMetric('gsubtreed/commit_count')
   cref = gsubtreed.GsubtreedConfigRef(opts.repo)
   opts.repo.reify()
 

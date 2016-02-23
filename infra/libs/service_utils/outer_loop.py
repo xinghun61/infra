@@ -23,6 +23,14 @@ LoopResults = collections.namedtuple(
     ],
 )
 
+count_metric = ts_mon.CounterMetric('proc/outer_loop/count',
+    description='Counter of loop iterations for this process, by success or '
+                'failure')
+success_metric = ts_mon.BooleanMetric('proc/outer_loop/success',
+    description='Set immediately before the loop exits')
+durations_metric = ts_mon.DistributionMetric('proc/outer_loop/durations',
+    description='Times (in seconds) taken to execute the task')
+
 
 def loop(task, sleep_timeout, duration=None, max_errors=None, time_mod=time):
   """Runs the task in a loop for a given duration.
@@ -50,9 +58,6 @@ def loop(task, sleep_timeout, duration=None, max_errors=None, time_mod=time):
   failed = False
   loop_count = 0
   error_count = 0
-  count_metric = ts_mon.CounterMetric('proc/outer_loop/count')
-  success_metric = ts_mon.BooleanMetric('proc/outer_loop/success')
-  durations_metric = ts_mon.DistributionMetric('proc/outer_loop/durations')
   try:
     while True:
       # Log that new attempt is starting.

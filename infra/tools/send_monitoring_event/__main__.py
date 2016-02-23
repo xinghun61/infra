@@ -12,6 +12,10 @@ import infra_libs.ts_mon as ts_mon
 from infra.tools.send_monitoring_event import send_event
 
 
+success_metric = ts_mon.BooleanMetric('send_monitoring_event/success',
+    description='Set to True if the monitoring event was sent successfully')
+
+
 def main(argv):  # pragma: no cover
   # Does nothing when no arguments are passed, to make it safe to import this
   # module (main() is executed on import, because this file is called __main__).
@@ -19,8 +23,6 @@ def main(argv):  # pragma: no cover
 
   if len(argv) == 0:
     return status
-
-  success_metric = ts_mon.BooleanMetric('send_monitoring_event/success')
 
   try:
     args = send_event.get_arguments(argv)
