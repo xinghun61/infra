@@ -59,7 +59,7 @@ def _flush_metrics_if_needed_locked(time_now):
     interface.state.last_flushed = entity.last_updated
     updated_sec_ago = (time_now - entity.last_updated).total_seconds()
     if updated_sec_ago > shared.INSTANCE_EXPECTED_TO_HAVE_TASK_NUM_SEC:
-      logging.warning('Instance %s is %n seconds old with no task_num.',
+      logging.warning('Instance %s is %d seconds old with no task_num.',
                       shared.instance_key_id(), updated_sec_ago)
     return False
   interface.state.target.task_num = entity.task_num
