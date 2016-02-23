@@ -43,6 +43,8 @@ class Metric(object):
   * GaugeMetric for metrics with arbitrarily varying integer values
   * CumulativeMetric for metrics with monotonically increasing float values
   * FloatMetric for metrics with arbitrarily varying float values
+
+  See http://go/inframon-doc for help designing and using your metrics.
   """
 
   def __init__(self, name, fields=None, description=None):
