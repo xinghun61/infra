@@ -39,6 +39,8 @@ class TextFragment(object):
 class LinkableText(object):
   """Turns arbitrary text into a set of links"""
 
+  CR_REV_URL = 'https://crrev.com'
+
   GERRIT_URLS = {
       'chrome': 'https://chrome-internal-review.googlesource.com',
       'chromium': 'https://chromium-review.googlesource.com',
@@ -86,11 +88,10 @@ class LinkableText(object):
         r'(([-+.a-z0-9_!#$%&*/=?^_`{|}~]+)@[-a-z0-9.]+\.[a-z0-9]+)\b',
         r'\1', r'\2', True)
 
-    # Convert SHA1's to gerrit links.  Assume all external since
-    # there is no sane way to detect it's an internal CL.
+    # Convert SHA1's to links to the respective commit on crrev.com.
     cls.register_converter(
         r'\b([0-9a-f]{40})\b',
-        r'%s/#q,\1,n,z' % cls.GERRIT_URLS['chromium'], r'\1', False)
+        r'%s/\1' % cls.CR_REV_URL, r'\1', False)
 
     # Convert public gerrit CL numbers which take the form:
     # CL:1234
