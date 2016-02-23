@@ -77,6 +77,18 @@ class InitializeTest(testing.AppengineTestCase):
     self.assertEqual(1, http_metrics.server_response_status.get({
         'name': '^/$', 'status': 200, 'is_robot': False}))
 
+  def test_instrument_app_with_enabled_fn(self):
+    class Handler(webapp2.RequestHandler):
+      def get(self):
+        self.response.write('success!')
+
+    is_enabled_fn = mock.Mock()
+
+    app = webapp2.WSGIApplication([('/', Handler)])
+    config.initialize(app, is_enabled_fn=is_enabled_fn, is_local_unittest=False)
+    app.get_response('/')
+    self.assertIs(is_enabled_fn, interface.state.flush_enabled_fn)
+
   def test_instruments_app_only_once(self):
     class Handler(webapp2.RequestHandler):
       def get(self):

@@ -55,6 +55,13 @@ class GlobalsTest(unittest.TestCase):
     self.assertEqual(1, len(proto.data))
     self.assertEqual('foo', proto.data[0].name)
 
+  def test_flush_disabled(self):
+    interface.state.global_monitor = stubs.MockMonitor()
+    interface.state.target = stubs.MockTarget()
+    interface.state.flush_enabled_fn = lambda: False
+    interface.flush()
+    self.assertFalse(interface.state.global_monitor.send.called)
+
   def test_flush_raises(self):
     self.assertIsNone(interface.state.global_monitor)
     with self.assertRaises(errors.MonitoringNoConfiguredMonitorError):
