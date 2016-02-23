@@ -41,7 +41,8 @@ def set_deathsig(sig):  # pragma: no cover
 
 
 class MasterMonitor(object):
-  up = ts_mon.BooleanMetric('buildbot/master/up')
+  up = ts_mon.BooleanMetric('buildbot/master/up',
+      description='False if the master failed to respond to any of its checks')
 
   POLLER_CLASSES = [
     pollers.VarzPoller,

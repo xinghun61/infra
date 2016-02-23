@@ -81,18 +81,29 @@ class Poller(object):
 class VarzPoller(Poller):
   endpoint = '/varz'
 
-  uptime = ts_mon.FloatMetric('buildbot/master/uptime')
-  accepting_builds = ts_mon.BooleanMetric('buildbot/master/accepting_builds')
+  uptime = ts_mon.FloatMetric('buildbot/master/uptime',
+      description='Time (in seconds) since the master was started')
+  accepting_builds = ts_mon.BooleanMetric('buildbot/master/accepting_builds',
+      description='Whether the master\'s BuildRequestDistributor is running')
 
-  connected = ts_mon.GaugeMetric('buildbot/master/builders/connected_slaves')
-  current_builds = ts_mon.GaugeMetric('buildbot/master/builders/current_builds')
-  pending_builds = ts_mon.GaugeMetric('buildbot/master/builders/pending_builds')
-  state = ts_mon.StringMetric('buildbot/master/builders/state')
-  total = ts_mon.GaugeMetric('buildbot/master/builders/total_slaves')
+  connected = ts_mon.GaugeMetric('buildbot/master/builders/connected_slaves',
+      description='Number of slaves currently connected, per builder')
+  current_builds = ts_mon.GaugeMetric('buildbot/master/builders/current_builds',
+      description='Number of builds currently running, per builder')
+  pending_builds = ts_mon.GaugeMetric('buildbot/master/builders/pending_builds',
+      description='Number of builds pending, per builder')
+  state = ts_mon.StringMetric('buildbot/master/builders/state',
+      description='State of this builder - building, idle, or offline')
+  total = ts_mon.GaugeMetric('buildbot/master/builders/total_slaves',
+      description='Number of slaves configured on this builder - connected or '
+                  'not')
 
-  pool_queue = ts_mon.GaugeMetric('buildbot/master/thread_pool/queue')
-  pool_waiting = ts_mon.GaugeMetric('buildbot/master/thread_pool/waiting')
-  pool_working = ts_mon.GaugeMetric('buildbot/master/thread_pool/working')
+  pool_queue = ts_mon.GaugeMetric('buildbot/master/thread_pool/queue',
+      description='Number of runnables queued in the database thread pool')
+  pool_waiting = ts_mon.GaugeMetric('buildbot/master/thread_pool/waiting',
+      description='Number of idle workers for the database thread pool')
+  pool_working = ts_mon.GaugeMetric('buildbot/master/thread_pool/working',
+      description='Number of running workers for the database thread pool')
 
   def handle_response(self, data):
     self.uptime.set(data['server_uptime'], fields=self.fields())
@@ -140,20 +151,29 @@ class FilePoller(Poller):
   """
   endpoint = 'FILE'
   field_keys = ('builder', 'slave', 'result', 'project_id', 'subproject_tag')
-  result_count = ts_mon.CounterMetric('buildbot/master/builders/results/count')
+  result_count = ts_mon.CounterMetric('buildbot/master/builders/results/count',
+      description='Number of items consumed from ts_mon.log by mastermon')
   # A custom bucketer with 12% resolution in the range of 1..10**5,
   # better suited for build cycle times.
   bucketer = ts_mon.GeometricBucketer(
       growth_factor=10**0.05, num_finite_buckets=100)
   cycle_times = ts_mon.CumulativeDistributionMetric(
-      'buildbot/master/builders/builds/durations', bucketer=bucketer)
+      'buildbot/master/builders/builds/durations', bucketer=bucketer,
+      description='Durations (in seconds) that slaves spent actively doing '
+                  'work towards builds for each builder')
   pending_times = ts_mon.CumulativeDistributionMetric(
-      'buildbot/master/builders/builds/pending_durations', bucketer=bucketer)
+      'buildbot/master/builders/builds/pending_durations', bucketer=bucketer,
+      description='Durations (in seconds) that the master spent waiting for '
+                  'slaves to become available for each builder')
   total_times = ts_mon.CumulativeDistributionMetric(
-      'buildbot/master/builders/builds/total_durations', bucketer=bucketer)
+      'buildbot/master/builders/builds/total_durations', bucketer=bucketer,
+      description='Total duration (in seconds) that builds took to complete '
+                  'for each builder')
 
   pre_test_times = ts_mon.CumulativeDistributionMetric(
-      'buildbot/master/builders/builds/pre_test_durations', bucketer=bucketer)
+      'buildbot/master/builders/builds/pre_test_durations', bucketer=bucketer,
+      description='Durations (in seconds) that builds spent before their '
+                  '"before_tests" step')
 
   def poll(self):
     LOGGER.info('Collecting results from %s', self._url)
