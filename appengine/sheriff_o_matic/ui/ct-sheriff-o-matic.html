@@ -25,6 +25,7 @@ found in the LICENSE file.
 <link rel="import" href="ct-banner.html">
 <link rel="import" href="ct-trooper-card.html">
 <link rel="import" href="ct-unexpected-failures.html">
+<link rel="import" href="ct-user-prefs.html">
 <link rel="import" href="ct-user-prefs-editor.html">
 
 <link rel="import" href="../bower_components/core-menu/core-menu.html">
@@ -145,11 +146,27 @@ found in the LICENSE file.
         bottom: 0px;
         right: 0px;
       }
+      .userInfo {
+        color: white;
+        font-family: monospace;
+      }
+      .userInfo a {
+        color: white;
+      }
     </style>
+    <ct-user-prefs id="userPrefs"></ct-user-prefs>
     <div id="top_bar">
       <div id="title_bar" horizontal layout>
         <div flex>Sheriff-O-Matic: {{ page_title }}</div>
-          <paper-spinner id="spinner" active="true"></paper-spinner>
+        <div class="userInfo">
+          <template if="{{ !$.userPrefs.values.user }}">
+            <a href="{{ $.userPrefs.values.loginUrl }}">Log in</a>
+          </template>
+          <template if="{{ $.userPrefs.values.user }}">
+            {{ $.userPrefs.values.user }} (<a href="{{ $.userPrefs.values.logoutUrl }}">Log out</a>)
+          </template>
+        </div>
+        <paper-spinner id="spinner" active="true"></paper-spinner>
           <a id="historyLink" href="{{tree}}?history={{ alertsHistoryKey }}"><paper-icon-button id="historyLinkButton" icon="link" title="permalink to this set of alerts" hidden?="{{ !alertsHistoryKey }}"></paper-icon-button></a>
           <ct-last-updated date="{{ failures.lastUpdateDate }}"></ct-last-updated>
         </div>
