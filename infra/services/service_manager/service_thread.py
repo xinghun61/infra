@@ -36,9 +36,15 @@ class ServiceThread(threading.Thread):
   This thread also polls the service occasionally and restarts it if it crashed.
   """
 
-  failures = ts_mon.CounterMetric('service_manager/failures')
-  reconfigs = ts_mon.CounterMetric('service_manager/reconfigs')
-  upgrades = ts_mon.CounterMetric('service_manager/upgrades')
+  failures = ts_mon.CounterMetric('service_manager/failures',
+      description='Number of times each service unexpectedly exited and was '
+                  'restarted by service manager')
+  reconfigs = ts_mon.CounterMetric('service_manager/reconfigs',
+      description='Number of times each service was restarted because its '
+                  'configuration changed')
+  upgrades = ts_mon.CounterMetric('service_manager/upgrades',
+      description='Number of times each service was restarted because its '
+                  'version changed')
 
   def __init__(self, poll_interval, state_directory, service_config,
                cloudtail_path,
