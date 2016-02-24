@@ -53,6 +53,14 @@ class MetricTest(TestBase):
     m.serialize_to(p, 1234, (('bar', 1), ('baz', False)), m.get(), t)
     return str(p).splitlines()
 
+  def test_serialize_with_description(self):
+    t = targets.DeviceTarget('reg', 'role', 'net', 'host')
+    m = metrics.StringMetric('test', description='a custom description')
+    m.set('val')
+    p = metrics_pb2.MetricsCollection()
+    m.serialize_to(p, 1234, (('bar', 1), ('baz', False)), m.get(), t)
+    return str(p).splitlines()
+
   def test_serialize_too_many_fields(self):
     m = metrics.StringMetric('test', fields={'a': 1, 'b': 2, 'c': 3, 'd': 4})
     m.set('val', fields={'e': 5, 'f': 6, 'g': 7})
