@@ -79,6 +79,18 @@ def is_privileged_user(user):
   return (email.endswith(PRIVILEGED_USER_DOMAINS) or
           email in committer_list.Committers())
 
+def sort_patches(patches):
+  """Returns patches in sorted order by filename.
+
+  Sets expectation files at the end.
+  """
+  def key(patch):
+    if patch.filename.endswith('.json') and '.expected/' in patch.filename:
+      # Put expectation files at the end.
+      return (1, patch.filename)
+    return (0, patch.filename)
+  return [p for _, p in sorted((key(p), p) for p in patches)]
+
 
 ### CQList ###
 
@@ -443,7 +455,8 @@ class Issue(ndb.Model):
         patchset.total_added = 0
         patchset.total_removed = 0
         if patchset_id == patchset.key.id():
-          patchset.patches_cache = list(patchset.patches)
+          assert False
+          patchset.patches_cache = sort_patches(patchset.patches)
           for patch in patchset.patches_cache:
             pkey = patch.key
             patch._num_comments = sum(c.patch_key == pkey for c in comments)
