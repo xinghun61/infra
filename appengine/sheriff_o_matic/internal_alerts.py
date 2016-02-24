@@ -6,8 +6,7 @@ import datetime
 import alerts
 import webapp2
 
-from google.appengine.api import users
-
+from components import auth
 
 class InternalAlertsHandler(alerts.AlertsHandler):
   ALERT_TYPE = 'internal-alerts'
@@ -16,23 +15,24 @@ class InternalAlertsHandler(alerts.AlertsHandler):
   # Has no 'response' member.
   # Use of super on an old style class.
   # pylint: disable=E1002,E1101
+  @auth.public
   def get(self):
     # Require users to be logged to see builder alerts from private/internal
     # trees.
-    user = users.get_current_user()
-    if not user:
+
+    user = auth.get_current_identity()
+    if user.is_anonymous:
       ret = {}
       ret.update({
           'date': datetime.datetime.utcnow(),
-          'redirect-url': users.create_login_url(self.request.uri)
+          'redirect-url': self.create_login_url(self.request.uri)
       })
       data = self.generate_json_dump(ret)
       self.send_json_headers()
       self.response.write(data)
       return
 
-    email = user.email()
-    if not email.endswith('@google.com') and '+' not in email:
+    if not auth.is_group_member('googlers'):
       self.response.set_status(403, 'Permission Denied')
       return
 

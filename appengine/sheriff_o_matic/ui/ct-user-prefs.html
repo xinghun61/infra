@@ -52,6 +52,11 @@ found in the LICENSE file.
         url = url.replace(
           '//build.chromium.org/p/',
           '//uberchromegw.corp.google.com/i/');
+        // TODO(martiniss): convert to regex
+        url = url.replace(
+          '//master7.golo.chromium.org/i/',
+          '//uberchromegw.corp.google.com/i/');
+        url = url.replace('http:', 'https:');
       }
       return url;
     },
