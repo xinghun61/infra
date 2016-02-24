@@ -19,7 +19,7 @@ class VersionedConfig(VersionedModel):
   """
 
   # When this revision of configuration was created.
-  updated_ts = ndb.DateTimeProperty(indexed=False, auto_now_add=True)
+  updated_ts = ndb.DateTimeProperty(indexed=False, auto_now=True)
 
   # Who created this revision of configuration.
   updated_by = ndb.StringProperty(indexed=False)
