@@ -16,13 +16,19 @@ if sys.platform == 'win32':  # pragma: no cover
   from infra.services.sysmon import puppet_metrics_win32
 
 
-config_version = ts_mon.GaugeMetric('puppet/version/config')
-puppet_version = ts_mon.StringMetric(
-  'puppet/version/puppet',
-  description='Version of puppet client installed.')
-events = ts_mon.GaugeMetric('puppet/events')
-resources = ts_mon.GaugeMetric('puppet/resources')
-times = ts_mon.FloatMetric('puppet/times')
+config_version = ts_mon.GaugeMetric('puppet/version/config',
+    description='The version of the puppet configuration.  By default this is '
+                'the time that the configuration was parsed')
+puppet_version = ts_mon.StringMetric('puppet/version/puppet',
+    description='Version of puppet client installed.')
+events = ts_mon.GaugeMetric('puppet/events',
+    description='Number of changes the puppet client made to the system in its '
+                'last run, by success or failure')
+resources = ts_mon.GaugeMetric('puppet/resources',
+    description='Number of resources known by the puppet client in its last '
+                'run')
+times = ts_mon.FloatMetric('puppet/times',
+    description='Time taken to perform various parts of the last puppet run')
 age = ts_mon.FloatMetric('puppet/age', description='Time since last run')
 
 

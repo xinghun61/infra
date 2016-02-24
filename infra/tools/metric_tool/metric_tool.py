@@ -112,9 +112,9 @@ def main(path):
   if documented:  # pragma: no branch
     print('\nDocumented metrics found:')
     for description in documented:
-      print('/chrome/infra/{2} \t"{3}" at {0}:{1}'.format(*description))
+      print(u'/chrome/infra/{2} \t"{3}" at {0}:{1}'.format(*description))
 
   if non_documented:  # pragma: no branch
     print('\nUndocumented metrics found:')
     for description in non_documented:
-      print('/chrome/infra/{2} \t at {0}:{1}'.format(*description))
+      print(u'/chrome/infra/{2} \t at {0}:{1}'.format(*description))

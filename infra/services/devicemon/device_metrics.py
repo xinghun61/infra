@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -5,10 +6,14 @@
 from infra_libs import ts_mon
 
 
-cpu_temp_metric = ts_mon.FloatMetric('dev/cpu/temperature')
-battery_temp_metric = ts_mon.FloatMetric('dev/battery/temperature')
-battery_charge_metric = ts_mon.FloatMetric('dev/battery/charge')
-device_status_metric = ts_mon.StringMetric('dev/status')
+cpu_temp_metric = ts_mon.FloatMetric('dev/cpu/temperature',
+    description=u"Temperature (°C) of the device's CPU")
+battery_temp_metric = ts_mon.FloatMetric('dev/battery/temperature',
+    description=u"Temperature (°C) of the device's battery")
+battery_charge_metric = ts_mon.FloatMetric('dev/battery/charge',
+    description="Charge (%) of the device's battery")
+device_status_metric = ts_mon.StringMetric('dev/status',
+    description='Status of the device')
 
 
 def set_cpu_temp(_device, metric_fields):
