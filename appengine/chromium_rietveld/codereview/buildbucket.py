@@ -171,16 +171,12 @@ def get_builds_for_patchset_async(project, issue_id, patchset_id):
   logging.info(
       'Fetching builds for patchset %s/%s. Buildset: %s',
       issue_id, patchset_id, buildset_tag)
-  start = datetime.datetime.now()
   try:
     resp = yield rpc_async('GET', 'search', params=params)
   except net.NotFoundError as ex:
     logging.error(
         'Buildbucket returned 404 unexpectedly. Body: %s', ex.response)
     raise
-  logging.info('Fetched %d buildsfor patchset %s/%s.Buildset: %s took %s',
-               len(resp.get('builds', [])), issue_id, patchset_id, buildset_tag,
-               datetime.datetime.now() - start)
   if 'error' in resp:
     bb_error = resp.get('error', {})
     raise BuildBucketError(
