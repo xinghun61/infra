@@ -41,6 +41,7 @@ def _CreateNewSwarmingTaskRequest(
 
   # Set the gtest_filter to run the given tests only.
   new_request.extra_args.append('--gtest_repeat=%s' % iterations)
+  new_request.extra_args.append('--test-launcher-retry-limit=0')
   new_request.extra_args = [
       a for a in new_request.extra_args if not a.startswith('--gtest_filter')
   ]

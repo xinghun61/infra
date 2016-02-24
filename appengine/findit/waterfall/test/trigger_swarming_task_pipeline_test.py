@@ -149,7 +149,9 @@ class TriggerSwarmingTaskPipelineTest(testing.AppengineTestCase):
             ],
             'execution_timeout_secs': 3600,
             'extra_args': [
-                '--flag=value', '--gtest_repeat=10', '--gtest_filter=a.b:a.c'],
+                '--flag=value', '--gtest_repeat=10',
+                '--test-launcher-retry-limit=0',
+                '--gtest_filter=a.b:a.c'],
             'grace_period_secs': 30,
             'idempotent': False,
             'inputs_ref': {'a': 1},
