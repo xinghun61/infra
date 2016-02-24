@@ -184,8 +184,8 @@ def gzipped(data):
 
 
 def inner_loop(args):
-  old_api_endpoint = string_helpers.slash_join(
-      args.api_endpoint_prefix, args.old_api_path)
+  old_api_endpoint = string_helpers.slash_join(args.api_endpoint_prefix,
+      args.old_api_path) if args.old_api_path else None
   if not old_api_endpoint:
     logging.warn(
         'No /data url passed, will write to builder_alerts.json. JSON posted '
