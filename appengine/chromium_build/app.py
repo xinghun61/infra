@@ -548,6 +548,7 @@ def console_handler(unquoted_localpath, remoteurl, page_data=None):
     'sheriff_memory',
     'sheriff_nacl',
     'sheriff_perf',
+    'sheriff_perfbot',
     'sheriff_v8',
     'sheriff_webkit',
   ]
@@ -1136,6 +1137,11 @@ URLS = [
   {
     'remoteurl': 'http://build.chromium.org/p/chromium/sheriff_perf.js',
     'localpath': 'chromium/sheriff_perf.js',
+    'maxage': 15*60,  # 15 mins
+  },
+  {
+    'remoteurl': 'http://build.chromium.org/p/chromium/sheriff_perfbot.js',
+    'localpath': 'chromium/sheriff_perfbot.js',
     'maxage': 15*60,  # 15 mins
   },
   {
