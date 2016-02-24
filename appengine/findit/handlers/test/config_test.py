@@ -94,6 +94,8 @@ class ConfigTest(testing.AppengineTestCase):
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'version': 1,
+        'updated_by': 'test',
+        'updated_ts': response.json_body.get('updated_ts')
     }
 
     self.assertEquals(expected_response, response.json_body)
@@ -511,6 +513,8 @@ class ConfigTest(testing.AppengineTestCase):
         })
     }
 
+    response = self.test_app.post('/config', params=params)
+
     expected_response = {
         'masters': {
             'supported_masters': {
@@ -533,7 +537,8 @@ class ConfigTest(testing.AppengineTestCase):
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'version': 1,
+        'updated_by': 'test',
+        'updated_ts': response.json_body.get('updated_ts')
     }
 
-    response = self.test_app.post('/config', params=params)
     self.assertEquals(expected_response, response.json_body)

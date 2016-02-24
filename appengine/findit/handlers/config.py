@@ -200,6 +200,9 @@ def _ConfigurationDictIsValid(configuration_dict):
 class Configuration(BaseHandler):
   PERMISSION_LEVEL = Permission.ADMIN
 
+  def _FormatTimestamp(self, timestamp):
+    return timestamp.strftime('%Y-%m-%d %H:%M:%S')
+
   def HandleGet(self):
     settings = wf_config.FinditConfig.Get()
 
@@ -209,6 +212,8 @@ class Configuration(BaseHandler):
         'try_job_settings': settings.try_job_settings,
         'swarming_settings': settings.swarming_settings,
         'version': settings.version,
+        'updated_by': settings.updated_by,
+        'updated_ts': self._FormatTimestamp(settings.updated_ts)
     }
 
     return {'template': 'config.html', 'data': data}
