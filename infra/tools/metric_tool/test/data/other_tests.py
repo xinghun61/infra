@@ -11,7 +11,7 @@ def nice_function():
   infra_libs.read_json_as_utf8()
 
   # Wrong type passed to 'description'
-  infra_libs.ts_mon.BooleanMetric('/my/metric', description=1)
+  infra_libs.ts_mon.BooleanMetric('my/metric', description=1)
 
 def other_function():
   # Function call that is not a metric instantiation.

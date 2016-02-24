@@ -14,7 +14,8 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 
 class MainMetricToolTest(unittest.TestCase):
   def test_smoke_main(self):
-    metric_tool.main(DATA_DIR)
+    metric_tool.main(DATA_DIR, include_metric_tool_tests=True)
+    metric_tool.main(DATA_DIR, include_metric_tool_tests=False)
 
 
 class DescriptionExtractionTest(unittest.TestCase):
@@ -79,5 +80,5 @@ class DescriptionExtractionTest(unittest.TestCase):
       os.path.join(DATA_DIR, 'other_tests.py'))
     self.assertEqual(len(descriptions), 1)
     description = descriptions[0]
-    self.assertEqual(description[2], '/my/metric')
+    self.assertEqual(description[2], 'my/metric')
     self.assertEqual(description[3], None)

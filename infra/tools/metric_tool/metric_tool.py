@@ -78,7 +78,7 @@ def extract_metrics_descriptions(filepath):
   return descriptions
 
 
-def main(path):
+def main(path, include_metric_tool_tests=False):
   """Recursively walk a directory structure and print metrics documentation.
 
   For all instanciated metrics in any Python file found under the directory
@@ -92,6 +92,12 @@ def main(path):
   non_documented = []
 
   for (dirpath, _, filenames) in os.walk(path):
+    if (not include_metric_tool_tests and
+        os.path.abspath(dirpath).startswith(
+            os.path.dirname(os.path.abspath(__file__)))):
+      # Don't scan our own test files.
+      continue
+
     for filename in filenames:
 
       if (not filename.endswith('.py')  # pragma: no branch

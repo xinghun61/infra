@@ -8,5 +8,5 @@ Don't do that, it's just to make sure the parsing is robust.
 """
 from infra_libs import ts_mon
 
-metric_name = '/my/metric1'
+metric_name = 'my/metric1'
 ts_mon.BooleanMetric(metric_name, description='metric1')
