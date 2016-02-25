@@ -112,8 +112,8 @@ def RunSteps(api, mastername, buildername, buildnumber):
   rev = bot_update_step.presentation.properties['got_revision']
 
   with api.step.defer_results():
-    # Run Linux\Mac tests everywhere, Windows tests only on public CI.
-    if not api.platform.is_win or project_name == 'infra':
+    # Run Linux tests everywhere, Windows tests only on public CI.
+    if api.platform.is_linux or project_name == 'infra':
       api.python(
           'infra python tests',
           'test.py',
