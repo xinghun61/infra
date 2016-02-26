@@ -166,10 +166,10 @@
     # When upgrading, ensure requests_cache is compatible with new version!
   },
   'requests_cache': {
-    'version': '0.4.7',
+    'version': '0.4.10',
     'build': '0',
     'repo': 'external/github.com/reclosedev/requests-cache',
-    'rev': '5799155b63ac92f9d3e8080e0a243bc4319da917',
+    'rev': '630198cdc4386478ab8eba18beed94c1847f1087',
   },
   'rsa': {
     'version': '3.1.4',
