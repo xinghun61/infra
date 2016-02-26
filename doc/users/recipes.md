@@ -8,6 +8,7 @@ sequences of subprocess calls in a cross-platform and testable way.
   [internal](https://chrome-internal.googlesource.com/chrome/tools/build_limited/+/master/scripts/slave/recipes/).
 * Recipe modules:
   [base library](https://chromium.googlesource.com/external/github.com/luci/recipes-py/+/master/recipe_modules/);
+  [depot_tools](https://chromium.googlesource.com/chromium/tools/depot_tools/+/master/recipe_modules/);
   [public](https://chromium.googlesource.com/chromium/tools/build.git/+/master/scripts/slave/recipe_modules/);
   [internal](https://chrome-internal.googlesource.com/chrome/tools/build_limited/+/master/scripts/slave/recipe_modules/).
 
