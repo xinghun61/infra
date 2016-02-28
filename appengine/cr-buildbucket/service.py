@@ -736,6 +736,7 @@ def delete_many_builds(bucket, status, tags=None, created_by=None):
   deferred.defer(
     _task_delete_many_builds,
     bucket,
+    status,
     tags=tags,
     created_by=created_by,
     # Schedule it on the backend module of the same version.
