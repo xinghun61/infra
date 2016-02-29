@@ -65,7 +65,7 @@
   },
   {
     "cmd": [
-      "[DEPOT_TOOLS]\\git.bat",
+      "RECIPE_PACKAGE[depot_tools]\\git.bat",
       "-c",
       "user.email=commit-bot@chromium.org",
       "-c",
@@ -93,7 +93,7 @@
   },
   {
     "cmd": [
-      "[DEPOT_TOOLS]\\git.bat",
+      "RECIPE_PACKAGE[depot_tools]\\git.bat",
       "diff",
       "--name-only",
       "HEAD",
