@@ -5,14 +5,23 @@
   <link rel="stylesheet" href="/common.css"></link>
   <title>Findit Configuration</title>
   <style>
-    .supported-masters, .unsupported-steps {
-      min-width: 200px;
-      max-width: 200px;
-      min-height: 150px;
-      max-height: 150px;
+    .previous, .next, .latest {
+      color: #0645AD;
+      background:none!important;
+      border:none; 
+      padding:0!important;
+      font: inherit;
+      border-bottom:1px solid #0645AD; 
+      cursor: pointer;
     }
-    .support {
-      float: left;
+    .disabled {
+      color: #d3d3d3;
+      background:none!important;
+      border:none; 
+      padding:0!important;
+      font: inherit;
+      border-bottom:1px solid #d3d3d3; 
+      cursor: pointer;
     }
   </style>
   <script>
@@ -30,6 +39,34 @@
       return JSON.stringify(json, null, '  ');
     }
 
+    function CreateUrl(version) {
+      if (version)
+        return '/config?version=' + version.toString();
+      else
+        return '/config';
+    }
+
+    function loadPrevious() {
+      $.get('/config').done(function(){
+        var newUrl = CreateUrl({{ version }} - 1);
+        window.location.replace(newUrl);
+      });
+    }
+
+    function loadNext() {
+      $.get('/config').done(function(){
+        var newUrl = CreateUrl({{ version }} + 1);
+        window.location.replace(newUrl);
+      });
+    }
+
+    function loadLatest() {
+      $.get('/config').done(function(){
+        var newUrl = CreateUrl(null);
+        window.location.replace(newUrl);
+      });
+    }
+
     function save(e) {
       var newConfig = {
         'steps_for_masters_rules': getJsonOfTextarea('steps-for-masters-rules'),
@@ -38,7 +75,7 @@
         'swarming_settings': getJsonOfTextarea('swarming-settings')
       };
       $.post('/config', { data: JSON.stringify(newConfig) }).done(function(){
-        window.location.reload();  // Reload after successful saving.
+        window.location.replace(CreateUrl(null));  // Reload after successful saving.
       }).fail(function(xhr){
         // Replace the whole page with errors from server side.
         document.body.outerHTML = xhr.responseText;
@@ -47,11 +84,27 @@
     }
 
     $(document).ready(function() {
+      $('#previous-version-button').click(loadPrevious);
+      $('#next-version-button').click(loadNext);
+      $('#latest-version-button').click(loadLatest);
       $('#save-button').click(save);
       $('#steps-for-masters-rules').val(getStringFromJson(findit.stepsForMastersRules));
       $('#builders-to-trybots').val(getStringFromJson(findit.builders));
       $('#try-job-settings').val(getStringFromJson(findit.tryJobSettings));
       $('#swarming-settings').val(getStringFromJson(findit.swarmingSettings));
+
+      if ({{ version }} < 2) {
+        $('#previous-version-button').attr('disabled', 'disabled');
+        $('#previous-version-button').addClass('disabled');
+      }
+      else if ({{ version }} >= {{ latest_version }} ) {
+        $('#next-version-button').attr('disabled', 'disabled');
+        $('#next-version-button').addClass('disabled');
+      }
+      else {
+        $('#previous-version-button').removeAttr('disabled');
+        $('#next-version-button').removeAttr('disabled');
+      }
     });
   </script>
 </head>
@@ -61,6 +114,12 @@
     Configuration version: {{ version }}<br>
     Updated by: {{ updated_by }}<br>
     Updated time: {{ updated_ts }}<br>
+  </div>
+  <div>
+    Browse version:
+    <button id="previous-version-button" class="previous">previous</button>
+    <button id="next-version-button" class="next">next</button>
+    <button id="latest-version-button" class="latest">latest</button>
   </div>
   <br>
   <div>

@@ -15,6 +15,7 @@ class _Entity(VersionedModel):
 
 
 class VersionedModelTest(testing.AppengineTestCase):
+
   def testGetRootModel(self):
     root_model_class = _Entity._GetRootModel()
     self.assertEqual('_EntityRoot', root_model_class._get_kind())
@@ -26,7 +27,7 @@ class VersionedModelTest(testing.AppengineTestCase):
     self.assertEqual(0, entity.version)
 
   def testGetMostRecentVersionWhenNoData(self):
-    entity = _Entity.GetMostRecentVersion()
+    entity = _Entity.GetVersion()
     self.assertIsNone(entity)
 
   def testGetMostRecentVersionWhenDataExists(self):
@@ -35,9 +36,28 @@ class VersionedModelTest(testing.AppengineTestCase):
     _Entity(key=ndb.Key('_Entity', 1, parent=root_key), value=1).put()
     _Entity(key=ndb.Key('_Entity', 2, parent=root_key), value=2).put()
 
-    entity = _Entity.GetMostRecentVersion()
+    entity = _Entity.GetVersion()
     self.assertEqual(2, entity.version)
     self.assertEqual(2, entity.value)
+
+  def testGetNextVersionWhenDataExists(self):
+    root_key = ndb.Key('_EntityRoot', 1)
+    _Entity._GetRootModel()(key=root_key, current=2).put()
+    _Entity(key=ndb.Key('_Entity', 1, parent=root_key), value=1).put()
+    _Entity(key=ndb.Key('_Entity', 2, parent=root_key), value=2).put()
+
+    entity = _Entity.GetVersion(2)
+    self.assertEqual(2, entity.version)
+    self.assertEqual(2, entity.value)
+    self.assertIsNone(_Entity.GetVersion(0))
+    self.assertIsNone(_Entity.GetVersion(3))
+
+  def testGetLatestVersionNumber(self):
+    root_key = ndb.Key('_EntityRoot', 1)
+    _Entity._GetRootModel()(key=root_key, current=1).put()
+    _Entity(key=ndb.Key('_Entity', 1, parent=root_key), value=2).put()
+
+    self.assertEqual(1, _Entity.GetLatestVersionNumber())
 
   def testSaveNewVersion(self):
     entity = _Entity()
@@ -47,7 +67,7 @@ class VersionedModelTest(testing.AppengineTestCase):
     expected_key = ndb.Key('_EntityRoot', 1, '_Entity', 1)
     self.assertEqual(expected_key, key)
 
-    entity = _Entity.GetMostRecentVersion()
+    entity = _Entity.GetVersion()
     self.assertEqual(1, entity.version)
     self.assertEqual(1, entity.value)
 

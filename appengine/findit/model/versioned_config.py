@@ -25,9 +25,10 @@ class VersionedConfig(VersionedModel):
   updated_by = ndb.StringProperty(indexed=False)
 
   @classmethod
-  def Get(cls):
-    """Returns the current up-to-date version of the config entity."""
-    return cls.GetMostRecentVersion() or cls()
+  def Get(cls, version=None):
+    """Returns the version of the config entity, the latest if not specified."""
+    config_data = cls.GetVersion(version)
+    return config_data or cls() if version is None else config_data
 
   def Update(self, **kwargs):
     """Applies |kwargs| dict to the entity and stores the entity if changed."""

@@ -54,8 +54,9 @@ def _ConvertOldMastersFormatToNew(masters_to_blacklisted_steps):
   return steps_for_masters_rules_in_latest_format
 
 
-def GetStepsForMastersRules():
-  settings = FinditConfig.Get()
+def GetStepsForMastersRules(settings=None, version=None):
+  if settings is None:
+    settings = FinditConfig.Get(version)
   return (settings.steps_for_masters_rules or
           _ConvertOldMastersFormatToNew(settings.masters_to_blacklisted_steps))
 

@@ -197,23 +197,38 @@ def _ConfigurationDictIsValid(configuration_dict):
   return True
 
 
+def _FormatTimestamp(timestamp):
+  if not timestamp:
+    return None
+  return timestamp.strftime('%Y-%m-%d %H:%M:%S')
+
+
 class Configuration(BaseHandler):
   PERMISSION_LEVEL = Permission.ADMIN
 
-  def _FormatTimestamp(self, timestamp):
-    return timestamp.strftime('%Y-%m-%d %H:%M:%S')
-
   def HandleGet(self):
-    settings = wf_config.FinditConfig.Get()
+    version = self.request.params.get('version')
+
+    if version is not None:
+      version = int(version)
+
+    settings = wf_config.FinditConfig.Get(version)
+
+    if not settings:
+      return self.CreateError(
+          'The requested version is invalid or not found.', 500)
+
+    latest_version = settings.GetLatestVersionNumber()
 
     data = {
-        'masters': waterfall_config.GetStepsForMastersRules(),
+        'masters': waterfall_config.GetStepsForMastersRules(settings),
         'builders': settings.builders_to_trybots,
         'try_job_settings': settings.try_job_settings,
         'swarming_settings': settings.swarming_settings,
         'version': settings.version,
+        'latest_version': latest_version,
         'updated_by': settings.updated_by,
-        'updated_ts': self._FormatTimestamp(settings.updated_ts)
+        'updated_ts': _FormatTimestamp(settings.updated_ts)
     }
 
     return {'template': 'config.html', 'data': data}

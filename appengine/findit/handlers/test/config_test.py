@@ -2,9 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import json
-
+import re
 import webapp2
+import webtest
 
 from handlers import config
 from model import wf_config
@@ -94,11 +96,62 @@ class ConfigTest(testing.AppengineTestCase):
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'version': 1,
+        'latest_version': 1,
         'updated_by': 'test',
         'updated_ts': response.json_body.get('updated_ts')
     }
 
     self.assertEquals(expected_response, response.json_body)
+
+  def testGetVersionOfConfigurationSettings(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+
+    config_data = {
+        'steps_for_masters_rules': _MOCK_STEPS_FOR_MASTERS_RULES,
+        'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
+        'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
+        'swarming_settings': _MOCK_SWARMING_SETTINGS
+    }
+    wf_config.FinditConfig.Get().Update(**config_data)
+
+    response = self.test_app.get(
+        '/config', params={'version': 1, 'format': 'json'})
+    self.assertEquals(response.status_int, 200)
+
+    expected_response = {
+        'masters': _MOCK_STEPS_FOR_MASTERS_RULES,
+        'builders': _MOCK_BUILDERS_TO_TRYBOTS,
+        'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
+        'swarming_settings': _MOCK_SWARMING_SETTINGS,
+        'version': 1,
+        'latest_version': 1,
+        'updated_by': 'test',
+        'updated_ts': response.json_body.get('updated_ts')
+    }
+
+    self.assertEquals(expected_response, response.json_body)
+
+  def testGetOutOfBoundsVersionOfConfigurationSettings(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+
+    config_data = {
+        'steps_for_masters_rules': _MOCK_STEPS_FOR_MASTERS_RULES,
+        'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
+        'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
+        'swarming_settings': _MOCK_SWARMING_SETTINGS
+    }
+    wf_config.FinditConfig.Get().Update(**config_data)
+
+    self.assertRaisesRegexp(
+        webtest.app.AppError,
+        re.compile('The requested version is invalid or not found.',
+                   re.MULTILINE | re.DOTALL),
+        self.test_app.get, '/config', params={'version': 0, 'format': 'json'})
+    self.assertRaisesRegexp(
+        webtest.app.AppError,
+        re.compile('The requested version is invalid or not found.',
+                   re.MULTILINE | re.DOTALL),
+        self.test_app.get, '/config', params={'version': 2, 'format': 'json'})
 
   def testIsListOfType(self):
     self.assertFalse(config._IsListOfType({}, basestring))
@@ -484,6 +537,12 @@ class ConfigTest(testing.AppengineTestCase):
         'this_is_not_a_valid_property': []
     }))
 
+  def testFormatTimestamp(self):
+    self.assertIsNone(config._FormatTimestamp(None))
+    self.assertEqual('2016-02-25 01:02:03',
+                     config._FormatTimestamp(
+                         datetime.datetime(2016, 2, 25, 1, 2, 3, 123456)))
+
   def testPostConfigurationSettings(self):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
@@ -537,6 +596,7 @@ class ConfigTest(testing.AppengineTestCase):
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'version': 1,
+        'latest_version': 1,
         'updated_by': 'test',
         'updated_ts': response.json_body.get('updated_ts')
     }

@@ -26,7 +26,7 @@ class _GroupRoot(ndb.Model):
 class VersionedModel(ndb.Model):
   """A model that supports versioning.
 
-  Subclass will automatically be versioned, if use GetMostRecentVersion() to
+  Subclass will automatically be versioned, if use GetVersion() to
   read and use Save() to write.
   """
 
@@ -35,8 +35,8 @@ class VersionedModel(ndb.Model):
     return self.key.integer_id() if self.key else 0
 
   @classmethod
-  def GetMostRecentVersion(cls):
-    """Returns the most recent version of the entity."""
+  def GetVersion(cls, version=None):
+    """Returns a version of the entity, the latest if version=None."""
     assert not ndb.in_transaction()
 
     root_key = cls._GetRootKey()
@@ -44,7 +44,17 @@ class VersionedModel(ndb.Model):
     if not root or not root.current:
       return None
 
-    return ndb.Key(cls, root.current, parent=root_key).get()
+    if version is None:
+      version = root.current
+    elif version < 1:
+      #  Return None for versions < 1, which causes exceptions in ndb.Key()
+      return None
+
+    return ndb.Key(cls, version, parent=root_key).get()
+
+  @classmethod
+  def GetLatestVersionNumber(cls):
+    return cls._GetRootKey().get().current
 
   def Save(self):
     """Saves the current entity, but as a new version."""
@@ -90,6 +100,7 @@ class VersionedModel(ndb.Model):
     root_model_name = '%sRoot' % cls.__name__
 
     class _RootModel(_GroupRoot):
+
       @classmethod
       def _get_kind(cls):
         return root_model_name

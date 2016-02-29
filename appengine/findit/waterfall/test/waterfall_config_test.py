@@ -81,6 +81,13 @@ class MastersTest(testing.AppengineTestCase):
 
             }))
 
+  def testGetStepsForMastersRulesWithSettingsProvided(self):
+    class MockSettings():
+      steps_for_masters_rules = {'blabla': 'blabla'}
+
+    self.assertEqual(waterfall_config.GetStepsForMastersRules(MockSettings()),
+                     MockSettings().steps_for_masters_rules)
+
   def testMasterIsSupported(self):
     self.assertTrue(waterfall_config.MasterIsSupported('master1'))
     self.assertFalse(waterfall_config.MasterIsSupported('blabla'))
