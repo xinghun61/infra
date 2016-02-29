@@ -8,19 +8,19 @@
     .previous, .next, .latest {
       color: #0645AD;
       background:none!important;
-      border:none; 
+      border:none;
       padding:0!important;
       font: inherit;
-      border-bottom:1px solid #0645AD; 
+      border-bottom:1px solid #0645AD;
       cursor: pointer;
     }
     .disabled {
       color: #d3d3d3;
       background:none!important;
-      border:none; 
+      border:none;
       padding:0!important;
       font: inherit;
-      border-bottom:1px solid #d3d3d3; 
+      border-bottom:1px solid #d3d3d3;
       cursor: pointer;
     }
   </style>
@@ -39,7 +39,7 @@
       return JSON.stringify(json, null, '  ');
     }
 
-    function CreateUrl(version) {
+    function createUrl(version) {
       if (version)
         return '/config?version=' + version.toString();
       else
@@ -48,21 +48,21 @@
 
     function loadPrevious() {
       $.get('/config').done(function(){
-        var newUrl = CreateUrl({{ version }} - 1);
+        var newUrl = createUrl({{ version }} - 1);
         window.location.replace(newUrl);
       });
     }
 
     function loadNext() {
       $.get('/config').done(function(){
-        var newUrl = CreateUrl({{ version }} + 1);
+        var newUrl = createUrl({{ version }} + 1);
         window.location.replace(newUrl);
       });
     }
 
     function loadLatest() {
       $.get('/config').done(function(){
-        var newUrl = CreateUrl(null);
+        var newUrl = createUrl(null);
         window.location.replace(newUrl);
       });
     }
@@ -75,7 +75,7 @@
         'swarming_settings': getJsonOfTextarea('swarming-settings')
       };
       $.post('/config', { data: JSON.stringify(newConfig) }).done(function(){
-        window.location.replace(CreateUrl(null));  // Reload after successful saving.
+        window.location.replace(createUrl(null));  // Reload after successful saving.
       }).fail(function(xhr){
         // Replace the whole page with errors from server side.
         document.body.outerHTML = xhr.responseText;

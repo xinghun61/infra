@@ -216,7 +216,7 @@ class Configuration(BaseHandler):
 
     if not settings:
       return self.CreateError(
-          'The requested version is invalid or not found.', 500)
+          'The requested version is invalid or not found.', 400)
 
     latest_version = settings.GetLatestVersionNumber()
 
