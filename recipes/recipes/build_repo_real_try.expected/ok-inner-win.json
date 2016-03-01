@@ -3,27 +3,21 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
+      "RECIPE_MODULE[depot_tools::bot_update]\\resources\\bot_update.py",
       "--master",
-      "tryserver.infra",
+      "chromium.infra",
       "--builder",
       "build_repo_real",
       "--slave",
       "TestSlavename",
       "--spec",
-      "cache_dir = '[ROOT]/git_cache'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://chromium.googlesource.com/chromium/tools/build.git'}]",
+      "cache_dir = '[ROOT]\\\\git_cache'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://chromium.googlesource.com/chromium/tools/build.git'}]",
       "--root",
       "build",
       "--revision_mapping_file",
       "{\"build\": \"got_revision\"}",
       "--git-cache-dir",
       "[GIT_CACHE]",
-      "--issue",
-      "12853011",
-      "--patchset",
-      "1",
-      "--rietveld_server",
-      "https://codereview.chromium.org",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -33,7 +27,7 @@
     ],
     "cwd": "[SLAVE_BUILD]",
     "env": {
-      "PATH": "%(PATH)s:RECIPE_PACKAGE[depot_tools]"
+      "PATH": "%(PATH)s;RECIPE_PACKAGE[depot_tools]"
     },
     "name": "bot_update",
     "~followup_annotations": [
@@ -67,43 +61,45 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
+      "RECIPE_MODULE[depot_tools::git]\\resources\\git_setup.py",
       "--path",
-      "[BUILD]/clone",
+      "[BUILD]\\clone",
       "--url",
-      "https://chromium.googlesource.com/chromium/tools/build"
+      "https://chromium.googlesource.com/chromium/tools/build",
+      "--git_cmd_path",
+      "[DEPOT_TOOLS]\\git.bat"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "git setup"
   },
   {
     "cmd": [
-      "git",
+      "[DEPOT_TOOLS]\\git.bat",
       "retry",
       "fetch",
       "origin",
       "master"
     ],
-    "cwd": "[BUILD]/clone",
+    "cwd": "[BUILD]\\clone",
     "name": "git fetch"
   },
   {
     "cmd": [
-      "git",
+      "[DEPOT_TOOLS]\\git.bat",
       "checkout",
       "-f",
       "FETCH_HEAD"
     ],
-    "cwd": "[BUILD]/clone",
+    "cwd": "[BUILD]\\clone",
     "name": "git checkout"
   },
   {
     "cmd": [
-      "git",
+      "[DEPOT_TOOLS]\\git.bat",
       "rev-parse",
       "HEAD"
     ],
-    "cwd": "[BUILD]/clone",
+    "cwd": "[BUILD]\\clone",
     "name": "read revision",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
@@ -112,33 +108,33 @@
   },
   {
     "cmd": [
-      "git",
+      "[DEPOT_TOOLS]\\git.bat",
       "clean",
       "-f",
       "-d",
       "-x"
     ],
-    "cwd": "[BUILD]/clone",
+    "cwd": "[BUILD]\\clone",
     "name": "git clean"
   },
   {
     "cmd": [
-      "git",
+      "[DEPOT_TOOLS]\\git.bat",
       "submodule",
       "sync"
     ],
-    "cwd": "[BUILD]/clone",
+    "cwd": "[BUILD]\\clone",
     "name": "submodule sync"
   },
   {
     "cmd": [
-      "git",
+      "[DEPOT_TOOLS]\\git.bat",
       "submodule",
       "update",
       "--init",
       "--recursive"
     ],
-    "cwd": "[BUILD]/clone",
+    "cwd": "[BUILD]\\clone",
     "name": "submodule update"
   },
   {

@@ -10,6 +10,7 @@ major outages.
 
 DEPS = [
   'depot_tools/bot_update',
+  'depot_tools/git',
   'file',
   'depot_tools/gclient',
   'recipe_engine/json',
@@ -71,6 +72,11 @@ def inner(api):
   api.gclient.set_config('build')
   api.bot_update.ensure_checkout(force=True, patch_root='build')
 
+  api.git.checkout(
+      url='https://chromium.googlesource.com/chromium/tools/build',
+      ref='master',
+      dir_path=api.path['build'].join('clone'))
+
 
 def GenTests(api):
   yield (
@@ -89,6 +95,15 @@ def GenTests(api):
   )
   yield (
       api.test('ok-inner') +
+      api.properties.generic(
+          mastername='chromium.infra',
+          buildername='build_repo_real',
+          actual_run='True',
+      )
+  )
+  yield (
+      api.test('ok-inner-win') +
+      api.platform('win', 64) +
       api.properties.generic(
           mastername='chromium.infra',
           buildername='build_repo_real',
