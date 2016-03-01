@@ -112,6 +112,9 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
     swarming_task_results = {
         'task_id1': {
             'state': 'COMPLETED',
+            'tags': [
+                'priority:25'
+            ],
             'outputs_ref': {
                 'isolatedserver': _ISOLATED_SERVER,
                 'namespace': 'default-gzip',

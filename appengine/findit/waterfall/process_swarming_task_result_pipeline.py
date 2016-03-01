@@ -107,6 +107,10 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
           task.status = wf_analysis_status.ERROR
           logging.error('Swarming task stopped with status: %s' % (
               task_state))
+        priority_str = swarming_util.GetTagValue(
+            data.get('tags', {}), 'priority')
+        if priority_str:
+          task.parameters['priority'] = int(priority_str)
         task.put()
       else:  # pragma: no cover
         if task_state == 'RUNNING' and not task_started:

@@ -588,3 +588,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
     }
 
     self.assertEqual(expected_failure_log, failure_log)
+
+  def testGetTagValueInvalidTag(self):
+    tags = ['a:1', 'b:2']
+    self.assertIsNone(swarming_util.GetTagValue(tags, 'c'))

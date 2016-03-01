@@ -154,6 +154,8 @@ class TriggerSwarmingTaskPipeline(BasePipeline):
     swarming_task = WfSwarmingTask.Get(
         master_name, builder_name, build_number, step_name)
     swarming_task.task_id = task_id
+    swarming_task.parameters['tests'] = tests
+    swarming_task.parameters['iterations_to_rerun'] = iterations_to_rerun
     swarming_task.put()
 
     logging.info('A Swarming task was triggered:%s', task_id)

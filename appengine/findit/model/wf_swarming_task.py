@@ -34,6 +34,9 @@ class WfSwarmingTask(BaseBuildModel):
   # Time when the task is completed.
   completed_time = ndb.DateTimeProperty(indexed=False)
 
+  # parameters need to be stored and analyzed later.
+  parameters = ndb.JsonProperty(default={}, indexed=False, compressed=True)
+
   @staticmethod
   def _CreateKey(
       master_name, builder_name, build_number, step_name):  # pragma: no cover

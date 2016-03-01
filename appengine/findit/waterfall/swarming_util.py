@@ -135,6 +135,17 @@ def GetSwarmingTaskFailureLog(outputs_ref, http_client):
   return _DownloadTestResults(isolated_data, http_client)
 
 
+def GetTagValue(tags, tag_name):
+  """Returns the content for a specific tag."""
+  tag_prefix = tag_name + ':'
+  content = None
+  for tag in tags:
+    if tag.startswith(tag_prefix):
+      content = tag[len(tag_prefix):]
+      break
+  return content
+
+
 def GetIsolatedDataForFailedBuild(
     master_name, builder_name, build_number, failed_steps, http_client):
   """Checks failed step_names in swarming log for the build.
@@ -147,16 +158,13 @@ def GetIsolatedDataForFailedBuild(
   if not data:
     return False
 
-  step_name_prefix = 'stepname:'
+  tag_name = 'stepname'
   build_isolated_data = defaultdict(list)
   for item in data:
     if item['failure'] and not item['internal_failure']:
       # Only retrieves test results from tasks which have failures and
       # the failure should not be internal infrastructure failure.
-      for tag in item['tags']:  # pragma: no cover
-        if tag.startswith(step_name_prefix):
-          swarming_step_name = tag[len(step_name_prefix):]
-          break
+      swarming_step_name = GetTagValue(item['tags'], tag_name)
       if swarming_step_name in failed_steps:
         isolated_data = _GenerateIsolatedData(item['outputs_ref'])
         build_isolated_data[swarming_step_name].append(isolated_data)

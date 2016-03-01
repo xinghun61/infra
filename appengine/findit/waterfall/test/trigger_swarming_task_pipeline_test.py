@@ -175,3 +175,6 @@ class TriggerSwarmingTaskPipelineTest(testing.AppengineTestCase):
         master_name, builder_name, build_number, step_name)
     self.assertIsNotNone(swarming_task)
     self.assertEqual('new_task_id', swarming_task.task_id)
+    self.assertEqual(tests, swarming_task.parameters['tests'])
+    self.assertEqual(_MOCK_SWARMING_SETTINGS['iterations_to_rerun'],
+                     swarming_task.parameters['iterations_to_rerun'])

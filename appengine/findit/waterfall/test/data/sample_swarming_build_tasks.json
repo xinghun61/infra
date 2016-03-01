@@ -314,6 +314,10 @@
         "namespace": "default-gzip",
         "isolated": "isolatedhashabctest-223"
       }
+    }, 
+    {
+      "failure": true, 
+      "internal_failure": true
     }
   ]
 }
