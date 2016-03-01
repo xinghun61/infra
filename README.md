@@ -28,3 +28,6 @@ documentation](doc/index.md). The rest of this page is specific to this repo.
   <stg>` is actually getting `<stg>` from
   [build/scripts/common](https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/common).
 * [utils/](utils): purpose? utils?
+* Need to bump infra/deployed to pick up changes?
+    * `git push origin <updated hash>:deployed`
+    * mail chrome-troopers@, include: previously deployed hash, the hash you just pushed, and the output of the `git push` command.
