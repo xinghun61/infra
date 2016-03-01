@@ -59,6 +59,13 @@
   },
   {
     "cmd": [
+      "RECIPE_PACKAGE[depot_tools]\\bootstrap\\win\\win_tools.bat"
+    ],
+    "cwd": "RECIPE_PACKAGE[depot_tools]",
+    "name": "ensure git tooling on windows"
+  },
+  {
+    "cmd": [
       "python",
       "-u",
       "RECIPE_MODULE[depot_tools::git]\\resources\\git_setup.py",
@@ -67,14 +74,14 @@
       "--url",
       "https://chromium.googlesource.com/chromium/tools/build",
       "--git_cmd_path",
-      "[DEPOT_TOOLS]\\git.bat"
+      "RECIPE_PACKAGE[depot_tools]\\git.bat"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "git setup"
   },
   {
     "cmd": [
-      "[DEPOT_TOOLS]\\git.bat",
+      "RECIPE_PACKAGE[depot_tools]\\git.bat",
       "retry",
       "fetch",
       "origin",
@@ -85,7 +92,7 @@
   },
   {
     "cmd": [
-      "[DEPOT_TOOLS]\\git.bat",
+      "RECIPE_PACKAGE[depot_tools]\\git.bat",
       "checkout",
       "-f",
       "FETCH_HEAD"
@@ -95,7 +102,7 @@
   },
   {
     "cmd": [
-      "[DEPOT_TOOLS]\\git.bat",
+      "RECIPE_PACKAGE[depot_tools]\\git.bat",
       "rev-parse",
       "HEAD"
     ],
@@ -108,7 +115,7 @@
   },
   {
     "cmd": [
-      "[DEPOT_TOOLS]\\git.bat",
+      "RECIPE_PACKAGE[depot_tools]\\git.bat",
       "clean",
       "-f",
       "-d",
@@ -119,7 +126,7 @@
   },
   {
     "cmd": [
-      "[DEPOT_TOOLS]\\git.bat",
+      "RECIPE_PACKAGE[depot_tools]\\git.bat",
       "submodule",
       "sync"
     ],
@@ -128,7 +135,7 @@
   },
   {
     "cmd": [
-      "[DEPOT_TOOLS]\\git.bat",
+      "RECIPE_PACKAGE[depot_tools]\\git.bat",
       "submodule",
       "update",
       "--init",
