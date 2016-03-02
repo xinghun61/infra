@@ -13,6 +13,10 @@ Runs builds and tests. Enables Chromium CI and tryserver.
 *   Safe to use for internal projects: yes
 *   Owner: infra-dev@chromium.org, chrome-infrastructure-team@google.com
 
+For BuildBot-related issues, please contact an infrastructure team member. To
+request BuildBot restarts or maintenance, file a trooper bug at
+[g.co/bugatrooper](http://g.co/bugatrooper).
+
 ## Configuration
 
 Master configurations are stored in
@@ -34,6 +38,26 @@ other.
 * Buildbot does not scale with the number of builds, slaves or amount of build
   logs.
 * Buildbot master has to be restarted on every configuration change.
+
+## Draining
+
+Prior to restarting BuildBot, it is a good practice to drain it first. Draining
+a BuildBot master instructs it to refrain from scheduling new builds, but allows
+it to complete any currently-scheduled builds.
+
+Masters are typically drained by
+[master_manager](https://chromium.googlesource.com/infra/infra/+/master/infra/tools/master_manager)
+during its restart cycle. First, a master will be drained in an effort to allow
+existing builds to terminate. If all current builds finish, or if a cutoff
+threshold has been exceeded, `master_manager` will restart the master. When it
+comes back up, any builds that were accumulated during the previous drain will
+now be candidate for scheduling, and the master will operate normally.
+
+While a BuildBot master is draining, it may appear to be slow or broken. This is
+an expected behavior if the master is undergoing a restart procedure. Some
+masters will explicitly note when they are being drained. To determine if a
+BuildBot master is being drained, visit its `/json/accepting_builds?as_text=1`
+endpoint.
 
 ## See also
 
