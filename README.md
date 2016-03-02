@@ -30,4 +30,9 @@ documentation](doc/index.md). The rest of this page is specific to this repo.
 * [utils/](utils): purpose? utils?
 * Need to bump infra/deployed to pick up changes?
     * `git push origin <updated hash>:deployed`
-    * mail chrome-troopers@, include: previously deployed hash, the hash you just pushed, and the output of the `git push` command.
+    * mail chrome-troopers@, include:
+        * previously deployed hash (for quick rollback)
+        * the hash you just pushed
+        * the list of CLs that made this push necessary
+        * the output of the `git push` command
+
