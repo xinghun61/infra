@@ -41,10 +41,12 @@ class PubSubMonitorTest(unittest.TestCase):
     creds = gc.from_stream.return_value
     scoped_creds = creds.create_scoped.return_value
     http_mock = instrumented_http.return_value
+    metric1 = metrics_pb2.MetricsData(name='m1')
     with mock.patch('infra_libs.ts_mon.common.monitors.open', m_open,
                     create=True):
       mon = monitors.PubSubMonitor('/path/to/creds.p8.json', 'myproject',
                                    'mytopic')
+      mon.send(metric1)
 
     m_open.assert_called_once_with('/path/to/creds.p8.json', 'r')
     creds.create_scoped.assert_called_once_with(monitors.PubSubMonitor._SCOPES)
@@ -59,7 +61,9 @@ class PubSubMonitorTest(unittest.TestCase):
   def test_init_gce_credential(self, aac, discovery, instrumented_http):
     creds = aac.return_value
     http_mock = instrumented_http.return_value
+    metric1 = metrics_pb2.MetricsData(name='m1')
     mon = monitors.PubSubMonitor(':gce', 'myproject', 'mytopic')
+    mon.send(metric1)
 
     aac.assert_called_once_with(monitors.PubSubMonitor._SCOPES)
     creds.authorize.assert_called_once_with(http_mock)
@@ -76,10 +80,12 @@ class PubSubMonitorTest(unittest.TestCase):
 
     m_open = mock.mock_open(read_data='{}')
     http_mock = instrumented_http.return_value
+    metric1 = metrics_pb2.MetricsData(name='m1')
     with mock.patch('infra_libs.ts_mon.common.monitors.open', m_open,
                     create=True):
       mon = monitors.PubSubMonitor('/path/to/creds.p8.json', 'myproject',
                                    'mytopic')
+      mon.send(metric1)
 
     m_open.assert_called_once_with('/path/to/creds.p8.json', 'r')
     storage_inst.get.assert_called_once_with()
