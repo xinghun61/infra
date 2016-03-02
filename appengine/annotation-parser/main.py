@@ -10,6 +10,7 @@ import logging
 import os
 import re
 
+from google.appengine.api import app_identity
 from google.appengine.api import urlfetch
 
 import jinja2
@@ -55,26 +56,30 @@ class Step(object):
 
 def fetch_json(url):
   logging.info('Fetching %s' % url)
+  authorization_token, _ = app_identity.get_access_token(
+      'https://www.googleapis.com/auth/userinfo.email')
   response = urlfetch.fetch(
-      url, follow_redirects=False, validate_certificate=True)
+      url, follow_redirects=False, validate_certificate=True,
+      headers={'Authorization': 'Bearer ' + authorization_token})
+  logging.debug(response.content)
   # TODO(phajdan.jr): Handle responses other than HTTP 200.
   return json.loads(response.content)
 
 
 def fetch_swarming_task_metadata(task_id):
   return fetch_json(
-      'https://chromium-swarm.appspot.com/swarming/api/v1/'
-      'client/task/%s' % task_id)
+      'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/'
+      'task/%s/result' % task_id)
 
 
 def fetch_swarming_task_output(task_id):
   return fetch_json(
-      'https://chromium-swarm.appspot.com/swarming/api/v1/'
-      'client/task/%s/output/0' % task_id)
+      'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/'
+      'task/%s/stdout' % task_id)
 
 
 def parse_datetime(datetime_string):
-  return datetime.datetime.strptime(datetime_string, '%Y-%m-%d %H:%M:%S')
+  return datetime.datetime.strptime(datetime_string, '%Y-%m-%dT%H:%M:%S.%f')
 
 
 def access_allowed(task_metadata):
@@ -121,12 +126,14 @@ class SwarmingBuildHandler(webapp2.RequestHandler):
     completed_ts = parse_datetime(task_metadata['completed_ts'])
 
     properties = []
-    for key in ('id', 'user', 'bot_id'):
+    for key in ('task_id', 'user', 'bot_id'):
       properties.append(Property(
           name=key, value=task_metadata[key], source='swarming'))
-    for key, value in task_metadata['bot_dimensions'].iteritems():
+    for dimension in task_metadata['bot_dimensions']:
       properties.append(Property(
-          name=key, value=json.dumps(value), source='swarming dimensions'))
+          name=dimension['key'],
+          value=json.dumps(dimension['value']),
+          source='swarming dimensions'))
 
     build_success = ((not task_metadata['failure']) and
                      (not task_metadata['internal_failure']))
@@ -136,7 +143,7 @@ class SwarmingBuildHandler(webapp2.RequestHandler):
     template_values = {
       'stylesheet': '/static/default.css',
 
-      'build_id': task_metadata['id'],
+      'build_id': task_metadata['task_id'],
       'result_css': 'success' if build_success else 'failure',
       'build_result': build_result,
 
