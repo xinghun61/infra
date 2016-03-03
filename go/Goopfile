@@ -3,7 +3,6 @@ github.com/dustin/go-humanize #8929fe90cee4b2cb9deb468b51fb34eba64d1bf0 !https:/
 github.com/golang/glog #23def4e6c14b4da8ac2ed8007337bc5eb5007998 !https://chromium.googlesource.com/external/github.com/golang/glog.git
 github.com/golang/lint #32a87160691b3c96046c0c678fe57c5bef761456 !https://chromium.googlesource.com/external/github.com/golang/lint.git
 github.com/golang/protobuf #221834dcb89c96e4b057ed8bb878bfe569dfacf4 !https://chromium.googlesource.com/external/github.com/golang/protobuf.git
-github.com/GoogleCloudPlatform/go-endpoints/endpoints #437e84a991c4e3420991d477e7341c712d20def8 !https://chromium.googlesource.com/external/github.com/GoogleCloudPlatform/go-endpoints.git
 github.com/gorhill/cronexpr #a557574d6c024ed6e36acc8b610f5f211c91568a !https://chromium.googlesource.com/external/github.com/gorhill/cronexpr.git
 github.com/jtolds/gls #8ddce2a84170772b95dd5d576c48d517b22cac63 !https://chromium.googlesource.com/external/github.com/jtolds/gls.git
 github.com/julienschmidt/httprouter #2c34ec888a7359c0750064e0a4c8df360806c255 !https://chromium.googlesource.com/external/github.com/julienschmidt/httprouter.git
@@ -17,6 +16,7 @@ github.com/kr/pretty #e6ac2fc51e89a3249e82157fa0bb7a18ef9dd5bb !https://chromium
 github.com/kr/pty #f7ee69f31298ecbe5d2b349c711e2547a617d398 !https://chromium.googlesource.com/external/github.com/kr/pty.git
 github.com/kr/text #bb797dc4fb8320488f47bf11de07a733d7233e1f !https://chromium.googlesource.com/external/github.com/kr/text.git
 github.com/luci/gkvlite #33184d2edd2d39ef71c3ed883e8ff752c4a18213 !https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
+github.com/luci/go-endpoints/endpoints #004b467f9f9b2840089b1166353ae06e5e0e5844 !https://chromium.googlesource.com/external/github.com/luci/go-endpoints.git
 github.com/luci/go-render #fb5bbe650634bbf7a13ac505ccd52e910cd9001d !https://chromium.googlesource.com/external/github.com/luci/go-render.git
 github.com/maruel/panicparse #f798c3e07c1e0764cc2e61b18ba1350a64a3138b !https://chromium.googlesource.com/external/github.com/maruel/panicparse.git
 github.com/maruel/pre-commit-go #279e9552a98052da270ca82274007a8974ff8d76 !https://chromium.googlesource.com/external/github.com/maruel/pre-commit-go.git

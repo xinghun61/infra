@@ -7,8 +7,7 @@ package assertions
 import (
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
-
+	"github.com/luci/go-endpoints/endpoints"
 	"github.com/luci/luci-go/common/testing/assertions"
 	"github.com/smartystreets/goconvey/convey"
 )

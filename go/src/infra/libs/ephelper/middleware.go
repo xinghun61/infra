@@ -5,7 +5,7 @@
 package ephelper
 
 import (
-	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
+	"github.com/luci/go-endpoints/endpoints"
 	gaeauth "github.com/luci/luci-go/appengine/gaeauth/server"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
 	"github.com/luci/luci-go/server/auth"

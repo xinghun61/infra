@@ -8,8 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
-	"github.com/luci/luci-go/appengine/ephelper/epfrontend"
+	"github.com/luci/go-endpoints/endpoints"
 )
 
 const errPrefix = "endpoints.Register: "
@@ -32,13 +31,7 @@ var (
 type MethodInfoMap map[string]*endpoints.MethodInfo
 
 // Helper is the endpoint helper configuration.
-type Helper struct {
-	// Frontend is the internally-hosted endpoints frontend service.
-	//
-	// If not nil, calls to Register() will also register the resulting
-	// services with the Frontend instance.
-	Frontend *epfrontend.Server
-}
+type Helper struct{}
 
 // Register adds an endpoints.RegisterService-compatible service object using
 // the MethodInfoMap to look up the MethodInfo objects by methodName. It is
@@ -87,11 +80,6 @@ func (h *Helper) Register(server *endpoints.Server, service interface{}, si *end
 		mi[methodName] = curInfo // So that we can observe the merged result
 	}
 
-	if h.Frontend != nil {
-		if err := h.Frontend.RegisterService(api); err != nil {
-			return fmt.Errorf("%s: failed to register with frontend: %v", errPrefix, err)
-		}
-	}
 	return nil
 }
 

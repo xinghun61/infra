@@ -7,7 +7,7 @@ package ephelper
 import (
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
+	"github.com/luci/go-endpoints/endpoints"
 	"golang.org/x/net/context"
 )
 

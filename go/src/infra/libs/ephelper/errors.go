@@ -5,7 +5,7 @@
 package ephelper
 
 import (
-	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
+	"github.com/luci/go-endpoints/endpoints"
 )
 
 // StripError converts the supplied error into an endpoints.APIError.
