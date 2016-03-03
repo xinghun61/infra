@@ -79,6 +79,8 @@ func TestLoopMultiple(t *testing.T) {
 
 // Run for 10s, every 1s. Every other task takes 1.5s to run. 3 + 3*1.5?
 func TestLoopOverrunSome(t *testing.T) {
+	// TODO(vadimsh): This test is flaky. Sometimes fails with
+	// Want 5 Overruns got 6.
 	ctx := context.Background()
 	_, c := testclock.UseTime(context.Background(), time.Unix(0, 0))
 
