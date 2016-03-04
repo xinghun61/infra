@@ -344,7 +344,7 @@
 </form>
 
 <script type="text/javascript"
-	src="http://omahaproxy.appspot.com/guess?version=[chrome_version]&os=[channel_guess_os_name]&callback=guessChannel">
+	src="https://omahaproxy.appspot.com/guess?version=[chrome_version]&os=[channel_guess_os_name]&callback=guessChannel">
 </script>
 
 </body>
