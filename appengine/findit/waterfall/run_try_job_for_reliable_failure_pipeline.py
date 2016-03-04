@@ -18,25 +18,18 @@ from waterfall.try_job_type import TryJobType
 TRY_JOB_PIPELINE_QUEUE_NAME = 'build-failure-analysis-queue'
 
 
-def _GetReliableTargetedTests(targeted_tests, steps_statuses):
-  """Uses SUCCESS/FAILURE statuses for each test to determine if it's reliable.
-
-  For a test, if any run succeeded, this test is flaky and should not be
-  included.
-  """
+def _GetReliableTargetedTests(targeted_tests, classified_tests_by_step):
+  """Returns a dict containing a list of reliable tests for each failed step."""
   reliable_tests = defaultdict(list)
   for step_name, tests in targeted_tests.iteritems():
-    if step_name in steps_statuses:  # Swarming.
-      if steps_statuses.get(step_name):  # Has result from swarming task.
-        # If the step is swarming but there is no result for it, it's highly
-        # likely that there is some error with the task.
-        # Thus treat this step as flaky for no insights from task.
-        tests_statuses = steps_statuses[step_name]
-        for test in tests:
-          if (tests_statuses.get(test) and not 
-              tests_statuses[test].get('SUCCESS')):
-            # Test has run but not succeeded, treats it as reliable failure.
-            reliable_tests[step_name].append(test)
+    if step_name in classified_tests_by_step:  # Swarming step.
+      # If the step is swarming but there is no result for it, it's highly
+      # likely that there is some error with the task.
+      # Thus skip this step for no insights from task to avoid false positive.
+      classified_tests = classified_tests_by_step[step_name]
+      for test in tests:
+        if (test in classified_tests.get('reliable_tests', [])):
+          reliable_tests[step_name].append(test)
     else:  # Non-swarming step, includes it directly.
       reliable_tests[step_name] = []
   return reliable_tests
@@ -54,7 +47,7 @@ class RunTryJobForReliableFailurePipeline(BasePipeline):
   def run(
       self, master_name, builder_name, build_number, good_revision,
       bad_revision, blame_list, try_job_type, compile_targets, targeted_tests,
-      *steps_statuses):
+      *classified_tests_by_step):
     """
     Args:
       master_name (str): Name of the master.
@@ -66,13 +59,13 @@ class RunTryJobForReliableFailurePipeline(BasePipeline):
       try_job_type (str): Type of the try job ('compile' or 'test').
       compile_targets (list): A list of failed targets for compile failure.
       targeted_tests (dict): A dict of failed tests for test failure.
-      *steps_statuses (list): A list of tuples of step_name and tests running
-          statuses for that step. The format is like:
-          [('step1', {'test1': {'total_run': 3, ..}, ..}), ..]
+      *classified_tests_by_step (list): A list of tuples of step_name and
+          classified_tests. The format is like:
+          [('step1', {'flaky_tests': ['test1', ..], ..}), ..]
     """
     if try_job_type == TryJobType.TEST:
       targeted_tests = _GetReliableTargetedTests(
-          targeted_tests, dict(steps_statuses))
+          targeted_tests, dict(classified_tests_by_step))
     if targeted_tests or try_job_type == TryJobType.COMPILE:
       new_try_job_pipeline = try_job_pipeline.TryJobPipeline(
           master_name, builder_name, build_number, good_revision,

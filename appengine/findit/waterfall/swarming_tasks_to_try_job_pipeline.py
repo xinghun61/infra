@@ -20,10 +20,10 @@ class SwarmingTasksToTryJobPipeline(BasePipeline):
       bad_revision, blame_list, try_job_type, compile_targets=None,
       targeted_tests=None):
 
-    # A list contains tuples of step_names and tests_statuses from
+    # A list contains tuples of step_names and classified_tests from
     # ProcessSwarmingTaskResultPipeline.
-    # The format would be [('step1', {'test1': {'total_run': 3, ..}, ..}), ..]
-    steps_statuses = []
+    # The format would be [('step1', {'flaky_tests': ['test1', ..], ..}), ..]
+    classified_tests_by_step = []
 
     if try_job_type == TryJobType.TEST:
       for step_name, tests in targeted_tests.iteritems():
@@ -33,10 +33,10 @@ class SwarmingTasksToTryJobPipeline(BasePipeline):
             master_name, builder_name, build_number, step_name, tests)
         step_future = yield ProcessSwarmingTaskResultPipeline(
             master_name, builder_name, build_number, step_name, task_id)
-        steps_statuses.append(step_future)
+        classified_tests_by_step.append(step_future)
 
-   # Waits until steps_statuses are ready.
+   # Waits until classified_tests_by_step are ready.
     yield RunTryJobForReliableFailurePipeline(
         master_name, builder_name, build_number, good_revision,
         bad_revision, blame_list, try_job_type, compile_targets, targeted_tests,
-        *steps_statuses)
+        *classified_tests_by_step)

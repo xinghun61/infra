@@ -24,6 +24,15 @@ class WfSwarmingTask(BaseBuildModel):
   status = ndb.IntegerProperty(
       default=wf_analysis_status.PENDING, indexed=False)
 
+  # Classification of tests into lists of reliable and flaky tests.
+  # example format would be:
+  # {
+  #     'flaky_tests': ['test1', 'test2', ...],
+  #     'reliable_tests': ['test3', ...]
+  # }
+  classified_tests = ndb.JsonProperty(
+      default={}, indexed=False, compressed=True)
+
   # The revision of the failed build.
   build_revision = ndb.StringProperty(indexed=False)
 

@@ -70,7 +70,15 @@ _SAMPLE_FAILURE_LOG = {
             ],
             'TestSuite1.test3': [
                 {
-                    'status': 'SUCCESS',
+                    'status': 'FAILURE',
+                    'other_info': 'N/A'
+                },
+                {
+                    'status': 'FAILURE',
+                    'other_info': 'N/A'
+                },
+                {
+                    'status': 'FAILURE',
                     'other_info': 'N/A'
                 }
             ]
@@ -88,11 +96,15 @@ _EXPECTED_TESTS_STATUESE = {
         'FAILURE': 2
     },
     'TestSuite1.test3': {
-        'total_run': 4,
-        'SUCCESS': 1,
-        'FAILURE': 3
+        'total_run': 6,
+        'FAILURE': 6
     }
 }
+_EXPECTED_CLASSIFIED_TESTS = {
+    'flaky_tests': ['TestSuite1.test2', 'TestSuite1.test1'],
+    'reliable_tests': ['TestSuite1.test3']
+}
+
 
 _MOCK_SWARMING_SETTINGS = {
     'task_timeout_hours': 23,
@@ -170,11 +182,11 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
         self.build_number, self.step_name).put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
-    step_name, tests_statuses = pipeline.run(
+    step_name, classified_tests = pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name, task_id)
 
-    self.assertEqual(_EXPECTED_TESTS_STATUESE, tests_statuses)
+    self.assertEqual(_EXPECTED_CLASSIFIED_TESTS, classified_tests)
 
     task = WfSwarmingTask.Get(
         self.master_name, self.builder_name, self.build_number, self.step_name)
@@ -182,6 +194,7 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
     self.assertEqual(self.step_name, step_name)
     self.assertEqual(wf_analysis_status.ANALYZED, task.status)
     self.assertEqual(_EXPECTED_TESTS_STATUESE, task.tests_statuses)
+    self.assertEqual(_EXPECTED_CLASSIFIED_TESTS, task.classified_tests)
     self.assertEqual(datetime.datetime(2016, 2, 10, 18, 32, 6, 538220),
                      task.created_time)
     self.assertEqual(datetime.datetime(2016, 2, 10, 18, 32, 9, 90550),
@@ -193,23 +206,23 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
   def testProcessSwarmingTaskResultPipelineTaskNotRunning(self):
     task_id = 'task_id2'
 
-
     WfSwarmingTask.Create(
         self.master_name, self.builder_name,
         self.build_number, self.step_name).put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
-    step_name, tests_statuses = pipeline.run(
+    step_name, classified_tests = pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name, task_id)
 
-    self.assertEqual({}, tests_statuses)
+    self.assertEqual({}, classified_tests)
 
     task = WfSwarmingTask.Get(
         self.master_name, self.builder_name, self.build_number, self.step_name)
 
     self.assertEqual(wf_analysis_status.ERROR, task.status)
     self.assertEqual({}, task.tests_statuses)
+    self.assertEqual({}, task.classified_tests)
     self.assertEqual(self.step_name, step_name)
 
   def testProcessSwarmingTaskResultPipelineTaskTimeOut(self):
@@ -222,17 +235,18 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
         self.build_number, self.step_name).put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
-    step_name, tests_statuses = pipeline.run(
+    step_name, classified_tests = pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name, task_id)
 
-    self.assertEqual({}, tests_statuses)
+    self.assertEqual({}, classified_tests)
 
     task = WfSwarmingTask.Get(
         self.master_name, self.builder_name, self.build_number, self.step_name)
 
     self.assertEqual(wf_analysis_status.ERROR, task.status)
     self.assertEqual({}, task.tests_statuses)
+    self.assertEqual({}, task.classified_tests)
     self.assertEqual(self.step_name, step_name)
 
     _MOCK_SWARMING_SETTINGS['task_timeout_hours'] = old_mock_timeout

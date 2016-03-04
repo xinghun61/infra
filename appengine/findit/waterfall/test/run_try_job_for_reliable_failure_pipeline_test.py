@@ -14,61 +14,31 @@ from waterfall.try_job_type import TryJobType
 _SAMPLE_TARGETED_TESTS = {
     'step1': ['step1_test1', 'step1_test2'],
     'step2': ['step2_test1', 'step2_test2', 'step2_test3'],
-    'step3': []
+    'step3': [],
+    'step4': ['step4_test1', 'step4_test2']
 }
 
-_SAMPLE_STEPS_STATUSES = {
+
+_SAMPLE_CLASSIFIED_TESTS_BY_STEP = {
     '1': {
         'step1': {
-            'step1_test1': {
-                'total_run': 2,
-                'SUCCESS': 2
-            },
-            'step1_test2': {
-                'total_run': 4,
-                'SUCCESS': 0,
-                'FAILURE': 4
-            },
-            'step1_test3': {
-                'total_run': 4,
-                'SUCCESS': 0,
-                'FAILURE': 4
-            }
+            # Step has reliable failures.
+            'flaky_tests': ['step1_test1'],
+            'reliable_tests': ['step1_test2', 'step1_test3']
         },
         'step2': {
-            'step2_test1': {
-                'total_run': 2,
-                'SUCCESS': 2
-            },
-            'step2_test2': {
-                'total_run': 4,
-                'SUCCESS': 2,
-                'FAILURE': 2
-            },
-            'step2_test3': {
-                'total_run': 4,
-                'SUCCESS': 1,
-                'FAILURE': 3
-            }
-        }
+            # All tests are flaky.
+            'flaky_tests': ['step2_test1', 'step2_test2', 'step2_test3']
+        },
+        'step4': {}  # There is something wrong with swarming task.
     },
     '2': {
+        # All steps are flaky.
         'step1': {
-            'step1_test1': {
-                'total_run': 2,
-                'SUCCESS': 2
-            },
-            'step1_test2': {
-                'total_run': 4,
-                'SUCCESS': 4,
-                'FAILURE': 0
-            }
+            'flaky_tests': ['step1_test1', 'step1_test2']
         },
         'step2': {
-            'step2_test1': {
-                'total_run': 2,
-                'SUCCESS': 2
-            }
+            'flaky_tests': ['step2_test1']
         }
     }
 }
@@ -102,7 +72,7 @@ class RunTryJobForReliableFailurePipelineTest(testing.AppengineTestCase):
   def testGetReliableTargetedTests(self):
     reliable_tests = (
         run_try_job_for_reliable_failure_pipeline._GetReliableTargetedTests(
-            _SAMPLE_TARGETED_TESTS, _SAMPLE_STEPS_STATUSES['1']))
+            _SAMPLE_TARGETED_TESTS, _SAMPLE_CLASSIFIED_TESTS_BY_STEP['1']))
 
     expected_reliable_tests = {
         'step1': ['step1_test2'],
@@ -114,7 +84,7 @@ class RunTryJobForReliableFailurePipelineTest(testing.AppengineTestCase):
   def testGetReliableTargetedTestsAllFlaky(self):
     reliable_tests = (
         run_try_job_for_reliable_failure_pipeline._GetReliableTargetedTests(
-            {'step1': ['step1_test1']}, _SAMPLE_STEPS_STATUSES['2']))
+            {'step1': ['step1_test1']}, _SAMPLE_CLASSIFIED_TESTS_BY_STEP['2']))
 
     expected_reliable_tests = {}
 
@@ -153,6 +123,6 @@ class RunTryJobForReliableFailurePipelineTest(testing.AppengineTestCase):
     pipeline.run(
         self.master_name, self.builder_name, self.build_number, 'rev1', 'rev2',
         ['rev2'], TryJobType.TEST, None, _SAMPLE_TARGETED_TESTS,
-        *tuple(_SAMPLE_STEPS_STATUSES['1'].iteritems()))
+        *tuple(_SAMPLE_CLASSIFIED_TESTS_BY_STEP['1'].iteritems()))
 
     self.assertTrue(_MockTryJobPipeline.STARTED)
