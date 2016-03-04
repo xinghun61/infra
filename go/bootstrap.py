@@ -52,18 +52,19 @@ EXE_SFX = '.exe' if sys.platform == 'win32' else ''
 GIT_EXE = 'git.bat' if sys.platform == 'win32' else 'git'
 
 # Pinned version of Go toolset to download. See http://golang.org/dl/.
-TOOLSET_VERSION = 'go1.6'
+TOOLSET_VERSION = 'go1.4.2'
 
 # Platform and toolset dependent portion of a download URL.
 # See NATIVE_DOWNLOAD_URL_PREFIX and CROSS_DOWNLOAD_URL_PREFIX.
 TOOLSET_VARIANTS = {
-  'darwin-amd64': 'darwin-amd64.tar.gz',
+  'darwin-386': 'darwin-386-osx10.8.tar.gz',
+  'darwin-amd64': 'darwin-amd64-osx10.8.tar.gz',
   'linux2-386': 'linux-386.tar.gz',
   'linux2-amd64': 'linux-amd64.tar.gz',
   'win32-386': 'windows-386.zip',
   'win32-amd64': 'windows-amd64.zip',
   # Cross-compilation toolsets must support all native ones above.
-  #'linux2-amd64-cross': 'linux2-amd64-cross.tar.gz',
+  'linux2-amd64-cross': 'linux2-amd64-cross.tar.gz',
 }
 
 
