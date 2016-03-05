@@ -9,6 +9,7 @@ from testing_utils import testing
 from handlers import try_job_result
 from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
+from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
 from waterfall import buildbot
 
@@ -258,7 +259,8 @@ class TryJobResultTest(testing.AppengineTestCase):
         'a_test': {
             'a_test1': 'm/b/121',
             'a_test2': 'm/b/121',
-            'a_test3': 'm/b/120'
+            'a_test3': 'm/b/120',
+            'a_test4': 'm/b/121'
         },
         'b_test': {
             'b_test1': 'm/b/121'
@@ -267,6 +269,44 @@ class TryJobResultTest(testing.AppengineTestCase):
         'd_test': 'm/b/122'
     }
     analysis.put()
+
+    task_120_a = WfSwarmingTask.Create(
+        self.master_name, self.builder_name, 120, 'a_test')
+    task_120_a.tests_statuses = {
+        'a_test3': {
+            'total_run': 1,
+            'FAILURE': 1
+        }
+    }
+    task_120_a.put()
+
+    task_121_a = WfSwarmingTask.Create(
+        self.master_name, self.builder_name, self.build_number, 'a_test')
+    task_121_a.tests_statuses = {
+        'a_test1': {
+            'total_run': 1,
+            'FAILURE': 1
+        },
+        'a_test2': {
+            'total_run': 1,
+            'FAILURE': 1
+        },
+        'a_test4': {
+            'total_run': 1,
+            'SUCCESS': 1
+        }
+    }
+    task_121_a.put()
+
+    task_121_b = WfSwarmingTask.Create(
+        self.master_name, self.builder_name, self.build_number, 'b_test')
+    task_121_b.tests_statuses = {
+        'b_test1': {
+            'total_run': 1,
+            'SUCCESS': 1
+        }
+    }
+    task_121_b.put()
 
     try_job_120 = WfTryJob.Create(
         self.master_name, self.builder_name, 120)
@@ -312,11 +352,6 @@ class TryJobResultTest(testing.AppengineTestCase):
                         'valid': True,
                         'failures': ['a_test1']
                     },
-                    'b_test': {
-                        'status': 'failed',
-                        'valid': True,
-                        'failures': ['b_test1']
-                    },
                     'c_test': {
                         'status': 'passed',
                         'valid': True
@@ -327,10 +362,6 @@ class TryJobResultTest(testing.AppengineTestCase):
                         'status': 'failed',
                         'valid': True,
                         'failures': ['a_test1']
-                    },
-                    'b_test': {
-                        'status': 'passed',
-                        'valid': True
                     },
                     'c_test': {
                         'status': 'failed',
@@ -346,15 +377,6 @@ class TryJobResultTest(testing.AppengineTestCase):
                 'a_test': {
                     'tests': {
                         'a_test1': {
-                            'revision': 'rev1',
-                            'commit_position': '1',
-                            'review_url': 'url_1'
-                        }
-                    }
-                },
-                'b_test': {
-                    'tests': {
-                        'b_test1': {
                             'revision': 'rev1',
                             'commit_position': '1',
                             'review_url': 'url_1'
@@ -418,7 +440,7 @@ class TryJobResultTest(testing.AppengineTestCase):
             'try_job_build_number': 121,
             'try_job_url': (
                 'http://build.chromium.org/p/tryserver.chromium.linux/'
-                'builders/linux_chromium_variable/builds/121'),
+                'builders/linux_chromium_variable/builds/121')
         },
         'a_test-a_test3': {
             'step': 'a_test',
@@ -433,18 +455,17 @@ class TryJobResultTest(testing.AppengineTestCase):
             'commit_position': '0',
             'review_url': 'url_0'
         },
+        'a_test-a_test4': {
+            'step': 'a_test',
+            'test': 'a_test4',
+            'try_job_key': 'm/b/121',
+            'status': 'Flaky'
+        },
         'b_test-b_test1': {
             'step': 'b_test',
             'test': 'b_test1',
             'try_job_key': 'm/b/121',
-            'try_job_build_number': 121,
-            'status': 'Completed',
-            'try_job_url': (
-                'http://build.chromium.org/p/tryserver.chromium.linux/'
-                'builders/linux_chromium_variable/builds/121'),
-            'revision': 'rev1',
-            'commit_position': '1',
-            'review_url': 'url_1'
+            'status': 'Flaky'
         },
         'c_test': {
             'step': 'c_test',

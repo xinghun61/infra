@@ -6,8 +6,12 @@ from base_handler import BaseHandler
 from base_handler import Permission
 from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
+from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
 from waterfall import buildbot
+
+
+FLAKY = 'Flaky'
 
 
 def _GetTryJobBuildNumber(url):
@@ -32,10 +36,13 @@ def _GetCulpritInfoForTryJobResult(try_job_key, culprits_info):
     if culprit_info['try_job_key'] != try_job_key:
       continue
 
+    # Only include try job result for reliable tests.
+    # Flaky tests have been marked as 'Flaky'.
     culprit_info['status'] = (
-        wf_analysis_status.TRY_JOB_STATUS_TO_DESCRIPTION[try_job.status])
+        wf_analysis_status.TRY_JOB_STATUS_TO_DESCRIPTION[try_job.status]
+        if not culprit_info.get('status') else culprit_info['status'])
 
-    if try_job_result:
+    if try_job_result and culprit_info['status'] != FLAKY:
       if try_job_result.get('url'):
         culprit_info['try_job_url'] = try_job_result['url']
         culprit_info['try_job_build_number'] = (
@@ -48,7 +55,7 @@ def _GetCulpritInfoForTryJobResult(try_job_key, culprits_info):
           # For historical culprit found by try job for compile,
           # step name is not recorded.
           culprit = try_job_culprits.get(step) or try_job_culprits
-        elif test in try_job_culprits.get(step).get('tests'):
+        elif test in try_job_culprits.get(step, {}).get('tests'):
           culprit = try_job_culprits[step]['tests'][test]
         else:   # pragma: no cover
           continue  # No culprit for test found.
@@ -58,9 +65,20 @@ def _GetCulpritInfoForTryJobResult(try_job_key, culprits_info):
         culprit_info['review_url'] = culprit.get('review_url')
 
 
+def _UpdateFlakiness(step_name, failure_key_set, culprits_info):
+  for failure_key in failure_key_set:
+    build_keys = failure_key.split('/')
+    task = WfSwarmingTask.Get(*build_keys, step_name=step_name)
+    classified_tests = task.classified_tests
+    for culprit_info in culprits_info.values():
+      if (culprit_info['try_job_key'] == failure_key and
+          culprit_info['test'] in classified_tests.get('flaky_tests', [])):
+        culprit_info['status'] = 'Flaky'
+
+
 def _GetAllTryJobResults(master_name, builder_name, build_number):
   culprits_info = {}
-  try_job_keys = []
+  try_job_keys = set()
 
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   if not analysis:
@@ -77,27 +95,27 @@ def _GetAllTryJobResults(master_name, builder_name, build_number):
     #     test_name2: try_job_key2,
     #     ...
     # }
-    for failed_step in failure_result_map:
-      if isinstance(failure_result_map[failed_step], dict):
-        for failed_test, try_job_key in (
-            failure_result_map[failed_step].iteritems()):
-          step_test_key = '%s-%s' % (failed_step, failed_test)
+    for step_name, step_failure_result_map in failure_result_map.iteritems():
+      if isinstance(step_failure_result_map, dict):
+        step_refering_keys = set()
+        for failed_test, try_job_key in step_failure_result_map.iteritems():
+          step_test_key = '%s-%s' % (step_name, failed_test)
           culprits_info[step_test_key] = {
-              'step': failed_step,
+              'step': step_name,
               'test': failed_test,
               'try_job_key': try_job_key
           }
-          if try_job_key not in try_job_keys:
-            try_job_keys.append(try_job_key)
+          step_refering_keys.add(try_job_key)
+
+        _UpdateFlakiness(step_name, step_refering_keys, culprits_info)
+        try_job_keys.update(step_refering_keys)
       else:
-        culprits_info[failed_step] = {
-            'step': failed_step,
+        culprits_info[step_name] = {
+            'step': step_name,
             'test': 'N/A',
-            'try_job_key': failure_result_map[failed_step]
+            'try_job_key': step_failure_result_map
         }
-        if (failure_result_map[failed_step] not in
-            try_job_keys):  # pragma: no cover
-          try_job_keys.append(failure_result_map[failed_step])
+        try_job_keys.add(step_failure_result_map)
 
     for try_job_key in try_job_keys:
       _GetCulpritInfoForTryJobResult(try_job_key, culprits_info)

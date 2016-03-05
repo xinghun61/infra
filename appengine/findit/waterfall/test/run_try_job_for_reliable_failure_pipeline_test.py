@@ -126,3 +126,19 @@ class RunTryJobForReliableFailurePipelineTest(testing.AppengineTestCase):
         *tuple(_SAMPLE_CLASSIFIED_TESTS_BY_STEP['1'].iteritems()))
 
     self.assertTrue(_MockTryJobPipeline.STARTED)
+
+
+  def testNoNeedToTriggerTryJobIfTargetedTestsEmpty(self):
+
+    self.mock(
+        run_try_job_for_reliable_failure_pipeline.try_job_pipeline,
+        'TryJobPipeline', _MockTryJobPipeline)
+    _MockTryJobPipeline.STARTED = False
+
+    pipeline = RunTryJobForReliableFailurePipeline()
+    pipeline.run(
+        self.master_name, self.builder_name, self.build_number, 'rev1', 'rev2',
+        ['rev2'], TryJobType.TEST, None, {'step1': ['test1']},
+        *tuple({'step1': {}}.iteritems()))
+
+    self.assertFalse(_MockTryJobPipeline.STARTED)

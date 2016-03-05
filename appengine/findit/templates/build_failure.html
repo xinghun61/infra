@@ -303,19 +303,22 @@
               } else {
                 tableString += '<td></td>';
               }
-              if (value.status == 'Flaky') {
-                var status = '';
-                var revision = 'Flaky';
+              var status;
+              var revision;
+              noTryJobStatuses = ['Flaky', 'Skipped'];
+              if (noTryJobStatuses.indexOf(value.status) > -1) {
+                status = '';
+                revision = value.status;
               } else if (value.status == 'Completed'){
-                var status = value.status;
-                var revision = value.commit_position || value.revision || 'Not Found';
+                status = value.status;
+                revision = value.commit_position || value.revision || 'Not Found';
               } else {
-                var status = value.status;
-                var revision = '';
+                status = value.status;
+                revision = '';
               }
-              if (value.status == 'Completed') {
+              if (status == 'Completed') {
                 status_class = 'completed';
-              } else if (value.status == 'Error') {
+              } else if (status == 'Error') {
                 status_class = 'error';
               } else {
                 // If status is either 'Scheduled' or 'Running', add 'running' style.
@@ -325,7 +328,12 @@
               if (value.review_url) {
                 tableString += '<td><a href="' + value.review_url + '">' + revision + '</a></td>';
               } else {
-                tableString += '<td>' + revision + '</td>';
+                var tdWithTitleMap = {
+                    'Flaky': '<td title="The test is flaky based on swarming task result.">',
+                    'Skipped': '<td title="There is no result from swarming task to identify flakiness so skip the step to avoid false positive.">'
+                };
+                tableString += tdWithTitleMap[revision] || '<td>';
+                tableString += revision + '</td>';
               }
               tableString += '</tr>';
             });
@@ -416,7 +424,7 @@
   <br>
 
   <div id='try_job' class='not-display'>
-    <b> Try job Result:</b>
+    <b> Try job or Swarming Task Result:</b>
     <div id='try_job_result'></div>
     <br>
   </div>

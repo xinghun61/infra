@@ -38,22 +38,6 @@ def _CheckTestsRunStatuses(output_json):
   return tests_statuses
 
 
-def _ClassifyTests(tests_statuses):
-  """Uses SUCCESS/FAILURE statuses for each test to classify them.
-
-  For a test, if any run succeeded, this test is flaky, otherwise reliable.
-  """
-  classified_tests = defaultdict(list)
-  for test_name, test_statuses in tests_statuses.iteritems():
-    if test_statuses.get('SUCCESS'):  # Test passed for some runs, flaky.
-      classified_tests['flaky_tests'].append(test_name)
-    else:
-      # Here we consider a 'non-flaky' test to be 'reliable'.
-      # TODO(chanli): Check more test statuses.
-      classified_tests['reliable_tests'].append(test_name)
-  return classified_tests
-
-
 def _ConvertDateTime(time_string):
   """Convert UTC time string to datetime.datetime."""
   # Match the time convertion with swarming.py.
@@ -101,7 +85,6 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
     task_started = False
     task_completed = False
     tests_statuses = {}
-    classified_tests = {}
 
     while not task_completed:
       # Keeps monitoring the swarming task, waits for it to complete.
@@ -117,11 +100,9 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
           output_json = swarming_util.GetSwarmingTaskFailureLog(
               outputs_ref, self.HTTP_CLIENT)
           tests_statuses = _CheckTestsRunStatuses(output_json)
-          classified_tests = _ClassifyTests(tests_statuses)
 
           task.status = wf_analysis_status.ANALYZED
           task.tests_statuses = tests_statuses
-          task.classified_tests = classified_tests
         else:
           task.status = wf_analysis_status.ERROR
           logging.error('Swarming task stopped with status: %s' % (
@@ -159,4 +140,4 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
     task.completed_time = _ConvertDateTime(data.get('completed_ts'))
     task.put()
 
-    return step_name, classified_tests
+    return step_name, task.classified_tests

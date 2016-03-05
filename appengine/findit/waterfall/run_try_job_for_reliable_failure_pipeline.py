@@ -79,10 +79,10 @@ class RunTryJobForReliableFailurePipeline(BasePipeline):
                    master_name, builder_name, build_number,
                    new_try_job_pipeline.pipeline_status_path)
     else:  # pragma: no cover
-      # No need to start try job, mark it as flaky.
+      # No need to start try job, mark it as skipped.
       try_job_result = WfTryJob.Get(
           master_name, builder_name, build_number)
       if try_job_result:
-        try_job_result.status = wf_analysis_status.FLAKY
+        try_job_result.status = wf_analysis_status.SKIPPED
         try_job_result.put()
       return

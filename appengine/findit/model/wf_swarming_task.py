@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import defaultdict
+
 from google.appengine.ext import ndb
 
 from model.base_build_model import BaseBuildModel
@@ -24,15 +26,6 @@ class WfSwarmingTask(BaseBuildModel):
   status = ndb.IntegerProperty(
       default=wf_analysis_status.PENDING, indexed=False)
 
-  # Classification of tests into lists of reliable and flaky tests.
-  # example format would be:
-  # {
-  #     'flaky_tests': ['test1', 'test2', ...],
-  #     'reliable_tests': ['test3', ...]
-  # }
-  classified_tests = ndb.JsonProperty(
-      default={}, indexed=False, compressed=True)
-
   # The revision of the failed build.
   build_revision = ndb.StringProperty(indexed=False)
 
@@ -45,6 +38,26 @@ class WfSwarmingTask(BaseBuildModel):
 
   # parameters need to be stored and analyzed later.
   parameters = ndb.JsonProperty(default={}, indexed=False, compressed=True)
+
+  @property
+  def classified_tests(self):
+    """Classification of tests into lists of reliable and flaky tests.
+
+    example format would be:
+    {
+        'flaky_tests': ['test1', 'test2', ...],
+        'reliable_tests': ['test3', ...]
+    }
+    """
+    classified_tests = defaultdict(list)
+    for test_name, test_statuses in self.tests_statuses.iteritems():
+      if test_statuses.get('SUCCESS'):  # Test passed for some runs, flaky.
+        classified_tests['flaky_tests'].append(test_name)
+      else:
+        # Here we consider a 'non-flaky' test to be 'reliable'.
+        # TODO(chanli): Check more test statuses.
+        classified_tests['reliable_tests'].append(test_name)
+    return classified_tests
 
   @staticmethod
   def _CreateKey(

@@ -4,11 +4,12 @@
 
 
 # Represent status of the analysis of a Chromium waterfall build failure.
+# TODO(stgao): Categorize statuses.
 PENDING = 0
 ANALYZING = 10
 ANALYZED = 70
 ERROR = 80
-FLAKY = 100
+SKIPPED = 100
 
 
 STATUS_TO_DESCRIPTION = {
@@ -24,7 +25,7 @@ TRY_JOB_STATUS_TO_DESCRIPTION = {
     ANALYZING: 'Running',
     ANALYZED: 'Completed',
     ERROR: 'Error',
-    FLAKY: 'Flaky'
+    SKIPPED: 'Skipped'
 }
 
 
