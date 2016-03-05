@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/luci/luci-go/client/authcli"
+	"github.com/luci/luci-go/client/cipd/version"
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
@@ -23,7 +24,6 @@ import (
 	gol "github.com/op/go-logging"
 	"golang.org/x/net/context"
 
-	"infra/libs/cipd"
 	"infra/tools/cloudtail"
 )
 
@@ -400,7 +400,7 @@ var application = &subcommands.DefaultApplication{
 	Title: "Tail logs and send them to Cloud Logging",
 	Commands: []*subcommands.Command{
 		subcommands.CmdHelp,
-		cipd.SubcommandVersion,
+		version.SubcommandVersion,
 
 		// Main commands.
 		cmdSend,
