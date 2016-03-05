@@ -19,12 +19,15 @@ MAX_GROUP_DISTANCE = datetime.timedelta(days=3)
 def RunsSortFunction(s):  # pragma: no cover
   return s.time_finished
 
+def filterNone(elements):
+  return [e for e in elements if e is not None]
+
 def show_all_flakes(flake, bug_friendly):  # pragma: no cover
   occurrence_keys = []
   for o in flake.occurrences:
     occurrence_keys.append(o)
 
-  occurrences = ndb.get_multi(occurrence_keys)
+  occurrences = filterNone(ndb.get_multi(occurrence_keys))
 
   failure_runs_keys = []
   patchsets_keys = []
@@ -34,8 +37,8 @@ def show_all_flakes(flake, bug_friendly):  # pragma: no cover
     patchsets_keys.append(o.failure_run.parent())
     flakes.append(f for f in o.flakes if f.failure == flake.name)
 
-  failure_runs = ndb.get_multi(failure_runs_keys)
-  patchsets = ndb.get_multi(patchsets_keys)
+  failure_runs = filterNone(ndb.get_multi(failure_runs_keys))
+  patchsets = filterNone(ndb.get_multi(patchsets_keys))
 
   class FailureRunExtended:
     def __init__(self, url, patchset_url, builder, formatted_time, issue_ids,

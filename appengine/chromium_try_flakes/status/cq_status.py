@@ -69,6 +69,7 @@ def get_patchset_builder_runs(issue, patchset, master, builder):
 # Calculate the counters for a Flake object.
 def update_flake_counters(flake):  # pragma: no cover
   occurrences = ndb.get_multi(flake.occurrences)
+  occurrences = [o for o in occurrences if o is not None]
   flake.count_hour = 0
   flake.count_day = 0
   flake.count_week = 0

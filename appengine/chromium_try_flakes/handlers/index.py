@@ -17,12 +17,16 @@ import logging
 import time
 import webapp2
 
+
+def filterNone(elements):
+  return [e for e in elements if e is not None]
+
 def FlakeSortFunction(s):  # pragma: no cover
   return s.builder + str(time.mktime(s.time_finished.timetuple()))
 
 def GetFilteredOccurences(flake, time_formatter,
                           filter_function):  # pragma: no cover
-  occurrences = ndb.get_multi(flake.occurrences)
+  occurrences = filterNone(ndb.get_multi(flake.occurrences))
 
   failure_run_keys = []
   patchsets_keys = []
@@ -30,8 +34,8 @@ def GetFilteredOccurences(flake, time_formatter,
     failure_run_keys.append(o.failure_run)
     patchsets_keys.append(o.failure_run.parent())
 
-  failure_runs = ndb.get_multi(failure_run_keys)
-  patchsets = ndb.get_multi(patchsets_keys)
+  failure_runs = filterNone(ndb.get_multi(failure_run_keys))
+  patchsets = filterNone(ndb.get_multi(patchsets_keys))
 
   filtered_occurrences = []
   for index, r in enumerate(failure_runs):

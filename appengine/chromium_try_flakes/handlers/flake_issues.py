@@ -127,6 +127,7 @@ class ProcessIssue(webapp2.RequestHandler):
   def _get_new_flakes(self, flake):
     num_runs = len(flake.occurrences) - flake.num_reported_flaky_runs
     flaky_runs = ndb.get_multi(flake.occurrences[-num_runs:])
+    flaky_runs = [run for run in flaky_runs if run is not None]
     return [
       flaky_run for flaky_run in flaky_runs
       if self._is_same_day(flaky_run) and
