@@ -153,9 +153,17 @@ class PubSubMonitor(Monitor):
           {'data': base64.b64encode(proto.SerializeToString())},
         ],
     }
-    self._api.projects().topics().publish(
-        topic=self._topic,
-        body=body).execute(num_retries=5)
+    # Occasionally, client fails to receive a proper internal JSON
+    # from the server and raises ValueError trying to parse it.  This
+    # is not fatal, we'll resend metrics next time.
+    try:
+      self._api.projects().topics().publish(
+          topic=self._topic,
+          body=body).execute(num_retries=5)
+    except ValueError:
+      # Log a warning, not error, to avoid false alarms in AppEngine apps.
+      logging.warning('PubSubMonitor.send failed:\n%s',
+                      traceback.format_exc())
 
 
 class DebugMonitor(Monitor):

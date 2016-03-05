@@ -151,6 +151,38 @@ class PubSubMonitorTest(unittest.TestCase):
         mock.call().execute(num_retries=5),
     ])
 
+  @mock.patch('infra_libs.ts_mon.common.monitors.PubSubMonitor.'
+              '_load_credentials', autospec=True)
+  @mock.patch('googleapiclient.discovery.build', autospec=True)
+  def test_send_fails(self, _discovery, _load_creds):
+    # Test for an occasional flake of .publish().execute().
+    mon = monitors.PubSubMonitor('/path/to/creds.p8.json', 'myproject',
+                                 'mytopic')
+    mon._api = mock.MagicMock()
+    topic = 'projects/myproject/topics/mytopic'
+
+    metric1 = metrics_pb2.MetricsData(name='m1')
+    mon.send(metric1)
+
+    publish = mon._api.projects.return_value.topics.return_value.publish
+    publish.side_effect = ValueError()
+
+    metric2 = metrics_pb2.MetricsData(name='m2')
+    mon.send([metric1, metric2])
+    collection = metrics_pb2.MetricsCollection(data=[metric1, metric2])
+    mon.send(collection)
+
+    def message(pb):
+      pb = monitors.Monitor._wrap_proto(pb)
+      return {'messages': [{'data': base64.b64encode(pb.SerializeToString())}]}
+    publish.assert_has_calls([
+        mock.call(topic=topic, body=message(metric1)),
+        mock.call().execute(num_retries=5),
+        mock.call(topic=topic, body=message([metric1, metric2])),
+        mock.call(topic=topic, body=message(collection)),
+        ])
+
+
 
 class DebugMonitorTest(unittest.TestCase):
 
