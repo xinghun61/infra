@@ -543,7 +543,8 @@ function htmlForPopupForBuild(builderKey, index, opt_testName)
     var time = g_resultsByBuilder[builder.key()].secondsSinceEpoch[index];
     if (time) {
         var date = new Date(time * 1000);
-        html += date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        html += date.toLocaleDateString() + ' ' +
+                date.toLocaleTimeString(undefined, {timeZoneName: 'short'});
     }
 
     var buildNumber = g_resultsByBuilder[builder.key()].buildNumbers[index];
