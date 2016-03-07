@@ -16,7 +16,7 @@ handled by the Systems team, please follow their
 
 For fastest response, please use the provided templates:
 
-*   [Master restart requests]
+*   [Master restart requests] (not for ChromeOS)
 *   [Slave restart requests]
 *   [Mobile device restart requests]
 *   [ChromeOS Waterfall Pin Bumps / Restarts]
