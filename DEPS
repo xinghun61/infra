@@ -95,7 +95,7 @@ deps = {
 
   # v12.0
   "infra/bootstrap/virtualenv":
-    ("https://chromium.googlesource.com/infra/third_party/virtualenv.git"
+    ("https://chromium.googlesource.com/external/github.com/pypa/virtualenv.git"
      "@4243b272823228dde5d18a7400c404ce52fb4cea"),
 
   "infra/appengine/third_party/src/github.com/golang/oauth2":
