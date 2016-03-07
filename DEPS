@@ -48,7 +48,7 @@ deps = {
      "@1e780a49412cdbb273e9421974cb91845c124f3f"),
 
   "infra/appengine/third_party/httplib2":
-    ("https://chromium.googlesource.com/infra/third_party/httplib2.git"
+    ("https://chromium.googlesource.com/external/github.com/jcgregorio/httplib2.git"
      "@058a1f9448d5c27c23772796f83a596caf9188e6"),
 
   "infra/appengine/third_party/endpoints-proto-datastore":
