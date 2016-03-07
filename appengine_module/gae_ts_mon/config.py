@@ -41,15 +41,15 @@ _flush_metrics_lock = threading.Lock()
 def flush_metrics_if_needed(time_fn=datetime.datetime.utcnow):
   time_now = time_fn()
   minute_ago = time_now - datetime.timedelta(seconds=60)
-  if interface.state.last_flushed > minute_ago:
-    return False
-  # Do not hammer Datastore if task_num is not yet assigned.
-  interface.state.last_flushed = time_now
   with _flush_metrics_lock:
-    return _flush_metrics_if_needed_locked(time_now)
+    if interface.state.last_flushed > minute_ago:
+      return False
+    interface.state.last_flushed = time_now
+
+  return _flush_metrics(time_now)
 
 
-def _flush_metrics_if_needed_locked(time_now):
+def _flush_metrics(time_now):
   """Return True if metrics were actually sent."""
   entity = shared.get_instance_entity()
   if entity.task_num < 0:
