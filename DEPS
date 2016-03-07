@@ -27,7 +27,7 @@ deps = {
 
   # Appengine third_party DEPS
   "infra/appengine/third_party/bootstrap":
-    ("https://chromium.googlesource.com/infra/third_party/bootstrap.git"
+    ("https://chromium.googlesource.com/external/github.com/twbs/bootstrap.git"
      "@b4895a0d6dc493f17fe9092db4debe44182d42ac"),
 
   "infra/appengine/third_party/cloudstorage":
