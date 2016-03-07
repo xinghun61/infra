@@ -35,7 +35,7 @@ deps = {
      "@ad74316d12e198e0c7352bd666bbc2ec7938bd65"),
 
   "infra/appengine/third_party/six":
-    ("https://chromium.googlesource.com/infra/third_party/six.git"
+    ("https://chromium.googlesource.com/external/bitbucket.org/gutworth/six.git"
      "@e0898d97d5951af01ba56e86acaa7530762155c8"),
 
   "infra/appengine/third_party/oauth2client":
