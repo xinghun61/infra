@@ -39,7 +39,7 @@ deps = {
      "@e0898d97d5951af01ba56e86acaa7530762155c8"),
 
   "infra/appengine/third_party/oauth2client":
-    ("https://chromium.googlesource.com/infra/third_party/oauth2client.git"
+    ("https://chromium.googlesource.com/external/github.com/google/oauth2client.git"
      "@e8b1e794d28f2117dd3e2b8feeb506b4c199c533"),
 
   "infra/appengine/third_party/uritemplate":
