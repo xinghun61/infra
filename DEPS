@@ -52,8 +52,8 @@ deps = {
      "@058a1f9448d5c27c23772796f83a596caf9188e6"),
 
   "infra/appengine/third_party/endpoints-proto-datastore":
-    ("https://chromium.googlesource.com/infra/third_party/"
-     "endpoints-proto-datastore.git"
+    ("https://chromium.googlesource.com/external/github.com/"
+     "GoogleCloudPlatform/endpoints-proto-datastore.git"
      "@971bca8e31a4ab0ec78b823add5a47394d78965a"),
 
   "infra/appengine/third_party/highlight":
