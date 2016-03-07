@@ -31,8 +31,9 @@ deps = {
      "@b4895a0d6dc493f17fe9092db4debe44182d42ac"),
 
   "infra/appengine/third_party/cloudstorage":
-    ("https://chromium.googlesource.com/infra/third_party/cloudstorage.git"
-     "@ad74316d12e198e0c7352bd666bbc2ec7938bd65"),
+    ("https://chromium.googlesource.com/external/github.com/"
+     "GoogleCloudPlatform/appengine-gcs-client.git"
+     "@76162a98044f2a481e2ef34d32b7e8196e534b78"),
 
   "infra/appengine/third_party/six":
     ("https://chromium.googlesource.com/external/bitbucket.org/gutworth/six.git"
