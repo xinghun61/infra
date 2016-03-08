@@ -11,7 +11,7 @@
       "--slave",
       "TestSlavename",
       "--spec",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra_internal', 'url': 'https://chrome-internal.googlesource.com/infra/infra_internal.git'}]",
+      "cache_dir = '[ROOT]/git_cache'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra_internal', 'url': 'https://chrome-internal.googlesource.com/infra/infra_internal.git'}]",
       "--root",
       "infra_internal",
       "--revision_mapping_file",
