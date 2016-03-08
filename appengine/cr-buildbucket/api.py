@@ -147,12 +147,18 @@ def id_resource_container(body_message_class=message_types.VoidMessage):
 
 def catch_errors(fn, response_message_class):
   @functools.wraps(fn)
-  def decorated(*args, **kwargs):
+  def decorated(svc, *args, **kwargs):
     try:
-      return fn(*args, **kwargs)
+      return fn(svc, *args, **kwargs)
     except errors.Error as ex:
       assert hasattr(response_message_class, 'error')
       return response_message_class(error=exception_to_error_message(ex))
+    except auth.AuthorizationError as ex:
+      logging.warning(
+        'Authorization error.\n%s\nPeer: %s\nIP: %s',
+        ex.message, auth.get_peer_identity().to_bytes(),
+        svc.request_state.remote_address)
+      raise endpoints.ForbiddenException(ex.message)
   return decorated
 
 

@@ -5,6 +5,7 @@
 import datetime
 import json
 
+from components import auth
 from components import utils
 from google.appengine.ext import ndb
 import mock
@@ -508,3 +509,8 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
   def test_lease_expired_error(self):
     self.error_test(errors.LeaseExpiredError, 'LEASE_EXPIRED')
+
+  def test_auth_error(self):
+    with self.call_should_fail(403):
+      service.get.side_effect = auth.AuthorizationError
+      self.call_api('get', {'id': 123})
