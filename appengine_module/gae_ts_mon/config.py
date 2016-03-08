@@ -171,6 +171,8 @@ def _instrumented_dispatcher(dispatcher, request, response, time_fn=time.time):
   start_time = time_fn()
   response_status = 0
   interface.state.store.initialize_context()
+  flush_thread = threading.Thread(target=flush_metrics_if_needed)
+  flush_thread.start()
   try:
     ret = dispatcher(request, response)
   except webapp2.HTTPException as ex:
@@ -184,6 +186,7 @@ def _instrumented_dispatcher(dispatcher, request, response, time_fn=time.time):
       response = ret
     response_status = response.status_int
   finally:
+    flush_thread.join()
     elapsed_ms = int((time_fn() - start_time) * 1000)
 
     fields = {'status': response_status, 'name': '', 'is_robot': False}
@@ -206,8 +209,6 @@ def _instrumented_dispatcher(dispatcher, request, response, time_fn=time.time):
     if response.content_length is not None:  # pragma: no cover
       http_metrics.server_response_bytes.add(response.content_length,
                                              fields=fields)
-    flush_metrics_if_needed()
-
   return ret
 
 
