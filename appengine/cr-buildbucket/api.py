@@ -7,6 +7,8 @@ import functools
 import json
 import logging
 
+from google.appengine.ext import ndb
+
 from components import auth
 from components import utils
 from protorpc import messages
@@ -143,6 +145,17 @@ def id_resource_container(body_message_class=message_types.VoidMessage):
   )
 
 
+def catch_errors(fn, response_message_class):
+  @functools.wraps(fn)
+  def decorated(*args, **kwargs):
+    try:
+      return fn(*args, **kwargs)
+    except errors.Error as ex:
+      assert hasattr(response_message_class, 'error')
+      return response_message_class(error=exception_to_error_message(ex))
+  return decorated
+
+
 def buildbucket_api_method(
     request_message_class, response_message_class, **kwargs):
   """Extends auth.endpoints_method by converting service errors."""
@@ -151,15 +164,10 @@ def buildbucket_api_method(
     request_message_class, response_message_class, **kwargs)
 
   def decorator(fn):
-    @functools.wraps(fn)
-    def decorated(*args, **kwargs):
-      try:
-        return fn(*args, **kwargs)
-      except errors.Error as ex:
-        assert hasattr(response_message_class, 'error')
-        return response_message_class(error=exception_to_error_message(ex))
-
-    return endpoints_decorator(decorated)
+    fn = catch_errors(fn, response_message_class)
+    fn = endpoints_decorator(fn)
+    fn = ndb.toplevel(fn)
+    return fn
 
   return decorator
 
