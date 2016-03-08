@@ -205,8 +205,19 @@ def parse_args():
   if args.date:
     args.date = date_from_string(args.date)
   else:
-    args.date = (datetime.datetime.now() -
-                 datetime.timedelta(minutes=INTERVALS[args.range]))
+    # If the start date is not specified, we look back into past for the
+    # specified range. For daily stats we look backwards from beginning of the
+    # current day and for weekly stats we look backwards from beginning of the
+    # current week. We use datetime.now() instead of datetime.utcnow() here,
+    # because it is later converted to a Unix timestamp using time.mktime, which
+    # expects a local time. This Unix timestamp is then passed in request to the
+    # chromium-cq-status app, which correctly converts it to a UTC datetime.
+    range_end = datetime.datetime.now()
+    if args.range == 'day' or args.range == 'week':
+      range_end = range_end.replace(hour=0, minute=0, second=0, microsecond=0)
+    if args.range == 'week':
+      range_end = range_end - datetime.timedelta(days=range_end.weekday())
+    args.date = range_end - datetime.timedelta(minutes=INTERVALS[args.range])
 
   return args
 

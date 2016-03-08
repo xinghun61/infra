@@ -19,6 +19,7 @@ import mock
 
 from testing_support import auto_stub
 
+from infra_libs.time_functions.testing import mock_datetime_utc, mock_timezone
 from infra.tools.cq_stats import cq_stats
 
 
@@ -756,3 +757,19 @@ class TestCQStats(auto_stub.TestCase):
     self.mock(cq_stats, 'acquire_stats', lambda _: cq_stats.default_stats())
     cq_stats.main()
     return self.expectations
+
+  @mock_timezone('UTC')
+  @mock_datetime_utc(2016, 3, 8, 12, 38, 12)
+  def test_stats_at_the_beginning_of_the_week_and_day(self):
+    self.mock(argparse.ArgumentParser, 'parse_args',
+              lambda *_: Args(date=None, range='hour'))
+    self.assertEqual(cq_stats.parse_args().date,
+                     datetime.datetime(2016, 3, 8, 11, 38, 12))
+    self.mock(argparse.ArgumentParser, 'parse_args',
+              lambda *_: Args(date=None, range='day'))
+    self.assertEqual(cq_stats.parse_args().date,
+                     datetime.datetime(2016, 3, 7, 0, 0, 0))
+    self.mock(argparse.ArgumentParser, 'parse_args',
+              lambda *_: Args(date=None, range='week'))
+    self.assertEqual(cq_stats.parse_args().date,
+                     datetime.datetime(2016, 2, 29, 0, 0, 0))
