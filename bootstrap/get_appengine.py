@@ -33,33 +33,31 @@ def get_gae_sdk_version(gae_path):
 
 def get_latest_gae_sdk_url(name):
   """Returns the url to get the latest GAE SDK and its version."""
-  return "https://storage.googleapis.com/appengine-sdks/featured/google_appengine_1.9.33.zip", "1.9.33"
+  url = 'https://cloud.google.com/appengine/downloads.html'
+  logging.debug('%s', url)
 
-#  url = 'https://cloud.google.com/appengine/downloads.html'
-#  logging.debug('%s', url)
-#
-#  for retry in xrange(URLOPEN_RETRIES):
-#    try:
-#      content = urllib2.urlopen(url).read()
-#      break
-#    except urllib2.HTTPError as e:
-#      if e.code == 500 and retry < URLOPEN_RETRIES - 1:
-#        delay = 2 ** retry
-#        logging.info('Failed to get %s. Retrying after %d seconds.', url, delay)
-#        time.sleep(delay)
-#      else:
-#        raise e
-#
-#  regexp = (
-#      r'(https\:\/\/storage.googleapis.com\/appengine-sdks\/featured\/'
-#      + re.escape(name) + r'[0-9\.]+?\.zip)')
-#  m = re.search(regexp, content)
-#  url = m.group(1)
-#  # Calculate the version from the url.
-#  new_version = re.search(re.escape(name) + r'(.+?).zip', url).group(1)
-#  # Upgrade to https
-#  return url.replace('http://', 'https://'), new_version
-#
+  for retry in xrange(URLOPEN_RETRIES):
+    try:
+      content = urllib2.urlopen(url).read()
+      break
+    except urllib2.HTTPError as e:
+      if e.code == 500 and retry < URLOPEN_RETRIES - 1:
+        delay = 2 ** retry
+        logging.info('Failed to get %s. Retrying after %d seconds.', url, delay)
+        time.sleep(delay)
+      else:
+        raise e
+
+  regexp = (
+      r'(https\:\/\/storage.googleapis.com\/appengine-sdks\/featured\/'
+      + re.escape(name) + r'[0-9\.]+?\.zip)')
+  m = re.search(regexp, content)
+  url = m.group(1)
+  # Calculate the version from the url.
+  new_version = re.search(re.escape(name) + r'(.+?).zip', url).group(1)
+  # Upgrade to https
+  return url.replace('http://', 'https://'), new_version
+
 
 def extract_zip(z, root_path):
   """Extracts files in a zipfile but keep the executable bits."""
@@ -113,9 +111,11 @@ def install_latest_gae_sdk(root_path, fetch_go, dry_run):
   if not dry_run:
     try:
       u = urllib2.urlopen(url)
-    except urllib2.HTTPError:
+    except urllib2.HTTPError as exc:
       # If we fail to download the new version, maintain the old one in place.
       # http://crbug.com/593481
+      print ('Failed to download sdk: %s' % url)
+      print exc
       return 1
 
     if os.path.isdir(gae_path):
