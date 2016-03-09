@@ -280,7 +280,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
       self, isolated_data=None, file_url=None,
       file_name=None, build_number=None):  # pragma: no cover
     if isolated_data:  # Mocks POST requests to isolated server.
-      url = '%s/_ah/api/isolateservice/v2/retrieve' % (
+      url = '%s/_ah/api/isolateservice/v1/retrieve' % (
           isolated_data['isolatedserver'])
       post_data = {
           'digest': isolated_data['digest'],
