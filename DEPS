@@ -57,10 +57,6 @@ deps = {
      "GoogleCloudPlatform/endpoints-proto-datastore.git"
      "@971bca8e31a4ab0ec78b823add5a47394d78965a"),
 
-  "infra/appengine/third_party/highlight":
-    ("https://chromium.googlesource.com/infra/third_party/highlight.js.git"
-     "@fa5bfec38aebd1415a81c9c674d0fde8ee5ef0ba"),
-
   "infra/appengine/third_party/difflibjs":
     ("https://chromium.googlesource.com/external/github.com/qiao/difflib.js.git"
      "@e11553ba3e303e2db206d04c95f8e51c5692ca28"),
