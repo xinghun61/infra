@@ -212,7 +212,9 @@ def _FetchOutputJsonInfoFromIsolatedServer(isolated_data, http_client):
   """
   post_data = {
       'digest': isolated_data['digest'],
-      'namespace': isolated_data['namespace']
+      'namespace': {
+          'namespace': isolated_data['namespace']
+      }
   }
   url = '%s/_ah/api/isolateservice/v1/retrieve' % (
       isolated_data['isolatedserver'])

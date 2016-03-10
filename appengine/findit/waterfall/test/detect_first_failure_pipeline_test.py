@@ -422,7 +422,9 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
       # Mock retrieving hash to output.json from isolated server.
       isolated_data = {
           'isolatedserver': 'https://isolateserver.appspot.com',
-          'namespace': 'default-gzip',
+          'namespace': {
+              'namespace': 'default-gzip'
+          },
           'digest': 'isolatedhashabctest-%d' % n
       }
       self._MockUrlfetchWithIsolatedData(
@@ -430,7 +432,9 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
       # Mock retrieving url to output.json from isolated server.
       file_hash_data = {
           'isolatedserver': 'https://isolateserver.appspot.com',
-          'namespace': 'default-gzip',
+          'namespace': {
+              'namespace': 'default-gzip'
+          },
           'digest': 'abctestoutputjsonhash-%d' % n
       }
       self._MockUrlfetchWithIsolatedData(
@@ -599,7 +603,9 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
       # Mock data for retrieving hash to output.json from isolated server.
       isolated_data = {
           'isolatedserver': 'https://isolateserver.appspot.com',
-          'namespace': 'default-gzip',
+          'namespace': {
+              'namespace': 'default-gzip'
+          },
           'digest': 'isolatedhashabctest-%d' % n
       }
       self._MockUrlfetchWithIsolatedData(
@@ -607,7 +613,9 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
       # Mock data for retrieving url to output.json from isolated server.
       file_hash_data = {
           'isolatedserver': 'https://isolateserver.appspot.com',
-          'namespace': 'default-gzip',
+          'namespace': {
+              'namespace': 'default-gzip'
+          },
           'digest': 'abctestoutputjsonhash-%d' % n
       }
       self._MockUrlfetchWithIsolatedData(
