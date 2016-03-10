@@ -208,11 +208,8 @@ def parse_args():
     # If the start date is not specified, we look back into past for the
     # specified range. For daily stats we look backwards from beginning of the
     # current day and for weekly stats we look backwards from beginning of the
-    # current week. We use datetime.now() instead of datetime.utcnow() here,
-    # because it is later converted to a Unix timestamp using time.mktime, which
-    # expects a local time. This Unix timestamp is then passed in request to the
-    # chromium-cq-status app, which correctly converts it to a UTC datetime.
-    range_end = datetime.datetime.now()
+    # current week.
+    range_end = datetime.datetime.utcnow()
     if args.range == 'day' or args.range == 'week':
       range_end = range_end.replace(hour=0, minute=0, second=0, microsecond=0)
     if args.range == 'week':
@@ -251,8 +248,8 @@ def date_from_git(date_str):
   return date
 
 
-def local_date_to_timestamp(date):
-  return time.mktime(date.timetuple())
+def utc_date_to_timestamp(date):
+  return calendar.timegm(date.timetuple())
 
 
 session = requests.Session()
@@ -351,7 +348,7 @@ def fetch_stats(args, begin_date=None, stats_range=None):
   if not stats_range:
     stats_range = args.range
   if begin_date:
-    timestamp = (int(local_date_to_timestamp(begin_date)) +
+    timestamp = (int(utc_date_to_timestamp(begin_date)) +
                  INTERVALS[stats_range] * 60)
   else:
     timestamp = int(time.time())
@@ -374,9 +371,9 @@ def fetch_cq_logs(start_date=None, end_date=None, filters=[]):
   begin_time = None
   end_time = None
   if start_date:
-    begin_time = int(time.mktime(start_date.timetuple()))
+    begin_time = int(calendar.timegm(start_date.timetuple()))
   if end_date:
-    end_time = int(time.mktime(end_date.timetuple()))
+    end_time = int(calendar.timegm(end_date.timetuple()))
   results = []
   cursor = None
   while True:
@@ -407,7 +404,7 @@ def fetch_cq_logs(start_date=None, end_date=None, filters=[]):
 def default_stats():
   """Generate all the required stats fields with default values."""
   stats = {
-      'begin': datetime.datetime.now(),
+      'begin': datetime.datetime.utcnow(),
       'end': datetime.datetime(1, 1, 1),
       'issue-count': 0,
       'patchset-count': 0,
@@ -449,7 +446,7 @@ def organize_stats(stats, init=None):
   for dataset in stats['results']:
     result['begin'] = min(
         date_from_timestamp(dataset['begin']),
-        result.get('begin', datetime.datetime.now()))
+        result.get('begin', datetime.datetime.utcnow()))
     result['end'] = max(date_from_timestamp(dataset['end']), result['end'])
     for data in dataset['stats']:
       if data['type'] == 'count':
@@ -1124,8 +1121,7 @@ def print_stats(args, stats):
     output('  No stats since %s', args.date)
     return
 
-  output('from %s till %s (local time).',
-         stats['begin'], stats['end'])
+  output('from %s till %s (UTC time).', stats['begin'], stats['end'])
 
   print_usage(stats)
 
@@ -1232,8 +1228,6 @@ def acquire_stats(args, add_tree_stats=True):
 def main():
   args = parse_args()
   logger = logging.getLogger()
-  # TODO(sergeyberezin): how do I derive local timezone string?
-  # Need to be able to pass dateutil.tz.tzlocal() directly.
   infra_libs.logs.process_argparse_options(args, logger)
   stats = acquire_stats(args)
   print_stats(args, stats)

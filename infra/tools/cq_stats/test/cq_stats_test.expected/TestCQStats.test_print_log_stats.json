@@ -1,6 +1,6 @@
 [
   "Statistics for project test_project",
-  "from 2014-01-01 00:00:00 till 2014-01-08 00:00:00 (local time).",
+  "from 2014-01-01 00:00:00 till 2014-01-08 00:00:00 (UTC time).",
   "",
   "   0 issues (0 patches) were tried by CQ, resulting in 0 attempts.",
   "   0 patches (0.0% of tried patches, 0.0% of attempts) were committed by CQ,",

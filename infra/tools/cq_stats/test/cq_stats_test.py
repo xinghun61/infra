@@ -758,7 +758,6 @@ class TestCQStats(auto_stub.TestCase):
     cq_stats.main()
     return self.expectations
 
-  @mock_timezone('UTC')
   @mock_datetime_utc(2016, 3, 8, 12, 38, 12)
   def test_stats_at_the_beginning_of_the_week_and_day(self):
     self.mock(argparse.ArgumentParser, 'parse_args',
