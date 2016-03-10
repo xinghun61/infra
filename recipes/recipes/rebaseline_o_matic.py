@@ -32,8 +32,10 @@ def RunSteps(api):
 
   api.python('webkit-patch auto-rebaseline',
              cwd.join('Tools', 'Scripts', 'webkit-patch'),
-             ['auto-rebaseline', '--verbose', '--auth-refresh-token-json',
-              RIETVELD_REFRESH_TOKEN],
+             ['auto-rebaseline', '--verbose',
+             '--auth-refresh-token-json', RIETVELD_REFRESH_TOKEN,
+             '--commit-author',
+             'Rebaseline Bot <blink-rebaseline-bot@chromium.org>'],
              cwd=cwd)
 
 
