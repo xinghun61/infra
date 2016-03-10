@@ -7,6 +7,7 @@ import copy
 import json
 import logging
 import os
+import time
 
 import requests
 
@@ -34,22 +35,32 @@ STATUS_TO_STRING = {
 class Poller(object):
   endpoint = None
 
-  def __init__(self, base_url, metric_fields):
+  durations = ts_mon.CumulativeDistributionMetric(
+      'buildbot/master/poller_durations',
+      description='Time (in milliseconds) taken for the buildbot master to '
+                  'respond to the request from mastermon')
+
+  def __init__(self, base_url, metric_fields, time_fn=time.time):
     if self.endpoint == 'FILE':
       self._url = base_url
     else:
       self._url = '%s/json%s' % (base_url.rstrip('/'), self.endpoint)
     self._metric_fields = metric_fields
+    self._time_fn = time_fn
 
   def poll(self):
     LOGGER.info('Requesting %s', self._url)
 
+    start_time = self._time_fn()
+    poller_name = self.__class__.__name__
     try:
-      response = instrumented_requests.get(self.__class__.__name__, self._url,
-                                           timeout=10)
+      response = instrumented_requests.get(poller_name, self._url, timeout=10)
     except requests.exceptions.RequestException:
       LOGGER.exception('Request for %s failed', self._url)
       return False
+    finally:
+      self.durations.add((self._time_fn() - start_time) * 1000,
+                         fields=self.fields({'poller': poller_name}))
 
     if response.status_code != requests.codes.ok:
       LOGGER.warning('Got status code %d from %s',

@@ -5,6 +5,7 @@
 import json
 import os
 import tempfile
+import time
 import unittest
 
 import mock
@@ -18,8 +19,11 @@ from infra.services.mastermon import pollers
 class FakePoller(pollers.Poller):
   endpoint = '/foo'
 
-  def __init__(self, base_url):
-    super(FakePoller, self).__init__(base_url, {})
+  def __init__(self, base_url, fields=None, **kwargs):
+    if fields is None:
+      fields = {}
+
+    super(FakePoller, self).__init__(base_url, fields, **kwargs)
     self.called_with_data = None
 
   def handle_response(self, data):
@@ -28,6 +32,11 @@ class FakePoller(pollers.Poller):
 
 @mock.patch('requests.get')
 class PollerTest(unittest.TestCase):
+  def setUp(self):
+    super(PollerTest, self).setUp()
+
+    ts_mon.reset_for_unittest()
+
   def test_requests_url(self, mock_get):
     response = mock_get.return_value
     response.json.return_value = {'foo': 'bar'}
@@ -80,6 +89,22 @@ class PollerTest(unittest.TestCase):
     p = FakePoller('http://foobar')
     self.assertFalse(p.poll())
     self.assertIsNone(p.called_with_data)
+
+  def test_durations_metric(self, mock_get):
+    response = mock_get.return_value
+    response.json.return_value = {'foo': 'bar'}
+    response.status_code = 200
+
+    mock_time = mock.create_autospec(time.time, spec_set=True)
+    mock_time.side_effect = [123.0, 124.2]
+
+    p = FakePoller('http://foobar', {'master': 'foo'}, time_fn=mock_time)
+    self.assertTrue(p.poll())
+
+    dist = pollers.Poller.durations.get(
+        {'master': 'foo', 'poller': 'FakePoller'})
+    self.assertEquals(1, dist.count)
+    self.assertAlmostEquals(1200, dist.sum)
 
 
 class VarzPollerTest(unittest.TestCase):
