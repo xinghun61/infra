@@ -54,6 +54,7 @@ def _CreateNewSwarmingTaskRequest(
   ]
 
   # Reset tags for searching and monitoring.
+  ref_name = swarming_util.GetTagValue(ref_request.tags, 'name')
   new_request.tags = []
   new_request.tags.append('purpose:deflake')
   new_request.tags.append('ref_master:%s' % master_name)
@@ -61,6 +62,7 @@ def _CreateNewSwarmingTaskRequest(
   new_request.tags.append('ref_buildnumber:%s' % build_number)
   new_request.tags.append('ref_stepname:%s' % step_name)
   new_request.tags.append('ref_task_id:%s' % ref_task_id)
+  new_request.tags.append('ref_name:%s' % ref_name)
 
   return new_request
 

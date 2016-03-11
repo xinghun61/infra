@@ -85,12 +85,15 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
     task_started = False
     task_completed = False
     tests_statuses = {}
+    step_name_no_platform = None
 
     while not task_completed:
       # Keeps monitoring the swarming task, waits for it to complete.
       data = swarming_util.GetSwarmingTaskResultById(
           task_id, self.HTTP_CLIENT)
       task_state = data['state']
+      step_name_no_platform = swarming_util.GetTagValue(
+          data.get('tags', {}), 'ref_name')
       if task_state not in swarming_util.STATES_RUNNING:
         task_completed = True
         task = WfSwarmingTask.Get(
@@ -140,4 +143,4 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
     task.completed_time = _ConvertDateTime(data.get('completed_ts'))
     task.put()
 
-    return step_name, task.classified_tests
+    return step_name, (step_name_no_platform, task.classified_tests)

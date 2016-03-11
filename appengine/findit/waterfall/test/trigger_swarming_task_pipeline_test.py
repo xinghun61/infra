@@ -111,7 +111,7 @@ class TriggerSwarmingTaskPipelineTest(testing.AppengineTestCase):
               'inputs_ref': {'a': 1},
               'io_timeout_secs': 1200,
           },
-          'tags': ['master:a', 'buildername:b'],
+          'tags': ['master:a', 'buildername:b', 'name:a_tests'],
           'user': 'user',
       })
     self.mock(swarming_util, 'GetSwarmingTaskRequest',
@@ -133,7 +133,7 @@ class TriggerSwarmingTaskPipelineTest(testing.AppengineTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 234
-    step_name = 's'
+    step_name = 'a_tests on platform'
     tests = ['a.b', 'a.c']
 
     expected_new_request_json = {
@@ -161,7 +161,8 @@ class TriggerSwarmingTaskPipelineTest(testing.AppengineTestCase):
                  'ref_buildername:%s' % builder_name,
                  'ref_buildnumber:%s' % build_number,
                  'ref_stepname:%s' % step_name,
-                 'ref_task_id:1'],
+                 'ref_task_id:1',
+                 'ref_name:a_tests'],
         'user': '',
     }
 

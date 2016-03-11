@@ -26,10 +26,12 @@ def _GetReliableTargetedTests(targeted_tests, classified_tests_by_step):
       # If the step is swarming but there is no result for it, it's highly
       # likely that there is some error with the task.
       # Thus skip this step for no insights from task to avoid false positive.
-      classified_tests = classified_tests_by_step[step_name]
+      step_name_no_platform = classified_tests_by_step[step_name][0]
+      classified_tests = classified_tests_by_step[step_name][1]
+
       for test in tests:
         if (test in classified_tests.get('reliable_tests', [])):
-          reliable_tests[step_name].append(test)
+          reliable_tests[step_name_no_platform].append(test)
     else:  # Non-swarming step, includes it directly.
       reliable_tests[step_name] = []
   return reliable_tests

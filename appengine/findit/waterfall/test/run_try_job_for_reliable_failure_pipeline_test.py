@@ -12,34 +12,43 @@ from waterfall.try_job_type import TryJobType
 
 
 _SAMPLE_TARGETED_TESTS = {
-    'step1': ['step1_test1', 'step1_test2'],
-    'step2': ['step2_test1', 'step2_test2', 'step2_test3'],
+    'step1 on platform': ['step1_test1', 'step1_test2'],
+    'step2 on platform': ['step2_test1', 'step2_test2', 'step2_test3'],
     'step3': [],
-    'step4': ['step4_test1', 'step4_test2']
+    'step4 on platform': ['step4_test1', 'step4_test2']
 }
 
 
 _SAMPLE_CLASSIFIED_TESTS_BY_STEP = {
     '1': {
-        'step1': {
-            # Step has reliable failures.
-            'flaky_tests': ['step1_test1'],
-            'reliable_tests': ['step1_test2', 'step1_test3']
-        },
-        'step2': {
+        'step1 on platform': (
+            'step1',
+            {
+                # Step has reliable failures.
+                'flaky_tests': ['step1_test1'],
+                'reliable_tests': ['step1_test2', 'step1_test3']
+            }),
+        'step2 on platform': (
+            'step2',
             # All tests are flaky.
-            'flaky_tests': ['step2_test1', 'step2_test2', 'step2_test3']
-        },
-        'step4': {}  # There is something wrong with swarming task.
+            {
+                'flaky_tests': ['step2_test1', 'step2_test2', 'step2_test3']
+            }),
+        'step4 on platform': (
+            'step4', {})  # There is something wrong with swarming task.
     },
     '2': {
         # All steps are flaky.
-        'step1': {
-            'flaky_tests': ['step1_test1', 'step1_test2']
-        },
-        'step2': {
-            'flaky_tests': ['step2_test1']
-        }
+        'step1 on platform': (
+            'step1',
+            {
+                'flaky_tests': ['step1_test1', 'step1_test2']
+            }),
+        'step2 on platform': (
+            'step2',
+            {
+                'flaky_tests': ['step2_test1']
+            })
     }
 }
 
@@ -84,7 +93,8 @@ class RunTryJobForReliableFailurePipelineTest(testing.AppengineTestCase):
   def testGetReliableTargetedTestsAllFlaky(self):
     reliable_tests = (
         run_try_job_for_reliable_failure_pipeline._GetReliableTargetedTests(
-            {'step1': ['step1_test1']}, _SAMPLE_CLASSIFIED_TESTS_BY_STEP['2']))
+            {'step1 on platform': ['step1_test1']},
+            _SAMPLE_CLASSIFIED_TESTS_BY_STEP['2']))
 
     expected_reliable_tests = {}
 
@@ -93,7 +103,8 @@ class RunTryJobForReliableFailurePipelineTest(testing.AppengineTestCase):
   def testGetReliableTargetedTestsNoStatuses(self):
     reliable_tests = (
         run_try_job_for_reliable_failure_pipeline._GetReliableTargetedTests(
-            {'step1': ['step1_test1']}, {'step1': {}}))
+            {'step1 on platform': ['step1_test1']},
+            {'step1 on platform': ('step1',{})}))
 
     expected_reliable_tests = {}
 
@@ -139,6 +150,6 @@ class RunTryJobForReliableFailurePipelineTest(testing.AppengineTestCase):
     pipeline.run(
         self.master_name, self.builder_name, self.build_number, 'rev1', 'rev2',
         ['rev2'], TryJobType.TEST, None, {'step1': ['test1']},
-        *tuple({'step1': {}}.iteritems()))
+        *tuple({'step1': ('step1', {})}.iteritems()))
 
     self.assertFalse(_MockTryJobPipeline.STARTED)
