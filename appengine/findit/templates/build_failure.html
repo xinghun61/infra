@@ -19,6 +19,11 @@
       background-color: #e98080;
       border-color: #a77272;
     }
+    .pending {
+      color: #000000;
+      background-color: #ffffff;
+      border-color: #ffffff;
+    }
     .thumbs-up-down {
       border-radius: 7px;
       display: inline-block;
@@ -58,7 +63,7 @@
     .thumb-down:hover, .thumb-down.triaged {
       background-color: #e98080;
     }
-    .not-display, .hidden-row {
+    .hidden-row {
       display: none;
     }
     .displayed-row {
@@ -88,22 +93,37 @@
     findit.showTriageHelpButton = '{{show_triage_help_button}}' == 'True';
     findit.showDebugInfo = '{{show_debug_info}}' == 'True';
     findit.analysisResult = {{analysis_result | tojson | safe}};
+    findit.resultSourceTryJob = 'try job';
 
     function generateStringForSingleCL(cl) {
       var clString = '';
-      clString += '<td><a href="' + findit.builderUrl + '/builds/' + cl.build_number + '">' + cl.build_number + '</a></td>';
-      clString += '<td>' + cl.repo_name + '</td>';
-      clString += '<td><a href="' + cl.url + '">' + cl.commit_position || cl.revision + '</a></td>';
-      clString += '<td>' + cl.score + '</td>';
-      clString += '<td>';
+      if ('result_source' in cl && cl.result_source.indexOf(findit.resultSourceTryJob) > -1 && !('revision' in cl)) {
+        clString += '<td colspan="5">Not Found</td>';
+      } else {
+        clString += '<td><a href="' + findit.builderUrl + '/builds/' + cl.build_number + '">' + cl.build_number + '</a></td>';
+        clString += '<td>' + cl.repo_name + '</td>';
+        clString += '<td><a href="' + cl.url + '">' + cl.commit_position || cl.revision + '</a></td>';
+        clString += '<td>' + cl.score + '</td>';
+        clString += '<td>';
 
-      var sortedHintsList = Object.keys(cl.hints).sort(function(a, b) {
-        return cl.hints[b] - cl.hints[a];
-      }); // Sorts hints by score in descending order.
-      $.each(sortedHintsList, function(index, hint) {
-        clString += '<li>' + hint + '</li>';
-      });
-      clString += '</td>';
+        var sortedHintsList = Object.keys(cl.hints).sort(function(a, b) {
+          return cl.hints[b] - cl.hints[a];
+        }); // Sorts hints by score in descending order.
+        $.each(sortedHintsList, function(index, hint) {
+          clString += '<li>' + hint + '</li>';
+        });
+        clString += '</td>';
+      }
+
+      if ('result_source' in cl && cl.result_source.indexOf(findit.resultSourceTryJob) > -1) {
+        if (cl.try_job_url) {
+          clString += '<td><span class="' + cl.status.toLowerCase() + '"><a title="Yellow: Running\nGreen: Completed\nRed: Error" href="' + cl.try_job_url + '">' + cl.try_job_build_number + '</a></span></td>';
+        } else {
+          clString += '<td><span class="' + cl.status.toLowerCase() + '">'+ cl.status +'</span></td>';
+        }
+      } else {
+        clString += '<td>N/A</td>';
+      }
       return clString;
     }
 
@@ -137,6 +157,21 @@
       } else {
         rowString += '<td rowspan="' + rowsSpan + '">N/A</td>';
       }
+
+      if (failure.swarming_task) {
+        if (failure.swarming_task == 'multiple') {
+            rowString += '<td rowspan="' + rowsSpan + '">' + failure.swarming_task + '</td>';
+        } else {
+          if (failure.swarming_task.task_url) {
+            rowString += '<td rowspan="' + rowsSpan + '"><span class="' + failure.swarming_task.status.toLowerCase() + '"><a title="Yellow: Running\nGreen: Completed\nRed: Error" href="' + failure.swarming_task.task_url + '">' + failure.swarming_task.task_id + '</a></span></td>';
+          } else {
+            rowString += '<td rowspan="' + rowsSpan + '"><span class="' + failure.swarming_task.status.toLowerCase() + '">' + failure.swarming_task.status + '</span></td>';
+          }
+        }
+      } else {
+        rowString += '<td rowspan="' + rowsSpan + '">N/A</td>';
+      }
+
       if (failure.suspected_cls.length > 0) {
         clString = generateStringForSingleCL(failure.suspected_cls[0]);
         rowString += clString + '</tr>';
@@ -154,7 +189,7 @@
           $('#failures tbody').append(rowString);
         }
       } else {
-        rowString += '<td colspan="5">';
+        rowString += '<td colspan="6">';
         if(type == 'step' && failure.supported == false) {
           rowString += 'Not Supported</td>';
         } else {
@@ -260,90 +295,6 @@
       }
     }
 
-    function displaySwarmingTask() {
-      $.getJSON('swarming-task?url=' + findit.buildUrl, function(data) {
-          if (! jQuery.isEmptyObject(data)) {
-            var tableString = '<table><tr><th>Step</th><th>Status</th><th>Task</th></tr>';
-            $.each(data, function(step, task) {
-              tableString += '<tr>';
-              tableString += '<td>' + step + '</td>';
-              if (task.status == 'Completed') {
-                status_class = 'completed';
-              } else if (task.status == 'Error') {
-                status_class = 'error';
-              } else {
-                // If status is either 'Pending' or 'Running', add 'running' style.
-                status_class = 'running';
-              }
-              tableString += '<td><span class="' + status_class + '">' + task.status + '</span></td>';
-              if (task.task_id) {
-                tableString += '<td><a href="' + task.task_url + '">' + task.task_id + '</a></td>';
-              } else {
-                tableString += '<td></td>';
-              }
-              tableString += '</tr>';
-            });
-            tableString += '</table>';
-            $('#swarming_task_table').html(tableString);
-            $('#swarming_task').removeClass('not-display');
-          }
-      });
-    }
-
-    function displayTryJobResult() {
-      $.getJSON('try-job-result?url=' + findit.buildUrl, function(data) {
-          if (! jQuery.isEmptyObject(data)) {
-            var tableString = '<table><tr><th>Step</th><th>Test</th><th>Link</th><th>Status</th><th>Culprit</th></tr>';
-            $.each(data, function(key, value) {
-              tableString += '<tr>';
-              tableString += '<td>' + value.step + '</td>';
-              tableString += '<td>' + value.test + '</td>';
-              if (value.try_job_url) {
-                tableString += '<td><a href="' + value.try_job_url + '">' + value.try_job_build_number + '</a></td>';
-              } else {
-                tableString += '<td></td>';
-              }
-              var status;
-              var revision;
-              noTryJobStatuses = ['Flaky', 'Skipped'];
-              if (noTryJobStatuses.indexOf(value.status) > -1) {
-                status = '';
-                revision = value.status;
-              } else if (value.status == 'Completed'){
-                status = value.status;
-                revision = value.commit_position || value.revision || 'Not Found';
-              } else {
-                status = value.status;
-                revision = '';
-              }
-              if (status == 'Completed') {
-                status_class = 'completed';
-              } else if (status == 'Error') {
-                status_class = 'error';
-              } else {
-                // If status is either 'Scheduled' or 'Running', add 'running' style.
-                status_class = 'running';
-              }
-              tableString += '<td><span class="' + status_class + '">' + status + '</span></td>';
-              if (value.review_url) {
-                tableString += '<td><a href="' + value.review_url + '">' + revision + '</a></td>';
-              } else {
-                var tdWithTitleMap = {
-                    'Flaky': '<td title="The test is flaky based on swarming task result.">',
-                    'Skipped': '<td title="There is no result from swarming task to identify flakiness so skip the step to avoid false positive.">'
-                };
-                tableString += tdWithTitleMap[revision] || '<td>';
-                tableString += revision + '</td>';
-              }
-              tableString += '</tr>';
-            });
-            tableString += '</table>';
-            $('#try_job_result').html(tableString);
-            $('#try_job').removeClass('not-display');
-          }
-      });
-    }
-
     $(document).ready(function() {
       if (!findit.analysisCompleted) {
         $('#status_message').text('running, will refresh in 5 seconds...');
@@ -394,12 +345,6 @@
       $('#score-info').click(function() {
         $('#score-explanation-dialog').dialog('open');
       });
-
-      // Displays Swarming task if any.
-      displaySwarmingTask();
-
-      // Displays Try Job Result if any.
-      displayTryJobResult();
     });
   </script>
 </head>
@@ -413,20 +358,6 @@
     Master: {{master_name}}<br>
     Builder: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}">{{builder_name}}</a><br>
     Build Number: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}">{{build_number}}</a>
-  </div>
-  <br>
-
-  <div id='swarming_task' class='not-display'>
-    <b> Swarming Task:</b>
-    <div id='swarming_task_table'></div>
-    <br>
-  </div>
-  <br>
-
-  <div id='try_job' class='not-display'>
-    <b> Try job or Swarming Task Result:</b>
-    <div id='try_job_result'></div>
-    <br>
   </div>
   <br>
 
@@ -461,12 +392,17 @@
           <div class="triage thumb-down"><img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_down_black_24dp.png"/> Incorrect</div>
         </div>
         <div id="analysis_result">
+          <br>
+          Note: Swarming task and Try job will be triggered when first failed build is completed.<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If you are expecting try job result but only see 'N/A' on this page, please check later.
+          <br>
           <table id="failures">
             <thead>
               <tr>
                 <th rowspan="2" title="Failed step/test name">Step/<font class="header-test">Test</font></th>
                 <th rowspan="2" title="The build cycle in which the step started to fail">First Failure</th>
                 <th rowspan="2" title="The last build cycle in which the step passed">Last Pass<br>Before Failure</th>
+                <th rowspan="2" title="The swarming task to classify reliable and flaky tests">Swarming Task</th>
                 <th colspan="7">Suspected CLs</th>
               </tr>
               <tr>
@@ -475,6 +411,7 @@
                 <th title="Git commit position/hash">Commit</th>
                 <th title="The higher score, the more suspected">Score (<a id="score-info" href="javascript:">?</a>)</th>
                 <th title="Why this CL is related to the failure">Hints</th>
+                <th title="If there is a try job, displays try job status, build number and a link to it.&#010;If there isn't a try job, displays the reason.">Try Job Info</th>
               </tr>
             </thead>
             <tbody>
