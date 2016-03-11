@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import copy
 from datetime import datetime
 import os
 
@@ -10,7 +9,6 @@ from google.appengine.api import users
 
 from base_handler import BaseHandler
 from base_handler import Permission
-from handlers import handlers_util
 from model.wf_analysis import WfAnalysis
 from model.wf_analysis_result_status import RESULT_STATUS_TO_DESCRIPTION
 from waterfall import build_failure_analysis_pipelines
@@ -19,8 +17,7 @@ from waterfall import waterfall_config
 
 
 BUILD_FAILURE_ANALYSIS_TASKQUEUE = 'build-failure-analysis-queue'
-HEURISTIC = 'heuristic analysis'
-TRY_JOB =  'try job'
+
 
 def _FormatDatetime(dt):
   if not dt:
@@ -47,116 +44,6 @@ def _GetTriageHistory(analysis):
     })
 
   return triage_history
-
-
-def _UpdateAnalysisResultWithSwarmingTask(result, task_info):
-  if not result or not task_info:
-    return result
-
-  for failure in result.get('failures', []):
-    step_name = failure['step_name']
-    if step_name in task_info:
-      step_task_info = task_info[step_name]
-      if len(step_task_info['swarming_tasks']) > 1:
-        failure['swarming_task'] = 'multiple'
-      elif len(step_task_info['swarming_tasks']) == 1:
-        failure['swarming_task'] = task_info[step_name]['swarming_tasks'][0]
-      else:  # pragma: no cover
-        continue
-
-      for test in failure.get('tests', []):
-        test_name = test['test_name']
-        if test_name in step_task_info['tests']:
-          test['swarming_task'] = step_task_info['tests'][test_name]
-
-
-def _GenerateTryJobHint(try_job_url, try_job_build_number):
-  if not try_job_url:
-    return None
-  return 'found by try job <a href="%s"> %d </a>' % (
-      try_job_url, try_job_build_number)
-
-
-def _AddResultSource(result):
-  for failure in result.get('failures', []):
-    for test in failure.get('tests', []):
-      for test_suspected_cl in test['suspected_cls']:
-        test_suspected_cl['result_source'] = [HEURISTIC]
-    for suspected_cl in failure['suspected_cls']:
-      suspected_cl['result_source'] = [HEURISTIC]
-
-
-def _AddTryJobResultToCulprits(suspected_cls, try_job_info):
-  try_job_culprit_revision = try_job_info.get('revision')
-  try_job_hint = _GenerateTryJobHint(
-      try_job_info.get('try_job_url'),
-      try_job_info.get('try_job_build_number'))
-  try_job_keys = set()
-
-#  if try_job_culprit_revision:
-  for suspected_cl in suspected_cls:
-    if suspected_cl.get('try_job_key'):
-      try_job_keys.add(suspected_cl.get('try_job_key'))
-      continue
-    if (try_job_culprit_revision and
-        try_job_culprit_revision == suspected_cl.get('revision')):
-      # If try job found the same culprit with heuristic based analysis.
-      try_job_keys.add(try_job_info['try_job_key'])
-      suspected_cl['result_source'] = [HEURISTIC, TRY_JOB]
-      suspected_cl['status'] = try_job_info['status']
-      suspected_cl['hints'][try_job_hint] = 5
-      suspected_cl['score'] += 5
-      suspected_cl['try_job_key'] = try_job_info['try_job_key']
-      suspected_cl['try_job_url'] = try_job_info.get('try_job_url', '')
-      suspected_cl['try_job_build_number'] = (
-          try_job_info.get('try_job_build_number'))
-
-  if try_job_info['try_job_key'] not in try_job_keys:
-    if try_job_culprit_revision:  # Only found by try job approach.
-      try_job_info['result_source'] = [TRY_JOB]
-      try_job_info['build_number'] = int(
-          try_job_info['try_job_key'].split('/')[-1])
-      try_job_info['repo_name'] = 'chromium'
-      try_job_info['hints'] = {
-          try_job_hint: 5
-      }
-      try_job_info['score'] = 5
-    else: # Try job is not needed or has not finished.
-      try_job_info['result_source'] = [TRY_JOB]
-    try_job_keys.add(try_job_info['try_job_key'])
-    suspected_cls.append(try_job_info)
-
-
-def _UpdateAnalysisResultWithTryJob(result, try_jobs_info):
-  if not result or not try_jobs_info:
-    return result
-
-  _AddResultSource(result)
-  for failure in result.get('failures', []):
-    step_name = failure['step_name']
-
-    if failure.get('tests'):
-      for test in failure.get('tests', []):
-        test_name = test['test_name']
-        step_test_key = '%s-%s' % (step_name, test_name)
-        if try_jobs_info.get(step_test_key):
-          _AddTryJobResultToCulprits(
-              test['suspected_cls'], try_jobs_info[step_test_key])
-          # Update step level suspected_cls.
-          _AddTryJobResultToCulprits(
-              failure['suspected_cls'], try_jobs_info[step_test_key])
-    else:
-      if try_jobs_info.get(step_name):
-        _AddTryJobResultToCulprits(
-            failure['suspected_cls'], try_jobs_info[step_name])
-
-
-def _UpdateAnalysisResult(result, master_name, builder_name, build_number):
-  _UpdateAnalysisResultWithSwarmingTask(
-      result, handlers_util.GenerateSwarmingTasksData(
-          master_name, builder_name, build_number))
-  _UpdateAnalysisResultWithTryJob(result, handlers_util.GetAllTryJobResults(
-      master_name, builder_name, build_number))
 
 
 class BuildFailure(BaseHandler):
@@ -186,13 +73,13 @@ class BuildFailure(BaseHandler):
     if not build_info:
       return BaseHandler.CreateError(
           'Url "%s" is not pointing to a build.' % url, 501)
+    master_name, builder_name, build_number = build_info
 
     analysis = None
-    master_name = build_info[0]
     if not (waterfall_config.MasterIsSupported(master_name) or
             users.is_current_user_admin()):
       # If the build failure was already analyzed, just show it to the user.
-      analysis = WfAnalysis.Get(*build_info)
+      analysis = WfAnalysis.Get(master_name, builder_name, build_number)
       if not analysis:
         return BaseHandler.CreateError(
             'Master "%s" is not supported yet.' % master_name, 501)
@@ -204,11 +91,9 @@ class BuildFailure(BaseHandler):
       build_completed = (users.is_current_user_admin() and
                          self.request.get('build_completed') == '1')
       analysis = build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
-          *build_info, build_completed=build_completed, force=force,
+          master_name, builder_name, build_number,
+          build_completed=build_completed, force=force,
           queue_name=BUILD_FAILURE_ANALYSIS_TASKQUEUE)
-
-    analysis_result = copy.deepcopy(analysis.result)
-    _UpdateAnalysisResult(analysis_result, *build_info)
 
     data = {
         'master_name': analysis.master_name,
@@ -223,7 +108,7 @@ class BuildFailure(BaseHandler):
         'analysis_update_time': _FormatDatetime(analysis.updated_time),
         'analysis_completed': analysis.completed,
         'analysis_failed': analysis.failed,
-        'analysis_result': analysis_result,
+        'analysis_result': analysis.result,
         'analysis_correct': analysis.correct,
         'triage_history': _GetTriageHistory(analysis),
         'show_triage_help_button': self._ShowTriageHelpButton(),
