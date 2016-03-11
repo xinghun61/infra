@@ -105,7 +105,7 @@
       "auto-rebaseline",
       "--verbose",
       "--auth-refresh-token-json",
-      "/creds/refresh_tokens/blink_rebaseline_bot_rietveld"
+      "/creds/refresh_tokens/blink_rebaseline_bot_rietveld",
       "--commit-author",
       "Rebaseline Bot <blink-rebaseline-bot@chromium.org>"
     ],
