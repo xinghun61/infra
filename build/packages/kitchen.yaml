@@ -1,0 +1,12 @@
+package: infra/tools/luci/kitchen/${platform}
+description: kitchen runs a recipe from given repository at given revision
+builders:
+  - infra-continuous-mac-10.9-64
+  - infra-continuous-precise-32
+  - infra-continuous-precise-64
+  - infra-continuous-win-32
+  - infra-continuous-win-64
+root: ../../go/bin
+data:
+  - file: kitchen${exe_suffix}
+  - version_file: .versions/kitchen${exe_suffix}.cipd_version
