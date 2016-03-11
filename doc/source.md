@@ -21,7 +21,7 @@ Most of the chrome infra source code lives in these repos:
   Contains Swarming, Isolate, Auth service, Config service and AppEngine
   components, used by AppEngine apps in infra.git and infra_internal.git
 * [luci-go](https://github.com/luci/luci-go): like luci-py, but in Golang.
-  Contains Isolate client.
+  Contains Isolate client. ([docs](https://godoc.org/github.com/luci/luci-go))
 
 Standalone one-purpose repos:
 
@@ -30,6 +30,8 @@ Standalone one-purpose repos:
   [infra.git's test.py](../test.py).
 * [testing_support](https://chromium.googlesource.com/infra/testing/testing_support):
   utilities to support writing unittests for infra-related tools.
+* [gae](https://github.com/luci/gae): Go wrapper interface around appengine APIs for
+  better testability. ([docs](https://godoc.org/github.com/luci/gae))
 
 See also
 [other internal repos](http://go/chrome-infra-docs-internal/source.md).
