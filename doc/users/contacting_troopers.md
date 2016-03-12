@@ -16,7 +16,7 @@ handled by the Systems team, please follow their
 
 For fastest response, please use the provided templates:
 
-*   [Master restart requests] (not for ChromeOS)
+*   [Master restart requests](#Master-Restarts) (not for ChromeOS)
 *   [Slave restart requests]
 *   [Mobile device restart requests]
 *   [ChromeOS Waterfall Pin Bumps / Restarts]
@@ -56,6 +56,27 @@ Status will be tracked using the Status field.
         to trooper.
 *   Started: Your issue is being handled, either by the Trooper or other owner.
 *   Fixed: The trooper believes the issue is resolved and no further action is required on their part.
+
+## Master Restarts
+
+Master restarts are handled by master manager and only require running a single
+command that mails a CL to schedule the restart.
+
+With `depot_tools` in your path, run:
+
+```bash
+# Restart chromium.fyi master in 15 minutes.
+cit restart chromium.fyi -r <current trooper>
+
+# Restart chromium.fyi at the end of the PST/PDT work day (6:30PM).
+cit restart chromium.fyi --eod -r <current trooper>
+```
+
+Note: if you're not in the committers list CQ will try it first and you'll
+have to ping the trooper to get an lgtm.
+
+If you're having trouble you can file a bug with the trooper using the
+[Master restart requests] bug template.
 
 ## Service Hours
 
