@@ -81,7 +81,11 @@ class SubProcess(object):
     except:
       # Put all exception text into an exception and raise that so it doesn't
       # get eaten by the multiprocessing code.
-      raise Exception(''.join(traceback.format_exception(*sys.exc_info())))
+      msg = '%s for master url %s' % (
+          ''.join(traceback.format_exception(*sys.exc_info())),
+          master_url,
+      )
+      raise Exception(msg)
 
 
 def query_findit(findit_api_url, alerts):
