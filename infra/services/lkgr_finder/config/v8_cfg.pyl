@@ -36,6 +36,7 @@
         'V8 Linux64 - debug',
         'V8 Linux64 ASAN',
         'V8 Linux64 TSAN',
+        'V8 Linux - arm64 - sim - MSAN',
         # TODO(machenbach): Enable once crbug.com/382930 is resolved.
         # 'V8 Linux - nosnap',
         # 'V8 Linux - nosnap - debug',
@@ -57,30 +58,25 @@
         'V8 Mac - debug',
         'V8 Mac64',
         'V8 Mac64 - debug',
+        'V8 Mac64 ASAN',
         'V8 Arm - builder',
         'V8 Arm - debug builder',
         'V8 Android Arm - builder',
-        # crbug.com/550805
+        # crbug.com/586088
         # 'V8 Arm',
-        # 'V8 Arm - debug - 1',
-        # 'V8 Arm - debug - 2',
         'V8 Linux - arm - sim',
         'V8 Linux - arm - sim - debug',
         'V8 Linux - arm64 - sim',
         'V8 Linux - arm64 - sim - debug',
         'V8 Linux - mipsel - sim - builder',
         'V8 Linux - gc stress',
+        'V8 Linux64 GC Stress - custom snapshot',
       ],
     },  # client.v8
     'client.v8.fyi': {
       'base_url': 'https://build.chromium.org/p/client.v8.fyi',
       'builders': [
-        'V8-Blink Linux 32',
-        # FIXME(machenbach): crbug.com/498689
-        # 'V8-Blink Linux 64',
-        'Linux Debug Builder',
-        'Linux ASAN Builder',
-        'Android Builder',
+        'V8-Blink Linux 64',
         'V8 Linux GN',
       ],
     },  # client.v8.fyi
