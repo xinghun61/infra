@@ -68,11 +68,7 @@
       "python",
       "-u",
       "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
-      "f",
-      "e",
-      "t",
-      "c",
-      "h"
+      "fetch"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "fetch recipe engine deps"

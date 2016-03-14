@@ -47,7 +47,7 @@ def RunSteps(api):
     api.python(
         'fetch recipe engine deps',
         api.path['checkout'].join('scripts', 'slave', 'recipes.py'),
-        'fetch')
+        ['fetch'])
   except api.step.StepFailure:
     # Delete the whole .deps just to be certain.
     recipe_deps = api.path['checkout'].join('scripts', 'slave', '.recipe_deps')
