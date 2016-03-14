@@ -476,7 +476,8 @@ class CreateFlakyRun(webapp2.RequestHandler):
         json_result = json.loads(result.content)
 
         _, failed, _ = cls._flatten_tests(
-            json_result.get('tests', {}), json_result.get('path_delimiter'))
+            json_result.get('tests', {}),
+            json_result.get('path_delimiter', '/'))
         return failed
 
       if result.status_code == 404:
