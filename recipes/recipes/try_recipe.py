@@ -41,6 +41,28 @@ def RunSteps(api):
   api.gclient.set_config('build')
   api.bot_update.ensure_checkout(force=True, patch_root='build')
 
+  try:
+    # Windows machine often fails to fetch deps because of some weird git.bat
+    # errors. So, try it here.
+    api.python(
+        'fetch recipe engine deps',
+        api.path['checkout'].join('scripts', 'slave', 'recipes.py'),
+        'fetch')
+  except api.step.StepFailure:
+    # Delete the whole .deps just to be certain.
+    recipe_deps = api.path['checkout'].join('scripts', 'slave', '.recipe_deps')
+    # api.file.rmtree('Remove recipe deps.', recipe_deps)
+    api.python.inline('remove repo workaround for http://crbug.com/589201',
+        """
+        import shutil, sys, os
+        shutil.rmtree(sys.argv[1], ignore_errors=True)
+        """, args=[str(recipe_deps)])
+    # Retry
+    api.python(
+        'fetch recipe engine deps from scratch.',
+        api.path['checkout'].join('scripts', 'slave', 'recipes.py'),
+        'fetch')
+
   recipe = str(api.properties['try_recipe'])
   level = int(api.properties.get('try_level', '0'))
   # Escaping multiple layers of json is hell, so wrap them with base64.
@@ -101,4 +123,18 @@ def GenTests(api):
             }),
           }),
       )
+  )
+  yield (
+      api.test('broken_win') +
+      api.platform('win', 64) +
+      api.properties.tryserver(
+          mastername='tryserver.infra',
+          buildername='recipe_try',
+          try_recipe='infra/build_repo_real_try',
+          try_props=encode({
+            'prop1': 'value1',
+            'prop2': 'value2',
+          })
+      ) +
+      api.override_step_data('fetch recipe engine deps', retcode=1)
   )

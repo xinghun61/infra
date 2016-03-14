@@ -3,7 +3,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
+      "RECIPE_MODULE[depot_tools::bot_update]\\resources\\bot_update.py",
       "--master",
       "tryserver.infra",
       "--builder",
@@ -33,7 +33,7 @@
     ],
     "cwd": "[SLAVE_BUILD]",
     "env": {
-      "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
+      "PATH": "%(PATH)s;RECIPE_PACKAGE_REPO[depot_tools]"
     },
     "name": "bot_update",
     "~followup_annotations": [
@@ -67,7 +67,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
+      "[SLAVE_BUILD]\\build\\scripts\\slave\\recipes.py",
       "f",
       "e",
       "t",
@@ -75,7 +75,41 @@
       "h"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "fetch recipe engine deps"
+    "name": "fetch recipe engine deps",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 1",
+      "@@@STEP_FAILURE@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport shutil, sys, os\nshutil.rmtree(sys.argv[1], ignore_errors=True)\n",
+      "[SLAVE_BUILD]\\build\\scripts\\slave\\.recipe_deps"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "remove repo workaround for http://crbug.com/589201",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import shutil, sys, os@@@",
+      "@@@STEP_LOG_LINE@python.inline@shutil.rmtree(sys.argv[1], ignore_errors=True)@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[SLAVE_BUILD]\\build\\scripts\\slave\\recipes.py",
+      "f",
+      "e",
+      "t",
+      "c",
+      "h"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "fetch recipe engine deps from scratch."
   },
   {
     "cmd": [],
@@ -99,12 +133,12 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/build/scripts/tools/annotee_indenter.py",
+      "[SLAVE_BUILD]\\build\\scripts\\tools\\annotee_indenter.py",
       "--base-level",
       "1",
       "--use-python-executable",
       "--",
-      "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
+      "[SLAVE_BUILD]\\build\\scripts\\slave\\recipes.py",
       "run",
       "--properties-file",
       "{\"buildername\": \"recipe_try\", \"buildnumber\": 571, \"mastername\": \"tryserver.infra\", \"prop1\": \"value1\", \"prop2\": \"value2\", \"slavename\": \"TestSlavename\", \"try_level\": 1}",
