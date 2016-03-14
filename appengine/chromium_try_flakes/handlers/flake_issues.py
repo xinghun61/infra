@@ -20,6 +20,7 @@ from issue_tracker import issue_tracker_api, issue
 from model.flake import (
     Flake, FlakeOccurrence, FlakeUpdate, FlakeUpdateSingleton, FlakyRun)
 from status import build_result, util
+from test_results.util import normalize_test_type
 
 
 MAX_UPDATED_ISSUES_PER_DAY = 50
@@ -393,33 +394,6 @@ class CreateFlakyRun(webapp2.RequestHandler):
     util.add_occurrence_time_to_flake(flake, failure_time)
     flake.put()
 
-  # TODO(sergiyb): Reuse code from infra/appengine/test_results/
-  # appengine_module/test_results/handlers/util.py to avoid code duplication.
-  @staticmethod
-  def _normalize_step_name(test_type):
-    """Clean extra details added to the test type.
-
-    Args:
-      test_type: String, step name containing test type.
-
-    Returns:
-      Test type without platforms and other noise.
-    """
-    # We allow (with patch) as a separate test_type for now since executions of
-    # uncommitted code should be treated differently.
-    clean_test_type = test_type.replace(' (with patch)', '', 1)
-    patched = len(clean_test_type) != len(test_type)
-
-    # Clean out any platform noise. For simplicity and based on current data
-    # we just keep everything before the first space, e.g. base_unittests.
-    first_space = clean_test_type.find(' ')
-    if first_space != -1:
-      clean_test_type = clean_test_type[:first_space]
-
-    if patched:
-      return '%s (with patch)' % clean_test_type
-    return clean_test_type
-
   @classmethod
   def _flatten_tests(cls, tests, delimiter='/', prefix=None):
     """Flattens hierarchical GTest JSON test structure.
@@ -484,7 +458,7 @@ class CreateFlakyRun(webapp2.RequestHandler):
   def get_flakes(cls, mastername, buildername, buildnumber, step):
     # If test results were invalid, report whole step as flaky.
     steptext = ' '.join(step['text'])
-    stepname = cls._normalize_step_name(step['name'])
+    stepname = normalize_test_type(step['name'])
     if 'TEST RESULTS WERE INVALID' in steptext:
       return [stepname]
 

@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.join(THIRD_PARTY_DIR, 'google-api-python-client'))
 sys.path.insert(0, os.path.join(THIRD_PARTY_DIR, 'httplib2', 'python2'))
 sys.path.insert(0, os.path.join(THIRD_PARTY_DIR, 'oauth2client'))
 sys.path.insert(0, os.path.join(THIRD_PARTY_DIR, 'six'))
+sys.path.insert(0, os.path.join(THIRD_PARTY_DIR, 'test_results'))
 sys.path.insert(0, os.path.join(THIRD_PARTY_DIR, 'time_functions'))
 sys.path.insert(0, os.path.join(THIRD_PARTY_DIR, 'uritemplate'))
 
