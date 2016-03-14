@@ -61,7 +61,7 @@ def RunSteps(api):
     api.python(
         'fetch recipe engine deps from scratch.',
         api.path['checkout'].join('scripts', 'slave', 'recipes.py'),
-        'fetch')
+        ['fetch'])
 
   recipe = str(api.properties['try_recipe'])
   level = int(api.properties.get('try_level', '0'))
