@@ -127,12 +127,16 @@ def ensure_checkout(root_dir, depot_tools, internal):
 
 
 def seed_passwords(root_dir, password_file):
-  with open(password_file, 'r') as f:
-    passwords = json.load(f)
-
-  # Seed buildbot bot password.
   bot_password_path = os.path.join(
       root_dir, 'build', 'site_config', '.bot_password')
+
+  # Already there? Could be put by Puppet (and thus not overridable).
+  if os.path.isfile(bot_password_path):
+    return
+
+  # Seed buildbot bot password.
+  with open(password_file, 'r') as f:
+    passwords = json.load(f)
   with open(bot_password_path, 'wb') as f:
     f.write(passwords['bot_password'])
 
