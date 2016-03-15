@@ -64,12 +64,6 @@ TEST_RESULTS_URL_TEMPLATE = (
     'http://test-results.appspot.com/testfile?builder=%(buildername)s&name='
     'full_results.json&master=%(mastername)s&testtype=%(stepname)s&buildnumber='
     '%(buildnumber)s')
-BACK_TO_QUEUE_MESSAGE = (
-    'There has been no update on this issue for over %(stale_days)d days, '
-    'therefore it has been moved back into the %(queue_name)s (unless already '
-    'there). Please make sure that owner is aware of the issue and assign to '
-    'another owner if necessary. If the flaky test/step has already been '
-    'fixed, please close this issue.')
 VERY_STALE_FLAKES_MESSAGE = (
     'Reporting to stale-flakes-reports@google.com to investigate why this '
     'issue is not being processed despite being in an appropriate queue.')
@@ -352,18 +346,7 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
     # Parse the flake name from the first comment (which we post ourselves).
     original_summary = comments[0].comment.splitlines()[0]
     flake_name = original_summary[len('"'):-len('" is flaky')]
-    queue_name, expected_label = get_queue_details(flake_name)
-
-    # Put back into appropriate queue if stale and unless already there.
-    stale_deadline = now - datetime.timedelta(days=DAYS_TILL_STALE)
-    if (last_third_party_update < stale_deadline and
-        expected_label not in flake_issue.labels):
-      flake_issue.labels.append(expected_label)
-      logging.info('Moving issue %s back to %s', flake_issue.id, queue_name)
-      message = BACK_TO_QUEUE_MESSAGE % {'stale_days': DAYS_TILL_STALE,
-                                         'queue_name': queue_name}
-      api.update(flake_issue, comment=message)
-      return
+    _, expected_label = get_queue_details(flake_name)
 
     # Report to stale-flakes-reports@ if the issue has been in appropriate queue
     # without any updates for 7 days.
