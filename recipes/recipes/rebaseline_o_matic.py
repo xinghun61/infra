@@ -30,12 +30,14 @@ def RunSteps(api):
 
   cwd = api.path['checkout'].join('third_party', 'WebKit')
 
+  # Changes should be committed and landed as the rebaseline bot role account.
+  api.git('config', 'user.name', 'Rebaseline Bot')
+  api.git('config', 'user.email', 'blink-rebaseline-bot@chromium.org')
+
   api.python('webkit-patch auto-rebaseline',
              cwd.join('Tools', 'Scripts', 'webkit-patch'),
              ['auto-rebaseline', '--verbose',
-             '--auth-refresh-token-json', RIETVELD_REFRESH_TOKEN,
-             '--commit-author',
-             'Rebaseline Bot <blink-rebaseline-bot@chromium.org>'],
+             '--auth-refresh-token-json', RIETVELD_REFRESH_TOKEN],
              cwd=cwd)
 
 
