@@ -138,10 +138,13 @@ class ProcessIssue(webapp2.RequestHandler):
   @ndb.non_transactional
   def _get_first_flake_occurrence_time(flake):
     assert flake.occurrences, 'Flake entity has no occurrences'
-    rev_occ = sorted(flake.occurrences, reverse=True)
-    last_occ_time = rev_occ[0].get().failure_run_time_finished
+    flaky_runs = ndb.get_multi(flake.occurrences)
+    flaky_runs = [run for run in flaky_runs if run is not None]
+    rev_occ = sorted(flaky_runs, key=lambda run: run.failure_run_time_finished,
+                     reverse=True)
+    last_occ_time = rev_occ[0].failure_run_time_finished
     for occ in rev_occ[1:]:
-      occ_time = occ.get().failure_run_time_finished
+      occ_time = occ.failure_run_time_finished
       if last_occ_time - occ_time > MAX_GAP_FOR_FLAKINESS_PERIOD:
         break
       last_occ_time = occ_time

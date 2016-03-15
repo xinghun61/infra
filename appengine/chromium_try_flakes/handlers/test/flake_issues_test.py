@@ -648,6 +648,32 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
           Flake(name='foo', occurrences=[fr5])),
         datetime.datetime(2015, 10, 19, 11, 0, 0))
 
+  def test_handles_non_existant_flaky_runs_correctly(self):
+    now = datetime.datetime.utcnow()
+    flaky_run = FlakyRun(
+        failure_run = ndb.Key('BuildRun', 1),
+        success_run = ndb.Key('BuildRun', 2),
+        failure_run_time_finished=now).put()
+    fake_flaky_run = ndb.Key('FlakyRun', 123456)
+
+    flake = Flake(name='FooBar', occurrences=[flaky_run, fake_flaky_run])
+    self.assertEqual(ProcessIssue._get_first_flake_occurrence_time(flake), now)
+
+  def test_handles_flaky_runs_in_a_flake_not_sorted_by_date_correctly(self):
+    now = datetime.datetime.utcnow()
+    run_hour_ago = FlakyRun(
+        failure_run = ndb.Key('BuildRun', 1),
+        success_run = ndb.Key('BuildRun', 2),
+        failure_run_time_finished=now - datetime.timedelta(hours=1)).put()
+    run_day_ago = FlakyRun(
+        failure_run = ndb.Key('BuildRun', 1),
+        success_run = ndb.Key('BuildRun', 2),
+        failure_run_time_finished=now - datetime.timedelta(days=1)).put()
+    flake = Flake(name='FooBar', occurrences=[run_hour_ago, run_day_ago])
+    self.assertEqual(ProcessIssue._get_first_flake_occurrence_time(flake),
+                     now - datetime.timedelta(days=1))
+
+
 class CreateFlakyRunTestCase(testing.AppengineTestCase):
   app_module = main.app
 
