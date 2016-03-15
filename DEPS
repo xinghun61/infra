@@ -13,10 +13,6 @@ deps = {
    ("https://chromium.googlesource.com/external/github.com/luci/luci-py"
      "@5489e0e3fc0a4a1044b4f1edbc838ccb65048231"),
 
-  "infra/recipes-py":
-   ("https://chromium.googlesource.com/external/github.com/luci/recipes-py"
-     "@origin/master"),
-
   "infra/go/src/github.com/luci/luci-go":
     ("https://chromium.googlesource.com/external/github.com/luci/luci-go"
      "@72d6bc9ffaef89dc0a99dc4fb42d64de826603e7"),
