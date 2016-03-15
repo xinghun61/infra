@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import collections
 import contextlib
 import datetime
 import distutils.util
@@ -28,6 +29,54 @@ MM_REPO = 'https://chrome-internal.googlesource.com/infradata/master-manager'
 
 class MasterNotFoundException(Exception):
   pass
+
+
+# Default minutes/seconds for "end of day" time.
+DEFAULT_EOD = (18, 30)
+
+
+RestartSpec = collections.namedtuple('RestartSpec',
+    ('name', 'desired_state_name', 'message', 'restart_time'))
+
+
+_MASTER_CONFIGS = {
+  'chromiumos': {'ref': 'chromeos'},
+  'chromeos': {
+    'eod': (17, 30),
+    'message': """\
+A %(master)s master restart is *almost always* accompanied by a Chromite
+"master" branch pin bump. This should be performed RIGHT BEFORE the time the
+master is scheduled to restart so slaves don't prematurely load the new
+parameters.
+
+For example:
+$ cit cros_pin update master
+
+DO NOT PROCEED unless you have either performed a pin bump or are sure you don't
+need one.
+
+See: go/chrome-infra-doc-cros for more information.
+""",
+  },
+
+  'chromeos_release': {
+    'message': """\
+A %(master)s master restart is *almost always* accompanied by a Chromite
+pin bump for the current release branch. This should be performed RIGHT BEFORE
+the time the master is scheduled to restart so slaves don't prematurely load the
+new parameters.
+
+For example (replacing #'s with the branch whose pin needs updating):
+$ cit cros_pin update release-R##-####.B
+
+DO NOT PROCEED unless you have either performed a pin bump or are sure you don't
+need one. If a branch was not specified in the restart request, follow up with
+the filer to determine which release branch needs updating.
+
+See: go/chrome-infra-doc-cros for more information.
+""",
+  },
+}
 
 
 def add_argparse_options(parser):
@@ -60,12 +109,47 @@ def add_argparse_options(parser):
            '(default %(default)s)')
 
 
-def get_restart_time_eod():
+def get_restart_spec(name, restart_time):
+  def _trim_prefix(v, prefix):
+    if v.startswith(prefix):
+      return v[len(prefix):]
+    return v
+  name = _trim_prefix(name, 'master.')
+
+  def _get_restart_config(name, seen):
+    if name in seen:
+      raise ValueError('Master config reference loop for "%s"' % (name,))
+    seen.add(name)
+
+    d = _MASTER_CONFIGS.get(name, {}).copy()
+    if d.get('ref'):
+      cur = d
+      d = _get_restart_config(d['ref'], seen)
+      d.update(cur)
+    return d
+  d = _get_restart_config(name, set())
+
+  if d.get('message'):
+    d['message'] = d['message'] % {'master': name}
+
+  if restart_time is None:
+    # End of Day
+    restart_time = get_restart_time_eod(*d.get('eod', DEFAULT_EOD))
+
+  return RestartSpec(
+      name=name,
+      desired_state_name='master.%s' % (name,),
+      message=d.get('message'),
+      restart_time=restart_time,
+  )
+
+
+def get_restart_time_eod(hour, minute):
   gst_now = datetime.datetime.now(pytz.timezone("America/Los_Angeles"))
-  if gst_now.hour > 18 or (gst_now.hour == 18 and gst_now.minute > 30):
+  if gst_now.hour > hour or (gst_now.hour == hour and gst_now.minute > minute):
     # next 6:30PM is tomorrow
     gst_now += datetime.timedelta(days=1)
-  gst_now = gst_now.replace(hour=18, minute=30, second=0, microsecond=0)
+  gst_now = gst_now.replace(hour=hour, minute=minute, second=0, microsecond=0)
   return gst_now.astimezone(pytz.UTC).replace(tzinfo=None)
 
 
@@ -86,15 +170,15 @@ def get_master_state_checkout():
 
 
 def commit(
-    target, masters, reviewers, bug, restart_time, restart_time_str, force,
-    no_commit, desired_state):
+    target, specs, reviewers, bug, force, no_commit, desired_state):
   """Commits the local CL via the CQ."""
   if desired_state == 'running':
     action = 'Restarting'
   else:
     action = desired_state.title() + 'ing'
+
   desc = '%s master(s) %s\n' % (
-      action, ', '.join(masters))
+      action, ', '.join([s.name for s in specs]))
   if bug:
     desc += '\nBUG=%s' % bug
   if reviewers:
@@ -102,13 +186,22 @@ def commit(
   subprocess.check_call(
       ['git', 'commit', '--all', '--message', desc], cwd=target)
 
-  delta = restart_time - datetime.datetime.utcnow()
 
   print
-  print '%s the following masters in %d minutes (%s)' % (
-      action, delta.total_seconds() / 60, restart_time_str)
-  for master in sorted(masters):
-    print '  %s' % master
+  print '%s the following masters:'
+  for s in specs:
+    delta = s.restart_time - datetime.datetime.utcnow()
+    restart_time_str = zulu.to_zulu_string(s.restart_time)
+
+    print '\t- %s %s in %d minutes (%s)' % (
+      action, s.name, delta.total_seconds() / 60, restart_time_str)
+
+  for s in specs:
+    if not s.message:
+      continue
+    print
+    print '=== %s ===' % (s.name,)
+    print s.message
   print
 
   print "This will upload a CL for master_manager.git, TBR an owner, and "
@@ -117,8 +210,6 @@ def commit(
   else:
     print "commit the CL through the CQ."
   print
-
-
 
   if not force:
     if no_commit:
@@ -157,7 +248,8 @@ def run(masters, restart_time, reviewers, bug, force, no_commit,
 
   Args:
     masters - a list(str) of masters to restart
-    restart_time - a datetime in UTC of when to restart them
+    restart_time - a datetime in UTC of when to restart them. If None, restart
+                   at a predefined "end of day".
     reviewers - a list(str) of reviewers for the CL (may be empty)
     bug - an integer bug number to include in the review or None
     force - a bool which causes commit not to prompt if true
@@ -165,6 +257,8 @@ def run(masters, restart_time, reviewers, bug, force, no_commit,
     desired_state - nominally 'running', picks which desired_state
                     to put the buildbot in
   """
+  masters = [get_restart_spec(m, restart_time) for m in sorted(set(masters))]
+
   # Step 1: Acquire a clean master state checkout.
   # This repo is too small to consider caching.
   with get_master_state_checkout() as master_state_dir:
@@ -186,18 +280,15 @@ def run(masters, restart_time, reviewers, bug, force, no_commit,
 
     master_states = desired_master_state.get('master_states', {})
     entries = 0
-    restart_time_str = zulu.to_zulu_string(restart_time)
     for master in masters:
-      if not master.startswith('master.'):
-        master = 'master.%s' % master
-      if master not in master_states:
-        msg = '%s not found in master state' % master
+      if master.desired_state_name not in master_states:
+        msg = '%s not found in master state' % master.desired_state_name
         LOGGER.error(msg)
         raise MasterNotFoundException(msg)
 
-      master_states.setdefault(master, []).append({
+      master_states.setdefault(master.desired_state_name, []).append({
           'desired_state': desired_state,
-          'transition_time_utc': restart_time_str,
+          'transition_time_utc': zulu.to_zulu_string(master.restart_time),
       })
       entries += 1
 
@@ -207,5 +298,5 @@ def run(masters, restart_time, reviewers, bug, force, no_commit,
 
     # Step 3: Send the patch to Rietveld and commit it via the CQ.
     LOGGER.info('Committing back into repository')
-    commit(master_state_dir, masters, reviewers, bug, restart_time,
-           restart_time_str, force, no_commit, desired_state)
+    commit(master_state_dir, masters, reviewers, bug, force, no_commit,
+           desired_state)

@@ -33,7 +33,7 @@ def main(argv):
     parser.error('minutes-in-future is mutually exclusive with --eod')
 
   if args.eod:
-    restart_time = restart.get_restart_time_eod()
+    restart_time = None
   else:
     restart_time = restart.get_restart_time_delta(args.minutes_in_future)
 
