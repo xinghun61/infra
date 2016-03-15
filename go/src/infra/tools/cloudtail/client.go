@@ -76,13 +76,13 @@ type ClientOptions struct {
 
 var (
 	entriesCounter = metric.NewCounter("cloudtail/log_entries",
-		"",  // TODO(dsansome): add real description.
+		"Log entries processed",
 		field.String("log"),
 		field.String("resource_type"),
 		field.String("resource_id"),
 		field.String("severity"))
 	writesCounter = metric.NewCounter("cloudtail/api_writes",
-		"",  // TODO(dsansome): add real description.
+		"Writes to Cloud Logging API",
 		field.String("log"),
 		field.String("resource_type"),
 		field.String("resource_id"),
