@@ -381,7 +381,8 @@ class TryJobUtilTest(testing.AppengineTestCase):
     self.assertIsNotNone(try_job)
 
   def testGetFailedTargetsFromSignals(self):
-    self.assertEqual(try_job_util._GetFailedTargetsFromSignals({}), [])
+    self.assertEqual(
+        try_job_util._GetFailedTargetsFromSignals({}, 'm', 'b'), [])
 
     signals = {
         'compile': {
@@ -393,4 +394,21 @@ class TryJobUtilTest(testing.AppengineTestCase):
     }
 
     self.assertEqual(
-        try_job_util._GetFailedTargetsFromSignals(signals), ['a.exe'])
+        try_job_util._GetFailedTargetsFromSignals(signals, 'm', 'b'), ['a.exe'])
+
+  def testUseObjectFilesAsFailedTargetIfStrictRegexUsed(self):
+    def Mocked_EnableStrictRegexForCompileLinkFailures(*_):
+      return True
+    self.mock(waterfall_config, 'EnableStrictRegexForCompileLinkFailures',
+              Mocked_EnableStrictRegexForCompileLinkFailures)
+
+    signals = {
+        'compile': {
+            'failed_targets': [
+                {'source': 'b.cc', 'target': 'b.o'},
+            ]
+        }
+    }
+
+    self.assertEqual(
+        try_job_util._GetFailedTargetsFromSignals(signals, 'm', 'b'), ['b.o'])

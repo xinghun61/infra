@@ -117,17 +117,20 @@ def _NeedANewTryJob(
   return need_new_try_job, last_pass, try_job_type, targeted_tests
 
 
-def _GetFailedTargetsFromSignals(signals):
+def _GetFailedTargetsFromSignals(signals, master_name, builder_name):
   compile_targets = []
 
   if not signals or 'compile' not in signals:
     return compile_targets
 
+  strict_regex = waterfall_config.EnableStrictRegexForCompileLinkFailures(
+      master_name, builder_name)
   for source_target in signals['compile']['failed_targets']:
-    # Link failures have only targets but no source. TODO(lijeffrey):
-    # Currently only link failures on linux are supported. Add support for
-    # compile failures and other platforms as well.
-    if not source_target.get('source'):
+    # For link failures, we pass the executable targets directly to try-job, and
+    # there is no 'source' for link failures.
+    # For compile failures, only pass the object files as the compile targets
+    # for the bots that we use strict regex to extract such information.
+    if not source_target.get('source') or strict_regex:
       compile_targets.append(source_target.get('target'))
 
   return compile_targets
@@ -156,7 +159,8 @@ def ScheduleTryJobIfNeeded(failure_info, signals=None, build_completed=False):
                       failed_steps, failure_result_map))
 
   if need_new_try_job:
-    compile_targets = (_GetFailedTargetsFromSignals(signals)
+    compile_targets = (_GetFailedTargetsFromSignals(
+        signals, master_name, builder_name)
                        if try_job_type == TryJobType.COMPILE else None)
 
     pipeline = (

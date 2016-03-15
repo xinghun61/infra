@@ -391,6 +391,24 @@ class ConfigTest(testing.AppengineTestCase):
             }
         }
     }))
+    self.assertTrue(config._ValidateTrybotMapping({
+        'master1': {
+            'builder1': {
+                'mastername': 'tryserver1',
+                'buildername': 'trybot1',
+                'strict_regex': True,
+            }
+        }
+    }))
+    self.assertFalse(config._ValidateTrybotMapping({
+        'master1': {
+            'builder1': {
+                'mastername': 'tryserver1',
+                'buildername': 'trybot1',
+                'strict_regex': 'a',
+            }
+        }
+    }))
     self.assertFalse(config._ValidateTrybotMapping(['a']))
     self.assertFalse(config._ValidateTrybotMapping({'a': ['b']}))
     self.assertFalse(config._ValidateTrybotMapping({'a': {'b': ['1']}}))

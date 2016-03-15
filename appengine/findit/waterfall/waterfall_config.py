@@ -130,6 +130,13 @@ def GetTrybotForWaterfallBuilder(wf_mastername, wf_buildername):
   return trybot_config.get('mastername'), trybot_config.get('buildername')
 
 
+def EnableStrictRegexForCompileLinkFailures(wf_mastername, wf_buildername):
+  """Returns True if strict regex should be used for the given builder."""
+  trybot_config = FinditConfig.Get().builders_to_trybots.get(
+      wf_mastername, {}).get(wf_buildername, {})
+  return trybot_config.get('strict_regex', False)
+
+
 def GetTryJobSettings():
   return FinditConfig().Get().try_job_settings
 

@@ -6,6 +6,7 @@ import textwrap
 
 from testing_utils import testing
 from waterfall import extractors
+from waterfall import waterfall_config
 from waterfall.extractor import Extractor
 
 
@@ -507,6 +508,81 @@ Note:You can safely ignore the above warning unless this call should not happen.
     self._RunTest(
         failure_log, extractors.CompileStepExtractor, expected_signal_json,
         'iOS_Simulator_(dbg)', 'chromium.mac')
+
+  def _MockEnableStrictRegexForCompileLinkFailures(self, enabled):
+    def Mocked_EnableStrictRegexForCompileLinkFailures(*_):
+      return enabled
+    self.mock(waterfall_config, 'EnableStrictRegexForCompileLinkFailures',
+              Mocked_EnableStrictRegexForCompileLinkFailures)
+
+  def testCompileStepStrictRegexForCompileFailures(self):
+    self._MockEnableStrictRegexForCompileLinkFailures(True)
+
+    goma_clang_prefix = (
+        '/b/build/goma/gomacc '
+        '../../third_party/llvm-build/Release+Asserts/bin/clang++ '
+        '-MMD -MF')
+    failure_log = textwrap.dedent("""
+        [1832/2467 | 117.498] CXX obj/a/b/test.file.o
+        blabla...
+        FAILED: %s obj/a.o.d ... -c a.c -o obj/a.o
+        blalba...
+        FAILED: %s obj/d.o.d ... -c d.c -o obj/e.o
+        blalba...
+        FAILED with 1: %s obj/f.o.d -c f.c -o obj/f.o
+        ninja: build stopped: subcommand failed.
+
+        /b/build/goma/goma_ctl.sh stat
+        blabla...""" % (
+            goma_clang_prefix, goma_clang_prefix, goma_clang_prefix))
+    expected_signal_json = {
+        'files': {
+            'obj/f.o': [],
+            'f.c': [],
+        },
+        'keywords': {},
+        'failed_targets': [
+            {
+                'source': 'a.c',
+                'target': 'obj/a.o',
+            },
+        ]
+    }
+
+    self._RunTest(
+        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+
+
+  def testCompileStepStrictRegexForLinkFailures(self):
+    self._MockEnableStrictRegexForCompileLinkFailures(True)
+
+    goma_gcc_prefix = (
+        '/b/build/slave/Linux/build/src/build/goma/client/gomacc '
+        '/bla/bla/.../bin/arm-linux-androideabi-gcc')
+    failure_log = textwrap.dedent("""
+        [1832/2467 | 117.498] CXX obj/a/b/test.file.o
+        blabla...
+        FAILED: %s -Wl,-z,now ... -o exe -Wl,--start-group obj/a.o ...
+        blalba...
+        FAILED: cd a/b/c; python script.py a b c blabla....
+        blalba...
+        ninja: build stopped: subcommand failed.
+
+        /b/build/goma/goma_ctl.sh stat
+        blabla...""" % goma_gcc_prefix)
+    expected_signal_json = {
+        'files': {
+        },
+        'keywords': {},
+        'failed_targets': [
+            {
+                'target': 'exe',
+            },
+        ]
+    }
+
+    self._RunTest(
+        failure_log, extractors.CompileStepExtractor, expected_signal_json)
 
   def testCheckPermExtractor(self):
     failure_log = textwrap.dedent("""

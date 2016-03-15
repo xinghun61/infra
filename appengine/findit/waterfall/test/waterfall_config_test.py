@@ -41,6 +41,7 @@ class MastersTest(testing.AppengineTestCase):
                 'builder1': {
                     'mastername': 'tryserver1',
                     'buildername': 'trybot1',
+                    'strict_regex': True,
                 }
             }
         },
@@ -150,3 +151,10 @@ class MastersTest(testing.AppengineTestCase):
             'iterations_to_rerun': 10
         },
         waterfall_config.GetSwarmingSettings())
+
+  def testEnableStrictRegexForCompileLinkFailures(self):
+    self.assertFalse(
+        waterfall_config.EnableStrictRegexForCompileLinkFailures('m', 'b'))
+    self.assertTrue(
+        waterfall_config.EnableStrictRegexForCompileLinkFailures(
+            'master1', 'builder1'))

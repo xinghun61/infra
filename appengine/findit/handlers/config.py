@@ -136,6 +136,9 @@ def _ValidateTrybotMapping(builders_to_trybots):
       if (not trybot_config.get('mastername') or
           not trybot_config.get('buildername')):
         return False
+      if (trybot_config.has_key('strict_regex') and
+          not isinstance(trybot_config['strict_regex'], bool)):
+        return False
   return True
 
 

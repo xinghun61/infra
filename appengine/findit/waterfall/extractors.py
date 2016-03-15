@@ -2,10 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 import os
 import re
 
 from waterfall import extractor_util
+from waterfall import waterfall_config
 from waterfall.extractor import Extractor
 from waterfall.failure_signal import FailureSignal
 
@@ -129,6 +131,38 @@ class CompileStepExtractor(Extractor):
   IOS_BUILDER_NAMES_FOR_COMPILE = ['iOS_Simulator_(dbg)', 'iOS_Device']
   MAC_MASTER_NAME_FOR_COMPILE = 'chromium.mac'
 
+  GOMA_COMPILER_PREFIX = (
+      r'\S*/gomacc '
+       '\S+(?:clang\+\+|androideabi-gcc|androideabi-g\+\+)'
+  )
+  STRICT_COMPILE_FAILURE_PATTEN = re.compile(
+      r'^FAILED: %s -MMD -MF (obj/[^\s-]+\.o)\.d .* '
+       '-c ([^\s-]+(?:cc|c|cpp|m|mm)) -o \\1$' % (
+           GOMA_COMPILER_PREFIX))
+
+  STRICT_LINK_FAILURE_PATTEN = re.compile(
+      r'^FAILED: %s -Wl,.* -o (\S+) -Wl,--start-group .*$' % (
+          GOMA_COMPILER_PREFIX))
+
+  def ExtractFailedOutputNodes(self, line, signal):
+    match = self.STRICT_COMPILE_FAILURE_PATTEN.match(line)
+    if match:
+      target = match.group(1)
+      source = match.group(2)
+      signal.AddTarget({
+          'target': target,
+          'source': source,
+      })
+    else:
+      match = self.STRICT_LINK_FAILURE_PATTEN.match(line)
+      if match:
+        target = match.group(1)
+        signal.AddTarget({
+            'target': target,
+        })
+      else:
+        logging.warn('Unknown failure type: %s', line)
+
   def GetFailedTarget(self, line, signal):
     match = self.LINUX_FAILED_SOURCE_TARGET_PATTERN.search(line)
 
@@ -199,9 +233,14 @@ class CompileStepExtractor(Extractor):
           else:
             error_lines.append(line)
     else:
+      strict_regex = waterfall_config.EnableStrictRegexForCompileLinkFailures(
+          master_name, bot_name)
       for line in failure_log.splitlines():
         if line.startswith(self.FAILURE_START_LINE_PREFIX):
-          self.GetFailedTarget(line, signal)
+          if strict_regex:
+            self.ExtractFailedOutputNodes(line, signal)
+          else:
+            self.GetFailedTarget(line, signal)
           if not failure_started:
             failure_started = True
           continue  # pragma: no cover
@@ -209,7 +248,8 @@ class CompileStepExtractor(Extractor):
           # It is possible the target and source file associated with a compile
           # failure is logged outside a 'FAILED: ... 1 error generated' block,
           # so extract regardless of failure_started.
-          self.GetFailedTarget(line, signal)
+          if not strict_regex:
+            self.GetFailedTarget(line, signal)
         elif failure_started and self.ERROR_LINE_END_PATTERN.match(line):
           failure_started = False
         elif failure_started and line.startswith(
