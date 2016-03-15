@@ -634,6 +634,8 @@ def _url(path, **kwargs):
       path and '?' omitted from the URL.
   """
   if kwargs:
+    if isinstance(kwargs.get('owner'), users.User):
+      kwargs['owner'] = kwargs['owner'].email()
     encoded_parameters = urllib.urlencode(kwargs)
     if path.endswith('?'):
       # Trailing ? on path.  Append parameters to end.
