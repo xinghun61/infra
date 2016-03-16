@@ -128,13 +128,15 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
                     'status': 'Completed',
                     'task_id': 'task1',
                     'task_url': (
-                        'https://chromium-swarm.appspot.com/user/task/task1')
+                        'https://chromium-swarm.appspot.com/user/task/task1'),
+                    'tests': ['test2']
                 },
                 {
                     'status': 'Completed',
                     'task_id': 'task0',
                     'task_url': (
-                        'https://chromium-swarm.appspot.com/user/task/task0')
+                        'https://chromium-swarm.appspot.com/user/task/task0'),
+                    'tests': ['test1']
                 }
             ],
             'tests': {
@@ -155,7 +157,8 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
         'step2': {
             'swarming_tasks': [
                 {
-                    'status': 'Pending'
+                    'status': 'Pending',
+                    'tests': ['test1']
                 }
             ],
             'tests': {

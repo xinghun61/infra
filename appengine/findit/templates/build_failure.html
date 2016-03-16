@@ -72,7 +72,13 @@
       background-color:#E0E0E0;
     }
     .valign-middle {
-       vertical-align: middle;
+      vertical-align: middle;
+    }
+    .truncate {
+      width: 500px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   </style>
   <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
@@ -228,7 +234,7 @@
       e.preventDefault();
     }
 
-    function toggle(thisobj) {
+    function toggleTests(thisobj) {
       var imgDirection;
       var rowAddedClass;
       var rowRemovedClass;
@@ -260,32 +266,71 @@
       }
     }
 
+    function toggleList(thisobj) {
+      var thisObjId = thisobj.attr("id");
+      if (thisobj.hasClass("collapsed_list")) {
+        thisobj.removeClass("collapsed_list").addClass("expanded_list");
+        thisobj.html('<a href="#" id="' + thisObjId + '"class="expanded_list">Show less</a>');
+        $('#list-' + thisObjId).removeClass("not-display");
+      } else {
+        thisobj.removeClass("expanded_list").addClass("collapsed_list");
+        thisobj.html('<a href="#" class="collapsed_list">Show more</a>');
+        $('#list-' + thisObjId).addClass("not-display");
+      }
+    }
+
     function displaySwarmingTask() {
       $.getJSON('swarming-task?url=' + findit.buildUrl, function(data) {
-          if (! jQuery.isEmptyObject(data)) {
-            var tableString = '<table><tr><th>Step</th><th>Status</th><th>Task</th></tr>';
-            $.each(data, function(step, task) {
-              tableString += '<tr>';
-              tableString += '<td>' + step + '</td>';
-              if (task.status == 'Completed') {
-                status_class = 'completed';
-              } else if (task.status == 'Error') {
-                status_class = 'error';
-              } else {
-                // If status is either 'Pending' or 'Running', add 'running' style.
-                status_class = 'running';
+          if (! jQuery.isEmptyObject(data) ) {
+            var tableString = '<table><tr><th>Step</th><th>Test(s)</th><th>Status</th><th>Task</th></tr>';
+            var hasTaskData = false;
+            $.each(data, function(step, task_info) {
+              var tasks = task_info.swarming_tasks;
+              if (tasks.length == 0) {
+                return true;  // Broken data, continue to next one.
               }
-              tableString += '<td><span class="' + status_class + '">' + task.status + '</span></td>';
-              if (task.task_id) {
-                tableString += '<td><a href="' + task.task_url + '">' + task.task_id + '</a></td>';
-              } else {
-                tableString += '<td></td>';
+              for (var i = 0; i < tasks.length; i++) {
+                hasTaskData = true;
+                task = tasks[i];
+                tableString += '<tr>';
+                tableString += '<td>' + step + '</td><td>';
+
+                var j = 0;
+                for (; j < (task.tests.length > 5 ? 5 : task.tests.length); j++) {
+                  tableString += '<li><div title="' + task.tests[j] + '" class="truncate">' + task.tests[j] + '</div></li>';
+                }
+
+                if(task.tests.length > 5) {
+                  tableString += '<div id="list-' + i + '"class="not-display">';
+                  for (; j < task.tests.length; j++) {
+                    tableString += '<li><div title="' + task.tests[j] + '" class="truncate">' + task.tests[j] + '</div></li>';
+                  }
+                  tableString += '</div><a id="' + i + '"href="#" class="collapsed_list">Show more</a>';
+                }
+
+                tableString += '</td>';
+                if (task.status == 'Completed') {
+                  status_class = 'completed';
+                } else if (task.status == 'Error') {
+                  status_class = 'error';
+                } else {
+                  // If status is either 'Pending' or 'Running', add 'running' style.
+                  status_class = 'running';
+                }
+                tableString += '<td><span class="' + status_class + '">' + task.status + '</span></td>';
+                if (task.task_id) {
+                  tableString += '<td><a href="' + task.task_url + '">' + task.task_id + '</a></td>';
+                } else {
+                  tableString += '<td></td>';
+                }
+                tableString += '</tr>';
               }
-              tableString += '</tr>';
             });
             tableString += '</table>';
-            $('#swarming_task_table').html(tableString);
-            $('#swarming_task').removeClass('not-display');
+            if (hasTaskData) {
+              $('#swarming_task_table').html(tableString);
+              $('#swarming_task').removeClass('not-display');
+            }
           }
       });
     }
@@ -294,14 +339,21 @@
       $.getJSON('try-job-result?url=' + findit.buildUrl, function(data) {
           if (! jQuery.isEmptyObject(data)) {
             var tableString = '<table><tr><th>Step</th><th>Test</th><th>Link</th><th>Status</th><th>Culprit</th></tr>';
+            var hasTryJobData = false;
             $.each(data, function(key, value) {
               tableString += '<tr>';
               tableString += '<td>' + value.step + '</td>';
-              tableString += '<td>' + value.test + '</td>';
+              tableString += '<td><li><div title="' + value.test + '" class="truncate">' + value.test + '</div></li></td>';
               if (value.try_job_url) {
                 tableString += '<td><a href="' + value.try_job_url + '">' + value.try_job_build_number + '</a></td>';
               } else {
                 tableString += '<td></td>';
+              }
+
+              if (value.status) {
+                hasTryJobData = true;
+              } else {
+                return true;  // Broken data, continue to next one.
               }
               var status;
               var revision;
@@ -338,8 +390,10 @@
               tableString += '</tr>';
             });
             tableString += '</table>';
-            $('#try_job_result').html(tableString);
-            $('#try_job').removeClass('not-display');
+            if (hasTryJobData) {
+              $('#try_job_result').html(tableString);
+              $('#try_job').removeClass('not-display');
+            }
           }
       });
     }
@@ -372,7 +426,7 @@
             $('#triage-and-table').text('no failure is found');
           }
           $(document).on("click",".expanded, .collapsed",function() {
-            toggle($(this));
+            toggleTests($(this));
           });
 
           if (findit.showTriageHelpButton) {
@@ -400,6 +454,10 @@
 
       // Displays Try Job Result if any.
       displayTryJobResult();
+
+      $(document).on("click",".collapsed_list, .expanded_list",function() {
+        toggleList($(this));
+      });
     });
   </script>
 </head>
