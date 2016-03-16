@@ -125,7 +125,7 @@ def _GetFailedTargetsFromSignals(signals, master_name, builder_name):
 
   strict_regex = waterfall_config.EnableStrictRegexForCompileLinkFailures(
       master_name, builder_name)
-  for source_target in signals['compile']['failed_targets']:
+  for source_target in signals['compile'].get('failed_targets', []):
     # For link failures, we pass the executable targets directly to try-job, and
     # there is no 'source' for link failures.
     # For compile failures, only pass the object files as the compile targets

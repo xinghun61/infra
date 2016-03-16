@@ -384,6 +384,10 @@ class TryJobUtilTest(testing.AppengineTestCase):
     self.assertEqual(
         try_job_util._GetFailedTargetsFromSignals({}, 'm', 'b'), [])
 
+    self.assertEqual(
+        try_job_util._GetFailedTargetsFromSignals({'compile': {}}, 'm', 'b'),
+        [])
+
     signals = {
         'compile': {
             'failed_targets': [
