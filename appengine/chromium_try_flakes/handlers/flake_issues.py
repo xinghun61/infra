@@ -219,7 +219,7 @@ class ProcessIssue(webapp2.RequestHandler):
   @ndb.transactional
   def _create_issue(self, api, flake, new_flakes, now):
     _, qlabel = get_queue_details(flake.name)
-    labels = ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky', 'Via-TryFlakes', qlabel]
+    labels = ['Type-Bug', 'Pri-1', 'Via-TryFlakes', qlabel]
     if is_trooper_flake(flake.name):
       other_queue_msg = TROOPER_QUEUE_MSG
     else:
@@ -238,7 +238,8 @@ class ProcessIssue(webapp2.RequestHandler):
     new_issue = issue.Issue({'summary': summary,
                              'description': description,
                              'status': 'Untriaged',
-                             'labels': labels})
+                             'labels': labels,
+                             'components': ['Tests>Flaky']})
     flake_issue = api.create(new_issue)
     flake.issue_id = flake_issue.id
     self._update_new_occurrences_with_issue_id(

@@ -93,6 +93,8 @@ class IssueTrackerAPI(object):  # pragma: no cover
       body['owner'] = {'name': issue.owner}
     if issue.labels:
       body['labels'] = issue.labels
+    if issue.components:
+      body['components'] = issue.components
     if issue.cc:
       body['cc'] = [{'name': user} for user in issue.cc]
     request = self.client.issues().insert(
@@ -122,10 +124,14 @@ class IssueTrackerAPI(object):  # pragma: no cover
       updates['blockedOn'] = issue.blocked_on
     if issue.labels.isChanged():
       updates['labels'] = list(issue.labels.added)
+      updates['labels'].extend('-%s' % label for label in issue.labels.removed)
+    if issue.components.isChanged():
+      updates['components'] = list(issue.components.added)
+      updates['components'].extend(
+          '-%s' % comp for comp in issue.components.removed)
     if issue.cc.isChanged():
-      # TODO: figure out what this logic should be, I have yet to make this work
-      # Probably doesn't work if update involves removals.
       updates['cc'] = list(issue.cc.added)
+      updates['cc'].extend('-%s' % cc for cc in issue.cc.removed)
 
     body = {'id': issue.id,
             'updates': updates}

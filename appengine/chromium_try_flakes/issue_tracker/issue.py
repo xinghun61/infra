@@ -30,6 +30,7 @@ class Issue(object):  # pragma: no cover
     self.stars = issue_entry.get('stars')
     self.open = issue_entry.get('state') == 'open'
     self.labels = ChangeTrackingList(issue_entry.get('labels', []))
+    self.components = ChangeTrackingList(issue_entry.get('components', []))
     self.cc = ChangeTrackingList([e['name'] for e in issue_entry.get('cc', [])])
 
     self.dirty = False

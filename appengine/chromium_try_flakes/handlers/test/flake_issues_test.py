@@ -100,6 +100,7 @@ class MockIssue(object):
     self.description = issue_entry.get('description')
     self.status = issue_entry.get('status')
     self.labels = issue_entry.get('labels', [])
+    self.components = issue_entry.get('components', [])
     self.open = True
     self.updated = datetime.datetime.utcnow()
     self.comments = []
@@ -219,8 +220,9 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
         'https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/'
         'sheriffing-bug-queues#triaging-auto-filed-flakiness-bugs')
     self.assertEqual(issue.status, 'Untriaged')
-    self.assertEqual(issue.labels, ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky',
-                                    'Via-TryFlakes', 'Sheriff-Chromium'])
+    self.assertEqual(issue.labels, ['Type-Bug', 'Pri-1', 'Via-TryFlakes',
+                                    'Sheriff-Chromium'])
+    self.assertEqual(issue.components, ['Tests>Flaky'])
     self.assertEqual(len(issue.comments), 0)
 
     # Check that flake in datastore was properly updated.
@@ -250,8 +252,9 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
         'please add Sheriff-Chromium label and change issue status to '
         'Untriaged. When done, please remove the issue from Trooper Bug Queue '
         'by removing the Infra-Troopers label.', issue.description)
-    self.assertEqual(issue.labels, ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky',
-                                    'Via-TryFlakes', 'Infra-Troopers'])
+    self.assertEqual(issue.labels, ['Type-Bug', 'Pri-1', 'Via-TryFlakes',
+                                    'Infra-Troopers'])
+    self.assertEqual(issue.components, ['Tests>Flaky'])
 
   def test_updates_new_occurrences_with_issue_id(self):
     flake = self._create_flake()
