@@ -145,16 +145,6 @@ hooks = [
       "python", "-u", "./infra/bootstrap/install_cipd_packages.py", "-v",
     ],
   },
-  {
-    "pattern": ".",
-    "action": [
-      "download_from_google_storage",
-      "--bucket", "chromium-infra",
-      "--recursive",
-      "--directory",
-      "infra/appengine/milo"
-    ]
-  }
 ]
 
 recursedeps = ['build']
