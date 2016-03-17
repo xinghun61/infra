@@ -31,6 +31,17 @@ def RunSteps(api):
   cwd = api.path['checkout'].join('third_party', 'WebKit')
 
   # Changes should be committed and landed as the rebaseline bot role account.
+  # The base chromium repo setup configures chrome-bot@ as the author/committer.
+  # We could attempt use of command-line arguments to git commands to specify
+  # the rebaseline bot name/email, but in fact this is insufficient to override
+  # due to precedence. Environment variables would likely work per the man page
+  # for git-commit-tree, but would require changes through both the auto-
+  # rebaseline script and 'git cl land', with this bot as the only intended
+  # customer.
+  #
+  # Given all tradeoffs, setting the chromium repo's user name/email to the
+  # intended rebaseline bot parameters in a persistent manner is deemed a
+  # reasonable alternate approach.
   api.git('config', 'user.name', 'Rebaseline Bot')
   api.git('config', 'user.email', 'blink-rebaseline-bot@chromium.org')
 
