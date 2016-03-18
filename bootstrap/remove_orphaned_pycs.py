@@ -9,7 +9,7 @@ import sys
 
 
 def main(argv):
-  logging.basicConfig(level=logging.DEBUG)
+  logging.basicConfig(level=logging.INFO)
   if len(argv) == 0:
     bootstrap_dir = os.path.dirname(os.path.abspath(__file__))
     infra_dir = os.path.dirname(bootstrap_dir)

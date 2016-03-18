@@ -23,27 +23,8 @@ import time
 import urllib
 from cStringIO import StringIO
 
-_netrc_file = '_netrc' if sys.platform.startswith('win') else '.netrc'
-_netrc_file = os.path.join(os.environ['HOME'], _netrc_file)
-try:
-  NETRC = netrc.netrc(_netrc_file)
-except IOError:
-  print >> sys.stderr, 'WARNING: Could not read netrc file %s' % _netrc_file
-  NETRC = netrc.netrc(os.devnull)
-except netrc.NetrcParseError as e:
-  _netrc_stat = os.stat(e.filename)
-  if _netrc_stat.st_mode & (stat.S_IRWXG | stat.S_IRWXO):
-    print >> sys.stderr, (
-        'WARNING: netrc file %s cannot be used because its file permissions '
-        'are insecure.  netrc file permissions should be 600.' % _netrc_file)
-  else:
-    print >> sys.stderr, ('ERROR: Cannot use netrc file %s due to a parsing '
-                          'error.' % _netrc_file)
-    raise
-  del _netrc_stat
-  NETRC = netrc.netrc(os.devnull)
-del _netrc_file
 
+NETRC = None
 LOGGER = logging.getLogger()
 TRY_LIMIT = 5
 
@@ -86,8 +67,32 @@ def GetConnectionClass(protocol=None):
         "Don't know how to work with protocol '%s'" % protocol)
 
 
+def GetNetrc():
+  netrc_file = '_netrc' if sys.platform.startswith('win') else '.netrc'
+  netrc_file = os.path.join(os.environ['HOME'], netrc_file)
+  try:
+    return netrc.netrc(netrc_file)
+  except IOError:
+    print >> sys.stderr, 'WARNING: Could not read netrc file %s' % netrc_file
+    return netrc.netrc(os.devnull)
+  except netrc.NetrcParseError as e:
+    netrc_stat = os.stat(e.filename)
+    if netrc_stat.st_mode & (stat.S_IRWXG | stat.S_IRWXO):
+      print >> sys.stderr, (
+          'WARNING: netrc file %s cannot be used because its file permissions '
+          'are insecure.  netrc file permissions should be 600.' % netrc_file)
+    else:
+      print >> sys.stderr, ('ERROR: Cannot use netrc file %s due to a parsing '
+                            'error.' % netrc_file)
+      raise
+    return netrc.netrc(os.devnull)
+
+
 def CreateHttpConn(host, path, reqtype='GET', headers=None, body=None):
   """Opens an https connection to a gerrit service, and sends a request."""
+  if not NETRC:
+    NETRC = GetNetrc()
+
   headers = headers or {}
   bare_host = host.partition(':')[0]
   auth = NETRC.authenticators(bare_host)
