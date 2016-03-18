@@ -60,7 +60,8 @@ def fetch_json(url):
       'https://www.googleapis.com/auth/userinfo.email')
   response = urlfetch.fetch(
       url, follow_redirects=False, validate_certificate=True,
-      headers={'Authorization': 'Bearer ' + authorization_token})
+      headers={'Authorization': 'Bearer ' + authorization_token},
+      deadline=30)
   logging.debug(response.content)
   # TODO(phajdan.jr): Handle responses other than HTTP 200.
   return json.loads(response.content)
