@@ -122,7 +122,7 @@ def get_release_version(v):
 
 def subcommand_update(args):
   """Update a single Chromite pin."""
-  create = (args.target != 'existing')
+  require = (args.target != 'existing')
   target_pins = []
   if args.target in ('external', 'both', 'existing'):
     target_pins.append(pinfile.EXTERNAL)
@@ -136,9 +136,13 @@ def subcommand_update(args):
     for pin in target_pins:
       logging.debug('Updating target pin [%s]', pin)
 
-      # Update 
+      # Update the pin.
       pf = pfe.load(pin)
-      update = pf.update(args.name, version=args.version, create=create)
+      if not (require or pf.has_pin(args.name)):
+        LOGGER.debug('Pin not found in [%s]. Only updating existing pins.', pin)
+        continue
+
+      update = pf.update(args.name, version=args.version, create=require)
       if not update:
         LOGGER.debug('Did not update pins for [%s]', pin)
         continue

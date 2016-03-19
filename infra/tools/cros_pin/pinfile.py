@@ -95,6 +95,8 @@ class Editor(object):
       with open(self._path, 'w') as fd:
         json.dump(pins, fd, indent=2, sort_keys=True)
 
+    def has_pin(self, pin_name):
+      return pin_name in self.load()
 
     def update(self, pin_name, create=False, version=None):
       """Updates a single pin value."""

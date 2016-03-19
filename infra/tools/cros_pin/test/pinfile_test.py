@@ -87,6 +87,11 @@ class TestPinfile(unittest.TestCase):
     self.assertRaises(pinfile.InvalidPinError,
         self._f.update, 'test', version=h('baz'))
 
+  def testHasPin(self):
+    self._f.load.return_value = {'test': 'foo'}
+    self.assertTrue(self._f.has_pin('test'))
+    self.assertFalse(self._f.has_pin('baz'))
+
   def testRemoveDeletesPin(self):
     self._f.load.return_value = {'test': 'foo', 'release': 'bar'}
     pu = self._f.remove('test')
