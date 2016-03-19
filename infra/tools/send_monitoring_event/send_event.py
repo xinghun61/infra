@@ -121,6 +121,8 @@ def get_arguments(argv):
                            help='Extra result code. String, comma-separated '
                            'list of strings or json-encoded list of string. '
                            'Each one must be less than 20 characters long.')
+  build_group.add_argument('--build-event-patch-url',
+                           help='URL of the patchset that triggered build')
 
   build_group.add_argument('--build-event-goma-stats-path',
                            metavar='FILENAME',
@@ -324,6 +326,7 @@ def send_build_event(args):
     step_number=args.build_event_step_number,
     result=args.build_event_result,
     extra_result_code=args.build_event_extra_result_code,
+    patch_url=args.build_event_patch_url,
     timestamp_kind=args.event_mon_timestamp_kind,
     event_timestamp=args.event_mon_event_timestamp,
     goma_stats=goma_stats,
@@ -409,7 +412,8 @@ def read_events_from_file(filename):
             extra_result_code=args.get('build-event-extra-result-code'),
             timestamp_kind=args.get('event-mon-timestamp-kind'),
             event_timestamp=args.get('event-mon-event-timestamp'),
-            service_name=args.get('event-mon-service-name')))
+            service_name=args.get('event-mon-service-name'),
+            patch_url=args.get('build-event-patch-url')))
       else:
         LOGGER.warning('build-event-type field not found, skipping line '
                        '%d in %s', lineno, filename)
