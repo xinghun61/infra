@@ -146,8 +146,8 @@ def _GetCulpritInfoForTryJobResult(try_job_key, culprits_info):
             _GetTryJobBuildNumber(try_job_result['url']))
       if try_job_result.get('culprit'):
         try_job_culprits = try_job_result['culprit']
-        step = culprit_info['step']
-        test = culprit_info['test']
+        step = culprit_info.get('step_no_platform', culprit_info['step_name'])
+        test = culprit_info['test_name']
 
         if test == 'N/A':  # Only step level.
           if try_job_culprits.get(step, {}).get('tests'):
@@ -156,8 +156,8 @@ def _GetCulpritInfoForTryJobResult(try_job_key, culprits_info):
             for test_name, try_job_culprit in step_culprits.iteritems():
               additional_test_key = '%s-%s' % (step, test_name)
               additional_tests_culprit_info[additional_test_key] = {
-                  'step': step,
-                  'test': test_name,
+                  'step_name': step,
+                  'test_name': test_name,
                   'try_job_key': try_job_key,
                   'status': culprit_info['status'],
                   'try_job_url': culprit_info['try_job_url'],
@@ -182,21 +182,26 @@ def _GetCulpritInfoForTryJobResult(try_job_key, culprits_info):
 
   if additional_tests_culprit_info:
     for key, test_culprit_info in additional_tests_culprit_info.iteritems():
-      culprits_info.pop(test_culprit_info['step'], None)
+      culprits_info.pop(test_culprit_info['step_name'], None)
       culprits_info[key] = test_culprit_info
 
 
-def _UpdateFlakiness(step_name, failure_key_set, culprits_info):
+def _UpdateTryJobCulpritUsingSwarmingTask(
+    step_name, failure_key_set, culprits_info):
   for failure_key in failure_key_set:
     build_keys = failure_key.split('/')
     task = WfSwarmingTask.Get(*build_keys, step_name=step_name)
     if not task:
       continue
     classified_tests = task.classified_tests
+    step_no_platform = task.parameters.get(
+        'ref_name', step_name.split()[0])
     for culprit_info in culprits_info.values():
       if (culprit_info['try_job_key'] == failure_key and
-          culprit_info['test'] in classified_tests.get('flaky_tests', [])):
-        culprit_info['status'] = FLAKY
+          step_name == culprit_info['step_name']):
+        culprit_info['step_no_platform'] = step_no_platform
+        if culprit_info['test_name'] in classified_tests.get('flaky_tests', []):
+          culprit_info['status'] = FLAKY
 
 
 def GetAllTryJobResults(master_name, builder_name, build_number):
@@ -224,18 +229,19 @@ def GetAllTryJobResults(master_name, builder_name, build_number):
         for failed_test, try_job_key in step_failure_result_map.iteritems():
           step_test_key = '%s-%s' % (step_name, failed_test)
           culprits_info[step_test_key] = {
-              'step': step_name,
-              'test': failed_test,
+              'step_name': step_name,
+              'test_name': failed_test,
               'try_job_key': try_job_key
           }
           step_refering_keys.add(try_job_key)
 
-        _UpdateFlakiness(step_name, step_refering_keys, culprits_info)
+        _UpdateTryJobCulpritUsingSwarmingTask(
+            step_name, step_refering_keys, culprits_info)
         try_job_keys.update(step_refering_keys)
       else:
         culprits_info[step_name] = {
-            'step': step_name,
-            'test': 'N/A',
+            'step_name': step_name,
+            'test_name': 'N/A',
             'try_job_key': step_failure_result_map
         }
         try_job_keys.add(step_failure_result_map)

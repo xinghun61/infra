@@ -199,8 +199,8 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
 
     expected_result = {
         'compile': {
-            'step': 'compile',
-            'test': 'N/A',
+            'step_name': 'compile',
+            'test_name': 'N/A',
             'try_job_key': 'm/b/121'
         }
     }
@@ -224,8 +224,8 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
 
     expected_result = {
         'compile': {
-            'step': 'compile',
-            'test': 'N/A',
+            'step_name': 'compile',
+            'test_name': 'N/A',
             'try_job_key': 'm/b/121',
             'status': 'Pending'
         }
@@ -258,8 +258,8 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
 
     expected_result = {
         'compile': {
-            'step': 'compile',
-            'test': 'N/A',
+            'step_name': 'compile',
+            'test_name': 'N/A',
             'try_job_key': 'm/b/121',
             'status': 'Running',
             'try_job_build_number': 121,
@@ -292,8 +292,8 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
 
     expected_result = {
         'compile': {
-            'step': 'compile',
-            'test': 'N/A',
+            'step_name': 'compile',
+            'test_name': 'N/A',
             'try_job_key': 'm/b/121',
             'status': 'Error'
         }
@@ -337,8 +337,8 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
 
     expected_result = {
         'compile': {
-            'step': 'compile',
-            'test': 'N/A',
+            'step_name': 'compile',
+            'test_name': 'N/A',
             'try_job_key': 'm/b/121',
             'try_job_build_number': 121,
             'status': 'Completed',
@@ -381,8 +381,8 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
 
     expected_result = {
         'compile': {
-            'step': 'compile',
-            'test': 'N/A',
+            'step_name': 'compile',
+            'test_name': 'N/A',
             'try_job_key': 'm/b/121',
             'try_job_build_number': 121,
             'status': 'Completed',
@@ -398,13 +398,13 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
     analysis = WfAnalysis.Create(
         self.master_name, self.builder_name, self.build_number)
     analysis.failure_result_map = {
-        'a_test': {
+        'a_test on platform': {
             'a_test1': 'm/b/121',
             'a_test2': 'm/b/121',
             'a_test3': 'm/b/120',
             'a_test4': 'm/b/121'
         },
-        'b_test': {
+        'b_test_on_platform': {
             'b_test1': 'm/b/121'
         },
         'c_test': 'm/b/121',
@@ -413,7 +413,7 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
     analysis.put()
 
     task_120_a = WfSwarmingTask.Create(
-        self.master_name, self.builder_name, 120, 'a_test')
+        self.master_name, self.builder_name, 120, 'a_test on platform')
     task_120_a.tests_statuses = {
         'a_test3': {
             'total_run': 1,
@@ -423,7 +423,8 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
     task_120_a.put()
 
     task_121_a = WfSwarmingTask.Create(
-        self.master_name, self.builder_name, self.build_number, 'a_test')
+        self.master_name, self.builder_name, self.build_number,
+        'a_test on platform')
     task_121_a.tests_statuses = {
         'a_test1': {
             'total_run': 1,
@@ -441,12 +442,16 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
     task_121_a.put()
 
     task_121_b = WfSwarmingTask.Create(
-        self.master_name, self.builder_name, self.build_number, 'b_test')
+        self.master_name, self.builder_name, self.build_number,
+        'b_test_on_platform')
     task_121_b.tests_statuses = {
         'b_test1': {
             'total_run': 1,
             'SUCCESS': 1
         }
+    }
+    task_121_b.parameters = {
+        'ref_name': 'b_test'
     }
     task_121_b.put()
 
@@ -561,9 +566,10 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
         self.master_name, self.builder_name, self.build_number)
 
     expected_result = {
-        'a_test-a_test1': {
-            'step': 'a_test',
-            'test': 'a_test1',
+        'a_test on platform-a_test1': {
+            'step_name': 'a_test on platform',
+            'test_name': 'a_test1',
+            'step_no_platform': 'a_test',
             'try_job_key': 'm/b/121',
             'try_job_build_number': 121,
             'status': 'Completed',
@@ -574,9 +580,10 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
             'commit_position': '1',
             'review_url': 'url_1'
         },
-        'a_test-a_test2': {
-            'step': 'a_test',
-            'test': 'a_test2',
+        'a_test on platform-a_test2': {
+            'step_name': 'a_test on platform',
+            'test_name': 'a_test2',
+            'step_no_platform': 'a_test',
             'try_job_key': 'm/b/121',
             'status': 'Completed',
             'try_job_build_number': 121,
@@ -584,9 +591,10 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
                 'http://build.chromium.org/p/tryserver.chromium.linux/'
                 'builders/linux_chromium_variable/builds/121')
         },
-        'a_test-a_test3': {
-            'step': 'a_test',
-            'test': 'a_test3',
+        'a_test on platform-a_test3': {
+            'step_name': 'a_test on platform',
+            'test_name': 'a_test3',
+            'step_no_platform': 'a_test',
             'try_job_key': 'm/b/120',
             'try_job_build_number': 120,
             'status': 'Completed',
@@ -597,21 +605,23 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
             'commit_position': '0',
             'review_url': 'url_0'
         },
-        'a_test-a_test4': {
-            'step': 'a_test',
-            'test': 'a_test4',
+        'a_test on platform-a_test4': {
+            'step_name': 'a_test on platform',
+            'test_name': 'a_test4',
+            'step_no_platform': 'a_test',
             'try_job_key': 'm/b/121',
             'status': 'Flaky'
         },
-        'b_test-b_test1': {
-            'step': 'b_test',
-            'test': 'b_test1',
+        'b_test_on_platform-b_test1': {
+            'step_name': 'b_test_on_platform',
+            'test_name': 'b_test1',
+            'step_no_platform': 'b_test',
             'try_job_key': 'm/b/121',
             'status': 'Flaky'
         },
         'c_test': {
-            'step': 'c_test',
-            'test': 'N/A',
+            'step_name': 'c_test',
+            'test_name': 'N/A',
             'try_job_key': 'm/b/121',
             'try_job_build_number': 121,
             'status': 'Completed',
@@ -623,8 +633,8 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
             'review_url': 'url_2'
         },
         'd_test': {
-            'step': 'd_test',
-            'test': 'N/A',
+            'step_name': 'd_test',
+            'test_name': 'N/A',
             'try_job_key': 'm/b/122',
             'try_job_build_number': 122,
             'status': 'Completed',
@@ -635,19 +645,20 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
     }
     self.assertEqual(expected_result, result)
 
-  def testUpdateFlakinessNoTask(self):
+  def testUpdateTryJobCulpritUsingSwarmingTaskNoTask(self):
     step_name = 's'
     failure_key_set = ['m/b/1']
     culprits_info = None
-    handlers_util._UpdateFlakiness(step_name, failure_key_set, culprits_info)
+    handlers_util._UpdateTryJobCulpritUsingSwarmingTask(
+        step_name, failure_key_set, culprits_info)
     self.assertIsNone(culprits_info)
 
   def testGetCulpritInfoForTryJobResultStep(self):
     try_job_key = 'm/b/120'
     culprits_info = {
-        'a_test': {
-            'step': 'a_test',
-            'test': 'N/A',
+        'a_test on platform': {
+            'step_name': 'a_test on platform',
+            'test_name': 'N/A',
             'try_job_key': try_job_key
         }
     }
@@ -659,7 +670,7 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
         {
             'result': {
                 'rev0': {
-                    'a_test': {
+                    'a_test on platform': {
                         'status': 'failed',
                         'valid': True,
                         'failures': ['a_test3']
@@ -670,7 +681,7 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
                     'builders/linux_chromium_variable/builds/120'),
             'try_job_id': '0',
             'culprit': {
-                'a_test': {
+                'a_test on platform': {
                     'tests': {
                         'a_test3': {
                             'revision': 'rev0',
@@ -687,9 +698,9 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
     handlers_util._GetCulpritInfoForTryJobResult(try_job_key, culprits_info)
 
     expected_culprits_info = {
-        'a_test-a_test3': {
-            'step': 'a_test',
-            'test': 'a_test3',
+        'a_test on platform-a_test3': {
+            'step_name': 'a_test on platform',
+            'test_name': 'a_test3',
             'try_job_key': 'm/b/120',
             'try_job_build_number': 120,
             'status': 'Completed',
