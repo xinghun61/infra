@@ -59,12 +59,17 @@ Status will be tracked using the Status field.
 
 ## Master Restarts
 
+### Self-service (Googlers only)
+
 Master restarts are handled by master manager and only require running a single
 command that mails a CL to schedule the restart.
 
 With `depot_tools` in your path, run:
 
 ```bash
+# Get an auth token for your @google.com account if you don't already have one.
+depot-tools-auth login https://chromereviews.googleplex.com
+
 # Restart chromium.fyi master in 15 minutes.
 cit restart chromium.fyi -r <current trooper> [-b <bug number>]
 
@@ -77,6 +82,10 @@ have to ping the trooper to get an lgtm.
 
 If you're having trouble you can file a bug with the trooper using the
 [Master restart requests] bug template.
+
+### Trooper-assisted Restart
+
+Please file a bug using the [Master restart requests] bug template.
 
 ## Service Hours
 
