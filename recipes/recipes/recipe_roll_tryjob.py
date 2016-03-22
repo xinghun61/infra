@@ -22,6 +22,7 @@ from recipe_engine.recipe_api import Property
 import collections
 import re
 import base64
+import json
 
 
 def get_auth_token(api):
@@ -103,8 +104,9 @@ def get_project_config(api, project, headers=None):
 
   fetch_result = api.url.fetch(url, step_name='Get %s deps' % project,
                                headers=headers)
+  result = json.loads(fetch_result)
 
-  file_contents = base64.b64decode(fetch_result['content'])
+  file_contents = base64.b64decode(result['content'])
   parsed = parse_protobuf(file_contents.split('\n'))
   return parsed
 
@@ -156,7 +158,7 @@ def get_url_mapping(api, headers=None):
 
   fetch_result = api.url.fetch(url, step_name='Get project urls',
       headers=headers,
-      step_test_data=lambda: api.raw_io.test_api.output({
+      step_test_data=lambda: api.raw_io.test_api.output(json.dumps({
              'projects': [
                  {
                      'repo_type': 'GITILES',
@@ -169,11 +171,12 @@ def get_url_mapping(api, headers=None):
                      'repo_url': 'https://repo.repo/chromium/build',
                  }
              ],
-         }))
+      })))
   mapping = {}
-  for project in fetch_result['projects']:
+
+  for project in json.loads(fetch_result)['projects']:
+    project = {str(k): str(v) for k, v in project.items()}
     mapping[project['id']] = project
-    mapping[project['id']] = dict(project)
   return mapping
 
 
@@ -321,14 +324,13 @@ PROPERTIES = {
 }
 
 def RunSteps(api, patches_raw):
-  auth_token = get_auth_token(api)
-  headers = {'Authorization': 'Bearer %s' % auth_token}
+  headers = {'Authorization': 'Bearer %s' % get_auth_token(api)}
 
   patches = parse_patches(api, patches_raw)
 
   root_dir = api.path['slave_build']
 
-  url_mapping = get_url_mapping(api, auth_token)
+  url_mapping = get_url_mapping(api, headers)
 
   # luci config project name to recipe config namedtuple
   recipe_configs = {}
@@ -374,14 +376,14 @@ def GenTests(api):
   def project(name, deps=None):
     if not deps:
       deps = []
-    return api.raw_io.output({
+    return api.raw_io.output(json.dumps({
             "content": make_recipe_config(name, deps),
             "content_hash": "v1:814564d6e6507ad7de56de8c76548a31633ce3e4",
             "revision": "80abb4d6f37e89ba0786c5bca9c599565693fe12",
             "kind": "config#resourcesItem",
             # NOTE: Invalid etag, truncated for line length.
             "etag": "\"-S_IMdk0_sAeij2f-EAhBG43QvQ/JlXgwF3XIs6IVH1\""
-    })
+    }))
 
   yield (
       api.test('basic') +

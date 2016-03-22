@@ -17,7 +17,7 @@
       "--outfile",
       "/path/to/tmp/",
       "--headers-json",
-      "\"ya29.foobar\""
+      "{\"Authorization\": \"Bearer ya29.foobar\"}"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "Get project urls"
