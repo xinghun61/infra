@@ -13,6 +13,11 @@ deps = {
    ("https://chromium.googlesource.com/external/github.com/luci/luci-py"
      "@5489e0e3fc0a4a1044b4f1edbc838ccb65048231"),
 
+  # This unpinned dependency is present because it is used by the trybots for
+  # the recipes-py repo; They check out infra with this at HEAD, and then apply
+  # the patch to it and run verifications within that copy of the repo. They
+  # piggyback on top of infra in order to take advantage of it's precompiled
+  # version of python-coverage.
   "infra/recipes-py":
    ("https://chromium.googlesource.com/external/github.com/luci/recipes-py"
      "@origin/master"),
