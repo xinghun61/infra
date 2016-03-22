@@ -188,7 +188,7 @@ def commit(
 
 
   print
-  print '%s the following masters:'
+  print 'Actions for the following masters:'
   for s in specs:
     delta = s.restart_time - datetime.datetime.utcnow()
     restart_time_str = zulu.to_zulu_string(s.restart_time)
