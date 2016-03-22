@@ -199,7 +199,8 @@ def _instrumented_dispatcher(dispatcher, request, response, time_fn=time.time):
       # user agent string indicates that the requester was a Google bot.
       fields['is_robot'] = (
           'GoogleBot' in request.user_agent or
-          'GoogleSecurityScanner' in request.user_agent)
+          'GoogleSecurityScanner' in request.user_agent or
+          request.user_agent == 'B3M/prober')
 
     http_metrics.server_durations.add(elapsed_ms, fields=fields)
     http_metrics.server_response_status.increment(fields=fields)
