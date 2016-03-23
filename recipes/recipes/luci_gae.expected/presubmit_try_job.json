@@ -135,8 +135,6 @@
       "--rietveld_fetch",
       "--upstream",
       "1baeb5a8a8ba8145cc2d047ac027a5a5e30ab846",
-      "--trybot-json",
-      "/path/to/tmp/json",
       "--rietveld_email",
       ""
     ],
@@ -144,13 +142,7 @@
     "env": {
       "PRESUBMIT_BUILDER": "1"
     },
-    "name": "presubmit",
-    "~followup_annotations": [
-      "@@@STEP_LOG_LINE@json.output@[@@@",
-      "@@@STEP_LOG_LINE@json.output@  []@@@",
-      "@@@STEP_LOG_LINE@json.output@]@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
+    "name": "presubmit"
   },
   {
     "name": "$result",

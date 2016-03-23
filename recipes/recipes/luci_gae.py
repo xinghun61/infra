@@ -34,7 +34,6 @@ def _run_presubmit(api, patch_root, bot_update_step):
     '--rietveld_url', api.properties['rietveld'],
     '--rietveld_fetch',
     '--upstream', upstream,
-    '--trybot-json', api.json.output(),
     '--rietveld_email', ''
   ]
   api.python('presubmit', api.path['checkout'].join('go', 'env.py'),
