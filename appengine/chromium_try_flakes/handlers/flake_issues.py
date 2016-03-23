@@ -335,16 +335,8 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
         self._remove_issue_from_flakes(issue_id)
       return
 
-    # Find the last update, which defaults to when issue was created if no third
-    # party updates were posted.
-    comments = api.getComments(issue_id)
-    last_third_party_update = flake_issue.created
-    for comment in sorted(comments, key=lambda c: c.created, reverse=True):
-      if comment.author != app_identity.get_service_account_name():
-        last_third_party_update = comment.created
-        break
-
     # Parse the flake name from the first comment (which we post ourselves).
+    comments = sorted(api.getComments(issue_id), key=lambda c: c.created)
     original_summary = comments[0].comment.splitlines()[0]
     flake_name = original_summary[len('"'):-len('" is flaky')]
     _, expected_label = get_queue_details(flake_name)
@@ -352,8 +344,8 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
     # Report to stale-flakes-reports@ if the issue has been in appropriate queue
     # without any updates for 7 days.
     week_ago = now - datetime.timedelta(days=7)
-    if (last_third_party_update < week_ago and
-        expected_label in flake_issue.labels and
+    last_updated = comments[-1].created
+    if (last_updated < week_ago and expected_label in flake_issue.labels and
         STALE_FLAKES_ML not in flake_issue.cc):
       flake_issue.cc.append(STALE_FLAKES_ML)
       logging.info('Reporting issue %s to %s', flake_issue.id, STALE_FLAKES_ML)

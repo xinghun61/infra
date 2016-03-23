@@ -148,12 +148,9 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
         mock.patch('issue_tracker.issue_tracker_api.IssueTrackerAPI',
                    lambda *args, **kwargs: self.mock_api),
         mock.patch('issue_tracker.issue.Issue', MockIssue),
-        mock.patch('google.appengine.api.app_identity.get_service_account_name',
-                   lambda *args, **kwargs: 'app@ae.org')
     ]
     for patcher in self.patchers:
       patcher.start()
-
 
   def tearDown(self):
     super(FlakeIssuesTestCase, self).tearDown()
@@ -500,13 +497,10 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     issue.comments = [
         MockComment(datetime.datetime(2015, 12, 1, 11, 0, 1), 'app@ae.org',
                     '"foo.bar" is flaky\n\nmore text...'),
-        # Since this is a comment by the app, it should not be considered as a
-        # recent update as we only consider updates by humans.
-        MockComment(datetime.datetime(2015, 12, 7, 0, 0, 0), 'app@ae.org')
     ]
     self.test_app.post('/issues/update-if-stale/%s' % issue.id)
     self.assertIn('stale-flakes-reports@google.com', issue.cc)
-    self.assertEqual(len(issue.comments), 3)
+    self.assertEqual(len(issue.comments), 2)
     self.assertEqual(
         issue.comments[-1].comment,
         'Reporting to stale-flakes-reports@google.com to investigate why this '
