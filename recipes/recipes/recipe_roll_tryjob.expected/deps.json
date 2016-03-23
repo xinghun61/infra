@@ -97,7 +97,7 @@
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
-    "name": "bot_update",
+    "name": "bot_update (without patch)",
     "~followup_annotations": [
       "@@@STEP_TEXT@Some step text@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -162,7 +162,7 @@
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
-    "name": "bot_update (2)",
+    "name": "bot_update (without patch) (2)",
     "~followup_annotations": [
       "@@@STEP_TEXT@Some step text@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -185,8 +185,6 @@
       "python",
       "-u",
       "[SLAVE_BUILD]/recipe_engine/recipe_engine/recipes.py",
-      "-O",
-      "build=[SLAVE_BUILD]/build/build",
       "--package",
       "[SLAVE_BUILD]/recipe_engine/recipe_engine/infra/config/recipes.cfg",
       "simulation_test"
@@ -199,6 +197,8 @@
       "python",
       "-u",
       "[SLAVE_BUILD]/build/build/recipes.py",
+      "-O",
+      "recipe_engine=[SLAVE_BUILD]/recipe_engine/recipe_engine",
       "--package",
       "[SLAVE_BUILD]/build/build/infra/config/recipes.cfg",
       "simulation_test"

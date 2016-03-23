@@ -148,7 +148,7 @@ def get_url_mapping(api, headers=None):
   """Fetch the mapping of project id to url from luci-config.
 
   Args:
-    auth_token: an OAuth2 access token for querying luci-config.
+    headers: Optional authentication headers to pass to luci-config.
 
   Returns:
     A dictionary mapping project id to its luci-config project spec (among
@@ -184,16 +184,20 @@ RietveldPatch = collections.namedtuple(
     'RietveldPatch', 'project server issue patchset')
 
 
-def parse_patches(api, patches_raw):
+def parse_patches(api, patches_raw, rietveld, issue, patchset, patch_project):
   """
   gives mapping of project to patch
     expect input of
     project1:https://a.b.c/1342342#ps1,project2:https://d.ce.f/1231231#ps1
   """
-  if not patches_raw:
-    return {}
-
   result = {}
+
+  if rietveld and issue and patchset and patch_project:
+    result[patch_project] = RietveldPatch(
+        patch_project, rietveld, issue, patchset)
+
+  if not patches_raw:
+    return result
 
   for patch_raw in patches_raw.split(','):
     project, url = patch_raw.split(':', 1)
@@ -302,6 +306,8 @@ def checkout_project(api, proj, proj_config, root_dir, patch=None):
     kwargs['rietveld'] = patch.server
     kwargs['issue'] = patch.issue
     kwargs['patchset'] = patch.patchset
+  else:
+    kwargs['patch'] = False
 
   api.bot_update.ensure_checkout(**kwargs)
   return repo_path
@@ -321,12 +327,26 @@ PROPERTIES = {
                       "url.to.codereview is the address of the code review site"
                       ", 123456 is the issue number, and ps01 is the patchset"
                       "number"),
+  # This recipe can be used as a tryjob by setting the rietveld, issue, and
+  # patchset properties, like a normal tryjob. If those are set, it will use
+  # those, as well as any data sent in the regular properties, as patches to
+  # apply.
+  "rietveld": Property(kind=str, default="",
+                       help="The Rietveld instance the issue is from"),
+  "issue": Property(kind=int, default=None,
+                    help="The Rietveld issue number to pull data from"),
+  "patchset": Property(kind=int, default=None,
+                       help="The patchset number for the supplied issue"),
+  "patch_project": Property(
+      kind=str, default=None,
+      help="The luci-config name of the project this patch belongs to"),
 }
 
-def RunSteps(api, patches_raw):
+def RunSteps(api, patches_raw, rietveld, issue, patchset, patch_project):
   headers = {'Authorization': 'Bearer %s' % get_auth_token(api)}
 
-  patches = parse_patches(api, patches_raw)
+  patches = parse_patches(
+      api, patches_raw, rietveld, issue, patchset, patch_project)
 
   root_dir = api.path['slave_build']
 
@@ -341,7 +361,7 @@ def RunSteps(api, patches_raw):
   recipe_configs = {
       p: get_project_config(api, p, headers) for p in all_projects}
 
-  downstream_projects, deps = get_deps_info(all_projects, recipe_configs)
+  deps, downstream_projects = get_deps_info(all_projects, recipe_configs)
 
   projs_to_test, locations = checkout_projects(
       api, all_projects, url_mapping, downstream_projects, root_dir, patches)
@@ -406,6 +426,18 @@ def GenTests(api):
 
   yield (
       api.test('deps') +
+      api.step_data("Get build deps", project('build', ['recipe_engine'])) +
+      api.step_data("Get recipe_engine deps", project('recipe_engine'))
+  )
+
+  yield (
+      api.test('tryjob') +
+      api.properties(
+        rietveld="https://fake.code.review",
+        issue=12345678,
+        patchset=1,
+        patch_project="build",
+      ) +
       api.step_data("Get build deps", project('build', ['recipe_engine'])) +
       api.step_data("Get recipe_engine deps", project('recipe_engine'))
   )
