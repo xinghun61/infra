@@ -342,8 +342,8 @@
             var hasTryJobData = false;
             $.each(data, function(key, value) {
               tableString += '<tr>';
-              tableString += '<td>' + value.step + '</td>';
-              tableString += '<td><li><div title="' + value.test + '" class="truncate">' + value.test + '</div></li></td>';
+              tableString += '<td>' + value.step_name + '</td>';
+              tableString += '<td><li><div title="' + value.test_name + '" class="truncate">' + value.test_name + '</div></li></td>';
               if (value.try_job_url) {
                 tableString += '<td><a href="' + value.try_job_url + '">' + value.try_job_build_number + '</a></td>';
               } else {
