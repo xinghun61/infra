@@ -123,8 +123,12 @@ class SwarmingBuildHandler(webapp2.RequestHandler):
       last_step = Step(task_id, step_name)
       steps.append(last_step)
 
-    started_ts = parse_datetime(task_metadata['started_ts'])
-    completed_ts = parse_datetime(task_metadata['completed_ts'])
+    if 'started_ts' in task_metadata and 'completed_ts' in task_metadata:
+      started_ts = parse_datetime(task_metadata['started_ts'])
+      completed_ts = parse_datetime(task_metadata['completed_ts'])
+      elapsed = str(completed_ts - started_ts)
+    else:
+      elapsed = 'n/a'
 
     properties = []
     for key in ('task_id', 'user', 'bot_id'):
@@ -136,17 +140,23 @@ class SwarmingBuildHandler(webapp2.RequestHandler):
           value=json.dumps(dimension['value']),
           source='swarming dimensions'))
 
-    build_success = ((not task_metadata['failure']) and
-                     (not task_metadata['internal_failure']))
-
-    build_result = ['Build successful'] if build_success else ['Failed']
+    if 'completed_ts' not in task_metadata:
+      build_result = 'Running'
+      result_css = 'running'
+    elif ((not task_metadata['failure']) and
+          (not task_metadata['internal_failure'])):
+      build_result = 'Build successful'
+      result_css = 'success'
+    else:
+      build_result = 'Failed'
+      result_css = 'failure'
 
     template_values = {
       'stylesheet': '/static/default.css',
 
       'build_id': task_metadata['task_id'],
-      'result_css': 'success' if build_success else 'failure',
-      'build_result': build_result,
+      'result_css': result_css,
+      'build_result': [build_result],
 
       'slave_url': ('https://chromium-swarm.appspot.com/restricted/bot/%s' %
                     task_metadata['bot_id']),
@@ -156,9 +166,9 @@ class SwarmingBuildHandler(webapp2.RequestHandler):
 
       'properties': properties,
 
-      'start': task_metadata['started_ts'],
-      'end': task_metadata['completed_ts'],
-      'elapsed': str(completed_ts - started_ts),
+      'start': task_metadata.get('started_ts', 'n/a'),
+      'end': task_metadata.get('completed_ts', 'n/a'),
+      'elapsed': elapsed,
     }
 
     template = JINJA_ENV.get_template('build.html')
