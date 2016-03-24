@@ -1,4 +1,6 @@
-# Buildbucket-Swarming integration.
+# Buildbucket-Swarming integration, aka Swarmbucket
+
+go/swarmbucket
 
 Buildbucket has native integration with swarming and recipes.
 A bucket can be configured so a build for a builder is scheduled on swarming
