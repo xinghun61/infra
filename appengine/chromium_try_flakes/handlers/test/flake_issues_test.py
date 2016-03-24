@@ -12,7 +12,6 @@ from google.appengine.ext import ndb
 
 from handlers.flake_issues import ProcessIssue, CreateFlakyRun
 import main
-from infra_libs import ts_mon
 from model.flake import Flake, FlakyRun, FlakeOccurrence
 from model.build_run import PatchsetBuilderRuns, BuildRun
 from testing_utils import testing
@@ -144,7 +143,6 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
 
   def setUp(self):
     super(FlakeIssuesTestCase, self).setUp()
-    ts_mon.reset_for_unittest(disable=True)
     self.mock_api = MockIssueTrackerAPI()
     self.patchers = [
         mock.patch('issue_tracker.issue_tracker_api.IssueTrackerAPI',

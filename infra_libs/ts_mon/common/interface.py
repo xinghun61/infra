@@ -78,11 +78,6 @@ class State(object):
     # Cached time of the last flush. Useful mostly in AppEngine apps.
     self.last_flushed = datetime.datetime.utcfromtimestamp(0)
 
-  def reset_for_unittest(self):
-    self.metrics = {}
-    self.last_flushed = datetime.datetime.utcfromtimestamp(0)
-    self.store.reset_for_unittest()
-
 state = State()
 
 
@@ -137,10 +132,8 @@ def close():
     state.flush_thread.stop()
 
 
-def reset_for_unittest(disable=False):
-  state.reset_for_unittest()
-  if disable:
-    state.flush_enabled_fn = lambda: False
+def reset_for_unittest():
+  state.store.reset_for_unittest()
 
 
 class _FlushThread(threading.Thread):
