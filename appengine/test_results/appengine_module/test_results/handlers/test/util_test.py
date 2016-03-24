@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import unittest
+
 from appengine_module.testing_utils import testing
 from appengine_module.test_results.handlers import util
 
@@ -35,3 +37,42 @@ class TestFileHandlerTest(testing.AppengineTestCase):
     self.assertEqual('base_unittests',
         util.normalize_test_type(
             'base_unittests on ATI GPU on Windows (without patch) on Windows'))
+
+
+class FlattenTestsTrieTest(unittest.TestCase):
+  def test_flattens_tests_trie_correctly(self):
+    test_trie = {
+      'b': {
+        'actual': 'FAIL PASS',
+        'expected': '...',
+      },
+      'a': {
+        '1': {
+          'actual': '...',
+          'expected': 'SKIP',
+        },
+        '2': {
+          'actual': '...',
+          'expected': '...',
+        },
+      },
+    }
+
+    expected = {
+      'b': {
+        'actual': ['FAIL', 'PASS'],
+        'expected': ['...'],
+      },
+      'a.1': {
+        'actual': ['...'],
+        'expected': ['SKIP'],
+      },
+      'a.2': {
+        'actual': ['...'],
+        'expected': ['...'],
+      },
+    }
+
+    actual = util.flatten_tests_trie(test_trie, '.')
+    self.assertDictEqual(actual, expected)
+

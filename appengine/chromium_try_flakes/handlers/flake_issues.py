@@ -20,7 +20,7 @@ from issue_tracker import issue_tracker_api, issue
 from model.flake import (
     Flake, FlakeOccurrence, FlakeUpdate, FlakeUpdateSingleton, FlakyRun)
 from status import build_result, util
-from test_results.util import normalize_test_type
+from test_results.util import normalize_test_type, flatten_tests_trie
 
 
 MAX_UPDATED_ISSUES_PER_DAY = 50
@@ -374,14 +374,12 @@ class CreateFlakyRun(webapp2.RequestHandler):
     flake.put()
 
   @classmethod
-  def _flatten_tests(cls, tests, delimiter='/', prefix=None):
-    """Flattens hierarchical GTest JSON test structure.
+  def _flatten_tests(cls, tests, delimiter):
+    """Finds all passed, failed and skipped tests in tests trie.
 
-    The hiearchical GTest JSON test structure is described in
-    https://www.chromium.org/developers/the-json-test-results-format (see
-    top-level 'tests' key).
+    Test names are produced by concatenating parent node names with delimieter.
 
-    We only return 3 test types:
+    We only return 3 types of tests:
      - passed, i.e. expected is "PASS" and last actual run is "PASS"
      - failed, i.e. expected is "PASS" and last actual run is "FAIL", "TIMEOUT"
        or "CRASH"
@@ -393,7 +391,6 @@ class CreateFlakyRun(webapp2.RequestHandler):
      - unexpected flakiness, i.e. failures than hapeneed before last PASS.
 
     Args:
-      prefix: Prefix to be added before test names if this is a parent node.
       delimiter: Delimiter to use for concatenating parts of test name.
       tests: Any non-leaf node of the hierarchical GTest JSON test structure.
 
@@ -403,27 +400,15 @@ class CreateFlakyRun(webapp2.RequestHandler):
     passed = []
     failed = []
     skipped = []
-    for node_name, node in tests.iteritems():
-      # Compute current node name, which would be a test name for leaf nodes or
-      # new prefix for parent nodes.
-      test_name = prefix + delimiter + node_name if prefix else node_name
-
-      # Check if it is a leaf node first.
-      if 'actual' in node and 'expected' in node:
-        if node['expected'] == 'PASS':
-          actual_results = node['actual'].split(' ')
-          if actual_results[-1] == 'PASS':
-            passed.append(test_name)
-          elif actual_results[-1] in ('FAIL', 'TIMEOUT', 'CRASH'):
-            failed.append(test_name)
-        elif node['expected'] == 'SKIP' and node['actual'] == 'SKIP':
-          skipped.append(test_name)
-      else:
-        node_passed, node_failed, node_skipped = cls._flatten_tests(
-            node, delimiter, test_name)
-        passed.extend(node_passed)
-        failed.extend(node_failed)
-        skipped.extend(node_skipped)
+    for name, test in flatten_tests_trie(tests, delimiter).iteritems():
+      if test['expected'] == ['PASS']:
+        last_result = test['actual'][-1]
+        if last_result == 'PASS':
+          passed.append(name)
+        elif last_result in ('FAIL', 'TIMEOUT', 'CRASH'):
+          failed.append(name)
+      elif test['expected'] == ['SKIP'] and test['actual'] == ['SKIP']:
+        skipped.append(name)
 
     return passed, failed, skipped
 

@@ -50,3 +50,32 @@ def normalize_test_type(test_type):
   if patched:
     return '%s (with patch)' % clean_test_type
   return clean_test_type
+
+
+def flatten_tests_trie(tests_trie, delimiter):
+  """Flattens tests trie structure.
+
+  The tests trie structure is described in
+  https://www.chromium.org/developers/the-json-test-results-format (see
+  top-level 'tests' key).
+
+  Args:
+    test_trie: Test trie (value of the 'tests' key in JSON results).
+    delimiter: Delimiter to use for concatenating parts of test name.
+
+  Returns:
+    Dictionary mapping full test names to dict describing them, which contains
+    at least 'expected' and 'actual' fields.
+  """
+  flattened_tests = {}
+  for prefix, node in tests_trie.iteritems():
+    if 'expected' in node and 'actual' in node:  # leaf node
+      new_node = node.copy()
+      new_node['actual'] = new_node['actual'].split(' ')
+      new_node['expected'] = new_node['expected'].split(' ')
+      flattened_tests[prefix] = new_node
+    else:
+      for name, test in flatten_tests_trie(node, delimiter).iteritems():
+        flattened_tests[prefix + delimiter + name] = test
+
+  return flattened_tests

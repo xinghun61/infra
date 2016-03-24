@@ -28,9 +28,12 @@
 
 import webapp2
 
+import gae_ts_mon
+import gae_event_mon
 from appengine_module.test_results.handlers import buildershandler
 from appengine_module.test_results.handlers import builderstatehandler
 from appengine_module.test_results.handlers import menu
+from appengine_module.test_results.handlers import monitoring
 from appengine_module.test_results.handlers import redirector
 from appengine_module.test_results.handlers import testfilehandler
 
@@ -43,9 +46,12 @@ routes = [
     ('/updatebuilders', buildershandler.UpdateBuilders),
     ('/builderstate', builderstatehandler.GetBuilderState),
     ('/updatebuilderstate', builderstatehandler.Update),
+    ('/internal/monitoring/upload', monitoring.EventMonUploader),
     ('/', menu.Menu),
     webapp2.Route('/revision_range', webapp2.RedirectHandler, defaults={
         '_uri': redirector.get_googlesource_url}),
 ]
 
 app = webapp2.WSGIApplication(routes, debug=True)
+gae_ts_mon.initialize(app)
+gae_event_mon.initialize('test-results')

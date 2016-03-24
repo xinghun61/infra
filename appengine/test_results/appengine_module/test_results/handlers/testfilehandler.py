@@ -42,6 +42,7 @@ from appengine_module.test_results.handlers import util
 from appengine_module.test_results.model.builderstate import BuilderState
 from appengine_module.test_results.model.jsonresults import JsonResults
 from appengine_module.test_results.model.testfile import TestFile
+from appengine_module.test_results.handlers.monitoring import EventMonUploader
 
 PARAM_MASTER = "master"
 PARAM_BUILDER = "builder"
@@ -318,6 +319,8 @@ class Upload(webapp2.RequestHandler):  # pylint: disable=W0232
             is_full_results_format=True)
         BuilderState.incremental_update(master, builder, test_type,
             datetime.now())
+        EventMonUploader.upload(master, builder, build_number, test_type,
+            file_json)
 
       if status_code == 200:
         logging.info(status_string)

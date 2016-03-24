@@ -8,3 +8,7 @@ cron:
   url: /updatebuilderstate
   schedule: every 30 minutes
   timezone: America/Los_Angeles
+
+- description: send ts_mon metrics
+  url: /internal/cron/ts_mon/send
+  schedule: every 1 minutes
