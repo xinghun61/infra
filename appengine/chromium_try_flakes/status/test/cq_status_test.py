@@ -319,7 +319,7 @@ class CQStatusTestCase(testing.AppengineTestCase):
 
   def setUp(self):
     super(CQStatusTestCase, self).setUp()
-    ts_mon.reset_for_unittest()
+    ts_mon.reset_for_unittest(disable=True)
 
   def test_create_tasks_to_update_issue_tracker(self):
     Flake(name='foo1', count_day=1).put()
