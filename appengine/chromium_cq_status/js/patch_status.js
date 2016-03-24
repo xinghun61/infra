@@ -34,6 +34,7 @@ var actionInfo = {
   patch_tree_closed: {
     description: 'Patch blocked on closed tree',
     cls: 'bad',
+    duplicate: lastTreeClosedRecordEqual,
   },
   patch_throttled: {
     description: 'Patch blocked on throttled CQ',
@@ -173,6 +174,7 @@ function displayAttempts(records) {
       rows: [],
       header: null,
     };
+    var previousRecord;
     recordGroup.forEach(function(record) {
       var info = actionInfo[record.fields.action];
       if (!info) {
@@ -186,9 +188,18 @@ function displayAttempts(records) {
       if (!info || (info.filter && !info.filter(record))) {
         return;
       }
+      if (info && info.duplicate && previousRecord &&
+          previousRecord.fields.action == record.fields.action &&
+          info.duplicate(record, previousRecord)) {
+        // If the previous record is a duplicate of the current, remove previous
+        // one, so we show the record with the latest timestamp, which in turn
+        // allows user to see that there is progress and that CQ is not stuck.
+        attempt.rows.pop();
+      }
       var duration = getDurationString(attempt.start, record.timestamp);
       attempt.rows.push(newRow(record.timestamp, duration, info.description,
                                record.fields.message, info.cls));
+      previousRecord = record;
     });
     attempt.header = newHeader(attempt);
     attempts.push(attempt);
@@ -324,6 +335,10 @@ function simpleTryjobVerifierCheck(record) {
 
 function tryjobVerifierCheck(record) {
   return record.fields.verifier === 'try job';
+}
+
+function lastTreeClosedRecordEqual(record, previousRecord) {
+  return previousRecord.fields.message == record.fields.message;
 }
 
 function verifierRetryInfo(attempt, record) {
