@@ -71,4 +71,15 @@ class EventMonUploaderTest(testing.AppengineTestCase):
     # TODO(sergiyb): Check that event is correctly created.
 
   def test_does_not_crash_on_incorrect_tests_structure(self):
+    EventMonUploader.upload('', '', '', '', {'tests': ['foo', 'bar']})
+
+  def test_inputs_without_required_fields_still_create_task(self):
     EventMonUploader.upload('', '', '', '', {})
+    tasks = self.taskqueue_stub.get_filtered_tasks()
+    self.assertEqual(len(tasks), 1)
+    self.assertEqual(tasks[0].url, '/internal/monitoring/upload')
+    params = tasks[0].extract_params()
+    self.assertEqual(params['interrupted'], 'False')
+    self.assertEqual(params['version'], '3')
+    self.assertEqual(params['seconds_since_epoch'], '0')
+    self.assertEqual(params['tests'], '{}')

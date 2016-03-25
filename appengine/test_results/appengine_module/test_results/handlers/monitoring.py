@@ -32,16 +32,16 @@ class EventMonUploader(webapp2.RequestHandler):
     # TODO(sergiyb): Schedule a task queue job reporting this to event_mon.
     try:
       tests = util.flatten_tests_trie(
-          file_json['tests'], file_json.get('path_delimieter', '/'))
+          file_json.get('tests', {}), file_json.get('path_delimieter', '/'))
 
       task_params = {
         'master': master,
         'builder': builder,
         'build_number': build_number,
         'test_type': test_type,
-        'interrupted': file_json['interrupted'],
-        'version': file_json['version'],
-        'seconds_since_epoch': file_json['seconds_since_epoch'],
+        'interrupted': file_json.get('interrupted', False),
+        'version': file_json.get('version', 3),
+        'seconds_since_epoch': file_json.get('seconds_since_epoch', 0),
         'tests': json.dumps(tests)
       }
     except Exception:
