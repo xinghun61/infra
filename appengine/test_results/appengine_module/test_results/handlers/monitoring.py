@@ -22,33 +22,29 @@ class EventMonUploader(webapp2.RequestHandler):
       description='Sum of all characters in all test names')
 
   def post(self):
+    # TODO(sergiyb): Retrieve test json from datastore based on task parameters.
     # TODO(sergiyb): Create a proto event and send it to event_mon.
     pass
 
   @classmethod
   def upload(cls, master, builder, build_number, test_type, file_json):
-    # Currently we just report stats about file_json to ts_mon to estimate size
-    # of the data that we are going to report to event_mon.
-    # TODO(sergiyb): Schedule a task queue job reporting this to event_mon.
+    taskqueue.add(url='/internal/monitoring/upload', params={
+      'master': master,
+      'builder': builder,
+      'build_number': build_number,
+      'test_type': test_type,
+    })
+
+    # Since the task queue doesn't actually do anything yet, we currently just
+    # report stats about number of tests and characters to ts_mon to estimate
+    # size of the data that we are going to report to event_mon.
+    # TODO(sergiyb): Remove this code and file_json parameter once we get needed
+    # estimates.
     try:
       tests = util.flatten_tests_trie(
           file_json.get('tests', {}), file_json.get('path_delimieter', '/'))
-
-      task_params = {
-        'master': master,
-        'builder': builder,
-        'build_number': build_number,
-        'test_type': test_type,
-        'interrupted': file_json.get('interrupted', False),
-        'version': file_json.get('version', 3),
-        'seconds_since_epoch': file_json.get('seconds_since_epoch', 0),
-        'tests': json.dumps(tests)
-      }
+      cls.num_tests.increment_by(len(tests))
+      cls.num_characters.increment_by(sum(len(t) for t in tests))
     except Exception:
       logging.exception('Failed to parse test results %s', file_json)
       return
-
-    taskqueue.add(url='/internal/monitoring/upload', params=task_params)
-
-    cls.num_tests.increment_by(len(tests))
-    cls.num_characters.increment_by(sum(len(t) for t in tests))
