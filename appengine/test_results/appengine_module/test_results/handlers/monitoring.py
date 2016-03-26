@@ -14,6 +14,9 @@ from infra_libs import event_mon
 
 
 class EventMonUploader(webapp2.RequestHandler):
+  num_test_results = ts_mon.CounterMetric(
+      'test_results/num_test_results',
+      description='Number of reported test results')
   num_tests = ts_mon.CounterMetric(
       'test_results/num_tests',
       description='Number of tests in the test results')
@@ -43,6 +46,7 @@ class EventMonUploader(webapp2.RequestHandler):
     try:
       tests = util.flatten_tests_trie(
           file_json.get('tests', {}), file_json.get('path_delimieter', '/'))
+      cls.num_test_results.increment_by(1)
       cls.num_tests.increment_by(len(tests))
       cls.num_characters.increment_by(sum(len(t) for t in tests))
     except Exception:
