@@ -7,6 +7,7 @@ import os
 import tempfile
 import unittest
 
+from googleapiclient import errors
 import mock
 
 from infra_libs.ts_mon.common import interface
@@ -170,7 +171,18 @@ class PubSubMonitorTest(unittest.TestCase):
     metric2 = metrics_pb2.MetricsData(name='m2')
     mon.send([metric1, metric2])
     collection = metrics_pb2.MetricsCollection(data=[metric1, metric2])
+    publish.side_effect = errors.HttpError(
+        mock.Mock(status=404, reason='test'), '')
     mon.send(collection)
+
+    # Test that all caught exceptions are specified without errors.
+    # When multiple exceptions are specified in the 'except' clause,
+    # they are evaluated lazily, and may contain syntax errors.
+    # Throwing an uncaught exception forces all exception specs to be
+    # evaluated, catching more runtime errors.
+    publish.side_effect = Exception('uncaught')
+    with self.assertRaises(Exception):
+      mon.send(collection)
 
     def message(pb):
       pb = monitors.Monitor._wrap_proto(pb)

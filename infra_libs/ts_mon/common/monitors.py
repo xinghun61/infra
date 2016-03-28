@@ -11,6 +11,7 @@ import logging
 import traceback
 
 from googleapiclient import discovery
+from googleapiclient import errors
 from oauth2client import gce
 from oauth2client.client import GoogleCredentials
 from oauth2client.file import Storage
@@ -154,13 +155,14 @@ class PubSubMonitor(Monitor):
         ],
     }
     # Occasionally, client fails to receive a proper internal JSON
-    # from the server and raises ValueError trying to parse it.  This
-    # is not fatal, we'll resend metrics next time.
+    # from the server and raises ValueError trying to parse it.  Other
+    # times we may fail with a network error. This is not fatal, we'll
+    # resend metrics next time.
     try:
       self._api.projects().topics().publish(
           topic=self._topic,
           body=body).execute(num_retries=5)
-    except ValueError:
+    except (ValueError, errors.Error):
       # Log a warning, not error, to avoid false alarms in AppEngine apps.
       logging.warning('PubSubMonitor.send failed:\n%s',
                       traceback.format_exc())
