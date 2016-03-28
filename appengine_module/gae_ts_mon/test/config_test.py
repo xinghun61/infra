@@ -8,6 +8,7 @@ import os
 import time
 import unittest
 
+import endpoints
 import gae_ts_mon
 import mock
 import webapp2
@@ -19,6 +20,8 @@ from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import monitors
 from infra_libs.ts_mon.common import targets
 from infra_libs.ts_mon.common.test import stubs
+from protorpc import message_types
+from protorpc import remote
 from testing_utils import testing
 
 
@@ -118,50 +121,55 @@ class InitializeTest(testing.AppengineTestCase):
 
   def test_flush_metrics_no_task_num(self):
     # We are not assigned task_num yet; cannot send metrics.
-    time_now = datetime.datetime(2016, 2, 8, 1, 0)
-    more_than_min_ago = time_now - datetime.timedelta(seconds=61)
+    time_now = 10000
+    datetime_now = datetime.datetime.utcfromtimestamp(time_now)
+    more_than_min_ago = datetime_now - datetime.timedelta(seconds=61)
     interface.state.last_flushed = more_than_min_ago
     entity = shared.get_instance_entity()
     entity.task_num = -1
     interface.state.target.task_num = -1
-    self.assertFalse(config.flush_metrics_if_needed(time_fn=lambda: time_now))
+    self.assertFalse(config.flush_metrics_if_needed(time_now))
 
   def test_flush_metrics_no_task_num_too_long(self):
     # We are not assigned task_num for too long; cannot send metrics.
-    time_now = datetime.datetime(2016, 2, 8, 1, 0)
-    too_long_ago = time_now - datetime.timedelta(
+    time_now = 10000
+    datetime_now = datetime.datetime.utcfromtimestamp(time_now)
+    too_long_ago = datetime_now - datetime.timedelta(
         seconds=shared.INSTANCE_EXPECTED_TO_HAVE_TASK_NUM_SEC+1)
     interface.state.last_flushed = too_long_ago
     entity = shared.get_instance_entity()
     entity.task_num = -1
     entity.last_updated = too_long_ago
     interface.state.target.task_num = -1
-    self.assertFalse(config.flush_metrics_if_needed(time_fn=lambda: time_now))
+    self.assertFalse(config.flush_metrics_if_needed(time_now))
 
   def test_flush_metrics_purged(self):
     # We lost our task_num; cannot send metrics.
-    time_now = datetime.datetime(2016, 2, 8, 1, 0)
-    more_than_min_ago = time_now - datetime.timedelta(seconds=61)
+    time_now = 10000
+    datetime_now = datetime.datetime.utcfromtimestamp(time_now)
+    more_than_min_ago = datetime_now - datetime.timedelta(seconds=61)
     interface.state.last_flushed = more_than_min_ago
     entity = shared.get_instance_entity()
     entity.task_num = -1
     interface.state.target.task_num = 2
-    self.assertFalse(config.flush_metrics_if_needed(time_fn=lambda: time_now))
+    self.assertFalse(config.flush_metrics_if_needed(time_now))
 
   def test_flush_metrics_too_early(self):
     # Too early to send metrics.
-    time_now = datetime.datetime(2016, 2, 8, 1, 0)
-    less_than_min_ago = time_now - datetime.timedelta(seconds=59)
+    time_now = 10000
+    datetime_now = datetime.datetime.utcfromtimestamp(time_now)
+    less_than_min_ago = datetime_now - datetime.timedelta(seconds=59)
     interface.state.last_flushed = less_than_min_ago
     entity = shared.get_instance_entity()
     entity.task_num = 2
-    self.assertFalse(config.flush_metrics_if_needed(time_fn=lambda: time_now))
+    self.assertFalse(config.flush_metrics_if_needed(time_now))
 
   @mock.patch('infra_libs.ts_mon.common.interface.flush', autospec=True)
   def test_flush_metrics_successfully(self, mock_flush):
     # We have task_num and due for sending metrics.
-    time_now = datetime.datetime(2016, 2, 8, 1, 0)
-    more_than_min_ago = time_now - datetime.timedelta(seconds=61)
+    time_now = 10000
+    datetime_now = datetime.datetime.utcfromtimestamp(time_now)
+    more_than_min_ago = datetime_now - datetime.timedelta(seconds=61)
     interface.state.last_flushed = more_than_min_ago
     entity = shared.get_instance_entity()
     entity.task_num = 2
@@ -170,27 +178,42 @@ class InitializeTest(testing.AppengineTestCase):
     test_global_metric.set(42)
     shared.register_global_metrics([test_global_metric])
     self.assertEqual(42, test_global_metric.get())
-    self.assertTrue(config.flush_metrics_if_needed(time_fn=lambda: time_now))
+    self.assertTrue(config.flush_metrics_if_needed(time_now))
     self.assertEqual(None, test_global_metric.get())
     mock_flush.assert_called_once_with()
+
+  @mock.patch('infra_libs.ts_mon.common.interface.flush', autospec=True)
+  def test_flush_metrics_disabled(self, mock_flush):
+    # We have task_num and due for sending metrics, but ts_mon is disabled.
+    time_now = 10000
+    datetime_now = datetime.datetime.utcfromtimestamp(time_now)
+    more_than_min_ago = datetime_now - datetime.timedelta(seconds=61)
+    interface.state.last_flushed = more_than_min_ago
+    interface.state.flush_enabled_fn = lambda: False
+    entity = shared.get_instance_entity()
+    entity.task_num = 2
+    self.assertFalse(config.flush_metrics_if_needed(time_now))
+    self.assertEqual(0, mock_flush.call_count)
 
   @mock.patch('gae_ts_mon.config.flush_metrics_if_needed', autospec=True,
               return_value=True)
   def test_shutdown_hook_flushed(self, _mock_flush):
+    time_now = 10000
     id = shared.get_instance_entity().key.id()
     with shared.instance_namespace_context():
       self.assertIsNotNone(shared.Instance.get_by_id(id))
-    config._shutdown_hook()
+    config._shutdown_hook(time_fn=lambda: time_now)
     with shared.instance_namespace_context():
       self.assertIsNone(shared.Instance.get_by_id(id))
 
   @mock.patch('gae_ts_mon.config.flush_metrics_if_needed', autospec=True,
               return_value=False)
   def test_shutdown_hook_not_flushed(self, _mock_flush):
+    time_now = 10000
     id = shared.get_instance_entity().key.id()
     with shared.instance_namespace_context():
       self.assertIsNotNone(shared.Instance.get_by_id(id))
-    config._shutdown_hook()
+    config._shutdown_hook(time_fn=lambda: time_now)
     with shared.instance_namespace_context():
       self.assertIsNone(shared.Instance.get_by_id(id))
 
@@ -225,7 +248,7 @@ class InstrumentTest(testing.AppengineTestCase):
 
     fields = {'name': '^/$', 'status': 200, 'is_robot': False}
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
-    self.assertEqual(3000, http_metrics.server_durations.get(fields).sum)
+    self.assertLessEqual(3000, http_metrics.server_durations.get(fields).sum)
     self.assertEqual(
         len('success!'), http_metrics.server_response_bytes.get(fields).sum)
 
@@ -348,3 +371,92 @@ class InstrumentTest(testing.AppengineTestCase):
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
     self.assertEqual(
         len('foo'), http_metrics.server_request_bytes.get(fields).sum)
+
+
+class FakeTime(object):
+  def __init__(self):
+    self.timestamp_now = 1000.0
+
+  def time_fn(self):
+    self.timestamp_now += 0.2
+    return self.timestamp_now
+
+
+@endpoints.api(name='testapi', version='v1')
+class TestEndpoint(remote.Service):
+
+  @gae_ts_mon.instrument_endpoint(time_fn=FakeTime().time_fn)
+  @endpoints.method(message_types.VoidMessage, message_types.VoidMessage,
+                    name='method_good')
+  def do_good(self, request):
+    return request
+
+  @gae_ts_mon.instrument_endpoint(time_fn=FakeTime().time_fn)
+  @endpoints.method(message_types.VoidMessage, message_types.VoidMessage,
+                    name='method_bad')
+  def do_bad(self, request):
+    raise Exception
+
+  @gae_ts_mon.instrument_endpoint(time_fn=FakeTime().time_fn)
+  @endpoints.method(message_types.VoidMessage, message_types.VoidMessage,
+                    name='method_400')
+  def do_400(self, request):
+    raise endpoints.BadRequestException('Bad request')
+
+
+class InstrumentEndpointTest(testing.EndpointsTestCase):
+  api_service_cls = TestEndpoint
+
+  def setUp(self):
+    super(InstrumentEndpointTest, self).setUp()
+
+    config.reset_for_unittest()
+    target = targets.TaskTarget('test_service', 'test_job',
+                                'test_region', 'test_host')
+    self.mock_state = interface.State(target=target)
+    self.mock_state.metrics = copy.copy(interface.state.metrics)
+    self.endpoint_name = '/_ah/spi/TestEndpoint.%s'
+    mock.patch('infra_libs.ts_mon.common.interface.state',
+        new=self.mock_state).start()
+
+    mock.patch('infra_libs.ts_mon.common.monitors.PubSubMonitor',
+               autospec=True).start()
+
+  def tearDown(self):
+    config.reset_for_unittest()
+    self.assertEqual([], list(shared.global_metrics_callbacks))
+    mock.patch.stopall()
+    super(InstrumentEndpointTest, self).tearDown()
+
+  def test_good(self):
+    self.call_api('do_good')
+    fields = {'name': self.endpoint_name % 'method_good',
+              'status': 200, 'is_robot': False}
+    self.assertEqual(1, http_metrics.server_response_status.get(fields))
+    self.assertLessEqual(200, http_metrics.server_durations.get(fields).sum)
+
+  def test_bad(self):
+    with self.call_should_fail('500 Internal Server Error'):
+      self.call_api('do_bad')
+    fields = {'name': self.endpoint_name % 'method_bad',
+              'status': 500, 'is_robot': False}
+    self.assertEqual(1, http_metrics.server_response_status.get(fields))
+    self.assertLessEqual(200, http_metrics.server_durations.get(fields).sum)
+
+  def test_400(self):
+    with self.call_should_fail('400 Bad Request'):
+      self.call_api('do_400')
+    fields = {'name': self.endpoint_name % 'method_400',
+              'status': 400, 'is_robot': False}
+    self.assertEqual(1, http_metrics.server_response_status.get(fields))
+    self.assertLessEqual(200, http_metrics.server_durations.get(fields).sum)
+
+  @mock.patch('gae_ts_mon.config.need_to_flush_metrics', autospec=True,
+              return_value=False)
+  def test_no_flush(self, _fake):
+    # For branch coverage.
+    self.call_api('do_good')
+    fields = {'name': self.endpoint_name % 'method_good',
+              'status': 200, 'is_robot': False}
+    self.assertEqual(1, http_metrics.server_response_status.get(fields))
+    self.assertLessEqual(200, http_metrics.server_durations.get(fields).sum)

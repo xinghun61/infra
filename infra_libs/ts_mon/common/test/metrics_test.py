@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import sys
-import textwrap
 import unittest
 
 import mock
@@ -22,6 +21,7 @@ from infra_libs.ts_mon.protos import metrics_pb2
 
 class TestBase(unittest.TestCase):
   def setUp(self):
+    super(TestBase, self).setUp()
     target = targets.TaskTarget('test_service', 'test_job',
                                 'test_region', 'test_host')
     self.mock_state = interface.State(target=target)
@@ -31,6 +31,7 @@ class TestBase(unittest.TestCase):
 
   def tearDown(self):
     self.state_patcher.stop()
+    super(TestBase, self).tearDown()
 
 
 class MetricTest(TestBase):
