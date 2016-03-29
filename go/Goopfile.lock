@@ -30,7 +30,7 @@ github.com/op/go-logging #970db520ece77730c7e4724c61121037378659d9 !https://chro
 github.com/pmezard/go-difflib #792786c7400a136282c1664665ae0a8db921c6c2 !https://chromium.googlesource.com/external/github.com/pmezard/go-difflib.git
 github.com/sergi/go-diff #ec7fdbb58eb3e300c8595ad5ac74a5aa50019cc7 !https://chromium.googlesource.com/external/github.com/sergi/go-diff.git
 github.com/smartystreets/assertions #2d74a419fbe076f8c76ed8b1c7c633a676c5dc63 !https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
-github.com/smartystreets/goconvey #101844423e4188895b52ec7fcb5689d014f32c30 !https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
+github.com/smartystreets/goconvey #55d548bcbd33d0fdfbd8844ede638af868cdf23e !https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
 github.com/steveyen/go-slab #2f82a688478741b7843a5575749f726d4b3f92b1 !https://chromium.googlesource.com/external/github.com/steveyen/go-slab.git
 github.com/texttheater/golang-levenshtein #14026fface0cb806188c85e792a93d625dc37d0f !https://chromium.googlesource.com/external/github.com/texttheater/golang-levenshtein.git
 github.com/xtgo/set #4431f6b51265b1e0b76af4dafc09d6f12c2bdcd0 !https://chromium.googlesource.com/external/github.com/xtgo/set
