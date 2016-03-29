@@ -163,7 +163,8 @@ CTFailures.prototype.update = function() {
       net.json('https://trooper-o-matic.appspot.com/alerts'),
       net.json('/api/v1/alerts/chromium'),
       net.json('/api/v1/alerts/blink'),
-      net.json('/api/v1/alerts/chromium.perf')];
+      net.json('/api/v1/alerts/chromium.perf'),
+      net.json('/api/v1/alerts/trooper')];
 
   return Promise.all(reqs).then(function(data_array) {
     var annotations = data_array[0];
@@ -174,6 +175,7 @@ CTFailures.prototype.update = function() {
       'chromium': data_array[4],
       'blink': data_array[5],
       'chromium.perf': data_array[6],
+      'trooper': data_array[7],
     };
 
     var newFailures = this._processSheriffData(sheriff_data, annotations);
