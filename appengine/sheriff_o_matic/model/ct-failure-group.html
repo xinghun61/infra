@@ -13,14 +13,14 @@ function CTFailureGroup(tree, data, category) {
   this.tree = tree;
   this.examineUrl = this.tree + '/failure/' + encodeURIComponent(this.key);
   this.data = data;
+  this._annotation = CTFailureGroup._mergeAnnotations(data.getAnnotations());
+  this._originalCategory = category || 'default';
+  // This will set |category| which is used for grouping so it is convenient
+  // to make sure that it is set on construction.
+  this._computeProperties();
   var cTree = CTTreeList.getTree(tree).then(function (cTree) {
-    if (cTree) {
+    if (cTree)
       this.data.bugLabels = cTree.bugLabels;
-    }
-
-    this._annotation = CTFailureGroup._mergeAnnotations(data.getAnnotations());
-    this._originalCategory = category || 'default';
-    this._computeProperties();
   }.bind(this))
 }
 
@@ -79,7 +79,7 @@ CTFailureGroup.prototype._computeProperties = function() {
   }
   // FIXME: Bug labels would be simpler to implement as a filter in the UI.
   if (this.bug != null)
-    this.bugLabel = `Bug ${bugId}` 
+    this.bugLabel = `Bug ${bugId}`
   else
     this.bugLabel = undefined;
 };

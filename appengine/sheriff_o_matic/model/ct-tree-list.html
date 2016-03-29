@@ -39,7 +39,7 @@ CTTreeList.getTree = function(treeName) {
 
 CTTreeList.defaultValue = function() {
   return CTTreeList.getInstance()._promise.then(function(trees) {
-    return trees[0].name;
+    return trees.length ? trees[0].name : undefined;
   })
 };
 
