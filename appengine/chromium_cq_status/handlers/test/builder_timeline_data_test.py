@@ -6,7 +6,7 @@ import os
 import json
 import main
 
-from tests.testing_utils import testing
+from third_party.testing_utils import testing
 from handlers.builder_timeline_data import create_events
 
 class BuilderTimelineDataTest(testing.AppengineTestCase):

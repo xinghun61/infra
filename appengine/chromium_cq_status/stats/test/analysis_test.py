@@ -5,7 +5,7 @@
 
 from datetime import datetime
 
-from tests.testing_utils import testing
+from third_party.testing_utils import testing
 
 import main
 from model.cq_stats import (

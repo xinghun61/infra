@@ -5,7 +5,7 @@
 from datetime import datetime
 import json
 
-from tests.testing_utils import testing
+from third_party.testing_utils import testing
 
 import highend
 from model.record import Record
@@ -355,6 +355,10 @@ class TestQuery(testing.AppengineTestCase):
         },
       }],
     }, _parse_body(response))
+
+  def test_query_bad_params(self):
+    response = self.test_app.get('/query', params={'bad': 'worse'})
+    self.assertIn('Unexpected parameters', response.body)
 
 
 def _clear_records(): # pragma: no cover

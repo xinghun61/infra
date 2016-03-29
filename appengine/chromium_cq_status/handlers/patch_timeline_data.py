@@ -17,24 +17,23 @@ from datetime import datetime
 from model.record import Record
 from shared.config import (
   JOB_STATE,
-  RIETVELD_TIMESTAMP_FORMAT,
   TAG_ISSUE,
   TAG_PATCHSET,
 )
-
+from shared.parsing import parse_rietveld_timestamp
 from shared.utils import (
   cross_origin_json,
   to_unix_timestamp,
 )
 
-class PatchTimelineData(webapp2.RequestHandler): # pragma: no cover
+class PatchTimelineData(webapp2.RequestHandler):
   @cross_origin_json
   def get(self, issue, patch):
     attempts = get_attempts(issue, patch)
     return attempts_to_events(attempts)
 
 
-def get_attempts(issue, patch): # pragma: no cover
+def get_attempts(issue, patch):
   """Given an issue and a patch, returns a list of attempts.
 
   Returns a list of attempts. Attempts are lists of records which fall within
@@ -55,11 +54,11 @@ def get_attempts(issue, patch): # pragma: no cover
       if action == 'patch_stop':
         yield attempt
         attempt = None
-  if attempt != None:
+  if attempt != None:  # pragma: no cover
     yield attempt
 
 
-def attempts_to_events(attempts): # pragma: no cover
+def attempts_to_events(attempts):
   """Given a list of attempts, returns a list of Trace Viewer events.
 
   Attempts are a list of CQ records which fall between patch_start and
@@ -85,7 +84,7 @@ def attempts_to_events(attempts): # pragma: no cover
         if event.is_meta():
           if builder_key in open_builds:
             open_builds[builder_key]['args'] = event.args
-          continue
+          continue  # pragma: no cover
         event_dict = event.to_dict()
         if event.ph == 'B':
           if event.cat == 'Patch Progress' and builder_key in open_builds:
@@ -122,7 +121,7 @@ def attempts_to_events(attempts): # pragma: no cover
   return events
 
 
-def record_to_events(record, attempt_number): # pragma: no cover
+def record_to_events(record, attempt_number):
   """Given a single CQ record, creates a generator for Trace Viewer events.
 
   A single record in CQ can correspond to any number of events, depending on
@@ -155,7 +154,7 @@ def record_to_events(record, attempt_number): # pragma: no cover
       # 'running' or not.
       job_state = JOB_STATE.get(cq_job_state)
 
-      if not job_state:
+      if not job_state:  # pragma: no cover
         continue
       elif job_state == 'running':
         for job_info in jobs:
@@ -167,7 +166,7 @@ def record_to_events(record, attempt_number): # pragma: no cover
         for job_info in jobs:
           master = job_info['master']
           builder = job_info['builder']
-          timestamp = rietveld_timestamp(job_info['timestamp'])
+          timestamp = parse_rietveld_timestamp(job_info['timestamp'])
           cname = 'cq_build_' + job_state
           args = {
             'build_url': job_info.get('url'),
@@ -197,7 +196,7 @@ def record_to_events(record, attempt_number): # pragma: no cover
                            cname, {'action': action})
 
 
-class TraceViewerEvent(): # pragma: no cover
+class TraceViewerEvent():
   """A class used to create JSON objects corresponding to an event.
 
   Trace Viewer requires a specific set of fields, described below:
@@ -229,7 +228,7 @@ class TraceViewerEvent(): # pragma: no cover
       'tid': self.tid,
       'args': self.args,
     }
-    if self.cname:
+    if self.cname:  # pragma: no branch
       event['cname'] = self.cname
     return event
 
@@ -241,7 +240,7 @@ class TraceViewerEvent(): # pragma: no cover
     return False
 
 
-class MetaEvent(): # pragma: no cover
+class MetaEvent():
   """A class used to update TraceViewerEvents
 
   TraceViewer events may need to be modified after they have been created
@@ -258,12 +257,3 @@ class MetaEvent(): # pragma: no cover
 
   def is_meta(self):
     return True
-
-
-def rietveld_timestamp(timestamp_string): # pragma: no cover
-  """Converts a Rietveld timestamp into a unix timestamp."""
-  try:
-    return to_unix_timestamp(
-        datetime.strptime(timestamp_string, RIETVELD_TIMESTAMP_FORMAT))
-  except ValueError:
-    return None

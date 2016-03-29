@@ -4,7 +4,7 @@
 
 from datetime import datetime
 
-from tests.testing_utils import testing
+from third_party.testing_utils import testing
 from shared import utils
 
 
@@ -42,6 +42,9 @@ class TestUtils(testing.AppengineTestCase):
 
     self.mock_current_user('random', 'random@person.com')
     self.assertFalse(utils.is_valid_user())
+
+    self.mock_current_user(is_admin=True)
+    self.assertTrue(utils.is_valid_user())
 
     self.mock_current_user('real', 'real@chromium.org')
     self.assertTrue(utils.is_valid_user())

@@ -20,7 +20,7 @@ from shared.parsing import (
 from model.password import Password
 from model.record import Record
 
-def update_record(key=None, tags=None, fields=None): # pragma: no cover
+def update_record(key=None, tags=None, fields=None):
   tags = tags or []
   fields = fields or {}
   if not key and len(tags) == 0 and len(fields) == 0:
@@ -35,7 +35,7 @@ def update_record(key=None, tags=None, fields=None): # pragma: no cover
   record.fields = fields
   record.put()
 
-class Post(webapp2.RequestHandler): # pragma: no cover
+class Post(webapp2.RequestHandler):
   def get(self):
     if not utils.is_valid_user():
       self.redirect(users.create_login_url('/'))
@@ -59,9 +59,9 @@ class Post(webapp2.RequestHandler): # pragma: no cover
     try:
       packets = map(json.loads, self.request.get_all('p'))
       for packet in packets:
-        if not isinstance(packet, dict):
+        if not isinstance(packet, dict):  # pragma: no cover
           raise ValueError('JSON dictionary expected.')
-    except ValueError as e:
+    except ValueError as e:  # pragma: no cover
       logging.warning(traceback.format_exc())
       self.response.write('Invalid packet: %s' % e)
       return

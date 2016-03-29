@@ -24,13 +24,13 @@ from shared import utils
 
 def has_end_timestamp(
       cache_timestamp, # pylint: disable=W0613
-      kwargs): # pragma: no cover
+      kwargs):
   end = kwargs.get('end')
   return end and end < datetime.utcnow()
 
 @utils.memcachize(cache_check=has_end_timestamp)
 def execute_query(
-    key, begin, end, tags, fields, count, cursor): # pragma: no cover
+    key, begin, end, tags, fields, count, cursor):
   records = []
   next_cursor = ''
   if key and count > 0:
@@ -66,13 +66,13 @@ def execute_query(
     'more': more,
   }
 
-def matches_fields(fields, record): # pragma: no cover
+def matches_fields(fields, record):
   for field, value in fields.items():
     if not field in record.fields or record.fields[field] != value:
       return False
   return True
 
-class Query(webapp2.RequestHandler): # pragma: no cover
+class Query(webapp2.RequestHandler):
   @utils.cross_origin_json
   def get(self, url_tags): # pylint: disable=W0221
     try:

@@ -7,7 +7,7 @@ import webapp2
 from model.cq_stats import CQStats
 from shared.utils import cross_origin_json
 
-class StatsDataPoints(webapp2.RequestHandler): # pragma: no cover
+class StatsDataPoints(webapp2.RequestHandler):
   @cross_origin_json
   def get(self, ranking, name, cq_stats_key): # pylint: disable=R0201
     cq_stats = CQStats.get_by_id(int(cq_stats_key))
@@ -16,7 +16,6 @@ class StatsDataPoints(webapp2.RequestHandler): # pragma: no cover
       if stats.name == name:
         if ranking == 'lowest':
           return stats.lowest_100
-        if ranking == 'highest':
-          return stats.highest_100
-        assert False
+        assert ranking == 'highest'
+        return stats.highest_100
     assert False, '%s must match a stat in the specified CQStats entry.' % name

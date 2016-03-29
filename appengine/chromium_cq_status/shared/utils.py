@@ -16,14 +16,14 @@ from shared.config import VALID_EMAIL_RE
 compressed_separators = (',', ':')
 minutes_per_day = 24 * 60
 
-def cronjob(cronjob_handler): # pragma: no cover
+def cronjob(cronjob_handler):
   def checked_cronjob_handler(self, *args):
-    assert (self.request.headers.get('X-AppEngine-Cron') or
+    assert (self.request.headers.get('X-AppEngine-Cron') or  # pragma: no cover
         users.is_current_user_admin())
-    cronjob_handler(self, *args)
+    cronjob_handler(self, *args)  # pragma: no cover
   return checked_cronjob_handler
 
-def cross_origin_json(handler): # pragma: no cover
+def cross_origin_json(handler):
   def headered_json_handler(self, *args):
     self.response.headers.add_header("Access-Control-Allow-Origin", "*")
     result = handler(self, *args)
@@ -32,16 +32,16 @@ def cross_origin_json(handler): # pragma: no cover
       self.response.write(compressed_json_dumps(result))
   return headered_json_handler
 
-def filter_dict(d, keys): # pragma: no cover
+def filter_dict(d, keys):
   return {key: d[key] for key in d if key in keys}
 
-def is_valid_user(): # pragma: no cover
+def is_valid_user():
   if users.is_current_user_admin():
     return True
   user = users.get_current_user()
   return user and VALID_EMAIL_RE.match(user.email())
 
-def memcachize(cache_check): # pragma: no cover
+def memcachize(cache_check):
   def decorator(f):
     def memcachized(**kwargs):
       key = '%s.%s(%s)' % (
@@ -65,14 +65,14 @@ def memcachize(cache_check): # pragma: no cover
     return memcachized
   return decorator
 
-def password_sha1(password): # pragma: no cover
+def password_sha1(password):
   return hashlib.sha1(password).hexdigest()
 
-def timestamp_now(): # pragma: no cover
+def timestamp_now():
   return to_unix_timestamp(datetime.utcnow())
 
-def to_unix_timestamp(dt): # pragma: no cover
+def to_unix_timestamp(dt):
   return calendar.timegm(dt.timetuple()) + dt.microsecond / 1e6
 
-def compressed_json_dumps(value): # pragma: no cover
+def compressed_json_dumps(value):
   return json.dumps(value, separators=compressed_separators)

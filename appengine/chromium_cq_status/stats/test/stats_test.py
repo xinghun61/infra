@@ -4,7 +4,7 @@
 
 from datetime import datetime, timedelta
 
-from tests.testing_utils import testing
+from third_party.testing_utils import testing
 
 import main
 from model.record import Record

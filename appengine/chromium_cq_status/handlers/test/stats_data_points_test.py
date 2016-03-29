@@ -5,7 +5,8 @@
 from datetime import datetime
 import json
 
-from tests.testing_utils import testing
+from third_party.testing_utils import testing
+from webtest.app import AppError
 
 import main
 from model.cq_stats import (
@@ -37,6 +38,11 @@ class TestStatsDataPoints(testing.AppengineTestCase):
       [1, {'data_point': 'b'}],
       [0, {'data_point': 'a'}],
     ], json.loads(response.body))
+
+  def test_highest_count_data_points_nonexistent(self):
+    key = _reset_stats()
+    with self.assertRaises(AppError):
+      self.test_app.get('/stats/highest/nonexistent/%s' % key)
 
   def test_lowest_list_data_points(self):
     key = _reset_stats()

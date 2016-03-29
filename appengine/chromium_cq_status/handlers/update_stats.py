@@ -22,11 +22,11 @@ analyzer_classes = (
   TryjobverifierAnalyzer,
 )
 
-def update_missing_cq_stats(minutes, end): # pragma: no cover
-  for begin, end in missing_intervals(minutes, end):
+def update_missing_cq_stats(minutes, end):
+  for begin, end in missing_intervals(minutes, end):  # pragma: no cover
     update_interval(minutes, begin, end, analyzer_classes)
 
-def missing_intervals(minutes, end): # pragma: no cover
+def missing_intervals(minutes, end):
   last_cq_stats = CQStats.query().filter(
       CQStats.interval_minutes == minutes).order(-CQStats.end).get()
   if last_cq_stats:
@@ -37,7 +37,7 @@ def missing_intervals(minutes, end): # pragma: no cover
     return intervals_in_range(minutes, begin, end)
   return []
 
-class UpdateStats(webapp2.RequestHandler): # pragma: no cover
+class UpdateStats(webapp2.RequestHandler):
   @cronjob
   def get(self):
     update_missing_cq_stats(

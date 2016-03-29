@@ -5,22 +5,27 @@
 
 from datetime import datetime
 
-from tests.testing_utils import testing
+from third_party.testing_utils import testing
 
-import main
+import highend
 from model.cq_stats import CQStats
 from model.record import Record
 from handlers.update_stats import missing_intervals
 
 class TestUpdateStats(testing.AppengineTestCase):
-  app_module = main.app
+  app_module = highend.app
+
+  def setUp(self):
+    super(TestUpdateStats, self).setUp()
+    _clear_ndb()
 
   def test_missing_intervals_empty(self):
-    _clear_ndb()
+    self.mock_current_user(is_admin=True)
     self.assertEqual([], missing_intervals(60, datetime(2000, 1, 1)))
+    # Smoke test for coverage.
+    self.test_app.get('/background/update-stats?interval_minutes=1440')
 
   def test_missing_intervals_records_only(self):
-    _clear_ndb()
     self.mock_now(datetime(2000, 1, 2, 0))
     Record().put()
     self.mock_now(datetime(2000, 1, 3, 0))
@@ -31,7 +36,6 @@ class TestUpdateStats(testing.AppengineTestCase):
     ], missing_intervals(1440, datetime(2000, 1, 4, 0)))
 
   def test_missing_intervals_mismatched_cq_stats(self):
-    _clear_ndb()
     CQStats(
       project='',
       interval_minutes=60,
@@ -45,7 +49,6 @@ class TestUpdateStats(testing.AppengineTestCase):
     ], missing_intervals(1440, datetime(2000, 1, 4, 0)))
 
   def test_missing_intervals_matched_cq_stats(self):
-    _clear_ndb()
     CQStats(
       project='',
       interval_minutes=1440,

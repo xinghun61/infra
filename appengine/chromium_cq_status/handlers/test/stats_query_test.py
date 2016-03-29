@@ -7,7 +7,7 @@ import json
 
 from google.appengine.api import memcache
 
-from tests.testing_utils import testing
+from third_party.testing_utils import testing
 
 import highend
 from model.cq_stats import (

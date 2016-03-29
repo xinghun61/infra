@@ -19,9 +19,9 @@ from handlers.patch_timeline_data import (
   MetaEvent,
 )
 
-class BuilderTimelineData(webapp2.RequestHandler): # pragma: no cover
+class BuilderTimelineData(webapp2.RequestHandler):
   @cross_origin_json
-  def get(self, master, builder, buildId, attempt_string):
+  def get(self, master, builder, buildId, attempt_string):  # pragma: no cover
     data = get_data(master, builder, buildId)
     events = []
     if data:
@@ -31,7 +31,7 @@ class BuilderTimelineData(webapp2.RequestHandler): # pragma: no cover
     return events
 
 
-def get_data(master, builder, buildId): # pragma: no cover
+def get_data(master, builder, buildId):  # pragma: no cover
   url = ('http://chrome-build-extract.appspot.com/p/' + master + '/builders/'
          + builder + '/builds/' + buildId + '?json=1')
   with contextlib.closing(urllib2.urlopen(url)) as response:
@@ -44,7 +44,7 @@ def get_data(master, builder, buildId): # pragma: no cover
 
 
 def create_events(data, master, builder, buildId, 
-                  attempt_string): # pragma: no cover
+                  attempt_string):
   steps = data['steps']
   state = 'cq_build_failed' if data.get('failed_steps') else 'cq_build_passed'
   for step in steps:

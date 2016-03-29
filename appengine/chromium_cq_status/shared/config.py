@@ -25,7 +25,8 @@ JOB_STATE = {
   'JOB_FAILED': 'failed',
   'JOB_TIMED_OUT': 'failed',
 }
-RIETVELD_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+RIETVELD_TIMESTAMP_FORMATS = (
+    '%Y-%m-%d %H:%M:%S.%f', '%Y-%m-%d %H:%M:%S.%f+00:00')
 STATS_START_TIMESTAMP = 374400 # 1970-01-05T00:00-0800 (midnight Monday PST)
 TAG_START = 'action=patch_start'
 TAG_STOP = 'action=patch_stop'

@@ -6,6 +6,6 @@ import webapp2
 
 from google.appengine.api import users
 
-class Login(webapp2.RequestHandler): # pragma: no cover
+class Login(webapp2.RequestHandler):
   def get(self):
     self.redirect(users.create_login_url())

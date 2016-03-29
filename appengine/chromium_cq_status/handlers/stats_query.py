@@ -27,19 +27,19 @@ from shared.parsing import (
 )
 from shared import utils
 
-def check_last_change(cache_timestamp, kwargs): # pragma: no cover
+def check_last_change(cache_timestamp, kwargs):
   last_change_key = get_last_change_key(kwargs.get('interval_minutes'))
   last_change_timestamp = memcache.get(last_change_key)
-  if last_change_timestamp is None:
+  if last_change_timestamp is None:  # pragma: no cover
     return False
   return cache_timestamp >= last_change_timestamp
 
-def get_last_change_key(interval_minutes): # pragma: no cover
+def get_last_change_key(interval_minutes):
   if interval_minutes:
     return LAST_CQ_STATS_INTERVAL_CHANGE_KEY % interval_minutes
   return LAST_CQ_STATS_CHANGE_KEY
 
-def ensure_last_change_timestamp(interval_minutes): # pragma: no cover
+def ensure_last_change_timestamp(interval_minutes):
   """Ensure a memcache timestamp is set for the last CQStats change."""
   last_change_key = get_last_change_key(interval_minutes)
   last_change_timestamp = memcache.get(last_change_key)
@@ -48,12 +48,12 @@ def ensure_last_change_timestamp(interval_minutes): # pragma: no cover
 
 @utils.memcachize(cache_check=check_last_change)
 def execute_query(key, project, interval_minutes, begin, end, names,
-    count, cursor): # pragma: no cover
+    count, cursor):
   stats_list = []
   next_cursor = ''
   if key and count > 0:
     stats = CQStats.get_by_id(key)
-    if stats and (
+    if stats and (  # pragma: no branch
         (not project or stats.project == project) and
         (not interval_minutes or stats.interval_minutes == interval_minutes) and
         (not begin or stats.begin >= begin) and
@@ -89,7 +89,7 @@ def execute_query(key, project, interval_minutes, begin, end, names,
     'more': more,
   }
 
-class StatsQuery(webapp2.RequestHandler): # pragma: no cover
+class StatsQuery(webapp2.RequestHandler):
   @utils.cross_origin_json
   def get(self):
     try:
@@ -104,6 +104,6 @@ class StatsQuery(webapp2.RequestHandler): # pragma: no cover
         'cursor': parse_cursor,
       })
       return execute_query(**params)
-    except ValueError as e:
+    except ValueError as e:  # pragma: no cover
       logging.warning(traceback.format_exc())
       self.response.write(e)

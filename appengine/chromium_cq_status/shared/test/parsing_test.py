@@ -102,6 +102,13 @@ class TestCase(unittest.TestCase):
     self.assertEqual(['test tag'], parsing.parse_url_tags('/test tag/'))
     self.assertEqual(['tag1', 'tag2'], parsing.parse_url_tags('/tag1//tag2/'))
 
+  def test_parse_rietveld_timestamp(self):
+    self.assertEqual(60, parsing.parse_rietveld_timestamp(
+        '1970-01-01 00:01:00.000000'))
+    self.assertEqual(120, parsing.parse_rietveld_timestamp(
+        '1970-01-01 00:02:00.000000+00:00'))
+    self.assertIsNone(parsing.parse_rietveld_timestamp('bad'))
+
 class MockRequest(object):
   def __init__(self, parameters):
     self.parameters = parameters

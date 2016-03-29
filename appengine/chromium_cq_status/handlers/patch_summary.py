@@ -16,22 +16,22 @@ from shared.config import (
   TAG_PATCHSET,
   TRYJOBVERIFIER,
   JOB_STATE,
-  RIETVELD_TIMESTAMP_FORMAT,
 )
+from shared.parsing import parse_rietveld_timestamp
 from shared.utils import (
   cross_origin_json,
   to_unix_timestamp,
 )
 
 
-class PatchSummary(webapp2.RequestHandler): # pragma: no cover
+class PatchSummary(webapp2.RequestHandler):
   @cross_origin_json
   def get(self, issue, patch): # pylint: disable=W0221
     now = to_unix_timestamp(datetime.utcnow())
     return summarize_patch(issue, patch, now)
 
 
-def summarize_patch(issue, patch, now): # pragma: no cover
+def summarize_patch(issue, patch, now):
   attempts = [
     summarize_attempt(raw_attempt, now)
     for raw_attempt in get_raw_attempts(issue, patch)][::-1]
@@ -57,7 +57,7 @@ def summarize_patch(issue, patch, now): # pragma: no cover
   }
 
 
-def get_raw_attempts(issue, patch): # pragma: no cover
+def get_raw_attempts(issue, patch):
   query = Record.query().order(Record.timestamp).filter(
     Record.tags == TAG_ISSUE % issue,
     Record.tags == TAG_PATCHSET % patch)
@@ -66,17 +66,17 @@ def get_raw_attempts(issue, patch): # pragma: no cover
   for record in query:
     if raw_attempt == None and TAG_START in record.tags:
       raw_attempt = []
-    if raw_attempt != None:
+    if raw_attempt != None:  # pragma: no branch
       raw_attempt.append(record)
       if TAG_STOP in record.tags:
         raw_attempts.append(raw_attempt)
         raw_attempt = None
-  if raw_attempt != None and len(raw_attempt) > 0:
+  if raw_attempt != None and len(raw_attempt) > 0:  # pragma: no cover
     raw_attempts.append(raw_attempt)
   return raw_attempts
 
 
-def summarize_attempt(raw_attempt, now): # pragma: no cover
+def summarize_attempt(raw_attempt, now):
   assert len(raw_attempt) > 0
   start_timestamp = to_unix_timestamp(raw_attempt[0].timestamp)
   summary = blank_attempt_summary()
@@ -113,7 +113,7 @@ def summarize_attempt(raw_attempt, now): # pragma: no cover
         durations['blocked_on_closed_tree'] += patch_state_duration
     if action == 'patch_committed':
       summary['success'] = True
-      if last_patch_action == 'patch_committing':
+      if last_patch_action == 'patch_committing':  # pragma: no branch
         durations['committing'] += patch_state_duration
     if action == 'patch_failed':
       summary['success'] = False
@@ -126,18 +126,18 @@ def summarize_attempt(raw_attempt, now): # pragma: no cover
 
   # Finalize attempt durations.
   summary['begin'] = start_timestamp
-  if summary['end'] != None:
+  if summary['end'] != None:  # pragma: no branch
     durations['total'] = summary['end'] - summary['begin']
   last_timestamp = summary['end'] or now
-  if last_patch_action:
+  if last_patch_action:  # pragma: no branch
     patch_state_duration = last_timestamp - last_patch_timestamp
-  if last_patch_action == 'patch_tree_closed':
+  if last_patch_action == 'patch_tree_closed':  # pragma: no cover
     durations['blocked_on_closed_tree'] += patch_state_duration
-  if last_patch_action == 'patch_throttled':
+  if last_patch_action == 'patch_throttled':  # pragma: no cover
     durations['blocked_on_throttled_tree'] += patch_state_duration
-  if last_patch_action == 'patch_committing':
+  if last_patch_action == 'patch_committing':  # pragma: no cover
     durations['committing'] += patch_state_duration
-  if verifier_start_timestamp:
+  if verifier_start_timestamp:  # pragma: no cover
     durations['running_all_jobs'] = last_timestamp - verifier_start_timestamp
 
   # Finalize jobs and job durations.
@@ -147,7 +147,7 @@ def summarize_attempt(raw_attempt, now): # pragma: no cover
   return summary
 
 
-class AttemptJobTracker(object): # pragma: no cover
+class AttemptJobTracker(object):
   def __init__(self, cutoff_timestamp):
     self.cutoff_timestamp = cutoff_timestamp
     self.jobs = {}
@@ -156,7 +156,7 @@ class AttemptJobTracker(object): # pragma: no cover
     job_states = record.fields.get('jobs', {})
     for cq_job_state, jobs in job_states.iteritems():
       job_state = JOB_STATE.get(cq_job_state)
-      if not job_state:
+      if not job_state:  # pragma: no cover
         logging.warning('Unknown job state: %s', cq_job_state)
         continue
       for job_info in jobs:
@@ -165,12 +165,13 @@ class AttemptJobTracker(object): # pragma: no cover
         self.jobs.setdefault(master, {})
         self.jobs[master].setdefault(builder, {})
         job_info = job_info or {}
-        timestamp = self.rietveld_timestamp(job_info.get('timestamp'))
+        timestamp = parse_rietveld_timestamp(job_info.get('timestamp'))
         # Ignore jobs from past attempts.
-        if not timestamp or timestamp < self.cutoff_timestamp:
+        if (not timestamp or  # pragma: no branch
+            timestamp < self.cutoff_timestamp):
           continue
         build_number = job_info.get('buildnumber')
-        if not build_number:
+        if not build_number:  # pragma: no cover
           logging.warning('No build number for %s %s at %s.' % (
               master, builder, timestamp))
           continue
@@ -197,21 +198,12 @@ class AttemptJobTracker(object): # pragma: no cover
         # if it was not already set.
         job['url'] = job['url'] or job_info.get('url')
 
-  @staticmethod
-  def rietveld_timestamp(timestamp_string):
-    try:
-      return to_unix_timestamp(
-          datetime.strptime(timestamp_string, RIETVELD_TIMESTAMP_FORMAT))
-    except ValueError:
-      logging.warning('Failed to parse Rietveld timestamp: ' + timestamp_string)
-      return None
-
   def summarize_jobs(self, attempt_ended, last_timestamp):
     summaries = {state: [] for state in JOB_STATE.itervalues()}
     for builds in self.jobs.itervalues():
       for jobs in builds.itervalues():
         for job in jobs.itervalues():
-          if job['end'] == None:
+          if job['end'] == None:  # pragma: no cover
             if attempt_ended:
               job['end'] = last_timestamp
             job['duration'] = last_timestamp - job['begin']
@@ -221,7 +213,7 @@ class AttemptJobTracker(object): # pragma: no cover
     return summaries
 
 
-def blank_attempt_summary(): # pragma: no cover
+def blank_attempt_summary():
   return {
     'success': None,
     'fail_reason': None,
@@ -232,7 +224,7 @@ def blank_attempt_summary(): # pragma: no cover
   }
 
 
-def blank_durations_summary(): # pragma: no cover
+def blank_durations_summary():
   return {
     'running_all_jobs': 0,
     'blocked_on_closed_tree': 0,
@@ -242,7 +234,7 @@ def blank_durations_summary(): # pragma: no cover
   }
 
 
-def blank_job_summary(): # pragma: no cover
+def blank_job_summary():
   return {
     'state': None,
     'retry': False,
@@ -257,7 +249,7 @@ def blank_job_summary(): # pragma: no cover
   }
 
 
-def get_flaky_jobs(attempts): # pragma: no cover
+def get_flaky_jobs(attempts):
   flaky_jobs = []
   passed_jobs = set()
   for attempt in attempts:
@@ -265,28 +257,28 @@ def get_flaky_jobs(attempts): # pragma: no cover
       passed_jobs.add(job_builder_id(job))
   for attempt in attempts:
     for job in attempt['jobs']['failed']:
-      if job_builder_id(job) in passed_jobs:
+      if job_builder_id(job) in passed_jobs:  # pragma: no branch
         flaky_jobs.append(job)
   return flaky_jobs
 
 
-def job_builder_id(job): # pragma: no cover
+def job_builder_id(job):
   return (job['master'], job['builder'])
 
 
-def same_builder(job_a, job_b): # pragma: no cover
+def same_builder(job_a, job_b):
   return job_builder_id(job_a) == job_builder_id(job_b)
 
 
-def maybe_min(iterable): # pragma: no cover
+def maybe_min(iterable):
   try:
     return min(iterable)
-  except ValueError:
+  except ValueError:  # pragma: no cover
     return None
 
 
-def maybe_max(iterable): # pragma: no cover
+def maybe_max(iterable):
   try:
     return max(iterable)
-  except ValueError:
+  except ValueError:  # pragma: no cover
     return None

@@ -4,10 +4,14 @@
 
 import json
 
-from tests.testing_utils import testing
+from third_party.testing_utils import testing
 
 import main
+
+from model.password import Password
 from model.record import Record
+from shared.config import CQ_BOT_PASSWORD_KEY
+from shared import utils
 
 from webtest.app import AppError
 
@@ -94,14 +98,17 @@ class TestPost(testing.AppengineTestCase):
                       record.fields)
 
   def test_post_multiple_empty(self):
-    self.mock_current_user(is_admin=True)
+    self.mock_current_user(is_admin=False)
+    password = 'passwd'
+    Password(id=CQ_BOT_PASSWORD_KEY, sha1=utils.password_sha1(password)).put()
 
     old_count = Record.query().count()
-    response = self.test_app.post('/post')
+    response = self.test_app.post('/post', params={'password': password})
     self.assertEquals('', response.body)
     self.assertEquals(old_count, Record.query().count())
 
-    response = self.test_app.post('/post', params={'p': '{}'})
+    response = self.test_app.post('/post', params={
+        'p': '{}', 'password': password})
     self.assertEquals('Empty record entries disallowed', response.body)
     self.assertEquals(old_count, Record.query().count())
 
