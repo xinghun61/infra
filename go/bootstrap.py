@@ -6,8 +6,8 @@
 """Prepares a local hermetic Go installation.
 
 - Downloads and unpacks the Go toolset in ../../golang.
-- Downloads and installs goop and golint.
-- Fetches code dependencies via goop.
+- Downloads and installs Glide (used by deps.py).
+- Fetches code dependencies via deps.py.
 """
 
 import argparse
@@ -80,20 +80,13 @@ NATIVE_DOWNLOAD_URL_PREFIX = 'https://storage.googleapis.com/golang'
 CROSS_DOWNLOAD_URL_PREFIX = (
     'https://storage-download.googleapis.com/%s/%s' % (BUCKET, BUCKET_PATH))
 
-# Describes how to fetch 'goop', with dependencies.
-TOOLS_SOURCE = {
-  'src/golang.org/x/tools': {
-    'url': 'https://go.googlesource.com/tools',
-    'ref': 'refs/heads/master',
-    'rev': '7d75e8b219c3efda2d08ae38acd6b42f8da4f5f9',
-  },
-  'src/github.com/nitrous-io/goop': {
+# Describes how to fetch 'glide'.
+GLIDE_SOURCE = {
+  'src/github.com/Masterminds/glide': {
     'url': (
-      'https://chromium.googlesource.com/infra/third_party/go/'
-      'github.com/nitrous-io/goop'
-    ),
-    'ref': 'refs/heads/chromium',
-    'rev': 'f1473c14fd226c2e50d7b08d6d16504aa6c6200f',
+        'https://chromium.googlesource.com/external/github.com/'
+        'Masterminds/glide.git'),
+    'rev': 'refs/tags/0.10.1',
   },
 }
 
@@ -106,29 +99,6 @@ GAE_PKGS = frozenset(('appengine', 'appengine_internal', 'github.com'))
 # http.DefaultTransport to prevent usage. Since we're still using the real
 # GAE SDK for running apps locally and doing app uploads, remove their hacks.
 GAE_HACK_PKGS = frozenset(('appengine_internal/init',))
-
-
-# Whitelist of packages with executables we want to be available in PATH. Will
-# be installed only if vendored via Goopfile. See update_vendored_packages.
-VENDORED_TOOLS = [
-  'github.com/golang/lint/golint',
-  'github.com/golang/protobuf/protoc-gen-go',
-  'github.com/kisielk/errcheck',
-  'github.com/maruel/panicparse/cmd/pp',
-  'github.com/maruel/pre-commit-go/cmd/covg',
-  'github.com/maruel/pre-commit-go/cmd/pcg',
-  'github.com/smartystreets/goconvey',
-  'golang.org/x/tools/cmd/callgraph',
-  'golang.org/x/tools/cmd/fiximports',
-  'golang.org/x/tools/cmd/godex',
-  'golang.org/x/tools/cmd/goimports',
-  'golang.org/x/tools/cmd/gomvpkg',
-  'golang.org/x/tools/cmd/gorename',
-  'golang.org/x/tools/cmd/oracle',
-  'golang.org/x/tools/cmd/stringer',
-  'google.golang.org/api/google-api-go-generator',
-  'google.golang.org/appengine/cmd/aedeploy',
-]
 
 
 class Failure(Exception):
@@ -329,12 +299,12 @@ def ensure_toolset_installed(toolset_root, toolset=None):
   return True
 
 
-def ensure_goop_installed(toolset_root):
-  """Installs or updates 'goop'."""
+def ensure_glide_installed(toolset_root):
+  """Installs or updates 'glide' tool."""
   installed_tools = read_file([toolset_root, 'INSTALLED_TOOLS'])
-  available_tools = json.dumps(TOOLS_SOURCE, sort_keys=True)
+  available_tools = json.dumps(GLIDE_SOURCE, sort_keys=True)
   if installed_tools == available_tools:
-    LOGGER.debug('Goop is up-to-date')
+    LOGGER.debug('Glide is up-to-date')
     return
 
   def install(workspace, pkg):
@@ -349,79 +319,39 @@ def ensure_goop_installed(toolset_root):
     if os.path.exists(dest):
       os.remove(dest)
     os.rename(os.path.join(workspace, 'bin', name + EXE_SFX), dest)
+    LOGGER.info('Installed %s', dest)
 
-  LOGGER.info('Installing Goop...')
+  LOGGER.info('Installing Glide...')
   with temp_dir(toolset_root) as tmp:
-    fetch_goop_code(tmp, TOOLS_SOURCE)
-    install(tmp, 'github.com/nitrous-io/goop')
+    fetch_glide_code(tmp, GLIDE_SOURCE)
+    install(tmp, 'github.com/Masterminds/glide')
 
-  LOGGER.info('Goop is installed')
+  LOGGER.info('Glide is installed')
   write_file([toolset_root, 'INSTALLED_TOOLS'], available_tools)
 
 
-def fetch_goop_code(workspace, spec):
-  """Fetches goop source code with dependencies."""
+def fetch_glide_code(workspace, spec):
+  """Fetches glide source code."""
   def git(cmd, cwd):
     subprocess.check_call([GIT_EXE] + cmd, cwd=cwd, stdout=sys.stderr)
   for path, repo in sorted(spec.iteritems()):
     path = os.path.join(workspace, path.replace('/', os.sep))
     os.makedirs(path)
-    git(['init', '.'], cwd=path)
-    git(['fetch', repo['url'], repo['ref']], cwd=path)
+    git(['clone', repo['url'], '.'], cwd=path)
     git(['checkout', repo['rev']], cwd=path)
 
 
-def update_vendor_packages(toolset_root, workspace, force=False):
-  """Runs goop to update external pinned packages."""
-  required = read_file([workspace, 'Goopfile.lock'])
-  if not force:
-    installed = read_file([workspace, '.vendor', 'Goopfile.lock'])
-    if installed == required:
-      LOGGER.debug('Third party dependencies in %s are up-to-date', workspace)
-      return
-  LOGGER.info('Updating third party dependencies in %s...', workspace)
-  remove_directory([workspace, '.vendor'])
-  ret_code = call_go_tool(
-      toolset_root=toolset_root,
-      workspace=workspace,
-      go_paths=[],
-      vendor_paths=[],
-      tool='goop',
-      args=['install'],
-      cwd=workspace,
-      stdout=sys.stderr)
-  if ret_code:
-    raise Failure('Failed to fetch third party dependencies')
-  # Goop doesn't do "go install <pkg>/...", only "go install <pkg>". Yet we
-  # need some executables that are not at root of vendored packages (i.e. we
-  # are vendoring parent package, not /cmd/... subpackage). Examples are golint,
-  # goimports, pcg, etc. Install them ourselves. Installing all executable from
-  # all vendored packages is taking too long (and there's lot of unnecessary
-  # stuff there), so keep a whitelist of packages we need in VENDOR_TOOLS and
-  # install subset of them brought in via current Goopfile.lock. Also note that
-  # each .vendor directory is just an isolated Go workspace. Executables will
-  # be installed to .vendor/bin/* (that's later added to PATH by env.py).
-  to_install = []
-  for dep_line in required.splitlines():
-    pkg = dep_line.split()[0]
-    to_install.extend(
-      tool for tool in VENDORED_TOOLS
-      if tool.startswith(pkg + '/') or tool == pkg)
-  if to_install:
-    LOGGER.info('Installing vendored tools...')
-    vendor_workspace = os.path.join(workspace, '.vendor')
-    ret_code = call_go_tool(
-        toolset_root=toolset_root,
-        workspace=vendor_workspace,
-        go_paths=[],
-        vendor_paths=[],
-        tool='go',
-        args=['install'] + to_install,
-        cwd=vendor_workspace,
-        stdout=sys.stderr)
-    if ret_code:
-      raise Failure('Failed to install vendored tools')
-  write_file([workspace, '.vendor', 'Goopfile.lock'], required)
+def update_vendor_packages(workspace, force=False):
+  """Runs deps.py to fetch and install pinned packages."""
+  if not os.path.isfile(os.path.join(workspace, 'deps.lock')):
+    return
+  cmd = [
+    sys.executable, '-u', os.path.join(ROOT, 'go', 'deps.py'),
+    '--workspace', workspace, 'install',
+  ]
+  if force:
+    cmd.append('--force')
+  subprocess.check_call(cmd, stdout=sys.stderr)
 
 
 def get_go_environ(
@@ -437,8 +367,8 @@ def get_go_environ(
   Args:
     toolset_root: GOROOT would be <toolset_root>/go.
     workspace: main workspace directory or None if compiling in GOROOT.
-    go_paths: additional paths to add to GOPATH.
-    vendor_paths: directories with .vendor files (created by goop).
+    go_paths: additional paths to add to GOPATH (used by bootstrap_internal.py).
+    vendor_paths: directories with .vendor directories.
     go_appengine_path: path to GAE Go SDK to add to PATH.
   """
   env = os.environ.copy()
@@ -500,38 +430,23 @@ def get_go_exe(toolset_root):
   return os.path.join(toolset_root, 'go', 'bin', 'go' + EXE_SFX)
 
 
-def call_go_tool(
-    toolset_root, workspace, go_paths, vendor_paths, tool, args, **kwargs):
-  """Setups environ and invokes some GOROOT/bin/* tool."""
-  cmd = [os.path.join(toolset_root, 'go', 'bin', tool + EXE_SFX)] + args
-  env = get_go_environ(toolset_root, workspace, go_paths, vendor_paths)
-  LOGGER.debug(
-      '%s with\n    %s', ' '.join(cmd),
-      '\n    '.join(
-          '%s = %s' % (k, v) for k, v in sorted(env.iteritems())
-          if k.startswith('GO')
-      )
-  )
-  return subprocess.call(cmd, env=env, **kwargs)
-
-
 def bootstrap(go_paths, logging_level, toolset=None):
   """Installs all dependencies in default locations.
 
   Supposed to be called at the beginning of some script (it modifies logger).
 
   Args:
-    go_paths: list of paths to search for Goopfile.lock, for each path goop
-        will install all dependencies in <path>/.vendor.
+    go_paths: list of paths to search for deps.lock, for each path deps.py
+        will install all dependencies in <path>/.vendor/src/*.
     logging_level: logging level of bootstrap process.
     toolset: custom toolset if given, otherwise native.
   """
   logging.basicConfig()
   LOGGER.setLevel(logging_level)
   updated = ensure_toolset_installed(TOOLSET_ROOT, toolset)
-  ensure_goop_installed(TOOLSET_ROOT)
+  ensure_glide_installed(TOOLSET_ROOT)
   for p in go_paths:
-    update_vendor_packages(TOOLSET_ROOT, p, force=updated)
+    update_vendor_packages(p, force=updated)
   if updated:
     # GOPATH/pkg may have binaries generated with previous version of toolset,
     # they may not be compatible and "go build" isn't smart enough to rebuild
@@ -540,14 +455,17 @@ def bootstrap(go_paths, logging_level, toolset=None):
       remove_directory([p, 'pkg'])
 
 
-def prepare_go_environ(skip_goop_update=False, toolset=None):
+def prepare_go_environ(toolset=None):
   """Returns dict with environment variables to set to use Go toolset.
 
-  Installs or updates the toolset if necessary.
+  Installs or updates the toolset and vendored dependencies if necessary.
   """
-  vendor_paths = [] if skip_goop_update else [WORKSPACE]
-  bootstrap(vendor_paths, logging.INFO, toolset)
-  return get_go_environ(TOOLSET_ROOT, WORKSPACE, [], vendor_paths, GO_APPENGINE)
+  bootstrap([WORKSPACE], logging.INFO, toolset)
+  return get_go_environ(
+    toolset_root=TOOLSET_ROOT,
+    workspace=WORKSPACE,       # primary GOPATH with source code
+    vendor_paths=[WORKSPACE],  # where to look for deps.yaml and .vendor dirs
+    go_appengine_path=GO_APPENGINE)
 
 
 def find_executable(name, workspaces):
@@ -569,7 +487,7 @@ def find_executable(name, workspaces):
 
 
 def build_cross_toolset(toolset):
-  env = prepare_go_environ(skip_goop_update=True, toolset=toolset)
+  env = prepare_go_environ(toolset)
 
   LOGGER.info('Building toolset for cross-compilation. Grab a coffee or tea...')
   tmp_env = env.copy()

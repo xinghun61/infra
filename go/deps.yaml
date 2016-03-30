@@ -1,0 +1,183 @@
+package: .
+import:
+- package: github.com/dustin/go-humanize
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/dustin/go-humanize.git
+- package: github.com/golang/protobuf
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/golang/protobuf.git
+  subpackages:
+  - jsonpb
+  - proto
+  - protoc-gen-go
+- package: github.com/gorhill/cronexpr
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/gorhill/cronexpr.git
+- package: github.com/julienschmidt/httprouter
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/julienschmidt/httprouter.git
+- package: github.com/kardianos/osext
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/kardianos/osext.git
+- package: github.com/kr/pretty
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/kr/pretty.git
+- package: github.com/luci/gkvlite
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
+- package: github.com/luci/go-endpoints
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/luci/go-endpoints.git
+  subpackages:
+  - endpoints
+- package: github.com/luci/go-render
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/luci/go-render.git
+  subpackages:
+  - render
+- package: github.com/maruel/subcommands
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/maruel/subcommands.git
+- package: github.com/maruel/ut
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/maruel/ut.git
+- package: github.com/mgutz/ansi
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/mgutz/ansi.git
+- package: github.com/op/go-logging
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/op/go-logging.git
+- package: github.com/sergi/go-diff
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/sergi/go-diff.git
+  subpackages:
+  - diffmatchpatch
+- package: github.com/smartystreets/assertions
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
+- package: github.com/smartystreets/goconvey
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
+  subpackages:
+  - convey
+- package: github.com/xtgo/set
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/xtgo/set.git
+- package: github.com/yosuke-furukawa/json5
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/yosuke-furukawa/json5.git
+  subpackages:
+  - encoding/json5
+- package: golang.org/x/net
+  version: master
+  repo: https://go.googlesource.com/net.git
+  subpackages:
+  - context
+  - context/ctxhttp
+- package: golang.org/x/oauth2
+  version: master
+  repo: https://go.googlesource.com/oauth2.git
+  subpackages:
+  - google
+  - jwt
+- package: google.golang.org/api
+  version: master
+  repo: https://code.googlesource.com/google-api-go-client.git
+  subpackages:
+  - gensupport
+  - googleapi
+  - logging/v1beta3
+  - pubsub/v1
+  - taskqueue/v1beta2
+  - google-api-go-generator
+- package: google.golang.org/appengine
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/golang/appengine.git
+  subpackages:
+  - datastore
+  - log
+  - mail
+  - memcache
+  - module
+  - remote_api
+  - taskqueue
+  - urlfetch
+  - user
+  - cmd/aedeploy
+- package: google.golang.org/cloud
+  version: master
+  repo: https://code.googlesource.com/gocloud.git
+  subpackages:
+  - bigtable
+  - compute/metadata
+  - pubsub
+  - storage
+- package: google.golang.org/grpc
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
+  subpackages:
+  - codes
+  - metadata
+- package: gopkg.in/fsnotify.v1
+  version: v1.2.9
+  repo: https://chromium.googlesource.com/external/github.com/go-fsnotify/fsnotify.git
+- package: gopkg.in/natefinch/npipe.v2
+  version: v2
+  repo: https://chromium.googlesource.com/external/github.com/natefinch/npipe.git
+- package: gopkg.in/yaml.v2
+  version: v2
+  repo: https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git
+- package: github.com/gopherjs/gopherjs
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/gopherjs/gopherjs.git
+  subpackages:
+  - js
+- package: github.com/jtolds/gls
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/jtolds/gls.git
+- package: github.com/kr/text
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/kr/text.git
+- package: github.com/pmezard/go-difflib
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/pmezard/go-difflib.git
+  subpackages:
+  - difflib
+- package: github.com/texttheater/golang-levenshtein
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/texttheater/golang-levenshtein.git
+  subpackages:
+  - levenshtein
+- package: github.com/golang/lint
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/golang/lint.git
+  subpackages:
+  - golint
+- package: github.com/kisielk/errcheck
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/kisielk/errcheck.git
+- package: github.com/maruel/panicparse
+  repo: https://chromium.googlesource.com/external/github.com/maruel/panicparse.git
+  subpackages:
+  - cmd/pp
+- package: github.com/maruel/pre-commit-go
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/maruel/pre-commit-go.git
+  subpackages:
+  - cmd/covg
+  - cmd/pcg
+- package: golang.org/x/tools
+  version: master
+  repo: https://go.googlesource.com/tools.git
+  subpackages:
+  - cmd/callgraph
+  - cmd/fiximports
+  - cmd/godex
+  - cmd/goimports
+  - cmd/gomvpkg
+  - cmd/gorename
+  - cmd/oracle
+  - cmd/stringer
+- package: github.com/kisielk/gotool
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/kisielk/gotool.git

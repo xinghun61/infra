@@ -1,0 +1,186 @@
+hash: fdcda39a6b27cfa3fb8c1415420e9f848aefc7f43b5c202801bc57c717b921a7
+updated: 2016-03-30T13:40:08.808592948-07:00
+imports:
+- name: github.com/dustin/go-humanize
+  version: 8929fe90cee4b2cb9deb468b51fb34eba64d1bf0
+  repo: https://chromium.googlesource.com/external/github.com/dustin/go-humanize.git
+- name: github.com/golang/lint
+  version: 9bad2ac064ef73cba57dec90e67d45fec2ab67bc
+  repo: https://chromium.googlesource.com/external/github.com/golang/lint.git
+  subpackages:
+  - golint
+- name: github.com/golang/protobuf
+  version: dda510ac0fd43b39770f22ac6260eb91d377bce3
+  repo: https://chromium.googlesource.com/external/github.com/golang/protobuf.git
+  subpackages:
+  - jsonpb
+  - proto
+  - protoc-gen-go
+- name: github.com/gopherjs/gopherjs
+  version: 64858154c27789453689ac91041a736c89abd49d
+  repo: https://chromium.googlesource.com/external/github.com/gopherjs/gopherjs.git
+  subpackages:
+  - js
+- name: github.com/gorhill/cronexpr
+  version: f0984319b44273e83de132089ae42b1810f4933b
+  repo: https://chromium.googlesource.com/external/github.com/gorhill/cronexpr.git
+- name: github.com/jtolds/gls
+  version: 8ddce2a84170772b95dd5d576c48d517b22cac63
+  repo: https://chromium.googlesource.com/external/github.com/jtolds/gls.git
+- name: github.com/julienschmidt/httprouter
+  version: 77366a47451a56bb3ba682481eed85b64fea14e8
+  repo: https://chromium.googlesource.com/external/github.com/julienschmidt/httprouter.git
+- name: github.com/kardianos/osext
+  version: 29ae4ffbc9a6fe9fb2bc5029050ce6996ea1d3bc
+  repo: https://chromium.googlesource.com/external/github.com/kardianos/osext.git
+- name: github.com/kisielk/errcheck
+  version: f76568f8d87e48ccbbd17a827c2eaf31805bf58c
+  repo: https://chromium.googlesource.com/external/github.com/kisielk/errcheck.git
+- name: github.com/kisielk/gotool
+  version: 58a7a198f2ec6ea7af221fd216e7f559d663ce02
+  repo: https://chromium.googlesource.com/external/github.com/kisielk/gotool.git
+- name: github.com/kr/pretty
+  version: add1dbc86daf0f983cd4a48ceb39deb95c729b67
+  repo: https://chromium.googlesource.com/external/github.com/kr/pretty.git
+- name: github.com/kr/text
+  version: bb797dc4fb8320488f47bf11de07a733d7233e1f
+  repo: https://chromium.googlesource.com/external/github.com/kr/text.git
+- name: github.com/luci/gkvlite
+  version: 33184d2edd2d39ef71c3ed883e8ff752c4a18213
+  repo: https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
+- name: github.com/luci/go-endpoints
+  version: 004b467f9f9b2840089b1166353ae06e5e0e5844
+  repo: https://chromium.googlesource.com/external/github.com/luci/go-endpoints.git
+  subpackages:
+  - endpoints
+- name: github.com/luci/go-render
+  version: fb5bbe650634bbf7a13ac505ccd52e910cd9001d
+  repo: https://chromium.googlesource.com/external/github.com/luci/go-render.git
+  subpackages:
+  - render
+- name: github.com/maruel/panicparse
+  version: fad3904e072035be3feaceecd7c26fc3139b1d29
+  repo: https://chromium.googlesource.com/external/github.com/maruel/panicparse.git
+  subpackages:
+  - cmd/pp
+- name: github.com/maruel/pre-commit-go
+  version: 279e9552a98052da270ca82274007a8974ff8d76
+  repo: https://chromium.googlesource.com/external/github.com/maruel/pre-commit-go.git
+  subpackages:
+  - cmd/covg
+  - cmd/pcg
+- name: github.com/maruel/subcommands
+  version: a4141cc8723941ce5b7a9ab87b77f397a80e2be6
+  repo: https://chromium.googlesource.com/external/github.com/maruel/subcommands.git
+- name: github.com/maruel/ut
+  version: a9c9f15ccfa6f8b90182a53df32f4745586fbae3
+  repo: https://chromium.googlesource.com/external/github.com/maruel/ut.git
+- name: github.com/mgutz/ansi
+  version: c286dcecd19ff979eeb73ea444e479b903f2cfcb
+  repo: https://chromium.googlesource.com/external/github.com/mgutz/ansi.git
+- name: github.com/op/go-logging
+  version: 970db520ece77730c7e4724c61121037378659d9
+  repo: https://chromium.googlesource.com/external/github.com/op/go-logging.git
+- name: github.com/pmezard/go-difflib
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  repo: https://chromium.googlesource.com/external/github.com/pmezard/go-difflib.git
+  subpackages:
+  - difflib
+- name: github.com/sergi/go-diff
+  version: ec7fdbb58eb3e300c8595ad5ac74a5aa50019cc7
+  repo: https://chromium.googlesource.com/external/github.com/sergi/go-diff.git
+  subpackages:
+  - diffmatchpatch
+- name: github.com/smartystreets/assertions
+  version: 2d74a419fbe076f8c76ed8b1c7c633a676c5dc63
+  repo: https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
+- name: github.com/smartystreets/goconvey
+  version: 55d548bcbd33d0fdfbd8844ede638af868cdf23e
+  repo: https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
+  subpackages:
+  - convey
+- name: github.com/texttheater/golang-levenshtein
+  version: 14026fface0cb806188c85e792a93d625dc37d0f
+  repo: https://chromium.googlesource.com/external/github.com/texttheater/golang-levenshtein.git
+  subpackages:
+  - levenshtein
+- name: github.com/xtgo/set
+  version: 4431f6b51265b1e0b76af4dafc09d6f12c2bdcd0
+  repo: https://chromium.googlesource.com/external/github.com/xtgo/set.git
+- name: github.com/yosuke-furukawa/json5
+  version: 07fdad7a3c55f2098b172ea58890470c07f7d392
+  repo: https://chromium.googlesource.com/external/github.com/yosuke-furukawa/json5.git
+  subpackages:
+  - encoding/json5
+- name: golang.org/x/net
+  version: 31df19d69da8728e9220def59b80ee577c3e48bf
+  repo: https://go.googlesource.com/net.git
+  subpackages:
+  - context
+  - context/ctxhttp
+- name: golang.org/x/oauth2
+  version: 33fa30fe45020622640e947917fd1fc4c81e3dce
+  repo: https://go.googlesource.com/oauth2.git
+  subpackages:
+  - google
+  - jwt
+- name: golang.org/x/tools
+  version: 84e7bc0dd39bab24b696dde4d714641fa738f945
+  repo: https://go.googlesource.com/tools.git
+  subpackages:
+  - cmd/callgraph
+  - cmd/fiximports
+  - cmd/godex
+  - cmd/goimports
+  - cmd/gomvpkg
+  - cmd/gorename
+  - cmd/oracle
+  - cmd/stringer
+- name: google.golang.org/api
+  version: 43c645d4bcf9251ced36c823a93b6d198764aae4
+  repo: https://code.googlesource.com/google-api-go-client.git
+  subpackages:
+  - gensupport
+  - googleapi
+  - logging/v1beta3
+  - pubsub/v1
+  - taskqueue/v1beta2
+  - google-api-go-generator
+- name: google.golang.org/appengine
+  version: 41265fb44deca5c3b05a946d5db1f54ae54fe67e
+  repo: https://chromium.googlesource.com/external/github.com/golang/appengine.git
+  subpackages:
+  - datastore
+  - log
+  - mail
+  - memcache
+  - module
+  - remote_api
+  - taskqueue
+  - urlfetch
+  - user
+  - cmd/aedeploy
+- name: google.golang.org/cloud
+  version: 669392d4c311275ca945e01a18bb1ebe88708e2a
+  repo: https://code.googlesource.com/gocloud.git
+  subpackages:
+  - bigtable
+  - compute/metadata
+  - pubsub
+  - storage
+- name: google.golang.org/grpc
+  version: 33966f53914846447d9d7b970fe1fe9e258f8745
+  repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
+  subpackages:
+  - codes
+  - metadata
+- name: gopkg.in/fsnotify.v1
+  version: 8611c35ab31c1c28aa903d33cf8b6e44a399b09e
+  repo: https://chromium.googlesource.com/external/github.com/go-fsnotify/fsnotify.git
+- name: gopkg.in/natefinch/npipe.v2
+  version: 0938d701e50e580f5925c773055eb6d6b32a0cbc
+  repo: https://chromium.googlesource.com/external/github.com/natefinch/npipe.git
+- name: gopkg.in/yaml.v2
+  version: a83829b6f1293c91addabc89d0571c246397bbf4
+  repo: https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git
+devImports: []
