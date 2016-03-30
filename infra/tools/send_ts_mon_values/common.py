@@ -36,13 +36,13 @@ def get_arguments(argv):
         --ts-mon-task-job-name chromium \\
         --gauge='{"name":"task/m1", "value":18, "custom_field": "value"}' \\
         --float='{"name":"task/m2", "value":45}' \\
-        --counter='{"name":"task/count", "start_time": 149523409000000, \\
+        --counter='{"name":"task/count", "start_time": 149523409, \\
                     "value": 42}'
 
     The argument to a metric argument (like --gauge, --float) must be a json
     string. The names 'name', 'value' and 'start_time' are reserved because
     they represent the metric name, and value (start_time only for --counter and
-    --cumulative, in microseconds since UNIX epoch). All the other keys are
+    --cumulative, in seconds since UNIX epoch). All the other keys are
     expected to be metric fields (with a maximum of seven).
 
     Note, that all points in the same metric must have the same set of metric
