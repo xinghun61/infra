@@ -4,9 +4,16 @@
 
 <dom-module id="som-drawer">
   <template>
+    <iron-ajax
+        auto
+        url="https://sheriff-o-matic.appspot.com/tree-list"
+        handle-as="json"
+        verbose
+        last-response="{{_treeList}}"
+    ></iron-ajax>
     <paper-menu attr-for-selected="value" selected="{{selectedAlertsGroup}}" id="menu">
-      <template is="dom-repeat" items="[[_alertsGroups]]" as="alertsGroup">
-        <paper-item value="[[alertsGroup]]">[[alertsGroup]]</paper-item>
+      <template is="dom-repeat" items="[[_treeList.trees]]" as="tree">
+        <paper-item value="[[tree.name]]">[[tree.display_name]]</paper-item>
       </template>
     </paper-menu>
   </template>
@@ -23,10 +30,10 @@
            value: '',
            notify: true
         },
-        _alertsGroups: {
-           type: Array,
-           value: ['chromium', 'blink', 'chromium.perf']
-        }
+        _treeList: {
+           type: Object,
+           value: function() { return {}; }
+        },
       },
     });
   })();
