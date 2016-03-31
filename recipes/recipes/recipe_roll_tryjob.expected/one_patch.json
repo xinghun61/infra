@@ -196,7 +196,8 @@
       "simulation_test"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "recipe_engine tests"
+    "name": "recipe_engine tests",
+    "stdout": "/path/to/tmp/"
   },
   {
     "cmd": [
@@ -208,7 +209,8 @@
       "simulation_test"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "build tests"
+    "name": "build tests",
+    "stdout": "/path/to/tmp/"
   },
   {
     "name": "$result",

@@ -236,7 +236,8 @@ def simulation_test(api, proj, proj_config, repo_path, deps):
 
   args += ['simulation_test']
 
-  return api.python('%s tests' % proj, recipes_py_loc, args)
+  return api.python(
+      '%s tests' % proj, recipes_py_loc, args, stdout=api.raw_io.output())
 
 
 def checkout_projects(api, all_projects, url_mapping,
