@@ -209,19 +209,21 @@ def _fetch_page(query, page_size, start_cursor, predicate=None):
       logging.warning(msg)
       raise errors.InvalidInputError(msg)
 
-  query_iter = query.iter(
-    start_cursor=curs, produce_cursors=True, batch_size=page_size)
   entities = []
-  for entity in query_iter:
-    if predicate is None or predicate(entity):  # pragma: no branch
-      entities.append(entity)
-      if len(entities) >= page_size:
-        break
+  while len(entities) < page_size:
+    page, curs, more = query.fetch_page(page_size, start_cursor=curs)
+    for entity in page:
+      if predicate is None or predicate(entity):  # pragma: no branch
+        entities.append(entity)
+        if len(entities) >= page_size:
+          break
+    if not more:
+      break
 
-  next_cursor_str = None
-  if query_iter.has_next():
-    next_cursor_str = query_iter.cursor_after().urlsafe()
-  return entities, next_cursor_str
+  curs_str = None
+  if more:
+    curs_str = curs.urlsafe()
+  return entities, curs_str
 
 
 def _check_search_acls(buckets):
