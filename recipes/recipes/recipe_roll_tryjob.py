@@ -293,12 +293,14 @@ def checkout_project(api, proj, proj_config, root_dir, patch=None):
   # Not working yet, but maybe??
   #api.file.rmtree('clean old %s repo' % proj, checkout_path)
 
-  config = api.gclient.make_config(GIT_MODE=True)
+  config = api.gclient.make_config(
+      GIT_MODE=True, CACHE_DIR=root_dir.join("__cache_dir"))
   soln = config.solutions.add()
   soln.name = proj
   soln.url = proj_config['repo_url']
 
   kwargs = {
+      'suffix': proj,
       'gclient_config': config,
       'force': True,
       'cwd': checkout_path,
