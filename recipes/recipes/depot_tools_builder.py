@@ -20,6 +20,7 @@ DEPS = [
 from recipe_engine.recipe_api import Property
 
 REPO_URL='https://chromium.googlesource.com/chromium/tools/depot_tools.git'
+DOC_UPLOAD_URL='gs://chrome-infra-docs/flat/depot_tools/docs/'
 
 PROPERTIES = {
   'revision': Property(
@@ -31,22 +32,22 @@ def RunSteps(api, revision):
   api.path['checkout'] = api.path['slave_build'].join('depot_tools')
   zip_out = api.path['slave_build'].join('depot_tools.zip')
 
-  # clean up any previous stuff
-  api.file.rmtree('rm depot_tools', api.path['checkout'])
-  api.file.remove('rm depot_tools.zip', zip_out, ok_ret=(0, 1))
+  with api.step.nest('clean workspace'):
+    api.file.rmtree('rm depot_tools', api.path['checkout'])
+    api.file.remove('rm depot_tools.zip', zip_out, ok_ret=(0, 1))
 
-  # generate the new directory
-  api.step('mk depot_tools', ['mkdir', api.path['checkout']])
+    # generate the new directory
+    api.step('mk depot_tools', ['mkdir', api.path['checkout']])
 
-  # clone + checkout depot_tools
-  api.git('clone', '--single-branch', '-n', REPO_URL, api.path['checkout'])
-  api.git('config', 'core.autocrlf', 'false', name='set autocrlf')
-  api.git('config', 'core.filemode', 'false', name='set filemode')
-  api.git('config', 'core.symlinks', 'false', name='set symlinks')
-  api.git('checkout', 'origin/master')
-  api.git('reset', '--hard',  revision)
-  api.git('reflog', 'expire', '--all')
-  api.git('gc', '--aggressive', '--prune=all')
+  with api.step.nest('clone + checkout'):
+    api.git('clone', '--single-branch', '-n', REPO_URL, api.path['checkout'])
+    api.git('config', 'core.autocrlf', 'false', name='set autocrlf')
+    api.git('config', 'core.filemode', 'false', name='set filemode')
+    api.git('config', 'core.symlinks', 'false', name='set symlinks')
+    api.git('checkout', 'origin/master')
+    api.git('reset', '--hard',  revision)
+    api.git('reflog', 'expire', '--all')
+    api.git('gc', '--aggressive', '--prune=all')
 
   # zip + upload repo
   api.zip.directory('zip it up', api.path['checkout'], zip_out)
@@ -55,8 +56,7 @@ def RunSteps(api, revision):
 
   # upload html docs
   api.gsutil(['cp', '-r', '-z', 'html', '-a', 'public-read',
-              api.path['checkout'].join('man', 'html'),
-              'gs://chrome-infra-docs/flat/depot_tools/docs/'],
+              api.path['checkout'].join('man', 'html'), DOC_UPLOAD_URL],
              name='upload docs')
 
 

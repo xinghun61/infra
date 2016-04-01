@@ -1,5 +1,10 @@
 [
   {
+    "cmd": [],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "clean workspace"
+  },
+  {
     "cmd": [
       "python",
       "-u",
@@ -7,8 +12,9 @@
       "[SLAVE_BUILD]/depot_tools"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "rmtree rm depot_tools",
+    "name": "clean workspace.rmtree rm depot_tools",
     "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@python.inline@@@@",
       "@@@STEP_LOG_LINE@python.inline@import os, sys@@@",
       "@@@STEP_LOG_LINE@python.inline@from common import chromium_utils # Error? See https://crbug.com/584783.@@@",
@@ -27,8 +33,9 @@
       "[SLAVE_BUILD]/depot_tools.zip"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "rm depot_tools.zip",
+    "name": "clean workspace.rm depot_tools.zip",
     "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@python.inline@@@@",
       "@@@STEP_LOG_LINE@python.inline@import os@@@",
       "@@@STEP_LOG_LINE@python.inline@import sys@@@",
@@ -42,7 +49,15 @@
       "[SLAVE_BUILD]/depot_tools"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "mk depot_tools"
+    "name": "clean workspace.mk depot_tools",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "clone + checkout"
   },
   {
     "cmd": [
@@ -54,7 +69,10 @@
       "[SLAVE_BUILD]/depot_tools"
     ],
     "cwd": "[SLAVE_BUILD]/depot_tools",
-    "name": "git clone"
+    "name": "clone + checkout.git clone",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
   },
   {
     "cmd": [
@@ -64,7 +82,10 @@
       "false"
     ],
     "cwd": "[SLAVE_BUILD]/depot_tools",
-    "name": "set autocrlf"
+    "name": "clone + checkout.set autocrlf",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
   },
   {
     "cmd": [
@@ -74,7 +95,10 @@
       "false"
     ],
     "cwd": "[SLAVE_BUILD]/depot_tools",
-    "name": "set filemode"
+    "name": "clone + checkout.set filemode",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
   },
   {
     "cmd": [
@@ -84,7 +108,10 @@
       "false"
     ],
     "cwd": "[SLAVE_BUILD]/depot_tools",
-    "name": "set symlinks"
+    "name": "clone + checkout.set symlinks",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
   },
   {
     "cmd": [
@@ -93,7 +120,10 @@
       "origin/master"
     ],
     "cwd": "[SLAVE_BUILD]/depot_tools",
-    "name": "git checkout"
+    "name": "clone + checkout.git checkout",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
   },
   {
     "cmd": [
@@ -103,7 +133,10 @@
       "deadbeef"
     ],
     "cwd": "[SLAVE_BUILD]/depot_tools",
-    "name": "git reset"
+    "name": "clone + checkout.git reset",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
   },
   {
     "cmd": [
@@ -113,7 +146,10 @@
       "--all"
     ],
     "cwd": "[SLAVE_BUILD]/depot_tools",
-    "name": "git reflog"
+    "name": "clone + checkout.git reflog",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
   },
   {
     "cmd": [
@@ -123,7 +159,10 @@
       "--prune=all"
     ],
     "cwd": "[SLAVE_BUILD]/depot_tools",
-    "name": "git gc"
+    "name": "clone + checkout.git gc",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
   },
   {
     "cmd": [
