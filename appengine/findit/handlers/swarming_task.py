@@ -19,7 +19,7 @@ class SwarmingTask(BaseHandler):
     if not build_keys:  # pragma: no cover
       return {'data': {}}
 
-    data = handlers_util.GenerateSwarmingTasksData(*build_keys)
+    data = handlers_util.GetSwarmingTaskInfo(*build_keys)
     return {'data': data}
 
   def HandlePost(self):  # pragma: no cover
