@@ -5,6 +5,7 @@
 """CLI to send data via ts_mon from outside infra.git."""
 
 import argparse
+import base64
 import collections
 import itertools
 import logging
@@ -54,18 +55,22 @@ def get_arguments(argv):
 
   metrics_group = parser.add_argument_group('Metric types')
   metrics_group.add_argument('--gauge', metavar='JSON', action='append',
-                             help="Send data for a gauge metric.")
+                             help="Send data for a gauge metric. The json "
+                             "string can be base64-encoded.")
   metrics_group.add_argument('--float', metavar='JSON', action='append',
                              help="Send data for a float metric.")
   metrics_group.add_argument('--string', metavar='JSON', action='append',
-                             help="Send data for a string metric.")
+                             help="Send data for a string metric. The json "
+                             "string can be base64-encoded.")
   metrics_group.add_argument('--bool', '--boolean',
                              metavar='JSON', action='append',
-                             help="Send data for a boolean metric.")
+                             help="Send data for a boolean metric. The json "
+                             "string can be base64-encoded")
   metrics_group.add_argument('--counter', metavar='JSON', action='append',
                              help="Send data for a counter metric.")
   metrics_group.add_argument('--cumulative', metavar='JSON', action='append',
-                             help="Send data for a cumulative metric.")
+                             help="Send data for a cumulative metric. The json "
+                             "string can be base64 encoded")
 
   infra_libs.logs.add_argparse_options(parser)
   ts_mon.add_argparse_options(parser)
@@ -79,11 +84,18 @@ def json_to_metric_data(json_str):
   """Parse arguments given to a metric flag.
 
   Args:
-    json_str (str): JSON string describing a metric point.
+    json_str (str): JSON string describing a metric point,
+        or base64-encoded json.
 
   Returns:
     MetricData or None: parsed metric if JSON is valid, otherwise None.
   """
+  if not json_str.startswith('{'):
+    try:
+      json_str = base64.b64decode(json_str)
+    except TypeError:  # Wrong padding in base64 string. Oh well.
+      pass
+
   try:
     fields = json.loads(json_str)
     metric_name = str(fields.pop('name'))

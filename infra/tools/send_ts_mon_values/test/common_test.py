@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import argparse
+import base64
 import unittest
 
 from infra_libs import ts_mon
@@ -71,6 +72,29 @@ class JsonParsingTest(unittest.TestCase):
 
   def test_json_parsing_bad_string(self):
     self.assertIsNone(common.json_to_metric_data('}'))
+
+  def test_json_parsing_base64(self):
+    json_str = ('{"name": "testname", "value": 13, '
+                '"myfield": "mystring", "otherfield": 42}')
+    json_base64 = base64.b64encode(json_str)
+    md = common.json_to_metric_data(json_base64)
+    self.assertIsInstance(md.name, str)
+    self.assertEquals(md.name, "testname")
+    self.assertEquals(md.points[0].value, 13)
+    self.assertIsNone(md.start_time)
+    self.assertEquals(md.points[0].fields,
+                      {'myfield': 'mystring', 'otherfield': 42})
+
+  def test_json_parsing_invalid_base64_1(self):
+    # 'bd' raises TypeError in base64.b64decode
+    self.assertIsNone(common.json_to_metric_data('bd'))
+
+  def test_json_parsing_invalid_base64_2(self):
+    # 'blah' does NOT raise TypeError in base64.b64decode
+    self.assertIsNone(common.json_to_metric_data('blah'))
+
+  def test_json_parsing_invalid_json(self):
+    self.assertIsNone(common.json_to_metric_data('{"blah:'))
 
 
 class test_collapse_metrics(unittest.TestCase):
