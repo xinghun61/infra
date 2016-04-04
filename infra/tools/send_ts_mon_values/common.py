@@ -57,20 +57,44 @@ def get_arguments(argv):
   metrics_group.add_argument('--gauge', metavar='JSON', action='append',
                              help="Send data for a gauge metric. The json "
                              "string can be base64-encoded.")
+  metrics_group.add_argument('--gauge-file', metavar='PATH', action='append',
+                             help="Same as --gauge but read json from a file, "
+                             "one entry per line.")
+
   metrics_group.add_argument('--float', metavar='JSON', action='append',
                              help="Send data for a float metric.")
+  metrics_group.add_argument('--float-file', metavar='PATH', action='append',
+                             help="Same as --float but read json from a file, "
+                             "one entry per line.")
+
   metrics_group.add_argument('--string', metavar='JSON', action='append',
                              help="Send data for a string metric. The json "
                              "string can be base64-encoded.")
+  metrics_group.add_argument('--string-file', metavar='PATH', action='append',
+                             help="Same as --string but read json from a file, "
+                             "one entry per line.")
+
   metrics_group.add_argument('--bool', '--boolean',
                              metavar='JSON', action='append',
                              help="Send data for a boolean metric. The json "
                              "string can be base64-encoded")
+  metrics_group.add_argument('--bool-file', metavar='PATH', action='append',
+                             help="Same as --bool but read json from a file, "
+                             "one entry per line.")
+
   metrics_group.add_argument('--counter', metavar='JSON', action='append',
                              help="Send data for a counter metric.")
+  metrics_group.add_argument('--counter-file', metavar='PATH', action='append',
+                             help="Same as --counter but read json from a file,"
+                             " one entry per line.")
+
   metrics_group.add_argument('--cumulative', metavar='JSON', action='append',
                              help="Send data for a cumulative metric. The json "
                              "string can be base64 encoded")
+  metrics_group.add_argument('--cumulative-file', metavar='PATH',
+                             action='append',
+                             help="Same as --cumulative but read json from a "
+                             "file, one entry per line.")
 
   infra_libs.logs.add_argparse_options(parser)
   ts_mon.add_argparse_options(parser)
@@ -221,6 +245,32 @@ def set_metric(metric_data, metric_type):
   return metric
 
 
+def set_metrics_file(filenames, metric_type):
+  """Create metrics from data read from a file.
+
+  Args:
+    filenames (list of str):
+      Paths to files containing one json string per line (potentially base64
+      encoded)
+    metric_type (ts_mon.Metric): any class deriving from ts_mon.Metric.
+      For ex. ts_mon.GaugeMetric.
+
+  Returns:
+    metric (list of metric_type): the metric instances, filled.
+  """
+  if not filenames:
+    return []
+
+  metrics = []
+  for filename in filenames:
+    with open(filename, 'r') as f:
+      lines = f.read()
+    # Skip blank lines because it helps humans.
+    lines = [line for line in lines.splitlines() if line.strip()]
+    metrics.extend(set_metrics(lines, metric_type))
+  return metrics
+
+
 def main(argv):
   args = get_arguments(argv)
   infra_libs.logs.process_argparse_options(args)
@@ -232,5 +282,12 @@ def main(argv):
   set_metrics(args.bool, ts_mon.BooleanMetric)
   set_metrics(args.counter, ts_mon.CounterMetric)
   set_metrics(args.cumulative, ts_mon.CumulativeMetric)
+
+  set_metrics_file(args.gauge_file, ts_mon.GaugeMetric)
+  set_metrics_file(args.float_file, ts_mon.FloatMetric)
+  set_metrics_file(args.string_file, ts_mon.StringMetric)
+  set_metrics_file(args.bool_file, ts_mon.BooleanMetric)
+  set_metrics_file(args.counter_file, ts_mon.CounterMetric)
+  set_metrics_file(args.cumulative_file, ts_mon.CumulativeMetric)
 
   ts_mon.flush()

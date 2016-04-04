@@ -4,10 +4,13 @@
 
 import argparse
 import base64
+import os
 import unittest
 
 from infra_libs import ts_mon
 from infra.tools.send_ts_mon_values import common
+
+DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
 
 
 class ArgumentTest(unittest.TestCase):
@@ -119,7 +122,54 @@ class test_collapse_metrics(unittest.TestCase):
     self.assertEqual(md.points, points1 + points2)
 
 
-class test_set_metric(unittest.TestCase):
+class test_set_metrics_file(unittest.TestCase):
+  def setUp(self):
+    ts_mon.reset_for_unittest()
+
+  def test_set_no_file(self):
+    metrics = common.set_metrics_file([], ts_mon.GaugeMetric)
+    self.assertEqual(0, len(metrics))
+
+  def test_set_one_file(self):
+    metrics = common.set_metrics_file(
+      [os.path.join(DATA_DIR, 'one_json_line.txt')],
+      ts_mon.GaugeMetric)
+    print metrics
+    self.assertEqual(1, len(metrics))
+    self.assertIsInstance(metrics[0], ts_mon.GaugeMetric)
+
+  def test_set_two_files(self):
+    metrics = common.set_metrics_file(
+      [os.path.join(DATA_DIR, 'one_json_line.txt'),
+       os.path.join(DATA_DIR, 'two_json_lines.txt')],
+      ts_mon.GaugeMetric)
+    self.assertEqual(3, len(metrics))
+    for metric in metrics:
+      self.assertIsInstance(metric, ts_mon.GaugeMetric)
+
+    # Make sure we get all the names we're supposed to get
+    names = set(metric.name for metric in metrics)
+    self.assertEqual(3, len(names))
+    for name in names:
+      self.assertTrue(name.startswith('json_line_'))
+
+  def test_base64_encoding(self):
+    metrics = common.set_metrics_file(
+      [os.path.join(DATA_DIR, 'two_base64_lines.txt')],
+      ts_mon.GaugeMetric)
+
+    self.assertEqual(2, len(metrics))
+    for metric in metrics:
+      self.assertIsInstance(metric, ts_mon.GaugeMetric)
+
+    # Make sure we get the two names we're supposed to get
+    names = set(metric.name for metric in metrics)
+    self.assertEqual(2, len(names))
+    for name in names:
+      self.assertTrue(name.startswith('json_line_'))
+
+
+class test_set_metrics(unittest.TestCase):
   def test_set_no_metrics(self):
     metrics = common.set_metrics([], ts_mon.GaugeMetric)
     self.assertEqual(0, len(metrics))
@@ -214,7 +264,6 @@ class test_set_metric(unittest.TestCase):
     for metric in metrics:
       self.assertIsInstance(metric, ts_mon.GaugeMetric)
       self.assertTrue(metric.name.startswith("test/name"))
-      metric.unregister()  # Cleanup
 
 
 class main_test(unittest.TestCase):
