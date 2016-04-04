@@ -336,9 +336,9 @@ PROPERTIES = {
   # apply.
   "rietveld": Property(kind=str, default="",
                        help="The Rietveld instance the issue is from"),
-  "issue": Property(kind=int, default=None,
+  "issue": Property(kind=str, default=None,
                     help="The Rietveld issue number to pull data from"),
-  "patchset": Property(kind=int, default=None,
+  "patchset": Property(kind=str, default=None,
                        help="The patchset number for the supplied issue"),
   "patch_project": Property(
       kind=str, default=None,
@@ -346,6 +346,10 @@ PROPERTIES = {
 }
 
 def RunSteps(api, patches_raw, rietveld, issue, patchset, patch_project):
+  # TODO(martiniss): use real types
+  issue = int(issue) if issue else None
+  patchset = int(patchset) if patchset else None
+
   headers = {'Authorization': 'Bearer %s' % get_auth_token(api)}
 
   patches = parse_patches(
@@ -437,8 +441,8 @@ def GenTests(api):
       api.test('tryjob') +
       api.properties(
         rietveld="https://fake.code.review",
-        issue=12345678,
-        patchset=1,
+        issue='12345678',
+        patchset='1',
         patch_project="build",
       ) +
       api.step_data("Get build deps", project('build', ['recipe_engine'])) +
