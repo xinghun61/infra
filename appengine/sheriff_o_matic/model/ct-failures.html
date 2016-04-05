@@ -164,7 +164,7 @@ CTFailures.prototype.update = function() {
       net.json('/api/v1/alerts/chromium'),
       net.json('/api/v1/alerts/blink'),
       net.json('/api/v1/alerts/chromium.perf'),
-      net.json('/api/v1/alerts/trooper')];
+      net.json('/trooper-queue')];
 
   return Promise.all(reqs).then(function(data_array) {
     var annotations = data_array[0];

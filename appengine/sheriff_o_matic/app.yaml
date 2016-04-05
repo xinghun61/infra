@@ -23,6 +23,10 @@ handlers:
   script: alerts_history.app
   secure: always
 
+- url: /trooper-queue
+  script: bugs.app
+  secure: always
+
 - url: /internal-alerts
   script: internal_alerts.app
   secure: always
