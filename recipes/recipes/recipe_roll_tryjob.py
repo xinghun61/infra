@@ -32,7 +32,9 @@ def get_auth_token(api):
   """
 
   result = api.step('Get auth token',
-      ['/opt/infra-tools/authutil', 'token',],
+      ['/opt/infra-tools/authutil', 'token',
+        '-service-account-json='
+        '/creds/service_accounts/service-account-recipe-roller.json'],
       stdout=api.raw_io.output(),
       step_test_data=lambda: api.raw_io.test_api.stream_output('ya29.foobar'))
   return result.stdout.strip()

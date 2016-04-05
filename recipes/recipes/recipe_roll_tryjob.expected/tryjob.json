@@ -2,7 +2,8 @@
   {
     "cmd": [
       "/opt/infra-tools/authutil",
-      "token"
+      "token",
+      "-service-account-json=/creds/service_accounts/service-account-recipe-roller.json"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "Get auth token",
