@@ -8,25 +8,13 @@ import os
 import urllib
 import zlib
 
-from testing_utils import testing
-
 from common.retry_http_client import RetryHttpClient
+from model.wf_config import FinditConfig
 from model.wf_step import WfStep
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.swarming_task_request import SwarmingTaskRequest
-
-
-_MOCK_SWARMING_SETTINGS = {
-    'task_timeout_hours': 23,
-    'server_query_interval_seconds': 60,
-    'iterations_to_rerun': 10,
-    'server_host': 'chromium-swarm.appspot.com',
-    'default_request_priority': 150,
-    'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-    'isolated_server': 'https://isolateserver.appspot.com',
-    'request_expiration_hours': 20
-}
+from waterfall.test import wf_testcase
 
 
 class SwarmingHttpClient(RetryHttpClient):
@@ -58,7 +46,7 @@ class SwarmingHttpClient(RetryHttpClient):
 
     url = ('https://%s/_ah/api/swarming/v1/tasks/'
            'list?tags=%s&tags=%s&tags=%s') % (
-               _MOCK_SWARMING_SETTINGS.get('server_host'),
+               FinditConfig().Get().swarming_settings.get('server_host'),
                urllib.quote('master:%s' % master_name),
                urllib.quote('buildername:%s' % builder_name),
                urllib.quote('buildnumber:%d' % build_number))
@@ -83,7 +71,7 @@ class SwarmingHttpClient(RetryHttpClient):
 
   def _SetResponseForGetRequestSwarmingResult(self, task_id):
     url = ('https://%s/_ah/api/swarming/v1/task/%s/result') % (
-        _MOCK_SWARMING_SETTINGS.get('server_host'), task_id)
+        FinditConfig().Get().swarming_settings.get('server_host'), task_id)
 
     response = self._GetData('task')
     self.get_responses[url] = response
@@ -135,17 +123,12 @@ class _LoggedHttpClient(RetryHttpClient):
     return self.requests.get(url)
 
 
-class SwarmingUtilTest(testing.AppengineTestCase):
+class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
     super(SwarmingUtilTest, self).setUp()
     self.http_client = SwarmingHttpClient()
     self.logged_http_client = _LoggedHttpClient()
-
-    def _MockGetSwarmingSettings():
-      return _MOCK_SWARMING_SETTINGS
-
-    self.mock(waterfall_config, 'GetSwarmingSettings', _MockGetSwarmingSettings)
 
   def testGetSwarmingTaskRequest(self):
     task_request_json = {
@@ -370,6 +353,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
 
     self.http_client._SetResponseForGetRequestSwarmingList(
         master_name, builder_name, build_number, step_name)
+
     task_ids = swarming_util.GetIsolatedDataForStep(
         master_name, builder_name, build_number, step_name,
         self.http_client)

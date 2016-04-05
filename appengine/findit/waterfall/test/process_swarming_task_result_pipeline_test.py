@@ -4,15 +4,13 @@
 
 import datetime
 
-from testing_utils import testing
-
 from model import wf_analysis_status
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall import process_swarming_task_result_pipeline
 from waterfall import swarming_util
-from waterfall import waterfall_config
 from waterfall.process_swarming_task_result_pipeline import (
     ProcessSwarmingTaskResultPipeline)
+from waterfall.test import wf_testcase
 
 
 _ISOLATED_SERVER = 'https://isolateserver.appspot.com'
@@ -106,19 +104,7 @@ _EXPECTED_CLASSIFIED_TESTS = {
 }
 
 
-_MOCK_SWARMING_SETTINGS = {
-    'task_timeout_hours': 23,
-    'server_query_interval_seconds': 60,
-    'iterations_to_rerun': 10,
-    'server_host': 'chromium-swarm.appspot.com',
-    'default_request_priority': 150,
-    'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-    'isolated_server': 'https://isolateserver.appspot.com',
-    'request_expiration_hours': 20
-}
-
-
-class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
+class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
   def _MockedGetSwarmingTaskResultById(self, task_id, _):
     swarming_task_results = {
@@ -152,9 +138,6 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
     self.builder_name = 'b'
     self.build_number = 121
     self.step_name = 'abc_tests on platform'
-    def _MockGetSwarmingSettings():
-      return _MOCK_SWARMING_SETTINGS
-    self.mock(waterfall_config, 'GetSwarmingSettings', _MockGetSwarmingSettings)
     self.mock(swarming_util, 'GetSwarmingTaskResultById',
               self._MockedGetSwarmingTaskResultById)
 
@@ -204,7 +187,6 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
     self.assertEqual(datetime.datetime(2016, 2, 10, 18, 33, 9),
                      task.completed_time)
 
-
   def testProcessSwarmingTaskResultPipelineTaskNotRunning(self):
     task_id = 'task_id2'
 
@@ -230,8 +212,13 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
 
   def testProcessSwarmingTaskResultPipelineTaskTimeOut(self):
     task_id = 'task_id1'
-    old_mock_timeout = _MOCK_SWARMING_SETTINGS['task_timeout_hours']
-    _MOCK_SWARMING_SETTINGS['task_timeout_hours'] = -1
+
+    # Override swarming config settings to force a timeout.
+    override_swarming_settings = {
+        'task_timeout_hours': -1
+    }
+    self.UpdateUnitTestConfigSettings(
+        'swarming_settings', override_swarming_settings)
 
     WfSwarmingTask.Create(
         self.master_name, self.builder_name,
@@ -252,5 +239,3 @@ class ProcessSwarmingTaskResultPipelineTest(testing.AppengineTestCase):
     self.assertEqual(wf_analysis_status.ERROR, task.status)
     self.assertEqual({}, task.tests_statuses)
     self.assertEqual({}, task.classified_tests)
-
-    _MOCK_SWARMING_SETTINGS['task_timeout_hours'] = old_mock_timeout

@@ -11,6 +11,8 @@ from base_handler import Permission
 from model import wf_config
 from waterfall import waterfall_config
 
+from google.appengine.api import users
+
 
 def _RemoveDuplicatesAndSort(elements):
   return list(set(elements))
@@ -243,6 +245,8 @@ class Configuration(BaseHandler):
       return self.CreateError(
           'New configuration settings is not properly formatted.', 400)
 
-    wf_config.FinditConfig.Get().Update(**new_config_dict)
+    wf_config.FinditConfig.Get().Update(users.get_current_user(),
+                                        users.IsCurrentUserAdmin(),
+                                        **new_config_dict)
 
     return self.HandleGet()

@@ -4,18 +4,16 @@
 
 import os
 
-from testing_utils import testing
-
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
 from pipeline_wrapper import pipeline_handlers
 from waterfall import buildbot
 from waterfall import try_job_util
-from waterfall import waterfall_config
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline
+from waterfall.test import wf_testcase
 
 
-class ExtractSignalPipelineTest(testing.AppengineTestCase):
+class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
   def setUp(self):
@@ -91,10 +89,6 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     with self.mock_urlfetch() as urlfetch:
       urlfetch.register_handler(step_log_url, 'If used, test should fail!')
 
-    def MockStepIsSupportedForMaster(*_):
-      return True
-    self.mock(waterfall_config, 'StepIsSupportedForMaster',
-              MockStepIsSupportedForMaster)
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number)
 
@@ -201,11 +195,6 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number)
 
-    def MockStepIsSupportedForMaster(*_):
-      return True
-    self.mock(waterfall_config, 'StepIsSupportedForMaster',
-              MockStepIsSupportedForMaster)
-
     pipeline = ExtractSignalPipeline(self.FAILURE_INFO)
     signals = pipeline.run(self.FAILURE_INFO, False)
 
@@ -227,9 +216,9 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     step_name = 'abc_test'
 
     failure_info = {
-        'master_name': 'm',
-        'builder_name': 'b',
-        'build_number': 124,
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
         'failed': True,
         'chromium_revision': 'a_git_hash',
         'failed_steps': {
@@ -245,11 +234,6 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     self.MockGetGtestJsonResult()
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number)
-
-    def MockStepIsSupportedForMaster(*_):
-      return True
-    self.mock(waterfall_config, 'StepIsSupportedForMaster',
-              MockStepIsSupportedForMaster)
 
     pipeline = ExtractSignalPipeline()
     signals = pipeline.run(failure_info, False)
@@ -268,13 +252,13 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     step_name = 'abc_test'
 
     failure_info = {
-        'master_name': 'm',
-        'builder_name': 'b',
-        'build_number': 125,
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
         'failed': True,
         'chromium_revision': 'a_git_hash',
         'failed_steps': {
-            'abc_test': {
+            step_name: {
                 'last_pass': 124,
                 'current_failure': 125,
                 'first_failure': 125,
@@ -286,11 +270,6 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     self.MockGetGtestJsonResult()
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number)
-
-    def MockStepIsSupportedForMaster(*_):
-      return True
-    self.mock(waterfall_config, 'StepIsSupportedForMaster',
-              MockStepIsSupportedForMaster)
 
     pipeline = ExtractSignalPipeline()
     signals = pipeline.run(failure_info, False)
@@ -393,11 +372,6 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
         }
     }
 
-    def MockStepIsSupportedForMaster(*_):
-      return True
-    self.mock(waterfall_config, 'StepIsSupportedForMaster',
-              MockStepIsSupportedForMaster)
-
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number)
 
@@ -450,10 +424,6 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
         }
     }
 
-    def MockStepIsSupportedForMaster(*_):
-      return True
-    self.mock(waterfall_config, 'StepIsSupportedForMaster',
-              MockStepIsSupportedForMaster)
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number)
 
@@ -466,6 +436,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     builder_name = 'b'
     build_number = 123
     supported_step_name = 'abc_test'
+    unsupported_step_name = 'unsupported_step6'
     failure_info = {
         'master_name': master_name,
         'builder_name': 'b',
@@ -478,19 +449,14 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
                 'current_failure': 123,
                 'first_failure': 123,
             },
-            'not_supported': {
+            unsupported_step_name: {
             }
         }
     }
 
-    def MockStepIsSupportedForMaster(step_name, _):
-      return step_name == supported_step_name
-
     def MockGetGtestResultLog(*_):
       return None
 
-    self.mock(waterfall_config, 'StepIsSupportedForMaster',
-              MockStepIsSupportedForMaster)
     self.MockGetStdiolog(master_name, builder_name, build_number,
                          supported_step_name)
     self.mock(buildbot, 'GetGtestResultLog', MockGetGtestResultLog)

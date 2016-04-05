@@ -2,19 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from testing_utils import testing
-
-from handlers import result_status
 from handlers import handlers_util
+from handlers import result_status
 from model import wf_analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
-from waterfall import buildbot
-from waterfall import waterfall_config
+from waterfall.test import wf_testcase
 
 
-class HandlersUtilResultTest(testing.AppengineTestCase):
+class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
     super(HandlersUtilResultTest, self).setUp()
@@ -22,15 +19,9 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
     self.builder_name = 'b'
     self.build_number = 121
 
-    def MockedGetSwarmingSettings():
-      return {'server_host': 'chromium-swarm.appspot.com'}
-    self.mock(
-        waterfall_config, 'GetSwarmingSettings', MockedGetSwarmingSettings)
-
   def testGetSwarmingTaskInfoNoAnalysis(self):
     data = handlers_util.GetSwarmingTaskInfo(
         self.master_name, self.builder_name, self.build_number)
-
     self.assertEqual({}, data)
 
   def testGetSwarmingTaskInfoReturnEmptyIfNoFailureMap(self):
@@ -222,10 +213,10 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
                 },
                 'm/b/120': {
                     'task_info': {
-                    'status': wf_analysis_status.ANALYZED,
-                    'task_id': 'task0',
-                    'task_url': (
-                        'https://chromium-swarm.appspot.com/user/task/task0')
+                        'status': wf_analysis_status.ANALYZED,
+                        'task_id': 'task0',
+                        'task_url': ('https://chromium-swarm.appspot.com/user/'
+                                     'task/task0')
                     },
                     'all_tests': ['test1'],
                     'reliable_tests': ['test1'],
@@ -372,7 +363,7 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
     result = handlers_util._GetTryJobResultForCompile({'compile': 'm/b/121'})
 
     expected_result = {
-        'compile':  {
+        'compile': {
             'try_jobs': [
                 {
                     'try_job_key': 'm/b/121',
@@ -421,7 +412,7 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
         self.master_name, self.builder_name, self.build_number)
 
     expected_result = {
-        'compile':  {
+        'compile': {
             'try_jobs': [
                 {
                     'try_job_key': 'm/b/121',
@@ -471,7 +462,7 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
         self.master_name, self.builder_name, self.build_number)
 
     expected_result = {
-        'compile':  {
+        'compile': {
             'try_jobs': [
                 {
                     'try_job_key': 'm/b/121',
@@ -501,7 +492,7 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
         self.master_name, self.builder_name, self.build_number)
 
     expected_result = {
-        'step1':{
+        'step1': {
             'try_jobs': [
                 {
                     'try_job_key': 'm/b/118',
@@ -593,7 +584,7 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
         failure_result_map, tasks_info)
 
     expected_result = {
-        'step1':{
+        'step1': {
             'try_jobs': [
                 {
                     'try_job_key': 'm/b/118',
@@ -721,7 +712,7 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
         failure_result_map, tasks_info)
 
     expected_result = {
-        'step1 on platform':{
+        'step1 on platform': {
             'try_jobs': [
                 {
                     'ref_name': 'step1',
@@ -823,7 +814,7 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
         failure_result_map, tasks_info)
 
     expected_result = {
-        'step1 on platform':{
+        'step1 on platform': {
             'try_jobs': [
                 {
                     'try_job_key': 'm/b/118',
@@ -902,12 +893,12 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
             'failed_tests': ['a_test2', 'a_test1']
         }
     }
-    self.assertEqual(expected_result,result)
+    self.assertEqual(expected_result, result)
 
   def testGetCulpritInfoForTryJobResultForTestTryJobNoResult(self):
     try_job_key = 'm/b/119'
     culprits_info = {
-        'step1 on platform':{
+        'step1 on platform': {
             'try_jobs': [
                 {
                     'ref_name': 'step1',
@@ -922,7 +913,7 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
         try_job_key, culprits_info)
 
     expected_culprits_info = {
-        'step1 on platform':{
+        'step1 on platform': {
             'try_jobs': [
                 {
                     'ref_name': 'step1',
@@ -938,7 +929,7 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
   def testGetCulpritInfoForTryJobResultForTestTryJobRunning(self):
     try_job_key = 'm/b/119'
     culprits_info = {
-        'step1 on platform':{
+        'step1 on platform': {
             'try_jobs': [
                 {
                     'ref_name': 'step1',
@@ -962,7 +953,7 @@ class HandlersUtilResultTest(testing.AppengineTestCase):
         try_job_key, culprits_info)
 
     expected_culprits_info = {
-        'step1 on platform':{
+        'step1 on platform': {
             'try_jobs': [
                 {
                     'ref_name': 'step1',

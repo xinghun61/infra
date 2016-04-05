@@ -4,19 +4,17 @@
 
 import os
 
-from testing_utils import testing
-
 from common import chromium_deps
-from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
+from model.wf_analysis import WfAnalysis
 from pipeline_wrapper import pipeline_handlers
 from waterfall import buildbot
-from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline
 from waterfall import lock_util
-from waterfall import waterfall_config
+from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline
+from waterfall.test import wf_testcase
 
 
-class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
+class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
   def _MockChangeLog(
@@ -103,13 +101,6 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
     build_number = 124
 
     self._Setup(master_name, builder_name, build_number)
-
-    def MockStepIsSupportedForMaster(*_):
-      return True
-
-    self.mock(waterfall_config,
-              'StepIsSupportedForMaster',
-              MockStepIsSupportedForMaster)
 
     root_pipeline = AnalyzeBuildFailurePipeline(master_name,
                                                 builder_name,

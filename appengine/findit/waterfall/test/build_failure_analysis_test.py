@@ -4,19 +4,17 @@
 
 from datetime import datetime
 
-from testing_utils import testing
-
 from common.blame import Blame
 from common.blame import Region
 from common.change_log import FileChangeInfo
 from common.diff import ChangeType
 from common.git_repository import GitRepository
 from waterfall import build_failure_analysis
-from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
+from waterfall.test import wf_testcase
 
 
-class BuildFailureAnalysisTest(testing.AppengineTestCase):
+class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
   def _MockGetChangeLog(self, revision):
 
@@ -556,7 +554,7 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
 
   def testAnalyzeBuildFailure(self):
     failure_info = {
-        'master_name': 'blabla',
+        'master_name': 'm',
         'failed': True,
         'chromium_revision': 'r99_2',
         'failed_steps': {
@@ -698,11 +696,6 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
         ]
     }
 
-    def MockStepIsSupportedForMaster(*_):
-      return True
-    self.mock(waterfall_config, 'StepIsSupportedForMaster',
-              MockStepIsSupportedForMaster)
-
     analysis_result = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs, deps_info, failure_signals_json)
     self.assertEqual(expected_analysis_result, analysis_result)
@@ -711,6 +704,7 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
     failure_info = {
         'failed': True,
         'chromium_revision': 'r99_2',
+        'master_name': 'm',
         'failed_steps': {
             'a': {
                 'current_failure': 99,
@@ -855,11 +849,6 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
         }
     }
 
-    def MockStepIsSupportedForMaster(*_):
-      return True
-    self.mock(waterfall_config, 'StepIsSupportedForMaster',
-              MockStepIsSupportedForMaster)
-
     def MockGetChangedLines(repo_info, touched_file, line_numbers, _):
       # Only need line_numbers, ignoring the first two parameters.
       del repo_info, touched_file
@@ -993,11 +982,11 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
 
   def testAnalyzeBuildFailureForUnsupportedStep(self):
     failure_info = {
-        'master_name': 'm',
+        'master_name': 'master1',
         'failed': True,
         'chromium_revision': 'r99_2',
         'failed_steps': {
-            'not_supported': {
+            'unsupported_step1': {
                 'current_failure': 99,
                 'first_failure': 98,
             },
@@ -1023,7 +1012,7 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
     expected_analysis_result = {
         'failures': [
             {
-                'step_name': 'not_supported',
+                'step_name': 'unsupported_step1',
                 'supported': False,
                 'first_failure': 98,
                 'last_pass': None,
@@ -1031,11 +1020,6 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
             },
         ]
     }
-
-    def MockStepIsSupportedForMaster(*_):
-      return False
-    self.mock(waterfall_config, 'StepIsSupportedForMaster',
-              MockStepIsSupportedForMaster)
 
     analysis_result = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs, deps_info, failure_signals_json)

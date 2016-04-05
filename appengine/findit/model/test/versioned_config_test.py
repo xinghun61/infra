@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 from google.appengine.ext import ndb
-
+from google.appengine.api import users
 from testing_utils import testing
 
 from model.versioned_config import VersionedConfig
@@ -14,9 +14,10 @@ class _Config(VersionedConfig):
 
 
 class VersionedConfigTest(testing.AppengineTestCase):
+
   def _CreateFirstVersion(self):
     config = _Config.Get()
-    config.Update(a=1)
+    config.Update(users.User(email='admin@chromium.org'), True, a=1)
 
   def testGetWhenNoConfigCreatedYet(self):
     config = _Config.Get()
@@ -26,14 +27,14 @@ class VersionedConfigTest(testing.AppengineTestCase):
   def testNonAdminCanNotUpdate(self):
     config = _Config.Get()
     with self.assertRaises(Exception):
-      config.Update()
+      config.Update(users.User(email='admin@chromium.org'), False, a=1)
 
   def testUpdateWhenChanged(self):
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     self._CreateFirstVersion()
     config = _Config.Get()
     self.assertIsNotNone(config)
-    self.assertTrue(config.Update(a=2))
+    self.assertTrue(config.Update(users.User(email='admin@chromium.org'), True,
+                                  a=2))
 
     config = _Config.Get()
     self.assertIsNotNone(config)
@@ -41,11 +42,11 @@ class VersionedConfigTest(testing.AppengineTestCase):
     self.assertEqual(2, config.a)
 
   def testNotUpdateWhenNotChanged(self):
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     self._CreateFirstVersion()
     config = _Config.Get()
     self.assertIsNotNone(config)
-    self.assertFalse(config.Update(a=1))
+    self.assertFalse(config.Update(users.User(email='admin@chromium.org'), True,
+                                   a=1))
 
     config = _Config.Get()
     self.assertIsNotNone(config)

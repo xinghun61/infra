@@ -4,16 +4,15 @@
 
 import textwrap
 
-from testing_utils import testing
 from waterfall import extractors
-from waterfall import waterfall_config
 from waterfall.extractor import Extractor
+from waterfall.test import wf_testcase
 
 
-class ExtractorsTest(testing.AppengineTestCase):
+class ExtractorsTest(wf_testcase.WaterfallTestCase):
 
   def _RunTest(self, failure_log, extractor_class, expected_signal_json,
-               bot='bot', master='master'):
+               bot='builder1', master='master1'):
     signal = extractor_class().Extract(
         failure_log, 'suite.test', 'step', bot, master)
     self.assertEqual(expected_signal_json, signal.ToDict())
@@ -356,7 +355,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
     }
 
     self._RunTest(
-        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+        failure_log, extractors.CompileStepExtractor, expected_signal_json,
+        'builder2', 'master2')
 
   def testCompileStepExtractorExtractFailedTargetsLinuxOutsideFailure(self):
     failure_log = textwrap.dedent("""
@@ -381,7 +381,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
     }
 
     self._RunTest(
-        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+        failure_log, extractors.CompileStepExtractor, expected_signal_json,
+        'builder2', 'master2')
 
   def testCompileStepExtractorExtractFailedLinkTargetsLinux(self):
     failure_log = textwrap.dedent("""
@@ -405,7 +406,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
     }
 
     self._RunTest(
-        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+        failure_log, extractors.CompileStepExtractor, expected_signal_json,
+        'builder2', 'master2')
 
   def testCompileStepExtractorExtractFailedCompileTargetsWindows(self):
     failure_log = textwrap.dedent("""
@@ -431,7 +433,7 @@ Note:You can safely ignore the above warning unless this call should not happen.
     }
 
     self._RunTest(failure_log, extractors.CompileStepExtractor,
-                  expected_signal_json)
+                  expected_signal_json, 'win_builder', 'win_master')
 
   def testCompileStepExtractorExtractFailedLinkTargetsWindows(self):
     failure_log = textwrap.dedent("""
@@ -449,7 +451,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
     }
 
     self._RunTest(
-        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+        failure_log, extractors.CompileStepExtractor, expected_signal_json,
+        'builder2', 'master2')
 
   def testCompileStepNinjaErrorExtractor(self):
     """Test ninja error extraction in compile step."""
@@ -509,14 +512,7 @@ Note:You can safely ignore the above warning unless this call should not happen.
         failure_log, extractors.CompileStepExtractor, expected_signal_json,
         'iOS_Simulator_(dbg)', 'chromium.mac')
 
-  def _MockEnableStrictRegexForCompileLinkFailures(self, enabled):
-    def Mocked_EnableStrictRegexForCompileLinkFailures(*_):
-      return enabled
-    self.mock(waterfall_config, 'EnableStrictRegexForCompileLinkFailures',
-              Mocked_EnableStrictRegexForCompileLinkFailures)
-
   def testCompileStepStrictRegexForCompileFailures(self):
-    self._MockEnableStrictRegexForCompileLinkFailures(True)
 
     goma_clang_prefix = (
         '/b/build/goma/gomacc '
@@ -552,9 +548,7 @@ Note:You can safely ignore the above warning unless this call should not happen.
     self._RunTest(
         failure_log, extractors.CompileStepExtractor, expected_signal_json)
 
-
   def testCompileStepStrictRegexForLinkFailures(self):
-    self._MockEnableStrictRegexForCompileLinkFailures(True)
 
     goma_gcc_prefix = (
         '/b/build/slave/Linux/build/src/build/goma/client/gomacc '

@@ -2,13 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from testing_utils import testing
-
 from model import wf_analysis_status
-from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from waterfall import try_job_util
-from waterfall import waterfall_config
+from waterfall.test import wf_testcase
 from waterfall.try_job_type import TryJobType
 
 
@@ -26,15 +23,10 @@ class _MockRootPipeline(object):
     return 'path'
 
 
-class TryJobUtilTest(testing.AppengineTestCase):
+class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
     super(TryJobUtilTest, self).setUp()
-
-    def Mocked_GetTrybotForWaterfallBuilder(*_):
-      return 'tryserver.master', 'tryserver.builder'
-    self.mock(waterfall_config, 'GetTrybotForWaterfallBuilder',
-              Mocked_GetTrybotForWaterfallBuilder)
 
   def testNotNeedANewTryJobIfBuildIsNotCompletedYet(self):
     self.mock(
@@ -49,13 +41,8 @@ class TryJobUtilTest(testing.AppengineTestCase):
     self.assertEqual({}, failure_result_map)
 
   def testNotNeedANewTryJobIfBuilderIsNotSupportedYet(self):
-    def Mocked_GetTrybotForWaterfallBuilder(*_):
-      return None, None
-    self.mock(waterfall_config, 'GetTrybotForWaterfallBuilder',
-              Mocked_GetTrybotForWaterfallBuilder)
-
-    master_name = 'm'
-    builder_name = 'b'
+    master_name = 'master2'
+    builder_name = 'builder2'
     build_number = 223
     failure_info = {
         'master_name': master_name,
@@ -401,11 +388,6 @@ class TryJobUtilTest(testing.AppengineTestCase):
         try_job_util._GetFailedTargetsFromSignals(signals, 'm', 'b'), ['a.exe'])
 
   def testUseObjectFilesAsFailedTargetIfStrictRegexUsed(self):
-    def Mocked_EnableStrictRegexForCompileLinkFailures(*_):
-      return True
-    self.mock(waterfall_config, 'EnableStrictRegexForCompileLinkFailures',
-              Mocked_EnableStrictRegexForCompileLinkFailures)
-
     signals = {
         'compile': {
             'failed_targets': [
@@ -415,4 +397,6 @@ class TryJobUtilTest(testing.AppengineTestCase):
     }
 
     self.assertEqual(
-        try_job_util._GetFailedTargetsFromSignals(signals, 'm', 'b'), ['b.o'])
+        try_job_util._GetFailedTargetsFromSignals(
+            signals, 'master1', 'builder1'),
+        ['b.o'])

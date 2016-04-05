@@ -2,22 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from testing_utils import testing
-
 from common import buildbucket_client
 from model.wf_try_job import WfTryJob
-from waterfall import waterfall_config
 from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
+from waterfall.test import wf_testcase
 from waterfall.try_job_type import TryJobType
 
 
-class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
-
-  def _Mock_GetTrybotForWaterfallBuilder(self, *_):
-    def MockedGetTrybotForWaterfallBuilder(*_):
-      return 'linux_chromium_variable', 'master.tryserver.chromium.linux'
-    self.mock(waterfall_config, 'GetTrybotForWaterfallBuilder',
-              MockedGetTrybotForWaterfallBuilder)
+class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
 
   def _Mock_TriggerTryJobs(self, responses):
     def MockedTriggerTryJobs(*_):
@@ -96,7 +88,7 @@ class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
             }
         }
     ]
-    self._Mock_GetTrybotForWaterfallBuilder(master_name, builder_name)
+
     self._Mock_TriggerTryJobs(responses)
 
     WfTryJob.Create(master_name, builder_name, build_number).put()
@@ -130,7 +122,6 @@ class ScheduleTryjobPipelineTest(testing.AppengineTestCase):
             }
         }
     ]
-    self._Mock_GetTrybotForWaterfallBuilder(master_name, builder_name)
     self._Mock_TriggerTryJobs(responses)
 
     WfTryJob.Create(master_name, builder_name, build_number).put()

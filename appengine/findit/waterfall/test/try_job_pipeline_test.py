@@ -4,26 +4,18 @@
 
 import json
 
-from testing_utils import testing
-
 from common import buildbucket_client
 from common.git_repository import GitRepository
 from model import wf_analysis_status
 from model.wf_try_job import WfTryJob
 from pipeline_wrapper import pipeline_handlers
-from waterfall import waterfall_config
+from waterfall.test import wf_testcase
 from waterfall.try_job_pipeline import TryJobPipeline
 from waterfall.try_job_type import TryJobType
 
 
-class TryJobPipelineTest(testing.AppengineTestCase):
+class TryJobPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
-
-  def _MockGetTrybotForWaterfallBuilder(self, *_):
-    def MockedGetTrybotForWaterfallBuilder(*_):
-      return 'linux_chromium_variable', 'master.tryserver.chromium.linux'
-    self.mock(waterfall_config, 'GetTrybotForWaterfallBuilder',
-              MockedGetTrybotForWaterfallBuilder)
 
   def _Mock_TriggerTryJobs(self, responses):
     def MockedTriggerTryJobs(*_):
@@ -92,15 +84,6 @@ class TryJobPipelineTest(testing.AppengineTestCase):
       return mock_change_logs.get(revision)
     self.mock(GitRepository, 'GetChangeLog', MockedGetChangeLog)
 
-  def _MockGetTryJobSettings(self):
-    def _GetMockTryJobSettings():
-      return {
-          'server_query_interval_seconds': 60,
-          'job_timeout_hours': 5,
-          'allowed_response_error_times': 1
-      }
-    self.mock(waterfall_config, 'GetTryJobSettings', _GetMockTryJobSettings)
-
   def testSuccessfullyScheduleNewTryJobForCompile(self):
     master_name = 'm'
     builder_name = 'b'
@@ -115,11 +98,10 @@ class TryJobPipelineTest(testing.AppengineTestCase):
             }
         }
     ]
-    self._MockGetTrybotForWaterfallBuilder(master_name, builder_name)
+
     self._Mock_TriggerTryJobs(responses)
     self._Mock_GetTryJobs('1')
     self._Mock_GetChangeLog('rev2')
-    self._MockGetTryJobSettings()
 
     WfTryJob.Create(master_name, builder_name, build_number).put()
 

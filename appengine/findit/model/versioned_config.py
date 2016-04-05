@@ -6,7 +6,6 @@
 
 import logging
 
-from google.appengine.api import users
 from google.appengine.ext import ndb
 
 from model.versioned_model import VersionedModel
@@ -30,9 +29,9 @@ class VersionedConfig(VersionedModel):
     config_data = cls.GetVersion(version)
     return config_data or cls() if version is None else config_data
 
-  def Update(self, **kwargs):
+  def Update(self, user, is_admin, **kwargs):
     """Applies |kwargs| dict to the entity and stores the entity if changed."""
-    if not users.is_current_user_admin():
+    if not is_admin:
       raise Exception('Only admin could update config.')
 
     dirty = False
@@ -43,7 +42,7 @@ class VersionedConfig(VersionedModel):
         dirty = True
 
     if dirty:
-      user_name = users.get_current_user().email().split('@')[0]
+      user_name = user.email().split('@')[0]
       self.updated_by = user_name
       self.Save()
       logging.info('Config %s was updated by %s', self.__class__, user_name)

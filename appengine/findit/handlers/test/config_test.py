@@ -11,7 +11,7 @@ import webtest
 from handlers import config
 from model import wf_config
 from testing_utils import testing
-
+from google.appengine.api import users
 
 _MOCK_STEPS_FOR_MASTERS_RULES_OLD_FORMAT = {
     'master1': ['unsupported_step1', 'unsupported_step2'],
@@ -77,15 +77,17 @@ class ConfigTest(testing.AppengineTestCase):
   ], debug=True)
 
   def testGetConfigurationSettings(self):
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-
     config_data = {
         'steps_for_masters_rules': _MOCK_STEPS_FOR_MASTERS_RULES,
         'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
         'swarming_settings': _MOCK_SWARMING_SETTINGS
     }
-    wf_config.FinditConfig.Get().Update(**config_data)
+
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+
+    wf_config.FinditConfig.Get().Update(users.GetCurrentUser(), True,
+                                        **config_data)
 
     response = self.test_app.get('/config', params={'format': 'json'})
     self.assertEquals(response.status_int, 200)
@@ -112,7 +114,8 @@ class ConfigTest(testing.AppengineTestCase):
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
         'swarming_settings': _MOCK_SWARMING_SETTINGS
     }
-    wf_config.FinditConfig.Get().Update(**config_data)
+    wf_config.FinditConfig.Get().Update(users.GetCurrentUser(), True,
+                                        **config_data)
 
     response = self.test_app.get(
         '/config', params={'version': 1, 'format': 'json'})
@@ -132,15 +135,16 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertEquals(expected_response, response.json_body)
 
   def testGetOutOfBoundsVersionOfConfigurationSettings(self):
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-
     config_data = {
         'steps_for_masters_rules': _MOCK_STEPS_FOR_MASTERS_RULES,
         'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
         'swarming_settings': _MOCK_SWARMING_SETTINGS
     }
-    wf_config.FinditConfig.Get().Update(**config_data)
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+
+    wf_config.FinditConfig.Get().Update(users.GetCurrentUser(), True,
+                                        **config_data)
 
     self.assertRaisesRegexp(
         webtest.app.AppError,

@@ -8,8 +8,6 @@ import os
 import urllib
 import zlib
 
-from testing_utils import testing
-
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from model import wf_analysis_status
 from model.wf_analysis import WfAnalysis
@@ -19,23 +17,11 @@ from pipeline_wrapper import pipeline_handlers
 from waterfall import buildbot
 from waterfall import lock_util
 from waterfall import swarming_util
-from waterfall import waterfall_config
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
+from waterfall.test import wf_testcase
 
 
-_MOCK_SWARMING_SETTINGS = {
-    'task_timeout_hours': 23,
-    'server_query_interval_seconds': 60,
-    'iterations_to_rerun': 10,
-    'server_host': 'chromium-swarm.appspot.com',
-    'default_request_priority': 150,
-    'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-    'isolated_server': 'https://isolateserver.appspot.com',
-    'request_expiration_hours': 20
-}
-
-
-class DetectFirstFailureTest(testing.AppengineTestCase):
+class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
   def setUp(self):
@@ -48,10 +34,6 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
       return True
 
     self.mock(lock_util, 'WaitUntilDownloadAllowed', _WaitUntilDownloadAllowed)
-
-    def _MockGetSwarmingSettings():
-      return _MOCK_SWARMING_SETTINGS
-    self.mock(waterfall_config, 'GetSwarmingSettings', _MockGetSwarmingSettings)
 
   def _TimeBeforeNowBySeconds(self, seconds):
     return datetime.datetime.utcnow() - datetime.timedelta(0, seconds, 0)
