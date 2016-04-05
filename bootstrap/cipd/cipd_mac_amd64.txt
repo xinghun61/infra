@@ -7,3 +7,5 @@
 
 # Proto3 Protocol Buffers generator (protoc).
 infra/tools/protoc/mac-amd64    release:v3.0.0-beta-2
+
+infra/tools/authutil/mac-amd64  git_revision:342ee7e69e360c5e9188e19df321992fbd301572
