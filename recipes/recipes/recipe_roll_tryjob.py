@@ -32,7 +32,7 @@ def get_auth_token(api):
   """
 
   result = api.step('Get auth token',
-      ['authutil', 'token',],
+      ['/opt/infra-tools/authutil', 'token',],
       stdout=api.raw_io.output(),
       step_test_data=lambda: api.raw_io.test_api.stream_output('ya29.foobar'))
   return result.stdout.strip()
@@ -343,14 +343,22 @@ PROPERTIES = {
   "patch_project": Property(
       kind=str, default=None,
       help="The luci-config name of the project this patch belongs to"),
+
+  # To generate an auth token for running locally, run
+  #   infra/go/bin/authutil login
+  'auth_token': Property(default=None),
 }
 
-def RunSteps(api, patches_raw, rietveld, issue, patchset, patch_project):
+def RunSteps(api, patches_raw, rietveld, issue, patchset, patch_project,
+             auth_token):
   # TODO(martiniss): use real types
   issue = int(issue) if issue else None
   patchset = int(patchset) if patchset else None
 
-  headers = {'Authorization': 'Bearer %s' % get_auth_token(api)}
+  if not auth_token:
+    auth_token = get_auth_token(api)
+
+  headers = {'Authorization': 'Bearer %s' % auth_token}
 
   patches = parse_patches(
       api, patches_raw, rietveld, issue, patchset, patch_project)

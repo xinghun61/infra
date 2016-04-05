@@ -1,7 +1,7 @@
 [
   {
     "cmd": [
-      "authutil",
+      "/opt/infra-tools/authutil",
       "token"
     ],
     "cwd": "[SLAVE_BUILD]",
