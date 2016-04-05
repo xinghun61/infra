@@ -43,16 +43,16 @@ DEFAULT_CERT_FILE = os.path.join(ROOT, 'data', 'cacert.pem')
 # CIPD server round-trip lookup. This can be obtained for a given package via:
 # $ cipd resolve \
 #      infra/tools/cipd/ \
-#     -version=git_revision:40a69b87c6c49c529bc3a1e57f099bddad71e38a
+#     -version=git_revision:12e14e0a2f61d7d19e79fd4b700cfb14147174c8
 ARCH_CONFIG_MAP = {
   ('Linux', 'x86_64'): {
     'cipd_package': 'infra/tools/cipd/linux-amd64',
-    'cipd_package_version': 'ec815bd831e9d2117620bb890af9edd9a8a3e4e4',
+    'cipd_package_version': 'b7b69d5bb6f43d3203d218c8cae96c0d55148422',
     'cipd_install_list': 'cipd_linux_amd64.txt',
   },
   ('Darwin', 'x86_64'): {
     'cipd_package': 'infra/tools/cipd/mac-amd64',
-    'cipd_package_version': '65a72d248166409c2db79e5c2f2a44044834454a',
+    'cipd_package_version': 'c68c98cb7617f4c422b893ed1cb0313bdb8a7dd9',
     'cipd_install_list': 'cipd_mac_amd64.txt',
   },
 }
