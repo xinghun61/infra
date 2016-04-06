@@ -33,6 +33,9 @@ found in the LICENSE file.
       }
     </style>
     <ct-tree-status status="{{ treeStatuses['chromium'] }}" state="{{ treeStatuses['chromium'].status }}"></ct-tree-status>
+    <template if="{{ tree == 'trooper' }}">
+      <ct-tree-status status="{{ treeStatuses['infra'] }}" state="{{ treeStatuses['infra'].status }}"></ct-tree-status>
+    </template>
     <template if="{{ tree == 'time-series-alerts' }}">
       <ct-time-series>
       </ct-time-series>
