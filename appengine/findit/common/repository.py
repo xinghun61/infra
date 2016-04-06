@@ -11,6 +11,10 @@ class Repository(object):  # pragma: no cover
     """Returns the change log of the given revision."""
     raise NotImplemented()
 
+  def GetChangeLogs(self, start_revision, end_revision, n=1000):
+    """Returns change log list in (start_revision, end_revision]."""
+    raise NotImplemented()
+
   def GetChangeDiff(self, revision):
     """Returns the diff of the given revision."""
     raise NotImplemented()

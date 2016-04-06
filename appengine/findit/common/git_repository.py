@@ -233,3 +233,26 @@ class GitRepository(Repository):
     """Returns source code of the file at ``path`` of the given revision."""
     url = '%s/+/%s/%s' % (self.repo_url, revision, path)
     return self._SendRequestForTextResponse(url)
+
+  def GetChangeLogs(self, start_revision, end_revision, n=1000):
+    """Gets a list of ChangeLogs in revision range.
+
+    Args:
+      start_revision (str): The oldest revision in the range.
+      end_revision (str): The latest revision in the range.
+      n (int): The maximum number of revisions to request at a time.
+
+    Returns:
+      A list of changelogs in (start_revision, end_revision].
+    """
+    revisions = self.GetCommitsBetweenRevisions(start_revision, end_revision, n)
+    changelogs = []
+
+    for revision in revisions:
+      changelog = self.GetChangeLog(revision)
+      if not changelog:
+        raise Exception('Failed to pull changelog for revision %s' % revision)
+
+      changelogs.append(changelog)
+
+    return changelogs

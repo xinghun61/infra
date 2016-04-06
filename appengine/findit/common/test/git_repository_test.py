@@ -11,6 +11,7 @@ from testing_utils import testing
 
 from common import git_repository
 from common import retry_http_client
+from common.change_log import ChangeLog
 
 
 COMMIT_MESSAGE = ('Add popover for snapshot canvas log.\n\n'
@@ -228,6 +229,29 @@ EXPECTED_FILE_BLAME_JSON = {
     ],
     'path': 'a/b/c.cc',
     'revision': 'dummy_abcd1234'
+}
+
+DUMMY_CHANGELOG_JSON = {
+    'author_name': 'test@chromium.org',
+    'message': 'dummy',
+    'committer_email': 'test@chromium.org',
+    'commit_position': 175976,
+    'author_email': 'test1@chromium.org',
+    'touched_files': [
+        {
+            'change_type': 'add',
+            'new_path': 'Source/devtools/added_file.js',
+            'old_path': '/dev/null'
+        }
+    ],
+    'author_time': datetime(2016, 01, 11, 23, 35, 32),
+    'committer_time': datetime(2016, 01, 11, 19, 35, 32),
+    'commit_url':
+        'https://repo.test/+/bcfd',
+    'code_review_url': 'https://codereview.chromium.org/328113005',
+    'committer_name': 'test1@chromium.org',
+    'revision': 'bcfd',
+    'reverted_revision': None
 }
 
 
@@ -531,3 +555,36 @@ class GitRepositoryTest(testing.AppengineTestCase):
     expected_commits = ['3', '2', '1']
     actual_commits = self.git_repo.GetCommitsBetweenRevisions('0', '3', n=2)
     self.assertEqual(expected_commits, actual_commits)
+
+  def _MockGetCommitsBetweenRevisions(self, *_):
+    return ['2', '1']
+
+  def testGetChangeLogs(self):
+
+    def _MockGetChangeLog(*_):
+      return ChangeLog.FromDict(DUMMY_CHANGELOG_JSON)
+
+    self.mock(git_repository.GitRepository, 'GetCommitsBetweenRevisions',
+              self._MockGetCommitsBetweenRevisions)
+    self.mock(git_repository.GitRepository, 'GetChangeLog',
+              _MockGetChangeLog)
+
+    changelogs = self.git_repo.GetChangeLogs('0', '2')
+
+    self.assertEqual(len(changelogs), 2)
+    self.assertEqual([changelogs[0].ToDict(), changelogs[1].ToDict()],
+                     [DUMMY_CHANGELOG_JSON, DUMMY_CHANGELOG_JSON])
+
+  def testGetChangeLogsFailToGetChangeLog(self):
+
+    def _MockGetChangeLog(*_):
+      return None
+
+    self.mock(git_repository.GitRepository, 'GetCommitsBetweenRevisions',
+              self._MockGetCommitsBetweenRevisions)
+    self.mock(git_repository.GitRepository, 'GetChangeLog',
+              _MockGetChangeLog)
+
+    self.assertRaisesRegexp(
+        Exception, 'Failed to pull changelog for revision 2',
+        self.git_repo.GetChangeLogs, '0', '2')
