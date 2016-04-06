@@ -28,6 +28,26 @@ def _fix_sys_path_for_appengine(pretest_filename):
   pretest_dev_appserver.fix_sys_path()
 
 
+def _load_appengine_config(pretest_filename):
+  app_dir = os.path.abspath(os.path.dirname(pretest_filename))
+  if not os.path.exists(os.path.join(app_dir, 'appengine_config.py')):
+    return
+
+  inserted = False
+  if app_dir not in sys.path:
+    sys.path.insert(0, app_dir)
+    inserted = True
+  import appengine_config  # Unused Variable pylint: disable=W0612
+  if inserted:
+    sys.path.remove(app_dir)
+
+
 # Using pretest_filename is magic, because it is available in the locals() of
 # the script which execfiles this file.
 _fix_sys_path_for_appengine(pretest_filename)
+
+# Load appengine_config from the appengine project to ensure that any changes to
+# configuration there are available to the tests (e.g. sys.path modifications,
+# namespaces, etc.). This is according to
+# https://cloud.google.com/appengine/docs/python/tools/localunittesting
+_load_appengine_config(pretest_filename)
