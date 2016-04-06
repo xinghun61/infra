@@ -28,9 +28,14 @@ class TrooperQueueHandler(auth.AuthenticatingHandler): # pragma: no cover
         discoveryServiceUrl=DISCOVERY_URL,
         credentials=credentials)
 
-  @auth.require(utils.is_trooper_or_admin)
+  @auth.public
   def get(self):
     alerts = []
+
+    if not utils.is_trooper_or_admin():
+      LOGGER.warn('unauthorized request for trooper queue')
+      self.response.write('{}')
+      return
 
     try:
       response = self.monorail.issues().list(projectId='chromium', can='open',
@@ -43,13 +48,11 @@ class TrooperQueueHandler(auth.AuthenticatingHandler): # pragma: no cover
 
     except apiclient.errors.HttpError as e:
       LOGGER.error(e)
-      self.response.set_status(500)
-      self.response.write('%s' % e)
+      self.response.write('{}')
       return
     except  httplib2.HttpLib2Error as e:
       LOGGER.error(e)
-      self.response.set_status(500)
-      self.response.write('%s' % e)
+      self.response.write('{}')
       return
 
     self.response.write(json.dumps({'alerts': alerts}))
