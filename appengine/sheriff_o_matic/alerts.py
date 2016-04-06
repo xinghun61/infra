@@ -37,6 +37,9 @@ class LastUpdated(ndb.Model):
 
 
 class AlertsHandler(auth.AuthenticatingHandler): # pragma: no cover
+  xsrf_token_enforce_on = []
+  xsrf_token_request_param = None
+
   ALERT_TYPE = 'alerts'
   # Max number of bytes that AppEngine allows writing to Memcache
   MAX_JSON_SIZE = 10**6 - 10**5

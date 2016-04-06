@@ -20,6 +20,9 @@ DISCOVERY_URL = (
     '{api}/{apiVersion}/rest')
 
 class TrooperQueueHandler(auth.AuthenticatingHandler): # pragma: no cover
+  xsrf_token_enforce_on = []
+  xsrf_token_request_param = None
+
   def __init__(self, request, response):
     self.initialize(request, response)
     credentials = GoogleCredentials.get_application_default()

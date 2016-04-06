@@ -54,6 +54,8 @@ class Tree(ndb.Model):
 
 class TreeListHandler(auth.AuthenticatingHandler):
   GROUPS = ["*", "googlers"]
+  xsrf_token_enforce_on = []
+  xsrf_token_request_param = None
 
   def send_json_headers(self):
     self.response.headers['Access-Control-Allow-Origin'] = '*'

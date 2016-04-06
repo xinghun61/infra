@@ -19,6 +19,8 @@ class UserPrefs(ndb.Model):
   use_new_windows = ndb.BooleanProperty()
 
 class UserPrefsHandler(auth.AuthenticatingHandler):
+  xsrf_token_enforce_on = []
+  xsrf_token_request_param = None
 
   @auth.public
   def get(self):
