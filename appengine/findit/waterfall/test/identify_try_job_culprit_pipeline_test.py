@@ -5,7 +5,7 @@
 from testing_utils import testing
 
 from common.git_repository import GitRepository
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall.identify_try_job_culprit_pipeline import(
@@ -93,7 +93,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         TryJobType.COMPILE, '1', None)
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
 
-    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
+    self.assertEqual(analysis_status.COMPLETED, try_job.status)
     self.assertEqual([], try_job.compile_results)
     self.assertIsNone(culprit)
     self.assertIsNone(try_job_data.culprits)
@@ -117,7 +117,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     try_job_data.put()
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = wf_analysis_status.ANALYZING
+    try_job.status = analysis_status.RUNNING
     try_job.compile_results = [{
         'report': {
             'result': {
@@ -156,7 +156,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(expected_compile_result, try_job.compile_results[-1])
-    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
+    self.assertEqual(analysis_status.COMPLETED, try_job.status)
 
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertEqual({'compile': expected_culprit}, try_job_data.culprits)
@@ -188,7 +188,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
 
     self.assertIsNone(culprit)
-    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
+    self.assertEqual(analysis_status.COMPLETED, try_job.status)
 
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertIsNone(try_job_data.culprits)
@@ -201,7 +201,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
 
     WfTryJobData.Create(try_job_id).put()
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = wf_analysis_status.ANALYZING
+    try_job.status = analysis_status.RUNNING
     try_job.put()
 
     pipeline = IdentifyTryJobCulpritPipeline()
@@ -238,7 +238,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
 
     WfTryJobData.Create(try_job_id).put()
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = wf_analysis_status.ANALYZING
+    try_job.status = analysis_status.RUNNING
     try_job.put()
 
     pipeline = IdentifyTryJobCulpritPipeline()
@@ -275,7 +275,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
 
     WfTryJobData.Create(try_job_id).put()
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = wf_analysis_status.ANALYZING
+    try_job.status = analysis_status.RUNNING
     try_job.put()
 
     pipeline = IdentifyTryJobCulpritPipeline()
@@ -351,7 +351,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
 
     WfTryJobData.Create(try_job_id).put()
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = wf_analysis_status.ANALYZING
+    try_job.status = analysis_status.RUNNING
     try_job.test_results = [test_result]
     try_job.put()
 
@@ -436,7 +436,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(expected_test_result, try_job.test_results[-1])
-    self.assertEqual(wf_analysis_status.ANALYZED, try_job.status)
+    self.assertEqual(analysis_status.COMPLETED, try_job.status)
 
     try_job_data = WfTryJobData.Get(try_job_id)
     expected_culprit_data = {

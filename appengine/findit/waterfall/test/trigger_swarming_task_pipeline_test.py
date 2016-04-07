@@ -4,7 +4,7 @@
 
 import time
 
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall import swarming_util
 from waterfall import trigger_swarming_task_pipeline
@@ -29,7 +29,7 @@ class TriggerSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
               MockedListSwarmingTasksDataByTags)
     swarming_task = WfSwarmingTask.Create(
         master_name, builder_name, build_number, step_name)
-    swarming_task.status = wf_analysis_status.ANALYZING
+    swarming_task.status = analysis_status.RUNNING
     swarming_task.task_id = 'task_id'
     swarming_task.put()
 
@@ -47,14 +47,14 @@ class TriggerSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
 
     swarming_task = WfSwarmingTask.Create(
         master_name, builder_name, build_number, step_name)
-    swarming_task.status = wf_analysis_status.PENDING
+    swarming_task.status = analysis_status.PENDING
     swarming_task.put()
 
     def MockedSleep(*_):
       swarming_task = WfSwarmingTask.Get(
           master_name, builder_name, build_number, step_name)
-      self.assertEqual(wf_analysis_status.PENDING, swarming_task.status)
-      swarming_task.status = wf_analysis_status.ANALYZING
+      self.assertEqual(analysis_status.PENDING, swarming_task.status)
+      swarming_task.status = analysis_status.RUNNING
       swarming_task.task_id = 'task_id'
       swarming_task.put()
     self.mock(time, 'sleep', MockedSleep)

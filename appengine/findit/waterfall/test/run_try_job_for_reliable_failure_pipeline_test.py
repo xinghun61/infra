@@ -4,7 +4,7 @@
 
 from testing_utils import testing
 
-from model import wf_analysis_status
+from model import analysis_status
 from waterfall import run_try_job_for_reliable_failure_pipeline
 from waterfall.run_try_job_for_reliable_failure_pipeline import (
     RunTryJobForReliableFailurePipeline)
@@ -59,7 +59,7 @@ class _MockTryJobPipeline(object):
   def __init__(self, *_):
     pass
 
-  def start(self, *_):
+  def start(self, *_, **__):
     _MockTryJobPipeline.STARTED = True
 
   @property

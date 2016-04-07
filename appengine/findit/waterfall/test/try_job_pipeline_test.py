@@ -6,7 +6,7 @@ import json
 
 from common import buildbucket_client
 from common.git_repository import GitRepository
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_try_job import WfTryJob
 from pipeline_wrapper import pipeline_handlers
 from waterfall.test import wf_testcase
@@ -150,7 +150,7 @@ class TryJobPipelineTest(wf_testcase.WaterfallTestCase):
     root_pipeline._LogUnexpectedAbort(True)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
-    self.assertEqual(wf_analysis_status.ERROR, try_job.status)
+    self.assertEqual(analysis_status.ERROR, try_job.status)
 
   def testPipelineAbortedWithOutTryJobResult(self):
     master_name = 'm'

@@ -6,7 +6,7 @@ from collections import defaultdict
 import copy
 
 from handlers import result_status
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
@@ -298,7 +298,7 @@ def _UpdateTryJobInfoBasedOnSwarming(step_tasks_info, try_jobs):
     try_job_key = try_job['try_job_key']
     task = step_tasks_info.get('swarming_tasks', {}).get(try_job_key)
 
-    if task['task_info']['status'] != wf_analysis_status.ANALYZED:
+    if task['task_info']['status'] != analysis_status.COMPLETED:
       # There is someting wrong with swarming task or it's not done yet,
       # no try job yet or ever.
       try_job['status'] = result_status.NO_TRY_JOB_REASON_MAP[
@@ -347,7 +347,7 @@ def _GetAllTryJobResultsForTest(failure_result_map, tasks_info):
           }
           try_jobs.append(try_job_dict)
           step_try_job_keys.add(try_job_key)
-        try_job_keys.update(step_try_job_keys)
+      try_job_keys.update(step_try_job_keys)
     else:
       # Try job should only be triggered for swarming tests, because we cannot
       # identify flaky tests for non-swarming tests.

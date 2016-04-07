@@ -1,0 +1,12 @@
+dispatch:
+  - url: "*/robots.txt"
+    module: default
+
+  - url: "*.appspot.com/build-failure"
+    module: waterfall-frontend
+
+  - url: "*.appspot.com/list-analyses"
+    module: waterfall-frontend
+
+  - url: "*.appspot.com/waterfall/*"
+    module: waterfall-frontend

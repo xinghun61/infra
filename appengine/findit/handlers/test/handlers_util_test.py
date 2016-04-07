@@ -4,7 +4,7 @@
 
 from handlers import handlers_util
 from handlers import result_status
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
@@ -152,7 +152,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     task0 = WfSwarmingTask.Create(
         self.master_name, self.builder_name, 120, 'step1 on platform')
     task0.task_id = 'task0'
-    task0.status = wf_analysis_status.ANALYZED
+    task0.status = analysis_status.COMPLETED
     task0.parameters = {
         'tests': ['test1']
     }
@@ -168,7 +168,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
         self.master_name, self.builder_name, self.build_number,
         'step1 on platform')
     task1.task_id = 'task1'
-    task1.status = wf_analysis_status.ANALYZED
+    task1.status = analysis_status.COMPLETED
     task1.parameters = {
         'tests': ['test2', 'test3', 'test4']
     }
@@ -201,7 +201,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
             'swarming_tasks': {
                 'm/b/121': {
                     'task_info': {
-                        'status': wf_analysis_status.ANALYZED,
+                        'status': analysis_status.COMPLETED,
                         'task_id': 'task1',
                         'task_url': ('https://chromium-swarm.appspot.com/user'
                                      '/task/task1')
@@ -213,7 +213,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
                 },
                 'm/b/120': {
                     'task_info': {
-                        'status': wf_analysis_status.ANALYZED,
+                        'status': analysis_status.COMPLETED,
                         'task_id': 'task0',
                         'task_url': ('https://chromium-swarm.appspot.com/user/'
                                      'task/task0')
@@ -229,7 +229,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
             'swarming_tasks': {
                 'm/b/121': {
                     'task_info': {
-                        'status': wf_analysis_status.PENDING
+                        'status': analysis_status.PENDING
                     },
                     'all_tests': ['test1'],
                     'ref_name': 'step2'
@@ -310,7 +310,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
             'try_jobs': [
                 {
                     'try_job_key': 'm/b/121',
-                    'status': wf_analysis_status.PENDING
+                    'status': analysis_status.PENDING
                 }
             ]
         }
@@ -321,7 +321,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
   def testGetTryJobResultForCompileOnlyReturnUrlIfStarts(self):
     try_job = WfTryJob.Create(
         self.master_name, self.builder_name, self.build_number)
-    try_job.status = wf_analysis_status.ANALYZING
+    try_job.status = analysis_status.RUNNING
     try_job.compile_results = [
         {
             'result': None,
@@ -338,7 +338,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
             'try_jobs': [
                 {
                     'try_job_key': 'm/b/121',
-                    'status': wf_analysis_status.ANALYZING,
+                    'status': analysis_status.RUNNING,
                     'try_job_build_number': 121,
                     'try_job_url': (
                         'http://build.chromium.org/p/tryserver.chromium.'
@@ -352,7 +352,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
   def testGetTryJobResultForCompileOnlyReturnStatusIfError(self):
     try_job = WfTryJob.Create(
         self.master_name, self.builder_name, self.build_number)
-    try_job.status = wf_analysis_status.ERROR
+    try_job.status = analysis_status.ERROR
     try_job.compile_results = [
         {
             'try_job_id': '1'
@@ -367,7 +367,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
             'try_jobs': [
                 {
                     'try_job_key': 'm/b/121',
-                    'status': wf_analysis_status.ERROR
+                    'status': analysis_status.ERROR
                 }
             ]
         }
@@ -385,7 +385,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
 
     try_job = WfTryJob.Create(
         self.master_name, self.builder_name, self.build_number)
-    try_job.status = wf_analysis_status.ANALYZED
+    try_job.status = analysis_status.COMPLETED
     try_job.compile_results = [
         {
             'report': {
@@ -416,7 +416,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
             'try_jobs': [
                 {
                     'try_job_key': 'm/b/121',
-                    'status': wf_analysis_status.ANALYZED,
+                    'status': analysis_status.COMPLETED,
                     'try_job_build_number': 121,
                     'try_job_url': (
                         'http://build.chromium.org/p/tryserver.chromium.'
@@ -443,7 +443,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
 
     try_job = WfTryJob.Create(
         self.master_name, self.builder_name, self.build_number)
-    try_job.status = wf_analysis_status.ANALYZED
+    try_job.status = analysis_status.COMPLETED
     try_job.compile_results = [
         {
             'report': {
@@ -466,7 +466,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
             'try_jobs': [
                 {
                     'try_job_key': 'm/b/121',
-                    'status': wf_analysis_status.ANALYZED,
+                    'status': analysis_status.COMPLETED,
                     'try_job_build_number': 121,
                     'try_job_url': (
                         'http://build.chromium.org/p/tryserver.chromium.'
@@ -564,13 +564,13 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
             'swarming_tasks': {
                 'm/b/118': {
                     'task_info': {
-                        'status': wf_analysis_status.PENDING
+                        'status': analysis_status.PENDING
                     },
                     'all_tests': ['test1']
                 },
                 'm/b/119': {
                     'task_info': {
-                        'status': wf_analysis_status.ANALYZING,
+                        'status': analysis_status.RUNNING,
                         'task_id': 'task3',
                         'task_url': 'task3_url'
                     },
@@ -589,13 +589,13 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
                 {
                     'try_job_key': 'm/b/118',
                     'status': result_status.NO_TRY_JOB_REASON_MAP[
-                        wf_analysis_status.PENDING],
+                        analysis_status.PENDING],
                     'tests': ['test1']
                 },
                 {
                     'try_job_key': 'm/b/119',
                     'status': result_status.NO_TRY_JOB_REASON_MAP[
-                        wf_analysis_status.ANALYZING],
+                        analysis_status.RUNNING],
                     'task_id': 'task3',
                     'task_url': 'task3_url',
                     'tests': ['test3']
@@ -610,7 +610,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
         'swarming_tasks': {
             'm/b/119': {
                 'task_info': {
-                    'status': wf_analysis_status.ANALYZED,
+                    'status': analysis_status.COMPLETED,
                     'task_id': 'task1',
                     'task_url': 'task_url'
                 },
@@ -655,7 +655,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
             'swarming_tasks': {
                 'm/b/119': {
                     'task_info': {
-                        'status': wf_analysis_status.ANALYZED,
+                        'status': analysis_status.COMPLETED,
                         'task_id': 'task1',
                         'task_url': ('https://chromium-swarm.appspot.com/user'
                                      '/task/task1')
@@ -670,7 +670,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     }
 
     try_job = WfTryJob.Create('m', 'b', 119)
-    try_job.status = wf_analysis_status.ANALYZED
+    try_job.status = analysis_status.COMPLETED
     try_job.test_results = [
         {
             'report': {
@@ -717,7 +717,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
                 {
                     'ref_name': 'step1',
                     'try_job_key': 'm/b/119',
-                    'status': wf_analysis_status.ANALYZED,
+                    'status': analysis_status.COMPLETED,
                     'try_job_url': (
                         'http://build.chromium.org/p/tryserver.chromium.'
                         'linux/builders/linux_chromium_variable/builds/121'),
@@ -752,7 +752,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
             'swarming_tasks': {
                 'm/b/119': {
                     'task_info': {
-                        'status': wf_analysis_status.ANALYZED,
+                        'status': analysis_status.COMPLETED,
                         'task_id': 'task1',
                         'task_url': 'url/task1'
                     },
@@ -772,7 +772,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     }
 
     try_job = WfTryJob.Create('m', 'b', 119)
-    try_job.status = wf_analysis_status.ANALYZED
+    try_job.status = analysis_status.COMPLETED
     try_job.test_results = [
         {
             'report': {
@@ -827,7 +827,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
                     'try_job_key': 'm/b/119',
                     'task_id': 'task1',
                     'task_url': 'url/task1',
-                    'status': wf_analysis_status.ANALYZED,
+                    'status': analysis_status.COMPLETED,
                     'try_job_url': (
                         'http://build.chromium.org/p/tryserver.chromium.'
                         'linux/builders/linux_chromium_variable/builds/121'),
@@ -840,7 +840,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
                     'try_job_key': 'm/b/119',
                     'task_id': 'task1',
                     'task_url': 'url/task1',
-                    'status': wf_analysis_status.ANALYZED,
+                    'status': analysis_status.COMPLETED,
                     'try_job_url': (
                         'http://build.chromium.org/p/tryserver.chromium.'
                         'linux/builders/linux_chromium_variable/builds/121'),
@@ -919,7 +919,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
                     'ref_name': 'step1',
                     'try_job_key': try_job_key,
                     'tests': ['test2', 'test3'],
-                    'status': wf_analysis_status.PENDING
+                    'status': analysis_status.PENDING
                 }
             ]
         }
@@ -940,7 +940,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
         }
     }
     try_job = WfTryJob.Create('m', 'b', '119')
-    try_job.status = wf_analysis_status.ANALYZING
+    try_job.status = analysis_status.RUNNING
     try_job.test_results = [
         {
             'url': ('http://build.chromium.org/p/tryserver.chromium.'
@@ -959,7 +959,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
                     'ref_name': 'step1',
                     'try_job_key': try_job_key,
                     'tests': ['test2', 'test3'],
-                    'status': wf_analysis_status.ANALYZING,
+                    'status': analysis_status.RUNNING,
                     'try_job_url': (
                         'http://build.chromium.org/p/tryserver.chromium.'
                         'linux/builders/linux_chromium_variable/builds/121'),

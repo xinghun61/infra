@@ -59,6 +59,9 @@ class VersionedModelTest(testing.AppengineTestCase):
 
     self.assertEqual(1, _Entity.GetLatestVersionNumber())
 
+  def testGetLatestVersionNumberWhenNoRecordYet(self):
+    self.assertEqual(-1, _Entity.GetLatestVersionNumber())
+
   def testSaveNewVersion(self):
     entity = _Entity()
     entity.value = 1

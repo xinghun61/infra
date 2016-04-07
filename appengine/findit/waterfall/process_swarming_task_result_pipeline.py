@@ -8,7 +8,7 @@ import logging
 import time
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_swarming_task import WfSwarmingTask
 from pipeline_wrapper import BasePipeline
 from waterfall import swarming_util
@@ -104,10 +104,10 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
               outputs_ref, self.HTTP_CLIENT)
           tests_statuses = _CheckTestsRunStatuses(output_json)
 
-          task.status = wf_analysis_status.ANALYZED
+          task.status = analysis_status.COMPLETED
           task.tests_statuses = tests_statuses
         else:
-          task.status = wf_analysis_status.ERROR
+          task.status = analysis_status.ERROR
           logging.error('Swarming task stopped with status: %s' % (
               task_state))
         priority_str = swarming_util.GetTagValue(
@@ -121,7 +121,7 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
           task_started = True
           task = WfSwarmingTask.Get(
               master_name, builder_name, build_number, step_name)
-          task.status = wf_analysis_status.ANALYZING
+          task.status = analysis_status.RUNNING
           task.put()
 
         time.sleep(server_query_interval_seconds)
@@ -130,7 +130,7 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
         # Updates status as ERROR.
         task = WfSwarmingTask.Get(
             master_name, builder_name, build_number, step_name)
-        task.status = wf_analysis_status.ERROR
+        task.status = analysis_status.ERROR
         task.put()
         logging.error('Swarming task timed out after %d hours.' % timeout_hours)
         break  # Stops the loop and return.

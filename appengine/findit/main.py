@@ -23,32 +23,19 @@ from handlers import version
 from pipeline_wrapper import pipeline_status_ui
 
 
-# This is for web pages in the frontend.
-web_pages_handler_mappings = [
-    ('/build-failure', build_failure.BuildFailure),
-    ('/check-duplicate-failures',
-     check_duplicate_failures.CheckDuplicateFailures),
-    ('/config', config.Configuration),
-    ('/failure-log', failure_log.FailureLog),
-    ('/help-triage', help_triage.HelpTriage),
-    ('/list-analyses', list_analyses.ListAnalyses),
-    ('/monitor-alerts', monitor_alerts.MonitorAlerts),
-    ('/swarming-task', swarming_task.SwarmingTask),
-    ('/triage-analysis', triage_analysis.TriageAnalysis),
-    ('/try-job', try_job.TryJob),
-    ('/try-job-result', try_job_result.TryJobResult),
-    ('/verify-analysis', verify_analysis.VerifyAnalysis),
+# This is for the default module.
+default_web_pages_handler_mappings = [
     ('/version', version.Version),
 ]
-web_application = webapp2.WSGIApplication(
-    web_pages_handler_mappings, debug=False)
+default_web_application = webapp2.WSGIApplication(
+    default_web_pages_handler_mappings, debug=False)
 
 
-# This is for Cloud Endpoint apis.
+# This is for Cloud Endpoint apis in the default module.
 api_application = endpoints.api_server([FindItApi])
 
 
-# This is for appengine pipeline status pages.
+# This is for appengine pipeline status pages in the default module.
 pipeline_status_handler_mappings = [
     ('/_ah/pipeline/rpc/tree', pipeline_status_ui._TreeStatusHandler),
     ('/_ah/pipeline/rpc/class_paths', pipeline_status_ui._ClassPathListHandler),
@@ -59,9 +46,31 @@ pipeline_status_application = webapp2.WSGIApplication(
     pipeline_status_handler_mappings, debug=False)
 
 
-# This is for task queue running in the backend.
-backend_handler_mappings = [
-    ('/trigger-analyses', trigger_analyses.TriggerAnalyses),
+# This is for the "waterfall-frontend" module.
+waterfall_frontend_web_pages_handler_mappings = [
+    ('/build-failure', build_failure.BuildFailure),
+    ('/list-analyses', list_analyses.ListAnalyses),
+    ('/waterfall/build-failure', build_failure.BuildFailure),
+    ('/waterfall/check-duplicate-failures',
+     check_duplicate_failures.CheckDuplicateFailures),
+    ('/waterfall/config', config.Configuration),
+    ('/waterfall/failure-log', failure_log.FailureLog),
+    ('/waterfall/help-triage', help_triage.HelpTriage),
+    ('/waterfall/list-analyses', list_analyses.ListAnalyses),
+    ('/waterfall/monitor-alerts', monitor_alerts.MonitorAlerts),
+    ('/waterfall/swarming-task', swarming_task.SwarmingTask),
+    ('/waterfall/triage-analysis', triage_analysis.TriageAnalysis),
+    ('/waterfall/try-job', try_job.TryJob),
+    ('/waterfall/try-job-result', try_job_result.TryJobResult),
+    ('/waterfall/verify-analysis', verify_analysis.VerifyAnalysis),
 ]
-backend_application = webapp2.WSGIApplication(
-    backend_handler_mappings, debug=False)
+waterfall_frontend_web_application = webapp2.WSGIApplication(
+    waterfall_frontend_web_pages_handler_mappings, debug=False)
+
+
+# This is for the "waterfall-backend" module.
+waterfall_backend_web_pages_handler_mappings = [
+    ('/waterfall/trigger-analyses', trigger_analyses.TriggerAnalyses),
+]
+waterfall_backend_web_application = webapp2.WSGIApplication(
+    waterfall_backend_web_pages_handler_mappings, debug=False)

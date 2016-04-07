@@ -10,7 +10,7 @@ import time
 from google.appengine.ext import ndb
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_swarming_task import WfSwarmingTask
 from pipeline_wrapper import BasePipeline
 from waterfall import swarming_util
@@ -75,7 +75,7 @@ def _NeedANewSwarmingTask(master_name, builder_name, build_number, step_name):
   if not swarming_task:
     swarming_task = WfSwarmingTask.Create(
         master_name, builder_name, build_number, step_name)
-    swarming_task.status = wf_analysis_status.PENDING
+    swarming_task.status = analysis_status.PENDING
     swarming_task.put()
     return True
   else:

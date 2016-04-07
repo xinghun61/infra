@@ -8,8 +8,9 @@ import logging
 from google.appengine.ext import ndb
 
 from common import appengine_util
+from common import constants
 from model.wf_analysis import WfAnalysis
-from model import wf_analysis_status
+from model import analysis_status
 from waterfall import analyze_build_failure_pipeline
 
 @ndb.transactional
@@ -31,7 +32,7 @@ def NeedANewAnalysis(
   if not analysis:
     # The build failure is not analyzed yet.
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.status = wf_analysis_status.PENDING
+    analysis.status = analysis_status.PENDING
     analysis.request_time = datetime.utcnow()
     analysis.put()
     return True
@@ -74,7 +75,7 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
                              failed_steps=None,
                              build_completed=False,
                              force=False,
-                             queue_name='default'):
+                             queue_name=constants.DEFAULT_QUEUE):
   """Schedules an analysis if needed and returns the build analysis.
 
   When the build failure was already analyzed and a new analysis is scheduled,
@@ -98,7 +99,7 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
       build_completed, force):
     pipeline_job = analyze_build_failure_pipeline.AnalyzeBuildFailurePipeline(
         master_name, builder_name, build_number, build_completed)
-    # Explicitly run analysis in the backend module "build-failure-analysis".
+    # Explicitly run analysis in the backend module "waterfall-backend".
     # Note: Just setting the target in queue.yaml does NOT work for pipeline
     # when deployed to App Engine, but it does work in dev-server locally.
     # A possible reason is that pipeline will pick a default target if none is
@@ -106,7 +107,7 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
     # in the queue.yaml file, but this contradicts the documentation in
     # https://cloud.google.com/appengine/docs/python/taskqueue/tasks#Task.
     pipeline_job.target = appengine_util.GetTargetNameForModule(
-        'build-failure-analysis')
+        constants.WATERFALL_BACKEND)
     pipeline_job.start(queue_name=queue_name)
 
     logging.info('An analysis was scheduled for build %s, %s, %s: %s',

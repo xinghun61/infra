@@ -5,8 +5,8 @@
 """This module is to provide Findit service APIs through Cloud Endpoints:
 
 Current APIs include:
-1. Analysis of build failures in Chromium waterfalls.
-   Analyzes build failures and detects suspected CLs.
+1. Analysis of compile/test failures in Chromium waterfalls.
+   Analyzes failures and detects suspected CLs.
 """
 
 import json
@@ -18,6 +18,7 @@ from protorpc import messages
 from protorpc import remote
 
 from common import appengine_util
+from common import constants
 from model.wf_analysis import WfAnalysis
 from waterfall import buildbot
 from waterfall import waterfall_config
@@ -27,10 +28,6 @@ from waterfall import waterfall_config
 # messages below. This package name will show up as a prefix to the message
 # class names in the discovery doc and client libraries.
 package = 'FindIt'
-
-
-_REQUEST_PROCESS_QUEUE = 'request-process-queue'
-_REQUEST_HANDLER_URL = '/trigger-analyses'
 
 
 # These subclasses of Message are basically definitions of Protocol RPC
@@ -76,11 +73,11 @@ class _BuildFailureAnalysisResultCollection(messages.Message):
 
 def _TriggerNewAnalysesOnDemand(builds_to_check):
   """Pushes a task to run on the backend to trigger new analyses on demand."""
-  target = appengine_util.GetTargetNameForModule('build-failure-analysis')
+  target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
   payload = json.dumps({'builds': builds_to_check})
   taskqueue.add(
-      url=_REQUEST_HANDLER_URL, payload=payload, target=target,
-      queue_name=_REQUEST_PROCESS_QUEUE)
+      url=constants.WATERFALL_TRIGGER_ANALYSIS_URL, payload=payload,
+      target=target, queue_name=constants.WATERFALL_SERIAL_QUEUE)
 
 
 # Create a Cloud Endpoints API.

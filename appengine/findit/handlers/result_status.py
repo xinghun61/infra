@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from model import wf_analysis_status
+from model import analysis_status
 
 # Additional status for swarming tasks and try jobs.
 NO_SWARMING_TASK_FOUND = 110
@@ -18,16 +18,16 @@ NO_TRY_JOB_REASON_MAP = {
     NO_SWARMING_TASK_FOUND: NO_SWARMING_TASK_FOUND,
     NON_SWARMING_NO_RERUN: NON_SWARMING_NO_RERUN,
     NO_FAILURE_RESULT_MAP: NO_FAILURE_RESULT_MAP,
-    wf_analysis_status.PENDING: SWARMING_TASK_PENDING,
-    wf_analysis_status.ANALYZING: SWARMING_TASK_RUNNING,
-    wf_analysis_status.ERROR: SWARMING_TASK_ERROR,
+    analysis_status.PENDING: SWARMING_TASK_PENDING,
+    analysis_status.RUNNING: SWARMING_TASK_RUNNING,
+    analysis_status.ERROR: SWARMING_TASK_ERROR,
 }
 
 STATUS_MESSAGE_MAP = {
-    wf_analysis_status.PENDING: 'Try job is pending.',
-    wf_analysis_status.ANALYZING: 'Try job is running.',
-    wf_analysis_status.ANALYZED: 'Not Found.',
-    wf_analysis_status.ERROR: 'Try job failed.',
+    analysis_status.PENDING: 'Try job is pending.',
+    analysis_status.RUNNING: 'Try job is running.',
+    analysis_status.COMPLETED: 'Not Found.',
+    analysis_status.ERROR: 'Try job failed.',
     NO_SWARMING_TASK_FOUND: 'No swarming task found, hence no try job.',
     NON_SWARMING_NO_RERUN: ('No swarming task nor try job will be triggered'
                             ' for non-swarming steps.'),

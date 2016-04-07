@@ -3,10 +3,10 @@
 # found in the LICENSE file.
 
 from google.appengine.api import users
-from testing_utils import testing
 
 import copy
 
+from common.findit_testcase import FinditTestCase
 from model.wf_config import FinditConfig
 
 
@@ -87,7 +87,7 @@ DEFAULT_CONFIG_DATA = {
 }
 
 
-class WaterfallTestCase(testing.AppengineTestCase):  # pragma: no cover.
+class WaterfallTestCase(FinditTestCase):  # pragma: no cover.
 
   def UpdateUnitTestConfigSettings(self, config_property=None,
                                    override_data=None):

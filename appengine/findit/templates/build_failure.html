@@ -103,7 +103,7 @@
         return;
 
       var correct = target.hasClass('thumb-up');
-      $.getJSON('triage-analysis?correct=' + correct + '&url=' + findit.buildUrl, function(data) {
+      $.getJSON('/waterfall/triage-analysis?correct=' + correct + '&url=' + findit.buildUrl, function(data) {
         if (data['success']) {
           $('.triaged').addClass('triage').removeClass('triaged');
           target.addClass('triaged').removeClass('triage');
@@ -121,7 +121,7 @@
     function triageHelp(e) {
       $('#triage_help_button').prop('disabled', true);
       $('#triage_help_result').html("Checking...");
-      $.getJSON('help-triage?url=' + findit.buildUrl, function(data) {
+      $.getJSON('/waterfall/help-triage?url=' + findit.buildUrl, function(data) {
         if (! jQuery.isEmptyObject(data)) {
           tableString = '<table><tr><th width="150">Build Number</th><th width="150">Culprit CL</th>'
           tableString += '<th width="150">Fix Build Number</th><th width="150">Possible Fixing CL</th><th width="100">Action</th></tr>';
@@ -162,7 +162,14 @@
     }
 
     function generateCommonCellsForAllCategories(step_name, category, index, tests, first_failure, last_pass, rowspan) {
-      var rowString = '<td rowspan="' + rowspan + '">' + step_name + '</td>';
+      var stepLogUrl = '';
+      var stepUrl = findit.buildUrl + '/steps/' + step_name;
+      if (findit.showDebugInfo) {
+        stepLogUrl = '/waterfall/failure-log?url=' + stepUrl;
+      } else {
+        stepLogUrl = stepUrl;
+      }
+      var rowString = '<td rowspan="' + rowspan + '"><a href="' + stepLogUrl + '">' + step_name + '</a></td>';
 
       rowString += '<td rowspan="' + rowspan + '">';
       var j = 0;
@@ -280,7 +287,7 @@
       }
     }
 
-    function displayunclassifiedFailures(step_name, results) {
+    function displayUnclassifiedFailures(step_name, results) {
       if (!jQuery.isEmptyObject(results)) {
         var tableString = '';
         $.each(results, function(index, result) {
@@ -327,7 +334,7 @@
                   if (category == 'reliable_failures') {
                     displayReliableFailures(step_name, results);
                   } else if (category == 'unclassified_failures') {
-                    displayunclassifiedFailures(step_name, results);
+                    displayUnclassifiedFailures(step_name, results);
                   } else if (category == 'flaky_failures') {
                     displayFlakyFailures(step_name, results);
                   } else {

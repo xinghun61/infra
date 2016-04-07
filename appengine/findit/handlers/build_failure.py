@@ -11,18 +11,18 @@ from google.appengine.api import users
 
 from base_handler import BaseHandler
 from base_handler import Permission
+from common import constants
 from handlers import handlers_util
 from handlers import result_status
 from handlers.result_status import NO_TRY_JOB_REASON_MAP
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_analysis import WfAnalysis
-from model.wf_analysis_result_status import RESULT_STATUS_TO_DESCRIPTION
+from model.result_status import RESULT_STATUS_TO_DESCRIPTION
 from waterfall import build_failure_analysis_pipelines
 from waterfall import buildbot
 from waterfall import waterfall_config
 
 
-BUILD_FAILURE_ANALYSIS_TASKQUEUE = 'build-failure-analysis-queue'
 NON_SWARMING = object()
 
 
@@ -162,7 +162,7 @@ def _GetAnalysisResultWithTryJobInfo(
                         'try_job':{
                             'ref_name': 'step1',
                             'try_job_key': 'm/b/119',
-                            'status': wf_analysis_status.ANALYZED,
+                            'status': analysis_status.COMPLETED,
                             'try_job_url': 'url/121',
                             'try_job_build_number': 121,
                         },
@@ -308,7 +308,7 @@ class BuildFailure(BaseHandler):
       analysis = build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
           master_name, builder_name, build_number,
           build_completed=build_completed, force=force,
-          queue_name=BUILD_FAILURE_ANALYSIS_TASKQUEUE)
+          queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
     organized_results = _GetOrganizedAnalysisResultBySuspectedCL(
         analysis.result)

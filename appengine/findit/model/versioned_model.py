@@ -54,7 +54,10 @@ class VersionedModel(ndb.Model):
 
   @classmethod
   def GetLatestVersionNumber(cls):
-    return cls._GetRootKey().get().current
+    root_entity = cls._GetRootKey().get()
+    if not root_entity:
+      return -1
+    return root_entity.current
 
   def Save(self):
     """Saves the current entity, but as a new version."""

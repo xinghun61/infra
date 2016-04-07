@@ -6,16 +6,13 @@ from collections import defaultdict
 import logging
 
 from common import appengine_util
-from model import wf_analysis_status
+from common import constants
+from model import analysis_status
 from model.wf_try_job import WfTryJob
 from pipeline_wrapper import BasePipeline
 from pipeline_wrapper import pipeline
 from waterfall import try_job_pipeline
 from waterfall.try_job_type import TryJobType
-
-
-# TODO(chanli): Need to figure out why try-job-queue doesn't work.
-TRY_JOB_PIPELINE_QUEUE_NAME = 'build-failure-analysis-queue'
 
 
 def _GetReliableTargetedTests(targeted_tests, classified_tests_by_step):
@@ -75,8 +72,8 @@ class RunTryJobForReliableFailurePipeline(BasePipeline):
           targeted_tests)
 
       new_try_job_pipeline.target = appengine_util.GetTargetNameForModule(
-          'build-failure-analysis')
-      new_try_job_pipeline.start()
+          constants.WATERFALL_BACKEND)
+      new_try_job_pipeline.start(queue_name=constants.WATERFALL_TRY_JOB_QUEUE)
       logging.info('Try-job was scheduled for build %s, %s, %s: %s',
                    master_name, builder_name, build_number,
                    new_try_job_pipeline.pipeline_status_path)
@@ -85,6 +82,6 @@ class RunTryJobForReliableFailurePipeline(BasePipeline):
       try_job_result = WfTryJob.Get(
           master_name, builder_name, build_number)
       if try_job_result:
-        try_job_result.status = wf_analysis_status.SKIPPED
+        try_job_result.status = analysis_status.SKIPPED
         try_job_result.put()
       return

@@ -12,7 +12,7 @@ from testing_utils import testing
 import findit_api
 from findit_api import FindItApi
 from model.wf_analysis import WfAnalysis
-from model import wf_analysis_status
+from model import analysis_status
 from waterfall import waterfall_config
 
 
@@ -109,7 +109,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     }
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.status = wf_analysis_status.ERROR
+    analysis.status = analysis_status.ERROR
     analysis.result = {
         'failures': [
             {
@@ -153,7 +153,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     }
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.status = wf_analysis_status.ANALYZING
+    analysis.status = analysis_status.RUNNING
     analysis.result = None
     analysis.put()
 
@@ -219,7 +219,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     ]
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.status = wf_analysis_status.ANALYZING
+    analysis.status = analysis_status.RUNNING
     analysis.result = analysis_result
     analysis.put()
 
@@ -244,7 +244,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     }
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.status = wf_analysis_status.ANALYZED
+    analysis.status = analysis_status.COMPLETED
     analysis.result = {
         'failures': [
             {
@@ -282,7 +282,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     }
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.status = wf_analysis_status.ANALYZED
+    analysis.status = analysis_status.COMPLETED
     analysis.result = {
         'failures': [
             {
@@ -364,7 +364,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     }
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.status = wf_analysis_status.ANALYZED
+    analysis.status = analysis_status.COMPLETED
     analysis.result = {
         'failures': [
             {

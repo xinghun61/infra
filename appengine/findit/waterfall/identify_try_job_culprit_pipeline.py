@@ -4,7 +4,7 @@
 
 from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from pipeline_wrapper import BasePipeline
@@ -185,7 +185,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
       else:  # pragma: no cover
         result_to_update.append(result)
 
-    try_job_result.status = wf_analysis_status.ANALYZED
+    try_job_result.status = analysis_status.COMPLETED
     try_job_result.put()
 
     return result.get('culprit') if result else None

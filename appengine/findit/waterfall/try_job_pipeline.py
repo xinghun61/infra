@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 from pipeline_wrapper import BasePipeline
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_try_job import WfTryJob
 from waterfall.identify_try_job_culprit_pipeline import (
     IdentifyTryJobCulpritPipeline)
@@ -36,7 +36,7 @@ class TryJobPipeline(BasePipeline):
       try_job_result = WfTryJob.Get(
           self.master_name, self.builder_name, self.build_number)
       if try_job_result:  # In case the result is deleted manually.
-        try_job_result.status = wf_analysis_status.ERROR
+        try_job_result.status = analysis_status.ERROR
         try_job_result.put()
 
   def finalized(self):

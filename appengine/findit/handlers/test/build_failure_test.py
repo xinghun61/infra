@@ -14,7 +14,7 @@ from handlers import build_failure
 from handlers import handlers_util
 from handlers import result_status
 from model.wf_analysis import WfAnalysis
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from waterfall import buildbot
 from waterfall.test import wf_testcase
@@ -32,7 +32,7 @@ SAMPLE_TRY_JOB_INFO = {
                     'try_job_key': 'm/b/119',
                     'task_id': 'task1',
                     'task_url': 'url/task1',
-                    'status': wf_analysis_status.ANALYZED,
+                    'status': analysis_status.COMPLETED,
                     'try_job_url': (
                         'http://build.chromium.org/p/tryserver.chromium.'
                         'linux/builders/linux_variable/builds/121'),
@@ -45,7 +45,7 @@ SAMPLE_TRY_JOB_INFO = {
                     'try_job_key': 'm/b/119',
                     'task_id': 'task1',
                     'task_url': 'url/task1',
-                    'status': wf_analysis_status.ANALYZED,
+                    'status': analysis_status.COMPLETED,
                     'try_job_url': (
                         'http://build.chromium.org/p/tryserver.chromium.'
                         'linux/builders/linux_variable/builds/121'),
@@ -69,7 +69,7 @@ SAMPLE_TRY_JOB_INFO = {
                     'ref_name': 'step1',
                     'try_job_key': 'm/b/120',
                     'status': result_status.NO_TRY_JOB_REASON_MAP[
-                        wf_analysis_status.PENDING],
+                        analysis_status.PENDING],
                     'task_id': 'task2',
                     'task_url': 'url/task2',
                     'tests': ['test1']
@@ -82,7 +82,7 @@ SAMPLE_TRY_JOB_INFO = {
             'try_jobs': [
                 {
                     'try_job_key': 'm/b/120',
-                    'status': wf_analysis_status.ANALYZED,
+                    'status': analysis_status.COMPLETED,
                     'try_job_build_number': 120,
                     'try_job_url': (
                         'http://build.chromium.org/p/tryserver.chromium.'
@@ -120,7 +120,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
   def testGetTriageHistoryWhenUserIsNotAdmin(self):
     analysis = WfAnalysis.Create('m', 'b', 1)
-    analysis.status = wf_analysis_status.ANALYZED
+    analysis.status = analysis_status.COMPLETED
     analysis.triage_history = [
         {
             'triage_timestamp': 1438380761,
@@ -133,7 +133,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
   def testGetTriageHistoryWhenUserIsAdmin(self):
     analysis = WfAnalysis.Create('m', 'b', 1)
-    analysis.status = wf_analysis_status.ANALYZED
+    analysis.status = analysis_status.COMPLETED
     analysis.triage_history = [
         {
             'triage_timestamp': 1438380761,
@@ -162,7 +162,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number)
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.status = wf_analysis_status.ANALYZED
+    analysis.status = analysis_status.COMPLETED
     analysis.put()
 
     response = self.test_app.get('/build-failure',
@@ -424,7 +424,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                             'try_job_key': 'm/b/119',
                             'task_id': 'task1',
                             'task_url': 'url/task1',
-                            'status': wf_analysis_status.ANALYZED,
+                            'status': analysis_status.COMPLETED,
                             'try_job_url': (
                                 'http://build.chromium.org/p/tryserver.chromium'
                                 '.linux/builders/linux_variable/builds/121'),
@@ -459,7 +459,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                             'try_job_key': 'm/b/119',
                             'task_id': 'task1',
                             'task_url': 'url/task1',
-                            'status': wf_analysis_status.ANALYZED,
+                            'status': analysis_status.COMPLETED,
                             'try_job_url': (
                                 'http://build.chromium.org/p/tryserver.chromium'
                                 '.linux/builders/linux_variable/builds/121'),
@@ -518,7 +518,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                             'ref_name': 'step1',
                             'try_job_key': 'm/b/120',
                             'status': result_status.NO_TRY_JOB_REASON_MAP[
-                                wf_analysis_status.PENDING],
+                                analysis_status.PENDING],
                             'task_id': 'task2',
                             'task_url': 'url/task2',
                             'tests': ['test1']
@@ -580,7 +580,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                     {
                         'try_job': {
                             'try_job_key': 'm/b/120',
-                            'status': wf_analysis_status.ANALYZED,
+                            'status': analysis_status.COMPLETED,
                             'try_job_build_number': 120,
                             'try_job_url': (
                                 'http://build.chromium.org/p/tryserver.chromium'

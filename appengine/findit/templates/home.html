@@ -4,10 +4,10 @@
   <meta charset="utf-8">
 </head>
 <body>
-  <h3>Build failure in Chromium waterfall</h3>
-  <form method="get" action="./build-failure">
-    URL to the failed build: <br>
-    (eg.: http://build.chromium.org/p/chromium.chromiumos/builders/Linux%20ChromiumOS%20GN/builds/6146 or http://build.chromium.org/p/chromium.mac/builders/Mac%20GN%20%28dbg%29/builds/2598/steps/compile/logs/stdio)
+  <h3>Compile or test failures in Chromium waterfall</h3>
+  <form method="get" action="/waterfall/build-failure">
+    URL to the failed build cycle: (eg.: https://build.chromium.org/p/chromium.linux/builders/Linux%20Builder/builds/63971)
+    <br>
     <input type="text" name="url" id="url" size="200"><br>
     <input type="submit" value="Find it">
   </form>

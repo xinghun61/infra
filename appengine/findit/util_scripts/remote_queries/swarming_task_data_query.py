@@ -15,7 +15,7 @@ sys.path.insert(1, _REMOTE_API_DIR)
 
 import remote_api
 
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_swarming_task import WfSwarmingTask
 
 
@@ -82,7 +82,7 @@ def _CategorizeSwarmingTaskData(swarming_task_list):
 
   for swarming_task in swarming_task_list:
     if (not swarming_task.parameters or not swarming_task.tests_statuses or
-        swarming_task.status != wf_analysis_status.ANALYZED):
+        swarming_task.status != analysis_status.COMPLETED):
       # Disregard any swarming tasks that are not yet completed or were
       # triggered before 'parameters' and 'tests_statuses' were introduced.
       continue
@@ -168,7 +168,7 @@ def _GetReportInformation(swarming_task_list, start_date, end_date):
         tests_counts.append(number_of_tests)
 
       # Error rate.
-      if swarming_task.status == wf_analysis_status.ERROR:
+      if swarming_task.status == analysis_status.ERROR:
         error_count += 1
 
     average_execution_time = (_GetAverageOfNumbersInList(

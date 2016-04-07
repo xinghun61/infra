@@ -8,10 +8,16 @@
 # deploying Findit to App Engine.
 
 THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE:-$0}" )" && pwd )"
-FINDIT_DIR="${THIS_SCRIPT_DIR}/.."
-INFRA_DIR="${FINDIT_DIR}/../.."
-GOOGLE_APP_ENGINE_DIR="${INFRA_DIR}/../google_appengine"
-FINDIT_MODULES="${FINDIT_DIR}/app.yaml ${FINDIT_DIR}/build-failure-analysis.yaml"
+FINDIT_DIR="$(realpath ${THIS_SCRIPT_DIR}/..)"
+INFRA_DIR="$(realpath ${FINDIT_DIR}/../..)"
+GOOGLE_APP_ENGINE_DIR="$(realpath ${INFRA_DIR}/../google_appengine)"
+APP_CFG="${GOOGLE_APP_ENGINE_DIR}/appcfg.py"
+FINDIT_MODULES="${FINDIT_DIR}/app.yaml ${FINDIT_DIR}/waterfall-frontend.yaml ${FINDIT_DIR}/waterfall-backend.yaml"
+
+if [[ -z "${USER}" ]]; then
+  echo "Cannot identify who is deploying Findit. Please set USER."
+  exit 1
+fi
 
 if [[ -z "${APPENGINE_TMP}" ]]; then
   TMP_DIR="${FINDIT_DIR}/.tmp"
@@ -27,9 +33,21 @@ print_usage() {
   echo "Supported commands:"
   echo "  test          Run the unittest"
   echo "  run           Run Findit locally"
-  echo "  deploy-test   Deploy Findit to findit-for-waterfall"
-  echo "  deploy-prod   Deploy Findit to findit-for-me"
+  echo "  deploy-prod       Deploy Findit to findit-for-me for release"
+  echo "  deploy-test-dev   Deploy Findit to findit-for-me-dev for test"
+  echo "  deploy-test-prod  Deploy Findit to findit-for-me for staging test"
   exit 1
+}
+
+print_command_for_queue_cron_dispatch() {
+  echo
+  echo "If there is any change to cron.yaml, dispatch.yaml, index.yaml, or"
+  echo " queue.yaml since last deployment, please run appropriate commands"
+  echo " below to update them:"
+  echo "  ${APP_CFG} update_cron -A $1 ${FINDIT_DIR}"
+  echo "  ${APP_CFG} update_dispatch -A $1 ${FINDIT_DIR}"
+  echo "  ${APP_CFG} update_indexes -A $1 ${FINDIT_DIR}"
+  echo "  ${APP_CFG} update_queues -A $1 ${FINDIT_DIR}"
 }
 
 run_unittests() {
@@ -44,63 +62,74 @@ run_findit_locally() {
   python ${GOOGLE_APP_ENGINE_DIR}/dev_appserver.py ${options} ${FINDIT_MODULES}
 }
 
-deploy_findit() {
-  local app_id="findit-for-waterfall"
+deploy_findit_for_test() {
+  # Deploy a version for testing, the version name is the same as the user name.
+  local app_id="findit-for-me-dev"
   if [[ "$1" == "prod" ]]; then
     app_id="findit-for-me"
-    local update_log="$TMP_DIR/update.log"
-    echo "Syncing code to tip of tree, logging in $update_log ..."
-    local update="$(cd $INFRA_DIR && git pull >>$update_log 2>>$update_log && gclient sync >>$update_log 2>>$update_log && echo $?)"
-    if [[ "$update" != "0" ]]; then
-      echo "Failed to run 'git pull && gclient sync'!"
-      echo "Please check log at $update_log"
-      return
-    fi
-    echo "Code was synced successfully."
+  fi
+  local new_version=${USER}
+
+  echo "-----------------------------------"
+  python ${APP_CFG} update -A ${app_id} $FINDIT_MODULES --version ${new_version}
+  echo "-----------------------------------"
+  print_command_for_queue_cron_dispatch ${app_id}
+  echo "-----------------------------------"
+  echo Findit was deployed to "https://${new_version}-dot-${app_id}.appspot.com/"
+}
+
+deploy_findit_for_prod() {
+  local app_id="findit-for-me"
+
+  # Sync to latest code.
+  local update_log="${TMP_DIR}/update.log"
+  echo "Syncing code to tip of tree, logging in ${update_log} ..."
+  local update="0" #"$(cd ${INFRA_DIR} && git pull >>${update_log} 2>>${update_log} && gclient sync >>$update_log >>${update_log} 2>>${update_log} && echo $?)"
+  if [[ "${update}" != "0" ]]; then
+    echo "Failed to run 'git pull && gclient sync'!"
+    echo "Please check log at ${update_log}"
+    return
+  fi
+  echo "Code was synced successfully."
+
+  # Check uncommitted local changes.
+  local changed_file_number="$(git status --porcelain | wc -l)"
+  if [[ "${changed_file_number}" != "0" ]]; then
+    echo "You have uncommitted local changes!"
+    echo "Please run 'git status' to check local changes."
+    return
   fi
 
+  local new_version="$(git rev-parse --short HEAD)"
+
+  # Check committed local changes.
+  local tot_version="$(git rev-parse --short origin/master)"
+  if [[ "${new_version}" != "${tot_version}" ]]; then
+    echo "You have local commits!"
+    echo "Please run 'git reset ${tot_version}' to reset the local changes."
+    return
+  fi
+
+  # Check current deployed version.
   local current_version=`curl -s https://${app_id}.appspot.com/version`
-  if ! [[ $current_version =~ ^[0-9a-fA-F]+$ ]]; then
+  if ! [[ ${current_version} =~ ^[0-9a-fA-F]+$ ]]; then
     echo "Failed to retrieve current version of Findit from the live app."
     echo "Please input the current version, followed by [ENTER]:"
     read current_version
   fi
-  echo "Current deployed version is $current_version"
 
-  local new_version="$(git rev-parse --short HEAD)"
-  if [[ "$1" == "prod" ]]; then
-    # Check uncommitted local changes.
-    local changed_file_number="$(git status --porcelain | wc -l)"
-    if [[ "$changed_file_number" != "0" ]]; then
-      echo "You have uncommitted local changes!"
-      echo "Please run 'git status' to check local changes."
-      return
-    fi
-
-    # Check committed local changes.
-    local tot_version="$(git rev-parse --short origin/master)"
-    if [[ "$new_version" != "$tot_version" ]]; then
-      echo "You have local commits!"
-      echo "Please run 'git reset $tot_version' to reset the local changes."
-      return
-    fi
-  fi
-
-  local app_cfg="${GOOGLE_APP_ENGINE_DIR}/appcfg.py"
-
-  echo "Current deployed version is '$current_version'."
+  echo "Current deployed version is ${current_version}"
   echo "Deploying new version '${new_version}'..."
 
   echo
   echo "-----------------------------------"
-  python ${app_cfg} update -A ${app_id} $FINDIT_MODULES --version ${new_version}
+  python ${APP_CFG} update -A ${app_id} $FINDIT_MODULES --version ${new_version}
+  echo "-----------------------------------"
+  print_command_for_queue_cron_dispatch ${app_id}
   echo "-----------------------------------"
   echo
 
   echo "New version '${new_version}' of Findit was deployed to ${app_id}."
-  if ! [[ "$1" == "prod" ]]; then
-    return
-  fi
 
   local dashboard_url="https://${new_version}-dot-${app_id}.appspot.com/list-analyses"
   echo "Please force a re-run of a recent build failure on dashboard ${dashboard_url},"
@@ -129,11 +158,14 @@ case "$1" in
   run)
     run_findit_locally
     ;;
-  deploy-test)
-    deploy_findit "test"
-    ;;
   deploy-prod)
-    deploy_findit "prod"
+    deploy_findit_for_prod
+    ;;
+  deploy-test-dev)
+    deploy_findit_for_test "dev"
+    ;;
+  deploy-test-prod)
+    deploy_findit_for_test "prod"
     ;;
   *)
     print_usage

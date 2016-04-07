@@ -1,5 +1,5 @@
-application: findit-for-waterfall
-module: build-failure-analysis
+application: findit-for-me-dev
+module: waterfall-backend
 version: 1
 runtime: python27
 api_version: 1

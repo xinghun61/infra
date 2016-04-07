@@ -8,7 +8,7 @@ from google.appengine.ext import ndb
 from base_handler import BaseHandler
 from base_handler import Permission
 from model.wf_analysis import WfAnalysis
-from model import wf_analysis_result_status
+from model import result_status
 
 
 _DEFAULT_DISPLAY_COUNT = 500
@@ -38,13 +38,13 @@ class ListAnalyses(BaseHandler):
       analysis_query = WfAnalysis.query(WfAnalysis.result_status == status_code)
     elif self.request.get('triage') == '1':
       analysis_query = WfAnalysis.query(ndb.AND(
-          WfAnalysis.result_status > wf_analysis_result_status.FOUND_CORRECT,
+          WfAnalysis.result_status > result_status.FOUND_CORRECT,
           WfAnalysis.result_status <
-          wf_analysis_result_status.NOT_FOUND_CORRECT))
+          result_status.NOT_FOUND_CORRECT))
     else:
       analysis_query = WfAnalysis.query(ndb.AND(
-          WfAnalysis.result_status >= wf_analysis_result_status.FOUND_CORRECT,
-          WfAnalysis.result_status < wf_analysis_result_status.FOUND_UNTRIAGED))
+          WfAnalysis.result_status >= result_status.FOUND_CORRECT,
+          WfAnalysis.result_status < result_status.FOUND_UNTRIAGED))
 
     if self.request.get('count'):
       count = int(self.request.get('count'))

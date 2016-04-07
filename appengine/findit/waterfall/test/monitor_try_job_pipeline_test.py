@@ -7,7 +7,7 @@ import json
 import time
 
 from common import buildbucket_client
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
@@ -202,7 +202,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             'try_job_id': '1',
         }
     ]
-    try_job.status = wf_analysis_status.ANALYZING
+    try_job.status = analysis_status.RUNNING
     try_job.put()
     self._MockGetTryJobs(try_job_id)
 
@@ -229,7 +229,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(expected_compile_result, try_job.compile_results[-1])
-    self.assertEqual(wf_analysis_status.ANALYZING, try_job.status)
+    self.assertEqual(analysis_status.RUNNING, try_job.status)
 
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertEqual(try_job_data.regression_range_size, regression_range_size)
@@ -248,7 +248,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             'try_job_id': '3',
         }
     ]
-    try_job.status = wf_analysis_status.ANALYZING
+    try_job.status = analysis_status.RUNNING
     try_job.put()
     self._MockGetTryJobs(try_job_id)
 
@@ -282,7 +282,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(expected_test_result, try_job.test_results[-1])
-    self.assertEqual(wf_analysis_status.ANALYZING, try_job.status)
+    self.assertEqual(analysis_status.RUNNING, try_job.status)
 
   def testUpdateTryJobResultAnalyzing(self):
     master_name = 'm'
@@ -297,4 +297,4 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         buildbucket_client.BuildbucketBuild.STARTED, master_name, builder_name,
         build_number, TryJobType.TEST, try_job_id, 'url')
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
-    self.assertEqual(wf_analysis_status.ANALYZING, try_job.status)
+    self.assertEqual(analysis_status.RUNNING, try_job.status)

@@ -9,7 +9,7 @@ import urllib
 import zlib
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from model.wf_step import WfStep
@@ -67,7 +67,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     build_number = 123
 
     self._CreateAndSaveWfAnanlysis(
-        master_name, builder_name, build_number, wf_analysis_status.ANALYZING)
+        master_name, builder_name, build_number, analysis_status.RUNNING)
 
     # Setup build data for builds:
     # 123: mock urlfetch to ensure it is fetched.
@@ -112,7 +112,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     build_number = 100
 
     self._CreateAndSaveWfAnanlysis(
-        master_name, builder_name, build_number, wf_analysis_status.ANALYZING)
+        master_name, builder_name, build_number, analysis_status.RUNNING)
 
     # Setup build data for builds:
     # 100: net_unitests failed, unit_tests failed.
@@ -147,7 +147,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     build_number = 124
 
     self._CreateAndSaveWfAnanlysis(
-        master_name, builder_name, build_number, wf_analysis_status.ANALYZING)
+        master_name, builder_name, build_number, analysis_status.RUNNING)
 
     # Setup build data for builds:
     self._MockUrlfetchWithBuildData(master_name, builder_name, 124)
@@ -175,7 +175,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     build_number = 121
 
     self._CreateAndSaveWfAnanlysis(
-        master_name, builder_name, build_number, wf_analysis_status.ANALYZING)
+        master_name, builder_name, build_number, analysis_status.RUNNING)
 
     # Setup build data for builds:
     self._MockUrlfetchWithBuildData(master_name, builder_name, 121)
@@ -193,7 +193,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     build_number = 2
 
     self._CreateAndSaveWfAnanlysis(
-        master_name, builder_name, build_number, wf_analysis_status.ANALYZING)
+        master_name, builder_name, build_number, analysis_status.RUNNING)
 
     # Setup build data for builds:
     self._MockUrlfetchWithBuildData(master_name, builder_name, 2)
@@ -567,7 +567,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     build_number = 223
 
     self._CreateAndSaveWfAnanlysis(
-        master_name, builder_name, build_number, wf_analysis_status.ANALYZING)
+        master_name, builder_name, build_number, analysis_status.RUNNING)
 
     # Mock data for retrieving data from swarming server for a build.
     self._MockUrlFetchWithSwarmingData(master_name, builder_name, 223)

@@ -6,6 +6,7 @@ import textwrap
 
 import webapp2
 
+from common import constants
 from common.http_client_appengine import RetryHttpClient
 from handlers import monitor_alerts
 from waterfall import build_failure_analysis_pipelines
@@ -161,7 +162,7 @@ class MonitorAlertsTest(wf_testcase.WaterfallTestCase):
 
     expected_scheduled_analyses = [
         ('m3', 'b3', 3, ['s3'], False,
-         monitor_alerts._BUILD_FAILURE_ANALYSIS_TASKQUEUE),
+         constants.WATERFALL_ANALYSIS_QUEUE),
     ]
 
     scheduled_analyses = []

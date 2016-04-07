@@ -4,7 +4,7 @@
 
 import datetime
 
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall import process_swarming_task_result_pipeline
 from waterfall import swarming_util
@@ -177,7 +177,7 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     task = WfSwarmingTask.Get(
         self.master_name, self.builder_name, self.build_number, self.step_name)
 
-    self.assertEqual(wf_analysis_status.ANALYZED, task.status)
+    self.assertEqual(analysis_status.COMPLETED, task.status)
     self.assertEqual(_EXPECTED_TESTS_STATUESE, task.tests_statuses)
     self.assertEqual(_EXPECTED_CLASSIFIED_TESTS, task.classified_tests)
     self.assertEqual(datetime.datetime(2016, 2, 10, 18, 32, 6, 538220),
@@ -206,7 +206,7 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     task = WfSwarmingTask.Get(
         self.master_name, self.builder_name, self.build_number, self.step_name)
 
-    self.assertEqual(wf_analysis_status.ERROR, task.status)
+    self.assertEqual(analysis_status.ERROR, task.status)
     self.assertEqual({}, task.tests_statuses)
     self.assertEqual({}, task.classified_tests)
 
@@ -236,6 +236,6 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     task = WfSwarmingTask.Get(
         self.master_name, self.builder_name, self.build_number, self.step_name)
 
-    self.assertEqual(wf_analysis_status.ERROR, task.status)
+    self.assertEqual(analysis_status.ERROR, task.status)
     self.assertEqual({}, task.tests_statuses)
     self.assertEqual({}, task.classified_tests)

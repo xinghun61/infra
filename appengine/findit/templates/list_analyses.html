@@ -21,9 +21,9 @@
       }
 
       if (params.length == 0) {
-        return './list-analyses'
+        return '/waterfall/list-analyses'
       } else {
-        return './list-analyses?' + params.join('&');
+        return '/waterfall/list-analyses?' + params.join('&');
       }
     }
 
@@ -68,7 +68,7 @@
           <td>{{loop.index}}</td>
           <td>{{analysis.build_start_time}}</td>
           <td>{{analysis.master_name}}, {{analysis.builder_name}},
-            <a href="./build-failure?url=https://build.chromium.org/p
+            <a href="/waterfall/build-failure?url=https://build.chromium.org/p
 /{{analysis.master_name}}/builders/{{analysis.builder_name}}
 /builds/{{analysis.build_number}}">
               {{analysis.build_number}}

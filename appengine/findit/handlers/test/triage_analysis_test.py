@@ -9,8 +9,8 @@ from testing_utils import testing
 
 from handlers import triage_analysis
 from model.wf_analysis import WfAnalysis
-from model import wf_analysis_result_status
-from model import wf_analysis_status
+from model import result_status
+from model import analysis_status
 from waterfall import buildbot
 
 
@@ -35,18 +35,18 @@ class TriageAnalysisTest(testing.AppengineTestCase):
 
     analysis = WfAnalysis.Create(
         self.master_name, self.builder_name, self.build_number_incomplete)
-    analysis.status = wf_analysis_status.ANALYZING
+    analysis.status = analysis_status.RUNNING
     analysis.put()
 
     analysis = WfAnalysis.Create(
         self.master_name, self.builder_name, self.build_number_found)
-    analysis.status = wf_analysis_status.ANALYZED
+    analysis.status = analysis_status.COMPLETED
     analysis.suspected_cls = self.suspected_cls
     analysis.put()
 
     analysis = WfAnalysis.Create(
         self.master_name, self.builder_name, self.build_number_not_found)
-    analysis.status = wf_analysis_status.ANALYZED
+    analysis.status = analysis_status.COMPLETED
     analysis.put()
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
@@ -65,7 +65,7 @@ class TriageAnalysisTest(testing.AppengineTestCase):
     self.assertTrue(success)
     analysis = WfAnalysis.Get(
         self.master_name, self.builder_name, self.build_number_found)
-    self.assertEquals(wf_analysis_result_status.FOUND_CORRECT,
+    self.assertEquals(result_status.FOUND_CORRECT,
                       analysis.result_status)
     self.assertEquals(self.suspected_cls, analysis.culprit_cls)
 
@@ -75,7 +75,7 @@ class TriageAnalysisTest(testing.AppengineTestCase):
     self.assertTrue(success)
     analysis = WfAnalysis.Get(
         self.master_name, self.builder_name, self.build_number_found)
-    self.assertEquals(wf_analysis_result_status.FOUND_INCORRECT,
+    self.assertEquals(result_status.FOUND_INCORRECT,
                       analysis.result_status)
     self.assertIsNone(analysis.culprit_cls)
 
@@ -85,7 +85,7 @@ class TriageAnalysisTest(testing.AppengineTestCase):
     self.assertTrue(success)
     analysis = WfAnalysis.Get(
         self.master_name, self.builder_name, self.build_number_not_found)
-    self.assertEquals(wf_analysis_result_status.NOT_FOUND_CORRECT,
+    self.assertEquals(result_status.NOT_FOUND_CORRECT,
                       analysis.result_status)
     self.assertIsNone(analysis.culprit_cls)
 
@@ -95,7 +95,7 @@ class TriageAnalysisTest(testing.AppengineTestCase):
     self.assertTrue(success)
     analysis = WfAnalysis.Get(
         self.master_name, self.builder_name, self.build_number_not_found)
-    self.assertEquals(wf_analysis_result_status.NOT_FOUND_INCORRECT,
+    self.assertEquals(result_status.NOT_FOUND_INCORRECT,
                       analysis.result_status)
     self.assertIsNone(analysis.culprit_cls)
 
@@ -109,9 +109,9 @@ class TriageAnalysisTest(testing.AppengineTestCase):
     analysis = WfAnalysis.Get(
         self.master_name, self.builder_name, self.build_number_found)
     self.assertEquals(2, len(analysis.triage_history))
-    self.assertEquals(wf_analysis_result_status.FOUND_CORRECT,
+    self.assertEquals(result_status.FOUND_CORRECT,
                       analysis.triage_history[0]['result_status'])
-    self.assertEquals(wf_analysis_result_status.FOUND_INCORRECT,
+    self.assertEquals(result_status.FOUND_INCORRECT,
                       analysis.triage_history[1]['result_status'])
 
   def testInvalidBuildUrl(self):

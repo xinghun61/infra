@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_try_job import WfTryJob
 from waterfall import try_job_util
 from waterfall.test import wf_testcase
@@ -144,7 +144,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.compile_results = [['rev', 'failed']]
-    try_job.status = wf_analysis_status.ANALYZED
+    try_job.status = analysis_status.COMPLETED
     try_job.put()
 
     failure_result_map = {}
@@ -175,7 +175,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = wf_analysis_status.ERROR
+    try_job.status = analysis_status.ERROR
     try_job.put()
 
     failure_result_map = {}
@@ -204,7 +204,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = wf_analysis_status.ERROR
+    try_job.status = analysis_status.ERROR
     try_job.put()
 
     failure_result_map = {}

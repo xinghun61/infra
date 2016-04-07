@@ -5,7 +5,7 @@
 from base_handler import BaseHandler
 from base_handler import Permission
 from model.wf_analysis import WfAnalysis
-from model import wf_analysis_result_status
+from model import result_status
 
 
 def _GetFailedStepsForEachCL(analysis):
@@ -56,7 +56,7 @@ def _ModifyStatusIfDuplicate(analysis):
     4. the first and the last result are both correct or incorrect
   Mark the result as 'FOUND_CORRECT_DUPLICATE' or 'FOUND_INCORRECT_DUPLICATE'.
   """
-  if analysis.result_status != wf_analysis_result_status.FOUND_UNTRIAGED:
+  if analysis.result_status != result_status.FOUND_UNTRIAGED:
     # It may have been taken care of when we check duplicates for previous
     # result in the series.
     return
@@ -73,8 +73,8 @@ def _ModifyStatusIfDuplicate(analysis):
     return
 
   if first_build_analysis.result_status not in (
-      wf_analysis_result_status.FOUND_CORRECT,
-      wf_analysis_result_status.FOUND_INCORRECT):
+      result_status.FOUND_CORRECT,
+      result_status.FOUND_INCORRECT):
     # Findit doesn't find suspected CLs for previous build or
     # it has not been triaged.
     return
@@ -92,8 +92,8 @@ def _ModifyStatusIfDuplicate(analysis):
       return
 
     elif build_analysis_cursor.result_status in (
-        wf_analysis_result_status.FOUND_CORRECT,
-        wf_analysis_result_status.FOUND_INCORRECT):
+        result_status.FOUND_CORRECT,
+        result_status.FOUND_INCORRECT):
       # The last failed build is reached and it has been triaged.
       if (first_build_analysis.result_status !=
           build_analysis_cursor.result_status or
@@ -105,9 +105,9 @@ def _ModifyStatusIfDuplicate(analysis):
         break
 
     elif build_analysis_cursor.result_status in (
-        wf_analysis_result_status.FOUND_UNTRIAGED,
-        wf_analysis_result_status.FOUND_CORRECT_DUPLICATE,
-        wf_analysis_result_status.FOUND_INCORRECT_DUPLICATE):
+        result_status.FOUND_UNTRIAGED,
+        result_status.FOUND_CORRECT_DUPLICATE,
+        result_status.FOUND_INCORRECT_DUPLICATE):
       # It is still within the continuous builds, not reach the end yet.
       if not _AnalysesForDuplicateFailures(
           first_build_analysis, build_analysis_cursor):
@@ -127,12 +127,12 @@ def _ModifyStatusIfDuplicate(analysis):
 
   for build_analysis in build_analyses:
     if (first_build_analysis.result_status ==
-        wf_analysis_result_status.FOUND_CORRECT):
+        result_status.FOUND_CORRECT):
       build_analysis.result_status = (
-          wf_analysis_result_status.FOUND_CORRECT_DUPLICATE)
+          result_status.FOUND_CORRECT_DUPLICATE)
     else:
       build_analysis.result_status = (
-          wf_analysis_result_status.FOUND_INCORRECT_DUPLICATE)
+          result_status.FOUND_INCORRECT_DUPLICATE)
     build_analysis.put()
 
 
@@ -142,7 +142,7 @@ class CheckDuplicateFailures(BaseHandler):
   @staticmethod
   def _FetchAndSortUntriagedAnalyses():
     query = WfAnalysis.query(
-    WfAnalysis.result_status == wf_analysis_result_status.FOUND_UNTRIAGED)
+    WfAnalysis.result_status == result_status.FOUND_UNTRIAGED)
     analyses = query.fetch()
     return sorted(
         analyses,

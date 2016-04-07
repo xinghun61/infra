@@ -5,8 +5,8 @@
 from google.appengine.ext import ndb
 
 from model.base_build_model import BaseBuildModel
-from model import wf_analysis_status
-from model import wf_analysis_result_status
+from model import analysis_status
+from model import result_status
 
 
 class WfAnalysis(BaseBuildModel):
@@ -32,7 +32,7 @@ class WfAnalysis(BaseBuildModel):
   @property
   def completed(self):
     return self.status in (
-        wf_analysis_status.ANALYZED, wf_analysis_status.ERROR)
+        analysis_status.COMPLETED, analysis_status.ERROR)
 
   @property
   def duration(self):
@@ -43,15 +43,15 @@ class WfAnalysis(BaseBuildModel):
 
   @property
   def failed(self):
-    return self.status == wf_analysis_status.ERROR
+    return self.status == analysis_status.ERROR
 
   @property
   def status_description(self):
-    return wf_analysis_status.STATUS_TO_DESCRIPTION.get(self.status, 'Unknown')
+    return analysis_status.STATUS_TO_DESCRIPTION.get(self.status, 'Unknown')
 
   @property
   def result_status_description(self):
-    return wf_analysis_result_status.RESULT_STATUS_TO_DESCRIPTION.get(
+    return result_status.RESULT_STATUS_TO_DESCRIPTION.get(
         self.result_status, '')
 
   @property
@@ -67,15 +67,15 @@ class WfAnalysis(BaseBuildModel):
       return None
 
     if self.result_status in (
-        wf_analysis_result_status.FOUND_CORRECT,
-        wf_analysis_result_status.NOT_FOUND_CORRECT,
-        wf_analysis_result_status.FOUND_CORRECT_DUPLICATE):
+        result_status.FOUND_CORRECT,
+        result_status.NOT_FOUND_CORRECT,
+        result_status.FOUND_CORRECT_DUPLICATE):
       return True
 
     if self.result_status in (
-        wf_analysis_result_status.FOUND_INCORRECT,
-        wf_analysis_result_status.NOT_FOUND_INCORRECT,
-        wf_analysis_result_status.FOUND_INCORRECT_DUPLICATE):
+        result_status.FOUND_INCORRECT,
+        result_status.NOT_FOUND_INCORRECT,
+        result_status.FOUND_INCORRECT_DUPLICATE):
       return False
 
     return None
@@ -83,7 +83,7 @@ class WfAnalysis(BaseBuildModel):
   def Reset(self):  # pragma: no cover
     """Resets to the state as if no analysis is run."""
     self.pipeline_status_path = None
-    self.status = wf_analysis_status.PENDING
+    self.status = analysis_status.PENDING
     self.request_time = None
     self.start_time = None
     self.end_time = None
@@ -96,7 +96,7 @@ class WfAnalysis(BaseBuildModel):
   pipeline_status_path = ndb.StringProperty(indexed=False)
   # The status of the analysis.
   status = ndb.IntegerProperty(
-      default=wf_analysis_status.PENDING, indexed=False)
+      default=analysis_status.PENDING, indexed=False)
   # When the analysis was requested.
   request_time = ndb.DateTimeProperty(indexed=False)
   # When the analysis actually started.

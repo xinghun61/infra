@@ -7,14 +7,11 @@ import logging
 
 from base_handler import BaseHandler
 from base_handler import Permission
+from common import constants
 from common.http_client_appengine import HttpClientAppengine
 from waterfall import buildbot
 from waterfall import build_failure_analysis_pipelines
 from waterfall import waterfall_config
-
-
-_ALERTS_SOURCE_URL = 'https://sheriff-o-matic.appspot.com/alerts'
-_BUILD_FAILURE_ANALYSIS_TASKQUEUE = 'build-failure-analysis-queue'
 
 
 def _GetLatestBuildFailures(http_client):
@@ -32,7 +29,8 @@ def _GetLatestBuildFailures(http_client):
       ...
     ]
   """
-  status_code, content = http_client.Get(_ALERTS_SOURCE_URL, timeout_seconds=30)
+  status_code, content = http_client.Get(
+      constants.WATERFALL_ALERTS_URL, timeout_seconds=30)
   if status_code != 200:
     logging.error('Failed to pull alerts from Sheriff-o-Matic.')
     return []
@@ -95,4 +93,4 @@ class MonitorAlerts(BaseHandler):
           build_failure['build_number'],
           failed_steps=build_failure['failed_steps'],
           force=False,
-          queue_name=_BUILD_FAILURE_ANALYSIS_TASKQUEUE)
+          queue_name=constants.WATERFALL_ANALYSIS_QUEUE)

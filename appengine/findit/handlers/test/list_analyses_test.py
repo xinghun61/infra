@@ -9,8 +9,8 @@ from testing_utils import testing
 
 from handlers import list_analyses
 from model.wf_analysis import WfAnalysis
-from model import wf_analysis_status
-from model import wf_analysis_result_status
+from model import analysis_status
+from model import result_status
 from waterfall import identify_culprit_pipeline
 
 
@@ -29,7 +29,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
 
   def _AddAnalysisResult(self, master_name, builder_name, build_number):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.status = wf_analysis_status.ANALYZING
+    analysis.status = analysis_status.RUNNING
     analysis.put()
     return analysis
 
@@ -48,13 +48,13 @@ class ListAnalysesTest(testing.AppengineTestCase):
     self._AddAnalysisResult('chromium.linux', 'Linux GN', 26120)
     analyses.append(WfAnalysis.Get('chromium.linux', 'Linux GN', 26120))
 
-    analyses[1].status = wf_analysis_status.ANALYZED
-    analyses[2].status = wf_analysis_status.ANALYZED
-    analyses[3].status = wf_analysis_status.ANALYZED
-    analyses[4].status = wf_analysis_status.ERROR
-    analyses[7].status = wf_analysis_status.ANALYZED
-    analyses[9].status = wf_analysis_status.ANALYZED
-    analyses[10].status = wf_analysis_status.ANALYZED
+    analyses[1].status = analysis_status.COMPLETED
+    analyses[2].status = analysis_status.COMPLETED
+    analyses[3].status = analysis_status.COMPLETED
+    analyses[4].status = analysis_status.ERROR
+    analyses[7].status = analysis_status.COMPLETED
+    analyses[9].status = analysis_status.COMPLETED
+    analyses[10].status = analysis_status.COMPLETED
 
     analyses[2].build_start_time = datetime.datetime.utcnow()
     StoreTestBuildDate(2, analyses[2].build_start_time)
@@ -251,11 +251,11 @@ class ListAnalysesTest(testing.AppengineTestCase):
           _GetResultAnalysisStatus(analysis.result))
       analysis.put()
 
-    analyses[1].result_status = wf_analysis_result_status.FOUND_INCORRECT
+    analyses[1].result_status = result_status.FOUND_INCORRECT
     analyses[1].put()
-    analyses[3].result_status = wf_analysis_result_status.NOT_FOUND_INCORRECT
+    analyses[3].result_status = result_status.NOT_FOUND_INCORRECT
     analyses[3].put()
-    analyses[10].result_status = wf_analysis_result_status.FOUND_CORRECT
+    analyses[10].result_status = result_status.FOUND_CORRECT
     analyses[10].put()
 
     return stored_dates
@@ -270,7 +270,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_number': 26120,
                 'build_start_time': self.stored_dates.get(10),
                 'status': 70,
-                'status_description': 'Analyzed',
+                'status_description': 'Completed',
                 'suspected_cls': [
                     {
                         'repo_name': 'chromium',
@@ -287,7 +287,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_number': 1,
                 'build_start_time': None,
                 'status': 70,
-                'status_description': 'Analyzed',
+                'status_description': 'Completed',
                 'suspected_cls': [
                     {
                         'repo_name': 'chromium',
@@ -304,7 +304,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_number': 3,
                 'build_start_time': None,
                 'status': 70,
-                'status_description': 'Analyzed',
+                'status_description': 'Completed',
                 'suspected_cls': [],
                 'result_status': 'Incorrect - Not Found'
             }
@@ -329,7 +329,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_number': 1,
                 'build_start_time': None,
                 'status': 70,
-                'status_description': 'Analyzed',
+                'status_description': 'Completed',
                 'suspected_cls': [
                     {
                         'repo_name': 'chromium',
@@ -346,7 +346,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_number': 3,
                 'build_start_time': None,
                 'status': 70,
-                'status_description': 'Analyzed',
+                'status_description': 'Completed',
                 'suspected_cls': [],
                 'result_status': 'Incorrect - Not Found'
             },
@@ -356,7 +356,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_number': 7,
                 'build_start_time': self.stored_dates.get(7),
                 'status': 70,
-                'status_description': 'Analyzed',
+                'status_description': 'Completed',
                 'suspected_cls': [
                     {
                         'repo_name': 'chromium',
@@ -386,7 +386,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_number': 9,
                 'build_start_time': None,
                 'status': 70,
-                'status_description': 'Analyzed',
+                'status_description': 'Completed',
                 'suspected_cls': [
                     {
                         'repo_name': 'chromium',
@@ -403,7 +403,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_number': 2,
                 'build_start_time': self.stored_dates.get(2),
                 'status': 70,
-                'status_description': 'Analyzed',
+                'status_description': 'Completed',
                 'suspected_cls': [],
                 'result_status': 'Untriaged - Not Found'
             }
@@ -428,7 +428,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_number': 26120,
                 'build_start_time': self.stored_dates.get(10),
                 'status': 70,
-                'status_description': 'Analyzed',
+                'status_description': 'Completed',
                 'suspected_cls': [
                     {
                         'repo_name': 'chromium',
@@ -445,7 +445,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_number': 1,
                 'build_start_time': None,
                 'status': 70,
-                'status_description': 'Analyzed',
+                'status_description': 'Completed',
                 'suspected_cls': [
                     {
                         'repo_name': 'chromium',
@@ -477,7 +477,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_number': 1,
                 'build_start_time': None,
                 'status': 70,
-                'status_description': 'Analyzed',
+                'status_description': 'Completed',
                 'suspected_cls': [
                     {
                         'repo_name': 'chromium',
@@ -513,7 +513,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_number': 2,
                 'build_start_time': self.stored_dates.get(2),
                 'status': 70,
-                'status_description': 'Analyzed',
+                'status_description': 'Completed',
                 'suspected_cls': [],
                 'result_status': 'Untriaged - Not Found'
             },
@@ -523,7 +523,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_number': 26120,
                 'build_start_time': self.stored_dates.get(10),
                 'status': 70,
-                'status_description': 'Analyzed',
+                'status_description': 'Completed',
                 'suspected_cls': [
                     {
                         'repo_name': 'chromium',
@@ -559,7 +559,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'build_number': 26120,
                 'build_start_time': self.stored_dates.get(10),
                 'status': 70,
-                'status_description': 'Analyzed',
+                'status_description': 'Completed',
                 'suspected_cls': [
                     {
                         'repo_name': 'chromium',

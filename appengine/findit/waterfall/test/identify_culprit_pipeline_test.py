@@ -5,8 +5,8 @@
 from testing_utils import testing
 
 from model.wf_analysis import WfAnalysis
-from model import wf_analysis_status
-from model import wf_analysis_result_status
+from model import analysis_status
+from model import result_status
 from pipeline_wrapper import pipeline_handlers
 from waterfall import build_failure_analysis
 from waterfall import identify_culprit_pipeline
@@ -171,7 +171,7 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
         ]
     }
 
-    self.assertEqual(wf_analysis_result_status.FOUND_UNTRIAGED,
+    self.assertEqual(result_status.FOUND_UNTRIAGED,
                      identify_culprit_pipeline._GetResultAnalysisStatus(
                          dummy_result))
 
@@ -193,7 +193,7 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
         ]
     }
 
-    self.assertEqual(wf_analysis_result_status.NOT_FOUND_UNTRIAGED,
+    self.assertEqual(result_status.NOT_FOUND_UNTRIAGED,
                      identify_culprit_pipeline._GetResultAnalysisStatus(
                          dummy_result))
 
@@ -204,7 +204,7 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.result = None
-    analysis.status = wf_analysis_status.ANALYZING
+    analysis.status = analysis_status.RUNNING
     analysis.put()
 
     failure_info = {
@@ -235,6 +235,6 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
     self.assertTrue(analysis.build_completed)
     self.assertIsNotNone(analysis)
     self.assertEqual(dummy_result, analysis.result)
-    self.assertEqual(wf_analysis_status.ANALYZED, analysis.status)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)
     self.assertIsNone(analysis.result_status)
     self.assertEqual(expected_suspected_cls, analysis.suspected_cls)

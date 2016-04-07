@@ -6,7 +6,7 @@ from datetime import datetime
 
 from common import appengine_util
 from model.wf_analysis import WfAnalysis
-from model import wf_analysis_status
+from model import analysis_status
 from pipeline_wrapper import BasePipeline
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 from waterfall.extract_deps_info_pipeline import ExtractDEPSInfoPipeline
@@ -34,7 +34,7 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
       analysis = WfAnalysis.Get(
           self.master_name, self.builder_name, self.build_number)
       if analysis:  # In case the analysis is deleted manually.
-        analysis.status = wf_analysis_status.ERROR
+        analysis.status = analysis_status.ERROR
         analysis.result_status = None
         analysis.put()
 
@@ -44,7 +44,7 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
   def _ResetAnalysis(self, master_name, builder_name, build_number):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.pipeline_status_path = self.pipeline_status_path()
-    analysis.status = wf_analysis_status.ANALYZING
+    analysis.status = analysis_status.RUNNING
     analysis.result_status = None
     analysis.start_time = datetime.utcnow()
     analysis.version = appengine_util.GetCurrentVersion()

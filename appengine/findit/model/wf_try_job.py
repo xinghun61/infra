@@ -5,7 +5,7 @@
 from google.appengine.ext import ndb
 
 from model.base_build_model import BaseBuildModel
-from model import wf_analysis_status
+from model import analysis_status
 
 
 class WfTryJob(BaseBuildModel):
@@ -21,7 +21,7 @@ class WfTryJob(BaseBuildModel):
 
   # The status of the try job.
   status = ndb.IntegerProperty(
-      default=wf_analysis_status.PENDING, indexed=False)
+      default=analysis_status.PENDING, indexed=False)
 
   # A list of try job IDs associated with each try job for collecting metadata.
   try_job_ids = ndb.JsonProperty(default=[], indexed=False, compressed=True)
@@ -45,8 +45,8 @@ class WfTryJob(BaseBuildModel):
   @property
   def completed(self):
     return self.status in (
-        wf_analysis_status.ANALYZED, wf_analysis_status.ERROR)
+        analysis_status.COMPLETED, analysis_status.ERROR)
 
   @property
   def failed(self):
-    return self.status == wf_analysis_status.ERROR
+    return self.status == analysis_status.ERROR

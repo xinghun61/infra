@@ -41,30 +41,24 @@
 
     function createUrl(version) {
       if (version)
-        return '/config?version=' + version.toString();
+        return '/waterfall/config?version=' + version.toString();
       else
-        return '/config';
+        return '/waterfall/config';
     }
 
     function loadPrevious() {
-      $.get('/config').done(function(){
-        var newUrl = createUrl({{ version }} - 1);
-        window.location.replace(newUrl);
-      });
+      var newUrl = createUrl({{ version }} - 1);
+      window.location.replace(newUrl);
     }
 
     function loadNext() {
-      $.get('/config').done(function(){
-        var newUrl = createUrl({{ version }} + 1);
-        window.location.replace(newUrl);
-      });
+      var newUrl = createUrl({{ version }} + 1);
+      window.location.replace(newUrl);
     }
 
     function loadLatest() {
-      $.get('/config').done(function(){
-        var newUrl = createUrl(null);
-        window.location.replace(newUrl);
-      });
+      var newUrl = createUrl(null);
+      window.location.replace(newUrl);
     }
 
     function save(e) {
@@ -74,7 +68,7 @@
         'try_job_settings': getJsonOfTextarea('try-job-settings'),
         'swarming_settings': getJsonOfTextarea('swarming-settings')
       };
-      $.post('/config', { data: JSON.stringify(newConfig) }).done(function(){
+      $.post('/waterfall/config', { data: JSON.stringify(newConfig) }).done(function(){
         window.location.replace(createUrl(null));  // Reload after successful saving.
       }).fail(function(xhr){
         // Replace the whole page with errors from server side.

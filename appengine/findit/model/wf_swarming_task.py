@@ -7,7 +7,7 @@ from collections import defaultdict
 from google.appengine.ext import ndb
 
 from model.base_build_model import BaseBuildModel
-from model import wf_analysis_status
+from model import analysis_status
 
 
 class WfSwarmingTask(BaseBuildModel):
@@ -24,7 +24,7 @@ class WfSwarmingTask(BaseBuildModel):
 
   # The status of the swarming task.
   status = ndb.IntegerProperty(
-      default=wf_analysis_status.PENDING, indexed=False)
+      default=analysis_status.PENDING, indexed=False)
 
   # The revision of the failed build.
   build_revision = ndb.StringProperty(indexed=False)

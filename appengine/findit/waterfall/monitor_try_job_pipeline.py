@@ -7,7 +7,7 @@ import time
 
 from common import buildbucket_client
 from common.buildbucket_client import BuildbucketBuild
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from pipeline_wrapper import BasePipeline
@@ -85,7 +85,7 @@ class MonitorTryJobPipeline(BasePipeline):
       result_to_update.append(result)
 
     if status == BuildbucketBuild.STARTED:
-      try_job_result.status = wf_analysis_status.ANALYZING
+      try_job_result.status = analysis_status.RUNNING
     try_job_result.put()
     return result_to_update
 

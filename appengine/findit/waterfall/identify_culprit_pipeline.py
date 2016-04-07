@@ -4,8 +4,8 @@
 
 from datetime import datetime
 
-from model import wf_analysis_result_status
-from model import wf_analysis_status
+from model import result_status
+from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from pipeline_wrapper import BasePipeline
 from waterfall import build_failure_analysis
@@ -26,9 +26,9 @@ def _GetResultAnalysisStatus(analysis_result):
 
   for failure in analysis_result['failures']:
     if failure['suspected_cls']:
-      return wf_analysis_result_status.FOUND_UNTRIAGED
+      return result_status.FOUND_UNTRIAGED
 
-  return wf_analysis_result_status.NOT_FOUND_UNTRIAGED
+  return result_status.NOT_FOUND_UNTRIAGED
 
 
 def _GetSuspectedCLs(analysis_result):
@@ -75,7 +75,7 @@ class IdentifyCulpritPipeline(BasePipeline):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.build_completed = build_completed
     analysis.result = analysis_result
-    analysis.status = wf_analysis_status.ANALYZED
+    analysis.status = analysis_status.COMPLETED
     analysis.result_status = _GetResultAnalysisStatus(analysis_result)
     analysis.suspected_cls = _GetSuspectedCLs(analysis_result)
     analysis.end_time = datetime.utcnow()

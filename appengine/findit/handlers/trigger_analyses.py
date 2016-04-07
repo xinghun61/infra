@@ -6,13 +6,11 @@ import json
 
 from base_handler import BaseHandler
 from base_handler import Permission
+from common import constants
 from common.http_client_appengine import HttpClientAppengine
 from waterfall import buildbot
 from waterfall import build_failure_analysis_pipelines
 from waterfall import build_util
-
-
-_BUILD_FAILURE_ANALYSIS_TASKQUEUE = 'build-failure-analysis-queue'
 
 
 def _TriggerNewAnalysesOnDemand(builds):
@@ -35,7 +33,7 @@ def _TriggerNewAnalysesOnDemand(builds):
     build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
         master_name, builder_name, build_number, failed_steps=failed_steps,
         build_completed=build_info.completed,
-        force=False, queue_name=_BUILD_FAILURE_ANALYSIS_TASKQUEUE)
+        force=False, queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
 
 class TriggerAnalyses(BaseHandler):

@@ -4,8 +4,9 @@
 
 import os
 
+from common import constants
 from common import chromium_deps
-from model import wf_analysis_status
+from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from pipeline_wrapper import pipeline_handlers
 from waterfall import buildbot
@@ -62,7 +63,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
 
   def _Setup(self, master_name, builder_name, build_number):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.status = wf_analysis_status.ANALYZING
+    analysis.status = analysis_status.RUNNING
     analysis.put()
 
     def MockWaitUntilDownloadAllowed(*_):
@@ -106,7 +107,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
                                                 builder_name,
                                                 build_number,
                                                 False)
-    root_pipeline.start(queue_name='default')
+    root_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
     expected_analysis_result = {
@@ -136,7 +137,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
-    self.assertEqual(wf_analysis_status.ANALYZED, analysis.status)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)
     self.assertEqual(expected_analysis_result, analysis.result)
     self.assertIsNotNone(analysis.result_status)
 
@@ -154,7 +155,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     root_pipeline._ResetAnalysis(master_name, builder_name, build_number)
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
-    self.assertEqual(wf_analysis_status.ANALYZING, analysis.status)
+    self.assertEqual(analysis_status.RUNNING, analysis.status)
     self.assertIsNone(analysis.result_status)
 
   def testAnalyzeBuildFailurePipelineAbortedWithAnalysis(self):
@@ -172,7 +173,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
-    self.assertEqual(wf_analysis_status.ERROR, analysis.status)
+    self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertIsNone(analysis.result_status)
 
   def testAnalyzeBuildFailurePipelineAbortedWithoutAnalysis(self):
@@ -204,4 +205,4 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
-    self.assertNotEqual(wf_analysis_status.ERROR, analysis.status)
+    self.assertNotEqual(analysis_status.ERROR, analysis.status)

@@ -8,7 +8,7 @@ from testing_utils import testing
 
 from handlers import check_duplicate_failures
 from model.wf_analysis import WfAnalysis
-from model import wf_analysis_result_status
+from model import result_status
 
 
 class CheckDuplicateFailuresTest(testing.AppengineTestCase):
@@ -51,7 +51,7 @@ class CheckDuplicateFailuresTest(testing.AppengineTestCase):
           'commit_position': 123,
           'url': None
       }]
-      analysis.result_status = wf_analysis_result_status.FOUND_UNTRIAGED
+      analysis.result_status = result_status.FOUND_UNTRIAGED
       analysis.put()
       analyses.append(analysis)
     return analyses
@@ -101,7 +101,7 @@ class CheckDuplicateFailuresTest(testing.AppengineTestCase):
     analysis.result = {
         'failures': []
     }
-    analysis.result_status = wf_analysis_result_status.FOUND_UNTRIAGED
+    analysis.result_status = result_status.FOUND_UNTRIAGED
     analysis.put()
     failed_steps = check_duplicate_failures._GetFailedStepsForEachCL(analysis)
 
@@ -351,30 +351,30 @@ class CheckDuplicateFailuresTest(testing.AppengineTestCase):
   def testModifyStatusIfDuplicateSuccess(self):
     analyses = self._CreateAnalyses('m', 'b', 3)
 
-    analyses[0].result_status = wf_analysis_result_status.FOUND_INCORRECT
+    analyses[0].result_status = result_status.FOUND_INCORRECT
     analyses[0].put()
-    analyses[2].result_status = wf_analysis_result_status.FOUND_INCORRECT
+    analyses[2].result_status = result_status.FOUND_INCORRECT
     analyses[2].put()
 
     check_duplicate_failures._ModifyStatusIfDuplicate(analyses[1])
 
     # Use data in datastore rather than in memory.
     analysis_two = WfAnalysis.Get('m', 'b', 1)
-    self.assertEqual(wf_analysis_result_status.FOUND_INCORRECT_DUPLICATE,
+    self.assertEqual(result_status.FOUND_INCORRECT_DUPLICATE,
                      analysis_two.result_status)
 
   def testModifyStatusIfDuplicateModifiedMultipleAnalyses(self):
     analyses = self._CreateAnalyses('m', 'b', 4)
 
-    analyses[0].result_status = wf_analysis_result_status.FOUND_CORRECT
+    analyses[0].result_status = result_status.FOUND_CORRECT
     analyses[0].put()
-    analyses[3].result_status = wf_analysis_result_status.FOUND_CORRECT
+    analyses[3].result_status = result_status.FOUND_CORRECT
     analyses[3].put()
 
     check_duplicate_failures._ModifyStatusIfDuplicate(analyses[1])
     for i in range(1, 3):
       analysis = WfAnalysis.Get('m', 'b', i)
-      self.assertEqual(wf_analysis_result_status.FOUND_CORRECT_DUPLICATE,
+      self.assertEqual(result_status.FOUND_CORRECT_DUPLICATE,
                        analysis.result_status)
 
   def testModifyStatusIfDuplicateSingleAnalysisResult(self):
@@ -383,17 +383,17 @@ class CheckDuplicateFailuresTest(testing.AppengineTestCase):
     check_duplicate_failures._ModifyStatusIfDuplicate(analyses[0])
 
     analysis = WfAnalysis.Get('m', 'b', 0)
-    self.assertEqual(wf_analysis_result_status.FOUND_UNTRIAGED,
+    self.assertEqual(result_status.FOUND_UNTRIAGED,
                      analysis.result_status)
 
   def testModifyStatusIfDuplicateCheckForTriagedResult(self):
     analyses = self._CreateAnalyses('m', 'b', 1)
 
-    analyses[0].result_status = wf_analysis_result_status.NOT_FOUND_UNTRIAGED
+    analyses[0].result_status = result_status.NOT_FOUND_UNTRIAGED
     check_duplicate_failures._ModifyStatusIfDuplicate(analyses[0])
 
     analysis = WfAnalysis.Get('m', 'b', 0)
-    self.assertEqual(wf_analysis_result_status.NOT_FOUND_UNTRIAGED,
+    self.assertEqual(result_status.NOT_FOUND_UNTRIAGED,
                      analysis.result_status)
 
   def testModifyStatusIfDuplicateFirstResultUntriaged(self):
@@ -401,42 +401,42 @@ class CheckDuplicateFailuresTest(testing.AppengineTestCase):
     check_duplicate_failures._ModifyStatusIfDuplicate(analyses[1])
 
     analysis_one = WfAnalysis.Get('m', 'b', 1)
-    self.assertEqual(wf_analysis_result_status.FOUND_UNTRIAGED,
+    self.assertEqual(result_status.FOUND_UNTRIAGED,
                      analysis_one.result_status)
 
   def testModifyStatusIfDuplicateDifferentStatuses(self):
     analyses = self._CreateAnalyses('m', 'b', 4)
 
-    analyses[0].result_status = wf_analysis_result_status.FOUND_CORRECT
+    analyses[0].result_status = result_status.FOUND_CORRECT
     analyses[0].put()
-    analyses[3].result_status = wf_analysis_result_status.FOUND_INCORRECT
+    analyses[3].result_status = result_status.FOUND_INCORRECT
     analyses[3].put()
 
     check_duplicate_failures._ModifyStatusIfDuplicate(analyses[1])
 
     for i in range(1, 3):
       analysis = WfAnalysis.Get('m', 'b', i)
-      self.assertEqual(wf_analysis_result_status.FOUND_UNTRIAGED,
+      self.assertEqual(result_status.FOUND_UNTRIAGED,
                        analysis.result_status)
 
   def testModifyStatusIfDuplicateOnlyOneTriagedEnd(self):
     analyses = self._CreateAnalyses('m', 'b', 4)
 
-    analyses[0].result_status = wf_analysis_result_status.FOUND_CORRECT
+    analyses[0].result_status = result_status.FOUND_CORRECT
     analyses[0].put()
 
     check_duplicate_failures._ModifyStatusIfDuplicate(analyses[1])
     for i in range(1, 3):
       analysis = WfAnalysis.Get('m', 'b', i)
-      self.assertEqual(wf_analysis_result_status.FOUND_UNTRIAGED,
+      self.assertEqual(result_status.FOUND_UNTRIAGED,
                        analysis.result_status)
 
   def testModifyStatusIfDuplicateExtraFlakyFailure(self):
     analyses = self._CreateAnalyses('m', 'b', 5)
 
-    analyses[0].result_status = wf_analysis_result_status.FOUND_CORRECT
+    analyses[0].result_status = result_status.FOUND_CORRECT
     analyses[0].put()
-    analyses[4].result_status = wf_analysis_result_status.FOUND_CORRECT
+    analyses[4].result_status = result_status.FOUND_CORRECT
     analyses[4].put()
 
     flaky_failure = {
@@ -452,15 +452,15 @@ class CheckDuplicateFailuresTest(testing.AppengineTestCase):
 
     for i in range(1, 4):
       analysis = WfAnalysis.Get('m', 'b', i)
-      self.assertEqual(wf_analysis_result_status.FOUND_CORRECT_DUPLICATE,
+      self.assertEqual(result_status.FOUND_CORRECT_DUPLICATE,
                        analysis.result_status)
 
   def testModifyStatusIfDuplicateNotContinuousFailures(self):
     analyses = self._CreateAnalyses('m', 'b', 5)
 
-    analyses[0].result_status = wf_analysis_result_status.FOUND_CORRECT
+    analyses[0].result_status = result_status.FOUND_CORRECT
     analyses[0].put()
-    analyses[4].result_status = wf_analysis_result_status.FOUND_CORRECT
+    analyses[4].result_status = result_status.FOUND_CORRECT
     analyses[4].put()
 
     analyses[2].result['failures'][0]['step_name'] = 'not_a'
@@ -469,53 +469,53 @@ class CheckDuplicateFailuresTest(testing.AppengineTestCase):
     check_duplicate_failures._ModifyStatusIfDuplicate(analyses[1])
 
     analysis_one = WfAnalysis.Get('m', 'b', 1)
-    self.assertEqual(wf_analysis_result_status.FOUND_UNTRIAGED,
+    self.assertEqual(result_status.FOUND_UNTRIAGED,
                      analysis_one.result_status)
 
   def testModifyStatusIfDuplicateDifferentStatusInBetween(self):
     analyses = self._CreateAnalyses('m', 'b', 5)
 
-    analyses[0].result_status = wf_analysis_result_status.FOUND_CORRECT
+    analyses[0].result_status = result_status.FOUND_CORRECT
     analyses[0].put()
-    analyses[4].result_status = wf_analysis_result_status.FOUND_CORRECT
+    analyses[4].result_status = result_status.FOUND_CORRECT
     analyses[4].put()
 
-    analyses[2].result_status = wf_analysis_result_status.NOT_FOUND_UNTRIAGED
+    analyses[2].result_status = result_status.NOT_FOUND_UNTRIAGED
     analyses[2].put()
 
     check_duplicate_failures._ModifyStatusIfDuplicate(analyses[1])
 
     analysis_one = WfAnalysis.Get('m', 'b', 1)
-    self.assertEqual(wf_analysis_result_status.FOUND_UNTRIAGED,
+    self.assertEqual(result_status.FOUND_UNTRIAGED,
                      analysis_one.result_status)
 
   def testModifyStatusIfDuplicateDuplicateStatusInBetween(self):
     analyses = self._CreateAnalyses('m', 'b', 5)
 
-    analyses[0].result_status = wf_analysis_result_status.FOUND_CORRECT
+    analyses[0].result_status = result_status.FOUND_CORRECT
     analyses[0].put()
-    analyses[4].result_status = wf_analysis_result_status.FOUND_CORRECT
+    analyses[4].result_status = result_status.FOUND_CORRECT
     analyses[4].put()
 
     analyses[2].result_status = (
-        wf_analysis_result_status.FOUND_CORRECT_DUPLICATE)
+        result_status.FOUND_CORRECT_DUPLICATE)
     analyses[2].put()
 
     check_duplicate_failures._ModifyStatusIfDuplicate(analyses[1])
 
     analysis_one = WfAnalysis.Get('m', 'b', 1)
     analysis_three = WfAnalysis.Get('m', 'b', 3)
-    self.assertEqual(wf_analysis_result_status.FOUND_CORRECT_DUPLICATE,
+    self.assertEqual(result_status.FOUND_CORRECT_DUPLICATE,
                      analysis_one.result_status)
-    self.assertEqual(wf_analysis_result_status.FOUND_CORRECT_DUPLICATE,
+    self.assertEqual(result_status.FOUND_CORRECT_DUPLICATE,
                      analysis_three.result_status)
 
   def testModifyStatusIfDuplicateDifferentCLs(self):
     analyses = self._CreateAnalyses('m', 'b', 5)
 
-    analyses[0].result_status = wf_analysis_result_status.FOUND_CORRECT
+    analyses[0].result_status = result_status.FOUND_CORRECT
     analyses[0].put()
-    analyses[4].result_status = wf_analysis_result_status.FOUND_CORRECT
+    analyses[4].result_status = result_status.FOUND_CORRECT
     analyses[4].put()
 
     analyses[2].result['failures'][0]['suspected_cls'][0]['revision'] = 'rev'
@@ -526,7 +526,7 @@ class CheckDuplicateFailuresTest(testing.AppengineTestCase):
 
     for i in range(1, 4):
       analysis = WfAnalysis.Get('m', 'b', i)
-      self.assertEqual(wf_analysis_result_status.FOUND_UNTRIAGED,
+      self.assertEqual(result_status.FOUND_UNTRIAGED,
                        analysis.result_status)
 
   def testFetchAndSortUntriagedAnalyses(self):

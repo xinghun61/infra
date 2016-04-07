@@ -4,18 +4,15 @@
 
 import logging
 
-from google.appengine.api import modules
 from google.appengine.ext import ndb
 
-from model import wf_analysis_status
+from common import appengine_util
+from common import constants
+from model import analysis_status
 from model.wf_try_job import WfTryJob
 from waterfall import swarming_tasks_to_try_job_pipeline
 from waterfall import waterfall_config
 from waterfall.try_job_type import TryJobType
-
-
-# TODO(chanli): Need to figure out why try-job-queue doesn't work.
-TRY_JOB_PIPELINE_QUEUE_NAME = 'build-failure-analysis-queue'
 
 
 def _CheckFailureForTryJobKey(
@@ -105,7 +102,7 @@ def _NeedANewTryJob(
 
     if try_job:
       if try_job.failed:
-        try_job.status = wf_analysis_status.PENDING
+        try_job.status = analysis_status.PENDING
         try_job.put()
       else:
         need_new_try_job = False
@@ -171,10 +168,9 @@ def ScheduleTryJobIfNeeded(failure_info, signals=None, build_completed=False):
             builds[str(build_number)]['blame_list'],
             try_job_type, compile_targets, targeted_tests))
 
-    pipeline.target = (
-        '%s.build-failure-analysis' % modules.get_current_version_name())
-    pipeline.start(
-        queue_name=TRY_JOB_PIPELINE_QUEUE_NAME)
+    pipeline.target = appengine_util.GetTargetNameForModule(
+        constants.WATERFALL_BACKEND)
+    pipeline.start(queue_name=constants.WATERFALL_TRY_JOB_QUEUE)
 
     if try_job_type == TryJobType.TEST:  # pragma: no cover
       logging_str = (
