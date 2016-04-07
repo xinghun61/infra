@@ -84,15 +84,6 @@
     "cmd": [
       "python",
       "-u",
-      "testjs.py"
-    ],
-    "cwd": "[SLAVE_BUILD]\\infra",
-    "name": "infra javascript tests"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
       "[SLAVE_BUILD]\\infra\\go\\env.py",
       "go",
       "version"

@@ -138,15 +138,6 @@
     "name": "go tests"
   },
   {
-    "cmd": [
-      "python",
-      "-u",
-      "testjs.py"
-    ],
-    "cwd": "[SLAVE_BUILD]/infra",
-    "name": "js tests"
-  },
-  {
     "name": "$result",
     "recipe_result": null,
     "status_code": 0
