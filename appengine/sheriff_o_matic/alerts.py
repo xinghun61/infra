@@ -25,8 +25,6 @@ class AlertsJSON(ndb.Model):
   type = ndb.StringProperty()
   json = ndb.BlobProperty(compressed=True)
   date = ndb.DateTimeProperty(auto_now_add=True)
-  # TODO(remove this property)
-  use_gcs = ndb.BooleanProperty()
   gcs_filename = ndb.StringProperty()
 
 
@@ -43,6 +41,9 @@ class AlertsHandler(auth.AuthenticatingHandler): # pragma: no cover
   ALERT_TYPE = 'alerts'
   # Max number of bytes that AppEngine allows writing to Memcache
   MAX_JSON_SIZE = 10**6 - 10**5
+
+  def can_put_in_datastore(self, num_bytes):
+    return num_bytes < self.MAX_JSON_SIZE
 
   # New alerts should be posted at least every 30 minutes
   MAX_STALENESS = 60*30
@@ -131,6 +132,7 @@ class AlertsHandler(auth.AuthenticatingHandler): # pragma: no cover
     if data:
       self.send_json_data(data)
     else:
+      self.send_json_headers()
       self.response.write({})
 
   def store_alerts(self, alerts):
@@ -160,7 +162,7 @@ class AlertsHandler(auth.AuthenticatingHandler): # pragma: no cover
       compression_level = 9
       compressed = zlib.compress(json_data, compression_level)
 
-      if len(compressed) < self.MAX_JSON_SIZE:
+      if self.can_put_in_datastore(len(compressed)):
         memcache.set(self.ALERT_TYPE, compressed)
         new_entry = AlertsJSON(
             json=json_data,
