@@ -1,0 +1,164 @@
+[
+  {
+    "timestamp": 10503,
+    "key": null,
+    "tags": [
+      "project=chromium",
+      "issue=123456789",
+      "owner=test@chromium.org",
+      "action=patch_stop",
+      "patchset=1"
+    ],
+    "fields": {
+      "project": "chromium",
+      "owner": "test@chromium.org",
+      "action": "patch_stop",
+      "patchset": 1,
+      "issue": 123456789
+    }
+  },
+
+
+
+
+  {
+    "timestamp": 10502,
+    "key": null,
+    "tags": [
+      "project=chromium",
+      "issue=123456789",
+      "owner=test@chromium.org",
+      "action=patch_failed",
+      "patchset=1"
+    ],
+    "fields": {
+      "project": "chromium",
+      "owner": "test@chromium.org",
+      "action": "patch_failed",
+      "reason": {
+        "verifier": "try job",
+        "fail_type": "failed_jobs",
+        "fail_details": [
+          {
+            "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_2/builds/1012",
+            "master": "tryserver.b",
+            "builder": "test_suite_b_2"
+          }
+        ]
+      },
+      "patchset": 1,
+      "issue": 123456789
+    }
+  },
+
+
+
+
+  {
+    "timestamp": 10501,
+    "key": null,
+    "tags": [
+      "project=chromium",
+      "issue=123456789",
+      "owner=test@chromium.org",
+      "action=verifier_pass",
+      "patchset=1",
+      "verifier=try job"
+    ],
+    "fields": {
+      "project": "chromium",
+      "owner": "test@chromium.org",
+      "verifier": "try job",
+      "action": "verifier_fail",
+      "patchset": 1,
+      "issue": 123456789
+    }
+  },
+
+
+
+
+  {
+    "timestamp": 10010,
+    "key": null,
+    "tags": [
+      "project=chromium",
+      "issue=123456789",
+      "owner=test@chromium.org",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=try job"
+    ],
+    "fields": {
+      "jobs": {
+        "JOB_RUNNING": [
+              {
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave-a1",
+                "url": "http://build.chromium.org/p/tryserver.a/builders/test_suite_a/builds/1000",
+                "timestamp": "1970-01-01 02:46:50.000000+00:00",
+                "master": "tryserver.a",
+                "builder": "test_suite_a",
+                "result": -1,
+                "buildnumber": 1000
+              },
+              {
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave-b1",
+                "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_1/builds/1001",
+                "timestamp": "1970-01-01 02:46:50.000000+00:00",
+                "master": "tryserver.b",
+                "builder": "test_suite_b_1",
+                "result": -1,
+                "buildnumber": 1001
+              },
+              {
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave-b2",
+                "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_2/builds/1002",
+                "timestamp": "1970-01-01 02:46:50.000000+00:00",
+                "master": "tryserver.b",
+                "builder": "test_suite_b_2",
+                "result": -1,
+                "buildnumber": 1002
+              }
+        ]
+      },
+      "project": "chromium",
+      "owner": "test@chromium.org",
+      "verifier": "try job",
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 123456789
+    }
+  },
+
+
+
+
+  {
+    "timestamp": 10000,
+    "key": null,
+    "tags": [
+      "owner=test@chromium.org",
+      "issue=123456789",
+      "patchset=1",
+      "project=chromium",
+      "action=patch_start"
+    ],
+    "fields": {
+      "project": "chromium",
+      "owner": "test@chromium.org",
+      "reason": null,
+      "action": "patch_start",
+      "patchset": 1,
+      "issue": 123456789
+    }
+  }
+]

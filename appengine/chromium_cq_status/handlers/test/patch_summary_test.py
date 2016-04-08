@@ -22,6 +22,9 @@ class PatchSummaryTest(testing.AppengineTestCase):
   def test_patch_summary_flaky(self):
     return self._test_patch('flaky')
 
+  def test_no_verifier_start(self):
+    return self._test_patch('no_verifier_start')
+
   # TODO(sergeyberezin): add a small real-life CL for an integration
   # test.
 

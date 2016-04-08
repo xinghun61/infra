@@ -101,7 +101,8 @@ def summarize_attempt(raw_attempt, now):
         verifier_start_timestamp = timestamp
       elif action == 'verifier_jobs_update':
         job_tracker.update_jobs(record)
-      elif action in ('verifier_pass', 'verifier_fail'):
+      elif (action in ('verifier_pass', 'verifier_fail') and
+            verifier_start_timestamp is not None):
         durations['running_all_jobs'] = timestamp - verifier_start_timestamp
         verifier_start_timestamp = None
 
