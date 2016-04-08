@@ -25,14 +25,22 @@ import base64
 import json
 
 
-def get_auth_token(api):
+def get_auth_token(api, service_account=None):
   """
   Get an auth token; this assumes the user is logged in with the infra
   authutil command line utility.
-  """
 
-  result = api.step('Get auth token',
-      ['/opt/infra-tools/authutil', 'token',],
+  If service_account is provided, that service account will be used when calling
+  authutil.
+  """
+  cmd = ['/opt/infra-tools/authutil', 'token']
+  if service_account: # pragma: no cover
+      cmd.extend([
+          '-service-account-json='
+          '/creds/service_accounts/service-account-%s.json' % service_account])
+
+  result = api.step(
+      'Get auth token', cmd,
       stdout=api.raw_io.output(),
       step_test_data=lambda: api.raw_io.test_api.stream_output('ya29.foobar'))
   return result.stdout.strip()
@@ -346,17 +354,28 @@ PROPERTIES = {
 
   # To generate an auth token for running locally, run
   #   infra/go/bin/authutil login
-  'auth_token': Property(default=None),
+  'auth_token': Property(
+      default=None, help="The auth_token to use to talk to luci-config. "
+      "Mutually exclusive with the service_account property"),
+  'service_account': Property(
+      default=None, kind=str,
+      help="The name of the service account to use when running on a bot. For "
+           "example, if you use \"recipe-roller\", this recipe will try to use "
+           "the /creds/service_accounts/service-account-recipe-roller.json "
+           "service account")
 }
 
 def RunSteps(api, patches_raw, rietveld, issue, patchset, patch_project,
-             auth_token):
+             auth_token, service_account):
   # TODO(martiniss): use real types
   issue = int(issue) if issue else None
   patchset = int(patchset) if patchset else None
 
   if not auth_token:
-    auth_token = get_auth_token(api)
+    auth_token = get_auth_token(api, service_account)
+  else: # pragma: no cover
+    assert not service_account, (
+        "Only one of \"service_account\" and \"auth_token\" may be set")
 
   headers = {'Authorization': 'Bearer %s' % auth_token}
 
