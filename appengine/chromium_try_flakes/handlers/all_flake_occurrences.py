@@ -92,4 +92,8 @@ class AllFlakeOccurrences(webapp2.RequestHandler):  # pragma: no cover
     flake = ndb.Key(urlsafe=key).get()
     bug_friendly = self.request.get('bug_friendly', 0)
 
+    if not flake:
+      self.response.set_status(404, 'Flake with id %s does not exist' % key)
+      return
+
     self.response.write(show_all_flakes(flake, bug_friendly))
