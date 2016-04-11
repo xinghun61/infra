@@ -316,7 +316,8 @@
   {
     "cmd": [
       "git",
-      "show"
+      "show",
+      "--no-commit-id"
     ],
     "cwd": "[TMP_BASE]/roll_build_tmp_1",
     "name": "build.git show",
