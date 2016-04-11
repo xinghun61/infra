@@ -124,7 +124,8 @@ CTFailureGroup.prototype._removeAnnotation = function(change) {
 };
 
 CTFailureGroup.prototype._updateAnnotation = function(kind, change) {
-  var fullChange = [{kind: change}];
+  var fullChange = [{}];
+  fullChange[0][kind] = change;
 
   return net.ajax({
     type: 'POST',
