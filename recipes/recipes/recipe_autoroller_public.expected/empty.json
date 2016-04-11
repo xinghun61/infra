@@ -212,7 +212,7 @@
       "user.email",
       "recipe-roller@chromium.org"
     ],
-    "cwd": "[SLAVE_BUILD]/infra",
+    "cwd": "[TMP_BASE]/roll_build_tmp_1",
     "name": "build.git config",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -225,7 +225,7 @@
       "user.name",
       "recipe-roller"
     ],
-    "cwd": "[SLAVE_BUILD]/infra",
+    "cwd": "[TMP_BASE]/roll_build_tmp_1",
     "name": "build.git config (2)",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
