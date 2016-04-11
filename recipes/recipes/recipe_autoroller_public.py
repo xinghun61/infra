@@ -7,6 +7,7 @@
 DEPS = [
   'recipe_autoroller',
   'recipe_engine/properties',
+  'recipe_engine/raw_io',
 ]
 
 from recipe_engine import recipe_api
@@ -34,13 +35,15 @@ def GenTests(api):
   yield (
       api.test('basic') +
       api.properties(projects=['build']) +
-      api.recipe_autoroller.roll_data('build')
+      api.recipe_autoroller.roll_data('build') +
+      api.recipe_autoroller.new_upload('build')
   )
 
   yield (
       api.test('nontrivial') +
       api.properties(projects=['build']) +
-      api.recipe_autoroller.roll_data('build', trivial=False)
+      api.recipe_autoroller.roll_data('build', trivial=False) +
+      api.recipe_autoroller.new_upload('build')
   )
 
   yield (
@@ -53,4 +56,21 @@ def GenTests(api):
       api.test('failure') +
       api.properties(projects=['build']) +
       api.recipe_autoroller.roll_data('build', success=False)
+  )
+
+  yield (
+      api.test('previously_uploaded') +
+      api.properties(projects=['build']) +
+      api.recipe_autoroller.roll_data('build') +
+      api.recipe_autoroller.previously_uploaded('build')
+  )
+
+  yield (
+      api.test('failed_upload') +
+      api.properties(projects=['build']) +
+      api.recipe_autoroller.roll_data('build') +
+      api.recipe_autoroller.new_upload('build') +
+      api.override_step_data(
+          'build.git cl issue',
+          api.raw_io.stream_output('Issue number: None (None)'))
   )

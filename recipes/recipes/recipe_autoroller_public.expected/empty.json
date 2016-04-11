@@ -233,18 +233,6 @@
   },
   {
     "cmd": [
-      "git",
-      "diff",
-      "HEAD"
-    ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_1",
-    "name": "build.git diff",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
       "python",
       "-u",
       "\nimport shutil, sys\nshutil.rmtree(sys.argv[1])\n",
