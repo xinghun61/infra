@@ -5,8 +5,8 @@
 from datetime import datetime
 import time
 
-from common import buildbucket_client
-from common.buildbucket_client import BuildbucketBuild
+from common.waterfall import buildbucket_client
+from common.waterfall.buildbucket_client import BuildbucketBuild
 from model import analysis_status
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData

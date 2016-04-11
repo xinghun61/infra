@@ -6,7 +6,7 @@ import json
 
 from testing_utils import testing
 
-from common import buildbucket_client
+from common.waterfall import buildbucket_client
 
 
 class BuildBucketClientTest(testing.AppengineTestCase):

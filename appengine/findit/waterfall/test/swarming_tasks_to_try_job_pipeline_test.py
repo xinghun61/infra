@@ -4,8 +4,8 @@
 
 import json
 
-from common import buildbucket_client
 from common.git_repository import GitRepository
+from common.waterfall import buildbucket_client
 from model.wf_try_job import WfTryJob
 from pipeline_wrapper import pipeline_handlers
 from waterfall import swarming_util

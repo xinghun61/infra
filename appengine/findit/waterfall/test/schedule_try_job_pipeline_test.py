@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from common import buildbucket_client
+from common.waterfall import buildbucket_client
 from model.wf_try_job import WfTryJob
 from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 from waterfall.test import wf_testcase

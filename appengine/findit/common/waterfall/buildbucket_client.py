@@ -8,8 +8,8 @@ import collections
 import json
 import logging
 
+from common import auth_util
 from common.http_client_appengine import HttpClientAppengine as HttpClient
-from waterfall import auth_util
 
 
 # TODO: save these settings in datastore and create a role account.

@@ -10,8 +10,8 @@ import zlib
 
 from google.appengine.ext import ndb
 
+from common import auth_util
 from model.wf_step import WfStep
-from waterfall import auth_util
 from waterfall import waterfall_config
 from waterfall.swarming_task_request import SwarmingTaskRequest
 

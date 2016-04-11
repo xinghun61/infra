@@ -4,7 +4,7 @@
 
 import json
 
-from common import buildbucket_client
+from common.waterfall import buildbucket_client
 from common.git_repository import GitRepository
 from model import analysis_status
 from model.wf_try_job import WfTryJob
