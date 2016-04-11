@@ -317,13 +317,16 @@
     "cmd": [
       "git",
       "show",
-      "--no-commit-id"
+      "--format=%b"
     ],
     "cwd": "[TMP_BASE]/roll_build_tmp_1",
     "name": "build.git show",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@output@-some line@@@",
+      "@@@STEP_LOG_LINE@output@+some other line@@@",
+      "@@@STEP_LOG_END@output@@@"
     ]
   },
   {
