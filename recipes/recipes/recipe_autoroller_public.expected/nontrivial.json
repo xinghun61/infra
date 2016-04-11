@@ -207,6 +207,21 @@
   },
   {
     "cmd": [
+      "git",
+      "checkout",
+      "-t",
+      "-b",
+      "roll",
+      "origin/master"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_1",
+    "name": "build.git checkout (2)",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
       "python",
       "-u",
       "[SLAVE_BUILD]/infra/recipes-py/recipes.py",
