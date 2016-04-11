@@ -10,9 +10,9 @@ import webtest
 
 from testing_utils import testing
 
-import base_handler
-from base_handler import BaseHandler
-from base_handler import Permission
+from common import base_handler
+from common.base_handler import BaseHandler
+from common.base_handler import Permission
 
 
 class PermissionLevelHandler(BaseHandler):

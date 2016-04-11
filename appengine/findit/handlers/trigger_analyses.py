@@ -4,9 +4,9 @@
 
 import json
 
-from base_handler import BaseHandler
-from base_handler import Permission
 from common import constants
+from common.base_handler import BaseHandler
+from common.base_handler import Permission
 from common.http_client_appengine import HttpClientAppengine
 from waterfall import buildbot
 from waterfall import build_failure_analysis_pipelines

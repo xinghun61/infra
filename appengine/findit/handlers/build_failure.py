@@ -9,8 +9,8 @@ import os
 
 from google.appengine.api import users
 
-from base_handler import BaseHandler
-from base_handler import Permission
+from common.base_handler import BaseHandler
+from common.base_handler import Permission
 from common import constants
 from handlers import handlers_util
 from handlers import result_status

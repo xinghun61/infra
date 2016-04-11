@@ -10,10 +10,10 @@ import logging
 from google.appengine.api.urlfetch import ResponseTooLargeError
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
+from common.pipeline_wrapper import BasePipeline
+from common.pipeline_wrapper import pipeline
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
-from pipeline_wrapper import BasePipeline
-from pipeline_wrapper import pipeline
 from waterfall import buildbot
 from waterfall import extractors
 from waterfall import lock_util

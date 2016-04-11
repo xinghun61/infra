@@ -5,9 +5,9 @@
 import json
 import logging
 
-from base_handler import BaseHandler
-from base_handler import Permission
 from common import buildbucket_client
+from common.base_handler import BaseHandler
+from common.base_handler import Permission
 
 
 class TryJob(BaseHandler):

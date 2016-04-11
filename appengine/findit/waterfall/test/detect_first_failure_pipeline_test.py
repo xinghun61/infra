@@ -9,11 +9,11 @@ import urllib
 import zlib
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
+from common.pipeline_wrapper import pipeline_handlers
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from model.wf_step import WfStep
-from pipeline_wrapper import pipeline_handlers
 from waterfall import buildbot
 from waterfall import lock_util
 from waterfall import swarming_util

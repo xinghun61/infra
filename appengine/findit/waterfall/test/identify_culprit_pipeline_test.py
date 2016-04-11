@@ -4,10 +4,10 @@
 
 from testing_utils import testing
 
-from model.wf_analysis import WfAnalysis
+from common.pipeline_wrapper import pipeline_handlers
 from model import analysis_status
 from model import result_status
-from pipeline_wrapper import pipeline_handlers
+from model.wf_analysis import WfAnalysis
 from waterfall import build_failure_analysis
 from waterfall import identify_culprit_pipeline
 

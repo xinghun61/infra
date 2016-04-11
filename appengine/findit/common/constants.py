@@ -4,6 +4,9 @@
 
 """Includes all the constants of module names, queue names, url paths, etc."""
 
+import os
+
+
 # Names of all modules.
 WATERFALL_BACKEND = 'waterfall-backend'
 
@@ -18,3 +21,8 @@ WATERFALL_SERIAL_QUEUE = 'waterfall-serial-queue'
 # Url paths.
 WATERFALL_TRIGGER_ANALYSIS_URL = '/waterfall/trigger-analyses'
 WATERFALL_ALERTS_URL = 'https://sheriff-o-matic.appspot.com/alerts'
+
+
+# Directory of html templates.
+HTML_TEMPLATE_DIR = os.path.realpath(
+    os.path.join(os.path.dirname(__file__), os.path.pardir, 'templates'))

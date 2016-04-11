@@ -5,9 +5,9 @@
 import json
 
 from common.git_repository import GitRepository
+from common.pipeline_wrapper import pipeline_handlers
 from common.waterfall import buildbucket_client
 from model.wf_try_job import WfTryJob
-from pipeline_wrapper import pipeline_handlers
 from waterfall import swarming_util
 from waterfall import trigger_swarming_task_pipeline
 from waterfall.swarming_task_request import SwarmingTaskRequest

@@ -4,10 +4,10 @@
 
 from datetime import datetime
 
+from common.pipeline_wrapper import BasePipeline
 from model import result_status
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
-from pipeline_wrapper import BasePipeline
 from waterfall import build_failure_analysis
 
 

@@ -7,10 +7,10 @@ import logging
 
 from common import appengine_util
 from common import constants
+from common.pipeline_wrapper import BasePipeline
+from common.pipeline_wrapper import pipeline
 from model import analysis_status
 from model.wf_try_job import WfTryJob
-from pipeline_wrapper import BasePipeline
-from pipeline_wrapper import pipeline
 from waterfall import try_job_pipeline
 from waterfall.try_job_type import TryJobType
 

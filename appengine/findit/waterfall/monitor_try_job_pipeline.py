@@ -5,13 +5,13 @@
 from datetime import datetime
 import time
 
+from common.pipeline_wrapper import BasePipeline
+from common.pipeline_wrapper import pipeline
 from common.waterfall import buildbucket_client
 from common.waterfall.buildbucket_client import BuildbucketBuild
 from model import analysis_status
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
-from pipeline_wrapper import BasePipeline
-from pipeline_wrapper import pipeline
 from waterfall import waterfall_config
 from waterfall.try_job_type import TryJobType
 

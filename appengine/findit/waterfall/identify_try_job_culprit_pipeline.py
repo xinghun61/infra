@@ -4,10 +4,10 @@
 
 from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
+from common.pipeline_wrapper import BasePipeline
 from model import analysis_status
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
-from pipeline_wrapper import BasePipeline
 from waterfall.try_job_type import TryJobType
 
 

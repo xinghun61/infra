@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from pipeline_wrapper import BasePipeline
+from common.pipeline_wrapper import BasePipeline
 from model import analysis_status
 from model.wf_try_job import WfTryJob
 from waterfall.identify_try_job_culprit_pipeline import (

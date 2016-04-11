@@ -4,9 +4,9 @@
 
 import os
 
+from common.pipeline_wrapper import pipeline_handlers
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
-from pipeline_wrapper import pipeline_handlers
 from waterfall import buildbot
 from waterfall import try_job_util
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline

@@ -11,16 +11,17 @@ from google.appengine.api import users
 import jinja2
 import webapp2
 
+from common import constants
+
 
 JINJA_ENVIRONMENT = jinja2.Environment(
-  loader=jinja2.FileSystemLoader(
-      os.path.join(os.path.dirname(__file__), 'templates')),
-  extensions=['jinja2.ext.autoescape'],
-  autoescape=True)
+    loader=jinja2.FileSystemLoader(constants.HTML_TEMPLATE_DIR),
+    extensions=['jinja2.ext.autoescape'],
+    autoescape=True)
 
 
 def ToJson(data):
-  return json.dumps(data)
+  return json.dumps(data, sort_keys=True)  # Sort by key to keep order on UI.
 
 
 JINJA_ENVIRONMENT.filters['tojson'] = ToJson

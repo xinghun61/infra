@@ -5,9 +5,9 @@
 from datetime import datetime
 
 from common import appengine_util
-from model.wf_analysis import WfAnalysis
+from common.pipeline_wrapper import BasePipeline
 from model import analysis_status
-from pipeline_wrapper import BasePipeline
+from model.wf_analysis import WfAnalysis
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 from waterfall.extract_deps_info_pipeline import ExtractDEPSInfoPipeline
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline

@@ -20,7 +20,7 @@ from handlers import try_job
 from handlers import try_job_result
 from handlers import verify_analysis
 from handlers import version
-from pipeline_wrapper import pipeline_status_ui
+from common.pipeline_wrapper import pipeline_status_ui
 
 
 # This is for the default module.

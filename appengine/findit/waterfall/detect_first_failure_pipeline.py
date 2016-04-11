@@ -6,10 +6,10 @@ import base64
 import json
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
+from common.pipeline_wrapper import BasePipeline
+from common.pipeline_wrapper import pipeline
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
-from pipeline_wrapper import BasePipeline
-from pipeline_wrapper import pipeline
 from waterfall import build_util
 from waterfall import buildbot
 from waterfall import swarming_util

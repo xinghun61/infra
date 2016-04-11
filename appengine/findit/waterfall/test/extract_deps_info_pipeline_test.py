@@ -7,7 +7,7 @@ from testing_utils import testing
 from common import chromium_deps
 from common.dependency import Dependency
 from common.diff import ChangeType
-from pipeline_wrapper import pipeline_handlers
+from common.pipeline_wrapper import pipeline_handlers
 from waterfall.extract_deps_info_pipeline import ExtractDEPSInfoPipeline
 
 

@@ -8,9 +8,9 @@ import logging
 import time
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
+from common.pipeline_wrapper import BasePipeline
 from model import analysis_status
 from model.wf_swarming_task import WfSwarmingTask
-from pipeline_wrapper import BasePipeline
 from waterfall import swarming_util
 from waterfall import waterfall_config
 

@@ -6,9 +6,9 @@ import os
 
 from common import constants
 from common import chromium_deps
+from common.pipeline_wrapper import pipeline_handlers
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
-from pipeline_wrapper import pipeline_handlers
 from waterfall import buildbot
 from waterfall import lock_util
 from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline

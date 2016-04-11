@@ -4,8 +4,8 @@
 
 from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
-from pipeline_wrapper import pipeline
-from pipeline_wrapper import BasePipeline
+from common.pipeline_wrapper import pipeline
+from common.pipeline_wrapper import BasePipeline
 
 
 class PullChangelogPipeline(BasePipeline):

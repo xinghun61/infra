@@ -4,11 +4,11 @@
 
 import json
 
-from common.waterfall import buildbucket_client
 from common.git_repository import GitRepository
+from common.pipeline_wrapper import pipeline_handlers
+from common.waterfall import buildbucket_client
 from model import analysis_status
 from model.wf_try_job import WfTryJob
-from pipeline_wrapper import pipeline_handlers
 from waterfall.test import wf_testcase
 from waterfall.try_job_pipeline import TryJobPipeline
 from waterfall.try_job_type import TryJobType

@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from pipeline_wrapper import BasePipeline
+from common.pipeline_wrapper import BasePipeline
 from waterfall.process_swarming_task_result_pipeline import (
     ProcessSwarmingTaskResultPipeline)
 from waterfall.run_try_job_for_reliable_failure_pipeline import (

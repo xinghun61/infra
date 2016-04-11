@@ -6,7 +6,7 @@ from datetime import datetime
 
 from testing_utils import testing
 
-from pipeline_wrapper import pipeline_handlers
+from common.pipeline_wrapper import pipeline_handlers
 from waterfall.pull_changelog_pipeline import PullChangelogPipeline
 
 

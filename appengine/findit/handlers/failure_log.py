@@ -5,8 +5,8 @@
 import base64
 import json
 
-from base_handler import BaseHandler
-from base_handler import Permission
+from common.base_handler import BaseHandler
+from common.base_handler import Permission
 from model.wf_step import WfStep
 from waterfall import buildbot
 
