@@ -7,12 +7,12 @@
 
 import calendar
 import datetime
+import functools
 import hashlib
 import json
 import logging
 import time
 import urllib2
-import webapp2
 
 from datetime import datetime as dt
 from google.appengine.api import users
@@ -21,11 +21,7 @@ from components import auth
 
 
 def is_googler(): # pragma: no cover
-  user = users.get_current_user()
-  if user:
-    email = user.email()
-    return email.endswith('@google.com') and '+' not in email
-  return False
+  return auth.is_group_member('googlers')
 
 
 def is_trooper_or_admin(): # pragma: no cover

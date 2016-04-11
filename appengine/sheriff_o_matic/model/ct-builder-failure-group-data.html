@@ -17,10 +17,6 @@ function CTBuilderFailureGroupData(failure, bot, examineUrl) {
   this.url = examineUrl;
 };
 
-CTBuilderFailureGroupData.prototype.getAnnotations = function() {
-  return this.annotation ? [this.annotation] : [];
-};
-
 CTBuilderFailureGroupData.prototype.failureKeys = function() {
   return [this.failure.key];
 };

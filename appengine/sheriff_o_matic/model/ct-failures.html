@@ -28,8 +28,8 @@ function CTFailures(repositories) {
 (function() {
 'use strict';
 
-// FIXME: This could potentially move onto CTStepFailureGroupData as it isn't relevant to
-// trooper failures.
+// FIXME: This could potentially move onto CTStepFailureGroupData as it isn't
+// relevant to trooper failures.
 // Reverse sorting order, if a > b, return a negative number.
 CTFailures.prototype._failureByTreeListComparator = function(tree, a, b) {
   if (tree === undefined)
@@ -102,7 +102,7 @@ CTFailures.prototype._mungeAlerts = function(alerts) {
   });
 };
 
-CTFailures.prototype._processSheriffData = function (data, annotations) {
+CTFailures.prototype._processSheriffData = function(data) {
   var newFailures = {};
 
   var lastPosted = (data.last_posted || data.date) * 1000;
@@ -111,7 +111,8 @@ CTFailures.prototype._processSheriffData = function (data, annotations) {
 
   this._mungeAlerts(data.alerts);
 
-  // FIXME: Change builder_alerts to expose the alerts as a map instead of an array.
+  // FIXME: Change builder_alerts to expose the alerts as a map instead of an
+  // array.
   var alertsByKey = {}
   data.alerts.forEach(function(alert) {
     alertsByKey[alert.key] = alert;
@@ -119,16 +120,17 @@ CTFailures.prototype._processSheriffData = function (data, annotations) {
   // Update |failures| with the appropriate CTFailureGroup's for each
   // tree.
   data.range_groups.forEach(function(rangeGroup) {
-    this._processFailuresForRangeGroup(newFailures, rangeGroup, alertsByKey, annotations, data.suspected_cls);
+    this._processFailuresForRangeGroup(
+        newFailures, rangeGroup, alertsByKey, data.suspected_cls);
   }.bind(this));
 
   data.stale_builder_alerts.forEach(function(alert) {
-    this._processBuilderFailure(newFailures, alert, annotations);
+    this._processBuilderFailure(newFailures, alert);
   }.bind(this));
 
   // Sort failure groups so that newer failures are shown at the top
   // of the UI.
-  Object.keys(newFailures, function (tree, failuresByTree) {
+  Object.keys(newFailures, function(tree, failuresByTree) {
     failuresByTree.sort(this._failureByTreeListComparator.bind(this, tree));
   }.bind(this));
 
@@ -136,7 +138,7 @@ CTFailures.prototype._processSheriffData = function (data, annotations) {
 }
 
 CTFailures.prototype.update = function() {
-  var annotationPromise = CTFailureGroup.fetchAnnotations();
+  var annotationPromise = CTFailureGroup.fetchAllAnnotations();
   var alertsUrl = 'https://sheriff-o-matic.appspot.com/alerts';
   var internalAlertsUrl = '/internal-alerts';
 
@@ -145,7 +147,8 @@ CTFailures.prototype.update = function() {
     parts.forEach(function(part) {
       var v = part.split('=');
       if (v[0].replace('?', "") == 'history') {
-        alertsUrl = 'https://sheriff-o-matic.appspot.com/alerts-history/' + v[1];
+        alertsUrl =
+            'https://sheriff-o-matic.appspot.com/alerts-history/' + v[1];
       }
     });
   }
@@ -167,7 +170,6 @@ CTFailures.prototype.update = function() {
       net.json('/trooper-queue')];
 
   return Promise.all(reqs).then(function(data_array) {
-    var annotations = data_array[0];
     var sheriff_data = data_array[1];
     var internal_sheriff_data = data_array[2];
     var trooper_data = data_array[3];
@@ -178,11 +180,12 @@ CTFailures.prototype.update = function() {
       'trooper': data_array[7],
     };
 
-    var newFailures = this._processSheriffData(sheriff_data, annotations);
+    var newFailures = this._processSheriffData(sheriff_data);
     if (internal_sheriff_data && internal_sheriff_data.alerts !== undefined) {
-      var internalFailures = this._processSheriffData(internal_sheriff_data, annotations);
-      Object.keys(internalFailures, function (key) {
-          newFailures[key] = updateUtil.updateLeft(newFailures[key], internalFailures[key]);
+      var internalFailures = this._processSheriffData(internal_sheriff_data);
+      Object.keys(internalFailures, function(key) {
+          newFailures[key] = updateUtil.updateLeft(
+              newFailures[key], internalFailures[key]);
         }
       )
     }
@@ -230,7 +233,10 @@ CTFailures.prototype._processTrooperFailures = function(all_failures,
       failure_array = trooper_failures;
     }
     failuresByTree.forEach(function(failure) {
-      if (failure.category == 'builder' || failure.category == 'master' || failure.category =='snoozed') {
+      // TODO(martiniss): put these in an enum
+      if (failure.category == 'builder' ||
+          failure.category == 'master'  ||
+          failure.category == 'snoozed') {
         failure_array.push(failure);
       }
     });
@@ -241,7 +247,7 @@ CTFailures.prototype._processTrooperFailures = function(all_failures,
   this.failures['trooper-fyi'] = trooper_fyi_failures;
 };
 
-CTFailures.prototype._groupFailuresByTreeAndReason = function(failures, annotations) {
+CTFailures.prototype._groupFailuresByTreeAndReason = function(failures) {
   var failuresByTree = {};
   failures.forEach(function(failure) {
     // Establish the key to uniquely identify a failure by reason.
@@ -263,15 +269,16 @@ CTFailures.prototype._groupFailuresByTreeAndReason = function(failures, annotati
       actual: failure.failureType,
       lastFailingBuild: failure.last_failing_build,
       masterUrl: failure.master_url,
-      failingBuildCount: (1 + failure.last_failing_build - failure.failing_build),
-      annotation: annotations[failureKey],
+      failingBuildCount: (
+          1 + failure.last_failing_build - failure.failing_build),
       isTreeCloser: failure.would_close_tree,
     };
   });
   return failuresByTree
 };
 
-CTFailures.prototype._populateSuspectedCLs = function(suspectedCLGroup, analysisResult, masterUrl, builderName, buildNumber) {
+CTFailures.prototype._populateSuspectedCLs = function(
+    suspectedCLGroup, analysisResult, masterUrl, builderName, buildNumber) {
   analysisResult.suspected_cls.forEach(function(cl) {
     if (!suspectedCLGroup[cl.repo_name])
       suspectedCLGroup[cl.repo_name] = {};
@@ -282,14 +289,17 @@ CTFailures.prototype._populateSuspectedCLs = function(suspectedCLGroup, analysis
         'builds': [],
       };
     }
-    var buildUrl = masterUrl + '/builders/' + builderName + '/builds/' + buildNumber;
-    if (suspectedCLGroup[cl.repo_name][cl.revision].builds.indexOf(buildUrl) == -1){
+    var buildUrl = masterUrl + '/builders/'
+      + builderName + '/builds/' + buildNumber;
+    if (suspectedCLGroup[cl.repo_name][cl.revision].builds.indexOf(buildUrl)
+          == -1){
       suspectedCLGroup[cl.repo_name][cl.revision].builds.push(buildUrl);
     }
   });
 };
 
-CTFailures.prototype._filterOutsuspectedCLForStepFailure = function(suspectedCLGroup, stepFailure, analysisResults) {
+CTFailures.prototype._filterOutsuspectedCLForStepFailure = function(
+    suspectedCLGroup, stepFailure, analysisResults) {
   var stepName = stepFailure.step;
   var testName = stepFailure.testName;
 
@@ -302,22 +312,28 @@ CTFailures.prototype._filterOutsuspectedCLForStepFailure = function(suspectedCLG
         return;
 
       // Filters with test name if findit has done a test level analysis.
-      // If either stepFailrue or findit result doesn't have test name, don't filter with test name.
-      if (testName && analysisResult.test_name && testName != analysisResult.test_name)
+      // If either stepFailrue or findit result doesn't have test name, don't
+      // filter with test name.
+      if (testName && analysisResult.test_name &&
+          testName != analysisResult.test_name)
         return;
 
-      this._populateSuspectedCLs(suspectedCLGroup, analysisResult, failure.masterUrl, builderName, failure.lastFailingBuild);
+      this._populateSuspectedCLs(
+          suspectedCLGroup, analysisResult, failure.masterUrl, builderName,
+          failure.lastFailingBuild);
     }.bind(this));
   }.bind(this));
 };
 
-CTFailures.prototype._processAnalysisResultsForStepFailureGroup = function(failures, analysisResults) {
+CTFailures.prototype._processAnalysisResultsForStepFailureGroup = function(
+    failures, analysisResults) {
   if (Object.isEmpty(analysisResults))
     return {};
 
   var suspectedCLGroup = {};
   failures.forEach(function(stepFailure) {
-    this._filterOutsuspectedCLForStepFailure(suspectedCLGroup, stepFailure, analysisResults);
+    this._filterOutsuspectedCLForStepFailure(
+        suspectedCLGroup, stepFailure, analysisResults);
   }.bind(this));
 
   var suspectedCLsByRepo = {};
@@ -332,14 +348,15 @@ CTFailures.prototype._processAnalysisResultsForStepFailureGroup = function(failu
   return suspectedCLsByRepo;
 };
 
-CTFailures.prototype._processFailuresForRangeGroup = function(newFailures, rangeGroup, alerts, annotations, analysisResults) {
-  // A rangeGroup may be related to multiple alerts (via |failure_keys|). Categorize
-  // these failures by reason (cause of failure), so that they can be grouped in the UI
-  // (via a CTFailureGroup).
+CTFailures.prototype._processFailuresForRangeGroup = function(
+    newFailures, rangeGroup, alerts, analysisResults) {
+  // A rangeGroup may be related to multiple alerts (via |failure_keys|).
+  // Categorize these failures by reason (cause of failure), so that they can
+  // be grouped in the UI (via a CTFailureGroup).
   var failures = rangeGroup.failure_keys.map(function(failure_key) {
     return alerts[failure_key];
   });
-  var failuresByTree = this._groupFailuresByTreeAndReason(failures, annotations);
+  var failuresByTree = this._groupFailuresByTreeAndReason(failures);
 
   if (Object.isEmpty(failuresByTree))
     return;
@@ -353,30 +370,36 @@ CTFailures.prototype._processFailuresForRangeGroup = function(newFailures, range
     });
     treeFailures.sort(this._failureComparator);
 
-    var suspectedCLsByRepo = this._processAnalysisResultsForStepFailureGroup(treeFailures, analysisResults);
+    var suspectedCLsByRepo = this._processAnalysisResultsForStepFailureGroup(
+        treeFailures, analysisResults);
 
     if (!newFailures[tree])
       newFailures[tree] = [];
-    var commitList = new CTCommitList(this.repositories, rangeGroup.likely_revisions);
-    newFailures[tree].push(new CTFailureGroup(tree, new CTStepFailureGroupData(treeFailures, commitList, suspectedCLsByRepo)));
+    var commitList = new CTCommitList(
+        this.repositories, rangeGroup.likely_revisions);
+    newFailures[tree].push(new CTFailureGroup(tree, new CTStepFailureGroupData(
+            treeFailures, commitList, suspectedCLsByRepo)));
   }.bind(this));
 };
 
-CTFailures.prototype._processBuilderFailure = function(newFailures, alert, annotations) {
-  var timeSinceLastUpdate = (this.lastUpdateDate.valueOf() / 1000) - alert.last_update_time;
+CTFailures.prototype._processBuilderFailure = function(newFailures, alert) {
+  var timeSinceLastUpdate = (
+      this.lastUpdateDate.valueOf() / 1000) - alert.last_update_time;
 
   var failure;
   var data;
   if (alert.hasOwnProperty('builder_name')) {
-    failure = new CTBuilderFailure(alert.tree, alert.master_url, alert.builder_name, alert.state,
-        timeSinceLastUpdate, alert.pending_builds, alert.hasOwnProperty('isMaster'));
+    failure = new CTBuilderFailure(
+        alert.tree, alert.master_url, alert.builder_name, alert.state,
+        timeSinceLastUpdate, alert.pending_builds,
+        alert.hasOwnProperty('isMaster'));
     data = new CTBuilderFailureGroupData(failure, alert.builder_name,
         alert.master_url + "/builders/" + alert.builder_name);
   } else {
-    failure = new CTMasterFailure(alert.tree, alert.master_url, timeSinceLastUpdate);
+    failure = new CTMasterFailure(
+        alert.tree, alert.master_url, timeSinceLastUpdate);
     data = new CTMasterFailureGroupData(failure, alert.master_url);
   }
-  data.annotation = annotations[failure.key];
 
   if (!newFailures[alert.tree])
     newFailures[alert.tree] = [];

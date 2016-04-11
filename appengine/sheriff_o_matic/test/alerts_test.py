@@ -125,7 +125,6 @@ class AlertsTest(testing.AppengineTestCase):
     self.test_app.post_json('/alerts', test_alerts2)
     alerts_query = alerts.AlertsJSON.query().order(alerts.AlertsJSON.date)
     stored_alerts = alerts_query.fetch(limit=3)
-    print stored_alerts
     self.assertEqual(2, len(stored_alerts))
     self.assertEqual(stored_alerts[0].type, 'alerts')
     self.assertEqual(stored_alerts[1].type, 'alerts')

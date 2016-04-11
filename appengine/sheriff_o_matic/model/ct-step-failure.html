@@ -61,14 +61,6 @@ CTStepFailure.prototype.keys = function() {
   return Object.values(this.resultNodesByBuilder).map('key');
 };
 
-CTStepFailure.prototype.annotations = function() {
-  var annotations = [];
-  Object.values(this.resultNodesByBuilder, function(result) {
-    annotations.push(result.annotation ? result.annotation : {});
-  });
-  return annotations;
-};
-
 // FIXME: This should just be provided as part of the alerts feed.
 CTStepFailure.createKey = function(alert) {
   function normalize(str) {

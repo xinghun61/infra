@@ -23,6 +23,26 @@ handlers:
   script: alerts_history.app
   secure: always
 
+- url: /api/v1/annotations
+  script: annotations.app
+  secure: always
+
+- url: /api/v1/annotations/.*
+  script: annotations.app
+  secure: always
+
+- url: /internal/cron/cleanup_old_annotations
+  script: annotations.app
+  secure: always
+
+- url: /banner-msg
+  script: banner_msg.app
+  secure: always
+
+- url: /banner-msg-form
+  script: banner_msg.app
+  secure: always
+
 - url: /trooper-queue
   script: bugs.app
   secure: always
@@ -53,14 +73,6 @@ handlers:
 
 - url: /ts-alerts-history/.*
   script: ts_alerts.app
-  secure: always
-
-- url: /banner-msg
-  script: banner_msg.app
-  secure: always
-
-- url: /banner-msg-form
-  script: banner_msg.app
   secure: always
 
 - url: /api/v1/prefs

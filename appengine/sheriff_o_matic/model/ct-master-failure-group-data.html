@@ -12,10 +12,6 @@ function CTMasterFailureGroupData(failure, examineUrl) {
   this.url = examineUrl;
 };
 
-CTMasterFailureGroupData.prototype.getAnnotations = function() {
-  return this.annotation ? [this.annotation] : [];
-};
-
 CTMasterFailureGroupData.prototype.failureKeys = function() {
   return [this.failure.key];
 };
