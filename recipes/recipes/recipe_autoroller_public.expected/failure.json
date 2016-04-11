@@ -208,6 +208,32 @@
   {
     "cmd": [
       "git",
+      "config",
+      "user.email",
+      "recipe-roller@chromium.org"
+    ],
+    "cwd": "[SLAVE_BUILD]/infra",
+    "name": "build.git config",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "config",
+      "user.name",
+      "recipe-roller"
+    ],
+    "cwd": "[SLAVE_BUILD]/infra",
+    "name": "build.git config (2)",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
       "checkout",
       "-t",
       "-b",
