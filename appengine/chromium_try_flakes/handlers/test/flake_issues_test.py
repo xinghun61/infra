@@ -80,6 +80,10 @@ TEST_BUILDBOT_JSON_REPLY = json.dumps({
     {'results': [2], 'name': 'Uncaught Exception', 'text': ['bar12c']},
     {'results': [2], 'name': 'bot_update', 'text': ['bot_update PATCH FAILED']},
 
+    # Detect infra-failure for 'Patch failure', but igore normal error.
+    {'results': [4], 'name': 'Patch failure', 'text': ['Patch failure']},
+    {'results': [2], 'name': 'Patch failure', 'text': ['Patch failure']},
+
     # Only count first step (with patch) and ignore summary step.
     {'results': [2], 'name': 'foo8 xx (with patch)', 'text': ['bar13']},
     {'results': [0], 'name': 'foo8 xx (without patch)', 'text': ['bar14']},
@@ -679,6 +683,8 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
         mock.Mock(status_code=200, content=TEST_BUILDBOT_JSON_REPLY),
         # JSON results for step "foo1".
         mock.Mock(status_code=200, content=TEST_TEST_RESULTS_REPLY),
+        # JSON results for step "Patch failure".
+        mock.Mock(status_code=404),
         # For step "foo8 xx (with patch)", something failed while parsing JSON,
         # step text ("bar13") should be reported as flake.
         Exception(),
@@ -715,25 +721,30 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
         'buildnumber=100'),
       mock.call(
         'http://test-results.appspot.com/testfile?builder=test-builder&'
+        'name=full_results.json&master=test.master&testtype=Patch&'
+        'buildnumber=100'),
+      mock.call(
+        'http://test-results.appspot.com/testfile?builder=test-builder&'
         'name=full_results.json&master=test.master&'
         'testtype=foo8%20%28with%20patch%29&buildnumber=100')])
 
     # Expected flakes to be found: list of (step_name, test_name).
-    expected_flakes = [
+    # We compare sets below, because order of entities returned by datastore
+    # doesn't have to be same as steps above.
+    expected_flakes = set([
         ('foo1', 'test2.a'),
         ('foo1', 'test2.d'),
         ('foo2', 'foo2'),
         ('foo8 xx (with patch)', 'foo8 (with patch)'),
-    ]
+        ('Patch failure', 'Patch'),
+    ])
 
     flake_occurrences = flaky_run.flakes
     self.assertEqual(len(flake_occurrences), len(expected_flakes))
-    actual_flake_occurrences = [
-        (fo.name, fo.failure) for fo in flake_occurrences]
+    actual_flake_occurrences = set([
+        (fo.name, fo.failure) for fo in flake_occurrences])
     self.assertEqual(expected_flakes, actual_flake_occurrences)
 
-    # We compare sets below, because order of flakes returned by datastore
-    # doesn't have to be same as steps above.
     flakes = Flake.query().fetch()
     self.assertEqual(len(flakes), len(expected_flakes))
     expected_flake_names = set([ef[1] for ef in expected_flakes])

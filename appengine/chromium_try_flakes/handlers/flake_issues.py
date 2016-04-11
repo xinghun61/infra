@@ -69,14 +69,25 @@ VERY_STALE_FLAKES_MESSAGE = (
     'issue is not being processed despite being in an appropriate queue.')
 STALE_FLAKES_ML = 'stale-flakes-reports@google.com'
 MAX_GAP_FOR_FLAKINESS_PERIOD = datetime.timedelta(days=3)
-KNOWN_TROOPER_FAILURES = [
+KNOWN_TROOPER_FLAKE_NAMES = [
     'analyze', 'bot_update', 'compile (with patch)', 'compile',
     'device_status_check', 'gclient runhooks (with patch)', 'Patch',
     'process_dumps', 'provision_devices', 'update_scripts']
 
+# Flakes in these steps are always ignored:
+#  - steps: always red when any other step is red (duplicates failure)
+#  - presubmit: typically red due to missing OWNERs LGTM, not a flake
+#  - recipe failure reason: always red when build fails (not a failure)
+#  - test results: always red when another step is red (not a failure)
+#  - Uncaught Exception: summary step referring to an exception in another
+#    step (duplicates failure)
+# There are additional rules for non-trivial cases in the FlakyRun.post method.
+IGNORED_STEPS = ['steps', 'presubmit', 'recipe failure reason', 'test results',
+                 'Uncaught Exception']
+
 
 def is_trooper_flake(flake_name):
-  return flake_name in KNOWN_TROOPER_FAILURES
+  return flake_name in KNOWN_TROOPER_FLAKE_NAMES
 
 
 def get_queue_details(flake_name):
@@ -471,7 +482,6 @@ class CreateFlakyRun(webapp2.RequestHandler):
         failure_run_time_finished=failure_run.time_finished,
         success_run=success_run.key)
 
-    success_time = success_run.time_finished
     failure_time = failure_run.time_finished
     patchset_builder_runs = failure_run.key.parent().get()
 
@@ -503,29 +513,24 @@ class CreateFlakyRun(webapp2.RequestHandler):
         continue
       step_name = step['name']
       step_text = ' '.join(step['text'])
-      # The following step failures are ignored:
-      #  - steps: always red when any other step is red (not a failure)
+      if step_name in IGNORED_STEPS:
+        continue
+
+      # Custom (non-trivial) rules for ignoring flakes in certain steps:
       #  - [swarming] ...: summary step would also be red (do not double count)
-      #  - presubmit: typically red due to missing OWNERs LGTM, not a flake
-      #  - recipe failure reason: always red when build fails (not a failure)
-      #  - Patch failure: if success run was before failure run, it is
-      #    likely a legitimate failure. For example it often happens that
-      #    developers use CQ dry run and then wait for a review. Once getting
-      #    LGTM they check CQ checkbox, but the patch does not cleanly apply
-      #    anymore.
-      #  - bot_update PATCH FAILED: Corresponds to 'Patch failure' step.
-      #  - test results: always red when another step is red (not a failure)
-      #  - Uncaught Exception: summary step referring to an exception in another
-      #    step (e.g. bot_update)
+      #  - Patch failure: ingore non-infra failures as they are typically due to
+      #    changes in the code on HEAD
+      #  - bot_update PATCH FAILED: Duplicates failure in 'Patch failure' step.
       #  - ... (retry summary): this is an artificial step to fail the build due
       #    to another step that has failed earlier (do not double count).
-      if (step_name == 'steps' or step_name.startswith('[swarming]') or
-          step_name == 'presubmit' or step_name == 'recipe failure reason' or
-          (step_name == 'Patch failure' and success_time < failure_time) or
-          (step_name == 'bot_update' and 'PATCH FAILED' in step_text) or
-          step_name == 'test results' or step_name == 'Uncaught Exception' or
-          step_name.endswith(' (retry summary)')):
+      print step_name, '1', build_result
+      if (step_name.startswith('[swarming]') or
+          step_name.endswith(' (retry summary)') or
+          (step_name == 'Patch failure' and result != build_result.EXCEPTION) or
+          (step_name == 'bot_update' and 'PATCH FAILED' in step_text)):
         continue
+      print step_name, '2'
+
       failed_steps.append(step)
 
     steps_to_ignore = []
