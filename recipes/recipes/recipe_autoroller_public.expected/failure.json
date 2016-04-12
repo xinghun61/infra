@@ -286,8 +286,7 @@
       "@@@STEP_LOG_LINE@json.output@  \"success\": false, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"trivial\": null@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@",
-      "@@@STEP_FAILURE@@@"
+      "@@@STEP_LOG_END@json.output@@@"
     ]
   },
   {
@@ -308,8 +307,22 @@
     ]
   },
   {
+    "cmd": [
+      "python",
+      "-u",
+      "import sys; sys.exit(1)"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "roll result",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 1",
+      "@@@STEP_TEXT@manual intervention needed: automated roll attempt failed@@@",
+      "@@@STEP_FAILURE@@@"
+    ]
+  },
+  {
     "name": "$result",
-    "recipe_result": null,
-    "status_code": 0
+    "reason": "Step('roll result') failed with return_code 1",
+    "status_code": 1
   }
 ]
