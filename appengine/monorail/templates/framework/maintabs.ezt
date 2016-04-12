@@ -1,0 +1,81 @@
+[# Show top-level tabs.
+
+   Args:
+     arg0: Can be "showtabs", or "showusertabs" to select which
+         top-level tabs are shown.
+     arg1: String like "t1", "t2", "t3" to identify the currently active tab.
+]
+<table id="monobar" width="100%" cellpadding="0" cellspacing="0">
+  <tr>
+    [if-any project_thumbnail_url]
+      <th id="thumbnail_box">
+          <a href="[project_home_page]" target="_blank">
+            <img src="[project_thumbnail_url]">
+          </a>
+      </th>
+    [else]
+      <th class="padded">
+        <a href="/" id="wordmark">[site_name]</a>
+      </th>
+    [end]
+    [if-any projectname]
+      <th class="toptabs padded">
+      <a href="[project_home_url]/" title="[project_summary]"
+                  id="projects-dropdown">Project: [projectname] <small>&#9660;</small></a>
+      <a href="[project_home_url]/issues/list" class="[is main_tab_mode "t2"]active[end]">Issues</a>
+      <a href="[project_home_url]/people/list" class="[is main_tab_mode "t3"]active[end]">People</a>
+      <a href="[project_home_url]/adminIntro" class="[is main_tab_mode "t4"]active[end]">Development process</a>
+      <a href="[project_home_url]/updates/list" class="[is main_tab_mode "t5"]active[end]">History</a>
+      [if-any perms.EditProject]
+        <a href="[project_home_url]/admin"
+           class="[is main_tab_mode "t6"]active[else]inactive[end]">Administer</a>
+      [end]
+
+      </th>
+    [end]
+
+    [if-any viewed_user]
+      <th class="padded">
+        User: [viewed_user.display_name]
+        [if-any viewed_user_pb.is_site_admin_bool]<i>(Administrator)</i>[end]
+      </th>
+    [end]
+
+    <td width="100%" id="userbar">
+      [include "user-bar.ezt"]
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  if ($("projects-dropdown"))
+    $("projects-dropdown").addEventListener("click", function(event) {
+        event.preventDefault();
+    });
+});
+</script>
+
+[is arg0 "showtabs"]
+  <div class="subt">
+    [include "projecttabs.ezt"]
+  </div>
+[else][is arg0 "showusertabs"]
+  <div class="subt">
+    [include "../sitewide/usertabs.ezt" arg1]
+  </div>
+[else][is arg0 "showusergrouptabs"]
+  <div class="subt">
+    [include "../sitewide/usergrouptabs.ezt" arg1]
+  </div>
+[end][end][end]
+
+[if-any site_read_only][else]
+  [if-any project_alert]
+    <div style="font-weight: bold; color: #c00; margin-top: 5px; display: block;">
+      [project_alert]
+    </div>
+  [end]
+[end]
+
+[include "../features/cues.ezt"]

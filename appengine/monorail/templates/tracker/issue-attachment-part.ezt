@@ -1,0 +1,70 @@
+[# This template part renders a small table that describes one issue attachment
+   on a issue description or issue comment.
+
+   arg0: Comment sequence number.
+   arg1: AttachmentView.
+   arg2: can_delete_bool? This will be True if the logged in user is allowed
+         to delete the comment.
+   Also used: projectname, issue.local_id, attachment_form_token.
+]
+
+
+[define attachment_visible][end]
+[if-any arg2][define attachment_visible]Yes[end][end]
+[if-any arg1.deleted_bool][else][define attachment_visible]Yes[end][end]
+
+[if-any attachment_visible]
+ <table cellspacing="3" cellpadding="2" border="0">
+     <tr><td width="20">
+           <a href="[arg1.downloadurl]">
+            <img width="16" height="16" src="/static[arg1.iconurl]" border="0">
+           </a>
+         </td>
+
+         <td style="min-width:16em" valign="top">
+          [if-any arg1.deleted_bool]Deleted:[end]
+          <b [if-any arg1.deleted_bool]style="color:#666"[end]>[arg1.filename]</b>
+          <br>
+
+          [arg1.filesizestr]
+          [if-any arg1.deleted_bool][else]
+           [if-any arg1.url]
+            <a href="[arg1.url]" target="_blank" style="margin-left:.7em">View</a>
+           [end]
+           <a href="[arg1.downloadurl]" style="margin-left:.7em" download>Download</a>
+          [end]
+         </td>
+
+      [if-any arg2]
+         <td valign="top">
+          <form action="delAttachment.do" method="post" style="padding-left:1em">
+            <input type="hidden" name="token" value="[attachment_form_token]">
+            [# TODO(jrobbins): add hidden fields to maintain navigational state, e.g., colspec, q, sort, start, num]
+            <input type="hidden" name="id" value="[issue.local_id]">
+            <input type="hidden" name="sequence_num" value="[arg0]">
+            <input type="hidden" name="aid" value="[arg1.attachment_id]">
+            [if-any arg1.deleted_bool]
+             <input type="submit" name="undelete" value="Undelete" style="font-size:92%; width:7em">
+            [else]
+             <input type="submit" name="delete" value="Delete" style="font-size:92%; width:7em">
+            [end]
+          </form>
+         </td>
+      [end]
+     </tr>
+
+     [if-any arg1.thumbnail_url]
+      [if-any arg1.deleted_bool][else]
+       <tr>
+        <td colspan="3">
+             <a href="[arg1.url]" target="_blank">
+              <img src="[arg1.thumbnail_url]" class="preview">
+             </a>
+         </td>
+       </tr>
+      [end]
+     [end]
+
+
+ </table>
+[end]

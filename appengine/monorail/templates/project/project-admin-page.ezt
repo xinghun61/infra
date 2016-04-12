@@ -1,0 +1,129 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+[if-any read_only][include "../framework/read-only-rejection.ezt"]
+[else]
+
+ <form action="admin.do" method="POST" autocomplete="off" enctype="multipart/form-data">
+  <input type="hidden" name="token" value="[form_token]">
+
+<h4>Project metadata</h4>
+
+<div class="section">
+  [include "../framework/project-descriptive-fields.ezt"]
+</div>
+
+
+<h4>Project access</h4>
+
+<div class="section">
+  [if-any offer_access_level initial_access]
+    <br>This project may be viewed by:
+    [include "../framework/project-access-part.ezt" "dontchecksubmit"]<br>
+  [end]
+
+<div class="section">
+ <div class="closed">
+  <p>Restriction labels allow project members to restrict access to individual
+     issues.
+  <a class="ifClosed toggleHidden" href="#" style="font-size:90%; margin-left:.5em">Learn more</a></p>
+  <div class="ifOpened help">
+      Normally, if a project member may edit the labels, then he or she may also
+      edit restriction labels.  That allows project committers to adjust access
+      controls for the items that they are working on.  However, some project
+      owners may prefer that once a restriction label is in place, only a project
+      owner may remove it.
+  </div>
+ </div>
+ <input type="checkbox" name="only_owners_remove_restrictions"
+        id="only_owners_remove_restrictions"
+        [if-any only_owners_remove_restrictions]checked="checked"[end] >
+ <label for="only_owners_remove_restrictions">Only project owners
+  may remove <tt>Restrict-*</tt> labels</label>
+</div>
+
+<div class="section">
+ <div class="closed">
+  <p>Collaboration style
+  <a class="ifClosed toggleHidden" href="#" style="font-size:90%; margin-left:.5em">Learn more</a></p>
+  <div class="ifOpened help">
+      Project workspaces are usually intended to promote collaboration among
+      all project members.  However, sometimes a compartmentalized collaboration
+      style is more appropriate.  For example, one company might want to work
+      with several partners, but not let each partner know about the others.
+      Note: In such a project, all artifacts should have restriction labels.
+  </div>
+ </div>
+ <input type="checkbox" name="only_owners_see_contributors" id="only_owners_see_contributors"
+        [if-any only_owners_see_contributors]checked="checked"[end] >
+ <label for="only_owners_see_contributors">Only project owners may see the list of contributors.</label>
+</div>
+
+</div>
+
+
+<h4>Activity notifications</h4>
+
+<div class="section">
+  <p>Email notifications of issue tracker activity will automatically be sent to
+     the following email address.</p>
+
+   <table cellpadding="2">
+     <tr><th>All issue changes:</th>
+      <td><input type="email" name="issue_notify" size="35" value="[issue_notify]"><br>
+       [if-any errors.issue_notify]
+       <div class="fielderror">[errors.issue_notify]</div>
+       [end]
+      </td>
+     </tr>
+   </table>
+  [# TODO: validate as address is entered ]
+
+  [include "../framework/admin-email-sender-part.ezt"]
+</div>
+
+
+<h4>Email reply processing</h4>
+
+<div class="section">
+ <div class="closed">
+  <p>Users may add comments and make updates by replying to
+   certain notification emails.
+  <a class="ifClosed toggleHidden" style="font-size:90%; margin-left:.5em">Learn more</a></p>
+  <div class="ifOpened help">
+      Users may add comments to an issue
+      by replying to a notification email:
+
+      <ul>
+       <li>Look for a note in the footer of the email indicating that
+           a reply will be processed by the server.</li>
+       <li>Comments must be in replies to notification emails sent directly
+           to the member, not through a mailing list.</li>
+       <li>The reply must be <tt>From:</tt> the same email address to which
+           the notification was sent.</li>
+       <li>Project members who have permission to edit issues may make
+           changes via email replies.</li>
+      </ul>
+  </div>
+ </div>
+ <input type="checkbox" name="process_inbound_email" id="process_inbound_email"
+        [if-any process_inbound_email]checked="checked"[end] >
+ <label for="process_inbound_email">Process email replies</label>
+</div>
+
+<br>
+
+  <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit">
+ </form>
+
+[include "../framework/footer-script.ezt"]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _onload();
+});
+</script>
+
+[end]
+
+[include "../framework/master-footer.ezt"]

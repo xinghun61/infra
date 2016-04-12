@@ -1,0 +1,20 @@
+[define title]User Group: [groupname][end]
+[define category_css]css/ph_list.css[end]
+[include "../framework/master-header.ezt" "showusergrouptabs"]
+
+
+<form action="groupadmin.do" method="POST" autocomplete="off">
+ <input type="hidden" name="token" value="[form_token]">
+
+	<h4>Group membership visibility</h4>
+
+	The group members may be viewed by: 
+	[include "../framework/group-setting-fields.ezt"]
+	<br>
+
+  <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit">
+</form>
+
+[include "../framework/footer-script.ezt"]
+
+[include "../framework/master-footer.ezt"]

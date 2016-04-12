@@ -1,0 +1,94 @@
+
+[if-any offer_membership_editing]
+<br>
+<div class="h4" style="margin-bottom:4px" id="addmembers">Add Members</div>
+
+<div id="makechanges" class="closed">
+
+  <div class="ifClosed">
+   <textarea id="tempt" rows="4" style="color:#666; width:500px; margin-left:4px"
+    >Enter new member email addresses</textarea>
+  </div>
+
+
+<input type="hidden" name="token" value="[form_token]">
+<table class="ifOpened vt" cellspacing="2" cellpadding="2" style="margin-top:0">
+  <tr>
+   <td colspan="2">
+      <textarea name="addmembers" style="width:500px" rows="4"
+                id="addMembersTextArea">[initial_add_members]</textarea>
+     [if-any errors.addmembers]
+      <div class="fielderror">[errors.addmembers]</div>
+     [end]<br>
+   </td>
+   <td rowspan="3">
+       <div class="tip" style="margin-top:0; margin-left:4px">
+           Enter the email addresses of users that you would like to
+           add to this [is arg0 "project"]project[else]group[end].<br><br>
+           Each email address must correspond to an existing Google Account.
+       </div>
+    </td>
+   </tr>
+
+  <tr>
+    <th width="30" align="left">Role:</th>
+
+    <td width="470" align="left">
+    [is arg0 "project"]
+       <input type="radio" name="role" value="owner" id="owner">
+       <label for="owner">Owner: may make any change to this
+       project.</label><br>
+
+       <input type="radio" name="role" value="committer" id="committer"
+              checked="checked">
+       <label for="committer">Committer: may work in the project, but may
+       not reconfigure it.</label><br>
+
+       <input type="radio" name="role" value="contributor" id="contributor">
+       <label for="contributor">Contributor: starts with the same permissions
+       as non-members.</label><br>
+       [# TODO(jrobbins): custom roles]
+    [else]
+       <input type="radio" name="role" value="owner" id="owner">
+       <label for="owner">Owner: may make any change to this
+       group.</label><br>
+
+       <input type="radio" name="role" value="member" id="member"
+              checked="checked">
+       <label for="member">Member: member of this user group.</label><br>
+    [end]
+    </td>
+
+    </tr>
+    <tr>
+     <td colspan="2">
+      <input type="submit" name="addbtn" id="addbtn"
+             value="Save changes" style="margin-top:1em">
+     </td>
+    </tr>
+</table>
+
+</div>
+
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  window._openAddMembersForm = function _openAddMembersForm() {
+    document.location.hash='addmembers';
+    document.getElementById('makechanges').className = "opened";
+    window.setTimeout(
+        function () { document.getElementById('addMembersTextArea').focus(); },
+        100);
+  }
+
+  [if-any initially_expand_form]
+    _openAddMembersForm();
+  [end]
+
+  if ($("tempt"))
+    $("tempt").addEventListener("mousedown", _openAddMembersForm);
+
+});
+</script>
+
+[end]

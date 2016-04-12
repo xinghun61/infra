@@ -1,0 +1,10 @@
+<span style="color:#a30">
+  [if-any site_read_only]
+    This operation cannot be done when the site is read-only.
+    Please come back later.
+  [else]
+    [if-any project_read_only]
+      READ-ONLY
+    [end]
+  [end]
+</span>

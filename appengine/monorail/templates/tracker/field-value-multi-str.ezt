@@ -1,0 +1,27 @@
+[if-any fields.values]
+  [for fields.values]
+    <input name="custom_[fields.field_id]" value="[fields.values.val]"
+           [# TODO(jrobbins): string validation]
+           [if-index fields.values first]
+             [if-any fields.field_def.is_required_bool]required="required"[end]
+           [end]
+           size="90" class="multivalued customfield">
+    [if-index fields.values first][else]
+      <u class="removeMultiFieldValueWidget">X</u>
+    [end]
+    [if-index fields.values last]
+      <u class="addMultiFieldValueWidget" data-field-id="[fields.field_id]" data-field-type="str">Add a value</u>
+    [end]
+  [end]
+[else]
+  <input name="custom_[fields.field_id]" value=""
+         [# TODO(jrobbins): string validation]
+         [if-any fields.field_def.is_required_bool]required="required"[end]
+         size="90" class="multivalued customfield">
+      <u class="addMultiFieldValueWidget"  data-field-id="[fields.field_id]" data-field-type="str">Add a value</u>
+[end]
+
+[for fields.derived_values]
+  <input disabled="disabled" value="[fields.derived_values.val]"
+         style="font-style:italic" size="90" class="multivalued">
+[end]

@@ -1,0 +1,60 @@
+[# Show the list of issue comments.  This is used on the issue detail page and also
+   the issue peek page.
+
+   arg0: If any value, then show the "Delete comment" links, if appropriate.
+]
+
+<div class="cursor_off vt issuedescription" id="hc0">
+
+<pre class="issue_text">
+[for description.text_runs][include "render-rich-text.ezt" description.text_runs][end]
+</pre>
+
+[if-any description.attachments]
+ <div class="attachments">
+  [for description.attachments]
+     [include "issue-attachment-part.ezt" "0" description.attachments description.can_delete_bool]
+  [end]
+ </div>
+[end]
+
+</div>[#issuedescription]
+
+
+[if-any cmnt_pagination]
+ [if-any cmnt_pagination.visible]
+  <div class="vt issuecomment" width="100%" style="background:#e5ecf9; padding:2px .7em; margin:0; border:0">
+    [include "../framework/comment-pagination-part.ezt"]
+  </div>
+ [end]
+[end]
+
+[for comments]
+  [if-any arg0]
+    [define show_comment][if-any comments.visible_bool]Yes[else]No[end][end]
+  [else]
+    [define show_comment][if-any comments.is_deleted_bool]No[else]Yes[end][end]
+  [end]
+
+  [is show_comment "Yes"]
+    <div class="[if-any comments.is_deleted_bool] delcom ifExpand[end]">
+      [include "issue-comment-normal-part.ezt" arg0]
+    </div>
+    [if-any comments.is_deleted_bool]
+      <div class="ifCollapse">
+        [include "issue-comment-tombstone-part.ezt" arg0]
+      </div>
+    [end]
+  [else]
+    [include "issue-comment-tombstone-part.ezt" arg0]
+  [end][# show_comment]
+[end][#for comments]
+
+
+[if-any cmnt_pagination]
+ [if-any cmnt_pagination.visible]
+  <div class="vt issuecomment" width="100%" style="background:#e5ecf9; padding:2px .7em; margin:0">
+   [include "../framework/comment-pagination-part.ezt"]
+  </div>
+ [end]
+[end]

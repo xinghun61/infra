@@ -1,0 +1,103 @@
+[define title]User Group: [groupname][end]
+[define category_css]css/ph_list.css[end]
+[include "../framework/master-header.ezt" "showusergrouptabs"]
+[include "../framework/js-placeholders.ezt"]
+
+<form method="POST" action="edit.do">
+<div id="colcontrol">
+   <div class="list">
+     [if-any pagination.visible]
+       <div class="pagination">
+          [if-any pagination.prev_url]<a href="[pagination.prev_url]"><b>&lsaquo;</b> Prev</a>[end]
+          Members [pagination.start] - [pagination.last] of [pagination.total_count]
+          [if-any pagination.next_url]<a href="[pagination.next_url]">Next <b>&rsaquo;</b></a>[end]
+       </div>
+     [end]
+     <b>User Group: [groupname]</b>
+     [if-any offer_membership_editing]
+     <input type="button" value="Add members" style="font-size:80%; margin-left:1em"
+            id="add_members_button">
+     <input type="submit" value="Remove members" style="font-size:80%; margin-left:1em"
+            id="removebtn" name="removebtn" disabled="disabled">
+     [# TODO(jrobbins): extra confirmation when removing yourself as group owner.]
+     [end]
+   </div>
+
+  <table cellspacing="0" cellpadding="2" border="0" class="results striped vt" id="resultstable" width="100%">
+  <tbody>
+   <tr id="headingrow">
+     [if-any offer_membership_editing]
+       <th style="border-right:0; padding-right:2px">&nbsp;</th>
+     [end]
+     <th style="white-space:nowrap">Member</th>
+     <th style="white-space:nowrap">Role</th>
+   </tr>
+
+   [if-any pagination.visible_results]
+      [for pagination.visible_results]
+        <tr>
+          [if-any offer_membership_editing]
+            <td style="padding-right:2px">
+              <input type="checkbox" name="remove"
+                     value="[pagination.visible_results.email]">
+          </td>
+         [end]
+          <td class="id" style="text-align:left">
+            [include "../framework/user-link.ezt" pagination.visible_results]
+          </td>
+          <td style="text-align:left" width="90%">
+            <a href="[pagination.visible_results.profile_url]">[pagination.visible_results.role]</a>
+          </td>
+        </tr>
+      [end]
+   [else]
+       <tr><td colspan="40">
+            This user group has no members.
+        </td></tr>
+   [end]
+
+
+  </tbody>
+  </table>
+</div>
+
+[include "../project/people-add-members-form.ezt" "group"]
+
+</form>
+
+
+[if-any offer_membership_editing]
+  <script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+    function _countChecked(opt_className) {
+      var numChecked = 0;
+      var inputs = document.getElementsByTagName('input');
+      for (var i = 0; i < inputs.length; i++) {
+        var el = inputs[[]i];
+        if (el.type == 'checkbox' && el.name == 'remove' && el.checked &&
+            (!opt_className || opt_className == el.className)) {
+          numChecked++;
+        }
+      }
+      return numChecked;
+    }
+
+   function _enableRemoveButton() {
+     var removeButton = document.getElementById('removebtn');
+     if (_countChecked() > 0) {
+       removeButton.disabled = false;
+     } else {
+       removeButton.disabled = true;
+     }
+   }
+
+   setInterval(_enableRemoveButton, 700);
+
+   $("add_members_button").addEventListener("click", _openAddMembersForm);
+});
+  </script>
+[end]
+
+
+[include "../framework/footer-script.ezt"]
+[include "../framework/master-footer.ezt"]

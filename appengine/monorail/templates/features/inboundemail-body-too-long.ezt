@@ -1,0 +1,6 @@
+Subject: Email body too long
+
+The email message you sent to [project_addr]
+was not processed because it was too large.
+
+[include "inboundemail-error-footer-part.ezt"]

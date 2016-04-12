@@ -1,0 +1,133 @@
+[# arg0 is either "user" for user saved queries or "project" for canned queries]
+<style>
+  #queries th, #queries td {  padding-bottom: 1em }
+</style>
+
+<table border="0" id="queries">
+   <tr>
+    <th></th>
+    <th style="text-align:left">Saved query name:</th>
+    [is arg0 "user"]
+      <th style="text-align:left">Project(s):</th>
+    [end]
+    <th colspan="2" style="text-align:left">Query:</th>
+    [is arg0 "user"]
+      <th style="text-align:left">Subsciption options:</th>
+    [end]
+    <th></th>
+   </tr>
+
+   [for canned_queries]
+   <tr>
+    <td style="text-align:right" width="20">[canned_queries.idx].
+      <input type="hidden" name="savedquery_id_[canned_queries.idx]" value="[canned_queries.query_id]">
+    </td>
+    <td><input type="text" name="savedquery_name_[canned_queries.idx]" size="35" value="[canned_queries.name]" class="acob"></td>
+    [is arg0 "user"]
+      <td><input type="text" name="savedquery_projects_[canned_queries.idx]" size="35" value="[canned_queries.projects]"
+           class="acob" autocomplete="off" id="savedquery_projects_[canned_queries.idx]"></td>
+    [end]
+
+    <td>
+       <select name="savedquery_base_[canned_queries.idx]">
+         [define can][canned_queries.base_query_id][end]
+         [include "../tracker/issue-can-widget.ezt" "admin"]
+       </select>
+    </td>
+    <td>
+      <input type="text" name="savedquery_query_[canned_queries.idx]" size="50" value="[canned_queries.query]" autocomplete="off" id="query_existing_[canned_queries.idx]" class="acob">
+    </td>
+    [is arg0 "user"]
+      <td>
+        <select id="savedquery_sub_mode_[canned_queries.idx]" name="savedquery_sub_mode_[canned_queries.idx]">
+          <option [is canned_queries.subscription_mode "noemail"]selected="select"[end] value="noemail"
+                  >No emails</option>
+          <option [is canned_queries.subscription_mode "immediate"]selected="select"[end] value="immediate">Notify Immediately</option>
+          [# TODO(jrobbins): <option disabled="disabled">Notify Daily</option>]
+          [# TODO(jrobbins): <option disabled="disabled">Notify Weekly on Monday</option>]
+        </select>
+      </td>
+    [end]
+    <td></td>
+   </tr>
+   [end]
+
+   [define can]2[end]
+   [for new_query_indexes]
+   <tr id="newquery[new_query_indexes]" [if-index new_query_indexes first][else]style="display:none"[end]>
+    <td style="text-align:right" width="20">[new_query_indexes].</td>
+    <td><input type="text" name="new_savedquery_name_[new_query_indexes]"
+               class="showNextQueryRow acob" data-index="[new_query_indexes]"
+               size="35" value="" placeholder="Required"></td>
+    [is arg0 "user"]
+      <td><input type="text" name="new_savedquery_projects_[new_query_indexes]" size="35" value="" class="acob"
+           autocomplete="off" id="new_savedquery_projects_[new_query_indexes]" placeholder="Optional"></td>
+    [end]
+    <td>
+       <select name="new_savedquery_base_[new_query_indexes]">
+         [include "../tracker/issue-can-widget.ezt" "admin"]
+       </select>
+    </td>
+    <td>
+      <input type="text" name="new_savedquery_query_[new_query_indexes]" size="50" value="" autocomplete="off" id="query_new_[new_query_indexes]" class="acob" placeholder="Optional. Example- &quot;label:Security owner:me&quot;">
+    </td>
+    [is arg0 "user"]
+      <td>
+        <select id="new_savedquery_sub_mode_[new_query_indexes]" name="new_savedquery_sub_mode_[new_query_indexes]">
+          <option selected="selected" value="noemail">No emails</option>
+          <option value="immediate">Notify Immediately</option>
+          [# TODO(jrobbins): <option disabled="disabled">Notify Daily</option>]
+          [# TODO(jrobbins): <option disabled="disabled">Notify Weekly</option>]
+        </select>
+      </td>
+    [end]
+    <td width="40px">
+     [if-index new_query_indexes last][else]
+      <span id="addquery[new_query_indexes]" class="fakelink" data-index="[new_query_indexes]">Add a row</span
+     [end]
+    </td>
+   </tr>
+   [end]
+
+</table>
+
+[include "../framework/footer-script.ezt"]
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  function showNextQueryRow(i) {
+   if (i < [max_queries]) {
+     _showID('newquery' + (i + 1));
+     _hideID('addquery' + i);
+   }
+  }
+  _fetchUserProjects(true);
+  _onload();
+
+  var addARowLinks = document.getElementsByClassName("fakelink");
+  for (var i = 0; i < addARowLinks.length; ++i) {
+    var link = addARowLinks[[]i];
+    link.addEventListener("click", function(event) {
+        var index = Number(event.target.getAttribute("data-index"));
+        showNextQueryRow(index);
+    });
+  }
+
+  var typeToAddARow = document.getElementsByClassName("showNextQueryRow");
+  for (var i = 0; i < typeToAddARow.length; ++i) {
+    var el = typeToAddARow[[]i];
+    el.addEventListener("keydown", function(event) {
+        var index = Number(event.target.getAttribute("data-index"));
+        showNextQueryRow(index);
+    });
+  }
+
+  var acobElements = document.getElementsByClassName("acob");
+  for (var i = 0; i < acobElements.length; ++i) {
+     var el = acobElements[[]i];
+     el.addEventListener("focus", function(event) {
+         _acrob(null);
+         _acof(event);
+     });
+  }
+});
+</script>

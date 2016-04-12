@@ -1,0 +1,3 @@
+<a class="ot-issue-link"
+   href="/p/[issue.project_name]/issues/detail?id=[issue.local_id][if-any issue_change_id]#c_id[issue_change_id][end]"
+   >issue [issue.local_id]</a>

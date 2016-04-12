@@ -1,0 +1,15 @@
+[if-any project_is_restricted]
+<p style="width:35em; border: 1px solid #933; padding: 3px">
+  <b style="color:#933">Important</b>: Access to this project is restricted, so
+  please do not specify a public mailing list address for all notifications.
+  Use only private mailing lists to avoid unwanted disclosures.  If you make
+  your project public later, choose a new mailing list at that time.
+</p>
+[end]
+
+<p>
+    Notifications will be sent from:
+    <tt>[email_from_addr]</tt><br>
+    You may need to add this address as an allowed poster to your mailing list.<br>
+    If using Google Groups, add the address directly with no email delivery.
+</p>

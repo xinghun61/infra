@@ -1,0 +1,7 @@
+[define page_css]css/d_updates_page.css[end]
+
+[include "../framework/master-header.ezt" "showusertabs" "t3"]
+
+[include "../features/updates-page.ezt"]
+
+[include "../framework/master-footer.ezt"]

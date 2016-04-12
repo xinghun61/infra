@@ -1,0 +1,16 @@
+[# Format the body of one issue update in the activities list.]
+
+<span class="ot-issue-comment">
+  [for comment.text_runs][include "../tracker/render-rich-text.ezt" comment.text_runs][end]
+</span>
+
+[if-any comment.amendments]
+  <div class="ot-issue-fields">
+    [for comment.amendments]
+      <div class="ot-issue-field-wrapper">
+       <span class="ot-issue-field-name">[comment.amendments.field_name]: </span>
+       <span class="ot-issue-field-value">[comment.amendments.newvalue]</span>
+      </div>
+    [end]
+  </div>
+[end]

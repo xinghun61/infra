@@ -1,0 +1,928 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is govered by a BSD-style
+# license that can be found in the LICENSE file or at
+# https://developers.google.com/open-source/licenses/bsd
+
+"""Task handlers for email notifications of issue changes.
+
+Email notificatons are sent when an issue changes, an issue that is blocking
+another issue changes, or a bulk edit is done.  The users notified include
+the project-wide mailing list, issue owners, cc'd users, starrers,
+also-notify addresses, and users who have saved queries with email notification
+set.
+"""
+
+import collections
+import logging
+
+from third_party import ezt
+
+from google.appengine.api import mail
+from google.appengine.api import taskqueue
+
+import settings
+from features import autolink
+from features import notify_helpers
+from framework import emailfmt
+from framework import framework_bizobj
+from framework import framework_constants
+from framework import framework_helpers
+from framework import framework_views
+from framework import jsonfeed
+from framework import monorailrequest
+from framework import permissions
+from framework import template_helpers
+from framework import urls
+from tracker import component_helpers
+from tracker import tracker_bizobj
+from tracker import tracker_helpers
+from tracker import tracker_views
+
+
+TEMPLATE_PATH = framework_constants.TEMPLATE_PATH
+
+
+def PrepareAndSendIssueChangeNotification(
+    project_id, local_id, hostport, commenter_id, seq_num, send_email=True,
+    old_owner_id=framework_constants.NO_USER_SPECIFIED):
+  """Create a task to notify users that an issue has changed.
+
+  Args:
+    project_id: int ID of the project containing the changed issue.
+    local_id: Issue number for the issue that was updated and saved.
+    hostport: string domain name and port number from the HTTP request.
+    commenter_id: int user ID of the user who made the comment.
+    seq_num: int index into the comments of the new comment.
+    send_email: True if email notifications should be sent.
+    old_owner_id: optional user ID of owner before the current change took
+      effect. He/she will also be notified.
+
+  Returns nothing.
+  """
+  params = dict(
+      project_id=project_id, id=local_id, commenter_id=commenter_id,
+      seq=seq_num, hostport=hostport,
+      old_owner_id=old_owner_id, send_email=int(send_email))
+  logging.info('adding notify task with params %r', params)
+  taskqueue.add(url=urls.NOTIFY_ISSUE_CHANGE_TASK + '.do', params=params)
+
+
+def PrepareAndSendIssueBlockingNotification(
+    project_id, hostport, local_id, delta_blocker_iids,
+    commenter_id, send_email=True):
+  """Create a task to follow up on an issue blocked_on change."""
+  if not delta_blocker_iids:
+    return  # No notification is needed
+
+  params = dict(
+      project_id=project_id, id=local_id, commenter_id=commenter_id,
+      hostport=hostport, send_email=int(send_email),
+      delta_blocker_iids=','.join(str(iid) for iid in delta_blocker_iids))
+
+  logging.info('adding blocking task with params %r', params)
+  taskqueue.add(url=urls.NOTIFY_BLOCKING_CHANGE_TASK + '.do', params=params)
+
+
+def SendIssueBulkChangeNotification(
+    hostport, project_id, local_ids, old_owner_ids,
+    comment_text, commenter_id, amendments, send_email, users_by_id):
+  """Create a task to follow up on an issue blocked_on change."""
+  amendment_lines = []
+  for up in amendments:
+    line = '    %s: %s' % (
+        tracker_bizobj.GetAmendmentFieldName(up),
+        tracker_bizobj.AmendmentString(up, users_by_id))
+    if line not in amendment_lines:
+      amendment_lines.append(line)
+
+  params = dict(
+      project_id=project_id, commenter_id=commenter_id,
+      hostport=hostport, send_email=int(send_email),
+      ids=','.join(str(lid) for lid in local_ids),
+      old_owner_ids=','.join(str(uid) for uid in old_owner_ids),
+      comment_text=comment_text, amendments='\n'.join(amendment_lines))
+
+  logging.info('adding bulk task with params %r', params)
+  taskqueue.add(url=urls.NOTIFY_BULK_CHANGE_TASK + '.do', params=params)
+
+
+def _EnqueueOutboundEmail(message_dict):
+  """Create a task to send one email message, all fields are in the dict.
+
+  We use a separate task for each outbound email to isolate errors.
+
+  Args:
+    message_dict: dict with all needed info for the task.
+  """
+  logging.info('Queuing an email task with params %r', message_dict)
+  taskqueue.add(
+      url=urls.OUTBOUND_EMAIL_TASK + '.do', params=message_dict,
+      queue_name='outboundemail')
+
+
+def AddAllEmailTasks(tasks):
+  """Add one GAE task for each email to be sent."""
+  notified = []
+  for task in tasks:
+    _EnqueueOutboundEmail(task)
+    notified.append(task['to'])
+
+  return notified
+
+
+class NotifyTaskBase(jsonfeed.InternalTask):
+  """Abstract base class for notification task handler."""
+
+  _EMAIL_TEMPLATE = None  # Subclasses must override this.
+
+  CHECK_SECURITY_TOKEN = False
+
+  def __init__(self, *args, **kwargs):
+    super(NotifyTaskBase, self).__init__(*args, **kwargs)
+
+    if not self._EMAIL_TEMPLATE:
+      raise Exception('Subclasses must override _EMAIL_TEMPLATE.'
+                      ' This class must not be called directly.')
+    # We use FORMAT_RAW for emails because they are plain text, not HTML.
+    # TODO(jrobbins): consider sending HTML formatted emails someday.
+    self.email_template = template_helpers.MonorailTemplate(
+        TEMPLATE_PATH + self._EMAIL_TEMPLATE,
+        compress_whitespace=False, base_format=ezt.FORMAT_RAW)
+
+
+class NotifyIssueChangeTask(NotifyTaskBase):
+  """JSON servlet that notifies appropriate users after an issue change."""
+
+  _EMAIL_TEMPLATE = 'tracker/issue-change-notification-email.ezt'
+
+  def HandleRequest(self, mr):
+    """Process the task to notify users after an issue change.
+
+    Args:
+      mr: common information parsed from the HTTP request.
+
+    Returns:
+      Results dictionary in JSON format which is useful just for debugging.
+      The main goal is the side-effect of sending emails.
+    """
+    project_id = mr.specified_project_id
+    if project_id is None:
+      return {
+          'params': {},
+          'notified': [],
+          'message': 'Cannot proceed without a valid project ID.',
+      }
+    commenter_id = mr.GetPositiveIntParam('commenter_id')
+    seq_num = mr.seq
+    omit_ids = [commenter_id]
+    hostport = mr.GetParam('hostport')
+    old_owner_id = mr.GetPositiveIntParam('old_owner_id')
+    send_email = bool(mr.GetIntParam('send_email'))
+    params = dict(
+        project_id=project_id, local_id=mr.local_id, commenter_id=commenter_id,
+        seq_num=seq_num, hostport=hostport, old_owner_id=old_owner_id,
+        omit_ids=omit_ids, send_email=send_email)
+
+    logging.info('issue change params are %r', params)
+    project = self.services.project.GetProject(mr.cnxn, project_id)
+    config = self.services.config.GetProjectConfig(mr.cnxn, project_id)
+    issue = self.services.issue.GetIssueByLocalID(
+        mr.cnxn, project_id, mr.local_id)
+
+    if issue.is_spam:
+      # Don't send email for spam issues.
+      return {
+          'params': params,
+          'notified': [],
+      }
+
+    all_comments = self.services.issue.GetCommentsForIssue(
+        mr.cnxn, issue.issue_id)
+    comment = all_comments[seq_num]
+
+    # Only issues that any contributor could view sent to mailing lists.
+    contributor_could_view = permissions.CanViewIssue(
+        set(), permissions.CONTRIBUTOR_ACTIVE_PERMISSIONSET,
+        project, issue)
+    starrer_ids = self.services.issue_star.LookupItemStarrers(
+        mr.cnxn, issue.issue_id)
+    users_by_id = framework_views.MakeAllUserViews(
+        mr.cnxn, self.services.user,
+        tracker_bizobj.UsersInvolvedInIssues([issue]), [old_owner_id],
+        tracker_bizobj.UsersInvolvedInComment(comment),
+        issue.cc_ids, issue.derived_cc_ids, starrer_ids, omit_ids)
+
+    # Make followup tasks to send emails
+    tasks = []
+    if send_email:
+      tasks = self._MakeEmailTasks(
+          mr.cnxn, project, issue, config, old_owner_id, users_by_id,
+          all_comments, comment, starrer_ids, contributor_could_view,
+          hostport, omit_ids)
+
+    notified = AddAllEmailTasks(tasks)
+
+    return {
+        'params': params,
+        'notified': notified,
+        }
+
+  def _MakeEmailTasks(
+      self, cnxn, project, issue, config, old_owner_id,
+      users_by_id, all_comments, comment, starrer_ids,
+      contributor_could_view, hostport, omit_ids):
+    """Formulate emails to be sent."""
+    detail_url = framework_helpers.IssueCommentURL(
+        hostport, project, issue.local_id, seq_num=comment.sequence)
+
+    # TODO(jrobbins): avoid the need to make a MonorailRequest object.
+    mr = monorailrequest.MonorailRequest()
+    mr.project_name = project.project_name
+    mr.project = project
+
+    # We do not autolink in the emails, so just use an empty
+    # registry of autolink rules.
+    # TODO(jrobbins): offer users an HTML email option w/ autolinks.
+    autolinker = autolink.Autolink()
+
+    email_data = {
+        # Pass open_related and closed_related into this method and to
+        # the issue view so that we can show it on new issue email.
+        'issue': tracker_views.IssueView(issue, users_by_id, config),
+        'summary': issue.summary,
+        'comment': tracker_views.IssueCommentView(
+            project.project_name, comment, users_by_id,
+            autolinker, {}, mr, issue),
+        'comment_text': comment.content,
+        'detail_url': detail_url,
+        }
+
+    # Generate two versions of email body: members version has all
+    # full email addresses exposed.
+    body_for_non_members = self.email_template.GetResponse(email_data)
+    framework_views.RevealAllEmails(users_by_id)
+    email_data['comment'] = tracker_views.IssueCommentView(
+        project.project_name, comment, users_by_id,
+        autolinker, {}, mr, issue)
+    body_for_members = self.email_template.GetResponse(email_data)
+
+    subject = 'Issue %d in %s: %s' % (
+        issue.local_id, project.project_name, issue.summary)
+
+    commenter_email = users_by_id[comment.user_id].email
+    omit_addrs = set([commenter_email] +
+                     [users_by_id[omit_id].email for omit_id in omit_ids])
+
+    auth = monorailrequest.AuthData.FromUserID(
+        cnxn, comment.user_id, self.services)
+    commenter_in_project = framework_bizobj.UserIsInProject(
+        project, auth.effective_ids)
+    noisy = tracker_helpers.IsNoisy(len(all_comments) - 1, len(starrer_ids))
+
+    # Get the transitive set of owners and Cc'd users, and their proxies.
+    reporter = [issue.reporter_id] if issue.reporter_id in starrer_ids else []
+    old_direct_owners, old_transitive_owners = (
+        self.services.usergroup.ExpandAnyUserGroups(cnxn, [old_owner_id]))
+    direct_owners, transitive_owners = (
+        self.services.usergroup.ExpandAnyUserGroups(cnxn, [issue.owner_id]))
+    der_direct_owners, der_transitive_owners = (
+        self.services.usergroup.ExpandAnyUserGroups(
+            cnxn, [issue.derived_owner_id]))
+    direct_comp, trans_comp = self.services.usergroup.ExpandAnyUserGroups(
+        cnxn, component_helpers.GetComponentCcIDs(issue, config))
+    direct_ccs, transitive_ccs = self.services.usergroup.ExpandAnyUserGroups(
+        cnxn, list(issue.cc_ids))
+    # TODO(jrobbins): This will say that the user was cc'd by a rule when it
+    # was really added to the derived_cc_ids by a component.
+    der_direct_ccs, der_transitive_ccs = (
+        self.services.usergroup.ExpandAnyUserGroups(
+            cnxn, list(issue.derived_cc_ids)))
+    users_by_id.update(framework_views.MakeAllUserViews(
+        cnxn, self.services.user, transitive_owners, der_transitive_owners,
+        direct_comp, trans_comp, transitive_ccs, der_transitive_ccs))
+
+    # Notify interested people according to the reason for their interest:
+    # owners, component auto-cc'd users, cc'd users, starrers, and
+    # other notification addresses.
+    reporter_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
+        cnxn, reporter, project, issue, self.services, omit_addrs, users_by_id)
+    owner_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
+        cnxn, direct_owners + transitive_owners, project, issue,
+        self.services, omit_addrs, users_by_id)
+    old_owner_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
+        cnxn, old_direct_owners + old_transitive_owners, project, issue,
+        self.services, omit_addrs, users_by_id)
+    owner_addr_perm_set = set(owner_addr_perm_list)
+    old_owner_addr_perm_list = [ap for ap in old_owner_addr_perm_list
+                                if ap not in owner_addr_perm_set]
+    der_owner_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
+        cnxn, der_direct_owners + der_transitive_owners, project, issue,
+        self.services, omit_addrs, users_by_id)
+    cc_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
+        cnxn, direct_ccs + transitive_ccs, project, issue,
+        self.services, omit_addrs, users_by_id)
+    der_cc_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
+        cnxn, der_direct_ccs + der_transitive_ccs, project, issue,
+        self.services, omit_addrs, users_by_id)
+
+    starrer_addr_perm_list = []
+    sub_addr_perm_list = []
+    if not noisy or commenter_in_project:
+      # Avoid an OOM by only notifying a number of starrers that we can handle.
+      # And, we really should limit the number of emails that we send anyway.
+      max_starrers = settings.max_starrers_to_notify
+      starrer_ids = starrer_ids[-max_starrers:]
+      # Note: starrers can never be user groups.
+      starrer_addr_perm_list = (
+          notify_helpers.ComputeIssueChangeAddressPermList(
+              cnxn, starrer_ids, project, issue,
+              self.services, omit_addrs, users_by_id,
+              pref_check_function=lambda u: u.notify_starred_issue_change))
+
+      sub_addr_perm_list = _GetSubscribersAddrPermList(
+          cnxn, self.services, issue, project, config, omit_addrs,
+          users_by_id)
+
+    # Get the list of addresses to notify based on filter rules.
+    issue_notify_addr_list = notify_helpers.ComputeIssueNotificationAddrList(
+        issue, omit_addrs)
+    # Get the list of addresses to notify based on project settings.
+    proj_notify_addr_list = notify_helpers.ComputeProjectNotificationAddrList(
+        project, contributor_could_view, omit_addrs)
+
+    # Give each user a bullet-list of all the reasons that apply for that user.
+    group_reason_list = [
+        (reporter_addr_perm_list, 'You reported this issue'),
+        (owner_addr_perm_list, 'You are the owner of the issue'),
+        (old_owner_addr_perm_list,
+         'You were the issue owner before this change'),
+        (der_owner_addr_perm_list, 'A rule made you owner of the issue'),
+        (cc_addr_perm_list, 'You were specifically CC\'d on the issue'),
+        (der_cc_addr_perm_list, 'A rule CC\'d you on the issue'),
+        ]
+    group_reason_list.extend(notify_helpers.ComputeComponentFieldAddrPerms(
+        cnxn, config, issue, project, self.services, omit_addrs,
+        users_by_id))
+    group_reason_list.extend(notify_helpers.ComputeCustomFieldAddrPerms(
+        cnxn, config, issue, project, self.services, omit_addrs,
+        users_by_id))
+    group_reason_list.extend([
+        (starrer_addr_perm_list, 'You starred the issue'),
+        (sub_addr_perm_list, 'Your saved query matched the issue'),
+        (issue_notify_addr_list,
+         'A rule was set up to notify you'),
+        (proj_notify_addr_list,
+         'The project was configured to send all issue notifications '
+         'to this address'),
+        ])
+    commenter_view = users_by_id[comment.user_id]
+    detail_url = framework_helpers.FormatAbsoluteURLForDomain(
+        hostport, issue.project_name, urls.ISSUE_DETAIL,
+        id=issue.local_id)
+    email_tasks = notify_helpers.MakeBulletedEmailWorkItems(
+        group_reason_list, subject, body_for_non_members, body_for_members,
+        project, hostport, commenter_view, seq_num=comment.sequence,
+        detail_url=detail_url)
+
+    return email_tasks
+
+
+class NotifyBlockingChangeTask(NotifyTaskBase):
+  """JSON servlet that notifies appropriate users after a blocking change."""
+
+  _EMAIL_TEMPLATE = 'tracker/issue-blocking-change-notification-email.ezt'
+
+  def HandleRequest(self, mr):
+    """Process the task to notify users after an issue blocking change.
+
+    Args:
+      mr: common information parsed from the HTTP request.
+
+    Returns:
+      Results dictionary in JSON format which is useful just for debugging.
+      The main goal is the side-effect of sending emails.
+    """
+    project_id = mr.specified_project_id
+    if project_id is None:
+      return {
+          'params': {},
+          'notified': [],
+          'message': 'Cannot proceed without a valid project ID.',
+      }
+    commenter_id = mr.GetPositiveIntParam('commenter_id')
+    omit_ids = [commenter_id]
+    hostport = mr.GetParam('hostport')
+    delta_blocker_iids = mr.GetIntListParam('delta_blocker_iids')
+    send_email = bool(mr.GetIntParam('send_email'))
+    params = dict(
+        project_id=project_id, local_id=mr.local_id, commenter_id=commenter_id,
+        hostport=hostport, delta_blocker_iids=delta_blocker_iids,
+        omit_ids=omit_ids, send_email=send_email)
+
+    logging.info('blocking change params are %r', params)
+    issue = self.services.issue.GetIssueByLocalID(
+        mr.cnxn, project_id, mr.local_id)
+    if issue.is_spam:
+      return {
+        'params': params,
+        'notified': [],
+        }
+
+    upstream_issues = self.services.issue.GetIssues(
+        mr.cnxn, delta_blocker_iids)
+    logging.info('updating ids %r', [up.local_id for up in upstream_issues])
+    upstream_projects = tracker_helpers.GetAllIssueProjects(
+        mr.cnxn, upstream_issues, self.services.project)
+    upstream_configs = self.services.config.GetProjectConfigs(
+        mr.cnxn, upstream_projects.keys())
+
+    users_by_id = framework_views.MakeAllUserViews(
+        mr.cnxn, self.services.user, [commenter_id])
+    commenter_view = users_by_id[commenter_id]
+
+    tasks = []
+    if send_email:
+      for upstream_issue in upstream_issues:
+        one_issue_email_tasks = self._ProcessUpstreamIssue(
+            mr.cnxn, upstream_issue,
+            upstream_projects[upstream_issue.project_id],
+            upstream_configs[upstream_issue.project_id],
+            issue, omit_ids, hostport, commenter_view)
+        tasks.extend(one_issue_email_tasks)
+
+    notified = AddAllEmailTasks(tasks)
+
+    return {
+        'params': params,
+        'notified': notified,
+        }
+
+  def _ProcessUpstreamIssue(
+      self, cnxn, upstream_issue, upstream_project, upstream_config,
+      issue, omit_ids, hostport, commenter_view):
+    """Compute notifications for one upstream issue that is now blocking."""
+    upstream_detail_url = framework_helpers.FormatAbsoluteURLForDomain(
+        hostport, upstream_issue.project_name, urls.ISSUE_DETAIL,
+        id=upstream_issue.local_id)
+    logging.info('upstream_detail_url = %r', upstream_detail_url)
+    detail_url = framework_helpers.FormatAbsoluteURLForDomain(
+        hostport, issue.project_name, urls.ISSUE_DETAIL,
+        id=issue.local_id)
+
+    # Only issues that any contributor could view are sent to mailing lists.
+    contributor_could_view = permissions.CanViewIssue(
+        set(), permissions.CONTRIBUTOR_ACTIVE_PERMISSIONSET,
+        upstream_project, upstream_issue)
+
+    # Now construct the e-mail to send
+
+    # Note: we purposely do not notify users who starred an issue
+    # about changes in blocking.
+    users_by_id = framework_views.MakeAllUserViews(
+        cnxn, self.services.user,
+        tracker_bizobj.UsersInvolvedInIssues([upstream_issue]), omit_ids)
+
+    is_blocking = upstream_issue.issue_id in issue.blocked_on_iids
+
+    email_data = {
+        'issue': tracker_views.IssueView(
+            upstream_issue, users_by_id, upstream_config),
+        'summary': upstream_issue.summary,
+        'detail_url': upstream_detail_url,
+        'is_blocking': ezt.boolean(is_blocking),
+        'downstream_issue_ref': tracker_bizobj.FormatIssueRef(
+            (None, issue.local_id)),
+        'downstream_issue_url': detail_url,
+        }
+
+    # TODO(jrobbins): Generate two versions of email body: members
+    # vesion has other member full email addresses exposed.  But, don't
+    # expose too many as we iterate through upstream projects.
+    body = self.email_template.GetResponse(email_data)
+
+    # Just use "Re:", not Message-Id and References because a blocking
+    # notification is not a comment on the issue.
+    subject = 'Re: Issue %d in %s: %s' % (
+        upstream_issue.local_id, upstream_issue.project_name,
+        upstream_issue.summary)
+
+    omit_addrs = {users_by_id[omit_id].email for omit_id in omit_ids}
+
+    # Get the transitive set of owners and Cc'd users, and their UserView's.
+    direct_owners, trans_owners = self.services.usergroup.ExpandAnyUserGroups(
+        cnxn, [tracker_bizobj.GetOwnerId(upstream_issue)])
+    direct_ccs, trans_ccs = self.services.usergroup.ExpandAnyUserGroups(
+        cnxn, list(upstream_issue.cc_ids))
+    # TODO(jrobbins): This will say that the user was cc'd by a rule when it
+    # was really added to the derived_cc_ids by a component.
+    der_direct_ccs, der_transitive_ccs = (
+        self.services.usergroup.ExpandAnyUserGroups(
+            cnxn, list(upstream_issue.derived_cc_ids)))
+    # direct owners and Ccs are already in users_by_id
+    users_by_id.update(framework_views.MakeAllUserViews(
+        cnxn, self.services.user, trans_owners, trans_ccs, der_transitive_ccs))
+
+    owner_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
+        cnxn, direct_owners + trans_owners, upstream_project, upstream_issue,
+        self.services, omit_addrs, users_by_id)
+    cc_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
+        cnxn, direct_ccs + trans_ccs, upstream_project, upstream_issue,
+        self.services, omit_addrs, users_by_id)
+    der_cc_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
+        cnxn, der_direct_ccs + der_transitive_ccs, upstream_project,
+        upstream_issue, self.services, omit_addrs, users_by_id)
+    sub_addr_perm_list = _GetSubscribersAddrPermList(
+        cnxn, self.services, upstream_issue, upstream_project, upstream_config,
+        omit_addrs, users_by_id)
+
+    issue_notify_addr_list = notify_helpers.ComputeIssueNotificationAddrList(
+        upstream_issue, omit_addrs)
+    proj_notify_addr_list = notify_helpers.ComputeProjectNotificationAddrList(
+        upstream_project, contributor_could_view, omit_addrs)
+
+    # Give each user a bullet-list of all the reasons that apply for that user.
+    group_reason_list = [
+        (owner_addr_perm_list, 'You are the owner of the issue'),
+        (cc_addr_perm_list, 'You were specifically CC\'d on the issue'),
+        (der_cc_addr_perm_list, 'A rule CC\'d you on the issue'),
+        ]
+    group_reason_list.extend(notify_helpers.ComputeComponentFieldAddrPerms(
+        cnxn, upstream_config, upstream_issue, upstream_project, self.services,
+        omit_addrs, users_by_id))
+    group_reason_list.extend(notify_helpers.ComputeCustomFieldAddrPerms(
+        cnxn, upstream_config, upstream_issue, upstream_project, self.services,
+        omit_addrs, users_by_id))
+    group_reason_list.extend([
+        # Starrers are not notified of blocking changes to reduce noise.
+        (sub_addr_perm_list, 'Your saved query matched the issue'),
+        (issue_notify_addr_list,
+         'Project filter rules were setup to notify you'),
+        (proj_notify_addr_list,
+         'The project was configured to send all issue notifications '
+         'to this address'),
+        ])
+
+    one_issue_email_tasks = notify_helpers.MakeBulletedEmailWorkItems(
+        group_reason_list, subject, body, body, upstream_project, hostport,
+        commenter_view, detail_url=detail_url)
+
+    return one_issue_email_tasks
+
+
+class NotifyBulkChangeTask(NotifyTaskBase):
+  """JSON servlet that notifies appropriate users after a bulk edit."""
+
+  _EMAIL_TEMPLATE = 'tracker/issue-bulk-change-notification-email.ezt'
+
+  def HandleRequest(self, mr):
+    """Process the task to notify users after an issue blocking change.
+
+    Args:
+      mr: common information parsed from the HTTP request.
+
+    Returns:
+      Results dictionary in JSON format which is useful just for debugging.
+      The main goal is the side-effect of sending emails.
+    """
+    hostport = mr.GetParam('hostport')
+    project_id = mr.specified_project_id
+    if project_id is None:
+      return {
+          'params': {},
+          'notified': [],
+          'message': 'Cannot proceed without a valid project ID.',
+      }
+
+    local_ids = mr.local_id_list
+    old_owner_ids = mr.GetIntListParam('old_owner_ids')
+    comment_text = mr.GetParam('comment_text')
+    commenter_id = mr.GetPositiveIntParam('commenter_id')
+    amendments = mr.GetParam('amendments')
+    send_email = bool(mr.GetIntParam('send_email'))
+    params = dict(
+        project_id=project_id, local_ids=mr.local_id_list,
+        commenter_id=commenter_id, hostport=hostport,
+        old_owner_ids=old_owner_ids, comment_text=comment_text,
+        send_email=send_email, amendments=amendments)
+
+    logging.info('bulk edit params are %r', params)
+    # TODO(jrobbins): For cross-project bulk edits, prefetch all relevant
+    # projects and configs and pass a dict of them to subroutines.
+    project = self.services.project.GetProject(mr.cnxn, project_id)
+    config = self.services.config.GetProjectConfig(mr.cnxn, project_id)
+    issues = self.services.issue.GetIssuesByLocalIDs(
+        mr.cnxn, project_id, local_ids)
+    issues = [issue for issue in issues if not issue.is_spam]
+    anon_perms = permissions.GetPermissions(None, set(), project)
+
+    users_by_id = framework_views.MakeAllUserViews(
+        mr.cnxn, self.services.user, [commenter_id])
+    ids_in_issues = {}
+    starrers = {}
+
+    non_private_issues = []
+    for issue, old_owner_id in zip(issues, old_owner_ids):
+      # TODO(jrobbins): use issue_id consistently rather than local_id.
+      starrers[issue.local_id] = self.services.issue_star.LookupItemStarrers(
+          mr.cnxn, issue.issue_id)
+      named_ids = set()  # users named in user-value fields that notify.
+      for fd in config.field_defs:
+        named_ids.update(notify_helpers.ComputeNamedUserIDsToNotify(issue, fd))
+      direct, indirect = self.services.usergroup.ExpandAnyUserGroups(
+          mr.cnxn, list(issue.cc_ids) + list(issue.derived_cc_ids) +
+          [issue.owner_id, old_owner_id, issue.derived_owner_id] +
+          list(named_ids))
+      ids_in_issues[issue.local_id] = set(starrers[issue.local_id])
+      ids_in_issues[issue.local_id].update(direct)
+      ids_in_issues[issue.local_id].update(indirect)
+      ids_in_issue_needing_views = (
+          ids_in_issues[issue.local_id] |
+          tracker_bizobj.UsersInvolvedInIssues([issue]))
+      new_ids_in_issue = [user_id for user_id in ids_in_issue_needing_views
+                          if user_id not in users_by_id]
+      users_by_id.update(
+          framework_views.MakeAllUserViews(
+              mr.cnxn, self.services.user, new_ids_in_issue))
+
+      anon_can_view = permissions.CanViewIssue(
+          set(), anon_perms, project, issue)
+      if anon_can_view:
+        non_private_issues.append(issue)
+
+    commenter_view = users_by_id[commenter_id]
+    omit_addrs = {commenter_view.email}
+
+    tasks = []
+    if send_email:
+      email_tasks = self._BulkEditEmailTasks(
+          mr.cnxn, issues, old_owner_ids, omit_addrs, project,
+          non_private_issues, users_by_id, ids_in_issues, starrers,
+          commenter_view, hostport, comment_text, amendments, config)
+      tasks = email_tasks
+
+    notified = AddAllEmailTasks(tasks)
+    return {
+        'params': params,
+        'notified': notified,
+        }
+
+  def _BulkEditEmailTasks(
+      self, cnxn, issues, old_owner_ids, omit_addrs, project,
+      non_private_issues, users_by_id, ids_in_issues, starrers,
+      commenter_view, hostport, comment_text, amendments, config):
+    """Generate Email PBs to notify interested users after a bulk edit."""
+    # 1. Get the user IDs of everyone who could be notified,
+    # and make all their user proxies. Also, build a dictionary
+    # of all the users to notify and the issues that they are
+    # interested in.  Also, build a dictionary of additional email
+    # addresses to notify and the issues to notify them of.
+    users_by_id = {}
+    ids_to_notify_of_issue = {}
+    additional_addrs_to_notify_of_issue = collections.defaultdict(list)
+
+    users_to_queries = notify_helpers.GetNonOmittedSubscriptions(
+        cnxn, self.services, [project.project_id], {})
+    config = self.services.config.GetProjectConfig(
+        cnxn, project.project_id)
+    for issue, old_owner_id in zip(issues, old_owner_ids):
+      issue_participants = set(
+          [tracker_bizobj.GetOwnerId(issue), old_owner_id] +
+          tracker_bizobj.GetCcIds(issue))
+      # users named in user-value fields that notify.
+      for fd in config.field_defs:
+        issue_participants.update(
+            notify_helpers.ComputeNamedUserIDsToNotify(issue, fd))
+      for user_id in ids_in_issues[issue.local_id]:
+        # TODO(jrobbins): implement batch GetUser() for speed.
+        if not user_id:
+          continue
+        auth = monorailrequest.AuthData.FromUserID(
+            cnxn, user_id, self.services)
+        if (auth.user_pb.notify_issue_change and
+            not auth.effective_ids.isdisjoint(issue_participants)):
+          ids_to_notify_of_issue.setdefault(user_id, []).append(issue)
+        elif (auth.user_pb.notify_starred_issue_change and
+              user_id in starrers[issue.local_id]):
+          # Skip users who have starred issues that they can no longer view.
+          starrer_perms = permissions.GetPermissions(
+              auth.user_pb, auth.effective_ids, project)
+          granted_perms = tracker_bizobj.GetGrantedPerms(
+              issue, auth.effective_ids, config)
+          starrer_can_view = permissions.CanViewIssue(
+              auth.effective_ids, starrer_perms, project, issue,
+              granted_perms=granted_perms)
+          if starrer_can_view:
+            ids_to_notify_of_issue.setdefault(user_id, []).append(issue)
+        logging.info(
+            'ids_to_notify_of_issue[%s] = %s',
+            user_id,
+            [i.local_id for i in ids_to_notify_of_issue.get(user_id, [])])
+
+      # Find all subscribers that should be notified.
+      subscribers_to_consider = notify_helpers.EvaluateSubscriptions(
+          cnxn, issue, users_to_queries, self.services, config)
+      for sub_id in subscribers_to_consider:
+        auth = monorailrequest.AuthData.FromUserID(cnxn, sub_id, self.services)
+        sub_perms = permissions.GetPermissions(
+            auth.user_pb, auth.effective_ids, project)
+        granted_perms = tracker_bizobj.GetGrantedPerms(
+            issue, auth.effective_ids, config)
+        sub_can_view = permissions.CanViewIssue(
+            auth.effective_ids, sub_perms, project, issue,
+            granted_perms=granted_perms)
+        if sub_can_view:
+          ids_to_notify_of_issue.setdefault(sub_id, []).append(issue)
+
+      if issue in non_private_issues:
+        for notify_addr in issue.derived_notify_addrs:
+          additional_addrs_to_notify_of_issue[notify_addr].append(issue)
+
+    # 2. Compose an email specifically for each user.
+    email_tasks = []
+    needed_user_view_ids = [uid for uid in ids_to_notify_of_issue
+                            if uid not in users_by_id]
+    users_by_id.update(framework_views.MakeAllUserViews(
+        cnxn, self.services.user, needed_user_view_ids))
+    for user_id in ids_to_notify_of_issue:
+      if not user_id:
+        continue  # Don't try to notify NO_USER_SPECIFIED
+      if users_by_id[user_id].email in omit_addrs:
+        logging.info('Omitting %s', user_id)
+        continue
+      user_issues = ids_to_notify_of_issue[user_id]
+      if not user_issues:
+        continue  # user's prefs indicate they don't want these notifications
+      email = self._FormatBulkIssuesEmail(
+          users_by_id[user_id].email, user_issues, users_by_id,
+          commenter_view, hostport, comment_text, amendments, config, project)
+      email_tasks.append(email)
+      omit_addrs.add(users_by_id[user_id].email)
+      logging.info('about to bulk notify %s (%s) of %s',
+                   users_by_id[user_id].email, user_id,
+                   [issue.local_id for issue in user_issues])
+
+    # 3. Compose one email to each notify_addr with all the issues that it
+    # is supossed to be notified about.
+    for addr, addr_issues in additional_addrs_to_notify_of_issue.iteritems():
+      email = self._FormatBulkIssuesEmail(
+          addr, addr_issues, users_by_id, commenter_view, hostport,
+          comment_text, amendments, config, project)
+      email_tasks.append(email)
+      omit_addrs.add(addr)
+      logging.info('about to bulk notify additional addr %s of %s',
+                   addr, [addr_issue.local_id for addr_issue in addr_issues])
+
+    # 4. Add in the project's issue_notify_address.  This happens even if it
+    # is the same as the commenter's email address (which would be an unusual
+    # but valid project configuration).  Only issues that any contributor could
+    # view are included in emails to the all-issue-activity mailing lists.
+    if (project.issue_notify_address
+        and project.issue_notify_address not in omit_addrs):
+      non_private_issues_live = []
+      for issue in issues:
+        contributor_could_view = permissions.CanViewIssue(
+            set(), permissions.CONTRIBUTOR_ACTIVE_PERMISSIONSET,
+            project, issue)
+        if contributor_could_view:
+          non_private_issues_live.append(issue)
+
+      if non_private_issues_live:
+        email = self._FormatBulkIssuesEmail(
+            project.issue_notify_address, non_private_issues_live,
+            users_by_id, commenter_view, hostport, comment_text, amendments,
+            config, project)
+        email_tasks.append(email)
+        omit_addrs.add(project.issue_notify_address)
+        logging.info('about to bulk notify all-issues %s of %s',
+                     project.issue_notify_address,
+                     [issue.local_id for issue in non_private_issues])
+
+    return email_tasks
+
+  def _FormatBulkIssuesEmail(
+      self, dest_email, issues, users_by_id, commenter_view,
+      hostport, comment_text, amendments, config, _project):
+    """Format an email to one user listing many issues."""
+    # TODO(jrobbins): Generate two versions of email body: members
+    # vesion has full email addresses exposed.  And, use the full
+    # commenter email address in the From: line when sending to
+    # a member.
+    subject, body = self._FormatBulkIssues(
+        issues, users_by_id, commenter_view, hostport, comment_text,
+        amendments, config)
+
+    from_addr = emailfmt.NoReplyAddress(commenter_view=commenter_view)
+    return dict(from_addr=from_addr, to=dest_email, subject=subject, body=body)
+
+  def _FormatBulkIssues(
+      self, issues, users_by_id, commenter_view, hostport, comment_text,
+      amendments, config, body_type='email'):
+    """Format a subject and body for a bulk issue edit."""
+    assert body_type in ('email', 'feed')
+    project_name = issues[0].project_name
+
+    issue_views = []
+    for issue in issues:
+      # TODO(jrobbins): choose config from dict of prefetched configs.
+      issue_views.append(tracker_views.IssueView(issue, users_by_id, config))
+
+    email_data = {
+        'hostport': hostport,
+        'num_issues': len(issues),
+        'issues': issue_views,
+        'comment_text': comment_text,
+        'commenter': commenter_view,
+        'amendments': amendments,
+        'body_type': body_type,
+    }
+
+    if len(issues) == 1:
+      subject = 'issue %s in %s: %s' % (
+          issues[0].local_id, project_name, issues[0].summary)
+      # TODO(jrobbins): Look up the sequence number instead and treat this
+      # more like an individual change for email threading.  For now, just
+      # add "Re:" because bulk edits are always replies.
+      subject = 'Re: ' + subject
+    else:
+      subject = '%d issues changed in %s' % (len(issues), project_name)
+
+    body = self.email_template.GetResponse(email_data)
+
+    return subject, body
+
+
+class OutboundEmailTask(jsonfeed.InternalTask):
+  """JSON servlet that sends one email."""
+
+  def HandleRequest(self, mr):
+    """Process the task to send one email message.
+
+    Args:
+      mr: common information parsed from the HTTP request.
+
+    Returns:
+      Results dictionary in JSON format which is useful just for debugging.
+      The main goal is the side-effect of sending emails.
+    """
+    # If running on a GAFYD domain, you must define an app alias on the
+    # Application Settings admin web page.
+    sender = mr.GetParam('from_addr')
+    reply_to = mr.GetParam('reply_to')
+    to = mr.GetParam('to')
+    if not to:
+      # Cannot proceed if we cannot create a valid EmailMessage.
+      return
+    references = mr.GetParam('references')
+    subject = mr.GetParam('subject')
+    body = mr.GetParam('body')
+    html_body = mr.GetParam('html_body')
+
+    if settings.dev_mode:
+      to_format = settings.send_dev_email_to
+    else:
+      to_format = settings.send_all_email_to
+
+    if to_format:
+      to_user, to_domain = to.split('@')
+      to = to_format % {'user': to_user, 'domain': to_domain}
+
+    logging.info(
+        'Email:\n sender: %s\n reply_to: %s\n to: %s\n references: %s\n '
+        'subject: %s\n body: %s\n html body: %s',
+        sender, reply_to, to, references, subject, body, html_body)
+    message = mail.EmailMessage(
+        sender=sender, to=to, subject=subject, body=body)
+    if html_body:
+      message.html = html_body
+    if reply_to:
+      message.reply_to = reply_to
+    if references:
+      message.headers = {'References': references}
+    if settings.unit_test_mode:
+      logging.info('Sending message "%s" in test mode.', message.subject)
+    else:
+      message.send()
+
+    return dict(
+        sender=sender, to=to, subject=subject, body=body, html_body=html_body,
+        reply_to=reply_to, references=references)
+
+
+def _GetSubscribersAddrPermList(
+    cnxn, services, issue, project, config, omit_addrs, users_by_id):
+  """Lookup subscribers, evaluate their saved queries, and decide to notify."""
+  users_to_queries = notify_helpers.GetNonOmittedSubscriptions(
+      cnxn, services, [project.project_id], omit_addrs)
+  # TODO(jrobbins): need to pass through the user_id to use for "me".
+  subscribers_to_notify = notify_helpers.EvaluateSubscriptions(
+      cnxn, issue, users_to_queries, services, config)
+  # TODO(jrobbins): expand any subscribers that are user groups.
+  subs_needing_user_views = [
+      uid for uid in subscribers_to_notify if uid not in users_by_id]
+  users_by_id.update(framework_views.MakeAllUserViews(
+      cnxn, services.user, subs_needing_user_views))
+  sub_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
+      cnxn, subscribers_to_notify, project, issue, services, omit_addrs,
+      users_by_id, pref_check_function=lambda *args: True)
+
+  return sub_addr_perm_list

@@ -1,0 +1,77 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+<form action="advsearch.do" method="POST" style="margin:6px;margin-top:12px;" autocomplete="false">
+
+[# Note: No need for UI element permission checking here. ]
+
+<table cellspacing="0" cellpadding="4" border="0" class="advquery">
+   <tr class="focus"><td width="25%"><b>&nbsp;Find issues</b></td>
+    <td>Search within</td>
+    <td>
+       <select name="can" style="width:100%">
+        [include "issue-can-widget.ezt" "advsearch"]
+       </select>
+    </td>
+    <td width="25%" align="center" rowspan="3">
+     <input type="submit" name="btn" value="Search" style="font-weight:bold; font-size:120%">
+    </td>
+   </tr>
+   <tr class="focus"><td width="25%"></td>
+       <td>with <b>all</b> of the words</td><td><input type="text" size="25" name="words" value=""></td>
+   </tr>
+   <tr class="focus"><td></td>
+       <td><b>without</b> the words</td><td><input type="text" size="25" name="without" value=""></td>
+   </tr>
+   <tr><td>&nbsp;</td><td></td><td></td><td></td></tr>
+   [# TODO(jrobbins): add autocomplete to labels field, allow commas, disable browser autocomplete. ]
+   <tr><td><b>Restrict search to</b></td><td>Labels</td><td><input type="text" name="labels" size="25" value="" placeholder="All the labels"></td><td class="eg">e.g., FrontEnd Priority:High</td></tr>
+   <tr><td rowspan="5"><br>
+        <table cellspacing="0" cellpadding="0" border="0"><tr><td>
+        <div class="tip">
+            <b>Tip:</b> Search results can be<br>refined by clicking on
+            the<br>result table headings.<br> <a href="searchtips">More
+            Search Tips</a>
+        </div>
+        </td></tr></table>
+       </td>
+       [# TODO(jrobbins): add autocomplete to status field, allow commas, disable browser autocomplete. ]
+       <td>Statuses</td><td><input type="text" name="statuses" size="25" value="" placeholder="Any status"></td><td class="eg">e.g., Started</td></tr>
+   <tr><td>Components</td><td><input type="text" size="25" name="components" value="" placeholder="Any component"></td><td class="eg"></td></tr>
+   <tr><td>Reporters</td><td><input type="text" size="25" name="reporters" value="" placeholder="Any reporter"></td><td class="eg"></td></tr>
+   [# TODO(jrobbins): add autocomplete to owners and cc fields, allow commas, disable browser autocomplete. ]
+   <tr><td>Owners</td><td><input type="text" size="25" name="owners" value="" placeholder="Any owner"></td><td class="eg">e.g., user@example.com</td></tr>
+   <tr><td>Cc</td><td><input type="text" size="25" name="cc" value="" placeholder="Any cc"></td><td class="eg"></td></tr>
+   <tr><td></td><td>Comment by</td><td><input type="text" size="25" name="commentby" value="" placeholder="Any commenter"></td><td class="eg"></td></tr>
+   [# TODO(jrobbins): implement search by star counts
+   <tr><td></td><td>Starred by</td>
+       <td>
+           <select name="starcount" style="width:100%">
+            <option value="-1" selected="selected">Any number of users</option>
+            <option value="0">Exactly zero users</option>
+            <option value="1">1 or more users</option>
+            <option value="2">2 or more users</option>
+            <option value="3">3 or more users</option>
+            <option value="4">4 or more users</option>
+            <option value="5">5 or more users</option>
+           </select></td>
+       <td class="eg"></td>
+   </tr>
+   ]
+   [# TODO(jrobbins) search by dates? ]
+   <tr><td></td><td>&nbsp;</td><td></td><td class="eg"></td></tr>
+</table>
+</form>
+
+[include "../framework/footer-script.ezt"]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _fetchOptions(
+      '[projectname]', 'issueOptions',
+      CS_env.token, [project.cached_content_timestamp]);
+  _onload();
+});
+</script>
+
+[include "../framework/master-footer.ezt"]

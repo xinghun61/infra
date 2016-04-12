@@ -1,0 +1,61 @@
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  [# Pass the list of column names from HTML to JS ]
+  window._allColumnNames = [
+    [for column_values]'[column_values.column_name]'[if-index column_values last][else], [end][end]
+    ];
+
+  [# Update the issue link hrefs on-load and whenever the column-spec changes.]
+  _ctxCan = [can];
+  _ctxQuery = "[format "js"][query][end]";
+  _ctxSortspec = "[format "js"][sortspec][end]";
+  _ctxGroupBy = "[format "js"][groupby][end]";
+  _ctxDefaultColspec = "[format "js"][default_colspec][end]";
+  _ctxStart = [start];
+  _ctxNum = [num];
+  _ctxResultsPerPage = [default_results_per_page];
+  _ctxArgs = _formatContextQueryArgs();
+
+  function _goIssue(issueIndex, newWindow) {
+    var url = _makeIssueLink(issueRefs[[]issueIndex]);
+    _go(url, newWindow);
+  }
+
+  window.issueRefs = [[]
+   [for table_data]
+     {project_name: "[format "js"][table_data.project_name][end]",
+      id: [table_data.local_id]}[if-index table_data last][else],[end][end]
+   ];
+
+  function _handleResultsClick(event) {
+    var target = event.target;
+    if (target.classList.contains("label"))
+      return;
+    if (target.classList.contains("rowwidgets") || target.parentNode.classList.contains("rowwidgets"))
+      return;
+    while (target && target.tagName != "TR") target = target.parentNode;
+    event.preventDefault();
+    _goIssue(target.attributes[[]"data-idx"].value,
+             (event.metaKey || event.ctrlKey || event.button == 1));
+  };
+  $("resultstable").addEventListener("click", _handleResultsClick);
+
+  function _handleHeaderClick(event) {
+    var target = event.target;
+    while (target && target.tagName != "TH") target = target.parentNode;
+    var colIndex = target.getAttribute("data-col-index");
+    _showBelow("pop_" + colIndex, target);
+  }
+  $("resultstablehead").addEventListener("click", _handleHeaderClick);
+});
+</script>
+
+<script type="text/javascript" defer src="/static/third_party/js/kibbles-1.3.3.comp.js" nonce="[nonce]"></script>
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _setupKibblesOnListPage(
+    '[project_home_url]/issues/list',
+    '[project_home_url]/issues/entry',
+    '[projectname]', 1, 0, '[set_star_token]');
+});
+</script>

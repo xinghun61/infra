@@ -1,0 +1,33 @@
+[# Display a group header row, if this is the start of a new group of rows.
+
+Args:
+ arg0: singular form of artifact type name.
+ arg1: plural form of artifact type name.
+]
+
+[if-any table_data.group][if-any table_data.group.cells]
+  <tbody class="opened"> [# The next tbody implicitly closes this one]
+  <tr class="group_row">
+    <td colspan="100" class="toggleHidden">
+      <img class="ifClosed" src="/static/images/plus.gif">
+      <img class="ifOpened" src="/static/images/minus.gif">
+      [table_data.group.rows_in_group]
+      [is table_data.group.rows_in_group "1"][arg0][else][arg1][end]:
+      [for table_data.group.cells]
+        [define any_group_value]No[end]
+        [for table_data.group.cells.values]
+           [if-any table_data.group.cells.values.item]
+            [define any_group_value]Yes[end]
+          [end]
+        [end]
+        [is any_group_value "Yes"]
+          [for table_data.group.cells.values]
+            [table_data.group.cells.group_name]=[table_data.group.cells.values.item]
+          [end]
+        [else]
+          -has:[table_data.group.cells.group_name]
+        [end]
+      [end]
+    </td>
+  </tr>
+[end][end]

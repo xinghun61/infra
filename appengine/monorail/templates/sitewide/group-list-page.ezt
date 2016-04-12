@@ -1,0 +1,96 @@
+[define title]User Groups[end]
+[define category_css]css/ph_list.css[end]
+[include "../framework/master-header.ezt" "hidetabs"]
+[include "../framework/js-placeholders.ezt"]
+
+<form method="POST" action='/hosting/deleteGroup.do'>
+<input type="hidden" name="token" value="[form_token]">
+<div id="colcontrol">
+   <div class="list">
+     <b>User Groups</b>
+     [if-any offer_group_deletion]
+     <input type="submit" value="Delete Groups" style="margin-left:1em"
+            id="removebtn" name="removebtn" disabled="disabled">
+     [end]
+     [if-any offer_group_creation]
+     <a href="/hosting/createGroup" class="buttonify" style="margin-left:1em">Create Group</a>
+     [end]
+   </div>
+
+  <table cellspacing="0" cellpadding="2" border="0" class="results striped" id="resultstable" width="100%">
+  <tbody>
+   [if-any groups]
+
+      <tr id="headingrow">
+        [if-any offer_group_deletion]
+          <th style="border-right:0; padding-right:2px" width="2%">&nbsp;</th>
+        [end]
+        <th style="white-space:nowrap">Name</th>
+        <th style="white-space:nowrap">Size</th>
+        <th style="white-space:nowrap">Member list visibility</th>
+      </tr>
+
+      [for groups]
+        <tr>
+          [if-any offer_group_deletion]
+            <td style="padding-right:2px" width="2%">
+              <input type="checkbox" name="remove"
+                     value="[groups.group_id]">
+            </td>
+          [end]
+          <td class="id" style="text-align:left"><a href="[groups.detail_url]">[groups.name]</a></td>
+          <td><a href="[groups.detail_url]">[groups.num_members]</a></td>
+          <td><a href="[groups.detail_url]">[groups.who_can_view_members]</a></td>
+        </tr>
+      [end]
+
+   [else]
+    <tr>
+     <td colspan="40" class="id">
+      <div style="padding: 3em; text-align: center">
+       No user groups have been defined.
+      </div>
+     </td>
+    </tr>
+   [end]
+
+
+  </tbody>
+  </table>
+</div>
+
+</form>
+
+[if-any offer_group_deletion]
+  <script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+    function _countChecked(opt_className) {
+      var numChecked = 0;
+      var inputs = document.getElementsByTagName('input');
+      for (var i = 0; i < inputs.length; i++) {
+        var el = inputs[[]i];
+        if (el.type == 'checkbox' && el.name == 'remove' && el.checked &&
+            (!opt_className || opt_className == el.className)) {
+          numChecked++;
+        }
+      }
+      return numChecked;
+    }
+
+   function _enableRemoveButton() {
+     var removeButton = document.getElementById('removebtn');
+     if (_countChecked() > 0) {
+       removeButton.disabled = false;
+     } else {
+       removeButton.disabled = true;
+     }
+   }
+
+   setInterval(_enableRemoveButton, 700);
+
+});
+  </script>
+[end]
+
+[include "../framework/footer-script.ezt"]
+[include "../framework/master-footer.ezt"]

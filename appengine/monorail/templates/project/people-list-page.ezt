@@ -1,0 +1,143 @@
+[define title]People[end]
+[define category_css]css/ph_list.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+[include "../framework/js-placeholders.ezt"]
+
+<form method="POST" action="list.do" id="membership_form">
+<div id="colcontrol">
+   <div class="list">
+     [if-any pagination.visible]
+       <div class="pagination">
+         [if-any pagination.prev_url]<a href="[pagination.prev_url]"><b>&lsaquo;</b> Prev</a>[end]
+         Members [pagination.start] - [pagination.last] of [pagination.total_count]
+         [if-any pagination.next_url]<a href="[pagination.next_url]">Next <b>&rsaquo;</b></a>[end]
+       </div>
+     [end]
+     <b style="margin-right:1em">Project People</b>
+
+     [if-any offer_membership_editing]
+     <input type="button" value="Add members" style="font-size:80%"
+            id="add_members_button">
+     <input type="submit" value="Remove members" style="font-size:80%; margin-left:1em"
+            id="removebtn" name="removebtn" disabled="disabled">
+     [# TOOD(jrobbins): extra confirmation when removing yourself as owner.]
+     [end]
+   </div>
+
+  <table cellspacing="0" cellpadding="2" border="0" class="results striped vt" id="resultstable" width="100%">
+  <tbody>
+   [if-any pagination.visible_results]
+
+      <tr id="headingrow">
+       [if-any offer_membership_editing]
+         <th style="border-right:0; padding-right:2px">&nbsp;</th>
+       [end]
+
+       <th style="white-space:nowrap">Name</th>
+       <th style="white-space:nowrap">Role</th>
+       <th style="white-space:nowrap">Notes</th>
+      </tr>
+
+      [for pagination.visible_results]
+        [include "people-list-row-part.ezt"]
+      [end]
+
+   [else]
+    <tr>
+     <td colspan="40" class="id">
+      <div style="padding: 3em; text-align: center">
+       This project does not have any members.
+      </div>
+     </td>
+    </tr>
+   [end]
+
+
+  </tbody>
+  </table>
+  <div class="list-foot">
+    <div class="pagination">
+    [if-any pagination.prev_url]<a href="[pagination.prev_url]"><b>&lsaquo;</b> Prev</a>[end]
+    [pagination.start] - [pagination.last] of [pagination.total_count]
+    [if-any pagination.next_url]<a href="[pagination.next_url]">Next <b>&rsaquo;</b></a>[end]
+    </div>
+  </div>
+</div>
+
+[if-any untrusted_user_groups]
+  <div style="width:45em">
+    [include "untrusted-user-groups-part.ezt"]
+  </div>
+[end]
+
+[include "people-add-members-form.ezt" "project"]
+</form>
+
+[if-any offer_membership_editing]
+  <script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+    $("add_members_button").addEventListener("click", _openAddMembersForm);
+
+    function _countChecked(opt_className) {
+      var numChecked = 0;
+      var inputs = document.getElementsByTagName('input');
+      for (var i = 0; i < inputs.length; i++) {
+        var el = inputs[[]i];
+        if (el.type == 'checkbox' && el.name == 'remove' && el.checked &&
+            (!opt_className || opt_className == el.className)) {
+          numChecked++;
+        }
+      }
+      return numChecked;
+    }
+
+   function _enableRemoveButton() {
+     var removeButton = document.getElementById('removebtn');
+     if (_countChecked() > 0) {
+       removeButton.disabled = false;
+     } else {
+       removeButton.disabled = true;
+     }
+   }
+
+   setInterval(_enableRemoveButton, 700);
+
+   function _preventAbandonment(event) {
+      var meCheckbox = document.getElementById("me_checkbox");
+      if (meCheckbox && meCheckbox.checked) {
+        numOwnersChecked = _countChecked("owner");
+        if (numOwnersChecked == [total_num_owners]) {
+          alert("You cannot remove all project owners.");
+          event.preventDefault();
+        } else {
+          if (!confirm("Remove yourself as project owner?\n" +
+                       "You will be locked out of making further changes.")) {
+              event.preventDefault();
+          }
+        }
+      }
+      return true;
+   }
+   [if-any check_abandonment]
+     $("membership_form").addEventListener("submit", _preventAbandonment);
+   [end]
+
+  function _handleResultsClick(event) {
+    var target = event.target;
+    if (target.tagName == "A")
+      return;
+    if (target.classList.contains("rowwidgets") || target.parentNode.classList.contains("rowwidgets"))
+      return;
+    if (target.tagName != "TR") target = target.parentNode;
+    _go(target.attributes[[]"data-url"].value,
+        (event.metaKey || event.ctrlKey || event.button == 1));
+  };
+  $("resultstable").addEventListener("click", _handleResultsClick);
+
+});
+  </script>
+[end]
+
+
+[include "../framework/footer-script.ezt"]
+[include "../framework/master-footer.ezt"]

@@ -1,0 +1,168 @@
+[# Table header popup menus ]
+
+[for column_values]
+ [is column_values.column_name "id"]
+   <div id="pop_[column_values.col_index]" class="popup">
+    <table cellspacing="0" cellpadding="0" border="0">
+     <tr id="pop_up_[column_values.col_index]"><td>Sort Up</td></tr>
+     <tr id="pop_down_[column_values.col_index]"><td>Sort Down</td></tr>
+     <tr id="pop_hide_[column_values.col_index]"><td>Hide Column</td></tr>
+    </table>
+   </div>
+ [else]
+  [is column_values.column_name "summary"]
+   <div id="pop_[column_values.col_index]" class="popup">
+    <table cellspacing="0" cellpadding="0" border="0">
+     <tr id="pop_up_[column_values.col_index]"><td>Sort Up</td></tr>
+     <tr id="pop_down_[column_values.col_index]"><td>Sort Down</td></tr>
+     [if-any column_values.filter_values]
+      <tr id="pop_show_only_[column_values.col_index]"><td>Show only
+          <span class="indicator">&#9658;</span></td></tr>
+     [end]
+     <tr id="pop_hide_[column_values.col_index]"><td>Hide Column</td></tr>
+    </table>
+   </div>
+  [else]
+   <div id="pop_[column_values.col_index]" class="popup">
+    <table cellspacing="0" cellpadding="0" border="0">
+     <tr id="pop_up_[column_values.col_index]"><td>Sort Up</td></tr>
+     <tr id="pop_down_[column_values.col_index]"><td>Sort Down</td></tr>
+     [if-any column_values.filter_values]
+      <tr id="pop_show_only_[column_values.col_index]"><td>Show only
+          <span class="indicator">&#9658;</span></td></tr>
+     [end]
+     <tr id="pop_hide_[column_values.col_index]"><td>Hide Column</td></tr>
+     <tr id="pop_groupby_[column_values.col_index]"><td>Group Rows</td></tr>
+    </table>
+   </div>
+  [end]
+ [end]
+[end]
+
+[# Table header popup submenus for autofiltering of values ]
+
+[for column_values]
+ <div id="filter_[column_values.col_index]" class="popup subpopup">
+  <table cellspacing="0" cellpadding="0" border="0">
+   [for column_values.filter_values]
+    <tr data-filter-column="[is column_values.column_name "Summary"]label[else][column_values.column_name][end]"
+        data-filter-value="[column_values.filter_values]">
+     <td>[column_values.filter_values]</td></tr>
+   [end]
+  </table>
+ </div>
+[end]
+
+[# Popup menu showing the list of available columns allowing show/hide ]
+
+<div id="pop_dot" class="popup">
+ <table cellspacing="0" cellpadding="0" border="0">
+  <tr><th>Show columns:</th></tr>
+   [for panels.ordered_columns]
+    <tr data-toggle-column-index="[panels.ordered_columns.col_index]"><td>&nbsp;<span
+        class="col_[panels.ordered_columns.col_index]">&diams;</span>&nbsp;[panels.ordered_columns.name]</td></tr>
+   [end]
+   [for unshown_columns]
+    <tr data-add-column-name="[unshown_columns]"
+        ><td>&nbsp;&nbsp;&nbsp;&nbsp;[unshown_columns]</td></tr>
+   [end]
+   <tr id="pop_dot_edit"
+      ><td>&nbsp;&nbsp;&nbsp;&nbsp;Edit&nbsp;column&nbsp;spec...</td></tr>
+ </table>
+</div>
+
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  function registerPopHandlers(colIndex, colName) {
+    var sortUpEl = $("pop_up_" + colIndex);
+    if (sortUpEl) {
+      sortUpEl.addEventListener("click", function () {
+        _closeAllPopups(sortUpEl);
+        _sortUp(colName);
+      });
+      sortUpEl.addEventListener("mouseover", function () {
+       _closeSubmenus();
+      });
+    }
+  
+    var sortDownEl = $("pop_down_" + colIndex);
+    if (sortDownEl) {
+      sortDownEl.addEventListener("click", function () {
+        _closeAllPopups(sortDownEl);
+        _sortDown(colName);
+      });
+      sortDownEl.addEventListener("mouseover", function () {
+       _closeSubmenus();
+      });
+    }
+
+    var hideEl = $("pop_hide_" + colIndex);
+    if (hideEl) {
+      hideEl.addEventListener("click", function () {
+        _closeAllPopups(hideEl);
+        _toggleColumnUpdate(colIndex);
+      });
+      hideEl.addEventListener("mouseover", function () {
+       _closeSubmenus();
+      });
+    }
+
+    var showOnlyEl = $("pop_show_only_" + colIndex);
+    if (showOnlyEl) {
+      showOnlyEl.addEventListener("mouseover", function () {
+        _showRight("filter_" + colIndex, showOnlyEl);
+      });
+    }
+  
+    var groupByEl = $("pop_groupby_" + colIndex);
+    if (groupByEl) {
+      groupByEl.addEventListener("click", function () {
+        _closeAllPopups(groupByEl);
+        _addGroupBy(colIndex);
+      });
+      groupByEl.addEventListener("mouseover", function () {
+       _closeSubmenus();
+      });
+    }
+  }
+
+  [for column_values]
+    registerPopHandlers([column_values.col_index], "[column_values.column_name]");
+  [end]
+
+  function handleFilterValueClick(event) {
+    var target = event.target;
+    if (target.tagName != "TR") target = target.parentNode;
+    _closeAllPopups(target);
+    var filterColumn = target.getAttribute("data-filter-column");
+    var filterValue = target.getAttribute("data-filter-value");
+    _filterTo(filterColumn, filterValue);
+  }
+
+  [for column_values]
+    $("filter_" + [column_values.col_index]).addEventListener(
+        "click", handleFilterValueClick);
+  [end]
+
+  function handleDotDotDotClick(event) {
+    var target = event.target;
+    if (target.tagName != "TR") target = target.parentNode;
+    _closeAllPopups(target);
+    var colIndex = target.getAttribute("data-toggle-column-index");
+    if (colIndex != null)
+      _toggleColumnUpdate(colIndex);
+    var colName = target.getAttribute("data-add-column-name");
+    if (colName != null)
+      _addcol(colName);
+  }
+
+  $("pop_dot").addEventListener("click", handleDotDotDotClick);
+
+  $("pop_dot_edit").addEventListener("click", function() {
+    var target = $("pop_dot_edit");
+    _closeAllPopups(target);
+    $("columnspec").style.display = "";
+  });
+});
+</script>

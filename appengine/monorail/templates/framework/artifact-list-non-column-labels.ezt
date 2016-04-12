@@ -1,0 +1,4 @@
+[for table_data.cells.non_column_labels]<a
+ class="label"  href="list?q=label:[table_data.cells.non_column_labels.value]"
+ >[if-any table_data.cells.non_column_labels.is_derived]<i>[end][table_data.cells.non_column_labels.value][if-any table_data.cells.non_column_labels.is_derived]</i>[end]</a>
+[end]

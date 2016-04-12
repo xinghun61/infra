@@ -1,0 +1,17 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+ <head>
+ <title>Issue [projectname]:[local_id] comment #[seq]</title>
+ <meta name="ROBOTS" content="NOINDEX">
+ <meta name="referrer" content="no-referrer">
+ <link type="text/css" rel="stylesheet" href="/static/css/ph_core.css?version=[app_version]">
+ </head>
+ <body>
+  <h3>Original email for issue [projectname]:[local_id] comment #[seq]</h3>
+  [if-any is_binary]
+   <i>The message could not be displayed.</i>
+  [else]
+   <pre>[message_body]</pre>
+  [end]
+ </body>
+</html>

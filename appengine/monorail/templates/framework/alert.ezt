@@ -1,0 +1,37 @@
+[if-any alerts.show]
+  <table align="center" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 6px">
+   <tr><td class="notice">
+     [if-any alerts.updated]
+      <a href="[project_home_url]/issues/detail?id=[alerts.updated]">Issue [alerts.updated]</a>
+      has been updated.
+     [end]
+
+     [if-any alerts.moved]
+       Issue has been moved to
+       <a href="/p/[alerts.moved_to_project]/issues/detail?id=[alerts.moved_to_id]">
+         [alerts.moved_to_project]:[alerts.moved_to_id]
+      </a>
+     [end]
+
+     [if-any alerts.copied]
+       <a href="[project_home_url]/issues/detail?id=[alerts.copied_from_id]">Issue [alerts.copied_from_id]</a>
+       has been copied to
+       <a href="/p/[alerts.copied_to_project]/issues/detail?id=[alerts.copied_to_id]">
+         [alerts.copied_to_project]:[alerts.copied_to_id]
+      </a>
+     [end]
+
+     [if-any alerts.saved]
+      Changes have been saved
+     [end]
+
+     [if-any alerts.deleted]
+      [is alerts.deleted "1"]
+       Item deleted
+      [else]
+       [alerts.deleted] items deleted
+      [end]
+     [end]
+   </td></tr>
+  </table>
+[end]

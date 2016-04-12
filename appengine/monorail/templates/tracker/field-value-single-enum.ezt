@@ -1,0 +1,81 @@
+[if-any fields.values fields.derived_values]
+
+  [# TODO(jrobbins): a better UX for undesired values would be to replace the current
+     --/value slect widget with a plain-text display of the value followed by an _X_
+     link to delete it.  There would be a hidden field with the value.  Validation would
+     fail in JS and on the server if each such _X_ had not already been clicked.]
+
+  [# There could be more than one if this field used to be multi-valued.]
+  [for fields.values]
+      <select name="custom_[fields.field_id]" id="custom_[fields.field_id]"
+              class="custom_field_value_menu">
+          [define show_no_value_choice]No[end]
+          [# Non-required fields can have any value removed.]
+          [if-any fields.field_def.is_required_bool][else]
+            [define show_no_value_choice]Yes[end]
+          [end]
+          [# Formerly multi-valued fields need -- to narrow down to being singled valued.]
+          [if-index fields.values first][else]
+            [define show_no_value_choice]Yes[end]
+          [end]
+          [is show_no_value_choice "Yes"]
+            <option value="--"
+                    [is fields.values.val ""]selected="selected"[end]
+                    title="No value">--</option>
+          [end]
+
+          [define value_is_shown]No[end]
+          [for fields.field_def.choices]
+            [define show_choice]No[end]
+            [# Always show the current value]
+            [is fields.values.val fields.field_def.choices.name]
+              [define value_is_shown]Yes[end]
+              [define show_choice]Yes[end]
+            [end]
+            [# Formerly multi-valued fields extra values can ONLY be removed.]
+            [if-index fields.values first]
+              [define show_choice]Yes[end]
+            [end]
+            [is show_choice "Yes"]
+              <option value="[fields.field_def.choices.name]"
+                      [is fields.values.val fields.field_def.choices.name]selected="selected"[end]>
+                [fields.field_def.choices.name]
+		[if-any fields.field_def.choices.docstring]= [fields.field_def.choices.docstring][end]
+              </option>
+            [end]
+          [end]
+
+          [is value_is_shown "No"]
+            [# This is an oddball label, force the user to explicitly remove it.]
+              <option value="[fields.values.val]" selected="selected"
+                      title="This value is not a defined choice for this field">
+                [fields.values.val]
+              </option>
+          [end]
+      </select><br>
+  [end]
+
+  [for fields.derived_values]
+    <div title="Derived: [fields.derived_values.docstring]" class="rolloverzone">
+      <i>[fields.derived_values.val]</i>
+    </div>
+  [end]
+
+[else][# No current values, just give all choices.]
+
+   <select name="custom_[fields.field_id]" id="custom_[fields.field_id]"
+           class="custom_field_value_menu">
+       [if-any fields.field_def.is_required_bool]
+         <option value="" disabled="disabled" selected="selected">Select value&hellip;</option>
+       [else]
+          <option value="--" selected="selected" title="No value">--</option>
+       [end]
+       [for fields.field_def.choices]
+         <option value="[fields.field_def.choices.name]">
+           [fields.field_def.choices.name]
+	   [if-any fields.field_def.choices.docstring]= [fields.field_def.choices.docstring][end]
+         </option>
+       [end]
+   </select><br>
+
+[end]

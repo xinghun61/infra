@@ -1,0 +1,5 @@
+[if-any errors.captcha]
+ <div class="fielderror">[errors.captcha]</div>
+[end]
+<script src="https://www.google.com/recaptcha/api.js" async defer nonce="[nonce]"></script>
+<div class="g-recaptcha" data-sitekey="[recaptcha_public_key]"></div>

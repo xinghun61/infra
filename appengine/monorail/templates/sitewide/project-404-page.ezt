@@ -1,0 +1,6 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+<center style="margin-top: 4em;">The page you asked for does not exist.</center>
+
+[include "../framework/master-footer.ezt"]

@@ -1,0 +1,30 @@
+<h4>Storage quota</h4>
+
+<div class="section">
+
+  <table cellspacing="6" style="padding:6px">
+    <tr>
+      <td>Issue attachments:</td>
+      <td>[include "quota-bar.ezt" attachment_quota]</td>
+    </tr>
+    <tr>
+      <td style="padding:15px 0">
+        [if-any offer_quota_editing]
+          <input type="submit" name="savechanges" value="Update Quota">
+        [end]
+      </td>
+      <td style="padding:15px 0">
+        [if-any offer_quota_editing]
+          <input type="number" name="[attachment_quota.field_name]" value="[attachment_quota.quota_mb]"
+                 size="5" min="1" style="font-size:90%; padding:0">
+          [if-any errors.attachment_quota]
+            <div class="fielderror">[errors.attachment_quota]</div>
+          [end]
+        [else]
+          [attachment_quota.quota_mb]
+        [end]
+        MB
+      </td>
+    </tr>
+  </table>
+</div>

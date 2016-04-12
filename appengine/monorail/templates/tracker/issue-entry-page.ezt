@@ -1,0 +1,401 @@
+[define title]New Issue[end]
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+[# Note: base permission for this page is CreateIssue]
+
+[if-any read_only][include "../framework/read-only-rejection.ezt"]
+[else]
+
+<div style="margin-top: 0; padding: 3px;" class="closed">
+ <form action="entry.do" method="POST" style="margin: 0; padding: 0" enctype="multipart/form-data" id="create_issue_form">
+  <input type="hidden" name="token" value="[form_token]">
+  <input type="hidden" name="template_name" value="[template_name]">
+  <input type="hidden" name="star" id="star_input" value="1">
+  <table cellpadding="0" cellspacing="0" border="0">
+   <tr><td>
+
+    <table cellspacing="0" cellpadding="3" border="0" class="rowmajor vt">
+     [if-any offer_templates]
+      <tr><th><label for="template_name">Template:</label></th>
+       <td><select name="template_name" id="template_name" data-project-name="[projectname]">
+        [for config.templates]
+         [if-any config.templates.can_view]
+          <option value="[config.templates.name]" [is config.templates.name template_name]selected=selected[end]>[config.templates.name]</option>
+         [end]
+        [end]
+       </td>
+      </tr>
+     [end]
+
+      <tr><th><label for="summary">Summary:</label></th>
+       <td colspan="2" class="inplace">
+        <input type="text" id="summary" name="summary" value="[initial_summary]" required data-clear-summary-on-click="[clear_summary_on_click]">
+        [if-any errors.summary]
+         <div class="fielderror">[errors.summary]</div>
+        [end]
+       </td>
+      </tr>
+
+      <tr><th rowspan="3"><label for="comment">Description:</label></th>
+       <td colspan="2">
+        <textarea style="width:100%" cols="80" rows="15" name="comment" id="comment" class="issue_text" required>[initial_description]
+</textarea> [# We want 1 final newline but 0 trailing spaces in the textarea]
+        [if-any errors.comment]
+         <div class="fielderror">[errors.comment]</div>
+        [end]
+       </td>
+      </tr>
+
+      <tr><td colspan="2">
+       <div id="attachmentareadeventry"></div>
+      </td></tr>
+
+      <tr>
+       <td style="width: 12em">
+        [if-any allow_attachments]
+         <span id="attachprompt"><img width="16" height="16" src="/static/images/paperclip.png" border="0" alt="A paperclip">
+         <a href="#" id="attachafile">Attach a file</a></span>
+         <div id="attachmaxsize" style="margin-left:1.2em; display:none">Max. attachments: [max_attach_size]</div>
+         [if-any errors.attachments]
+          <div class="fielderror">[errors.attachments]</div>
+         [end]
+        [else]
+         <div style="color:#666">Issue attachment storage quota exceeded.</div>
+        [end]
+       </td>
+       <td id="star_cell">
+        [# Note: if the user is permitted to enter an issue, they are permitted to star it.]
+        <a class="star" id="star" style="color:cornflowerblue;">&#9733;</a>
+        Notify me of issue changes, if enabled in <a id="settings" target="new" href="/hosting/settings">settings</a>
+       </td>
+      </tr>
+
+      <tr [if-any page_perms.EditIssue page_perms.EditIssueStatus][else]style="display:none;"[end]><th width="10%"><label for="statusenter">Status:</label></th>
+       <td class="inplace" style="width: 12em">
+        <input type="text" id="statusenter" autocomplete="off" name="status" value="[initial_status]">
+       </td>
+      </tr>
+      <tr [if-any page_perms.EditIssue page_perms.EditIssueOwner][else]style="display:none;"[end]><th width="10%"><label for="ownerenter">Owner:</label></th>
+       <td class="inplace" style="width: 12em">
+        <input type="text" id="ownerenter"  autocomplete="off" name="owner" value="[initial_owner]">
+        [if-any errors.owner]
+         <div class="fielderror">[errors.owner]</div>
+        [end]
+       </td>
+      </tr>
+
+      <tr [if-any page_perms.EditIssue page_perms.EditIssueCc][else]style="display:none;"[end]><th><label for="memberenter">Cc:</label></th>
+       <td colspan="2" class="inplace">
+        <input type="text" multiple id="memberenter" autocomplete="off" name="cc" value="[initial_cc]">
+        [if-any errors.cc]
+         <div class="fielderror">[errors.cc]</div>
+        [end]
+       </td>
+      </tr>
+
+      [# TODO(jrobbins): page_perms.EditIssueComponent]
+      <tr [if-any page_perms.EditIssue][else]style="display:none;"[end]><th><label for="components">Components:</label></th>
+       <td colspan="2" class="inplace">
+        <input type="text" id="components" autocomplete="off" name="components" value="[initial_components]">
+        [if-any errors.components]
+         <div class="fielderror">[errors.components]</div>
+        [end]
+       </td>
+      </tr>
+
+      <tbody [if-any page_perms.EditIssue][else]style="display:none;"[end] class="collapse">
+       [define any_fields_to_reveal]No[end]
+       [for fields]
+        [if-any fields.applicable]
+         [# TODO(jrobbins): determine applicability dynamically and update fields in JS]
+         <tr [if-any fields.display][else]class="ifExpand"[define any_fields_to_reveal]Yes[end][end]>
+          <th>[fields.field_name]:</th>
+          <td colspan="2">
+            [include "field-value-widgets.ezt" fields.field_def.is_multivalued_bool]
+            <div class="fielderror" style="display:none" id="error_custom_[fields.field_id]"></div>
+          </td>
+         <tr>
+        [end]
+       [end]
+       [is any_fields_to_reveal "Yes"]
+        <tr class="ifCollapse">
+         <td colspan="2"><a href="#" class="toggleCollapse">Show all fields</a><t/td>
+        </tr>
+       [end]
+      </tbody>
+
+      <tr [if-any page_perms.EditIssue][else]style="display:none;"[end]><th><label for="label0">Labels:</label></th>
+       <td colspan="2" class="labelediting">
+        [include "label-fields.ezt" "just-two"]
+       </td>
+      </tr>
+
+      <tr [if-any page_perms.EditIssue][else]style="display:none;"[end]><th style="white-space:nowrap"><label for="blocked_on">Blocked on:</label></th>
+       <td class="inplace" colspan="2">
+        <input type="text" name="blocked_on" id="blocked_on" value="[initial_blocked_on]">
+        [if-any errors.blocked_on]
+         <div class="fielderror">[errors.blocked_on]</div>
+        [end]
+       </td>
+      </tr>
+      <tr [if-any page_perms.EditIssue][else]style="display:none;"[end]><th><label for="blocking">Blocking:</label></th>
+       <td class="inplace" colspan="2">
+        <input type="text" name="blocking" id="blocking" value="[initial_blocking]" />
+        [if-any errors.blocking]
+         <div class="fielderror">[errors.blocking]</div>
+        [end]
+       </td>
+      </tr>
+
+     [if-any show_captcha]
+      <tr><th style="white-space:nowrap">Human Verification:</th>
+       <td colspan="2">
+        [include "../framework/captcha-field.ezt"]
+       </td>
+      </tr>
+     [end]
+
+     [include "../framework/label-validation-row.ezt"]
+     [include "../framework/component-validation-row.ezt"]
+    </table>
+
+    <div style="padding:6px">
+     <input type="submit" id="submit_btn" name="btn" value="Submit issue">
+     <input type="button" id="discard" name="nobtn" value="Discard">
+    </div>
+
+   </td>
+   </tr>
+  </table>
+ </form>
+</div>
+
+<div id="helparea"></div>
+
+[include "../framework/footer-script.ezt"]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+
+  if ($("template_name")) {
+    $("template_name").addEventListener("change", function(event) {
+      _switchTemplate(event.target.getAttribute("data-project-name"),
+                      event.target.value)
+    });
+  }
+
+  if ($("summary")) {
+    var clearSummaryOnClick = $("summary").getAttribute("data-clear-summary-on-click");
+    if (clearSummaryOnClick) {
+      $("summary").addEventListener("keydown", function(event) {
+        _clearOnFirstEvent();
+      });
+    }
+    $("summary").addEventListener("click", function(event) {
+      if (clearSummaryOnClick) {
+        _clearOnFirstEvent();
+      }
+      checksubmit();
+    });
+    $("summary").addEventListener("focus", function(event) {
+      _acrob(null);
+      _acof(event);
+    });
+    $("summary").addEventListener("keyup", function(event) {
+      _dirty();
+      checksubmit();
+      return true;
+    });
+  }
+
+  if ($("comment")) {
+    $("comment").addEventListener("keyup", function(event) {
+      _dirty();
+      return true;
+    });
+  }
+  if ($("settings")) {
+    $("settings").addEventListener("focus", function(event) {
+      _acrob(null);
+    });
+  }
+  if ($("statusenter")) {
+    $("statusenter").addEventListener("focus", function(event) {
+      _acof(event);
+    });
+    $("statusenter").addEventListener("keyup", function(event) {
+      _dirty();
+      return _confirmNovelStatus(event.target);
+    });
+  }
+
+  if ($("submit_btn")) {
+    $("submit_btn").addEventListener("focus", function(event) {
+      _acrob(null);
+    });
+    $("submit_btn").addEventListener("click", function(event) {
+      _acrob(null);
+      _trimCommas();
+      userMadeChanges = false;
+      TKR_isDirty = false;
+    });
+  }
+  if ($("discard")) {
+    $("discard").addEventListener("focus", function(event) {
+      _acrob(null);
+    });
+    $("discard").addEventListener("click", function(event) {
+      _acrob(null);
+      _confirmDiscardEntry(event.target);
+      event.preventDefault();
+    });
+  }
+
+  window.allowSubmit = true;
+  $("create_issue_form").addEventListener("submit", function() {
+    if (allowSubmit) {
+      allowSubmit = false;
+      $("submit_btn").value = "Creating issue...";
+      $("submit_btn").disabled = "disabled";
+    }
+    else {
+      event.preventDefault();
+    }
+  });
+
+  var _blockIdsToListeners = [[]"blocked_on", "blocking"];
+  for (var i = 0; i < _blockIdsToListeners.length; i++) {
+    var id = _blockIdsToListeners[[]i];
+    if ($(id)) {
+      $(id).addEventListener("focus", function(event) {
+        _acrob(null);
+        _acof(event);
+      });
+      $(id).addEventListener("keyup", function(event) {
+        _dirty();
+        return true;
+      });
+    }
+  }
+
+  var _idsToAddDefaultListeners = [[]"ownerenter", "memberenter", "components"];
+  for (var i = 0; i < _idsToAddDefaultListeners.length; i++) {
+    var id = _idsToAddDefaultListeners[[]i];
+    if ($(id)) {
+      $(id).addEventListener("focus", function(event) {
+        _acof(event);
+      });
+      $(id).addEventListener("keyup", function(event) {
+        _dirty();
+        return true;
+      });
+    }
+  }
+
+  if ($("attachafile")) {
+    $("attachafile").addEventListener("click", function(event) {
+      _addAttachmentFields("attachmentareadeventry");
+      event.preventDefault();
+    });
+  }
+
+  window.userMadeChanges = false;
+  var inputs = document.querySelectorAll('input[type~="text"], textarea');
+  for (var i = 0; i < inputs.length; i++) {
+    var el = inputs[[]i];
+    el.addEventListener("input", function(event) {
+      if (event.target.id != "searchq") {
+        userMadeChanges = true;
+      }
+    });
+  }
+
+  window.onbeforeunload = function() {
+    if (userMadeChanges || TKR_isDirty) {
+      return "You have unsaved changes. Leave this page and discard them?";
+    }
+  };
+
+  _lfidprefix = 'labelenter';
+  _onload();
+  [if-any any_errors]
+   function _clearOnFirstEvent(){}
+  [else]
+   document.getElementById('summary').select();
+  [end]
+
+  _fetchOptions("[projectname]", "issueOptions",
+                CS_env.token, [project.cached_content_timestamp]);
+  [if-any page_perms.EditIssue page_perms.EditIssueStatus page_perms.EditIssueOwner page_perms.EditIssueCc]
+    setTimeout(_forceProperTableWidth, 100);
+  [end]
+
+  [if-any page_perms.EditIssue]
+   _exposeExistingLabelFields();
+  [end]
+
+  var field_error;
+  [if-any  errors.custom_fields]
+    [for errors.custom_fields]
+      field_error = document.getElementById('error_custom_' + [errors.custom_fields.field_id]);
+      field_error.innerText = "[errors.custom_fields.message]";
+      field_error.style.display = "";
+    [end]
+  [end]
+
+
+
+function checksubmit() {
+  var restrict_to_known = [if-any restrict_to_known]true[else]false[end];
+  var confirmmsg = document.getElementById('confirmmsg');
+  var cg = document.getElementById('cg');
+  var label_blocksubmitmsg = document.getElementById('blocksubmitmsg');
+  var component_blocksubmitmsg = document.getElementById('component_blocksubmitmsg');
+
+  // Check for templates that require components.
+  var component_required = [if-any component_required]true[else]false[end];
+  var components = document.getElementById('components');
+  if (components && component_required && components.value == "") {
+    component_blocksubmitmsg.innerText = "You must specify a component for this template.";
+  } else {
+    component_blocksubmitmsg.innerText = "";
+  }
+
+  var submit = document.getElementById('submit_btn');
+  var summary = document.getElementById('summary');
+  if ((restrict_to_known && confirmmsg && confirmmsg.innerText) ||
+      (label_blocksubmitmsg && label_blocksubmitmsg.innerText) ||
+      (component_blocksubmitmsg && component_blocksubmitmsg.innerText) ||
+      (cg && cg.value == "") ||
+      (!allowSubmit) ||
+      (!summary.value [if-any must_edit_summary]|| summary.value == '[format "js"][template_summary][end]'[end])) {
+     submit.disabled='disabled';
+  } else {
+     submit.disabled='';
+  }
+}
+checksubmit();
+setInterval(checksubmit, 700); [# catch changes that were not keystrokes, e.g., paste menu item.]
+
+$("star").addEventListener("click", function (event) {
+    _TKR_toggleStarLocal($("star"), "star_input");
+});
+
+});
+</script>
+
+[# TODO(jrobbins): Re-enable keystrokes on issue entry after resolving issue 3039]
+<!--
+<script type="text/javascript" defer src="/static/third_party/js/kibbles-1.3.3.comp.js" nonce="[nonce]"></script>
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _setupKibblesOnEntryPage('[project_home_url]/issues/list');
+});
+</script>
+-->
+
+[end]
+
+[include "field-value-widgets-js.ezt"]
+[include "../framework/master-footer.ezt"]

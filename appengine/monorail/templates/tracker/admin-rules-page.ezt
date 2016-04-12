@@ -1,0 +1,28 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+[if-any read_only][include "../framework/read-only-rejection.ezt"]
+[else]
+
+<form action="adminRules.do" id="adminRules" method="POST">
+ <input type="hidden" name="token" value="[form_token]">
+
+ [include "../framework/filter-rule-admin-part.ezt" "with_tracking_actions"]
+
+ <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit">
+</form>
+
+[end]
+
+[include "../framework/footer-script.ezt"]
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+ _fetchOptions(
+   '[projectname]', 'issueOptions',
+   CS_env.token, [project.cached_content_timestamp]);
+ _onload();
+
+});
+</script>
+
+[include "../framework/master-footer.ezt"]

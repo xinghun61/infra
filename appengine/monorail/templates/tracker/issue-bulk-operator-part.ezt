@@ -1,0 +1,28 @@
+[# Display a <select> widget with options to set/append/remove/clear the field.
+   Args:
+    arg0: element ID of widget to disable if Clear is selected.  The form name and ID
+          of the <select> will be "op_" + arg0.
+    arg1: "multi" for multi-valued fields so that "Append" and "Remove" are offered.
+  ]
+<select name="op_[arg0]" id="op_[arg0]" style="width:9em" tabindex="-1">
+  [is arg1 "multi"]
+    <option value="append" selected="selected">Append +=</option>
+    <option value="remove">Remove -=</option>
+    [# TODO(jrobbins): <option value="setexact">Set exactly :=</option>]
+  [else]
+    <option value="set" selected="selected">Set =</option>
+    <option value="clear">Clear</option>
+  [end]
+</select>
+
+[is arg1 "multi"][else]
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  if ($("op_[arg0]")) {
+    $("op_[arg0]").addEventListener("change", function(event) {
+      _ignoreWidgetIfOpIsClear(event.target, '[arg0]');
+    });
+  }
+});
+</script>
+[end]

@@ -1,0 +1,8 @@
+[# Safely display some text that includes some markup, completely removing the markup.
+
+  arg0 is a list of element EZT objects that have a tad and content and maybe some
+  other attributes.
+
+  We do not use extra whitespace in this template because it generates text into a
+  context where whitespace is significant.
+][arg0.content]

@@ -1,0 +1,17 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showusertabs" "t1"]
+
+<div style="max-width:50em">
+
+<h3>User Preferences</h3>
+
+<form action="settings.do" method="POST">
+  [include "unified-settings.ezt"]
+  [if-any read_only][else]
+   <input id="submit_btn" type="submit" name="btn" value="Save preferences">
+  [end]
+</form>
+
+</div>
+
+[include "../framework/master-footer.ezt"]

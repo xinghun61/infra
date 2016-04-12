@@ -1,0 +1,5 @@
+[is scope "projects"]
+[is starred "yes"]Starred[else]Unstarred[end] project [include "updates-project-link.ezt" "1"]
+[else][is scope "users"]
+[is starred "yes"]Starred[else]Unstarred[end] <a class="ot-profile-link-1" href="[starred_user_profile_url]">[starred_user_display_name]</a>
+[end][end]

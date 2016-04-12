@@ -1,0 +1,95 @@
+[# Diplay a widget to choose group visibility level, or read-only text showing
+   the visibility level.  Read-only text is used when the user does not have
+   permission to edit, or if there is only one available choice.
+]
+
+[define vis_menu_was_shown]False[end]
+
+[if-any read_only][else]
+  <select name="visibility" id="visibility" [if-any import_group]disabled="disabled"[end]>
+    <option value="" disabled="disabled" [if-any initial_visibility][else]selected="selected"[end]>
+      Select a visibility level...
+    </option>
+    [for visibility_levels]
+      <option value="[visibility_levels.key]"
+        [if-any initial_visibility]
+          [is initial_visibility.key visibility_levels.key]selected="selected"[end]
+        [end]>
+        [visibility_levels.name]
+      </option>
+    [end]
+  </select>
+  [define vis_menu_was_shown]True[end]
+
+  <br><br>
+  Friend projects: <br>
+  <input size="60" type="text" id="friendprojects" name="friendprojects" value="[initial_friendprojects]">
+  <div class="fielderror">
+    <span id="friendprojectsfeedback"></span>
+    [if-any errors.friendprojects][errors.friendprojects][end]
+  </div>
+
+  <br><br>
+  <input type="checkbox" name="import_group" id="import_group"
+         [if-any import_group]checked="checked"[end]
+         [if-any groupadmin]disabled="disabled"[end] >
+  <label for="import_group">Import from external group</label>
+
+  <div class="fielderror">
+    <span id="groupimportfeedback"></span>
+    [if-any errors.groupimport][errors.groupimport][end]
+  </div>
+
+  <br>
+  &nbsp;&nbsp;External group type:
+  <select name="group_type" id="group_type"
+          [if-any import_group][else]disabled="disabled"[end]
+          [if-any groupadmin]disabled="disabled"[end] >
+    <option value="" disabled="disabled" [if-any initial_group_type][else]selected="selected"[end]>
+      Select a group type...
+    </option>
+    [for group_types]
+      <option value="[group_types.key]"
+        [if-any initial_group_type]
+          [is initial_group_type.key group_types.key]selected="selected"[end]
+        [end]>
+        [group_types.name]
+      </option>
+    [end]
+  </select>
+  <br><br>
+
+  <script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+    cur_vis_value = $("visibility").value;
+    
+    function _updateSettings() {
+      if ($("import_group").checked) {
+        $("group_type").disabled = false;
+        cur_vis_value = $("visibility").value;
+        $("visibility").value = 0;
+        $("visibility").disabled = true;
+        $("friendprojects").disabled = true;
+      } else {
+        $("group_type").disabled = true;
+        $("visibility").value = cur_vis_value;
+        $("visibility").disabled = false;
+        $("friendprojects").disabled = false;
+      }
+    }
+
+    $("import_group").addEventListener("click", _updateSettings);
+});
+  </script>
+[end]
+
+[is vis_menu_was_shown "False"]
+  [initial_visibility.name]
+  <input type="hidden" name="visibility" value="[initial_visibility.key]">
+[end]
+
+<div class="formerror">
+  [if-any errors.access]
+    <div class="emphasis">[errors.access]</div>
+  [end]
+</div>

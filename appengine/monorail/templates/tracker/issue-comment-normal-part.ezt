@@ -1,0 +1,81 @@
+<div class="cursor_off vt issuecomment" id="hc[comments.sequence]">
+
+  <div class="issuecommentheader">
+    <span class="author">
+      [if-any comments.creator_role]<span class="role_label">Project Member</span>[end]
+      <a name="c[comments.sequence]"
+         href="[project_home_url]/issues/detail?id=[issue.local_id]#c[comments.sequence]">Comment [comments.sequence]</a>
+      by
+      [include "../framework/user-link.ezt" comments.creator]</span>,
+      <span class="date" title="[comments.date_tooltip] UTC"
+            >[comments.date_string][comments.date_relative]</span>
+    [if-any page_perms.ViewInboundMessages comments.can_delete_bool][if-any comments.inbound_message]
+      via <a target="_blank" href="original?id=[issue.local_id]&seq=[comments.sequence]">email</a>
+    [end][end]
+  </div>[#issuecommentheader]
+
+  <div class="issuecommentbody">
+    [if-any read_only][else]
+     <div style="float:right; margin-right:.3em; text-align:right" class="ichcommands">
+      <span id='comment-action-loading-[comments.sequence]'
+       class='loading' style='display:none;'>Processing</span>
+
+      [if-any comments.can_delete_bool][if-any arg0]
+        [if-any comments.is_deleted_bool]
+         <div style="font-size:90%">
+          This comment is not visible to normal users.
+         </div>
+         [if-any comments.is_spam_bool]
+           <a style="font-size: 90%" href="#"
+            class="flagComment" data-spam="[comments.is_spam]" data-id="[comments.id]"
+            data-sequence='[comments.sequence]'
+           >Unmark this comment as spam</a>
+         [else]
+           <a style="font-size: 90%" href="#"
+            class="delComment" data-sequence="[comments.sequence]" data-mode="0"
+           >Undelete comment</a>
+         [end]
+        [else]
+         <a style="font-size: 90%" href="#"
+          class="delComment" data-sequence="[comments.sequence]" data-mode="1"
+          >Delete comment</a>
+        [end]
+      [end][end]
+
+      [if-any page_perms.FlagSpam]
+       <a class="spamflag flagComment"
+        data-spam="[comments.flagged_spam]" data-id="[comments.id]" data-sequence="[comments.sequence]"
+        style="color:[if-any comments.flagged_spam_bool]red[else]gray[end]; text-decoration:none;"
+        title="[if-any comments.flagged_spam_bool]Un-f[else]F[end]lag as spam">
+       [if-any comments.flagged_spam_bool]&#9873;[else]&#9872;[end]
+       </a>
+      [end]
+
+     </div>
+    [end]
+
+    [if-any comments.amendments]
+     <table class="updates">
+      <tr><td class="box-inner">
+       [for comments.amendments]
+        [include "issue-comment-amendment-part.ezt" comments.amendments]
+       [end]
+      </td></tr>
+     </table>
+    [end]
+
+[if-any comments.content]<pre class="issue_text">
+[for comments.text_runs][include "render-rich-text.ezt" comments.text_runs][end]
+</pre>[end]
+
+    [if-any comments.attachments]
+     <div class="attachments">
+      [for comments.attachments]
+       [define offer_delete_attach][if-any arg0][comments.can_delete_bool][else][end][end]
+       [include "issue-attachment-part.ezt" comments.sequence comments.attachments offer_delete_attach]
+      [end]
+     </div>
+    [end]
+
+  </div>[#issuecommentbody]
+</div>[#issuecomment]

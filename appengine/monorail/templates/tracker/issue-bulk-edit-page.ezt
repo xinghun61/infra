@@ -1,0 +1,470 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+[# Note: base permission for this page is EditIssue]
+
+[if-any read_only][include "../framework/read-only-rejection.ezt"]
+[else]
+
+<div style="margin-top: 0; padding: 3px;" class="closed">
+ <form action="bulkedit.do" method="POST" style="margin: 0; padding: 0" enctype="multipart/form-data"
+       id="bulk_form">
+
+ <input type="hidden" name="can" value=[can] >
+ <input type="hidden" name="start" value=[start] >
+ <input type="hidden" name="num" value=[num] >
+ <input type="hidden" name="q" value="[query]">
+ <input type="hidden" id="sort" name="sort" value="[sortspec]">
+ <input type="hidden" name="groupby" value="[groupby]">
+ <input type="hidden" name="colspec" value="[colspec]">
+ <input type="hidden" name="x" value="[grid_x_attr]">
+ <input type="hidden" name="y" value="[grid_y_attr]">
+ <input type="hidden" name="mode" value="[if-any grid_mode]grid[end]">
+ <input type="hidden" name="cells" value="[grid_cell_mode]">
+
+ <input type="hidden" name="ids"
+        value="[for issues][issues.local_id][if-index issues last][else], [end][end]">
+ <input type="hidden" name="token" value="[form_token]">
+ <table cellpadding="0" cellspacing="0" border="0">
+  <tr><td>
+
+ <table cellspacing="0" cellpadding="3" border="0" class="rowmajor vt">
+   <tr><th>Issues:</th>
+    <td colspan="2">
+     [for issues]
+      <a href="detail?id=[issues.local_id]" title="[issues.summary]"
+        [if-any issues.closed]class=closed_ref[end]
+        >[if-any issues.closed]&nbsp;[end][issues.local_id][if-any issues.closed]&nbsp;[end]</a>[if-index issues last][else], [end]
+     [end]
+    </td>
+   </tr>
+
+   <tr>
+    <th>Comment:</th>
+    <td colspan="2">
+     <textarea cols="75" rows="6" name="comment" id="comment" class="issue_text">[initial_comment]</textarea>
+       [if-any errors.comment]
+         <div class="fielderror">[errors.comment]</div>
+       [end]
+    </td>
+   </tr>
+
+   <tr><th width="10%">Status:</th><td colspan="2">
+        [include "issue-bulk-operator-part.ezt" "statusenter" ""]
+        <input id="statusenter" autocomplete="off" style="width: 12em"
+               name="status" value="[initial_status]">
+        <span id="merge_area" style="margin-left:2em;">
+               Merge into issue:
+               <input type="text" id="merge_into" name="merge_into" style="width: 5em"
+                      value="[is initial_merge_into "0"][else][initial_merge_into][end]">
+        </span>
+        [if-any errors.merge_into_id]
+          <div class="fielderror">[errors.merge_into_id]</div>
+        [end]         
+       </td>
+   </tr>
+   <tr><th width="10%">Owner:</th><td colspan="2">
+         [include "issue-bulk-operator-part.ezt" "ownerenter" ""]
+         <input id="ownerenter" type="text" autocomplete="off" style="width: 12em"
+                name="owner" value="[initial_owner]">
+         [if-any errors.owner]
+           <div class="fielderror">[errors.owner]</div>
+         [end]
+       </td>
+   </tr>
+   <tr><th>Cc:</th><td colspan="2">
+         [include "issue-bulk-operator-part.ezt" "memberenter" "multi"]
+         <input type="text" multiple id="memberenter" autocomplete="off" style="width: 30em"
+                name="cc" value="[initial_cc]">
+         [if-any errors.cc]
+           <div class="fielderror">[errors.cc]</div>
+         [end]
+       </td>
+   </tr>
+
+   <tr><th>Components:</th><td colspan="2">
+       [include "issue-bulk-operator-part.ezt" "componententer" "multi"]
+       <input type="text" id="componententer" style="width:30em"
+              name="components" value="[initial_components]">
+       [if-any errors.components]
+         <div class="fielderror">[errors.components]</div>
+       [end]
+   </td></tr>
+
+   <tbody class="collapse">
+   [# Show some field editing elements immediately, others can be revealed.]
+     [define any_fields_to_reveal]No[end]
+     [for fields]
+       [if-any fields.applicable]
+         [# TODO(jrobbins): determine applicability dynamically and update fields in JS]
+         <tr [if-any fields.display][else]class="ifExpand"[define any_fields_to_reveal]Yes[end][end]>
+           <th>[fields.field_name]:</th>
+           <td colspan="2">
+             [define widget_id]custom_[fields.field_id][end]
+             [define multi][if-any fields.field_def.is_multivalued_bool]multi[end][end]
+             [include "issue-bulk-operator-part.ezt" widget_id multi]
+             [include "field-value-widgets.ezt" False]
+             <div class="fielderror" style="display:none" id="error_custom_[fields.field_id]"></div>
+           </td>
+         <tr>
+       [end]
+     [end]
+     [is any_fields_to_reveal "Yes"]
+       <tr class="ifCollapse">
+         <td colspan="2"><a href="#" class="toggleCollapse">Show all fields</a><t/td>
+       </tr>
+     [end]
+   </tbody>
+
+   <tr><th>Labels:</th>
+       <td colspan="2" class="labelediting">
+        <div id="enterrow1">
+         <input type="text" class="labelinput" id="label0" size="20" autocomplete="off"
+                name="label" value="[label0]">
+         <input type="text" class="labelinput" id="label1" size="20" autocomplete="off"
+                name="label" value="[label1]">
+         <input type="text" class="labelinput" id="label2" size="20" autocomplete="off"
+                data-show-id="enterrow2" data-hide-id="addrow1"
+                name="label" value="[label2]"> <span id="addrow1" class="fakelink" data-instead="enterrow2">Add a row</span>
+        </div>
+        <div id="enterrow2"  style="display:none">
+         <input type="text" class="labelinput" id="label3" size="20" autocomplete="off"
+                name="label" value="[label3]">
+         <input type="text" class="labelinput" id="label4" size="20" autocomplete="off"
+                name="label" value="[label4]">
+         <input type="text" class="labelinput" id="label5" size="20" autocomplete="off"
+                data-show-id="enterrow3" data-hide-id="addrow2"
+                name="label" value="[label5]"> <span id="addrow2" class="fakelink" data-instead="enterrow3">Add a row</span>
+        </div>
+        <div id="enterrow3" style="display:none">
+         <input type="text" class="labelinput" id="label6" size="20" autocomplete="off"
+                name="label" value="[label6]">
+         <input type="text" class="labelinput" id="label7" size="20" autocomplete="off"
+                name="label" value="[label7]">
+         <input type="text" class="labelinput" id="label8" size="20" autocomplete="off"
+                data-show-id="enterrow4" data-hide-id="addrow3"
+                name="label" value="[label8]"> <span id="addrow3" class="fakelink" data-instead="enterrow4">Add a row</span>
+        </div>
+        <div id="enterrow4" style="display:none">
+         <input type="text" class="labelinput" id="label9" size="20" autocomplete="off"
+                name="label" value="[label9]">
+         <input type="text" class="labelinput" id="label10" size="20" autocomplete="off"
+                name="label" value="[label10]">
+         <input type="text" class="labelinput" id="label11" size="20" autocomplete="off"
+                data-show-id="enterrow5" data-hide-id="addrow4"
+                name="label" value="[label11]"> <span id="addrow4" class="fakelink" data-instead="enterrow5">Add a row</span>
+        </div>
+        <div id="enterrow5" style="display:none">
+         <input type="text" class="labelinput" id="label12" size="20" autocomplete="off"
+                name="label" value="[label12]">
+         <input type="text" class="labelinput" id="label13" size="20" autocomplete="off"
+                name="label" value="[label13]">
+         <input type="text" class="labelinput" id="label14" size="20" autocomplete="off"
+                data-show-id="enterrow6" data-hide-id="addrow5"
+                name="label" value="[label14]"> <span id="addrow5" class="fakelink" data-instead="enterrow6">Add a row</span>
+        </div>
+        <div id="enterrow6" style="display:none">
+         <input type="text" class="labelinput" id="label15" size="20" autocomplete="off"
+                name="label" value="[label15]">
+         <input type="text" class="labelinput" id="label16" size="20" autocomplete="off"
+                name="label" value="[label16]">
+         <input type="text" class="labelinput" id="label17" size="20" autocomplete="off"
+                data-show-id="enterrow7" data-hide-id="addrow6"
+                name="label" value="[label17]"> <span id="addrow6" class="fakelink" data-instead="enterrow7">Add a row</span>
+        </div>
+        <div id="enterrow7" style="display:none">
+         <input type="text" class="labelinput" id="label18" size="20" autocomplete="off"
+                name="label" value="[label18]">
+         <input type="text" class="labelinput" id="label19" size="20" autocomplete="off"
+                name="label" value="[label19]">
+         <input type="text" class="labelinput" id="label20" size="20" autocomplete="off"
+                data-show-id="enterrow8" data-hide-id="addrow7"
+                name="label" value="[label20]"> <span id="addrow7" class="fakelink" data-instead="enterrow8">Add a row</span>
+        </div>
+        <div id="enterrow8" style="display:none">
+         <input type="text" class="labelinput" id="label21" size="20" autocomplete="off"
+                name="label" value="[label21]">
+         <input type="text" class="labelinput" id="label22" size="20" autocomplete="off"
+                name="label" value="[label22]">
+         <input type="text" class="labelinput" id="label23" size="20" autocomplete="off"
+                name="label" value="[label23]">
+        </div>
+      </td>
+   </tr>
+
+   [if-any page_perms.DeleteIssue]
+   <tr><th width="10%">Move to project:</th><td colspan="2">
+         <input id="move_toenter" type="text" autocomplete="off" style="width: 12em"
+                name="move_to">
+         [if-any errors.move_to]
+           <div class="fielderror">[errors.move_to]</div>
+         [end]
+       </td>
+   </tr>
+   [end]
+
+   [if-any show_captcha]
+    <tr><th style="white-space:nowrap">Human Verification:</th>
+     <td colspan="2">
+      [include "../framework/captcha-field.ezt"]
+     </td>
+    </tr>
+   [end]
+
+   <tr>
+    <td colspan="3"><span id="confirmarea" class="novel" style="padding-top:5px; margin:0">
+      <span id="confirmmsg"></span>
+      [# TODO(jrobbins): <a href="TODO" target="_new">Learn more</a>]
+    </span>
+    </td>
+   </tr>
+ </table>
+
+
+
+[# TODO(jrobbins):     <a class="ifClosed toggleHidden" href="#">More options</a>]
+[#     <a class="ifOpened" href="#" class="toggleHidden" style="background:#ccc; padding: 4px;">Hide options</a>]
+[#     <div  class="ifOpened"  style="background:#ccc; padding: 8px"><a href="#autmatically-generated">Bookmarkable link to these values</a></div>]
+[# <br><br>]
+
+
+
+
+ <div style="padding:6px">
+  <input type="submit" id="submit_btn" name="btn" value="Update [num_issues] Issue[is num_issues "1"][else]s[end]">
+  <input type="button" id="discard" name="nobtn" value="Discard">
+
+  <input type="checkbox" checked="checked" name="send_email" id="send_email" style="margin-left:1em">
+  <label for="send_email" title="Send issue change notifications to interested users">Send email</label>
+
+ </div>
+
+
+
+[if-any show_progress]
+ <div>Note: Updating [num_issues] issues will take approximately [num_seconds] seconds.</div>
+ <div id="progress">
+ </div>
+[end]
+
+   </td>
+   <td>
+     <div class="tip">
+         <b>Usage:</b> This form allows you to update several issues at one
+         time.<br><br>
+         The same comment will be applied to all issues.<br><br>
+
+         If specified, the status or owner you enter will be applied to all
+         issues.<br><br>
+
+         You may append or remove values in multi-valued fields by choosing the += or -= operators.
+         To remove labels, preceed the label with a leading dash.  (You may also use a leading dash
+         to remove individual items when using the += operator.)
+     </div>
+   </td>
+   </tr>
+   </table>
+
+
+ </form>
+</div>
+
+[include "../framework/footer-script.ezt"]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  document.getElementById('comment').select();
+  _lfidprefix = 'label';
+  _fetchOptions("[projectname]", "issueOptions",
+                CS_env.token, [project.cached_content_timestamp]);
+  _fetchUserProjects(false);
+  setTimeout(_forceProperTableWidth, 100);
+
+  _exposeExistingLabelFields();
+  _onload();
+
+  checksubmit();
+  setInterval(checksubmit, 700); [# catch changes that were not keystrokes, e.g., paste menu item.]
+
+
+
+function checksubmit() {
+  var submit = document.getElementById('submit_btn');
+  var cg = document.getElementById('cg');
+  if (cg != undefined) { submit.disabled='disabled'; }
+
+  submit.disabled='disabled';
+  var restrict_to_known = [if-any restrict_to_known]true[else]false[end];
+  var confirmmsg = document.getElementById('confirmmsg');
+  var statusenter = $('statusenter');
+  var merge_area = $('merge_area');
+  var statuses_offer_merge = [[] [for statuses_offer_merge]"[statuses_offer_merge]"[if-index statuses_offer_merge last][else],[end][end] ];
+  if (restrict_to_known && confirmmsg && confirmmsg.innerText.length > 0) {
+    return;
+  }
+  if (cg == undefined || cg.value.length > 1) {
+    submit.disabled='';
+  }
+
+  if (statusenter) {
+     var offer_merge = 'none';
+     for (var i = 0; i < statuses_offer_merge.length; i++) {
+       if (statusenter.value == statuses_offer_merge[[]i]) offer_merge = '';
+     }
+     merge_area.style.display = offer_merge;
+  }
+}
+
+
+function disableFormElement(el) {
+  el.readOnly = 'yes';
+  el.style.background = '#eee';
+  [# TODO(jrobbins): disable auto-complete ]
+}
+
+
+function bulkOnSubmit() {
+  var inputs = document.getElementsByTagName('input');
+  for (var i = 0; i < inputs.length; i++) {
+    disableFormElement(inputs[[]i]);
+  }
+  disableFormElement(document.getElementById('comment'));
+  [if-any show_progress]
+   var progress = document.getElementById('progress');
+   progress.innerText = 'Processing...';
+  [end]
+}
+
+
+function _checkAutoClear(inputEl, selectID) {
+  var val = inputEl.value;
+  var sel = document.getElementById(selectID);
+  if (val.match(/^--+$/)) {
+    sel.value = 'clear';
+    inputEl.value = '';
+  } else if (val) {
+    sel.value = 'set';
+  }
+}
+
+
+function _ignoreWidgetIfOpIsClear(selectEl, inputID) {
+  if (selectEl.value == 'clear') {
+    document.getElementById(inputID).value = '';
+  }
+}
+
+$("bulk_form").addEventListener("submit", bulkOnSubmit);
+
+if ($("comment")) {
+  $("comment").addEventListener("keyup", function(event) {
+    _dirty();
+    return true;
+  });
+}
+if ($("statusenter")) {
+  $("statusenter").addEventListener("focus", function(event) {
+    _acof(event);
+  });
+  $("statusenter").addEventListener("keyup", function(event) {
+    _dirty();
+    _checkAutoClear(event.target, "op_statusenter");
+    return _confirmNovelStatus(event.target);
+  });
+}
+if ($("ownerenter")) {
+  $("ownerenter").addEventListener("focus", function(event) {
+    _acof(event);
+  });
+  $("ownerenter").addEventListener("keyup", function(event) {
+    _dirty();
+    _checkAutoClear(event.target, "op_ownerenter");
+    return true;
+  });
+}
+if ($("memberenter")) {
+  $("memberenter").addEventListener("focus", function(event) {
+    _acof(event);
+  });
+  $("memberenter").addEventListener("keyup", function(event) {
+    _dirty();
+    return true;
+  });
+}
+if ($("componententer")) {
+  $("componententer").addEventListener("focus", function(event) {
+    _acof(event);
+  });
+  $("componententer").addEventListener("keyup", function(event) {
+    _dirty();
+    return true;
+  });
+}
+
+if ($("move_toenter")) {
+  $("move_toenter").addEventListener("focus", function(event) {
+    _acof(event);
+  });
+  $("move_toenter").addEventListener("keyup", function(event) {
+    _dirty();
+    return true;
+  });
+}
+
+if ($("submit_btn")) {
+  $("submit_btn").addEventListener("focus", function(event) {
+    _acrob(null);
+  });
+  $("submit_btn").addEventListener("mousedown", function(event) {
+    _acrob(null);
+  });
+  $("submit_btn").addEventListener("click", function(event) {
+    _trimCommas();
+  });
+}
+if ($("discard")) {
+  $("discard").addEventListener("click", function(event) {
+    _confirmDiscardEntry(this);
+    event.preventDefault();
+  });
+}
+
+var labelInputs = document.getElementsByClassName("labelinput");
+for (var i = 0; i < labelInputs.length; ++i) {
+  var labelInput = labelInputs[[]i];
+  labelInput.addEventListener("keyup", function (event) {
+    _dirty();
+    if (event.target.getAttribute("data-show-id") &&
+        event.target.getAttribute("data-hide-id") &&
+        event.target.value) {
+      _showID(event.target.getAttribute("data-show-id"));
+      _hideID(event.target.getAttribute("data-hide-id"));
+    }
+    return _vallab(event.target);
+  });
+  labelInput.addEventListener("blur", function (event) {
+    return _vallab(event.target);
+  });
+  labelInput.addEventListener("focus", function (event) {
+    return _acof(event);
+  });
+}
+
+var addRowLinks = document.getElementsByClassName("fakelink");
+for (var i = 0; i < addRowLinks.length; ++i) {
+  var rowLink = addRowLinks[[]i];
+  rowLink.addEventListener("click", function (event) {
+      _acrob(null);
+      var insteadID = event.target.getAttribute("data-instead");
+      if (insteadID)
+        _showInstead(insteadID, this);
+  });
+}
+
+});
+</script>
+
+[end]
+
+[include "field-value-widgets-js.ezt"]
+[include "../framework/master-footer.ezt"]

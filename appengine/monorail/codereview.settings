@@ -1,0 +1,11 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is govered by a BSD-style
+# license that can be found in the LICENSE file or at
+# https://developers.google.com/open-source/licenses/bsd
+
+# This file is used by gcl to get repository specific information.
+CODE_REVIEW_SERVER: https://codereview.chromium.org
+VIEW_VC: https://chromium.googlesource.com/infra/infra/+/
+CC_LIST: chromium-reviews@chromium.org, infra-reviews+infra@chromium.org, jrobbins+catch-up@google.com
+PROJECT: infra
+BUG_PREFIX: monorail:

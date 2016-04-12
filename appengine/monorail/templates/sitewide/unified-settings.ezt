@@ -1,0 +1,186 @@
+[# common form fields for changing user settings ]
+<input type="hidden" name="token" value="[form_token]">
+
+
+<h4>Privacy</h4>
+<div style="margin:0 0 2em 2em">
+ <input type="checkbox" name="obscure_email" id="obscure_email" value="1"
+        [if-any read_only]disabled="disabled"[end]
+        [if-any settings_user_pb.obscure_email_bool]checked="checked"[end] >
+ <label for="obscure_email">
+   When [if-any self]I participate[else]this user participates[end]
+   in projects, show non-members [if-any self]my[else]this user's[end] email address as
+   "[settings_user.obscured_username]...@[settings_user.domain]", instead of
+   showing the full address.
+ </label>
+
+ <br><br>
+</div>
+
+<h4>Issue tracker</h4>
+<div style="margin:0 0 2em 2em">
+  [# TODO(jrobbins): re-implement issue preview on hover in polymer.]
+
+ <p>
+  Whenever an issue is changed by another user, send
+  [if-any self]me[else]this user[end] an email:
+ </p>
+ <input type="checkbox" name="notify" id="notify" value="1"
+        [if-any read_only]disabled="disabled"[end]
+        [if-any settings_user_pb.notify_issue_change_bool]checked="checked"[end] >
+ <label for="notify">If [if-any self]I am[else]this user is[end] in the issue's
+   <b>owner</b> or <b>CC</b> fields.</label><br>
+ <input type="checkbox" name="notify_starred" id="notify_starred" value="1"
+        [if-any read_only]disabled="disabled"[end]
+        [if-any settings_user_pb.notify_starred_issue_change_bool]checked="checked"[end]  >
+ <label for="notify_starred">
+  If [if-any self]I[else]this user[end] <b>starred</b> the issue.
+ </label>
+ <br><br>
+</div>
+
+[if-any perms._EditOtherUsers]
+  <h4>Banned for abuse</h4>
+  <div style="margin:0 0 2em 2em">
+   <input type="checkbox" name="banned" id="banned" value="1"
+          [if-any settings_user_is_banned]checked="checked"[end] >
+   <label for="banned">This user is banned because:</label>
+   <input type="text" size="50" name="banned_reason" id="banned_reason" value="[settings_user_pb.banned]">
+  </div>
+
+  <h4>Action limits</h4>
+   <div style="margin:0 0 2em 2em; width:50em">
+   <input type="checkbox" name="ignore_action_limits" id="ignore_action_limits" value="1"
+          [if-any settings_user_ignore_action_limits]checked="checked"[end] >
+   <label for="ignore_action_limits">
+    [if-any self]I am[else]This user is[end]
+    trusted to not spam, so ignore action limits</label>
+   <br><br>
+
+   <div class="help" style="width:75em">
+    <table cellpadding="6" cellspacing="0" style="padding:4px" width="100%">
+     <tr>
+      <th align="left">Project creation:</th>
+      <td>
+       [is settings_user_pb.project_creation_limit.recent_count "0"]
+        None
+       [else]
+        <label for="reset_project_creation">Reset</label>
+        <input type="checkbox" name="reset_project_creation" id="reset_project_creation" value="1">
+        [settings_user_pb.project_creation_limit.recent_count] since [project_creation_reset]
+       [end]
+      </td>
+      <td>
+      Period soft limit: <input name="project_creation_soft_limit" value="[project_creation_soft_limit]" size="4">
+      hard limit: <input name="project_creation_hard_limit" value="[project_creation_hard_limit]" size="4">
+      </td>
+      <td>
+       [settings_user_pb.project_creation_limit.lifetime_count]
+       out of <input name="project_creation_lifetime_limit" value="[project_creation_lifetime_limit]" size="4">
+       in lifetime.
+      </td>
+     </tr>
+
+     <tr>
+      <th align="left">Issue comment:</th>
+      <td>
+       [is settings_user_pb.issue_comment_limit.recent_count "0"]
+        None
+       [else]
+        <label for="reset_issue_comment_creation">Reset</label>
+        <input type="checkbox" name="reset_issue_comment" id="reset_issue_comment" value="1">
+        [settings_user_pb.issue_comment_limit.recent_count] since [issue_comment_reset]
+       [end]
+      </td>
+      <td>
+      Period soft limit: <input name="issue_comment_soft_limit" value="[issue_comment_soft_limit]" size="4">
+      hard limit: <input name="issue_comment_hard_limit" value="[issue_comment_hard_limit]" size="4">
+      </td>
+      <td>
+       [settings_user_pb.issue_comment_limit.lifetime_count]
+       out of <input name="issue_comment_lifetime_limit" value="[issue_comment_lifetime_limit]" size="4">
+       in lifetime.
+      </td>
+     </tr>
+
+     <tr>
+      <th align="left">Issue attachment:</th>
+      <td>
+       [is settings_user_pb.issue_attachment_limit.recent_count "0"]
+        None
+       [else]
+        <label for="reset_issue_attachment">Reset</label>
+        <input type="checkbox" name="reset_issue_attachment" id="reset_issue_attachment" value="1">
+        [settings_user_pb.issue_attachment_limit.recent_count] since [issue_attachment_reset].
+       [end]
+      </td>
+      <td>
+      Period soft limit: <input name="issue_attachment_soft_limit" value="[issue_attachment_soft_limit]" size="4">
+      hard limit: <input name="issue_attachment_hard_limit" value="[issue_attachment_hard_limit]" size="4">
+      </td>
+      <td>
+       [settings_user_pb.issue_attachment_limit.lifetime_count]
+       out of <input name="issue_attachment_lifetime_limit" value="[issue_attachment_lifetime_limit]" size="4">
+       in lifetime.
+      </td>
+     </tr>
+
+     <tr>
+      <th align="left">Issue bulk edit:</th>
+      <td>
+       [is settings_user_pb.issue_bulk_edit_limit.recent_count "0"]
+        None
+       [else]
+        <label for="reset_issue_bulk_edit">Reset</label>
+        <input type="checkbox" name="reset_issue_bulk_edit" id="reset_issue_bulk" value="1">
+        [settings_user_pb.issue_bulk_edit_limit.recent_count] since [issue_bulk_edit_reset]
+       [end]
+      </td>
+      <td>
+      Period soft limit: <input name="issue_bulk_edit_soft_limit" value="[issue_bulk_edit_soft_limit]" size="4">
+      hard limit: <input name="issue_bulk_edit_hard_limit" value="[issue_bulk_edit_hard_limit]" size="4">
+      </td>
+      <td>
+       [settings_user_pb.issue_bulk_edit_limit.lifetime_count]
+       out of <input name="issue_bulk_edit_lifetime_limit" value="[issue_bulk_edit_lifetime_limit]" size="4">
+       in lifetime.
+      </td>
+     </tr>
+
+     <tr>
+      <th align="left">API request:</th>
+      <td>
+       [is settings_user_pb.api_request_limit.recent_count "0"]
+        None
+       [else]
+        <label for="reset_api_request">Reset</label>
+        <input type="checkbox" name="reset_api_request" id="reset_api_request" value="1">
+        [settings_user_pb.api_request_limit.recent_count] since [api_request_reset].
+       [end]
+      </td>
+      <td>
+      Period soft limit: <input name="api_request_soft_limit" value="[api_request_soft_limit]" size="4">
+      hard limit: <input name="api_request_hard_limit" value="[api_request_hard_limit]" size="4">
+      </td>
+      <td>
+       [settings_user_pb.api_request_limit.lifetime_count]
+       out of <input name="api_request_lifetime_limit" value="[api_request_lifetime_limit]" size="6">
+       in lifetime.
+      </td>
+     </tr>
+
+    </table>
+    </div>
+   </div>
+
+[end]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  $("banned_reason").addEventListener("keyup", function() {
+    $("banned").checked = $("banned_reason").value != "";
+  });
+});
+</script>
+
+[include "../framework/footer-script.ezt"]

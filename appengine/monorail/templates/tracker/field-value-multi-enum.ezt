@@ -1,0 +1,69 @@
+[for fields.field_def.choices]
+  [define checked]No[end]
+  [define derived]No[end]
+  [for fields.values]
+    [is fields.values.val fields.field_def.choices.name]
+      [define checked]Yes[end]
+    [end]
+  [end]
+  [for fields.derived_values]
+    [is fields.derived_values.val fields.field_def.choices.name]
+      [define checked]Yes[end]
+      [define derived]Yes[end]
+    [end]
+  [end]
+
+  <span style="white-space:nowrap; margin-right:1em"
+        title="[if-any derived]derived: [end][fields.field_def.choices.docstring]"
+        >
+    <input type="checkbox" name="custom_[fields.field_id]"
+           value="[fields.field_def.choices.name]"
+           id="custom_[fields.field_id]_[fields.field_def.choices.idx]"
+           [is checked "Yes"]checked="checked"[end] [is derived "Yes"]disabled="disabled"[end]>
+    <label for="custom_[fields.field_id]_[fields.field_def.choices.idx]"
+           [is derived "Yes"]style="font-style:italic"[end]>
+      [fields.field_def.choices.name]</label>
+  </span>
+
+[end]
+
+
+[# Also include any oddball values as plain text with an _X_ icon.]
+[for fields.values]
+  [define already_shown]No[end]
+  [for fields.field_def.choices]
+    [is fields.field_def.choices.name fields.values.val]
+      [define already_shown]Yes[end]
+    [end]
+  [end]
+  [is already_shown "No"]
+    <span style="white-space:nowrap; margin-right:1em"
+          title="This is not a defined choice for this field"
+          id="span_oddball_[fields.values.idx]">
+      <a id="oddball_[fields.values.idx]" class="remove_oddball">
+        <img src="/static/images/close_icon.png" width="13" height="13">
+      </a>[fields.values.val]
+      [# Below hidden input contains the value of the field for tracker_helpers._ParseIssueRequestFields ]
+      <input type="text" class="labelinput" id="input_oddball_[fields.values.idx]" size="20" name="label"
+             value="[fields.field_name]-[fields.values.val]" hidden>
+    </span>
+  [end]
+[end]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  var oddballAnchors = document.getElementsByClassName("remove_oddball")
+  for (var i = 0; i < oddballAnchors.length; ++i) {
+    var oddballAnchor = oddballAnchors[[]i];
+    
+    oddballAnchor.addEventListener("click", function(event) {
+      var oddballSpan = $("span_" + this.id);
+      oddballSpan.hidden = true;
+      var oddballInput = $("input_" + this.id);
+      oddballInput.value = "";
+      event.preventDefault();
+    });
+  }
+});
+</script>
+

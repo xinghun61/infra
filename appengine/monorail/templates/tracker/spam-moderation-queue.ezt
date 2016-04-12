@@ -1,0 +1,106 @@
+[define title]Spam Moderation Queue[end]
+[define category_css]css/ph_list.css[end]
+[define page_css]css/ph_detail.css[end][# needed for infopeek]
+
+[if-any projectname]
+  [include "../framework/master-header.ezt" "showtabs"]
+[else]
+  [include "../framework/master-header.ezt" "hidetabs"]
+[end]
+[include "../framework/js-placeholders.ezt" "showtabs"]
+
+<h2>Spam Moderation Queue</h2>
+[include "../framework/artifact-list-pagination-part.ezt"]
+
+<form method="POST" action="spamqueue.do">
+<button type="submit" vaue="mark_spam" disabled="true">Mark as Spam</button>
+<button type="submit" value="mark_ham" disabled="true">Mark as Ham</button>
+
+<span style="margin:0 .7em">Select:
+  <a id="selectall" href="#">All</a>
+  <a id="selectnone" href="#">None</a>
+</span>
+
+<table id='resultstable'>
+<tr>
+  <td>
+  </td>
+  <td>ID</td>
+  <td>Author</td>
+  <td>Summary</td>
+  <td>Snippet</td>
+  <td>Opened at</td>
+  <td>Spam?</td>
+  <td>Verdict reason</td>
+  <td>Confidence</td>
+  <td>Verdict at</td>
+  <td>Flag count</td>
+</tr>
+[for spam_queue]
+<tr>
+  <td><input type='checkbox' name='issue_local_id' value='[spam_queue.issue.local_id]'/></td>
+  <td><a href='/p/[projectname]/issues/detail?id=[spam_queue.issue.local_id]'>[spam_queue.issue.local_id]</a></td>
+  <td><a href='/u/[spam_queue.reporter.email]'>[spam_queue.reporter.email]</a></td>
+  <td><a href='/p/[projectname]/issues/detail?id=[spam_queue.issue.local_id]'>[spam_queue.summary]</a></td>
+  <td>
+  [spam_queue.comment_text]
+  </td>
+  <td>[spam_queue.issue.opened_timestamp]</td>
+  <td>[spam_queue.issue.is_spam]</td>
+
+  <td>[spam_queue.reason]</td>
+  <td>[spam_queue.classifier_confidence]</td>
+  <td>[spam_queue.verdict_time]</td>
+  <td>[spam_queue.flag_count]</td>
+</tr>
+[end]
+</table>
+
+[include "../framework/artifact-list-pagination-part.ezt"]
+<input type="hidden" name="token" value="[moderate_spam_token]">
+<button type="submit" vaue="mark_spam" disabled="true">Mark as Spam</button>
+<button type="submit" value="mark_ham" disabled="true">Mark as Ham</button>
+
+</form>
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  if ($("selectall")) {
+    $("selectall").addEventListener("click", function() {
+        _selectAllIssues();
+        setDisabled(false);
+    });
+  }
+  if ($("selectnone")) {
+    $("selectnone").addEventListener("click", function() {
+        _selectNoneIssues();
+        setDisabled(true);
+    });
+  }
+  var checkboxNodes = document.querySelectorAll("input[type=checkbox]");
+  var checkboxes = Array();
+  for (var i = 0; i < checkboxNodes.length; ++i) {
+    var checkbox = checkboxNodes.item(i);
+    checkboxes.push(checkbox);
+    checkbox.addEventListener("change", updateEnabled);
+  }
+
+  function updateEnabled() {
+    var anySelected = checkboxes.some(function(checkbox) {
+      return checkbox.checked;
+    });
+    setDisabled(!anySelected);
+   }
+
+  function setDisabled(disabled) {
+    var buttons = document.querySelectorAll("button[type=submit]");
+    for (var i = 0; i < buttons.length; ++i) {
+      buttons.item(i).disabled = disabled;
+    }
+  }
+});
+</script>
+
+[include "../framework/footer-script.ezt"]
+
+[include "../framework/master-footer.ezt"]

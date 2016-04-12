@@ -1,0 +1,55 @@
+<div class="list">
+<div style="float:right; margin-left:2em; font-size:95%">
+ <a class="buttonify capsule_left" href="list?can=[can]&amp;q=[query]&amp;colspec=[format "url"][colspec][end]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;cells=[grid_cell_mode]">List</a><span
+ class="buttonify capsule_right mode_button_active">Grid</span>
+</div>
+
+[if-any grid_data]
+<div class="pagination">
+ [is pagination.total_count "1"]
+  [pagination.total_count] issue shown
+ [else]
+  [if-any grid_limited][grid_shown] issues of [end]
+  [pagination.total_count] issues shown
+ [end]
+</div>
+[end]
+
+ <form id="colspecform" action="list" method="GET" style="display:inline">
+  <input type="hidden" name="can" value="[can]">
+  <input type="hidden" name="q" value="[query]">
+  <input type="hidden" name="colspec" id="colspec" value="[colspec]">
+  <input type="hidden" name="sort" value="[sortspec]">
+  <input type="hidden" name="groupby" value="[groupby]">
+  <input type="hidden" name="mode" value="grid">
+<span>Rows:</span>
+<select name="y" class="drop-down-bub">
+ <option value="--" [if-any grid_y_attr][else]selected=selected[end]>None</option>
+ [for grid_axis_choices]
+  <option value="[grid_axis_choices]"
+          [is grid_axis_choices grid_y_attr]selected=selected[end]
+    >[grid_axis_choices]</option>
+ [end]
+</select>
+
+<span style="margin-left:.7em">Cols:</span>
+<select name="x" class="drop-down-bub">
+ <option value="--" [if-any grid_x_attr][else]selected=selected[end]>None</option>
+ [for grid_axis_choices]
+  <option value="[grid_axis_choices]"
+          [is grid_axis_choices grid_x_attr]selected=selected[end]
+    >[grid_axis_choices]</option>
+ [end]
+</select>
+
+<span style="margin-left:.7em">Cells:</span>
+<select name="cells" class="drop-down-bub">
+ <option value="tiles" [is grid_cell_mode "tiles"]selected=selected[end]>Tiles</option>
+ <option value="ids" [is grid_cell_mode "ids"]selected=selected[end]>IDs</option>
+ <option value="counts" [is grid_cell_mode "counts"]selected=selected[end]>Counts</option>
+</select>
+
+<input type="submit" name="nobtn" style="font-size:90%; margin-left:.5em" value="Update">
+
+</form>
+</div>

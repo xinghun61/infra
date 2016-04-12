@@ -1,0 +1,11 @@
+[include "../framework/master-header.ezt" "showtabs"]
+
+ <form action="adminAdvanced.do" method="POST">
+  <input type="hidden" name="token" value="[form_token]">
+
+  [include "project-admin-publishing-part.ezt"]
+  [include "project-admin-quota-part.ezt"]
+
+ </form>
+
+[include "../framework/master-footer.ezt"]

@@ -1,0 +1,134 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "hidetabs"]
+
+<h2>Create a new project</h2>
+
+[if-any read_only][include "../framework/read-only-rejection.ezt"]
+[else]
+
+<form action="createProject.do" method="POST" id="create_project_form"
+      style="margin:1em" enctype="multipart/form-data">
+  <input type="hidden" name="token" value="[form_token]">
+
+  [if-any cue_remaining_projects]
+    <table align="center" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 6px">
+      <tr><td class="notice">
+        <b>Note:</b> You can create at most [cue_remaining_projects] more projects.
+      </td></tr>
+    </table>
+  [end]
+
+
+  Project name:<br>
+  <input size="30" type="text" id="projectname" name="projectname" autocomplete="off"
+         value="[initial_name]">
+  <span class="graytext">Example: my-project-name</span>
+  <div class="fielderror">&nbsp;
+    <span id="projectnamefeedback">
+       [if-any errors.projectname][errors.projectname][end]
+    </span>
+  </div>
+
+  [include "../framework/project-descriptive-fields.ezt"]
+  <br>
+
+  Viewable by:
+  [include "../framework/project-access-part.ezt" "checksubmit"]
+  <br>
+
+  [if-any show_captcha]
+    <div>Word verification</div>
+    <div>[include "../framework/captcha-field.ezt"]</div>
+  [end]
+  <br>
+  <input type="submit" id="submit_btn" name="btn" value="Create project">
+</form>
+
+
+[include "../framework/footer-script.ezt"]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _onload();
+
+  [# TODO(jrobbins): move this to compiled Javascript. ]
+  var submit = document.getElementById('submit_btn');
+  submit.disabled = 'disabled';
+  var projectname = document.getElementById('projectname');
+  var access = document.getElementById('access');
+  var summary = document.getElementById('summary');
+  var description = document.getElementById('description');
+  var cg = document.getElementById('cg');
+  var oldName = '';
+  projectname.focus();
+  var solelyDigits = /^[[]-0-9]+$/
+  var hasUppercase = /[[]A-Z]/
+  var projectRE = /^[[]a-z0-9][[]-a-z0-9]*$/
+
+  function checkprojectname() {
+    name = projectname.value;
+    if (name != oldName) {
+      oldName = name;
+      feedback = document.getElementById('projectnamefeedback');
+      submit.disabled='disabled';
+      if (name == '') {
+        feedback.innerText = '';
+      } else if (hasUppercase.test(name)) {
+        feedback.innerText = 'Must be all lowercase';
+      } else if (solelyDigits.test(name)) {
+        feedback.innerText = 'Must include a lowercase letter';
+      } else if (!projectRE.test(name)) {
+        feedback.innerText = 'Invalid project name';
+      } else if (name.length > [max_project_name_length]) {
+        feedback.innerText = 'Project name is too long';
+      } else if(name[[]name.length - 1] == '-') {
+        feedback.innerText = "Project name cannot end with a '-'";
+      } else {
+        feedback.innerText = '';
+        checkname()
+        checksubmit()
+      }
+    }
+  }
+
+  function checkname() {
+    _CP_checkProjectName(projectname.value);
+  }
+
+  function checkempty(elemId) {
+    var elem = document.getElementById(elemId);
+    feedback = document.getElementById(elemId + 'feedback');
+    if (elem.value.length == 0) {
+      feedback.innerText = 'Please enter a ' + elemId;
+    } else {
+      feedback.innerText = ' ';
+    }
+    checksubmit();
+  }
+
+  function checksubmit() {
+  feedback = document.getElementById('projectnamefeedback');
+   submit.disabled='disabled';
+   if (projectname.value.length > 0 &&
+       summary.value.length > 0 &&
+       description.value.length > 0 &&
+       (cg == undefined || cg.value.length > 1) &&
+       feedback.innerText == '') {
+     submit.disabled='';
+   }
+  }
+  setInterval(checkprojectname, 700); [# catch changes that were not keystrokes.]
+  $("projectname").addEventListener("keyup", checkprojectname);
+  $("summary").addEventListener("keyup", function() { checkempty("summary"); });
+  $("description").addEventListener("keyup", function() { checkempty("description"); });
+  $("create_project_form").addEventListener("submit", function () {
+      $("submit_btn").value = "Creating project...";
+      $("submit_btn").disabled = "disabled";
+  });
+
+});
+</script>
+
+[end][# not read-only]
+
+[include "../framework/master-footer.ezt"]

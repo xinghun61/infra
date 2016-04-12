@@ -1,0 +1,65 @@
+[define show_search_metadata]True[end]
+[define robots_no_index]true[end]
+[define category_css]css/ph_list.css[end]
+
+[include "../framework/master-header.ezt" "hidesearch"]
+
+[define prod_hosting_base_url]/hosting/[end]
+
+<div style="padding-top:30px;">
+<div style="margin-top:3em; text-align:center;">
+[# TODO: Provide an text alternative to the logo.]
+<p style="font-size:large;">Monorail, Monorail, Monorail!</p>
+
+<div style="text-align:center;margin:1em">
+  [if-any read_only][else]
+    [if-any can_create_project]
+      <img src="/static/images/new-24.gif" style="vertical-align:top; width:16px;">
+        <a href="/hosting/createProject">Create a new project</a>
+    [end]
+  [end]
+
+  [if-any learn_more_link]
+    <img src="/static/images/question-16.gif" style="vertical-align:top;padding-left:30px">
+    <a href="[learn_more_link]">Learn more about [site_name]</a>
+  [end]
+</div>
+
+ <p style="text-align:center;padding:0; margin:2em">
+  <div id="controls">
+    [include "../sitewide/project-list-controls.ezt" arg1]
+  </div>
+
+  <div style="margin:2em">
+    [if-any projects]
+      <table class="resultstable striped" width="100%" border="0" cellspacing="0" cellpadding="10px" style="margin:auto;">
+      [for projects]
+        <tr>
+          [include "project-list-row.ezt"]
+        </tr>
+      [end]
+      </table>
+    [else]
+     <p>There were no visible projects found.</p>
+    [end]
+  </div>
+
+ </p>
+</div>
+
+</div>
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+   var stars = document.getElementsByClassName("star");
+   for (var i = 0; i < stars.length; ++i) {
+     var star = stars[[]i];
+     star.addEventListener("click", function (event) {
+         var projectName = event.target.getAttribute("data-project-name");
+         _TKR_toggleStar(event.target, projectName);
+     });
+   }
+});
+</script>
+
+[include "../framework/master-footer.ezt"]

@@ -1,0 +1,74 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is govered by a BSD-style
+# license that can be found in the LICENSE file or at
+# https://developers.google.com/open-source/licenses/bsd
+
+"""Unit tests for servlet base class helper functions."""
+
+import unittest
+
+from framework import permissions
+from framework import servlet_helpers
+from proto import project_pb2
+from testing import testing_helpers
+
+
+class EztDataTest(unittest.TestCase):
+
+  def testGetBannerTime(self):
+    """Tests GetBannerTime method."""
+    timestamp = ['2009', '3', '13', '21', '24', '5']
+
+    banner_time = servlet_helpers.GetBannerTime(timestamp)
+
+    # Ensure that the banner timestamp falls in a timestamp range to account for
+    # the test being run in different timezones.
+    # Using "Sun, 12 Mar 2009 00:00:00 GMT" and "Sun, 15 Mar 2009 00:00:00 GMT".
+    self.assertTrue(1236816000000 <= banner_time.ts <= 1237075200000)
+    self.assertEqual(2009, banner_time.year)
+    self.assertEqual(3, banner_time.month)
+    self.assertEqual(13, banner_time.day)
+    self.assertEqual(21, banner_time.hour)
+    self.assertEqual(24, banner_time.minute)
+    self.assertEqual(5, banner_time.second)
+    self.assertEqual('Friday', banner_time.weekday)
+    self.assertEqual('09:24PM', banner_time.hour_min)
+
+
+class AssertBasePermissionTest(unittest.TestCase):
+
+  def testAccessGranted(self):
+    _, mr = testing_helpers.GetRequestObjects(path='/hosting')
+    # No exceptions should be raised.
+    servlet_helpers.AssertBasePermission(mr)
+
+    mr.auth.user_id = 123L
+    # No exceptions should be raised.
+    servlet_helpers.AssertBasePermission(mr)
+    servlet_helpers.AssertBasePermissionForUser(
+        mr.auth.user_pb, mr.auth.user_view)
+
+  def testBanned(self):
+    _, mr = testing_helpers.GetRequestObjects(path='/hosting')
+    mr.auth.user_pb.banned = 'spammer'
+    self.assertRaises(
+        permissions.BannedUserException,
+        servlet_helpers.AssertBasePermissionForUser,
+        mr.auth.user_pb, mr.auth.user_view)
+    self.assertRaises(
+        permissions.BannedUserException,
+        servlet_helpers.AssertBasePermission, mr)
+
+  def testNoAccessToProject(self):
+    project = project_pb2.Project()
+    project.project_name = 'proj'
+    project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+    _, mr = testing_helpers.GetRequestObjects(path='/p/proj/', project=project)
+    mr.perms = permissions.EMPTY_PERMISSIONSET
+    self.assertRaises(
+        permissions.PermissionException,
+        servlet_helpers.AssertBasePermission, mr)
+
+
+if __name__ == '__main__':
+  unittest.main()

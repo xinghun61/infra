@@ -1,0 +1,42 @@
+[define title][if-any viewing_self]My[else][viewed_username][end] saved queries[end]
+[define category_css]css/ph_detail.css[end]
+
+[include "../framework/master-header.ezt" "showusertabs" "t4"]
+
+
+<h3>Saved queries</h3>
+
+[if-any read_only][include "../framework/read-only-rejection.ezt"]
+[else]
+<div class="section">
+
+  <div class="closed">
+    <div>Saved queries allow you to quickly view issue lists that you use frequently.
+     <a class="ifClosed toggleHidden" href="#"
+        style="font-size:90%; margin:0 1em">Learn more</a>
+    </div>
+
+    <div id="filterhelp" class="ifOpened help">
+        Personal saved queries allow you to keep track of the issues that matter most to you.<br/>
+        When you are in a project, you can choose one of your saved queries from the 
+        the bottom section of the search dropdown menu that is next to the issue search box.<br/>
+        You can also subscribe to any query to get email notifications when issues that
+        satisfy that query are modified.
+    </div>
+    <br>
+
+    <form action="queries.do" method="POST">
+      <input type="hidden" name="token" value="[form_token]">
+      [include "../framework/saved-queries-admin-part.ezt" "user"]
+
+      <input type="submit" id="savechanges" name="btn" value="Save changes"
+             class="submit">
+
+    </form>
+
+  </div>
+</div>
+
+[end][# if not read-only]
+
+[include "../framework/master-footer.ezt"]

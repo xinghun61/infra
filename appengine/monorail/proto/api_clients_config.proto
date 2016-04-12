@@ -1,0 +1,38 @@
+// Copyright 2016 The Chromium Authors. All Rights Reserved.
+// Use of this source code is governed by the Apache v2.0 license that can be
+// found in the LICENSE file.
+
+// Schemas for monorail api client configs.
+// Command to generate api_clients_config_pb2.py: in monorail/ directory:
+// protoc ./proto/api_clients_config.proto --proto_path=./proto/ --python_out=./proto
+
+
+syntax = "proto2";
+
+package monorail;
+
+message ProjectPermission {
+  enum Role {
+    committer = 1;
+    contributor = 2;
+  }
+
+  optional string project = 1;
+  optional Role role = 2 [default = contributor];
+  repeated string extra_permissions = 3;
+}
+
+message Client {
+  optional string client_email = 1;
+  optional string display_name = 2;
+  optional string client_id = 3;
+  optional string description = 4;
+  repeated ProjectPermission project_permissions = 5;
+  optional int32 period_limit = 6 [default = 100000];
+  optional int32 lifetime_limit = 7 [default = 1000000];
+  repeated string contacts = 8;
+}
+
+message ClientCfg {
+  repeated Client clients = 1;
+}

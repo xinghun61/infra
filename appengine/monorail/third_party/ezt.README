@@ -1,0 +1,8 @@
+The license (BSD) is contained within the file ezt.py.
+
+This copy was fetched with the following command:
+
+$ svn cat https://ezt.googlecode.com/svn/trunk/ezt.py > ezt.py
+
+For documentation, see:
+http://code.google.com/p/ezt/

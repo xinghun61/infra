@@ -1,0 +1,350 @@
+/* Copyright 2016 The Chromium Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file or at
+ * https://developers.google.com/open-source/licenses/bsd
+ */
+
+pre.prettyprint {
+    padding: 0.5em;
+    overflow: auto;
+    font-family: Monaco, 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Lucida Console', monospace;
+    font-size: 93%;
+}
+
+.role_label {
+  background-color: #8ae;
+  border-radius: 3px;
+  color: white;
+  display: inline-block;
+  padding: 2px 4px;
+  font-size: 75%;
+  font-weight: bold;
+  line-height: 14px;
+}
+
+.issuedescription pre, .issuecomment pre {
+    white-space: pre-wrap;
+    white-space: -moz-pre-wrap;
+    white-space: -pre-wrap;
+    white-space: -o-pre-wrap;
+}
+
+.issuedescription pre a, .issuecomment pre a {
+    word-wrap: break-word;
+    word-break: break-all;
+}
+
+.closed_ref { text-decoration: line-through }
+.rowmajor { width: 700px; }
+
+.rowmajor th {
+    text-align: right;
+    white-space: nowrap;
+}
+
+#meta-float th { white-space: nowrap; }
+.labelediting input { margin: 0 3px 4px 0; }
+.labelediting input { color: #060; }
+.collapse .ifExpand { display: none }
+.expand .ifCollapse { display: none }
+.inplace input { width: 100%; }
+.inplace td { border: 0; }
+td.issueheader { background: #e5ecf9; }
+
+.closed_colors td.issueheader, .closed_colors td.issueheader a {
+    background: #888; color: #fff;
+}
+
+.issuepage { margin-top: 0; }
+.issuepage td { padding: 2px; }
+.issuecomment { margin-top: 1em;}
+
+.issuecommentheader {
+    background: #e5ecf9;
+    padding: 3px;
+}
+
+.closed_colors .issuecommentheader { background: #eee;}
+
+.issuedescription pre, .issuecomment pre {
+    max-width: 80em;
+    padding: 0 0 3px .7em;
+}
+
+.issuedescription pre b, .issuecomment pre b {
+    font-size: 110%;
+    font-weight: bolder;
+    padding: 3px 0 3px 0;
+}
+
+.issue_text {
+  font-family: monospace;
+}
+
+.author { padding-left: 4px; }
+
+.ichcommands a {
+    color: #aaa;
+    text-decoration: none;
+}
+
+.issuecomment:hover .ichcommands a {
+    text-decoration: underline;
+}
+
+#issuemeta {
+    width: 12em;
+    background: #eef8ee;
+    font-size: 95%;
+    vertical-align: top;
+    border-right: 3px solid #fff;
+    border-top: 3px solid #fff;
+}
+
+#issuemeta td, #issuemeta td div, #issuemeta div.widemeta {
+    max-width: 14em;
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+}
+#issuemeta td.widemeta,  #issuemeta td.widemeta div, #issuemeta div.widemeta {
+    max-width: 20em;
+}
+
+.closed_colors #issuemeta { background: #eee; }
+
+.issuemetaheader {
+    padding: 0 5px;
+    background: #eef8ee;
+    border-right: 3px solid #fff;
+}
+
+.closed_colors .issuemetaheader {
+    background:#eee;
+}
+
+#issuemeta table td, #issuemeta table th {
+    margin: 0;
+    padding: 0;
+    padding-top: 5px;
+}
+
+.rel_issues a { white-space: nowrap; }
+
+.issue_restrictions {
+    padding: 2px 4px;
+    background-color: #fed;
+    min-width: 14em;
+    border: 2px solid #fff;
+}
+
+.issue_restrictions .restrictions_header {
+    padding: 0 0 2px 0;
+    text-align: center;
+    font-weight: bold;
+}
+
+.issue_restrictions ul {
+    padding: 0 2px;
+    margin: 0;
+    list-style: none;
+}
+
+.issue_restrictions .other_restriction {
+    white-space: nowrap;
+}
+
+.lock_grey {
+    background: no-repeat url(/static/images/lock.png);
+    width: 15px;
+    height: 16px
+}
+
+.updates {
+    margin: 0 7px 5px 7px;
+    background: #f2f6ff;
+    font-size: 90%;
+    padding: 5px;
+    border-radius: 0 0 10px 10px;
+}
+
+.closed_colors .updates { background: #f4f4f4;}
+
+.fakelink {
+    color: #0000cc;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: underline;
+}
+
+.undef { color: #666; }
+table.advquery { border: 3px solid #e5ecf9;}
+
+table.advquery td {
+    white-space: nowrap;
+    padding: 2px;
+}
+
+.focus td { background: #e5ecf9; }
+
+.eg {
+    color: #666;
+    font-size: 90%;
+}
+
+#submit { font-weight: bold; }
+div td .novel { color: #430; }
+div td .blockingsubmit { color: #a03; }
+div td .exclconflict { color: #a03; }
+div td .questionmark { color: #a03; }
+.delcom { background: #e8e8e8; }
+.numberentry { text-align: right; }
+
+.rollovercontrol { display: none; }
+.rolloverzone:hover .rollovercontrol { display: inline; }
+
+td u {
+    margin-left: .3em;
+    color: #0000cc;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+td u:hover { text-decoration: underline; }
+#peopledetail input { margin-bottom: 2px; }
+#perm_defs { margin-top: 1em; }
+#perm_defs th { text-align:left; }
+
+#perm_defs td {
+    vertical-align:bottom;
+    padding-left: 1em;
+}
+
+.attachments { width:33%; border-top:2px solid #999; padding-top: 3px; margin-left: .7em;}
+.attachments table { margin-bottom: 0.75em; }
+.attachments table tr td { padding: 0; margin: 0; font-size: 95%; }
+.preview { border: 2px solid #c3d9ff; padding: 1px; }
+.preview:hover { border: 2px solid blue; }
+.label { white-space: nowrap; }
+.derived { font-style: italic; }
+
+.cursor_on .author {
+    background: url(/static/images/show-arrow.gif) no-repeat 2px;
+}
+
+/* Issue Peek Feature */
+
+#infobubble {
+  position: absolute;
+  display: none;
+  border: 1px solid #666;
+  padding: 3px 5px 5px 5px;
+  background: #ebeff9;
+}
+
+#peekarea {
+  min-height: 30em;
+  font-size: 95%;
+  background: #fff;
+}
+
+.perms_EditIssue #peekarea {
+   min-height: 36.4em;
+}
+
+#issuesummary {
+  width: 300px;
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+td.rowwidgets { padding: 2px 2px 0 7px; }
+.cursor_on td.rowwidgets {
+  background-image: url(/static/images/show-arrow.gif);
+  background-repeat: no-repeat;
+  background-position: 2px;
+}
+
+.loading {
+  background-image: url(/static/images/spin_16.gif);
+  background-repeat: no-repeat;
+  background-position: 2px;
+  padding: 4px 20px;
+}
+
+#peekheading {
+  background: #ebeff9;
+  font-size:140%;
+  padding:2px 2px 0; overflow-x: hidden;
+  white-space:nowrap;
+}
+
+.peek #issuemeta, .peek #issuecomments {
+  height: 28em;
+  max-height: 28em;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll: auto;
+}
+
+.issuecomment { padding-top: 1px; }
+.updates { margin-bottom: 2px; }
+#hc_controls { float: right; }
+#hc_controls a.paginate { margin-left: 1px; }
+#hc_controls a.close { margin-left: 3px; }
+
+#infobuttons {
+  background: #fff;
+  /* for IE */
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffff', endColorstr='#f1f1f1');
+  /* for webkit browsers */
+  background: -webkit-gradient(linear, left top, left bottom, from(#fff), to(#f1f1f1));
+  /* for firefox 3.6+ */
+  background: -moz-linear-gradient(top,  #fff,  #f1f1f1);
+  border-top: 1px solid #ccc;
+  white-space:nowrap;
+}
+
+#infobuttons td {
+  padding: 0;
+}
+
+.custom_field_value_menu {
+  width: 20em;
+}
+
+#cue.scrim {
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgb(0,0,0);
+  background-color: rgba(0,0,0,0.4);
+}
+
+#privacy_dialog {
+  background: #fefefe;
+  border: 1px solid #888;
+  border-radius: 4px;
+  margin: 15% auto;
+  padding: 20px;
+  width: 80%;
+  max-width: 40em;
+}
+
+#privacy_dialog .actions {
+  margin-top: 2em;
+  text-align: right;
+  font-weight: bold;
+}
+
+#privacy_dialog .actions a {
+  text-decoration: none;
+  margin-left: 2em;
+}

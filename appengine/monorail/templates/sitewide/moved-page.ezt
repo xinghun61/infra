@@ -1,0 +1,24 @@
+[include "../framework/master-header.ezt" "hidetabs"]
+
+<h3>Project has moved</h3>
+
+<h4>What happened?</h4>
+
+<p>Project "[project_name]" has moved to another location on the Internet.</p>
+
+<div style="margin:2em" class="help">
+  <b style="margin:0.5em">Your options:</b>
+
+  <ul>
+   [if-any moved_to_url]
+    <li>View the project at:
+     <a href="[moved_to_url]">[moved_to_url]</a></li>
+   [end]
+   <li><a href="http://www.google.com/search?q=[project_name]">Search the web</a>
+       for pages about "[project_name]".
+   </li>
+
+  </ul>
+</div>
+
+[include "../framework/master-footer.ezt"]

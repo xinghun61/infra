@@ -1,0 +1,8 @@
+Subject: User does not have permission to add a comment
+
+The email message you sent to [project_addr]
+was not processed because user [sender_addr] 
+does not have permission to add a comment to 
+[artifact_phrase] in [project_name].
+
+[include "inboundemail-error-footer-part.ezt"]

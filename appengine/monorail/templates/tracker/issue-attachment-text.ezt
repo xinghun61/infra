@@ -1,0 +1,54 @@
+[define category_css]css/ph_detail.css[end]
+[define page_css]css/d_sb.css[end]
+[define title][filename] ([filesize])[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+<link type="text/css" rel="stylesheet"
+      href="/static/css/prettify.css?version=[app_version]">
+
+<h3 style="margin-bottom: 0">Issue <a href="detail?id=[local_id][#TODO(jrobbins): comment number]">[local_id]</a> attachment: [filename] <small>([filesize])</small>
+</h3>
+
+
+
+<div class="fc">
+  [if-any too_large]
+    <p><em>This file is too large to display.</em></p>
+
+  [else][if-any is_binary]
+
+    <p><em>
+      This file is not plain text (only UTF-8 and Latin-1 text encodings are currently supported).
+    </em></p>
+  [else]
+
+    [define revision]None[end]
+    [include "../framework/file-content-part.ezt"]
+    [include "../framework/file-content-js.ezt"]
+
+  [end][end]
+
+</div>
+
+
+[if-any should_prettify]
+<script src="/static/js/prettify.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  prettyPrint();
+});
+</script>
+[end]
+
+[if-any perms.EditIssue]
+  [include "../framework/footer-script.ezt"]
+  <script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+    _fetchOptions(
+      '[projectname]', 'issueOptions',
+      CS_env.token, [project.cached_content_timestamp]);
+});
+  </script>
+[end]
+
+[include "../framework/master-footer.ezt"]

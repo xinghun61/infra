@@ -1,0 +1,28 @@
+[# Pre-render the title of an activity for an issue update.]
+
+[include "updates-issue-link.ezt"]
+([issue.short_summary])
+
+[define field_changed][end]
+[define multiple_fields_changed][end]
+[for comment.amendments]
+  [if-any field_changed]
+    [define multiple_fields_changed]True[end]
+  [else]
+    [define field_changed][comment.amendments.field_name][end]
+  [end]
+[end]
+
+[if-any issue_change_id]
+  [if-any multiple_fields_changed]
+    changed
+  [else][if-any field_changed]
+    [field_changed] changed
+  [else]
+    commented on
+  [end][end]
+[else]
+  reported
+[end]
+
+[include "updates-ending.ezt"]

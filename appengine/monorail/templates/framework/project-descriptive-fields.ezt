@@ -1,0 +1,35 @@
+Summary:<br>
+<input type="text" id="summary" name="summary" size="75" value="[initial_summary]"><br>
+<div class="fielderror">&nbsp;
+   <span id="summaryfeedback">[if-any errors.summary][errors.summary][end]</span>
+</div>
+
+Description:<br>
+<textarea id="description" name="description" rows="20" cols="90" wrap="soft"
+          >[initial_description]</textarea><br>
+<div class="fielderror">&nbsp;
+  <span id="descriptionfeedback">[if-any errors.description][errors.description][end]</span>
+</div>
+
+Project home page (optional):<br/>
+<input type="text" id="project_home" name="project_home" size="75" value="[initial_project_home]"><br>
+<div class="fielderror">&nbsp;
+  <span id="project_homefeedback">[if-any errors.project_home][errors.project_home][end]</span>
+</div>
+
+Project documentation page (optional):<br/>
+<input type="text" id="docs_url" name="docs_url" size="75" value="[initial_docs_url]"><br>
+<div class="fielderror">&nbsp;
+  <span id="docs_urlfeedback">[if-any errors.docs_url][errors.docs_url][end]</span>
+</div>
+
+[if-any logo_view.viewurl]
+  Project logo:<br>
+  [include "display-project-logo.ezt" True]
+[else]
+  Upload project logo (optional, will be resized to 110x30):<br/>
+  <input type="file" name="logo" id="logo">
+  <div class="fielderror">&nbsp;
+    <span id="logofeedback">[if-any errors.logo][errors.logo][end]</span>
+  </div>
+[end]

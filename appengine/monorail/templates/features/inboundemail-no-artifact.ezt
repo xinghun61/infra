@@ -1,0 +1,7 @@
+Subject: Could not find [artifact_phrase] in project [project_name]
+
+The email message you sent to [project_addr]
+was not processed because [artifact_phrase] does
+not exist in project [project_name].
+
+[include "inboundemail-error-footer-part.ezt"]

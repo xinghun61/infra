@@ -1,0 +1,32 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+<h3>Issue export</h3>
+
+<form action="export/json" method="GET">
+  [# We use xhr_token here because we are doing a GET on a JSON servlet.]
+  <input type="hidden" name="token" value="[xhr_token]">
+  <table cellpadding="3" class="rowmajor vt">
+    <tr>
+     <th>Format</th>
+     <td style="width:90%">JSON</td>
+   </tr>
+   <tr>
+     <th>Start</th>
+     <td><input type="number" size="7" name="start" value="[initial_start]"></td>
+   </tr>
+   <tr>
+     <th>Num</th>
+     <td><input type="number" size="4" name="num" value="[initial_num]"></td>
+   </tr>
+   <tr>
+     <th></th>
+     <td><input type="submit" name="btn" value="Submit"></td>
+   </tr>
+ </table> 
+</form>
+
+
+
+[include "../framework/footer-script.ezt"]
+[include "../framework/master-footer.ezt"]

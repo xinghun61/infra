@@ -1,0 +1,29 @@
+[#  Display one row in the permissions table.
+
+Args:
+  arg0: True if the permission is native to the role. So, it cannot be removed.
+  arg1: True if the user has this permission. So, it will be shown when not in editing mode.
+  arg2: Permission name.
+  arg3: Permission description.
+
+References globals:
+  offer_edit_perms: True if the user can edit permissions on this page.
+]
+
+<tr>
+ <td>
+   <input type="checkbox" [if-any arg1]checked="checked"[end] id="[arg2]"
+    [if-any offer_edit_perms]
+      [if-any arg0]
+       disabled="disabled"
+      [else]
+       name="extra_perms" value="[arg2]"
+      [end]
+    [else]
+      disabled="disabled"
+    [end]
+    >
+  <label for="[arg2]">[arg2]</label>
+ </td>
+ <td>[arg3]</td>
+</tr>

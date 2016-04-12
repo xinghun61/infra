@@ -1,0 +1,1 @@
+[if-any arg0.profile_url]<a style="white-space: nowrap" href="[arg0.profile_url]" title="[arg0.display_name]">[arg0.display_name]</a>[else][arg0.display_name][end]

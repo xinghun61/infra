@@ -1,0 +1,7 @@
+Subject: You are banned from using this issue tracker
+
+The email message you sent to [project_addr]
+was not processed because your account, [sender_addr],
+has been banned from using this issue tracker.
+
+[include "inboundemail-error-footer-part.ezt"]

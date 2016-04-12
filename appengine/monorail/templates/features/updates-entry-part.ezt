@@ -1,0 +1,57 @@
+[# Show one activity.  arg0 is the activity.]
+
+[is arg0.highlight ""]
+  [define column_width]160[end]
+[else]
+  [define column_width]300[end]
+[end]
+
+<li [is even "Yes"]class="even"[end]>
+  <div class="g-section g-tpl-[column_width]">
+    <div class="g-unit g-first">
+      <div class="g-c">
+        [if-any arg0.highlight]
+        <div class="g-section g-tpl-160">
+          <div class="g-unit g-first">
+            <div class="g-c">
+              <span class="date [if-any arg0.escaped_body]below-more[else][end] activity" title="[arg0.date_tooltip]">[arg0.date_relative]</span>
+            </div>
+          </div>
+          <div class="g-unit">
+            <div class="g-c" style="padding-right:1em">
+              <span class="highlight-column">
+                [is arg0.highlight "project"]
+                <a href="/p/[arg0.project_name]/" title="[arg0.project_name]">[arg0.project_name]</a>
+                [else][is arg0.highlight "user"]
+                <a href="[arg0.user.profile_url]" title="[arg0.user.display_name]">[arg0.user.display_name]</a>
+                [end][end]
+              </span>
+            </div>
+          </div>
+        </div>
+        [else]
+        <span class="date [if-any arg0.escaped_body]below-more[end] activity" title="[arg0.date_tooltip]">[arg0.date_relative]</span>
+        [end]
+      </div>
+    </div>
+    <div class="g-unit">
+      <div class="g-c">
+        <span class="content">
+          [# SECURITY: OK to use "raw" here because escaped_title was preprocessed through the template engine.]
+          <span class="title">[format "raw"][arg0.escaped_title][end]</span>
+          [if-any arg0.escaped_body]
+          <span class="details-inline" style="margin-left:.5em">
+            [# SECURITY: OK to use "raw" here because escaped_body was preprocessed through the template engine.]
+            - [format "raw"][arg0.escaped_body][end]
+          </span>
+          <div class="details-wrapper">
+            [# SECURITY: OK to use "raw" here because escaped_body was preprocessed through the template engine.]
+            <div class="details">[format "raw"][arg0.escaped_body][end]</div>
+          </div>
+          [end]
+        </span>
+      </div>
+    </div>
+  </div>
+</li>
+[define even][is even "Yes"]No[else]Yes[end][end]

@@ -1,0 +1,35 @@
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  var removeMFVElements = document.getElementsByClassName("removeMultiFieldValueWidget");
+  for (var i = 0; i < removeMFVElements.length; ++i) {
+     var el = removeMFVElements[[]i];
+     el.addEventListener("click", function(event) {
+         _removeMultiFieldValueWidget(event.target);
+     });
+  }
+
+  var addMFVElements = document.getElementsByClassName("addMultiFieldValueWidget");
+  for (var i = 0; i < addMFVElements.length; ++i) {
+     var el = addMFVElements[[]i];
+     el.addEventListener("click", function(event) {
+          var target = event.target;
+          var fieldID = target.getAttribute("data-field-id");
+          var fieldType = target.getAttribute("data-type");
+          var fieldValidate1 = target.getAttribute("data-validate-1");
+          var fieldValidate2 = target.getAttribute("data-validate-2");
+         _addMultiFieldValueWidget(
+             event.target, fieldID, fieldType, fieldValidate1, fieldValidate2);
+     });
+  }
+
+  var customFieldElements = document.getElementsByClassName("customfield");
+  for (var i = 0; i < customFieldElements.length; ++i) {
+     var el = customFieldElements[[]i];
+     el.addEventListener("focus", function(event) {
+         _acrob(null);
+         _acof(event);
+     });
+     el.addEventListener("keyup", _dirty);
+  }
+});
+</script>

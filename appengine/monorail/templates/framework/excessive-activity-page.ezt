@@ -1,0 +1,31 @@
+[include "../framework/master-header.ezt" "hidetabs"]
+
+<h3>Action Limit Exceeded</h3>
+
+<h4>What happened?</h4>
+
+<div style="width:60em">
+
+<p>You have performed the requested action too many times in a 24-hour
+time period.  Or, you have performed the requested action too many
+times since the creation of your account.</p>
+
+<p>We place limits on the number of actions that can be performed by
+each user in order to reduce the potential for abuse.  We feel that we have set
+these limits high enough that legitimate use will very rarely
+reach them.  Without these limits, a few abusive users could degrade
+the quality of this site for everyone.</p>
+
+
+<div style="margin:2em" class="help">
+  <b style="margin:0.5em">Your options:</b>
+
+  <ul>
+   <li>Wait 24 hours and then try this action again.</li>
+   <li>Ask another member of your project to perform the action for you.</li>
+   <li><a href="mailto:[feedback_email]">Contact us</a> for further assistance.</li>
+  </ul>
+</div>
+
+</div>
+[include "../framework/master-footer.ezt"]

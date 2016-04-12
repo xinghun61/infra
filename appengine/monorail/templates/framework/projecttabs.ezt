@@ -1,0 +1,30 @@
+[is main_tab_mode "t2"]
+  [include "../tracker/issue-search-form.ezt"]
+[end]
+
+
+[is main_tab_mode "t4"]
+  <div class="[admin_tab_mode]">
+      <div class="at isf">
+       <span class="inst1"><a href="/p/[projectname]/adminIntro">Introduction</a></span>
+       <span class="inst3"><a href="/p/[projectname]/adminStatuses">Statuses</a></span>
+       <span class="inst4"><a href="/p/[projectname]/adminLabels">Labels and fields</a></span>
+       [if-any perms.EditProject][# Rule might be too sensitive for non-members to view.]
+         <span class="inst5"><a href="/p/[projectname]/adminRules">Rules</a></span>
+       [end]
+       <span class="inst6"><a href="/p/[projectname]/adminTemplates">Templates</a></span>
+       <span class="inst7"><a href="/p/[projectname]/adminComponents">Components</a></span>
+       <span class="inst8"><a href="/p/[projectname]/adminViews">Views</a></span>
+     </div>
+  </div>
+[end]
+
+
+[is main_tab_mode "t6"]
+  <div class="[admin_tab_mode]">
+      <div class="at isf">
+       <span class="inst1"><a href="/p/[projectname]/admin">General</a></span>
+       <span class="inst9"><a href="/p/[projectname]/adminAdvanced">Advanced</a></span>
+      </div>
+  </div>
+[end]

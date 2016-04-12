@@ -1,0 +1,14 @@
+[if-any perms.EditProject]
+  <div class="help" style="background: #ddf8cc;">
+       <b>Important:</b> Users could be given indirect
+       roles in this project without your knowledge.
+       The following user groups either have group managers
+       who are not project owners in this project, or they allow anyone to
+       join the group:
+       <ul style="list-style-type: none">
+         [for untrusted_user_groups]
+         <li>[untrusted_user_groups.email]</li> [# TODO(jrobbins): hyperlink]
+         [end]
+       </ul>
+  </div>
+[end]

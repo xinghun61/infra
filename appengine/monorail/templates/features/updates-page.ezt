@@ -1,0 +1,177 @@
+[define title]Updates[end]
+[if-any updates_data]
+
+[define even]Yes[end]
+
+<div id="colcontrol">
+<div class="list">
+    <table style="width: 100%;" cellspacing="0" cellpadding="0">
+     <tbody><tr>
+     <td style="text-align: left;">
+       Details:
+       <a id="detailsshow" href="#" class="showAll">Show all</a>
+       <a id="detailshide" href="#" class="hideAll">Hide all</a></td>
+     <td>
+     [include "../framework/artifact-list-pagination-part.ezt"]
+     </td>
+     </tr>
+     </tbody>
+    </table>
+  </div>
+
+  <table cellspacing="0" cellpadding="0" border="0" width="100%" id="resultstable" class="results" style="table-layout:fixed; width:100%">
+  <tbody>
+  <tr>
+  <td style="padding:0px" width="100%">
+
+  <div id='activity-streams-list' class='activity-stream-list'>
+    [if-any updates_data.today]
+      <h4>Today</h4>
+      <ul class='activity-stream'>
+      [for updates_data.today]
+        [include "updates-entry-part.ezt" updates_data.today]
+      [end]
+      </ul>
+    [end]
+
+    [if-any updates_data.yesterday]
+      <h4>Yesterday</h4>
+      <ul class='activity-stream'>
+      [for updates_data.yesterday]
+        [include "updates-entry-part.ezt" updates_data.yesterday]
+      [end]
+      </ul>
+    [end]
+
+    [if-any updates_data.pastweek]
+      <h4>Last 7 days</h4>
+      <ul class='activity-stream'>
+      [for updates_data.pastweek]
+        [include "updates-entry-part.ezt" updates_data.pastweek]
+      [end]
+      </ul>
+    [end]
+
+    [if-any updates_data.pastmonth]
+      <h4>Last 30 days</h4>
+      <ul class='activity-stream'>
+      [for updates_data.pastmonth]
+        [include "updates-entry-part.ezt" updates_data.pastmonth]
+      [end]
+      </ul>
+    [end]
+
+    [if-any updates_data.thisyear]
+      <h4>Earlier this year</h4>
+      <ul class='activity-stream'>
+      [for updates_data.thisyear]
+        [include "updates-entry-part.ezt" updates_data.thisyear]
+      [end]
+      </ul>
+    [end]
+
+    [if-any updates_data.older]
+      <h4>Older</h4>
+      <ul class='activity-stream'>
+      [for updates_data.older]
+        [include "updates-entry-part.ezt" updates_data.older]
+      [end]
+      </ul>
+    [end]
+  </div>
+
+  </td></tr></tbody></table>
+
+  <div class="list-foot">
+    [include "../framework/artifact-list-pagination-part.ezt"]
+  </div>
+</div>
+
+[else]
+
+  [if-any no_stars]
+    [is user_updates_tab_mode "st2"]
+      <div class="display-error">There are no starred projects.</div>
+    [else][is user_updates_tab_mode "st3"]
+      <div class="display-error">There are no starred developers.</div>
+    [end][end]
+  [else][if-any no_activities]
+    <div class="display-error">There are no updates yet.</div>
+  [end][end]
+
+[end]
+
+[if-any updates_data]
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+
+  /**
+   * Shows the activity detail for the particular activity selected.
+   */
+  function handleActivityLinkClick(e) {
+    var targetEl;
+
+    if (!e) {
+      var e = window.event;
+    }
+    if (e.target) {
+      targetEl = e.target;
+
+    } else if (e.srcElement) {
+      targetEl = e.srcElement;
+    }
+    if (targetEl.nodeType == 3) {
+      targetEl = targetEl.parentNode;
+    }
+
+    while (targetEl.tagName.toLowerCase() != 'li') {
+      targetEl = targetEl.parentNode;
+    }
+    if (targetEl.className.indexOf('click') != -1) {
+      targetEl.className = targetEl.className.replace(/click/, '');
+    } else {
+      targetEl.className += ' click';
+    }
+
+    e.preventDefault();
+  }
+
+  /**
+   * Array of <li> elements for activity streams
+   */
+  var _CS_asElemList = document.getElementById('activity-streams-list').
+      getElementsByTagName('li');
+
+  /**
+   * Shows all activity details
+   */
+  function expandAll(event) {
+    for (var i=0; i < _CS_asElemList.length; i++) {
+      _CS_asElemList[[]i].className = 'click';
+    }
+    event.preventDefault();
+  }
+
+  /**
+   * Hides all activity details
+   */
+  function closeAll(event) {
+    for (var i=0; i < _CS_asElemList.length; i++) {
+      _CS_asElemList[[]i].className = '';
+    }
+    event.preventDefault();
+  }
+
+  if ($("detailsshow"))
+    $("detailsshow").addEventListener("click", expandAll);
+  if ($("detailshide"))
+    $("detailshide").addEventListener("click", closeAll);
+
+  var activityLinks = document.getElementsByClassName("activity");
+  for (var i = 0; i < activityLinks.length; ++i) {
+    var link = activityLinks[[]i];
+    link.addEventListener("click", handleActivityLinkClick);
+  }
+});
+</script>
+[end]

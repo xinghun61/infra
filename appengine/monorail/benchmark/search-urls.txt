@@ -1,0 +1,75 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is govered by a BSD-style
+# license that can be found in the LICENSE file or at
+# https://developers.google.com/open-source/licenses/bsd
+
+# This is a bunch of URLs that can be hit to measure performance.
+# Use 'make siege' to run it.
+# Or 'siege -c 4 -f benchmark/search-urls.txt'
+#
+# For a log of results of running performance tests see the
+# go/monorail-performance spreadsheet.
+
+
+# Use one of these lines to choose the server and project.
+ISSUE_LIST=https://monorail-staging.appspot.com/p/chromium/issues/list?disable_cache=1&
+#ISSUE_LIST=https://code.google.com/p/chromium/issues/list?
+
+# Log data shows that 68% of issue list page views have no query terms.
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+${ISSUE_LIST}
+
+${ISSUE_LIST}can=1
+${ISSUE_LIST}can=1
+${ISSUE_LIST}can=3
+${ISSUE_LIST}can=4
+${ISSUE_LIST}q=label:Type-Bug
+${ISSUE_LIST}q=label:Pri-2
+${ISSUE_LIST}q=label:OS-Windows
+${ISSUE_LIST}q=status:Unconfirmed
+${ISSUE_LIST}q=status=Unconfirmed
+${ISSUE_LIST}q=status=Started
+${ISSUE_LIST}q=status=Untriaged
+${ISSUE_LIST}q=status=Started,Untriaged
+${ISSUE_LIST}q=-status=Started,Untriaged
+${ISSUE_LIST}can=1&q=status=Fixed
+${ISSUE_LIST}can=1&q=status=Duplicate
+# Actually owner:me is pretty common, but specify the owner here since we ar not signed in.
+${ISSUE_LIST}q=owner=agl@chromium.org
+${ISSUE_LIST}q=owner=rch@chromium.org
+${ISSUE_LIST}q=owner=jon@chromium.org
+${ISSUE_LIST}q=owner=amit@chromium.org
+${ISSUE_LIST}q=cc:amit@chromium.org
+${ISSUE_LIST}q=owner:google.com
+${ISSUE_LIST}q=feature=nacl status:started
+${ISSUE_LIST}q=Hotlist=GoodFirstBug
+${ISSUE_LIST}q=has:restrict
+${ISSUE_LIST}q=feature=Printing
+${ISSUE_LIST}q=feature=Printing status=Available
+${ISSUE_LIST}q=feature=Printing -status=Available
+
+
+

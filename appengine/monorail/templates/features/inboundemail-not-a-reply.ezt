@@ -1,0 +1,7 @@
+Subject: Your message is not a reply to a notification email
+
+The email message you sent to [project_addr]
+was not processed because it was not a reply to a notification
+email that we sent specifically to [sender_addr].
+
+[include "inboundemail-error-footer-part.ezt"]

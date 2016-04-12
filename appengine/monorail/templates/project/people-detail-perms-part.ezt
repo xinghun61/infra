@@ -1,0 +1,82 @@
+<table id="perm_defs" class="ifOpened">
+ [if-any offer_edit_perms displayed_extra_perms]
+  <tr><th colspan="2">Standard permissions</th></tr>
+ [end]
+
+ [include "people-detail-row-part.ezt" role_perms.View member_perms.View "View" "View issues"]
+ [include "people-detail-row-part.ezt" role_perms.Commit member_perms.Commit "Commit" "Full project member"]
+
+ [include "people-detail-row-part.ezt" role_perms.CreateIssue member_perms.CreateIssue "CreateIssue" "Enter a new issue"]
+ [include "people-detail-row-part.ezt" role_perms.AddIssueComment member_perms.AddIssueComment "AddIssueComment" "Add a comment to an issue"]
+ [include "people-detail-row-part.ezt" role_perms.EditIssue member_perms.EditIssue "EditIssue" "Edit any attribute of an issue"]
+ [include "people-detail-row-part.ezt" role_perms.EditIssueOwner member_perms.EditIssueOwner "EditIssueOwner" "- Edit the owner of an issue"]
+ [include "people-detail-row-part.ezt" role_perms.EditIssueSummary member_perms.EditIssueSummary "EditIssueSummary" "- Edit the summary of an issue"]
+ [include "people-detail-row-part.ezt" role_perms.EditIssueStatus member_perms.EditIssueStatus "EditIssueStatus" "- Edit the status of an issue"]
+ [include "people-detail-row-part.ezt" role_perms.EditIssueCc member_perms.EditIssueCc "EditIssueCc" "- Edit the CC list of an issue"]
+ [include "people-detail-row-part.ezt" role_perms.DeleteIssue member_perms.DeleteIssue "DeleteIssue" "Delete/undelete an issue"]
+
+ [include "people-detail-row-part.ezt" role_perms.DeleteAny member_perms.DeleteAny "DeleteAny" "Delete comments by anyone"]
+ [include "people-detail-row-part.ezt" role_perms.EditAnyMemberNotes member_perms.EditAnyMemberNotes "EditAnyMemberNotes" "Edit anyone's member notes"]
+ [include "people-detail-row-part.ezt" role_perms.ModerateSpam member_perms.ModerateSpam "ModerateSpam" "Mark or un-mark issues and comments as spam"]
+
+
+
+ [if-any offer_edit_perms displayed_extra_perms]
+  <tr><th colspan="2">Custom permissions</th></tr>
+ [end]
+
+ [if-any offer_edit_perms]
+  <tr>
+   <td id="displayed_extra_perms" colspan="2">
+   <div style="width:12em">
+    [for displayed_extra_perms]
+        <input style="width:100%" name="extra_perms"
+               value="[displayed_extra_perms]">
+    [end]
+     <input style="width:100%" name="extra_perms"
+            id="first_extra_perms"
+            value="" autocomplete="off">
+   </div>
+   </td>
+  </tr>
+ [else]
+   [for displayed_extra_perms]
+    <tr>
+     <td>
+      <input type="checkbox" checked="checked" disabled="disabled">
+      [displayed_extra_perms]
+     </td>
+     <td></td>
+    </tr>
+   [end]
+ [end]
+
+</table>
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  function _addInput(event) {
+    if (event.target.value == "") {
+      return;
+    }
+    var area = event.target.parentNode;
+    var newInput = document.createElement("input");
+    newInput.style.width = "100%";
+    newInput.name = event.target.name;
+    newInput.onfocus = function(e) {
+        _acrob(null);
+        _acof(e);
+    };
+    newInput.setAttribute("autocomplete", "off");
+    newInput.addEventListener("keyup", _addInput);
+    area.appendChild(newInput);
+    area.appendChild(document.createElement("br"));
+
+    // Make it only fire once.
+    event.target.removeEventListener("keyup", _addInput);
+  }
+
+  if ($("first_extra_perms"))
+    $("first_extra_perms").addEventListener("keyup", _addInput);
+});
+</script>

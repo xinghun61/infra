@@ -1,0 +1,110 @@
+[# This is the "Project publishing options" on the "Advanced" subtab. ]
+
+<h4>Project state</h4>
+
+<div class="section">
+<table class="vt" cellspacing="20" style="width:60em">
+ [if-any offer_archive]
+ <tr>
+  <td>
+    <input type="submit" name="archivebtn" style="width:6em"
+           value="Archive">
+  </td>
+  <td>
+    Archive this project. It will only be visible read-only to
+    project members.  Once it is archived, you may unarchive it, or go ahead
+    and fully delete it.
+    <br><br>
+  </td>
+ </tr>
+ [end]
+
+ [if-any offer_delete]
+ <tr>
+  <td>
+    <input type="submit" name="deletebtn" style="width:6em"
+           value="Delete" id="delbtn">
+  </td>
+  <td>
+    Completely delete this project now.
+    <br><br>
+  </td>
+ </tr>
+ [end]
+
+ [if-any offer_publish]
+ <tr>
+  <td>
+    <input type="submit" name="publishbtn" style="width:6em"
+           value="Unarchive">
+  </td>
+  <td>
+    Make this project active again.
+    All project contents will become visible and editable to users as normal.
+    <br><br>
+  </td>
+ </tr>
+ [end]
+
+ [if-any offer_move]
+ <tr>
+  <td>
+    <input type="submit" name="movedbtn" style="width:6em"
+           value="Move">
+  </td>
+  <td>
+    If you have moved your project to a different location, enter it here and
+    users will be directed to that location.  If the destination is another
+    project on this site, enter just the new project name.  If the destination
+    is another site, enter the new project home page URL.
+    <br><br>
+    <b>Location:</b>
+    <input type="text" name="moved_to" size="50" value="[moved_to]">
+  </td>
+ </tr>
+ [end]
+
+ [if-any offer_doom]
+ <tr>
+  <td>
+    <input type="submit" name="doombtn" style="width:6em"
+           value="Doom">
+  </td>
+  <td>
+    Immediately archive this project and schedule it for deletion in
+    90 days.  Only a site admin can un-archive the project, not a
+    project owner.  In the meantime, the project will be read-only for
+    project members only, and the reason for deletion will be displayed at the top
+    of each page.
+    <br><br>
+    <b>Reason:</b>
+    <input type="text" name="reason" size="50" value="[default_doom_reason]">
+  </td>
+ </tr>
+ [end]
+
+ [if-any offer_archive offer_delete offer_publish offer_doom offer_move][else]
+ <tr>
+  <td>
+  </td>
+  <td>
+    You are not authorized to change the project state.
+  </td>
+ </tr>
+ [end]
+
+</table>
+
+</div>
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  if ($("delbtn")) {
+    $("delbtn").addEventListener("click", function(event) {
+        var msg = "Really delete the whole project?\nThis operation cannot be undone.";
+        if (!confirm(msg))
+          event.preventDefault();
+    });
+  }
+});
+</script>

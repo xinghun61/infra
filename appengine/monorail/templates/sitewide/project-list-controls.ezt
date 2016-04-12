@@ -1,0 +1,14 @@
+<table class="isf" width="100%" border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    [if-any projects]
+      <td style="padding:3px 1em; font-weight:normal; white-space:nowrap;">
+        <p style="font-size:1.2em">List of Projects</p>
+        [if-any pagination.prev_url]<a href="[pagination.prev_url]"><b>&lsaquo;</b> Prev</a>[end]
+        [pagination.start] - [pagination.last] of [pagination.total_count]
+        [if-any pagination.next_url]<a href="[pagination.next_url]">Next <b>&rsaquo;</b></a>[end]
+      </td>
+    [else]
+      <td style="padding:3px 1em">&nbsp;</td>
+    [end]
+  </tr>
+</table>

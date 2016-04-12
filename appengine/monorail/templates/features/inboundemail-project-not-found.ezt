@@ -1,0 +1,6 @@
+Subject: Project not found
+
+The email message you sent to [project_addr]
+was not processed because there is no project at that address.
+
+[include "inboundemail-error-footer-part.ezt"]

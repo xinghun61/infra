@@ -1,0 +1,88 @@
+[for panels][# There will always be exactly one panel.]
+ [include "issue-list-headings.ezt"]
+[end]
+
+[if-any table_data]
+ [for table_data]
+
+  [include "../framework/artifact-list-group-row.ezt" "issue" "issues"]
+
+  <tr class="ifOpened hoverTarget [is cursor table_data.issue_ref]cursor_on[else]cursor_off[end]" data-idx="[table_data.idx]">
+    <td class="rowwidgets nowrap">
+     [if-any read_only][else]
+      [if-any page_perms.EditIssue][if-any is_cross_project][else][# TODO(jrobbins): cross-project bulk edit]
+       <input type="checkbox" id="cb_[table_data.local_id]" class="checkRangeSelect">
+      [end][end]
+      [if-any page_perms.SetStar]
+       <a class="star" id="star-[table_data.project_name]-[table_data.local_id]"
+        style="color:[if-any table_data.starred]cornflowerblue[else]gray[end];"
+        title="[if-any table_data.starred]Un-s[else]S[end]tar this issue"
+        data-project-name="[table_data.project_name]" data-local-id="[table_data.local_id]">
+        [if-any table_data.starred]&#9733;[else]&#9734;[end]
+       </a>
+      [else]
+       &nbsp;
+      [end]
+     [end]
+    </td>
+
+    [for table_data.cells]
+     [is table_data.cells.type "ID"]
+      <td class="id col_[table_data.cells.col_index]"
+          [# TODO(jrobbins): re-implement preview_on_hover in polymer.]
+          ><a href="[table_data.issue_url]">
+              [if-any is_cross_project][table_data.project_name]:[end][table_data.local_id]</a></td>
+     [end]
+
+     [is table_data.cells.type "summary"]
+      <td class="col_[table_data.cells.col_index]"
+          align="right" valign="top" style="padding-right:0; padding-top: 0.15em">
+       [if-any table_data.owner_is_me]<small><b>&rsaquo;</b></small>[else]&nbsp;[end]
+      </td>
+      <td class="col_[table_data.cells.col_index]" width="100%"
+        >[include "../framework/artifact-list-cell-values.ezt"]
+          [include "../framework/artifact-list-non-column-labels.ezt"]
+      </td>
+     [end]
+
+     [is table_data.cells.type "attr"]
+      <td class="col_[table_data.cells.col_index][if-any table_data.cells.NOWRAP] nowrap[end]"
+            [if-any table_data.cells.align]align="[table_data.cells.align]"[end]
+            >[include "../framework/artifact-list-cell-values.ezt"]</td>
+     [end]
+
+     [is table_data.cells.type "unfilterable"]
+       <td class="col_[table_data.cells.col_index] [if-any table_data.cells.NOWRAP]nowrap[end]"
+         [if-any table_data.cells.align]align="[table_data.cells.align]"[end]
+         >[include "../framework/artifact-list-cell-values.ezt"]</td>
+     [end]
+    [end]
+   <td>&nbsp;</td>
+  </tr>
+ [end]
+
+[else]
+
+ <tr>
+  <td colspan="40" class="id">
+   <div style="padding: 3em; text-align: center">
+    [if-any project_has_any_issues]
+     Your search did not generate any results.  <br>
+     [is can "1"]
+      You may want to remove some terms from your query.<br>
+     [else]
+      You may want to try your search over <a href="list?can=1&amp;q=[format "url"][query][end]">all issues</a>.<br>
+     [end]
+    [else]
+     This project currently has no issues.<br>
+     [if-any page_perms.CreateIssue]
+      [if-any read_only][else]
+       You may want to enter a <a class="id" href="entry">new issue</a>.
+      [end]
+     [end]
+    [end]
+    </div>
+   </td>
+  </tr>
+
+[end]

@@ -1,0 +1,125 @@
+[if-any cue]
+
+[# Do not show cue if there is an alert shown on the page.]
+[if-any alerts.show][else]
+
+
+[# Dialog box for privacy settings.]
+[is cue "privacy_click_through"]
+  <div id="cue" class="scrim">
+    <div id="privacy_dialog">
+      <h2>Email display settings</h2>
+
+      <p>There is a <a href="/hosting/settings" title="Settings"
+      class="dismiss_cue">setting</a> to control how your email
+      address appears on comments and issues that you post.
+
+      [if-any is_privileged_domain_user]
+        Since you are an integral part of this community, that setting
+        defaults to showing your full email address.</p>
+
+        <p>Also, you are being trusted to view email addresses of
+        non-members who post comments in your projects.  Please use
+        those addresses only to request additional information about
+        the posted comments, and do not share other users' email
+        addresses beyond the site.</p>
+      [else]
+        Project members will always see your full email address.  By
+        default, other users who visit the site will see an
+        abbreviated version of your email address.</p>
+
+        <p>If you do not wish your email address to be shared, there
+        are other ways to <a
+        href="http://www.chromium.org/getting-involved">get
+        involved</a> in the community.  To report a problem when using
+        the Chrome browser, you may use the "Report an issue..."  item
+        on the "Help" menu.</p>
+      [end]
+
+      <div class="actions">
+        <a href="#" title="Got it" class="dismiss_cue">GOT IT</a>
+      </div>
+    </div>
+  </div>
+
+[else]
+
+ <table align="center" border="0" cellspacing="0" cellpadding="0" id="cue">
+  <tr><td><span>
+    [# Cue cards to teach users how to join a project.]
+    [is cue "how_to_join_project"]
+      <b>How-to:</b>
+      Join this project by contacting the project owners.
+    [end]
+
+    [# Cue card to teach users how to search for numbers in the issue tracker.]
+    [is cue "search_for_numbers"]
+     [if-any jump_local_id]
+       <b>Tip:</b>
+       To find issues containing "[jump_local_id]", use quotes.
+     [end]
+    [end]
+
+    [# Cue card to teach users how to search for numbers in the issue tracker.]
+    [is cue "dit_keystrokes"]
+      <b>Tip:</b>
+      Type <b style="font-size:130%"><tt>?</tt></b> for keyboard shortcuts.
+    [end]
+
+    [# Cue card to teach users that italics mean derived values in the issue tracker.]
+    [is cue "italics_mean_derived"]
+      <b>Note:</b>
+      <i>Italics</i> mean that a value was derived by a filter rule.
+      <a href="http://code.google.com/p/monorail/wiki/FilterRules">Learn more</a>
+    [end]
+
+    [# Cue card to teach users that full-text indexing takes time.]
+    [is cue "stale_fulltext"]
+      <b>Note:</b>
+      Searching for text in issues may show results that are a few minutes out of date.
+    [end]
+
+    [# Cue cards to improve discoverability of people roles.]
+    [is cue "document_team_duties"]
+     [if-any read_only][else]
+       <b>Tip:</b>
+       Document <a href="people/list">each teammate's project duties</a>.
+     [end]
+    [end]
+
+    [# Cue cards to explain grid mode.]
+    [is cue "showing_ids_instead_of_tiles"]
+       <b>Note:</b>
+       Grid mode automatically switches to displaying IDs when there are many results.
+    [end]
+
+   </span>
+    [# Link to dismiss the cue card.]
+    [if-any logged_in_user]
+     [if-any read_only][else]
+      <a href="#" title="Don't show this message again" style="margin-left:3em;vertical-align:middle;" class="dismiss_cue"
+         ><img src="/static/images/close_icon.png" width="13" height="13"></a>
+     [end]
+    [end]
+  </td></tr>
+ </table>
+[end]
+
+
+
+ <script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  var dismissLinks = document.getElementsByClassName("dismiss_cue");
+  for (var i = 0; i < dismissLinks.length; ++i) {
+   var dismissCue = dismissLinks[[]i];
+     dismissCue.addEventListener("click", function(event) {
+         _CS_dismissCue("[format "js"][cue][end]");
+         if (dismissCue.href == "#")
+           event.preventDefault();
+     });
+  }
+});
+ </script>
+
+[end]
+[end]

@@ -1,0 +1,132 @@
+[define category_css]css/ph_list.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+[include "../framework/js-placeholders.ezt"]
+
+[if-any read_only][include "../framework/read-only-rejection.ezt"]
+[else]
+
+<form action="adminLabels.do" id="adminLabels" method="POST">
+ <input type="hidden" name="token" value="[form_token]">
+
+ <h4>Predefined issue labels</h4>
+ <div class="section">
+  [if-any perms.EditProject]
+    <table class="vt">
+     <tr><td>
+       <textarea name="predefinedlabels" rows="12" cols="75" style="tab-size:18">[for config.issue_labels]
+[config.issue_labels.commented][config.issue_labels.name_padded][if-any config.issue_labels.docstring]&#09;= [config.issue_labels.docstring][end][end]
+</textarea><br><br>
+
+       Each issue may have <b>at most one</b> label with each of these prefixes:<br>
+       <input type="text" size="75" name="excl_prefixes"
+              value="[for config.excl_prefixes][config.excl_prefixes][if-index config.excl_prefixes last][else], [end][end]">
+      </td>
+      <td style="padding-left:.7em">
+       <div class="tip">
+           <b>Instructions:</b><br> List one label per line in desired sort-order.<br><br>
+           Optionally, use an equals-sign to document the meaning of each label.
+       </div>
+      </td>
+     </tr>
+    </table>
+  [else]
+    <table cellspacing="0" cellpadding="2" border="0" class="results striped" width="100%">
+     <tr>
+       <th style="min-width:14em">Label</th>
+       <th width="100%">Meaning</th>
+     </tr>
+     [for config.issue_labels]
+       <tr>
+         <td style="white-space:nowrap; padding-right:2em; color:#363">[config.issue_labels.name]</td>
+         <td>[config.issue_labels.docstring]</td>
+       </tr>
+     [end]
+    </table>
+  [end]
+ </div>
+
+ [if-any perms.EditProject]
+   <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit">
+ [end]
+
+ <br>
+ <br>
+
+ <h4>Custom fields</h4>
+ <div class="section">
+  <table cellspacing="0" cellpadding="2" border="0" class="results striped vt" id="resultstable" width="100%">
+  <tbody>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Required</th>
+      <th>Multivalued</th>
+      <th>Applicable to</th>
+      <th>Description</th>
+    </tr>
+    [if-any field_defs][else]
+      <tr>
+        <td colspan="40">
+          <div style="padding: 3em; text-align: center">
+            This project has not defined any custom fields.
+          </div>
+        </td>
+      </tr>
+    [end]
+    [for field_defs]
+      [define detail_url]/p/[projectname]/fields/detail?field=[field_defs.field_name][end]
+      [is field_defs.type_name "INT_TYPE"][define pretty_type_name]Integer[end][end]
+      [is field_defs.type_name "ENUM_TYPE"][define pretty_type_name]Enum[end][end]
+      [is field_defs.type_name "USER_TYPE"][define pretty_type_name]User[end][end]
+      [is field_defs.type_name "STR_TYPE"][define pretty_type_name]String[end][end]
+      <tr data-url="[detail_url]">
+        <td class="id" style="white-space:nowrap">
+          <a href="[detail_url]">[field_defs.field_name]</a></td>
+        <td style="white-space:nowrap">
+          [pretty_type_name]
+        </td>
+        <td style="white-space:nowrap">
+          [if-any field_defs.is_required_bool]Required[else]Optional[end]
+        </td>
+        <td style="white-space:nowrap">
+          [if-any field_defs.is_multivalued_bool]Multiple[else]Single[end]
+        </td>
+        <td style="white-space:nowrap">
+          [if-any field_defs.applicable_type][field_defs.applicable_type][else]Any issue[end]
+        </td>
+        <td>
+           [field_defs.docstring_short]
+        </td>
+      </tr>
+    [end]
+  </tbody>
+  </table>
+  <div class="list-foot"></div>
+  [if-any perms.EditProject]
+    <p><a href="/p/[projectname]/fields/create" class="buttonify">Add field</a></p>
+  [end]
+ </div>
+
+</form>
+
+[end]
+
+
+[include "../framework/footer-script.ezt"]
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _onload();
+
+  function _handleResultsClick(event) {
+    var target = event.target;
+    if (target.tagName == "A")
+      return;
+    while (target && target.tagName != "TR") target = target.parentNode;
+    _go(target.attributes[[]"data-url"].value,
+        (event.metaKey || event.ctrlKey || event.button == 1));
+  };
+  $("resultstable").addEventListener("click", _handleResultsClick);
+});
+</script>
+
+[include "../framework/master-footer.ezt"]

@@ -1,0 +1,7 @@
+Issue [issue.local_id]: [format "raw"][summary][end]
+[detail_url]
+
+[if-any is_blocking]This issue is now blocking issue [downstream_issue_ref].
+See [downstream_issue_url]
+[else]This issue is no longer blocking issue [downstream_issue_ref].
+See [downstream_issue_url][end]

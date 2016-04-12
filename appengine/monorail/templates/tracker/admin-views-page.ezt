@@ -1,0 +1,81 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+[if-any read_only][include "../framework/read-only-rejection.ezt"]
+[else]
+
+<form action="adminViews.do" id="adminViews" method="POST">
+ <input type="hidden" name="token" value="[form_token]">
+
+ [include "../framework/artifact-list-admin-part.ezt" "with_grid"]
+
+<h4 id="queries">Saved queries</h4>
+<div class="section">
+
+ <div class="closed">
+  <div>Saved queries help project visitors easily view relevant issue lists.
+   <a class="ifClosed toggleHidden" href="#"
+      style="font-size:90%; margin-left:.5em">Learn more</a>
+  </div>
+
+  <div id="filterhelp" class="ifOpened help">
+      Project owners can set up saved queries to make it easier for team members to
+      quickly run common queries.  More importantly, project owners can use saved
+      queries to focus the team's attention on the issue lists that are most important
+      for the project's success.  The project's saved queries are shown in the middle
+      section of the search dropdown menu that is next to the issue search box.
+  </div>
+  <br>
+
+  [if-any perms.EditProject]
+    [include "../framework/saved-queries-admin-part.ezt" "project"]
+  [else]
+    <table cellspacing="0" cellpadding="2" border="0" class="results striped">
+      <tr>
+        <th align="left">Saved query name</th>
+        <th align="left">Search in</th>
+        <th align="left">Query</th>
+      </tr>
+      [for canned_queries]
+        <tr>
+          <td>[canned_queries.name]</td>
+          <td>
+            [define can][canned_queries.base_query_id][end]
+            [is can "1"]All issues[end]
+            [is can "2"]Open issues[end]
+            [is can "3"]Open and owned by me[end]
+            [is can "4"]Open and reported by me[end]
+            [is can "5"]Open and starred by me[end]
+            [is can "6"]New issues[end]
+            [is can "7"]Issues to verify[end]
+            [is can "8"]Open with comment by me[end]
+          </td>
+          <td>
+            [canned_queries.query]
+          </td>
+        </tr>
+      [end]
+    </table>
+  [end]
+ </div>
+</div>
+
+ [if-any perms.EditProject]
+   <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit">
+ [end]
+</form>
+
+[end]
+
+[include "../framework/footer-script.ezt"]
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+ _fetchOptions(
+   '[projectname]', 'issueOptions',
+   CS_env.token, [project.cached_content_timestamp]);
+ _onload();
+
+});
+</script>
+
+[include "../framework/master-footer.ezt"]

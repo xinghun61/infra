@@ -1,0 +1,9 @@
+[# This template is used to pre-render the title of an activity so that it can
+   later be accessed as activity.escaped_title.
+]
+
+[is activity_type "ProjectIssueUpdate"]
+  [include "updates-issueupdate-title.ezt"]
+[else]
+  title?
+[end]

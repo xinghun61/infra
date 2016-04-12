@@ -1,0 +1,45 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+<h3>Issue export</h3>
+
+[if-any import_errors]
+  [# This is actually used to show both errors and progress messages
+     after a successful import.]
+  <div class="error" style="margin-bottom:1em">
+    Import event log:
+    <ul>
+      [for import_errors]
+        <li>[import_errors]</li>
+      [end]
+    </ul>
+  </div>
+[end]
+
+
+<form action="import.do" enctype="multipart/form-data" method="POST">
+  <input type="hidden" name="token" value="[form_token]">
+  <table cellpadding="3" class="rowmajor vt">
+    <tr>
+     <th>Format</th>
+     <td style="width:90%">JSON</td>
+   </tr>
+   <tr>
+     <th>File</th>
+     <td><input type="file" name="jsonfile"></td>
+   </tr>
+   <tr>
+     <th>Pre-check only</th>
+     <td><input type="checkbox" name="pre_check_only"></td>
+   </tr>
+   <tr>
+     <th></th>
+     <td><input type="submit" name="btn" value="Submit"></td>
+   </tr>
+ </table> 
+</form>
+
+
+
+[include "../framework/footer-script.ezt"]
+[include "../framework/master-footer.ezt"]

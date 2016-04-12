@@ -1,0 +1,1 @@
+[is num_issues "1"]Issue [else]Issues [end][for local_ids]<a class="ot-issue-link" href="/p/[project.project_name]/issues/detail?id=[local_ids]">[local_ids]</a>[if-index local_ids last][else], [end][end]

@@ -1,0 +1,27 @@
+<div class="gridtile">
+ <table cellspacing="0" cellpadding="0">
+  <tr>
+   <td class="id">
+    [if-any read_only][else]
+     [if-any page_perms.SetStar]
+      <a class="star"
+       style="color:[if-any arg0]cornflowerblue[else]gray[end]; text-decoration:none;"
+       title="[if-any arg0]Un-s[else]S[end]tar this issue"
+       data-project-name="[projectname]" data-local-id="[arg1]">
+       [if-any arg0]&#9733;[else]&#9734;[end]
+      </a>
+     [end]
+    [end]
+    <a href="detail?id=[arg1]">[arg1]</a>
+   </td>
+   <td class="status">[arg2]</td>
+  </tr>
+  <tr>
+   <td colspan="2">
+    <div>
+     <a href="detail?id=[arg1]">[arg3]</a>
+    </div>
+   </td>
+  </tr>
+ </table>
+</div>

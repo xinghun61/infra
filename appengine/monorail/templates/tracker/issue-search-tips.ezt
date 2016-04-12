@@ -1,0 +1,331 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+[# Note: No UI element permission checking needed on this page. ]
+
+<div id="searchtips">
+
+[# TODO(jrobbins): this page should be redone in the standard Google]
+[# on-line help system.  For now, it helps to document our planned search]
+[# features. ]
+
+
+<h3>Basic issue search</h3>
+
+<p>In most cases you can find the issues that you want to work with
+very easily by using the issue list headers or by entering a few
+simple keywords into the main search field.</p>
+
+<p>Whenever you visit the "<a href="list">Issues</a>" tab in your
+project, you are presented with a table of all open issues.  If you
+see too many results, you can quickly filter your results by clicking
+on the table headers and choosing a specific value from the "Show
+only:" submenu.</p>
+
+[# TODO screenshot ]
+
+<p>The main search field consists of two parts:</p>
+
+<ul>
+ <li>A drop-down selection of search scopes, e.g, "All issues" or just "Open issues".</li>
+ <li>A search text field where you can enter search terms.</li>
+</ul>
+
+[# TODO screenshot ]
+
+<p>In the text field, you may enter simple search terms, or add any of
+the search operators described below.</p>
+
+<p>You can also use the search text field to jump directly to any
+issue by entering its issue number.  If you wish to search for issues
+that contain a number, rather than jumping to that issue, enclose the
+number in quotation marks.</p>
+
+<p>Behind the scenes, the search scope is simply an additional set of
+search terms that is automatically combined with the user's search
+terms to make a complete query.</p>
+
+
+<h3>Advanced issue search</h3>
+
+<p>The <a href="advsearch">Advanced Search</a> page helps you
+compose a complex query.  The advanced search form breaks the search
+down into several popular criteria and allows you to specify each one
+easily.  The search criteria boil down to the same thing as the search
+operators described below, but you don't need to remember the operator
+names.</p>
+
+
+
+<h3>Search operators</h3>
+
+<p>Just like the Google web search that everyone knows and loves, you
+can search for issues by simply entering a few words.  However, you
+may get a few more results than you expected.  When you need to search
+more precisely, you can use search operators for more power.</p>
+
+<h4>Searching in specific fields</h4>
+
+<p>Normal search terms will match words found in any field of an
+issue.  You can narrow the search to a specific field by using the
+name of the field.  The built-in field operators are summary:,
+description:, comment:, status:, reporter:, owner:, cc:, commentby:,
+and label:.  You can limit your search to just open issues by using
+is:open, or to just closed issues by using isnot:open.</p>
+[# TODO(jrobbins): dateopened:]
+
+<p>For example, here's how to search for issues with the word
+<b>calculation</b> in the summary field.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="summary:calculation">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+<p>When searching for issues owned by a specific user, you can use his
+or her username.  When referring to yourself, you can also use the
+special term <b>me</b>. For example, this restricts the search to
+issues that are owned by you.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="owner:username">
+ <input type="submit" name="btn" value="Search">
+</form>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="owner:me">
+ <input type="submit" name="btn" [if-any logged_in_user][else]disabled=disabled[end] value="Search">
+ [if-any logged_in_user][else]
+   <span style="white-space:nowrap"><a href="[login_url]"
+   >Sign in</a> to try this example</span>
+ [end]</p>
+</form>
+
+<p>Rather than have a large number of predefined fields, our issue
+tracker stores many issue details as labels.</p>
+
+<p>For example, if you labeled security-related issues with the label
+<b>Security</b>, here's how to search for them.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="label:security">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+
+<p>In addition to simple one-word labels, you can use two part labels
+that specify an attribute and a value, like <b>Priority-High</b>,
+<b>Priority-Medium</b>, and <b>Priority-Low</b>.  You can search for
+these with the label: operator, or you can use the first part of the
+label name like an operator.</p>
+
+<p>For example, if you labeled high priority issues with
+<b>Priority-High</b>, here's one way to search for them.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="label:Priority-High">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+<p>And, here is a more compact way to do the same search.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="Priority:High">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+<p>For <b>components</b>, the default search will find issues in that component
+and all of its subcomponents.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="component:UI">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+<p>And of course, you can combine any of these field operators.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="is:open owner:me Hostlist:Fixit">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+
+<h3>Empty (or non-empty) field search</h3>
+
+<p>For each built-in field operator, you can use the 'has' operator to search for
+issues with empty or non-empty fields.</p>
+
+<p>For example, here's how to search for issues whose owner field is non-empty,
+assigned to someone.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="has:owner">
+ <input type="submit" name="btn" value="Search">
+</form>
+
+<p>Or, you can use '-has' operator for negation, to search for issues with empty
+fields.</p>
+
+<p>For example, here's how to search for issues whose owner field is empty
+because no one is assigned to it.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="-has:owner">
+ <input type="submit" name="btn" value="Search">
+</form>
+
+
+<h3>Multiple values in search terms</h3>
+
+[# TODO(jrobbins): put back OR documentation when OR is working.]
+
+<p>You can search for two values for one field, or two labels
+with the same prefix by using.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="Priority:High,Medium">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+
+<h3>Exact value search</h3>
+
+<p>You can search for issues that exactly match the given term by using
+the search operator '='.</p>
+
+<p>For example, searching for 'Milestone=2009' only matches issues with the
+label 'Milestone-2009', while searching for 'Milestone:2009' matches issues
+with the labels 'Milestone-2009', 'Milestone-2009-Q1', 'Milestone-2009-Q3',
+etc.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="Milestone=2009">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+<p>Similarly, using exact matching on components will get you only those issues
+that are in that component, not including any of its descendants.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="component=UI">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+<h3>Star search</h3>
+
+<p>Any logged in user can mark any issue with a star.  The star
+indicates interest in the issue.</p>
+
+<p>For example, to quickly see all the issues in this project that you
+have starred, you could use the following:</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="is:starred">
+ <input type="submit" name="btn" [if-any logged_in_user][else]disabled="disabled"[end] value="Search">
+ [if-any logged_in_user][else]
+   <span style="white-space:nowrap"><a href="[login_url]"
+   >Sign in</a> to try this example</span>
+ [end]</p>
+</form>
+
+<p>And, to see the issues that exactly three users have starred, use the following:</p>
+[# TODO(jrobbins): should search for issues with *at least* N stars.]
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="stars:3">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+
+<h3>Jump to issue and numeric search</h3>
+
+<p>You can jump directly to a specific issue by entering its ID in the
+search field.</p>
+
+<p>For example, to jump to issue 1, just search for 1.  If there is no
+existing issue with that ID, the system will search for issues that
+contain that number anywhere in the issue.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="1">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+<p>If you just want to search for issues that contain the number 1, without
+jumping to issue 1, enclose the number in quotation marks.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="&quot;1&quot;">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+
+<h3>Attachment search</h3>
+
+<p>Users can attach files to any issues, either when issues are created or as
+part of issue comments.</p>
+
+<p>To quickly see all the issues that have attachments, use the following:</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="has:attachment">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+<p>Or, you can search for a specific filename of the attachment.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="attachment:screenshot">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+<p>You can also search for the file extension of the attachment.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="attachment:png">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+
+<h3>Date range search</h3>
+
+<p>You can perform searches based on date ranges.</p>
+
+<p>This search syntax is divided into two parts, the action and the date,
+[[]action]:[[]date]</p>
+
+<p>Supported actions are: 'opened-after', 'opened-before',
+'modified-after', 'modified-before', 'closed-after', and 'closed-before'.
+And the date must to be specified as 'YYYY-MM-DD', 'YYYY/MM/DD' or 'today-N'.</p>
+
+<p>For example, if you want to search for issues opened after 2009/4/1, you
+could do the following:</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="opened-after:2009/4/1">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+<p>Or, if you want to search for issues modified 20 days before today's date,
+you could do the following:</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="modified-before:today-20">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+
+</div>
+
+[include "../framework/footer-script.ezt"]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _fetchOptions(
+      '[projectname]', 'issueOptions',
+      CS_env.token, [project.cached_content_timestamp]);
+  _onload();
+});
+</script>
+
+[include "../framework/master-footer.ezt"]

@@ -1,0 +1,16 @@
+[# Prefix response body with over 1024 bytes of static content to avoid content sniffing.]
+"-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+This file contains the same information as the issue list web page, but in CSV format.
+You can adjust the columns of the CSV file by adjusting the columns shown on the web page
+before clicking the CSV link.
+"-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+
+
+[for panels][# There will always be exactly one panel.][for panels.ordered_columns]"[panels.ordered_columns.name]"[if-index panels.ordered_columns last][else],[end][end][end]
+[for table_data][for table_data.cells][is table_data.cells.type "ID"]"[table_data.local_id]",[else]"[format "raw"][if-any table_data.cells.values][for table_data.cells.values][table_data.cells.values.item][if-index table_data.cells.values last][else], [end][end][end][end]"[if-index table_data.cells last][else],[end][end][end]
+[end]
+
+[if-any next_csv_link]
+This file is truncated to [item_count] out of [pagination.total_count] total results.
+See [next_csv_link] for the next set of results.
+[end]

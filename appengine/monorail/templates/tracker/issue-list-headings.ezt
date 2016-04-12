@@ -1,0 +1,26 @@
+[# arg0 is the ordered_columns argument that gives the name and index of each column.]
+
+<thead id="resultstablehead">
+<tr id="headingrow"><th style="border-left: 0"> &nbsp; </th>
+ [for panels.ordered_columns]
+  [is panels.ordered_columns.name "Summary"]
+   <th class="col_[panels.ordered_columns.col_index]" style="border-right:0">&nbsp;</th>
+   <th class="col_[panels.ordered_columns.col_index]" nowrap="nowrap" id="summaryheading"
+       data-col-index="[panels.ordered_columns.col_index]" width="100%"
+       ><a href="#" style="text-decoration: none">Summary + Labels <span class="indicator">&#9660;</span></a></th>
+  [else]
+   [is panels.ordered_columns.name "ID"]
+    <th class="col_[panels.ordered_columns.col_index]" nowrap="nowrap"
+        data-col-index="[panels.ordered_columns.col_index]"
+       ><a href="#" style="text-decoration: none">[panels.ordered_columns.name] <span class="indicator">&#9660;</span></a></th>
+   [else]
+    <th class="col_[panels.ordered_columns.col_index]"
+        data-col-index="[panels.ordered_columns.col_index]"
+       ><a href="#" style="text-decoration: none">[panels.ordered_columns.name]&nbsp;<span class="indicator">&#9660;</span></a></th>
+   [end]
+  [end]
+ [end]
+ <th data-col-index="dot" style="width:3ex"><a href="#columnprefs"
+     class="dotdotdot">...</a></th>
+</tr>
+</thead>

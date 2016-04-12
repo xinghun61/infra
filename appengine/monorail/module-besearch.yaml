@@ -1,0 +1,36 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is govered by a BSD-style
+# license that can be found in the LICENSE file or at
+# https://developers.google.com/open-source/licenses/bsd
+
+application: monorail-staging
+module: besearch
+version: 2013-03-18
+runtime: python27
+api_version: 1
+threadsafe: no
+
+instance_class: F4
+automatic_scaling:
+  min_idle_instances: 20
+  max_pending_latency: 0.2s
+
+handlers:
+- url: /_backend/.*
+  script: monorailapp.app
+
+- url: /_cron/.*
+  script: monorailapp.app
+  login: admin
+
+- url: /_task/.*
+  script: monorailapp.app
+  login: admin
+
+libraries:
+- name: endpoints
+  version: 1.0
+- name: MySQLdb
+  version: "latest"
+- name: django
+  version: 1.4

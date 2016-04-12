@@ -1,0 +1,89 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+[# TODO: add UI element permissions when I add editing elements to this page. ]
+[define show_star][if-any project_stars_enabled][if-any logged_in_user][if-any read_only][else]yes[end][end][end][end]
+
+<div style="font-size:140%; margin-top:1em">Project: <b>[projectname]</b></div>
+<div class="section">
+  <div><i>[project_summary]</i></div>
+
+  [if-any show_star]
+  <div>
+   <a class="star" id="star"
+    style="color:[if-any is_project_starred]cornflowerblue[else]gray[end];"
+    title="[if-any is_project_starred]Un-s[else]S[end]tar this project">
+   [if-any is_project_starred]&#9733;[else]&#9734;[end]
+   </a>
+   Starred by [num_stars] user[plural]
+   </div>
+  [end]
+</div>
+
+
+<h4>Project description</h4>
+<div class="section">
+  [format "raw"][formatted_project_description][end]
+</div>
+
+<h4>Project access</h4>
+<div class="section">
+  [access_level.name]
+</div>
+
+
+[if-any home_page]
+  <h4>Project home page</h4>
+  <div class="section">
+    <a href="[home_page]">[home_page]</a>
+  </div>
+[end]
+
+
+<!--  TODO(jrobbins): expose this later when it is more fully baked.
+
+<h4>Issue tracking process</h4>
+<div class="section">
+  Brief paragraph about how you intend this issue tracker to be used.
+
+</div>
+
+
+<h4>Ground rules</h4>
+  <ul>
+    <li>Non-members may enter new issues, but they will be moderated...</li>
+    <li>Please keep to the facts of the issue, don't try to advocate.</li>
+    <li>We are not currently looking for feature requests from non-members.</li>
+  </ul>
+
+
+
+<h4>Guidelines</h4>
+  <ul>
+    <li>Make sure the defect is verified with the latest build</li>
+    <li>Another bullet item describing how to collaborate in this project</li>
+    <li>A few more</li>
+    <li>And going into a little detail</li>
+    <li>But not too much... also need good defaults and examples</li>
+  </ul>
+
+
+<h4>For more information</h4>
+  <ul>
+    <li>Link to external docs</li>
+    <li>And discussion forums</li>
+  </ul>
+
+-->
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  if ($("star")) {
+    [# The user viewing this page wants to star the project *on* this page]
+    $("star").addEventListener("click", function () {
+       _TKR_toggleStar($("star"), "[projectname]");
+    });
+  }
+});
+</script>
+
+[include "../framework/master-footer.ezt"]

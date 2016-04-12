@@ -1,0 +1,135 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+<a href="list">&lsaquo; Back to people list</a>
+
+<form action="detail.do" method="POST" id="peopledetail">
+<input type="hidden" name="token" value="[form_token]">
+<input type="hidden" name="u" value="[member.user.user_id]">
+<table cellspacing="8" class="rowmajor vt">
+<tr>
+ <th width="1%">User:</th>
+ <td>[include "../framework/user-link.ezt" member.user]</td>
+</tr>
+
+ <tr class="[if-any expand_perms]opened[else]closed[end]">
+ <th>Role:</th>
+ <td>
+   [# Show a widget if the current user is allowed to edit roles.]
+   [if-any perms.EditProject]
+     [define offer_role_select]Yes[end]
+   [else]
+     [define offer_role_select]No[end]
+   [end]
+   [# But, don't offer it if the user could remove himself as the last owner.]
+   [is total_num_owners "1"][if-any warn_abandonment]
+     [define offer_role_select]No[end]
+   [end][end]
+
+   [is offer_role_select "Yes"]
+     <select name="role">
+       <option [is member.role "Owner"]selected="selected"[end]
+               value="owner">Owner</option>
+       <option [is member.role "Committer"]selected="selected"[end]
+               value="committer">Committer</option>
+       <option [is member.role "Contributor"]selected="selected"[end]
+               value="contributor">Contributor</option>
+     </select>
+   [else]
+     [member.role]
+   [end]
+   <a class="ifClosed toggleHidden" href="#" id="show_permissions"
+      style="font-size:90%; margin-left:1em">Show permissions</a>
+   <a class="ifOpened toggleHidden" href="#" id="hide_permissions"
+      style="font-size:90%; margin-left:1em">Hide permissions</a>
+   [include "people-detail-perms-part.ezt"]
+ </td>
+ <td>
+   <div class="ifOpened tip" style="width:17em">
+      <b>Permissions</b> enable members to perform specific actions in
+      a project.  Appropriate permissions are already defined for each
+      role: Owner, Committer, and Contributor.  Additional permissions can
+      be granted to individual members, if needed.
+
+      <p>Most project owners will never need to grant any individual
+      member permissions.  It is usually more important to describe
+      each member's duties in the notes.</p>
+
+      <div style="margin-top:.5em">
+        <a href="http://code.google.com/p/monorail/wiki/Permissions" target="new">Learn more</a>
+        <a href="http://code.google.com/p/monorail/wiki/Permissions" target="new"><img src="/static/images/tearoff_icon.gif" width="16" height="16"></a>
+      </div>
+   </div>
+ </td>
+</tr>
+
+
+<tr>
+ <th>Notes:</th>
+ <td>
+  [if-any offer_edit_member_notes]
+   <div style="width:40em">
+    <textarea style="width:100%" rows="4" class="ifExpand" name="notes"
+              >[member.notes]</textarea>
+   </div>
+  [else]
+   [if-any member.notes][member.notes][else]----[end]
+  [end]
+
+ </td>
+</tr>
+
+[if-any offer_edit_perms offer_edit_member_notes]
+ <tr>
+   <th></th>
+   <td>
+    <input type="submit" name="submit" value="Save changes">
+    [if-any offer_remove_role]
+      <input type="submit" name="remove" value="Remove member"
+             style="margin-left:3em" id="remove_member">
+    [end]
+   </td>
+ </tr>
+[end]
+
+</table>
+</form>
+
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+ function _confirmRemove() {
+  [if-any warn_abandonment]
+    [is total_num_owners "1"]
+      alert('You cannot remove the last project owner.');
+      return false;
+    [else]
+      return confirm('Remove yourself?\nYou will be locked out of making further changes.');
+    [end]
+  [else]
+    return confirm('Remove member [format "js"][member.user.email][end]?');
+  [end]
+ }
+
+ if ($("remove_member"))
+   $("remove_member").addEventListener("click", function(event) {
+      if (!_confirmRemove())
+        event.preventDefault();
+   });
+
+ [if-any read_only][else]
+   if ($("show_permissions"))
+     $("show_permissions").addEventListener("click", function() {
+       _setPeoplePrefs("[projectname]", 1, "[xhr_token]");
+     });
+   if ($("hide_permissions"))
+     $("hide_permissions").addEventListener("click", function() {
+       _setPeoplePrefs("[projectname]", 0, "[xhr_token]");
+     });
+ [end]
+
+});
+</script>
+
+[include "../framework/footer-script.ezt"]
+[include "../framework/master-footer.ezt"]

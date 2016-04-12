@@ -1,0 +1,37 @@
+[define detail_url][pagination.visible_results.detail_url][end]
+<tr data-url="[detail_url]">
+
+  [if-any offer_membership_editing]
+     <td style="padding-right:2px" class="rowwidgets">
+         <input type="checkbox" name="remove"
+                [is pagination.visible_results.role "Owner"]class="owner"[end]
+                value="[pagination.visible_results.user.email]"
+                [if-any pagination.visible_results.viewing_self]
+                  id="me_checkbox"
+                [end]
+                >
+     </td>
+  [end]
+
+  <td style="white-space:nowrap">
+     <a href="[detail_url]"
+      >[pagination.visible_results.user.display_name]</a>
+      [if-any pagination.visible_results.viewing_self]
+       <b>- me</b>
+      [end]
+  </td>
+
+  <td>
+    <a href="[detail_url]" style="white-space:nowrap">
+      [pagination.visible_results.role]<br>
+      [for pagination.visible_results.extra_perms]
+        <div style="font-size:90%">+ [pagination.visible_results.extra_perms]</div>
+      [end]
+    </a>
+  </td>
+
+  <td width="90%">
+    <a href="[detail_url]">[pagination.visible_results.notes]</a>
+  </td>
+
+</tr>

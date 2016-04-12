@@ -1,0 +1,18 @@
+[if-any pagination]
+ [if-any pagination.visible]
+  <div class="pagination">
+   [if-any pagination.prev_url]
+     <a href="[pagination.prev_url]"><b>&lsaquo;</b> Prev</a>
+   [end]
+   [if-any pagination.start]
+     [pagination.start] - [pagination.last]
+   [end]
+   [if-any pagination.total_count]
+     of [pagination.total_count][if-any pagination.limit_reached]+[end]
+   [end]
+   [if-any pagination.next_url]
+     <a href="[pagination.next_url]">Next <b>&rsaquo;</b></a>
+   [end]
+  </div>
+ [end]
+[end]

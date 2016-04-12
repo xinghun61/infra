@@ -1,0 +1,35 @@
+[# Even though this field definition says it is single-valued, the issue might have
+   multiple values if the field definition was previously multi-valued.  In such a situation
+   values other than the first value are shown read-only and must be explicitly removed
+   before the comment can be submitted. ]
+
+[# If the field has no explicit values, then show an empty form element.]
+[if-any fields.values][else]
+    <input type="number" name="custom_[fields.field_id]" id="custom_[fields.field_id]" value=""
+           [if-any fields.field_def.is_required_bool] required="required"[end]
+           [if-any fields.field_def.min_value]min="[fields.field_def.min_value]"[end]
+           [if-any fields.field_def.max_value]max="[fields.field_def.max_value]"[end]
+           style="text-align:right; width:12em" class="multivalued customfield">
+[end]
+
+
+[for fields.values]
+  [if-index fields.values first]
+    <input type="number" name="custom_[fields.field_id]" value="[fields.values.val]"
+           [if-any fields.field_def.is_required_bool]required="required"[end]
+           [if-any fields.field_def.min_value]min="[fields.field_def.min_value]"[end]
+           [if-any fields.field_def.max_value]max="[fields.field_def.max_value]"[end]
+           style="text-align:right; width:12em" class="multivalued customfield">
+  [else]
+    <span>
+      <input type="number" disabled="disabled" value="[fields.values.val]"
+             style="text-align:right; width: 12em" class="multivalued customfield">
+      <u class="removeMultiFieldValueWidget">X</u>
+    </span>
+  [end]
+[end]
+
+[for fields.derived_values]
+  <input type="number" disabled="disabled" value="[fields.derived_values.val]"
+         style="font-style:italic; text-align:right; width:12em" class="multivalued">
+[end]

@@ -1,0 +1,57 @@
+[# Safely display user-content text, such a program source code, with
+   line numbers and the ability to comment (if enabled).
+
+Other EZT variables used:
+  revision: revision ID string.
+  file_lines: List of lines in the file.  Each line
+      has a line number, line content, and list of published and unpublished
+      comments.
+  should_prettify: whether the text should be syntax highlighted.
+  prettify_class: additional CSS class used to tell prettify.js how to
+      best syntax highlight this source file.
+]
+
+[# Display the line numbers and source lines in separate columns.
+   See corresponding comments L1, L2, L3 and S1, S2, S3 below.
+   This is messy because the pre tags have significant whitespace, so we
+   break lines inside the tags themslves to make our templates readable.
+   The table has class "opened" or "closed" and the published comment cells
+   and their corresponding gutter cells are conditionally displayed by the
+   CSS rules for the "ifOpened" class. The "hide published comments" link
+   toggles the table's open/closed state.]
+<table class="opened" id="review_comment_area"><tr>
+<td id="nums">
+[# L1. Start with a nocursor row at the top to space the line numbers down the
+       same amount as the source code lines w/ their initial cursor_hidden row.]
+<pre><table width="100%"><tr class="nocursor"><td></td></tr></table></pre>
+
+[# L2. Display each line number in a row that we can refer
+       to by ID, and make each line number a self-link w/ anchor.
+       If that source line has any published comments, add a nocursor row
+       for spacing to match the corresponding cursor_hidden row, and a gutter
+       cell. The height of the gutter cell is set by JS.  Same for unpublished
+       comments.]
+<pre><table width="100%" id="nums_table_0">[for file_lines]<tr id="gr_svn[revision]_[file_lines.num]"
+><td id="[file_lines.num]"><a href="#[file_lines.num]">[file_lines.num]</a></td></tr
+>[end]</table></pre>
+
+[# L3. Finish the line numbers column with another nocursor row to match
+       the spacing of the source code column's final cursor_hidden row.]
+<pre><table width="100%"><tr class="nocursor"><td></td></tr></table></pre>
+</td>
+<td id="lines">
+
+[# S1. Start the source code column with a cursor row. ]
+<pre><table width="100%"><tr class="cursor_stop cursor_hidden"><td></td></tr></table></pre>
+
+[# S2. Display each source code line in a table row and cell
+       that we can identify by id.]
+<pre [if-any should_prettify]class="prettyprint [prettify_class]"[end]><table id="src_table_0">[for file_lines]<tr
+id=sl_svn[revision]_[file_lines.num]
+><td class="source">[file_lines.line]<br></td></tr
+>[end]</table></pre>
+
+[# S3. Finish the line numbers column with another cursor stop.]
+<pre><table width="100%"><tr class="cursor_stop cursor_hidden"><td></td></tr></table></pre>
+</td>
+</tr></table>

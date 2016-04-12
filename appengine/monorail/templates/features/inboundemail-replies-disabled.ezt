@@ -1,0 +1,7 @@
+Subject: Email replies are not enabled in project [project_name]
+
+The email message you sent to [project_addr]
+was not processed because project [project_name]
+has not enabled email replies.
+
+[include "inboundemail-error-footer-part.ezt"]

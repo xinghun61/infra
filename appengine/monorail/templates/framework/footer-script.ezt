@@ -1,0 +1,23 @@
+<script type="text/javascript" defer src="/static/js/graveyard/common.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/graveyard/listen.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/graveyard/xmlhttp.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/graveyard/shapes.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/graveyard/geom.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/graveyard/popup_controller.js?version=[app_version]" nonce="[nonce]"></script>
+
+[# Note that this file will be requested twice on some pages, but chrome is smart enough
+   to not even request it the second time.]
+<script type="text/javascript" defer src="/static/js/framework/framework-ajax.js?version=[app_version]" nonce="[nonce]"></script>
+
+<script type="text/javascript" defer src="/static/js/tracker/externs.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/tracker/ac.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/tracker/tracker-ac.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/tracker/tracker-components.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/tracker/tracker-display.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/tracker/tracker-editing.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/tracker/tracker-fields.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/tracker/tracker-keystrokes.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/tracker/tracker-nav.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/tracker/tracker-util.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/tracker/tracker-onload.js?version=[app_version]" nonce="[nonce]"></script>
+

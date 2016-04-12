@@ -1,0 +1,64 @@
+<div class="list">
+  <div style="float:right; margin-left:2em; font-size:95%">
+   <span class="buttonify mode_button_active capsule_left">List</span><a
+   class="buttonify capsule_right" href="list?can=[can]&amp;q=[query]&amp;colspec=[format "url"][colspec][end]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;cells=[grid_cell_mode]&amp;mode=grid">Grid</a>
+  </div>
+
+   [include "../framework/artifact-list-pagination-part.ezt"]
+
+   [if-any page_perms.EditIssue]
+     [if-any is_cross_project][else]
+       <span style="margin:0 .7em">Select:
+         <a id="selectall" href="#">All</a>
+         <a id="selectnone" href="#">None</a>
+       </span>
+     [end]
+    <select id="moreactions" class="drop-down-bub">
+     <option value="moreactions" disabled="disabled" selected="selected">Actions...</option>
+     <option value="colspec">Change columns...</option>
+     [if-any is_cross_project][else][# TODO(jrobbins): cross-project bulk edit]
+       <option value="bulk">Bulk edit...</option>
+     [end]
+     [if-any is_cross_project][else][# TODO(jrobbins): cross-project spam flagging]
+       <option value="flagspam">Flag as spam...</option>
+       <option value="unflagspam">Un-flag as spam...</option>
+     [end]
+    </select>
+    <span id='bulk-action-loading' class='loading' style='visibility:hidden'>Processing</span>
+   [end]
+   <form id="colspecform" action="list" method="GET" autocomplete="off"
+         style="display:inline; margin-left:1em">
+    <input type="hidden" name="can" value="[can]">
+    <input type="hidden" name="q" value="[query]">
+    <input type="hidden" name="sort" value="[sortspec]">
+    <input type="hidden" id="groupbyspec" name="groupby" value="[groupby]">
+    <span id="columnspec" style="display:none; font-size:90%"><span>Columns:
+     </span><span id="colspec_field"><input type="text" size="60" name="colspec"
+                   value="[colspec]"></span>
+            <input type="submit" name="nobtn" value="Update">
+     [# TODO(jrobbins): <a href="TODO">Learn more</a> ]
+     </span>
+   </form>
+</div>
+
+<form id='bulkspam' method="post" action="flagspam.do">
+  <input type="hidden" name="token" value="[flag_spam_token]">
+  <input type="hidden" id="bulk_spam_ids" name="ids">
+  <input type="hidden" id="bulk_spam_value" name="spam" value="true">
+</form>
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  if ($("selectall")) {
+    $("selectall").addEventListener("click", function() { _selectAllIssues(); });
+  }
+  if ($("selectnone")) {
+    $("selectnone").addEventListener("click", function() { _selectNoneIssues(); });
+  }
+  if ($("moreactions")) {
+    $("moreactions").addEventListener("change", function(event) {
+        _handleListActions(event.target);
+    });
+  }
+});
+</script>

@@ -1,0 +1,15 @@
+[# Display a row of tabs for servlets with URLs starting with /u/username.
+
+  Args:
+     arg0: String like "t1", "t2", "t3" to identify the currently active tab.
+]
+
+<div class="[admin_tab_mode]">
+	<div class="at isf">
+		<span class="inst1"><a href="/g/[groupid]/">People</a></span>
+		[if-any offer_membership_editing]
+			<span class="inst2"><a href="/g/[groupid]/groupadmin">Administer</a></span>
+		[end]
+	</div>
+</div>
+

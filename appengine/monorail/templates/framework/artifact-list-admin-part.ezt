@@ -1,0 +1,106 @@
+[# If any value is supplied for arg0, the user will also be able
+   to edit grid preferences.]
+<h4>[if-any arg0]List and grid preferences[else]List preferences[end]</h4>
+<div class="section">
+
+ <div class="closed">
+  <div>Default columns shown in list view:
+   <a class="ifClosed toggleHidden" href="#"
+      style="font-size:90%; margin-left:.5em">Learn more</a>
+  </div>
+
+  <div id="colhelp" class="ifOpened help">
+      <div>
+       You may enter a series of column names separated by spaces.  The
+       columns will be displayed in order on the list view page.
+      </div>
+      <br>
+      <div>
+       Columns may be the names of built-in attributes, e.g., "Summary"
+       or "Stars". Columns may also be prefixes of the labels on items.
+       To experiment with label prefixes, label some items with
+       Key-Value labels, then click the "..." menu in the far upper right
+       heading of the list view.
+      </div>
+  </div>
+  <br>
+ </div>
+
+ <input type="text" size="75" name="default_col_spec" value="[config.default_col_spec]"
+        [if-any perms.EditProject][else]readonly="readonly"[end]
+        class="acob" style="margin-left:.7em">
+ <br>
+ <br>
+ <br>
+
+ <div class="closed">
+  <div>Default sorting order:
+   <a class="ifClosed toggleHidden" href="#"
+      style="font-size:90%; margin-left:.7em">Learn more</a>
+  </div>
+
+  <div class="ifOpened help">
+      <div>
+       You may enter a series of column names separated by spaces.  Items
+       will be sorted by the first column specified.  If two items have
+       the same value in the first column, the items' values in the second
+       column will be used to break the tie, and so on. Use a leading
+       minus-sign to reverse the sort order within a column.
+      </div>
+      <br>
+      <div>
+       To experiment with column sorting, click the list view header cells and
+       choose "Sort up" or "Sort down". The sorting specification used becomes
+       part of the page URL.
+      </div>
+  </div>
+  <br>
+ </div>
+
+ <input type="text" size="75" name="default_sort_spec" value="[config.default_sort_spec]"
+        [if-any perms.EditProject][else]readonly="readonly"[end]
+        class="acob" style="margin-left:.7em">
+
+
+ [if-any arg0]
+ <br>
+ <br>
+ <br>
+
+ <div class="closed">
+  <div>Default grid axes:
+   <a class="ifClosed toggleHidden" href="#"
+      style="font-size:90%; margin-left:.7em">Learn more</a>
+  </div>
+
+  <div class="ifOpened help">
+      <div>
+       You may enter one attribute name for the default grid rows and one for
+       the default grid columns.  For example, "milestone" and "priority".  Or,
+       you may leave each field blank.
+      </div>
+      <br>
+      <div>
+       To experiment with grid axes, click the "grid" link in the list view and
+       use the drop-down menus to select row and column attributes.
+      </div>
+  </div>
+  <br>
+ </div>
+
+ <span style="margin-left:.7em">
+   Rows: <input type="text" size="10" name="default_y_attr" value="[config.default_y_attr]"
+                [if-any perms.EditProject][else]readonly="readonly"[end]
+                class="acob">
+ </span>
+
+ <span style="margin-left:.7em">
+   Columns: <input type="text" size="10" name="default_x_attr" value="[config.default_x_attr]"
+                   [if-any perms.EditProject][else]readonly="readonly"[end]
+                   class="acob">
+ </span>
+
+ [end]
+
+</div>
+

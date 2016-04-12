@@ -1,0 +1,259 @@
+[define title]Issue [issue.local_id][end]
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+[define any_visible_deleted]false[end]
+[for comments]
+ [if-any comments.can_delete_bool]
+  [if-any comments.is_deleted_bool]
+   [define any_visible_deleted]true[end]
+  [end]
+ [end]
+[end]
+
+[if-any page_perms.EditIssue page_perms.EditIssueSummary page_perms.EditIssueStatus page_perms.EditIssueOwner page_perms.EditIssueCc]
+  [define offer_make_changes]yes[end]
+[else]
+  [define offer_make_changes][end]
+[end]
+
+<div id="color_control" class="[if-any issue.is_open][else]closed_colors[end]">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" class="issuepage" id="meta-container">
+
+<tbody class="collapse"> [# collapse/expand controls undelete-able comments]
+ <tr>
+  <td nowrap="nowrap" class="vt h3 issuemetaheader" style="min-width:8em">
+   [define user_can_star]false[end]
+   [if-any page_perms.SetStar]
+    [if-any read_only][else]
+     [define user_can_star]true[end]
+     <a class="star" id="star"
+      style="color:[if-any starred]cornflowerblue[else]gray[end]"
+      title="[if-any starred]Un-s[else]S[end]tar this issue">
+     [if-any starred]&#9733;[else]&#9734;[end]
+     </a>
+    [end]
+   [end]
+   <a href="detail?id=[issue.local_id]">Issue [issue.local_id]</a>
+
+   [if-any page_perms.FlagSpam]
+     <a class="spamflag" id="flag_spam"
+      style="float:right; color:[if-any issue.flagged_spam_bool]red[else]gray[end]"
+      title="[if-any issue.flagged_spam_bool]Un-f[else]F[end]lag as spam">
+     [if-any issue.flagged_spam_bool]&#9873;[else]&#9872;[end]
+     </a>
+     <form action="flagspam.do" method="post" id="spam_form" style="display:none">
+      <input type="hidden" name="token" value="[flag_spam_token]">
+      <input type="hidden" name="id" value="[issue.local_id]">
+      <input type="hidden" name="spam" value="[if-any issue.flagged_spam_bool]false[else]true[end]">
+    </form>
+   [end]
+  </td>
+  <td width="90%" class="vt issueheader" style="border-right: 2px solid white">
+    [if-any issue.flagged_spam_bool]<div style="border:1px solid red; background:#fdd; padding:1em">You have reported this issue as spam. To undo this, click the flag again.</div>[end]
+    <span class="h3" style="padding-left:4px">[issue.summary]</span>
+  </td>
+  <td class="issueheader">
+    [if-any flipper.show]
+     <div class="pagination">
+     [if-any flipper.prev_url]<a href="[flipper.prev_url]" title="Prev">&lsaquo; Prev</a>[else][end]
+      [flipper.current] of [flipper.total_count]
+     [if-any flipper.next_url]<a href="[flipper.next_url]" title="Next">Next &rsaquo;</a>[else][end]
+    </div>[end]
+  </td>
+ </tr>
+ <tr>
+  <td nowrap="nowrap" class="issuemetaheader">
+    Starred by [issue.star_count]
+   [is issue.star_count "1"] user [else] users [end]
+  </td>
+  <td class="issueheader" style="padding-left:6px; border-right: 2px solid white">
+      [if-any description.creator_role]<span class="role_label">Project Member</span>[end]
+      Reported by
+      [include "../framework/user-link.ezt" description.creator],
+      <span class="date" title="[description.date_tooltip] UTC">[description.date_string][description.date_relative]</span>
+      [# Note: initial issue description cannot have come via email]
+  </td>
+  <td align="center" nowrap="nowrap" class="issueheader">
+   [if-any back_to_list_url]
+     <a href="[back_to_list_url]">Back to list</a>
+   [end]
+  </td>
+ </tr>
+
+
+ <tr>
+  <td id="issuemeta">
+   [if-any noisy]
+    <br>
+    Comments by non-members will not trigger notification emails to users who starred this issue.
+   [end]
+   <div id="meta-float">
+   [include "issue-meta-part.ezt" "show make changes below"]
+
+   [is any_visible_deleted "true"]
+    <br><br>
+    <div style="text-align:right; margin-right:.3em; font-size:90%">
+     <a class="ifCollapse toggleCollapse" href="#"
+        style="white-space:nowrap">Show deleted comments</a>
+     <a class="ifExpand toggleCollapse" href="#"
+        style="white-space:nowrap">Hide deleted comments</a>
+    </div>
+   [end]
+
+   </div>
+  </td>
+  <td class="vt issuedescription" width="100%" id="cursorarea" colspan="2">
+    [include "issue-comments-part.ezt" "show-delete-comment-link"]
+  </td>
+ </tr>
+
+[if-any read_only][else]
+ [if-any logged_in_user][else]
+  <tr>
+   <td colspan="2"></td>
+   <td class="vt issuecomment">
+     <span class="indicator">&#9658;</span> <a href="[login_url]"
+     >Sign in</a> to add a comment
+   </td>
+  </tr>
+ [end]
+[end]
+</tbody>
+</table>
+<br>
+
+[include "../framework/footer-script.ezt"]
+
+[define user_can_comment]false[end]
+[if-any read_only][else]
+ [if-any page_perms.AddIssueComment]
+  [include "issue-update-form.ezt"]
+  [define user_can_comment]true[end]
+ [end]
+[end]
+
+
+</div> [# end color_control]
+
+[# Form used to submit comment soft delete and undelete changes.]
+<form name="delcom" action="delComment.do?q=[query]&amp;can=[can]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;colspec=[format "url"][colspec][end]" method="POST">
+ <input type="hidden" name="sequence_num" value="">
+ <input type="hidden" name="mode" value="">
+ <input type="hidden" name="id" value="[issue.local_id]">
+ <input type="hidden" name="token" value="[delComment_form_token]">
+</form>
+
+[# Form used to flag/unflag comments as spam.]
+<form name="flagcom" action="flagspam.do" method="post">
+ <input type="hidden" name="comment_id" value="">
+ <input type="hidden" name="sequence_num" value="">
+ <input type="hidden" name="spam" value="">
+ <input type="hidden" name="id" value="[issue.local_id]">
+ <input type="hidden" name="token" value="[flag_spam_token]">
+</form>
+
+
+<div id="helparea"></div>
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _fetchOptions('[projectname]', 'issueOptions',
+                CS_env.token, [project.cached_content_timestamp]);
+  _fetchUserProjects(false);
+
+  _onload();
+
+  function delComment(sequence_num, delete_mode) {
+    var f = document.forms[[]"delcom"];
+    f.sequence_num.value = sequence_num;
+    f.mode.value = delete_mode;
+    [# TODO(jrobbins): submit in a subframe,XHR or ask user before losing comment in-progress ]
+    var loading = $('comment-action-loading-' + sequence_num);
+    loading.style.display = 'inline';
+    f.submit();
+    return false;
+  }
+
+  _floatMetadata();
+
+  if ($("star"))
+    $("star").addEventListener("click", function (event) {
+       _TKR_toggleStar($("star"), "[projectname]", [issue.local_id], null, "[set_star_token]");
+       _TKR_syncStarIcons($("star"), "star2");
+    });
+
+  var delCommentElements = document.getElementsByClassName("delComment");
+  for (var i = 0; i < delCommentElements.length; ++i) {
+     var el = delCommentElements[[]i];
+     el.addEventListener("click", function(event) {
+         var sequence = event.target.getAttribute("data-sequence");
+         var mode = event.target.getAttribute("data-mode");
+         delComment(sequence, mode);
+         event.preventDefault();
+     });
+  }
+
+  function flagComment(comment_id, sequence_num, isSpam) {
+    var f = document.forms[[]"flagcom"];
+    f.comment_id.value = comment_id;
+    f.sequence_num.value = sequence_num;
+    f.spam.value = isSpam.toLowerCase() == "false";
+
+    var loading = $('comment-action-loading-' + sequence_num);
+    loading.style.display = 'inline';
+
+    f.submit();
+    return false;
+  }
+
+  var flagCommentElements = document.getElementsByClassName("flagComment");
+  for (var i = 0; i < flagCommentElements.length; ++i) {
+     var el = flagCommentElements[[]i];
+     el.addEventListener("click", function(event) {
+         var id = event.target.getAttribute("data-id");
+         var sequence = event.target.getAttribute("data-sequence");
+         var isSpam = event.target.getAttribute("data-spam");
+         flagComment(id, sequence, isSpam);
+         event.preventDefault();
+     });
+  }
+
+  window.userMadeChanges = false;
+  var inputs = document.querySelectorAll('input[type~="text"], textarea');
+  for (var i = 0; i < inputs.length; i++) {
+    var el = inputs[[]i];
+    el.addEventListener("input", function(event) {
+      if (event.target.id != "searchq") {
+        userMadeChanges = true;
+      }
+    });
+  }
+
+  window.onbeforeunload = function() {
+    if (userMadeChanges || TKR_isDirty) {
+      return "You have unsaved changes. Leave this page and discard them?";
+    }
+  };
+
+
+
+});
+</script>
+
+<script type="text/javascript" defer src="/static/third_party/js/kibbles-1.3.3.comp.js" nonce="[nonce]"></script>
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _setupKibblesOnDetailPage(
+   [if-any back_to_list_url]'[format "js"][back_to_list_url][end]'[else]'[project_home_url]/issues/list'[end],
+   '[project_home_url]/issues/entry',
+   '[if-any flipper.show][if-any flipper.prev_url][format "js"][flipper.prev_url][end][end][end]',
+   '[if-any flipper.show][if-any flipper.next_url][format "js"][flipper.next_url][end][end][end]',
+   '[projectname]', [issue.local_id],
+   [user_can_comment], [user_can_star], '[set_star_token]');
+});
+</script>
+
+
+[include "../framework/master-footer.ezt"]

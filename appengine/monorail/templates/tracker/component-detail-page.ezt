@@ -1,0 +1,158 @@
+[define title]Component [component_def.path][end]
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+<a href="/p/[projectname]/adminComponents">&lsaquo; Back to component list</a><br><br>
+
+
+<h4>Component</h4>
+[if-any creator]
+  Created by <a href="[creator.profile_url]">[creator.display_name]</a> [created]<br/>
+[end]
+[if-any modifier]
+  Last modified by <a href="[modifier.profile_url]">[modifier.display_name]</a> [modified]<br/>
+[end]
+
+<br/>
+<form action="detail.do" method="POST">
+<input type="hidden" name="token" value="[form_token]">
+<input type="hidden" name="component" value="[component_def.path]">
+<table cellspacing="8" class="rowmajor vt">
+  <tr>
+    <th width="1%">Name:</th>
+    <td>
+      [if-any allow_edit]
+        [if-any component_def.parent_path][component_def.parent_path]&gt;[end]
+        <input id="leaf_name" name="leaf_name" value="[initial_leaf_name]" size="30" class="acob">
+        <span id="leafnamefeedback" class="fielderror" style="margin-left:1em">
+          [if-any errors.leaf_name][errors.leaf_name][end]
+        </span>
+      [else]
+        [component_def.path]
+      [end]
+    </td>
+  </tr>
+
+  <tr>
+    <th>Description:</th>
+    <td>
+      [if-any allow_edit]
+        <textarea name="docstring" rows="4" cols="75">[initial_docstring]</textarea>
+      [else]
+        [component_def.docstring]
+      [end]
+    </td>
+  </tr>
+
+  <tr>
+    <th>Admins:</th>
+    <td>
+      [if-any allow_edit]
+        <textarea id="member_admins" name="admins" rows="3" cols="75">[for initial_admins][initial_admins], [end]</textarea>
+        <span id="memberadminsfeedback" class="fielderror" style="margin-left:1em">
+          [if-any errors.member_admins][errors.member_admins][end]
+        </span>
+      [else]
+        [for component_def.admins]
+          <div>[include "../framework/user-link.ezt" component_def.admins]</div>
+        [end]
+      [end]
+    </td>
+  </tr>
+
+  <tr>
+    <th>Auto Cc:</th>
+    <td>
+      [if-any allow_edit]
+        <textarea id="member_cc" name="cc" rows="3" cols="75">[for initial_cc][initial_cc], [end]</textarea>
+        <span id="memberccfeedback" class="fielderror" style="margin-left:1em">
+          [if-any errors.member_cc][errors.member_cc][end]
+        </span>
+      [else]
+        [for component_def.cc]
+          <div>[include "../framework/user-link.ezt" component_def.cc]</div>
+        [end]
+      [end]
+    </td>
+  </tr>
+
+  <tr>
+    <th>Deprecated:</th>
+    <td>
+        <input type="checkbox" id="deprecated" name="deprecated" [if-any initial_deprecated]checked="checked"[end]
+               [if-any allow_edit][else]disabled[end]>
+    </td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td>
+      [if-any allow_edit]
+        <div>
+          <span style="float:left;">
+            <input type="submit" name="submit" id="submit_btn" value="Submit changes">
+            <input type="submit" name="deletecomponent" value="Delete component"
+                   [if-any allow_delete][else]disabled[end]
+                   style="margin-left:2em" id="deletecomponent">
+          </span>
+          <span style="float:right;">
+            <a href="/p/[projectname]/components/create?component=[component_def.path]">Create new subcomponent</a>
+          </span>
+          <div style="clear:both;"></div>
+        </div>
+        [if-any allow_delete][else]
+          <br/><br/>
+          <b>Note:</b>
+          [if-any subcomponents]
+            <br/>
+            Can not delete this component because it has the following subcomponents:<br/>
+            [for subcomponents]<div style="margin-left:1em">[subcomponents.path]</div>[end]
+          [end]
+          [if-any templates]
+            <br/>
+            Can not delete this component because it is listed in the following templates:<br/>
+            [for templates]<div style="margin-left:1em">[templates.name]</div>[end]
+          [end]
+        [end]
+      [end]
+    </td>
+  </tr>
+
+</table>
+</form>
+
+[include "../framework/footer-script.ezt"]
+
+[if-any allow_edit]
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+ _fetchOptions('[projectname]', 'issueOptions',
+               CS_env.token, [project.cached_content_timestamp]);
+
+  _onload();
+  function checkSubmit() {
+    _checkLeafName('[projectname]', '[component_def.parent_path]', '[component_def.leaf_name]', CS_env.token);
+  }
+  setInterval(checkSubmit, 700);
+
+  if ($("deletecomponent")) {
+    $("deletecomponent").addEventListener("click", function(event) {
+        if (!confirm("Are you sure you want to delete [component_def.path]?\nThis operation cannot be undone."))
+          event.preventDefault();
+     });
+  }
+
+  var acobElements = document.getElementsByClassName("acob");
+  for (var i = 0; i < acobElements.length; ++i) {
+     var el = acobElements[[]i];
+     el.addEventListener("focus", function(event) {
+         _acrob(null);
+         _acof(event);
+     });
+  }
+});
+</script>
+[end]
+
+
+[include "../framework/master-footer.ezt"]

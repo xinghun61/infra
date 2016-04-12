@@ -1,0 +1,36 @@
+[# Diplay a widget to choose project access level, or read-only text showing
+   the access level.  Read-only text is used when the user does not have
+   permission to edit, or if there is only one available choice.
+]
+
+[define access_menu_was_shown]False[end]
+
+[if-any read_only][else]
+  [if-any offer_access_level]
+    <select name="access" id="access">
+      <option value="" disabled="disabled" [if-any initial_access][else]selected="selected"[end]>
+        Select an access level...
+      </option>
+      [for available_access_levels]
+        <option value="[available_access_levels.key]"
+          [if-any initial_access]
+            [is initial_access.key available_access_levels.key]selected="selected"[end]
+          [end]>
+          [available_access_levels.name]
+        </option>
+      [end]
+    </select>
+    [define access_menu_was_shown]True[end]
+  [end]
+[end]
+
+[is access_menu_was_shown "False"]
+  [initial_access.name]
+  <input type="hidden" name="access" value="[initial_access.key]">
+[end]
+
+<div class="formerror">
+  [if-any errors.access]
+    <div class="emphasis">[errors.access]</div>
+  [end]
+</div>

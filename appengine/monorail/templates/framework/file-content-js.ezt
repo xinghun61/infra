@@ -1,0 +1,89 @@
+[# TODO(jrobbins): move this into compiled javascript. ]
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  var numsGenState = {table_base_id: 'nums_table_'};
+  var srcGenState = {table_base_id: 'src_table_'};
+  var alignerRunning = false;
+  var startOver = false;
+
+  function setLineNumberHeights() {
+    if (alignerRunning) {
+      startOver = true;
+      return;
+    }
+    numsGenState.chunk_id = 0;
+    numsGenState.table = document.getElementById('nums_table_0');
+    numsGenState.row_num = 0;
+
+    if (!numsGenState.table) {
+      return;  // Silently exit if no file is present.
+    }
+
+    srcGenState.chunk_id = 0;
+    srcGenState.table = document.getElementById('src_table_0');
+    srcGenState.row_num = 0;
+
+    alignerRunning = true;
+    continueToSetLineNumberHeights();
+  }
+
+  function rowGenerator(genState) {
+    if (genState.row_num < genState.table.rows.length) {
+      var currentRow = genState.table.rows[[]genState.row_num];
+      genState.row_num++;
+      return currentRow;
+    }
+
+    var newTable = document.getElementById(
+        genState.table_base_id + (genState.chunk_id + 1));
+    if (newTable) {
+      genState.chunk_id++;
+      genState.row_num = 0;
+      genState.table = newTable;
+      return genState.table.rows[[]0];
+    }
+
+    return null;
+  }
+
+  var MAX_ROWS_PER_PASS = 1000;
+
+  function continueToSetLineNumberHeights() {
+    var rowsInThisPass = 0;
+    var numRow = 1;
+    var srcRow = 1;
+
+    while (numRow && srcRow && rowsInThisPass < MAX_ROWS_PER_PASS) {
+      numRow = rowGenerator(numsGenState);
+      srcRow = rowGenerator(srcGenState);
+      rowsInThisPass++;
+
+      if (numRow && srcRow) {
+        if (numRow.offsetHeight != srcRow.offsetHeight) {
+          numRow.firstChild.style.height = srcRow.offsetHeight + 'px';
+        }
+      }
+    }
+
+    if (rowsInThisPass >= MAX_ROWS_PER_PASS) {
+      setTimeout(continueToSetLineNumberHeights, 10);
+    } else {
+      alignerRunning = false;
+      if (startOver) {
+        startOver = false;
+        setTimeout(setLineNumberHeights, 500);
+      }
+    }
+
+  }
+
+  function initLineNumberHeights() {
+    // Do 2 complete passes, because there can be races
+    // between this code and prettify.
+    startOver = true;
+    setTimeout(setLineNumberHeights, 250);
+    window.addEventListener('resize', setLineNumberHeights);
+  }
+  initLineNumberHeights();
+});
+</script>

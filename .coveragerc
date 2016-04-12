@@ -7,6 +7,10 @@ omit =
     # Add chromium_build, which wasn't test.py-enabled for a long time.
     ./appengine/chromium_build/*
 
+    # Add monorail's third-party packages and worst offenders
+    ./appengine/monorail/third_party/*
+    ./appengine/monorail/testing/*
+
     # Appengine third_party packages, committed into the repo as is.
     ./appengine/third_party/*
 
@@ -32,3 +36,6 @@ exclude_lines =
     # Don't complain if non-runnable code isn't run:
     if 0:
     if __name__ == ['"]__main__['"]:
+
+[expect_tests]
+expected_coverage_min = 90

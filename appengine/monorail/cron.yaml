@@ -1,0 +1,25 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is govered by a BSD-style
+# license that can be found in the LICENSE file or at
+# https://developers.google.com/open-source/licenses/bsd
+
+cron:
+- description: keep the databases loaded
+  url: /p/chromium/issues/list
+  schedule: every 30 minutes synchronized
+- description: consolidate old invalidation rows
+  url: /_cron/ramCacheConsolidate
+  schedule: every 6 hours synchronized
+- description: index issues that were modified in big batches
+  url: /_cron/reindexQueue
+  schedule: every 6 minutes synchronized
+- description: get rid of doomed and deletable projects
+  url: /_cron/reap
+  schedule: every 24 hours synchronized
+- description: send ts_mon metrics
+  url: /internal/cron/ts_mon/send
+  schedule: every 1 minutes
+- description: export spam model training examples
+  url: /_cron/spamDataExport
+  timezone: US/Pacific
+  schedule: every day 01:00

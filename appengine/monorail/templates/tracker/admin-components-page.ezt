@@ -1,0 +1,196 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+[if-any read_only][include "../framework/read-only-rejection.ezt"]
+[else]
+
+<form action="adminComponents.do" id="adminComponents" method="POST">
+ <input type="hidden" name="token" value="form_token]">
+
+ <h4>Issue components</h4>
+ [if-any perms.EditProject]
+   <span style="margin:0 .7em">Show:
+    <select id="rowfilter">
+     <option label="All components" value="all">
+     <option label="Active components" value="active" selected=true>
+     <option label="Top-level components" value="toplevel">
+     <option label="Components I administer" value="myadmin">
+     <option label="Components I am CC'd on" value="mycc">
+     <option label="Deprecated components" value="deprecated">
+    </select>
+   </span>
+   <span style="margin:0 .7em">Select:
+     <a id="selectall" href="#">All</a>
+     <a id="selectnone" href="#">None</a>
+   </span>
+ [end]
+
+ <div class="list-foot"></div>
+ [if-any perms.EditProject]
+   <form action="adminComponents.do" method="POST">
+     <a href="/p/[projectname]/components/create" class="buttonify">Create component</a>
+     <input type="hidden" name="delete_components">
+     <input type="hidden" name="token" value="[form_token]">
+     <input type="submit" name="deletebtn" value="Delete Component(s)" style="margin-left:2em" disabled>
+   </form>
+   <div id="deletebtnsfeedback" class="fielderror" style="margin-left:1em">
+     [if-any failed_perm]
+       You do not have permission to delete the components:
+       [failed_perm]<br/>
+     [end]
+     [if-any failed_subcomp]
+       Can not delete the following components because they have subcomponents:
+       [failed_subcomp]<br/>
+     [end]
+     [if-any failed_templ]
+       Can not delete the following components because they are listed in templates:
+       [failed_templ]<br/>
+     [end]
+   </div>
+ [end]
+
+ <div class="section">
+   <table cellspacing="0" cellpadding="2" border="0" class="comptable results striped vt active" id="resultstable" width="100%">
+   <tbody>
+     <tr>
+       [if-any perms.EditProject]<th></th>[end]
+       <th>Name</th>
+       <th>Administrators</th>
+       <th>Auto Cc</th>
+       <th>Description</th>
+     </tr>
+     [if-any component_defs][else]
+       <tr>
+         <td colspan="5">
+           <div style="padding: 3em; text-align: center">
+             This project has not defined any components.
+           </div>
+         </td>
+       </tr>
+     [end]
+     [for component_defs]
+       [define detail_url]/p/[projectname]/components/detail?component=[format "url"][component_defs.path][end][end]
+       <tr data-url="[detail_url]" class="comprow [component_defs.classes]">
+         [if-any perms.EditProject]
+           <td class="cb">
+             <input type="checkbox" data-path="[component_defs.path]" class="checkRangeSelect">
+           </td>
+         [end]
+         <td class="id">
+           <a style="white-space:nowrap" href="[detail_url]">[component_defs.path]</a>
+         </td>
+         <td>
+           [for component_defs.admins]
+             [include "../framework/user-link.ezt" component_defs.admins][if-index component_defs.admins last][else],[end]
+           [end]
+         </td>
+         <td>
+           [for component_defs.cc]
+             [include "../framework/user-link.ezt" component_defs.cc][if-index component_defs.cc last][else],[end]
+           [end]
+         </td>
+         <td>
+             [component_defs.docstring_short]
+         </td>
+       </tr>
+     [end]
+   </tbody>
+   </table>
+ </div>[# section]
+
+ <div class="list-foot"></div>
+ [if-any perms.EditProject]
+   <form action="adminComponents.do" method="POST">
+     <a href="/p/[projectname]/components/create" class="buttonify">Create component</a>
+     <input type="hidden" name="delete_components">
+     <input type="hidden" name="token" value="[form_token]">
+     <input type="submit" name="deletebtn" value="Delete Component(s)" style="margin-left:2em" disabled>
+   </form>
+ [end]
+
+</form>
+
+[end]
+
+[include "../framework/footer-script.ezt"]
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _onload();
+
+  if ($("selectall")) {
+    $("selectall").addEventListener("click", function() {
+        _selectAllIssues();
+        setDisabled(false);
+    });
+  }
+  if ($("selectnone")) {
+    $("selectnone").addEventListener("click", function() {
+        _selectNoneIssues();
+        setDisabled(true);
+    });
+  }
+
+  var checkboxNodes = document.getElementsByClassName("checkRangeSelect");
+  var checkboxes = Array();
+   for (var i = 0; i < checkboxNodes.length; ++i) {
+     var checkbox = checkboxNodes.item(i);
+     checkboxes.push(checkbox);
+     checkbox.addEventListener("click", function (event) {
+         _checkRangeSelect(event, event.target);
+         _highlightRow(event.target);
+         updateEnabled();
+     });
+   }
+
+  function updateEnabled() {
+    var anySelected = checkboxes.some(function(checkbox) {
+      return checkbox.checked;
+    });
+    setDisabled(!anySelected);
+   }
+
+  var deleteButtons = document.getElementsByName("deletebtn");
+  function setDisabled(disabled) {
+    for (var i = 0; i < deleteButtons.length; ++i) {
+      deleteButtons.item(i).disabled = disabled;
+    }
+  }
+
+  for (var i = 0; i < deleteButtons.length; ++i) {
+    deleteButtons.item(i).addEventListener("click", function(event) {
+      var componentsToDelete = [];
+      for (var i = 0; i< checkboxes.length; ++i) {
+        var checkbox = checkboxes[[]i];
+        if (checkbox.checked)
+          componentsToDelete.push(checkbox.getAttribute("data-path"));
+      }
+      var fields = document.getElementsByName("delete_components");
+      for (var i = 0; i< fields.length; ++i) {
+        fields.item(i).value = componentsToDelete.join();
+      }
+      if (!confirm("Are you sure you want to delete the selected components ?\nThis operation cannot be undone."))
+        event.preventDefault();
+     });
+  }
+
+  function _handleResultsClick(event) {
+    var target = event.target;
+    if (target.tagName == "A" || target.type == "checkbox" || target.className == "cb")
+      return;
+    while (target && target.tagName != "TR") target = target.parentNode;
+    _go(target.attributes[[]"data-url"].value,
+        (event.metaKey || event.ctrlKey || event.button == 1));
+  };
+  $("resultstable").addEventListener("click", _handleResultsClick);
+
+
+  function _handleRowFilterChange(event) {
+    $("resultstable").classList.remove('all', 'active', 'toplevel', 'myadmin', 'mycc', 'deprecated');
+    $("resultstable").classList.add(event.target.value);
+  };
+  $("rowfilter").addEventListener("change", _handleRowFilterChange);
+});
+</script>
+
+
+[include "../framework/master-footer.ezt"]

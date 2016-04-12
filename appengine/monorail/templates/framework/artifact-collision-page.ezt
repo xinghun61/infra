@@ -1,0 +1,30 @@
+[include "../framework/master-header.ezt" "showtabs"]
+
+[# Note: No need for UI element permission checking here. ]
+
+<h3>Update Collision</h3>
+
+<h4>What happened?</h4>
+
+<p>While you were viewing or updating [artifact_name], another user
+submitted an update to it.  That user's update has already
+taken effect.  Your update cannot be saved because your changes could
+overwrite the other user's changes.</p>
+
+<p>Note: if you have been viewing and updating [artifact_name] in multiple
+browser windows or tabs, it is possible that the "other user" is
+actually yourself.</p>
+
+
+<div style="margin:2em" class="help">
+  <b style="margin:0.5em">Your options:</b>
+
+  <ul>
+   <li>Start over: view the up-to-date
+   <a href="[artifact_detail_url]">[artifact_name]</a>
+   and consider making your changes again.</li>
+  </ul>
+
+</div>
+
+[include "../framework/master-footer.ezt"]

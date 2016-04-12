@@ -1,0 +1,7 @@
+[is ending_type "in_project"]
+  in project [include "updates-project-link.ezt" "2"]
+[else][is ending_type "by_user"]
+  [define user_profile_url][user.profile_url][end]
+  [define user_display_name][user.display_name][end]
+  by [include "updates-profile-link.ezt" "2"]
+[end][end]

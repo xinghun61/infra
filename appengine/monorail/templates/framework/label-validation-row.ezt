@@ -1,0 +1,6 @@
+<tr>
+  <td colspan="3">
+    <div id="confirmarea" class="novel"><span id="confirmmsg"></span></div>
+    <div id="blocksubmitarea" class="blockingsubmit"><span id="blocksubmitmsg"></span></div>
+  </td>
+</tr>

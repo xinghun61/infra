@@ -1,0 +1,797 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is govered by a BSD-style
+# license that can be found in the LICENSE file or at
+# https://developers.google.com/open-source/licenses/bsd
+
+This file contains a log of ALTER TABLE statements that need to be executed
+to bring a Monorail SQL database up to the current schema.
+
+================================================================
+2012-05-24: Added more Project fields.
+
+ALTER TABLE Project ADD COLUMN read_only_reason VARCHAR(80);
+ALTER TABLE Project ADD COLUMN issue_notify_address VARCHAR(80);
+ALTER TABLE Project ADD COLUMN attachment_bytes_used INT DEFAULT 0;
+ALTER TABLE Project ADD COLUMN attachment_quota INT DEFAULT 52428800;
+ALTER TABLE Project ADD COLUMN moved_to VARCHAR(250);
+ALTER TABLE Project ADD COLUMN process_inbound_email BOOLEAN DEFAULT FALSE;
+
+================================================================
+2012-06-01: Added inbound_message for issue comments
+
+ALTER TABLE Comment ADD COLUMN inbound_message TEXT;
+
+
+================================================================
+2012-06-05: Removed send_notifications_from_user because Monorail will
+not offer that feature any time soon.
+
+ALTER TABLE ProjectIssueConfig DROP COLUMN send_notifications_from_user;
+
+
+================================================================
+2012-06-05: Add initial subscription options.
+
+ALTER TABLE User2SavedQuery ADD COLUMN subscription_mode
+    ENUM ('noemail', 'immediate') DEFAULT 'noemail' NOT NULL;
+
+
+================================================================
+2012-07-02: Revised project states and added state_reason and delete_time
+
+ALTER TABLE Project MODIFY COLUMN state ENUM ('live', 'archived', 'deletable')
+NOT NULL;
+
+ALTER TABLE Project ADD COLUMN state_reason VARCHAR(80);
+ALTER TABLE Project ADD COLUMN delete_time INT;
+
+
+================================================================
+2012-07-05: Added action limits and dismissed cues
+
+CREATE TABLE ActionLimit (
+  user_id INT NOT NULL AUTO_INCREMENT,
+  action_kind ENUM (
+      'project_creation', 'issue_comment', 'issue_attachment',
+      'issue_bulk_edit'),
+  recent_count INT,
+  reset_timestamp INT,
+  lifetime_count INT,
+  lifetime_limit INT,
+
+  PRIMARY KEY (user_id, action_kind)
+) ENGINE=INNODB;
+
+
+CREATE TABLE DismissedCues (
+  user_id INT NOT NULL AUTO_INCREMENT,
+  cue VARCHAR(40),  -- names of the cue cards that the user has dismissed.
+
+  INDEX (user_id)
+) ENGINE=INNODB;
+
+
+ALTER TABLE User ADD COLUMN ignore_action_limits BOOLEAN DEFAULT FALSE;
+
+================================================================
+2012-07-11: No longer using Counter table.
+
+DROP TABLE Counter;
+
+================================================================
+2012-09-06: Drop AttachmentContent, put blobkey in Attachment
+and drop some redundant columns.
+
+Note: This loses attachment data that might currently be in your
+instance. Good thing these schema refinements are getting done
+before launch.
+
+ALTER TABLE Attachment DROP COLUMN attachment_id;
+ALTER TABLE Attachment DROP COLUMN comment_created;
+ALTER TABLE Attachment ADD COLUMN blobkey VARCHAR(1024) NOT NULL;
+
+DROP TABLE AttachmentContent;
+
+ALTER TABLE IssueUpdate  DROP COLUMN comment_created;
+
+
+================================================================
+2012-11-01: Add Components to IssueUpdate enum.
+
+alter table IssueUpdate modify field ENUM ('summary', 'status', 'owner',
+'cc', 'labels', 'blockedon', 'blocking', 'mergedinto', 'project',
+'components') NOT NULL;
+
+
+================================================================
+2012-12-10: Add template admins and field admins
+
+
+CREATE TABLE FieldDef2Admin (
+  field_id INT NOT NULL,
+  admin_id INT NOT NULL,
+
+  PRIMARY KEY (field_id, admin_id),
+  FOREIGN KEY (field_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (admin_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+CREATE TABLE Template2Admin (
+  template_id INT NOT NULL,
+  admin_id INT NOT NULL,
+
+  PRIMARY KEY (template_id, admin_id),
+  FOREIGN KEY (template_id) REFERENCES Template(id),
+  FOREIGN KEY (admin_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+
+================================================================
+2012-12-14: Add a table of custom field values
+
+ALTER TABLE FieldDef MODIFY field_type ENUM (
+  'enum_type', 'int_type', 'str_type', 'user_type') NOT NULL;
+
+CREATE TABLE Issue2FieldValue (
+  iid INT NOT NULL,
+  field_id INT NOT NULL,
+
+  int_value INT,
+  str_value VARCHAR(1024),
+  user_id INT,
+
+  derived BOOLEAN DEFAULT FALSE,
+
+  INDEX (iid, field_id),
+  INDEX (field_id, int_value),
+  INDEX (field_id, str_value),
+  INDEX (field_id, user_id),
+
+  FOREIGN KEY (iid) REFERENCES Issue(id),
+  -- FOREIGN KEY (field_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+
+================================================================
+2012-12-18: persistence for update objects on custom fields
+
+ALTER TABLE IssueUpdate MODIFY field ENUM (
+  'summary', 'status', 'owner', 'cc', 'labels', 'blockedon', 'blocking', 'mergedinto',
+  'project', 'components', 'custom' ) NOT NULL;
+
+ALTER TABLE IssueUpdate ADD custom_field_name VARCHAR(255);
+
+
+================================================================
+2012-12-27: Rename component owner to component admin
+
+DROP TABLE Component2Owner;
+
+CREATE TABLE Component2Admin (
+  component_id SMALLINT UNSIGNED NOT NULL,
+  admin_id INT NOT NULL,
+
+  PRIMARY KEY (component_id, admin_id),
+
+  FOREIGN KEY (component_id) REFERENCES ComponentDef(id),
+  FOREIGN KEY (admin_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+
+================================================================
+2013-01-20: add field applicability predicate
+
+ALTER TABLE FieldDef ADD applicable_type VARCHAR(80);
+ALTER TABLE FieldDef ADD applicable_predicate TEXT;
+
+================================================================
+2013-01-25: add field validation details
+
+ALTER TABLE FieldDef ADD max_value INT;
+ALTER TABLE FieldDef ADD min_value INT;
+ALTER TABLE FieldDef ADD regex VARCHAR(80);
+ALTER TABLE FieldDef ADD needs_member BOOLEAN;
+ALTER TABLE FieldDef ADD needs_perm VARCHAR(80);
+
+
+================================================================
+2013-02-11: add grant and notify to user-valued fields
+
+ALTER TABLE FieldDef ADD grants_perm VARCHAR(80);
+ALTER TABLE FieldDef ADD notify_on ENUM ('never', 'any_comment') DEFAULT 'never' NOT NULL;
+
+
+================================================================
+2013-03-17: Add Template2FieldValue
+
+CREATE TABLE Template2FieldValue (
+  template_id INT NOT NULL,
+  field_id INT NOT NULL,
+
+  int_value INT,
+  str_value VARCHAR(1024),
+  user_id INT,
+
+  INDEX (template_id, field_id),
+
+  FOREIGN KEY (template_id) REFERENCES Template(id),
+  -- FOREIGN KEY (field_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+
+================================================================
+2013-05-08: eliminated same_org_only
+
+-- This needs to be done on all shards.
+UPDATE Project SET access = 'members_only' WHERE access = 'same_org_only';
+ALTER TABLE Project MODIFY COLUMN access ENUM ('anyone', 'members_only');
+
+================================================================
+2013-05-08: implemented recent activity timestamp
+
+-- This needs to be done on all shards.
+ALTER TABLE Project ADD recent_activity_timestamp INT;
+
+================================================================
+2013-07-01: use BIGINT for Invalidate timesteps
+
+ALTER TABLE Invalidate MODIFY COLUMN timestep BIGINT NOT NULL AUTO_INCREMENT;
+
+
+================================================================
+2013-07-23: renamed to avoid "participant"
+
+RENAME TABLE ParticipantDuty TO MemberDuty;
+RENAME TABLE ParticipantNotes TO MemberNotes;
+
+================================================================
+2013-08-22: renamed issue_id to local_id
+
+-- On master and all shards
+ALTER TABLE Issue CHANGE issue_id local_id INT NOT NULL;
+
+-- On master only
+ALTER TABLE IssueFormerLocations CHANGE issue_id local_id INT NOT NULL;
+
+================================================================
+2013-08-24: renamed iid to issue_id
+
+-- On master and all shards
+
+ALTER TABLE IssueSummary DROP FOREIGN KEY IssueSummary_ibfk_1;
+ALTER TABLE IssueSummary CHANGE iid issue_id INT NOT NULL;
+ALTER TABLE IssueSummary ADD FOREIGN KEY (issue_id) REFERENCES Issue(id);
+
+ALTER TABLE Issue2Label DROP FOREIGN KEY Issue2Label_ibfk_1;
+ALTER TABLE Issue2Label CHANGE iid issue_id INT NOT NULL;
+ALTER TABLE Issue2Label ADD FOREIGN KEY (issue_id) REFERENCES Issue(id);
+
+ALTER TABLE Issue2Component DROP FOREIGN KEY Issue2Component_ibfk_1;
+ALTER TABLE Issue2Component CHANGE iid issue_id INT NOT NULL;
+ALTER TABLE Issue2Component ADD FOREIGN KEY (issue_id) REFERENCES Issue(id);
+
+ALTER TABLE Issue2Cc DROP FOREIGN KEY Issue2Cc_ibfk_1;
+ALTER TABLE Issue2Cc CHANGE iid issue_id INT NOT NULL;
+ALTER TABLE Issue2Cc ADD FOREIGN KEY (issue_id) REFERENCES Issue(id);
+
+ALTER TABLE Issue2Notify DROP FOREIGN KEY Issue2Notify_ibfk_1;
+ALTER TABLE Issue2Notify CHANGE iid issue_id INT NOT NULL;
+ALTER TABLE Issue2Notify ADD FOREIGN KEY (issue_id) REFERENCES Issue(id);
+
+ALTER TABLE IssueStar DROP FOREIGN KEY IssueStar_ibfk_1;
+ALTER TABLE IssueStar CHANGE iid issue_id INT NOT NULL;
+ALTER TABLE IssueStar ADD FOREIGN KEY (issue_id) REFERENCES Issue(id);
+
+ALTER TABLE IssueRelation DROP FOREIGN KEY IssueRelation_ibfk_1;
+ALTER TABLE IssueRelation CHANGE iid issue_id INT NOT NULL;
+ALTER TABLE IssueRelation ADD FOREIGN KEY (issue_id) REFERENCES Issue(id);
+
+ALTER TABLE IssueRelation CHANGE dst_iid dst_issue_id INT NOT NULL;
+
+ALTER TABLE Issue2FieldValue DROP FOREIGN KEY Issue2FieldValue_ibfk_1;
+ALTER TABLE Issue2FieldValue CHANGE iid issue_id INT NOT NULL;
+ALTER TABLE Issue2FieldValue ADD FOREIGN KEY (issue_id) REFERENCES Issue(id);
+
+-- On master only
+ALTER TABLE Comment DROP FOREIGN KEY Comment_ibfk_2;
+ALTER TABLE Comment CHANGE iid issue_id INT NOT NULL;
+ALTER TABLE Comment ADD FOREIGN KEY (issue_id) REFERENCES Issue(id);
+
+ALTER TABLE Attachment DROP FOREIGN KEY Attachment_ibfk_1;
+ALTER TABLE Attachment CHANGE iid issue_id INT NOT NULL;
+ALTER TABLE Attachment ADD FOREIGN KEY (issue_id) REFERENCES Issue(id);
+
+ALTER TABLE IssueUpdate DROP FOREIGN KEY IssueUpdate_ibfk_1;
+ALTER TABLE IssueUpdate CHANGE iid issue_id INT NOT NULL;
+ALTER TABLE IssueUpdate ADD FOREIGN KEY (issue_id) REFERENCES Issue(id);
+
+-- I was missing a foreign key constraint here.  Adding now.
+ALTER TABLE IssueFormerLocations CHANGE iid issue_id INT NOT NULL;
+ALTER TABLE IssueFormerLocations ADD FOREIGN KEY (issue_id) REFERENCES Issue(id);
+
+-- I was missing a foreign key constraint here.  Adding now.
+ALTER TABLE ReindexQueue CHANGE iid issue_id INT NOT NULL;
+ALTER TABLE ReindexQueue ADD FOREIGN KEY (issue_id) REFERENCES Issue(id);
+
+
+================================================================
+2013-08-30: added per-project email sending flag
+
+-- On master and all shards
+ALTER TABLE Project ADD COLUMN deliver_outbound_email BOOLEAN DEFAULT FALSE;
+
+
+================================================================
+2013-10-30: renamed prompts to templates
+
+ALTER TABLE ProjectIssueConfig
+CHANGE default_prompt_for_developers default_template_for_developers INT NOT NULL;
+
+ALTER TABLE ProjectIssueConfig
+CHANGE default_prompt_for_users default_template_for_users INT NOT NULL;
+
+ALTER TABLE Template
+CHANGE prompt_name name VARCHAR(255) NOT NULL,
+CHANGE prompt_text content TEXT,
+CHANGE prompt_summary summary TEXT,
+CHANGE prompt_summary_must_be_edited summary_must_be_edited BOOLEAN,
+CHANGE prompt_owner_id owner_id INT,
+CHANGE prompt_status status VARCHAR(255),
+CHANGE prompt_members_only members_only BOOLEAN;
+
+
+================================================================
+2013-11-18: add LocalIDCounter to master DB only, and fill in values.
+
+CREATE TABLE LocalIDCounter (
+  project_id SMALLINT UNSIGNED NOT NULL,
+  used_local_id INT NOT NULL,
+
+  PRIMARY KEY (project_id),
+  FOREIGN KEY (project_id) REFERENCES Project(project_id)
+) ENGINE=INNODB;
+
+
+-- Note: this ignores former issue locations, so it can only be run
+-- now, before the "move issue" feature is offered.
+REPLACE INTO LocalIDCounter
+SELECT project_id, MAX(local_id)
+FROM Issue
+GROUP BY project_id;
+
+================================================================
+2015-06-12: add issue_id to Invalidate's enum for kind.
+
+ALTER TABLE Invalidate CHANGE kind kind ENUM('user', 'project', 'issue', 'issue_id');
+
+================================================================
+2015-07-24: Rename blobkey to gcs_object_id because we are using
+Google Cloud storage now.
+
+ALTER TABLE Attachment CHANGE blobkey gcs_object_id VARCHAR(1024) NOT NULL;
+
+===============================================================
+2015-08-14: Use MurmurHash3 to deterministically generate user ids.
+
+-- First, drop foreign key constraints, then alter the keys, then
+-- add back the foreign key constraints.
+
+ALTER TABLE User2Project DROP FOREIGN KEY user2project_ibfk_2;
+ALTER TABLE ExtraPerm DROP FOREIGN KEY extraperm_ibfk_2;
+ALTER TABLE MemberNotes DROP FOREIGN KEY membernotes_ibfk_2;
+ALTER TABLE UserStar DROP FOREIGN KEY userstar_ibfk_1;
+ALTER TABLE UserStar DROP FOREIGN KEY userstar_ibfk_2;
+ALTER TABLE ProjectStar DROP FOREIGN KEY projectstar_ibfk_1;
+ALTER TABLE UserGroup DROP FOREIGN KEY usergroup_ibfk_1;
+ALTER TABLE UserGroup DROP FOREIGN KEY usergroup_ibfk_2;
+ALTER TABLE UserGroupSettings DROP FOREIGN KEY usergroupsettings_ibfk_1;
+ALTER TABLE QuickEditHistory DROP FOREIGN KEY quickedithistory_ibfk_2;
+ALTER TABLE QuickEditMostRecent DROP FOREIGN KEY quickeditmostrecent_ibfk_2;
+ALTER TABLE Issue DROP FOREIGN KEY issue_ibfk_2;
+ALTER TABLE Issue DROP FOREIGN KEY issue_ibfk_3;
+ALTER TABLE Issue DROP FOREIGN KEY issue_ibfk_4;
+ALTER TABLE Issue2Cc DROP FOREIGN KEY issue2cc_ibfk_2;
+ALTER TABLE IssueStar DROP FOREIGN KEY issuestar_ibfk_1;  -- ?
+ALTER TABLE Issue2FieldValue DROP FOREIGN KEY issue2fieldvalue_ibfk_2;
+ALTER TABLE Comment DROP FOREIGN KEY comment_ibfk_3;
+ALTER TABLE Comment DROP FOREIGN KEY comment_ibfk_4;
+ALTER TABLE FieldDef2Admin DROP FOREIGN KEY fielddef2admin_ibfk_2;
+ALTER TABLE Template2Admin DROP FOREIGN KEY template2admin_ibfk_2;
+ALTER TABLE Template2FieldValue DROP FOREIGN KEY template2fieldvalue_ibfk_2;
+ALTER TABLE Component2Admin DROP FOREIGN KEY component2admin_ibfk_2;
+ALTER TABLE Component2Cc DROP FOREIGN KEY component2cc_ibfk_2;
+ALTER TABLE User2SavedQuery DROP FOREIGN KEY user2savedquery_ibfk_1;
+
+
+ALTER TABLE User MODIFY user_id INT UNSIGNED NOT NULL;
+ALTER TABLE ActionLimit MODIFY user_id INT UNSIGNED NOT NULL;
+ALTER TABLE DismissedCues MODIFY user_id INT UNSIGNED NOT NULL;
+ALTER TABLE User2Project MODIFY user_id INT UNSIGNED NOT NULL;
+ALTER TABLE ExtraPerm MODIFY user_id INT UNSIGNED NOT NULL;
+ALTER TABLE MemberNotes MODIFY user_id INT UNSIGNED NOT NULL;
+ALTER TABLE UserStar MODIFY starred_user_id INT UNSIGNED NOT NULL,
+                     MODIFY user_id INT UNSIGNED NOT NULL;
+ALTER TABLE ProjectStar MODIFY user_id INT UNSIGNED NOT NULL;
+ALTER TABLE UserGroup MODIFY user_id INT UNSIGNED NOT NULL;
+ALTER TABLE UserGroup MODIFY group_id INT UNSIGNED NOT NULL;
+ALTER TABLE UserGroupSettings MODIFY group_id INT UNSIGNED NOT NULL;
+ALTER TABLE QuickEditHistory MODIFY user_id INT UNSIGNED NOT NULL;
+ALTER TABLE QuickEditMostRecent MODIFY user_id INT UNSIGNED NOT NULL;
+ALTER TABLE Issue MODIFY reporter_id INT UNSIGNED NOT NULL,
+                  MODIFY owner_id INT UNSIGNED,
+                  MODIFY derived_owner_id INT UNSIGNED;
+ALTER TABLE Issue2Cc MODIFY cc_id INT UNSIGNED NOT NULL;
+ALTER TABLE IssueStar MODIFY user_id INT UNSIGNED NOT NULL;
+ALTER TABLE Issue2FieldValue MODIFY user_id INT UNSIGNED;
+ALTER TABLE Comment MODIFY commenter_id INT UNSIGNED NOT NULL;
+ALTER TABLE Comment MODIFY deleted_by INT UNSIGNED;
+ALTER TABLE IssueUpdate MODIFY added_user_id INT UNSIGNED,
+                        MODIFY removed_user_id INT UNSIGNED;
+ALTER TABLE Template MODIFY owner_id INT UNSIGNED;
+ALTER TABLE FieldDef2Admin MODIFY admin_id INT UNSIGNED NOT NULL;
+ALTER TABLE Template2Admin MODIFY admin_id INT UNSIGNED NOT NULL;
+ALTER TABLE Template2FieldValue MODIFY user_id INT UNSIGNED;
+ALTER TABLE Component2Admin MODIFY admin_id INT UNSIGNED NOT NULL;
+ALTER TABLE Component2Cc MODIFY cc_id INT UNSIGNED NOT NULL;
+ALTER TABLE User2SavedQuery MODIFY user_id INT UNSIGNED NOT NULL;
+
+ALTER TABLE User2Project ADD CONSTRAINT user2project_ibfk_2 FOREIGN KEY (user_id) REFERENCES User(user_id);
+ALTER TABLE ExtraPerm ADD CONSTRAINT extraperm_ibfk_2  FOREIGN KEY (user_id) REFERENCES User(user_id);
+ALTER TABLE MemberNotes ADD CONSTRAINT membernotes_ibfk_2  FOREIGN KEY (user_id) REFERENCES User(user_id);
+ALTER TABLE UserStar ADD CONSTRAINT userstar_ibfk_1  FOREIGN KEY (user_id) REFERENCES User(user_id);
+ALTER TABLE UserStar ADD CONSTRAINT userstar_ibfk_2  FOREIGN KEY (starred_user_id) REFERENCES User(user_id);
+ALTER TABLE ProjectStar ADD CONSTRAINT projectstar_ibfk_1  FOREIGN KEY (user_id) REFERENCES User(user_id);
+ALTER TABLE UserGroup ADD CONSTRAINT usergroup_ibfk_1  FOREIGN KEY (user_id) REFERENCES User(user_id);
+ALTER TABLE UserGroup ADD CONSTRAINT usergroup_ibfk_2  FOREIGN KEY (group_id) REFERENCES User(user_id);
+ALTER TABLE UserGroupSettings ADD CONSTRAINT usergroupsettings_ibfk_1  FOREIGN KEY (group_id) REFERENCES User(user_id);
+ALTER TABLE QuickEditHistory ADD CONSTRAINT quickedithistory_ibfk_2  FOREIGN KEY (user_id) REFERENCES User(user_id);
+ALTER TABLE QuickEditMostRecent ADD CONSTRAINT quickeditmostrecent_ibfk_2  FOREIGN KEY (user_id) REFERENCES User(user_id);
+ALTER TABLE Issue ADD CONSTRAINT issue_ibfk_2  FOREIGN KEY (reporter_id) REFERENCES User(user_id);
+ALTER TABLE Issue ADD CONSTRAINT issue_ibfk_3  FOREIGN KEY (owner_id) REFERENCES User(user_id);
+ALTER TABLE Issue ADD CONSTRAINT issue_ibfk_4  FOREIGN KEY (derived_owner_id) REFERENCES User(user_id);
+ALTER TABLE Issue2Cc ADD CONSTRAINT issue2cc_ibfk_2  FOREIGN KEY (cc_id) REFERENCES User(user_id);
+ALTER TABLE IssueStar ADD CONSTRAINT issuestar_ibfk_1  FOREIGN KEY (user_id) REFERENCES User(user_id);
+ALTER TABLE Issue2FieldValue ADD CONSTRAINT issue2fieldvalue_ibfk_2  FOREIGN KEY (user_id) REFERENCES User(user_id);
+ALTER TABLE Comment ADD CONSTRAINT comment_ibfk_3  FOREIGN KEY (commenter_id) REFERENCES User(user_id);
+ALTER TABLE Comment ADD CONSTRAINT comment_ibfk_4  FOREIGN KEY (deleted_by) REFERENCES User(user_id);
+ALTER TABLE FieldDef2Admin ADD CONSTRAINT fielddef2admin_ibfk_2  FOREIGN KEY (admin_id) REFERENCES User(user_id);
+ALTER TABLE Template2Admin ADD CONSTRAINT template2admin_ibfk_2  FOREIGN KEY (admin_id) REFERENCES User(user_id);
+ALTER TABLE Template2FieldValue ADD CONSTRAINT template2fieldvalue_ibfk_2  FOREIGN KEY (user_id) REFERENCES User(user_id);
+ALTER TABLE Component2Admin ADD CONSTRAINT component2admin_ibfk_2  FOREIGN KEY (admin_id) REFERENCES User(user_id);
+ALTER TABLE Component2Cc ADD CONSTRAINT component2cc_ibfk_2  FOREIGN KEY (cc_id) REFERENCES User(user_id);
+ALTER TABLE User2SavedQuery ADD CONSTRAINT user2savedquery_ibfk_1  FOREIGN KEY (user_id) REFERENCES User(user_id);
+
+================================================================
+2015-08-20: Add obscure_email column to User.
+
+ALTER TABLE User ADD obscure_email BOOLEAN DEFAULT TRUE;
+
+================================================================
+2015-09-14: Add role column to UserGroup.
+
+ALTER TABLE UserGroup ADD COLUMN role ENUM ('owner', 'member') NOT NULL DEFAULT 'member';
+
+================================================================
+2015-09-14: Remove via_id column from UserGroup.
+
+ALTER TABLE UserGroup DROP COLUMN via_id;
+
+================================================================
+2015-09-14: Add foreign key constraints to Issue2Foo tables
+
+ALTER TABLE Issue ADD CONSTRAINT issue_ibfk_5  FOREIGN KEY (status_id) REFERENCES StatusDef(id);
+ALTER TABLE Issue2Component ADD CONSTRAINT issue2component_ibfk_2  FOREIGN KEY (component_id) REFERENCES ComponentDef(id);
+ALTER TABLE Issue2Label ADD CONSTRAINT issue2label_ibfk_2  FOREIGN KEY (label_id) REFERENCES LabelDef(id);
+ALTER TABLE Issue2FieldValue ADD CONSTRAINT issue2fieldvalue_ibfk_3  FOREIGN KEY (field_id) REFERENCES FieldDef(id);
+
+================================================================
+2015-09-16: Use Binary collation on Varchar unique keys
+
+ALTER TABLE StatusDef MODIFY status VARCHAR(80) BINARY NOT NULL;
+ALTER TABLE ComponentDef MODIFY path VARCHAR(255) BINARY NOT NULL;
+ALTER TABLE LabelDef MODIFY label VARCHAR(80) BINARY NOT NULL;
+ALTER TABLE FieldDef MODIFY field_name VARCHAR(80) BINARY NOT NULL;
+ALTER TABLE Template MODIFY name VARCHAR(255) BINARY NOT NULL;
+
+================================================================
+2015-09-16: Have components use the same ID schema as Labels/Statuses
+
+ALTER TABLE ComponentDef MODIFY id INT NOT NULL AUTO_INCREMENT;
+ALTER TABLE Component2Admin MODIFY component_id INT NOT NULL;
+ALTER TABLE Component2Cc MODIFY component_id INT NOT NULL;
+ALTER TABLE Issue2Component MODIFY component_id INT NOT NULL;
+
+================================================================
+2015-09-17: Introduce DanglingIssueRelation table
+
+ALTER TABLE IssueRelation ADD CONSTRAINT issuerelation_ibfk_2  FOREIGN KEY (dst_issue_id) REFERENCES Issue(id);
+
+CREATE TABLE DanglingIssueRelation (
+  issue_id INT NOT NULL,
+  dst_issue_project VARCHAR(80),
+  dst_issue_local_id INT,
+
+  -- This table uses 'blocking' so that it can guarantee the src issue
+  -- always exists, while the dst issue is always the dangling one.
+  kind ENUM ('blockedon', 'blocking', 'mergedinto') NOT NULL,
+
+  PRIMARY KEY (issue_id, dst_issue_project, dst_issue_local_id),
+  INDEX (issue_id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id)
+) ENGINE=INNODB;
+
+================================================================
+2015-09-18: Convert table char encodings to utf8.
+
+ALTER DATABASE monorail CHARACTER SET = utf8 COLLATE = utf8_unicode_ci;
+ALTER TABLE Comment CONVERT TO CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+ALTER TABLE ComponentDef CONVERT TO CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+ALTER TABLE FieldDef CONVERT TO CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+ALTER TABLE IssueSummary CONVERT TO CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+ALTER TABLE LabelDef CONVERT TO CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+ALTER TABLE MemberNotes CONVERT TO CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+ALTER TABLE Project CONVERT TO CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+ALTER TABLE StatusDef CONVERT TO CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+
+================================================================
+2015-09-22: Make IssueRelation primary key more specific
+
+ALTER TABLE IssueRelation DROP PRIMARY KEY, ADD PRIMARY KEY (issue_id, dst_issue_id, kind);
+ALTER TABLE DanglingIssueRelation DROP PRIMARY KEY, ADD PRIMARY KEY (issue_id, dst_issue_project, dst_issue_local_id, kind);
+
+================================================================
+2015-09-29: Make cache_key unsigned so unsigned user ids can be invalidated.
+
+ALTER TABLE Invalidate MODIFY cache_key INT UNSIGNED NOT NULL;
+
+================================================================
+2015-09-29: Add external_group_type and external_group_name to UserGroupSettings
+
+ALTER TABLE UserGroupSettings ADD COLUMN external_group_type ENUM ('chrome_infra_auth', 'mdb');
+ALTER TABLE UserGroupSettings ADD COLUMN last_sync_time INT;
+
+================================================================
+2015-10-27: Eliminate Project.deliver_outbound_email because we have separate staging and prod instances.
+
+ALTER TABLE Project DROP COLUMN deliver_outbound_email;
+
+================================================================
+2015-10-27: Add SpamReport and is_spam fields to Issue and Comment
+
+ALTER TABLE Issue ADD COLUMN is_spam BOOL DEFAULT FALSE;
+ALTER TABLE Issue ADD INDEX (is_spam, project_id);
+
+ALTER TABLE Comment ADD COLUMN is_spam BOOL DEFAULT FALSE;
+ALTER TABLE Comment ADD INDEX (is_spam, project_id, created);
+
+-- Created whenever a user reports an issue or comment as spam.
+-- Note this is distinct from a SpamVerdict, which is issued by
+-- the system rather than a human user.
+CREATE TABLE SpamReport (
+  -- when this report was generated
+  created TIMESTAMP NOT NULL,
+  -- when the reported content was generated
+  content_created TIMESTAMP NOT NULL,
+	-- id of the reporting user
+  user_id INT UNSIGNED NOT NULL,
+	-- id of the reported user
+  reported_user_id INT UNSIGNED NOT NULL,
+  -- either this or issue_id must be set
+  comment_id INT,
+  -- either this or comment_id must be set
+  issue_id INT,
+
+  INDEX (issue_id),
+  INDEX (comment_id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id),
+  FOREIGN KEY (comment_id) REFERENCES Comment(id)
+);
+
+================================================================
+2015-11-03: Add new external group type chromium_committers
+
+ALTER TABLE UserGroupSettings MODIFY COLUMN external_group_type ENUM ('chrome_infra_auth', 'mdb', 'chromium_committers');
+
+================================================================
+2015-11-4: Add SpamVerdict table.
+
+-- Any time a human or the system sets is_spam to true,
+-- or changes it from true to false, we want to have a
+-- record of who did it and why.
+CREATE TABLE SpamVerdict (
+  -- when this verdict was generated
+  created TIMESTAMP NOT NULL,
+
+	-- id of the reporting user, may be null if it was
+  -- an automatic classification.
+  user_id INT UNSIGNED,
+
+  -- either this or issue_id must be set
+  comment_id INT,
+
+  -- either this or comment_id must be set
+  issue_id INT,
+
+  INDEX (issue_id),
+  INDEX (comment_id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id),
+  FOREIGN KEY (comment_id) REFERENCES Comment(id),
+
+  -- If the classifier issued the verdict, this should
+  -- be set.
+  classifier_confidence FLOAT,
+
+  -- This should reflect the new is_spam value that was applied
+  -- by this verdict, not the value it had prior.
+  is_spam BOOLEAN NOT NULL,
+
+  -- owner: a project owner marked it as spam
+  -- threshhold: number of SpamReports from non-members was exceeded.
+  -- classifier: the automatic classifier reports it as spam.
+  reason ENUM ("manual", "threshold", "classifier") NOT NULL
+);
+
+ALTER TABLE LocalIDCounter ADD used_spam_id int(11) NOT NULL;
+
+================================================================
+2015-11-13: Add Template2Component table.
+
+CREATE TABLE Template2Component (
+  template_id INT NOT NULL,
+  component_id INT NOT NULL,
+
+  PRIMARY KEY (template_id, component_id),
+
+  FOREIGN KEY (template_id) REFERENCES Template(id),
+  FOREIGN KEY (component_id) REFERENCES ComponentDef(id)
+) ENGINE=INNODB;
+
+================================================================
+2015-11-13: Add new external group type baggins
+
+ALTER TABLE UserGroupSettings MODIFY COLUMN external_group_type ENUM ('chrome_infra_auth', 'mdb', 'chromium_committers', 'baggins');
+
+================================================================
+2015-11-18: Add new action kind api_request in ActionLimit
+
+ALTER TABLE ActionLimit MODIFY COLUMN action_kind ENUM ('project_creation', 'issue_comment', 'issue_attachment', 'issue_bulk_edit', 'api_request');
+
+================================================================
+2015-11-24: Add shard column to Issue, add indexes, and UPDATE existing rows.
+
+ALTER TABLE Issue ADD COLUMN shard SMALLINT UNSIGNED DEFAULT 0 NOT NULL;
+
+UPDATE Issue set shard = id % 10;
+
+ALTER TABLE Issue ADD INDEX (shard, status_id);
+ALTER TABLE Issue ADD INDEX (shard, project_id);
+
+================================================================
+2015-11-25: Remove external group type chromium_committers
+
+ALTER TABLE UserGroupSettings MODIFY COLUMN external_group_type ENUM ('chrome_infra_auth', 'mdb', 'baggins');
+
+================================================================
+2015-12-08: Modify handling of hidden well-known labels/statuses
+
+ALTER TABLE StatusDef ADD COLUMN hidden BOOLEAN DEFAULT FALSE;
+ALTER TABLE LabelDef ADD COLUMN hidden BOOLEAN DEFAULT FALSE;
+
+UPDATE StatusDef SET status=TRIM(LEADING '#' FROM status), hidden=TRUE WHERE status COLLATE UTF8_GENERAL_CI LIKE '#%';
+UPDATE LabelDef SET label=TRIM(LEADING '#' FROM label), hidden=TRUE WHERE label COLLATE UTF8_GENERAL_CI LIKE '#%';
+
+================================================================
+2015-12-11: Speed up moderation queue queries.
+
+ALTER TABLE SpamVerdict ADD INDEX(classifier_confidence);
+
+================================================================
+2015-12-14: Give components 'deprecated' col to match labels/statuses
+
+ALTER TABLE StatusDef CHANGE hidden deprecated BOOLEAN DEFAULT FALSE;
+ALTER TABLE LabelDef CHANGE hidden deprecated BOOLEAN DEFAULT FALSE;
+ALTER TABLE ComponentDef ADD COLUMN deprecated BOOLEAN DEFAULT FALSE;
+
+================================================================
+2015-12-14: Add table Group2Project
+
+CREATE TABLE Group2Project (
+  group_id INT UNSIGNED NOT NULL,
+  project_id SMALLINT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (group_id, project_id),
+
+  FOREIGN KEY (group_id) REFERENCES UserGroupSettings(group_id),
+  FOREIGN KEY (project_id) REFERENCES Project(project_id)
+) ENGINE=INNODB;
+
+================================================================
+2015-12-15: Increase maximum attachment quota bytes
+
+ALTER TABLE Project MODIFY attachment_bytes_used BIGINT DEFAULT 0;
+ALTER TABLE Project MODIFY attachment_quota BIGINT DEFAULT 0;
+
+================================================================
+2015-12-15: Simplify moderation queue queries.
+
+ALTER TABLE SpamVerdict ADD COLUMN overruled BOOL NOT NULL;
+ALTER TABLE SpamVerdict ADD COLUMN project_id INT NOT NULL;
+UPDATE SpamVerdict s JOIN Issue i ON i.id=s.issue_id SET s.project_id=i.project_id;
+
+================================================================
+2015-12-17: Add cols home_page and logo to table Project
+
+ALTER TABLE Project ADD COLUMN home_page VARCHAR(250);
+ALTER TABLE Project ADD COLUMN logo_gcs_id VARCHAR(250);
+ALTER TABLE Project ADD COLUMN logo_file_name VARCHAR(250);
+
+================================================================
+2015-12-28: Add component_required col to table Template;
+
+ALTER TABLE Template ADD component_required BOOLEAN DEFAULT FALSE;
+
+================================================================
+2016-01-05: Add issue_shard column to Issue2Label, Issue2Component,
+add indexes, and UPDATE existing rows.
+
+ALTER TABLE Issue2Component ADD COLUMN issue_shard SMALLINT UNSIGNED DEFAULT 0 NOT NULL;
+UPDATE Issue2Component set issue_shard = issue_id % 10;
+ALTER TABLE Issue2Component ADD INDEX (component_id, issue_shard);
+
+ALTER TABLE Issue2Label ADD COLUMN issue_shard SMALLINT UNSIGNED DEFAULT 0 NOT NULL;
+UPDATE Issue2Label set issue_shard = issue_id % 10;
+ALTER TABLE Issue2Label ADD INDEX (label_id, issue_shard);
+
+================================================================
+2016-01-06: Add period_soft_limit and period_hard_limit columns to ActionLimit
+
+ALTER TABLE ActionLimit ADD COLUMN period_soft_limit INT;
+ALTER TABLE ActionLimit ADD COLUMN period_hard_limit INT;
+
+================================================================
+2016-01-08: Add issue_shard column to Issue2FieldValue, Issue2Cc,
+add indexes, and UPDATE existing rows.
+
+ALTER TABLE Issue2FieldValue ADD COLUMN issue_shard SMALLINT UNSIGNED DEFAULT 0 NOT NULL;
+UPDATE Issue2FieldValue SET issue_shard = issue_id % 10;
+ALTER TABLE Issue2FieldValue ADD INDEX (field_id, issue_shard, int_value);
+ALTER TABLE Issue2FieldValue ADD INDEX (field_id, issue_shard, str_value(255));
+ALTER TABLE Issue2FieldValue ADD INDEX (field_id, issue_shard, user_id);
+
+ALTER TABLE Issue2Cc ADD COLUMN issue_shard SMALLINT UNSIGNED DEFAULT 0 NOT NULL;
+UPDATE Issue2Cc SET issue_shard = issue_id % 10;
+ALTER TABLE Issue2Cc ADD INDEX (cc_id, issue_shard);
+
+================================================================
+2015-12-17: Add documentation forwarding for /wiki urls
+
+ALTER TABLE Project ADD COLUMN docs_url VARCHAR(250);
+
+================================================================
+2015-12-17: Ensure SavedQueries never have null ids
+
+ALTER TABLE SavedQuery MODIFY id INT NOT NULL AUTO INCREMENT;
+
+================================================================
+2016-02-04: Add created, creator_id, modified, modifier_id for components
+
+ALTER TABLE ComponentDef ADD COLUMN created INT;
+ALTER TABLE ComponentDef ADD COLUMN creator_id INT UNSIGNED;
+ALTER TABLE ComponentDef ADD FOREIGN KEY (creator_id) REFERENCES User(user_id);
+ALTER TABLE ComponentDef ADD COLUMN modified INT;
+ALTER TABLE ComponentDef ADD COLUMN modifier_id INT UNSIGNED;
+ALTER TABLE ComponentDef ADD FOREIGN KEY (modifier_id) REFERENCES User(user_id);
+
+================================================================
+2016-02-19: Opt all privileged accounts into displaying full email.
+
+UPDATE User SET obscure_email = FALSE WHERE email LIKE "%@chromium.org";
+UPDATE User SET obscure_email = FALSE WHERE email LIKE "%@webrtc.org";
+UPDATE User SET obscure_email = FALSE WHERE email LIKE "%@google.com";
+
+================================================================
+2016-04-11: Increase email length limit to 255
+
+ALTER TABLE User MODIFY email VARCHAR(255);

@@ -1,0 +1,27 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is govered by a BSD-style
+# license that can be found in the LICENSE file or at
+# https://developers.google.com/open-source/licenses/bsd
+
+blacklist:
+# Edit this file to enable GAE's built-in DoS protection.
+# Run some aggregate queries in the Cloud Console BigQuery
+# interface to see if you can block larger subnets rathe
+# than individual IP addresses. Also, this list is limited
+# to 100 entries, so if it's a DDoS you might run out
+# subnets.
+# On-Call Playbook:
+# https://docs.google.com/document/d/1acGea37jlb5FEp1BGdqca6tY_hiH1QGXKxbt4iBfAug
+#
+# See the playbook for other measures you can take, such
+# as setting ratelimiting_enabled = True in settings.py.
+
+# Example entries:
+# - subnet: 192.0.2.1
+#   description: a single IP address
+# - subnet: 192.0.2.0/24
+#   description: an IPv4 subnet
+# - subnet: 2001:DB8::1
+#   description: an IPv6 address
+# - subnet: 2001:DB8::/32
+#   description: an IPv6 subnet

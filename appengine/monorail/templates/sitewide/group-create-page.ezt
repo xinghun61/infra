@@ -1,0 +1,43 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "hidetabs"]
+
+<h2>Create a new user group</h2>
+
+[if-any read_only][include "../framework/read-only-rejection.ezt"]
+[else]
+
+<form action="createGroup.do" method="POST" id="create_group_form"
+      style="margin:1em">
+  <input type="hidden" name="token" value="[form_token]">
+
+  Group email address:<br>
+  <input size="30" type="text" id="groupname" name="groupname" value="[initial_name]">
+  <span class="graytext">Example: group-name@example.com</span>
+  <div class="fielderror">
+    <span id="groupnamefeedback"></span>
+    [if-any errors.groupname][errors.groupname][end]
+  </div>
+  <br>
+
+  Members viewable by:
+  [include "../framework/group-setting-fields.ezt"]
+  <br>
+
+  <input type="submit" id="submit_btn" name="btn" value="Create group">
+</form>
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  $("create_group_form").addEventListener("submit", function() {
+    $("submit_btn").value = "Creating group...";
+    $("submit_btn").disabled = "disabled";
+  });
+});
+</script>
+
+[include "../framework/footer-script.ezt"]
+
+
+[end][# not read-only]
+
+[include "../framework/master-footer.ezt"]

@@ -1,0 +1,13 @@
+[# Empty function definitions because we load the JS at bottom of page.
+   Without this, some rollovers or on-click handlers might give errors for
+   the first 200ms or so after the page loads. With them, they simply are
+   no-ops. ]
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+function _showBelow(){}
+function _toggleStar(){}
+function _goIssue(){}
+function _goFile(){}
+});
+</script>
+

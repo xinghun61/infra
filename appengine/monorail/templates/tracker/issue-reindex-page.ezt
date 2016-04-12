@@ -1,0 +1,45 @@
+[define title]Reindex Issues[end]
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+[if-any read_only][include "../framework/read-only-rejection.ezt"]
+[else]
+
+<form action="reindex.do" method="POST" id="form">
+  <input type="hidden" name="token" value="[form_token]">
+  <table>
+    <tr>
+      <td>Start:</td>
+      <td><input type="input" name="start" value="[start]"></td>
+    </tr>
+    <tr>
+      <td>Num:</td>
+      <td><input type="input" name="num" value="[num]"></td>
+    </tr>
+    <tr>
+      <td colspan="2">
+        <input type="submit" id="submit_btn" name="btn" value="Re-index"></td>
+    </tr>
+    <tr>
+      <td><label for="autosubmit">Autosubmit:</label></td>
+      <td><input type="checkbox" name="auto_submit" id="autosubmit"
+                 [is auto_submit "True"]checked="checked"[end] ></td>
+    </tr>
+  </table>
+</form>
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  function autosubmit() {
+    if (document.getElementById('autosubmit').checked) {
+      document.getElementById('form').submit();
+    }
+  }
+  if (document.getElementById('autosubmit').checked) {
+    setTimeout(autosubmit, 5000);
+  }
+});
+</script>
+
+[end]
+[include "../framework/master-footer.ezt"]

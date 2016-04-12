@@ -1,0 +1,37 @@
+[# Display widgets for editing one custom field.
+   The variable "fields" must already refer to a FieldValueView object.
+   arg0: True if the field is multi-valued.
+]
+[is fields.field_def.type_name "ENUM_TYPE"]
+  [if-any arg0]
+    [include "field-value-multi-enum.ezt"]
+  [else]
+    [include "field-value-single-enum.ezt"]
+  [end]
+[end]
+
+[is fields.field_def.type_name "INT_TYPE"]
+  [if-any arg0]
+    [include "field-value-multi-int.ezt"]
+  [else]
+    [include "field-value-single-int.ezt"]
+  [end]
+[end]
+
+[is fields.field_def.type_name "STR_TYPE"]
+  [if-any arg0]
+    [include "field-value-multi-str.ezt"]
+  [else]
+    [include "field-value-single-str.ezt"]
+  [end]
+[end]
+
+[is fields.field_def.type_name "USER_TYPE"]
+  [if-any arg0]
+    [include "field-value-multi-user.ezt"]
+  [else]
+    [include "field-value-single-user.ezt"]
+  [end]
+[end]
+
+[# TODO(jrobbins): more field types. ]

@@ -1,0 +1,68 @@
+[if-any results]
+
+ [is grid_x_attr "--"][else]
+  <tr>
+   [is grid_y_attr "--"][else]<th>&nbsp;</th>[end]
+   [for grid_x_headings]
+    <th>[grid_x_headings]</th>
+   [end]
+  </tr>
+ [end]
+
+ [for grid_data]
+  <tr class="grid">
+   [is grid_y_attr "--"][else]<th>[grid_data.grid_y_heading]</th>[end]
+
+   [for grid_data.cells_in_row]
+    <td class="vt hoverTarget [is grid_cell_mode "tiles"][else]idcount[end]">
+     [for grid_data.cells_in_row.tiles]
+      [is grid_cell_mode "tiles"]
+       [include "issue-grid-tile.ezt" grid_data.cells_in_row.tiles.starred grid_data.cells_in_row.tiles.local_id grid_data.cells_in_row.tiles.status grid_data.cells_in_row.tiles.summary]
+      [end]
+      [is grid_cell_mode "ids"]
+       <a title="[grid_data.cells_in_row.tiles.summary]"
+          href="detail?id=[grid_data.cells_in_row.tiles.local_id]">[grid_data.cells_in_row.tiles.local_id]</a>
+      [end]
+     [end]
+     [is grid_cell_mode "counts"]
+      [is grid_data.cells_in_row.count "0"]
+      [else]
+       [is grid_data.cells_in_row.count "1"]
+        <a href="detail?id=[for grid_data.cells_in_row.tiles][grid_data.cells_in_row.tiles.local_id][end]"
+           >[grid_data.cells_in_row.count] item</a>
+       [else]
+        <a href="list?can=[can]&amp;q=[grid_data.cells_in_row.drill_down][query]">[grid_data.cells_in_row.count] items</a>
+       [end]
+      [end]
+
+     [end]
+    </td>
+   [end]
+  </tr>
+ [end]
+
+[else]
+
+ <tr>
+  <td colspan="40" class="id">
+   <div style="padding: 3em; text-align: center">
+    [if-any project_has_any_issues]
+     Your search did not generate any results.  <br>
+     [is can "1"]
+      You may want to remove some terms from your query.<br>
+     [else]
+      You may want to try your search over <a href="list?can=1&amp;q=[query]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;mode=grid">all issues</a>.<br>
+     [end]
+    [else]
+     This project currently has no issues.<br>
+     [if-any page_perms.CreateIssue]
+      [if-any read_only][else]
+       You may want to enter a <a class="id" href="entry">new issue</a>.
+      [end]
+     [end]
+    [end]
+    </div>
+   </td>
+  </tr>
+
+[end]

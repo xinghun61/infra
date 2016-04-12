@@ -1,0 +1,9 @@
+Subject: Could not determine account of sender
+
+The email message you sent to [project_addr]
+was not processed because your address, [sender_addr],
+does not correspond to an account known to the server.
+You must send from an email address that has already
+been used to interact with the issue tracker web UI.
+
+[include "inboundemail-error-footer-part.ezt"]

@@ -1,0 +1,8 @@
+[if-any cmnt_pagination.prev_url]
+  <a href="[cmnt_pagination.prev_url]" style="margin-right:.7em"><b>&lsaquo;</b> Newer</a>
+[end]
+Showing comments [cmnt_pagination.last] - [cmnt_pagination.start]
+[if-any cmnt_pagination.total_count]of [cmnt_pagination.total_count][end]
+[if-any cmnt_pagination.next_url]
+  <a href="[cmnt_pagination.next_url]" style="margin-left:.7em">Older <b>&rsaquo;</b></a>
+[end]

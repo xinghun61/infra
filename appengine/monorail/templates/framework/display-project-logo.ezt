@@ -1,0 +1,29 @@
+[# This template displays the project logo with the file name and a View link.
+
+   arg0: Whether to display a checkbox to delete the logo.
+]
+
+<table cellspacing="5" cellpadding="2" border="0">
+  <tr>
+    <td>
+      <b>[logo_view.filename]</b>
+    </td>
+    <td>
+      <a href="[logo_view.viewurl]" target="_blank" style="margin-left:.2em">View</a>
+    </td>
+  </tr>
+  <tr>
+    <td colspan=2>
+      <a href="[logo_view.viewurl]" target="_blank">
+        <img src="[logo_view.thumbnail_url]" class="preview">
+      </a>
+    </td>
+  </tr>
+  [if-any arg0]
+    <tr>
+      <td colspan=2>
+        <input type="checkbox" name="delete_logo" id="delete_logo"> Delete this logo
+      </td>
+    </tr>
+  [end]
+</table>

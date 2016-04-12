@@ -1,0 +1,25 @@
+[include "../framework/master-header.ezt" "hidetabs"]
+
+<h3>Access Not Allowed</h3>
+
+<h4>What happened?</h4>
+
+<p>You are not allowed to access this service.</p>
+
+<p>Please <a href="mailto:[feedback_email]">contact us</a> if you believe that you should be able to access this service. (This is a Google Group; what you write will be visible on the Internet.)</p>
+
+[# Note: we do not show the reason for being banned. ]
+
+
+<div style="margin:2em" class="help">
+  <b style="margin:0.5em">Your options:</b>
+
+  <ul>
+   <li>Participate in the open source community through other websites.</li>
+   <li><a href="[logout_url_goto_home]">Sign out</a> and access this site as
+     an anonymous user.</li>
+   <li><a href="mailto:[feedback_email]">Contact us</a> for further assistance.</li>
+  </ul>
+</div>
+
+[include "../framework/master-footer.ezt"]

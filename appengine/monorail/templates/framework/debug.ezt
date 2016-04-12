@@ -1,0 +1,50 @@
+[is dbg "off"]
+ [if-any perms._ViewDebug]
+   <div class="debug">
+    - <a href="[debug_uri]">Reload w/ debug info</a>
+   </div>
+ [end]
+[else]
+   [# Note that this only handles the top two levels of (sub)phases.
+    # If you nest phases further than that (which we haven't wanted/needed to
+    # do so far), you'll have to modify this code in order to render it.]
+   <style type="text/css">
+    .debug, .debug a { color: #444; font-size: x-small}
+    .debug td, .debug th { background: #ddf}
+    .debug th { text-align: left; font-family: courier; font-size: small}
+   </style>
+
+   <div class="debug">Profile Data
+     <table class="ifOpened" cellpadding="2" cellspacing="2" border="0"  style="padding-left: 1em">
+       [for profiler.top_phase.subphases]
+        <tr>
+         <th style="white-space:nowrap">[profiler.top_phase.subphases.name]:</th>
+         <td align="right">[profiler.top_phase.subphases.ms][is profiler.top_phase.subphases.ms "in_progress"][else] ms[end]</td>
+         <td><table cellspacing="1" cellpadding="0"><tr>
+         [for profiler.top_phase.subphases.subphases]
+          <td title="[profiler.top_phase.subphases.subphases.name]: [profiler.top_phase.subphases.subphases.ms]ms"
+            width="[is profiler.top_phase.subphases.subphases.ms "in_progress"]100%[else][profiler.top_phase.subphases.subphases.ms][end]"
+            style="padding:2px;color:#fff;background:#[profiler.top_phase.subphases.subphases.color]">[profiler.top_phase.subphases.subphases.ms]</td>
+         [end]
+
+         [if-any profiler.top_phase.subphases.uncategorized_ms]
+           <td title="uncategorized: [profiler.top_phase.subphases.uncategorized_ms]ms"
+              width="[profiler.top_phase.subphases.uncategorized_ms]"
+              style="padding:1px">[profiler.top_phase.subphases.uncategorized_ms]</td>
+         [end]
+        </tr></table>
+         </td>
+        </tr>
+       [end]
+     </table>
+   </div><br>
+ [for debug]
+   <div class="debug">[debug.title]
+     <table cellpadding="2" cellspacing="2" border="0" style="padding-left: 1em">
+      [for debug.collection]
+       <tr><th>[debug.collection.key]</th><td>[debug.collection.val]</td></tr>
+      [end]
+     </table>
+   </div><br>
+ [end]
+[end]

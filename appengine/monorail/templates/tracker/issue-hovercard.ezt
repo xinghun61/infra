@@ -1,0 +1,6 @@
+[# Show a small dialog box allows the user to quickly view one issue.]
+
+<div id="infobubble">
+ <div id="peekarea" style="width:72em; padding:0"
+      ><div class="loading">Loading...</div></div>
+</div>

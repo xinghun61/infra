@@ -1,0 +1,125 @@
+[define title]Add a Component[end]
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+<a href="/p/[projectname]/adminComponents">&lsaquo; Back to component list</a><br><br>
+
+
+<h4>Add a component</h4>
+
+<form action="create.do" method="POST">
+<input type="hidden" name="token" value="[form_token]">
+
+<table cellspacing="8" class="rowmajor vt">
+
+  <tr>
+    <th width="1%">Parent:</th>
+    <td>
+      <select name="parent_path" id="parent_path">
+        <option value="">Top level</option>
+        [for component_defs]
+          <option value="[component_defs.path]" [if-any component_defs.selected]selected=true[end]>[component_defs.path]</option>
+        [end]
+      </select>
+    </td>
+    <td rowspan="10">
+      <div class="tip">
+        <p>Components should describe the structure of the software being
+          built so that issues can be related to the correct parts.</p>
+
+        <p>Please use labels instead for releases,
+           milestones, task forces, types of issues, etc.</p>
+
+        <p>Deprecated components won't be shown in autocomplete.</p>
+      </div>
+    </td>
+  </tr>
+
+  <tr>
+    <th width="1%">Name:</th>
+    <td>
+      <input id="leaf_name" name="leaf_name" size="30" value="[initial_leaf_name]"
+             class="acob">
+      <span id="leafnamefeedback" class="fielderror" style="margin-left:1em">
+          [if-any errors.leaf_name][errors.leaf_name][end]
+      </span>
+    </td>
+  </tr>
+
+  <tr>
+    <th>Description:</th>
+    <td>
+      <textarea name="docstring" rows="4" cols="75">[initial_docstring]</textarea>
+    </td>
+  </tr>
+
+  <tr>
+    <th>Admins:</th>
+    <td>
+        <textarea id="member_admins" name="admins" rows="3" cols="75">[for initial_admins][initial_admins], [end]</textarea>
+        <span id="memberadminsfeedback" class="fielderror" style="margin-left:1em">
+            [if-any errors.member_admins][errors.member_admins][end]
+        </span>
+    </td>
+  </tr>
+
+  <tr>
+    <th>Auto Cc:</th>
+    <td>
+        <textarea id="member_cc" name="cc" rows="3" cols="75">[for initial_cc][initial_cc], [end]</textarea>
+        <span id="memberccfeedback" class="fielderror" style="margin-left:1em">
+            [if-any errors.member_cc][errors.member_cc][end]
+        </span>
+    </td>
+  </tr>
+
+  <tr>
+    <th>Deprecated:</th>
+    <td>
+        <input type="checkbox" id="deprecated" name="deprecated">
+    </td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td>
+      <input id="submit_btn" type="submit" name="submit" value="Create component">
+    </td>
+  </tr>
+
+</table>
+</form>
+
+[include "../framework/footer-script.ezt"]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _fetchOptions('[projectname]', 'issueOptions',
+                CS_env.token, [project.cached_content_timestamp]);
+
+  _onload();
+  document.getElementById('submit_btn').disabled = 'disabled';
+  document.getElementById('leaf_name').focus();
+
+  function checkSubmit() {
+    _checkLeafName(
+        '[projectname]',
+        document.getElementById('parent_path').value,
+        '', CS_env.token);
+  }
+  setInterval(checkSubmit, 700);
+
+  var acobElements = document.getElementsByClassName("acob");
+  for (var i = 0; i < acobElements.length; ++i) {
+     var el = acobElements[[]i];
+     el.addEventListener("focus", function(event) {
+         _acrob(null);
+         _acof(event);
+     });
+  }
+});
+</script>
+
+
+
+[include "../framework/master-footer.ezt"]

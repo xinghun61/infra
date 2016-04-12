@@ -1,0 +1,10 @@
+[# Safely display some text that includes some markup.  Only the tags
+   that we explicitly whitelist are allowed, everything else gets
+   escaped.
+
+   description.text_runs is a list of element EZT objects that have a
+   tag and content and maybe some other attributes.
+
+   We do not use extra whitespace in this template because it
+   generates text into a context where whitespace is significant.
+][is arg0.tag ""][arg0.content][end][is arg0.tag "a"]<a href="[arg0.href]" title="[arg0.title]" class="[arg0.css_class]" rel="nofollow">[arg0.content]</a>[end][is arg0.tag "b"]<b>[arg0.content]</b>[end]

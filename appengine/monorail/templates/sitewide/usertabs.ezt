@@ -1,0 +1,43 @@
+[# Display a row of tabs for servlets with URLs starting with /u/username.
+
+  Args:
+     arg0: String like "t1", "t2", "t3" to identify the currently active tab.
+]
+
+<div class="at isf [user_tab_mode]">
+  <span class="inst2">
+    <a href="[viewed_user.profile_url]">[if-any viewing_self]My Profile[else]User Profile[end]</a>
+  </span>
+
+  <span class="inst5">
+    <a href="[viewed_user.profile_url][if-any viewing_self]updates/projects[else]updates[end]">Updates</a>
+  </span>
+
+  [if-any viewing_self]
+  <span class="inst3">
+    <a href="/hosting/settings">Settings</a>
+  </span>
+  [end]
+
+  [if-any offer_saved_queries_subtab]
+  <span class="inst4">
+    <a href="[viewed_user.profile_url]queries">Saved Queries</a>
+  </span>
+  [end]
+
+</div>
+
+
+[is arg0 "t3"]
+    <div class="at [user_updates_tab_mode]" style="margin-left: 2em">
+      <span class="inst1">
+        <a href="[viewed_user.profile_url]updates">From [viewed_user.display_name]</a>
+      </span>
+      <span class="inst2">
+        <a href="[viewed_user.profile_url]updates/projects">Starred Projects</a>
+      </span>
+      <span class="inst3">
+        <a href="[viewed_user.profile_url]updates/developers">Starred Developers</a>
+      </span>
+    </div>
+[end]

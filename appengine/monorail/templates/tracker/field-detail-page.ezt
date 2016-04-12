@@ -1,0 +1,260 @@
+[define title]Field [field_def.field_name][end]
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+<a href="/p/[projectname]/adminLabels">&lsaquo; Back to field list</a><br><br>
+
+
+<h4>Custom field</h4>
+
+<form action="detail.do" method="POST">
+<input type="hidden" name="token" value="[form_token]">
+<input type="hidden" name="field" value="[field_def.field_name]">
+
+<table cellspacing="8" class="rowmajor vt">
+  <tr>
+    <th width="1%">Name:</th>
+    <td>
+      [if-any uneditable_name]
+        <input type="hidden" name="name" value="[field_def.field_name]">
+        [field_def.field_name]
+      [else][if-any allow_edit]
+        <input name="name" value="[field_def.field_name]" size="30" class="acob">
+      [else]
+        [field_def.field_name]
+      [end][end]
+    </td>
+  </tr>
+
+  <tr>
+    <th>Description:</th>
+    <td>
+      [if-any allow_edit]
+        <textarea name="docstring" rows="4" cols="75">[field_def.docstring]</textarea>
+      [else]
+        [field_def.docstring]
+      [end]
+    </td>
+  </tr>
+
+  <tr>
+    <th>Type:</th>
+    [# TODO(jrobbins): make field types editable someday.]
+    <td>[field_def.type_name]</td>
+  </tr>
+
+  [is field_def.field_name "Type"][else]
+  <tr>
+    <th>Applicable:</th>
+    <td>When issue type is:
+      [if-any allow_edit]
+        <select id="applicable_type" name="applicable_type">
+          <option value="" [is initial_applicable_type ""]selected="selected"[end]>Anything</option>
+          <option disabled="disabled">----</option>
+          [for well_known_issue_types]
+            <option value="[well_known_issue_types]" [is initial_applicable_type well_known_issue_types]selected="selected"[end]>[well_known_issue_types]</option>
+          [end]
+        </select>
+      [else]
+        [initial_applicable_type]
+      [end]
+      [# TODO(jrobbins): editable applicable_predicate.]
+    </td>
+  </tr>
+  [end]
+
+  <tr>
+    <th>Required:</th>
+    <td>
+      [if-any allow_edit]
+        <input type="checkbox" id="is_required" name="is_required" class="acob"
+               [if-any field_def.is_required_bool]checked="checked"[end]>
+        <label for="is_required">Required when applicable</label>
+      [else]
+        [if-any field_def.is_required_bool]Yes[else]No[end]
+      [end]
+    </td>
+  </tr>
+
+  <tr>
+    <th>Multivalued:</th>
+    <td>
+      [if-any allow_edit]
+        <input type="checkbox" name="is_multivalued" class="acob"
+               [if-any field_def.is_multivalued_bool]checked="checked"[end]>
+      [else]
+        [if-any field_def.is_multivalued_bool]Yes[else]No[end]
+      [end]
+    </td>
+  </tr>
+
+  [# TODO(jrobbins): dynamically display validation info as field type is edited.]
+  [is field_def.type_name "ENUM_TYPE"]
+    <tr>
+      <th>Choices:</th>
+      <td>
+        [if-any allow_edit]
+          <textarea name="choices" rows="10" cols="75" style="tab-size:18">
+[for field_def.choices][field_def.choices.name_padded][if-any field_def.choices.docstring]&#09;= [end][field_def.choices.docstring]
+[end]
+          </textarea>
+        [else]
+          <table cellspacing="4" cellpadding="0" style="padding: 2px; border:2px solid #eee">
+            [for field_def.choices]
+              <tr>
+                <td>[field_def.choices.name]</td>
+                <td>[if-any field_def.choices.docstring]= [end][field_def.choices.docstring]</td>
+              </tr>
+            [end]
+          </table>
+        [end]
+      </td>
+    </tr>
+  [end]
+
+  [is field_def.type_name "INT_TYPE"]
+    <tr id="int_row">
+      <th>Validation:</th>
+      <td>
+        Min value:
+        <input type="number" name="min_value" style="text-align:right; width: 4em"
+               value="[field_def.min_value]" class="acob"
+               [if-any allow_edit][else]disabled="disabled"[end]>
+        Max value:
+        <input type="number" name="max_value" style="text-align:right; width: 4em"
+               value="[field_def.max_value]" class="acob"
+               [if-any allow_edit][else]disabled="disabled"[end]><br>
+      </td>
+    </tr>
+  [end]
+
+  [is field_def.type_name "STR_TYPE"]
+    <tr id="str_row">
+      <th>Validation:</th>
+      <td>
+        Regex: <input type="text" name="regex" size="30" value="[field_def.regex]" class="acob"><br>
+      </td>
+    </tr>
+  [end]
+
+  [is field_def.type_name "USER_TYPE"]
+    <tr id="user_row">
+      <th>Validation:</th>
+      <td>
+        <input type="checkbox" name="needs_member" id="needs_member" class="acob"
+               [if-any allow_edit][else]disabled="disabled"[end]
+               [if-any field_def.needs_member_bool]checked="checked"[end]>
+        <label for="needs_member">User must be a project member</label><br>
+        <span id="needs_perm_span" style="margin-left:1em">Required permission:
+          <input type="text" name="needs_perm" id="needs_perm" size="20"
+                 value="[field_def.needs_perm]" autocomplete="off" class="acob"
+                 [if-any allow_edit][else]disabled="disabled"[end]></span><br>
+      </td>
+    </tr>
+    <tr id="user_row2">
+      <th>Permissions:</th>
+      <td>
+        The users named in this field is granted this permission on this issue:<br>
+        [# TODO(jrobbins): one-click way to specify View vs. EditIssue vs. any custom perm.]
+        <input type="text" name="grants_perm" id="grants_perm" class="acob"
+               size="20" value="[field_def.grants_perm]" autocomplete="off"
+               [if-any allow_edit][else]disabled[end]>
+      </td>
+    </tr>
+    <tr id="user_row3">
+      <th>Notification:</th>
+      <td>
+        The users named in this field will be notified via email whenever:<br>
+        <select name="notify_on" [if-any allow_edit][else]disabled[end]
+                class="acrob">
+          <option value="never" [is field_def.notify_on "0"]selected="selected"[end]
+                  >No notifications</option>
+          <option value="any_comment" [is field_def.notify_on "1"]selected="selected"[end]
+                  >Any change or comment is added</option>
+        </select>
+      </td>
+    </tr>
+  [end]
+
+  <th>Admins:</th>
+    <td>
+      [if-any allow_edit]
+        <input id="member_admins" name="admin_names" size="75" value="[initial_admins]"
+               autocomplete="off" class="acob">
+        <span class="fielderror" style="margin-left:1em">
+            [if-any errors.field_admins][errors.field_admins][end]
+        </span>
+      [else]
+        [for field_def.admins]
+          <div>[include "../framework/user-link.ezt" field_def.admins]</div>
+        [end]
+      [end]
+    </td>
+  </tr>
+
+
+  <tr>
+    <td></td>
+    <td>
+      [if-any allow_edit]
+        <input type="submit" name="submit" value="Submit changes">
+        <input type="submit" name="deletefield" value="Delete Field"
+               style="margin-left:2em" id="deletefield">
+      [end]
+    </td>
+  </tr>
+
+</table>
+</form>
+
+
+[include "../framework/footer-script.ezt"]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _fetchOptions('[projectname]', 'issueOptions',
+                CS_env.token, [project.cached_content_timestamp]);
+
+  _onload();
+
+  var needs_perm_span = document.getElementById('needs_perm_span');
+  var needs_perm = document.getElementById('needs_perm');
+  var needs_member = document.getElementById('needs_member');
+  function enableNeedsPerm(enable) {
+    needs_perm_span.style.color = enable ? 'inherit' : '#999';
+    needs_perm.disabled = enable ? '' : 'disabled';
+    if (!enable) needs_perm.value = '';
+  }
+  [if-any allow_edit]
+    if (needs_perm)
+      enableNeedsPerm(needs_member.checked);
+  [end]
+
+  if ($("deletefield")) {
+    $("deletefield").addEventListener("click", function(event) {
+        var msg = ("Are you sure you want to delete [field_def.field_name]?\n" +
+                   "This operation cannot be undone. " +
+                   "[is field_def.type_name "ENUM_TYPE"]\nEnum values will be retained on issues as labels.[end]");
+        if (!confirm(msg))
+          event.preventDefault();
+     });
+  }
+
+  var acobElements = document.getElementsByClassName("acob");
+  for (var i = 0; i < acobElements.length; ++i) {
+     var el = acobElements[[]i];
+     el.addEventListener("focus", function(event) {
+         _acrob(null);
+         _acof(event);
+     });
+  }
+
+  if ($("needs_member")) {
+    $("needs_member").addEventListener("change", function(event) {
+       enableNeedsPerm($("needs_member").checked);
+    });
+  }
+});
+</script>
+
+[include "../framework/master-footer.ezt"]

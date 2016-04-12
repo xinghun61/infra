@@ -1,0 +1,10 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "hidetabs"]
+
+<center style="margin-top: 4em;">
+  You do not have permission to view the requested page.
+  <br/><br/>
+  [if-any reason]Reason: [reason][end]
+</center>
+
+[include "../framework/master-footer.ezt"]

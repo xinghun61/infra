@@ -1,0 +1,284 @@
+[define category_css]css/ph_list.css[end]
+[include "../framework/master-header.ezt" "showusertabs" "t1"]
+[include "../framework/js-placeholders.ezt"]
+<div id="colcontrol">
+
+<h2>
+  [if-any viewing_self][else]
+   [if-any user_stars_enabled]
+    [if-any logged_in_user]
+     [if-any read_only][else]
+          [if-any user_stars_enabled]
+           [if-any logged_in_user]
+            [if-any read_only][else]
+             <a id="user_star"
+              style="color:[if-any is_user_starred]cornflowerblue[else]gray[end]"
+              title="[if-any is_user_starred]Un-s[else]S[end]tar this project">
+             [if-any is_user_starred]&#9733;[else]&#9734;[end]
+             </a>
+            [end]
+           [end]
+          [end]
+     [end]
+    [end]
+   [end]
+ [end]
+
+ [viewed_user_display_name]
+</h2>
+
+[if-any user_stars_enabled]
+<div>
+<b>Starred developers:</b>
+[if-any starred_users]
+[for starred_users]
+  [include "../framework/user-link.ezt" starred_users][if-index starred_users last][else], [end]
+[end]
+[else]<i>None</i>[end]
+</div>
+[end]
+<br>
+
+<div class="list">
+  <table style="width: 100%;" cellspacing="0" cellpadding="0">
+  <tbody><tr>
+     <th style="text-align: left;">Projects
+     </th>
+  </tr></tbody>
+  </table>
+</div>
+
+<table cellspacing="0" cellpadding="2" border="0" class="results striped" id="projecttable" width="100%">
+    <tbody>
+      <tr id="headingrow">
+        [if-any logged_in_user]
+        <th style="white-space:nowrap; width:3%;"></th>
+        [end]
+        <th style="white-space:nowrap; width:15%;">Role</th>
+        <th style="white-space:nowrap; width:25%;">Project</th>
+        <th style="white-space:nowrap; width:57%;">Summary</th>
+      </tr>
+ [if-any owner_of_projects committer_of_projects contributor_to_projects]
+      [if-any owner_of_projects]
+        [for owner_of_projects]
+        <tr data-url="[owner_of_projects.relative_home_url]" data-project-name="[owner_of_projects.project_name]">
+        [if-any logged_in_user]
+        <td class="rowwidgets">
+         <a class="star"
+          style="color:[if-any owner_of_projects.starred]cornflowerblue[else]gray[end]"
+          title="[if-any owner_of_projects.starred]Un-s[else]S[end]tar this project"
+          data-project-name="[owner_of_projects.project_name]">
+         [if-any owner_of_projects.starred]&#9733;[else]&#9734;[end]
+         </a>
+        </td>
+        [end]
+        <td>Owner</td>
+        <td class="id" name="owner">
+        <a href="[owner_of_projects.relative_home_url]/">[owner_of_projects.project_name]</a>
+          [is owner_of_projects.state_name "HIDDEN"]<span style="color:red"> - hidden</span>[end]
+        </td>
+        <td>[owner_of_projects.summary]</td>
+        </tr>
+        [end]
+      [end]
+      [if-any committer_of_projects]
+        [for committer_of_projects]
+        <tr data-url="[committer_of_projects.relative_home_url]" data-project-name="[committer_of_projects.project_name]">
+        [if-any logged_in_user]
+        <td class="rowwidgets">
+         <a class="star"
+          style="color:[if-any committer_of_projects.starred]cornflowerblue[else]gray[end]"
+          title="[if-any committer_of_projects.starred]Un-s[else]S[end]tar this project"
+          data-project-name="[committer_of_projects.project_name]">
+         [if-any committer_of_projects.starred]&#9733;[else]&#9734;[end]
+         </a>
+        </td>
+        [end]
+        <td>Committer</td>
+        <td class="id" name="committer">
+          <a href="[committer_of_projects.relative_home_url]/">[committer_of_projects.project_name]
+          </a>
+        </td>
+        <td>
+        [committer_of_projects.summary]
+        </td>
+        </tr>
+        [end]
+      [end]
+
+      [if-any contributor_to_projects]
+        [for contributor_to_projects]
+        <tr data-url="[contributor_to_projects.relative_home_url]" data-project-name="[contributor_to_projects.project_name]">
+        [if-any logged_in_user]
+        <td class="rowwidgets">
+         <a class="star"
+          style="color:[if-any contributor_to_projects.starred]cornflowerblue[else]gray[end]"
+          title="[if-any contributor_to_projects.starred]Un-s[else]S[end]tar this project"
+          data-project-name="[contributor_to_projects.project_name]">
+         [if-any contributor_to_projects.starred]&#9733;[else]&#9734;[end]
+         </a>
+        </td>
+        [end]
+        <td>Contributor</td>
+        <td class="id" name="contributor">
+          <a href="[contributor_to_projects.relative_home_url]/">[contributor_to_projects.project_name]
+          </a>
+        [is contributor_to_projects.state_name "HIDDEN"]<span style="color:red"> - hidden</span>[end]</td>
+        <td>
+        [contributor_to_projects.summary]
+        </td>
+        </tr>
+        [end]
+      [end]
+
+ [else]
+      <tr>
+      <td colspan="4"><i>No projects.</i></td>
+      <tr>
+ [end]
+  </tbody>
+</table>
+
+
+[if-any starred_projects]
+<br>
+<div class="list">
+  <table style="width: 100%;" cellspacing="0" cellpadding="0">
+  <tbody><tr>
+     <th style="text-align: left;">
+      Starred by [if-any viewing_self]me[else]
+      [viewed_user_display_name]
+      [end]
+     </th>
+  </tr></tbody>
+  </table>
+</div>
+<table cellspacing="0" cellpadding="2" border="0" class="results striped" id="starredtable" width="100%">
+    <tbody>
+      <tr id="headingrow">
+        [if-any logged_in_user]
+        <th style="white-space:nowrap; width:3%;"></th>
+        [end]
+        <th style="white-space:nowrap; width:25%;">Name</th>
+        <th style="white-space:nowrap; width:57%;">Summary</th>
+      </tr>
+
+      [for starred_projects]
+      <tr data-url="[starred_projects.relative_home_url]" data-project-name="[starred_projects.project_name]">
+      [if-any logged_in_user]
+      <td class="rowwidgets">
+        <a class="star"
+         style="color:[if-any starred_projects.starred]cornflowerblue[else]gray[end]"
+         title="[if-any starred_projects.starred]Un-s[else]S[end]tar this project"
+         data-project-name="[starred_projects.project_name]">
+        [if-any starred_projects.starred]&#9733;[else]&#9734;[end]
+        </a>
+      </td>
+      [end]
+      <td class="id" name="starred_project">
+        <a href="[starred_projects.relative_home_url]/">[starred_projects.project_name]</a>
+        [is starred_projects.state_name "HIDDEN"]<span style="color:red"> - hidden</span>[end]
+      </td>
+      <td>
+      [starred_projects.summary]
+      </td>
+      </tr>
+      [end]
+
+</table>
+[end]
+
+[if-any owner_of_archived_projects]
+<br>
+<div class="list">
+  <table style="width: 100%;" cellspacing="0" cellpadding="0">
+  <tbody><tr>
+     <th style="text-align: left;">Archived projects
+     </th>
+  </tr></tbody>
+  </table>
+</div>
+<table cellspacing="0" cellpadding="2" border="0" class="results striped" id="archivedtable" width="100%">
+    <tbody>
+      <tr id="headingrow">
+        <th style="white-space:nowrap; width:25%;">Name</th>
+        <th style="white-space:nowrap; width:60%;">Summary</th>
+      </tr>
+        [for owner_of_archived_projects]
+        <tr data-url="[owner_of_archived_projects.relative_home_url]/adminAdvanced">
+        <td class="id" name="deleted_project">[owner_of_archived_projects.project_name] -
+          <a href="[owner_of_archived_projects.relative_home_url]/adminAdvanced">Unarchive or delete</a>
+        </td>
+        <td>
+        [owner_of_archived_projects.summary]
+        </td>
+        </tr>
+        [end]
+</table>
+[end]
+
+</div>
+</div>
+
+[if-any perms._EditOtherUsers]
+<h3 style="clear:both">Edit user</h3>
+ <form action="edit.do" method="POST">
+  <input type="hidden" name="token" value="[form_token]">
+  <h4>Site administration</h4>
+  <div style="margin:0 0 2em 2em">
+   <input type="checkbox" name="site_admin" id="site_admin" value="1" [if-any viewed_user_pb.is_site_admin_bool]checked="checked"[end] >
+   <label for="site_admin">This user is a site administrator (a super user)</label>
+  </div>
+
+  [include "unified-settings.ezt"]
+
+  <div style="margin:0 0 2em 2em">
+   <input id="submit_btn" type="submit" name="btn"
+          value="Save changes">
+  </div>
+
+ </form>
+[end]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  if ($("user_star")) {
+    [# The user viewing this page wants to star the user *on* this page]
+    $("user_star").addEventListener("click", function () {
+       _TKR_toggleStar($("user_star"), null, null, "[viewed_user_id]");
+    });
+  }
+
+  var stars = document.getElementsByClassName("star");
+  for (var i = 0; i < stars.length; ++i) {
+    var star = stars[[]i];
+    star.addEventListener("click", function (event) {
+        var projectName = event.target.getAttribute("data-project-name");
+        _TKR_toggleStar(event.target, projectName);
+    });
+  }
+
+  function _handleProjectClick(event) {
+    var target = event.target;
+    if (target.tagName == "A")
+      return;
+
+    if (target.classList.contains("rowwidgets") || target.parentNode.classList.contains("rowwidgets"))
+      return;
+    if (target.tagName != "TR") target = target.parentNode;
+    _go(target.attributes[[]"data-url"].value,
+        (event.metaKey || event.ctrlKey || event.button == 1));
+  };
+  $("projecttable").addEventListener("click", _handleProjectClick);
+  if ($("starredtable")) {
+    $("starredtable").addEventListener("click", _handleProjectClick);
+  }
+  if ($("archivedtable")) {
+    $("archivedtable").addEventListener("click", _handleProjectClick);
+  }
+
+});
+</script>
+
+[include "../framework/footer-script.ezt"]
+[include "../framework/master-footer.ezt"]

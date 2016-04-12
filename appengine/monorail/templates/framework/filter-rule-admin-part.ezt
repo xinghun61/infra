@@ -1,0 +1,153 @@
+<style>
+  #rules th, #rules td {  padding-bottom: 1em }
+</style>
+
+[# If any value is supplied for arg0, the user will be able to set actions
+   that set default owner, set default status, and add CC users.]
+<h4 id="filters">Filter rules</h4>
+<div class="section">
+
+ <div class="closed">
+  <div>Filter rules can help you fill in defaults and stay organized.
+   <a class="ifClosed toggleHidden" href="#"
+      style="font-size:90%; margin-left:.5em">Learn more</a>
+  </div>
+
+  <div id="filterhelp" class="ifOpened help">
+       Filter rules can help your team triage issues by automatically
+       filling in default values based on other values.  They can be used
+       in the same way that you might use message filters in an email client.
+       Filter rules are evaluated after each edit, not just on new items. And,
+       filter rules only add values or set default values, they never override
+       values that were explicitly set by a user.<br>
+       <br>
+       Note that exclusive prefixes still apply.  So, if a user has set a label
+       with one of the exclusive prefixes, a rule that adds another label with
+       the same prefix will have no effect.
+  </div>
+  <br>
+
+  <table border="0" id="rules">
+   <tr>
+    <th></th>
+    <th style="text-align:left">If the issue matches this query:</th>
+    <th colspan="2" style="text-align:left">Then, [if-any arg0]do the following[else]add these labels[end]:</th>
+    <th></th>
+   </tr>
+
+   [for rules]
+   <tr>
+    <td style="text-align:right" width="20">[rules.idx].</td>
+    <td><input type="text" name="predicate[rules.idx]" size="60" value="[rules.predicate]"
+               autocomplete="off" id="predicate_existing_[rules.idx]" class="acob"></td>
+    <td>
+      [if-any arg0]
+       <select name="action_type[rules.idx]">
+         <option value="" disabled="disabled" [is rules.action_type ""]selected="selected"[end]>Choose...</option>
+         <option value="default_status" [is rules.action_type "default_status"]selected="selected"[end]>Set default status:</option>
+         <option value="default_owner" [is rules.action_type "default_owner"]selected="selected"[end]>Set default owner:</option>
+         <option value="add_ccs" [is rules.action_type "add_ccs"]selected="selected"[end]>Add Cc:</option>
+         <option value="add_labels" [is rules.action_type "add_labels"]selected="selected"[end]>Add labels:</option>
+         <option value="also_notify" [is rules.action_type "also_notify"]selected="selected"[end]>Also notify email:</option>
+       </select>
+      [end]
+    </td>
+    <td>
+      <input type="text" name="action_value[rules.idx]" size="70" value="[rules.action_value]" class="acob">
+    </td>
+    <td></td>
+   </tr>
+   [end]
+
+   [for new_rule_indexes]
+   <tr id="newrow[new_rule_indexes]" [if-index new_rule_indexes first][else]style="display:none"[end]>
+    <td style="text-align:right" width="20">[new_rule_indexes].</td>
+    <td><input type="text" name="new_predicate[new_rule_indexes]" size="60" value=""
+               class="showNextRuleRow acob" data-index="[new_rule_indexes]"
+               autocomplete="off" id="predicate_new_[new_rule_indexes]"></td>
+    <td>
+      [if-any arg0]
+       <select name="new_action_type[new_rule_indexes]">
+         <option value="" disabled="disabled" selected="selected">Choose...</option>
+         <option value="default_status">Set default status:</option>
+         <option value="default_owner">Set default owner:</option>
+         <option value="add_ccs">Add Cc:</option>
+         <option value="add_labels">Add labels:</option>
+         <option value="also_notify">Also notify email:</option>
+       </select>
+      [end]
+    </td>
+    <td>
+      <input type="text" name="new_action_value[new_rule_indexes]" size="70" value="" class="acob">
+      [# TODO(jrobbins): figure out a way to display error messages on each rule. ]
+    </td>
+    <td width="40px">
+     [if-index new_rule_indexes last][else]
+      <span id="addrow[new_rule_indexes]" class="fakelink" class="fakelink" data-index="[new_rule_indexes]">Add a row</span
+     [end]
+    </td>
+   </tr>
+   [end]
+
+  </table>
+ </div>
+
+ [if-any errors.rules]
+  [for errors.rules]
+    <div class="fielderror">[errors.rules]</div>
+  [end]
+  <script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+   document.location.hash = 'filters';
+});
+  </script>
+ [end]
+
+</div>
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  function showNextRuleRow(i) {
+   if (i < [max_rules]) {
+     _showID('newrow' + (i + 1));
+     _hideID('addrow' + i);
+   }
+  }
+
+  var addARowLinks = document.getElementsByClassName("fakelink");
+  for (var i = 0; i < addARowLinks.length; ++i) {
+    var link = addARowLinks[[]i];
+    link.addEventListener("click", function(event) {
+        var index = Number(event.target.getAttribute("data-index"));
+        showNextRuleRow(index);
+    });
+  }
+
+  var typeToAddARow = document.getElementsByClassName("showNextRuleRow");
+  for (var i = 0; i < typeToAddARow.length; ++i) {
+    var el = typeToAddARow[[]i];
+    el.addEventListener("keydown", function(event) {
+        var index = Number(event.target.getAttribute("data-index"));
+        showNextRuleRow(index);
+    });
+  }
+
+  var acobElements = document.getElementsByClassName("acob");
+  for (var i = 0; i < acobElements.length; ++i) {
+     var el = acobElements[[]i];
+     el.addEventListener("focus", function(event) {
+         _acrob(null);
+         _acof(event);
+     });
+  }
+
+  var acobElements = document.getElementsByClassName("acob");
+  for (var i = 0; i < acobElements.length; ++i) {
+     var el = acobElements[[]i];
+     el.addEventListener("focus", function(event) {
+         _acrob(null);
+         _acof(event);
+     });
+  }
+});
+</script>

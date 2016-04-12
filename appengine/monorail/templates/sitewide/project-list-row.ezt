@@ -1,0 +1,52 @@
+[# This displays one list row of the project search results.
+
+No parameters are used, but it expects the "projects" loop variable to
+hold the current project.]
+
+[# Project name link to this project]
+<td style="width:10%">
+  <a href="[projects.relative_home_url]/" style="font-size:medium">
+    [projects.project_name]
+  </a>
+</td>
+
+[# Display membership and star only if user is logged in]
+[if-any logged_in_user]
+  [# User's membership status of this project]
+  <td style="width:10%">
+    [if-any projects.membership_desc][projects.membership_desc][end]
+  </td>
+
+  [# Display star for logged in user to star this project]
+  <td style="width:5%">
+    [if-any logged_in_user]
+      <a class="star"
+       style="color:[if-any projects.starred]cornflowerblue[else]gray[end]"
+       title="[if-any projects.starred]Un-s[else]S[end]tar this project" data-project-name="[projects.project_name]">
+      [if-any projects.starred]&#9733;[else]&#9734;[end]
+      </a>
+    [end]
+  </td>
+[end]
+
+[# Display how many have starred this project]
+<td style="width:10%">
+  [is projects.num_stars "0"]
+  [else]
+    Stars: <span id="star_count-[projects.project_name]">[projects.num_stars]</span>
+  [end]
+</td>
+
+[# When project was last updated]
+<td style="width:20%">
+  [if-any projects.last_updated_exists]
+    Updated: [projects.recent_activity]
+  [end]
+</td>
+
+[# The short summary of this project]
+<td style="width:45%">
+  [is projects.limited_summary ""][else]
+    [projects.limited_summary]<br>
+  [end]
+</td>
