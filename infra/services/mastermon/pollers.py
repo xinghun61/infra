@@ -161,7 +161,12 @@ class FilePoller(Poller):
   it was rotated or deleted.
   """
   endpoint = 'FILE'
-  field_keys = ('builder', 'slave', 'result', 'project_id', 'subproject_tag')
+  build_field_keys = ('builder', 'slave', 'result',
+                      'project_id', 'subproject_tag')
+  step_field_keys = ('builder', 'slave', 'step_result',
+                     'project_id', 'subproject_tag')
+
+  ### These metrics are sent when a build finishes.
   result_count = ts_mon.CounterMetric('buildbot/master/builders/results/count',
       description='Number of items consumed from ts_mon.log by mastermon')
   # A custom bucketer with 12% resolution in the range of 1..10**5,
@@ -185,6 +190,11 @@ class FilePoller(Poller):
       'buildbot/master/builders/builds/pre_test_durations', bucketer=bucketer,
       description='Durations (in seconds) that builds spent before their '
                   '"before_tests" step')
+
+  ### This metric is sent when a step finishes.
+  step_results_count = ts_mon.CounterMetric(
+    'buildbot/master/builders/steps/results/count',
+    description='Count of step results, per builder')
 
   def poll(self):
     LOGGER.info('Collecting results from %s', self._url)
@@ -210,13 +220,24 @@ class FilePoller(Poller):
     return True
 
   def handle_response(self, data):
-    fields = self.fields({k: data.get(k, 'unknown') for k in self.field_keys})
-    self.result_count.increment(fields)
-    if 'duration_s' in data:
-      self.cycle_times.add(data['duration_s'], fields)
-    if 'pending_s' in data:
-      self.pending_times.add(data['pending_s'], fields)
-    if 'total_s' in data:
-      self.total_times.add(data['total_s'], fields)
-    if 'pre_test_time_s' in data:
-      self.pre_test_times.add(data['pre_test_time_s'], fields)
+    # We handle two cases here: whether the data was generated when a build
+    # finished or when a step finished. We use the content of the json dict to
+    # tell the difference.
+
+    if 'step_result' in data:  # generated when a step finishes
+      fields = self.fields({k: data.get(k, 'unknown')
+                            for k in self.step_field_keys})
+      self.step_results_count.increment(fields=fields)
+
+    else:  # otherwise it's generated after a build finishes
+      fields = self.fields({k: data.get(k, 'unknown')
+                            for k in self.build_field_keys})
+      self.result_count.increment(fields)
+      if 'duration_s' in data:
+        self.cycle_times.add(data['duration_s'], fields)
+      if 'pending_s' in data:
+        self.pending_times.add(data['pending_s'], fields)
+      if 'total_s' in data:
+        self.total_times.add(data['total_s'], fields)
+      if 'pre_test_time_s' in data:
+        self.pre_test_times.add(data['pre_test_time_s'], fields)

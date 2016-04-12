@@ -4,7 +4,6 @@
 
 import json
 import os
-import tempfile
 import time
 import unittest
 
@@ -211,36 +210,37 @@ class FilePollerTest(unittest.TestCase):
       self.assertTrue(p.poll())
       self.assertFalse(os.path.isfile(pollers.rotated_filename(filename)))
 
-  @mock.patch('infra_libs.ts_mon.CounterMetric.increment')
-  @mock.patch('infra_libs.ts_mon.CumulativeDistributionMetric.add')
-  def test_file_has_data(self, fake_add, fake_increment):
+  def test_file_has_data(self):
     result1 = {'builder': 'b1', 'slave': 's1',
                'result': 'r1', 'project_id': 'chromium',
                'subproject_tag': 'unknown'}
     result2 = {'builder': 'b1', 'slave': 's1',
                'result': 'r1', 'project_id': 'unknown',
                'subproject_tag': 'unknown'}
+    result3 = {'builder': 'b1', 'slave': 's1',
+               'step_result': 'r1', 'project_id': 'chromium',
+               'subproject_tag': 'unknown'}
     # Check that we've listed all the required metric fields.
-    self.assertEqual(set(result1), set(pollers.FilePoller.field_keys))
-    self.assertEqual(set(result2), set(pollers.FilePoller.field_keys))
+    self.assertEqual(set(result1), set(pollers.FilePoller.build_field_keys))
+    self.assertEqual(set(result2), set(pollers.FilePoller.build_field_keys))
+    self.assertEqual(set(result3), set(pollers.FilePoller.step_field_keys))
 
-    data1 = result1.copy()
-    data2 = result2.copy()
-    data1['random'] = 'value'  # Extra field, should be ignored.
-    del data2['project_id']    # Missing field, should become 'unknown'.
-    data2['duration_s'] = 5
-    data2['pending_s'] = 1
-    data2['total_s'] = data2['pending_s'] + data2['duration_s']
-    data2['pre_test_time_s'] = 2
+    data = [r.copy() for r in (result1, result2, result3)]
+    data[0]['random'] = 'value'  # Extra field, should be ignored.
+    del data[1]['project_id']    # Missing field, should become 'unknown'.
+    data[1]['duration_s'] = 5
+    data[1]['pending_s'] = 1
+    data[1]['total_s'] = data[1]['pending_s'] + data[1]['duration_s']
+    data[1]['pre_test_time_s'] = 2
     with temporary_directory(prefix='poller-test-') as tempdir:
-      filename = self.create_data_file(tempdir, [data1, data2])
+      filename = self.create_data_file(tempdir, data)
       p = pollers.FilePoller(filename, {})
       self.assertTrue(p.poll())
-      fake_increment.assert_any_call(result1)
-      fake_increment.assert_any_call(result2)
-      fake_add.assert_any_call(data2['duration_s'], result2)
-      fake_add.assert_any_call(data2['pending_s'], result2)
-      fake_add.assert_any_call(data2['total_s'], result2)
+
+      self.assertEqual(pollers.FilePoller.result_count.get(result1), 1)
+      self.assertEqual(pollers.FilePoller.result_count.get(result2), 1)
+      self.assertEqual(pollers.FilePoller.step_results_count.get(result3), 1)
+
       self.assertFalse(os.path.isfile(filename))
       # Make sure the rotated file is still there - for debugging.
       self.assertTrue(os.path.isfile(pollers.rotated_filename(filename)))
