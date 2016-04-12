@@ -77,6 +77,9 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     if not report:
       return None
 
+    if report.get('culprit'):
+      return report.get('culprit')
+
     return IdentifyTryJobCulpritPipeline._GetFailedRevisionFromResultsDict(
         report.get('result', {}))
 

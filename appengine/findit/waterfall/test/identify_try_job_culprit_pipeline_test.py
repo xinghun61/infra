@@ -75,6 +75,18 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
                     }
                 }
             }))
+    self.assertEqual(
+        'rev1',
+        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromCompileResult(
+            {
+                'report': {
+                    'result': {
+                        'rev1': 'failed',
+                        'rev2': 'failed'
+                    },
+                    'culprit': 'rev1',
+                }
+            }))
 
   def testIdentifyCulpritForCompileTryJobNoCulprit(self):
     master_name = 'm'
