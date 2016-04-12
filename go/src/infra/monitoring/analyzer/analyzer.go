@@ -8,8 +8,10 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/luci/luci-go/common/logging/gologger"
@@ -20,22 +22,28 @@ import (
 
 const (
 	// StepCompletedRun is a synthetic step name used to indicate the build run is complete.
-	StepCompletedRun   = "completed run"
-	treeCloserPri      = 0
-	reliableFailureSev = 0
-	newFailureSev      = 1
-	staleMasterSev     = 0
-	staleBuilderSev    = 0
-	hungBuilderSev     = 1
-	idleBuilderSev     = 1
-	offlineBuilderSev  = 1
-	resOK              = float64(1)
-	resInfraFailure    = float64(4)
+	StepCompletedRun = "completed run"
+
+	// Order of severity, worst to least bad.
+	treeCloserSev = iota
+	staleMasterSev
+	infraFailureSev
+	reliableFailureSev
+	newFailureSev
+	staleBuilderSev
+	hungBuilderSev
+	idleBuilderSev
+	offlineBuilderSev
+
+	// Step result values.
+	resOK           = float64(1)
+	resInfraFailure = float64(4)
 )
 
 var (
 	log     = gologger.Get()
 	expvars = expvar.NewMap("analyzer")
+	cpRE    = regexp.MustCompile("Cr-Commit-Position: (.*)@{#([0-9]+)}")
 )
 
 var (
@@ -94,14 +102,16 @@ type Analyzer struct {
 	// triggering a "stale master" alert.
 	StaleMasterThreshold time.Duration
 
-	// MasterCfgs is a map of master name to MasterConfig
-	MasterCfgs map[string]messages.MasterConfig
+	// Gatekeeper is a the parsed gatekeeper.json config file.
+	Gatekeeper *GatekeeperRules
 
 	// These limit the scope analysis, useful for debugging.
 	MasterOnly  string
 	BuilderOnly string
 	BuildOnly   int64
 
+	// rslck protects revisionSummaries from concurrent access.
+	rslck             *sync.Mutex
 	revisionSummaries map[string]messages.RevisionSummary
 
 	// Now is useful for mocking the system clock in testing and simulating time
@@ -128,8 +138,8 @@ func New(c client.Reader, minBuilds, maxBuilds int) *Analyzer {
 			&TestFailureAnalyzer{Reader: c},
 			&CompileFailureAnalyzer{Reader: c},
 		},
-		MasterCfgs: map[string]messages.MasterConfig{},
-
+		Gatekeeper:        &GatekeeperRules{},
+		rslck:             &sync.Mutex{},
 		revisionSummaries: map[string]messages.RevisionSummary{},
 		Now: func() time.Time {
 			return time.Now()
@@ -153,12 +163,13 @@ func (a *Analyzer) MasterAlerts(master string, be *messages.BuildExtract) []mess
 		ret = append(ret, messages.Alert{
 			Key:       fmt.Sprintf("stale master: %v", master),
 			Title:     fmt.Sprintf("Stale %s master data", master),
-			Body:      fmt.Sprintf("%s elapsed since last update.", elapsed),
+			Body:      fmt.Sprintf("%dh %2dm elapsed since last update.", int(elapsed.Hours()), int(elapsed.Minutes())),
 			StartTime: messages.TimeToEpochTime(be.CreatedTimestamp.Time()),
 			Severity:  staleMasterSev,
 			Time:      messages.TimeToEpochTime(a.Now()),
 			Links:     []messages.Link{{"Master", client.MasterURL(master)}},
-			// No type or extension for now.
+			Type:      "stale-master",
+			// No extension for now.
 		})
 	}
 	if elapsed < 0 {
@@ -337,6 +348,7 @@ func (a *Analyzer) builderAlerts(masterName string, builderName string, b *messa
 				Severity: hungBuilderSev,
 				Time:     messages.TimeToEpochTime(a.Now()),
 				Links:    links,
+				Type:     "hung-builder",
 			})
 			// Note, just because it's building doesn't mean it's in a good state. If the last N builds
 			// all failed (for some large N) then this might still be alertable.
@@ -350,6 +362,7 @@ func (a *Analyzer) builderAlerts(masterName string, builderName string, b *messa
 				Severity: offlineBuilderSev,
 				Time:     messages.TimeToEpochTime(a.Now()),
 				Links:    links,
+				Type:     "offline-builder",
 			})
 		}
 	case messages.StateIdle:
@@ -361,6 +374,7 @@ func (a *Analyzer) builderAlerts(masterName string, builderName string, b *messa
 				Severity: idleBuilderSev,
 				Time:     messages.TimeToEpochTime(a.Now()),
 				Links:    links,
+				Type:     "idle-builder",
 			})
 		}
 	default:
@@ -494,7 +508,12 @@ func (a *Analyzer) mergeAlertsByStep(alerts []messages.Alert) []messages.Alert {
 		sort.Sort(byRepo(mergedBF.RegressionRanges))
 
 		if len(mergedBF.Builders) > 1 {
-			merged.Title = fmt.Sprintf("%s (failing on %d builders)", step, len(mergedBF.Builders))
+			merged.Title = fmt.Sprintf("%s failing on %d builders", step, len(mergedBF.Builders))
+			builderNames := []string{}
+			for _, b := range mergedBF.Builders {
+				builderNames = append(builderNames, b.Name)
+			}
+			merged.Body = strings.Join(builderNames, ", ")
 		}
 		merged.Extension = mergedBF
 		mergedAlerts = append(mergedAlerts, merged)
@@ -507,7 +526,9 @@ func (a *Analyzer) mergeAlertsByStep(alerts []messages.Alert) []messages.Alert {
 func (a *Analyzer) GetRevisionSummaries(hashes []string) ([]messages.RevisionSummary, error) {
 	ret := []messages.RevisionSummary{}
 	for _, h := range hashes {
+		a.rslck.Lock()
 		s, ok := a.revisionSummaries[h]
+		a.rslck.Unlock()
 		if !ok {
 			return nil, fmt.Errorf("Unrecognized hash:  %s", h)
 		}
@@ -714,6 +735,17 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 				if r, ok := failure.step.Results[0].(float64); ok && r == resInfraFailure {
 					// TODO: Create a trooper alert about this.
 					log.Errorf("INFRA FAILURE: %+v", failure)
+					alr := messages.Alert{
+						Title:    fmt.Sprintf("%s infra failure", failure.builderName),
+						Body:     fmt.Sprintf("On step %s", failure.step.Name),
+						Type:     "infra-failure",
+						Severity: infraFailureSev,
+					}
+					rs <- res{
+						f:   failure,
+						a:   &alr,
+						err: nil,
+					}
 				}
 			}
 			continue
@@ -721,7 +753,7 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 		}
 
 		// Check the gatekeeper configs to see if this is ignorable.
-		if a.excludeFailure(failure.masterName, failure.builderName, failure.step.Name) {
+		if a.Gatekeeper.ExcludeFailure(failure.masterName, failure.builderName, failure.step.Name) {
 			continue
 		}
 
@@ -741,9 +773,11 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 			expvars.Add("StepFailures", 1)
 			defer expvars.Add("StepFailures", -1)
 			alr := messages.Alert{
-				Title: fmt.Sprintf("Builder step failure: %s.%s", f.masterName, f.builderName),
-				Time:  messages.EpochTime(a.Now().Unix()),
-				Type:  "buildfailure",
+				Title:    fmt.Sprintf("%s step failure", f.builderName),
+				Body:     fmt.Sprintf("%s failing on %s/%s", f.step.Name, f.masterName, f.builderName),
+				Time:     messages.EpochTime(a.Now().Unix()),
+				Type:     "buildfailure",
+				Severity: newFailureSev,
 			}
 
 			regRanges := []messages.RegressionRange{}
@@ -787,13 +821,23 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 				// change.Revision is *not* always a git hash. Sometimes it is a position from gnumbd.
 				// change.Revision is git hash or gnumbd depending on what exactly? Not obvious at this time.
 				// A potential problem here is when multiple repos have overlapping gnumbd ranges.
+				parts := cpRE.FindAllStringSubmatch(change.Comments, -1)
+				pos, branch := "", ""
+				if len(parts) > 0 {
+					branch = parts[0][1]
+					pos = parts[0][2]
+				}
+				a.rslck.Lock()
 				a.revisionSummaries[change.Revision] = messages.RevisionSummary{
 					GitHash:     change.Revision,
 					Link:        change.Revlink,
 					Description: trunc(change.Comments),
 					Author:      change.Who,
 					When:        change.When,
+					Position:    pos,
+					Branch:      branch,
 				}
+				a.rslck.Unlock()
 			}
 
 			for repo, revisions := range revisionsByRepo {
@@ -817,8 +861,12 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 						LatestFailure: f.build.Number,
 					},
 				},
-				TreeCloser:       a.wouldCloseTree(f.masterName, f.builderName, f.step.Name),
+				TreeCloser:       a.Gatekeeper.WouldCloseTree(f.masterName, f.builderName, f.step.Name),
 				RegressionRanges: regRanges,
+			}
+
+			if bf.TreeCloser {
+				alr.Severity = treeCloserSev
 			}
 
 			reasons := a.reasonsForFailure(f)
@@ -893,77 +941,6 @@ func (a *Analyzer) reasonsForFailure(f stepFailure) []string {
 	}
 
 	return ret
-}
-
-func (a *Analyzer) excludeFailure(master, builder, step string) bool {
-	mc, ok := a.MasterCfgs[master]
-	if !ok {
-		log.Errorf("Can't filter unknown master %s", master)
-		return false
-	}
-
-	for _, ebName := range mc.ExcludedBuilders {
-		if ebName == "*" || ebName == builder {
-			return true
-		}
-	}
-
-	// Not clear that builder_alerts even looks at the rest of these condtions
-	// even though they're specified in gatekeeper.json
-	for _, s := range mc.ExcludedSteps {
-		if step == s {
-			return true
-		}
-	}
-
-	bc, ok := mc.Builders[builder]
-	if !ok {
-		if bc, ok = mc.Builders["*"]; !ok {
-			log.Warningf("Unknown %s builder %s", master, builder)
-			return true
-		}
-	}
-
-	for _, esName := range bc.ExcludedSteps {
-		if esName == step || esName == "*" {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (a *Analyzer) wouldCloseTree(master, builder, step string) bool {
-	mc, ok := a.MasterCfgs[master]
-	if !ok {
-		log.Errorf("Missing master cfg: %s", master)
-		return false
-	}
-	bc, ok := mc.Builders[builder]
-	if !ok {
-		bc, ok = mc.Builders["*"]
-		if ok {
-			return true
-		}
-	}
-
-	for _, xstep := range bc.ExcludedSteps {
-		if xstep == step {
-			return false
-		}
-	}
-
-	csteps := []string{}
-	csteps = append(csteps, bc.ClosingSteps...)
-	csteps = append(csteps, bc.ClosingOptional...)
-
-	for _, cs := range csteps {
-		if cs == "*" || cs == step {
-			return true
-		}
-	}
-
-	return false
 }
 
 // unexpected returns the set of expected xor actual.

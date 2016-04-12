@@ -28,6 +28,11 @@ type BuilderConfig struct {
 	ClosingOptional   []string `json:"closing_optional"`
 }
 
+type GatekeeperConfig struct {
+	Categories map[string]BuilderConfig  `json:"categories"`
+	Masters    map[string][]MasterConfig `json:"masters"`
+}
+
 // TreeMasterConfig is a named group of masters. e.g. chromium, or blink.
 type TreeMasterConfig struct {
 	BuildDB string   `json:"build-db"`

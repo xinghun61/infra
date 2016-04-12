@@ -107,7 +107,9 @@ func TestMasterAlerts(t *testing.T) {
 				{
 					Key:       "stale master: fake.master",
 					Title:     "Stale fake.master master data",
-					Body:      fmt.Sprintf("%s elapsed since last update.", 20*time.Minute),
+					Type:      "stale-master",
+					Severity:  staleMasterSev,
+					Body:      "0h 20m elapsed since last update.",
 					Time:      messages.TimeToEpochTime(time.Unix(100, 0).Add(20 * time.Minute)),
 					Links:     []messages.Link{{"Master", client.MasterURL("fake.master")}},
 					StartTime: messages.EpochTime(100),
@@ -131,7 +133,8 @@ func TestMasterAlerts(t *testing.T) {
 		a.Now = fakeNow(test.t)
 		got := a.MasterAlerts(test.master, &test.be)
 		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("%s failed. Got %+v, want: %+v", test.name, got, test.want)
+			t.Errorf("%s failed. Got %+v, want: %+v\nDiff: %v", test.name, got, test.want,
+				ansidiff.Diff(got, test.want))
 		}
 	}
 }
@@ -262,9 +265,10 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 				{
 					Key:      "fake.master.fake.builder.hung",
 					Title:    "fake.master.fake.builder is hung in step fake_step.",
+					Type:     "hung-builder",
 					Time:     messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour)),
 					Body:     "fake.master.fake.builder has been building for 3h59m50s (last step update 1970-01-01 00:00:10 +0000 UTC), past the alerting threshold of 3h0m0s",
-					Severity: 1,
+					Severity: hungBuilderSev,
 					Links: []messages.Link{
 						{Title: "Builder", Href: "https://build.chromium.org/p/fake.master/builders/fake.builder"},
 						{Title: "Last build", Href: "https://build.chromium.org/p/fake.master/builders/fake.builder/builds/1"},
@@ -285,7 +289,8 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 		}
 		gotAlerts, gotErrs := a.builderAlerts(test.master, test.builder, &test.b)
 		if !reflect.DeepEqual(gotAlerts, test.wantAlerts) {
-			t.Errorf("%s failed. Got:\n%+v, want:\n%+v", test.name, gotAlerts, test.wantAlerts)
+			t.Errorf("%s failed. Got:\n%+v, want:\n%+v\nDiff: %v", test.name, gotAlerts, test.wantAlerts,
+				ansidiff.Diff(gotAlerts, test.wantAlerts))
 		}
 		if !reflect.DeepEqual(gotErrs, test.wantErrs) {
 			t.Errorf("%s failed. Got %+v, want: %+v", test.name, gotErrs, test.wantErrs)
@@ -351,9 +356,11 @@ func TestBuilderStepAlerts(t *testing.T) {
 			},
 			wantAlerts: []messages.Alert{
 				{
-					Key:   "fake.master.fake.builder.fake_step",
-					Title: "Builder step failure: fake.master.fake.builder",
-					Type:  "buildfailure",
+					Key:      "fake.master.fake.builder.fake_step",
+					Title:    "fake.builder step failure",
+					Type:     "buildfailure",
+					Body:     "fake_step failing on fake.master/fake.builder",
+					Severity: newFailureSev,
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
 							{
@@ -468,9 +475,11 @@ func TestBuilderStepAlerts(t *testing.T) {
 			},
 			wantAlerts: []messages.Alert{
 				{
-					Key:   "fake.master.fake.builder.fake_step",
-					Title: "Builder step failure: fake.master.fake.builder",
-					Type:  "buildfailure",
+					Key:      "fake.master.fake.builder.fake_step",
+					Title:    "fake.builder step failure",
+					Type:     "buildfailure",
+					Body:     "fake_step failing on fake.master/fake.builder",
+					Severity: reliableFailureSev,
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
 							{
@@ -677,8 +686,9 @@ func TestMergeAlertsByStep(t *testing.T) {
 			},
 			want: []messages.Alert{
 				{
-					Title: "step_a (failing on 3 builders)",
+					Title: "step_a failing on 3 builders",
 					Type:  "buildfailure",
+					Body:  "builder A, builder B, builder C",
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
 							{Name: "builder A"},
@@ -717,7 +727,7 @@ func TestMergeAlertsByStep(t *testing.T) {
 	for _, test := range tests {
 		got := a.mergeAlertsByStep(test.in)
 		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("%s failed. Got:\n\t%+v, want:\n\t%+v", test.name, got, test.want)
+			t.Errorf("%s failed. Got:\n\t%+v, want:\n\t%+v\nDiff: %v", test.name, got, test.want, ansidiff.Diff(got, test.want))
 		}
 	}
 }
@@ -921,9 +931,11 @@ func TestStepFailureAlerts(t *testing.T) {
 			testResults: messages.TestResults{},
 			alerts: []messages.Alert{
 				{
-					Key:   "fake.master.fake.builder.fake_tests",
-					Title: "Builder step failure: fake.master.fake.builder",
-					Type:  "buildfailure",
+					Key:      "fake.master.fake.builder.fake_tests",
+					Title:    "fake.builder step failure",
+					Body:     "fake_tests failing on fake.master/fake.builder",
+					Severity: newFailureSev,
+					Type:     "buildfailure",
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
 							{
@@ -954,7 +966,8 @@ func TestStepFailureAlerts(t *testing.T) {
 		mc.testResults = &test.testResults
 		alerts, err := a.stepFailureAlerts(test.failures)
 		if !reflect.DeepEqual(alerts, test.alerts) {
-			t.Errorf("%s failed. Got:\n\t%+v, want:\n\t%+v", test.name, alerts, test.alerts)
+			t.Errorf("%s failed. Got:\n\t%+v, want:\n\t%+v\nDiff: %s", test.name, alerts, test.alerts,
+				ansidiff.Diff(alerts, test.alerts))
 		}
 		if !reflect.DeepEqual(err, test.err) {
 			t.Errorf("%s failed. Got %+v, want %+v", test.name, err, test.err)
@@ -1100,7 +1113,7 @@ func TestLatestBuildStep(t *testing.T) {
 func TestExcludeFailure(t *testing.T) {
 	tests := []struct {
 		name                  string
-		cfgs                  map[string]messages.MasterConfig
+		gk                    messages.GatekeeperConfig
 		master, builder, step string
 		want                  bool
 	}{
@@ -1116,11 +1129,11 @@ func TestExcludeFailure(t *testing.T) {
 			master:  "fake.master",
 			builder: "fake.builder",
 			step:    "fake_step",
-			cfgs: map[string]messages.MasterConfig{
-				"fake.master": {
+			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
+				"fake.master": {{
 					ExcludedBuilders: []string{"fake.builder"},
-				},
-			},
+				}},
+			}},
 			want: true,
 		},
 		{
@@ -1128,11 +1141,11 @@ func TestExcludeFailure(t *testing.T) {
 			master:  "fake.master",
 			builder: "fake.builder",
 			step:    "fake_step",
-			cfgs: map[string]messages.MasterConfig{
-				"fake.master": {
+			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
+				"fake.master": {{
 					ExcludedSteps: []string{"fake_step"},
-				},
-			},
+				}},
+			}},
 			want: true,
 		},
 		{
@@ -1140,14 +1153,14 @@ func TestExcludeFailure(t *testing.T) {
 			master:  "fake.master",
 			builder: "fake.builder",
 			step:    "fake_step",
-			cfgs: map[string]messages.MasterConfig{
-				"fake.master": {
+			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
+				"fake.master": {{
 					Builders: map[string]messages.BuilderConfig{
 						"fake.builder": {
 							ExcludedSteps: []string{"fake_step"},
 						},
-					},
-				},
+					}},
+				}},
 			},
 			want: true,
 		},
@@ -1156,19 +1169,19 @@ func TestExcludeFailure(t *testing.T) {
 			master:  "fake.master",
 			builder: "fake.builder",
 			step:    "fake_step",
-			cfgs: map[string]messages.MasterConfig{
-				"fake.master": {
+			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
+				"fake.master": {{
 					ExcludedBuilders: []string{"*"},
-				},
-			},
+				}},
+			}},
 			want: true,
 		},
 	}
 
 	a := New(&mockReader{}, 0, 10)
 	for _, test := range tests {
-		a.MasterCfgs = test.cfgs
-		got := a.excludeFailure(test.master, test.builder, test.step)
+		a.Gatekeeper = NewGatekeeperRules(test.gk)
+		got := a.Gatekeeper.ExcludeFailure(test.master, test.builder, test.step)
 		if got != test.want {
 			t.Errorf("%s failed. Got: %+v, want: %+v", test.name, got, test.want)
 		}

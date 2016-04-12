@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -55,10 +56,7 @@ var (
 	duration, cycle time.Duration
 
 	// gk is the gatekeeper config.
-	gk = &struct {
-		// Weird. Are there ever multiple configs per master key?
-		Masters map[string][]messages.MasterConfig `json:"masters"`
-	}{}
+	gk = &messages.GatekeeperConfig{}
 	// gkt is the gatekeeper trees config.
 	gkt              = map[string]messages.TreeMasterConfig{}
 	filteredFailures = uint64(0)
@@ -128,6 +126,14 @@ func fetchBuildExtracts(c client.Reader, masterNames []string) map[string]*messa
 	return bes
 }
 
+type bySeverity []messages.Alert
+
+func (a bySeverity) Len() int      { return len(a) }
+func (a bySeverity) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a bySeverity) Less(i, j int) bool {
+	return a[i].Severity < a[j].Severity
+}
+
 func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool) error {
 	done := make(chan interface{})
 	errs := make(chan error)
@@ -152,6 +158,8 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool) 
 			for masterName, be := range bes {
 				alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(a, masterName, be)...)
 			}
+
+			sort.Sort(bySeverity(alerts.Alerts))
 
 			// Make sure we have summaries for each revision implicated in a builder failure.
 			for _, alert := range alerts.Alerts {
@@ -267,7 +275,7 @@ func main() {
 
 	err = readJSONFile(*gatekeeperTreesJSON, &gkt)
 	if err != nil {
-		log.Errorf("Error reading gatekeeper json: %v", err)
+		log.Errorf("Error reading gatekeeper trees json: %v", err)
 		os.Exit(1)
 	}
 
@@ -298,15 +306,28 @@ func main() {
 			diff := time.Now().Sub(start)
 			return t.Add(diff)
 		}
+	} else if *replay != "" {
+		f, err := os.Open(*replay)
+		defer f.Close()
+		if err != nil {
+			log.Errorf("Couldn't open replay dir: %s", err)
+			os.Exit(1)
+		}
+		stat, err := f.Stat()
+		if err != nil {
+			log.Errorf("Couldn't stat replay dir: %s", err)
+			os.Exit(1)
+		}
+		start := time.Now()
+		t := stat.ModTime()
+
+		a.Now = func() time.Time {
+			diff := time.Now().Sub(start)
+			return t.Add(diff)
+		}
 	}
 
-	for masterURL, masterCfgs := range gk.Masters {
-		if len(masterCfgs) != 1 {
-			log.Errorf("Multiple configs for master: %s", masterURL)
-		}
-		masterName := masterFromURL(masterURL)
-		a.MasterCfgs[masterName] = masterCfgs[0]
-	}
+	a.Gatekeeper = analyzer.NewGatekeeperRules(*gk)
 
 	a.MasterOnly = *masterOnly
 	a.BuilderOnly = *builderOnly

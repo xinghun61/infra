@@ -114,6 +114,8 @@ type RegressionRange struct {
 // RevisionSummary summarizes some information about a revision.
 type RevisionSummary struct {
 	GitHash     string    `json:"git_hash"`
+	Position    string    `json:"commit_position"`
+	Branch      string    `json:"branch"`
 	Link        string    `json:"link"`
 	Description string    `json:"description"`
 	Author      string    `json:"author"`
