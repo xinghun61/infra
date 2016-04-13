@@ -21,7 +21,7 @@ handlers:
 
 # Pipeline handler.
 - url: /_ah/pipeline(/.*)?
-  script: "pipeline_wrapper.pipeline_handlers._APP"
+  script: main.pipeline_backend_application
   secure: always
 
 skip_files:

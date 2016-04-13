@@ -5,6 +5,8 @@
 import endpoints
 import webapp2
 
+from common.pipeline_wrapper import pipeline_handlers
+from common.pipeline_wrapper import pipeline_status_ui
 from findit_api import FindItApi
 from handlers import build_failure
 from handlers import check_duplicate_failures
@@ -20,7 +22,6 @@ from handlers import try_job
 from handlers import try_job_result
 from handlers import verify_analysis
 from handlers import version
-from common.pipeline_wrapper import pipeline_status_ui
 
 
 # This is for the default module.
@@ -44,6 +45,10 @@ pipeline_status_handler_mappings = [
 ]
 pipeline_status_application = webapp2.WSGIApplication(
     pipeline_status_handler_mappings, debug=False)
+
+
+# For appengine pipeline running on backend modules.
+pipeline_backend_application = pipeline_handlers._APP
 
 
 # This is for the "waterfall-frontend" module.

@@ -2,11 +2,11 @@ dispatch:
   - url: "*/robots.txt"
     module: default
 
-  - url: "*.appspot.com/build-failure"
+  - url: "*/build-failure"
     module: waterfall-frontend
 
-  - url: "*.appspot.com/list-analyses"
+  - url: "*/list-analyses"
     module: waterfall-frontend
 
-  - url: "*.appspot.com/waterfall/*"
+  - url: "*/waterfall/*"
     module: waterfall-frontend

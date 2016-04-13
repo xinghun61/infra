@@ -59,7 +59,7 @@ run_unittests() {
 
 run_findit_locally() {
   local options="--storage_path ${TMP_DIR}/findit"
-  python ${GOOGLE_APP_ENGINE_DIR}/dev_appserver.py ${options} ${FINDIT_MODULES}
+  python ${GOOGLE_APP_ENGINE_DIR}/dev_appserver.py ${options} ${FINDIT_DIR}/dispatch.yaml ${FINDIT_MODULES}
 }
 
 deploy_findit_for_test() {
