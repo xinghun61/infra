@@ -5,7 +5,7 @@
 import json
 import logging
 
-from common import buildbucket_client
+from common.waterfall import buildbucket_client
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
 
