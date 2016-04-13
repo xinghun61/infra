@@ -109,6 +109,22 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       service.add('bucket', parameters=[])
 
+  ################################### RETRY ####################################
+
+  def test_retry(self):
+    self.test_build.put()
+    build = service.retry(self.test_build.key.id())
+    self.assertIsNotNone(build)
+    self.assertIsNotNone(build.key)
+    self.assertNotEqual(build.key.id(), self.test_build.key.id())
+    self.assertEqual(build.bucket, self.test_build.bucket)
+    self.assertEqual(build.parameters, self.test_build.parameters)
+    self.assertEqual(build.retry_of, self.test_build.key.id())
+
+  def test_retry_not_found(self):
+    with self.assertRaises(errors.BuildNotFoundError):
+      service.retry(2)
+
   #################################### GET #####################################
 
   def test_get(self):
@@ -271,6 +287,17 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     builds, _ = service.search(
       created_by='x@chromium.org', buckets=[self.test_build.bucket])
+    self.assertEqual(builds, [build2])
+
+  def test_search_by_retry_of(self):
+    self.test_build.put()
+    build2 = model.Build(
+      bucket=self.test_build.bucket,
+      retry_of=42,
+    )
+    build2.put()
+
+    builds, _ = service.search(retry_of=42)
     self.assertEqual(builds, [build2])
 
   def test_search_by_created_by_with_bad_string(self):

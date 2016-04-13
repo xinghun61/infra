@@ -119,6 +119,7 @@ class Build(ndb.Model):
   tags = ndb.StringProperty(repeated=True)
   parameters = ndb.JsonProperty()
   pubsub_callback = ndb.StructuredProperty(PubSubCallback, indexed=False)
+  retry_of = ndb.IntegerProperty()
 
   # Lease-time attributes.
   lease_expiration_date = ndb.DateTimeProperty()

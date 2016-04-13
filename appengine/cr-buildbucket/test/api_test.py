@@ -76,6 +76,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.test_build.tags = ['owner:ivan']
     service.add.return_value = self.test_build
     req = {
+      'client_operation_id': '42',
       'bucket': self.test_build.bucket,
       'tags': self.test_build.tags,
       'pubsub_callback': {
@@ -90,7 +91,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
       tags=req['tags'],
       parameters=None,
       lease_expiration_date=None,
-      client_operation_id=None,
+      client_operation_id='42',
       pubsub_callback=model.PubSubCallback(
         topic='projects/foo/topic/bar',
         user_data='hello',
@@ -135,6 +136,48 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
       'parameters_json': '}non-json',
     }
     self.expect_error('put', req, 'INVALID_INPUT')
+
+  #################################### RETRY ###################################
+
+  def test_retry(self):
+    build = model.Build(
+      bucket='chromium',
+      parameters={'builder_name': 'debug'},
+      tags = ['a:b'],
+      retry_of=2,
+    )
+    build.put()
+    service.retry.return_value = build
+
+    req = {
+      'id': build.key.id(),
+      'client_operation_id': '42',
+      'pubsub_callback': {
+        'topic': 'projects/foo/topic/bar',
+        'user_data': 'hello',
+        'auth_token': 'secret',
+      }
+    }
+    resp = self.call_api('retry', req).json_body
+    service.retry.assert_called_once_with(
+      build.key.id(),
+      client_operation_id='42',
+      lease_expiration_date=None,
+      pubsub_callback=model.PubSubCallback(
+        topic='projects/foo/topic/bar',
+        user_data='hello',
+        auth_token='secret',
+      ),
+    )
+    self.assertEqual(resp['build']['id'], str(build.key.id()))
+    self.assertEqual(resp['build']['bucket'], build.bucket)
+    self.assertEqual(
+      json.loads(resp['build']['parameters_json']), build.parameters)
+    self.assertEqual(resp['build']['retry_of'], '2')
+
+  def test_retry_not_found(self):
+    service.retry.side_effect = errors.BuildNotFoundError
+    self.expect_error('retry', {'id': 42}, 'BUILD_NOT_FOUND')
 
   ################################## PUT_BATCH #################################
 
@@ -216,6 +259,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
       'result': 'CANCELED',
       'status': 'COMPLETED',
       'tag': ['important'],
+      'retry_of': '42',
     }
 
     res = self.call_api('search', req).json_body
@@ -229,7 +273,9 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
       cancelation_reason=model.CancelationReason.CANCELED_EXPLICITLY,
       created_by='user:x@chromium.org',
       max_builds=None,
-      start_cursor=None)
+      start_cursor=None,
+      retry_of=42,
+    )
     self.assertEqual(len(res['builds']), 1)
     self.assertEqual(res['builds'][0]['id'], str(self.test_build.key.id()))
     self.assertEqual(res['next_cursor'], 'the cursor')

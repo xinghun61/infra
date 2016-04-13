@@ -96,6 +96,7 @@ class BuildMessage(messages.Message):
   created_by = messages.StringField(16)
   status_changed_ts = messages.IntegerField(17)
   utcnow_ts = messages.IntegerField(18, required=True)
+  retry_of = messages.IntegerField(19)
 
 
 class BuildResponseMessage(messages.Message):
@@ -127,6 +128,7 @@ def build_to_message(build, include_lease_key=False):
     created_by=build.created_by.to_bytes() if build.created_by else None,
     status_changed_ts=datetime_to_timestamp_safe(build.status_changed_time),
     utcnow_ts=datetime_to_timestamp_safe(utils.utcnow()),
+    retry_of=build.retry_of,
   )
   if build.lease_expiration_date is not None:
     msg.lease_expiration_ts = utils.datetime_to_timestamp(
@@ -287,6 +289,29 @@ class BuildBucketApi(remote.Service):
       for req, build in zip(request.builds, build_futures)]
     return res
 
+  ##################################  RETRY   ##################################
+
+  class RetryRequestMessage(messages.Message):
+    client_operation_id = messages.StringField(1)
+    lease_expiration_ts = messages.IntegerField(2)
+    pubsub_callback = messages.MessageField(PubSubCallbackMessage, 3)
+
+  @buildbucket_api_method(
+    id_resource_container(RetryRequestMessage),
+    BuildResponseMessage,
+    path='builds/{id}/retry', http_method='PUT')
+  @auth.public
+  def retry(self, request):
+    """Retries an existing build."""
+    build = service.retry(
+      request.id,
+      lease_expiration_date=parse_datetime(request.lease_expiration_ts),
+      client_operation_id=request.client_operation_id,
+      pubsub_callback=pubsub_callback_from_message(request.pubsub_callback),
+    )
+    return build_to_response_message(build, include_lease_key=True)
+
+
   ##################################  SEARCH   #################################
 
 
@@ -302,6 +327,7 @@ class BuildBucketApi(remote.Service):
     failure_reason=messages.EnumField(model.FailureReason, 7),
     created_by=messages.StringField(8),
     max_builds=messages.IntegerField(9, variant=messages.Variant.INT32),
+    retry_of=messages.IntegerField(10),
   )
 
   class SearchResponseMessage(messages.Message):
@@ -325,7 +351,9 @@ class BuildBucketApi(remote.Service):
       cancelation_reason=request.cancelation_reason,
       max_builds=request.max_builds,
       created_by=request.created_by,
-      start_cursor=request.start_cursor)
+      start_cursor=request.start_cursor,
+      retry_of=request.retry_of,
+    )
     return self.SearchResponseMessage(
       builds=map(build_to_message, builds),
       next_cursor=next_cursor,

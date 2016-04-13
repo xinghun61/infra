@@ -94,7 +94,7 @@ def current_identity_cannot(action_format, *args):
 @ndb.tasklet
 def add_async(
     bucket, tags=None, parameters=None, lease_expiration_date=None,
-    client_operation_id=None, pubsub_callback=None):
+    client_operation_id=None, pubsub_callback=None, retry_of=None):
   """Adds the build entity to the build bucket.
 
   Requires the current user to have permissions to add builds to the
@@ -107,10 +107,11 @@ def add_async(
       build creation.
     lease_expiration_date (datetime.datetime): if not None, the build is
       created as leased and its lease_key is not None.
-    pubsub_callback (model.PubsubCallback): callback parameters.
     client_operation_id (str): client-supplied operation id. If an
       a build with the same client operation id was added during last minute,
       it will be returned instead.
+    pubsub_callback (model.PubsubCallback): callback parameters.
+    retry_of (int): value for model.Build.retry_of attribute.
 
   Returns:
     A new Build.
@@ -151,6 +152,7 @@ def add_async(
     created_by=identity,
     never_leased=lease_expiration_date is None,
     pubsub_callback=pubsub_callback,
+    retry_of=retry_of,
   )
   if lease_expiration_date is not None:
     build.lease_expiration_date = lease_expiration_date
@@ -180,6 +182,24 @@ def add_async(
 def add(*args, **kwargs):
   """Sync version of add_async."""
   return add_async(*args, **kwargs).get_result()
+
+
+def retry(
+    build_id, lease_expiration_date=None, client_operation_id=None,
+    pubsub_callback=None):
+  """Adds a build with same bucket, parameters and tags as the given one."""
+  build = model.Build.get_by_id(build_id)
+  if not build:
+    raise errors.BuildNotFoundError('Build %s not found' % build_id)
+  return add(
+    build.bucket,
+    tags=build.tags,
+    parameters=build.parameters,
+    lease_expiration_date=lease_expiration_date,
+    client_operation_id=client_operation_id,
+    pubsub_callback=pubsub_callback,
+    retry_of=build_id,
+  )
 
 
 def get(build_id):
@@ -240,7 +260,8 @@ def _check_search_acls(buckets):
 def search(
     buckets=None, tags=None,
     status=None, result=None, failure_reason=None, cancelation_reason=None,
-    created_by=None, max_builds=None, start_cursor=None):
+    created_by=None, max_builds=None, start_cursor=None,
+    retry_of=None):
   """Searches for builds.
 
   Args:
@@ -256,6 +277,7 @@ def search(
     max_builds (int): maximum number of builds to return.
     start_cursor (string): a value of "next" cursor returned by previous
       search_by_tags call. If not None, return next builds in the query.
+    retry_of (int): value of retry_of attribute.
 
   Returns:
     A tuple:
@@ -272,6 +294,10 @@ def search(
 
   if buckets:
     _check_search_acls(buckets)
+  elif retry_of:
+    retry_of_build = model.Build.get_by_id(retry_of)
+    if retry_of_build:
+      buckets = [retry_of_build.bucket]
   else:
     buckets = acl.get_available_buckets()
     if buckets is not None and len(buckets) == 0:
@@ -280,7 +306,7 @@ def search(
     buckets = set(buckets)
   assert buckets is None or buckets
 
-  check_buckets_locally = False
+  check_buckets_locally = retry_of is not None
   q = model.Build.query()
   for t in tags:
     if t.startswith('buildset:'):
@@ -292,6 +318,7 @@ def search(
   q = filter_if(model.Build.failure_reason, failure_reason)
   q = filter_if(model.Build.cancelation_reason, cancelation_reason)
   q = filter_if(model.Build.created_by, created_by)
+  q = filter_if(model.Build.retry_of, retry_of)
   # buckets is None if the current identity has access to ALL buckets.
   if buckets and not check_buckets_locally:
     q = q.filter(model.Build.bucket.IN(buckets))
