@@ -438,6 +438,8 @@ class IssueService(object):
 
     issue = tracker_pb2.Issue()
     issue.project_id = project_id
+    issue.project_name = services.project.LookupProjectNames(
+        cnxn, [project_id]).get(project_id)
     issue.summary = summary
     issue.status = status
     issue.owner_id = owner_id
