@@ -112,6 +112,8 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
         'number_of_try_jobs': The number of try jobs in this list,
         'detection_rate': The number of try jobs that found any culprits at all
             regardless of correctness over the total number of try jobs.
+        'error_rate': The number of try jobs that had an error / the total
+            number of try jobs in the list.
     }
   """
   try_jobs_per_day = NOT_AVAILABLE
@@ -122,6 +124,7 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
   longest_execution_time = NOT_AVAILABLE
   shortest_execution_time = NOT_AVAILABLE
   detection_rate = NOT_AVAILABLE
+  error_rate = NOT_AVAILABLE
   number_of_try_jobs = len(try_job_data_list) if try_job_data_list else 0
 
   if try_job_data_list:
@@ -132,6 +135,7 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
     in_queue_times = []
     commits_analyzed = []
     culprits_detected = 0
+    errors_detected = 0
 
     for try_job_data in try_job_data_list:
       # Regression range size.
@@ -156,6 +160,9 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
       if try_job_data.culprits:
         culprits_detected += 1
 
+      if try_job_data.error:
+        errors_detected += 1
+
     average_regression_range_size = _GetAverageOfNumbersInList(
         regression_range_sizes)
     average_execution_time = (_GetAverageOfNumbersInList(
@@ -172,6 +179,7 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
         str(datetime.timedelta(seconds=min(execution_times_seconds)))
         if execution_times_seconds else NOT_AVAILABLE)
     detection_rate = float(culprits_detected) / len(try_job_data_list)
+    error_rate = float(errors_detected) / len(try_job_data_list)
 
   return {
       'try_jobs_per_day': try_jobs_per_day,
@@ -182,7 +190,8 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
       'longest_execution_time': longest_execution_time,
       'shortest_execution_time': shortest_execution_time,
       'number_of_try_jobs': number_of_try_jobs,
-      'detection_rate': detection_rate
+      'detection_rate': detection_rate,
+      'error_rate': error_rate
   }
 
 
@@ -220,6 +229,7 @@ def _GetReportListForMastersAndBuilders(supported_masters_to_builders,
                         'shortest_execution_time': 1 or 'N/A',
                         'number_of_try_jobs': 1 or 'N/A',
                         'detection_rate': 0.0-1.0 or 'N/A',
+                        'error_rate': 0.0-1.0 or 'N/A'
                     },
                     ...
                 },
@@ -324,6 +334,7 @@ def CreateHtmlPage(report_list, start_date, end_date):
             <th>Shortest Execution Time</th>
             <th>Culprit Detection Rate</th>
             <th># Try Jobs</th>
+            <th>Error Rate</th>
           </tr>"""
 
       for master_name, builder_reports in try_job_report.iteritems():
@@ -347,6 +358,7 @@ def CreateHtmlPage(report_list, start_date, end_date):
           html += cell_template % _FormatDigits(
               builder_report['detection_rate'])
           html += cell_template % builder_report['number_of_try_jobs']
+          html += cell_template % _FormatDigits(builder_report['error_rate'])
           html += '</tr>'
 
       html += '</table>'
@@ -358,8 +370,8 @@ if __name__ == '__main__':
   # Set up the Remote API to use services on the live App Engine.
   remote_api.EnableRemoteApi(app_id='findit-for-me')
 
-  START_DATE = datetime.datetime(2016, 2, 1)
-  END_DATE = datetime.datetime(2016, 3, 8)
+  START_DATE = datetime.datetime(2016, 3, 1)
+  END_DATE = datetime.datetime(2016, 4, 14)
 
   wf_analysis_query = WfTryJobData.query(
       WfTryJobData.request_time >= START_DATE,
