@@ -341,6 +341,7 @@
       "git",
       "cl",
       "upload",
+      "--send-mail",
       "--cq-dry-run",
       "--bypass-hooks",
       "-f",

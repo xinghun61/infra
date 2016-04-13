@@ -352,7 +352,7 @@
       "git",
       "cl",
       "upload",
-      "--cq-dry-run",
+      "--use-commit-queue",
       "--bypass-hooks",
       "-f",
       "-m",
