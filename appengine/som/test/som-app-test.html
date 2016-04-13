@@ -23,12 +23,11 @@
     test('renders bare minimum', function() {
       element._alertsJson = {
         alerts:[],
-        last_posted: 0
+        timestamp: 0
       };
-
       assert.equal(
-          'Last updated: Wed Dec 31 1969 16:00:00 GMT-0800 (PST)',
-          element.$$('.last-updated').textContent);
+          element.$$('.last-updated').textContent,
+          'Last updated: 12/31/1969, 4:00:00 PM');
     });
   });
 

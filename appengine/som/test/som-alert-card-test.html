@@ -23,6 +23,8 @@
       element.alert = {
         title: 'test title',
         body: 'test body',
+        links: [],
+        type: '',
       };
       assert.equal(
           'test title',
@@ -31,31 +33,13 @@
           'test body',
           element.$$('.alert-body').textContent);
     });
-  });
 
-  suite('interaction', function() {
-    var element;
-
-    setup(function() {
-      element = fixture('basic');
+    test('click to view Details panel', function() {
+      assert.equal(element.selected, false);
+      element.click();
+      assert.equal(element.selected, true);
     });
 
-    test('open/close links', function() {
-      element.alert = {
-        title: 'test title',
-        body: 'test body',
-        links: [
-          {title: 'link 1', href: 'http://link1'},
-          {title: 'link 2', href: 'http://link2'},
-          {title: 'link 3', href: 'http://link3'},
-        ]
-      };
-      assert.isFalse(element.$.links.opened);
-      MockInteractions.tap(element.$.toggleLinks);
-      assert.isTrue(element.$.links.opened);
-      MockInteractions.tap(element.$.toggleLinks);
-      assert.isFalse(element.$.links.opened);
-    });
   });
 })();
 </script>

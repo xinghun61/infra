@@ -1,55 +1,80 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
-<link rel="import" href="../bower_components/paper-button/paper-button.html">
-<link rel="import" href="../bower_components/paper-card/paper-card.html">
-<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
 <link rel="import" href="../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
 <link rel="import" href="../bower_components/iron-icons/hardware-icons.html">
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
 <link rel="import" href="som-extension-build-failure.html">
 
 <dom-module id="som-alert-card">
   <template>
     <style>
-      paper-card {
-        width: 100%;
+      paper-card,
+      #extension {
+        display: inline-block;
+        min-width: 530px;
+        margin: auto;
         margin-bottom: 16px;
+        vertical-align: top;
       }
-      .link-arrow {
-        float: right;
+      paper-card {
+        --paper-card-header-text: {
+          font-size: large;
+          font-weight: bold;
+        };
+      }
+      #extension {
+        position: absolute;
+        margin-left: 0.5em;
+        background: white;
+      }
+      a {
+        text-decoration: none;
+      }
+      .alert-times {
+        color: #666;
+      }
+      .alert-body {
+        margin-bottom: 1em;
+      }
+      .selected-arrow {
+        position: absolute;
+        right: 1em;
+        top: 1em;
       }
     </style>
-    <paper-card heading="[[alert.title]]">
-      <div class="card-content">
-        <div class="alert-body">[[alert.body]]</div>
+    <div>
+      <paper-card id="card" heading="[[alert.title]]">
+        <iron-icon class="selected-arrow" icon="chevron-right" hidden$="[[!selected]]"></iron-icon>
+        <div class="card-content">
+          <div class="alert-body">[[alert.body]]</div>
+          <div class="alert-times">
+            <iron-icon icon="schedule"></iron-icon>
+            <span>[[_startTime]]</span> - [[_latestTime]]
+          </div>
+          <div hidden$="[[!alert.links]]" class="card-links">
+            <template is="dom-repeat" items="[[alert.links]]" as="link">
+              <paper-button><iron-icon icon="open-in-new"></iron-icon>
+                <a target="_blank" href$="[[link.href]]">[[link.title]]</a>
+              </paper-button>
+            </template>
+          </div>
+        </div>
+        <div class="card-actions">
+          <paper-button><a href$="[[_examineUrl(alert.extension)]]"><iron-icon icon="launch"></iron-icon>Examine</a></paper-button>
+          <paper-button><iron-icon icon="link"></iron-icon>Link Bug</paper-button>
+          <paper-button><iron-icon icon="alarm-off"></iron-icon>Snooze</paper-button>
+        </div>
+      </paper-card>
+      <paper-card id="extension" animatedShadow="true" hidden$="[[!selected]]" elevation="5" heading="[[alert.type]] Details">
         <div hidden$="[[!_isBuildFailure(alert.type)]]">
           <som-extension-build-failure extension="[[alert.extension]]"></som-extension-build-failure>
         </div>
-      </div>
-      <div class="card-actions">
-        <paper-button>Examine</paper-button>
-        <paper-button>Snooze</paper-button>
-        <paper-button>Link Bug</paper-button>
-        <span hidden$="[[!alert.links]]">
-          <paper-icon-button
-              id="toggleLinks"
-              icon="hardware:keyboard-arrow-down"
-              title="Links to more information about this alert"
-              on-tap="_toggleLinks"
-              class="link-arrow">
-          </paper-icon-button>
-          <iron-collapse id="links">
-            <div class="card-links">
-              <ul>
-                 <template is="dom-repeat" items="[[alert.links]]" as="link">
-                   <li><a target="_blank" href$="[[link.href]]">[[link.title]]</a></li>
-                 </template>
-              </ul>
-            </div>
-          </iron-collapse>
-        </span>
-      </div>
-    </paper-card>
+      </paper-card>
+    </div>
   </template>
   <script>
   (function() {
@@ -60,18 +85,59 @@
 
       properties: {
         alert: Object,
+        examineUrl: {
+          type: String,
+          value: '',
+          computed: '_examineUrl(this.alert)'
+        },
+        selected: {
+          type: Boolean,
+          value: false,
+          notify: true,
+          observer: '_selectedChanged'
+        },
+        tree: String,
+        _startTime: {
+          type: String,
+          computed: '_formatTimestamp(alert.start_time)'
+        },
+        _latestTime: {
+          type: String,
+          computed: '_formatTimestamp(alert.time)'
+        },
+      },
+
+      listeners: {
+        'tap': '_onTap'
+      },
+
+      _onTap: function(e) {
+        this.selected = true;
+      },
+
+      _selectedChanged: function(e) {
+        this.$.card.elevation = this.selected ? 5 : 1;
       },
 
       _isBuildFailure: function(type) {
         return type == 'buildfailure';
       },
 
-      _toggleLinks: function(evt) {
-        var iconButton = Polymer.dom(evt).localTarget;
-        iconButton.icon = this.$.links.opened ? 'hardware:keyboard-arrow-down'
-            : 'hardware:keyboard-arrow-up';
-        this.$.links.toggle();
+      _examineUrl: function(extension) {
+        // TODO: Make links for alerts without extensions.
+        if (!extension) { return ''; }
+        let builderNames = extension.builders.map((b) => { return b.name; });
+        let examineUrl = `/${this.tree}/examine/${builderNames.join(',')}`;
+        return examineUrl;
+      },
+
+      _formatTimestamp: function(timestamp) {
+        if (timestamp != undefined) {
+          return new Date(timestamp * 1000).toLocaleString();
+        }
+        return '';
       }
+
     });
   })();
   </script>

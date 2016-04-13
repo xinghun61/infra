@@ -26,15 +26,15 @@
       #regressionRangeToggleArrow {
         float: right;
       }
-	  </style>
+    </style>
     <div hidden$="[[!extension.builders]]">
-      <paper-item on-tap="_toggleBuilders">
+      <paper-item id="toggleBuilders" on-tap="_toggleBuilders">
         Builders ([[extension.builders.length]])
         <paper-icon-button
             id="builderToggleArrow"
             icon="hardware:keyboard-arrow-down"
             title="Builders">
-      </paper-icon-button>
+        </paper-icon-button>
       </paper-item>
     </div>
     <iron-collapse id="builderList">
@@ -47,13 +47,13 @@
     </iron-collapse>
 
     <div hidden$="[[!extension.reasons]]">
-      <paper-item on-tap="_toggleReasons">
+      <paper-item id="toggleReasons" on-tap="_toggleReasons">
         Reasons ([[extension.reasons.length]])
         <paper-icon-button
             id="reasonToggleArrow"
             icon="hardware:keyboard-arrow-down"
             title="Reasons">
-      </paper-icon-button>
+        </paper-icon-button>
       </paper-item>
     </div>
     <iron-collapse id="reasonList">
@@ -65,13 +65,13 @@
     </iron-collapse>
 
     <div hidden$="[[!extension.regression_ranges]]">
-      <paper-item on-tap="_toggleRegressionRanges">
+      <paper-item id="toggleRegressionRanges" on-tap="_toggleRegressionRanges">
         Repos with Regression Ranges ([[extension.regression_ranges.length]])
         <paper-icon-button
             id="regressionRangeToggleArrow"
             icon="hardware:keyboard-arrow-down"
             title="Regression ranges">
-      </paper-icon-button>
+        </paper-icon-button>
       </paper-item>
     </div>
     <iron-collapse id="regressionRangeList">
@@ -92,7 +92,7 @@
               [[regressionRange.repo]] Revisions
               <div>
                 <template is="dom-repeat" items="[[regressionRange.revisions]]" as="revision">
-                 <div>[[revision]]</div>
+                  <div>[[revision]]</div>
                 </template>
               </div>
             </paper-item>

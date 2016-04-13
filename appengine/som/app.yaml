@@ -15,6 +15,10 @@ handlers:
   static_dir: test
   secure: always
 
+- url: /api/.*
+  script: _go_app
+  secure: always
+
 - url: /.*
   script: _go_app
   secure: always

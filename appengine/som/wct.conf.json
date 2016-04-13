@@ -1,0 +1,10 @@
+{
+  "verbose": true,
+  "activeBrowsers": [ "chrome" ],
+  "plugins": {
+    "local": {
+      "browsers": [ "chrome" ]
+    }
+  }
+}
+
