@@ -59,13 +59,6 @@
         'V8 Mac64',
         'V8 Mac64 - debug',
         'V8 Mac64 ASAN',
-        'V8 Arm - builder',
-        'V8 Arm - debug builder',
-        'V8 Android Arm - builder',
-        # crbug.com/586088
-        # 'V8 Arm',
-        'V8 Linux - arm - sim',
-        'V8 Linux - arm - sim - debug',
         'V8 Linux - gc stress',
         'V8 Linux64 GC Stress - custom snapshot',
       ],
@@ -73,6 +66,13 @@
     'client.v8.ports': {
       'base_url': 'https://build.chromium.org/p/client.v8.ports',
       'builders': [
+        'V8 Arm - builder',
+        'V8 Arm - debug builder',
+        'V8 Android Arm - builder',
+        # crbug.com/586088
+        # 'V8 Arm',
+        'V8 Linux - arm - sim',
+        'V8 Linux - arm - sim - debug',
         'V8 Linux - arm64 - sim',
         'V8 Linux - arm64 - sim - debug',
         'V8 Linux - mipsel - sim - builder',
