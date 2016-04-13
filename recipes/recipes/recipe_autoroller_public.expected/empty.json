@@ -105,29 +105,15 @@
   },
   {
     "cmd": [
-      "curl",
-      "https://luci-config.appspot.com/_ah/api/config/v1/projects"
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
+      "https://luci-config.appspot.com/_ah/api/config/v1/projects",
+      "--outfile",
+      "/path/to/tmp/"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "Get project urls",
-    "stdout": "/path/to/tmp/json",
-    "~followup_annotations": [
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"projects\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"id\": \"recipe_engine\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"repo_type\": \"GITILES\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"repo_url\": \"https://repo.repo/recipes-py\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }, @@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"id\": \"build\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"repo_type\": \"GITILES\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"repo_url\": \"https://repo.repo/chromium/build\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
+    "name": "Get luci-config projects"
   },
   {
     "cmd": [],
@@ -142,7 +128,7 @@
       "--path",
       "[TMP_BASE]/roll_build_tmp_1",
       "--url",
-      "https://repo.repo/chromium/build"
+      "https://repo.repo/build"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "build.git setup",
