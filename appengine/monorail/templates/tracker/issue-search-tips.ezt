@@ -294,15 +294,15 @@ part of issue comments.</p>
 <p>This search syntax is divided into two parts, the action and the date,
 [[]action]:[[]date]</p>
 
-<p>Supported actions are: 'opened-after', 'opened-before',
-'modified-after', 'modified-before', 'closed-after', and 'closed-before'.
-And the date must to be specified as 'YYYY-MM-DD', 'YYYY/MM/DD' or 'today-N'.</p>
+<p>Supported predicates are: 'opened', 'modified', and 'closed'. Each can be
+paired with an inequality operator '&lt' or '&gt'. The date must to be specified
+as 'YYYY-MM-DD', 'YYYY/MM/DD' or 'today-N'.</p>
 
 <p>For example, if you want to search for issues opened after 2009/4/1, you
 could do the following:</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="opened-after:2009/4/1">
+ <p><input type="text" size="25" name="q" value="opened>2009/4/1">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -310,7 +310,7 @@ could do the following:</p>
 you could do the following:</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="modified-before:today-20">
+ <p><input type="text" size="25" name="q" value="modified<today-20">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
