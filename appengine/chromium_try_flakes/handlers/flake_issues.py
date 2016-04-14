@@ -523,13 +523,11 @@ class CreateFlakyRun(webapp2.RequestHandler):
       #  - bot_update PATCH FAILED: Duplicates failure in 'Patch failure' step.
       #  - ... (retry summary): this is an artificial step to fail the build due
       #    to another step that has failed earlier (do not double count).
-      print step_name, '1', build_result
       if (step_name.startswith('[swarming]') or
           step_name.endswith(' (retry summary)') or
           (step_name == 'Patch failure' and result != build_result.EXCEPTION) or
           (step_name == 'bot_update' and 'PATCH FAILED' in step_text)):
         continue
-      print step_name, '2'
 
       failed_steps.append(step)
 
