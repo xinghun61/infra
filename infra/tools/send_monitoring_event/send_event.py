@@ -107,6 +107,9 @@ def get_arguments(argv):
   build_group.add_argument('--build-event-step-name',
                            metavar='STEP_NAME',
                            help='Step name as known to Buildbot.')
+  build_group.add_argument('--build-event-step-text',
+                           metavar='STEP_TEXT',
+                           help='Step text as known to Buildbot.')
   build_group.add_argument('--build-event-step-number',
                            type=int,
                            metavar='BUILD_NUMBER',
@@ -323,6 +326,7 @@ def send_build_event(args):
     build_number=args.build_event_build_number,
     build_scheduling_time=args.build_event_build_scheduling_time,
     step_name=args.build_event_step_name,
+    step_text=args.build_event_step_text,
     step_number=args.build_event_step_number,
     result=args.build_event_result,
     extra_result_code=args.build_event_extra_result_code,
@@ -407,6 +411,7 @@ def read_events_from_file(filename):
             build_number=args.get('build-event-build-number'),
             build_scheduling_time=args.get('build-event-build-scheduling-time'),
             step_name=args.get('build-event-step-name'),
+            step_text=args.get('build-event-step-text'),
             step_number=args.get('build-event-step-number'),
             result=args.get('build-event-result'),
             extra_result_code=args.get('build-event-extra-result-code'),
