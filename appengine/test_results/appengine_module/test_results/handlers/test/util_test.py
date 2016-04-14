@@ -38,6 +38,11 @@ class TestFileHandlerTest(testing.AppengineTestCase):
         util.normalize_test_type(
             'base_unittests on ATI GPU on Windows (without patch) on Windows'))
 
+  def test_removes_instrumentation_test_prefix(self):
+    self.assertEqual('content_shell_test_apk (with patch)',
+        util.normalize_test_type(
+            'Instrumentation test content_shell_test_apk (with patch)'))
+
 
 class FlattenTestsTrieTest(unittest.TestCase):
   def test_flattens_tests_trie_correctly(self):

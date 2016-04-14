@@ -41,6 +41,10 @@ def normalize_test_type(test_type):
   clean_test_type = test_type.replace(' (with patch)', '', 1)
   patched = len(clean_test_type) != len(test_type)
 
+  # Special rule for instrumentation tests.
+  if clean_test_type.startswith('Instrumentation test '):
+    clean_test_type = clean_test_type[len('Instrumentation test '):]
+
   # Clean out any platform noise. For simplicity and based on current data
   # we just keep everything before the first space, e.g. base_unittests.
   first_space = clean_test_type.find(' ')
