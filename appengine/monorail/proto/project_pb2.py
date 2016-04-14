@@ -170,6 +170,8 @@ class Project(messages.Message):
   home_page = messages.StringField(68)
   # The url to redirect to for wiki/documentation links.
   docs_url = messages.StringField(71)
+  # The url to redirect to for wiki/documentation links.
+  source_url = messages.StringField(72)
   # The GCS object ID of the Project's logo.
   logo_gcs_id = messages.StringField(69)
   # The uploaded file name of the Project's logo.
@@ -195,7 +197,7 @@ def MakeProject(
     access=ProjectAccess.ANYONE, summary=None, description=None,
     moved_to=None, cached_content_timestamp=None,
     owner_ids=None, committer_ids=None, contributor_ids=None,
-    read_only=None, home_page=None, docs_url=None,
+    read_only=None, home_page=None, docs_url=None, source_url=None,
     logo_gcs_id=None, logo_file_name=None):
   """Returns a project protocol buffer with the given attributes."""
   project = Project(
@@ -214,6 +216,8 @@ def MakeProject(
     project.home_page = home_page
   if docs_url:
     project.docs_url = docs_url
+  if source_url:
+    project.source_url = source_url
   if logo_gcs_id:
     project.logo_gcs_id = logo_gcs_id
   if logo_file_name:

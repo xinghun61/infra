@@ -795,3 +795,9 @@ UPDATE User SET obscure_email = FALSE WHERE email LIKE "%@google.com";
 2016-04-11: Increase email length limit to 255
 
 ALTER TABLE User MODIFY email VARCHAR(255);
+
+================================================================
+2016-04-14: Add forwarding for /source urls
+
+ALTER TABLE Project ADD COLUMN source_url VARCHAR(250);
+

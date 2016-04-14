@@ -57,6 +57,7 @@ CREATE TABLE Project (
 
   home_page VARCHAR(250),
   docs_url VARCHAR(250),
+  source_url VARCHAR(250),
   logo_gcs_id VARCHAR(250),
   logo_file_name VARCHAR(250),
 

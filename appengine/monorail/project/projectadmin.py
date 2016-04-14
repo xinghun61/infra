@@ -54,6 +54,7 @@ class ProjectAdmin(servlet.Servlet):
         'initial_summary': mr.project.summary,
         'initial_project_home': mr.project.home_page,
         'initial_docs_url': mr.project.docs_url,
+        'initial_source_url': mr.project.source_url,
         'initial_logo_gcs_id': mr.project.logo_gcs_id,
         'initial_logo_file_name': mr.project.logo_file_name,
         'logo_view': tracker_views.LogoView(mr.project),
@@ -95,6 +96,10 @@ class ProjectAdmin(servlet.Servlet):
     if docs_url and not (
         docs_url.startswith('http:') or docs_url.startswith('https:')):
       mr.errors.docs_url = 'Documentation link must start with http: or https:'
+    source_url = post_data.get('source_url')
+    if source_url and not (
+        source_url.startswith('http:') or source_url.startswith('https:')):
+      mr.errors.source_url = 'Source link must start with http: or https:'
 
     logo_gcs_id = ''
     logo_file_name = ''
@@ -126,7 +131,7 @@ class ProjectAdmin(servlet.Servlet):
           only_owners_remove_restrictions=only_owners_remove_restrictions,
           only_owners_see_contributors=only_owners_see_contributors,
           process_inbound_email=process_inbound_email, access=access,
-          home_page=home_page, docs_url=docs_url,
+          home_page=home_page, docs_url=docs_url, source_url=source_url,
           logo_gcs_id=logo_gcs_id, logo_file_name=logo_file_name,
           )
 

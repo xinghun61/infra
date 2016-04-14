@@ -38,6 +38,19 @@
   </div>
 [end]
 
+[if-any docs_url]
+  <h4>Project documentation</h4>
+  <div class="section">
+    <a href="[docs_url]">[docs_url]</a>
+  </div>
+[end]
+
+[if-any source_url]
+  <h4>Project source browser</h4>
+  <div class="section">
+    <a href="[source_url]">[source_url]</a>
+  </div>
+[end]
 
 <!--  TODO(jrobbins): expose this later when it is more fully baked.
 

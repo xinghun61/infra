@@ -627,7 +627,8 @@ class ProjectService(object):
       self, _cnxn, project_name, owner_ids, committer_ids,
       contributor_ids, summary, description,
       state=project_pb2.ProjectState.LIVE, access=None, read_only=None,
-      home_page=None, docs_url=None, logo_gcs_id=None, logo_file_name=None):
+      home_page=None, docs_url=None, source_url=None,
+      logo_gcs_id=None, logo_file_name=None):
     """Create and store a Project with the given attributes."""
     if project_name in self.test_projects:
       raise project_svc.ProjectAlreadyExists()
@@ -698,7 +699,7 @@ class ProjectService(object):
       read_only_reason=None, cached_content_timestamp=None,
       only_owners_see_contributors=None, delete_time=None,
       recent_activity=None, revision_url_format=None, home_page=None,
-      docs_url=None, logo_gcs_id=None, logo_file_name=None):
+      docs_url=None, source_url=None, logo_gcs_id=None, logo_file_name=None):
     project = self.projects_by_id.get(project_id)
     if not project:
       raise project_svc.NoSuchProjectException(

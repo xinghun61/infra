@@ -36,7 +36,7 @@ from project import projectadminadvanced
 from project import projectexport
 from project import projectsummary
 from project import projectupdates
-from project import wikiredirect
+from project import redirects
 
 from search import backendnonviewable
 from search import backendsearch
@@ -200,8 +200,9 @@ class ServletRegistry(object):
         urls.FIELD_CHECKNAME_JSON: fieldcreate.CheckFieldNameJSON,
         urls.FIELD_CREATE: fieldcreate.FieldCreate,
         urls.FIELD_DETAIL: fielddetail.FieldDetail,
-        urls.WIKI_LIST: wikiredirect.WikiRedirect,
-        urls.WIKI_PAGE: wikiredirect.WikiRedirect,
+        urls.WIKI_LIST: redirects.WikiRedirect,
+        urls.WIKI_PAGE: redirects.WikiRedirect,
+        urls.SOURCE_PAGE: redirects.SourceRedirect,
         urls.ADMIN_STATUSES: issueadmin.AdminStatuses,
         urls.ADMIN_LABELS: issueadmin.AdminLabels,
         urls.ADMIN_RULES: issueadmin.AdminRules,

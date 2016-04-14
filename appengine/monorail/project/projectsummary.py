@@ -37,6 +37,8 @@ class ProjectSummary(servlet.Servlet):
         'num_stars': num_stars,
         'plural': plural,
         'home_page': mr.project.home_page,
+        'docs_url': mr.project.docs_url,
+        'source_url': mr.project.source_url,
         }
 
     return page_data

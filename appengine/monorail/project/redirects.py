@@ -3,10 +3,10 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
-"""A class to forward requests to the provided documentation url.
+"""A class to forward requests to configured urls.
 
-This page handles the /wiki urls which are forwarded from Codesite.
-If a project has defined a docs_url, then the requests are forwarded there.
+This page handles the /wiki and /source urls which are forwarded from Codesite.
+If a project has defined appropriate urls, then the users are forwarded there.
 If not, they are redirected to adminIntro.
 """
 
@@ -28,3 +28,17 @@ class WikiRedirect(servlet.Servlet):
           self.mr, urls.ADMIN_INTRO, include_project=True)
     self.response.location = docs_url
     self.response.status = httplib.MOVED_PERMANENTLY
+
+
+class SourceRedirect(servlet.Servlet):
+  """Redirect to the source browser, if provided."""
+
+  def get(self, **kwargs):
+    """Construct a 302 pointing at project.source_url, or at adminIntro."""
+    source_url = self.mr.project.source_url
+    if not source_url:
+      source_url = framework_helpers.FormatAbsoluteURL(
+          self.mr, urls.ADMIN_INTRO, include_project=True)
+    self.response.location = source_url
+    self.response.status = httplib.MOVED_PERMANENTLY
+

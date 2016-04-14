@@ -23,6 +23,12 @@ Project documentation page (optional):<br/>
   <span id="docs_urlfeedback">[if-any errors.docs_url][errors.docs_url][end]</span>
 </div>
 
+Project source browser (optional):<br/>
+<input type="text" id="source_url" name="source_url" size="75" value="[initial_source_url]"><br>
+<div class="fielderror">&nbsp;
+  <span id="source_urlfeedback">[if-any errors.source_url][errors.source_url][end]</span>
+</div>
+
 [if-any logo_view.viewurl]
   Project logo:<br>
   [include "display-project-logo.ezt" True]

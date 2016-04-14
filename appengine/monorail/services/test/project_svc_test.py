@@ -49,10 +49,10 @@ class ProjectTwoLevelCacheTest(unittest.TestCase):
     project_rows = [
         (123, 'proj1', 'test proj 1', 'test project', 'live', 'anyone', '', '',
          None, '', 0, 50 * 1024 * 1024, NOW, NOW, None, True, False,
-         False, None, None, None, None, None),
+         False, None, None, None, None, None, None),
         (234, 'proj2', 'test proj 2', 'test project', 'live', 'anyone', '', '',
          None, '', 0, 50 * 1024 * 1024, NOW, NOW, None, True, False,
-         False, None, None, None, None, None)]
+         False, None, None, None, None, None, None)]
     role_rows = [
         (123, 111L, 'owner'), (123, 444L, 'owner'),
         (123, 222L, 'committer'),
@@ -105,7 +105,8 @@ class ProjectServiceTest(unittest.TestCase):
     self.project_service.project_tbl.InsertRow(
         self.cnxn, project_name='proj1',
         summary='Test project summary', description='Test project description',
-        home_page=None, docs_url=None, logo_file_name=None, logo_gcs_id=None,
+        home_page=None, docs_url=None, source_url=None,
+        logo_file_name=None, logo_gcs_id=None,
         state='LIVE', access='ANYONE').AndReturn(123)
 
     # Insert the users.  There are none.
@@ -147,7 +148,7 @@ class ProjectServiceTest(unittest.TestCase):
     project_rows = [
         (234, 'proj2', 'test proj 2', 'test project', 'live', 'anyone', '', '',
          None, '', 0, 50 * 1024 * 1024, NOW, NOW, None, True, False,
-         False, None, None, None, None, None)]
+         False, None, None, None, None, None, None)]
     self.project_service.project_tbl.Select(
         self.cnxn, cols=project_svc.PROJECT_COLS,
         project_id=[234]).AndReturn(project_rows)
@@ -173,7 +174,7 @@ class ProjectServiceTest(unittest.TestCase):
     project_rows = [
         (234, 'proj2', 'test proj 2', 'test project', 'live', 'anyone', '', '',
          None, '', 0, 50 * 1024 * 1024, NOW, NOW, None, True, False,
-         False, None, None)]
+         False, None, None, None)]
 
     self.project_service.project_tbl.Select(
         self.cnxn, cols=['project_id'],
@@ -191,7 +192,7 @@ class ProjectServiceTest(unittest.TestCase):
     project_rows = [
         (234, 'proj2', 'test proj 2', 'test project', 'live', 'anyone', '', '',
          None, '', 0, 50 * 1024 * 1024, NOW, NOW, None, True, False,
-         False, None, None, None, None, None)]
+         False, None, None, None, None, None, None)]
 
     self.project_service.project_tbl.Select(
         self.cnxn, cols=['project_id'],
@@ -208,7 +209,7 @@ class ProjectServiceTest(unittest.TestCase):
     project_rows = [
         (234, 'proj2', 'test proj 2', 'test project', 'live', 'members_only',
          '', '', None, '', 0, 50 * 1024 * 1024, NOW, NOW, None, True, False,
-         False, False, None, None, None, None, None)]
+         False, False, None, None, None, None, None, None)]
     self.proj2.access = project_pb2.ProjectAccess.MEMBERS_ONLY
     self.proj2.contributor_ids.append(111)
     self.project_service.project_2lc.CacheItem(234, self.proj2)
@@ -228,7 +229,7 @@ class ProjectServiceTest(unittest.TestCase):
     project_rows = [
         (234, 'proj2', 'test proj 2', 'test project', 'live', 'members_only',
          '', '', None, '', 0, 50 * 1024 * 1024, NOW, NOW, None, True,
-         False, False, None, None, None, None, None)]
+         False, False, None, None, None, None, None, None)]
     self.proj2.access = project_pb2.ProjectAccess.MEMBERS_ONLY
     self.project_service.project_2lc.CacheItem(234, self.proj2)
 
@@ -247,7 +248,7 @@ class ProjectServiceTest(unittest.TestCase):
     project_rows = [
         (234, 'proj2', 'test proj 2', 'test project', 'live', 'members_only',
          '', '', None, '', 0, 50 * 1024 * 1024, NOW, NOW, None, True,
-         False, False, None, None, None, None, None)]
+         False, False, None, None, None, None, None, None)]
     self.proj2.access = project_pb2.ProjectAccess.MEMBERS_ONLY
     self.project_service.project_2lc.CacheItem(234, self.proj2)
 
@@ -265,7 +266,7 @@ class ProjectServiceTest(unittest.TestCase):
     project_rows = [
         (234, 'proj2', 'test proj 2', 'test project', 'live', 'members_only',
          '', '', None, '', 0, 50 * 1024 * 1024, NOW, NOW, None, True,
-         False, False, None, None, None, None, None)]
+         False, False, None, None, None, None, None, None)]
     self.proj2.access = project_pb2.ProjectAccess.MEMBERS_ONLY
     self.project_service.project_2lc.CacheItem(234, self.proj2)
 
@@ -285,7 +286,7 @@ class ProjectServiceTest(unittest.TestCase):
     project_rows = [
         (234, 'proj2', 'test proj 2', 'test project', 'archived', 'anyone',
          '', '', None, '', 0, 50 * 1024 * 1024, NOW, NOW, None, True,
-         False, False, None, None, None, None, None)]
+         False, False, None, None, None, None, None, None)]
     self.proj2.state = project_pb2.ProjectState.ARCHIVED
     self.project_service.project_2lc.CacheItem(234, self.proj2)
 
