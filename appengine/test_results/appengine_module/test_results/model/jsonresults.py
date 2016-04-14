@@ -346,11 +346,6 @@ class JsonResults(object):
     num_builds = 0
     index = 0
     for result in encoded_list:
-      # We have old corrupted results.json files in datastore, which contain
-      # empty results. We skip them here, therefore updating latest results.json
-      # with correct data and preventing 500's when uploading files.
-      if not result:
-        continue
       num_builds = num_builds + result[0]
       index = index + 1
       if num_builds >= num_runs:
