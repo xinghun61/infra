@@ -7,6 +7,8 @@ import json
 from common.git_repository import GitRepository
 from common.pipeline_wrapper import pipeline_handlers
 from common.waterfall import buildbucket_client
+from model import result_status
+from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from waterfall import swarming_util
 from waterfall import trigger_swarming_task_pipeline
@@ -201,6 +203,8 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self._MockGetChangeLog('rev2')
 
     WfTryJob.Create(master_name, builder_name, build_number).put()
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.put()
 
     root_pipeline = SwarmingTasksToTryJobPipeline(
         master_name, builder_name, build_number, 'rev1', 'rev2', ['rev2'],
@@ -209,6 +213,13 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
+
+    expected_suspected_cl = {
+        'revision': 'rev2',
+        'commit_position': '2',
+        'review_url': 'url_2',
+        'repo_name': 'chromium'
+    }
 
     expected_try_job_results = [
         {
@@ -224,15 +235,16 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             'url': 'url',
             'try_job_id': '1',
             'culprit': {
-                'compile': {
-                    'revision': 'rev2',
-                    'commit_position': '2',
-                    'review_url': 'url_2'
-                }
+                'compile': expected_suspected_cl
             }
         }
     ]
+
     self.assertEqual(expected_try_job_results, try_job.compile_results)
+    self.assertEqual(analysis.result_status,
+                     result_status.FOUND_UNTRIAGED)
+    self.assertEqual(analysis.suspected_cls,
+                     [expected_suspected_cl])
 
   def testSuccessfullyScheduleNewTryJobForTest(self):
     master_name = 'm'
@@ -326,6 +338,8 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self._MockGetChangeLog('rev1')
 
     WfTryJob.Create(master_name, builder_name, build_number).put()
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.put()
 
     root_pipeline = SwarmingTasksToTryJobPipeline(
         master_name, builder_name, build_number, 'rev0', 'rev1', ['rev1'],
@@ -334,6 +348,13 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
+
+    expected_suspected_cl = {
+        'revision': 'rev1',
+        'commit_position': '1',
+        'review_url': 'url_1',
+        'repo_name': 'chromium'
+    }
 
     expected_try_job_results = [
         {
@@ -361,11 +382,7 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             'culprit': {
                 'a_test': {
                     'tests': {
-                        'TestSuite1.test3': {
-                            'revision': 'rev1',
-                            'commit_position': '1',
-                            'review_url': 'url_1'
-                        }
+                        'TestSuite1.test3': expected_suspected_cl
                     }
                 }
             }
@@ -373,3 +390,6 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     ]
 
     self.assertEqual(expected_try_job_results, try_job.test_results)
+    self.assertEqual(analysis.result_status,
+                     result_status.FOUND_UNTRIAGED)
+    self.assertEqual(analysis.suspected_cls, [expected_suspected_cl])

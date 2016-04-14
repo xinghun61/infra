@@ -6,6 +6,8 @@ from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
 from model import analysis_status
+from model import result_status
+from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall.try_job_type import TryJobType
@@ -15,15 +17,87 @@ GIT_REPO = GitRepository(
     'https://chromium.googlesource.com/chromium/src.git', HttpClient())
 
 
+def _GetResultAnalysisStatus(analysis, result):
+  """Returns the analysis status based on existing status and try job result.
+
+  Args:
+    analysis: The WfAnalysis entity corresponding to this try job.
+    result: A result dict containing the result of this try job.
+
+  Returns:
+    A result_status code.
+  """
+  # Only return an updated analysis result status if no results were already
+  # found (by the heuristic-based approach) but were by the try job. Note it is
+  # possible the heuristic-based result was triaged before the completion of
+  # this try job.
+  old_result_status = analysis.result_status
+  try_job_found_culprit = result and result.get('culprit')
+
+  if (try_job_found_culprit and
+      (old_result_status is None or
+       old_result_status == result_status.NOT_FOUND_UNTRIAGED or
+       old_result_status == result_status.NOT_FOUND_INCORRECT or
+       old_result_status == result_status.NOT_FOUND_CORRECT)):
+    return result_status.FOUND_UNTRIAGED
+
+  return old_result_status
+
+
+def _GetSuspectedCLs(analysis, result):
+  """Returns a list of suspected CLs.
+
+  Args:
+    analysis: The WfAnalysis entity corresponding to this try job.
+    result: A result dict containing the culprit from the results of
+      this try job.
+
+  Returns:
+    A combined list of suspected CLs from those already in analysis and those
+    found by this try job.
+  """
+  suspected_cls = analysis.suspected_cls[:] if analysis.suspected_cls else []
+  culprit = result.get('culprit')
+  compile_cl_info = culprit.get('compile')
+
+  if compile_cl_info:
+    # Suspected CL is from compile failure.
+    if compile_cl_info not in suspected_cls:
+      suspected_cls.append(compile_cl_info)
+    return suspected_cls
+
+  # Suspected CLs are from test failures.
+  for results in culprit.itervalues():
+    if results.get('revision'):
+      # Non swarming test failures, only have step level failure info.
+      cl_info = {
+          'review_url': results.get('review_url'),
+          'repo_name': results.get('repo_name'),
+          'revision': results.get('revision'),
+          'commit_position': results.get('commit_position')
+      }
+      if cl_info not in suspected_cls:
+        suspected_cls.append(cl_info)
+    else:
+      for test_cl_info in results['tests'].values():
+        if test_cl_info not in suspected_cls:
+          suspected_cls.append(test_cl_info)
+
+  return suspected_cls
+
+
 class IdentifyTryJobCulpritPipeline(BasePipeline):
   """A pipeline to identify culprit CL info based on try job compile results."""
 
   def _GetCulpritInfo(self, failed_revisions):
     """Gets commit_positions and review_urls for revisions."""
     culprits = {}
+    # TODO(lijeffrey): remove hard-coded 'chromium' when DEPS file parsing is
+    # supported.
     for failed_revision in failed_revisions:
       culprits[failed_revision] = {
-          'revision': failed_revision
+          'revision': failed_revision,
+          'repo_name': 'chromium'
       }
       change_log = GIT_REPO.GetChangeLog(failed_revision)
       if change_log:
@@ -109,6 +183,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
             not culprit_map[step].get('revision')):
           # Non swarming test failures, only have step level failure info.
           culprit_map[step]['revision'] = revision
+          culprit_map[step]['repo_name'] = 'chromium'
 
         for failed_test in test_result['failures']:
           # Swarming tests, gets first failed revision for each test.
@@ -177,6 +252,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
 
     # Store try job results.
     try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
+
     if culprits:
       result_to_update = (
           try_job_result.compile_results if
@@ -187,6 +263,18 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
         result_to_update[-1].update(result)
       else:  # pragma: no cover
         result_to_update.append(result)
+
+      # Update analysis result and suspected CLs with results of this try job if
+      # culprits were found.
+      analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+      updated_result_status = _GetResultAnalysisStatus(analysis, result)
+      updated_suspected_cls = _GetSuspectedCLs(analysis, result)
+
+      if (analysis.result_status != updated_result_status or
+          analysis.suspected_cls != updated_suspected_cls):
+        analysis.result_status = updated_result_status
+        analysis.suspected_cls = updated_suspected_cls
+        analysis.put()
 
     try_job_result.status = analysis_status.COMPLETED
     try_job_result.put()
