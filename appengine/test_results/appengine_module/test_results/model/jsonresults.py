@@ -346,7 +346,15 @@ class JsonResults(object):
     num_builds = 0
     index = 0
     for result in encoded_list:
-      num_builds = num_builds + result[0]
+      # Some of the old results.json files in datastore have been corrupted and
+      # contain items that are empty lists. Because of this, the code below used
+      # to break and they were never updated. However, we can not simply remove
+      # them either as this would break the consistency between items having
+      # same indices in different arrays (times, build results etc.). Instead,
+      # we will simply keep them and continue adding new results. As a result
+      # old corrupted entries will be eventually dropped.
+      if result:
+        num_builds = num_builds + result[0]
       index = index + 1
       if num_builds >= num_runs:
         return encoded_list[:index]
