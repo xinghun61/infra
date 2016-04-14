@@ -33,6 +33,7 @@ def get_running_masters():
       PIDs.
   """
   bb_dirs = {}
+  master_pids = set()
   for proc in psutil.process_iter():
     try:
       cmdline = proc.cmdline()
@@ -42,8 +43,14 @@ def get_running_masters():
     if not _is_buildbot_cmdline(cmdline):
       continue
 
+    master_pids.add(proc.pid)
     master_name = os.path.basename(cwd)
-    bb_dirs.setdefault(master_name, set()).add(proc.pid)
-  for k, v in bb_dirs.iteritems():
-    bb_dirs[k] = sorted(v)
+    bb_dirs.setdefault(master_name, []).append(proc)
+
+  for master_name, procs in bb_dirs.iteritems():
+    # Master processes can spawn subprocesses (which can spawn subprocesses,
+    # etc.). Prune any child whose parent PID is listed in the set of master
+    # PIDs.
+    bb_dirs[master_name] = sorted(p.pid for p in procs
+                                  if p.ppid() not in master_pids)
   return bb_dirs
