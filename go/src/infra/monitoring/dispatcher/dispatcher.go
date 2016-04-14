@@ -232,7 +232,7 @@ func main() {
 		},
 	}
 
-	mode := auth.SilentLogin
+	mode := auth.OptionalLogin
 	if *login {
 		mode = auth.InteractiveLogin
 	}
