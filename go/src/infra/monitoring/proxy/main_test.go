@@ -43,7 +43,7 @@ func TestMain(t *testing.T) {
 		return &retry.Limited{}
 	})
 
-	Convey(`An application using testing stubs`, t, func() {
+	SkipConvey(`An application using testing stubs`, t, func() {
 		config := config{
 			pubsub: pubsubConfig{
 				project:      "test-project",
