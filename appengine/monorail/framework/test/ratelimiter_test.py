@@ -301,21 +301,7 @@ class RateLimiterTest(unittest.TestCase):
     # throw an excpetion, but cost thresholds are disabled.
     self.ratelimiter.CheckStart(request, start_time)
 
-  def testChekcEnd_underCostThresh(self):
-    request, _ = testing_helpers.GetRequestObjects(
-      project=self.project)
-    request.headers[ratelimiter.COUNTRY_HEADER] = 'asdasd'
-    request.remote_addr = '192.168.1.1'
-    start_time = 0.0
-
-    # Send some requests, all under the limit.
-    for _ in range(ratelimiter.DEFAULT_LIMIT):
-      self.ratelimiter.CheckStart(request, start_time)
-      now = start_time + 0.010
-      self.ratelimiter.CheckEnd(request, now, start_time)
-      start_time = now + 0.010
-
-  def testChekcEnd_underCostThresh(self):
+  def testCheckEnd_underCostThresh(self):
     request, _ = testing_helpers.GetRequestObjects(
       project=self.project)
     request.headers[ratelimiter.COUNTRY_HEADER] = 'asdasd'
