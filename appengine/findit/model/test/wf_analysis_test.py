@@ -6,6 +6,7 @@ from datetime import datetime
 
 import unittest
 
+from common.waterfall import failure_type
 from model.wf_analysis import WfAnalysis
 from model import analysis_status
 from model import result_status
@@ -112,3 +113,29 @@ class WfAnalysisTest(unittest.TestCase):
       analysis.status = analysis_status.COMPLETED
       analysis.result_status = status
       self.assertFalse(analysis.correct)
+
+  def testFailureTypeForNoneLegacyData(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.build_failure_type = failure_type.COMPILE
+    analysis.result = None
+    self.assertEqual(failure_type.COMPILE, analysis.failure_type)
+
+  def testFailureTypeForLegacyDataWithoutResult(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.result = None
+    self.assertEqual(failure_type.UNKNOWN, analysis.failure_type)
+
+  def testFailureTypeForLegacyDataWithoutFailedSteps(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.result = {'failures': []}
+    self.assertEqual(failure_type.UNKNOWN, analysis.failure_type)
+
+  def testFailureTypeForLegacyDataWithFailedCompileStep(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.result = {'failures': [{'step_name': 'compile'}]}
+    self.assertEqual(failure_type.COMPILE, analysis.failure_type)
+
+  def testFailureTypeForLegacyDataWithFailedTestStep(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.result = {'failures': [{'step_name': 'browser_tests'}]}
+    self.assertEqual(failure_type.TEST, analysis.failure_type)

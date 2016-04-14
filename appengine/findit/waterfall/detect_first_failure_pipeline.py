@@ -5,9 +5,11 @@
 import base64
 import json
 
+from common import constants
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
+from common.waterfall import failure_type
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
 from waterfall import build_util
@@ -367,6 +369,15 @@ class DetectFirstFailurePipeline(BasePipeline):
 
     self._UpdateFailureInfoBuilds(failed_steps, builds)
 
+  @staticmethod
+  def _GetFailureType(build_info):
+    if not build_info.failed_steps:
+      return failure_type.UNKNOWN
+    if constants.COMPILE_STEP_NAME in build_info.failed_steps:
+      return failure_type.COMPILE
+    # TODO(http://crbug.com/602733): differentiate test steps from infra ones.
+    return failure_type.TEST
+
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number):
     """
@@ -418,6 +429,8 @@ class DetectFirstFailurePipeline(BasePipeline):
     if not build_info:  # pragma: no cover
       raise pipeline.Retry('Failed to extract build info.')
 
+    build_failure_type = self._GetFailureType(build_info)
+
     failure_info = {
         'failed': True,
         'master_name': master_name,
@@ -426,10 +439,10 @@ class DetectFirstFailurePipeline(BasePipeline):
         'chromium_revision': build_info.chromium_revision,
         'builds': {},
         'failed_steps': {},
+        'failure_type': build_failure_type,
     }
 
-    if (build_info.result == buildbot.SUCCESS or
-        not build_info.failed_steps):
+    if build_info.result == buildbot.SUCCESS or not build_info.failed_steps:
       failure_info['failed'] = False
       return failure_info
 
@@ -442,15 +455,17 @@ class DetectFirstFailurePipeline(BasePipeline):
     self._CheckForFirstKnownFailure(
         master_name, builder_name, build_number, failed_steps, builds)
 
-    # Checks first failed builds for each failed test.
-    self._CheckFirstKnownFailureForSwarmingTests(
-        master_name, builder_name, build_number, failed_steps, builds)
+    if build_failure_type == failure_type.TEST:
+      # Checks first failed builds for each failed test.
+      self._CheckFirstKnownFailureForSwarmingTests(
+          master_name, builder_name, build_number, failed_steps, builds)
 
     failure_info['builds'] = builds
     failure_info['failed_steps'] = failed_steps
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.not_passed_steps = build_info.not_passed_steps
+    analysis.build_failure_type = build_failure_type
     analysis.put()
 
     return failure_info

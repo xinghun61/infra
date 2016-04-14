@@ -4,6 +4,8 @@
 
 from google.appengine.ext import ndb
 
+from common import constants
+from common.waterfall import failure_type
 from model.base_build_model import BaseBuildModel
 from model import analysis_status
 from model import result_status
@@ -88,9 +90,34 @@ class WfAnalysis(BaseBuildModel):
     self.start_time = None
     self.end_time = None
 
+  @property
+  def failure_type(self):
+    if self.build_failure_type is not None:
+      return self.build_failure_type
+
+    # Legacy data don't have property ``build_failure_type``.
+    if not self.result:
+      return failure_type.UNKNOWN
+
+    step_failures = self.result.get('failures', [])
+    if not step_failures:
+      return failure_type.UNKNOWN
+
+    for step_result in step_failures:
+      if step_result['step_name'] == constants.COMPILE_STEP_NAME:
+        return failure_type.COMPILE
+
+    # Although the failed steps could be infra setup steps like "bot_update",
+    # for legacy data we just assume all of them are tests if not compile.
+    return failure_type.TEST
+
   # When the build cycle started.
   build_start_time = ndb.DateTimeProperty(indexed=True)
+  # Whether the build cycle has completed.
   build_completed = ndb.BooleanProperty(indexed=False)
+  # Whether it is a compile failure, test failure, infra failure or others.
+  # Refer to common/waterfall/failure_type.py for all the failure types.
+  build_failure_type = ndb.IntegerProperty(indexed=False)
 
   # The url path to the pipeline status page.
   pipeline_status_path = ndb.StringProperty(indexed=False)

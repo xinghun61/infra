@@ -260,7 +260,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
   def _MockUrlfetchWithIsolatedData(
       self, isolated_data=None, file_url=None,
-      file_name=None, build_number=None):  # pragma: no cover
+      file_name=None, build_number=None):
     if isolated_data:  # Mocks POST requests to isolated server.
       url = '%s/_ah/api/isolateservice/v1/retrieve' % (
           isolated_data['isolatedserver'])
@@ -269,11 +269,12 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
           'namespace': isolated_data['namespace']
       }
       file_name = isolated_data['digest']
-      if build_number:
+      if build_number:  # pragma: no branch
         file_name = isolated_data['digest'][:-4]
       content = self._GetSwarmingData('isolated', file_name, build_number)
 
-    elif file_url and file_name:  # Mocks GET requests to isolated server.
+    elif file_url and file_name:  # pragma: no branch.
+      # Mocks GET requests to isolated server.
       url = file_url
       post_data = None
       content = self._GetSwarmingData('isolated', file_name)
@@ -572,7 +573,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     # Mock data for retrieving data from swarming server for a build.
     self._MockUrlFetchWithSwarmingData(master_name, builder_name, 223)
 
-    for n in xrange(223, 219, -1):  # pragma: no cover
+    for n in xrange(223, 219, -1):  # pragma: no branch.
       # Setup build data for builds:
       self._MockUrlfetchWithBuildData(master_name, builder_name, n)
       if n == 220:
@@ -590,8 +591,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
           },
           'digest': 'isolatedhashabctest-%d' % n
       }
-      self._MockUrlfetchWithIsolatedData(
-          isolated_data, build_number=n)
+      self._MockUrlfetchWithIsolatedData(isolated_data, build_number=n)
       # Mock data for retrieving url to output.json from isolated server.
       file_hash_data = {
           'isolatedserver': 'https://isolateserver.appspot.com',
@@ -600,8 +600,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
           },
           'digest': 'abctestoutputjsonhash-%d' % n
       }
-      self._MockUrlfetchWithIsolatedData(
-          file_hash_data, build_number=n)
+      self._MockUrlfetchWithIsolatedData(file_hash_data, build_number=n)
 
       # Mock data for downloading output.json from isolated server.
       self._MockUrlfetchWithIsolatedData(
@@ -620,11 +619,6 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     failure_info = pipeline.run(master_name, builder_name, build_number)
 
     expected_failed_steps = {
-        'compile': {
-            'current_failure': 223,
-            'first_failure': 221,
-            'last_pass': 220
-        },
         'abc_test': {
             'current_failure': 223,
             'first_failure': 222,

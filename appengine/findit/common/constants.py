@@ -18,9 +18,10 @@ WATERFALL_TRY_JOB_QUEUE = 'waterfall-try-job-queue'
 WATERFALL_SERIAL_QUEUE = 'waterfall-serial-queue'
 
 
-# Url paths.
+# Waterfall-related.
 WATERFALL_TRIGGER_ANALYSIS_URL = '/waterfall/trigger-analyses'
 WATERFALL_ALERTS_URL = 'https://sheriff-o-matic.appspot.com/alerts'
+COMPILE_STEP_NAME = 'compile'
 
 
 # Directory of html templates.

@@ -17,14 +17,7 @@
   "steps": [
     {
       "isFinished": true,
-      "name": "compile",
-      "results": [
-        2,
-        [
-          "failed",
-          "compile"
-        ]
-      ]
+      "name": "compile"
     },
     {
       "isFinished": true,
