@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <link rel="stylesheet" href="/common.css"></link>
+  <title>Crash Configuration</title>
+  <script>
+    var crash = {};
+    crash.fracas = {{ fracas | tojson | safe }};
+
+    function getJsonOfTextarea(textId) {
+      return JSON.parse($('#' + textId).val());
+    }
+
+    function getStringFromJson(json) {
+      return JSON.stringify(json, null, '  ');
+    }
+
+    function save(e) {
+      var newConfig = {
+        'fracas': getJsonOfTextarea('fracas'),
+      };
+      $.post('/crash/config', { data: JSON.stringify(newConfig) }).done(function() {
+        window.location.reload();  // Reload after successful saving.
+      }).fail(function(xhr) {
+        // Replace the whole page with errors from server side.
+        document.body.outerHTML = xhr.responseText;
+      });
+      e.preventDefault();
+    }
+
+    $(document).ready(function() {
+      $('#save-button').click(save);
+      $('#fracas').val(getStringFromJson(crash.fracas));
+    });
+  </script>
+</head>
+<body>
+  <h3>Crash Configuration</h3>
+  <div>
+    Settings for Fracas:<br>
+    <textarea id="fracas" rows="20" cols="80"></textarea>
+  </div>
+  <button type="submit" id="save-button">Save</button>
+</body>

@@ -10,3 +10,6 @@ dispatch:
 
   - url: "*/waterfall/*"
     module: waterfall-frontend
+
+  - url: "*.appspot.com/crash/*"
+    module: crash-frontend

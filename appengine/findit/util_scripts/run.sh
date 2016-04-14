@@ -12,7 +12,7 @@ FINDIT_DIR="$(realpath ${THIS_SCRIPT_DIR}/..)"
 INFRA_DIR="$(realpath ${FINDIT_DIR}/../..)"
 GOOGLE_APP_ENGINE_DIR="$(realpath ${INFRA_DIR}/../google_appengine)"
 APP_CFG="${GOOGLE_APP_ENGINE_DIR}/appcfg.py"
-FINDIT_MODULES="${FINDIT_DIR}/app.yaml ${FINDIT_DIR}/waterfall-frontend.yaml ${FINDIT_DIR}/waterfall-backend.yaml"
+FINDIT_MODULES="${FINDIT_DIR}/app.yaml ${FINDIT_DIR}/waterfall-frontend.yaml ${FINDIT_DIR}/waterfall-backend.yaml ${FINDIT_DIR}/crash-frontend.yaml ${FINDIT_DIR}/crash-backend-fracas.yaml"
 
 if [[ -z "${USER}" ]]; then
   echo "Cannot identify who is deploying Findit. Please set USER."
@@ -64,18 +64,25 @@ run_findit_locally() {
 
 deploy_findit_for_test() {
   # Deploy a version for testing, the version name is the same as the user name.
-  local app_id="findit-for-me-dev"
-  if [[ "$1" == "prod" ]]; then
-    app_id="findit-for-me"
+  if [[ -z ${APP_ID} ]]; then
+    if [[ "$1" == "prod" ]]; then
+      local app_id_to_use="findit-for-me"
+    else
+      local app_id_to_use="findit-for-me-dev"
+    fi
+  else
+    local app_id_to_use=${APP_ID}
   fi
+  echo "app id is ${app_id_to_use}"
+
   local new_version=${USER}
 
   echo "-----------------------------------"
-  python ${APP_CFG} update -A ${app_id} $FINDIT_MODULES --version ${new_version}
+  python ${APP_CFG} update -A ${app_id_to_use} $FINDIT_MODULES --version ${new_version}
   echo "-----------------------------------"
-  print_command_for_queue_cron_dispatch ${app_id}
+  print_command_for_queue_cron_dispatch ${app_id_to_use}
   echo "-----------------------------------"
-  echo Findit was deployed to "https://${new_version}-dot-${app_id}.appspot.com/"
+  echo Findit was deployed to "https://${new_version}-dot-${app_id_to_use}.appspot.com/"
 }
 
 deploy_findit_for_prod() {

@@ -22,9 +22,11 @@ from handlers import try_job
 from handlers import try_job_result
 from handlers import verify_analysis
 from handlers import version
+from handlers.crash import crash_config
+from handlers.crash import fracas_crash
 
 
-# This is for the default module.
+# Default module.
 default_web_pages_handler_mappings = [
     ('/version', version.Version),
 ]
@@ -32,11 +34,11 @@ default_web_application = webapp2.WSGIApplication(
     default_web_pages_handler_mappings, debug=False)
 
 
-# This is for Cloud Endpoint apis in the default module.
+# Cloud Endpoint apis in the default module.
 api_application = endpoints.api_server([FindItApi])
 
 
-# This is for appengine pipeline status pages in the default module.
+# App Engine pipeline status pages in the default module.
 pipeline_status_handler_mappings = [
     ('/_ah/pipeline/rpc/tree', pipeline_status_ui._TreeStatusHandler),
     ('/_ah/pipeline/rpc/class_paths', pipeline_status_ui._ClassPathListHandler),
@@ -51,7 +53,7 @@ pipeline_status_application = webapp2.WSGIApplication(
 pipeline_backend_application = pipeline_handlers._APP
 
 
-# This is for the "waterfall-frontend" module.
+# "waterfall-frontend" module.
 waterfall_frontend_web_pages_handler_mappings = [
     ('/build-failure', build_failure.BuildFailure),
     ('/list-analyses', list_analyses.ListAnalyses),
@@ -73,9 +75,17 @@ waterfall_frontend_web_application = webapp2.WSGIApplication(
     waterfall_frontend_web_pages_handler_mappings, debug=False)
 
 
-# This is for the "waterfall-backend" module.
+# "waterfall-backend" module.
 waterfall_backend_web_pages_handler_mappings = [
     ('/waterfall/trigger-analyses', trigger_analyses.TriggerAnalyses),
 ]
 waterfall_backend_web_application = webapp2.WSGIApplication(
     waterfall_backend_web_pages_handler_mappings, debug=False)
+
+# "crash-frontend" module.
+crash_frontend_web_pages_handler_mappings = [
+    ('/crash/config', crash_config.CrashConfig),
+    ('/crash/fracas', fracas_crash.FracasCrash),
+]
+crash_frontend_web_application = webapp2.WSGIApplication(
+    crash_frontend_web_pages_handler_mappings, debug=False)

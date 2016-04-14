@@ -9,6 +9,7 @@ import os
 
 # Names of all modules.
 WATERFALL_BACKEND = 'waterfall-backend'
+CRASH_BACKEND_FRACAS = 'crash-backend-fracas'
 
 
 # Names of all queues.
@@ -16,6 +17,7 @@ DEFAULT_QUEUE = 'default'
 WATERFALL_ANALYSIS_QUEUE = 'waterfall-analysis-queue'
 WATERFALL_TRY_JOB_QUEUE = 'waterfall-try-job-queue'
 WATERFALL_SERIAL_QUEUE = 'waterfall-serial-queue'
+CRASH_ANALYSIS_FRACAS_QUEUE = 'crash-analysis-fracas-queue'
 
 
 # Waterfall-related.
