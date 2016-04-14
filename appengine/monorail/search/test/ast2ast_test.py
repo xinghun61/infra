@@ -169,15 +169,13 @@ class AST2ASTTest(unittest.TestCase):
     for local_ids in (['1'], ['1', '2'], ['3']):
       cond = ast_pb2.MakeCond(
           ast_pb2.QueryOp.TEXT_HAS, [blockedon_field], local_ids, [])
-      try:
+      with self.assertRaises(ValueError) as cm:
         ast2ast._PreprocessBlockedOnCond(
             self.cnxn, cond, [1, 2], self.services, None)
-        self.fail('Expected an Exception.')
-      except ValueError, e:
-        self.assertEquals(
-            'Searching for issues accross multiple/all projects without '
-            'project prefixes is ambiguous and is currently not supported.',
-            e.message)
+      self.assertEquals(
+          'Searching for issues accross multiple/all projects without '
+          'project prefixes is ambiguous and is currently not supported.',
+          cm.exception.message)
 
   def testPreprocessIsBlockedCond(self):
     blocked_field = BUILTIN_ISSUE_FIELDS['blockedon_id']
@@ -283,15 +281,13 @@ class AST2ASTTest(unittest.TestCase):
     for local_ids in (['1'], ['1', '2'], ['3']):
       cond = ast_pb2.MakeCond(
           ast_pb2.QueryOp.TEXT_HAS, [blocking_field], local_ids, [])
-      try:
+      with self.assertRaises(ValueError) as cm:
         ast2ast._PreprocessBlockingCond(
             self.cnxn, cond, [1, 2], self.services, None)
-        self.fail('Expected an Exception.')
-      except ValueError, e:
-        self.assertEquals(
-            'Searching for issues accross multiple/all projects without '
-            'project prefixes is ambiguous and is currently not supported.',
-            e.message)
+      self.assertEquals(
+        'Searching for issues accross multiple/all projects without '
+        'project prefixes is ambiguous and is currently not supported.',
+        cm.exception.message)
 
   def testPreprocessStatusCond(self):
     status_field = BUILTIN_ISSUE_FIELDS['status']

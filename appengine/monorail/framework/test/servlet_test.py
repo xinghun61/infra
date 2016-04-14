@@ -103,11 +103,9 @@ class ServletTest(unittest.TestCase):
 
     # We can make an explicit exception to that.
     self.page_class.CHECK_SECURITY_TOKEN = False
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.page_class._DoFormProcessing(request, mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEqual(302, e.code)  # forms redirect on succcess
+    self.assertEqual(302, cm.exception.code)  # forms redirect on succcess
 
     self.assertDictEqual(
         {'yesterday': 'thursday', 'today': 'friday'},
@@ -138,11 +136,9 @@ class ServletTest(unittest.TestCase):
         user_info={'user_id': user_id},
         method='POST',
     )
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.page_class._DoFormProcessing(request, mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEqual(302, e.code)  # forms redirect on succcess
+    self.assertEqual(302, cm.exception.code)  # forms redirect on succcess
 
     self.assertDictEqual(
         {'yesterday': 'thursday', 'today': 'friday', 'token': token},
@@ -186,19 +182,15 @@ class ServletTest(unittest.TestCase):
     project = fake.Project(project_name='proj', moved_to='http://example.com')
     request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj', project=project)
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.page_class._CheckForMovedProject(mr, request)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEqual(302, e.code)  # redirect because project moved
+    self.assertEqual(302, cm.exception.code)  # redirect because project moved
 
     request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/source/browse/p/adminAdvanced', project=project)
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.page_class._CheckForMovedProject(mr, request)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEqual(302, e.code)  # redirect because project moved
+    self.assertEqual(302, cm.exception.code)  # redirect because project moved
 
   def testCheckForMovedProject_AdminAdvanced(self):
     """We do not redirect away from the page that edits project state."""

@@ -202,16 +202,14 @@ class MonorailRequestUnitTest(unittest.TestCase):
         mr.viewed_user_auth.user_pb)
 
   def testViewedUser_NoSuchEmail(self):
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self._MRWithMockRequest('/u/unknownuser@example.com/')
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
   def testViewedUser_NoSuchUserID(self):
-    with self.assertRaises(webapp2.HTTPException) as e:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self._MRWithMockRequest('/u/234521111/')
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
   def testGetParam(self):
     mr = testing_helpers.MakeMonorailRequest(

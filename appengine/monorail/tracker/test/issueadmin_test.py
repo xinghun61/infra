@@ -197,11 +197,11 @@ class AdminTemplatesTest(TestBase):
     self.config.templates.append(self.test_template)
     post_data = fake.PostData()
     for_devs, for_users = self.servlet._ParseDefaultTemplateSelections(
-        post_data, self.config.tempaltes)
+        post_data, self.config.templates)
     self.assertEqual(None, for_devs)
     self.assertEqual(None, for_users)
 
-  def testParseDefaultTempalteSelections_NotSpecified(self):
+  def testParseDefaultTempalteSelections_TemplateNotFoundIsIgnored(self):
     self.config.templates.append(self.test_template)
     post_data = fake.PostData(
         default_template_for_developers=['Bad value'],

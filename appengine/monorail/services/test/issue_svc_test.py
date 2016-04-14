@@ -1084,12 +1084,11 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
         comment_id=cids).AndReturn([])
+    attachment_rows = []
     if issue_ids:
       attachment_rows = [
           (1234, issue_ids[0], cids[0], 'a_filename', 1024, 'text/plain',
            False, None)]
-    else:
-      attachment_rows = []
 
     self.services.issue.attachment_tbl.Select(
         self.cnxn, cols=issue_svc.ATTACHMENT_COLS,

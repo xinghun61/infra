@@ -135,9 +135,6 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   api_service_cls = api_svc_v1.MonorailApi
 
-  def makeMar(self, request):
-    return FakeMonorailApiRequest(request, self.services)
-
   def setUp(self):
     super(MonorailApiTest, self).setUp()
     self.requester = RequesterMock(email='requester@example.com')
@@ -941,11 +938,8 @@ class AllBaseChecksTest(unittest.TestCase):
     requester = RequesterMock(email='test@example.com')
     request = RequestMock()
     request.projectId = 'test-project'
-    try:
-      api_svc_v1.api_base_checks(
-          request, requester, self.services, None, self.auth_client_ids, [])
-    except Exception as e:
-      self.fail('Unexpected exception: %s' % str(e))
+    api_svc_v1.api_base_checks(
+        request, requester, self.services, None, self.auth_client_ids, [])
 
   def testNoIssue(self):
     requester = RequesterMock(email='test@example.com')
@@ -975,11 +969,8 @@ class AllBaseChecksTest(unittest.TestCase):
     requester = RequesterMock(email='test@example.com')
     request = RequestMock()
     request.projectId = 'test-project'
-    try:
-      api_svc_v1.api_base_checks(
-          request, requester, self.services, None, [], ['test@example.com'])
-    except Exception as e:
-      self.fail('Unexpected exception: %s' % str(e))
+    api_svc_v1.api_base_checks(
+        request, requester, self.services, None, [], ['test@example.com'])
 
     with self.assertRaises(endpoints.UnauthorizedException):
       api_svc_v1.api_base_checks(

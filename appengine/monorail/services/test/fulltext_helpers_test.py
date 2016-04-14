@@ -115,12 +115,9 @@ class FulltextHelpersTest(unittest.TestCase):
     query_ast_conj = ast_pb2.Conjunction(conds=[
         ast_pb2.MakeCond(TEXT_HAS, [self.summary_fd], ['haystack"needle'], []),
         ast_pb2.MakeCond(TEXT_HAS, [self.milestone_fd], ['Q3', 'Q4'], [])])
-    try:
+    with self.assertRaises(AssertionError):
       fulltext_helpers.BuildFTSQuery(
           query_ast_conj, self.fulltext_fields)
-      raise Exception('Expected AssertionError')
-    except AssertionError:
-      pass
 
   def testBuildFTSQuery_SpecialPrefixQuery(self):
     special_prefix = fulltext_helpers.NON_OP_PREFIXES[0]

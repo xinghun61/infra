@@ -23,12 +23,6 @@ from tracker import issueattachment
 
 from third_party import cloudstorage
 
-def MockResize(_self, image_data, width=None, height=None):
-  """Mock of images.resize() used to test AttachmentPage."""
-  _image_data = image_data
-  _width = width
-  _height = height
-  return 'this is a thumbnail'
 
 class IssueattachmentTest(unittest.TestCase):
 
@@ -66,8 +60,6 @@ class IssueattachmentTest(unittest.TestCase):
     services.issue.TestAddAttachment(
         self.attachment, self.comment.id, self.issue.issue_id)
 
-    images.resize = MockResize
-
   def tearDown(self):
     cloudstorage.open = self._old_gcs_open
 
@@ -78,11 +70,9 @@ class IssueattachmentTest(unittest.TestCase):
         project=self.project,
         path='/p/proj/issues/attachment?aid=%s' % aid,
         perms=permissions.EMPTY_PERMISSIONSET)
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet.GatherPageData(mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
   # TODO(jrobbins): test cases for missing comment and missing issue.
 

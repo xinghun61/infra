@@ -125,39 +125,29 @@ class PeopleDetailTest(unittest.TestCase):
             'fake cnxn', 333, self.project))
 
     # 404 for user that does not exist
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet.ValidateMemberID('fake cnxn', 8933, self.project)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
     # 404 for valid user that is not in this project
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet.ValidateMemberID('fake cnxn', 999, self.project)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
   def testParsePersonData_BadPost(self):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/people/detail',
         project=self.project)
     post_data = fake.PostData()
-    try:
+    with self.assertRaises(monorailrequest.InputException):
       _result = self.servlet.ParsePersonData(mr, post_data)
-      self.fail()
-    except monorailrequest.InputException:
-      pass
 
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/people/detail?u=',
         project=self.project)
     post_data = fake.PostData()
-    try:
+    with self.assertRaises(monorailrequest.InputException):
       _result = self.servlet.ParsePersonData(mr, post_data)
-      self.fail()
-    except monorailrequest.InputException:
-      pass
 
   def testParsePersonData_NoDetails(self):
     mr = testing_helpers.MakeMonorailRequest(

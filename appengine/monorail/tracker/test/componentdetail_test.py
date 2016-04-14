@@ -202,12 +202,10 @@ class ComponentDetailTest(unittest.TestCase):
     post_data = fake.PostData(
         name=['BackEnd'],
         deletecomponent=['Submit'])
-    try:
+    with self.assertRaises(permissions.PermissionException) as cm:
       self.servlet.ProcessFormData(self.mr, post_data)
-      self.fail('Expected permissions.PermissionException')
-    except permissions.PermissionException, e:
-      self.assertEquals('User tried to delete component that had subcomponents',
-                        e.message)
+    self.assertEquals('User tried to delete component that had subcomponents',
+                      cm.exception.message)
 
   def testProcessFormData_Edit(self):
     post_data = fake.PostData(

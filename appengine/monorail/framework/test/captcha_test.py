@@ -46,10 +46,10 @@ class CaptchaTest(unittest.TestCase):
         captcha.Verify('1.2.3.4', None))
     self.mox.VerifyAll()
     
-  def testVerify_WrongGuess(self):
+  def testVerify_GotErrorCode(self):
     self.mox.StubOutWithMock(captcha, '_AskRecaptcha')
     captcha._AskRecaptcha(
-        '1.2.3.4', 'matching').AndReturn(
+        '1.2.3.4', 'some challenge').AndReturn(
       {'success': False, 'error-codes': ['invalid-input-response']})
     self.mox.ReplayAll()
     self.assertEqual(

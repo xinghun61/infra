@@ -28,19 +28,15 @@ class MovedTest(unittest.TestCase):
     _request, mr = testing_helpers.GetRequestObjects(
         path='/hosting/moved?project=my-project')
 
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet.GatherPageData(mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
     project = self.services.project.TestAddProject(project_name)
     # Project exists but has not been moved, so 400 BAD_REQUEST.
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet.GatherPageData(mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(400, e.code)
+    self.assertEquals(400, cm.exception.code)
 
     # Display the moved_to url if it is valid.
     project.moved_to = moved_to

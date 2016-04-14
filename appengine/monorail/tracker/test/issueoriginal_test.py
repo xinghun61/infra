@@ -127,29 +127,23 @@ class IssueOriginalTest(unittest.TestCase):
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/original',
         project=self.proj)
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet.GatherPageData(mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/original?id=1&seq=999',
         project=self.proj)
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet.GatherPageData(mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/original?id=999&seq=1',
         project=self.proj)
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet.GatherPageData(mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
   def testGetIssueAndComment_Normal(self):
     _request, mr = testing_helpers.GetRequestObjects(
@@ -163,57 +157,45 @@ class IssueOriginalTest(unittest.TestCase):
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/original?id=1&seq=99',
         project=self.proj)
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet._GetIssueAndComment(mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
   def testGetIssueAndComment_Malformed(self):
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/original',
         project=self.proj)
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet._GetIssueAndComment(mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/original?id=1',
         project=self.proj)
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet._GetIssueAndComment(mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/original?seq=1',
         project=self.proj)
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet._GetIssueAndComment(mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/original?id=abc',
         project=self.proj)
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet._GetIssueAndComment(mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/original?seq=abc',
         project=self.proj)
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet._GetIssueAndComment(mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
 
 if __name__ == '__main__':

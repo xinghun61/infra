@@ -130,11 +130,9 @@ class IssueAttachmentTextTest(unittest.TestCase):
         project=self.project,
         path='/p/proj/issues/attachmentText?aid=9999',
         perms=permissions.READ_ONLY_PERMISSIONSET)
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet.GatherPageData(mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
   def testGatherPageData_AttachmentDeleted(self):
     """If the attachment was deleted, give a 404."""
@@ -143,11 +141,9 @@ class IssueAttachmentTextTest(unittest.TestCase):
         path='/p/proj/issues/attachmentText?aid=1234',
         perms=permissions.READ_ONLY_PERMISSIONSET)
     self.attach1.deleted = True
-    try:
+    with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet.GatherPageData(mr)
-      self.fail()
-    except webapp2.HTTPException as e:
-      self.assertEquals(404, e.code)
+    self.assertEquals(404, cm.exception.code)
 
   def testGatherPageData_Normal(self):
     _request, mr = testing_helpers.GetRequestObjects(

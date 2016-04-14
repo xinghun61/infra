@@ -21,12 +21,6 @@ from tracker import tracker_bizobj
 from tracker import tracker_constants
 
 
-class DisplayNameMock(object):
-
-  def __init__(self, name):
-    self.display_name = name
-
-
 class IssueListUnitTest(unittest.TestCase):
 
   def testGatherPageData(self):

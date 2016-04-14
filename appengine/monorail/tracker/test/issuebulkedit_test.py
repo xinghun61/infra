@@ -242,10 +242,7 @@ class IssueBulkEditTest(unittest.TestCase):
     issue_id = issue.issue_id
     comments = self.services.issue.GetCommentsForIssue(self.cnxn, issue_id)
     last_comment = comments[-1]
-    if last_comment.amendments[0].newvalue == 'Updated':
-      return True
-    else:
-      return False
+    return last_comment.amendments[0].newvalue == 'Updated'
 
   def testProcessFormData_CustomFields(self):
     """Test PFD processes edits to custom fields."""

@@ -321,19 +321,10 @@ class ComputeListDeltasTest(unittest.TestCase):
 class UserSettingsTest(unittest.TestCase):
 
   def testGatherUnifiedSettingsPageData(self):
-    email_options = []
-
-    class UserSettingsStub(framework_helpers.UserSettings):
-
-      # pylint: disable=unused-argument
-      @classmethod
-      def _GetEmailOptions(cls, user_view, conn_pool):
-        return email_options
-
     mr = testing_helpers.MakeMonorailRequest()
     mr.auth.user_view = framework_views.UserView(100, 'user@invalid', True)
     mr.auth.user_view.profile_url = '/u/profile/url'
-    page_data = UserSettingsStub.GatherUnifiedSettingsPageData(
+    page_data = framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
         mr.auth.user_id, mr.auth.user_view, mr.auth.user_pb)
 
     expected_keys = [

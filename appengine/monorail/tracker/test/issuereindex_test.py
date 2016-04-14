@@ -43,12 +43,10 @@ class IssueReindexTest(unittest.TestCase):
           project=self.project, perms=permission)
       servlet = issuereindex.IssueReindex(
           request, 'res', services=self.services)
-      try:
-        servlet.AssertBasePermission(mr)
-        self.fail('Expected PermissisonException not thrown.')
-      except permissions.PermissionException, e:
-        self.assertEqual('You are not allowed to administer this project',
-                         e.message)
+    with self.assertRaises(permissions.PermissionException) as cm:
+      servlet.AssertBasePermission(mr)
+    self.assertEqual('You are not allowed to administer this project',
+                     cm.exception.message)
 
   def testAssertBasePermission_WithAccess(self):
     # Owners and admins have permission to view this page.
