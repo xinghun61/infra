@@ -9,10 +9,14 @@ def validate_tag(tag, ctx):
 
 
 def validate_dimension(dimension, ctx):
-  if not dimension.key:
-    ctx.error('no key')
-  if not dimension.value:
-    ctx.error('no value')
+  components = dimension.split(':', 1)
+  if len(components) != 2:
+    ctx.error('does not have ":"')
+  else:
+    if not components[0]:
+      ctx.error('no key')
+    if not components[1]:
+      ctx.error('no value')
 
 
 def validate_recipe_cfg(recipe, ctx):

@@ -179,7 +179,12 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
 
   dimensions = task.setdefault('properties', {}).setdefault('dimensions', [])
   for ds in (swarming_cfg.common_dimensions, builder_cfg.dimensions):
-    _extend_unique(dimensions, [{'key': d.key, 'value': d.value} for d in ds])
+    for d in ds:
+      # dimensions in configs are already validated.
+      key, value = d.split(':', 1)
+      swarming_dim = {'key': key, 'value': value}
+      if swarming_dim not in dimensions:
+        dimensions.append(swarming_dim)
 
   task['pubsub_topic'] = (
     'projects/%s/topics/%s' %

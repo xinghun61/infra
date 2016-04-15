@@ -26,12 +26,12 @@ class SwarmingCfgTest(testing.AppengineTestCase):
     cfg = Swarming(
       hostname='chromium-swam.appspot.com',
       common_swarming_tags=['master:master.a'],
-      common_dimensions=[Swarming.Dimension(key='cores', value='8')],
+      common_dimensions=['cores:8'],
       builders=[
         Swarming.Builder(
           name='release',
           swarming_tags=['builder:release'],
-          dimensions=[Swarming.Dimension(key='os', value='Linux')],
+          dimensions=['os:Linux'],
           recipe=Swarming.Recipe(
             repository='https://x.com',
             name='foo',
@@ -46,11 +46,11 @@ class SwarmingCfgTest(testing.AppengineTestCase):
 
     cfg = Swarming(
       common_swarming_tags=['wrong'],
-      common_dimensions=[Swarming.Dimension()],
+      common_dimensions=[''],
       builders=[
         Swarming.Builder(
           swarming_tags=['wrong2'],
-          dimensions=[Swarming.Dimension()],
+          dimensions=[':'],
         ),
         Swarming.Builder(
           name='b2',
@@ -67,8 +67,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
     test(cfg, [
       'hostname unspecified',
       'common tag #1: does not have ":": wrong',
-      'common dimension #1: no key',
-      'common dimension #1: no value',
+      'common dimension #1: does not have ":"',
       'builder #1: name unspecified',
       'builder #1: tag #1: does not have ":": wrong2',
       'builder #1: dimension #1: no key',
