@@ -50,7 +50,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
       builders=[
         Swarming.Builder(
           swarming_tags=['wrong2'],
-          dimensions=[':'],
+          dimensions=[':', 'a.b:c'],
         ),
         Swarming.Builder(
           name='b2',
@@ -72,6 +72,8 @@ class SwarmingCfgTest(testing.AppengineTestCase):
       'builder #1: tag #1: does not have ":": wrong2',
       'builder #1: dimension #1: no key',
       'builder #1: dimension #1: no value',
+      ('builder #1: dimension #2: '
+       'key "a.b" does not match pattern "^[a-zA-Z\_\-]+$"'),
       'builder #1: recipe unspecified',
       'builder b2: recipe: name unspecified',
       'builder b2: recipe: repository unspecified',

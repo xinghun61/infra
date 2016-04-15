@@ -2,6 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import re
+
+
+DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')
+
+
 def validate_tag(tag, ctx):
   # a valid swarming tag is a string that contains ":"
   if ':' not in tag:
@@ -13,9 +19,14 @@ def validate_dimension(dimension, ctx):
   if len(components) != 2:
     ctx.error('does not have ":"')
   else:
-    if not components[0]:
+    key, value = components
+    if not key:
       ctx.error('no key')
-    if not components[1]:
+    elif not DIMENSION_KEY_RGX.match(key):
+      ctx.error(
+        'key "%s" does not match pattern "%s"',
+        key, DIMENSION_KEY_RGX.pattern)
+    if not value:
       ctx.error('no value')
 
 
