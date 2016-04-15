@@ -6,6 +6,7 @@ import contextlib
 import datetime
 
 from components import auth
+from components import net
 from components import utils
 from google.appengine.ext import ndb
 from testing_utils import testing
@@ -49,6 +50,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.mock(acl, 'can_async', lambda *_: future(True))
     self.mock(utils, 'utcnow', lambda: datetime.datetime(2015, 1, 1))
     self.mock(swarming, 'is_for_swarming_async', mock.Mock())
+    self.mock(swarming, 'create_task_async', mock.Mock())
     swarming.is_for_swarming_async.return_value = ndb.Future()
     swarming.is_for_swarming_async.return_value.set_result(False)
 
@@ -108,6 +110,22 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_add_with_bad_parameters(self):
     with self.assertRaises(errors.InvalidInputError):
       service.add('bucket', parameters=[])
+
+  def test_add_with_swarming_400(self):
+    swarming.is_for_swarming_async.return_value = ndb.Future()
+    swarming.is_for_swarming_async.return_value.set_result(True)
+    swarming.create_task_async.side_effect = net.Error(
+        '', status_code=400, response='bad request')
+    with self.assertRaises(errors.InvalidInputError):
+      service.add(self.test_build.bucket)
+
+  def test_add_with_swarming_403(self):
+    swarming.is_for_swarming_async.return_value = ndb.Future()
+    swarming.is_for_swarming_async.return_value.set_result(True)
+    swarming.create_task_async.side_effect = net.AuthError(
+      '', status_code=403, response='access denied')
+    with self.assertRaises(auth.AuthorizationError):
+      service.add(self.test_build.bucket)
 
   ################################### RETRY ####################################
 

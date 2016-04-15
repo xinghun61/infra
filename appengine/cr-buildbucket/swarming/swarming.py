@@ -520,20 +520,14 @@ def _call_api_async(hostname, path, method='GET', payload=None, identity=None):
     impersonate=identity,
   )
   url = 'https://%s/_ah/api/swarming/v1/%s' % (hostname, path)
-  try:
-    res = yield net.json_request_async(
-      url,
-      method=method,
-      payload=payload,
-      scopes=net.EMAIL_SCOPE,
-      delegation_token=delegation_token,
-    )
-    raise ndb.Return(res)
-  except net.AuthError as ex:
-    raise auth.AuthorizationError(
-      'Auth error while calling swarming on behalf of %s: %s' % (
-        identity.to_bytes(), ex
-      ))
+  res = yield net.json_request_async(
+    url,
+    method=method,
+    payload=payload,
+    scopes=net.EMAIL_SCOPE,
+    delegation_token=delegation_token,
+  )
+  raise ndb.Return(res)
 
 
 @utils.cache

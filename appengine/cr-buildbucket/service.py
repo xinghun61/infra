@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import contextlib
 import datetime
 import logging
 import urlparse
@@ -13,6 +14,7 @@ from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 
 from components import auth
+from components import net
 from components import utils
 
 import acl
@@ -161,14 +163,16 @@ def add_async(
 
   for_swarming = yield swarming.is_for_swarming_async(build)
   if for_swarming:  # pragma: no cover
-    yield swarming.create_task_async(build)
+    with _with_swarming_api_error_converter():
+      yield swarming.create_task_async(build)
 
   try:
     yield build.put_async()
   except:  # pragma: no cover
     # Best effort.
     if for_swarming:
-      yield swarming.cancel_task_async(build)
+      with _with_swarming_api_error_converter():
+        yield swarming.cancel_task_async(build)
     raise
   logging.info(
     'Build %s was created by %s', build.key.id(), identity.to_bytes())
@@ -177,6 +181,31 @@ def add_async(
   if client_operation_id is not None:
     yield ctx.memcache_set(client_operation_cache_key, build.key.id(), 60)
   raise ndb.Return(build)
+
+
+@contextlib.contextmanager
+def _with_swarming_api_error_converter():
+  """Converts swarming API errors to errors appropriate for the user."""
+  try:
+    yield
+  except net.AuthError as ex:
+    raise auth.AuthorizationError(
+      'Auth error while calling swarming on behalf of %s: %s' % (
+        auth.get_current_identity().to_bytes(), ex
+      ))
+  except net.Error as ex:
+    if ex.status_code == 400:
+      # Note that 401, 403 and 404 responses are converted to different
+      # error types.
+
+      # In general, it is hard to determine if swarming task creation failed
+      # due to user-supplied data or buildbucket configuration values.
+      # Notify both buildbucket admins and users about the error by logging
+      # it and returning 4xx response respectively.
+      msg = 'Swarming API call failed with HTTP 400: %s' % ex.response
+      logging.error(msg)
+      raise errors.InvalidInputError(msg)
+    raise  # pragma: no cover
 
 
 def add(*args, **kwargs):

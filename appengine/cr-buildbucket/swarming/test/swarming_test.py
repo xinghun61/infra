@@ -239,20 +239,6 @@ class SwarmingTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
-  def test_create_task_async_403(self):
-    build = model.Build(
-      bucket='bucket',
-      parameters={
-        'builder_name': 'builder',
-      },
-    )
-
-    http403 = net.AuthError('403', 403, 'nope')
-    self.mock(net, 'json_request_async', mock.Mock(side_effect=http403))
-
-    with self.assertRaises(auth.AuthorizationError):
-      swarming.create_task_async(build).get_result()
-
   def test_cancel_task(self):
     self.mock(net, 'json_request_async', mock.Mock(return_value=futuristic({})))
     build = model.Build(
