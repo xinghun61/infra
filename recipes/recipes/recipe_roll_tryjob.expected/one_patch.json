@@ -20,35 +20,35 @@
       "{\"Authorization\": \"Bearer ya29.foobar\"}"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "Get project urls"
+    "name": "Get luci-config projects"
   },
   {
     "cmd": [
       "python",
       "-u",
       "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
-      "https://luci-config.appspot.com/_ah/api/config/v1/config_sets/projects%2Frecipe_engine%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
+      "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Frecipe_engine%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
       "--outfile",
       "/path/to/tmp/",
       "--headers-json",
       "{\"Authorization\": \"Bearer ya29.foobar\"}"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "Get recipe_engine deps"
+    "name": "Get project 'recipe_engine' config 'recipes.cfg'"
   },
   {
     "cmd": [
       "python",
       "-u",
       "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
-      "https://luci-config.appspot.com/_ah/api/config/v1/config_sets/projects%2Fbuild%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
+      "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Fbuild%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
       "--outfile",
       "/path/to/tmp/",
       "--headers-json",
       "{\"Authorization\": \"Bearer ya29.foobar\"}"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "Get build deps"
+    "name": "Get project 'build' config 'recipes.cfg'"
   },
   {
     "cmd": [
@@ -79,7 +79,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec",
-      "cache_dir = '[SLAVE_BUILD]/__cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'recipe_engine', 'url': 'https://repo.repo/recipes-py'}]",
+      "cache_dir = '[SLAVE_BUILD]/__cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'recipe_engine', 'url': 'https://repo.repo/recipe_engine'}]",
       "--root",
       "recipe_engine",
       "--revision_mapping_file",
@@ -144,7 +144,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec",
-      "cache_dir = '[SLAVE_BUILD]/__cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://repo.repo/chromium/build'}]",
+      "cache_dir = '[SLAVE_BUILD]/__cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://repo.repo/build'}]",
       "--root",
       "build",
       "--revision_mapping_file",
