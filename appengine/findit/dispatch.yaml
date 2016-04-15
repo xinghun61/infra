@@ -11,5 +11,5 @@ dispatch:
   - url: "*/waterfall/*"
     module: waterfall-frontend
 
-  - url: "*.appspot.com/crash/*"
+  - url: "*/crash/*"
     module: crash-frontend
