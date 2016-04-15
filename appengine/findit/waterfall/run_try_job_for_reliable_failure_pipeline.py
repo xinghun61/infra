@@ -46,7 +46,7 @@ class RunTryJobForReliableFailurePipeline(BasePipeline):
   def run(
       self, master_name, builder_name, build_number, good_revision,
       bad_revision, blame_list, try_job_type, compile_targets, targeted_tests,
-      *classified_tests_by_step):
+      suspected_revisions, *classified_tests_by_step):
     """
     Args:
       master_name (str): Name of the master.
@@ -58,6 +58,7 @@ class RunTryJobForReliableFailurePipeline(BasePipeline):
       try_job_type (str): Type of the try job ('compile' or 'test').
       compile_targets (list): A list of failed targets for compile failure.
       targeted_tests (dict): A dict of failed tests for test failure.
+      suspected_revisions (list): Suspected revisions for a compile failure.
       *classified_tests_by_step (list): A list of tuples of step_name and
           classified_tests. The format is like:
           [('step1', {'flaky_tests': ['test1', ..], ..}), ..]
@@ -69,7 +70,7 @@ class RunTryJobForReliableFailurePipeline(BasePipeline):
       new_try_job_pipeline = try_job_pipeline.TryJobPipeline(
           master_name, builder_name, build_number, good_revision,
           bad_revision, blame_list, try_job_type, compile_targets,
-          targeted_tests)
+          targeted_tests, suspected_revisions)
 
       new_try_job_pipeline.target = appengine_util.GetTargetNameForModule(
           constants.WATERFALL_BACKEND)

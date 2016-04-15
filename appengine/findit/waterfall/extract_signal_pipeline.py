@@ -17,7 +17,6 @@ from model.wf_step import WfStep
 from waterfall import buildbot
 from waterfall import extractors
 from waterfall import lock_util
-from waterfall import try_job_util
 from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
 
@@ -95,12 +94,11 @@ class ExtractSignalPipeline(BasePipeline):
     return failed_test_log
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, failure_info, build_completed):
+  def run(self, failure_info):
     """Extracts failure signals from failed steps.
 
     Args:
       failure_info (dict): Output of pipeline DetectFirstFailurePipeline.run().
-      build_completed (bool): Whether the build is completed.
 
     Returns:
       A dict like below:
@@ -195,13 +193,5 @@ class ExtractSignalPipeline(BasePipeline):
       else:
         signals[step_name] = extractors.ExtractSignal(
             master_name, builder_name, step_name, None, failure_log).ToDict()
-
-    # Starts a new try_job if needed.
-    failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
-        failure_info, signals=signals, build_completed=build_completed)
-
-    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    analysis.failure_result_map = failure_result_map
-    analysis.put()
 
     return signals

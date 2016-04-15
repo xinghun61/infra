@@ -149,7 +149,7 @@ class RunTryJobForReliableFailurePipelineTest(testing.AppengineTestCase):
     pipeline = RunTryJobForReliableFailurePipeline()
     pipeline.run(
         self.master_name, self.builder_name, self.build_number, 'rev1', 'rev2',
-        ['rev2'], TryJobType.TEST, None, {'step1': ['test1']},
+        ['rev2'], TryJobType.TEST, None, {'step1': ['test1']}, None,
         *tuple({'step1': ('step1', {})}.iteritems()))
 
     self.assertFalse(_MockTryJobPipeline.STARTED)

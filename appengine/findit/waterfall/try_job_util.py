@@ -133,11 +133,17 @@ def _GetFailedTargetsFromSignals(signals, master_name, builder_name):
   return compile_targets
 
 
-def ScheduleTryJobIfNeeded(failure_info, signals=None, build_completed=False):
-  # Do not schedule try-jobs or Swarming tasks until the build is completed.
-  if not build_completed:
-    return {}
+def _GetSuspectsForCompileFailureFromHeuristicResult(heuristic_result):
+  suspected_revisions = []
+  if not heuristic_result:
+    return suspected_revisions
+  for failure in heuristic_result.get('failures', []):
+    if failure['step_name'] == constants.COMPILE_STEP_NAME:
+      suspected_revisions = [c['revision'] for c in failure['suspected_cls']]
+  return suspected_revisions
 
+
+def ScheduleTryJobIfNeeded(failure_info, signals, heuristic_result):
   master_name = failure_info['master_name']
   builder_name = failure_info['builder_name']
   build_number = failure_info['build_number']
@@ -159,6 +165,9 @@ def ScheduleTryJobIfNeeded(failure_info, signals=None, build_completed=False):
     compile_targets = (_GetFailedTargetsFromSignals(
         signals, master_name, builder_name)
                        if try_job_type == TryJobType.COMPILE else None)
+    suspected_revisions = (
+        _GetSuspectsForCompileFailureFromHeuristicResult(heuristic_result)
+            if try_job_type == TryJobType.COMPILE else None)
 
     pipeline = (
         swarming_tasks_to_try_job_pipeline.SwarmingTasksToTryJobPipeline(
@@ -166,7 +175,7 @@ def ScheduleTryJobIfNeeded(failure_info, signals=None, build_completed=False):
             builds[str(last_pass)]['chromium_revision'],
             builds[str(build_number)]['chromium_revision'],
             builds[str(build_number)]['blame_list'],
-            try_job_type, compile_targets, targeted_tests))
+            try_job_type, compile_targets, targeted_tests, suspected_revisions))
 
     pipeline.target = appengine_util.GetTargetNameForModule(
         constants.WATERFALL_BACKEND)

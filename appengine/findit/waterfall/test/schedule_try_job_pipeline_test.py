@@ -44,7 +44,7 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_pipeline = ScheduleTryJobPipeline()
     properties = try_job_pipeline._GetBuildProperties(
         master_name, builder_name, build_number, 1, 2, TryJobType.COMPILE,
-        compile_targets, None)
+        compile_targets, None, None)
 
     self.assertEqual(properties, expected_properties)
 
@@ -68,11 +68,11 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_pipeline = ScheduleTryJobPipeline()
     properties = try_job_pipeline._GetBuildProperties(
         master_name, builder_name, build_number, 1, 2, TryJobType.TEST,
-        None, targeted_tests)
+        None, targeted_tests, None)
 
     self.assertEqual(properties, expected_properties)
 
-  def testSuccessfullyScheduleNewTryJobForCompile(self):
+  def testSuccessfullyScheduleNewTryJobForCompileWithSuspectedRevisions(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -96,7 +96,7 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_pipeline = ScheduleTryJobPipeline()
     try_job_id = try_job_pipeline.run(
         master_name, builder_name, build_number, good_revision, bad_revision,
-        TryJobType.COMPILE, None, None)
+        TryJobType.COMPILE, None, None, ['r5'])
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     expected_try_job_id = '1'
@@ -129,7 +129,7 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_pipeline = ScheduleTryJobPipeline()
     try_job_id = try_job_pipeline.run(
         master_name, builder_name, build_number, good_revision, bad_revision,
-        TryJobType.TEST, None, targeted_tests)
+        TryJobType.TEST, None, targeted_tests, None)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual('1', try_job_id)

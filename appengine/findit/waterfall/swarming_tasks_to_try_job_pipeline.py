@@ -18,7 +18,7 @@ class SwarmingTasksToTryJobPipeline(BasePipeline):
   def run(
       self, master_name, builder_name, build_number, good_revision,
       bad_revision, blame_list, try_job_type, compile_targets=None,
-      targeted_tests=None):
+      targeted_tests=None, suspected_cls=None):
 
     # A list contains tuples of step_names and classified_tests from
     # ProcessSwarmingTaskResultPipeline.
@@ -39,4 +39,4 @@ class SwarmingTasksToTryJobPipeline(BasePipeline):
     yield RunTryJobForReliableFailurePipeline(
         master_name, builder_name, build_number, good_revision,
         bad_revision, blame_list, try_job_type, compile_targets, targeted_tests,
-        *classified_tests_by_step)
+        suspected_cls, *classified_tests_by_step)

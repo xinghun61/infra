@@ -17,10 +17,11 @@ class TryJobPipeline(BasePipeline):
   def __init__(
       self, master_name, builder_name, build_number,
       good_revision, bad_revision, blame_list, try_job_type,
-      compile_targets=None, targeted_tests=None):
+      compile_targets=None, targeted_tests=None, suspected_revisions=None):
     super(TryJobPipeline, self).__init__(
         master_name, builder_name, build_number, good_revision, bad_revision,
-        blame_list, try_job_type, compile_targets, targeted_tests)
+        blame_list, try_job_type, compile_targets, targeted_tests,
+        suspected_revisions)
     self.master_name = master_name
     self.builder_name = builder_name
     self.build_number = build_number
@@ -46,10 +47,11 @@ class TryJobPipeline(BasePipeline):
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(
       self, master_name, builder_name, build_number, good_revision,
-      bad_revision, blame_list, try_job_type, compile_targets, targeted_tests):
+      bad_revision, blame_list, try_job_type, compile_targets, targeted_tests,
+      suspected_revisions):
     try_job_id = yield ScheduleTryJobPipeline(
         master_name, builder_name, build_number, good_revision, bad_revision,
-        try_job_type, compile_targets, targeted_tests)
+        try_job_type, compile_targets, targeted_tests, suspected_revisions)
     try_job_result = yield MonitorTryJobPipeline(
         master_name, builder_name, build_number, try_job_type, try_job_id)
     yield IdentifyTryJobCulpritPipeline(

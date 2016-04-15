@@ -8,21 +8,12 @@ from common.pipeline_wrapper import pipeline_handlers
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
 from waterfall import buildbot
-from waterfall import try_job_util
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline
 from waterfall.test import wf_testcase
 
 
 class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
-
-  def setUp(self):
-    super(ExtractSignalPipelineTest, self).setUp()
-
-    def Mocked_ScheduleTryJobIfNeeded(*_, **__):
-      pass
-    self.mock(
-        try_job_util, 'ScheduleTryJobIfNeeded', Mocked_ScheduleTryJobIfNeeded)
 
   def _CreateAndSaveWfAnanlysis(
       self, master_name, builder_name, build_number):
@@ -93,7 +84,7 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number)
 
     pipeline = ExtractSignalPipeline(self.FAILURE_INFO)
-    signals = pipeline.run(self.FAILURE_INFO, False)
+    signals = pipeline.run(self.FAILURE_INFO)
 
     self.assertEqual(self.FAILURE_SIGNALS, signals)
 
@@ -113,7 +104,7 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number)
 
-    pipeline = ExtractSignalPipeline(self.FAILURE_INFO, False)
+    pipeline = ExtractSignalPipeline(self.FAILURE_INFO)
     pipeline.start()
     self.execute_queued_tasks()
 
@@ -196,7 +187,7 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number)
 
     pipeline = ExtractSignalPipeline(self.FAILURE_INFO)
-    signals = pipeline.run(self.FAILURE_INFO, False)
+    signals = pipeline.run(self.FAILURE_INFO)
 
     step = WfStep.Get(master_name, builder_name, build_number, step_name)
 
@@ -236,7 +227,7 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number)
 
     pipeline = ExtractSignalPipeline()
-    signals = pipeline.run(failure_info, False)
+    signals = pipeline.run(failure_info)
 
     step = WfStep.Get(master_name, builder_name, build_number, step_name)
 
@@ -272,7 +263,7 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number)
 
     pipeline = ExtractSignalPipeline()
-    signals = pipeline.run(failure_info, False)
+    signals = pipeline.run(failure_info)
 
     step = WfStep.Get(master_name, builder_name, build_number, step_name)
 
@@ -291,7 +282,7 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     expected_signals = {}
 
     pipeline = ExtractSignalPipeline()
-    signals = pipeline.run(failure_info, False)
+    signals = pipeline.run(failure_info)
     self.assertEqual(expected_signals, signals)
 
   def testBailOutIfNoValidChromiumRevision(self):
@@ -302,7 +293,7 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     expected_signals = {}
 
     pipeline = ExtractSignalPipeline()
-    signals = pipeline.run(failure_info, False)
+    signals = pipeline.run(failure_info)
     self.assertEqual(expected_signals, signals)
 
   def testExtractSignalsForTests(self):
@@ -376,7 +367,7 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number)
 
     pipeline = ExtractSignalPipeline()
-    signals = pipeline.run(failure_info, False)
+    signals = pipeline.run(failure_info)
     self.assertEqual(expected_signals, signals)
 
   def testExtractSignalsForTestsFlaky(self):
@@ -428,7 +419,7 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number)
 
     pipeline = ExtractSignalPipeline()
-    signals = pipeline.run(failure_info, False)
+    signals = pipeline.run(failure_info)
     self.assertEqual(expected_signals, signals)
 
   def testBailOutForUnsupportedStep(self):
@@ -464,5 +455,5 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number)
 
     pipeline = ExtractSignalPipeline()
-    signals = pipeline.run(failure_info, False)
+    signals = pipeline.run(failure_info)
     self.assertEqual(self.FAILURE_SIGNALS, signals)

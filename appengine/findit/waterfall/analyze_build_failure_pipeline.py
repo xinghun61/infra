@@ -13,6 +13,8 @@ from waterfall.extract_deps_info_pipeline import ExtractDEPSInfoPipeline
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline
 from waterfall.identify_culprit_pipeline import IdentifyCulpritPipeline
 from waterfall.pull_changelog_pipeline import PullChangelogPipeline
+from waterfall.start_try_job_on_demand_pipeline import (
+    StartTryJobOnDemandPipeline)
 
 
 class AnalyzeBuildFailurePipeline(BasePipeline):
@@ -33,7 +35,9 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     if was_aborted:
       analysis = WfAnalysis.Get(
           self.master_name, self.builder_name, self.build_number)
-      if analysis:  # In case the analysis is deleted manually.
+      # Heuristic analysis could have already completed, while triggering the
+      # try job kept failing and lead to the abortion.
+      if analysis and not analysis.completed:
         analysis.status = analysis_status.ERROR
         analysis.result_status = None
         analysis.put()
@@ -62,6 +66,8 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
         master_name, builder_name, build_number)
     change_logs = yield PullChangelogPipeline(failure_info)
     deps_info = yield ExtractDEPSInfoPipeline(failure_info, change_logs)
-    signals = yield ExtractSignalPipeline(failure_info, build_completed)
-    yield IdentifyCulpritPipeline(
+    signals = yield ExtractSignalPipeline(failure_info)
+    heuristic_result = yield IdentifyCulpritPipeline(
         failure_info, change_logs, deps_info, signals, build_completed)
+    yield StartTryJobOnDemandPipeline(
+        failure_info, signals, build_completed, heuristic_result)
