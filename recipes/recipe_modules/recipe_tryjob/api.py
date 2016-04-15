@@ -51,6 +51,8 @@ def parse_protobuf(lines):
 
     if line == '}':
       return ret
+    if line == '':
+      continue
 
     raise ValueError('Could not understand line: <%s>' % line)# pragma: no cover
   return ret

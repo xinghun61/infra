@@ -15,6 +15,7 @@ class RecipeTryjobTestApi(recipe_test_api.RecipeTestApi):
         'api_version: 1',
         'project_id: "%s"' % name,
         'recipes_path: ""',
+        '',
     ]
     for dep in deps:
       config += [
