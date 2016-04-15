@@ -177,14 +177,12 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
   _extend_unique(tags, build.tags)
   tags.sort()
 
-  dimensions = task.setdefault('properties', {}).setdefault('dimensions', [])
-  for ds in (swarming_cfg.common_dimensions, builder_cfg.dimensions):
-    for d in ds:
-      # dimensions in configs are already validated.
-      key, value = d.split(':', 1)
-      swarming_dim = {'key': key, 'value': value}
-      if swarming_dim not in dimensions:
-        dimensions.append(swarming_dim)
+  task_properties = task.setdefault('properties', {})
+  task_properties['dimensions'] = _prepare_dimensions(
+    task_properties.get('dimensions', []),
+    swarming_cfg.common_dimensions,
+    builder_cfg.dimensions
+  )
 
   task['pubsub_topic'] = (
     'projects/%s/topics/%s' %
@@ -195,6 +193,26 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
     'swarming_hostname': swarming_cfg.hostname,
   }, sort_keys=True)
   raise ndb.Return(task)
+
+
+def _prepare_dimensions(global_dims, bucket_cfg_dims, builder_cfg_dims):
+  """Computes final task dimensions.
+
+  Configs must have valid format.
+  """
+  # Make them all lists of pairs.
+  global_dims = [(d['key'], d['value']) for d in global_dims]
+  parse_cfg_dim = lambda d: d.split(':', 1)
+  bucket_dims = map(parse_cfg_dim, bucket_cfg_dims)
+  builder_dims = map(parse_cfg_dim, builder_cfg_dims)
+
+  # Note: dimensions must be unique.
+  # Overwrite global dimensions by bucket-level dimensions,
+  # then by builder-level dimensions.
+  merged = {}
+  for ds in (global_dims, bucket_dims, builder_dims):
+    merged.update(ds)
+  return sorted({'key': k, 'value': v} for k, v in merged.iteritems())
 
 
 @ndb.tasklet

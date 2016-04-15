@@ -40,12 +40,12 @@ class SwarmingTest(testing.AppengineTestCase):
         hostname='chromium-swarm.appspot.com',
         url_format='https://example.com/{swarming_hostname}/{task_id}',
         common_swarming_tags=['commontag:yes'],
-        common_dimensions=['cores:8'],
+        common_dimensions=['cores:8', 'pool:default'],
         builders=[
           project_config_pb2.Swarming.Builder(
             name='builder',
             swarming_tags=['buildertag:yes'],
-            dimensions=['os:Linux'],
+            dimensions=['os:Linux', 'pool:Chrome'],
             recipe=project_config_pb2.Swarming.Recipe(
               repository='https://example.com/repo',
               name='recipe',
@@ -146,6 +146,7 @@ class SwarmingTest(testing.AppengineTestCase):
           'dimensions': [
             {'key': 'cores', 'value': '8'},
             {'key': 'os', 'value': 'Linux'},
+            {'key': 'pool', 'value': 'Chrome'},
           ],
         },
         'tags': [
@@ -198,10 +199,11 @@ class SwarmingTest(testing.AppengineTestCase):
           '-recipe', 'recipe',
           '-properties', '{"a": "b", "predefined-property": "x"}',
         ],
-        'dimensions': [
+        'dimensions': sorted([
           {'key': 'cores', 'value': '8'},
           {'key': 'os', 'value': 'Linux'},
-        ],
+          {'key': 'pool', 'value': 'Chrome'},
+        ]),
       },
       'pubsub_topic': 'projects/testbed-test/topics/swarming',
       'pubsub_userdata': json.dumps({
@@ -216,6 +218,7 @@ class SwarmingTest(testing.AppengineTestCase):
       'builder:builder',
       'swarming_dimension:cores:8',
       'swarming_dimension:os:Linux',
+      'swarming_dimension:pool:Chrome',
       'swarming_hostname:chromium-swarm.appspot.com',
       'swarming_tag:builder:builder',
       'swarming_tag:buildertag:yes',
