@@ -670,6 +670,8 @@ class TestCQStats(auto_stub.TestCase):
     stats_set = cq_stats.default_stats()
     stats_set['begin'] = args.date
     stats_set['end'] = args.date + datetime.timedelta(days=7)
+    stats_set['requested_begin'] = stats_set['begin']
+    stats_set['requested_end'] = stats_set['end']
 
     stats_set['patch_stats'].update({
         (123, 1): {
@@ -726,6 +728,8 @@ class TestCQStats(auto_stub.TestCase):
     stats_set = cq_stats.default_stats()
     stats_set['begin'] = args.date
     stats_set['end'] = args.date + datetime.timedelta(days=7)
+    stats_set['requested_begin'] = stats_set['begin']
+    stats_set['requested_end'] = stats_set['end']
 
     cq_stats.print_stats(args, stats_set)
     return self.expectations

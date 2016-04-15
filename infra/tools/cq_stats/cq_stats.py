@@ -563,6 +563,8 @@ def derive_stats(args, begin_date, init_stats=None):
   if not results:
     return stats
 
+  stats['requested_begin'] = begin_date
+  stats['requested_end'] = end_date
   stats['begin'] = date_from_timestamp(results[-1]['timestamp'])
   stats['end'] = date_from_timestamp(results[0]['timestamp'])
 
@@ -1121,7 +1123,8 @@ def print_stats(args, stats):
     output('  No stats since %s', args.date)
     return
 
-  output('from %s till %s (UTC time).', stats['begin'], stats['end'])
+  output('from %s till %s (UTC time).', stats['requested_begin'],
+         stats['requested_end'])
 
   print_usage(stats)
 
