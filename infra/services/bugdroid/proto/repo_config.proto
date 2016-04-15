@@ -1,0 +1,89 @@
+// Copyright 2016 The Chromium Authors. All Rights Reserved.
+// Use of this source code is governed by the Apache v2.0 license that can be
+// found in the LICENSE file.
+
+// Schemas for bugdroid repo configs.
+
+
+syntax = "proto2";
+
+package bugdroid;
+
+enum RepoTye {
+    svn = 0;
+    git = 1;
+    gerrit = 2;
+}
+
+enum UrlTemplate {
+    cr = 0;
+    cr_int = 1;
+    nacl = 2;
+}
+
+enum PathUrlTemplate {
+    viewvc = 0;
+    viewvc_int = 1;
+    google_code = 2;
+}
+
+message Repo {
+  // Type of repository to monitor
+  optional RepoTye repo_type = 1;
+
+  // URL of the repository to monitor
+  optional string repo_url = 2;
+
+  // The default issue tracker project ID (the /p/<project> part of
+  // the URL) to use when a BUG= line only contains numbers (e.g. 
+  // BUG=123) instead of full specifiers (e.g. BUG=chromium:123)
+  optional string default_project = 3;
+
+  // URL template for linking to commits in the repo Web UI
+  optional UrlTemplate url_template = 4;
+
+  // URL template for linking to a commit\'s files in the repo Web UI
+  optional PathUrlTemplate path_url_template = 5;
+
+  // Project name used in the repo Web UI url templates
+  optional string svn_project = 6;
+
+  // Whether or not to include the commit details in public bugs
+  optional bool public_bugs = 7 [default = true];
+
+  // List of regexes to filter refs (branches) for monitoring
+  // (git only). See the poller classes for default values
+  repeated string refs_regex = 8;
+
+  // List of substitution regexes defining refs (branches) used to
+  // filter out commits from processing (e.g. commits from upstream
+  // repos). NOTE: If specified, there MUST be one filter_regex
+  // corresponding to each refs_regex (use null if a given refs_regex
+  // should not be filtered). (git only)
+  repeated string filter_regex = 9;
+
+  // List of refs (branches) that should not trigger "merge"
+  // labelling (typically the repo\'s "trunk" or "master" branch)
+  repeated string no_merge_refs = 10 [default = ["refs/heads/master", "refs/heads/git-svn"]];
+
+  // List of repo path regexes to filter commits for processing
+  // (git only). Only commits that affect files in the given
+  // path(s) will be processed
+  repeated string paths_regex = 11;
+
+  // List of handlers that must succeed in order for a log entry to
+  // be considered properly processed, otherwise the poller should
+  // retry that log entry
+  repeated string must_succeed = 12;
+
+  // When true, bugs will not actually be updated
+  optional bool test_mode = 13 [default = false];
+
+  // Dict of issue labels to apply to certain types of commit
+  // (e.g "merge") from this repo
+  map<string, string> issues_labels = 14;
+}
+
+message RepoConfigs {
+  repeated Repo repos = 1;
+}

@@ -1,0 +1,431 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+"""Update bug trackers with information from repository commits."""
+
+import argparse
+import datetime
+import json
+import logging
+import os
+import sys
+import threading
+import time
+
+import infra.services.bugdroid.branch_utils as branch_utils
+import infra.services.bugdroid.gerrit_poller as gerrit_poller
+import infra.services.bugdroid.gitiles_poller as gitiles_poller
+import infra.services.bugdroid.IssueTrackerManager as IssueTrackerManager
+import infra.services.bugdroid.log_parser as log_parser
+import infra.services.bugdroid.poller_handlers as poller_handlers
+import infra.services.bugdroid.scm_helper as scm_helper
+import infra.services.bugdroid.svn_poller as svn_poller
+
+
+# pylint: disable=C0301
+URL_TEMPLATES = {
+    'blink': 'http://src.chromium.org/viewvc/blink?view=rev&rev=%d',
+    'cr': 'http://src.chromium.org/viewvc/chrome?view=rev&revision=%d',
+    'cr_int': 'http://goto.ext.google.com/viewvc/chrome-internal?view=rev&revision=%d',
+    'nacl': 'http://src.chromium.org/viewvc/native_client?view=rev&revision=%d',
+    }
+
+PATH_URL_TEMPLATES = {
+    'viewvc': 'http://src.chromium.org/viewvc/%s%s?r1=%d&r2=%d&pathrev=%d',
+    'viewvc_int': 'http://goto.google.com/viewvc/%s%s?r1=%d&r2=%d&pathrev=%d',
+    'google_code': 'http://code.google.com/p/%s/source/diff?path=%s&spec=svn%d&r_previous=%d&r=%d&format=side',
+    }
+# pylint: enable=C0301
+
+CODESITE_PROJECTS = [
+    'brillo', 'chrome-os-partner',
+]
+
+
+# TODO(mmoss): Refactor with commitsentry (and chrome.base.get_logger()?)
+def GetLogger(logger_id, console=True, default_log_level=logging.INFO,
+              logdir=''):
+  """Logging setup for pollers."""
+  logger = logging.getLogger(logger_id)
+  logger.setLevel(default_log_level)
+  formatter = logging.Formatter(
+      '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+  # If logger_id isn't specificed (i.e. the root logger), just create a
+  # timestamp-based log file.
+  logfn = os.path.join(logdir, '%s.log' % (logger_id or
+                                           datetime.date.today().isoformat()))
+  fh = logging.FileHandler(logfn)
+  fh.setFormatter(formatter)
+  fh.setLevel(default_log_level)
+  logger.addHandler(fh)
+  logging.info('Log file (level: %s): "%s"',
+               logging.getLevelName(default_log_level), logfn)
+  if console:
+    sh = logging.StreamHandler()
+    sh.setLevel(default_log_level)
+    logger.addHandler(sh)
+  return logger
+
+
+class BugdroidPollerHandler(poller_handlers.BasePollerHandler):
+  """Handler for updating bugs with information from commits."""
+
+  def __init__(self, bugdroid, default_project,
+               no_merge=None, public_bugs=True, test_mode=False,
+               issues_labels=None, *args, **kwargs):
+    self.bugdroid = bugdroid
+    self.default_project = default_project
+    self.no_merge = no_merge or []
+    self.public_bugs = public_bugs
+    self.test_mode = test_mode
+    self.issues_labels = issues_labels or {}
+    super(BugdroidPollerHandler, self).__init__(*args, **kwargs)
+
+  def WarmUp(self):
+    try:
+      self.bugdroid.Reset(self.default_project)
+    except Exception:  # pylint: disable=W0703
+      self.logger.exception('Unhandled Exception')
+
+  def _ApplyMergeMergedLabel(self, issue, branch):
+    if not branch or not issue:
+      return
+
+    label = '%s-%s' % (self.issues_labels.get('merge', 'merge-merged'), branch)
+    issue.addLabel(label)
+    if self.logger:
+      self.logger.debug('Adding %s', label)
+
+    label = self.issues_labels.get('approved', 'merge-approved')
+    if issue.hasLabel(label):
+      issue.removeLabel(label)
+      if self.logger:
+        self.logger.debug('Removing %s', label)
+
+    mstone = branch_utils.get_mstone(branch, False)
+    if mstone:
+      label = 'merge-approved-%s' % mstone
+      if issue.hasLabel(label):
+        issue.removeLabel(label)
+        if self.logger:
+          self.logger.debug('Removing %s' % label)
+
+  def ProcessLogEntry(self, log_entry):
+
+    project_bugs = log_parser.get_issues(
+        log_entry, default_project=self.default_project)
+    if self.logger:
+      self.logger.info('Processing commit %s : bugs %s' %
+                       (log_entry.revision, str(project_bugs)))
+    if project_bugs:
+      comment = self._CreateMessage(log_entry)
+      if self.logger:
+        self.logger.debug(comment)
+
+      for project, bugs in project_bugs.iteritems():
+        itm = self.bugdroid.GetItm(project)
+        for bug in bugs:
+          issue = itm.getIssue(bug)
+          issue.comment = comment[:24 * 1024]
+          branch = scm_helper.GetBranch(log_entry)
+          # Apply merge labels if this commit landed on a branch.
+          if branch and not (log_entry.scm in ['git', 'gerrit'] and
+                             scm_helper.GetBranch(log_entry, full=True) in
+                             self.no_merge):
+            self._ApplyMergeMergedLabel(issue, branch)
+          if self.logger:
+            self.logger.debug('Attempting to save issue: %d' % issue.id)
+          if not self.test_mode:
+            issue.save()
+
+  def _CreateMessage(self, log_entry):  # pylint: disable=W0613,R0201
+    raise NotImplementedError
+
+
+class BugdroidSVNPollerHandler(BugdroidPollerHandler):
+  """Handler for updating bugs with information from svn commits."""
+
+  def __init__(self, url_template, path_url_template, svn_project, *args,
+               **kwargs):
+    self.url_template = url_template
+    self.path_url_template = path_url_template
+    self.svn_project = svn_project
+    super(BugdroidSVNPollerHandler, self).__init__(*args, **kwargs)
+
+  def _CreateMessage(self, log_entry):
+    msg = ''
+    # If the url_template matches the Chromium URL template, then the
+    # preamble we would use is redundant with the "r12345" linkification
+    # that codesite does, which points by default to the Chromium ViewVC
+    # instance.  In the cases where the URL template is for another
+    # project, include the preamble.
+    if self.url_template != URL_TEMPLATES['cr']:
+      msg += 'The following revision refers to this bug:\n'
+      msg += '  %s\n\n' % (self.url_template % log_entry.revision)
+    msg += self._BuildLogSpecial(log_entry)
+    return msg
+
+  def _BuildLogSpecial(self, log_entry):
+    """Generate svn-log style message, with links to files in the Web UI."""
+    rtn = '------------------------------------------------------------------\n'
+    rtn += 'r%d | %s | %s\n\n' % (log_entry.revision, log_entry.author,
+                                  log_entry.date)
+    if self.public_bugs:
+      rtn += 'Changed paths:\n'
+      for path in log_entry.paths:
+        filename = self.path_url_template % (self.svn_project, path.filename,
+                                             log_entry.revision,
+                                             log_entry.revision - 1,
+                                             log_entry.revision)
+        rtn += '   %s %s\n' % (path.action, filename)
+
+      rtn += '\n%s\n' % log_entry.msg
+    rtn += '-----------------------------------------------------------------'
+    return rtn
+
+
+class BugdroidGitPollerHandler(BugdroidPollerHandler):
+  """Handler for updating bugs with information from git commits."""
+
+  def _CreateMessage(self, log_entry):
+    msg = ''
+    msg += 'The following revision refers to this bug:\n'
+    msg += '  %s\n\n' % log_entry.GetCommitUrl()
+    msg += self._BuildLogSpecial(log_entry)
+    return msg
+
+  def _BuildLogSpecial(self, log_entry):
+    """Generate git-log style message, with links to files in the Web UI."""
+    rtn = 'commit %s\n' % log_entry.commit
+    rtn += 'Author: %s <%s>\n' % (log_entry.author_name, log_entry.author_email)
+    rtn += 'Date: %s\n' % log_entry.author_date
+    if self.public_bugs:
+      rtn += '\n%s\n' % log_entry.msg
+      for path in log_entry.paths:
+        if path.action == 'delete':
+          # Use parent and copy_from_path for deletions, otherwise we get links
+          # to https://.../<commit>//dev/null
+          rtn += '[%s] %s\n' % (
+              path.action, log_entry.GetPathUrl(
+                  path.copy_from_path, parent=True, universal=True))
+        else:
+          rtn += '[%s] %s\n' % (
+              path.action, log_entry.GetPathUrl(
+                  path.filename, universal=True))
+    return rtn
+
+
+class Bugdroid(object):
+  """App to setup and run repository pollers and bug updating handlers."""
+
+  def __init__(self, configfile, credentials_db, run_once, log_level, datadir,
+               logdir, fake_config=False):
+    self.pollers = []
+    self.trackers = {}
+    self.credentials_db = credentials_db
+    self.run_once = run_once
+    self.fake_config = fake_config
+
+    if not os.path.isdir(logdir):
+      if os.path.exists(logdir):
+        raise ConfigsException(
+            'logdir "%s" is not a directory.' % logdir)
+      os.makedirs(logdir)
+    self.logdir = logdir
+
+    if not os.path.isdir(datadir):
+      if os.path.exists(datadir):
+        raise ConfigsException(
+          'datadir "%s" is not a directory.' % datadir)
+      os.makedirs(datadir)
+    self.datadir = datadir
+
+    levels = {'debug': logging.DEBUG,
+              'info': logging.INFO,
+              'warning': logging.WARNING,
+              'error': logging.ERROR,
+              'critical': logging.CRITICAL}
+    self.loglevel = levels.get(log_level)
+    # Make the root logger log to a file.
+    GetLogger(None, console=False, default_log_level=self.loglevel,
+              logdir=self.logdir)
+    # Critcal errors always go to stdout.
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.CRITICAL)
+    logging.getLogger(None).addHandler(sh)
+
+    # Ugh, the apiclient library is overly verbose even at 'info' level. Only
+    # log that stuff if 'debug' logging is enabled, otherwise restrict it to
+    # warning level or greater messages.
+    if self.loglevel > logging.DEBUG:
+      logging.getLogger('apiclient.discovery').setLevel(logging.WARNING)
+
+    if not configfile:
+      logging.critical('No poller configs found. Aborting.')
+      raise ConfigsException()
+
+    with open(configfile, 'r') as f:
+      configs = json.load(f)
+
+    for name, config in configs.iteritems():
+      if config.get('refs_regex') and config.get('filter_regex'):
+        if len(config['refs_regex']) != len(config['filter_regex']):
+          logging.critical(
+              'Config error (%s): "refs_regex" and "filter_regex" '
+              'cannot have different numbers of items.', name)
+
+          raise ConfigsException()
+      poller = self.InitPoller(name, config)
+      self.pollers.append(poller)
+
+  def Reset(self, project_name=None):
+    if project_name:
+      if project_name in self.trackers:
+        del self.trackers[project_name]
+    else:
+      self.trackers.clear()
+
+  def GetItm(self, project, use_cache=True):
+    """Get (or create) the IssueTrackerManager for the given project."""
+    # Lazy load all of the trackers (so nothing gets specified up front)
+    if not use_cache or project not in self.trackers:
+      if project in CODESITE_PROJECTS:
+        itm = IssueTrackerManager.IssueTrackerManager(
+            client_id=None, client_secret=None,
+            project_name=project, credential_store=self.credentials_db)
+      else:
+        itm = IssueTrackerManager.MonorailIssueTrackerManager(
+            client_id=None, client_secret=None,
+            project_name=project, credential_store=self.credentials_db)
+      self.trackers[project] = itm
+    return self.trackers[project]
+
+  def InitPoller(self, name, config):
+    """Create a repository poller based on the given config."""
+
+    poller = None
+    t = str(config.get('repo_type'))
+    interval_minutes = 1
+    default_project = config['default_project']
+    logger = GetLogger(name, console=False, default_log_level=self.loglevel,
+                       logdir=self.logdir)
+    if t == 'svn':
+      poller = svn_poller.SVNPoller(
+          config['repo_url'],
+          name,
+          interval_in_minutes=interval_minutes,
+          logger=logger,
+          run_once=self.run_once,
+          datadir=self.datadir)
+
+      # Add handlers for each issues_projects in the config.
+      # TODO(mmoss): The whole issues_projects thing is a bit
+      # of a clunky way to define multiple handlers. Good enough for now (and
+      # really only needed for the bugdroid_chrome poller), but might be worth
+      # creating a more generic syntax for multiple handlers in a config.
+      h = BugdroidSVNPollerHandler(
+          url_template=URL_TEMPLATES[config['url_template']],
+          path_url_template=PATH_URL_TEMPLATES[config['path_url_template']],
+          svn_project=config['svn_project'],
+          bugdroid=self,
+          default_project=default_project,
+          public_bugs=config.get('public_bugs', True),
+          test_mode=config.get('test_mode', False),
+          issues_labels=config.get('issues_labels'))
+      poller.add_handler(h)
+
+    elif t == 'git':
+      poller = gitiles_poller.GitilesPoller(
+          config['repo_url'],
+          name,
+          refs_regex=config.get('refs_regex'),
+          paths_regex=config.get('paths_regex'),
+          filter_regex=config.get('filter_regex'),
+          interval_in_minutes=interval_minutes,
+          logger=logger,
+          run_once=self.run_once,
+          datadir=self.datadir)
+
+      h = BugdroidGitPollerHandler(
+          bugdroid=self,
+          default_project=default_project,
+          public_bugs=config.get('public_bugs', True),
+          test_mode=config.get('test_mode', False),
+          issues_labels=config.get('issues_labels'),
+          no_merge=config.get('no_merge_refs',
+                              ['refs/heads/master', 'refs/heads/git-svn']))
+      poller.add_handler(h)
+
+    elif t == 'gerrit':
+      poller = gerrit_poller.GerritPoller(
+          config['repo_url'],
+          name,
+          interval_in_minutes=interval_minutes,
+          logger=logger,
+          run_once=self.run_once,
+          datadir=self.datadir)
+
+      h = BugdroidGitPollerHandler(
+          bugdroid=self,
+          default_project=default_project,
+          public_bugs=config.get('public_bugs', True),
+          test_mode=config.get('test_mode', False),
+          issues_labels=config.get('issues_labels'),
+          no_merge=config.get('no_merge_refs',
+                              ['refs/heads/master', 'refs/heads/git-svn']))
+      poller.add_handler(h)
+
+    else:
+      logging.error('Unknown poller type: %s', t)
+
+    if poller:
+      poller.saved_config = config
+      poller.daemon = True
+    return poller
+
+
+  def Execute(self):
+    for poller in self.pollers:
+      if poller.logger:
+        poller.logger.info('Starting Poller "%s".', poller.poller_id)
+      poller.start()
+    # While any pollers are alive, try to keep them all alive. If they all die
+    # for some reason (only the main thread left), something is probably
+    # terribly wrong, so just let the program exit.
+    while threading.active_count() > 1 and not self.run_once:
+      # Polling intervals are in minutes, so check that they're alive a little
+      # more frequently than that.
+      time.sleep(55)
+      logging.debug('Checking pollers ...')
+      for poller in self.pollers[:]:
+        if not poller.isAlive():
+          # TODO(mmoss): Maybe send an alert email, so these failures can be
+          # investigated (without needing to discover them in the logs)? Or
+          # maybe only if the same poller dies too frequently or too quickly?
+          logging.error('Poller "%s" died. Restarting ...', poller.poller_id)
+          self.pollers.remove(poller)
+          poller = self.InitPoller(poller.poller_id, poller.saved_config)
+          self.pollers.append(poller)
+          poller.start()
+
+
+def inner_loop(opts):
+  try:
+    bugdroid = Bugdroid(opts.configfile, opts.credentials_db, True,
+                        opts.default_loglevel, opts.datadir, opts.logdir,
+                        opts.fake_config)
+    bugdroid.Execute()
+    return True
+  except ConfigsException:
+    return False
+
+
+class Error(Exception):
+  """Base exception class."""
+  pass
+
+
+class ConfigsException(Error):
+  """The repo configs cannot be used."""
+  pass
