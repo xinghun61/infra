@@ -152,6 +152,7 @@ def ScheduleTryJobIfNeeded(failure_info, signals, heuristic_result):
 
   tryserver_mastername, tryserver_buildername = (
       waterfall_config.GetTrybotForWaterfallBuilder(master_name, builder_name))
+
   if not tryserver_mastername or not tryserver_buildername:
     logging.info('%s, %s is not supported yet.', master_name, builder_name)
     return {}
@@ -161,13 +162,19 @@ def ScheduleTryJobIfNeeded(failure_info, signals, heuristic_result):
       _NeedANewTryJob(master_name, builder_name, build_number,
                       failed_steps, failure_result_map))
 
+  if (try_job_type == TryJobType.TEST and
+      waterfall_config.ShouldSkipTestTryJobs(master_name, builder_name)):
+    logging.info('Test try jobs on %s, %s are not supported yet.',
+                 master_name, builder_name)
+    return {}
+
   if need_new_try_job:
     compile_targets = (_GetFailedTargetsFromSignals(
         signals, master_name, builder_name)
                        if try_job_type == TryJobType.COMPILE else None)
     suspected_revisions = (
         _GetSuspectsForCompileFailureFromHeuristicResult(heuristic_result)
-            if try_job_type == TryJobType.COMPILE else None)
+        if try_job_type == TryJobType.COMPILE else None)
 
     pipeline = (
         swarming_tasks_to_try_job_pipeline.SwarmingTasksToTryJobPipeline(

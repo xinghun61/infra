@@ -76,7 +76,7 @@ class MastersTest(wf_testcase.WaterfallTestCase):
         waterfall_config.GetTrybotForWaterfallBuilder('master1', 'builder1'))
     self.assertEqual(
         (None, None),
-        waterfall_config.GetTrybotForWaterfallBuilder('master2', 'builder2'))
+        waterfall_config.GetTrybotForWaterfallBuilder('master3', 'builder3'))
 
   def testGetTryJobSettings(self):
     self.assertEqual(
@@ -107,3 +107,12 @@ class MastersTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(
         waterfall_config.EnableStrictRegexForCompileLinkFailures(
             'master1', 'builder1'))
+
+  def testShouldSkipTestTryJobs(self):
+    self.assertFalse(
+        waterfall_config.ShouldSkipTestTryJobs('master1', 'builder1'))
+    self.assertFalse(
+        waterfall_config.ShouldSkipTestTryJobs('master2', 'builder3'))
+    self.assertTrue(
+        waterfall_config.ShouldSkipTestTryJobs('master2', 'builder2'))
+    

@@ -26,8 +26,8 @@ class _MockRootPipeline(object):
 class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
   def testNotNeedANewTryJobIfBuilderIsNotSupportedYet(self):
-    master_name = 'master2'
-    builder_name = 'builder2'
+    master_name = 'master3'
+    builder_name = 'builder3'
     build_number = 223
     failure_info = {
         'master_name': master_name,
@@ -69,6 +69,24 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         failure_info, None, None)
 
     self.assertFalse(_MockRootPipeline.STARTED)
+    self.assertEqual({}, failure_result_map)
+
+  def testBailOutForTestTryJob(self):
+    master_name = 'master2'
+    builder_name = 'builder2'
+    build_number = 223
+    failure_info = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failed_steps': {
+            'a_test': {}
+        },
+    }
+
+    failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
+        failure_info, None, None)
+
     self.assertEqual({}, failure_result_map)
 
   def testNotNeedANewTryJobIfNotFirstTimeFailure(self):

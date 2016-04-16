@@ -51,6 +51,18 @@ _DEFAULT_TRY_BOT_MAPPING = {
             'strict_regex': True,
         }
     },
+    'master2': {
+        'builder2': {
+            'mastername': 'tryserver2',
+            'buildername': 'trybot2',
+            'not_run_tests': True
+        },
+        'builder3': {
+            'mastername': 'tryserver2',
+            'buildername': 'trybot2',
+            'not_run_tests': False
+        },
+    },
     'm': {
         'b': {
             'mastername': 'tryserver.master',

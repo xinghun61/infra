@@ -141,6 +141,9 @@ def _ValidateTrybotMapping(builders_to_trybots):
       if (trybot_config.has_key('strict_regex') and
           not isinstance(trybot_config['strict_regex'], bool)):
         return False
+      if (trybot_config.has_key('not_run_tests') and
+          not isinstance(trybot_config['not_run_tests'], bool)):
+        return False
   return True
 
 
