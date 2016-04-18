@@ -274,7 +274,7 @@ def IdentifyProjectAndIssue(project_addr, subject):
 
   try:
     local_id = int(local_id_str)
-  except ValueError:
+  except (ValueError, TypeError):
     local_id = None
 
   return project_name, local_id
