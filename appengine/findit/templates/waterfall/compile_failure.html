@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<head>
+  <title>Compile Failure</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/common.css">
+  <style>
+    .pending {
+      color: #666666;
+      background-color: #fffc6c;
+      border-color: #c5c56d;
+    }
+    .running {
+      color: #666666;
+      background-color: #fffc6c;
+      border-color: #c5c56d;
+    }
+    .completed {
+      color: #ffffff;
+      background-color: #8fdf5f;
+      border-color: #4f8530;
+    }
+    .error {
+      color: #ffffff;
+      background-color: #e98080;
+      border-color: #a77272;
+    }
+    .warning {
+      color: RED;
+    }
+    .thumbs-up-down {
+      border-radius: 7px;
+      display: inline-block;
+      height: 28px;
+    }
+    .triage, .triaged {
+      display: block;
+      float: left;
+      vertical-align: middle;
+    }
+    .triage {
+      background-color: #e5e5e5;
+      cursor: pointer;
+    }
+    .triaged {
+      cursor: default;
+    }
+    .thumb-up {
+      border-top: solid 1px;
+      border-bottom: solid 1px;
+      border-left: solid 1px;
+      border-top-left-radius: 7px;
+      border-bottom-left-radius: 7px;
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+    .thumb-down {
+      border: solid 1px;
+      border-top-right-radius: 7px;
+      border-bottom-right-radius: 7px;
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+    .thumb-up:hover, .thumb-up.triaged {
+      background-color: #8fdf5f;
+    }
+    .thumb-down:hover, .thumb-down.triaged {
+      background-color: #e98080;
+    }
+  </style>
+  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/jquery-ui.min.js"></script>
+  <script>
+    var findit = {};
+    findit.analysisCompleted = '{{analysis_completed}}' == 'True';
+    findit.analysisFailed = '{{analysis_failed}}' == 'True';
+    findit.builderUrl = 'https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}';
+    findit.buildUrl = findit.builderUrl + '/builds/{{build_number}}';
+    findit.analysisCorrect = '{{analysis_correct}}';  // Possible values: 'None', 'True', or 'False'.
+    findit.showTriageHelpButton = '{{show_triage_help_button}}' == 'True';
+    findit.showDebugInfo = '{{show_debug_info}}' == 'True';
+
+    function triageAnalysisResult(e) {
+      var target = $(this);
+      if (target.hasClass('triaged'))
+        return;
+
+      var correct = target.hasClass('thumb-up');
+      $.getJSON('/waterfall/triage-analysis?correct=' + correct + '&url=' + findit.buildUrl, function(data) {
+        if (data['success']) {
+          $('.triaged').addClass('triage').removeClass('triaged');
+          target.addClass('triaged').removeClass('triage');
+        } else {
+          alert('Failed to update datastore. Please refresh and try again.');
+        }
+      }).error(function(xhr) {
+        // Replace the whole page with errors from server side.
+        document.body.outerHTML = xhr.responseText;
+      });
+
+      e.preventDefault();
+    }
+
+    function triageHelp(e) {
+      $('#triage_help_button').prop('disabled', true);
+      $('#triage_help_result').html("Checking...");
+      $.getJSON('/waterfall/help-triage?url=' + findit.buildUrl, function(data) {
+        if (! jQuery.isEmptyObject(data)) {
+          tableString = '<table><tr><th width="150">Build Number</th><th width="150">Culprit CL</th>'
+          tableString += '<th width="150">Fix Build Number</th><th width="150">Possible Fixing CL</th><th width="100">Action</th></tr>';
+          $.each(data, function(key, value) {
+            tableString += '<tr>';
+            tableString += '<td><a href="' + value.fixed_build_url + '">' + value.fixed_build_number +'</a></td>';
+            tableString += '<td><a href="' + value.fixed_cl_review_url + '">' + value.fixed_cl_commit_position +'</a></td>';
+            tableString += '<td><a href="' + value.fixing_build_url + '">' + value.fixing_build_number +'</a></td>';
+            tableString += '<td><a href="' + value.fixing_cl_review_url + '">' + value.fixing_cl_commit_position +'</a></td>';
+            tableString += '<td>' + value.action + '</td>';
+            tableString += '</tr>';
+          });
+          tableString += '</table>';
+          $('#triage_help_result').html(tableString);
+        } else {
+          $('#triage_help_result').html('No results found.');
+        }
+        $('#triage_help_button').prop('disabled', false);
+      }).error(function(xhr) {
+        // Replace the whole page with errors from server side.
+        document.body.outerHTML = xhr.responseText;
+      });
+
+      e.preventDefault();
+    }
+
+    $(document).ready(function() {
+      if (!findit.analysisCompleted) {
+        $('#status_message').text('running, will refresh in 5 seconds...');
+        $('#status_message').attr('class', 'running');
+        setTimeout(function() {
+          {% if show_debug_info %}
+          window.location.href = '/waterfall/build-failure?url=' + findit.buildUrl + '&debug=1';
+          {% else %}
+          window.location.href = '/waterfall/build-failure?url=' + findit.buildUrl;
+          {% endif %}
+        }, 5000);
+      } else {
+        if (findit.analysisFailed) {
+          $('#status_message').text('error');
+          $('#status_message').attr('class', 'error');
+        } else {
+          // TODO: use another style when no culprit CL is found.
+          $('#status_message').text('completed');
+          $('#status_message').attr('class', 'completed');
+
+          $('.triage').click(triageAnalysisResult);
+
+          if (findit.showTriageHelpButton) {
+            $('#triage_help_button').click(triageHelp);
+          }
+
+          if (findit.analysisCorrect == 'True') {
+            $('.thumb-up').addClass('triaged').removeClass('triage');
+          } else if (findit.analysisCorrect == 'False') {
+            $('.thumb-down').addClass('triaged').removeClass('triage');
+          }
+        }
+      }
+
+      $('#score-explanation-dialog').dialog({
+        autoOpen: false,
+        modal: true,
+        width: 600,
+      });
+      $('#score-info').click(function() {
+        $('#score-explanation-dialog').dialog('open');
+      });
+    });
+  </script>
+</head>
+<body>
+  Findit now provides results from both heuristics and try-jobs. (<a href="https://code.google.com/p/chromium/issues/entry?status=Unconfirmed&labels=Pri-2,findit&summary=Findit%20bug%20or%20reature%20request&comment=Url%20to%20the%20build%20Failure:%0Ahttps://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}%0A%0AWhat%20is%20the%20bug%20or%20feature:%0A">File a Findit bug</a>)
+  <br>
+  <br>
+
+  <b>Compile failure:</b>
+  <div>
+    Master: {{master_name}}<br>
+    Builder: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}">{{builder_name}}</a><br>
+    {% if build_number != first_failure %}
+      Current Failure: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}">{{build_number}}</a><br>
+      First Failure: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{first_failure}}">{{first_failure}}</a><br>
+    {% else %}
+      First Failure: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}">{{build_number}}</a><br>
+    {% endif %}
+    {% if last_pass %}
+      Last Pass: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{last_pass}}">{{last_pass}}</a><br>
+      {% if last_pass + 1 != first_failure %}
+       <div class='warning'>Be careful, compile was not run or purple in builds before first failure!</div>
+      {% endif %}
+    {% else %}
+      Last Pass: Unknown!
+    {% endif %}
+  </div>
+  <br>
+
+  {% if try_job %}
+  <div>
+    <b>Try-job Result:</b><br>
+    Status: <span class="{{try_job.status}}">{{try_job.status}}</span>
+    {% if try_job.url %}
+      <a href="{{try_job.url}}">try-job</a>
+    {% endif %}
+    <br>
+      {% if try_job.completed %}
+        {% if try_job.failed %}
+          <span class="error">Try job ran into error!</span>
+        {% elif try_job.culprit %}
+        Culprit: {{try_job.culprit.repo_name}}: <a href="{{try_job.culprit.review_url}}">{{try_job.culprit.commit_position or try_job.culprit.revision}}</a>
+        {% else %}
+          <div>No culprit found!</div>
+        {% endif%}
+      {% endif%}
+  </div>
+  <br>
+  {% endif%}
+
+  <b>Heuristic Analysis Result:</b>
+  <div id="heuristic-analysis">
+    Status: <span id="status_message"></span>
+  {% if show_debug_info %}
+    {% if pipeline_status_path %}
+      <a href="{{pipeline_status_path}}">pipeline</a>
+    {% endif %}
+    <br>
+    Requested: {{analysis_request_time | default('N/A', true)}}<br>
+    {% if analysis_duration %}
+      Duration: {{analysis_duration}} seconds. <br>
+    {% else %}
+      Started: {{analysis_start_time | default('N/A', true)}}<br>
+    {% endif %}
+    Updated: {{analysis_update_time}}<br>
+  {% endif %}
+
+  {% if analysis_completed %}
+    <br>
+    {% if analysis_failed %}
+      <div class="error">No result because of some error in analysis!</div>
+    {% elif suspected_cls_by_heuristic|length == 0 %}
+      <div>No culprit is found!</div>
+    {% else %}
+      <div id="suspected_cls">
+        <table>
+          <tr>
+            <th title="The build cycle in which the CL was in">Build Number</th>
+            <th title="Git repo name and commit position/hash of the culprit">Culprit</th>
+            <th title="The higher score, the more suspected">Score(<a id="score-info" href="javascript:">?</a>)</th>
+            <th title="Why this CL is related to the failure">Hints</th>
+          </tr>
+          <tbody>
+            {% for suspected_cl in suspected_cls_by_heuristic %}
+            <tr>
+              <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{suspected_cl.build_number}}">{{suspected_cl.build_number}}</a></td>
+              <td>
+                {{suspected_cl.repo_name}}: <a href="{{suspected_cl.url}}">{{suspected_cl.commit_position or suspected_cl.revision}}</a>
+              </td>
+              <td>{{suspected_cl.score}}</td>
+              <td>
+                {% for hint, _ in suspected_cl.hints|dictsort(case_sensitive=True, by='value')|reverse %}
+                  <li>{{hint}}</li>
+                {% endfor %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  {% endif %}
+  </div>
+
+  {% if analysis_completed %}
+  <br>
+  <div>
+    <b>Feedback on Findit Result:</b><br>
+    <div class="thumbs-up-down">
+      <div class="triage thumb-up">Correct <img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_up_black_24dp.png"/></div>
+      <div class="triage thumb-down"><img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_down_black_24dp.png"/> Incorrect</div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if triage_history %}
+  <br>
+  <b>Triage History:</b>
+  <div>
+    <table>
+      <tr><th>When</th><th>Who</th><th>Result</th><th>Version</th></tr>
+      <tbody>
+        {% for triage_record in triage_history %}
+          <tr>
+            <td>{{triage_record.triage_time}}</td>
+            <td>{{triage_record.user_name}}</td>
+            <td>{{triage_record.result_status}}</td>
+            <td>{{triage_record.version | default('N/A', true)}}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if show_triage_help_button %}
+  <br>
+  <div id="triage_help">
+    <button id="triage_help_button">Triage Help</button>
+    <br>
+    <div id="triage_help_result">
+    </div>
+  </div>
+  {% endif %}
+
+  <div id="score-explanation-dialog" title="Score Explanation">
+    The total score is a sum of scores for all hints.<br>
+    Rules to set a score to an hint:
+    <ul>
+      <li>5: The CL added or deleted a file that appears in the failure log.</li>
+      <li>4: The CL changed the error line in a file that appears in the failure log.</li>
+      <li>2: The CL modified a file that appears in the failure log.</li>
+      <li>1: The CL modified a file that is related to another file
+             appearing in the failure log. (eg: file.h was changed and
+             file_unittest.cc or file_impl.cc appeared in the log.)</li>
+      <li>1: The CL rolled a dependency within src/DEPS and a file of that
+             dependency appears in the failure log. (eg: third_party/dep
+             was changed in src/DEPS and third_party/dep/f.cpp appeared
+             in the log.)</li>
+    </ul>
+    (More rules will be added when implemented.)
+  </div>
+</body>

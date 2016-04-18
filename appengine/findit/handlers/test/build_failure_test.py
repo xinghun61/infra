@@ -14,6 +14,7 @@ from handlers import build_failure
 from handlers import handlers_util
 from handlers import result_status
 from model.wf_analysis import WfAnalysis
+from model.wf_try_job import WfTryJob
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from waterfall import buildbot
@@ -616,3 +617,78 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
         }
     }
     self.assertEqual(expected_result, result)
+
+  def testPrepareTryJobDataForCompileFailure(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.result = {
+        'failures': [
+            {
+                'step_name': 'compile',
+                'first_failure': 122,
+                'last_pass': 121,
+                'suspected_cls': [],
+            },
+            {
+                'step_name': 'steps',
+            },
+        ]
+    }
+    analysis.failure_result_map = {
+        'compile': 'm/b/122',
+    }
+
+    try_job = WfTryJob.Create('m', 'b', 122)
+    try_job.status = analysis_status.COMPLETED
+    try_job.compile_results = [
+        {
+            'url': 'build/url',
+            'culprit': {
+                'compile': {
+                    'revision': 'rev',
+                }
+            }
+        }
+    ]
+    try_job.put()
+
+    expected_try_job_data = {
+        'status': 'completed',
+        'url': 'build/url',
+        'completed': True,
+        'failed': False,
+        'culprit': {
+            'revision': 'rev',
+        }
+    }
+
+    try_job_data = (
+        build_failure.BuildFailure._PrepareTryJobDataForCompileFailure(
+            analysis))
+
+    self.assertEqual(expected_try_job_data, try_job_data)
+
+  def testPopulateHeuristicDataForCompileFailure(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.result = {
+        'failures': [
+            {
+                'step_name': 'compile',
+                'first_failure': 122,
+                'last_pass': 121,
+                'suspected_cls': [],
+            },
+            {
+                'step_name': 'steps',
+            },
+        ]
+    }
+    expected_data = {
+        'first_failure': 122,
+        'last_pass': 121,
+        'suspected_cls_by_heuristic': [],
+    }
+
+    data = {}
+    build_failure.BuildFailure._PopulateHeuristicDataForCompileFailure(
+        analysis, data)
+    self.assertEqual(expected_data, data)

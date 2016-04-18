@@ -5,18 +5,21 @@
 from collections import defaultdict
 import copy
 from datetime import datetime
+import logging
 import os
 
 from google.appengine.api import users
 
+from common import constants
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
-from common import constants
+from common.waterfall import failure_type
 from handlers import handlers_util
 from handlers import result_status
 from handlers.result_status import NO_TRY_JOB_REASON_MAP
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
+from model.wf_try_job import WfTryJob
 from model.result_status import RESULT_STATUS_TO_DESCRIPTION
 from waterfall import build_failure_analysis_pipelines
 from waterfall import buildbot
@@ -268,11 +271,88 @@ class BuildFailure(BaseHandler):
     # Show debug info only if the app is run locally during development, if the
     # currently logged-in user is an admin, or if it is explicitly requested
     # with parameter 'debug=1'.
-    return (os.environ['SERVER_SOFTWARE'].startswith('Development') or
+    return (
             users.is_current_user_admin() or self.request.get('debug') == '1')
 
   def _ShowTriageHelpButton(self):
     return users.is_current_user_admin()
+
+  def _PrepareCommonDataForFailure(self, analysis):
+    return {
+        'master_name': analysis.master_name,
+        'builder_name': analysis.builder_name,
+        'build_number': analysis.build_number,
+        'pipeline_status_path': analysis.pipeline_status_path,
+        'show_debug_info': self._ShowDebugInfo(),
+        'analysis_request_time': _FormatDatetime(analysis.request_time),
+        'analysis_start_time': _FormatDatetime(analysis.start_time),
+        'analysis_end_time': _FormatDatetime(analysis.end_time),
+        'analysis_duration': analysis.duration,
+        'analysis_update_time': _FormatDatetime(analysis.updated_time),
+        'analysis_completed': analysis.completed,
+        'analysis_failed': analysis.failed,
+        'analysis_correct': analysis.correct,
+        'triage_history': _GetTriageHistory(analysis),
+        'show_triage_help_button': self._ShowTriageHelpButton(),
+        'status_message_map': result_status.STATUS_MESSAGE_MAP
+    }
+
+  @staticmethod
+  def _PrepareTryJobDataForCompileFailure(analysis):
+    try_job_data = {}
+    if not (analysis.failure_result_map and  # pragma: no branch.
+            constants.COMPILE_STEP_NAME in analysis.failure_result_map):
+      return try_job_data  # pragma: no cover.
+
+    referred_build_keys = analysis.failure_result_map[
+        constants.COMPILE_STEP_NAME].split('/')
+    try_job = WfTryJob.Get(*referred_build_keys)
+    if not try_job or not try_job.compile_results:
+      return try_job_data  # pragma: no cover.
+    result = try_job.compile_results[-1]
+
+    try_job_data['status'] = analysis_status.STATUS_TO_DESCRIPTION.get(
+          try_job.status, 'unknown').lower()
+    try_job_data['url'] = result.get('url')
+    try_job_data['completed'] = try_job.completed
+    try_job_data['failed'] = try_job.failed
+    try_job_data['culprit'] = result.get(
+        'culprit', {}).get(constants.COMPILE_STEP_NAME)
+
+    return try_job_data
+
+  @staticmethod
+  def _PopulateHeuristicDataForCompileFailure(analysis, data):
+    if analysis.result:  # pragma: no branch.
+      compile_failure = None
+      for failure in analysis.result.get('failures', []):
+        if failure['step_name'] == constants.COMPILE_STEP_NAME:
+          compile_failure = failure
+      if compile_failure:  # pragma: no branch.
+        data['first_failure'] = compile_failure['first_failure']
+        data['last_pass'] = compile_failure['last_pass']
+        data['suspected_cls_by_heuristic'] = compile_failure['suspected_cls']
+
+  def _PrepareDataForCompileFailure(self, analysis):
+    data = self._PrepareCommonDataForFailure(analysis)
+
+    # Check result from heuristic analysis.
+    self._PopulateHeuristicDataForCompileFailure(analysis, data)
+    # Check result from try job.
+    data['try_job'] = self._PrepareTryJobDataForCompileFailure(analysis)
+
+    return data
+
+  def _PrepareDataForTestFailures(self, analysis, build_info):
+    data = self._PrepareCommonDataForFailure(analysis)
+
+    organized_results = _GetOrganizedAnalysisResultBySuspectedCL(
+        analysis.result)
+    analysis_result = _GetAnalysisResultWithTryJobInfo(
+        organized_results, *build_info)
+    data['analysis_result'] = analysis_result
+
+    return data
 
   def HandleGet(self):
     """Triggers analysis of a build failure on demand and return current result.
@@ -310,32 +390,16 @@ class BuildFailure(BaseHandler):
           build_completed=build_completed, force=force,
           queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
-    organized_results = _GetOrganizedAnalysisResultBySuspectedCL(
-        analysis.result)
-    analysis_result = _GetAnalysisResultWithTryJobInfo(
-        organized_results, *build_info)
-
-    data = {
-        'master_name': analysis.master_name,
-        'builder_name': analysis.builder_name,
-        'build_number': analysis.build_number,
-        'pipeline_status_path': analysis.pipeline_status_path,
-        'show_debug_info': self._ShowDebugInfo(),
-        'analysis_request_time': _FormatDatetime(analysis.request_time),
-        'analysis_start_time': _FormatDatetime(analysis.start_time),
-        'analysis_end_time': _FormatDatetime(analysis.end_time),
-        'analysis_duration': analysis.duration,
-        'analysis_update_time': _FormatDatetime(analysis.updated_time),
-        'analysis_completed': analysis.completed,
-        'analysis_failed': analysis.failed,
-        'analysis_result': analysis_result,
-        'analysis_correct': analysis.correct,
-        'triage_history': _GetTriageHistory(analysis),
-        'show_triage_help_button': self._ShowTriageHelpButton(),
-        'status_message_map': result_status.STATUS_MESSAGE_MAP
-    }
-
-    return {'template': 'build_failure.html', 'data': data}
+    if analysis.failure_type == failure_type.COMPILE:  # pragma: no branch
+      return {
+        'template': 'waterfall/compile_failure.html',
+        'data': self._PrepareDataForCompileFailure(analysis),
+      }
+    else:
+      return {
+        'template': 'build_failure.html',
+        'data': self._PrepareDataForTestFailures(analysis, build_info),
+      }
 
   def HandlePost(self):  # pragma: no cover
     return self.HandleGet()
