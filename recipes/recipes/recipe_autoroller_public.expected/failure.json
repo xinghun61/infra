@@ -234,7 +234,7 @@
   },
   {
     "cmd": [
-      "python",
+      "[SLAVE_BUILD]/infra/ENV/bin/python",
       "-u",
       "[SLAVE_BUILD]/infra/recipes-py/recipes.py",
       "--package",
