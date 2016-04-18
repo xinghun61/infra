@@ -255,8 +255,7 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
 
     args += ['simulation_test']
 
-    return self._python(
-        '%s tests' % proj, recipes_py_loc, args, stdout=self.m.raw_io.output())
+    return self._python('%s tests' % proj, recipes_py_loc, args)
 
   def _python(self, name, script, args, **kwargs):
     """Call python from infra's virtualenv.
