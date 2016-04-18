@@ -54,6 +54,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
         ),
         Swarming.Builder(
           name='b2',
+          dimensions=['x:y', 'x:y2'],
           recipe=Swarming.Recipe(
             properties=[
               '',
@@ -75,6 +76,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
       ('builder #1: dimension #2: '
        'key "a.b" does not match pattern "^[a-zA-Z\_\-]+$"'),
       'builder #1: recipe unspecified',
+      'builder b2: dimension #2: duplicate key x',
       ('builder b2: has no "pool" dimension. '
        'Either define it in the builder or in "common_dimensions"'),
       'builder b2: recipe: name unspecified',

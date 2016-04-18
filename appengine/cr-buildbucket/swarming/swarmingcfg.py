@@ -14,20 +14,28 @@ def validate_tag(tag, ctx):
     ctx.error('does not have ":": %s', tag)
 
 
-def validate_dimension(dimension, ctx):
-  components = dimension.split(':', 1)
-  if len(components) != 2:
-    ctx.error('does not have ":"')
-  else:
-    key, value = components
-    if not key:
-      ctx.error('no key')
-    elif not DIMENSION_KEY_RGX.match(key):
-      ctx.error(
-        'key "%s" does not match pattern "%s"',
-        key, DIMENSION_KEY_RGX.pattern)
-    if not value:
-      ctx.error('no value')
+def validate_dimensions(field_name, dimensions, ctx):
+  known_keys = set()
+  for i, dim in enumerate(dimensions):
+    with ctx.prefix('%s #%d: ', field_name, i + 1):
+      components = dim.split(':', 1)
+      if len(components) != 2:
+        ctx.error('does not have ":"')
+        continue
+      key, value = components
+      if not key:
+        ctx.error('no key')
+      else:
+        if not DIMENSION_KEY_RGX.match(key):
+          ctx.error(
+            'key "%s" does not match pattern "%s"',
+            key, DIMENSION_KEY_RGX.pattern)
+        if key in known_keys:
+          ctx.error('duplicate key %s', key)
+        else:
+          known_keys.add(key)
+      if not value:
+        ctx.error('no value')
 
 
 def validate_recipe_cfg(recipe, ctx):
@@ -53,13 +61,8 @@ def validate_builder_cfg(builder, ctx, bucket_has_pool_dim=False):
     with ctx.prefix('tag #%d: ', i + 1):
       validate_tag(t, ctx)
 
-  has_pool_dim = bucket_has_pool_dim
-  for i, d in enumerate(builder.dimensions):
-    with ctx.prefix('dimension #%d: ', i + 1):
-      validate_dimension(d, ctx)
-    if d.startswith('pool:'):
-      has_pool_dim = True
-  if not has_pool_dim:
+  validate_dimensions('dimension', builder.dimensions, ctx)
+  if not bucket_has_pool_dim and not has_pool_dimension(builder.dimensions):
     ctx.error(
       'has no "pool" dimension. '
       'Either define it in the builder or in "common_dimensions"')
@@ -81,13 +84,12 @@ def validate_cfg(swarming, ctx):
     with ctx.prefix('common tag #%d: ', i + 1):
       validate_tag(t, ctx)
 
-  has_pool_dim = False
-  for i, d in enumerate(swarming.common_dimensions):
-    with ctx.prefix('common dimension #%d: ', i + 1):
-      validate_dimension(d, ctx)
-    if d.startswith('pool:'):
-      has_pool_dim = True
+  validate_dimensions('common dimension', swarming.common_dimensions, ctx)
+  has_pool_dim = has_pool_dimension(swarming.common_dimensions)
 
   for i, b in enumerate(swarming.builders):
     with ctx.prefix('builder %s: ' % (b.name or '#%s' % (i + 1))):
       validate_builder_cfg(b, ctx, bucket_has_pool_dim=has_pool_dim)
+
+def has_pool_dimension(dimensions):
+  return any(d.startswith('pool:') for d in dimensions)
