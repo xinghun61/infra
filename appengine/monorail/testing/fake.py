@@ -763,7 +763,7 @@ class ConfigService(object):
   def ExpungeConfig(self, _cnxn, project_id):
     self.expunged_configs.append(project_id)
 
-  def GetLabelDefRows(self, cnxn, project_id):
+  def GetLabelDefRows(self, cnxn, project_id, use_cache=True):
     """This always returns empty results.  Mock it to test other cases."""
     return []
 

@@ -241,7 +241,7 @@ class AbstractTwoLevelCache(object):
     strs_to_cache = {
         self._KeyToStr(key): self._ValueToStr(value)
         for key, value in retrieved_dict.iteritems()}
-    memcache.set_multi(
+    memcache.add_multi(
         strs_to_cache, key_prefix=self.memcache_prefix,
         time=framework_constants.MEMCACHE_EXPIRATION)
     logging.info('cached batch of %d values in memcache %s',
@@ -277,7 +277,8 @@ class AbstractTwoLevelCache(object):
     """Drop the given keys from both RAM and memcache."""
     self.cache.InvalidateKeys(cnxn, keys)
     memcache.delete_multi(
-        [self._KeyToStr(key) for key in keys], key_prefix=self.memcache_prefix)
+        [self._KeyToStr(key) for key in keys], seconds=5,
+        key_prefix=self.memcache_prefix)
 
   def InvalidateAllKeys(self, cnxn, keys):
     """Drop the given keys from memcache and invalidate all keys in RAM.
@@ -287,7 +288,8 @@ class AbstractTwoLevelCache(object):
     """
     self.cache.InvalidateAll(cnxn)
     memcache.delete_multi(
-        [self._KeyToStr(key) for key in keys], key_prefix=self.memcache_prefix)
+        [self._KeyToStr(key) for key in keys], seconds=5,
+        key_prefix=self.memcache_prefix)
 
   def GetAllAlreadyInRam(self, keys):
     """Look only in RAM to return {key: values}, missed_keys."""

@@ -439,9 +439,10 @@ class ConfigService(object):
 
   ### Label lookups
 
-  def GetLabelDefRows(self, cnxn, project_id):
+  def GetLabelDefRows(self, cnxn, project_id, use_cache=True):
     """Get SQL result rows for all labels used in the specified project."""
-    pids_to_label_rows, misses = self.label_row_2lc.GetAll(cnxn, [project_id])
+    pids_to_label_rows, misses = self.label_row_2lc.GetAll(
+        cnxn, [project_id], use_cache=use_cache)
     assert not misses
     return pids_to_label_rows[project_id]
 
@@ -465,10 +466,10 @@ class ConfigService(object):
 
     return label_id_to_name, label_name_to_id
 
-  def _EnsureLabelCacheEntry(self, cnxn, project_id):
+  def _EnsureLabelCacheEntry(self, cnxn, project_id, use_cache=True):
     """Make sure that self.label_cache has an entry for project_id."""
-    if not self.label_cache.HasItem(project_id):
-      def_rows = self.GetLabelDefRows(cnxn, project_id)
+    if not use_cache or not self.label_cache.HasItem(project_id):
+      def_rows = self.GetLabelDefRows(cnxn, project_id, use_cache=use_cache)
       self.label_cache.CacheItem(project_id, self._DeserializeLabels(def_rows))
 
   def LookupLabel(self, cnxn, project_id, label_id):
@@ -483,6 +484,13 @@ class ConfigService(object):
       Label name string for the given label_id, or None.
     """
     self._EnsureLabelCacheEntry(cnxn, project_id)
+    label_id_to_name, _label_name_to_id = self.label_cache.GetItem(
+        project_id)
+    if label_id in label_id_to_name:
+      return label_id_to_name[label_id]
+
+    logging.info('Label %r not found. Getting fresh from DB.', label_id)
+    self._EnsureLabelCacheEntry(cnxn, project_id, use_cache=False)
     label_id_to_name, _label_name_to_id = self.label_cache.GetItem(
         project_id)
     return label_id_to_name.get(label_id)
