@@ -26,7 +26,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
     cfg = Swarming(
       hostname='chromium-swam.appspot.com',
       common_swarming_tags=['master:master.a'],
-      common_dimensions=['cores:8'],
+      common_dimensions=['cores:8', 'pool:default'],
       builders=[
         Swarming.Builder(
           name='release',
@@ -50,7 +50,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
       builders=[
         Swarming.Builder(
           swarming_tags=['wrong2'],
-          dimensions=[':', 'a.b:c'],
+          dimensions=[':', 'a.b:c', 'pool:default'],
         ),
         Swarming.Builder(
           name='b2',
@@ -75,6 +75,8 @@ class SwarmingCfgTest(testing.AppengineTestCase):
       ('builder #1: dimension #2: '
        'key "a.b" does not match pattern "^[a-zA-Z\_\-]+$"'),
       'builder #1: recipe unspecified',
+      ('builder b2: has no "pool" dimension. '
+       'Either define it in the builder or in "common_dimensions"'),
       'builder b2: recipe: name unspecified',
       'builder b2: recipe: repository unspecified',
       'builder b2: recipe: property #1: does not have colon',

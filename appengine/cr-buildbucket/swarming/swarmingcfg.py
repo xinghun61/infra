@@ -45,7 +45,7 @@ def validate_recipe_cfg(recipe, ctx):
           ctx.error('key not specified')
 
 
-def validate_builder_cfg(builder, ctx):
+def validate_builder_cfg(builder, ctx, bucket_has_pool_dim=False):
   if not builder.name:
     ctx.error('name unspecified')
 
@@ -53,9 +53,16 @@ def validate_builder_cfg(builder, ctx):
     with ctx.prefix('tag #%d: ', i + 1):
       validate_tag(t, ctx)
 
+  has_pool_dim = bucket_has_pool_dim
   for i, d in enumerate(builder.dimensions):
     with ctx.prefix('dimension #%d: ', i + 1):
       validate_dimension(d, ctx)
+    if d.startswith('pool:'):
+      has_pool_dim = True
+  if not has_pool_dim:
+    ctx.error(
+      'has no "pool" dimension. '
+      'Either define it in the builder or in "common_dimensions"')
 
   if not builder.HasField('recipe'):
     ctx.error('recipe unspecified')
@@ -73,9 +80,14 @@ def validate_cfg(swarming, ctx):
   for i, t in enumerate(swarming.common_swarming_tags):
     with ctx.prefix('common tag #%d: ', i + 1):
       validate_tag(t, ctx)
+
+  has_pool_dim = False
   for i, d in enumerate(swarming.common_dimensions):
     with ctx.prefix('common dimension #%d: ', i + 1):
       validate_dimension(d, ctx)
+    if d.startswith('pool:'):
+      has_pool_dim = True
+
   for i, b in enumerate(swarming.builders):
     with ctx.prefix('builder %s: ' % (b.name or '#%s' % (i + 1))):
-      validate_builder_cfg(b, ctx)
+      validate_builder_cfg(b, ctx, bucket_has_pool_dim=has_pool_dim)
