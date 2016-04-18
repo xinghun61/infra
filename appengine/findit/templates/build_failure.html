@@ -346,6 +346,12 @@
             $('#triage-and-table').text('no failure is found');
           }
 
+          if (findit.analysisCorrect == 'True') {
+            $('.thumb-up').addClass('triaged').removeClass('triage');
+          } else if (findit.analysisCorrect == 'False') {
+            $('.thumb-down').addClass('triaged').removeClass('triage');
+          }
+
           if (findit.showTriageHelpButton) {
             $('#triage_help_button').click(triageHelp);
           }
