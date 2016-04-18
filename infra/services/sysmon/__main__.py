@@ -35,9 +35,6 @@ class SysMon(outer_loop.Application):
 
     parser.set_defaults(
         ts_mon_flush='manual',
-        ts_mon_target_type='task',
-        ts_mon_task_service_name='sysmon',
-        ts_mon_task_job_name='sysmon',
     )
 
   def task(self):
