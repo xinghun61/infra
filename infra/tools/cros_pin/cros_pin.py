@@ -147,8 +147,8 @@ def subcommand_update(args):
         LOGGER.debug('Did not update pins for [%s]', pin)
         continue
       tracker.add(pin, update)
+      LOGGER.debug('Updated pin set: %s', update)
 
-    LOGGER.debug('Updated pin set: %s', update)
     if not tracker:
       LOGGER.error('No pins were updated.')
       return 1
@@ -201,7 +201,12 @@ def subcommand_add_release(args):
       return 1
 
     # Regenerate slave pools for affected masters.
-    tracker.update()
+    try:
+      tracker.update()
+    except SlavePoolUpdateError as e:
+      LOGGER.error('Failed to generate pin bump CLs: %s', e)
+      return 1
+
     LOGGER.info('Created issues:\n%s', '\n'.join(tracker.issues))
   return 0
 
@@ -257,9 +262,10 @@ class UpdateTracker(object):
       try:
         self._regenerate_slave_pool(m)
       except SlavePoolUpdateError:
+        LOGGER.exception("Failed to update slave pools for [%s].", m)
         failed_slave_pool_masters.append(m)
     if failed_slave_pool_masters:
-      LOGGER.error('Failed to update slave pools for %s. You may need to '
+      LOGGER.error('Failed to update slave pools for: %s. You may need to '
                    'add additional slaves the pool(s).',
                    failed_slave_pool_masters)
       raise SlavePoolUpdateError("Failed to update slave pools.")
