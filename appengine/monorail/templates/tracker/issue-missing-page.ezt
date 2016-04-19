@@ -1,7 +1,11 @@
-[define title]Issue Not Found[end]
+[if-any moved_to_project_name]
+  [define title]Issue Moved[end]
+[else]
+  [define title]Issue Not Found[end]
+[end]
 [include "../framework/master-header.ezt" "showtabs"]
 
-<h3>Issue Not Found</h3>
+<h3>[title]</h3>
 
 <h4>What happened?</h4>
 
