@@ -6,8 +6,8 @@ import datetime
 
 from google.appengine.ext import ndb
 import mock
+import gae_ts_mon
 
-from components import metrics as metrics_component
 from components import utils
 from testing_utils import testing
 from proto import project_config_pb2
@@ -17,26 +17,27 @@ import metrics
 import model
 
 
-class MerticsTest(testing.AppengineTestCase):
-  def test_send_build_status_metric(self):
-    buf = mock.Mock()
+class MetricsTest(testing.AppengineTestCase):
+  def setUp(self):
+    super(MetricsTest, self).setUp()
+    gae_ts_mon.reset_for_unittest(disable=True)
 
+  def test_send_build_status_metric(self):
     ndb.put_multi([
       model.Build(bucket='chromium', status=model.BuildStatus.SCHEDULED),
       model.Build(bucket='chromium', status=model.BuildStatus.SCHEDULED),
       model.Build(bucket='v8', status=model.BuildStatus.SCHEDULED),
       model.Build(bucket='chromium', status=model.BuildStatus.STARTED),
     ])
-    send_future = metrics.send_build_status_metric(
-      buf, 'chromium', metrics.METRIC_PENDING_BUILDS,
-      model.BuildStatus.SCHEDULED)
-    send_future.get_result()
-    buf.set_gauge.assert_called_once_with(
-      metrics.METRIC_PENDING_BUILDS, 2,
-      {metrics.LABEL_BUCKET: 'chromium'})
+    metrics.send_build_status_metric(
+      metrics.CURRENTLY_PENDING,
+      'chromium',
+      model.BuildStatus.SCHEDULED).get_result()
+    self.assertEqual(2, metrics.CURRENTLY_PENDING.get(
+      {metrics.FIELD_BUCKET: 'chromium'},
+      target_fields=metrics.GLOBAL_TARGET_FIELDS))
 
   def test_send_build_lease_latency(self):
-    buf = mock.Mock()
     now = datetime.datetime(2015, 1, 4)
     self.mock(utils, 'utcnow', lambda: now)
 
@@ -70,17 +71,14 @@ class MerticsTest(testing.AppengineTestCase):
       ),
     ])
     metrics.send_build_latency(
-      buf, metrics.METRIC_LEASE_BUILD_LATENCY, 'chromium', True).get_result()
-    buf.set_gauge.assert_called_once_with(
-      metrics.METRIC_LEASE_BUILD_LATENCY,
-      2.0 * 24 * 3600,  # 2 days,
-      {metrics.LABEL_BUCKET: 'chromium'})
+      metrics.LEASE_LATENCY, 'chromium', True).get_result()
+    dist = metrics.LEASE_LATENCY.get(
+      {metrics.FIELD_BUCKET: 'chromium'},
+      target_fields=metrics.GLOBAL_TARGET_FIELDS)
+    self.assertEquals(dist.sum, 4.0 * 24 * 3600)  # 4 days
 
-  def test_send_all_metrics(self):
-    buf = mock.Mock()
-    self.mock(metrics_component, 'Buffer', lambda: buf)
-
-    self.mock(config, 'get_buckets_async', mock.Mock())
+  @mock.patch('config.get_buckets_async', autospec=True)
+  def test_send_all_metrics(self, *_):
     config.get_buckets_async.return_value = future([
       project_config_pb2.Bucket(name='x')
     ])
@@ -89,9 +87,9 @@ class MerticsTest(testing.AppengineTestCase):
     metrics.send_all_metrics()
 
     metrics.send_build_status_metric.assert_any_call(
-      buf, 'x', metrics.METRIC_PENDING_BUILDS, model.BuildStatus.SCHEDULED)
+      metrics.CURRENTLY_PENDING, 'x', model.BuildStatus.SCHEDULED)
     metrics.send_build_status_metric.assert_any_call(
-      buf, 'x', metrics.METRIC_RUNNING_BUILDS, model.BuildStatus.STARTED)
+      metrics.CURRENTLY_RUNNING, 'x', model.BuildStatus.STARTED)
 
   def test_fields_for(self):
     self.assertEqual(
