@@ -37,3 +37,4 @@ sys.path.extend(SDK_LIBRARY_PATHS)
 
 os.environ['SERVER_SOFTWARE'] = 'test ' + os.environ.get('SERVER_SOFTWARE', '')
 os.environ['CURRENT_VERSION_ID'] = 'test.123'
+os.environ.setdefault('NO_GCE_CHECK', 'True')
