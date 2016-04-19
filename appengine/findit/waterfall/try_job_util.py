@@ -8,6 +8,7 @@ from google.appengine.ext import ndb
 
 from common import appengine_util
 from common import constants
+from common.waterfall import failure_type
 from model import analysis_status
 from model.wf_try_job import WfTryJob
 from waterfall import swarming_tasks_to_try_job_pipeline
@@ -97,8 +98,7 @@ def _NeedANewTryJob(
             failed_steps))
 
   if need_new_try_job:
-    try_job = WfTryJob.Get(
-        master_name, builder_name, build_number)
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
 
     if try_job:
       if try_job.failed:
@@ -107,8 +107,7 @@ def _NeedANewTryJob(
       else:
         need_new_try_job = False
     else:
-      try_job = WfTryJob.Create(
-          master_name, builder_name, build_number)
+      try_job = WfTryJob.Create(master_name, builder_name, build_number)
       try_job.put()
 
   return need_new_try_job, last_pass, try_job_type, targeted_tests
@@ -156,17 +155,16 @@ def ScheduleTryJobIfNeeded(failure_info, signals, heuristic_result):
   if not tryserver_mastername or not tryserver_buildername:
     logging.info('%s, %s is not supported yet.', master_name, builder_name)
     return {}
+  elif (failure_info['failure_type'] == failure_type.TEST and
+        waterfall_config.ShouldSkipTestTryJobs(master_name, builder_name)):
+    logging.info('Test try jobs on %s, %s are not supported yet.',
+                 master_name, builder_name)
+    return {}
 
   failure_result_map = {}
   need_new_try_job, last_pass, try_job_type, targeted_tests = (
       _NeedANewTryJob(master_name, builder_name, build_number,
                       failed_steps, failure_result_map))
-
-  if (try_job_type == TryJobType.TEST and
-      waterfall_config.ShouldSkipTestTryJobs(master_name, builder_name)):
-    logging.info('Test try jobs on %s, %s are not supported yet.',
-                 master_name, builder_name)
-    return {}
 
   if need_new_try_job:
     compile_targets = (_GetFailedTargetsFromSignals(

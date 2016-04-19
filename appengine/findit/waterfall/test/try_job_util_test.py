@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from common.waterfall import failure_type
 from model import analysis_status
 from model.wf_try_job import WfTryJob
 from waterfall import try_job_util
@@ -82,6 +83,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         'failed_steps': {
             'a_test': {}
         },
+        'failure_type': failure_type.TEST
     }
 
     failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
@@ -121,7 +123,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
                 'blame_list': ['223-1', '223-2', '223-3'],
                 'chromium_revision': '223-3'
             }
-        }
+        },
+        'failure_type': failure_type.COMPILE
     }
 
     self.mock(
@@ -355,7 +358,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
                 'blame_list': ['223-1', '223-2', '223-3'],
                 'chromium_revision': '223-3'
             }
-        }
+        },
+        'failure_type': failure_type.COMPILE
     }
 
     self.mock(
