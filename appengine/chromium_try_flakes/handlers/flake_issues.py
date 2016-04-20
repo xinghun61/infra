@@ -64,9 +64,16 @@ TEST_RESULTS_URL_TEMPLATE = (
     'http://test-results.appspot.com/testfile?builder=%(buildername)s&name='
     'full_results.json&master=%(mastername)s&testtype=%(stepname)s&buildnumber='
     '%(buildnumber)s')
-VERY_STALE_FLAKES_MESSAGE = (
+NUM_DAYS_IGNORED_IN_QUEUE_FOR_STALENESS = 7
+VERY_STALE_FLAKES_MESSAGE_IGNORED = (
     'Reporting to stale-flakes-reports@google.com to investigate why this '
-    'issue is not being processed despite being in an appropriate queue.')
+    'issue is not being processed despite being in an appropriate queue for %d '
+    'days or more.' % NUM_DAYS_IGNORED_IN_QUEUE_FOR_STALENESS)
+NUM_TIMES_IN_QUEUE_FOR_STALENESS = 5
+VERY_STALE_FLAKES_MESSAGE_MANY_TIMES = (
+    'Reporting to stale-flakes-reports@google.com to investigate why this '
+    'issue has been in the appropriate queue %d times or more.' %
+    NUM_TIMES_IN_QUEUE_FOR_STALENESS)
 STALE_FLAKES_ML = 'stale-flakes-reports@google.com'
 MAX_GAP_FOR_FLAKINESS_PERIOD = datetime.timedelta(days=3)
 KNOWN_TROOPER_FLAKE_NAMES = [
@@ -353,14 +360,26 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
     _, expected_label = get_queue_details(flake_name)
 
     # Report to stale-flakes-reports@ if the issue has been in appropriate queue
-    # without any updates for 7 days.
-    week_ago = now - datetime.timedelta(days=7)
+    # without any updates for NUM_DAYS_IGNORED_IN_QUEUE_FOR_STALENESS days.
+    stale_deadline = now - datetime.timedelta(
+        days=NUM_DAYS_IGNORED_IN_QUEUE_FOR_STALENESS)
     last_updated = comments[-1].created
-    if (last_updated < week_ago and expected_label in flake_issue.labels and
+    if (last_updated < stale_deadline and
+        expected_label in flake_issue.labels and
         STALE_FLAKES_ML not in flake_issue.cc):
       flake_issue.cc.append(STALE_FLAKES_ML)
       logging.info('Reporting issue %s to %s', flake_issue.id, STALE_FLAKES_ML)
-      api.update(flake_issue, comment=VERY_STALE_FLAKES_MESSAGE)
+      api.update(flake_issue, comment=VERY_STALE_FLAKES_MESSAGE_IGNORED)
+
+    # Report to stale-flake-reports@ if the issue has been in the appropriate
+    # queue more than NUM_TIMES_IN_QUEUE_FOR_STALENESS times.
+    num_times_in_queue = len(list(
+        comment for comment in comments if expected_label in comment.labels))
+    if (num_times_in_queue >= NUM_TIMES_IN_QUEUE_FOR_STALENESS and
+        STALE_FLAKES_ML not in flake_issue.cc):
+      flake_issue.cc.append(STALE_FLAKES_ML)
+      logging.info('Reporting issue %s to %s', flake_issue.id, STALE_FLAKES_ML)
+      api.update(flake_issue, comment=VERY_STALE_FLAKES_MESSAGE_MANY_TIMES)
 
 
 class CreateFlakyRun(webapp2.RequestHandler):

@@ -27,7 +27,7 @@ class Comment(object):  # pragma: no cover
       self.blocked_on = [
           e for e in comment_entry['updates'].get('blockedOn', [])]
     else:
-      self.cc = None
+      self.cc = []
       self.labels = []
       self.owner = None
       self.status = None

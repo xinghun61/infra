@@ -93,10 +93,11 @@ TEST_BUILDBOT_JSON_REPLY = json.dumps({
 
 
 class MockComment(object):
-  def __init__(self, created, author, comment=None):
+  def __init__(self, created, author, comment=None, labels=None):
     self.created = created
     self.author = author
     self.comment = comment
+    self.labels = labels or []
 
 class MockIssue(object):
   def __init__(self, issue_entry):
@@ -510,7 +511,33 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     self.assertEqual(
         issue.comments[-1].comment,
         'Reporting to stale-flakes-reports@google.com to investigate why this '
-        'issue is not being processed despite being in an appropriate queue.')
+        'issue is not being processed despite being in an appropriate queue '
+        'for 7 days or more.')
+
+  @mock_datetime_utc(2015, 12, 8, 15, 0, 0)
+  def test_cc_stale_flakes_reports_when_in_queue_5_times(self):
+    issue = self.mock_api.create(MockIssue({}))
+    issue.created = datetime.datetime(2015, 12, 3, 11, 0, 0)
+    issue.labels = ['Sheriff-Chromium']
+    issue.comments = [
+        MockComment(datetime.datetime(2015, 12, 3, 11, 0, 1), 'app@ae.org',
+                    '"foo.bar" is flaky\n\n...', labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 4, 11, 0, 1), 'app@ae.org',
+                    'more flakes...', labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 5, 11, 0, 1), 'app@ae.org',
+                    'more flakes...', labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 6, 11, 0, 1), 'app@ae.org',
+                    'more flakes...', labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 7, 11, 0, 1), 'app@ae.org',
+                    'more flakes...', labels=['Sheriff-Chromium']),
+    ]
+    self.test_app.post('/issues/update-if-stale/%s' % issue.id)
+    self.assertIn('stale-flakes-reports@google.com', issue.cc)
+    self.assertEqual(len(issue.comments), 6)
+    self.assertEqual(
+        issue.comments[-1].comment,
+        'Reporting to stale-flakes-reports@google.com to investigate why this '
+        'issue has been in the appropriate queue 5 times or more.')
 
   @mock_datetime_utc(2015, 12, 8, 15, 0, 0)
   def test_uses_third_party_comment_date_to_compute_staleness(self):
