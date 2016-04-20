@@ -176,6 +176,7 @@ import:
   - cmd/goimports
   - cmd/gomvpkg
   - cmd/gorename
+  - cmd/guru
   - cmd/oracle
   - cmd/stringer
 - package: github.com/kisielk/gotool
