@@ -9,6 +9,7 @@ from components import auth
 from components import utils
 from google.appengine.ext import ndb
 import mock
+import gae_ts_mon
 
 from testing_utils import testing
 import api
@@ -22,6 +23,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
   def setUp(self):
     super(BuildBucketApiTest, self).setUp()
+    gae_ts_mon.reset_for_unittest(disable=True)
     for a in dir(service):
       self.mock(service, a, mock.Mock())
 

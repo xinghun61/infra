@@ -172,12 +172,12 @@ def buildbucket_api_method(
     request_message_class, response_message_class, **kwargs)
 
   def decorator(fn):
-    def ts_mon_time():
-      return utils.datetime_to_timestamp(utils.utcnow()) / 1000000.0
-    fn = gae_ts_mon.instrument_endpoint(time_fn=ts_mon_time)(fn)
     fn = catch_errors(fn, response_message_class)
     fn = endpoints_decorator(fn)
     fn = ndb.toplevel(fn)
+    def ts_mon_time():
+      return utils.datetime_to_timestamp(utils.utcnow()) / 1000000.0
+    fn = gae_ts_mon.instrument_endpoint(time_fn=ts_mon_time)(fn)
     return fn
 
   return decorator
