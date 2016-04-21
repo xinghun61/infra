@@ -93,7 +93,7 @@ def Linkify(_mr, autolink_regex_match,
 
   if (not validate.IsValidURL(hyperlink) and
       not validate.IsValidEmail(hyperlink)):
-    return [template_helpers.TextRun(hyperlink)]
+    return [template_helpers.TextRun(autolink_regex_match.group(0))]
 
   result = [template_helpers.TextRun(hyperlink, tag='a', href=hyperlink)]
   if trailing:

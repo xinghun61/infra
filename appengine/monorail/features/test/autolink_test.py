@@ -310,6 +310,14 @@ class URLAutolinkTest(unittest.TestCase):
     self.assertEqual(test, result[0].href)
     self.assertEqual(test, result[0].content)
 
+  def testLinkify_ContextOnBadLink(self):
+    """Test that surrounding text retained in cases where we don't link url."""
+    test = 'http://badexample'
+    result = self.DoLinkify('<a href="%s">' % test)
+    self.assertEqual(None, result[0].href)
+    self.assertEqual(test + '">', result[0].content)
+    self.assertEqual(1, len(result))
+
   def testLinkify_UnicodeContext(self):
     """Test that unicode context does not mess up the link."""
     test = 'http://www.example.com'
