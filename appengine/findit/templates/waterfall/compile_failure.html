@@ -136,11 +136,7 @@
         $('#status_message').text('running, will refresh in 5 seconds...');
         $('#status_message').attr('class', 'running');
         setTimeout(function() {
-          {% if show_debug_info %}
-          window.location.href = '/waterfall/build-failure?url=' + findit.buildUrl + '&debug=1';
-          {% else %}
           window.location.href = '/waterfall/build-failure?url=' + findit.buildUrl;
-          {% endif %}
         }, 5000);
       } else {
         if (findit.analysisFailed) {
@@ -194,11 +190,17 @@
     {% if last_pass %}
       Last Pass: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{last_pass}}">{{last_pass}}</a><br>
       {% if last_pass + 1 != first_failure %}
-       <div class='warning'>Be careful, compile was not run or purple in builds before first failure!</div>
+      <div class="warning">Be careful, compile was not run or purple in builds before first failure!</div>
       {% endif %}
     {% else %}
-      Last Pass: Unknown!
+      <div class="warning">Last Pass: Unknown!</div>
     {% endif %}
+    {%if show_debug_info %}
+      <a href="/waterfall/failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/compile">compile stdio</a>
+    {% else %}
+      <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/compile">compile stdio</a>
+    {% endif %}
+    <br>
   </div>
   <br>
 
@@ -214,7 +216,7 @@
         {% if try_job.failed %}
           <span class="error">Try job ran into error!</span>
         {% elif try_job.culprit %}
-        Culprit: {{try_job.culprit.repo_name}}: <a href="{{try_job.culprit.review_url}}">{{try_job.culprit.commit_position or try_job.culprit.revision}}</a>
+        Culprit: {{try_job.culprit.repo_name or 'chromium'}} <a href="{{try_job.culprit.review_url}}">{{try_job.culprit.commit_position or try_job.culprit.revision}}</a>
         {% else %}
           <div>No culprit found!</div>
         {% endif%}
@@ -250,7 +252,7 @@
       <div id="suspected_cls">
         <table>
           <tr>
-            <th title="The build cycle in which the CL was in">Build Number</th>
+            <th title="The build cycle in which the culprit was in">Build Number</th>
             <th title="Git repo name and commit position/hash of the culprit">Culprit</th>
             <th title="The higher score, the more suspected">Score(<a id="score-info" href="javascript:">?</a>)</th>
             <th title="Why this CL is related to the failure">Hints</th>
@@ -260,7 +262,7 @@
             <tr>
               <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{suspected_cl.build_number}}">{{suspected_cl.build_number}}</a></td>
               <td>
-                {{suspected_cl.repo_name}}: <a href="{{suspected_cl.url}}">{{suspected_cl.commit_position or suspected_cl.revision}}</a>
+                {{suspected_cl.repo_name}} <a href="{{suspected_cl.url}}">{{suspected_cl.commit_position or suspected_cl.revision}}</a>
               </td>
               <td>{{suspected_cl.score}}</td>
               <td>
