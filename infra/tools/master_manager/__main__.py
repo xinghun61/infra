@@ -19,9 +19,15 @@ from infra.libs.service_utils import daemon
 from infra.libs.service_utils import outer_loop
 from infra.services.master_lifecycle import buildbot_state
 from infra_libs import logs
+from infra_libs import ts_mon
 
 
-def parse_args():  # pragma: no cover
+run_count = ts_mon.CounterMetric(
+    'master_manager/run_count',
+    description='Count the number of state machine runs.')
+
+
+def parse_args(argv):
   parser = argparse.ArgumentParser(
       description='Manage the state of a buildbot master. NOTE: Does nothing '
                   'unless --prod is specified')
@@ -62,11 +68,20 @@ def parse_args():  # pragma: no cover
            'out.')
   outer_loop.add_argparse_options(parser)
   logs.add_argparse_options(parser)
+  ts_mon.add_argparse_options(parser)
 
-  args = parser.parse_args()
+  parser.set_defaults(
+    ts_mon_target_type='task',
+    ts_mon_task_job_name='unset',  # Will be overwritten with master name.
+    ts_mon_task_service_name='master_manager',
+    ts_mon_flush_mode='manual',
+  )
+
+  args = parser.parse_args(argv)
   logs.process_argparse_options(args)
+  ts_mon.process_argparse_options(args)
 
-  if not args.list_all_states:
+  if not args.list_all_states:  # pragma: no cover
     if not args.directory:
       parser.error('A master directory must be specified.')
     if not args.transition_time_utc:
@@ -79,7 +94,7 @@ def parse_args():  # pragma: no cover
 def master_hostname_is_valid(local_hostname, abs_master_directory, logger):
   master_hostname = master.get_mastermap_data(
       abs_master_directory)['fullhost']
-  if master_hostname != local_hostname:
+  if master_hostname != local_hostname:  # pragma: no cover
     logger.error('%s does not match %s, aborting. use --hostname to override.',
         local_hostname, master_hostname)
     return False
@@ -90,13 +105,27 @@ def run_state_machine_pass(
     logger, matchlist, abs_master_directory, emergency_file, desired_state,
     transition_time_utc, enable_gclient_sync, prod, connection_timeout,
     hostname, builder_filters):
-  # pragma: no cover
-  if os.path.exists(os.path.join(abs_master_directory, emergency_file)):
+  def metric_kwargs(result, action='none'):
+    return {
+        'fields': {
+            'result': result,
+            'action': action,
+        },
+        'target_fields': {
+            'job_name': abs_master_directory.split('/')[-1],
+        },
+    }
+  
+  if os.path.exists(os.path.join(
+      abs_master_directory, emergency_file)):  # pragma: no cover
     logger.error('%s detected in %s, aborting!',
         emergency_file, abs_master_directory)
+    run_count.increment(**metric_kwargs('failure'))
     return 1
 
-  if not master_hostname_is_valid(hostname, abs_master_directory, logger):
+  if not master_hostname_is_valid(
+      hostname, abs_master_directory, logger):  # pragma: no cover
+    run_count.increment(**metric_kwargs('failure'))
     return 1
 
   evidence = buildbot_state.collect_evidence(
@@ -116,7 +145,7 @@ def run_state_machine_pass(
   logger.info('%s: current state: %s', abs_master_directory, state)
   logger.info('%s: performing action: %s', abs_master_directory, action_name)
 
-  if execution_list:
+  if execution_list:  # pragma: no branch
     if prod:
       logger.info('production run, executing:')
     else:
@@ -126,20 +155,22 @@ def run_state_machine_pass(
       if prod:
         try:
           with daemon.flock(cmd['lockfile']):
-            subprocess.check_call(
+            subprocess.check_call(  # pragma: no branch
                 [str(x) for x in cmd['cmd']],
                 cwd=cmd['cwd'],
                 close_fds=True)
-        except daemon.LockAlreadyLocked:
+        except daemon.LockAlreadyLocked:  # pragma: no cover
           logger.warn('  lock on %s could not be acquired, no action taken.',
               cmd['lockfile'])
-  else:
+  else:  # pragma: no cover
     logger.info('no action to be taken.')
+
+  run_count.increment(**metric_kwargs('success', action_name))
   return 0
 
 
-def main():  # pragma: no cover
-  args = parse_args()
+def run(argv):
+  args = parse_args(argv)
 
   logger = logging.getLogger(__name__)
   logs.add_handler(logger)
@@ -147,7 +178,7 @@ def main():  # pragma: no cover
   matchlist = buildbot_state.construct_pattern_matcher(
       drain_timeout_sec=args.drain_timeout)
 
-  if args.list_all_states:
+  if args.list_all_states:  # pragma: no cover
     matchlist.print_all_states()
     return 0
 
@@ -159,15 +190,21 @@ def main():  # pragma: no cover
         args.desired_state, args.transition_time_utc, args.enable_gclient_sync,
         args.prod, args.connection_timeout, args.hostname, builder_filters)
 
-  if args.loop:
+  if args.loop:  # pragma: no cover
     loop_opts = outer_loop.process_argparse_options(args)
     outer_loop.loop(
         state_machine, lambda: args.loop_sleep_secs, **loop_opts)
   else:
     return state_machine()
 
-  return 0
+  return 0  # pragma: no cover
 
 
-if __name__ == '__main__':  # pragma: no cover
+def main():  # pragma: no cover
+  ret = run(sys.argv[1:])
+  ts_mon.flush()
+  return ret
+
+
+if __name__ == '__main__':
   sys.exit(main())
