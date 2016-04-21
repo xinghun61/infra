@@ -378,7 +378,7 @@
   <br>
   <br>
 
-  <b>Build info:</b>
+  <b>Test Failure:</b>
   <div>
     Master: {{master_name}}<br>
     Builder: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}">{{builder_name}}</a><br>
@@ -386,7 +386,7 @@
   </div>
   <br>
 
-  <b>Analysis info:</b>
+  <b>Heuristic analysis info:</b>
   <div id="analysis_info">
     status: <span id="status_message"></span>
   {% if show_debug_info %}
@@ -406,20 +406,14 @@
   <br>
 
   {% if analysis_completed %}
-  <b>Analysis result:</b>
+  <b>Findit result:</b>
     {% if analysis_failed %}
-      <br>
       <span class="error">No result because of some error in analysis!</span>
     {% else %}
       <div id="triage-and-table">
-        <div class="thumbs-up-down">
-          <div class="triage thumb-up">Correct <img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_up_black_24dp.png"/></div>
-          <div class="triage thumb-down"><img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_down_black_24dp.png"/> Incorrect</div>
-        </div>
         <div id="analysis_result">
           <div id="reliable_failures" class='not-display'>
-            <br>
-            <b>Reliable Failures</b>
+            <b>Reliable failures</b>
             <table id="reliable_failures_table">
               <thead>
                 <tr>
@@ -446,11 +440,11 @@
               <tbody>
               </tbody>
             </table>
+            <br>
           </div>
 
           <div id="flaky_failures" class='not-display'>
-            <br>
-            <b>Flaky Failures</b>
+            <b>Flaky failures</b>
             <table id="flaky_failures_table">
               <thead>
                 <tr>
@@ -474,11 +468,11 @@
               <tbody>
               </tbody>
             </table>
+            <br>
           </div>
 
           <div id="unclassified_failures" class='not-display'>
-            <br>
-            <b>Unclassified Failures</b>
+            <b>Unclassified failures</b>
             <table id="unclassified_failures_table">
               <thead>
                 <tr>
@@ -504,6 +498,12 @@
             </table>
           </div>
         </div>
+        <br>
+        <div class="thumbs-up-down">
+          <b>Feedback on Findit result:</b><br>
+          <div class="triage thumb-up">Correct <img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_up_black_24dp.png"/></div>
+          <div class="triage thumb-down"><img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_down_black_24dp.png"/> Incorrect</div>
+        </div>
       </div>
     {% endif %}
   {% endif %}
@@ -511,7 +511,7 @@
   {% if show_triage_help_button %}
     <br><br>
     <div id="triage_help">
-      <button id="triage_help_button">Triage Help</button>
+      <button id="triage_help_button">Triage help</button>
       <br>
       <div id="triage_help_result">
       </div>
@@ -520,7 +520,7 @@
 
   {% if triage_history %}
     <br>
-    <b>Triage History:</b>
+    <b>Triage history:</b>
     <div>
       <table>
         <tr><th>When</th><th>Who</th><th>Result</th><th>Version</th></tr>

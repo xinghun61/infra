@@ -177,7 +177,7 @@
   <br>
   <br>
 
-  <b>Compile failure:</b>
+  <b><font color="red">Compile Failure:</font></b>
   <div>
     Master: {{master_name}}<br>
     Builder: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}">{{builder_name}}</a><br>
@@ -225,7 +225,7 @@
   <br>
   {% endif%}
 
-  <b>Heuristic Analysis Result:</b>
+  <b>Heuristic analysis result:</b>
   <div id="heuristic-analysis">
     Status: <span id="status_message"></span>
   {% if show_debug_info %}
@@ -282,7 +282,7 @@
   {% if analysis_completed %}
   <br>
   <div>
-    <b>Feedback on Findit Result:</b><br>
+    <b>Feedback on Findit result:</b><br>
     <div class="thumbs-up-down">
       <div class="triage thumb-up">Correct <img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_up_black_24dp.png"/></div>
       <div class="triage thumb-down"><img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_down_black_24dp.png"/> Incorrect</div>
@@ -290,9 +290,19 @@
   </div>
   {% endif %}
 
+  {% if show_triage_help_button %}
+  <br>
+  <div id="triage_help">
+    <button id="triage_help_button">Triage help</button>
+    <br>
+    <div id="triage_help_result">
+    </div>
+  </div>
+  {% endif %}
+
   {% if triage_history %}
   <br>
-  <b>Triage History:</b>
+  <b>Triage history:</b>
   <div>
     <table>
       <tr><th>When</th><th>Who</th><th>Result</th><th>Version</th></tr>
@@ -307,16 +317,6 @@
         {% endfor %}
       </tbody>
     </table>
-  </div>
-  {% endif %}
-
-  {% if show_triage_help_button %}
-  <br>
-  <div id="triage_help">
-    <button id="triage_help_button">Triage Help</button>
-    <br>
-    <div id="triage_help_result">
-    </div>
   </div>
   {% endif %}
 
