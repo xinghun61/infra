@@ -4,6 +4,7 @@
 
 import collections
 
+
 class Dependency(object):
   """Represents a dependency in Chrome, like blink, v8, pdfium, etc."""
   def __init__(self, path, repo_url, revision, deps_file='DEPS'):

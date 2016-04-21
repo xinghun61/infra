@@ -10,7 +10,7 @@ from common import chromium_deps
 from common import deps_parser
 from common import git_repository
 from common import repository
-from common.dependency import Dependency
+from common.dependency import Dependency, DependencyRoll
 
 
 class DummyGitRepository(repository.Repository):
@@ -172,3 +172,25 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
     deps_rolls = chromium_deps.GetChromiumDEPSRolls('rev1', 'rev2', 'unix')
     self.assertEqual(expected_deps_rolls,
                      [roll.ToDict() for roll in deps_rolls])
+
+  def testGetDEPSRollsDict(self):
+    def _MockGetChromiumDEPSRolls(*_):
+      return [
+          DependencyRoll('src/dep1', 'https://url_dep1', '7', '9'),
+          DependencyRoll('src/dep2', 'https://url_dep2', '3', None)
+      ]
+
+    self.mock(chromium_deps, 'GetChromiumDEPSRolls',
+              _MockGetChromiumDEPSRolls)
+
+    expected_deps_rolls_dict = {
+        'src/dep1': DependencyRoll('src/dep1', 'https://url_dep1', '7', '9'),
+        'src/dep2': DependencyRoll('src/dep2', 'https://url_dep2', '3', None),
+        'src/': DependencyRoll(
+            'src/',
+            'https://chromium.googlesource.com/chromium/src.git', '4', '5'),
+    }
+
+    self.assertEqual(chromium_deps.GetDEPSRollsDict('4', '5', 'all'),
+                     expected_deps_rolls_dict)
+

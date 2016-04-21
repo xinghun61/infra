@@ -46,12 +46,12 @@ class DEPSDownloader(deps_parser.DEPSLoader):
     return content
 
 
-def GetChromeDependency(revision, os_platform, check_deps_git_first=False):
+def GetChromeDependency(revision, platform, check_deps_git_first=False):
   """Returns all dependencies of Chrome as a dict for the given revision and OS.
 
   Args:
     revision (str): The revision of a Chrome build.
-    os_platform (str): The target platform of the Chrome build, should be one of
+    platform (str): The target platform of the Chrome build, should be one of
         'win', 'ios', 'mac', 'unix', 'android', or 'all'.
     check_deps_git_first (bool): If True, use .DEPS.git instead of DEPS.
 
@@ -62,7 +62,7 @@ def GetChromeDependency(revision, os_platform, check_deps_git_first=False):
       _CHROMIUM_ROOT_DIR, _CHROMIUM_REPO_MASTER, revision, 'DEPS')
 
   deps_parser.UpdateDependencyTree(
-      root_dep, [os_platform], DEPSDownloader(check_deps_git_first))
+      root_dep, [platform], DEPSDownloader(check_deps_git_first))
 
   dependencies = {}
 
@@ -77,20 +77,20 @@ def GetChromeDependency(revision, os_platform, check_deps_git_first=False):
   return dependencies
 
 
-def GetChromiumDEPSRolls(old_cr_revision, new_cr_revision, os_platform,
+def GetChromiumDEPSRolls(old_cr_revision, new_cr_revision, platform,
                          check_deps_git_first=False):
   """Returns a list of dependency rolls between the given Chromium revisions.
 
   Args:
     old_cr_revision (str): The Git commit hash for the old Chromium revision.
     new_cr_revision (str): The Git commit hash for the new Chromium revision.
-    os_platform (str): The target OS platform of the Chrome or test binary.
+    platform (str): The target OS platform of the Chrome or test binary.
     check_deps_git_first (bool): If True, use .DEPS.git instead of DEPS.
   """
   old_deps = GetChromeDependency(
-      old_cr_revision, os_platform, check_deps_git_first)
+      old_cr_revision, platform, check_deps_git_first)
   new_deps = GetChromeDependency(
-      new_cr_revision, os_platform, check_deps_git_first)
+      new_cr_revision, platform, check_deps_git_first)
 
   rolls = []
 
@@ -114,3 +114,28 @@ def GetChromiumDEPSRolls(old_cr_revision, new_cr_revision, os_platform,
               path, old_dep.repo_url, old_dep.revision, None))
 
   return rolls
+
+
+def GetDEPSRollsDict(old_cr_revision, new_cr_revision, platform):
+  """Gets dep_path to DependencyRoll dictionary for deps in
+  (old_cr_revision, new_cr_revision].
+
+  Args:
+    old_cr_revision (str): The Git commit hash for the old Chromium revision.
+    new_cr_revision (str): The Git commit hash for the new Chromium revision.
+    platform (str): The target OS platform of the Chrome or test binary.
+
+  Returns:
+    A dict, mapping dep path to DependencyRoll.
+  """
+  deps_rolls = GetChromiumDEPSRolls(old_cr_revision, new_cr_revision, platform)
+  # Add chromium as dependency roll.
+  deps_rolls.append(dependency.DependencyRoll(
+      _CHROMIUM_ROOT_DIR, _CHROMIUM_REPO_MASTER,
+      old_cr_revision, new_cr_revision))
+
+  deps_rolls_dict = {}
+  for dep_roll in deps_rolls:
+    deps_rolls_dict[dep_roll.path] = dep_roll
+
+  return deps_rolls_dict
