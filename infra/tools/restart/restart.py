@@ -92,10 +92,10 @@ def add_argparse_options(parser):
       help='schedules restart for 6:30PM Google Standard Time.')
   parser.add_argument('-b', '--bug', default=None, type=str,
                       help='Bug containing master restart request.')
-  parser.add_argument('-r', '--reviewer', action='append', type=str,
-                      help=(
-                          'Reviewer to TBR the CL to. If not specified, '
-                          'chooses a random reviewer from OWNERS file'))
+  parser.add_argument(
+      '-r', '--reviewer', action='append', type=str,
+      help=('Reviewer (ldap or ldap@google.com) to TBR the CL to. '
+            'If not specified, chooses a random reviewer from OWNERS file'))
   parser.add_argument(
       '-f', '--force', action='store_true',
       help='don\'t ask for confirmation, just commit')
@@ -169,6 +169,23 @@ def get_master_state_checkout():
     shutil.rmtree(target_dir)
 
 
+def autocomplete_and_partition(reviewers):
+  """Autocompletes ldap to ldap@google.com.
+
+  Returns partitions the list into google.com emails and others.
+  """
+  google, other = [], []
+  for r in reviewers:
+    if '@' in r:
+      _, domain = r.split('@', 1)
+      if domain != 'google.com':
+        other.append(r)
+      else:
+        google.append(r)
+    else:
+      google.append('%s@google.com' % r)
+  return google, other
+
 def commit(
     target, specs, reviewers, bug, force, no_commit, desired_state):
   """Commits the local CL via the CQ."""
@@ -181,8 +198,18 @@ def commit(
       action, ', '.join([s.name for s in specs]))
   if bug:
     desc += '\nBUG=%s' % bug
+  tbr_whom = 'an owner'
   if reviewers:
-    desc += '\nTBR=%s' % ', '.join(reviewers)
+    google, other = autocomplete_and_partition(reviewers)
+    if other:
+      print
+      print 'Error: not @google.com email(s) for reviewers found:'
+      print '  %s' % ('\n  '.join(other))
+      print 'Hint: save your fingertips - use just ldap: -r <ldap>'
+      return 1
+
+    tbr_whom = ', '.join(google)
+    desc += '\nTBR=%s' % tbr_whom
   subprocess.check_call(
       ['git', 'commit', '--all', '--message', desc], cwd=target)
 
@@ -204,7 +231,7 @@ def commit(
     print s.message
   print
 
-  print "This will upload a CL for master_manager.git, TBR an owner, and "
+  print "This will upload a CL for master_manager.git, TBR %s, and " % tbr_whom
   if no_commit:
     print "wait for you to manually commit."
   else:
