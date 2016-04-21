@@ -41,4 +41,4 @@ Multiple Appengine modules are fully supported - the module name will appear as
 part of the `event_source.host_name` field in the following format:
 "`module_name`, version".
 
-[chrome-infra-mon-pubsub project]: https://pantheon.corp.google.com/project/chrome-infra-mon-pubsub/cloudpubsub/topicList
+[chrome-infra-mon-pubsub project]: https://console.developers.google.com/project/chrome-infra-mon-pubsub/cloudpubsub/topicList

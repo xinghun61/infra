@@ -26,7 +26,7 @@ Testing on a staging instance
 Cloud project: chrome-infra-mon-proxy-dev
 
 The app reads its parameters from the [Metadata
-server](https://pantheon.corp.google.com/project/chrome-infra-mon-proxy-dev/compute/metadata) on startup;
+server](https://console.developers.google.com/project/chrome-infra-mon-proxy-dev/compute/metadata) on startup;
 make sure parameters are set as you expect.
 
 If you change Metadata parameters, you need to restart the app either
