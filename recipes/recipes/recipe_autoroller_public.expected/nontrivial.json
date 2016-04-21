@@ -282,7 +282,7 @@
       "@@@STEP_LOG_LINE@blame@recipe_engine:@@@",
       "@@@STEP_LOG_LINE@blame@  https://crrev.com/123abc some commit message (foo@chromium.org)@@@",
       "@@@STEP_LOG_END@blame@@@",
-      "@@@STEP_WARNINGS@@@"
+      "@@@STEP_FAILURE@@@"
     ]
   },
   {
