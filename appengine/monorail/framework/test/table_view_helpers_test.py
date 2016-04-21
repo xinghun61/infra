@@ -332,7 +332,7 @@ class TableViewHelpersTest(unittest.TestCase):
     lower_columns = []
     cell_factories = {}
     table_data = table_view_helpers.MakeTableData(
-        visible_results, None, [], lower_columns, lower_columns,
+        visible_results, [], lower_columns, lower_columns,
         cell_factories, [], lambda art: 'id', {}, self.config)
     self.assertEqual([], table_data)
 
@@ -343,7 +343,7 @@ class TableViewHelpersTest(unittest.TestCase):
         }
 
     table_data = table_view_helpers.MakeTableData(
-        visible_results, None, [], lower_columns, [], {},
+        visible_results, [], lower_columns, [], {},
         cell_factories, lambda art: 'id', {}, self.config)
     self.assertEqual([], table_data)
 
@@ -358,7 +358,7 @@ class TableViewHelpersTest(unittest.TestCase):
         }
 
     table_data = table_view_helpers.MakeTableData(
-        visible_results, None, [], lower_columns, lower_columns, {},
+        visible_results, [], lower_columns, lower_columns, {},
         cell_factories, lambda art: 'id', {}, self.config)
     self.assertEqual(1, len(table_data))
     row = table_data[0]
@@ -377,7 +377,7 @@ class TableViewHelpersTest(unittest.TestCase):
         }
 
     table_data = table_view_helpers.MakeTableData(
-        visible_results, None, [], lower_columns, lower_group_by, {},
+        visible_results, [], lower_columns, lower_group_by, {},
         cell_factories, lambda art: 'id', {}, self.config)
     self.assertEqual(1, len(table_data))
     row = table_data[0]
@@ -398,7 +398,7 @@ class TableViewHelpersTest(unittest.TestCase):
     # a result is an table_view_helpers.TableRow object with a "cells" field
     # containing a list of table_view_helpers.TableCell objects.
     result = table_view_helpers.MakeRowData(
-        art, columns, True, {}, cell_factories, {}, self.config)
+        art, columns, {}, cell_factories, {}, self.config)
 
     self.assertEqual(len(columns), len(result.cells))
 

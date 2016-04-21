@@ -4,7 +4,6 @@
 <tr id="headingrow"><th style="border-left: 0"> &nbsp; </th>
  [for panels.ordered_columns]
   [is panels.ordered_columns.name "Summary"]
-   <th class="col_[panels.ordered_columns.col_index]" style="border-right:0">&nbsp;</th>
    <th class="col_[panels.ordered_columns.col_index]" nowrap="nowrap" id="summaryheading"
        data-col-index="[panels.ordered_columns.col_index]" width="100%"
        ><a href="#" style="text-decoration: none">Summary + Labels <span class="indicator">&#9660;</span></a></th>

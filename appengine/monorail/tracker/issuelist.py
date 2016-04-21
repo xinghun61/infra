@@ -222,8 +222,7 @@ class IssueList(servlet.Servlet):
     logging.info('grid_x_headings = %s', grid_x_headings)
     logging.info('grid_y_headings = %s', grid_y_headings)
     grid_data = _MakeGridData(
-        results, mr.auth.user_id,
-        starred_iid_set, grid_x_attr, grid_x_headings,
+        results, starred_iid_set, grid_x_attr, grid_x_headings,
         grid_y_attr, grid_y_headings, users_by_id, all_label_values,
         config)
 
@@ -284,8 +283,7 @@ class IssueList(servlet.Servlet):
     lower_columns = mr.col_spec.lower().split()
     lower_group_by = mr.group_by_spec.lower().split()
     table_data = _MakeTableData(
-        results, mr.auth.user_id,
-        starred_iid_set, lower_columns, lower_group_by,
+        results, starred_iid_set, lower_columns, lower_group_by,
         users_by_id, self.GetCellFactories(), related_issues, config)
 
     # Used to offer easy filtering of each unique value in each column.
@@ -366,12 +364,11 @@ def _AnyDerivedValues(table_data):
 
 
 def _MakeTableData(
-    visible_results, logged_in_user_id, starred_iid_set,
-    lower_columns, lower_group_by, users_by_id, cell_factories,
-    related_issues, config):
+    visible_results, starred_iid_set, lower_columns, lower_group_by,
+    users_by_id, cell_factories, related_issues, config):
   """Return a list of list row objects for display by EZT."""
   table_data = table_view_helpers.MakeTableData(
-      visible_results, logged_in_user_id, starred_iid_set,
+      visible_results, starred_iid_set,
       lower_columns, lower_group_by, users_by_id, cell_factories,
       lambda issue: issue.issue_id, related_issues, config)
 
@@ -386,7 +383,7 @@ def _MakeTableData(
 
 
 def _MakeGridData(
-    allowed_results, _logged_in_user_id, starred_iid_set, x_attr,
+    allowed_results, starred_iid_set, x_attr,
     grid_col_values, y_attr, grid_row_values, users_by_id, all_label_values,
     config):
   """Return all data needed for EZT to render the body of the grid view."""

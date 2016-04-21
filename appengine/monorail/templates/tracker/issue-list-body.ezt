@@ -35,10 +35,6 @@
      [end]
 
      [is table_data.cells.type "summary"]
-      <td class="col_[table_data.cells.col_index]"
-          align="right" valign="top" style="padding-right:0; padding-top: 0.15em">
-       [if-any table_data.owner_is_me]<small><b>&rsaquo;</b></small>[else]&nbsp;[end]
-      </td>
       <td class="col_[table_data.cells.col_index]" width="100%"
         >[include "../framework/artifact-list-cell-values.ezt"]
           [include "../framework/artifact-list-non-column-labels.ezt"]

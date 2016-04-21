@@ -237,14 +237,12 @@ def ExtractUniqueValues(columns, artifact_list, users_by_id, config):
 
 
 def MakeTableData(
-    visible_results, logged_in_user_id, starred_items,
-    lower_columns, lower_group_by, users_by_id, cell_factories,
-    id_accessor, related_issues, config):
+    visible_results, starred_items, lower_columns, lower_group_by,
+    users_by_id, cell_factories, id_accessor, related_issues, config):
   """Return a list of list row objects for display by EZT.
 
   Args:
     visible_results: list of artifacts to display on one pagination page.
-    logged_in_user_id: user ID of the signed in user, or None.
     starred_items: list of IDs/names of items in the current project
         that the signed in user has starred.
     lower_columns: list of column names to display, all lowercase.  These can
@@ -272,12 +270,9 @@ def MakeTableData(
 
   current_group = None
   for idx, art in enumerate(visible_results):
-    owner_is_me = ezt.boolean(
-        logged_in_user_id and
-        tracker_bizobj.GetOwnerId(art) == logged_in_user_id)
     row = MakeRowData(
-        art, lower_columns, owner_is_me, users_by_id, factories_to_use,
-        related_issues, config)
+        art, lower_columns, users_by_id, factories_to_use, related_issues,
+        config)
     row.starred = ezt.boolean(id_accessor(art) in starred_items)
     row.idx = idx  # EZT does not have loop counters, so add idx.
     table_data.append(row)
@@ -288,8 +283,7 @@ def MakeTableData(
     # common case where no new group heading row is to be inserted.
     group = MakeRowData(
         art, [group_name.strip('-') for group_name in lower_group_by],
-        owner_is_me, users_by_id, group_cell_factories, related_issues,
-        config)
+        users_by_id, group_cell_factories, related_issues, config)
     for cell, group_name in zip(group.cells, lower_group_by):
       cell.group_name = group_name
     if group == current_group:
@@ -303,15 +297,12 @@ def MakeTableData(
 
 
 def MakeRowData(
-    art, columns, owner_is_me, users_by_id, cell_factory_list,
-    related_issues, config):
+    art, columns, users_by_id, cell_factory_list, related_issues, config):
   """Make a TableRow for use by EZT when rendering HTML table of results.
 
   Args:
     art: a project artifact PB
     columns: list of lower-case column names
-    owner_is_me: boolean indicating that the logged in user is the owner
-        of the current artifact
     users_by_id: dictionary {user_id: UserView} with each UserView having
         a "display_name" member.
     cell_factory_list: list of functions that each create TableCell
@@ -350,7 +341,7 @@ def MakeRowData(
     new_cell.col_index = i
     ordered_row_data.append(new_cell)
 
-  return TableRow(ordered_row_data, owner_is_me)
+  return TableRow(ordered_row_data)
 
 
 def _AccumulateLabelValues(
@@ -387,10 +378,9 @@ def _AccumulateLabelValues(
 class TableRow(object):
   """A tiny auxiliary class to represent a row in an HTML table."""
 
-  def __init__(self, cells, owner_is_me):
+  def __init__(self, cells):
     """Initialize the table row with the given data."""
     self.cells = cells
-    self.owner_is_me = ezt.boolean(owner_is_me)  # Shows tiny ">" on my issues.
     # Used by MakeTableData for layout.
     self.idx = None
     self.group = None

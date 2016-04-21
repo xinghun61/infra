@@ -96,7 +96,7 @@ class IssueListUnitTest(unittest.TestCase):
         table_view_helpers.CELL_TYPE_ATTR, [1, 2, 3],
         derived_values=[4, 5, 6])
     page_data_with_derived = {
-        'table_data': [table_view_helpers.TableRow([cell], True)]
+        'table_data': [table_view_helpers.TableRow([cell])]
         }
 
     # Owners and members see a cue about italics, iff there are any
@@ -139,13 +139,13 @@ class IssueListFunctionsTest(unittest.TestCase):
         derived_values=['derived'])
 
     table_data = [
-        table_view_helpers.TableRow([cell1], False),
-        table_view_helpers.TableRow([], False)]
+        table_view_helpers.TableRow([cell1]),
+        table_view_helpers.TableRow([])]
     self.assertFalse(issuelist._AnyDerivedValues(table_data))
 
     table_data = [
-        table_view_helpers.TableRow([cell1, cell2], False),
-        table_view_helpers.TableRow([], False)]
+        table_view_helpers.TableRow([cell1, cell2]),
+        table_view_helpers.TableRow([])]
     self.assertTrue(issuelist._AnyDerivedValues(table_data))
 
   def testMakeTableData_Normal(self):
@@ -158,7 +158,7 @@ class IssueListFunctionsTest(unittest.TestCase):
     # Standard columns
     lower_columns = _GetColumns()
     table_data = issuelist._MakeTableData(
-        visible_results, None, [], lower_columns, [], {}, CELL_FACTORIES, {},
+        visible_results, [], lower_columns, [], {}, CELL_FACTORIES, {},
         self.config)
     self.assertEqual(1, len(table_data))
     row = table_data[0]
@@ -174,7 +174,7 @@ class IssueListFunctionsTest(unittest.TestCase):
     # 2 columns -> 2 cells with 1 value in each cell.
     lower_columns = ['type', 'priority']
     table_data = issuelist._MakeTableData(
-        visible_results, None, [], lower_columns, [], {}, CELL_FACTORIES, {},
+        visible_results, [], lower_columns, [], {}, CELL_FACTORIES, {},
         self.config)
     self.assertEqual(1, len(table_data))
     row = table_data[0]
@@ -195,7 +195,7 @@ class IssueListFunctionsTest(unittest.TestCase):
     # A combined column -> 1 cell with 2 values in it.
     lower_columns = ['type/priority']
     table_data = issuelist._MakeTableData(
-        visible_results, None, [], lower_columns, [], {}, CELL_FACTORIES, {},
+        visible_results, [], lower_columns, [], {}, CELL_FACTORIES, {},
         self.config)
     self.assertEqual(1, len(table_data))
     row = table_data[0]
@@ -215,7 +215,7 @@ class IssueListFunctionsTest(unittest.TestCase):
     # group of issues with type=defect.
     lower_columns = ['type', 'priority']
     table_data = issuelist._MakeTableData(
-        visible_results, None, [], lower_columns, ['type'], {}, CELL_FACTORIES,
+        visible_results, [], lower_columns, ['type'], {}, CELL_FACTORIES,
         {}, self.config)
     self.assertEqual(1, len(table_data))
     row = table_data[0]

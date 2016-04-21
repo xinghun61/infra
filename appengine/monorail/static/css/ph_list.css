@@ -168,7 +168,7 @@ div.projecttile:hover {
 }
 
 #resultstable td, #resultstable th {
-    padding-right: 2em;
+    padding-right: 1em;
 }
 
 .labels a:link { color: #080; }
