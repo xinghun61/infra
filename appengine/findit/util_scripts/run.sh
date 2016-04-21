@@ -138,15 +138,15 @@ deploy_findit_for_prod() {
 
   echo "New version '${new_version}' of Findit was deployed to ${app_id}."
 
-  local dashboard_url="https://${new_version}-dot-${app_id}.appspot.com/list-analyses"
+  local dashboard_url="https://${new_version}-dot-waterfall-frontend-dot-${app_id}.appspot.com/waterfall/list-analyses"
   echo "Please force a re-run of a recent build failure on dashboard ${dashboard_url},"
-  echo "ensure that the analysis is run in the new-version frontend & backend and gives correct results,"
-  echo "and then set the new version ${new_version} as default for both frontend and backend."
+  echo "ensure that the analysis is run in the new-version waterfall frontend & backend and gives correct results,"
+  echo "and then set the new version ${new_version} as default for three modules default, waterfall-frontend and waterfall-backend."
   echo
 
   local change_log_url="https://chromium.googlesource.com/infra/infra/+log/${current_version}..${new_version}/appengine/findit"
   echo "If the release is for findit-for-me, please email chrome-findit with the following:"
-  echo "Subject: 'Release: findit-for-me was update to ${new_version}.'"
+  echo "Subject: Release: findit-for-me updated to ${new_version}."
   echo "Hi all,"
   echo
   echo "The app findit-for-me was updated from ${current_version} to ${new_version}."

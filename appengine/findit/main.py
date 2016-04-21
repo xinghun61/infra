@@ -82,6 +82,7 @@ waterfall_backend_web_pages_handler_mappings = [
 waterfall_backend_web_application = webapp2.WSGIApplication(
     waterfall_backend_web_pages_handler_mappings, debug=False)
 
+
 # "crash-frontend" module.
 crash_frontend_web_pages_handler_mappings = [
     ('/crash/config', crash_config.CrashConfig),

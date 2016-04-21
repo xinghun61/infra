@@ -23,6 +23,16 @@ handlers:
   static_files: static/common.css
   upload: static/common.css
 
+# Pipeline status UI handler.
+- url: /_ah/pipeline(/.*)?
+  script: main.pipeline_status_application
+  secure: always
+
+# Endpoints handler.
+- url: /_ah/spi/.*
+  script: main.api_application
+  secure: always
+
 # Web UI pages.
 - url: /.*
   script: main.waterfall_frontend_web_application
