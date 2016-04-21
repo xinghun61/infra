@@ -112,6 +112,7 @@ _load_metadata_check E_URL "monitoring_proxy_endpoint_url"
 _load_metadata_check E_AUTH_JSON "monitoring_proxy_endpoint_auth_json"
 
 _load_metadata_check PS_PROJECT "monitoring_proxy_pubsub_project"
+_load_metadata_check PS_TOPIC "monitoring_proxy_pubsub_topic"
 _load_metadata_check PS_SUBSCRIPTION "monitoring_proxy_pubsub_subscription"
 _load_metadata PS_BATCH_SIZE "monitoring_proxy_pubsub_batch_size"
 
@@ -134,6 +135,7 @@ ARGS=(
   "-endpoint-service-account-json" "${E_AUTH_PATH}"
 
   "-pubsub-project" "${PS_PROJECT}"
+  "-pubsub-topic" "${PS_TOPIC}"
   "-pubsub-subscription" "${PS_SUBSCRIPTION}"
   )
 

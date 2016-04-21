@@ -7,6 +7,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -20,6 +21,9 @@ import (
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
 	"github.com/luci/luci-go/common/parallel"
+	"github.com/luci/luci-go/common/tsmon"
+	"github.com/luci/luci-go/common/tsmon/field"
+	"github.com/luci/luci-go/common/tsmon/metric"
 	"golang.org/x/net/context"
 	"google.golang.org/cloud/pubsub"
 )
@@ -31,6 +35,12 @@ const (
 	// maxMessageSize is the maximum size of a message that the proxy will
 	// forward. Messages larger than this will be discarded by policy.
 	maxMessageSize = 1024 * 512
+)
+
+var (
+	sentCount = metric.NewCounter("mon_proxy/endpoint/sent",
+		"Count of messages proxied to the endpoint",
+		field.String("result"))
 )
 
 func init() {
@@ -248,6 +258,8 @@ func (a *application) proxyMessages(ctx context.Context, msgs []*pubsub.Message)
 		"count":       len(msgs),
 		"errorCount":  len(merr),
 	}.Infof(ctx, "Sent messages to endpoint.")
+	sentCount.Add(ctx, int64(len(msgs)), "success")
+	sentCount.Add(ctx, int64(len(merr)), "failure")
 	return err
 }
 
@@ -281,12 +293,27 @@ func mainImpl(args []string) int {
 	loggerConfig := newLoggerConfig() // Internal logging config (cloud logging).
 	logConfig := log.Config{Level: log.Debug}
 	config := config{}
+	tsmonConfig := tsmon.NewFlags()
+	tsmonConfig.Flush = "auto"
+	tsmonConfig.Target.TargetType = "task"
+	tsmonConfig.Target.TaskServiceName = "monitoring_proxy"
 
 	fs := flag.CommandLine
 	config.addFlags(fs)
 	loggerConfig.addFlags(fs)
 	logConfig.AddFlags(fs)
+	tsmonConfig.Register(fs)
 	fs.Parse(args)
+
+	if tsmonConfig.Endpoint == "" {
+		tsmonConfig.Endpoint = fmt.Sprintf("pubsub://%s/%s", config.pubsub.project, config.pubsub.topic)
+	}
+	if tsmonConfig.Credentials == "" {
+		tsmonConfig.Credentials = tsmon.GCECredentials
+	}
+	if tsmonConfig.Target.TaskJobName == "" {
+		tsmonConfig.Target.TaskJobName = config.pubsub.subscription
+	}
 
 	// TODO(dnj): Fix this once LUCI logging CL lands.
 	ctx = log.SetLevel(ctx, logConfig.Level)
@@ -310,6 +337,12 @@ func mainImpl(args []string) int {
 	app := newApplication(config)
 	if err := app.loadServices(ctx, client); err != nil {
 		log.Errorf(log.SetError(ctx, err), "Failed to initialize services.")
+		return 1
+	}
+
+	// Configure tsmon.
+	if err := tsmon.InitializeFromFlags(ctx, &tsmonConfig); err != nil {
+		log.Errorf(log.SetError(ctx, err), "Failed to initialize tsmon.")
 		return 1
 	}
 

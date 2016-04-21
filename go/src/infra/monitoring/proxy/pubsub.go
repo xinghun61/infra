@@ -8,11 +8,15 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/tsmon/distribution"
+	"github.com/luci/luci-go/common/tsmon/field"
+	"github.com/luci/luci-go/common/tsmon/metric"
 	"golang.org/x/net/context"
 	"google.golang.org/cloud"
 	"google.golang.org/cloud/pubsub"
@@ -32,6 +36,18 @@ var (
 
 	// Error returned by pullAckMessages to indicate that no messages were available.
 	errNoMessages = errors.New("pubsub: no messages")
+
+	messageCount = metric.NewCounter("mon_proxy/pubsub/message",
+		"Count of messages pulled from pub/sub")
+	ackCount = metric.NewCounter("mon_proxy/pubsub/ack",
+		"Count of messages Ack'd, by success/failure",
+		field.String("result"))
+	pullDuration = metric.NewCumulativeDistribution("mon_proxy/pubsub/pull_duration",
+		"Time taken to Pull messages from pub/sub, in milliseconds",
+		distribution.DefaultBucketer)
+	ackDuration = metric.NewCumulativeDistribution("mon_proxy/pubsub/ack_duration",
+		"Time taken to Ack messages to pub/sub, in milliseconds",
+		distribution.DefaultBucketer)
 )
 
 // pubsubConfig is the set of configuration parameters for a pubsubClient.
@@ -47,8 +63,7 @@ type pubsubConfig struct {
 func (c *pubsubConfig) addFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.project, "pubsub-project", "", "The name of the Pub/Sub project.")
 	fs.StringVar(&c.subscription, "pubsub-subscription", "", "The name of the Pub/Sub subscription.")
-	fs.StringVar(&c.topic, "pubsub-topic", "",
-		"The name of the Pub/Sub topic. Needed if subscription must be created.")
+	fs.StringVar(&c.topic, "pubsub-topic", "", "The name of the Pub/Sub topic.")
 	fs.IntVar(&c.batchSize, "pubsub-batch-size", maxSubscriptionPullSize,
 		"The Pub/Sub batch size.")
 	fs.BoolVar(&c.create, "pubsub-create", false,
@@ -122,6 +137,9 @@ type pubsubClient struct {
 func newPubSubClient(ctx context.Context, config pubsubConfig, svc pubSubService) (*pubsubClient, error) {
 	if config.subscription == "" {
 		return nil, errors.New("pubsub: you must supply a subscription")
+	}
+	if config.topic == "" {
+		return nil, errors.New("pubsub: you must supply a topic")
 	}
 	if config.batchSize <= 0 {
 		return nil, errors.New("pubsub: batch size must be at least 1")
@@ -239,6 +257,8 @@ func (p *pubsubClient) pullAckMessages(ctx context.Context, handler func([]*pubs
 			"ackCount": ackCount,
 			"duration": duration,
 		}.Infof(ctx, "Pull/ACK cycle complete.")
+		messageCount.Add(ctx, int64(len(msgs)))
+		pullDuration.Add(ctx, float64(duration/time.Millisecond))
 	}()
 
 	err = retryCall(ctx, "Pull()", func() error {
@@ -296,17 +316,21 @@ func (p *pubsubClient) ackMessages(ctx context.Context, messages []*pubsub.Messa
 	})
 	duration := clock.Now(ctx).Sub(startTime)
 
+	ackDuration.Add(ctx, float64(duration/time.Millisecond))
+
 	if err != nil {
 		log.Fields{
 			log.ErrorKey: err,
 			"duration":   duration,
 		}.Errorf(ctx, "Failed to ACK messages.")
+		ackCount.Add(ctx, int64(len(messages)), "failure")
 		return 0, err
 	}
 
 	log.Fields{
 		"duration": duration,
 	}.Debugf(ctx, "Successfully ACK messages.")
+	ackCount.Add(ctx, int64(len(messages)), "success")
 	return len(messageIds), nil
 }
 
