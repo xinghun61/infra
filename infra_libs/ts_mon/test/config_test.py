@@ -189,6 +189,22 @@ class GlobalsTest(auto_stub.TestCase):
     self.assertEqual(interface.state.target.network, 'net')
     self.assertEqual(interface.state.target.hostname, 'host')
 
+  def test_autogen_device_args(self):
+    p = argparse.ArgumentParser()
+    config.add_argparse_options(p)
+    args = p.parse_args(['--ts-mon-credentials', '/path/to/creds.p8.json',
+                         '--ts-mon-target-type', 'device',
+                         '--ts-mon-device-region', 'reg',
+                         '--ts-mon-device-role', 'role',
+                         '--ts-mon-device-network', 'net',
+                         '--ts-mon-device-hostname', 'host',
+                         '--ts-mon-autogen-hostname'])
+    config.process_argparse_options(args)
+    self.assertEqual(interface.state.target.region, 'reg')
+    self.assertEqual(interface.state.target.role, 'role')
+    self.assertEqual(interface.state.target.network, 'net')
+    self.assertEqual(interface.state.target.hostname, 'autogen:host')
+
   def test_task_args(self):
     p = argparse.ArgumentParser()
     config.add_argparse_options(p)
@@ -205,6 +221,48 @@ class GlobalsTest(auto_stub.TestCase):
     self.assertEqual(interface.state.target.region, 'reg')
     self.assertEqual(interface.state.target.hostname, 'host')
     self.assertEqual(interface.state.target.task_num, 1)
+
+  def test_autogen_task_args(self):
+    p = argparse.ArgumentParser()
+    config.add_argparse_options(p)
+    args = p.parse_args(['--ts-mon-credentials', '/path/to/creds.p8.json',
+                         '--ts-mon-target-type', 'task',
+                         '--ts-mon-task-service-name', 'serv',
+                         '--ts-mon-task-job-name', 'job',
+                         '--ts-mon-task-region', 'reg',
+                         '--ts-mon-task-hostname', 'host',
+                         '--ts-mon-task-number', '1',
+                         '--ts-mon-autogen-hostname'])
+    config.process_argparse_options(args)
+    self.assertEqual(interface.state.target.service_name, 'serv')
+    self.assertEqual(interface.state.target.job_name, 'job')
+    self.assertEqual(interface.state.target.region, 'reg')
+    self.assertEqual(interface.state.target.hostname, 'autogen:host')
+    self.assertEqual(interface.state.target.task_num, 1)
+
+  def test_task_args_missing_service_name(self):
+    p = argparse.ArgumentParser()
+    config.add_argparse_options(p)
+    args = p.parse_args(['--ts-mon-credentials', '/path/to/creds.p8.json',
+                         '--ts-mon-target-type', 'task',
+                         '--ts-mon-task-job-name', 'job',
+                         '--ts-mon-task-region', 'reg',
+                         '--ts-mon-task-hostname', 'host',
+                         '--ts-mon-task-number', '1'])
+    with self.assertRaises(SystemExit):
+      config.process_argparse_options(args)
+
+  def test_task_args_missing_job_name(self):
+    p = argparse.ArgumentParser()
+    config.add_argparse_options(p)
+    args = p.parse_args(['--ts-mon-credentials', '/path/to/creds.p8.json',
+                         '--ts-mon-target-type', 'task',
+                         '--ts-mon-task-service-name', 'serv',
+                         '--ts-mon-task-region', 'reg',
+                         '--ts-mon-task-hostname', 'host',
+                         '--ts-mon-task-number', '1'])
+    with self.assertRaises(SystemExit):
+      config.process_argparse_options(args)
 
   @mock.patch('infra_libs.ts_mon.common.monitors.NullMonitor', autospec=True)
   def test_no_args(self, fake_monitor):

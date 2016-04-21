@@ -38,4 +38,4 @@ exclude_lines =
     if __name__ == ['"]__main__['"]:
 
 [expect_tests]
-expected_coverage_min = 90
+expected_coverage_min = 92
