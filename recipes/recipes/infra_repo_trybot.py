@@ -17,8 +17,12 @@ DEPS = [
 
 def RunSteps(api):
   project = api.properties['patch_project'] or api.properties['project']
+  # In case of Gerrit tryjob, project is infra/infra or infra/infra_internal.
+  if project in ('infra/infra', 'infra/infra_internal'):
+    project = project.split('/')[-1]
+  assert project in ('infra', 'infra_internal'), (
+      'unknown project: "%s"' % project)
   internal = (project == 'infra_internal')
-
   api.gclient.set_config(project)
   api.bot_update.ensure_checkout(force=True, patch_root=project,
                                  patch_oauth2=internal)
@@ -81,6 +85,15 @@ def GenTests(api):
   )
 
   yield (
+    api.test('basic_gerrit') +
+    api.properties.tryserver_gerrit(
+        full_project_name='infra/infra',
+        mastername='tryserver.infra',
+        buildername='infra_tester') +
+    diff('infra/stuff.py', 'go/src/infra/stuff.go')
+  )
+
+  yield (
     api.test('only_go') +
     api.properties.tryserver(
         mastername='tryserver.chromium.linux',
@@ -122,6 +135,16 @@ def GenTests(api):
         mastername='internal.infra',
         buildername='infra-internal-tester',
         patch_project='infra_internal') +
+    diff('infra/stuff.py', 'go/src/infra/stuff.go')
+  )
+
+  yield (
+    api.test('infra_internal_gerrit') +
+    api.properties.tryserver_gerrit(
+        full_project_name='infra/infra_internal',
+        gerrit_host='chrome-internal-review.googlesource.com',
+        mastername='tryserver.infra',
+        buildername='infra_tester') +
     diff('infra/stuff.py', 'go/src/infra/stuff.go')
   )
 
