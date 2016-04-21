@@ -40,13 +40,19 @@
       .alert-body {
         margin-bottom: 1em;
       }
+      .snoozed {
+        opacity: 0.5;
+      }
+      #root {
+        transition: opacity .25s;
+      }
       .selected-arrow {
         position: absolute;
         right: 1em;
         top: 1em;
       }
     </style>
-    <div>
+    <div id="root" class$="[[_cssClass]]">
       <paper-card id="card" heading="[[alert.title]]">
         <iron-icon class="selected-arrow" icon="chevron-right" hidden$="[[!selected]]"></iron-icon>
         <div class="card-content">
@@ -66,7 +72,10 @@
         <div class="card-actions">
           <paper-button><a href$="[[_examineUrl(alert.extension)]]"><iron-icon icon="launch"></iron-icon>Examine</a></paper-button>
           <paper-button><iron-icon icon="link"></iron-icon>Link Bug</paper-button>
-          <paper-button><iron-icon icon="alarm-off"></iron-icon>Snooze</paper-button>
+          <paper-button id="snooze" on-tap="_snooze">
+            <iron-icon icon="[[_snoozeIcon]]"></iron-icon>
+            [[snoozeText]]
+          </paper-button>
         </div>
       </paper-card>
       <paper-card id="extension" animatedShadow="true" hidden$="[[!selected]]" elevation="5" heading="[[alert.type]] Details">
@@ -85,6 +94,7 @@
 
       properties: {
         alert: Object,
+        annotation: Object,
         examineUrl: {
           type: String,
           value: '',
@@ -105,10 +115,22 @@
           type: String,
           computed: '_formatTimestamp(alert.time)'
         },
+        snoozeText: {
+          type: String,
+          computed: '_computeSnoozeText(annotation.snoozed)',
+        },
+        _cssClass: {
+          type: String,
+          computed: '_computeCssClass(annotation.snoozed)',
+        },
+        _snoozeIcon: {
+          type: String,
+          computed: '_computeSnoozeIcon(annotation.snoozed)',
+        },
       },
 
       listeners: {
-        'tap': '_onTap'
+        'tap': '_onTap',
       },
 
       _onTap: function(e) {
@@ -136,8 +158,37 @@
           return new Date(timestamp * 1000).toLocaleString();
         }
         return '';
-      }
+      },
 
+      _snooze: function(evt) {
+        if (this.annotation.snoozed) {
+          this.fire('annotation-change', {
+            changes: [{
+              'remove': {'snoozeTime': true},
+            }]
+          });
+        } else {
+          this.fire('annotation-change', {
+            changes: [{
+              'add': {
+                snoozeTime: Date.now() + 1000 * 60 * 60 * 60 * 60,
+              }
+            }]
+          });
+        }
+      },
+
+      _computeSnoozeText: function(snoozed) {
+        return snoozed ? 'Unsnooze' : 'Snooze';
+      },
+
+      _computeCssClass: function(snoozed) {
+        return snoozed ? 'snoozed': '';
+      },
+
+      _computeSnoozeIcon: function(snoozed) {
+        return snoozed ? 'alarm-off' : 'alarm';
+      },
     });
   })();
   </script>

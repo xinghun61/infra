@@ -12,13 +12,14 @@
 <script>
 (function() {
   'use strict';
+  var element;
+
+  setup(function() {
+    element = fixture('basic');
+    element.$.alertsAjax.auto = false;
+  });
 
   suite('basic tests', function() {
-    var element;
-
-    setup(function() {
-      element = fixture('basic');
-    });
 
     test('renders bare minimum', function() {
       element._alertsJson = {
@@ -31,11 +32,165 @@
     });
   });
 
-  suite('navigation', function() {
-    var element;
+  suite('annotations', function() {
+    var server;
+    var clock;
+    var responseHeaders = {
+        json: { 'Content-Type': 'application/json' },
+    };
 
     setup(function() {
-      element = fixture('basic');
+      server = sinon.fakeServer.create();
+      clock = sinon.useFakeTimers();
+    });
+
+    teardown(function() {
+      server.restore();
+    });
+
+    test('gets annotations from server', function(done) {
+      element.$.annotations.generateRequest();
+      server.respondWith(
+        'GET',
+        '/api/v1/annotations', [
+          200,
+          responseHeaders.json,
+          '[{"key":"foobar"}]'
+        ]
+      );
+      server.respond();
+
+      flush(function () {
+        assert.deepEqual(element.annotations, {foobar: {key: 'foobar'}});
+        done();
+      });
+    });
+
+    test('annotation request hits the server', function(done) {
+      let data = {
+        bugs: [],
+        snoozeTime: null,
+        key: "annKey"
+      };
+      element.annotationsJson = [];
+      server.respondWith('POST', '/api/v1/annotations/annKey', [
+          200,
+          responseHeaders.json,
+          JSON.stringify(data)
+      ]);
+      let keyStub = sinon.stub(element, '_keyForAlert');
+      keyStub.onFirstCall().returns('annKey');
+      let responseStub = sinon.spy();
+
+      element._handleAnnotation({
+        model: {
+          alert: true // Needed so the reference resolves
+        },
+        detail: {
+          changes: [data]
+        }
+      });
+      server.respond();
+
+      flush(function() {
+        sinon.assert.calledOnce(keyStub);
+        assert.deepEqual(element.annotations, {annKey: data});
+
+        keyStub.restore();
+        done();
+      });
+    });
+
+    test('compute annotations object correctly', function() {
+      let annotations = [{key: 'foo', bugs: ['bar']}];
+      assert.deepEqual({
+        foo: {
+          key: 'foo',
+          bugs: ['bar']
+        }
+      }, element._computeAnnotations(annotations));
+    });
+
+    test('compute per card annotation correctly', function() {
+      clock.tick(100);
+      let keyStub = sinon.stub(element, '_keyForAlert');
+      keyStub.onFirstCall().returns('foo');
+      keyStub.onSecondCall().returns('foo');
+      let annotations = {
+        foo: {
+          key: 'foo',
+          snoozeTime: 0,
+        }
+      };
+
+      let result = element._computeAnnotation(annotations, 'alertt');
+      assert.deepEqual({
+          key: 'foo',
+          snoozed: false,
+        }, result);
+
+      annotations.foo.snoozeTime = 200;
+      result = element._computeAnnotation(annotations, 'alertt');
+      assert.deepEqual({
+          key: 'foo',
+          snoozed: true,
+        }, result);
+
+      sinon.assert.calledTwice(keyStub);
+    });
+
+    test('compute keys correctly', function() {
+      assert.isNull(element._keyForAlert({}));
+
+      assert.equal('foostep::fooname', element._keyForAlert({
+        extension: {
+          reasons: [
+            {step: 'foostep'}
+          ],
+          builders: [
+            {name: 'fooname'}
+          ]
+        }
+      }));
+
+      assert.equal('foostep::foostep::fooname::fooname', element._keyForAlert({
+        extension: {
+          reasons: [
+            {step: 'foostep'},
+            {step: 'foostep'}
+          ],
+          builders: [
+            {name: 'fooname'},
+            {name: 'fooname'}
+          ]
+        }
+      }));
+    });
+
+    test('sort works correctly', function() {
+      let keyStub = sinon.stub(element, '_computeAnnotation');
+      keyStub.onCall(0).returns({snoozed:false});
+      keyStub.onCall(1).returns({snoozed:false});
+
+      keyStub.onCall(2).returns({snoozed:false});
+      keyStub.onCall(3).returns({snoozed:true});
+
+      keyStub.onCall(4).returns({snoozed:true});
+      keyStub.onCall(5).returns({snoozed:false});
+
+      keyStub.onCall(6).returns({snoozed:true});
+      keyStub.onCall(7).returns({snoozed:true});
+
+      assert.equal(0, element._sort()());
+      assert.equal(-1, element._sort()());
+      assert.equal(1, element._sort()());
+      assert.equal(0, element._sort()());
+    });
+  });
+
+
+  suite('navigation', function() {
+    setup(function() {
       element._alertsGroup = 'chromium';
       element.$.drawer.selectedAlertsGroup = 'chromium';
       element.$.url.path = '/chromium';

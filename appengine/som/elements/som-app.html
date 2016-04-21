@@ -52,6 +52,18 @@
         handle-as="json"
         last-response="{{_alertsJson}}"
         debounce-duration="300"></iron-ajax>
+    <iron-ajax
+        auto
+        id="annotations"
+        url="/api/v1/annotations"
+        handle-as="json"
+        last-response="{{annotationsJson}}"
+        debounce-duration="300"></iron-ajax>
+    <iron-ajax
+        id="annotationPost"
+        method="post"
+        handle-as="json"
+        on-response="_postResponse"></iron-ajax>
     <paper-drawer-panel>
       <paper-header-panel drawer>
         <paper-toolbar>
@@ -79,8 +91,14 @@
           </paper-tabs>
         </paper-toolbar>
         <div id="alerts" class="layout vertical">
-          <template is="dom-repeat" items="[[_alertsJson.alerts]]" as="alert">
-            <som-alert-card hidden="[[_filterOut(alert.type, selectedTab)]]" alert="[[alert]]" on-selected-changed="_handleCardSelected"></som-alert-card>
+          <template is="dom-repeat" items="[[_alertsJson.alerts]]" as="alert" sort="[[_sort(annotations)]]">
+            <som-alert-card
+                hidden="[[_filterOut(alert.type, selectedTab)]]"
+                alert="[[alert]]"
+                annotation="[[_computeAnnotation(annotations,alert)]]"
+                on-selected-changed="_handleCardSelected"
+                on-annotation-change="_handleAnnotation"
+                ></som-alert-card>
           </template>
         </div>
       </paper-header-panel>
@@ -116,6 +134,14 @@
           type: Object,
           value: function() { return {}; }
         },
+        // We don't convert the array into an object because the polymer data
+        // binding doesn't seem to like mutations to an object, but it's fine
+        // watching and notifying about changes to an array :/
+        annotations: {
+          type: Object,
+          computed: '_computeAnnotations(annotationsJson)',
+        },
+        annotationsJson: Array,
         _lastUpdated: {
           type: Date,
           computed: '_computeLastUpdated(_alertsJson.timestamp)'
@@ -157,6 +183,68 @@
           return new Date(lastPosted * 1000).toLocaleString();
         }
         return '';
+      },
+
+      _sort: function(annotations) {
+        return (a, b) => {
+          let aAnn = this._computeAnnotation(annotations, a);
+          let bAnn = this._computeAnnotation(annotations, b);
+
+          if (aAnn.snoozed == bAnn.snoozed) {
+            return 0;
+          }
+
+          return aAnn.snoozed ? 1 : -1;
+        };
+      },
+
+      _computeAnnotations: function(annotationsJson) {
+        let annotations = {};
+        annotationsJson.forEach(function(annotation) {
+          annotations[annotation.key] = annotation;
+        });
+        return annotations;
+      },
+
+      _computeAnnotation: function(annotations, alert) {
+        let key = this._keyForAlert(alert);
+
+        let ann = annotations[key];
+        return {
+          key: key,
+          snoozed: ann && ann.snoozeTime ? Date.now() < ann.snoozeTime : false,
+        };
+      },
+
+      _handleAnnotation: function(evt) {
+        let changes = evt.detail.changes;
+        let key = this._keyForAlert(evt.model.alert);
+        this.$.annotationPost.body = JSON.stringify(changes);
+        this.$.annotationPost.url = '/api/v1/annotations/' + key;
+        this.$.annotationPost.generateRequest();
+      },
+
+      _postResponse: function(evt) {
+        let response = evt.detail.response;
+        let annotations = this.annotations;
+        annotations[response.key] = response;
+        let newArray = [];
+        Object.keys(annotations).forEach(function(k) {
+          newArray.push(annotations[k]);
+        });
+        this.annotationsJson = newArray;
+      },
+
+      _keyForAlert: function(alert) {
+        if (alert.extension && alert.extension.reasons &&
+            alert.extension.builders) {
+          return alert.extension.reasons.map(function(reason) {
+            return reason.step;
+          }).concat(alert.extension.builders.map(function(builder) {
+            return builder.name;
+          })).join('::');
+        }
+        return null;
       },
 
       _tabsFromAlerts: function(alertsJson) {
