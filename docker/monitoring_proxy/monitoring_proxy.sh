@@ -146,7 +146,7 @@ if [ ! -z "${WORKERS}" ]; then
   ARGS+=("-workers" "${WORKERS}")
 fi
 if [ ! -z "${LOG_LEVEL}" ]; then
-  ARGS+=("-log_level" "${LOG_LEVEL}")
+  ARGS+=("-log-level" "${LOG_LEVEL}")
 fi
 if [ ! -z "${CLOUD_AUTH_PATH}" ]; then
   ARGS+=("-proxy-service-account-json" "${CLOUD_AUTH_PATH}")
