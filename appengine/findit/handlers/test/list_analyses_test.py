@@ -269,6 +269,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'builder_name': 'Linux GN',
                 'build_number': 26120,
                 'build_start_time': self.stored_dates.get(10),
+                'failure_type': 'test',
                 'status': 70,
                 'status_description': 'Completed',
                 'suspected_cls': [
@@ -286,6 +287,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'builder_name': 'b',
                 'build_number': 1,
                 'build_start_time': None,
+                'failure_type': 'test',
                 'status': 70,
                 'status_description': 'Completed',
                 'suspected_cls': [
@@ -303,6 +305,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'builder_name': 'b',
                 'build_number': 3,
                 'build_start_time': None,
+                'failure_type': 'test',
                 'status': 70,
                 'status_description': 'Completed',
                 'suspected_cls': [],
@@ -328,6 +331,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'builder_name': 'b',
                 'build_number': 1,
                 'build_start_time': None,
+                'failure_type': 'test',
                 'status': 70,
                 'status_description': 'Completed',
                 'suspected_cls': [
@@ -345,6 +349,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'builder_name': 'b',
                 'build_number': 3,
                 'build_start_time': None,
+                'failure_type': 'test',
                 'status': 70,
                 'status_description': 'Completed',
                 'suspected_cls': [],
@@ -355,6 +360,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'builder_name': 'b',
                 'build_number': 7,
                 'build_start_time': self.stored_dates.get(7),
+                'failure_type': 'test',
                 'status': 70,
                 'status_description': 'Completed',
                 'suspected_cls': [
@@ -385,6 +391,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'builder_name': 'b',
                 'build_number': 9,
                 'build_start_time': None,
+                'failure_type': 'test',
                 'status': 70,
                 'status_description': 'Completed',
                 'suspected_cls': [
@@ -402,6 +409,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'builder_name': 'b',
                 'build_number': 2,
                 'build_start_time': self.stored_dates.get(2),
+                'failure_type': 'test',
                 'status': 70,
                 'status_description': 'Completed',
                 'suspected_cls': [],
@@ -427,6 +435,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'builder_name': 'Linux GN',
                 'build_number': 26120,
                 'build_start_time': self.stored_dates.get(10),
+                'failure_type': 'test',
                 'status': 70,
                 'status_description': 'Completed',
                 'suspected_cls': [
@@ -444,6 +453,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'builder_name': 'b',
                 'build_number': 1,
                 'build_start_time': None,
+                'failure_type': 'test',
                 'status': 70,
                 'status_description': 'Completed',
                 'suspected_cls': [
@@ -476,6 +486,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'builder_name': 'b',
                 'build_number': 1,
                 'build_start_time': None,
+                'failure_type': 'test',
                 'status': 70,
                 'status_description': 'Completed',
                 'suspected_cls': [
@@ -512,6 +523,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'builder_name': 'b',
                 'build_number': 2,
                 'build_start_time': self.stored_dates.get(2),
+                'failure_type': 'test',
                 'status': 70,
                 'status_description': 'Completed',
                 'suspected_cls': [],
@@ -522,6 +534,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'builder_name': 'Linux GN',
                 'build_number': 26120,
                 'build_start_time': self.stored_dates.get(10),
+                'failure_type': 'test',
                 'status': 70,
                 'status_description': 'Completed',
                 'suspected_cls': [
@@ -558,6 +571,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'builder_name': 'Linux GN',
                 'build_number': 26120,
                 'build_start_time': self.stored_dates.get(10),
+                'failure_type': 'test',
                 'status': 70,
                 'status_description': 'Completed',
                 'suspected_cls': [

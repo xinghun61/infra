@@ -139,3 +139,8 @@ class WfAnalysisTest(unittest.TestCase):
     analysis = WfAnalysis.Create('m', 'b', 123)
     analysis.result = {'failures': [{'step_name': 'browser_tests'}]}
     self.assertEqual(failure_type.TEST, analysis.failure_type)
+
+  def testFailureTypeStr(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.result = {'failures': [{'step_name': 'browser_tests'}]}
+    self.assertEqual('test', analysis.failure_type_str)

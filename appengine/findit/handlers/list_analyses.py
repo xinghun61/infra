@@ -83,10 +83,11 @@ class ListAnalyses(BaseHandler):
           'builder_name': analysis_result.builder_name,
           'build_number': analysis_result.build_number,
           'build_start_time': FormatDatetime(analysis_result.build_start_time),
+          'failure_type': analysis_result.failure_type_str,
           'status': analysis_result.status,
           'status_description': analysis_result.status_description,
           'suspected_cls': analysis_result.suspected_cls,
-          'result_status': analysis_result.result_status_description
+          'result_status': analysis_result.result_status_description,
       }
       analyses.append(analysis)
 

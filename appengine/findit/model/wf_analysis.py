@@ -111,6 +111,10 @@ class WfAnalysis(BaseBuildModel):
     # for legacy data we just assume all of them are tests if not compile.
     return failure_type.TEST
 
+  @property
+  def failure_type_str(self):
+    return failure_type.GetDescriptionForFailureType(self.failure_type)
+
   # When the build cycle started.
   build_start_time = ndb.DateTimeProperty(indexed=True)
   # Whether the build cycle has completed.

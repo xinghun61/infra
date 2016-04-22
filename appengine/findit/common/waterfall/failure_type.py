@@ -6,3 +6,13 @@ UNKNOWN = 0x00
 INFRA = 0x01
 COMPILE = 0x08
 TEST = 0x10
+
+
+def GetDescriptionForFailureType(failure_type):  # pragma: no cover.
+  description = {
+      UNKNOWN: 'unknown',
+      INFRA: 'infra',
+      COMPILE: 'compile',
+      TEST: 'test',
+  }
+  return description.get(failure_type, 'No description for %s' % failure_type)

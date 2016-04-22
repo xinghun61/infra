@@ -47,6 +47,7 @@
         <th></th>
         <th>Build Start Time</th>
         <th>Build</th>
+        <th>Failure Type</th>
         <th>Status</th>
         <th>Suspected CLs</th>
         <th>
@@ -74,6 +75,7 @@
               {{analysis.build_number}}
             </a>
           </td>
+          <td>{{analysis.failure_type}}</td>
           <td>{{analysis.status_description}}</td>
           <td>
           {% if analysis.suspected_cls %}
