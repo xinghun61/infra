@@ -9,8 +9,11 @@ import collections
 import datetime
 import logging
 import re
-from services import fulltext_helpers
 import time
+
+from google.appengine.api import search
+
+from services import fulltext_helpers
 
 from proto import ast_pb2
 from proto import tracker_pb2
@@ -193,6 +196,7 @@ def ParseUserQuery(
   conjunctions = [
       _ParseConjunction(sq, scope, combined_fields, warnings)
       for sq in subqueries]
+  logging.info('search warnings: %r', warnings)
   return ast_pb2.QueryAST(conjunctions=conjunctions)
 
 
@@ -210,6 +214,7 @@ def _ParseConjunction(subquery, scope, fields, warnings):
   scoped_query = ('%s %s' % (scope, subquery)).lower()
   cond_strs = _ExtractConds(scoped_query)
   conds = [_ParseCond(cond_str, fields, warnings) for cond_str in cond_strs]
+  conds = [cond for cond in conds if cond]
   return ast_pb2.Conjunction(conds=conds)
 
 
@@ -238,6 +243,14 @@ def _ParseCond(cond_str, fields, warnings):
     cond_str = cond_str[1:]
   else:
     op = TEXT_HAS
+
+  # Construct a full-text Query object as a dry-run to validate that
+  # the syntax is acceptable.
+  try:
+    _fts_query = search.Query(cond_str)
+  except search.QueryError:
+    warnings.append('Ignoring full-text term: %s' % cond_str)
+    return None
 
   # Flag a potential user misunderstanding.
   if cond_str.lower() in ('and', 'or', 'not'):

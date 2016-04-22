@@ -79,6 +79,11 @@ class QueryParsingUnitTest(unittest.TestCase):
         MakeCond(NOT_TEXT_HAS, [ANY_FIELD], ['hamfancy'], []),
         fulltext_cond)
 
+    # invalid fulltext term
+    ast = query2ast.ParseUserQuery(
+        'ham=fancy\\', '', BUILTIN_ISSUE_FIELDS, self.default_config)
+    self.assertEqual([], ast.conjunctions[0].conds)
+
     # an explicit "AND" query in the "featured" context
     warnings = []
     query2ast.ParseUserQuery(
