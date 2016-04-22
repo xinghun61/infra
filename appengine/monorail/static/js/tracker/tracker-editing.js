@@ -614,8 +614,8 @@ var TKR_firstEvent = true;
  * issue entry page.  If the placeholder in the new issue sumary field has
  * not yet been cleared, then this function clears it.
  */
-function TKR_clearOnFirstEvent() {
-  if (TKR_firstEvent) {
+function TKR_clearOnFirstEvent(initialSummary) {
+  if (TKR_firstEvent && $('summary').value == initialSummary) {
     TKR_firstEvent = false;
     $('summary').value = TKR_keepJustSummaryPrefixes($('summary').value);
   }

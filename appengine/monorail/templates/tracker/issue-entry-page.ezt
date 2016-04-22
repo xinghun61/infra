@@ -30,9 +30,16 @@
 
       <tr><th><label for="summary">Summary:</label></th>
        <td colspan="2" class="inplace">
-        <input type="text" id="summary" name="summary" value="[initial_summary]" required data-clear-summary-on-click="[clear_summary_on_click]">
+        <input type="text" id="summary" name="summary" value="[initial_summary]" required data-clear-summary-on-click="[clear_summary_on_click]"
+               [if-any any_errors][else]autofocus[end]>
         [if-any errors.summary]
          <div class="fielderror">[errors.summary]</div>
+        [end]
+
+        [if-any any_errors][else]
+          <script type="text/javascript" nonce="[nonce]">
+            document.getElementById('summary').select();
+          </script>
         [end]
        </td>
       </tr>
@@ -189,12 +196,12 @@ runOnLoad(function() {
     var clearSummaryOnClick = $("summary").getAttribute("data-clear-summary-on-click");
     if (clearSummaryOnClick) {
       $("summary").addEventListener("keydown", function(event) {
-        _clearOnFirstEvent();
+        _clearOnFirstEvent('[format "js"][initial_summary][end]');
       });
     }
     $("summary").addEventListener("click", function(event) {
       if (clearSummaryOnClick) {
-        _clearOnFirstEvent();
+        _clearOnFirstEvent('[format "js"][initial_summary][end]');
       }
       checksubmit();
     });
@@ -321,8 +328,6 @@ runOnLoad(function() {
   _onload();
   [if-any any_errors]
    function _clearOnFirstEvent(){}
-  [else]
-   document.getElementById('summary').select();
   [end]
 
   _fetchOptions("[projectname]", "issueOptions",
