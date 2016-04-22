@@ -138,8 +138,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     error = buildbucket_client.BuildbucketError(error_data)
     try_job_data = WfTryJobData.Create('1')
 
-    MonitorTryJobPipeline._UpdateTryJobMetadataForBuildError(
-        try_job_data, error)
+    MonitorTryJobPipeline._UpdateTryJobMetadata(
+        try_job_data, None, None, error, False)
     self.assertEqual(try_job_data.error, error_data)
 
   def testUpdateTryJobMetadataForCompletedBuild(self):
@@ -168,8 +168,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     build = buildbucket_client.BuildbucketBuild(build_data)
     try_job_data = WfTryJobData.Create(try_job_id)
 
-    MonitorTryJobPipeline._UpdateTryJobMetadataForCompletedBuild(
-        try_job_data, build, None, timed_out=False)
+    MonitorTryJobPipeline._UpdateTryJobMetadata(
+        try_job_data, None, build, None, False)
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertIsNone(try_job_data.error)
     self.assertEqual(try_job_data.regression_range_size, 2)
@@ -179,10 +179,10 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
                      datetime(2016, 2, 1, 22, 59, 30))
     self.assertEqual(try_job_data.try_job_url, url)
 
-    MonitorTryJobPipeline._UpdateTryJobMetadataForCompletedBuild(
-        try_job_data, build, None, timed_out=True)
+    MonitorTryJobPipeline._UpdateTryJobMetadata(
+        try_job_data, None, build, None, True)
     self.assertEqual(try_job_data.error,
-                     {'message': MonitorTryJobPipeline.TIMEOUT,
+                     {'message': 'Try job monitoring was abandoned.',
                       'reason': MonitorTryJobPipeline.TIMEOUT})
 
   def testGetTryJobsForCompileSuccess(self):

@@ -77,6 +77,7 @@ class BuildbucketBuild(object):
   COMPLETED = 'COMPLETED'
 
   def __init__(self, raw_json_data):
+    self.response = raw_json_data
     self.id = raw_json_data.get('id')
     self.url = raw_json_data.get('url')
     self.status = raw_json_data.get('status')

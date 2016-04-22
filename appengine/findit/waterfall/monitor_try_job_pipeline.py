@@ -33,32 +33,46 @@ class MonitorTryJobPipeline(BasePipeline):
     return None
 
   @staticmethod
-  def _UpdateTryJobMetadataForBuildError(try_job_data, error):
-    try_job_data.error = {
-        'message': error.message,
-        'reason': error.reason
-    }
-    try_job_data.put()
+  def _GetError(buildbucket_error, timed_out):
+    # TODO(lijeffrey): Currently only timeouts (Findit abandoned monitoring the
+    # try job after waiting too long for it to complete) and errors reported
+    # directly in the buildbucket_client request are captured. Several other
+    # failures can be derrived from the response in the build too which should
+    # be determined here.
+    if buildbucket_error:
+      return {
+          'message': buildbucket_error.message,
+          'reason': buildbucket_error.reason
+      }
 
-  @staticmethod
-  def _UpdateTryJobMetadataForCompletedBuild(try_job_data, build, start_time,
-                                             timed_out=False):
-    try_job_data.request_time = MonitorTryJobPipeline._MicrosecondsToDatetime(
-        build.request_time)
-    # If start_time is unavailable, fallback to request_time.
-    try_job_data.start_time = start_time or try_job_data.request_time
-    try_job_data.end_time = MonitorTryJobPipeline._MicrosecondsToDatetime(
-        build.end_time)
-    try_job_data.number_of_commits_analyzed = len(
-        build.report.get('result', {}))
-    try_job_data.try_job_url = build.url
-    try_job_data.regression_range_size = build.report.get(
-        'metadata', {}).get('regression_range_size')
     if timed_out:
-      try_job_data.error = {
-          'message': MonitorTryJobPipeline.TIMEOUT,
+      return {
+          'message': 'Try job monitoring was abandoned.',
           'reason': MonitorTryJobPipeline.TIMEOUT
       }
+
+  @staticmethod
+  def _UpdateTryJobMetadata(try_job_data, start_time, buildbucket_build,
+                            buildbucket_error, timed_out):
+    if buildbucket_build:
+      try_job_data.request_time = MonitorTryJobPipeline._MicrosecondsToDatetime(
+          buildbucket_build.request_time)
+      # If start_time is unavailable, fallback to request_time.
+      try_job_data.start_time = start_time or try_job_data.request_time
+      try_job_data.end_time = MonitorTryJobPipeline._MicrosecondsToDatetime(
+          buildbucket_build.end_time)
+      try_job_data.number_of_commits_analyzed = len(
+          buildbucket_build.report.get('result', {}))
+      try_job_data.try_job_url = buildbucket_build.url
+      try_job_data.regression_range_size = buildbucket_build.report.get(
+          'metadata', {}).get('regression_range_size')
+      try_job_data.last_buildbucket_response = buildbucket_build.response
+
+    error = MonitorTryJobPipeline._GetError(buildbucket_error, timed_out)
+
+    if error:
+      try_job_data.error = error
+
     try_job_data.put()
 
   def _UpdateTryJobResult(
@@ -111,6 +125,7 @@ class MonitorTryJobPipeline(BasePipeline):
                     WfTryJobData.Create(try_job_id))
     try_job_data.master_name = master_name
     try_job_data.builder_name = builder_name
+    try_job_data.build_number = build_number
     try_job_data.try_job_type = try_job_type
 
     already_set_started = False
@@ -123,13 +138,14 @@ class MonitorTryJobPipeline(BasePipeline):
           pipeline_wait_seconds += default_pipeline_wait_seconds
         else:  # pragma: no cover
           # Buildbucket has responded error more than 5 times, retry pipeline.
-          self._UpdateTryJobMetadataForBuildError(try_job_data, error)
+          self._UpdateTryJobMetadata(
+              try_job_data, start_time, build, error, False)
           raise pipeline.Retry(
               'Error "%s" occurred. Reason: "%s"' % (error.message,
                                                      error.reason))
       elif build.status == BuildbucketBuild.COMPLETED:
-        self._UpdateTryJobMetadataForCompletedBuild(
-            try_job_data, build, start_time)
+        self._UpdateTryJobMetadata(
+            try_job_data, start_time, build, error, False)
         result_to_update = self._UpdateTryJobResult(
             BuildbucketBuild.COMPLETED, master_name, builder_name, build_number,
             try_job_type, try_job_id, build.url, build.report)
@@ -150,8 +166,7 @@ class MonitorTryJobPipeline(BasePipeline):
           already_set_started = True
 
       if time.time() > deadline:  # pragma: no cover
-        self._UpdateTryJobMetadataForCompletedBuild(
-            try_job_data, build, start_time, timed_out=True)
+        self._UpdateTryJobMetadata(try_job_data, start_time, build, error, True)
         # Explicitly abort the whole pipeline.
         raise pipeline.Abort(
             'Try job %s timed out after %d hours.' % (

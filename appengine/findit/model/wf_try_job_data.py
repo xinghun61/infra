@@ -11,6 +11,8 @@ class WfTryJobData(ndb.Model):
   master_name = ndb.StringProperty(indexed=True)
   # The original buildername on which the build was detected to have failed.
   builder_name = ndb.StringProperty(indexed=True)
+  # The original build number.
+  build_number = ndb.IntegerProperty(indexed=True)
   # The type of try job, such as 'compile' or 'test'.
   try_job_type = ndb.StringProperty(indexed=True)
   # When the try job was created.
@@ -29,6 +31,8 @@ class WfTryJobData(ndb.Model):
   try_job_url = ndb.StringProperty(indexed=False)
   # Error message and reason, if any.
   error = ndb.JsonProperty(indexed=False)
+  # The last buildbucket build response received.
+  last_buildbucket_response = ndb.JsonProperty(indexed=False, compressed=True)
 
   # TODO(lijeffrey): We may want to determine whether or not a try job
   # was triggered as a redo of another if the first failed to find a culprit.
