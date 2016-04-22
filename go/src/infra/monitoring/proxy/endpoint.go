@@ -140,6 +140,7 @@ func (s *endpointServiceImpl) send(ctx context.Context, data []byte) error {
 			log.ErrorKey: err,
 			"status":     resp.Status,
 			"statusCode": resp.StatusCode,
+			"body":       string(bodyData),
 		}.Warningf(ctx, "Proxy error.")
 		return err
 	})
