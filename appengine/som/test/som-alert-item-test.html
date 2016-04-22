@@ -2,10 +2,10 @@
 <script src="../bower_components/webcomponentsjs/webcomponents.min.js"></script>
 <script src="../bower_components/web-component-tester/browser.js"></script>
 <link rel="import" href="../bower_components/iron-test-helpers/iron-test-helpers.html">
-<link rel="import" href="../elements/som-alert-card.html">
+<link rel="import" href="../elements/som-alert-item.html">
 <test-fixture id="basic">
   <template>
-    <som-alert-card></som-alert-card>
+    <som-alert-item></som-alert-item>
   </template>
 </test-fixture>
 <script>
@@ -37,7 +37,7 @@
       };
       assert.equal(
           'test title',
-          element.$$('paper-card').heading);
+          element.$$('.alert-title').textContent);
       assert.equal(
           'test body',
           element.$$('.alert-body').textContent);
@@ -47,12 +47,12 @@
       element.annotation = {
         snoozed: false,
       };
-      assert.equal(element.$.snooze.innerText.trim(), 'SNOOZE');
+      assert.equal(element.$.snooze.title.trim(), 'Snooze');
 
       element.annotation = {
         snoozed: true,
       };
-      assert.equal(element.$.snooze.innerText.trim(), 'UNSNOOZE');
+      assert.equal(element.$.snooze.title.trim(), 'Unsnooze');
     });
 
     test('snoozed affects class', function() {
@@ -71,24 +71,13 @@
       element.annotation = {
         snoozed: false,
       };
-      let children = element.$.snooze.getElementsByTagName('iron-icon');
-      assert.lengthOf(children, 1);
-      assert.equal(children[0].icon, 'alarm');
+      assert.equal(element.$.snooze.icon, 'alarm');
 
       element.annotation = {
         snoozed: true,
       };
-      children = element.$.snooze.getElementsByTagName('iron-icon');
-      assert.lengthOf(children, 1);
-      assert.equal(children[0].icon, 'alarm-off');
+      assert.equal(element.$.snooze.icon, 'alarm-off');
     });
-
-    test('click to view Details panel', function() {
-      assert.equal(element.selected, false);
-      element.click();
-      assert.equal(element.selected, true);
-    });
-
   });
 })();
 </script>

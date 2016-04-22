@@ -1,0 +1,162 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="som-extension-build-failure.html">
+
+<dom-module id="som-alert-item">
+  <template>
+    <style>
+      .alert {
+        @apply(--layout-horizontal);
+        padding: 20px;
+        background-color: white;
+        border: 1px solid #ddd;
+        cursor: pointer;
+      }
+      .alert-expanded {
+        padding: 1em;
+        color: #666;
+      }
+     .alert-title-bar {
+       display: flex;
+       justify-content: space-between;
+       align-items: center;
+     }
+     .alert-title {
+       font-weight: bold;
+       font-size: larger;
+     }
+     .alert-times {
+       font-size: smaller;
+       color: #666;
+     }
+     .list-item {
+        @apply(--layout-flex);
+        @apply(--layout-vertical);
+        padding: 0 16px;
+      }
+      .file-bug,
+      .snooze {
+        color: #aaa;
+      }
+      .snoozed {
+        opacity: 0.5;
+      }
+      #root {
+        transition: opacity .25s;
+      }
+    </style>
+    <div id="root" class$="[[_cssClass]]">
+      <div class$="[[_classForAlert(alert, selected)]]">
+        <div class="list-item">
+          <div class="alert-title-bar">
+            <div class="alert-title">[[alert.title]]</div>
+            <div class="alert-times">
+              [[_duration]] ([[_startTime]] - [[_latestTime]])
+            </div>
+          </div>
+          <div class="alert-body">[[alert.body]]</div>
+          <div class="alert-expanded">
+            <div class="alert-links">
+              <template is="dom-repeat" items="[[alert.links]]" as="link">
+                <paper-button><iron-icon icon="open-in-new"></iron-icon>
+                  <a target="_blank" href$="[[link.href]]">[[link.title]]</a>
+                </paper-button>
+              </template>
+            </div>
+            <som-extension-build-failure extension="[[alert.extension]]"></som-extension-build-failure>
+          </div>
+        </div>
+        <paper-icon-button class="file-bug" icon="bug-report" alt="File a bug"></paper-icon-button>
+        <paper-icon-button id="snooze" class="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze"></paper-icon-button>
+      </div>
+    </div>
+  </template>
+  <script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'som-alert-item',
+      properties: {
+        alert: Object,
+        annotation: Object,
+        _startTime: {
+          type: String,
+          computed: '_formatTimestamp(alert.start_time)'
+        },
+        _latestTime: {
+          type: String,
+          computed: '_formatTimestamp(alert.time)'
+        },
+        _duration: {
+          type: String,
+          computed: '_calculateDuration(alert)'
+        },
+        _snoozeText: {
+          type: String,
+          computed: '_computeSnoozeText(annotation.snoozed)',
+        },
+        _cssClass: {
+          type: String,
+          computed: '_computeCssClass(annotation.snoozed)',
+        },
+        _snoozeIcon: {
+          type: String,
+          computed: '_computeSnoozeIcon(annotation.snoozed)',
+        },
+      },
+
+      _classForAlert: function(alert, selected) {
+        return 'alert' + (selected ? ' selected' : '');
+      },
+
+     _formatTimestamp: function(timestamp) {
+        if (timestamp != undefined) {
+          return new Date(timestamp * 1000).toLocaleString();
+        }
+        return '';
+      },
+
+      _calculateDuration(alert) {
+        let deltaSec = Math.round((alert.time - alert.start_time));
+        let hours = Math.floor(deltaSec/60/60);
+        let minutes = Math.floor((deltaSec - hours*60*60)/60);
+        let seconds = deltaSec - hours * 60*60 - minutes*60;
+        return `${hours}h ${minutes}m ${seconds}s`;
+      },
+
+      _snooze: function(evt) {
+        if (this.annotation.snoozed) {
+          this.fire('annotation-change', {
+            changes: [{
+              'remove': {'snoozeTime': true},
+            }]
+          });
+        } else {
+          this.fire('annotation-change', {
+            changes: [{
+              'add': {
+                snoozeTime: Date.now() + 1000 * 60 * 60 * 60 * 60,
+              }
+            }]
+          });
+        }
+      },
+
+      _computeSnoozeText: function(snoozed) {
+        return snoozed ? 'Unsnooze' : 'Snooze';
+      },
+
+      _computeCssClass: function(snoozed) {
+        return snoozed ? 'snoozed': '';
+      },
+
+      _computeSnoozeIcon: function(snoozed) {
+        return snoozed ? 'alarm-off' : 'alarm';
+      },
+    });
+  })();
+  </script>
+</dom-module>

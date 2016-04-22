@@ -111,7 +111,7 @@
       }, element._computeAnnotations(annotations));
     });
 
-    test('compute per card annotation correctly', function() {
+    test('compute per item annotation correctly', function() {
       clock.tick(100);
       let keyStub = sinon.stub(element, '_keyForAlert');
       keyStub.onFirstCall().returns('foo');
@@ -168,26 +168,27 @@
     });
 
     test('sort works correctly', function() {
-      let keyStub = sinon.stub(element, '_computeAnnotation');
-      keyStub.onCall(0).returns({snoozed:false});
-      keyStub.onCall(1).returns({snoozed:false});
+      let alertsJson = {
+        alerts: [
+          {extension: { builders: [{name: 'a'}], reasons: [ {step: 'a'} ]} },
+          {extension: { builders: [{name: 'b'}], reasons: [ {step: 'b'} ]} },
+          {extension: { builders: [{name: 'c'}], reasons: [ {step: 'c'} ]} },
+        ],
+      };
 
-      keyStub.onCall(2).returns({snoozed:false});
-      keyStub.onCall(3).returns({snoozed:true});
+      let annotations = {};
+      annotations[element._keyForAlert(alertsJson.alerts[0])] = {
+        snoozeTime: Date.now() + 1000000,
+      };
 
-      keyStub.onCall(4).returns({snoozed:true});
-      keyStub.onCall(5).returns({snoozed:false});
+      let sortedAlerts = element._computeAlerts(alertsJson, annotations);
 
-      keyStub.onCall(6).returns({snoozed:true});
-      keyStub.onCall(7).returns({snoozed:true});
-
-      assert.equal(0, element._sort()());
-      assert.equal(-1, element._sort()());
-      assert.equal(1, element._sort()());
-      assert.equal(0, element._sort()());
+      assert.equal('b', sortedAlerts[0].extension.builders[0].name);
+      assert.equal('c', sortedAlerts[1].extension.builders[0].name);
+      // a is snoozed, goes to the bottom.
+      assert.equal('a', sortedAlerts[2].extension.builders[0].name);
     });
   });
-
 
   suite('navigation', function() {
     setup(function() {

@@ -1,3 +1,4 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
 <link rel="import" href="../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
@@ -12,94 +13,68 @@
 <link rel="import" href="../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../bower_components/paper-progress/paper-progress.html">
 <link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
-<link rel="import" href="../bower_components/polymer/polymer.html">
 
 <dom-module id="som-extension-build-failure">
   <template>
     <style>
-      paper-card {
-        width: 100%;
-        margin-bottom: 16px;
+     .builder {
+        border-radius: 2px;
+        border: 1px solid #dcdcdc;
+        font-size: smaller;
+        margin: 0.1em;
+        padding: 0.5em;
+        display: inline-block;
+        color: red;
       }
-      #builderToggleArrow,
-      #reasonToggleArrow,
-      #regressionRangeToggleArrow {
-        float: right;
+      .multiple-failures {
+        background: #E75D54;
+        color: #f4f4f4;
+      }
+      .builder.multiple-failures a {
+        color: #f4f4f4;
+      }
+      .builder a {
+        font-weight: bold;
+        text-decoration: none;
+        color: red;
+      }
+      #reasons {
+        margin: 1em 0;
       }
     </style>
-    <div hidden$="[[!extension.builders]]">
-      <paper-item id="toggleBuilders" on-tap="_toggleBuilders">
-        Builders ([[extension.builders.length]])
-        <paper-icon-button
-            id="builderToggleArrow"
-            icon="hardware:keyboard-arrow-down"
-            title="Builders">
-        </paper-icon-button>
-      </paper-item>
-    </div>
-    <iron-collapse id="builderList">
-      <template is="dom-repeat" items="[[extension.builders]]" as="builder">
-        <paper-item>
-          <a href="[[builder.url]]">[[builder.name]]</a>:
-              [[builder.first_failure]] - [[builder.latest_failure]]
-        </paper-item>
-      </template>
-    </iron-collapse>
+    <div>
+      <div id="builders">
+        <template is="dom-repeat" items="[[extension.builders]]" as="builder">
+          <span class$="[[_classForBuilder(builder)]]">
+            <a target="_blank" href$="[[builder.url]]" title$="Failing for the last [[_failureCount(builder)]] build(s).">
+                [[builder.name]]
+            </a>
+            [[_failureCount(builder)]] builds ([[builder.first_failure]] - [[builder.latest_failure]])
+          </span>
+        </template>
+      </div>
 
-    <div hidden$="[[!extension.reasons]]">
-      <paper-item id="toggleReasons" on-tap="_toggleReasons">
-        Reasons ([[extension.reasons.length]])
-        <paper-icon-button
-            id="reasonToggleArrow"
-            icon="hardware:keyboard-arrow-down"
-            title="Reasons">
-        </paper-icon-button>
-      </paper-item>
-    </div>
-    <iron-collapse id="reasonList">
-      <template is="dom-repeat" items="[[extension.reasons]]" as="reason">
-        <paper-item>
-          <a href$="[[reason.url]]">[[reason.step]]</a>: [[reason.test_name]]
-        </paper-item>
-      </template>
-    </iron-collapse>
-
-    <div hidden$="[[!extension.regression_ranges]]">
-      <paper-item id="toggleRegressionRanges" on-tap="_toggleRegressionRanges">
-        Repos with Regression Ranges ([[extension.regression_ranges.length]])
-        <paper-icon-button
-            id="regressionRangeToggleArrow"
-            icon="hardware:keyboard-arrow-down"
-            title="Regression ranges">
-        </paper-icon-button>
-      </paper-item>
-    </div>
-    <iron-collapse id="regressionRangeList">
-      <template is="dom-repeat" items="[[extension.regression_ranges]]" as="regressionRange">
-        <paper-item>
-          <div hidden$="[[!regressionRange.positions.length]]">
-            <paper-item class="layout vertical">
-              [[regressionRange.repo]] Positions
-              <div>
-                <template is="dom-repeat" items="[[regressionRange.positions]]" as="position">
-                  [[position]]<br/>
-                </template>
-              </div>
-            </paper-item>
+      <div id="reasons">
+        <template is="dom-repeat" items="[[extension.reasons]]" as="reason">
+          <div>
+            <a target="_blank" href$="[[reason.url]]">[[reason.step]]</a>
+            <ul>
+              <template is="dom-repeat" items="[[reason.test_name]]" as="testName">
+                <li>[[testName]]</li>
+              </template>
+            </ul>
           </div>
-          <div hidden$="[[!regressionRange.revisions.length]]">
-            <paper-item class="layout vertical">
-              [[regressionRange.repo]] Revisions
-              <div>
-                <template is="dom-repeat" items="[[regressionRange.revisions]]" as="revision">
-                  <div>[[revision]]</div>
-                </template>
-              </div>
-            </paper-item>
+        </template>
+      </div>
+      <div id="regression-ranges">
+        <template is="dom-repeat" items="[[extension.regression_ranges]]" as="regressionRange" filter="_showRegressionRange">
+          <div>
+            [[regressionRange.repo]]:
+            <a target="_blank" href$="[[_regressionRangeLink(regressionRange)]]">[[_regressionRange(regressionRange)]]</a>
           </div>
-        </paper-item>
-      </template>
-    </iron-collapse>
+        </template>
+      </div>
+    </div>
   </template>
   <script>
   (function() {
@@ -115,26 +90,60 @@
         }
       },
 
-      _toggleBuilders: function(evt, detail) {
-        this.$.builderToggleArrow.icon =
-            this.$.builderList.opened ? 'hardware:keyboard-arrow-down'
-                : 'hardware:keyboard-arrow-up';
-        this.$.builderList.toggle();
+     _regressionRange: function(range) {
+        if (!range.positions || range.positions.length == 0) {
+          return '';
+        }
+
+        let start = this._parseCommitPosition(range.positions[0]);
+        if (range.positions.length == 1) {
+          return start;
+        }
+
+        let end = this._parseCommitPosition(
+            range.positions[range.positions.length - 1]);
+
+        if (start && end) {
+          return `${start} - ${end}`;
+        }
       },
 
-      _toggleReasons: function(evt, detail) {
-        this.$.reasonToggleArrow =
-            this.$.reasonList.opened ? 'hardware:keyboard-arrow-down'
-                : 'hardware:keyboard-arrow-up';
-        this.$.reasonList.toggle();
+      _regressionRangeLink: function(range) {
+        if (!range.positions) {
+          return '';
+        }
+        let end = this._parseCommitPosition(range.positions[0]);
+        let start = end;
+        if (range.positions.length > 1) {
+          end = this._parseCommitPosition(
+              range.positions[range.positions.length - 1]);
+        }
+        return 'http://test-results.appspot.com/revision_range?start=' +
+            `${start}&end=${end}`;
       },
 
-      _toggleRegressionRanges: function(evt, detail) {
-        this.$.regressionRangeToggleArrow.icon =
-            this.$.regressionRangeList.opened ? 'hardware:keyboard-arrow-down'
-                : 'hardware:keyboard-arrow-up';
-        this.$.regressionRangeList.toggle();
-      }
+      _parseCommitPosition: function(pos) {
+        let groups = /refs\/heads\/master@{#([0-9]+)}/.exec(pos);
+        if (groups && groups.length == 2) {
+          return groups[1];
+        }
+      },
+
+      _failureCount: function(builder) {
+        // The build number range is inclusive.
+        return builder.latest_failure - builder.first_failure + 1;
+      },
+
+      _classForBuilder: function(builder) {
+        if (this._failureCount(builder) > 1) {
+          return 'builder multiple-failures';
+        }
+        return 'builder';
+      },
+
+      _showRegressionRange: function(range) {
+        return this._regressionRange(range) && range.positions.length > 0;
+      },
     });
   })();
   </script>

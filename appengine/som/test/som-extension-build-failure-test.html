@@ -21,45 +21,15 @@
 
     test('renders bare minimum', function() {
       element.extension = {
-        builders: [],
-        reasons: [],
-        regression_ranges: []
-      };
-      assert.equal(
-          'Builders (0)',
-          element.$$('paper-item').textContent.trim());
-    });
-  });
-
-  suite('interaction', function() {
-    var element;
-
-    setup(function() {
-      element = fixture('basic');
-    });
-
-    test('open/close builders', function() {
-      element.extension = {
+        bar: ['baz'],
         builders: [
-          {
-            url: "http://build.example1",
-            first_failure: 0,
-            latest_failure: 1
-          },
-          {
-            url: "http://build.example2",
-            first_failure: 17,
-            latest_failure: 41
-          },
+          {name: 'dummy builder 1', first_failure:0, latest_failure:0},
+          {name: 'dummy builder 2', first_failure:0, latest_failure:0},
         ],
         reasons: [],
         regression_ranges: []
       };
-      assert.isFalse(element.$.builderList.opened);
-      MockInteractions.tap(element.$.toggleBuilders);
-      assert.isTrue(element.$.builderList.opened);
-      MockInteractions.tap(element.$.toggleBuilders);
-      assert.isFalse(element.$.builderList.opened);
+      assert.isDefined(element.$$('#builders').textContent.trim());
     });
   });
 })();

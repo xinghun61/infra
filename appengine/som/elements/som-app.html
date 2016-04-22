@@ -1,7 +1,10 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
 <link rel="import" href="../bower_components/iron-icons/hardware-icons.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-list/iron-list.html">
 <link rel="import" href="../bower_components/iron-page-url/iron-page-url.html">
 <link rel="import" href="../bower_components/paper-badge/paper-badge.html">
 <link rel="import" href="../bower_components/paper-drawer-panel/paper-drawer-panel.html">
@@ -9,8 +12,7 @@
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
-<link rel="import" href="../bower_components/polymer/polymer.html">
-<link rel="import" href="../elements/som-alert-card.html">
+<link rel="import" href="../elements/som-alert-item.html">
 <link rel="import" href="../elements/som-drawer.html">
 
 <dom-module id="som-app">
@@ -28,28 +30,45 @@
         @apply(--center-justified);
         margin: 0 auto;
         padding: 8px;
+        height: 100%;
       }
       paper-header-panel[main] {
         --paper-header-panel-body: {
           background: #eee;
         }
       }
-      paper-tabs {
-        min-width: 500px;
-      }
-      .title {
+     .title {
         font-size: big;
       }
       .som-title {
         font-weight: bold;
       }
+      iron-list {
+        overflow: none;
+        --iron-list-items-container: {
+          margin: auto;
+          margin-bottom: 60px;
+          border-bottom: 1px solid #ddd;
+        };
+      }
+      .list-item {
+        @apply(--layout-flex);
+        @apply(--layout-vertical);
+        margin-bottom: 10px;
+      }
+      .file-bug,
+      .snooze {
+        color: #aaa;
+      }
     </style>
     <iron-page-url id="url" path="{{_path}}"></iron-page-url>
     <iron-ajax
         auto
+        id="alertsAjax"
         loading="{{_networkActive}}"
         url="/api/v1/alerts/[[_alertsGroup]]"
         handle-as="json"
+        last-error="{{_alertsJsonError}}"
         last-response="{{_alertsJson}}"
         debounce-duration="300"></iron-ajax>
     <iron-ajax
@@ -57,14 +76,16 @@
         id="annotations"
         url="/api/v1/annotations"
         handle-as="json"
+        last-error="{{_annotationsJsonError}}"
         last-response="{{annotationsJson}}"
         debounce-duration="300"></iron-ajax>
     <iron-ajax
         id="annotationPost"
         method="post"
         handle-as="json"
+        last-error="{{_annotationPostError}}"
         on-response="_postResponse"></iron-ajax>
-    <paper-drawer-panel>
+    <paper-drawer-panel responsive-width="1024px">
       <paper-header-panel drawer>
         <paper-toolbar>
           <span class="som-title">Sheriff-o-Matic</span>
@@ -72,7 +93,7 @@
         <som-drawer id="drawer" selected-alerts-group="{{_alertsGroup}}"></som-drawer>
       </paper-header-panel>
       <paper-header-panel main>
-        <paper-toolbar class="medium-tall">
+        <paper-toolbar>
           <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
           <div class="layout horizontal flex">
             <div class="flex title">[[_alertsGroup]]</div>
@@ -80,27 +101,20 @@
             <iron-icon icon="refresh"></iron-icon>
           </div>
           <paper-spinner active="[[_networkActive]]"></paper-spinner>
-          <paper-tabs id="tabs" selected="{{selectedTab}}" attr-for-selected="value" class="bottom self-end">
-            <template is="dom-repeat" items="[[_tabs]]" as="tab">
-              <paper-tab value="[[tab.id]]">
-                <span>[[tab.name]]
-                  <paper-badge label="[[tab.count]]"></paper-badge>
-                </span>
-              </paper-tab>
-            </template>
-          </paper-tabs>
         </paper-toolbar>
-        <div id="alerts" class="layout vertical">
-          <template is="dom-repeat" items="[[_alertsJson.alerts]]" as="alert" sort="[[_sort(annotations)]]">
-            <som-alert-card
-                hidden="[[_filterOut(alert.type, selectedTab)]]"
-                alert="[[alert]]"
-                annotation="[[_computeAnnotation(annotations,alert)]]"
-                on-selected-changed="_handleCardSelected"
-                on-annotation-change="_handleAnnotation"
-                ></som-alert-card>
+        <iron-list id="alertsList" items="[[_alerts]]" as="alert" class="fit" selection-enabled multi-selection>
+          <template>
+            <div class="list-item" tabindex$="[[tabIndex]]">
+              <som-alert-item
+                  alert="{{alert}}"
+                  selected="[[selected]]"
+                  annotation="[[_computeAnnotation(annotations,alert)]]"
+                  on-selected-changed="_handleCardSelected"
+                  on-annotation-change="_handleAnnotation"
+              ></som-alert-item>
+            </div>
           </template>
-        </div>
+        </iron-list>
       </paper-header-panel>
     </paper-drawer-panel>
   </template>
@@ -116,10 +130,6 @@
       },
 
       properties: {
-        selectedTab: {
-          type: String,
-          value: 'all',
-        },
         _alertsGroup: {
           type: String,
           value: 'chromium',
@@ -134,6 +144,10 @@
           type: Object,
           value: function() { return {}; }
         },
+        _alerts: {
+          type: Array,
+          computed: '_computeAlerts(_alertsJson, annotations)',
+        },
         // We don't convert the array into an object because the polymer data
         // binding doesn't seem to like mutations to an object, but it's fine
         // watching and notifying about changes to an array :/
@@ -146,13 +160,21 @@
           type: Date,
           computed: '_computeLastUpdated(_alertsJson.timestamp)'
         },
-        _tabs: {
-          type: Array,
-          computed: '_tabsFromAlerts(_alertsJson)'
-        },
         _networkActive: {
           type: Boolean,
           value: false
+        },
+        _alertsJsonError: {
+          type: Object,
+          value: function() { return {}; }
+        },
+         _annotationsJsonError: {
+          type: Object,
+          value: function() { return {}; }
+        },
+        _annotationPostError: {
+          type: Object,
+          value: function() { return {}; }
         },
       },
 
@@ -164,20 +186,6 @@
         this._alertsGroup = newVal.split('/')[1];
       },
 
-      _handleCardSelected: function(e) {
-        if (!e.target.selected) {
-          return;
-        }
-        this.selectedCard = e.target;
-        let cards = this.querySelectorAll('som-alert-card');
-        for (let i = 0; i < cards.length; i++) {
-          let card = cards[i];
-          if (card != this.selectedCard) {
-            card.selected = false;
-          }
-        }
-      },
-
       _computeLastUpdated: function(lastPosted) {
         if (lastPosted != undefined) {
           return new Date(lastPosted * 1000).toLocaleString();
@@ -185,21 +193,29 @@
         return '';
       },
 
-      _sort: function(annotations) {
-        return (a, b) => {
+      _computeAlerts: function(alertsJson, annotations) {
+        if (!alertsJson.alerts) {
+          return [];
+        }
+        alertsJson.alerts.sort((a, b) => {
           let aAnn = this._computeAnnotation(annotations, a);
           let bAnn = this._computeAnnotation(annotations, b);
 
           if (aAnn.snoozed == bAnn.snoozed) {
-            return 0;
+            return a.severity - b.severity;
           }
 
           return aAnn.snoozed ? 1 : -1;
-        };
+        });
+
+        return alertsJson.alerts;
       },
 
       _computeAnnotations: function(annotationsJson) {
         let annotations = {};
+        if (!annotationsJson) {
+          return annotations;
+        }
         annotationsJson.forEach(function(annotation) {
           annotations[annotation.key] = annotation;
         });
@@ -233,6 +249,11 @@
           newArray.push(annotations[k]);
         });
         this.annotationsJson = newArray;
+        // Kind of a cheat: we aren't resizing anything necessarily but we
+        // do want to tickle the list order.
+        setTimeout( ()=> {
+          this.$.alertsList.notifyResize();
+        }, 250);
       },
 
       _keyForAlert: function(alert) {
@@ -245,33 +266,6 @@
           })).join('::');
         }
         return null;
-      },
-
-      _tabsFromAlerts: function(alertsJson) {
-        let tabs = [{name: 'All', id: 'all',
-            count: !alertsJson.alerts ? 0 : alertsJson.alerts.length || 0}];
-
-        let typeTabs = {};
-        if (alertsJson && alertsJson.alerts)  {
-          alertsJson.alerts.forEach((alrt) => {
-            typeTabs[alrt.type] = (typeTabs[alrt.type] | 0) + 1;
-          });
-
-          Object.keys(typeTabs).forEach((k) => {
-            tabs.push({name: k, id: k, count: typeTabs[k]});
-          });
-        }
-
-        return tabs;
-      },
-
-      _filterOut: function(alertType, selectedTab) {
-        if (selectedTab == 'all') {
-          return false;
-        }
-        if (selectedTab != alertType) {
-          return true;
-        }
       },
     });
   })();
