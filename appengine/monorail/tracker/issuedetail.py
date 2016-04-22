@@ -428,6 +428,13 @@ class IssueDetail(issuepeek.IssuePeek):
         # more details.
         pass
 
+  def _ValidateCC(self, cc_ids, cc_usernames):
+    """Validate cc list."""
+    if None in cc_ids:
+      invalid_cc = [cc_name for cc_name, cc_id in zip(cc_usernames, cc_ids)
+                    if cc_id is None]
+      return 'Invalid Cc username: %s' % ', '.join(invalid_cc)
+
   def ProcessFormData(self, mr, post_data):
     """Process the posted issue update form.
 
@@ -507,8 +514,10 @@ class IssueDetail(issuepeek.IssuePeek):
     if error_msg:
       mr.errors.owner = error_msg
 
-    if None in parsed.users.cc_ids:
-      mr.errors.cc = 'Invalid Cc username'
+    error_msg = self._ValidateCC(
+        parsed.users.cc_ids, parsed.users.cc_usernames)
+    if error_msg:
+      mr.errors.cc = error_msg
 
     if len(parsed.comment) > tracker_constants.MAX_COMMENT_CHARS:
       mr.errors.comment = 'Comment is too long'

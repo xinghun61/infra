@@ -356,6 +356,16 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertEquals('invalid owner', ret)
 
+  def testValidateCC(self):
+    cc_ids = [1L, 2L]
+    cc_names = ['user1@example', 'user2@example']
+    res = self.servlet._ValidateCC(cc_ids, cc_names)
+    self.assertIsNone(res)
+
+    cc_ids = [None, 2L]
+    res = self.servlet._ValidateCC(cc_ids, cc_names)
+    self.assertEqual(res, 'Invalid Cc username: user1@example')
+
   def testProcessFormData_NoPermission(self):
     """Anonymous users and users without ADD_ISSUE_COMMENT cannot comment."""
     local_id_1 = self.services.issue.CreateIssue(
