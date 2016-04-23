@@ -5,6 +5,8 @@
 /*
 CLI wrapper for infra/libs/auth library. Can be used to manage cached
 credentials.
+
+TODO(vadimsh): Move into luci-go.
 */
 package main
 
@@ -19,7 +21,7 @@ import (
 )
 
 func main() {
-	opts := auth.Options{Logger: gologger.Get()}
+	opts := auth.Options{Logger: gologger.StdConfig.NewLogger(nil)}
 	application := &subcommands.DefaultApplication{
 		Name:  "auth",
 		Title: "Chrome Infra Authentication tool",

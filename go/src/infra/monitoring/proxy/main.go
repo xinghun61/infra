@@ -288,7 +288,7 @@ func mainImpl(args []string) int {
 
 	// Install a console logger by default.
 	ctx := context.Background()
-	ctx = gologger.Use(ctx)
+	ctx = gologger.StdConfig.Use(ctx)
 
 	loggerConfig := newLoggerConfig() // Internal logging config (cloud logging).
 	logConfig := log.Config{Level: log.Debug}

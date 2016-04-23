@@ -14,21 +14,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/maruel/subcommands"
+	"golang.org/x/net/context"
+
 	"github.com/luci/luci-go/client/authcli"
 	"github.com/luci/luci-go/client/cipd/version"
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
 	"github.com/luci/luci-go/common/tsmon"
-	"github.com/maruel/subcommands"
-	gol "github.com/op/go-logging"
-	"golang.org/x/net/context"
 
 	"infra/tools/cloudtail"
 )
 
 var authOptions = auth.Options{
-	Logger:                 gologger.New(os.Stderr, gol.INFO),
+	Logger:                 gologger.StdConfig.NewLogger(context.Background()),
 	ServiceAccountJSONPath: defaultServiceAccountJSONPath(),
 	Scopes: []string{
 		auth.OAuthScopeEmail,
@@ -91,14 +91,9 @@ func (opts *commonOptions) registerFlags(f *flag.FlagSet, defaultAutoFlush bool)
 // processFlags validates flags, creates and configures logger, client, etc.
 func (opts *commonOptions) processFlags() (state, error) {
 	// Logger.
-	logLevels := map[logging.Level]gol.Level{
-		logging.Debug:   gol.DEBUG,
-		logging.Info:    gol.INFO,
-		logging.Warning: gol.WARNING,
-		logging.Error:   gol.ERROR,
-	}
 	ctx := context.Background()
-	ctx = logging.Set(ctx, gologger.New(os.Stderr, logLevels[opts.localLogLevel]))
+	ctx = gologger.StdConfig.Use(ctx)
+	ctx = logging.SetLevel(ctx, opts.localLogLevel)
 
 	// Auth options.
 	authOpts, err := opts.authFlags.Options()

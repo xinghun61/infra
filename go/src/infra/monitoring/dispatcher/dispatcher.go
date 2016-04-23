@@ -52,7 +52,6 @@ var (
 	replayTime          = flag.String("replay-time", "", "Specify a simulated starting time for the replay in RFC3339 format, used with --replay-snapshot.")
 	serviceAccountJSON  = flag.String("service-account", "", "Service account JSON file.")
 
-	log             = gologger.Get()
 	duration, cycle time.Duration
 
 	// gk is the gatekeeper config.
@@ -70,12 +69,12 @@ func init() {
 	}
 }
 
-func analyzeBuildExtract(a *analyzer.Analyzer, masterName string, b *messages.BuildExtract) []messages.Alert {
+func analyzeBuildExtract(ctx context.Context, a *analyzer.Analyzer, masterName string, b *messages.BuildExtract) []messages.Alert {
 	ret := a.MasterAlerts(masterName, b)
 	if *mastersOnly {
 		return ret
 	}
-	log.Infof("getting builder alerts for %s", masterName)
+	logging.Infof(ctx, "getting builder alerts for %s", masterName)
 	return append(ret, a.BuilderAlerts(masterName, b)...)
 }
 
@@ -97,7 +96,7 @@ func masterFromURL(masterURL string) string {
 	return parts[len(parts)-1]
 }
 
-func fetchBuildExtracts(c client.Reader, masterNames []string) map[string]*messages.BuildExtract {
+func fetchBuildExtracts(ctx context.Context, c client.Reader, masterNames []string) map[string]*messages.BuildExtract {
 	bes := map[string]*messages.BuildExtract{}
 	type beResp struct {
 		name string
@@ -111,7 +110,7 @@ func fetchBuildExtracts(c client.Reader, masterNames []string) map[string]*messa
 			r := beResp{name: mn}
 			r.be, r.err = c.BuildExtract(mn)
 			if r.err != nil {
-				log.Errorf("Error reading build extract from %s : %s", mn, r.err)
+				logging.Errorf(ctx, "Error reading build extract from %s : %s", mn, r.err)
 			}
 			res <- r
 		}(masterName)
@@ -141,7 +140,7 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool) 
 		go func(tree string) {
 			expvars.Add(fmt.Sprintf("Tree-%s", tree), 1)
 			defer expvars.Add(fmt.Sprintf("Tree-%s", tree), -1)
-			log.Infof("Checking tree: %s", tree)
+			logging.Infof(ctx, "Checking tree: %s", tree)
 			masterNames := []string{}
 			t := gkt[tree]
 			for _, url := range t.Masters {
@@ -149,14 +148,14 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool) 
 			}
 
 			// TODO(seanmccullough): Plumb ctx through the rest of these calls.
-			bes := fetchBuildExtracts(a.Reader, masterNames)
-			log.Infof("Build Extracts read: %d", len(bes))
+			bes := fetchBuildExtracts(ctx, a.Reader, masterNames)
+			logging.Infof(ctx, "Build Extracts read: %d", len(bes))
 
 			alerts := &messages.Alerts{
 				RevisionSummaries: map[string]messages.RevisionSummary{},
 			}
 			for masterName, be := range bes {
-				alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(a, masterName, be)...)
+				alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(ctx, a, masterName, be)...)
 			}
 
 			sort.Sort(bySeverity(alerts.Alerts))
@@ -167,7 +166,7 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool) 
 					for _, r := range bf.RegressionRanges {
 						revs, err := a.GetRevisionSummaries(r.Revisions)
 						if err != nil {
-							log.Errorf("Couldn't get revision summaries: %v", err)
+							logging.Errorf(ctx, "Couldn't get revision summaries: %v", err)
 							continue
 						}
 						for _, rev := range revs {
@@ -179,33 +178,33 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool) 
 			alerts.Timestamp = messages.TimeToEpochTime(time.Now())
 
 			if *alertsBaseURL == "" {
-				log.Infof("No data_url provided. Writing to %s-alerts.json", tree)
+				logging.Infof(ctx, "No data_url provided. Writing to %s-alerts.json", tree)
 
 				abytes, err := json.MarshalIndent(alerts, "", "\t")
 				if err != nil {
-					log.Errorf("Couldn't marshal alerts json: %v", err)
+					logging.Errorf(ctx, "Couldn't marshal alerts json: %v", err)
 					errs <- err
 					return
 				}
 
 				if err := ioutil.WriteFile(fmt.Sprintf("%s-alerts.json", tree), abytes, 0644); err != nil {
-					log.Errorf("Couldn't write to alerts.json: %v", err)
+					logging.Errorf(ctx, "Couldn't write to alerts.json: %v", err)
 					errs <- err
 					return
 				}
 			} else {
 				alertsURL := fmt.Sprintf("%s/%s", *alertsBaseURL, tree)
 				w := client.NewWriter(alertsURL)
-				log.Infof("Posting alerts to %s", alertsURL)
+				logging.Infof(ctx, "Posting alerts to %s", alertsURL)
 				err := w.PostAlerts(alerts)
 				if err != nil {
-					log.Errorf("Couldn't post alerts: %v", err)
+					logging.Errorf(ctx, "Couldn't post alerts: %v", err)
 					errs <- err
 					return
 				}
 			}
 
-			log.Infof("Filtered failures: %v", filteredFailures)
+			logging.Infof(ctx, "Filtered failures: %v", filteredFailures)
 			done <- nil
 		}(treeName)
 	}
@@ -224,7 +223,12 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool) 
 func main() {
 	flag.Parse()
 
+	ctx := context.Background()
+	ctx = gologger.StdConfig.Use(ctx)
+	ctx = logging.SetLevel(ctx, logging.Debug)
+
 	authOptions := auth.Options{
+		Context:                ctx,
 		ServiceAccountJSONPath: *serviceAccountJSON,
 		Scopes: []string{
 			auth.OAuthScopeEmail,
@@ -239,9 +243,9 @@ func main() {
 
 	transport, err := auth.NewAuthenticator(mode, authOptions).Transport()
 	if err != nil {
-		log.Errorf("AuthenticatedTransport: %v", err)
+		logging.Errorf(ctx, "AuthenticatedTransport: %v", err)
 		if !*login {
-			log.Errorf("Consider re-running with -login")
+			logging.Errorf(ctx, "Consider re-running with -login")
 		}
 		os.Exit(1)
 	}
@@ -250,37 +254,37 @@ func main() {
 	go func() {
 		err := http.ListenAndServe(":12345", nil)
 		if err != nil {
-			log.Errorf("ListenAndServe: %v", err)
+			logging.Errorf(ctx, "ListenAndServe: %v", err)
 			os.Exit(1)
 		}
 	}()
 
 	duration, err := time.ParseDuration(*durationStr)
 	if err != nil {
-		log.Errorf("Error parsing duration: %v", err)
+		logging.Errorf(ctx, "Error parsing duration: %v", err)
 		os.Exit(1)
 	}
 
 	cycle, err := time.ParseDuration(*cycleStr)
 	if err != nil {
-		log.Errorf("Error parsing cycle: %v", err)
+		logging.Errorf(ctx, "Error parsing cycle: %v", err)
 		os.Exit(1)
 	}
 
 	err = readJSONFile(*gatekeeperJSON, &gk)
 	if err != nil {
-		log.Errorf("Error reading gatekeeper json: %v", err)
+		logging.Errorf(ctx, "Error reading gatekeeper json: %v", err)
 		os.Exit(1)
 	}
 
 	err = readJSONFile(*gatekeeperTreesJSON, &gkt)
 	if err != nil {
-		log.Errorf("Error reading gatekeeper trees json: %v", err)
+		logging.Errorf(ctx, "Error reading gatekeeper trees json: %v", err)
 		os.Exit(1)
 	}
 
 	if *snapshot != "" && *replay != "" {
-		log.Errorf("Cannot use snapshot and replay flags at the same time.")
+		logging.Errorf(ctx, "Cannot use snapshot and replay flags at the same time.")
 		os.Exit(1)
 	}
 
@@ -298,7 +302,7 @@ func main() {
 	if *replayTime != "" {
 		t, err := time.Parse(time.RFC3339, *replayTime)
 		if err != nil {
-			log.Errorf("Couldn't parse replay-time: %s", err)
+			logging.Errorf(ctx, "Couldn't parse replay-time: %s", err)
 			os.Exit(1)
 		}
 		start := time.Now()
@@ -310,12 +314,12 @@ func main() {
 		f, err := os.Open(*replay)
 		defer f.Close()
 		if err != nil {
-			log.Errorf("Couldn't open replay dir: %s", err)
+			logging.Errorf(ctx, "Couldn't open replay dir: %s", err)
 			os.Exit(1)
 		}
 		stat, err := f.Stat()
 		if err != nil {
-			log.Errorf("Couldn't stat replay dir: %s", err)
+			logging.Errorf(ctx, "Couldn't stat replay dir: %s", err)
 			os.Exit(1)
 		}
 		start := time.Now()
@@ -346,7 +350,7 @@ func main() {
 
 	for tree := range trees {
 		if _, ok := gkt[tree]; !ok {
-			log.Errorf("Unrecognized tree name: %s", tree)
+			logging.Errorf(ctx, "Unrecognized tree name: %s", tree)
 			os.Exit(1)
 		}
 	}
@@ -357,14 +361,13 @@ func main() {
 		return mainLoop(ctx, a, trees)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), duration)
-	logging.Set(ctx, log)
+	ctx, cancel := context.WithTimeout(ctx, duration)
 	defer cancel()
 
 	loopResults := looper.Run(ctx, f, cycle, *maxErrs, clock.GetSystemClock())
 
 	if !loopResults.Success {
-		log.Errorf("Failed to run loop, %v errors", loopResults.Errs)
+		logging.Errorf(ctx, "Failed to run loop, %v errors", loopResults.Errs)
 		os.Exit(1)
 	}
 }

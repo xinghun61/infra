@@ -78,7 +78,7 @@ func NewTailer(opts TailerOptions) (*Tailer, error) {
 		opts.Parser = StdParser()
 	}
 	if opts.Logger == nil {
-		opts.Logger = logging.Null()
+		opts.Logger = logging.Null
 	}
 	if opts.RotationCheckPeriod == 0 {
 		opts.RotationCheckPeriod = DefaultRotationCheckPeriod

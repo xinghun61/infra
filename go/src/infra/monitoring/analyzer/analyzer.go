@@ -41,7 +41,7 @@ const (
 )
 
 var (
-	log     = gologger.Get()
+	log     = gologger.StdConfig.NewLogger(nil)
 	expvars = expvar.NewMap("analyzer")
 	cpRE    = regexp.MustCompile("Cr-Commit-Position: (.*)@{#([0-9]+)}")
 )

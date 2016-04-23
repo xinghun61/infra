@@ -93,7 +93,7 @@ var (
 // log in Cloud Logging.
 func NewClient(opts ClientOptions) (Client, error) {
 	if opts.Logger == nil {
-		opts.Logger = logging.Null()
+		opts.Logger = logging.Null
 	}
 	if opts.ProjectID == "" {
 		return nil, fmt.Errorf("no ProjectID is provided")
@@ -119,7 +119,9 @@ func NewClient(opts ClientOptions) (Client, error) {
 	service.UserAgent = opts.UserAgent
 	return &loggingClient{
 		opts: opts,
-		ctx:  logging.Set(context.Background(), opts.Logger),
+		ctx: logging.SetFactory(context.Background(), func(context.Context) logging.Logger {
+			return opts.Logger
+		}),
 		commonLabels: map[string]string{
 			"compute.googleapis.com/resource_id":   opts.ResourceID,
 			"compute.googleapis.com/resource_type": opts.ResourceType,

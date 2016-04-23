@@ -16,7 +16,7 @@ import (
 
 var (
 	googLoc *time.Location
-	log     = gologger.Get()
+	log     = gologger.StdConfig.NewLogger(nil)
 )
 
 const (

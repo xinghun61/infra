@@ -51,7 +51,7 @@ func TestDrainChannel(t *testing.T) {
 			close(ch)
 		}()
 
-		drainChannel(ch, parser, buf, logging.Null())
+		drainChannel(ch, parser, buf, logging.Null)
 		So(buf.Stop(nil), ShouldBeNil)
 		So(len(client.getEntries()), ShouldEqual, 0)
 	})

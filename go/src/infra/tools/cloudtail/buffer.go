@@ -69,7 +69,7 @@ type PushBuffer interface {
 // NewPushBuffer returns PushBuffer that's ready to accept log entries.
 func NewPushBuffer(opts PushBufferOptions) PushBuffer {
 	if opts.Logger == nil {
-		opts.Logger = logging.Null()
+		opts.Logger = logging.Null
 	}
 	if opts.Clock == nil {
 		opts.Clock = clock.GetSystemClock()

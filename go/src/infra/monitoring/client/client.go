@@ -31,7 +31,7 @@ const (
 )
 
 var (
-	log     = gologger.Get()
+	log     = gologger.StdConfig.NewLogger(nil)
 	expvars = expvar.NewMap("client")
 )
 
