@@ -7,47 +7,55 @@
 [define prod_hosting_base_url]/hosting/[end]
 
 <div style="padding-top:30px;">
-<div style="margin-top:3em; text-align:center;">
-[# TODO: Provide an text alternative to the logo.]
-<p style="font-size:large;">Monorail, Monorail, Monorail!</p>
+  <div style="margin-top:3em; text-align:center;">
+    [# TODO: Provide an text alternative to the logo.]
+    <p style="font-size:large;">Monorail, Monorail, Monorail!</p>
 
-<div style="text-align:center;margin:1em">
-  [if-any read_only][else]
-    [if-any can_create_project]
-      <img src="/static/images/new-24.gif" style="vertical-align:top; width:16px;">
-        <a href="/hosting/createProject">Create a new project</a>
-    [end]
-  [end]
+    <div style="text-align:center;margin:1em">
+      [if-any read_only][else]
+        [if-any can_create_project]
+          <a href="/hosting/createProject">Create a new project</a>
+        [end]
+      [end]
 
-  [if-any learn_more_link]
-    <img src="/static/images/question-16.gif" style="vertical-align:top;padding-left:30px">
-    <a href="[learn_more_link]">Learn more about [site_name]</a>
-  [end]
+      [if-any learn_more_link]
+        <a href="[learn_more_link]">Learn more about [site_name]</a>
+      [end]
+    </div>
+
+    <p style="text-align:center;padding:0; margin:2em">
+      <div id="controls">
+        [include "../sitewide/project-list-controls.ezt" arg1]
+      </div>
+
+    </p>
+  </div>
 </div>
 
- <p style="text-align:center;padding:0; margin:2em">
-  <div id="controls">
-    [include "../sitewide/project-list-controls.ezt" arg1]
-  </div>
-
-  <div style="margin:2em">
-    [if-any projects]
-      <table class="resultstable striped" width="100%" border="0" cellspacing="0" cellpadding="10px" style="margin:auto;">
+<div style="margin:2em">
+  [if-any projects]
+    <table id="resultstable" class="resultstable striped" width="100%" border="0" cellspacing="0" cellpadding="18px">
+      <tr>
+        [if-any logged_in_user]<th></th>[end]
+        <th style="text-align:left">Name</th>
+        [if-any logged_in_user]<th style="text-align:left; white-space:nowrap">Your role</th>[end]
+        <th style="text-align:left">Stars</th>
+        <th style="text-align:left">Updated</th>
+        <th style="text-align:left">Summary</th>
+      </tr>
       [for projects]
-        <tr>
+        <tr data-url="[projects.relative_home_url]">
           [include "project-list-row.ezt"]
         </tr>
       [end]
-      </table>
-    [else]
-     <p>There were no visible projects found.</p>
-    [end]
-  </div>
-
- </p>
+    </table>
+  [else]
+   <p style="text-align:center;padding:0; margin:2em">
+     There were no visible projects found.
+   </p>
+  [end]
 </div>
 
-</div>
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
@@ -59,6 +67,18 @@ runOnLoad(function() {
          _TKR_toggleStar(event.target, projectName);
      });
    }
+
+  function _handleResultsClick(event) {
+    var target = event.target;
+    if (target.tagName == "A" || target.type == "checkbox" || target.className == "cb")
+      return;
+    while (target && target.tagName != "TR") target = target.parentNode;
+    _go(target.attributes[[]"data-url"].value,
+        (event.metaKey || event.ctrlKey || event.button == 1));
+  };
+  $("resultstable").addEventListener("click", _handleResultsClick);
+
+
 });
 </script>
 

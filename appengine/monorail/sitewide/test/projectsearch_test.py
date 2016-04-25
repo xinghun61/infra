@@ -25,6 +25,8 @@ class ProjectSearchTest(unittest.TestCase):
 
     for idx, letter in enumerate('abcdefghijklmnopqrstuvwxyz'):
       self.services.project.TestAddProject(letter, project_id=idx + 1)
+    for idx in range(27, 110):
+      self.services.project.TestAddProject(str(idx), project_id=idx)
 
     self.mox = mox.Mox()
     self.mox.StubOutWithMock(self.services.project, 'GetVisibleLiveProjects')
@@ -84,17 +86,17 @@ class ProjectSearchTest(unittest.TestCase):
   def SetUpTwoPageResults(self):
     self.services.project.GetVisibleLiveProjects(
         mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
-            range(1, 16))
+            range(1, 106))
 
   def testTwoPageResults(self):
     """Test more than one pagination page of results."""
     self.SetUpTwoPageResults()
     self.mox.ReplayAll()
     pipeline = self.TestPipeline(
-        expected_last=10, expected_len=10)
+        expected_last=100, expected_len=100)
     self.mox.VerifyAll()
     self.assertEqual(
-        '/hosting/search?num=10&start=10', pipeline.pagination.next_url)
+        '/hosting/search?num=100&start=100', pipeline.pagination.next_url)
 
 
 if __name__ == '__main__':

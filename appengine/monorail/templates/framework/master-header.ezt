@@ -80,7 +80,12 @@
 
 [# Tiny script used sitewide. ]
 <script type="text/javascript" nonce="[nonce]">
-   function _go(url) { document.location = url; }
+   function _go(url, newWindow) {
+     if (newWindow)
+       window.open(url, '_blank');
+     else
+       document.location = url;
+   }
    function $(id) { return document.getElementById(id); }
 
    var loadQueue = [];

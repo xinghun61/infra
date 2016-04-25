@@ -12,8 +12,7 @@ from framework import paginate
 from framework import permissions
 
 
-DEFAULT_RESULTS_PER_PAGE = 10
-MAXIMUM_RESULT_PAGES_OFFERED = 10
+DEFAULT_RESULTS_PER_PAGE = 100
 
 
 class ProjectSearchPipeline(object):
