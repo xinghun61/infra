@@ -188,9 +188,9 @@ def ScheduleTryJobIfNeeded(failure_info, signals, heuristic_result):
 
     if try_job_type == TryJobType.TEST:  # pragma: no cover
       logging_str = (
-          'Swarming task was scheduled for build %s, %s, %s: %s because of'
-          ' %s failure. A try job may be triggered if some reliable failure'
-          ' is detected in the task.') % (
+          'Trying to schedule swarming task(s) for build %s, %s, %s: %s'
+          ' because of %s failure. A try job may be triggered if some reliable'
+          ' failure is detected in task(s).') % (
               master_name, builder_name, build_number,
               pipeline.pipeline_status_path, try_job_type)
     else:  # pragma: no cover

@@ -19,18 +19,19 @@ def _GetReliableTargetedTests(targeted_tests, classified_tests_by_step):
   """Returns a dict containing a list of reliable tests for each failed step."""
   reliable_tests = defaultdict(list)
   for step_name, tests in targeted_tests.iteritems():
+    # Skips non-swarming steps to avoid false positives.
+    # TODO(chanli): It is very unlikely for some non-swarming steps to be flaky.
+    # Need to identify those steps and add them to a whitelist.
     if step_name in classified_tests_by_step:  # Swarming step.
-      # If the step is swarming but there is no result for it, it's highly
-      # likely that there is some error with the task.
-      # Thus skip this step for no insights from task to avoid false positive.
       step_name_no_platform = classified_tests_by_step[step_name][0]
       classified_tests = classified_tests_by_step[step_name][1]
 
       for test in tests:
+      # If the step is swarming but there is no result for it, it's highly
+      # likely that there is some error with the task.
+      # Thus skip this step for no insights from task to avoid false positive.
         if (test in classified_tests.get('reliable_tests', [])):
           reliable_tests[step_name_no_platform].append(test)
-    else:  # Non-swarming step, includes it directly.
-      reliable_tests[step_name] = []
   return reliable_tests
 
 

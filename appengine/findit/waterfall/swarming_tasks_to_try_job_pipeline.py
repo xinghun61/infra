@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 from common.pipeline_wrapper import BasePipeline
 from waterfall.process_swarming_task_result_pipeline import (
     ProcessSwarmingTaskResultPipeline)
@@ -33,6 +35,10 @@ class SwarmingTasksToTryJobPipeline(BasePipeline):
             master_name, builder_name, build_number, step_name, tests)
         step_future = yield ProcessSwarmingTaskResultPipeline(
             master_name, builder_name, build_number, step_name, task_id)
+        logging_str = (
+            'Swarming task was scheduled for build %s/%s/%s step %s') % (
+                master_name, builder_name, build_number, step_name)
+        logging.info(logging_str)
         classified_tests_by_step.append(step_future)
 
    # Waits until classified_tests_by_step are ready.

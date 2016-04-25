@@ -84,8 +84,7 @@ class RunTryJobForReliableFailurePipelineTest(testing.AppengineTestCase):
             _SAMPLE_TARGETED_TESTS, _SAMPLE_CLASSIFIED_TESTS_BY_STEP['1']))
 
     expected_reliable_tests = {
-        'step1': ['step1_test2'],
-        'step3': []
+        'step1': ['step1_test2']
     }
 
     self.assertEqual(expected_reliable_tests, reliable_tests)
@@ -133,7 +132,7 @@ class RunTryJobForReliableFailurePipelineTest(testing.AppengineTestCase):
     pipeline = RunTryJobForReliableFailurePipeline()
     pipeline.run(
         self.master_name, self.builder_name, self.build_number, 'rev1', 'rev2',
-        ['rev2'], TryJobType.TEST, None, _SAMPLE_TARGETED_TESTS,
+        ['rev2'], TryJobType.TEST, None, _SAMPLE_TARGETED_TESTS, None,
         *tuple(_SAMPLE_CLASSIFIED_TESTS_BY_STEP['1'].iteritems()))
 
     self.assertTrue(_MockTryJobPipeline.STARTED)
