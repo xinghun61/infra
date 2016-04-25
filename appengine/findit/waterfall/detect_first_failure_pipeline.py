@@ -354,7 +354,7 @@ class DetectFirstFailurePipeline(BasePipeline):
 
     for step_name, failed_step in failed_steps.iteritems():
       if not failed_step.get('list_isolated_data'):  # Non-swarming step.
-        continue
+        continue  # pragma: no cover.
 
       # Checks tests in one step and updates failed_step info if swarming.
       result = self._StartTestLevelCheckForFirstFailure(

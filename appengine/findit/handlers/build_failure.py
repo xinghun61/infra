@@ -294,7 +294,6 @@ class BuildFailure(BaseHandler):
         'analysis_correct': analysis.correct,
         'triage_history': _GetTriageHistory(analysis),
         'show_triage_help_button': self._ShowTriageHelpButton(),
-        'status_message_map': result_status.STATUS_MESSAGE_MAP
     }
 
   @staticmethod
@@ -345,6 +344,7 @@ class BuildFailure(BaseHandler):
 
   def _PrepareDataForTestFailures(self, analysis, build_info):
     data = self._PrepareCommonDataForFailure(analysis)
+    data['status_message_map'] = result_status.STATUS_MESSAGE_MAP
 
     organized_results = _GetOrganizedAnalysisResultBySuspectedCL(
         analysis.result)
@@ -390,7 +390,7 @@ class BuildFailure(BaseHandler):
           build_completed=build_completed, force=force,
           queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
-    if analysis.failure_type == failure_type.COMPILE:  # pragma: no branch
+    if analysis.failure_type == failure_type.COMPILE:
       return {
         'template': 'waterfall/compile_failure.html',
         'data': self._PrepareDataForCompileFailure(analysis),

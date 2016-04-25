@@ -692,3 +692,55 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     build_failure.BuildFailure._PopulateHeuristicDataForCompileFailure(
         analysis, data)
     self.assertEqual(expected_data, data)
+
+  def testGetTryJobResultForCompileFailure(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.result = {
+        'failures': [
+            {
+                'step_name': 'compile',
+                'first_failure': 122,
+                'last_pass': 121,
+                'suspected_cls': [],
+            },
+            {
+                'step_name': 'steps',
+            },
+        ]
+    }
+    analysis.failure_result_map = {
+        'compile': 'm/b/122',
+    }
+    analysis.status = analysis_status.COMPLETED
+    analysis.put()
+
+    try_job = WfTryJob.Create('m', 'b', 122)
+    try_job.status = analysis_status.COMPLETED
+    try_job.compile_results = [
+        {
+            'url': 'build/url',
+            'culprit': {
+                'compile': {
+                    'revision': 'rev',
+                }
+            }
+        }
+    ]
+    try_job.put()
+
+    expected_try_job_result = {
+        'status': 'completed',
+        'url': 'build/url',
+        'completed': True,
+        'culprit': {
+            'revision': 'rev',
+        },
+        'failed': False,
+    }
+
+    build_url = buildbot.CreateBuildUrl('m', 'b', 123)
+    response = self.test_app.get('/build-failure',
+                                 params={'url': build_url, 'format': 'json'})
+
+    self.assertEquals(200, response.status_int)
+    self.assertEqual(expected_try_job_result, response.json_body['try_job'])

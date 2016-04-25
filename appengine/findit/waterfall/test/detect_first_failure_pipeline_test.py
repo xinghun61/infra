@@ -10,6 +10,7 @@ import zlib
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import pipeline_handlers
+from common.waterfall import failure_type
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
@@ -17,6 +18,7 @@ from model.wf_step import WfStep
 from waterfall import buildbot
 from waterfall import lock_util
 from waterfall import swarming_util
+from waterfall.build_info import BuildInfo
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 from waterfall.test import wf_testcase
 
@@ -666,3 +668,15 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
       self.assertEqual(expected_step_log_data[n], step.log_data)
 
     self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
+
+  def testGetFailureType(self):
+    cases = {
+        failure_type.UNKNOWN: [],
+        failure_type.COMPILE: ['compile', 'slave_steps'],
+        failure_type.TEST: ['browser_tests'],
+    }
+    for expected_type, failed_steps in cases.iteritems():
+      build_info = BuildInfo('m', 'b', 123)
+      build_info.failed_steps = failed_steps
+      self.assertEqual(
+          expected_type, DetectFirstFailurePipeline._GetFailureType(build_info))
