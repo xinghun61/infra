@@ -64,6 +64,7 @@ class ProjectCreate(servlet.Servlet):
         'initial_description': '',
         'initial_project_home': '',
         'initial_docs_url': '',
+        'initial_source_url': '',
         'initial_logo_gcs_id': '',
         'initial_logo_file_name': '',
         'logo_view': tracker_views.LogoView(None),
