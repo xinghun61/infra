@@ -31,21 +31,24 @@
        font-size: smaller;
        color: #666;
      }
+     .alert-links {
+       display: inline-block;
+     }
      .list-item {
         @apply(--layout-flex);
         @apply(--layout-vertical);
         padding: 0 16px;
-      }
-      .file-bug,
-      .snooze {
-        color: #aaa;
-      }
-      .snoozed {
-        opacity: 0.5;
-      }
-      #root {
-        transition: opacity .25s;
-      }
+     }
+     .file-bug,
+     .snooze {
+       color: #aaa;
+     }
+     .snoozed {
+       opacity: 0.5;
+     }
+     #root {
+       transition: opacity .25s;
+     }
     </style>
     <div id="root" class$="[[_cssClass]]">
       <div class$="[[_classForAlert(alert, selected)]]">
@@ -58,17 +61,23 @@
           </div>
           <div class="alert-body">[[alert.body]]</div>
           <div class="alert-expanded">
-            <div class="alert-links">
-              <template is="dom-repeat" items="[[alert.links]]" as="link">
+            <div id="noBugs" hidden$="[[_hasBugs]]" class="alert-links">
+              No Linked Bugs.
+            </div>
+            <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links">
+              Bugs:
+              <template is="dom-repeat" items="[[annotation.bugs]]" as="bug">
                 <paper-button><iron-icon icon="open-in-new"></iron-icon>
-                  <a target="_blank" href$="[[link.href]]">[[link.title]]</a>
+                  <a target="_blank" href$="[[bug]]">[[_bugLabel(bug)]]</a>
                 </paper-button>
+                <paper-icon-button id="remove[[index]]" icon="close" on-tap="_removeBug">
+                </paper-icon-button>
               </template>
             </div>
             <som-extension-build-failure extension="[[alert.extension]]"></som-extension-build-failure>
           </div>
         </div>
-        <paper-icon-button class="file-bug" icon="bug-report" alt="File a bug"></paper-icon-button>
+        <paper-icon-button on-tap="_fileBug" class="file-bug" icon="bug-report" alt="File a bug"></paper-icon-button>
         <paper-icon-button id="snooze" class="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze"></paper-icon-button>
       </div>
     </div>
@@ -77,42 +86,90 @@
   (function() {
     'use strict';
 
+    const bugLinkRegExp = /([0-9]{3,})/;
+
+
     Polymer({
       is: 'som-alert-item',
+
+      /**
+       * Fired when an alert requests that the link bug dialog be shown.
+       *
+       * @event link-bug
+       */
+
+      /**
+       * Fired when an alert has an annotation change that needs to be sent to the
+       * server.
+       *
+       * @event annotation-change
+       * @param {Object} changes The changes to be sent to the server.
+       */
+
       properties: {
         alert: Object,
         annotation: Object,
-        _startTime: {
+        _cssClass: {
           type: String,
-          computed: '_formatTimestamp(alert.start_time)'
-        },
-        _latestTime: {
-          type: String,
-          computed: '_formatTimestamp(alert.time)'
+          computed: '_computeCssClass(annotation.snoozed)',
         },
         _duration: {
           type: String,
           computed: '_calculateDuration(alert)'
         },
+        _hasBugs: {
+          type: Boolean,
+          computed: '_computeHasBugs(annotation.bugs)',
+        },
+        _latestTime: {
+          type: String,
+          computed: '_formatTimestamp(alert.time)'
+        },
         _snoozeText: {
           type: String,
           computed: '_computeSnoozeText(annotation.snoozed)',
-        },
-        _cssClass: {
-          type: String,
-          computed: '_computeCssClass(annotation.snoozed)',
         },
         _snoozeIcon: {
           type: String,
           computed: '_computeSnoozeIcon(annotation.snoozed)',
         },
+        _startTime: {
+          type: String,
+          computed: '_formatTimestamp(alert.start_time)'
+        },
+      },
+
+      _bugLabel: function(bugUrl) {
+        let bugId = bugLinkRegExp.exec(bugUrl);
+
+        return `Bug ${bugId[0]}`;
       },
 
       _classForAlert: function(alert, selected) {
         return 'alert' + (selected ? ' selected' : '');
       },
 
-     _formatTimestamp: function(timestamp) {
+      _computeHasBugs: function(bugs) {
+        return !!(bugs && bugs.length > 0);
+      },
+
+      _computeSnoozeText: function(snoozed) {
+        return snoozed ? 'Unsnooze' : 'Snooze';
+      },
+
+      _computeCssClass: function(snoozed) {
+        return snoozed ? 'snoozed' : '';
+      },
+
+      _computeSnoozeIcon: function(snoozed) {
+        return snoozed ? 'alarm-off' : 'alarm';
+      },
+
+      _fileBug: function(evt) {
+        this.fire('link-bug');
+      },
+
+      _formatTimestamp: function(timestamp) {
         if (timestamp != undefined) {
           return new Date(timestamp * 1000).toLocaleString();
         }
@@ -125,6 +182,14 @@
         let minutes = Math.floor((deltaSec - hours*60*60)/60);
         let seconds = deltaSec - hours * 60*60 - minutes*60;
         return `${hours}h ${minutes}m ${seconds}s`;
+      },
+
+      _removeBug: function(evt) {
+        this.fire('annotation-change', {
+          changes: [{
+            'remove': {'bugs': [evt.model.bug]},
+          }]
+        });
       },
 
       _snooze: function(evt) {
@@ -143,18 +208,6 @@
             }]
           });
         }
-      },
-
-      _computeSnoozeText: function(snoozed) {
-        return snoozed ? 'Unsnooze' : 'Snooze';
-      },
-
-      _computeCssClass: function(snoozed) {
-        return snoozed ? 'snoozed': '';
-      },
-
-      _computeSnoozeIcon: function(snoozed) {
-        return snoozed ? 'alarm-off' : 'alarm';
       },
     });
   })();

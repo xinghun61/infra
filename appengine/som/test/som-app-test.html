@@ -78,25 +78,11 @@
           responseHeaders.json,
           JSON.stringify(data)
       ]);
-      let keyStub = sinon.stub(element, '_keyForAlert');
-      keyStub.onFirstCall().returns('annKey');
-      let responseStub = sinon.spy();
-
-      element._handleAnnotation({
-        model: {
-          alert: true // Needed so the reference resolves
-        },
-        detail: {
-          changes: [data]
-        }
-      });
+      element._sendAnnotation("annKey", [data]);
       server.respond();
 
       flush(function() {
-        sinon.assert.calledOnce(keyStub);
         assert.deepEqual(element.annotations, {annKey: data});
-
-        keyStub.restore();
         done();
       });
     });
@@ -116,27 +102,39 @@
       let keyStub = sinon.stub(element, '_keyForAlert');
       keyStub.onFirstCall().returns('foo');
       keyStub.onSecondCall().returns('foo');
+      keyStub.onThirdCall().returns('bar');
       let annotations = {
         foo: {
           key: 'foo',
           snoozeTime: 0,
+        },
+        bar: {
+          key: 'bar',
+          bugs: ["bar"],
         }
       };
 
-      let result = element._computeAnnotation(annotations, 'alertt');
-      assert.deepEqual({
+      // Second argument doesn't matter, since we mocked _keyForAlert
+      assert.deepEqual(element._computeAnnotation(annotations), {
           key: 'foo',
           snoozed: false,
-        }, result);
+          bugs: undefined,
+        });
 
       annotations.foo.snoozeTime = 200;
-      result = element._computeAnnotation(annotations, 'alertt');
-      assert.deepEqual({
+      assert.deepEqual(element._computeAnnotation(annotations), {
           key: 'foo',
           snoozed: true,
-        }, result);
+          bugs:undefined,
+        });
 
-      sinon.assert.calledTwice(keyStub);
+      assert.deepEqual(element._computeAnnotation(annotations), {
+          key: 'bar',
+          snoozed: false,
+          bugs:['bar'],
+        });
+
+      sinon.assert.calledThrice(keyStub);
     });
 
     test('compute keys correctly', function() {
@@ -187,6 +185,38 @@
       assert.equal('c', sortedAlerts[1].extension.builders[0].name);
       // a is snoozed, goes to the bottom.
       assert.equal('a', sortedAlerts[2].extension.builders[0].name);
+    });
+  });
+
+  suite('bugs', function() {
+    test('filing a bug reminds you to enter the new bug', function() {
+      assert.equal(element._filedBug, false);
+      expect(element.$.fileBugLink).be.visible;
+      expect(element.$.bugReminder).be.hidden;
+
+      element.$.fileBugLink.click();
+
+      assert.equal(element._filedBug, true);
+      expect(element.$.fileBugLink).be.hidden;
+      expect(element.$.bugReminder).be.visible;
+    });
+
+    test('save bug saves an annotation', function() {
+      let keyStub = sinon.stub(element, '_keyForAlert');
+      keyStub.onFirstCall().returns('foo');
+      let sendStub = sinon.stub(element, '_sendAnnotation');
+
+      element.$.bug.value = "bar"
+
+      element._saveBug();
+
+      sinon.assert.calledOnce(keyStub);
+      sinon.assert.calledOnce(sendStub);
+      sendStub.calledWith('foo', [{
+        add: {
+          bugs: ["bar"]
+        }
+      }]);
     });
   });
 

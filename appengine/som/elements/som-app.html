@@ -6,10 +6,15 @@
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/iron-list/iron-list.html">
 <link rel="import" href="../bower_components/iron-page-url/iron-page-url.html">
+<link rel="import" href="../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../bower_components/paper-badge/paper-badge.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../bower_components/paper-drawer-panel/paper-drawer-panel.html">
 <link rel="import" href="../bower_components/paper-header-panel/paper-header-panel.html">
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
 <link rel="import" href="../elements/som-alert-item.html">
@@ -111,12 +116,31 @@
                   annotation="[[_computeAnnotation(annotations,alert)]]"
                   on-selected-changed="_handleCardSelected"
                   on-annotation-change="_handleAnnotation"
+                  on-link-bug="_handleLinkBug"
               ></som-alert-item>
             </div>
           </template>
         </iron-list>
       </paper-header-panel>
     </paper-drawer-panel>
+    <paper-dialog id="bugDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+      <h2>Enter bug number</h2>
+      <paper-input autofocus id="bug" label="Bug # or URL"></paper-input>
+      <a hidden$="[[_filedBug]]" id="fileBugLink" target="_blank" on-tap="_fileBugClicked">
+        File bug
+      </a>
+      <div hidden$="[[!_filedBug]]" id="bugReminder">
+        Remember to enter the new bug number above!
+      </div>
+      <div class="buttons">
+        <paper-button dialog-close raised on-tap="_closeBugDialog">
+          Close
+        </paper-button>
+        <paper-button dialog-confirm raised on-tap="_saveBug">
+          Save Bug
+        </paper-button>
+      </div>
+    </paper-dialog>
   </template>
   <script>
   (function() {
@@ -130,23 +154,22 @@
       },
 
       properties: {
-        _alertsGroup: {
-          type: String,
-          value: 'chromium',
-          observer: '_handleAlertsGroupChange',
-        },
-        _path: {
-          type: String,
-          value: '/chromium',
-          observer: '_handlePathChange'
+        _alerts: {
+          type: Array,
+          computed: '_computeAlerts(_alertsJson, annotations)',
         },
         _alertsJson: {
           type: Object,
           value: function() { return {}; }
         },
-        _alerts: {
-          type: Array,
-          computed: '_computeAlerts(_alertsJson, annotations)',
+        _alertsJsonError: {
+          type: Object,
+          value: function() { return {}; }
+        },
+        _alertsGroup: {
+          type: String,
+          value: 'chromium',
+          observer: '_handleAlertsGroupChange',
         },
         // We don't convert the array into an object because the polymer data
         // binding doesn't seem to like mutations to an object, but it's fine
@@ -160,15 +183,7 @@
           type: Date,
           computed: '_computeLastUpdated(_alertsJson.timestamp)'
         },
-        _networkActive: {
-          type: Boolean,
-          value: false
-        },
-        _alertsJsonError: {
-          type: Object,
-          value: function() { return {}; }
-        },
-         _annotationsJsonError: {
+        _annotationsJsonError: {
           type: Object,
           value: function() { return {}; }
         },
@@ -176,7 +191,23 @@
           type: Object,
           value: function() { return {}; }
         },
+        _bugModel: Object,
+        _filedBug: {
+          type: Boolean,
+          value: false,
+        },
+        _networkActive: {
+          type: Boolean,
+          value: false
+        },
+        _path: {
+          type: String,
+          value: '/chromium',
+          observer: '_handlePathChange'
+        },
       },
+
+      ////////////////////// Alerts and path ///////////////////////////
 
       _handleAlertsGroupChange: function(newVal) {
         this._path = '/' + newVal;
@@ -211,6 +242,8 @@
         return alertsJson.alerts;
       },
 
+      ////////////////////// Annotations ///////////////////////////
+
       _computeAnnotations: function(annotationsJson) {
         let annotations = {};
         if (!annotationsJson) {
@@ -229,15 +262,13 @@
         return {
           key: key,
           snoozed: ann && ann.snoozeTime ? Date.now() < ann.snoozeTime : false,
+          bugs: ann && ann.bugs,
         };
       },
 
       _handleAnnotation: function(evt) {
-        let changes = evt.detail.changes;
-        let key = this._keyForAlert(evt.model.alert);
-        this.$.annotationPost.body = JSON.stringify(changes);
-        this.$.annotationPost.url = '/api/v1/annotations/' + key;
-        this.$.annotationPost.generateRequest();
+        this._sendAnnotation(
+            this._keyForAlert(evt.model.alert), evt.detail.changes);
       },
 
       _postResponse: function(evt) {
@@ -256,6 +287,12 @@
         }, 250);
       },
 
+      _sendAnnotation: function(key, changes) {
+        this.$.annotationPost.body = JSON.stringify(changes);
+        this.$.annotationPost.url = '/api/v1/annotations/' + key;
+        this.$.annotationPost.generateRequest();
+      },
+
       _keyForAlert: function(alert) {
         if (alert.extension && alert.extension.reasons &&
             alert.extension.builders) {
@@ -266,6 +303,32 @@
           })).join('::');
         }
         return null;
+      },
+
+      ////////////////////// Bugs ///////////////////////////
+
+      _handleLinkBug: function(evt) {
+        this._bugModel = evt.model.alert;
+        // TODO(martiniss): make this link be customized per builder
+        this.$.fileBugLink.href = "https://crbug.com/new";
+        this.$.bugDialog.open();
+      },
+
+      _fileBugClicked: function() {
+        this._filedBug = true;
+      },
+
+      _closeBugDialog: function() {
+        this.$.bugDialog.close();
+      },
+
+      _saveBug: function() {
+        this._sendAnnotation(
+          this._keyForAlert(this._bugModel), [{
+            add: {
+              bugs: [this.$.bug.value]
+            }
+          }]);
       },
     });
   })();
