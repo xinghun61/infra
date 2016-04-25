@@ -330,9 +330,10 @@ def get_build_event(event_type,
                     event.build_event.build_scheduling_time_ms)
 
   if step_name:
-    event.build_event.step_name = step_name
+    event.build_event.step_name = str(step_name)
   if step_text:
-    event.build_event.step_text = step_text
+    event.build_event.step_text = str(step_text)
+
   if step_number is not None:
     event.build_event.step_number = step_number
   if patch_url is not None:
