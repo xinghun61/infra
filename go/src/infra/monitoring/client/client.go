@@ -349,7 +349,6 @@ func (hc *trackingHTTPClient) getJSON(url string, v interface{}) (status int, er
 
 			time.Sleep(time.Duration(math.Pow(2, float64(attempts))) * time.Second)
 		}
-		return length, err
 	})
 
 	return status, err

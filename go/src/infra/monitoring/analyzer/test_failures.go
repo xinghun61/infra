@@ -63,11 +63,9 @@ func (a *TestFailureAnalyzer) Analyze(f stepFailure) (*StepAnalyzerResult, error
 		if err != nil {
 			return nil, err
 		}
-		if len(ue) > 0 {
-			// Don't give too many reasons, just the top level test/suite names.
-			// TODO: figure out a way to coalesce the unexpected results list into
-			// something compact but still meaningful in an alerting context.
-			ret.Reasons = append(ret.Reasons, testName)
+
+		for _, e := range ue {
+			ret.Reasons = append(ret.Reasons, e)
 		}
 	}
 	return ret, nil
@@ -95,11 +93,8 @@ func traverseResults(parent string, testResults map[string]interface{}) ([]strin
 			continue
 		}
 
-		expected := strings.Split(res["expected"].(string), " ")
-		actual := strings.Split(res["actual"].(string), " ")
-		ue := unexpected(expected, actual)
-		if len(ue) > 0 && res["bugs"] == nil {
-			ret = append(ret, fmt.Sprintf("%s/%s: %+v vs %+v", parent, testName, expected, actual))
+		if ue, ok := res["is_unexpected"]; ok && ue.(bool) && res["actual"] != "PASS" {
+			ret = append(ret, fmt.Sprintf("%s/%s", parent, testName))
 		}
 	}
 	return ret, nil

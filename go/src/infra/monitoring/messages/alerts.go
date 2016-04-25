@@ -19,10 +19,33 @@ var (
 	log     = gologger.StdConfig.NewLogger(nil)
 )
 
+type AlertType string
+
 const (
 	// GoogleTimeZone is the timezone used by the services whose
 	// messages this package parses.
 	GoogleTimeZone = "UTC"
+
+	// AlertStaleMaster indicates that we have no recent updates from the master.
+	AlertStaleMaster = "stale-master"
+
+	// AlertHungBuilder indicates that a builder has been executing a step for too long.
+	AlertHungBuilder = "hung-builder"
+
+	// AlertOfflineBuilder indicates that we have no recent updates from the builder.
+	AlertOfflineBuilder = "offline-builder"
+
+	// AlertIdleBuilder indicates that a builder has not executed any builds recently
+	// even though it has requests queued up.
+	AlertIdleBuilder = "idle-builder"
+
+	// AlertInfraFailure indicates that a builder step failed due to infrastructure
+	// problems rather than errors in the code it tried to build or execute.
+	AlertInfraFailure = "infra-failure"
+
+	// AlertBuildFailure indicates that one of the build steps failed, must likely
+	// due to the patch it's building/running with.
+	AlertBuildFailure = "build-failure"
 )
 
 func init() {
@@ -65,7 +88,7 @@ type Alert struct {
 	Links     []Link    `json:"links"`
 	Tags      []string  `json:"tags"`
 	// Type determines what kind of extension has been set on the Alert.
-	Type string `json:"type"`
+	Type AlertType `json:"type"`
 	// Extension may take on different concrete types depending on the
 	// code that generates the Alert.
 	Extension interface{} `json:"extension"`
@@ -98,9 +121,11 @@ type AlertedBuilder struct {
 
 // Reason contains information about why the Alert was triggered.
 type Reason struct {
-	TestName string `json:"test_name"`
-	Step     string `json:"step"`
-	URL      string `json:"url"`
+	// Could be more detailed about test failures. For instance, we could
+	// indicate expected vs. actual result.
+	TestNames []string `json:"test_name"`
+	Step      string   `json:"step"`
+	URL       string   `json:"url"`
 }
 
 // RegressionRange identifies the bounds of the location of a regression.

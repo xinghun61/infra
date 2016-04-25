@@ -107,7 +107,7 @@ func TestMasterAlerts(t *testing.T) {
 				{
 					Key:       "stale master: fake.master",
 					Title:     "Stale fake.master master data",
-					Type:      "stale-master",
+					Type:      messages.AlertStaleMaster,
 					Severity:  staleMasterSev,
 					Body:      "0h 20m elapsed since last update.",
 					Time:      messages.TimeToEpochTime(time.Unix(100, 0).Add(20 * time.Minute)),
@@ -215,6 +215,7 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 				},
 			},
 			b: messages.Builder{
+				State:        messages.StateBuilding,
 				BuilderName:  "fake.builder",
 				CachedBuilds: []int64{0},
 			},
@@ -224,9 +225,9 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 		{
 			name:    "builder building for too long",
 			master:  "fake.master",
-			builder: "fake.builder",
+			builder: "hung.builder",
 			builds: map[string]*messages.Build{
-				"fake.master/fake.builder/0": {
+				"fake.master/hung.builder/0": {
 					Number: 0,
 					Times: []messages.EpochTime{
 						messages.TimeToEpochTime(time.Unix(10, 0)),
@@ -242,14 +243,16 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 						},
 					},
 				},
-				"fake.master/fake.builder/1": {
+				"fake.master/hung.builder/1": {
 					Number: 1,
+					Times: []messages.EpochTime{
+						messages.TimeToEpochTime(time.Unix(100, 0)),
+					},
 					Steps: []messages.Step{
 						{
 							Name: "fake_step",
 							Times: []messages.EpochTime{
-								messages.TimeToEpochTime(time.Unix(10, 0)),
-								messages.TimeToEpochTime(time.Unix(0, 0)),
+								messages.TimeToEpochTime(time.Unix(100, 0)),
 							},
 						},
 					},
@@ -263,16 +266,17 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 			time: time.Unix(0, 0).Add(4 * time.Hour),
 			wantAlerts: []messages.Alert{
 				{
-					Key:      "fake.master.fake.builder.hung",
-					Title:    "fake.master.fake.builder is hung in step fake_step.",
-					Type:     "hung-builder",
-					Time:     messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour)),
-					Body:     "fake.master.fake.builder has been building for 3h59m50s (last step update 1970-01-01 00:00:10 +0000 UTC), past the alerting threshold of 3h0m0s",
-					Severity: hungBuilderSev,
+					Key:       "fake.master.hung.builder.hung",
+					Title:     "fake.master.hung.builder is hung in step fake_step.",
+					Type:      messages.AlertHungBuilder,
+					StartTime: 100,
+					Time:      messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour)),
+					Body:      "fake.master.hung.builder has been building for 3h58m20s (last step update 1970-01-01 00:01:40 +0000 UTC), past the alerting threshold of 3h0m0s",
+					Severity:  hungBuilderSev,
 					Links: []messages.Link{
-						{Title: "Builder", Href: "https://build.chromium.org/p/fake.master/builders/fake.builder"},
-						{Title: "Last build", Href: "https://build.chromium.org/p/fake.master/builders/fake.builder/builds/1"},
-						{Title: "Last build step", Href: "https://build.chromium.org/p/fake.master/builders/fake.builder/builds/1/steps/fake_step"},
+						{Title: "Builder", Href: "https://build.chromium.org/p/fake.master/builders/hung.builder"},
+						{Title: "Last build", Href: "https://build.chromium.org/p/fake.master/builders/hung.builder/builds/1"},
+						{Title: "Last build step", Href: "https://build.chromium.org/p/fake.master/builders/hung.builder/builds/1/steps/fake_step"},
 					},
 				},
 			},
@@ -320,6 +324,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 			builds: map[string]*messages.Build{
 				"fake.master/fake.builder/0": {
 					Number: 0,
+					Times:  []messages.EpochTime{0, 1},
 					Steps: []messages.Step{
 						{
 							Name:    "fake_step",
@@ -337,6 +342,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 			builds: map[string]*messages.Build{
 				"fake.master/fake.builder/0": {
 					Number: 0,
+					Times:  []messages.EpochTime{0, 1},
 					Steps: []messages.Step{
 						{
 							Name:       "fake_step",
@@ -344,21 +350,16 @@ func TestBuilderStepAlerts(t *testing.T) {
 							Results:    []interface{}{float64(2)},
 						},
 					},
-					SourceStamp: messages.SourceStamp{
-						Changes: []messages.Change{
-							{
-								Repository: "testing.git",
-								Revision:   "4242",
-							},
-						},
+					Properties: [][]interface{}{
+						{"got_revision_cp", "refs/heads/master@{#291569}"},
 					},
 				},
 			},
 			wantAlerts: []messages.Alert{
 				{
-					Key:      "fake.master.fake.builder.fake_step",
+					Key:      "fake.master.fake.builder.fake_step.",
 					Title:    "fake.builder step failure",
-					Type:     "buildfailure",
+					Type:     messages.AlertBuildFailure,
 					Body:     "fake_step failing on fake.master/fake.builder",
 					Severity: newFailureSev,
 					Extension: messages.BuildFailure{
@@ -376,9 +377,8 @@ func TestBuilderStepAlerts(t *testing.T) {
 						},
 						RegressionRanges: []messages.RegressionRange{
 							{
-								Repo:      "testing.git",
-								Revisions: []string{"4242"},
-								Positions: []string{},
+								Repo:      "chromium",
+								Positions: []string{"refs/heads/master@{#291569}"},
 							},
 						},
 					},
@@ -393,19 +393,12 @@ func TestBuilderStepAlerts(t *testing.T) {
 			builds: map[string]*messages.Build{
 				"fake.master/fake.builder/0": {
 					Number: 0,
+					Times:  []messages.EpochTime{0, 1},
 					Steps: []messages.Step{
 						{
 							Name:       "fake_step",
 							IsFinished: true,
 							Results:    []interface{}{float64(2)},
-						},
-					},
-					SourceStamp: messages.SourceStamp{
-						Changes: []messages.Change{
-							{
-								Repository: "testing1.git",
-								Revision:   "4141",
-							},
 						},
 					},
 					Properties: [][]interface{}{
@@ -414,19 +407,12 @@ func TestBuilderStepAlerts(t *testing.T) {
 				},
 				"fake.master/fake.builder/1": {
 					Number: 1,
+					Times:  []messages.EpochTime{0, 1},
 					Steps: []messages.Step{
 						{
 							Name:       "fake_step",
 							IsFinished: true,
 							Results:    []interface{}{float64(2)},
-						},
-					},
-					SourceStamp: messages.SourceStamp{
-						Changes: []messages.Change{
-							{
-								Repository: "testing1.git",
-								Revision:   "4242",
-							},
 						},
 					},
 					Properties: [][]interface{}{
@@ -435,19 +421,12 @@ func TestBuilderStepAlerts(t *testing.T) {
 				},
 				"fake.master/fake.builder/2": {
 					Number: 2,
+					Times:  []messages.EpochTime{0, 1},
 					Steps: []messages.Step{
 						{
 							Name:       "fake_step",
 							IsFinished: true,
 							Results:    []interface{}{float64(2)},
-						},
-					},
-					SourceStamp: messages.SourceStamp{
-						Changes: []messages.Change{
-							{
-								Repository: "testing2.git",
-								Revision:   "4343",
-							},
 						},
 					},
 					Properties: [][]interface{}{
@@ -456,6 +435,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 				},
 				"fake.master/fake.builder/3": {
 					Number: 3,
+					Times:  []messages.EpochTime{0, 1},
 					Steps: []messages.Step{
 						{
 							Name:       "fake_step",
@@ -463,21 +443,13 @@ func TestBuilderStepAlerts(t *testing.T) {
 							Results:    []interface{}{float64(2)},
 						},
 					},
-					SourceStamp: messages.SourceStamp{
-						Changes: []messages.Change{
-							{
-								Repository: "testing2.git",
-								Revision:   "4444",
-							},
-						},
-					},
 				},
 			},
 			wantAlerts: []messages.Alert{
 				{
-					Key:      "fake.master.fake.builder.fake_step",
+					Key:      "fake.master.fake.builder.fake_step.",
 					Title:    "fake.builder step failure",
-					Type:     "buildfailure",
+					Type:     messages.AlertBuildFailure,
 					Body:     "fake_step failing on fake.master/fake.builder",
 					Severity: reliableFailureSev,
 					Extension: messages.BuildFailure{
@@ -497,22 +469,11 @@ func TestBuilderStepAlerts(t *testing.T) {
 						},
 						RegressionRanges: []messages.RegressionRange{
 							{
-								Repo:      "chromium",
-								Revisions: []string{},
+								Repo: "chromium",
 								Positions: []string{
 									"refs/heads/master@{#291569}",
 									"refs/heads/master@{#291570}",
 								},
-							},
-							{
-								Repo:      "testing1.git",
-								Revisions: []string{"4141", "4242"},
-								Positions: []string{},
-							},
-							{
-								Repo:      "testing2.git",
-								Revisions: []string{"4343", "4444"},
-								Positions: []string{},
 							},
 						},
 					},
@@ -530,7 +491,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 		}
 		gotAlerts, gotErrs := a.builderStepAlerts(test.master, test.builder, test.recentBuilds)
 		if !reflect.DeepEqual(gotAlerts, test.wantAlerts) {
-			t.Errorf("%s failed. Diff:\n%+v", test.name, ansidiff.Diff(gotAlerts, test.wantAlerts))
+			t.Errorf("%s failed. Got:\n\t%+v\nWant:\n\t%+v\n\tDiff:\n\t%+v", test.name, gotAlerts, test.wantAlerts, ansidiff.Diff(gotAlerts, test.wantAlerts))
 		}
 		if !reflect.DeepEqual(gotErrs, test.wantErrs) {
 			t.Errorf("%s failed. Got %+v, want: %+v", test.name, gotErrs, test.wantErrs)
@@ -551,7 +512,7 @@ func TestMergeAlertsByStep(t *testing.T) {
 			name: "no merges",
 			in: []messages.Alert{
 				{
-					Type: "buildfailure",
+					Type: messages.AlertBuildFailure,
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
 							{Name: "builder A"},
@@ -569,7 +530,7 @@ func TestMergeAlertsByStep(t *testing.T) {
 					},
 				},
 				{
-					Type: "buildfailure",
+					Type: messages.AlertBuildFailure,
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
 							{Name: "builder B"},
@@ -589,7 +550,7 @@ func TestMergeAlertsByStep(t *testing.T) {
 			},
 			want: []messages.Alert{
 				{
-					Type: "buildfailure",
+					Type: messages.AlertBuildFailure,
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
 							{Name: "builder A"},
@@ -607,7 +568,7 @@ func TestMergeAlertsByStep(t *testing.T) {
 					},
 				},
 				{
-					Type: "buildfailure",
+					Type: messages.AlertBuildFailure,
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
 							{Name: "builder B"},
@@ -630,7 +591,7 @@ func TestMergeAlertsByStep(t *testing.T) {
 			name: "multiple builders fail on step_a",
 			in: []messages.Alert{
 				{
-					Type: "buildfailure",
+					Type: messages.AlertBuildFailure,
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
 							{Name: "builder A"},
@@ -648,7 +609,7 @@ func TestMergeAlertsByStep(t *testing.T) {
 					},
 				},
 				{
-					Type: "buildfailure",
+					Type: messages.AlertBuildFailure,
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
 							{Name: "builder B"},
@@ -666,7 +627,7 @@ func TestMergeAlertsByStep(t *testing.T) {
 					},
 				},
 				{
-					Type: "buildfailure",
+					Type: messages.AlertBuildFailure,
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
 							{Name: "builder C"},
@@ -687,7 +648,7 @@ func TestMergeAlertsByStep(t *testing.T) {
 			want: []messages.Alert{
 				{
 					Title: "step_a failing on 3 builders",
-					Type:  "buildfailure",
+					Type:  messages.AlertBuildFailure,
 					Body:  "builder A, builder B, builder C",
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
@@ -703,17 +664,14 @@ func TestMergeAlertsByStep(t *testing.T) {
 						RegressionRanges: []messages.RegressionRange{
 							{
 								Repo:      "repo.a",
-								Revisions: []string{},
 								Positions: []string{},
 							},
 							{
 								Repo:      "repo.b",
-								Revisions: []string{},
 								Positions: []string{},
 							},
 							{
 								Repo:      "repo.c",
-								Revisions: []string{},
 								Positions: []string{},
 							},
 						},
@@ -725,7 +683,7 @@ func TestMergeAlertsByStep(t *testing.T) {
 
 	a := New(&mockReader{}, 0, 10)
 	for _, test := range tests {
-		got := a.mergeAlertsByStep(test.in)
+		got := a.mergeAlertsByReason(test.in)
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("%s failed. Got:\n\t%+v, want:\n\t%+v\nDiff: %v", test.name, got, test.want, ansidiff.Diff(got, test.want))
 		}
@@ -779,7 +737,6 @@ func TestReasonsForFailure(t *testing.T) {
 		{
 			name:        "empty",
 			testResults: &messages.TestResults{},
-			want:        []string{},
 		},
 		{
 			name: "GTests",
@@ -912,6 +869,7 @@ func TestStepFailureAlerts(t *testing.T) {
 					builderName: "fake.builder",
 					build: messages.Build{
 						Number: 2,
+						Times:  []messages.EpochTime{0, 1},
 					},
 					step: messages.Step{
 						Name: "steps",
@@ -922,6 +880,7 @@ func TestStepFailureAlerts(t *testing.T) {
 					builderName: "fake.builder",
 					build: messages.Build{
 						Number: 42,
+						Times:  []messages.EpochTime{0, 1},
 					},
 					step: messages.Step{
 						Name: "fake_tests",
@@ -931,11 +890,11 @@ func TestStepFailureAlerts(t *testing.T) {
 			testResults: messages.TestResults{},
 			alerts: []messages.Alert{
 				{
-					Key:      "fake.master.fake.builder.fake_tests",
+					Key:      "fake.master.fake.builder.fake_tests.",
 					Title:    "fake.builder step failure",
 					Body:     "fake_tests failing on fake.master/fake.builder",
 					Severity: newFailureSev,
-					Type:     "buildfailure",
+					Type:     messages.AlertBuildFailure,
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
 							{
@@ -990,6 +949,7 @@ func TestLatestBuildStep(t *testing.T) {
 		{
 			name: "done time is latest",
 			b: messages.Build{
+				Times: []messages.EpochTime{0},
 				Steps: []messages.Step{
 					{
 						Name: "done step",
@@ -1006,12 +966,12 @@ func TestLatestBuildStep(t *testing.T) {
 		{
 			name: "started time is latest",
 			b: messages.Build{
+				Times: []messages.EpochTime{0},
 				Steps: []messages.Step{
 					{
 						Name: "start step",
 						Times: []messages.EpochTime{
 							messages.TimeToEpochTime(time.Unix(42, 0)),
-							messages.TimeToEpochTime(time.Unix(0, 0)),
 						},
 					},
 				},
@@ -1022,6 +982,7 @@ func TestLatestBuildStep(t *testing.T) {
 		{
 			name: "started time is latest, multiple steps",
 			b: messages.Build{
+				Times: []messages.EpochTime{0},
 				Steps: []messages.Step{
 					{
 						Name: "start step",
@@ -1045,6 +1006,7 @@ func TestLatestBuildStep(t *testing.T) {
 		{
 			name: "done time is latest, multiple steps",
 			b: messages.Build{
+				Times: []messages.EpochTime{0},
 				Steps: []messages.Step{
 					{
 						Name: "start step",
