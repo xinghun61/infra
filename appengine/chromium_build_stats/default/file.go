@@ -31,7 +31,7 @@ func fileHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Login required", http.StatusUnauthorized)
 		return
 	}
-	if !strings.HasSuffix(user.Email, "@chromium.org") && !strings.HasSuffix(user.Email, "@google.com") {
+	if !strings.HasSuffix(user.Email, "@google.com") {
 		http.Error(w, "Unauthorized to access", http.StatusUnauthorized)
 		return
 	}
