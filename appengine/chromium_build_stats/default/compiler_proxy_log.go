@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"appengine"
+	"appengine/user"
 
 	"github.com/golang/oauth2/google"
 
@@ -94,8 +95,15 @@ func init() {
 // compilerProxyLogHandler handles /<path> for compiler_proxy.INFO log file in gs://chrome-goma-log/<path>
 func compilerProxyLogHandler(w http.ResponseWriter, req *http.Request) {
 	ctx := appengine.NewContext(req)
-
-	// TODO(ukai): should we set access control like /file?
+	user := user.Current(ctx)
+	if user == nil {
+		http.Error(w, "Login required", http.StatusUnauthorized)
+		return
+	}
+	if !strings.HasSuffix(user.Email, "@google.com") {
+		http.Error(w, "Unauthorized to access", http.StatusUnauthorized)
+		return
+	}
 
 	config := google.NewAppEngineConfig(ctx, []string{
 		"https://www.googleapis.com/auth/devstorage.read_only",
