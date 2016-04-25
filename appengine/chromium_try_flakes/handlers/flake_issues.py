@@ -373,8 +373,18 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
 
     # Report to stale-flake-reports@ if the issue has been in the appropriate
     # queue more than NUM_TIMES_IN_QUEUE_FOR_STALENESS times.
-    num_times_in_queue = len(list(
-        comment for comment in comments if expected_label in comment.labels))
+    num_times_in_queue = 0
+    for comment in comments:
+      if expected_label in comment.labels:
+        num_times_in_queue += 1
+      # After the issue is investigated, the manager of the stale mailing list
+      # will remove the list from CC and the issue should not be returned back
+      # to the list unless it is returned to appropriate queue more than
+      # NUM_TIMES_IN_QUEUE_FOR_STALENESS times again. Therefore, once we see a
+      # comment that removes the stale mailing list, we reset the counter.
+      remove_stale_flake_ml = '-%s' % STALE_FLAKES_ML
+      if remove_stale_flake_ml in comment.cc:
+        num_times_in_queue = 0
     if (num_times_in_queue >= NUM_TIMES_IN_QUEUE_FOR_STALENESS and
         STALE_FLAKES_ML not in flake_issue.cc):
       flake_issue.cc.append(STALE_FLAKES_ML)

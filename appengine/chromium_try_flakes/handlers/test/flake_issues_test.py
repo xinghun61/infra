@@ -93,11 +93,12 @@ TEST_BUILDBOT_JSON_REPLY = json.dumps({
 
 
 class MockComment(object):
-  def __init__(self, created, author, comment=None, labels=None):
+  def __init__(self, created, author, comment=None, labels=None, cc=None):
     self.created = created
     self.author = author
     self.comment = comment
     self.labels = labels or []
+    self.cc = cc or []
 
 class MockIssue(object):
   def __init__(self, issue_entry):
@@ -538,6 +539,41 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
         issue.comments[-1].comment,
         'Reporting to stale-flakes-reports@google.com to investigate why this '
         'issue has been in the appropriate queue 5 times or more.')
+
+  @mock_datetime_utc(2015, 12, 10, 15, 0, 0)
+  def test_counts_only_new_returns_after_removing_stale_from_cc(self):
+    issue = self.mock_api.create(MockIssue({}))
+    issue.created = datetime.datetime(2015, 12, 3, 11, 0, 0)
+    issue.labels = ['Sheriff-Chromium']
+    issue.comments = [
+        MockComment(datetime.datetime(2015, 12, 3, 11, 0, 1), 'app@ae.org',
+                    '"foo.bar" is flaky\n\n...', labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 4, 11, 0, 1), 'app@ae.org',
+                    'more flakes...', labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 5, 11, 0, 1), 'app@ae.org',
+                    'more flakes...', labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 6, 11, 0, 1), 'app@ae.org',
+                    'more flakes...', labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 7, 11, 0, 1), 'app@ae.org',
+                    'more flakes...', labels=['Sheriff-Chromium']),
+
+        MockComment(datetime.datetime(2015, 12, 7, 12, 0, 1), 'app@ae.org',
+                    'more flakes...', cc=['stale-flakes-reports@google.com']),
+        MockComment(datetime.datetime(2015, 12, 7, 15, 0, 1), 'someone@xyz.org',
+                    'more flakes...', cc=['-stale-flakes-reports@google.com']),
+        MockComment(datetime.datetime(2015, 12, 8, 11, 0, 1), 'app@ae.org',
+                    'more flakes...', labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 9, 11, 0, 1), 'app@ae.org',
+                    'more flakes...', labels=['Sheriff-Chromium']),
+
+        MockComment(datetime.datetime(2015, 12, 7, 15, 0, 1), 'someone@xyz.org',
+                    'more flakes...', cc=['-stale-flakes-reports@google.com'],
+                    labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 8, 11, 0, 1), 'app@ae.org',
+                    'more flakes...', labels=['Sheriff-Chromium']),
+    ]
+    self.test_app.post('/issues/update-if-stale/%s' % issue.id)
+    self.assertNotIn('stale-flakes-reports@google.com', issue.cc)
 
   @mock_datetime_utc(2015, 12, 8, 15, 0, 0)
   def test_uses_third_party_comment_date_to_compute_staleness(self):
