@@ -153,6 +153,8 @@ class RateLimiter:
     if elapsed_ms < settings.ratelimiting_cost_thresh_ms:
       return
 
+    self.cost_thresh_exceeded.increment()
+
     # TODO: Look into caching the keys instead of generating them twice
     # for every request. Say, return them from CheckStart so they can
     # be bassed back in here later.
@@ -160,12 +162,12 @@ class RateLimiter:
     for keys in keysets:
       logging.info('Rate Limit Cost Threshold Exceeded: %s, %s, %s' % (
           country, ip, user_email))
-      self.cost_thresh_exceeded.increment_by(settings.ratelimiting_cost_penalty)
 
       # Only update the latest *time* bucket for each prefix (reverse chron).
       k = keys[0]
       memcache.add(k, 0, time=EXPIRE_AFTER_SECS)
-      memcache.incr(k, initial_value=0)
+      memcache.incr(k, delta=settings.ratelimiting_cost_penalty,
+          initial_value=0)
 
 class RateLimitExceeded(Exception):
   def __init__(self, country=None, ip=None, user_email=None, **_kwargs):
