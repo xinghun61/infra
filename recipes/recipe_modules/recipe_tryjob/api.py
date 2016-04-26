@@ -271,7 +271,7 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
         self.m.python.failing_step, patches_raw, rietveld, issue, patchset,
         patch_project)
 
-    root_dir = self.m.path['slave_build']
+    root_dir = self.m.infra_paths['slave_build']
 
     # Needed to set up the infra checkout, for _python
     self.m.gclient.set_config('infra')
