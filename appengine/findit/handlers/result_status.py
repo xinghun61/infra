@@ -7,12 +7,14 @@ from model import analysis_status
 # Additional status for swarming tasks and try jobs.
 NO_SWARMING_TASK_FOUND = 110
 NON_SWARMING_NO_RERUN = 120
-#Additional reasons for no try job information.
+# Additional reasons for no try job information.
 SWARMING_TASK_PENDING = 130
 SWARMING_TASK_RUNNING = 140
 SWARMING_TASK_ERROR = 150
 NO_FAILURE_RESULT_MAP = 160
 FLAKY = 200
+# Universal status for unknowns.
+UNKNOWN = 210
 
 NO_TRY_JOB_REASON_MAP = {
     NO_SWARMING_TASK_FOUND: NO_SWARMING_TASK_FOUND,
@@ -37,4 +39,5 @@ STATUS_MESSAGE_MAP = {
         'Swarming task failed, try job will not be triggered.'),
     NO_FAILURE_RESULT_MAP: 'No swarming task nor try job was triggered.',
     FLAKY: 'Flaky tests.',
+    UNKNOWN: 'Unknown failure.'
 }

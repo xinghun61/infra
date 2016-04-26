@@ -74,6 +74,13 @@ SAMPLE_TRY_JOB_INFO = {
                     'task_id': 'task2',
                     'task_url': 'url/task2',
                     'tests': ['test1']
+                },
+                {
+                    'ref_name': 'step1',
+                    'try_job_key': 'm/b/120',
+                    'task_id': 'task2',
+                    'task_url': 'url/task2',
+                    'tests': ['test5']
                 }
             ]
         }
@@ -407,7 +414,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                 'last_pass': 119,
                 'supported': True,
                 'suspected_cls': [],
-                'tests': ['test1']
+                'tests': ['test1', 'test5']
             }
         ]
     }
@@ -514,6 +521,23 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                     }
                 ],
                 'unclassified_failures': [
+                    {
+                        'try_job':{
+                            'ref_name': 'step1',
+                            'try_job_key': 'm/b/120',
+                            'status': result_status.UNKNOWN,
+                            'task_id': 'task2',
+                            'task_url': 'url/task2',
+                            'tests': ['test5']
+                        },
+                        'heuristic_analysis': {
+                            'suspected_cls': []
+                        },
+                        'tests': ['test5'],
+                        'first_failure': 120,
+                        'last_pass': 119,
+                        'supported': True
+                    },
                     {
                         'try_job':{
                             'ref_name': 'step1',

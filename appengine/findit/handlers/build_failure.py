@@ -253,11 +253,14 @@ def _GetAnalysisResultWithTryJobInfo(
           'supported': heuristic_result['supported']
       }
 
-      if try_job_result['status'] == result_status.FLAKY:
-        step_updated_results['flaky_failures'].append(final_result)
-      elif try_job_result['status'] in NO_TRY_JOB_REASON_MAP.values():
+      if ('status' not in try_job_result or
+          try_job_result['status'] in NO_TRY_JOB_REASON_MAP.values()):
         # There is no try job info but only heuristic result.
+        try_job_result['status'] = try_job_result.get(
+            'status', result_status.UNKNOWN)
         step_updated_results['unclassified_failures'].append(final_result)
+      elif try_job_result['status'] == result_status.FLAKY:
+        step_updated_results['flaky_failures'].append(final_result)
       else:
         step_updated_results['reliable_failures'].append(final_result)
 
