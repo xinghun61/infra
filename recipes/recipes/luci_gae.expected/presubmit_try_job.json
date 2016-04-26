@@ -11,13 +11,13 @@
       "--slave",
       "TestSlavename",
       "--spec",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
+      "cache_dir = '[ROOT]/b/build/slave/cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
       "--root",
       "infra/go/src/github.com/luci/gae",
       "--revision_mapping_file",
       "{\"infra/go/src/github.com/luci/gae\": \"got_revision\"}",
       "--git-cache-dir",
-      "[GIT_CACHE]",
+      "[ROOT]/b/build/slave/cache_dir",
       "--issue",
       "12853011",
       "--patchset",
@@ -35,7 +35,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -81,7 +80,7 @@
       "-m",
       "Committed patch"
     ],
-    "cwd": "[SLAVE_BUILD]/infra/go/src/github.com/luci/gae",
+    "cwd": "[CWD]/infra/go/src/github.com/luci/gae",
     "name": "commit git patch"
   },
   {
@@ -91,7 +90,6 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -101,22 +99,21 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/go/env.py",
+      "[CWD]/infra/go/env.py",
       "go",
       "version"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "go third parties"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/go/env.py",
+      "[CWD]/infra/go/env.py",
       "python",
-      "[DEPOT_TOOLS]/presubmit_support.py",
+      "[ROOT]/b/depot_tools/presubmit_support.py",
       "--root",
-      "[SLAVE_BUILD]/infra/go/src/github.com/luci/gae",
+      "[CWD]/infra/go/src/github.com/luci/gae",
       "--commit",
       "--verbose",
       "--verbose",
@@ -138,7 +135,6 @@
       "--rietveld_email",
       ""
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PRESUBMIT_BUILDER": "1"
     },

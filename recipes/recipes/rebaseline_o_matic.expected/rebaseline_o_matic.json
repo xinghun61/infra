@@ -11,13 +11,13 @@
       "--slave",
       "fake-slave",
       "--spec",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'custom_vars': {'googlecode_url': 'svn://svn-mirror.golo.chromium.org/%s', 'nacl_trunk': 'svn://svn-mirror.golo.chromium.org/native_client/trunk', 'sourceforge_url': 'svn://svn-mirror.golo.chromium.org/%(repo)s', 'webkit_trunk': 'svn://svn-mirror.golo.chromium.org/blink/trunk'}, 'deps_file': 'DEPS', 'managed': True, 'name': 'src', 'url': 'svn://svn-mirror.golo.chromium.org/chrome/trunk/src'}]",
+      "cache_dir = '[ROOT]/b/build/slave/cache_dir'\nsolutions = [{'custom_vars': {'googlecode_url': 'svn://svn-mirror.golo.chromium.org/%s', 'nacl_trunk': 'svn://svn-mirror.golo.chromium.org/native_client/trunk', 'sourceforge_url': 'svn://svn-mirror.golo.chromium.org/%(repo)s', 'webkit_trunk': 'svn://svn-mirror.golo.chromium.org/blink/trunk'}, 'deps_file': 'DEPS', 'managed': True, 'name': 'src', 'url': 'svn://svn-mirror.golo.chromium.org/chrome/trunk/src'}]",
       "--root",
       "src",
       "--revision_mapping_file",
       "{\"src\": \"got_revision\", \"src/native_client\": \"got_nacl_revision\", \"src/third_party/angle\": \"got_angle_revision\", \"src/third_party/webrtc\": \"got_webrtc_revision\", \"src/tools/swarming_client\": \"got_swarming_client_revision\", \"src/v8\": \"got_v8_revision\"}",
       "--git-cache-dir",
-      "[GIT_CACHE]",
+      "[ROOT]/b/build/slave/cache_dir",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -25,7 +25,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -104,7 +103,7 @@
       "user.name",
       "Rebaseline Bot"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[CWD]/src",
     "name": "git config"
   },
   {
@@ -114,20 +113,20 @@
       "user.email",
       "blink-rebaseline-bot@chromium.org"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[CWD]/src",
     "name": "git config (2)"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/src/third_party/WebKit/Tools/Scripts/webkit-patch",
+      "[CWD]/src/third_party/WebKit/Tools/Scripts/webkit-patch",
       "auto-rebaseline",
       "--verbose",
       "--auth-refresh-token-json",
       "/creds/refresh_tokens/blink_rebaseline_bot_rietveld"
     ],
-    "cwd": "[SLAVE_BUILD]/src/third_party/WebKit",
+    "cwd": "[CWD]/src/third_party/WebKit",
     "name": "webkit-patch auto-rebaseline"
   },
   {

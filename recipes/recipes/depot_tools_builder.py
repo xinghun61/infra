@@ -11,6 +11,7 @@ DEPS = [
   'recipe_engine/step',
 
   'depot_tools/git',
+  'depot_tools/infra_paths',
 
   'file',
   'gsutil',
@@ -29,8 +30,8 @@ PROPERTIES = {
 
 def RunSteps(api, revision):
   # prepare the output dir and zip paths
-  api.path['checkout'] = api.path['slave_build'].join('depot_tools')
-  zip_out = api.path['slave_build'].join('depot_tools.zip')
+  api.path['checkout'] = api.infra_paths['slave_build'].join('depot_tools')
+  zip_out = api.infra_paths['slave_build'].join('depot_tools.zip')
 
   with api.step.nest('clean workspace'):
     api.file.rmtree('rm depot_tools', api.path['checkout'])

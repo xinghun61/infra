@@ -6,6 +6,7 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
+  'depot_tools/infra_paths',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/properties',
@@ -22,8 +23,8 @@ def _run_presubmit(api, patch_root, bot_update_step):
   # infra/go/env.py takes care of this.
   presubmit_cmd = [
     'python',  # env.py will replace with this its sys.executable.
-    api.path['depot_tools'].join('presubmit_support.py'),
-    '--root', api.path['slave_build'].join(patch_root),
+    api.infra_paths['depot_tools'].join('presubmit_support.py'),
+    '--root', api.infra_paths['slave_build'].join(patch_root),
     '--commit',
     '--verbose', '--verbose',
     '--issue', api.properties['issue'],
@@ -45,7 +46,7 @@ def _commit_change(api, patch_root):
           '-c', 'user.name=The Commit Bot',
           'commit', '-a', '-m', 'Committed patch',
           name='commit git patch',
-          cwd=api.path['slave_build'].join(patch_root))
+          cwd=api.infra_paths['slave_build'].join(patch_root))
 
 
 def RunSteps(api):

@@ -11,13 +11,13 @@
       "--slave",
       "TestSlavename",
       "--spec",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': 'DEPS', 'managed': True, 'name': 'gerrit-test-cq-normal', 'url': 'https://chromium.googlesource.com/playground/gerrit-cq/normal.git'}]",
+      "cache_dir = '[ROOT]/b/build/slave/cache_dir'\nsolutions = [{'deps_file': 'DEPS', 'managed': True, 'name': 'gerrit-test-cq-normal', 'url': 'https://chromium.googlesource.com/playground/gerrit-cq/normal.git'}]",
       "--root",
       "gerrit-test-cq-normal",
       "--revision_mapping_file",
       "{}",
       "--git-cache-dir",
-      "[GIT_CACHE]",
+      "[ROOT]/b/build/slave/cache_dir",
       "--gerrit_repo",
       "https://chromium.googlesource.com/playground/gerrit-cq/normal",
       "--gerrit_ref",
@@ -29,7 +29,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },

@@ -11,13 +11,13 @@
       "--slave",
       "TestSlavename",
       "--spec",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://chromium.googlesource.com/chromium/tools/build.git'}]",
+      "cache_dir = '[ROOT]/b/build/slave/cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://chromium.googlesource.com/chromium/tools/build.git'}]",
       "--root",
       "build",
       "--revision_mapping_file",
       "{\"build\": \"got_revision\"}",
       "--git-cache-dir",
-      "[GIT_CACHE]",
+      "[ROOT]/b/build/slave/cache_dir",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -25,7 +25,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -62,13 +61,12 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
+      "[CWD]/build/scripts/slave/recipes.py",
       "run",
       "--properties-file",
       "{\"actual_run\": \"True\", \"buildername\": \"build_repo_real\", \"buildnumber\": 571, \"mastername\": \"chromium.infra\", \"slavename\": \"TestSlavename\"}",
       "infra/build_repo_real_try"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "ci actual execute_inner"
   },
   {
@@ -76,13 +74,12 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
+      "[CWD]/build/scripts/slave/recipes.py",
       "run",
       "--properties-file",
       "{\"actual_run\": \"True\", \"buildername\": \"build_repo_real\", \"buildnumber\": 571, \"issue\": \"1662543002\", \"mastername\": \"chromium.infra\", \"patch_project\": \"build\", \"patch_storage\": \"rietveld\", \"patchset\": \"1\", \"reason\": \"CQ\", \"rietveld\": \"https://codereview.chromium.org\", \"slavename\": \"TestSlavename\"}",
       "infra/build_repo_real_try"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "try patch from Rietveld"
   },
   {

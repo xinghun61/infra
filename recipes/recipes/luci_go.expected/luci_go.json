@@ -11,13 +11,13 @@
       "--slave",
       "TestSlavename",
       "--spec",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
+      "cache_dir = '[ROOT]/b/build/slave/cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
       "--root",
       "infra/go/src/github.com/luci/luci-go",
       "--revision_mapping_file",
       "{\"infra/go/src/github.com/luci/luci-go\": \"got_revision\"}",
       "--git-cache-dir",
-      "[GIT_CACHE]",
+      "[ROOT]/b/build/slave/cache_dir",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -27,7 +27,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -67,7 +66,6 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -77,35 +75,32 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/go/env.py",
+      "[CWD]/infra/go/env.py",
       "go",
       "version"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "go third parties"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/go/env.py",
+      "[CWD]/infra/go/env.py",
       "go",
       "build",
       "github.com/luci/luci-go/..."
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "go build"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/go/env.py",
+      "[CWD]/infra/go/env.py",
       "go",
       "test",
       "github.com/luci/luci-go/..."
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "go test"
   },
   {

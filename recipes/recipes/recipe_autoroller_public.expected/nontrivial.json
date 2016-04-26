@@ -6,9 +6,8 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "config",
       "--spec",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]"
+      "cache_dir = '[ROOT]/b/build/slave/cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -36,7 +35,6 @@
       "--output-json",
       "/path/to/tmp/json"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -67,7 +65,6 @@
       "user.name",
       "local_bot"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -84,7 +81,6 @@
       "user.email",
       "local_bot@example.com"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -97,7 +93,6 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -112,12 +107,10 @@
       "--outfile",
       "/path/to/tmp/"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "Get luci-config projects"
   },
   {
     "cmd": [],
-    "cwd": "[SLAVE_BUILD]",
     "name": "build"
   },
   {
@@ -126,11 +119,10 @@
       "-u",
       "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
       "--path",
-      "[TMP_BASE]/roll_build_tmp_1",
+      "[TMP]/roll_build_tmp_1",
       "--url",
       "https://repo.repo/build"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "build.git setup",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -144,7 +136,7 @@
       "origin",
       "master"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_1",
+    "cwd": "[TMP]/roll_build_tmp_1",
     "name": "build.git fetch",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -157,7 +149,7 @@
       "-f",
       "FETCH_HEAD"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_1",
+    "cwd": "[TMP]/roll_build_tmp_1",
     "name": "build.git checkout",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -169,7 +161,7 @@
       "rev-parse",
       "HEAD"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_1",
+    "cwd": "[TMP]/roll_build_tmp_1",
     "name": "build.read revision",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
@@ -185,7 +177,7 @@
       "-d",
       "-x"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_1",
+    "cwd": "[TMP]/roll_build_tmp_1",
     "name": "build.git clean",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -198,7 +190,7 @@
       "user.email",
       "recipe-roller@chromium.org"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_1",
+    "cwd": "[TMP]/roll_build_tmp_1",
     "name": "build.git config",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -211,7 +203,7 @@
       "user.name",
       "recipe-roller"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_1",
+    "cwd": "[TMP]/roll_build_tmp_1",
     "name": "build.git config (2)",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -226,7 +218,7 @@
       "roll",
       "origin/master"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_1",
+    "cwd": "[TMP]/roll_build_tmp_1",
     "name": "build.git checkout (2)",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -234,16 +226,15 @@
   },
   {
     "cmd": [
-      "[SLAVE_BUILD]/infra/ENV/bin/python",
+      "[CWD]/infra/ENV/bin/python",
       "-u",
-      "[SLAVE_BUILD]/infra/recipes-py/recipes.py",
+      "[CWD]/infra/recipes-py/recipes.py",
       "--package",
-      "[TMP_BASE]/roll_build_tmp_1/infra/config/recipes.cfg",
+      "[TMP]/roll_build_tmp_1/infra/config/recipes.cfg",
       "autoroll",
       "--output-json",
       "/path/to/tmp/json"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "build.roll",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
@@ -293,7 +284,7 @@
       "-m",
       "roll recipes.cfg"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_1",
+    "cwd": "[TMP]/roll_build_tmp_1",
     "name": "build.git commit",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -305,7 +296,7 @@
       "show",
       "--format=%b"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_1",
+    "cwd": "[TMP]/roll_build_tmp_1",
     "name": "build.git show",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
@@ -321,12 +312,11 @@
       "-u",
       "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
-      "[DEPOT_TOOLS]/gsutil.py",
+      "[ROOT]/b/depot_tools/gsutil.py",
       "----",
       "cat",
       "gs://recipe-roller-cl-uploads/8e9377cb1551d1353f8f1103e01bd5bf"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "build.gsutil cat",
     "stderr": "/path/to/tmp/",
     "stdout": "/path/to/tmp/",
@@ -349,7 +339,7 @@
       "Roll recipe dependencies (nontrivial).\n\nThis is an automated CL created by the recipe roller. This CL rolls recipe\nchanges from upstream projects (e.g. depot_tools) into downstream projects\n(e.g. tools/build).\n\n\nPlease review the expectation changes, and LGTM as normal. The recipe roller\nwill *NOT* CQ the change itself, so you must commit the change manually.\n\n\nMore info is at https://goo.gl/zkKdpD. Use https://goo.gl/noib3a to file a bug\n(or complain)\n\nrecipe_engine:\n  https://crrev.com/123abc some commit message (foo@chromium.org)\n\nR=foo@chromium.org,bar@chromium.org,baz@chromium.org\nBUG=123,456\n",
       "--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_1",
+    "cwd": "[TMP]/roll_build_tmp_1",
     "name": "build.git cl upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -361,7 +351,7 @@
       "cl",
       "issue"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_1",
+    "cwd": "[TMP]/roll_build_tmp_1",
     "name": "build.git cl issue",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
@@ -375,13 +365,12 @@
       "-u",
       "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
-      "[DEPOT_TOOLS]/gsutil.py",
+      "[ROOT]/b/depot_tools/gsutil.py",
       "----",
       "cp",
       "{\"diff_digest\": \"afe53a0e969fd0b2a6b5c5f89724d0c6\", \"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\"}",
       "gs://recipe-roller-cl-uploads/8e9377cb1551d1353f8f1103e01bd5bf"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "build.gsutil upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
@@ -393,10 +382,9 @@
       "python",
       "-u",
       "\nimport shutil, sys\nshutil.rmtree(sys.argv[1])\n",
-      "[TMP_BASE]/roll_build_tmp_1"
+      "[TMP]/roll_build_tmp_1"
     ],
-    "cwd": "[SLAVE_BUILD]",
-    "name": "build.rmtree [TMP_BASE]/roll_build_tmp_1",
+    "name": "build.rmtree [TMP]/roll_build_tmp_1",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@python.inline@@@@",

@@ -6,6 +6,7 @@ DEPS = [
   'depot_tools/bot_update',
   'file',
   'depot_tools/gclient',
+  'depot_tools/infra_paths',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -22,12 +23,12 @@ def RunSteps(api):
   api.gclient.runhooks()
 
   api.python('master manager configuration test',
-             api.path['slave_build'].join('infra', 'run.py'),
+             api.infra_paths['slave_build'].join('infra', 'run.py'),
              ['infra.services.master_manager_launcher',
               '--verify',
               '--ts-mon-endpoint=none',
               '--json-file',
-             api.path['slave_build'].join(
+             api.infra_paths['slave_build'].join(
                  'infra-data-master-manager',
                  'desired_master_state.json')])
 

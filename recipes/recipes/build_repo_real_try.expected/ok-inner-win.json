@@ -11,13 +11,13 @@
       "--slave",
       "TestSlavename",
       "--spec",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://chromium.googlesource.com/chromium/tools/build.git'}]",
+      "cache_dir = '[ROOT]\\\\b\\\\build\\\\slave\\\\cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://chromium.googlesource.com/chromium/tools/build.git'}]",
       "--root",
       "build",
       "--revision_mapping_file",
       "{\"build\": \"got_revision\"}",
       "--git-cache-dir",
-      "[GIT_CACHE]",
+      "[ROOT]\\b\\build\\slave\\cache_dir",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -25,7 +25,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s;RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -70,13 +69,12 @@
       "-u",
       "RECIPE_MODULE[depot_tools::git]\\resources\\git_setup.py",
       "--path",
-      "[BUILD]\\clone",
+      "[ROOT]\\b\\build\\clone",
       "--url",
       "https://chromium.googlesource.com/chromium/tools/build",
       "--git_cmd_path",
       "RECIPE_PACKAGE_REPO[depot_tools]\\git.bat"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "git setup"
   },
   {
@@ -87,7 +85,7 @@
       "origin",
       "master"
     ],
-    "cwd": "[BUILD]\\clone",
+    "cwd": "[ROOT]\\b\\build\\clone",
     "name": "git fetch"
   },
   {
@@ -97,7 +95,7 @@
       "-f",
       "FETCH_HEAD"
     ],
-    "cwd": "[BUILD]\\clone",
+    "cwd": "[ROOT]\\b\\build\\clone",
     "name": "git checkout"
   },
   {
@@ -106,7 +104,7 @@
       "rev-parse",
       "HEAD"
     ],
-    "cwd": "[BUILD]\\clone",
+    "cwd": "[ROOT]\\b\\build\\clone",
     "name": "read revision",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
@@ -121,7 +119,7 @@
       "-d",
       "-x"
     ],
-    "cwd": "[BUILD]\\clone",
+    "cwd": "[ROOT]\\b\\build\\clone",
     "name": "git clean"
   },
   {
@@ -130,7 +128,7 @@
       "submodule",
       "sync"
     ],
-    "cwd": "[BUILD]\\clone",
+    "cwd": "[ROOT]\\b\\build\\clone",
     "name": "submodule sync"
   },
   {
@@ -141,7 +139,7 @@
       "--init",
       "--recursive"
     ],
-    "cwd": "[BUILD]\\clone",
+    "cwd": "[ROOT]\\b\\build\\clone",
     "name": "submodule update"
   },
   {

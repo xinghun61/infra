@@ -11,13 +11,13 @@
       "--slave",
       "TestSlavename",
       "--spec",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
+      "cache_dir = '[ROOT]\\\\b\\\\build\\\\slave\\\\cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
       "--root",
       "infra",
       "--revision_mapping_file",
       "{\"infra\": \"got_revision\"}",
       "--git-cache-dir",
-      "[GIT_CACHE]",
+      "[ROOT]\\b\\build\\slave\\cache_dir",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -25,7 +25,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s;RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -64,7 +63,6 @@
       "RECIPE_PACKAGE_REPO[depot_tools]\\gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s;RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -77,56 +75,52 @@
       "test.py",
       "test"
     ],
-    "cwd": "[SLAVE_BUILD]\\infra",
+    "cwd": "[CWD]\\infra",
     "name": "infra python tests"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]\\infra\\go\\env.py",
+      "[CWD]\\infra\\go\\env.py",
       "go",
       "version"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "go third parties"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]\\infra\\go\\env.py",
+      "[CWD]\\infra\\go\\env.py",
       "python",
-      "[SLAVE_BUILD]\\infra\\go\\test.py"
+      "[CWD]\\infra\\go\\test.py"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "infra go tests"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]\\infra\\build\\build.py",
+      "[CWD]\\infra\\build\\build.py",
       "--builder",
       "infra-continuous"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "cipd - build packages"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]\\infra\\build\\test_packages.py"
+      "[CWD]\\infra\\build\\test_packages.py"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "cipd - test packages integrity"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]\\infra\\build\\build.py",
+      "[CWD]\\infra\\build\\build.py",
       "--no-rebuild",
       "--upload",
       "--service-account-json",
@@ -140,7 +134,6 @@
       "git_repository:https://chromium.googlesource.com/infra/infra",
       "git_revision:5e03a58dc0850e5137a8ebbce29610670c756aed"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "cipd - upload packages",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output (invalid)@null@@@",

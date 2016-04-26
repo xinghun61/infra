@@ -11,13 +11,13 @@
       "--slave",
       "TestSlavename",
       "--spec",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://chromium.googlesource.com/chromium/tools/build.git'}]",
+      "cache_dir = '[ROOT]/b/build/slave/cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://chromium.googlesource.com/chromium/tools/build.git'}]",
       "--root",
       "build",
       "--revision_mapping_file",
       "{\"build\": \"got_revision\"}",
       "--git-cache-dir",
-      "[GIT_CACHE]",
+      "[ROOT]/b/build/slave/cache_dir",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -25,7 +25,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -62,13 +61,12 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/build/scripts/tools/run_recipe.py",
+      "[CWD]/build/scripts/tools/run_recipe.py",
       "infra/cipd_test",
       "--master-overrides-slave",
       "--properties-file",
-      "{\"buildername\": \"cipd-module-tester\", \"buildnumber\": 571, \"dir_to_package\": \"[SLAVE_BUILD]/build/scripts/slave/recipe_modules/cipd\", \"mastername\": \"chromium.infra\", \"revision_tag\": \"80754af91bfb6d1073585b046fe0a474ce868509\", \"slavename\": \"TestSlavename\"}"
+      "{\"buildername\": \"cipd-module-tester\", \"buildnumber\": 571, \"dir_to_package\": \"[CWD]/build/scripts/slave/recipe_modules/cipd\", \"mastername\": \"chromium.infra\", \"revision_tag\": \"80754af91bfb6d1073585b046fe0a474ce868509\", \"slavename\": \"TestSlavename\"}"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "actual run"
   },
   {

@@ -13,6 +13,7 @@ DEPS = [
   'cipd',
   'file',
   'depot_tools/gclient',
+  'depot_tools/infra_paths',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -76,7 +77,7 @@ def inner(api):
   assert api.cipd.get_executable()
 
   test_package = '%s/%s' % (TEST_PACKAGE_PREFIX, api.cipd.platform_suffix())
-  test_package_file = api.path['slave_build'].join('test_package.cipd')
+  test_package_file = api.infra_paths['slave_build'].join('test_package.cipd')
   step = api.cipd.build(api.properties['dir_to_package'],
                         test_package_file,
                         test_package, install_mode='copy')
@@ -132,7 +133,7 @@ def inner(api):
   assert not unset_tags
 
   # Install test package we've just uploaded by ref.
-  cipd_root = api.path['slave_build'].join('cipd_test_package')
+  cipd_root = api.infra_paths['slave_build'].join('cipd_test_package')
   api.cipd.ensure(cipd_root, {test_package: 'latest'})
   # Someone might have changed the latest ref in the meantime,
   # so install again by exact instance_id.
