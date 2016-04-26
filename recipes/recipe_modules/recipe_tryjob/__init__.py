@@ -1,7 +1,6 @@
 DEPS = [
   'depot_tools/gclient',
   'depot_tools/bot_update',
-  'depot_tools/infra_paths',
   'file',
   'luci_config',
   'recipe_engine/path',
