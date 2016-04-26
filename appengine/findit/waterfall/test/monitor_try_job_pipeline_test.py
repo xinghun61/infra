@@ -6,10 +6,12 @@ from datetime import datetime
 import json
 import time
 
+from common.waterfall import try_job_error
 from common.waterfall import buildbucket_client
 from model import analysis_status
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
+from waterfall import waterfall_config
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall.test import wf_testcase
 from waterfall.try_job_type import TryJobType
@@ -168,6 +170,13 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     build = buildbucket_client.BuildbucketBuild(build_data)
     try_job_data = WfTryJobData.Create(try_job_id)
 
+    expected_error_dict = {
+        'message': 'Try job monitoring was abandoned.',
+        'reason': ('Timeout after %s hours' %
+                   waterfall_config.GetTryJobSettings().get(
+                       'job_timeout_hours'))
+    }
+
     MonitorTryJobPipeline._UpdateTryJobMetadata(
         try_job_data, None, build, None, False)
     try_job_data = WfTryJobData.Get(try_job_id)
@@ -181,9 +190,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     MonitorTryJobPipeline._UpdateTryJobMetadata(
         try_job_data, None, build, None, True)
-    self.assertEqual(try_job_data.error,
-                     {'message': 'Try job monitoring was abandoned.',
-                      'reason': MonitorTryJobPipeline.TIMEOUT})
+    self.assertEqual(try_job_data.error, expected_error_dict)
+    self.assertEqual(try_job_data.error_code, try_job_error.TIMEOUT)
 
   def testGetTryJobsForCompileSuccess(self):
     master_name = 'm'
@@ -298,3 +306,116 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         build_number, TryJobType.TEST, try_job_id, 'url')
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(analysis_status.RUNNING, try_job.status)
+
+  def testGetErrorForNoError(self):
+    build_response = {
+        'id': 1,
+        'url': 'url',
+        'status': 'COMPLETED',
+        'completed_ts': '1454367574000000',
+        'created_ts': '1454367570000000',
+        'result_details_json': json.dumps({
+            'properties': {
+                'report': {
+                    'result': {
+                        'rev1': 'passed',
+                        'rev2': 'failed'
+                    },
+                    'metadata': {
+                        'regression_range_size': 2
+                    }
+                }
+            }
+        })
+    }
+    self.assertEqual(
+        MonitorTryJobPipeline._GetError(build_response, None, False),
+        (None, None))
+    self.assertEqual(MonitorTryJobPipeline._GetError({}, None, False),
+                     (None, None))
+
+  def testGetErrorForTimeout(self):
+    expected_error_dict = {
+        'message': 'Try job monitoring was abandoned.',
+        'reason': ('Timeout after %s hours' %
+                   waterfall_config.GetTryJobSettings().get(
+                       'job_timeout_hours'))
+    }
+
+    self.assertEqual(
+        MonitorTryJobPipeline._GetError({}, None, True),
+        (expected_error_dict, try_job_error.TIMEOUT))
+
+  def testGetErrorForBuildbucketReportedError(self):
+    build_response = {
+        'result_details_json': json.dumps({
+            'error': {
+                'message': 'Builder b not found'
+            }
+        })
+    }
+
+    expected_error_dict = {
+        'message': 'Buildbucket reported an error.',
+        'reason': 'Builder b not found'
+    }
+
+    self.assertEqual(
+        MonitorTryJobPipeline._GetError(build_response, None, False),
+        (expected_error_dict, try_job_error.CI_REPORTED_ERROR))
+
+  def testGetErrorUnknown(self):
+    build_response = {
+        'result_details_json': json.dumps({
+            'error': {
+                'abc': 'abc'
+            }
+        })
+    }
+
+    expected_error_dict = {
+        'message': 'Buildbucket reported an error.',
+        'reason': MonitorTryJobPipeline.UNKNOWN
+    }
+
+    self.assertEqual(
+        MonitorTryJobPipeline._GetError(build_response, None, False),
+        (expected_error_dict, try_job_error.CI_REPORTED_ERROR))
+
+  def testGetErrorInfraFailure(self):
+    build_response = {
+        'result_details_json': json.dumps({
+            'properties': {
+                'report': {
+                    'metadata': {
+                        'infra_failure': True
+                    }
+                }
+            }
+        })
+    }
+
+    expected_error_dict = {
+        'message': 'Try job encountered an infra issue during execution.',
+        'reason': MonitorTryJobPipeline.UNKNOWN
+    }
+
+    self.assertEqual(
+        MonitorTryJobPipeline._GetError(build_response, None, False),
+        (expected_error_dict, try_job_error.INFRA_FAILURE))
+
+  def testGetErrorReportMissing(self):
+    build_response = {
+        'result_details_json': json.dumps({
+            'properties': {}
+        })
+    }
+
+    expected_error_dict = {
+        'message': 'No result report was found.',
+        'reason': MonitorTryJobPipeline.UNKNOWN
+    }
+
+    self.assertEqual(
+        MonitorTryJobPipeline._GetError(build_response, None, False),
+        (expected_error_dict, try_job_error.UNKNOWN))

@@ -31,14 +31,10 @@ class WfTryJobData(ndb.Model):
   try_job_url = ndb.StringProperty(indexed=False)
   # Error message and reason, if any.
   error = ndb.JsonProperty(indexed=False)
+  # Error code if anything went wrong with the try job.
+  error_code = ndb.IntegerProperty(indexed=True)
   # The last buildbucket build response received.
   last_buildbucket_response = ndb.JsonProperty(indexed=False, compressed=True)
-
-  # TODO(lijeffrey): We may want to determine whether or not a try job
-  # was triggered as a redo of another if the first failed to find a culprit.
-  # For example, if passing compile targets yields no results, a redo without
-  # compile targets may be attempted to find the culprit CL and the occurrence
-  # documented in a queryable manner.
 
   @staticmethod
   def _CreateKey(build_id):  # pragma: no cover
