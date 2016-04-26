@@ -5,11 +5,12 @@
       "-u",
       "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
-      "[ROOT]/b/depot_tools/gsutil.py",
+      "[DEPOT_TOOLS]/gsutil.py",
       "----",
       "ls",
       "gs://chromium-browser-official/"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "gsutil ls",
     "stdout": "/path/to/tmp/"
   },
@@ -25,13 +26,13 @@
       "--slave",
       "TestSlavename",
       "--spec",
-      "cache_dir = '[ROOT]/b/build/slave/cache_dir'\nsolutions = [{'custom_vars': {'googlecode_url': 'svn://svn-mirror.golo.chromium.org/%s', 'nacl_trunk': 'svn://svn-mirror.golo.chromium.org/native_client/trunk', 'sourceforge_url': 'svn://svn-mirror.golo.chromium.org/%(repo)s', 'webkit_trunk': 'svn://svn-mirror.golo.chromium.org/blink/trunk'}, 'deps_file': 'DEPS', 'managed': True, 'name': 'src', 'url': 'svn://svn-mirror.golo.chromium.org/chrome/trunk/src'}]",
+      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'custom_vars': {'googlecode_url': 'svn://svn-mirror.golo.chromium.org/%s', 'nacl_trunk': 'svn://svn-mirror.golo.chromium.org/native_client/trunk', 'sourceforge_url': 'svn://svn-mirror.golo.chromium.org/%(repo)s', 'webkit_trunk': 'svn://svn-mirror.golo.chromium.org/blink/trunk'}, 'deps_file': 'DEPS', 'managed': True, 'name': 'src', 'url': 'svn://svn-mirror.golo.chromium.org/chrome/trunk/src'}]",
       "--root",
       "src",
       "--revision_mapping_file",
       "{\"src\": \"got_revision\", \"src/native_client\": \"got_nacl_revision\", \"src/third_party/angle\": \"got_angle_revision\", \"src/third_party/webrtc\": \"got_webrtc_revision\", \"src/tools/swarming_client\": \"got_swarming_client_revision\", \"src/v8\": \"got_v8_revision\"}",
       "--git-cache-dir",
-      "[ROOT]/b/build/slave/cache_dir",
+      "[GIT_CACHE]",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -40,6 +41,7 @@
       "--output_manifest",
       "--with_branch_heads"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -117,7 +119,7 @@
       "clean",
       "-dffx"
     ],
-    "cwd": "[CWD]/src",
+    "cwd": "[SLAVE_BUILD]/src",
     "name": "git clean"
   },
   {
@@ -129,7 +131,7 @@
       "-D",
       "--nohooks"
     ],
-    "cwd": "[CWD]/src",
+    "cwd": "[SLAVE_BUILD]/src",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -138,8 +140,9 @@
   {
     "cmd": [
       "touch",
-      "[CWD]/src/chrome/test/data/webui/i18n_process_css_test.html"
+      "[SLAVE_BUILD]/src/chrome/test/data/webui/i18n_process_css_test.html"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "touch chrome/test/data/webui/i18n_process_css_test.html"
   },
   {
@@ -152,9 +155,9 @@
       "--verbose",
       "--progress",
       "--src-dir",
-      "[CWD]/src"
+      "[SLAVE_BUILD]/src"
     ],
-    "cwd": "[TMP]/export_tarball_tmp_1",
+    "cwd": "[TMP_BASE]/export_tarball_tmp_1",
     "name": "export_tarball"
   },
   {
@@ -163,14 +166,15 @@
       "-u",
       "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
-      "[ROOT]/b/depot_tools/gsutil.py",
+      "[DEPOT_TOOLS]/gsutil.py",
       "----",
       "cp",
       "-a",
       "public-read",
-      "[TMP]/export_tarball_tmp_1/chromium-38.0.2125.122.tar.xz",
+      "[TMP_BASE]/export_tarball_tmp_1/chromium-38.0.2125.122.tar.xz",
       "gs://chromium-browser-official/chromium-38.0.2125.122.tar.xz"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "gsutil upload chromium-38.0.2125.122.tar.xz",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122.tar.xz@@@"
@@ -181,9 +185,10 @@
       "python",
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
-      "[TMP]/export_tarball_tmp_1/chromium-38.0.2125.122.tar.xz",
+      "[TMP_BASE]/export_tarball_tmp_1/chromium-38.0.2125.122.tar.xz",
       "/path/to/tmp/"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "generate_hashes"
   },
   {
@@ -192,7 +197,7 @@
       "-u",
       "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
-      "[ROOT]/b/depot_tools/gsutil.py",
+      "[DEPOT_TOOLS]/gsutil.py",
       "----",
       "cp",
       "-a",
@@ -200,6 +205,7 @@
       "md5  164ebd6889588da166a52ca0d57b9004  bash",
       "gs://chromium-browser-official/chromium-38.0.2125.122.tar.xz.hashes"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "gsutil upload chromium-38.0.2125.122.tar.xz.hashes",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122.tar.xz.hashes@@@"
@@ -210,8 +216,9 @@
       "python",
       "-u",
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
-      "[TMP]/export_tarball_tmp_1"
+      "[TMP_BASE]/export_tarball_tmp_1"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "rmtree temp dir",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -234,9 +241,9 @@
       "--verbose",
       "--progress",
       "--src-dir",
-      "[CWD]/src"
+      "[SLAVE_BUILD]/src"
     ],
-    "cwd": "[TMP]/export_tarball_tmp_2",
+    "cwd": "[TMP_BASE]/export_tarball_tmp_2",
     "name": "export_tarball (2)"
   },
   {
@@ -245,14 +252,15 @@
       "-u",
       "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
-      "[ROOT]/b/depot_tools/gsutil.py",
+      "[DEPOT_TOOLS]/gsutil.py",
       "----",
       "cp",
       "-a",
       "public-read",
-      "[TMP]/export_tarball_tmp_2/chromium-38.0.2125.122.tar.xz",
+      "[TMP_BASE]/export_tarball_tmp_2/chromium-38.0.2125.122.tar.xz",
       "gs://chromium-browser-official/chromium-38.0.2125.122-testdata.tar.xz"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "gsutil upload chromium-38.0.2125.122-testdata.tar.xz",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-testdata.tar.xz@@@"
@@ -263,9 +271,10 @@
       "python",
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
-      "[TMP]/export_tarball_tmp_2/chromium-38.0.2125.122.tar.xz",
+      "[TMP_BASE]/export_tarball_tmp_2/chromium-38.0.2125.122.tar.xz",
       "/path/to/tmp/"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "generate_hashes (2)"
   },
   {
@@ -274,7 +283,7 @@
       "-u",
       "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
-      "[ROOT]/b/depot_tools/gsutil.py",
+      "[DEPOT_TOOLS]/gsutil.py",
       "----",
       "cp",
       "-a",
@@ -282,6 +291,7 @@
       "md5  164ebd6889588da166a52ca0d57b9004  bash",
       "gs://chromium-browser-official/chromium-38.0.2125.122-testdata.tar.xz.hashes"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "gsutil upload chromium-38.0.2125.122-testdata.tar.xz.hashes",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-testdata.tar.xz.hashes@@@"
@@ -292,8 +302,9 @@
       "python",
       "-u",
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
-      "[TMP]/export_tarball_tmp_2"
+      "[TMP_BASE]/export_tarball_tmp_2"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "rmtree temp dir (2)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -311,16 +322,17 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copytree(sys.argv[1], sys.argv[2], symlinks=bool(sys.argv[3]))\n",
-      "[CWD]/src",
-      "[TMP]/tmp_tmp_3/src",
+      "[SLAVE_BUILD]/src",
+      "[TMP_BASE]/tmp_tmp_3/src",
       "1"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "copytree"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/android_webview",
+      "[TMP_BASE]/tmp_tmp_3/src/android_webview",
       "-type",
       "f",
       "!",
@@ -337,12 +349,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune android_webview"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/buildtools/third_party/libc++",
+      "[TMP_BASE]/tmp_tmp_3/src/buildtools/third_party/libc++",
       "-type",
       "f",
       "!",
@@ -359,12 +372,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune buildtools/third_party/libc++"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/chrome/android",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android",
       "-type",
       "f",
       "!",
@@ -381,12 +395,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune chrome/android"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/chromecast",
+      "[TMP_BASE]/tmp_tmp_3/src/chromecast",
       "-type",
       "f",
       "!",
@@ -403,12 +418,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune chromecast"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/ios",
+      "[TMP_BASE]/tmp_tmp_3/src/ios",
       "-type",
       "f",
       "!",
@@ -425,12 +441,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune ios"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/native_client",
+      "[TMP_BASE]/tmp_tmp_3/src/native_client",
       "-type",
       "f",
       "!",
@@ -447,12 +464,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune native_client"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/native_client_sdk",
+      "[TMP_BASE]/tmp_tmp_3/src/native_client_sdk",
       "-type",
       "f",
       "!",
@@ -469,12 +487,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune native_client_sdk"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/third_party/WebKit/ManualTests",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/WebKit/ManualTests",
       "-type",
       "f",
       "!",
@@ -491,12 +510,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/WebKit/ManualTests"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/third_party/WebKit/PerformanceTests",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/WebKit/PerformanceTests",
       "-type",
       "f",
       "!",
@@ -513,12 +533,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/WebKit/PerformanceTests"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/third_party/android_platform",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/android_platform",
       "-type",
       "f",
       "!",
@@ -535,12 +556,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/android_platform"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/third_party/chromite",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/chromite",
       "-type",
       "f",
       "!",
@@ -557,12 +579,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/chromite"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/third_party/closure_compiler",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/closure_compiler",
       "-type",
       "f",
       "!",
@@ -579,12 +602,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/closure_compiler"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/third_party/freetype2",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/freetype2",
       "-type",
       "f",
       "!",
@@ -601,12 +625,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/freetype2"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/third_party/icu",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/icu",
       "-type",
       "f",
       "!",
@@ -623,12 +648,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/icu"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/third_party/libjpeg_turbo",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/libjpeg_turbo",
       "-type",
       "f",
       "!",
@@ -645,12 +671,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/libjpeg_turbo"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/third_party/libxml/src",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/libxml/src",
       "-type",
       "f",
       "!",
@@ -667,12 +694,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/libxml/src"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/third_party/snappy",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/snappy",
       "-type",
       "f",
       "!",
@@ -689,12 +717,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/snappy"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/third_party/webgl",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/webgl",
       "-type",
       "f",
       "!",
@@ -711,12 +740,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/webgl"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/third_party/yasm",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/yasm",
       "-type",
       "f",
       "!",
@@ -733,12 +763,13 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/yasm"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src/tools/win",
+      "[TMP_BASE]/tmp_tmp_3/src/tools/win",
       "-type",
       "f",
       "!",
@@ -755,18 +786,20 @@
       "*.grd*",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune tools/win"
   },
   {
     "cmd": [
       "find",
-      "[TMP]/tmp_tmp_3/src",
+      "[TMP_BASE]/tmp_tmp_3/src",
       "-depth",
       "-type",
       "d",
       "-empty",
       "-delete"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "prune empty directories"
   },
   {
@@ -779,9 +812,9 @@
       "--verbose",
       "--progress",
       "--src-dir",
-      "[TMP]/tmp_tmp_3/src"
+      "[TMP_BASE]/tmp_tmp_3/src"
     ],
-    "cwd": "[TMP]/export_tarball_tmp_4",
+    "cwd": "[TMP_BASE]/export_tarball_tmp_4",
     "name": "export_tarball (3)"
   },
   {
@@ -790,14 +823,15 @@
       "-u",
       "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
-      "[ROOT]/b/depot_tools/gsutil.py",
+      "[DEPOT_TOOLS]/gsutil.py",
       "----",
       "cp",
       "-a",
       "public-read",
-      "[TMP]/export_tarball_tmp_4/chromium-38.0.2125.122.tar.xz",
+      "[TMP_BASE]/export_tarball_tmp_4/chromium-38.0.2125.122.tar.xz",
       "gs://chromium-browser-official/chromium-38.0.2125.122-lite.tar.xz"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "gsutil upload chromium-38.0.2125.122-lite.tar.xz",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-lite.tar.xz@@@"
@@ -808,9 +842,10 @@
       "python",
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
-      "[TMP]/export_tarball_tmp_4/chromium-38.0.2125.122.tar.xz",
+      "[TMP_BASE]/export_tarball_tmp_4/chromium-38.0.2125.122.tar.xz",
       "/path/to/tmp/"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "generate_hashes (3)"
   },
   {
@@ -819,7 +854,7 @@
       "-u",
       "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
-      "[ROOT]/b/depot_tools/gsutil.py",
+      "[DEPOT_TOOLS]/gsutil.py",
       "----",
       "cp",
       "-a",
@@ -827,6 +862,7 @@
       "md5  164ebd6889588da166a52ca0d57b9004  bash",
       "gs://chromium-browser-official/chromium-38.0.2125.122-lite.tar.xz.hashes"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "gsutil upload chromium-38.0.2125.122-lite.tar.xz.hashes",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-lite.tar.xz.hashes@@@"
@@ -837,8 +873,9 @@
       "python",
       "-u",
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
-      "[TMP]/export_tarball_tmp_4"
+      "[TMP_BASE]/export_tarball_tmp_4"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "rmtree temp dir (3)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -856,8 +893,9 @@
       "python",
       "-u",
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
-      "[TMP]/tmp_tmp_3"
+      "[TMP_BASE]/tmp_tmp_3"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "rmtree temp dir (4)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -875,22 +913,24 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copytree(sys.argv[1], sys.argv[2], symlinks=bool(sys.argv[3]))\n",
-      "[CWD]/src",
-      "[TMP]/tmp_tmp_5/src",
+      "[SLAVE_BUILD]/src",
+      "[TMP_BASE]/tmp_tmp_5/src",
       "1"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "copytree (2)"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[TMP]/tmp_tmp_5/src/native_client/toolchain_build/toolchain_build_pnacl.py",
+      "[TMP_BASE]/tmp_tmp_5/src/native_client/toolchain_build/toolchain_build_pnacl.py",
       "--verbose",
       "--sync",
       "--sync-only",
       "--disable-git-cache"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "download pnacl toolchain dependencies"
   },
   {
@@ -903,9 +943,9 @@
       "--verbose",
       "--progress",
       "--src-dir",
-      "[TMP]/tmp_tmp_5/src"
+      "[TMP_BASE]/tmp_tmp_5/src"
     ],
-    "cwd": "[TMP]/export_tarball_tmp_6",
+    "cwd": "[TMP_BASE]/export_tarball_tmp_6",
     "name": "export_tarball (4)"
   },
   {
@@ -914,14 +954,15 @@
       "-u",
       "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
-      "[ROOT]/b/depot_tools/gsutil.py",
+      "[DEPOT_TOOLS]/gsutil.py",
       "----",
       "cp",
       "-a",
       "public-read",
-      "[TMP]/export_tarball_tmp_6/chromium-38.0.2125.122.tar.xz",
+      "[TMP_BASE]/export_tarball_tmp_6/chromium-38.0.2125.122.tar.xz",
       "gs://chromium-browser-official/chromium-38.0.2125.122-nacl.tar.xz"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "gsutil upload chromium-38.0.2125.122-nacl.tar.xz",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-nacl.tar.xz@@@"
@@ -932,9 +973,10 @@
       "python",
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
-      "[TMP]/export_tarball_tmp_6/chromium-38.0.2125.122.tar.xz",
+      "[TMP_BASE]/export_tarball_tmp_6/chromium-38.0.2125.122.tar.xz",
       "/path/to/tmp/"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "generate_hashes (4)"
   },
   {
@@ -943,7 +985,7 @@
       "-u",
       "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
-      "[ROOT]/b/depot_tools/gsutil.py",
+      "[DEPOT_TOOLS]/gsutil.py",
       "----",
       "cp",
       "-a",
@@ -951,6 +993,7 @@
       "md5  164ebd6889588da166a52ca0d57b9004  bash",
       "gs://chromium-browser-official/chromium-38.0.2125.122-nacl.tar.xz.hashes"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "gsutil upload chromium-38.0.2125.122-nacl.tar.xz.hashes",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-nacl.tar.xz.hashes@@@"
@@ -961,8 +1004,9 @@
       "python",
       "-u",
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
-      "[TMP]/export_tarball_tmp_6"
+      "[TMP_BASE]/export_tarball_tmp_6"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "rmtree temp dir (5)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -980,8 +1024,9 @@
       "python",
       "-u",
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
-      "[TMP]/tmp_tmp_5"
+      "[TMP_BASE]/tmp_tmp_5"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "rmtree temp dir (6)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",

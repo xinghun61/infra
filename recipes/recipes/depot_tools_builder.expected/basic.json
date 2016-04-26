@@ -1,6 +1,7 @@
 [
   {
     "cmd": [],
+    "cwd": "[SLAVE_BUILD]",
     "name": "clean workspace"
   },
   {
@@ -8,8 +9,9 @@
       "python",
       "-u",
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
-      "[CWD]/depot_tools"
+      "[SLAVE_BUILD]/depot_tools"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "clean workspace.rmtree rm depot_tools",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
@@ -28,8 +30,9 @@
       "python",
       "-u",
       "\nimport os\nimport sys\nos.remove(sys.argv[1])\n",
-      "[CWD]/depot_tools.zip"
+      "[SLAVE_BUILD]/depot_tools.zip"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "clean workspace.rm depot_tools.zip",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
@@ -43,8 +46,9 @@
   {
     "cmd": [
       "mkdir",
-      "[CWD]/depot_tools"
+      "[SLAVE_BUILD]/depot_tools"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "clean workspace.mk depot_tools",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -52,6 +56,7 @@
   },
   {
     "cmd": [],
+    "cwd": "[SLAVE_BUILD]",
     "name": "clone + checkout"
   },
   {
@@ -61,9 +66,9 @@
       "--single-branch",
       "-n",
       "https://chromium.googlesource.com/chromium/tools/depot_tools.git",
-      "[CWD]/depot_tools"
+      "[SLAVE_BUILD]/depot_tools"
     ],
-    "cwd": "[CWD]/depot_tools",
+    "cwd": "[SLAVE_BUILD]/depot_tools",
     "name": "clone + checkout.git clone",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -76,7 +81,7 @@
       "core.autocrlf",
       "false"
     ],
-    "cwd": "[CWD]/depot_tools",
+    "cwd": "[SLAVE_BUILD]/depot_tools",
     "name": "clone + checkout.set autocrlf",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -89,7 +94,7 @@
       "core.filemode",
       "false"
     ],
-    "cwd": "[CWD]/depot_tools",
+    "cwd": "[SLAVE_BUILD]/depot_tools",
     "name": "clone + checkout.set filemode",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -102,7 +107,7 @@
       "core.symlinks",
       "false"
     ],
-    "cwd": "[CWD]/depot_tools",
+    "cwd": "[SLAVE_BUILD]/depot_tools",
     "name": "clone + checkout.set symlinks",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -114,7 +119,7 @@
       "checkout",
       "origin/master"
     ],
-    "cwd": "[CWD]/depot_tools",
+    "cwd": "[SLAVE_BUILD]/depot_tools",
     "name": "clone + checkout.git checkout",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -127,7 +132,7 @@
       "--hard",
       "deadbeef"
     ],
-    "cwd": "[CWD]/depot_tools",
+    "cwd": "[SLAVE_BUILD]/depot_tools",
     "name": "clone + checkout.git reset",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -140,7 +145,7 @@
       "expire",
       "--all"
     ],
-    "cwd": "[CWD]/depot_tools",
+    "cwd": "[SLAVE_BUILD]/depot_tools",
     "name": "clone + checkout.git reflog",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -153,7 +158,7 @@
       "--aggressive",
       "--prune=all"
     ],
-    "cwd": "[CWD]/depot_tools",
+    "cwd": "[SLAVE_BUILD]/depot_tools",
     "name": "clone + checkout.git gc",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -165,8 +170,9 @@
       "-u",
       "RECIPE_MODULE[build::zip]/resources/zip.py"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "zip it up",
-    "stdin": "{\"entries\": [{\"path\": \"[CWD]/depot_tools\", \"type\": \"dir\"}], \"output\": \"[CWD]/depot_tools.zip\", \"root\": \"[CWD]/depot_tools\"}"
+    "stdin": "{\"entries\": [{\"path\": \"[SLAVE_BUILD]/depot_tools\", \"type\": \"dir\"}], \"output\": \"[SLAVE_BUILD]/depot_tools.zip\", \"root\": \"[SLAVE_BUILD]/depot_tools\"}"
   },
   {
     "cmd": [
@@ -174,14 +180,15 @@
       "-u",
       "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
-      "[ROOT]/b/depot_tools/gsutil.py",
+      "[DEPOT_TOOLS]/gsutil.py",
       "----",
       "cp",
       "-a",
       "public-read",
-      "[CWD]/depot_tools.zip",
+      "[SLAVE_BUILD]/depot_tools.zip",
       "gs://chrome-infra/depot_tools.zip"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "gsutil upload",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.googleapis.com/chrome-infra/depot_tools.zip@@@"
@@ -193,7 +200,7 @@
       "-u",
       "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
-      "[ROOT]/b/depot_tools/gsutil.py",
+      "[DEPOT_TOOLS]/gsutil.py",
       "----",
       "cp",
       "-r",
@@ -201,9 +208,10 @@
       "html",
       "-a",
       "public-read",
-      "[CWD]/depot_tools/man/html",
+      "[SLAVE_BUILD]/depot_tools/man/html",
       "gs://chrome-infra-docs/flat/depot_tools/docs/"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "gsutil upload docs"
   },
   {

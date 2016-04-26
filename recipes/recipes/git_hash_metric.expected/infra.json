@@ -10,6 +10,7 @@
       "--ts-mon-task-service-name=git_hash_metric",
       "--string='{\"name\":\"repository/hash\", \"value\": \"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\", \"repository\": \"https://chromium.googlesource.com/infra/infra\"}'"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "send hash to ts_mon"
   },
   {

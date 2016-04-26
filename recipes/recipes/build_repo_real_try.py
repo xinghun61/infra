@@ -13,7 +13,6 @@ DEPS = [
   'depot_tools/git',
   'file',
   'depot_tools/gclient',
-  'depot_tools/infra_paths',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -76,7 +75,7 @@ def inner(api):
   api.git.checkout(
       url='https://chromium.googlesource.com/chromium/tools/build',
       ref='master',
-      dir_path=api.infra_paths['build'].join('clone'))
+      dir_path=api.path['build'].join('clone'))
 
 
 def GenTests(api):

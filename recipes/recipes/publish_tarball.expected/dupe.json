@@ -5,11 +5,12 @@
       "-u",
       "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
       "--",
-      "[ROOT]/b/depot_tools/gsutil.py",
+      "[DEPOT_TOOLS]/gsutil.py",
       "----",
       "ls",
       "gs://chromium-browser-official/"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "gsutil ls",
     "stdout": "/path/to/tmp/"
   },

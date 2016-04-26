@@ -11,13 +11,13 @@
       "--slave",
       "TestSlavename",
       "--spec",
-      "cache_dir = '[ROOT]\\\\b\\\\build\\\\slave\\\\cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://chromium.googlesource.com/chromium/tools/build.git'}]",
+      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://chromium.googlesource.com/chromium/tools/build.git'}]",
       "--root",
       "build",
       "--revision_mapping_file",
       "{\"build\": \"got_revision\"}",
       "--git-cache-dir",
-      "[ROOT]\\b\\build\\slave\\cache_dir",
+      "[GIT_CACHE]",
       "--issue",
       "12853011",
       "--patchset",
@@ -31,6 +31,7 @@
       "--force",
       "--output_manifest"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s;RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -66,9 +67,10 @@
     "cmd": [
       "python",
       "-u",
-      "[CWD]\\build\\scripts\\slave\\recipes.py",
+      "[SLAVE_BUILD]\\build\\scripts\\slave\\recipes.py",
       "fetch"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "fetch recipe engine deps",
     "~followup_annotations": [
       "step returned non-zero exit code: 1",
@@ -80,8 +82,9 @@
       "python",
       "-u",
       "\nimport shutil, sys, os\nshutil.rmtree(sys.argv[1], ignore_errors=True)\n",
-      "[CWD]\\build\\scripts\\slave\\.recipe_deps"
+      "[SLAVE_BUILD]\\build\\scripts\\slave\\.recipe_deps"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "remove repo workaround for http://crbug.com/589201",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -94,13 +97,15 @@
     "cmd": [
       "python",
       "-u",
-      "[CWD]\\build\\scripts\\slave\\recipes.py",
+      "[SLAVE_BUILD]\\build\\scripts\\slave\\recipes.py",
       "fetch"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "fetch recipe engine deps from scratch."
   },
   {
     "cmd": [],
+    "cwd": "[SLAVE_BUILD]",
     "name": "properties (0)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@properties@{@@@",
@@ -120,17 +125,18 @@
     "cmd": [
       "python",
       "-u",
-      "[CWD]\\build\\scripts\\tools\\annotee_indenter.py",
+      "[SLAVE_BUILD]\\build\\scripts\\tools\\annotee_indenter.py",
       "--base-level",
       "1",
       "--use-python-executable",
       "--",
-      "[CWD]\\build\\scripts\\slave\\recipes.py",
+      "[SLAVE_BUILD]\\build\\scripts\\slave\\recipes.py",
       "run",
       "--properties-file",
       "{\"buildername\": \"recipe_try\", \"buildnumber\": 571, \"mastername\": \"tryserver.infra\", \"prop1\": \"value1\", \"prop2\": \"value2\", \"slavename\": \"TestSlavename\", \"try_level\": 1}",
       "infra/build_repo_real_try"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "infra.build_repo_real_try run"
   },
   {

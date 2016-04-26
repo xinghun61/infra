@@ -6,7 +6,6 @@ from recipe_engine.recipe_api import Property
 
 DEPS = [
   'depot_tools/bot_update',
-  'depot_tools/infra_paths',
   'file',
   'depot_tools/gclient',
   'recipe_engine/json',
@@ -77,7 +76,7 @@ def build_luci(api):
   absfiles = [api.path.join(go_bin, i) for i in files]
   api.python(
       'upload go bin',
-      api.infra_paths['depot_tools'].join('upload_to_google_storage.py'),
+      api.path['depot_tools'].join('upload_to_google_storage.py'),
       ['-b', 'chromium-luci'] + absfiles)
   for name, abspath in zip(files, absfiles):
     sha1 = api.file.read(

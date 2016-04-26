@@ -4,6 +4,7 @@
       "/opt/infra-tools/authutil",
       "token"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "Get auth token",
     "stdout": "/path/to/tmp/"
   },
@@ -13,6 +14,7 @@
       "-u",
       "import sys; sys.exit(1)"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "Invalid patchset list",
     "~followup_annotations": [
       "step returned non-zero exit code: 1",
