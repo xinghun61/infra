@@ -15,13 +15,12 @@ import (
 
 	"github.com/luci/luci-go/client/authcli"
 	"github.com/luci/luci-go/common/auth"
-	"github.com/luci/luci-go/common/logging/gologger"
 
 	"github.com/maruel/subcommands"
 )
 
 func main() {
-	opts := auth.Options{Logger: gologger.StdConfig.NewLogger(nil)}
+	opts := auth.Options{}
 	application := &subcommands.DefaultApplication{
 		Name:  "auth",
 		Title: "Chrome Infra Authentication tool",

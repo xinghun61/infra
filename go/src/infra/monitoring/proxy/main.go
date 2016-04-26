@@ -86,9 +86,8 @@ func (c *config) createAuthenticatedClient(ctx context.Context) (*http.Client, e
 	options := auth.Options{
 		Scopes:                 scopes,
 		ServiceAccountJSONPath: c.serviceAccountJSONPath,
-		Logger:                 log.Get(ctx),
 	}
-	return auth.NewAuthenticator(mode, options).Client()
+	return auth.NewAuthenticator(ctx, mode, options).Client()
 }
 
 // application represents the main application state.

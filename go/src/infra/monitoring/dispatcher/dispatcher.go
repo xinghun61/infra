@@ -227,7 +227,6 @@ func main() {
 	ctx := context.Background()
 
 	authOptions := auth.Options{
-		Context:                ctx,
 		ServiceAccountJSONPath: *serviceAccountJSON,
 		Scopes: []string{
 			auth.OAuthScopeEmail,
@@ -240,7 +239,7 @@ func main() {
 		mode = auth.InteractiveLogin
 	}
 
-	transport, err := auth.NewAuthenticator(mode, authOptions).Transport()
+	transport, err := auth.NewAuthenticator(ctx, mode, authOptions).Transport()
 	if err != nil {
 		errLog.Printf("AuthenticatedTransport: %v", err)
 		if !*login {

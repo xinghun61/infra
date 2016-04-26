@@ -48,8 +48,9 @@ func TestLoopMultiple(t *testing.T) {
 	c.SetTimerCallback(func(d time.Duration, t clock.Timer) {
 		if i++; i >= 5 {
 			cancel()
+		} else {
+			c.Add(d)
 		}
-		c.Add(d)
 	})
 	res := Run(ctx, f, 1*time.Second, 1, c)
 	if !res.Success {
@@ -79,8 +80,9 @@ func TestLoopOverrunSome(t *testing.T) {
 	c.SetTimerCallback(func(d time.Duration, t clock.Timer) {
 		if i++; i >= 10 {
 			cancel()
+		} else {
+			c.Add(d)
 		}
-		c.Add(d)
 	})
 
 	res := Run(ctx, f, 1*time.Second, 3, c)
@@ -115,8 +117,9 @@ func TestLoopOverrunAll(t *testing.T) {
 	c.SetTimerCallback(func(d time.Duration, t clock.Timer) {
 		if i++; i >= 5 {
 			cancel()
+		} else {
+			c.Add(d)
 		}
-		c.Add(d)
 	})
 	res := Run(ctx, f, 1*time.Second, 3, c)
 	if !res.Success {
@@ -151,8 +154,9 @@ func TestLoopMaxErrors(t *testing.T) {
 	c.SetTimerCallback(func(d time.Duration, t clock.Timer) {
 		if i++; i >= 8 {
 			cancel()
+		} else {
+			c.Add(d)
 		}
-		c.Add(d)
 	})
 	res := Run(ctx, f, 1*time.Second, 3, c)
 	if res.Success {

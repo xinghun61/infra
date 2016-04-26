@@ -28,7 +28,6 @@ import (
 )
 
 var authOptions = auth.Options{
-	Logger:                 gologger.StdConfig.NewLogger(context.Background()),
 	ServiceAccountJSONPath: defaultServiceAccountJSONPath(),
 	Scopes: []string{
 		auth.OAuthScopeEmail,
@@ -100,7 +99,6 @@ func (opts *commonOptions) processFlags() (state, error) {
 	if err != nil {
 		return state{}, err
 	}
-	authOpts.Context = ctx
 	if opts.projectID == "" {
 		if authOpts.ServiceAccountJSONPath != "" {
 			opts.projectID = projectIDFromServiceAccountJSON(authOpts.ServiceAccountJSONPath)
@@ -120,7 +118,7 @@ func (opts *commonOptions) processFlags() (state, error) {
 	}
 
 	// Client.
-	httpClient, err := auth.NewAuthenticator(auth.SilentLogin, authOpts).Client()
+	httpClient, err := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts).Client()
 	if err != nil {
 		return state{}, err
 	}

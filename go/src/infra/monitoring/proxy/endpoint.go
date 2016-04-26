@@ -68,12 +68,12 @@ func (c *endpointConfig) createService(ctx context.Context) (endpointService, er
 	}
 
 	authenticator := auth.NewAuthenticator(
+		ctx,
 		auth.SilentLogin,
 		auth.Options{
 			Method:                 auth.ServiceAccountMethod,
 			Scopes:                 endpointScopes,
 			ServiceAccountJSONPath: c.serviceAccountJSONPath,
-			Logger:                 log.Get(ctx),
 		})
 	client, err := authenticator.Client()
 	if err != nil {
