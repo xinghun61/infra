@@ -10,6 +10,7 @@ import time
 import unittest
 
 from proto import ast_pb2
+from proto import tracker_pb2
 from search import query2ast
 from services import fulltext_helpers
 from tracker import tracker_bizobj
@@ -41,7 +42,17 @@ MakeCond = ast_pb2.MakeCond
 
 class QueryParsingUnitTest(unittest.TestCase):
 
-  default_config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+  def setUp(self):
+    self.project_id = 789
+    self.default_config = tracker_bizobj.MakeDefaultProjectIssueConfig(
+        self.project_id)
+
+  def testParseUserQuery_OrClauseDisabled(self):
+    """We warn users that OR is not supported yet."""
+
+    with self.assertRaises(query2ast.InvalidQueryError):
+      query2ast.ParseUserQuery(
+          'ham OR fancy', '', BUILTIN_ISSUE_FIELDS, self.default_config)
 
   @unittest.skip('TODO(jrobbins): fully support OR')
   def skip_testParseUserQuery_OrClause(self):
@@ -192,6 +203,22 @@ class QueryParsingUnitTest(unittest.TestCase):
                  ['"base::tuple"'], []),
         cond)
 
+  def testParseUserQuery_IsOperator(self):
+    """Test is:open, is:spam, and is:blocked."""
+    for keyword in ['open', 'spam', 'blocked']:
+      ast = query2ast.ParseUserQuery(
+          'is:' + keyword, '', BUILTIN_ISSUE_FIELDS, self.default_config)
+      cond1 = ast.conjunctions[0].conds[0]
+      self.assertEqual(
+          MakeCond(EQ, [BUILTIN_ISSUE_FIELDS[keyword]], [], [True]),
+          cond1)
+      ast = query2ast.ParseUserQuery(
+          '-is:' + keyword, '', BUILTIN_ISSUE_FIELDS, self.default_config)
+      cond1 = ast.conjunctions[0].conds[0]
+      self.assertEqual(
+          MakeCond(EQ, [BUILTIN_ISSUE_FIELDS[keyword]], [], [False]),
+          cond1)
+
   def testParseUserQuery_HasOperator(self):
     # Search for issues with at least one attachment
     ast = query2ast.ParseUserQuery(
@@ -236,6 +263,14 @@ class QueryParsingUnitTest(unittest.TestCase):
     self.assertEqual(
         MakeCond(IS_NOT_DEFINED, [BUILTIN_ISSUE_FIELDS['attachments']],
                  [], []),
+        cond1)
+
+    # If it is not a field, look for any key-value label.
+    ast = query2ast.ParseUserQuery(
+        'has:Size', '', BUILTIN_ISSUE_FIELDS, self.default_config)
+    cond1 = ast.conjunctions[0].conds[0]
+    self.assertEqual(
+        MakeCond(IS_DEFINED, [BUILTIN_ISSUE_FIELDS['label']], ['size'], []),
         cond1)
 
   def testParseUserQuery_Components(self):
@@ -435,6 +470,29 @@ class QueryParsingUnitTest(unittest.TestCase):
                  [BUILTIN_ISSUE_FIELDS['label']], ['priority-high'], []),
         cond1)
 
+  def testParseUserQuery_SearchWithinCustomFields(self):
+    """Enums are treated as labels, other fields are kept as fields."""
+    fd1 = tracker_bizobj.MakeFieldDef(
+        1, self.project_id, 'Size', tracker_pb2.FieldTypes.ENUM_TYPE, 
+        'applic', 'applic', False, False, None, None, None, False, None,
+        None, None, 'doc', False)
+    fd2 = tracker_bizobj.MakeFieldDef(
+        1, self.project_id, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE, 
+        'applic', 'applic', False, False, None, None, None, False, None,
+        None, None, 'doc', False)
+    self.default_config.field_defs.extend([fd1, fd2])
+    ast = query2ast.ParseUserQuery(
+        'Size:Small EstDays>3', '', BUILTIN_ISSUE_FIELDS, self.default_config)
+    cond1 = ast.conjunctions[0].conds[0]
+    cond2 = ast.conjunctions[0].conds[1]
+    self.assertEqual(
+        MakeCond(KEY_HAS, [BUILTIN_ISSUE_FIELDS['label']],
+                 ['size-small'], []),
+        cond1)
+    self.assertEqual(
+        MakeCond(GT, [fd2], ['3'], [3]),
+        cond2)
+
   def testParseUserQuery_QuickOr(self):
     # quick-or searches
     ast = query2ast.ParseUserQuery(
@@ -546,6 +604,59 @@ class QueryParsingUnitTest(unittest.TestCase):
     self.assertEqual(
         MakeCond(GT, [BUILTIN_ISSUE_FIELDS['closed']], [], [ts3]), cond3)
 
+  def testParseUserQuery_BadDates(self):
+    bad_dates = ['today-13h', 'yesterday', '2/2', 'm/y/d',
+                 '99/99/1999', '0-0-0']
+    for val in bad_dates:
+      with self.assertRaises(query2ast.InvalidQueryError) as cm:
+        query2ast.ParseUserQuery(
+            'modified>=' + val, '', BUILTIN_ISSUE_FIELDS,
+            self.default_config)
+        self.assertEqual('Could not parse date: ' + val,
+                         cm.exception.message)
+
+
+  def testParseUserQuery_SyntaxErrors(self):
+    """Bad queries should report warnings."""
+    warnings = []
+    ast = query2ast.ParseUserQuery(
+        'one two (three four)', '',
+        BUILTIN_ISSUE_FIELDS, self.default_config, warnings)
+    self.assertEqual(4, len(ast.conjunctions[0].conds))
+    self.assertEqual(
+        ['Parentheses are ignored in user queries.'],
+        warnings)
+
+    warnings = []
+    ast = query2ast.ParseUserQuery(
+        '', 'one two (three four)',
+        BUILTIN_ISSUE_FIELDS, self.default_config, warnings)
+    self.assertEqual(4, len(ast.conjunctions[0].conds))
+    self.assertEqual(
+        ['Parentheses are ignored in saved queries.'],
+        warnings)
+
+  def testParseUserQuery_CheckSyntax(self):
+    warnings = []
+    msg = query2ast.CheckSyntax(
+        'ok query', self.default_config, warnings=warnings)
+    self.assertIsNone(msg)
+    self.assertEqual([], warnings)
+
+    warnings = []
+    msg = query2ast.CheckSyntax(
+        'modified:0-0-0', self.default_config, warnings=warnings)
+    self.assertEqual(
+        'Could not parse date: 0-0-0',
+        msg)
+
+    warnings = []
+    msg = query2ast.CheckSyntax(
+        'foo (bar)', self.default_config, warnings=warnings)
+    self.assertIsNone(msg)
+    self.assertEqual(
+        ['Parentheses are ignored in user queries.'],
+        warnings)
 
 if __name__ == '__main__':
   unittest.main()

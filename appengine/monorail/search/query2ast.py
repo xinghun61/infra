@@ -370,9 +370,6 @@ def _ExtractConds(query):
     elif word:
       terms.append(word)
 
-    else:
-      logging.warn('Unexpected search term in %r', query)
-
   return terms
 
 
@@ -395,18 +392,23 @@ def _ParseDateValue(val):
     try:
       days_ago = int(val.split('-')[1])
     except ValueError:
-      days_ago = 0
+      raise InvalidQueryError('Could not parse date: ' + val)
     return _CalculatePastDate(days_ago)
 
-  if '/' in val:
-    year, month, day = [int(x) for x in val.split('/')]
-  elif '-' in val:
-    year, month, day = [int(x) for x in val.split('-')]
+  try:
+    if '/' in val:
+      year, month, day = [int(x) for x in val.split('/')]
+    elif '-' in val:
+      year, month, day = [int(x) for x in val.split('-')]
+    else:
+      raise InvalidQueryError('Could not parse date: ' + val)
+  except ValueError:
+    raise InvalidQueryError('Could not parse date: ' + val)
 
   try:
     return int(time.mktime(datetime.datetime(year, month, day).timetuple()))
   except ValueError:
-    raise InvalidQueryError('Could not parse date')
+    raise InvalidQueryError('Could not parse date: ' + val)
 
 
 def _CalculatePastDate(days_ago, now=None):
