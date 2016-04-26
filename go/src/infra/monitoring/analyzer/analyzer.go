@@ -8,13 +8,13 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
+	"log"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/luci/luci-go/common/logging/gologger"
 
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
@@ -41,7 +41,8 @@ const (
 )
 
 var (
-	log     = gologger.StdConfig.NewLogger(nil)
+	errLog  = log.New(os.Stderr, "", log.Lshortfile|log.Ltime)
+	infoLog = log.New(os.Stdout, "", log.Lshortfile|log.Ltime)
 	expvars = expvar.NewMap("analyzer")
 	cpRE    = regexp.MustCompile("Cr-Commit-Position: (.*)@{#([0-9]+)}")
 )
@@ -174,7 +175,7 @@ func (a *Analyzer) MasterAlerts(master string, be *messages.BuildExtract) []mess
 	}
 	if elapsed < 0 {
 		// Add this to the alerts returned, rather than just log it?
-		log.Errorf("Master %s timestamp is newer than current time (%s): %s old.", master, a.Now(), elapsed)
+		errLog.Printf("Master %s timestamp is newer than current time (%s): %s old.", master, a.Now(), elapsed)
 	}
 
 	return ret
@@ -220,7 +221,7 @@ func (a *Analyzer) BuilderAlerts(masterName string, be *messages.BuildExtract) [
 		r := <-c
 		if len(r.err) != 0 {
 			// TODO: add a special alert for this too?
-			log.Errorf("Error getting alerts for builder %s: %v", builderName, r.err)
+			errLog.Printf("Error getting alerts for builder %s: %v", builderName, r.err)
 		} else {
 			ret = append(ret, r.alerts...)
 		}
@@ -278,7 +279,7 @@ func (a *Analyzer) lastBuilds(masterName, builderName string, recentBuildIDs []i
 	// Check for stale/idle/offline builders.  Latest build is the first in the list.
 
 	for i, buildNum := range recentBuildIDs {
-		log.Infof("Checking last %s/%s build ID: %d", masterName, builderName, buildNum)
+		infoLog.Printf("Checking last %s/%s build ID: %d", masterName, builderName, buildNum)
 
 		var build *messages.Build
 		build, err = a.Reader.Build(masterName, builderName, buildNum)
@@ -381,11 +382,11 @@ func (a *Analyzer) builderAlerts(masterName string, builderName string, b *messa
 			})
 		}
 	default:
-		log.Errorf("Unknown %s.%s builder state: %s", masterName, builderName, b.State)
+		errLog.Printf("Unknown %s.%s builder state: %s", masterName, builderName, b.State)
 	}
 
 	// Check for alerts on the most recent complete build
-	log.Infof("Checking %d most recent builds for alertable step failures: %s/%s", len(recentBuildIDs), masterName, builderName)
+	infoLog.Printf("Checking %d most recent builds for alertable step failures: %s/%s", len(recentBuildIDs), masterName, builderName)
 	as, es := a.builderStepAlerts(masterName, builderName, []int64{lastCompletedBuild.Number})
 
 	if len(as) > 0 {
@@ -443,7 +444,7 @@ func (a *Analyzer) mergeAlertsByReason(alerts []messages.Alert) []messages.Alert
 
 		mergedBF := merged.Extension.(messages.BuildFailure)
 		if len(mergedBF.Builders) > 1 {
-			log.Errorf("Alert shouldn't have multiple builders before merging by reason: %+v", reason)
+			errLog.Printf("Alert shouldn't have multiple builders before merging by reason: %+v", reason)
 		}
 
 		// Clear out the list of builders because we're going to reconstruct it.
@@ -456,7 +457,7 @@ func (a *Analyzer) mergeAlertsByReason(alerts []messages.Alert) []messages.Alert
 		for _, alert := range stepAlerts { // stepAlerts[1:]? already have [0] in mergedBf
 			bf := alert.Extension.(messages.BuildFailure)
 			if len(bf.Builders) > 1 {
-				log.Errorf("Alert shouldn't have multiple builders before merging by reason: %+v", reason)
+				errLog.Printf("Alert shouldn't have multiple builders before merging by reason: %+v", reason)
 			}
 			if bf.TreeCloser {
 				mergedBF.TreeCloser = true
@@ -589,30 +590,30 @@ func (a *Analyzer) builderStepAlerts(masterName, builderName string, recentBuild
 
 	// Now coalesce alerts with the same key into single alerts with merged properties.
 	for key, keyedAlerts := range stepAlertsByKey {
-		log.Infof("Merging %d distinct alerts for key: %q", len(alerts), key)
+		infoLog.Printf("Merging %d distinct alerts for key: %q", len(alerts), key)
 
 		mergedAlert := keyedAlerts[0] // Merge everything into the first one
 		mergedBF, ok := mergedAlert.Extension.(messages.BuildFailure)
 		if !ok {
-			log.Errorf("Couldn't cast extension as BuildFailure: %s", mergedAlert.Type)
+			errLog.Printf("Couldn't cast extension as BuildFailure: %s", mergedAlert.Type)
 		}
 
 		for _, alr := range keyedAlerts[1:] {
 			if alr.Title != mergedAlert.Title {
 				// Sanity checking.
-				log.Errorf("Merging alerts with same key (%q), different title: (%q vs %q)", key, alr.Title, mergedAlert.Title)
+				errLog.Printf("Merging alerts with same key (%q), different title: (%q vs %q)", key, alr.Title, mergedAlert.Title)
 				continue
 			}
 			bf, ok := alr.Extension.(messages.BuildFailure)
 			if !ok {
-				log.Errorf("Couldn't cast a %q extension as BuildFailure", alr.Type)
+				errLog.Printf("Couldn't cast a %q extension as BuildFailure", alr.Type)
 				continue
 			}
 			// At this point, there should only be one builder per failure because
 			// alert keys include the builder name.  We merge builders by step failure
 			// in another pass, after this funtion is called.
 			if len(bf.Builders) != 1 {
-				log.Errorf("bf.Builders len is not 1: %d", len(bf.Builders))
+				errLog.Printf("bf.Builders len is not 1: %d", len(bf.Builders))
 			}
 			firstBuilder := bf.Builders[0]
 			mergedBuilder := mergedBF.Builders[0]
@@ -694,7 +695,7 @@ func (a *Analyzer) stepFailures(masterName string, builderName string, bID int64
 	var err error // To avoid re-scoping b in the nested conditional below with a :=.
 	b, err := a.Reader.Build(masterName, builderName, bID)
 	if err != nil || b == nil {
-		log.Errorf("Error fetching build: %v", err)
+		errLog.Printf("Error fetching build: %v", err)
 		return nil, err
 	}
 
@@ -714,7 +715,7 @@ func (a *Analyzer) stepFailures(masterName string, builderName string, bID int64
 				continue
 			}
 		} else {
-			log.Errorf("Couldn't unmarshal first step result into a float64: %v", s.Results[0])
+			errLog.Printf("Couldn't unmarshal first step result into a float64: %v", s.Results[0])
 		}
 
 		// We have a failure of some kind, so queue it up to check later.
@@ -749,10 +750,10 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 		if failure.step.Name == "steps" {
 			// check results to see if it's an array of [4]
 			// That's a purple failure, which should go to infra/trooper.
-			log.Infof("steps results: %+v", failure.step)
+			infoLog.Printf("steps results: %+v", failure.step)
 			if len(failure.step.Results) > 0 {
 				if r, ok := failure.step.Results[0].(float64); ok && r == resInfraFailure {
-					log.Errorf("INFRA FAILURE: %+v", failure)
+					errLog.Printf("INFRA FAILURE: %+v", failure)
 					alr := messages.Alert{
 						Title:    fmt.Sprintf("%s infra failure", failure.builderName),
 						Body:     fmt.Sprintf("On step %s", failure.step.Name),
@@ -930,12 +931,12 @@ func trunc(s string) string {
 func (a *Analyzer) reasonsForFailure(f stepFailure) []string {
 	ret := []string(nil)
 	recognized := false
-	log.Infof("Checking for reasons for failure step: %v", f.step.Name)
+	infoLog.Printf("Checking for reasons for failure step: %v", f.step.Name)
 	for _, sfa := range a.StepAnalyzers {
 		res, err := sfa.Analyze(f)
 		if err != nil {
 			// TODO: return something that contains errors *and* reasons.
-			log.Errorf("Error getting reasons from StepAnalyzer: %v", err)
+			errLog.Printf("Error getting reasons from StepAnalyzer: %v", err)
 			continue
 		}
 		if res.Recognized {
@@ -947,7 +948,7 @@ func (a *Analyzer) reasonsForFailure(f stepFailure) []string {
 	if !recognized {
 		// TODO: log and report frequently encountered unrecognized builder step
 		// failure names.
-		log.Errorf("Unrecognized step step failure type, unable to find reasons: %s", f.step.Name)
+		errLog.Printf("Unrecognized step step failure type, unable to find reasons: %s", f.step.Name)
 	}
 
 	return ret

@@ -54,7 +54,7 @@ func (a *CompileFailureAnalyzer) Analyze(f stepFailure) (*StepAnalyzerResult, er
 			if len(parts) > 0 {
 				ret.Reasons = append(ret.Reasons, fmt.Sprintf("%s:%s", parts[0][1], parts[0][2]))
 			}
-			log.Errorf("Error parsing stdio for compiler error: %v", parts)
+			errLog.Printf("Error parsing stdio for compiler error: %v", parts)
 		}
 	}
 

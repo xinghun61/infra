@@ -75,7 +75,7 @@ func (c *snapshot) BuildExtract(master string) (*messages.BuildExtract, error) {
 	}
 	err = write(filepath.Join(c.baseDir, "buildextracts", master), m)
 	if err != nil {
-		log.Errorf("Error snapshotting build extract: %v", err)
+		errLog.Printf("Error snapshotting build extract: %v", err)
 	}
 	return m, err
 }
@@ -98,7 +98,7 @@ func (c *snapshot) CrbugItems(label string) ([]messages.CrbugItem, error) {
 	}
 	err = write(filepath.Join(c.baseDir, "crbugitems", label), items)
 	if err != nil {
-		log.Errorf("Error snapshotting crbug items: %v", err)
+		errLog.Printf("Error snapshotting crbug items: %v", err)
 	}
 	return items, err
 }

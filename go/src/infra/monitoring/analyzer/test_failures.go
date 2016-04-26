@@ -42,7 +42,7 @@ func (a *TestFailureAnalyzer) Analyze(f stepFailure) (*StepAnalyzerResult, error
 	for testName, testResults := range testResults.Tests {
 		res, ok := testResults.(map[string]interface{})
 		if !ok {
-			log.Errorf("Couldn't convert test results to map: %s", testName)
+			errLog.Printf("Couldn't convert test results to map: %s", testName)
 			continue
 		}
 

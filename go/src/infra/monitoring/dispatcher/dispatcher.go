@@ -14,6 +14,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"sort"
@@ -22,8 +23,6 @@ import (
 
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/logging/gologger"
 
 	"golang.org/x/net/context"
 
@@ -60,6 +59,8 @@ var (
 	gkt              = map[string]messages.TreeMasterConfig{}
 	filteredFailures = uint64(0)
 	expvars          = expvar.NewMap("dispatcher")
+	errLog           = log.New(os.Stderr, "", log.Lshortfile|log.Ltime)
+	infoLog          = log.New(os.Stdout, "", log.Lshortfile|log.Ltime)
 )
 
 func init() {
@@ -74,7 +75,7 @@ func analyzeBuildExtract(ctx context.Context, a *analyzer.Analyzer, masterName s
 	if *mastersOnly {
 		return ret
 	}
-	logging.Infof(ctx, "getting builder alerts for %s", masterName)
+	infoLog.Printf("getting builder alerts for %s", masterName)
 	return append(ret, a.BuilderAlerts(masterName, b)...)
 }
 
@@ -110,7 +111,7 @@ func fetchBuildExtracts(ctx context.Context, c client.Reader, masterNames []stri
 			r := beResp{name: mn}
 			r.be, r.err = c.BuildExtract(mn)
 			if r.err != nil {
-				logging.Errorf(ctx, "Error reading build extract from %s : %s", mn, r.err)
+				errLog.Printf("Error reading build extract from %s : %s", mn, r.err)
 			}
 			res <- r
 		}(masterName)
@@ -140,7 +141,7 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool) 
 		go func(tree string) {
 			expvars.Add(fmt.Sprintf("Tree-%s", tree), 1)
 			defer expvars.Add(fmt.Sprintf("Tree-%s", tree), -1)
-			logging.Infof(ctx, "Checking tree: %s", tree)
+			infoLog.Printf("Checking tree: %s", tree)
 			masterNames := []string{}
 			t := gkt[tree]
 			for _, url := range t.Masters {
@@ -149,7 +150,7 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool) 
 
 			// TODO(seanmccullough): Plumb ctx through the rest of these calls.
 			bes := fetchBuildExtracts(ctx, a.Reader, masterNames)
-			logging.Infof(ctx, "Build Extracts read: %d", len(bes))
+			infoLog.Printf("Build Extracts read: %d", len(bes))
 
 			alerts := &messages.Alerts{
 				RevisionSummaries: map[string]messages.RevisionSummary{},
@@ -166,7 +167,7 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool) 
 					for _, r := range bf.RegressionRanges {
 						revs, err := a.GetRevisionSummaries(r.Revisions)
 						if err != nil {
-							logging.Errorf(ctx, "Couldn't get revision summaries: %v", err)
+							errLog.Printf("Couldn't get revision summaries: %v", err)
 							continue
 						}
 						for _, rev := range revs {
@@ -178,33 +179,33 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool) 
 			alerts.Timestamp = messages.TimeToEpochTime(time.Now())
 
 			if *alertsBaseURL == "" {
-				logging.Infof(ctx, "No data_url provided. Writing to %s-alerts.json", tree)
+				infoLog.Printf("No data_url provided. Writing to %s-alerts.json", tree)
 
 				abytes, err := json.MarshalIndent(alerts, "", "\t")
 				if err != nil {
-					logging.Errorf(ctx, "Couldn't marshal alerts json: %v", err)
+					errLog.Printf("Couldn't marshal alerts json: %v", err)
 					errs <- err
 					return
 				}
 
 				if err := ioutil.WriteFile(fmt.Sprintf("%s-alerts.json", tree), abytes, 0644); err != nil {
-					logging.Errorf(ctx, "Couldn't write to alerts.json: %v", err)
+					errLog.Printf("Couldn't write to alerts.json: %v", err)
 					errs <- err
 					return
 				}
 			} else {
 				alertsURL := fmt.Sprintf("%s/%s", *alertsBaseURL, tree)
 				w := client.NewWriter(alertsURL)
-				logging.Infof(ctx, "Posting alerts to %s", alertsURL)
+				infoLog.Printf("Posting alerts to %s", alertsURL)
 				err := w.PostAlerts(alerts)
 				if err != nil {
-					logging.Errorf(ctx, "Couldn't post alerts: %v", err)
+					errLog.Printf("Couldn't post alerts: %v", err)
 					errs <- err
 					return
 				}
 			}
 
-			logging.Infof(ctx, "Filtered failures: %v", filteredFailures)
+			infoLog.Printf("Filtered failures: %v", filteredFailures)
 			done <- nil
 		}(treeName)
 	}
@@ -224,8 +225,6 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
-	ctx = gologger.StdConfig.Use(ctx)
-	ctx = logging.SetLevel(ctx, logging.Debug)
 
 	authOptions := auth.Options{
 		Context:                ctx,
@@ -243,9 +242,9 @@ func main() {
 
 	transport, err := auth.NewAuthenticator(mode, authOptions).Transport()
 	if err != nil {
-		logging.Errorf(ctx, "AuthenticatedTransport: %v", err)
+		errLog.Printf("AuthenticatedTransport: %v", err)
 		if !*login {
-			logging.Errorf(ctx, "Consider re-running with -login")
+			errLog.Printf("Consider re-running with -login")
 		}
 		os.Exit(1)
 	}
@@ -254,37 +253,37 @@ func main() {
 	go func() {
 		err := http.ListenAndServe(":12345", nil)
 		if err != nil {
-			logging.Errorf(ctx, "ListenAndServe: %v", err)
+			errLog.Printf("ListenAndServe: %v", err)
 			os.Exit(1)
 		}
 	}()
 
 	duration, err := time.ParseDuration(*durationStr)
 	if err != nil {
-		logging.Errorf(ctx, "Error parsing duration: %v", err)
+		errLog.Printf("Error parsing duration: %v", err)
 		os.Exit(1)
 	}
 
 	cycle, err := time.ParseDuration(*cycleStr)
 	if err != nil {
-		logging.Errorf(ctx, "Error parsing cycle: %v", err)
+		errLog.Printf("Error parsing cycle: %v", err)
 		os.Exit(1)
 	}
 
 	err = readJSONFile(*gatekeeperJSON, &gk)
 	if err != nil {
-		logging.Errorf(ctx, "Error reading gatekeeper json: %v", err)
+		errLog.Printf("Error reading gatekeeper json: %v", err)
 		os.Exit(1)
 	}
 
 	err = readJSONFile(*gatekeeperTreesJSON, &gkt)
 	if err != nil {
-		logging.Errorf(ctx, "Error reading gatekeeper trees json: %v", err)
+		errLog.Printf("Error reading gatekeeper trees json: %v", err)
 		os.Exit(1)
 	}
 
 	if *snapshot != "" && *replay != "" {
-		logging.Errorf(ctx, "Cannot use snapshot and replay flags at the same time.")
+		errLog.Printf("Cannot use snapshot and replay flags at the same time.")
 		os.Exit(1)
 	}
 
@@ -302,7 +301,7 @@ func main() {
 	if *replayTime != "" {
 		t, err := time.Parse(time.RFC3339, *replayTime)
 		if err != nil {
-			logging.Errorf(ctx, "Couldn't parse replay-time: %s", err)
+			errLog.Printf("Couldn't parse replay-time: %s", err)
 			os.Exit(1)
 		}
 		start := time.Now()
@@ -314,12 +313,12 @@ func main() {
 		f, err := os.Open(*replay)
 		defer f.Close()
 		if err != nil {
-			logging.Errorf(ctx, "Couldn't open replay dir: %s", err)
+			errLog.Printf("Couldn't open replay dir: %s", err)
 			os.Exit(1)
 		}
 		stat, err := f.Stat()
 		if err != nil {
-			logging.Errorf(ctx, "Couldn't stat replay dir: %s", err)
+			errLog.Printf("Couldn't stat replay dir: %s", err)
 			os.Exit(1)
 		}
 		start := time.Now()
@@ -350,7 +349,7 @@ func main() {
 
 	for tree := range trees {
 		if _, ok := gkt[tree]; !ok {
-			logging.Errorf(ctx, "Unrecognized tree name: %s", tree)
+			errLog.Printf("Unrecognized tree name: %s", tree)
 			os.Exit(1)
 		}
 	}
@@ -367,7 +366,7 @@ func main() {
 	loopResults := looper.Run(ctx, f, cycle, *maxErrs, clock.GetSystemClock())
 
 	if !loopResults.Success {
-		logging.Errorf(ctx, "Failed to run loop, %v errors", loopResults.Errs)
+		errLog.Printf("Failed to run loop, %v errors", loopResults.Errs)
 		os.Exit(1)
 	}
 }

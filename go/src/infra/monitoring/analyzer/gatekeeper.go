@@ -18,7 +18,7 @@ func NewGatekeeperRules(cfg messages.GatekeeperConfig) *GatekeeperRules {
 	ret := &GatekeeperRules{cfg}
 	for masterURL, masterCfgs := range cfg.Masters {
 		if len(masterCfgs) != 1 {
-			log.Errorf("Multiple configs for master: %s", masterURL)
+			errLog.Printf("Multiple configs for master: %s", masterURL)
 		}
 		parts := strings.Split(masterURL, "/")
 		masterName := parts[len(parts)-1]
@@ -32,7 +32,7 @@ func NewGatekeeperRules(cfg messages.GatekeeperConfig) *GatekeeperRules {
 func (r *GatekeeperRules) WouldCloseTree(master, builder, step string) bool {
 	mcs, ok := r.cfg.Masters[master]
 	if !ok {
-		log.Errorf("Missing master cfg: %s", master)
+		errLog.Printf("Missing master cfg: %s", master)
 		return false
 	}
 	mc := mcs[0]
@@ -68,7 +68,7 @@ func (r *GatekeeperRules) WouldCloseTree(master, builder, step string) bool {
 func (r *GatekeeperRules) ExcludeFailure(master, builder, step string) bool {
 	mcs, ok := r.cfg.Masters[master]
 	if !ok {
-		log.Errorf("Can't filter unknown master %s", master)
+		errLog.Printf("Can't filter unknown master %s", master)
 		return false
 	}
 	mc := mcs[0]
@@ -90,7 +90,7 @@ func (r *GatekeeperRules) ExcludeFailure(master, builder, step string) bool {
 	bc, ok := mc.Builders[builder]
 	if !ok {
 		if bc, ok = mc.Builders["*"]; !ok {
-			log.Warningf("Unknown %s builder %s", master, builder)
+			errLog.Printf("Unknown %s builder %s", master, builder)
 			return true
 		}
 	}

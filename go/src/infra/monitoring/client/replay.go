@@ -71,7 +71,7 @@ func (c *replay) CrbugItems(label string) ([]messages.CrbugItem, error) {
 // TODO(seanmccullough): Evaluate GOB encoding as a faster alternative.
 func read(path string, v interface{}) error {
 	f, err := os.Open(path)
-	log.Infof("Reading file: %s", path)
+	infoLog.Printf("Reading file: %s", path)
 	if err != nil {
 		return err
 	}

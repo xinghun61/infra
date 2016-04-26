@@ -10,15 +10,15 @@ import (
 	"expvar"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/luci/luci-go/common/logging/gologger"
 
 	"infra/monitoring/messages"
 )
@@ -31,7 +31,8 @@ const (
 )
 
 var (
-	log     = gologger.StdConfig.NewLogger(nil)
+	errLog  = log.New(os.Stderr, "", log.Lshortfile|log.Ltime)
+	infoLog = log.New(os.Stdout, "", log.Lshortfile|log.Ltime)
 	expvars = expvar.NewMap("client")
 )
 
@@ -151,7 +152,7 @@ func (r *reader) Build(master, builder string, buildNum int64) (*messages.Build,
 	expvars.Add("Build", 1)
 	defer expvars.Add("Build", -1)
 	if code, err := r.hc.getJSON(URL, build); err != nil {
-		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
+		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
 
@@ -171,7 +172,7 @@ func (r *reader) LatestBuilds(master, builder string) ([]*messages.Build, error)
 	expvars.Add("LatestBuilds", 1)
 	defer expvars.Add("LatestBuilds", -1)
 	if code, err := r.hc.getJSON(URL, &res); err != nil {
-		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
+		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
 
@@ -200,7 +201,7 @@ func (r *reader) TestResults(masterName, builderName, stepName string, buildNumb
 	expvars.Add("TestResults", 1)
 	defer expvars.Add("TestResults", -1)
 	if code, err := r.hc.getJSON(URL, tr); err != nil {
-		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
+		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
 
@@ -214,7 +215,7 @@ func (r *reader) BuildExtract(master string) (*messages.BuildExtract, error) {
 	expvars.Add("BuildExtract", 1)
 	defer expvars.Add("BuildExtract", -1)
 	if code, err := r.hc.getJSON(URL, ret); err != nil {
-		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
+		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
 	return ret, nil
@@ -240,7 +241,7 @@ func (r *reader) CrbugItems(label string) ([]messages.CrbugItem, error) {
 	defer expvars.Add("CrbugIssues", -1)
 	res := &messages.CrbugSearchResults{}
 	if code, err := r.hc.getJSON(URL, res); err != nil {
-		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
+		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
 
@@ -258,7 +259,7 @@ func NewWriter(alertsBase string) Writer {
 
 func (w *writer) PostAlerts(alerts *messages.Alerts) error {
 	return w.hc.trackRequestStats(func() (length int64, err error) {
-		log.Infof("POSTing alerts to %s", w.alertsBase)
+		infoLog.Printf("POSTing alerts to %s", w.alertsBase)
 		expvars.Add("PostAlerts", 1)
 		defer expvars.Add("PostAlerts", -1)
 		b, err := json.Marshal(alerts)
@@ -301,14 +302,14 @@ func (hc *trackingHTTPClient) trackRequestStats(cb func() (int64, error)) error 
 func (hc *trackingHTTPClient) attemptJSON(url string, v interface{}) (bool, int, int64, error) {
 	resp, err := hc.c.Get(url)
 	if err != nil {
-		log.Errorf("error: %q, possibly retrying.", err.Error())
+		errLog.Printf("error: %q, possibly retrying.", err.Error())
 		return false, 0, 0, err
 	}
 
 	defer resp.Body.Close()
 	status := resp.StatusCode
 	if err = json.NewDecoder(resp.Body).Decode(v); err != nil {
-		log.Errorf("Error decoding response: %v", err)
+		errLog.Printf("Error decoding response: %v", err)
 		return false, status, 0, err
 	}
 	ct := strings.ToLower(resp.Header.Get("Content-Type"))
@@ -317,7 +318,7 @@ func (hc *trackingHTTPClient) attemptJSON(url string, v interface{}) (bool, int,
 		err = fmt.Errorf("unexpected Content-Type, expected \"%s\", got \"%s\": %s", expected, ct, url)
 		return false, status, 0, err
 	}
-	log.Infof("Fetched(%d) json: %s", resp.StatusCode, url)
+	infoLog.Printf("Fetched(%d) json: %s", resp.StatusCode, url)
 
 	return true, status, resp.ContentLength, err
 }
@@ -329,13 +330,13 @@ func (hc *trackingHTTPClient) getJSON(url string, v interface{}) (status int, er
 	err = hc.trackRequestStats(func() (length int64, err error) {
 		attempts := 0
 		for {
-			log.Infof("Fetching json (%d in flight, attempt %d of %d): %s", hc.currReqs, attempts, maxRetries, url)
+			infoLog.Printf("Fetching json (%d in flight, attempt %d of %d): %s", hc.currReqs, attempts, maxRetries, url)
 			done, status, length, err := hc.attemptJSON(url, v)
 			if done {
 				return length, err
 			}
 			if err != nil {
-				log.Errorf("Error attempting fetch: %v", err)
+				errLog.Printf("Error attempting fetch: %v", err)
 			}
 
 			attempts++
@@ -360,7 +361,7 @@ func (hc *trackingHTTPClient) getJSON(url string, v interface{}) (status int, er
 func (hc *trackingHTTPClient) getText(url string) (ret string, status int, err error) {
 	err = hc.trackRequestStats(func() (length int64, err error) {
 
-		log.Infof("Fetching text (%d): %s", hc.currReqs, url)
+		infoLog.Printf("Fetching text (%d): %s", hc.currReqs, url)
 		resp, err := hc.c.Get(url)
 		if err != nil {
 			err = fmt.Errorf("couldn't resolve %s: %s", url, err)
@@ -382,7 +383,7 @@ func (hc *trackingHTTPClient) getText(url string) (ret string, status int, err e
 		ret = string(b)
 		length = resp.ContentLength
 
-		log.Infof("Fetched(%d) text: %s", resp.StatusCode, url)
+		infoLog.Printf("Fetched(%d) text: %s", resp.StatusCode, url)
 		return length, err
 	})
 	return ret, status, nil

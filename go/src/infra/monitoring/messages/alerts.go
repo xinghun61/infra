@@ -8,15 +8,14 @@
 package messages
 
 import (
+	"log"
 	"os"
 	"time"
-
-	"github.com/luci/luci-go/common/logging/gologger"
 )
 
 var (
 	googLoc *time.Location
-	log     = gologger.StdConfig.NewLogger(nil)
+	errLog  = log.New(os.Stderr, "", log.Lshortfile|log.Ltime)
 )
 
 type AlertType string
@@ -52,7 +51,7 @@ func init() {
 	var err error
 	googLoc, err = time.LoadLocation(GoogleTimeZone)
 	if err != nil {
-		log.Errorf("Could not load Google Time Zone (%s)", GoogleTimeZone)
+		errLog.Printf("Could not load Google Time Zone (%s)", GoogleTimeZone)
 		os.Exit(1)
 	}
 }
@@ -123,7 +122,7 @@ type AlertedBuilder struct {
 type Reason struct {
 	// Could be more detailed about test failures. For instance, we could
 	// indicate expected vs. actual result.
-	TestNames []string `json:"test_name"`
+	TestNames []string `json:"test_names"`
 	Step      string   `json:"step"`
 	URL       string   `json:"url"`
 }
