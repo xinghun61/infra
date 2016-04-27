@@ -68,7 +68,22 @@ class TrainingDataExportTask(servlet.Servlet):
             fixed_summary, fixed_comment,
         ])
 
+      comments, _count = (
+          self.services.spam.GetTrainingComments(
+              mr.cnxn, self.services.issue, since, offset=0, limit=BATCH_SIZE))
+      total_comments = len(comments)
+      for comment in comments:
+        # Cloud Prediction API doesn't allow newlines in the training data.
+        fixed_comment = comment.content.replace('\r\n', ' ')
+
+        csv_writer.writerow([
+            'spam' if comment.is_spam else 'ham',
+            # Comments don't have summaries, so it's blank:
+            '', fixed_comment,
+        ])
+
     self.response.body = json.dumps({
         "exported_issue_count": total_issues,
+        "exported_comment_count": total_comments,
     })
 

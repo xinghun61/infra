@@ -46,7 +46,7 @@ class SpamServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
 
     issue_reporters, comment_reporters = (
-        self.spam_service.LookupFlaggers(self.cnxn, 234))
+        self.spam_service.LookupIssueFlaggers(self.cnxn, 234))
     self.mox.VerifyAll()
     self.assertItemsEqual([111L], issue_reporters)
     self.assertEqual({1: [222L]}, comment_reporters)

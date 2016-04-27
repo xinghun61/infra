@@ -178,20 +178,20 @@ class IssueDetail(issuepeek.IssuePeek):
         permissions.VIEW_INBOUND_MESSAGES,
         granted_perms=granted_perms)
 
-    spam_promise = None
-    spam_hist_promise = None
+    issue_spam_promise = None
+    issue_spam_hist_promise = None
 
     if page_perms.FlagSpam:
-      spam_cnxn = sql.MonorailConnection()
-      spam_promise = framework_helpers.Promise(
-          self.services.spam.LookupFlaggers, spam_cnxn,
+      issue_spam_cnxn = sql.MonorailConnection()
+      issue_spam_promise = framework_helpers.Promise(
+          self.services.spam.LookupIssueFlaggers, issue_spam_cnxn,
           issue.issue_id)
 
     if page_perms.VerdictSpam:
-      spam_hist_cnxn = sql.MonorailConnection()
-      spam_hist_promise = framework_helpers.Promise(
-          self.services.spam.LookUpIssueVerdictHistory, spam_hist_cnxn,
-          [issue.issue_id])
+      issue_spam_hist_cnxn = sql.MonorailConnection()
+      issue_spam_hist_promise = framework_helpers.Promise(
+          self.services.spam.LookupIssueVerdictHistory, issue_spam_hist_cnxn,
+          [issue.issue_id])     
 
     with self.profiler.Phase('finishing getting comments and pagination'):
       (description, visible_comments,
@@ -206,8 +206,8 @@ class IssueDetail(issuepeek.IssuePeek):
       framework_views.RevealAllEmailsToMembers(mr, users_by_id)
 
     issue_flaggers, comment_flaggers = [], {}
-    if spam_promise:
-      issue_flaggers, comment_flaggers = spam_promise.WaitAndGetValue()
+    if issue_spam_promise:
+      issue_flaggers, comment_flaggers = issue_spam_promise.WaitAndGetValue()
 
     (issue_view, description_view,
      comment_views) = self._MakeIssueAndCommentViews(
@@ -263,8 +263,8 @@ class IssueDetail(issuepeek.IssuePeek):
     previous_locations = self.GetPreviousLocations(mr, issue)
 
     spam_verdict_history = []
-    if spam_hist_promise:
-      spam_hist = spam_hist_promise.WaitAndGetValue()
+    if issue_spam_hist_promise:
+      issue_spam_hist = issue_spam_hist_promise.WaitAndGetValue()
 
       spam_verdict_history = [template_helpers.EZTItem(
           created=verdict['created'].isoformat(),
@@ -273,7 +273,7 @@ class IssueDetail(issuepeek.IssuePeek):
           user_id=verdict['user_id'],
           classifier_confidence=verdict['classifier_confidence'],
           overruled=verdict['overruled'],
-          ) for verdict in spam_hist]
+          ) for verdict in issue_spam_hist]
 
     return {
         'issue_tab_mode': 'issueDetail',

@@ -29,6 +29,9 @@ help:
 test:
 	../../test.py test appengine/monorail
 
+test_no_coverage:
+	../../test.py test appengine/monorail --no-coverage
+
 # Commands for running locally using dev_appserver.
 serve:
 	@echo "---[Starting SDK AppEngine Server]---"

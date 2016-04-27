@@ -13,6 +13,7 @@ import settings
 import sys
 import settings
 
+from collections import defaultdict
 from features import filterrules_helpers
 from framework import sql
 from infra_libs import ts_mon
@@ -54,7 +55,7 @@ class SpamService(object):
     except (Oauth2ClientError, ApiClientError):
       logging.error("Error getting GoogleCredentials: %s" % sys.exc_info()[0])
 
-  def LookupFlaggers(self, cnxn, issue_id):
+  def LookupIssueFlaggers(self, cnxn, issue_id):
     """Returns users who've reported the issue or its comments as spam.
 
     Returns a tuple. First element is a list of users who flagged the issue;
@@ -75,7 +76,7 @@ class SpamService(object):
 
     return issue_reporters, comment_reporters
 
-  def LookUpFlagCounts(self, cnxn, issue_ids):
+  def LookupIssueFlagCounts(self, cnxn, issue_ids):
     """Returns a map of issue_id to flag counts"""
     rows = self.report_tbl.Select(cnxn, cols=['issue_id', 'COUNT(*)'],
                                   issue_id=issue_ids, group_by=['issue_id'])
@@ -84,7 +85,7 @@ class SpamService(object):
       counts[long(row[0])] = row[1]
     return counts
 
-  def LookUpIssueVerdicts(self, cnxn, issue_ids):
+  def LookupIssueVerdicts(self, cnxn, issue_ids):
     """Returns a map of issue_id to most recent spam verdicts"""
     rows = self.verdict_tbl.Select(cnxn,
                                    cols=['issue_id', 'reason', 'MAX(created)'],
@@ -94,7 +95,7 @@ class SpamService(object):
       counts[long(row[0])] = row[1]
     return counts
 
-  def LookUpIssueVerdictHistory(self, cnxn, issue_ids):
+  def LookupIssueVerdictHistory(self, cnxn, issue_ids):
     """Returns a map of issue_id to most recent spam verdicts"""
     rows = self.verdict_tbl.Select(cnxn, cols=[
         'issue_id', 'reason', 'created', 'is_spam', 'classifier_confidence',
@@ -106,6 +107,28 @@ class SpamService(object):
     for row in rows:
       verdicts.append({
         'issue_id': row[0],
+        'reason': row[1],
+        'created': row[2],
+        'is_spam': row[3],
+        'classifier_confidence': row[4],
+        'user_id': row[5],
+        'overruled': row[6],
+      })
+
+    return verdicts
+
+  def LookupCommentVerdictHistory(self, cnxn, comment_ids):
+    """Returns a map of issue_id to most recent spam verdicts"""
+    rows = self.verdict_tbl.Select(cnxn, cols=[
+        'comment_id', 'reason', 'created', 'is_spam', 'classifier_confidence',
+            'user_id', 'overruled'],
+        comment_id=comment_ids, order_by=[('comment_id', []), ('created', [])])
+
+    # TODO: group by comment_id, make class instead of dict for verdict.
+    verdicts = []
+    for row in rows:
+      verdicts.append({
+        'comment_id': row[0],
         'reason': row[1],
         'created': row[2],
         'is_spam': row[3],
@@ -134,8 +157,8 @@ class SpamService(object):
 
     # Now record new verdicts and update issue.is_spam, if they've changed.
     ids = [issue.issue_id for issue in issues]
-    counts = self.LookUpFlagCounts(cnxn, ids)
-    previous_verdicts = self.LookUpIssueVerdicts(cnxn, ids)
+    counts = self.LookupIssueFlagCounts(cnxn, ids)
+    previous_verdicts = self.LookupIssueVerdicts(cnxn, ids)
 
     for issue_id in counts:
       # If the flag counts changed enough to toggle the is_spam bit, need to
@@ -308,6 +331,7 @@ class SpamService(object):
      # slower as the number of SpamVerdicts grows, regardless of offset
      # and limit values used here.  Using offset,limit in general may not
      # be the best way to do this.
+     # Also: add comments to the moderation queue.
      results = self.verdict_tbl.Select(cnxn,
          cols=['issue_id', 'is_spam', 'reason', 'classifier_confidence',
                'created'],
@@ -385,6 +409,42 @@ class SpamService(object):
         ])
 
     return issues, first_comments, count
+
+  def GetTrainingComments(self, cnxn, issue_service, since, offset=0,
+      limit=100):
+    """Returns list of recent comments with spam verdicts,
+    ranked in ascending order of confidence (so uncertain items are first).
+    """
+
+    # get all of the manual verdicts in the past day.
+    results = self.verdict_tbl.Select(cnxn,
+        cols=['comment_id'],
+        where=[
+            ('overruled = %s', [False]),
+            ('reason = %s', ['manual']),
+            ('comment_id IS NOT NULL', []),
+            ('created > %s', [since.isoformat()]),
+        ],
+        offset=offset,
+        limit=limit,
+        )
+
+    comment_ids = [long(row[0]) for row in results if row[0]]
+    # Don't care about sequence numbers in this context yet.
+    comments = issue_service.GetCommentsByID(cnxn, comment_ids,
+        defaultdict(int))
+
+    count = self.verdict_tbl.SelectValue(cnxn,
+        col='COUNT(*)',
+        where=[
+            ('overruled = %s', [False]),
+            ('reason = %s', ['manual']),
+            ('comment_id IS NOT NULL', []),
+            ('created > %s', [since.isoformat()]),
+        ])
+
+    return comments, count
+
 
 class ModerationItem:
   def __init__(self, **kwargs):
