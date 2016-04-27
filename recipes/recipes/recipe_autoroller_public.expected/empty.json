@@ -8,7 +8,6 @@
       "--spec",
       "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -36,7 +35,6 @@
       "--output-json",
       "/path/to/tmp/json"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -67,7 +65,6 @@
       "user.name",
       "local_bot"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -84,7 +81,6 @@
       "user.email",
       "local_bot@example.com"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -97,7 +93,6 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -112,12 +107,10 @@
       "--outfile",
       "/path/to/tmp/"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "Get luci-config projects"
   },
   {
     "cmd": [],
-    "cwd": "[SLAVE_BUILD]",
     "name": "build"
   },
   {
@@ -130,7 +123,6 @@
       "--url",
       "https://repo.repo/build"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "build.git setup",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -243,7 +235,6 @@
       "--output-json",
       "/path/to/tmp/json"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "build.roll",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
@@ -265,7 +256,6 @@
       "\nimport shutil, sys\nshutil.rmtree(sys.argv[1])\n",
       "[TMP_BASE]/roll_build_tmp_1"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "build.rmtree [TMP_BASE]/roll_build_tmp_1",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",

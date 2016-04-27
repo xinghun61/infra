@@ -1,7 +1,6 @@
 [
   {
     "cmd": [],
-    "cwd": "[SLAVE_BUILD]",
     "name": "clean workspace"
   },
   {
@@ -11,7 +10,6 @@
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
       "[SLAVE_BUILD]/depot_tools"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "clean workspace.rmtree rm depot_tools",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
@@ -32,7 +30,6 @@
       "\nimport os\nimport sys\nos.remove(sys.argv[1])\n",
       "[SLAVE_BUILD]/depot_tools.zip"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "clean workspace.rm depot_tools.zip",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
@@ -48,7 +45,6 @@
       "mkdir",
       "[SLAVE_BUILD]/depot_tools"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "clean workspace.mk depot_tools",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -56,7 +52,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[SLAVE_BUILD]",
     "name": "clone + checkout"
   },
   {
@@ -170,7 +165,6 @@
       "-u",
       "RECIPE_MODULE[build::zip]/resources/zip.py"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "zip it up",
     "stdin": "{\"entries\": [{\"path\": \"[SLAVE_BUILD]/depot_tools\", \"type\": \"dir\"}], \"output\": \"[SLAVE_BUILD]/depot_tools.zip\", \"root\": \"[SLAVE_BUILD]/depot_tools\"}"
   },
@@ -188,7 +182,6 @@
       "[SLAVE_BUILD]/depot_tools.zip",
       "gs://chrome-infra/depot_tools.zip"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "gsutil upload",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.googleapis.com/chrome-infra/depot_tools.zip@@@"
@@ -211,7 +204,6 @@
       "[SLAVE_BUILD]/depot_tools/man/html",
       "gs://chrome-infra-docs/flat/depot_tools/docs/"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "gsutil upload docs"
   },
   {

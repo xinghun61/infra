@@ -29,7 +29,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -72,7 +71,6 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -89,7 +87,6 @@
       "--json-file",
       "[SLAVE_BUILD]/infra-data-master-manager/desired_master_state.json"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "master manager configuration test"
   },
   {

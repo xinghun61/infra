@@ -35,7 +35,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -89,7 +88,6 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -128,7 +126,6 @@
       "-u",
       "[SLAVE_BUILD]/infra_internal/go/env.py"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "go bootstrap"
   },
   {
@@ -139,7 +136,6 @@
       "python",
       "[SLAVE_BUILD]/infra_internal/go/test.py"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "go tests"
   },
   {

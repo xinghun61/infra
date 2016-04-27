@@ -31,7 +31,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -74,7 +73,6 @@
       "--properties-file",
       "{\"buildername\": \"cipd-module-tester\", \"buildnumber\": 571, \"dir_to_package\": \"[SLAVE_BUILD]/build/scripts/slave/recipe_modules/cipd\", \"mastername\": \"chromium.infra\", \"revision_tag\": \"80754af91bfb6d1073585b046fe0a474ce868509/12853011_1\", \"slavename\": \"TestSlavename\"}"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "actual run"
   },
   {

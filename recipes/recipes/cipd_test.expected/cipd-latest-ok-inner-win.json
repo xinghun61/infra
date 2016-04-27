@@ -11,7 +11,6 @@
       "--json-output",
       "/path/to/tmp/json"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "install cipd",
     "~followup_annotations": [
       "@@@STEP_TEXT@cipd instance_id: 40-chars-fake-of-the-package-instance_id@@@",
@@ -37,7 +36,6 @@
       "--install-mode",
       "copy"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "build windows-amd64",
     "~followup_annotations": [
       "@@@STEP_TEXT@instance_id: 40-chars-fake-of-the-package-instance_id@@@",
@@ -68,7 +66,6 @@
       "--tag",
       "revision:deadbeaf"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "register infra/cipd_recipe_test/windows-amd64",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -94,7 +91,6 @@
       "--tag",
       "tag:cipd_test"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "cipd set-tag infra/cipd_recipe_test/windows-amd64",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -123,7 +119,6 @@
       "--ref",
       "cipd_test"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "cipd set-ref infra/cipd_recipe_test/windows-amd64",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -150,7 +145,6 @@
       "--service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "cipd search infra/cipd_recipe_test/windows-amd64 revision:deadbeaf",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -176,7 +170,6 @@
       "--service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "cipd describe infra/cipd_recipe_test/windows-amd64",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -229,7 +222,6 @@
       "--service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "ensure_installed",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -256,7 +248,6 @@
       "--service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "ensure_installed (2)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -277,7 +268,6 @@
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
       "[SLAVE_BUILD]\\cipd_test_package\\.cipd"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "rmtree .cipd package directory",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -305,7 +295,6 @@
       "--install-mode",
       "copy"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "build windows-amd64 (2)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",

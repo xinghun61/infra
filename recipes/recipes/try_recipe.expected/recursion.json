@@ -31,7 +31,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -70,12 +69,10 @@
       "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
       "fetch"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "fetch recipe engine deps"
   },
   {
     "cmd": [],
-    "cwd": "[SLAVE_BUILD]",
     "name": "properties (1)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@properties@{@@@",
@@ -106,7 +103,6 @@
       "{\"buildername\": \"recipe_try\", \"buildnumber\": 571, \"mastername\": \"tryserver.infra\", \"slavename\": \"TestSlavename\", \"try_level\": 2, \"try_props\": \"eNqrViooyi8wVLJSUCpLzClNNVTSUQALGcGFjJRqAeKlC4s=\", \"try_recipe\": \"infra/build_repo_real_try\"}",
       "infra/try_other_recipe"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "infra.try_other_recipe run"
   },
   {

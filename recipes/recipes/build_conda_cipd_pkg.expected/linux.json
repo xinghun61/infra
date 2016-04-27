@@ -11,7 +11,6 @@
       "--json-output",
       "/path/to/tmp/json"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "install cipd",
     "~followup_annotations": [
       "@@@STEP_TEXT@cipd instance_id: 40-chars-fake-of-the-package-instance_id@@@",
@@ -29,7 +28,6 @@
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
       "[SLAVE_BUILD]/conda_staging_dir"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "rmtree cleaning staging dir",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -53,7 +51,6 @@
       "--attempts",
       "5"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "fetch miniconda installer"
   },
   {
@@ -64,7 +61,6 @@
       "-p",
       "[SLAVE_BUILD]/conda_staging_dir"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PYTHONPATH": ""
     },
@@ -77,7 +73,6 @@
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
       "[TMP_BASE]/conda_tmp_1"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "rmtree remove miniconda installer",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -97,7 +92,6 @@
       "matplotlib",
       "--yes"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PYTHONPATH": null
     },
@@ -110,7 +104,6 @@
       "numpy",
       "--yes"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PYTHONPATH": null
     },
@@ -123,7 +116,6 @@
       "scipy",
       "--yes"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PYTHONPATH": null
     },
@@ -138,7 +130,6 @@
       "--packages",
       "--yes"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PYTHONPATH": null
     },
@@ -151,7 +142,6 @@
       "RECIPE_MODULE[build::conda]/resources/butcher_conda.py",
       "[SLAVE_BUILD]/conda_staging_dir"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "make conda env location independent"
   },
   {
@@ -169,7 +159,6 @@
       "--install-mode",
       "copy"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "build linux-amd64",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -197,7 +186,6 @@
       "--tag",
       "conda:Miniconda2-3-18-3"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "register infra/conda_python/scientific/linux-amd64",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -216,7 +204,6 @@
       "\nimport os\nimport sys\nos.remove(sys.argv[1])\n",
       "[SLAVE_BUILD]/conda_python.cipd"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "remove *.cipd file",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -233,7 +220,6 @@
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
       "[SLAVE_BUILD]/conda_staging_dir"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "rmtree removing conda",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",

@@ -33,7 +33,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -88,7 +87,6 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -102,7 +100,6 @@
       "go",
       "version"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "go third parties"
   },
   {
@@ -135,7 +132,6 @@
       "--rietveld_email",
       ""
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PRESUBMIT_BUILDER": "1"
     },

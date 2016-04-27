@@ -10,7 +10,6 @@
       "ls",
       "gs://chromium-browser-official/"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "gsutil ls",
     "stdout": "/path/to/tmp/"
   },

@@ -4,7 +4,6 @@
       "/opt/infra-tools/authutil",
       "token"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "Get auth token",
     "stdout": "/path/to/tmp/"
   },
@@ -17,7 +16,6 @@
       "--spec",
       "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -43,7 +41,6 @@
       "--output-json",
       "/path/to/tmp/json"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -71,7 +68,6 @@
       "user.name",
       "local_bot"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -88,7 +84,6 @@
       "user.email",
       "local_bot@example.com"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -101,7 +96,6 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -118,7 +112,6 @@
       "--headers-json",
       "{\"Authorization\": \"Bearer ya29.foobar\"}"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "Get luci-config projects"
   },
   {
@@ -132,7 +125,6 @@
       "--headers-json",
       "{\"Authorization\": \"Bearer ya29.foobar\"}"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "Get project 'recipe_engine' config 'recipes.cfg'"
   },
   {
@@ -146,7 +138,6 @@
       "--headers-json",
       "{\"Authorization\": \"Bearer ya29.foobar\"}"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "Get project 'build' config 'recipes.cfg'"
   },
   {
@@ -157,7 +148,6 @@
       "[SLAVE_BUILD]/recipe_engine/recipe_engine",
       "511"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "makedirs recipe_engine directory",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -222,7 +212,6 @@
       "[SLAVE_BUILD]/build/build",
       "511"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "makedirs build directory",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
@@ -288,7 +277,6 @@
       "[SLAVE_BUILD]/recipe_engine/recipe_engine/infra/config/recipes.cfg",
       "simulation_test"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "recipe_engine tests"
   },
   {
@@ -302,7 +290,6 @@
       "[SLAVE_BUILD]/build/build/infra/config/recipes.cfg",
       "simulation_test"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "build tests"
   },
   {

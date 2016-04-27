@@ -25,7 +25,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s;RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -64,7 +63,6 @@
       "RECIPE_PACKAGE_REPO[depot_tools]\\gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s;RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -88,7 +86,6 @@
       "go",
       "version"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "go third parties"
   },
   {
@@ -99,7 +96,6 @@
       "python",
       "[SLAVE_BUILD]\\infra\\go\\test.py"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "infra go tests"
   },
   {
@@ -110,7 +106,6 @@
       "--builder",
       "infra-continuous"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "cipd - build packages"
   },
   {
@@ -119,7 +114,6 @@
       "-u",
       "[SLAVE_BUILD]\\infra\\build\\test_packages.py"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "cipd - test packages integrity"
   },
   {
@@ -140,7 +134,6 @@
       "git_repository:https://chromium.googlesource.com/infra/infra",
       "git_revision:5e03a58dc0850e5137a8ebbce29610670c756aed"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "cipd - upload packages",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output (invalid)@null@@@",

@@ -25,7 +25,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -67,7 +66,6 @@
       "--url",
       "https://chromium.googlesource.com/chromium/tools/build"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "git setup"
   },
   {

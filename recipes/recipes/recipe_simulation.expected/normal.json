@@ -25,7 +25,6 @@
       "--force",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -64,7 +63,6 @@
       "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
       "fetch"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "recipe fetch deps"
   },
   {
@@ -74,7 +72,6 @@
       "[SLAVE_BUILD]/build/scripts/slave/unittests/recipe_simulation_test.py",
       "test"
     ],
-    "cwd": "[SLAVE_BUILD]",
     "name": "recipe simulation test"
   },
   {
