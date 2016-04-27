@@ -254,6 +254,8 @@ def schedule(issue, patchset_id, builds):
       'patchset': patchset_id,
       'rietveld': 'https://%s' % self_hostname,
     })
+    if 'presubmit' in build['builder'].lower():
+      properties['dry_run'] = 'true'
     req['builds'].append({
         'bucket': 'master.%s' % build['master'],
         'parameters_json': json.dumps({
