@@ -591,6 +591,9 @@ var ac_completions = null;
 /** -1 or in [0, _AC_Completions.length).  @private */
 var ac_selected = -1;
 
+/** Maxium number of options dislpayed in menu. @private */
+var ac_max_options = 100;
+
 /**
  * handles all the key strokes, updating the completion list, tracking selected
  * element, performing substitutions, etc.
@@ -632,7 +635,8 @@ function ac_handleKey_(code, isDown, isShiftKey) {
       break;
     case DOWN_KEYCODE:  // down
       if (isDown) {
-        ac_selected = Math.min(numCompletions - 1, ac_selected + 1);
+	  ac_selected = Math.min(
+              ac_max_options - 1, Math.min(numCompletions - 1, ac_selected + 1));
       }
       break;
     }
@@ -789,7 +793,7 @@ function ac_updateCompletionList(show) {
     var tableEl = document.createElement('table');
     tableEl.setAttribute('cellpadding', 0);
     tableEl.setAttribute('cellspacing', 0);
-    for (var i = 0; i < ac_completions.length; ++i) {
+    for (var i = 0; i < Math.min(ac_max_options, ac_completions.length); ++i) {
       if (ac_completions[i].heading) {
         var rowEl = document.createElement('tr');
         tableEl.appendChild(rowEl);
