@@ -669,6 +669,48 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
 
+  def testRunPipelineForCompileFailure(self):
+    def _MockExtractBuildInfo(*_):
+      build_info = BuildInfo('m', 'b', 25409)
+      build_info.failed_steps = {
+          'compile': {
+              'last_pass': '25408',
+              'current_failure': '25409',
+              'first_failure': '25409'
+          }
+      }
+      return build_info
+
+    self.mock(DetectFirstFailurePipeline, '_ExtractBuildInfo',
+              _MockExtractBuildInfo)
+
+    self._CreateAndSaveWfAnanlysis('m', 'b', 25409, analysis_status.RUNNING)
+    pipeline = DetectFirstFailurePipeline()
+    failure_info = pipeline.run('m', 'b', 25409)
+
+    expected_failure_info = {
+        'failed': True,
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 25409,
+        'chromium_revision': None,
+        'builds': {
+            25409: {
+                'blame_list': [],
+                'chromium_revision': None
+            }
+        },
+        'failed_steps': {
+            'compile': {
+                'current_failure': 25409,
+                'first_failure': 25409
+            }
+        },
+        'failure_type': failure_type.COMPILE
+    }
+
+    self.assertEqual(failure_info, expected_failure_info)
+
   def testGetFailureType(self):
     cases = {
         failure_type.UNKNOWN: [],
