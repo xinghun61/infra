@@ -76,7 +76,7 @@ func (t *Template) HTML(fname string, traces []ninjalog.Trace) ([]byte, error) {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if line == `<script id="viewer-data" type="application/json">` {
+		if line == `<script id="viewer-data" type="text/plain">` {
 			fmt.Fprintf(&w, "%s\n", line)
 			break
 		}

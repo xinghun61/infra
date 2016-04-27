@@ -8,7 +8,8 @@ default module
 How to:
 
  to generate trace-viewer contents
-  $ ./gen-trace-viewer.sh
+  $ cd default; go generate
+ it will use ../third_party/catapult/tracing/bin/trace2html
 
  to compile
    $ cd default; ../goenv.sh goapp build
