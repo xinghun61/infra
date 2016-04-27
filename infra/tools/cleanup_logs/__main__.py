@@ -15,6 +15,7 @@ DEFAULT_MAX_AGE_SECS = 2 * 24 * 60 * 60  # 2 days
 DIRECTORIES = {
   'linux2': [
     ('/tmp', '*.log.*', None),
+    ('/tmp', 'swarming_output*', None),
     ('/var/log/chrome-infra', '*.log.*', None),
     ('/home/chrome-bot/.config/chromium/Crash Reports', None, 10 * 3600),
     ('/b/build/slave', 'twistd.log.*', None),
