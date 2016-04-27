@@ -135,6 +135,10 @@ CTFailureGroup.prototype._updateAnnotation = function(kind, change) {
     var parsed = JSON.parse(data);
     CTFailureGroup._annotations[parsed.key] = parsed;
     this._computeProperties();
+  }.bind(this), function(reject) {
+    if (this.errorCallback) {
+      this.errorCallback(reject);
+    }
   }.bind(this));
 };
 
