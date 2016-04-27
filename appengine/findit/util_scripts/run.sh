@@ -52,8 +52,7 @@ print_command_for_queue_cron_dispatch() {
 
 run_unittests() {
   local coverage_report_dir="${TMP_DIR}/coverage"
-  python ${INFRA_DIR}/test.py test --html-report ${coverage_report_dir} \
-    appengine/findit
+  python ${INFRA_DIR}/test.py test appengine/findit --html-report ${coverage_report_dir}
   echo "Code coverage report file://${coverage_report_dir}/index.html"
 }
 
