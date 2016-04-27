@@ -325,7 +325,7 @@ def search(
     _check_search_acls(buckets)
   elif retry_of:
     retry_of_build = model.Build.get_by_id(retry_of)
-    if retry_of_build:
+    if retry_of_build:  # pragma: no cover
       buckets = [retry_of_build.bucket]
   else:
     buckets = acl.get_available_buckets()

@@ -1,25 +1,9 @@
 [run]
-include = ./*
+include = appengine/monorail/*
 omit =
-    # Virtual environment with third_party packages.
-    ./ENV/*
-
-    # Add chromium_build, which wasn't test.py-enabled for a long time.
-    ./appengine/chromium_build/*
-
     # Add monorail's third-party packages and worst offenders
     ./appengine/monorail/third_party/*
     ./appengine/monorail/testing/*
-
-    # Appengine third_party packages, committed into the repo as is.
-    ./appengine/third_party/*
-
-    # Luci code added via DEPS.
-    ./luci/*
-
-    # Antibody third_party files
-    ./infra/tools/antibody/static/third_party/*
-
 [report]
 exclude_lines =
     # Have to re-enable the standard pragma
@@ -38,4 +22,4 @@ exclude_lines =
     if __name__ == ['"]__main__['"]:
 
 [expect_tests]
-expected_coverage_min = 92
+expected_coverage_min = 82

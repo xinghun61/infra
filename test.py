@@ -14,7 +14,7 @@ import sys
 
 
 def usage():
-  print """\nUsage: %s <action> [<expect_tests options>] [<test names>]
+  print """\nUsage: %s <action> [<test names>] [<expect_tests options>]
 
   where <action> is one of: list, test, train, debug.
 
@@ -23,12 +23,13 @@ def usage():
     ./test.py test
   Run all tests in the infra package:
     ./test.py test infra
+  Run all tests and generate an HTML report:
+    ./test.py test infra --html-report /path/to/report/folder
   Run one given test in the infra package:
     ./test.py test infra/libs/git2/test:*testCommitBogus
 
   See expect_tests documentation for more details
   """ % sys.argv[0]
-  sys.exit(1)
 
 
 INFRA_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -58,9 +59,11 @@ WIN_ENABLED_PACKAGES = [
 # Parse command-line arguments
 if len(sys.argv) == 1:
   usage()
+  sys.exit(1)
 else:
   if not sys.argv[1] in ('list', 'train', 'test', 'debug'):
     usage()
+    sys.exit(1)
 
 if sys.platform == 'win32':
   python_bin = os.path.join('ENV', 'Scripts', 'python')
@@ -69,31 +72,67 @@ else:
   python_bin = os.path.join('ENV', 'bin', 'python')
   expect_tests_path = os.path.join('ENV', 'bin', 'expect_tests')
 
-args = sys.argv[1:]
+command = sys.argv[1]
+args = sys.argv[2:]
+
+modules = []
+flags = []
+for arg in args:
+  if arg.startswith('-'):
+    flags.append(arg)
+    continue
+  if flags:
+    flags.append(arg)
+  else:
+    modules.append(arg)
 
 # Set up default list of packages/directories if none have been provided.
-if all([arg.startswith('--') for arg in sys.argv[2:]]):
+if not modules:
   if sys.platform == 'win32':
-    args.extend(WIN_ENABLED_PACKAGES)
+    modules.extend(WIN_ENABLED_PACKAGES)
   else:
-    args.extend(['infra', 'infra_libs'])  # TODO(pgervais): add 'test/'
+    modules.extend(['infra', 'infra_libs'])  # TODO(pgervais): add 'test/'
   appengine_dir = os.path.join(INFRA_ROOT, 'appengine')
   if sys.platform != 'win32' and os.path.isdir(appengine_dir):
-    args.extend(['appengine_module'])
+    modules.extend(['appengine_module'])
     appengine_dirs = [
       os.path.join('appengine', d)
       for d in os.listdir(appengine_dir)
     ]
     # Use relative paths to shorten the command-line
-    args.extend(itertools.chain(
+    modules.extend(itertools.chain(
       [d for d in appengine_dirs if os.path.isfile(os.path.join(d, 'app.yaml'))]
     ))
 
 os.environ['PYTHONPATH'] = ''
 os.chdir(INFRA_ROOT)
-if '--help' not in sys.argv and '-h' not in sys.argv:
+if '--help' not in flags and '-h' not in flags:
   subprocess.check_call(
       [python_bin, os.path.join('bootstrap', 'remove_orphaned_pycs.py')])
-if sys.platform == 'win32' and '--force-coverage' not in args:
-  args.append('--no-coverage')
-sys.exit(subprocess.call([python_bin, expect_tests_path] + args))
+else:
+  usage()
+  sys.exit(subprocess.call([python_bin, expect_tests_path, command, '--help']))
+
+if sys.platform == 'win32' and '--force-coverage' not in flags:
+  flags.append('--no-coverage')
+
+exit_code = 0
+failed_modules = []
+for module in modules:
+  print 'Running %s...' % module
+  module_flags = flags[:]
+  module_flags.append('--coveragerc=%s' % os.path.join(
+      INFRA_ROOT, module, '.coveragerc'))
+  module_flags.append('--html-report-subdir=%s' % module)
+  cmd = [python_bin, expect_tests_path, command, module] + module_flags
+  module_exit_code = subprocess.call(cmd)
+  exit_code = module_exit_code or exit_code
+  if module_exit_code:
+    failed_modules.append(module)
+
+if exit_code:
+  print 'Tests failed in modules:\n  %s' % '\n  '.join(failed_modules)
+else:
+  print 'All tests passed.'
+
+sys.exit(exit_code)
