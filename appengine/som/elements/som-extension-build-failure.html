@@ -38,18 +38,30 @@
         text-decoration: none;
         color: red;
       }
+      .builder a:hover {
+        text-decoration: underline;
+      }
+      #builders {
+        margin: 0.5em 0;
+      }
       #reasons {
-        margin: 1em 0;
+        margin: 0.5em;
+      }
+      #regression-ranges {
+        margin: 0.5em;
+      }
+      .codesearch-link {
+        font-size: smaller;
       }
     </style>
     <div>
       <div id="builders">
         <template is="dom-repeat" items="[[extension.builders]]" as="builder">
           <span class$="[[_classForBuilder(builder)]]">
-            <a target="_blank" href$="[[builder.url]]" title$="Failing for the last [[_failureCount(builder)]] build(s).">
+            <a target="_blank" href$="[[builder.url]]" title$="Failing for the last [[_failureCount(builder)]] build(s): [[builder.first_failure]] - [[builder.latest_failure]].">
                 [[builder.name]]
             </a>
-            [[_failureCount(builder)]] builds ([[builder.first_failure]] - [[builder.latest_failure]])
+            [[_failureCount(builder)]] builds
           </span>
         </template>
       </div>
@@ -59,8 +71,13 @@
           <div>
             <a target="_blank" href$="[[reason.url]]">[[reason.step]]</a>
             <ul>
-              <template is="dom-repeat" items="[[reason.test_name]]" as="testName">
-                <li>[[testName]]</li>
+              <template is="dom-repeat" items="[[reason.test_names]]" as="testName">
+                <li>
+                  [[testName]]
+                  <a class='codesearch-link' target="_blank" href="https://cs.chromium.org/[[testName]]">
+                    CS
+                  </a>
+                </li>
               </template>
             </ul>
           </div>

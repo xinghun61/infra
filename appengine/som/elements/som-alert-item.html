@@ -9,13 +9,12 @@
     <style>
       .alert {
         @apply(--layout-horizontal);
-        padding: 20px;
+        padding: 1em;
         background-color: white;
         border: 1px solid #ddd;
         cursor: pointer;
       }
       .alert-expanded {
-        padding: 1em;
         color: #666;
       }
      .alert-title-bar {
@@ -37,18 +36,17 @@
      .list-item {
         @apply(--layout-flex);
         @apply(--layout-vertical);
-        padding: 0 16px;
-     }
-     .file-bug,
-     .snooze {
-       color: #aaa;
-     }
-     .snoozed {
-       opacity: 0.5;
-     }
-     #root {
-       transition: opacity .25s;
-     }
+      }
+      .file-bug,
+      .snooze {
+        color: #aaa;
+      }
+      .snoozed {
+        opacity: 0.5;
+      }
+      #root {
+        transition: opacity .25s;
+      }
     </style>
     <div id="root" class$="[[_cssClass]]">
       <div class$="[[_classForAlert(alert, selected)]]">
@@ -56,7 +54,7 @@
           <div class="alert-title-bar">
             <div class="alert-title">[[alert.title]]</div>
             <div class="alert-times">
-              [[_duration]] ([[_startTime]] - [[_latestTime]])
+              [[_duration]]
             </div>
           </div>
           <div class="alert-body">[[alert.body]]</div>
