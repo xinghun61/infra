@@ -19,6 +19,8 @@ The recipe is in
 Alerts dispatcher uses CIPD to deploy new packages. Step one is to build a new
 package (from infra/build):
 
+#### Build the new CIPD package
+
 ```
 ./build.py dispatcher --upload
 ```
@@ -32,8 +34,21 @@ Summary
 infra/monitoring/dispatcher/linux-amd64 2d2f91e467892b53b3cd5a1c1845b7fa1fd78948
 ```
 
-Edit alerts_dispatcher.py's pkgs var to use this hash for the "version"
-property.
+#### Update the recipe tests and submit
+
+Then in [slave.git](https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave.git)
+edit `recipes/infra/alerts_dipsatcher.py` to update the package version:
+
+```
+   pkgs = {
+     "infra/monitoring/dispatcher/%s" % pt: (
+       '<New CIPD Package hash goes here>'),
+   }
+```
+
+Then run `./unittests/recipe_simulation_test.py train` from the `slave` dir to
+generate new expectations. These show the cipd ensure command with the correct
+revision.
 
 Send the CL out for review, and once it's submitted it should be picked up by
 infra.cron within the next 10 minutes.
