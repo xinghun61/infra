@@ -24,64 +24,71 @@ enum UrlTemplate {
 enum PathUrlTemplate {
     viewvc = 0;
     viewvc_int = 1;
-    google_code = 2;
+}
+
+message Pair {
+    optional string key = 1;
+    optional string value = 2;
 }
 
 message Repo {
+
+  optional string repo_name = 1;
+
   // Type of repository to monitor
-  optional RepoTye repo_type = 1;
+  optional RepoTye repo_type = 2;
 
   // URL of the repository to monitor
-  optional string repo_url = 2;
+  optional string repo_url = 3;
 
   // The default issue tracker project ID (the /p/<project> part of
   // the URL) to use when a BUG= line only contains numbers (e.g. 
   // BUG=123) instead of full specifiers (e.g. BUG=chromium:123)
-  optional string default_project = 3;
+  optional string default_project = 4;
 
   // URL template for linking to commits in the repo Web UI
-  optional UrlTemplate url_template = 4;
+  optional UrlTemplate url_template = 5;
 
   // URL template for linking to a commit\'s files in the repo Web UI
-  optional PathUrlTemplate path_url_template = 5;
+  optional PathUrlTemplate path_url_template = 6;
 
   // Project name used in the repo Web UI url templates
-  optional string svn_project = 6;
+  optional string svn_project = 7;
 
   // Whether or not to include the commit details in public bugs
-  optional bool public_bugs = 7 [default = true];
+  optional bool public_bugs = 8 [default = true];
 
   // List of regexes to filter refs (branches) for monitoring
   // (git only). See the poller classes for default values
-  repeated string refs_regex = 8;
+  repeated string refs_regex = 9;
 
   // List of substitution regexes defining refs (branches) used to
   // filter out commits from processing (e.g. commits from upstream
   // repos). NOTE: If specified, there MUST be one filter_regex
   // corresponding to each refs_regex (use null if a given refs_regex
   // should not be filtered). (git only)
-  repeated string filter_regex = 9;
+  repeated string filter_regex = 10;
 
   // List of refs (branches) that should not trigger "merge"
   // labelling (typically the repo\'s "trunk" or "master" branch)
-  repeated string no_merge_refs = 10 [default = ["refs/heads/master", "refs/heads/git-svn"]];
+  repeated string no_merge_refs = 11;
 
   // List of repo path regexes to filter commits for processing
   // (git only). Only commits that affect files in the given
   // path(s) will be processed
-  repeated string paths_regex = 11;
+  repeated string paths_regex = 12;
 
   // List of handlers that must succeed in order for a log entry to
   // be considered properly processed, otherwise the poller should
   // retry that log entry
-  repeated string must_succeed = 12;
+  repeated string must_succeed = 13;
 
   // When true, bugs will not actually be updated
-  optional bool test_mode = 13 [default = false];
+  optional bool test_mode = 14 [default = false];
 
   // Dict of issue labels to apply to certain types of commit
   // (e.g "merge") from this repo
-  map<string, string> issues_labels = 14;
+  repeated Pair issues_labels = 15;
 }
 
 message RepoConfigs {

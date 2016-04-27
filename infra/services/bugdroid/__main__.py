@@ -25,7 +25,8 @@ LOGDIR = os.path.join(DATADIR, 'logs')
 def parse_args(args):  # pragma: no cover
   parser = argparse.ArgumentParser('./run.py %s' % __package__)
   parser.add_argument('-c', '--configfile',
-                 help='The JSON poller configuration file.')
+                 help='Local JSON poller configuration file to override '
+                      'confilg file from luci-config.')
   parser.add_argument('-d', '--credentials_db',
                  help='File to use for Codesite OAuth2 credentials storage.')
   parser.add_argument('--default_loglevel', default='info',
@@ -35,8 +36,6 @@ def parse_args(args):  # pragma: no cover
                  help='Directory where log files should be stored.')
   parser.add_argument('--datadir', default=DATADIR,
                  help='Directory where persistent app data should be stored.')
-  parser.add_argument('--fake_config', action='store_true',
-                 help='use fake config for local testing.')
 
   logs.add_argparse_options(parser)
   ts_mon.add_argparse_options(parser)

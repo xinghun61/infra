@@ -14,6 +14,7 @@ import threading
 import time
 
 import infra.services.bugdroid.branch_utils as branch_utils
+import infra.services.bugdroid.config_service as config_service
 import infra.services.bugdroid.gerrit_poller as gerrit_poller
 import infra.services.bugdroid.gitiles_poller as gitiles_poller
 import infra.services.bugdroid.IssueTrackerManager as IssueTrackerManager
@@ -25,16 +26,15 @@ import infra.services.bugdroid.svn_poller as svn_poller
 
 # pylint: disable=C0301
 URL_TEMPLATES = {
-    'blink': 'http://src.chromium.org/viewvc/blink?view=rev&rev=%d',
     'cr': 'http://src.chromium.org/viewvc/chrome?view=rev&revision=%d',
-    'cr_int': 'http://goto.ext.google.com/viewvc/chrome-internal?view=rev&revision=%d',
-    'nacl': 'http://src.chromium.org/viewvc/native_client?view=rev&revision=%d',
+    'cr_int': ('http://goto.ext.google.com/viewvc/'
+               'chrome-internal?view=rev&revision=%d'),
+    'nacl': 'http://src.chromium.org/viewvc/native_client?view=rev&revision=%d'
     }
 
 PATH_URL_TEMPLATES = {
     'viewvc': 'http://src.chromium.org/viewvc/%s%s?r1=%d&r2=%d&pathrev=%d',
-    'viewvc_int': 'http://goto.google.com/viewvc/%s%s?r1=%d&r2=%d&pathrev=%d',
-    'google_code': 'http://code.google.com/p/%s/source/diff?path=%s&spec=svn%d&r_previous=%d&r=%d&format=side',
+    'viewvc_int': 'http://goto.google.com/viewvc/%s%s?r1=%d&r2=%d&pathrev=%d'
     }
 # pylint: enable=C0301
 
@@ -79,7 +79,10 @@ class BugdroidPollerHandler(poller_handlers.BasePollerHandler):
     self.no_merge = no_merge or []
     self.public_bugs = public_bugs
     self.test_mode = test_mode
-    self.issues_labels = issues_labels or {}
+    if issues_labels:
+      self.issues_labels = dict((p.key, p.value) for p in issues_labels)
+    else:
+      self.issues_labels = {}
     super(BugdroidPollerHandler, self).__init__(*args, **kwargs)
 
   def WarmUp(self):
@@ -220,12 +223,11 @@ class Bugdroid(object):
   """App to setup and run repository pollers and bug updating handlers."""
 
   def __init__(self, configfile, credentials_db, run_once, log_level, datadir,
-               logdir, fake_config=False):
+               logdir):
     self.pollers = []
     self.trackers = {}
     self.credentials_db = credentials_db
     self.run_once = run_once
-    self.fake_config = fake_config
 
     if not os.path.isdir(logdir):
       if os.path.exists(logdir):
@@ -261,22 +263,21 @@ class Bugdroid(object):
     if self.loglevel > logging.DEBUG:
       logging.getLogger('apiclient.discovery').setLevel(logging.WARNING)
 
-    if not configfile:
-      logging.critical('No poller configs found. Aborting.')
+    configs = config_service.get_repos(self.credentials_db, configfile)
+
+    if not configs:
+      logging.critical('Failed to load poller configs. Aborting.')
       raise ConfigsException()
 
-    with open(configfile, 'r') as f:
-      configs = json.load(f)
-
-    for name, config in configs.iteritems():
-      if config.get('refs_regex') and config.get('filter_regex'):
-        if len(config['refs_regex']) != len(config['filter_regex']):
+    for config in configs.repos:
+      if config.refs_regex and config.filter_regex:
+        if len(config.refs_regex) != len(config.filter_regex):
           logging.critical(
               'Config error (%s): "refs_regex" and "filter_regex" '
-              'cannot have different numbers of items.', name)
+              'cannot have different numbers of items.', config.repo_name)
 
           raise ConfigsException()
-      poller = self.InitPoller(name, config)
+      poller = self.InitPoller(config.repo_name, config)
       self.pollers.append(poller)
 
   def Reset(self, project_name=None):
@@ -305,14 +306,14 @@ class Bugdroid(object):
     """Create a repository poller based on the given config."""
 
     poller = None
-    t = str(config.get('repo_type'))
+    t = config_service.decode_repo_type(config.repo_type)
     interval_minutes = 1
-    default_project = config['default_project']
+    default_project = config.default_project
     logger = GetLogger(name, console=False, default_log_level=self.loglevel,
                        logdir=self.logdir)
     if t == 'svn':
       poller = svn_poller.SVNPoller(
-          config['repo_url'],
+          config.repo_url,
           name,
           interval_in_minutes=interval_minutes,
           logger=logger,
@@ -325,23 +326,25 @@ class Bugdroid(object):
       # really only needed for the bugdroid_chrome poller), but might be worth
       # creating a more generic syntax for multiple handlers in a config.
       h = BugdroidSVNPollerHandler(
-          url_template=URL_TEMPLATES[config['url_template']],
-          path_url_template=PATH_URL_TEMPLATES[config['path_url_template']],
-          svn_project=config['svn_project'],
+          url_template=URL_TEMPLATES[config_service.decode_url_template(
+              config.url_template)],
+          path_url_template=PATH_URL_TEMPLATES[
+              config_service.decode_path_url_template(
+                  config.path_url_template)],
+          svn_project=config.svn_project,
           bugdroid=self,
           default_project=default_project,
-          public_bugs=config.get('public_bugs', True),
-          test_mode=config.get('test_mode', False),
-          issues_labels=config.get('issues_labels'))
+          public_bugs=config.public_bugs,
+          test_mode=config.test_mode,
+          issues_labels=config.issues_labels)
       poller.add_handler(h)
-
     elif t == 'git':
       poller = gitiles_poller.GitilesPoller(
-          config['repo_url'],
+          config.repo_url,
           name,
-          refs_regex=config.get('refs_regex'),
-          paths_regex=config.get('paths_regex'),
-          filter_regex=config.get('filter_regex'),
+          refs_regex=config.refs_regex,
+          paths_regex=config.paths_regex,
+          filter_regex=config.filter_regex,
           interval_in_minutes=interval_minutes,
           logger=logger,
           run_once=self.run_once,
@@ -350,16 +353,14 @@ class Bugdroid(object):
       h = BugdroidGitPollerHandler(
           bugdroid=self,
           default_project=default_project,
-          public_bugs=config.get('public_bugs', True),
-          test_mode=config.get('test_mode', False),
-          issues_labels=config.get('issues_labels'),
-          no_merge=config.get('no_merge_refs',
-                              ['refs/heads/master', 'refs/heads/git-svn']))
+          public_bugs=config.public_bugs,
+          test_mode=config.test_mode,
+          issues_labels=config.issues_labels,
+          no_merge=config.no_merge_refs)
       poller.add_handler(h)
-
     elif t == 'gerrit':
       poller = gerrit_poller.GerritPoller(
-          config['repo_url'],
+          config.repo_url,
           name,
           interval_in_minutes=interval_minutes,
           logger=logger,
@@ -369,11 +370,10 @@ class Bugdroid(object):
       h = BugdroidGitPollerHandler(
           bugdroid=self,
           default_project=default_project,
-          public_bugs=config.get('public_bugs', True),
-          test_mode=config.get('test_mode', False),
-          issues_labels=config.get('issues_labels'),
-          no_merge=config.get('no_merge_refs',
-                              ['refs/heads/master', 'refs/heads/git-svn']))
+          public_bugs=config.public_bugs,
+          test_mode=config.test_mode,
+          issues_labels=config.issues_labels,
+          no_merge=config.no_merge_refs)
       poller.add_handler(h)
 
     else:
@@ -413,8 +413,7 @@ class Bugdroid(object):
 def inner_loop(opts):
   try:
     bugdroid = Bugdroid(opts.configfile, opts.credentials_db, True,
-                        opts.default_loglevel, opts.datadir, opts.logdir,
-                        opts.fake_config)
+                        opts.default_loglevel, opts.datadir, opts.logdir)
     bugdroid.Execute()
     return True
   except ConfigsException:
