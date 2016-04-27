@@ -6,8 +6,8 @@ from datetime import datetime
 import json
 import time
 
-from common.waterfall import try_job_error
 from common.waterfall import buildbucket_client
+from common.waterfall import try_job_error
 from model import analysis_status
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
@@ -144,7 +144,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         try_job_data, None, None, error, False)
     self.assertEqual(try_job_data.error, error_data)
 
-  def testUpdateTryJobMetadataForCompletedBuild(self):
+  def testUpdateTryJobMetadata(self):
     try_job_id = '1'
     url = 'url'
     build_data = {
@@ -168,14 +168,13 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         })
     }
     build = buildbucket_client.BuildbucketBuild(build_data)
-    try_job_data = WfTryJobData.Create(try_job_id)
-
     expected_error_dict = {
         'message': 'Try job monitoring was abandoned.',
         'reason': ('Timeout after %s hours' %
                    waterfall_config.GetTryJobSettings().get(
                        'job_timeout_hours'))
     }
+    try_job_data = WfTryJobData.Create(try_job_id)
 
     MonitorTryJobPipeline._UpdateTryJobMetadata(
         try_job_data, None, build, None, False)
@@ -253,11 +252,15 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         {
             'report': None,
             'url': 'url',
-            'try_job_id': '3',
+            'try_job_id': try_job_id,
         }
     ]
     try_job.status = analysis_status.RUNNING
     try_job.put()
+
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.put()
+
     self._MockGetTryJobs(try_job_id)
 
     pipeline = MonitorTryJobPipeline()

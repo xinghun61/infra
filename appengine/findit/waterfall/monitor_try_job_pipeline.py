@@ -110,20 +110,23 @@ class MonitorTryJobPipeline(BasePipeline):
   def _UpdateTryJobMetadata(try_job_data, start_time, buildbucket_build,
                             buildbucket_error, timed_out):
     buildbucket_response = {}
+
     if buildbucket_build:
-      try_job_data.request_time = MonitorTryJobPipeline._MicrosecondsToDatetime(
-          buildbucket_build.request_time)
+      try_job_data.request_time = (
+          try_job_data.request_time or
+          MonitorTryJobPipeline._MicrosecondsToDatetime(
+              buildbucket_build.request_time))
       # If start_time is unavailable, fallback to request_time.
       try_job_data.start_time = start_time or try_job_data.request_time
       try_job_data.end_time = MonitorTryJobPipeline._MicrosecondsToDatetime(
           buildbucket_build.end_time)
       try_job_data.number_of_commits_analyzed = len(
           buildbucket_build.report.get('result', {}))
-      try_job_data.try_job_url = buildbucket_build.url
       try_job_data.regression_range_size = buildbucket_build.report.get(
           'metadata', {}).get('regression_range_size')
-      try_job_data.last_buildbucket_response = buildbucket_build.response
+      try_job_data.try_job_url = buildbucket_build.url
       buildbucket_response = buildbucket_build.response
+      try_job_data.last_buildbucket_response = buildbucket_response
 
     error_dict, error_code = MonitorTryJobPipeline._GetError(
         buildbucket_response, buildbucket_error, timed_out)
@@ -180,13 +183,7 @@ class MonitorTryJobPipeline(BasePipeline):
     # TODO(chanli): Make sure total wait time equals to timeout_hours
     # regardless of retries.
     deadline = time.time() + timeout_hours * 60 * 60
-    try_job_data = (WfTryJobData.Get(try_job_id) or
-                    WfTryJobData.Create(try_job_id))
-    try_job_data.master_name = master_name
-    try_job_data.builder_name = builder_name
-    try_job_data.build_number = build_number
-    try_job_data.try_job_type = try_job_type
-
+    try_job_data = WfTryJobData.Get(try_job_id)
     already_set_started = False
     start_time = None
     while True:
@@ -222,6 +219,15 @@ class MonitorTryJobPipeline(BasePipeline):
           self._UpdateTryJobResult(
               BuildbucketBuild.STARTED, master_name, builder_name, build_number,
               try_job_type, try_job_id, build.url)
+
+          # Update as much try job metadata as soon as possible to avoid data
+          # loss in case of errors.
+          try_job_data.start_time = start_time
+          try_job_data.request_time = (
+              MonitorTryJobPipeline._MicrosecondsToDatetime(build.request_time))
+          try_job_data.try_job_url = build.url
+          try_job_data.put()
+
           already_set_started = True
 
       if time.time() > deadline:  # pragma: no cover

@@ -4,6 +4,7 @@
 
 from common.waterfall import buildbucket_client
 from model.wf_try_job import WfTryJob
+from model.wf_try_job_data import WfTryJobData
 from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 from waterfall.test import wf_testcase
 from waterfall.try_job_type import TryJobType
@@ -78,12 +79,14 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 223
     good_revision = 'rev1'
     bad_revision = 'rev2'
+    build_id = '1'
+    url = 'url'
 
     responses = [
         {
             'build': {
-                'id': '1',
-                'url': 'url',
+                'id': build_id,
+                'url': url,
                 'status': 'SCHEDULED',
             }
         }
@@ -99,11 +102,20 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
         TryJobType.COMPILE, None, None, ['r5'])
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    try_job_data = WfTryJobData.Get(build_id)
+
     expected_try_job_id = '1'
     self.assertEqual(expected_try_job_id, try_job_id)
     self.assertEqual(
         expected_try_job_id, try_job.compile_results[-1]['try_job_id'])
     self.assertTrue(expected_try_job_id in try_job.try_job_ids)
+    self.assertIsNotNone(try_job_data)
+    self.assertEqual(try_job_data.master_name, master_name)
+    self.assertEqual(try_job_data.builder_name, builder_name)
+    self.assertEqual(try_job_data.build_number, build_number)
+    self.assertEqual(try_job_data.try_job_type, TryJobType.COMPILE)
+    self.assertFalse(try_job_data.has_compile_targets)
+    self.assertTrue(try_job_data.has_heuristic_results)
 
   def testSuccessfullyScheduleNewTryJobForTest(self):
     master_name = 'm'
@@ -112,11 +124,12 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     good_revision = 'rev1'
     bad_revision = 'rev2'
     targeted_tests = {'a': ['test1', 'test2']}
+    build_id = '1'
 
     responses = [
         {
             'build': {
-                'id': '1',
+                'id': build_id,
                 'url': 'url',
                 'status': 'SCHEDULED',
             }
@@ -132,5 +145,13 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
         TryJobType.TEST, None, targeted_tests, None)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
-    self.assertEqual('1', try_job_id)
-    self.assertEqual('1', try_job.test_results[-1]['try_job_id'])
+    try_job_data = WfTryJobData.Get(try_job_id)
+    self.assertEqual(try_job_id, build_id)
+    self.assertEqual(try_job.test_results[-1]['try_job_id'], build_id)
+    self.assertIsNotNone(try_job_data)
+    self.assertEqual(try_job_data.master_name, master_name)
+    self.assertEqual(try_job_data.builder_name, builder_name)
+    self.assertEqual(try_job_data.build_number, build_number)
+    self.assertEqual(try_job_data.try_job_type, TryJobType.TEST)
+    self.assertFalse(try_job_data.has_compile_targets)
+    self.assertFalse(try_job_data.has_heuristic_results)

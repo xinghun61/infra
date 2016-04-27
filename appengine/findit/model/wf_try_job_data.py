@@ -35,6 +35,10 @@ class WfTryJobData(ndb.Model):
   error_code = ndb.IntegerProperty(indexed=True)
   # The last buildbucket build response received.
   last_buildbucket_response = ndb.JsonProperty(indexed=False, compressed=True)
+  # Whether or not the try job had compile targets passed (compile only).
+  has_compile_targets = ndb.BooleanProperty(indexed=True)
+  # Whether or not the try job had heuristic results to guide it.
+  has_heuristic_results = ndb.BooleanProperty(indexed=True)
 
   @staticmethod
   def _CreateKey(build_id):  # pragma: no cover
