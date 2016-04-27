@@ -102,17 +102,21 @@ def SignUrl(gcs_filename):
       str(expiration),
       gcs_filename]).encode('utf-8')
 
-  signature_bytes = app_identity.sign_blob(signature_string)[1]
+  try:
+    signature_bytes = app_identity.sign_blob(signature_string)[1]
+    query_params = {'GoogleAccessId': app_identity.get_service_account_name(),
+                    'Expires': str(expiration),
+                    'Signature': base64.b64encode(signature_bytes)}
 
-  query_params = {'GoogleAccessId': app_identity.get_service_account_name(),
-                  'Expires': str(expiration),
-                  'Signature': base64.b64encode(signature_bytes)}
+    result = 'https://storage.googleapis.com{resource}?{querystring}'
 
-  result = 'https://storage.googleapis.com{resource}?{querystring}'
+    if IS_DEV_APPSERVER:
+      result = '/_ah/gcs{resource}?{querystring}'
 
-  if IS_DEV_APPSERVER:
-    result = '/_ah/gcs{resource}?{querystring}'
+    return result.format(
+          resource=gcs_filename, querystring=urllib.urlencode(query_params))
 
-  return result.format(
-        resource=gcs_filename, querystring=urllib.urlencode(query_params))
+  except Exception as e:
+    logging.exception(e)
+    return '/missing-gcs-url'
 
