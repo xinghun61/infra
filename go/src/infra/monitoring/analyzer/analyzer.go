@@ -412,6 +412,7 @@ func (a *Analyzer) mergeAlertsByReason(alerts []messages.Alert) []messages.Alert
 	for _, alert := range alerts {
 		bf, ok := alert.Extension.(messages.BuildFailure)
 		if !ok {
+			infoLog.Printf("%s failed, but isn't a builder-failure: %s", alert.Key, alert.Type)
 			// Not a builder failure, so don't bother trying to group it by step name.
 			mergedAlerts = append(mergedAlerts, alert)
 			continue
@@ -590,8 +591,6 @@ func (a *Analyzer) builderStepAlerts(masterName, builderName string, recentBuild
 
 	// Now coalesce alerts with the same key into single alerts with merged properties.
 	for key, keyedAlerts := range stepAlertsByKey {
-		infoLog.Printf("Merging %d distinct alerts for key: %q", len(alerts), key)
-
 		mergedAlert := keyedAlerts[0] // Merge everything into the first one
 		mergedBF, ok := mergedAlert.Extension.(messages.BuildFailure)
 		if !ok {
@@ -663,6 +662,7 @@ func (a *Analyzer) builderStepAlerts(masterName, builderName string, recentBuild
 				mergedAlert.StartTime = failingBuilder.StartTime
 			}
 		}
+
 		alerts = append(alerts, mergedAlert)
 	}
 
@@ -748,27 +748,48 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 		// goroutine/channel because the reasonsForFailure call potentially
 		// blocks on IO.
 		if failure.step.Name == "steps" {
-			// check results to see if it's an array of [4]
-			// That's a purple failure, which should go to infra/trooper.
-			infoLog.Printf("steps results: %+v", failure.step)
-			if len(failure.step.Results) > 0 {
-				if r, ok := failure.step.Results[0].(float64); ok && r == resInfraFailure {
-					errLog.Printf("INFRA FAILURE: %+v", failure)
-					alr := messages.Alert{
-						Title:    fmt.Sprintf("%s infra failure", failure.builderName),
-						Body:     fmt.Sprintf("On step %s", failure.step.Name),
-						Type:     messages.AlertInfraFailure,
-						Severity: infraFailureSev,
-					}
-					rs <- res{
-						f:   failure,
-						a:   &alr,
-						err: nil,
-					}
-				}
-			}
+			infoLog.Printf("steps results failed, skipping ahead to actual failure: %s %s", failure.masterName, failure.builderName)
 			continue
 			// The actual breaking step will appear later.
+		}
+
+		if len(failure.step.Results) > 0 {
+			// Check results to see if it's an array of [4]
+			// That's a purple failure, which should go to infra/trooper.
+			if r, ok := failure.step.Results[0].(float64); ok && r == resInfraFailure {
+				infoLog.Printf("INFRA FAILURE: %s/%s/%s", failure.masterName, failure.builderName, failure.step.Name)
+				alr := messages.Alert{
+					Title:     fmt.Sprintf("%s infra failure", failure.builderName),
+					Body:      fmt.Sprintf("On step %s", failure.step.Name),
+					Type:      messages.AlertInfraFailure,
+					StartTime: failure.build.Times[0],
+					Time:      failure.build.Times[0],
+					Severity:  infraFailureSev,
+					Key:       alertKey(failure.masterName, failure.builderName, failure.step.Name, fmt.Sprintf("%v", failure.step.Results[1])),
+					Extension: messages.BuildFailure{
+						Reasons: []messages.Reason{{
+							Step: failure.step.Name,
+							URL:  failure.URL(),
+						}},
+						Builders: []messages.AlertedBuilder{
+							{
+								Name:          failure.builderName,
+								URL:           client.BuilderURL(failure.masterName, failure.builderName),
+								StartTime:     failure.build.Times[0],
+								FirstFailure:  failure.build.Number,
+								LatestFailure: failure.build.Number,
+							},
+						},
+						TreeCloser: a.Gatekeeper.WouldCloseTree(failure.masterName, failure.builderName, failure.step.Name),
+					},
+				}
+				scannedFailures = append(scannedFailures, failure)
+				rs <- res{
+					f:   failure,
+					a:   &alr,
+					err: nil,
+				}
+			}
 		}
 
 		// Check the gatekeeper configs to see if this is ignorable.
