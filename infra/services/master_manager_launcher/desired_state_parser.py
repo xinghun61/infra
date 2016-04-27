@@ -255,11 +255,8 @@ def write_master_state(desired_state, filename):
       'master_params': desired_state.get('master_params', {}),
       'master_states': prune_desired_state(
           desired_state.get('master_states', {})),
-      # Remove transition once crbug.com/583441 is resolved.
-      'version': PREV_VERSION,
+      'version': VERSION,
   }
-  # Remove transition once crbug.com/583441 is resolved.
-  new_desired_state['master_params'].pop('manually_managed', None)
 
   with open(filename, 'w') as f:
     json.dump(

@@ -317,7 +317,7 @@ class TestWritingState(auto_stub.TestCase):
              'transition_time_utc': UNIX_TIMESTAMP_7000},
           ]},
         'master_params': {},
-        'version': desired_state_parser.PREV_VERSION,
+        'version': desired_state_parser.VERSION,
       }, filename)
 
       with open(filename) as f:
@@ -336,7 +336,7 @@ class TestWritingState(auto_stub.TestCase):
              'transition_time_utc': UNIX_TIMESTAMP_7000},
           ]},
         'master_params': {},
-        'version': desired_state_parser.PREV_VERSION,
+        'version': desired_state_parser.VERSION,
       }, filename)
 
   def testInvalidState(self):
@@ -356,7 +356,7 @@ class TestWritingState(auto_stub.TestCase):
                'transition_time_utc': UNIX_TIMESTAMP_7000},
             ]},
           'master_params': {},
-          'version': desired_state_parser.PREV_VERSION,
+          'version': desired_state_parser.VERSION,
         }, filename)
 
   def testNothingInPast(self):
@@ -372,7 +372,7 @@ class TestWritingState(auto_stub.TestCase):
                'transition_time_utc': UNIX_TIMESTAMP_7000},
             ]},
           'master_params': {},
-          'version': desired_state_parser.PREV_VERSION,
+          'version': desired_state_parser.VERSION,
         }, filename)
 
   def testNothing(self):
@@ -386,5 +386,5 @@ class TestWritingState(auto_stub.TestCase):
       self.assertEqual(parsed_data, {
           'master_states': {},
           'master_params': {},
-          'version': desired_state_parser.PREV_VERSION,
+          'version': desired_state_parser.VERSION,
       })
