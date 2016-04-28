@@ -9,7 +9,7 @@
       "--ts-mon-target-type=task",
       "--ts-mon-task-service-name=git_hash_metric",
       "--ts-mon-task-job-name=default",
-      "--string='{\"name\":\"repository/hash\", \"value\": \"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\", \"repository\": \"https://chromium.googlesource.com/infra/infra\"}'"
+      "--string={\"name\":\"repository/hash\",\"value\":\"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\",\"repository\":\"https://chromium.googlesource.com/infra/infra\"}"
     ],
     "name": "send hash to ts_mon"
   },

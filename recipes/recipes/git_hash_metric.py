@@ -22,8 +22,8 @@ def RunSteps(api):
      '--ts-mon-target-type=task',
      '--ts-mon-task-service-name=git_hash_metric',
      '--ts-mon-task-job-name=default',
-     ('--string=\'{"name":"repository/hash", '
-      '"value": "%s", "repository": "%s"}\'' % (git_revision, repository)),
+     ('--string={"name":"repository/hash",'
+      '"value":"%s","repository":"%s"}' % (git_revision, repository)),
    ]
   )
 
