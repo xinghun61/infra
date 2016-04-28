@@ -18,12 +18,13 @@ from common.repository import Repository
 
 
 SVN_REVISION_PATTERN = re.compile(
-    '^git\-svn\-id: svn://[^@]*@(\d+) [a-z0-9\-]*$')
+    '^git\-svn\-id: svn://[^@]*@(\d+) [a-z0-9\-]*$', re.IGNORECASE)
 COMMIT_POSITION_PATTERN = re.compile(
-    '^Cr-Commit-Position: refs/heads/master@{#(\d+)}$')
-CODE_REVIEW_URL_PATTERN = re.compile('^Review URL: (.*\d+).*$')
+    '^Cr-Commit-Position: refs/heads/master@{#(\d+)}$', re.IGNORECASE)
+CODE_REVIEW_URL_PATTERN = re.compile(
+    '^(?:Review URL|Review-Url): (.*\d+).*$', re.IGNORECASE)
 REVERTED_REVISION_PATTERN = re.compile(
-    '^> Committed: https://.+/([0-9a-fA-F]{40})$')
+    '^> Committed: https://.+/([0-9a-fA-F]{40})$', re.IGNORECASE)
 TIMEZONE_PATTERN = re.compile('[-+]\d{4}$')
 CACHE_EXPIRE_TIME_SECONDS = 24 * 60 * 60
 

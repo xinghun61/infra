@@ -297,6 +297,17 @@ class GitRepositoryTest(testing.AppengineTestCase):
             'message':
                 'balabala...\n'
                 '\n'
+                'BUG=604502\n'
+                '\n'
+                'Review-Url: https://codereview.chromium.org/1927593004\n'
+                'Cr-Commit-Position: refs/heads/master@{#390254}\n',
+            'commit_position': 390254,
+            'code_review_url': 'https://codereview.chromium.org/1927593004',
+        },
+        {
+            'message':
+                'balabala...\n'
+                '\n'
                 'BUG=409934\n'
                 '\n'
                 'Review URL: https://codereview.chromium.org/547753003\n'
