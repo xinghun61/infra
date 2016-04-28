@@ -20,6 +20,7 @@ import (
 	"github.com/luci/luci-go/client/authcli"
 	"github.com/luci/luci-go/client/cipd/version"
 	"github.com/luci/luci-go/common/auth"
+	"github.com/luci/luci-go/common/cli"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
 	"github.com/luci/luci-go/common/tsmon"
@@ -88,10 +89,8 @@ func (opts *commonOptions) registerFlags(f *flag.FlagSet, defaultAutoFlush bool)
 }
 
 // processFlags validates flags, creates and configures logger, client, etc.
-func (opts *commonOptions) processFlags() (state, error) {
+func (opts *commonOptions) processFlags(ctx context.Context) (state, error) {
 	// Logger.
-	ctx := context.Background()
-	ctx = gologger.StdConfig.Use(ctx)
 	ctx = logging.SetLevel(ctx, opts.localLogLevel)
 
 	// Auth options.
@@ -241,7 +240,8 @@ func (c *sendRun) Run(a subcommands.Application, args []string) int {
 		return 1
 	}
 
-	state, err := c.commonOptions.processFlags()
+	ctx := cli.GetContext(a, c)
+	state, err := c.commonOptions.processFlags(ctx)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		return 1
@@ -292,7 +292,8 @@ func (c *pipeRun) Run(a subcommands.Application, args []string) int {
 		return 1
 	}
 
-	state, err := c.commonOptions.processFlags()
+	ctx := cli.GetContext(a, c)
+	state, err := c.commonOptions.processFlags(ctx)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
@@ -351,7 +352,8 @@ func (c *tailRun) Run(a subcommands.Application, args []string) int {
 		return 1
 	}
 
-	state, err := c.commonOptions.processFlags()
+	ctx := cli.GetContext(a, c)
+	state, err := c.commonOptions.processFlags(ctx)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
@@ -388,9 +390,12 @@ func (c *tailRun) Run(a subcommands.Application, args []string) int {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-var application = &subcommands.DefaultApplication{
+var application = &cli.Application{
 	Name:  "cloudtail",
 	Title: "Tail logs and send them to Cloud Logging",
+	Context: func(ctx context.Context) context.Context {
+		return gologger.StdConfig.Use(ctx)
+	},
 	Commands: []*subcommands.Command{
 		subcommands.CmdHelp,
 		version.SubcommandVersion,
