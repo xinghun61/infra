@@ -59,10 +59,15 @@ found in the LICENSE file.
       <ct-button on-tap="{{ saveBug }}" affirmative role="button" id="dialogOk" label="OK"></ct-button>
     </paper-action-dialog>
     <paper-action-dialog heading="Error" transition="paper-transition-center" id="loginDialog">
-      <div id="accessDeniedMessage">
-        Please <a href="{{ $.userPrefs.values.loginUrl }}">log in</a> to modify alerts.
-      </div>
-      <div id="otherMessage"></div>
+      <div>
+        An error occurred while sending a request to the server.
+        <template if="{{ $.userPrefs.values.user }}">
+          Email infra-dev@chromium.org if this error persists.
+        </template>
+        <template if="{{ !$.userPrefs.values.user }}">
+          Please <a href="{{ $.userPrefs.values.loginUrl }}">log in</a> and try again.
+        </template>
+      </div.
     </paper-action-dialog>
   </template>
   <script>
@@ -75,12 +80,6 @@ found in the LICENSE file.
       },
 
       errorCallback: function(args) {
-        if (args.message == "Forbidden") {
-          this.$.otherMessage.hidden = true;
-        } else {
-          this.$.accessDeniedMessage.hidden = true;
-          this.$.otherMessage.textContent = args.message;
-        }
         this.$.loginDialog.open();
       },
 
