@@ -195,7 +195,12 @@ def activate_env(env, deps, quiet=False):
       m = re.search(r'( +)sys\.real_prefix = .*', site_py)
       replacement = ('%(indent)sif (sys.real_prefix.startswith("E:\\\\") and\n'
                      '%(indent)s    not os.path.exists(sys.real_prefix)):\n'
-                     '%(indent)s  sys.real_prefix = "C" + sys.real_prefix[1:]\n'
+                     '%(indent)s  cand = "C:\\\\setup" + sys.real_prefix[4:]\n'
+                     '%(indent)s  if os.path.exists(cand):\n'
+                     '%(indent)s    sys.real_prefix = cand\n'
+                     '%(indent)s  else:\n'
+                     '%(indent)s    sys.real_prefix = "C" + sys.real_prefix'
+                        '[1:]\n'
                      % {'indent': m.group(1)})
 
       site_py = site_py[:m.end(0)] + '\n' + replacement + site_py[m.end(0):]
