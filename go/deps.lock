@@ -4,6 +4,9 @@ imports:
 - name: github.com/dustin/go-humanize
   version: 8929fe90cee4b2cb9deb468b51fb34eba64d1bf0
   repo: https://chromium.googlesource.com/external/github.com/dustin/go-humanize.git
+- name: github.com/go-sql-driver/mysql
+  version: 7ebe0a500653eeb1859664bed5e48dec1e164e73
+  repo: https://chromium.googlesource.com/external/github.com/go-sql-driver/mysql.git
 - name: github.com/golang/lint
   version: 8f348af5e29faa4262efdc14302797f23774e477
   repo: https://chromium.googlesource.com/external/github.com/golang/lint.git

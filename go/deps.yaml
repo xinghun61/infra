@@ -182,3 +182,6 @@ import:
 - package: github.com/kisielk/gotool
   version: master
   repo: https://chromium.googlesource.com/external/github.com/kisielk/gotool.git
+- package: github.com/go-sql-driver/mysql/
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/go-sql-driver/mysql.git
