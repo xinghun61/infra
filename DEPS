@@ -79,7 +79,7 @@ deps = {
   "infra/appengine/third_party/catapult":
     ("https://chromium.googlesource.com/external/github.com/catapult-project/"
      "catapult.git"
-     "@b1ed0c91a981cbef63d1e8929914c30532686bf3"),
+     "@506457cbd726324f327b80ae11f46c1dfeb8710d"),
 
   "infra/appengine/third_party/gae-pytz":
     ("https://chromium.googlesource.com/external/code.google.com/p/gae-pytz/"
