@@ -147,15 +147,16 @@ def _make_master_json_call(directory, endpoint, timeout):
   if port is not None:
     try:
       res = requests.get(
-          'http://localhost:%d/json/%s?filter=0' % (port, endpoint),
+          'http://127.0.0.1:%d/json/%s?filter=0' % (port, endpoint),
           timeout=timeout)
       if res.status_code == 200:
         try:
           return res.json()
-        except simplejson.scanner.JSONDecodeError:
-          pass
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
-      pass
+        except simplejson.scanner.JSONDecodeError as e:
+          print e
+    except (
+        requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+      print e
   return None
 
 
