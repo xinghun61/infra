@@ -29,7 +29,7 @@ class GitCookieDaemon(infra_libs.BaseApplication):
     super(GitCookieDaemon, self).add_argparse_options(parser)
 
   def main(self, opts):
-    git_cookie_daemon.run()
+    git_cookie_daemon.ensure_git_cookie_daemon()
 
 
 if __name__ == '__main__':

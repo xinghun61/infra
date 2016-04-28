@@ -20,12 +20,16 @@ import time
 
 # https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
 LOGGER = logging.getLogger(__name__)
-GIT = '/usr/bin/git'
+if sys.platform == 'win32':  # pragma: no cover
+  GIT = 'C:\\setup\\depot_tools\\git.bat'
+else:  # pragma: no cover
+  GIT = '/usr/bin/git'
 
-HOME_DIR = os.environ.get('HOME', '')
+HOME_DIR = os.path.expanduser('~')
 GIT_COOKIE_DIR = os.path.join(HOME_DIR, '.git-credential-cache')
 GIT_COOKIE = os.path.join(GIT_COOKIE_DIR, 'cookie')
-ACQUIRE_URL = 'http://metadata/0.1/meta-data/service-accounts/default/acquire'
+ACQUIRE_URL = ('http://169.254.169.254/0.1/meta-data/service-accounts/'
+               'default/acquire')
 
 COOKIE_SPEC = {
     'version': 0,
