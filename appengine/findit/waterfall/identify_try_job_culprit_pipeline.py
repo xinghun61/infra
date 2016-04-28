@@ -57,12 +57,15 @@ def _GetSuspectedCLs(analysis, result):
     found by this try job.
   """
   suspected_cls = analysis.suspected_cls[:] if analysis.suspected_cls else []
+  suspected_cl_revisions = [cl['revision'] for cl in suspected_cls]
   culprit = result.get('culprit')
   compile_cl_info = culprit.get('compile')
 
   if compile_cl_info:
     # Suspected CL is from compile failure.
-    if compile_cl_info not in suspected_cls:
+    revision = compile_cl_info.get('revision')
+    if revision not in suspected_cl_revisions:
+      suspected_cl_revisions.append(revision)
       suspected_cls.append(compile_cl_info)
     return suspected_cls
 
@@ -70,17 +73,21 @@ def _GetSuspectedCLs(analysis, result):
   for results in culprit.itervalues():
     if results.get('revision'):
       # Non swarming test failures, only have step level failure info.
+      revision = results.get('revision')
       cl_info = {
-          'review_url': results.get('review_url'),
+          'url': results.get('url'),
           'repo_name': results.get('repo_name'),
           'revision': results.get('revision'),
           'commit_position': results.get('commit_position')
       }
-      if cl_info not in suspected_cls:
+      if revision not in suspected_cl_revisions:
+        suspected_cl_revisions.append(revision)
         suspected_cls.append(cl_info)
     else:
       for test_cl_info in results['tests'].values():
-        if test_cl_info not in suspected_cls:
+        revision = test_cl_info.get('revision')
+        if revision not in suspected_cl_revisions:
+          suspected_cl_revisions.append(revision)
           suspected_cls.append(test_cl_info)
 
   return suspected_cls
@@ -90,7 +97,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
   """A pipeline to identify culprit CL info based on try job compile results."""
 
   def _GetCulpritInfo(self, failed_revisions):
-    """Gets commit_positions and review_urls for revisions."""
+    """Gets commit_positions and review urls for revisions."""
     culprits = {}
     # TODO(lijeffrey): remove hard-coded 'chromium' when DEPS file parsing is
     # supported.
@@ -103,7 +110,8 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
       if change_log:
         culprits[failed_revision]['commit_position'] = (
             change_log.commit_position)
-        culprits[failed_revision]['review_url'] = change_log.code_review_url
+        culprits[failed_revision]['url'] = (
+            change_log.code_review_url or change_log.commit_url)
 
     return culprits
 
@@ -195,12 +203,12 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     return culprit_map, failed_revisions
 
   def _UpdateCulpritMapWithCulpritInfo(self, culprit_map, culprits):
-    """Fills in commit_position and review_url for each failed rev in map."""
+    """Fills in commit_position and review url for each failed rev in map."""
     for step_culprit in culprit_map.values():
       if step_culprit.get('revision'):
         culprit = culprits[step_culprit['revision']]
         step_culprit['commit_position'] = culprit['commit_position']
-        step_culprit['review_url'] = culprit['review_url']
+        step_culprit['url'] = culprit['url']
       for test_culprit in step_culprit.get('tests', {}).values():
         test_revision = test_culprit['revision']
         test_culprit.update(culprits[test_revision])

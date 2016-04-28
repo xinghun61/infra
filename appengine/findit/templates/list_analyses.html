@@ -82,10 +82,15 @@
             {% for suspected_cl in analysis.suspected_cls %}
               <li>
                 {{suspected_cl.repo_name}}:
-                {% if suspected_cl.commit_position %}
-                  <a href="{{suspected_cl.url}}">{{suspected_cl.commit_position}}</a>
+                {% if suspected_cl.url or suspected_cl.review_url %}
+                  {% set review_url = suspected_cl.url or suspected_cl.review_url %}
                 {% else %}
-                  <a href="{{suspected_cl.url}}">{{suspected_cl.revision}}</a>
+                  {% set review_url = 'https://chromium.googlesource.com/chromium/src.git/+/' + suspected_cl.revision %}
+                {% endif %}
+                {% if suspected_cl.commit_position %}
+                  <a href="{{review_url}}">{{suspected_cl.commit_position}}</a>
+                {% else %}
+                  <a href="{{review_url}}">{{suspected_cl.revision}}</a>
                 {% endif %}
               </li>
             {% endfor %}

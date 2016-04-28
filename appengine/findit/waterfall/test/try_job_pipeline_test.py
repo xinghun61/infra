@@ -119,7 +119,7 @@ class TryJobPipelineTest(wf_testcase.WaterfallTestCase):
     expected_suspected_cl = {
         'revision': 'rev2',
         'commit_position': '2',
-        'review_url': 'url_2',
+        'url': 'url_2',
         'repo_name': 'chromium'
     }
 

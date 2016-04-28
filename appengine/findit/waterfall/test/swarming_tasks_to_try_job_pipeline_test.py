@@ -217,7 +217,7 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     expected_suspected_cl = {
         'revision': 'rev2',
         'commit_position': '2',
-        'review_url': 'url_2',
+        'url': 'url_2',
         'repo_name': 'chromium'
     }
 
@@ -352,7 +352,7 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     expected_suspected_cl = {
         'revision': 'rev1',
         'commit_position': '1',
-        'review_url': 'url_1',
+        'url': 'url_1',
         'repo_name': 'chromium'
     }
 

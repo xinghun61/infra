@@ -102,7 +102,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
             'compile': {
                 'revision': 'rev1',
                 'commit_position': '1',
-                'review_url': 'url_1',
+                'url': 'url_1',
                 'repo_name': 'chromium'
             }
         }
@@ -125,7 +125,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
             'compile': {
                 'revision': 'rev1',
                 'commit_position': '1',
-                'review_url': 'url_1',
+                'url': 'url_1',
                 'repo_name': 'chromium'
             }
         }
@@ -149,7 +149,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
             'compile': {
                 'revision': 'rev1',
                 'commit_position': '1',
-                'review_url': 'url_1',
+                'url': 'url_1',
                 'repo_name': 'chromium'
             }
         }
@@ -172,7 +172,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
             'compile': {
                 'revision': 'rev1',
                 'commit_position': '1',
-                'review_url': 'url_1',
+                'url': 'url_1',
                 'repo_name': 'chromium'
             }
         }
@@ -207,7 +207,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
             'compile': {
                 'revision': 'rev1',
                 'commit_position': '1',
-                'review_url': 'url_1',
+                'url': 'url_1',
                 'repo_name': 'chromium'
             }
         }
@@ -249,14 +249,14 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     heuristic_suspected_cl = {
         'revision': 'rev1',
         'commit_position': '1',
-        'review_url': 'url_1',
+        'url': 'url_1',
         'repo_name': 'chromium'
     }
 
     compile_suspected_cl = {
         'revision': 'rev2',
         'commit_position': '2',
-        'review_url': 'url_2',
+        'url': 'url_2',
         'repo_name': 'chromium'
     }
 
@@ -278,7 +278,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     suspected_cl = {
         'revision': 'rev1',
         'commit_position': '1',
-        'review_url': 'url_1',
+        'url': 'url_1',
         'repo_name': 'chromium'
     }
 
@@ -300,19 +300,19 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     suspected_cl1 = {
         'revision': 'rev1',
         'commit_position': '1',
-        'review_url': 'url_1',
+        'url': 'url_1',
         'repo_name': 'chromium'
     }
     suspected_cl2 = {
         'revision': 'rev2',
         'commit_position': '2',
-        'review_url': 'url_2',
+        'url': 'url_2',
         'repo_name': 'chromium'
     }
     suspected_cl3 = {
         'revision': 'rev3',
         'commit_position': '3',
-        'review_url': 'url_3',
+        'url': 'url_3',
         'repo_name': 'chromium'
     }
 
@@ -336,7 +336,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
             'c_test': {
                 'revision': 'rev3',
                 'commit_position': '3',
-                'review_url': 'url_3',
+                'url': 'url_3',
                 'repo_name': 'chromium',
                 'tests': {}
             }
@@ -351,7 +351,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     suspected_cl = {
         'revision': 'rev1',
         'commit_position': '1',
-        'review_url': 'url_1',
+        'url': 'url_1',
         'repo_name': 'chromium'
     }
 
@@ -364,13 +364,12 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
             'a_test': {
                 'revision': 'rev1',
                 'commit_position': '1',
-                'review_url': 'url_1',
+                'url': 'url_1',
                 'repo_name': 'chromium',
                 'tests': {}
             }
         }
     }
-
     self.assertEqual(
         identify_try_job_culprit_pipeline._GetSuspectedCLs(analysis, result),
         [suspected_cl])
@@ -444,7 +443,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     expected_suspected_cl = {
         'revision': 'rev2',
         'commit_position': '2',
-        'review_url': 'url_2',
+        'url': 'url_2',
         'repo_name': 'chromium'
     }
     expected_compile_result = {
@@ -544,7 +543,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     suspected_cl = {
         'revision': 'rev1',
         'commit_position': '1',
-        'review_url': 'url_1',
+        'url': 'url_1',
         'repo_name': 'chromium'
     }
 
@@ -737,13 +736,13 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     a_test1_suspected_cl = {
         'revision': 'rev1',
         'commit_position': '1',
-        'review_url': 'url_1',
+        'url': 'url_1',
         'repo_name': 'chromium'
     }
     a_test2_suspected_cl = {
         'revision': 'rev2',
         'commit_position': '2',
-        'review_url': 'url_2',
+        'url': 'url_2',
         'repo_name': 'chromium'
     }
 
@@ -803,7 +802,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
             'c_test': {
                 'revision': 'rev2',
                 'commit_position': '2',
-                'review_url': 'url_2',
+                'url': 'url_2',
                 'repo_name': 'chromium',
                 'tests': {}
             }
@@ -842,7 +841,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     suspected_cl = {
         'revision': 'rev1',
         'commit_position': '1',
-        'review_url': 'url_1',
+        'url': 'url_1',
         'repo_name': 'chromium'
     }
 

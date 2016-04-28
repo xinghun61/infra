@@ -244,7 +244,7 @@
           if (! jQuery.isEmptyObject(tryJobCulprit)) {
             var build_number = result.try_job.try_job_key.split('/')[2];  // try_job_key would look like: 'master_name/builder_name/build_number'.
             tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/builds/' + build_number + '">' + build_number + '</a></td>';
-            var review_url = tryJobCulprit.review_url || findit.defaultGitBaseUrl + 'tryJobCulprit.revision';
+            var review_url = tryJobCulprit.url || tryJobCulprit.review_url || (findit.defaultGitBaseUrl + tryJobCulprit.revision);
             tableString += '<td rowspan="' + rowspan + '"><a href="' + review_url + '">' + tryJobCulprit.commit_position || tryJobCulprit.revision + '</a></td>';
 
           } else {

@@ -216,7 +216,7 @@
         {% if try_job.failed %}
           <span class="error">Try job ran into error!</span>
         {% elif try_job.culprit %}
-        Culprit: {{try_job.culprit.repo_name or 'chromium'}} <a href="{{try_job.culprit.review_url}}">{{try_job.culprit.commit_position or try_job.culprit.revision}}</a>
+        Culprit: {{try_job.culprit.repo_name or 'chromium'}} <a href="{{try_job.culprit.url or try_job.culprit.review_url}}">{{try_job.culprit.commit_position or try_job.culprit.revision}}</a>
         {% else %}
           <div>No culprit found!</div>
         {% endif%}
