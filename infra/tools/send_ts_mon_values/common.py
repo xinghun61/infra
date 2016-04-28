@@ -126,11 +126,11 @@ def json_to_metric_data(json_str):
     metric_value = fields.pop('value')
   except ValueError:
     LOGGER.error("Invalid json string: %s", str(json_str))
-    return None
+    raise
   except KeyError:
     LOGGER.error("Missing required fields ('name', 'value') in json string: %s",
                  str(json_str))
-    return None
+    raise
   start_time = fields.pop('start_time', None)
   if not fields:
     fields = None
@@ -160,10 +160,10 @@ def set_metrics(json_strs, metric_type):
 
 
 def group_metrics(metrics):
-  """Given signleton MetricData points, group them by metric name.
+  """Given singleton MetricData points, group them by metric name.
 
   Args:
-    metrics (list of MetricData or None): each element is has a single point.
+    metrics (list of MetricData): each element is has a single point.
 
   Returns:
     dict: a mapping of metric names to the list of correspoinding MetricData.
@@ -172,8 +172,6 @@ def group_metrics(metrics):
   """
   grouped_metrics = {}
   for metric in metrics:
-    if not metric:
-      continue
     grouped_metrics.setdefault(metric.name, []).append(metric)
   return grouped_metrics
 
@@ -276,18 +274,26 @@ def main(argv):
   infra_libs.logs.process_argparse_options(args)
   ts_mon.process_argparse_options(args)
 
-  set_metrics(args.gauge, ts_mon.GaugeMetric)
-  set_metrics(args.float, ts_mon.FloatMetric)
-  set_metrics(args.string, ts_mon.StringMetric)
-  set_metrics(args.bool, ts_mon.BooleanMetric)
-  set_metrics(args.counter, ts_mon.CounterMetric)
-  set_metrics(args.cumulative, ts_mon.CumulativeMetric)
+  arg_to_metric_type = (
+    (args.gauge, ts_mon.GaugeMetric),
+    (args.float, ts_mon.FloatMetric),
+    (args.string, ts_mon.StringMetric),
+    (args.bool, ts_mon.BooleanMetric),
+    (args.counter, ts_mon.CounterMetric),
+    (args.cumulative, ts_mon.CumulativeMetric),
+  )
+  for arg, metric in arg_to_metric_type:
+    set_metrics(arg, metric)
 
-  set_metrics_file(args.gauge_file, ts_mon.GaugeMetric)
-  set_metrics_file(args.float_file, ts_mon.FloatMetric)
-  set_metrics_file(args.string_file, ts_mon.StringMetric)
-  set_metrics_file(args.bool_file, ts_mon.BooleanMetric)
-  set_metrics_file(args.counter_file, ts_mon.CounterMetric)
-  set_metrics_file(args.cumulative_file, ts_mon.CumulativeMetric)
+  argfile_to_metric_type = (
+    (args.gauge_file, ts_mon.GaugeMetric),
+    (args.float_file, ts_mon.FloatMetric),
+    (args.string_file, ts_mon.StringMetric),
+    (args.bool_file, ts_mon.BooleanMetric),
+    (args.counter_file, ts_mon.CounterMetric),
+    (args.cumulative_file, ts_mon.CumulativeMetric),
+  )
+  for arg, metric in argfile_to_metric_type:
+    set_metrics_file(arg, metric)
 
   ts_mon.flush()

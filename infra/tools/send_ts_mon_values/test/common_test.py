@@ -66,15 +66,16 @@ class JsonParsingTest(unittest.TestCase):
     self.assertIsNone(md.points[0].fields)
 
   def test_json_parsing_with_missing_name(self):
-    self.assertIsNone(common.json_to_metric_data(
-        '{"value": 13, "start_time": 1234}'))
+    with self.assertRaises(KeyError):
+      common.json_to_metric_data('{"value": 13, "start_time": 1234}')
 
   def test_json_parsing_with_missing_value(self):
-    self.assertIsNone(common.json_to_metric_data(
-        '{"name": "test/name", "start_time": 1234}'))
+    with self.assertRaises(KeyError):
+      common.json_to_metric_data('{"name": "test/name", "start_time": 1234}')
 
   def test_json_parsing_bad_string(self):
-    self.assertIsNone(common.json_to_metric_data('}'))
+    with self.assertRaises(ValueError):
+      common.json_to_metric_data('}')
 
   def test_json_parsing_base64(self):
     json_str = ('{"name": "testname", "value": 13, '
@@ -90,14 +91,17 @@ class JsonParsingTest(unittest.TestCase):
 
   def test_json_parsing_invalid_base64_1(self):
     # 'bd' raises TypeError in base64.b64decode
-    self.assertIsNone(common.json_to_metric_data('bd'))
+    with self.assertRaises(ValueError):
+      common.json_to_metric_data('bd')
 
   def test_json_parsing_invalid_base64_2(self):
     # 'blah' does NOT raise TypeError in base64.b64decode
-    self.assertIsNone(common.json_to_metric_data('blah'))
+    with self.assertRaises(ValueError):
+      common.json_to_metric_data('blah')
 
   def test_json_parsing_invalid_json(self):
-    self.assertIsNone(common.json_to_metric_data('{"blah:'))
+    with self.assertRaises(ValueError):
+      common.json_to_metric_data('{"blah:')
 
 
 class test_collapse_metrics(unittest.TestCase):
@@ -198,13 +202,13 @@ class test_set_metrics(unittest.TestCase):
 
   def test_set_one_metric_missing_name(self):
     json_str = '{"value": 13, "start_time": 1234}'
-    metrics = common.set_metrics([json_str], ts_mon.CounterMetric)
-    self.assertEqual([], metrics)
+    with self.assertRaises(KeyError):
+      common.set_metrics([json_str], ts_mon.CounterMetric)
 
   def test_set_one_metric_missing_value(self):
     json_str = '{"name": "test/name", "start_time": 1234}'
-    metrics = common.set_metrics([json_str], ts_mon.CounterMetric)
-    self.assertEqual([], metrics)
+    with self.assertRaises(KeyError):
+      common.set_metrics([json_str], ts_mon.CounterMetric)
 
   def test_set_multiple_metrics(self):
     # list of json strs, call set_metrics
@@ -257,13 +261,8 @@ class test_set_metrics(unittest.TestCase):
     json_strs = ['{"name": "test/name1", "value": 13}',
                  '{"name": "test/name2"}',
                  '{"name": "test/name3", "value": 14}']
-    metrics = common.set_metrics(json_strs, ts_mon.GaugeMetric)
-
-    self.assertEquals(len(metrics) + 1, len(json_strs))
-
-    for metric in metrics:
-      self.assertIsInstance(metric, ts_mon.GaugeMetric)
-      self.assertTrue(metric.name.startswith("test/name"))
+    with self.assertRaises(KeyError):
+      common.set_metrics(json_strs, ts_mon.GaugeMetric)
 
 
 class main_test(unittest.TestCase):
