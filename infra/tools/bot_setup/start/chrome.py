@@ -35,26 +35,15 @@ solutions = [
 ]
 """
 
-# These are urls that we are seeding passwords to.
-SVN_URLS = [
-    'svn://svn-mirror.chromium.org/chrome-try'
-    'svn://svn-mirror.golo.chromium.org/chrome'
-    'svn://svn-mirror.golo.chromium.org/chrome-internal'
-    'svn://svn.chromium.org/chrome'
-    'svn://svn.chromium.org/chrome-internal'
-    'svn://svn.chromium.org/chrome-try'
-]
 
 # TODO(hinoka): Make this an infra virtualenv.  crbug.com/426099.
 # Because of various issues (eg. pywin32 not installed in the infra virtualenv)
 # We can't use the virtualenv for running buildbot :(.
 if IS_WINDOWS:
-  PYTHON = 'C:\\Python27\\python-2.7.5\\python'
-  GIT = 'C:\\git\\bin\\git.exe'
+  GIT = 'C:\\setup\\depot_tools\\git.exe'
   GCLIENT_BIN = 'gclient.bat'
   TEMP_DEPOT_TOOLS = 'C:\\tmp\\depot_tools'
 else:
-  PYTHON = '/usr/bin/python'
   GIT = '/usr/bin/git'
   GCLIENT_BIN = 'gclient'
   TEMP_DEPOT_TOOLS = '/tmp/depot_tools'
@@ -117,7 +106,8 @@ def ensure_checkout(root_dir, depot_tools, internal):
       full_path = os.path.join(root_dir, filename)
       print 'Deleting %s...' % full_path
       if os.path.isdir(full_path):
-        shutil.rmtree(full_path)
+        # shutil.rmtree doesn't work on Windows, but ours works.
+        infra_libs.rmtree(full_path)
       else:
         os.remove(full_path)
     write_gclient_file(root_dir, internal)
@@ -141,14 +131,18 @@ def seed_passwords(root_dir, password_file):
     f.write(passwords['bot_password'])
 
 
-def run_slave(root_dir):
+def run_slave(root_dir, slave_name):
   slave_dir = os.path.join(root_dir, 'build', 'slave')
   run_slave_path = os.path.join(slave_dir, 'run_slave.py')
   twistd_pid_path = os.path.join(slave_dir, 'twistd.pid')
   env = inject_path_in_environ(
       os.environ.copy(), os.path.join(root_dir, 'depot_tools'))
-  env['DISPLAY'] = ':0.0'
+  if not IS_WINDOWS:
+    env['DISPLAY'] = ':0.0'
   env['LANG'] = 'en_US.UTF-8'
+  if slave_name:
+    # We do this on Windows because the hostname is incorrect.
+    env['TESTING_SLAVENAME'] = slave_name
 
   # Clean up the PID file.
   try:
@@ -157,10 +151,6 @@ def run_slave(root_dir):
     pass
   else:
     print 'Removed stale pid file %s' % twistd_pid_path
-
-  # HACK(hinoka): This is dumb. Buildbot on Windows requires pywin32.
-  if IS_WINDOWS:
-    call(['pip', 'install', 'pypiwin32'], cwd=slave_dir, env=env)
 
   # Observant infra members will notice that we are not using "make start" to
   # start the run_slave.py process.  We use make start for a couple of reasons:
@@ -172,7 +162,7 @@ def run_slave(root_dir):
   #      Daemonizing is not a priority.
   #   2. The limits are already set in /etc/security/limits.conf.
   # This is why we can explicitly call run_slave.py
-  cmd = [PYTHON, run_slave_path, '--no_save', '--no-gclient-sync',
+  cmd = [sys.executable, run_slave_path, '--no_save', '--no-gclient-sync',
          '--python', 'buildbot.tac', '--nodaemon', '--logfile', 'twistd.log']
   call(cmd, cwd=slave_dir, env=env)
   print 'run_slave.py died'
@@ -212,4 +202,4 @@ def start(root_dir, depot_tools, password_file, slave_name):
   ensure_checkout(root_dir, depot_tools, is_internal)
   if password_file:
     seed_passwords(root_dir, password_file)
-  run_slave(root_dir)
+  run_slave(root_dir, slave_name)
