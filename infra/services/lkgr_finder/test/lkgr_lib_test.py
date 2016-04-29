@@ -7,7 +7,9 @@
 
 
 import datetime
+import mock
 import os
+import requests
 import sys
 import unittest
 
@@ -16,6 +18,49 @@ from infra.services.lkgr_finder.status_generator import StatusGeneratorStub
 
 
 # TODO(agable): Test everything else once I can import pymox.
+
+
+class FetchBuilderJsonTest(unittest.TestCase):
+  test_masters = {
+    'master1': {
+      'base_url': 'http://master.url.com',
+      'builders': ['builder1', 'builder2'],
+    },
+  }
+
+  @mock.patch('requests.get', autospec=True)
+  def testAllBuildersSucceeded(self, mocked_get):
+    response = mocked_get.return_value
+    response.json.side_effect = [{'build1': 'success'}, {'build2': 'failure'}]
+    build_data,failures = lkgr_lib.FetchBuildData(self.test_masters,
+                                                  max_threads=1)
+    self.assertEquals(failures, 0)
+    self.assertEquals(len(build_data['master1']), 2)
+    self.assertEquals(build_data['master1']['builder1']['build1'], 'success')
+    self.assertEquals(build_data['master1']['builder2']['build2'], 'failure')
+
+  @mock.patch('requests.get', autospec=True)
+  def testAllBuildersFailed(self, mocked_get):
+    response = mocked_get.return_value
+    response.json.side_effect = [requests.exceptions.RequestException,
+                                 requests.exceptions.RequestException]
+    build_data,failures = lkgr_lib.FetchBuildData(self.test_masters,
+                                                  max_threads=1)
+    self.assertEquals(failures, 2)
+    self.assertEquals(build_data['master1']['builder1'], None)
+    self.assertEquals(build_data['master1']['builder2'], None)
+
+  @mock.patch('requests.get', autospec=True)
+  def testSomeBuildersFailed(self, mocked_get):
+    response = mocked_get.return_value
+    response.json.side_effect = [{'build1': 'success'},
+                                 requests.exceptions.RequestException]
+    build_data,failures = lkgr_lib.FetchBuildData(self.test_masters,
+                                                  max_threads=1)
+    self.assertEquals(failures, 1)
+    self.assertEquals(len(build_data['master1']), 2)
+    self.assertEquals(build_data['master1']['builder1']['build1'], 'success')
+    self.assertEquals(build_data['master1']['builder2'], None)
 
 
 class FindLKGRCandidateTest(unittest.TestCase):

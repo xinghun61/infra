@@ -186,7 +186,9 @@ def main(argv):
     if args.build_data:
       builds = lkgr_lib.ReadBuildData(args.build_data)
     else:
-      builds = lkgr_lib.FetchBuildData(lkgr_builders, args.max_threads)
+      builds, failures = lkgr_lib.FetchBuildData(lkgr_builders, args.max_threads)
+      if failures > 0:
+        return 1
 
     if args.dump_build_data:
       try:

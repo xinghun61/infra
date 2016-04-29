@@ -220,6 +220,7 @@ def FetchBuilderJson(fetch_q):  # pragma: no cover
       output_builds[builder] = builder_history
     except requests.exceptions.RequestException as e:
       LOGGER.error('RequestException while fetching %s:\n%s', url, repr(e))
+      output_builds[builder] = None
 
 
 def FetchBuildData(masters, max_threads=0):  # pragma: no cover
@@ -253,7 +254,14 @@ def FetchBuildData(masters, max_threads=0):  # pragma: no cover
   for th in fetch_threads:
     th.join()
 
-  return build_data
+  failures = 0
+  for master, builders in build_data.iteritems():
+    for builder, builds in builders.iteritems():
+      if builds is None:
+        failures += 1
+        LOGGER.error('Failed to fetch builds for %s:%s' % (master,builder))
+
+  return build_data, failures
 
 
 def ReadBuildData(filename):  # pragma: no cover
