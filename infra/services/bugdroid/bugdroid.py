@@ -43,29 +43,38 @@ CODESITE_PROJECTS = [
 ]
 
 
+loggers = {}
+
+
 # TODO(mmoss): Refactor with commitsentry (and chrome.base.get_logger()?)
 def GetLogger(logger_id, console=True, default_log_level=logging.INFO,
               logdir=''):
   """Logging setup for pollers."""
-  logger = logging.getLogger(logger_id)
-  logger.setLevel(default_log_level)
-  formatter = logging.Formatter(
-      '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-  # If logger_id isn't specificed (i.e. the root logger), just create a
-  # timestamp-based log file.
-  logfn = os.path.join(logdir, '%s.log' % (logger_id or
-                                           datetime.date.today().isoformat()))
-  fh = logging.FileHandler(logfn)
-  fh.setFormatter(formatter)
-  fh.setLevel(default_log_level)
-  logger.addHandler(fh)
-  logging.info('Log file (level: %s): "%s"',
-               logging.getLevelName(default_log_level), logfn)
-  if console:
-    sh = logging.StreamHandler()
-    sh.setLevel(default_log_level)
-    logger.addHandler(sh)
-  return logger
+  # pylint: disable=global-variable-not-assigned
+  global loggers
+  if loggers.get(logger_id):
+    return loggers.get(logger_id)
+  else:
+    logger = logging.getLogger(logger_id)
+    logger.setLevel(default_log_level)
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # If logger_id isn't specificed (i.e. the root logger), just create a
+    # timestamp-based log file.
+    logfn = os.path.join(logdir, '%s.log' % (logger_id or
+                                             datetime.date.today().isoformat()))
+    fh = logging.FileHandler(logfn)
+    fh.setFormatter(formatter)
+    fh.setLevel(default_log_level)
+    logger.addHandler(fh)
+    logging.info('Log file (level: %s): "%s"',
+                 logging.getLevelName(default_log_level), logfn)
+    if console:
+      sh = logging.StreamHandler()
+      sh.setLevel(default_log_level)
+      logger.addHandler(sh)
+    loggers[logger_id] = logger
+    return logger
 
 
 class BugdroidPollerHandler(poller_handlers.BasePollerHandler):
@@ -384,7 +393,6 @@ class Bugdroid(object):
       poller.daemon = True
     return poller
 
-
   def Execute(self):
     for poller in self.pollers:
       if poller.logger:
@@ -412,9 +420,9 @@ class Bugdroid(object):
 
 def inner_loop(opts):
   try:
-    bugdroid = Bugdroid(opts.configfile, opts.credentials_db, True,
+    bug = Bugdroid(opts.configfile, opts.credentials_db, True,
                         opts.default_loglevel, opts.datadir, opts.logdir)
-    bugdroid.Execute()
+    bug.Execute()
     return True
   except ConfigsException:
     return False
