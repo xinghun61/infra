@@ -36,6 +36,7 @@ MAX_POST_BODY_SIZE = 10 * 1024 * 1024   # = 10 MB
 NO_USER_SPECIFIED = 0
 NO_SESSION_SPECIFIED = 0
 NO_USER_NAME = '----'
+DELETED_USER_NAME = 'a deleted user'
 
 # String to display when some field has no value.
 NO_VALUES = '----'

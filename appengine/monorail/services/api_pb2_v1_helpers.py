@@ -166,10 +166,8 @@ def convert_issue(cls, issue, mar, services):
       continue
     val = None
     if fv.user_id:
-      try:
-        val = services.user.LookupUserEmail(mar.cnxn, fv.user_id)
-      except user_svc.NoSuchUserException:
-        val = ''
+      val = _get_user_email(
+          services.user, mar.cnxn, fv.user_id)
     elif fv.str_value:
       val = fv.str_value
     elif fv.int_value:
@@ -262,17 +260,18 @@ def convert_amendments(issue, amendments, mar, services):
       if len(amendment.added_user_ids) == 0:
         result.owner = framework_constants.NO_USER_NAME
       else:
-        user_email = services.user.LookupUserEmail(
-            mar.cnxn, amendment.added_user_ids[0])
-        result.owner = user_email
+        result.owner = _get_user_email(
+            services.user, mar.cnxn, amendment.added_user_ids[0])
     elif amendment.field == tracker_pb2.FieldID.LABELS:
       result.labels = amendment.newvalue.split()
     elif amendment.field == tracker_pb2.FieldID.CC:
       for user_id in amendment.added_user_ids:
-        user_email = services.user.LookupUserEmail(mar.cnxn, user_id)
+        user_email = _get_user_email(
+            services.user, mar.cnxn, user_id)
         result.cc.append(user_email)
       for user_id in amendment.removed_user_ids:
-        user_email = services.user.LookupUserEmail(mar.cnxn, user_id)
+        user_email = _get_user_email(
+            services.user, mar.cnxn, user_id)
         result.cc.append('-%s' % user_email)
     elif amendment.field == tracker_pb2.FieldID.BLOCKEDON:
       result.blockedOn = _append_project(
@@ -291,6 +290,19 @@ def convert_amendments(issue, amendments, mar, services):
       result.fieldValues.append(fv)
 
   return result
+
+
+def _get_user_email(user_service, cnxn, user_id):
+  """Get user email."""
+
+  try:
+    user_email = user_service.LookupUserEmail(
+            cnxn, user_id)
+    if not user_email:
+      user_email = framework_constants.DELETED_USER_NAME
+  except user_svc.NoSuchUserException:
+    user_email = framework_constants.DELETED_USER_NAME
+  return user_email
 
 
 def _append_project(issue_ids, project_name):

@@ -84,7 +84,7 @@ class UserView(object):
     # No need to obfuscate or reveal client email.
     # Instead display a human-readable username.
     if not self.email:
-      self.display_name = 'a deleted user'
+      self.display_name = framework_constants.DELETED_USER_NAME
       self.obscure_email = ''
       self.profile_url = ''
     elif self.email in client_config_svc.GetServiceAccountMap():

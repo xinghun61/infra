@@ -9,6 +9,7 @@ import datetime
 import mock
 import unittest
 
+from framework import framework_constants
 from framework import permissions
 from services import api_pb2_v1_helpers
 from services import service_manager
@@ -292,6 +293,17 @@ class ApiV1HelpersTest(unittest.TestCase):
     self.assertTrue(
         datetime.datetime(2015, 7, 23, 0, 0, 0) <= result.published <=
         datetime.datetime(2015, 7, 25, 0, 0, 0))
+
+  def testGetUserEmail(self):
+    svcs = service_manager.Services()
+    svcs.user = fake.UserService()
+    svcs.user.TestAddUser('user@example.com', 1)
+
+    email = api_pb2_v1_helpers._get_user_email(svcs.user, '', 1)
+    self.assertEquals('user@example.com', email)
+
+    no_email = api_pb2_v1_helpers._get_user_email(svcs.user, '', 2)
+    self.assertEquals(framework_constants.DELETED_USER_NAME, no_email)
 
   def testSplitRemoveAdd(self):
     """Test split_remove_add."""
