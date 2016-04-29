@@ -40,10 +40,12 @@ solutions = [
 # Because of various issues (eg. pywin32 not installed in the infra virtualenv)
 # We can't use the virtualenv for running buildbot :(.
 if IS_WINDOWS:
+  PYTHON = 'c:\\setup\\depot_tools\\python276_bin\\python.exe'
   GIT = 'C:\\setup\\depot_tools\\git.exe'
   GCLIENT_BIN = 'gclient.bat'
   TEMP_DEPOT_TOOLS = 'C:\\tmp\\depot_tools'
 else:
+  PYTHON = '/usr/bin/python'
   GIT = '/usr/bin/git'
   GCLIENT_BIN = 'gclient'
   TEMP_DEPOT_TOOLS = '/tmp/depot_tools'
@@ -162,7 +164,7 @@ def run_slave(root_dir, slave_name):
   #      Daemonizing is not a priority.
   #   2. The limits are already set in /etc/security/limits.conf.
   # This is why we can explicitly call run_slave.py
-  cmd = [sys.executable, run_slave_path, '--no_save', '--no-gclient-sync',
+  cmd = [PYTHON, run_slave_path, '--no_save', '--no-gclient-sync',
          '--python', 'buildbot.tac', '--nodaemon', '--logfile', 'twistd.log']
   call(cmd, cwd=slave_dir, env=env)
   print 'run_slave.py died'
