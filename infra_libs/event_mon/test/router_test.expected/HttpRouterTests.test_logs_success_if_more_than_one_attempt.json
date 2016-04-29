@@ -1,0 +1,16 @@
+[
+  [
+    [
+      "event_mon: POSTing events to %s",
+      "https://bla.bla"
+    ],
+    {}
+  ],
+  [
+    [
+      "Succeeded POSTing data after %d attempts",
+      2
+    ],
+    {}
+  ]
+]

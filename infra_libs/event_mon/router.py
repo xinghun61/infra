@@ -251,7 +251,11 @@ class _HttpRouter(_Router):
           )
 
         if self._dry_run or response.status == 200:
+          if attempt > 0:
+            logging.info('Succeeded POSTing data after %d attempts',
+                         attempt + 1)
           return True
+
       except Exception:
         logging.exception('exception when POSTing data')
 
@@ -260,7 +264,7 @@ class _HttpRouter(_Router):
                       self.endpoint, response.status, attempt)
 
       if attempt == 0:
-        logging.error('data: %s', str(events)[:200])
+        logging.error('data: %s', str(events)[:2000])
 
       self._sleep_fn(backoff_time(attempt, retry_backoff=self.retry_backoff))
 

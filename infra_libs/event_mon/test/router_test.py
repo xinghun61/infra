@@ -112,6 +112,35 @@ class HttpRouterTests(unittest.TestCase):
     self.assertFalse(r.push_event(event))
     self.assertEquals(len(sleep.call_args_list), 2)
 
+  @mock.patch('logging.info', autospec=True)
+  def test_logs_success_if_more_than_one_attempt(self, loginfo):
+    # Fail to push events once.
+    sleep = mock.create_autospec(time.sleep, auto_set=True)
+    r = router._HttpRouter({}, 'https://bla.bla', _sleep_fn=sleep)
+
+    class FakeHttp(object):
+      def __init__(self):
+        self.num_errors = 1
+        self.success_http = infra_libs.HttpMock(
+              [('https://bla.bla', {'status': 200}, '')])
+
+      # pylint: disable=unused-argument
+      def request(self, *args, **kwargs):
+        if self.num_errors:
+          self.num_errors -= 1
+          raise ValueError()
+        else:
+          return self.success_http.request(*args, **kwargs)
+
+    r._http = FakeHttp()
+
+    event = LogRequestLite.LogEventLite()
+    event.event_time_ms = router.time_ms()
+    event.event_code = 1
+    event.event_flow_id = 2
+    self.assertTrue(r.push_event(event))
+    return loginfo.call_args_list
+
 
 class TextStreamRouterTests(unittest.TestCase):
   def test_stdout_smoke(self):
