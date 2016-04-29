@@ -1,5 +1,5 @@
-hash: 337ca2028030636b37c9f663cc6786425972bbec721b41148034abfaa14ca7f6
-updated: 2016-04-20T12:09:45.299260164-07:00
+hash: 97d0dd605c78327252ade7f877213a17b92014b34a4a6f5cbe5137a7c355f850
+updated: 2016-04-29T12:12:35.996869042-07:00
 imports:
 - name: github.com/dustin/go-humanize
   version: 8929fe90cee4b2cb9deb468b51fb34eba64d1bf0
@@ -8,12 +8,12 @@ imports:
   version: 7ebe0a500653eeb1859664bed5e48dec1e164e73
   repo: https://chromium.googlesource.com/external/github.com/go-sql-driver/mysql.git
 - name: github.com/golang/lint
-  version: 8f348af5e29faa4262efdc14302797f23774e477
+  version: c7bacac2b21ca01afa1dee0acf64df3ce047c28f
   repo: https://chromium.googlesource.com/external/github.com/golang/lint.git
   subpackages:
   - golint
 - name: github.com/golang/protobuf
-  version: bf531ff1a004f24ee53329dfd5ce0b41bfdc17df
+  version: 7cc19b78d562895b13596ddce7aafb59dd789318
   repo: https://chromium.googlesource.com/external/github.com/golang/protobuf.git
   subpackages:
   - jsonpb
@@ -95,7 +95,7 @@ imports:
   subpackages:
   - diffmatchpatch
 - name: github.com/smartystreets/assertions
-  version: 2d74a419fbe076f8c76ed8b1c7c633a676c5dc63
+  version: 40711f7748186bbf9c99977cd89f21ce1a229447
   repo: https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
 - name: github.com/smartystreets/goconvey
   version: cc5d85f4f15bd2163abf0fe6e6753356dde72aa2
@@ -116,19 +116,19 @@ imports:
   subpackages:
   - encoding/json5
 - name: golang.org/x/net
-  version: fb93926129b8ec0056f2f458b1f519654814edf0
+  version: 1aafd77e1e7f6849ad16a7bdeb65e3589a10b2bb
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/oauth2
-  version: 7e9cd5d59563851383f8f81a7fbb01213709387c
+  version: 9ef2eddcc6774e42f998940fe1167216d36a7424
   repo: https://go.googlesource.com/oauth2.git
   subpackages:
   - google
   - jwt
 - name: golang.org/x/tools
-  version: 5e468032ea9e193c60de97cfcd040ffa7a9b774e
+  version: d4437bf59744b83da8bb401f87f0ae099fc66564
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -165,7 +165,7 @@ imports:
   - user
   - cmd/aedeploy
 - name: google.golang.org/cloud
-  version: 5f04c0d1d178a4540ded1e6b3105bf8468b431f8
+  version: 5c2ed224e55f2b5919cee83c91034682bf86f9e4
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -173,7 +173,7 @@ imports:
   - pubsub
   - storage
 - name: google.golang.org/grpc
-  version: 1a5928317d2d6526b75552438d5593e005f36477
+  version: b062a3c003c22bfef58fa99d689e6a892b408f9d
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes

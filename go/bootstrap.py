@@ -52,7 +52,7 @@ EXE_SFX = '.exe' if sys.platform == 'win32' else ''
 GIT_EXE = 'git.bat' if sys.platform == 'win32' else 'git'
 
 # Pinned version of Go toolset to download. See http://golang.org/dl/.
-TOOLSET_VERSION = 'go1.6'
+TOOLSET_VERSION = 'go1.6.2'
 
 # Platform and toolset dependent portion of a download URL.
 # See NATIVE_DOWNLOAD_URL_PREFIX and CROSS_DOWNLOAD_URL_PREFIX.
@@ -86,7 +86,7 @@ GLIDE_SOURCE = {
     'url': (
         'https://chromium.googlesource.com/external/github.com/'
         'Masterminds/glide.git'),
-    'rev': 'refs/tags/0.10.1',
+    'rev': 'refs/tags/0.10.2',
   },
 }
 

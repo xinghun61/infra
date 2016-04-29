@@ -55,6 +55,7 @@ VENDORED_TOOLS = [
   'golang.org/x/tools/cmd/goimports',
   'golang.org/x/tools/cmd/gomvpkg',
   'golang.org/x/tools/cmd/gorename',
+  'golang.org/x/tools/cmd/guru',
   'golang.org/x/tools/cmd/oracle',
   'golang.org/x/tools/cmd/stringer',
   'google.golang.org/api/google-api-go-generator',
