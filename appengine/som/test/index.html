@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<script src="../bower_components/webcomponentsjs/webcomponents.min.js"></script>
-<script src="../bower_components/web-component-tester/browser.js"></script>
+<base href="/">
+<script src="/bower_components/webcomponentsjs/webcomponents.min.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
 <style>
   body {
     font-family: sans-serif;
@@ -14,8 +15,8 @@
     'som-alert-item-test.html',
     'som-extension-build-failure-test.html',
   ].forEach((file) => {
-    testFiles.push(file);
-    testFiles.push(`${file}?dom=shadow`);
+    testFiles.push(`/test/${file}`);
+    testFiles.push(`/test/${file}?dom=shadow`);
    });
 
   WCT.loadSuites(testFiles);

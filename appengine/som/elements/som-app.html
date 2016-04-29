@@ -1,24 +1,26 @@
-<link rel="import" href="../bower_components/polymer/polymer.html">
-<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
-<link rel="import" href="../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
-<link rel="import" href="../bower_components/iron-icons/hardware-icons.html">
-<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
-<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
-<link rel="import" href="../bower_components/iron-list/iron-list.html">
-<link rel="import" href="../bower_components/iron-page-url/iron-page-url.html">
-<link rel="import" href="../bower_components/neon-animation/animations/scale-up-animation.html">
-<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
-<link rel="import" href="../bower_components/paper-badge/paper-badge.html">
-<link rel="import" href="../bower_components/paper-button/paper-button.html">
-<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
-<link rel="import" href="../bower_components/paper-drawer-panel/paper-drawer-panel.html">
-<link rel="import" href="../bower_components/paper-header-panel/paper-header-panel.html">
-<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="../bower_components/paper-input/paper-input.html">
-<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
-<link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
-<link rel="import" href="../elements/som-alert-item.html">
-<link rel="import" href="../elements/som-drawer.html">
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="/bower_components/iron-flex-layout/classes/iron-flex-layout.html">
+<link rel="import" href="/bower_components/iron-icons/hardware-icons.html">
+<link rel="import" href="/bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="/bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="/bower_components/iron-list/iron-list.html">
+<link rel="import" href="/bower_components/iron-location/iron-location.html">
+<link rel="import" href="/bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="/bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="/bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="/bower_components/paper-badge/paper-badge.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="/bower_components/paper-drawer-panel/paper-drawer-panel.html">
+<link rel="import" href="/bower_components/paper-header-panel/paper-header-panel.html">
+<link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/bower_components/paper-input/paper-input.html">
+<link rel="import" href="/bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="/bower_components/paper-toolbar/paper-toolbar.html">
+<link rel="import" href="/elements/som-alert-item.html">
+<link rel="import" href="/elements/som-drawer.html">
+<link rel="import" href="/elements/som-examine.html">
 
 <dom-module id="som-app">
   <template>
@@ -66,7 +68,7 @@
         color: #aaa;
       }
     </style>
-    <iron-page-url id="url" path="{{_path}}"></iron-page-url>
+    <iron-location id="url" path="{{_path}}"></iron-location>
     <iron-ajax
         auto
         id="alertsAjax"
@@ -107,20 +109,26 @@
           </div>
           <paper-spinner active="[[_networkActive]]"></paper-spinner>
         </paper-toolbar>
-        <iron-list id="alertsList" items="[[_alerts]]" as="alert" class="fit" selection-enabled multi-selection>
-          <template>
-            <div class="list-item" tabindex$="[[tabIndex]]">
-              <som-alert-item
-                  alert="{{alert}}"
-                  selected="[[selected]]"
-                  annotation="[[_computeAnnotation(annotations,alert)]]"
-                  on-selected-changed="_handleCardSelected"
-                  on-annotation-change="_handleAnnotation"
-                  on-link-bug="_handleLinkBug"
-              ></som-alert-item>
-            </div>
-          </template>
-        </iron-list>
+        <iron-pages attr-for-selected='id' selected="[[_selectedPage]]">
+          <iron-list id="alertsList" items="[[_alerts]]" as="alert" class="fit" selection-enabled multi-selection>
+            <template>
+              <div class="list-item" tabindex$="[[tabIndex]]">
+                <som-alert-item
+                    alert="{{alert}}"
+                    alerts-group="[[_alertsGroup]]"
+                    selected="[[selected]]"
+                    annotation="[[_computeAnnotation(annotations, alert)]]"
+                    on-selected-changed="_handleCardSelected"
+                    on-annotation-change="_handleAnnotation"
+                    on-link-bug="_handleLinkBug"
+                ></som-alert-item>
+              </div>
+            </template>
+          </iron-list>
+          <div id="examineAlert">
+            <som-examine alert="[[_examinedAlert]]"></som-examine>
+          </div>
+        </iron-pages>
       </paper-header-panel>
     </paper-drawer-panel>
     <paper-dialog id="bugDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
@@ -148,23 +156,20 @@
 
     Polymer({
       is: 'som-app',
-
-      attached: function() {
-        this._alertsGroup = this.$.url.path.split('/')[1];
-      },
-
       properties: {
         _alerts: {
           type: Array,
+          value: function() { return []; },
           computed: '_computeAlerts(_alertsJson, annotations)',
+          observer: '_alertsChanged',
         },
         _alertsJson: {
           type: Object,
-          value: function() { return {}; }
+          value: function() { return {}; },
         },
         _alertsJsonError: {
           type: Object,
-          value: function() { return {}; }
+          value: function() { return {}; },
         },
         _alertsGroup: {
           type: String,
@@ -181,15 +186,15 @@
         annotationsJson: Array,
         _lastUpdated: {
           type: Date,
-          computed: '_computeLastUpdated(_alertsJson.timestamp)'
+          computed: '_computeLastUpdated(_alertsJson.timestamp)',
         },
         _annotationsJsonError: {
           type: Object,
-          value: function() { return {}; }
+          value: function() { return {}; },
         },
         _annotationPostError: {
           type: Object,
-          value: function() { return {}; }
+          value: function() { return {}; },
         },
         _bugModel: Object,
         _filedBug: {
@@ -198,12 +203,23 @@
         },
         _networkActive: {
           type: Boolean,
-          value: false
+          value: false,
         },
         _path: {
           type: String,
-          value: '/chromium',
-          observer: '_handlePathChange'
+          observer: '_handlePathChange',
+        },
+        _selectedPage: {
+          type: String,
+          value: 'alertsList',
+        },
+        _examinedAlert: {
+          type: Object,
+          value: function() { return {}; },
+        },
+        _examinedAlertKey: {
+          type: String,
+          value: '',
         },
       },
 
@@ -214,7 +230,45 @@
       },
 
       _handlePathChange: function(newVal) {
-        this._alertsGroup = newVal.split('/')[1];
+        // This implements an temporary routing solution, in lieu of
+        // carbon-router which is still in beta.
+        // TODO(seanmccullough): switch to carbon-router.
+        let pathParts = newVal.split('/');
+        if (pathParts.length < 2) {
+          console.error('error: pathParts < 2', pathParts);
+        }
+        this._alertsGroup = pathParts[1];
+        if (pathParts.length < 3) {
+          this._selectedPage = 'alertsList';
+          return;
+        }
+
+        if (pathParts[2] == 'examine') {
+          this._selectedPage = 'examineAlert';
+          if (pathParts.length > 3) {
+            // Let som-examine element deal with the rest of the path.
+            this._examinedAlertKey =
+                window.unescape(pathParts.slice(3).join('/'));
+            // Now find the actual alert for that key:
+            this._findExaminedAlertFromKey();
+          }
+        }
+      },
+
+      _alertsChanged: function() {
+        this._findExaminedAlertFromKey();
+      },
+
+      _findExaminedAlertFromKey: function() {
+        let examinedAlert = this._alerts.find( (alert) => {
+          return alert.key == this._examinedAlertKey;
+        });
+        // Two possibilities if examinedAlert is undefined:
+        // 1. The alert key is bad.
+        // 2. Alerts has not been ajaxed in yet.
+        if (examinedAlert) {
+          this._examinedAlert = examinedAlert;
+        }
       },
 
       _computeLastUpdated: function(lastPosted) {
@@ -239,6 +293,9 @@
           return aAnn.snoozed ? 1 : -1;
         });
 
+        if (this._examinedAlertKey) {
+          this._findExaminedAlertFromKey();
+        }
         return alertsJson.alerts;
       },
 

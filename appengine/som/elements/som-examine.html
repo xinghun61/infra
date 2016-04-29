@@ -1,0 +1,27 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+
+<dom-module id="som-examine">
+  <template>
+    <style>
+    </style>
+    <h2>Examine: [[alert.title]]</h2>
+    <div>[[alert.type]]</div>
+    <div>[[alert.body]]</div>
+    <!-- iframe for each buidler/build/test log etc -->
+  </template>
+  <script>
+    (function() {
+      'use strict';
+      Polymer({
+        is: 'som-examine',
+        properties: {
+          alert: {
+            type: Object,
+            value: function() { return {}; },
+          },
+        },
+      });
+    })();
+  </script>
+</dom-module>
+

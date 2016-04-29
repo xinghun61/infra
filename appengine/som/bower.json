@@ -35,6 +35,8 @@
     "iron-list": "PolymerElements/iron-list#^1.2.8",
     "paper-dialog": "PolymerElements/paper-dialog#^1.0.4",
     "paper-input": "PolymerElements/paper-input#^1.1.11",
-    "neon-animation": "PolymerElements/neon-animation#^1.2.2"
+    "neon-animation": "PolymerElements/neon-animation#^1.2.2",
+    "iron-location": "PolymerElements/iron-location#^0.8.2",
+    "iron-pages": "PolymerElements/iron-pages#^1.0.7"
   }
 }
