@@ -19,7 +19,9 @@ from protorpc import remote
 
 from common import appengine_util
 from common import constants
+from common.waterfall import failure_type
 from model.wf_analysis import WfAnalysis
+from model.wf_try_job import WfTryJob
 from waterfall import buildbot
 from waterfall import waterfall_config
 
@@ -52,6 +54,11 @@ class _SuspectedCL(messages.Message):
   commit_position = messages.IntegerField(3, variant=messages.Variant.INT32)
 
 
+class _AnalysisApproach(messages.Enum):
+  HEURISTIC = 1
+  TRY_JOB = 2
+
+
 class _BuildFailureAnalysisResult(messages.Message):
   master_url = messages.StringField(1, required=True)
   builder_name = messages.StringField(2, required=True)
@@ -64,6 +71,7 @@ class _BuildFailureAnalysisResult(messages.Message):
   first_known_failed_build_number = messages.IntegerField(
       7, variant=messages.Variant.INT32)
   suspected_cls = messages.MessageField(_SuspectedCL, 8, repeated=True)
+  analysis_approach = messages.EnumField(_AnalysisApproach, 9)
 
 
 class _BuildFailureAnalysisResultCollection(messages.Message):
@@ -71,10 +79,10 @@ class _BuildFailureAnalysisResultCollection(messages.Message):
   results = messages.MessageField(_BuildFailureAnalysisResult, 1, repeated=True)
 
 
-def _TriggerNewAnalysesOnDemand(builds_to_check):
+def _TriggerNewAnalysesOnDemand(builds):
   """Pushes a task to run on the backend to trigger new analyses on demand."""
   target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
-  payload = json.dumps({'builds': builds_to_check})
+  payload = json.dumps({'builds': builds})
   taskqueue.add(
       url=constants.WATERFALL_TRIGGER_ANALYSIS_URL, payload=payload,
       target=target, queue_name=constants.WATERFALL_SERIAL_QUEUE)
@@ -88,7 +96,8 @@ class FindItApi(remote.Service):
 
   def _GenerateBuildFailureAnalysisResult(
       self, build, suspected_cls_in_result, step_name,
-      first_failure, test_name=None):
+      first_failure, test_name=None,
+      analysis_approach=_AnalysisApproach.HEURISTIC):
     suspected_cls = []
     for suspected_cl in suspected_cls_in_result:
       suspected_cls.append(_SuspectedCL(
@@ -104,7 +113,78 @@ class FindItApi(remote.Service):
         is_sub_test=test_name is not None,
         test_name=test_name,
         first_known_failed_build_number=first_failure,
-        suspected_cls=suspected_cls)
+        suspected_cls=suspected_cls,
+        analysis_approach=analysis_approach)
+
+  def _GetCulpritFromTryJob(
+      self, try_job_map, build_failure_type, step_name, test_name=None):
+    """Returns the culprit found by try-job for the given step or test."""
+    if not try_job_map:
+      return None
+
+    if test_name is None:
+      try_job_key = try_job_map.get(step_name)
+    else:
+      try_job_key = try_job_map.get(step_name, {}).get(test_name)
+
+    if not try_job_key:
+      return None
+
+    try_job = WfTryJob.Get(*try_job_key.split('/'))
+    if not try_job or not try_job.completed or try_job.failed:
+      return None
+
+    if build_failure_type == failure_type.COMPILE:
+      return try_job.compile_results[-1].get('culprit', {}).get(step_name)
+
+    if test_name is None:
+      step_info = try_job.test_results[-1].get('culprit', {}).get(step_name)
+      if not step_info or step_info.get('tests'):  # pragma: no cover.
+        # TODO(chanli): For some steps like checkperms/sizes/etc, the culprit
+        # finding try-job might have test-level results.
+        return None
+      return step_info
+
+    return try_job.test_results[-1].get('culprit', {}).get(
+        step_name, {}).get('tests', {}).get(test_name)
+
+  def _PopulateResult(
+      self, results, build, try_job_map, build_failure_type,
+      heuristic_result, step_name, test_name=None):
+    """Appends an analysis result for the given step or test.
+
+    Try-job results are always given priority over heuristic results.
+    """
+    # Default to heuristic analysis.
+    suspected_cls = heuristic_result['suspected_cls']
+    analysis_approach = _AnalysisApproach.HEURISTIC
+
+    # Check analysis result from try-job.
+    culprit = self._GetCulpritFromTryJob(
+        try_job_map, build_failure_type, step_name, test_name=test_name)
+    if culprit:
+      suspected_cls = [culprit]
+      analysis_approach = _AnalysisApproach.TRY_JOB
+
+    if not suspected_cls:
+      return
+
+    results.append(self._GenerateBuildFailureAnalysisResult(
+        build, suspected_cls, step_name, heuristic_result['first_failure'],
+        test_name=test_name, analysis_approach=analysis_approach))
+
+  def _GenerateResultsForBuild(self, build, heuristic_analysis, results):
+    for failure in heuristic_analysis.result['failures']:
+      if failure.get('tests'):  # Test-level analysis.
+        for test in failure['tests']:
+          self._PopulateResult(
+              results, build, heuristic_analysis.failure_result_map,
+              heuristic_analysis.failure_type, test,
+              failure['step_name'], test_name=test['test_name'])
+      else:
+        self._PopulateResult(
+            results, build, heuristic_analysis.failure_result_map,
+            heuristic_analysis.failure_type, failure, failure['step_name'])
 
   @endpoints.method(
       _BuildFailureCollection, _BuildFailureAnalysisResultCollection,
@@ -122,14 +202,14 @@ class FindItApi(remote.Service):
       A list of analysis results for the given build failures.
     """
     results = []
-    builds_to_check = []
+    supported_builds = []
 
     for build in request.builds:
       master_name = buildbot.GetMasterNameFromUrl(build.master_url)
       if not (master_name and waterfall_config.MasterIsSupported(master_name)):
         continue
 
-      builds_to_check.append({
+      supported_builds.append({
           'master_name': master_name,
           'builder_name': build.builder_name,
           'build_number': build.build_number,
@@ -140,36 +220,21 @@ class FindItApi(remote.Service):
       # scheduled to analyze new failed steps, the returned WfAnalysis will
       # still have the result from last completed analysis.
       # If there is no analysis yet, no result is returned.
-      analysis = WfAnalysis.Get(
+      heuristic_analysis = WfAnalysis.Get(
           master_name, build.builder_name, build.build_number)
-      if not analysis:
+      if not heuristic_analysis:
         continue
 
-      if analysis.failed or not analysis.result:
+      if heuristic_analysis.failed or not heuristic_analysis.result:
         # Bail out if the analysis failed or there is no result yet.
         continue
 
-      for failure in analysis.result['failures']:
-        if not failure['suspected_cls'] and not failure.get('tests'):
-          continue
-
-        if failure.get('tests'):
-          for test in failure['tests']:
-            if not test['suspected_cls']:
-              continue
-            results.append(self._GenerateBuildFailureAnalysisResult(
-                build, test['suspected_cls'], failure['step_name'],
-                test['first_failure'], test['test_name']))
-
-        else:
-          results.append(self._GenerateBuildFailureAnalysisResult(
-              build, failure['suspected_cls'], failure['step_name'],
-              failure['first_failure']))
+      self._GenerateResultsForBuild(build, heuristic_analysis, results)
 
     logging.info('%d build failure(s), while %d are supported',
-                 len(request.builds), len(builds_to_check))
+                 len(request.builds), len(supported_builds))
     try:
-      _TriggerNewAnalysesOnDemand(builds_to_check)
+      _TriggerNewAnalysesOnDemand(supported_builds)
     except Exception:  # pragma: no cover.
       # If we fail to post a task to the task queue, we ignore and wait for next
       # request.
