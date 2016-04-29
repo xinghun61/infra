@@ -15,6 +15,7 @@ class ExtractorsTest(wf_testcase.WaterfallTestCase):
                bot='builder1', master='master1'):
     signal = extractor_class().Extract(
         failure_log, 'suite.test', 'step', bot, master)
+
     self.assertEqual(expected_signal_json, signal.ToDict())
 
   def testGeneralExtractor(self):
@@ -285,14 +286,18 @@ Note:You can safely ignore the above warning unless this call should not happen.
     failure_log = textwrap.dedent("""
         [1832/2467 | 117.498] CXX obj/a/b/test.file.o
         blabla...
-        FAILED: /b/build/goma/gomacc ... ../../a/b/c.cc ... obj/a/b/test.c.o
+        FAILED: obj/a/b/test.c.o
+        /b/build/goma/gomacc blabla ... -c ../../a/b/c.cc -o obj/a/b/test.c.o
         ../../a/b/c.cc:307:44: error: no member 'kEnableExtensionInfoDialog' ...
         1 error generated.
         x/y/not_in_signal.cc
-        FAILED: /b/build/goma/gomacc ... ../../a/b/x.cc ... obj/a/b/test.c.o
+        FAILED: obj/a/b/test.d.o
+        /b/build/goma/gomacc blabla ... -c ../../a/b/d.cc -o obj/a/b/test.d.o
         ../../a/b/d.cc:123:44: error: no member 'kEnableExtensionInfoDialog' ...
         blabla...
-        FAILED: /b/build/goma/gomacc ... ../../a/b/x.cc ... obj/a/b/test.c.o
+        1 error generated.
+        FAILED: obj/a/b/test.e.o
+        /b/build/goma/gomacc ... ../../a/b/e.cc ... obj/a/b/test.e.o
         ../../a/b/e.cc:79:44: error: no member 'kEnableExtensionInfoDialog' ...
         blabla...
         ninja: build stopped: subcommand failed.
@@ -315,19 +320,24 @@ Note:You can safely ignore the above warning unless this call should not happen.
     failure_log = textwrap.dedent("""
         [1832/2467 | 117.498] CXX obj/a/b/test.file.o
         blabla...
-        FAILED: /b/build/goma/gomacc ... -c ../../a/b/c.cc -o obj/a/b/c.o
+        FAILED: obj/a/b/c.o
+        /b/build/goma/gomacc ... -c ../../a/b/c.cc -o obj/a/b/c.o
         ../../a/b/c.cc:307:44: error: no member 'kEnableExtensionInfoDialog' ...
         1 error generated.
         x/y/not_in_signal.cc
-        FAILED: /b/build/goma/gomacc ... -c ../../a/b/x.cc -o obj/a/b/x.o
+        FAILED: obj/a/b/x.o
+        /b/build/goma/gomacc ... -c ../../a/b/x.cc -o obj/a/b/x.o
         ../../a/b/d.cc:123:44: error: no member 'kEnableExtensionInfoDialog' ...
         blabla...
-        FAILED: /b/build/goma/gomacc ... -c ../../a/b/x.cc -o obj/a/b/x.o
-        ../../a/b/e.cc:79:44: error: no member 'kEnableExtensionInfoDialog' ...
+        1 error generated.
+        FAILED: target.exe
+        blabla -o not_this blabla gomacc ... -o target.exe
         blabla...
-        FAILED: blabla -o not_this blabla gomacc ... -o target.exe
-        blabla...
-        FAILED: blabla -o not_this blabla -c not_this.cc -o not_this.o
+        1 error generated.
+        blabla
+        FAILED: notgoma.exe
+        blabla -c blabla.c -o blabla.o
+        blabla
         ninja: build stopped: subcommand failed.
 
         /b/build/goma/goma_ctl.sh stat
@@ -336,7 +346,6 @@ Note:You can safely ignore the above warning unless this call should not happen.
         'files': {
             'a/b/c.cc': [307],
             'a/b/d.cc': [123],
-            'a/b/e.cc': [79]
         },
         'keywords': {},
         'failed_targets': [
@@ -387,10 +396,12 @@ Note:You can safely ignore the above warning unless this call should not happen.
   def testCompileStepExtractorExtractFailedLinkTargetsLinux(self):
     failure_log = textwrap.dedent("""
         [5430/5600] blabla
-        FAILED: python blabla clang++ -o a/b.nexe blabla
+        FAILED: a/b.nexe
+        python blabla clang++ -o a/b.nexe blabla
         blabla
         blabla.Error: FAILED with blabla
-        FAILED: blabla gomacc -o "target with spaces and quotes" blabla
+        FAILED: "target with spaces and quotes"
+        blabla gomacc -o "target with spaces and quotes" blabla
         ninja: build stopped: subcommand failed.""")
     expected_signal_json = {
         'files': {},
@@ -412,9 +423,12 @@ Note:You can safely ignore the above warning unless this call should not happen.
   def testCompileStepExtractorExtractFailedCompileTargetsWindows(self):
     failure_log = textwrap.dedent("""
         [4576/31353] blabla
-        FAILED: ninja blabla /c ..\\..\\a\\b\\c.cc /Foa\\b.c.obj blabla
+        FAILED: a\\b.c.obj
+        ninja blabla /c ..\\..\\a\\b\\c.cc /Foa\\b.c.obj blabla
         blabla
-        FAILED: ninja blabla /c ..\\..\\d\\e\\f.cc /Fod\\e\\f\\a.b.obj blabla
+        1 error generated.
+        FAILED: d\\e\\f\\a.b.obj
+        ninja blabla /c ..\\..\\d\\e\\f.cc /Fod\\e\\f\\a.b.obj blabla
         blabla
         ninja: build stopped: subcommand failed.""")
     expected_signal_json = {
@@ -438,7 +452,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
   def testCompileStepExtractorExtractFailedLinkTargetsWindows(self):
     failure_log = textwrap.dedent("""
         [11428/27088] blabla
-        FAILED: blabla link.exe /OUT:test.exe @test.exe.rsp blabla
+        FAILED: test.exe
+        blabla link.exe /OUT:test.exe @test.exe.rsp blabla
         ninja: build stopped: subcommand failed.""")
     expected_signal_json = {
         'files': {},
@@ -521,21 +536,17 @@ Note:You can safely ignore the above warning unless this call should not happen.
     failure_log = textwrap.dedent("""
         [1832/2467 | 117.498] CXX obj/a/b/test.file.o
         blabla...
-        FAILED: %s obj/a.o.d ... -c a.c -o obj/a.o
-        blalba...
-        FAILED: %s obj/d.o.d ... -c d.c -o obj/e.o
-        blalba...
-        FAILED with 1: %s obj/f.o.d -c f.c -o obj/f.o
+        FAILED: obj/a.o
+        %s obj/a.o.d ... -c a.c -o obj/a.o
+        blabla...
+        1 error generated.
+        FAILED with 1: obj/f.o %s obj/f.o.d -c f.c -o obj/f.o
         ninja: build stopped: subcommand failed.
 
         /b/build/goma/goma_ctl.sh stat
-        blabla...""" % (
-            goma_clang_prefix, goma_clang_prefix, goma_clang_prefix))
+        blabla...""" % (goma_clang_prefix, goma_clang_prefix))
     expected_signal_json = {
-        'files': {
-            'obj/f.o': [],
-            'f.c': [],
-        },
+        'files': {},
         'keywords': {},
         'failed_targets': [
             {
@@ -556,7 +567,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
     failure_log = textwrap.dedent("""
         [1832/2467 | 117.498] CXX obj/a/b/test.file.o
         blabla...
-        FAILED: %s -Wl,-z,now ... -o exe -Wl,--start-group obj/a.o ...
+        FAILED: obj/a.o
+        %s -Wl,-z,now ... -o exe -Wl,--start-group obj/a.o ...
         blalba...
         FAILED: cd a/b/c; python script.py a b c blabla....
         blalba...

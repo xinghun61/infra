@@ -125,7 +125,10 @@ class CompileStepExtractor(Extractor):
 
   NINJA_FAILURE_END_LINE_PREFIX = 'ninja: build stopped'
   NINJA_ERROR_LINE_PREFIX = 'ninja: error'
-  ERROR_LINE_END_PATTERN = re.compile(r'^\d+ errors? generated.')
+  ERROR_LINE_END_PATTERN1 = re.compile(r'^\d+ errors? generated.')
+  ERROR_LINE_END_PATTERN2 = re.compile(r'failed with exit code \d+')
+  OUTSIDE_FAILURE_LINE_PATTERN = re.compile(r'\[\d+/\d+\]')
+
   IOS_ERROR_LINE_START_PREFIX = 'CompileC'
 
   IOS_BUILDER_NAMES_FOR_COMPILE = ['iOS_Simulator_(dbg)', 'iOS_Device']
@@ -133,15 +136,14 @@ class CompileStepExtractor(Extractor):
 
   GOMA_COMPILER_PREFIX = (
       r'\S*/gomacc '
-       '\S+(?:clang\+\+|androideabi-gcc|androideabi-g\+\+)'
+      '\S+(?:clang\+\+|androideabi-gcc|androideabi-g\+\+)'
   )
   STRICT_COMPILE_FAILURE_PATTEN = re.compile(
-      r'^FAILED: %s -MMD -MF (obj/[^\s-]+\.o)\.d .* '
-       '-c ([^\s-]+(?:cc|c|cpp|m|mm)) -o \\1$' % (
-           GOMA_COMPILER_PREFIX))
+      r'^%s -MMD -MF (obj/[^\s-]+\.o)\.d .* '
+      '-c ([^\s-]+(?:cc|c|cpp|m|mm)) -o \\1$' % GOMA_COMPILER_PREFIX)
 
   STRICT_LINK_FAILURE_PATTEN = re.compile(
-      r'^FAILED: %s -Wl,.* -o (\S+) -Wl,--start-group .*$' % (
+      r'^%s -Wl,.* -o (\S+) -Wl,--start-group .*$' % (
           GOMA_COMPILER_PREFIX))
 
   def ExtractFailedOutputNodes(self, line, signal):
@@ -214,13 +216,14 @@ class CompileStepExtractor(Extractor):
   def Extract(self, failure_log, test_name, step_name, bot_name, master_name):
     signal = FailureSignal()
     failure_started = False
+    is_build_command_line = False
 
     if (master_name == self.MAC_MASTER_NAME_FOR_COMPILE and
         bot_name in self.IOS_BUILDER_NAMES_FOR_COMPILE):
       error_lines = []
       for line in reversed(failure_log.splitlines()):
         if (not failure_started and
-            self.ERROR_LINE_END_PATTERN.match(line)):
+            self.ERROR_LINE_END_PATTERN1.match(line)):
           failure_started = True
           continue
 
@@ -237,24 +240,32 @@ class CompileStepExtractor(Extractor):
           master_name, bot_name)
       for line in failure_log.splitlines():
         if line.startswith(self.FAILURE_START_LINE_PREFIX):
+          if not failure_started:
+            failure_started = True
+          is_build_command_line = True
+          continue
+        elif is_build_command_line:
           if strict_regex:
             self.ExtractFailedOutputNodes(line, signal)
           else:
             self.GetFailedTarget(line, signal)
-          if not failure_started:
-            failure_started = True
-          continue  # pragma: no cover
+          is_build_command_line = False
+          continue
         elif self.FAILURE_WITH_ERROR_PATTERN.match(line):
           # It is possible the target and source file associated with a compile
           # failure is logged outside a 'FAILED: ... 1 error generated' block,
-          # so extract regardless of failure_started.
+          # so extract targets regardless of failure_started.
           if not strict_regex:
             self.GetFailedTarget(line, signal)
-        elif failure_started and self.ERROR_LINE_END_PATTERN.match(line):
+        elif (failure_started and
+              (self.ERROR_LINE_END_PATTERN1.match(line) or
+               self.ERROR_LINE_END_PATTERN2.search(line) or
+               self.OUTSIDE_FAILURE_LINE_PATTERN.match(line))):
           failure_started = False
         elif failure_started and line.startswith(
             self.NINJA_FAILURE_END_LINE_PREFIX):  # pragma: no cover
           break
+
         if failure_started or line.startswith(self.NINJA_ERROR_LINE_PREFIX):
           # either within the compile errors or is a ninja error.
           self.ExtractFiles(line, signal)
