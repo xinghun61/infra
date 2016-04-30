@@ -175,6 +175,7 @@ def process_argparse_options(args):
   config = load_machine_config(args.ts_mon_config_file)
   endpoint = config.get('endpoint', '')
   credentials = config.get('credentials', '')
+  autogen_hostname = config.get('autogen_hostname', False)
 
   # Command-line args override the values in the config file.
   if args.ts_mon_endpoint is not None:
@@ -184,7 +185,7 @@ def process_argparse_options(args):
 
   if args.ts_mon_target_type == 'device':
     hostname = args.ts_mon_device_hostname
-    if args.ts_mon_autogen_hostname:
+    if args.ts_mon_autogen_hostname or autogen_hostname:
       hostname = 'autogen:' + hostname
     interface.state.target = targets.DeviceTarget(
         args.ts_mon_device_region,
