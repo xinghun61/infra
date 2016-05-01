@@ -286,17 +286,17 @@ Note:You can safely ignore the above warning unless this call should not happen.
     failure_log = textwrap.dedent("""
         [1832/2467 | 117.498] CXX obj/a/b/test.file.o
         blabla...
-        FAILED: obj/a/b/test.c.o
+        FAILED: obj/a/b/test.c.o 
         /b/build/goma/gomacc blabla ... -c ../../a/b/c.cc -o obj/a/b/test.c.o
         ../../a/b/c.cc:307:44: error: no member 'kEnableExtensionInfoDialog' ...
         1 error generated.
         x/y/not_in_signal.cc
-        FAILED: obj/a/b/test.d.o
+        FAILED: obj/a/b/test.d.o 
         /b/build/goma/gomacc blabla ... -c ../../a/b/d.cc -o obj/a/b/test.d.o
         ../../a/b/d.cc:123:44: error: no member 'kEnableExtensionInfoDialog' ...
         blabla...
         1 error generated.
-        FAILED: obj/a/b/test.e.o
+        FAILED: obj/a/b/test.e.o 
         /b/build/goma/gomacc ... ../../a/b/e.cc ... obj/a/b/test.e.o
         ../../a/b/e.cc:79:44: error: no member 'kEnableExtensionInfoDialog' ...
         blabla...
@@ -310,7 +310,12 @@ Note:You can safely ignore the above warning unless this call should not happen.
             'a/b/d.cc': [123],
             'a/b/e.cc': [79]
         },
-        'keywords': {}
+        'keywords': {},
+        'failed_output_nodes': [
+            'obj/a/b/test.c.o',
+            'obj/a/b/test.d.o',
+            'obj/a/b/test.e.o',
+        ],
     }
 
     self._RunTest(
@@ -360,7 +365,13 @@ Note:You can safely ignore the above warning unless this call should not happen.
             {
                 'target': 'target.exe'
             }
-        ]
+        ],
+        'failed_output_nodes': [
+            'notgoma.exe',
+            'obj/a/b/c.o',
+            'obj/a/b/x.o',
+            'target.exe',
+        ],
     }
 
     self._RunTest(
@@ -386,7 +397,10 @@ Note:You can safely ignore the above warning unless this call should not happen.
                 'source': 'a/b.cc',
                 'target': 'c/d.o'
             }
-        ]
+        ],
+        'failed_output_nodes': [
+            'blabla',
+        ],
     }
 
     self._RunTest(
@@ -413,7 +427,11 @@ Note:You can safely ignore the above warning unless this call should not happen.
             {
                 'target': '"target with spaces and quotes"'
             }
-        ]
+        ],
+        'failed_output_nodes': [
+            'a/b.nexe',
+            'target with spaces and quotes',
+        ],
     }
 
     self._RunTest(
@@ -443,7 +461,11 @@ Note:You can safely ignore the above warning unless this call should not happen.
                 'source': '..\\..\\d\\e\\f.cc',
                 'target': 'd\\e\\f\\a.b.obj'
             },
-        ]
+        ],
+        'failed_output_nodes': [
+            'a\\b.c.obj',
+            'd\\e\\f\\a.b.obj',
+        ],
     }
 
     self._RunTest(failure_log, extractors.CompileStepExtractor,
@@ -462,7 +484,10 @@ Note:You can safely ignore the above warning unless this call should not happen.
             {
                 'target': 'test.exe'
             }
-        ]
+        ],
+        'failed_output_nodes': [
+            'test.exe',
+        ],
     }
 
     self._RunTest(
@@ -553,14 +578,16 @@ Note:You can safely ignore the above warning unless this call should not happen.
                 'source': 'a.c',
                 'target': 'obj/a.o',
             },
-        ]
+        ],
+        'failed_output_nodes': [
+            'obj/a.o',
+        ],
     }
 
     self._RunTest(
         failure_log, extractors.CompileStepExtractor, expected_signal_json)
 
   def testCompileStepStrictRegexForLinkFailures(self):
-
     goma_gcc_prefix = (
         '/b/build/slave/Linux/build/src/build/goma/client/gomacc '
         '/bla/bla/.../bin/arm-linux-androideabi-gcc')
@@ -570,7 +597,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
         FAILED: obj/a.o
         %s -Wl,-z,now ... -o exe -Wl,--start-group obj/a.o ...
         blalba...
-        FAILED: cd a/b/c; python script.py a b c blabla....
+        FAILED: action_output_name
+        cd a/b/c; python script.py a b c blabla....
         blalba...
         ninja: build stopped: subcommand failed.
 
@@ -584,7 +612,39 @@ Note:You can safely ignore the above warning unless this call should not happen.
             {
                 'target': 'exe',
             },
-        ]
+        ],
+        'failed_output_nodes': [
+            'action_output_name',
+            'obj/a.o',
+        ],
+    }
+
+    self._RunTest(
+        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+
+  def testCompileStepNoMatchingQuote(self):
+    goma_gcc_prefix = (
+        '/b/build/slave/Linux/build/src/build/goma/client/gomacc '
+        '/bla/bla/.../bin/arm-linux-androideabi-gcc')
+    failure_log = textwrap.dedent("""
+        [1832/2467 | 117.498] CXX obj/a/b/test.file.o
+        blabla...
+        FAILED: a "b no matching quote
+        %s -Wl,-z,now ... -o exe -Wl,--start-group obj/a.o ...
+        blalba...
+        ninja: build stopped: subcommand failed.
+
+        /b/build/goma/goma_ctl.sh stat
+        blabla...""" % goma_gcc_prefix)
+    expected_signal_json = {
+        'files': {
+        },
+        'keywords': {},
+        'failed_targets': [
+            {
+                'target': 'exe',
+            },
+        ],
     }
 
     self._RunTest(

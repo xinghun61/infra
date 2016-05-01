@@ -119,6 +119,9 @@ def _GetFailedTargetsFromSignals(signals, master_name, builder_name):
   if not signals or 'compile' not in signals:
     return compile_targets
 
+  if signals['compile'].get('failed_output_nodes'):
+    return signals['compile'].get('failed_output_nodes')
+
   strict_regex = waterfall_config.EnableStrictRegexForCompileLinkFailures(
       master_name, builder_name)
   for source_target in signals['compile'].get('failed_targets', []):

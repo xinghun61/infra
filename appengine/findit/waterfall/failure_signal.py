@@ -12,7 +12,8 @@ class FailureSignal(object):
   def __init__(self):
     self.files = collections.defaultdict(list)
     self.keywords = collections.defaultdict(int)
-    self.failed_targets = []
+    self.failed_targets = []  # A list of dict.
+    self.failed_output_nodes = []  # A list of string.
 
   def AddFile(self, file_path, line_number=None):
     line_numbers = self.files[file_path]
@@ -43,19 +44,20 @@ class FailureSignal(object):
     new_failed_targets = other_signal.get('failed_targets', [])
     for target in new_failed_targets:
       self.AddTarget(target)
+    self.failed_output_nodes = list(
+        set(self.failed_output_nodes +
+            other_signal.get('failed_output_nodes', [])))
 
   def ToDict(self):
-    if self.failed_targets:
-      return {
-          'files': self.files,
-          'keywords': self.keywords,
-          'failed_targets': self.failed_targets
-      }
-
-    return {
+    json_dict = {
         'files': self.files,
         'keywords': self.keywords,
     }
+    if self.failed_targets:
+      json_dict['failed_targets'] = self.failed_targets
+    if self.failed_output_nodes:
+      json_dict['failed_output_nodes'] = self.failed_output_nodes
+    return json_dict
 
   @staticmethod
   def FromDict(data):
@@ -63,6 +65,7 @@ class FailureSignal(object):
     signal.files.update(copy.deepcopy(data.get('files', {})))
     signal.keywords.update(data.get('keywords', {}))
     signal.failed_targets = data.get('failed_targets', [])
+    signal.failed_output_nodes = data.get('failed_output_nodes', [])
     return signal
 
   def PrettyPrint(self):  # pragma: no cover
@@ -83,3 +86,5 @@ class FailureSignal(object):
           print '  Target: %s' % target
         if source:
           print '  Source: %s' % source
+    if self.failed_output_nodes:
+      print '  Failed output nodes: %s' % ','.join(self.failed_output_nodes)

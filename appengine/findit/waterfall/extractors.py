@@ -213,10 +213,41 @@ class CompileStepExtractor(Extractor):
           target = match.group(1)
           signal.AddTarget({'target': target})
 
+  def _GetFailedOutputNodes(self, line):
+    """Returns the list of failed output nodes."""
+    # Possible format:
+    # FAILED: obj/path/to/file.o
+    # FAILED: target.exe
+    # FAILED: "target with space in name"
+    failed_output_nodes = []
+
+    while line:
+      quote_index = line.find('"')
+      if quote_index < 0:
+        sub_part = line
+        remaining_part = None
+      else:
+        sub_part = line[:quote_index]
+        match_quote_index = line.find('"', quote_index + 1)
+        if match_quote_index < 0:
+          return []  # Return an empty list for unexpected format.
+        failed_output_nodes.append(
+            line[quote_index + 1: match_quote_index])
+        remaining_part = line[match_quote_index + 1:]
+      line = remaining_part
+
+      for node in sub_part.split(' '):
+        node = node.strip()
+        if node:
+          failed_output_nodes.append(node)
+
+    return failed_output_nodes
+
   def Extract(self, failure_log, test_name, step_name, bot_name, master_name):
     signal = FailureSignal()
     failure_started = False
     is_build_command_line = False
+    failed_output_nodes = []
 
     if (master_name == self.MAC_MASTER_NAME_FOR_COMPILE and
         bot_name in self.IOS_BUILDER_NAMES_FOR_COMPILE):
@@ -242,6 +273,8 @@ class CompileStepExtractor(Extractor):
         if line.startswith(self.FAILURE_START_LINE_PREFIX):
           if not failure_started:
             failure_started = True
+          line = line[len(self.FAILURE_START_LINE_PREFIX):]
+          failed_output_nodes.extend(self._GetFailedOutputNodes(line))
           is_build_command_line = True
           continue
         elif is_build_command_line:
@@ -270,6 +303,7 @@ class CompileStepExtractor(Extractor):
           # either within the compile errors or is a ninja error.
           self.ExtractFiles(line, signal)
 
+    signal.failed_output_nodes = sorted(set(failed_output_nodes))
     return signal
 
 

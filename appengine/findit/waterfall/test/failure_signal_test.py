@@ -47,7 +47,10 @@ class FailureSignalTest(unittest.TestCase):
         },
         'keywords': {
             'k1': 3
-        }
+        },
+        'failed_output_nodes': [
+            'obj/path/to/file.o',
+        ],
     }
     signal = FailureSignal.FromDict(data)
     self.assertEqual(data, signal.ToDict())

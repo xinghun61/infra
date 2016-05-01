@@ -374,6 +374,21 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(_MockRootPipeline.STARTED)
     self.assertIsNotNone(try_job)
 
+  def testUseFailedOutputNodesFromSignals(self):
+    signals = {
+        'compile': {
+            'failed_targets': [
+                {'target': 'a.exe'},
+                {'source': 'b.cc', 'target': 'b.o'},
+            ],
+            'failed_output_nodes': ['a', 'b'],
+        }
+    }
+
+    self.assertEqual(
+        try_job_util._GetFailedTargetsFromSignals(signals, 'm', 'b'),
+        ['a', 'b'])
+
   def testGetFailedTargetsFromSignals(self):
     self.assertEqual(
         try_job_util._GetFailedTargetsFromSignals({}, 'm', 'b'), [])
