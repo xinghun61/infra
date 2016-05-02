@@ -64,9 +64,9 @@ def add_argparse_options(parser):
                      help="Directory containing service accounts credentials.\n"
                      "Defaults to %(default)s"
                      )
-  group.add_argument('--event-mon-http-timeout', default=10,
+  group.add_argument('--event-mon-http-timeout', default=10, type=int,
                      help='Timeout in seconds for HTTP requests to send events')
-  group.add_argument('--event-mon-http-retry-backoff', default=2.,
+  group.add_argument('--event-mon-http-retry-backoff', default=2., type=float,
                      help='Time in seconds before retrying POSTing to the HTTP '
                      'endpoint. Randomized exponential backoff is applied on '
                      'subsequent retries.')
