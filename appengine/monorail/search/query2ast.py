@@ -138,7 +138,8 @@ BUILTIN_ISSUE_FIELDS = {
 
 
 def ParseUserQuery(
-    query, scope, builtin_fields, harmonized_config, warnings=None):
+    query, scope, builtin_fields, harmonized_config, warnings=None,
+    now=None):
   """Parse a user query and return a set of structure terms.
 
   Args:
@@ -155,6 +156,7 @@ def ParseUserQuery(
          - could be label in one project and field in another project.
         @@@ what about searching across all projects?
     warnings: optional list to accumulate warning messages.
+    now: optional timestamp for tests, otherwise time.time() is used.
 
   Returns:
     A QueryAST with conjunctions (usually just one), where each has a list of
@@ -194,7 +196,7 @@ def ParseUserQuery(
       combined_fields[fd.field_name.lower()].append(fd)
 
   conjunctions = [
-      _ParseConjunction(sq, scope, combined_fields, warnings)
+      _ParseConjunction(sq, scope, combined_fields, warnings, now=now)
       for sq in subqueries]
   logging.info('search warnings: %r', warnings)
   return ast_pb2.QueryAST(conjunctions=conjunctions)
@@ -208,17 +210,18 @@ def _HasParens(s):
   return '(' in s or ')' in s
 
 
-def _ParseConjunction(subquery, scope, fields, warnings):
+def _ParseConjunction(subquery, scope, fields, warnings, now=None):
   """Parse part of a user query into a Conjunction PB."""
   logging.info('Parsing sub query: %r in scope %r', subquery, scope)
   scoped_query = ('%s %s' % (scope, subquery)).lower()
   cond_strs = _ExtractConds(scoped_query)
-  conds = [_ParseCond(cond_str, fields, warnings) for cond_str in cond_strs]
+  conds = [_ParseCond(cond_str, fields, warnings, now=now)
+           for cond_str in cond_strs]
   conds = [cond for cond in conds if cond]
   return ast_pb2.Conjunction(conds=conds)
 
 
-def _ParseCond(cond_str, fields, warnings):
+def _ParseCond(cond_str, fields, warnings, now=None):
   """Parse one user query condition string into a Condition PB."""
   op_match = OP_RE.match(cond_str)
   # Do not treat as key:value search terms if any of the special prefixes match.
@@ -235,7 +238,7 @@ def _ParseCond(cond_str, fields, warnings):
         if prefix.endswith(date_suffix):
           prefix = prefix.rstrip(date_suffix)
           op = _DATE_FIELD_SUFFIX_TO_OP[date_suffix]
-    return _ParseStructuredTerm(prefix, op, val, fields)
+    return _ParseStructuredTerm(prefix, op, val, fields, now=now)
 
   # Treat the cond as a full-text search term, which might be negated.
   if cond_str.startswith('-'):
@@ -261,7 +264,7 @@ def _ParseCond(cond_str, fields, warnings):
       op, [BUILTIN_ISSUE_FIELDS[ast_pb2.ANY_FIELD]], [cond_str], [])
 
 
-def _ParseStructuredTerm(prefix, op_str, value, fields):
+def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
   """Parse one user structured query term into an internal representation.
 
   Args:
@@ -270,6 +273,7 @@ def _ParseStructuredTerm(prefix, op_str, value, fields):
     op_str: the comparison operator.  Usually ":" or "=", but can be any OPS.
     value: the value to compare against, e.g., term to find in that field.
     fields: dict {name_lower: [FieldDef, ...]} for built-in and custom fields.
+    now: optional timestamp for tests, otherwise time.time() is used.
 
   Returns:
     A Condition PB.
@@ -308,7 +312,7 @@ def _ParseStructuredTerm(prefix, op_str, value, fields):
     # define the same custom field name, and one is a date and another is not.
     first_field = fields[prefix][0]
     if first_field.field_type == DATE:
-      date_value = _ParseDateValue(unquoted_value)
+      date_value = _ParseDateValue(unquoted_value, now=now)
       return ast_pb2.MakeCond(op, fields[prefix], [], [date_value])
     else:
       quick_or_ints = []
@@ -373,7 +377,7 @@ def _ExtractConds(query):
   return terms
 
 
-def _ParseDateValue(val):
+def _ParseDateValue(val, now=None):
   """Convert the user-entered date into timestamp."""
   # Support timestamp value such as opened>1437671476
   try:
@@ -387,13 +391,13 @@ def _ParseDateValue(val):
   # In fact, it is not very useful because everything in the system
   # happened before the current time.
   if val == 'today':
-    return _CalculatePastDate(0)
+    return _CalculatePastDate(0, now=now)
   elif val.startswith('today-'):
     try:
       days_ago = int(val.split('-')[1])
     except ValueError:
       raise InvalidQueryError('Could not parse date: ' + val)
-    return _CalculatePastDate(days_ago)
+    return _CalculatePastDate(days_ago, now=now)
 
   try:
     if '/' in val:

@@ -38,6 +38,7 @@ IS_NOT_DEFINED = query2ast.IS_NOT_DEFINED
 KEY_HAS = query2ast.KEY_HAS
 
 MakeCond = ast_pb2.MakeCond
+NOW = 1277762224
 
 
 class QueryParsingUnitTest(unittest.TestCase):
@@ -563,9 +564,9 @@ class QueryParsingUnitTest(unittest.TestCase):
     # query with a date field compared to "today"
     ast = query2ast.ParseUserQuery(
         'modified<today', '', BUILTIN_ISSUE_FIELDS,
-        self.default_config)
+        self.default_config, now=NOW)
     cond1 = ast.conjunctions[0].conds[0]
-    ts1 = query2ast._CalculatePastDate(0)
+    ts1 = query2ast._CalculatePastDate(0, now=NOW)
     self.assertEqual(MakeCond(LT, [BUILTIN_ISSUE_FIELDS['modified']],
                               [], [ts1]),
                      cond1)
@@ -573,17 +574,18 @@ class QueryParsingUnitTest(unittest.TestCase):
     # query with a daterange using today-N alias
     ast = query2ast.ParseUserQuery(
         'modified>=today-13', '', BUILTIN_ISSUE_FIELDS,
-        self.default_config)
+        self.default_config, now=NOW)
     cond1 = ast.conjunctions[0].conds[0]
-    ts1 = query2ast._CalculatePastDate(13)
+    ts1 = query2ast._CalculatePastDate(13, now=NOW)
     self.assertEqual(MakeCond(GE, [BUILTIN_ISSUE_FIELDS['modified']],
                               [], [ts1]),
                      cond1)
 
     ast = query2ast.ParseUserQuery(
-        'modified>today-13', '', BUILTIN_ISSUE_FIELDS, self.default_config)
+        'modified>today-13', '', BUILTIN_ISSUE_FIELDS, self.default_config,
+        now=NOW)
     cond1 = ast.conjunctions[0].conds[0]
-    ts1 = query2ast._CalculatePastDate(13)
+    ts1 = query2ast._CalculatePastDate(13, now=NOW)
     self.assertEqual(MakeCond(GT, [BUILTIN_ISSUE_FIELDS['modified']],
                               [], [ts1]),
                      cond1)
