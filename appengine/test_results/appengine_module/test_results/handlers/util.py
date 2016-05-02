@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-def normalize_test_type(test_type):
+def normalize_test_type(test_type, ignore_with_patch=False):
   """Clean extra details added to the test type.
 
   Args:
@@ -38,22 +38,23 @@ def normalize_test_type(test_type):
   """
   # We allow (with patch) as a separate test_type for now since executions of
   # uncommitted code should be treated differently.
-  clean_test_type = test_type.replace(' (with patch)', '', 1)
-  patched = len(clean_test_type) != len(test_type)
+  if not ignore_with_patch:
+    patched = ' (with patch)' in test_type
+    test_type = test_type.replace(' (with patch)', '', 1)
 
   # Special rule for instrumentation tests.
-  if clean_test_type.startswith('Instrumentation test '):
-    clean_test_type = clean_test_type[len('Instrumentation test '):]
+  if test_type.startswith('Instrumentation test '):
+    test_type = test_type[len('Instrumentation test '):]
 
   # Clean out any platform noise. For simplicity and based on current data
   # we just keep everything before the first space, e.g. base_unittests.
-  first_space = clean_test_type.find(' ')
+  first_space = test_type.find(' ')
   if first_space != -1:
-    clean_test_type = clean_test_type[:first_space]
+    test_type = test_type[:first_space]
 
-  if patched:
-    return '%s (with patch)' % clean_test_type
-  return clean_test_type
+  if not ignore_with_patch and patched:
+    return '%s (with patch)' % test_type
+  return test_type
 
 
 def flatten_tests_trie(tests_trie, delimiter):

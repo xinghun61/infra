@@ -43,6 +43,11 @@ class TestFileHandlerTest(testing.AppengineTestCase):
         util.normalize_test_type(
             'Instrumentation test content_shell_test_apk (with patch)'))
 
+  def test_ignores_with_patch_when_asked_to(self):
+    self.assertEqual('base_unittests', util.normalize_test_type(
+        'base_unittests on Windows XP (with patch)',
+        ignore_with_patch=True))
+
 
 class FlattenTestsTrieTest(unittest.TestCase):
   def test_flattens_tests_trie_correctly(self):

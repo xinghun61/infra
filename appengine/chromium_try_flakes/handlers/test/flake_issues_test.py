@@ -88,6 +88,13 @@ TEST_BUILDBOT_JSON_REPLY = json.dumps({
     {'results': [2], 'name': 'foo8 xx (with patch)', 'text': ['bar13']},
     {'results': [0], 'name': 'foo8 xx (without patch)', 'text': ['bar14']},
     {'results': [2], 'name': 'foo8 xx (retry summary)', 'text': ['bar15']},
+
+    # Ignore steps that failed both with and without patch. Also check that
+    # adding suffixes doesn't break the detection algorithm. Also check that we
+    # work correctly with summary steps without any (suffix).
+    {'results': [2], 'name': 'foo9 xx (with patch) aa', 'text': ['bar16']},
+    {'results': [2], 'name': 'foo9 yy (without patch) bb', 'text': ['bar17']},
+    {'results': [0], 'name': 'foo9', 'text': ['bar18']},
   ]
 })
 

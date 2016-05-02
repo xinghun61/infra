@@ -553,7 +553,6 @@ class CreateFlakyRun(webapp2.RequestHandler):
       #  - ... (retry summary): this is an artificial step to fail the build due
       #    to another step that has failed earlier (do not double count).
       if (step_name.startswith('[swarming]') or
-          step_name.endswith(' (retry summary)') or
           (step_name == 'Patch failure' and result != build_result.EXCEPTION) or
           (step_name == 'bot_update' and 'PATCH FAILED' in step_text)):
         continue
@@ -563,21 +562,20 @@ class CreateFlakyRun(webapp2.RequestHandler):
     steps_to_ignore = []
     for step in failed_steps:
       step_name = step['name']
-      if ' (with patch)' in step_name:
-        # Android instrumentation tests add a prefix before the step name, which
-        # doesn't appear on the summary step (without suffixes). To make sure we
-        # correctly ignore duplicate failures, we remove the prefix.
-        step_name = step_name.replace('Instrumentation test ', '')
-
-        # If a step fails without the patch, then the tree is busted. Don't
-        # count as flake.
-        step_name_with_no_modifier = step_name.replace(' (with patch)', '')
-        step_name_without_patch = (
-            '%s (without patch)' % step_name_with_no_modifier)
+      if '(with patch)' in step_name:
+        # Ignore any steps from the same test suite, which is determined by the
+        # normalized step name. Additionally, if the step fails without patch,
+        # ignore the original step as well because tree is busted.
+        normalized_step_name = normalize_test_type(step_name, True)
         for other_step in failed_steps:
-          if other_step['name'] == step_name_without_patch:
-            steps_to_ignore.append(step['name'])
+          if other_step == step:
+            continue
+          normalized_other_step_name = normalize_test_type(
+              other_step['name'], True)
+          if normalized_other_step_name == normalized_step_name:
             steps_to_ignore.append(other_step['name'])
+            if '(without patch)' in other_step['name']:
+              steps_to_ignore.append(step['name'])
 
     flakes_to_update = []
     for step in failed_steps:
