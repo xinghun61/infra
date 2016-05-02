@@ -123,6 +123,7 @@ class TryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'repo_name': 'chromium'
     }
 
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     expected_try_job_results = [
         {
             'report': {

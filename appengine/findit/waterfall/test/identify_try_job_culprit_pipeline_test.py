@@ -466,6 +466,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     self.assertEqual(analysis_status.COMPLETED, try_job.status)
 
     try_job_data = WfTryJobData.Get(try_job_id)
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertEqual({'compile': expected_culprit}, try_job_data.culprits)
     self.assertEqual(analysis.result_status,
                      result_status.FOUND_UNTRIAGED)
@@ -663,6 +664,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     self.assertEqual(expected_culprit, culprit)
 
     try_job_data = WfTryJobData.Get(try_job_id)
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     expected_culprit_data = {
         'a_test': {
             'a_test1': 'rev3'
@@ -816,6 +818,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     self.assertEqual(analysis_status.COMPLETED, try_job.status)
 
     try_job_data = WfTryJobData.Get(try_job_id)
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     expected_culprit_data = {
         'a_test': {
             'a_test1': 'rev1',

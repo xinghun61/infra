@@ -213,6 +213,7 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
 
     expected_suspected_cl = {
         'revision': 'rev2',
@@ -348,6 +349,7 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
 
     expected_suspected_cl = {
         'revision': 'rev1',

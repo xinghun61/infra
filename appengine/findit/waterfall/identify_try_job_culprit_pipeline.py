@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from google.appengine.ext import ndb
+
 from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
@@ -258,19 +260,26 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
           try_job_data.culprits = self._GetCulpritDataForTest(culprit_map)
       try_job_data.put()
 
-    # Store try job results.
-    try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
+    @ndb.transactional
+    def UpdateTryJobResult():
+      try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
+      if culprits:
+        result_to_update = (
+            try_job_result.compile_results if
+            try_job_type == TryJobType.COMPILE else
+            try_job_result.test_results)
+        if (result_to_update and
+            result_to_update[-1]['try_job_id'] == try_job_id):
+          result_to_update[-1].update(result)
+        else:  # pragma: no cover
+          result_to_update.append(result)
+      try_job_result.status = analysis_status.COMPLETED
+      try_job_result.put()
 
-    if culprits:
-      result_to_update = (
-          try_job_result.compile_results if
-          try_job_type == TryJobType.COMPILE else
-          try_job_result.test_results)
-      if (result_to_update and
-          result_to_update[-1]['try_job_id'] == try_job_id):
-        result_to_update[-1].update(result)
-      else:  # pragma: no cover
-        result_to_update.append(result)
+    @ndb.transactional
+    def UpdateWfAnalysisWithTryJobResult():
+      if not culprits:
+        return
 
       # Update analysis result and suspected CLs with results of this try job if
       # culprits were found.
@@ -284,7 +293,9 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
         analysis.suspected_cls = updated_suspected_cls
         analysis.put()
 
-    try_job_result.status = analysis_status.COMPLETED
-    try_job_result.put()
+    # Store try-job results.
+    UpdateTryJobResult()
+    # Add try-job results to WfAnalysis.
+    UpdateWfAnalysisWithTryJobResult()
 
     return result.get('culprit') if result else None

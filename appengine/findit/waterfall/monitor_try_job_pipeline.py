@@ -6,6 +6,8 @@ from datetime import datetime
 import json
 import time
 
+from google.appengine.ext import ndb
+
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
 from common.waterfall import buildbucket_client
@@ -137,6 +139,7 @@ class MonitorTryJobPipeline(BasePipeline):
 
     try_job_data.put()
 
+  @ndb.transactional
   def _UpdateTryJobResult(
       self, status, master_name, builder_name, build_number, try_job_type,
       try_job_id, try_job_url, result_content=None):
