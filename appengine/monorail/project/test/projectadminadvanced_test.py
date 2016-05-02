@@ -15,6 +15,8 @@ from services import service_manager
 from testing import fake
 from testing import testing_helpers
 
+NOW = 1277762224
+
 
 class ProjectAdminAdvancedTest(unittest.TestCase):
   """Unit tests for the ProjectAdminAdvanced servlet class."""
@@ -27,6 +29,11 @@ class ProjectAdminAdvancedTest(unittest.TestCase):
     self.project = services.project.TestAddProject('proj')
     self.mr = testing_helpers.MakeMonorailRequest(
         project=self.project, perms=permissions.OWNER_ACTIVE_PERMISSIONSET)
+    self.orig_time_function = time.time
+    time.time = lambda: NOW
+
+  def tearDown(self):
+    time.time = self.orig_time_function
 
   def testAssertBasePermission(self):
     # Signed-out users cannot edit the project
@@ -106,9 +113,8 @@ class ProjectAdminAdvancedTest(unittest.TestCase):
     self.mr.project_name = 'proj'
     post_data = fake.PostData()
     next_url = self.servlet.ProcessFormData(self.mr, post_data)
-    now = int(time.time())
     self.assertEqual(
-        'http://127.0.0.1/p/proj/adminAdvanced?saved=1&ts=%s' % now,
+        'http://127.0.0.1/p/proj/adminAdvanced?saved=1&ts=%s' % NOW,
         next_url)
 
   def testProcessFormData_AfterDeletion(self):
