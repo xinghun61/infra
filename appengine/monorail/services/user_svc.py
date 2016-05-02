@@ -27,9 +27,9 @@ DISMISSEDCUES_TABLE_NAME = 'DismissedCues'
 
 USER_COLS = [
     'user_id', 'email', 'is_site_admin', 'notify_issue_change',
-    'notify_starred_issue_change', 'banned', 'after_issue_update',
-    'keep_people_perms_open', 'preview_on_hover', 'ignore_action_limits',
-    'obscure_email']
+    'notify_starred_issue_change', 'email_compact_subject', 'email_view_widget',
+    'banned', 'after_issue_update', 'keep_people_perms_open',
+    'preview_on_hover', 'ignore_action_limits', 'obscure_email']
 ACTIONLIMIT_COLS = [
     'user_id', 'action_kind', 'recent_count', 'reset_timestamp',
     'lifetime_count', 'lifetime_limit', 'period_soft_limit',
@@ -63,7 +63,8 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
     # Make one User PB for each row in user_rows.
     for row in user_rows:
       (user_id, email, is_site_admin,
-       notify_issue_change, notify_starred_issue_change, banned,
+       notify_issue_change, notify_starred_issue_change,
+       email_compact_subject, email_view_widget, banned,
        after_issue_update, keep_people_perms_open, preview_on_hover,
        ignore_action_limits, obscure_email) = row
       user = user_pb2.MakeUser()
@@ -71,6 +72,8 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
       user.is_site_admin = bool(is_site_admin)
       user.notify_issue_change = bool(notify_issue_change)
       user.notify_starred_issue_change = bool(notify_starred_issue_change)
+      user.email_compact_subject = bool(email_compact_subject)
+      user.email_view_widget = bool(email_view_widget)
       user.obscure_email = bool(obscure_email)
       if banned:
         user.banned = banned
@@ -367,6 +370,8 @@ class UserService(object):
         'is_site_admin': user.is_site_admin,
         'notify_issue_change': user.notify_issue_change,
         'notify_starred_issue_change': user.notify_starred_issue_change,
+        'email_compact_subject': user.email_compact_subject,
+        'email_view_widget': user.email_view_widget,
         'banned': user.banned,
         'after_issue_update': str(user.after_issue_update or 'UP_TO_LIST'),
         'keep_people_perms_open': user.keep_people_perms_open,
@@ -410,6 +415,7 @@ class UserService(object):
 
   def UpdateUserSettings(
       self, cnxn, user_id, user, notify=None, notify_starred=None,
+      email_compact_subject=None, email_view_widget=None,
       obscure_email=None, after_issue_update=None,
       is_site_admin=None, ignore_action_limits=None,
       is_banned=None, banned_reason=None, action_limit_updates=None,
@@ -430,6 +436,10 @@ class UserService(object):
       user.notify_issue_change = notify
     if notify_starred is not None:
       user.notify_starred_issue_change = notify_starred
+    if email_compact_subject is not None:
+      user.email_compact_subject = email_compact_subject
+    if email_view_widget is not None:
+      user.email_view_widget = email_view_widget
 
     # display options
     if after_issue_update is not None:

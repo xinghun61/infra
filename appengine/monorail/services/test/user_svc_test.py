@@ -21,7 +21,7 @@ def SetUpGetUsers(user_service, cnxn):
   """Set up expected calls to SQL tables."""
   user_service.user_tbl.Select(
       cnxn, cols=user_svc.USER_COLS, user_id=[333L]).AndReturn(
-          [(333L, 'c@example.com', False, False, False, 'Spammer',
+          [(333L, 'c@example.com', False, False, False, False, True, 'Spammer',
             'stay_same_issue', False, False, False, True)])
   user_service.actionlimit_tbl.Select(
       cnxn, cols=user_svc.ACTIONLIMIT_COLS, user_id=[333L]).AndReturn([])
@@ -51,9 +51,9 @@ class UserTwoLevelCacheTest(unittest.TestCase):
 
   def testDeserializeUsersByID(self):
     user_rows = [
-        (111L, 'a@example.com', False, False, False, '',
+        (111L, 'a@example.com', False, False, False, False, True, '',
          'stay_same_issue', False, False, False, True),
-        (222L, 'b@example.com', False, False, False, '',
+        (222L, 'b@example.com', False, False, False, False, True, '',
          'next_in_list', False, False, False, True),
         ]
     actionlimit_rows = []
@@ -203,6 +203,8 @@ class UserServiceTest(unittest.TestCase):
         'is_site_admin': False,
         'banned': 'Turned spammer',
         'obscure_email': True,
+        'email_compact_subject': False,
+        'email_view_widget': True,
     }
     self.user_service.user_tbl.Update(
         self.cnxn, delta, user_id=111L, commit=False)

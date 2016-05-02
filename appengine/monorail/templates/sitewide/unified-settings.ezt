@@ -17,7 +17,7 @@
  <br><br>
 </div>
 
-<h4>Issue tracker</h4>
+<h4>Notifications</h4>
 <div style="margin:0 0 2em 2em">
   [# TODO(jrobbins): re-implement issue preview on hover in polymer.]
 
@@ -28,15 +28,32 @@
  <input type="checkbox" name="notify" id="notify" value="1"
         [if-any read_only]disabled="disabled"[end]
         [if-any settings_user_pb.notify_issue_change_bool]checked="checked"[end] >
- <label for="notify">If [if-any self]I am[else]this user is[end] in the issue's
-   <b>owner</b> or <b>CC</b> fields.</label><br>
+ <label for="notify">
+   If [if-any self]I am[else]this user is[end] in the issue's <b>owner</b> or <b>CC</b> fields.
+ </label><br>
  <input type="checkbox" name="notify_starred" id="notify_starred" value="1"
         [if-any read_only]disabled="disabled"[end]
         [if-any settings_user_pb.notify_starred_issue_change_bool]checked="checked"[end]  >
  <label for="notify_starred">
   If [if-any self]I[else]this user[end] <b>starred</b> the issue.
  </label>
- <br><br>
+
+ <p>
+  Email notifications sent to me should:
+ </p>
+ <input type="checkbox" name="email_compact_subject" id="email_compact_subject" value="1"
+        [if-any read_only]disabled="disabled"[end]
+        [if-any settings_user_pb.email_compact_subject_bool]checked="checked"[end] >
+ <label for="email_compact_subject">
+   Format the subject line compactly
+ </label><br>
+ <input type="checkbox" name="email_view_widget" id="email_view_widget" value="1"
+        [if-any read_only]disabled="disabled"[end]
+        [if-any settings_user_pb.email_view_widget_bool]checked="checked"[end]  >
+ <label for="email_view_widget">
+   Include a "View Issue" button in Gmail
+ </label><br>
+ <br>
 </div>
 
 [if-any perms._EditOtherUsers]

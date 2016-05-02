@@ -72,6 +72,10 @@ class User(messages.Message):
   # the issue.
   notify_issue_change = messages.BooleanField(5, default=True)
   notify_starred_issue_change = messages.BooleanField(6, default=True)
+  # Opt-in to email subject lines like "proj:123: issue summary".
+  email_compact_subject = messages.BooleanField(14, default=False)
+  # Opt-out of "View Issue" button in Gmail inbox.
+  email_view_widget = messages.BooleanField(15, default=True)
 
   # This user has been banned, and this string describes why. All access
   # to Monorail pages should be disabled.
@@ -109,6 +113,7 @@ class User(messages.Message):
 
   flag_spam_limit = messages.MessageField(ActionLimit, 43)
   api_request_limit = messages.MessageField(ActionLimit, 44)
+
 
 def MakeUser():
   """Create and return a new user record in RAM."""

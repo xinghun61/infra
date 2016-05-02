@@ -538,6 +538,8 @@ class UserSettings(object):
     user_service.UpdateUserSettings(
         cnxn, user_id, user, notify='notify' in post_data,
         notify_starred='notify_starred' in post_data,
+        email_compact_subject='email_compact_subject' in post_data,
+        email_view_widget='email_view_widget' in post_data,
         preview_on_hover='preview_on_hover' in post_data,
         obscure_email=obscure_email, **kwargs)
 

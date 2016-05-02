@@ -801,3 +801,8 @@ ALTER TABLE User MODIFY email VARCHAR(255);
 
 ALTER TABLE Project ADD COLUMN source_url VARCHAR(250);
 
+================================================================
+2016-04-27: Add prefs for compact email subject lines
+
+ALTER TABLE User ADD COLUMN email_compact_subject BOOLEAN DEFAULT FALSE;
+ALTER TABLE User ADD COLUMN email_view_widget BOOLEAN DEFAULT TRUE;

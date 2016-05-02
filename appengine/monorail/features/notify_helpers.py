@@ -49,13 +49,21 @@ HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE = """
   "potentialAction": {
     "@type": "ViewAction",
     "name": "View Issue",
-    "url": "%s"
+    "url": "%(url)s"
   },
   "description": ""
 }
 </script>
 
-<div style="font-family: arial, sans-serif">%s</div>
+<div style="font-family: arial, sans-serif">%(body)s</div>
+</body>
+</html>
+"""
+
+HTML_BODY_WITHOUT_GMAIL_ACTION_TEMPLATE = """
+<html>
+<body>
+<div style="font-family: arial, sans-serif">%(body)s</div>
 </body>
 </html>
 """
@@ -84,8 +92,8 @@ def ComputeIssueChangeAddressPermList(
         can be set to check "If I starred the issue."
 
   Returns:
-    A list of tuples: [(recipient_is_member, address, reply_perm), ...] where
-    reply_perm is one of REPLY_NOT_ALLOWED, REPLY_MAY_COMMENT,
+    A list of tuples: [(recipient_is_member, address, user, reply_perm), ...]
+    where reply_perm is one of REPLY_NOT_ALLOWED, REPLY_MAY_COMMENT,
     REPLY_MAY_UPDATE.
   """
   memb_addr_perm_list = []
@@ -124,7 +132,7 @@ def ComputeIssueChangeAddressPermList(
           auth.effective_ids, perms, project, issue):
         reply_perm = REPLY_MAY_COMMENT
 
-    memb_addr_perm_list.append((recipient_is_member, addr, reply_perm))
+    memb_addr_perm_list.append((recipient_is_member, addr, user, reply_perm))
 
   logging.info('For %s %s, will notify: %r',
                project.project_name, issue.local_id, memb_addr_perm_list)
@@ -148,14 +156,14 @@ def ComputeProjectNotificationAddrList(
         they already know.
 
   Returns:
-    A list of tuples: [(False, email_address, reply_permission_level), ...],
+    A list of tuples: [(False, email_addr, None, reply_permission_level), ...],
     where reply_permission_level is always REPLY_NOT_ALLOWED for now.
   """
   memb_addr_perm_list = []
   if contributor_could_view:
     ml_addr = project.issue_notify_address
     if ml_addr and ml_addr not in omit_addrs:
-      memb_addr_perm_list.append((False, ml_addr, REPLY_NOT_ALLOWED))
+      memb_addr_perm_list.append((False, ml_addr, None, REPLY_NOT_ALLOWED))
 
   return memb_addr_perm_list
 
@@ -174,25 +182,25 @@ def ComputeIssueNotificationAddrList(issue, omit_addrs):
         they already know.
 
   Returns:
-    A list of tuples: [(False, email_address, reply_permission_level), ...],
+    A list of tuples: [(False, email_addr, None, reply_permission_level), ...],
     where reply_permission_level is always REPLY_NOT_ALLOWED for now.
   """
   addr_perm_list = []
   for addr in issue.derived_notify_addrs:
     if addr not in omit_addrs:
-      addr_perm_list.append((False, addr, REPLY_NOT_ALLOWED))
+      addr_perm_list.append((False, addr, None, REPLY_NOT_ALLOWED))
 
   return addr_perm_list
 
 
 def MakeBulletedEmailWorkItems(
-    group_reason_list, subject, body_for_non_members, body_for_members,
+    group_reason_list, issue, body_for_non_members, body_for_members,
     project, hostport, commenter_view, seq_num=None, detail_url=None):
   """Make a list of dicts describing email-sending tasks to notify users.
 
   Args:
     group_reason_list: list of (is_memb, addr_perm, reason) tuples.
-    subject: string email subject line.
+    issue: Issue that was updated.
     body_for_non_members: string body of email to send to non-members.
     body_for_members: string body of email to send to members.
     project: Project that contains the issue.
@@ -215,7 +223,7 @@ def MakeBulletedEmailWorkItems(
   email_tasks = []
   for memb_addr_perm, reasons in addr_reasons_dict.iteritems():
     email_tasks.append(_MakeEmailWorkItem(
-        memb_addr_perm, reasons, subject, body_for_non_members,
+        memb_addr_perm, reasons, issue, body_for_non_members,
         body_for_members, project, hostport, commenter_view, seq_num=seq_num,
         detail_url=detail_url))
 
@@ -223,10 +231,20 @@ def MakeBulletedEmailWorkItems(
 
 
 def _MakeEmailWorkItem(
-    (recipient_is_member, to_addr, reply_perm), reasons, subject,
+    (recipient_is_member, to_addr, user, reply_perm), reasons, issue,
     body_for_non_members, body_for_members, project, hostport, commenter_view,
     seq_num=None, detail_url=None):
   """Make one email task dict for one user, includes a detailed reason."""
+  subject_format = 'Issue %(local_id)d in %(project_name)s: %(summary)s'
+  if user and user.email_compact_subject:
+    subject_format = '%(project_name)s:%(local_id)d: %(summary)s'
+
+  subject = subject_format % {
+    'local_id': issue.local_id,
+    'project_name': issue.project_name,
+    'summary': issue.summary,
+    }
+
   footer = _MakeNotificationFooter(reasons, reply_perm, hostport)
   if isinstance(footer, unicode):
     footer = footer.encode('utf-8')
@@ -258,9 +276,13 @@ def _MakeEmailWorkItem(
     # occassionally used to contain HTML attributes and event handler
     # definitions.
     html_escaped_body = cgi.escape(body + footer, quote=1).replace("'", '&#39;')
-    html_body = HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % (
-        detail_url,
-        _AddHTMLTags(html_escaped_body.decode('utf-8')))
+    template = HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE
+    if user and not user.email_view_widget:
+      template = HTML_BODY_WITHOUT_GMAIL_ACTION_TEMPLATE
+    html_body = template % {
+        'url': detail_url,
+        'body': _AddHTMLTags(html_escaped_body.decode('utf-8')),
+        }
   return dict(to=to_addr, subject=subject, body=body + footer,
               html_body=html_body, from_addr=from_addr, reply_to=reply_to,
               references=refs)

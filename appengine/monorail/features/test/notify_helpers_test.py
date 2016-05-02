@@ -34,9 +34,9 @@ class ComputeIssueChangeAddressPermListTest(unittest.TestCase):
         issue=fake.IssueService(),
         user=fake.UserService(),
         usergroup=fake.UserGroupService())
-    self.services.user.TestAddUser('owner@example.com', 111L)
-    self.services.user.TestAddUser('member@example.com', 222L)
-    self.services.user.TestAddUser('visitor@example.com', 999L)
+    self.owner = self.services.user.TestAddUser('owner@example.com', 111L)
+    self.member = self.services.user.TestAddUser('member@example.com', 222L)
+    self.visitor = self.services.user.TestAddUser('visitor@example.com', 999L)
     self.project = self.services.project.TestAddProject(
         'proj', owner_ids=[111L], committer_ids=[222L])
     self.project.process_inbound_email = True
@@ -57,9 +57,9 @@ class ComputeIssueChangeAddressPermListTest(unittest.TestCase):
         cnxn, ids_to_consider, self.project, self.issue, self.services, set(),
         self.users_by_id, pref_check_function=lambda *args: True)
     self.assertEqual(
-        [(True, 'owner@example.com', REPLY_MAY_UPDATE),
-         (True, 'member@example.com', REPLY_MAY_UPDATE),
-         (False, 'visitor@example.com', REPLY_MAY_COMMENT)],
+        [(True, 'owner@example.com', self.owner, REPLY_MAY_UPDATE),
+         (True, 'member@example.com', self.member, REPLY_MAY_UPDATE),
+         (False, 'visitor@example.com', self.visitor, REPLY_MAY_COMMENT)],
         addr_perm_list)
 
 
@@ -85,7 +85,7 @@ class ComputeProjectAndIssueNotificationAddrListTest(unittest.TestCase):
     addr_perm_list = notify_helpers.ComputeProjectNotificationAddrList(
         self.project, True, set())
     self.assertListEqual(
-        [(False, 'mailing-list@domain.com', REPLY_NOT_ALLOWED)],
+        [(False, 'mailing-list@domain.com', None, REPLY_NOT_ALLOWED)],
         addr_perm_list)
 
     # No one is notified because mailing list was already notified.
@@ -107,7 +107,7 @@ class ComputeProjectAndIssueNotificationAddrListTest(unittest.TestCase):
     addr_perm_list = notify_helpers.ComputeIssueNotificationAddrList(
         issue, set())
     self.assertListEqual(
-        [(False, 'notify@domain.com', REPLY_NOT_ALLOWED)],
+        [(False, 'notify@domain.com', None, REPLY_NOT_ALLOWED)],
         addr_perm_list)
 
     # Also-notify addresses can be omitted (e.g., if it is the same as
@@ -123,15 +123,17 @@ class MakeBulletedEmailWorkItemsTest(unittest.TestCase):
     self.project = fake.Project(project_name='proj1')
     self.commenter_view = framework_views.UserView(
         111L, 'test@example.com', True)
+    self.issue = fake.MakeTestIssue(
+        self.project.project_id, 1234, 'summary', 'New', 111L)
 
   def testEmptyAddrs(self):
     """Test the case where we found zero users to notify."""
     email_tasks = notify_helpers.MakeBulletedEmailWorkItems(
-        [], 'subject', 'body', 'body', self.project, 'example.com',
+        [], self.issue, 'body', 'body', self.project, 'example.com',
         self.commenter_view)
     self.assertEqual([], email_tasks)
     email_tasks = notify_helpers.MakeBulletedEmailWorkItems(
-        [([], 'reason')], 'subject', 'body', 'body', self.project,
+        [([], 'reason')], self.issue, 'body', 'body', self.project,
         'example.com', self.commenter_view)
     self.assertEqual([], email_tasks)
 
@@ -148,16 +150,22 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         'adjust your notification preferences at:<br/><a href="https://'
         'example.com/hosting/settings">https://example.com/hosting/settings'
         '</a>')
+    self.services = service_manager.Services(
+        user=fake.UserService())
+    self.member = self.services.user.TestAddUser('member@example.com', 222L)
+    self.issue = fake.MakeTestIssue(
+        self.project.project_id, 1234, 'summary', 'New', 111L,
+        project_name='proj1')
 
   def testBodySelection(self):
     """We send non-members the email body that is indented for non-members."""
     email_task = notify_helpers._MakeEmailWorkItem(
-        (False, 'a@a.com', REPLY_NOT_ALLOWED),
-        ['reason'], 'subject', 'body non', 'body mem', self.project,
+        (False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+        ['reason'], self.issue, 'body non', 'body mem', self.project,
         'example.com', self.commenter_view)
 
     self.assertEqual('a@a.com', email_task['to'])
-    self.assertEqual('subject', email_task['subject'])
+    self.assertEqual('Issue 1234 in proj1: summary', email_task['subject'])
     self.assertIn('body non', email_task['body'])
     self.assertEqual(
       emailfmt.FormatFromAddr(self.project, commenter_view=self.commenter_view,
@@ -166,16 +174,16 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     self.assertEqual(emailfmt.NoReplyAddress(), email_task['reply_to'])
 
     email_task = notify_helpers._MakeEmailWorkItem(
-        (True, 'a@a.com', REPLY_NOT_ALLOWED),
-        ['reason'], 'subject', 'body mem', 'body mem', self.project,
+        (True, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+        ['reason'], self.issue, 'body mem', 'body mem', self.project,
         'example.com', self.commenter_view)
     self.assertIn('body mem', email_task['body'])
 
   def testHtmlBody_NoDetailUrl(self):
     """"An html body is not be sent if detail_url is not specified."""
     email_task = notify_helpers._MakeEmailWorkItem(
-        (False, 'a@a.com', REPLY_NOT_ALLOWED),
-        ['reason'], 'subject', 'body non', 'body mem', self.project,
+        (False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+        ['reason'], self.issue, 'body non', 'body mem', self.project,
         'example.com', self.commenter_view, detail_url=None)
 
     self.assertIsNone(email_task['html_body'])
@@ -184,14 +192,14 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     """"An html body is sent if a detail_url is specified."""
     detail_url = 'http://test-detail-url.com/id=1234'
     email_task = notify_helpers._MakeEmailWorkItem(
-        (False, 'a@a.com', REPLY_NOT_ALLOWED),
-        ['reason'], 'subject', 'body non', 'body mem', self.project,
+        (False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+        ['reason'], self.issue, 'body non', 'body mem', self.project,
         'example.com', self.commenter_view, detail_url=detail_url)
 
     expected_html_body = (
-        notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % (
-            detail_url,
-            'body non-- <br/>%s' % self.expected_html_footer))
+        notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % {
+            'url': detail_url,
+            'body': 'body non-- <br/>%s' % self.expected_html_footer})
     self.assertEquals(expected_html_body, email_task['html_body'])
 
   def testHtmlBody_WithUnicodeChars(self):
@@ -199,62 +207,65 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     detail_url = 'http://test-detail-url.com/id=1234'
     unicode_content = '\xe2\x9d\xa4     â    â'
     email_task = notify_helpers._MakeEmailWorkItem(
-        (False, 'a@a.com', REPLY_NOT_ALLOWED),
-        ['reason'], 'subject', unicode_content, 'unused body mem',
+        (False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+        ['reason'], self.issue, unicode_content, 'unused body mem',
         self.project, 'example.com', self.commenter_view, detail_url=detail_url)
 
     expected_html_body = (
-        notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % (
-            detail_url,
-            '%s-- <br/>%s' % (unicode_content.decode('utf-8'),
-                              self.expected_html_footer)))
+        notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % {
+            'url': detail_url,
+            'body': '%s-- <br/>%s' % (unicode_content.decode('utf-8'),
+                                      self.expected_html_footer)})
     self.assertEquals(expected_html_body, email_task['html_body'])
 
   def testHtmlBody_WithLinks(self):
     """"An html body is sent if a detail_url is specified."""
     detail_url = 'http://test-detail-url.com/id=1234'
     email_task = notify_helpers._MakeEmailWorkItem(
-        (False, 'a@a.com', REPLY_NOT_ALLOWED),
-        ['reason'], 'subject', 'test google.com test', 'unused body mem',
+        (False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+        ['reason'], self.issue, 'test google.com test', 'unused body mem',
         self.project, 'example.com', self.commenter_view, detail_url=detail_url)
 
     expected_html_body = (
-        notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % (
-            detail_url,
+        notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % {
+            'url': detail_url,
+            'body': (
             'test <a href="http://google.com">google.com</a> test-- <br/>%s' % (
-                self.expected_html_footer)))
+                self.expected_html_footer))})
     self.assertEquals(expected_html_body, email_task['html_body'])
 
   def testHtmlBody_LinkWithinTags(self):
     """"An html body is sent with correct <a href>s."""
     detail_url = 'http://test-detail-url.com/id=1234'
     email_task = notify_helpers._MakeEmailWorkItem(
-        (False, 'a@a.com', REPLY_NOT_ALLOWED),
-        ['reason'], 'subject', 'test <http://google.com> test', 'unused body',
+        (False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+        ['reason'], self.issue, 'test <http://google.com> test', 'unused body',
         self.project, 'example.com', self.commenter_view, detail_url=detail_url)
 
     expected_html_body = (
-        notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % (
-            detail_url,
-            'test <a href="http://google.com"><http://google.com></a> '
-            'test-- <br/>%s' % self.expected_html_footer))
+        notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % {
+            'url': detail_url,
+            'body': (
+                'test <a href="http://google.com"><http://google.com></a> '
+                'test-- <br/>%s' % self.expected_html_footer)})
     self.assertEquals(expected_html_body, email_task['html_body'])
 
   def testHtmlBody_EmailWithinTags(self):
     """"An html body is sent with correct <a href>s."""
     detail_url = 'http://test-detail-url.com/id=1234'
     email_task = notify_helpers._MakeEmailWorkItem(
-        (False, 'a@a.com', REPLY_NOT_ALLOWED),
-        ['reason'], 'subject', 'test <t@chromium.org> <a@chromium.org> test',
+        (False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+        ['reason'], self.issue, 'test <t@chromium.org> <a@chromium.org> test',
         'unused body mem', self.project, 'example.com', self.commenter_view,
         detail_url=detail_url)
 
     expected_html_body = (
-        notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % (
-            detail_url,
-            'test <a href="mailto:t@chromium.org"><t@chromium.org></a> '
-            '<a href="mailto:a@chromium.org"><a@chromium.org></a> '
-            'test-- <br/>%s' % self.expected_html_footer))
+        notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % {
+            'url': detail_url,
+            'body': (
+                'test <a href="mailto:t@chromium.org"><t@chromium.org></a> '
+                '<a href="mailto:a@chromium.org"><a@chromium.org></a> '
+                'test-- <br/>%s' % self.expected_html_footer)})
     self.assertEquals(expected_html_body, email_task['html_body'])
 
   def testHtmlBody_WithEscapedHtml(self):
@@ -263,8 +274,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     body_with_html_content = (
         '<a href="http://www.google.com">test</a> \'something\'')
     email_task = notify_helpers._MakeEmailWorkItem(
-        (False, 'a@a.com', REPLY_NOT_ALLOWED),
-        ['reason'], 'subject', body_with_html_content, 'unused body mem',
+        (False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+        ['reason'], self.issue, body_with_html_content, 'unused body mem',
         self.project, 'example.com', self.commenter_view, detail_url=detail_url)
 
     escaped_body_with_html_content = (
@@ -273,24 +284,24 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     notify_helpers._MakeNotificationFooter(
         ['reason'], REPLY_NOT_ALLOWED, 'example.com')
     expected_html_body = (
-        notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % (
-            detail_url,
-            '%s-- <br/>%s' % (escaped_body_with_html_content,
-                              self.expected_html_footer)))
+        notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % {
+            'url': detail_url,
+            'body': '%s-- <br/>%s' % (escaped_body_with_html_content,
+                                      self.expected_html_footer)})
     self.assertEquals(expected_html_body, email_task['html_body'])
 
   def testReplyInvitation(self):
     """We include a footer about replying that is appropriate for that user."""
     email_task = notify_helpers._MakeEmailWorkItem(
-        (True, 'a@a.com', REPLY_NOT_ALLOWED),
-        ['reason'], 'subject', 'body non', 'body mem', self.project,
+        (True, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
+        ['reason'], self.issue, 'body non', 'body mem', self.project,
         'example.com', self.commenter_view)
     self.assertEqual(emailfmt.NoReplyAddress(), email_task['reply_to'])
     self.assertNotIn('Reply to this email', email_task['body'])
 
     email_task = notify_helpers._MakeEmailWorkItem(
-        (True, 'a@a.com', REPLY_MAY_COMMENT),
-        ['reason'], 'subject', 'body non', 'body mem', self.project,
+        (True, 'a@a.com', self.member, REPLY_MAY_COMMENT),
+        ['reason'], self.issue, 'body non', 'body mem', self.project,
         'example.com', self.commenter_view)
     self.assertEqual(
       '%s@%s' % (self.project.project_name, emailfmt.MailDomain()),
@@ -299,8 +310,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     self.assertNotIn('make changes', email_task['body'])
 
     email_task = notify_helpers._MakeEmailWorkItem(
-        (True, 'a@a.com', REPLY_MAY_UPDATE),
-        ['reason'], 'subject', 'body non', 'body mem', self.project,
+        (True, 'a@a.com', self.member, REPLY_MAY_UPDATE),
+        ['reason'], self.issue, 'body non', 'body mem', self.project,
         'example.com', self.commenter_view)
     self.assertEqual(
       '%s@%s' % (self.project.project_name, emailfmt.MailDomain()),
@@ -312,16 +323,16 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     """We don't invite replies if they are disabled for this project."""
     self.project.process_inbound_email = False
     email_task = notify_helpers._MakeEmailWorkItem(
-        (True, 'a@a.com', REPLY_MAY_UPDATE),
-        ['reason'], 'subject', 'body non', 'body mem', self.project,
+        (True, 'a@a.com', self.member, REPLY_MAY_UPDATE),
+        ['reason'], self.issue, 'body non', 'body mem', self.project,
         'example.com', self.commenter_view)
     self.assertEqual(emailfmt.NoReplyAddress(), email_task['reply_to'])
 
   def testReasons(self):
     """The footer lists reasons why that email was sent to that user."""
     email_task = notify_helpers._MakeEmailWorkItem(
-        (True, 'a@a.com', REPLY_MAY_UPDATE),
-        ['Funny', 'Caring', 'Near'], 'subject', 'body', 'body', self.project,
+        (True, 'a@a.com', self.member, REPLY_MAY_UPDATE),
+        ['Funny', 'Caring', 'Near'], self.issue, 'body', 'body', self.project,
         'example.com', self.commenter_view)
     self.assertIn('because:', email_task['body'])
     self.assertIn('1. Funny', email_task['body'])
@@ -329,8 +340,8 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     self.assertIn('3. Near', email_task['body'])
 
     email_task = notify_helpers._MakeEmailWorkItem(
-        (True, 'a@a.com', REPLY_MAY_UPDATE),
-        [], 'subject', 'body', 'body', self.project,
+        (True, 'a@a.com', self.member, REPLY_MAY_UPDATE),
+        [], self.issue, 'body', 'body', self.project,
         'example.com', self.commenter_view)
     self.assertNotIn('because', email_task['body'])
 

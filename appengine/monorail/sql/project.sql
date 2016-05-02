@@ -16,6 +16,8 @@ CREATE TABLE User (
   obscure_email BOOLEAN DEFAULT TRUE,
   notify_issue_change BOOLEAN DEFAULT TRUE,
   notify_starred_issue_change BOOLEAN DEFAULT TRUE,
+  email_compact_subject BOOLEAN DEFAULT FALSE,
+  email_view_widget BOOLEAN DEFAULT TRUE,
   banned VARCHAR(80),
   after_issue_update ENUM ('up_to_list', 'stay_same_issue', 'next_in_list'),
   keep_people_perms_open BOOLEAN DEFAULT FALSE,

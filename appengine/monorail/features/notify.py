@@ -266,9 +266,6 @@ class NotifyIssueChangeTask(NotifyTaskBase):
         autolinker, {}, mr, issue)
     body_for_members = self.email_template.GetResponse(email_data)
 
-    subject = 'Issue %d in %s: %s' % (
-        issue.local_id, project.project_name, issue.summary)
-
     commenter_email = users_by_id[comment.user_id].email
     omit_addrs = set([commenter_email] +
                      [users_by_id[omit_id].email for omit_id in omit_ids])
@@ -380,7 +377,7 @@ class NotifyIssueChangeTask(NotifyTaskBase):
         hostport, issue.project_name, urls.ISSUE_DETAIL,
         id=issue.local_id)
     email_tasks = notify_helpers.MakeBulletedEmailWorkItems(
-        group_reason_list, subject, body_for_non_members, body_for_members,
+        group_reason_list, issue, body_for_non_members, body_for_members,
         project, hostport, commenter_view, seq_num=comment.sequence,
         detail_url=detail_url)
 
