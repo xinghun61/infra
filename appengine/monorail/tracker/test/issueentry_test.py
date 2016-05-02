@@ -8,6 +8,9 @@
 import mox
 import unittest
 
+from google.appengine.ext import testbed
+import webapp2
+
 from framework import framework_views
 from framework import permissions
 from services import service_manager
@@ -15,7 +18,6 @@ from testing import fake
 from testing import testing_helpers
 from tracker import issueentry
 
-from google.appengine.ext import testbed
 
 class IssueEntryTest(unittest.TestCase):
   def setUp(self):
@@ -30,8 +32,10 @@ class IssueEntryTest(unittest.TestCase):
         user=fake.UserService(),
         project=fake.ProjectService())
     self.project = self.services.project.TestAddProject('proj', project_id=987)
+    request = webapp2.Request.blank('/p/proj/issues/entry')
+    response = webapp2.Response()
     self.servlet = issueentry.IssueEntry(
-        'req', 'res', services=self.services)
+        request, response, services=self.services)
     self.mox = mox.Mox()
 
   def tearDown(self):
@@ -116,17 +120,40 @@ class IssueEntryTest(unittest.TestCase):
     self.assertFalse(page_data['clear_summary_on_click'])
     self.assertTrue(page_data['must_edit_summary'])
 
-  def testProcessFormData(self):
+  def testProcessFormData_RedirectToEnteredIssue(self):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry')
     mr.auth.user_view = framework_views.UserView(100, 'user@invalid', True)
-    mr.perms = []
+    mr.perms = permissions.EMPTY_PERMISSIONSET
     post_data = fake.PostData(
         summary=['fake summary'],
         comment=['fake comment'],
         status=['New'])
     url = self.servlet.ProcessFormData(mr, post_data)
     self.assertTrue('/p/proj/issues/detail?id=' in url)
+
+  def testProcessFormData_RejectPlacedholderSummary(self):
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry')
+    mr.auth.user_view = framework_views.UserView(100, 'user@invalid', True)
+    mr.perms = permissions.EMPTY_PERMISSIONSET
+    post_data = fake.PostData(
+        summary=[issueentry.PLACEHOLDER_SUMMARY],
+        comment=['fake comment'],
+        status=['New'])
+
+    self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
+    self.servlet.PleaseCorrect(
+        mr, component_required=None, fields=[], initial_blocked_on='',
+        initial_blocking='', initial_cc='', initial_comment='fake comment',
+        initial_components='', initial_owner='', initial_status='New',
+        initial_summary='Enter one-line summary', labels=[])
+    self.mox.ReplayAll()
+
+    url = self.servlet.ProcessFormData(mr, post_data)
+    self.mox.VerifyAll()
+    self.assertEqual('Summary is required', mr.errors.summary)
+    self.assertIsNone(url)
 
 
   def test_SelectTemplate(self):

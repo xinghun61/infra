@@ -218,7 +218,7 @@ class IssueEntry(servlet.Servlet):
     reporter_id = mr.auth.user_id
     self.CheckCaptcha(mr, post_data)
 
-    if not parsed.summary.strip():
+    if not parsed.summary.strip() or parsed.summary == PLACEHOLDER_SUMMARY:
       mr.errors.summary = 'Summary is required'
 
     if not parsed.comment.strip():
