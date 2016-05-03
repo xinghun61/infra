@@ -497,12 +497,6 @@ class NotifyBlockingChangeTask(NotifyTaskBase):
     # expose too many as we iterate through upstream projects.
     body = self.email_template.GetResponse(email_data)
 
-    # Just use "Re:", not Message-Id and References because a blocking
-    # notification is not a comment on the issue.
-    subject = 'Re: Issue %d in %s: %s' % (
-        upstream_issue.local_id, upstream_issue.project_name,
-        upstream_issue.summary)
-
     omit_addrs = {users_by_id[omit_id].email for omit_id in omit_ids}
 
     # Get the transitive set of owners and Cc'd users, and their UserView's.
@@ -560,8 +554,8 @@ class NotifyBlockingChangeTask(NotifyTaskBase):
         ])
 
     one_issue_email_tasks = notify_helpers.MakeBulletedEmailWorkItems(
-        group_reason_list, subject, body, body, upstream_project, hostport,
-        commenter_view, detail_url=detail_url)
+        group_reason_list, upstream_issue, body, body, upstream_project,
+        hostport, commenter_view, detail_url=detail_url)
 
     return one_issue_email_tasks
 
@@ -834,6 +828,7 @@ class NotifyBulkChangeTask(NotifyTaskBase):
     }
 
     if len(issues) == 1:
+      # TODO(jrobbins): use compact email subject lines based on user pref.
       subject = 'issue %s in %s: %s' % (
           issues[0].local_id, project_name, issues[0].summary)
       # TODO(jrobbins): Look up the sequence number instead and treat this
