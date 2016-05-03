@@ -86,7 +86,7 @@ waterfall_backend_web_application = webapp2.WSGIApplication(
 # "crash-frontend" module.
 crash_frontend_web_pages_handler_mappings = [
     ('/crash/config', crash_config.CrashConfig),
-    ('/crash/fracas', fracas_crash.FracasCrash),
+    ('/_ah/push-handlers/crash/fracas', fracas_crash.FracasCrash),
 ]
 crash_frontend_web_application = webapp2.WSGIApplication(
     crash_frontend_web_pages_handler_mappings, debug=False)

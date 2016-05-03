@@ -12,7 +12,6 @@ from model.crash.crash_config import CrashConfig
 
 DEFAULT_CONFIG_DATA = {
     'fracas': {
-        'crash_data_push_token': 'secret_token',
         'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
         'supported_platform_list_by_channel': {
             'canary': ['win', 'mac'],

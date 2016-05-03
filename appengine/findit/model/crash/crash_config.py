@@ -13,7 +13,6 @@ class CrashConfig(VersionedConfig):
   """Global configuration of settings for processing Chrome crashes."""
   # Fracas-specific parameters.
   # {
-  #   "crash_data_push_token": "secret_token",
   #   "analysis_result_pubsub_topic": "projects/project-name/topics/name",
   #   "supported_platform_list_by_channel": {
   #     "canary": ["win", "mac"],

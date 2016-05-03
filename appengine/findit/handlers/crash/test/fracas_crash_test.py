@@ -12,12 +12,11 @@ import webtest
 
 from crash.test.crash_testcase import CrashTestCase
 from handlers.crash import fracas_crash
-from model.crash.crash_config import CrashConfig
 
 
 class FracasCrashTest(CrashTestCase):
   app_module = webapp2.WSGIApplication([
-      ('/crash/fracas', fracas_crash.FracasCrash),
+      ('/_ah/push-handlers/crash/fracas', fracas_crash.FracasCrash),
   ], debug=True)
 
   def _MockScheduleNewAnalysisForCrash(self, requested_crashes):
@@ -26,19 +25,10 @@ class FracasCrashTest(CrashTestCase):
     self.mock(fracas_crash.fracas_crash_pipeline, 'ScheduleNewAnalysisForCrash',
               Mocked_ScheduleNewAnalysisForCrash)
 
-  def testUnauthorizedToken(self):
-    requested_crashes = []
-    self._MockScheduleNewAnalysisForCrash(requested_crashes)
-    self.assertRaisesRegexp(
-        webtest.app.AppError,
-        re.compile('.*403.* Unauthorized access: invalid token.*',
-                   re.MULTILINE | re.DOTALL),
-        self.test_app.post, '/crash/fracas?token=UnauthorizedToken')
-    self.assertEqual(0, len(requested_crashes))
-
   def testAnalysisScheduled(self):
     requested_crashes = []
     self._MockScheduleNewAnalysisForCrash(requested_crashes)
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
     channel = 'supported_channel'
     platform = 'supported_platform'
@@ -62,9 +52,8 @@ class FracasCrashTest(CrashTestCase):
         'subscription': 'subscription',
     }
 
-    crash_config = CrashConfig.Get()
-    token = crash_config.fracas.get('crash_data_push_token')
-    self.test_app.post_json('/crash/fracas?token=%s' % token, request_json_data)
+    self.test_app.post_json('/_ah/push-handlers/crash/fracas',
+                            request_json_data)
 
     self.assertEqual(1, len(requested_crashes))
     self.assertEqual(
