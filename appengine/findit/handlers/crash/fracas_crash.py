@@ -13,7 +13,7 @@ from crash import fracas_crash_pipeline
 
 
 class FracasCrash(BaseHandler):
-  PERMISSION_LEVEL = Permission.ADMIN
+  PERMISSION_LEVEL = Permission.ANYONE
 
   def HandlePost(self):
     """Handles push delivery from Pub/Sub for crash data.
@@ -31,19 +31,20 @@ class FracasCrash(BaseHandler):
       },
     }
     """
-    received_message = json.loads(self.request.body)
-    pubsub_message = received_message['message']
-    crash_data = json.loads(base64.b64decode(pubsub_message['data']))
-
-    logging.info('Processing message %s from subscription %s.',
-                 pubsub_message['message_id'], received_message['subscription'])
-
     try:
+      received_message = json.loads(self.request.body)
+      pubsub_message = received_message['message']
+      crash_data = json.loads(base64.b64decode(pubsub_message['data']))
+
+      logging.info('Processing message %s from subscription %s.',
+                   pubsub_message['message_id'],
+                   received_message['subscription'])
+
       fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
           crash_data['channel'], crash_data['platform'],
           crash_data['signature'], crash_data['stack_trace'],
           crash_data['chrome_version'], crash_data['versions_to_cpm'],
           queue_name=constants.CRASH_ANALYSIS_FRACAS_QUEUE)
-    except KeyError:  # pragma: no cover.
+    except (KeyError, ValueError):  # pragma: no cover.
       # TODO: save exception in datastore and create a page to show them.
       logging.exception('Failed to process fracas message')
