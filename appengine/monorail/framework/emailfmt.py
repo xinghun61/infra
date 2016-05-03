@@ -234,9 +234,14 @@ PROJECT_EMAIL_RE = re.compile(
     r'(?P<project>[-a-z0-9]+)'
     r'@(?P<domain>[-a-z0-9.]+)')
 
-ISSUE_CHANGE_SUMMARY_RE = re.compile(
+ISSUE_CHANGE_SUBJECT_RE = re.compile(
     r'Issue (?P<local_id>[0-9]+) in '
     r'(?P<project>[-a-z0-9]+): '
+    r'(?P<summary>.+)')
+
+ISSUE_CHANGE_COMPACT_SUBJECT_RE = re.compile(
+    r'(?P<project>[-a-z0-9]+):'
+    r'(?P<local_id>[0-9]+): '
     r'(?P<summary>.+)')
 
 
@@ -282,7 +287,8 @@ def IdentifyProjectAndIssue(project_addr, subject):
 
 def _MatchSubject(subject):
   """Parse the project, artifact type, and artifact id from a subject line."""
-  m = ISSUE_CHANGE_SUMMARY_RE.match(subject)
+  m = (ISSUE_CHANGE_SUBJECT_RE.match(subject) or
+       ISSUE_CHANGE_COMPACT_SUBJECT_RE.match(subject))
   if m:
     return m.group('project'), m.group('local_id')
 

@@ -113,7 +113,8 @@ class EmailFmtTest(unittest.TestCase):
     self.assertEqual(expected_project_name, project_name)
     self.assertEqual(expected_local_id, local_id)
 
-  def testIdentifyProjectAndIssues(self):
+  def testIdentifyProjectAndIssues_Normal(self):
+    """Parse normal issue notification subject lines."""
     self.CheckIdentifiedValues(
         'proj@monorail.example.com',
         'Issue 123 in proj: the dogs wont eat the dogfood',
@@ -134,9 +135,38 @@ class EmailFmtTest(unittest.TestCase):
         'Issue 451 in day: something is fishy',
         None, 451)
 
+  def testIdentifyProjectAndIssues_Compact(self):
+    """Parse compact subject lines."""
+    self.CheckIdentifiedValues(
+        'proj@monorail.example.com',
+        'proj:123: the dogs wont eat the dogfood',
+        'proj', 123)
+
+    self.CheckIdentifiedValues(
+        'Proj@MonoRail.Example.Com',
+        'proj:123: the dogs wont eat the dogfood',
+        'proj', 123)
+
+    self.CheckIdentifiedValues(
+        'proj-4-u@test-example3.com',
+        'proj-4-u:123: this one goes to: 11',
+        'proj-4-u', 123)
+
+    self.CheckIdentifiedValues(
+        'night@monorail.example.com',
+        'day:451: something is fishy',
+        None, 451)
+
+  def testIdentifyProjectAndIssues_NotAMatch(self):
+    """These subject lines do not match the ones we send."""
     self.CheckIdentifiedValues(
         'no_reply@chromium.org',
         'Issue 234 in project foo: ignore this one',
+        None, None)
+
+    self.CheckIdentifiedValues(
+        'no_reply@chromium.org',
+        'foo-234: ignore this one',
         None, None)
 
   def testStripSubjectPrefixes(self):
