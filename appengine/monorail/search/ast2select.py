@@ -94,8 +94,7 @@ def _GetBlockIDCond(cond, alias, blocking_id=False):
   field_type, field_values = _GetFieldTypeAndValues(cond)
   if field_values:
     where = [_Compare(
-        alias, ast_pb2.QueryOp.EQ, field_type, matching_issue_col,
-        field_values)]
+        alias, cond.op, field_type, matching_issue_col, field_values)]
   else:
     # If no field values are specified display all issues which have the
     # property.

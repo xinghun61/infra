@@ -51,7 +51,7 @@ class AST2SelectTest(unittest.TestCase):
   def testBlockingIDCond_SingleValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blocking_id']
     txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.TEXT_HAS, [fd], ['1'], [])
+        ast_pb2.QueryOp.EQ, [fd], ['1'], [])
     num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1L])
 
     for cond, expected in ((txt_cond, '1'), (num_cond, 1L)):
@@ -66,10 +66,28 @@ class AST2SelectTest(unittest.TestCase):
           [('Cond1.issue_id = %s', [expected])],
           where)
 
+  def testBlockingIDCond_NegatedSingleValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['blocking_id']
+    txt_cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.NE, [fd], ['1'], [])
+    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1L])
+
+    for cond, expected in ((txt_cond, '1'), (num_cond, 1L)):
+      left_joins, where = ast2select._ProcessBlockingIDCond(
+          cond, 'Cond1', 'Issue1')
+      self.assertEqual(
+          [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
+            'Cond1.kind = %s',
+            ['blockedon'])],
+          left_joins)
+      self.assertEqual(
+          [('(Cond1.issue_id IS NULL OR Cond1.issue_id != %s)', [expected])],
+          where)
+
   def testBlockingIDCond_MultiValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blocking_id']
     txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.TEXT_HAS, [fd], ['1', '2', '3'], [])
+        ast_pb2.QueryOp.EQ, [fd], ['1', '2', '3'], [])
     num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1L, 2L, 3L])
 
     for cond, expected in ((txt_cond, ['1', '2', '3']),
@@ -85,10 +103,30 @@ class AST2SelectTest(unittest.TestCase):
           [('Cond1.issue_id IN (%s,%s,%s)', expected)],
           where)
 
+  def testBlockingIDCond_NegatedMultiValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['blocking_id']
+    txt_cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.NE, [fd], ['1', '2', '3'], [])
+    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1L, 2L, 3L])
+
+    for cond, expected in ((txt_cond, ['1', '2', '3']),
+                           (num_cond, [1L, 2L, 3L])):
+      left_joins, where = ast2select._ProcessBlockingIDCond(
+          cond, 'Cond1', 'Issue1')
+      self.assertEqual(
+          [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
+            'Cond1.kind = %s',
+            ['blockedon'])],
+          left_joins)
+      self.assertEqual(
+          [('(Cond1.issue_id IS NULL OR Cond1.issue_id NOT IN (%s,%s,%s))',
+            expected)],
+          where)
+
   def testBlockedOnIDCond_SingleValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
     txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.TEXT_HAS, [fd], ['1'], [])
+        ast_pb2.QueryOp.EQ, [fd], ['1'], [])
     num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1L])
 
     for cond, expected in ((txt_cond, '1'), (num_cond, 1L)):
@@ -103,10 +141,29 @@ class AST2SelectTest(unittest.TestCase):
           [('Cond1.dst_issue_id = %s', [expected])],
           where)
 
+  def testBlockedOnIDCond_NegatedSingleValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
+    txt_cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.NE, [fd], ['1'], [])
+    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1L])
+
+    for cond, expected in ((txt_cond, '1'), (num_cond, 1L)):
+      left_joins, where = ast2select._ProcessBlockedOnIDCond(
+          cond, 'Cond1', 'Issue1')
+      self.assertEqual(
+          [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
+            'Cond1.kind = %s',
+            ['blockedon'])],
+          left_joins)
+      self.assertEqual(
+          [('(Cond1.dst_issue_id IS NULL OR Cond1.dst_issue_id != %s)',
+            [expected])],
+          where)
+
   def testBlockedIDCond_MultiValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
     txt_cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.TEXT_HAS, [fd], ['1', '2', '3'], [])
+        ast_pb2.QueryOp.EQ, [fd], ['1', '2', '3'], [])
     num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1L, 2L, 3L])
 
     for cond, expected in ((txt_cond, ['1', '2', '3']),
@@ -120,6 +177,27 @@ class AST2SelectTest(unittest.TestCase):
           left_joins)
       self.assertEqual(
           [('Cond1.dst_issue_id IN (%s,%s,%s)', expected)],
+          where)
+
+  def testBlockedIDCond_NegatedMultiValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
+    txt_cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.NE, [fd], ['1', '2', '3'], [])
+    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1L, 2L, 3L])
+
+    for cond, expected in ((txt_cond, ['1', '2', '3']),
+                           (num_cond, [1L, 2L, 3L])):
+      left_joins, where = ast2select._ProcessBlockedOnIDCond(
+          cond, 'Cond1', 'Issue1')
+      self.assertEqual(
+          [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
+            'Cond1.kind = %s',
+            ['blockedon'])],
+          left_joins)
+      self.assertEqual(
+          [('(Cond1.dst_issue_id IS NULL OR'
+            ' Cond1.dst_issue_id NOT IN (%s,%s,%s))',
+            expected)],
           where)
 
   def testHasBlockedCond(self):
