@@ -29,7 +29,7 @@ class TrainingDataExport(webapp2.RequestHandler):
     logging.info("Training data export requested.")
     taskqueue.add(url=urls.SPAM_DATA_EXPORT_TASK + '.do')
 
-BATCH_SIZE = 100
+BATCH_SIZE = 1000
 
 class TrainingDataExportTask(servlet.Servlet):
   """Export any human-labeled ham or spam from the previous day. These
@@ -51,9 +51,9 @@ class TrainingDataExportTask(servlet.Servlet):
       csv_writer = csv.writer(gcs_file, delimiter=',', quotechar='"',
           quoting=csv.QUOTE_ALL, lineterminator='\n')
 
-      since = datetime.now() - timedelta(days=1)
+      since = datetime.now() - timedelta(days=7)
 
-      # TODO: Comments, and further pagination
+      # TODO: Further pagination.
       issues, first_comments, _count = (
           self.services.spam.GetTrainingIssues(
               mr.cnxn, self.services.issue, since, offset=0, limit=BATCH_SIZE))
@@ -62,10 +62,10 @@ class TrainingDataExportTask(servlet.Servlet):
         # Cloud Prediction API doesn't allow newlines in the training data.
         fixed_summary = issue.summary.replace('\r\n', ' ')
         fixed_comment = first_comments[issue.issue_id].replace('\r\n', ' ')
-
+        email = self.services.user.LookupUserEmail(mr.cnxn, issue.reporter_id)
         csv_writer.writerow([
             'spam' if issue.is_spam else 'ham',
-            fixed_summary, fixed_comment,
+            fixed_summary, fixed_comment, email,
         ])
 
       comments, _count = (
@@ -75,11 +75,11 @@ class TrainingDataExportTask(servlet.Servlet):
       for comment in comments:
         # Cloud Prediction API doesn't allow newlines in the training data.
         fixed_comment = comment.content.replace('\r\n', ' ')
-
+        email = self.services.user.LookupUserEmail(mr.cnxn, comment.user_id)
         csv_writer.writerow([
             'spam' if comment.is_spam else 'ham',
             # Comments don't have summaries, so it's blank:
-            '', fixed_comment,
+            '', fixed_comment, email
         ])
 
     self.response.body = json.dumps({
