@@ -10,10 +10,13 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
+
 	"github.com/julienschmidt/httprouter"
 	"github.com/luci/gae/service/info"
 	"github.com/luci/luci-go/appengine/gaeauth/server"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
+	"github.com/luci/luci-go/common/grpcutil"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/auth/identity"
@@ -23,40 +26,45 @@ import (
 	"github.com/luci/luci-go/server/templates"
 	"golang.org/x/net/context"
 	"google.golang.org/appengine"
+	"google.golang.org/grpc/codes"
 
 	"infra/crimson/proto"
 )
 
 // templateBundle is used to render HTML templates. It provides a base args
 // passed to all templates.
-var templateBundle = &templates.Bundle{
-	Loader:    templates.FileSystemLoader("templates"),
-	DebugMode: appengine.IsDevAppServer(),
-	DefaultArgs: func(c context.Context) (templates.Args, error) {
-		loginURL, err := auth.LoginURL(c, "/")
-		if err != nil {
-			return nil, err
-		}
-		logoutURL, err := auth.LogoutURL(c, "/")
-		if err != nil {
-			return nil, err
-		}
-		isAdmin, err := auth.IsMember(c, "administrators")
-		if err != nil {
-			return nil, err
-		}
-		return templates.Args{
-			"AppVersion":  strings.Split(info.Get(c).VersionID(), ".")[0],
-			"IsAnonymous": auth.CurrentIdentity(c) == identity.AnonymousIdentity,
-			"IsAdmin":     isAdmin,
-			"User":        auth.CurrentUser(c),
-			"LoginURL":    loginURL,
-			"LogoutURL":   logoutURL,
-		}, nil
-	},
-}
+var (
+	templateBundle = &templates.Bundle{
+		Loader:    templates.FileSystemLoader("templates"),
+		DebugMode: appengine.IsDevAppServer(),
+		DefaultArgs: func(c context.Context) (templates.Args, error) {
+			loginURL, err := auth.LoginURL(c, "/")
+			if err != nil {
+				return nil, err
+			}
+			logoutURL, err := auth.LogoutURL(c, "/")
+			if err != nil {
+				return nil, err
+			}
+			isAdmin, err := auth.IsMember(c, "administrators")
+			if err != nil {
+				return nil, err
+			}
+			return templates.Args{
+				"AppVersion":  strings.Split(info.Get(c).VersionID(), ".")[0],
+				"IsAnonymous": auth.CurrentIdentity(c) == identity.AnonymousIdentity,
+				"IsAdmin":     isAdmin,
+				"User":        auth.CurrentUser(c),
+				"LoginURL":    loginURL,
+				"LogoutURL":   logoutURL,
+			}, nil
+		},
+	}
+	// People with read/write access to the database (c-i-a group)
+	rwGroup = "crimson"
+)
 
-// Auth middleware. Hard fails when user is not authenticated or not admin.
+// Auth middleware. Hard fails when user is not authorized.
 func requireAuthWeb(h middleware.Handler) middleware.Handler {
 	return func(
 		c context.Context,
@@ -74,7 +82,7 @@ func requireAuthWeb(h middleware.Handler) middleware.Handler {
 			return
 		}
 
-		isGoogler, err := auth.IsMember(c, "googlers")
+		isGoogler, err := auth.IsMember(c, rwGroup)
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			logging.Errorf(c, "Failed to get group membership.")
@@ -82,45 +90,34 @@ func requireAuthWeb(h middleware.Handler) middleware.Handler {
 		}
 		if isGoogler {
 			h(c, rw, r, p)
-		} else {
-			templates.MustRender(c, rw, "pages/access_denied.html", nil)
-		}
-	}
-}
-
-// TODO(pgervais) Use svcdec instead of this middleware for pRPC authorization.
-// This middleware hard fails when user is not authenticated or not admin.
-func requireAuthRPC(h middleware.Handler) middleware.Handler {
-	return func(
-		c context.Context,
-		rw http.ResponseWriter,
-		r *http.Request,
-		p httprouter.Params) {
-		identity := auth.CurrentUser(c).Email
-		logging.Infof(c, identity)
-		isGoogler, err := auth.IsMember(c, "googlers")
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			logging.Errorf(c, "Failed to get group membership.")
 			return
 		}
 
-		if isGoogler {
-			h(c, rw, r, p)
-			return
-		}
-
-		rw.WriteHeader(http.StatusForbidden)
-		logging.Errorf(c, "request not authorized: not a googler.")
+		templates.MustRender(c, rw, "pages/access_denied.html", nil)
 	}
 }
 
-// base is the root of the middleware chain.
+// checkAuthorizationPrpc is a prelude function in the svcdec sense.
+// It hard fails when the user is not authorized.
+func checkAuthorizationPrpc(
+	c context.Context, methodName string, req proto.Message) (context.Context, error) {
+
+	identity := auth.CurrentIdentity(c)
+	logging.Infof(c, "%s", identity)
+	hasAccess, err := auth.IsMember(c, rwGroup)
+	if err != nil {
+		return nil, grpcutil.Errf(codes.Internal, "%s", err)
+	}
+	if hasAccess {
+		return c, nil
+	}
+	return nil, grpcutil.Errf(codes.PermissionDenied,
+		"%s is not allowed to call APIs", auth.CurrentIdentity(c))
+}
+
 func base(h middleware.Handler) httprouter.Handle {
 	methods := auth.Authenticator{
-		&server.OAuth2Method{Scopes: []string{server.EmailScope}},
 		server.CookieAuth,
-		&server.InboundAppIDAuthMethod{},
 	}
 	h = auth.Authenticate(h)
 	h = auth.Use(h, methods)
@@ -128,12 +125,20 @@ func base(h middleware.Handler) httprouter.Handle {
 	return gaemiddleware.BaseProd(h)
 }
 
-func baseWeb(h middleware.Handler) httprouter.Handle {
+// webBase sets up authentication/authorization for http requests.
+func webBase(h middleware.Handler) httprouter.Handle {
 	return base(requireAuthWeb(h))
 }
 
-func baseRPC(h middleware.Handler) httprouter.Handle {
-	return base(requireAuthRPC(h))
+// prpcBase is the middleware for pRPC API handlers.
+func prpcBase(h middleware.Handler) httprouter.Handle {
+	// OAuth 2.0 with email scope is registered as a default authenticator
+	// by importing "github.com/luci/luci-go/appengine/gaeauth/server".
+	// No need to setup an authenticator here.
+	//
+	// For authorization checks, we use per-service decorators; see
+	// service registration code.
+	return gaemiddleware.BaseProd(h)
 }
 
 //// Routes.
@@ -141,12 +146,15 @@ func baseRPC(h middleware.Handler) httprouter.Handle {
 func init() {
 	router := httprouter.New()
 	server.InstallHandlers(router, base)
-	router.GET("/", baseWeb(indexPage))
+	router.GET("/", webBase(indexPage))
 
 	var api prpc.Server
-	crimson.RegisterGreeterServer(&api, &greeterService{})
+	crimson.RegisterGreeterServer(&api, &crimson.DecoratedGreeter{
+		Service: &greeterService{},
+		Prelude: checkAuthorizationPrpc,
+	})
 	discovery.Enable(&api)
-	api.InstallHandlers(router, baseRPC)
+	api.InstallHandlers(router, prpcBase)
 
 	http.DefaultServeMux.Handle("/", router)
 }
