@@ -187,8 +187,9 @@ def delete_old_flake_occurrences():
           occ for occ in flake.occurrences if occ not in occurrences_to_remove]
       flake.put()
 
-    if len(new_occurrences) >= 100:
-      remove_occurrences(flake.key, old_occurrences + invalid_occurrences)
+    occurrences_to_remove = old_occurrences + invalid_occurrences
+    if len(new_occurrences) >= 100 and occurrences_to_remove:
+      remove_occurrences(flake.key, occurrences_to_remove)
       logging.info('Removed %d old and %d invalid occurrences from flake %s',
                    len(old_occurrences), len(invalid_occurrences), flake.name)
 
