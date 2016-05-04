@@ -30,22 +30,46 @@ class FracasCrashTest(CrashTestCase):
     self._MockScheduleNewAnalysisForCrash(requested_crashes)
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
+    client_id = 'fracas'
     channel = 'supported_channel'
     platform = 'supported_platform'
     signature = 'signature/here'
     stack_trace = 'frame1\nframe2\nframe3'
     chrome_version = '50.2500.0.0'
-    versions_to_cpm = [['50.2500.0.0']]
+    historic_metadata = [{'chrome_version': '50.2500.0.0', 'cpm': 0.6}]
+
+    crash_identifiers = {
+        'chrome_version': chrome_version,
+        'signature': signature,
+        'channel': channel,
+        'platform': platform,
+        'process_type': 'renderer'
+    }
 
     request_json_data = {
         'message': {
             'data': base64.b64encode(json.dumps({
-                'channel': channel,
-                'platform': platform,
-                'signature': signature,
-                'stack_trace': stack_trace,
-                'chrome_version': chrome_version,
-                'versions_to_cpm': versions_to_cpm,
+                'customized_data': {
+                    'channel': 'supported_channel',
+                    'historic_metadata': [
+                        {
+                            'chrome_version': '50.2500.0.0',
+                            'cpm': 0.6
+                        },
+                    ]
+                },
+                'chrome_version': '50.2500.0.0',
+                'signature': 'signature/here',
+                'client_id': 'fracas',
+                'platform': 'supported_platform',
+                'crash_identifiers': {
+                    'chrome_version': '50.2500.0.0',
+                    'signature': 'signature/here',
+                    'channel': 'supported_channel',
+                    'platform': 'supported_platform',
+                    'process_type': 'renderer'
+                },
+                'stack_trace': 'frame1\nframe2\nframe3'
             })),
             'message_id': 'id',
         },
@@ -57,6 +81,6 @@ class FracasCrashTest(CrashTestCase):
 
     self.assertEqual(1, len(requested_crashes))
     self.assertEqual(
-        (channel, platform, signature, stack_trace,
-         chrome_version, versions_to_cpm),
+        (crash_identifiers, chrome_version, signature, client_id,
+         platform, stack_trace, channel, historic_metadata),
         requested_crashes[0])

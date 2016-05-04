@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import hashlib
+import json
 
 from google.appengine.ext import ndb
 
@@ -11,33 +12,26 @@ from model.crash.crash_analysis import CrashAnalysis
 
 class FracasCrashAnalysis(CrashAnalysis):
   """Represents an analysis of a Chrome crash."""
-  # Data of crash per million page loads for each Chrome version.
-  versions_to_cpm = ndb.JsonProperty(indexed=False)
+  # Customized properties for Fracas crash.
+  historic_metadata = ndb.JsonProperty(indexed=False)
+  channel = ndb.StringProperty(indexed=False)
 
   def Reset(self):
     super(FracasCrashAnalysis, self).Reset()
-    self.versions_to_cpm = None
-
-  @ndb.ComputedProperty
-  def channel(self):
-    return self.key.pairs()[0][1].split('/')[0]
-
-  @ndb.ComputedProperty
-  def platform(self):
-    return self.key.pairs()[0][1].split('/')[1]
+    self.historic_metadata = None
+    self.channel = None
 
   @staticmethod
-  def _CreateKey(channel, platform, signature):
+  def _CreateKey(crash_identifiers):
     # Use sha1 hex digest of signature to avoid char conflict with '/'.
-    return ndb.Key('FracasCrashAnalysis', '%s/%s/%s' % (
-        channel, platform, hashlib.sha1(signature).hexdigest()))
+    return ndb.Key('FracasCrashAnalysis', hashlib.sha1(
+        json.dumps(crash_identifiers, sort_keys=True)).hexdigest())
 
   @classmethod
-  def Get(cls, channel, platform, signature):
-    return cls._CreateKey(channel, platform, signature).get()
+  def Get(cls, crash_identifiers):
+    return cls._CreateKey(crash_identifiers).get()
 
   @classmethod
-  def Create(cls, channel, platform, signature):
-    analysis = cls(key=cls._CreateKey(channel, platform, signature))
-    analysis.signature = signature
+  def Create(cls, crash_identifiers):
+    analysis = cls(key=cls._CreateKey(crash_identifiers))
     return analysis

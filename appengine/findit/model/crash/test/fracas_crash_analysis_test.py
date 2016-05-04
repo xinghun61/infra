@@ -11,18 +11,25 @@ from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 
 class FracasCrashAnalysisTest(CrashTestCase):
-  def testComputedProperties(self):
-    channel = 'canary'
-    platform = 'win'
-    signature = 'signature/here'
-    FracasCrashAnalysis.Create(channel, platform, signature).put()
-    analysis = FracasCrashAnalysis.Get(channel, platform, signature)
-    self.assertEqual(channel, analysis.channel)
-    self.assertEqual(platform, analysis.platform)
-    self.assertEqual(signature, analysis.signature)
+
+  def testDoNotUseIdentifiersToSetProperties(self):
+    crash_identifiers = {
+      'chrome_version': '1',
+      'signature': 'signature/here',
+      'channel': 'canary',
+      'platform': 'win',
+      'process_type': 'browser',
+    }
+    FracasCrashAnalysis.Create(crash_identifiers).put()
+    analysis = FracasCrashAnalysis.Get(crash_identifiers)
+    self.assertIsNone(analysis.crashed_version)
+    self.assertIsNone(analysis.signature)
+    self.assertIsNone(analysis.channel)
+    self.assertIsNone(analysis.platform)
 
   def testFracasCrashAnalysisReset(self):
     analysis = FracasCrashAnalysis()
-    analysis.versions_to_cpm = {}
+    analysis.historic_metadata = {}
     analysis.Reset()
-    self.assertIsNone(analysis.versions_to_cpm)
+    self.assertIsNone(analysis.channel)
+    self.assertIsNone(analysis.historic_metadata)

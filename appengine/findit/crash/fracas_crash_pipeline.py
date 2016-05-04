@@ -21,12 +21,9 @@ from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 
 class FracasBasePipeline(BasePipeline):
-  def __init__(self, channel, platform, signature):
-    super(FracasBasePipeline, self).__init__(
-        channel, platform, signature)
-    self.channel = channel
-    self.platform = platform
-    self.signature = signature
+  def __init__(self, crash_identifiers):
+    super(FracasBasePipeline, self).__init__(crash_identifiers)
+    self.crash_identifiers = crash_identifiers
 
   def run(self, *args, **kwargs):
     raise NotImplementedError()
@@ -37,10 +34,8 @@ class FracasAnalysisPipeline(FracasBasePipeline):
     if not aborted:
       return
 
-    logging.error('Aborted analysis for %s, %s, %s',
-                  self.channel, self.platform, self.signature)
-    analysis = FracasCrashAnalysis.Get(
-        self.channel, self.platform, self.signature)
+    logging.error('Aborted analysis for %s', repr(self.crash_identifiers))
+    analysis = FracasCrashAnalysis.Get(self.crash_identifiers)
     analysis.status = analysis_status.ERROR
     analysis.put()
 
@@ -48,8 +43,8 @@ class FracasAnalysisPipeline(FracasBasePipeline):
     self._SetErrorIfAborted(self.was_aborted)
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, channel, platform, signature):
-    analysis = FracasCrashAnalysis.Get(channel, platform, signature)
+  def run(self, crash_identifiers):
+    analysis = FracasCrashAnalysis.Get(crash_identifiers)
 
     # Update analysis status.
     analysis.pipeline_status_path = self.pipeline_status_path()
@@ -60,8 +55,9 @@ class FracasAnalysisPipeline(FracasBasePipeline):
 
     # Run the analysis.
     result, tags = fracas.FindCulpritForChromeCrash(
-        channel, platform, signature, analysis.stack_trace,
-        analysis.crashed_version, analysis.versions_to_cpm)
+        analysis.channel, analysis.platform, analysis.signature,
+        analysis.stack_trace, analysis.crashed_version,
+        analysis.historic_metadata)
 
     # Update analysis status and save the analysis result.
     analysis.completed_time = datetime.datetime.utcnow()
@@ -77,16 +73,14 @@ class FracasAnalysisPipeline(FracasBasePipeline):
 class PublishResultPipeline(FracasBasePipeline):
   def finalized(self):
     if self.was_aborted:  # pragma: no cover.
-      logging.error('Failed to publish analysis result for %s, %s, %s',
-                    self.channel, self.platform, self.signature)
+      logging.error('Failed to publish analysis result for %s',
+                    repr(self.crash_identifiers))
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, channel, platform, signature):
-    analysis = FracasCrashAnalysis.Get(channel, platform, signature)
+  def run(self, crash_identifiers):
+    analysis = FracasCrashAnalysis.Get(crash_identifiers)
     result = {
-        'channel': channel,
-        'platform': platform,
-        'signature': signature,
+        'crash_identifiers': crash_identifiers,
         'result': analysis.result,
     }
     messages_data = [json.dumps(result, sort_keys=True)]
@@ -94,44 +88,58 @@ class PublishResultPipeline(FracasBasePipeline):
     crash_config = CrashConfig.Get()
     topic = crash_config.fracas['analysis_result_pubsub_topic']
     pubsub_util.PublishMessagesToTopic(messages_data, topic)
-    logging.info('Published analysis result for %s, %s, %s',
-                 channel, platform, signature)
+    logging.info('Published analysis result for %s', repr(crash_identifiers))
 
 
 class FracasCrashWrapperPipeline(BasePipeline):
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, channel, platform, signature):
-    run_analysis = yield FracasAnalysisPipeline(channel, platform, signature)
+  def run(self, crash_identifiers):
+    run_analysis = yield FracasAnalysisPipeline(crash_identifiers)
     with pipeline.After(run_analysis):
-      yield PublishResultPipeline(channel, platform, signature)
+      yield PublishResultPipeline(crash_identifiers)
 
 
 @ndb.transactional
 def _NeedsNewAnalysis(
-    channel, platform, signature, stack_trace, chrome_version, versions_to_cpm):
-  analysis = FracasCrashAnalysis.Get(channel, platform, signature)
+    crash_identifiers, chrome_version, signature, client_id,
+    platform, stack_trace, channel, historic_metadata):
+  analysis = FracasCrashAnalysis.Get(crash_identifiers)
   if analysis and not analysis.failed:
     # A new analysis is not needed if last one didn't complete or succeeded.
     # TODO(http://crbug.com/600535): re-analyze if stack trace or regression
     # range changed.
+    print 'lala'
     return False
 
   if not analysis:
     # A new analysis is needed if there is no analysis yet.
-    analysis = FracasCrashAnalysis.Create(channel, platform, signature)
+    analysis = FracasCrashAnalysis.Create(crash_identifiers)
 
   analysis.Reset()
+
+  # Set common properties.
   analysis.crashed_version = chrome_version
   analysis.stack_trace = stack_trace
-  analysis.versions_to_cpm = versions_to_cpm
+  analysis.signature = signature
+  analysis.platform = platform
+  analysis.client_id = client_id
+
+  # Set customized properties.
+  analysis.historic_metadata = historic_metadata
+  analysis.channel = channel
+
+  # Set analysis progress properties.
   analysis.status = analysis_status.PENDING
   analysis.requested_time = datetime.datetime.utcnow()
+
   analysis.put()
+
   return True
 
 
 def ScheduleNewAnalysisForCrash(
-    channel, platform, signature, stack_trace, chrome_version, versions_to_cpm,
+    crash_identifiers, chrome_version, signature, client_id,
+    platform, stack_trace, channel, historic_metadata,
     queue_name=constants.DEFAULT_QUEUE):
   """Schedules an analysis."""
   crash_config = CrashConfig.Get()
@@ -140,14 +148,13 @@ def ScheduleNewAnalysisForCrash(
     # Bail out if either the channel or platform is not supported yet.
     return False
 
-  if _NeedsNewAnalysis(channel, platform, signature, stack_trace,
-                       chrome_version, versions_to_cpm):
-    analysis_pipeline = FracasCrashWrapperPipeline(channel, platform, signature)
+  if _NeedsNewAnalysis(crash_identifiers, chrome_version, signature, client_id,
+                       platform, stack_trace, channel, historic_metadata):
+    analysis_pipeline = FracasCrashWrapperPipeline(crash_identifiers)
     analysis_pipeline.target = appengine_util.GetTargetNameForModule(
         constants.CRASH_BACKEND_FRACAS)
     analysis_pipeline.start(queue_name=queue_name)
-    logging.info('New analysis is scheduled for %s, %s, %s',
-                 channel, platform, signature)
+    logging.info('New analysis is scheduled for %s', repr(crash_identifiers))
     return True
 
   return False

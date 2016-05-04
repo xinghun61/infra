@@ -20,15 +20,35 @@ class FracasCrash(BaseHandler):
 
     The crash data should be in the following json format:
     {
-      'channel': 'canary',
-      'platform': 'win',
-      'signature': 'namesapce1:namespace2:class_name:func_name',
-      'stack_trace': 'frame1\nframe2\nframe3',
-      'chrome_version': '50.0.2500.0',
-      'versions_to_cpm': {
-        '50.0.2500.0': 1.2,
-        '50.0.2499.0': 1.0,
+      "customized_data": {
+        "channel": "beta",
+        "historic_metadata": [
+          {
+            "chrome_version": "51.0.2693.2",
+            "cpm": 0.0610491148
+          },
+          {
+            "chrome_version": "51.0.2704.10",
+            "cpm": 0.0490386976
+          },
+          {
+            "chrome_version": "52.0.2718.2",
+            "cpm": 0.0040353297
+          }
+        ]
       },
+      "chrome_version": "51.0.2704.28",
+      "signature": "blink::FramePainter::paintContents",
+      "client_id": "fracas",
+      "platform": "android",
+      "crash_identifiers": {
+        "chrome_version": "51.0.2704.28",
+        "signature": "blink::FramePainter::paintContents",
+        "channel": "beta",
+        "platform": "android",
+        "process_type": null
+      },
+      "stack_trace": "CRASHED [SIGILL @ 0x5320e570]\\n#0 0x5320e570..."
     }
     """
     try:
@@ -41,9 +61,14 @@ class FracasCrash(BaseHandler):
                    received_message['subscription'])
 
       fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
-          crash_data['channel'], crash_data['platform'],
-          crash_data['signature'], crash_data['stack_trace'],
-          crash_data['chrome_version'], crash_data['versions_to_cpm'],
+          crash_data['crash_identifiers'],
+          crash_data['chrome_version'],
+          crash_data['signature'],
+          crash_data['client_id'],
+          crash_data['platform'],
+          crash_data['stack_trace'],
+          crash_data['customized_data']['channel'],
+          crash_data['customized_data']['historic_metadata'],
           queue_name=constants.CRASH_ANALYSIS_FRACAS_QUEUE)
     except (KeyError, ValueError):  # pragma: no cover.
       # TODO: save exception in datastore and create a page to show them.

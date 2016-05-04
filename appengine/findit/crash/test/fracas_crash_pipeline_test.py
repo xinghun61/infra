@@ -19,54 +19,88 @@ class FracasCrashPipelineTest(CrashTestCase):
   app_module = pipeline_handlers._APP
 
   def testNoAnalysisIfLastOneIsNotFailed(self):
-    channel = 'canary'
-    platform = 'win'
+    chrome_version = '1'
     signature = 'signature'
+    platform = 'win'
+    crash_identifiers = {
+      'chrome_version': chrome_version,
+      'signature': signature,
+      'channel': 'canary',
+      'platform': platform,
+      'process_type': 'browser',
+    }
     for status in (analysis_status.PENDING, analysis_status.RUNNING,
                    analysis_status.COMPLETED, analysis_status.SKIPPED):
-      analysis = FracasCrashAnalysis.Create(channel, platform, signature)
+      analysis = FracasCrashAnalysis.Create(crash_identifiers)
       analysis.status = status
       analysis.put()
       self.assertFalse(fracas_crash_pipeline._NeedsNewAnalysis(
-          channel, platform, signature, None, None, None))
+          crash_identifiers, chrome_version, signature, 'fracas',
+          platform, None, None, None))
 
   def testAnalysisNeededIfLastOneFailed(self):
-    channel = 'canary'
-    platform = 'win'
+    chrome_version = '1'
     signature = 'signature'
-    analysis = FracasCrashAnalysis.Create(channel, platform, signature)
+    platform = 'win'
+    crash_identifiers = {
+      'chrome_version': chrome_version,
+      'signature': signature,
+      'channel': 'canary',
+      'platform': platform,
+      'process_type': 'browser',
+    }
+    analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.status = analysis_status.ERROR
     analysis.put()
     self.assertTrue(fracas_crash_pipeline._NeedsNewAnalysis(
-        channel, platform, signature, None, None, None))
+          crash_identifiers, chrome_version, signature, 'fracas',
+          platform, None, None, None))
 
   def testAnalysisNeededIfNoAnalysisYet(self):
-    channel = 'canary'
-    platform = 'win'
+    chrome_version = '1'
     signature = 'signature'
+    platform = 'win'
+    crash_identifiers = {
+      'chrome_version': chrome_version,
+      'signature': signature,
+      'channel': 'canary',
+      'platform': platform,
+      'process_type': 'browser',
+    }
     self.assertTrue(fracas_crash_pipeline._NeedsNewAnalysis(
-        channel, platform, signature, None, None, None))
+          crash_identifiers, chrome_version, signature, 'fracas',
+          platform, None, None, None))
 
   def testUnsupportedChannelOrPlatformSkipped(self):
     self.assertFalse(
         fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
-            'unsupported_channel', 'win', None, None, None, None))
+            {}, None, None, 'fracas', 'win',
+            None, 'unsupported_channel',  None))
     self.assertFalse(
         fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
-            'supported_channel', 'unsupported_platform',
-            None, None, None, None))
+            {}, None, None, 'fracas', 'unsupported_platform',
+            None, 'unsupported_channel',  None))
 
   def testNoAnalysisNeeded(self):
-    channel = 'supported_channel'
-    platform = 'supported_platform'
+    chrome_version = '1'
     signature = 'signature'
-    analysis = FracasCrashAnalysis.Create(channel, platform, signature)
+    platform = 'win'
+    channel = 'canary'
+    crash_identifiers = {
+      'chrome_version': chrome_version,
+      'signature': signature,
+      'channel': channel,
+      'platform': platform,
+      'process_type': 'browser',
+    }
+    analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.status = analysis_status.COMPLETED
     analysis.put()
 
     self.assertFalse(
         fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
-            channel, platform, signature, None, None, None))
+            crash_identifiers, chrome_version, signature, 'fracas',
+            platform, None, channel, None))
 
   def testRunningAnalysis(self):
     pubsub_publish_requests = []
@@ -91,52 +125,63 @@ class FracasCrashPipelineTest(CrashTestCase):
       return analysis_result, analysis_tags
     self.mock(fracas_crash_pipeline.fracas, 'FindCulpritForChromeCrash',
               Mocked_FindCulpritForChromeCrash)
-
-    channel = 'supported_channel'
-    platform = 'supported_platform'
-    signature = 'signature/here'
+    chrome_version = '1'
+    signature = 'signature'
+    platform = 'win'
+    channel = 'canary'
+    crash_identifiers = {
+      'chrome_version': chrome_version,
+      'signature': signature,
+      'channel': channel,
+      'platform': platform,
+      'process_type': 'browser',
+    }
     stack_trace = 'frame1\nframe2\nframe3'
     chrome_version = '50.2500.0.0'
-    versions_to_cpm = {'50.2500.0.0': 1.0}
+    historic_metadata = {'50.2500.0.0': 1.0}
 
     self.assertTrue(
         fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
-            channel, platform, signature, stack_trace,
-            chrome_version, versions_to_cpm))
+            crash_identifiers, chrome_version, signature, 'fracas',
+            platform, stack_trace, channel, historic_metadata))
 
     self.execute_queued_tasks()
 
     self.assertEqual(1, len(pubsub_publish_requests))
     expected_messages_data = [json.dumps({
-          'channel': channel,
-          'platform': platform,
-          'signature': signature,
-          'result': analysis_result,
+            'crash_identifiers': crash_identifiers,
+            'result': analysis_result,
         }, sort_keys=True)]
     self.assertEqual(expected_messages_data, pubsub_publish_requests[0][0])
 
     self.assertEqual(1, len(analyzed_crashes))
     self.assertEqual(
         (channel, platform, signature, stack_trace,
-         chrome_version, versions_to_cpm),
+         chrome_version, historic_metadata),
         analyzed_crashes[0])
 
-    analysis = FracasCrashAnalysis.Get(channel, platform, signature)
+    analysis = FracasCrashAnalysis.Get(crash_identifiers)
     self.assertEqual(analysis_result, analysis.result)
     self.assertTrue(analysis.has_regression_range)
     self.assertTrue(analysis.found_suspects)
     self.assertEqual('core', analysis.solution)
 
   def testAnalysisAborted(self):
-    channel = 'canary'
-    platform = 'win'
+    chrome_version = '1'
     signature = 'signature'
-    analysis = FracasCrashAnalysis.Create(channel, platform, signature)
+    platform = 'win'
+    crash_identifiers = {
+      'chrome_version': chrome_version,
+      'signature': signature,
+      'channel': 'canary',
+      'platform': platform,
+      'process_type': 'browser',
+    }
+    analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.status = analysis_status.RUNNING
     analysis.put()
 
-    pipeline = fracas_crash_pipeline.FracasAnalysisPipeline(
-        channel, platform, signature)
+    pipeline = fracas_crash_pipeline.FracasAnalysisPipeline(crash_identifiers)
     pipeline._SetErrorIfAborted(True)
-    analysis = FracasCrashAnalysis.Get(channel, platform, signature)
+    analysis = FracasCrashAnalysis.Get(crash_identifiers)
     self.assertEqual(analysis_status.ERROR, analysis.status)

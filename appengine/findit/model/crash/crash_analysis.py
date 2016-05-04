@@ -8,7 +8,7 @@ from model import analysis_status
 
 
 class CrashAnalysis(ndb.Model):
-  """Base class to represent an analysis of a Chrome crash."""
+  """Base class to represent an analysis of a Chrome/Clusterfuzz crash."""
   ################### Properties for the crash itself. ###################
   # In which version or revision of Chrome the crash occurred. Either a version
   # number for Chrome build or a git commit hash/position for chromium build.
@@ -19,6 +19,12 @@ class CrashAnalysis(ndb.Model):
 
   # The signature of the crash.
   signature = ndb.StringProperty(indexed=False)
+
+  # The platform of this crash.
+  platform = ndb.StringProperty(indexed=False)
+
+  # ID to differentiate different client.
+  client_id = ndb.StringProperty(indexed=False)
 
   ################### Properties for the analysis progress. ###################
 
