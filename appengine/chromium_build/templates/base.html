@@ -78,6 +78,25 @@ function checkMouseLeave(element, event) {
   }
 }
 
+// Returns the value of a GET parameter, or null if it does not exist.
+function readGetParameter(name) {
+  var begin = name + '=';
+  var data = location.search;
+  if (data === '') {
+    return null;
+  }
+  // Location starts with "?".
+  data = data.substr(1);
+  var parameters = data.split('&');
+  var foundElement = parameters.find( (parameter) => {
+    return parameter.indexOf(begin) == 0;
+  });
+  if (foundElement) {
+    return decodeURIComponent(foundElement.substr(begin.length));
+  }
+  return null;
+}
+
 // Creates a new cookie.
 function createCookie(name, value, day) {
     var date = new Date();
@@ -86,7 +105,7 @@ function createCookie(name, value, day) {
     document.cookie = name + "=" + value+expires + "; path=/";
 }
 
-// Returns the vaue of a cookie, or null if it does not exist.
+// Returns the value of a cookie, or null if it does not exist.
 function readCookie(name) {
     var begin = name + "=";
     var data = document.cookie.split(';');
@@ -278,6 +297,22 @@ function unmerge() {
 }
 
 function SetupView() {
+    // Allow override cookies with Get parameters.
+    var getMerged = readGetParameter('merged');
+    if (getMerged === 'true') {
+        createCookie('merged', 'true', 30);
+    }
+    if (getMerged === 'false') {
+        eraseCookie('merged');
+    }
+    var getCollapsed = readGetParameter('collapsed');
+    if (getCollapsed === 'true') {
+        createCookie('collapsed', 'true', 30);
+    }
+    if (getCollapsed === 'false') {
+        eraseCookie('collapsed');
+    }
+
     if (readCookie('merged')) {
         merge();
     } else if (readCookie('collapsed')) {
