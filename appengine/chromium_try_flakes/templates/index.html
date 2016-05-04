@@ -69,16 +69,22 @@ try run for the same patchset.
          onblur="PostComment('step_comment_{{forloop.counter}}')">
 </td>
 </tr>
+
 {% for o in f.filtered_occurrences %}
 <tr>
 <td><a href="{{o.getURL}}">try run at {{o.formatted_time}} UTC</a></td>
 <td><a href="{{o.patchset_url}}">patchset</a></td>
 <td>{{o.builder}} </td>
-
 </tr>
 {% endfor %}
 
-</tr><tr><td>&nbsp;</td></tr>
+{% if f.more_occurrences %}
+<tr><td colspan="3">
+<a href="/all_flake_occurrences?key={{f.key.urlsafe}}">more occurrences</a>
+</td></tr>
+{% endif %}
+
+<tr><td>&nbsp;</td></tr>
 {% endfor %}
 </table>
 

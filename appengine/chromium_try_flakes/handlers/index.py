@@ -18,6 +18,9 @@ import time
 import webapp2
 
 
+MAX_OCCURRENCES_PER_FLAKE_ON_INDEX_PAGE = 4
+
+
 def filterNone(elements):
   return [e for e in elements if e is not None]
 
@@ -26,7 +29,8 @@ def FlakeSortFunction(s):  # pragma: no cover
 
 def GetFilteredOccurences(flake, time_formatter,
                           filter_function):  # pragma: no cover
-  occurrences = filterNone(ndb.get_multi(flake.occurrences))
+  occurrences = filterNone(ndb.get_multi(
+    flake.occurrences[-MAX_OCCURRENCES_PER_FLAKE_ON_INDEX_PAGE:]))
 
   failure_run_keys = []
   patchsets_keys = []
@@ -99,6 +103,8 @@ class Index(webapp2.RequestHandler):  # pragma: no cover
     for f in flakes:
       f.filtered_occurrences = GetFilteredOccurences(
           f, time_formatter, filter_by_range)
+      if len(f.occurrences) > MAX_OCCURRENCES_PER_FLAKE_ON_INDEX_PAGE:
+        f.more_occurrences = True
 
     values = {
       'range': time_range,
