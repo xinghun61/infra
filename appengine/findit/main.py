@@ -19,6 +19,7 @@ from handlers import swarming_task
 from handlers import triage_analysis
 from handlers import trigger_analyses
 from handlers import try_job
+from handlers import try_job_dashboard
 from handlers import try_job_result
 from handlers import verify_analysis
 from handlers import version
@@ -68,6 +69,7 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/waterfall/swarming-task', swarming_task.SwarmingTask),
     ('/waterfall/triage-analysis', triage_analysis.TriageAnalysis),
     ('/waterfall/try-job', try_job.TryJob),
+    ('/waterfall/try-job-dashboard', try_job_dashboard.TryJobDashboard),
     ('/waterfall/try-job-result', try_job_result.TryJobResult),
     ('/waterfall/verify-analysis', verify_analysis.VerifyAnalysis),
 ]
