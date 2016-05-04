@@ -37,4 +37,4 @@ cron:
 
 - description: Remove old Flake occurrences to speed up the app
   url: /cron/delete_old_flake_occurrences
-  schedule: every 1 days
+  schedule: every 24 hours
