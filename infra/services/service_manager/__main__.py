@@ -75,7 +75,7 @@ class ServiceManager(infra_libs.BaseApplication):
     parser.set_defaults(
         ts_mon_target_type='task',
         ts_mon_task_service_name='service_manager',
-        ts_mon_task_job_name=socket.getfqdn(),
+        ts_mon_task_job_name='service_manager',
     )
 
   def main(self, opts):
