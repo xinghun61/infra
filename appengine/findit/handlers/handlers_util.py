@@ -230,24 +230,24 @@ def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info):
           # Uses culprits to group tests.
           culprit_tests_map = _OrganizeTryJobResultByCulprits(
               try_job_result['culprit'][ref_name])
-          unrgouped_tests = try_job_info['tests']
+          ungrouped_tests = try_job_info['tests']
           list_of_culprits = []
           for culprit_info in culprit_tests_map.values():
             failed_tests = culprit_info['failed_tests']
             list_of_culprits.append(culprit_info)
             # Gets tests that haven't been grouped.
-            unrgouped_tests = list(
-                set(unrgouped_tests) ^ set(failed_tests))
-            if not unrgouped_tests:
+            ungrouped_tests = list(
+                set(ungrouped_tests) ^ set(failed_tests))
+            if not ungrouped_tests:
               # All tests have been grouped.
               break
 
           index_start = 1
-          if unrgouped_tests:
+          if ungrouped_tests:
             # There are tests don't have try job culprits.
             # Group these tests together.
             # Save them in current try_job_info.
-            try_job_info['tests'] = unrgouped_tests
+            try_job_info['tests'] = ungrouped_tests
             try_job_info['culprit'] = {}
             # Saves all the tests that have culprits later.
             index_start = 0
@@ -257,7 +257,8 @@ def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info):
             try_job_info['culprit'] = {
                 'revision': list_of_culprits[0]['revision'],
                 'commit_position': list_of_culprits[0]['commit_position'],
-                'review_url': list_of_culprits[0]['review_url']
+                'review_url': list_of_culprits[0].get(
+                    'url', list_of_culprits[0].get('review_url', None))
             }
             try_job_info['tests'] = list_of_culprits[0]['failed_tests']
 
@@ -268,7 +269,8 @@ def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info):
             tmp_try_job_info['culprit'] = {
                 'revision': iterate_culprit['revision'],
                 'commit_position': iterate_culprit['commit_position'],
-                'review_url': iterate_culprit['review_url']
+                'review_url': iterate_culprit.get(
+                    'url', iterate_culprit.get('review_url', None))
             }
             tmp_try_job_info['tests'] = iterate_culprit['failed_tests']
             additional_tests_culprit_info.append(tmp_try_job_info)
