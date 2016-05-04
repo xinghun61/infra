@@ -139,7 +139,8 @@ class HttpRouterTests(unittest.TestCase):
     event.event_code = 1
     event.event_flow_id = 2
     self.assertTrue(r.push_event(event))
-    return loginfo.call_args_list
+    self.assertIn(mock.call('Succeeded POSTing data after %d attempts', 2),
+                  loginfo.call_args_list)
 
 
 class TextStreamRouterTests(unittest.TestCase):
