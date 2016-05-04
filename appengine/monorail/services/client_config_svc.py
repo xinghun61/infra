@@ -9,10 +9,12 @@ import logging
 import os
 import time
 import urllib
+import webapp2
 
 from google import protobuf
 from google.appengine.api import app_identity
 from google.appengine.api import urlfetch
+from google.appengine.ext import db
 
 import settings
 from framework import framework_constants
@@ -31,6 +33,33 @@ LUCI_CONFIG_URL = (
 
 client_config_svc = None
 service_account_map = None
+
+
+class ClientConfig(db.Model):
+  configs = db.TextProperty()
+
+
+# Note: The cron job must have hit the servlet before this will work.
+class LoadApiClientConfigs(webapp2.RequestHandler):
+  def get(self):
+    authorization_token, _ = app_identity.get_access_token(
+      framework_constants.OAUTH_SCOPE)
+    response = urlfetch.fetch(
+      LUCI_CONFIG_URL,
+      method=urlfetch.GET,
+      follow_redirects=False,
+      headers={'Content-Type': 'application/json; charset=UTF-8',
+              'Authorization': 'Bearer ' + authorization_token})
+    if response.status_code == 200:
+      content = json.loads(response.content)
+      config_content = content['content']
+      content_text = base64.b64decode(config_content)
+      logging.info('luci-config content decoded: %r.', content_text)
+      configs = ClientConfig(configs=content_text,
+                              key_name='api_client_configs')
+      configs.put()
+    else:
+      logging.error('Invalid response from luci-config: %r', response)
 
 
 class ClientConfigService(object):
@@ -78,30 +107,14 @@ class ClientConfigService(object):
           str(ex))
 
   def _ReadFromLuciConfig(self):
-    try:
-      authorization_token, _ = app_identity.get_access_token(
-          framework_constants.OAUTH_SCOPE)
-      response = urlfetch.fetch(
-          LUCI_CONFIG_URL,
-          method=urlfetch.GET,
-          follow_redirects=False,
-          headers={'Content-Type': 'application/json; charset=UTF-8',
-                   'Authorization': 'Bearer ' + authorization_token})
-      if response.status_code == 200:
-        content = json.loads(response.content)
-        config_content = content['content']
-        content_text = base64.b64decode(config_content)
-        logging.info('luci-config content decoded: %r.', content_text)
-        cfg = api_clients_config_pb2.ClientCfg()
-        protobuf.text_format.Merge(content_text, cfg)
-        self.client_configs = cfg
-        self.load_time = int(time.time())
-      else:
-        logging.error('Invalid response from luci-config: %r', response)
-    except Exception as ex:
-      logging.exception(
-          'Failed to retrieve client configs from luci-config: %s',
-          str(ex))
+    entity = ClientConfig.get_by_key_name('api_client_configs')
+    if entity:
+      cfg = api_clients_config_pb2.ClientCfg()
+      protobuf.text_format.Merge(entity.configs, cfg)
+      self.client_configs = cfg
+      self.load_time = int(time.time())
+    else:
+      logging.error('Failed to get api client configs from datastore.')
 
   def GetClientIDEmails(self):
     """Get client IDs and Emails."""

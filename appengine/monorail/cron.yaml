@@ -23,3 +23,6 @@ cron:
   url: /_cron/spamDataExport
   timezone: US/Pacific
   schedule: every day 01:00
+- description: fetch api clients from luci-config
+  url: /_cron/loadApiClientConfigs
+  schedule: every 30 minutes synchronized

@@ -63,6 +63,7 @@ REINDEX_QUEUE_CRON = '/_cron/reindexQueue'
 RAMCACHE_CONSOLIDATE_CRON = '/_cron/ramCacheConsolidate'
 REAP_CRON = '/_cron/reap'
 SPAM_DATA_EXPORT_CRON = '/_cron/spamDataExport'
+LOAD_API_CLIENT_CONFIGS_CRON = '/_cron/loadApiClientConfigs'
 
 # URLs of User pages
 SAVED_QUERIES = '/queries'

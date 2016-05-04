@@ -42,6 +42,7 @@ from search import backendnonviewable
 from search import backendsearch
 
 from services import cachemanager_svc
+from services import client_config_svc
 
 from sitewide import custom_404
 from sitewide import groupadmin
@@ -257,6 +258,8 @@ class ServletRegistry(object):
         urls.RAMCACHE_CONSOLIDATE_CRON: cachemanager_svc.RamCacheConsolidate,
         urls.REAP_CRON: reap.Reap,
         urls.SPAM_DATA_EXPORT_CRON: spammodel.TrainingDataExport,
+        urls.LOAD_API_CLIENT_CONFIGS_CRON: (
+            client_config_svc.LoadApiClientConfigs),
         })
 
     self._SetupProjectServlets({
