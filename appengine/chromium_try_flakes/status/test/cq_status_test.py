@@ -606,12 +606,17 @@ class CQStatusTestCase(testing.AppengineTestCase):
           success_run = ndb.Key('BuildRun', 2)).put()
       new_flakes.append(key)
 
+    non_existant_flake = [ndb.Key('FlakyRun', '201')]
+
     # Create Flakes.
     Flake(key=ndb.Key('Flake', 'foo'), name='foo',
           occurrences = old_flakes + new_flakes,
           last_time_seen = now).put()
     Flake(key=ndb.Key('Flake', 'bar'), name='bar',
           occurrences = old_flakes + new_flakes[:50],
+          last_time_seen = now).put()
+    Flake(key=ndb.Key('Flake', 'baz'), name='baz',
+          occurrences = non_existant_flake + new_flakes,
           last_time_seen = now).put()
 
     path = '/cron/delete_old_flake_occurrences'
@@ -623,6 +628,9 @@ class CQStatusTestCase(testing.AppengineTestCase):
 
     # Kept old flakes since there are just 50 new flakes.
     self.assertEqual(len(Flake.get_by_id('bar').occurrences), 150)
+
+    # Make sure that non existant flake got removed.
+    self.assertNotIn(non_existant_flake, Flake.get_by_id('bar').occurrences)
 
     # Make sure that we do not delete any FlakyRun entities.
     self.assertEqual(FlakyRun.query().count(limit=300), 200)

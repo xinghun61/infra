@@ -152,32 +152,45 @@ def update_stale_issues():
 
 
 def delete_old_flake_occurrences():
-  """Delete old flake occurrences (FlakyRun) from flakes (Flake.occurrences).
+  """Delete old and invalid flake occurrences from flakes.
 
-  Old FlakyRuns are those which have finished more than 3 months ago. However,
-  we only remove them if there is there are at least 100 recent occurrences.
+  Old occurrences (FlakyRuns) are those which have finished more than 3 months
+  ago. Invalid ones are those that that do not exist in datastore, but are
+  listed in Flake.occurrences field. We do not remove any occurrences from a
+  given flake unless there is there at least 100 recent valid occurrences in the
+  occurrences field.
   """
   old_occ_cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=90)
   for flake in Flake.query(Flake.last_time_seen > old_occ_cutoff):
     flaky_runs = ndb.get_multi(flake.occurrences)
-    new_flakes = [fr.key for fr in flaky_runs
-                  if fr.failure_run_time_finished > old_occ_cutoff]
+    occurrence_map = {}
+    map(occurrence_map.__setitem__, flake.occurrences, flaky_runs)
+
+    # Sort flake occurrences.
+    new_occurrences = []
+    old_occurrences = []
+    invalid_occurrences = []
+    for key, flaky_run in occurrence_map.iteritems():
+      if not flaky_run:
+        invalid_occurrences.append(key)
+      elif flaky_run.failure_run_time_finished < old_occ_cutoff:
+        old_occurrences.append(key)
+      else:
+        new_occurrences.append(key)
 
     # We use a nested function with transaction enabled to make sure that we do
     # not loose any new flakes being added to the Flake at the same time.
     @ndb.transactional
-    def remove_old_occurrences(flake_key, occurrences_to_remove):
+    def remove_occurrences(flake_key, occurrences_to_remove):
       flake = flake_key.get()
       flake.occurrences = [
           occ for occ in flake.occurrences if occ not in occurrences_to_remove]
       flake.put()
 
-    if len(new_flakes) >= 100:
-      old_flakes = [fr.key for fr in flaky_runs
-                    if fr.failure_run_time_finished <= old_occ_cutoff]
-      remove_old_occurrences(flake.key, old_flakes)
-      logging.info('Removed %d old occurrences from flake %s',
-                   len(old_flakes), flake.name)
+    if len(new_occurrences) >= 100:
+      remove_occurrences(flake.key, old_occurrences + invalid_occurrences)
+      logging.info('Removed %d old and %d invalid occurrences from flake %s',
+                   len(old_occurrences), len(invalid_occurrences), flake.name)
 
 
 def get_int_value(properties, key):
