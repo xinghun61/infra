@@ -9,6 +9,10 @@ handlers:
   script: main.app
   login: admin
   secure: always
+- url: /override_issue_id
+  login: required
+  auth_fail_action: redirect
+  script: main.app
 - url: /.*
   script: main.app
 

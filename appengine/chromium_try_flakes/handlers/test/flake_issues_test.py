@@ -830,3 +830,48 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     self.assertEqual(set(passed), set(['test1']))
     self.assertEqual(set(failed), set(['test2/a', 'test2/d']))
     self.assertEqual(set(skipped), set(['test2/b']))
+
+
+class TestOverrideIssueID(testing.AppengineTestCase):
+  app_module = main.app
+
+  def setUp(self):
+    super(TestOverrideIssueID, self).setUp()
+    self.mock_current_user(user_email='someone@chromium.org')
+
+    self.mock_api = MockIssueTrackerAPI()
+    self.patchers = [
+        mock.patch('issue_tracker.issue_tracker_api.IssueTrackerAPI',
+                   lambda *args, **kwargs: self.mock_api),
+    ]
+    for patcher in self.patchers:
+      patcher.start()
+
+  def tearDown(self):
+    super(TestOverrideIssueID, self).tearDown()
+    for patcher in self.patchers:
+      patcher.stop()
+
+  def test_only_chromium_users_are_allowed_to_change(self):
+    self.mock_current_user(user_email='someone@evil-site.com')
+    self.test_app.get('/override_issue_id?key=123&issue_id=0', status=401)
+
+  def test_validates_issue_id(self):
+    self.test_app.get('/override_issue_id?issue_id=foobar', status=400)
+    self.test_app.get('/override_issue_id?issue_id=-5', status=400)
+
+  def test_checks_issue_is_on_monorail(self):
+    self.test_app.get('/override_issue_id?issue_id=200', status=400)
+
+  def test_overrides_issue_id(self):
+    issue = self.mock_api.create(MockIssue({}))
+    key = Flake(name='foobar', issue_id=issue.id).put()
+    self.test_app.get(
+        '/override_issue_id?key=%s&issue_id=%d' % (key.urlsafe(), issue.id))
+    self.assertEqual(key.get().issue_id, issue.id)
+
+  def test_overrides_issue_id_with_0(self):
+    key = Flake(name='foobar', issue_id=100000).put()
+    self.test_app.get(
+        '/override_issue_id?key=%s&issue_id=0' % key.urlsafe())
+    self.assertEqual(key.get().issue_id, 0)

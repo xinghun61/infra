@@ -13,6 +13,7 @@ import webapp2
 from google.appengine.api import app_identity
 from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
+from google.appengine.api import users
 from google.appengine.ext import ndb
 
 from infra_libs import ts_mon
@@ -594,3 +595,43 @@ class CreateFlakyRun(webapp2.RequestHandler):
     for flake in flakes_to_update:
       self.add_failure_to_flake(flake, flaky_run_key, failure_time)
     self.flaky_runs.increment_by(1)
+
+
+class OverrideIssueId(webapp2.RequestHandler):
+  def get(self):
+    # 'login: required' in app.yaml guarantees that we'll get a valid user here
+    if not users.get_current_user().email().endswith('@chromium.org'):
+      self.response.set_status(401)
+      self.response.write(
+          'Please login with your chromium.org account. <a href="%s">Logout'
+          '</a>.' % users.create_logout_url(self.request.url))
+      return
+
+    try:
+      issue_id = int(self.request.get('issue_id'))
+    except Exception as e:
+      self.response.set_status(400)
+      self.response.write('Failed to parse Issue ID as an integer.')
+      return
+
+    if issue_id < 0:
+      self.response.set_status(400)
+      self.response.write('Issue ID must be positive or 0.')
+      return
+
+    if issue_id != 0:
+      try:
+        api = issue_tracker_api.IssueTrackerAPI('chromium', True)
+        api.getIssue(issue_id)
+      except Exception as e:
+        self.response.set_status(400)
+        self.response.write(
+            'Failed to find issue %d on issue tracker: %s.' % (issue_id, e))
+        return
+
+    key = self.request.get('key')
+    flake = ndb.Key(urlsafe=key).get()
+    flake.issue_id = issue_id
+    flake.put()
+
+    self.redirect('/all_flake_occurrences?key=%s' % key)

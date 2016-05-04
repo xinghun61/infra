@@ -35,6 +35,7 @@ handlers = [
   (r'/issues/process/(.*)', flake_issues.ProcessIssue),
   (r'/issues/update-if-stale/(.*)', flake_issues.UpdateIfStaleIssue),
   (r'/issues/create_flaky_run', flake_issues.CreateFlakyRun),
+  (r'/override_issue_id', flake_issues.OverrideIssueId),
 ]
 
 app = webapp2.WSGIApplication(handlers, debug=True)
