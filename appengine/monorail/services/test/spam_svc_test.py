@@ -14,6 +14,7 @@ from google.appengine.ext import testbed
 import settings
 from framework import sql
 from proto import user_pb2
+from proto import tracker_pb2
 from services import spam_svc
 from testing import fake
 
@@ -249,6 +250,79 @@ class SpamServiceTest(unittest.TestCase):
     self.assertEqual("classifier", res[0].reason)
     self.assertEqual(0.9, res[0].classifier_confidence)
     self.assertEqual("2015-12-10 11:06:24", res[0].verdict_time)
+
+  def testClassifyIssue_spam(self):
+    issue = fake.MakeTestIssue(
+        project_id=789, local_id=1, reporter_id=111L, owner_id=456,
+        summary='sum', status='Live', issue_id=78901, is_spam=True)
+    self.spam_service._predict = lambda body: (
+        {'outputLabel': 'spam'})
+
+    # Prevent missing service inits to fail the test.
+    self.spam_service.prediction_service = True
+
+    comment_pb = tracker_pb2.IssueComment()
+    comment_pb.content = "this is spam"
+    res = self.spam_service.ClassifyIssue(issue, comment_pb, 'test@test.com')
+    self.assertEqual('spam', res['outputLabel'])
+
+    res = self.spam_service.ClassifyIssue(issue, comment_pb,
+        'test@chromium.org.spam.com')
+    self.assertEqual('spam', res['outputLabel'])
+
+    res = self.spam_service.ClassifyIssue(issue, comment_pb,
+        'test.google.com@test.com')
+    self.assertEqual('spam', res['outputLabel'])
+
+  def testClassifyIssue_spamExempt(self):
+    issue = fake.MakeTestIssue(
+        project_id=789, local_id=1, reporter_id=111L, owner_id=456,
+        summary='sum', status='Live', issue_id=78901, is_spam=True)
+    self.spam_service._predict = lambda body: (
+        {'outputLabel': 'spam'})
+ 
+    # Prevent missing service inits to fail the test.
+    self.spam_service.prediction_service = True
+
+    comment_pb = tracker_pb2.IssueComment()
+    comment_pb.content = "this is spam"
+    res = self.spam_service.ClassifyIssue(issue, comment_pb, 'test@google.com')
+    self.assertEqual('ham', res['outputLabel'])
+    res = self.spam_service.ClassifyIssue(issue, comment_pb,
+        'test@chromium.org')
+    self.assertEqual('ham', res['outputLabel'])
+
+  def testClassifyComment_spam(self):
+    self.spam_service._predict = lambda body: (
+        {'outputLabel': 'spam'})
+
+    # Prevent missing service inits to fail the test.
+    self.spam_service.prediction_service = True
+
+    res = self.spam_service.ClassifyComment('this is spam', 'test@test.com')
+    self.assertEqual('spam', res['outputLabel'])
+
+    res = self.spam_service.ClassifyComment('this is spam',
+        'test@chromium.org.spam.com')
+    self.assertEqual('spam', res['outputLabel'])
+
+    res = self.spam_service.ClassifyComment('this is spam',
+        'test.google.com@test.com')
+    self.assertEqual('spam', res['outputLabel'])
+
+  def testClassifyComment_spamExempt(self):
+    self.spam_service._predict = lambda body: (
+        {'outputLabel': 'spam'})
+
+    # Prevent missing service inits to fail the test.
+    self.spam_service.prediction_service = True
+
+    res = self.spam_service.ClassifyComment('this is spam', 'test@google.com')
+    self.assertEqual('ham', res['outputLabel'])
+
+    res = self.spam_service.ClassifyComment('this is spam',
+        'test@chromium.org')
+    self.assertEqual('ham', res['outputLabel'])
 
 if __name__ == '__main__':
   unittest.main()

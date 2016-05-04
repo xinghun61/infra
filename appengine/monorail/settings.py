@@ -282,6 +282,10 @@ classifier_moderation_thresh = 1.0
 # with is_spam=True, and will be filtered out from search results.
 classifier_spam_thresh = 1.0
 
+# Users with email addresses ending with these will not be subject to
+# spam filtering.
+spam_whitelisted_suffixes = ('@google.com', '@chromium.org')
+
 ratelimiting_enabled = False
 
 # Enable cost-based rate limiting. This only applies if

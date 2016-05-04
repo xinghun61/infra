@@ -275,7 +275,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpInsertIssue()
     self.SetUpInsertComment(7890101, True)
     self.services.spam.ClassifyIssue(mox.IgnoreArg(),
-        mox.IgnoreArg()).AndReturn(
+        mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
         self.classifierResult('ham', 1.0))
     self.services.spam.RecordClassifierIssueVerdict(self.cnxn,
        mox.IsA(tracker_pb2.Issue), False, 1.0)
@@ -295,7 +295,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpInsertIssue(label_rows=[])
     self.SetUpInsertComment(7890101, True)
     self.services.spam.ClassifyIssue(mox.IgnoreArg(),
-        mox.IgnoreArg()).AndReturn(
+        mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
         self.classifierResult('ham', 1.0))
     self.services.spam.RecordClassifierIssueVerdict(self.cnxn,
        mox.IsA(tracker_pb2.Issue), False, 1.0)
@@ -321,7 +321,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpInsertComment(7890101, True)
 
     self.services.spam.ClassifyIssue(mox.IsA(tracker_pb2.Issue),
-        mox.IsA(tracker_pb2.IssueComment)).AndReturn(
+        mox.IsA(tracker_pb2.IssueComment), None).AndReturn(
         self.classifierResult('spam', 1.0))
     self.services.spam.RecordClassifierIssueVerdict(self.cnxn,
        mox.IsA(tracker_pb2.Issue), True, 1.0)
@@ -765,7 +765,7 @@ class IssueServiceTest(unittest.TestCase):
         is_spam=False)
     self.services.issue.UpdateIssues(self.cnxn, [issue],
         just_derived=False, update_cols=None, commit=True, invalidate=True)
-    self.services.spam.ClassifyComment('comment text').AndReturn(
+    self.services.spam.ClassifyComment('comment text', None).AndReturn(
       self.classifierResult('ham', 1.0))
     self.services.spam.RecordClassifierCommentVerdict(self.cnxn,
        None, False, 1.0)
@@ -803,7 +803,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.SoftDeleteComment(self.cnxn,
         issue.project_id, issue.local_id, 0, issue.reporter_id,
         self.services.user, is_spam=True)
-    self.services.spam.ClassifyComment('comment text').AndReturn(
+    self.services.spam.ClassifyComment('comment text', None).AndReturn(
         self.classifierResult('spam', 1.0))
     self.services.spam.RecordClassifierCommentVerdict(self.cnxn,
         mox.IsA(tracker_pb2.IssueComment), True, 1.0)
@@ -845,7 +845,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.GetIssueByLocalID(self.cnxn, 789, 1).AndReturn(issue)
     self.services.issue.UpdateIssues(self.cnxn, [issue],
         just_derived=False, update_cols=None, commit=True, invalidate=True)
-    self.services.spam.ClassifyComment('comment text').AndReturn(
+    self.services.spam.ClassifyComment('comment text', None).AndReturn(
         self.classifierResult('ham', 1.0))
     self.services.spam.RecordClassifierCommentVerdict(self.cnxn,
         mox.IsA(tracker_pb2.IssueComment), False, 1.0)

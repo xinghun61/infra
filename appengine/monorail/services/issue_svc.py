@@ -473,7 +473,9 @@ class IssueService(object):
         tracker_bizobj.GetStatus(issue), config):
       issue.closed_timestamp = timestamp
 
-    classification = services.spam.ClassifyIssue(issue, comment)
+    reporter_email = services.user.LookupUserEmail(cnxn, reporter_id)
+    classification = services.spam.ClassifyIssue(issue, comment,
+        reporter_email)
 
     label = classification['outputLabel']
     logging.info('issue/comment classification: %s' % classification)
@@ -1471,7 +1473,8 @@ class IssueService(object):
     # restriction label, owner, cc, or user-type custom field.
     self._config_service.InvalidateMemcache([issue], key_prefix='nonviewable:')
 
-    classification = services.spam.ClassifyComment(comment)
+    author_email = services.user.LookupUserEmail(cnxn, reporter_id)
+    classification = services.spam.ClassifyComment(comment, author_email)
 
     label = classification['outputLabel']
     logging.info('comment classification: %s' % classification)

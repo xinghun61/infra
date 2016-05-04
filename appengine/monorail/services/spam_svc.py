@@ -256,7 +256,13 @@ class SpamService(object):
     if is_spam:
       self.comment_actions.increment({'type': 'classifier'})
 
-  def ClassifyIssue(self, issue, firstComment):
+  def _predict(self, body):
+    return self.prediction_service.trainedmodels().predict(
+        settings.classifier_prorect_id,
+        settings.classifier_model_id,
+        body).execute()
+
+  def ClassifyIssue(self, issue, firstComment, reporter_email):
     """Classify an issue as either spam or ham.
 
     Args:
@@ -269,6 +275,12 @@ class SpamService(object):
     # Fail-safe: not spam.
     result = {'outputLabel': 'ham',
               'outputMulti': [{'label':'ham', 'score': '1.0'}]}
+
+    if reporter_email is not None and reporter_email.endswith(
+        settings.spam_whitelisted_suffixes):
+      logging.info('%s excempted from spam filtering', reporter_email)
+      return result
+
     if not self.prediction_service:
       logging.error("prediction_service not initialized.")
       return result
@@ -276,20 +288,24 @@ class SpamService(object):
     remaining_retries = 3
     while remaining_retries > 0:
       try:
-        result = self.prediction_service.trainedmodels().predict(
-            project=settings.classifier_project_id,
-            id=settings.classifier_model_id,
-            body={'input': {
-                'csvInstance': [issue.summary, firstComment.content]}}
-        ).execute()
+        result = self._predict(
+             {
+               'input': {
+                 'csvInstance': [
+                   issue.summary,
+                   firstComment.content,
+                 ],
+               }
+             }
+           )
         return result
       except Exception:
         remaining_retries = remaining_retries - 1
-        logging.error('Error calling prediction API: %s' % sys.exc_info()[0])
+        logging.error('Error calling prediction API: %s' % sys.exc_info()[2])
 
     return result
 
-  def ClassifyComment(self, comment_content):
+  def ClassifyComment(self, comment_content, author_email):
     """Classify a comment as either spam or ham.
 
     Args:
@@ -301,6 +317,12 @@ class SpamService(object):
     # Fail-safe: not spam.
     result = {'outputLabel': 'ham',
               'outputMulti': [{'label':'ham', 'score': '1.0'}]}
+
+    if author_email is not None and author_email.endswith(
+        settings.spam_whitelisted_suffixes):
+      logging.info('%s excempted from spam filtering', author_email)
+      return result
+
     if not self.prediction_service:
       logging.error("prediction_service not initialized.")
       return result
@@ -308,13 +330,18 @@ class SpamService(object):
     remaining_retries = 3
     while remaining_retries > 0:
       try:
-        result = self.prediction_service.trainedmodels().predict(
-            project=settings.classifier_project_id,
-            id=settings.classifier_model_id,
-            # We re-use the issue classifier here, with a blank
-            # description and use the comment content as the body.
-            body={'input': {'csvInstance': ['', comment_content]}}
-        ).execute()
+        result = self._predict(
+             {
+               'input': {
+                 'csvInstance': [
+                    # We re-use the issue classifier here, with a blank
+                    # description and use the comment content as the body.
+                    '',
+                    comment_content,
+                 ],
+               }
+             }
+           )
         return result
       except Exception:
         remaining_retries = remaining_retries - 1
