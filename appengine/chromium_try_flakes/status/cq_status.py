@@ -337,10 +337,11 @@ def fetch_cq_status():
       end = str(time_functions.timestamp.utcnow_ts())
 
     if begin and end:
-      logging.info('fetching from ' +
-                   str(datetime.datetime.fromtimestamp(float(begin))) + ' to ' +
-                   str(datetime.datetime.fromtimestamp(float(end))) +
-                   ' cursor: ' + cursor)
+      logging.info(
+          'fetching from %s to %s cursor: %s',
+          str(datetime.datetime.utcfromtimestamp(float(begin))),
+          str(datetime.datetime.utcfromtimestamp(float(end))),
+          cursor)
     else:
       logging.info('fetching with no begin/end and cursor: ' + cursor)
 

@@ -300,14 +300,6 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
 })
 
 
-class DateTimeMock(datetime.datetime):
-  test_utcnow = datetime.datetime(2015, 10, 30, 14, 17, 42)
-
-  @classmethod
-  def utcnow(cls):
-    return cls.test_utcnow
-
-
 class CQStatusTestCase(testing.AppengineTestCase):
   app_module = main.app
 
@@ -384,7 +376,7 @@ class CQStatusTestCase(testing.AppengineTestCase):
     # Make sure we actually give up after last call.
     self.assertEqual(urlfetch_mock.call_count, 6)
 
-  @mock.patch('datetime.datetime', DateTimeMock)
+  @mock_datetime_utc(2015, 10, 30, 14, 17, 42)
   def test_cq_status_fetch_fetches_one_week_if_no_previous_status(self):
     urlfetch_mock = mock.Mock()
     urlfetch_mock.return_value.content = json.dumps({
@@ -398,7 +390,7 @@ class CQStatusTestCase(testing.AppengineTestCase):
       'tags=action=verifier_jobs_update&begin=1445609862.0&end=1446214662.0&'
       'count=10')
 
-  @mock.patch('datetime.datetime', DateTimeMock)
+  @mock_datetime_utc(2015, 10, 30, 14, 17, 42)
   def test_cq_status_fetch_continues_previous_fetch(self):
     urlfetch_mock = mock.Mock()
     urlfetch_mock.return_value.content = json.dumps({
@@ -414,7 +406,7 @@ class CQStatusTestCase(testing.AppengineTestCase):
       'tags=action=verifier_jobs_update&cursor=abcd&begin=1445604262.0&'
       'end=1446212662.0&count=10')
 
-  @mock.patch('datetime.datetime', DateTimeMock)
+  @mock_datetime_utc(2015, 10, 30, 14, 17, 42)
   def test_cq_status_fetch_without_begin_end(self):
     urlfetch_mock = mock.Mock()
     urlfetch_mock.return_value.content = json.dumps({
@@ -428,7 +420,7 @@ class CQStatusTestCase(testing.AppengineTestCase):
       'https://chromium-cq-status.appspot.com/query?'
       'tags=action=verifier_jobs_update&cursor=abcd&count=10')
 
-  @mock.patch('datetime.datetime', DateTimeMock)
+  @mock_datetime_utc(2015, 10, 30, 14, 17, 42)
   def test_cq_status_fetch_stats_new_fetch_from_last_build_run(self):
     urlfetch_mock = mock.Mock()
     urlfetch_mock.return_value.content = json.dumps({
@@ -469,7 +461,7 @@ class CQStatusTestCase(testing.AppengineTestCase):
     with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
       cq_status.fetch_cq_status()
 
-  @mock.patch('datetime.datetime', DateTimeMock)
+  @mock_datetime_utc(2015, 10, 30, 14, 17, 42)
   def test_cq_status_fetch_stores_intermediate_status(self):
     urlfetch_mock = mock.Mock()
     urlfetch_mock.side_effect = [
