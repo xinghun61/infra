@@ -151,6 +151,35 @@ def update_stale_issues():
                   url='/issues/update-if-stale/%s' % flake.issue_id)
 
 
+def delete_old_flake_occurrences():
+  """Delete old flake occurrences (FlakyRun) from flakes (Flake.occurrences).
+
+  Old FlakyRuns are those which have finished more than 3 months ago. However,
+  we only remove them if there is there are at least 100 recent occurrences.
+  """
+  old_occ_cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=90)
+  for flake in Flake.query(Flake.last_time_seen > old_occ_cutoff):
+    flaky_runs = ndb.get_multi(flake.occurrences)
+    new_flakes = [fr.key for fr in flaky_runs
+                  if fr.failure_run_time_finished > old_occ_cutoff]
+
+    # We use a nested function with transaction enabled to make sure that we do
+    # not loose any new flakes being added to the Flake at the same time.
+    @ndb.transactional
+    def remove_old_occurrences(flake_key, occurrences_to_remove):
+      flake = flake_key.get()
+      flake.occurrences = [
+          occ for occ in flake.occurrences if occ not in occurrences_to_remove]
+      flake.put()
+
+    if len(new_flakes) >= 100:
+      old_flakes = [fr.key for fr in flaky_runs
+                    if fr.failure_run_time_finished <= old_occ_cutoff]
+      remove_old_occurrences(flake.key, old_flakes)
+      logging.info('Removed %d old occurrences from flake %s',
+                   len(old_flakes), flake.name)
+
+
 def get_int_value(properties, key):
   if not key in properties:
     raise ValueError('key not found')

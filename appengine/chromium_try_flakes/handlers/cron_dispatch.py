@@ -17,6 +17,7 @@ commands = {
   'update_flake_day_counter': cq_status.update_flake_day_counter,
   'update_flake_week_counter': cq_status.update_flake_week_counter,
   'update_flake_month_counter': cq_status.update_flake_month_counter,
+  'delete_old_flake_occurrences': cq_status.delete_old_flake_occurrences,
 }
 
 class CronDispatch(webapp2.RequestHandler):  # pragma: no cover

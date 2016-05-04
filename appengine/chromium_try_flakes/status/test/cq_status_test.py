@@ -15,9 +15,10 @@ import main
 from infra_libs import ts_mon
 from model.build_run import BuildRun, PatchsetBuilderRuns
 from model.fetch_status import FetchStatus
-from model.flake import Flake
+from model.flake import Flake, FlakyRun
 from status import cq_status
 from testing_utils import testing
+from time_functions.testing import mock_datetime_utc
 
 
 # Test results below capture various variants in which results may be processed.
@@ -589,3 +590,47 @@ class CQStatusTestCase(testing.AppengineTestCase):
     self.assertEqual({5: 1, 11: 2}, dist.buckets)
     self.assertEqual(32, dist.sum)
     self.assertEqual(3, dist.count)
+
+  @mock_datetime_utc(2015, 11, 10, 10, 11, 0)
+  def test_delete_old_flakes(self):
+    # Create old FlakyRuns.
+    now = datetime.datetime.utcnow()
+    old_flakes = []
+    for i in range(1, 101):  # id can not be 0
+      key = FlakyRun(
+          key = ndb.Key('FlakyRun', i),
+          failure_run_time_finished = now - datetime.timedelta(days=100 + i),
+          failure_run = ndb.Key('BuildRun', 1),
+          success_run = ndb.Key('BuildRun', 2)).put()
+      old_flakes.append(key)
+
+    # Create new FlakyRuns.
+    new_flakes = []
+    for i in range(101, 201):
+      key = FlakyRun(
+          key = ndb.Key('FlakyRun', i),
+          failure_run_time_finished = now - datetime.timedelta(hours=100 + i),
+          failure_run = ndb.Key('BuildRun', 1),
+          success_run = ndb.Key('BuildRun', 2)).put()
+      new_flakes.append(key)
+
+    # Create Flakes.
+    Flake(key=ndb.Key('Flake', 'foo'), name='foo',
+          occurrences = old_flakes + new_flakes,
+          last_time_seen = now).put()
+    Flake(key=ndb.Key('Flake', 'bar'), name='bar',
+          occurrences = old_flakes + new_flakes[:50],
+          last_time_seen = now).put()
+
+    path = '/cron/delete_old_flake_occurrences'
+    response = self.test_app.get(path, headers={'X-AppEngine-Cron': 'true'})
+    self.assertEqual(200, response.status_int)
+
+    # Removed old flakes.
+    self.assertEqual(set(Flake.get_by_id('foo').occurrences), set(new_flakes))
+
+    # Kept old flakes since there are just 50 new flakes.
+    self.assertEqual(len(Flake.get_by_id('bar').occurrences), 150)
+
+    # Make sure that we do not delete any FlakyRun entities.
+    self.assertEqual(FlakyRun.query().count(limit=300), 200)
