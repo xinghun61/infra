@@ -600,7 +600,8 @@ class CreateFlakyRun(webapp2.RequestHandler):
 class OverrideIssueId(webapp2.RequestHandler):
   def get(self):
     # 'login: required' in app.yaml guarantees that we'll get a valid user here
-    if not users.get_current_user().email().endswith('@chromium.org'):
+    user_email = users.get_current_user().email()
+    if not user_email.endswith('@chromium.org'):
       self.response.set_status(401)
       self.response.write(
           'Please login with your chromium.org account. <a href="%s">Logout'
@@ -634,4 +635,6 @@ class OverrideIssueId(webapp2.RequestHandler):
     flake.issue_id = issue_id
     flake.put()
 
+    logging.info('%s updated issue_id for flake %s to %d.', user_email,
+                 flake.name, issue_id)
     self.redirect('/all_flake_occurrences?key=%s' % key)
