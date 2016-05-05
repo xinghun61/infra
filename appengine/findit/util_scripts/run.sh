@@ -51,9 +51,13 @@ print_command_for_queue_cron_dispatch() {
 }
 
 run_unittests() {
-  local coverage_report_dir="${TMP_DIR}/coverage"
-  python ${INFRA_DIR}/test.py test appengine/findit --html-report ${coverage_report_dir}
-  echo "Code coverage report file://${coverage_report_dir}/index.html"
+  local findit="appengine/findit"
+  local coverage_report_parent_dir="${TMP_DIR}/coverage"
+  if [ ! -d ${coverage_report_parent_dir} ]; then
+    mkdir -p ${coverage_report_parent_dir}
+  fi
+  python ${INFRA_DIR}/test.py test ${findit} --html-report ${coverage_report_parent_dir}
+  echo "Code coverage report file://${coverage_report_parent_dir}/${findit}/index.html"
 }
 
 run_findit_locally() {
