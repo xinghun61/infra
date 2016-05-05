@@ -6,7 +6,7 @@
 
 <div class="cursor_off vt issuedescription" id="hc0">
 
-<pre class="issue_text">
+<pre class="issue_text" tabIndex="0">
 [for description.text_runs][include "render-rich-text.ezt" description.text_runs][end]
 </pre>
 

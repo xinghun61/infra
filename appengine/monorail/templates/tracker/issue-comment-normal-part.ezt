@@ -14,7 +14,7 @@
     [end][end]
   </div>[#issuecommentheader]
 
-  <div class="issuecommentbody">
+  <div class="issuecommentbody" tabIndex="0">
     [if-any read_only][else]
      <div style="float:right; margin-right:.3em; text-align:right" class="ichcommands">
       <span id='comment-action-loading-[comments.sequence]'
