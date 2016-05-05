@@ -126,9 +126,10 @@ class ActivitiesTest(unittest.TestCase):
 
     activity_view = updates_data['updates_data'].older[0]
     self.assertEqual(
-        '<a class="ot-issue-link"\n href="/p//issues/detail?id=%s#c_id%s"\n >'
+        '<a class="ot-issue-link"\n \n '
+        'href="/p//issues/detail?id=%s#c_ts%s"\n >'
         'issue %s</a>\n\n()\n\n\n\n\n \n commented on' % (
-            self.issue_local_id, self.comment_id, self.issue_local_id),
+            self.issue_local_id, self.comment_timestamp, self.issue_local_id),
         activity_view.escaped_title)
     self.assertEqual(
         '<span class="ot-issue-comment">\n this is the 1st comment\n</span>',

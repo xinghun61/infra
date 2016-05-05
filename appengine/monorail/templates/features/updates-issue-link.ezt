@@ -1,3 +1,5 @@
 <a class="ot-issue-link"
-   href="/p/[issue.project_name]/issues/detail?id=[issue.local_id][if-any issue_change_id]#c_id[issue_change_id][end]"
+   [# Go to the first comment with the correct timestamp. That's usually right, and close
+      even in cases where it is wrong.  It avoids exposing a DB ID.]
+   href="/p/[issue.project_name]/issues/detail?id=[issue.local_id][if-any issue_change_id]#c_ts[issue_change_id][end]"
    >issue [issue.local_id]</a>

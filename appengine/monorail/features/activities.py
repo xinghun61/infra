@@ -72,7 +72,7 @@ class ActivityView(template_helpers.PBProxy):
       if self.timestamp == issue.opened_timestamp:
         issue_change_id = None  # This comment is the description.
       else:
-        issue_change_id = pb.id  # instead of seq num.
+        issue_change_id = pb.timestamp  # instead of seq num.
 
       self.comment = tracker_views.IssueCommentView(
           mr.project_name, pb, users_by_id, autolink,
