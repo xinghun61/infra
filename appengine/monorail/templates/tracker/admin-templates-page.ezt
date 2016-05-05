@@ -53,7 +53,12 @@
     Default template for non-members:
     <select name="default_template_for_users" id="default_template_for_users">
      [for config.templates]
-       <option value="[config.templates.name]" [is config.templates.template_id config.default_template_for_users]selected[end]>[config.templates.name]</option>
+       [define offer_template_in_users_menu]No[end]
+       [is config.templates.template_id config.default_template_for_users][define offer_template_in_users_menu]Yes[end][end]
+       [if-any config.templates.members_only][else][define offer_template_in_users_menu]Yes[end][end]
+       [is offer_template_in_users_menu "Yes"]
+         <option value="[config.templates.name]" [is config.templates.template_id config.default_template_for_users]selected[end]>[config.templates.name]</option>
+       [end]
      [end]
     </select>
  [end]
