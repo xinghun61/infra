@@ -124,7 +124,7 @@ func TestPubSub(t *testing.T) {
 				svc.MockCall("Pull", "test-subscription", 64).WithResult(nil, nil)
 
 				Convey(`Returns errNoMessages.`, func() {
-					err := client.pullAckMessages(ctx, func([]*pubsub.Message) {})
+					err := client.pullAckMessages(ctx, 1, func([]*pubsub.Message) {})
 					So(err, ShouldEqual, errNoMessages)
 				})
 			})
@@ -143,7 +143,7 @@ func TestPubSub(t *testing.T) {
 					svc.MockCall("Ack", "test-subscription", []string{"ack0"}).WithResult(nil)
 
 					var pullMsg []*pubsub.Message
-					err := client.pullAckMessages(ctx, func(msg []*pubsub.Message) {
+					err := client.pullAckMessages(ctx, 1, func(msg []*pubsub.Message) {
 						pullMsg = msg
 					})
 					So(err, ShouldBeNil)
@@ -155,14 +155,14 @@ func TestPubSub(t *testing.T) {
 					svc.MockCall("Ack", "test-subscription", []string{"ack0"}).WithResult(nil)
 
 					So(func() {
-						client.pullAckMessages(ctx, func(msg []*pubsub.Message) {
+						client.pullAckMessages(ctx, 1, func(msg []*pubsub.Message) {
 							panic("Handler failure!")
 						})
 					}, ShouldPanic)
 				})
 
 				Convey(`Does not ACK the message if the handler clears it.`, func() {
-					err := client.pullAckMessages(ctx, func(msg []*pubsub.Message) {
+					err := client.pullAckMessages(ctx, 1, func(msg []*pubsub.Message) {
 						for i := range msg {
 							msg[i] = nil
 						}
@@ -176,7 +176,7 @@ func TestPubSub(t *testing.T) {
 				svc.MockCall("Pull", "test-subscription", 64).WithResult(nil, e)
 
 				Convey(`Returns the error as transient.`, func() {
-					So(client.pullAckMessages(ctx, func([]*pubsub.Message) {}), ShouldResemble, errors.WrapTransient(e))
+					So(client.pullAckMessages(ctx, 1, func([]*pubsub.Message) {}), ShouldResemble, errors.WrapTransient(e))
 				})
 			})
 		})

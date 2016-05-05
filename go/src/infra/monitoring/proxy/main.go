@@ -22,6 +22,7 @@ import (
 	"github.com/luci/luci-go/common/logging/gologger"
 	"github.com/luci/luci-go/common/parallel"
 	"github.com/luci/luci-go/common/tsmon"
+	"github.com/luci/luci-go/common/tsmon/distribution"
 	"github.com/luci/luci-go/common/tsmon/field"
 	"github.com/luci/luci-go/common/tsmon/metric"
 	"golang.org/x/net/context"
@@ -41,6 +42,9 @@ var (
 	sentCount = metric.NewCounter("mon_proxy/endpoint/sent",
 		"Count of messages proxied to the endpoint",
 		field.String("result"))
+	sentDuration = metric.NewCumulativeDistribution("mon_proxy/endpoint/duration",
+		"Time taken to send messages to the endpoint, in milliseconds",
+		distribution.DefaultBucketer)
 )
 
 func init() {
@@ -152,7 +156,7 @@ func (a *application) run(ctx context.Context) error {
 		go func(id int) {
 			defer wg.Done()
 
-			a.process(log.SetField(ctx, "worker", i))
+			a.process(log.SetField(ctx, "worker", i), i)
 		}(i)
 	}
 
@@ -179,12 +183,12 @@ func (a *application) isShutdown() bool {
 
 // process runs in its own goroutine and continuously processes data in the
 // configured subscription.
-func (a *application) process(ctx context.Context) {
+func (a *application) process(ctx context.Context, workerID int) {
 	for !a.isShutdown() {
 		// Although we call pullAckMessages without backoff or a throttle, the calls
 		// to the Pub/Sub service use retry library's exponential backoff, so we
 		// don't need to implement DoS protection at this level.
-		err := a.pubsub.pullAckMessages(ctx, func(msgs []*pubsub.Message) {
+		err := a.pubsub.pullAckMessages(ctx, workerID, func(msgs []*pubsub.Message) {
 			log.Fields{
 				"count": len(msgs),
 			}.Infof(ctx, "Pull()ed messages from subscription.")
@@ -217,6 +221,8 @@ func (a *application) sleepWithInterrupt(ctx context.Context, amount time.Durati
 
 // proxyMessages forwards a set of pubsub messages to the endpoint proxy.
 func (a *application) proxyMessages(ctx context.Context, msgs []*pubsub.Message) error {
+	startTime := clock.Now(ctx)
+
 	log.Fields{
 		"size": len(msgs),
 	}.Debugf(ctx, "Sending messages to Proxy.")
@@ -251,6 +257,8 @@ func (a *application) proxyMessages(ctx context.Context, msgs []*pubsub.Message)
 		}
 	})
 
+	duration := clock.Now(ctx).Sub(startTime)
+
 	merr, _ := err.(luciErrors.MultiError)
 	log.Fields{
 		"errorStatus": err,
@@ -259,6 +267,7 @@ func (a *application) proxyMessages(ctx context.Context, msgs []*pubsub.Message)
 	}.Infof(ctx, "Sent messages to endpoint.")
 	sentCount.Add(ctx, int64(len(msgs)), "success")
 	sentCount.Add(ctx, int64(len(merr)), "failure")
+	sentDuration.Add(ctx, float64(duration/time.Millisecond))
 	return err
 }
 

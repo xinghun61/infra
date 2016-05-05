@@ -38,14 +38,15 @@ var (
 	errNoMessages = errors.New("pubsub: no messages")
 
 	messageCount = metric.NewCounter("mon_proxy/pubsub/message",
-		"Count of messages pulled from pub/sub")
+		"Count of messages pulled from pub/sub, by worker",
+		field.Int("worker"))
 	ackCount = metric.NewCounter("mon_proxy/pubsub/ack",
 		"Count of messages Ack'd, by success/failure",
 		field.String("result"))
-	pullDuration = metric.NewCumulativeDistribution("mon_proxy/pubsub/pull_duration",
+	pullDurationMetric = metric.NewCumulativeDistribution("mon_proxy/pubsub/pull_duration",
 		"Time taken to Pull messages from pub/sub, in milliseconds",
 		distribution.DefaultBucketer)
-	ackDuration = metric.NewCumulativeDistribution("mon_proxy/pubsub/ack_duration",
+	ackDurationMetric = metric.NewCumulativeDistribution("mon_proxy/pubsub/ack_duration",
 		"Time taken to Ack messages to pub/sub, in milliseconds",
 		distribution.DefaultBucketer)
 )
@@ -243,7 +244,7 @@ func (p *pubsubClient) setupSubscription(ctx context.Context) error {
 //
 // handler is a method that returns true if there was a transient failure,
 // indicating that the messages shouldn't be ACK'd.
-func (p *pubsubClient) pullAckMessages(ctx context.Context, handler func([]*pubsub.Message)) error {
+func (p *pubsubClient) pullAckMessages(ctx context.Context, workerID int, handler func([]*pubsub.Message)) error {
 	var err error
 	var msgs []*pubsub.Message
 	ackCount := 0
@@ -251,14 +252,12 @@ func (p *pubsubClient) pullAckMessages(ctx context.Context, handler func([]*pubs
 	// Report the duration of a Pull/ACK cycle.
 	startTime := clock.Now(ctx)
 	defer func() {
-		duration := clock.Now(ctx).Sub(startTime)
+		totalDuration := clock.Now(ctx).Sub(startTime)
 		log.Fields{
 			"count":    len(msgs),
 			"ackCount": ackCount,
-			"duration": duration,
+			"duration": totalDuration,
 		}.Infof(ctx, "Pull/ACK cycle complete.")
-		messageCount.Add(ctx, int64(len(msgs)))
-		pullDuration.Add(ctx, float64(duration/time.Millisecond))
 	}()
 
 	err = retryCall(ctx, "Pull()", func() error {
@@ -266,11 +265,15 @@ func (p *pubsubClient) pullAckMessages(ctx context.Context, handler func([]*pubs
 		msgs, err = p.service.Pull(p.subscription, p.batchSize)
 		return p.wrapTransient(err)
 	})
+	pullDuration := clock.Now(ctx).Sub(startTime)
 	log.Fields{
 		log.ErrorKey: err,
-		"duration":   clock.Now(ctx).Sub(startTime),
+		"duration":   pullDuration,
 		"count":      len(msgs),
 	}.Debugf(ctx, "Pull() complete.")
+
+	pullDurationMetric.Add(ctx, float64(pullDuration/time.Millisecond))
+	messageCount.Add(ctx, int64(len(msgs)), workerID)
 
 	if err != nil {
 		return err
@@ -316,7 +319,7 @@ func (p *pubsubClient) ackMessages(ctx context.Context, messages []*pubsub.Messa
 	})
 	duration := clock.Now(ctx).Sub(startTime)
 
-	ackDuration.Add(ctx, float64(duration/time.Millisecond))
+	ackDurationMetric.Add(ctx, float64(duration/time.Millisecond))
 
 	if err != nil {
 		log.Fields{
