@@ -116,7 +116,7 @@
                >[if-index issue.fields.values last][if-any issue.fields.derived_values],[end][else],[end]
             [end]
             [for issue.fields.derived_values]
-              <a href="list?q=[issue.fields.field_name]=&quot;[format "url"][issue.fields.derived_values.val][end]&quot;"
+              <a href="list?q=[issue.fields.field_name]=&quot;[format "url"][issue.fields.derived_values.val][end]&quot;" class="fieldvalue"
                       title="derived: [issue.fields.derived_values.val] [issue.fields.derived_values.docstring]"><i>[issue.fields.derived_values.val]</i></a>[if-index issue.fields.derived_values last][else],[end]
             [end]
           [else]
