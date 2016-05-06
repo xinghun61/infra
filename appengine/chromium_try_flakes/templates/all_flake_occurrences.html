@@ -46,3 +46,8 @@ Current Issue ID where new flakes are reported:
 {% endfor %}
 
 </table>
+
+{% if show_all_link %}
+<a href="/all_flake_occurrences?key={{flake.key.urlsafe}}&show_all=1">
+show all flakes</a> (may take several minutes to load)
+{% endif %}

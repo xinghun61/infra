@@ -14,6 +14,7 @@ import webapp2
 
 
 MAX_GROUP_DISTANCE = datetime.timedelta(days=3)
+MAX_OCCURRENCES_DEFAULT = 50
 
 
 def RunsSortFunction(s):  # pragma: no cover
@@ -22,12 +23,9 @@ def RunsSortFunction(s):  # pragma: no cover
 def filterNone(elements):
   return [e for e in elements if e is not None]
 
-def show_all_flakes(flake):  # pragma: no cover
-  occurrence_keys = []
-  for o in flake.occurrences:
-    occurrence_keys.append(o)
-
-  occurrences = filterNone(ndb.get_multi(occurrence_keys))
+def show_all_flakes(flake, show_all):  # pragma: no cover
+  from_index = 0 if show_all else -MAX_OCCURRENCES_DEFAULT
+  occurrences = filterNone(ndb.get_multi(flake.occurrences[from_index:]))
 
   failure_runs_keys = []
   patchsets_keys = []
@@ -77,9 +75,12 @@ def show_all_flakes(flake):  # pragma: no cover
         current_group = [f]
     grouped_runs.append(current_group)
 
+  show_all_link = (len(flake.occurrences) > MAX_OCCURRENCES_DEFAULT and
+                   not show_all)
   values = {
     'flake': flake,
     'grouped_runs': grouped_runs,
+    'show_all_link': show_all_link,
     'time_now': datetime.datetime.utcnow(),
   }
 
@@ -89,9 +90,10 @@ class AllFlakeOccurrences(webapp2.RequestHandler):  # pragma: no cover
   def get(self):
     key = self.request.get('key')
     flake = ndb.Key(urlsafe=key).get()
+    show_all = self.request.get('show_all', 0)
 
     if not flake:
       self.response.set_status(404, 'Flake with id %s does not exist' % key)
       return
 
-    self.response.write(show_all_flakes(flake))
+    self.response.write(show_all_flakes(flake, show_all))
