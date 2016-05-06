@@ -567,35 +567,35 @@ class GitRepositoryTest(testing.AppengineTestCase):
     actual_commits = self.git_repo.GetCommitsBetweenRevisions('0', '3', n=2)
     self.assertEqual(expected_commits, actual_commits)
 
-  def _MockGetCommitsBetweenRevisions(self, *_):
-    return ['2', '1']
-
   def testGetChangeLogs(self):
+    def _MockSendRequestForJsonResponse(*_, **kargs):
+      self.assertTrue(bool(kargs))
+      return {'log': [json.loads(COMMIT_LOG[5:])]}
 
-    def _MockGetChangeLog(*_):
-      return ChangeLog.FromDict(DUMMY_CHANGELOG_JSON)
+    self.mock(git_repository.GitRepository, '_SendRequestForJsonResponse',
+              _MockSendRequestForJsonResponse)
 
-    self.mock(git_repository.GitRepository, 'GetCommitsBetweenRevisions',
-              self._MockGetCommitsBetweenRevisions)
-    self.mock(git_repository.GitRepository, 'GetChangeLog',
-              _MockGetChangeLog)
+    changelogs = self.git_repo.GetChangeLogs('0', '2')
+
+    self.assertEqual(len(changelogs), 1)
+    self.assertEqual(changelogs[0].ToDict(), EXPECTED_CHANGE_LOG_JSON)
+
+  def testGetChangeLogsNextPage(self):
+    log1 = json.loads(COMMIT_LOG[5:])
+    log1['commit'] = 'first_commit'
+    log2 = log1.copy()
+    log2['commit'] = 'next_page_commit'
+
+    def _MockSendRequestForJsonResponse(_, url, **kargs):
+      self.assertTrue(bool(kargs))
+      if 'next' in url:
+        return {'log': [log2]}
+
+      return {'log': [log1], 'next': 'next_page_commit'}
+
+    self.mock(git_repository.GitRepository, '_SendRequestForJsonResponse',
+              _MockSendRequestForJsonResponse)
 
     changelogs = self.git_repo.GetChangeLogs('0', '2')
 
     self.assertEqual(len(changelogs), 2)
-    self.assertEqual([changelogs[0].ToDict(), changelogs[1].ToDict()],
-                     [DUMMY_CHANGELOG_JSON, DUMMY_CHANGELOG_JSON])
-
-  def testGetChangeLogsFailToGetChangeLog(self):
-
-    def _MockGetChangeLog(*_):
-      return None
-
-    self.mock(git_repository.GitRepository, 'GetCommitsBetweenRevisions',
-              self._MockGetCommitsBetweenRevisions)
-    self.mock(git_repository.GitRepository, 'GetChangeLog',
-              _MockGetChangeLog)
-
-    self.assertRaisesRegexp(
-        Exception, 'Failed to pull changelog for revision 2',
-        self.git_repo.GetChangeLogs, '0', '2')

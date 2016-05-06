@@ -141,11 +141,7 @@ class GitRepository(Repository):
       if reverted_revision_match:
         return reverted_revision_match.group(1)
 
-  def GetChangeLog(self, revision):
-    url, data = self._DownloadChangeLogData(revision)
-    if not data:
-      return None
-
+  def _ParseChangeLogFromLogData(self, data):
     commit_position, code_review_url = (
         self.ExtractCommitPositionAndCodeReviewUrl(data['message']))
 
@@ -161,6 +157,7 @@ class GitRepository(Repository):
     author_time = self._GetDateTimeFromString(data['author']['time'])
     committer_time = self._GetDateTimeFromString(data['committer']['time'])
     reverted_revision = self.GetRevertedRevision(data['message'])
+    url = '%s/+/%s' % (self.repo_url, data['commit'])
 
     return ChangeLog(
         data['author']['name'], self._NormalizeEmail(data['author']['email']),
@@ -170,6 +167,13 @@ class GitRepository(Repository):
         committer_time, data['commit'], commit_position,
         data['message'], touched_files, url, code_review_url,
         reverted_revision)
+
+  def GetChangeLog(self, revision):
+    _, data = self._DownloadChangeLogData(revision)
+    if not data:
+      return None
+
+    return self._ParseChangeLogFromLogData(data)
 
   def GetCommitsBetweenRevisions(self, start_revision, end_revision, n=1000):
     """Gets a list of commit hashes between start_revision and end_revision.
@@ -236,24 +240,31 @@ class GitRepository(Repository):
     return self._SendRequestForTextResponse(url)
 
   def GetChangeLogs(self, start_revision, end_revision, n=1000):
-    """Gets a list of ChangeLogs in revision range.
+    """Gets a list of ChangeLogs in revision range by batch.
 
     Args:
       start_revision (str): The oldest revision in the range.
       end_revision (str): The latest revision in the range.
-      n (int): The maximum number of revisions to request at a time.
+      n (int): The maximum number of revisions to request at a time (default
+        to 1000).
 
     Returns:
       A list of changelogs in (start_revision, end_revision].
     """
-    revisions = self.GetCommitsBetweenRevisions(start_revision, end_revision, n)
+    next_end_revision = end_revision
     changelogs = []
 
-    for revision in revisions:
-      changelog = self.GetChangeLog(revision)
-      if not changelog:
-        raise Exception('Failed to pull changelog for revision %s' % revision)
+    while next_end_revision:
+      url = '%s/+log/%s..%s' % (self.repo_url,
+                                start_revision, next_end_revision)
+      data = self._SendRequestForJsonResponse(url, params={'n': str(n),
+                                                           'name-status': '1'})
+      for log in data['log']:
+        changelogs.append(self._ParseChangeLogFromLogData(log))
 
-      changelogs.append(changelog)
+      if 'next' in data:
+        next_end_revision = data['next']
+      else:
+        next_end_revision = None
 
     return changelogs
