@@ -9,13 +9,13 @@ import json
 import time
 import urllib2
 
+import gae_ts_mon
 from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 from google.appengine.runtime import DeadlineExceededError
 from handlers.flake_issues import MIN_REQUIRED_FLAKY_RUNS
-from infra_libs import ts_mon
 from model.build_run import BuildRun
 from model.build_run import PatchsetBuilderRuns
 from model.fetch_status import FetchStatus
@@ -26,21 +26,21 @@ from status import build_result, util
 import time_functions.timestamp
 
 
-requests_metric = ts_mon.CounterMetric(
+requests_metric = gae_ts_mon.CounterMetric(
     'flakiness_pipeline/cq_status/requests',
     description='Requests made to the chromium-cq-status API')
-flakes_metric = ts_mon.CounterMetric(
+flakes_metric = gae_ts_mon.CounterMetric(
     'flakiness_pipeline/flake_occurrences_detected',
     description='Detected flake occurrences')
-occurrences_per_flake_day = ts_mon.NonCumulativeDistributionMetric(
+occurrences_per_flake_day = gae_ts_mon.NonCumulativeDistributionMetric(
     'flakiness_pipeline/occurrences_per_flake/day',
     description='Distribution of flake occurrence counts, calculated over all '
                 'flakes in the last day')
-occurrences_per_flake_week = ts_mon.NonCumulativeDistributionMetric(
+occurrences_per_flake_week = gae_ts_mon.NonCumulativeDistributionMetric(
     'flakiness_pipeline/occurrences_per_flake/week',
     description='Distribution of flake occurrence counts, calculated over all '
                 'flakes in the last week')
-occurrences_per_flake_month = ts_mon.NonCumulativeDistributionMetric(
+occurrences_per_flake_month = gae_ts_mon.NonCumulativeDistributionMetric(
     'flakiness_pipeline/occurrences_per_flake/month',
     description='Distribution of flake occurrence counts, calculated over all '
                 'flakes in the last month')
@@ -86,7 +86,7 @@ def update_flake_counters(flake):  # pragma: no cover
 
 
 def update_histogram(query, count_attribute, metric):
-  dist = ts_mon.Distribution(ts_mon.FixedWidthBucketer(1, 10))
+  dist = gae_ts_mon.Distribution(gae_ts_mon.FixedWidthBucketer(1, 10))
   for flake in query:
     dist.add(getattr(flake, count_attribute))
   metric.set(dist)

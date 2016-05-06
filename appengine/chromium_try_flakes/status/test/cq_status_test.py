@@ -11,8 +11,8 @@ from google.appengine.datastore import datastore_stub_util
 from google.appengine.ext import ndb
 from google.appengine.runtime import DeadlineExceededError
 
+import gae_ts_mon
 import main
-from infra_libs import ts_mon
 from model.build_run import BuildRun, PatchsetBuilderRuns
 from model.fetch_status import FetchStatus
 from model.flake import Flake, FlakyRun
@@ -312,7 +312,7 @@ class CQStatusTestCase(testing.AppengineTestCase):
 
   def setUp(self):
     super(CQStatusTestCase, self).setUp()
-    ts_mon.reset_for_unittest(disable=True)
+    gae_ts_mon.reset_for_unittest(disable=True)
 
   def test_create_tasks_to_update_issue_tracker(self):
     Flake(name='foo1', count_day=1).put()

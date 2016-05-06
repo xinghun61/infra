@@ -16,7 +16,7 @@ from google.appengine.api import urlfetch
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
-from infra_libs import ts_mon
+import gae_ts_mon
 from issue_tracker import issue_tracker_api, issue
 from model.flake import (
     Flake, FlakeOccurrence, FlakeUpdate, FlakeUpdateSingleton, FlakyRun)
@@ -106,12 +106,12 @@ def get_queue_details(flake_name):
 
 
 class ProcessIssue(webapp2.RequestHandler):
-  reporting_delay = ts_mon.FloatMetric(
+  reporting_delay = gae_ts_mon.FloatMetric(
       'flakiness_pipeline/reporting_delay',
       description='The delay in seconds from the moment first flake occurrence '
                   'in this flakiness period happens and until the time an '
                   'issue is created to track it.')
-  issue_updates = ts_mon.CounterMetric(
+  issue_updates = gae_ts_mon.CounterMetric(
       'flakiness_pipeline/issue_updates',
       description='Issues updated/created')
 
@@ -394,7 +394,7 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
 
 
 class CreateFlakyRun(webapp2.RequestHandler):
-  flaky_runs = ts_mon.CounterMetric(
+  flaky_runs = gae_ts_mon.CounterMetric(
       'flakiness_pipeline/flake_occurrences_recorded',
       description='Recorded flake occurrences.')
 
