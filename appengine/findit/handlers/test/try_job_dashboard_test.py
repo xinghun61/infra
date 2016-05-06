@@ -137,7 +137,8 @@ class TryJobDashboardTest(testing.AppengineTestCase):
         'culprit_found': True
     }
 
-    response = self.test_app.get('/try-job-dashboard?format=json')
+    response = self.test_app.get(
+        '/try-job-dashboard?format=json&start_date=2016-05-03')
     response_data = response.json_body
     try_jobs_in_progress = response_data.get('try_jobs_in_progress')
     try_jobs_with_error = response_data.get('try_jobs_with_error')
