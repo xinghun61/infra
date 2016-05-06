@@ -81,7 +81,7 @@ def gofmt_main(verbose, filestream):
         p = p[len(root):]
       print '  %s' % p
     print
-    print 'Consider running \'go fmt -s -w infra\''
+    print 'Consider running \'gofmt -s -w /path/to/infra\''
   return 0 if not bad else 1
 
 
