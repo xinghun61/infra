@@ -863,12 +863,18 @@ def _SafeCreateLoginURL(mr, continue_url=None):
   """Make a login URL w/ a detailed continue URL, otherwise use a short one."""
   continue_url = continue_url or mr.current_page_url
   try:
-    return users.create_login_url(continue_url)
+    url = users.create_login_url(continue_url)
   except users.RedirectTooLongError:
     if mr.project_name:
-      return users.create_login_url('/p/%s' % mr.project_name)
+      url = users.create_login_url('/p/%s' % mr.project_name)
     else:
-      return users.create_login_url('/')
+      url = users.create_login_url('/')
+
+  # Give the user a choice of existing accounts in their session
+  # or the option to add an account, even if they are currently
+  # signed in to exactly one account.
+  url = url.replace('/accounts/ServiceLogin', '/a/SelectSession', 1)
+  return url
 
 
 def _SafeCreateLogoutURL(mr):
