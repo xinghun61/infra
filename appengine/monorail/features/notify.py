@@ -40,6 +40,7 @@ from tracker import tracker_views
 
 
 TEMPLATE_PATH = framework_constants.TEMPLATE_PATH
+MAX_EMAIL_BODY_SIZE = 45000
 
 
 def PrepareAndSendIssueChangeNotification(
@@ -128,6 +129,14 @@ def AddAllEmailTasks(tasks):
     notified.append(task['to'])
 
   return notified
+
+
+def _TruncateBody(body):
+  """Truncate body string if it exceeds size limit."""
+  if len(body) > MAX_EMAIL_BODY_SIZE:
+    logging.info('Truncate body since its size %d exceeds limit', len(body))
+    return body[:MAX_EMAIL_BODY_SIZE] + '...'
+  return body
 
 
 class NotifyTaskBase(jsonfeed.InternalTask):
@@ -260,11 +269,13 @@ class NotifyIssueChangeTask(NotifyTaskBase):
     # Generate two versions of email body: members version has all
     # full email addresses exposed.
     body_for_non_members = self.email_template.GetResponse(email_data)
+    body_for_non_members = _TruncateBody(body_for_non_members)
     framework_views.RevealAllEmails(users_by_id)
     email_data['comment'] = tracker_views.IssueCommentView(
         project.project_name, comment, users_by_id,
         autolinker, {}, mr, issue)
     body_for_members = self.email_template.GetResponse(email_data)
+    body_for_members = _TruncateBody(body_for_members)
 
     commenter_email = users_by_id[comment.user_id].email
     omit_addrs = set([commenter_email] +
@@ -496,6 +507,7 @@ class NotifyBlockingChangeTask(NotifyTaskBase):
     # vesion has other member full email addresses exposed.  But, don't
     # expose too many as we iterate through upstream projects.
     body = self.email_template.GetResponse(email_data)
+    body = _TruncateBody(body)
 
     omit_addrs = {users_by_id[omit_id].email for omit_id in omit_ids}
 
@@ -801,6 +813,7 @@ class NotifyBulkChangeTask(NotifyTaskBase):
     subject, body = self._FormatBulkIssues(
         issues, users_by_id, commenter_view, hostport, comment_text,
         amendments, config)
+    body = _TruncateBody(body)
 
     from_addr = emailfmt.NoReplyAddress(commenter_view=commenter_view)
     return dict(from_addr=from_addr, to=dest_email, subject=subject, body=body)
