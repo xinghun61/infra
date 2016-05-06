@@ -224,8 +224,7 @@ class InboundEmailTest(unittest.TestCase):
                           self.issue.local_id, self.project.project_name),
                       email_task['subject'])
 
-  def testProcessIssueReply_NoAddIssuePerm(self):
-    perms = permissions.READ_ONLY_PERMISSIONSET
+  def VerifyUserHasNoPerm(self, perms):
     email_tasks = self.inbound.ProcessIssueReply(
         self.cnxn, self.project, self.issue.local_id, self.project_addr,
         'user@example.com', 111L, [1, 2, 3], perms, 'awesome!')
@@ -234,6 +233,16 @@ class InboundEmailTest(unittest.TestCase):
     self.assertEquals('user@example.com', email_task['to'])
     self.assertEquals('User does not have permission to add a comment',
                       email_task['subject'])
+
+  def testProcessIssueReply_NoViewPerm(self):
+    self.VerifyUserHasNoPerm(permissions.EMPTY_PERMISSIONSET)
+
+  def testProcessIssueReply_CantViewRestrictedIssue(self):
+    self.issue.labels.append('Restrict-View-CoreTeam')
+    self.VerifyUserHasNoPerm(permissions.USER_PERMISSIONSET)
+
+  def testProcessIssueReply_NoAddIssuePerm(self):
+    self.VerifyUserHasNoPerm(permissions.READ_ONLY_PERMISSIONSET)
 
   def testProcessIssueReply_NoEditIssuePerm(self):
     perms = permissions.USER_PERMISSIONSET

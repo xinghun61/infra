@@ -200,9 +200,13 @@ class InboundEmail(webapp2.RequestHandler):
           artifact_phrase='issue %d' % local_id,
           project_name=project.project_name)
 
-    if not perms.CanUsePerm(
+    can_view = perms.CanUsePerm(
+        permissions.VIEW, effective_ids, project,
+        permissions.GetRestrictions(issue))
+    can_comment = perms.CanUsePerm(
         permissions.ADD_ISSUE_COMMENT, effective_ids, project,
-        permissions.GetRestrictions(issue)):
+        permissions.GetRestrictions(issue))
+    if not can_view or not can_comment:
       return _MakeErrorMessageReplyTask(
           project_addr, from_addr, self._templates['no_perms'],
           artifact_phrase='issue %d' % local_id,
