@@ -5,7 +5,6 @@
 <td colspan="4">All flaky occurrences of <b>{{flake.name}}</b>.</td>
 </tr>
 
-{% if not bug_friendly %}
 <tr>
 <td colspan="4">
 <form action="/override_issue_id" method="GET">
@@ -19,13 +18,11 @@ Current Issue ID where new flakes are reported:
 <tr>
 <td>&nbsp;</td>
 </tr>
-{% endif %}
 
 {% for failure_runs in grouped_runs %}
 {% for f in failure_runs %}
 <tr>
 
-{% if not bug_friendly %}
 <td><a href="{{f.url}}">try run at {{f.formatted_time}}</a></td>
 <td><a href="{{f.patchset_url}}">patchset</a></td>
 <td>{{f.builder}} </td>
@@ -38,9 +35,6 @@ Current Issue ID where new flakes are reported:
 -->)
 {% endif %}
 </td>
-{% else %}
-<td><a href="{{f.url}}">{{f.url}}</a></td>
-{% endif %}
 
 </tr>
 {% endfor %}
@@ -52,8 +46,3 @@ Current Issue ID where new flakes are reported:
 {% endfor %}
 
 </table>
-{% if not bug_friendly %}
-<a href="/all_flake_occurrences?key={{flake.key.urlsafe}}&bug_friendly=1">
-bug friendly
-</a>
-{% endif %}

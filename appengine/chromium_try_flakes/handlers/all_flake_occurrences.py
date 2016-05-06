@@ -22,7 +22,7 @@ def RunsSortFunction(s):  # pragma: no cover
 def filterNone(elements):
   return [e for e in elements if e is not None]
 
-def show_all_flakes(flake, bug_friendly):  # pragma: no cover
+def show_all_flakes(flake):  # pragma: no cover
   occurrence_keys = []
   for o in flake.occurrences:
     occurrence_keys.append(o)
@@ -80,7 +80,6 @@ def show_all_flakes(flake, bug_friendly):  # pragma: no cover
   values = {
     'flake': flake,
     'grouped_runs': grouped_runs,
-    'bug_friendly': bug_friendly,
     'time_now': datetime.datetime.utcnow(),
   }
 
@@ -90,10 +89,9 @@ class AllFlakeOccurrences(webapp2.RequestHandler):  # pragma: no cover
   def get(self):
     key = self.request.get('key')
     flake = ndb.Key(urlsafe=key).get()
-    bug_friendly = self.request.get('bug_friendly', 0)
 
     if not flake:
       self.response.set_status(404, 'Flake with id %s does not exist' % key)
       return
 
-    self.response.write(show_all_flakes(flake, bug_friendly))
+    self.response.write(show_all_flakes(flake))
