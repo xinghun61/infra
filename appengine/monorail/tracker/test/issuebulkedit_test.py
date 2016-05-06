@@ -457,3 +457,55 @@ class IssueBulkEditTest(unittest.TestCase):
     issue = self.services.issue.GetIssueByLocalID(
         self.cnxn, move_to_project.project_id, local_id_1)
     self.assertIsNotNone(issue)
+
+  def testProcessFormData_InvalidBlockIssues(self):
+    """Test PFD processes invalid blocked_on and blocking values."""
+    local_id_1 = self.services.issue.CreateIssue(
+        self.cnxn, self.services, 789, 'issue summary', 'New', 111L,
+        [], [], [], [], 111L, 'test issue')
+    mr = testing_helpers.MakeMonorailRequest(
+        project=self.project,
+        perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
+        user_info={'user_id': 111})
+    mr.project_name = 'proj'
+    mr.local_id_list = [local_id_1]
+
+    self._MockMethods()
+    post_data = fake.PostData(
+        op_blockedonenter=['append'], blocked_on=['12345'],
+        op_blockingenter=['append'], blocking=['54321'],
+        can=[1], q=[''],
+        colspec=[''], sort=[''], groupby=[''], start=[0], num=[100])
+    self.servlet.ProcessFormData(mr, post_data)
+
+    self.assertEqual('Invalid issue ID 12345', mr.errors.blocked_on)
+    self.assertEqual('Invalid issue ID 54321', mr.errors.blocking)
+
+  def testProcessFormData_NormalBlockIssues(self):
+    """Test PFD processes blocked_on and blocking values."""
+    local_id_1 = self.services.issue.CreateIssue(
+        self.cnxn, self.services, 789, 'issue summary', 'New', 111L,
+        [], [], [], [], 111L, 'test issue')
+    blocking_id = self.services.issue.CreateIssue(
+        self.cnxn, self.services, 789, 'blocking', 'New', 111L,
+        [], [], [], [], 111L, 'test issue')
+    blocked_on_id = self.services.issue.CreateIssue(
+        self.cnxn, self.services, 789, 'blocked on', 'New', 111L,
+        [], [], [], [], 111L, 'test issue')
+    mr = testing_helpers.MakeMonorailRequest(
+        project=self.project,
+        perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
+        user_info={'user_id': 111})
+    mr.project_name = 'proj'
+    mr.local_id_list = [local_id_1]
+
+    self._MockMethods()
+    post_data = fake.PostData(
+        op_blockedonenter=['append'], blocked_on=[str(blocked_on_id)],
+        op_blockingenter=['append'], blocking=[str(blocking_id)],
+        can=[1], q=[''],
+        colspec=[''], sort=[''], groupby=[''], start=[0], num=[100])
+    self.servlet.ProcessFormData(mr, post_data)
+
+    self.assertIsNone(mr.errors.blocked_on)
+    self.assertIsNone(mr.errors.blocking)

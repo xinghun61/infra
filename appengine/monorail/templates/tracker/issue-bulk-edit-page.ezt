@@ -192,6 +192,26 @@
       </td>
    </tr>
 
+   <tr><th>Blocked on:</th><td colspan="2">
+         [include "issue-bulk-operator-part.ezt" "blockedonenter" "multi"]
+         <input type="text" multiple id="blockedonenter" style="width: 30em"
+                name="blocked_on" value="[initial_blocked_on]">
+         [if-any errors.blocked_on]
+           <div class="fielderror">[errors.blocked_on]</div>
+         [end]
+       </td>
+   </tr>
+
+   <tr><th>Blocking:</th><td colspan="2">
+         [include "issue-bulk-operator-part.ezt" "blockingenter" "multi"]
+         <input type="text" multiple id="blockingenter" style="width: 30em"
+                name="blocking" value="[initial_blocking]">
+         [if-any errors.blocking]
+           <div class="fielderror">[errors.blocking]</div>
+         [end]
+       </td>
+   </tr>
+
    [if-any page_perms.DeleteIssue]
    <tr><th width="10%">Move to project:</th><td colspan="2">
          <input id="move_toenter" type="text" autocomplete="off" style="width: 12em"

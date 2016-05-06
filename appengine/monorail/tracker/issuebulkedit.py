@@ -131,6 +131,8 @@ class IssueBulkEdit(servlet.Servlet):
         'show_progress': ezt.boolean(num_seconds > self._SLOWNESS_THRESHOLD),
         'num_seconds': num_seconds,
 
+        'initial_blocked_on': '',
+        'initial_blocking': '',
         'initial_comment': '',
         'initial_status': '',
         'initial_owner': '',
@@ -251,6 +253,19 @@ class IssueBulkEdit(servlet.Servlet):
     if post_data.get('op_memberenter') == 'remove':
       cc_ids, cc_ids_remove = parsed.users.cc_ids_remove, parsed.users.cc_ids
 
+    if post_data.get('op_blockedonenter') == 'append':
+      blocked_on_add = parsed.blocked_on.iids
+      blocked_on_remove = []
+    else:
+      blocked_on_add = []
+      blocked_on_remove = parsed.blocked_on.iids
+    if post_data.get('op_blockingenter') == 'append':
+      blocking_add = parsed.blocking.iids
+      blocking_remove = []
+    else:
+      blocking_add = []
+      blocking_remove = parsed.blocking.iids
+
     local_ids_actually_changed = []
     old_owner_ids = []
     combined_amendments = []
@@ -314,6 +329,9 @@ class IssueBulkEdit(servlet.Servlet):
               issue, status, owner_id, cc_ids, cc_ids_remove, comp_ids,
               comp_ids_remove, parsed.labels, parsed.labels_remove, field_vals,
               field_vals_remove, parsed.fields.fields_clear,
+              blocked_on_add=blocked_on_add,
+              blocked_on_remove=blocked_on_remove,
+              blocking_add=blocking_add, blocking_remove=blocking_remove,
               merged_into=merge_into_iid, comment=parsed.comment,
               iids_to_invalidate=iids_to_invalidate, rules=rules,
               predicate_asts=predicate_asts)
