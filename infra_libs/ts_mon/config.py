@@ -203,7 +203,7 @@ def process_argparse_options(args):
                             'when the target type is "task".')
       sys.exit(2)
     hostname = args.ts_mon_task_hostname
-    if args.ts_mon_autogen_hostname:
+    if args.ts_mon_autogen_hostname or autogen_hostname:
       hostname = 'autogen:' + hostname
     interface.state.target = targets.TaskTarget(
         args.ts_mon_task_service_name,

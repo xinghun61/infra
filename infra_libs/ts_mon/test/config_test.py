@@ -205,6 +205,26 @@ class GlobalsTest(auto_stub.TestCase):
     self.assertEqual(interface.state.target.network, 'net')
     self.assertEqual(interface.state.target.hostname, 'autogen:host')
 
+  def test_autogen_device_config(self):
+    self.mock(config, 'load_machine_config', lambda x: {
+        'autogen_hostname': True,
+        'credentials': '/path/to/creds.p8.json',
+        'endpoint': 'test://endpoint'})
+    p = argparse.ArgumentParser()
+    config.add_argparse_options(p)
+    args = p.parse_args([
+        '--ts-mon-target-type', 'device',
+        '--ts-mon-device-region', 'reg',
+        '--ts-mon-device-role', 'role',
+        '--ts-mon-device-network', 'net',
+        '--ts-mon-device-hostname', 'host'])
+    config.process_argparse_options(args)
+    self.assertEqual(interface.state.target.region, 'reg')
+    self.assertEqual(interface.state.target.role, 'role')
+    self.assertEqual(interface.state.target.network, 'net')
+    self.assertEqual(interface.state.target.hostname, 'autogen:host')
+
+
   def test_task_args(self):
     p = argparse.ArgumentParser()
     config.add_argparse_options(p)
@@ -233,6 +253,26 @@ class GlobalsTest(auto_stub.TestCase):
                          '--ts-mon-task-hostname', 'host',
                          '--ts-mon-task-number', '1',
                          '--ts-mon-autogen-hostname'])
+    config.process_argparse_options(args)
+    self.assertEqual(interface.state.target.service_name, 'serv')
+    self.assertEqual(interface.state.target.job_name, 'job')
+    self.assertEqual(interface.state.target.region, 'reg')
+    self.assertEqual(interface.state.target.hostname, 'autogen:host')
+    self.assertEqual(interface.state.target.task_num, 1)
+
+  def test_autogen_task_config(self):
+    self.mock(config, 'load_machine_config', lambda x: {
+        'autogen_hostname': True,
+        'credentials': '/path/to/creds.p8.json',
+        'endpoint': 'test://endpoint'})
+    p = argparse.ArgumentParser()
+    config.add_argparse_options(p)
+    args = p.parse_args(['--ts-mon-target-type', 'task',
+                         '--ts-mon-task-service-name', 'serv',
+                         '--ts-mon-task-job-name', 'job',
+                         '--ts-mon-task-region', 'reg',
+                         '--ts-mon-task-hostname', 'host',
+                         '--ts-mon-task-number', '1'])
     config.process_argparse_options(args)
     self.assertEqual(interface.state.target.service_name, 'serv')
     self.assertEqual(interface.state.target.job_name, 'job')
