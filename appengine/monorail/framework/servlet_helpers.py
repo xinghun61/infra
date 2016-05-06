@@ -8,9 +8,13 @@
 import datetime
 import logging
 import time
+import urllib
 
+from framework import framework_helpers
 from framework import permissions
 from framework import template_helpers
+from framework import urls
+from framework import xsrf
 
 
 _WEEKDAY = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
@@ -112,3 +116,33 @@ def CheckPermForProject(mr, perm, project, art=None):
       mr.auth.user_pb, mr.auth.effective_ids, project)
   return perms.CanUsePerm(
       perm, mr.auth.effective_ids, project, permissions.GetRestrictions(art))
+
+
+def ComputeIssueEntryURL(mr, config):
+  """Compute the URL to use for the "New issue" subtab.
+
+  Args:
+    mr: commonly used info parsed from the request.
+    config: ProjectIssueConfig for the current project.
+
+  Returns:
+    A URL string to use.  It will be simply "entry" in the non-customized
+    case. Otherewise it will be a fully qualified URL that includes some
+    query string parameters.
+  """
+  if not config.custom_issue_entry_url:
+    return 'entry'
+
+  base_url = config.custom_issue_entry_url
+  sep = '&' if '?' in base_url else '?'
+  token = xsrf.GenerateToken(
+    mr.auth.user_id, '/p/%s%s%s' % (mr.project_name, urls.ISSUE_ENTRY, '.do'))
+  role_name = framework_helpers.GetRoleName(mr.auth.effective_ids, mr.project)
+
+  continue_url = urllib.quote(framework_helpers.FormatAbsoluteURL(
+      mr, urls.ISSUE_ENTRY + '.do'))
+
+  return '%s%stoken=%s&role=%s&continue=%s' % (
+      base_url, sep, urllib.quote(token),
+      urllib.quote(role_name or ''), continue_url)
+

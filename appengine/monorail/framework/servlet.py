@@ -540,7 +540,7 @@ class Servlet(webapp2.RequestHandler):
       canned_query_views = [
           savedqueries_helpers.SavedQueryView(sq, idx + 1, None, None)
           for idx, sq in enumerate(canned_queries)]
-      issue_entry_url = _ComputeIssueEntryURL(mr, config)
+      issue_entry_url = _LoginOrIssueEntryURL(mr, config)
 
     if mr.auth.user_id and self.services.features:
       with self.profiler.Phase('getting saved queries'):
@@ -848,39 +848,22 @@ def _ProjectIsRestricted(mr):
           mr.project.access != project_pb2.ProjectAccess.ANYONE)
 
 
-def _ComputeIssueEntryURL(mr, config):
-  """Compute the URL to use for the "New issue" subtab.
-
-  Args:
-    mr: commonly used info parsed from the request.
-    config: ProjectIssueConfig for the current project.
-
-  Returns:
-    A URL string to use.  It will be simply "entry" in the non-customized
-    case. Otherewise it will be a fully qualified URL that includes some
-    query string parameters.
-  """
-  if not config.custom_issue_entry_url:
-    return 'entry'
-
-  base_url = config.custom_issue_entry_url
-  sep = '&' if '?' in base_url else '?'
-  token = xsrf.GenerateToken(
-    mr.auth.user_id, '/p/%s%s%s' % (mr.project_name, urls.ISSUE_ENTRY, '.do'))
-  role_name = framework_helpers.GetRoleName(mr.auth.effective_ids, mr.project)
-
-  continue_url = urllib.quote(framework_helpers.FormatAbsoluteURL(
-      mr, urls.ISSUE_ENTRY + '.do'))
-
-  return '%s%stoken=%s&role=%s&continue=%s' % (
-      base_url, sep, urllib.quote(token),
-      urllib.quote(role_name or ''), continue_url)
+def _LoginOrIssueEntryURL(mr, config):
+  """Make a URL to sign in, if needed, on the way to entering an issue."""
+  issue_entry_url = servlet_helpers.ComputeIssueEntryURL(mr, config)
+  if mr.auth.user_id:
+    return issue_entry_url
+  else:
+    after_login_url = framework_helpers.FormatAbsoluteURL(
+        mr, urls.ISSUE_ENTRY_AFTER_LOGIN)
+    return _SafeCreateLoginURL(mr, after_login_url)
 
 
-def _SafeCreateLoginURL(mr):
+def _SafeCreateLoginURL(mr, continue_url=None):
   """Make a login URL w/ a detailed continue URL, otherwise use a short one."""
+  continue_url = continue_url or mr.current_page_url
   try:
-    return users.create_login_url(mr.current_page_url)
+    return users.create_login_url(continue_url)
   except users.RedirectTooLongError:
     if mr.project_name:
       return users.create_login_url('/p/%s' % mr.project_name)

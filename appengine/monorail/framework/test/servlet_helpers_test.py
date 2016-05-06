@@ -7,9 +7,13 @@
 
 import unittest
 
+from google.appengine.ext import testbed
+
+
 from framework import permissions
 from framework import servlet_helpers
 from proto import project_pb2
+from proto import tracker_pb2
 from testing import testing_helpers
 
 
@@ -68,6 +72,43 @@ class AssertBasePermissionTest(unittest.TestCase):
     self.assertRaises(
         permissions.PermissionException,
         servlet_helpers.AssertBasePermission, mr)
+
+
+FORM_URL = 'http://example.com/issues/form.php'
+
+
+class ComputeIssueEntryURLTest(unittest.TestCase):
+
+  def setUp(self):
+    self.project = project_pb2.Project()
+    self.project.project_name = 'proj'
+    self.config = tracker_pb2.ProjectIssueConfig()
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_user_stub()
+    self.testbed.init_memcache_stub()
+    self.testbed.init_datastore_v3_stub()
+
+  def testComputeIssueEntryURL_Normal(self):
+    _request, mr = testing_helpers.GetRequestObjects(
+        path='/p/proj/issues/detail?id=123&q=term',
+        project=self.project)
+
+    url = servlet_helpers.ComputeIssueEntryURL(mr, self.config)
+    self.assertEqual('entry', url)
+
+  def testComputeIssueEntryURL_Customized(self):
+    _request, mr = testing_helpers.GetRequestObjects(
+        path='/p/proj/issues/detail?id=123&q=term',
+        project=self.project)
+    mr.auth.user_id = 111L
+    self.config.custom_issue_entry_url = FORM_URL
+
+    url = servlet_helpers.ComputeIssueEntryURL(mr, self.config)
+    self.assertTrue(url.startswith(FORM_URL))
+    self.assertIn('token=', url)
+    self.assertIn('role=', url)
+    self.assertIn('continue=', url)
 
 
 if __name__ == '__main__':

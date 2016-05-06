@@ -68,6 +68,7 @@ from tracker import issueattachmenttext
 from tracker import issuebulkedit
 from tracker import issuedetail
 from tracker import issueentry
+from tracker import issueentryafterlogin
 from tracker import issuelist
 from tracker import issuelistcsv
 from tracker import issueoptions
@@ -190,6 +191,7 @@ class ServletRegistry(object):
         urls.ISSUE_SETSTAR_JSON: issuedetail.SetStarForm,
         urls.ISSUE_DELETE_JSON: issuedetail.IssueDeleteForm,
         urls.ISSUE_ENTRY: issueentry.IssueEntry,
+        urls.ISSUE_ENTRY_AFTER_LOGIN: issueentryafterlogin.IssueEntryAfterLogin,
         urls.ISSUE_OPTIONS_JSON: issueoptions.IssueOptionsJSON,
         urls.ISSUE_TIPS: issuetips.IssueSearchTips,
         urls.ISSUE_ATTACHMENT: issueattachment.AttachmentPage,
