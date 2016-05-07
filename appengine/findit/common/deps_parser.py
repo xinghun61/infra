@@ -166,7 +166,7 @@ def UpdateDependencyTree(root_dep, target_os_list, deps_loader):
     target_os_list = [_NormalizeTargetOSName(name) for name in target_os_list]
 
   deps_content = deps_loader.Load(
-      root_dep.repo_url, root_dep.revision, root_dep.deps_file)
+      root_dep.deps_repo_url, root_dep.deps_repo_revision, root_dep.deps_file)
   deps, deps_os = ParseDEPSContent(deps_content, keys=('deps', 'deps_os'))
 
   all_deps = MergeWithOsDeps(deps, deps_os, target_os_list)

@@ -55,9 +55,8 @@ class FracasAnalysisPipeline(FracasBasePipeline):
 
     # Run the analysis.
     result, tags = fracas.FindCulpritForChromeCrash(
-        analysis.channel, analysis.platform, analysis.signature,
-        analysis.stack_trace, analysis.crashed_version,
-        analysis.historic_metadata)
+        analysis.signature, analysis.platform, analysis.stack_trace,
+        analysis.crashed_version, analysis.historic_metadata)
 
     # Update analysis status and save the analysis result.
     analysis.completed_time = datetime.datetime.utcnow()
@@ -81,6 +80,7 @@ class PublishResultPipeline(FracasBasePipeline):
     analysis = FracasCrashAnalysis.Get(crash_identifiers)
     result = {
         'crash_identifiers': crash_identifiers,
+        'client_id': analysis.client_id,
         'result': analysis.result,
     }
     messages_data = [json.dumps(result, sort_keys=True)]
@@ -108,7 +108,6 @@ def _NeedsNewAnalysis(
     # A new analysis is not needed if last one didn't complete or succeeded.
     # TODO(http://crbug.com/600535): re-analyze if stack trace or regression
     # range changed.
-    print 'lala'
     return False
 
   if not analysis:

@@ -375,7 +375,7 @@ class DepsParserTest(unittest.TestCase):
     def _Test(target_os_list, expected_deps_tree_json):
       root_dep = dependency.Dependency(
           root_dep_path, root_dep_repo_url, root_dep_revision,
-          root_dep_deps_file)
+          deps_file=root_dep_deps_file)
 
       deps_parser.UpdateDependencyTree(
           root_dep, target_os_list, DummyDEPSLoader(self))

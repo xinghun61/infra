@@ -356,7 +356,7 @@ class FinditForCrashTest(CrashTestSuite):
             'time': 'Thu Mar 31 21:24:43 2016',
             'reason': ('1. Top frame changed is frame #0 (score: 1)\n'
                        '2. Minimum distance to crashed line is 0 (score: 1)\n'
-                       '\nChanged file a.cc which crashed in func (#0)'
+                       '\nChanged file a.cc crashed in func (#0)'
                        ', func (#1)'),
             'confidence': 1,
         },
@@ -369,7 +369,7 @@ class FinditForCrashTest(CrashTestSuite):
             'time': 'Thu Apr 1 21:24:43 2016',
             'reason': ('1. Top frame changed is frame #5 (score: 0)\n'
                        '2. Minimum distance to crashed line is 20 (score: 0)\n'
-                       '\nChanged file f.cc which crashed in func (#5)'),
+                       '\nChanged file f.cc crashed in func (#5)'),
             'confidence': 0.22857142857142856,
         },
     ]

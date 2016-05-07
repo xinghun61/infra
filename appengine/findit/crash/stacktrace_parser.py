@@ -5,7 +5,7 @@
 
 class StacktraceParser(object):
 
-  def Parse(self, stacktrace_string, deps):
+  def Parse(self, stacktrace_string, deps, signature=None):
     raise NotImplementedError()
 
   def _IsStartOfNewCallStack(self, line):

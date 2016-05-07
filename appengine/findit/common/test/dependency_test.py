@@ -45,6 +45,14 @@ class DependencyTest(unittest.TestCase):
     sub_dep.SetParent(root_dep)
     self.assertEqual(expected_dep_tree_dict, root_dep.ToDict())
 
+  def testDependencyForChromeVersion(self):
+    dep = Dependency(
+        'a/b/', 'https://cr.googlesource.com/cr/b.git', '12b', 'DEPS',
+        deps_repo_url='https://chrome-internal', deps_repo_revision='master')
+
+    self.assertEqual(dep.deps_repo_url, 'https://chrome-internal')
+    self.assertEqual(dep.deps_repo_revision, 'master')
+
 
 class DependencyRollTest(unittest.TestCase):
   def testToDict(self):

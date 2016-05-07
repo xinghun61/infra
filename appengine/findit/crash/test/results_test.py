@@ -105,7 +105,7 @@ class ResultsTest(CrashTestSuite):
     result.file_to_stack_infos = {
         'a.cc': [(StackFrame(0, 'src/', '', 'func', 'a.cc', []), 0)]
     }
-    expected_result_str = 'Changed file a.cc which crashed in func (#0)'
+    expected_result_str = 'Changed file a.cc crashed in func (#0)'
 
     self.assertEqual(str(result), expected_result_str)
 

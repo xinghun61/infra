@@ -40,7 +40,7 @@ class Result(object):
       for frame, _ in stack_infos:
         line_parts.append('%s (#%d)' % (frame.function, frame.index))
 
-      lines.append('Changed file %s which crashed in %s' % (
+      lines.append('Changed file %s crashed in %s' % (
           file_path, ', '.join(line_parts)))
 
     return '\n'.join(lines)

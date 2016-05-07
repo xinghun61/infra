@@ -5,6 +5,7 @@
 import re
 
 from crash.callstack import CallStack
+from crash.callstack_filters import FilterFramesBeforeSignature
 from crash.stacktrace import Stacktrace
 from crash.stacktrace_parser import StacktraceParser
 from crash.type_enums import CallStackFormatType
@@ -18,7 +19,7 @@ _INFINITY_PRIORITY = 1000
 
 class FracasParser(StacktraceParser):
 
-  def Parse(self, stacktrace_string, deps):
+  def Parse(self, stacktrace_string, deps, signature=None):
     """Parse fracas stacktrace string into Stacktrace instance."""
     stacktrace = Stacktrace()
     callstack = CallStack(_INFINITY_PRIORITY)
@@ -40,6 +41,8 @@ class FracasParser(StacktraceParser):
     if callstack.priority != _INFINITY_PRIORITY and callstack:
       stacktrace.append(callstack)
 
+    # Filter all the frames before signature frame.
+    FilterFramesBeforeSignature(stacktrace.GetCrashStack(), signature)
     return stacktrace
 
   def _IsStartOfNewCallStack(self, line):

@@ -7,11 +7,23 @@ import collections
 
 class Dependency(object):
   """Represents a dependency in Chrome, like blink, v8, pdfium, etc."""
-  def __init__(self, path, repo_url, revision, deps_file='DEPS'):
+  def __init__(self, path, repo_url, revision,
+               deps_file='DEPS', deps_repo_url=None, deps_repo_revision=None):
     self.path = path
     self.repo_url = repo_url
     self.revision = revision
     self.deps_file = deps_file
+
+    if deps_repo_url is None:
+      self.deps_repo_url = repo_url
+    else:
+      self.deps_repo_url = deps_repo_url
+
+    if deps_repo_revision is None:
+      self.deps_repo_revision = revision
+    else:
+      self.deps_repo_revision = deps_repo_revision
+
     self.parent = None
     self.children = dict()
 

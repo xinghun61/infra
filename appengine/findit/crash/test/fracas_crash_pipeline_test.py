@@ -12,7 +12,6 @@ from crash.test.crash_testcase import CrashTestCase
 from model import analysis_status
 from model import result_status
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
-from waterfall.test import wf_testcase
 
 
 class FracasCrashPipelineTest(CrashTestCase):
@@ -150,14 +149,14 @@ class FracasCrashPipelineTest(CrashTestCase):
     self.assertEqual(1, len(pubsub_publish_requests))
     expected_messages_data = [json.dumps({
             'crash_identifiers': crash_identifiers,
+            'client_id': 'fracas',
             'result': analysis_result,
         }, sort_keys=True)]
     self.assertEqual(expected_messages_data, pubsub_publish_requests[0][0])
 
     self.assertEqual(1, len(analyzed_crashes))
     self.assertEqual(
-        (channel, platform, signature, stack_trace,
-         chrome_version, historic_metadata),
+        (signature, platform, stack_trace, chrome_version, historic_metadata),
         analyzed_crashes[0])
 
     analysis = FracasCrashAnalysis.Get(crash_identifiers)
