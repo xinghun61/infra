@@ -73,3 +73,4 @@ class FracasCrash(BaseHandler):
     except (KeyError, ValueError):  # pragma: no cover.
       # TODO: save exception in datastore and create a page to show them.
       logging.exception('Failed to process fracas message')
+      logging.info(self.request.body)
