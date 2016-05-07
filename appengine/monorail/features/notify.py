@@ -19,6 +19,7 @@ from third_party import ezt
 
 from google.appengine.api import mail
 from google.appengine.api import taskqueue
+from google.appengine.runtime import apiproxy_errors
 
 import settings
 from features import autolink
@@ -906,7 +907,14 @@ class OutboundEmailTask(jsonfeed.InternalTask):
     if settings.unit_test_mode:
       logging.info('Sending message "%s" in test mode.', message.subject)
     else:
-      message.send()
+      retry_count = 3
+      for i in xrange(retry_count):
+        try:
+          message.send()
+          break
+        except apiproxy_errors.DeadlineExceededError as ex:
+          logging.warning('Sending email timed out on try: %d', i)
+          logging.warning(str(ex))
 
     return dict(
         sender=sender, to=to, subject=subject, body=body, html_body=html_body,
