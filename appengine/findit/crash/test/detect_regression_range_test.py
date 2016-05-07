@@ -4,10 +4,10 @@
 
 from testing_utils import testing
 
+from crash.detect_regression_range import GetAttributesListFromHistoricData
 from crash.detect_regression_range import GetSpikeIndexes
 from crash.detect_regression_range import GetRegressionRangeFromSpike
 from crash.detect_regression_range import DetectRegressionRange
-
 
 class DetectRegressionRangeTest(testing.AppengineTestCase):
 
@@ -41,15 +41,22 @@ class DetectRegressionRangeTest(testing.AppengineTestCase):
     self.assertEqual(DetectRegressionRange([]), None)
 
   def testReturnNoneWhenSpikeDetectionFailed(self):
-    crash_history = [('1', 0), ('2', 0)]
-    self.assertEqual(DetectRegressionRange(crash_history), None)
+    historic_metadata = [{'chrome_version': '1', 'cpm': 0},
+                         {'chrome_version': '2', 'cpm': 0}]
+    self.assertEqual(DetectRegressionRange(historic_metadata), None)
 
   def testDetectRegressionRangeForNewCrash(self):
     """Detect new crash that didn't happen before."""
     cases = [
-        ([('1', 0), ('2', 0), ('3', 0.5)],
+        ([{'chrome_version': '1', 'cpm': 0},
+          {'chrome_version': '2', 'cpm': 0},
+          {'chrome_version': '3', 'cpm': 0.5}],
          ('2', '3')),
-        ([('1', 0), ('2', 0), ('3', 0.1), ('4', 0.6), ('5', 0.001)],
+        ([{'chrome_version': '1', 'cpm': 0},
+          {'chrome_version': '2', 'cpm': 0},
+          {'chrome_version': '3', 'cpm': 0.1},
+          {'chrome_version': '4', 'cpm': 0.6},
+          {'chrome_version': '5', 'cpm': 0.001}],
          ('2', '3'))]
 
     self._VerifyCasesForDetectRegressonRange(cases)
@@ -57,9 +64,29 @@ class DetectRegressionRangeTest(testing.AppengineTestCase):
   def testDetectRegressionRangeForStableCrash(self):
     """Detect long-existing stable crashes."""
     cases = [
-        ([('1', 0.002), ('2', 0.8), ('3', 0.0007), ('4', 0.0007), ('5', 0.5)],
-         ('4', '5')),
-        ([('1', 0.06), ('2', 0.0003), ('3', 0.0007), ('4', 0.6), ('5', 0.002)],
+        ([{'chrome_version': '1', 'cpm': 0.002},
+          {'chrome_version': '2', 'cpm': 0.8},
+          {'chrome_version': '3', 'cpm': 0.0007},
+          {'chrome_version': '4', 'cpm': 0.0007},
+          {'chrome_version': '5', 'cpm': 0.5}],
+          ('4', '5')),
+        ([{'chrome_version': '1', 'cpm': 0.06},
+          {'chrome_version': '2', 'cpm': 0.0003},
+          {'chrome_version': '3', 'cpm': 0.0007},
+          {'chrome_version': '4', 'cpm': 0.6},
+          {'chrome_version': '5', 'cpm': 0.002}],
          ('3', '4'))]
 
     self._VerifyCasesForDetectRegressonRange(cases)
+
+  def testGetAttributesListFromHistoricData(self):
+    historic_metadata = [{'chrome_version': '1', 'cpm': 0},
+                         {'chrome_version': '2', 'cpm': 0}]
+
+    attribute_list = GetAttributesListFromHistoricData(historic_metadata,
+                                                       ['chrome_version'])
+    expected_list = ['1', '2']
+    self.assertEqual(attribute_list, expected_list)
+
+    attribute_list = GetAttributesListFromHistoricData(historic_metadata, [])
+    self.assertEqual(attribute_list, [])

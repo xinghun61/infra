@@ -21,7 +21,7 @@ def GetSpikeIndexes(data_series, alpha=_DEFAULT_ALPHA,
                     threshold=_SPIKENESS_THRESHOLD):
   """Finds all the spikes in a data_series.
   Args:
-    data_series (list): A list of (x, y) values where y is a number.
+    data_series (list): A list of (x, y) tuples where y is a number.
     alpha (float): In (0, 1], it controls the weight of current data
       when computing the running mean, a higher value has more weight.
     threshold (float): Threshold of spike score.
@@ -59,28 +59,64 @@ def GetRegressionRangeFromSpike(spike_index, versions):
   return (versions[spike_index - 1], versions[spike_index])
 
 
-def DetectRegressionRange(crash_history, max_win_size=_MAXIMUM_WINDOW_SIZE):
-  """Detect regression range from crash_history data.
+def GetAttributesListFromHistoricData(historic_metadata, attributes):
+  """Returns a list of attributes from historic_metadata.
 
   Args:
-    crash_history (list): A list of (x, y) tuples. x-value, chrome version,
-      y-value, CPM (crashes per million pageloads).
+    historic_metadata (list): A list of dict of metadata, for example:
+      [{'chrome_version': '1', 'cpm': 0}, {'chrome_version': '2', 'cpm': 0}]
+    attributes (list): A list of attribute names.
+
+  Returns:
+    A list of strs(attributes has only 1 element), or tuples
+  """
+  if not attributes:
+    return []
+
+  attributes_list = []
+
+  for data in historic_metadata:
+    attributes_entry = []
+
+    for attribute in attributes:
+      attributes_entry.append(data[attribute])
+
+    if len(attributes_entry) == 1:
+      attributes_list.append(attributes_entry[0])
+    else:
+      attributes_list.append(tuple(attributes_entry))
+
+  return attributes_list
+
+
+def DetectRegressionRange(historic_metadata, max_win_size=_MAXIMUM_WINDOW_SIZE):
+  """Detect regression range from historic_metadata data.
+
+  Args:
+    historic_metadata (list): A list of dict of metadata, the list is sorted by
+      'chrome_version' from oldest to latest.
+      For example:
+      [{'chrome_version': '1', 'cpm': 0}, {'chrome_version': '2', 'cpm': 0}]
     max_win_size (int): Number of versions to look back from
       the currect version.
 
   Returns:
     A tuple, (last_good_version, first_bad_version) or None if none found.
   """
-  if not crash_history:
+  if not historic_metadata:
     return None
 
-  crash_history = crash_history[-max_win_size:]
-  versions, _ = zip(*crash_history)
-  spike_indexes = GetSpikeIndexes(crash_history)
+  # Truncate the historic data so we only analyze data for max_win_size of
+  # latest versions.
+  versions_to_cpm = GetAttributesListFromHistoricData(
+      historic_metadata[-max_win_size:], ['chrome_version', 'cpm'])
+
+  versions, _ = zip(*versions_to_cpm)
+  spike_indexes = GetSpikeIndexes(versions_to_cpm)
 
   if not spike_indexes:
     logging.warning('Failed to find spikes in history data %s' % repr(
-        crash_history))
+        historic_metadata))
     return None
 
   # Only return the latest regression range.
