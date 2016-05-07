@@ -387,6 +387,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testGetErrorInfraFailure(self):
     build_response = {
+        'result': 'FAILED',
+        'failure_reason': 'INFRA_FAILURE',
         'result_details_json': json.dumps({
             'properties': {
                 'report': {
@@ -406,6 +408,50 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         MonitorTryJobPipeline._GetError(build_response, None, False),
         (expected_error_dict, try_job_error.INFRA_FAILURE))
+
+  def testGetErrorUnexpectedBuildFailure(self):
+    build_response = {
+        'result': 'FAILED',
+        'failure_reason': 'BUILD_FAILURE',
+        'result_details_json': json.dumps({
+            'properties': {
+                'report': {
+                    'metadata': {
+                        'infra_failure': True
+                    }
+                }
+            }
+        })
+    }
+
+    expected_error_dict = {
+        'message': 'Compile failed unexpectedly.',
+        'reason': MonitorTryJobPipeline.UNKNOWN
+    }
+
+    self.assertEqual(
+        MonitorTryJobPipeline._GetError(build_response, None, False),
+        (expected_error_dict, try_job_error.INFRA_FAILURE))
+
+  def testGetErrorUnknownBuildbucketFailure(self):
+    build_response = {
+        'result': 'FAILED',
+        'failure_reason': 'SOME_FAILURE',
+        'result_details_json': json.dumps({
+            'properties': {
+                'report': {}
+            }
+        })
+    }
+
+    expected_error_dict = {
+        'message': 'SOME_FAILURE',
+        'reason': MonitorTryJobPipeline.UNKNOWN
+    }
+
+    self.assertEqual(
+        MonitorTryJobPipeline._GetError(build_response, None, False),
+        (expected_error_dict, try_job_error.UNKNOWN))
 
   def testGetErrorReportMissing(self):
     build_response = {

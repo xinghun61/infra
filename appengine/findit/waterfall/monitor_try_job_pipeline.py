@@ -69,12 +69,38 @@ class MonitorTryJobPipeline(BasePipeline):
           try_job_error.TIMEOUT)
 
     if buildbucket_response:
-      # If there is no explicit timeout or reason specified, check the last
-      # build response for errors.
+      # Check buildbucket_response.
+      buildbucket_failure_reason = buildbucket_response.get('failure_reason')
+      if buildbucket_failure_reason == 'BUILD_FAILURE':
+        # Can occurr if an exception is thrown or the disk is full.
+        return (
+            {
+                'message': 'Compile failed unexpectedly.',
+                'reason': MonitorTryJobPipeline.UNKNOWN
+            },
+            try_job_error.INFRA_FAILURE
+        )
+      elif buildbucket_failure_reason == 'INFRA_FAILURE':
+        return (
+            {
+                'message': ('Try job encountered an infra issue during '
+                            'execution.'),
+                'reason': MonitorTryJobPipeline.UNKNOWN
+            },
+            try_job_error.INFRA_FAILURE
+        )
+      elif buildbucket_failure_reason:
+        return (
+            {
+                'message': buildbucket_failure_reason,
+                'reason': MonitorTryJobPipeline.UNKNOWN
+            },
+            try_job_error.UNKNOWN
+        )
+
+      # Check result_details_json for errors.
       result_details_json = json.loads(
           buildbucket_response.get('result_details_json', '{}')) or {}
-
-      # Check result_details_json for any obvious errors.
       error = result_details_json.get('error', {})
       if error:
         return (
@@ -84,19 +110,7 @@ class MonitorTryJobPipeline(BasePipeline):
             },
             try_job_error.CI_REPORTED_ERROR)
 
-      # Check the report to see if anything went wrong.
-      report = result_details_json.get('properties', {}).get('report')
-      if report:
-        if report.get('metadata', {}).get('infra_failure'):
-          # Check for any infra issues caught by the recipe.
-          return (
-              {
-                  'message': ('Try job encountered an infra issue during '
-                              'execution.'),
-                  'reason': MonitorTryJobPipeline.UNKNOWN
-              },
-              try_job_error.INFRA_FAILURE)
-      else:
+      if not result_details_json.get('properties', {}).get('report'):
         # A report should always be included as part of 'properties'. If it is
         # missing something else is wrong.
         return (
@@ -104,7 +118,8 @@ class MonitorTryJobPipeline(BasePipeline):
                 'message': 'No result report was found.',
                 'reason': MonitorTryJobPipeline.UNKNOWN
             },
-            try_job_error.UNKNOWN)
+            try_job_error.UNKNOWN
+        )
 
     return None, None
 
