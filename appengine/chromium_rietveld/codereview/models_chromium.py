@@ -199,6 +199,10 @@ class TryserverBuilders(ndb.Model):
           if 'bisect' in builder:
             continue
 
+          # Skip Findit try bots.
+          if 'variable' in builder:
+            continue
+
           category = parsed_json[builder].get('category', 'None')
           new_json_contents.setdefault(tryserver, {}).setdefault(
               category, []).append(builder)
