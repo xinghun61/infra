@@ -37,10 +37,12 @@ import sys
 import tempfile
 import time
 import googleapiclient
+import urllib
 
 from apiclient.discovery import build
 from oauth2client.client import GoogleCredentials
-
+from datetime import datetime, timedelta
+from functools import wraps
 
 credentials = GoogleCredentials.get_application_default()
 service = build(
@@ -73,6 +75,39 @@ def Train(args):
   ).execute()
   return result
 
+class throttle(object):
+    """
+    Decorator that prevents a function from being called more than once every
+    time period.
+    To create a function that cannot be called more than once a minute:
+        @throttle(minutes=1)
+        def my_fun():
+            pass
+    """
+    def __init__(self, seconds=0, minutes=0, hours=0):
+        self.throttle_period = timedelta(
+            seconds=seconds, minutes=minutes, hours=hours)
+        self.time_of_last_call = datetime.min
+
+    def __call__(self, fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            now = datetime.now()
+            time_since_last_call = now - self.time_of_last_call
+
+            if time_since_last_call < self.throttle_period:
+              sleep_s = (self.throttle_period -
+                  time_since_last_call).total_seconds()
+              print "Throttle, sleeping for %s" % sleep_s
+              time.sleep(sleep_s)
+
+            # if time_since_last_call > self.throttle_period:
+            self.time_of_last_call = now
+            return fn(*args, **kwargs)
+
+        return wrapper
+
+@throttle(seconds=2)
 def _Classify(project, model, features):
   retries = 0
   while retries < 3:
@@ -97,7 +132,7 @@ def Test(args):
   with open(args.testing_data, 'rb') as csvfile:
     spamreader = csv.reader(csvfile)
     i = 0
-    confusion = {"ham": {"ham": 0, "spam": 0}, "spam": {"ham": 0, "spam": 0}}
+    confusion = {'ham': {'ham': 0, 'spam': 0}, 'spam': {'ham': 0, 'spam': 0}}
     for row in spamreader:
       i = i + 1
       if random.random() > args.sample_rate:
@@ -107,16 +142,16 @@ def Test(args):
       result = _Classify(args.project, args.model, features)
       c = confusion[label][result['outputLabel']]
       confusion[label][result['outputLabel']] = c + 1
-
-      print "%d: actual: %s / predicted: %s" % (i, label, result['outputLabel'])
+      output = result['outputMulti']
+      print '%d: actual: %s / predicted: %s score=%s' % (i, label,
+          result['outputLabel'], json.dumps(output))
 
       if label != result['outputLabel']:
-        print "Mismatch:"
+        print 'Mismatch:'
         print json.dumps(row, indent=2)
         print json.dumps(result, indent=2)
 
     return confusion
-
 
 class struct(dict):
   def __getattr__(self, key):
@@ -185,22 +220,94 @@ def ROC(args):
   print "FP/N: %f/%f, TP/P: %f/%f" % (
       false_positive, total_negative, true_positive, total_positive)
 
+
+_LINKIFY_SCHEMES = r'(https?://|ftp://|mailto:)'
+_IS_A_LINK_RE = re.compile(r'(%s)([^\s<]+)' % _LINKIFY_SCHEMES, re.UNICODE)
+
+def _ExtractUrls(text):
+  matches = _IS_A_LINK_RE.findall(text)
+  if not matches:
+    return []
+
+  ret = [''.join(match[1:]).replace('\\r', '') for match in matches]
+  return ret
+
+# Cache results from safe browsing API:
+url_type = {}
+
+# Queries the Safe Browsing lookup API with a list of URLs to see which have
+# been marked as not "ok" (malware etc).
+def _CountUnsafeUrls(urls, args):
+  results = {}
+  req_urls = []
+  for url in urls:
+    if url in url_type:
+      results[url] = url_type[url]
+    else:
+      req_urls.append(url)
+
+  sb_url = ('https://sb-ssl.google.com/safebrowsing/api/lookup?' +
+      'client=%s&key=%s&appver=1.5.2&pver=3.1') % (args.project, args.api_key)
+
+  req_body = '%d\n%s' % (len(req_urls), '\n'.join(req_urls))
+
+  resp = urllib.urlopen(sb_url, req_body)
+  num_unsafe = 0
+  if resp.getcode() == 200:
+    print 'req_urls: %s' % (req_urls)
+    i = 0
+    for line in resp.readlines():
+      line = line.strip()
+      url_type[req_urls[i]] = line
+      print '%s: %s' % (req_urls[i], url_type[req_urls[i]])
+      if line != 'ok':
+        num_unsafe += 1
+      i += 1
+  elif resp.getcode() == 204:
+    for url in req_urls:
+      url_type[url] = 'ok'
+
+  return num_unsafe
+
+SKETCHY_EMAIL_RE = re.compile('[a-zA-Z]+[0-9]+\@.+')
+
+def _EmailIsSketchy(email):
+  if email.endswith(('@chromium.org', '@google.com')):
+    return False
+  return SKETCHY_EMAIL_RE.match(email) is not None
+
+# Assumes input csv file has the following columns:
+# label, issue summary, comment body, author email address
 def Prep(args):
   with open(args.infile, 'rb') as csvfile:
+    csvreader = csv.reader(csvfile)
     with tempfile.NamedTemporaryFile('wb', delete=False) as trainfile:
       with open(args.test, 'wb') as testfile:
-        for row in csvfile:
+        for row in csvreader:
           # If hash features are requested, generate those instead of
           # the raw text.
           if args.hash_features > 0:
-            row = row.split(',')
             # Hash every field after the first (which is the class)
             feature_hashes = _HashFeatures(row[1:], args.hash_features)
             # Convert to strings so we can re-join the columns.
             feature_hashes = [str(h) for h in feature_hashes]
             row = [row[0]]
             row.extend(feature_hashes)
-            row = ','.join(row) + '\n'
+
+          # author email is in the 4th column.
+          sketchy_email_feature = _EmailIsSketchy(row[3])
+          urls = _ExtractUrls(row[2])
+          num_urls_feature = len(urls) if urls else 0
+          num_unsafe_urls_feature = _CountUnsafeUrls(urls, args) if urls else 0
+          num_duplicate_urls_feature = len(urls) - len(list(set(urls)))
+          row.extend([
+            '%s' % sketchy_email_feature,
+            '%d' % num_urls_feature,
+            '%d' % num_unsafe_urls_feature,
+            '%d' % num_duplicate_urls_feature,
+          ])
+
+          row = ','.join(row) + '\n'
 
           if random.random() > args.ratio:
             testfile.write(row)
@@ -282,6 +389,7 @@ def main():
       help='Test/train split ratio.')
   parser_prep.add_argument('--hash_features', '-f', type=int,
       help='Number of hash features to generate.', default=0)
+  parser_prep.add_argument('--api_key', '-k', required=True)
 
   args = parser.parse_args()
 
