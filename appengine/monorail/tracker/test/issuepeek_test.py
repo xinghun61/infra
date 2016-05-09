@@ -113,7 +113,3 @@ class IssuePeekTest(unittest.TestCase):
     self.assertEqual(issuecomment_list[0], description)
     self.assertEqual(issuecomment_list[2:], visible_comments)
     self.assertFalse(pagination.visible)
-
-
-if __name__ == '__main__':
-  unittest.main()

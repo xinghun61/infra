@@ -78,7 +78,3 @@ class CaptchaTest(unittest.TestCase):
 
     self.mox.VerifyAll()
     self.assertEqual((False, 'incorrect-captcha-sol'), result)
-
-
-if __name__ == '__main__':
-  unittest.main()

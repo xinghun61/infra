@@ -481,7 +481,3 @@ class TableViewHelpersTest(unittest.TestCase):
          },
         label_values)
     self.assertEqual([], non_col_labels)
-
-
-if __name__ == '__main__':
-  unittest.main()

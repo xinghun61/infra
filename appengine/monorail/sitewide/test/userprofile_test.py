@@ -183,7 +183,3 @@ class UserProfileTest(unittest.TestCase):
     self.assertEquals('ot...@xyz.com', page_data['viewed_user_display_name'])
 
     self.mox.VerifyAll()
-
-
-if __name__ == '__main__':
-  unittest.main()

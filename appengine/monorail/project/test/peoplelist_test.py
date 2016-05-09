@@ -113,7 +113,3 @@ class PeopleListTest(unittest.TestCase):
         project=self.project,
         perms=permissions.OWNER_ACTIVE_PERMISSIONSET)
     self.servlet.ProcessFormData(mr, {})
-
-
-if __name__ == '__main__':
-  unittest.main()

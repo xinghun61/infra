@@ -120,7 +120,3 @@ class IssueReindexTest(unittest.TestCase):
     ret = self._callProcessFormData(post_data, index_issue_1=False)
     self.assertEquals(
         '/p/None/issues/reindex?start=11&auto_submit=False&num=5', ret)
-
-
-if __name__ == '__main__':
-  unittest.main()

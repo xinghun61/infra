@@ -518,7 +518,3 @@ class AST2SelectTest(unittest.TestCase):
         'Alias', ast_pb2.QueryOp.NE, 'col')
     self.assertEqual('Alias.col IS NULL', cond_str)
     self.assertEqual([], cond_args)
-
-
-if __name__ == '__main__':
-  unittest.main()

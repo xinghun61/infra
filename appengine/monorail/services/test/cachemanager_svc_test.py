@@ -177,7 +177,3 @@ class RamCacheConsolidateTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertEqual(json_data['old_count'], 4012)
     self.assertEqual(json_data['new_count'], 1000)
-
-
-if __name__ == '__main__':
-  unittest.main()

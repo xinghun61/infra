@@ -70,7 +70,3 @@ class PaginateTest(unittest.TestCase):
     self.assertEquals(vp.start, 1)
     self.assertEquals(vp.last, 1000)
     self.assertTrue(vp.visible)
-
-
-if __name__ == '__main__':
-  unittest.main()

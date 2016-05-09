@@ -96,7 +96,3 @@ class GroupCreateTest(unittest.TestCase):
                      group_settings.who_can_view_members)
     self.assertEqual(usergroup_pb2.GroupType.MDB,
                      group_settings.ext_group_type)
-
-
-if __name__ == '__main__':
-  unittest.main()

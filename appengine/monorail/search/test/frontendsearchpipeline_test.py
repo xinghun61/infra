@@ -853,7 +853,3 @@ class FrontendSearchPipelineShardMethodsTest(unittest.TestCase):
     self.assertEqual(
       [(30, 2), (41, 1), (62, 2), (40, 3), (81, 3)],
       frontendsearchpipeline._CalcSamplePositions(self.sharded_iids, samples))
-
-
-if __name__ == '__main__':
-  unittest.main()

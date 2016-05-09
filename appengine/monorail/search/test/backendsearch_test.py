@@ -95,7 +95,3 @@ class BackendSearchTest(unittest.TestCase):
     # All are IDs are returned to the frontend.
     self.assertEqual([1, 2, 3, 4, 5, 6, 7, 8], json_data['unfiltered_iids'])
     self.assertFalse(json_data['search_limit_reached'])
-
-
-if __name__ == '__main__':
-  unittest.main()

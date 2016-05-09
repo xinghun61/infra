@@ -82,7 +82,3 @@ class XsrfTest(unittest.TestCase):
       xsrf.TokenIncorrect,
       xsrf.ValidateToken, token, 11L, '/path',
       now=test_time + xsrf.TOKEN_TIMEOUT_SEC + 1)
-
-
-if __name__ == '__main__':
-  unittest.main()

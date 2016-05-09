@@ -187,7 +187,3 @@ class HelpersUnitTest(unittest.TestCase):
     self.assertEqual('1.0 MB', template_helpers.BytesKbOrMb(1024 * 1024))
     self.assertEqual('98.0 MB', template_helpers.BytesKbOrMb(98 * 1024 * 1024))
     self.assertEqual('99 MB', template_helpers.BytesKbOrMb(99 * 1024 * 1024))
-
-
-if __name__ == '__main__':
-  unittest.main()

@@ -248,7 +248,3 @@ class UserServiceFunctionsTest(unittest.TestCase):
     row = user_svc._ActionLimitToRow(
         111, action_kind, al)
     self.assertEqual((111, action_kind, 1, 123456, 9, 10, 2, 5), row)
-
-
-if __name__ == '__main__':
-  unittest.main()

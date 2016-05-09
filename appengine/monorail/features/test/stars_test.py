@@ -62,7 +62,3 @@ class StarsTest(unittest.TestCase):
   def testSetAndGetStarredItems_Project(self):
     self.SetAndVerifyStarredItems(
         'projects', 'proj', 123, self.services.project_star.CountItemStars)
-
-
-if __name__ == '__main__':
-  unittest.main()

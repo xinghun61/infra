@@ -164,7 +164,3 @@ class AbstractTwoLevelCacheTest(unittest.TestCase):
     self.testable_cache.InvalidateAllRamEntries(self.cnxn)
     self.assertFalse(self.testable_cache.HasItem(123))
     self.assertFalse(self.testable_cache.HasItem(124))
-
-
-if __name__ == '__main__':
-  unittest.main()

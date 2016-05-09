@@ -61,7 +61,3 @@ class FakeMetaTest(unittest.TestCase):
           self.assertEquals(
               real_spec[3], fake_spec[3],
               'Mismatched kwarg defaults on %s.%s' % (fake_cls.__name__, name))
-
-
-if __name__ == '__main__':
-  unittest.main()

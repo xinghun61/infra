@@ -56,7 +56,3 @@ class GroupListTest(unittest.TestCase):
         removebtn=[1])
     self.servlet.ProcessFormData(self.mr, post_data)
     self.assertNotIn(888L, self.services.usergroup.group_settings)
-
-
-if __name__ == '__main__':
-  unittest.main()

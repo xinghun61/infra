@@ -334,7 +334,3 @@ class FeaturesServiceTest(unittest.TestCase):
     self.features_service.ExpungeFilterRules(
         self.cnxn, 12345)
     self.mox.VerifyAll()
-
-
-if __name__ == '__main__':
-  unittest.main()

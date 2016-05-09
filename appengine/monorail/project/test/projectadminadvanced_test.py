@@ -123,7 +123,3 @@ class ProjectAdminAdvancedTest(unittest.TestCase):
     post_data = fake.PostData(deletebtn='1')
     next_url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertEqual('http://127.0.0.1/hosting/', next_url)
-
-
-if __name__ == '__main__':
-  unittest.main()

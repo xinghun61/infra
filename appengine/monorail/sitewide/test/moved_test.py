@@ -55,7 +55,3 @@ class MovedTest(unittest.TestCase):
         page_data.keys())
     self.assertEqual(project_name, page_data['project_name'])
     self.assertEqual('#invalid-destination-url', page_data['moved_to_url'])
-
-
-if __name__ == '__main__':
-  unittest.main()

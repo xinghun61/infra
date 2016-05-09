@@ -136,7 +136,3 @@ class TestableJsonFeed(jsonfeed.JsonFeed):
   # but save the response data for inspection
   def _RenderJsonResponse(self, json_data):
     self.json_data = json_data
-
-
-if __name__ == '__main__':
-  unittest.main()

@@ -438,7 +438,3 @@ class MakeFieldUserViewsTest(unittest.TestCase):
 
 class ConfigViewTest(unittest.TestCase):
   pass  # TODO(jrobbins): write tests
-
-
-if __name__ == '__main__':
-  unittest.main()

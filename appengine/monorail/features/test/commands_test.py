@@ -225,7 +225,3 @@ class CommandSyntaxParsingTest(unittest.TestCase):
         222L,
         commands._LookupMeOrUsername(
             'fake cnxn', 'a@example.com', self.services, 0))
-
-
-if __name__ == '__main__':
-  unittest.main()

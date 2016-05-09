@@ -590,7 +590,3 @@ class VCAutolinkTest(unittest.TestCase):
     self.assertEquals(
         'http://example.com/+/%s' % self.GIT_HASH_1, result[0].href)
     self.assertEquals('r%s' % self.GIT_HASH_1, result[0].content)
-
-
-if __name__ == '__main__':
-  unittest.main()

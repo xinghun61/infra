@@ -90,7 +90,3 @@ class InboundEmailTest(unittest.TestCase):
     # Assert that ammendments were *not* made to the issue.
     self.assertEquals('summary', self.issue.summary)
     self.assertEquals('Assigned', self.issue.status)
-
-
-if __name__ == '__main__':
-  unittest.main()

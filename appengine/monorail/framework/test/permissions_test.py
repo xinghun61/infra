@@ -1175,7 +1175,3 @@ class IssuePermissionsTest(unittest.TestCase):
     self.assertFalse(permissions.CanEditTemplate(
         {111L}, permissions.PermissionSet([]),
         None, td))
-
-
-if __name__ == '__main__':
-  unittest.main()

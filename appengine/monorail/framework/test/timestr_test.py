@@ -98,7 +98,3 @@ class TimeStrTest(unittest.TestCase):
         GetDate(2007, 12, 31, 15), ('Older', 'Dec 31, 2007'))
     self.assertEquals(
         GetDate(2008, 4, 11, 20, 49, 35), ('Future', 'Later'))
-
-
-if __name__ == '__main__':
-  unittest.main()

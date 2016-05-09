@@ -308,7 +308,3 @@ class ComponentDetailTest(unittest.TestCase):
     self.assertEqual(0, subcd_2.created)
     self.assertEqual(127L, subcd_2.modifier_id)
     self.assertEqual(4, subcd_2.modified)
-
-
-if __name__ == '__main__':
-  unittest.main()

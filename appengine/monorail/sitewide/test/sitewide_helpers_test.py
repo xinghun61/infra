@@ -255,7 +255,3 @@ class PickProjectsTest(unittest.TestCase):
     wanted = [123, 999, 234]
     picked = sitewide_helpers._PickProjects(wanted, preloaded)
     self.assertEqual([self.project_1, self.project_2], picked)
-
-
-if __name__ == '__main__':
-  unittest.main()

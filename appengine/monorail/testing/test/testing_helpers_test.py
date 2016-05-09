@@ -69,7 +69,3 @@ class BlankTest(unittest.TestCase):
     self.assertEqual('foo', blank.foo)
     self.assertEqual(123, blank.bar)
     self.assertEqual(5, blank.inc(4))
-
-
-if __name__ == '__main__':
-  unittest.main()

@@ -750,7 +750,3 @@ class StripQuotedTextTest(unittest.TestCase):
          'text\n'
          '\n'
          'Sent from my iPod'))
-
-
-if __name__ == '__main__':
-  unittest.main()

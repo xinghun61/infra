@@ -192,7 +192,3 @@ class RevealAllEmailsTest(unittest.TestCase):
     self.assertEqual('b@b.com', users_by_id[222L].display_name)
     self.assertEqual('c@c.com', users_by_id[333L].display_name)
     self.assertEqual('z@z.com', users_by_id[999L].display_name)
-
-
-if __name__ == '__main__':
-  unittest.main()

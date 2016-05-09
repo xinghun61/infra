@@ -38,7 +38,3 @@ class AlertsViewTest(unittest.TestCase):
         path='/p/testproj/?updated=10', project=project)
     alerts_view = alerts.AlertsView(mr)
     self.assertEqual(ezt.boolean(False), alerts_view.show)
-
-
-if __name__ == '__main__':
-  unittest.main()

@@ -68,7 +68,3 @@ class ProjectSummaryTest(unittest.TestCase):
         project_commitments)
     help_data = self.servlet.GatherHelpData(mr, {})
     self.assertEqual(None, help_data['cue'])
-
-
-if __name__ == '__main__':
-  unittest.main()

@@ -43,7 +43,3 @@ class UserProjectsTest(unittest.TestCase):
     self.assertEqual(['contributorto-proj'], result['contributorto'])
     self.assertEqual(['starred-proj'], result['starred_projects'])
     self.assertEqual(['ownerof-proj'], result['ownerof'])
-
-
-if __name__ == '__main__':
-  unittest.main()

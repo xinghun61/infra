@@ -153,7 +153,3 @@ class FieldDetailTest(unittest.TestCase):
     fd = tracker_bizobj.FindFieldDef('CPU', self.config)
     self.assertEqual('CPU', fd.field_name)
     self.assertEqual(2, fd.min_value)
-
-
-if __name__ == '__main__':
-  unittest.main()

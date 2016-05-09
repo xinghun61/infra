@@ -243,7 +243,3 @@ class BackendSearchPipelineMethodsTest(unittest.TestCase):
     self.assertEqual(
       ([10002, 10052], 12345),
       memcache.get('789;is:open;Priority:High is:spam;project id;2'))
-
-
-if __name__ == '__main__':
-  unittest.main()

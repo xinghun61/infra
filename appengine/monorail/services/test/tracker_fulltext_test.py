@@ -203,7 +203,3 @@ class TrackerFulltextTest(unittest.TestCase):
       self.assertTrue(capped)
     finally:
       settings.fulltext_limit_per_shard = orig
-
-
-if __name__ == '__main__':
-  unittest.main()

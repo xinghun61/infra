@@ -159,7 +159,3 @@ class ActionLimitTest(unittest.TestCase):
     # sets initial values to zero
     self.assertEqual(0, limit.recent_count)
     self.assertEqual(0, limit.reset_timestamp)
-
-
-if __name__ == '__main__':
-  unittest.main()

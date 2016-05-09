@@ -247,7 +247,3 @@ class ProjectIsRestrictedTest(unittest.TestCase):
     proj.state = project_pb2.ProjectState.LIVE
     proj.access = project_pb2.ProjectAccess.MEMBERS_ONLY
     self.assertTrue(servlet._ProjectIsRestricted(mr))
-
-
-if __name__ == '__main__':
-  unittest.main()

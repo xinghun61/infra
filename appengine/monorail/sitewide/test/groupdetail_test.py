@@ -124,5 +124,3 @@ class GroupDetailTest(unittest.TestCase):
     mr.auth.effective_ids = set([111L])
     self.servlet.ProcessFormData(mr, {})
 
-if __name__ == '__main__':
-  unittest.main()

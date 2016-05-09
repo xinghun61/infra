@@ -103,7 +103,3 @@ class ComponentHelpersTest(unittest.TestCase):
     components_cc_ids = component_helpers.GetCcIDsForComponentAndAncestors(
         self.config, self.cd3)
     self.assertEqual({111L, 333L}, components_cc_ids)
-
-
-if __name__ == '__main__':
-  unittest.main()

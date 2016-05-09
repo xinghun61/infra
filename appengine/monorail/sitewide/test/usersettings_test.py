@@ -60,7 +60,3 @@ class UserSettingsTest(unittest.TestCase):
                      page_data['logged_in_user_pb'])
 
     self.mox.VerifyAll()
-
-
-if __name__ == '__main__':
-  unittest.main()

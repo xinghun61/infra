@@ -67,7 +67,3 @@ class SearchPipelineTest(unittest.TestCase):
 
   def testReplaceKeywordsWithUserID(self):
     pass  # TODO(jrobbins): write tests
-
-
-if __name__ == '__main__':
-  unittest.main()

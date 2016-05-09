@@ -222,7 +222,3 @@ class FulltextHelpersTest(unittest.TestCase):
         'browser', 'search index name')
     self.mox.VerifyAll()
     self.assertItemsEqual([123, 234, 345], project_ids)
-
-
-if __name__ == '__main__':
-  unittest.main()

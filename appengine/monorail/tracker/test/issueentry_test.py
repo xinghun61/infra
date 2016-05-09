@@ -166,7 +166,3 @@ class IssueEntryTest(unittest.TestCase):
 
     templ = issueentry._SelectTemplate(None, config, True)
     self.assertEquals('Defect report from developer', templ.name)
-
-
-if __name__ == '__main__':
-  unittest.main()

@@ -107,7 +107,3 @@ class MemberViewTest(unittest.TestCase):
     self.assertEqual('Contributor', member_view.role)
     self.assertEqual('/p/proj/people/detail?u=333',
                      member_view.detail_url)
-
-
-if __name__ == '__main__':
-  unittest.main()

@@ -171,7 +171,3 @@ class ComponentCreateMethodsTest(unittest.TestCase):
         componentcreate.LeafNameErrorMessage('', 'FrontEnd', self.config))
     self.assertIsNone(
         componentcreate.LeafNameErrorMessage('BackEnd', 'Search', self.config))
-
-
-if __name__ == '__main__':
-  unittest.main()

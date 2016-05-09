@@ -43,7 +43,3 @@ class SendRedirectInScopeTest(unittest.TestCase):
     redirector.get()
     self.assertEqual(response.location, '//example.com/p/foo/')
     self.assertEqual(response.status, '302 Moved Temporarily')
-
-
-if __name__ == '__main__':
-  unittest.main()

@@ -208,7 +208,3 @@ class AST2SortTest(unittest.TestCase):
         self.harmonized_fields)
     self.assertEqual([], left_joins)
     self.assertEqual([('Issue.star_count DESC', [])], order_by)
-
-
-if __name__ == '__main__':
-  unittest.main()

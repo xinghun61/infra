@@ -168,7 +168,3 @@ class GridViewHelpersTest(unittest.TestCase):
     self.assertTrue(grid_view_helpers.AnyArtifactHasNoAttr(
         artifacts, 'milestone', self.users_by_id, all_label_values,
         self.config))
-
-
-if __name__ == '__main__':
-  unittest.main()

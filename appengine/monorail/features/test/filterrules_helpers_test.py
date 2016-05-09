@@ -627,7 +627,3 @@ class FilterRulesHelpersTest(unittest.TestCase):
     self.assertEquals(rules[3].add_labels[1], 'cold')
     self.assertEquals(len(rules), 4)
     self.assertFalse(errors.AnyErrors())
-
-
-if __name__ == '__main__':
-  unittest.main()

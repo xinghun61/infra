@@ -121,7 +121,3 @@ class ValidateUnitTest(unittest.TestCase):
 
     for url in self.BAD_URLS:
       self.assertFalse(validate.IsValidURL(url), msg='Accepted:%r' % url)
-
-
-if __name__ == '__main__':
-  unittest.main()

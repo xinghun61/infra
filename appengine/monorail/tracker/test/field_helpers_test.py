@@ -316,7 +316,3 @@ class FieldHelpersTest(unittest.TestCase):
     custom_field_error = self.errors.custom_fields[0]
     self.assertEqual(123, custom_field_error.field_id)
     self.assertEqual('Value must be <= 999', custom_field_error.message)
-
-
-if __name__ == '__main__':
-  unittest.main()

@@ -21,7 +21,3 @@ class GroupViewTest(unittest.TestCase):
     self.assertEqual(123, view.num_members)
     self.assertEqual('ANYONE', view.who_can_view_members)
     self.assertEqual('/g/999/', view.detail_url)
-
-
-if __name__ == '__main__':
-  unittest.main()

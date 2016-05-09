@@ -569,7 +569,3 @@ class IssueCommentDeletionTest(unittest.TestCase):
     mr.local_id = local_id_1
     mr.auth.user_id = 222L
     self.servlet.ProcessFormData(mr, post_data)
-
-
-if __name__ == '__main__':
-  unittest.main()

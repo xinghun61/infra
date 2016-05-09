@@ -65,7 +65,3 @@ class RuleViewTest(unittest.TestCase):
     self.assertEquals('label:a label:b', view.predicate)
     self.assertEquals('also_notify', view.action_type)
     self.assertEquals('a@dom.com, b@dom.com', view.action_value)
-
-
-if __name__ == '__main__':
-  unittest.main()

@@ -111,7 +111,3 @@ class ReapTest(unittest.TestCase):
     self.assertEquals([self.proj1_id, self.proj2_id],
                       self.services.project_star.expunged_item_ids)
     self.assertEquals(0, len(self.services.project.test_projects))
-
-
-if __name__ == '__main__':
-  unittest.main()

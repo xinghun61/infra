@@ -204,7 +204,3 @@ class FieldCreateMethodsTest(unittest.TestCase):
     self.assertItemsEqual(
         ['Critical', 'High', 'Medium', 'Low'],
         [item.name for item in label_doc_list])
-
-
-if __name__ == '__main__':
-  unittest.main()

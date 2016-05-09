@@ -323,6 +323,3 @@ class SpamServiceTest(unittest.TestCase):
     res = self.spam_service.ClassifyComment('this is spam',
         'test@chromium.org')
     self.assertEqual('ham', res['outputLabel'])
-
-if __name__ == '__main__':
-  unittest.main()

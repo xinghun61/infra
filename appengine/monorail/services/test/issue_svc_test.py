@@ -1462,7 +1462,3 @@ class IssueServiceFunctionsTest(unittest.TestCase):
     issue.status = 'New'
     issue_svc._UpdateClosedTimestamp(config, issue, 'Closed')
     self.assert_(not issue.closed_timestamp)
-
-
-if __name__ == '__main__':
-  unittest.main()

@@ -42,7 +42,3 @@ class ProfilerTest(unittest.TestCase):
       self.assertEquals(prof.current_phase.name, 'overall profile')
       self.assertEquals(
           prof.top_phase.subphases[0].subphases[1].name, 'baz')
-
-
-if __name__ == '__main__':
-  unittest.main()

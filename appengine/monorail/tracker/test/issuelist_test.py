@@ -326,7 +326,3 @@ def _GetColumns():
   columns = tracker_constants.DEFAULT_COL_SPEC.split()
   columns.extend(tracker_constants.OTHER_BUILT_IN_COLS)
   return [c.lower() for c in columns]
-
-
-if __name__ == '__main__':
-  unittest.main()

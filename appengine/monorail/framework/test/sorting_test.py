@@ -214,7 +214,3 @@ class SortingTest(unittest.TestCase):
     self.assertEquals(
         ['a', '-b', 'c', '-owner', 'id', '-reporter', 'project'],
         sorting.ComputeSortDirectives(mr, config))
-
-
-if __name__ == '__main__':
-  unittest.main()

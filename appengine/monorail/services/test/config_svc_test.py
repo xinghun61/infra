@@ -976,7 +976,3 @@ class ConfigServiceTest(unittest.TestCase):
     self.assertIsNone(memcache.get('label_rows:789'))
     self.assertIsNone(memcache.get('field_rows:789'))
     self.assertEqual(NOW, memcache.get('890;1'))
-
-
-if __name__ == '__main__':
-  unittest.main()

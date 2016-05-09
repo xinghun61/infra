@@ -163,7 +163,3 @@ class BackendNonviewableTest(unittest.TestCase):
       self.mr.cnxn, {111L}, 789, 2)
     self.mox.VerifyAll()
     self.assertEqual([543, 654], ok_iids)
-
-
-if __name__ == '__main__':
-  unittest.main()

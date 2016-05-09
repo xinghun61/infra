@@ -186,7 +186,3 @@ class IssueAttachmentTextTest(unittest.TestCase):
     self.assertEqual(ezt.boolean(False), page_data['should_prettify'])
     self.assertEqual(ezt.boolean(False), page_data['is_binary'])
     self.assertEqual(ezt.boolean(True), page_data['too_large'])
-
-
-if __name__ == '__main__':
-  unittest.main()

@@ -1058,7 +1058,3 @@ class IssueMergeTest(unittest.TestCase):
         self.cnxn, 2)
     # XXX(jrobbins): these tests incorrectly mix local IDs with IIDs.
     self.assertItemsEqual([1, 2, 3, 4, 5], issue_2_starrers)
-
-
-if __name__ == '__main__':
-  unittest.main()

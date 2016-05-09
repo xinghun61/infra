@@ -394,7 +394,3 @@ class AdminRulesTest(TestBase):
 
   def testProcessSubtabForm(self):
     pass  # TODO(jrobbins): write this test
-
-
-if __name__ == '__main__':
-  unittest.main()

@@ -45,7 +45,3 @@ class BannedTest(unittest.TestCase):
     page_data = servlet.GatherPageData(mr)
 
     self.assertEquals(None, page_data['currentPageURLEncoded'])
-
-
-if __name__ == '__main__':
-  unittest.main()

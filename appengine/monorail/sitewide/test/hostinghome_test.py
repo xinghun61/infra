@@ -125,6 +125,3 @@ class HostingHomeTest(unittest.TestCase):
     self.assertEqual(6, len(grid[1].labels))
     self.assertEqual(6, len(grid[2].labels))
     self.assertEqual(6, len(grid[3].labels))
-
-if __name__ == '__main__':
-  unittest.main()

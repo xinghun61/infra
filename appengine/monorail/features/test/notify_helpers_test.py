@@ -389,7 +389,3 @@ class MakeNotificationFooterTest(unittest.TestCase):
     self.assertIn('add a comment', footer)
     self.assertIn('make updates', footer)
     self.assertIn('https://example.com/hosting/settings', footer)
-
-
-if __name__ == '__main__':
-  unittest.main()

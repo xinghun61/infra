@@ -196,7 +196,3 @@ class IssueOriginalTest(unittest.TestCase):
     with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet._GetIssueAndComment(mr)
     self.assertEquals(404, cm.exception.code)
-
-
-if __name__ == '__main__':
-  unittest.main()

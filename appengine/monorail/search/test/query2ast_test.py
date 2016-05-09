@@ -659,6 +659,3 @@ class QueryParsingUnitTest(unittest.TestCase):
     self.assertEqual(
         ['Parentheses are ignored in user queries.'],
         warnings)
-
-if __name__ == '__main__':
-  unittest.main()

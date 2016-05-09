@@ -131,7 +131,3 @@ class AbstractStarServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.star_service.SetStar(self.cnxn, 123, 111L, False)
     self.mox.VerifyAll()
-
-
-if __name__ == '__main__':
-  unittest.main()

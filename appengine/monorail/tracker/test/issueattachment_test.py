@@ -130,7 +130,3 @@ class IssueattachmentTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.servlet.GatherPageData(mr)
     self.mox.VerifyAll()
-
-
-if __name__ == '__main__':
-  unittest.main()

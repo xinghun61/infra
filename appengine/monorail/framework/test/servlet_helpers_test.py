@@ -109,7 +109,3 @@ class ComputeIssueEntryURLTest(unittest.TestCase):
     self.assertIn('token=', url)
     self.assertIn('role=', url)
     self.assertIn('continue=', url)
-
-
-if __name__ == '__main__':
-  unittest.main()

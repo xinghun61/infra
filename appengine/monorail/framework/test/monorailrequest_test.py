@@ -405,7 +405,3 @@ class TestPermissionLookup(unittest.TestCase):
   def testExternalUserPermissions_MembersOnly(self):
     mr = self.MakeRequestAsUser('members-only', 'user@gmail.com')
     self.CheckPermissions(mr.perms, False, False, False)
-
-
-if __name__ == '__main__':
-  unittest.main()

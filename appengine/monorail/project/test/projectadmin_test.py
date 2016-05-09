@@ -70,7 +70,3 @@ class ProjectAdminTest(unittest.TestCase):
     self.assertTrue(page_data['only_owners_see_contributors'])
 
     # TODO(jrobbins): many more tests needed.
-
-
-if __name__ == '__main__':
-  unittest.main()

@@ -504,7 +504,3 @@ class UserGroupServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertTrue(result1)
     self.assertFalse(result2)
-
-
-if __name__ == '__main__':
-  unittest.main()

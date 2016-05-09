@@ -38,7 +38,3 @@ class IssueListCSVTest(unittest.TestCase):
     mr.auth.user_id = 0
     self.assertRaises(permissions.PermissionException,
                       self.servlet.GatherPageData, mr)
-
-
-if __name__ == '__main__':
-  unittest.main()

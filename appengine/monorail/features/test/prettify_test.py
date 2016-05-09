@@ -87,7 +87,3 @@ class BuildPrettifyDataTest(unittest.TestCase):
         dict(should_prettify=ezt.boolean(True),
              prettify_class='lang-sh'),
         prettify_data)
-
-
-if __name__ == '__main__':
-  unittest.main()

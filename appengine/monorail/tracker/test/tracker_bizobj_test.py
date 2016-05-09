@@ -556,7 +556,3 @@ class BizobjTest(unittest.TestCase):
         raw_value='test',
     )
     self.assertEqual('test', val)
-
-
-if __name__ == '__main__':
-  unittest.main()

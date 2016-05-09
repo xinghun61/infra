@@ -267,7 +267,3 @@ class BuildRestrictionChoicesTest(unittest.TestCase):
                 dict(name='Restrict-Smoke-Over21',
                      doc='Permission Over21 needed to use Smoke')]
     self.assertListEqual(expected, choices)
-
-
-if __name__ == '__main__':
-  unittest.main()

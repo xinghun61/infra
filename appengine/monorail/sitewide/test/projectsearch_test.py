@@ -97,7 +97,3 @@ class ProjectSearchTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertEqual(
         '/hosting/search?num=100&start=100', pipeline.pagination.next_url)
-
-
-if __name__ == '__main__':
-  unittest.main()

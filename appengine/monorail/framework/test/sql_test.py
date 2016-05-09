@@ -465,7 +465,3 @@ class FunctionsTest(unittest.TestCase):
     self.assertEqual(
         [12, 1, 'hi', [0, 'yo']],
         sql._BoolsToInts([12, True, 'hi', [False, 'yo']]))
-
-
-if __name__ == '__main__':
-  unittest.main()

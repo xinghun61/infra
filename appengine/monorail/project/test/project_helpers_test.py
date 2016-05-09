@@ -68,7 +68,3 @@ class HelpersUnitTest(unittest.TestCase):
     project = project_pb2.MakeProject('proj')
     access = project_helpers.ParseProjectAccess(project, '9')
     self.assertEqual(None, access)
-
-
-if __name__ == '__main__':
-  unittest.main()

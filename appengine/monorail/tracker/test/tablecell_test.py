@@ -285,6 +285,3 @@ class TableCellCSVTest(unittest.TestCase):
         test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual([v.item for v in cell.values], labels + derived_labels)
-
-if __name__ == '__main__':
-  unittest.main()

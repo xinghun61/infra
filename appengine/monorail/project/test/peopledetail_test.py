@@ -257,7 +257,3 @@ class PeopleDetailTest(unittest.TestCase):
         perms=permissions.OWNER_ACTIVE_PERMISSIONSET)
     result = self.servlet.CanRemoveRole(mr, 222)
     self.assertTrue(result)
-
-
-if __name__ == '__main__':
-  unittest.main()

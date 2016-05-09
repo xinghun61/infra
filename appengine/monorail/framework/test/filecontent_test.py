@@ -182,7 +182,3 @@ class DecodeFileContentsTest(unittest.TestCase):
         contents)
     self.assertFalse(is_binary)
     self.assertFalse(is_long)
-
-
-if __name__ == '__main__':
-  unittest.main()

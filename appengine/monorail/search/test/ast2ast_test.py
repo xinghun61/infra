@@ -544,7 +544,3 @@ class AST2ASTTest(unittest.TestCase):
           ast_pb2.QueryOp.KEY_HAS):
         self.assertEqual(no_change_op,
                          ast2ast._TextOpToIntOp(no_change_op))
-
-
-if __name__ == '__main__':
-  unittest.main()

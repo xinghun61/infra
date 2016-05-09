@@ -117,7 +117,3 @@ class CheckProjectNameJSONTest(unittest.TestCase):
         params={'project': 'not-taken'})
     json_data = self.servlet.HandleRequest(mr)
     self.assertEqual('', json_data['error_message'])
-
-
-if __name__ == '__main__':
-  unittest.main()

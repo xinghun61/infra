@@ -427,7 +427,3 @@ class IsServiceAccountTest(unittest.TestCase):
     self.assertTrue(framework_helpers.IsServiceAccount(developer))
     self.assertTrue(framework_helpers.IsServiceAccount(bugdroid))
     self.assertFalse(framework_helpers.IsServiceAccount(user))
-
-
-if __name__ == '__main__':
-  unittest.main()

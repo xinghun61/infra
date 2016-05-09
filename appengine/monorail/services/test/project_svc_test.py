@@ -442,7 +442,3 @@ class ProjectServiceTest(unittest.TestCase):
     self.project_service.UpdateExtraPerms(
         self.cnxn, 234, 111L, ['SecurityTeam'], now=NOW)
     self.mox.VerifyAll()
-
-
-if __name__ == '__main__':
-  unittest.main()

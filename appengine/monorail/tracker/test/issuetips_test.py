@@ -28,7 +28,3 @@ class IssueTipsTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(path='/p/proj/issues/tips')
     page_data = self.servlet.GatherPageData(mr)
     self.assertEqual('issueSearchTips', page_data['issue_tab_mode'])
-
-
-if __name__ == '__main__':
-  unittest.main()
