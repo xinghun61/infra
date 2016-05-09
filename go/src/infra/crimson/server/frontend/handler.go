@@ -145,7 +145,7 @@ func prpcBase(h middleware.Handler) httprouter.Handle {
 
 func init() {
 	router := httprouter.New()
-	server.InstallHandlers(router, base)
+	gaemiddleware.InstallHandlers(router, base)
 	router.GET("/", webBase(indexPage))
 
 	var api prpc.Server
