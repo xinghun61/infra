@@ -363,6 +363,7 @@ _AC_Store.prototype.oncomplete = function (completed, keycode, element, text) {
   // the same side-effect as typing.  E.g., exposing the next row of input
   // fields.
   element.dispatchEvent(new Event('keyup'));
+  _ac_real_onblur();
 };
 /** substitutes a completion for a completable in a text input's value. */
 _AC_Store.prototype.substitute =
@@ -699,7 +700,7 @@ function ac_complete() {
   // that the caret is correctly calculated (i.e. the caret should not consider
   // placeholder values like '*member').
   var new_caret = caret + completion.value.length;
-  if (!ac_lastCompletable.startsWith("*")) {
+  if (!ac_lastCompletable.startsWith('*')) {
     // Only consider the ac_lastCompletable length if it does not start with '*'
     new_caret = new_caret - ac_lastCompletable.length
   }
@@ -810,15 +811,18 @@ function ac_updateCompletionList(show) {
         var rowEl = document.createElement('tr');
         tableEl.appendChild(rowEl);
         if (i == ac_selected) {
-          rowEl.id = "ac-selected-row";
-          rowEl.className = "selected";
+          rowEl.id = 'ac-selected-row';
+          rowEl.className = 'selected';
         }
-        rowEl.setAttribute("data-index", i);
-        rowEl.addEventListener("mouseup", function(event) {
+        rowEl.setAttribute('data-index', i);
+        rowEl.addEventListener('mousedown', function(event) {
+          event.preventDefault();
+        });
+        rowEl.addEventListener('mouseup', function(event) {
             var target = event.target;
-            while (target && target.tagName != "TR")
+            while (target && target.tagName != 'TR')
               target = target.parentNode;
-            var idx = Number(target.getAttribute("data-index"));
+            var idx = Number(target.getAttribute('data-index'));
             try {
               _ac_select(idx);
             } finally {
@@ -827,9 +831,9 @@ function ac_updateCompletionList(show) {
         });
         rowEl.addEventListener('mouseover', function(event) {
             var target = event.target;
-            while (target && target.tagName != "TR")
+            while (target && target.tagName != 'TR')
               target = target.parentNode;
-            var idx = Number(target.getAttribute("data-index"));
+            var idx = Number(target.getAttribute('data-index'));
             _ac_mouseover(idx);
         });
         var valCellEl = document.createElement('td');
