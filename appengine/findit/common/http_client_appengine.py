@@ -12,14 +12,17 @@ from common.retry_http_client import RetryHttpClient
 
 
 #TODO(katesonia): Move this to config.
-_INTERNAL_HOSTS = ['https://chrome-internal.googlesource.com/']
+_INTERNAL_HOSTS_TO_SCOPES = {
+    'https://chrome-internal.googlesource.com/': (
+        'https://www.googleapis.com/auth/gerritcodereview')
+}
 
 
 class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
   """A http client for running on appengine."""
 
-  def _ExpandAuthorizationHeaders(self, headers):
-    headers['Authorization'] = 'Bearer ' + auth_util.GetAuthToken()
+  def _ExpandAuthorizationHeaders(self, headers, scope):
+    headers['Authorization'] = 'Bearer ' + auth_util.GetAuthToken(scope)
 
   def _ShouldLogError(self, status_code):
     if not self.no_error_logging_statuses:
@@ -33,9 +36,9 @@ class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
 
     # For google internal hosts, expand Oauth2.0 token to headers to authorize
     # the requests.
-    for host in _INTERNAL_HOSTS:
+    for host, scope in _INTERNAL_HOSTS_TO_SCOPES.iteritems():
       if url.startswith(host):
-        self._ExpandAuthorizationHeaders(headers)
+        self._ExpandAuthorizationHeaders(headers, scope)
         break
 
     if method in (urlfetch.POST, urlfetch.PUT):

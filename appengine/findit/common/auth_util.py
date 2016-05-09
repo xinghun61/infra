@@ -8,7 +8,7 @@ from google.appengine.api.app_identity import app_identity
 _EMAIL_SCOPE = 'https://www.googleapis.com/auth/userinfo.email'
 
 
-def GetAuthToken():  # pragma: no cover
-  """Gets auth token for requests to swarming server and isolated server."""
-  auth_token, _ = app_identity.get_access_token(_EMAIL_SCOPE)
+def GetAuthToken(scope=_EMAIL_SCOPE):  # pragma: no cover
+  """Gets auth token for requests to hosts that need authorizations."""
+  auth_token, _ = app_identity.get_access_token(scope)
   return auth_token
