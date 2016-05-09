@@ -377,7 +377,7 @@ class FakeTime(object):
   def __init__(self):
     self.timestamp_now = 1000.0
 
-  def time_fn(self):
+  def __call__(self):
     self.timestamp_now += 0.2
     return self.timestamp_now
 
@@ -385,19 +385,19 @@ class FakeTime(object):
 @endpoints.api(name='testapi', version='v1')
 class TestEndpoint(remote.Service):
 
-  @gae_ts_mon.instrument_endpoint(time_fn=FakeTime().time_fn)
+  @gae_ts_mon.instrument_endpoint(time_fn=FakeTime())
   @endpoints.method(message_types.VoidMessage, message_types.VoidMessage,
                     name='method_good')
   def do_good(self, request):
     return request
 
-  @gae_ts_mon.instrument_endpoint(time_fn=FakeTime().time_fn)
+  @gae_ts_mon.instrument_endpoint(time_fn=FakeTime())
   @endpoints.method(message_types.VoidMessage, message_types.VoidMessage,
                     name='method_bad')
   def do_bad(self, request):
     raise Exception
 
-  @gae_ts_mon.instrument_endpoint(time_fn=FakeTime().time_fn)
+  @gae_ts_mon.instrument_endpoint(time_fn=FakeTime())
   @endpoints.method(message_types.VoidMessage, message_types.VoidMessage,
                     name='method_400')
   def do_400(self, request):
@@ -460,3 +460,113 @@ class InstrumentEndpointTest(testing.EndpointsTestCase):
               'status': 200, 'is_robot': False}
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
     self.assertLessEqual(200, http_metrics.server_durations.get(fields).sum)
+
+
+def view_func():
+  pass  # pragma: no cover
+
+
+class ViewClass(object):
+  def view_method(self):
+    pass  # pragma: no cover
+
+
+class DjangoMiddlewareTest(testing.AppengineTestCase):
+
+  def setUp(self):
+    super(DjangoMiddlewareTest, self).setUp()
+
+    interface.reset_for_unittest()
+    self.m = config.DjangoMiddleware(time_fn=FakeTime())
+    self.request = mock.Mock()
+    self.request.body = 'x' * 42
+    self.request.META = {'HTTP_USER_AGENT': 'useragent'}
+    self.response = mock.Mock()
+    self.response.status_code = 200
+    self.response.content = 'x' * 43
+    self.view_func = view_func
+
+  def run_middleware(self):
+    self.assertIsNone(self.m.process_view(self.request, self.view_func, [], {}))
+    self.assertEquals(self.response,
+        self.m.process_response(self.request, self.response))
+
+  def test_good(self):
+    self.run_middleware()
+
+    fields = {'name': 'gae_ts_mon.test.config_test.view_func',
+              'status': 200, 'is_robot': False}
+    self.assertEquals(1, http_metrics.server_response_status.get(fields))
+    self.assertEquals(42, http_metrics.server_request_bytes.get(fields).sum)
+    self.assertEquals(43, http_metrics.server_response_bytes.get(fields).sum)
+    self.assertAlmostEquals(200, http_metrics.server_durations.get(fields).sum)
+
+  def test_bad(self):
+    self.response.status_code = 404
+    self.run_middleware()
+
+    fields = {'name': 'gae_ts_mon.test.config_test.view_func',
+              'status': 404, 'is_robot': False}
+    self.assertEquals(1, http_metrics.server_response_status.get(fields))
+
+  def test_robot(self):
+    self.request.META['HTTP_USER_AGENT'] = 'GoogleBot'
+    self.run_middleware()
+
+    fields = {'name': 'gae_ts_mon.test.config_test.view_func',
+              'status': 200, 'is_robot': True}
+    self.assertEquals(1, http_metrics.server_response_status.get(fields))
+
+  def test_view_method(self):
+    self.view_func = ViewClass().view_method
+    self.run_middleware()
+
+    fields = {'name': 'gae_ts_mon.test.config_test.ViewClass.view_method',
+              'status': 200, 'is_robot': False}
+    self.assertEquals(1, http_metrics.server_response_status.get(fields))
+
+  def test_unbound_view_method(self):
+    self.view_func = ViewClass.view_method
+    self.run_middleware()
+
+    fields = {'name': 'gae_ts_mon.test.config_test.ViewClass.view_method',
+              'status': 200, 'is_robot': False}
+    self.assertEquals(1, http_metrics.server_response_status.get(fields))
+
+  def test_response_without_request(self):
+    del self.request.ts_mon_state
+    # Doesn't raise.
+    self.assertEquals(self.response,
+        self.m.process_response(self.request, self.response))
+
+  def test_missing_body(self):
+    del self.request.body
+    self.run_middleware()
+
+    fields = {'name': 'gae_ts_mon.test.config_test.view_func',
+              'status': 200, 'is_robot': False}
+    self.assertEquals(1, http_metrics.server_response_status.get(fields))
+    self.assertEquals(0, http_metrics.server_request_bytes.get(fields).sum)
+    self.assertEquals(43, http_metrics.server_response_bytes.get(fields).sum)
+    self.assertEquals(1, http_metrics.server_response_bytes.get(fields).count)
+
+  def test_missing_content(self):
+    del self.response.content
+    self.run_middleware()
+
+    fields = {'name': 'gae_ts_mon.test.config_test.view_func',
+              'status': 200, 'is_robot': False}
+    self.assertEquals(1, http_metrics.server_response_status.get(fields))
+    self.assertEquals(42, http_metrics.server_request_bytes.get(fields).sum)
+    self.assertEquals(0, http_metrics.server_response_bytes.get(fields).sum)
+    self.assertEquals(1, http_metrics.server_response_bytes.get(fields).count)
+
+  @mock.patch('gae_ts_mon.config.need_to_flush_metrics', autospec=True,
+              return_value=False)
+  def test_no_flush(self, _fake):
+    # For branch coverage.
+    self.run_middleware()
+
+    fields = {'name': 'gae_ts_mon.test.config_test.view_func',
+              'status': 200, 'is_robot': False}
+    self.assertEqual(1, http_metrics.server_response_status.get(fields))

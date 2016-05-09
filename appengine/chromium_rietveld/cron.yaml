@@ -14,3 +14,7 @@ cron:
 - description: Update the list of available CQs
   url: /restricted/update_cq_list
   schedule: every 10 minutes
+
+- description: Send ts_mon metrics
+  url: /internal/cron/ts_mon/send
+  schedule: every 1 minutes
