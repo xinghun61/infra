@@ -42,6 +42,10 @@ var errStatus = func(w http.ResponseWriter, status int, msg string) {
 }
 
 var requireGoogler = func(w http.ResponseWriter, c context.Context) bool {
+	if appengine.IsDevAppServer() {
+		return true
+	}
+
 	isMember, err := auth.IsMember(c, authGroup)
 	if !isMember || err != nil {
 		msg := ""
