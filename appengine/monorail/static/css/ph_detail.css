@@ -82,6 +82,10 @@ td.issueheader { background: #e5ecf9; }
   font-family: monospace;
 }
 
+.issue_text:focus {
+    outline: 0;
+}
+
 .author { padding-left: 4px; }
 
 .ichcommands a {
@@ -91,6 +95,10 @@ td.issueheader { background: #e5ecf9; }
 
 .issuecomment:hover .ichcommands a {
     text-decoration: underline;
+}
+
+.issuecommentbody:focus {
+    outline: 0;
 }
 
 #issuemeta {
