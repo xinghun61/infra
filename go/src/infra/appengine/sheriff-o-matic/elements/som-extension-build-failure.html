@@ -24,20 +24,21 @@
         margin: 0.1em;
         padding: 0.5em;
         display: inline-block;
-        color: red;
-      }
-      .multiple-failures {
         background: #E75D54;
         color: #f4f4f4;
       }
-      .builder.multiple-failures a {
-        color: #f4f4f4;
+      .infra-failure {
+        background: #e0b0ff;
+        color: #fff;
       }
-      .builder a {
+     .builder a {
         font-weight: bold;
         text-decoration: none;
-        color: red;
+        color: white;
       }
+      .infra-failure a {
+        color: white;
+      } 
       .builder a:hover {
         text-decoration: underline;
       }
@@ -61,11 +62,10 @@
             <a target="_blank" href$="[[builder.url]]" title$="Failing for the last [[_failureCount(builder)]] build(s): [[builder.first_failure]] - [[builder.latest_failure]].">
                 [[builder.name]]
             </a>
-            [[_failureCount(builder)]] builds
+            [[_failureCount(builder)]]
           </span>
         </template>
       </div>
-
       <div id="reasons">
         <template is="dom-repeat" items="[[extension.reasons]]" as="reason">
           <div>
@@ -104,7 +104,11 @@
         extension: {
           type: Object,
           value: null
-        }
+        },
+        type: {
+          type: String,
+          value: ''
+        },
       },
 
      _regressionRange: function(range) {
@@ -148,14 +152,21 @@
 
       _failureCount: function(builder) {
         // The build number range is inclusive.
-        return builder.latest_failure - builder.first_failure + 1;
+        let numBuilds = builder.latest_failure - builder.first_failure + 1;
+        if (numBuilds > 1) {
+          return `[${numBuilds} in a row]`;
+        }
       },
 
       _classForBuilder: function(builder) {
+        let classes = ['builder']
         if (this._failureCount(builder) > 1) {
-          return 'builder multiple-failures';
+          classes.push('multiple-failures');
         }
-        return 'builder';
+        if (this.type == 'infra-failure') {
+          classes.push('infra-failure');
+        }
+        return classes.join(' ');
       },
 
       _showRegressionRange: function(range) {
