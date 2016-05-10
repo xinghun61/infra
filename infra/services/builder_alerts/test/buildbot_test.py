@@ -371,6 +371,29 @@ class DiskCacheTest(TestCaseWithDiskCache):
     self.assertEqual(latest_time, 22)
     self.assertEqual(step_name, 'later')
 
+  def test_latest_update_time_for_builder_not_started(self):
+    k_example_last_build_times = {
+      "times": [
+        10,
+        None
+      ],
+      "steps": [
+        {
+          "name": "earlier",
+          "times": [
+            None,
+            None
+          ]
+        },
+      ]
+    }
+
+    # Test that we use end time when it's present,
+    latest_time, step_name = buildbot.latest_update_time_and_step_for_builder(
+        k_example_last_build_times)
+    self.assertEqual(latest_time, 10)
+    self.assertEqual(step_name, 'started run')
+
   def test_latest_update_time_for_builder_none_values(self):
     # Test that a step that hasn't started yet doesn't throw an error.
     k_example_last_build_times = {

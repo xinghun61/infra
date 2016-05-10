@@ -218,8 +218,10 @@ def revisions_from_build(build_json):
 
 
 def latest_update_time_and_step_for_builder(last_build):
-  last_update = None
-  step_name = None
+  # default is when the build started
+  last_update = last_build['times'][0]
+  step_name = 'started run'
+
   if last_build['times'][1] != None:
     last_update = float(last_build['times'][1])
     step_name = 'completed run'
