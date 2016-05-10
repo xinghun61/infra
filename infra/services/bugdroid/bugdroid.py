@@ -46,9 +46,7 @@ CODESITE_PROJECTS = [
 loggers = {}
 
 
-# TODO(mmoss): Refactor with commitsentry (and chrome.base.get_logger()?)
-def GetLogger(logger_id, console=True, default_log_level=logging.INFO,
-              logdir=''):
+def GetLogger(logger_id):
   """Logging setup for pollers."""
   # pylint: disable=global-variable-not-assigned
   global loggers
@@ -56,23 +54,13 @@ def GetLogger(logger_id, console=True, default_log_level=logging.INFO,
     return loggers.get(logger_id)
   else:
     logger = logging.getLogger(logger_id)
-    logger.setLevel(default_log_level)
+    logger.setLevel(logging.INFO)
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    # If logger_id isn't specificed (i.e. the root logger), just create a
-    # timestamp-based log file.
-    logfn = os.path.join(logdir, '%s.log' % (logger_id or
-                                             datetime.date.today().isoformat()))
-    fh = logging.FileHandler(logfn)
-    fh.setFormatter(formatter)
-    fh.setLevel(default_log_level)
-    logger.addHandler(fh)
-    logging.info('Log file (level: %s): "%s"',
-                 logging.getLevelName(default_log_level), logfn)
-    if console:
-      sh = logging.StreamHandler()
-      sh.setLevel(default_log_level)
-      logger.addHandler(sh)
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.INFO)
+    sh.setFormatter(formatter)
+    logger.addHandler(sh)
     loggers[logger_id] = logger
     return logger
 
@@ -231,19 +219,11 @@ class BugdroidGitPollerHandler(BugdroidPollerHandler):
 class Bugdroid(object):
   """App to setup and run repository pollers and bug updating handlers."""
 
-  def __init__(self, configfile, credentials_db, run_once, log_level, datadir,
-               logdir):
+  def __init__(self, configfile, credentials_db, run_once, datadir):
     self.pollers = []
     self.trackers = {}
     self.credentials_db = credentials_db
     self.run_once = run_once
-
-    if not os.path.isdir(logdir):
-      if os.path.exists(logdir):
-        raise ConfigsException(
-            'logdir "%s" is not a directory.' % logdir)
-      os.makedirs(logdir)
-    self.logdir = logdir
 
     if not os.path.isdir(datadir):
       if os.path.exists(datadir):
@@ -252,25 +232,7 @@ class Bugdroid(object):
       os.makedirs(datadir)
     self.datadir = datadir
 
-    levels = {'debug': logging.DEBUG,
-              'info': logging.INFO,
-              'warning': logging.WARNING,
-              'error': logging.ERROR,
-              'critical': logging.CRITICAL}
-    self.loglevel = levels.get(log_level)
-    # Make the root logger log to a file.
-    GetLogger(None, console=False, default_log_level=self.loglevel,
-              logdir=self.logdir)
-    # Critcal errors always go to stdout.
-    sh = logging.StreamHandler()
-    sh.setLevel(logging.CRITICAL)
-    logging.getLogger(None).addHandler(sh)
-
-    # Ugh, the apiclient library is overly verbose even at 'info' level. Only
-    # log that stuff if 'debug' logging is enabled, otherwise restrict it to
-    # warning level or greater messages.
-    if self.loglevel > logging.DEBUG:
-      logging.getLogger('apiclient.discovery').setLevel(logging.WARNING)
+    logging.basicConfig(level=logging.INFO)
 
     configs = config_service.get_repos(self.credentials_db, configfile)
 
@@ -318,8 +280,7 @@ class Bugdroid(object):
     t = config_service.decode_repo_type(config.repo_type)
     interval_minutes = 1
     default_project = config.default_project
-    logger = GetLogger(name, console=False, default_log_level=self.loglevel,
-                       logdir=self.logdir)
+    logger = GetLogger(name)
     if t == 'svn':
       poller = svn_poller.SVNPoller(
           config.repo_url,
@@ -420,8 +381,7 @@ class Bugdroid(object):
 
 def inner_loop(opts):
   try:
-    bug = Bugdroid(opts.configfile, opts.credentials_db, True,
-                        opts.default_loglevel, opts.datadir, opts.logdir)
+    bug = Bugdroid(opts.configfile, opts.credentials_db, True, opts.datadir)
     bug.Execute()
     return True
   except ConfigsException:

@@ -29,11 +29,6 @@ def parse_args(args):  # pragma: no cover
                       'confilg file from luci-config.')
   parser.add_argument('-d', '--credentials_db',
                  help='File to use for Codesite OAuth2 credentials storage.')
-  parser.add_argument('--default_loglevel', default='info',
-                 choices=['debug', 'info', 'warning', 'error', 'critical'],
-                 help='Set the desired amount of logging information.')
-  parser.add_argument('--logdir', default=LOGDIR,
-                 help='Directory where log files should be stored.')
   parser.add_argument('--datadir', default=DATADIR,
                  help='Directory where persistent app data should be stored.')
 
