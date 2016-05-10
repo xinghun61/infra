@@ -5,6 +5,7 @@
 import collections
 import contextlib
 import datetime
+import dateutil.tz
 import distutils.util
 import json
 import logging
@@ -219,9 +220,12 @@ def commit(
   for s in specs:
     delta = s.restart_time - datetime.datetime.utcnow()
     restart_time_str = zulu.to_zulu_string(s.restart_time)
+    local_time = s.restart_time.replace(tzinfo=dateutil.tz.tzutc())
+    local_time = local_time.astimezone(dateutil.tz.tzlocal())
 
-    print '\t- %s %s in %d minutes (%s)' % (
-      action, s.name, delta.total_seconds() / 60, restart_time_str)
+    print '\t- %s %s in %d minutes (UTC: %s, Local: %s)' % (
+      action, s.name, delta.total_seconds() / 60, restart_time_str,
+      local_time)
 
   for s in specs:
     if not s.message:
