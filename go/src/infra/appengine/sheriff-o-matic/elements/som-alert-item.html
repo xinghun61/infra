@@ -188,26 +188,25 @@
 
       _removeBug: function(evt) {
         this.fire('annotation-change', {
-          changes: [{
-            'remove': {'bugs': [evt.model.bug]},
-          }]
+          type: 'remove',
+          change: {
+            'bugs': [evt.model.bug]
+          },
         });
       },
 
       _snooze: function(evt) {
         if (this.annotation.snoozed) {
           this.fire('annotation-change', {
-            changes: [{
-              'remove': {'snoozeTime': true},
-            }]
+            type: 'remove',
+            change: {'snoozeTime': true},
           });
         } else {
           this.fire('annotation-change', {
-            changes: [{
-              'add': {
-                snoozeTime: Date.now() + 1000 * 60 * 60 * 60 * 60,
-              }
-            }]
+            type: 'add',
+            change: {
+              snoozeTime: Date.now() + 1000 * 60 * 60 * 60 * 60,
+            }
           });
         }
       },

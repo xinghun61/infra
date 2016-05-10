@@ -28,7 +28,7 @@
       paper-toolbar {
         --paper-toolbar-background: black;
       }
-      .last-updated {
+      .last-updated, .user-name {
         text-align: right;
         padding-right: 1em;
       }
@@ -97,34 +97,44 @@
         <paper-toolbar>
           <span class="som-title">Sheriff-o-Matic</span>
         </paper-toolbar>
-        <som-drawer id="drawer" selected-alerts-group="{{_alertsGroup}}"></som-drawer>
+        <som-drawer id="drawer" alerts-group="[[_alertsGroup]]" path="{{_path}}"></som-drawer>
       </paper-header-panel>
       <paper-header-panel main>
         <paper-toolbar>
           <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
           <div class="layout horizontal flex">
             <div class="flex title">[[_alertsGroup]]</div>
-            <div class="flex last-updated">Last updated: [[_lastUpdated]]</div>
+            <div hidden$="[[_lastUpdate]]" class="flex last-updated">
+              Last updated: [[_lastUpdated]]
+            </div>
+            <div class="user-name">
+              [[user]] (<a href$="[[logoutUrl]]">Log Out </a>)
+            </div>
             <iron-icon icon="refresh"></iron-icon>
           </div>
           <paper-spinner active="[[_networkActive]]"></paper-spinner>
         </paper-toolbar>
         <iron-pages attr-for-selected='id' selected="[[_selectedPage]]">
-          <iron-list id="alertsList" items="[[_alerts]]" as="alert" class="fit" selection-enabled multi-selection>
-            <template>
-              <div class="list-item" tabindex$="[[tabIndex]]">
-                <som-alert-item
-                    alert="{{alert}}"
-                    alerts-group="[[_alertsGroup]]"
-                    selected="[[selected]]"
-                    annotation="[[_computeAnnotation(annotations, alert)]]"
-                    on-selected-changed="_handleCardSelected"
-                    on-annotation-change="_handleAnnotation"
-                    on-link-bug="_handleLinkBug"
-                ></som-alert-item>
-              </div>
-            </template>
-          </iron-list>
+          <div id="alertsList">
+            <div hidden$="[[_haveAlerts]]">
+              No alerts!
+            </div>
+            <iron-list id="alertsIronList" items="[[_alerts]]" as="alert" class="fit" selection-enabled multi-selection>
+              <template>
+                <div class="list-item" tabindex$="[[tabIndex]]">
+                  <som-alert-item
+                      alert="{{alert}}"
+                      alerts-group="[[_alertsGroup]]"
+                      selected="[[selected]]"
+                      annotation="[[_computeAnnotation(annotations, alert)]]"
+                      on-selected-changed="_handleCardSelected"
+                      on-annotation-change="_handleAnnotation"
+                      on-link-bug="_handleLinkBug"
+                  ></som-alert-item>
+                </div>
+              </template>
+            </iron-list>
+          </div>
           <div id="examineAlert">
             <som-examine alert="[[_examinedAlert]]"></som-examine>
           </div>
@@ -161,7 +171,6 @@
           type: Array,
           value: function() { return []; },
           computed: '_computeAlerts(_alertsJson, annotations)',
-          observer: '_alertsChanged',
         },
         _alertsJson: {
           type: Object,
@@ -173,8 +182,7 @@
         },
         _alertsGroup: {
           type: String,
-          value: 'chromium',
-          observer: '_handleAlertsGroupChange',
+          computed: '_computeAlertsGroup(_path)',
         },
         // We don't convert the array into an object because the polymer data
         // binding doesn't seem to like mutations to an object, but it's fine
@@ -201,73 +209,84 @@
           type: Boolean,
           value: false,
         },
+        _haveAlerts: {
+          type: Boolean,
+          computed: '_computeHaveAlerts(alerts)',
+        },
+        logoutUrl: String,
         _networkActive: {
           type: Boolean,
           value: false,
         },
         _path: {
           type: String,
-          observer: '_handlePathChange',
         },
         _selectedPage: {
           type: String,
-          value: 'alertsList',
+          computed: '_computeSelectedPage(_path)',
         },
         _examinedAlert: {
           type: Object,
-          value: function() { return {}; },
+          computed: '_computeExaminedAlert(_alerts, _examinedAlertKey)',
         },
         _examinedAlertKey: {
           type: String,
-          value: '',
+          computed: '_computeExaminedAlertKey(_path)',
         },
+        user: String,
       },
 
       ////////////////////// Alerts and path ///////////////////////////
 
-      _handleAlertsGroupChange: function(newVal) {
-        this._path = '/' + newVal;
+      _computeAlertsGroup: function(path) {
+        let pathParts = path.split('/');
+        if (pathParts.length < 2 || pathParts[1] == "") {
+          console.error('error: invalid pathParts', pathParts);
+        }
+        return pathParts[1];
       },
 
-      _handlePathChange: function(newVal) {
-        // This implements an temporary routing solution, in lieu of
-        // carbon-router which is still in beta.
-        // TODO(seanmccullough): switch to carbon-router.
-        let pathParts = newVal.split('/');
+      _computeSelectedPage: function(path) {
+        let pathParts = path.split('/');
         if (pathParts.length < 2) {
           console.error('error: pathParts < 2', pathParts);
         }
-        this._alertsGroup = pathParts[1];
         if (pathParts.length < 3) {
-          this._selectedPage = 'alertsList';
-          return;
+          return 'alertsList';
+        }
+        if (pathParts[2] == 'examine') {
+          return 'examineAlert';
+        }
+        console.error("Invalid path", path, ". No page found.");
+      },
+
+      _computeExaminedAlertKey: function(path) {
+        let pathParts = path.split('/');
+        if (pathParts.length < 2) {
+          console.error('error: pathParts < 2', pathParts);
+        }
+
+        if (pathParts.length < 3) {
+          return '';
         }
 
         if (pathParts[2] == 'examine') {
-          this._selectedPage = 'examineAlert';
           if (pathParts.length > 3) {
             // Let som-examine element deal with the rest of the path.
-            this._examinedAlertKey =
-                window.unescape(pathParts.slice(3).join('/'));
-            // Now find the actual alert for that key:
-            this._findExaminedAlertFromKey();
+            return window.unescape(pathParts.slice(3).join('/'));
           }
         }
       },
 
-      _alertsChanged: function() {
-        this._findExaminedAlertFromKey();
-      },
-
-      _findExaminedAlertFromKey: function() {
-        let examinedAlert = this._alerts.find( (alert) => {
-          return alert.key == this._examinedAlertKey;
+      _computeExaminedAlert: function(alerts, examinedAlertKey) {
+        let examinedAlert = alerts.find( (alert) => {
+          return alert.key == examinedAlertKey;
         });
         // Two possibilities if examinedAlert is undefined:
         // 1. The alert key is bad.
         // 2. Alerts has not been ajaxed in yet.
         if (examinedAlert) {
-          this._examinedAlert = examinedAlert;
+          return examinedAlert;
         }
       },
 
@@ -275,11 +294,11 @@
         if (lastPosted != undefined) {
           return new Date(lastPosted * 1000).toLocaleString();
         }
-        return '';
+        return ' Unknown';
       },
 
       _computeAlerts: function(alertsJson, annotations) {
-        if (!alertsJson.alerts) {
+        if (!alertsJson || !alertsJson.alerts) {
           return [];
         }
         alertsJson.alerts.sort((a, b) => {
@@ -293,9 +312,6 @@
           return aAnn.snoozed ? 1 : -1;
         });
 
-        if (this._examinedAlertKey) {
-          this._findExaminedAlertFromKey();
-        }
         return alertsJson.alerts;
       },
 
@@ -325,7 +341,8 @@
 
       _handleAnnotation: function(evt) {
         this._sendAnnotation(
-            this._keyForAlert(evt.model.alert), evt.detail.changes);
+          this._keyForAlert(evt.model.alert), evt.detail.type,
+          evt.detail.change);
       },
 
       _postResponse: function(evt) {
@@ -340,13 +357,13 @@
         // Kind of a cheat: we aren't resizing anything necessarily but we
         // do want to tickle the list order.
         setTimeout( ()=> {
-          this.$.alertsList.notifyResize();
+          this.$.alertsIronList.notifyResize();
         }, 250);
       },
 
-      _sendAnnotation: function(key, changes) {
-        this.$.annotationPost.body = JSON.stringify(changes);
-        this.$.annotationPost.url = '/api/v1/annotations/' + key;
+      _sendAnnotation: function(key, type, change) {
+        this.$.annotationPost.body = JSON.stringify(change);
+        this.$.annotationPost.url = '/api/v1/annotations/' + key + '/' + type;
         this.$.annotationPost.generateRequest();
       },
 
@@ -381,11 +398,9 @@
 
       _saveBug: function() {
         this._sendAnnotation(
-          this._keyForAlert(this._bugModel), [{
-            add: {
-              bugs: [this.$.bug.value]
-            }
-          }]);
+          this._keyForAlert(this._bugModel), 'add', {
+            bugs: [this.$.bug.value]
+          });
       },
     });
   })();

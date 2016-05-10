@@ -27,7 +27,7 @@
         timestamp: 0
       };
       assert.equal(
-          element.$$('.last-updated').textContent,
+          element.$$('.last-updated').textContent.trim(),
           'Last updated: 12/31/1969, 4:00:00 PM');
     });
   });
@@ -68,17 +68,17 @@
 
     test('annotation request hits the server', function(done) {
       let data = {
-        bugs: [],
+        bugs: ["123123"],
         snoozeTime: null,
         key: "annKey"
       };
       element.annotationsJson = [];
-      server.respondWith('POST', '/api/v1/annotations/annKey', [
+      server.respondWith('POST', '/api/v1/annotations/annKey/add', [
           200,
           responseHeaders.json,
           JSON.stringify(data)
       ]);
-      element._sendAnnotation("annKey", [data]);
+      element._sendAnnotation("annKey", 'add', [data]);
       server.respond();
 
       flush(function() {
@@ -222,25 +222,21 @@
 
   suite('navigation', function() {
     setup(function() {
-      element._alertsGroup = 'chromium';
-      element.$.drawer.selectedAlertsGroup = 'chromium';
       element.$.url.path = '/chromium';
+      element.$.drawer.selectedAlertsGroup = 'chromium';
     });
 
-    test('sync iron-page-url to alertsGroup and drawer selection', function() {
+    test('sync iron-page-url to alertsGroup and drawer selection', function(done) {
       element.$.url.path = '/chromium.perf';
-      assert.equal('chromium.perf', element._alertsGroup);
-      assert.equal('chromium.perf', element.$.drawer.selectedAlertsGroup);
-    });
-
-    test('sync alertsGroup to iron-page-url and drawer selection', function() {
-      element._alertsGroup = 'blink';
-      assert.equal('/blink', element.$.url.path);
-      assert.equal('blink', element.$.drawer.selectedAlertsGroup);
+      flush(function() {
+        assert.equal('chromium.perf', element._alertsGroup);
+        assert.equal('chromium.perf', element.$.drawer.alertsGroup);
+        done();
+      });
     });
 
     test('sync drawer selection to alertsGroup to iron-page-url', function() {
-      element.$.drawer.selectedAlertsGroup = 'chromium.perf';
+      element.$.drawer.path = '/chromium.perf';
       assert.equal('/chromium.perf', element.$.url.path);
       assert.equal('chromium.perf', element._alertsGroup);
     });

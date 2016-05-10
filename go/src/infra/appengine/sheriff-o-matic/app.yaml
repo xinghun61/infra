@@ -1,6 +1,6 @@
 runtime: go
 api_version: go1
-application: som
+application: sherrif-o-matic-staging
 
 handlers:
 - url: /bower_components

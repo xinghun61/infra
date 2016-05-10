@@ -3,16 +3,21 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
 
 <dom-module id="som-drawer">
+    <style>
+      paper-item {
+        font-size: 26px;
+      }
+    </style>
   <template>
     <iron-ajax
         auto
-        url="https://sheriff-o-matic.appspot.com/tree-list"
+        url="/api/v1/trees"
         handle-as="json"
         verbose
         last-response="{{_treeList}}"
     ></iron-ajax>
-    <paper-menu attr-for-selected="value" selected="{{selectedAlertsGroup}}" id="menu">
-      <template is="dom-repeat" items="[[_treeList.trees]]" as="tree">
+      <paper-menu attr-for-selected="value" on-iron-select="_onSelected" selected="[[alertsGroup]]" id="menu">
+      <template is="dom-repeat" items="[[_treeList]]" as="tree">
         <paper-item value="[[tree.name]]">[[tree.display_name]]</paper-item>
       </template>
     </paper-menu>
@@ -25,15 +30,19 @@
       is: 'som-drawer',
 
       properties: {
-        selectedAlertsGroup: {
+        alertsGroup: String,
+        path: {
            type: String,
-           value: '',
            notify: true
         },
         _treeList: {
-           type: Object,
-           value: function() { return {}; }
+           type: Array,
+           value: function() { return []; }
         },
+      },
+
+      _onSelected: function(evt) {
+        this.path = "/" + evt.detail.item.value;
       },
     });
   })();

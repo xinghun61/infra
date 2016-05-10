@@ -97,9 +97,8 @@
       labelStub.onFirstCall().returns('');
 
       element.addEventListener('annotation-change', (evt)=> {
-        assert.deepEqual(evt.detail.changes, [{
-            'remove': {'bugs': ["foo/bar"]}
-          }]);
+        assert.deepEqual(evt.detail.change, {'bugs': ["foo/bar"]});
+        assert.equal(evt.detail.type, 'remove');
         done();
       });
 
