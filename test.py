@@ -132,6 +132,9 @@ for module in modules:
 
 if exit_code:
   print 'Tests failed in modules:\n  %s' % '\n  '.join(failed_modules)
+  if '--html-report' not in flags:
+    print '\nFor detailed coverage report and per-line branch coverage,'
+    print 'rerun with --html-report <dir>'
 else:
   print 'All tests passed.'
 
