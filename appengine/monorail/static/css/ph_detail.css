@@ -324,6 +324,15 @@ td.rowwidgets { padding: 2px 2px 0 7px; }
   width: 20em;
 }
 
+.enum_checkbox {
+  display: inline-block;
+  width: 24%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: #f8f8f8;
+}
+
 #cue.scrim {
   position: fixed;
   z-index: 1;

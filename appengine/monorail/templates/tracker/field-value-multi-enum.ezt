@@ -13,17 +13,15 @@
     [end]
   [end]
 
-  <span style="white-space:nowrap; margin-right:1em"
-        title="[if-any derived]derived: [end][fields.field_def.choices.docstring]"
-        >
+  <label for="custom_[fields.field_id]_[fields.field_def.choices.idx]" class="enum_checkbox"
+         title="[is derived "Yes"]derived: [end][fields.field_def.choices.name][if-any fields.field_def.choices.docstring]: [fields.field_def.choices.docstring][end]"
+         [is derived "Yes"]style="font-style:italic"[end]>
     <input type="checkbox" name="custom_[fields.field_id]"
            value="[fields.field_def.choices.name]"
            id="custom_[fields.field_id]_[fields.field_def.choices.idx]"
            [is checked "Yes"]checked="checked"[end] [is derived "Yes"]disabled="disabled"[end]>
-    <label for="custom_[fields.field_id]_[fields.field_def.choices.idx]"
-           [is derived "Yes"]style="font-style:italic"[end]>
-      [fields.field_def.choices.name]</label>
-  </span>
+      [fields.field_def.choices.name]
+  </label>
 
 [end]
 
@@ -37,7 +35,7 @@
     [end]
   [end]
   [is already_shown "No"]
-    <span style="white-space:nowrap; margin-right:1em"
+    <span class="enum_checkbox"
           title="This is not a defined choice for this field"
           id="span_oddball_[fields.values.idx]">
       <a id="oddball_[fields.values.idx]" class="remove_oddball">
@@ -58,7 +56,7 @@ runOnLoad(function() {
     
     oddballAnchor.addEventListener("click", function(event) {
       var oddballSpan = $("span_" + this.id);
-      oddballSpan.hidden = true;
+      oddballSpan.style.display = "none";
       var oddballInput = $("input_" + this.id);
       oddballInput.value = "";
       event.preventDefault();
