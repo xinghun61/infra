@@ -100,7 +100,7 @@ class LogQuery(object):
     self._http = self._creds.authorize(httplib2.Http())
     self._bq = discovery.build('bigquery', 'v2', http=self._http)
 
-  def cat(self, targets, limit=None):  # pragma: no cover
+  def cat(self, targets, limit=None):
     assert len(targets) in (1, 2)
     log_name = targets[0]
     resource_id = None
@@ -110,7 +110,7 @@ class LogQuery(object):
       print >>sys.stderr, (
           'WARNING: Querying for all resources under a service, '
           'this may take a long time...')
-    if not limit:
+    if not limit:  # pragma: no branch
       limit = self.limit
     tzoffset = datetime.timedelta(seconds=time.altzone)
     offset = time.altzone / 60 / 60
@@ -148,7 +148,7 @@ class LogQuery(object):
         break
 
     lines = []
-    while True:  # pragma: no cover
+    while True:
       for row in j['rows']:
         ts_f = row['f'][0]['v']  # Bigquery returns timestamps as float strings.
         line = row['f'][1]['v']  # textPayload
@@ -160,17 +160,17 @@ class LogQuery(object):
           lines.append('%s: %s' % (local_ts_str, line))
         else:
           lines.append('%s (%s): %s' % (local_ts_str, resource, line))
-      if not j.get('pageToken'):
+      if not j.get('pageToken'):  # pragma: no branch
         break
       # Should finish immediately.
-      j = self._bq.jobs().getQueryResults(
+      j = self._bq.jobs().getQueryResults(  # pragma: no cover
           projectId=PROJECT_ID, jobId=j['jobReference']['jobId'],
           maxResults=1000, pageToken=j['pageToken']).execute()
 
     for line in reversed(lines):
       print line
 
-  def _list_logs_names(self):  # pragma: no cover
+  def _list_logs_names(self):
     """List all of the log names in a project."""
     tables = []
     nextPage = None
@@ -179,7 +179,7 @@ class LogQuery(object):
           projectId=PROJECT_ID, datasetId=DATASET_ID,
           pageToken=nextPage, maxResults=1000).execute()
       tables.extend(page['tables'])
-      if not page.get('nextPageToken'):
+      if not page.get('nextPageToken'):  # pragma: no branch
         break
       nextPage = page['nextPageToken']  # pragma: no cover
 

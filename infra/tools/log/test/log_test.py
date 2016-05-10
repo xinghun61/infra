@@ -8,7 +8,6 @@ import unittest
 import mock
 
 from infra.tools.log import log
-from infra.tools.log import __main__ as log_main
 
 
 def bq_row(*args):
@@ -121,17 +120,3 @@ class LogQueryTests(unittest.TestCase):
     self.lq._bq.jobs().query.assert_called_with(
       projectId=log.PROJECT_ID, body={'query': q}
     )
-
-  def test_main_options(self):
-    parser = argparse.ArgumentParser()
-    l = log_main.Log()
-    l.add_argparse_options(parser)
-    args = parser.parse_args(['cat', 'bootstrap'])
-    self.assertEquals(args.command, 'cat')
-    self.assertEquals(args.target, ['bootstrap'])
-
-  def test_main(self):
-    args = mock.MagicMock()
-    args.command = 'list'
-    with mock.patch.object(log, 'LogQuery'):
-      log_main.Log().main(args)

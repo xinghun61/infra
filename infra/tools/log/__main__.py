@@ -9,8 +9,6 @@ cit log list bootstrap
 cit log cat bootstrap
 cit log cat bootstrap slave123-c4
 """
-# This file is untested, keep as little code as possible in there.
-
 import argparse
 import logging
 import sys
@@ -27,7 +25,7 @@ class Log(infra_libs.BaseApplication):
   DESCRIPTION = sys.modules['__main__'].__doc__
   PROG_NAME = 'log'
 
-  def add_argparse_options(self, parser):  # pragma: no cover
+  def add_argparse_options(self, parser):
     # This is actually covered, but python coverage is confused.
     super(Log, self).add_argparse_options(parser)
     parser.add_argument('--project', '-p', default=log.PROJECT_ID)
@@ -41,9 +39,8 @@ class Log(infra_libs.BaseApplication):
     parser.add_argument('command', help='')
     parser.add_argument('target', nargs='*', help='', default=None)
 
-  def main(self, args):  # pragma: no cover
-    # This is actually covered, but python coverage is confused.
-    if args.command == 'auth':
+  def main(self, args):
+    if args.command == 'auth':  # pragma: no cover
       log.LogQuery._auth()
       return
 
@@ -51,18 +48,18 @@ class Log(infra_libs.BaseApplication):
         args.project, args.service, args.limit, -args.days_from, -args.until)
     cl._actually_init()
 
-    if args.command == 'list':
-      if len(args.target) == 1:
+    if args.command == 'list':  # pragma: no branch
+      if len(args.target) == 1:  # pragma: no cover
         return cl.list_logs(args.target[0])
       elif len(args.target) == 0:
         return cl.list_logs(None)
-      else:
+      else:  # pragma: no cover
         print 'Invalid number of targets for list (expected 0 or 1)'
-    elif args.command == 'cat':
+    elif args.command == 'cat':  # pragma: no cover
       return cl.cat(args.target)
-    else:
+    else:  # pragma: no cover
       print 'Unkown command: %s' % args.command
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == '__main__':
   Log().run()
