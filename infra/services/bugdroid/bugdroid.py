@@ -54,11 +54,11 @@ def GetLogger(logger_id):
     return loggers.get(logger_id)
   else:
     logger = logging.getLogger(logger_id)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     sh = logging.StreamHandler()
-    sh.setLevel(logging.INFO)
+    sh.setLevel(logging.DEBUG)
     sh.setFormatter(formatter)
     logger.addHandler(sh)
     loggers[logger_id] = logger
@@ -232,7 +232,7 @@ class Bugdroid(object):
       os.makedirs(datadir)
     self.datadir = datadir
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
 
     configs = config_service.get_repos(self.credentials_db, configfile)
 
