@@ -15,6 +15,8 @@ from protorpc import message_types
 from protorpc import remote
 import gae_ts_mon
 
+import acl
+import config
 import endpoints
 import errors
 import model
@@ -102,6 +104,14 @@ class BuildMessage(messages.Message):
 class BuildResponseMessage(messages.Message):
   build = messages.MessageField(BuildMessage, 1)
   error = messages.MessageField(ErrorMessage, 2)
+
+
+class BucketMessage(messages.Message):
+  name = messages.StringField(1, required=True)
+  project_id = messages.StringField(2, required=True)
+  config_file_content = messages.StringField(3)
+  config_file_url = messages.StringField(4)
+  config_file_rev = messages.StringField(5)
 
 
 def build_to_message(build, include_lease_key=False):
@@ -617,3 +627,28 @@ class BuildBucketApi(remote.Service):
       request.bucket, request.status,
       tags=request.tag[:], created_by=request.created_by)
     return self.DeleteManyBuildsResponse()
+
+  ##############################  GET_BUCKET  ##################################
+
+  @buildbucket_api_method(
+    endpoints.ResourceContainer(
+      message_types.VoidMessage,
+      bucket=messages.StringField(1, required=True),
+    ),
+    BucketMessage,
+    path='buckets/{bucket}', http_method='GET')
+  @auth.public
+  def get_bucket(self, request):
+    """Returns bucket information."""
+    if not acl.can_access_bucket(request.bucket):
+      raise acl.current_identity_cannot('access bucket %s', request.bucket)
+    bucket = config.Bucket.get_by_id(request.bucket)
+    if not bucket:
+      raise endpoints.NotFoundException('bucket %s not found' % request.bucket)
+    return BucketMessage(
+      name=request.bucket,
+      project_id=bucket.project_id,
+      config_file_content=bucket.config_content,
+      config_file_rev=bucket.revision,
+      config_file_url=config.get_buildbucket_cfg_url(bucket.project_id),
+    )

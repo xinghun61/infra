@@ -20,6 +20,7 @@ from google.appengine.ext import ndb
 
 from components import auth
 from components import config
+from components import gitiles
 from components.config import validation
 
 from proto import project_config_pb2
@@ -29,6 +30,7 @@ import errors
 
 @utils.cache
 def cfg_path():
+  """Returns relative buildbucket config file path."""
   try:
     appid = app_identity.get_application_id()
   except AttributeError:
@@ -213,3 +215,17 @@ def cron_update_buckets():
     logging.warning(
       'Deleting buckets: %s', ', '.join(k.id() for k in to_delete))
     ndb.delete_multi(to_delete)
+
+
+def get_buildbucket_cfg_url(project_id):
+  """Returns URL of a buildbucket config file in a project, or None."""
+  config_url = config.get_config_set_location('projects/%s' % project_id)
+  if config_url is None:  # pragma: no cover
+    return None
+  try:
+    loc = gitiles.Location.parse(config_url)
+  except ValueError:  # pragma: no cover
+    logging.exception(
+        'Not a valid Gitiles URL %r of project %s', config_url, project_id)
+    return None
+  return str(loc.join(cfg_path()))

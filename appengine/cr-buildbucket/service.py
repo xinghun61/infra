@@ -86,13 +86,6 @@ def validate_tags(tags):
       raise errors.InvalidInputError('Invalid tag "%s": does not contain ":"')
 
 
-def current_identity_cannot(action_format, *args):
-  action = action_format % args
-  msg = 'User %s cannot %s' % (auth.get_current_identity().to_bytes(), action)
-  logging.warning(msg)
-  raise auth.AuthorizationError(msg)
-
-
 @ndb.tasklet
 def add_async(
     bucket, tags=None, parameters=None, lease_expiration_date=None,
@@ -133,7 +126,7 @@ def add_async(
   ctx = ndb.get_context()
   identity = auth.get_current_identity()
   if not (yield acl.can_add_build_async(bucket)):  # pragma: no branch
-    raise current_identity_cannot('add builds to bucket %s', bucket)
+    raise acl.current_identity_cannot('add builds to bucket %s', bucket)
 
   if client_operation_id is not None:
     client_operation_cache_key = (
@@ -240,7 +233,7 @@ def get(build_id):
   if not build:
     return None
   if not acl.can_view_build(build):
-    raise current_identity_cannot('view build %s', build.key.id())
+    raise acl.current_identity_cannot('view build %s', build.key.id())
   return build
 
 
@@ -283,7 +276,7 @@ def _check_search_acls(buckets):
 
   for bucket in buckets:
     if not acl.can_search_builds(bucket):
-      raise current_identity_cannot('search builds in bucket %s', bucket)
+      raise acl.current_identity_cannot('search builds in bucket %s', bucket)
 
 
 def search(
@@ -412,7 +405,7 @@ def _get_leasable_build(build_id):
   if build is None:
     raise errors.BuildNotFoundError()
   if not acl.can_lease_build(build):
-    raise current_identity_cannot('lease build %s', build.key.id())
+    raise acl.current_identity_cannot('lease build %s', build.key.id())
   return build
 
 
@@ -477,7 +470,7 @@ def reset(build_id):
   """
   build = _get_leasable_build(build_id)
   if not acl.can_reset_build(build):
-    raise current_identity_cannot('reset build %s', build.key.id())
+    raise acl.current_identity_cannot('reset build %s', build.key.id())
   if build.status == model.BuildStatus.COMPLETED:
     raise errors.BuildIsCompletedError('Cannot reset a completed build')
   build.status = model.BuildStatus.SCHEDULED
@@ -693,7 +686,7 @@ def cancel(build_id):
     if build is None:
       raise errors.BuildNotFoundError()
     if not acl.can_cancel_build(build):
-      raise current_identity_cannot('cancel build %s', build.key.id())
+      raise acl.current_identity_cannot('cancel build %s', build.key.id())
     if build.status == model.BuildStatus.COMPLETED:
       if build.result == model.BuildResult.CANCELED:
         return build
@@ -788,7 +781,7 @@ def delete_many_builds(bucket, status, tags=None, created_by=None):
     raise errors.InvalidInputError(
       'status can be STARTED or SCHEDULED, not %s' % status)
   if not acl.can_delete_scheduled_builds(bucket):
-    raise current_identity_cannot('delete scheduled builds of %s', bucket)
+    raise acl.current_identity_cannot('delete scheduled builds of %s', bucket)
   # Validate created_by prior scheduled a push task.
   created_by = parse_identity(created_by)
   deferred.defer(

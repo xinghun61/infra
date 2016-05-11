@@ -437,6 +437,17 @@ class ConfigTest(testing.AppengineTestCase):
       ]
     )
 
+  @mock.patch('components.config.get_config_set_location', autospec=True)
+  def test_get_buildbucket_cfg_url(self, get_config_set_location):
+    get_config_set_location.return_value = (
+        'https://chromium.googlesource.com/chromium/src/+/infra/config')
+
+    url = config.get_buildbucket_cfg_url('chromium')
+    self.assertEqual(
+      url,
+      ('https://chromium.googlesource.com/chromium/src/+/'
+       'infra/config/buildbucket.cfg'))
+
 
 def errmsg(text):
   return validation_context.Message(severity=logging.ERROR, text=text)

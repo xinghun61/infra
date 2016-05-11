@@ -40,11 +40,14 @@ class Action(messages.Enum):
   WRITE_ACL = 8
   # Delete all scheduled builds from a bucket.
   DELETE_SCHEDULED_BUILDS = 9
+  # Know about bucket existence and read its info.
+  ACCESS_BUCKET = 10
 
 
 _action_dict = Action.to_dict()
 
 READER_ROLE_ACTIONS = [
+  Action.ACCESS_BUCKET,
   Action.VIEW_BUILD,
   Action.SEARCH_BUILDS,
 ]
@@ -93,6 +96,7 @@ can_reset_build = can_fn_for_build(Action.RESET_BUILD)
 can_read_acl = can_fn(Action.READ_ACL)
 can_write_acl = can_fn(Action.WRITE_ACL)
 can_delete_scheduled_builds = can_fn(Action.DELETE_SCHEDULED_BUILDS)
+can_access_bucket = can_fn(Action.ACCESS_BUCKET)
 
 
 ################################################################################
@@ -180,3 +184,11 @@ def get_available_buckets():
   # Cache for 10 min
   memcache.set(cache_key, available_buckets, 10 * 60)
   return available_buckets
+
+
+def current_identity_cannot(action_format, *args):  # pragma: no cover
+  """Returns AuthorizationError."""
+  action = action_format % args
+  msg = 'User %s cannot %s' % (auth.get_current_identity().to_bytes(), action)
+  logging.warning(msg)
+  return auth.AuthorizationError(msg)

@@ -13,6 +13,7 @@ import gae_ts_mon
 
 from testing_utils import testing
 import api
+import config
 import errors
 import model
 import service
@@ -532,7 +533,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.assertEqual(res1['error']['reason'], 'BUILD_IS_COMPLETED')
     service.cancel.assert_any_call(2)
 
-  ##########################  DELETE_MANY_BUILDS  #############################
+  ##########################  DELETE_MANY_BUILDS  ##############################
 
   def test_delete_many_builds(self):
     req = {
@@ -542,6 +543,56 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
       'created_by': 'nodir@google.com',
     }
     self.call_api('delete_many_builds', req)
+
+  ##############################  GET_BUCKET  ##################################
+
+  @mock.patch('config.get_buildbucket_cfg_url', autospec=True)
+  def test_get_bucket(self, get_buildbucket_cfg_url):
+    get_buildbucket_cfg_url.return_value = 'https://example.com/buildbucket.cfg'
+
+    bucket_cfg = """
+      name: "master.tryserver.chromium.linux"
+      acls {
+        role: READER
+        identity: "anonymous:anonymous"
+      }
+    """
+
+    config.Bucket(
+        id='master.tryserver.chromium.linux',
+        project_id='chromium',
+        revision='deadbeef',
+        config_content=bucket_cfg,
+    ).put()
+
+    req = {
+      'bucket': 'master.tryserver.chromium.linux',
+    }
+    res = self.call_api('get_bucket', req).json_body
+    self.assertEqual(res, {
+      'name': 'master.tryserver.chromium.linux',
+      'project_id': 'chromium',
+      'config_file_content': bucket_cfg,
+      'config_file_url': 'https://example.com/buildbucket.cfg',
+      'config_file_rev': 'deadbeef',
+    })
+
+  @mock.patch('components.auth.is_admin', autospec=True)
+  def test_get_bucket_not_found(self, is_admin):
+    is_admin.return_value = True
+
+    req = {
+      'bucket': 'non-existent',
+    }
+    with self.call_should_fail(404):
+      self.call_api('get_bucket', req)
+
+  def test_get_bucket_with_auth_error(self):
+    req = {
+      'bucket': 'secret-project',
+    }
+    with self.call_should_fail(403):
+      self.call_api('get_bucket', req)
 
   #################################### ERRORS ##################################
 
