@@ -21,6 +21,7 @@ from common import appengine_util
 from common import constants
 from common.waterfall import failure_type
 from model.wf_analysis import WfAnalysis
+from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
 from waterfall import buildbot
 from waterfall import waterfall_config
@@ -145,8 +146,11 @@ class FindItApi(remote.Service):
         return None
       return step_info
 
+    task = WfSwarmingTask.Get(*try_job_key.split('/'), step_name=step_name)
+    ref_name = (task.parameters.get('ref_name') if task and task.parameters
+                else None)
     return try_job.test_results[-1].get('culprit', {}).get(
-        step_name, {}).get('tests', {}).get(test_name)
+        ref_name or step_name, {}).get('tests', {}).get(test_name)
 
   def _PopulateResult(
       self, results, build, try_job_map, build_failure_type,

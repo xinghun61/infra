@@ -13,6 +13,7 @@ from common.waterfall import failure_type
 import findit_api
 from findit_api import FindItApi
 from model.wf_analysis import WfAnalysis
+from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
 from model import analysis_status
 from waterfall import waterfall_config
@@ -453,6 +454,10 @@ class FinditApiTest(testing.EndpointsTestCase):
         ]
     }
 
+    task = WfSwarmingTask.Create(master_name, builder_name, 4, 'b on platform')
+    task.parameters['ref_name'] = 'b'
+    task.put()
+
     try_job = WfTryJob.Create(master_name, builder_name, 4)
     try_job.status = analysis_status.COMPLETED
     try_job.test_results = [
@@ -483,7 +488,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     analysis.status = analysis_status.COMPLETED
     analysis.failure_result_map = {
         'a': '/'.join([master_name, builder_name, '4']),
-        'b': {
+        'b on platform': {
             'Unittest1.Subtest1': '/'.join([master_name, builder_name, '3']),
             'Unittest3.Subtest1': '/'.join([master_name, builder_name, '4']),
         },
@@ -509,7 +514,7 @@ class FinditApiTest(testing.EndpointsTestCase):
                 ],
             },
             {
-                'step_name': 'b',
+                'step_name': 'b on platform',
                 'first_failure': 3,
                 'last_pass': 2,
                 'suspected_cls': [
@@ -606,7 +611,7 @@ class FinditApiTest(testing.EndpointsTestCase):
             'master_url': master_url,
             'builder_name': builder_name,
             'build_number': build_number,
-            'step_name': 'b',
+            'step_name': 'b on platform',
             'is_sub_test': True,
             'test_name': 'Unittest1.Subtest1',
             'first_known_failed_build_number': 3,
@@ -622,7 +627,7 @@ class FinditApiTest(testing.EndpointsTestCase):
             'master_url': master_url,
             'builder_name': builder_name,
             'build_number': build_number,
-            'step_name': 'b',
+            'step_name': 'b on platform',
             'is_sub_test': True,
             'test_name': 'Unittest2.Subtest1',
             'first_known_failed_build_number': 4,
@@ -638,7 +643,7 @@ class FinditApiTest(testing.EndpointsTestCase):
             'master_url': master_url,
             'builder_name': builder_name,
             'build_number': build_number,
-            'step_name': 'b',
+            'step_name': 'b on platform',
             'is_sub_test': True,
             'test_name': 'Unittest3.Subtest1',
             'first_known_failed_build_number': 4,
