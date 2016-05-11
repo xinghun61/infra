@@ -446,7 +446,7 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertEqual(
       url,
       ('https://chromium.googlesource.com/chromium/src/+/'
-       'infra/config/buildbucket.cfg'))
+       'infra/config/testbed-test.cfg'))
 
 
 def errmsg(text):

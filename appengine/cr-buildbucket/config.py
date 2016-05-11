@@ -36,7 +36,7 @@ def cfg_path():
   except AttributeError:
     # Raised in testbed environment because cfg_path is called
     # during decoration.
-    appid = 'buildbucket'
+    appid = 'testbed-test'
   return '%s.cfg' % appid
 
 
