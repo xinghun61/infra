@@ -5,11 +5,13 @@
 import apiclient.discovery
 import datetime
 import httplib2
+import json
 import logging
 import oauth2client.client
 import time
 
 from apiclient.errors import HttpError
+from oauth2client.client import OAuth2Credentials
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.file import Storage
 from oauth2client.tools import run
@@ -147,16 +149,18 @@ class IssueTrackerManager(object):
     self.project_name = project_name
     self._empty_owner_value = '----'
 
-    storage = Storage(credential_store)
-    storage.acquire_lock()
-    try:
-      credentials = storage.locked_get()
-    finally:
-      storage.release_lock()
+    with open(credential_store) as data_file:    
+      creds_data = json.load(data_file)
+
+    credentials = OAuth2Credentials(
+        None, creds_data['client_id'], creds_data['client_secret'],
+        creds_data['refresh_token'], None,
+        'https://accounts.google.com/o/oauth2/token',
+        'python-issue-tracker-manager/2.0')
 
     if credentials is None or credentials.invalid == True:
       api_scope = 'https://www.googleapis.com/auth/projecthosting'
-      credentials = self._authenticate(storage=storage,
+      credentials = self._authenticate(storage=None,
                                        service_acct=service_acct,
                                        client_id=client_id,
                                        client_secret=client_secret,
@@ -391,12 +395,14 @@ class MonorailIssueTrackerManager(IssueTrackerManager):
     self.project_name = project_name
     self._empty_owner_value = ''
 
-    storage = Storage(credential_store)
-    storage.acquire_lock()
-    try:
-      credentials = storage.locked_get()
-    finally:
-      storage.release_lock()
+    with open(credential_store) as data_file:    
+      creds_data = json.load(data_file)
+
+    credentials = OAuth2Credentials(
+        None, creds_data['client_id'], creds_data['client_secret'],
+        creds_data['refresh_token'], None,
+        'https://accounts.google.com/o/oauth2/token',
+        'python-issue-tracker-manager/2.0')
 
     if credentials is None or credentials.invalid == True:
       if not client_id or not client_secret:
@@ -406,7 +412,7 @@ class MonorailIssueTrackerManager(IssueTrackerManager):
             'create MonorailIssueTrackerManager with valid |client_id| '
             'and |client_secret| arguments.' % credential_store)
       api_scope = 'https://www.googleapis.com/auth/userinfo.email'
-      credentials = self._authenticate(storage=storage,
+      credentials = self._authenticate(storage=None,
                                        service_acct=service_acct,
                                        client_id=client_id,
                                        client_secret=client_secret,
