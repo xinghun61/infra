@@ -18,7 +18,7 @@ def DecorateModerationQueue(
   for issue in issues:
     issue_map[issue.issue_id] = issue
 
-  flag_counts = spam_service.LookupFlagCounts(cnxn, issue_ids)
+  flag_counts = spam_service.LookupIssueFlagCounts(cnxn, issue_ids)
 
   reporter_ids = [issue.reporter_id for issue in issues]
   reporters = user_service.GetUsersByIDs(cnxn, reporter_ids)
