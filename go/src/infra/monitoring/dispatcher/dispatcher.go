@@ -23,6 +23,8 @@ import (
 
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/clock"
+	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/logging/gologger"
 
 	"golang.org/x/net/context"
 
@@ -134,7 +136,7 @@ func (a bySeverity) Less(i, j int) bool {
 	return a[i].Severity < a[j].Severity
 }
 
-func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool) error {
+func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, transport http.RoundTripper) error {
 	done := make(chan interface{})
 	errs := make(chan error)
 	for treeName := range trees {
@@ -195,7 +197,7 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool) 
 				}
 			} else {
 				alertsURL := fmt.Sprintf("%s/%s", *alertsBaseURL, tree)
-				w := client.NewWriter(alertsURL)
+				w := client.NewWriter(alertsURL, transport)
 				infoLog.Printf("Posting alerts to %s", alertsURL)
 				err := w.PostAlerts(alerts)
 				if err != nil {
@@ -225,6 +227,8 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
+	ctx = gologger.StdConfig.Use(ctx)
+	logging.SetLevel(ctx, logging.Debug)
 
 	authOptions := auth.Options{
 		ServiceAccountJSONPath: *serviceAccountJSON,
@@ -232,9 +236,10 @@ func main() {
 			auth.OAuthScopeEmail,
 			"https://www.googleapis.com/auth/projecthosting",
 		},
+		Method: auth.ServiceAccountMethod,
 	}
 
-	mode := auth.OptionalLogin
+	mode := auth.SilentLogin
 	if *login {
 		mode = auth.InteractiveLogin
 	}
@@ -247,6 +252,7 @@ func main() {
 		}
 		os.Exit(1)
 	}
+	ctx = context.Background()
 
 	// Start serving expvars.
 	go func() {
@@ -286,7 +292,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	r := client.NewReader(transport)
+	r := client.NewReader()
 
 	if *snapshot != "" {
 		r = client.NewSnapshot(r, *snapshot)
@@ -356,7 +362,7 @@ func main() {
 	// This is the polling/analysis/alert posting function, which will run in a loop until
 	// a timeout or max errors is reached.
 	f := func(ctx context.Context) error {
-		return mainLoop(ctx, a, trees)
+		return mainLoop(ctx, a, trees, transport)
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, duration)

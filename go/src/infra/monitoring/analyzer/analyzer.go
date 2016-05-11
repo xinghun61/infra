@@ -124,7 +124,7 @@ type Analyzer struct {
 // maxBuilds is the maximum number of builds to check, per builder.
 func New(c client.Reader, minBuilds, maxBuilds int) *Analyzer {
 	if c == nil {
-		c = client.NewReader(nil)
+		c = client.NewReader()
 	}
 
 	return &Analyzer{

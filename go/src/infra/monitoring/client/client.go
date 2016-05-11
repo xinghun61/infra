@@ -118,14 +118,10 @@ type writer struct {
 
 // NewReader returns a new Reader, which will read data from various chrome infra
 // data sources.
-func NewReader(transport http.RoundTripper) Reader {
+func NewReader() Reader {
 	return &reader{
 		hc: &trackingHTTPClient{
-			c: &http.Client{
-				// TODO: figure out how to get Timeout to work with oauth Transport,
-				// which fails because it doesn't implement CancelRequest.
-				Transport: transport,
-			},
+			c: http.DefaultClient,
 		},
 		bCache: map[string]*messages.Build{},
 	}
@@ -253,8 +249,12 @@ func cacheable(b *messages.Build) bool {
 }
 
 // NewWriter returns a new Client, which will post alerts to alertsBase.
-func NewWriter(alertsBase string) Writer {
-	return &writer{hc: &trackingHTTPClient{c: http.DefaultClient}, alertsBase: alertsBase}
+func NewWriter(alertsBase string, transport http.RoundTripper) Writer {
+	return &writer{hc: &trackingHTTPClient{
+		c: &http.Client{
+			Transport: transport,
+		},
+	}, alertsBase: alertsBase}
 }
 
 func (w *writer) PostAlerts(alerts *messages.Alerts) error {
