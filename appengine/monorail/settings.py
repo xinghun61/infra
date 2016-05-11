@@ -284,7 +284,7 @@ classifier_spam_thresh = 0.99
 
 # Users with email addresses ending with these will not be subject to
 # spam filtering.
-spam_whitelisted_suffixes = ('@google.com', '@chromium.org')
+spam_whitelisted_suffixes = ('@google.com', '@chromium.org', '@webrtc.org')
 
 ratelimiting_enabled = False
 
