@@ -53,5 +53,4 @@ skip_files:
 - ^(.*/)?.*~$
 - ^(.*/)?.*\.py[co]$
 - ^(.*/)?\..*$
-- ^third_party/catapult/tracing/third_party/.*$
 - ^third_party/catapult/tracing/test_data/.*$
