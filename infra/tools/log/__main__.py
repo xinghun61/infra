@@ -30,12 +30,12 @@ class Log(infra_libs.BaseApplication):
     super(Log, self).add_argparse_options(parser)
     parser.add_argument('--project', '-p', default=log.PROJECT_ID)
     parser.add_argument('--service', '-s', default=log.SERVICE_NAME)
-    parser.add_argument('--limit', '-l', default=20000)
+    parser.add_argument('--limit', '-l', type=int, default=20000)
     parser.add_argument(
-        '--from', dest='days_from', default=2,
+        '--from', dest='days_from', type=int, default=2,
         help='Get logs from this many days ago.')
     parser.add_argument(
-        '--until', default=0, help='Number of days to look until.')
+        '--until', default=0, type=int, help='Number of days to look until.')
     parser.add_argument('command', help='')
     parser.add_argument('target', nargs='*', help='', default=None)
 
