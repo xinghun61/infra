@@ -12,6 +12,7 @@ from common import diff
 from common.blame import Blame
 from common.blame import Region
 from common.cache_decorator import Cached
+from common.cache_decorator import CompressedMemCacher
 from common.change_log import ChangeLog
 from common.change_log import FileChangeInfo
 from common.repository import Repository
@@ -43,7 +44,8 @@ class GitRepository(Repository):
   def identifier(self):
     return self.repo_url
 
-  @Cached(namespace='Gitiles-json-view', expire_time=CACHE_EXPIRE_TIME_SECONDS)
+  @Cached(namespace='Gitiles-json-view', expire_time=CACHE_EXPIRE_TIME_SECONDS,
+          cacher=CompressedMemCacher())
   def _SendRequestForJsonResponse(self, url, params=None):
     if params is None:  # pragma: no cover
       params = {}

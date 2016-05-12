@@ -3,6 +3,9 @@
 # found in the LICENSE file.
 
 import pickle
+import zlib
+
+from google.appengine.api import memcache
 
 from testing_utils import testing
 
@@ -25,10 +28,40 @@ def _DummyKeyGenerator(func, *_):
 
 
 class CacheDecoratorTest(testing.AppengineTestCase):
-  def testMemCacher(self):
-    cacher = cache_decorator.MemCacher()
+  def testPickledMemCacher(self):
+    cacher = cache_decorator.PickledMemCacher()
     cacher.Set('a', 'd')
     self.assertEquals('d', cacher.Get('a'))
+
+  def _MockPickleAndZlib(self):
+    def Func(string, *_, **__):
+      return string
+    self.mock(pickle, 'dumps', Func)
+    self.mock(pickle, 'loads', Func)
+    self.mock(zlib, 'compress', Func)
+    self.mock(zlib, 'decompress', Func)
+
+  def testCachingSmallDataInCompressedMemCacher(self):
+    self._MockPickleAndZlib()
+    cacher = cache_decorator.CompressedMemCacher()
+    data = 'A' * 1024 # A string of size 1KB.
+    cacher.Set('a', data)
+    self.assertEquals(data, cacher.Get('a'))
+
+  def testCachingLargeDataInCompressedMemCacher(self):
+    self._MockPickleAndZlib()
+    cacher = cache_decorator.CompressedMemCacher()
+    data = 'A' * (1024 * 1024 * 2)  # A string of size 2MB.
+    cacher.Set('a', data)
+    self.assertEquals(data, cacher.Get('a'))
+
+  def testMissingSubPieceOfLargeDataInCompressedMemCacher(self):
+    self._MockPickleAndZlib()
+    cacher = cache_decorator.CompressedMemCacher()
+    data = 'A' * (1024 * 1024 * 2)  # A string of size 2MB.
+    cacher.Set('a', data)
+    memcache.delete('a-0')
+    self.assertEquals(None, cacher.Get('a'))
 
   def testDefaultKeyGenerator(self):
     expected_params = {
