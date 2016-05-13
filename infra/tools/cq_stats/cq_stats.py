@@ -1053,9 +1053,13 @@ def print_flakiness_stats(args, stats):
       )
       init_dict = {key: 0 for key in keys}
       init_dict['uncategorized_flakes'] = []
-      try_job_stats.setdefault((master, builder), init_dict)
+      try_job_stats.setdefault((master, builder), copy.copy(init_dict))
+      try_job_stats.setdefault(('OVERALL', 'OVERALL'), copy.copy(init_dict))
       for key in keys:
-        try_job_stats[(master, builder)][key] += result[(master, builder)][key]
+        try_job_stats[(master, builder)][key] += result[
+            (master, builder)][key]
+        try_job_stats[('OVERALL', 'OVERALL')][key] += result[
+            (master, builder)][key]
 
       try_job_stats[(master, builder)]['uncategorized_flakes'].extend(
           result[(master, builder)]['uncategorized_flakes'])
@@ -1068,15 +1072,17 @@ def print_flakiness_stats(args, stats):
                       try_job_stats[master_builder]['total'])
 
   builders = sorted(try_job_stats.iterkeys(), key=flakiness, reverse=True)
-  format_string = '%-15s %-55s %-16s|%-7s|%-7s|%-7s|%-7s|%-7s|%-7s'
+  format_string = '%-20s %-55s %-18s|%-7s|%-7s|%-7s|%-7s|%-7s|%-7s'
   output(format_string,
          'Master', 'Builder', 'Flakes',
          'Infra', 'Compile', 'Test', 'Invalid', 'Patch', 'Other')
   for master_builder in builders:
     master, builder = master_builder
+    if try_job_stats[master_builder]['flakes'] == 0:
+      continue
     output(format_string,
            master.replace('tryserver.', ''), builder,
-           '%4d/%4d (%3.0f%%)' % (try_job_stats[master_builder]['flakes'],
+           '%5d/%5d (%3.0f%%)' % (try_job_stats[master_builder]['flakes'],
                                   try_job_stats[master_builder]['total'],
                                   flakiness(master_builder)),
            '%6.0f%%' % percentage(
@@ -1234,7 +1240,3 @@ def main():
   infra_libs.logs.process_argparse_options(args, logger)
   stats = acquire_stats(args)
   print_stats(args, stats)
-
-
-if __name__ == '__main__':
-  sys.exit(main())
