@@ -1196,18 +1196,18 @@ def print_stats(args, stats):
              percentage(sum(p['count'] for p in infra_false_rejections),
                         day_stats['attempt-count']))
 
+  print_flakiness_stats(args, stats)
+
   output()
   output('Slowest CLs:')
   slowest_cls = sorted(
       stats['patch_stats'],
       key=lambda p: stats['patch_stats'][p]['patchset-duration'],
       reverse=True)
-  for p in slowest_cls[:40]:
+  for p in slowest_cls[:20]:
     output('%s (%s hrs)' % (
         patch_url(p),
         round(stats['patch_stats'][p]['patchset-duration'] / 3600.0, 1)))
-
-  print_flakiness_stats(args, stats)
 
 
 def acquire_stats(args, add_tree_stats=True):
