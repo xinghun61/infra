@@ -135,14 +135,14 @@ def _GetFailedTargetsFromSignals(signals, master_name, builder_name):
   return compile_targets
 
 
-def _GetSuspectsForCompileFailureFromHeuristicResult(heuristic_result):
-  suspected_revisions = []
+def _GetSuspectsFromHeuristicResult(heuristic_result):
+  suspected_revisions = set()
   if not heuristic_result:
-    return suspected_revisions
+    return list(suspected_revisions)
   for failure in heuristic_result.get('failures', []):
-    if failure['step_name'] == constants.COMPILE_STEP_NAME:
-      suspected_revisions = [c['revision'] for c in failure['suspected_cls']]
-  return suspected_revisions
+    for cl in failure['suspected_cls']:
+      suspected_revisions.add(cl['revision'])
+  return list(suspected_revisions)
 
 
 def ScheduleTryJobIfNeeded(failure_info, signals, heuristic_result):
@@ -173,9 +173,7 @@ def ScheduleTryJobIfNeeded(failure_info, signals, heuristic_result):
     compile_targets = (_GetFailedTargetsFromSignals(
         signals, master_name, builder_name)
                        if try_job_type == TryJobType.COMPILE else None)
-    suspected_revisions = (
-        _GetSuspectsForCompileFailureFromHeuristicResult(heuristic_result)
-        if try_job_type == TryJobType.COMPILE else None)
+    suspected_revisions = _GetSuspectsFromHeuristicResult(heuristic_result)
 
     pipeline = (
         swarming_tasks_to_try_job_pipeline.SwarmingTasksToTryJobPipeline(

@@ -423,7 +423,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
             signals, 'master1', 'builder1'),
         ['b.o'])
 
-  def testGetSuspectsForCompileFailureFromHeuristicResult(self):
+  def testGetSuspectsFromHeuristicResultForCompile(self):
     heuristic_result = {
         'failures': [
             {
@@ -437,13 +437,41 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
                     },
                 ],
             },
-            {
-                'step_name': 'steps'
-            },
         ]
     }
     expected_suspected_revisions = ['r1', 'r2']
     self.assertEqual(
         expected_suspected_revisions,
-        try_job_util._GetSuspectsForCompileFailureFromHeuristicResult(
-            heuristic_result))
+        try_job_util._GetSuspectsFromHeuristicResult(heuristic_result))
+
+  def testGetSuspectsFromHeuristicResultForTest(self):
+    heuristic_result = {
+        'failures': [
+            {
+                'step_name': 'step1',
+                'suspected_cls': [
+                    {
+                        'revision': 'r1',
+                    },
+                    {
+                        'revision': 'r2',
+                    },
+                ],
+            },
+            {
+                'step_name': 'step2',
+                'suspected_cls': [
+                    {
+                        'revision': 'r1',
+                    },
+                    {
+                        'revision': 'r3',
+                    },
+                ],
+            },
+        ]
+    }
+    expected_suspected_revisions = ['r1', 'r2', 'r3']
+    self.assertEqual(
+        expected_suspected_revisions,
+        try_job_util._GetSuspectsFromHeuristicResult(heuristic_result))

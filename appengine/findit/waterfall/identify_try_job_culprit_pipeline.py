@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import defaultdict
+
 from google.appengine.ext import ndb
 
 from common.git_repository import GitRepository
@@ -167,34 +169,30 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     return IdentifyTryJobCulpritPipeline._GetFailedRevisionFromResultsDict(
         report.get('result', {}))
 
-  def _FindCulpritForEachTestFailure(self, blame_list, result):
-    # For test failures, the try job will run against every revision,
-    # so we need to traverse the result dict in chronological order to identify
-    # the culprits for each failed step or test.
+  @staticmethod
+  def _GetCulpritsForTestsFromResultsDict(blame_list, test_results):
     culprit_map = {}
-    failed_revisions = []
+    failed_revisions = set()
+
     for revision in blame_list:
-      test_results = result['report'].get('result')
+      if not test_results.get(revision):
+        continue
 
       for step, test_result in test_results[revision].iteritems():
         if (not test_result['valid'] or
             test_result['status'] != 'failed'):  # pragma: no cover
           continue
 
-        if revision not in failed_revisions:
-          failed_revisions.append(revision)
+        failed_revisions.add(revision)
 
         if step not in culprit_map:
           culprit_map[step] = {
               'tests': {}
           }
-
         if (not test_result['failures'] and
             not culprit_map[step].get('revision')):
           # Non swarming test failures, only have step level failure info.
           culprit_map[step]['revision'] = revision
-          culprit_map[step]['repo_name'] = 'chromium'
-
         for failed_test in test_result['failures']:
           # Swarming tests, gets first failed revision for each test.
           if failed_test not in culprit_map[step]['tests']:
@@ -202,7 +200,36 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
                 'revision': revision
             }
 
-    return culprit_map, failed_revisions
+    return culprit_map, list(failed_revisions)
+
+  def _FindCulpritForEachTestFailure(self, blame_list, result):
+    # For test failures, we need to traverse the result dict in chronological
+    # order to identify the culprits for each failed step or test.
+    # The earliest revision that a test failed is the culprit.
+    culprit_map = defaultdict(dict)
+    failed_revisions = set()
+
+    # Recipe should return culprits with the farmat as:
+    # 'culprits': {
+    #     'step1': {
+    #         'test1': 'rev1',
+    #         'test2': 'rev2',
+    #         ...
+    #     },
+    #     ...
+    # }
+    if result['report'].get('culprits'):
+      for step_name, tests in result['report']['culprits'].iteritems():
+        culprit_map[step_name]['tests'] = {}
+        for test_name, revision in tests.iteritems():
+          culprit_map[step_name]['tests'][test_name] = {
+            'revision': revision
+          }
+          failed_revisions.add(revision)
+      return culprit_map, list(failed_revisions)
+
+    return IdentifyTryJobCulpritPipeline._GetCulpritsForTestsFromResultsDict(
+        blame_list, result['report'].get('result'))
 
   def _UpdateCulpritMapWithCulpritInfo(self, culprit_map, culprits):
     """Fills in commit_position and review url for each failed rev in map."""
@@ -211,6 +238,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
         culprit = culprits[step_culprit['revision']]
         step_culprit['commit_position'] = culprit['commit_position']
         step_culprit['url'] = culprit['url']
+        step_culprit['repo_name'] = culprit['repo_name']
       for test_culprit in step_culprit.get('tests', {}).values():
         test_revision = test_culprit['revision']
         test_culprit.update(culprits[test_revision])

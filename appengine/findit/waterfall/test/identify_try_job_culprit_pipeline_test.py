@@ -885,3 +885,48 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
                      result_status.FOUND_UNTRIAGED)
     self.assertEqual(analysis.suspected_cls, [suspected_cl])
     self.assertEqual(version, analysis.version)  # No update to analysis.
+
+  def testFindCulpritForEachTestFailureRevisionNotRun(self):
+    blame_list = ['rev1']
+    result = {
+        'report': {
+            'result': {
+                'rev2': 'passed'
+            }
+        }
+    }
+
+    pipeline = IdentifyTryJobCulpritPipeline()
+    culprit_map, failed_revisions = pipeline._FindCulpritForEachTestFailure(
+        blame_list, result)
+    self.assertEqual(culprit_map, {})
+    self.assertEqual(failed_revisions, [])
+
+  def testFindCulpritForEachTestFailureCulpritsReturned(self):
+    blame_list = ['rev1']
+    result = {
+        'report': {
+            'culprits': {
+                'a_tests': {
+                    'Test1': 'rev1'
+                }
+            }
+        }
+    }
+
+    pipeline = IdentifyTryJobCulpritPipeline()
+    culprit_map, failed_revisions = pipeline._FindCulpritForEachTestFailure(
+        blame_list, result)
+
+    expected_culprit_map = {
+        'a_tests': {
+            'tests': {
+                'Test1': {
+                    'revision': 'rev1'
+                }
+            }
+        }
+    }
+
+    self.assertEqual(culprit_map, expected_culprit_map)
+    self.assertEqual(failed_revisions, ['rev1'])

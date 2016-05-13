@@ -32,12 +32,13 @@ class ScheduleTryJobPipeline(BasePipeline):
       properties['target_buildername'] = builder_name
       if compile_targets:
         properties['compile_targets'] = compile_targets
-      if suspected_revisions:
-        properties['suspected_revisions'] = suspected_revisions
     else:  # try_job_type is 'test'.
       properties['target_testername'] = builder_name
       assert targeted_tests
       properties['tests'] = targeted_tests
+
+    if suspected_revisions:
+      properties['suspected_revisions'] = suspected_revisions
 
     return properties
 
