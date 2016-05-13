@@ -220,20 +220,19 @@ runOnLoad(function() {
      });
   }
 
-  window.userMadeChanges = false;
   var inputs = document.querySelectorAll('input[type~="text"], textarea');
   for (var i = 0; i < inputs.length; i++) {
     var el = inputs[[]i];
     el.addEventListener("input", function(event) {
       if (event.target.id != "searchq") {
-        userMadeChanges = true;
+        TKR_isDirty = true;
       }
     });
   }
 
   window.onbeforeunload = function() {
-    if (userMadeChanges || TKR_isDirty) {
-      return "You have unsaved changes. Leave this page and discard them?";
+    if (TKR_isDirty) {
+      return 1;  // Triggers a prompt dialog.
     }
   };
 

@@ -530,7 +530,8 @@ function TKR_dirty() {
  */
 function TKR_confirmDiscardUpdate(nextUrl) {
  if (!TKR_isDirty || confirm(TKR_DISCARD_YOUR_CHANGES)) {
-    document.location = nextUrl;
+  TKR_isDirty = false
+  document.location = nextUrl;
  }
 }
 
@@ -543,6 +544,7 @@ function TKR_confirmDiscardUpdate(nextUrl) {
  */
 function TKR_confirmDiscardEntry(discardButton) {
  if (!TKR_isDirty || confirm(TKR_DISCARD_YOUR_CHANGES)) {
+  TKR_isDirty = false
   TKR_go('list');
  }
 }
