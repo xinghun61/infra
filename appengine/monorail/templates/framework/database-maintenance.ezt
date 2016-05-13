@@ -8,6 +8,6 @@
 </head>
 <body>
   <h2>This bug tracker is currently unavailable due to database issues.</h2>
-  Please try again later.
+  Please <a href="[requested_url]">try again</a> later.
 </body>
 </html>

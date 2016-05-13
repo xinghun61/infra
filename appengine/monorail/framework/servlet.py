@@ -160,7 +160,15 @@ class Servlet(webapp2.RequestHandler):
 
       except MySQLdb.OperationalError as e:
         logging.exception(e)
-        self.redirect('/database-maintenance', abort=True)
+        page_data = {
+          'requested_url': self.request.url,
+        }
+        self.template = template_helpers.GetTemplate(
+            'templates/framework/database-maintenance.ezt',
+            eliminate_blank_lines=self._ELIMINATE_BLANK_LINES)
+        self.template.WriteResponse(
+          self.response, page_data, content_type='text/html')
+        return
 
     try:
       with self.profiler.Phase('parsing request and doing lookups'):
