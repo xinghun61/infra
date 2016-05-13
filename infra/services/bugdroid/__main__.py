@@ -3,10 +3,15 @@
 # found in the LICENSE file.
 
 import argparse
+import base64
 import collections
+import glob
+import httplib2
 import json
+import logging
 import os
 import sys
+import time
 import urlparse
 
 from infra.libs import git2
@@ -14,12 +19,80 @@ from infra.libs.service_utils import outer_loop
 from infra_libs import logs
 from infra_libs import ts_mon
 from infra.services.bugdroid import bugdroid
+from oauth2client.client import OAuth2Credentials
 
 
 # TODO(sheyang): move to cloud
 DIRBASE = os.path.splitext(os.path.basename(__file__))[0]
 DATADIR = os.path.join(os.environ.get('HOME', ''), 'appdata', DIRBASE)
-LOGDIR = os.path.join(DATADIR, 'logs')
+
+
+DATA_URL = 'https://bugdroid-data.appspot.com/_ah/api/bugdroid/v1/data'
+
+
+def get_data(http):
+  logging.info('Getting data from datastore...')
+  retry_count = 5
+  success = False
+  for i in xrange(retry_count):
+    resp, content = http.request(DATA_URL,
+                                 headers={'Content-Type':'application/json'})
+    if resp.status >= 400:
+      logging.warning('Failed to get data in retry %d. Status: %d.',
+                      i, resp.status)
+      time.sleep(i)
+      continue
+    data_json = json.loads(content)
+    data_files = json.loads(data_json['data_files'])
+    for data_file in data_files:
+      content = base64.b64decode(data_file['file_content'])
+      file_path = os.path.join(DATADIR, data_file['file_name'])
+
+      # Bit map for gerrit
+      if data_file['file_name'].endswith('.seen'):
+        with open(file_path, "wb") as binary_file:
+          binary_file.write(content)
+      else:
+        with open(file_path, "w") as text_file:
+          text_file.write(content)
+    success = True
+    break
+  return success
+
+
+def update_data(http):
+  logging.info('Updating data to datastore...')
+  result = []
+  for data_file in os.listdir(DATADIR):
+    if os.path.isdir(data_file):
+      continue
+    file_dict = {}
+    file_dict['file_name'] = data_file
+    file_path = os.path.join(DATADIR, data_file)
+    # binary
+    if data_file.endswith('.seen'):
+      with open(file_path, "rb") as binary_file:
+        file_dict['file_content'] = base64.b64encode(binary_file.read())
+    else:
+      with open(file_path, "r") as text_file:
+        file_dict['file_content'] = base64.b64encode(text_file.read())
+    result.append(file_dict)
+
+  data_files = json.dumps(result)
+  retry_count = 5
+  success = False
+  for i in xrange(retry_count):
+    resp, _ = http.request(
+        DATA_URL, "POST", body=json.dumps({'data_files': data_files}),
+        headers={'Content-Type': 'application/json'})
+    if resp.status >= 400:
+      logging.warning('Failed to update data in retry %d. Status: %d.',
+                      i, resp.status)
+      time.sleep(i)
+      continue
+    success = True
+    break
+  return success
 
 
 def parse_args(args):  # pragma: no cover
@@ -53,6 +126,21 @@ def parse_args(args):  # pragma: no cover
 def main(args):  # pragma: no cover
   opts, loop_opts = parse_args(args)
 
+  with open(opts.credentials_db) as data_file:    
+    creds_data = json.load(data_file)
+
+  credentials = OAuth2Credentials(
+      None, creds_data['client_id'], creds_data['client_secret'],
+      creds_data['refresh_token'], None,
+      'https://accounts.google.com/o/oauth2/token',
+      'python-issue-tracker-manager/2.0')
+  http = httplib2.Http()
+  http = credentials.authorize(http)
+
+  if not get_data(http):
+    logging.error('Failed to get data files.')
+    return 1
+
   def outer_loop_iteration():
     return bugdroid.inner_loop(opts)
 
@@ -60,6 +148,10 @@ def main(args):  # pragma: no cover
       task=outer_loop_iteration,
       sleep_timeout=lambda: 5.0,
       **loop_opts)
+
+  if not update_data(http):
+    logging.error('Failed to update data files.')
+    return 1
 
   return 0 if loop_results.success else 1
 

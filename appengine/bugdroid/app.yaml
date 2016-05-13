@@ -1,0 +1,14 @@
+application: bugdroid-data
+runtime: python27
+api_version: 1
+threadsafe: true
+instance_class: F4
+
+handlers:
+- url: /_ah/spi/.*
+  secure: always
+  script: bugdroidapp.endpoint_list
+
+libraries:
+- name: endpoints
+  version: 1.0
