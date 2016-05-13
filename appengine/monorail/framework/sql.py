@@ -18,11 +18,15 @@ if not settings.unit_test_mode:
 
 from framework import framework_helpers
 
+from infra_libs import ts_mon
 
 # MonorailConnection maintains a dictionary of connections to SQL databases.
 # Each is identified by an int shard ID.
 # And there is one connection to the master DB identified by key MASTER_CNXN.
 MASTER_CNXN = 'master_cnxn'
+
+CONNECTION_COUNT = ts_mon.CounterMetric(
+    'monorail/sql/connection_count')
 
 
 @framework_helpers.retry(2, delay=1, backoff=2)
@@ -30,13 +34,18 @@ def MakeConnection(instance, database):
   logging.info('About to connect to SQL instance %r db %r', instance, database)
   if settings.unit_test_mode:
     raise ValueError('unit tests should not need real database connections')
-  if settings.dev_mode:
-    cnxn = MySQLdb.connect(
-      host='127.0.0.1', port=3306, db=database, user='root', charset='utf8')
-  else:
-    cnxn = MySQLdb.connect(
-      unix_socket='/cloudsql/' + instance, db=database, user='root',
-      charset='utf8')
+  try:
+    if settings.dev_mode:
+      cnxn = MySQLdb.connect(
+        host='127.0.0.1', port=3306, db=database, user='root', charset='utf8')
+    else:
+      cnxn = MySQLdb.connect(
+        unix_socket='/cloudsql/' + instance, db=database, user='root',
+        charset='utf8')
+    CONNECTION_COUNT.increment({'success': True})
+  except MySQLdb.OperationalError:
+    CONNECTION_COUNT.increment({'success': False})
+    raise
   return cnxn
 
 
