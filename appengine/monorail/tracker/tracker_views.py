@@ -329,9 +329,10 @@ class IssueCommentView(template_helpers.PBProxy):
 
     self.attachments = [AttachmentView(attachment, project_name)
                         for attachment in comment_pb.attachments]
-    self.amendments = [
+    self.amendments = sorted([
         AmendmentView(amendment, users_by_id, mr.project_name)
-        for amendment in comment_pb.amendments]
+        for amendment in comment_pb.amendments],
+        key=lambda amendment: amendment.field_name.lower())
     # Treat comments from banned users as being deleted.
     self.is_deleted = (comment_pb.deleted_by or
                        (self.creator and self.creator.banned))
