@@ -159,12 +159,11 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
     parsed = parse_protobuf(result['content'].split('\n'))
     return parsed
 
-  def _checkout_projects(self, all_projects, root_dir, url_mapping,
+  def _checkout_projects(self, root_dir, url_mapping, deps,
                         downstream_projects, patches):
-    """Checks out projects listed in all_projects into root_dir.
+    """Checks out projects listed in projects into root_dir.
 
     Args:
-      all_projects: All the projects we care about.
       root_dir: Root directory to check this project out in.
       url_mapping: Project id to url of git repository.
       downstream_projects: The mapping from project to dependent projects.
@@ -178,7 +177,7 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
     # All the projects we want to test.
     projs_to_test  = set()
     # Projects we need to look at dependencies for.
-    queue = set(all_projects)
+    queue = set(patches.keys())
     # luci config project name to file system path of the checkout
     locations = {}
 
@@ -189,8 +188,10 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
             proj, url_mapping[proj], root_dir, patches.get(proj))
         projs_to_test.add(proj)
 
-      for downstream in downstream_projects[proj]:
+        for downstream in downstream_projects[proj]:
           queue.add(downstream)
+        for upstream in deps[proj]:
+          queue.add(upstream)
 
     return projs_to_test, locations
 
@@ -295,7 +296,7 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
     deps, downstream_projects = get_deps_info(all_projects, recipe_configs)
 
     projs_to_test, locations = self._checkout_projects(
-        all_projects, root_dir, url_mapping, downstream_projects, patches)
+        root_dir, url_mapping, deps, downstream_projects, patches)
 
     with self.m.step.defer_results():
       for proj in projs_to_test:
