@@ -2,9 +2,9 @@
 
 ## What (is it)?
 
-It's a service (aka a bot) that commits rietveld changes for you, instead of
-you directly committing the change. We support a wide variety of projects
-already and can support your project too (see [internal docs]).
+It's a service (aka a bot) that commits Rietveld and Gerrit changes for you,
+instead of you directly committing the change. We support a wide variety of
+projects already and can support your project too (see [internal docs]).
 
 For enabled projects, we display a CQ checkbox/button on Rietveld interface.
 
