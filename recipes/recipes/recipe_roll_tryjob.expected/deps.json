@@ -176,6 +176,12 @@
       "{}",
       "--git-cache-dir",
       "[SLAVE_BUILD]/__cache_dir",
+      "--issue",
+      "123456",
+      "--patchset",
+      "1",
+      "--rietveld_server",
+      "https://fake.code.review",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -187,7 +193,7 @@
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
-    "name": "bot_update (without patch) - recipe_engine",
+    "name": "bot_update - recipe_engine",
     "~followup_annotations": [
       "@@@STEP_TEXT@Some step text@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",

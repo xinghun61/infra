@@ -127,7 +127,9 @@ def GenTests(api):
           api.recipe_tryjob.make_recipe_config('build', ['recipe_engine'])) +
       api.luci_config.get_project_config(
           'recipe_engine', 'recipes.cfg',
-          api.recipe_tryjob.make_recipe_config('recipe_engine'))
+          api.recipe_tryjob.make_recipe_config('recipe_engine')) +
+      api.properties(
+          patches="recipe_engine:https://fake.code.review/123456#ps1")
   )
 
   yield (
@@ -139,6 +141,23 @@ def GenTests(api):
         patch_project="build",
       ) +
       api.luci_config.get_projects(('recipe_engine', 'build')) +
+      api.luci_config.get_project_config(
+          'build', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config('build', ['recipe_engine'])) +
+      api.luci_config.get_project_config(
+          'recipe_engine', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config('recipe_engine'))
+  )
+
+  yield (
+      api.test('tryjob_dont_test_untouched_code') +
+      api.properties(
+        rietveld="https://fake.code.review",
+        issue='12345678',
+        patchset='1',
+        patch_project="build",
+      ) +
+      api.luci_config.get_projects(('recipe_engine', 'build', 'foobar')) +
       api.luci_config.get_project_config(
           'build', 'recipes.cfg',
           api.recipe_tryjob.make_recipe_config('build', ['recipe_engine'])) +
