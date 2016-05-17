@@ -87,12 +87,12 @@ function readGetParameter(name) {
   }
   // Location starts with "?".
   data = data.substr(1);
-  var parameters = data.split('&');
-  var foundElement = parameters.find( (parameter) => {
-    return parameter.indexOf(begin) == 0;
-  });
-  if (foundElement) {
-    return decodeURIComponent(foundElement.substr(begin.length));
+  var parameters = data.split("&");
+  for (var index = 0; index < parameters.length; index++) {
+    var parameter = parameters[index];
+    if (parameter.indexOf(begin) == 0)
+      return decodeURIComponent(
+          parameter.substring(begin.length));
   }
   return null;
 }
