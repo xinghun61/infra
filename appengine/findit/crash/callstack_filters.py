@@ -4,21 +4,28 @@
 
 import re
 
+from crash.callstack import CallStack
 
-def FilterFramesBeforeSignature(callstack, signature):
-  """Filter all the stack frames before the signature frame.
 
-  Note: The callstack is filtered in place.
+_INLINE_FUNCTION_FILE_PATH_MARKERS = [
+    'third_party/llvm-build/Release+Asserts/include/c++/v1/',
+    'linux/debian_wheezy_amd64-sysroot/usr/include/c++/4.6/bits/',
+    'eglibc-3GlaMS/eglibc-2.19/sysdeps/unix/',
+]
+
+
+def FilterInlineFunctionFrames(callstack):
+  """Filters all the stack frames with inline function file paths.
+
+  File paths for inline functions are not the oringinal file paths. They
+  should be filtered out.
   """
-  if not signature:
-    return
+  def _IsNonInlineFunctionFrame(frame):
+    for path_marker in _INLINE_FUNCTION_FILE_PATH_MARKERS:
+      if path_marker in frame.file_path:
+        return False
 
-  signature_frame_index = 0
-  # Filter out the types of signature, for example [Out of Memory].
-  signature = re.sub('[[][^]]*[]]\s*', '', signature)
+    return True
 
-  for index, frame in enumerate(callstack):
-    if signature in frame.function:
-      signature_frame_index = index
-
-  callstack[:] = callstack[signature_frame_index:]
+  return CallStack(callstack.priority, callstack.format_type,
+                   filter(_IsNonInlineFunctionFrame, callstack))

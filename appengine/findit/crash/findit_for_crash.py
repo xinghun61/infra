@@ -235,7 +235,7 @@ def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps):
 
   # We are only interested in the deps in crash stack (the callstack that
   # caused the crash).
-  stack_deps = GetDepsInCrashStack(stacktrace.GetCrashStack(), crashed_deps)
+  stack_deps = GetDepsInCrashStack(stacktrace.crash_stack, crashed_deps)
 
   # Get dep and file to changelogs, stack_info and blame dicts.
   dep_to_file_to_changelogs, ignore_cls = GetChangeLogsForFilesGroupedByDeps(

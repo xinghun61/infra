@@ -70,7 +70,7 @@ class FracasParserTest(StacktraceTestSuite):
 
         CRASHED [EXC @ 0x508]
         #0 0x8fee in e::f::g(p* &d) src/f.cc:20:2
-        #0 0x1fae in h::i::j(p* &d) src/ff.cc:9:1
+        #1 0x1fae in h::i::j(p* &d) src/ff.cc:9:1
         """
     )
 
@@ -84,7 +84,7 @@ class FracasParserTest(StacktraceTestSuite):
     expected_callstack1 = CallStack(0)
     expected_callstack1.extend(
         [StackFrame(0, 'src/', '', 'e::f::g(p* &d)', 'f.cc', [20, 21, 22]),
-         StackFrame(0, 'src/', '', 'h::i::j(p* &d)', 'ff.cc', [9, 10])])
+         StackFrame(1, 'src/', '', 'h::i::j(p* &d)', 'ff.cc', [9, 10])])
 
     expected_stacktrace = Stacktrace()
     expected_stacktrace.extend([expected_callstack0, expected_callstack1])

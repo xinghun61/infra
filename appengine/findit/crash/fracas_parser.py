@@ -5,7 +5,7 @@
 import re
 
 from crash.callstack import CallStack
-from crash.callstack_filters import FilterFramesBeforeSignature
+from crash.callstack_filters import FilterInlineFunctionFrames
 from crash.stacktrace import Stacktrace
 from crash.stacktrace_parser import StacktraceParser
 from crash.type_enums import CallStackFormatType
@@ -21,7 +21,7 @@ class FracasParser(StacktraceParser):
 
   def Parse(self, stacktrace_string, deps, signature=None):
     """Parse fracas stacktrace string into Stacktrace instance."""
-    stacktrace = Stacktrace()
+    stacktrace = Stacktrace(signature=signature)
     callstack = CallStack(_INFINITY_PRIORITY)
 
     for line in stacktrace_string.splitlines():
@@ -42,7 +42,9 @@ class FracasParser(StacktraceParser):
       stacktrace.append(callstack)
 
     # Filter all the frames before signature frame.
-    FilterFramesBeforeSignature(stacktrace.GetCrashStack(), signature)
+    if stacktrace:
+      stacktrace = Stacktrace(map(FilterInlineFunctionFrames, stacktrace))
+
     return stacktrace
 
   def _IsStartOfNewCallStack(self, line):

@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import copy
-
 from crash.callstack import StackFrame, CallStack
 from crash import callstack_filters
 from crash.test.stacktrace_test_suite import StacktraceTestSuite
@@ -11,27 +9,26 @@ from crash.test.stacktrace_test_suite import StacktraceTestSuite
 
 class CallStackFiltersTest(StacktraceTestSuite):
 
-  def testEmptyFilterFramesBeforeSignature(self):
-    callstack = CallStack(0)
-    filtered_callstack = copy.copy(callstack)
-    callstack_filters.FilterFramesBeforeSignature(filtered_callstack, '')
+  def testFilterInlineFunctionFrames(self):
+    frame_list = [
+        StackFrame(
+            0, '', 'src/', 'normal_func', 'f.cc', [2]),
+        StackFrame(
+            0, '', 'src/', 'inline_func',
+            'third_party/llvm-build/Release+Asserts/include/c++/v1/a', [1]),
+        StackFrame(
+            0, '', 'src/', 'inline_func',
+            'linux/debian_wheezy_amd64-sysroot/usr/include/c++/4.6/bits/b',
+            [1]),
+        StackFrame(
+            0, '', 'src/', 'inline_func',
+            'eglibc-3GlaMS/eglibc-2.19/sysdeps/unix/c', [1])
+    ]
 
-    self._VerifyTwoCallStacksEqual(callstack, filtered_callstack)
+    expected_frame_list = frame_list[:1]
 
-  def testFilterFramesBeforeSignature(self):
-    callstack = CallStack(0)
-    callstack.extend(
-        [StackFrame(0, 'src/', '', 'func', 'file0.cc', [32]),
-         StackFrame(0, 'src/', '', 'signature_func', 'file1.cc', [53]),
-         StackFrame(0, 'src/', '', 'funcc', 'file2.cc', [3])])
+    self._VerifyTwoCallStacksEqual(
+        callstack_filters.FilterInlineFunctionFrames(
+            CallStack(0, frame_list=frame_list)),
+        CallStack(0, frame_list=expected_frame_list))
 
-    filtered_callstack = copy.copy(callstack)
-    callstack_filters.FilterFramesBeforeSignature(
-        filtered_callstack, 'signature')
-
-    expected_callstack = CallStack(0)
-    expected_callstack.extend(
-        [StackFrame(0, 'src/', '', 'signature_func', 'file1.cc', [53]),
-         StackFrame(0, 'src/', '', 'funcc', 'file2.cc', [3])])
-
-    self._VerifyTwoCallStacksEqual(filtered_callstack, expected_callstack)
