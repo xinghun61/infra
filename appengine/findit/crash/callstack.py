@@ -14,7 +14,7 @@ CALLSTACK_FORMAT_TO_PATTERN = {
     CallStackFormatType.SYZYASAN: re.compile(
         r'(CF: )?(.*?)( \(FPO: .*\) )?( \(CONV: .*\) )?\[(.*) @ (\d+)\]'),
     CallStackFormatType.DEFAULT: re.compile(
-        r'([^:]*):(\d+)(:\d+)?$')
+        r'(.*):(\d+)(:\d+)?$')
 }
 
 
@@ -78,9 +78,11 @@ class CallStack(list):
       '#0 0x32b5982 in get third_party/WebKit/Source/wtf/RefPtr.h:61:43'
     language_type (CallStackLanguageType): Either CPP or JAVA language.
   """
-  def __init__(self, stack_priority, format_type=CallStackFormatType.DEFAULT):
-    super(CallStack, self).__init__()
-    self.priority = stack_priority
+  def __init__(self, priority, format_type=CallStackFormatType.DEFAULT,
+               frame_list=None):
+    super(CallStack, self).__init__(frame_list or [])
+
+    self.priority = priority
     self.format_type = format_type
     self.language_type = parse_util.GetLanguageTypeFromFormatType(format_type)
 

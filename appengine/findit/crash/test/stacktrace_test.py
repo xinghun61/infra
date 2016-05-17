@@ -4,11 +4,10 @@
 
 from crash.callstack import CallStack
 from crash.stacktrace import Stacktrace
+from crash.test.crash_test_suite import CrashTestSuite
 
-from testing_utils import testing
 
-
-class StacktraceTest(testing.AppengineTestCase):
+class StacktraceTest(CrashTestSuite):
 
   def testGetCrashStack(self):
     stack_trace = Stacktrace()
@@ -17,4 +16,11 @@ class StacktraceTest(testing.AppengineTestCase):
     callstack_list = [CallStack(0), CallStack(1)]
     stack_trace.extend(callstack_list)
 
-    self.assertEqual(stack_trace.GetCrashStack(), callstack_list[0])
+    self._VerifyTwoCallStacksEqual(stack_trace.GetCrashStack(),
+                                   callstack_list[0])
+
+  def testInitStacktaceByCopyAnother(self):
+    stack_trace = Stacktrace()
+    stack_trace.extend([CallStack(0), CallStack(1)])
+
+    self._VerifyTwoStacktracesEqual(Stacktrace(stack_trace), stack_trace)

@@ -21,6 +21,13 @@ class CallStackTest(StacktraceTestSuite):
         StackFrame(0, 'src/', '', 'func', 'f.cc', [1, 2, 3, 4]).ToString(),
         '#0 in func @ f.cc:1:3')
 
+  def testFrameListInitCallStack(self):
+    stack = CallStack(0)
+    stack.extend([StackFrame(0, 'src/', '', 'func', 'f.cc', [2])])
+
+    copy_stack = CallStack(stack.priority, frame_list=stack)
+    self._VerifyTwoCallStacksEqual(copy_stack, stack)
+
   def testParseLineForJavaCallstackFormat(self):
     stack = CallStack(0, CallStackFormatType.JAVA)
 
