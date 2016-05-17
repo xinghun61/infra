@@ -80,6 +80,25 @@ class FracasCrashPipelineTest(CrashTestCase):
             {}, None, None, 'fracas', 'unsupported_platform',
             None, 'unsupported_channel',  None))
 
+  def testBlackListSignatureSipped(self):
+    self.assertFalse(
+        fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
+            {}, None, '[Android Java Exception] signature', 'fracas', 'win',
+            None, 'canary',  None))
+
+  def testPlatformRename(self):
+    def _MockNeedsNewAnalysis(*args):
+      self.assertEqual(args,
+                       ({}, None, 'signature', 'fracas', 'unix', None,
+                        'canary', None))
+      return False
+
+    self.mock(fracas_crash_pipeline, '_NeedsNewAnalysis', _MockNeedsNewAnalysis)
+
+    fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
+        {}, None, 'signature', 'fracas', 'linux',
+        None, 'canary',  None)
+
   def testNoAnalysisNeeded(self):
     chrome_version = '1'
     signature = 'signature'

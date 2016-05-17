@@ -14,7 +14,7 @@ DEFAULT_CONFIG_DATA = {
     'fracas': {
         'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
         'supported_platform_list_by_channel': {
-            'canary': ['win', 'mac'],
+            'canary': ['win', 'mac', 'linux'],
             'supported_channel': ['supported_platform'],
         },
     }

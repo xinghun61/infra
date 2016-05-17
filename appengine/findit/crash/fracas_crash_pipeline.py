@@ -20,6 +20,11 @@ from model.crash.crash_config import CrashConfig
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 
+# TODO(katesonia): Move these to config page.
+_SIGNATURE_BLACKLIST_MARKERS = ['[Android Java Exception]']
+_PLATFORM_RENAME = {'linux': 'unix'}
+
+
 class FracasBasePipeline(BasePipeline):
   def __init__(self, crash_identifiers):
     super(FracasBasePipeline, self).__init__(crash_identifiers)
@@ -108,6 +113,8 @@ def _NeedsNewAnalysis(
     # A new analysis is not needed if last one didn't complete or succeeded.
     # TODO(http://crbug.com/600535): re-analyze if stack trace or regression
     # range changed.
+    logging.info('The analysis of %s has already been done.',
+                 repr(crash_identifiers))
     return False
 
   if not analysis:
@@ -145,7 +152,20 @@ def ScheduleNewAnalysisForCrash(
   if platform not in crash_config.fracas.get(
       'supported_platform_list_by_channel', {}).get(channel, []):
     # Bail out if either the channel or platform is not supported yet.
+    logging.info('Ananlysis of channel %s, platform %s is not supported. '
+                 'No analysis is scheduled for %s',
+                 channel, platform, repr(crash_identifiers))
     return False
+
+  for blacklist_marker in _SIGNATURE_BLACKLIST_MARKERS:
+    if blacklist_marker in signature:
+      logging.info('%s signature is not supported. '
+                   'No analysis is scheduled for %s', blacklist_marker,
+                   repr(crash_identifiers))
+      return False
+
+  if platform in _PLATFORM_RENAME:
+    platform = _PLATFORM_RENAME[platform]
 
   if _NeedsNewAnalysis(crash_identifiers, chrome_version, signature, client_id,
                        platform, stack_trace, channel, historic_metadata):
