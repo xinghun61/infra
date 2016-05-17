@@ -261,6 +261,7 @@ class GitRepository(Repository):
                                 start_revision, next_end_revision)
       data = self._SendRequestForJsonResponse(url, params={'n': str(n),
                                                            'name-status': '1'})
+
       for log in data['log']:
         changelogs.append(self._ParseChangeLogFromLogData(log))
 

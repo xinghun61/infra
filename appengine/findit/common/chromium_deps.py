@@ -82,7 +82,7 @@ def GetChromeDependency(revision, platform, check_deps_git_first=False):
     # instead of chromium trunk.
     deps_repo_info['deps_repo_url'] = _BUILDSPEC_REPO
     deps_repo_info['deps_repo_revision'] = 'master'
-    deps_repo_info['deps_file'] = 'release/%s/DEPS' % revision
+    deps_repo_info['deps_file'] = 'releases/%s/DEPS' % revision
 
   root_dep = dependency.Dependency(
       _CHROMIUM_ROOT_DIR, _CHROMIUM_REPO_MASTER, revision, **deps_repo_info)
@@ -99,6 +99,9 @@ def GetChromeDependency(revision, platform, check_deps_git_first=False):
       FlattenDepTree(child)
 
   FlattenDepTree(root_dep)
+
+  # Make sure that DEPS file in buildspec/ overwrite the chromium repo.
+  dependencies[_CHROMIUM_ROOT_DIR] = root_dep
 
   return dependencies
 
@@ -166,6 +169,7 @@ def GetDEPSRollsDict(old_cr_revision, new_cr_revision, platform):
                                     skip_chromium_roll=False)
 
   deps_rolls_dict = {}
+
   for dep_roll in deps_rolls:
     deps_rolls_dict[dep_roll.path] = dep_roll
 
