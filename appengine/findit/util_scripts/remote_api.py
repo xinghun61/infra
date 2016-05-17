@@ -18,6 +18,7 @@ import sys
 
 
 _FINDIT_ROOT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir)
+_THIRD_PARTY_DIR = os.path.join(_FINDIT_ROOT_DIR, 'third_party')
 _APPNGINE_SDK_DIR = os.path.join(_FINDIT_ROOT_DIR, os.path.pardir,
                                  os.path.pardir, os.path.pardir,
                                  'google_appengine')
@@ -25,6 +26,7 @@ _APPNGINE_SDK_DIR = os.path.join(_FINDIT_ROOT_DIR, os.path.pardir,
 
 # Add App Engine SDK dir to sys.path.
 sys.path.insert(1, _APPNGINE_SDK_DIR)
+sys.path.insert(1, _THIRD_PARTY_DIR)
 import dev_appserver
 dev_appserver.fix_sys_path()
 
