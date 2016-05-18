@@ -31,7 +31,17 @@ TEST_ID_MAP = {
     'mike.j.parent': 1,
     'jrobbins': 2,
     'ningerso': 3,
+    'ui@example.com': 4,
+    'db@example.com': 5,
+    'ui-db@example.com': 6,
     }
+
+TEST_LABEL_IDS = {
+  'i18n': 1,
+  'l10n': 2,
+  'Priority-High': 3,
+  'Priority-Medium': 4,
+  }
 
 
 class MockTaskQueue(object):
@@ -208,15 +218,17 @@ class FilterRulesHelpersTest(unittest.TestCase):
 
   def setUp(self):
     self.cnxn = 'fake cnxn'
-    self.services = service_manager.Services()
-    self.services.user = fake.UserService()
-    self.services.project = fake.ProjectService()
-    self.services.issue = fake.IssueService()
+    self.services = service_manager.Services(
+        user=fake.UserService(),
+        project=fake.ProjectService(),
+        issue=fake.IssueService(),
+        config=fake.ConfigService())
     self.project = self.services.project.TestAddProject('proj', project_id=789)
     self.other_project = self.services.project.TestAddProject(
         'otherproj', project_id=890)
     for email, user_id in TEST_ID_MAP.iteritems():
       self.services.user.TestAddUser(email, user_id)
+    self.services.config.TestAddLabelsDict(TEST_LABEL_IDS)
 
   def testApplyRule(self):
     cnxn = 'fake sql connection'
@@ -303,7 +315,89 @@ class FilterRulesHelpersTest(unittest.TestCase):
             cnxn, self.services, rule, predicate_ast, issue, {'a', 'b'},
             config))
 
-  def testComputeDerivedFields(self):
+  def testComputeDerivedFields_Components(self):
+    cnxn = 'fake sql connection'
+    rules = []
+    component_defs = [
+      tracker_bizobj.MakeComponentDef(
+        10, 789, 'DB', 'database', False, [],
+        [TEST_ID_MAP['db@example.com'],
+         TEST_ID_MAP['ui-db@example.com']],
+        0, 0,
+        label_ids=[TEST_LABEL_IDS['i18n'],
+                   TEST_LABEL_IDS['Priority-High']]),
+      tracker_bizobj.MakeComponentDef(
+        20, 789, 'Install', 'installer', False, [],
+        [], 0, 0),
+      tracker_bizobj.MakeComponentDef(
+        30, 789, 'UI', 'doc', False, [],
+        [TEST_ID_MAP['ui@example.com'],
+         TEST_ID_MAP['ui-db@example.com']],
+        0, 0,
+        label_ids=[TEST_LABEL_IDS['i18n'],
+                   TEST_LABEL_IDS['l10n'],
+                   TEST_LABEL_IDS['Priority-Medium']]),
+      ]
+    excl_prefixes = ['Priority', 'type', 'milestone']
+    config = tracker_pb2.ProjectIssueConfig(
+        exclusive_label_prefixes=excl_prefixes,
+        component_defs=component_defs)
+    predicate_asts = filterrules_helpers.ParsePredicateASTs(rules, config, None)
+
+    # No components.
+    issue = fake.MakeTestIssue(
+        789, 1, ORIG_SUMMARY, 'New', 0L, labels=ORIG_LABELS)
+    self.assertEquals(
+        (0, '', [], [], []),
+        filterrules_helpers._ComputeDerivedFields(
+            cnxn, self.services, issue, config, rules, predicate_asts))
+
+    # One component, no CCs or labels added
+    issue.component_ids = [20]
+    issue = fake.MakeTestIssue(
+        789, 1, ORIG_SUMMARY, 'New', 0L, labels=ORIG_LABELS)
+    self.assertEquals(
+        (0, '', [], [], []),
+        filterrules_helpers._ComputeDerivedFields(
+            cnxn, self.services, issue, config, rules, predicate_asts))
+
+    # One component, some CCs and labels added
+    issue = fake.MakeTestIssue(
+        789, 1, ORIG_SUMMARY, 'New', 0L, labels=ORIG_LABELS,
+        component_ids=[10])
+    self.assertEquals(
+        (0, '', 
+         [TEST_ID_MAP['db@example.com'], TEST_ID_MAP['ui-db@example.com']],
+         ['i18n', 'Priority-High'], []),
+        filterrules_helpers._ComputeDerivedFields(
+            cnxn, self.services, issue, config, rules, predicate_asts))
+
+    # One component, CCs and labels not added because of labels on the issue.
+    issue = fake.MakeTestIssue(
+        789, 1, ORIG_SUMMARY, 'New', 0L, labels=['Priority-Low', 'i18n'],
+        component_ids=[10])
+    issue.cc_ids = [TEST_ID_MAP['db@example.com']]
+    self.assertEquals(
+        (0, '',
+         [TEST_ID_MAP['ui-db@example.com']],
+         [], []),
+        filterrules_helpers._ComputeDerivedFields(
+            cnxn, self.services, issue, config, rules, predicate_asts))
+
+    # Multiple components, added CCs treated as a set, exclusive labels in later
+    # components take priority over earlier ones.
+    issue = fake.MakeTestIssue(
+        789, 1, ORIG_SUMMARY, 'New', 0L, labels=ORIG_LABELS,
+        component_ids=[10, 30])
+    self.assertEquals(
+        (0, '',
+         [TEST_ID_MAP['db@example.com'], TEST_ID_MAP['ui-db@example.com'],
+          TEST_ID_MAP['ui@example.com']],
+         ['i18n', 'l10n', 'Priority-Medium'], []),
+        filterrules_helpers._ComputeDerivedFields(
+            cnxn, self.services, issue, config, rules, predicate_asts))
+
+  def testComputeDerivedFields_Rules(self):
     cnxn = 'fake sql connection'
     rules = [
         filterrules_helpers.MakeRule(
@@ -318,7 +412,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
         filterrules_helpers.MakeRule(
             'Size=L', default_owner_id=444L),
         ]
-    excl_prefixes = ['priority', 'type', 'milestone']
+    excl_prefixes = ['Priority', 'type', 'milestone']
     config = tracker_pb2.ProjectIssueConfig(
         exclusive_label_prefixes=excl_prefixes)
     predicate_asts = filterrules_helpers.ParsePredicateASTs(rules, config, None)

@@ -12,11 +12,15 @@ import mox
 from google.appengine.api import app_identity
 from third_party import ezt
 
+from framework import framework_views
 from framework import gcs_helpers
 from framework import urls
 from proto import project_pb2
 from proto import tracker_pb2
+from services import service_manager
+from testing import fake
 from testing import testing_helpers
+from tracker import tracker_bizobj
 from tracker import tracker_views
 
 
@@ -366,7 +370,39 @@ class AmendmentViewTest(unittest.TestCase):
 
 
 class ComponentDefViewTest(unittest.TestCase):
-  pass  # TODO(jrobbins): write tests
+  def setUp(self):
+    self.services = service_manager.Services(
+        user=fake.UserService(),
+        config=fake.ConfigService())
+    self.services.user.TestAddUser('admin@example.com', 111L)
+    self.services.user.TestAddUser('cc@example.com', 222L)
+    self.users_by_id = framework_views.MakeAllUserViews(
+      'cnxn', self.services.user, [111L, 222L])
+    self.services.config.TestAddLabelsDict({'Hot': 1, 'Cold': 2})
+    self.cd = tracker_bizobj.MakeComponentDef(
+      10, 789, 'UI', 'User interface', False,
+      [111L], [222L], 0, 111L, label_ids=[1, 2])
+
+  def testRootComponent(self):
+    view = tracker_views.ComponentDefView(
+       'cnxn', self.services, self.cd, self.users_by_id)
+    self.assertEquals('', view.parent_path)
+    self.assertEquals('UI', view.leaf_name)
+    self.assertEquals('User interface', view.docstring_short)
+    self.assertEquals('admin@example.com', view.admins[0].email)
+    self.assertEquals(['Hot', 'Cold'], view.labels)
+    self.assertEquals('all toplevel active ', view.classes)
+
+  def testNestedComponent(self):
+    self.cd.path = 'UI>Dialogs>Print'
+    view = tracker_views.ComponentDefView(
+       'cnxn', self.services, self.cd, self.users_by_id)
+    self.assertEquals('UI>Dialogs', view.parent_path)
+    self.assertEquals('Print', view.leaf_name)
+    self.assertEquals('User interface', view.docstring_short)
+    self.assertEquals('admin@example.com', view.admins[0].email)
+    self.assertEquals(['Hot', 'Cold'], view.labels)
+    self.assertEquals('all active ', view.classes)
 
 
 class ComponentValueTest(unittest.TestCase):

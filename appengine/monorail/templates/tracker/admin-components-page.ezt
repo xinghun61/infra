@@ -57,6 +57,7 @@
        <th>Name</th>
        <th>Administrators</th>
        <th>Auto Cc</th>
+       <th>Add Labels</th>
        <th>Description</th>
      </tr>
      [if-any component_defs][else]
@@ -87,6 +88,11 @@
          <td>
            [for component_defs.cc]
              [include "../framework/user-link.ezt" component_defs.cc][if-index component_defs.cc last][else],[end]
+           [end]
+         </td>
+         <td>
+           [for component_defs.labels]
+             [component_defs.labels][if-index component_defs.labels last][else],[end]
            [end]
          </td>
          <td>

@@ -271,6 +271,18 @@ def FindAncestorComponents(config, component_def):
           if path_lower.startswith(cd.path.lower() + '>')]
 
 
+def GetIssueComponentsAndAncestors(issue, config):
+  """Return a list of all the components that an issue is in."""
+  result = set()
+  for component_id in issue.component_ids:
+    cd = FindComponentDefByID(component_id, config)
+    ancestors = FindAncestorComponents(config, cd)
+    result.add(cd)
+    result.update(ancestors)
+
+  return sorted(result, key=lambda cd: cd.path)
+
+
 def FindDescendantComponents(config, component_def):
   """Return a list of all nested components under the given component."""
   path_plus_delim = component_def.path.lower() + '>'
@@ -280,13 +292,14 @@ def FindDescendantComponents(config, component_def):
 
 def MakeComponentDef(
     component_id, project_id, path, docstring, deprecated, admin_ids, cc_ids,
-    created, creator_id, modified=None, modifier_id=None):
+    created, creator_id, modified=None, modifier_id=None, label_ids=None):
   """Make a ComponentDef PB for the given FieldDef table row tuple."""
   cd = tracker_pb2.ComponentDef(
       component_id=component_id, project_id=project_id, path=path,
       docstring=docstring, deprecated=bool(deprecated),
       admin_ids=admin_ids, cc_ids=cc_ids, created=created,
-      creator_id=creator_id, modified=modified, modifier_id=modifier_id)
+      creator_id=creator_id, modified=modified, modifier_id=modifier_id,
+      label_ids=label_ids or [])
   return cd
 
 

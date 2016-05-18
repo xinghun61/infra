@@ -213,7 +213,8 @@ class ComponentDetailTest(unittest.TestCase):
         docstring=['This is where the magic happens'],
         deprecated=[True],
         admins=['a@example.com'],
-        cc=['a@example.com'])
+        cc=['a@example.com'],
+        labels=['Hot, Cold'])
 
     url = self.servlet.ProcessFormData(self.mr, post_data)
 
@@ -242,7 +243,8 @@ class ComponentDetailTest(unittest.TestCase):
         docstring=['This is where the magic happens'],
         deprecated=[True],
         admins=['a@example.com'],
-        cc=['a@example.com'])
+        cc=['a@example.com'],
+        labels=['Hot, Cold'])
 
     self.servlet._ProcessEditComponent(
         self.mr, post_data, self.config, self.cd)
@@ -283,7 +285,8 @@ class ComponentDetailTest(unittest.TestCase):
         docstring=['This is where the magic happens'],
         deprecated=[True],
         admins=['a@example.com'],
-        cc=['a@example.com'])
+        cc=['a@example.com'],
+        labels=[''])
 
     self.servlet._ProcessEditComponent(
         self.mr, post_data, self.config, self.cd)

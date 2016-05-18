@@ -27,7 +27,7 @@ def MakeConfigService(cache_manager, my_mox):
       'template2component_tbl', 'template2fieldvalue_tbl',
       'projectissueconfig_tbl', 'statusdef_tbl', 'labeldef_tbl', 'fielddef_tbl',
       'fielddef2admin_tbl', 'componentdef_tbl', 'component2admin_tbl',
-      'component2cc_tbl']:
+      'component2cc_tbl', 'component2label_tbl']:
     setattr(config_service, table_var, my_mox.CreateMock(sql.SQLTableManager))
 
   return config_service
@@ -165,6 +165,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.componentdef_rows = []
     self.component2admin_rows = []
     self.component2cc_rows = []
+    self.component2label_rows = []
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -172,7 +173,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
 
   def testDeserializeIssueConfigs_Empty(self):
     config_dict = self.config_2lc._DeserializeIssueConfigs(
-        [], [], [], [], [], [], [], [], [], [], [], [], [])
+        [], [], [], [], [], [], [], [], [], [], [], [], [], [])
     self.assertEqual({}, config_dict)
 
   def testDeserializeIssueConfigs_Normal(self):
@@ -181,7 +182,8 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
         self.template2component_rows, self.template2admin_rows,
         self.template2fieldvalue_rows, self.statusdef_rows, self.labeldef_rows,
         self.fielddef_rows, self.fielddef2admin_rows, self.componentdef_rows,
-        self.component2admin_rows, self.component2cc_rows)
+        self.component2admin_rows, self.component2cc_rows,
+        self.component2label_rows)
     self.assertItemsEqual([789], config_dict.keys())
     config = config_dict[789]
     self.assertEqual(789, config.project_id)
@@ -237,6 +239,9 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.config_service.component2cc_tbl.Select(
         self.cnxn, cols=config_svc.COMPONENT2CC_COLS,
         component_id=component_ids).AndReturn(self.component2cc_rows)
+    self.config_service.component2label_tbl.Select(
+        self.cnxn, cols=config_svc.COMPONENT2LABEL_COLS,
+        component_id=component_ids).AndReturn(self.component2label_rows)
 
   def testFetchConfigs(self):
     keys = [789]
@@ -568,6 +573,9 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.component2cc_tbl.Select(
         self.cnxn, cols=config_svc.COMPONENT2CC_COLS,
         component_id=[]).AndReturn([])
+    self.config_service.component2label_tbl.Select(
+        self.cnxn, cols=config_svc.COMPONENT2LABEL_COLS,
+        component_id=[]).AndReturn([])
 
   def testGetProjectConfigs(self):
     project_ids = [789, 679]
@@ -882,6 +890,8 @@ class ConfigServiceTest(unittest.TestCase):
         self.cnxn, config_svc.COMPONENT2ADMIN_COLS, [], commit=False)
     self.config_service.component2cc_tbl.InsertRows(
         self.cnxn, config_svc.COMPONENT2CC_COLS, [], commit=False)
+    self.config_service.component2label_tbl.InsertRows(
+        self.cnxn, config_svc.COMPONENT2LABEL_COLS, [], commit=False)
     self.cnxn.Commit()
 
   def testCreateComponentDef(self):
@@ -889,7 +899,7 @@ class ConfigServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     comp_id = self.config_service.CreateComponentDef(
-        self.cnxn, 789, 'WindowManager', 'doc', False, [], [], 0, 0)
+        self.cnxn, 789, 'WindowManager', 'doc', False, [], [], 0, 0, [])
     self.mox.VerifyAll()
     self.assertEqual(1, comp_id)
 
@@ -902,6 +912,10 @@ class ConfigServiceTest(unittest.TestCase):
         self.cnxn, component_id=component_id, commit=False)
     self.config_service.component2cc_tbl.InsertRows(
         self.cnxn, config_svc.COMPONENT2CC_COLS, [], commit=False)
+    self.config_service.component2label_tbl.Delete(
+        self.cnxn, component_id=component_id, commit=False)
+    self.config_service.component2label_tbl.InsertRows(
+        self.cnxn, config_svc.COMPONENT2LABEL_COLS, [], commit=False)
 
     self.config_service.componentdef_tbl.Update(
         self.cnxn,
@@ -915,13 +929,15 @@ class ConfigServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.config_service.UpdateComponentDef(
         self.cnxn, 789, 1, path='DisplayManager', docstring='doc',
-        deprecated=True, admin_ids=[], cc_ids=[])
+        deprecated=True, admin_ids=[], cc_ids=[], label_ids=[])
     self.mox.VerifyAll()
 
   def SetUpDeleteComponentDef(self, component_id):
     self.config_service.component2cc_tbl.Delete(
         self.cnxn, component_id=component_id, commit=False)
     self.config_service.component2admin_tbl.Delete(
+        self.cnxn, component_id=component_id, commit=False)
+    self.config_service.component2label_tbl.Delete(
         self.cnxn, component_id=component_id, commit=False)
     self.config_service.componentdef_tbl.Delete(
         self.cnxn, id=component_id, commit=False)

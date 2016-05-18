@@ -757,6 +757,14 @@ class ConfigService(object):
     self.next_component_id = 345
     self.expunged_configs = []
     self.component_ids_to_templates = {}
+    self.label_to_id = {}
+    self.id_to_label = {}
+
+  def TestAddLabelsDict(self, label_to_id):
+    self.label_to_id = label_to_id
+    self.id_to_label = {
+        label_id: label
+        for label, label_id in self.label_to_id.items()}
 
   def TemplatesWithComponent(self, _cnxn, component_id, _config):
     return self.component_ids_to_templates.get(component_id, [])
@@ -773,11 +781,15 @@ class ConfigService(object):
     return []
 
   def LookupLabel(self, cnxn, project_id, label_id):
+    if label_id in self.id_to_label:
+      return self.id_to_label[label_id]
     if label_id == 999:
       return None
     return 'label_%d_%d' % (project_id, label_id)
 
   def LookupLabelID(self, cnxn, project_id, label, autocreate=True):
+    if label in self.label_to_id:
+      return self.label_to_id[label]
     return 1
 
   def LookupLabelIDs(self, cnxn, project_id, labels, autocreate=False):
@@ -910,11 +922,11 @@ class ConfigService(object):
 
   def CreateComponentDef(
       self, cnxn, project_id, path, docstring, deprecated, admin_ids, cc_ids,
-      created, creator_id):
+      created, creator_id, label_ids):
     config = self.GetProjectConfig(cnxn, project_id)
     cd = tracker_bizobj.MakeComponentDef(
         self.next_component_id, project_id, path, docstring, deprecated,
-        admin_ids, cc_ids, created, creator_id)
+        admin_ids, cc_ids, created, creator_id, label_ids=label_ids)
     config.component_defs.append(cd)
     self.next_component_id += 1
     self.StoreConfig(cnxn, config)
@@ -923,7 +935,7 @@ class ConfigService(object):
   def UpdateComponentDef(
       self, cnxn, project_id, component_id, path=None, docstring=None,
       deprecated=None, admin_ids=None, cc_ids=None, created=None,
-      creator_id=None, modified=None, modifier_id=None):
+      creator_id=None, modified=None, modifier_id=None, label_ids=None):
     config = self.GetProjectConfig(cnxn, project_id)
     cd = tracker_bizobj.FindComponentDefByID(component_id, config)
     if path is not None:
@@ -938,6 +950,7 @@ class ConfigService(object):
     if creator_id is not None: cd.creator_id = creator_id
     if modified is not None: cd.modified = modified
     if modifier_id is not None: cd.modifier_id = modifier_id
+    if label_ids is not None: cd.label_ids = label_ids
     self.StoreConfig(cnxn, config)
 
   def DeleteComponentDef(self, cnxn, project_id, component_id):

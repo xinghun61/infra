@@ -74,6 +74,16 @@
   </tr>
 
   <tr>
+    <th>Add Labels:</th>
+    <td>
+        <textarea id="labels" name="labels" rows="3" cols="75">[for initial_labels][initial_labels], [end]</textarea>
+        <span id="labelsfeedback" class="fielderror" style="margin-left:1em">
+            [if-any errors.labels][errors.labels][end]
+        </span>
+    </td>
+  </tr>
+
+  <tr>
     <th>Deprecated:</th>
     <td>
         <input type="checkbox" id="deprecated" name="deprecated">

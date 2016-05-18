@@ -880,10 +880,11 @@ class MonorailApi(remote.Service):
         mar.cnxn, list(user_emails), autocreate=False)
     admin_ids = [user_ids_dict[uname] for uname in request.admin]
     cc_ids = [user_ids_dict[uname] for uname in request.cc]
+    label_ids = []  # TODO(jrobbins): allow API clients to specify this too.
 
     component_id = self._services.config.CreateComponentDef(
         mar.cnxn, mar.project_id, path, request.description, request.deprecated,
-        admin_ids, cc_ids, created, user_ids_dict[mar.auth.email])
+        admin_ids, cc_ids, created, user_ids_dict[mar.auth.email], label_ids)
 
     return api_pb2_v1.Component(
         componentId=component_id,

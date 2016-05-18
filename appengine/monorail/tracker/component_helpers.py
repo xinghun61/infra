@@ -9,16 +9,18 @@ import collections
 import logging
 import re
 
+from proto import tracker_pb2
 from tracker import tracker_bizobj
 
 
 ParsedComponentDef = collections.namedtuple(
     'ParsedComponentDef',
     'leaf_name, docstring, deprecated, '
-    'admin_usernames, cc_usernames, admin_ids, cc_ids')
+    'admin_usernames, cc_usernames, admin_ids, cc_ids, '
+    'label_strs, label_ids')
 
 
-def ParseComponentRequest(mr, post_data, user_service):
+def ParseComponentRequest(mr, post_data, services):
   """Parse the user's request to create or update a component definition.
 
   If an error is encountered then this function populates mr.errors
@@ -33,7 +35,7 @@ def ParseComponentRequest(mr, post_data, user_service):
   cc_usernames = [
       uname.strip() for uname in re.split('[,;\s]+', post_data['cc'])
       if uname.strip()]
-  all_user_ids = user_service.LookupUserIDs(
+  all_user_ids = services.user.LookupUserIDs(
       mr.cnxn, admin_usernames + cc_usernames, autocreate=True)
 
   admin_ids = []
@@ -54,9 +56,17 @@ def ParseComponentRequest(mr, post_data, user_service):
     if cc_id not in cc_ids:
       cc_ids.append(cc_id)
 
+  label_strs = [
+    lab.strip() for lab in re.split('[,;\s]+', post_data['labels'])
+    if lab.strip()]
+
+  label_ids = services.config.LookupLabelIDs(
+      mr.cnxn, mr.project_id, label_strs, autocreate=True)
+
   return ParsedComponentDef(
       leaf_name, docstring, deprecated,
-      admin_usernames, cc_usernames, admin_ids, cc_ids)
+      admin_usernames, cc_usernames, admin_ids, cc_ids,
+      label_strs, label_ids)
 
 
 def GetComponentCcIDs(issue, config):

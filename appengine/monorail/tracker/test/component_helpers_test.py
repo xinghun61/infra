@@ -26,7 +26,8 @@ class ComponentHelpersTest(unittest.TestCase):
         3, 789, 'BackEnd', 'doc', True, [], [111L, 333L], 0, 0)
     self.config.component_defs = [self.cd1, self.cd2, self.cd3]
     self.services = service_manager.Services(
-        user=fake.UserService())
+        user=fake.UserService(),
+        config=fake.ConfigService())
     self.services.user.TestAddUser('a@example.com', 111L)
     self.services.user.TestAddUser('b@example.com', 222L)
     self.services.user.TestAddUser('c@example.com', 333L)
@@ -34,9 +35,9 @@ class ComponentHelpersTest(unittest.TestCase):
     self.mr.cnxn = fake.MonorailConnection()
 
   def testParseComponentRequest_Empty(self):
-    post_data = fake.PostData(admins=[''], cc=[''])
+    post_data = fake.PostData(admins=[''], cc=[''], labels=[''])
     parsed = component_helpers.ParseComponentRequest(
-        self.mr, post_data, self.services.user)
+        self.mr, post_data, self.services)
     self.assertEqual('', parsed.leaf_name)
     self.assertEqual('', parsed.docstring)
     self.assertEqual([], parsed.admin_usernames)
@@ -51,15 +52,18 @@ class ComponentHelpersTest(unittest.TestCase):
         docstring=['The server-side app that serves pages'],
         deprecated=[False],
         admins=['a@example.com'],
-        cc=['b@example.com, c@example.com'])
+        cc=['b@example.com, c@example.com'],
+        labels=['Hot, Cold'])
     parsed = component_helpers.ParseComponentRequest(
-        self.mr, post_data, self.services.user)
+        self.mr, post_data, self.services)
     self.assertEqual('FrontEnd', parsed.leaf_name)
     self.assertEqual('The server-side app that serves pages', parsed.docstring)
     self.assertEqual(['a@example.com'], parsed.admin_usernames)
     self.assertEqual(['b@example.com', 'c@example.com'], parsed.cc_usernames)
+    self.assertEqual(['Hot', 'Cold'], parsed.label_strs)
     self.assertEqual([111L], parsed.admin_ids)
     self.assertEqual([222L, 333L], parsed.cc_ids)
+    self.assertEqual([0, 1], parsed.label_ids)
     self.assertFalse(self.mr.errors.AnyErrors())
 
   def testParseComponentRequest_InvalidUser(self):
@@ -68,9 +72,10 @@ class ComponentHelpersTest(unittest.TestCase):
         docstring=['The server-side app that serves pages'],
         deprecated=[False],
         admins=['a@example.com, invalid_user'],
-        cc=['b@example.com, c@example.com'])
+        cc=['b@example.com, c@example.com'],
+        labels=[''])
     parsed = component_helpers.ParseComponentRequest(
-        self.mr, post_data, self.services.user)
+        self.mr, post_data, self.services)
     self.assertEqual('FrontEnd', parsed.leaf_name)
     self.assertEqual('The server-side app that serves pages', parsed.docstring)
     self.assertEqual(['a@example.com', 'invalid_user'], parsed.admin_usernames)

@@ -197,7 +197,8 @@ def _ComputeDerivedFields(cnxn, services, issue, config, rules, predicate_asts):
     Filter rules only produce derived values that do not conflict with the
     explicit field values of the issue.
   """
-  excl_prefixes = config.exclusive_label_prefixes
+  excl_prefixes = [
+      prefix.lower() for prefix in config.exclusive_label_prefixes]
   # Examine the explicit labels and Cc's on the issue.
   lower_labels = [lab.lower() for lab in issue.labels]
   label_set = set(lower_labels)
@@ -213,15 +214,38 @@ def _ComputeDerivedFields(cnxn, services, issue, config, rules, predicate_asts):
   # accumulate changes.
   derived_owner_id = framework_constants.NO_USER_SPECIFIED
   derived_status = ''
-  # Get the component auto-cc's before even starting the rules.
-  # TODO(jrobbins): take this out and instead get component CC IDs
-  # on each access and search, but that will be a pretty big change.
-  derived_cc_ids = [
-      auto_cc_id
-      for auto_cc_id in component_helpers.GetComponentCcIDs(issue, config)
-      if auto_cc_id not in cc_set]
+  derived_cc_ids = []
   derived_labels = []
   derived_notify_addrs = []
+
+  def AddLabelConsideringExclusivePrefixes(label):
+    lab_lower = label.lower()
+    if lab_lower in label_set:
+      return  # We already have that label.
+    prefix = lab_lower.split('-')[0]
+    if '-' in lab_lower and prefix in excl_prefixes:
+      if prefix in excl_prefixes_used:
+        return  # Issue already has that prefix.
+      # Replace any earlied-added label that had the same exclusive prefix.
+      if prefix in prefix_values_added:
+        label_set.remove(prefix_values_added[prefix].lower())
+        derived_labels.remove(prefix_values_added[prefix])
+      prefix_values_added[prefix] = label
+
+    derived_labels.append(label)
+    label_set.add(lab_lower)
+
+  # Apply component labels and auto-cc's before doing the rules.
+  components = tracker_bizobj.GetIssueComponentsAndAncestors(issue, config)
+  for cd in components:
+    for cc_id in cd.cc_ids:
+      if cc_id not in cc_set:
+        derived_cc_ids.append(cc_id)
+        cc_set.add(cc_id)
+
+    for label_id in cd.label_ids:
+      lab = services.config.LookupLabel(cnxn, config.project_id, label_id)
+      AddLabelConsideringExclusivePrefixes(lab)
 
   # Apply each rule in order. Later rules see the results of earlier rules.
   # Later rules can overwrite or add to results of earlier rules.
@@ -249,22 +273,7 @@ def _ComputeDerivedFields(cnxn, services, issue, config, rules, predicate_asts):
         cc_set.add(cc_id)
 
     for lab in rule_add_labels:
-      lab_lower = lab.lower()
-      if lab_lower in label_set:
-        continue  # We already have that label.
-      prefix = lab_lower.split('-')[0]
-      if '-' in lab_lower and prefix in excl_prefixes:
-        if prefix in excl_prefixes_used:
-          continue  # Issue already has that prefix.
-        # Replace any earlied-added label that had the same exclusive prefix.
-        if prefix in prefix_values_added:
-          label_set.remove(prefix_values_added[prefix].lower())
-          derived_labels = [dl for dl in derived_labels
-                            if dl != prefix_values_added[prefix]]
-        prefix_values_added[prefix] = lab
-
-      derived_labels.append(lab)
-      label_set.add(lab_lower)
+      AddLabelConsideringExclusivePrefixes(lab)
 
     for addr in rule_add_notify:
       if addr not in derived_notify_addrs:

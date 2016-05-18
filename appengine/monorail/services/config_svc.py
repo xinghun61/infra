@@ -36,6 +36,7 @@ FIELDDEF2ADMIN_TABLE_NAME = 'FieldDef2Admin'
 COMPONENTDEF_TABLE_NAME = 'ComponentDef'
 COMPONENT2ADMIN_TABLE_NAME = 'Component2Admin'
 COMPONENT2CC_TABLE_NAME = 'Component2Cc'
+COMPONENT2LABEL_TABLE_NAME = 'Component2Label'
 STATUSDEF_TABLE_NAME = 'StatusDef'
 
 TEMPLATE_COLS = [
@@ -67,6 +68,7 @@ COMPONENTDEF_COLS = ['id', 'project_id', 'path', 'docstring', 'deprecated',
                      'created', 'creator_id', 'modified', 'modifier_id']
 COMPONENT2ADMIN_COLS = ['component_id', 'admin_id']
 COMPONENT2CC_COLS = ['component_id', 'cc_id']
+COMPONENT2LABEL_COLS = ['component_id', 'label_id']
 
 NOTIFY_ON_ENUM = ['never', 'any_comment']
 
@@ -246,7 +248,8 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
         is_deleted)
 
   def _UnpackComponentDef(
-      self, cd_row, component2admin_rows, component2cc_rows):
+      self, cd_row, component2admin_rows, component2cc_rows,
+      component2label_rows):
     """Partially construct a FieldDef object using info from a DB row."""
     (component_id, project_id, path, docstring, deprecated, created,
      creator_id, modified, modifier_id) = cd_row
@@ -256,7 +259,10 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
          if comp_id == component_id],
         [cc_id for comp_id, cc_id in component2cc_rows
          if comp_id == component_id],
-        created, creator_id, modified, modifier_id)
+        created, creator_id, 
+        modified=modified, modifier_id=modifier_id,
+        label_ids=[label_id for comp_id, label_id in component2label_rows
+                   if comp_id == component_id])
 
     return cd
 
@@ -264,7 +270,8 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
       self, config_rows, template_rows, template2label_rows,
       template2component_rows, template2admin_rows, template2fieldvalue_rows,
       statusdef_rows, labeldef_rows, fielddef_rows, fielddef2admin_rows,
-      componentdef_rows, component2admin_rows, component2cc_rows):
+      componentdef_rows, component2admin_rows, component2cc_rows,
+      component2label_rows):
     """Convert the given row tuples into a dict of ProjectIssueConfig PBs."""
     result_dict = {}
     template_dict = {}
@@ -336,7 +343,7 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
 
     for cd_row in componentdef_rows:
       cd = self._UnpackComponentDef(
-          cd_row, component2admin_rows, component2cc_rows)
+          cd_row, component2admin_rows, component2cc_rows, component2label_rows)
       result_dict[cd.project_id].component_defs.append(cd)
 
     return result_dict
@@ -380,13 +387,15 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
         cnxn, cols=COMPONENT2ADMIN_COLS, component_id=component_ids)
     component2cc_rows = self.config_service.component2cc_tbl.Select(
         cnxn, cols=COMPONENT2CC_COLS, component_id=component_ids)
+    component2label_rows = self.config_service.component2label_tbl.Select(
+        cnxn, cols=COMPONENT2LABEL_COLS, component_id=component_ids)
 
     retrieved_dict = self._DeserializeIssueConfigs(
         config_rows, template_rows, template2label_rows,
         template2component_rows, template2admin_rows,
         template2fv_rows, statusdef_rows, labeldef_rows,
         fielddef_rows, fielddef2admin_rows, componentdef_rows,
-        component2admin_rows, component2cc_rows)
+        component2admin_rows, component2cc_rows, component2label_rows)
     return retrieved_dict
 
   def FetchItems(self, cnxn, keys):
@@ -428,6 +437,7 @@ class ConfigService(object):
     self.componentdef_tbl = sql.SQLTableManager(COMPONENTDEF_TABLE_NAME)
     self.component2admin_tbl = sql.SQLTableManager(COMPONENT2ADMIN_TABLE_NAME)
     self.component2cc_tbl = sql.SQLTableManager(COMPONENT2CC_TABLE_NAME)
+    self.component2label_tbl = sql.SQLTableManager(COMPONENT2LABEL_TABLE_NAME)
 
     self.config_2lc = ConfigTwoLevelCache(cache_manager, self)
     self.label_row_2lc = LabelRowTwoLevelCache(cache_manager, self)
@@ -1211,7 +1221,7 @@ class ConfigService(object):
 
   def CreateComponentDef(
       self, cnxn, project_id, path, docstring, deprecated, admin_ids, cc_ids,
-      created, creator_id):
+      created, creator_id, label_ids):
     """Create a new component definition with the given info.
 
     Args:
@@ -1225,6 +1235,8 @@ class ConfigService(object):
           this component is updated.
       created: timestamp this component was created at.
       creator_id: int ID of user who created this component.
+      label_ids: list of int IDs of labels to add when an issue is
+          in this component.
 
     Returns:
       Integer component_id of the new component definition.
@@ -1241,6 +1253,10 @@ class ConfigService(object):
         cnxn, COMPONENT2CC_COLS,
         [(component_id, cc_id) for cc_id in cc_ids],
         commit=False)
+    self.component2label_tbl.InsertRows(
+        cnxn, COMPONENT2LABEL_COLS,
+        [(component_id, label_id) for label_id in label_ids],
+        commit=False)
     cnxn.Commit()
     self.config_2lc.InvalidateKeys(cnxn, [project_id])
     self.InvalidateMemcacheForEntireProject(project_id)
@@ -1249,7 +1265,8 @@ class ConfigService(object):
   def UpdateComponentDef(
       self, cnxn, project_id, component_id, path=None, docstring=None,
       deprecated=None, admin_ids=None, cc_ids=None, created=None,
-      creator_id=None, modified=None, modifier_id=None):
+      creator_id=None, modified=None, modifier_id=None,
+      label_ids=None):
     """Update the specified component definition."""
     new_values = {}
     if path is not None:
@@ -1284,6 +1301,14 @@ class ConfigService(object):
           [(component_id, cc_id) for cc_id in cc_ids],
           commit=False)
 
+    if label_ids is not None:
+      self.component2label_tbl.Delete(
+          cnxn, component_id=component_id, commit=False)
+      self.component2label_tbl.InsertRows(
+          cnxn, COMPONENT2LABEL_COLS,
+          [(component_id, label_id) for label_id in label_ids],
+          commit=False)
+
     self.componentdef_tbl.Update(
         cnxn, new_values, id=component_id, commit=False)
     cnxn.Commit()
@@ -1295,6 +1320,8 @@ class ConfigService(object):
     self.component2cc_tbl.Delete(
         cnxn, component_id=component_id, commit=False)
     self.component2admin_tbl.Delete(
+        cnxn, component_id=component_id, commit=False)
+    self.component2label_tbl.Delete(
         cnxn, component_id=component_id, commit=False)
     self.componentdef_tbl.Delete(cnxn, id=component_id, commit=False)
     cnxn.Commit()

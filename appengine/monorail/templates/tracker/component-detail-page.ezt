@@ -77,6 +77,22 @@
   </tr>
 
   <tr>
+    <th>Add Labels:</th>
+    <td>
+      [if-any allow_edit]
+        <textarea id="labels" name="labels" rows="3" cols="75">[for initial_labels][initial_labels], [end]</textarea>
+        <span id="labelsfeedback" class="fielderror" style="margin-left:1em">
+          [if-any errors.labels][errors.labels][end]
+        </span>
+      [else]
+        [for component_def.labels]
+          <div>[component_def.labels]</div>
+        [end]
+      [end]
+    </td>
+  </tr>
+
+  <tr>
     <th>Deprecated:</th>
     <td>
         <input type="checkbox" id="deprecated" name="deprecated" [if-any initial_deprecated]checked="checked"[end]

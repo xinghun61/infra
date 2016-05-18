@@ -70,9 +70,12 @@ class ComponentDetail(servlet.Servlet):
         mr.cnxn, self.services.user,
         component_def.admin_ids, component_def.cc_ids)
     component_def_view = tracker_views.ComponentDefView(
-        component_def, users_by_id)
+        mr.cnxn, self.services, component_def, users_by_id)
     initial_admins = [users_by_id[uid].email for uid in component_def.admin_ids]
     initial_cc = [users_by_id[uid].email for uid in component_def.cc_ids]
+    initial_labels = [
+        self.services.config.LookupLabel(mr.cnxn, mr.project_id, label_id)
+        for label_id in component_def.label_ids]
 
     creator, created = self._GetUserViewAndFormattedTime(
         mr, component_def.creator_id, component_def.created)
@@ -96,6 +99,7 @@ class ComponentDetail(servlet.Servlet):
         'initial_deprecated': ezt.boolean(component_def.deprecated),
         'initial_admins': initial_admins,
         'initial_cc': initial_cc,
+        'initial_labels': initial_labels,
         'allow_edit': ezt.boolean(allow_edit),
         'allow_delete': ezt.boolean(allow_delete),
         'subcomponents': subcomponents,
@@ -166,7 +170,7 @@ class ComponentDetail(servlet.Servlet):
   def _ProcessEditComponent(self, mr, post_data, config, component_def):
     """The user wants to edit this component definition."""
     parsed = component_helpers.ParseComponentRequest(
-        mr, post_data, self.services.user)
+        mr, post_data, self.services)
 
     if not tracker_constants.COMPONENT_NAME_RE.match(parsed.leaf_name):
       mr.errors.leaf_name = 'Invalid component name'
@@ -194,6 +198,7 @@ class ComponentDetail(servlet.Servlet):
           initial_deprecated=ezt.boolean(parsed.deprecated),
           initial_admins=parsed.admin_usernames,
           initial_cc=parsed.cc_usernames,
+          initial_labels=parsed.label_strs,
           created=created,
           creator=creator,
           modified=modified,
@@ -208,7 +213,7 @@ class ComponentDetail(servlet.Servlet):
         mr.cnxn, mr.project_id, component_def.component_id,
         path=new_path, docstring=parsed.docstring, deprecated=parsed.deprecated,
         admin_ids=parsed.admin_ids, cc_ids=parsed.cc_ids, modified=new_modified,
-        modifier_id=new_modifier_id)
+        modifier_id=new_modifier_id, label_ids=parsed.label_ids)
 
     update_rule = False
     if new_path != original_path:
@@ -227,7 +232,8 @@ class ComponentDetail(servlet.Servlet):
             mr.cnxn, mr.project_id, subcomponent_def.component_id,
             path=subcomponent_new_path)
 
-    if set(parsed.cc_ids) != set(component_def.cc_ids):
+    if (set(parsed.cc_ids) != set(component_def.cc_ids) or
+        set(parsed.label_ids) != set(component_def.label_ids)):
       update_rule = True
     if update_rule:
       filterrules_helpers.RecomputeAllDerivedFields(

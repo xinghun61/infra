@@ -401,7 +401,7 @@ class AdminComponents(IssueAdminBase):
           for cd in config.component_defs])
     framework_views.RevealAllEmailsToMembers(mr, users_by_id)
     component_def_views = [
-        tracker_views.ComponentDefView(cd, users_by_id)
+        tracker_views.ComponentDefView(mr.cnxn, self.services, cd, users_by_id)
         # TODO(jrobbins): future component-level view restrictions.
         for cd in config.component_defs]
     for cd in component_def_views:

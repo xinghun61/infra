@@ -54,7 +54,7 @@ class ComponentCreate(servlet.Servlet):
         *[list(cd.admin_ids) + list(cd.cc_ids)
           for cd in config.component_defs])
     component_def_views = [
-        tracker_views.ComponentDefView(cd, users_by_id)
+        tracker_views.ComponentDefView(mr.cnxn, self.services, cd, users_by_id)
         # TODO(jrobbins): future component-level view restrictions.
         for cd in config.component_defs]
     for cdv in component_def_views:
@@ -72,6 +72,7 @@ class ComponentCreate(servlet.Servlet):
         'initial_deprecated': ezt.boolean(False),
         'initial_admins': [],
         'initial_cc': [],
+        'initial_labels': [],
         }
 
   def ProcessFormData(self, mr, post_data):
@@ -87,7 +88,7 @@ class ComponentCreate(servlet.Servlet):
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     parent_path = post_data.get('parent_path', '')
     parsed = component_helpers.ParseComponentRequest(
-        mr, post_data, self.services.user)
+        mr, post_data, self.services)
 
     if parent_path:
       parent_def = tracker_bizobj.FindComponentDef(parent_path, config)
@@ -116,6 +117,7 @@ class ComponentCreate(servlet.Servlet):
           initial_deprecated=ezt.boolean(parsed.deprecated),
           initial_admins=parsed.admin_usernames,
           initial_cc=parsed.cc_usernames,
+          initial_labels=parsed.label_strs,
       )
       return
 
@@ -125,7 +127,8 @@ class ComponentCreate(servlet.Servlet):
 
     self.services.config.CreateComponentDef(
         mr.cnxn, mr.project_id, path, parsed.docstring, parsed.deprecated,
-        parsed.admin_ids, parsed.cc_ids, created, creator_id)
+        parsed.admin_ids, parsed.cc_ids, created, creator_id,
+        label_ids=parsed.label_ids)
 
     return framework_helpers.FormatAbsoluteURL(
         mr, urls.ADMIN_COMPONENTS, saved=1, ts=int(time.time()))

@@ -80,6 +80,17 @@ CREATE TABLE LabelDef (
 ) ENGINE=INNODB;
 
 
+CREATE TABLE Component2Label (
+  component_id INT NOT NULL,
+  label_id INT NOT NULL,
+
+  PRIMARY KEY (component_id, label_id),
+
+  FOREIGN KEY (component_id) REFERENCES ComponentDef(id),
+  FOREIGN KEY (label_id) REFERENCES LabelDef(id)
+) ENGINE=INNODB;
+
+
 CREATE TABLE FieldDef (
   id INT NOT NULL AUTO_INCREMENT,
   project_id SMALLINT UNSIGNED NOT NULL,

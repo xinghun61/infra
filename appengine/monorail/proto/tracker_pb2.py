@@ -280,6 +280,7 @@ class ComponentDef(messages.Message):
   creator_id = messages.IntegerField(9)
   modified = messages.IntegerField(10)
   modifier_id = messages.IntegerField(11)
+  label_ids = messages.IntegerField(12, repeated=True)
 
 
 class FilterRule(messages.Message):

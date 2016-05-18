@@ -81,7 +81,8 @@ class ComponentCreateTest(unittest.TestCase):
         docstring=['Detecting outages'],
         deprecated=[False],
         admins=[''],
-        cc=[''])
+        cc=[''],
+        labels=[''])
     self.assertRaises(
         webapp2.HTTPException,
         self.servlet.ProcessFormData, self.mr, post_data)
@@ -93,7 +94,8 @@ class ComponentCreateTest(unittest.TestCase):
         docstring=['A database'],
         deprecated=[False],
         admins=[''],
-        cc=[''])
+        cc=[''],
+        labels=[''])
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertTrue('/adminComponents?saved=1&' in url)
     config = self.services.config.GetProjectConfig(

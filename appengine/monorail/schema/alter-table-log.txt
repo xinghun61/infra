@@ -806,3 +806,17 @@ ALTER TABLE Project ADD COLUMN source_url VARCHAR(250);
 
 ALTER TABLE User ADD COLUMN email_compact_subject BOOLEAN DEFAULT FALSE;
 ALTER TABLE User ADD COLUMN email_view_widget BOOLEAN DEFAULT TRUE;
+
+================================================================
+2016-05-13: Add component labels
+
+CREATE TABLE Component2Label (
+  component_id INT NOT NULL,
+  label_id INT NOT NULL,
+
+  PRIMARY KEY (component_id, label_id),
+
+  FOREIGN KEY (component_id) REFERENCES ComponentDef(id),
+  FOREIGN KEY (label_id) REFERENCES LabelDef(id)
+) ENGINE=INNODB;
+

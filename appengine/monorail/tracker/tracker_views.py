@@ -474,7 +474,7 @@ class AmendmentView(object):
 class ComponentDefView(template_helpers.PBProxy):
   """Wrapper class to make it easier to display component definitions."""
 
-  def __init__(self, component_def, users_by_id):
+  def __init__(self, cnxn, services, component_def, users_by_id):
     super(ComponentDefView, self).__init__(component_def)
 
     c_path = component_def.path
@@ -491,6 +491,9 @@ class ComponentDefView(template_helpers.PBProxy):
     self.admins = [users_by_id.get(admin_id)
                    for admin_id in component_def.admin_ids]
     self.cc = [users_by_id.get(cc_id) for cc_id in component_def.cc_ids]
+    self.labels = [
+        services.config.LookupLabel(cnxn, component_def.project_id, label_id)
+        for label_id in component_def.label_ids]
     self.classes = 'all '
     if self.parent_path == '':
       self.classes += 'toplevel '
