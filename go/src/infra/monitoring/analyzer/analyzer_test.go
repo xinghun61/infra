@@ -1151,7 +1151,7 @@ func TestExcludeFailure(t *testing.T) {
 
 	a := New(&mockReader{}, 0, 10)
 	for _, test := range tests {
-		a.Gatekeeper = NewGatekeeperRules(test.gk)
+		a.Gatekeeper = NewGatekeeperRules([]*messages.GatekeeperConfig{&test.gk})
 		got := a.Gatekeeper.ExcludeFailure(&messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.step)
 		if got != test.want {
 			t.Errorf("%s failed. Got: %+v, want: %+v", test.name, got, test.want)

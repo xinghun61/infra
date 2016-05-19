@@ -53,8 +53,8 @@ var (
 	masterFilter        = flag.String("master-filter", "", "Filter out masters that contain this string")
 	masterOnly          = flag.String("master", "", "Only check this master")
 	mastersOnly         = flag.Bool("masters-only", false, "Just check for master alerts, not builders")
-	gatekeeperJSON      = flag.String("gatekeeper", "gatekeeper.json", "Location of gatekeeper json file")
-	gatekeeperTreesJSON = flag.String("gatekeeper-trees", "gatekeeper_trees.json", "Location of gatekeeper json file")
+	gatekeeperJSON      = stringSlice([]string{"gatekeeper.json"})
+	gatekeeperTreesJSON = stringSlice([]string{"gatekeeper_tree.json"})
 	treesOnly           = flag.String("trees", "", "Comma separated list. Only check these trees")
 	builderOnly         = flag.String("builder", "", "Only check this builder")
 	buildOnly           = flag.Int64("build", 0, "Only check this build")
@@ -69,9 +69,9 @@ var (
 	duration, cycle time.Duration
 
 	// gk is the gatekeeper config.
-	gk = messages.GatekeeperConfig{}
+	gks = []*messages.GatekeeperConfig{}
 	// gkt is the gatekeeper trees config.
-	gkt              = map[string]messages.TreeMasterConfig{}
+	gkts             = map[string][]messages.TreeMasterConfig{}
 	filteredFailures = uint64(0)
 	expvars          = expvar.NewMap("dispatcher")
 	errLog           = log.New(os.Stderr, "", log.Lshortfile|log.Ltime)
@@ -162,9 +162,16 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 			infoLog.Printf("Checking tree: %s", tree)
 			masters := []*messages.MasterLocation{}
 
-			t := gkt[tree]
-			for _, url := range t.Masters {
-				masters = append(masters, url)
+			for treeToUse, shouldUse := range trees {
+				if !shouldUse {
+					continue
+				}
+
+				for _, t := range gkts[treeToUse] {
+					for _, url := range t.Masters {
+						masters = append(masters, url)
+					}
+				}
 			}
 
 			// TODO(seanmccullough): Plumb ctx through the rest of these calls.
@@ -241,6 +248,9 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 }
 
 func main() {
+	flag.Var(&gatekeeperJSON, "gatekeeper", "Location of gatekeeper json file. Can have multiple comma separated values.")
+	flag.Var(&gatekeeperTreesJSON, "gatekeeper-trees", "Location of gatekeeper tree json file. Can have multiple comma separated values.")
+
 	flag.Parse()
 
 	ctx := context.Background()
@@ -300,16 +310,28 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = readJSONFile(*gatekeeperJSON, &gk)
-	if err != nil {
-		errLog.Printf("Error reading gatekeeper json: %v", err)
-		os.Exit(1)
+	for _, gkFile := range gatekeeperJSON {
+		gk := messages.GatekeeperConfig{}
+		err = readJSONFile(gkFile, &gk)
+		if err != nil {
+			errLog.Printf("Error reading gatekeeper json: %v", err)
+			os.Exit(1)
+		}
+
+		gks = append(gks, &gk)
 	}
 
-	err = readJSONFile(*gatekeeperTreesJSON, &gkt)
-	if err != nil {
-		errLog.Printf("Error reading gatekeeper json: %v", err)
-		os.Exit(1)
+	for _, treeFile := range gatekeeperTreesJSON {
+		tree := make(map[string]messages.TreeMasterConfig)
+		err = readJSONFile(treeFile, &tree)
+		if err != nil {
+			errLog.Printf("Error reading gatekeeper trees json: %v", err)
+			os.Exit(1)
+		}
+
+		for treeName, config := range tree {
+			gkts[treeName] = append(gkts[treeName], config)
+		}
 	}
 
 	if *snapshot != "" && *replay != "" {
@@ -360,7 +382,7 @@ func main() {
 		}
 	}
 
-	a.Gatekeeper = analyzer.NewGatekeeperRules(gk)
+	a.Gatekeeper = analyzer.NewGatekeeperRules(gks)
 
 	a.MasterOnly = *masterOnly
 	a.BuilderOnly = *builderOnly
@@ -372,13 +394,13 @@ func main() {
 			trees[treeOnly] = true
 		}
 	} else {
-		for treeName := range gkt {
+		for treeName := range gkts {
 			trees[treeName] = true
 		}
 	}
 
 	for tree := range trees {
-		if _, ok := gkt[tree]; !ok {
+		if _, ok := gkts[tree]; !ok {
 			errLog.Printf("Unrecognized tree name: %s", tree)
 			os.Exit(1)
 		}

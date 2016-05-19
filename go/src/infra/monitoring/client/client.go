@@ -211,17 +211,26 @@ func (r *reader) BuildExtract(masterURL *messages.MasterLocation) (*messages.Bui
 
 	expvars.Add("BuildExtract", 1)
 	defer expvars.Add("BuildExtract", -1)
-	if code, err := r.hc.getJSON(URL, ret); err != nil {
-		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
+	code, err := r.hc.getJSON(URL, ret)
 
+	if err != nil {
+		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
+		return nil, err
+	}
+
+	if code == 404 {
+		if !strings.Contains(masterURL.Name(), "internal") {
+			return nil, err
+		}
+
+		URL = fmt.Sprintf("%s/json", masterURL.String())
 		expvars.Add("DirectPoll", 1)
 		defer expvars.Add("DirectPoll", -1)
-		if code, err := r.hc.getJSON(masterURL.String(), ret); err != nil {
+		if code, err := r.hc.getJSON(URL, ret); err != nil {
 			errLog.Printf("Error (%d) fetching %s: %v", code, masterURL.String(), err)
 			return nil, err
 		}
 		return ret, nil
-		return nil, err
 	}
 	return ret, nil
 }
@@ -327,7 +336,7 @@ func (hc *trackingHTTPClient) attemptJSON(url string, v interface{}) (bool, int,
 		err = fmt.Errorf("unexpected Content-Type, expected \"%s\", got \"%s\": %s", expected, ct, url)
 		return false, status, 0, err
 	}
-	infoLog.Printf("Fetched(%d) json: %s", resp.StatusCode, url)
+	infoLog.Printf("Fetched(%d) json: %s", status, url)
 
 	return true, status, resp.ContentLength, err
 }
@@ -340,7 +349,8 @@ func (hc *trackingHTTPClient) getJSON(url string, v interface{}) (status int, er
 		attempts := 0
 		for {
 			infoLog.Printf("Fetching json (%d in flight, attempt %d of %d): %s", hc.currReqs, attempts, maxRetries, url)
-			done, status, length, err := hc.attemptJSON(url, v)
+			done, tStatus, length, err := hc.attemptJSON(url, v)
+			status = tStatus
 			if done {
 				return length, err
 			}

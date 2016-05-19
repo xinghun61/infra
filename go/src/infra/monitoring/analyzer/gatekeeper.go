@@ -7,26 +7,37 @@ import (
 // GatekeeperRules implements the rule checks that gatekeeper performs
 // on failures to determine if the failure should close the tree.
 type GatekeeperRules struct {
-	cfg messages.GatekeeperConfig
+	cfgs []*messages.GatekeeperConfig
 }
 
 // NewGatekeeperRules returns a new instance of GatekeeperRules initialized
 // with cfg.
-func NewGatekeeperRules(cfg messages.GatekeeperConfig) *GatekeeperRules {
-	ret := &GatekeeperRules{cfg}
-	for master, masterCfgs := range cfg.Masters {
-		if len(masterCfgs) != 1 {
-			errLog.Printf("Multiple configs for master: %s", master)
+func NewGatekeeperRules(cfgs []*messages.GatekeeperConfig) *GatekeeperRules {
+	ret := &GatekeeperRules{cfgs}
+	for i, cfg := range cfgs {
+		for master, masterCfgs := range cfg.Masters {
+			if len(masterCfgs) != 1 {
+				errLog.Printf("Multiple configs for master: %s", master)
+			}
+			ret.cfgs[i].Masters[master] = masterCfgs
 		}
-		ret.cfg.Masters[master] = masterCfgs
 	}
 	return ret
+}
+
+func (r *GatekeeperRules) findMaster(master *messages.MasterLocation) ([]messages.MasterConfig, bool) {
+	for _, cfg := range r.cfgs {
+		if mcs, ok := cfg.Masters[master.String()]; ok {
+			return mcs, ok
+		}
+	}
+	return nil, false
 }
 
 // WouldCloseTree returns true if a step failure on given builder/master would
 // cause it to close the tree.
 func (r *GatekeeperRules) WouldCloseTree(master *messages.MasterLocation, builder, step string) bool {
-	mcs, ok := r.cfg.Masters[master.String()]
+	mcs, ok := r.findMaster(master)
 	if !ok {
 		errLog.Printf("Missing master cfg: %s", master)
 		return false
@@ -62,7 +73,7 @@ func (r *GatekeeperRules) WouldCloseTree(master *messages.MasterLocation, builde
 
 // ExcludeFailure returns true if a step failure whould be ignored.
 func (r *GatekeeperRules) ExcludeFailure(master *messages.MasterLocation, builder, step string) bool {
-	mcs, ok := r.cfg.Masters[master.String()]
+	mcs, ok := r.findMaster(master)
 	if !ok {
 		errLog.Printf("Can't filter unknown master %s", master)
 		return false
