@@ -214,11 +214,11 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
 
   @mock_datetime_utc(2015, 11, 10, 10, 11, 0)
   def test_creates_issue_for_new_flake(self):
-    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
-      flake = self._create_flake()
-      flake.key = ndb.Key('Flake', 'test-flake-key')
-      flake.put()
+    flake = self._create_flake()
+    flake.key = ndb.Key('Flake', 'test-flake-key')
+    flake.put()
 
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
       response = self.test_app.post('/issues/process/%s' % flake.key.urlsafe())
       self.assertEqual(200, response.status_int)
 
@@ -253,6 +253,18 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     self.assertEqual(updated_flake.num_reported_flaky_runs, 3)
     self.assertEqual(updated_flake.issue_last_updated,
                      datetime.datetime(2015, 11, 10, 10, 11, 0))
+
+  def test_step_flakes_do_not_ask_sheriffs_to_disable_them(self):
+    flake = self._create_flake()
+    flake.is_step = True
+    flake.name = 'compile (with patch)'
+    flake.put()
+
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      self.test_app.post('/issues/process/%s' % flake.key.urlsafe())
+
+    self.assertNotIn('Flaky tests should be disabled within 30 minutes',
+                     self.mock_api.issues[100000].description)
 
   @mock_datetime_utc(2015, 11, 10, 10, 11, 0)
   def test_creates_issue_for_troopers(self):

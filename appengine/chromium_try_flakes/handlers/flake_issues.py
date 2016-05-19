@@ -43,6 +43,8 @@ DESCRIPTION_TEMPLATE = (
     'this issue to them. %(other_queue_msg)s\n\n'
     'We have detected %(flakes_count)d recent flakes. List of all flakes can '
     'be found at %(flakes_url)s.\n\n'
+    '%(footer)s')
+DESCRIPTION_TEST_FOOTER = (
     'Flaky tests should be disabled within 30 minutes unless culprit CL is '
     'found and reverted. Please see more details here: '
     'https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/'
@@ -252,7 +254,8 @@ class ProcessIssue(webapp2.RequestHandler):
         'summary': summary,
         'flakes_url': FLAKES_URL_TEMPLATE % flake.key.urlsafe(),
         'flakes_count': len(new_flakes),
-        'other_queue_msg': other_queue_msg}
+        'other_queue_msg': other_queue_msg,
+        'footer': '' if flake.is_step else DESCRIPTION_TEST_FOOTER}
     if flake.old_issue_id:
       description = REOPENED_DESCRIPTION_TEMPLATE % {
           'description': description, 'old_issue': flake.old_issue_id}
