@@ -38,6 +38,7 @@ class FlakyRun(ndb.Model):
 # instance of a flake being represented by a FlakyRun.
 class Flake(ndb.Model):
   name = ndb.StringProperty(required=True)
+  is_step = ndb.BooleanProperty(default=False)
   occurrences = ndb.KeyProperty(FlakyRun, repeated=True)
   comment = ndb.StringProperty(default='')
 

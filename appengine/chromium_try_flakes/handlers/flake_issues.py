@@ -216,10 +216,13 @@ class ProcessIssue(webapp2.RequestHandler):
           self._recreate_issue_for_flake(flake)
         return
 
-    # Make sure issue is in the appropriate bug queue as flakiness is ongoing.
+    # Make sure issue is in the appropriate bug queue as flakiness is ongoing as
+    # the sheriffs are supposed to disable flaky tests. For steps, only return
+    # if there is no owner on the bug.
     queue_name, expected_label = get_queue_details(flake.name)
     if expected_label not in flake_issue.labels:
-      flake_issue.labels.append(expected_label)
+      if not flake.is_step or not flake_issue.owner:
+        flake_issue.labels.append(expected_label)
 
     new_flaky_runs_msg = FLAKY_RUNS_TEMPLATE % {
         'name': flake.name,
@@ -404,13 +407,17 @@ class CreateFlakyRun(webapp2.RequestHandler):
   @staticmethod
   # pylint: disable=E1120
   @ndb.transactional(xg=True, propagation=ndb.TransactionOptions.INDEPENDENT)
-  def add_failure_to_flake(name, flaky_run_key, failure_time):
+  def add_failure_to_flake(name, flaky_run_key, failure_time, is_step):
     flake = Flake.get_by_id(name)
     if not flake:
-      flake = Flake(name=name, id=name, last_time_seen=datetime.datetime.min)
+      flake = Flake(name=name, id=name, last_time_seen=datetime.datetime.min,
+                    is_step=is_step)
       flake.put()
 
     flake.occurrences.append(flaky_run_key)
+    # TODO(sergiyb): This is necessary to update existing flakes. Remove in July
+    # 2016 or later.
+    flake.is_step = is_step
     util.add_occurrence_time_to_flake(flake, failure_time)
     flake.put()
 
@@ -461,11 +468,26 @@ class CreateFlakyRun(webapp2.RequestHandler):
   # TODO(jam): get specific problem with compile so we can use that as name
   @classmethod
   def get_flakes(cls, mastername, buildername, buildnumber, step):
+    """Returns a list of flakes in a given step.
+
+    It can either be entire step or a list of specific tests.
+
+    Args:
+      mastername: Master name on which step has been run.
+      buildername: Builder name on which step has been run.
+      buildnume: Number of the build in which step has been run.
+      step: Step name.
+
+    Returns:
+      (flakes, is_step), where flakes is a list of flake names and is_step is
+      True when the whole step is a flake, in which case flakes is a list
+      containing a single entry - the name of the step.
+    """
     # If test results were invalid, report whole step as flaky.
     steptext = ' '.join(step['text'])
     stepname = normalize_test_type(step['name'])
     if 'TEST RESULTS WERE INVALID' in steptext:
-      return [stepname]
+      return [stepname], True
 
     url = TEST_RESULTS_URL_TEMPLATE % {
       'mastername': urllib2.quote(mastername),
@@ -483,7 +505,7 @@ class CreateFlakyRun(webapp2.RequestHandler):
         _, failed, _ = cls._flatten_tests(
             json_result.get('tests', {}),
             json_result.get('path_delimiter', '/'))
-        return failed
+        return failed, False
 
       if result.status_code == 404:
         # This is quite a common case (only some failing steps are actually
@@ -494,7 +516,7 @@ class CreateFlakyRun(webapp2.RequestHandler):
     except Exception:
       logging.exception('Failed to retrieve or parse JSON from %s', url)
 
-    return [stepname]
+    return [stepname], True
 
   @ndb.transactional(xg=True)  # pylint: disable=E1120
   def post(self):
@@ -583,17 +605,17 @@ class CreateFlakyRun(webapp2.RequestHandler):
       step_name = step['name']
       if step_name in steps_to_ignore:
         continue
-      flakes = self.get_flakes(
+      flakes, is_step = self.get_flakes(
           patchset_builder_runs.master, patchset_builder_runs.builder,
           failure_run.buildnumber, step)
       for flake in flakes:
         flake_occurrence = FlakeOccurrence(name=step_name, failure=flake)
         flaky_run.flakes.append(flake_occurrence)
-        flakes_to_update.append(flake)
+        flakes_to_update.append((flake, is_step))
 
     flaky_run_key = flaky_run.put()
-    for flake in flakes_to_update:
-      self.add_failure_to_flake(flake, flaky_run_key, failure_time)
+    for flake, is_step in flakes_to_update:
+      self.add_failure_to_flake(flake, flaky_run_key, failure_time, is_step)
     self.flaky_runs.increment_by(1)
 
 

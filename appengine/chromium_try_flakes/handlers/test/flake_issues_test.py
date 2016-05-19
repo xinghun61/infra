@@ -98,6 +98,15 @@ TEST_BUILDBOT_JSON_REPLY = json.dumps({
   ]
 })
 
+# Expected flakes to be found: list of (step_name, test_name).
+EXPECTED_FLAKES = set([
+    ('foo1', 'test2.a'),
+    ('foo1', 'test2.d'),
+    ('foo2', 'foo2'),
+    ('foo8 xx (with patch)', 'foo8 (with patch)'),
+    ('Patch failure', 'Patch'),
+])
+
 
 class MockComment(object):
   def __init__(self, created, author, comment=None, labels=None, cc=None):
@@ -115,6 +124,7 @@ class MockIssue(object):
     self.status = issue_entry.get('status')
     self.labels = issue_entry.get('labels', [])
     self.components = issue_entry.get('components', [])
+    self.owner = issue_entry.get('owner', {}).get('name')
     self.open = True
     self.updated = datetime.datetime.utcnow()
     self.comments = []
@@ -385,6 +395,23 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
       self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
 
     self.assertIn('Sheriff-Chromium', issue.labels)
+
+  def test_does_not_add_sheriff_label_to_owned_issues_for_step_flakes(self):
+    issue = self.mock_api.create(MockIssue({}))
+    issue.owner = 'foo@bar.org'
+
+    now = datetime.datetime.utcnow()
+    flake = self._create_flake()
+    flake.is_step = True
+    flake.issue_id = issue.id
+    flake.num_reported_flaky_runs = 0
+    flake.issue_last_updated = now - datetime.timedelta(hours=25)
+    flake_key = flake.put()
+
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+
+    self.assertNotIn('Sheriff-Chromium', issue.labels)
 
   def test_updates_issue_only_if_there_are_new_flakes(self):
     issue = self.mock_api.create(MockIssue({}))
@@ -744,11 +771,9 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
             {'name': 'step', 'text': 'step'})
         self.assertEqual(exception_mock.call_count, 1)
 
-  def test_get_flaky_run_reason(self):
-    now = datetime.datetime.utcnow()
-    br_f, br_s = self._create_build_runs(now - datetime.timedelta(hours=1), now)
-
-    urlfetch_mock = mock.Mock(side_effect = [
+  @staticmethod
+  def _create_urlfetch_mock():
+    return mock.Mock(side_effect = [
         # JSON results for the build.
         mock.Mock(status_code=200, content=TEST_BUILDBOT_JSON_REPLY),
         # JSON results for step "foo1".
@@ -759,6 +784,11 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
         # step text ("bar13") should be reported as flake.
         Exception(),
     ])
+
+  def test_get_flaky_run_reason(self):
+    now = datetime.datetime.utcnow()
+    br_f, br_s = self._create_build_runs(now - datetime.timedelta(hours=1), now)
+    urlfetch_mock = self._create_urlfetch_mock()
 
     # We also create one Flake to test that it is correctly updated. Other Flake
     # entities will be created automatically.
@@ -798,26 +828,17 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
         'name=full_results.json&master=test.master&'
         'testtype=foo8%20%28with%20patch%29&buildnumber=100')])
 
-    # Expected flakes to be found: list of (step_name, test_name).
     # We compare sets below, because order of entities returned by datastore
     # doesn't have to be same as steps above.
-    expected_flakes = set([
-        ('foo1', 'test2.a'),
-        ('foo1', 'test2.d'),
-        ('foo2', 'foo2'),
-        ('foo8 xx (with patch)', 'foo8 (with patch)'),
-        ('Patch failure', 'Patch'),
-    ])
-
     flake_occurrences = flaky_run.flakes
-    self.assertEqual(len(flake_occurrences), len(expected_flakes))
+    self.assertEqual(len(flake_occurrences), len(EXPECTED_FLAKES))
     actual_flake_occurrences = set([
         (fo.name, fo.failure) for fo in flake_occurrences])
-    self.assertEqual(expected_flakes, actual_flake_occurrences)
+    self.assertEqual(EXPECTED_FLAKES, actual_flake_occurrences)
 
     flakes = Flake.query().fetch()
-    self.assertEqual(len(flakes), len(expected_flakes))
-    expected_flake_names = set([ef[1] for ef in expected_flakes])
+    self.assertEqual(len(flakes), len(EXPECTED_FLAKES))
+    expected_flake_names = set([ef[1] for ef in EXPECTED_FLAKES])
     actual_flake_names = set([f.name for f in flakes])
     self.assertEqual(expected_flake_names, actual_flake_names)
 
@@ -830,6 +851,26 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     self.assertEqual(set(passed), set(['test1']))
     self.assertEqual(set(failed), set(['test2/a', 'test2/d']))
     self.assertEqual(set(skipped), set(['test2/b']))
+
+  def test_stores_and_updates_is_step_property(self):
+    now = datetime.datetime.utcnow()
+    br_f, br_s = self._create_build_runs(now - datetime.timedelta(hours=1), now)
+    urlfetch_mock = self._create_urlfetch_mock()
+
+    # We store one flake with invalid is_step value to make sure it is updated.
+    Flake(id='foo2', name='foo2', is_step=False,
+          last_time_seen=datetime.datetime.min).put()
+
+    with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
+      self.test_app.post('/issues/create_flaky_run',
+                         {'failure_run_key': br_f.urlsafe(),
+                          'success_run_key': br_s.urlsafe()})
+
+    self.assertFalse(Flake.get_by_id('test2.a').is_step)
+    self.assertFalse(Flake.get_by_id('test2.d').is_step)
+    self.assertTrue(Flake.get_by_id('foo2').is_step)
+    self.assertTrue(Flake.get_by_id('foo8 (with patch)').is_step)
+    self.assertTrue(Flake.get_by_id('Patch').is_step)
 
 
 class TestOverrideIssueID(testing.AppengineTestCase):
