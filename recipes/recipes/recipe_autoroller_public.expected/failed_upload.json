@@ -316,7 +316,7 @@
       "[DEPOT_TOOLS]/gsutil.py",
       "----",
       "cat",
-      "gs://recipe-roller-cl-uploads/8e9377cb1551d1353f8f1103e01bd5bf"
+      "gs://recipe-roller-cl-uploads/791ad91de804e9b08076c4db2081bfa6"
     ],
     "name": "build.gsutil cat",
     "stderr": "/path/to/tmp/",

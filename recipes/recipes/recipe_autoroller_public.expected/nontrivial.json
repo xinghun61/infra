@@ -316,7 +316,7 @@
       "[DEPOT_TOOLS]/gsutil.py",
       "----",
       "cat",
-      "gs://recipe-roller-cl-uploads/8e9377cb1551d1353f8f1103e01bd5bf"
+      "gs://recipe-roller-cl-uploads/791ad91de804e9b08076c4db2081bfa6"
     ],
     "name": "build.gsutil cat",
     "stderr": "/path/to/tmp/",
@@ -369,13 +369,13 @@
       "[DEPOT_TOOLS]/gsutil.py",
       "----",
       "cp",
-      "{\"diff_digest\": \"afe53a0e969fd0b2a6b5c5f89724d0c6\", \"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\"}",
-      "gs://recipe-roller-cl-uploads/8e9377cb1551d1353f8f1103e01bd5bf"
+      "{\"diff_digest\": \"d4fbd1f86c94d02a0e9f2a3d08aebc1c\", \"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\"}",
+      "gs://recipe-roller-cl-uploads/791ad91de804e9b08076c4db2081bfa6"
     ],
     "name": "build.gsutil upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/recipe-roller-cl-uploads/8e9377cb1551d1353f8f1103e01bd5bf@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/recipe-roller-cl-uploads/791ad91de804e9b08076c4db2081bfa6@@@"
     ]
   },
   {
