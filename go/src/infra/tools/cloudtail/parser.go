@@ -107,6 +107,7 @@ func (p *infraLogsParser) ParseLogLine(line string) *Entry {
 
 		severity := matches[1]
 		processID, _ := strconv.Atoi(matches[3])
+		threadID := matches[4] // threadID can be too long for int
 		module := matches[5]
 		line, _ := strconv.Atoi(matches[6])
 		message := matches[7]
@@ -114,7 +115,7 @@ func (p *infraLogsParser) ParseLogLine(line string) *Entry {
 		return &Entry{
 			Timestamp:   timestamp,
 			Severity:    infraLogsSeverity[severity],
-			TextPayload: fmt.Sprintf("%d %s:%d] %s", processID, module, line, message),
+			TextPayload: fmt.Sprintf("[pid:%d tid:%s %s:%d] %s", processID, threadID, module, line, message),
 			ParsedBy:    p,
 		}
 	}
@@ -150,7 +151,7 @@ func (p *twistedLogsParser) ParseLogLine(line string) *Entry {
 		return &Entry{
 			Timestamp:   timestamp,
 			Severity:    Default,
-			TextPayload: fmt.Sprintf("%s] %s", system, message),
+			TextPayload: fmt.Sprintf("[%s] %s", system, message),
 			ParsedBy:    p,
 		}
 	}

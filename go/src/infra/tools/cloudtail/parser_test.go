@@ -75,28 +75,28 @@ func TestInfraLogsParser(t *testing.T) {
 				wantSuccess:   true,
 				wantTimestamp: "2015-09-22T01:02:03.000004+00:00",
 				wantSeverity:  Info,
-				wantPayload:   "123 __main__:789] Hello world",
+				wantPayload:   "[pid:123 tid:456 __main__:789] Hello world",
 			},
 			{
 				line:          "[C2015-09-22T01:02:03.000004-07:00 123 456 foo.bar:789] Hello world",
 				wantSuccess:   true,
 				wantTimestamp: "2015-09-22T01:02:03.000004-07:00",
 				wantSeverity:  Critical,
-				wantPayload:   "123 foo.bar:789] Hello world",
+				wantPayload:   "[pid:123 tid:456 foo.bar:789] Hello world",
 			},
 			{
 				line:          "[C2015-09-22T01:02:03.000004-07:00 123 -456 foo.bar:789] Hello world",
 				wantSuccess:   true,
 				wantTimestamp: "2015-09-22T01:02:03.000004-07:00",
 				wantSeverity:  Critical,
-				wantPayload:   "123 foo.bar:789] Hello world",
+				wantPayload:   "[pid:123 tid:-456 foo.bar:789] Hello world",
 			},
 			{
 				line:          "[I2015-10-27T06:59:24.219355 29084 140208595912448 lib.botmap:403] Checking swarming botmap updates...",
 				wantSuccess:   true,
 				wantTimestamp: "2015-10-27T06:59:24.219355+00:00",
 				wantSeverity:  Info,
-				wantPayload:   "29084 lib.botmap:403] Checking swarming botmap updates...",
+				wantPayload:   "[pid:29084 tid:140208595912448 lib.botmap:403] Checking swarming botmap updates...",
 			},
 		})
 }
@@ -113,21 +113,21 @@ func TestTwistedLogsParser(t *testing.T) {
 				wantSuccess:   true,
 				wantTimestamp: "2015-09-27T23:40:38.000000-07:00",
 				wantSeverity:  Default,
-				wantPayload:   "-] Finished processing request with id: 97038920",
+				wantPayload:   "[-] Finished processing request with id: 97038920",
 			},
 			{
 				line:          "2015-09-27 23:41:00+0000 [HTTP11ClientProtocol,client] GitilesPoller: No new commits.",
 				wantSuccess:   true,
 				wantTimestamp: "2015-09-27T23:41:00.000000+00:00",
 				wantSeverity:  Default,
-				wantPayload:   "HTTP11ClientProtocol,client] GitilesPoller: No new commits.",
+				wantPayload:   "[HTTP11ClientProtocol,client] GitilesPoller: No new commits.",
 			},
 			{
 				line:          "2015-09-27 23:41:00+1000 [HTTPChannel,44506,127.0.0.1] Loading builder Android's build 39149 from on-disk pickle",
 				wantSuccess:   true,
 				wantTimestamp: "2015-09-27T23:41:00.000000+10:00",
 				wantSeverity:  Default,
-				wantPayload:   "HTTPChannel,44506,127.0.0.1] Loading builder Android's build 39149 from on-disk pickle",
+				wantPayload:   "[HTTPChannel,44506,127.0.0.1] Loading builder Android's build 39149 from on-disk pickle",
 			},
 		})
 }
