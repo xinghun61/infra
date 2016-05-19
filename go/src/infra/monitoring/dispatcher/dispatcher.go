@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"sort"
@@ -256,9 +257,17 @@ func main() {
 
 	// Start serving expvars.
 	go func() {
-		err := http.ListenAndServe(":12345", nil)
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		if err != nil {
-			errLog.Printf("ListenAndServe: %v", err)
+			errLog.Printf("Listen: %s", err)
+			os.Exit(1)
+		}
+
+		infoLog.Printf("expvars listening on %v", listener.Addr())
+
+		err = http.Serve(listener, nil)
+		if err != nil {
+			errLog.Printf("http.Serve: %s", err)
 			os.Exit(1)
 		}
 	}()
