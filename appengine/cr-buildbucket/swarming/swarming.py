@@ -161,21 +161,25 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
   if builder_cfg.priority > 0:  # pragma: no branch
     task['priority'] = builder_cfg.priority
 
-  tags = task.setdefault('tags', [])
-  _extend_unique(tags, [
+  build_tags = dict(t.split(':', 1) for t in build.tags)
+  build_tags['builder'] = builder_cfg.name
+  build.tags = sorted('%s:%s' % (k, v) for k, v in build_tags.iteritems())
+
+  swarming_tags = task.setdefault('tags', [])
+  _extend_unique(swarming_tags, [
     'buildbucket_hostname:%s' % app_identity.get_default_version_hostname(),
     'buildbucket_bucket:%s' % build.bucket,
   ])
   if is_recipe:  # pragma: no branch
-    _extend_unique(tags, [
+    _extend_unique(swarming_tags, [
       'recipe_repository:%s' % recipe.repository,
       'recipe_revision:%s' % revision,
       'recipe_name:%s' % recipe.name,
     ])
-  _extend_unique(tags, swarming_cfg.common_swarming_tags)
-  _extend_unique(tags, builder_cfg.swarming_tags)
-  _extend_unique(tags, build.tags)
-  tags.sort()
+  _extend_unique(swarming_tags, swarming_cfg.common_swarming_tags)
+  _extend_unique(swarming_tags, builder_cfg.swarming_tags)
+  _extend_unique(swarming_tags, build.tags)
+  swarming_tags.sort()
 
   task_properties = task.setdefault('properties', {})
   task_properties['dimensions'] = _prepare_dimensions(

@@ -30,7 +30,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
       builders=[
         Swarming.Builder(
           name='release',
-          swarming_tags=['builder:release'],
+          swarming_tags=['a:b'],
           dimensions=['os:Linux'],
           recipe=Swarming.Recipe(
             repository='https://x.com',
@@ -54,6 +54,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
         ),
         Swarming.Builder(
           name='b2',
+          swarming_tags=['builder:b2'],
           dimensions=['x:y', 'x:y2'],
           recipe=Swarming.Recipe(
             properties=[
@@ -76,6 +77,8 @@ class SwarmingCfgTest(testing.AppengineTestCase):
       ('builder #1: dimension #2: '
        'key "a.b" does not match pattern "^[a-zA-Z\_\-]+$"'),
       'builder #1: recipe unspecified',
+      ('builder b2: tag #1: do not specify builder tag; '
+       'it is added by swarmbucket automatically'),
       'builder b2: dimension #2: duplicate key x',
       ('builder b2: has no "pool" dimension. '
        'Either define it in the builder or in "common_dimensions"'),

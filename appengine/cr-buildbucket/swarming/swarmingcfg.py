@@ -12,6 +12,11 @@ def validate_tag(tag, ctx):
   # a valid swarming tag is a string that contains ":"
   if ':' not in tag:
     ctx.error('does not have ":": %s', tag)
+  name = tag.split(':', 1)[0]
+  if name.lower() == 'builder':
+    ctx.error(
+        'do not specify builder tag; '
+        'it is added by swarmbucket automatically')
 
 
 def validate_dimensions(field_name, dimensions, ctx):
