@@ -91,7 +91,7 @@ class HttpRouterTests(unittest.TestCase):
     event.event_code = 1
     event.event_flow_id = 2
     self.assertFalse(r.push_event(event))
-    self.assertEquals(len(sleep.call_args_list), r.try_num - 1)
+    self.assertEquals(len(sleep.call_args_list), r.try_num)
 
   def test_push_exception(self):
     # Fail to push events even after all retries
@@ -110,37 +110,20 @@ class HttpRouterTests(unittest.TestCase):
     event.event_code = 1
     event.event_flow_id = 2
     self.assertFalse(r.push_event(event))
-    self.assertEquals(len(sleep.call_args_list), 2)
+    self.assertEquals(len(sleep.call_args_list), 3)
 
-  @mock.patch('logging.info', autospec=True)
-  def test_logs_success_if_more_than_one_attempt(self, loginfo):
-    # Fail to push events once.
-    sleep = mock.create_autospec(time.sleep, auto_set=True)
-    r = router._HttpRouter({}, 'https://bla.bla', _sleep_fn=sleep)
-
-    class FakeHttp(object):
-      def __init__(self):
-        self.num_errors = 1
-        self.success_http = infra_libs.HttpMock(
-              [('https://bla.bla', {'status': 200}, '')])
-
-      # pylint: disable=unused-argument
-      def request(self, *args, **kwargs):
-        if self.num_errors:
-          self.num_errors -= 1
-          raise ValueError()
-        else:
-          return self.success_http.request(*args, **kwargs)
-
-    r._http = FakeHttp()
+  @mock.patch('logging.debug', autospec=True)
+  def test_logs_success(self, logdebug):
+    r = router._HttpRouter({}, 'https://bla.bla')
+    r._http = infra_libs.HttpMock([('https://bla.bla', {'status': 200}, '')])
 
     event = LogRequestLite.LogEventLite()
     event.event_time_ms = router.time_ms()
     event.event_code = 1
     event.event_flow_id = 2
     self.assertTrue(r.push_event(event))
-    self.assertIn(mock.call('Succeeded POSTing data after %d attempts', 2),
-                  loginfo.call_args_list)
+    self.assertIn(mock.call('Succeeded POSTing data after %d attempts', 1),
+                  logdebug.call_args_list)
 
 
 class TextStreamRouterTests(unittest.TestCase):
