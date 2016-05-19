@@ -29,7 +29,7 @@ func (a *TestFailureAnalyzer) Analyze(f stepFailure) (*StepAnalyzerResult, error
 	}
 	ret.Recognized = true
 
-	testResults, err := a.Reader.TestResults(f.masterName, f.builderName, f.step.Name, f.build.Number)
+	testResults, err := a.Reader.TestResults(f.master, f.builderName, f.step.Name, f.build.Number)
 	if err != nil {
 		ret.Reasons = append(ret.Reasons, f.step.Name)
 		return ret, fmt.Errorf("Error fetching test results: %v", err)

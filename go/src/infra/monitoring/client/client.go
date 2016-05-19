@@ -36,25 +36,26 @@ var (
 	expvars = expvar.NewMap("client")
 )
 
-// MasterURL returns the builder URL for the given master.
-func MasterURL(master string) string {
-	return fmt.Sprintf("https://build.chromium.org/p/%s", master)
-}
-
 // BuilderURL returns the builder URL for the given master and builder.
-func BuilderURL(master, builder string) string {
-	return fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s", master, oldEscape(builder))
+func BuilderURL(master *messages.MasterLocation, builder string) *url.URL {
+	newURL := master.URL
+	newURL.Path += fmt.Sprintf("/builders/%s", oldEscape(builder))
+	return &newURL
 }
 
 // BuildURL returns the build URL for the given master, builder and build number.
-func BuildURL(master, builder string, buildNum int64) string {
-	return fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d", master, oldEscape(builder), buildNum)
+func BuildURL(master *messages.MasterLocation, builder string, buildNum int64) *url.URL {
+	newURL := master.URL
+	newURL.Path += fmt.Sprintf("/builders/%s/builds/%d", oldEscape(builder), buildNum)
+	return &newURL
 }
 
 // StepURL returns the step URL for the given master, builder, step and build number.
-func StepURL(master, builder, step string, buildNum int64) string {
-	return fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s",
-		master, oldEscape(builder), buildNum, oldEscape(step))
+func StepURL(master *messages.MasterLocation, builder, step string, buildNum int64) *url.URL {
+	newURL := master.URL
+	newURL.Path += fmt.Sprintf("/builders/%s/builds/%d/steps/%s",
+		oldEscape(builder), buildNum, oldEscape(step))
+	return &newURL
 }
 
 // Sigh.  build.chromium.org doesn't accept + as an escaped space in URL paths.
@@ -67,21 +68,21 @@ func oldEscape(s string) string {
 type Reader interface {
 	// Build fetches the build summary for master, builder and buildNum
 	// from build.chromium.org.
-	Build(master, builder string, buildNum int64) (*messages.Build, error)
+	Build(master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error)
 
 	// LatestBuilds fetches a list of recent build summaries for master and builder
 	// from build.chromium.org.
-	LatestBuilds(master, build string) ([]*messages.Build, error)
+	LatestBuilds(master *messages.MasterLocation, build string) ([]*messages.Build, error)
 
 	// TestResults fetches the results of a step failure's test run.
-	TestResults(masterName, builderName, stepName string, buildNumber int64) (*messages.TestResults, error)
+	TestResults(masterName *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error)
 
 	// BuildExtract fetches build information for master from CBE.
-	BuildExtract(master string) (*messages.BuildExtract, error)
+	BuildExtract(master *messages.MasterLocation) (*messages.BuildExtract, error)
 
 	// StdioForStep fetches the standard output for a given build step, and an error if any
 	// occurred.
-	StdioForStep(master, builder, step string, buildNum int64) ([]string, error)
+	StdioForStep(master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error)
 
 	// CrbugItems fetches a list of open issues from crbug matching the given label.
 	CrbugItems(label string) ([]messages.CrbugItem, error)
@@ -127,12 +128,12 @@ func NewReader() Reader {
 	}
 }
 
-func cacheKeyForBuild(master, builder string, number int64) string {
+func cacheKeyForBuild(master *messages.MasterLocation, builder string, number int64) string {
 	return filepath.FromSlash(
-		fmt.Sprintf("%s/%s/%d.json", url.QueryEscape(master), url.QueryEscape(builder), number))
+		fmt.Sprintf("%s/%s/%d.json", url.QueryEscape(master.String()), url.QueryEscape(builder), number))
 }
 
-func (r *reader) Build(master, builder string, buildNum int64) (*messages.Build, error) {
+func (r *reader) Build(master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
 	// TODO: get this from cache.
 	r.bLock.Lock()
 	build, ok := r.bCache[cacheKeyForBuild(master, builder, buildNum)]
@@ -142,7 +143,7 @@ func (r *reader) Build(master, builder string, buildNum int64) (*messages.Build,
 	}
 
 	build = &messages.Build{}
-	URL := fmt.Sprintf("https://build.chromium.org/p/%s/json/builders/%s/builds/%d",
+	URL := fmt.Sprintf("%s/json/builders/%s/builds/%d",
 		master, builder, buildNum)
 
 	expvars.Add("Build", 1)
@@ -155,9 +156,9 @@ func (r *reader) Build(master, builder string, buildNum int64) (*messages.Build,
 	return build, nil
 }
 
-func (r *reader) LatestBuilds(master, builder string) ([]*messages.Build, error) {
+func (r *reader) LatestBuilds(master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
 	v := url.Values{}
-	v.Add("master", master)
+	v.Add("master", master.Name())
 	v.Add("builder", builder)
 
 	URL := fmt.Sprintf("https://chrome-build-extract.appspot.com/get_builds?%s", v.Encode())
@@ -183,10 +184,10 @@ func (r *reader) LatestBuilds(master, builder string) ([]*messages.Build, error)
 	return res.Builds, nil
 }
 
-func (r *reader) TestResults(masterName, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
+func (r *reader) TestResults(master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
 	v := url.Values{}
 	v.Add("name", "full_results.json")
-	v.Add("master", masterName)
+	v.Add("master", master.Name())
 	v.Add("builder", builderName)
 	v.Add("buildnumber", fmt.Sprintf("%d", buildNumber))
 	v.Add("testtype", stepName)
@@ -204,20 +205,28 @@ func (r *reader) TestResults(masterName, builderName, stepName string, buildNumb
 	return tr, nil
 }
 
-func (r *reader) BuildExtract(master string) (*messages.BuildExtract, error) {
-	URL := fmt.Sprintf("https://chrome-build-extract.appspot.com/get_master/%s", master)
+func (r *reader) BuildExtract(masterURL *messages.MasterLocation) (*messages.BuildExtract, error) {
+	URL := fmt.Sprintf("https://chrome-build-extract.appspot.com/get_master/%s", masterURL.Name())
 	ret := &messages.BuildExtract{}
 
 	expvars.Add("BuildExtract", 1)
 	defer expvars.Add("BuildExtract", -1)
 	if code, err := r.hc.getJSON(URL, ret); err != nil {
 		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
+
+		expvars.Add("DirectPoll", 1)
+		defer expvars.Add("DirectPoll", -1)
+		if code, err := r.hc.getJSON(masterURL.String(), ret); err != nil {
+			errLog.Printf("Error (%d) fetching %s: %v", code, masterURL.String(), err)
+			return nil, err
+		}
+		return ret, nil
 		return nil, err
 	}
 	return ret, nil
 }
 
-func (r *reader) StdioForStep(master, builder, step string, buildNum int64) ([]string, error) {
+func (r *reader) StdioForStep(master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
 	URL := fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s/logs/stdio/text", master, builder, buildNum, step)
 
 	expvars.Add("StdioForStep", 1)

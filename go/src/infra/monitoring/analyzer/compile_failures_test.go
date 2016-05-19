@@ -6,6 +6,7 @@ package analyzer
 
 import (
 	"infra/monitoring/messages"
+	"net/url"
 	"reflect"
 	"strings"
 	"testing"
@@ -26,7 +27,11 @@ func TestCompileFailureAlerts(t *testing.T) {
 		{
 			name: "non-compiler failure",
 			failure: stepFailure{
-				masterName:  "fake.master",
+				master: &messages.MasterLocation{URL: url.URL{
+					Scheme: "https",
+					Host:   "build.chromium.org",
+					Path:   "/p/fake.master",
+				}},
 				builderName: "fake_builder",
 				step: messages.Step{
 					Name: "tests_compile",

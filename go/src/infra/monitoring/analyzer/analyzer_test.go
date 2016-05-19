@@ -7,8 +7,8 @@ package analyzer
 import (
 	"fmt"
 	"infra/libs/testing/ansidiff"
-	"infra/monitoring/client"
 	"infra/monitoring/messages"
+	"net/url"
 	"reflect"
 	"testing"
 	"time"
@@ -24,7 +24,7 @@ type mockReader struct {
 	bCache       map[string]*messages.Build
 	build        *messages.Build
 	builds       map[string]*messages.Build
-	latestBuilds map[string]map[string][]*messages.Build
+	latestBuilds map[messages.MasterLocation]map[string][]*messages.Build
 	testResults  *messages.TestResults
 	stdioForStep []string
 	buildFetchError,
@@ -33,12 +33,12 @@ type mockReader struct {
 	buildFetchErrs map[string]error
 }
 
-func (m mockReader) Build(master, builder string, buildNum int64) (*messages.Build, error) {
+func (m mockReader) Build(master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
 	if m.build != nil {
 		return m.build, m.buildFetchError
 	}
 
-	key := fmt.Sprintf("%s/%s/%d", master, builder, buildNum)
+	key := fmt.Sprintf("%s/%s/%d", master.Name(), builder, buildNum)
 	if b, ok := m.bCache[key]; ok {
 		return b, nil
 	}
@@ -46,19 +46,19 @@ func (m mockReader) Build(master, builder string, buildNum int64) (*messages.Bui
 	return m.builds[key], m.buildFetchErrs[key]
 }
 
-func (m mockReader) LatestBuilds(master, builder string) ([]*messages.Build, error) {
-	return m.latestBuilds[master][builder], nil
+func (m mockReader) LatestBuilds(master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
+	return m.latestBuilds[*master][builder], nil
 }
 
-func (m mockReader) TestResults(masterName, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
+func (m mockReader) TestResults(master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
 	return m.testResults, m.stepFetchError
 }
 
-func (m mockReader) BuildExtract(url string) (*messages.BuildExtract, error) {
+func (m mockReader) BuildExtract(url *messages.MasterLocation) (*messages.BuildExtract, error) {
 	return nil, nil
 }
 
-func (m mockReader) StdioForStep(master, builder, step string, buildNum int64) ([]string, error) {
+func (m mockReader) StdioForStep(master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
 	return m.stdioForStep, m.stdioForStepError
 }
 
@@ -72,6 +72,14 @@ func (m mockReader) PostAlerts(alerts *messages.Alerts) error {
 
 func (m mockReader) CrbugItems(tree string) ([]messages.CrbugItem, error) {
 	return nil, nil
+}
+
+func urlParse(s string, t *testing.T) *url.URL {
+	p, err := url.Parse(s)
+	if err != nil {
+		t.Errorf("failed to parse %s: %s", s, err)
+	}
+	return p
 }
 
 func TestMasterAlerts(t *testing.T) {
@@ -105,13 +113,13 @@ func TestMasterAlerts(t *testing.T) {
 			t: time.Unix(100, 0).Add(20 * time.Minute),
 			want: []messages.Alert{
 				{
-					Key:       "stale master: fake.master",
-					Title:     "Stale fake.master master data",
+					Key:       "stale master: https://build.chromium.org/p/fake.master",
+					Title:     "Stale https://build.chromium.org/p/fake.master master data",
 					Type:      messages.AlertStaleMaster,
 					Severity:  staleMasterSev,
 					Body:      "0h 20m elapsed since last update.",
 					Time:      messages.TimeToEpochTime(time.Unix(100, 0).Add(20 * time.Minute)),
-					Links:     []messages.Link{{"Master", client.MasterURL("fake.master")}},
+					Links:     []messages.Link{{"Master", urlParse("https://build.chromium.org/p/fake.master", t).String()}},
 					StartTime: messages.EpochTime(100),
 				},
 			},
@@ -131,7 +139,7 @@ func TestMasterAlerts(t *testing.T) {
 
 	for _, test := range tests {
 		a.Now = fakeNow(test.t)
-		got := a.MasterAlerts(test.master, &test.be)
+		got := a.MasterAlerts(&messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, &test.be)
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("%s failed. Got %+v, want: %+v\nDiff: %v", test.name, got, test.want,
 				ansidiff.Diff(got, test.want))
@@ -171,7 +179,7 @@ func TestBuilderAlerts(t *testing.T) {
 
 	for _, test := range tests {
 		a.Now = fakeNow(test.t)
-		got := a.BuilderAlerts(test.url, &test.be)
+		got := a.BuilderAlerts(&messages.MasterLocation{URL: *urlParse(test.url, t)}, &test.be)
 		if !reflect.DeepEqual(got, test.wantBuilders) {
 			t.Errorf("%s failed. Got %+v, want: %+v", test.name, got, test.wantBuilders)
 		}
@@ -274,9 +282,9 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 					Body:      "fake.master.hung.builder has been building for 3h58m20s (last step update 1970-01-01 00:01:40 +0000 UTC), past the alerting threshold of 3h0m0s",
 					Severity:  hungBuilderSev,
 					Links: []messages.Link{
-						{Title: "Builder", Href: "https://build.chromium.org/p/fake.master/builders/hung.builder"},
-						{Title: "Last build", Href: "https://build.chromium.org/p/fake.master/builders/hung.builder/builds/1"},
-						{Title: "Last build step", Href: "https://build.chromium.org/p/fake.master/builders/hung.builder/builds/1/steps/fake_step"},
+						{Title: "Builder", Href: urlParse("https://build.chromium.org/p/fake.master/builders/hung.builder", t).String()},
+						{Title: "Last build", Href: urlParse("https://build.chromium.org/p/fake.master/builders/hung.builder/builds/1", t).String()},
+						{Title: "Last build step", Href: urlParse("https://build.chromium.org/p/fake.master/builders/hung.builder/builds/1/steps/fake_step", t).String()},
 					},
 				},
 			},
@@ -291,7 +299,8 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 		a.Reader = mockReader{
 			builds: test.builds,
 		}
-		gotAlerts, gotErrs := a.builderAlerts(test.master, test.builder, &test.b)
+		fmt.Printf("test %s", test.name)
+		gotAlerts, gotErrs := a.builderAlerts(&messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, &test.b)
 		if !reflect.DeepEqual(gotAlerts, test.wantAlerts) {
 			t.Errorf("%s failed. Got:\n%+v, want:\n%+v\nDiff: %v", test.name, gotAlerts, test.wantAlerts,
 				ansidiff.Diff(gotAlerts, test.wantAlerts))
@@ -366,13 +375,13 @@ func TestBuilderStepAlerts(t *testing.T) {
 						Builders: []messages.AlertedBuilder{
 							{
 								Name: "fake.builder",
-								URL:  "https://build.chromium.org/p/fake.master/builders/fake.builder",
+								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 							},
 						},
 						Reasons: []messages.Reason{
 							{
 								Step: "fake_step",
-								URL:  "https://build.chromium.org/p/fake.master/builders/fake.builder/builds/0/steps/fake_step",
+								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder/builds/0/steps/fake_step", t).String(),
 							},
 						},
 						RegressionRanges: []messages.RegressionRange{
@@ -456,7 +465,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						Builders: []messages.AlertedBuilder{
 							{
 								Name:          "fake.builder",
-								URL:           "https://build.chromium.org/p/fake.master/builders/fake.builder",
+								URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 								FirstFailure:  0,
 								LatestFailure: 3,
 							},
@@ -464,7 +473,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						Reasons: []messages.Reason{
 							{
 								Step: "fake_step",
-								URL:  "https://build.chromium.org/p/fake.master/builders/fake.builder/builds/0/steps/fake_step",
+								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder/builds/0/steps/fake_step", t).String(),
 							},
 						},
 						RegressionRanges: []messages.RegressionRange{
@@ -489,7 +498,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 		a.Reader = mockReader{
 			builds: test.builds,
 		}
-		gotAlerts, gotErrs := a.builderStepAlerts(test.master, test.builder, test.recentBuilds)
+		gotAlerts, gotErrs := a.builderStepAlerts(&messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.recentBuilds)
 		if !reflect.DeepEqual(gotAlerts, test.wantAlerts) {
 			t.Errorf("%s failed. Got:\n\t%+v\nWant:\n\t%+v\n\tDiff:\n\t%+v", test.name, gotAlerts, test.wantAlerts, ansidiff.Diff(gotAlerts, test.wantAlerts))
 		}
@@ -807,7 +816,7 @@ func TestStepFailures(t *testing.T) {
 			},
 			want: []stepFailure{
 				{
-					masterName:  "stepCheck.master",
+					master:      &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/stepCheck.master", t)},
 					builderName: "fake.builder",
 					build: messages.Build{
 						Steps: []messages.Step{
@@ -839,7 +848,7 @@ func TestStepFailures(t *testing.T) {
 	for _, test := range tests {
 		mc.build = test.b
 		mc.bCache = test.bCache
-		got, err := a.stepFailures(test.master, test.builder, test.buildNum)
+		got, err := a.stepFailures(&messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.buildNum)
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("%s failed.\nGot:\n%+v\nwant:\n%+v", test.name, got, test.want)
 		}
@@ -865,7 +874,7 @@ func TestStepFailureAlerts(t *testing.T) {
 			name: "single failure",
 			failures: []stepFailure{
 				{
-					masterName:  "fake.master",
+					master:      &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
 					builderName: "fake.builder",
 					build: messages.Build{
 						Number: 2,
@@ -876,7 +885,7 @@ func TestStepFailureAlerts(t *testing.T) {
 					},
 				},
 				{
-					masterName:  "fake.master",
+					master:      &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
 					builderName: "fake.builder",
 					build: messages.Build{
 						Number: 42,
@@ -899,7 +908,7 @@ func TestStepFailureAlerts(t *testing.T) {
 						Builders: []messages.AlertedBuilder{
 							{
 								Name:          "fake.builder",
-								URL:           "https://build.chromium.org/p/fake.master/builders/fake.builder",
+								URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 								FirstFailure:  42,
 								LatestFailure: 42,
 							},
@@ -907,7 +916,7 @@ func TestStepFailureAlerts(t *testing.T) {
 						Reasons: []messages.Reason{
 							{
 								Step: "fake_tests",
-								URL:  "https://build.chromium.org/p/fake.master/builders/fake.builder/builds/42/steps/fake_tests",
+								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder/builds/42/steps/fake_tests", t).String(),
 							},
 						},
 						RegressionRanges: []messages.RegressionRange{},
@@ -1092,7 +1101,7 @@ func TestExcludeFailure(t *testing.T) {
 			builder: "fake.builder",
 			step:    "fake_step",
 			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
-				"fake.master": {{
+				"https://build.chromium.org/p/fake.master": {{
 					ExcludedBuilders: []string{"fake.builder"},
 				}},
 			}},
@@ -1104,7 +1113,7 @@ func TestExcludeFailure(t *testing.T) {
 			builder: "fake.builder",
 			step:    "fake_step",
 			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
-				"fake.master": {{
+				"https://build.chromium.org/p/fake.master": {{
 					ExcludedSteps: []string{"fake_step"},
 				}},
 			}},
@@ -1116,7 +1125,7 @@ func TestExcludeFailure(t *testing.T) {
 			builder: "fake.builder",
 			step:    "fake_step",
 			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
-				"fake.master": {{
+				"https://build.chromium.org/p/fake.master": {{
 					Builders: map[string]messages.BuilderConfig{
 						"fake.builder": {
 							ExcludedSteps: []string{"fake_step"},
@@ -1132,7 +1141,7 @@ func TestExcludeFailure(t *testing.T) {
 			builder: "fake.builder",
 			step:    "fake_step",
 			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
-				"fake.master": {{
+				"https://build.chromium.org/p/fake.master": {{
 					ExcludedBuilders: []string{"*"},
 				}},
 			}},
@@ -1143,7 +1152,7 @@ func TestExcludeFailure(t *testing.T) {
 	a := New(&mockReader{}, 0, 10)
 	for _, test := range tests {
 		a.Gatekeeper = NewGatekeeperRules(test.gk)
-		got := a.Gatekeeper.ExcludeFailure(test.master, test.builder, test.step)
+		got := a.Gatekeeper.ExcludeFailure(&messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.step)
 		if got != test.want {
 			t.Errorf("%s failed. Got: %+v, want: %+v", test.name, got, test.want)
 		}

@@ -32,9 +32,9 @@ func (a *CompileFailureAnalyzer) Analyze(f stepFailure) (*StepAnalyzerResult, er
 	}
 	ret.Recognized = true
 
-	stdio, err := a.Reader.StdioForStep(f.masterName, f.builderName, f.step.Name, f.build.Number)
+	stdio, err := a.Reader.StdioForStep(f.master, f.builderName, f.step.Name, f.build.Number)
 	if err != nil {
-		return nil, fmt.Errorf("Couldn't get stdio for %s.%s.%s: %v", f.masterName, f.builderName, f.step.Name, err)
+		return nil, fmt.Errorf("Couldn't get stdio for %s.%s.%s: %v", f.master.Name(), f.builderName, f.step.Name, err)
 	}
 
 	// '(?P<path>.*):(?P<line>\d+):(?P<column>\d+): error:'

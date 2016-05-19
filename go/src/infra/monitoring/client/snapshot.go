@@ -29,27 +29,27 @@ type snapshot struct {
 
 // Build fetches the build summary for master master, builder builder and build id buildNum
 // from build.chromium.org.
-func (c *snapshot) Build(master, builder string, buildNum int64) (*messages.Build, error) {
+func (c *snapshot) Build(master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
 	b, err := c.wrapped.Build(master, builder, buildNum)
 	if err != nil {
 		return nil, err
 	}
-	err = write(filepath.Join(c.baseDir, "build", master, builder, fmt.Sprintf("%d", buildNum)), b)
+	err = write(filepath.Join(c.baseDir, "build", master.Name(), builder, fmt.Sprintf("%d", buildNum)), b)
 	return b, err
 }
 
-func (c *snapshot) LatestBuilds(master, builder string) ([]*messages.Build, error) {
+func (c *snapshot) LatestBuilds(master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
 	bs, err := c.wrapped.LatestBuilds(master, builder)
 	if err != nil {
 		return nil, err
 	}
 
-	err = write(filepath.Join(c.baseDir, "latestbuilds", master, builder), bs)
+	err = write(filepath.Join(c.baseDir, "latestbuilds", master.Name(), builder), bs)
 	if err != nil {
 		return nil, err
 	}
 	for _, b := range bs {
-		if err := write(filepath.Join(c.baseDir, "build", master, builder, fmt.Sprintf("%d", b.Number)), b); err != nil {
+		if err := write(filepath.Join(c.baseDir, "build", master.Name(), builder, fmt.Sprintf("%d", b.Number)), b); err != nil {
 			return nil, err
 		}
 	}
@@ -57,23 +57,23 @@ func (c *snapshot) LatestBuilds(master, builder string) ([]*messages.Build, erro
 }
 
 // TestResults fetches the results of a step failure's test run.
-func (c *snapshot) TestResults(masterName, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
-	r, err := c.wrapped.TestResults(masterName, builderName, stepName, buildNumber)
+func (c *snapshot) TestResults(master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
+	r, err := c.wrapped.TestResults(master, builderName, stepName, buildNumber)
 	if err != nil {
 		return nil, err
 	}
-	err = write(filepath.Join(c.baseDir, "testresults", masterName, builderName, stepName, fmt.Sprintf("%d", buildNumber)), r)
+	err = write(filepath.Join(c.baseDir, "testresults", master.Name(), builderName, stepName, fmt.Sprintf("%d", buildNumber)), r)
 	return r, err
 }
 
 // BuildExtracts fetches build information for masters from CBE in parallel.
 // Returns a map of url to error for any requests that had errors.
-func (c *snapshot) BuildExtract(master string) (*messages.BuildExtract, error) {
+func (c *snapshot) BuildExtract(master *messages.MasterLocation) (*messages.BuildExtract, error) {
 	m, err := c.wrapped.BuildExtract(master)
 	if err != nil {
 		return nil, err
 	}
-	err = write(filepath.Join(c.baseDir, "buildextracts", master), m)
+	err = write(filepath.Join(c.baseDir, "buildextracts", master.Name()), m)
 	if err != nil {
 		errLog.Printf("Error snapshotting build extract: %v", err)
 	}
@@ -82,12 +82,12 @@ func (c *snapshot) BuildExtract(master string) (*messages.BuildExtract, error) {
 
 // StdioForStep fetches the standard output for a given build step, and an error if any
 // occurred.
-func (c *snapshot) StdioForStep(master, builder, step string, buildNum int64) ([]string, error) {
+func (c *snapshot) StdioForStep(master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
 	s, err := c.wrapped.StdioForStep(master, builder, step, buildNum)
 	if err != nil {
 		return nil, err
 	}
-	err = write(filepath.Join(c.baseDir, "stdioforstep", master, builder, step, fmt.Sprintf("%d", buildNum)), s)
+	err = write(filepath.Join(c.baseDir, "stdioforstep", master.Name(), builder, step, fmt.Sprintf("%d", buildNum)), s)
 	return s, err
 }
 

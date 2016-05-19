@@ -17,6 +17,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -34,6 +35,17 @@ import (
 	"infra/monitoring/looper"
 	"infra/monitoring/messages"
 )
+
+type stringSlice []string
+
+func (s *stringSlice) String() string {
+	return strings.Join(*s, ",")
+}
+
+func (s *stringSlice) Set(value string) error {
+	*s = strings.Split(value, ",")
+	return nil
+}
 
 var (
 	alertsBaseURL       = flag.String("base-url", "", "Base URL where alerts are stored. Will be appended with the tree name.")
@@ -57,7 +69,7 @@ var (
 	duration, cycle time.Duration
 
 	// gk is the gatekeeper config.
-	gk = &messages.GatekeeperConfig{}
+	gk = messages.GatekeeperConfig{}
 	// gkt is the gatekeeper trees config.
 	gkt              = map[string]messages.TreeMasterConfig{}
 	filteredFailures = uint64(0)
@@ -73,13 +85,13 @@ func init() {
 	}
 }
 
-func analyzeBuildExtract(ctx context.Context, a *analyzer.Analyzer, masterName string, b *messages.BuildExtract) []messages.Alert {
-	ret := a.MasterAlerts(masterName, b)
+func analyzeBuildExtract(ctx context.Context, a *analyzer.Analyzer, masterURL *messages.MasterLocation, b *messages.BuildExtract) []messages.Alert {
+	ret := a.MasterAlerts(masterURL, b)
 	if *mastersOnly {
 		return ret
 	}
-	infoLog.Printf("getting builder alerts for %s", masterName)
-	return append(ret, a.BuilderAlerts(masterName, b)...)
+	infoLog.Printf("getting builder alerts for %s", masterURL)
+	return append(ret, a.BuilderAlerts(masterURL, b)...)
 }
 
 // readJSONFile reads a file and decode it as JSON.
@@ -95,35 +107,38 @@ func readJSONFile(filePath string, object interface{}) error {
 	return nil
 }
 
-func masterFromURL(masterURL string) string {
-	parts := strings.Split(masterURL, "/")
+func masterFromURL(masterURL *url.URL) string {
+	parts := strings.Split(masterURL.Path, "/")
 	return parts[len(parts)-1]
 }
 
-func fetchBuildExtracts(ctx context.Context, c client.Reader, masterNames []string) map[string]*messages.BuildExtract {
-	bes := map[string]*messages.BuildExtract{}
+func fetchBuildExtracts(ctx context.Context, c client.Reader, masters []*messages.MasterLocation) map[messages.MasterLocation]*messages.BuildExtract {
+	bes := map[messages.MasterLocation]*messages.BuildExtract{}
 	type beResp struct {
-		name string
-		err  error
-		be   *messages.BuildExtract
+		master *messages.MasterLocation
+		err    error
+		be     *messages.BuildExtract
 	}
 
 	res := make(chan beResp)
-	for _, masterName := range masterNames {
-		go func(mn string) {
-			r := beResp{name: mn}
-			r.be, r.err = c.BuildExtract(mn)
+	for _, master := range masters {
+		master := master
+		go func() {
+			r := beResp{
+				master: master,
+			}
+			r.be, r.err = c.BuildExtract(master)
 			if r.err != nil {
-				errLog.Printf("Error reading build extract from %s : %s", mn, r.err)
+				errLog.Printf("Error reading build extract from %s : %s", r.master.Name(), r.err)
 			}
 			res <- r
-		}(masterName)
+		}()
 	}
 
-	for range masterNames {
+	for range masters {
 		r := <-res
 		if r.be != nil {
-			bes[r.name] = r.be
+			bes[*r.master] = r.be
 		}
 	}
 	return bes
@@ -145,21 +160,22 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 			expvars.Add(fmt.Sprintf("Tree-%s", tree), 1)
 			defer expvars.Add(fmt.Sprintf("Tree-%s", tree), -1)
 			infoLog.Printf("Checking tree: %s", tree)
-			masterNames := []string{}
+			masters := []*messages.MasterLocation{}
+
 			t := gkt[tree]
 			for _, url := range t.Masters {
-				masterNames = append(masterNames, masterFromURL(url))
+				masters = append(masters, url)
 			}
 
 			// TODO(seanmccullough): Plumb ctx through the rest of these calls.
-			bes := fetchBuildExtracts(ctx, a.Reader, masterNames)
+			bes := fetchBuildExtracts(ctx, a.Reader, masters)
 			infoLog.Printf("Build Extracts read: %d", len(bes))
 
 			alerts := &messages.Alerts{
 				RevisionSummaries: map[string]messages.RevisionSummary{},
 			}
-			for masterName, be := range bes {
-				alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(ctx, a, masterName, be)...)
+			for master, be := range bes {
+				alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(ctx, a, &master, be)...)
 			}
 
 			sort.Sort(bySeverity(alerts.Alerts))
@@ -292,7 +308,7 @@ func main() {
 
 	err = readJSONFile(*gatekeeperTreesJSON, &gkt)
 	if err != nil {
-		errLog.Printf("Error reading gatekeeper trees json: %v", err)
+		errLog.Printf("Error reading gatekeeper json: %v", err)
 		os.Exit(1)
 	}
 
@@ -344,7 +360,7 @@ func main() {
 		}
 	}
 
-	a.Gatekeeper = analyzer.NewGatekeeperRules(*gk)
+	a.Gatekeeper = analyzer.NewGatekeeperRules(gk)
 
 	a.MasterOnly = *masterOnly
 	a.BuilderOnly = *builderOnly

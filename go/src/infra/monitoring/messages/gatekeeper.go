@@ -6,6 +6,12 @@
 
 package messages
 
+import (
+	"encoding/json"
+	"net/url"
+	"strings"
+)
+
 // MasterConfig represents filtering configurtaion for alerts
 // generated about a buildbot master.
 type MasterConfig struct {
@@ -35,6 +41,47 @@ type GatekeeperConfig struct {
 
 // TreeMasterConfig is a named group of masters. e.g. chromium, or blink.
 type TreeMasterConfig struct {
+	BuildDB string            `json:"build-db"`
+	Masters []*MasterLocation `json:"masters"`
+}
+
+// Intermediate struct without parsed URLs
+type treeMasterConfig struct {
 	BuildDB string   `json:"build-db"`
 	Masters []string `json:"masters"`
+}
+
+func (t *TreeMasterConfig) UnmarshalJSON(b []byte) error {
+	tmpT := treeMasterConfig{}
+	if err := json.Unmarshal(b, &tmpT); err != nil {
+		return err
+	}
+
+	t.BuildDB = tmpT.BuildDB
+	t.Masters = make([]*MasterLocation, len(tmpT.Masters))
+
+	for i, master := range tmpT.Masters {
+		parsed, err := url.Parse(master)
+		if err != nil {
+			return err
+		}
+
+		t.Masters[i] = &MasterLocation{*parsed}
+	}
+
+	return nil
+}
+
+type MasterLocation struct {
+	url.URL
+}
+
+func (m *MasterLocation) Name() string {
+	parts := strings.Split(m.Path, "/")
+	return parts[len(parts)-1]
+}
+
+func (m *MasterLocation) MarshalJSON() ([]byte, error) {
+	return []byte(m.String()), nil
+
 }

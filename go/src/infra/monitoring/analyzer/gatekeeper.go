@@ -1,8 +1,6 @@
 package analyzer
 
 import (
-	"strings"
-
 	"infra/monitoring/messages"
 )
 
@@ -16,21 +14,19 @@ type GatekeeperRules struct {
 // with cfg.
 func NewGatekeeperRules(cfg messages.GatekeeperConfig) *GatekeeperRules {
 	ret := &GatekeeperRules{cfg}
-	for masterURL, masterCfgs := range cfg.Masters {
+	for master, masterCfgs := range cfg.Masters {
 		if len(masterCfgs) != 1 {
-			errLog.Printf("Multiple configs for master: %s", masterURL)
+			errLog.Printf("Multiple configs for master: %s", master)
 		}
-		parts := strings.Split(masterURL, "/")
-		masterName := parts[len(parts)-1]
-		ret.cfg.Masters[masterName] = masterCfgs
+		ret.cfg.Masters[master] = masterCfgs
 	}
 	return ret
 }
 
 // WouldCloseTree returns true if a step failure on given builder/master would
 // cause it to close the tree.
-func (r *GatekeeperRules) WouldCloseTree(master, builder, step string) bool {
-	mcs, ok := r.cfg.Masters[master]
+func (r *GatekeeperRules) WouldCloseTree(master *messages.MasterLocation, builder, step string) bool {
+	mcs, ok := r.cfg.Masters[master.String()]
 	if !ok {
 		errLog.Printf("Missing master cfg: %s", master)
 		return false
@@ -65,8 +61,8 @@ func (r *GatekeeperRules) WouldCloseTree(master, builder, step string) bool {
 }
 
 // ExcludeFailure returns true if a step failure whould be ignored.
-func (r *GatekeeperRules) ExcludeFailure(master, builder, step string) bool {
-	mcs, ok := r.cfg.Masters[master]
+func (r *GatekeeperRules) ExcludeFailure(master *messages.MasterLocation, builder, step string) bool {
+	mcs, ok := r.cfg.Masters[master.String()]
 	if !ok {
 		errLog.Printf("Can't filter unknown master %s", master)
 		return false

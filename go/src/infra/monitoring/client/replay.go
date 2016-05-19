@@ -27,38 +27,38 @@ type replay struct {
 
 // Build fetches the build summary for master master, builder builder and build id buildNum
 // from build.chromium.org.
-func (c *replay) Build(master, builder string, buildNum int64) (*messages.Build, error) {
+func (c *replay) Build(master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
 	b := &messages.Build{}
-	err := read(filepath.Join(c.baseDir, "build", master, builder, fmt.Sprintf("%d", buildNum)), b)
+	err := read(filepath.Join(c.baseDir, "build", master.Name(), builder, fmt.Sprintf("%d", buildNum)), b)
 	return b, err
 }
 
-func (c *replay) LatestBuilds(master, builder string) ([]*messages.Build, error) {
+func (c *replay) LatestBuilds(master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
 	bs := []*messages.Build{}
-	err := read(filepath.Join(c.baseDir, "latestbuilds", master, builder), bs)
+	err := read(filepath.Join(c.baseDir, "latestbuilds", master.Name(), builder), bs)
 	return bs, err
 }
 
 // TestResults fetches the results of a step failure's test run.
-func (c *replay) TestResults(masterName, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
+func (c *replay) TestResults(master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
 	r := &messages.TestResults{}
-	err := read(filepath.Join(c.baseDir, "testresults", masterName, builderName, stepName, fmt.Sprintf("%d", buildNumber)), r)
+	err := read(filepath.Join(c.baseDir, "testresults", master.Name(), builderName, stepName, fmt.Sprintf("%d", buildNumber)), r)
 	return r, err
 }
 
 // BuildExtracts fetches build information for masters from CBE in parallel.
 // Returns a map of url to error for any requests that had errors.
-func (c *replay) BuildExtract(master string) (*messages.BuildExtract, error) {
+func (c *replay) BuildExtract(master *messages.MasterLocation) (*messages.BuildExtract, error) {
 	be := &messages.BuildExtract{}
-	err := read(filepath.Join(c.baseDir, "buildextracts", master), be)
+	err := read(filepath.Join(c.baseDir, "buildextracts", master.Name()), be)
 	return be, err
 }
 
 // StdioForStep fetches the standard output for a given build step, and an error if any
 // occurred.
-func (c *replay) StdioForStep(master, builder, step string, buildNum int64) ([]string, error) {
+func (c *replay) StdioForStep(master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
 	s := []string{}
-	err := read(filepath.Join(c.baseDir, "stdioforstep", master, builder, step, fmt.Sprintf("%d", buildNum)), &s)
+	err := read(filepath.Join(c.baseDir, "stdioforstep", master.Name(), builder, step, fmt.Sprintf("%d", buildNum)), &s)
 	return s, err
 }
 
