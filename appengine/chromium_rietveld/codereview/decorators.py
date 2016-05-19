@@ -37,6 +37,7 @@ def access_control_allow_origin_star(func):
   """Decorator that adds Access-Control-Allow-Origin: * to any HTTPResponse
   allowing cross-site XHR access to the handler."""
 
+  @functools.wraps(func)
   def allow_origin_access_star_wrapper(request, *args, **kwds):
     response = func(request, *args, **kwds)
     response["Access-Control-Allow-Origin"] = "*"
@@ -48,6 +49,7 @@ def access_control_allow_origin_star(func):
 def admin_required(func):
   """Decorator that insists that you're logged in as administratior."""
 
+  @functools.wraps(func)
   def admin_wrapper(request, *args, **kwds):
     if request.user is None:
       return HttpResponseRedirect(
@@ -66,6 +68,7 @@ def editor_required(func):
   It must appear after issue_required or equivalent, like patchset_required.
   """
 
+  @functools.wraps(func)
   @login_required
   def editor_wrapper(request, *args, **kwds):
     if not request.issue.edit_allowed:
@@ -82,6 +85,7 @@ def image_required(func):
    content: a Content entity.
   """
 
+  @functools.wraps(func)
   @patch_required
   def image_wrapper(request, image_type, *args, **kwds):
     content_key = None
@@ -108,6 +112,7 @@ def issue_editor_required(func):
   """Decorator that processes the issue_id argument and insists the user has
   permission to edit it."""
 
+  @functools.wraps(func)
   @login_required
   @issue_required
   def issue_editor_wrapper(request, *args, **kwds):
@@ -123,6 +128,7 @@ def issue_uploader_required(func):
   """Decorator that processes the issue_id argument and insists the user has
   permission to add a patchset to it."""
 
+  @functools.wraps(func)
   @login_required
   @issue_required
   def issue_uploader_wrapper(request, *args, **kwds):
@@ -139,6 +145,7 @@ def issue_uploader_required(func):
 def issue_required(func):
   """Decorator that processes the issue_id handler argument."""
 
+  @functools.wraps(func)
   def issue_wrapper(request, issue_id, *args, **kwds):
     issue = models.Issue.get_by_id(int(issue_id))
     if issue is None:
@@ -167,6 +174,7 @@ def json_response(func):
   """
 
   @functools.wraps(func)
+  @functools.wraps(func)
   def json_wrapper(request, *args, **kwds):
     data = func(request, *args, **kwds)
     if isinstance(data, HttpResponse):
@@ -189,6 +197,7 @@ def json_response(func):
 def login_required(func):
   """Decorator that redirects to the login page if you're not logged in."""
 
+  @functools.wraps(func)
   def login_wrapper(request, *args, **kwds):
     if request.user is None:
       return HttpResponseRedirect(
@@ -201,6 +210,7 @@ def login_required(func):
 def patch_filename_required(func):
   """Decorator that processes the patch_id argument."""
 
+  @functools.wraps(func)
   @patchset_required
   def patch_wrapper(request, patch_filename, *args, **kwds):
     patch = models.Patch.query(
@@ -227,6 +237,7 @@ def patch_filename_required(func):
 def patch_required(func):
   """Decorator that processes the patch_id argument."""
 
+  @functools.wraps(func)
   @patchset_required
   def patch_wrapper(request, patch_id, *args, **kwds):
     patch = models.Patch.get_by_id(int(patch_id), parent=request.patchset.key)
@@ -246,6 +257,7 @@ def patchset_editor_required(func):
   """Decorator that processes the patchset_id argument and insists you own the
   issue."""
 
+  @functools.wraps(func)
   @patchset_required
   @editor_required
   def patchset_editor_wrapper(request, *args, **kwds):
@@ -308,6 +320,7 @@ def upload_required(func):
 def user_key_required(func):
   """Decorator that processes the user handler argument."""
 
+  @functools.wraps(func)
   def user_key_wrapper(request, user_key, *args, **kwds):
     user_key = urllib.unquote(user_key)
     if '@' in user_key:
@@ -328,6 +341,7 @@ def user_key_required(func):
 def patchset_required(func):
   """Decorator that processes the patchset_id argument."""
 
+  @functools.wraps(func)
   @issue_required
   def patchset_wrapper(request, patchset_id, *args, **kwds):
     patchset = models.PatchSet.get_by_id(
@@ -351,6 +365,7 @@ def xsrf_required(func):
   with @upload_required.
   """
 
+  @functools.wraps(func)
   def xsrf_wrapper(request, *args, **kwds):
     if request.method == 'POST':
       post_token = request.POST.get('xsrf_token')

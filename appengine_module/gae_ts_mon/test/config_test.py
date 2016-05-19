@@ -4,6 +4,7 @@
 
 import copy
 import datetime
+import functools
 import os
 import time
 import unittest
@@ -471,6 +472,18 @@ class ViewClass(object):
     pass  # pragma: no cover
 
 
+def decorator(func):
+  @functools.wraps(func)
+  def wrapped():
+    pass  # pragma: no cover
+  return wrapped
+
+
+@decorator
+def decorated_view_func():
+  pass  # pragma: no cover
+
+
 class DjangoMiddlewareTest(testing.AppengineTestCase):
 
   def setUp(self):
@@ -530,6 +543,15 @@ class DjangoMiddlewareTest(testing.AppengineTestCase):
     self.run_middleware()
 
     fields = {'name': 'gae_ts_mon.test.config_test.ViewClass.view_method',
+              'status': 200, 'is_robot': False}
+    self.assertEquals(1, http_metrics.server_response_status.get(fields))
+
+  def test_decorated_view_func(self):
+    self.view_func = decorated_view_func
+    self.run_middleware()
+    print self.request.ts_mon_state
+
+    fields = {'name': 'gae_ts_mon.test.config_test.decorated_view_func',
               'status': 200, 'is_robot': False}
     self.assertEquals(1, http_metrics.server_response_status.get(fields))
 

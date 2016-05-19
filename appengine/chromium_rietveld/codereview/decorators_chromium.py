@@ -14,6 +14,7 @@
 
 """Decorators for Chromium port of Rietveld."""
 
+import functools
 import mimetypes
 import sha
 
@@ -33,6 +34,7 @@ def binary_required(func):
    content: a Content entity.
   """
 
+  @functools.wraps(func)
   @deco.patch_required
   def binary_wrapper(request, content_type, *args, **kwds):
     if content_type == "0":
@@ -58,6 +60,7 @@ def binary_required(func):
 def key_required(func):
   """Decorator that insists that you are using a specific key."""
 
+  @functools.wraps(func)
   @deco.require_methods('POST')
   def key_wrapper(request, *args, **kwds):
     key = request.POST.get('password')
