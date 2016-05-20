@@ -156,21 +156,16 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 	done := make(chan interface{})
 	errs := make(chan error)
 	for treeName := range trees {
-		go func(tree string) {
+		tree := treeName
+		go func() {
 			expvars.Add(fmt.Sprintf("Tree-%s", tree), 1)
 			defer expvars.Add(fmt.Sprintf("Tree-%s", tree), -1)
 			infoLog.Printf("Checking tree: %s", tree)
 			masters := []*messages.MasterLocation{}
 
-			for treeToUse, shouldUse := range trees {
-				if !shouldUse {
-					continue
-				}
-
-				for _, t := range gkts[treeToUse] {
-					for _, url := range t.Masters {
-						masters = append(masters, url)
-					}
+			for _, t := range gkts[tree] {
+				for _, url := range t.Masters {
+					masters = append(masters, url)
 				}
 			}
 
@@ -233,7 +228,7 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 
 			infoLog.Printf("Filtered failures: %v", filteredFailures)
 			done <- nil
-		}(treeName)
+		}()
 	}
 
 	for range trees {
