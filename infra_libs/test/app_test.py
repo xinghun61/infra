@@ -58,6 +58,7 @@ class AppTest(unittest.TestCase):
   def test_catches_exceptions(self):
     a = MockApplication()
     a.main.side_effect = Exception
+    ts_mon.reset_for_unittest(disable=True)
 
     with self.assertRaises(SystemExit) as cm:
       a.run(['appname'])

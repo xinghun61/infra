@@ -88,12 +88,13 @@ state = State()
 
 def flush():
   """Send all metrics that are registered in the application."""
-  if not state.global_monitor or not state.target:
-    raise errors.MonitoringNoConfiguredMonitorError(None)
 
   if not state.flush_enabled_fn():
     logging.debug('ts_mon: sending metrics is disabled.')
     return
+
+  if not state.global_monitor or not state.target:
+    raise errors.MonitoringNoConfiguredMonitorError(None)
 
   proto = metrics_pb2.MetricsCollection()
 

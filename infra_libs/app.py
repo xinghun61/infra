@@ -118,6 +118,8 @@ class BaseApplication(object):
       status = self.main(self.opts)
     except Exception:
       logging.exception('Uncaught exception, exiting:')
+      # Flushing ts_mon to try to report the exception.
+      ts_mon.flush()
       status = 1
 
     sys.exit(status)
