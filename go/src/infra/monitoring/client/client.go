@@ -39,14 +39,14 @@ var (
 // BuilderURL returns the builder URL for the given master and builder.
 func BuilderURL(master *messages.MasterLocation, builder string) *url.URL {
 	newURL := master.URL
-	newURL.Path += fmt.Sprintf("/builders/%s", oldEscape(builder))
+	newURL.Path += fmt.Sprintf("/builders/%s", builder)
 	return &newURL
 }
 
 // BuildURL returns the build URL for the given master, builder and build number.
 func BuildURL(master *messages.MasterLocation, builder string, buildNum int64) *url.URL {
 	newURL := master.URL
-	newURL.Path += fmt.Sprintf("/builders/%s/builds/%d", oldEscape(builder), buildNum)
+	newURL.Path += fmt.Sprintf("/builders/%s/builds/%d", builder, buildNum)
 	return &newURL
 }
 
@@ -54,13 +54,8 @@ func BuildURL(master *messages.MasterLocation, builder string, buildNum int64) *
 func StepURL(master *messages.MasterLocation, builder, step string, buildNum int64) *url.URL {
 	newURL := master.URL
 	newURL.Path += fmt.Sprintf("/builders/%s/builds/%d/steps/%s",
-		oldEscape(builder), buildNum, oldEscape(step))
+		builder, buildNum, step)
 	return &newURL
-}
-
-// Sigh.  build.chromium.org doesn't accept + as an escaped space in URL paths.
-func oldEscape(s string) string {
-	return strings.Replace(url.QueryEscape(s), "+", "%20", -1)
 }
 
 // Client provides access to read status information from various parts of chrome

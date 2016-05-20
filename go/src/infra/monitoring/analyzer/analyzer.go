@@ -790,6 +790,7 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 					a:   &alr,
 					err: nil,
 				}
+				continue
 			}
 		}
 
