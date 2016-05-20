@@ -34,7 +34,9 @@ def _GetBucketName(master_name):
 
 class TryJob(collections.namedtuple(
     'TryJobNamedTuple',
-    ('master_name', 'builder_name', 'revision', 'properties', 'tags'))):
+    ('master_name', 'builder_name', 'revision', 'properties', 'tags',
+     'additional_build_parameters'))
+):
   """Represents a try-job to be triggered through Buildbucket.
 
   Tag for "user_agent" should not be set, as it will be added automatically.
@@ -45,6 +47,9 @@ class TryJob(collections.namedtuple(
         'builder_name': self.builder_name,
         'properties': self.properties,
     }
+    if self.additional_build_parameters:
+      parameters_json['additional_build_parameters'] = (
+          self.additional_build_parameters)
     if self.revision:
       parameters_json['changes'] = [
           {

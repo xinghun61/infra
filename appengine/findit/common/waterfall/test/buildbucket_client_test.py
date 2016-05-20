@@ -26,8 +26,40 @@ class BuildBucketClientTest(testing.AppengineTestCase):
       self.assertEqual(expected_full_master_name,
                        buildbucket_client._GetBucketName(master_name))
 
+  def testTryJobToBuildbucketRequestWithTests(self):
+    try_job = buildbucket_client.TryJob(
+        'm', 'b', 'r', {'a': '1'}, ['a'],
+        {'tests': {'a_tests': ['Test.One', 'Test.Two']}})
+    expceted_parameters = {
+        'builder_name': 'b',
+        'changes': [
+            {
+                'author': {
+                    'email': buildbucket_client._ROLE_EMAIL,
+                },
+                'revision': 'r',
+            },
+        ],
+        'properties': {
+            'a': '1',
+        },
+        'additional_build_parameters': {
+            'tests': {
+                'a_tests': ['Test.One', 'Test.Two']
+            }
+        }
+    }
+
+    request_json = try_job.ToBuildbucketRequest()
+    self.assertEqual('master.m', request_json['bucket'])
+    self.assertEqual(2, len(request_json['tags']))
+    self.assertEqual('a', request_json['tags'][0])
+    self.assertEqual('user_agent:findit', request_json['tags'][1])
+    parameters = json.loads(request_json['parameters_json'])
+    self.assertEqual(expceted_parameters, parameters)
+
   def testTryJobToBuildbucketRequestWithRevision(self):
-    try_job = buildbucket_client.TryJob('m', 'b', 'r', {'a': '1'}, ['a'])
+    try_job = buildbucket_client.TryJob('m', 'b', 'r', {'a': '1'}, ['a'], {})
     expceted_parameters = {
         'builder_name': 'b',
         'changes': [
@@ -52,7 +84,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual(expceted_parameters, parameters)
 
   def testTryJobToBuildbucketRequestWithoutRevision(self):
-    try_job = buildbucket_client.TryJob('m', 'b', None, {'a': '1'}, ['a'])
+    try_job = buildbucket_client.TryJob('m', 'b', None, {'a': '1'}, ['a'], {})
     expceted_parameters = {
         'builder_name': 'b',
         'properties': {
@@ -91,7 +123,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
             'status': 'SCHEDULED',
         }
     }
-    try_job = buildbucket_client.TryJob('m', 'b', 'r', {'a': 'b'}, [])
+    try_job = buildbucket_client.TryJob('m', 'b', 'r', {'a': 'b'}, [], {})
     self._MockUrlFetch(
         None, json.dumps(try_job.ToBuildbucketRequest()), json.dumps(response))
     results = buildbucket_client.TriggerTryJobs([try_job])
@@ -110,7 +142,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
             'message': 'message',
         }
     }
-    try_job = buildbucket_client.TryJob('m', 'b', 'r', {}, [])
+    try_job = buildbucket_client.TryJob('m', 'b', 'r', {}, [], {})
     self._MockUrlFetch(
         None, json.dumps(try_job.ToBuildbucketRequest()), json.dumps(response))
     results = buildbucket_client.TriggerTryJobs([try_job])
@@ -123,7 +155,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
 
   def testTriggerTryJobsRequestFailure(self):
     response = 'Not Found'
-    try_job = buildbucket_client.TryJob('m', 'b', 'r', {}, [])
+    try_job = buildbucket_client.TryJob('m', 'b', 'r', {}, [], {})
     self._MockUrlFetch(
         None, json.dumps(try_job.ToBuildbucketRequest()),
         response, 404)

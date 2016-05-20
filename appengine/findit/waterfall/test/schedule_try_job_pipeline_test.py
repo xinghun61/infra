@@ -45,7 +45,7 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_pipeline = ScheduleTryJobPipeline()
     properties = try_job_pipeline._GetBuildProperties(
         master_name, builder_name, build_number, 1, 2, TryJobType.COMPILE,
-        compile_targets, None, None)
+        compile_targets, None)
 
     self.assertEqual(properties, expected_properties)
 
@@ -53,7 +53,6 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
-    targeted_tests = {'a': []}
 
     expected_properties = {
         'recipe': 'findit/chromium/test',
@@ -61,7 +60,6 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
         'bad_revision': 2,
         'target_mastername': master_name,
         'target_testername': 'b',
-        'tests': targeted_tests,
         'referenced_build_url': ('https://build.chromium.org/p/%s/builders'
                                  '/%s/builds/%s') % (
                                      master_name, builder_name, build_number)
@@ -69,7 +67,7 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_pipeline = ScheduleTryJobPipeline()
     properties = try_job_pipeline._GetBuildProperties(
         master_name, builder_name, build_number, 1, 2, TryJobType.TEST,
-        None, targeted_tests, None)
+        None, None)
 
     self.assertEqual(properties, expected_properties)
 

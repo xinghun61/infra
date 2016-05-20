@@ -17,8 +17,7 @@ class ScheduleTryJobPipeline(BasePipeline):
 
   def _GetBuildProperties(
       self, master_name, builder_name, build_number, good_revision,
-      bad_revision, try_job_type, compile_targets, targeted_tests,
-      suspected_revisions):
+      bad_revision, try_job_type, compile_targets, suspected_revisions):
     properties = {
         'recipe': 'findit/chromium/%s' % try_job_type,
         'good_revision': good_revision,
@@ -34,8 +33,6 @@ class ScheduleTryJobPipeline(BasePipeline):
         properties['compile_targets'] = compile_targets
     else:  # try_job_type is 'test'.
       properties['target_testername'] = builder_name
-      assert targeted_tests
-      properties['tests'] = targeted_tests
 
     if suspected_revisions:
       properties['suspected_revisions'] = suspected_revisions
@@ -53,10 +50,16 @@ class ScheduleTryJobPipeline(BasePipeline):
 
     properties = self._GetBuildProperties(
         master_name, builder_name, build_number, good_revision, bad_revision,
-        try_job_type, compile_targets, targeted_tests, suspected_revisions)
+        try_job_type, compile_targets, suspected_revisions)
+
+    if try_job_type == TryJobType.COMPILE:
+      additional_parameters = {}
+    else:
+      additional_parameters = {'tests': targeted_tests}
 
     try_job = buildbucket_client.TryJob(
-        tryserver_mastername, tryserver_buildername, None, properties, [])
+        tryserver_mastername, tryserver_buildername, None, properties,
+        additional_parameters, [])
     error, build = buildbucket_client.TriggerTryJobs([try_job])[0]
 
     if error:  # pragma: no cover
