@@ -41,8 +41,11 @@ message Swarming {
   }
 
   message Builder {
-    // Name of the builder
+    // Name of the builder. Will be propagated to "builder" build tag and
+    // "buildername" recipe property.
     optional string name = 1;
+    // Builder category. Will be used for visual grouping, for example in Code Review.
+    optional string category = 6;
     // Will be become to swarming task tags.
     // Each tag will end up in "swarming_tag" buildbucket tag, for example
     // "swarming_tag:builder:release"
