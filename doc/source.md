@@ -13,7 +13,7 @@ Most of the chrome infra source code lives in these repos:
   repo. Contains Buildbot, recipes, gatekeeper-ng.
 * [build_internal](https://chrome-internal.googlesource.com/chrome/tools/build):
   internal couterpart of build repo.
-* [build_limited](https://chrome-internal.googlesource.com/chrome/tools/build_limited/):
+* [build_limited](https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave/):
   minimal set of internal code that must be checked out on buildbot slaves
   that run internal builds.
 * [luci-py](https://github.com/luci/luci-py) on GitHub: chromium-independent
