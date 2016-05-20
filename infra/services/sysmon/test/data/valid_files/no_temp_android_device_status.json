@@ -1,0 +1,308 @@
+{
+  "devices": {
+    "03e0363a003c6ad4": {
+      "battery": {
+        "health": 2, 
+        "level": 100, 
+        "power": [
+          "USB"
+        ], 
+        "status": 5, 
+        "temperature": 266, 
+        "voltage": 4321
+      }, 
+      "build": {
+        "board.platform": "msm8974", 
+        "build.fingerprint": "google/hammerhead/hammerhead:4.4.4/KTU84P/1227136:userdebug/dev-keys", 
+        "build.id": "KTU84P", 
+        "build.version.sdk": "19", 
+        "product.board": "hammerhead", 
+        "product.cpu.abi": "armeabi-v7a"
+      }, 
+      "cpu": {
+        "cur": "300000", 
+        "governor": "powersave"
+      }, 
+      "disk": {
+        "cache": {
+          "free_mb": 677.3, 
+          "size_mb": 689.8
+        }, 
+        "data": {
+          "free_mb": 27049.7, 
+          "size_mb": 27403.5
+        }, 
+        "system": {
+          "free_mb": 369.1, 
+          "size_mb": 1009.3
+        }
+      }, 
+      "imei": "352136068305396", 
+      "ip": {}, 
+      "max_uid": 10073, 
+      "other_packages": [], 
+      "port_path": "3/37", 
+      "state": "available", 
+      "temp": {
+        "emmc_therm": 26.0, 
+        "pa_therm0": 26.0, 
+        "pm8841_tz": 37.0, 
+        "pm8941_tz": 28.561
+      }, 
+      "uptime": 2178.14
+    }, 
+    "05fb3eb00ae5909f": {
+      "battery": {
+        "health": 2, 
+        "level": 100, 
+        "power": [
+          "USB"
+        ], 
+        "status": 5, 
+        "temperature": 266, 
+        "voltage": 4346
+      }, 
+      "build": {
+        "board.platform": "msm8974", 
+        "build.fingerprint": "google/hammerhead/hammerhead:4.4.4/KTU84P/1227136:userdebug/dev-keys", 
+        "build.id": "KTU84P", 
+        "build.version.sdk": "19", 
+        "product.board": "hammerhead", 
+        "product.cpu.abi": "armeabi-v7a"
+      }, 
+      "cpu": {
+        "cur": "300000", 
+        "governor": "powersave"
+      }, 
+      "disk": {
+        "cache": {
+          "free_mb": 677.3, 
+          "size_mb": 689.8
+        }, 
+        "data": {
+          "free_mb": 27051.0, 
+          "size_mb": 27403.5
+        }, 
+        "system": {
+          "free_mb": 369.1, 
+          "size_mb": 1009.3
+        }
+      }, 
+      "imei": "352136069308613", 
+      "ip": {}, 
+      "max_uid": 10073, 
+      "other_packages": [], 
+      "port_path": "3/34", 
+      "state": "available", 
+      "temp": {
+        "emmc_therm": 25.0, 
+        "pa_therm0": 25.0, 
+        "pm8841_tz": 37.0, 
+        "pm8941_tz": 24.582
+      }, 
+      "uptime": 2173.13
+    }, 
+    "0607524f13c86722": {
+      "battery": {
+        "health": 2, 
+        "level": 100, 
+        "power": [
+          "USB"
+        ], 
+        "status": 5, 
+        "temperature": 263, 
+        "voltage": 4323
+      }, 
+      "build": {
+        "board.platform": "msm8974", 
+        "build.fingerprint": "google/hammerhead/hammerhead:4.4.4/KTU84P/1227136:userdebug/dev-keys", 
+        "build.id": "KTU84P", 
+        "build.version.sdk": "19", 
+        "product.board": "hammerhead", 
+        "product.cpu.abi": "armeabi-v7a"
+      }, 
+      "cpu": {
+        "cur": "300000", 
+        "governor": "powersave"
+      }, 
+      "disk": {
+        "cache": {
+          "free_mb": 677.3, 
+          "size_mb": 689.8
+        }, 
+        "data": {
+          "free_mb": 27050.8, 
+          "size_mb": 27403.5
+        }, 
+        "system": {
+          "free_mb": 369.1, 
+          "size_mb": 1009.3
+        }
+      }, 
+      "imei": "352136068241989", 
+      "ip": {}, 
+      "max_uid": 10073, 
+      "other_packages": [], 
+      "port_path": "3/39", 
+      "state": "available", 
+      "temp": {
+        "emmc_therm": 25.0, 
+        "pa_therm0": 25.0, 
+        "pm8841_tz": 37.0, 
+        "pm8941_tz": 28.139
+      }, 
+      "uptime": 2146.92
+    }, 
+    "06b6b29c00622900": {
+      "battery": {
+        "health": 2, 
+        "level": 100, 
+        "power": [
+          "USB"
+        ], 
+        "status": 5, 
+        "temperature": 258, 
+        "voltage": 4312
+      }, 
+      "build": {
+        "board.platform": "msm8974", 
+        "build.fingerprint": "google/hammerhead/hammerhead:4.4.4/KTU84P/1227136:userdebug/dev-keys", 
+        "build.id": "KTU84P", 
+        "build.version.sdk": "19", 
+        "product.board": "hammerhead", 
+        "product.cpu.abi": "armeabi-v7a"
+      }, 
+      "cpu": {
+        "cur": "300000", 
+        "governor": "powersave"
+      }, 
+      "disk": {
+        "cache": {
+          "free_mb": 677.3, 
+          "size_mb": 689.8
+        }, 
+        "data": {
+          "free_mb": 26998.7, 
+          "size_mb": 27403.5
+        }, 
+        "system": {
+          "free_mb": 369.1, 
+          "size_mb": 1009.3
+        }
+      }, 
+      "imei": "352136068241625", 
+      "ip": {}, 
+      "max_uid": 10073, 
+      "other_packages": [], 
+      "port_path": "3/35", 
+      "state": "available", 
+      "temp": {
+        "emmc_therm": 25.0, 
+        "pa_therm0": 25.0, 
+        "pm8841_tz": 37.0, 
+        "pm8941_tz": 26.248
+      }, 
+      "uptime": 2138.82
+    }, 
+    "06b8ad30006202bc": {
+      "battery": {
+        "health": 2, 
+        "level": 100, 
+        "power": [
+          "USB"
+        ], 
+        "status": 5, 
+        "temperature": 251, 
+        "voltage": 4340
+      }, 
+      "build": {
+        "board.platform": "msm8974", 
+        "build.fingerprint": "google/hammerhead/hammerhead:4.4.4/KTU84P/1227136:userdebug/dev-keys", 
+        "build.id": "KTU84P", 
+        "build.version.sdk": "19", 
+        "product.board": "hammerhead", 
+        "product.cpu.abi": "armeabi-v7a"
+      }, 
+      "cpu": {
+        "cur": "300000", 
+        "governor": "powersave"
+      }, 
+      "disk": {
+        "cache": {
+          "free_mb": 677.3, 
+          "size_mb": 689.8
+        }, 
+        "data": {
+          "free_mb": 26998.0, 
+          "size_mb": 27403.5
+        }, 
+        "system": {
+          "free_mb": 369.1, 
+          "size_mb": 1009.3
+        }
+      }, 
+      "imei": "352136068307590", 
+      "ip": {}, 
+      "max_uid": 10073, 
+      "other_packages": [], 
+      "port_path": "3/36", 
+      "state": "available", 
+      "temp": {
+        "emmc_therm": 25.0, 
+        "pa_therm0": 25.0, 
+        "pm8841_tz": 37.0, 
+        "pm8941_tz": 27.381
+      }, 
+      "uptime": 2156.99
+    }, 
+    "06c38708006afff3": {
+      "battery": {
+        "health": 2, 
+        "level": 100, 
+        "power": [
+          "USB"
+        ], 
+        "status": 5, 
+        "temperature": 268, 
+        "voltage": 4322
+      }, 
+      "build": {
+        "board.platform": "msm8974", 
+        "build.fingerprint": "google/hammerhead/hammerhead:4.4.4/KTU84P/1227136:userdebug/dev-keys", 
+        "build.id": "KTU84P", 
+        "build.version.sdk": "19", 
+        "product.board": "hammerhead", 
+        "product.cpu.abi": "armeabi-v7a"
+      }, 
+      "cpu": {
+        "cur": "300000", 
+        "governor": "powersave"
+      }, 
+      "disk": {
+        "cache": {
+          "free_mb": 677.3, 
+          "size_mb": 689.8
+        }, 
+        "data": {
+          "free_mb": 27051.1, 
+          "size_mb": 27403.5
+        }, 
+        "system": {
+          "free_mb": 369.1, 
+          "size_mb": 1009.3
+        }
+      }, 
+      "imei": "352136069310387", 
+      "ip": {}, 
+      "max_uid": 10073, 
+      "other_packages": [], 
+      "port_path": "3/38", 
+      "state": "available", 
+      "temp": {
+      }, 
+      "uptime": 2162.74
+    }
+  }, 
+  "timestamp": 1463706428.637728, 
+  "version": 1
+}
