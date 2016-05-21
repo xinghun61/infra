@@ -166,12 +166,21 @@ def _ValidateSwarmingSettings(settings):
           isinstance(settings.get('iterations_to_rerun'), int))
 
 
+def _ValidateDownloadBuildDataSettings(settings):
+  return (isinstance(settings, dict) and
+          isinstance(settings.get('download_interval_seconds'), int) and
+          isinstance(settings.get(
+              'memcache_master_download_expiration_seconds'), int) and
+          isinstance(settings.get('use_chrome_build_extract'), bool))
+
+
 # Maps config properties to their validation functions.
 _CONFIG_VALIDATION_FUNCTIONS = {
     'steps_for_masters_rules': _ValidateMastersAndStepsRulesMapping,
     'builders_to_trybots': _ValidateTrybotMapping,
     'try_job_settings': _ValidateTryJobSettings,
-    'swarming_settings': _ValidateSwarmingSettings
+    'swarming_settings': _ValidateSwarmingSettings,
+    'download_build_data_settings': _ValidateDownloadBuildDataSettings
 }
 
 
@@ -233,6 +242,7 @@ class Configuration(BaseHandler):
         'builders': settings.builders_to_trybots,
         'try_job_settings': settings.try_job_settings,
         'swarming_settings': settings.swarming_settings,
+        'download_build_data_settings': settings.download_build_data_settings,
         'version': settings.version,
         'latest_version': latest_version,
         'updated_by': settings.updated_by,

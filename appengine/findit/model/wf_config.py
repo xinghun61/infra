@@ -71,3 +71,12 @@ class FinditConfig(VersionedConfig):
   #     'iterations_to_rerun': 10
   # }
   swarming_settings = ndb.JsonProperty(indexed=False, default={})
+
+  # A dict containing build data download settings. For example,
+  # {
+  #     'download_interval_seconds': 10,
+  #     'memcache_download_expiration_seconds': 3600,
+  #     'use_chrome_build_extract': True
+  # }
+  download_build_data_settings = ndb.JsonProperty(indexed=False, default={})
+  

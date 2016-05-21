@@ -2,8 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
+from datetime import timedelta
+
 from common.waterfall import failure_type
 from model import analysis_status
+from model.wf_build import WfBuild
 from model.wf_try_job import WfTryJob
 from waterfall import try_job_util
 from waterfall.test import wf_testcase
@@ -66,6 +70,12 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
     _MockRootPipeline.STARTED = False
 
+    def _MockShouldBailOutForOutdatedBuild(*_):
+      return False
+    self.mock(
+        try_job_util, '_ShouldBailOutForOutdatedBuild',
+        _MockShouldBailOutForOutdatedBuild)
+
     failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
         failure_info, None, None)
 
@@ -86,9 +96,49 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         'failure_type': failure_type.TEST
     }
 
+    def _MockShouldBailOutForOutdatedBuild(*_):
+      return False
+    self.mock(
+        try_job_util, '_ShouldBailOutForOutdatedBuild',
+        _MockShouldBailOutForOutdatedBuild)
+
     failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
         failure_info, None, None)
 
+    self.assertEqual({}, failure_result_map)
+
+  def testBailOutForTryJobWithOutdatedTimestamp(self):
+    master_name = 'master3'
+    builder_name = 'builder3'
+    build_number = 223
+    failure_info = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failed_steps': {
+            'compile': {
+                'current_failure': 221,
+                'first_failure': 221,
+                'last_pass': 220
+            }
+        },
+    }
+
+    self.mock(
+        try_job_util.swarming_tasks_to_try_job_pipeline,
+        'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
+    _MockRootPipeline.STARTED = False
+
+    def _MockShouldBailOutForOutdatedBuild(*_):
+      return True
+    self.mock(
+        try_job_util, '_ShouldBailOutForOutdatedBuild',
+        _MockShouldBailOutForOutdatedBuild)
+
+    failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
+        failure_info, None, None)
+
+    self.assertFalse(_MockRootPipeline.STARTED)
     self.assertEqual({}, failure_result_map)
 
   def testNotNeedANewTryJobIfNotFirstTimeFailure(self):
@@ -131,6 +181,12 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         try_job_util.swarming_tasks_to_try_job_pipeline,
         'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
     _MockRootPipeline.STARTED = False
+
+    def _MockShouldBailOutForOutdatedBuild(*_):
+      return False
+    self.mock(
+        try_job_util, '_ShouldBailOutForOutdatedBuild',
+        _MockShouldBailOutForOutdatedBuild)
 
     try_job_util.ScheduleTryJobIfNeeded(failure_info, None, None)
 
@@ -367,6 +423,12 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
     _MockRootPipeline.STARTED = False
 
+    def _MockShouldBailOutForOutdatedBuild(*_):
+      return False
+    self.mock(
+        try_job_util, '_ShouldBailOutForOutdatedBuild',
+        _MockShouldBailOutForOutdatedBuild)
+
     try_job_util.ScheduleTryJobIfNeeded(failure_info, None, None)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
@@ -475,3 +537,12 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         expected_suspected_revisions,
         try_job_util._GetSuspectsFromHeuristicResult(heuristic_result))
+
+  def testShouldBailOutforOutdatedBuild(self):
+    yesterday = datetime.utcnow() - timedelta(days=1)
+    build = WfBuild.Create('m', 'b', 1)
+    build.start_time = yesterday
+    self.assertTrue(try_job_util._ShouldBailOutForOutdatedBuild(build))
+
+    build.start_time = yesterday + timedelta(hours=1)
+    self.assertFalse(try_job_util._ShouldBailOutForOutdatedBuild(build))

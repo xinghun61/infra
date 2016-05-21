@@ -90,12 +90,18 @@ _DEFAULT_SWARMING_SETTINGS = {
     'iterations_to_rerun': 10
 }
 
+_DEFAULT_DOWNLOAD_BUILD_DATA_SETTINGS = {
+    'download_interval_seconds': 10,
+    'memcache_master_download_expiration_seconds': 3600,
+    'use_chrome_build_extract': True
+}
 
 DEFAULT_CONFIG_DATA = {
     'steps_for_masters_rules': _DEFAULT_STEPS_FOR_MASTERS_RULES,
     'builders_to_trybots': _DEFAULT_TRY_BOT_MAPPING,
     'try_job_settings': _DEFAULT_TRY_JOB_SETTINGS,
-    'swarming_settings': _DEFAULT_SWARMING_SETTINGS
+    'swarming_settings': _DEFAULT_SWARMING_SETTINGS,
+    'download_build_data_settings': _DEFAULT_DOWNLOAD_BUILD_DATA_SETTINGS
 }
 
 

@@ -68,6 +68,13 @@ _MOCK_SWARMING_SETTINGS = {
     'iterations_to_rerun': 10
 }
 
+
+_MOCK_DOWNLOAD_BUILD_DATA_SETTINGS = {
+    'download_interval_seconds': 10,
+    'memcache_master_download_expiration_seconds': 3600,
+    'use_chrome_build_extract': True
+}
+
 _MOCK_VERSION_NUMBER = 12
 
 
@@ -81,7 +88,8 @@ class ConfigTest(testing.AppengineTestCase):
         'steps_for_masters_rules': _MOCK_STEPS_FOR_MASTERS_RULES,
         'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
-        'swarming_settings': _MOCK_SWARMING_SETTINGS
+        'swarming_settings': _MOCK_SWARMING_SETTINGS,
+        'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS
     }
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
@@ -97,6 +105,7 @@ class ConfigTest(testing.AppengineTestCase):
         'builders': _MOCK_BUILDERS_TO_TRYBOTS,
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
+        'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'version': 1,
         'latest_version': 1,
         'updated_by': 'test',
@@ -112,7 +121,8 @@ class ConfigTest(testing.AppengineTestCase):
         'steps_for_masters_rules': _MOCK_STEPS_FOR_MASTERS_RULES,
         'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
-        'swarming_settings': _MOCK_SWARMING_SETTINGS
+        'swarming_settings': _MOCK_SWARMING_SETTINGS,
+        'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS
     }
     wf_config.FinditConfig.Get().Update(users.GetCurrentUser(), True,
                                         **config_data)
@@ -126,6 +136,7 @@ class ConfigTest(testing.AppengineTestCase):
         'builders': _MOCK_BUILDERS_TO_TRYBOTS,
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
+        'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'version': 1,
         'latest_version': 1,
         'updated_by': 'test',
@@ -555,6 +566,29 @@ class ConfigTest(testing.AppengineTestCase):
         'iterations_to_rerun': 10
     }))
 
+  def testValidateDownloadBuildDataSettings(self):
+    self.assertFalse(config._ValidateDownloadBuildDataSettings({}))
+    self.assertFalse(config._ValidateDownloadBuildDataSettings({
+        'download_interval_seconds': {},  # Should be an int.
+        'memcache_master_download_expiration_seconds': 10,
+        'use_chrome_build_extract': True
+        }))
+    self.assertFalse(config._ValidateDownloadBuildDataSettings({
+        'download_interval_seconds': 10,
+        'memcache_master_download_expiration_seconds': [],  # Should be an int.
+        'use_chrome_build_extract': True
+        }))
+    self.assertFalse(config._ValidateDownloadBuildDataSettings({
+        'download_interval_seconds': 10,
+        'memcache_master_download_expiration_seconds': 3600,
+        'use_chrome_build_extract': 'blabla'  # Should be a bool.
+        }))
+    self.assertTrue(config._ValidateDownloadBuildDataSettings({
+        'download_interval_seconds': 10,
+        'memcache_master_download_expiration_seconds': 3600,
+        'use_chrome_build_extract': False
+        }))
+
   def testConfigurationDictIsValid(self):
     self.assertTrue(config._ConfigurationDictIsValid({
         'steps_for_masters_rules': {
@@ -608,7 +642,8 @@ class ConfigTest(testing.AppengineTestCase):
             },
             'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
             'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
-            'swarming_settings': _MOCK_SWARMING_SETTINGS
+            'swarming_settings': _MOCK_SWARMING_SETTINGS,
+            'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS
         })
     }
 
@@ -635,6 +670,7 @@ class ConfigTest(testing.AppengineTestCase):
         'builders': _MOCK_BUILDERS_TO_TRYBOTS,
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
+        'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'version': 1,
         'latest_version': 1,
         'updated_by': 'test',

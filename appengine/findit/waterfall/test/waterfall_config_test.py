@@ -101,6 +101,15 @@ class MastersTest(wf_testcase.WaterfallTestCase):
         },
         waterfall_config.GetSwarmingSettings())
 
+  def testGetDownloadBuildDataSettings(self):
+    self.assertEqual(
+        {
+            'download_interval_seconds': 10,
+            'memcache_master_download_expiration_seconds': 3600,
+            'use_chrome_build_extract': True
+        },
+        waterfall_config.GetDownloadBuildDataSettings())
+
   def testEnableStrictRegexForCompileLinkFailures(self):
     self.assertFalse(
         waterfall_config.EnableStrictRegexForCompileLinkFailures('m', 'b'))

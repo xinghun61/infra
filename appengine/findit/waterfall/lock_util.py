@@ -6,12 +6,12 @@ import logging
 import random
 import time
 
+from waterfall import waterfall_config
+
 from google.appengine.api import memcache
 
 
 _MEMCACHE_MASTER_DOWNLOAD_LOCK = 'master-download-lock-%s'
-_MEMCACHE_MASTER_DOWNLOAD_EXPIRATION_SECONDS = 60 * 60
-_DOWNLOAD_INTERVAL_SECONDS = 10
 
 
 def WaitUntilDownloadAllowed(
@@ -24,20 +24,26 @@ def WaitUntilDownloadAllowed(
   """
   client = memcache.Client()
   key = _MEMCACHE_MASTER_DOWNLOAD_LOCK % master_name
-
   deadline = time.time() + timeout_seconds
+  download_interval_seconds = (
+      waterfall_config.GetDownloadBuildDataSettings().get(
+          'download_interval_seconds'))
+  memcache_master_download_expiration_seconds = (
+      waterfall_config.GetDownloadBuildDataSettings().get(
+          'memcache_master_download_expiration_seconds'))
+
   while True:
     info = client.gets(key)
-    if not info or time.time() - info['time'] >= _DOWNLOAD_INTERVAL_SECONDS:
+    if not info or time.time() - info['time'] >= download_interval_seconds:
       new_info = {
           'time': time.time()
       }
       if not info:
         success = client.add(
-            key, new_info, time=_MEMCACHE_MASTER_DOWNLOAD_EXPIRATION_SECONDS)
+            key, new_info, time=memcache_master_download_expiration_seconds)
       else:
         success = client.cas(
-            key, new_info, time=_MEMCACHE_MASTER_DOWNLOAD_EXPIRATION_SECONDS)
+            key, new_info, time=memcache_master_download_expiration_seconds)
 
       if success:
         logging.info('Download from %s is allowed. Waited %s seconds.',
@@ -50,4 +56,4 @@ def WaitUntilDownloadAllowed(
       return False
 
     logging.info('Waiting to download from %s', master_name)
-    time.sleep(_DOWNLOAD_INTERVAL_SECONDS + random.random())
+    time.sleep(download_interval_seconds + random.random())

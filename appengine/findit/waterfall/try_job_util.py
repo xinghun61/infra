@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import logging
 
 from google.appengine.ext import ndb
@@ -10,6 +11,7 @@ from common import appengine_util
 from common import constants
 from common.waterfall import failure_type
 from model import analysis_status
+from model.wf_build import WfBuild
 from model.wf_try_job import WfTryJob
 from waterfall import swarming_tasks_to_try_job_pipeline
 from waterfall import waterfall_config
@@ -145,12 +147,26 @@ def _GetSuspectsFromHeuristicResult(heuristic_result):
   return list(suspected_revisions)
 
 
+def _ShouldBailOutForOutdatedBuild(build):
+  return (datetime.utcnow() - build.start_time).days > 0
+    
+
 def ScheduleTryJobIfNeeded(failure_info, signals, heuristic_result):
   master_name = failure_info['master_name']
   builder_name = failure_info['builder_name']
   build_number = failure_info['build_number']
   failed_steps = failure_info.get('failed_steps', [])
   builds = failure_info.get('builds', {})
+
+  # Bail out if the build data's timestamp is more than 24 hours old to
+  # avoid using outdated revisions. TODO(lijeffrey): This will also disallow
+  # manually triggering try jobs more than a day old using build_completed=1.
+  # Need to implement a flag to force try jobs regardless of timestamp.
+  build = WfBuild.Get(master_name, builder_name, build_number)
+  if _ShouldBailOutForOutdatedBuild(build):
+    logging.error(
+        'Build time is more than 24 hours old. Try job will not be triggered.')
+    return {}
 
   tryserver_mastername, tryserver_buildername = (
       waterfall_config.GetTrybotForWaterfallBuilder(master_name, builder_name))

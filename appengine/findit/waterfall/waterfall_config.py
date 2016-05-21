@@ -161,3 +161,7 @@ def GetTryJobSettings():
 
 def GetSwarmingSettings():
   return FinditConfig().Get().swarming_settings
+
+
+def GetDownloadBuildDataSettings():
+  return FinditConfig().Get().download_build_data_settings
