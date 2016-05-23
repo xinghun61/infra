@@ -174,7 +174,6 @@ def json_response(func):
   """
 
   @functools.wraps(func)
-  @functools.wraps(func)
   def json_wrapper(request, *args, **kwds):
     data = func(request, *args, **kwds)
     if isinstance(data, HttpResponse):
