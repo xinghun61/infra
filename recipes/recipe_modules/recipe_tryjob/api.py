@@ -105,7 +105,8 @@ def parse_patches(failing_step, patches_raw, rietveld, issue, patchset,
   result = {}
 
   if rietveld and issue and patchset and patch_project:
-    result[patch_project] = RietveldPatch(
+    # convert to str because recipes don't like unicode as step names
+    result[str(patch_project)] = RietveldPatch(
         patch_project, rietveld, issue, patchset)
 
   if not patches_raw:
