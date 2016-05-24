@@ -32,6 +32,8 @@ batt_charge = ts_mon.FloatMetric('dev/battery/charge',
                                  description='percentage charge of battery')
 dev_status = ts_mon.StringMetric('dev/status',
                                  description='operational state of device')
+dev_type = ts_mon.StringMetric('dev/type',
+                                description='device hardware or type')
 dev_os = ts_mon.StringMetric('dev/os',
                              description='operating system of the device')
 dev_uptime = ts_mon.FloatMetric('dev/device_uptime',
@@ -53,6 +55,11 @@ def get_device_statuses(device_file=ANDROID_DEVICE_FILE, now=None):
 
     # Fields with special handling.
 
+    build = device.get('build', {})
+    d_type = build.get('build_product',
+                       build.get('product.board',
+                                 build.get('product.device')))
+
     battery_temp = device.get('battery', {}).get('temperature')
     battery_temp = battery_temp / 10.0 if battery_temp else None
 
@@ -63,8 +70,9 @@ def get_device_statuses(device_file=ANDROID_DEVICE_FILE, now=None):
         (cpu_temp, device.get('temp', {}).get('emmc_therm')),
         (batt_temp, battery_temp),
         (batt_charge, device.get('battery', {}).get('level')),
+        (dev_os, build.get('build.id')),
         (dev_status, status),
-        (dev_os, device.get('build', {}).get('build.id')),
+        (dev_type, d_type),
         (dev_uptime, device.get('uptime'))):
       if value is not None:
         metric.set(value, fields=fields)

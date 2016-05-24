@@ -44,6 +44,7 @@ class AndroidDeviceMetricTest(unittest.TestCase):
     self.assertIsNone(android_device_metrics.cpu_temp.get(fields=fields))
     self.assertIsNone(android_device_metrics.dev_os.get(fields=fields))
     self.assertIsNone(android_device_metrics.dev_status.get(fields=fields))
+    self.assertIsNone(android_device_metrics.dev_type.get(fields=fields))
     self.assertIsNone(android_device_metrics.dev_uptime.get(fields=fields))
 
   def test_no_file(self):
@@ -94,6 +95,8 @@ class AndroidDeviceMetricTest(unittest.TestCase):
     self.assertEqual(android_device_metrics.dev_os.get(fields=fields), 'KTU84P')
     self.assertEqual(
         android_device_metrics.dev_status.get(fields=fields), 'good')
+    self.assertEqual(android_device_metrics.dev_type.get(fields=fields),
+                     'hammerhead')
     self.assertEqual(
         android_device_metrics.dev_uptime.get(fields=fields), 2162.74)
 
