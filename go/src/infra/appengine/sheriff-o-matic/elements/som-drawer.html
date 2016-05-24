@@ -1,14 +1,15 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="/bower_components/paper-item/paper-item.html">
 <link rel="import" href="/bower_components/paper-menu/paper-menu.html">
-<link rel="import" href="/bower_components/polymer/polymer.html">
 
 <dom-module id="som-drawer">
+  <template>
     <style>
       paper-item {
         font-size: 26px;
       }
     </style>
-  <template>
     <iron-ajax
         auto
         url="/api/v1/trees"
@@ -16,7 +17,7 @@
         verbose
         last-response="{{_treeList}}"
     ></iron-ajax>
-      <paper-menu attr-for-selected="value" selected="[[alertsGroup]]" id="menu">
+    <paper-menu attr-for-selected="value" selected="[[alertsGroup]]" id="menu">
       <template is="dom-repeat" items="[[_treeList]]" as="tree">
         <paper-item value="[[tree.name]]" on-tap="_onSelected">[[tree.display_name]]</paper-item>
       </template>
@@ -37,7 +38,7 @@
         },
         _treeList: {
            type: Array,
-           value: function() { return []; }
+           value: function() { return []; },
         },
       },
 

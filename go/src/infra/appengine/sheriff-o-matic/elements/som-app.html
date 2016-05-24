@@ -28,6 +28,9 @@
       paper-toolbar {
         --paper-toolbar-background: black;
       }
+      paper-header-panel /deep/ #mainContainer {
+        @apply(--layout-vertical);
+      }
       .last-updated, .user-name {
         text-align: right;
         padding-right: 1em;
@@ -99,7 +102,7 @@
         </paper-toolbar>
         <som-drawer id="drawer" alerts-group="[[_alertsGroup]]" path="{{_path}}"></som-drawer>
       </paper-header-panel>
-      <paper-header-panel main>
+      <paper-header-panel main class="flex layout vertical">
         <paper-toolbar>
           <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
           <div class="layout horizontal flex">
@@ -114,31 +117,33 @@
           </div>
           <paper-spinner active="[[_networkActive]]"></paper-spinner>
         </paper-toolbar>
-        <iron-pages attr-for-selected='id' selected="[[_selectedPage]]">
-          <div id="alertsList">
-            <div hidden$="[[_haveAlerts]]">
-              No alerts!
+        <div class="flex layout vertical">
+          <iron-pages attr-for-selected='id' selected="[[_selectedPage]]" class="flex layout vertical">
+            <div id="alertsList">
+              <div hidden$="[[_haveAlerts]]">
+                No alerts!
+              </div>
+              <iron-list id="alertsIronList" items="[[_alerts]]" as="alert" class="fit" selection-enabled multi-selection>
+                <template>
+                  <div class="list-item" tabindex$="[[tabIndex]]">
+                    <som-alert-item
+                        alert="{{alert}}"
+                        alerts-group="[[_alertsGroup]]"
+                        selected="[[selected]]"
+                        annotation="[[_computeAnnotation(annotations, alert)]]"
+                        on-selected-changed="_handleCardSelected"
+                        on-annotation-change="_handleAnnotation"
+                        on-link-bug="_handleLinkBug"
+                    ></som-alert-item>
+                  </div>
+                </template>
+              </iron-list>
             </div>
-            <iron-list id="alertsIronList" items="[[_alerts]]" as="alert" class="fit" selection-enabled multi-selection>
-              <template>
-                <div class="list-item" tabindex$="[[tabIndex]]">
-                  <som-alert-item
-                      alert="{{alert}}"
-                      alerts-group="[[_alertsGroup]]"
-                      selected="[[selected]]"
-                      annotation="[[_computeAnnotation(annotations, alert)]]"
-                      on-selected-changed="_handleCardSelected"
-                      on-annotation-change="_handleAnnotation"
-                      on-link-bug="_handleLinkBug"
-                  ></som-alert-item>
-                </div>
-              </template>
-            </iron-list>
-          </div>
-          <div id="examineAlert">
-            <som-examine alert="[[_examinedAlert]]"></som-examine>
-          </div>
-        </iron-pages>
+            <div id="examineAlert" class="flex layout vertical">
+              <som-examine alert="[[_examinedAlert]]" class="flex layout vertical"></som-examine>
+            </div>
+          </iron-pages>
+        </div>
       </paper-header-panel>
     </paper-drawer-panel>
     <paper-dialog id="bugDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">

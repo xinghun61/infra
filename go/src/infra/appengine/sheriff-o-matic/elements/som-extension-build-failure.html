@@ -38,7 +38,7 @@
       }
       .infra-failure a {
         color: white;
-      } 
+      }
       .builder a:hover {
         text-decoration: underline;
       }
@@ -61,8 +61,8 @@
           <span class$="[[_classForBuilder(builder)]]">
             <a target="_blank" href$="[[builder.url]]" title$="Failing for the last [[_failureCount(builder)]] build(s): [[builder.first_failure]] - [[builder.latest_failure]].">
                 [[builder.name]]
+                [[_failureCount(builder)]]
             </a>
-            [[_failureCount(builder)]]
           </span>
         </template>
       </div>
