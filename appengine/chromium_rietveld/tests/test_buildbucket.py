@@ -227,11 +227,48 @@ class BuildbucketFunctionsTest(TestCase):
         owner=users.User(email='owner@chromium.org'),
     )
     builds = buildbucket.schedule(issue, '1', [
-        {'master': 'tryserver.chromium.linux', 'builder': 'linux_rel'},
-        {'master': 'tryserver.chromium.linux', 'builder': 'linux_debug'},
+        {'bucket': 'master.tryserver.chromium.linux', 'builder': 'linux_rel'},
+        {'bucket': 'master.tryserver.chromium.linux', 'builder': 'linux_debug'},
     ])
     self.assertEqual(
         builds, [r['build'] for r in put_builds_response['results']])
+
+  def test_get_builders(self):
+    get_builders_response = {
+      'buckets': [
+        {
+          'name': 'luci-cron-test',
+          'builders': [
+            {
+              'category': '',
+              'name': 'foo'
+            }
+          ],
+        },
+        {
+          'name': 'bar.bucket',
+          'builders': [
+            {
+              'category': 'cat',
+              'name': 'bar.builder',
+            }
+          ],
+        }
+      ],
+    }
+    self.fake_responses = [
+      get_builders_response
+    ]
+
+    builders = buildbucket.get_swarmbucket_builders()
+    self.assertEqual(builders, {
+      'luci-cron-test': {
+        None: ['foo'],
+      },
+      'bar.bucket': {
+        'cat': ['bar.builder']
+      }
+    })
 
 
 if __name__ == '__main__':

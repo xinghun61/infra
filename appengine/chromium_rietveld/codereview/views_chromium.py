@@ -414,9 +414,9 @@ def edit_flags(request):
 
     builds = []
     for b in new_builders:
-      master, builder = b.split(':', 1)
+      bucket, builder = b.split(':', 1)
       builds.append({
-        'master': master,
+        'bucket': bucket,
         'builder': builder,
       })
     buildbucket.schedule(request.issue, last_patchset.key.id(), builds)
@@ -684,9 +684,9 @@ def try_patchset(request):
       # clobber property is checked for presence. Its value is ignored.
       props['clobber'] = True
     builds.append({
+      'bucket': 'master.%s' % master,
       'builder': builder,
       'category': category,
-      'master': master,
       'properties': props,
       'revision': revision,
     })

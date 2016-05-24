@@ -24,6 +24,7 @@ from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import ndb
 
+from codereview import buildbucket
 from codereview import models
 
 
@@ -149,7 +150,7 @@ class TryserverBuilders(ndb.Model):
 
     The structure of the array is:
     [
-      { tryserver: tryserver_name2,
+      { tryserver: buildbucket_bucket_name,
         builders: [
           { builder: builder_name1, category: category_name1 },
           { builder: builder_name2, category: category_name2 },
@@ -183,7 +184,9 @@ class TryserverBuilders(ndb.Model):
 
   @classmethod
   def refresh(cls):
-    new_json_contents = {}
+    new_json_contents = buildbucket.get_swarmbucket_builders()
+    if new_json_contents:
+      logging.info('received builders from swarmbucket: %r', new_json_contents)
 
     for tryserver, json_urls in cls.JSON_SOURCES.iteritems():
       for json_url in json_urls:
@@ -203,8 +206,9 @@ class TryserverBuilders(ndb.Model):
           if 'variable' in builder:
             continue
 
-          category = parsed_json[builder].get('category', 'None')
-          new_json_contents.setdefault(tryserver, {}).setdefault(
+          category = parsed_json[builder].get('category')
+          bucket_name = 'master.%s' % tryserver
+          new_json_contents.setdefault(bucket_name, {}).setdefault(
               category, []).append(builder)
 
     instance = cls.get_instance()

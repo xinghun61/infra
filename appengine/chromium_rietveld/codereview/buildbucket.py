@@ -148,7 +148,7 @@ class BuildbucketTryJobResult(models.TryJobResult):
 
 
 ################################################################################
-## Gettings builds.
+## API.
 
 
 @ndb.tasklet
@@ -208,15 +208,11 @@ def get_try_job_results_for_patchset_async(project, issue_id, patchset_id):
   raise ndb.Return(results)
 
 
-################################################################################
-## Scheduling builds.
-
-
 def schedule(issue, patchset_id, builds):
   """Schedules builds on buildbucket.
 
   |builds| is a list of dicts with keys:
-    master: required. Must not have '.master' prefix.
+    bucket: required, target buildbucket bucket name. May have "master." prefix.
     builder: required.
     revision
     properties
@@ -233,8 +229,14 @@ def schedule(issue, patchset_id, builds):
   opid = uuid.uuid4()
 
   for i, build in enumerate(builds):
-    assert 'master' in build, build
+    assert 'bucket' in build, build
     assert 'builder' in build, build
+
+    master_prefix = 'master.'
+    master_name = None   # Buildbot master name without "master." prefix.
+    if build['bucket'].startswith(master_prefix):
+      master_name = build['bucket'][:len(master_prefix)]
+
     # Build definitions are similar to what CQ produces:
     # https://chrome-internal.googlesource.com/infra/infra_internal/+/c3092da98975c7a3e083093f21f0f4130c66a51c/commit_queue/buildbucket_util.py#171
     change = {
@@ -248,28 +250,32 @@ def schedule(issue, patchset_id, builds):
     properties = build.get('properties') or {}
     properties.update({
       'issue': issue.key.id(),
-      'master': build['master'],
       'patch_project': issue.project,
       'patch_storage': 'rietveld',
       'patchset': patchset_id,
       'rietveld': 'https://%s' % self_hostname,
     })
+    if master_name:
+      properties['master'] = master_name
+
     if 'presubmit' in build['builder'].lower():
       properties['dry_run'] = 'true'
+    tags = [
+      'builder:%s' % build['builder'],
+      'buildset:%s' % get_buildset_for(
+          issue.project, issue.key.id(), patchset_id),
+      'user_agent:rietveld',
+    ]
+    if master_name:
+      tags.append('master:%s' % master_name)
     req['builds'].append({
-        'bucket': 'master.%s' % build['master'],
+        'bucket': build['bucket'],
         'parameters_json': json.dumps({
           'builder_name': build['builder'],
           'changes': [change],
           'properties': properties,
         }),
-        'tags': [
-            'builder:%s' % build['builder'],
-            'buildset:%s' % get_buildset_for(
-                issue.project, issue.key.id(), patchset_id),
-            'master:%s' % build['master'],
-            'user_agent:rietveld',
-        ],
+        'tags': tags,
         'client_operation_id': '%s:%s' % (opid, i),
     })
 
@@ -287,6 +293,33 @@ def schedule(issue, patchset_id, builds):
       'Scheduled buildbucket builds: %r',
       ', '.join([str(b['id']) for b in actual_builds]))
   return actual_builds
+
+
+def get_swarmbucket_builders():
+  """Fetches a list of swarmbucket builders.
+
+  Slow API, do not use on serving path.
+
+  Does not impersonate current user, but uses rietveld service account.
+
+  For more information about swarmbucket builders:
+  https://chromium.googlesource.com/infra/infra/+/master/appengine/cr-buildbucket/doc/swarming.md
+
+  Returns:
+    Dict {bucket_name_str: {category_str: [builder_name_str]}}
+  """
+  url = (
+      'https://%s.appspot.com/_ah/api/swarmbucket/v1/builders' %
+      BUILDBUCKET_APP_ID)
+  response = net.json_request(url, scopes=net.EMAIL_SCOPE)
+  result = {}
+  for bucket in response['buckets']:
+    categories = {}
+    for builder in bucket.get('builders', []):
+      category = builder.get('category') or None
+      categories.setdefault(category, []).append(builder['name'])
+    result[bucket['name']] = categories
+  return result
 
 
 ################################################################################
