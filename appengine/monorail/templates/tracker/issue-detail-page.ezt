@@ -232,7 +232,8 @@ runOnLoad(function() {
 
   window.onbeforeunload = function() {
     if (TKR_isDirty) {
-      return 1;  // Triggers a prompt dialog.
+      // This message is ignored in recent versions of Chrome and Firefox.
+      return "You have unsaved changes. Leave this page and discard them?";
     }
   };
 
