@@ -754,6 +754,11 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 			// The actual breaking step will appear later.
 		}
 
+		// Check the gatekeeper configs to see if this is ignorable.
+		if a.Gatekeeper.ExcludeFailure(failure.master, failure.builderName, failure.step.Name) {
+			continue
+		}
+
 		if len(failure.step.Results) > 0 {
 			// Check results to see if it's an array of [4]
 			// That's a purple failure, which should go to infra/trooper.
@@ -792,11 +797,6 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 				}
 				continue
 			}
-		}
-
-		// Check the gatekeeper configs to see if this is ignorable.
-		if a.Gatekeeper.ExcludeFailure(failure.master, failure.builderName, failure.step.Name) {
-			continue
 		}
 
 		// Gets the named revision number from gnumbd metadata.
