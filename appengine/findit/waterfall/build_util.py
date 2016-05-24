@@ -45,7 +45,7 @@ def DownloadBuildData(master_name, builder_name, build_number):
           master_name):  # pragma: no cover
         return None
 
-    if not build.data:
+    if not build.data or not use_cbe:
       # Retrieve build data from build master.
       build.data = buildbot.GetBuildDataFromBuildMaster(
           master_name, builder_name, build_number, HTTP_CLIENT_LOGGING_ERRORS)

@@ -147,3 +147,22 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     build_util.DownloadBuildData(master_name, builder_name, build_number)
 
     self.assertEqual(build.data_source, build_util.BUILDBOT_MASTER)
+
+  def testDownloadBuildDataSourceFromBMUpateBuildData(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.data = 'Original build data'
+    build.last_crawled_time = self._TimeBeforeNowBySeconds(360)
+    build.put()
+
+    self.UpdateUnitTestConfigSettings(
+        'download_build_data_settings', {'use_chrome_build_extract': False})
+    self._MockUrlfetchWithBuildData(master_name, builder_name, build_number,
+                                    build_data='Test get build data')
+
+    build_util.DownloadBuildData(master_name, builder_name, build_number)
+
+    self.assertEqual(build.data_source, build_util.BUILDBOT_MASTER)
+    self.assertEqual(build.data, 'Test get build data from build master')
