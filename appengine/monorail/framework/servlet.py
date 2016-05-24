@@ -161,6 +161,7 @@ class Servlet(webapp2.RequestHandler):
       except MySQLdb.OperationalError as e:
         logging.exception(e)
         page_data = {
+          'http_response_code': httplib.SERVICE_UNAVAILABLE,
           'requested_url': self.request.url,
         }
         self.template = template_helpers.GetTemplate(
