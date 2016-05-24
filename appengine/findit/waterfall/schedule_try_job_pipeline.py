@@ -58,8 +58,8 @@ class ScheduleTryJobPipeline(BasePipeline):
       additional_parameters = {'tests': targeted_tests}
 
     try_job = buildbucket_client.TryJob(
-        tryserver_mastername, tryserver_buildername, None, properties,
-        additional_parameters, [])
+        tryserver_mastername, tryserver_buildername, None, properties, [],
+        additional_parameters)
     error, build = buildbucket_client.TriggerTryJobs([try_job])[0]
 
     if error:  # pragma: no cover
