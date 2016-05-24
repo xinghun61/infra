@@ -56,6 +56,7 @@ from sitewide import userprofile
 from sitewide import userprojects
 from sitewide import usersettings
 from sitewide import userupdates
+from sitewide import module_version_match
 
 from tracker import componentcreate
 from tracker import componentdetail
@@ -283,6 +284,7 @@ class ServletRegistry(object):
         urls.GROUP_CREATE: groupcreate.GroupCreate,
         urls.GROUP_LIST: grouplist.GroupList,
         urls.GROUP_DELETE: grouplist.GroupList,
+        urls.MODULE_VERSION_CHECK: module_version_match.ModuleVersionMatch,
         })
 
     self._SetupUserServlets({

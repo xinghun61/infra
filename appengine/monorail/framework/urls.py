@@ -124,3 +124,5 @@ CSP_REPORT = '/csp'
 TOKEN_REFRESH = '/hosting/tokenRefresh'
 
 SPAM_MODERATION_QUEUE = '/spamqueue'
+
+MODULE_VERSION_CHECK = '/moduleVersionCheck'
