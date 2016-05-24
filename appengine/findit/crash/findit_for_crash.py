@@ -141,45 +141,9 @@ def GetStackInfosForFilesGroupedByDeps(stacktrace, stack_deps):
   return dep_to_file_to_stack_infos
 
 
-def GetBlameForFilesGroupedByDeps(stacktrace, stack_deps):
-  """Gets Blames of files in stacktrace for deps in stack_deps.
-
-  Args:
-    stacktrace (Stacktrace): Parsed stacktrace object.
-    stack_deps (dict of Dependencys): Represents all the dependencies shown in
-      the crash stack.
-
-  Returns:
-    A dict, maps dep_path to a dict mapping file path to its Blame.
-
-    For example:
-    {
-        'src/': {
-            'a.cc': Blame(revision, 'a.cc')
-            'b.cc': Blame(revision, 'b.cc')
-        }
-    }
-  """
-  dep_to_file_to_blame = defaultdict(dict)
-
-  for callstack in stacktrace:
-    for frame in callstack:
-      # We only care about those dependencies in crash stack.
-      if frame.dep_path not in stack_deps:
-        continue
-
-      git_repository = GitRepository(stack_deps[frame.dep_path].repo_url,
-                                     HttpClientAppengine())
-      dep_to_file_to_blame[frame.dep_path][frame.file_path] = (
-          git_repository.GetBlame(
-              frame.file_path, stack_deps[frame.dep_path].revision))
-
-  return dep_to_file_to_blame
-
-
 def FindMatchResults(dep_to_file_to_changelogs,
                      dep_to_file_to_stack_infos,
-                     dep_to_file_to_blame,
+                     stack_deps,
                      ignore_cls=None):
   """Finds results by matching stacktrace and changelogs in regression range.
 
@@ -192,28 +156,37 @@ def FindMatchResults(dep_to_file_to_changelogs,
       to a list of stack inforamtion of this file. A file may occur in several
       frames, one stack info consist of a StackFrame and the callstack priority
       of it.
-    dep_to_file_to_blame (dict): Maps dep_path to a dict mapping file path to
-      its Blame.
+    stack_deps (dict): Represents all the dependencies show in
+      the crash stack.
     ignore_cls (set): Set of reverted revisions.
 
   Returns:
-    A list of MatchResult instances with confidence and reason unset.
+    A tuple - [match_result_list, dep_to_matched_file_to_blame]
+    match_result_list (list of MatchResult): A list of MatchResult instances
+      with confidence and reason unset.
+    dep_to_matched_file_to_blame (dict): Maps dep_path to a dict mapping
+      matched file path to its Blame.
   """
   match_results = MatchResults(ignore_cls)
+  dep_to_matched_file_to_blame = defaultdict(dict)
 
   for dep, file_to_stack_infos in dep_to_file_to_stack_infos.iteritems():
     file_to_changelogs = dep_to_file_to_changelogs[dep]
+    git_repository = GitRepository(stack_deps[dep].repo_url,
+                                   HttpClientAppengine())
 
     for crashed_file_path, stack_infos in file_to_stack_infos.iteritems():
       for touched_file_path, changelogs in file_to_changelogs.iteritems():
         if not crash_util.IsSameFilePath(crashed_file_path, touched_file_path):
           continue
 
+        blame = git_repository.GetBlame(crashed_file_path,
+                                        stack_deps[dep].revision)
         match_results.GenerateMatchResults(
-            crashed_file_path, dep, stack_infos, changelogs,
-            dep_to_file_to_blame[dep][crashed_file_path])
+            crashed_file_path, dep, stack_infos, changelogs, blame)
+        dep_to_matched_file_to_blame[dep][crashed_file_path] = blame
 
-  return match_results.values()
+  return match_results.values(), dep_to_matched_file_to_blame
 
 
 def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps):
@@ -242,12 +215,10 @@ def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps):
       regression_deps_rolls, stack_deps)
   dep_to_file_to_stack_infos = GetStackInfosForFilesGroupedByDeps(
       stacktrace, stack_deps)
-  dep_to_file_to_blame = GetBlameForFilesGroupedByDeps(stacktrace, stack_deps)
 
-  results = FindMatchResults(dep_to_file_to_changelogs,
-                             dep_to_file_to_stack_infos,
-                             dep_to_file_to_blame,
-                             ignore_cls)
+  results, _ = FindMatchResults(dep_to_file_to_changelogs,
+                                dep_to_file_to_stack_infos,
+                                stack_deps, ignore_cls)
 
   if not results:
     return []

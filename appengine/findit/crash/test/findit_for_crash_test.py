@@ -207,54 +207,6 @@ class FinditForCrashTest(CrashTestSuite):
 
         self._VerifyTwoStackInfosEqual(stack_infos, expected_stack_infos)
 
-  def testGetBlameForFilesGroupedByDeps(self):
-
-    dummy_blame = Blame('1', 'a.cc')
-    dummy_blame.AddRegion(
-        Region(1, 5, '0', 'a', 'a@email.com', 'Thu Mar 25 21:24:43 2016'))
-    dummy_blame.AddRegion(
-        Region(6, 10, '1', 'b', 'b@email.com', 'Thu Mar 31 21:24:43 2016'))
-
-    def _MockGetBlame(*_):
-      return dummy_blame
-
-    self.mock(GitRepository, 'GetBlame', _MockGetBlame)
-
-    main_stack = CallStack(0)
-    main_stack.extend(
-        [StackFrame(0, 'src/', '', 'c(p* &d)', 'a.cc', [177]),
-         StackFrame(1, 'src/', '', 'd(a* c)', 'a.cc', [227, 228, 229])])
-
-    low_priority_stack = CallStack(1)
-    low_priority_stack.append(
-        StackFrame(0, 'dummy_dep/', '', 'k(p* &d)', 'h.cc', [17]))
-
-    stacktrace = Stacktrace()
-    stacktrace.extend([main_stack, low_priority_stack])
-
-    crash_deps = {'src/': Dependency('src/', 'https://chromium_repo', '1')}
-
-    dep_file_to_blame = findit_for_crash.GetBlameForFilesGroupedByDeps(
-        stacktrace,
-        findit_for_crash.GetDepsInCrashStack(main_stack, crash_deps))
-
-    expected_dep_file_to_blame = {
-        'src/': {
-            'a.cc': dummy_blame
-        }
-    }
-
-    for dep, file_to_blame in dep_file_to_blame.iteritems():
-
-      self.assertTrue(dep in expected_dep_file_to_blame)
-
-      expected_file_to_blame = expected_dep_file_to_blame[dep]
-      for file_path, blame in file_to_blame.iteritems():
-        self.assertTrue(file_path in expected_file_to_blame)
-        expected_blame = expected_file_to_blame[file_path]
-
-        self._VerifyTwoBlamesEqual(blame, expected_blame)
-
   def testFindMatchResults(self):
     dep_file_to_changelogs = {
         'src/': {
@@ -282,10 +234,13 @@ class FinditForCrashTest(CrashTestSuite):
     dummy_blame.AddRegion(
         Region(6, 10, '1', 'b', 'b@chromium.org', 'Thu Jun 19 12:11:40 2015'))
 
-    dep_file_to_blame = {
-        'src/': {
-            'a.cc': dummy_blame
-        }
+    def _MockGetBlame(*_):
+      return dummy_blame
+
+    self.mock(GitRepository, 'GetBlame', _MockGetBlame)
+
+    stack_deps = {
+        'src/': Dependency('src/', 'https://url_src', 'rev1', 'DEPS'),
     }
 
     expected_match_results = [{
@@ -299,11 +254,18 @@ class FinditForCrashTest(CrashTestSuite):
         'confidence': None,
     }]
 
-    match_results = findit_for_crash.FindMatchResults(dep_file_to_changelogs,
-                                                      dep_file_to_stack_infos,
-                                                      dep_file_to_blame)
+    expected_dep_to_changed_file_to_blame = {'src/': {'a.cc': dummy_blame}}
+
+    match_results, dep_to_changed_file_to_blame = (
+        findit_for_crash.FindMatchResults(
+            dep_file_to_changelogs, dep_file_to_stack_infos, stack_deps))
     self.assertEqual([result.ToDict() for result in match_results],
                      expected_match_results)
+
+    for file_path, blame in dep_to_changed_file_to_blame.iteritems():
+      print dep_to_changed_file_to_blame
+      self.assertTrue(file_path in expected_dep_to_changed_file_to_blame)
+      self.assertEqual(blame, expected_dep_to_changed_file_to_blame[file_path])
 
   def testFindItForCrashNoRegressionRange(self):
     self.assertEqual(
@@ -313,7 +275,7 @@ class FinditForCrashTest(CrashTestSuite):
   def testFindItForCrashNoMatchFound(self):
 
     def _MockFindMatchResults(*_):
-      return []
+      return [], {}
 
     self.mock(findit_for_crash, 'FindMatchResults', _MockFindMatchResults)
 
@@ -342,7 +304,7 @@ class FinditForCrashTest(CrashTestSuite):
       }
       match_result2.min_distance = 20
 
-      return [match_result1, match_result2]
+      return [match_result1, match_result2], {}
 
     self.mock(findit_for_crash, 'FindMatchResults', _MockFindMatchResults)
 
