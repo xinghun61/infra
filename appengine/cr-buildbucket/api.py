@@ -7,12 +7,12 @@ import json
 import logging
 
 from google.appengine.ext import ndb
-
-from components import auth
-from components import utils
 from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
+
+from components import auth
+from components import utils
 import gae_ts_mon
 
 import acl
@@ -176,7 +176,7 @@ def catch_errors(fn, response_message_class):
 
 def buildbucket_api_method(
     request_message_class, response_message_class, **kwargs):
-  """Extends auth.endpoints_method by converting service errors."""
+  """Defines a buildbucket API method."""
 
   endpoints_decorator = auth.endpoints_method(
     request_message_class, response_message_class, **kwargs)

@@ -33,7 +33,8 @@ def create_html_app():  # pragma: no cover
 
 def create_endpoints_app():  # pragma: no cover
   """Returns WSGI app that serves cloud endpoints requests."""
-  return endpoints.api_server([api.BuildBucketApi, config.ConfigApi])
+  return endpoints.api_server([
+    api.BuildBucketApi, swarming.SwarmbucketApi, config.ConfigApi])
 
 
 def create_backend_app():  # pragma: no cover

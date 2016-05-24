@@ -3,3 +3,4 @@
 # found in the LICENSE file.
 
 from .swarming import *  # pylint: disable=wildcard-import
+from .swarmbucket_api import SwarmbucketApi
