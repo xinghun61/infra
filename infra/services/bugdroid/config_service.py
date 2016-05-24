@@ -10,7 +10,7 @@ import json
 import logging
 
 from google import protobuf
-from oauth2client.file import Storage
+from oauth2client.client import OAuth2Credentials
 
 from infra.services.bugdroid.proto import repo_config_pb2
 
@@ -32,12 +32,13 @@ def get_repos(credentials_db, configfile=None):
       
     else:
       logging.info('Read repo configs from luci-config.')
-      storage = Storage(credentials_db)
-      storage.acquire_lock()
-      try:
-        credentials = storage.locked_get()
-      finally:
-        storage.release_lock()
+      with open(credentials_db) as data_file:    
+        creds_data = json.load(data_file)
+      credentials = OAuth2Credentials(
+          None, creds_data['client_id'], creds_data['client_secret'],
+          creds_data['refresh_token'], None,
+          'https://accounts.google.com/o/oauth2/token',
+          'bugdroid-config-service')
       if not credentials:
         logging.error('Invalid credentail file')
         return None
