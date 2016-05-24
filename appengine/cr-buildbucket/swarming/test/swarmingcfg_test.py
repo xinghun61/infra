@@ -59,7 +59,8 @@ class SwarmingCfgTest(testing.AppengineTestCase):
           recipe=Swarming.Recipe(
             properties=[
               '',
-              ':'
+              ':',
+              'buildername:foobar',
             ],
           ),
           priority=-1,
@@ -86,5 +87,8 @@ class SwarmingCfgTest(testing.AppengineTestCase):
       'builder b2: recipe: repository unspecified',
       'builder b2: recipe: property #1: does not have colon',
       'builder b2: recipe: property #2: key not specified',
+      ('builder b2: recipe: property #3: '
+       'do not specify buildername property; '
+       'it is added by swarmbucket automatically'),
       'builder b2: priority must be in [0, 200] range; got -1',
     ])

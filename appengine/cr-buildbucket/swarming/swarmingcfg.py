@@ -56,6 +56,10 @@ def validate_recipe_cfg(recipe, ctx):
         key, _ = p.split(':', 1)
         if not key:
           ctx.error('key not specified')
+        elif key =='buildername':
+          ctx.error(
+            'do not specify buildername property; '
+            'it is added by swarmbucket automatically')
 
 
 def validate_builder_cfg(builder, ctx, bucket_has_pool_dim=False):

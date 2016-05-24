@@ -107,11 +107,22 @@ class SwarmingTest(testing.AppengineTestCase):
       (None, None))
     self.assertFalse(swarming.is_for_swarming_async(build).get_result())
 
+  def test_build_parameters(self):
+    with self.assertRaises(errors.InvalidInputError):
+      swarming.validate_build_parameters('foo', {'properties': []})
+    with self.assertRaises(errors.InvalidInputError):
+      swarming.validate_build_parameters('foo', {
+        'properties': {'buildername': 'bar'},
+      })
+
   def test_validate_swarming_param(self):
-    swarming.validate_swarming_param(None)
-    swarming.validate_swarming_param({})
-    swarming.validate_swarming_param({'recipe': {}})
-    swarming.validate_swarming_param({'recipe': {'revision': 'deadbeef'}})
+    def validate_swarming_param(value):
+      swarming.validate_build_parameters('builder', {'swarming': value})
+
+    validate_swarming_param(None)
+    validate_swarming_param({})
+    validate_swarming_param({'recipe': {}})
+    validate_swarming_param({'recipe': {'revision': 'deadbeef'}})
 
     bad = [
       [],
@@ -122,7 +133,7 @@ class SwarmingTest(testing.AppengineTestCase):
     ]
     for p in bad:
       with self.assertRaises(errors.InvalidInputError):
-        swarming.validate_swarming_param(p)
+        validate_swarming_param(p)
 
   def test_create_task_async(self):
     build = model.Build(
@@ -170,7 +181,6 @@ class SwarmingTest(testing.AppengineTestCase):
       'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new')
     actual_task_def = net.json_request_async.call_args[1]['payload']
     del actual_task_def['pubsub_auth_token']
-    self.maxDiff =24566
     expected_task_def = {
       'name': 'buildbucket-bucket-builder',
       'priority': 108,
@@ -197,7 +207,11 @@ class SwarmingTest(testing.AppengineTestCase):
           '-repository', 'https://example.com/repo',
           '-revision', 'badcoffee',
           '-recipe', 'recipe',
-          '-properties', '{"a": "b", "predefined-property": "x"}',
+          '-properties', json.dumps({
+            'a': 'b',
+            'buildername': 'builder',
+            'predefined-property': 'x',
+          }, sort_keys=True)
         ],
         'dimensions': sorted([
           {'key': 'cores', 'value': '8'},

@@ -49,7 +49,8 @@ import notifications
 
 PUBSUB_TOPIC = 'swarming'
 BUILDER_PARAMETER = 'builder_name'
-PROPERTIES_PARAMETER = 'properties'
+PARAM_PROPERTIES = 'properties'
+PARAM_SWARMING = 'swarming'
 DEFAULT_URL_FORMAT = 'https://{swarming_hostname}/user/task/{task_id}'
 
 
@@ -95,30 +96,36 @@ def is_for_swarming_async(build):
   raise ndb.Return(result)
 
 
-def validate_swarming_param(swarming):
-  """Raises errors.InvalidInputError if |swarming| build parameter is invalid.
-  """
-  if swarming is None:
-    return
-  if not isinstance(swarming, dict):
-    raise errors.InvalidInputError('swarming param must be an object')
+def validate_build_parameters(builder_name, params):
+  """Raises errors.InvalidInputError if build parameters are invalid."""
+  properties = params.get(PARAM_PROPERTIES)
+  if properties is not None:
+    if not isinstance(properties, dict):
+      raise errors.InvalidInputError('properties param must be an object')
+    if properties.get('buildername', builder_name) != builder_name:
+      raise errors.InvalidInputError('inconsistent builder name')
 
-  swarming = copy.deepcopy(swarming)
-  if 'recipe' in swarming:
-    recipe = swarming.pop('recipe')
-    if not isinstance(recipe, dict):
-      raise errors.InvalidInputError('swarming.recipe param must be an object')
-    if 'revision' in recipe:
-      revision = recipe.pop('revision')
-      if not isinstance(revision, basestring):
+  swarming = params.get(PARAM_SWARMING)
+  if swarming is not None:
+    if not isinstance(swarming, dict):
+      raise errors.InvalidInputError('swarming param must be an object')
+    swarming = copy.deepcopy(swarming)
+    if 'recipe' in swarming:
+      recipe = swarming.pop('recipe')
+      if not isinstance(recipe, dict):
         raise errors.InvalidInputError(
-          'swarming.recipe.revision must be a string')
-    if recipe:
-      raise errors.InvalidInputError(
-        'Unrecognized keys in swarming.recipe: %r' % recipe)
+            'swarming.recipe param must be an object')
+      if 'revision' in recipe:
+        revision = recipe.pop('revision')
+        if not isinstance(revision, basestring):
+          raise errors.InvalidInputError(
+            'swarming.recipe.revision must be a string')
+      if recipe:
+        raise errors.InvalidInputError(
+          'Unrecognized keys in swarming.recipe: %r' % recipe)
 
-  if swarming:
-    raise errors.InvalidInputError('Unrecognized keys: %r', swarming)
+    if swarming:
+      raise errors.InvalidInputError('Unrecognized keys: %r', swarming)
 
 
 @ndb.tasklet
@@ -126,10 +133,11 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
   """Creates a swarming task definition for the |build|.
 
   Raises:
-    errors.InvalidInputError if build.parameters['swarming'] is invalid.
+    errors.InvalidInputError if build.parameters are invalid.
   """
-  swarming_param = build.parameters.get('swarming') or {}
-  validate_swarming_param(swarming_param)
+  params = build.parameters or {}
+  validate_build_parameters(builder_cfg.name, params)
+  swarming_param = params.get(PARAM_SWARMING) or {}
 
   # Render task template.
   task_template = yield get_task_template_async()
@@ -145,7 +153,8 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
 
     build_properties = dict(
       p.split(':', 1) for p in builder_cfg.recipe.properties or [])
-    build_properties.update(build.parameters.get(PROPERTIES_PARAMETER) or {})
+    build_properties.update(build.parameters.get(PARAM_PROPERTIES) or {})
+    build_properties['buildername'] = builder_cfg.name
 
     task_template_params.update({
       'repository': recipe.repository,
