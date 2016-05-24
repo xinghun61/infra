@@ -24,7 +24,8 @@ from infra.services.bugdroid.Issue import Issue2
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.NullHandler())
 
-MONORAIL_PROD_URL = ('https://monorail-prod.appspot.com/_ah/api/discovery/'
+# TODO(sheyang): Use staging for tesing now
+MONORAIL_PROD_URL = ('https://monorail-staging.appspot.com/_ah/api/discovery/'
                      'v1/apis/{api}/{apiVersion}/rest')
 
 
