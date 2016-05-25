@@ -33,6 +33,26 @@ class AppTest(unittest.TestCase):
     self.mock_logs_process_argparse_options.assert_called_once()
     self.mock_ts_mon_process_argparse_options.assert_called_once()
 
+  def test_initialises_standard_modules_except_ts_mon(self):
+    class Application(MockApplication):
+      USES_TS_MON = False
+
+    with self.assertRaises(SystemExit):
+      Application().run(['appname'])
+
+    self.mock_logs_process_argparse_options.assert_called_once()
+    self.assertFalse(self.mock_ts_mon_process_argparse_options.called)
+
+  def test_initialises_standard_modules_except_logs(self):
+    class Application(MockApplication):
+      USES_STANDARD_LOGGING = False
+
+    with self.assertRaises(SystemExit):
+      Application().run(['appname'])
+
+    self.assertFalse(self.mock_logs_process_argparse_options.called)
+    self.mock_ts_mon_process_argparse_options.assert_called_once()
+
   def test_argparse_options(self):
     test_case = self
     class App(MockApplication):
@@ -57,6 +77,18 @@ class AppTest(unittest.TestCase):
 
   def test_catches_exceptions(self):
     a = MockApplication()
+    a.main.side_effect = Exception
+    ts_mon.reset_for_unittest(disable=True)
+
+    with self.assertRaises(SystemExit) as cm:
+      a.run(['appname'])
+    self.assertEqual(1, cm.exception.code)
+
+  def test_catches_exceptions_with_ts_mon_disabled(self):
+    class Application(MockApplication):
+      USES_TS_MON = False
+
+    a = Application()
     a.main.side_effect = Exception
     ts_mon.reset_for_unittest(disable=True)
 

@@ -1,15 +1,14 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-"""List and cat logs in the infra cloud
+"""List and cat logs in the infra cloud.
 
-Example invocation:
-cit log list
-cit log list bootstrap
-cit log cat bootstrap
-cit log cat bootstrap slave123-c4
+Commands:
+  list                  Lists all log types
+  list <log>            Lists all machines that write this log
+  cat <log>             Prints a log from all machines
+  cat <log> <machine>   Prints a log from one machine
 """
-import argparse
 import logging
 import sys
 
@@ -24,10 +23,12 @@ LOGGER = logging.getLogger(__name__)
 class Log(infra_libs.BaseApplication):
   DESCRIPTION = sys.modules['__main__'].__doc__
   PROG_NAME = 'log'
+  USES_STANDARD_LOGGING = False
+  USES_TS_MON = False
 
   def add_argparse_options(self, parser):
-    # This is actually covered, but python coverage is confused.
     super(Log, self).add_argparse_options(parser)
+
     parser.add_argument('--project', '-p', default=log.PROJECT_ID)
     parser.add_argument('--service', '-s', default=log.SERVICE_NAME)
     parser.add_argument('--limit', '-l', type=int, default=20000)
@@ -38,6 +39,12 @@ class Log(infra_libs.BaseApplication):
         '--until', default=0, type=int, help='Number of days to look until.')
     parser.add_argument('command', help='')
     parser.add_argument('target', nargs='*', help='', default=None)
+
+    def error_handler(message):  # pragma: no cover
+      parser.print_help()
+      sys.stderr.write('\nerror: %s\n' % message)
+      sys.exit(2)
+    parser.error = error_handler
 
   def main(self, args):
     if args.command == 'auth':  # pragma: no cover
@@ -57,8 +64,10 @@ class Log(infra_libs.BaseApplication):
         print 'Invalid number of targets for list (expected 0 or 1)'
     elif args.command == 'cat':  # pragma: no cover
       return cl.cat(args.target)
+    elif args.command == 'help':  # pragma: no cover
+      self.parser.print_help()
     else:  # pragma: no cover
-      print 'Unkown command: %s' % args.command
+      self.parser.error('Unkown command: %s' % args.command)
 
 
 if __name__ == '__main__':
