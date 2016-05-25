@@ -10,7 +10,6 @@ import time
 import psutil
 
 from infra_libs import ts_mon
-from infra_libs.ts_mon.common.metrics import MICROSECONDS_PER_SECOND
 
 
 cpu_time = ts_mon.FloatMetric('dev/cpu/time',
@@ -70,6 +69,16 @@ uptime = ts_mon.GaugeMetric('dev/uptime',
 proc_count = ts_mon.GaugeMetric('dev/proc/count',
                                 description='Number of processes currently '
                                     'running.')
+
+# tsmon pipeline uses backend clocks when assigning timestamps to metric points.
+# By comparing point timestamp to the point value (i.e. time by machine's local
+# clock), we can potentially detect some anomalies (clock drift, unusually high
+# metrics pipeline delay, completely wrong clocks, etc).
+#
+# It is important to gather this metric right before the flush.
+unix_time = ts_mon.GaugeMetric('dev/unix_time',
+                               description='Number of milliseconds since epoch '
+                                  'based on local machine clock.')
 
 
 def get_uptime():
@@ -153,3 +162,7 @@ def get_net_info():
 def get_proc_info():
   procs = psutil.pids()
   proc_count.set(len(procs))
+
+
+def get_unix_time():
+  unix_time.set(int(time.time() * 1000))

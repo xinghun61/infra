@@ -49,6 +49,7 @@ class SysMon(outer_loop.Application):
       puppet_metrics.get_puppet_summary()
       cipd_metrics.get_cipd_summary()
       android_device_metrics.get_device_statuses()
+      system_metrics.get_unix_time() # must be the last in the list
     finally:
       ts_mon.flush()
     return True

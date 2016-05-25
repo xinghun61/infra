@@ -133,3 +133,8 @@ class SystemMetricsTest(unittest.TestCase):
     system_metrics.get_proc_info()
 
     self.assertGreater(system_metrics.proc_count.get(), 10)
+
+  def test_get_unix_time(self):
+    system_metrics.get_unix_time()
+    self.assertTrue(
+      1464000000000 < system_metrics.unix_time.get() < 9464000000000)
