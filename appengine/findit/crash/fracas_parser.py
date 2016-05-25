@@ -14,15 +14,12 @@ from crash.type_enums import CallStackFormatType
 FRACAS_CALLSTACK_START_PATTERN = re.compile(r'CRASHED \[(.*) @ 0x(.*)\]')
 
 
-_INFINITY_PRIORITY = 1000
-
-
 class FracasParser(StacktraceParser):
 
   def Parse(self, stacktrace_string, deps, signature=None):
     """Parse fracas stacktrace string into Stacktrace instance."""
-    stacktrace = Stacktrace(signature=signature)
-    callstack = CallStack(_INFINITY_PRIORITY)
+    stacktrace = Stacktrace()
+    callstack = CallStack(float('inf'))
 
     for line in stacktrace_string.splitlines():
       is_new_callstack, stack_priority, format_type = (
@@ -31,14 +28,14 @@ class FracasParser(StacktraceParser):
       if is_new_callstack:
         # If the callstack is not the initial one or empty, add it
         # to stacktrace.
-        if callstack.priority != _INFINITY_PRIORITY and callstack:
+        if callstack.priority != float('inf') and callstack:
           stacktrace.append(callstack)
 
         callstack = CallStack(stack_priority, format_type)
       else:
         callstack.ParseLine(line, deps)
 
-    if callstack.priority != _INFINITY_PRIORITY and callstack:
+    if callstack.priority != float('inf') and callstack:
       stacktrace.append(callstack)
 
     # Filter all the frames before signature frame.

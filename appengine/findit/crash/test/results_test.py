@@ -78,7 +78,7 @@ class ResultsTest(CrashTestSuite):
 
   def testResultToDict(self):
 
-    result = Result(DUMMY_CHANGELOG1, 'src/', '',
+    result = Result(DUMMY_CHANGELOG1, 'src/',
                     confidence=1, reason='some reason')
 
     expected_result_json = {
@@ -96,14 +96,14 @@ class ResultsTest(CrashTestSuite):
 
   def testResultToString(self):
 
-    result = Result(DUMMY_CHANGELOG1, 'src/', '',
+    result = Result(DUMMY_CHANGELOG1, 'src/',
                     confidence=1, reason='some reason')
 
     expected_result_str = ''
     self.assertEqual(result.ToString(), expected_result_str)
 
     result.file_to_stack_infos = {
-        'a.cc': [(StackFrame(0, 'src/', '', 'func', 'a.cc', []), 0)]
+        'a.cc': [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', []), 0)]
     }
     expected_result_str = 'Changed file a.cc crashed in func (#0)'
 
@@ -111,35 +111,37 @@ class ResultsTest(CrashTestSuite):
 
   def testMatchResultUpdate(self):
     # Touched lines have intersection with crashed lines.
-    result = MatchResult(DUMMY_CHANGELOG1, 'src/', '',
+    result = MatchResult(DUMMY_CHANGELOG1, 'src/',
                          confidence=1, reason='some reason')
-    stack_infos = [(StackFrame(0, 'src/', '', 'func', 'a.cc', [7]), 0)]
+    stack_infos = [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7]), 0)]
 
     result.Update('a.cc', stack_infos, DUMMY_BLAME)
     self.assertEqual(result.min_distance, 0)
 
     # Touched lines are before crashed lines.
-    result = MatchResult(DUMMY_CHANGELOG1, 'src/', '',
+    result = MatchResult(DUMMY_CHANGELOG1, 'src/',
                          confidence=1, reason='some reason')
 
-    stack_infos = [(StackFrame(0, 'src/', '', 'func', 'a.cc', [3]), 0)]
+    stack_infos = [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [3]), 0)]
 
     result.Update('a.cc', stack_infos, DUMMY_BLAME)
     self.assertEqual(result.min_distance, 3)
 
     # Touched lines are after crashed lines.
-    result = MatchResult(DUMMY_CHANGELOG1, 'src/', '',
+    result = MatchResult(DUMMY_CHANGELOG1, 'src/',
                          confidence=1, reason='some reason')
 
-    stack_infos = [(StackFrame(0, 'src/', '', 'func', 'a.cc', [10]), 0)]
+    stack_infos = [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [10]), 0)]
 
     result.Update('a.cc', stack_infos, DUMMY_BLAME)
     self.assertEqual(result.min_distance, 2)
 
   def testMatchResultsGenerateMatchResults(self):
     match_results = MatchResults(ignore_cls=set(['2']))
-    stack_infos1 = [(StackFrame(0, 'src/', '', 'func', 'a.cc', [7]), 0)]
-    stack_infos2 = [(StackFrame(1, 'src/', '', 'func', 'b.cc', [11]), 0)]
+    stack_infos1 = [(StackFrame(
+        0, 'src/',  'func', 'a.cc', 'src/a.cc', [7]), 0)]
+    stack_infos2 = [(StackFrame(
+        1, 'src/',  'func', 'b.cc', 'src/b.cc', [11]), 0)]
     match_results.GenerateMatchResults('a.cc', 'src/', stack_infos1,
                                        [DUMMY_CHANGELOG1, DUMMY_CHANGELOG2],
                                        DUMMY_BLAME)
@@ -148,7 +150,7 @@ class ResultsTest(CrashTestSuite):
                                        [DUMMY_CHANGELOG1, DUMMY_CHANGELOG2],
                                        DUMMY_BLAME2)
 
-    expected_match_result = MatchResult(DUMMY_CHANGELOG1, 'src/', '')
+    expected_match_result = MatchResult(DUMMY_CHANGELOG1, 'src/')
     expected_match_result.file_to_stack_infos = {
         'a.cc': stack_infos1,
         'b.cc': stack_infos2

@@ -8,11 +8,10 @@ _INFINITY = 1000
 class Result(object):
   """Represents findit culprit result."""
 
-  def __init__(self, changelog, dep_path, component,
+  def __init__(self, changelog, dep_path,
                confidence=None, reason=None):
     self.changelog = changelog
     self.dep_path = dep_path
-    self.component = component
     self.confidence = confidence
     self.reason = reason
 
@@ -52,10 +51,10 @@ class Result(object):
 class MatchResult(Result):
   """Represents findit culprit result got from match algorithm."""
 
-  def __init__(self, changelog, dep_path, component,
+  def __init__(self, changelog, dep_path,
                confidence=None, reason=None):
     super(MatchResult, self).__init__(
-        changelog, dep_path, component, confidence, reason)
+        changelog, dep_path, confidence, reason)
 
     self.min_distance = _INFINITY
 
@@ -132,10 +131,7 @@ class MatchResults(dict):
         continue
 
       if changelog.revision not in self:
-        # TODO(katesonia): Enable component classifier later. Get it from
-        # file_path and dep_path.
-        component = ''
-        self[changelog.revision] = MatchResult(changelog, dep_path, component)
+        self[changelog.revision] = MatchResult(changelog, dep_path)
 
       match_result = self[changelog.revision]
 

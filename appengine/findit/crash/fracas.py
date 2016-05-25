@@ -8,6 +8,8 @@ from common import chromium_deps
 from crash import detect_regression_range
 from crash import findit_for_crash
 from crash.fracas_parser import FracasParser
+from crash.project_classifier import ProjectClassifier
+from crash.component_classifier import ComponentClassifier
 
 
 def FindCulpritForChromeCrash(signature, platform,
@@ -80,9 +82,11 @@ def FindCulpritForChromeCrash(signature, platform,
   culprit_results = findit_for_crash.FindItForCrash(
       stacktrace, regression_deps_rolls, crash_deps)
 
-  # TODO(katesonia): Enable dependency classifier and component classifier.
-  suspected_project = ''
-  suspected_components = []
+  crash_stack = stacktrace.crash_stack
+  suspected_project = ProjectClassifier().Classify(
+      culprit_results, crash_stack)
+  suspected_components = ComponentClassifier().Classify(
+      culprit_results, crash_stack)
 
   return (
       {

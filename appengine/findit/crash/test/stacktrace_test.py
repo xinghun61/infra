@@ -12,10 +12,10 @@ from crash.test.stacktrace_test_suite import StacktraceTestSuite
 class StacktraceTest(StacktraceTestSuite):
   def testCrashStackForStacktraceWithoutSignature(self):
     frame_list1 = [
-        StackFrame(0, 'src/', '', 'func', 'file0.cc', [32])]
+        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32])]
 
     frame_list2 = [
-        StackFrame(0, 'src/', '', 'func2', 'file0.cc', [32])]
+        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
 
     stacktrace = Stacktrace([CallStack(0, frame_list=frame_list1),
                              CallStack(1, frame_list=frame_list2)])
@@ -25,22 +25,25 @@ class StacktraceTest(StacktraceTestSuite):
 
   def testFilterFramesBeforeSignatureForCrashStack(self):
     frame_list1 = [
-        StackFrame(0, 'src/', '', 'func', 'file0.cc', [32]),
+        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32]),
     ]
     callstack1 = CallStack(0, frame_list=frame_list1)
 
     frame_list2 = [
-        StackFrame(0, 'src/', '', 'func', 'file0.cc', [32]),
-        StackFrame(1, 'src/', '', 'signature_func', 'file1.cc', [53]),
-        StackFrame(2, 'src/', '', 'funcc', 'file2.cc', [3])
+        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32]),
+        StackFrame(1, 'src/', 'signature_func',
+                   'file1.cc', 'src/file1.cc', [53]),
+        StackFrame(2, 'src/', 'funcc', 'file2.cc', 'src/file2.cc', [3])
     ]
     callstack2 = CallStack(0, frame_list=frame_list2)
 
     stacktrace = Stacktrace([callstack1, callstack2], 'signature')
 
     expected_frame_list = [
-        StackFrame(1, 'src/', '', 'signature_func', 'file1.cc', [53]),
-        StackFrame(2, 'src/', '', 'funcc', 'file2.cc', [3])]
+        StackFrame(
+            1, 'src/', 'signature_func', 'file1.cc', 'src/file1.cc', [53]),
+        StackFrame(
+            2, 'src/', 'funcc', 'file2.cc', 'src/file2.cc', [3])]
     expected_crash_stack = CallStack(0, frame_list=expected_frame_list)
 
     self._VerifyTwoCallStacksEqual(stacktrace.crash_stack,
@@ -48,7 +51,7 @@ class StacktraceTest(StacktraceTestSuite):
 
   def testNoSignatureMatchForCrashStack(self):
     frame_list = [
-        StackFrame(0, 'src/', '', 'func', 'file0.cc', [32]),
+        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32]),
     ]
     callstack = CallStack(0, frame_list=frame_list)
 

@@ -15,7 +15,7 @@ class AggregatorTest(ScorerTestSuite):
   def testScoreAndReason(self):
     result = MatchResult(self._GetDummyChangeLog(), 'src/', '')
     result.file_to_stack_infos = {
-        'a.cc': [(StackFrame(0, 'src/', '', 'func', 'a.cc', [7]), 0)]
+        'a.cc': [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7]), 0)]
     }
     result.min_distance = 0
 

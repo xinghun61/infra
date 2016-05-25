@@ -29,18 +29,21 @@ class StackFrame(object):
       this - '#0 ...', else use the index in the callstack list.
     dep_path (str): Path of the dep this frame represents, for example,
       'src/', 'src/v8', 'src/skia'...etc.
-    component (str): Component of this frame, for example, 'Blink>API'.
     function (str): Function that caused the crash.
-    file_path (str): Path of the crashed file.
+    file_path (str): Normalized path of the crashed file, with parts dep_path
+      and parts before it stripped, for example, api.cc.
+    raw_file_path (str): Normalized original path of the crashed file,
+      for example, /b/build/slave/mac64/build/src/v8/src/heap/
+      incremental-marking-job.cc.
     crashed_line_numbers (list): Line numbers of the file that caused the crash.
   """
-  def __init__(self, index, dep_path, component,
-               function, file_path, crashed_line_numbers):
+  def __init__(self, index, dep_path, function,
+               file_path, raw_file_path, crashed_line_numbers):
     self.index = index
     self.dep_path = dep_path
-    self.component = component
     self.function = function
     self.file_path = file_path
+    self.raw_file_path = raw_file_path
     self.crashed_line_numbers = crashed_line_numbers
 
   def ToString(self):
@@ -98,7 +101,7 @@ class CallStack(list):
         return
 
       function = match.group(1)
-      file_path = parse_util.GetFullPathForJavaFrame(function)
+      raw_file_path = parse_util.GetFullPathForJavaFrame(function)
       crashed_line_numbers = [int(match.group(3))]
 
     elif self.format_type == CallStackFormatType.SYZYASAN:
@@ -107,7 +110,7 @@ class CallStack(list):
         return
 
       function = match.group(2).strip()
-      file_path = match.group(5)
+      raw_file_path = match.group(5)
       crashed_line_numbers = [int(match.group(6))]
 
     else:
@@ -120,16 +123,13 @@ class CallStack(list):
         return
 
       function = ' '.join(line_parts[3:-1])
-      file_path = match.group(1)
+      raw_file_path = match.group(1)
       crashed_line_numbers = parse_util.GetCrashedLineRange(
           match.group(2) + (match.group(3) if match.group(3) else ''))
 
     # Normalize the file path so that it can be compared to repository path.
     dep_path, file_path = parse_util.GetDepPathAndNormalizedFilePath(
-        file_path, deps)
-
-    #TODO(katesonia): Enable component classifier later.
-    component = ''
+        raw_file_path, deps)
 
     # If we have the common stack frame index pattern, then use it
     # since it is more reliable.
@@ -139,5 +139,5 @@ class CallStack(list):
     else:
       stack_frame_index = len(self)
 
-    self.append(StackFrame(stack_frame_index, dep_path, component,
-                           function, file_path, crashed_line_numbers))
+    self.append(StackFrame(stack_frame_index, dep_path, function,
+                           file_path, raw_file_path, crashed_line_numbers))

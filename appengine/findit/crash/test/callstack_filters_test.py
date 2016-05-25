@@ -12,17 +12,20 @@ class CallStackFiltersTest(StacktraceTestSuite):
   def testFilterInlineFunctionFrames(self):
     frame_list = [
         StackFrame(
-            0, '', 'src/', 'normal_func', 'f.cc', [2]),
+            0, 'src/', 'normal_func', 'f.cc', 'dummy/src/f.cc', [2]),
         StackFrame(
-            0, '', 'src/', 'inline_func',
-            'third_party/llvm-build/Release+Asserts/include/c++/v1/a', [1]),
+            0, 'src/', 'inline_func',
+            'third_party/llvm-build/Release+Asserts/include/c++/v1/a',
+            'src/third_party/llvm-build/Release+Asserts/include/c++/v1/a', [1]),
         StackFrame(
-            0, '', 'src/', 'inline_func',
+            0, 'src/', 'inline_func',
             'linux/debian_wheezy_amd64-sysroot/usr/include/c++/4.6/bits/b',
+            'src/linux/debian_wheezy_amd64-sysroot/usr/include/c++/4.6/bits/b',
             [1]),
         StackFrame(
-            0, '', 'src/', 'inline_func',
-            'eglibc-3GlaMS/eglibc-2.19/sysdeps/unix/c', [1])
+            0, 'src/', 'inline_func',
+            'eglibc-3GlaMS/eglibc-2.19/sysdeps/unix/c',
+            'src/eglibc-3GlaMS/eglibc-2.19/sysdeps/unix/c', [1])
     ]
 
     expected_frame_list = frame_list[:1]
@@ -31,4 +34,3 @@ class CallStackFiltersTest(StacktraceTestSuite):
         callstack_filters.FilterInlineFunctionFrames(
             CallStack(0, frame_list=frame_list)),
         CallStack(0, frame_list=expected_frame_list))
-

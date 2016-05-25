@@ -10,7 +10,6 @@ class StacktraceTestSuite(testing.AppengineTestCase):  #pragma: no cover.
   def _VerifyTwoStackFramesEqual(self, frame1, frame2):
     self.assertEqual(str(frame1), str(frame2))
     self.assertEqual(frame1.dep_path, frame2.dep_path)
-    self.assertEqual(frame1.component, frame2.component)
 
   def _VerifyTwoCallStacksEqual(self, stack1, stack2):
     self.assertEqual(len(stack1), len(stack2))

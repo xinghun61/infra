@@ -27,7 +27,6 @@ class CrashTestSuite(StacktraceTestSuite):  # pragma: no cover.
   def _VerifyTwoResultEqual(self, result1, result2):
     self._VerifyTwoChangeLogsEqual(result1.changelog, result2.changelog)
     self.assertEqual(result1.dep_path, result2.dep_path)
-    self.assertEqual(result1.component, result2.component)
     self.assertEqual(result1.confidence, result2.confidence)
     self.assertEqual(result1.reason, result2.reason)
     self.assertEqual(len(result1.file_to_stack_infos),

@@ -40,9 +40,9 @@ class FracasParserTest(StacktraceTestSuite):
     stacktrace_string = textwrap.dedent(
         """
         CRASHED [EXC @ 0x508]
-        #0 0x7fee in a::b::c(p* &d) src/f0.cc:177
-        #1 0x4b6e in a::b::d(a* c) src/f1.cc:227:2
-        #2 0x7ff9 in a::b::e(int) src/f2.cc:87:3
+        #0 0x7fee in a::c(p* &d) src/f0.cc:177
+        #1 0x4b6e in a::d(a* c) src/f1.cc:227
+        #2 0x7ff9 in a::e(int) src/f2.cc:87:1
         """
     )
 
@@ -50,9 +50,9 @@ class FracasParserTest(StacktraceTestSuite):
 
     expected_callstack = CallStack(0)
     expected_callstack.extend(
-        [StackFrame(0, 'src/', '', 'a::b::c(p* &d)', 'f0.cc', [177]),
-         StackFrame(1, 'src/', '', 'a::b::d(a* c)', 'f1.cc', [227, 228, 229]),
-         StackFrame(2, 'src/', '', 'a::b::e(int)', 'f2.cc', [87, 88, 89, 90])])
+        [StackFrame(0, 'src/', 'a::c(p* &d)', 'f0.cc', 'src/f0.cc', [177]),
+         StackFrame(1, 'src/', 'a::d(a* c)', 'f1.cc', 'src/f1.cc', [227]),
+         StackFrame(2, 'src/', 'a::e(int)', 'f2.cc', 'src/f2.cc', [87, 88])])
 
     expected_stacktrace = Stacktrace()
     expected_stacktrace.append(expected_callstack)
@@ -66,7 +66,7 @@ class FracasParserTest(StacktraceTestSuite):
         """
         CRASHED [EXC @ 0x66]
         #0 0x7fee in a::b::c(p* &d) src/f0.cc:177
-        #1 0x4b6e in a::b::d(a* c) src/f1.cc:227:2
+        #1 0x4b6e in a::b::d(a* c) src/f1.cc:227
 
         CRASHED [EXC @ 0x508]
         #0 0x8fee in e::f::g(p* &d) src/f.cc:20:2
@@ -78,13 +78,15 @@ class FracasParserTest(StacktraceTestSuite):
 
     expected_callstack0 = CallStack(0)
     expected_callstack0.extend(
-        [StackFrame(0, 'src/', '', 'a::b::c(p* &d)', 'f0.cc', [177]),
-         StackFrame(1, 'src/', '', 'a::b::d(a* c)', 'f1.cc', [227, 228, 229])])
+        [StackFrame(0, 'src/', 'a::b::c(p* &d)', 'f0.cc', 'src/f0.cc', [177]),
+         StackFrame(1, 'src/', 'a::b::d(a* c)', 'f1.cc', 'src/f1.cc', [227])])
 
     expected_callstack1 = CallStack(0)
     expected_callstack1.extend(
-        [StackFrame(0, 'src/', '', 'e::f::g(p* &d)', 'f.cc', [20, 21, 22]),
-         StackFrame(1, 'src/', '', 'h::i::j(p* &d)', 'ff.cc', [9, 10])])
+        [StackFrame(
+            0, 'src/', 'e::f::g(p* &d)', 'f.cc', 'src/f.cc', [20, 21, 22]),
+         StackFrame(
+             1, 'src/', 'h::i::j(p* &d)', 'ff.cc', 'src/ff.cc', [9, 10])])
 
     expected_stacktrace = Stacktrace()
     expected_stacktrace.extend([expected_callstack0, expected_callstack1])

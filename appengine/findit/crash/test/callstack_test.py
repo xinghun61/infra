@@ -12,14 +12,14 @@ class CallStackTest(StacktraceTestSuite):
 
   def testStackFrameToString(self):
     self.assertEqual(
-        StackFrame(0, 'src/', '', 'func', 'f.cc', []).ToString(),
+        StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', []).ToString(),
         '#0 in func @ f.cc')
     self.assertEqual(
-        StackFrame(0, 'src/', '', 'func', 'f.cc', [1]).ToString(),
+        StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [1]).ToString(),
         '#0 in func @ f.cc:1')
     self.assertEqual(
-        StackFrame(0, 'src/', '', 'func', 'f.cc', [1, 2, 3, 4]).ToString(),
-        '#0 in func @ f.cc:1:3')
+        StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [1, 2]).ToString(),
+        '#0 in func @ f.cc:1:1')
 
   def testFrameListInitCallStack(self):
     stack = CallStack(0)
@@ -38,7 +38,7 @@ class CallStackTest(StacktraceTestSuite):
     stack.ParseLine('  at org.a.b(a.java:609)', deps)
     self._VerifyTwoStackFramesEqual(
         stack[0],
-        StackFrame(0, 'org/', '', 'org.a.b', 'a.java', [609]))
+        StackFrame(0, 'org/', 'org.a.b', 'a.java', 'org/a.java', [609]))
 
   def testParseLineForSyzyasanCallstackFormat(self):
     stack = CallStack(0, CallStackFormatType.SYZYASAN)
@@ -50,7 +50,8 @@ class CallStackTest(StacktraceTestSuite):
     stack.ParseLine('c::p::n [src/content/e.cc @ 165]', deps)
     self._VerifyTwoStackFramesEqual(
         stack[0],
-        StackFrame(0, 'src/content/', '', 'c::p::n', 'e.cc', [165]))
+        StackFrame(
+            0, 'src/content/', 'c::p::n', 'e.cc', 'src/content/e.cc', [165]))
 
   def testParseLineForDefaultCallstackFormat(self):
     stack = CallStack(0, CallStackFormatType.DEFAULT)
@@ -65,4 +66,5 @@ class CallStackTest(StacktraceTestSuite):
     stack.ParseLine('#0 0x52617a in func0 tp/webrtc/a.c:38:3', deps)
     self._VerifyTwoStackFramesEqual(
         stack[0],
-        StackFrame(0, 'tp/webrtc/', '', 'func0', 'a.c', [38, 39, 40, 41]))
+        StackFrame(
+            0, 'tp/webrtc/', 'func0', 'a.c', 'tp/webrtc/a.c', [38, 39, 40, 41]))

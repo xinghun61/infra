@@ -8,6 +8,7 @@ from crash import fracas
 from crash import fracas_parser
 from crash import findit_for_crash
 from crash.stacktrace import Stacktrace
+from crash.callstack import CallStack
 from crash.test.crash_testcase import CrashTestCase
 
 
@@ -18,7 +19,9 @@ class FracasTest(CrashTestCase):
       return {}
 
     def _MockParse(*_):
-      return Stacktrace()
+      stacktrace = Stacktrace()
+      stacktrace.extend([CallStack(0)])
+      return stacktrace
 
     def _MockDetectRegressionRange(historic):
       if historic:

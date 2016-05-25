@@ -21,6 +21,8 @@ class CrashConfig(BaseHandler):
 
     data = {
         'fracas': settings.fracas,
+        'component_classifier': settings.component_classifier,
+        'project_classifier': settings.project_classifier,
     }
 
     return {'template': 'crash/crash_config.html', 'data': data}
@@ -28,6 +30,10 @@ class CrashConfig(BaseHandler):
   def HandlePost(self):
     data = self.request.params.get('data')
     new_config_dict = json.loads(data)
-    CrashConfigModel.Get().Update(
+
+    crash_config = CrashConfigModel.Get()
+
+    crash_config.ClearCache()
+    crash_config.Update(
         users.get_current_user(), users.IsCurrentUserAdmin(), **new_config_dict)
     return self.HandleGet()

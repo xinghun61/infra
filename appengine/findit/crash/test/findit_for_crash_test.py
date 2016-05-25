@@ -95,9 +95,9 @@ class FinditForCrashTest(CrashTestSuite):
   def testGetDepsInCrashStack(self):
     crash_stack = CallStack(0)
     crash_stack.extend([
-        StackFrame(0, 'src/', '', 'func0', 'f0.cc', [1]),
-        StackFrame(1, 'src/', '', 'func1', 'f1.cc', [2, 3]),
-        StackFrame(1, '', '', 'func1', 'f1.cc', [3]),
+        StackFrame(0, 'src/', 'func0', 'f0.cc', 'src/f0.cc', [1]),
+        StackFrame(1, 'src/', 'func1', 'f1.cc', 'src/f1.cc', [2, 3]),
+        StackFrame(1, '', 'func2', 'f2.cc', 'src/f2.cc', [2, 3]),
     ])
     crash_deps = {'src/': Dependency('src/', 'https://chromium_repo', '1'),
                   'src/v8/': Dependency('src/v8/', 'https://v8_repo', '2')}
@@ -149,13 +149,13 @@ class FinditForCrashTest(CrashTestSuite):
 
     main_stack = CallStack(0)
     main_stack.extend(
-        [StackFrame(0, 'src/', '', 'c(p* &d)', 'a.cc', [177]),
-         StackFrame(1, 'src/', '', 'd(a* c)', 'a.cc', [227, 228, 229]),
-         StackFrame(2, 'src/v8/', '', 'e(int)', 'b.cc', [87, 88, 89, 90])])
+        [StackFrame(0, 'src/', 'c(p* &d)', 'a.cc', 'src/a.cc', [177]),
+         StackFrame(1, 'src/', 'd(a* c)', 'a.cc', 'src/a.cc', [227, 228, 229]),
+         StackFrame(2, 'src/v8/', 'e(int)', 'b.cc', 'src/v8/b.cc', [89, 90])])
 
     low_priority_stack = CallStack(1)
     low_priority_stack.append(
-        StackFrame(0, 'src/dummy/', '', 'c(p* &d)', 'd.cc', [17]))
+        StackFrame(0, 'src/dummy/', 'c(p* &d)', 'd.cc', 'src/dummy/d.cc', [17]))
 
     stacktrace = Stacktrace()
     stacktrace.extend([main_stack, low_priority_stack])
@@ -206,11 +206,11 @@ class FinditForCrashTest(CrashTestSuite):
     dep_file_to_stack_infos = {
         'src/': {
             'a.cc': [
-                (StackFrame(0, 'src/', '', 'func', 'a.cc', [1]), 0),
-                (StackFrame(1, 'src/', '', 'func', 'a.cc', [7]), 0),
+                (StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [1]), 0),
+                (StackFrame(1, 'src/', 'func', 'a.cc', 'src/a.cc', [7]), 0),
             ],
             'b.cc': [
-                (StackFrame(2, 'src/', '', 'func', 'b.cc', [36]), 0),
+                (StackFrame(2, 'src/', 'func', 'b.cc', 'src/b.cc', [36]), 0),
             ]
         }
     }
@@ -250,7 +250,6 @@ class FinditForCrashTest(CrashTestSuite):
                      expected_match_results)
 
     for file_path, blame in dep_to_changed_file_to_blame.iteritems():
-      print dep_to_changed_file_to_blame
       self.assertTrue(file_path in expected_dep_to_changed_file_to_blame)
       self.assertEqual(blame, expected_dep_to_changed_file_to_blame[file_path])
 
@@ -277,8 +276,8 @@ class FinditForCrashTest(CrashTestSuite):
       match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', '')
       match_result1.file_to_stack_infos = {
           'a.cc': [
-              (StackFrame(0, 'src/', '', 'func', 'a.cc', [1]), 0),
-              (StackFrame(1, 'src/', '', 'func', 'a.cc', [7]), 0),
+              (StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [1]), 0),
+              (StackFrame(1, 'src/', 'func', 'a.cc', 'src/a.cc', [7]), 0),
           ]
       }
       match_result1.min_distance = 0
@@ -286,7 +285,7 @@ class FinditForCrashTest(CrashTestSuite):
       match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
       match_result2.file_to_stack_infos = {
           'f.cc': [
-              (StackFrame(5, 'src/', '', 'func', 'f.cc', [1]), 0),
+              (StackFrame(5, 'src/', 'func', 'f.cc', 'src/f.cc', [1]), 0),
           ]
       }
       match_result2.min_distance = 20
@@ -320,8 +319,8 @@ class FinditForCrashTest(CrashTestSuite):
       match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', '')
       match_result1.file_to_stack_infos = {
           'a.cc': [
-              (StackFrame(0, 'src/', '', 'func', 'a.cc', [1]), 0),
-              (StackFrame(1, 'src/', '', 'func', 'a.cc', [7]), 0),
+              (StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [1]), 0),
+              (StackFrame(1, 'src/', 'func', 'a.cc', 'src/a.cc', [7]), 0),
           ]
       }
       match_result1.min_distance = 1
@@ -329,7 +328,7 @@ class FinditForCrashTest(CrashTestSuite):
       match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
       match_result2.file_to_stack_infos = {
           'f.cc': [
-              (StackFrame(15, 'src/', '', 'func', 'f.cc', [1]), 0),
+              (StackFrame(15, 'src/', 'func', 'f.cc', 'src/f.cc', [1]), 0),
           ]
       }
       match_result2.min_distance = 20
@@ -337,7 +336,7 @@ class FinditForCrashTest(CrashTestSuite):
       match_result3 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
       match_result3.file_to_stack_infos = {
           'f.cc': [
-              (StackFrame(3, 'src/', '', 'func', 'ff.cc', [1]), 0),
+              (StackFrame(3, 'src/', 'func', 'ff.cc', 'src/ff.cc', [1]), 0),
           ]
       }
       match_result3.min_distance = 60
