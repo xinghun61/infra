@@ -57,6 +57,8 @@ class MembershipTwoLevelCache(caches.AbstractTwoLevelCache):
         cnxn, cols=['user_id', 'group_id'], distinct=True,
         user_id=keys)
     memberships_set = set()
+    self.group_dag.MarkObsolete()
+    logging.info('Rebuild group dag on RAM and memcache miss')
     for c_id, p_id in direct_memberships_rows:
       all_parents = self.group_dag.GetAllAncestors(cnxn, p_id, True)
       all_parents.append(p_id)

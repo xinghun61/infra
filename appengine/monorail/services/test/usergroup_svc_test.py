@@ -121,6 +121,11 @@ class UserGroupServiceTest(unittest.TestCase):
     self.usergroup_service.group_dag.initialized = True
     self.usergroup_service.memberships_2lc.CacheItem(111L, {888L, 999L})
     self.SetUpLookupAllMemberships([222L], [(222L, 777L), (222L, 999L)])
+    self.usergroup_service.usergroupsettings_tbl.Select(
+          self.cnxn, cols=['group_id']).AndReturn([])
+    self.usergroup_service.usergroup_tbl.Select(
+          self.cnxn, cols=['user_id', 'group_id'], distinct=True,
+          user_id=[]).AndReturn([])
     self.mox.ReplayAll()
     actual_membership_dict = self.usergroup_service.LookupAllMemberships(
         self.cnxn, [111L, 222L])
