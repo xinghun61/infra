@@ -5,9 +5,6 @@
 """Classes representing individual metrics that can be sent."""
 
 import copy
-import operator
-import threading
-import time
 
 from infra_libs.ts_mon.protos import metrics_pb2
 
@@ -354,7 +351,8 @@ class DistributionMetric(Metric):
     pb = metric.distribution
 
     pb.is_cumulative = self._is_cumulative
-    metric.start_timestamp_us = int(start_time * MICROSECONDS_PER_SECOND)
+    if self._is_cumulative:
+      metric.start_timestamp_us = int(start_time * MICROSECONDS_PER_SECOND)
 
     # Copy the bucketer params.
     if (value.bucketer.width == 0 and
