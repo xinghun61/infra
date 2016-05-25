@@ -9,6 +9,8 @@ import re
 
 from recipe_engine import recipe_api
 
+RECIPE_TRYJOB_BYPASS_REASON_TAG = "Recipe-Tryjob-Bypass-Reason"
+
 #TODO(martiniss): make the recipe engine be able to dump the package as JSON so
 # we don't have to do this weird parsing.
 def parse_protobuf(lines):
@@ -236,6 +238,32 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
     self.m.bot_update.ensure_checkout(**kwargs)
     return repo_path
 
+  def get_fail_build_info(self, downstream_projects, patches):
+    fail_build = collections.defaultdict(lambda: True)
+
+    for proj, patch in patches.items():
+      patch_url = "%s/%s" % (patch.server, patch.issue)
+      desc = self.m.git_cl.get_description(
+          patch=patch_url, codereview='rietveld', suffix=proj)
+
+      assert desc.stdout is not None, "CL %s had no description!" % patch_url
+
+      bypass_reason = self.m.tryserver.get_footer(
+          RECIPE_TRYJOB_BYPASS_REASON_TAG, patch_text=desc.stdout)
+
+      fail_build[proj] = not bool(bypass_reason)
+
+    # Propogate Falses down the deps tree
+    queue = list(patches.keys())
+    while queue:
+      item = queue.pop(0)
+
+      if not fail_build[item]:
+        for downstream in downstream_projects.get(item, []):
+          fail_build[downstream] = False
+          queue.append(downstream)
+
+    return fail_build
 
   def simulation_test(self, proj, proj_config, repo_path, deps):
     """
@@ -295,13 +323,30 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
         p: self._get_project_config(p) for p in all_projects}
 
     deps, downstream_projects = get_deps_info(all_projects, recipe_configs)
+    should_fail_build_mapping = self.get_fail_build_info(
+        downstream_projects, patches)
 
     projs_to_test, locations = self._checkout_projects(
         root_dir, url_mapping, deps, downstream_projects, patches)
 
-    with self.m.step.defer_results():
-      for proj in projs_to_test:
-        deps_locs = {dep: locations[dep] for dep in deps[proj]}
+    failures = []
+    try:
+      with self.m.step.defer_results():
+        for proj in projs_to_test:
+          deps_locs = {dep: locations[dep] for dep in deps[proj]}
 
-        self.simulation_test(
-            proj, recipe_configs[proj], locations[proj], deps_locs)
+          simulation_result = self.simulation_test(
+              proj, recipe_configs[proj], locations[proj], deps_locs)
+
+          try:
+            simulation_result.get_result()
+          except recipe_api.StepFailure as f:
+            if should_fail_build_mapping.get(proj):
+              failures.append(f)
+    except recipe_api.AggregatedStepFailure:
+      if failures:
+        raise
+
+
+
+
