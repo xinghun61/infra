@@ -5,6 +5,7 @@
 from crash.callstack import CallStack
 from crash.callstack import StackFrame
 from crash.stacktrace import Stacktrace
+
 from crash.test.stacktrace_test_suite import StacktraceTestSuite
 
 

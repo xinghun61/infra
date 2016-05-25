@@ -25,6 +25,6 @@ class TopFrameIndexTest(ScorerTestSuite):
 
   def testReason(self):
     self.assertEqual(TopFrameIndex().Reason(0, 1),
-                     'Top frame changed is frame #0')
+                     'Modified top crashing frame is #0')
     self.assertEqual(TopFrameIndex().Reason(30, 0),
                      '')

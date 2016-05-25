@@ -97,6 +97,7 @@ class FinditForCrashTest(CrashTestSuite):
     crash_stack.extend([
         StackFrame(0, 'src/', '', 'func0', 'f0.cc', [1]),
         StackFrame(1, 'src/', '', 'func1', 'f1.cc', [2, 3]),
+        StackFrame(1, '', '', 'func1', 'f1.cc', [3]),
     ])
     crash_deps = {'src/': Dependency('src/', 'https://chromium_repo', '1'),
                   'src/v8/': Dependency('src/v8/', 'https://v8_repo', '2')}
@@ -109,29 +110,15 @@ class FinditForCrashTest(CrashTestSuite):
 
   def testGetChangeLogsForFilesGroupedByDeps(self):
     regression_deps_rolls = {
-        'src/dep1': {
-            'path': 'src/dep1',
-            'repo_url': 'https://url_dep1',
-            'old_revision': '7',
-            'new_revision': '9',
-        },
-        'src/dep2': {
-            'path': 'src/dep2',
-            'repo_url': 'https://url_dep2',
-            'old_revision': '3',
-            'new_revision': None,
-        },
-        'src/': {
-            'path': 'src/',
-            'repo_url': ('https://chromium.googlesource.com/chromium/'
-                         'src.git'),
-            'old_revision': '4',
-            'new_revision': '5',
-        },
+        'src/dep1': DependencyRoll('src/dep1', 'https://url_dep1', '7', '9'),
+        'src/dep2': DependencyRoll('src/dep2', 'repo_url', '3', None),
+        'src/': DependencyRoll('src/', ('https://chromium.googlesource.com/'
+                                        'chromium/src.git'), '4', '5')
     }
 
     stack_deps = {
         'src/': Dependency('src/', 'https://url_src', 'rev1', 'DEPS'),
+        'src/new': Dependency('src/new', 'https://new', 'rev2', 'DEPS'),
     }
 
     def _MockGetChangeLogs(*_):
@@ -245,9 +232,9 @@ class FinditForCrashTest(CrashTestSuite):
 
     expected_match_results = [{
         'url': 'https://repo.test/+/1',
+        'review_url': 'https://codereview.chromium.org/3281',
         'revision': '1',
-        'dep_path': 'src/',
-        'component': '',
+        'project_path': 'src/',
         'author': 'r@chromium.org',
         'time': 'Thu Mar 31 21:24:43 2016',
         'reason': None,
@@ -310,30 +297,16 @@ class FinditForCrashTest(CrashTestSuite):
 
     expected_match_results = [
         {
-            'url': 'https://repo.test/+/1',
-            'revision': '1',
-            'dep_path': 'src/',
-            'component': '',
-            'author': 'r@chromium.org',
-            'time': 'Thu Mar 31 21:24:43 2016',
-            'reason': ('1. Top frame changed is frame #0 (score: 1)\n'
-                       '2. Minimum distance to crashed line is 0 (score: 1)\n'
-                       '\nChanged file a.cc crashed in func (#0)'
-                       ', func (#1)'),
-            'confidence': 1,
-        },
-        {
-            'url': 'https://repo.test/+/3',
-            'revision': '3',
-            'dep_path': 'src/',
-            'component': '',
-            'author': 'e@chromium.org',
-            'time': 'Thu Apr 1 21:24:43 2016',
-            'reason': ('1. Top frame changed is frame #5 (score: 0)\n'
-                       '2. Minimum distance to crashed line is 20 (score: 0)\n'
-                       '\nChanged file f.cc crashed in func (#5)'),
-            'confidence': 0.22857142857142856,
-        },
+            'reason': ('(1) Modified top crashing frame is #0\n'
+                        '(2) Modification distance (LOC) is 0\n\n'
+                        'Changed file a.cc crashed in func (#0), func (#1)'),
+             'time': 'Thu Mar 31 21:24:43 2016',
+             'author': 'r@chromium.org',
+             'url': 'https://repo.test/+/1',
+             'project_path': 'src/',
+             'review_url': 'https://codereview.chromium.org/3281',
+             'confidence': 1.0, 'revision': '1'
+         },
     ]
 
     regression_deps_rolls = {'src/': DependencyRoll('src/', 'https://repo',
@@ -341,3 +314,82 @@ class FinditForCrashTest(CrashTestSuite):
 
     self.assertEqual(findit_for_crash.FindItForCrash(
         Stacktrace(), regression_deps_rolls, {}), expected_match_results)
+
+  def testFinditForCrashFilterZeroConfidentResults(self):
+    def _MockFindMatchResults(*_):
+      match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', '')
+      match_result1.file_to_stack_infos = {
+          'a.cc': [
+              (StackFrame(0, 'src/', '', 'func', 'a.cc', [1]), 0),
+              (StackFrame(1, 'src/', '', 'func', 'a.cc', [7]), 0),
+          ]
+      }
+      match_result1.min_distance = 1
+
+      match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
+      match_result2.file_to_stack_infos = {
+          'f.cc': [
+              (StackFrame(15, 'src/', '', 'func', 'f.cc', [1]), 0),
+          ]
+      }
+      match_result2.min_distance = 20
+
+      match_result3 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
+      match_result3.file_to_stack_infos = {
+          'f.cc': [
+              (StackFrame(3, 'src/', '', 'func', 'ff.cc', [1]), 0),
+          ]
+      }
+      match_result3.min_distance = 60
+
+      return [match_result1, match_result2, match_result3], {}
+
+    self.mock(findit_for_crash, 'FindMatchResults', _MockFindMatchResults)
+
+    expected_match_results = [
+        {
+            'reason': ('(1) Modified top crashing frame is #0\n'
+                       '(2) Modification distance (LOC) is 1\n\n'
+                       'Changed file a.cc crashed in func (#0), func (#1)'),
+            'time': 'Thu Mar 31 21:24:43 2016',
+            'author': 'r@chromium.org',
+            'url': 'https://repo.test/+/1',
+            'project_path': 'src/',
+            'review_url': 'https://codereview.chromium.org/3281',
+            'confidence': 0.8, 'revision': '1'},
+    ]
+
+    regression_deps_rolls = {'src/': DependencyRoll('src/', 'https://repo',
+                                                    '1', '2')}
+
+    self.assertEqual(findit_for_crash.FindItForCrash(
+        Stacktrace(), regression_deps_rolls, {}), expected_match_results)
+
+  def testFinditForCrashAllMatchResultsWithZeroConfidences(self):
+    def _MockFindMatchResults(*_):
+      match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', '')
+      match_result1.file_to_stack_infos = {
+          'a.cc': [
+              (StackFrame(20, 'src/', '', 'func', 'a.cc', [1]), 0),
+              (StackFrame(21, 'src/', '', 'func', 'a.cc', [7]), 0),
+          ]
+      }
+      match_result1.min_distance = 1
+
+      match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
+      match_result2.file_to_stack_infos = {
+          'f.cc': [
+              (StackFrame(15, 'src/', '', 'func', 'f.cc', [1]), 0),
+          ]
+      }
+      match_result2.min_distance = 20
+
+      return [match_result1, match_result2], {}
+
+    self.mock(findit_for_crash, 'FindMatchResults', _MockFindMatchResults)
+
+    regression_deps_rolls = {'src/': DependencyRoll('src/', 'https://repo',
+                                                    '1', '2')}
+
+    self.assertEqual(findit_for_crash.FindItForCrash(
+        Stacktrace(), regression_deps_rolls, {}), [])

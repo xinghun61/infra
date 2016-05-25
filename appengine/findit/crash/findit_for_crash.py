@@ -8,10 +8,16 @@ from common.diff import ChangeType
 from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine
 from crash import crash_util
+from crash.callstack import CallStack
+from crash.stacktrace import Stacktrace
 from crash.results import MatchResults
 from crash.scorers.aggregator import Aggregator
 from crash.scorers.min_distance import MinDistance
 from crash.scorers.top_frame_index import TopFrameIndex
+
+
+#TODO(katesonia): Move this to config page.
+_TOP_N_FRAMES = 7
 
 
 def GetDepsInCrashStack(crash_stack, crash_deps):
@@ -21,7 +27,8 @@ def GetDepsInCrashStack(crash_stack, crash_deps):
 
   stack_deps = {}
   for frame in crash_stack:
-    stack_deps[frame.dep_path] = crash_deps[frame.dep_path]
+    if frame.dep_path:
+      stack_deps[frame.dep_path] = crash_deps[frame.dep_path]
 
   return stack_deps
 
@@ -80,11 +87,16 @@ def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps):
   ignore_cls = set()
 
   for dep in stack_deps:
+    # If a dep is not in regression range, than it cannot be the dep of
+    # culprits.
+    if dep not in regression_deps_rolls:
+      continue
+
     dep_roll = regression_deps_rolls[dep]
 
-    git_repository = GitRepository(dep_roll['repo_url'], HttpClientAppengine())
-    changelogs = git_repository.GetChangeLogs(dep_roll['old_revision'],
-                                              dep_roll['new_revision'])
+    git_repository = GitRepository(dep_roll.repo_url, HttpClientAppengine())
+    changelogs = git_repository.GetChangeLogs(dep_roll.old_revision,
+                                              dep_roll.new_revision)
 
     for changelog in changelogs:
       if changelog.reverted_revision:
@@ -156,8 +168,7 @@ def FindMatchResults(dep_to_file_to_changelogs,
       to a list of stack inforamtion of this file. A file may occur in several
       frames, one stack info consist of a StackFrame and the callstack priority
       of it.
-    stack_deps (dict): Represents all the dependencies show in
-      the crash stack.
+    stack_deps (dict): Represents all the dependencies shown in the crash stack.
     ignore_cls (set): Set of reverted revisions.
 
   Returns:
@@ -189,7 +200,8 @@ def FindMatchResults(dep_to_file_to_changelogs,
   return match_results.values(), dep_to_matched_file_to_blame
 
 
-def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps):
+def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps,
+                   top_n=_TOP_N_FRAMES):
   """Finds culprit results for crash.
 
   Args:
@@ -206,15 +218,20 @@ def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps):
   if not regression_deps_rolls:
     return []
 
+  # Findit will only analyze the top n frames in each callstacks.
+  stack_trace = Stacktrace([
+      CallStack(stack.priority, stack.format_type, stack[:top_n])
+      for stack in stacktrace])
+
   # We are only interested in the deps in crash stack (the callstack that
   # caused the crash).
-  stack_deps = GetDepsInCrashStack(stacktrace.crash_stack, crashed_deps)
+  stack_deps = GetDepsInCrashStack(stack_trace.crash_stack, crashed_deps)
 
   # Get dep and file to changelogs, stack_info and blame dicts.
   dep_to_file_to_changelogs, ignore_cls = GetChangeLogsForFilesGroupedByDeps(
       regression_deps_rolls, stack_deps)
   dep_to_file_to_stack_infos = GetStackInfosForFilesGroupedByDeps(
-      stacktrace, stack_deps)
+      stack_trace, stack_deps)
 
   results, _ = FindMatchResults(dep_to_file_to_changelogs,
                                 dep_to_file_to_stack_infos,
@@ -227,5 +244,15 @@ def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps):
 
   map(aggregator.ScoreAndReason, results)
 
-  return sorted([result.ToDict() for result in results],
-                key=lambda r: -r['confidence'])
+  # Filter all the 0 confidence results.
+  results = filter(lambda r: r.confidence != 0, results)
+  if not results:
+    return []
+
+  sorted_results = sorted([result.ToDict() for result in results],
+                          key=lambda r: -r['confidence'])
+
+  if sorted_results[0]['confidence'] > 0.999:
+    return sorted_results[:1]
+
+  return sorted_results[:3]

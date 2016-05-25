@@ -83,9 +83,9 @@ class ResultsTest(CrashTestSuite):
 
     expected_result_json = {
         'url': DUMMY_CHANGELOG1.commit_url,
+        'review_url': DUMMY_CHANGELOG1.code_review_url,
         'revision': DUMMY_CHANGELOG1.revision,
-        'dep_path': 'src/',
-        'component': '',
+        'project_path': 'src/',
         'author': DUMMY_CHANGELOG1.author_email,
         'time': str(DUMMY_CHANGELOG1.author_time),
         'reason': 'some reason',

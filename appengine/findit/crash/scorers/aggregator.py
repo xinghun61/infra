@@ -23,7 +23,7 @@ class Aggregator(object):
       # TODO(katesonia): Compare this mutiply aggregator with a vector of scores
       # aggregator later.
       score *= current_score
-      reason += '%d. %s (score: %d)\n' % (i + 1, current_reason, current_score)
+      reason += '(%d) %s\n' % (i + 1, current_reason)
 
     reason += '\n%s' % str(result)
 

@@ -24,6 +24,6 @@ class AggregatorTest(ScorerTestSuite):
 
     self.assertEqual(result.confidence, 1)
     self.assertEqual(result.reason,
-                     ('1. Top frame changed is frame #0 (score: 1)\n'
-                      '2. Minimum distance to crashed line is 0 (score: 1)\n'
-                      '\nChanged file a.cc crashed in func (#0)'))
+                     ('(1) Modified top crashing frame is #0\n'
+                      '(2) Modification distance (LOC) is 0\n\n'
+                      'Changed file a.cc crashed in func (#0)'))

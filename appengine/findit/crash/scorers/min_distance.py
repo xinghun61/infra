@@ -43,4 +43,4 @@ class MinDistance(Scorer):
     if score == 0:
       return ''
 
-    return 'Minimum distance to crashed line is %d' % min_distance
+    return 'Modification distance (LOC) is %d' % min_distance

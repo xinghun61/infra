@@ -26,6 +26,6 @@ class MinDistanceTest(ScorerTestSuite):
 
   def testReason(self):
     self.assertEqual(MinDistance().Reason(0, 1),
-                     'Minimum distance to crashed line is 0')
+                     'Modification distance (LOC) is 0')
     self.assertEqual(MinDistance().Reason(60, 0),
                      '')

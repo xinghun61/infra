@@ -42,4 +42,4 @@ class TopFrameIndex(Scorer):
     if score == 0:
       return ''
 
-    return 'Top frame changed is frame #%d' % top_frame_index
+    return 'Modified top crashing frame is #%d' % top_frame_index

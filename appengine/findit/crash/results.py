@@ -21,11 +21,11 @@ class Result(object):
   def ToDict(self):
     return {
         'url': self.changelog.commit_url,
+        'review_url': self.changelog.code_review_url,
         'revision': self.changelog.revision,
-        'dep_path': self.dep_path,
-        'component': self.component,
+        'project_path': self.dep_path,
         'author': self.changelog.author_email,
-        'time': self.changelog.author_time,
+        'time': str(self.changelog.author_time),
         'reason': self.reason,
         'confidence': self.confidence,
     }
@@ -78,6 +78,9 @@ class MatchResult(Result):
       blame (Blame): Blame oject of this file.
     """
     self.file_to_stack_infos[file_path] = stack_infos
+
+    if not blame:
+      return
 
     for region in blame:
       if region.revision != self.changelog.revision:
