@@ -857,6 +857,39 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     for flake in flakes:
       self.assertEqual(flake.occurrences, [flaky_run.key])
 
+  def test_records_step_as_a_flake_when_too_many_tests_fail(self):
+    now = datetime.datetime.utcnow()
+    br_f, br_s = self._create_build_runs(now - datetime.timedelta(hours=1), now)
+    urlfetch_mock = mock.Mock(side_effect = [
+      # Buildbot reply.
+      mock.Mock(status_code=200, content=json.dumps({
+        'steps': [
+          {'results': [2], 'name': 'test-step', 'text': ['']},
+        ]
+      })),
+      # Test-results reply.
+      mock.Mock(status_code=200, content=json.dumps({
+        'tests': {
+          'test%d' % i: {
+            'expected': 'PASS',
+            'actual': 'FAIL',
+          } for i in range(51)
+        }
+      }))
+    ])
+
+    with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
+      self.test_app.post('/issues/create_flaky_run',
+                         {'failure_run_key': br_f.urlsafe(),
+                          'success_run_key': br_s.urlsafe()})
+
+    flaky_runs = FlakyRun.query().fetch(100)
+    self.assertEqual(len(flaky_runs), 1)
+    flaky_run = flaky_runs[0]
+    self.assertEqual(len(flaky_run.flakes), 1)
+    self.assertEqual(flaky_run.flakes[0].name, 'test-step')
+    self.assertEqual(flaky_run.flakes[0].failure, 'test-step')
+
   def test_flattens_tests_correctly(self):
     passed, failed, skipped = CreateFlakyRun._flatten_tests(
         json.loads(TEST_TEST_RESULTS_REPLY)['tests'], '/')

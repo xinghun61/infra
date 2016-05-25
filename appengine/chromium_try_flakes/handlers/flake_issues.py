@@ -30,6 +30,7 @@ MIN_REQUIRED_FLAKY_RUNS = 3
 DAYS_TILL_STALE = 30
 USE_MONORAIL = True
 DAYS_TO_REOPEN_ISSUE = 3
+MAX_INDIVIDUAL_FLAKES_PER_STEP = 50
 FLAKY_RUNS_TEMPLATE = (
     'Detected %(new_flakes_count)d new flakes for test/step "%(name)s". To see '
     'the actual flakes, please visit %(flakes_url)s. This message was posted '
@@ -508,6 +509,8 @@ class CreateFlakyRun(webapp2.RequestHandler):
         _, failed, _ = cls._flatten_tests(
             json_result.get('tests', {}),
             json_result.get('path_delimiter', '/'))
+        if len(failed) > MAX_INDIVIDUAL_FLAKES_PER_STEP:
+          return [stepname], True
         return failed, False
 
       if result.status_code == 404:
