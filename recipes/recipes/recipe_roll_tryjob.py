@@ -7,6 +7,7 @@
 DEPS = [
   'recipe_tryjob',
   'luci_config',
+  'recipe_engine/json',
   'recipe_engine/properties',
   'recipe_engine/raw_io',
   'recipe_engine/step',
@@ -110,7 +111,108 @@ def GenTests(api):
       api.luci_config.get_project_config(
           'recipe_engine', 'recipes.cfg',
           api.recipe_tryjob.make_recipe_config('recipe_engine')) +
-      api.properties(patches="build:https://fake.code.review/123456#ps1")
+      api.properties(patches="build:https://fake.code.review/123456#ps1") +
+      api.override_step_data(
+          'git_cl description (build)', stdout=api.raw_io.output(
+              "")) +
+      api.override_step_data(
+          'parse description', api.json.output(
+              {}))
+  )
+
+  yield (
+      api.test('three_patches') +
+      api.luci_config.get_projects(('recipe_engine', 'build', 'depot_tools')) +
+      api.luci_config.get_project_config(
+          'build', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config(
+              'build', ['depot_tools', 'recipe_engine'])) +
+      api.luci_config.get_project_config(
+          'recipe_engine', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config('recipe_engine')) +
+      api.luci_config.get_project_config(
+          'depot_tools', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config(
+              'depot_tools', ['recipe_engine'])) +
+      api.properties(
+          patches="depot_tools:https://fake.code.review/123456#ps1,"
+                  "build:https://fake.code.review/789999#ps2") +
+      api.override_step_data(
+          'git_cl description (build)', stdout=api.raw_io.output(
+              "")) +
+      api.override_step_data(
+          'git_cl description (depot_tools)', stdout=api.raw_io.output(
+              "")) +
+      api.override_step_data(
+          'parse description', api.json.output(
+              {})) +
+      api.override_step_data(
+          'parse description (2)', api.json.output(
+              {}))
+  )
+
+  yield (
+      api.test('three_patches_fail_not_ok') +
+      api.luci_config.get_projects(('recipe_engine', 'build', 'depot_tools')) +
+      api.luci_config.get_project_config(
+          'build', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config(
+              'build', ['depot_tools', 'recipe_engine'])) +
+      api.luci_config.get_project_config(
+          'recipe_engine', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config('recipe_engine')) +
+      api.luci_config.get_project_config(
+          'depot_tools', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config(
+              'depot_tools', ['recipe_engine'])) +
+      api.properties(
+          patches="depot_tools:https://fake.code.review/123456#ps1,"
+                  "build:https://fake.code.review/789999#ps2") +
+      api.override_step_data(
+          'git_cl description (build)', stdout=api.raw_io.output(
+              "")) +
+      api.override_step_data(
+          'git_cl description (depot_tools)', stdout=api.raw_io.output(
+              "")) +
+      api.override_step_data(
+          'parse description', api.json.output(
+              {})) +
+      api.override_step_data(
+          'parse description (2)', api.json.output(
+              {})) +
+      api.override_step_data("build tests", retcode=1)
+  )
+
+  yield (
+      api.test('three_patches_fail_ok') +
+      api.luci_config.get_projects(('recipe_engine', 'build', 'depot_tools')) +
+      api.luci_config.get_project_config(
+          'build', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config(
+              'build', ['depot_tools', 'recipe_engine'])) +
+      api.luci_config.get_project_config(
+          'recipe_engine', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config('recipe_engine')) +
+      api.luci_config.get_project_config(
+          'depot_tools', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config(
+              'depot_tools', ['recipe_engine'])) +
+      api.properties(
+          patches="depot_tools:https://fake.code.review/123456#ps1,"
+                  "build:https://fake.code.review/789999#ps2") +
+      api.override_step_data(
+          'git_cl description (build)', stdout=api.raw_io.output(
+              "foo")) +
+      api.override_step_data(
+          'git_cl description (depot_tools)', stdout=api.raw_io.output(
+              "Recipe-Tryjob-Bypass-Reason: best reason")) +
+      api.override_step_data(
+          'parse description', api.json.output(
+              {'Recipe-Tryjob-Bypass-Reason': ['Best Reason']})) +
+      api.override_step_data(
+          'parse description (2)', api.json.output(
+              {'Recipe-Tryjob-Bypass-Reason': []})) +
+      api.override_step_data("build tests", retcode=1)
   )
 
   yield (
@@ -129,7 +231,12 @@ def GenTests(api):
           'recipe_engine', 'recipes.cfg',
           api.recipe_tryjob.make_recipe_config('recipe_engine')) +
       api.properties(
-          patches="recipe_engine:https://fake.code.review/123456#ps1")
+          patches="recipe_engine:https://fake.code.review/123456#ps1") +
+      api.override_step_data(
+          'parse description', api.json.output({})) +
+      api.override_step_data(
+          'git_cl description (recipe_engine)', stdout=api.raw_io.output(
+              "foo"))
   )
 
   yield (
@@ -146,7 +253,13 @@ def GenTests(api):
           api.recipe_tryjob.make_recipe_config('build', ['recipe_engine'])) +
       api.luci_config.get_project_config(
           'recipe_engine', 'recipes.cfg',
-          api.recipe_tryjob.make_recipe_config('recipe_engine'))
+          api.recipe_tryjob.make_recipe_config('recipe_engine')) +
+      api.override_step_data(
+          'git_cl description (build)', stdout=api.raw_io.output(
+              "")) +
+      api.override_step_data(
+          'parse description', api.json.output(
+              {}))
   )
 
   yield (
@@ -163,6 +276,12 @@ def GenTests(api):
           api.recipe_tryjob.make_recipe_config('build', ['recipe_engine'])) +
       api.luci_config.get_project_config(
           'recipe_engine', 'recipes.cfg',
-          api.recipe_tryjob.make_recipe_config('recipe_engine'))
+          api.recipe_tryjob.make_recipe_config('recipe_engine')) +
+      api.override_step_data(
+          'git_cl description (build)', stdout=api.raw_io.output(
+              "")) +
+      api.override_step_data(
+          'parse description', api.json.output(
+              {}))
   )
 

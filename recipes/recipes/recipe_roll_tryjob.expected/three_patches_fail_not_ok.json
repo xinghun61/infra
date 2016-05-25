@@ -120,6 +120,19 @@
       "python",
       "-u",
       "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
+      "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Fdepot_tools%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
+      "--outfile",
+      "/path/to/tmp/",
+      "--headers-json",
+      "{\"Authorization\": \"Bearer ya29.foobar\"}"
+    ],
+    "name": "Get project 'depot_tools' config 'recipes.cfg'"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
       "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Frecipe_engine%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
       "--outfile",
       "/path/to/tmp/",
@@ -149,7 +162,7 @@
       "--rietveld",
       "https://fake.code.review/123456"
     ],
-    "name": "git_cl description (recipe_engine)",
+    "name": "git_cl description (depot_tools)",
     "stdout": "/path/to/tmp/"
   },
   {
@@ -161,9 +174,105 @@
       "/path/to/tmp/json"
     ],
     "name": "parse description",
-    "stdin": "foo",
+    "stdin": "",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "RECIPE_PACKAGE_REPO[depot_tools]/git_cl.py",
+      "description",
+      "-d",
+      "--rietveld",
+      "https://fake.code.review/789999"
+    ],
+    "name": "git_cl description (build)",
+    "stdout": "/path/to/tmp/"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[depot_tools]/git_footers.py",
+      "--json",
+      "/path/to/tmp/json"
+    ],
+    "name": "parse description (2)",
+    "stdin": "",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
+      "[SLAVE_BUILD]/depot_tools/depot_tools",
+      "511"
+    ],
+    "name": "makedirs depot_tools directory",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
+      "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
+      "@@@STEP_LOG_LINE@python.inline@mode = int(sys.argv[2])@@@",
+      "@@@STEP_LOG_LINE@python.inline@if not os.path.isdir(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  if os.path.exists(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@    print \"%s exists but is not a dir\" % path@@@",
+      "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
+      "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
+      "--spec",
+      "cache_dir = '[SLAVE_BUILD]/__cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'depot_tools', 'url': 'https://repo.repo/depot_tools'}]",
+      "--root",
+      "depot_tools",
+      "--revision_mapping_file",
+      "{}",
+      "--git-cache-dir",
+      "[SLAVE_BUILD]/__cache_dir",
+      "--issue",
+      "123456",
+      "--patchset",
+      "1",
+      "--rietveld_server",
+      "https://fake.code.review",
+      "--output_json",
+      "/path/to/tmp/json",
+      "--revision",
+      "depot_tools@HEAD",
+      "--force",
+      "--output_manifest"
+    ],
+    "cwd": "[SLAVE_BUILD]/depot_tools",
+    "env": {
+      "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
+    },
+    "name": "bot_update - depot_tools",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Some step text@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"depot_tools\": \"HEAD\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"manifest\": {}, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"depot_tools\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"properties\": {}, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"root\": \"depot_tools\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"step_text\": \"Some step text\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
     ]
   },
@@ -202,12 +311,6 @@
       "{}",
       "--git-cache-dir",
       "[SLAVE_BUILD]/__cache_dir",
-      "--issue",
-      "123456",
-      "--patchset",
-      "1",
-      "--rietveld_server",
-      "https://fake.code.review",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -219,7 +322,7 @@
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
-    "name": "bot_update - recipe_engine",
+    "name": "bot_update (without patch) - recipe_engine",
     "~followup_annotations": [
       "@@@STEP_TEXT@Some step text@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -272,6 +375,12 @@
       "{}",
       "--git-cache-dir",
       "[SLAVE_BUILD]/__cache_dir",
+      "--issue",
+      "789999",
+      "--patchset",
+      "2",
+      "--rietveld_server",
+      "https://fake.code.review",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -283,7 +392,7 @@
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
-    "name": "bot_update (without patch) - build",
+    "name": "bot_update - build",
     "~followup_annotations": [
       "@@@STEP_TEXT@Some step text@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -305,6 +414,19 @@
     "cmd": [
       "[SLAVE_BUILD]/infra/ENV/bin/python",
       "-u",
+      "[SLAVE_BUILD]/depot_tools/depot_tools/recipes.py",
+      "-O",
+      "recipe_engine=[SLAVE_BUILD]/recipe_engine/recipe_engine",
+      "--package",
+      "[SLAVE_BUILD]/depot_tools/depot_tools/infra/config/recipes.cfg",
+      "simulation_test"
+    ],
+    "name": "depot_tools tests"
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]/infra/ENV/bin/python",
+      "-u",
       "[SLAVE_BUILD]/recipe_engine/recipe_engine/recipes.py",
       "--package",
       "[SLAVE_BUILD]/recipe_engine/recipe_engine/infra/config/recipes.cfg",
@@ -318,16 +440,22 @@
       "-u",
       "[SLAVE_BUILD]/build/build/recipes.py",
       "-O",
+      "depot_tools=[SLAVE_BUILD]/depot_tools/depot_tools",
+      "-O",
       "recipe_engine=[SLAVE_BUILD]/recipe_engine/recipe_engine",
       "--package",
       "[SLAVE_BUILD]/build/build/infra/config/recipes.cfg",
       "simulation_test"
     ],
-    "name": "build tests"
+    "name": "build tests",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 1",
+      "@@@STEP_FAILURE@@@"
+    ]
   },
   {
     "name": "$result",
-    "recipe_result": null,
-    "status_code": 0
+    "reason": "1 out of 3 aggregated steps failed. Failures: Step('build tests') failed with return_code 1",
+    "status_code": 1
   }
 ]
