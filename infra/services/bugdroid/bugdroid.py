@@ -21,7 +21,6 @@ import infra.services.bugdroid.IssueTrackerManager as IssueTrackerManager
 import infra.services.bugdroid.log_parser as log_parser
 import infra.services.bugdroid.poller_handlers as poller_handlers
 import infra.services.bugdroid.scm_helper as scm_helper
-import infra.services.bugdroid.svn_poller as svn_poller
 
 
 # pylint: disable=C0301
@@ -281,34 +280,7 @@ class Bugdroid(object):
     interval_minutes = 1
     default_project = config.default_project
     logger = GetLogger(name)
-    if t == 'svn':
-      poller = svn_poller.SVNPoller(
-          config.repo_url,
-          name,
-          interval_in_minutes=interval_minutes,
-          logger=logger,
-          run_once=self.run_once,
-          datadir=self.datadir)
-
-      # Add handlers for each issues_projects in the config.
-      # TODO(mmoss): The whole issues_projects thing is a bit
-      # of a clunky way to define multiple handlers. Good enough for now (and
-      # really only needed for the bugdroid_chrome poller), but might be worth
-      # creating a more generic syntax for multiple handlers in a config.
-      h = BugdroidSVNPollerHandler(
-          url_template=URL_TEMPLATES[config_service.decode_url_template(
-              config.url_template)],
-          path_url_template=PATH_URL_TEMPLATES[
-              config_service.decode_path_url_template(
-                  config.path_url_template)],
-          svn_project=config.svn_project,
-          bugdroid=self,
-          default_project=default_project,
-          public_bugs=config.public_bugs,
-          test_mode=config.test_mode,
-          issues_labels=config.issues_labels)
-      poller.add_handler(h)
-    elif t == 'git':
+    if t == 'git':
       poller = gitiles_poller.GitilesPoller(
           config.repo_url,
           name,
