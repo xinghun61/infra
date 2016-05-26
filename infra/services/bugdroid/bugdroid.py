@@ -331,24 +331,8 @@ class Bugdroid(object):
       if poller.logger:
         poller.logger.info('Starting Poller "%s".', poller.poller_id)
       poller.start()
-    # While any pollers are alive, try to keep them all alive. If they all die
-    # for some reason (only the main thread left), something is probably
-    # terribly wrong, so just let the program exit.
-    while threading.active_count() > 1 and not self.run_once:
-      # Polling intervals are in minutes, so check that they're alive a little
-      # more frequently than that.
-      time.sleep(55)
-      logging.debug('Checking pollers ...')
-      for poller in self.pollers[:]:
-        if not poller.isAlive():
-          # TODO(mmoss): Maybe send an alert email, so these failures can be
-          # investigated (without needing to discover them in the logs)? Or
-          # maybe only if the same poller dies too frequently or too quickly?
-          logging.error('Poller "%s" died. Restarting ...', poller.poller_id)
-          self.pollers.remove(poller)
-          poller = self.InitPoller(poller.poller_id, poller.saved_config)
-          self.pollers.append(poller)
-          poller.start()
+    for poller in self.pollers:
+      poller.join()
 
 
 def inner_loop(opts):

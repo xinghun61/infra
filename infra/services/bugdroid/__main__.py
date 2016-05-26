@@ -22,6 +22,17 @@ from infra.services.bugdroid import bugdroid
 from oauth2client.client import OAuth2Credentials
 
 
+DEFAULT_LOGGER = logging.getLogger(__name__)
+DEFAULT_LOGGER.addHandler(logging.NullHandler())
+DEFAULT_LOGGER.setLevel(logging.DEBUG)
+DEFAULT_LOGGER.setLevel(logging.DEBUG)
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+sh = logging.StreamHandler()
+sh.setLevel(logging.DEBUG)
+sh.setFormatter(formatter)
+DEFAULT_LOGGER.addHandler(sh)
+
 # TODO(sheyang): move to cloud
 DIRBASE = os.path.splitext(os.path.basename(__file__))[0]
 DATADIR = os.path.join(os.environ.get('HOME', ''), 'appdata', DIRBASE)
@@ -31,14 +42,14 @@ DATA_URL = 'https://bugdroid-data.appspot.com/_ah/api/bugdroid/v1/data'
 
 
 def get_data(http):
-  logging.info('Getting data from datastore...')
+  DEFAULT_LOGGER.info('Getting data from datastore...')
   retry_count = 5
   success = False
   for i in xrange(retry_count):
     resp, content = http.request(DATA_URL,
                                  headers={'Content-Type':'application/json'})
     if resp.status >= 400:
-      logging.warning('Failed to get data in retry %d. Status: %d.',
+      DEFAULT_LOGGER.warning('Failed to get data in retry %d. Status: %d.',
                       i, resp.status)
       time.sleep(i)
       continue
@@ -61,7 +72,7 @@ def get_data(http):
 
 
 def update_data(http):
-  logging.info('Updating data to datastore...')
+  DEFAULT_LOGGER.info('Updating data to datastore...')
   result = []
   for data_file in os.listdir(DATADIR):
     if os.path.isdir(data_file):
@@ -86,7 +97,7 @@ def update_data(http):
         DATA_URL, "POST", body=json.dumps({'data_files': data_files}),
         headers={'Content-Type': 'application/json'})
     if resp.status >= 400:
-      logging.warning('Failed to update data in retry %d. Status: %d.',
+      DEFAULT_LOGGER.warning('Failed to update data in retry %d. Status: %d.',
                       i, resp.status)
       time.sleep(i)
       continue
@@ -138,7 +149,7 @@ def main(args):  # pragma: no cover
   http = credentials.authorize(http)
 
   if not get_data(http):
-    logging.error('Failed to get data files.')
+    DEFAULT_LOGGER.error('Failed to get data files.')
     return 1
 
   def outer_loop_iteration():
@@ -150,7 +161,7 @@ def main(args):  # pragma: no cover
       **loop_opts)
 
   if not update_data(http):
-    logging.error('Failed to update data files.')
+    DEFAULT_LOGGER.error('Failed to update data files.')
     return 1
 
   return 0 if loop_results.success else 1
