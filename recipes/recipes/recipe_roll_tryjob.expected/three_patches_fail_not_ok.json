@@ -455,7 +455,7 @@
   },
   {
     "name": "$result",
-    "reason": "1 out of 3 aggregated steps failed. Failures: Step('build tests') failed with return_code 1",
+    "reason": "One or more projects failed tests: build",
     "status_code": 1
   }
 ]
