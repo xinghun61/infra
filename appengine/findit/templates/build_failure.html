@@ -253,6 +253,59 @@
       }
     }
 
+    function displayReliableFailuresToSheriffs(step_name, results) {
+      if (!jQuery.isEmptyObject(results)) {
+        var tableString = '';
+        $.each(results, function(index, result) {
+          tableString += '<tr>';
+
+          var tryJob = result.try_job;
+          var tryJobCulprit = tryJob.culprit;
+          var rowspan = 1;
+
+          if (jQuery.isEmptyObject(tryJobCulprit)) {
+            rowspan = result.heuristic_analysis.suspected_cls.length > 0 ? result.heuristic_analysis.suspected_cls.length : 1;
+          }
+          tableString += generateCommonCellsForAllCategories(step_name, 'determined', index, result.tests, result.first_failure, result.last_pass, 1);
+
+          if (! jQuery.isEmptyObject(tryJobCulprit)) {
+            tableString += '<td rowspan="' + rowspan + '">Try Job</td>';
+            var build_number = result.try_job.try_job_key.split('/')[2];  // try_job_key would look like: 'master_name/builder_name/build_number'.
+            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/builds/' + build_number + '">' + build_number + '</a></td>';
+            var review_url = tryJobCulprit.url || tryJobCulprit.review_url || (findit.defaultGitBaseUrl + tryJobCulprit.revision);
+            tableString += '<td rowspan="' + rowspan + '"><a href="' + review_url + '">' + tryJobCulprit.commit_position || tryJobCulprit.revision + '</a></td>';
+            // Right now this cell is only for scores of heuristic results, placeholder for confidence in the future.
+            tableString += '<td rowspan="' + rowspan + '">N/A</td>';
+            tableString += '<td rowspan="' + rowspan + '">';
+            tableString += '<li>Reliable failure: <a href="' + tryJob.task_url+ '">' + tryJob.task_id + '</a></li>';
+            if (tryJob.try_job_url) {
+              tableString += '<li>For try job details: <a href="' + tryJob.try_job_url+ '">' + tryJob.try_job_build_number + '</a></li>';
+            }
+            tableString += '</td>';
+            tableString += '<td rowspan="' + rowspan + '">Try job completed successfully.</td>';
+
+          } else {
+            if (result.heuristic_analysis.suspected_cls.length > 0) {
+              tableString += '<td rowspan="' + rowspan + '">Heuristic Analysis</td>';
+              tableString += generateHeuristicCulpritCls(result.heuristic_analysis.suspected_cls, result.supported);
+            } else {
+              var no_result_reason = 'Not Found';
+              if (! result.supported) {
+                no_result_reason = 'Not Supported';
+              }
+              tableString += '<td colspan="5" rowspan="' + rowspan + '">' + no_result_reason + '</td>';
+            }
+            tableString += '<td rowspan="' + rowspan + '">' + findit.tryjobStatusMessageMap[tryJob.status] + '</td>';
+          }
+
+          tableString += '</tr>';
+        });
+
+        $('#reliable_failures_sheriffs_table tbody').append(tableString);
+        $('#reliable_failures_sheriffs').removeClass('not-display');
+      }
+    }
+
     function displayFlakyFailures(step_name, results) {
       if (!jQuery.isEmptyObject(results)) {
         var tableString = '';
@@ -318,7 +371,11 @@
             $.each(findit.analysisResult, function(step_name, step_results) {
               $.each(step_results.results, function(category, results) {
                   if (category == 'reliable_failures') {
+                    {% if show_debug_info %}
                     displayReliableFailures(step_name, results);
+                    {% else %}
+                    displayReliableFailuresToSheriffs(step_name, results);
+                    {% endif %}
                   } else if (category == 'unclassified_failures') {
                     displayUnclassifiedFailures(step_name, results);
                   } else if (category == 'flaky_failures') {
@@ -411,7 +468,7 @@
                 </tr>
                 <tr>
                   <th colspan="3">Try Job Result</th>
-                  <th colspan="4">Heuristic Analysis Result</th>
+                  <th colspan="5">Heuristic Analysis Result</th>
                 </tr>
                 <tr>
                   <th title="The build cycle in which the CL was built or tested for the first time">Build Number</th>
@@ -421,6 +478,32 @@
                   <th title="Git commit position/hash">Commit</th>
                   <th title="The higher score, the more suspected">Score (<a class="score-info" href="javascript:">?</a>)</th>
                   <th title="Why this CL is related to the failure">Hints</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+            <br>
+          </div>
+
+          <div id="reliable_failures_sheriffs" class='not-display'>
+            <b>Reliable failures</b>
+            <table id="reliable_failures_sheriffs_table">
+              <thead>
+                <tr>
+                  <th rowspan="2" title="Failed step name" width="150px">Step</th>
+                  <th rowspan="2" title="Failed test name" width="300px">Test(s)</th>
+                  <th rowspan="2" title="The build cycle in which the step started to fail">First Failure</th>
+                  <th rowspan="2" title="The last build cycle in which the step passed">Last Pass<br>Before Failure</th>
+                  <th colspan="6">Suspected CLs</th>
+                </tr>
+                <tr>
+                  <th title="The source of result, it could be a Try Job rerun or Heuristic Analysis on failure logs and CLs in regression range.">Analysis approach</th>
+                  <th title="The build cycle in which the CL was built or tested for the first time">Build Number</th>
+                  <th title="Git commit position/hash">Commit</th>
+                  <th title="The higher score, the more suspected">Score (<a class="score-info" href="javascript:">?</a>)</th>
+                  <th title="Why this CL is related to the failure">Reason</th>
+                  <th title="Additional information such as the status of try job.">Note</th>
                 </tr>
               </thead>
               <tbody>
@@ -482,9 +565,10 @@
               <tbody>
               </tbody>
             </table>
+            <br>
           </div>
         </div>
-        <br>
+
         <div class="thumbs-up-down">
           <b>Feedback on Findit result:</b><br>
           <div class="triage thumb-up">Correct <img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_up_black_24dp.png"/></div>

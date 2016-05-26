@@ -204,6 +204,7 @@
   </div>
   <br>
 
+  {% set show_heuristic = True %}
   {% if try_job %}
   <div>
     <b>Try-job Result:</b><br>
@@ -216,15 +217,17 @@
         {% if try_job.failed %}
           <span class="error">Try job ran into error!</span>
         {% elif try_job.culprit %}
+        {% set show_heuristic = False %}
         Culprit: {{try_job.culprit.repo_name or 'chromium'}} <a href="{{try_job.culprit.url or try_job.culprit.review_url or ('https://chromium.googlesource.com/chromium/src.git/+/' + try_job.culprit.revision)}}">{{try_job.culprit.commit_position or try_job.culprit.revision}}</a>
         {% else %}
           <div>No culprit found!</div>
         {% endif%}
       {% endif%}
   </div>
-  <br>
   {% endif%}
 
+  {% if show_heuristic or show_debug_info %}
+  <br>
   <b>Heuristic analysis result:</b>
   <div id="heuristic-analysis">
     Status: <span id="status_message"></span>
@@ -278,6 +281,7 @@
     {% endif %}
   {% endif %}
   </div>
+  {% endif %}
 
   {% if analysis_completed %}
   <br>
