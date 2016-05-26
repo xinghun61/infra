@@ -77,6 +77,7 @@ def update_data(http):
   for data_file in os.listdir(DATADIR):
     if os.path.isdir(data_file):
       continue
+    DEFAULT_LOGGER.debug('Processing file %s', data_file)
     file_dict = {}
     file_dict['file_name'] = data_file
     file_path = os.path.join(DATADIR, data_file)
@@ -88,6 +89,7 @@ def update_data(http):
       with open(file_path, "r") as text_file:
         file_dict['file_content'] = base64.b64encode(text_file.read())
     result.append(file_dict)
+    DEFAULT_LOGGER.debug('Completed file %s', data_file)
 
   data_files = json.dumps(result)
   retry_count = 5
@@ -163,6 +165,9 @@ def main(args):  # pragma: no cover
   if not update_data(http):
     DEFAULT_LOGGER.error('Failed to update data files.')
     return 1
+
+  DEFAULT_LOGGER.info('Outer loop finished with result %r',
+                      loop_results.success)
 
   return 0 if loop_results.success else 1
 
