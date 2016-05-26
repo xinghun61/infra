@@ -34,6 +34,7 @@ type BuilderConfig struct {
 	ClosingOptional   []string `json:"closing_optional"`
 }
 
+// GatekeeperConfig is the main gatekeeper.json config.
 type GatekeeperConfig struct {
 	Categories map[string]BuilderConfig  `json:"categories"`
 	Masters    map[string][]MasterConfig `json:"masters"`
@@ -51,6 +52,7 @@ type treeMasterConfig struct {
 	Masters map[string][]string `json:"masters"`
 }
 
+// UnmarshalJSON unmarshals bytes into this struct.
 func (t *TreeMasterConfig) UnmarshalJSON(b []byte) error {
 	tmpT := treeMasterConfig{}
 	if err := json.Unmarshal(b, &tmpT); err != nil {
@@ -72,15 +74,18 @@ func (t *TreeMasterConfig) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// MasterLocation is the location of a master. Currently it's just a URL.
 type MasterLocation struct {
 	url.URL
 }
 
+// Name is the name of the master; chromium, chromium.linux, etc.
 func (m *MasterLocation) Name() string {
 	parts := strings.Split(m.Path, "/")
 	return parts[len(parts)-1]
 }
 
+// MarshalJSON returns the JSON serialized version of a master location.
 func (m *MasterLocation) MarshalJSON() ([]byte, error) {
 	return []byte(m.String()), nil
 
