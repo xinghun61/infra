@@ -58,6 +58,7 @@ func (t *TreeMasterConfig) UnmarshalJSON(b []byte) error {
 	}
 
 	t.BuildDB = tmpT.BuildDB
+	t.Masters = make(map[MasterLocation][]string)
 
 	for master, allowed := range tmpT.Masters {
 		parsed, err := url.Parse(master)
