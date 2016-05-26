@@ -329,24 +329,20 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
     projs_to_test, locations = self._checkout_projects(
         root_dir, url_mapping, deps, downstream_projects, patches)
 
-    failures = []
-    try:
-      with self.m.step.defer_results():
-        for proj in projs_to_test:
-          deps_locs = {dep: locations[dep] for dep in deps[proj]}
+    bad_projects = []
+    for proj in projs_to_test:
+      deps_locs = {dep: locations[dep] for dep in deps[proj]}
 
-          simulation_result = self.simulation_test(
-              proj, recipe_configs[proj], locations[proj], deps_locs)
+      try:
+        self.simulation_test(
+          proj, recipe_configs[proj], locations[proj], deps_locs)
+      except recipe_api.StepFailure:
+        if should_fail_build_mapping.get(proj, True):
+          bad_projects.append(proj)
 
-          try:
-            simulation_result.get_result()
-          except recipe_api.StepFailure as f:
-            if should_fail_build_mapping.get(proj):
-              failures.append(f)
-    except recipe_api.AggregatedStepFailure:
-      if failures:
-        raise
-
-
+    if bad_projects:
+      raise recipe_api.StepFailure(
+          "One or more projects failed tests: %s" % (
+              ','.join(bad_projects)))
 
 
