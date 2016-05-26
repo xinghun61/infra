@@ -34,24 +34,13 @@ Summary
 infra/monitoring/dispatcher/linux-amd64 2d2f91e467892b53b3cd5a1c1845b7fa1fd78948
 ```
 
-#### Update the recipe tests and submit
-
-Then in [slave.git](https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave.git)
-edit `recipes/infra/alerts_dipsatcher.py` to update the package version:
+Then, run this command to set the ref for the cipd package.
 
 ```
-   pkgs = {
-     "infra/monitoring/dispatcher/%s" % pt: (
-       '<New CIPD Package hash goes here>'),
-   }
+cipd set-ref infra/monitoring/dispatcher/linux-amd64  -version 2d2f91e467892b53b3cd5a1c1845b7fa1fd78948 -ref prod
 ```
 
-Then run `./unittests/recipe_simulation_test.py train` from the `slave` dir to
-generate new expectations. These show the cipd ensure command with the correct
-revision.
-
-Send the CL out for review, and once it's submitted it should be picked up by
-infra.cron within the next 10 minutes.
+This should go live on the next cron re-run.
 
 ## Running Locally
 From infra/go:
