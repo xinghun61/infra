@@ -7,22 +7,21 @@ import (
 // GatekeeperRules implements the rule checks that gatekeeper performs
 // on failures to determine if the failure should close the tree.
 type GatekeeperRules struct {
-	cfgs []*messages.GatekeeperConfig
+	cfgs     []*messages.GatekeeperConfig
+	treeCfgs map[string][]messages.TreeMasterConfig
 }
 
 // NewGatekeeperRules returns a new instance of GatekeeperRules initialized
 // with cfg.
-func NewGatekeeperRules(cfgs []*messages.GatekeeperConfig) *GatekeeperRules {
-	ret := &GatekeeperRules{cfgs}
-	for i, cfg := range cfgs {
+func NewGatekeeperRules(cfgs []*messages.GatekeeperConfig, treeCfgs map[string][]messages.TreeMasterConfig) *GatekeeperRules {
+	for _, cfg := range cfgs {
 		for master, masterCfgs := range cfg.Masters {
 			if len(masterCfgs) != 1 {
 				errLog.Printf("Multiple configs for master: %s", master)
 			}
-			ret.cfgs[i].Masters[master] = masterCfgs
 		}
 	}
-	return ret
+	return &GatekeeperRules{cfgs, treeCfgs}
 }
 
 func (r *GatekeeperRules) findMaster(master *messages.MasterLocation) ([]messages.MasterConfig, bool) {
@@ -32,6 +31,16 @@ func (r *GatekeeperRules) findMaster(master *messages.MasterLocation) ([]message
 		}
 	}
 	return nil, false
+}
+
+func (r *GatekeeperRules) getAllowedBuilders(tree string, master *messages.MasterLocation) []string {
+	allowed := []string{}
+
+	for _, cfg := range r.treeCfgs[tree] {
+		allowed = append(allowed, cfg.Masters[*master]...)
+	}
+
+	return allowed
 }
 
 // WouldCloseTree returns true if a step failure on given builder/master would
@@ -71,14 +80,29 @@ func (r *GatekeeperRules) WouldCloseTree(master *messages.MasterLocation, builde
 	return false
 }
 
+func contains(arr []string, s string) bool {
+	for _, itm := range arr {
+		if itm == s {
+			return true
+		}
+	}
+
+	return false
+}
+
 // ExcludeFailure returns true if a step failure whould be ignored.
-func (r *GatekeeperRules) ExcludeFailure(master *messages.MasterLocation, builder, step string) bool {
+func (r *GatekeeperRules) ExcludeFailure(tree string, master *messages.MasterLocation, builder, step string) bool {
 	mcs, ok := r.findMaster(master)
 	if !ok {
-		errLog.Printf("Can't filter unknown master %s", master)
+		errLog.Printf("Can't filter unknown master %s (tree %s)", master, tree)
 		return false
 	}
 	mc := mcs[0]
+
+	allowedBuilders := r.getAllowedBuilders(tree, master)
+	if !(contains(allowedBuilders, "*") || contains(allowedBuilders, builder)) {
+		return true
+	}
 
 	for _, ebName := range mc.ExcludedBuilders {
 		if ebName == "*" || ebName == builder {

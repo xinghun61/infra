@@ -183,7 +183,7 @@ func (a *Analyzer) MasterAlerts(master *messages.MasterLocation, be *messages.Bu
 }
 
 // BuilderAlerts returns alerts generated from builders connected to the master.
-func (a *Analyzer) BuilderAlerts(master *messages.MasterLocation, be *messages.BuildExtract) []messages.Alert {
+func (a *Analyzer) BuilderAlerts(tree string, master *messages.MasterLocation, be *messages.BuildExtract) []messages.Alert {
 
 	// TODO: Collect activeBuilds from be.Slaves.RunningBuilds
 	type r struct {
@@ -213,7 +213,7 @@ func (a *Analyzer) BuilderAlerts(master *messages.MasterLocation, be *messages.B
 			// Each call to builderAlerts may trigger blocking json fetches,
 			// but it has a data dependency on the above cache-warming call, so
 			// the logic remains serial.
-			out.alerts, out.err = a.builderAlerts(master, builderName, &b)
+			out.alerts, out.err = a.builderAlerts(tree, master, builderName, &b)
 		}(builderName, builder)
 	}
 
@@ -304,7 +304,7 @@ func (a *Analyzer) lastBuilds(master *messages.MasterLocation, builderName strin
 
 // TODO: also check the build slaves to see if there are alerts for currently running builds that
 // haven't shown up in CBE yet.
-func (a *Analyzer) builderAlerts(master *messages.MasterLocation, builderName string, b *messages.Builder) ([]messages.Alert, []error) {
+func (a *Analyzer) builderAlerts(tree string, master *messages.MasterLocation, builderName string, b *messages.Builder) ([]messages.Alert, []error) {
 	if len(b.CachedBuilds) == 0 {
 		// TODO: Make an alert for this?
 		return nil, []error{errNoRecentBuilds}
@@ -388,7 +388,7 @@ func (a *Analyzer) builderAlerts(master *messages.MasterLocation, builderName st
 
 	// Check for alerts on the most recent complete build
 	infoLog.Printf("Checking %d most recent builds for alertable step failures: %s/%s", len(recentBuildIDs), master.Name(), builderName)
-	as, es := a.builderStepAlerts(master, builderName, []int64{lastCompletedBuild.Number})
+	as, es := a.builderStepAlerts(tree, master, builderName, []int64{lastCompletedBuild.Number})
 
 	if len(as) > 0 {
 		mostRecentComplete := 0
@@ -397,7 +397,7 @@ func (a *Analyzer) builderAlerts(master *messages.MasterLocation, builderName st
 				mostRecentComplete = i
 			}
 		}
-		as, es = a.builderStepAlerts(master, builderName, recentBuildIDs[mostRecentComplete:])
+		as, es = a.builderStepAlerts(tree, master, builderName, recentBuildIDs[mostRecentComplete:])
 		alerts = append(alerts, as...)
 		errs = append(errs, es...)
 	}
@@ -564,7 +564,7 @@ func (a *Analyzer) GetRevisionSummaries(hashes []string) ([]messages.RevisionSum
 // generating an Alert for each step output that warrants one.  Alerts are then
 // merged by key so that failures that occur across a range of builds produce a single
 // alert instead of one for each build.
-func (a *Analyzer) builderStepAlerts(master *messages.MasterLocation, builderName string, recentBuildIDs []int64) (alerts []messages.Alert, errs []error) {
+func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocation, builderName string, recentBuildIDs []int64) (alerts []messages.Alert, errs []error) {
 	// Check for alertable step failures.  We group them by key to de-duplicate and merge values
 	// once we've scanned everything.
 	stepAlertsByKey := map[string][]messages.Alert{}
@@ -579,7 +579,7 @@ func (a *Analyzer) builderStepAlerts(master *messages.MasterLocation, builderNam
 			break
 		}
 
-		as, err := a.stepFailureAlerts(failures)
+		as, err := a.stepFailureAlerts(tree, failures)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -733,7 +733,7 @@ func (a *Analyzer) stepFailures(master *messages.MasterLocation, builderName str
 
 // stepFailureAlerts returns alerts generated from step failures. It applies filtering
 // logic specified in the gatekeeper config to ignore some failures.
-func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, error) {
+func (a *Analyzer) stepFailureAlerts(tree string, failures []stepFailure) ([]messages.Alert, error) {
 	ret := []messages.Alert{}
 	type res struct {
 		f   stepFailure
@@ -755,7 +755,7 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 		}
 
 		// Check the gatekeeper configs to see if this is ignorable.
-		if a.Gatekeeper.ExcludeFailure(failure.master, failure.builderName, failure.step.Name) {
+		if a.Gatekeeper.ExcludeFailure(tree, failure.master, failure.builderName, failure.step.Name) {
 			continue
 		}
 

@@ -85,13 +85,13 @@ func init() {
 	}
 }
 
-func analyzeBuildExtract(ctx context.Context, a *analyzer.Analyzer, masterURL *messages.MasterLocation, b *messages.BuildExtract) []messages.Alert {
+func analyzeBuildExtract(ctx context.Context, a *analyzer.Analyzer, tree string, masterURL *messages.MasterLocation, b *messages.BuildExtract) []messages.Alert {
 	ret := a.MasterAlerts(masterURL, b)
 	if *mastersOnly {
 		return ret
 	}
-	infoLog.Printf("getting builder alerts for %s", masterURL)
-	return append(ret, a.BuilderAlerts(masterURL, b)...)
+	infoLog.Printf("getting builder alerts for %s (tree %s)", masterURL, tree)
+	return append(ret, a.BuilderAlerts(tree, masterURL, b)...)
 }
 
 // readJSONFile reads a file and decode it as JSON.
@@ -164,8 +164,8 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 			masters := []*messages.MasterLocation{}
 
 			for _, t := range gkts[tree] {
-				for _, url := range t.Masters {
-					masters = append(masters, url)
+				for url := range t.Masters {
+					masters = append(masters, &url)
 				}
 			}
 
@@ -177,7 +177,7 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 				RevisionSummaries: map[string]messages.RevisionSummary{},
 			}
 			for master, be := range bes {
-				alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(ctx, a, &master, be)...)
+				alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(ctx, a, tree, &master, be)...)
 			}
 
 			sort.Sort(bySeverity(alerts.Alerts))
@@ -377,7 +377,7 @@ func main() {
 		}
 	}
 
-	a.Gatekeeper = analyzer.NewGatekeeperRules(gks)
+	a.Gatekeeper = analyzer.NewGatekeeperRules(gks, gkts)
 
 	a.MasterOnly = *masterOnly
 	a.BuilderOnly = *builderOnly

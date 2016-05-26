@@ -29,8 +29,16 @@ class GatekeeperExtrasTest(unittest.TestCase):
       'infra.services.builder_alerts.gatekeeper_extras.tree_for_master',
       lambda master_url, trees_config: 'test-tree')
   def test_apply_gatekeeper_rules(self):
-    gatekeeper_cfg = {'http://build.chromium.org/p/chromium': {'key': 'value'}}
-    gatekeeper_trees_cfg = {}
+    gatekeeper_cfg = {
+        'http://build.chromium.org/p/chromium': {'key': 'value'},
+        'http://build.chromium.org/p/chromium.android': {'key': 'value'},
+    }
+    gatekeeper_trees_cfg = {
+        'test-tree': {
+            'http://build.chromium.org/p/chromium': ['*'],
+            'http://build.chromium.org/p/chromium.android': ['foo'],
+        }
+    }
     alerts = [
         {'master_url': 'http://build.chromium.org/p/project.without.config',
          'builder_name': 'Linux',
@@ -58,13 +66,20 @@ class GatekeeperExtrasTest(unittest.TestCase):
           'pending_builds': [],
           'step': 'bot_update',
           'latest_build': 1234,
-        }
+        },
+        {'master_url': 'http://build.chromium.org/p/chromium.android',
+         'builder_name': 'foo',
+         'step_name': 'bot_update'},
+        {'master_url': 'http://build.chromium.org/p/chromium.android',
+         'builder_name': 'bar',
+         'step_name': 'bot_update'},
     ]
 
     filtered_alerts = gatekeeper_extras.apply_gatekeeper_rules(
         alerts, gatekeeper_cfg, gatekeeper_trees_cfg)
+    print filtered_alerts
 
-    self.assertEqual(len(filtered_alerts), 5)
+    self.assertEqual(len(filtered_alerts), 6)
     self.assertIn({'master_url': 'http://build.chromium.org/p/chromium',
                    'builder_name': 'Win',
                    'step_name': 'bot_update',
@@ -99,6 +114,20 @@ class GatekeeperExtrasTest(unittest.TestCase):
           'latest_build': 1234,
           'tree': 'test-tree',
         },
+        filtered_alerts)
+    self.assertIn(
+        {'master_url': 'http://build.chromium.org/p/chromium.android',
+         'builder_name': 'foo',
+         'tree': 'test-tree',
+         'step_name': 'bot_update',
+         'would_close_tree': True},
+        filtered_alerts)
+    self.assertNotIn(
+        {'master_url': 'http://build.chromium.org/p/chromium.android',
+         'builder_name': 'bar',
+         'tree': 'test-tree',
+         'step_name': 'bot_update',
+         'would_close_tree': True},
         filtered_alerts)
 
   def test_tree_for_master_returns_tree_name(self):

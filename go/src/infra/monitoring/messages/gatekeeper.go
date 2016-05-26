@@ -41,14 +41,14 @@ type GatekeeperConfig struct {
 
 // TreeMasterConfig is a named group of masters. e.g. chromium, or blink.
 type TreeMasterConfig struct {
-	BuildDB string            `json:"build-db"`
-	Masters []*MasterLocation `json:"masters"`
+	BuildDB string                      `json:"build-db"`
+	Masters map[MasterLocation][]string `json:"masters"`
 }
 
 // Intermediate struct without parsed URLs
 type treeMasterConfig struct {
-	BuildDB string   `json:"build-db"`
-	Masters []string `json:"masters"`
+	BuildDB string              `json:"build-db"`
+	Masters map[string][]string `json:"masters"`
 }
 
 func (t *TreeMasterConfig) UnmarshalJSON(b []byte) error {
@@ -58,15 +58,14 @@ func (t *TreeMasterConfig) UnmarshalJSON(b []byte) error {
 	}
 
 	t.BuildDB = tmpT.BuildDB
-	t.Masters = make([]*MasterLocation, len(tmpT.Masters))
 
-	for i, master := range tmpT.Masters {
+	for master, allowed := range tmpT.Masters {
 		parsed, err := url.Parse(master)
 		if err != nil {
 			return err
 		}
 
-		t.Masters[i] = &MasterLocation{*parsed}
+		t.Masters[MasterLocation{*parsed}] = allowed
 	}
 
 	return nil

@@ -12,6 +12,14 @@ from infra.services.builder_alerts.buildbot import master_name_from_url
 def excluded_builders(master_config):
   return master_config[0].get('*', {}).get('excluded_builders', set())
 
+def builder_is_excluded(builder, config, master_config):
+  if builder in excluded_builders(config):
+    return True
+
+  if '*' in master_config:
+    return False
+
+  return builder not in master_config
 
 def tree_for_master(master_url, gatekeeper_trees_config):
   """Get the name of the tree for a given master url, or the master's name."""
@@ -33,15 +41,17 @@ def apply_gatekeeper_rules(alerts, gatekeeper, gatekeeper_trees):
       continue
 
     builder = alert.get('builder_name')
+    alert_tree = tree_for_master(master_url, gatekeeper_trees)
     if builder:
-      if builder in excluded_builders(config):
+      if builder_is_excluded(
+          builder, config, gatekeeper_trees[alert_tree][master_url]):
         continue
       # Only apply tree closer logic for step failures
       if 'step_name' in alert:
         alert['would_close_tree'] = would_close_tree(
             config, builder, alert['step_name'])
 
-    alert['tree'] = tree_for_master(master_url, gatekeeper_trees)
+    alert['tree'] = alert_tree
     filtered_alerts.append(alert)
   return filtered_alerts
 

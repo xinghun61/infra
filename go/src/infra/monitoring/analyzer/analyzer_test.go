@@ -179,7 +179,7 @@ func TestBuilderAlerts(t *testing.T) {
 
 	for _, test := range tests {
 		a.Now = fakeNow(test.t)
-		got := a.BuilderAlerts(&messages.MasterLocation{URL: *urlParse(test.url, t)}, &test.be)
+		got := a.BuilderAlerts("tree", &messages.MasterLocation{URL: *urlParse(test.url, t)}, &test.be)
 		if !reflect.DeepEqual(got, test.wantBuilders) {
 			t.Errorf("%s failed. Got %+v, want: %+v", test.name, got, test.wantBuilders)
 		}
@@ -300,7 +300,7 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 			builds: test.builds,
 		}
 		fmt.Printf("test %s", test.name)
-		gotAlerts, gotErrs := a.builderAlerts(&messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, &test.b)
+		gotAlerts, gotErrs := a.builderAlerts("tree", &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, &test.b)
 		if !reflect.DeepEqual(gotAlerts, test.wantAlerts) {
 			t.Errorf("%s failed. Got:\n%+v, want:\n%+v\nDiff: %v", test.name, gotAlerts, test.wantAlerts,
 				ansidiff.Diff(gotAlerts, test.wantAlerts))
@@ -498,7 +498,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 		a.Reader = mockReader{
 			builds: test.builds,
 		}
-		gotAlerts, gotErrs := a.builderStepAlerts(&messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.recentBuilds)
+		gotAlerts, gotErrs := a.builderStepAlerts("tree", &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.recentBuilds)
 		if !reflect.DeepEqual(gotAlerts, test.wantAlerts) {
 			t.Errorf("%s failed. Got:\n\t%+v\nWant:\n\t%+v\n\tDiff:\n\t%+v", test.name, gotAlerts, test.wantAlerts, ansidiff.Diff(gotAlerts, test.wantAlerts))
 		}
@@ -932,7 +932,7 @@ func TestStepFailureAlerts(t *testing.T) {
 
 	for _, test := range tests {
 		mc.testResults = &test.testResults
-		alerts, err := a.stepFailureAlerts(test.failures)
+		alerts, err := a.stepFailureAlerts("tree", test.failures)
 		if !reflect.DeepEqual(alerts, test.alerts) {
 			t.Errorf("%s failed. Got:\n\t%+v, want:\n\t%+v\nDiff: %s", test.name, alerts, test.alerts,
 				ansidiff.Diff(alerts, test.alerts))
@@ -1083,13 +1083,15 @@ func TestLatestBuildStep(t *testing.T) {
 
 func TestExcludeFailure(t *testing.T) {
 	tests := []struct {
-		name                  string
-		gk                    messages.GatekeeperConfig
-		master, builder, step string
-		want                  bool
+		name                        string
+		gk                          messages.GatekeeperConfig
+		gkt                         map[string][]messages.TreeMasterConfig
+		master, builder, step, tree string
+		want                        bool
 	}{
 		{
 			name:    "empty config",
+			tree:    "test_tree1",
 			master:  "fake.master",
 			builder: "fake.builder",
 			step:    "fake_step",
@@ -1097,6 +1099,7 @@ func TestExcludeFailure(t *testing.T) {
 		},
 		{
 			name:    "specifically excluded builder",
+			tree:    "test_tree2",
 			master:  "fake.master",
 			builder: "fake.builder",
 			step:    "fake_step",
@@ -1109,6 +1112,7 @@ func TestExcludeFailure(t *testing.T) {
 		},
 		{
 			name:    "specifically excluded master step",
+			tree:    "test_tree3",
 			master:  "fake.master",
 			builder: "fake.builder",
 			step:    "fake_step",
@@ -1121,6 +1125,7 @@ func TestExcludeFailure(t *testing.T) {
 		},
 		{
 			name:    "specifically excluded builder step",
+			tree:    "test_tree4",
 			master:  "fake.master",
 			builder: "fake.builder",
 			step:    "fake_step",
@@ -1137,6 +1142,7 @@ func TestExcludeFailure(t *testing.T) {
 		},
 		{
 			name:    "wildcard builder excluded",
+			tree:    "test_tree5",
 			master:  "fake.master",
 			builder: "fake.builder",
 			step:    "fake_step",
@@ -1147,12 +1153,87 @@ func TestExcludeFailure(t *testing.T) {
 			}},
 			want: true,
 		},
+		{
+			name:    "config should exclude builder (tree config)",
+			tree:    "test_tree6",
+			master:  "fake.master",
+			builder: "fake.builder",
+			step:    "fake_step",
+			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
+				"https://build.chromium.org/p/fake.master": {{
+					Builders: map[string]messages.BuilderConfig{
+						"*": {},
+					},
+				}},
+			}},
+			gkt: map[string][]messages.TreeMasterConfig{
+				"test_tree": {
+					messages.TreeMasterConfig{
+						Masters: map[messages.MasterLocation][]string{
+							messages.MasterLocation{URL: *urlParse(
+								"https://build.chromium.org/p/fake.master", t)}: {"other.builder"},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name:    "config shouldn't exclude builder (tree config)",
+			tree:    "test_tree7",
+			master:  "fake.master",
+			builder: "fake.builder",
+			step:    "fake_step",
+			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
+				"https://build.chromium.org/p/fake.master": {{
+					Builders: map[string]messages.BuilderConfig{
+						"*": {},
+					},
+				}},
+			}},
+			gkt: map[string][]messages.TreeMasterConfig{
+				"test_tree7": {
+					messages.TreeMasterConfig{
+						Masters: map[messages.MasterLocation][]string{
+							messages.MasterLocation{URL: *urlParse(
+								"https://build.chromium.org/p/fake.master", t)}: {"fake.builder"},
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name:    "config shouldn't exclude builder (tree config glob)",
+			tree:    "test_tree8",
+			master:  "fake.master",
+			builder: "fake.builder",
+			step:    "fake_step",
+			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
+				"https://build.chromium.org/p/fake.master": {{
+					Builders: map[string]messages.BuilderConfig{
+						"*": {},
+					},
+				}},
+			}},
+			gkt: map[string][]messages.TreeMasterConfig{
+				"test_tree8": {
+					messages.TreeMasterConfig{
+						Masters: map[messages.MasterLocation][]string{
+							messages.MasterLocation{URL: *urlParse(
+								"https://build.chromium.org/p/fake.master", t)}: {"*"},
+						},
+					},
+				},
+			},
+			want: false,
+		},
 	}
 
 	a := New(&mockReader{}, 0, 10)
 	for _, test := range tests {
-		a.Gatekeeper = NewGatekeeperRules([]*messages.GatekeeperConfig{&test.gk})
-		got := a.Gatekeeper.ExcludeFailure(&messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.step)
+		a.Gatekeeper = NewGatekeeperRules([]*messages.GatekeeperConfig{&test.gk}, test.gkt)
+		got := a.Gatekeeper.ExcludeFailure(test.tree, &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.step)
 		if got != test.want {
 			t.Errorf("%s failed. Got: %+v, want: %+v", test.name, got, test.want)
 		}
