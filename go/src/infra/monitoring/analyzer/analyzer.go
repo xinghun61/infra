@@ -325,6 +325,10 @@ func (a *Analyzer) builderAlerts(tree string, master *messages.MasterLocation, b
 		return nil, errs
 	}
 
+	if a.Gatekeeper.ExcludeBuilder(tree, master, builderName) {
+		return nil, nil
+	}
+
 	// Examining only the latest build is probably suboptimal since if it's still in progress it might
 	// not have hit a step that is going to fail and has failed repeatedly for the last few builds.
 	// AKA "Reliable failures".  TODO: Identify "Reliable failures"

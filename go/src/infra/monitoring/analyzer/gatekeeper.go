@@ -90,8 +90,8 @@ func contains(arr []string, s string) bool {
 	return false
 }
 
-// ExcludeFailure returns true if a step failure whould be ignored.
-func (r *GatekeeperRules) ExcludeFailure(tree string, master *messages.MasterLocation, builder, step string) bool {
+// ExcludeBuilder returns true if a builder should be ignored.
+func (r *GatekeeperRules) ExcludeBuilder(tree string, master *messages.MasterLocation, builder string) bool {
 	mcs, ok := r.findMaster(master)
 	if !ok {
 		errLog.Printf("Can't filter unknown master %s (tree %s)", master, tree)
@@ -103,6 +103,28 @@ func (r *GatekeeperRules) ExcludeFailure(tree string, master *messages.MasterLoc
 	if !(contains(allowedBuilders, "*") || contains(allowedBuilders, builder)) {
 		return true
 	}
+
+	for _, ebName := range mc.ExcludedBuilders {
+		if ebName == "*" || ebName == builder {
+			return true
+		}
+	}
+
+	return false
+}
+
+// ExcludeFailure returns true if a step failure whould be ignored.
+func (r *GatekeeperRules) ExcludeFailure(tree string, master *messages.MasterLocation, builder, step string) bool {
+	if r.ExcludeBuilder(tree, master, builder) {
+		return true
+	}
+
+	mcs, ok := r.findMaster(master)
+	if !ok {
+		errLog.Printf("Can't filter unknown master %s (tree %s)", master, tree)
+		return false
+	}
+	mc := mcs[0]
 
 	for _, ebName := range mc.ExcludedBuilders {
 		if ebName == "*" || ebName == builder {
