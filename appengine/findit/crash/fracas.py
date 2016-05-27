@@ -4,6 +4,8 @@
 
 """Process crashes from Chrome crash server and find culprits for them."""
 
+import logging
+
 from common import chromium_deps
 from crash import detect_regression_range
 from crash import findit_for_crash
@@ -68,6 +70,10 @@ def FindCulpritForChromeCrash(signature, platform,
   """
   crash_deps = chromium_deps.GetChromeDependency(crashed_version, platform)
   stacktrace = FracasParser().Parse(stack_trace, crash_deps, signature)
+  if not stacktrace:
+    logging.warning('Failed to parse the stacktrace %s', stack_trace)
+    return {'found': False}, {'found_suspects': False,
+                              'has_regression_range': False}
 
   regression_deps_rolls = {}
   regression_versions = detect_regression_range.DetectRegressionRange(
@@ -75,6 +81,9 @@ def FindCulpritForChromeCrash(signature, platform,
 
   if regression_versions:
     last_good_version, first_bad_version = regression_versions
+    logging.info('Find regression range %s:%s', last_good_version,
+                 first_bad_version)
+
     # Get regression deps and crash deps.
     regression_deps_rolls = chromium_deps.GetDEPSRollsDict(
         last_good_version, first_bad_version, platform)
@@ -94,7 +103,7 @@ def FindCulpritForChromeCrash(signature, platform,
                     bool(culprit_results)),
           'suspected_project': suspected_project,
           'suspected_components': suspected_components,
-          'culprits': culprit_results,
+          'suspected_cls': culprit_results,
       },
       {
           'found_suspects': bool(culprit_results),

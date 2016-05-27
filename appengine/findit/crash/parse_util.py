@@ -9,7 +9,8 @@ import re
 from crash.type_enums import CallStackFormatType, CallStackLanguageType
 
 
-GENERATED_CODE_FILE_PATH_PATTERN = re.compile(r'out/[^/]+/gen/')
+GENERATED_CODE_FILE_PATH_PATTERN = re.compile(r'.*out/[^/]+/gen/')
+THIRD_PARTY_FILE_PATH_MARKER = 'third_party'
 
 
 def GetFullPathForJavaFrame(function):
@@ -58,33 +59,61 @@ def GetDepPathAndNormalizedFilePath(path, deps):
   normalized_path = os.path.normpath(path).replace('\\', '/')
 
   if GENERATED_CODE_FILE_PATH_PATTERN.match(normalized_path):
+    logging.info('Generated code path %s', normalized_path)
     return '', normalized_path
 
   # Iterate through all dep paths in the parsed DEPS in an order.
   for dep_path in sorted(deps.keys(), key=lambda path: -path.count('/')):
+    # trim the 'src/' in the beginning of the dep_path to match, because there
+    # are many cases, especially in linux platform, the file paths are like,
+    # 'third_party/WebKit/Source/...', or 'v8/...'.
+    trimmed_dep_path = dep_path
+    if trimmed_dep_path.startswith('src/') and trimmed_dep_path != 'src/':
+      trimmed_dep_path = trimmed_dep_path[len('src/'):]
+
     # We need to consider when the lowercased dep path is in the path,
-    # because syzyasan build returns lowercased file path.
+    # because syzyasan builds and win canary crashes return lowercased file
+    # path.
+    trimmed_dep_path_lower = trimmed_dep_path.lower()
     dep_path_lower = dep_path.lower()
 
-    # If this path is the part of file path, this file must be from this
-    # dep.
-    if dep_path in normalized_path or dep_path_lower in normalized_path:
-      # Case when the retreived path is in lowercase.
-      if dep_path_lower in normalized_path:
-        current_dep_path = dep_path_lower
-      else:
-        current_dep_path = dep_path
+    current_dep_path = ''
 
-      # Normalize the path by stripping everything off the dep's relative
-      # path.
+    if (normalized_path.startswith(trimmed_dep_path) or
+        normalized_path.startswith(trimmed_dep_path_lower)):
+      # Case when the retreived path is in lowercase.
+      if normalized_path.startswith(trimmed_dep_path):
+        current_dep_path = trimmed_dep_path
+      else:
+        current_dep_path = trimmed_dep_path_lower
+
+    # For some special cases, for example, a file like
+    # 'https://chromium.googlesource.com/chromium/src/+/master/'
+    # 'third_party/tcmalloc/chromium/src/common.cc', this path shouldn't be
+    # matched with 'src' in between, it should be matched to the trimmed 'src/'
+    # in the beginning.
+    if (not normalized_path.startswith(THIRD_PARTY_FILE_PATH_MARKER) and
+        (dep_path in normalized_path or dep_path_lower in normalized_path)):
+      if dep_path in normalized_path:
+        current_dep_path = dep_path
+      else:
+        current_dep_path = dep_path_lower
+
+    # Normalize the path by stripping everything off the dep's relative
+    # path.
+    if current_dep_path:
       normalized_path = normalized_path.split(current_dep_path, 1)[1]
 
       return (dep_path, normalized_path)
 
-  logging.warning(
-      'Failed to match dependency with file path %s' % normalized_path)
-  # If the path does not match any dep, default to others.
-  return '', normalized_path
+  logging.info(
+      'Cannot find match of dep path for file path %s, Default to src/',
+      normalized_path)
+
+  # For some crashes, the file path looks like this:
+  # third_party/WebKit/Source/a.cc, the src/ in the beginning is trimmed, so
+  # default the dep path to 'src/' if no match found.
+  return 'src/', normalized_path
 
 
 def GetLanguageTypeFromFormatType(format_type):

@@ -23,7 +23,6 @@ class FracasCrashAnalysis(CrashAnalysis):
 
   @staticmethod
   def _CreateKey(crash_identifiers):
-    # Use sha1 hex digest of signature to avoid char conflict with '/'.
     return ndb.Key('FracasCrashAnalysis', hashlib.sha1(
         json.dumps(crash_identifiers, sort_keys=True)).hexdigest())
 

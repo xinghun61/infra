@@ -60,6 +60,8 @@ class FracasCrash(BaseHandler):
                    pubsub_message['message_id'],
                    received_message['subscription'])
 
+      logging.info('Crash data is %s', json.dumps(crash_data))
+
       fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
           crash_data['crash_identifiers'],
           crash_data['chrome_version'],
@@ -68,7 +70,7 @@ class FracasCrash(BaseHandler):
           crash_data['platform'],
           crash_data['stack_trace'],
           crash_data['customized_data']['channel'],
-          crash_data['customized_data']['historic_metadata'],
+          crash_data['customized_data']['historical_metadata'],
           queue_name=constants.CRASH_ANALYSIS_FRACAS_QUEUE)
     except (KeyError, ValueError):  # pragma: no cover.
       # TODO: save exception in datastore and create a page to show them.

@@ -21,6 +21,13 @@ class FracasParserTest(StacktraceTestSuite):
     self.assertEqual(parser._IsStartOfNewCallStack('CRASHED [EXC @ 0x508]'),
                      (True, 0, CallStackFormatType.DEFAULT))
 
+  def testReturnEmptyStacktraceForEmptyString(self):
+    parser = FracasParser()
+    deps = {'src/': Dependency('src/', 'https://repo', '1')}
+
+    self._VerifyTwoStacktracesEqual(parser.Parse('', deps),
+                                    Stacktrace())
+
   def testFracasParserParseLineMalformatedCallstack(self):
     parser = FracasParser()
     deps = {'src/': Dependency('src/', 'https://repo', '1')}

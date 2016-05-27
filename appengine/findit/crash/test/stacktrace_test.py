@@ -10,6 +10,7 @@ from crash.test.stacktrace_test_suite import StacktraceTestSuite
 
 
 class StacktraceTest(StacktraceTestSuite):
+
   def testCrashStackForStacktraceWithoutSignature(self):
     frame_list1 = [
         StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32])]

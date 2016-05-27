@@ -8,7 +8,7 @@ import logging
 _MAXIMUM_WINDOW_SIZE = 30
 
 # Add epsilon to avoid dividing by zero when computing spike score.
-_EPSILON = 0.001
+_EPSILON = 0.00000001
 
 # Default value to control weight of current data when computing spike score.
 _DEFAULT_ALPHA = 0.9
@@ -34,6 +34,9 @@ def GetSpikeIndexes(data_series, alpha=_DEFAULT_ALPHA,
   if not data_series or len(data_series) == 1:
     return spike_indexes
 
+  logging.info('For data series %s', repr(data_series))
+  logging.info('Threshold is %f', threshold)
+
   previous_mean = data_series[0][1]
   for i, (_, y) in enumerate(data_series[1:]):
     current_mean = (1 - alpha) * previous_mean + alpha * y
@@ -42,7 +45,8 @@ def GetSpikeIndexes(data_series, alpha=_DEFAULT_ALPHA,
     # to both numerator and denominator to avoid dividing by zero error.
     spike_score = ((current_mean - previous_mean + _EPSILON) /
                    (previous_mean + _EPSILON))
-
+    logging.info('The spike score for data %s is %s',
+                 repr(data_series[i]), spike_score)
     if spike_score > threshold:
       spike_indexes.append(i + 1)
 

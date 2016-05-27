@@ -31,14 +31,23 @@ class ParseUtilTest(testing.AppengineTestCase):
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('src/a/b.cc', deps),
         ('src/', 'a/b.cc'))
+
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('src/Upper/a/b.cc', deps),
+        ('src/Upper/', 'a/b.cc'))
+    self.assertEqual(
+        parse_util.GetDepPathAndNormalizedFilePath('src/upper/a/b.cc', deps),
+        ('src/Upper/', 'a/b.cc'))
+    self.assertEqual(
+        parse_util.GetDepPathAndNormalizedFilePath('Upper/a/b.cc', deps),
+        ('src/Upper/', 'a/b.cc'))
+    self.assertEqual(
+        parse_util.GetDepPathAndNormalizedFilePath('upper/a/b.cc', deps),
         ('src/Upper/', 'a/b.cc'))
 
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('dummy/path/b.cc', deps),
-        ('', 'dummy/path/b.cc'))
-
+        ('src/', 'dummy/path/b.cc'))
 
   def testGetLanguageTypeFromFormatType(self):
     self.assertEqual(

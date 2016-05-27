@@ -51,7 +51,7 @@ class FracasCrashTest(CrashTestCase):
             'data': base64.b64encode(json.dumps({
                 'customized_data': {
                     'channel': 'supported_channel',
-                    'historic_metadata': [
+                    'historical_metadata': [
                         {
                             'chrome_version': '50.2500.0.0',
                             'cpm': 0.6
