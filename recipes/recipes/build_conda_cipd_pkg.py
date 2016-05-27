@@ -54,11 +54,8 @@ def RunSteps(api):
       conda.install(pkg)
     try:
       conda.convert_to_cipd_package(cipd_pkg_name, cipd_pkg_file)
-      if api.platform.is_win:
-        creds = 'C:\\creds\\service_accounts\\service-account-cipd-builder.json'
-      else:
-        creds = '/creds/service_accounts/service-account-cipd-builder.json'
-      api.cipd.set_service_account_credentials(creds)
+      api.cipd.set_service_account_credentials(
+          api.cipd.default_bot_service_account_credentials)
       tags = {
         'buildbot_build': '%s/%s/%s' % (
             api.properties['mastername'],

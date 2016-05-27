@@ -85,13 +85,8 @@ def inner(api):
   assert package_pin['package'] == test_package
   step.presentation.step_text = 'instance_id: %s' % package_pin['instance_id']
 
-  # Path to a service account credentials to use to talk to CIPD backend.
-  # Deployed by Puppet.
-  if api.platform.is_win:
-    creds = 'C:\\creds\\service_accounts\\service-account-cipd-builder.json'
-  else:
-    creds = '/creds/service_accounts/service-account-cipd-builder.json'
-  api.cipd.set_service_account_credentials(creds)
+  api.cipd.set_service_account_credentials(
+      api.cipd.default_bot_service_account_credentials)
 
   tags = {
     'revision': api.properties['revision_tag'],

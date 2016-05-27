@@ -5,6 +5,7 @@
 from recipe_engine.recipe_api import Property
 
 DEPS = [
+  'cipd',
   'depot_tools/bot_update',
   'file',
   'depot_tools/gclient',
@@ -18,13 +19,6 @@ DEPS = [
 
 
 def build_cipd_packages(api, repo, rev, mastername, buildername, buildnumber):
-  # Path to a service account credentials to use to talk to CIPD backend.
-  # Deployed by Puppet.
-  if api.platform.is_win:
-    creds = 'C:\\creds\\service_accounts\\service-account-cipd-builder.json'
-  else:
-    creds = '/creds/service_accounts/service-account-cipd-builder.json'
-
   # Build packages locally.
   api.python(
       'cipd - build packages',
@@ -49,7 +43,8 @@ def build_cipd_packages(api, repo, rev, mastername, buildername, buildnumber):
         [
           '--no-rebuild',
           '--upload',
-          '--service-account-json', creds,
+          '--service-account-json',
+          api.cipd.default_bot_service_account_credentials,
           '--json-output', api.json.output(),
           '--builder', api.properties.get('buildername'),
         ] + ['--tags'] + tags)

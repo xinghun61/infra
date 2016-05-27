@@ -80,6 +80,8 @@
       "[SLAVE_BUILD]/recipes-py/infra/cipd/recipes-py.yaml",
       "--json-output",
       "/path/to/tmp/json",
+      "--service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json",
       "--tag",
       "buildbot_build://-1",
       "--tag",
