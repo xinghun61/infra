@@ -338,6 +338,14 @@ def revert_patchset(request):
           request.user.email(), revert_reason))
   views.make_message(request, original_issue, revert_message,
                      send_mail=True).put()
+
+  # Post a message saying who CQ'd the revert. This is critical for CQ, which is
+  # using this message to determine when the attempt has been started.
+  if revert_cq:
+    views.make_message(
+        request, issue, 'The CQ bit was checked by %s' % request.user.email(),
+        auto_generated=True, send_mail=False).put()
+
   # Notify the revert issue recipients.
   views.make_message(request, issue, 'Created %s' % subject,
                      send_mail=True).put()
