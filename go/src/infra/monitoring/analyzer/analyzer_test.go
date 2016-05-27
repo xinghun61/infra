@@ -378,12 +378,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 							},
 						},
-						Reasons: []messages.Reason{
-							{
-								Step: "fake_step",
-								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder/builds/0/steps/fake_step", t).String(),
-							},
-						},
+						Reasons: []messages.Reason(nil),
 						RegressionRanges: []messages.RegressionRange{
 							{
 								Repo:      "chromium",
@@ -470,12 +465,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								LatestFailure: 3,
 							},
 						},
-						Reasons: []messages.Reason{
-							{
-								Step: "fake_step",
-								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder/builds/0/steps/fake_step", t).String(),
-							},
-						},
+						Reasons: []messages.Reason(nil),
 						RegressionRanges: []messages.RegressionRange{
 							{
 								Repo: "chromium",
@@ -913,12 +903,7 @@ func TestStepFailureAlerts(t *testing.T) {
 								LatestFailure: 42,
 							},
 						},
-						Reasons: []messages.Reason{
-							{
-								Step: "fake_tests",
-								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder/builds/42/steps/fake_tests", t).String(),
-							},
-						},
+						Reasons:          []messages.Reason(nil),
 						RegressionRanges: []messages.RegressionRange{},
 					},
 				},
