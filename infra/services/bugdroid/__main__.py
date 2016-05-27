@@ -91,13 +91,17 @@ def update_data(http):
     result.append(file_dict)
     DEFAULT_LOGGER.debug('Completed file %s', data_file)
 
+  DEFAULT_LOGGER.info('Creating json...')
   data_files = json.dumps(result)
+  DEFAULT_LOGGER.info('Finish creating json...')
   retry_count = 5
   success = False
   for i in xrange(retry_count):
+    DEFAULT_LOGGER.info('Sending post request %d...', i)
     resp, _ = http.request(
         DATA_URL, "POST", body=json.dumps({'data_files': data_files}),
         headers={'Content-Type': 'application/json'})
+    DEFAULT_LOGGER.info('Post request %d status: %d', i, resp.status)
     if resp.status >= 400:
       DEFAULT_LOGGER.warning('Failed to update data in retry %d. Status: %d.',
                       i, resp.status)
