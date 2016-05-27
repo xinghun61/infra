@@ -915,13 +915,11 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []stepFailure) ([]mes
 
 			reasons := a.reasonsForFailure(f)
 
-			if len(reasons) > 0 {
-				bf.Reasons = append(bf.Reasons, messages.Reason{
-					TestNames: reasons,
-					Step:      f.step.Name,
-					URL:       f.URL().String(),
-				})
-			}
+			bf.Reasons = append(bf.Reasons, messages.Reason{
+				TestNames: reasons,
+				Step:      f.step.Name,
+				URL:       f.URL().String(),
+			})
 
 			alr.Key = alertKey(f.master.Name(), f.builderName, f.step.Name, "")
 			alr.Extension = bf
