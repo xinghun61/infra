@@ -31,6 +31,8 @@ import httpagentparser # pylint: disable=F0401
 import settings
 from third_party import ezt
 
+import gae_ts_mon
+
 
 WIZARD_TEMPLATE_PATH = 'templates/wizard.ezt'
 WIZARD_HTML_TEMPLATE = ezt.Template(WIZARD_TEMPLATE_PATH)
@@ -292,3 +294,4 @@ application = webapp2.WSGIApplication(
      ('/wizard.html', MainHandler),
      ('/wizard.do', MainHandler)],
     debug=True)
+gae_ts_mon.initialize(application)

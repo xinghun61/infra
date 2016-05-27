@@ -16,3 +16,6 @@ handlers:
 - url: /.*
   script: main.application
   secure: always
+
+includes:
+- gae_ts_mon  # handles /internal/cron/ts_mon/send
