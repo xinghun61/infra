@@ -112,7 +112,7 @@ func masterFromURL(masterURL *url.URL) string {
 	return parts[len(parts)-1]
 }
 
-func fetchBuildExtracts(ctx context.Context, c client.Reader, masters []*messages.MasterLocation) map[messages.MasterLocation]*messages.BuildExtract {
+func fetchBuildExtracts(ctx context.Context, c client.Reader, masters []messages.MasterLocation) map[messages.MasterLocation]*messages.BuildExtract {
 	bes := map[messages.MasterLocation]*messages.BuildExtract{}
 	type beResp struct {
 		master *messages.MasterLocation
@@ -125,9 +125,9 @@ func fetchBuildExtracts(ctx context.Context, c client.Reader, masters []*message
 		master := master
 		go func() {
 			r := beResp{
-				master: master,
+				master: &master,
 			}
-			r.be, r.err = c.BuildExtract(master)
+			r.be, r.err = c.BuildExtract(&master)
 			if r.err != nil {
 				errLog.Printf("Error reading build extract from %s : %s", r.master.Name(), r.err)
 			}
@@ -161,11 +161,11 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 			expvars.Add(fmt.Sprintf("Tree-%s", tree), 1)
 			defer expvars.Add(fmt.Sprintf("Tree-%s", tree), -1)
 			infoLog.Printf("Checking tree: %s", tree)
-			masters := []*messages.MasterLocation{}
+			masters := []messages.MasterLocation{}
 
 			for _, t := range gkts[tree] {
 				for url := range t.Masters {
-					masters = append(masters, &url)
+					masters = append(masters, url)
 				}
 			}
 
