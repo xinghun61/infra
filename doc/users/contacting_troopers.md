@@ -119,7 +119,7 @@ View the [current trooper queue].
 
 Common Non-Trooper Requests:
 
-*   [Create a new repository](https://bugs.chromium.org/p/chromium/issues/entry?template=Infra-Git)
+*   [Contact a Git Admin](https://bugs.chromium.org/p/chromium/issues/entry?template=Infra-Git)
 
 [Master restart requests]: https://bugs.chromium.org/p/chromium/issues/entry?template=Build%20Infrastructure&labels=Restrict-View-Google,Infra-Troopers,Pri-2&summary=%5BMaster%20Restart%5D%20for%20%5Bmastername%5D&comment=Please%20provide%20the%20reason%20for%20restart%20(including%20CL%20link%20if%20possible).%0A%0ACc%20any%20users%20you%27d%20like%20notified%20of%20the%20restart.%0A%0ALeave%20at%20Pri-2%20for%20restart%20by%20end-of-day;%20Pri-1%20if%20you%20would%20like%20a%20restart%20sooner%20than%20that;%20or%20Pri-0%20if%20this%20is%20part%20of%20fixing%20an%20ongoing%20outage
 [Slave restart requests]: https://bugs.chromium.org/p/chromium/issues/entry?template=Build%20Infrastructure&labels=Restrict-View-Google,Infra-Troopers,Pri-2&cc=pgervais@chromium.org&summary=%5BSlave%20Restart%5D%20for%20%5Bslave%20hostame%5D&comment=Please%20provide%20the%20reason%20for%20restart.%0A%0ALeave%20at%20Pri-2%20for%20restart%20by%20end-of-day;%20Pri-1%20if%20you%20would%20like%20a%20restart%20sooner%20than%20that;%20or%20Pri-0%20if%20this%20is%20part%20of%20fixing%20an%20ongoing%20outage.
