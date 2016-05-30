@@ -29,6 +29,7 @@ import urlparse
 
 import requests
 from requests.packages import urllib3
+import requests_cache
 
 
 STATS_URL = 'http://chromium-cq-status.appspot.com'
@@ -252,6 +253,7 @@ def utc_date_to_timestamp(date):
   return calendar.timegm(date.timetuple())
 
 
+requests_cache.install_cache('cq_stats')
 session = requests.Session()
 http_adapter = requests.adapters.HTTPAdapter(
     max_retries=urllib3.util.Retry(total=4, backoff_factor=0.5),
