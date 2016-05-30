@@ -34,8 +34,10 @@ MAX_INDIVIDUAL_FLAKES_PER_STEP = 50
 FLAKY_RUNS_TEMPLATE = (
     'Detected %(new_flakes_count)d new flakes for test/step "%(name)s". To see '
     'the actual flakes, please visit %(flakes_url)s. This message was posted '
-    'automatically by the chromium-try-flakes app. Since flakiness is ongoing, '
-    'the issue was moved back into %(queue_name)s (unless already there).')
+    'automatically by the chromium-try-flakes app.%(suffix)s')
+RETURN_TO_QUEUE_SUFFIX = (
+    'Since flakiness is ongoing, the issue was moved back into %s (unless '
+    'already there).')
 SUMMARY_TEMPLATE = '"%(name)s" is flaky'
 DESCRIPTION_TEMPLATE = (
     '%(summary)s.\n\n'
@@ -222,16 +224,18 @@ class ProcessIssue(webapp2.RequestHandler):
     # Make sure issue is in the appropriate bug queue as flakiness is ongoing as
     # the sheriffs are supposed to disable flaky tests. For steps, only return
     # if there is no owner on the bug.
+    suffix = None
     queue_name, expected_label = get_queue_details(flake.name)
     if expected_label not in flake_issue.labels:
       if not flake.is_step or not flake_issue.owner:
         flake_issue.labels.append(expected_label)
+        suffix = RETURN_TO_QUEUE_SUFFIX % queue_name
 
     new_flaky_runs_msg = FLAKY_RUNS_TEMPLATE % {
         'name': flake.name,
         'new_flakes_count': len(new_flakes),
         'flakes_url': FLAKES_URL_TEMPLATE % flake.key.urlsafe(),
-        'queue_name': queue_name}
+        'suffix': ' %s' % suffix if suffix else ''}
     api.update(flake_issue, comment=new_flaky_runs_msg)
     self.issue_updates.increment_by(1, {'operation': 'update'})
     logging.info('Updated issue %d for flake %s with %d flake runs',

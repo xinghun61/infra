@@ -388,19 +388,27 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
         'Detected 2 new flakes for test/step "foo.bar". To see the actual '
         'flakes, please visit https://chromium-try-flakes.appspot.com/'
         'all_flake_occurrences?key=agx0ZXN0YmVkLXRlc3RyCwsSBUZsYWtlGAoM. This '
-        'message was posted automatically by the chromium-try-flakes app. '
-        'Since flakiness is ongoing, the issue was moved back into Sheriff Bug '
-        'Queue (unless already there).'
+        'message was posted automatically by the chromium-try-flakes app.'
     )
+
+  def test_includes_message_about_moving_back_to_queue(self):
+    issue = self.mock_api.create(MockIssue({}))
+    flake = self._create_flake()
+    flake.issue_id = issue.id
+    flake_key = flake.put()
+
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+
+    self.assertEqual(len(issue.comments), 1)
+    self.assertIn(
+        'Since flakiness is ongoing, the issue was moved back into Sheriff Bug '
+        'Queue (unless already there).', issue.comments[0].comment)
 
   def test_adds_sheriff_label_when_updating_issue(self):
     issue = self.mock_api.create(MockIssue({}))
-
-    now = datetime.datetime.utcnow()
     flake = self._create_flake()
     flake.issue_id = issue.id
-    flake.num_reported_flaky_runs = 0
-    flake.issue_last_updated = now - datetime.timedelta(hours=25)
     flake_key = flake.put()
 
     with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
@@ -424,6 +432,12 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
       self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
 
     self.assertNotIn('Sheriff-Chromium', issue.labels)
+
+    # Check that the comment does not mention returning to Sheriff Bug Queue.
+    self.assertEqual(len(issue.comments), 1)
+    self.assertNotIn(
+        'Since flakiness is ongoing, the issue was moved back into Sheriff Bug '
+        'Queue (unless already there).', issue.comments[0].comment)
 
   def test_updates_issue_only_if_there_are_new_flakes(self):
     issue = self.mock_api.create(MockIssue({}))
