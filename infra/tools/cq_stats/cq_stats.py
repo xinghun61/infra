@@ -587,7 +587,14 @@ def derive_stats(args, begin_date, init_stats=None):
 
   patches, issues = set(), set()
   for patch_id, pstats in iterable:
-    if not pstats['supported']:
+    # The pragma-no-cover statement below is needed due to some bug in coverage
+    # engine. When adding
+    #   print 'foo'
+    # before continue-statement, coverage engine reports full coverage, while
+    # without it it reports missing branch coverage for if-statement and missing
+    # line coverage for continue-statement.
+    # TODO(sergiyb): Fix coverage engine and remove this pragma.
+    if not pstats['supported'] or pstats['attempts'] == 0:  # pragma: no cover
       continue
     patch_stats[patch_id] = pstats
 
