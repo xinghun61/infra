@@ -571,8 +571,8 @@ def derive_stats(args, begin_date, init_stats=None):
   stats['end'] = date_from_timestamp(results[0]['timestamp'])
 
   raw_patches = set()
-  for reason in results:
-    raw_patches.add((reason['fields']['issue'], reason['fields']['patchset']))
+  for result in results:
+    raw_patches.add((result['fields']['issue'], result['fields']['patchset']))
 
   patch_stats = {}
   # Fetch and process each patchset log
@@ -645,7 +645,7 @@ def derive_patch_stats(args, begin_date, end_date, patch_id):
   results = fetch_cq_logs(start_date=begin_date, end_date=end_date, filters=[
       'issue=%s' % patch_id[0], 'patchset=%s' % patch_id[1]])
   # The results should already ordered, but sort it again just to be sure.
-  results = sorted(results, key=lambda r: r['timestamp'], reverse=True)
+  results = sorted(results, key=lambda r: r['timestamp'])
   logging.debug('derive_patch_stats(%r): fetched %d entries.',
                 patch_id, len(results))
   # Group by attempts
@@ -689,7 +689,7 @@ def derive_patch_stats(args, begin_date, end_date, patch_id):
   failing_builders = {}
   state = 'stop'
   attempt_counter = 0
-  for result in reversed(results):
+  for result in results:
     action = result['fields'].get('action')
     verifier = result['fields'].get('verifier')
     dry_run = result['fields'].get('dry_run')
