@@ -82,6 +82,8 @@
       "/path/to/tmp/json",
       "--service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json",
+      "--ref",
+      "latest",
       "--tag",
       "buildbot_build://-1",
       "--tag",
