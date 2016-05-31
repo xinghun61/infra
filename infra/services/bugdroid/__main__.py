@@ -5,7 +5,7 @@
 import argparse
 import base64
 import collections
-import glob
+import datetime
 import httplib2
 import json
 import logging
@@ -24,7 +24,6 @@ from oauth2client.client import OAuth2Credentials
 
 DEFAULT_LOGGER = logging.getLogger(__name__)
 DEFAULT_LOGGER.addHandler(logging.NullHandler())
-DEFAULT_LOGGER.setLevel(logging.DEBUG)
 DEFAULT_LOGGER.setLevel(logging.DEBUG)
 formatter = logging.Formatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -148,7 +147,8 @@ def main(args):  # pragma: no cover
 
   credentials = OAuth2Credentials(
       None, creds_data['client_id'], creds_data['client_secret'],
-      creds_data['refresh_token'], None,
+      creds_data['refresh_token'],
+      datetime.datetime.now() + datetime.timedelta(minutes=15),
       'https://accounts.google.com/o/oauth2/token',
       'python-issue-tracker-manager/2.0')
   http = httplib2.Http()
@@ -157,6 +157,10 @@ def main(args):  # pragma: no cover
   if not get_data(http):
     DEFAULT_LOGGER.error('Failed to get data files.')
     return 1
+
+  DEFAULT_LOGGER.debug('Attemp to post again...')
+  update_data(http)
+  DEFAULT_LOGGER.debug('Attemp to post again completed...')
 
   def outer_loop_iteration():
     return bugdroid.inner_loop(opts)
