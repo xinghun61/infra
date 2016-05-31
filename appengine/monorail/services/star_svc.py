@@ -130,6 +130,7 @@ class AbstractStarService(object):
 
     self.star_cache.Invalidate(cnxn, starrer_user_id)
     self.starrer_cache.Invalidate(cnxn, item_id)
+    self.star_count_cache.Invalidate(cnxn, item_id)
 
 
 class UserStarService(AbstractStarService):

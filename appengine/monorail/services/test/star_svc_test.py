@@ -122,6 +122,9 @@ class AbstractStarServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.star_service.SetStar(self.cnxn, 123, 111L, True)
     self.mox.VerifyAll()
+    self.assertFalse(self.star_service.star_cache.HasItem(123))
+    self.assertFalse(self.star_service.starrer_cache.HasItem(123))
+    self.assertFalse(self.star_service.star_count_cache.HasItem(123))
 
   def SetUpSetStar_Remove(self):
     self.mock_tbl.Delete(self.cnxn, item_id=123, user_id=111L)
