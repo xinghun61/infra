@@ -106,7 +106,9 @@
       "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
       "https://luci-config.appspot.com/_ah/api/config/v1/projects",
       "--outfile",
-      "/path/to/tmp/"
+      "/path/to/tmp/",
+      "--attempts",
+      "3"
     ],
     "name": "Get luci-config projects"
   },

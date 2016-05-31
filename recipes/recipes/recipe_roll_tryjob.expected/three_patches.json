@@ -111,7 +111,9 @@
       "--outfile",
       "/path/to/tmp/",
       "--headers-json",
-      "{\"Authorization\": \"Bearer ya29.foobar\"}"
+      "{\"Authorization\": \"Bearer ya29.foobar\"}",
+      "--attempts",
+      "3"
     ],
     "name": "Get luci-config projects"
   },
@@ -124,7 +126,9 @@
       "--outfile",
       "/path/to/tmp/",
       "--headers-json",
-      "{\"Authorization\": \"Bearer ya29.foobar\"}"
+      "{\"Authorization\": \"Bearer ya29.foobar\"}",
+      "--attempts",
+      "3"
     ],
     "name": "Get project 'depot_tools' config 'recipes.cfg'"
   },
@@ -137,7 +141,9 @@
       "--outfile",
       "/path/to/tmp/",
       "--headers-json",
-      "{\"Authorization\": \"Bearer ya29.foobar\"}"
+      "{\"Authorization\": \"Bearer ya29.foobar\"}",
+      "--attempts",
+      "3"
     ],
     "name": "Get project 'recipe_engine' config 'recipes.cfg'"
   },
@@ -150,7 +156,9 @@
       "--outfile",
       "/path/to/tmp/",
       "--headers-json",
-      "{\"Authorization\": \"Bearer ya29.foobar\"}"
+      "{\"Authorization\": \"Bearer ya29.foobar\"}",
+      "--attempts",
+      "3"
     ],
     "name": "Get project 'build' config 'recipes.cfg'"
   },
