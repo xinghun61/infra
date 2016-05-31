@@ -171,7 +171,9 @@ def main(args):  # pragma: no cover
       sleep_timeout=lambda: 5.0,
       **loop_opts)
 
-  if not update_data(http):
+  http2 = httplib2.Http()
+  http2 = credentials.authorize(http2)
+  if not update_data(http2):
     DEFAULT_LOGGER.error('Failed to update data files.')
     return 1
 
