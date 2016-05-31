@@ -149,7 +149,7 @@ class LogQuery(object):
 
     lines = []
     while True:
-      for row in j['rows']:
+      for row in j.get('rows', []):
         ts_f = row['f'][0]['v']  # Bigquery returns timestamps as float strings.
         line = row['f'][1]['v']  # textPayload
         resource = row['f'][2]['v']  # metadata.labels.value
