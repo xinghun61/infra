@@ -20,9 +20,10 @@ from infra_libs import logs
 from infra_libs import ts_mon
 from infra.services.bugdroid import bugdroid
 from oauth2client.client import OAuth2Credentials
+import  oauth2client.client
 
 
-DEFAULT_LOGGER = logging.getLogger(__name__)
+DEFAULT_LOGGER = oauth2client.client.logger
 DEFAULT_LOGGER.addHandler(logging.NullHandler())
 DEFAULT_LOGGER.setLevel(logging.DEBUG)
 formatter = logging.Formatter(
