@@ -1218,6 +1218,14 @@ def print_stats(args, stats):
         patch_url(p),
         round(stats['patch_stats'][p]['patchset-duration'] / 3600.0, 1)))
 
+  if args.list_false_rejections:
+    output()
+    output('False rejections:')
+    for patch_id, pstats in stats['patch_stats'].iteritems():
+      if pstats['false-rejections']:
+        output('%s (%d false rejections)' % (
+          patch_url(patch_id), pstats['false-rejections']))
+
 
 def acquire_stats(args, add_tree_stats=True):
   stats = {}

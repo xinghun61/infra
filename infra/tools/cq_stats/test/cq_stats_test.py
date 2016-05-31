@@ -666,7 +666,7 @@ class TestCQStats(auto_stub.TestCase):
   # default_stats(). This is verified in test_organize_stats().
   def test_print_stats(self):
     self.mock(cq_stats, 'output', self.print_mock)
-    args = Args()
+    args = Args(list_false_rejections=True)
     stats_set = cq_stats.default_stats()
     stats_set['begin'] = args.date
     stats_set['end'] = args.date + datetime.timedelta(days=7)
@@ -687,7 +687,7 @@ class TestCQStats(auto_stub.TestCase):
         },
         (456, 1): {
             'attempts': 1,
-            'false-rejections': 0,
+            'false-rejections': 1,
             'rejections': 1,
             'committed': False,
             'patchset-duration': 7200,
