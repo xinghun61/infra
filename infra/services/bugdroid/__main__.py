@@ -23,7 +23,7 @@ from oauth2client.client import OAuth2Credentials
 import  oauth2client.client
 
 
-DEFAULT_LOGGER = oauth2client.client.logger
+DEFAULT_LOGGER = logging.getLogger(__name__)
 DEFAULT_LOGGER.addHandler(logging.NullHandler())
 DEFAULT_LOGGER.setLevel(logging.DEBUG)
 formatter = logging.Formatter(
@@ -42,10 +42,11 @@ DATA_URL = 'https://bugdroid-data.appspot.com/_ah/api/bugdroid/v1/data'
 
 
 def get_data(http):
-  DEFAULT_LOGGER.info('Getting data from datastore...')
+  DEFAULT_LOGGER.info('Getting data files from gcs...')
   retry_count = 5
   success = False
   for i in xrange(retry_count):
+    DEFAULT_LOGGER.debug('Sending get request %d...', i)
     resp, content = http.request(DATA_URL,
                                  headers={'Content-Type':'application/json'})
     if resp.status >= 400:
@@ -72,12 +73,11 @@ def get_data(http):
 
 
 def update_data(http):
-  DEFAULT_LOGGER.info('Updating data to datastore...')
+  DEFAULT_LOGGER.info('Updating data files to gcs...')
   result = []
   for data_file in os.listdir(DATADIR):
     if os.path.isdir(data_file):
       continue
-    DEFAULT_LOGGER.debug('Processing file %s', data_file)
     file_dict = {}
     file_dict['file_name'] = data_file
     file_path = os.path.join(DATADIR, data_file)
@@ -89,19 +89,15 @@ def update_data(http):
       with open(file_path, "r") as text_file:
         file_dict['file_content'] = base64.b64encode(text_file.read())
     result.append(file_dict)
-    DEFAULT_LOGGER.debug('Completed file %s', data_file)
 
-  DEFAULT_LOGGER.info('Creating json...')
   data_files = json.dumps(result)
-  DEFAULT_LOGGER.info('Finish creating json...')
   retry_count = 5
   success = False
   for i in xrange(retry_count):
-    DEFAULT_LOGGER.info('Sending post request %d...', i)
+    DEFAULT_LOGGER.debug('Sending post request %d...', i)
     resp, _ = http.request(
         DATA_URL, "POST", body=json.dumps({'data_files': data_files}),
         headers={'Content-Type': 'application/json'})
-    DEFAULT_LOGGER.info('Post request %d status: %d', i, resp.status)
     if resp.status >= 400:
       DEFAULT_LOGGER.warning('Failed to update data in retry %d. Status: %d.',
                       i, resp.status)
@@ -159,10 +155,6 @@ def main(args):  # pragma: no cover
     DEFAULT_LOGGER.error('Failed to get data files.')
     return 1
 
-  DEFAULT_LOGGER.debug('Attemp to post again...')
-  update_data(http)
-  DEFAULT_LOGGER.debug('Attemp to post again completed...')
-
   def outer_loop_iteration():
     return bugdroid.inner_loop(opts)
 
@@ -176,7 +168,7 @@ def main(args):  # pragma: no cover
       creds_data['refresh_token'],
       datetime.datetime.now() + datetime.timedelta(minutes=15),
       'https://accounts.google.com/o/oauth2/token',
-      'bugdroid2')
+      'bugdroid')
   http2 = httplib2.Http()
   http2 = credentials2.authorize(http2)
   if not update_data(http2):
