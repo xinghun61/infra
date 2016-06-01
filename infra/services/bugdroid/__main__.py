@@ -151,7 +151,7 @@ def main(args):  # pragma: no cover
       creds_data['refresh_token'],
       datetime.datetime.now() + datetime.timedelta(minutes=15),
       'https://accounts.google.com/o/oauth2/token',
-      'python-issue-tracker-manager/2.0')
+      'bugdroid')
   http = httplib2.Http()
   http = credentials.authorize(http)
 
@@ -171,8 +171,14 @@ def main(args):  # pragma: no cover
       sleep_timeout=lambda: 5.0,
       **loop_opts)
 
+  credentials2 = OAuth2Credentials(
+      None, creds_data['client_id'], creds_data['client_secret'],
+      creds_data['refresh_token'],
+      datetime.datetime.now() + datetime.timedelta(minutes=15),
+      'https://accounts.google.com/o/oauth2/token',
+      'bugdroid2')
   http2 = httplib2.Http()
-  http2 = credentials.authorize(http2)
+  http2 = credentials2.authorize(http2)
   if not update_data(http2):
     DEFAULT_LOGGER.error('Failed to update data files.')
     return 1
