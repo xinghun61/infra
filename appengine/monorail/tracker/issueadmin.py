@@ -575,7 +575,11 @@ def _ParseListPreferences(post_data):
   if y_attr_words:
     y_attr = y_attr_words[0]
 
-  return col_spec, sort_spec, x_attr, y_attr
+  member_default_query = ''
+  if 'member_default_query' in post_data:
+    member_default_query = post_data['member_default_query']
+
+  return col_spec, sort_spec, x_attr, y_attr, member_default_query
 
 
 class AdminRules(IssueAdminBase):

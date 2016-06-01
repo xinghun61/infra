@@ -63,12 +63,31 @@
   <td colspan="40" class="id">
    <div style="padding: 3em; text-align: center">
     [if-any project_has_any_issues]
-     Your search did not generate any results.  <br>
-     [is can "1"]
-      You may want to remove some terms from your query.<br>
-     [else]
-      You may want to try your search over <a href="list?can=1&amp;q=[format "url"][query][end]">all issues</a>.<br>
-     [end]
+       The search [if-any query] for<br>
+       <b>[query]</b><br>[end]
+       did not generate any results.
+     <br><br>
+
+     <table cellspacing="10" style="margin:auto">
+       <tr>
+         <td class="tip" [is can "1"][else][if-any query]colspan="2"[end][end] style="padding:1em">
+           Type a new query in the search box above
+         </td>
+       </tr>
+       <tr>
+         [if-any query]
+           <td class="tip" style="padding:1em">
+             <a href="list">View all open issues</a>
+           </td>
+         [end]
+         [is can "1"][else]
+           <td class="tip" style="padding:1em">
+             <a href="list?can=1&amp;q=[format "url"][query][end]">Consider closed issues</a>
+           </td>
+         [end]
+       </tr>
+     </table>
+
     [else]
      This project currently has no issues.<br>
      [if-any page_perms.CreateIssue]

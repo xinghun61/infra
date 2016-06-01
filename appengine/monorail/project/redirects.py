@@ -14,6 +14,7 @@ import httplib
 
 from framework import framework_helpers
 from framework import servlet
+from framework import servlet_helpers
 from framework import urls
 
 
@@ -42,3 +43,19 @@ class SourceRedirect(servlet.Servlet):
     self.response.location = source_url
     self.response.status = httplib.MOVED_PERMANENTLY
 
+
+class IssueListDefaultRedirect(servlet.Servlet):
+  """Redirect to the issue list, with a default query if appropriate."""
+
+  def GatherPageData(self, mr):
+    """Build up a dictionary of data values to use when rendering the page.
+
+    Args:
+      mr: commonly used info parsed from the request.
+
+    Returns:
+      Nothing, always redirects.
+    """
+    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    issue_list_url = servlet_helpers.IssueListURL(mr, config)
+    self.redirect(issue_list_url, abort=True)

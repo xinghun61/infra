@@ -372,11 +372,16 @@ class ProjectIssueConfig(messages.Message):
   default_template_for_developers = messages.IntegerField(3, required=True)
   default_template_for_users = messages.IntegerField(4, required=True)
 
-  # These options control the default appearance of the issue list or grid.
+  # These options control the default appearance of the issue list or grid
+  # for non-members.
   default_col_spec = messages.StringField(50, default='')
   default_sort_spec = messages.StringField(51, default='')
   default_x_attr = messages.StringField(52, default='')
   default_y_attr = messages.StringField(53, default='')
+
+  # These options control the default appearance of the issue list or grid
+  # for project members.
+  member_default_query = messages.StringField(57, default='')
 
   # This bool controls whether users are able to enter odd-ball
   # labels and status values, or whether they are limited to only the

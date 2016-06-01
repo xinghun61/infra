@@ -820,3 +820,8 @@ CREATE TABLE Component2Label (
   FOREIGN KEY (label_id) REFERENCES LabelDef(id)
 ) ENGINE=INNODB;
 
+=======
+2016-05-23: Add default search for members
+
+ALTER TABLE ProjectIssueConfig ADD COLUMN member_default_query TEXT;
+

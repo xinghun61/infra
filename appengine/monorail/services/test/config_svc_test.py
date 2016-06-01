@@ -146,8 +146,10 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.config_service = MakeConfigService(self.cache_manager, self.mox)
     self.config_2lc = self.config_service.config_2lc
 
-    self.config_rows = [(789, 'Duplicate', 'Pri Type', 1, 2, 'Type Pri Summary',
-                         '-Pri', 'Mstone', 'Owner', None)]
+    self.config_rows = [
+      (789, 'Duplicate', 'Pri Type', 1, 2,
+       'Type Pri Summary', '-Pri', 'Mstone', 'Owner',
+       '', None)]
     self.template_rows = []
     self.template2label_rows = []
     self.template2component_rows = []
@@ -620,6 +622,7 @@ class ConfigServiceTest(unittest.TestCase):
         default_sort_spec='',
         default_x_attr='',
         default_y_attr='',
+        member_default_query='',
         custom_issue_entry_url=None,
         commit=False)
 

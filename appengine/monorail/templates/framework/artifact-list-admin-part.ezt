@@ -4,6 +4,29 @@
 <div class="section">
 
  <div class="closed">
+  <div>Default query for project members:
+   <a class="ifClosed toggleHidden" href="#"
+      style="font-size:90%; margin-left:.5em">Learn more</a>
+  </div>
+
+  <div id="colhelp" class="ifOpened help">
+      <div>
+       You may enter a default query for project members.  They will run
+       this query when they click on the "Issues" tab.
+      </div>
+  </div>
+  <br>
+ </div>
+
+ <input type="text" size="75" name="member_default_query"
+        value="[config.member_default_query]" id="searchq"
+        [if-any perms.EditProject][else]readonly="readonly"[end]
+        class="acob" style="margin-left:.7em">
+ <br>
+ <br>
+ <br>
+
+ <div class="closed">
   <div>Default columns shown in list view:
    <a class="ifClosed toggleHidden" href="#"
       style="font-size:90%; margin-left:.5em">Learn more</a>

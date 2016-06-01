@@ -63,7 +63,7 @@
     [# Cue card to teach users how to search for numbers in the issue tracker.]
     [is cue "dit_keystrokes"]
       <b>Tip:</b>
-      Type <b style="font-size:130%"><tt>?</tt></b> for keyboard shortcuts.
+      Press <b>Esc</b> then <b style="font-size:130%"><tt>?</tt></b> for keyboard shortcuts.
     [end]
 
     [# Cue card to teach users that italics mean derived values in the issue tracker.]

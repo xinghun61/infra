@@ -329,16 +329,18 @@ class AdminViewsFunctionsTest(unittest.TestCase):
   def testParseListPreferences(self):
     # If no input, col_spec will be default column spec.
     # For other fiels empty strings should be returned.
-    col_spec, sort_spec, x_attr, y_attr = issueadmin._ParseListPreferences(
-        {})
+    (col_spec, sort_spec, x_attr, y_attr, member_default_query,
+     ) = issueadmin._ParseListPreferences({})
     self.assertEqual(tracker_constants.DEFAULT_COL_SPEC, col_spec)
     self.assertEqual('', sort_spec)
     self.assertEqual('', x_attr)
     self.assertEqual('', y_attr)
+    self.assertEqual('', member_default_query)
 
     # Test how hyphens in input are treated.
     spec = 'label1-sub1  label2  label3-sub3'
-    col_spec, sort_spec, x_attr, y_attr = issueadmin._ParseListPreferences(
+    (col_spec, sort_spec, x_attr, y_attr, member_default_query,
+     ) = issueadmin._ParseListPreferences(
         fake.PostData(default_col_spec=[spec],
                       default_sort_spec=[spec],
                       default_x_attr=[spec],
@@ -360,11 +362,13 @@ class AdminViewsFunctionsTest(unittest.TestCase):
     spec = ('\xe7\xaa\xbf\xe8\x8b\xa5-\xe7\xb9\xb9 '
             '\xe5\x9c\xb0\xe3\x81\xa6-\xe5\xbd\x93-\xe3\x81\xbe\xe3\x81\x99')
     spec = spec.decode('utf-8')
-    col_spec, sort_spec, x_attr, y_attr = issueadmin._ParseListPreferences(
+    (col_spec, sort_spec, x_attr, y_attr, member_default_query,
+     ) = issueadmin._ParseListPreferences(
         fake.PostData(default_col_spec=[spec],
                       default_sort_spec=[spec],
                       default_x_attr=[spec],
-                      default_y_attr=[spec]),
+                      default_y_attr=[spec],
+                      member_default_query=[spec]),
         )
     self.assertEqual(spec, col_spec)
     self.assertEqual(' '.join(spec.split()), sort_spec)
@@ -372,6 +376,7 @@ class AdminViewsFunctionsTest(unittest.TestCase):
                      x_attr)
     self.assertEqual('\xe7\xaa\xbf\xe8\x8b\xa5-\xe7\xb9\xb9'.decode('utf-8'),
                      y_attr)
+    self.assertEqual(spec, member_default_query)
 
 
 class AdminRulesTest(TestBase):

@@ -182,6 +182,7 @@ class ServletRegistry(object):
     self._SetupProjectServlets({
         urls.ISSUE_LIST: issuelist.IssueList,
         urls.ISSUE_LIST_CSV: issuelistcsv.IssueListCsv,
+        urls.ISSUE_LIST_DEFAULT: redirects.IssueListDefaultRedirect,
         urls.ISSUE_REINDEX: issuereindex.IssueReindex,
         urls.ISSUE_DETAIL: issuedetail.IssueDetail,
         urls.ISSUE_COMMENT_DELETION_JSON: issuedetail.IssueCommentDeletion,
@@ -230,7 +231,7 @@ class ServletRegistry(object):
         }, post_does_write=False)
 
     list_redir = registerpages_helpers.MakeRedirectInScope(
-        urls.ISSUE_LIST, 'p')
+        urls.ISSUE_LIST_DEFAULT, 'p')
     self._SetupProjectServlets({
         '': list_redir,
         '/': list_redir,

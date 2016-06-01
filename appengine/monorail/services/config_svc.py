@@ -22,6 +22,7 @@ from framework import sql
 from proto import tracker_pb2
 from services import caches
 from tracker import tracker_bizobj
+from tracker import tracker_constants
 
 
 TEMPLATE_TABLE_NAME = 'Template'
@@ -52,7 +53,7 @@ PROJECTISSUECONFIG_COLS = [
     'project_id', 'statuses_offer_merge', 'exclusive_label_prefixes',
     'default_template_for_developers', 'default_template_for_users',
     'default_col_spec', 'default_sort_spec', 'default_x_attr',
-    'default_y_attr', 'custom_issue_entry_url']
+    'default_y_attr', 'member_default_query', 'custom_issue_entry_url']
 STATUSDEF_COLS = [
     'id', 'project_id', 'rank', 'status', 'means_open', 'docstring',
     'deprecated']
@@ -193,7 +194,7 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
     (project_id, statuses_offer_merge, exclusive_label_prefixes,
      default_template_for_developers, default_template_for_users,
      default_col_spec, default_sort_spec, default_x_attr, default_y_attr,
-     custom_issue_entry_url) = config_row
+     member_default_query, custom_issue_entry_url) = config_row
     config = tracker_pb2.ProjectIssueConfig()
     config.project_id = project_id
     config.statuses_offer_merge.extend(statuses_offer_merge.split())
@@ -204,6 +205,7 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
     config.default_sort_spec = default_sort_spec
     config.default_x_attr = default_x_attr
     config.default_y_attr = default_y_attr
+    config.member_default_query = member_default_query
     if custom_issue_entry_url is not None:
       config.custom_issue_entry_url = custom_issue_entry_url
 
@@ -797,6 +799,7 @@ class ConfigService(object):
         default_sort_spec=config.default_sort_spec,
         default_x_attr=config.default_x_attr,
         default_y_attr=config.default_y_attr,
+        member_default_query=config.member_default_query,
         custom_issue_entry_url=config.custom_issue_entry_url,
         commit=False)
 
@@ -997,11 +1000,14 @@ class ConfigService(object):
       project_config.default_template_for_users = default_template_for_users
 
     if list_prefs:
-      default_col_spec, default_sort_spec, x_attr, y_attr = list_prefs
+      (default_col_spec, default_sort_spec, default_x_attr, default_y_attr,
+       member_default_query) = list_prefs
+      project_config.default_col_spec = default_col_spec
       project_config.default_col_spec = default_col_spec
       project_config.default_sort_spec = default_sort_spec
-      project_config.default_x_attr = x_attr
-      project_config.default_y_attr = y_attr
+      project_config.default_x_attr = default_x_attr
+      project_config.default_y_attr = default_y_attr
+      project_config.member_default_query = member_default_query
 
     if restrict_to_known is not None:
       project_config.restrict_to_known = restrict_to_known

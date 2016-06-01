@@ -539,6 +539,7 @@ class Servlet(webapp2.RequestHandler):
     grid_y_attr = None
     canned_query_views = []
     issue_entry_url = 'entry'
+    config = None
     if mr.project_id and self.services.config:
       with self.profiler.Phase('getting config'):
         config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
@@ -587,6 +588,7 @@ class Servlet(webapp2.RequestHandler):
         'hostport': mr.request.host,
         'absolute_base_url': '%s://%s' % (mr.request.scheme, mr.request.host),
         'project_home_url': None,
+        'issue_list_url': None,
         'link_rel_canonical': None,  # For specifying <link rel="canonical">
         'projectname': mr.project_name,
         'project': project_view,
@@ -674,6 +676,7 @@ class Servlet(webapp2.RequestHandler):
 
     if mr.project:
       base_data['project_home_url'] = '/p/%s' % mr.project_name
+      base_data['issue_list_url'] = servlet_helpers.IssueListURL(mr, config)
 
     # Always add an anti-xsrf token when the user is logged in.
     if mr.auth.user_id:

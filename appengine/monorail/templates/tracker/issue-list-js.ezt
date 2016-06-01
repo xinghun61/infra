@@ -38,7 +38,9 @@ runOnLoad(function() {
     _goIssue(target.attributes[[]"data-idx"].value,
              (event.metaKey || event.ctrlKey || event.button == 1));
   };
-  $("resultstable").addEventListener("click", _handleResultsClick);
+  [if-any table_data]
+    $("resultstable").addEventListener("click", _handleResultsClick);
+  [end]
 
   function _handleHeaderClick(event) {
     var target = event.target;

@@ -261,6 +261,14 @@ function ac_keyevent_(event) {
         }
       }
     }
+    // If the user hit Escape when the auto-complete menu was not shown,
+    // then blur the input text field so that the user can use keyboard
+    // shortcuts.
+    var acList = document.getElementById('ac-list');
+    if (ESC_KEYCODE == code &&
+        (!acList || acList.style.display == 'none')) {
+      ac_focusedInput.blur();
+    }
     if (storeFound) {
       var isCompletion = ac_store.isCompletionKey(code, isDown, isShiftKey);
       var hasResults = ac_completions && (ac_completions.length > 0);
@@ -603,7 +611,6 @@ var ac_max_options = 100;
 function ac_handleKey_(code, isDown, isShiftKey) {
   // check completions
   ac_checkCompletions();
-
   var show = true;
   var numCompletions = ac_completions ? ac_completions.length : 0;
   // handle enter and tab on key press and the rest on key down

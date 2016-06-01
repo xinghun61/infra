@@ -864,11 +864,12 @@ class ConfigService(object):
       project_config.default_template_for_users = default_template_for_users
 
     if list_prefs:
-      default_col_spec, default_sort_spec, x_attr, y_attr = list_prefs
+      default_col_spec, default_sort_spec, x_attr, y_attr, m_d_q = list_prefs
       project_config.default_col_spec = default_col_spec
       project_config.default_sort_spec = default_sort_spec
       project_config.default_x_attr = x_attr
       project_config.default_y_attr = y_attr
+      project_config.member_default_query = m_d_q
 
     if restrict_to_known is not None:
       project_config.restrict_to_known = restrict_to_known
