@@ -9,7 +9,7 @@ from collections import defaultdict
 
 
 BUG_LINE_REGEX = re.compile(
-    r'(?m)^(?P<flag>[>\s]*(?:BUGS?|ISSUE) *[ :=] *)(?P<data>.*)$')
+    r'(?m)^(?P<flag>[>\s]*(?:BUGS?|ISSUE|Bugs?) *[ :=] *)(?P<data>.*)$')
 
 PROJECT_NAME_REGEX = r'(?P<project>[a-z0-9][-a-z0-9]*[a-z0-9])'
 BUG_NUMBER_REGEX = r'(?P<bugnum>[0-9]+)'
@@ -31,7 +31,7 @@ REGEXES = [
 ]
 
 
-def normalize_project_name(project):
+def normalize_project_name(project): # pragma: no cover
   """Return the canonical name for a project specification."""
   mapping = {
       'nacl': 'nativeclient',
@@ -40,7 +40,7 @@ def normalize_project_name(project):
   return mapping.get(project, project)
 
 
-def get_issues(log_entry, default_project):
+def get_issues(log_entry, default_project): # pragma: no cover
   """Extract bug #'s from a SCM commit log message.
 
   Args:
