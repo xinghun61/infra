@@ -14,7 +14,7 @@ sequences of subprocess calls in a cross-platform and testable way.
 
 ## Recipe Roller
 
-[Builder page (internal link)](https://uberchromegw.corp.google.com/i/internal.infra.cron/builders/recipe-roller).
+[Builder page (internal link)](https://uberchromegw.corp.google.com/i/internal.infra.cron/builders/recipe-autoroller-internal).
 
 The recipe roller is a service that ensures that the pinned dependencies between
 recipe repositories are kept up to date.  At the time of writing, the
