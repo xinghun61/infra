@@ -5,6 +5,7 @@
 import json
 import logging
 import os
+import re
 import socket
 import time
 
@@ -22,6 +23,8 @@ ANDROID_DEVICE_FILE = os.path.join(os.path.expanduser('~'),
 
 # Don't read a file older than this many seconds.
 ANDROID_DEVICE_FILE_STALENESS_S = 120
+
+PORT_PATH_RE = re.compile(r'\d+\/\d+')
 
 
 cpu_temp = ts_mon.FloatMetric('dev/cpu/temperature',
@@ -51,6 +54,11 @@ def get_device_statuses(device_file=ANDROID_DEVICE_FILE, now=None):
     return
 
   for device_name, device in devices.iteritems():
+    if PORT_PATH_RE.match(device_name):
+      logging.warning('Found port path %s as device id. Skipping.',
+                      device_name)
+      continue
+
     fields = {'device_id': device_name}
 
     # Fields with special handling.

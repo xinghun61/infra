@@ -28,6 +28,8 @@ class AndroidDeviceMetricTest(unittest.TestCase):
         DATA_DIR, 'valid_files', 'android_device_status.json')
     self.no_temp_file = os.path.join(
         DATA_DIR, 'valid_files', 'no_temp_android_device_status.json')
+    self.port_path_file = os.path.join(
+        DATA_DIR, 'valid_files', 'some_port_paths.json')
 
     # A test device in the representative json file.
     self.device_id = '06c38708006afff3'
@@ -110,3 +112,32 @@ class AndroidDeviceMetricTest(unittest.TestCase):
 
     fields = {'device_id': self.device_id}
     self.assertIsNone(android_device_metrics.cpu_temp.get(fields=fields))
+
+  def test_port_paths(self):
+    with open(self.port_path_file) as f:
+      file_time = float(json.load(f)['timestamp'])
+
+    android_device_metrics.get_device_statuses(
+        self.port_path_file, now=file_time)
+    self._assert_read_status(should_equal='good')
+
+    fields = {'device_id': self.device_id}
+    self.assertEqual(
+        android_device_metrics.batt_charge.get(fields=fields), 100.0)
+    self.assertEqual(android_device_metrics.batt_temp.get(fields=fields), 26.8)
+    self.assertEqual(android_device_metrics.cpu_temp.get(fields=fields), 26)
+    self.assertEqual(android_device_metrics.dev_os.get(fields=fields), 'KTU84P')
+    self.assertEqual(
+        android_device_metrics.dev_status.get(fields=fields), 'good')
+    self.assertEqual(android_device_metrics.dev_type.get(fields=fields),
+                     'hammerhead')
+    self.assertEqual(
+        android_device_metrics.dev_uptime.get(fields=fields), 2162.74)
+
+    fields = {'device_id': '1/23'}
+    self.assertEqual(
+        android_device_metrics.dev_status.get(fields=fields), None)
+
+    fields = {'device_id': '09/8765'}
+    self.assertEqual(
+        android_device_metrics.dev_status.get(fields=fields), None)
