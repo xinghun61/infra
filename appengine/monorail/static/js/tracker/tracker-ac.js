@@ -708,6 +708,7 @@ function TKR_setUpComponentStore(componentDefs) {
 
   TKR_componentListStore = new _AC_SimpleStore(componentWords);
   TKR_componentListStore.docstrings = docdict;
+  TKR_componentListStore.commaCompletes = false;
 
   TKR_componentListStore.completions = function(prefix, tofilter) {
     var fullList = TKR_fullComplete(prefix, componentDefs);
