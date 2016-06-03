@@ -391,7 +391,8 @@ class Gerrit(object):
       raise UnexpectedResponseException(code, body)
     return body
 
-  def get_issue(self, issue_id, revisions=None, current_files=None):
+  def get_issue(self, issue_id, revisions=None, current_files=None,
+                options=None):
     """Returns a ChangeInfo dictionary for a given issue_id or None if it
     doesn't exist.
 
@@ -403,7 +404,7 @@ class Gerrit(object):
       revisions either None (default) or 'CURRENT_REVISION' or 'ALL_REVISIONS'.
     """
     request_path = '/changes/%s/detail' % urllib.quote(issue_id, safe='~')
-    options = []
+    options = options or []
 
     if current_files:
       options.append('CURRENT_FILES')

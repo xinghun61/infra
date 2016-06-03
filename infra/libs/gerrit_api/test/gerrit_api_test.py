@@ -408,6 +408,27 @@ class GerritAgentTestCase(unittest.TestCase):
     self.assertEquals(result, info_with_files)
 
   @mock.patch.object(requests.Session, 'request')
+  def test_get_issue_generic(self, mock_method):
+    # By default, Gerrit doesn't return revisions data.
+    info_without_revisions = TEST_CHANGE_INFO.copy()
+    info_without_revisions.pop('revisions')
+    info_without_revisions.pop('current_revision')
+    mock_method.return_value = _create_mock_return(
+        '%s%s' % (GERRIT_JSON_HEADER, json.dumps(info_without_revisions)), 200)
+    result = self.gerrit.get_issue('test/project~weird/branch~hash',
+                                   options=['CURRENT_COMMIT'])
+    mock_method.assert_called_once_with(
+        data=None,
+        method='GET',
+        params={'o': ['CURRENT_COMMIT']},
+        url=('https://chromium-review.googlesource.com/a/changes/'
+             'test%2Fproject~weird%2Fbranch~hash/detail'),
+        headers=HEADERS,
+        hooks=self.gerrit._instrumentation_hooks)
+    self.assertEquals(result, info_without_revisions)
+
+
+  @mock.patch.object(requests.Session, 'request')
   def test_get_issue_with_files_and_revisions(self, mock_method):
     info = copy.deepcopy(TEST_CHANGE_INFO)
     current = info['current_revision']
