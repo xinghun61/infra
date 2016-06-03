@@ -121,9 +121,11 @@ failed_modules = []
 for module in modules:
   print 'Running %s...' % module
   module_flags = flags[:]
+  # Remove any test glob, which comes after semicolon (:).
+  module_path = module.split(':')[0]
   module_flags.append('--coveragerc=%s' % os.path.join(
-      INFRA_ROOT, module, '.coveragerc'))
-  module_flags.append('--html-report-subdir=%s' % module)
+      INFRA_ROOT, module_path, '.coveragerc'))
+  module_flags.append('--html-report-subdir=%s' % module_path)
   cmd = [python_bin, expect_tests_path, command, module] + module_flags
   module_exit_code = subprocess.call(cmd)
   exit_code = module_exit_code or exit_code

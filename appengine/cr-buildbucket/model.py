@@ -155,7 +155,8 @@ class Build(ndb.Model):
     assert not (is_completed and is_leased)
     assert (self.lease_expiration_date is not None) == is_leased
     assert (self.leasee is not None) == is_leased
-    assert not self.tags or all(':' in t for t in self.tags)
+    # no cover due to a bug in coverage (http://stackoverflow.com/a/35325514)
+    assert not self.tags or all(':' in t for t in self.tags)  # pragma: no cover
 
   def regenerate_lease_key(self):
     """Changes lease key to a different random int."""

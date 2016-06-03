@@ -513,7 +513,9 @@ class TestGetEventsFileList(unittest.TestCase):
       [os.path.join(self.FILES_DIR, filename) for filename in filenames])
     self.assertTrue(len(file_list) == 2)
     for fname in file_list:
-      self.assertTrue(any(fname.endswith(filename) for filename in filenames))
+      # no cover due to a bug in coverage (http://stackoverflow.com/a/35325514)
+      self.assertTrue(any(fname.endswith(filename)
+                          for filename in filenames))  # pragma: no cover
 
   def test_one_wildcard(self):
     filenames = ('events.log', 'events-1.log', 'events-2.log')
@@ -521,7 +523,9 @@ class TestGetEventsFileList(unittest.TestCase):
       [os.path.join(self.FILES_DIR, 'events*.log')])
     self.assertTrue(len(file_list) == 3)
     for fname in file_list:
-      self.assertTrue(any(fname.endswith(filename) for filename in filenames))
+      # no cover due to a bug in coverage (http://stackoverflow.com/a/35325514)
+      self.assertTrue(any(fname.endswith(filename)
+                          for filename in filenames))  # pragma: no cover
 
   def test_one_wildcard_one_file(self):
     filenames = ('events.log', 'events-1.log', 'events-2.log')
@@ -530,7 +534,9 @@ class TestGetEventsFileList(unittest.TestCase):
        os.path.join(self.FILES_DIR, 'events.log')])
     self.assertTrue(len(file_list) == 3)
     for fname in file_list:
-      self.assertTrue(any(fname.endswith(filename) for filename in filenames))
+      # no cover due to a bug in coverage (http://stackoverflow.com/a/35325514)
+      self.assertTrue(any(fname.endswith(filename)
+                          for filename in filenames))  # pragma: no cover
 
 
 class TestProcessRequestPath(SendingEventBaseTest):

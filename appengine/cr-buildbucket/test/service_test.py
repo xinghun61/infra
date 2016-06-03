@@ -337,7 +337,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       max_builds=10,
       start_cursor=next_cursor)
     self.assertEqual(len(second_page), 10)
-    self.assertTrue(any(new not in first_page for new in second_page))
+    # no cover due to a bug in coverage (http://stackoverflow.com/a/35325514)
+    self.assertTrue(
+        any(new not in first_page for new in second_page))  # pragma: no cover
 
   def test_search_with_bad_tags(self):
     def test_bad_tag(tags):

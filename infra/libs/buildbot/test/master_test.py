@@ -96,7 +96,9 @@ class TestMasterInformation(auto_stub.TestCase):
     master_port = master._get_master_web_port(self.chromium_fyi)
     self.assertEquals(master_port, 8011)
     self.assertEquals(len(self.calls), 1)
-    self.assertTrue(any(x.endswith('mastermap.py') for x in self.calls[0]))
+    # no cover due to a bug in coverage (http://stackoverflow.com/a/35325514)
+    self.assertTrue(any(x.endswith('mastermap.py')
+                        for x in self.calls[0]))  # pragma: no cover
 
   def testNoSuchMaster(self):
     master_port = master._get_master_web_port(self.chromium_webkit)
@@ -105,8 +107,9 @@ class TestMasterInformation(auto_stub.TestCase):
   def testMasterMapInternal(self):
     master._get_master_web_port(self.supersecret)
     self.assertEquals(len(self.calls), 1)
-    self.assertTrue(
-        any(x.endswith('mastermap_internal.py') for x in self.calls[0]))
+    # no cover due to a bug in coverage (http://stackoverflow.com/a/35325514)
+    self.assertTrue(any(x.endswith('mastermap_internal.py')
+                        for x in self.calls[0]))  # pragma: no cover
 
   def testGetBuildstate(self):
     self.mock(requests, 'get', self.requests_handler)

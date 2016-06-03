@@ -28,10 +28,10 @@
     'implicit': True,  # Required by cryptography
   },
   'coverage': {
-    'version': '3.7.1',
+    'version': '4.1',
     'build': '0',
     'repo': 'external/github.com/nedbat/coveragepy',
-    'rev': '8da39d5389c602bb838363563bd2e31ecbb53754',
+    'rev': '4e2faeead034005cda1bcb096afde921527a748f',
     'implicit': True,  # Required by expect_tests
   },
   'cryptography': {
@@ -57,7 +57,7 @@
     'version': '0.3.21',
     'build': '0',
     'repo': 'infra/testing/expect_tests',
-    'rev': '53484081e87817dd8c9dcf0032aa547ca58607bb',
+    'rev': 'fca8c5fcc668484ca919278928fbdc2d71f84a0a',
   },
   'google_api_python_client': {
     'version': '1.4.2',
