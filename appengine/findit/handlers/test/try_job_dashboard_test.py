@@ -43,8 +43,21 @@ class TryJobDashboardTest(testing.AppengineTestCase):
         try_job_dashboard._RemoveMicrosecondsFromDelta(delta).microseconds,
         0)
 
+  def testFormatDuration(self):
+    self.assertEqual(try_job_dashboard._FormatDuration(None, None),
+                     try_job_dashboard.NOT_AVAILABLE)
+    self.assertEqual(
+        try_job_dashboard._FormatDuration(datetime(2016, 1, 2, 1, 2, 3), None),
+        try_job_dashboard.NOT_AVAILABLE)
+    self.assertEqual(
+        try_job_dashboard._FormatDuration(None, datetime(2016, 1, 2, 1, 2, 3)),
+        try_job_dashboard.NOT_AVAILABLE)
+    self.assertEqual(
+        try_job_dashboard._FormatDuration(datetime(2016, 1, 2, 1, 2, 3),
+                                          datetime(2016, 1, 2, 1, 2, 4)),
+        '00:00:01')
+
   def testFormatTimedelta(self):
-    self.assertIsNone(try_job_dashboard._FormatTimedelta(None))
     self.assertEqual(try_job_dashboard._FormatTimedelta(timedelta(0, 1)),
                      '00:00:01')
     self.assertEqual(try_job_dashboard._FormatTimedelta(timedelta(0, 60)),
@@ -107,7 +120,6 @@ class TryJobDashboardTest(testing.AppengineTestCase):
         'builder_name': 'b',
         'build_number': 1,
         'try_job_type': 'compile',
-        'start_time': '2016-05-04 00:00:01 UTC',
         'request_time': '2016-05-04 00:00:00 UTC',
         'try_job_url': 'url1',
         'status': 'running'
@@ -118,9 +130,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
         'builder_name': 'b',
         'build_number': 2,
         'try_job_type': 'compile',
-        'start_time': '2016-05-04 00:00:01 UTC',
         'request_time': '2016-05-04 00:00:00 UTC',
-        'end_time': '2016-05-04 00:00:02 UTC',
         'try_job_url': 'url2',
         'error': 'some error',
     }
@@ -130,9 +140,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
         'builder_name': 'b',
         'build_number': 3,
         'try_job_type': 'compile',
-        'start_time': '2016-05-04 00:00:01 UTC',
         'request_time': '2016-05-04 00:00:00 UTC',
-        'end_time': '2016-05-04 00:00:02 UTC',
         'try_job_url': 'url3',
         'culprit_found': True
     }

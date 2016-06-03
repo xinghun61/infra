@@ -53,7 +53,7 @@
           <th>Build #</th>
           <th>Try Job Type</th>
           <th>Request Time</th>
-          <th>Start Time</th>
+          <th>Pending Time</th>
           <th>Elapsed Time</th>
           <th>Status</th>
           <th>Try Job URL</th>
@@ -64,14 +64,16 @@
               <td>{{ try_job_display_data.master_name }}</td>
               <td>{{ try_job_display_data.builder_name }}</td>
               <td>
-                <a href="/waterfall/build-failure?url=https://build.chromium.org/p
+                {% if try_job_display_data.build_number %}
+                   <a href="/waterfall/build-failure?url=https://build.chromium.org/p
 /{{try_job_display_data.master_name}}/builders/{{try_job_display_data.builder_name}}
 /builds/{{try_job_display_data.build_number}}" target="_blank">{{try_job_display_data.build_number}}
-                </a>
+                    </a>
+                {% endif %}
               </td>
               <td>{{ try_job_display_data.try_job_type }}</td>
               <td>{{ try_job_display_data.request_time }}</td>
-              <td>{{ try_job_display_data.start_time }}</td>
+              <td>{{ try_job_display_data.pending_time }}</td>
               <td>{{ try_job_display_data.elapsed_time }}</td>
               <td>{{ try_job_display_data.status }}</td>
               <td>
@@ -98,8 +100,8 @@
           <th>Build #</th>
           <th>Try Job Type</th>
           <th>Request Time</th>
-          <th>Start Time</th>
-          <th>End Time</th>
+          <th>Pending Time</th>
+          <th>Execution Time</th>
           <th>Error Message</th>
           <th>Try Job URL</th>
         </tr>
@@ -109,15 +111,17 @@
               <td>{{ try_job_display_data.master_name }}</td>
               <td>{{ try_job_display_data.builder_name }}</td>
               <td>
-                <a href="/waterfall/build-failure?url=https://build.chromium.org/p
+                {% if try_job_display_data.build_number %}
+                   <a href="/waterfall/build-failure?url=https://build.chromium.org/p
 /{{try_job_display_data.master_name}}/builders/{{try_job_display_data.builder_name}}
 /builds/{{try_job_display_data.build_number}}" target="_blank">{{try_job_display_data.build_number}}
-                </a>
+                    </a>
+                {% endif %}
               </td>
               <td>{{ try_job_display_data.try_job_type }}</td>
               <td>{{ try_job_display_data.request_time }}</td>
-              <td>{{ try_job_display_data.start_time }}</td>
-              <td>{{ try_job_display_data.end_time }}</td>
+              <td>{{ try_job_display_data.pending_time }}</td>
+              <td>{{ try_job_display_data.execution_time }}</td>
               <td>{{ try_job_display_data.error }}</td>
               <td>
                 {% if try_job_display_data.try_job_url %}
@@ -143,8 +147,8 @@
           <th>Build #</th>
           <th>Try Job Type</th>
           <th>Request Time</th>
-          <th>Start Time</th>
-          <th>End Time</th>
+          <th>Pending Time</th>
+          <th>Execution Time</th>
           <th>Culprit Found</th>
           <th>Try Job URL</th>
         </tr>
@@ -154,15 +158,17 @@
               <td>{{ try_job_display_data.master_name }}</td>
               <td>{{ try_job_display_data.builder_name }}</td>
               <td>
-                <a href="/waterfall/build-failure?url=https://build.chromium.org/p
+                {% if try_job_display_data.build_number %}
+                   <a href="/waterfall/build-failure?url=https://build.chromium.org/p
 /{{try_job_display_data.master_name}}/builders/{{try_job_display_data.builder_name}}
 /builds/{{try_job_display_data.build_number}}" target="_blank">{{try_job_display_data.build_number}}
-                </a>
+                    </a>
+                {% endif %}
               </td>
               <td>{{ try_job_display_data.try_job_type }}</td>
               <td>{{ try_job_display_data.request_time }}</td>
-              <td>{{ try_job_display_data.start_time }}</td>
-              <td>{{ try_job_display_data.end_time }}</td>
+              <td>{{ try_job_display_data.pending_time }}</td>
+              <td>{{ try_job_display_data.execution_time }}</td>
               <td>{{ try_job_display_data.culprit_found }}</td>
               <td>
                 {% if try_job_display_data.try_job_url %}
