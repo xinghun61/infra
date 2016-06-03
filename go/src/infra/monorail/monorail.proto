@@ -1,0 +1,115 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// This file *partially* describes Monorail API.
+// It is derived from
+// https://chromium.googlesource.com/infra/infra/+/f2e2a4d/appengine/monorail/services/api_svc_v1.py
+// and
+// https://chromium.googlesource.com/infra/infra/+/f2e2a4d/appengine/monorail/proto/api_pb2_v1.py
+
+syntax = "proto3";
+
+package monorail;
+
+// Monorail service can manipulate issues.
+service Monorail {
+    // Creates an issue.
+    rpc InsertIssue(InsertIssueRequest) returns (InsertIssueResponse){};
+    // Posts a comment to an issue. Can update issue attributes, such as status.
+    rpc InsertComment(InsertCommentRequest) returns (InsertCommentResponse){};
+}
+
+// A monorail issue.
+message Issue {
+    // Reporter of the issue.
+    AtomPerson author = 1;
+    // Issues that must be fixed before this one can be fixed.
+    repeated IssueRef blockedOn = 2;
+    // People participating in the issue discussion.
+    repeated AtomPerson cc = 6;
+    // The text body of the issue.
+    string description = 8;
+    // Identifier of the issue, unique within the appengine app.
+    int32 id = 9;
+    // Monorail components for this issue.
+    repeated string components = 10;
+    // Arbitrary indexed strings visible to users,
+    // usually of form "Key-Value" or "Key-Value-SubValue",
+    repeated string labels = 11;
+    // Who is currently responsible for closing the issue.
+    AtomPerson owner = 12;
+    // Current status of issue. Standard values:
+    //
+    // Open statuses:
+    // "Unconrimed" - New, has been not verified or reproduced.
+    // "Untriaged" - Confirmed, not reviews for priority of assignment
+    // "Available" - Triaged, but no owner assigned
+    // "Started" - Work in progress.
+    // "ExternalDependency" - Requires action from a third party
+    // Closed statuses:
+    // "Fixed" - Work completed, needs verificaiton
+    // "Verified" - Test or reporter verified that the fix works
+    // "Duplicate" - Same root cause as another issue
+    // "WontFix" -  Cannot reproduce, works as intended, invalid or absolete.
+    // "Archived" - Old issue with no activity.
+    string status = 17;
+    // A one line description of the issue.
+    string summary = 18;
+}
+
+// IssueRef references another issue in the same Monorail instance.
+message IssueRef {
+    // ID of the issue.
+    int32 issueId = 1;
+    // ID of the project containing the issue.
+    string projectId = 2;
+}
+
+// Request for Monorail.InsertIssue().
+message InsertIssueRequest {
+    // Target project id.
+    string projectId = 1;
+    // Definition of the issue.
+    // issue.id must be empty.
+    Issue issue = 2;
+    // Whether to send email to participants.
+    bool sendEmail = 3;
+}
+
+// Response for Monorail.InsertIssue()
+message InsertIssueResponse {
+    // Created issue.
+    Issue issue = 1;
+}
+
+// Request for Monorail.InsertComment()
+message InsertCommentRequest {
+    // Defines the comment.
+    // This message is partial.
+    // Derived from IssueCommentWrapper type in api_pb2_v1.py.
+    message Comment {
+        string content = 4;
+        Update updates = 8;
+    }
+    // Definition of the comment.
+    Comment comment = 1;
+    // The reference to post the comment to.
+    IssueRef issue = 2;
+}
+
+message InsertCommentResponse{}
+
+// Defines a mutation to an issue.
+// This message is partial.
+// Derived from Update type in api_pb2_v1.py.
+message Update {
+    // If set, the new status of the issue.
+    string status = 2;
+}
+
+// Identifies a Monorail user.
+message AtomPerson {
+    // User email.
+    string name = 1;
+}
