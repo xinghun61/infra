@@ -539,6 +539,7 @@ def console_handler(unquoted_localpath, remoteurl, page_data=None):
   sheriff_files = [
     'sheriff',
     'sheriff_android',
+    'sheriff_angle',
     'sheriff_cr_cros_gardeners',
     'sheriff_cros_mtv',
     'sheriff_cros_nonmtv',
@@ -1097,6 +1098,11 @@ URLS = [
     'remoteurl':
         'http://build.chromium.org/p/chromium/sheriff_cr_cros_gardeners.js',
     'localpath': 'chromium/sheriff_cr_cros_gardeners.js',
+    'maxage': 15*60,  # 15 mins
+  },
+  {
+    'remoteurl': 'http://build.chromium.org/p/chromium/sheriff_angle.js',
+    'localpath': 'chromium/sheriff_angle.js',
     'maxage': 15*60,  # 15 mins
   },
   {
