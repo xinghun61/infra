@@ -1,6 +1,7 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
 <link rel="import" href="/bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="/bower_components/paper-item/paper-item.html">
+<link rel="import" href="/bower_components/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="/bower_components/paper-menu/paper-menu.html">
 
 <dom-module id="som-drawer">
@@ -8,6 +9,16 @@
     <style>
       paper-item {
         font-size: 26px;
+      }
+      paper-item:hover {
+        cursor: pointer;
+      }
+      paper-checkbox {
+        padding-bottom: 10px;
+      }
+      hr {
+        width: 90%;
+        background-color: #000;
       }
     </style>
     <iron-ajax
@@ -21,6 +32,14 @@
       <template is="dom-repeat" items="[[_treeList]]" as="tree">
         <paper-item value="[[tree.name]]" on-tap="_onSelected">[[tree.display_name]]</paper-item>
       </template>
+      <hr/>
+      <div class="vertical layout center">
+        <paper-checkbox class="center" checked="{{showInfraFailures}}">Show infra failures</paper-checkbox>
+        <paper-button id="feedback_button" on-tap="_fileSOMBug" raised>
+          <iron-icon icon="bug-report" aria-label="bug-report"></iron-icon>
+          File a Bug
+        </paper-button>
+      </div>
     </paper-menu>
   </template>
   <script>
@@ -36,6 +55,10 @@
            type: String,
            notify: true
         },
+        showInfraFailures: {
+          type: Boolean,
+          notify: true,
+        },
         _treeList: {
            type: Array,
            value: function() { return []; },
@@ -45,6 +68,15 @@
       _onSelected: function(evt) {
         this.path = "/" + evt.srcElement.value;
       },
+
+      _fileSOMBug: function() {
+        const url = 'https://code.google.com/p/chromium/issues/entry' +
+            '?template=Build%20Infrastructure&labels=SheriffOMatic,Pri-2&' +
+            'cc=seanmccullough@chromium.org,martiniss@chromium.org&'+
+            `comment=Problem+with+Sheriff-o-Matic:%0A${encodeURI(window.location.href)}%0A`;
+        window.open(url, '_blank');
+      },
+
     });
   })();
   </script>

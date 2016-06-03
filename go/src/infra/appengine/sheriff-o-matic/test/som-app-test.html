@@ -241,5 +241,24 @@
       assert.equal('chromium.perf', element._alertsGroup);
     });
   });
+
+  suite('refresh', function() {
+    var refreshStub;
+    var clock;
+
+    setup(function() {
+      refreshStub = sinon.stub(element, '_refresh');
+      clock = sinon.useFakeTimers();
+    });
+
+    test('refreshes after a period', function(done) {
+      clock.tick(60 * 1000);
+      flush(function() {
+        sinon.assert.calledOnce(refreshStub);
+        done();
+      });
+    });
+
+  });
 })();
 </script>

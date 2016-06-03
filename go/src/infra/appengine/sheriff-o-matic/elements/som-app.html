@@ -70,6 +70,11 @@
       .snooze {
         color: #aaa;
       }
+      #refresh {
+        width: 25px;
+        height: 25px;
+        padding: 0;
+      }
     </style>
     <iron-location id="url" path="{{_path}}"></iron-location>
     <iron-ajax
@@ -100,7 +105,7 @@
         <paper-toolbar>
           <span class="som-title">Sheriff-o-Matic</span>
         </paper-toolbar>
-        <som-drawer id="drawer" alerts-group="[[_alertsGroup]]" path="{{_path}}"></som-drawer>
+        <som-drawer id="drawer" alerts-group="[[_alertsGroup]]" path="{{_path}}" show-infra-failures="{{showInfraFailures}}"></som-drawer>
       </paper-header-panel>
       <paper-header-panel main class="flex layout vertical">
         <paper-toolbar>
@@ -113,7 +118,7 @@
             <div class="user-name">
               [[user]] (<a href$="[[logoutUrl]]">Log Out </a>)
             </div>
-            <iron-icon icon="refresh"></iron-icon>
+            <paper-icon-button on-tap="_refresh" id="refresh" icon="refresh"></paper-icon-button>
           </div>
           <paper-spinner active="[[_networkActive]]"></paper-spinner>
         </paper-toolbar>
@@ -131,7 +136,6 @@
                         alerts-group="[[_alertsGroup]]"
                         selected="[[selected]]"
                         annotation="[[_computeAnnotation(annotations, alert)]]"
-                        on-selected-changed="_handleCardSelected"
                         on-annotation-change="_handleAnnotation"
                         on-link-bug="_handleLinkBug"
                     ></som-alert-item>
@@ -169,13 +173,16 @@
   (function() {
     'use strict';
 
+    // Time, in milliseconds, between each refresh of data from the server.
+    const refreshDelayMs = 60 * 1000;
+
     Polymer({
       is: 'som-app',
       properties: {
         _alerts: {
           type: Array,
           value: function() { return []; },
-          computed: '_computeAlerts(_alertsJson, annotations)',
+          computed: '_computeAlerts(_alertsJson, annotations, showInfraFailures)',
         },
         _alertsJson: {
           type: Object,
@@ -230,6 +237,10 @@
           type: String,
           computed: '_computeSelectedPage(_path)',
         },
+        showInfraFailures: {
+          type: Boolean,
+          value: true,
+        },
         _examinedAlert: {
           type: Object,
           computed: '_computeExaminedAlert(_alerts, _examinedAlertKey)',
@@ -239,6 +250,21 @@
           computed: '_computeExaminedAlertKey(_path)',
         },
         user: String,
+      },
+
+      created: function() {
+        this.async(this._refreshAsync, refreshDelayMs);
+      },
+
+      ////////////////////// Refresh ///////////////////////////
+
+      _refresh: function() {
+        this.$.alertsAjax.generateRequest();
+      },
+
+      _refreshAsync: function() {
+        this._refresh();
+        this.async(this._refreshAsync, refreshDelayMs);
       },
 
       ////////////////////// Alerts and path ///////////////////////////
@@ -301,11 +327,19 @@
         return ' Unknown';
       },
 
-      _computeAlerts: function(alertsJson, annotations) {
+      _computeAlerts: function(alertsJson, annotations, showInfraFailures) {
         if (!alertsJson || !alertsJson.alerts) {
           return [];
         }
-        alertsJson.alerts.sort((a, b) => {
+
+        let alerts = alertsJson.alerts;
+        if (!showInfraFailures) {
+          alerts = alerts.filter(function(alert) {
+            return alert.type !== 'infra-failure';
+          });
+        }
+
+        alerts.sort((a, b) => {
           let aAnn = this._computeAnnotation(annotations, a);
           let bAnn = this._computeAnnotation(annotations, b);
 
@@ -316,7 +350,7 @@
           return aAnn.snoozed ? 1 : -1;
         });
 
-        return alertsJson.alerts;
+        return alerts;
       },
 
       ////////////////////// Annotations ///////////////////////////

@@ -21,55 +21,58 @@
         border-radius: 2px;
         border: 1px solid #dcdcdc;
         font-size: smaller;
-        margin: 0.1em;
-        padding: 0.5em;
+        margin: .1em;
+        padding: .5em;
         display: inline-block;
         background: #E75D54;
         color: #f4f4f4;
-      }
-      .infra-failure {
-        background: #e0b0ff;
-        color: #fff;
-      }
+     }
+     .infra-failure {
+       background: #e0b0ff;
+       color: #fff;
+     }
      .builder a {
         font-weight: bold;
         text-decoration: none;
-        color: white;
-      }
-      .infra-failure a {
-        color: white;
-      }
-      .builder a:hover {
-        text-decoration: underline;
-      }
-      #builders {
-        margin: 0.5em 0;
-      }
-      #reasons {
-        margin: 0.5em;
-      }
-      #regression-ranges {
-        margin: 0.5em;
-      }
-      .codesearch-link {
-        font-size: smaller;
-      }
+        color: #fff;
+     }
+     .infra-failure a {
+       color: #fff;
+     }
+     .builder a:hover {
+       text-decoration: underline;
+     }
+     #builders {
+       margin: .5em 0;
+     }
+     #reasons {
+       margin: .5em auto;
+     }
+     #regression-ranges {
+       margin: .5em auto;
+     }
+     .codesearch-link {
+       font-size: smaller;
+     }
     </style>
     <div>
-      <div id="builders">
-        <template is="dom-repeat" items="[[extension.builders]]" as="builder">
-          <span class$="[[_classForBuilder(builder)]]">
-            <a target="_blank" href$="[[builder.url]]" title$="Failing for the last [[_failureCount(builder)]] build(s): [[builder.first_failure]] - [[builder.latest_failure]].">
-                [[builder.name]]
-                [[_failureCount(builder)]]
-            </a>
-          </span>
-        </template>
-      </div>
+      <template is="dom-if" if="[[_haveBuilders(extension)]]">
+        <div id="builders">
+          Builders this step failed on:
+          <template is="dom-repeat" items="[[extension.builders]]" as="builder">
+            <span class$="[[_classForBuilder(builder)]]">
+              <a target="_blank" href$="[[_uberify(builder.url)]]" title$="Failing for the last [[_failureCount(builder)]] build(s): [[builder.first_failure]] - [[builder.latest_failure]].">
+                  [[builder.name]]
+                  [[_failureCount(builder)]]
+              </a>
+            </span>
+          </template>
+        </div>
+      </template>
       <div id="reasons">
         <template is="dom-repeat" items="[[extension.reasons]]" as="reason">
           <div>
-            <a target="_blank" href$="[[reason.url]]">[[reason.step]]</a>
+            <a target="_blank" href$="[[_uberify(reason.url)]]">[[reason.step]]</a>
             <ul>
               <template is="dom-repeat" items="[[reason.test_names]]" as="testName">
                 <li>
@@ -109,6 +112,10 @@
           type: String,
           value: ''
         },
+      },
+
+      _haveBuilders: function(extension) {
+        return extension && extension.builders && extension.builders.length > 0;
       },
 
      _regressionRange: function(range) {
@@ -172,6 +179,16 @@
       _showRegressionRange: function(range) {
         return this._regressionRange(range) && range.positions.length > 0;
       },
+
+      _uberify: function(url) {
+        let u = new URL(url);
+        if (u.hostname.includes('chromium.org')) {
+          u.hostname = 'uberchromegw.corp.google.com';
+          u.pathname = u.pathname.replace('/p/', '/i/');
+        }
+        u.protocol = 'https:'
+        return u.toString();
+      }
     });
   })();
   </script>

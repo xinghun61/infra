@@ -39,6 +39,7 @@
     "iron-location": "PolymerElements/iron-location#^0.8.2",
     "iron-pages": "PolymerElements/iron-pages#^1.0.7",
     "paper-dropdown-menu": "PolymerElements/paper-dropdown-menu#^1.2.1",
-    "paper-listbox": "polymerelements/paper-listbox#^1.1.2"
+    "paper-listbox": "polymerelements/paper-listbox#^1.1.2",
+    "paper-checkbox": "PolymerElements/paper-checkbox#^1.2.0"
   }
 }

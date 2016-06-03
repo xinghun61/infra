@@ -1,25 +1,24 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
+
 <link rel="import" href="/bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="/bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
 <link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/elements/som-extension-build-failure.html">
 
 <dom-module id="som-alert-item">
   <template>
     <style>
-      .alert {
-        @apply(--layout-horizontal);
-        padding: 1em;
-        background-color: white;
-        border: 1px solid #ddd;
-        cursor: pointer;
-      }
-      .alert-expanded {
-        color: #666;
-      }
+     .alert {
+       @apply(--layout-horizontal);
+       padding: 1em;
+       background-color: white;
+       border: 1px solid #ddd;
+     }
+     .alert-expanded {
+       color: #666;
+     }
      .alert-title-bar {
-       display: flex;
-       justify-content: space-between;
        align-items: center;
      }
      .alert-title {
@@ -30,56 +29,65 @@
        font-size: smaller;
        color: #666;
      }
-     .alert-links {
-       display: inline-block;
-     }
      .list-item {
         @apply(--layout-flex);
         @apply(--layout-vertical);
-      }
-      .file-bug,
-      .snooze {
-        color: #aaa;
-      }
-      .snoozed {
-        opacity: 0.5;
-      }
-      #root {
-        transition: opacity .25s;
-      }
+     }
+     .file-bug-icon,
+     .snooze-icon {
+       color: #aaa;
+     }
+     .snoozed {
+       opacity: 0.5;
+     }
+     #root {
+       transition: opacity .25s;
+     }
+     #bugsList {
+       margin-left: 15px;
+     }
+     hr {
+       width: 100%;
+       background-color: #000;
+     }
+     .divider {
+       width: 20px;
+     }
     </style>
     <div id="root" class$="[[_cssClass]]">
       <div class$="[[_classForAlert(alert, selected)]]">
         <div class="list-item">
-          <div class="alert-title-bar">
-            <div class="alert-title">[[alert.title]]</div>
+          <div class="alert-title-bar horizontal layout justified">
+            <div class="horizontal layout">
+              <div class="alert-title self-center">[[alert.title]]</div>
+              <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links">
+                <template is="dom-repeat" items="[[annotation.bugs]]" as="bug">
+                  <a target="_blank" href$="[[bug]]">[[_bugLabel(bug)]]</a>
+                  <paper-button id="remove[[index]]" on-tap="_removeBug" raised>Remove</paper-button>
+                </template>
+              </div>
+            </div>
             <div class="alert-times">
               [[_duration]]
             </div>
           </div>
+          <hr/>
           <div class="alert-body">[[alert.body]]</div>
-          <div class="alert-expanded">
-            <paper-button>
-              <a href$="[[alertsGroup]]/examine/[[alert.key]]">Examine</a>
+          <div class="alert-expanded layout horizontal center">
+            <a href$="[[alertsGroup]]/examine/[[alert.key]]">Examine</a>
+            <paper-button class="horizontal layout center" on-tap="_fileBug" alt="Link a bug" raised noink>
+              <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
+              Link Bug
             </paper-button>
-            <div id="noBugs" hidden$="[[_hasBugs]]" class="alert-links">
-              No Linked Bugs.
-            </div>
-            <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links">
-              Bugs:
-              <template is="dom-repeat" items="[[annotation.bugs]]" as="bug">
-                <paper-button><iron-icon icon="open-in-new"></iron-icon>
-                  <a target="_blank" href$="[[bug]]">[[_bugLabel(bug)]]</a>
-                </paper-button>
-                <paper-icon-button id="remove[[index]]" icon="close" on-tap="_removeBug">
-                </paper-icon-button>
-              </template>
-            </div>
+            <paper-button class="horizontal layout center" id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" raised noink>
+              <iron-icon class="snooze-icon" icon="[[_snoozeIcon]]">
+              </iron-icon>
+              [[_snoozeText]]
+            </paper-button>
+            <div class="divider"></div>
             <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]"></som-extension-build-failure>
           </div>
         </div>
-        <paper-icon-button on-tap="_fileBug" class="file-bug" icon="bug-report" alt="File a bug"></paper-icon-button>
-        <paper-icon-button id="snooze" class="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze"></paper-icon-button>
       </div>
     </div>
   </template>
@@ -144,7 +152,7 @@
       _bugLabel: function(bugUrl) {
         let bugId = bugLinkRegExp.exec(bugUrl);
 
-        return `Bug ${bugId[0]}`;
+        return !!bugId[0] ? `Bug ${bugId[0]}` : bugUrl;
       },
 
       _classForAlert: function(alert, selected) {
@@ -183,7 +191,10 @@
         let hours = Math.floor(deltaSec/60/60);
         let minutes = Math.floor((deltaSec - hours*60*60)/60);
         let seconds = deltaSec - hours * 60*60 - minutes*60;
-        return `${hours}h ${minutes}m ${seconds}s`;
+        if (hours == 0 && minutes == 0 && seconds == 0) {
+          return '';
+        }
+        return `Active for: ${hours}h ${minutes}m ${seconds}s`;
       },
 
       _removeBug: function(evt) {
