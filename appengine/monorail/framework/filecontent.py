@@ -20,6 +20,10 @@ _EXTENSION_TO_CTYPE_TABLE = {
     'ico': 'image/x-icon',
     'svg': 'image/svg+xml',
     'pdf': 'application/pdf',
+    'ogv': 'video/ogg',
+    'mp4': 'video/mp4',
+    'mpg': 'video/mp4',
+    'mpeg': 'video/mp4',
 
     # We do not serve mimetypes that cause the brower to launch a local
     # app because that is not required for issue tracking and it is a

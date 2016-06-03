@@ -57,10 +57,20 @@
       [if-any arg1.deleted_bool][else]
        <tr>
         <td colspan="3">
-             <a href="[arg1.url]" target="_blank">
-              <img src="[arg1.thumbnail_url]" class="preview">
-             </a>
-         </td>
+          <a href="[arg1.url]" target="_blank">
+            <img src="[arg1.thumbnail_url]" class="preview">
+          </a>
+        </td>
+       </tr>
+      [end]
+     [end]
+
+     [if-any arg1.video_url]
+      [if-any arg1.deleted_bool][else]
+       <tr>
+        <td colspan="3">
+          <video src="[arg1.url]" class="preview" controls width="640">
+        </td>
        </tr>
       [end]
      [end]

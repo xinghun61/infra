@@ -361,6 +361,31 @@ class IsViewableImageTest(unittest.TestCase):
         'image/jpeg', 13 * 1024 * 1024))
 
 
+class IsViewableVideoTest(unittest.TestCase):
+
+  def testIsViewableVideo(self):
+    self.assertTrue(tracker_views.IsViewableVideo('video/ogg', 123))
+    self.assertTrue(tracker_views.IsViewableVideo(
+        'video/ogg; charset=binary', 123))
+    self.assertTrue(tracker_views.IsViewableVideo('video/mp4', 123))
+    self.assertTrue(tracker_views.IsViewableVideo(
+        'video/mp4; charset=binary', 123))
+    self.assertTrue(tracker_views.IsViewableVideo('video/mpg', 123))
+    self.assertTrue(tracker_views.IsViewableVideo(
+        'video/mpg; charset=binary', 123))
+    self.assertTrue(tracker_views.IsViewableVideo('video/mpeg', 123))
+    self.assertTrue(tracker_views.IsViewableVideo(
+        'video/mpeg; charset=binary', 123))
+    self.assertTrue(tracker_views.IsViewableVideo(
+        'video/mpeg', 3 * 1024 * 1024))
+
+    self.assertFalse(tracker_views.IsViewableVideo('junk/bits', 123))
+    self.assertFalse(tracker_views.IsViewableVideo(
+        'junk/bits; charset=binary', 123))
+    self.assertFalse(tracker_views.IsViewableVideo(
+        'video/mp4', 13 * 1024 * 1024))
+
+
 class IsViewableTextTest(unittest.TestCase):
   pass  # TODO(jrobbins): write tests
 

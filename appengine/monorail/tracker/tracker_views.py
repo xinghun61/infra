@@ -374,6 +374,7 @@ def _ChunkToRun(chunk):
 
 
 VIEWABLE_IMAGE_TYPES = ['image/jpeg', 'image/gif', 'image/png', 'image/x-png']
+VIEWABLE_VIDEO_TYPES = ['video/ogg', 'video/mp4', 'video/mpg', 'video/mpeg']
 MAX_PREVIEW_FILESIZE = 4 * 1024 * 1024  # 4MB
 
 
@@ -416,9 +417,13 @@ class AttachmentView(template_helpers.PBProxy):
 
     self.url = None
     self.thumbnail_url = None
+    self.video_url = None
     if IsViewableImage(attach_pb.mimetype, attach_pb.filesize):
       self.url = self.downloadurl + '&inline=1'
       self.thumbnail_url = self.url + '&thumb=1'
+    elif IsViewableVideo(attach_pb.mimetype, attach_pb.filesize):
+      self.url = self.downloadurl + '&inline=1'
+      self.video_url = self.url
     elif IsViewableText(attach_pb.mimetype, attach_pb.filesize):
       self.url = tracker_helpers.FormatRelativeIssueURL(
           project_name, urls.ISSUE_ATTACHMENT_TEXT,
@@ -443,6 +448,23 @@ def IsViewableImage(mimetype_charset, filesize):
   """
   mimetype = mimetype_charset.split(';', 1)[0]
   return (mimetype in VIEWABLE_IMAGE_TYPES and
+          filesize < MAX_PREVIEW_FILESIZE)
+
+
+def IsViewableVideo(mimetype_charset, filesize):
+  """Return true if we can safely display such a video in the browser.
+
+  Args:
+    mimetype_charset: string with the mimetype string that we got back
+        from the 'file' command.  It may have just the mimetype, or it
+        may have 'foo/bar; charset=baz'.
+    filesize: int length of the file in bytes.
+
+  Returns:
+    True iff we should allow the user to watch the video in the page.
+  """
+  mimetype = mimetype_charset.split(';', 1)[0]
+  return (mimetype in VIEWABLE_VIDEO_TYPES and
           filesize < MAX_PREVIEW_FILESIZE)
 
 
