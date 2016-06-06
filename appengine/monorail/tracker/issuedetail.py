@@ -482,9 +482,13 @@ class IssueDetail(issuepeek.IssuePeek):
 
     granted_perms = tracker_bizobj.GetGrantedPerms(
         issue, mr.auth.effective_ids, config)
-    permit_edit = permissions.CanEditIssue(
-        mr.auth.effective_ids, mr.perms, mr.project, issue,
-        granted_perms=granted_perms)
+    # We process edits iff the user has permission, and the form
+    # was generated including the editing fields.
+    permit_edit = (
+        permissions.CanEditIssue(
+            mr.auth.effective_ids, mr.perms, mr.project, issue,
+            granted_perms=granted_perms) and
+        'fields_not_offered' not in post_data)
     page_perms = self.MakePagePerms(
         mr, issue,
         permissions.CREATE_ISSUE,
@@ -521,6 +525,7 @@ class IssueDetail(issuepeek.IssuePeek):
 
     if len(parsed.comment) > tracker_constants.MAX_COMMENT_CHARS:
       mr.errors.comment = 'Comment is too long'
+    logging.info('parsed.summary is %r', parsed.summary)
     if len(parsed.summary) > tracker_constants.MAX_SUMMARY_CHARS:
       mr.errors.summary = 'Summary is too long'
 

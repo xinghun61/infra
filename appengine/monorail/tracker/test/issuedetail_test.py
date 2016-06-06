@@ -434,6 +434,55 @@ class IssueDetailFunctionsTest(unittest.TestCase):
 
     notify.PrepareAndSendIssueChangeNotification = orig_prepsend
 
+  def testProcessFormData_NewMemberExistingFormOnlyAddsComment(self):
+    """Non-member had a form open, then become a member, then submitted."""
+    orig_prepsend = notify.PrepareAndSendIssueChangeNotification
+    notify.PrepareAndSendIssueChangeNotification = lambda *args, **kwargs: None
+
+    self.services.issue.CreateIssue(
+        self.cnxn, self.services, self.project.project_id,
+        'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')
+    local_id_2 = self.services.issue.CreateIssue(
+        self.cnxn, self.services, self.project.project_id,
+        'summary_2', 'status', 111L, [], [], [], [], 111L, 'description_2')
+
+    non_member_user_id = 999L
+    post_data = fake.PostData({
+        # non-member form has no summary field, so it defaults to ''.
+        'fields_not_offered': 'True',
+        'comment': ['thanks!'],
+        'can': ['1'],
+        'q': ['foo'],
+        'colspec': ['bar'],
+        'sort': 'baz',
+        'groupby': 'qux',
+        'start': ['0'],
+        'num': ['100'],
+        'pagegen': [str(int(time.time()) + 1)],
+        })
+
+    _, mr = testing_helpers.GetRequestObjects(
+        user_info={'user_id': non_member_user_id},
+        path='/p/proj/issues/detail.do?id=%d' % local_id_2,
+        project=self.project, method='POST',
+        # The user has suddenly become a member.
+        perms=permissions.COMMITTER_ACTIVE_PERMISSIONSET)
+    mr.project_name = self.project.project_name
+    mr.project = self.project
+
+    # The form should be processed and redirect back to viewing the issue.
+    redirect_url = self.servlet.ProcessFormData(mr, post_data)
+    self.assertTrue(redirect_url.startswith(
+        'http://127.0.0.1/p/proj/issues/detail?id=%d' % local_id_2))
+
+    # BUT, issue should not have been edited because editing fields were not
+    # offered when the form was generated.
+    updated_issue_2 = self.services.issue.GetIssueByLocalID(
+        self.cnxn, self.project.project_id, local_id_2)
+    self.assertEqual('summary_2', updated_issue_2.summary)
+
+    notify.PrepareAndSendIssueChangeNotification = orig_prepsend
+
   def testProcessFormData_DuplicateAddsACommentToTarget(self):
     """Marking issue 2 as dup of 1 adds a comment to 1."""
     orig_prepsend = notify.PrepareAndSendIssueChangeNotification
