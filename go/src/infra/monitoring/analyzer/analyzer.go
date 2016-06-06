@@ -19,8 +19,6 @@ import (
 
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
-
-	"github.com/luci/luci-go/common/stringset"
 )
 
 const (
@@ -394,16 +392,19 @@ func (a *Analyzer) builderAlerts(tree string, master *messages.MasterLocation, b
 
 	// Check for alerts on the most recent complete build
 	infoLog.Printf("Checking %d most recent builds for alertable step failures: %s/%s", len(recentBuildIDs), master.Name(), builderName)
+	as, es := a.builderStepAlerts(tree, master, builderName, []int64{lastCompletedBuild.Number})
 
-	mostRecentComplete := 0
-	for i, id := range recentBuildIDs {
-		if id == lastCompletedBuild.Number {
-			mostRecentComplete = i
+	if len(as) > 0 {
+		mostRecentComplete := 0
+		for i, id := range recentBuildIDs {
+			if id == lastCompletedBuild.Number {
+				mostRecentComplete = i
+			}
 		}
+		as, es = a.builderStepAlerts(tree, master, builderName, recentBuildIDs[mostRecentComplete:])
+		alerts = append(alerts, as...)
+		errs = append(errs, es...)
 	}
-	as, es := a.builderStepAlerts(tree, master, builderName, recentBuildIDs[mostRecentComplete:])
-	alerts = append(alerts, as...)
-	errs = append(errs, es...)
 
 	return alerts, errs
 }
@@ -567,36 +568,10 @@ func (a *Analyzer) GetRevisionSummaries(hashes []string) ([]messages.RevisionSum
 // generating an Alert for each step output that warrants one.  Alerts are then
 // merged by key so that failures that occur across a range of builds produce a single
 // alert instead of one for each build.
-//
-// We assume the first build in the list of recent build IDs is the most recent;
-// this build is used to select the steps which we think are still failing and
-// should show up as alerts.
 func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocation, builderName string, recentBuildIDs []int64) (alerts []messages.Alert, errs []error) {
-	if len(recentBuildIDs) == 0 {
-		return nil, nil
-	}
-
-	sort.Sort(buildNums(recentBuildIDs))
 	// Check for alertable step failures.  We group them by key to de-duplicate and merge values
 	// once we've scanned everything.
 	stepAlertsByKey := map[string][]messages.Alert{}
-
-	latestBuild := recentBuildIDs[0]
-	importantFailures, err := a.stepFailures(master, builderName, latestBuild)
-	if err != nil {
-		return nil, []error{err}
-	}
-	if len(importantFailures) == 0 {
-		return nil, errs
-	}
-	importantAlerts, err := a.stepFailureAlerts(tree, importantFailures)
-	if err != nil {
-		return nil, []error{err}
-	}
-	importantKeys := stringset.New(0)
-	for _, alr := range importantAlerts {
-		importantKeys.Add(alr.Key)
-	}
 
 	for _, buildNum := range recentBuildIDs {
 		failures, err := a.stepFailures(master, builderName, buildNum)
@@ -615,9 +590,7 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 
 		// Group alerts by key so they can be merged across builds/regression ranges.
 		for _, alr := range as {
-			if importantKeys.Has(alr.Key) {
-				stepAlertsByKey[alr.Key] = append(stepAlertsByKey[alr.Key], alr)
-			}
+			stepAlertsByKey[alr.Key] = append(stepAlertsByKey[alr.Key], alr)
 		}
 	}
 
