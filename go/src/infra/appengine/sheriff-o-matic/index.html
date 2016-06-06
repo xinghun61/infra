@@ -8,3 +8,21 @@
   }
 </style>
 <som-app user="{{.User}}" logout-url="{{.LogoutUrl}}"></som-app>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['CrDXObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://storage.googleapis.com/crdx-feedback.appspot.com/feedback.js','crdx');
+
+  crdx('setFeedbackButtonLink', 'https://bugs.chromium.org/p/chromium/issues/entry?template=Build%20Infrastructure&labels=SheriffOMatic,Pri-2&cc=seanmccullough@chromium.org,martiniss@chromium.org&comment=Problem+with+Sheriff-o-Matic');
+  crdx('setFeedbackButtonBackgroundColor', '#15c');
+
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-55762617-22', 'auto');
+  ga('send', 'pageview');
+</script>

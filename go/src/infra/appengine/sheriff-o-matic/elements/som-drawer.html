@@ -35,10 +35,6 @@
       <hr/>
       <div class="vertical layout center">
         <paper-checkbox class="center" checked="{{showInfraFailures}}">Show infra failures</paper-checkbox>
-        <paper-button id="feedback_button" on-tap="_fileSOMBug" raised>
-          <iron-icon icon="bug-report" aria-label="bug-report"></iron-icon>
-          File a Bug
-        </paper-button>
       </div>
     </paper-menu>
   </template>
@@ -68,15 +64,6 @@
       _onSelected: function(evt) {
         this.path = "/" + evt.srcElement.value;
       },
-
-      _fileSOMBug: function() {
-        const url = 'https://code.google.com/p/chromium/issues/entry' +
-            '?template=Build%20Infrastructure&labels=SheriffOMatic,Pri-2&' +
-            'cc=seanmccullough@chromium.org,martiniss@chromium.org&'+
-            `comment=Problem+with+Sheriff-o-Matic:%0A${encodeURI(window.location.href)}%0A`;
-        window.open(url, '_blank');
-      },
-
     });
   })();
   </script>
