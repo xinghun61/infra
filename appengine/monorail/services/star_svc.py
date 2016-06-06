@@ -118,19 +118,28 @@ class AbstractStarService(object):
 
     return item_count_dict
 
-  def SetStar(self, cnxn, item_id, starrer_user_id, starred):
-    """Sets or unsets a star for the specified item and user."""
+  def _SetStarsBatch(self, cnxn, item_id, starrer_user_ids, starred):
+    """Sets or unsets stars for the specified item and users."""
     if starred:
-      self.tbl.InsertRow(
-          cnxn, ignore=True,
-          **{self.item_col: item_id, self.user_col: starrer_user_id})
+      rows = [(item_id, user_id) for user_id in starrer_user_ids]
+      self.tbl.InsertRows(
+          cnxn, [self.item_col, self.user_col], rows, ignore=True)
     else:
       self.tbl.Delete(
-          cnxn, **{self.item_col: item_id, self.user_col: starrer_user_id})
+          cnxn, **{self.item_col: item_id, self.user_col: starrer_user_ids})
 
-    self.star_cache.Invalidate(cnxn, starrer_user_id)
+    self.star_cache.InvalidateKeys(cnxn, starrer_user_ids)
     self.starrer_cache.Invalidate(cnxn, item_id)
     self.star_count_cache.Invalidate(cnxn, item_id)
+
+  def SetStarsBatch(self, cnxn, item_id, starrer_user_ids, starred):
+    """Sets or unsets stars for the specified item and users."""
+    self._SetStarsBatch(cnxn, item_id, starrer_user_ids, starred)
+
+  def SetStar(self, cnxn, item_id, starrer_user_id, starred):
+    """Sets or unsets a star for the specified item and user."""
+    self._SetStarsBatch(cnxn, item_id, [starrer_user_id], starred)
+
 
 
 class UserStarService(AbstractStarService):
@@ -175,10 +184,26 @@ class IssueStarService(AbstractStarService):
       starrer_user_id: user ID of the user who starred the issue.
       starred: boolean True for adding a star, False when removing one.
     """
+    self.SetStarsBatch(
+        cnxn, services, config, issue_id, [starrer_user_id], starred)
+
+  # pylint: disable=arguments-differ
+  def SetStarsBatch(
+      self, cnxn, services, config, issue_id, starrer_user_ids, starred):
+    """Add or remove a star on the given issue for the given user.
+
+    Args:
+      cnxn: connection to SQL database.
+      services: connections to persistence layer.
+      config: ProjectIssueConfig PB for the project containing the issue.
+      issue_id: integer global ID of an issue.
+      starrer_user_id: user ID of the user who starred the issue.
+      starred: boolean True for adding a star, False when removing one.
+    """
     logging.info(
-        'SetIssueStar:%06d, %s, %s', issue_id, starrer_user_id, starred)
-    super(IssueStarService, self).SetStar(
-        cnxn, issue_id, starrer_user_id, starred)
+        'SetStarsBatch:%r, %r, %r', issue_id, starrer_user_ids, starred)
+    super(IssueStarService, self).SetStarsBatch(
+        cnxn, issue_id, starrer_user_ids, starred)
 
     issue = services.issue.GetIssue(cnxn, issue_id)
     issue.star_count = self.CountItemStars(cnxn, issue_id)
@@ -187,5 +212,5 @@ class IssueStarService(AbstractStarService):
     # field could have changed as a result of filter rules.
     services.issue.UpdateIssue(cnxn, issue)
 
-    self.star_cache.Invalidate(cnxn, starrer_user_id)
+    self.star_cache.InvalidateKeys(cnxn, starrer_user_ids)
     self.starrer_cache.Invalidate(cnxn, issue_id)

@@ -114,8 +114,8 @@ class AbstractStarServiceTest(unittest.TestCase):
     self.assertEqual(2, count_dict[234])
 
   def SetUpSetStar_Add(self):
-    self.mock_tbl.InsertRow(
-        self.cnxn, ignore=True, item_id=123, user_id=111L)
+    self.mock_tbl.InsertRows(
+        self.cnxn, ['item_id', 'user_id'], [(123, 111L)], ignore=True)
 
   def testSetStar_Add(self):
     self.SetUpSetStar_Add()
@@ -127,10 +127,39 @@ class AbstractStarServiceTest(unittest.TestCase):
     self.assertFalse(self.star_service.star_count_cache.HasItem(123))
 
   def SetUpSetStar_Remove(self):
-    self.mock_tbl.Delete(self.cnxn, item_id=123, user_id=111L)
+    self.mock_tbl.Delete(self.cnxn, item_id=123, user_id=[111L])
 
-  def testSetProjectStar_Remove(self):
+  def testSetStar_Remove(self):
     self.SetUpSetStar_Remove()
     self.mox.ReplayAll()
     self.star_service.SetStar(self.cnxn, 123, 111L, False)
     self.mox.VerifyAll()
+    self.assertFalse(self.star_service.star_cache.HasItem(123))
+    self.assertFalse(self.star_service.starrer_cache.HasItem(123))
+    self.assertFalse(self.star_service.star_count_cache.HasItem(123))
+
+  def SetUpSetStarsBatch_Add(self):
+    self.mock_tbl.InsertRows(
+        self.cnxn, ['item_id', 'user_id'], [(123, 111L), (123, 222L)],
+        ignore=True)
+
+  def testSetStarsBatch_Add(self):
+    self.SetUpSetStarsBatch_Add()
+    self.mox.ReplayAll()
+    self.star_service.SetStarsBatch(self.cnxn, 123, [111L, 222L], True)
+    self.mox.VerifyAll()
+    self.assertFalse(self.star_service.star_cache.HasItem(123))
+    self.assertFalse(self.star_service.starrer_cache.HasItem(123))
+    self.assertFalse(self.star_service.star_count_cache.HasItem(123))
+
+  def SetUpSetStarsBatch_Remove(self):
+    self.mock_tbl.Delete(self.cnxn, item_id=123, user_id=[111L, 222L])
+
+  def testSetStarsBatch_Remove(self):
+    self.SetUpSetStarsBatch_Remove()
+    self.mox.ReplayAll()
+    self.star_service.SetStarsBatch(self.cnxn, 123, [111L, 222L], False)
+    self.mox.VerifyAll()
+    self.assertFalse(self.star_service.star_cache.HasItem(123))
+    self.assertFalse(self.star_service.starrer_cache.HasItem(123))
+    self.assertFalse(self.star_service.star_count_cache.HasItem(123))

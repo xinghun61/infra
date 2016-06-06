@@ -817,9 +817,8 @@ def AddIssueStarrers(
   """Merge all the starrers for the current issue into the target issue."""
   project = merge_into_project or mr.project
   config = services.config.GetProjectConfig(mr.cnxn, project.project_id)
-  for starrer_id in new_starrers:
-    services.issue_star.SetStar(
-        cnxn, services, config, merge_into_iid, starrer_id, True)
+  services.issue_star.SetStarsBatch(
+      cnxn, services, config, merge_into_iid, new_starrers, True)
 
 
 def IsMergeAllowed(merge_into_issue, mr, services):

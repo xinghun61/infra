@@ -274,10 +274,10 @@ class IssueImport(servlet.Servlet):
         total_comments += 1
         comment.issue_id = issue_id
         self.services.issue.InsertComment(cnxn, comment)
-      for starrer in state.starrers_dict[issue.local_id]:
-        total_stars += 1
-        self.services.issue_star.SetStar(
-            cnxn, self.services, config, issue_id, starrer, True)
+      self.services.issue_star.SetStarsBatch(
+          cnxn, self.services, config, issue_id,
+          state.starrers_dict[issue.local_id], True)
+      total_stars += len(state.starrers_dict[issue.local_id])
 
     event_log.append('Created %d issues' % len(state.issue_list))
     event_log.append('Created %d comments for %d issues' % (

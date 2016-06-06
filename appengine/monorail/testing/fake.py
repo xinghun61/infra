@@ -508,7 +508,7 @@ class AbstractStarService(object):
     return {item_id: self.CountItemStars(cnxn, item_id)
             for item_id in item_ids}
 
-  def SetStar(self, cnxn, item_id, starrer_user_id, starred):
+  def _SetStar(self, cnxn, item_id, starrer_user_id, starred):
     if starred and not self.IsItemStarredBy(cnxn, item_id, starrer_user_id):
       self.stars_by_item_id.setdefault(item_id, []).append(starrer_user_id)
       self.stars_by_starrer_id.setdefault(starrer_user_id, []).append(item_id)
@@ -516,6 +516,13 @@ class AbstractStarService(object):
     elif not starred and self.IsItemStarredBy(cnxn, item_id, starrer_user_id):
       self.stars_by_item_id[item_id].remove(starrer_user_id)
       self.stars_by_starrer_id[starrer_user_id].remove(item_id)
+
+  def SetStar(self, cnxn, item_id, starrer_user_id, starred):
+    self._SetStar(cnxn, item_id, starrer_user_id, starred)
+
+  def SetStarsBatch(self, cnxn, item_id, starrer_user_ids, starred):
+    for starrer_user_id in starrer_user_ids:
+      self._SetStar(cnxn, item_id, starrer_user_id, starred)
 
 
 class UserStarService(AbstractStarService):
@@ -534,6 +541,13 @@ class IssueStarService(AbstractStarService):
       starred):
     super(IssueStarService, self).SetStar(
         cnxn, issue_id, starrer_user_id, starred)
+
+  # pylint: disable=arguments-differ
+  def SetStarsBatch(
+      self, cnxn, _service, _config, issue_id, starrer_user_ids,
+      starred):
+    super(IssueStarService, self).SetStarsBatch(
+        cnxn, issue_id, starrer_user_ids, starred)
 
 
 class ProjectService(object):
