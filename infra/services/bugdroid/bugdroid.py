@@ -142,48 +142,6 @@ class BugdroidPollerHandler(poller_handlers.BasePollerHandler):
     raise NotImplementedError
 
 
-class BugdroidSVNPollerHandler(BugdroidPollerHandler):
-  """Handler for updating bugs with information from svn commits."""
-
-  def __init__(self, url_template, path_url_template, svn_project, *args,
-               **kwargs):
-    self.url_template = url_template
-    self.path_url_template = path_url_template
-    self.svn_project = svn_project
-    super(BugdroidSVNPollerHandler, self).__init__(*args, **kwargs)
-
-  def _CreateMessage(self, log_entry):
-    msg = ''
-    # If the url_template matches the Chromium URL template, then the
-    # preamble we would use is redundant with the "r12345" linkification
-    # that codesite does, which points by default to the Chromium ViewVC
-    # instance.  In the cases where the URL template is for another
-    # project, include the preamble.
-    if self.url_template != URL_TEMPLATES['cr']:
-      msg += 'The following revision refers to this bug:\n'
-      msg += '  %s\n\n' % (self.url_template % log_entry.revision)
-    msg += self._BuildLogSpecial(log_entry)
-    return msg
-
-  def _BuildLogSpecial(self, log_entry):
-    """Generate svn-log style message, with links to files in the Web UI."""
-    rtn = '------------------------------------------------------------------\n'
-    rtn += 'r%d | %s | %s\n\n' % (log_entry.revision, log_entry.author,
-                                  log_entry.date)
-    if self.public_bugs:
-      rtn += 'Changed paths:\n'
-      for path in log_entry.paths:
-        filename = self.path_url_template % (self.svn_project, path.filename,
-                                             log_entry.revision,
-                                             log_entry.revision - 1,
-                                             log_entry.revision)
-        rtn += '   %s %s\n' % (path.action, filename)
-
-      rtn += '\n%s\n' % log_entry.msg
-    rtn += '-----------------------------------------------------------------'
-    return rtn
-
-
 class BugdroidGitPollerHandler(BugdroidPollerHandler):
   """Handler for updating bugs with information from git commits."""
 

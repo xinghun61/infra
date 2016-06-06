@@ -19,6 +19,7 @@ from oauth2client.tools import run
 from infra.services.bugdroid.Comment import Comment
 from infra.services.bugdroid.Issue import changelist
 from infra.services.bugdroid.Issue import Issue2
+from infra_libs import httplib2_utils
 
 
 LOGGER = logging.getLogger(__name__)
@@ -419,7 +420,7 @@ class MonorailIssueTrackerManager(IssueTrackerManager):
                                        client_secret=client_secret,
                                        api_scope=api_scope)
 
-    http = httplib2.Http()
+    http = httplib2_utils.InstrumentedHttp('monorail:%s' % self.project_name)
     http = credentials.authorize(http)
 
     self.client = build_client(discovery_url, http, 'monorail', 'v1')

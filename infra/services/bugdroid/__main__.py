@@ -33,10 +33,8 @@ sh.setLevel(logging.DEBUG)
 sh.setFormatter(formatter)
 DEFAULT_LOGGER.addHandler(sh)
 
-# TODO(sheyang): move to cloud
 DIRBASE = os.path.splitext(os.path.basename(__file__))[0]
 DATADIR = os.path.join(os.environ.get('HOME', ''), 'appdata', DIRBASE)
-
 
 DATA_URL = 'https://bugdroid-data.appspot.com/_ah/api/bugdroid/v1/data'
 

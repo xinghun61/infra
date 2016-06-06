@@ -5,6 +5,7 @@
 """Utilities for interacting with GoB repositories using various API."""
 
 import datetime
+import httplib2
 import json
 import logging
 import netrc
@@ -15,6 +16,8 @@ import urlparse
 
 from base64 import b64decode
 from textwrap import dedent
+
+from infra_libs import httplib2_utils
 
 
 DEFAULT_LOGGER = logging.getLogger(__name__)
@@ -267,17 +270,14 @@ class RestApiHelper(object):
 
   def __init__(self, api_url, logger=None):
     self._api_url = api_url
-    self.opener = urllib2.build_opener()
-    self.authhandler = urllib2.HTTPBasicAuthHandler()
     self.logger = logger or DEFAULT_LOGGER
 
     # Add a Basic auth handler using credentials from netrc.
     urlp = urlparse.urlparse(self._api_url)
     nrc = netrc.netrc()
-    self.authhandler.add_password(
-        realm=urlp.netloc, uri='%s://%s/' % (urlp.scheme, urlp.netloc),
-        user=nrc.hosts[urlp.netloc][0], passwd=nrc.hosts[urlp.netloc][2])
-    self.opener.add_handler(self.authhandler)
+    self.http = httplib2_utils.InstrumentedHttp('gob:%s' % urlp.path)
+    self.headers = {}
+    self.headers['Authorization'] = 'OAuth %s' % nrc.hosts[urlp.netloc][2]
 
 
 class GitilesHelper(RestApiHelper):
@@ -321,11 +321,14 @@ class GitilesHelper(RestApiHelper):
     commit_url = '%s/+/%s?format=JSON' % (self._api_url, ref)
     self.logger.debug('Commit request: %s', commit_url)
     try:
-      resp = self.opener.open(commit_url)
+      resp, content = self.http.request(commit_url, headers=self.headers)
+      if resp.status >= 400:
+        raise httplib2.HttpLib2Error('Invalid response status %d' %
+                                     resp.status)
       # Skip the first 5 bytes of the response due to JSON anti-XSSI prefix.
-      json_txt = resp.read()[5:]
-    except urllib2.URLError:
-      self.logger.exception('Failed Commit request: %s', commit_url)
+      json_txt = content[5:]
+    except httplib2.HttpLib2Error as e:
+      self.logger.exception('Failed Commit request %s: %s', commit_url, str(e))
       return {}
     return json.loads(json_txt)
 
@@ -335,10 +338,13 @@ class GitilesHelper(RestApiHelper):
     diff_url = '%s/+/%s%%5E%%21/?format=TEXT' % (self._api_url, commit)
     self.logger.debug('Diff request: %s', diff_url)
     try:
-      resp = self.opener.open(diff_url)
-      return b64decode(resp.read())
-    except urllib2.URLError:
-      self.logger.exception('Failed Diff request: %s', diff_url)
+      resp, content = self.http.request(diff_url, headers=self.headers)
+      if resp.status >= 400:
+        raise httplib2.HttpLib2Error('Invalid response status %d' %
+                                     resp.status)
+      return b64decode(content)
+    except httplib2.HttpLib2Error as e:
+      self.logger.exception('Failed Diff request %s: %s', diff_url, str(e))
       return None
 
   def GetLogEntries(self, ref, limit=10, ancestor=None, with_paths=False,
@@ -377,12 +383,15 @@ class GitilesHelper(RestApiHelper):
       url = '%s/+log/%s?format=JSON&n=%d' % (self._api_url, log_range, limit)
       self.logger.debug('Log request: %s', url)
       try:
-        resp = self.opener.open(url)
+        resp, content = self.http.request(url, headers=self.headers)
+        if resp.status >= 400:
+          raise httplib2.HttpLib2Error('Invalid response status %d' %
+                                       resp.status)
         # Skip the first 5 bytes of the response due to JSON anti-XSSI prefix.
-        json_txt = resp.read()[5:]
+        json_txt = content[5:]
         return json.loads(json_txt)
-      except urllib2.URLError:
-        self.logger.exception('Failed log request: %s', url)
+      except httplib2.HttpLib2Error as e:
+        self.logger.exception('Failed log request %s: %s', url, str(e))
         return None
 
     def_return = [], None
@@ -462,24 +471,14 @@ class GitilesHelper(RestApiHelper):
     refs_url = '%s/+refs?format=TEXT' % self._api_url
     self.logger.debug('Refs request: %s', refs_url)
     try:
-      resp = self.opener.open(refs_url)
-    except urllib2.HTTPError as e:
-      # urllib2 will only try "reauth" 5 times before giving up, on the
-      # assumption that broken auth will be broken until new credentials are
-      # provided. Unfortunately, this handling is also triggered by 429 (gitiles
-      # over quota) errors, which are not actual authorization failures, and
-      # which can be recovered from (e.g. reset or increase quota) without
-      # reinitializing credentials. But if urllib2 has already given up at that
-      # point, then self.opener will never try to reauth again, and
-      # authenticated requests will continue to fail and end up here.
-      # This tries to prevent that situation by forcing urllib2 to not count 429
-      # errors against auth retries.
-      if e.code == 429:
-        self.authhandler.reset_retry_count()
-      self.logger.exception('Failed refs request: %s (%s)', refs_url, e)
-      return refs, filters
-    except urllib2.URLError as e:
-      self.logger.exception('Failed refs request: %s (%s)', refs_url, e)
+      resp, content = self.http.request(refs_url, headers=self.headers)
+      if resp.status >= 400:
+        raise httplib2.HttpLib2Error('Invalid response status %d' %
+                                     resp.status)
+    except httplib2.HttpLib2Error as e:
+      self.logger.exception(
+          'Failed refs request: %s (%s). Response: %r',
+          refs_url, e, resp)
       return refs, filters
 
     splitter = re.compile(r'(?P<commit>[0-9a-fA-F]+)\s+(?P<ref>[^\s]+)$')
@@ -489,7 +488,7 @@ class GitilesHelper(RestApiHelper):
       for idx, filter_reg in enumerate(filter_regex or []):
         ref_res[idx][1] = filter_reg
     all_refs = []
-    for line in resp:
+    for line in content.splitlines():
       m = splitter.match(line)
       if m:
         ref = m.group('ref')
@@ -622,10 +621,13 @@ class GerritHelper(RestApiHelper):
       query = '%s&%s' % (query, '&'.join(['o=%s' % p for p in fields]))
     self.logger.debug('Gerrit commits request: %s', query)
     try:
-      resp = self.opener.open(query)
+      resp, content = self.http.request(query, headers=self.headers)
+      if resp.status >= 400:
+        raise httplib2.HttpLib2Error('Invalid response status %d' %
+                                     resp.status)
       # Skip the first 5 bytes of the response due to JSON anti-XSSI prefix.
-      json_txt = resp.read()[5:]
-    except urllib2.URLError:
-      self.logger.exception('Failed gerrit request: %s', query)
+      json_txt = content[5:]
+    except httplib2.HttpLib2Error as e:
+      self.logger.exception('Failed gerrit request %s: %s', query, str(e))
       return {}
     return json.loads(json_txt)
