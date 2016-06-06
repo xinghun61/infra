@@ -151,5 +151,5 @@ class UpdateIssueAction(IssueAction):
     if amendments or self.description:  # Avoid completely empty comments.
       cmnts = services.issue.GetCommentsForIssue(cnxn, issue.issue_id)
       notify.PrepareAndSendIssueChangeNotification(
-          self.project.project_id, self.local_id, self.hostport,
+          issue.issue_id, self.project.project_id, self.local_id, self.hostport,
           self.commenter_id, len(cmnts) - 1, old_owner_id=old_owner_id)

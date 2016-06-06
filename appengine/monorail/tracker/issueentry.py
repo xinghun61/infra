@@ -304,11 +304,11 @@ class IssueEntry(servlet.Servlet):
       return
 
     notify.PrepareAndSendIssueChangeNotification(
-        mr.project_id, new_local_id, mr.request.host,
+        issue.issue_id, mr.project_id, new_local_id, mr.request.host,
         reporter_id, 0)  # Initial description is comment 0.
 
     notify.PrepareAndSendIssueBlockingNotification(
-        mr.project_id, mr.request.host, new_local_id,
+        issue.issue_id, mr.project_id, mr.request.host, new_local_id,
         parsed.blocked_on.iids, reporter_id)
 
     # format a redirect url

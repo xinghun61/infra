@@ -45,11 +45,12 @@ MAX_EMAIL_BODY_SIZE = 45000
 
 
 def PrepareAndSendIssueChangeNotification(
-    project_id, local_id, hostport, commenter_id, seq_num, send_email=True,
-    old_owner_id=framework_constants.NO_USER_SPECIFIED):
+    issue_id, project_id, local_id, hostport, commenter_id, seq_num,
+    send_email=True, old_owner_id=framework_constants.NO_USER_SPECIFIED):
   """Create a task to notify users that an issue has changed.
 
   Args:
+    issue_id: int ID of the issue that was changed.
     project_id: int ID of the project containing the changed issue.
     local_id: Issue number for the issue that was updated and saved.
     hostport: string domain name and port number from the HTTP request.
@@ -62,23 +63,23 @@ def PrepareAndSendIssueChangeNotification(
   Returns nothing.
   """
   params = dict(
-      project_id=project_id, id=local_id, commenter_id=commenter_id,
-      seq=seq_num, hostport=hostport,
+      issue_id=issue_id, project_id=project_id, id=local_id,
+      commenter_id=commenter_id, seq=seq_num, hostport=hostport,
       old_owner_id=old_owner_id, send_email=int(send_email))
   logging.info('adding notify task with params %r', params)
   taskqueue.add(url=urls.NOTIFY_ISSUE_CHANGE_TASK + '.do', params=params)
 
 
 def PrepareAndSendIssueBlockingNotification(
-    project_id, hostport, local_id, delta_blocker_iids,
+    issue_id, project_id, hostport, local_id, delta_blocker_iids,
     commenter_id, send_email=True):
   """Create a task to follow up on an issue blocked_on change."""
   if not delta_blocker_iids:
     return  # No notification is needed
 
   params = dict(
-      project_id=project_id, id=local_id, commenter_id=commenter_id,
-      hostport=hostport, send_email=int(send_email),
+      issue_id=issue_id, project_id=project_id, id=local_id,
+      commenter_id=commenter_id, hostport=hostport, send_email=int(send_email),
       delta_blocker_iids=','.join(str(iid) for iid in delta_blocker_iids))
 
   logging.info('adding blocking task with params %r', params)
@@ -86,7 +87,7 @@ def PrepareAndSendIssueBlockingNotification(
 
 
 def SendIssueBulkChangeNotification(
-    hostport, project_id, local_ids, old_owner_ids,
+    issue_ids, hostport, project_id, local_ids, old_owner_ids,
     comment_text, commenter_id, amendments, send_email, users_by_id):
   """Create a task to follow up on an issue blocked_on change."""
   amendment_lines = []
@@ -98,6 +99,7 @@ def SendIssueBulkChangeNotification(
       amendment_lines.append(line)
 
   params = dict(
+      issue_ids=','.join(str(iid) for iid in issue_ids),
       project_id=project_id, commenter_id=commenter_id,
       hostport=hostport, send_email=int(send_email),
       ids=','.join(str(lid) for lid in local_ids),
@@ -175,6 +177,7 @@ class NotifyIssueChangeTask(NotifyTaskBase):
       Results dictionary in JSON format which is useful just for debugging.
       The main goal is the side-effect of sending emails.
     """
+    issue_id = mr.GetPositiveIntParam('issue_id')
     project_id = mr.specified_project_id
     if project_id is None:
       return {
@@ -189,7 +192,8 @@ class NotifyIssueChangeTask(NotifyTaskBase):
     old_owner_id = mr.GetPositiveIntParam('old_owner_id')
     send_email = bool(mr.GetIntParam('send_email'))
     params = dict(
-        project_id=project_id, local_id=mr.local_id, commenter_id=commenter_id,
+        issue_id=issue_id, project_id=project_id, local_id=mr.local_id,
+        commenter_id=commenter_id,
         seq_num=seq_num, hostport=hostport, old_owner_id=old_owner_id,
         omit_ids=omit_ids, send_email=send_email)
 
@@ -411,6 +415,7 @@ class NotifyBlockingChangeTask(NotifyTaskBase):
       Results dictionary in JSON format which is useful just for debugging.
       The main goal is the side-effect of sending emails.
     """
+    issue_id = mr.GetPositiveIntParam('issue_id')
     project_id = mr.specified_project_id
     if project_id is None:
       return {
@@ -424,6 +429,7 @@ class NotifyBlockingChangeTask(NotifyTaskBase):
     delta_blocker_iids = mr.GetIntListParam('delta_blocker_iids')
     send_email = bool(mr.GetIntParam('send_email'))
     params = dict(
+        issue_id=issue_id,
         project_id=project_id, local_id=mr.local_id, commenter_id=commenter_id,
         hostport=hostport, delta_blocker_iids=delta_blocker_iids,
         omit_ids=omit_ids, send_email=send_email)
@@ -588,6 +594,7 @@ class NotifyBulkChangeTask(NotifyTaskBase):
       Results dictionary in JSON format which is useful just for debugging.
       The main goal is the side-effect of sending emails.
     """
+    issue_ids = mr.GetIntListParam('issue_ids')
     hostport = mr.GetParam('hostport')
     project_id = mr.specified_project_id
     if project_id is None:
@@ -604,6 +611,7 @@ class NotifyBulkChangeTask(NotifyTaskBase):
     amendments = mr.GetParam('amendments')
     send_email = bool(mr.GetIntParam('send_email'))
     params = dict(
+        issue_ids=issue_ids,
         project_id=project_id, local_ids=mr.local_id_list,
         commenter_id=commenter_id, hostport=hostport,
         old_owner_ids=old_owner_ids, comment_text=comment_text,

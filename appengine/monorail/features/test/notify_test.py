@@ -48,6 +48,7 @@ class SendNotificationTest(unittest.TestCase):
 
   def testPrepareAndSendIssueChangeNotification(self):
     notify.PrepareAndSendIssueChangeNotification(
+        issue_id=78901,
         project_id=789,
         local_id=1,
         hostport='testbed-test.appspotmail.com',
@@ -62,6 +63,7 @@ class SendNotificationTest(unittest.TestCase):
 
   def testPrepareAndSendIssueBlockingNotification(self):
     notify.PrepareAndSendIssueBlockingNotification(
+        issue_id=78901,
         project_id=789,
         hostport='testbed-test.appspotmail.com',
         local_id=1,
@@ -74,6 +76,7 @@ class SendNotificationTest(unittest.TestCase):
     self.assertEqual(0, len(tasks))
 
     notify.PrepareAndSendIssueBlockingNotification(
+        issue_id=78901,
         project_id=789,
         hostport='testbed-test.appspotmail.com',
         local_id=1,
@@ -87,6 +90,7 @@ class SendNotificationTest(unittest.TestCase):
 
   def testSendIssueBulkChangeNotification_CommentOnly(self):
     notify.SendIssueBulkChangeNotification(
+        issue_ids=[78901],
         hostport='testbed-test.appspotmail.com',
         project_id=789,
         local_ids=[1],
@@ -107,6 +111,7 @@ class SendNotificationTest(unittest.TestCase):
 
   def testSendIssueBulkChangeNotification_Normal(self):
     notify.SendIssueBulkChangeNotification(
+        issue_ids=[78901],
         hostport='testbed-test.appspotmail.com',
         project_id=789,
         local_ids=[1],

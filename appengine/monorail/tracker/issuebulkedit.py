@@ -266,7 +266,8 @@ class IssueBulkEdit(servlet.Servlet):
       blocking_add = []
       blocking_remove = parsed.blocking.iids
 
-    local_ids_actually_changed = []
+    local_ids_actually_changed = []  # TODO(jrobbins): phase out
+    iids_actually_changed = []
     old_owner_ids = []
     combined_amendments = []
     merge_into_issue = None
@@ -338,6 +339,7 @@ class IssueBulkEdit(servlet.Servlet):
 
           if amendments or parsed.comment:  # Avoid empty comments.
             local_ids_actually_changed.append(issue.local_id)
+            iids_actually_changed.append(issue.issue_id)
             old_owner_ids.append(old_owner_id)
             combined_amendments.extend(amendments)
 
@@ -385,11 +387,13 @@ class IssueBulkEdit(servlet.Servlet):
           project_id = move_to_project.project_id
           local_ids_actually_changed = [
               issue.local_id for issue in editable_issues]
+          iids_actually_changed = [
+              issue.issue_id for issue in editable_issues]
         else:
           project_id = mr.project_id
 
         notify.SendIssueBulkChangeNotification(
-            mr.request.host, project_id,
+            iids_actually_changed, mr.request.host, project_id,
             local_ids_actually_changed, old_owner_ids, parsed.comment,
             reporter_id, combined_amendments, send_email, users_by_id)
 

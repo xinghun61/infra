@@ -673,14 +673,16 @@ class IssueDetail(issuepeek.IssuePeek):
     if amendments or parsed.comment.strip() or parsed.attachments:
       cmnts = self.services.issue.GetCommentsForIssue(mr.cnxn, issue.issue_id)
       notify.PrepareAndSendIssueChangeNotification(
-          issue.project_id, issue.local_id, mr.request.host, reporter_id,
-          len(cmnts) - 1, send_email=send_email, old_owner_id=old_owner_id)
+          issue.issue_id, issue.project_id, issue.local_id, mr.request.host,
+          reporter_id, len(cmnts) - 1, send_email=send_email,
+          old_owner_id=old_owner_id)
 
     if merge_into_issue and merge_allowed and merge_comment:
       cmnts = self.services.issue.GetCommentsForIssue(
           mr.cnxn, merge_into_issue.issue_id)
       notify.PrepareAndSendIssueChangeNotification(
-          merge_into_issue.project_id, merge_into_issue.local_id,
+          merge_into_issue.issue_id, merge_into_issue.project_id,
+          merge_into_issue.local_id,
           mr.request.host, reporter_id, len(cmnts) - 1, send_email=send_email)
 
     if permit_edit:
@@ -689,8 +691,8 @@ class IssueDetail(issuepeek.IssuePeek):
           orig_blocked_on, blocked_on_iids)
       delta_blockers = blockers_added + blockers_removed
       notify.PrepareAndSendIssueBlockingNotification(
-          issue.project_id, mr.request.host, issue.local_id, delta_blockers,
-          reporter_id, send_email=send_email)
+          issue.issue_id, issue.project_id, mr.request.host, issue.local_id,
+          delta_blockers, reporter_id, send_email=send_email)
       # We don't send notification emails to newly blocked issues: either they
       # know they are blocked, or they don't care and can be fixed anyway.
       # This is the same behavior as the issue entry page.
