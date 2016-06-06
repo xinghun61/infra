@@ -264,6 +264,7 @@ var publish_link = "{%url codereview.views.publish issue.key.id%}";
 
 {%if not is_dev%}
 <script>
+  // Google Analytics.
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -277,6 +278,16 @@ var publish_link = "{%url codereview.views.publish issue.key.id%}";
   ga('linker:autoLink',
      ['chromiumcodereview.appspot.com', 'codereview.chromium.org'] );
   ga('send', 'pageview');
+
+  // CRDX Feedback button.
+  (function(i,s,o,g,r,a,m){i['CrDXObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://storage.googleapis.com/crdx-feedback.appspot.com/feedback.js','crdx');
+
+  crdx('setFeedbackButtonLink',
+      'https://bugs.chromium.org/p/chromium/issues/entry?cc=andybons@chromium.org&components=Infra%3ECodereview%3ERietveld');
+  crdx('setFeedbackButtonBackgroundColor', '#4182FA');
 </script>
 {%endif%}
 
