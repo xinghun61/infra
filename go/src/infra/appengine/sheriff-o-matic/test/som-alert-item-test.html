@@ -110,7 +110,6 @@
     test('no bug list when no bugs', function() {
       // The template counts as an element
       assert.equal(1, element.$.bugsList.childElementCount);
-      assert.equal("No Linked Bugs.", element.$.noBugs.textContent.trim());
     })
 
     test('has a bug list when annotation has bugs', function(done) {

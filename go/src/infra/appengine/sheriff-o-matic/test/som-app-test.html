@@ -252,6 +252,7 @@
     });
 
     test('refreshes after a period', function(done) {
+      element.created();
       clock.tick(60 * 1000);
       flush(function() {
         sinon.assert.calledOnce(refreshStub);

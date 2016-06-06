@@ -19,7 +19,7 @@
       element = fixture('basic');
     });
 
-    test('renders bare minimum', function() {
+    test('renders bare minimum', function(done) {
       element.extension = {
         bar: ['baz'],
         builders: [
@@ -29,7 +29,11 @@
         reasons: [],
         regression_ranges: []
       };
-      assert.isDefined(element.$$('#builders').textContent.trim());
+      element._uberify = (url) => { return url; };
+      flush( () => {
+        assert.isDefined(element.$$('#builders').textContent.trim());
+        done();
+      });
     });
   });
 })();
