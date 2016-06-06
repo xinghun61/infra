@@ -25,8 +25,7 @@ from infra_libs import httplib2_utils
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.NullHandler())
 
-# TODO(sheyang): Use staging for tesing now
-MONORAIL_PROD_URL = ('https://monorail-staging.appspot.com/_ah/api/discovery/'
+MONORAIL_PROD_URL = ('https://monorail-prod.appspot.com/_ah/api/discovery/'
                      'v1/apis/{api}/{apiVersion}/rest')
 
 
