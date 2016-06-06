@@ -190,6 +190,11 @@ def parse_args():
       action='store_false',
       help=('Fetch the cached stats from the app. Opposite to --use-logs.'))
   parser.add_argument(
+      '--use-local-request-cache',
+      action='store_false', default=False,
+      help='Store responses to all http and https requests in the local cache '
+           'and use them instead of making an actual request when available.')
+  parser.add_argument(
       '--use-message-parsing', action='store_true',
       help='DEPRECATED: use message parsing to derive failure reasons.')
   parser.add_argument(
@@ -253,14 +258,19 @@ def utc_date_to_timestamp(date):
   return calendar.timegm(date.timetuple())
 
 
-requests_cache.install_cache('cq_stats')
-session = requests.Session()
-http_adapter = requests.adapters.HTTPAdapter(
-    max_retries=urllib3.util.Retry(total=4, backoff_factor=0.5),
-    pool_block=True)
-session.mount('http://', http_adapter)
-session.mount('https://', http_adapter)
+session = None
 
+
+def configure_session(args):
+  global session
+  if args.use_local_request_cache:
+    requests_cache.install_cache('cq_stats')
+  session = requests.Session()
+  http_adapter = requests.adapters.HTTPAdapter(
+      max_retries=urllib3.util.Retry(total=4, backoff_factor=0.5),
+      pool_block=True)
+  session.mount('http://', http_adapter)
+  session.mount('https://', http_adapter)
 
 def fetch_json(url):
   return session.get(url).json()
@@ -971,7 +981,7 @@ def print_flakiness_stats(args, stats):
       try_job_results = fetch_json(
           'https://codereview.chromium.org/api/%d/%d/try_job_results' % (
               issue, patchset))
-    except simplejson.JSONDecodeError as e:
+    except simplejson.JSONDecodeError as e:  # pragma: no cover
       # This can happen e.g. for private issues where we can't fetch the JSON
       # without authentication.
       logging.warn('%r (issue:%d, patchset:%d)', e, issue, patchset)
@@ -1253,6 +1263,7 @@ def acquire_stats(args, add_tree_stats=True):
 
 def main():
   args = parse_args()
+  configure_session(args)
   logger = logging.getLogger()
   infra_libs.logs.process_argparse_options(args, logger)
   stats = acquire_stats(args)

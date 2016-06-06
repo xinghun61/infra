@@ -38,6 +38,7 @@ class Args(object):
     self.seq = 'false'
     self.thread_pool = 3
     self.bots = []
+    self.use_local_request_cache = False
     for name, val in kwargs.iteritems():
       self.__dict__[name] = val
 
@@ -123,10 +124,8 @@ class TestCQStats(auto_stub.TestCase):
                      datetime.datetime(2014, 10, 21, 23, 49, 39))
 
   def test_fetch_json(self):
-    class MockResponse(object):
-      def json(self):
-        return {}
-    self.mock(cq_stats.session, 'get', lambda url: MockResponse())
+    cq_stats.session = mock.Mock()
+    cq_stats.session.get.return_value.json.return_value = {}
     self.assertEqual(cq_stats.fetch_json('foo'), {})
 
   def test_fetch_git_page(self):
@@ -665,6 +664,8 @@ class TestCQStats(auto_stub.TestCase):
   # Assumption: input stats at minimum have the keys from
   # default_stats(). This is verified in test_organize_stats().
   def test_print_stats(self):
+    cq_stats.session = mock.Mock()
+    cq_stats.session.get.return_value.json.return_value = {}
     self.mock(cq_stats, 'output', self.print_mock)
     args = Args(list_false_rejections=True)
     stats_set = cq_stats.default_stats()
@@ -776,3 +777,10 @@ class TestCQStats(auto_stub.TestCase):
               lambda *_: Args(date=None, range='week'))
     self.assertEqual(cq_stats.parse_args().date,
                      datetime.datetime(2016, 2, 29, 0, 0, 0))
+
+  @mock.patch('requests_cache.install_cache')
+  def test_use_local_cache_only_with_flag(self, install_cache_mock):
+    cq_stats.configure_session(Args())
+    self.assertFalse(install_cache_mock.called)
+    cq_stats.configure_session(Args(use_local_request_cache=True))
+    self.assertTrue(install_cache_mock.called)
