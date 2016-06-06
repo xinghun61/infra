@@ -7,6 +7,7 @@ from recipe_engine.recipe_api import Property
 DEPS = [
   'cipd',
   'depot_tools/bot_update',
+  'depot_tools/depot_tools',
   'file',
   'depot_tools/gclient',
   'recipe_engine/json',
@@ -71,7 +72,7 @@ def build_luci(api):
   absfiles = [api.path.join(go_bin, i) for i in files]
   api.python(
       'upload go bin',
-      api.path['depot_tools'].join('upload_to_google_storage.py'),
+      api.depot_tools.upload_to_google_storage_path,
       ['-b', 'chromium-luci'] + absfiles)
   for name, abspath in zip(files, absfiles):
     sha1 = api.file.read(
@@ -164,6 +165,7 @@ def GenTests(api):
   yield (
     api.test('infra') +
     api.properties.git_scheduled(
+        path_config='kitchen',
         buildername='infra-continuous',
         buildnumber=123,
         mastername='chromium.infra',
@@ -175,6 +177,7 @@ def GenTests(api):
   yield (
     api.test('infra_win') +
     api.properties.git_scheduled(
+        path_config='kitchen',
         buildername='infra-continuous',
         buildnumber=123,
         mastername='chromium.infra',
@@ -185,6 +188,7 @@ def GenTests(api):
   yield (
     api.test('infra_internal') +
     api.properties.git_scheduled(
+        path_config='kitchen',
         buildername='infra-internal-continuous',
         buildnumber=123,
         mastername='internal.infra',
@@ -197,6 +201,7 @@ def GenTests(api):
   yield (
     api.test('infra-64') +
     api.properties.git_scheduled(
+        path_config='kitchen',
         buildername='infra-continuous-64',
         buildnumber=123,
         mastername='chromium.infra',
@@ -207,6 +212,7 @@ def GenTests(api):
   yield (
     api.test('infra_swarming') +
     api.properties.git_scheduled(
+        path_config='kitchen',
         buildername='infra-continuous-32',
         buildnumber=-1,
         mastername='chromium.infra',

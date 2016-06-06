@@ -6,6 +6,7 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
+  'depot_tools/presubmit',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/properties',
@@ -22,7 +23,7 @@ def _run_presubmit(api, patch_root, bot_update_step):
   # infra/go/env.py takes care of this.
   presubmit_cmd = [
     'python',  # env.py will replace with this its sys.executable.
-    api.path['depot_tools'].join('presubmit_support.py'),
+    api.presubmit.presubmit_support_path,
     '--root', api.path['slave_build'].join(patch_root),
     '--commit',
     '--verbose', '--verbose',
@@ -89,6 +90,7 @@ def GenTests(api):
   yield (
     api.test('luci_gae') +
     api.properties.git_scheduled(
+        path_config='kitchen',
         buildername='luci-gae-linux64',
         mastername='chromium.infra',
         repository='https://chromium.googlesource.com/external/github.com/luci/gae',
@@ -97,6 +99,7 @@ def GenTests(api):
   yield (
     api.test('presubmit_try_job') +
     api.properties.tryserver(
+        path_config='kitchen',
         mastername='tryserver.infra',
         buildername='Luci-GAE Presubmit',
     ) + api.step_data('presubmit', api.json.output([[]]))

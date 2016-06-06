@@ -211,7 +211,7 @@
     "cmd": [
       "python",
       "-u",
-      "[DEPOT_TOOLS]/upload_to_google_storage.py",
+      "RECIPE_PACKAGE_REPO[depot_tools]/upload_to_google_storage.py",
       "-b",
       "chromium-luci",
       "[SLAVE_BUILD]/infra/go/bin/file 1",

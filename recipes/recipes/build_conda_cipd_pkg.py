@@ -76,15 +76,15 @@ def GenTests(api):
   yield (
     api.test('linux') +
     api.platform.name('linux') +
-    api.properties.generic()
+    api.properties.generic(path_config='kitchen')
   )
   yield (
     api.test('mac') +
     api.platform.name('mac') +
-    api.properties.generic()
+    api.properties.generic(path_config='kitchen')
   )
   yield (
     api.test('win') +
     api.platform.name('win') +
-    api.properties.generic()
+    api.properties.generic(path_config='kitchen')
   )

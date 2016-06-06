@@ -61,4 +61,7 @@ def RunSteps(api, revision):
 
 
 def GenTests(api):
-  yield api.test('basic') + api.properties(revision='deadbeef')
+  yield (
+      api.test('basic') +
+      api.properties(path_config='kitchen', revision='deadbeef')
+  )

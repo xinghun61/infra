@@ -9,6 +9,7 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'recipe_engine/path',
+  'recipe_engine/properties',
 ]
 
 
@@ -39,4 +40,4 @@ def RunSteps(api, mastername, buildername, buildnumber):
 
 
 def GenTests(api):
-  yield api.test('basic')
+  yield api.test('basic') + api.properties(path_config='kitchen')
