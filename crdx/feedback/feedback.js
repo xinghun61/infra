@@ -81,7 +81,14 @@
   function setButtonsVisible(visible) {
     container.style.display = visible ? null : 'none';
   }
-  document.body.appendChild(container);
+  // document.body may not exist yet.
+  if (!document.body) {
+    window.addEventListener('load', function() {
+      document.body.appendChild(container);
+    });
+  } else {
+    document.body.appendChild(container);
+  }
 
   var crdx = window[window.CrDXObject] || {};
   var queue = crdx.q || [];
