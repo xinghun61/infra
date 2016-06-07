@@ -125,6 +125,25 @@
     "cmd": [
       "python",
       "-u",
+      "[SLAVE_BUILD]/infra_internal/recipes/recipes.py",
+      "simulation_test",
+      "test"
+    ],
+    "name": "recipe tests"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[SLAVE_BUILD]/infra_internal/recipes/recipes.py",
+      "lint"
+    ],
+    "name": "recipe lint"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "[SLAVE_BUILD]/infra_internal/go/env.py"
     ],
     "name": "go bootstrap"

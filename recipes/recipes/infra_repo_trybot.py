@@ -49,6 +49,13 @@ def RunSteps(api):
 
     api.python('python tests', 'test.py', ['test'], cwd=api.path['checkout'])
 
+    api.python(
+        'recipe tests', api.path['checkout'].join('recipes', 'recipes.py'),
+        ['simulation_test', 'test'])
+    api.python(
+        'recipe lint', api.path['checkout'].join('recipes', 'recipes.py'),
+        ['lint'])
+
     # if any(f.startswith('infra/glyco/') for f in files):
     #   api.python(
     #     'glyco tests',
