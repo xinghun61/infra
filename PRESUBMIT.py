@@ -267,6 +267,8 @@ def PylintChecks(input_api, output_api):  # pragma: no cover
   black_list = list(input_api.DEFAULT_BLACK_LIST)
   black_list += DISABLED_PROJECTS
   black_list += ['.*\.pyc$', '.*_pb2\.py']
+  # TODO(phajdan.jr): pylint recipes-py code (http://crbug.com/617939).
+  black_list += [r'^recipes/recipes\.py$']
   black_list += IgnoredPaths(input_api)
 
   extra_syspaths = [venv_path]
