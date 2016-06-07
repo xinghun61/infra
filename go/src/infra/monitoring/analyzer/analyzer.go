@@ -796,8 +796,8 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []stepFailure) ([]mes
 			if r, ok := failure.step.Results[0].(float64); ok && r == resInfraFailure {
 				infoLog.Printf("INFRA FAILURE: %s/%s/%s", failure.master.Name(), failure.builderName, failure.step.Name)
 				alr := messages.Alert{
-					Title:     fmt.Sprintf("%s infra failure", failure.builderName),
-					Body:      fmt.Sprintf("On step %s", failure.step.Name),
+					Title:     fmt.Sprintf("%s failing on %s/%s", failure.step.Name, failure.master.Name(), failure.builderName),
+					Body:      "infrastructure failure",
 					Type:      messages.AlertInfraFailure,
 					StartTime: failure.build.Times[0],
 					Time:      failure.build.Times[0],
@@ -846,8 +846,8 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []stepFailure) ([]mes
 			expvars.Add("StepFailures", 1)
 			defer expvars.Add("StepFailures", -1)
 			alr := messages.Alert{
-				Title:     fmt.Sprintf("%s step failure", f.builderName),
-				Body:      fmt.Sprintf("%s failing on %s/%s", f.step.Name, f.master.Name(), f.builderName),
+				Title:     fmt.Sprintf("%s failing on %s/%s", f.step.Name, f.master.Name(), f.builderName),
+				Body:      "",
 				Time:      f.build.Times[0],
 				StartTime: f.build.Times[0],
 				Type:      messages.AlertBuildFailure,

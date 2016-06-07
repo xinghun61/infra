@@ -368,9 +368,9 @@ func TestBuilderStepAlerts(t *testing.T) {
 			wantAlerts: []messages.Alert{
 				{
 					Key:      "fake.master.fake.builder.fake_step.",
-					Title:    "fake.builder step failure",
+					Title:    "fake_step failing on fake.master/fake.builder",
 					Type:     messages.AlertBuildFailure,
-					Body:     "fake_step failing on fake.master/fake.builder",
+					Body:     "",
 					Severity: newFailureSev,
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
@@ -458,9 +458,9 @@ func TestBuilderStepAlerts(t *testing.T) {
 			wantAlerts: []messages.Alert{
 				{
 					Key:      "fake.master.fake.builder.fake_step.",
-					Title:    "fake.builder step failure",
+					Title:    "fake_step failing on fake.master/fake.builder",
 					Type:     messages.AlertBuildFailure,
-					Body:     "fake_step failing on fake.master/fake.builder",
+					Body:     "",
 					Severity: reliableFailureSev,
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
@@ -547,9 +547,9 @@ func TestBuilderStepAlerts(t *testing.T) {
 			wantAlerts: []messages.Alert{
 				{
 					Key:      "fake.master.fake.builder.other_step.",
-					Title:    "fake.builder step failure",
+					Title:    "other_step failing on fake.master/fake.builder",
 					Type:     messages.AlertBuildFailure,
-					Body:     "other_step failing on fake.master/fake.builder",
+					Body:     "",
 					Severity: newFailureSev,
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
@@ -578,9 +578,9 @@ func TestBuilderStepAlerts(t *testing.T) {
 				},
 				{
 					Key:      "fake.master.fake.builder.fake_step.",
-					Title:    "fake.builder step failure",
+					Title:    "fake_step failing on fake.master/fake.builder",
 					Type:     messages.AlertBuildFailure,
-					Body:     "fake_step failing on fake.master/fake.builder",
+					Body:     "",
 					Severity: reliableFailureSev,
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
@@ -667,9 +667,9 @@ func TestBuilderStepAlerts(t *testing.T) {
 			wantAlerts: []messages.Alert{
 				{
 					Key:      "fake.master.fake.builder.fake_step.",
-					Title:    "fake.builder step failure",
+					Title:    "fake_step failing on fake.master/fake.builder",
 					Type:     messages.AlertBuildFailure,
-					Body:     "fake_step failing on fake.master/fake.builder",
+					Body:     "",
 					Severity: reliableFailureSev,
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
@@ -1121,8 +1121,8 @@ func TestStepFailureAlerts(t *testing.T) {
 			alerts: []messages.Alert{
 				{
 					Key:      "fake.master.fake.builder.fake_tests.",
-					Title:    "fake.builder step failure",
-					Body:     "fake_tests failing on fake.master/fake.builder",
+					Title:    "fake_tests failing on fake.master/fake.builder",
+					Body:     "",
 					Severity: newFailureSev,
 					Type:     messages.AlertBuildFailure,
 					Extension: messages.BuildFailure{
