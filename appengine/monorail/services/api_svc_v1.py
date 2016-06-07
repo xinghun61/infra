@@ -628,6 +628,10 @@ class MonorailApi(remote.Service):
     new_issue = self._services.issue.GetIssueByLocalID(
         mar.cnxn, mar.project_id, local_id)
 
+    self._services.issue_star.SetStar(
+        mar.cnxn, self._services, mar.config, new_issue.issue_id,
+        mar.auth.user_id, True)
+
     if request.sendEmail:
       notify.PrepareAndSendIssueChangeNotification(
           new_issue.issue_id, mar.project_id, local_id,

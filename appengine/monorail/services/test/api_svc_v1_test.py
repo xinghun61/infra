@@ -336,6 +336,13 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.assertEqual('Field1', resp['fieldValues'][0]['fieldName'])
     self.assertEqual('11', resp['fieldValues'][0]['fieldValue'])
 
+    new_issue = self.services.issue.GetIssueByLocalID(
+        'fake cnxn', 12345, resp['id'])
+
+    starrers = self.services.issue_star.LookupItemStarrers(
+        'fake cnxn', new_issue.issue_id)
+    self.assertIn(1, starrers)
+
   def testIssuesList_NoPermission(self):
     """No permission for additional projects."""
     self.services.project.TestAddProject(
