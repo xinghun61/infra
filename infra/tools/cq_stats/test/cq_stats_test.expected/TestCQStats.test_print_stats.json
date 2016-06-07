@@ -24,12 +24,10 @@
   "",
   "Slowest CLs:",
   "http://chromium-cq-status.appspot.com/patch-status/456/1 (2.0 hrs)",
-  "http://chromium-cq-status.appspot.com/patch-status/789/1 (2.0 hrs)",
   "http://chromium-cq-status.appspot.com/patch-status/123/1 (1.0 hrs)",
   "",
   "False rejections:",
   "http://chromium-cq-status.appspot.com/patch-status/456/1 (1 false rejections)",
-  "http://chromium-cq-status.appspot.com/patch-status/789/1 (2 false rejections, 1 infra)",
   "Statistics for project test_project",
   "  No stats since 2014-01-01 00:00:00",
   "Statistics for project test_project",
@@ -63,7 +61,6 @@
   "",
   "Slowest CLs:",
   "http://chromium-cq-status.appspot.com/patch-status/456/1 (2.0 hrs)",
-  "http://chromium-cq-status.appspot.com/patch-status/789/1 (2.0 hrs)",
   "http://chromium-cq-status.appspot.com/patch-status/123/1 (1.0 hrs)",
   "Statistics for project test_project",
   "excluding paths in the following set:",
@@ -96,6 +93,5 @@
   "",
   "Slowest CLs:",
   "http://chromium-cq-status.appspot.com/patch-status/456/1 (2.0 hrs)",
-  "http://chromium-cq-status.appspot.com/patch-status/789/1 (2.0 hrs)",
   "http://chromium-cq-status.appspot.com/patch-status/123/1 (1.0 hrs)"
 ]
