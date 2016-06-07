@@ -49,15 +49,16 @@ def RunSteps(api):
 
     api.python('python tests', 'test.py', ['test'], cwd=api.path['checkout'])
 
-    # TODO(phajdan.jr): should we make recipe tests run on other platforms?
-    if api.platform.is_linux and api.platform.bits == 64:
-      api.python(
-          'recipe tests', api.path['checkout'].join('recipes', 'recipes.py'),
-          ['simulation_test', 'test'])
+    if not internal:
+      # TODO(phajdan.jr): should we make recipe tests run on other platforms?
+      if api.platform.is_linux and api.platform.bits == 64:
+        api.python(
+            'recipe tests', api.path['checkout'].join('recipes', 'recipes.py'),
+            ['simulation_test', 'test'])
 
-    api.python(
-        'recipe lint', api.path['checkout'].join('recipes', 'recipes.py'),
-        ['lint'])
+      api.python(
+          'recipe lint', api.path['checkout'].join('recipes', 'recipes.py'),
+          ['lint'])
 
     # if any(f.startswith('infra/glyco/') for f in files):
     #   api.python(
