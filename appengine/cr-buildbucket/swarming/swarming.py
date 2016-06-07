@@ -51,6 +51,7 @@ PUBSUB_TOPIC = 'swarming'
 BUILDER_PARAMETER = 'builder_name'
 PARAM_PROPERTIES = 'properties'
 PARAM_SWARMING = 'swarming'
+PARAM_CHANGES = 'changes'
 DEFAULT_URL_FORMAT = 'https://{swarming_hostname}/user/task/{task_id}'
 
 
@@ -132,6 +133,10 @@ def validate_build_parameters(builder_name, params):
 def create_task_def_async(swarming_cfg, builder_cfg, build):
   """Creates a swarming task definition for the |build|.
 
+  Supports build properties that are supported by Buildbot-Buildbucket
+  integration. See
+  https://chromium.googlesource.com/chromium/tools/build/+/eff4ceb/scripts/master/buildbucket/README.md#Build-parameters
+
   Raises:
     errors.InvalidInputError if build.parameters are invalid.
   """
@@ -155,6 +160,13 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
       p.split(':', 1) for p in builder_cfg.recipe.properties or [])
     build_properties.update(build.parameters.get(PARAM_PROPERTIES) or {})
     build_properties['buildername'] = builder_cfg.name
+
+    # Convert changes in build to blamelist property, like Buildbot-Buildbucket
+    # integration. In Buildbot the property value is a list of emails.
+    changes = params.get(PARAM_CHANGES)
+    if changes:  # pragma: no branch
+      emails = [c.get('author', {}).get('email') for c in changes]
+      build_properties['blamelist'] = filter(None, emails)
 
     task_template_params.update({
       'repository': recipe.repository,

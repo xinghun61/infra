@@ -146,7 +146,10 @@ class SwarmingTest(testing.AppengineTestCase):
         },
         'properties': {
           'a': 'b',
-        }
+        },
+        'changes': [{
+          'author': {'email': 'bob@example.com'},
+        }]
       },
     )
 
@@ -209,6 +212,7 @@ class SwarmingTest(testing.AppengineTestCase):
           '-recipe', 'recipe',
           '-properties', json.dumps({
             'a': 'b',
+            'blamelist': ['bob@example.com'],
             'buildername': 'builder',
             'predefined-property': 'x',
           }, sort_keys=True)
