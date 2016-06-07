@@ -343,6 +343,8 @@ def CommonChecks(input_api, output_api):  # pragma: no cover
   output = input_api.RunTests(PylintChecks(input_api, output_api))
   output.extend(input_api.RunTests(JshintChecks(input_api, output_api)))
   output.extend(BrokenLinksChecks(input_api, output_api))
+  output.extend(
+      input_api.canned_checks.CheckGenderNeutral(input_api, output_api))
   return output
 
 
