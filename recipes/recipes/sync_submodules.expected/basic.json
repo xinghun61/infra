@@ -89,6 +89,16 @@
   },
   {
     "cmd": [
+      "git",
+      "rev-parse",
+      "FETCH_HEAD^"
+    ],
+    "cwd": "[CWD]/src",
+    "name": "git rev-parse",
+    "stdout": "/path/to/tmp/"
+  },
+  {
+    "cmd": [
       "python",
       "RECIPE_MODULE[build::sync_submodules]/resources/deps2submodules.py",
       "DEPS"
