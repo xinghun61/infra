@@ -312,7 +312,7 @@ class URLAutolinkTest(unittest.TestCase):
 
   def testLinkify_ContextOnBadLink(self):
     """Test that surrounding text retained in cases where we don't link url."""
-    test = 'http://badexample'
+    test = 'http://bad=example'
     result = self.DoLinkify('<a href="%s">' % test)
     self.assertEqual(None, result[0].href)
     self.assertEqual(test + '">', result[0].content)
@@ -339,7 +339,7 @@ class URLAutolinkTest(unittest.TestCase):
   def testLinkify_LinkTextEscapingDisabled(self):
     """Test that url-like things that miss validation aren't linked."""
     # Link matched by the regex but not accepted by the validator.
-    test = 'http://crash/reportdetail?reportid=35aa03e04772358b'
+    test = 'http://bad_domain/reportdetail?reportid=35aa03e04772358b'
     result = self.DoLinkify('<span>%s</span>' % test)
     self.assertEqual(None, result[0].href)
     self.assertEqual(test, result[0].content)

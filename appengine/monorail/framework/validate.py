@@ -74,11 +74,18 @@ RE_EMAIL_SEARCH = re.compile(_RFC_2821_EMAIL_REGEX)
 # email address (by adding the end-of-string anchor $)
 RE_EMAIL_ONLY = re.compile('^%s$' % _RFC_2821_EMAIL_REGEX)
 
-_URL_HOST_PATTERN = (
-    r'(?:https?|ftp)://'                         # http(s) and ftp protocols
-    r'[-a-zA-Z0-9.]+\.[a-zA-Z]{2,9}(:[0-9]+)?'   # ascii host values
-)
-_URL_REGEX = r'%s(/[^\s]*)?' % _URL_HOST_PATTERN
+_SCHEME_PATTERN = r'(?:https?|ftp)://'
+_SHORT_HOST_PATTERN = (
+    r'(?=[a-zA-Z])[-a-zA-Z0-9]*[a-zA-Z0-9](:[0-9]+)?'
+    r'/'  # Slash is manditory for short host names.
+    r'[^\s]*'
+    )
+_DOTTED_HOST_PATTERN = (
+    r'[-a-zA-Z0-9.]+\.[a-zA-Z]{2,9}(:[0-9]+)?'
+    r'(/[^\s]*)?'
+    )
+_URL_REGEX = r'%s(%s|%s)' % (
+    _SCHEME_PATTERN, _SHORT_HOST_PATTERN, _DOTTED_HOST_PATTERN)
 
 # A more complete URL regular expression based on a combination of the
 # existing _URL_REGEX and the pattern found for URI regular expressions

@@ -90,14 +90,15 @@ class ValidateUnitTest(unittest.TestCase):
       'http://domain.with.port.com:8080',
       'http://domain.with.port.com:8080/path/info',
       'ftp://ftp.gnu.org',
-      'ftp://some.server.some.place.com'
+      'ftp://some.server.some.place.com',
+      'http://b/123456',
+      'http://cl/123456/',
   ]
 
   BAD_URLS = [
       ' http://leading.whitespace.com',
       'http://trailing.domain.whitespace.com ',
       'http://trailing.whitespace.com/after/path/info ',
-      'http://no-tld/',
       'http://underscore_domain.com/',
       'http://space in domain.com',
       'http://user@example.com',  # standard, but we purposely don't accept it.
@@ -106,11 +107,12 @@ class ValidateUnitTest(unittest.TestCase):
       'missing-http.com',
       'http:missing-slashes.com',
       'http:/only-one-slash.com',
-      'http://bad-tld.c0m',
-      'http://bad-tld.c',
       'http://trailing.dot.',
       'mailto:bad.scheme',
       'javascript:attempt-to-inject',
+      'http://short-with-no-final-slash',
+      'http:///',
+      'http:///no.host.name',
       'http://:8080/',
       'http://badport.com:808a0/ ',
   ]
