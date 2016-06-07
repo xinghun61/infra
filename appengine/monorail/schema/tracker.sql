@@ -456,8 +456,14 @@ CREATE TABLE ProjectIssueConfig (
   exclusive_label_prefixes VARCHAR(255) NOT NULL,
   default_template_for_developers INT NOT NULL,
   default_template_for_users INT NOT NULL,
+  default_col_spec TEXT,
+  default_sort_spec TEXT,
+  default_x_attr TEXT,
+  default_y_attr TEXT,
+
   member_default_query TEXT,
   custom_issue_entry_url TEXT,
+  member_default_query TEXT,
 
   PRIMARY KEY (project_id),
   FOREIGN KEY (project_id) REFERENCES Project(project_id)
