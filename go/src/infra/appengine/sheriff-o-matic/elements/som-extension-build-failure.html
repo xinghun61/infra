@@ -161,7 +161,7 @@
         // The build number range is inclusive.
         let numBuilds = builder.latest_failure - builder.first_failure + 1;
         if (numBuilds > 1) {
-          return `[${numBuilds} in a row]`;
+          return `[${numBuilds} since first detection]`;
         }
       },
 
