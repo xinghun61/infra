@@ -35,8 +35,10 @@ class GatekeeperExtrasTest(unittest.TestCase):
     }
     gatekeeper_trees_cfg = {
         'test-tree': {
-            'http://build.chromium.org/p/chromium': ['*'],
-            'http://build.chromium.org/p/chromium.android': ['foo'],
+            'masters': {
+              'http://build.chromium.org/p/chromium': ['*'],
+              'http://build.chromium.org/p/chromium.android': ['foo'],
+            }
         }
     }
     alerts = [

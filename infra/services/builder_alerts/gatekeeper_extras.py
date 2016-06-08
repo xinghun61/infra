@@ -43,8 +43,8 @@ def apply_gatekeeper_rules(alerts, gatekeeper, gatekeeper_trees):
     builder = alert.get('builder_name')
     alert_tree = tree_for_master(master_url, gatekeeper_trees)
     if builder:
-      if alert_tree in gatekeeper_trees and builder_is_excluded(
-          builder, config, gatekeeper_trees[alert_tree][master_url]):
+      masters = gatekeeper_trees.get(alert_tree, {}).get('masters', {})
+      if builder_is_excluded(builder, config, masters.get(master_url, [])):
         continue
       # Only apply tree closer logic for step failures
       if 'step_name' in alert:
