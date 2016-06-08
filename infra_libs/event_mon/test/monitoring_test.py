@@ -313,6 +313,21 @@ class GetBuildEventTest(unittest.TestCase):
     self.assertTrue(event.HasField('build_event'))
     self.assertEquals(event.build_event.patch_url, patch_url)
 
+  def test_get_build_event_with_bbucket_id(self):
+    log_event = monitoring.get_build_event(
+        'BUILD', 'bot.host.name', 'build_name', bbucket_id=123).log_event()
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.bbucket_id, 123)
+
+    # Try invalid value. This should not throw any exceptions.
+    log_event = monitoring.get_build_event(
+        'BUILD', 'bot.host.name', 'build_name', bbucket_id='foo').log_event()
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+
   def test_get_build_event_invalid_type(self):
     # An invalid type is a critical error.
     log_event = monitoring.get_build_event('INVALID_TYPE',
