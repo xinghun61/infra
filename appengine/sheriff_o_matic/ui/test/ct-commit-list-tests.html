@@ -22,17 +22,20 @@ describe('ct-commit-list', function() {
     setTimeout(done);
   });
 
-  function numOfMatchedSuspectedCommitInfo() {
-    var html = list.shadowRoot.innerHTML;
-    var results = html.match(/\d+ suspected CL\(s\)/g);
-    return Object.size(results);
+  function finditResult() {
+    var element = list.shadowRoot.getElementById('findit-result');
+    if (element) {
+      return element.innerText;
+    } else {
+      return undefined;
+    }
   }
 
   describe('commit list UI', function() {
     it('should show no commits by default', function() {
+      assert.isUndefined(finditResult());
       var commits = list.shadowRoot.querySelectorAll('ct-commit');
       assert.lengthOf(commits, 0);
-      assert.equal(numOfMatchedSuspectedCommitInfo(), 0);
     });
 
     describe('expanded test', function() {
@@ -42,41 +45,135 @@ describe('ct-commit-list', function() {
       });
 
       it('should show commit when expanded', function() {
+        assert.isUndefined(finditResult());
         assert.lengthOf(list.shadowRoot.querySelectorAll('ct-commit'), 2);
-        assert.equal(numOfMatchedSuspectedCommitInfo(), 0);
       });
     });
   });
 
   describe('summary of suspected commits', function() {
-    it('should show up if they are in range', function(done) {
-      list.suspectedCLsByRepo = {
-        'blink': [
-          {
-            'commitPosition': 158544,
-            'builds': ['https://abc']
+    it('a single culprit found by try-job', function(done) {
+      list.suspectedCLGroup = {
+        'buildUrl': 'https://abc',
+        'foundByTryJob': 1,
+        'foundByHeuristic': 0,
+        'suspectedCLsByRepo': {
+          'blink': {
+            'git_hash': {
+              'commitPosition': 158544,
+              'revision': 'git_hash',
+              'foundByTryJob': 1,
+              'foundByHeuristic': 0,
+            },
           }
-        ]
+        }
       };
 
       setTimeout(function() {
-        assert.equal(numOfMatchedSuspectedCommitInfo(), 2);
+        assert.equal('Findit Try-Job found culprit blink:158544 (Details)', finditResult());
         done();
       });
     });
 
-    it('should not show up if they are out of range', function(done) {
-      list.suspectedCLsByRepo = {
-        'blink': [
-          {
-            'commitPosition': 258544,
-            'builds': ['https://abc']
+    it('Two culprits found by try-job', function(done) {
+      list.suspectedCLGroup = {
+        'buildUrl': 'https://abc',
+        'foundByTryJob': 2,
+        'foundByHeuristic': 0,
+        'suspectedCLsByRepo': {
+          'blink': {
+            'git_hash1': {
+              'commitPosition': 158544,
+              'revision': 'git_hash1',
+              'foundByTryJob': 1,
+              'foundByHeuristic': 0,
+            },
+            'git_hash2': {
+              'commitPosition': 158545,
+              'revision': 'git_hash2',
+              'foundByTryJob': 1,
+              'foundByHeuristic': 0,
+            },
           }
-        ]
+        }
       };
 
       setTimeout(function() {
-        assert.equal(numOfMatchedSuspectedCommitInfo(), 0);
+        assert.equal('Findit Try-Job found 2 culprits (Details)', finditResult());
+        done();
+      });
+    });
+
+    it('a single suspect found by heuristic', function(done) {
+      list.suspectedCLGroup = {
+        'buildUrl': 'https://abc',
+        'foundByTryJob': 0,
+        'foundByHeuristic': 1,
+        'suspectedCLsByRepo': {
+          'blink': {
+            'git_hash': {
+              'commitPosition': 158544,
+              'revision': 'git_hash',
+              'foundByTryJob': 0,
+              'foundByHeuristic': 1,
+            },
+          }
+        }
+      };
+
+      setTimeout(function() {
+        assert.equal('Findit Heuristic found suspect blink:158544 (Details)', finditResult());
+        done();
+      });
+    });
+
+    it('Two suspects found by heuristic', function(done) {
+      list.suspectedCLGroup = {
+        'buildUrl': 'https://abc',
+        'foundByTryJob': 0,
+        'foundByHeuristic': 2,
+        'suspectedCLsByRepo': {
+          'blink': {
+            'git_hash1': {
+              'commitPosition': 158544,
+              'revision': 'git_hash1',
+              'foundByTryJob': 0,
+              'foundByHeuristic': 1,
+            },
+            'git_hash2': {
+              'commitPosition': 158545,
+              'revision': 'git_hash2',
+              'foundByTryJob': 0,
+              'foundByHeuristic': 1,
+            },
+          }
+        }
+      };
+
+      setTimeout(function() {
+        assert.equal('Findit Heuristic found 2 suspects (Details)', finditResult());
+        done();
+      });
+    });
+    it('should not show up if they are out of range', function(done) {
+      list.suspectedCLGroup = {
+        'buildUrl': 'https://abc',
+        'foundByTryJob': 1,
+        'foundByTryJob': 0,
+        'suspectedCLsByRepo': {
+          'blink': {
+            'git_hash': {
+              'commitPosition': 258544,
+              'revision': 'git_hash',
+              'foundByTryJob': 1,
+              'foundByTryJob': 0,
+            },
+          }
+        }
+      };
+
+      setTimeout(function() {
+        assert.isUndefined(finditResult());
         done();
       });
     });

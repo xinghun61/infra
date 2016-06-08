@@ -9,7 +9,7 @@ found in the LICENSE file.
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="ct-user-prefs.html">
 
-<polymer-element name="ct-commit-list" attributes="flex commitList detailed suspectedCLsByRepo">
+<polymer-element name="ct-commit-list" attributes="flex commitList detailed suspectedCLGroup">
   <template>
     <style>
       :host {
@@ -35,10 +35,13 @@ found in the LICENSE file.
         border-top: 1px solid lightgrey;
         margin-top: 3px;
       }
+      .findit-result {
+        color: red;
+      }
     </style>
     <ct-user-prefs id="userPrefs"></ct-user-prefs>
-    <template if="{{ totalSuspectedCommits_ > 0 }}">
-      <a target="{{ $.userPrefs.values.linkTarget }}" href="https://findit-for-me.appspot.com/build-failure?url={{ representiveBuildUrl_ }}">Findit found {{ totalSuspectedCommits_ }} suspected CL(s).</a>
+    <template if="{{ totalSuspects_ > 0 || totalCulprits_ > 0 }}">
+      <div id="findit-result"><span class="findit-result">{{ _finditResult() }}</span> <a target="{{ $.userPrefs.values.linkTarget }}" href="https://findit-for-me.appspot.com/waterfall/build-failure?url={{ representiveBuildUrl_ }}">(Details)</a></div>
     </template>
     <template repeat="{{ repository in commitList.repositories }}">
       <div class="repository-info">
@@ -52,16 +55,13 @@ found in the LICENSE file.
         <template if="{{ repository.name != 'blink' && repository.name != 'chromium'}}">{{ repository.range }}</template>
         <paper-icon-button icon="unfold-more"
             on-click="{{ _toggle }}" repository="{{ repository.name }}"></paper-icon-button>
-        <template if="{{ suspectedCommitsByRepo_[repository.name] && _numberOfSuspectedCL(repository.name) > 0 }}">
-          <span style="color: red">{{ _numberOfSuspectedCL(repository.name) }} suspected CL(s)</span>
-        </template>
         <template if="{{ repository.expanded }}">
           <template repeat="{{ commit, commit_index in repository.commits }}">
             <template if="{{ !detailed }}">
-              <ct-commit class="{{ commit_index == 0 ? 'first' : 'notfirst' }}" data="{{ commit }}" suspected="{{ commit.revision | _isSuspected(repository.name) }}"></ct-commit>
+              <ct-commit class="{{ commit_index == 0 ? 'first' : 'notfirst' }}" data="{{ commit }}" highlight="{{ commit.revision | _shouldHighlightCommit(repository.name) }}"></ct-commit>
             </template>
             <template if="{{ detailed }}">
-              <ct-detailed-commit class="{{ commit_index == 0 ? 'first' : 'notfirst' }}" data="{{ commit }}" suspected="{{ commit.revision | _isSuspected(repository.name) }}"></ct-detailed-commit>
+              <ct-detailed-commit class="{{ commit_index == 0 ? 'first' : 'notfirst' }}" data="{{ commit }}" highlight="{{ commit.revision | _shouldHighlightCommit(repository.name) }}"></ct-detailed-commit>
             </template>
           </template>
         </template>
@@ -71,13 +71,14 @@ found in the LICENSE file.
   <script>
   Polymer({
     detailed: false,
-    suspectedCommitsByRepo_: {},
-    totalSuspectedCommits_: 0,
+    commitsByRepo_: {},
+    totalSuspects_: 0,
+    totalCulprits_: 0,
     representiveBuildUrl_: null,
 
     observe: {
       commitList: '_updateSuspectedCommitInfo',
-      suspectedCLsByRepo: '_updateSuspectedCommitInfo',
+      suspectedCLGroup: '_updateSuspectedCommitInfo',
     },
 
     _toggle: function(event, detail, sender, target) {
@@ -99,66 +100,75 @@ found in the LICENSE file.
     },
 
     _updateSuspectedCommitInfo: function() {
-      this.suspectedCommitsByRepo_ = {};
-      this.totalSuspectedCommits_ = 0;
+      this.commitsByRepo_ = {};
+      this.totalSuspects_ = 0;
+      this.totalCulprits_ = 0;
       this.representiveBuildUrl_ = null;
 
-      if (Object.isEmpty(this.suspectedCLsByRepo))
+      if (Object.isEmpty(this.suspectedCLGroup))
         return;
 
-      var builds = {};
+      this.representiveBuildUrl_ = this.suspectedCLGroup.buildUrl;
+      var suspectedCLsByRepo = this.suspectedCLGroup.suspectedCLsByRepo;
 
       this.commitList.repositories.forEach(function(repository) {
-        if (!this.suspectedCLsByRepo[repository.name])
+        if (!suspectedCLsByRepo[repository.name])
           return;
-
-        if (!this.suspectedCommitsByRepo_[repository.name])
-          this.suspectedCommitsByRepo_[repository.name] = {};
 
         repository.commits.forEach(function(commit) {
           var suspectedCL = null;
 
           // If a suspected CL is not in the regression range, don't show it on UI.
-          this.suspectedCLsByRepo[repository.name].some(function(cl) {
+          Object.keys(suspectedCLsByRepo[repository.name], function(revision, cl) {
             // In builder_alerts and sheriff-o-matic, git commit position is referred as revision.
             if (cl.commitPosition == commit.revision) {
               suspectedCL = cl;
-              return true;
             }
-            return false;
-          });
+          }.bind(this));
 
           if (suspectedCL) {
-            this.suspectedCommitsByRepo_[repository.name][commit.revision] = suspectedCL;
-            suspectedCL.builds.forEach(function(buildUrl) {
-              if (!builds[buildUrl])
-                builds[buildUrl] = 0;
-              builds[buildUrl] += 1;
-            });
-            this.totalSuspectedCommits_ += 1;
+            if (!this.commitsByRepo_[repository.name]) {
+              this.commitsByRepo_[repository.name] = {};
+            }
+            this.commitsByRepo_[repository.name][commit.revision] = suspectedCL;
+
+            if (suspectedCL.foundByTryJob > 0) {
+              // Try-job result is more reliable than heuristic.
+              this.totalCulprits_ += 1;
+            } else {  // suspectedCL.foundByHeuristic > 0
+              this.totalSuspects_ += 1;
+            }
           }
         }.bind(this));
       }.bind(this));
+    },
 
-      // Use a build out of the same step failure group as a representative one to link back to Findit.
-      // It could be the one that has the most failures tagged with some suspected CLs.
-      if (!Object.isEmpty(builds)) {
-        var maxCount = 0;
-        Object.keys(builds, function(buildUrl, count) {
-          if (count > maxCount) {
-            this.representiveBuildUrl_ = buildUrl;
-            maxCount = count;
-          }
+    _getSingleCL: function() {
+      // There is only one culprit or suspect.
+      var cl = '';
+      Object.keys(this.commitsByRepo_, function(repoName, revisions) {
+        Object.keys(revisions, function(revision, clInfo) {
+          cl = repoName + ':' + revision;
         }.bind(this));
-      }
+      }.bind(this));
+      return cl;
     },
 
-    _isSuspected: function(revision, repoName) {
-      return this.suspectedCommitsByRepo_[repoName] && this.suspectedCommitsByRepo_[repoName][revision] !== undefined;
+    _finditResult: function() {
+      // For 90% of failures, Findit will identify only one culprit or suspect.
+      if (this.totalCulprits_ == 1)
+        return 'Findit Try-Job found culprit ' + this._getSingleCL();
+      else if (this.totalCulprits_ > 1)
+        return 'Findit Try-Job found ' + this.totalCulprits_ + ' culprits';
+      else if (this.totalSuspects_ == 1)
+        return 'Findit Heuristic found suspect ' + this._getSingleCL();
+      else if (this.totalSuspects_ > 1)
+        return 'Findit Heuristic found ' + this.totalSuspects_ + ' suspects';
+      return 'Findit found nothing';  // Should never be reached.
     },
 
-    _numberOfSuspectedCL: function(repoName) {
-      return Object.size(this.suspectedCommitsByRepo_[repoName]);
+    _shouldHighlightCommit: function(revision, repoName) {
+      return this.commitsByRepo_[repoName] && this.commitsByRepo_[repoName][revision] && this.commitsByRepo_[repoName][revision] !== undefined;
     },
   });
   </script>

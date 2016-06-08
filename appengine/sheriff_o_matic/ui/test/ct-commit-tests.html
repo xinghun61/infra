@@ -32,35 +32,35 @@ describe('ct-commit', function() {
       assert.equal(commit.shadowRoot.querySelector('a').href, commit.data.url);
     }
 
-    function checkNotASuspectedCommit() {
+    function checkNotAHighlightedCommit() {
       assert.equal(commit.shadowRoot.querySelector('span'), null);
       assert.equal(commit.shadowRoot.querySelector('a').className, '');
     }
 
     it('should show example commit', function() {
       checkCommitInfo();
-      checkNotASuspectedCommit();
+      checkNotAHighlightedCommit();
     });
 
-    it('should show unsuspected commit', function(done) {
-      commit.suspected = false;
+    it('should show unhightlighted commit', function(done) {
+      commit.highlight = false;
 
-      setTimeout(function(){
+      setTimeout(function() {
         checkCommitInfo();
-        checkNotASuspectedCommit();
+        checkNotAHighlightedCommit();
 
         done();
       });
     });
 
-    it('should show suspected commit', function(done) {
-      commit.suspected = true;
+    it('should show highlighted commit', function(done) {
+      commit.highlight = true;
 
-      setTimeout(function(){
+      setTimeout(function() {
         checkCommitInfo();
 
         assert.equal(commit.shadowRoot.querySelector('span').innerHTML, '*');
-        assert.equal(commit.shadowRoot.querySelector('a').className, 'suspected-commit');
+        assert.equal(commit.shadowRoot.querySelector('a').className, 'highlighted-commit');
 
         done();
       });

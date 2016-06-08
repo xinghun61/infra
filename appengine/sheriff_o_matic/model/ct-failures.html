@@ -278,28 +278,42 @@ CTFailures.prototype._groupFailuresByTreeAndReason = function(failures) {
 };
 
 CTFailures.prototype._populateSuspectedCLs = function(
-    suspectedCLGroup, analysisResult, masterUrl, builderName, buildNumber) {
+    suspectedCLGroupByBuild, analysisResult, masterUrl, builderName, buildNumber) {
+  var buildUrl = masterUrl + '/builders/'
+    + builderName + '/builds/' + buildNumber;
+  if (!suspectedCLGroupByBuild[buildUrl]) {
+    suspectedCLGroupByBuild[buildUrl] = {
+      'buildUrl': buildUrl,
+      'foundByTryJob': 0,
+      'foundByHeuristic': 0,
+      'suspectedCLsByRepo': {},
+    };
+  }
+
+  var suspectedCLsByRepo = suspectedCLGroupByBuild[buildUrl].suspectedCLsByRepo;
   analysisResult.suspected_cls.forEach(function(cl) {
-    if (!suspectedCLGroup[cl.repo_name])
-      suspectedCLGroup[cl.repo_name] = {};
-    if (!suspectedCLGroup[cl.repo_name][cl.revision]) {
-      suspectedCLGroup[cl.repo_name][cl.revision] = {
+    if (!suspectedCLsByRepo[cl.repo_name])
+      suspectedCLsByRepo[cl.repo_name] = {};
+    if (!suspectedCLsByRepo[cl.repo_name][cl.revision]) {
+      suspectedCLsByRepo[cl.repo_name][cl.revision] = {
         'commitPosition': cl.commit_position,
         'revision': cl.revision,
-        'builds': [],
+        'foundByTryJob': 0,
+        'foundByHeuristic': 0,
       };
     }
-    var buildUrl = masterUrl + '/builders/'
-      + builderName + '/builds/' + buildNumber;
-    if (suspectedCLGroup[cl.repo_name][cl.revision].builds.indexOf(buildUrl)
-          == -1){
-      suspectedCLGroup[cl.repo_name][cl.revision].builds.push(buildUrl);
+    if (analysisResult.analysis_approach == 'TRY_JOB') {
+      suspectedCLGroupByBuild[buildUrl].foundByTryJob += 1;
+      suspectedCLsByRepo[cl.repo_name][cl.revision].foundByTryJob += 1;
+    } else {  // Analysis approach is HEURISTIC.
+      suspectedCLGroupByBuild[buildUrl].foundByHeuristic += 1;
+      suspectedCLsByRepo[cl.repo_name][cl.revision].foundByHeuristic += 1;
     }
   });
 };
 
 CTFailures.prototype._filterOutsuspectedCLForStepFailure = function(
-    suspectedCLGroup, stepFailure, analysisResults) {
+    suspectedCLGroupByBuild, stepFailure, analysisResults) {
   var stepName = stepFailure.step;
   var testName = stepFailure.testName;
 
@@ -319,7 +333,7 @@ CTFailures.prototype._filterOutsuspectedCLForStepFailure = function(
         return;
 
       this._populateSuspectedCLs(
-          suspectedCLGroup, analysisResult, failure.masterUrl, builderName,
+          suspectedCLGroupByBuild, analysisResult, failure.masterUrl, builderName,
           failure.lastFailingBuild);
     }.bind(this));
   }.bind(this));
@@ -330,22 +344,28 @@ CTFailures.prototype._processAnalysisResultsForStepFailureGroup = function(
   if (Object.isEmpty(analysisResults))
     return {};
 
-  var suspectedCLGroup = {};
+  var suspectedCLGroupByBuild = {};
   failures.forEach(function(stepFailure) {
     this._filterOutsuspectedCLForStepFailure(
-        suspectedCLGroup, stepFailure, analysisResults);
+        suspectedCLGroupByBuild, stepFailure, analysisResults);
   }.bind(this));
 
-  var suspectedCLsByRepo = {};
-  Object.keys(suspectedCLGroup, function(repoName, clByRevision) {
-    Object.keys(clByRevision, function(revision, cl) {
-      if (!suspectedCLsByRepo[repoName])
-        suspectedCLsByRepo[repoName] = [];
-      suspectedCLsByRepo[repoName].push(cl);
-    });
+  if (Object.isEmpty(suspectedCLGroupByBuild))
+    return {};
+
+  // Pick a build to represent this step failure group, so that we could link
+  // back to Findit on the UI. The build is the one that has most analysis
+  // results from try-job rerun, or the most analysis results from heuristic.
+  var suspectedCLGroupList = Object.values(suspectedCLGroupByBuild);
+  suspectedCLGroupList.sort(function(a, b) {
+    if (a.foundByTryJob > b.foundByTryJob)
+      return -1;
+    if (a.foundByTryJob < b.foundByTryJob)
+      return 1;
+    return b.foundByHeuristic - a.foundByHeuristic;
   });
 
-  return suspectedCLsByRepo;
+  return suspectedCLGroupList[0];
 };
 
 CTFailures.prototype._processFailuresForRangeGroup = function(
@@ -370,7 +390,7 @@ CTFailures.prototype._processFailuresForRangeGroup = function(
     });
     treeFailures.sort(this._failureComparator);
 
-    var suspectedCLsByRepo = this._processAnalysisResultsForStepFailureGroup(
+    var suspectedCLGroup = this._processAnalysisResultsForStepFailureGroup(
         treeFailures, analysisResults);
 
     if (!newFailures[tree])
@@ -378,7 +398,7 @@ CTFailures.prototype._processFailuresForRangeGroup = function(
     var commitList = new CTCommitList(
         this.repositories, rangeGroup.likely_revisions);
     newFailures[tree].push(new CTFailureGroup(tree, new CTStepFailureGroupData(
-            treeFailures, commitList, suspectedCLsByRepo)));
+            treeFailures, commitList, suspectedCLGroup)));
   }.bind(this));
 };
 
