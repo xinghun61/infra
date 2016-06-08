@@ -12,7 +12,6 @@ Include the following script on your site and set the target URL like so:
   })(window,document,'script','https://storage.googleapis.com/crdx-feedback.appspot.com/feedback.js','crdx');
 
   crdx('setFeedbackButtonLink', 'https://bugs.chromium.org');
-  crdx('setFeedbackButtonBackgroundColor', 'green'); // Any valid CSS value is ok.
 </script>
 ```
 

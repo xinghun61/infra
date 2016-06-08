@@ -11,105 +11,59 @@
   document.head.appendChild(el);
 
   var css = `
-    .__crdxFeedbackContainer {
-      align-items: center;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
+    .__crdxFeedbackButton {
       position: fixed;
       bottom: 32px;
       right: 24px;
+      width: 32px;
+      height: 32px;
       z-index: 8675309; /* Jenny */
-    }
-    .__crdxFeedbackContainer:hover .__crdxFeedbackClose {
-      display: block;
-    }
-    .__crdxFeedbackContainer:hover .__crdxFeedbackAction {
-      opacity: 1;
-    }
-    .__crdxFeedbackButton {
       border-radius: 50%;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
       transition: all .2s;
+      text-decoration: none;
+      opacity: .4;
+      color: #666;
     }
     .__crdxFeedbackButton:hover {
-      box-shadow: 0 2px 2px rgba(0, 0, 0, .2), 0 6px 10px rgba(0, 0, 0, .3);
+      opacity: .6;
     }
-    .__crdxFeedbackClose::before {
-      color: #757575;
-      content: 'close';
+    .__crdxFeedbackButton::before {
       display: block;
-      font-size: 18px;
-      padding: 3px;
-    }
-    .__crdxFeedbackClose {
-      display: none;
-      background-color: #fff;
-      color: #777;
-      cursor: pointer;
-      width: 24px;
-      height: 24px;
-    }
-    .__crdxFeedbackAction::before {
-      color: #fff;
-      display: block;
-      padding: 8px;
+      padding: 4px;
       content: 'bug_report';
-    }
-    .__crdxFeedbackAction {
-      opacity: .75;
-      background-color: #e91e63;
-      text-decoration: none;
-      margin-top: 8px;
-      width: 40px;
-      height: 40px;
     }
   `;
   el = document.createElement('style');
   el.appendChild(document.createTextNode(css));
   document.head.appendChild(el);
 
-  var container = document.createElement('div');
-  container.classList.add('__crdxFeedbackContainer');
-  container.style.display = 'none';
-
-  el = document.createElement('i');
-  el.classList.add('material-icons', '__crdxFeedbackButton',
-      '__crdxFeedbackClose');
-  el.addEventListener('click', function() { setButtonsVisible(false); });
-  container.appendChild(el);
-
-  var mainBtn = document.createElement('a');
-  mainBtn.classList.add('material-icons', '__crdxFeedbackButton',
-      '__crdxFeedbackAction');
-  mainBtn.target = '_blank';
-  container.appendChild(mainBtn);
+  var button = document.createElement('a');
+  button.classList.add('material-icons', '__crdxFeedbackButton');
+  button.target = '_blank';
 
   function setButtonsVisible(visible) {
-    container.style.display = visible ? null : 'none';
+    button.style.display = visible ? null : 'none';
   }
   // document.body may not exist yet.
   if (!document.body) {
     window.addEventListener('load', function() {
-      document.body.appendChild(container);
+      document.body.appendChild(button);
     });
   } else {
-    document.body.appendChild(container);
+    document.body.appendChild(button);
   }
 
   var crdx = window[window.CrDXObject] || {};
   var queue = crdx.q || [];
 
   crdx = function() {
-    crdx[arguments[0]].apply(null, Array.from(arguments).slice(1));
-  };
-
-  crdx.setFeedbackButtonBackgroundColor = function(color) {
-    mainBtn.style.backgroundColor = color;
+    if (typeof crdx[arguments[0]] === "function") {
+      crdx[arguments[0]].apply(null, Array.from(arguments).slice(1));
+    }
   };
 
   crdx.setFeedbackButtonLink = function(href) {
-    mainBtn.href = href;
+    button.href = href;
   };
 
   queue.forEach(function(args) { crdx.apply(null, args); });
