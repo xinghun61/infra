@@ -50,7 +50,7 @@
       <template is="dom-repeat" items="[[alert.extension.builders]]" as="builder">
         <paper-tab id$="[[builder.name]]">
           [[_tabTitle(builder)]]
-          <a href$="[[builder.url]]/builds/[[builder.latest_failure]]/steps/[[selectedStep]]"
+          <a href$="[[_uberify(builder.url, builder.latest_failure, selectedStep)]]"
               title="Open in a new window"
               target="_blank">
             <iron-icon icon="open-in-new"></iron-icon>
@@ -64,7 +64,7 @@
           <div>Builds: [[builder.first_failure]]-[[builder.latest_failure]]</div>
           <div class="flex layout vertical">
             <iframe
-                src$="[[builder.url]]/builds/[[builder.latest_failure]]/steps/[[selectedStep]]"
+                src$="[[_uberify(builder.url,builder.latest_failure,selectedStep)]]"
                 class="flex"
             ></iframe>
           </div>
@@ -149,6 +149,16 @@
           }
           return undefined;
         },
+
+        _uberify: function(url, buildNumber, step) {
+          let u = new URL(url + "/builds/" + buildNumber + "/steps/" + step);
+          if (u.hostname.includes('chromium.org')) {
+            u.hostname = 'uberchromegw.corp.google.com';
+            u.pathname = u.pathname.replace('/p/', '/i/');
+          }
+          u.protocol = 'https:'
+          return u.toString();
+        }
       });
     })();
   </script>
