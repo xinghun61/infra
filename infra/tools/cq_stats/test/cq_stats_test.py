@@ -658,7 +658,7 @@ class TestCQStats(auto_stub.TestCase):
     }])
     cq_stats.print_flakiness_stats(args, stats_set)
 
-    return self.expectations
+    return self.expectations  # pragma: no cover, see crbug.com/618077
 
   # Expectation: must print stats in a certain format.
   # Assumption: input stats at minimum have the keys from

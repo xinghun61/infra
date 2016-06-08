@@ -1122,7 +1122,7 @@ def print_flakiness_stats(args, stats):
            '%6.0f%%' % percentage(
                try_job_stats[master_builder]['other_failures'],
                try_job_stats[master_builder]['flakes']))
-    if args.list_uncategorized_flakes:
+    if args.list_uncategorized_flakes:  # pragma: no cover, see crbug.com/618077
       uncategorized_flakes = try_job_stats[
           master_builder]['uncategorized_flakes']
       if uncategorized_flakes:
