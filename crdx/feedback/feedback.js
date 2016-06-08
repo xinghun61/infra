@@ -21,10 +21,16 @@
       right: 24px;
       z-index: 8675309; /* Jenny */
     }
+    .__crdxFeedbackContainer:hover .__crdxFeedbackClose {
+      display: block;
+    }
+    .__crdxFeedbackContainer:hover .__crdxFeedbackAction {
+      opacity: 1;
+    }
     .__crdxFeedbackButton {
       border-radius: 50%;
       box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
-      transition: box-shadow .2s;
+      transition: all .2s;
     }
     .__crdxFeedbackButton:hover {
       box-shadow: 0 2px 2px rgba(0, 0, 0, .2), 0 6px 10px rgba(0, 0, 0, .3);
@@ -37,6 +43,7 @@
       padding: 3px;
     }
     .__crdxFeedbackClose {
+      display: none;
       background-color: #fff;
       color: #777;
       cursor: pointer;
@@ -50,8 +57,8 @@
       content: 'bug_report';
     }
     .__crdxFeedbackAction {
+      opacity: .75;
       background-color: #e91e63;
-      color: #fff;
       text-decoration: none;
       margin-top: 8px;
       width: 40px;
