@@ -59,7 +59,15 @@ ARCH_CONFIG_MAP = {
 
 
 def get_platform_config():
-  key = (platform.system(), platform.machine())
+  machine = platform.machine().lower()
+  system = platform.system()
+  if (machine == 'x86_64' and system == 'Linux' and
+      sys.maxsize == (2 ** 31) - 1):
+    # This is 32bit python on 64bit CPU on linux, which probably means the
+    # entire userland is 32bit and thus we should play along and install 32bit
+    # packages.
+    machine = 'x86'
+  key = (system, machine)
   return key, ARCH_CONFIG_MAP.get(key)
 
 

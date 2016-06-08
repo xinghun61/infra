@@ -107,6 +107,13 @@ class Failure(Exception):
 
 def get_default_toolset():
   """Name of a toolset native for this platform."""
+  machine = platform.machine().lower()
+  if (machine == 'x86_64' and platform.system() == 'Linux' and
+      sys.maxsize == (2 ** 31) - 1):
+    # This is 32bit python on 64bit CPU on linux, which probably means the
+    # entire userland is 32bit and thus we should play along and install 32bit
+    # packages.
+    machine = 'x86'
   # Name arch the same way Go does it.
   arch = {
     'amd64': 'amd64',
@@ -114,7 +121,7 @@ def get_default_toolset():
     'i386': '386',
     'i686': '386',
     'x86': '386',
-  }.get(platform.machine().lower())
+  }.get(machine)
   return '%s-%s' % (sys.platform, arch)
 
 
