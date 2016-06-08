@@ -8,7 +8,7 @@
     <input name="custom_[fields.field_id]" id="custom_[fields.field_id]" value=""
            [if-any fields.field_def.is_required_bool]required="required"[end]
            [# TODO(jrobbins): validation]
-           class="multivalued customfield" size="90">
+           class="multivalued customfield" style="width: 12em">
 [end]
 
 
@@ -18,11 +18,11 @@
            class="multivalued customfield"
            [if-any fields.field_def.is_required_bool]required="required"[end]
            [# TODO(jrobbins): validation]
-           size="90"><br>
+           style="width: 12em"><br>
   [else]
     <span>
       <input disabled="disabled" value="[fields.values.val]"
-             class="multivalued" size="90">
+             class="multivalued" style="width: 12em">
       <a href="#" class="removeMultiFieldValueWidget">X</a>
     </span>
   [end]
@@ -30,5 +30,5 @@
 
 [for fields.derived_values]
   <input disabled="disabled" value="[fields.derived_values.val]"
-         style="font-style:italic" class="multivalued" size="90"><br>
+         style="font-style:italic" class="multivalued" style="width: 12em"><br>
 [end]
