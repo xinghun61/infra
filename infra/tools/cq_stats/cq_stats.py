@@ -1233,8 +1233,12 @@ def print_stats(args, stats):
     output('False rejections:')
     for patch_id, pstats in stats['patch_stats'].iteritems():
       if pstats['false-rejections']:
-        output('%s (%d false rejections)' % (
-          patch_url(patch_id), pstats['false-rejections']))
+        if pstats['infra-false-rejections']:
+          infra_fr_suffix = ', %d infra' % pstats['infra-false-rejections']
+        else:
+          infra_fr_suffix = ''
+        output('%s (%d false rejections%s)' % (
+          patch_url(patch_id), pstats['false-rejections'], infra_fr_suffix))
 
 
 def acquire_stats(args, add_tree_stats=True):

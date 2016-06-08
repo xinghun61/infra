@@ -689,7 +689,20 @@ class TestCQStats(auto_stub.TestCase):
         (456, 1): {
             'attempts': 1,
             'false-rejections': 1,
+            'infra-false-rejections': 0,
             'rejections': 1,
+            'committed': False,
+            'patchset-duration': 7200,
+            'patchset-duration-wallclock': 7200,
+            'failed-jobs-details': {
+                'builder_a': 1,
+            },
+        },
+        (789, 1): {
+            'attempts': 3,
+            'false-rejections': 2,
+            'infra-false-rejections': 1,
+            'rejections': 3,
             'committed': False,
             'patchset-duration': 7200,
             'patchset-duration-wallclock': 7200,
