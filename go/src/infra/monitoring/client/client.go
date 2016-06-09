@@ -58,7 +58,7 @@ func StepURL(master *messages.MasterLocation, builder, step string, buildNum int
 	return &newURL
 }
 
-// Client provides access to read status information from various parts of chrome
+// Reader provides access to read status information from various parts of chrome
 // developer infrastructure.
 type Reader interface {
 	// Build fetches the build summary for master, builder and buildNum
@@ -83,6 +83,7 @@ type Reader interface {
 	CrbugItems(label string) ([]messages.CrbugItem, error)
 }
 
+// Writer writes out data to other services, most notably sheriff-o-matic.
 type Writer interface {
 	// PostAlerts posts alerts to Sheriff-o-Matic.
 	PostAlerts(alerts *messages.Alerts) error
@@ -214,7 +215,9 @@ func (r *reader) BuildExtract(masterURL *messages.MasterLocation) (*messages.Bui
 	}
 
 	if code == 404 {
-		if !strings.Contains(masterURL.Name(), "internal") {
+		// TODO(martiniss): make this configurable per master/tree
+		if !(strings.Contains(masterURL.Name(), "internal") || strings.Contains(
+			masterURL.Name(), "official")) {
 			return nil, err
 		}
 
