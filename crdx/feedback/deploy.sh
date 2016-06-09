@@ -5,6 +5,14 @@
 
 set -ex
 
+gzip -k icon.png
+gsutil -h "Content-Encoding:gzip" \
+       -h "Content-Type:image/png" \
+       -h "Cache-Control:public, max-age=3600" \
+       cp icon.png.gz gs://crdx-feedback.appspot.com/icon.png
+rm icon.png.gz
+gsutil acl ch -u AllUsers:R gs://crdx-feedback.appspot.com/icon.png
+
 gzip -k feedback.js
 gsutil -h "Content-Encoding:gzip" \
        -h "Content-Type:application/javascript; charset=utf-8" \

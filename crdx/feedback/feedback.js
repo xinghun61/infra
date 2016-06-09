@@ -4,12 +4,6 @@
 (function(window, document) {
   'use strict';
 
-  var el = document.createElement('link');
-  el.rel = 'stylesheet';
-  el.href = 'https://fonts.googleapis.com/icon?family=Material+Icons';
-  el.addEventListener('load', function() { setButtonsVisible(true); });
-  document.head.appendChild(el);
-
   var css = `
     .__crdxFeedbackButton {
       position: fixed;
@@ -18,32 +12,24 @@
       width: 32px;
       height: 32px;
       z-index: 8675309; /* Jenny */
-      border-radius: 50%;
-      transition: all .2s;
-      text-decoration: none;
+      transition: opacity .2s;
       opacity: .4;
-      color: #666;
+      background-image: url('https://storage.googleapis.com/crdx-feedback.appspot.com/icon.png');
+      background-size: cover;
     }
     .__crdxFeedbackButton:hover {
-      opacity: .6;
-    }
-    .__crdxFeedbackButton::before {
-      display: block;
-      padding: 4px;
-      content: 'bug_report';
+      opacity: .75;
     }
   `;
-  el = document.createElement('style');
+
+  var el = document.createElement('style');
   el.appendChild(document.createTextNode(css));
   document.head.appendChild(el);
 
   var button = document.createElement('a');
-  button.classList.add('material-icons', '__crdxFeedbackButton');
+  button.classList.add('__crdxFeedbackButton');
   button.target = '_blank';
 
-  function setButtonsVisible(visible) {
-    button.style.display = visible ? null : 'none';
-  }
   // document.body may not exist yet.
   if (!document.body) {
     window.addEventListener('load', function() {
@@ -57,7 +43,7 @@
   var queue = crdx.q || [];
 
   crdx = function() {
-    if (typeof crdx[arguments[0]] === "function") {
+    if (typeof crdx[arguments[0]] === 'function') {
       crdx[arguments[0]].apply(null, Array.from(arguments).slice(1));
     }
   };
