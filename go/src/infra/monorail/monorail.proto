@@ -18,6 +18,8 @@ service Monorail {
     rpc InsertIssue(InsertIssueRequest) returns (InsertIssueResponse){};
     // Posts a comment to an issue. Can update issue attributes, such as status.
     rpc InsertComment(InsertCommentRequest) returns (InsertCommentResponse){};
+    // Lists issues from a project.
+    rpc IssuesList(IssuesListRequest) returns (IssuesListResponse){};
 }
 
 // A monorail issue.
@@ -99,6 +101,64 @@ message InsertCommentRequest {
 }
 
 message InsertCommentResponse{}
+
+// Request for a list of Issues.
+message IssuesListRequest {
+  // String name of the project, e.g. "chromium".
+  string projectId = 1;
+  // Additional projects to search.
+  repeated string additionalProject = 2;
+  enum CannedQuery {
+    ALL = 0;
+    NEW = 1;
+    OPEN = 2;
+    OWNED = 3;
+    REPORTED = 4;
+    STARRED = 5;
+    TO_VERIFY = 6;
+  }
+  // Use a canned query.
+  CannedQuery can = 3;
+  // Issue label or space separated list of labels.
+  string label = 4;
+  // Maximum results to retrieve.
+  int32 maxResults = 5;
+  // Issue owner.
+  string owner = 6;
+  // Search for Issues published before this timestamp.
+  int64 publishedMax = 7;
+  // Search for Issues published after this timestamp.
+  int64 publishedMin = 8;
+  // Free-form text query.
+  string q = 9;
+  // Sort-by field or fields, space separated terms with leading - to
+  // indicate decreasing direction. e.g. "estdays -milestone" to sort by
+  // estdays increasing, then milestone decreasing.
+  string sort = 10;
+  // Starting index for pagination.
+  int32 startIndex = 11;
+  // Issue status.
+  string status = 12;
+  // Search for Issues most recently updated before this timestamp.
+  int64 updatedMax = 13;
+  // Search for Issues most recently updated after this timestamp.
+  int64 updatedMin = 14;
+}
+
+message ErrorMessage {
+  int32 code = 1;
+  string reason = 2;
+  string message = 3;
+}
+
+message IssuesListResponse {
+  ErrorMessage error = 1;
+  // Search results.
+  repeated Issue items = 2;
+  // Total size of matching result set, regardless of how many are included
+  // in this response.
+  int32 totalResults = 3;
+}
 
 // Defines a mutation to an issue.
 // This message is partial.
