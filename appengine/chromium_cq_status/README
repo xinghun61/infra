@@ -95,6 +95,3 @@ mocha: testing framework. Provides good asynchronous and synchronous test
        test case.
 
 chai:  assertion library.
-
-catapult: Project containing Trace Viewer, used as the front-end for the
-          timeline view.
