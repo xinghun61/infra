@@ -10,6 +10,7 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/depot_tools',
   'depot_tools/gclient',
+  'depot_tools/infra_paths',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -73,7 +74,8 @@ def build_luci(api):
   api.python(
       'upload go bin',
       api.depot_tools.upload_to_google_storage_path,
-      ['-b', 'chromium-luci'] + absfiles)
+      ['-b', 'chromium-luci'] + absfiles,
+      env={'DEPOT_TOOLS_GSUTIL_BIN_DIR': api.path['cache'].join('gsutil')})
   for name, abspath in zip(files, absfiles):
     sha1 = api.file.read(
         '%s sha1' % str(name), abspath + '.sha1',

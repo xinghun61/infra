@@ -219,6 +219,9 @@
       "[SLAVE_BUILD]/infra/go/bin/file 1",
       "[SLAVE_BUILD]/infra/go/bin/file 2"
     ],
+    "env": {
+      "DEPOT_TOOLS_GSUTIL_BIN_DIR": "[CACHE]/gsutil"
+    },
     "name": "upload go bin"
   },
   {
