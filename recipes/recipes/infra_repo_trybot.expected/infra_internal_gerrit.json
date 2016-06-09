@@ -114,7 +114,9 @@
       "python",
       "-u",
       "test.py",
-      "test"
+      "test",
+      "--jobs",
+      "1"
     ],
     "cwd": "[SLAVE_BUILD]/infra_internal",
     "name": "python tests"

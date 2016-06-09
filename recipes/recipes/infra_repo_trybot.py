@@ -47,7 +47,8 @@ def RunSteps(api):
     # Rietveld tests.
     deps_mod = 'DEPS' in files
 
-    api.python('python tests', 'test.py', ['test'], cwd=api.path['checkout'])
+    api.python('python tests', 'test.py', ['test', '--jobs', 1],
+               cwd=api.path['checkout'])
 
     if not internal:
       # TODO(phajdan.jr): should we make recipe tests run on other platforms?
