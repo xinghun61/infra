@@ -11,7 +11,7 @@ import google.protobuf
 import infra_libs
 from infra_libs import event_mon
 
-from infra.tools.send_monitoring_event import send_event
+from infra.tools.send_monitoring_event import common
 
 from infra_libs.event_mon import (BuildEvent, ServiceEvent,
                                   ChromeInfraEvent, LogRequestLite)
@@ -29,42 +29,50 @@ class SendingEventBaseTest(unittest.TestCase):
     event_mon.close()
 
 
+def get_arguments(args):
+  """Convenience function to test argument parsing."""
+  parser = argparse.ArgumentParser()
+  common.add_argparse_options(parser)
+  opts = parser.parse_args(args)
+  common._extra_argument_checking(opts)
+  return opts
+
+
 class TestArgumentParsing(unittest.TestCase):
   def test_smoke(self):
-    args = send_event.get_arguments(['--event-mon-service-name', 'thing'])
-    self.assertIsInstance(args, argparse.Namespace)
+    args = get_arguments(['--event-mon-service-name', 'thing'])
     self.assertEquals(args.event_mon_service_name, 'thing')
 
   def test_both_build_and_service_flags(self):
-    with self.assertRaises(SystemExit):
-      send_event.get_arguments(
+    with self.assertRaises(ValueError):
+      get_arguments(
         ['--build-event-type', 'BUILD', '--service-event-type', 'START'])
 
   def test_both_from_file_and_build(self):
-    with self.assertRaises(SystemExit):
-      send_event.get_arguments(
+    with self.assertRaises(ValueError):
+      get_arguments(
         ['--build-event-type', 'BUILD', '--events-from-file', 'filename'])
 
   def test_both_from_file_and_service(self):
-    with self.assertRaises(SystemExit):
-      send_event.get_arguments(
+    with self.assertRaises(ValueError):
+      get_arguments(
         ['--service-event-type', 'START', '--events-from-file', 'filename'])
 
   def test_extra_result_code_string(self):
-    args = send_event.get_arguments(
+    args = get_arguments(
         ['--service-event-type', 'START',
          '--build-event-extra-result-code', 'test-string'])
     self.assertEquals(args.build_event_extra_result_code, 'test-string')
 
   def test_extra_result_code_strings_list(self):
-    args = send_event.get_arguments(
+    args = get_arguments(
         ['--service-event-type', 'START',
          '--build-event-extra-result-code', 'code1,code2,code3'])
     self.assertEquals(args.build_event_extra_result_code,
                       ['code1', 'code2', 'code3'])
 
   def test_extra_result_code_json(self):
-    args = send_event.get_arguments(
+    args = get_arguments(
         ['--service-event-type', 'START',
          '--build-event-extra-result-code', '["code4", "code5","code6"]'])
     self.assertEquals(args.build_event_extra_result_code,
@@ -73,30 +81,30 @@ class TestArgumentParsing(unittest.TestCase):
 
 class TestServiceEvent(SendingEventBaseTest):
   def test_send_service_event_stack_trace_smoke(self):
-    args = send_event.get_arguments(
+    args = get_arguments(
       ['--event-mon-service-name', 'thing',
        '--service-event-stack-trace', 'stack trace'])
-    send_event.send_service_event(args)
+    common.send_service_event(args)
 
   def test_send_service_event_revinfo_smoke(self):
-    args = send_event.get_arguments(
+    args = get_arguments(
       ['--event-mon-service-name', 'thing',
        '--service-event-type', 'START',
        '--service-event-revinfo', os.path.join(DATA_DIR, 'revinfo.txt')])
-    send_event.send_service_event(args)
+    common.send_service_event(args)
 
 
 class TestBuildEvent(SendingEventBaseTest):
   def test_send_build_event_smoke(self):
-    args = send_event.get_arguments(
+    args = get_arguments(
       ['--event-mon-service-name', 'thing',
        '--build-event-type', 'SCHEDULER',
        '--build-event-hostname', 'foo.bar.dns',
        '--build-event-build-name', 'whatever'])
-    self.assertTrue(send_event.send_build_event(args))
+    self.assertTrue(common.send_build_event(args))
 
   def test_send_build_event_smoke_missing_goma_file(self):
-    args = send_event.get_arguments(
+    args = get_arguments(
       ['--event-mon-service-name', 'thing',
        '--build-event-type', 'BUILD',
        '--build-event-hostname', 'foo.bar.dns',
@@ -104,7 +112,7 @@ class TestBuildEvent(SendingEventBaseTest):
        '--build-event-goma-stats-path',
            os.path.join(DATA_DIR, 'this-file-does-not-exist')])
     with self.assertRaises(IOError):
-      send_event.send_build_event(args)
+      common.send_build_event(args)
 
 
 class TestInputModesFile(unittest.TestCase):
@@ -115,9 +123,9 @@ class TestInputModesFile(unittest.TestCase):
 
   def test_send_build_event_with_goma_stats(self):
     # Write a file to avoid mocks
-    with infra_libs.temporary_directory(prefix='send_event_test-') as tmpdir:
+    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
       outfile = os.path.join(tmpdir, 'out.bin')
-      args = send_event.get_arguments(
+      args = get_arguments(
         ['--event-mon-run-type', 'file',
          '--event-mon-output-file', outfile,
          '--event-mon-service-name', 'thing',
@@ -128,7 +136,7 @@ class TestInputModesFile(unittest.TestCase):
          os.path.join(DATA_DIR, 'goma_stats.bin')])
       self.assertEquals(args.event_mon_run_type, 'file')
       event_mon.process_argparse_options(args)
-      self.assertTrue(send_event.send_build_event(args))
+      self.assertTrue(common.send_build_event(args))
 
       # Now open the resulting file and check what was written
       with open(outfile, 'rb') as f:
@@ -143,9 +151,9 @@ class TestInputModesFile(unittest.TestCase):
 
   def test_send_build_event_with_invalid_goma_stats(self):
     # Write a file to avoid mocks
-    with infra_libs.temporary_directory(prefix='send_event_test-') as tmpdir:
+    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
       outfile = os.path.join(tmpdir, 'out.bin')
-      args = send_event.get_arguments(
+      args = get_arguments(
         ['--event-mon-run-type', 'file',
          '--event-mon-output-file', outfile,
          '--event-mon-service-name', 'thing',
@@ -157,12 +165,12 @@ class TestInputModesFile(unittest.TestCase):
       self.assertEquals(args.event_mon_run_type, 'file')
       event_mon.process_argparse_options(args)
       with self.assertRaises(google.protobuf.message.DecodeError):
-        send_event.send_build_event(args)
+        common.send_build_event(args)
 
   def test_send_build_event_with_goma_error_unknown(self):
-    with infra_libs.temporary_directory(prefix='send_event_test-') as tmpdir:
+    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
       outfile = os.path.join(tmpdir, 'out.bin')
-      args = send_event.get_arguments(
+      args = get_arguments(
         ['--event-mon-run-type', 'file',
          '--event-mon-output-file', outfile,
          '--event-mon-service-name', 'thing',
@@ -172,7 +180,7 @@ class TestInputModesFile(unittest.TestCase):
          '--build-event-goma-error', 'GOMA_ERROR_UNKNOWN'])
       self.assertEquals(args.event_mon_run_type, 'file')
       event_mon.process_argparse_options(args)
-      self.assertTrue(send_event.send_build_event(args))
+      self.assertTrue(common.send_build_event(args))
 
       # Now open the resulting file and check what was written
       with open(outfile, 'rb') as f:
@@ -185,9 +193,9 @@ class TestInputModesFile(unittest.TestCase):
     self.assertEqual(event.build_event.host_name, 'foo.bar.dns')
 
   def test_send_build_event_with_goma_error_crashed(self):
-    with infra_libs.temporary_directory(prefix='send_event_test-') as tmpdir:
+    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
       outfile = os.path.join(tmpdir, 'out.bin')
-      args = send_event.get_arguments(
+      args = get_arguments(
         ['--event-mon-run-type', 'file',
          '--event-mon-output-file', outfile,
          '--event-mon-service-name', 'thing',
@@ -199,7 +207,7 @@ class TestInputModesFile(unittest.TestCase):
          os.path.join(DATA_DIR, 'goma_error_report.txt')])
       self.assertEquals(args.event_mon_run_type, 'file')
       event_mon.process_argparse_options(args)
-      self.assertTrue(send_event.send_build_event(args))
+      self.assertTrue(common.send_build_event(args))
 
       # Now open the resulting file and check what was written
       with open(outfile, 'rb') as f:
@@ -215,9 +223,9 @@ class TestInputModesFile(unittest.TestCase):
 
   def test_send_build_event_with_non_existing_goma_error_report(self):
     # Write a file to avoid mocks
-    with infra_libs.temporary_directory(prefix='send_event_test-') as tmpdir:
+    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
       outfile = os.path.join(tmpdir, 'out.bin')
-      args = send_event.get_arguments(
+      args = get_arguments(
         ['--event-mon-run-type', 'file',
          '--event-mon-output-file', outfile,
          '--event-mon-service-name', 'thing',
@@ -230,7 +238,7 @@ class TestInputModesFile(unittest.TestCase):
       self.assertEquals(args.event_mon_run_type, 'file')
       event_mon.process_argparse_options(args)
       with self.assertRaises(IOError):
-        send_event.send_build_event(args)
+        common.send_build_event(args)
 
   # The default event used below (build-foo-builder.bin) has been generated by:
   # ./run.py infra.tools.send_monitoring_event \
@@ -242,9 +250,9 @@ class TestInputModesFile(unittest.TestCase):
   #     --build-event-type=BUILD \
   #     --build-event-build-name=foo"
   def test_logrequest_path_valid_build_event(self):
-    with infra_libs.temporary_directory(prefix='send_event_test-') as tmpdir:
+    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
       outfile = os.path.join(tmpdir, 'out.bin')
-      args = send_event.get_arguments(
+      args = get_arguments(
         ['--event-mon-run-type', 'file',
          '--event-mon-output-file', outfile,
          '--event-mon-service-name', 'thing',
@@ -254,8 +262,8 @@ class TestInputModesFile(unittest.TestCase):
         ])
       self.assertEquals(args.event_mon_run_type, 'file')
       event_mon.process_argparse_options(args)
-      send_event._process_logrequest_path(args)
-      self.assertTrue(send_event.send_build_event(args))
+      common.process_argparse_options(args)
+      self.assertTrue(common.send_build_event(args))
 
       # Now open the resulting file and check what was written
       with open(outfile, 'rb') as f:
@@ -269,9 +277,9 @@ class TestInputModesFile(unittest.TestCase):
 
   def test_logrequest_path_build_type_override(self):
     # logrequest contains build event, overrid the type with an arg.
-    with infra_libs.temporary_directory(prefix='send_event_test-') as tmpdir:
+    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
       outfile = os.path.join(tmpdir, 'out.bin')
-      args = send_event.get_arguments(
+      args = get_arguments(
         ['--event-mon-run-type', 'file',
          '--event-mon-output-file', outfile,
          '--event-mon-service-name', 'thing',
@@ -282,8 +290,8 @@ class TestInputModesFile(unittest.TestCase):
         ])
       self.assertEquals(args.event_mon_run_type, 'file')
       event_mon.process_argparse_options(args)
-      send_event._process_logrequest_path(args)
-      self.assertTrue(send_event.send_build_event(args))
+      common.process_argparse_options(args)
+      self.assertTrue(common.send_build_event(args))
 
       # Now open the resulting file and check what was written
       with open(outfile, 'rb') as f:
@@ -298,9 +306,9 @@ class TestInputModesFile(unittest.TestCase):
 
   def test_logrequest_path_build_service_conflicts(self):
     # logrequest contains build event, provides service event as arg
-    with infra_libs.temporary_directory(prefix='send_event_test-') as tmpdir:
+    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
       outfile = os.path.join(tmpdir, 'out.bin')
-      args = send_event.get_arguments(
+      args = get_arguments(
         ['--event-mon-run-type', 'file',
          '--event-mon-output-file', outfile,
          '--event-mon-service-name', 'thing',
@@ -312,7 +320,7 @@ class TestInputModesFile(unittest.TestCase):
       self.assertEquals(args.event_mon_run_type, 'file')
       event_mon.process_argparse_options(args)
       with self.assertRaises(ValueError):
-        send_event._process_logrequest_path(args)
+        common.process_argparse_options(args)
 
   # The default event used below has been generated using:
   # ./run.py infra.tools.send_monitoring_event
@@ -324,9 +332,9 @@ class TestInputModesFile(unittest.TestCase):
   #     --event-mon-timestamp-kind=BEGIN
   #     --event-mon-event-timestamp=123
   def test_logrequest_path_valid_service_event(self):
-    with infra_libs.temporary_directory(prefix='send_event_test-') as tmpdir:
+    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
       outfile = os.path.join(tmpdir, 'out.bin')
-      args = send_event.get_arguments(
+      args = get_arguments(
         ['--event-mon-run-type', 'file',
          '--event-mon-output-file', outfile,
          '--event-mon-service-name', 'thing',
@@ -335,8 +343,8 @@ class TestInputModesFile(unittest.TestCase):
         ])
       self.assertEquals(args.event_mon_run_type, 'file')
       event_mon.process_argparse_options(args)
-      send_event._process_logrequest_path(args)
-      self.assertTrue(send_event.send_service_event(args))
+      common.process_argparse_options(args)
+      self.assertTrue(common.send_service_event(args))
 
       # Now open the resulting file and check what was written
       with open(outfile, 'rb') as f:
@@ -349,9 +357,9 @@ class TestInputModesFile(unittest.TestCase):
     self.assertEqual(event.timestamp_kind, ChromeInfraEvent.BEGIN)
 
   def test_logrequest_path_service_type_override(self):
-    with infra_libs.temporary_directory(prefix='send_event_test-') as tmpdir:
+    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
       outfile = os.path.join(tmpdir, 'out.bin')
-      args = send_event.get_arguments(
+      args = get_arguments(
         ['--event-mon-run-type', 'file',
          '--event-mon-output-file', outfile,
          '--event-mon-service-name', 'thing',
@@ -361,8 +369,8 @@ class TestInputModesFile(unittest.TestCase):
         ])
       self.assertEquals(args.event_mon_run_type, 'file')
       event_mon.process_argparse_options(args)
-      send_event._process_logrequest_path(args)
-      self.assertTrue(send_event.send_service_event(args))
+      common.process_argparse_options(args)
+      self.assertTrue(common.send_service_event(args))
 
       # Now open the resulting file and check what was written
       with open(outfile, 'rb') as f:
@@ -375,9 +383,9 @@ class TestInputModesFile(unittest.TestCase):
     self.assertEqual(event.timestamp_kind, ChromeInfraEvent.END)
 
   def test_logrequest_path_service_build_conflict(self):
-    with infra_libs.temporary_directory(prefix='send_event_test-') as tmpdir:
+    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
       outfile = os.path.join(tmpdir, 'out.bin')
-      args = send_event.get_arguments(
+      args = get_arguments(
         ['--event-mon-run-type', 'file',
          '--event-mon-output-file', outfile,
          '--event-mon-service-name', 'thing',
@@ -388,14 +396,14 @@ class TestInputModesFile(unittest.TestCase):
       self.assertEquals(args.event_mon_run_type, 'file')
       event_mon.process_argparse_options(args)
       with self.assertRaises(ValueError):
-        send_event._process_logrequest_path(args)
+        common.process_argparse_options(args)
 
   def test_logrequest_path_service_build_and_service(self):
     # The logrequest provided contains both a service and a build type,
     # which is invalid.
-    with infra_libs.temporary_directory(prefix='send_event_test-') as tmpdir:
+    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
       outfile = os.path.join(tmpdir, 'out.bin')
-      args = send_event.get_arguments(
+      args = get_arguments(
         ['--event-mon-run-type', 'file',
          '--event-mon-output-file', outfile,
          '--event-mon-service-name', 'thing',
@@ -405,7 +413,7 @@ class TestInputModesFile(unittest.TestCase):
       self.assertEquals(args.event_mon_run_type, 'file')
       event_mon.process_argparse_options(args)
       with self.assertRaises(ValueError):
-        send_event._process_logrequest_path(args)
+        common.process_argparse_options(args)
 
 
 class TestEventsFromTextFile(SendingEventBaseTest):
@@ -426,8 +434,8 @@ class TestEventsFromTextFile(SendingEventBaseTest):
                 '"build-event-hostname": "vm25-m1"}\n')
 
       self.assertTrue(os.path.isfile(event_file))
-      args = send_event.get_arguments(['--events-from-file', event_file])
-      send_event.send_events_from_file(args)
+      args = get_arguments(['--events-from-file', event_file])
+      common.send_events_from_file(args)
       self.assertTrue(os.path.isfile(event_file))
 
   def test_send_events_from_file_delete_file_smoke(self):
@@ -446,22 +454,22 @@ class TestEventsFromTextFile(SendingEventBaseTest):
                 '"build-event-build-scheduling-time": 1434665160000, '
                 '"build-event-hostname": "vm25-m1"}\n')
       self.assertTrue(os.path.isfile(event_file))
-      args = send_event.get_arguments(['--events-from-file', event_file,
+      args = get_arguments(['--events-from-file', event_file,
                                        '--delete-file-when-sent'])
-      send_event.send_events_from_file(args)
+      common.send_events_from_file(args)
       self.assertFalse(os.path.isfile(event_file))
 
 
 class TestReadEventsFromFile(SendingEventBaseTest):
   def test_read_valid_file(self):
-    events = send_event.read_events_from_file(
+    events = common.read_events_from_file(
       os.path.join(DATA_DIR, 'events_valid.log'))
     for event in events:
       self.assertIsInstance(event, event_mon.Event)
     self.assertEqual(len(events), 5)
 
   def test_read_invalid_file(self):
-    events = send_event.read_events_from_file(
+    events = common.read_events_from_file(
       os.path.join(DATA_DIR, 'events_invalid.log'))
     for event in events:
       self.assertIsInstance(event, event_mon.Event)
@@ -469,7 +477,7 @@ class TestReadEventsFromFile(SendingEventBaseTest):
     self.assertEqual(len(events), 4)
 
   def test_read_file_with_blank_lines(self):
-    events = send_event.read_events_from_file(
+    events = common.read_events_from_file(
       os.path.join(DATA_DIR, 'events_blank_lines.log'))
     for event in events:
       self.assertIsInstance(event, event_mon.Event)
@@ -478,7 +486,7 @@ class TestReadEventsFromFile(SendingEventBaseTest):
 
   def test_read_file_with_service_event(self):
     # service_event is not supported (yet).
-    events = send_event.read_events_from_file(
+    events = common.read_events_from_file(
       os.path.join(DATA_DIR, 'events_one_service_event.log'))
     for event in events:
       self.assertIsInstance(event, event_mon.Event)
@@ -486,7 +494,7 @@ class TestReadEventsFromFile(SendingEventBaseTest):
     self.assertEqual(len(events), 4)
 
   def test_read_with_extra_result_code(self):
-    events = send_event.read_events_from_file(
+    events = common.read_events_from_file(
       os.path.join(DATA_DIR, 'events_valid_extra_result.log'))
     for event in events:
       self.assertIsInstance(event, event_mon.Event)
@@ -498,45 +506,52 @@ class TestReadEventsFromFile(SendingEventBaseTest):
 class TestGetEventsFileList(unittest.TestCase):
   FILES_DIR = os.path.join(DATA_DIR, 'get_events_file_list')
   def test_no_filename(self):
-    file_list = send_event.get_event_file_list([])
+    file_list = common.get_event_file_list([])
     self.assertTrue(len(file_list) == 0)
 
   def test_one_filename(self):
-    file_list = send_event.get_event_file_list(
+    file_list = common.get_event_file_list(
       [os.path.join(self.FILES_DIR, 'events.log')])
     self.assertTrue(len(file_list) == 1)
     self.assertTrue(file_list[0].endswith('events.log'))
 
   def test_two_filenames(self):
     filenames = ('events.log', 'events-2.log')
-    file_list = send_event.get_event_file_list(
+    file_list = common.get_event_file_list(
       [os.path.join(self.FILES_DIR, filename) for filename in filenames])
     self.assertTrue(len(file_list) == 2)
     for fname in file_list:
       # no cover due to a bug in coverage (http://stackoverflow.com/a/35325514)
       self.assertTrue(any(fname.endswith(filename)
-                          for filename in filenames))  # pragma: no cover
+                      for filename in filenames))  # pragma: no cover
 
   def test_one_wildcard(self):
     filenames = ('events.log', 'events-1.log', 'events-2.log')
-    file_list = send_event.get_event_file_list(
+    file_list = common.get_event_file_list(
       [os.path.join(self.FILES_DIR, 'events*.log')])
     self.assertTrue(len(file_list) == 3)
     for fname in file_list:
       # no cover due to a bug in coverage (http://stackoverflow.com/a/35325514)
       self.assertTrue(any(fname.endswith(filename)
-                          for filename in filenames))  # pragma: no cover
+                      for filename in filenames))  # pragma: no cover
 
   def test_one_wildcard_one_file(self):
     filenames = ('events.log', 'events-1.log', 'events-2.log')
-    file_list = send_event.get_event_file_list(
+    file_list = common.get_event_file_list(
       [os.path.join(self.FILES_DIR, 'events-?.log'),
        os.path.join(self.FILES_DIR, 'events.log')])
     self.assertTrue(len(file_list) == 3)
     for fname in file_list:
       # no cover due to a bug in coverage (http://stackoverflow.com/a/35325514)
       self.assertTrue(any(fname.endswith(filename)
-                          for filename in filenames))  # pragma: no cover
+                      for filename in filenames))  # pragma: no cover
+
+
+def _parse_arguments(args):
+  """Convenience function to test argument parsing."""
+  parser = argparse.ArgumentParser()
+  common.add_argparse_options(parser)
+  return parser.parse_args(args)
 
 
 class TestProcessRequestPath(SendingEventBaseTest):
@@ -544,9 +559,9 @@ class TestProcessRequestPath(SendingEventBaseTest):
     orig_event = event_mon.get_default_event()
     self.assertIsNot(orig_event, None)
 
-    args = argparse.Namespace()
-    args.event_logrequest_path = None
-    send_event._process_logrequest_path(args)
+    opts = _parse_arguments([])
+    opts.event_logrequest_path = None
+    common.process_argparse_options(opts)
 
     self.assertEqual(orig_event, event_mon.get_default_event())
 
@@ -554,11 +569,11 @@ class TestProcessRequestPath(SendingEventBaseTest):
     orig_event = event_mon.get_default_event()
     self.assertIsNot(orig_event, None)
 
-    args = argparse.Namespace()
-    args.event_logrequest_path = os.path.join(DATA_DIR, 'logrequest-build.bin')
-    args.service_event_type = None
-    args.build_event_type = None
-    send_event._process_logrequest_path(args)
+    opts = _parse_arguments([])
+    opts.event_logrequest_path = os.path.join(DATA_DIR, 'logrequest-build.bin')
+    opts.service_event_type = None
+    opts.build_event_type = None
+    common.process_argparse_options(opts)
 
     new_event = event_mon.get_default_event()
     self.assertNotEqual(orig_event, new_event)
@@ -568,22 +583,22 @@ class TestProcessRequestPath(SendingEventBaseTest):
     orig_event = event_mon.get_default_event()
     self.assertIsNot(orig_event, None)
 
-    args = argparse.Namespace()
-    args.event_logrequest_path = os.path.join(DATA_DIR, 'logrequest-empty.bin')
+    opts = _parse_arguments([])
+    opts.event_logrequest_path = os.path.join(DATA_DIR, 'logrequest-empty.bin')
     with self.assertRaises(ValueError):
-      send_event._process_logrequest_path(args)
+      common.process_argparse_options(opts)
 
   def test_logrequest_with_bad_content(self):
     orig_event = event_mon.get_default_event()
     self.assertIsNot(orig_event, None)
 
-    args = argparse.Namespace()
-    args.event_logrequest_path = os.path.join(DATA_DIR, 'garbage')
+    opts = _parse_arguments([])
+    opts.event_logrequest_path = os.path.join(DATA_DIR, 'garbage')
     with self.assertRaises(google.protobuf.message.DecodeError):
-      send_event._process_logrequest_path(args)
+      common.process_argparse_options(opts)
 
   def test_logrequest_with_missing_file(self):
-    args = argparse.Namespace()
-    args.event_logrequest_path = os.path.join(DATA_DIR, 'non-existent-file.bin')
+    opts = _parse_arguments([])
+    opts.event_logrequest_path = os.path.join(DATA_DIR, 'non-existent-file.bin')
     with self.assertRaises(IOError):
-      send_event._process_logrequest_path(args)
+      common.process_argparse_options(opts)

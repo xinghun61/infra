@@ -6,56 +6,78 @@ import logging
 import sys
 import traceback
 
+import infra_libs
 import infra_libs.event_mon as event_mon
 import infra_libs.ts_mon as ts_mon
 
-from infra.tools.send_monitoring_event import send_event
+from infra.tools.send_monitoring_event import common
 
 
 success_metric = ts_mon.BooleanMetric('send_monitoring_event/success',
     description='Set to True if the monitoring event was sent successfully')
 
 
-def main(argv):  # pragma: no cover
-  # Does nothing when no arguments are passed, to make it safe to import this
-  # module (main() is executed on import, because this file is called __main__).
-  status = 0
+class SendMonitoringEvent(infra_libs.BaseApplication):
+  DESCRIPTION = """Send an event to the monitoring pipeline.
 
-  if len(argv) == 0:
-    return status
+    Examples:
+    run.py infra.tools.send_monitoring_event --service-event-type=START \\
+                                     --service-event-revinfo <filename>
 
-  try:
-    args = send_event.get_arguments(argv)
-    send_event.process_argparse_options(args)
+    run.py infra.tools.send_monitoring_event \\
+                                     --service-event-stack-trace "<stack trace>"
 
-    if args.build_event_type:
-      success_metric.set(send_event.send_build_event(args))
+    run.py infra.tools.send_monitoring_event --build-event-type=SCHEDULER \\
+                                     --build-event-build-name=foo
+                                     --build-event-hostname='bot.dns.name'
+    """
+  def add_argparse_options(self, parser):
+    super(SendMonitoringEvent, self).add_argparse_options(parser)
+    common.add_argparse_options(parser)
 
-    elif args.service_event_type:
-      success_metric.set(send_event.send_service_event(args))
+    parser.set_defaults(
+        ts_mon_flush='manual',
+        ts_mon_target_type='task',
+        ts_mon_task_service_name='send_monitoring_event',
+        ts_mon_task_job_name='manual',
+      )
 
-    elif args.events_from_file:
-      success_metric.set(send_event.send_events_from_file(args))
+  def process_argparse_options(self, opts):
+    super(SendMonitoringEvent, self).process_argparse_options(opts)
+    common.process_argparse_options(opts)
 
-    else:
-      print >> sys.stderr, ('At least one of the --*-event-type options or '
-                            '--events-from-file should be provided. Nothing '
-                            'was sent.')
-      status = 2
-      success_metric.set(False)
-  except Exception:
-    success_metric.set(False)
-    traceback.print_exc()  # helps with debugging locally.
-  finally:
-    event_mon.close()
+  def main(self, opts):  # pragma: no cover
+    status = 0
+
     try:
-      ts_mon.flush()
-    except ts_mon.MonitoringNoConfiguredMonitorError:
-      logging.error("Unable to flush ts_mon because it's not configured.")
+      if opts.build_event_type:
+        success_metric.set(common.send_build_event(opts))
+
+      elif opts.service_event_type:
+        success_metric.set(common.send_service_event(opts))
+
+      elif opts.events_from_file:
+        success_metric.set(common.send_events_from_file(opts))
+
+      else:
+        print >> sys.stderr, ('At least one of the --*-event-type options or '
+                              '--events-from-file should be provided. Nothing '
+                              'was sent.')
+        status = 2
+        success_metric.set(False)
     except Exception:
-      logging.exception("Flushing ts_mon metrics failed.")
-  return status
+      success_metric.set(False)
+      traceback.print_exc()  # helps with debugging locally.
+    finally:
+      event_mon.close()
+      try:
+        ts_mon.flush()
+      except ts_mon.MonitoringNoConfiguredMonitorError:
+        logging.error("Unable to flush ts_mon because it's not configured.")
+      except Exception:
+        logging.exception("Flushing ts_mon metrics failed.")
+    return status
 
 
 if __name__ == '__main__':
-  sys.exit(main(sys.argv[1:]))
+  SendMonitoringEvent().run()
