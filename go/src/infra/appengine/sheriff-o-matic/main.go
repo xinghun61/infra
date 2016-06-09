@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"infra/monorail"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -19,6 +20,8 @@ import (
 	"google.golang.org/appengine"
 
 	"github.com/luci/gae/service/datastore"
+	"github.com/luci/gae/service/urlfetch"
+	"github.com/luci/luci-go/appengine/gaeauth/client"
 	"github.com/luci/luci-go/appengine/gaeauth/server"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
 	"github.com/luci/luci-go/common/clock"
@@ -34,6 +37,7 @@ const authGroup = "sheriff-o-matic-access"
 var (
 	mainPage         = template.Must(template.ParseFiles("./index.html"))
 	accessDeniedPage = template.Must(template.ParseFiles("./access-denied.html"))
+	monorailEndpoint = "https://monorail-prod.appspot.com/_ah/api/monorail/v1/"
 )
 
 var errStatus = func(w http.ResponseWriter, status int, msg string) {
@@ -369,6 +373,32 @@ func postAnnotationsHandler(c context.Context, w http.ResponseWriter, r *http.Re
 	w.Write(data)
 }
 
+func getBugQueueHandler(c context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	c = client.UseServiceAccountTransport(c, nil, nil)
+	mr := monorail.NewEndpointsClient(&http.Client{Transport: urlfetch.Get(c)}, monorailEndpoint)
+	tree := p.ByName("tree")
+	req := &monorail.IssuesListRequest{
+		ProjectId: tree,
+		Can:       monorail.IssuesListRequest_OPEN,
+		Q:         fmt.Sprintf("label:Sheriff-%s", tree),
+	}
+
+	res, err := mr.IssuesList(c, req)
+	if err != nil {
+		errStatus(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	bytes, err := json.Marshal(res)
+	if err != nil {
+		errStatus(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(bytes)
+}
+
 // base is the root of the middleware chain.
 func base(h middleware.Handler) httprouter.Handle {
 	methods := auth.Authenticator{
@@ -394,6 +424,7 @@ func init() {
 	router.POST("/api/v1/alerts/:tree", base(auth.Authenticate(postAlertsHandler)))
 	router.GET("/api/v1/annotations/", base(auth.Authenticate(getAnnotationsHandler)))
 	router.POST("/api/v1/annotations/:annKey/:action", base(auth.Authenticate(postAnnotationsHandler)))
+	router.GET("/api/v1/bugqueue/:tree", base(auth.Authenticate(getBugQueueHandler)))
 
 	rootRouter := httprouter.New()
 	rootRouter.GET("/*path", base(auth.Authenticate(indexPage)))
