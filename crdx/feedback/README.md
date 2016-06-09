@@ -11,7 +11,7 @@ Include the following script on your site and set the target URL like so:
   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
   })(window,document,'script','https://storage.googleapis.com/crdx-feedback.appspot.com/feedback.js','crdx');
 
-  crdx('setFeedbackButtonLink', 'https://bugs.chromium.org');
+  crdx('setFeedbackButtonLink', 'https://bugs.chromium.org/p/chromium/issues/entry?labels=Infra-DX');
 </script>
 ```
 
