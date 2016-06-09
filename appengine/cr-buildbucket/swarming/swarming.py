@@ -260,7 +260,16 @@ def create_task_async(build):
 
   task = yield create_task_def_async(bucket_cfg.swarming, builder_cfg, build)
   res = yield _call_api_async(
-    bucket_cfg.swarming.hostname, 'tasks/new', method='POST', payload=task)
+    bucket_cfg.swarming.hostname, 'tasks/new', method='POST', payload=task,
+    # Higher timeout than normal because if the task creation request
+    # fails, but the task is actually created, later we will receive a
+    # notification that the task is completed, but we won't have a build
+    # for that task, which results in errors in the log.
+    deadline=30,
+    # This code path is executed by put and put_batch request handlers.
+    # Clients should retry these requests on transient errors, so
+    # do not retry requests to swarming.
+    max_attempts=1)
   task_id = res['task_id']
   logging.info('Created a swarming task %s: %r', task_id, res)
 
@@ -441,7 +450,7 @@ class SubNotify(webapp2.RequestHandler):
     if not builds:
       if utils.utcnow() < created_time + datetime.timedelta(minutes=20):
         self.stop(
-          'Build for task %s/%s not found yet.',
+          'Build for task %s/user/task/%s not found yet.',
           hostname, task_id, redeliver=True)
       else:
         self.stop('Build for task %s/%s not found.', hostname, task_id)
@@ -556,7 +565,9 @@ def get_routes():  # pragma: no cover
 
 
 @ndb.tasklet
-def _call_api_async(hostname, path, method='GET', payload=None, identity=None):
+def _call_api_async(
+    hostname, path, method='GET', payload=None, identity=None, deadline=None,
+    max_attempts=None):
   identity = identity or auth.get_current_identity()
   delegation_token = yield auth.delegate_async(
     audience=[_self_identity()],
@@ -568,6 +579,8 @@ def _call_api_async(hostname, path, method='GET', payload=None, identity=None):
     method=method,
     payload=payload,
     scopes=net.EMAIL_SCOPE,
+    deadline=deadline,
+    max_attempts=max_attempts,
     delegation_token=delegation_token,
   )
   raise ndb.Return(res)

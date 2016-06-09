@@ -274,7 +274,10 @@ class SwarmingTest(testing.AppengineTestCase):
       method='POST',
       scopes=net.EMAIL_SCOPE,
       delegation_token='blah',
-      payload=None)
+      payload=None,
+      deadline=None,
+      max_attempts=None,
+    )
 
   def test_update_build_success(self):
     cases = [
