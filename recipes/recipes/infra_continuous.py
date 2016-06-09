@@ -113,7 +113,7 @@ def RunSteps(api, mastername, buildername, buildnumber):
       api.python(
           'infra python tests',
           'test.py',
-          ['test'],
+          ['test', '--jobs', 1],
           cwd=api.path['checkout'])
 
     # Run Glyco tests only on public Linux\Mac CI.
