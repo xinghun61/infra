@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents.min.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="/elements/som-bug-queue.html">
+<test-fixture id="basic">
+  <template>
+    <som-bug-queue></som-bug-queue>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+    var server;
+    var responseHeaders = {
+        json: {'Content-Type': 'application/json'},
+    };
+
+    setup(function() {
+      element = fixture('basic');
+      server = sinon.fakeServer.create();
+    });
+
+    teardown(function() {
+      server.restore();
+    });
+
+    test('_haveNoBugs', function() {
+      assert.equal(true, element._haveNoBugs());
+      assert.equal(true, element._haveNoBugs({}));
+      assert.equal(true, element._haveNoBugs({items:[]}));
+      assert.equal(false,
+          element._haveNoBugs({items:[{id:1, status: 'foo'}]}));
+    });
+
+    test('renders empty', function(done) {
+      assert.equal(true, element.$.main.hidden);
+      element._bugQueueJson = {};
+      assert.equal(true, element._haveNoBugs(element._bugQueueJson));
+      flush( () => {
+        assert.equal(true, element.$.main.hidden);
+        done();
+      });
+    });
+
+    test('renders basic', function(done) {
+      assert.equal(true, element.$.main.hidden);
+      element._bugQueueJson = {
+        items: [
+          { summary: "foo", status: "bar", id: 123 },
+          { summary: "baz", status: "zippy", id: 456 },
+        ],
+      };
+
+      assert.equal(false, element._haveNoBugs(element._bugQueueJson));
+
+      flush( () => {
+        assert.equal(false, element.$.main.hidden);
+        assert.equal(2, element.$.main.querySelectorAll('.bug').length);
+        done();
+      });
+    });
+  });
+})();
+</script>

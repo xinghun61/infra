@@ -19,6 +19,7 @@
 <link rel="import" href="/bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="/bower_components/paper-toolbar/paper-toolbar.html">
 <link rel="import" href="/elements/som-alert-item.html">
+<link rel="import" href="/elements/som-bug-queue.html">
 <link rel="import" href="/elements/som-drawer.html">
 <link rel="import" href="/elements/som-examine.html">
 
@@ -125,10 +126,11 @@
         <div class="flex layout vertical">
           <iron-pages attr-for-selected='id' selected="[[_selectedPage]]" class="flex layout vertical">
             <div id="alertsList">
-              <div hidden$="[[_haveAlerts]]">
+             <som-bug-queue id="bugQueue" alerts-group="[[_alertsGroup]]"></som-bug-queue>
+             <div hidden$="[[_haveAlerts]]">
                 No alerts!
               </div>
-              <iron-list id="alertsIronList" items="[[_alerts]]" as="alert" class="fit" selection-enabled multi-selection>
+              <iron-list id="alertsIronList" items="[[_alerts]]" as="alert" selection-enabled multi-selection>
                 <template>
                   <div class="list-item" tabindex$="[[tabIndex]]">
                     <som-alert-item
@@ -223,7 +225,7 @@
         },
         _haveAlerts: {
           type: Boolean,
-          computed: '_computeHaveAlerts(alerts)',
+          computed: '_computeHaveAlerts(_alerts)',
         },
         logoutUrl: String,
         _networkActive: {
@@ -260,6 +262,7 @@
 
       _refresh: function() {
         this.$.alertsAjax.generateRequest();
+        this.$.bugQueue.refresh();
       },
 
       _refreshAsync: function() {
@@ -350,7 +353,19 @@
           return aAnn.snoozed ? 1 : -1;
         });
 
+        // Otherwise alertsIronList doesn't render all of the alert items.
+        setTimeout(() => {
+          this.$.alertsIronList.notifyResize();
+        }, 250);
+
         return alerts;
+      },
+
+      _computeHaveAlerts: function(alerts) {
+        if (!alerts) {
+          return true;
+        }
+        return alerts.length > 0;
       },
 
       ////////////////////// Annotations ///////////////////////////
