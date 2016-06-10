@@ -1,4 +1,3 @@
-# coding: utf-8
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is govered by a BSD-style
 # license that can be found in the LICENSE file or at
@@ -92,11 +91,10 @@ read_only = False
 # described in the banner message takes effect.  It is
 # expressed as a 5-tuple of ints: (year, month, day, hour, minute),
 # e.g. (2009, 3, 20, 21, 45) represents March 20 2009 9:45PM.
-banner_time = (2016, 6, 10, 16, 0)
+banner_time = None
 
 # Display a site maintenance banner on every monorail page.
-banner_message = ('Monorail will be in read only mode while we upgrade ' +
-    ' some tables to support Emoji 🙌')
+banner_message = ''
 
 # User accounts with email addresses at these domains are all banned.
 banned_user_domains = []
