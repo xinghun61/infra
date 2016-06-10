@@ -123,8 +123,8 @@ def _find_old_twistd_logs(base, files, max_age):
   while lo < hi:
     mid = (lo+hi)//2
     path = os.path.join(base, twistd_log_files[mid][0])
-    create_time = datetime.datetime.fromtimestamp(os.path.getctime(path))
-    if create_time < threshold:
+    timestamp = datetime.datetime.fromtimestamp(os.path.getmtime(path))
+    if timestamp > threshold:
       hi = mid
     else:
       lo = mid+1
