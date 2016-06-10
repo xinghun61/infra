@@ -176,6 +176,20 @@ info](../master_auth.md) the slave will use to connect to buildbucket.
 By convention, the value is "service-account-\<project\>.json". If not
 set, it defaults to None.
 
+### pubsub_service_account_file
+
+Similar to service_account_file, this is also an *optional* field but
+must be present if the builders on the master are intended to send build data
+to pubsub.
+
+If set, it should point to the filename in the credentials directory on
+the slave machine (i.e., just the basename + extension, no directory
+part), that contains the [OAuth service account
+info](../master_auth.md) the slave will use to connect to pubsub.
+By convention, the value is "service-account-\<project\>.json".
+The <project> field is usually "luci-milo" for most masters.  If not
+set, it defaults to None.
+
 ### builders
 
 This is a *required* field and must be a dict of builder names and their
