@@ -23,6 +23,14 @@ class GroupList(servlet.Servlet):
 
   _PAGE_TEMPLATE = 'sitewide/group-list-page.ezt'
 
+  def AssertBasePermission(self, mr):
+    """Assert that the user has the permissions needed to view this page."""
+    super(GroupList, self).AssertBasePermission(mr)
+
+    if not mr.perms.HasPerm(permissions.VIEW_GROUP, None, None):
+      raise permissions.PermissionException(
+          'User is not allowed to view list of user groups')
+
   def GatherPageData(self, mr):
     """Build up a dictionary of data values to use when rendering the page."""
     group_views = [

@@ -23,6 +23,20 @@ class GroupListTest(unittest.TestCase):
     self.servlet = grouplist.GroupList('req', 'res', services=self.services)
     self.mr = testing_helpers.MakeMonorailRequest()
 
+  def testAssertBasePermission_Anon(self):
+    self.mr.perms = permissions.READ_ONLY_PERMISSIONSET
+    with self.assertRaises(permissions.PermissionException):
+      self.servlet.AssertBasePermission(self.mr)
+
+  def testAssertBasePermission_RegularUsers(self):
+    self.mr.perms = permissions.COMMITTER_ACTIVE_PERMISSIONSET
+    with self.assertRaises(permissions.PermissionException):
+      self.servlet.AssertBasePermission(self.mr)
+
+  def testAssertBasePermission_SiteAdmin(self):
+    self.mr.perms = permissions.ADMIN_PERMISSIONSET
+    self.servlet.AssertBasePermission(self.mr)
+
   def testGatherPagData_ZeroGroups(self):
     page_data = self.servlet.GatherPageData(self.mr)
     self.assertEqual([], page_data['groups'])
