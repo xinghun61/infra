@@ -27,20 +27,28 @@ ANDROID_DEVICE_FILE_STALENESS_S = 120
 PORT_PATH_RE = re.compile(r'\d+\/\d+')
 
 
-cpu_temp = ts_mon.FloatMetric('dev/cpu/temperature',
+cpu_temp = ts_mon.FloatMetric('dev/mobile/cpu/temperature',
                               description='device CPU temperature in deg C')
-batt_temp = ts_mon.FloatMetric('dev/battery/temperature',
+batt_temp = ts_mon.FloatMetric('dev/mobile/battery/temperature',
                                description='battery temperature in deg C')
-batt_charge = ts_mon.FloatMetric('dev/battery/charge',
+batt_charge = ts_mon.FloatMetric('dev/mobile/battery/charge',
                                  description='percentage charge of battery')
-dev_status = ts_mon.StringMetric('dev/status',
+dev_status = ts_mon.StringMetric('dev/mobile/status',
                                  description='operational state of device')
-dev_type = ts_mon.StringMetric('dev/type',
+dev_type = ts_mon.StringMetric('dev/mobile/type',
                                 description='device hardware or type')
-dev_os = ts_mon.StringMetric('dev/os',
+dev_os = ts_mon.StringMetric('dev/mobile/os',
                              description='operating system of the device')
-dev_uptime = ts_mon.FloatMetric('dev/device_uptime',
+dev_uptime = ts_mon.FloatMetric('dev/mobile/uptime',
                                 description='device uptime in seconds')
+mem_free = ts_mon.GaugeMetric(
+    'dev/mobile/mem/free',
+    description='available memory (free + cached + buffers) in kb')
+mem_total = ts_mon.GaugeMetric(
+    'dev/mobile/mem/total',
+    description='total memory (device ram - kernel leaks) in kb')
+proc_count = ts_mon.GaugeMetric('dev/mobile/proc/count',
+                                description='process count')
 
 metric_read_status = ts_mon.StringMetric(
     'dev/android_device_metric_read/status',
@@ -81,7 +89,10 @@ def get_device_statuses(device_file=ANDROID_DEVICE_FILE, now=None):
         (dev_os, build.get('build.id')),
         (dev_status, status),
         (dev_type, d_type),
-        (dev_uptime, device.get('uptime'))):
+        (dev_uptime, device.get('uptime')),
+        (mem_free, device.get('mem', {}).get('avail')),
+        (mem_total, device.get('mem', {}).get('total')),
+        (proc_count, device.get('processes'))):
       if value is not None:
         metric.set(value, fields=fields)
 

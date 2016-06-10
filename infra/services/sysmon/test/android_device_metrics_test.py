@@ -48,6 +48,9 @@ class AndroidDeviceMetricTest(unittest.TestCase):
     self.assertIsNone(android_device_metrics.dev_status.get(fields=fields))
     self.assertIsNone(android_device_metrics.dev_type.get(fields=fields))
     self.assertIsNone(android_device_metrics.dev_uptime.get(fields=fields))
+    self.assertIsNone(android_device_metrics.mem_free.get(fields=fields))
+    self.assertIsNone(android_device_metrics.mem_total.get(fields=fields))
+    self.assertIsNone(android_device_metrics.proc_count.get(fields=fields))
 
   def test_no_file(self):
     android_device_metrics.get_device_statuses(self.nonexistent_file)
@@ -101,6 +104,12 @@ class AndroidDeviceMetricTest(unittest.TestCase):
                      'hammerhead')
     self.assertEqual(
         android_device_metrics.dev_uptime.get(fields=fields), 2162.74)
+    self.assertEqual(
+        android_device_metrics.mem_free.get(fields=fields), 1512264)
+    self.assertEqual(
+        android_device_metrics.mem_total.get(fields=fields), 1899548)
+    self.assertEqual(
+        android_device_metrics.proc_count.get(fields=fields), 183)
 
   def test_no_metric_sent(self):
     with open(self.no_temp_file) as f:

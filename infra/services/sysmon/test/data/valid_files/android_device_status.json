@@ -295,7 +295,16 @@
       "imei": "352136069310387", 
       "ip": {}, 
       "max_uid": 10073, 
+      "mem": {
+        "avail": 1512264,
+        "buffers": 14732,
+        "cached": 324096,
+        "free": 1173436,
+        "total": 1899548,
+        "used": 387284
+      },
       "other_packages": [], 
+      "processes": 183,
       "port_path": "3/38", 
       "state": "available", 
       "temp": {
