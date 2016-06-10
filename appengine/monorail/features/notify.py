@@ -749,12 +749,19 @@ class NotifyBulkChangeTask(NotifyTaskBase):
         for notify_addr in issue.derived_notify_addrs:
           additional_addrs_to_notify_of_issue[notify_addr].append(issue)
 
-    # 2. Compose an email specifically for each user.
+    # 2. Compose an email specifically for each user, and one email to each
+    # notify_addr with all the issues that it.
+    # Start from non-members first, then members to reveal email addresses.
     email_tasks = []
     needed_user_view_ids = [uid for uid in ids_to_notify_of_issue
                             if uid not in users_by_id]
     users_by_id.update(framework_views.MakeAllUserViews(
         cnxn, self.services.user, needed_user_view_ids))
+    member_ids_to_notify_of_issue = {}
+    non_member_ids_to_notify_of_issue = {}
+    member_additional_addrs = {}
+    non_member_additional_addrs = {}
+
     for user_id in ids_to_notify_of_issue:
       if not user_id:
         continue  # Don't try to notify NO_USER_SPECIFIED
@@ -764,24 +771,71 @@ class NotifyBulkChangeTask(NotifyTaskBase):
       user_issues = ids_to_notify_of_issue[user_id]
       if not user_issues:
         continue  # user's prefs indicate they don't want these notifications
+      auth = monorailrequest.AuthData.FromUserID(
+          cnxn, user_id, self.services)
+      is_member = bool(framework_bizobj.UserIsInProject(
+          project, auth.effective_ids))
+      if is_member:
+        member_ids_to_notify_of_issue[user_id] = user_issues
+      else:
+        non_member_ids_to_notify_of_issue[user_id] = user_issues
+      omit_addrs.add(users_by_id[user_id].email)
+
+    for addr, addr_issues in additional_addrs_to_notify_of_issue.iteritems():
+      auth = None
+      try:
+        auth = monorailrequest.AuthData.FromEmail(
+            cnxn, addr, self.services)
+      except:  # pylint: disable=bare-except
+        logging.warning('Cannot find user of email %s ', addr)
+      if auth:
+        is_member = bool(framework_bizobj.UserIsInProject(
+            project, auth.effective_ids))
+      else:
+        is_member = False
+      if is_member:
+        member_additional_addrs[addr] = addr_issues
+      else:
+        non_member_additional_addrs[addr] = addr_issues
+      omit_addrs.add(addr)
+
+    for user_id, user_issues in non_member_ids_to_notify_of_issue.iteritems():
       email = self._FormatBulkIssuesEmail(
           users_by_id[user_id].email, user_issues, users_by_id,
-          commenter_view, hostport, comment_text, amendments, config, project)
+          commenter_view, hostport, comment_text, amendments, config, project,
+          False)
       email_tasks.append(email)
-      omit_addrs.add(users_by_id[user_id].email)
-      logging.info('about to bulk notify %s (%s) of %s',
+      logging.info('about to bulk notify non-member %s (%s) of %s',
                    users_by_id[user_id].email, user_id,
                    [issue.local_id for issue in user_issues])
 
-    # 3. Compose one email to each notify_addr with all the issues that it
-    # is supossed to be notified about.
-    for addr, addr_issues in additional_addrs_to_notify_of_issue.iteritems():
+    for addr, addr_issues in non_member_additional_addrs.iteritems():
       email = self._FormatBulkIssuesEmail(
           addr, addr_issues, users_by_id, commenter_view, hostport,
-          comment_text, amendments, config, project)
+          comment_text, amendments, config, project, False)
       email_tasks.append(email)
-      omit_addrs.add(addr)
-      logging.info('about to bulk notify additional addr %s of %s',
+      logging.info('about to bulk notify non-member additional addr %s of %s',
+                   addr, [addr_issue.local_id for addr_issue in addr_issues])
+
+    framework_views.RevealAllEmails(users_by_id)
+    commenter_view.RevealEmail()
+
+    for user_id, user_issues in member_ids_to_notify_of_issue.iteritems():
+      email = self._FormatBulkIssuesEmail(
+          users_by_id[user_id].email, user_issues, users_by_id,
+          commenter_view, hostport, comment_text, amendments, config, project,
+          True)
+      email_tasks.append(email)
+      logging.info('about to bulk notify member %s (%s) of %s',
+                   users_by_id[user_id].email, user_id,
+                   [issue.local_id for issue in user_issues])
+
+    for addr, addr_issues in member_additional_addrs.iteritems():
+      email = self._FormatBulkIssuesEmail(
+          addr, addr_issues, users_by_id, commenter_view, hostport,
+          comment_text, amendments, config, project, True)
+      email_tasks.append(email)
+      logging.info('about to bulk notify member additional addr %s of %s',
                    addr, [addr_issue.local_id for addr_issue in addr_issues])
 
     # 4. Add in the project's issue_notify_address.  This happens even if it
@@ -802,7 +856,7 @@ class NotifyBulkChangeTask(NotifyTaskBase):
         email = self._FormatBulkIssuesEmail(
             project.issue_notify_address, non_private_issues_live,
             users_by_id, commenter_view, hostport, comment_text, amendments,
-            config, project)
+            config, project, True)
         email_tasks.append(email)
         omit_addrs.add(project.issue_notify_address)
         logging.info('about to bulk notify all-issues %s of %s',
@@ -813,18 +867,21 @@ class NotifyBulkChangeTask(NotifyTaskBase):
 
   def _FormatBulkIssuesEmail(
       self, dest_email, issues, users_by_id, commenter_view,
-      hostport, comment_text, amendments, config, _project):
+      hostport, comment_text, amendments, config, project, is_member):
     """Format an email to one user listing many issues."""
-    # TODO(jrobbins): Generate two versions of email body: members
-    # vesion has full email addresses exposed.  And, use the full
-    # commenter email address in the From: line when sending to
-    # a member.
+
+    if is_member:
+      from_addr = emailfmt.FormatFromAddr(
+          project, commenter_view=commenter_view, reveal_addr=is_member,
+          can_reply_to=False)
+    else:
+      from_addr = emailfmt.NoReplyAddress(commenter_view=commenter_view)
+
     subject, body = self._FormatBulkIssues(
         issues, users_by_id, commenter_view, hostport, comment_text,
         amendments, config)
     body = _TruncateBody(body)
 
-    from_addr = emailfmt.NoReplyAddress(commenter_view=commenter_view)
     return dict(from_addr=from_addr, to=dest_email, subject=subject, body=body)
 
   def _FormatBulkIssues(

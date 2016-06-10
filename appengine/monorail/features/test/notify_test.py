@@ -165,8 +165,9 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
         features=fake.FeaturesService())
     self.services.user.TestAddUser('requester@example.com', 1)
     self.services.user.TestAddUser('user@example.com', 2)
+    self.services.user.TestAddUser('member@example.com', 3)
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[1],
+        'test-project', owner_ids=[1, 3],
         project_id=12345)
     issue1 = MakeTestIssue(
         project_id=12345, local_id=1, owner_id=2, reporter_id=1)
@@ -248,10 +249,11 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
   def testNotifyBulkChangeTask(self):
     issue2 = MakeTestIssue(
         project_id=12345, local_id=2, owner_id=2, reporter_id=1)
+    issue2.cc_ids = [3]
     self.services.issue.TestAddIssue(issue2)
     task = notify.NotifyBulkChangeTask(
         request=None, response=None, services=self.services)
-    params = {'send_email': 1, 'project_id': 12345, 'ids': '1,2', 'seq': 0,
+    params = {'send_email': 1, 'project_id': 12345, 'ids': '1,2,3', 'seq': 0,
               'old_owner_ids': '1,1', 'commenter_id': 1}
     mr = testing_helpers.MakeMonorailRequest(
         user_info={'user_id': 1},
@@ -260,6 +262,19 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
         services=self.services)
     result = task.HandleRequest(mr)
     self.VerifyParams(result, params)
+
+    tasks = self.taskqueue_stub.get_filtered_tasks(
+        url=urls.OUTBOUND_EMAIL_TASK + '.do')
+    self.assertEqual(2, len(tasks))
+    for task in tasks:
+      task_params = dict(item.split('=')
+                    for item in tasks[0].payload.split('&'))
+      # obfuscated email for non-members
+      if 'user' in task_params['to']:
+        self.assertIn('...', task_params['from_addr'])
+      # Full email for members
+      else:
+        self.assertNotIn('...', task_params['from_addr'])
 
   def testNotifyBulkChangeTask_spam(self):
     issue2 = MakeTestIssue(
