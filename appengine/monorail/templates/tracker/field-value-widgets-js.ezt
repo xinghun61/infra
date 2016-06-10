@@ -14,7 +14,7 @@ runOnLoad(function() {
      el.addEventListener("click", function(event) {
           var target = event.target;
           var fieldID = target.getAttribute("data-field-id");
-          var fieldType = target.getAttribute("data-type");
+          var fieldType = target.getAttribute("data-field-type");
           var fieldValidate1 = target.getAttribute("data-validate-1");
           var fieldValidate2 = target.getAttribute("data-validate-2");
          _addMultiFieldValueWidget(

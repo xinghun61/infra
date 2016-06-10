@@ -1344,6 +1344,13 @@ function TKR_addMultiFieldValueWidget(
   }
   if (field_type == 'user') {
     widget.style = 'width:12em';
+    widget.classList.add('userautocomplete');
+    widget.classList.add('customfield');
+    widget.classList.add('multivalued');
+    widget.addEventListener('focus', function(event) {
+      _acrob(null);
+      _acof(event);
+     });
   }
   if (field_type == 'int') {
     widget.style.textAlign = 'right';
