@@ -303,3 +303,61 @@ func makeParams(items ...string) httprouter.Params {
 
 	return params
 }
+
+func TestWriteSettings(t *testing.T) {
+	t.Parallel()
+
+	Convey("write settings", t, func() {
+		c := gaetesting.TestingContext()
+		ds := datastore.Get(c)
+
+		Convey("writeTrees", func() {
+			Convey("basic", func() {
+				err := writeTrees(c, "foo")
+				So(err, ShouldBeNil)
+
+				t := &Tree{
+					Name: "foo",
+				}
+				So(ds.Get(t), ShouldBeNil)
+				So(t.DisplayName, ShouldEqual, "Foo")
+			})
+
+			tree := &Tree{
+				Name:        "oak",
+				DisplayName: "Oaakk",
+			}
+
+			So(ds.Put(tree), ShouldBeNil)
+			ds.Testable().CatchupIndexes()
+
+			Convey("don't overwrite tree", func() {
+				err := writeTrees(c, "oak")
+				So(err, ShouldBeNil)
+
+				So(ds.Get(tree), ShouldBeNil)
+				So(tree.DisplayName, ShouldEqual, "Oaakk")
+			})
+		})
+
+		Convey("writeAlertStreams", func() {
+			tree := &Tree{
+				Name:        "oak",
+				DisplayName: "Oak",
+			}
+
+			So(ds.Put(tree), ShouldBeNil)
+			ds.Testable().CatchupIndexes()
+
+			Convey("basic", func() {
+				err := writeAlertStreams(c, "oak:thing")
+				So(err, ShouldBeNil)
+
+				So(ds.Get(tree), ShouldBeNil)
+				So(tree.DisplayName, ShouldEqual, "Oak")
+				So(tree.AlertStreams, ShouldResemble, []string{"thing"})
+			})
+
+		})
+	})
+}

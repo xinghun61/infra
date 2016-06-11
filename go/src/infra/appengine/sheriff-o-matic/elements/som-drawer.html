@@ -28,7 +28,7 @@
         verbose
         last-response="{{_treeList}}"
     ></iron-ajax>
-    <paper-menu attr-for-selected="value" selected="[[alertsGroup]]" id="menu">
+    <paper-menu attr-for-selected="value" selected="[[tree]]" id="menu">
       <template is="dom-repeat" items="[[_treeList]]" as="tree">
         <paper-item value="[[tree.name]]" on-tap="_onSelected">[[tree.display_name]]</paper-item>
       </template>
@@ -46,7 +46,7 @@
       is: 'som-drawer',
 
       properties: {
-        alertsGroup: String,
+        tree: String,
         path: {
            type: String,
            notify: true
@@ -59,6 +59,19 @@
            type: Array,
            value: function() { return []; },
         },
+        trees: {
+          type: Object,
+          notify: true,
+          computed: '_computeTrees(_treeList)',
+        },
+      },
+
+      _computeTrees(treeList) {
+        let trees = {};
+        treeList.forEach(function(tree) {
+          trees[tree.name] = tree;
+        });
+        return trees;
       },
 
       _onSelected: function(evt) {

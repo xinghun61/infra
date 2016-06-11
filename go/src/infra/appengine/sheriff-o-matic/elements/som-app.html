@@ -80,15 +80,6 @@
     <iron-location id="url" path="{{_path}}"></iron-location>
     <iron-ajax
         auto
-        id="alertsAjax"
-        loading="{{_networkActive}}"
-        url="/api/v1/alerts/[[_alertsGroup]]"
-        handle-as="json"
-        last-error="{{_alertsJsonError}}"
-        last-response="{{_alertsJson}}"
-        debounce-duration="300"></iron-ajax>
-    <iron-ajax
-        auto
         id="annotations"
         url="/api/v1/annotations"
         handle-as="json"
@@ -106,13 +97,13 @@
         <paper-toolbar>
           <span class="som-title">Sheriff-o-Matic</span>
         </paper-toolbar>
-        <som-drawer id="drawer" alerts-group="[[_alertsGroup]]" path="{{_path}}" show-infra-failures="{{showInfraFailures}}"></som-drawer>
+        <som-drawer id="drawer" tree="[[_tree]]" path="{{_path}}" show-infra-failures="{{showInfraFailures}}" trees="{{_trees}}"></som-drawer>
       </paper-header-panel>
       <paper-header-panel main class="flex layout vertical">
         <paper-toolbar>
           <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
           <div class="layout horizontal flex">
-            <div class="flex title">[[_alertsGroup]]</div>
+            <div class="flex title">[[_tree]]</div>
             <div hidden$="[[_lastUpdate]]" class="flex last-updated">
               Last updated: [[_lastUpdated]]
             </div>
@@ -121,7 +112,7 @@
             </div>
             <paper-icon-button on-tap="_refresh" id="refresh" icon="refresh"></paper-icon-button>
           </div>
-          <paper-spinner active="[[_networkActive]]"></paper-spinner>
+          <paper-spinner active="[[_fetchingAlerts]]"></paper-spinner>
         </paper-toolbar>
         <div class="flex layout vertical">
           <iron-pages attr-for-selected='id' selected="[[_selectedPage]]" class="flex layout vertical">
@@ -135,7 +126,7 @@
                   <div class="list-item" tabindex$="[[tabIndex]]">
                     <som-alert-item
                         alert="{{alert}}"
-                        alerts-group="[[_alertsGroup]]"
+                        tree="[[_tree]]"
                         selected="[[selected]]"
                         annotation="[[_computeAnnotation(annotations, alert)]]"
                         on-annotation-change="_handleAnnotation"
@@ -181,22 +172,28 @@
     Polymer({
       is: 'som-app',
       properties: {
+        _activeRequests: {
+          type: Number,
+          value: function() { return 0; },
+        },
         _alerts: {
           type: Array,
           value: function() { return []; },
-          computed: '_computeAlerts(_alertsJson, annotations, showInfraFailures)',
+          computed: '_computeAlerts(_alertsData.*, annotations, showInfraFailures)',
         },
-        _alertsJson: {
+        // Map of stream to data, timestamp of latest updated data.
+        _alertsData: {
           type: Object,
           value: function() { return {}; },
         },
-        _alertsJsonError: {
+        _alertsTimes: {
           type: Object,
           value: function() { return {}; },
         },
-        _alertsGroup: {
-          type: String,
-          computed: '_computeAlertsGroup(_path)',
+        _alertsGroups: {
+          type: Array,
+          computed: '_computeAlertsGroup(_tree, _trees)',
+          observer: '_alertsGroupChanged',
         },
         // We don't convert the array into an object because the polymer data
         // binding doesn't seem to like mutations to an object, but it's fine
@@ -208,7 +205,7 @@
         annotationsJson: Array,
         _lastUpdated: {
           type: Date,
-          computed: '_computeLastUpdated(_alertsJson.timestamp)',
+          computed: '_computeLastUpdated(_alertsTimes.*)',
         },
         _annotationsJsonError: {
           type: Object,
@@ -227,11 +224,11 @@
           type: Boolean,
           computed: '_computeHaveAlerts(_alerts)',
         },
-        logoutUrl: String,
-        _networkActive: {
+        _fetchingAlerts: {
           type: Boolean,
-          value: false,
+          computed: '_computeFetchingAlerts(_activeRequests)',
         },
+        logoutUrl: String,
         _path: {
           type: String,
         },
@@ -242,6 +239,11 @@
         showInfraFailures: {
           type: Boolean,
           value: true,
+        },
+        _trees: Object,
+        _tree: {
+          type: String,
+          computed: '_computeTree(_path)',
         },
         _examinedAlert: {
           type: Object,
@@ -261,8 +263,13 @@
       ////////////////////// Refresh ///////////////////////////
 
       _refresh: function() {
+<<<<<<< c4f4bdb83d993152d97b7ad2f63bf9a7d79fe5c4
         this.$.alertsAjax.generateRequest();
         this.$.bugQueue.refresh();
+=======
+        this.$.annotations.generateRequest();
+>>>>>>> Comments
+        this._alertsGroupChanged(this._alertsGroups);
       },
 
       _refreshAsync: function() {
@@ -272,12 +279,26 @@
 
       ////////////////////// Alerts and path ///////////////////////////
 
-      _computeAlertsGroup: function(path) {
+      _computeTree: function(path) {
         let pathParts = path.split('/');
         if (pathParts.length < 2 || pathParts[1] == "") {
           console.error('error: invalid pathParts', pathParts);
+          return "";
         }
+
         return pathParts[1];
+      },
+
+      _computeAlertsGroup: function(tree, trees) {
+        if (tree === '') {
+          return [];
+        }
+
+        if (trees && trees[tree] && trees[tree].alert_streams) {
+          return trees[tree].alert_streams
+        }
+
+        return [tree];
       },
 
       _computeSelectedPage: function(path) {
@@ -323,26 +344,62 @@
         }
       },
 
-      _computeLastUpdated: function(lastPosted) {
-        if (lastPosted != undefined) {
-          return new Date(lastPosted * 1000).toLocaleString();
+      _computeLastUpdated: function(alertsTimes) {
+        alertsTimes = alertsTimes.base;
+
+        // Alert streams are assumed to be always older than right now.
+        let oldestDate = new Date();
+        Object.keys(alertsTimes).forEach((tree) => {
+          if (alertsTimes[tree] < oldestDate) {
+            oldestDate = alertsTimes[tree];
+          }
+        });
+
+        // Assume it takes less than 1 millisecond to calculate that.
+        if (Date.now() - oldestDate > 1) {
+          return new Date(oldestDate * 1000).toLocaleString();
         }
-        return ' Unknown';
+        return 'Unknown';
       },
 
-      _computeAlerts: function(alertsJson, annotations, showInfraFailures) {
-        if (!alertsJson || !alertsJson.alerts) {
+      _alertsGroupChanged: function(alertsGroup) {
+        this.set('_activeRequests', this._activeRequests + alertsGroup.length);
+
+        // TODO: handle webpage offline throwing an exception
+        alertsGroup.forEach((group) => {
+          fetch('/api/v1/alerts/' + group, {credentials: 'include'}).then((response) => {
+            // TODO: handle alerts not found
+            this.set('_activeRequests', this._activeRequests - 1);
+            return response.json();
+          }).then( (json) => {
+            this.set(['_alertsData', group], json.alerts);
+            this.set(['_alertsTimes', group], json.timestamp);
+          });
+        });
+      },
+
+      _computeFetchingAlerts: function(activeRequests) {
+        return activeRequests !== 0;
+      },
+
+      _computeAlerts: function(alertsData, annotations, showInfraFailures) {
+        if (!alertsData || !alertsData.base) {
           return [];
         }
+        alertsData = alertsData.base;
 
-        let alerts = alertsJson.alerts;
-        if (!showInfraFailures) {
-          alerts = alerts.filter(function(alert) {
-            return alert.type !== 'infra-failure';
-          });
+        let allAlerts = [];
+        for (let tree in alertsData) {
+          let alerts = alertsData[tree];
+          if (!showInfraFailures) {
+            alerts = alerts.filter(function(alert) {
+              return alert.type !== 'infra-failure';
+            });
+          }
+          allAlerts = allAlerts.concat(alerts);
         }
 
-        alerts.sort((a, b) => {
+        allAlerts.sort((a, b) => {
           let aAnn = this._computeAnnotation(annotations, a);
           let bAnn = this._computeAnnotation(annotations, b);
 
@@ -358,7 +415,7 @@
           this.$.alertsIronList.notifyResize();
         }, 250);
 
-        return alerts;
+        return allAlerts;
       },
 
       _computeHaveAlerts: function(alerts) {

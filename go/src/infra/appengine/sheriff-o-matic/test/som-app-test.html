@@ -13,34 +13,55 @@
 (function() {
   'use strict';
   var element;
+  var server;
+  var responseHeaders = {
+      json: {'Content-Type': 'application/json'},
+  };
 
   setup(function() {
     element = fixture('basic');
-    element.$.alertsAjax.auto = false;
+    server = sinon.fakeServer.create();
+    server.respondWith(
+      'GET',
+      '/api/v1/trees', [
+        200,
+        responseHeaders.json,
+        '[]'
+      ]
+    );
+    server.respondWith(
+      'GET',
+      '/api/v1/alerts/test', [
+        200,
+        responseHeaders.json,
+        '[]'
+      ]
+    );
+  });
+
+  teardown(function() {
+    server.restore();
   });
 
   suite('basic tests', function() {
 
     test('renders bare minimum', function() {
-      element._alertsJson = {
-        alerts:[],
-        timestamp: 0
+      element._alertsData = {
+        test: []
+      };
+      element._alertsTimes = {
+        test: new Date()
       };
       assert.equal(
           element.$$('.last-updated').textContent.trim(),
-          'Last updated: 12/31/1969, 4:00:00 PM');
+          'Last updated: Unknown');
     });
   });
 
   suite('annotations', function() {
-    var server;
     var clock;
-    var responseHeaders = {
-        json: { 'Content-Type': 'application/json' },
-    };
 
     setup(function() {
-      server = sinon.fakeServer.create();
       clock = sinon.useFakeTimers();
     });
 
@@ -166,20 +187,22 @@
     });
 
     test('sort works correctly', function() {
-      let alertsJson = {
-        alerts: [
+      let alertsData = {
+        test: [
           {extension: { builders: [{name: 'a'}], reasons: [ {step: 'a'} ]} },
           {extension: { builders: [{name: 'b'}], reasons: [ {step: 'b'} ]} },
           {extension: { builders: [{name: 'c'}], reasons: [ {step: 'c'} ]} },
-        ],
+        ]
       };
 
       let annotations = {};
-      annotations[element._keyForAlert(alertsJson.alerts[0])] = {
+      annotations[element._keyForAlert(alertsData.test[0])] = {
         snoozeTime: Date.now() + 1000000,
       };
 
-      let sortedAlerts = element._computeAlerts(alertsJson, annotations);
+      let sortedAlerts = element._computeAlerts({
+        base: alertsData
+      }, annotations);
 
       assert.equal('b', sortedAlerts[0].extension.builders[0].name);
       assert.equal('c', sortedAlerts[1].extension.builders[0].name);
@@ -229,8 +252,8 @@
     test('sync iron-page-url to alertsGroup and drawer selection', function(done) {
       element.$.url.path = '/chromium.perf';
       flush(function() {
-        assert.equal('chromium.perf', element._alertsGroup);
-        assert.equal('chromium.perf', element.$.drawer.alertsGroup);
+        assert.equal('chromium.perf', element._tree);
+        assert.equal('chromium.perf', element.$.drawer.tree);
         done();
       });
     });
@@ -238,7 +261,7 @@
     test('sync drawer selection to alertsGroup to iron-page-url', function() {
       element.$.drawer.path = '/chromium.perf';
       assert.equal('/chromium.perf', element.$.url.path);
-      assert.equal('chromium.perf', element._alertsGroup);
+      assert.equal('chromium.perf', element._tree);
     });
   });
 

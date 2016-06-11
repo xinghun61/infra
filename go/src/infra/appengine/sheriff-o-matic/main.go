@@ -81,7 +81,13 @@ func (settingsUIPage) Fields(c context.Context) ([]settings.UIField, error) {
 			ID:    "Trees",
 			Title: "Trees in SOM",
 			Type:  settings.UIFieldText,
-			Help:  `Trees listed in SOM. Comma separated values.`,
+			Help:  "Trees listed in SOM. Comma separated values.",
+		},
+		{
+			ID:    "AlertStreams",
+			Title: "Alert streams",
+			Type:  settings.UIFieldText,
+			Help:  "Alert streams per each tree. Write only field; tree:streamA,streamB",
 		},
 	}, nil
 }
@@ -96,41 +102,73 @@ func (settingsUIPage) ReadSettings(c context.Context) (map[string]string, error)
 	}
 
 	return map[string]string{
-		"Trees": strings.Join(stringed, ","),
+		"Trees":        strings.Join(stringed, ","),
+		"AlertStreams": "",
 	}, nil
 }
 
-func (settingsUIPage) WriteSettings(c context.Context, values map[string]string, who, why string) error {
+func writeTrees(c context.Context, treeStr string) error {
 	ds := datastore.Get(c)
-
 	q := datastore.NewQuery("Tree")
 	trees := []*Tree{}
 	datastore.Get(c).GetAll(q, &trees)
 
-	treeStr, ok := values["Trees"]
-
-	if ok {
-		toMake := strings.Split(treeStr, ",")
-		for _, tree := range trees {
-			for i, it := range toMake {
-				if it == tree.Name {
-					toMake[i] = ""
-				}
+	toMake := strings.Split(treeStr, ",")
+	for _, tree := range trees {
+		for i, it := range toMake {
+			if it == tree.Name {
+				toMake[i] = ""
 			}
 		}
+	}
 
-		for _, it := range toMake {
-			it = strings.TrimSpace(it)
-			if it != "" {
-				err := ds.Put(&Tree{
-					Name:        it,
-					DisplayName: strings.Replace(strings.Title(it), "_", " ", -1),
-				})
+	for _, it := range toMake {
+		it = strings.TrimSpace(it)
+		if len(it) == 0 {
+			continue
+		}
 
-				if err != nil {
-					return err
-				}
-			}
+		if err := ds.Put(&Tree{
+			Name:        it,
+			DisplayName: strings.Replace(strings.Title(it), "_", " ", -1),
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeAlertStreams(c context.Context, alertStreams string) error {
+	ds := datastore.Get(c)
+	split := strings.Split(alertStreams, ":")
+	if len(split) != 2 {
+		return fmt.Errorf("invalid alertStreams: %q", alertStreams)
+	}
+
+	t := &Tree{Name: split[0]}
+
+	if err := ds.Get(t); err != nil {
+		return err
+	}
+
+	t.AlertStreams = strings.Split(split[1], ",")
+	if err := ds.Put(t); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (settingsUIPage) WriteSettings(c context.Context, values map[string]string, who, why string) error {
+	if treeStr, ok := values["Trees"]; ok {
+		if err := writeTrees(c, treeStr); err != nil {
+			return err
+		}
+	}
+
+	if alertStreams, ok := values["AlertStreams"]; ok {
+		if err := writeAlertStreams(c, alertStreams); err != nil {
+			return err
 		}
 	}
 

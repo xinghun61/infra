@@ -74,7 +74,7 @@
           <hr/>
           <div class="alert-body">[[alert.body]]</div>
           <div class="alert-expanded layout horizontal center">
-            <a href$="[[alertsGroup]]/examine/[[alert.key]]">Examine</a>
+            <a href$="[[tree]]/examine/[[alert.key]]">Examine</a>
             <paper-button class="horizontal layout center" on-tap="_fileBug" alt="Link a bug" raised noink>
               <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
               Link Bug
@@ -117,7 +117,7 @@
 
       properties: {
         alert: Object,
-        alertsGroup: String, 
+        tree: String,
         annotation: Object,
         _cssClass: {
           type: String,
