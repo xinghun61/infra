@@ -263,7 +263,6 @@
       ////////////////////// Refresh ///////////////////////////
 
       _refresh: function() {
-        this.$.alertsAjax.generateRequest();
         this.$.bugQueue.refresh();
         this.$.annotations.generateRequest();
         this._alertsGroupChanged(this._alertsGroups);
@@ -361,6 +360,7 @@
 
       _alertsGroupChanged: function(alertsGroup) {
         this.set('_activeRequests', this._activeRequests + alertsGroup.length);
+        this.set('_alertsData', {});
 
         // TODO: handle webpage offline throwing an exception
         alertsGroup.forEach((group) => {
