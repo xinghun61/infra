@@ -28,7 +28,7 @@
     <iron-ajax
         auto
         id="bugQueueAjax"
-        url="/api/v1/bugqueue/[[alertsGroup]]"
+        url="/api/v1/bugqueue/[[tree]]"
         handle-as="json"
         last-error="{{_bugQueueJsonError}}"
         last-response="{{_bugQueueJson}}"
@@ -54,7 +54,7 @@
       is: 'som-bug-queue',
 
       properties: {
-        alertsGroup: {
+        tree: {
           type: String,
         },
         _bugQueueJson: {

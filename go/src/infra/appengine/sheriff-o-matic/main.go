@@ -415,6 +415,9 @@ func getBugQueueHandler(c context.Context, w http.ResponseWriter, r *http.Reques
 	c = client.UseServiceAccountTransport(c, nil, nil)
 	mr := monorail.NewEndpointsClient(&http.Client{Transport: urlfetch.Get(c)}, monorailEndpoint)
 	tree := p.ByName("tree")
+
+	// TODO(martiniss): make this look up request info based on Tree datastore
+	// object
 	req := &monorail.IssuesListRequest{
 		ProjectId: tree,
 		Can:       monorail.IssuesListRequest_OPEN,

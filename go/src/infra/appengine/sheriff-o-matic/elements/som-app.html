@@ -117,7 +117,7 @@
         <div class="flex layout vertical">
           <iron-pages attr-for-selected='id' selected="[[_selectedPage]]" class="flex layout vertical">
             <div id="alertsList">
-             <som-bug-queue id="bugQueue" alerts-group="[[_alertsGroup]]"></som-bug-queue>
+             <som-bug-queue id="bugQueue" tree="[[_tree]]"></som-bug-queue>
              <div hidden$="[[_haveAlerts]]">
                 No alerts!
               </div>
