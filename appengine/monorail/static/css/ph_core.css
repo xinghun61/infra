@@ -543,7 +543,6 @@ a.spamflag {
 .h3 {
     font-size: 130%;
     font-weight: bolder;
-    font-family: "Geneva", arial, sans-serif;
 }
 input { padding-left: 1px; padding-right: 1px; }
 textarea { padding-left: 1px; padding-right: 1px; }
