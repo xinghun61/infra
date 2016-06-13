@@ -166,7 +166,7 @@ func (settingsUIPage) WriteSettings(c context.Context, values map[string]string,
 		}
 	}
 
-	if alertStreams, ok := values["AlertStreams"]; ok {
+	if alertStreams, ok := values["AlertStreams"]; ok && alertStreams != "" {
 		if err := writeAlertStreams(c, alertStreams); err != nil {
 			return err
 		}

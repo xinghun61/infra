@@ -29,6 +29,9 @@
        font-size: smaller;
        color: #666;
      }
+     .alert-link {
+       padding-left: 5px;
+     }
      .list-item {
         @apply(--layout-flex);
         @apply(--layout-vertical);
@@ -85,6 +88,12 @@
               [[_snoozeText]]
             </paper-button>
             <div class="divider"></div>
+            <template is="dom-if" if="[[_haveLinks(alert)]]">
+              Useful Links:
+              <template is="dom-repeat" items="[[alert.links]]" as="link">
+                <a class="alert-link" target="_blank" href$="[[link.href]]">[[link.title]]</a>
+              </template>
+            </template>
             <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]"></som-extension-build-failure>
           </div>
         </div>
@@ -155,6 +164,17 @@
         return !!bugId[0] ? `Bug ${bugId[0]}` : bugUrl;
       },
 
+      _calculateDuration(alert) {
+        let deltaSec = Math.round((alert.time - alert.start_time));
+        let hours = Math.floor(deltaSec/60/60);
+        let minutes = Math.floor((deltaSec - hours*60*60)/60);
+        let seconds = deltaSec - hours * 60*60 - minutes*60;
+        if (hours == 0 && minutes == 0 && seconds == 0) {
+          return '';
+        }
+        return `Active for: ${hours}h ${minutes}m ${seconds}s`;
+      },
+
       _classForAlert: function(alert, selected) {
         return 'alert' + (selected ? ' selected' : '');
       },
@@ -186,15 +206,8 @@
         return '';
       },
 
-      _calculateDuration(alert) {
-        let deltaSec = Math.round((alert.time - alert.start_time));
-        let hours = Math.floor(deltaSec/60/60);
-        let minutes = Math.floor((deltaSec - hours*60*60)/60);
-        let seconds = deltaSec - hours * 60*60 - minutes*60;
-        if (hours == 0 && minutes == 0 && seconds == 0) {
-          return '';
-        }
-        return `Active for: ${hours}h ${minutes}m ${seconds}s`;
+      _haveLinks: function(alert) {
+        return alert && alert.links && alert.links.length > 0;
       },
 
       _removeBug: function(evt) {
