@@ -64,6 +64,19 @@ def RunTest(test_name):
       s = super(LogFormatter, self).format(record)
       return s.replace(base_repo_path, '[TMPDIR]')
 
+  class LogFilterer(logging.Filter):
+    def filter(self, record):
+      # infra.libs.git2.repo logs this message if the command took longer than
+      # 1s to run.  This causes test flakes occasionally.
+      if (record.name.startswith('infra.libs.git2.repo.Repo') and
+          record.msg.startswith('Finished in ')): # pragma: no cover
+        return False
+
+      return record.name.startswith((
+        'infra.services.gsubtreed',
+        'infra.libs.git2',
+      ))
+
   def checkpoint(message, include_committer=False, include_config=False):
     repos = collections.OrderedDict()
     repos['origin'] = origin.snap(include_committer, include_config)
@@ -79,6 +92,7 @@ def RunTest(test_name):
     root_logger = logging.getLogger()
     shandler = logging.StreamHandler(logout)
     shandler.setFormatter(LogFormatter('%(levelname)s: %(message)s'))
+    shandler.addFilter(LogFilterer())
     root_logger.addHandler(shandler)
     shandler.setLevel(logging.INFO)
 
@@ -103,11 +117,7 @@ def RunTest(test_name):
 
       root_logger.removeHandler(shandler)
 
-      # infra.libs.git2.repo logs this message if the command took longer than
-      # 1s to run.  This causes test flakes occasionally.
-      log_lines = [x for x in logout.getvalue().splitlines()
-                   if 'Finished in ' not in x]
-      ret.append({'log output': log_lines})
+      ret.append({'log output': logout.getvalue().splitlines()})
 
       ret.append({
         'inner_loop success': success,

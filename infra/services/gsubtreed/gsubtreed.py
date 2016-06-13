@@ -102,7 +102,7 @@ class Pusher(threading.Thread):
     self.join()
     if self.FAKE_THREADING:  # pragma: no cover
       self._push()
-    log = logging.info if self._success else logging.error
+    log = LOGGER.info if self._success else LOGGER.error
     prefix = 'Completed' if self._success else 'FAILED'
     log('%s push for %r', prefix, self._name)
     if self._output:
@@ -162,21 +162,21 @@ def process_path(path, origin_repo, config):
       if synth_parent is not INVALID:
         f = synth_parent.data.footers
         if MIRRORED_COMMIT not in f:
-          logging.warn('Getting data from extra_footers. This information is'
+          LOGGER.warn('Getting data from extra_footers. This information is'
                        'only as trustworthy as the ACLs.')
           f = synth_parent.extra_footers()
         if MIRRORED_COMMIT not in f:
           success = False
-          logging.error('Could not find footers for synthesized commit %r',
+          LOGGER.error('Could not find footers for synthesized commit %r',
                         synth_parent.hsh)
           continue
         processed_commit = f[MIRRORED_COMMIT][0]
         processed = origin_repo.get_commit(processed_commit)
-        logging.info('got processed commit %s: %r', processed_commit, processed)
+        LOGGER.info('got processed commit %s: %r', processed_commit, processed)
 
         if processed is INVALID:
           success = False
-          logging.error('Subtree mirror commit %r claims to mirror commit %r, '
+          LOGGER.error('Subtree mirror commit %r claims to mirror commit %r, '
                         'which doesn\'t exist in the origin repo. Halting.',
                         synth_parent.hsh, processed_commit)
           continue
