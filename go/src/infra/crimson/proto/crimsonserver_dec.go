@@ -7,18 +7,26 @@ import (
 	context "golang.org/x/net/context"
 )
 
-type DecoratedGreeter struct {
+type DecoratedCrimson struct {
 	// Service is the service to decorate.
-	Service GreeterServer
+	Service CrimsonServer
 	// Prelude is called in each method before forwarding the call to Service.
 	// If Prelude returns an error, it is returned without forwarding the call.
 	Prelude func(c context.Context, methodName string, req proto.Message) (context.Context, error)
 }
 
-func (s *DecoratedGreeter) SayHello(c context.Context, req *HelloRequest) (*HelloReply, error) {
-	c, err := s.Prelude(c, "SayHello", req)
+func (s *DecoratedCrimson) CreateIPRange(c context.Context, req *IPRange) (*IPRangeStatus, error) {
+	c, err := s.Prelude(c, "CreateIPRange", req)
 	if err != nil {
 		return nil, err
 	}
-	return s.Service.SayHello(c, req)
+	return s.Service.CreateIPRange(c, req)
+}
+
+func (s *DecoratedCrimson) ReadIPRange(c context.Context, req *IPRangeQuery) (*IPRanges, error) {
+	c, err := s.Prelude(c, "ReadIPRange", req)
+	if err != nil {
+		return nil, err
+	}
+	return s.Service.ReadIPRange(c, req)
 }

@@ -6,18 +6,27 @@ syntax = "proto3";
 
 package crimson;
 
-// The greeting service definition.
-service Greeter {
-  // Sends a greeting
-  rpc SayHello (HelloRequest) returns (HelloReply) {}
+service Crimson {
+  rpc CreateIPRange (IPRange) returns (IPRangeStatus) {}
+  rpc ReadIPRange (IPRangeQuery) returns (IPRanges) {}
 }
 
-// The request message containing the user's name.
-message HelloRequest {
-  string name = 1;
+message IPRanges {
+  repeated IPRange ranges = 1;
 }
 
-// The response message containing the greetings
-message HelloReply {
-  string message = 1;
+message IPRange {
+  string site = 1;
+  string vlan = 2;
+  string start_ip = 3;
+  string end_ip = 4;
+}
+
+message IPRangeStatus {
+  string error = 1;
+}
+
+message IPRangeQuery {
+  string site = 1;
+  string vlan = 2;
 }

@@ -9,6 +9,10 @@ It is generated from these files:
 	crimson.proto
 
 It has these top-level messages:
+	IPRanges
+	IPRange
+	IPRangeStatus
+	IPRangeQuery
 	HelloRequest
 	HelloReply
 */
@@ -35,6 +39,53 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 const _ = proto.ProtoPackageIsVersion1
 
+type IPRanges struct {
+	Ranges []*IPRange `protobuf:"bytes,1,rep,name=ranges" json:"ranges,omitempty"`
+}
+
+func (m *IPRanges) Reset()                    { *m = IPRanges{} }
+func (m *IPRanges) String() string            { return proto.CompactTextString(m) }
+func (*IPRanges) ProtoMessage()               {}
+func (*IPRanges) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+func (m *IPRanges) GetRanges() []*IPRange {
+	if m != nil {
+		return m.Ranges
+	}
+	return nil
+}
+
+type IPRange struct {
+	Site    string `protobuf:"bytes,1,opt,name=site" json:"site,omitempty"`
+	Vlan    string `protobuf:"bytes,2,opt,name=vlan" json:"vlan,omitempty"`
+	StartIp string `protobuf:"bytes,3,opt,name=start_ip,json=startIp" json:"start_ip,omitempty"`
+	EndIp   string `protobuf:"bytes,4,opt,name=end_ip,json=endIp" json:"end_ip,omitempty"`
+}
+
+func (m *IPRange) Reset()                    { *m = IPRange{} }
+func (m *IPRange) String() string            { return proto.CompactTextString(m) }
+func (*IPRange) ProtoMessage()               {}
+func (*IPRange) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+type IPRangeStatus struct {
+	Error string `protobuf:"bytes,1,opt,name=error" json:"error,omitempty"`
+}
+
+func (m *IPRangeStatus) Reset()                    { *m = IPRangeStatus{} }
+func (m *IPRangeStatus) String() string            { return proto.CompactTextString(m) }
+func (*IPRangeStatus) ProtoMessage()               {}
+func (*IPRangeStatus) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
+type IPRangeQuery struct {
+	Site string `protobuf:"bytes,1,opt,name=site" json:"site,omitempty"`
+	Vlan string `protobuf:"bytes,2,opt,name=vlan" json:"vlan,omitempty"`
+}
+
+func (m *IPRangeQuery) Reset()                    { *m = IPRangeQuery{} }
+func (m *IPRangeQuery) String() string            { return proto.CompactTextString(m) }
+func (*IPRangeQuery) ProtoMessage()               {}
+func (*IPRangeQuery) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
 // The request message containing the user's name.
 type HelloRequest struct {
 	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
@@ -43,7 +94,7 @@ type HelloRequest struct {
 func (m *HelloRequest) Reset()                    { *m = HelloRequest{} }
 func (m *HelloRequest) String() string            { return proto.CompactTextString(m) }
 func (*HelloRequest) ProtoMessage()               {}
-func (*HelloRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (*HelloRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 // The response message containing the greetings
 type HelloReply struct {
@@ -53,9 +104,13 @@ type HelloReply struct {
 func (m *HelloReply) Reset()                    { *m = HelloReply{} }
 func (m *HelloReply) String() string            { return proto.CompactTextString(m) }
 func (*HelloReply) ProtoMessage()               {}
-func (*HelloReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (*HelloReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
 func init() {
+	proto.RegisterType((*IPRanges)(nil), "crimson.IPRanges")
+	proto.RegisterType((*IPRange)(nil), "crimson.IPRange")
+	proto.RegisterType((*IPRangeStatus)(nil), "crimson.IPRangeStatus")
+	proto.RegisterType((*IPRangeQuery)(nil), "crimson.IPRangeQuery")
 	proto.RegisterType((*HelloRequest)(nil), "crimson.HelloRequest")
 	proto.RegisterType((*HelloReply)(nil), "crimson.HelloReply")
 }
@@ -67,6 +122,129 @@ var _ grpc.ClientConn
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion2
+
+// Client API for Crimson service
+
+type CrimsonClient interface {
+	//  rpc CreateMachine (MachineState) returns (MachineState) {}
+	CreateIPRange(ctx context.Context, in *IPRange, opts ...grpc.CallOption) (*IPRangeStatus, error)
+	ReadIPRange(ctx context.Context, in *IPRangeQuery, opts ...grpc.CallOption) (*IPRanges, error)
+}
+type crimsonPRPCClient struct {
+	client *prpccommon.Client
+}
+
+func NewCrimsonPRPCClient(client *prpccommon.Client) CrimsonClient {
+	return &crimsonPRPCClient{client}
+}
+
+func (c *crimsonPRPCClient) CreateIPRange(ctx context.Context, in *IPRange, opts ...grpc.CallOption) (*IPRangeStatus, error) {
+	out := new(IPRangeStatus)
+	err := c.client.Call(ctx, "crimson.Crimson", "CreateIPRange", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *crimsonPRPCClient) ReadIPRange(ctx context.Context, in *IPRangeQuery, opts ...grpc.CallOption) (*IPRanges, error) {
+	out := new(IPRanges)
+	err := c.client.Call(ctx, "crimson.Crimson", "ReadIPRange", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+type crimsonClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewCrimsonClient(cc *grpc.ClientConn) CrimsonClient {
+	return &crimsonClient{cc}
+}
+
+func (c *crimsonClient) CreateIPRange(ctx context.Context, in *IPRange, opts ...grpc.CallOption) (*IPRangeStatus, error) {
+	out := new(IPRangeStatus)
+	err := grpc.Invoke(ctx, "/crimson.Crimson/CreateIPRange", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *crimsonClient) ReadIPRange(ctx context.Context, in *IPRangeQuery, opts ...grpc.CallOption) (*IPRanges, error) {
+	out := new(IPRanges)
+	err := grpc.Invoke(ctx, "/crimson.Crimson/ReadIPRange", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for Crimson service
+
+type CrimsonServer interface {
+	//  rpc CreateMachine (MachineState) returns (MachineState) {}
+	CreateIPRange(context.Context, *IPRange) (*IPRangeStatus, error)
+	ReadIPRange(context.Context, *IPRangeQuery) (*IPRanges, error)
+}
+
+func RegisterCrimsonServer(s prpc.Registrar, srv CrimsonServer) {
+	s.RegisterService(&_Crimson_serviceDesc, srv)
+}
+
+func _Crimson_CreateIPRange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IPRange)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CrimsonServer).CreateIPRange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/crimson.Crimson/CreateIPRange",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CrimsonServer).CreateIPRange(ctx, req.(*IPRange))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Crimson_ReadIPRange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IPRangeQuery)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CrimsonServer).ReadIPRange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/crimson.Crimson/ReadIPRange",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CrimsonServer).ReadIPRange(ctx, req.(*IPRangeQuery))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Crimson_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "crimson.Crimson",
+	HandlerType: (*CrimsonServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateIPRange",
+			Handler:    _Crimson_CreateIPRange_Handler,
+		},
+		{
+			MethodName: "ReadIPRange",
+			Handler:    _Crimson_ReadIPRange_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{},
+}
 
 // Client API for Greeter service
 
@@ -150,14 +328,25 @@ var _Greeter_serviceDesc = grpc.ServiceDesc{
 }
 
 var fileDescriptor0 = []byte{
-	// 139 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xe2, 0x4d, 0x2e, 0xca, 0xcc,
-	0x2d, 0xce, 0xcf, 0xd3, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x87, 0x72, 0x95, 0x94, 0xb8,
-	0x78, 0x3c, 0x52, 0x73, 0x72, 0xf2, 0x83, 0x52, 0x0b, 0x4b, 0x53, 0x8b, 0x4b, 0x84, 0x84, 0xb8,
-	0x58, 0xf2, 0x12, 0x73, 0x53, 0x25, 0x18, 0x15, 0x18, 0x35, 0x38, 0x83, 0xc0, 0x6c, 0x25, 0x35,
-	0x2e, 0x2e, 0xa8, 0x9a, 0x82, 0x9c, 0x4a, 0x21, 0x09, 0x2e, 0xf6, 0xdc, 0xd4, 0xe2, 0xe2, 0xc4,
-	0x74, 0x98, 0x22, 0x18, 0xd7, 0xc8, 0x99, 0x8b, 0xdd, 0xbd, 0x28, 0x35, 0xb5, 0x24, 0xb5, 0x48,
-	0xc8, 0x82, 0x8b, 0x23, 0x38, 0xb1, 0x12, 0xac, 0x4b, 0x48, 0x54, 0x0f, 0x66, 0x37, 0xb2, 0x4d,
-	0x52, 0xc2, 0xe8, 0xc2, 0x40, 0xc3, 0x95, 0x18, 0x92, 0xd8, 0xc0, 0x0e, 0x34, 0x06, 0x04, 0x00,
-	0x00, 0xff, 0xff, 0x23, 0xfc, 0xc3, 0x42, 0xb1, 0x00, 0x00, 0x00,
+	// 306 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x8c, 0x52, 0x4d, 0x4f, 0x83, 0x40,
+	0x14, 0x2c, 0xb6, 0x65, 0xf1, 0xb5, 0x24, 0xba, 0x5a, 0x83, 0x9c, 0xcc, 0x26, 0x1a, 0x4e, 0x3d,
+	0xa0, 0x31, 0x1a, 0x8f, 0x1c, 0x94, 0x9b, 0xd2, 0x1f, 0x60, 0xd6, 0xf6, 0xa5, 0x21, 0xe1, 0xcb,
+	0xdd, 0xc5, 0x84, 0xa3, 0xff, 0x5c, 0x58, 0x16, 0xd3, 0xe0, 0xc5, 0xdb, 0xcc, 0xbc, 0x19, 0xf6,
+	0xcd, 0x0b, 0xe0, 0x6e, 0x45, 0x9a, 0xcb, 0xb2, 0x58, 0x57, 0xa2, 0x54, 0x25, 0x25, 0x86, 0xb2,
+	0x3b, 0x70, 0xe2, 0xd7, 0x84, 0x17, 0x7b, 0x94, 0x34, 0x00, 0x5b, 0x68, 0xe4, 0x59, 0x57, 0xd3,
+	0x60, 0x11, 0x9e, 0xac, 0x87, 0x90, 0xb1, 0x24, 0x66, 0xce, 0xb6, 0x40, 0x8c, 0x44, 0x29, 0xcc,
+	0x64, 0xaa, 0xb0, 0x8d, 0x58, 0xc1, 0x71, 0xa2, 0x71, 0xa7, 0x7d, 0x65, 0xbc, 0xf0, 0x8e, 0x7a,
+	0xad, 0xc3, 0xf4, 0x12, 0x1c, 0xa9, 0xb8, 0x50, 0xef, 0x69, 0xe5, 0x4d, 0xb5, 0x4e, 0x34, 0x8f,
+	0x2b, 0xba, 0x02, 0x1b, 0x8b, 0x5d, 0x37, 0x98, 0xe9, 0xc1, 0xbc, 0x65, 0x71, 0xc5, 0xae, 0xc1,
+	0x35, 0x8f, 0x6c, 0x14, 0x57, 0xb5, 0xa4, 0xe7, 0x30, 0x47, 0x21, 0x4a, 0x61, 0xde, 0xea, 0x09,
+	0xbb, 0x87, 0xa5, 0xb1, 0xbd, 0xd5, 0x28, 0x9a, 0xff, 0x2e, 0xc4, 0x18, 0x2c, 0x5f, 0x30, 0xcb,
+	0xca, 0x04, 0x3f, 0x6b, 0x94, 0xaa, 0xf3, 0x14, 0x3c, 0xff, 0xcd, 0x75, 0x98, 0xdd, 0x00, 0x18,
+	0x4f, 0x95, 0x35, 0xd4, 0x03, 0x92, 0xa3, 0x94, 0x7c, 0x3f, 0x98, 0x06, 0x1a, 0x7e, 0x5b, 0x40,
+	0xa2, 0xfe, 0x56, 0xf4, 0x09, 0xdc, 0x48, 0x20, 0x57, 0x38, 0x5c, 0xe8, 0xcf, 0x19, 0xfd, 0x8b,
+	0xb1, 0xd2, 0x17, 0x64, 0x13, 0xfa, 0x08, 0x8b, 0x04, 0xf9, 0x6e, 0x88, 0xae, 0xc6, 0x46, 0x5d,
+	0xd1, 0x3f, 0x1d, 0xcb, 0x6d, 0x34, 0x8c, 0x80, 0x3c, 0x0b, 0x44, 0x85, 0x82, 0x3e, 0x80, 0xb3,
+	0xe1, 0x8d, 0xde, 0xfc, 0xe0, 0x13, 0x87, 0x6d, 0xfd, 0xb3, 0xb1, 0xdc, 0x16, 0x64, 0x93, 0x0f,
+	0x5b, 0xff, 0x1e, 0xb7, 0x3f, 0x01, 0x00, 0x00, 0xff, 0xff, 0xd4, 0xcd, 0x9e, 0xe7, 0x2f, 0x02,
+	0x00, 0x00,
 }

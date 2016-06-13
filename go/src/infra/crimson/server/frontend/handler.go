@@ -7,6 +7,7 @@
 package frontend
 
 import (
+	"database/sql"
 	"net/http"
 	"strings"
 
@@ -28,12 +29,17 @@ import (
 	"google.golang.org/appengine"
 	"google.golang.org/grpc/codes"
 
-	"infra/crimson/proto"
+	"infra/crimson/proto" // 'crimson' package
+	"infra/crimson/server/crimsondb"
 )
 
 // templateBundle is used to render HTML templates. It provides a base args
 // passed to all templates.
 var (
+	dbHandle *sql.DB
+	// People with read/write access to the database (c-i-a group)
+	rwGroup = "crimson"
+
 	templateBundle = &templates.Bundle{
 		Loader:    templates.FileSystemLoader("templates"),
 		DebugMode: appengine.IsDevAppServer(),
@@ -60,8 +66,6 @@ var (
 			}, nil
 		},
 	}
-	// People with read/write access to the database (c-i-a group)
-	rwGroup = "crimson"
 )
 
 // Auth middleware. Hard fails when user is not authorized.
@@ -94,6 +98,17 @@ func requireAuthWeb(h middleware.Handler) middleware.Handler {
 		}
 
 		templates.MustRender(c, rw, "pages/access_denied.html", nil)
+	}
+}
+
+func addDbToContext(h middleware.Handler) middleware.Handler {
+	return func(
+		c context.Context,
+		rw http.ResponseWriter,
+		r *http.Request,
+		p httprouter.Params) {
+		c = context.WithValue(c, "dbHandle", dbHandle)
+		h(c, rw, r, p)
 	}
 }
 
@@ -136,21 +151,32 @@ func prpcBase(h middleware.Handler) httprouter.Handle {
 	// by importing "github.com/luci/luci-go/appengine/gaeauth/server".
 	// No need to setup an authenticator here.
 	//
-	// For authorization checks, we use per-service decorators; see
-	// service registration code.
-	return gaemiddleware.BaseProd(h)
+	// Authorization is checked in checkAuthorizationPrpc using a
+	// service decorator.
+	return gaemiddleware.BaseProd(addDbToContext(h))
 }
 
 //// Routes.
 
 func init() {
+
+	// Open DB connection.
+	// Declare 'err' here otherwise the next line shadows the global 'dbHandle'
+	var err error
+	dbHandle, err = crimsondb.GetDBHandle()
+	if err != nil {
+		logging.Errorf(context.Background(),
+			"Failed to connect to CloudSQL: %v", err)
+		return
+	}
+
 	router := httprouter.New()
 	gaemiddleware.InstallHandlers(router, base)
 	router.GET("/", webBase(indexPage))
 
 	var api prpc.Server
-	crimson.RegisterGreeterServer(&api, &crimson.DecoratedGreeter{
-		Service: &greeterService{},
+	crimson.RegisterCrimsonServer(&api, &crimson.DecoratedCrimson{
+		Service: &crimsonService{},
 		Prelude: checkAuthorizationPrpc,
 	})
 	discovery.Enable(&api)
