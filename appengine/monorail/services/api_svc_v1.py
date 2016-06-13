@@ -60,6 +60,7 @@ def monorail_api_method(
   time_fn = kwargs.pop('time_fn', time.time)
   method_name = kwargs.get('name', '')
   method_path = kwargs.get('path', '')
+  http_method = kwargs.get('http_method', '')
   def new_decorator(func):
     @endpoints.method(request_message, response_message, **kwargs)
     @functools.wraps(func)
@@ -72,6 +73,9 @@ def monorail_api_method(
       request = args[0]
       ret = None
       try:
+        if settings.read_only and http_method.lower() != 'get':
+          raise permissions.PermissionException(
+              'This request is not allowed in read-only mode')
         requester = endpoints.get_current_user()
         auth_client_ids, auth_emails = (
             client_config_svc.GetClientConfigSvc().GetClientIDEmails())
