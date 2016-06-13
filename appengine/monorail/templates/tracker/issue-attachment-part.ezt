@@ -69,7 +69,7 @@
       [if-any arg1.deleted_bool][else]
        <tr>
         <td colspan="3">
-          <video src="[arg1.url]" class="preview" controls width="640">
+          <video src="[arg1.url]" class="preview" controls width="640" preload="metadata">
         </td>
        </tr>
       [end]
