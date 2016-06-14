@@ -158,7 +158,7 @@ def main(args):  # pragma: no cover
 
   loop_results = outer_loop.loop(
       task=outer_loop_iteration,
-      sleep_timeout=lambda: 5.0,
+      sleep_timeout=lambda: 60.0,
       **loop_opts)
 
   credentials2 = OAuth2Credentials(
