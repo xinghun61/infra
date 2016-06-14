@@ -440,6 +440,59 @@ func getBugQueueHandler(c context.Context, w http.ResponseWriter, r *http.Reques
 	w.Write(bytes)
 }
 
+func getCrRevJSON(c context.Context, pos string) (map[string]string, error) {
+	c = client.UseServiceAccountTransport(c, nil, nil)
+
+	hc := &http.Client{Transport: urlfetch.Get(c)}
+
+	resp, err := hc.Get(fmt.Sprintf("https://cr-rev.appspot.com/_ah/api/crrev/v1/redirect/%s", pos))
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	m := map[string]string{}
+	err = json.Unmarshal(body, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
+}
+
+func getRevRangeHandler(c context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	start := p.ByName("start")
+	end := p.ByName("end")
+	if start == "" || end == "" {
+		errStatus(w, http.StatusBadRequest, "Start and end parameters must be set.")
+		return
+	}
+
+	startRev, err := getCrRevJSON(c, start)
+	if err != nil {
+		errStatus(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	endRev, err := getCrRevJSON(c, end)
+	if err != nil {
+		errStatus(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// TODO(seanmccullough): some sanity checking of the rev json (same repo etc)
+
+	gitilesURL := fmt.Sprintf("https://chromium.googlesource.com/chromium/src/+log/%s^..%s?format=JSON",
+		startRev["git_sha"], endRev["git_sha"])
+
+	http.Redirect(w, r, gitilesURL, 301)
+}
+
 // base is the root of the middleware chain.
 func base(h middleware.Handler) httprouter.Handle {
 	methods := auth.Authenticator{
@@ -466,6 +519,7 @@ func init() {
 	router.GET("/api/v1/annotations/", base(auth.Authenticate(getAnnotationsHandler)))
 	router.POST("/api/v1/annotations/:annKey/:action", base(auth.Authenticate(postAnnotationsHandler)))
 	router.GET("/api/v1/bugqueue/:tree", base(auth.Authenticate(getBugQueueHandler)))
+	router.GET("/api/v1/revrange/:start/:end", base(getRevRangeHandler))
 
 	rootRouter := httprouter.New()
 	rootRouter.GET("/*path", base(auth.Authenticate(indexPage)))

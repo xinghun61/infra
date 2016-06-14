@@ -13,6 +13,7 @@
 <link rel="import" href="/bower_components/paper-item/paper-item.html">
 <link rel="import" href="/bower_components/paper-progress/paper-progress.html">
 <link rel="import" href="/bower_components/paper-toolbar/paper-toolbar.html">
+<link rel="import" href="/elements/som-rev-range.html">
 
 <dom-module id="som-extension-build-failure">
   <template>
@@ -89,8 +90,7 @@
       <div id="regression-ranges">
         <template is="dom-repeat" items="[[extension.regression_ranges]]" as="regressionRange" filter="_showRegressionRange">
           <div>
-            [[regressionRange.repo]]:
-            <a target="_blank" href$="[[_regressionRangeLink(regressionRange)]]">[[_regressionRange(regressionRange)]]</a>
+            <som-rev-range range="[[regressionRange]]"></som-rev-range>
           </div>
         </template>
       </div>
@@ -100,7 +100,7 @@
   (function() {
     'use strict';
 
-     Polymer({
+    Polymer({
       is: 'som-extension-build-failure',
 
       properties: {
@@ -116,45 +116,6 @@
 
       _haveBuilders: function(extension) {
         return extension && extension.builders && extension.builders.length > 0;
-      },
-
-     _regressionRange: function(range) {
-        if (!range.positions || range.positions.length == 0) {
-          return '';
-        }
-
-        let start = this._parseCommitPosition(range.positions[0]);
-        if (range.positions.length == 1) {
-          return start;
-        }
-
-        let end = this._parseCommitPosition(
-            range.positions[range.positions.length - 1]);
-
-        if (start && end) {
-          return `${start} - ${end}`;
-        }
-      },
-
-      _regressionRangeLink: function(range) {
-        if (!range.positions) {
-          return '';
-        }
-        let end = this._parseCommitPosition(range.positions[0]);
-        let start = end;
-        if (range.positions.length > 1) {
-          end = this._parseCommitPosition(
-              range.positions[range.positions.length - 1]);
-        }
-        return 'http://test-results.appspot.com/revision_range?start=' +
-            `${start}&end=${end}`;
-      },
-
-      _parseCommitPosition: function(pos) {
-        let groups = /refs\/heads\/master@{#([0-9]+)}/.exec(pos);
-        if (groups && groups.length == 2) {
-          return groups[1];
-        }
       },
 
       _failureCount: function(builder) {
@@ -177,7 +138,7 @@
       },
 
       _showRegressionRange: function(range) {
-        return this._regressionRange(range) && range.positions.length > 0;
+        return range.positions && range.positions.length > 0;
       },
 
       _uberify: function(url) {

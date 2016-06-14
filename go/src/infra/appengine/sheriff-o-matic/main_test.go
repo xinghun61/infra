@@ -17,6 +17,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/luci/gae/service/datastore"
+	"github.com/luci/gae/service/urlfetch"
 	"github.com/luci/luci-go/appengine/gaetesting"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/clock/testclock"
@@ -358,6 +359,32 @@ func TestWriteSettings(t *testing.T) {
 				So(tree.AlertStreams, ShouldResemble, []string{"thing"})
 			})
 
+		})
+	})
+}
+
+func TestRevRangeHandler(t *testing.T) {
+	t.Parallel()
+
+	Convey("get rev range", t, func() {
+		Convey("ok", func() {
+			c := gaetesting.TestingContext()
+			w := httptest.NewRecorder()
+			c = urlfetch.Set(c, http.DefaultTransport)
+
+			getRevRangeHandler(c, w, makeGetRequest(),
+				makeParams("start", "123", "end", "456"))
+
+			So(w.Code, ShouldEqual, 301)
+		})
+		Convey("bad request", func() {
+			c := gaetesting.TestingContext()
+			w := httptest.NewRecorder()
+			c = urlfetch.Set(c, http.DefaultTransport)
+
+			getRevRangeHandler(c, w, makeGetRequest(), nil)
+
+			So(w.Code, ShouldEqual, 400)
 		})
 	})
 }
