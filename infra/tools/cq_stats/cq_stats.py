@@ -594,6 +594,7 @@ def derive_stats(args, begin_date, init_stats=None):
   else:
     pool = ThreadPool(min(args.thread_pool, len(raw_patches)))
     iterable = pool.imap_unordered(get_patch_stats, raw_patches)
+    pool.close()
 
   patches, issues = set(), set()
   for patch_id, pstats in iterable:
