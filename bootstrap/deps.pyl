@@ -195,7 +195,7 @@
     'version': '0.1.8',
     'build': '0',
     'repo': 'infra/testing/testing_support',
-    'rev': '8da98d0f4a123099c4f9132a08b09055c35026dc',
+    'rev': 'ab9c80db669731ff1acdbe8f2f2a36433def4ba1',
   },
   'tzlocal': {
     'version': '1.2',
