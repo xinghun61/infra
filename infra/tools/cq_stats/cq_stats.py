@@ -595,6 +595,7 @@ def derive_stats(args, begin_date, init_stats=None):
     pool = ThreadPool(min(args.thread_pool, len(raw_patches)))
     iterable = pool.imap_unordered(get_patch_stats, raw_patches)
     pool.close()
+    pool.join()
 
   patches, issues = set(), set()
   for patch_id, pstats in iterable:
@@ -1057,6 +1058,8 @@ def print_flakiness_stats(args, stats):
     pool = ThreadPool(min(args.thread_pool, len(stats['patch_stats'].keys())))
     iterable = pool.imap_unordered(
         get_flakiness_stats, stats['patch_stats'].keys())
+    pool.close()
+    pool.join()
 
   try_job_stats = {}
   for result in iterable:
