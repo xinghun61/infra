@@ -23,6 +23,10 @@ handlers:
   static_files: static/common.css
   upload: static/common.css
 
+- url: /waterfall/flake
+  static_files: templates/flake.html
+  upload: templates/flake.html 
+
 # Pipeline status UI handler.
 - url: /_ah/pipeline(/.*)?
   script: main.pipeline_status_application

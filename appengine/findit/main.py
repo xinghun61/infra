@@ -25,7 +25,7 @@ from handlers import verify_analysis
 from handlers import version
 from handlers.crash import crash_config
 from handlers.crash import fracas_crash
-
+from handlers.flake import check_flake
 
 # Default module.
 default_web_pages_handler_mappings = [
@@ -61,6 +61,7 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/waterfall/build-failure', build_failure.BuildFailure),
     ('/waterfall/check-duplicate-failures',
      check_duplicate_failures.CheckDuplicateFailures),
+    ('/waterfall/check-flake', check_flake.CheckFlake),
     ('/waterfall/config', config.Configuration),
     ('/waterfall/failure-log', failure_log.FailureLog),
     ('/waterfall/help-triage', help_triage.HelpTriage),
