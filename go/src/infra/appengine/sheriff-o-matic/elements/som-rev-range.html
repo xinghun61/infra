@@ -1,6 +1,7 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
 
 <link rel="import" href="/bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="/bower_components/iron-icon/iron-icon.html">
 
 <dom-module id="som-rev-range">
   <template>
@@ -13,6 +14,7 @@
     </style>
     <div on-tap="_toggleCollapse">
       [[range.repo]]: <a target="_blank" href$="[[_regressionRangeLink(range)]]">[[_regressionRange(range)]]</a>
+      <iron-icon icon="[[_iconName]]"></iron-icon>
     </div>
     <iron-collapse id="collapse">
       <template is="dom-repeat" items="[[_revs]]" as="rev">
@@ -41,6 +43,10 @@
           type: Array,
           value: null
         },
+        _iconName: {
+          type: String,
+          value: 'icons:unfold-more'
+        },
       },
 
      _toggleCollapse: function() {
@@ -65,6 +71,8 @@
        }
 
        this.$.collapse.toggle();
+       this._iconName = this.$.collapse.opened ? 'icons:unfold-less' :
+           'icons:unfold-more';
      },
 
      _shortHash: function(hash) {
