@@ -4,7 +4,6 @@
 <link rel="import" href="/bower_components/iron-icons/hardware-icons.html">
 <link rel="import" href="/bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="/bower_components/iron-icons/iron-icons.html">
-<link rel="import" href="/bower_components/iron-list/iron-list.html">
 <link rel="import" href="/bower_components/iron-location/iron-location.html">
 <link rel="import" href="/bower_components/iron-pages/iron-pages.html">
 <link rel="import" href="/bower_components/neon-animation/animations/scale-up-animation.html">
@@ -54,18 +53,11 @@
       .som-title {
         font-weight: bold;
       }
-      iron-list {
-        overflow: none;
-        --iron-list-items-container: {
-          margin: auto;
-          margin-bottom: 60px;
-          border-bottom: 1px solid #ddd;
-        };
-      }
-      .list-item {
+     .list-item {
         @apply(--layout-flex);
         @apply(--layout-vertical);
-        margin-bottom: 10px;
+        margin: 1em;
+        border-bottom: 1px solid #ddd;
       }
       .file-bug,
       .snooze {
@@ -75,6 +67,10 @@
         width: 25px;
         height: 25px;
         padding: 0;
+      }
+      #alertsList {
+        background: white;
+        border-left: 1px solid #ddd;
       }
     </style>
     <iron-location id="url" path="{{_path}}"></iron-location>
@@ -121,8 +117,8 @@
              <div hidden$="[[_haveAlerts]]">
                 No alerts!
               </div>
-              <iron-list id="alertsIronList" items="[[_alerts]]" as="alert" selection-enabled multi-selection>
-                <template>
+              <div id="alertsList">
+                <template is="dom-repeat" items="[[_alerts]]" as="alert">
                   <div class="list-item" tabindex$="[[tabIndex]]">
                     <som-alert-item
                         alert="{{alert}}"
@@ -134,7 +130,7 @@
                     ></som-alert-item>
                   </div>
                 </template>
-              </iron-list>
+              </div>
             </div>
             <div id="examineAlert" class="flex layout vertical">
               <som-examine alert="[[_examinedAlert]]" class="flex layout vertical"></som-examine>
@@ -407,11 +403,6 @@
           return aAnn.snoozed ? 1 : -1;
         });
 
-        // Otherwise alertsIronList doesn't render all of the alert items.
-        setTimeout(() => {
-          this.$.alertsIronList.notifyResize();
-        }, 250);
-
         return allAlerts;
       },
 
@@ -461,11 +452,6 @@
           newArray.push(annotations[k]);
         });
         this.annotationsJson = newArray;
-        // Kind of a cheat: we aren't resizing anything necessarily but we
-        // do want to tickle the list order.
-        setTimeout( ()=> {
-          this.$.alertsIronList.notifyResize();
-        }, 250);
       },
 
       _sendAnnotation: function(key, type, change) {
