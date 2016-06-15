@@ -235,7 +235,7 @@ def schedule(issue, patchset_id, builds):
     master_prefix = 'master.'
     master_name = None   # Buildbot master name without "master." prefix.
     if build['bucket'].startswith(master_prefix):
-      master_name = build['bucket'][:len(master_prefix)]
+      master_name = build['bucket'][len(master_prefix):]
 
     # Build definitions are similar to what CQ produces:
     # https://chrome-internal.googlesource.com/infra/infra_internal/+/c3092da98975c7a3e083093f21f0f4130c66a51c/commit_queue/buildbucket_util.py#171
