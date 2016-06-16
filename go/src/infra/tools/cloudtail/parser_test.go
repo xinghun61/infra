@@ -174,6 +174,25 @@ func TestApacheErrorLogsParser(t *testing.T) {
 	})
 }
 
+func TestGlogLogsParser(t *testing.T) {
+	now := time.Date(2016, 6, 12, 23, 4, 5, 6, time.FixedZone("", -7*60*60))
+	testTextLogsParser(t, &glogLogsParser{
+		now: &now,
+	}, []textTestCase{
+		{
+			line:        "not a valid log line",
+			wantSuccess: false,
+		},
+		{
+			line:          "I0612 22:55:35.173471  4608 example.cc:123] Hello World",
+			wantSuccess:   true,
+			wantTimestamp: "2016-06-12T22:55:35.173471-07:00",
+			wantSeverity:  Info,
+			wantPayload:   "[tid:4608 example.cc:123] Hello World",
+		},
+	})
+}
+
 type callbackParser struct {
 	cb      func(line string) *Entry
 	mergeCb func(line string, e *Entry) bool

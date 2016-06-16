@@ -52,6 +52,7 @@ func StdParser() LogParser {
 		&twistedLogsParser{},
 		&puppetLogsParser{},
 		&apacheErrorLogsParser{time.Local},
+		&glogLogsParser{},
 	}
 }
 
@@ -271,6 +272,77 @@ func (p *apacheErrorLogsParser) ParseLogLine(line string) *Entry {
 }
 
 func (p *apacheErrorLogsParser) MergeLogLine(line string, e *Entry) bool {
+	e.TextPayload += "\n" + line
+	return true
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+var (
+	glogRe = regexp.MustCompile(
+		`^` +
+			`([IWEF])` + // Severity
+			`(\d{2})(\d{2})` + // mmDD
+			` (\d{2}:\d{2}:\d{2}\.\d{6})` + // YY:MM:SS.microseconds
+			` *(\d+)` + // Thread ID
+			` ([^:]+):(\d+)` + // Module and line number
+			`\] (.*)`) // Message
+
+	glogSeverities = map[string]Severity{
+		"I": Info,
+		"W": Warning,
+		"E": Error,
+		"F": Critical,
+	}
+)
+
+type glogLogsParser struct {
+	// Inject current time for testing.
+	now *time.Time
+}
+
+func (p *glogLogsParser) fromMonthDayHMS(month, day, hms string) (time.Time, error) {
+	now := time.Now()
+	if p.now != nil {
+		now = *p.now
+	}
+	t := fmt.Sprintf("%d-%s-%sT%s", now.Year(), month, day, hms)
+	timestamp, err := time.ParseInLocation("2006-01-02T15:04:05.000000", t, now.Location())
+	if err != nil {
+		return timestamp, err
+	}
+	// log should always be past but if it goes to future, now is in new
+	// year but actual log should come from the last year.
+	if timestamp.After(now) {
+		t := fmt.Sprintf("%d-%s-%sT%s", now.Year()-1, month, day, hms)
+		timestamp, err = time.ParseInLocation("2006-01-02T15:04:05.000000", t, now.Location())
+	}
+	return timestamp, err
+}
+
+func (p *glogLogsParser) ParseLogLine(line string) *Entry {
+	if matches := glogRe.FindStringSubmatch(line); matches != nil {
+		timestamp, err := p.fromMonthDayHMS(matches[2], matches[3], matches[4])
+		if err != nil {
+			return nil
+		}
+		severity := matches[1]
+		threadID := matches[5]
+		module := matches[6]
+		line, _ := strconv.Atoi(matches[7])
+		message := matches[8]
+
+		return &Entry{
+			Timestamp:   timestamp,
+			Severity:    glogSeverities[severity],
+			TextPayload: fmt.Sprintf("[tid:%s %s:%d] %s", threadID, module, line, message),
+			ParsedBy:    p,
+		}
+	}
+	return nil
+}
+
+func (p *glogLogsParser) MergeLogLine(line string, e *Entry) bool {
 	e.TextPayload += "\n" + line
 	return true
 }
