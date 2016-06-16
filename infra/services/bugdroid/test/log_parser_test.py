@@ -31,7 +31,3 @@ class BugLineParserTest(unittest.TestCase):
       m = log_parser.BUG_LINE_REGEX.match(bug_line)
       self.assertIsNone(m, '"%s" line must not be matched (got %s)' %
                            (bug_line, m.groups()) if m else None)
-
-
-if __name__ == "__main__":
-  unittest.main()

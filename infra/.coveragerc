@@ -3,6 +3,7 @@ include = ./infra/*
 omit =
     # Antibody third_party files
     ./infra/tools/antibody/static/third_party/*
+    ./infra/services/bugdroid/*
 
 [report]
 exclude_lines =

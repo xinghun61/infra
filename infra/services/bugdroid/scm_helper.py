@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Helper methods that handle both git and svn repos."""
+"""Helper methods that handle git repos."""
 
 
 def GetBranch(log_entry, full=False):
