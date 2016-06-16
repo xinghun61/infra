@@ -59,22 +59,6 @@ handlers:
   script: tree.endpoints_app
   secure: always
 
-- url: /ts-alerts
-  script: ts_alerts.app
-  secure: always
-
-- url: /ts-alerts/.*
-  script: ts_alerts.app
-  secure: always
-
-- url: /ts-alerts-history
-  script: ts_alerts.app
-  secure: always
-
-- url: /ts-alerts-history/.*
-  script: ts_alerts.app
-  secure: always
-
 - url: /api/v1/prefs
   script: user_prefs.app
   secure: always
