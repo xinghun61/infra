@@ -11,54 +11,6 @@ from recipe_engine import recipe_api
 
 RECIPE_TRYJOB_BYPASS_REASON_TAG = "Recipe-Tryjob-Bypass-Reason"
 
-#TODO(martiniss): make the recipe engine be able to dump the package as JSON so
-# we don't have to do this weird parsing.
-def parse_protobuf(lines):
-  """Parse the protobuf text format just well enough to understand recipes.cfg.
-
-  We don't use the protobuf library because we want to be as self-contained
-  as possible in this bootstrap, so it can be simply vendored into a client
-  repo.
-
-  We assume all fields are repeated since we don't have a proto spec to work
-  with.
-
-  Args:
-    lines: a list of the lines to parse
-  Returns:
-    A recursive dictionary of lists.
-  """
-  def parse_atom(text):
-    # NOTE: Assuming we only have numbers and strings to avoid using
-    # ast.literal_eval
-    try:
-      return int(text)
-    except ValueError:
-      return text.strip("'").strip('"')
-
-  ret = {}
-  while lines:
-    line = lines.pop(0).strip()
-
-    m = re.match(r'(\w+)\s*:\s*(.*)', line)
-    if m:
-      ret.setdefault(m.group(1), []).append(parse_atom(m.group(2)))
-      continue
-
-    m = re.match(r'(\w+)\s*{', line)
-    if m:
-      subparse = parse_protobuf(lines)
-      ret.setdefault(m.group(1), []).append(subparse)
-      continue
-
-    if line == '}':
-      return ret
-    if line == '':
-      continue
-
-    raise ValueError('Could not understand line: <%s>' % line)# pragma: no cover
-  return ret
-
 def get_recipes_path(project_config):
   # Returns a tuple of the path components to traverse from the root of the repo
   # to get to the directory containing recipes.
@@ -151,7 +103,6 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
 
     Args:
       project: The name of the project in luci-config.
-      auth_token: Authentication token to use when talking to luci-config.
 
     Returns:
       The recipes.cfg file for that project, as a parsed dictionary. See
@@ -159,7 +110,7 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
     """
     result = self.m.luci_config.get_project_config(project, 'recipes.cfg')
 
-    parsed = parse_protobuf(result['content'].split('\n'))
+    parsed = self.m.luci_config.parse_textproto(result['content'].split('\n'))
     return parsed
 
   def _checkout_projects(self, root_dir, url_mapping, deps,
