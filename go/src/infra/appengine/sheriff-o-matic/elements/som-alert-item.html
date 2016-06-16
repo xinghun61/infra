@@ -117,6 +117,12 @@
        */
 
       /**
+       * Fired when an alert requests that the snooze dialog be shown.
+       *
+       * @event snooze
+       */
+
+      /**
        * Fired when an alert has an annotation change that needs to be sent to the
        * server.
        *
@@ -226,12 +232,7 @@
             change: {'snoozeTime': true},
           });
         } else {
-          this.fire('annotation-change', {
-            type: 'add',
-            change: {
-              snoozeTime: Date.now() + 1000 * 60 * 60 * 60 * 60,
-            }
-          });
+          this.fire('snooze');
         }
       },
     });

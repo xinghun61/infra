@@ -126,6 +126,7 @@
                         annotation="[[_computeAnnotation(annotations, alert)]]"
                         on-annotation-change="_handleAnnotation"
                         on-link-bug="_handleLinkBug"
+                        on-snooze="_handleSnooze"
                     ></som-alert-item>
                   </div>
                 </template>
@@ -156,6 +157,18 @@
         </paper-button>
       </div>
     </paper-dialog>
+    <paper-dialog id="snoozeDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+      <h2>Snooze</h2>
+      <paper-input autofocus label="Amount of time (minutes):" id="snoozeTime"></paper-input>
+      <div class="buttons">
+        <paper-button dialog-close raised on-tap="_closeSnooze">
+          Close
+        </paper-button>
+        <paper-button dialog-confirm raised on-tap="_snooze">
+          Snooze
+        </paper-button>
+      </div>
+    </paper-dialog>
   </template>
   <script>
   (function() {
@@ -163,6 +176,8 @@
 
     // Time, in milliseconds, between each refresh of data from the server.
     const refreshDelayMs = 60 * 1000;
+    const ONE_MIN_MS = 1000 * 60;
+    const DEFAULT_SNOOZE_TIME_MIN = 60;
 
     Polymer({
       is: 'som-app',
@@ -239,6 +254,7 @@
           type: Boolean,
           value: true,
         },
+        _snoozeModel: Object,
         _trees: Object,
         _tree: {
           type: String,
@@ -503,6 +519,26 @@
             bugs: [this.$.bug.value]
           });
       },
+
+      ////////////////////// Snooze ///////////////////////////
+
+      _handleSnooze: function(evt) {
+        this._snoozeModel = evt.model.alert;
+        this.$.snoozeTime.value = DEFAULT_SNOOZE_TIME_MIN;
+        this.$.snoozeDialog.open();
+      },
+
+      _closeSnooze: function() {
+        this.$.snoozeDialog.close();
+      },
+
+      _snooze: function() {
+        this._sendAnnotation(
+          this._keyForAlert(this._snoozeModel), 'add', {
+            snoozeTime: Date.now() + ONE_MIN_MS * this.$.snoozeTime.value
+          });
+      },
+
     });
   })();
   </script>
