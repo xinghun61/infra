@@ -39,6 +39,9 @@ OTHER_CLIENT_IDS = [
   'dummy55.apps.googleusercontent.com',
   'dummy89.apps.googleusercontent.com',
 ]
+WHILTELISTED_EMAILS = [
+  'dummy1@appspot.gserviceaccount.com',
+]
 
 
 
@@ -51,7 +54,7 @@ class TestAuthUtils(TestCase):
     self.oauth_login(TEST_EMAIL)
 
     auth_utils.SecretKey.set_config(CLIENT_ID, 'dummy.secret',
-                                    OTHER_CLIENT_IDS)
+                                    OTHER_CLIENT_IDS, WHILTELISTED_EMAILS)
 
   def tearDown(self):
     super(TestAuthUtils, self).tearDown()
@@ -188,6 +191,21 @@ class TestAuthUtils(TestCase):
     self.oauth_login('oauth@mail.com', is_admin=True)
 
     self.assertTrue(auth_utils.is_current_user_admin())
+
+  def test_is_current_user_oauth_but_not_whitelisted_email(self):
+    self.cookie_logout()
+    self.oauth_login('not-whitelisted@appspot.gserviceaccount.com',
+                     is_admin=False, client_id='anonymous')
+    self.assertIsNone(auth_utils.get_current_rietveld_oauth_user())
+
+  def test_is_current_user_oauth_and_whitelisted_email(self):
+    for email in WHILTELISTED_EMAILS:
+      self.cookie_logout()
+      self.oauth_logout()
+      self.oauth_login(email, is_admin=False, client_id='anonymous')
+      oauth_user = auth_utils.get_current_rietveld_oauth_user()
+      self.assertIsNotNone(oauth_user)
+      self.assertEqual(email, oauth_user.email())
 
 
 if __name__ == '__main__':

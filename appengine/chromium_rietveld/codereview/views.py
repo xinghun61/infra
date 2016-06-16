@@ -547,6 +547,10 @@ class ClientIDAndSecretForm(forms.Form):
     required=False,
     help_text='Enter a comma-separated list of Client IDs.',
     widget=forms.TextInput(attrs={'size': '100'}))
+  whitelisted_emails = StringListField(
+    required=False,
+    help_text='Enter a comma-separated list of email addresses to whitelist.',
+    widget=forms.TextInput(attrs={'size': '100'}))
 
 class UpdateStatsForm(forms.Form):
   tasks_to_trigger = forms.CharField(
@@ -4432,7 +4436,7 @@ def _create_flow(django_request):
   """
   redirect_path = reverse(oauth2callback)
   redirect_uri = django_request.build_absolute_uri(redirect_path)
-  client_id, client_secret, _ = auth_utils.SecretKey.get_config()
+  client_id, client_secret, _, _ = auth_utils.SecretKey.get_config()
   return OAuth2WebServerFlow(client_id, client_secret, auth_utils.EMAIL_SCOPE,
                              redirect_uri=redirect_uri,
                              approval_prompt='force')
@@ -4541,19 +4545,22 @@ def set_client_id_and_secret(request):
       client_id = form.cleaned_data['client_id']
       client_secret = form.cleaned_data['client_secret']
       additional_client_ids = form.cleaned_data['additional_client_ids']
+      whitelisted_emails = form.cleaned_data['whitelisted_emails']
       logging.info('Adding client_id: %s' % client_id)
       auth_utils.SecretKey.set_config(client_id, client_secret,
-                                      additional_client_ids)
+                                      additional_client_ids,
+                                      whitelisted_emails)
     else:
       logging.info('Form is invalid')
     return HttpResponseRedirect(reverse(set_client_id_and_secret))
   else:
-    client_id, client_secret, additional_client_ids = \
+    client_id, client_secret, additional_client_ids, whitelisted_emails = \
       auth_utils.SecretKey.get_config()
     form = ClientIDAndSecretForm(initial={
       'client_id': client_id,
       'client_secret': client_secret,
-      'additional_client_ids': additional_client_ids})
+      'additional_client_ids': additional_client_ids,
+      'whitelisted_emails': whitelisted_emails})
     return respond(request, 'set_client_id_and_secret.html', {'form': form})
 
 

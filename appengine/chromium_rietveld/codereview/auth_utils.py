@@ -52,11 +52,13 @@ class SecretKey(ndb.Model):
   client_id = ndb.StringProperty(required=True, indexed=False)
   client_secret = ndb.StringProperty(required=True, indexed=False)
   additional_client_ids = ndb.StringProperty(repeated=True, indexed=False)
+  whitelisted_emails = ndb.StringProperty(repeated=True, indexed=False)
 
   GLOBAL_KEY = '_global_config'
 
   @classmethod
-  def set_config(cls, client_id, client_secret, additional_client_ids=None):
+  def set_config(cls, client_id, client_secret, additional_client_ids=None,
+                 whitelisted_emails=None):
     """Sets global config object using a Client ID and Secret.
 
     Args:
@@ -66,14 +68,18 @@ class SecretKey(ndb.Model):
         are allowed against this application but not used to mint tokens on
         the server. For example, service accounts which interact with this
         application. Defaults to None.
+      whitelisted_emails: List of email addresses whitelisted for access
+        to this application.
 
     Returns:
       The inserted SecretKey object.
     """
     additional_client_ids = additional_client_ids or []
+    whitelisted_emails = whitelisted_emails or []
     config = cls(id=cls.GLOBAL_KEY,
                  client_id=client_id, client_secret=client_secret,
-                 additional_client_ids=additional_client_ids)
+                 additional_client_ids=additional_client_ids,
+                 whitelisted_emails=whitelisted_emails)
     config.put()
     return config
 
@@ -82,16 +88,17 @@ class SecretKey(ndb.Model):
     """Gets tuple of Client ID and Secret from global config object.
 
     Returns:
-      3-tuple containing the Client ID and Secret from the global config
-          SecretKey object as well as a list of other allowed client IDs, if the
-          config is in the datastore, else the tuple (None, None, []).
+      4-tuple containing the Client ID and Secret from the global config
+          SecretKey object as well as a list of other allowed client IDs and
+          a list of the whiltelisted emails, if the config is in the datastore,
+          else the tuple (None, None, [], []).
     """
     config = cls.get_by_id(cls.GLOBAL_KEY)
     if config is None:
-      return None, None, []
+      return None, None, [], []
     else:
       return (config.client_id, config.client_secret,
-              config.additional_client_ids)
+              config.additional_client_ids, config.whitelisted_emails)
 
 
 def _get_client_id(tries=3):
@@ -105,6 +112,49 @@ def _get_client_id(tries=3):
         raise
 
 
+def _is_allowed_client_id():
+  """Returns True if the client id is allowed to reach this application."""
+  try:
+    current_client_id = _get_client_id()
+  except oauth.Error as e:
+    logging.debug('OAuth error occurred: %s' % str(e.__class__.__name__))
+    return False
+
+  # SecretKey.get_config() below returns client ids of service accounts that
+  # are authorized to connect to this instance.
+  # If modifying the following lines, please look for places where
+  # 'developer.gserviceaccount.com' (service account domain) is used. Some
+  # code relies on the filtering performed here.
+  accepted_client_id, _, additional_client_ids, _ = SecretKey.get_config()
+  if (accepted_client_id != current_client_id and
+      current_client_id not in additional_client_ids):
+    logging.debug('Client ID %r not intended for this application.',
+                  current_client_id)
+    return False
+
+  return True
+
+
+def _is_allowed_email():
+  """Returns True if the AppEngine service account is allowed."""
+  try:
+    oauth_user = oauth.get_current_user(EMAIL_SCOPE)
+  except oauth.Error as e:
+    logging.debug('OAuth error occurred: %s' % str(e.__class__.__name__))
+    return False
+
+  if not oauth_user:
+    return False
+
+  _, _, _, whitelisted_emails = SecretKey.get_config()
+  if oauth_user.email() not in whitelisted_emails:
+    logging.debug('Email account %r not intended for this application.',
+                  oauth_user)
+    return False
+
+  return True
+
+
 def get_current_rietveld_oauth_user():
   """Gets the current OAuth 2.0 user associated with a request.
 
@@ -116,22 +166,7 @@ def get_current_rietveld_oauth_user():
         the token is valid, otherwise None.
   """
   # TODO(dhermes): Address local environ here as well.
-  try:
-    current_client_id = _get_client_id()
-  except oauth.Error as e:
-    logging.debug('OAuth error occurred: %s' % str(e.__class__.__name__))
-    return
-
-  # SecretKey.get_config() below returns client ids of service accounts that
-  # are authorized to connect to this instance.
-  # If modifying the following lines, please look for places where
-  # 'developer.gserviceaccount.com' (service account domain) is used. Some
-  # code relies on the filtering performed here.
-  accepted_client_id, _, additional_client_ids = SecretKey.get_config()
-  if (accepted_client_id != current_client_id and
-      current_client_id not in additional_client_ids):
-    logging.debug('Client ID %r not intended for this application.',
-                  current_client_id)
+  if not _is_allowed_client_id() and not _is_allowed_email():
     return
 
   try:
