@@ -356,6 +356,47 @@ class ConfigServiceTest(unittest.TestCase):
         2, self.config_service.LookupLabelID(self.cnxn, 789, 'UX'))
     self.mox.VerifyAll()
 
+  def testLookupLabelID_MissAndDoubleCheck(self):
+    label_dicts = {1: 'Security', 2: 'UX'}, {'security': 1, 'ux': 2}
+    self.config_service.label_cache.CacheItem(789, label_dicts)
+
+    self.config_service.labeldef_tbl.Select(
+        self.cnxn, cols=['id'], project_id=789,
+        where=[('LOWER(label) = %s', ['newlabel'])],
+        limit=1).AndReturn([(3,)])
+    self.mox.ReplayAll()
+    self.assertEqual(
+        3, self.config_service.LookupLabelID(self.cnxn, 789, 'NewLabel'))
+    self.mox.VerifyAll()
+
+  def testLookupLabelID_MissAutocreate(self):
+    label_dicts = {1: 'Security', 2: 'UX'}, {'security': 1, 'ux': 2}
+    self.config_service.label_cache.CacheItem(789, label_dicts)
+
+    self.config_service.labeldef_tbl.Select(
+        self.cnxn, cols=['id'], project_id=789,
+        where=[('LOWER(label) = %s', ['newlabel'])],
+        limit=1).AndReturn([])
+    self.config_service.labeldef_tbl.InsertRow(
+        self.cnxn, project_id=789, label='NewLabel').AndReturn(3)
+    self.mox.ReplayAll()
+    self.assertEqual(
+        3, self.config_service.LookupLabelID(self.cnxn, 789, 'NewLabel'))
+    self.mox.VerifyAll()
+
+  def testLookupLabelID_MissDontAutocreate(self):
+    label_dicts = {1: 'Security', 2: 'UX'}, {'security': 1, 'ux': 2}
+    self.config_service.label_cache.CacheItem(789, label_dicts)
+
+    self.config_service.labeldef_tbl.Select(
+        self.cnxn, cols=['id'], project_id=789,
+        where=[('LOWER(label) = %s', ['newlabel'])],
+        limit=1).AndReturn([])
+    self.mox.ReplayAll()
+    self.assertIsNone(self.config_service.LookupLabelID(
+        self.cnxn, 789, 'NewLabel', autocreate=False))
+    self.mox.VerifyAll()
+
   def testLookupLabelIDs_Hit(self):
     label_dicts = {1: 'Security', 2: 'UX'}, {'security': 1, 'ux': 2}
     self.config_service.label_cache.CacheItem(789, label_dicts)

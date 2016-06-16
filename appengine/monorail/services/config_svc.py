@@ -525,6 +525,17 @@ class ConfigService(object):
     if label.lower() in label_name_to_id:
       return label_name_to_id[label.lower()]
 
+    # Double check that the label does not already exist in the DB.
+    rows = self.labeldef_tbl.Select(
+        cnxn, cols=['id'], project_id=project_id,
+        where=[('LOWER(label) = %s', [label.lower()])],
+        limit=1)
+    logging.info('Double checking for %r gave %r', label, rows)
+    if rows:
+      self.label_row_2lc.cache.LocalInvalidate(project_id)
+      self.label_cache.LocalInvalidate(project_id)
+      return rows[0][0]
+
     if autocreate:
       logging.info('No label %r is known in project %d, so intern it.',
                    label, project_id)
