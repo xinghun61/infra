@@ -95,7 +95,7 @@
         </paper-toolbar>
         <som-drawer id="drawer" tree="[[_tree]]" path="{{_path}}" show-infra-failures="{{showInfraFailures}}" trees="{{_trees}}"></som-drawer>
       </paper-header-panel>
-      <paper-header-panel main class="flex layout vertical">
+      <paper-header-panel main id="mainHeaderPanel" class="flex layout vertical">
         <paper-toolbar>
           <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
           <div class="layout horizontal flex">
@@ -116,7 +116,7 @@
              <div hidden$="[[_haveAlerts]]">
                 No alerts!
               </div>
-              <div id="alertsList">
+              <div id="alertsListInner">
                 <template is="dom-repeat" items="[[_alerts]]" as="alert">
                   <div class="list-item" tabindex$="[[tabIndex]]">
                     <som-alert-item
@@ -227,6 +227,10 @@
         _path: {
           type: String,
         },
+        _refreshPosition: {
+          type: Number,
+          value: function() { return 0; },
+        },
         _selectedPage: {
           type: String,
           computed: '_computeSelectedPage(_path)',
@@ -258,6 +262,7 @@
       ////////////////////// Refresh ///////////////////////////
 
       _refresh: function() {
+        this._refreshPosition  = this.$.mainHeaderPanel.$.mainContainer.scrollTop;
         this.$.annotations.generateRequest();
         this._alertsGroupChanged(this._alertsGroups);
       },
@@ -401,6 +406,11 @@
           return aAnn.snoozed ? 1 : -1;
         });
 
+        // After alerts have rendered, scroll to where we were when we refreshed
+        // (if we did refresh)
+        setTimeout(() => {
+          this.$.mainHeaderPanel.$.mainContainer.scrollTop = this._refreshPosition;
+        }, 50);
         return allAlerts;
       },
 
