@@ -297,6 +297,67 @@ class MonorailRequestUnitTest(unittest.TestCase):
         mr_2.ComputeColSpec, config_2)
 
 
+class CalcDefaultQueryTest(unittest.TestCase):
+
+  def setUp(self):
+    self.project = project_pb2.Project()
+    self.project.project_name = 'proj'
+    self.project.owner_ids = [111L]
+    self.config = tracker_pb2.ProjectIssueConfig()
+
+  def testIssueListURL_NotDefaultCan(self):
+    mr = monorailrequest.MonorailRequest()
+    mr.query = None
+    mr.can = 1
+    self.assertEqual('', mr._CalcDefaultQuery())
+
+  def testIssueListURL_NoProject(self):
+    mr = monorailrequest.MonorailRequest()
+    mr.query = None
+    mr.can = 2
+    self.assertEqual('', mr._CalcDefaultQuery())
+
+  def testIssueListURL_NoConfig(self):
+    mr = monorailrequest.MonorailRequest()
+    mr.query = None
+    mr.can = 2
+    mr.project = self.project
+    self.assertEqual('', mr._CalcDefaultQuery())
+
+  def testIssueListURL_NotCustomized(self):
+    mr = monorailrequest.MonorailRequest()
+    mr.query = None
+    mr.can = 2
+    mr.project = self.project
+    mr.config = self.config
+    self.assertEqual('', mr._CalcDefaultQuery())
+
+  def testIssueListURL_Customized_Nonmember(self):
+    mr = monorailrequest.MonorailRequest()
+    mr.query = None
+    mr.can = 2
+    mr.project = self.project
+    mr.config = self.config
+    mr.config.member_default_query = 'owner:me'
+    self.assertEqual('', mr._CalcDefaultQuery())
+
+    mr.auth = testing_helpers.Blank(effective_ids=set())
+    self.assertEqual('', mr._CalcDefaultQuery())
+
+    mr.auth = testing_helpers.Blank(effective_ids={999L})
+    self.assertEqual('', mr._CalcDefaultQuery())
+
+  def testIssueListURL_Customized_Member(self):
+    mr = monorailrequest.MonorailRequest()
+    mr.query = None
+    mr.can = 2
+    mr.project = self.project
+    mr.config = self.config
+    mr.config.member_default_query = 'owner:me'
+    mr.auth = testing_helpers.Blank(effective_ids={111L})
+    self.assertEqual('owner:me', mr._CalcDefaultQuery())
+
+
 class TestMonorailRequestFunctions(unittest.TestCase):
 
   def testExtractPathIdenifiers_ProjectOnly(self):

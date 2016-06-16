@@ -170,7 +170,7 @@ function TKR_setupKibblesComponentKeys(listUrl, entryUrl, currentPageType) {
 
 
 /**
- * On the artifact list page, go tp the artifact at the kibbles cursor.
+ * On the artifact list page, go to the artifact at the kibbles cursor.
  * @param {number} linkCellIndex row child that is expected to hold a link.
  */
 function TKR_openArtifactAtCursor(linkCellIndex, newWindow) {

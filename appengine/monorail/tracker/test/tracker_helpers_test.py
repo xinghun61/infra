@@ -682,21 +682,21 @@ class HelpersTest(unittest.TestCase):
 
     url_1 = tracker_helpers.FormatIssueListURL(mr, config)
     self.assertEquals(
-        '%s/p/proj/issues/list?%s' % (
+        '%s/p/proj/issues/list?%s&q=' % (
             absolute_base_url, self.default_colspec_param),
         url_1)
 
     url_2 = tracker_helpers.FormatIssueListURL(
         mr, config, foo=123)
     self.assertEquals(
-        '%s/p/proj/issues/list?%s&foo=123' % (
+        '%s/p/proj/issues/list?%s&foo=123&q=' % (
             absolute_base_url, self.default_colspec_param),
         url_2)
 
     url_3 = tracker_helpers.FormatIssueListURL(
         mr, config, foo=123, bar='abc')
     self.assertEquals(
-        '%s/p/proj/issues/list?bar=abc&%s&foo=123' % (
+        '%s/p/proj/issues/list?bar=abc&%s&foo=123&q=' % (
             absolute_base_url, self.default_colspec_param),
         url_3)
 
@@ -704,7 +704,7 @@ class HelpersTest(unittest.TestCase):
         mr, config, baz='escaped+encoded&and100% "safe"')
     self.assertEquals(
         '%s/p/proj/issues/list?'
-        'baz=escaped%%2Bencoded%%26and100%%25%%20%%22safe%%22&%s' % (
+        'baz=escaped%%2Bencoded%%26and100%%25%%20%%22safe%%22&%s&q=' % (
             absolute_base_url, self.default_colspec_param),
         url_4)
 
@@ -720,21 +720,21 @@ class HelpersTest(unittest.TestCase):
     url_1 = tracker_helpers.FormatIssueListURL(mr, config)
     self.assertEquals(
         '%s/p/proj/issues/list?colspec=a%%20b%%20c'
-        '&groupby=d&sort=aa' % absolute_base_url,
+        '&groupby=d&q=&sort=aa' % absolute_base_url,
         url_1)
 
     url_2 = tracker_helpers.FormatIssueListURL(
         mr, config, foo=123)
     self.assertEquals(
         '%s/p/proj/issues/list?'
-        'colspec=a%%20b%%20c&foo=123&groupby=d&sort=aa' % absolute_base_url,
+        'colspec=a%%20b%%20c&foo=123&groupby=d&q=&sort=aa' % absolute_base_url,
         url_2)
 
     url_3 = tracker_helpers.FormatIssueListURL(
         mr, config, colspec='X Y Z')
     self.assertEquals(
         '%s/p/proj/issues/list?colspec=a%%20b%%20c'
-        '&groupby=d&sort=aa' % absolute_base_url,
+        '&groupby=d&q=&sort=aa' % absolute_base_url,
         url_3)
 
   def testFormatRelativeIssueURL(self):

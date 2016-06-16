@@ -146,7 +146,7 @@ class IssueBulkEditTest(unittest.TestCase):
         q=[''], colspec=[''], sort=[''], groupby=[''], start=[0], num=[100])
     self._MockMethods()
     url = self.servlet.ProcessFormData(mr, post_data)
-    self.assertTrue('list?can=1&saved=1' in url)
+    self.assertTrue('list?can=1&q=&saved=1' in url)
 
   def testProcessFormData_NoIssues(self):
     """Test PFD when no issues are specified."""

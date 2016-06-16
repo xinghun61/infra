@@ -22,7 +22,7 @@
       <th class="toptabs padded">
       <a href="[project_home_url]/" title="[project_summary]"
                   id="projects-dropdown">Project: [projectname] <small>&#9660;</small></a>
-      <a href="[issue_list_url]" class="[is main_tab_mode "t2"]active[end]">Issues</a>
+      <a href="[project_home_url]/issues/list" class="[is main_tab_mode "t2"]active[end]">Issues</a>
       <a href="[project_home_url]/people/list" class="[is main_tab_mode "t3"]active[end]">People</a>
       <a href="[project_home_url]/adminIntro" class="[is main_tab_mode "t4"]active[end]">Development process</a>
       <a href="[project_home_url]/updates/list" class="[is main_tab_mode "t5"]active[end]">History</a>

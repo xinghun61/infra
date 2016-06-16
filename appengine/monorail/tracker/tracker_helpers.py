@@ -409,8 +409,7 @@ def FormatIssueListURL(
   if project_names is None:
     project_names = [mr.project_name]
   if not tracker_constants.JUMP_RE.match(mr.query):
-    if mr.query:
-      kwargs['q'] = mr.query
+    kwargs['q'] = mr.query
     if mr.can and mr.can != 2:
       kwargs['can'] = mr.can
   def_col_spec = config.default_col_spec

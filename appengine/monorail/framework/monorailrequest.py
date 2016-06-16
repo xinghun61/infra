@@ -24,6 +24,7 @@ from google.appengine.api import users
 import webapp2
 
 import settings
+from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_views
 from framework import permissions
@@ -314,6 +315,7 @@ class MonorailRequest(object):
 
     self.project_name = None
     self.project = None
+    self.config = None
 
     self.viewed_username = None
     self.viewed_user_auth = AuthData()
@@ -360,11 +362,17 @@ class MonorailRequest(object):
 
     if not self.project:  # It can be already set in unit tests.
       self._LookupProject(services, prof)
+    if self.project_id and services.config:
+      self.config = services.config.GetProjectConfig(self.cnxn, self.project_id)
+
     if do_user_lookups:
       if self.viewed_username:
         self._LookupViewedUser(services, prof)
       self._LookupLoggedInUser(services, prof)
       # TODO(jrobbins): re-implement HandleLurkerViewingSelf()
+
+    if self.query is None:
+      self.query = self._CalcDefaultQuery()
 
     prod_debug_allowed = self.perms.HasPerm(
         permissions.VIEW_DEBUG, self.auth.user_id, None)
@@ -374,6 +382,15 @@ class MonorailRequest(object):
     if request.params.get('disable_cache'):
       if settings.dev_mode or 'staging' in request.host:
         self.use_cached_searches = False
+
+  def _CalcDefaultQuery(self):
+    """When URL has no q= param, return the default for members or ''."""
+    if (self.can == 2 and self.project and self.auth.effective_ids and
+        framework_bizobj.UserIsInProject(self.project, self.auth.effective_ids)
+        and self.config):
+      return self.config.member_default_query
+    else:
+      return ''
 
   def _ParseQueryParameters(self):
     """Parse and convert all the query string params used in any servlet."""
@@ -395,7 +412,7 @@ class MonorailRequest(object):
         'can', default_value=tracker_constants.OPEN_ISSUES_CAN)
 
     # Search query
-    self.query = self.GetParam('q', default_value='').strip()
+    self.query = self.GetParam('q')
 
     # Sorting of search results (needed for result list and flipper)
     self.sort_spec = self.GetParam(
