@@ -2,6 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# This file flakily fails coverage either due to a bug in coverage engine or in
+# expect_tests, see http://crbug.com/618077. Since we are planning to deprecate
+# cq_stats.py, we've chosen to disable coverage for entire file by adding
+# pragma: no cover to each top-level function or class.
+
 import argparse
 import collections
 import copy
@@ -23,7 +28,7 @@ from infra_libs.time_functions.testing import mock_datetime_utc, mock_timezone
 from infra.tools.cq_stats import cq_stats
 
 
-class Args(object):
+class Args(object):  # pragma: no cover
   def __init__(self, **kwargs):
     self.project = 'test_project'
     self.path_filter_include = None
@@ -43,7 +48,7 @@ class Args(object):
       self.__dict__[name] = val
 
 
-class ResponseMock(object):
+class ResponseMock(object):  # pragma: no cover
   """Mock out Response class for urllib2.urlopen()."""
   def __init__(self, lines):
     self.lines = lines
@@ -52,14 +57,14 @@ class ResponseMock(object):
     return self.lines.__iter__()
 
 
-def urlopen_mock(lines):
+def urlopen_mock(lines):  # pragma: no cover
   obj = ResponseMock(lines)
   def func(_):
     return obj
   return func
 
 
-def ensure_serializable(obj):
+def ensure_serializable(obj):  # pragma: no cover
   if isinstance(obj, dict):
     return {ensure_serializable(k): ensure_serializable(v)
             for k, v in obj.iteritems()}
@@ -75,7 +80,7 @@ def ensure_serializable(obj):
     return obj
 
 
-class TestCQStats(auto_stub.TestCase):
+class TestCQStats(auto_stub.TestCase):  # pragma: no cover
   def setUp(self):
     super(TestCQStats, self).setUp()
     self.expectations = []
@@ -658,7 +663,7 @@ class TestCQStats(auto_stub.TestCase):
     }])
     cq_stats.print_flakiness_stats(args, stats_set)
 
-    return self.expectations  # pragma: no cover, see crbug.com/618077
+    return self.expectations
 
   # Expectation: must print stats in a certain format.
   # Assumption: input stats at minimum have the keys from

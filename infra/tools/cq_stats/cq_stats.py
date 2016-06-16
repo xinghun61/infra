@@ -4,6 +4,11 @@
 # found in the LICENSE file.
 '''Generate stats of CQ usage.'''
 
+# This file flakily fails coverage either due to a bug in coverage engine or in
+# expect_tests, see http://crbug.com/618077. Since we are planning to deprecate
+# cq_stats.py, we've chosen to disable coverage for entire file by adding
+# pragma: no cover to each top-level function.
+
 import argparse
 import calendar
 import collections
@@ -145,8 +150,7 @@ REASONS['failed-unknown'] = {
 # This line was copied from master/buildbot/status/builder.py.
 SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY, TRY_PENDING = range(7)
 
-
-def parse_args():
+def parse_args():  # pragma: no cover
   parser = argparse.ArgumentParser(description=sys.modules['__main__'].__doc__)
   parser.add_argument(
       '--project',
@@ -225,7 +229,7 @@ def parse_args():
   return args
 
 
-def date_from_string(iso_str):
+def date_from_string(iso_str):  # pragma: no cover
   try:
     return dateutil.parser.parse(iso_str)
   except ValueError:
@@ -233,11 +237,11 @@ def date_from_string(iso_str):
   raise ValueError('Unrecognized date/time format: %s' % iso_str)
 
 
-def date_from_timestamp(timestamp):
+def date_from_timestamp(timestamp):  # pragma: no cover
   return datetime.datetime.utcfromtimestamp(float(timestamp))
 
 
-def date_from_git(date_str):
+def date_from_git(date_str):  # pragma: no cover
   """If date_str is not valid or None, return None."""
   if not date_str:
     return None
@@ -254,14 +258,14 @@ def date_from_git(date_str):
   return date
 
 
-def utc_date_to_timestamp(date):
+def utc_date_to_timestamp(date):  # pragma: no cover
   return calendar.timegm(date.timetuple())
 
 
 session = None
 
 
-def configure_session(args):
+def configure_session(args):  # pragma: no cover
   global session
   if args.use_local_request_cache:
     requests_cache.install_cache('cq_stats')
@@ -272,11 +276,11 @@ def configure_session(args):
   session.mount('http://', http_adapter)
   session.mount('https://', http_adapter)
 
-def fetch_json(url):
+def fetch_json(url):  # pragma: no cover
   return session.get(url).json()
 
 
-def fetch_git_page(repo_url, cursor=None, page_size=2000):
+def fetch_git_page(repo_url, cursor=None, page_size=2000):  # pragma: no cover
   """Fetch one page worth of logs from gitiles."""
   params = {
       'pretty': 'full',
@@ -300,11 +304,11 @@ def fetch_git_page(repo_url, cursor=None, page_size=2000):
   return page
 
 
-def matches_path_filter(entry, filters):
+def matches_path_filter(entry, filters):  # pragma: no cover
   return any(entry.startswith(f) for f in filters)
 
 
-def fetch_git_logs(repo, from_date, to_date, args):
+def fetch_git_logs(repo, from_date, to_date, args):  # pragma: no cover
   """Fetch all logs from Gitiles for the given date range.
 
   Gitiles does not natively support time ranges, so we just fetch
@@ -354,7 +358,7 @@ def fetch_git_logs(repo, from_date, to_date, args):
   return data
 
 
-def fetch_stats(args, begin_date=None, stats_range=None):
+def fetch_stats(args, begin_date=None, stats_range=None):  # pragma: no cover
   if not begin_date:
     begin_date = args.date
   if not stats_range:
@@ -379,7 +383,8 @@ def fetch_stats(args, begin_date=None, stats_range=None):
 
 
 # "Dangerous default value []": pylint: disable=W0102
-def fetch_cq_logs(start_date=None, end_date=None, filters=[]):
+def fetch_cq_logs(start_date=None, end_date=None,
+                  filters=[]):  # pragma: no cover
   begin_time = None
   end_time = None
   if start_date:
@@ -413,7 +418,7 @@ def fetch_cq_logs(start_date=None, end_date=None, filters=[]):
   return results
 
 
-def default_stats():
+def default_stats():  # pragma: no cover
   """Generate all the required stats fields with default values."""
   stats = {
       'begin': datetime.datetime.utcnow(),
@@ -442,7 +447,7 @@ def default_stats():
   return stats
 
 
-def organize_stats(stats, init=None):
+def organize_stats(stats, init=None):  # pragma: no cover
   """Changes cached lists of stats into dictionaries.
 
   Args:
@@ -481,7 +486,7 @@ def organize_stats(stats, init=None):
   return result
 
 
-def derive_list_stats(series):
+def derive_list_stats(series):  # pragma: no cover
   if not series:
     series = [0]
   return {
@@ -500,11 +505,11 @@ def derive_list_stats(series):
   }
 
 
-def sort_by_count(elements):
+def sort_by_count(elements):  # pragma: no cover
   return sorted(elements, key=lambda p: p['count'], reverse=True)
 
 
-def stats_by_count_entry(patch_stats, name, patch, reasons):
+def stats_by_count_entry(patch_stats, name, patch, reasons):  # pragma: no cover
   entry = {
       'count': patch_stats[name],
       'patch_id': patch,
@@ -519,13 +524,13 @@ def stats_by_count_entry(patch_stats, name, patch, reasons):
 
 
 # "Dangerous default value []": pylint: disable=W0102
-def stats_by_count(patch_stats, name, reasons=[]):
+def stats_by_count(patch_stats, name, reasons=[]):  # pragma: no cover
   return sort_by_count([
       stats_by_count_entry(patch_stats[p], name, p, reasons)
       for p in patch_stats if patch_stats[p].get(name)])
 
 
-def _derive_stats_from_patch_stats(stats):
+def _derive_stats_from_patch_stats(stats):  # pragma: no cover
   patch_stats = stats['patch_stats']
   stats['attempt-count'] = sum(
       patch_stats[p]['attempts'] for p in patch_stats)
@@ -561,7 +566,7 @@ def _derive_stats_from_patch_stats(stats):
       if patch_stats[p]['committed']])
 
 
-def derive_stats(args, begin_date, init_stats=None):
+def derive_stats(args, begin_date, init_stats=None):  # pragma: no cover
   """Process raw CQ updates log and derive stats.
 
   Fetches raw CQ events and returns the same format as organize_stats().
@@ -599,14 +604,7 @@ def derive_stats(args, begin_date, init_stats=None):
 
   patches, issues = set(), set()
   for patch_id, pstats in iterable:
-    # The pragma-no-cover statement below is needed due to some bug in coverage
-    # engine. When adding
-    #   print 'foo'
-    # before continue-statement, coverage engine reports full coverage, while
-    # without it it reports missing branch coverage for if-statement and missing
-    # line coverage for continue-statement.
-    # TODO(sergiyb): Fix coverage engine and remove this pragma.
-    if not pstats['supported'] or pstats['attempts'] == 0:  # pragma: no cover
+    if not pstats['supported'] or pstats['attempts'] == 0:
       continue
     patch_stats[patch_id] = pstats
 
@@ -622,11 +620,11 @@ def derive_stats(args, begin_date, init_stats=None):
   return stats
 
 
-def patch_url(patch_id):
+def patch_url(patch_id):  # pragma: no cover
   return '%s/patch-status/%s/%s' % ((STATS_URL,) + patch_id)
 
 
-def parse_json(obj, return_type=None):
+def parse_json(obj, return_type=None):  # pragma: no cover
   """Attempt to interpret a string as JSON.
 
   Guarantee the return type if given, pass through otherwise.
@@ -645,7 +643,7 @@ def parse_json(obj, return_type=None):
   return result
 
 
-def parse_failing_tryjobs(message):
+def parse_failing_tryjobs(message):  # pragma: no cover
   """Parse the message to extract failing try jobs."""
   builders = []
   msg_lines = message.splitlines()
@@ -658,7 +656,8 @@ def parse_failing_tryjobs(message):
   return builders
 
 
-def derive_patch_stats(args, begin_date, end_date, patch_id):
+def derive_patch_stats(args, begin_date, end_date,
+                       patch_id):  # pragma: no cover
   """``patch_id`` is a tuple (issue, patchset)."""
   # TODO(phajdan.jr): Document or simplify this function.
   results = fetch_cq_logs(start_date=begin_date, end_date=end_date, filters=[
@@ -865,7 +864,7 @@ def derive_patch_stats(args, begin_date, end_date, patch_id):
   return patch_id, stats
 
 
-def derive_log_stats(log_data):
+def derive_log_stats(log_data):  # pragma: no cover
   # Calculate stats.
   cq_commits = [v for v in log_data if v['commit-bot']]
   users = {}
@@ -883,36 +882,36 @@ def derive_log_stats(log_data):
   return stats
 
 
-def derive_git_stats(project, start_date, end_date, args):
+def derive_git_stats(project, start_date, end_date, args):  # pragma: no cover
   logs = fetch_git_logs(PROJECTS[project]['repo'], start_date, end_date, args)
   return derive_log_stats(logs)
 
 
-def percentage_tuple(data, total):
+def percentage_tuple(data, total):  # pragma: no cover
   num_data = data if isinstance(data, numbers.Number) else len(data)
   num_total = total if isinstance(total, numbers.Number) else len(total)
   percent = 100. * num_data / num_total if num_total else 0.
   return num_data, num_total, percent
 
 
-def percentage(data, total):
+def percentage(data, total):  # pragma: no cover
   return percentage_tuple(data, total)[2]
 
 
-def output(fmt='', *args):
+def output(fmt='', *args):  # pragma: no cover
   """An equivalent of print to mock out in testing."""
   print fmt % args
 
 
-def _get_patches_by_reason(stats, name, committed=None):
+def _get_patches_by_reason(stats, name, committed=None):  # pragma: no cover
   return [
       p for p in stats[name]
       if committed is None or
       bool(stats['patch_stats'][p['patch_id']]['committed']) is committed]
 
 
-def print_attempt_counts(stats, name, message, item_name='',
-                         details=False, committed=None, indent=0):
+def print_attempt_counts(stats, name, message, item_name='', details=False,
+                         committed=None, indent=0):  # pragma: no cover
   """Print a summary of a ``name`` slice of attempts.
 
   |committed|: None=print all, True=only committed patches, False=only
@@ -961,7 +960,7 @@ def print_attempt_counts(stats, name, message, item_name='',
     output()
 
 
-def print_usage(stats):
+def print_usage(stats):  # pragma: no cover
   if not stats['usage']:
     return
   output()
@@ -976,7 +975,7 @@ def print_usage(stats):
   output(fmt_str, *data)
 
 
-def print_flakiness_stats(args, stats):
+def print_flakiness_stats(args, stats):  # pragma: no cover
   def get_flakiness_stats(issue_patchset):
     issue, patchset = issue_patchset
     try:
@@ -1135,7 +1134,7 @@ def print_flakiness_stats(args, stats):
           output('    %s' % result['url'])
 
 
-def print_stats(args, stats):
+def print_stats(args, stats):  # pragma: no cover
   if not stats:
     output('No stats to display.')
     return
@@ -1245,7 +1244,7 @@ def print_stats(args, stats):
           patch_url(patch_id), pstats['false-rejections'], infra_fr_suffix))
 
 
-def acquire_stats(args, add_tree_stats=True):
+def acquire_stats(args, add_tree_stats=True):  # pragma: no cover
   stats = {}
   logging.info('Acquiring stats for project %s for a %s of %s using %s',
                args.project, args.range, args.date,
@@ -1269,7 +1268,7 @@ def acquire_stats(args, add_tree_stats=True):
 
   return stats
 
-def main():
+def main():  # pragma: no cover
   args = parse_args()
   configure_session(args)
   logger = logging.getLogger()
