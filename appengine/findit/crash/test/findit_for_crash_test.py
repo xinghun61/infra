@@ -298,7 +298,7 @@ class FinditForCrashTest(CrashTestSuite):
         {
             'reason': ('(1) Modified top crashing frame is #0\n'
                         '(2) Modification distance (LOC) is 0\n\n'
-                        'Changed file a.cc crashed in func (#0), func (#1)'),
+                        'Changed file a.cc crashed in frame #0, frame #1'),
              'time': 'Thu Mar 31 21:24:43 2016',
              'author': 'r@chromium.org',
              'url': 'https://repo.test/+/1',
@@ -349,7 +349,7 @@ class FinditForCrashTest(CrashTestSuite):
         {
             'reason': ('(1) Modified top crashing frame is #0\n'
                        '(2) Modification distance (LOC) is 1\n\n'
-                       'Changed file a.cc crashed in func (#0), func (#1)'),
+                       'Changed file a.cc crashed in frame #0, frame #1'),
             'time': 'Thu Mar 31 21:24:43 2016',
             'author': 'r@chromium.org',
             'url': 'https://repo.test/+/1',

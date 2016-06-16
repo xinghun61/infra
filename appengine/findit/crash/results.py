@@ -37,7 +37,7 @@ class Result(object):
     for file_path, stack_infos in self.file_to_stack_infos.iteritems():
       line_parts = []
       for frame, _ in stack_infos:
-        line_parts.append('%s (#%d)' % (frame.function, frame.index))
+        line_parts.append('frame #%d' % frame.index)
 
       lines.append('Changed file %s crashed in %s' % (
           file_path, ', '.join(line_parts)))
