@@ -41,6 +41,8 @@ class SystemMetricsTest(unittest.TestCase):
     self.assertBetween(0, 100, system)
     self.assertBetween(0, 100, idle)
 
+    self.assertGreater(system_metrics.cpu_count.get(), 0)
+
   def test_disk_info(self):
     system_metrics.get_disk_info()
 

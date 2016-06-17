@@ -12,6 +12,8 @@ import psutil
 from infra_libs import ts_mon
 
 
+cpu_count = ts_mon.GaugeMetric('dev/cpu/count',
+                               description='Number of CPU cores.')
 cpu_time = ts_mon.FloatMetric('dev/cpu/time',
                               description='percentage of time spent by the CPU'
                                   ' in different states.')
@@ -89,6 +91,8 @@ def get_uptime():
 
 
 def get_cpu_info():
+  cpu_count.set(psutil.cpu_count())
+
   times = psutil.cpu_times_percent()
   for mode in ('user', 'system', 'idle'):
     cpu_time.set(getattr(times, mode), {'mode': mode})
