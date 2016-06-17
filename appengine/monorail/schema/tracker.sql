@@ -463,7 +463,6 @@ CREATE TABLE ProjectIssueConfig (
 
   member_default_query TEXT,
   custom_issue_entry_url TEXT,
-  member_default_query TEXT,
 
   PRIMARY KEY (project_id),
   FOREIGN KEY (project_id) REFERENCES Project(project_id)
