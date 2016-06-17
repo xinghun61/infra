@@ -69,6 +69,9 @@ uptime = ts_mon.GaugeMetric('dev/uptime',
 proc_count = ts_mon.GaugeMetric('dev/proc/count',
                                 description='Number of processes currently '
                                     'running.')
+load_average = ts_mon.FloatMetric('dev/proc/load_average',
+                                  description='Number of processes currently '
+                                      'in the system run queue.')
 
 # tsmon pipeline uses backend clocks when assigning timestamps to metric points.
 # By comparing point timestamp to the point value (i.e. time by machine's local
@@ -162,6 +165,16 @@ def get_net_info():
 def get_proc_info():
   procs = psutil.pids()
   proc_count.set(len(procs))
+
+  if os.name == 'posix':  # pragma: no cover
+    try:
+      avg1, avg5, avg15 = os.getloadavg()
+    except OSError:  # pragma: no cover
+      pass
+    else:
+      load_average.set(avg1, fields={'minutes': 1})
+      load_average.set(avg5, fields={'minutes': 5})
+      load_average.set(avg15, fields={'minutes': 15})
 
 
 def get_unix_time():

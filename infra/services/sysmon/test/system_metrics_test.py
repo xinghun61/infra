@@ -134,6 +134,14 @@ class SystemMetricsTest(unittest.TestCase):
 
     self.assertGreater(system_metrics.proc_count.get(), 10)
 
+    if os.name == 'posix':  # pragma: no cover
+      self.assertGreater(
+          system_metrics.load_average.get(fields={'minutes': 1}), 0)
+      self.assertGreater(
+          system_metrics.load_average.get(fields={'minutes': 5}), 0)
+      self.assertGreater(
+          system_metrics.load_average.get(fields={'minutes': 15}), 0)
+
   def test_get_unix_time(self):
     system_metrics.get_unix_time()
     self.assertTrue(
