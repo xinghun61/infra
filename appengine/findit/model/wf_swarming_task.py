@@ -46,15 +46,20 @@ class WfSwarmingTask(BaseBuildModel):
     example format would be:
     {
         'flaky_tests': ['test1', 'test2', ...],
-        'reliable_tests': ['test3', ...]
+        'reliable_tests': ['test3', ...],
+        'unknown_tests': ['test4', ...]
     }
     """
     classified_tests = defaultdict(list)
     for test_name, test_statuses in self.tests_statuses.iteritems():
       if test_statuses.get('SUCCESS'):  # Test passed for some runs, flaky.
         classified_tests['flaky_tests'].append(test_name)
+      elif test_statuses.get('UNKNOWN'):
+        classified_tests['unknown_tests'].append(test_name)
       else:
         # Here we consider a 'non-flaky' test to be 'reliable'.
+        # If the test is 'SKIPPED', there should be failure in its dependency,
+        # consider it to be failed as well.
         # TODO(chanli): Check more test statuses.
         classified_tests['reliable_tests'].append(test_name)
     return classified_tests

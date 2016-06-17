@@ -252,7 +252,7 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
     targeted_tests = {
-        'a_test': ['TestSuite1.test1', 'TestSuite1.test3'],
+        'a_test': ['TestSuite1.PRE_test1', 'TestSuite1.test3'],
         'b_test': [],  # Non-swarming test.
     }
 

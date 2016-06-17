@@ -18,6 +18,7 @@ from waterfall import swarming_util
 
 
 _MAX_BUILDS_TO_CHECK = 20
+_NON_FAILURE_STATUS = ['SUCCESS', 'SKIPPED', 'UNKNOWN']
 
 
 class DetectFirstFailurePipeline(BasePipeline):
@@ -181,8 +182,11 @@ class DetectFirstFailurePipeline(BasePipeline):
       for test_name in iteration.keys():
         is_reliable_failure = True
 
-        if any(test['status'] == 'SUCCESS' for test in iteration[test_name]):
-          # Ignore the test if any of the attempts were 'SUCCESS'.
+        if (any(test['status'] in _NON_FAILURE_STATUS
+            for test in iteration[test_name])):
+          # Ignore the test if any of the attempts didn't fail.
+          # If a test is skipped, that means it was not run at all.
+          # Treats it as success since the status cannot be determined.
           is_reliable_failure = False
 
         if is_reliable_failure:

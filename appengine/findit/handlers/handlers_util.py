@@ -86,20 +86,16 @@ def _GenerateSwarmingTasksData(failure_result_map):
         task_dict = step_tasks_info[key]
         referred_build_keys = key.split('/')
         task = WfSwarmingTask.Get(*referred_build_keys, step_name=step_name)
+        all_tests = _GetAllTestsForASwarmingTask(key, failure)
+        task_dict['all_tests'] = all_tests
         if not task:  # In case task got manually removed from data store.
           task_info = {
               'status': result_status.NO_SWARMING_TASK_FOUND
           }
-          task_dict['all_tests'] = _GetAllTestsForASwarmingTask(key, failure)
         else:
           task_info = {
               'status': task.status
           }
-
-          task_dict['all_tests'] = (
-              _GetAllTestsForASwarmingTask(key, failure)
-              if not (task.parameters and task.parameters.get('tests'))
-              else task.parameters['tests'])
 
           # Get the step name without platform.
           # This value should have been saved in task.parameters;
@@ -118,10 +114,12 @@ def _GenerateSwarmingTasksData(failure_result_map):
             # Use its result to get reliable and flaky tests.
             # If task has not completed, there will be no try job yet,
             # the result will be grouped in unclassified failures temporarily.
-            task_dict['reliable_tests'] = task.classified_tests.get(
-                'reliable_tests', [])
-            task_dict['flaky_tests'] = task.classified_tests.get(
-                'flaky_tests', [])
+            reliable_tests = task.classified_tests.get('reliable_tests', [])
+            task_dict['reliable_tests'] = [
+                test for test in reliable_tests if test in all_tests]
+            flaky_tests = task.classified_tests.get('flaky_tests', [])
+            task_dict['flaky_tests'] = [
+                test for test in flaky_tests if test in all_tests]
 
         task_dict['task_info'] = task_info
     else:

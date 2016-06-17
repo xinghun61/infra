@@ -134,8 +134,9 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
         self.master_name, self.builder_name, self.build_number)
     analysis.failure_result_map = {
         'step1 on platform': {
-            'test1': '%s/%s/%s' % (self.master_name, self.builder_name, 120),
-            'test2': '%s/%s/%s' % (
+            'PRE_test1': '%s/%s/%s' % (
+                self.master_name, self.builder_name, 120),
+            'PRE_PRE_test2': '%s/%s/%s' % (
                 self.master_name, self.builder_name, self.build_number),
             'test3': '%s/%s/%s' % (
                 self.master_name, self.builder_name, self.build_number),
@@ -159,6 +160,10 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     task0.tests_statuses = {
         'test1': {
             'total_run': 2,
+            'SKIPPED': 2
+        },
+        'PRE_test1': {
+            'total_run': 2,
             'FAILURE': 2
         }
     }
@@ -173,9 +178,17 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
         'tests': ['test2', 'test3', 'test4']
     }
     task1.tests_statuses = {
-        'test2': {
+        'PRE_PRE_test2': {
             'total_run': 2,
             'FAILURE': 2
+        },
+        'PRE_test2': {
+            'total_run': 2,
+            'SKIPPED': 2
+        },
+        'test2': {
+            'total_run': 2,
+            'SKIPPED': 2
         },
         'test3': {
             'total_run': 4,
@@ -206,8 +219,8 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
                         'task_url': ('https://chromium-swarm.appspot.com/user'
                                      '/task/task1')
                     },
-                    'all_tests': ['test2', 'test3', 'test4'],
-                    'reliable_tests': ['test2'],
+                    'all_tests': ['PRE_PRE_test2', 'test3', 'test4'],
+                    'reliable_tests': ['PRE_PRE_test2'],
                     'flaky_tests': ['test3', 'test4'],
                     'ref_name': 'step1'
                 },
@@ -218,8 +231,8 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
                         'task_url': ('https://chromium-swarm.appspot.com/user/'
                                      'task/task0')
                     },
-                    'all_tests': ['test1'],
-                    'reliable_tests': ['test1'],
+                    'all_tests': ['PRE_test1'],
+                    'reliable_tests': ['PRE_test1'],
                     'flaky_tests': [],
                     'ref_name': 'step1'
                 }
@@ -231,13 +244,13 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
                     'task_info': {
                         'status': analysis_status.PENDING
                     },
-                    'all_tests': ['test1'],
+                    'all_tests': ['PRE_test1'],
                     'ref_name': 'step2'
                 }
             }
         }
     }
-    self.assertEqual(expected_data, data)
+    self.assertEqual(sorted(expected_data), sorted(data))
 
   def testGetAllTryJobResultsNoAnalysis(self):
     data = handlers_util.GetAllTryJobResults(

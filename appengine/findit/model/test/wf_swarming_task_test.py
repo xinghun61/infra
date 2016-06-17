@@ -23,12 +23,21 @@ class WfSwarmingTaskTest(unittest.TestCase):
         'TestSuite1.test3': {
             'total_run': 6,
             'FAILURE': 6
+        },
+        'TestSuite1.test4': {
+            'total_run': 6,
+            'SKIPPED': 6
+        },
+        'TestSuite1.test5': {
+            'total_run': 6,
+            'UNKNOWN': 6
         }
     }
 
     expected_classified_tests = {
         'flaky_tests': ['TestSuite1.test2', 'TestSuite1.test1'],
-        'reliable_tests': ['TestSuite1.test3']
+        'reliable_tests': ['TestSuite1.test3', 'TestSuite1.test4'],
+        'unknown_tests': ['TestSuite1.test5']
     }
 
     self.assertEqual(expected_classified_tests, task.classified_tests)
