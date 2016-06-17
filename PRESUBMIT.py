@@ -105,7 +105,7 @@ def EnvAddingPythonPath(input_api, extra_python_paths):
 
 # Forked with prejudice from depot_tools/presubmit_canned_checks.py
 def PylintFiles(input_api, output_api, files, pylint_root, disabled_warnings,
-      extra_python_paths):  # pragma: no cover
+                extra_python_paths):  # pragma: no cover
   input_api.logging.debug('Running pylint on: %s', files)
 
   # FIXME: depot_tools should be right next to infra, however DEPS
@@ -125,7 +125,8 @@ def PylintFiles(input_api, output_api, files, pylint_root, disabled_warnings,
 
   # Pass args via stdin, because windows (command line limit).
   return input_api.Command(
-      name='Pylint (%s files under %s)' % (len(files), pylint_root),
+      name=('Pylint (%s files%s)' % (
+            len(files), ' under %s' % pylint_root if pylint_root else '')),
       cmd=[input_api.python_executable,
            pytlint_path,
            '--args-on-stdin'],
@@ -259,7 +260,7 @@ def BrokenLinksChecks(input_api, output_api):  # pragma: no cover
   return output
 
 
-def PylintChecks(input_api, output_api):  # pragma: no cover
+def PylintChecks(input_api, output_api, only_changed):  # pragma: no cover
   infra_root = input_api.PresubmitLocalPath()
   # DEPS specifies depot_tools, as sibling of infra.
   venv_path = input_api.os_path.join(infra_root, 'ENV', 'lib', 'python2.7')
@@ -278,27 +279,35 @@ def PylintChecks(input_api, output_api):  # pragma: no cover
 
   extra_syspaths = [venv_path]
 
-  all_python_files = FetchAllFiles(input_api, white_list, black_list)
-
-  root_to_paths = GroupPythonFilesByRoot(input_api, all_python_files)
   source_filter = lambda path: input_api.FilterSourceFile(path,
       white_list=white_list, black_list=black_list)
   changed_py_files = [f.LocalPath()
       for f in input_api.AffectedSourceFiles(source_filter)]
+
+  if only_changed:
+    if changed_py_files:
+      input_api.logging.info('Running pylint on %d files',
+                             len(changed_py_files))
+      return [PylintFiles(input_api, output_api, changed_py_files, None,
+                          DISABLED_PYLINT_WARNINGS, extra_syspaths)]
+    else:
+      return []
+
+  all_python_files = FetchAllFiles(input_api, white_list, black_list)
+  root_to_paths = GroupPythonFilesByRoot(input_api, all_python_files)
   dirty_roots = DirtyRootsFromAffectedFiles(changed_py_files, root_to_paths)
 
   tests = []
   for root_path in sorted(dirty_roots):
     python_files = root_to_paths[root_path]
-    if root_path == '':
-      root_path = input_api.PresubmitLocalPath()
-    input_api.logging.info('Running pylint on %d files under %s',
-        len(python_files), root_path)
-
-    syspaths = extra_syspaths + [root_path]
-
-    tests.append(PylintFiles(input_api, output_api, python_files, root_path,
-      DISABLED_PYLINT_WARNINGS, syspaths))
+    if python_files:
+      if root_path == '':
+        root_path = input_api.PresubmitLocalPath()
+      input_api.logging.info('Running pylint on %d files under %s',
+          len(python_files), root_path)
+      syspaths = extra_syspaths + [root_path]
+      tests.append(PylintFiles(input_api, output_api, python_files, root_path,
+        DISABLED_PYLINT_WARNINGS, syspaths))
   return tests
 
 
@@ -345,18 +354,22 @@ def JshintChecks(input_api, output_api):  # pragma: no cover
 
 
 def CommonChecks(input_api, output_api):  # pragma: no cover
-  third_party_filter = lambda path: input_api.FilterSourceFile(
-      path, black_list=THIRD_PARTY_DIRS)
-  output = input_api.RunTests(PylintChecks(input_api, output_api))
+  output = []
   output.extend(input_api.RunTests(JshintChecks(input_api, output_api)))
   output.extend(BrokenLinksChecks(input_api, output_api))
+
+  third_party_filter = lambda path: input_api.FilterSourceFile(
+      path, black_list=THIRD_PARTY_DIRS)
   output.extend( input_api.canned_checks.CheckGenderNeutral(
       input_api, output_api, source_file_filter=third_party_filter))
+
   return output
 
 
 def CheckChangeOnUpload(input_api, output_api):  # pragma: no cover
   output = CommonChecks(input_api, output_api)
+  output.extend(input_api.RunTests(
+    PylintChecks(input_api, output_api, only_changed=True)))
   output.extend(NoForkCheck(input_api, output_api))
   output.extend(EmptiedFilesCheck(input_api, output_api))
   output.extend(GoGoopRollCheck(input_api, output_api))
@@ -365,6 +378,8 @@ def CheckChangeOnUpload(input_api, output_api):  # pragma: no cover
 
 def CheckChangeOnCommit(input_api, output_api):  # pragma: no cover
   output = CommonChecks(input_api, output_api)
+  output.extend(input_api.RunTests(
+    PylintChecks(input_api, output_api, only_changed=False)))
   output.extend(input_api.canned_checks.CheckOwners(input_api, output_api))
   output.extend(input_api.canned_checks.CheckTreeIsOpen(
       input_api,
