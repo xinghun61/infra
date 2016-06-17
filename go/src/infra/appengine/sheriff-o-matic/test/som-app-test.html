@@ -186,6 +186,50 @@
       }));
     });
 
+    test('merge multiple alert streams', function() {
+      let alertsData = {
+        test: [
+          {extension: { builders: [{name: 'a'}], reasons: [ {step: 'a'} ]} },
+        ],
+        other: [
+          {extension: { builders: [{name: 'blahblah'}], reasons: [ {step: 'reasons'} ]} },
+        ],
+      };
+
+      let sortedAlerts = element._computeAlerts({
+        base: alertsData
+      }, {
+        element._keyForAlert(alertsData.test[0]): {
+          snoozeTime: Date.now() + 1000000,
+        }
+      });
+
+      assert.equal(2, sortedAlerts.length);
+      assert.equal('blahblah', sortedAlerts[0].extension.builders[0].name);
+      // a is snoozed, goes to the bottom.
+      assert.equal('a', sortedAlerts[1].extension.builders[0].name);
+    })
+
+    test('merge multiple alert streams with one null', function() {
+      let alertsData = {
+        test: [
+          {extension: { builders: [{name: 'a'}], reasons: [ {step: 'a'} ]} },
+        ],
+        other: null
+      };
+
+      let sortedAlerts = element._computeAlerts({
+        base: alertsData
+      }, {
+        element._keyForAlert(alertsData.test[0]): {
+          snoozeTime: Date.now() + 1000000,
+        }
+      });
+
+      assert.equal(1, sortedAlerts.length);
+      assert.equal('a', sortedAlerts[0].extension.builders[0].name);
+    })
+
     test('sort works correctly', function() {
       let alertsData = {
         test: [
@@ -195,14 +239,13 @@
         ]
       };
 
-      let annotations = {};
-      annotations[element._keyForAlert(alertsData.test[0])] = {
-        snoozeTime: Date.now() + 1000000,
-      };
-
       let sortedAlerts = element._computeAlerts({
         base: alertsData
-      }, annotations);
+      }, {
+        element._keyForAlert(alertsData.test[0]): {
+          snoozeTime: Date.now() + 1000000,
+        }
+      });
 
       assert.equal('b', sortedAlerts[0].extension.builders[0].name);
       assert.equal('c', sortedAlerts[1].extension.builders[0].name);

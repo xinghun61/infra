@@ -403,6 +403,9 @@
         let allAlerts = [];
         for (let tree in alertsData) {
           let alerts = alertsData[tree];
+          if (!alerts) {
+            continue;
+          }
           if (!showInfraFailures) {
             alerts = alerts.filter(function(alert) {
               return alert.type !== 'infra-failure';
