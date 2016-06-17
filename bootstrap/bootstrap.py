@@ -151,8 +151,7 @@ def install(deps):
       if not deps_entry.get('implicit'):
         requirements.append('%s==%s' % (name, deps_entry['version']))
     subprocess.check_call(
-        [pip, 'install', '--no-index', '--download-cache',
-         os.path.join(ROOT, '.wheelcache'), '-f', ipath] + requirements)
+        [pip, 'install', '--no-index', '-f', ipath] + requirements)
 
 
 def activate_env(env, deps, quiet=False):

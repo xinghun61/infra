@@ -87,7 +87,7 @@ Run `gclient runhooks`. Under the hood, this runs:
 
 This creates a virtualenv called `{repo_root}/ENV` with all the deps
 contained in `bootstrap/deps.pyl`. You must be online, or must already
-have the wheels for your system cached in `{repo_root}/.wheelcache`.
+have the wheels for your system in cache.
 
 If you already have an `ENV` directory, [bootstrap.py](bootstrap.py) will check
 the manifest in `ENV` to see if it matches [deps.pyl](#deps_pyl) (i.e. the diff

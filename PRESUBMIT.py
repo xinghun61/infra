@@ -32,6 +32,13 @@ DISABLED_PROJECTS = [
     'bootstrap/virtualenv',
 ]
 
+# List of third_party direcories.
+THIRD_PARTY_DIRS = [
+  'appengine/third_party',
+  # Remove this when virtualenv is unvendored.
+  'bootstrap/virtualenv',
+]
+
 # List of directories to jshint.
 JSHINT_PROJECTS = [
   'appengine/chromium_cq_status',
@@ -41,9 +48,7 @@ JSHINT_PROJECTS = [
   'appengine/chrome_infra_packages',
 ]
 # List of blacklisted directories that we don't want to jshint.
-JSHINT_PROJECTS_BLACKLIST = [
-  'appengine/third_party',
-]
+JSHINT_PROJECTS_BLACKLIST = THIRD_PARTY_DIRS
 
 # Files that must not be modified (regex)
 # Paths tested are relative to the directory containing this file.
@@ -340,11 +345,13 @@ def JshintChecks(input_api, output_api):  # pragma: no cover
 
 
 def CommonChecks(input_api, output_api):  # pragma: no cover
+  third_party_filter = lambda path: input_api.FilterSourceFile(
+      path, black_list=THIRD_PARTY_DIRS)
   output = input_api.RunTests(PylintChecks(input_api, output_api))
   output.extend(input_api.RunTests(JshintChecks(input_api, output_api)))
   output.extend(BrokenLinksChecks(input_api, output_api))
-  output.extend(
-      input_api.canned_checks.CheckGenderNeutral(input_api, output_api))
+  output.extend( input_api.canned_checks.CheckGenderNeutral(
+      input_api, output_api, source_file_filter=third_party_filter))
   return output
 
 
