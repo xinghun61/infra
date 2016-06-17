@@ -30,6 +30,7 @@ def RunSteps(api, project_under_test):
   soln.name = project_under_test
   soln.url = api.luci_config.get_project_metadata(
       project_under_test)['repo_url']
+  soln.revision = 'HEAD'
 
   api.bot_update.ensure_checkout(
       force=True, gclient_config=c,
