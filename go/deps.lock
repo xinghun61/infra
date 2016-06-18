@@ -1,11 +1,11 @@
 hash: 97d0dd605c78327252ade7f877213a17b92014b34a4a6f5cbe5137a7c355f850
-updated: 2016-05-26T10:12:20.285363411-07:00
+updated: 2016-06-17T19:51:30.030866359-07:00
 imports:
 - name: github.com/dustin/go-humanize
-  version: 8929fe90cee4b2cb9deb468b51fb34eba64d1bf0
+  version: 499693e27ee0d14ffab67c31ad065fdb3d34ea75
   repo: https://chromium.googlesource.com/external/github.com/dustin/go-humanize.git
 - name: github.com/go-sql-driver/mysql
-  version: 7ebe0a500653eeb1859664bed5e48dec1e164e73
+  version: 3654d25ec346ee8ce71a68431025458d52a38ac0
   repo: https://chromium.googlesource.com/external/github.com/go-sql-driver/mysql.git
 - name: github.com/golang/lint
   version: c7bacac2b21ca01afa1dee0acf64df3ce047c28f
@@ -13,14 +13,14 @@ imports:
   subpackages:
   - golint
 - name: github.com/golang/protobuf
-  version: 9e6977f30c91c78396e719e164e57f9287fff42c
+  version: 0c1f6d65b5a189c2250d10e71a5506f06f9fa0a0
   repo: https://chromium.googlesource.com/external/github.com/golang/protobuf.git
   subpackages:
   - jsonpb
   - proto
   - protoc-gen-go
 - name: github.com/gopherjs/gopherjs
-  version: 78919e0ff9540aec8ec7ddf27fbf607ae41abc2f
+  version: a727a4a1dd2f292e948cebe6ec9aef1a7863f145
   repo: https://chromium.googlesource.com/external/github.com/gopherjs/gopherjs.git
   subpackages:
   - js
@@ -67,7 +67,7 @@ imports:
   subpackages:
   - cmd/pp
 - name: github.com/maruel/pre-commit-go
-  version: 2c55690f8967097d7541d2e3192b81e002b15fe1
+  version: 7d6194a716afcf9f525d4f5c91c3f59e157a53cd
   repo: https://chromium.googlesource.com/external/github.com/maruel/pre-commit-go.git
   subpackages:
   - cmd/covg
@@ -116,19 +116,19 @@ imports:
   subpackages:
   - encoding/json5
 - name: golang.org/x/net
-  version: dfd9ed699ea197b58a32e0d1dcfa2be66f127ec4
+  version: 1961d9def2b2d7a28d7958926d2457d05a178ecd
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/oauth2
-  version: c406a4cc4ba462e5dc2f16225c5bd9488f9cbe10
+  version: 65a8d08c6292395d47053be10b3c5e91960def76
   repo: https://go.googlesource.com/oauth2.git
   subpackages:
   - google
   - jwt
 - name: golang.org/x/tools
-  version: ba484b064f228462fd5d8e41dcbbf4004636bbfe
+  version: a2a552218a0e22e6fb22469f49ef371b492f6178
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -141,7 +141,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: aa89374d6f4a7f9ab85dcb3b01c95d2d3bd7f10a
+  version: 63ade871fd3aec1225809d496e81ec91ab76ea29
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - gensupport
@@ -165,7 +165,7 @@ imports:
   - user
   - cmd/aedeploy
 - name: google.golang.org/cloud
-  version: 4da660f59adf463f364fca03a6f8422758101a84
+  version: 581cbbbaf53b821281c5df8f4bb9fa69c2d5f49c
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -173,7 +173,7 @@ imports:
   - pubsub
   - storage
 - name: google.golang.org/grpc
-  version: 8213ee577a465c1f314d85748fb29e4eeed59baf
+  version: e78224b060cf3215247b7be455f80ea22e469b66
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
