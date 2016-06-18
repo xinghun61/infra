@@ -23,6 +23,7 @@ from services import api_svc_v1
 from services import issue_svc
 from services import project_svc
 from services import service_manager
+from services import tracker_fulltext
 from services import user_svc
 from testing import fake
 from testing_utils import testing
@@ -158,6 +159,8 @@ class MonorailApiTest(testing.EndpointsTestCase):
     # api_base_checks is tested in AllBaseChecksTest,
     # so mock it to reduce noise.
     self.mock(api_svc_v1, 'api_base_checks', lambda x, y, z, u, v, w: None)
+
+    self.mock(tracker_fulltext, 'IndexIssues', lambda x, y, z, u, v: None)
 
   def SetUpComponents(
       self, project_id, component_id, component_name, component_doc='doc',
