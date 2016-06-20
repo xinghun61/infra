@@ -58,10 +58,11 @@ class FracasTest(CrashTestCase):
     def _MockGetDEPSRollsDict(*_):
       return {'src/': DependencyRoll('src/', 'https://repo', '1', '2')}
 
+    dummy_match_result = MatchResult(self.GetDummyChangeLog(), 'src/')
     def _MockFindItForCrash(*args):
       regression_deps_rolls = args[1]
       if regression_deps_rolls:
-        return ['DummyResultObject']
+        return [dummy_match_result]
 
       return []
 
@@ -92,7 +93,7 @@ class FracasTest(CrashTestCase):
           'found': True,
           'suspected_project': '',
           'suspected_components': [],
-          'suspected_cls': ['DummyResultObject'],
+          'suspected_cls': [dummy_match_result.ToDict()],
     }
     expected_tag = {
           'found_suspects': True,

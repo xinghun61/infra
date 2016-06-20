@@ -97,16 +97,18 @@ def FindCulpritForChromeCrash(signature, platform,
   suspected_components = ComponentClassifier().Classify(
       culprit_results, crash_stack)
 
+  culprit_results_list = [result.ToDict() for result in culprit_results]
+
   return (
       {
           'found': (bool(suspected_project) or bool(suspected_components) or
-                    bool(culprit_results)),
+                    bool(culprit_results_list)),
           'suspected_project': suspected_project,
           'suspected_components': suspected_components,
-          'suspected_cls': culprit_results,
+          'suspected_cls': culprit_results_list,
       },
       {
-          'found_suspects': bool(culprit_results),
+          'found_suspects': bool(culprit_results_list),
           'has_regression_range': bool(regression_versions),
           'solution': 'core_algorithm',
       }

@@ -212,8 +212,7 @@ def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps,
       crashed revision.
 
   Returns:
-    List of dicts of culprit results, sorted by confidence from highest to
-    lowest.
+    List of Results, sorted by confidence from highest to lowest.
   """
   if not regression_deps_rolls:
     return []
@@ -249,10 +248,9 @@ def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps,
   if not results:
     return []
 
-  sorted_results = sorted([result.ToDict() for result in results],
-                          key=lambda r: -r['confidence'])
+  sorted_results = sorted(results, key=lambda r: -r.confidence)
 
-  if sorted_results[0]['confidence'] > 0.999:
+  if sorted_results[0].confidence > 0.999:
     return sorted_results[:1]
 
   return sorted_results[:3]

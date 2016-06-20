@@ -311,8 +311,10 @@ class FinditForCrashTest(CrashTestSuite):
     regression_deps_rolls = {'src/': DependencyRoll('src/', 'https://repo',
                                                     '1', '2')}
 
-    self.assertEqual(findit_for_crash.FindItForCrash(
-        Stacktrace(), regression_deps_rolls, {}), expected_match_results)
+    results = findit_for_crash.FindItForCrash(Stacktrace(),
+                                              regression_deps_rolls, {})
+    self.assertEqual([result.ToDict() for result in results],
+                     expected_match_results)
 
   def testFinditForCrashFilterZeroConfidentResults(self):
     def _MockFindMatchResults(*_):
@@ -355,14 +357,17 @@ class FinditForCrashTest(CrashTestSuite):
             'url': 'https://repo.test/+/1',
             'project_path': 'src/',
             'review_url': 'https://codereview.chromium.org/3281',
-            'confidence': 0.8, 'revision': '1'},
+            'confidence': 0.8, 'revision': '1'
+        },
     ]
 
     regression_deps_rolls = {'src/': DependencyRoll('src/', 'https://repo',
                                                     '1', '2')}
 
-    self.assertEqual(findit_for_crash.FindItForCrash(
-        Stacktrace(), regression_deps_rolls, {}), expected_match_results)
+    results = findit_for_crash.FindItForCrash(Stacktrace(),
+                                              regression_deps_rolls, {})
+    self.assertEqual([result.ToDict() for result in results],
+                     expected_match_results)
 
   def testFinditForCrashAllMatchResultsWithZeroConfidences(self):
     def _MockFindMatchResults(*_):
