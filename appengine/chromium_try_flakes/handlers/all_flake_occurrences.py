@@ -17,7 +17,7 @@ MAX_GROUP_DISTANCE = datetime.timedelta(days=3)
 MAX_OCCURRENCES_DEFAULT = 50
 FLAKINESS_DASHBOARD_URL = (
   'http://test-results.appspot.com/dashboards/flakiness_dashboard.html#'
-  'testType=%{normalized_step_name}s&tests=%{test_name}s')
+  'testType=%(normalized_step_name)s&tests=%(test_name)s')
 
 
 def RunsSortFunction(s):  # pragma: no cover
