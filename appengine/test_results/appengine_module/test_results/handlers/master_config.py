@@ -8,6 +8,10 @@
 # FIXME: The concept of groups is being deprecated.  Once it's removed from
 # the flakiness dashboard, this whole map can go away.
 _masters = {
+    'chromium.android': {
+        'name': 'ChromiumAndroid',
+        'groups': ['Unused']
+    },
     'chromium.chromiumos': {
         'name': 'ChromiumChromiumOS',
         'groups': ['@ToT ChromeOS']
@@ -60,6 +64,10 @@ _masters = {
     'tryserver.blink': {
         'name': 'BlinkTryServer',
         'groups': ['Unused']
+    },
+    'tryserver.chromium.android': {
+        'name': 'TryserverChromiumAndroid',
+        'group': ['Unused'],
     },
     'tryserver.chromium.linux': {
         'name': 'TryServerChromiumLinux',
