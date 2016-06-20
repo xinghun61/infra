@@ -25,7 +25,6 @@ Console -> Credentials -> [service account] -> Generate new JSON key.
 
 import argparse
 import csv
-import hashlib
 import httplib2
 import json
 import logging
@@ -38,6 +37,9 @@ import tempfile
 import time
 import googleapiclient
 import urllib
+import zlib
+
+import spam_helpers
 
 from apiclient.discovery import build
 from oauth2client.client import GoogleCredentials
@@ -221,17 +223,6 @@ def ROC(args):
       false_positive, total_negative, true_positive, total_positive)
 
 
-_LINKIFY_SCHEMES = r'(https?://|ftp://|mailto:)'
-_IS_A_LINK_RE = re.compile(r'(%s)([^\s<]+)' % _LINKIFY_SCHEMES, re.UNICODE)
-
-def _ExtractUrls(text):
-  matches = _IS_A_LINK_RE.findall(text)
-  if not matches:
-    return []
-
-  ret = [''.join(match[1:]).replace('\\r', '') for match in matches]
-  return ret
-
 # Cache results from safe browsing API:
 url_type = {}
 
@@ -269,44 +260,30 @@ def _CountUnsafeUrls(urls, args):
 
   return num_unsafe
 
-SKETCHY_EMAIL_RE = re.compile('[a-zA-Z]+[0-9]+\@.+')
-
-def _EmailIsSketchy(email):
-  if email.endswith(('@chromium.org', '@google.com')):
-    return False
-  return SKETCHY_EMAIL_RE.match(email) is not None
 
 # Assumes input csv file has the following columns:
-# label, issue summary, comment body, author email address
+# label, issue summary, comment body, author email (only in monorail data)
 def Prep(args):
   with open(args.infile, 'rb') as csvfile:
     csvreader = csv.reader(csvfile)
     with tempfile.NamedTemporaryFile('wb', delete=False) as trainfile:
       with open(args.test, 'wb') as testfile:
         for row in csvreader:
-          # If hash features are requested, generate those instead of
-          # the raw text.
-          if args.hash_features > 0:
-            # Hash every field after the first (which is the class)
-            feature_hashes = _HashFeatures(row[1:], args.hash_features)
-            # Convert to strings so we can re-join the columns.
-            feature_hashes = [str(h) for h in feature_hashes]
-            row = [row[0]]
-            row.extend(feature_hashes)
-
-          # author email is in the 4th column.
-          sketchy_email_feature = _EmailIsSketchy(row[3])
-          urls = _ExtractUrls(row[2])
-          num_urls_feature = len(urls) if urls else 0
-          num_unsafe_urls_feature = _CountUnsafeUrls(urls, args) if urls else 0
-          num_duplicate_urls_feature = len(urls) - len(list(set(urls)))
-          row.extend([
-            '%s' % sketchy_email_feature,
-            '%d' % num_urls_feature,
-            '%d' % num_unsafe_urls_feature,
-            '%d' % num_duplicate_urls_feature,
-          ])
-
+          label = row[0]
+          summary = row[1]
+          description = row[2]
+          email = ''
+          if len(row) > 3:
+            email = row[3]
+          features = spam_helpers.GenerateFeatures(summary, description, email,
+              args.hash_features, (
+                  '@chromium.org',
+                  '.gserviceaccount.com',
+                  '@google.com',
+                  '@webrtc.org',
+              ))
+          row = [label]
+          row.extend(features)
           row = ','.join(row) + '\n'
 
           if random.random() > args.ratio:
@@ -317,24 +294,6 @@ def Prep(args):
   print 'Copying %s to The Cloud as %s' % (trainfile.name, args.train)
   subprocess.check_call(['gsutil', 'cp', trainfile.name, args.train])
 
-DELIMITERS = ['\s', '\,', '\.', '\?', '!', '\:', '\(', '\)']
-
-def _HashFeatures(content, num_features):
-  """
-    Feature hashing is a fast and compact way to turn a string of text into a
-    vector of feature values for classification and training.
-    See also: https://en.wikipedia.org/wiki/Feature_hashing
-    This is a simple implementation that doesn't try to minimize collisions
-    or anything else fancy.
-  """
-  features = [0] * num_features
-  for blob in content:
-    words = re.split('|'.join(DELIMITERS), blob)
-    for w in words:
-      feature_index = int(int(hashlib.sha1(w).hexdigest(), 16) % num_features)
-      features[feature_index] += 1
-
-  return features
 
 def main():
   if 'GOOGLE_APPLICATION_CREDENTIALS' not in os.environ:
@@ -389,7 +348,8 @@ def main():
       help='Test/train split ratio.')
   parser_prep.add_argument('--hash_features', '-f', type=int,
       help='Number of hash features to generate.', default=0)
-  parser_prep.add_argument('--api_key', '-k', required=True)
+  parser_prep.add_argument('--api_key', '-k', required=False,
+      help='Safe Browsing API key.')
 
   args = parser.parse_args()
 
