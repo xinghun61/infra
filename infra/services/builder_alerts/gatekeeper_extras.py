@@ -21,12 +21,17 @@ def builder_is_excluded(builder, config, master_config):
 
   return builder not in master_config
 
-def tree_for_master(master_url, gatekeeper_trees_config):
+def trees_for_master(master_url, gatekeeper_trees_config):
   """Get the name of the tree for a given master url, or the master's name."""
+  trees = []
   for tree_name, tree_config in gatekeeper_trees_config.iteritems():
     if master_url in tree_config['masters']:
-      return tree_name
-  return master_name_from_url(master_url)
+      trees.append(tree_name)
+
+  if trees:
+    return trees
+
+  return [master_name_from_url(master_url)]
 
 
 def apply_gatekeeper_rules(alerts, gatekeeper, gatekeeper_trees):
@@ -41,18 +46,20 @@ def apply_gatekeeper_rules(alerts, gatekeeper, gatekeeper_trees):
       continue
 
     builder = alert.get('builder_name')
-    alert_tree = tree_for_master(master_url, gatekeeper_trees)
-    if builder:
-      masters = gatekeeper_trees.get(alert_tree, {}).get('masters', {})
-      if builder_is_excluded(builder, config, masters.get(master_url, [])):
-        continue
-      # Only apply tree closer logic for step failures
-      if 'step_name' in alert:
-        alert['would_close_tree'] = would_close_tree(
-            config, builder, alert['step_name'])
+    alert_trees = trees_for_master(master_url, gatekeeper_trees)
+    for tree in alert_trees:
+      alert_cpy = alert.copy()
+      alert_cpy['tree'] = tree
+      if builder:
+        masters = gatekeeper_trees.get(tree, {}).get('masters', {})
+        if builder_is_excluded(builder, config, masters.get(master_url, [])):
+          continue
+        # Only apply tree closer logic for step failures
+        if 'step_name' in alert_cpy:
+          alert_cpy['would_close_tree'] = would_close_tree(
+              config, builder, alert_cpy['step_name'])
 
-    alert['tree'] = alert_tree
-    filtered_alerts.append(alert)
+      filtered_alerts.append(alert_cpy)
   return filtered_alerts
 
 

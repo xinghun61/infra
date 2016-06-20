@@ -26,8 +26,8 @@ class GatekeeperExtrasTest(unittest.TestCase):
       'infra.services.builder_alerts.gatekeeper_extras.would_close_tree',
       lambda config, builder, step: True)
   @mock.patch(
-      'infra.services.builder_alerts.gatekeeper_extras.tree_for_master',
-      lambda master_url, trees_config: 'test-tree')
+      'infra.services.builder_alerts.gatekeeper_extras.trees_for_master',
+      lambda master_url, trees_config: ['test-tree'])
   def test_apply_gatekeeper_rules(self):
     gatekeeper_cfg = {
         'http://build.chromium.org/p/chromium': {'key': 'value'},
@@ -132,27 +132,36 @@ class GatekeeperExtrasTest(unittest.TestCase):
          'would_close_tree': True},
         filtered_alerts)
 
-  def test_tree_for_master_returns_tree_name(self):
+  def test_trees_for_master_returns_tree_name(self):
     gatekeeper_trees = {
         'chromium': {'masters': [
-            'https://build.chromium.org/p/chromium.linux',
+            'https://build.chromium.org/p/chromium.android',
             'https://build.chromium.org/p/chromium.gpu',
         ]},
         'non-closers': {'masters': [
             'https://build.chromium.org/p/chromium.lkgr',
+        ]},
+        'android': {'masters': [
+            'https://build.chromium.org/p/chromium.android',
         ]}
+
     }
 
-    self.assertEqual('chromium', gatekeeper_extras.tree_for_master(
+    self.assertEqual(['chromium'], gatekeeper_extras.trees_for_master(
         'https://build.chromium.org/p/chromium.gpu', gatekeeper_trees))
-    self.assertEqual('non-closers', gatekeeper_extras.tree_for_master(
+    self.assertEqual(['non-closers'], gatekeeper_extras.trees_for_master(
         'https://build.chromium.org/p/chromium.lkgr', gatekeeper_trees))
+    self.assertEqual(
+        sorted(['chromium', 'android']), sorted(
+            gatekeeper_extras.trees_for_master(
+                'https://build.chromium.org/p/chromium.android',
+                gatekeeper_trees)))
 
   @mock.patch( # pragma: no cover (decorators are run before coverage is loaded)
       'infra.services.builder_alerts.buildbot.master_name_from_url',
       lambda url: 'foo.bar')
-  def test_tree_for_master_falls_back_to_master_name(self):
-    self.assertEqual('foo.bar', gatekeeper_extras.tree_for_master(
+  def test_trees_for_master_falls_back_to_master_name(self):
+    self.assertEqual(['foo.bar'], gatekeeper_extras.trees_for_master(
         'https://build.chromium.org/p/foo.bar', {}))
 
   def test_fetch_master_urls(self):
