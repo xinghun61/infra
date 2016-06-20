@@ -54,15 +54,15 @@ func TestValidation(t *testing.T) {
 			bad((*Issue)(nil))
 			bad(&Issue{})
 			bad(&Issue{
-				Status: StatusStarted,
+				Status:    StatusStarted,
 				BlockedOn: []*IssueRef{{}},
 			})
 			bad(&Issue{
 				Status: StatusStarted,
-				Cc: []*AtomPerson{{Name: "a"}, {Name: "a"}},
+				Cc:     []*AtomPerson{{Name: "a"}, {Name: "a"}},
 			})
 			bad(&Issue{
-				Status: StatusStarted,
+				Status:     StatusStarted,
 				Components: []string{""},
 			})
 			bad(&Issue{
@@ -71,7 +71,7 @@ func TestValidation(t *testing.T) {
 			})
 			bad(&Issue{
 				Status: StatusStarted,
-				Owner: &AtomPerson{},
+				Owner:  &AtomPerson{},
 			})
 		})
 		Convey("InsertIssueRequest", func() {
@@ -92,9 +92,9 @@ func TestValidation(t *testing.T) {
 			bad(&InsertIssueRequest{})
 			bad(&InsertIssueRequest{
 				ProjectId: "chromium",
-				Issue: &Issue {
+				Issue: &Issue{
 					Status: StatusStarted,
-					Id: 1,
+					Id:     1,
 				},
 			})
 		})

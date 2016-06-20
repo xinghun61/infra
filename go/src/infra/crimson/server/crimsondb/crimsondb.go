@@ -1,6 +1,11 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 package crimsondb
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
@@ -11,6 +16,8 @@ import (
 	"golang.org/x/net/context"
 
 	_ "github.com/go-sql-driver/mysql"
+
+	"infra/crimson/proto"
 )
 
 type IPRangeRow struct {
@@ -51,8 +58,6 @@ func HexStringToIP(hexIP string) net.IP {
 
 func InsertIPRangeRows(ctx context.Context, rows []IPRangeRow) {
 	db := ctx.Value("dbHandle").(*sql.DB)
-	// TODO(pgervais): validate input data to avoid SQL injection.
-	// TODO(pgervais): add a transaction.
 	// TODO(pgervais): return the number of rows inserted (see row_count in mysql)
 
 	values := make([]string, 0)
@@ -79,29 +84,45 @@ func InsertIPRangeRows(ctx context.Context, rows []IPRangeRow) {
 	}
 }
 
-func SelectIPRange(ctx context.Context, vlan string, site string) []IPRangeRow {
+func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) []IPRangeRow {
 	db := ctx.Value("dbHandle").(*sql.DB)
 	var rows *sql.Rows
 	var err error
 
-	switch {
-	case site != "" && vlan != "":
-		rows, err = db.Query(
-			"SELECT vlan, site, start_ip, end_ip FROM ip_range WHERE vlan=? AND site=?",
-			vlan, site)
-	case site == "" && vlan != "":
-		rows, err = db.Query(
-			"SELECT vlan, site, start_ip, end_ip FROM ip_range WHERE vlan=?", vlan)
-	case site != "" && vlan == "":
-		rows, err = db.Query(
-			"SELECT vlan, site, start_ip, end_ip FROM ip_range WHERE site=?", site)
-	default:
-		// TODO(pgervais): propagate this error to the caller.
-		logging.Errorf(ctx, "vlan and site are both empty.")
-		return []IPRangeRow{}
+	vlan := req.Vlan
+	site := req.Site
+
+	statement := bytes.Buffer{}
+	params := []interface{}{}
+
+	statement.WriteString("SELECT vlan, site, start_ip, end_ip FROM ip_range")
+
+	if site != "" || vlan != "" {
+		statement.WriteString("\nWHERE ")
 	}
 
+	if site != "" {
+		statement.WriteString("site=?")
+		params = append(params, site)
+	}
+
+	if vlan != "" {
+		if site != "" {
+			statement.WriteString("\nAND ")
+		}
+		statement.WriteString("vlan=?")
+		params = append(params, vlan)
+	}
+
+	if req.Limit > 0 {
+		statement.WriteString("\nLIMIT ?")
+		params = append(params, req.Limit)
+	}
+
+	rows, err = db.Query(statement.String(), params...)
+
 	if err != nil {
+		// TODO(pgervais): propagate the error up the stack.
 		logging.Errorf(ctx, "%s", err)
 		return []IPRangeRow{}
 	}

@@ -8,15 +8,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/luci/luci-go/common/errors"
 	"golang.org/x/net/context"
 
-	. "github.com/smartystreets/goconvey/convey"
 	. "github.com/luci/luci-go/common/testing/assertions"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestEndpointsClient(t *testing.T) {
@@ -60,7 +60,7 @@ func TestEndpointsClient(t *testing.T) {
 			}))
 			defer insertIssueServer.Close()
 
-			httpClient := &http.Client{Timeout:time.Second}
+			httpClient := &http.Client{Timeout: time.Second}
 			client := NewEndpointsClient(httpClient, insertIssueServer.URL)
 			actualRes, err := client.InsertIssue(ctx, req)
 			So(err, ShouldBeNil)
@@ -70,14 +70,14 @@ func TestEndpointsClient(t *testing.T) {
 		Convey("Insert issue with invalid request", func(c C) {
 			req := &InsertIssueRequest{
 				Issue: &Issue{
-					Summary:     "Write tests for monorail client",
-					Author:      &AtomPerson{"seanmccullough@chromium.org"},
-					Owner:       &AtomPerson{"nodir@chromium.org"},
-					Status:      StatusStarted,
+					Summary: "Write tests for monorail client",
+					Author:  &AtomPerson{"seanmccullough@chromium.org"},
+					Owner:   &AtomPerson{"nodir@chromium.org"},
+					Status:  StatusStarted,
 				},
 			}
 
-			httpClient := &http.Client{Timeout:time.Second}
+			httpClient := &http.Client{Timeout: time.Second}
 			client := NewEndpointsClient(httpClient, "https://example.com")
 			_, err := client.InsertIssue(ctx, req)
 			So(err, ShouldErrLike, "no projectId")

@@ -34,8 +34,9 @@ type addVlanRun struct {
 
 type queryVlanRun struct {
 	commonFlags
-	site string
-	vlan string
+	site  string
+	vlan  string
+	limit int
 }
 
 var (
@@ -64,6 +65,8 @@ var (
 				"crimson-staging.appspot.com", "Host to talk to")
 			c.Flags.StringVar(&c.site, "site", "", "Name of the site")
 			c.Flags.StringVar(&c.vlan, "vlan", "", "Name of the vlan")
+			c.Flags.IntVar(&c.limit, "limit", 10,
+				"Maximum number of results to return")
 			return c
 		},
 	}
@@ -120,24 +123,23 @@ func (c *queryVlanRun) Run(a subcommands.Application, args []string) int {
 	ctx := cli.GetContext(a, c)
 	client := c.newCrimsonClient(ctx)
 
-	if c.vlan == "" && c.site == "" {
-		fmt.Fprintln(os.Stderr,
-			"At least one of --vlan or --site options must be provided.")
-		return 1
-	}
-
 	req := &crimson.IPRangeQuery{
-		Site: c.site,
-		Vlan: c.vlan,
+		Site:  c.site,
+		Vlan:  c.vlan,
+		Limit: uint32(c.limit),
 	}
 
-	res, err := client.ReadIPRange(ctx, req)
+	results, err := client.ReadIPRange(ctx, req)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
 
-	fmt.Println(res)
+	fmt.Println("site \tvlan \t IP range")
+	for _, ipRange := range results.Ranges {
+		fmt.Printf("%s \t %s \t%s-%s\n",
+			ipRange.Site, ipRange.Vlan, ipRange.StartIp, ipRange.EndIp)
+	}
 	return 0
 }
 

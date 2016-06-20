@@ -29,4 +29,5 @@ message IPRangeStatus {
 message IPRangeQuery {
   string site = 1;
   string vlan = 2;
+  uint32 limit = 3;
 }

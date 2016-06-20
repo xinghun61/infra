@@ -31,7 +31,7 @@ func (s *crimsonService) CreateIPRange(ctx context.Context, req *crimson.IPRange
 
 func (s *crimsonService) ReadIPRange(ctx context.Context, req *crimson.IPRangeQuery) (*crimson.IPRanges, error) {
 
-	rows := crimsondb.SelectIPRange(ctx, req.Vlan, req.Site)
+	rows := crimsondb.SelectIPRange(ctx, req)
 
 	ret := crimson.IPRanges{}
 	for _, row := range rows {
