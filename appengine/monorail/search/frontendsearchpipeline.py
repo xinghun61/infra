@@ -719,7 +719,7 @@ def _StartBackendSearchCall(
       mr, urls.BACKEND_SEARCH,
       skip_filtering=True,  # TODO(jrobbins): remove after next release.
       projects=','.join(query_project_names),
-      start=0, num=mr.start + mr.num,
+      q=mr.query, start=0, num=mr.start + mr.num,
       logged_in_user_id=mr.auth.user_id or 0,
       me_user_id=mr.me_user_id, shard_id=shard_id,
       invalidation_timestep=invalidation_timestep))
