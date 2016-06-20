@@ -17,6 +17,7 @@ from collections import defaultdict
 from features import filterrules_helpers
 from framework import sql
 from infra_libs import ts_mon
+from services import spam_helpers
 
 from apiclient.discovery import build
 from oauth2client.client import GoogleCredentials
@@ -262,12 +263,13 @@ class SpamService(object):
         settings.classifier_model_id,
         body).execute()
 
-  def ClassifyIssue(self, issue, firstComment, reporter_email):
+  def ClassifyIssue(self, issue, firstComment, author_email):
     """Classify an issue as either spam or ham.
 
     Args:
       issue: the Issue.
       firstComment: the first Comment on issue.
+      author_email: the email address of the Issue reporter.
 
     Returns a JSON dict of classifier prediction results from
     the Cloud Prediction API.
@@ -276,25 +278,26 @@ class SpamService(object):
     result = {'outputLabel': 'ham',
               'outputMulti': [{'label':'ham', 'score': '1.0'}]}
 
-    if reporter_email is not None and reporter_email.endswith(
+    if author_email is not None and author_email.endswith(
         settings.spam_whitelisted_suffixes):
-      logging.info('%s excempted from spam filtering', reporter_email)
+      logging.info('%s excempted from spam filtering', author_email)
       return result
 
     if not self.prediction_service:
       logging.error("prediction_service not initialized.")
       return result
 
+    features = spam_helpers.GenerateFeatures(issue.summary,
+        firstComment.content, author_email, settings.spam_feature_hashes,
+        settings.spam_whitelisted_suffixes)
+ 
     remaining_retries = 3
     while remaining_retries > 0:
       try:
         result = self._predict(
              {
                'input': {
-                 'csvInstance': [
-                   issue.summary,
-                   firstComment.content,
-                 ],
+                 'csvInstance': features,
                }
              }
            )
@@ -327,18 +330,17 @@ class SpamService(object):
       logging.error("prediction_service not initialized.")
       return result
 
+    features = spam_helpers.GenerateFeatures('', comment_content,
+        author_email, settings.spam_feature_hashes,
+        settings.spam_whitelisted_suffixes)
+ 
     remaining_retries = 3
     while remaining_retries > 0:
       try:
         result = self._predict(
              {
                'input': {
-                 'csvInstance': [
-                    # We re-use the issue classifier here, with a blank
-                    # description and use the comment content as the body.
-                    '',
-                    comment_content,
-                 ],
+                 'csvInstance': features,
                }
              }
            )

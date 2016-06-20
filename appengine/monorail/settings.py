@@ -264,7 +264,7 @@ if dev_mode:
 else:
   classifier_project_id = app_identity.get_application_id()
 
-classifier_model_id = 'spam'
+classifier_model_id = '20160616'
 
 # Number of distinct users who have to flag an issue before it
 # is autmatically removed as spam.
@@ -290,6 +290,10 @@ spam_whitelisted_suffixes = (
   '@google.com',
   '@webrtc.org',
 )
+
+# The nubmer of hash buckets to use when vectorizing text from Issues and
+# Comments. This should be the same value that the model was trained with.
+spam_feature_hashes = 100
 
 ratelimiting_enabled = False
 

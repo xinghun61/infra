@@ -51,6 +51,16 @@ def _HashFeatures(content, num_features):
 
 def GenerateFeatures(summary, description, author_email, num_hashes,
       whitelisted_email_suffixes):
+  """ Generates a vector of features for a given issue or comment.
+
+  Args:
+    summary: The summary text of the Issue.
+    description: The description of the Issue or the content of the Comment.
+    author_email: The email address of the Issue or Comment author.
+    num_hashes: The number of feature hashes to generate.
+    whitelisted_email_suffixes: The set of email address suffixes to ignore.
+  """
+
   # Compression ratio lets us know how much repeated data there is.
   uncompressed_summary_len = len(summary)
   uncompressed_description_len = len(description)
