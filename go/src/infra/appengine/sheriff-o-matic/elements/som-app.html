@@ -202,8 +202,8 @@
         },
         _alertsGroups: {
           type: Array,
-          computed: '_computeAlertsGroup(_tree, _trees)',
-          observer: '_alertsGroupChanged',
+          computed: '_computeAlertsGroups(_tree, _trees)',
+          observer: '_alertsGroupsChanged',
         },
         // We don't convert the array into an object because the polymer data
         // binding doesn't seem to like mutations to an object, but it's fine
@@ -280,7 +280,7 @@
       _refresh: function() {
         this._refreshPosition  = this.$.mainHeaderPanel.$.mainContainer.scrollTop;
         this.$.annotations.generateRequest();
-        this._alertsGroupChanged(this._alertsGroups);
+        this._alertsGroupsChanged(this._alertsGroups);
       },
 
       _refreshAsync: function() {
@@ -300,7 +300,7 @@
         return pathParts[1];
       },
 
-      _computeAlertsGroup: function(tree, trees) {
+      _computeAlertsGroups: function(tree, trees) {
         if (tree === '') {
           return [];
         }
@@ -373,12 +373,12 @@
         return 'Unknown';
       },
 
-      _alertsGroupChanged: function(alertsGroup) {
-        this.set('_activeRequests', this._activeRequests + alertsGroup.length);
+      _alertsGroupsChanged: function(alertsGroups) {
+        this.set('_activeRequests', this._activeRequests + alertsGroups.length);
         this.set('_alertsData', {});
 
         // TODO: handle webpage offline throwing an exception
-        alertsGroup.forEach((group) => {
+        alertsGroups.forEach((group) => {
           fetch('/api/v1/alerts/' + group, {credentials: 'include'}).then((response) => {
             // TODO: handle alerts not found
             this.set('_activeRequests', this._activeRequests - 1);
