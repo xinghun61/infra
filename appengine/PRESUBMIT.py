@@ -144,7 +144,7 @@ def GetAppEngineLibraryPaths(input_api, appengine_env_path):  # pragma: no cover
 
 # Forked with prejudice from depot_tools/presubmit_canned_checks.py
 def PylintFiles(input_api, output_api, files, pylint_root, disabled_warnings,
-      extra_python_paths):  # pragma: no cover
+                extra_python_paths):  # pragma: no cover
   input_api.logging.debug('Running pylint on: %s', files)
 
   # FIXME: depot_tools should be right next to infra, however DEPS
@@ -174,7 +174,8 @@ def PylintFiles(input_api, output_api, files, pylint_root, disabled_warnings,
 
   # Pass args via stdin, because windows (command line limit).
   return input_api.Command(
-      name='Pylint (%s files under %s)' % (len(files), pylint_root),
+      name=('Pylint (%s files%s)' % (
+            len(files), ' under %s' % pylint_root if pylint_root else '')),
       cmd=[input_api.python_executable,
            pylint_path,
            '--args-on-stdin'],
@@ -182,7 +183,7 @@ def PylintFiles(input_api, output_api, files, pylint_root, disabled_warnings,
       message=output_api.PresubmitError)
 
 
-def PylintChecks(input_api, output_api):  # pragma: no cover
+def PylintChecks(input_api, output_api, only_changed):  # pragma: no cover
   infra_root = input_api.os_path.dirname(input_api.PresubmitLocalPath())
 
   # DEPS specifies depot_tools, google_appengine as siblings of infra.
@@ -204,9 +205,6 @@ def PylintChecks(input_api, output_api):  # pragma: no cover
   appengine_lib_paths = GetAppEngineLibraryPaths(input_api, appengine_env_path)
   extra_syspaths = [appengine_env_path, venv_path] + appengine_lib_paths
 
-  all_python_files = FetchAllFiles(input_api, white_list, black_list)
-
-  root_to_paths = GroupPythonFilesByRoot(input_api, all_python_files)
   source_filter = lambda path: input_api.FilterSourceFile(path,
       white_list=white_list, black_list=black_list)
 
@@ -219,31 +217,45 @@ def PylintChecks(input_api, output_api):  # pragma: no cover
     if not rel.startswith('..'):
       changed_py_files.append(abs_path[len(input_api.PresubmitLocalPath())+1:])
 
+  if only_changed:
+    if changed_py_files:
+      input_api.logging.info('Running pylint on %d files',
+                             len(changed_py_files))
+      return [PylintFiles(input_api, output_api, changed_py_files, None,
+                          DISABLED_PYLINT_WARNINGS, extra_syspaths)]
+    else:
+      return []
+
+  all_python_files = FetchAllFiles(input_api, white_list, black_list)
+  root_to_paths = GroupPythonFilesByRoot(input_api, all_python_files)
   dirty_roots = DirtyRootsFromAffectedFiles(changed_py_files, root_to_paths)
 
   tests = []
   for root_path in sorted(dirty_roots):
     python_files = root_to_paths[root_path]
+    if python_files:
+      input_api.logging.info('Running appengine pylint on %d files under %s',
+          len(python_files), root_path)
+      syspaths = extra_syspaths
 
-    input_api.logging.info('Running appengine pylint on %d files under %s',
-        len(python_files), root_path)
-    syspaths = extra_syspaths
-
-    tests.append(PylintFiles(input_api, output_api, python_files, root_path,
-      DISABLED_PYLINT_WARNINGS, syspaths))
+      tests.append(PylintFiles(input_api, output_api, python_files, root_path,
+        DISABLED_PYLINT_WARNINGS, syspaths))
   return tests
 
 
-def CommonChecks(input_api, output_api):  # pragma: no cover
-  output = input_api.RunTests(PylintChecks(input_api, output_api))
-  return output
+def CommonChecks(_input_api, _output_api):  # pragma: no cover
+  return []
 
 
 def CheckChangeOnUpload(input_api, output_api):  # pragma: no cover
   output = CommonChecks(input_api, output_api)
+  output.extend(input_api.RunTests(PylintChecks(
+    input_api, output_api, only_changed=True)))
   return output
 
 
 def CheckChangeOnCommit(input_api, output_api):  # pragma: no cover
   output = CommonChecks(input_api, output_api)
+  output.extend(input_api.RunTests(PylintChecks(
+    input_api, output_api, only_changed=False)))
   return output
