@@ -42,6 +42,14 @@ class Flake(ndb.Model):
   occurrences = ndb.KeyProperty(FlakyRun, repeated=True)
   comment = ndb.StringProperty(default='')
 
+  # The comment above suggests that test flakes are recorded as
+  # step_name:test_name, which is not the case. We only record test_name.
+  # However, before we can change this, we would like to accumulate some data to
+  # understand whether flake tests are frequently reported under varying step
+  # names and also to collect data needed to batch-update existing Flake
+  # entities.
+  parent_step_names = ndb.StringProperty(repeated=True)
+
   # Used so we can quickly query and sort by number of occurrences per time
   # range.
   count_hour = ndb.IntegerProperty(default=0)
