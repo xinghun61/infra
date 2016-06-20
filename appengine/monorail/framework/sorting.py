@@ -262,7 +262,6 @@ def _MakeSingleSortKeyAccessor(
       return accessors[col_name]
 
   # Case 3. Anything else is assumed to be a label prefix or custom field.
-  # TODO(jrobbins): user-valued custom fields.  Find them at top of loop.
   fd_list = [
       fd for fd in config.field_defs
       if (fd.field_name.lower() == col_name and
