@@ -229,8 +229,8 @@ td u:hover { text-decoration: underline; }
     padding-left: 1em;
 }
 
-.attachments { width:33%; border-top:2px solid #999; padding-top: 3px; margin-left: .7em;}
-.attachments table { margin-bottom: 0.75em; }
+.attachments { width:33%; margin-left: .7em;}
+.attachments table { background: #f8f8f8; padding: 4px; margin: 8px; }
 .attachments table tr td { padding: 0; margin: 0; font-size: 95%; }
 .preview { border: 2px solid #c3d9ff; padding: 1px; }
 .preview:hover { border: 2px solid blue; }

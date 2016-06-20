@@ -36,7 +36,7 @@
          </td>
 
       [if-any arg2]
-         <td valign="top">
+         <td valign="top" align="right">
           <form action="delAttachment.do" method="post" style="padding-left:1em">
             <input type="hidden" name="token" value="[attachment_form_token]">
             [# TODO(jrobbins): add hidden fields to maintain navigational state, e.g., colspec, q, sort, start, num]
