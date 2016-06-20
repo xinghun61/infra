@@ -484,7 +484,7 @@
       _sendAnnotation: function(key, type, change) {
         this.$.annotationPost.body = JSON.stringify(change);
         this.$.annotationPost.url = '/api/v1/annotations/' + key + '/' + type;
-        this.$.annotationPost.generateRequest();
+        return this.$.annotationPost.generateRequest();
       },
 
       _keyForAlert: function(alert) {
@@ -517,10 +517,14 @@
       },
 
       _saveBug: function() {
+        // TODO(add proper error handling)
         this._sendAnnotation(
           this._keyForAlert(this._bugModel), 'add', {
             bugs: [this.$.bug.value]
-          });
+          }
+        ).completes.then(() => {
+          this.$.bug.value = '';
+        });
       },
 
       ////////////////////// Snooze ///////////////////////////
@@ -536,10 +540,13 @@
       },
 
       _snooze: function() {
+        // TODO(add proper error handling)
         this._sendAnnotation(
           this._keyForAlert(this._snoozeModel), 'add', {
             snoozeTime: Date.now() + ONE_MIN_MS * this.$.snoozeTime.value
-          });
+        ).completes.then(() => {
+          this.$.snoozeTime.value = '';
+        });
       },
 
     });
