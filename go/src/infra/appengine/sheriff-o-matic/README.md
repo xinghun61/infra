@@ -14,5 +14,5 @@ xvfb-run -a wct
 
 To deploy:
 ```
-gcloud preview app --project=google.com:sheriff-o-matic-staging deploy app.yaml
+./gae.py upload
 ```
