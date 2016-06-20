@@ -17,59 +17,66 @@ import (
 )
 
 func TestIPStringToHexString(t *testing.T) {
-	hexString := IPStringToHexString("192.168.0.1")
-	expected := "0xc0a80001"
-	if hexString != expected {
-		t.Error("Hex string is different from expected value:",
-			hexString, "vs", expected)
-	}
+	t.Parallel()
+	Convey("TestHexStringToIPString works", t, func() {
+		Convey("on 192.168.0.1", func() {
+			hexString := IPStringToHexString("192.168.0.1")
+			expected := "0xc0a80001"
+			So(hexString, ShouldEqual, expected)
+		})
 
-	hexString = IPStringToHexString("0.0.0.0")
-	expected = "0x00000000"
-	if hexString != expected {
-		t.Error("Hex string is different from expected value:",
-			hexString, "vs", expected)
-	}
+		Convey("on 0.0.0.0", func() {
+			hexString := IPStringToHexString("0.0.0.0")
+			expected := "0x00000000"
+			So(hexString, ShouldEqual, expected)
+		})
+	})
 }
 
 func TestHexStringToIPString(t *testing.T) {
-	ipString := HexStringToIP("0x00000000").String()
-	expected := "0.0.0.0"
-	if ipString != expected {
-		t.Error("IP string is different from expected value:",
-			ipString, "vs", expected)
-	}
-
-	ipString = HexStringToIP("0xc0a80001").String()
-	expected = "192.168.0.1"
-	if ipString != expected {
-		t.Error("IP string is different from expected value:",
-			ipString, "vs", expected)
-	}
+	t.Parallel()
+	Convey("TestHexStringToIPString works", t, func() {
+		Convey("on 0x00000000", func() {
+			ipString := HexStringToIP("0x00000000").String()
+			expected := "0.0.0.0"
+			So(ipString, ShouldEqual, expected)
+		})
+		Convey("on 0xc0a80001", func() {
+			ipString := HexStringToIP("0xc0a80001").String()
+			expected := "192.168.0.1"
+			So(ipString, ShouldEqual, expected)
+		})
+		Convey("on 0XC0A80002", func() {
+			ipString := HexStringToIP("0XC0A80002").String()
+			expected := "192.168.0.2"
+			So(ipString, ShouldEqual, expected)
+		})
+	})
 }
 
 func TestIPStringToHexAndBack(t *testing.T) {
+	t.Parallel()
 	// Check that function which are supposed to be exact inverse actually are.
-	ip1 := "135.45.1.84"
-	ip2 := HexStringToIP(IPStringToHexString(ip1)).String()
-	if ip1 != ip2 {
-		t.Error("IP string is different from expected value:",
-			ip1, "vs", ip2)
-	}
+	Convey("HexStringToIP and IPStringToHexString are inverse of each other",
+		t, func() {
+			Convey("on 135.45.1.84", func() {
+				ip1 := "135.45.1.84"
+				ip2 := HexStringToIP(IPStringToHexString(ip1)).String()
+				So(ip1, ShouldEqual, ip2)
+			})
 
-	ip1 = "1.2.3.4"
-	ip2 = HexStringToIP(IPStringToHexString(ip1)).String()
-	if ip1 != ip2 {
-		t.Error("IP string is different from expected value:",
-			ip1, "vs", ip2)
-	}
+			Convey("on 1.2.3.4", func() {
+				ip1 := "1.2.3.4"
+				ip2 := HexStringToIP(IPStringToHexString(ip1)).String()
+				So(ip1, ShouldEqual, ip2)
+			})
 
-	ip1 = "255.255.255.255"
-	ip2 = HexStringToIP(IPStringToHexString(ip1)).String()
-	if ip1 != ip2 {
-		t.Error("IP string is different from expected value:",
-			ip1, "vs", ip2)
-	}
+			Convey("on 255.255.255.255", func() {
+				ip1 := "255.255.255.255"
+				ip2 := HexStringToIP(IPStringToHexString(ip1)).String()
+				So(ip1, ShouldEqual, ip2)
+			})
+		})
 }
 
 func TestSelectIPRange(t *testing.T) {
