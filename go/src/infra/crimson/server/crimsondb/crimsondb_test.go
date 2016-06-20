@@ -12,7 +12,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"infra/crimson/proto"
+	crimson "infra/crimson/proto"
 	"infra/crimson/server/sqlmock"
 )
 
@@ -161,6 +161,39 @@ func TestSelectIPRange(t *testing.T) {
 					"LIMIT ?")
 				So(query.Query, ShouldEqual, expected)
 				So(query.Args, ShouldResemble, []driver.Value{int64(14)})
+			})
+		})
+	})
+}
+
+func TestInsertIPRange(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	db, conn := sqlmock.NewMockDB()
+	ctx = context.WithValue(ctx, "dbHandle", db)
+
+	Convey("InsertIPRange", t, func() {
+		Convey("with correct values", func() {
+			InsertIPRange(ctx,
+				&crimson.IPRange{
+					Site:    "site0",
+					Vlan:    "vlan0",
+					StartIp: "1.2.3.4",
+					EndIp:   "1.2.3.20"})
+			query, err := conn.PopOldestQuery()
+			Convey("generates a SQL query", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("generates the correct query", func() {
+				expected := ("INSERT INTO ip_range (site, vlan, start_ip, end_ip)\n" +
+					"VALUES (?, ?, ?, ?)")
+				So(query.Query, ShouldEqual, expected)
+				So(query.Args, ShouldResemble,
+					[]driver.Value{
+						"site0",
+						"vlan0",
+						"0x01020304",
+						"0x01020314"})
 			})
 		})
 	})

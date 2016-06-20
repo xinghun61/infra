@@ -10,26 +10,27 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
-	"strings"
 
 	"github.com/luci/luci-go/common/logging"
 	"golang.org/x/net/context"
 
+	// This simply registers the mysql driver.
 	_ "github.com/go-sql-driver/mysql"
 
 	"infra/crimson/proto"
 )
 
+// IPRangeRow describes a row in the ip_range table.
 type IPRangeRow struct {
 	Site    string
 	Vlan    string
-	StartIp string
-	EndIp   string
+	StartIP string
+	EndIP   string
 }
 
-func (this IPRangeRow) String() string {
+func (row IPRangeRow) String() string {
 	return fmt.Sprintf("%s/%s: %s-%s",
-		this.Site, this.Vlan, this.StartIp, this.EndIp)
+		row.Site, row.Vlan, row.StartIP, row.EndIP)
 }
 
 // IPStringToHexString converts an IP address into a hex string suitable for MySQL.
@@ -56,34 +57,24 @@ func HexStringToIP(hexIP string) net.IP {
 	return netIP
 }
 
-func InsertIPRangeRows(ctx context.Context, rows []IPRangeRow) {
+// InsertIPRange adds a new IP range in the corresponding table.
+func InsertIPRange(ctx context.Context, row *crimson.IPRange) error {
 	db := ctx.Value("dbHandle").(*sql.DB)
-	// TODO(pgervais): return the number of rows inserted (see row_count in mysql)
 
-	values := make([]string, 0)
-	for _, row := range rows {
-		// FIXME(pgervais): THIS IS SUSCEPTIBLE TO SQL INJECTION.
-		if row.StartIp != "" && row.EndIp != "" {
-			values = append(values,
-				fmt.Sprintf("('%s', '%s', '%s', '%s')",
-					row.Site, row.Vlan,
-					IPStringToHexString(row.StartIp),
-					IPStringToHexString(row.EndIp)))
-		}
+	statement := ("INSERT INTO ip_range (site, vlan, start_ip, end_ip)\n" +
+		"VALUES (?, ?, ?, ?)")
+	_, err := db.Exec(statement,
+		row.Site,
+		row.Vlan,
+		IPStringToHexString(row.StartIp),
+		IPStringToHexString(row.EndIp))
+	if err != nil {
+		logging.Errorf(ctx, "IP range insertion failed. %s", err)
 	}
-	if len(values) > 0 {
-		statement := "insert into ip_range (site, vlan, start_ip, end_ip) values " +
-			strings.Join(values, ",")
-		_, err := db.Exec(statement)
-		if err != nil {
-			logging.Errorf(ctx, "IP range insertion failed. %s", err)
-			return
-		}
-	} else {
-		logging.Infof(ctx, "No IP range provided")
-	}
+	return err
 }
 
+// SelectIPRange returns ip ranges filtered by values in req.
 func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) []IPRangeRow {
 	db := ctx.Value("dbHandle").(*sql.DB)
 	var rows *sql.Rows
@@ -127,18 +118,19 @@ func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) []IPRangeRow 
 		return []IPRangeRow{}
 	}
 
-	ipRanges := make([]IPRangeRow, 0)
+	var ipRanges []IPRangeRow
+
 	for rows.Next() {
-		var startIp, endIp string
+		var startIP, endIP string
 		ipRange := IPRangeRow{}
 		err := rows.Scan(
-			&ipRange.Vlan, &ipRange.Site, &startIp, &endIp)
+			&ipRange.Vlan, &ipRange.Site, &startIP, &endIP)
 		if err != nil {
 			logging.Errorf(ctx, "%s", err)
 			return []IPRangeRow{}
 		}
-		ipRange.StartIp = HexStringToIP(startIp).String()
-		ipRange.EndIp = HexStringToIP(endIp).String()
+		ipRange.StartIP = HexStringToIP(startIP).String()
+		ipRange.EndIP = HexStringToIP(endIP).String()
 		ipRanges = append(ipRanges, ipRange)
 	}
 	err = rows.Err()
@@ -149,6 +141,7 @@ func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) []IPRangeRow 
 	return ipRanges
 }
 
+// GetDBHandle returns a handle to the Cloud SQL instance used by this deployment.
 func GetDBHandle() (*sql.DB, error) {
 	// TODO(pgervais): do not hard-code the name of the database.
 	return sql.Open("mysql", "root@cloudsql(crimson-staging:crimson-staging)/crimson")

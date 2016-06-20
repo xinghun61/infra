@@ -15,14 +15,7 @@ type crimsonService struct{}
 
 func (s *crimsonService) CreateIPRange(ctx context.Context, req *crimson.IPRange) (*crimson.IPRangeStatus, error) {
 
-	row := crimsondb.IPRangeRow{
-		Site:    req.Site,
-		Vlan:    req.Vlan,
-		StartIp: req.StartIp,
-		EndIp:   req.EndIp,
-	}
-
-	crimsondb.InsertIPRangeRows(ctx, []crimsondb.IPRangeRow{row})
+	crimsondb.InsertIPRange(ctx, req)
 
 	return &crimson.IPRangeStatus{
 		Error: "no error",
@@ -40,8 +33,8 @@ func (s *crimsonService) ReadIPRange(ctx context.Context, req *crimson.IPRangeQu
 			&crimson.IPRange{
 				Site:    row.Site,
 				Vlan:    row.Vlan,
-				StartIp: row.StartIp,
-				EndIp:   row.EndIp,
+				StartIp: row.StartIP,
+				EndIp:   row.EndIP,
 			})
 	}
 	return &ret, nil
