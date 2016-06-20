@@ -209,14 +209,16 @@ class NoReplyAddressTest(unittest.TestCase):
   def testWithCommenter(self):
     commenter_view = framework_views.UserView(111L, 'user@example.com', True)
     self.assertEqual(
-        'user@example.com via Monorail <no_reply@testbed-test.appspotmail.com>',
+        'user at example.com via Monorail '
+        '<no_reply@testbed-test.appspotmail.com>',
         emailfmt.NoReplyAddress(
             commenter_view=commenter_view, reveal_addr=True))
 
   def testObscuredCommenter(self):
     commenter_view = framework_views.UserView(111L, 'user@example.com', True)
     self.assertEqual(
-        'u...@example.com via Monorail <no_reply@testbed-test.appspotmail.com>',
+        'u... at example.com via Monorail '
+        '<no_reply@testbed-test.appspotmail.com>',
         emailfmt.NoReplyAddress(
             commenter_view=commenter_view, reveal_addr=False))
 
@@ -224,7 +226,15 @@ class NoReplyAddressTest(unittest.TestCase):
 class FormatFromAddrTest(unittest.TestCase):
 
   def setUp(self):
-    self.project = project_pb2.Project(project_name='proj')
+    self.project = project_pb2.Project(project_name='monorail')
+    self.old_send_email_as = settings.send_email_as
+    settings.send_email_as = 'monorail@chromium.org'
+    self.old_send_noreply_email_as = settings.send_noreply_email_as
+    settings.send_noreply_email_as = 'monorail+noreply@chromium.org'
+
+  def tearDown(self):
+    self.old_send_email_as = settings.send_email_as
+    self.old_send_noreply_email_as = settings.send_noreply_email_as
 
   def testNoCommenter(self):
     self.assertEqual(settings.send_email_as,
@@ -237,14 +247,14 @@ class FormatFromAddrTest(unittest.TestCase):
   def testWithCommenter(self):
     commenter_view = framework_views.UserView(111L, 'user@example.com', True)
     self.assertEqual(
-        'user@example.com via Monorail <%s>' % settings.send_email_as,
+        'user at example.com via Monorail <monorail+v1.111@chromium.org>',
         emailfmt.FormatFromAddr(
             self.project, commenter_view=commenter_view, reveal_addr=True))
 
   def testObscuredCommenter(self):
     commenter_view = framework_views.UserView(111L, 'user@example.com', True)
     self.assertEqual(
-        'u...@example.com via Monorail <%s>' % settings.send_email_as,
+        'u... at example.com via Monorail <monorail+v1.111@chromium.org>',
         emailfmt.FormatFromAddr(
             self.project, commenter_view=commenter_view, reveal_addr=False))
 
@@ -252,7 +262,7 @@ class FormatFromAddrTest(unittest.TestCase):
     johndoe_bot = '123456789@developer.gserviceaccount.com'
     commenter_view = framework_views.UserView(111L, johndoe_bot, True)
     self.assertEqual(
-        ('johndoe@example.com via Monorail <%s>' % settings.send_email_as),
+        ('johndoe at example.com via Monorail <monorail+v1.111@chromium.org>'),
         emailfmt.FormatFromAddr(
             self.project, commenter_view=commenter_view, reveal_addr=False))
 
