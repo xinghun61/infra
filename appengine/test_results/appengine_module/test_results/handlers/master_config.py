@@ -67,7 +67,7 @@ _masters = {
     },
     'tryserver.chromium.android': {
         'name': 'TryserverChromiumAndroid',
-        'group': ['Unused'],
+        'groups': ['Unused'],
     },
     'tryserver.chromium.linux': {
         'name': 'TryServerChromiumLinux',
