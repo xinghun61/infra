@@ -15,6 +15,9 @@ import webapp2
 
 MAX_GROUP_DISTANCE = datetime.timedelta(days=3)
 MAX_OCCURRENCES_DEFAULT = 50
+FLAKINESS_DASHBOARD_URL = (
+  'http://test-results.appspot.com/dashboards/flakiness_dashboard.html#'
+  'testType=%{normalized_step_name}s&tests=%{test_name}s')
 
 
 def RunsSortFunction(s):  # pragma: no cover
@@ -22,6 +25,14 @@ def RunsSortFunction(s):  # pragma: no cover
 
 def filterNone(elements):
   return [e for e in elements if e is not None]
+
+def _is_webkit_test_name(flake_name):
+  if '/' not in flake_name:
+    return False
+
+  file_name = flake_name.split('/')[-1]
+  return file_name.endswith(('.html', '.xml', '.xhtml', '.xht', '.pl', '.htm',
+                             '.php', '.svg', '.mht', '.pdf',))
 
 def show_all_flakes(flake, show_all):  # pragma: no cover
   from_index = 0 if show_all else -MAX_OCCURRENCES_DEFAULT
@@ -83,6 +94,17 @@ def show_all_flakes(flake, show_all):  # pragma: no cover
     'show_all_link': show_all_link,
     'time_now': datetime.datetime.utcnow(),
   }
+
+  # TODO(sergiyb): Currently we do not have information about which step a
+  # given flaky test is executed in, see http://crbug.com/621454. However,
+  # since flakiness is mostly found in webkit_tests, we can use a hard-coded
+  # step name if we discover that test name looks like WebKit test. This should
+  # change after we start recording step name for each test flake.
+  if not flake.is_step and _is_webkit_test_name(flake.name):
+    values['flakiness_dashboard_url'] = FLAKINESS_DASHBOARD_URL % {
+      'normalized_step_name': 'webkit_tests (with patch)',
+      'test_name': flake.name,
+    }
 
   return template.render('templates/all_flake_occurrences.html', values)
 
