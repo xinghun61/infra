@@ -21,17 +21,25 @@ type TestFailureAnalyzer struct {
 // running.
 func (a *TestFailureAnalyzer) Analyze(f stepFailure) (*StepAnalyzerResult, error) {
 	ret := &StepAnalyzerResult{}
+
+	name := f.step.Name
+	s := strings.Split(name, " ")
+
+	// Android tests add Instrumentation test as a prefix to the step name :/
+	if len(s) > 2 && s[0] == "Instrumentation" && s[1] == "test" {
+		name = s[2]
+		s = []string{name}
+	}
 	// Some test steps have names like "webkit_tests iOS(dbug)" so we look at the first
 	// term before the space, if there is one.
-	s := strings.Split(f.step.Name, " ")
-	if !strings.HasSuffix(s[0], "tests") {
+	if !(strings.HasSuffix(s[0], "tests") || strings.HasSuffix(s[0], "test_apk")) {
 		return ret, nil
 	}
 	ret.Recognized = true
 
-	testResults, err := a.Reader.TestResults(f.master, f.builderName, f.step.Name, f.build.Number)
+	testResults, err := a.Reader.TestResults(f.master, f.builderName, name, f.build.Number)
 	if err != nil {
-		ret.Reasons = append(ret.Reasons, f.step.Name)
+		ret.Reasons = append(ret.Reasons, name)
 		return ret, fmt.Errorf("Error fetching test results: %v", err)
 	}
 
