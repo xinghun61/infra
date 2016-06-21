@@ -544,6 +544,7 @@
         this._sendAnnotation(
           this._keyForAlert(this._snoozeModel), 'add', {
             snoozeTime: Date.now() + ONE_MIN_MS * this.$.snoozeTime.value
+          }
         ).completes.then(() => {
           this.$.snoozeTime.value = '';
         });
