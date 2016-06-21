@@ -7,8 +7,8 @@
 -- Create tables in the crimson DB.
 
 CREATE TABLE ip_range (
-  site varchar(20),
+  site varchar(20) NOT NULL,
   vlan varchar(20),
-  start_ip varbinary(16),
-  end_ip varbinary(16)
+  start_ip varbinary(16) NOT NULL,
+  end_ip varbinary(16) NOT NULL
 ) ENGINE=INNODB;

@@ -34,12 +34,15 @@ func (row IPRangeRow) String() string {
 }
 
 // IPStringToHexString converts an IP address into a hex string suitable for MySQL.
-func IPStringToHexString(ip string) string {
+func IPStringToHexString(ip string) (string, error) {
 	ipb := net.ParseIP(ip)
+	if ipb == nil {
+		return "", fmt.Errorf("parsing of IP address failed: %s", ip)
+	}
 	if ipb.DefaultMask() != nil {
 		ipb = ipb.To4()
 	}
-	return "0x" + hex.EncodeToString(ipb)
+	return "0x" + hex.EncodeToString(ipb), nil
 }
 
 // HexStringToIP converts an hex string returned by MySQL into a net.IP structure.
@@ -61,13 +64,29 @@ func HexStringToIP(hexIP string) net.IP {
 func InsertIPRange(ctx context.Context, row *crimson.IPRange) error {
 	db := ctx.Value("dbHandle").(*sql.DB)
 
+	if len(row.Site) == 0 {
+		logging.Errorf(ctx, "Received empty site value.")
+		return fmt.Errorf("Received empty site value.")
+	}
+
+	var err error
+	var startIP, endIP string
+	startIP, err = IPStringToHexString(row.StartIp)
+	if err != nil {
+		return err
+	}
+	endIP, err = IPStringToHexString(row.EndIp)
+	if err != nil {
+		return err
+	}
+
 	statement := ("INSERT INTO ip_range (site, vlan, start_ip, end_ip)\n" +
 		"VALUES (?, ?, ?, ?)")
-	_, err := db.Exec(statement,
+	_, err = db.Exec(statement,
 		row.Site,
 		row.Vlan,
-		IPStringToHexString(row.StartIp),
-		IPStringToHexString(row.EndIp))
+		startIP,
+		endIP)
 	if err != nil {
 		logging.Errorf(ctx, "IP range insertion failed. %s", err)
 	}

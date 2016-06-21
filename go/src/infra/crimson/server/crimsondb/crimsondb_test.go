@@ -20,17 +20,46 @@ func TestIPStringToHexString(t *testing.T) {
 	t.Parallel()
 	Convey("TestHexStringToIPString works", t, func() {
 		Convey("on 192.168.0.1", func() {
-			hexString := IPStringToHexString("192.168.0.1")
+			hexString, err := IPStringToHexString("192.168.0.1")
 			expected := "0xc0a80001"
 			So(hexString, ShouldEqual, expected)
+			So(err, ShouldEqual, nil)
 		})
 
 		Convey("on 0.0.0.0", func() {
-			hexString := IPStringToHexString("0.0.0.0")
+			hexString, err := IPStringToHexString("0.0.0.0")
 			expected := "0x00000000"
 			So(hexString, ShouldEqual, expected)
+			So(err, ShouldEqual, nil)
 		})
 	})
+
+	Convey("TestHexStringToIPString returns an error", t, func() {
+		Convey("on empty string", func() {
+			hexString, err := IPStringToHexString("")
+			So(hexString, ShouldEqual, "")
+			So(err, ShouldNotEqual, nil)
+		})
+
+		Convey("on non-numerical string with dots", func() {
+			hexString, err := IPStringToHexString("ah.ah.ah.ah")
+			So(hexString, ShouldEqual, "")
+			So(err, ShouldNotEqual, nil)
+		})
+
+		Convey("on non-numerical string", func() {
+			hexString, err := IPStringToHexString("aaaaaah")
+			So(hexString, ShouldEqual, "")
+			So(err, ShouldNotEqual, nil)
+		})
+
+		Convey("on '128.26.4'", func() {
+			hexString, err := IPStringToHexString("128.26.4")
+			So(hexString, ShouldEqual, "")
+			So(err, ShouldNotEqual, nil)
+		})
+	})
+
 }
 
 func TestHexStringToIPString(t *testing.T) {
@@ -61,19 +90,22 @@ func TestIPStringToHexAndBack(t *testing.T) {
 		t, func() {
 			Convey("on 135.45.1.84", func() {
 				ip1 := "135.45.1.84"
-				ip2 := HexStringToIP(IPStringToHexString(ip1)).String()
+				value, _ := IPStringToHexString(ip1)
+				ip2 := HexStringToIP(value).String()
 				So(ip1, ShouldEqual, ip2)
 			})
 
 			Convey("on 1.2.3.4", func() {
 				ip1 := "1.2.3.4"
-				ip2 := HexStringToIP(IPStringToHexString(ip1)).String()
+				value, _ := IPStringToHexString(ip1)
+				ip2 := HexStringToIP(value).String()
 				So(ip1, ShouldEqual, ip2)
 			})
 
 			Convey("on 255.255.255.255", func() {
 				ip1 := "255.255.255.255"
-				ip2 := HexStringToIP(IPStringToHexString(ip1)).String()
+				value, _ := IPStringToHexString(ip1)
+				ip2 := HexStringToIP(value).String()
 				So(ip1, ShouldEqual, ip2)
 			})
 		})
