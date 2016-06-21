@@ -17,7 +17,7 @@ class ScheduleTryJobPipeline(BasePipeline):
 
   def _GetBuildProperties(
       self, master_name, builder_name, build_number, good_revision,
-      bad_revision, try_job_type, compile_targets, suspected_revisions):
+      bad_revision, try_job_type, suspected_revisions):
     properties = {
         'recipe': 'findit/chromium/%s' % try_job_type,
         'good_revision': good_revision,
@@ -29,8 +29,6 @@ class ScheduleTryJobPipeline(BasePipeline):
 
     if try_job_type == TryJobType.COMPILE:
       properties['target_buildername'] = builder_name
-      if compile_targets:
-        properties['compile_targets'] = compile_targets
     else:  # try_job_type is 'test'.
       properties['target_testername'] = builder_name
 
@@ -50,10 +48,10 @@ class ScheduleTryJobPipeline(BasePipeline):
 
     properties = self._GetBuildProperties(
         master_name, builder_name, build_number, good_revision, bad_revision,
-        try_job_type, compile_targets, suspected_revisions)
+        try_job_type, suspected_revisions)
 
     if try_job_type == TryJobType.COMPILE:
-      additional_parameters = {}
+      additional_parameters = {'compile_targets': compile_targets}
     else:
       additional_parameters = {'tests': targeted_tests}
 
