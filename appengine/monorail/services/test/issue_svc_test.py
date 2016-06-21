@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is govered by a BSD-style
 # license that can be found in the LICENSE file or at
@@ -1213,6 +1214,11 @@ class IssueServiceTest(unittest.TestCase):
     self.assertEqual('content', comment.content)
     self.assertEqual([], comment.amendments)
     self.assertEqual([], comment.attachments)
+
+  def testMakeIssueComment_NonAscii(self):
+    _ = self.services.issue._MakeIssueComment(
+        789, 111L, 'content', timestamp=self.now,
+        inbound_message='sent by написа')
 
   def testCreateIssueComment(self):
     _issue_1, _issue_2 = self.SetUpGetIssues()

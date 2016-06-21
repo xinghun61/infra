@@ -65,7 +65,7 @@ class TrainingDataExportTask(servlet.Servlet):
         email = self.services.user.LookupUserEmail(mr.cnxn, issue.reporter_id)
         csv_writer.writerow([
             'spam' if issue.is_spam else 'ham',
-            fixed_summary, fixed_comment, email,
+            fixed_summary.encode('utf-8'), fixed_comment.encode('utf-8'), email,
         ])
 
       comments, _count = (
@@ -79,7 +79,7 @@ class TrainingDataExportTask(servlet.Servlet):
         csv_writer.writerow([
             'spam' if comment.is_spam else 'ham',
             # Comments don't have summaries, so it's blank:
-            '', fixed_comment, email
+            '', fixed_comment.encode('utf-8'), email
         ])
 
     self.response.body = json.dumps({
