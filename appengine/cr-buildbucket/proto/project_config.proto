@@ -75,6 +75,10 @@ message Swarming {
   // Swarming tasks are created only for builds for builders that are not
   // explicitly specified.
   repeated Builder builders = 5;
+
+  // Defines a default recipe for all builders in this bucket.
+  // A builder may override it or parts of it with something else.
+  optional Recipe common_recipe = 6;
 }
 
 // Defines one bucket in buildbucket.cfg

@@ -4,6 +4,8 @@
 
 import re
 
+from proto import project_config_pb2
+
 
 DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')
 
@@ -43,12 +45,18 @@ def validate_dimensions(field_name, dimensions, ctx):
         ctx.error('no value')
 
 
-def validate_recipe_cfg(recipe, ctx):
-  if not recipe.name:
+
+def validate_recipe_cfg(recipe, common_recipe, ctx):
+  common_recipe = common_recipe or project_config_pb2.Swarming.Recipe()
+  if not (recipe.name or common_recipe.name):
     ctx.error('name unspecified')
-  if not recipe.repository:
+  if not (recipe.repository or common_recipe.repository):
     ctx.error('repository unspecified')
-  for i, p in enumerate(recipe.properties):
+  validate_recipe_properties(recipe.properties, ctx)
+
+
+def validate_recipe_properties(properties, ctx):
+  for i, p in enumerate(properties):
     with ctx.prefix('property #%d: ', i + 1):
       if ':' not in p:
         ctx.error('does not have colon')
@@ -61,8 +69,8 @@ def validate_recipe_cfg(recipe, ctx):
             'do not specify buildername property; '
             'it is added by swarmbucket automatically')
 
-
-def validate_builder_cfg(builder, ctx, bucket_has_pool_dim=False):
+def validate_builder_cfg(
+    builder, ctx, bucket_has_pool_dim=False, common_recipe=None):
   if not builder.name:
     ctx.error('name unspecified')
 
@@ -76,11 +84,11 @@ def validate_builder_cfg(builder, ctx, bucket_has_pool_dim=False):
       'has no "pool" dimension. '
       'Either define it in the builder or in "common_dimensions"')
 
-  if not builder.HasField('recipe'):
+  if not builder.HasField('recipe') and not common_recipe:
     ctx.error('recipe unspecified')
   else:
     with ctx.prefix('recipe: '):
-      validate_recipe_cfg(builder.recipe, ctx)
+      validate_recipe_cfg(builder.recipe, common_recipe, ctx)
 
   if builder.priority < 0 or builder.priority > 200:
     ctx.error('priority must be in [0, 200] range; got %d', builder.priority)
@@ -95,10 +103,17 @@ def validate_cfg(swarming, ctx):
 
   validate_dimensions('common dimension', swarming.common_dimensions, ctx)
   has_pool_dim = has_pool_dimension(swarming.common_dimensions)
+  common_recipe = None
+  if swarming.HasField('common_recipe'):
+    common_recipe = swarming.common_recipe
+    with ctx.prefix('common_recipe: '):
+      validate_recipe_properties(swarming.common_recipe.properties, ctx)
 
   for i, b in enumerate(swarming.builders):
     with ctx.prefix('builder %s: ' % (b.name or '#%s' % (i + 1))):
-      validate_builder_cfg(b, ctx, bucket_has_pool_dim=has_pool_dim)
+      validate_builder_cfg(
+          b, ctx, bucket_has_pool_dim=has_pool_dim,
+          common_recipe=common_recipe)
 
 def has_pool_dimension(dimensions):
   return any(d.startswith('pool:') for d in dimensions)

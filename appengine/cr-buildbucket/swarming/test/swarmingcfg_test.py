@@ -15,16 +15,16 @@ Swarming = project_config_pb2.Swarming
 
 
 class SwarmingCfgTest(testing.AppengineTestCase):
-  def test_validate_config(self):
-    def test(cfg, expected_errors):
-      ctx = config_component.validation.Context()
-      swarmingcfg.validate_cfg(cfg, ctx)
-      self.assertEqual(
+  def cfg_test(self, cfg, expected_errors):
+    ctx = config_component.validation.Context()
+    swarmingcfg.validate_cfg(cfg, ctx)
+    self.assertEqual(
         map(config_test.errmsg, expected_errors),
         ctx.result().messages)
 
+  def test_valid(self):
     cfg = Swarming(
-      hostname='chromium-swam.appspot.com',
+      hostname='chromium-swarm.appspot.com',
       common_swarming_tags=['master:master.a'],
       common_dimensions=['cores:8', 'pool:default'],
       builders=[
@@ -36,14 +36,16 @@ class SwarmingCfgTest(testing.AppengineTestCase):
             repository='https://x.com',
             name='foo',
             properties=['a:b'],
-          )
+          ),
         ),
       ],
     )
-    test(cfg, [])
+    self.cfg_test(cfg, [])
 
-    test(Swarming(), ['hostname unspecified'])
+  def test_empty(self):
+    self.cfg_test(Swarming(), ['hostname unspecified'])
 
+  def test_bad(self):
     cfg = Swarming(
       common_swarming_tags=['wrong'],
       common_dimensions=[''],
@@ -67,7 +69,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
         ),
       ],
     )
-    test(cfg, [
+    self.cfg_test(cfg, [
       'hostname unspecified',
       'common tag #1: does not have ":": wrong',
       'common dimension #1: does not have ":"',
@@ -91,4 +93,40 @@ class SwarmingCfgTest(testing.AppengineTestCase):
        'do not specify buildername property; '
        'it is added by swarmbucket automatically'),
       'builder b2: priority must be in [0, 200] range; got -1',
+    ])
+
+  def test_common_recipe(self):
+    cfg = Swarming(
+        hostname='chromium-swarm.appspot.com',
+        common_dimensions=['pool:default'],
+        common_recipe=Swarming.Recipe(
+            repository='https://x.com',
+            name='foo',
+            properties=['a:b'],
+        ),
+        builders=[
+          Swarming.Builder(name='debug'),
+          Swarming.Builder(
+              name='release',
+              recipe=Swarming.Recipe(properties=['a:c']),
+          ),
+        ],
+    )
+    self.cfg_test(cfg, [])
+
+  def test_common_recipe_bad(self):
+    cfg = Swarming(
+        hostname='chromium-swarm.appspot.com',
+        common_dimensions=['pool:default'],
+        common_recipe=Swarming.Recipe(
+            name='foo',
+            properties=['a'],
+        ),
+        builders=[
+          Swarming.Builder(name='debug'),
+        ],
+    )
+    self.cfg_test(cfg, [
+      'common_recipe: property #1: does not have colon',
+      'builder debug: recipe: repository unspecified',
     ])

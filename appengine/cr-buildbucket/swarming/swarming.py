@@ -42,6 +42,7 @@ from google.appengine.api import app_identity
 from google.appengine.ext import ndb
 import webapp2
 
+from proto import project_config_pb2
 import config
 import errors
 import model
@@ -129,6 +130,20 @@ def validate_build_parameters(builder_name, params):
       raise errors.InvalidInputError('Unrecognized keys: %r', swarming)
 
 
+def merge_recipe(r1, r2):
+  """Merges two Recipe messages. Values in r2 overwrite values in r1."""
+  if not r1:  # pragma: no branch
+    return r2  # pragma: no cover
+  r1_props = dict(p.split(':', 1) for p in r1.properties)
+  r2_props = dict(p.split(':', 1) for p in r2.properties)
+  r1_props.update(r2_props)
+  return project_config_pb2.Swarming.Recipe(
+    repository=r2.repository or r1.repository,
+    name=r2.name or r1.name,
+    properties=['%s:%s' % item for item in sorted(r1_props.iteritems())],
+  )
+
+
 @ndb.tasklet
 def create_task_def_async(swarming_cfg, builder_cfg, build):
   """Creates a swarming task definition for the |build|.
@@ -151,13 +166,14 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
     'builder': builder_cfg.name,
   }
 
-  is_recipe = builder_cfg.HasField('recipe')
+  is_recipe = (
+      builder_cfg.HasField('recipe') or swarming_cfg.HasField('common_recipe'))
   if is_recipe:  # pragma: no branch
-    recipe = builder_cfg.recipe
+    recipe = merge_recipe(swarming_cfg.common_recipe, builder_cfg.recipe)
     revision = swarming_param.get('recipe', {}).get('revision') or ''
 
     build_properties = dict(
-      p.split(':', 1) for p in builder_cfg.recipe.properties or [])
+      p.split(':', 1) for p in recipe.properties or [])
     build_properties.update(build.parameters.get(PARAM_PROPERTIES) or {})
     build_properties['buildername'] = builder_cfg.name
 
