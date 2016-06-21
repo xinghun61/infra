@@ -202,6 +202,36 @@ func TestSelectIPRange(t *testing.T) {
 				So(query.Args, ShouldResemble, []driver.Value{int64(14)})
 			})
 		})
+
+		Convey("with ip filtering", func() {
+			SelectIPRange(ctx, &crimson.IPRangeQuery{Ip: "192.168.1.0"})
+			query, err := conn.PopOldestQuery()
+			Convey("generates a SQL query", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("generates the correct query", func() {
+				expected := ("SELECT vlan, site, start_ip, end_ip FROM ip_range\n" +
+					"WHERE start_ip<=? AND ?<=end_ip")
+				So(query.Query, ShouldEqual, expected)
+				So(query.Args, ShouldResemble,
+					[]driver.Value{"0xc0a80100", "0xc0a80100"})
+			})
+		})
+
+		Convey("with site and ip filtering", func() {
+			SelectIPRange(ctx, &crimson.IPRangeQuery{Site: "foo", Ip: "192.168.1.0"})
+			query, err := conn.PopOldestQuery()
+			Convey("generates a SQL query", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("generates the correct query", func() {
+				expected := ("SELECT vlan, site, start_ip, end_ip FROM ip_range\n" +
+					"WHERE site=?\nAND start_ip<=? AND ?<=end_ip")
+				So(query.Query, ShouldEqual, expected)
+				So(query.Args, ShouldResemble,
+					[]driver.Value{"foo", "0xc0a80100", "0xc0a80100"})
+			})
+		})
 	})
 }
 

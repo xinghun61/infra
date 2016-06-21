@@ -98,6 +98,7 @@ func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) []IPRangeRow 
 	db := ctx.Value("dbHandle").(*sql.DB)
 	var rows *sql.Rows
 	var err error
+	delimiter := ""
 
 	vlan := req.Vlan
 	site := req.Site
@@ -106,22 +107,31 @@ func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) []IPRangeRow 
 	params := []interface{}{}
 
 	statement.WriteString("SELECT vlan, site, start_ip, end_ip FROM ip_range")
-
-	if site != "" || vlan != "" {
-		statement.WriteString("\nWHERE ")
-	}
+	delimiter = "\nWHERE "
 
 	if site != "" {
+		statement.WriteString(delimiter)
+		delimiter = "\nAND "
 		statement.WriteString("site=?")
 		params = append(params, site)
 	}
 
 	if vlan != "" {
-		if site != "" {
-			statement.WriteString("\nAND ")
-		}
+		statement.WriteString(delimiter)
+		delimiter = "\nAND "
 		statement.WriteString("vlan=?")
 		params = append(params, vlan)
+	}
+
+	if req.Ip != "" {
+		statement.WriteString(delimiter)
+		delimiter = "\nAND "
+		ip, err := IPStringToHexString(req.Ip)
+		if err != nil {
+			return nil
+		}
+		statement.WriteString("start_ip<=? AND ?<=end_ip")
+		params = append(params, ip, ip)
 	}
 
 	if req.Limit > 0 {
