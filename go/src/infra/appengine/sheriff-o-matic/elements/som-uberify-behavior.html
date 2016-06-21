@@ -1,0 +1,13 @@
+<script>
+    UberifyBehavior = {
+      _uberify: function(url) {
+        let u = new URL(url);
+        if (u.hostname.includes('chromium.org')) {
+          u.hostname = 'uberchromegw.corp.google.com';
+          u.pathname = u.pathname.replace('/p/', '/i/');
+        }
+        u.protocol = 'https:'
+        return u.toString();
+      }
+    };
+</script>

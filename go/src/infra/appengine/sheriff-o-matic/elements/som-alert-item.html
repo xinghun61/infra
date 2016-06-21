@@ -5,6 +5,7 @@
 <link rel="import" href="/bower_components/paper-button/paper-button.html">
 <link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/elements/som-extension-build-failure.html">
+<link rel="import" href="/elements/som-uberify-behavior.html">
 
 <dom-module id="som-alert-item">
   <template>
@@ -91,7 +92,7 @@
             <template is="dom-if" if="[[_haveLinks(alert)]]">
               Useful Links:
               <template is="dom-repeat" items="[[alert.links]]" as="link">
-                <a class="alert-link" target="_blank" href$="[[link.href]]">[[link.title]]</a>
+                <a class="alert-link" target="_blank" href$="[[_uberify(link.href)]]">[[link.title]]</a>
               </template>
             </template>
             <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]"></som-extension-build-failure>
@@ -109,6 +110,7 @@
 
     Polymer({
       is: 'som-alert-item',
+      behaviors: [UberifyBehavior],
 
       /**
        * Fired when an alert requests that the link bug dialog be shown.

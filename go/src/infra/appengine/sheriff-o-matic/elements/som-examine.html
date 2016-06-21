@@ -6,6 +6,7 @@
 <link rel="import" href="/bower_components/paper-item/paper-item.html">
 <link rel="import" href="/bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="/bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="/elements/som-uberify-behavior.html">
 
 <dom-module id="som-examine">
   <template>
@@ -79,6 +80,7 @@
       'use strict';
       Polymer({
         is: 'som-examine',
+        behaviors: [UberifyBehavior],
         properties: {
           alert: {
             type: Object,
@@ -149,16 +151,6 @@
           }
           return undefined;
         },
-
-        _uberify: function(url, buildNumber, step) {
-          let u = new URL(url + "/builds/" + buildNumber + "/steps/" + step);
-          if (u.hostname.includes('chromium.org')) {
-            u.hostname = 'uberchromegw.corp.google.com';
-            u.pathname = u.pathname.replace('/p/', '/i/');
-          }
-          u.protocol = 'https:'
-          return u.toString();
-        }
       });
     })();
   </script>
