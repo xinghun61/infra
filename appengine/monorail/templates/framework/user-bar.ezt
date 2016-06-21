@@ -1,7 +1,7 @@
 <span style="padding: 0 1em">
   [if-any logged_in_user]
-    <span id="account-menu" style="color:#0000cc">
-      <b><u>[logged_in_user.email]</u></b>
+    <span id="account-menu">
+      <b><a href="#">[logged_in_user.email]</a></b>
       <small>&#9660;</small>
     </span>
     | <a href="[logged_in_user.profile_url]"

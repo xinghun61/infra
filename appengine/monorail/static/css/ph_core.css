@@ -832,3 +832,8 @@ html>body .goog-inline-block {
     margin: 3em;
     width: 52em;
 }
+
+#account-menu a {
+    color: #0000cc;
+    text-decoration: none;
+}
