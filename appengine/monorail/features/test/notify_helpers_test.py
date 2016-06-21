@@ -290,6 +290,15 @@ class MakeEmailWorkItemTest(unittest.TestCase):
                                       self.expected_html_footer)})
     self.assertEquals(expected_html_body, email_task['html_body'])
 
+  def testAddHTMLTags_EmailInQuotes(self):
+    """Test adding html tags in email body"""
+    body = 'test quote &quot;test@example.com&quot;.'
+    body_with_tags = notify_helpers._AddHTMLTags(body)
+    body_expected = ('test quote <a href="mailto:&quot;test@example.com'
+                     '&quot;">&quot;test@example.com&quot;</a>.')
+
+    self.assertEqual(body_expected, body_with_tags)
+
   def testReplyInvitation(self):
     """We include a footer about replying that is appropriate for that user."""
     email_task = notify_helpers._MakeEmailWorkItem(

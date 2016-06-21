@@ -307,6 +307,10 @@ def _AddHTMLTags(body):
   body = re.sub(r'&lt;<a href="(|mailto:)(.*?)&gt">(.*?)&gt</a>;',
                 r'<a href="\1\2"><\3></a>', body)
 
+  # Fix incorrectly split &quot; by urlize
+  body = re.sub(r'<a href="(.*?)&quot">(.*?)&quot</a>;',
+                r'<a href="\1&quot;">\2&quot;</a>', body)
+
   # Convert all "\n"s into "<br/>"s.
   body = body.replace("\n", "<br/>")
   return body
