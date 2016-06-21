@@ -241,17 +241,10 @@ class FinditForCrashTest(CrashTestSuite):
         'confidence': None,
     }]
 
-    expected_dep_to_changed_file_to_blame = {'src/': {'a.cc': dummy_blame}}
-
-    match_results, dep_to_changed_file_to_blame = (
-        findit_for_crash.FindMatchResults(
-            dep_file_to_changelogs, dep_file_to_stack_infos, stack_deps))
+    match_results = findit_for_crash.FindMatchResults(
+            dep_file_to_changelogs, dep_file_to_stack_infos, stack_deps)
     self.assertEqual([result.ToDict() for result in match_results],
                      expected_match_results)
-
-    for file_path, blame in dep_to_changed_file_to_blame.iteritems():
-      self.assertTrue(file_path in expected_dep_to_changed_file_to_blame)
-      self.assertEqual(blame, expected_dep_to_changed_file_to_blame[file_path])
 
   def testFindItForCrashNoRegressionRange(self):
     self.assertEqual(
@@ -261,7 +254,7 @@ class FinditForCrashTest(CrashTestSuite):
   def testFindItForCrashNoMatchFound(self):
 
     def _MockFindMatchResults(*_):
-      return [], {}
+      return []
 
     self.mock(findit_for_crash, 'FindMatchResults', _MockFindMatchResults)
 
@@ -290,15 +283,15 @@ class FinditForCrashTest(CrashTestSuite):
       }
       match_result2.min_distance = 20
 
-      return [match_result1, match_result2], {}
+      return [match_result1, match_result2]
 
     self.mock(findit_for_crash, 'FindMatchResults', _MockFindMatchResults)
 
     expected_match_results = [
         {
             'reason': ('(1) Modified top crashing frame is #0\n'
-                        '(2) Modification distance (LOC) is 0\n\n'
-                        'Changed file a.cc crashed in frame #0, frame #1'),
+                       '(2) Modification distance (LOC) is 0\n\n'
+                       'Changed file a.cc crashed in frame #0, frame #1'),
              'time': 'Thu Mar 31 21:24:43 2016',
              'author': 'r@chromium.org',
              'url': 'https://repo.test/+/1',
@@ -343,7 +336,7 @@ class FinditForCrashTest(CrashTestSuite):
       }
       match_result3.min_distance = 60
 
-      return [match_result1, match_result2, match_result3], {}
+      return [match_result1, match_result2, match_result3]
 
     self.mock(findit_for_crash, 'FindMatchResults', _MockFindMatchResults)
 
@@ -388,7 +381,7 @@ class FinditForCrashTest(CrashTestSuite):
       }
       match_result2.min_distance = 20
 
-      return [match_result1, match_result2], {}
+      return [match_result1, match_result2]
 
     self.mock(findit_for_crash, 'FindMatchResults', _MockFindMatchResults)
 

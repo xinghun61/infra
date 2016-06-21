@@ -172,14 +172,9 @@ def FindMatchResults(dep_to_file_to_changelogs,
     ignore_cls (set): Set of reverted revisions.
 
   Returns:
-    A tuple - [match_result_list, dep_to_matched_file_to_blame]
-    match_result_list (list of MatchResult): A list of MatchResult instances
-      with confidence and reason unset.
-    dep_to_matched_file_to_blame (dict): Maps dep_path to a dict mapping
-      matched file path to its Blame.
+    A list of MatchResult instances with confidence and reason unset.
   """
   match_results = MatchResults(ignore_cls)
-  dep_to_matched_file_to_blame = defaultdict(dict)
 
   for dep, file_to_stack_infos in dep_to_file_to_stack_infos.iteritems():
     file_to_changelogs = dep_to_file_to_changelogs[dep]
@@ -195,9 +190,8 @@ def FindMatchResults(dep_to_file_to_changelogs,
                                         stack_deps[dep].revision)
         match_results.GenerateMatchResults(
             crashed_file_path, dep, stack_infos, changelogs, blame)
-        dep_to_matched_file_to_blame[dep][crashed_file_path] = blame
 
-  return match_results.values(), dep_to_matched_file_to_blame
+  return match_results.values()
 
 
 def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps,
@@ -232,9 +226,9 @@ def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps,
   dep_to_file_to_stack_infos = GetStackInfosForFilesGroupedByDeps(
       stack_trace, stack_deps)
 
-  results, _ = FindMatchResults(dep_to_file_to_changelogs,
-                                dep_to_file_to_stack_infos,
-                                stack_deps, ignore_cls)
+  results = FindMatchResults(dep_to_file_to_changelogs,
+                             dep_to_file_to_stack_infos,
+                             stack_deps, ignore_cls)
 
   if not results:
     return []
