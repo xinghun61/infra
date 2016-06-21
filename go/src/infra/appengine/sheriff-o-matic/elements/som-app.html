@@ -454,7 +454,7 @@
       },
 
       _computeAnnotation: function(annotations, alert) {
-        let key = this._keyForAlert(alert);
+        let key = alert.key;
 
         let ann = annotations[key];
         return {
@@ -466,7 +466,7 @@
 
       _handleAnnotation: function(evt) {
         this._sendAnnotation(
-          this._keyForAlert(evt.model.alert), evt.detail.type,
+          evt.model.alert.key, evt.detail.type,
           evt.detail.change);
       },
 
@@ -485,18 +485,6 @@
         this.$.annotationPost.body = JSON.stringify(change);
         this.$.annotationPost.url = '/api/v1/annotations/' + key + '/' + type;
         return this.$.annotationPost.generateRequest();
-      },
-
-      _keyForAlert: function(alert) {
-        if (alert.extension && alert.extension.reasons &&
-            alert.extension.builders) {
-          return alert.extension.reasons.map(function(reason) {
-            return reason.step;
-          }).concat(alert.extension.builders.map(function(builder) {
-            return builder.name;
-          })).join('::');
-        }
-        return null;
       },
 
       ////////////////////// Bugs ///////////////////////////
@@ -519,7 +507,7 @@
       _saveBug: function() {
         // TODO(add proper error handling)
         this._sendAnnotation(
-          this._keyForAlert(this._bugModel), 'add', {
+          this._bugModel.key, 'add', {
             bugs: [this.$.bug.value]
           }
         ).completes.then(() => {
@@ -542,7 +530,7 @@
       _snooze: function() {
         // TODO(add proper error handling)
         this._sendAnnotation(
-          this._keyForAlert(this._snoozeModel), 'add', {
+          this._snoozeModel.key, 'add', {
             snoozeTime: Date.now() + ONE_MIN_MS * this.$.snoozeTime.value
           }
         ).completes.then(() => {
