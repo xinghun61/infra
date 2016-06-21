@@ -69,7 +69,8 @@ def RunSteps(api):
   api.python(
       'go third parties',
       api.path['checkout'].join('go', 'env.py'),
-      ['go', 'version'])
+      ['go', 'version'],
+      infra_step=True)
 
   if is_presubmit:
     with api.tryserver.set_failure_hash():
