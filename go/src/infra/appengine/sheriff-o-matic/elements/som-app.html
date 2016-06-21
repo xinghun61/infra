@@ -28,6 +28,9 @@
       paper-toolbar {
         --paper-toolbar-background: black;
       }
+      paper-toolbar a {
+        color: #fff;
+      }
       paper-header-panel /deep/ #mainContainer {
         @apply(--layout-vertical);
       }
@@ -35,25 +38,18 @@
         text-align: right;
         padding-right: 1em;
       }
-      #alerts {
-        @apply(--layout-vertical);
-        @apply(--center-justified);
-        margin: 0 auto;
-        padding: 8px;
-        height: 100%;
-      }
       paper-header-panel[main] {
         --paper-header-panel-body: {
           background: #eee;
         }
       }
-     .title {
+      .title {
         font-size: big;
       }
       .som-title {
         font-weight: bold;
       }
-     .list-item {
+      .list-item {
         @apply(--layout-flex);
         @apply(--layout-vertical);
         margin: 1em;
