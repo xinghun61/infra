@@ -128,11 +128,11 @@ def FormatFriendly(commenter_view, sender, reveal_addr):
   if commenter_view:
     site_name = settings.site_name
     if commenter_view.email in client_config_svc.GetServiceAccountMap():
-      friendly = commenter_view.display_name.replace('@', ' at ')
+      friendly = commenter_view.display_name
     elif reveal_addr:
-      friendly = '%s at %s' % (commenter_view.username, commenter_view.domain)
+      friendly = commenter_view.email
     else:
-      friendly = '%s... at %s' % (
+      friendly = '%s...@%s' % (
           commenter_view.obscured_username, commenter_view.domain)
     return '%s via %s <%s>' % (friendly, site_name, sender)
   else:
