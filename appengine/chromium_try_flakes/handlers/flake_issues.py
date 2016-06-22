@@ -24,7 +24,7 @@ from status import build_result, util
 from test_results.util import normalize_test_type, flatten_tests_trie
 
 
-MAX_UPDATED_ISSUES_PER_DAY = 50
+MAX_UPDATED_ISSUES_PER_DAY = 10
 MAX_TIME_DIFFERENCE_SECONDS = 12 * 60 * 60
 MIN_REQUIRED_FLAKY_RUNS = 3
 DAYS_TILL_STALE = 30
