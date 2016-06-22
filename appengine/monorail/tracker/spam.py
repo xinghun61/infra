@@ -63,7 +63,6 @@ class FlagSpamForm(servlet.Servlet):
     # Flag a single comment.
     if comment_id is not None:
       comment = self.services.issue.GetComment(mr.cnxn, comment_id)
-      print 'flagged_spam: %s' % flagged_spam
       if perms.VerdictSpam:
         self.services.spam.RecordManualCommentVerdict(mr.cnxn,
             self.services.issue, self.services.user, comment_id,
