@@ -13,7 +13,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/luci/gae/service/info"
 	"github.com/luci/luci-go/appengine/gaeauth/server"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
@@ -22,8 +21,8 @@ import (
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/auth/identity"
 	"github.com/luci/luci-go/server/discovery"
-	"github.com/luci/luci-go/server/middleware"
 	"github.com/luci/luci-go/server/prpc"
+	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
 	"golang.org/x/net/context"
 	"google.golang.org/appengine"
@@ -69,47 +68,36 @@ var (
 )
 
 // Auth middleware. Hard fails when user is not authorized.
-func requireAuthWeb(h middleware.Handler) middleware.Handler {
-	return func(
-		c context.Context,
-		rw http.ResponseWriter,
-		r *http.Request,
-		p httprouter.Params) {
-
-		if auth.CurrentIdentity(c) == identity.AnonymousIdentity {
-			loginURL, err := auth.LoginURL(c, "/")
-			if err != nil {
-				logging.Errorf(c, "Failed to get login URL")
-			}
-			logging.Infof(c, "Redirecting to %s", loginURL)
-			http.Redirect(rw, r, loginURL, 302)
-			return
-		}
-
-		isGoogler, err := auth.IsMember(c, rwGroup)
+func requireAuthWeb(c *router.Context, next router.Handler) {
+	if auth.CurrentIdentity(c.Context) == identity.AnonymousIdentity {
+		loginURL, err := auth.LoginURL(c.Context, "/")
 		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			logging.Errorf(c, "Failed to get group membership.")
+			logging.Errorf(c.Context, "Failed to get login URL")
+			http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if isGoogler {
-			h(c, rw, r, p)
-			return
-		}
-
-		templates.MustRender(c, rw, "pages/access_denied.html", nil)
+		logging.Infof(c.Context, "Redirecting to %s", loginURL)
+		http.Redirect(c.Writer, c.Request, loginURL, 302)
+		return
 	}
+
+	isGoogler, err := auth.IsMember(c.Context, rwGroup)
+	if err != nil {
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+		logging.Errorf(c.Context, "Failed to get group membership.")
+		return
+	}
+	if isGoogler {
+		next(c)
+		return
+	}
+
+	templates.MustRender(c.Context, c.Writer, "pages/access_denied.html", nil)
 }
 
-func addDbToContext(h middleware.Handler) middleware.Handler {
-	return func(
-		c context.Context,
-		rw http.ResponseWriter,
-		r *http.Request,
-		p httprouter.Params) {
-		c = context.WithValue(c, "dbHandle", dbHandle)
-		h(c, rw, r, p)
-	}
+func addDbToContext(c *router.Context, next router.Handler) {
+	c.Context = context.WithValue(c.Context, "dbHandle", dbHandle)
+	next(c)
 }
 
 // checkAuthorizationPrpc is a prelude function in the svcdec sense.
@@ -130,30 +118,32 @@ func checkAuthorizationPrpc(
 		"%s is not allowed to call APIs", auth.CurrentIdentity(c))
 }
 
-func base(h middleware.Handler) httprouter.Handle {
+func base() router.MiddlewareChain {
 	methods := auth.Authenticator{
 		server.CookieAuth,
 	}
-	h = auth.Authenticate(h)
-	h = auth.Use(h, methods)
-	h = templates.WithTemplates(h, templateBundle)
-	return gaemiddleware.BaseProd(h)
+	return append(
+		gaemiddleware.BaseProd(),
+		templates.WithTemplates(templateBundle),
+		auth.Use(methods),
+		auth.Authenticate,
+	)
 }
 
 // webBase sets up authentication/authorization for http requests.
-func webBase(h middleware.Handler) httprouter.Handle {
-	return base(requireAuthWeb(h))
+func webBase() router.MiddlewareChain {
+	return append(base(), requireAuthWeb)
 }
 
-// prpcBase is the middleware for pRPC API handlers.
-func prpcBase(h middleware.Handler) httprouter.Handle {
+// prpcBase returns the middleware for pRPC API handlers.
+func prpcBase() router.MiddlewareChain {
 	// OAuth 2.0 with email scope is registered as a default authenticator
 	// by importing "github.com/luci/luci-go/appengine/gaeauth/server".
 	// No need to setup an authenticator here.
 	//
 	// Authorization is checked in checkAuthorizationPrpc using a
 	// service decorator.
-	return gaemiddleware.BaseProd(addDbToContext(h))
+	return append(gaemiddleware.BaseProd(), addDbToContext)
 }
 
 //// Routes.
@@ -170,9 +160,9 @@ func init() {
 		return
 	}
 
-	router := httprouter.New()
-	gaemiddleware.InstallHandlers(router, base)
-	router.GET("/", webBase(indexPage))
+	r := router.New()
+	gaemiddleware.InstallHandlers(r, base())
+	r.GET("/", webBase(), indexPage)
 
 	var api prpc.Server
 	crimson.RegisterCrimsonServer(&api, &crimson.DecoratedCrimson{
@@ -180,18 +170,13 @@ func init() {
 		Prelude: checkAuthorizationPrpc,
 	})
 	discovery.Enable(&api)
-	api.InstallHandlers(router, prpcBase)
+	api.InstallHandlers(r, prpcBase())
 
-	http.DefaultServeMux.Handle("/", router)
+	http.DefaultServeMux.Handle("/", r)
 }
 
 //// Handlers.
 
-func indexPage(
-	c context.Context,
-	w http.ResponseWriter,
-	r *http.Request,
-	p httprouter.Params) {
-
-	templates.MustRender(c, w, "pages/index.html", nil)
+func indexPage(c *router.Context) {
+	templates.MustRender(c.Context, c.Writer, "pages/index.html", nil)
 }

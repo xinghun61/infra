@@ -23,6 +23,7 @@ import (
 	"github.com/luci/luci-go/common/clock/testclock"
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/auth/authtest"
+	"github.com/luci/luci-go/server/router"
 	"golang.org/x/net/context"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -45,7 +46,12 @@ func TestMain(t *testing.T) {
 			c = auth.SetAuthenticator(c, []auth.Method(nil))
 
 			Convey("anonymous", func() {
-				indexPage(c, w, makeGetRequest(), makeParams("path", "chromium"))
+				indexPage(&router.Context{
+					Context: c,
+					Writer:  w,
+					Request: makeGetRequest(),
+					Params:  makeParams("path", "chromium"),
+				})
 
 				r, err := ioutil.ReadAll(w.Body)
 				So(err, ShouldBeNil)
@@ -66,7 +72,12 @@ func TestMain(t *testing.T) {
 			c = auth.WithState(c, authState)
 
 			Convey("No access", func() {
-				indexPage(c, w, makeGetRequest(), makeParams("path", "chromium"))
+				indexPage(&router.Context{
+					Context: c,
+					Writer:  w,
+					Request: makeGetRequest(),
+					Params:  makeParams("path", "chromium"),
+				})
 
 				So(w.Code, ShouldEqual, 200)
 				r, err := ioutil.ReadAll(w.Body)
@@ -78,7 +89,12 @@ func TestMain(t *testing.T) {
 			authState.IdentityGroups = []string{authGroup}
 
 			Convey("good path", func() {
-				indexPage(c, w, makeGetRequest(), makeParams("path", "chromium"))
+				indexPage(&router.Context{
+					Context: c,
+					Writer:  w,
+					Request: makeGetRequest(),
+					Params:  makeParams("path", "chromium"),
+				})
 				r, err := ioutil.ReadAll(w.Body)
 				So(err, ShouldBeNil)
 				body := string(r)
@@ -107,7 +123,11 @@ func TestMain(t *testing.T) {
 
 			Convey("/trees", func() {
 				Convey("no trees yet", func() {
-					getTreesHandler(c, w, makeGetRequest(), nil)
+					getTreesHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makeGetRequest(),
+					})
 
 					r, err := ioutil.ReadAll(w.Body)
 					So(err, ShouldBeNil)
@@ -124,7 +144,11 @@ func TestMain(t *testing.T) {
 				ds.Testable().CatchupIndexes()
 
 				Convey("basic tree", func() {
-					getTreesHandler(c, w, makeGetRequest(), nil)
+					getTreesHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makeGetRequest(),
+					})
 
 					r, err := ioutil.ReadAll(w.Body)
 					So(err, ShouldBeNil)
@@ -141,7 +165,12 @@ func TestMain(t *testing.T) {
 				}
 				Convey("GET", func() {
 					Convey("no alerts yet", func() {
-						getAlertsHandler(c, w, makeGetRequest(), makeParams("tree", "oak"))
+						getAlertsHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makeGetRequest(),
+							Params:  makeParams("tree", "oak"),
+						})
 
 						r, err := ioutil.ReadAll(w.Body)
 						So(err, ShouldBeNil)
@@ -153,7 +182,12 @@ func TestMain(t *testing.T) {
 					So(ds.Put(alerts), ShouldBeNil)
 
 					Convey("basic alerts", func() {
-						getAlertsHandler(c, w, makeGetRequest(), makeParams("tree", "oak"))
+						getAlertsHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makeGetRequest(),
+							Params:  makeParams("tree", "oak"),
+						})
 
 						r, err := ioutil.ReadAll(w.Body)
 						So(err, ShouldBeNil)
@@ -169,7 +203,12 @@ func TestMain(t *testing.T) {
 					So(ds.GetAll(q, &results), ShouldBeNil)
 					So(results, ShouldBeEmpty)
 
-					postAlertsHandler(c, w, makePostRequest(`{"thing":"FOOBAR"}`), makeParams("tree", "oak"))
+					postAlertsHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makePostRequest(`{"thing":"FOOBAR"}`),
+						Params:  makeParams("tree", "oak"),
+					})
 
 					r, err := ioutil.ReadAll(w.Body)
 					So(err, ShouldBeNil)
@@ -190,7 +229,11 @@ func TestMain(t *testing.T) {
 			Convey("/annotations", func() {
 				Convey("GET", func() {
 					Convey("no annotations yet", func() {
-						getAnnotationsHandler(c, w, makeGetRequest(), nil)
+						getAnnotationsHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makeGetRequest(),
+						})
 
 						r, err := ioutil.ReadAll(w.Body)
 						So(err, ShouldBeNil)
@@ -210,7 +253,11 @@ func TestMain(t *testing.T) {
 					ds.Testable().CatchupIndexes()
 
 					Convey("basic annotation", func() {
-						getAnnotationsHandler(c, w, makeGetRequest(), nil)
+						getAnnotationsHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makeGetRequest(),
+						})
 
 						r, err := ioutil.ReadAll(w.Body)
 						So(err, ShouldBeNil)
@@ -221,7 +268,12 @@ func TestMain(t *testing.T) {
 				})
 				Convey("POST", func() {
 					Convey("invalid action", func() {
-						postAnnotationsHandler(c, w, makePostRequest(""), makeParams("annKey", "foobar", "action", "lolwut"))
+						postAnnotationsHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makePostRequest(""),
+							Params:  makeParams("annKey", "foobar", "action", "lolwut"),
+						})
 
 						So(w.Code, ShouldEqual, 404)
 					})
@@ -234,7 +286,12 @@ func TestMain(t *testing.T) {
 
 					Convey("add", func() {
 						change := `{"snoozeTime":123123}`
-						postAnnotationsHandler(c, w, makePostRequest(change), makeParams("annKey", "foobar", "action", "add"))
+						postAnnotationsHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makePostRequest(change),
+							Params:  makeParams("annKey", "foobar", "action", "add"),
+						})
 
 						So(w.Code, ShouldEqual, 200)
 
@@ -243,7 +300,12 @@ func TestMain(t *testing.T) {
 
 						Convey("bad change", func() {
 							w = httptest.NewRecorder()
-							postAnnotationsHandler(c, w, makePostRequest(`{"bugs":["oooops"]}`), makeParams("annKey", "foobar", "action", "add"))
+							postAnnotationsHandler(&router.Context{
+								Context: c,
+								Writer:  w,
+								Request: makePostRequest(`{"bugs":["oooops"]}`),
+								Params:  makeParams("annKey", "foobar", "action", "add"),
+							})
 
 							So(w.Code, ShouldEqual, 400)
 
@@ -255,7 +317,12 @@ func TestMain(t *testing.T) {
 
 					Convey("remove", func() {
 						Convey("can't remove non-existant annotation", func() {
-							postAnnotationsHandler(c, w, makePostRequest(""), makeParams("annKey", "foobar", "action", "remove"))
+							postAnnotationsHandler(&router.Context{
+								Context: c,
+								Writer:  w,
+								Request: makePostRequest(""),
+								Params:  makeParams("annKey", "foobar", "action", "remove"),
+							})
 
 							So(w.Code, ShouldEqual, 404)
 						})
@@ -266,7 +333,13 @@ func TestMain(t *testing.T) {
 						Convey("basic", func() {
 							So(ann.SnoozeTime, ShouldEqual, 123)
 
-							postAnnotationsHandler(c, w, makePostRequest(`{"snoozeTime":true}`), makeParams("annKey", "foobar", "action", "remove"))
+							postAnnotationsHandler(&router.Context{
+								Context: c,
+								Writer:  w,
+								Request: makePostRequest(`{"snoozeTime":true}`),
+								Params:  makeParams("annKey", "foobar", "action", "remove"),
+							})
+
 							So(w.Code, ShouldEqual, 200)
 							So(ds.Get(ann), ShouldBeNil)
 							So(ann.SnoozeTime, ShouldEqual, 0)
@@ -372,8 +445,12 @@ func TestRevRangeHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 			c = urlfetch.Set(c, http.DefaultTransport)
 
-			getRevRangeHandler(c, w, makeGetRequest(),
-				makeParams("start", "123", "end", "456"))
+			getRevRangeHandler(&router.Context{
+				Context: c,
+				Writer:  w,
+				Request: makeGetRequest(),
+				Params:  makeParams("start", "123", "end", "456"),
+			})
 
 			So(w.Code, ShouldEqual, 301)
 		})
@@ -382,7 +459,11 @@ func TestRevRangeHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 			c = urlfetch.Set(c, http.DefaultTransport)
 
-			getRevRangeHandler(c, w, makeGetRequest(), nil)
+			getRevRangeHandler(&router.Context{
+				Context: c,
+				Writer:  w,
+				Request: makeGetRequest(),
+			})
 
 			So(w.Code, ShouldEqual, 400)
 		})

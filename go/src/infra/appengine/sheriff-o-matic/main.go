@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/julienschmidt/httprouter"
 	"golang.org/x/net/context"
 	"google.golang.org/appengine"
 
@@ -28,7 +27,7 @@ import (
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/auth/identity"
-	"github.com/luci/luci-go/server/middleware"
+	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/settings"
 )
 
@@ -176,7 +175,8 @@ func (settingsUIPage) WriteSettings(c context.Context, values map[string]string,
 }
 
 //// Handlers.
-func indexPage(c context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func indexPage(ctx *router.Context) {
+	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 	if p.ByName("path") == "" {
 		http.Redirect(w, r, "/chromium", http.StatusFound)
 		return
@@ -232,7 +232,9 @@ func indexPage(c context.Context, w http.ResponseWriter, r *http.Request, p http
 	}
 }
 
-func getTreesHandler(c context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func getTreesHandler(ctx *router.Context) {
+	c, w := ctx.Context, ctx.Writer
+
 	if !requireGoogler(w, c) {
 		return
 	}
@@ -255,7 +257,9 @@ func getTreesHandler(c context.Context, w http.ResponseWriter, r *http.Request, 
 	w.Write(txt)
 }
 
-func getAlertsHandler(c context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func getAlertsHandler(ctx *router.Context) {
+	c, w, p := ctx.Context, ctx.Writer, ctx.Params
+
 	if !requireGoogler(w, c) {
 		return
 	}
@@ -286,7 +290,9 @@ func getAlertsHandler(c context.Context, w http.ResponseWriter, r *http.Request,
 	w.Write(alertsJSON.Contents)
 }
 
-func postAlertsHandler(c context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func postAlertsHandler(ctx *router.Context) {
+	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
+
 	if !requireGoogler(w, c) {
 		return
 	}
@@ -333,7 +339,9 @@ func postAlertsHandler(c context.Context, w http.ResponseWriter, r *http.Request
 	}
 }
 
-func getAnnotationsHandler(c context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func getAnnotationsHandler(ctx *router.Context) {
+	c, w := ctx.Context, ctx.Writer
+
 	if !requireGoogler(w, c) {
 		return
 	}
@@ -352,7 +360,9 @@ func getAnnotationsHandler(c context.Context, w http.ResponseWriter, r *http.Req
 	w.Write(data)
 }
 
-func postAnnotationsHandler(c context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func postAnnotationsHandler(ctx *router.Context) {
+	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
+
 	if !requireGoogler(w, c) {
 		return
 	}
@@ -411,7 +421,9 @@ func postAnnotationsHandler(c context.Context, w http.ResponseWriter, r *http.Re
 	w.Write(data)
 }
 
-func getBugQueueHandler(c context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func getBugQueueHandler(ctx *router.Context) {
+	c, w, p := ctx.Context, ctx.Writer, ctx.Params
+
 	c = client.UseServiceAccountTransport(c, nil, nil)
 	mr := monorail.NewEndpointsClient(&http.Client{Transport: urlfetch.Get(c)}, monorailEndpoint)
 	tree := p.ByName("tree")
@@ -465,7 +477,9 @@ func getCrRevJSON(c context.Context, pos string) (map[string]string, error) {
 	return m, nil
 }
 
-func getRevRangeHandler(c context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func getRevRangeHandler(ctx *router.Context) {
+	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
+
 	start := p.ByName("start")
 	end := p.ByName("end")
 	if start == "" || end == "" {
@@ -494,39 +508,41 @@ func getRevRangeHandler(c context.Context, w http.ResponseWriter, r *http.Reques
 }
 
 // base is the root of the middleware chain.
-func base(h middleware.Handler) httprouter.Handle {
+func base() router.MiddlewareChain {
 	methods := auth.Authenticator{
 		&server.OAuth2Method{Scopes: []string{server.EmailScope}},
 		server.CookieAuth,
 		&server.InboundAppIDAuthMethod{},
 	}
-	h = auth.Use(h, methods)
-	if !appengine.IsDevAppServer() {
-		h = middleware.WithPanicCatcher(h)
-	}
-	return gaemiddleware.BaseProd(h)
+	return append(
+		gaemiddleware.BaseProd(),
+		auth.Use(methods),
+	)
 }
 
 //// Routes.
 func init() {
 	settings.RegisterUIPage(settingsKey, settingsUIPage{})
 
-	router := httprouter.New()
-	gaemiddleware.InstallHandlers(router, base)
-	router.GET("/api/v1/trees/", base(auth.Authenticate(getTreesHandler)))
-	router.GET("/api/v1/alerts/:tree", base(auth.Authenticate(getAlertsHandler)))
-	router.POST("/api/v1/alerts/:tree", base(auth.Authenticate(postAlertsHandler)))
-	router.GET("/api/v1/annotations/", base(auth.Authenticate(getAnnotationsHandler)))
-	router.POST("/api/v1/annotations/:annKey/:action", base(auth.Authenticate(postAnnotationsHandler)))
-	router.GET("/api/v1/bugqueue/:tree", base(auth.Authenticate(getBugQueueHandler)))
-	router.GET("/api/v1/revrange/:start/:end", base(getRevRangeHandler))
+	r := router.New()
+	basemw := base()
+	authmw := append(basemw, auth.Authenticate)
 
-	rootRouter := httprouter.New()
-	rootRouter.GET("/*path", base(auth.Authenticate(indexPage)))
+	gaemiddleware.InstallHandlers(r, basemw)
+	r.GET("/api/v1/trees/", authmw, getTreesHandler)
+	r.GET("/api/v1/alerts/:tree", authmw, getAlertsHandler)
+	r.POST("/api/v1/alerts/:tree", authmw, postAlertsHandler)
+	r.GET("/api/v1/annotations/", authmw, getAnnotationsHandler)
+	r.POST("/api/v1/annotations/:annKey/:action", authmw, postAnnotationsHandler)
+	r.GET("/api/v1/bugqueue/:tree", authmw, getBugQueueHandler)
+	r.GET("/api/v1/revrange/:start/:end", basemw, getRevRangeHandler)
 
-	http.DefaultServeMux.Handle("/api/", router)
-	http.DefaultServeMux.Handle("/admin/", router)
-	http.DefaultServeMux.Handle("/auth/", router)
-	http.DefaultServeMux.Handle("/_ah/", router)
+	rootRouter := router.New()
+	rootRouter.GET("/*path", authmw, indexPage)
+
+	http.DefaultServeMux.Handle("/api/", r)
+	http.DefaultServeMux.Handle("/admin/", r)
+	http.DefaultServeMux.Handle("/auth/", r)
+	http.DefaultServeMux.Handle("/_ah/", r)
 	http.DefaultServeMux.Handle("/", rootRouter)
 }
