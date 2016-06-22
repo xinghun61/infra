@@ -34,7 +34,7 @@ class SwarmingTest(testing.AppengineTestCase):
   def setUp(self):
     super(SwarmingTest, self).setUp()
     self.mock(utils, 'utcnow', lambda: datetime.datetime(2015, 11, 30))
-    bucket_cfg = project_config_pb2.Bucket(
+    self.bucket_cfg = project_config_pb2.Bucket(
       name='bucket',
       swarming=project_config_pb2.Swarming(
         hostname='chromium-swarm.appspot.com',
@@ -47,18 +47,19 @@ class SwarmingTest(testing.AppengineTestCase):
         ),
         builders=[
           project_config_pb2.Swarming.Builder(
-            name='builder',
-            swarming_tags=['buildertag:yes'],
-            dimensions=['os:Linux', 'pool:Chrome'],
-            recipe=project_config_pb2.Swarming.Recipe(
-              properties=['predefined-property:x'],
-            ),
-            priority=108,
+              name='builder',
+              swarming_tags=['buildertag:yes'],
+              dimensions=['os:Linux', 'pool:Chrome'],
+              recipe=project_config_pb2.Swarming.Recipe(
+                  properties=['predefined-property:x'],
+              ),
+              priority=108,
           ),
         ],
       ),
     )
-    self.mock(config, 'get_bucket_async', lambda name: futuristic(bucket_cfg))
+    self.mock(
+        config, 'get_bucket_async', lambda name: futuristic(self.bucket_cfg))
 
     task_template = {
       'name': 'buildbucket-$bucket-$builder',
@@ -136,6 +137,25 @@ class SwarmingTest(testing.AppengineTestCase):
     for p in bad:
       with self.assertRaises(errors.InvalidInputError):
         validate_swarming_param(p)
+
+  def test_execution_timeout(self):
+    builder_cfg = project_config_pb2.Swarming.Builder(
+        name='fast-builder',
+        execution_timeout_secs=60,
+    )
+
+    build = model.Build(
+        bucket='bucket',
+        parameters={
+          'builder_name': 'fast-builder',
+        },
+    )
+
+    task_def = swarming.create_task_def_async(
+        self.bucket_cfg.swarming, builder_cfg, build).get_result()
+
+    self.assertEqual(
+        task_def['properties']['execution_timeout_secs'], 60)
 
   def test_create_task_async(self):
     build = model.Build(

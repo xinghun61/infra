@@ -56,6 +56,9 @@ message Swarming {
     optional Recipe recipe = 4;
     // Swarming task priority.
     optional int32 priority = 5;
+    // Maximum build execution time. Not to be confused with pending time.
+    // If not set, defaults to server defaults.
+    optional int32 execution_timeout_secs = 7;
   }
 
   // Hostname of the swarming instance, e.g. "chromium-swarm.appspot.com".

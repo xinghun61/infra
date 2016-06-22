@@ -224,6 +224,9 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
     swarming_cfg.common_dimensions,
     builder_cfg.dimensions
   )
+  if builder_cfg.execution_timeout_secs > 0:
+    task_properties['execution_timeout_secs'] = (
+        builder_cfg.execution_timeout_secs)
 
   task['pubsub_topic'] = (
     'projects/%s/topics/%s' %
