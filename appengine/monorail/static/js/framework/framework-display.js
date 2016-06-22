@@ -129,6 +129,29 @@ function CS_toggleCollapse(el) {
 }
 
 
+/**
+ * Register a function for mouse clicks on a table row.  This is needed because
+ * some browsers (now including Chrome) do not generate click events for mouse
+ * buttons other than the primary mouse button.  So, we look for a mousedown
+ * and mouseup at about the same location.
+ */
+
+var CS_lastX = 0, CS_lastY = 0;
+
+function CS_addClickListener(tableEl, handler) {
+  tableEl.addEventListener('mousedown', function(event) {
+    CS_lastX = event.clientX;
+    CS_lastY = event.clientY;
+  });
+  tableEl.addEventListener('mouseup', function(event) {
+    if (CS_lastX - 2 < event.clientX && CS_lastX + 2 > event.clientX &&
+        CS_lastY - 2 < event.clientY && CS_lastY + 2 > event.clientY) {
+      handler(event);
+    }
+  });
+}
+
+
 // Exports
 _hideID = CS_hideID;
 _showID = CS_showID;
@@ -137,3 +160,4 @@ _showEl = CS_showEl;
 _showInstead = CS_showInstead;
 _toggleHidden = CS_toggleHidden;
 _toggleCollapse = CS_toggleCollapse;
+_addClickListener = CS_addClickListener;

@@ -76,7 +76,7 @@ runOnLoad(function() {
     _go(target.attributes[[]"data-url"].value,
         (event.metaKey || event.ctrlKey || event.button == 1));
   };
-  $("resultstable").addEventListener("click", _handleResultsClick);
+  _addClickListener($("resultstable"), _handleResultsClick);
 
 
 });

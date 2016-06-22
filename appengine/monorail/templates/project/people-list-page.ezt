@@ -121,7 +121,12 @@ runOnLoad(function() {
    [if-any check_abandonment]
      $("membership_form").addEventListener("submit", _preventAbandonment);
    [end]
+});
+  </script>
+[end]
 
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
   function _handleResultsClick(event) {
     var target = event.target;
     if (target.tagName == "A")
@@ -132,11 +137,10 @@ runOnLoad(function() {
     _go(target.attributes[[]"data-url"].value,
         (event.metaKey || event.ctrlKey || event.button == 1));
   };
-  $("resultstable").addEventListener("click", _handleResultsClick);
+  _addClickListener($("resultstable"), _handleResultsClick);
 
 });
-  </script>
-[end]
+</script>
 
 
 [include "../framework/footer-script.ezt"]
