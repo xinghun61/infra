@@ -5,7 +5,9 @@
 
 """Servlet that implements the entry of new issues."""
 
+import difflib
 import logging
+import string
 import time
 from third_party import ezt
 
@@ -229,6 +231,9 @@ class IssueEntry(servlet.Servlet):
     if len(parsed.summary) > tracker_constants.MAX_SUMMARY_CHARS:
       mr.errors.summary = 'Summary is too long'
 
+    if _MatchesTemplate(parsed.comment, config):
+      mr.errors.comment = 'Template must be filled out.'
+
     if parsed.users.owner_id is None:
       mr.errors.owner = 'Invalid owner username'
     else:
@@ -314,6 +319,16 @@ class IssueEntry(servlet.Servlet):
     # format a redirect url
     return framework_helpers.FormatAbsoluteURL(
         mr, urls.ISSUE_DETAIL, id=new_local_id)
+
+def _MatchesTemplate(content, config):
+    content = content.strip(string.whitespace)
+    for template in config.templates:
+      template_content = template.content.strip(string.whitespace)
+      diff = difflib.unified_diff(content.splitlines(),
+          template_content.splitlines())
+      if len('\n'.join(diff)) == 0:
+        return True
+    return False
 
 
 def _MarkupDescriptionOnInput(content, tmpl_text):

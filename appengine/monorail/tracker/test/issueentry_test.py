@@ -155,6 +155,31 @@ class IssueEntryTest(unittest.TestCase):
     self.assertEqual('Summary is required', mr.errors.summary)
     self.assertIsNone(url)
 
+  def testProcessFormData_RejectUnmodifiedTemplate(self):
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry')
+    mr.auth.user_view = framework_views.UserView(100, 'user@invalid', True)
+    mr.perms = permissions.EMPTY_PERMISSIONSET
+    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    template = config.templates[0]
+    post_data = fake.PostData(
+        summary=['Nya nya I modified the summary'],
+        comment=[template.content],
+        status=['New'])
+
+    self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
+    self.servlet.PleaseCorrect(
+        mr, component_required=None, fields=[], initial_blocked_on='',
+        initial_blocking='', initial_cc='', initial_comment=template.content,
+        initial_components='', initial_owner='', initial_status='New',
+        initial_summary='Nya nya I modified the summary', labels=[])
+    self.mox.ReplayAll()
+
+    url = self.servlet.ProcessFormData(mr, post_data)
+    self.mox.VerifyAll()
+    self.assertEqual('Template must be filled out.', mr.errors.comment)
+    self.assertIsNone(url)
+
 
   def test_SelectTemplate(self):
     mr = testing_helpers.MakeMonorailRequest(
