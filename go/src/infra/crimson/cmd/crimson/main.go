@@ -40,6 +40,7 @@ type queryVlanRun struct {
 	commonFlags
 	site  string
 	vlan  string
+	ip    string
 	limit int
 }
 
@@ -71,6 +72,7 @@ var (
 				"crimson-staging.appspot.com", "Host to talk to")
 			c.Flags.StringVar(&c.site, "site", "", "Name of the site")
 			c.Flags.StringVar(&c.vlan, "vlan", "", "Name of the vlan")
+			c.Flags.StringVar(&c.ip, "ip", "", "IP contained within the range")
 			c.Flags.IntVar(&c.limit, "limit", 10,
 				"Maximum number of results to return")
 			return c
@@ -80,41 +82,41 @@ var (
 
 func ipRangeFromSiteAndVlan(c *addVlanRun) ([]*crimson.IPRange, error) {
 	if c.site == "" {
-		return nil, fmt.Errorf("missing required -site option.")
+		return nil, fmt.Errorf("missing required -site option")
 	}
 
 	if c.vlan == "" {
-		return nil, fmt.Errorf("missing required -vlan option.")
+		return nil, fmt.Errorf("missing required -vlan option")
 	}
 
 	if c.Flags.NArg() == 0 {
 		return nil, fmt.Errorf(
-			"missing an IP range. Example: '192.168.0.0-192.168.0.5'.")
+			"missing an IP range. Example: '192.168.0.0-192.168.0.5'")
 	}
 	parts := strings.SplitN(c.Flags.Args()[0], "-", 2)
 	if len(parts) != 2 {
 		return nil, fmt.Errorf(
 			"invalid format for ipRange. Expecting something like "+
-				"'192.168.0.0-192.168.0.5', got ", c.Flags.Args()[0])
+				"'192.168.0.0-192.168.0.5', got %s", c.Flags.Args()[0])
 	}
 
 	if ip := net.ParseIP(parts[0]); ip == nil {
 		return nil, fmt.Errorf(
 			"invalid format for ipRange. Expecting something like "+
-				"'192.168.0.0-192.168.0.5', got ", c.Flags.Args()[0])
+				"'192.168.0.0-192.168.0.5', got %s", c.Flags.Args()[0])
 	}
 
 	if ip := net.ParseIP(parts[1]); ip == nil {
 		return nil, fmt.Errorf(
 			"invalid format for ipRange. Expecting something like "+
-				"'192.168.0.0-192.168.0.5', got ", c.Flags.Args()[0])
+				"'192.168.0.0-192.168.0.5', got %s", c.Flags.Args()[0])
 	}
 
 	return []*crimson.IPRange{{
 		Site:    c.site,
 		Vlan:    c.vlan,
-		StartIp: parts[1],
-		EndIp:   parts[2]},
+		StartIp: parts[0],
+		EndIp:   parts[1]},
 	}, nil
 }
 
@@ -185,6 +187,7 @@ func (c *queryVlanRun) Run(a subcommands.Application, args []string) int {
 	req := &crimson.IPRangeQuery{
 		Site:  c.site,
 		Vlan:  c.vlan,
+		Ip:    c.ip,
 		Limit: uint32(c.limit),
 	}
 
