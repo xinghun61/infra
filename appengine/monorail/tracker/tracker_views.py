@@ -373,8 +373,12 @@ def _ChunkToRun(chunk):
     return template_helpers.TextRun(chunk)
 
 
-VIEWABLE_IMAGE_TYPES = ['image/jpeg', 'image/gif', 'image/png', 'image/x-png']
-VIEWABLE_VIDEO_TYPES = ['video/ogg', 'video/mp4', 'video/mpg', 'video/mpeg']
+VIEWABLE_IMAGE_TYPES = [
+    'image/jpeg', 'image/gif', 'image/png', 'image/x-png', 'image/webp',
+    ]
+VIEWABLE_VIDEO_TYPES = [
+    'video/ogg', 'video/mp4', 'video/mpg', 'video/mpeg', 'video/webm',
+    ]
 MAX_PREVIEW_FILESIZE = 4 * 1024 * 1024  # 4MB
 
 

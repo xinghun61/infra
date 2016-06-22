@@ -17,6 +17,7 @@ _EXTENSION_TO_CTYPE_TABLE = {
     'jpg': 'image/jpeg',
     'jpeg': 'image/jpeg',
     'png': 'image/png',
+    'webp': 'image/webp',
     'ico': 'image/x-icon',
     'svg': 'image/svg+xml',
     'pdf': 'application/pdf',
@@ -24,6 +25,7 @@ _EXTENSION_TO_CTYPE_TABLE = {
     'mp4': 'video/mp4',
     'mpg': 'video/mp4',
     'mpeg': 'video/mp4',
+    'webm': 'video/webm',
 
     # We do not serve mimetypes that cause the brower to launch a local
     # app because that is not required for issue tracking and it is a
@@ -73,7 +75,7 @@ COMMON_BINARY_FILE_EXTENSIONS = {
     'mp3', 'wma', 'exe', 'dll', 'bin', 'class', 'o', 'so', 'lib', 'dylib',
     'jar', 'ear', 'war', 'par', 'msi', 'tar', 'zip', 'rar', 'cab', 'z', 'gz',
     'bz2', 'dmg', 'iso', 'rpm', 'pdf', 'eps', 'tif', 'tiff', 'xls', 'ppt',
-    'graffie', 'violet',
+    'graffie', 'violet', 'webm', 'webp',
     }
 
 # The source code browser will display file contents as text data for files

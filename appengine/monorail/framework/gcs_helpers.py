@@ -26,7 +26,9 @@ ATTACHMENT_TTL = timedelta(seconds=30)
 IS_DEV_APPSERVER = (
     'development' in os.environ.get('SERVER_SOFTWARE', '').lower())
 
-RESIZABLE_MIME_TYPES = ['image/png', 'image/jpg', 'image/jpeg', 'image/gif']
+RESIZABLE_MIME_TYPES = [
+    'image/png', 'image/jpg', 'image/jpeg', 'image/gif', 'image/webp',
+    ]
 
 DEFAULT_THUMB_WIDTH = 250
 DEFAULT_THUMB_HEIGHT = 200
