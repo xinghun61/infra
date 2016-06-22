@@ -304,9 +304,13 @@ def create_task_async(build):
 
   # Mark the build as leased.
   assert 'expiration_secs' in task, task
+  # task['expiration_secs'] is max time for the task to be pending
   task_expiration = datetime.timedelta(seconds=int(task['expiration_secs']))
-  extra_time = datetime.timedelta(hours=1)
-  build.lease_expiration_date = utils.utcnow() + task_expiration + extra_time
+  # task['execution_timeout_secs'] is max time for the task to run
+  task_expiration += datetime.timedelta(
+      seconds=int(task['properties']['execution_timeout_secs']))
+  task_expiration += datetime.timedelta(hours=1)
+  build.lease_expiration_date = utils.utcnow() + task_expiration
   build.regenerate_lease_key()
   build.leasee = _self_identity()
   build.never_leased = False
