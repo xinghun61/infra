@@ -2,6 +2,31 @@
 
 [TOC]
 
+
+## Get the code
+
+The steps for getting the code are:
+
+ 1. [Install depot_tools](https://www.chromium.org/developers/how-tos/install-depot-tools)
+ 1. Run `fetch infra`
+ 1. Run `infra/go/env.py`
+
+
+### Quick Setup
+
+If you are on Linux you can run the [quicksetup script](quicksetup.sh) like so:
+
+```shell
+cd /where/you/want/source/code
+wget -O- "https://chromium.googlesource.com/infra/infra/+/master/go/quicksetup.sh?format=TEXT" | base64 -d | bash
+```
+
+This will create a self-contained `cr-infra-go-area` directory and populate it
+will all necessary tools and source for using or contributing to Chromium's Go
+Infrastructure. Once run, look in `cr-infra-go-area/infra/go/src` for the
+editable source code.
+
+
 ## Structure
 
 This directory contains a set of scripts to setup and manage a hermetic Go
@@ -35,6 +60,7 @@ approach allows projects that use multiple big libraries (like luci-go) to
 manage all dependencies centrally in a single place, thus avoiding issues of
 version conflicts and binary bloat due to inclusion of a same third party code
 via multiple import paths.
+
 
 ## Bootstrap
 
