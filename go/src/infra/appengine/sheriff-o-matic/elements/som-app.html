@@ -70,6 +70,14 @@
         font-size: 2.5em;
         line-height: 150%;
       }
+      .notification {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 8px 10px;
+        margin: 10px auto 20px;
+        border: 1px solid #666;
+        border-radius: 5px;
+      }
     </style>
     <iron-location id="url" path="{{_path}}"></iron-location>
     <iron-ajax
@@ -111,7 +119,12 @@
         <div class="flex layout vertical">
           <iron-pages attr-for-selected='id' selected="[[_selectedPage]]" class="flex layout vertical">
             <div id="alertsList">
-             <div hidden$="[[_haveAlerts]]" id="noAlerts">
+              <div class="list-item" hidden$="[[_hideWebkitNotice]]">
+                <div class="notification">
+                  Chromium sheriffs: you now need to handle WebKit bot failures too. <a href="http://www.chromium.org/blink/sheriffing" target="_blank">More information</a>.
+                </div>
+              </div>
+              <div hidden$="[[_haveAlerts]]">
                 No alerts!
                 <br>
                 <img src="/images/jparent-jump.gif" alt="Julie Jumping" title="Julie Jumping">
@@ -230,13 +243,17 @@
           type: Boolean,
           value: false,
         },
+        _fetchingAlerts: {
+          type: Boolean,
+          computed: '_computeFetchingAlerts(_activeRequests)',
+        },
         _haveAlerts: {
           type: Boolean,
           computed: '_computeHaveAlerts(_alerts)',
         },
-        _fetchingAlerts: {
+        _hideWebkitNotice: {
           type: Boolean,
-          computed: '_computeFetchingAlerts(_activeRequests)',
+          computed: '_computeHideWebkitNotice(_tree)',
         },
         logoutUrl: String,
         _path: {
@@ -442,6 +459,10 @@
           return true;
         }
         return alerts.length > 0;
+      },
+
+      _computeHideWebkitNotice: function(tree) {
+        return tree != "chromium";
       },
 
       ////////////////////// Annotations ///////////////////////////

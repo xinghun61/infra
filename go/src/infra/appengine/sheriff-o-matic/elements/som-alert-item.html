@@ -54,7 +54,8 @@
      #root {
        transition: opacity .25s;
      }
-     #bugsList {
+     #bugsList,
+     #handleLink {
        margin-left: 15px;
      }
      hr {
@@ -70,7 +71,10 @@
         <div class="list-item">
           <div class="alert-title-bar horizontal layout justified">
             <div class="horizontal layout">
-              <div class="alert-title self-center">[[alert.title]]</div>
+              <div class="alert-title self-center">[[alert.title]] </div>
+              <div id="handleLink" class="self-center" hidden$="[[!_helpLinkForAlert(alert)]]">
+                [<a href="[[_helpLinkForAlert(alert)]]">Help</a>]
+              </div>
               <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links">
                 <template is="dom-repeat" items="[[annotation.bugs]]" as="bug">
                   <a target="_blank" href$="[[bug]]">[[_bugLabel(bug)]]</a>
@@ -187,6 +191,19 @@
           return '';
         }
         return `Active for: ${hours}h ${minutes}m ${seconds}s`;
+      },
+
+      _helpLinkForAlert: function(alert) {
+        // TODO(zhangtiff): Add documentation links for other kinds of alerts
+        if (this._alertIsWebkit(alert)) {
+          return "http://www.chromium.org/blink/sheriffing";
+        }
+        return null;
+      },
+
+      _alertIsWebkit(alert) {
+        // TODO(zhangtiff): Find a better way to categorize alerts
+        return alert.key.includes("chromium.webkit");
       },
 
       _classForAlert: function(alert, selected) {
