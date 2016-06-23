@@ -59,7 +59,11 @@ func (a *TestFailureAnalyzer) Analyze(f stepFailure) (*StepAnalyzerResult, error
 			expected := strings.Split(res["expected"].(string), " ")
 			actual := strings.Split(res["actual"].(string), " ")
 			ue := unexpected(expected, actual)
-			if len(ue) > 0 && res["bugs"] == nil {
+
+			// Could still be a flaky test, so check if last of actual is PASS
+			// expected: PASS
+			// actual: FAIL PASS
+			if len(ue) > 0 && res["bugs"] == nil && actual[len(actual)-1] != "PASS" {
 				ret.Reasons = append(ret.Reasons, testName)
 			}
 			continue

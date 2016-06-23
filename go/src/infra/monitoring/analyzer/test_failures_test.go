@@ -64,6 +64,32 @@ func TestTestStepFailureAlerts(t *testing.T) {
 				Recognized: true,
 			},
 		},
+		{
+			name: "flaky",
+			failure: stepFailure{
+				master: &messages.MasterLocation{URL: url.URL{
+					Scheme: "https",
+					Host:   "build.chromium.org",
+					Path:   "/p/fake.master",
+				}},
+				builderName: "fake_builder",
+				step: messages.Step{
+					Name: "something_tests",
+				},
+			},
+			testResults: &messages.TestResults{
+				Tests: map[string]interface{}{
+					"test_a": map[string]interface{}{
+						"expected": "PASS",
+						"actual":   "FAIL PASS",
+					},
+				},
+			},
+			wantResult: &StepAnalyzerResult{
+				Reasons:    nil,
+				Recognized: true,
+			},
+		},
 	}
 
 	mc := &mockReader{}
