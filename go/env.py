@@ -18,6 +18,7 @@ assert __name__ == '__main__'
 
 import imp
 import os
+import pipes
 import subprocess
 import sys
 
@@ -31,7 +32,7 @@ new = bootstrap.prepare_go_environ()
 if len(sys.argv) == 1:
   for key, value in sorted(new.iteritems()):
     if old.get(key) != value:
-      print 'export %s="%s"' % (key, value)
+      print 'export %s=%s' % (key, pipes.quote(value))
 else:
   exe = sys.argv[1]
   if exe == 'python':
