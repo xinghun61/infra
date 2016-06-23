@@ -376,10 +376,14 @@
             this.set('_activeRequests', this._activeRequests - 1);
             return response.json();
           }).then( (json) => {
-            this.set(['_alertsData', group], json.alerts);
-            this.set(['_alertsTimes', group], json.timestamp);
+            this.set(['_alertsData', this._alertGroupVarName(group)], json.alerts);
+            this.set(['_alertsTimes', this._alertGrouVarName(group)], json.timestamp);
           });
         });
+      },
+
+      _alertGroupVarName(group) {
+        return group.replace(".", "_");
       },
 
       _computeFetchingAlerts: function(activeRequests) {
