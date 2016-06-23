@@ -34,14 +34,16 @@ Shows a table of recently received records.
 Tags to filter by are specified as a comma separated list after the #.
 
 
-<span class="item">/patch-status/&lt;issue&gt;/&lt;patchset&gt;</span>
-Example: <a href="/patch-status/1067633003/1">/patch-status/1067633003/1</a>
+<span class="item">/v2/patch-status/&lt;codereview_hostname&gt;/&lt;issue&gt;/&lt;patchset&gt;</span>
+Example: <a href="/v2/patch-status/codereview.chromium.org/1067633003/1"
+         >/v2/patch-status/codereview.chromium.org/1067633003/1</a>
 Shows a log of CQ activity on a given patch.
 Only accepts GET requests.
 
 
-<span class="item">/patch-summary/&lt;issue&gt;/&lt;patchset&gt;</span>
-Example: <a href="/patch-summary/1067633003/1">/patch-summary/1067633003/1</a>
+<span class="item">/v2/patch-summary/&lt;codereview_hostname&gt;/&lt;issue&gt;/&lt;patchset&gt;</span>
+Example: <a href="/v2/patch-summary/codereview.chromium.org/1067633003/1"
+         >/v2/patch-summary/codereview.chromium.org/1067633003/1</a>
 API for getting a summary of the activity on a patch.
 Only accepts GET requests.
 Patch summary format (all duration values are in seconds):

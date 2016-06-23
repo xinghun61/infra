@@ -14,6 +14,7 @@ from shared.config import (
   TAG_STOP,
   TAG_ISSUE,
   TAG_PATCHSET,
+  TAG_CODEREVIEW_HOSTNAME,
   TRYJOBVERIFIER,
   JOB_STATE,
 )
@@ -21,6 +22,7 @@ from shared.parsing import parse_rietveld_timestamp
 from shared.utils import (
   cross_origin_json,
   to_unix_timestamp,
+  guess_legacy_codereview_hostname,
 )
 
 
@@ -28,13 +30,22 @@ class PatchSummary(webapp2.RequestHandler):
   @cross_origin_json
   def get(self, issue, patch): # pylint: disable=W0221
     now = to_unix_timestamp(datetime.utcnow())
-    return summarize_patch(issue, patch, now)
+    codereview_hostname = guess_legacy_codereview_hostname(issue)
+    return summarize_patch(codereview_hostname, issue, patch, now)
 
 
-def summarize_patch(issue, patch, now):
+class PatchSummaryV2(webapp2.RequestHandler):
+  @cross_origin_json
+  def get(self, codereview_hostname, issue, patch): # pylint: disable=W0221
+    now = to_unix_timestamp(datetime.utcnow())
+    return summarize_patch(codereview_hostname, issue, patch, now)
+
+
+def summarize_patch(codereview_hostname, issue, patch, now):
   attempts = [
     summarize_attempt(raw_attempt, now)
-    for raw_attempt in get_raw_attempts(issue, patch)][::-1]
+    for raw_attempt in get_raw_attempts(codereview_hostname, issue, patch)
+  ][::-1]
   return {
     'success': any(attempt['success'] for attempt in attempts),
     'begin': maybe_min(attempt['begin'] for attempt in attempts),
@@ -57,13 +68,17 @@ def summarize_patch(issue, patch, now):
   }
 
 
-def get_raw_attempts(issue, patch):
+def get_raw_attempts(codereview_hostname, issue, patch):
+  # Do not filter by TAG_CODEREVIEW_HOSTNAME here, because it is not set for old
+  # issues.
   query = Record.query().order(Record.timestamp).filter(
     Record.tags == TAG_ISSUE % issue,
     Record.tags == TAG_PATCHSET % patch)
   raw_attempts = []
   raw_attempt = None
   for record in query:
+    if not record.matches_codereview_hostname(codereview_hostname):
+      continue
     if raw_attempt == None and TAG_START in record.tags:
       raw_attempt = []
     if raw_attempt != None:  # pragma: no branch

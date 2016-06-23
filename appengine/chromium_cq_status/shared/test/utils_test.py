@@ -140,3 +140,24 @@ class TestUtils(testing.AppengineTestCase):
       return large_value
     self.assertEquals(get_large_value(), large_value)
     self.assertEquals(get_large_value(), large_value)
+
+  def test_is_gerrit_issue(self):
+    self.assertTrue(utils.is_gerrit_issue('123'))
+    self.assertTrue(utils.is_gerrit_issue('123123'))
+    self.assertFalse(utils.is_gerrit_issue('123123123'))
+    self.assertFalse(utils.is_gerrit_issue('werid stuff'))
+
+  def test_guess_legacy_codereview_hostname(self):
+    self.assertEquals(utils.guess_legacy_codereview_hostname('123'),
+                      'chromium-review.googlesource.com')
+    self.assertEquals(utils.guess_legacy_codereview_hostname(1234567),
+                      'codereview.chromium.org')
+
+  def test_get_full_patchset_url(self):
+    self.assertEquals(
+        utils.get_full_patchset_url(
+          'chromium-review.googlesource.com', '123', '567'),
+        'https://chromium-review.googlesource.com/#/c/123/567')
+    self.assertEquals(
+        utils.get_full_patchset_url('codereview.chromium.org', '123', '567'),
+        'https://codereview.chromium.org/123/#ps567')

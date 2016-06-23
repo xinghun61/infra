@@ -25,6 +25,23 @@ class PatchSummaryTest(testing.AppengineTestCase):
   def test_no_verifier_start(self):
     return self._test_patch('no_verifier_start')
 
+  def test_no_verifier_start_explicit_codereview(self):
+    return self._test_patch(
+        'no_verifier_start', codereview_hostname='codereview.chromium.org')
+
+  def test_patch_summary_simple_v2(self):
+    return self._test_patch(
+        'simple', codereview_hostname='codereview.chromium.org')
+
+  def test_patch_summary_flaky_v2(self):
+    return self._test_patch(
+        'flaky', codereview_hostname='codereview.chromium.org')
+
+  def test_no_verifier_start_v2(self):
+    return self._test_patch(
+        'no_verifier_start',
+        codereview_hostname='chromium-review.googlesource.com')
+
   # TODO(sergeyberezin): add a small real-life CL for an integration
   # test.
 
@@ -39,9 +56,13 @@ class PatchSummaryTest(testing.AppengineTestCase):
         fields=record['fields'],
       ).put()
 
-  def _test_patch(self, name, issue=123456789):
+  def _test_patch(self, name, issue=123456789, codereview_hostname=None):
     self._load_records('patch_%s.json' % name)
-    response = self.test_app.get('/patch-summary/%s/1' % issue)
+    if not codereview_hostname:
+      response = self.test_app.get('/patch-summary/%s/1' % issue)
+    else:
+      response = self.test_app.get('/v2/patch-summary/%s/%s/1' %
+                                   (codereview_hostname, issue))
     summary = json.loads(response.body)
     logging.debug(json.dumps(summary, indent=2))
     return summary

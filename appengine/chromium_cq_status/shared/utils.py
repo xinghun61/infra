@@ -76,3 +76,37 @@ def to_unix_timestamp(dt):
 
 def compressed_json_dumps(value):
   return json.dumps(value, separators=compressed_separators)
+
+
+def is_gerrit_issue(issue):
+  """Returns true, if the issue is likely legacy Gerrit issue.
+
+  Doesn't do database requests and guesses based purely on issue.
+  """
+  # Gerrit CQ used to post urls for Gerrit users usign same code as Rietveld.
+  # The only easy way to distinguish Rietveld from Gerrit issue, is that
+  # all Gerrit instances used numbers (so far) < 1M, while Rietveld issues are
+  # >10M. Since March 2016, CQ started sending extra codereview_hostname
+  # metadata explicitely, so guessing isn't necessary, and we can safely support
+  # Gerrit issues >1M.
+  try:
+    issue = int(issue)
+    return 0 < issue and issue < 10**6
+  except (ValueError, TypeError):
+    return False
+
+
+def guess_legacy_codereview_hostname(issue):
+  if is_gerrit_issue(issue):
+    return 'chromium-review.googlesource.com'
+  return 'codereview.chromium.org'  # Default Rietveld review site.
+
+
+def get_full_patchset_url(codereview_hostname, issue, patchset):
+  if codereview_hostname.split('.')[0].split('-')[-1] == 'review':
+    # This is Gerrit, which has host-review.googlesource.com.
+    templ = 'https://%s/#/c/%s/%s'
+  else:
+    # Rietveld.
+    templ = 'https://%s/%s/#ps%s'
+  return templ % (codereview_hostname, issue, patchset)

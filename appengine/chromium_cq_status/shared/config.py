@@ -33,5 +33,6 @@ TAG_STOP = 'action=patch_stop'
 TAG_PROJECT = 'project=%s'
 TAG_ISSUE = 'issue=%s'
 TAG_PATCHSET = 'patchset=%s'
+TAG_CODEREVIEW_HOSTNAME = 'codereview_hostname=%s'
 TRYJOBVERIFIER = 'try job'
 VALID_EMAIL_RE = re.compile(r'^.*@(chromium\.org|google\.com)$')

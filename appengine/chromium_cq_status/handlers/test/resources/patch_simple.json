@@ -380,5 +380,31 @@
       "patchset": 1,
       "issue": 123456789
     }
+  },
+
+
+
+
+  {
+    "timestamp": 10001,
+    "key": null,
+    "tags": [
+      "owner=test@chromium.org",
+      "issue=123456789",
+      "patchset=1",
+      "project=spurious",
+      "action=patch_start",
+      "codereview_hostname=chromium-review.googlesource.com"
+    ],
+    "fields": {
+      "project": "spurious",
+      "owner": "test@chromium.org",
+      "reason": null,
+      "action": "patch_start",
+      "patchset": 1,
+      "issue": 123456789,
+      "message": "Spurious Gerrit and Rietveld issue overlap in a far away future",
+      "codereview_hostname": "chromium-review.googlesource.com"
+    }
   }
 ]

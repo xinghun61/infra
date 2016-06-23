@@ -11,7 +11,6 @@ var recentModule = (function(){
 
 var indexSelected = {};
 var logServer = '//chromium-cq-status.appspot.com';
-var reviewServer = '//codereview.chromium.org';
 var tags = [];
 var cursor;
 var table;
@@ -92,6 +91,10 @@ function loadJSON(url, callback) {
 }
 
 function addRow(record) {
+  if (!record.codereview_hostname && !!record.issue){
+    // Old events pre-Gerrit didn't have it set and assumed public Rietveld.
+    record.codereview_hostname = 'codereview.chromium.org';
+  }
   var index = records.length;
   records.push(record);
   var row = newElement('tr');
@@ -99,6 +102,7 @@ function addRow(record) {
     newElement('span', new Date(record.timestamp * 1000)),
     newFieldValue(record, 'project'),
     newFieldValue(record, 'owner'),
+    newFieldValue(record, 'codereview_hostname'),
     newFieldValue(record, 'issue'),
     newFieldValue(record, 'patchset'),
     newFieldValue(record, 'action'),
@@ -171,15 +175,32 @@ function newStatusLink(fields) {
   if (!fields.issue || !fields.patchset) {
     return null;
   }
-  return newLink('[status]', logServer + '/patch-status/' + fields.issue + '/' + fields.patchset);
+  return newLink('[status]', logServer + '/v2/patch-status/' +
+      fields.codereview_hostname + '/' + fields.issue + '/' + fields.patchset);
+}
+
+function isGerritHostname(hostname){
+  var parts = hostname.split(',')[0].split('-');
+  return parts[parts.length - 1] === 'review';
 }
 
 function newReviewLink(fields) {
-  if (!fields.issue) {
+  if (!fields.issue || !fields.codereview_hostname) {
     return null;
   }
-  var patchset = fields.patchset ? '#ps' + fields.patchset : '';
-  return newLink('[review]', reviewServer + '/' + fields.issue + patchset);
+  var path_prefix;
+  var patchset;
+  // Gerrit.
+  if (isGerritHostname(fields.codereview_hostname)){
+    path_prefix = '/c/';
+    patchset = fields.patchset ? '/' + fields.patchset : '';
+  } else {
+    // Rietveld.
+    path_prefix = '/';
+    patchset = fields.patchset ? '#ps' + fields.patchset : '';
+  }
+  return newLink('[review]', '//' + fields.codereview_hostname + path_prefix +
+      fields.issue + patchset);
 }
 
 function updateFilterList() {

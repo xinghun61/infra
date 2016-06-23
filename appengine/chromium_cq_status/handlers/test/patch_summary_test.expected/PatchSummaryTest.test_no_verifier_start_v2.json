@@ -1,0 +1,77 @@
+{
+  "attempt_count": 1,
+  "attempt_fail_count": 0,
+  "attempts": [
+    {
+      "begin": 10000.0,
+      "durations": {
+        "blocked_on_closed_tree": 0,
+        "blocked_on_throttled_tree": 0,
+        "committing": 0,
+        "running_all_jobs": 0,
+        "total": 503.0
+      },
+      "end": 10503.0,
+      "fail_reason": null,
+      "jobs": {
+        "failed": [],
+        "passed": [],
+        "running": [
+          {
+            "begin": 10010.0,
+            "build_number": 1001,
+            "builder": "test_suite_b_1",
+            "duration": 493.0,
+            "end": null,
+            "master": "tryserver.b",
+            "retry": false,
+            "slave": "slave-b1",
+            "state": "running",
+            "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_1/builds/1001"
+          },
+          {
+            "begin": 10010.0,
+            "build_number": 1002,
+            "builder": "test_suite_b_2",
+            "duration": 493.0,
+            "end": null,
+            "master": "tryserver.b",
+            "retry": false,
+            "slave": "slave-b2",
+            "state": "running",
+            "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_2/builds/1002"
+          },
+          {
+            "begin": 10010.0,
+            "build_number": 1000,
+            "builder": "test_suite_a",
+            "duration": 493.0,
+            "end": null,
+            "master": "tryserver.a",
+            "retry": false,
+            "slave": "slave-a1",
+            "state": "running",
+            "url": "http://build.chromium.org/p/tryserver.a/builders/test_suite_a/builds/1000"
+          }
+        ]
+      },
+      "success": null
+    }
+  ],
+  "begin": 10000.0,
+  "durations": {
+    "blocked_on_closed_tree": 0,
+    "blocked_on_throttled_tree": 0,
+    "committing": 0,
+    "running_all_jobs": 0,
+    "total": 503.0
+  },
+  "end": 10503.0,
+  "flaky_jobs": [],
+  "job_counts": {
+    "failed": 0,
+    "passed": 0,
+    "running": 3
+  },
+  "success": false
+}

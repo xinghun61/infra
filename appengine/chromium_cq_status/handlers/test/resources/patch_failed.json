@@ -73,11 +73,11 @@
 						"defaulttests"
 					]
 				},
-        "client.skia.test": {
-          "Test-Tester": [
-            "defaulttests"
-          ]
-        }
+				"client.skia.test": {
+					"Test-Tester": [
+						"defaulttests"
+					]
+				}
 			}
 		},
 		"key": null,
@@ -197,9 +197,9 @@
 						"category": "cq",
 						"job_state": "JOB_RUNNING",
 						"revision": ""
-          }
-        ],
-       "JOB_FAILED": [
+					}
+				],
+				"JOB_FAILED": [
 					{
 						"build_id": "9042920998742054880",
 						"parent_name": null,
@@ -316,6 +316,7 @@
 			"action": "patch_stop",
 			"patchset": 1,
 			"issue": 123456789,
+			"codereview_hostname": "codereview.chromium.org",
 			"message": "Try jobs failed."
 		},
 		"key": null,
@@ -324,7 +325,8 @@
 			"action=patch_stop",
 			"patchset=1",
 			"issue=123456789",
-			"project=skiabuildbot"
+			"project=skiabuildbot",
+			"codereview_hostname=codereview.chromium.org"
 		]
 	}
 ]
