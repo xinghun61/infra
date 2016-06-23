@@ -13,7 +13,7 @@
      .alert {
        @apply(--layout-horizontal);
        padding: 1em;
-       background-color: white;
+       background-color: #fff;
        border: 1px solid #ddd;
      }
      .alert-expanded {
@@ -36,6 +36,13 @@
      .list-item {
         @apply(--layout-flex);
         @apply(--layout-vertical);
+     }
+     paper-button {
+       -webkit-transition: background .3s ease;
+       transition: background .3s ease;
+     }
+     paper-button:hover {
+       background-color: #eee;
      }
      .file-bug-icon,
      .snooze-icon {
