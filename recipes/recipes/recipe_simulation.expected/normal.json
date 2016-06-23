@@ -24,7 +24,7 @@
       "--slave",
       "TestSlavename",
       "--spec",
-      "cache_dir = '[SLAVE_BUILD]/_cache_dir'\nsolutions = [{'deps_file': 'DEPS', 'managed': True, 'name': 'build', 'url': 'https://repo.repo/build'}]",
+      "cache_dir = '[SLAVE_BUILD]/_cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://repo.repo/build'}]",
       "--root",
       "build",
       "--revision_mapping_file",
