@@ -64,6 +64,12 @@
         background: white;
         border-left: 1px solid #ddd;
       }
+      #noAlerts {
+        margin: 1em;
+        text-align: center;
+        font-size: 2.5em;
+        line-height: 150%;
+      }
     </style>
     <iron-location id="url" path="{{_path}}"></iron-location>
     <iron-ajax
@@ -105,8 +111,10 @@
         <div class="flex layout vertical">
           <iron-pages attr-for-selected='id' selected="[[_selectedPage]]" class="flex layout vertical">
             <div id="alertsList">
-             <div hidden$="[[_haveAlerts]]">
+             <div hidden$="[[_haveAlerts]]" id="noAlerts">
                 No alerts!
+                <br>
+                <img src="/images/jparent-jump.gif" alt="Julie Jumping" title="Julie Jumping">
               </div>
               <div id="alertsListInner">
                 <template is="dom-repeat" items="[[_alerts]]" as="alert">

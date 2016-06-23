@@ -7,6 +7,10 @@ handlers:
   static_dir: bower_components
   secure: always
 
+- url: /images
+  static_dir: images
+  secure: always
+
 - url: /elements
   static_dir: elements
   secure: always
