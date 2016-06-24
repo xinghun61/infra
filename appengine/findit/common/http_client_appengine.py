@@ -11,10 +11,12 @@ from common import auth_util
 from common.retry_http_client import RetryHttpClient
 
 
-#TODO(katesonia): Move this to config.
+# TODO(katesonia): Move this to config.
 _INTERNAL_HOSTS_TO_SCOPES = {
     'https://chrome-internal.googlesource.com/': (
-        'https://www.googleapis.com/auth/gerritcodereview')
+        'https://www.googleapis.com/auth/gerritcodereview'),
+    'https://codereview.chromium.org/': (
+        'https://www.googleapis.com/auth/userinfo.email'),
 }
 
 
@@ -39,15 +41,18 @@ class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
     for host, scope in _INTERNAL_HOSTS_TO_SCOPES.iteritems():
       if url.startswith(host):
         self._ExpandAuthorizationHeaders(headers, scope)
+        logging.debug('Authorization header of scope %s was added for %s',
+                      scope, url)
         break
 
     if method in (urlfetch.POST, urlfetch.PUT):
       result = urlfetch.fetch(
-          url, payload=data, method=method,
-          headers=headers, deadline=timeout, validate_certificate=True)
+          url, payload=data, method=method, headers=headers, deadline=timeout,
+          follow_redirects=False, validate_certificate=True)
     else:
       result = urlfetch.fetch(
-          url, headers=headers, deadline=timeout, validate_certificate=True)
+          url, headers=headers, deadline=timeout,
+          follow_redirects=False, validate_certificate=True)
 
     if (result.status_code != 200 and self._ShouldLogError(result.status_code)):
       logging.error('Request to %s resulted in %d, headers:%s', url,
