@@ -1226,7 +1226,7 @@ class IssueService(object):
       component_ids, blocked_on, blocking, dangling_blocked_on_refs,
       dangling_blocking_refs, merged_into, index_now=True,
       page_gen_ts=None, comment=None, inbound_message=None, attachments=None,
-      timestamp=None):
+      is_description=False, timestamp=None):
     """Feel free to implement a spec-compliant return value."""
     issue = self.issues_by_project[project_id][local_id]
     amendments = []
@@ -1312,7 +1312,7 @@ class IssueService(object):
   def CreateIssueComment(
       self, _cnxn, project_id, local_id, user_id, content,
       inbound_message=None, amendments=None, attachments=None, timestamp=None,
-      is_spam=False, commit=True):
+      is_spam=False, is_description=False, commit=True):
     # Add a comment to an issue
     issue = self.issues_by_project[project_id][local_id]
 
@@ -1330,6 +1330,8 @@ class IssueService(object):
       comment.amendments.extend(amendments)
     if inbound_message:
       comment.inbound_message = inbound_message
+    comment.is_spam = is_spam
+    comment.is_description = is_description
 
     pid = project_id
     self.comments_by_project.setdefault(pid, {})

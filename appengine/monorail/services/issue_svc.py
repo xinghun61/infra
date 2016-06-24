@@ -70,8 +70,9 @@ ISSUE2FIELDVALUE_COLS = [
 COMMENT_COLS = [
     'Comment.id', 'issue_id', 'created', 'Comment.project_id', 'commenter_id',
     'content', 'inbound_message', 'was_escaped', 'deleted_by',
-    'Comment.is_spam']
-ABBR_COMMENT_COLS = ['Comment.id', 'commenter_id', 'deleted_by']
+    'Comment.is_spam', 'is_description']
+ABBR_COMMENT_COLS = ['Comment.id', 'commenter_id', 'deleted_by',
+    'is_description']
 ATTACHMENT_COLS = [
     'id', 'issue_id', 'comment_id', 'filename', 'filesize', 'mimetype',
     'deleted', 'gcs_object_id']
@@ -462,7 +463,8 @@ class IssueService(object):
 
     comment = self._MakeIssueComment(
         project_id, reporter_id, marked_description,
-        attachments=attachments, timestamp=timestamp, was_escaped=True)
+        attachments=attachments, timestamp=timestamp, was_escaped=True,
+        is_description=True)
 
     # Set the closed_timestamp both before and after filter rules.
     if not tracker_helpers.MeansOpenInProject(
@@ -1231,7 +1233,7 @@ class IssueService(object):
       component_ids, blocked_on, blocking, dangling_blocked_on_refs,
       dangling_blocking_refs, merged_into, index_now=True,
       page_gen_ts=None, comment=None, inbound_message=None, attachments=None,
-      timestamp=None):
+      is_description=False, timestamp=None):
     """Update the issue in the database and return info for notifications.
 
     Args:
@@ -1262,6 +1264,7 @@ class IssueService(object):
       attachments: This should be a list of
           [(filename, contents, mimetype),...] attachments uploaded at
           the time the comment was made.
+      is_description: True if the comment is a new description for the issue.
       timestamp: int timestamp set during testing, otherwise defaults to
           int(time.time()).
 
@@ -1492,7 +1495,8 @@ class IssueService(object):
       comment_pb = self.CreateIssueComment(
           cnxn, project_id, local_id, reporter_id, comment,
           amendments=amendments, attachments=attachments,
-          inbound_message=inbound_message, is_spam=is_spam)
+          inbound_message=inbound_message, is_spam=is_spam,
+          is_description=is_description)
       services.spam.RecordClassifierCommentVerdict(
           cnxn, comment_pb, is_spam, score)
     else:
@@ -1612,7 +1616,8 @@ class IssueService(object):
       # Create the same summary comment as the target issue.
       comment = self._MakeIssueComment(
           dest_project.project_id, copier_id, initial_summary_comment.content,
-          attachments=attachments, timestamp=timestamp, was_escaped=True)
+          attachments=attachments, timestamp=timestamp, was_escaped=True,
+          is_description=True)
 
       new_issue.local_id = self.AllocateNextLocalID(
           cnxn, dest_project.project_id)
@@ -1861,7 +1866,8 @@ class IssueService(object):
   def _UnpackComment(self, comment_row):
     """Partially construct a Comment PB from a DB row."""
     (comment_id, issue_id, created, project_id, commenter_id, content,
-     inbound_message, was_escaped, deleted_by, is_spam) = comment_row
+     inbound_message, was_escaped, deleted_by, is_spam,
+     is_description) = comment_row
     comment = tracker_pb2.IssueComment()
     comment.id = comment_id
     comment.issue_id = issue_id
@@ -1873,6 +1879,7 @@ class IssueService(object):
     comment.was_escaped = bool(was_escaped)
     comment.deleted_by = deleted_by or 0
     comment.is_spam = bool(is_spam)
+    comment.is_description = bool(is_description)
     return comment
 
   def _UnpackAmendment(self, amendment_row):
@@ -2084,7 +2091,7 @@ class IssueService(object):
         inbound_message=comment.inbound_message,
         was_escaped=comment.was_escaped,
         deleted_by=comment.deleted_by or None,
-        is_spam=comment.is_spam,
+        is_spam=comment.is_spam, is_description=comment.is_description,
         commit=commit)
     comment.id = comment_id
 
@@ -2140,7 +2147,7 @@ class IssueService(object):
   def _MakeIssueComment(
       self, project_id, user_id, content, inbound_message=None,
       amendments=None, attachments=None, timestamp=None, was_escaped=False,
-      is_spam=False):
+      is_spam=False, is_description=False):
     """Create in IssueComment protocol buffer in RAM.
 
     Args:
@@ -2156,6 +2163,7 @@ class IssueService(object):
       timestamp: time at which the comment was made, defaults to now.
       was_escaped: True if the comment was HTML escaped already.
       is_spam: True if the comment was classified as spam.
+      is_description: True if the comment is a description for the issue.
     Returns:
       The new IssueComment protocol buffer.
 
@@ -2169,6 +2177,7 @@ class IssueService(object):
     comment.content = content or ''
     comment.was_escaped = was_escaped
     comment.is_spam = is_spam
+    comment.is_description = is_description
     if not timestamp:
       timestamp = int(time.time())
     comment.timestamp = int(timestamp)
@@ -2195,7 +2204,7 @@ class IssueService(object):
   def CreateIssueComment(
       self, cnxn, project_id, local_id, user_id, content, inbound_message=None,
       amendments=None, attachments=None, timestamp=None, is_spam=False,
-      commit=True):
+      is_description=False, commit=True):
     """Create and store a new comment on the specified issue.
 
     Args:
@@ -2212,6 +2221,7 @@ class IssueService(object):
           the time the comment was made.
       timestamp: time at which the comment was made, defaults to now.
       is_spam: True if the comment is classified as spam.
+      is_description: True if the comment is a description for the issue.
       commit: set to False to not commit to DB yet.
 
     Returns:
@@ -2226,7 +2236,7 @@ class IssueService(object):
     comment = self._MakeIssueComment(
         issue.project_id, user_id, content, amendments=amendments,
         inbound_message=inbound_message, attachments=attachments,
-        timestamp=timestamp, is_spam=is_spam)
+        timestamp=timestamp, is_spam=is_spam, is_description=is_description)
     comment.issue_id = issue.issue_id
 
     if attachments:

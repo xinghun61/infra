@@ -825,3 +825,12 @@ CREATE TABLE Component2Label (
 
 ALTER TABLE ProjectIssueConfig ADD COLUMN member_default_query TEXT;
 
+=======
+2016-06-17: Add is_description column to Comment
+
+Local:
+% pt-online-schema-change --alter "ADD COLUMN is_description BOOLEAN DEFAULT FALSE" D=monorail,t=Comment --host=localhost --user=root --alter-foreign-keys-method=rebuild_constraints --execute
+
+Staging/Production:
+% pt-online-schema-change --alter "ADD COLUMN is_description BOOLEAN DEFAULT FALSE" D=monorail,t=Comment,h=<master IP address>,u=$USER,p=test --alter-forieign-keys-method=rebuild_constraints --recursion-method=hosts --execute
+

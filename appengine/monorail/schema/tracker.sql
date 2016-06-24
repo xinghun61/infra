@@ -317,6 +317,8 @@ CREATE TABLE Comment (
   was_escaped BOOLEAN DEFAULT FALSE,
   deleted_by INT UNSIGNED,
   is_spam BOOLEAN DEFAULT FALSE,
+  -- TODO(lukasperaza) Update first comments SET is_description=TRUE
+  is_description BOOLEAN DEFAULT FALSE,
 
   PRIMARY KEY(id),
   INDEX (is_spam, project_id, created),

@@ -378,6 +378,7 @@ class IssueDetail(issuepeek.IssuePeek):
     if not abbr_comment_rows:
       return None, [], None
 
+    # TODO(lukasperaza): Show last description comment as description
     description = abbr_comment_rows[0]
     comments = abbr_comment_rows[1:]
     all_comment_ids = [row[0] for row in comments]
