@@ -111,12 +111,20 @@ class SwarmingTest(testing.AppengineTestCase):
     self.assertFalse(swarming.is_for_swarming_async(build).get_result())
 
   def test_build_parameters(self):
-    with self.assertRaises(errors.InvalidInputError):
-      swarming.validate_build_parameters('foo', {'properties': []})
-    with self.assertRaises(errors.InvalidInputError):
-      swarming.validate_build_parameters('foo', {
-        'properties': {'buildername': 'bar'},
-      })
+    bad = [
+      {'properties': []},
+      {'properties': {'buildername': 'bar'}},
+      {'changes': 0},
+      {'changes': [0]},
+      {'changes': [{'author': 0}]},
+      {'changes': [{'author': {}}]},
+      {'changes': [{'author': {'email': 0}}]},
+      {'changes': [{'author': {'email': ''}}]},
+      {'changes': [{'author': {'email': 'a@example.com'}, 'repo_url': 0}]},
+    ]
+    for p in bad:
+      with self.assertRaises(errors.InvalidInputError):
+        swarming.validate_build_parameters('foo', p)
 
   def test_validate_swarming_param(self):
     def validate_swarming_param(value):
@@ -171,6 +179,7 @@ class SwarmingTest(testing.AppengineTestCase):
         },
         'changes': [{
           'author': {'email': 'bob@example.com'},
+          'repo_url': 'https://chromium.googlesource.com/chromium/src',
         }]
       },
     )
@@ -237,6 +246,7 @@ class SwarmingTest(testing.AppengineTestCase):
             'blamelist': ['bob@example.com'],
             'buildername': 'builder',
             'predefined-property': 'x',
+            'repository': 'https://chromium.googlesource.com/chromium/src',
           }, sort_keys=True)
         ],
         'dimensions': sorted([

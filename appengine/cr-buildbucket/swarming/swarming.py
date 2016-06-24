@@ -100,34 +100,54 @@ def is_for_swarming_async(build):
 
 def validate_build_parameters(builder_name, params):
   """Raises errors.InvalidInputError if build parameters are invalid."""
+
+  def bad(fmt, *args):
+    raise errors.InvalidInputError(fmt % args)
+
   properties = params.get(PARAM_PROPERTIES)
   if properties is not None:
     if not isinstance(properties, dict):
-      raise errors.InvalidInputError('properties param must be an object')
+      bad('properties parameter must be an object')
     if properties.get('buildername', builder_name) != builder_name:
-      raise errors.InvalidInputError('inconsistent builder name')
+      bad('inconsistent builder name')
 
   swarming = params.get(PARAM_SWARMING)
   if swarming is not None:
     if not isinstance(swarming, dict):
-      raise errors.InvalidInputError('swarming param must be an object')
+      bad('swarming parameter must be an object')
     swarming = copy.deepcopy(swarming)
     if 'recipe' in swarming:
       recipe = swarming.pop('recipe')
       if not isinstance(recipe, dict):
-        raise errors.InvalidInputError(
-            'swarming.recipe param must be an object')
+        bad('swarming.recipe parameter must be an object')
       if 'revision' in recipe:
         revision = recipe.pop('revision')
         if not isinstance(revision, basestring):
-          raise errors.InvalidInputError(
-            'swarming.recipe.revision must be a string')
+          bad('swarming.recipe.revision parameter must be a string')
       if recipe:
-        raise errors.InvalidInputError(
-          'Unrecognized keys in swarming.recipe: %r' % recipe)
+        bad('unrecognized keys in swarming.recipe: %r', recipe)
 
     if swarming:
-      raise errors.InvalidInputError('Unrecognized keys: %r', swarming)
+      bad('unrecognized keys: %r', swarming)
+
+  changes = params.get(PARAM_CHANGES)
+  if changes is not None:
+    if not isinstance(changes, list):
+      bad('changes param must be an array')
+    for c in changes:  # pragma: no branch
+      if not isinstance(c, dict):
+        bad('changes param must contain only objects')
+      repo_url = c.get('repo_url')
+      if repo_url is not None and not isinstance(repo_url, basestring):
+        bad('change repo_url must be a string')
+      author = c.get('author')
+      if not isinstance(author, dict):
+        bad('change author must be an object')
+      email = author.get('email')
+      if not isinstance(email, basestring):
+        bad('change author email must be a string')
+      if not email:
+        bad('change author email not specified')
 
 
 def merge_recipe(r1, r2):
@@ -174,15 +194,29 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
 
     build_properties = dict(
       p.split(':', 1) for p in recipe.properties or [])
-    build_properties.update(build.parameters.get(PARAM_PROPERTIES) or {})
     build_properties['buildername'] = builder_cfg.name
 
-    # Convert changes in build to blamelist property, like Buildbot-Buildbucket
-    # integration. In Buildbot the property value is a list of emails.
     changes = params.get(PARAM_CHANGES)
     if changes:  # pragma: no branch
+      # Buildbucket-Buildbot integration passes repo_url of the first change in
+      # build parameter "changes" as "repository" attribute of SourceStamp.
+      # https://chromium.googlesource.com/chromium/tools/build/+/2c6023d/scripts/master/buildbucket/changestore.py#140
+      # Buildbot passes repository of the build source stamp as "repository"
+      # build property. Recipes, in partiular bot_update recipe module, rely on
+      # "repository" property and it is an almost sane property to support in
+      # swarmbucket.
+      repo_url = changes[0].get('repo_url')
+      if repo_url:  # pragma: no branch
+        build_properties['repository'] = repo_url
+
+      # Buildbot-Buildbucket integration converts emails in changes to blamelist
+      # property.
       emails = [c.get('author', {}).get('email') for c in changes]
       build_properties['blamelist'] = filter(None, emails)
+
+    # Properties specified in build parameters must override any values derived
+    # by swarmbucket.
+    build_properties.update(build.parameters.get(PARAM_PROPERTIES) or {})
 
     task_template_params.update({
       'repository': recipe.repository,
