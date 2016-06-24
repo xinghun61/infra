@@ -518,7 +518,7 @@ func (a *Analyzer) mergeAlertsByReason(alerts []messages.Alert) []messages.Alert
 		sort.Sort(byRepo(mergedBF.RegressionRanges))
 
 		if len(mergedBF.Builders) > 1 {
-			merged.Title = fmt.Sprintf("%s failing on %d builders", reason, len(mergedBF.Builders))
+			merged.Title = fmt.Sprintf("%s failing on %d builders", mergedBF.Reasons[0].Step, len(mergedBF.Builders))
 			builderNames := []string{}
 			for _, b := range mergedBF.Builders {
 				builderNames = append(builderNames, b.Name)

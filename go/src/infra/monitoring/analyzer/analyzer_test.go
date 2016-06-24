@@ -729,7 +729,7 @@ func (a sortAlerts) Len() int           { return len(a) }
 func (a sortAlerts) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a sortAlerts) Less(i, j int) bool { return a[i].Key > a[j].Key }
 
-func TestMergeAlertsByStep(t *testing.T) {
+func TestMergeAlertsByReason(t *testing.T) {
 	tests := []struct {
 		name     string
 		in, want []messages.Alert
@@ -905,6 +905,59 @@ func TestMergeAlertsByStep(t *testing.T) {
 								Positions: []string{},
 							},
 						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple builders fail on step_a with tests",
+			in: []messages.Alert{
+				{
+					Type: messages.AlertBuildFailure,
+					Extension: messages.BuildFailure{
+						Builders: []messages.AlertedBuilder{
+							{Name: "builder A"},
+						},
+						Reasons: []messages.Reason{
+							{
+								TestNames: []string{"test1", "test2"},
+								Step:      "step_a",
+							},
+						},
+					},
+				},
+				{
+					Type: messages.AlertBuildFailure,
+					Extension: messages.BuildFailure{
+						Builders: []messages.AlertedBuilder{
+							{Name: "builder B"},
+						},
+						Reasons: []messages.Reason{
+							{
+								TestNames: []string{"test1", "test2"},
+								Step:      "step_a",
+							},
+						},
+					},
+				},
+			},
+			want: []messages.Alert{
+				{
+					Title: "step_a failing on 2 builders",
+					Type:  messages.AlertBuildFailure,
+					Body:  "builder A, builder B",
+					Extension: messages.BuildFailure{
+						Builders: []messages.AlertedBuilder{
+							{Name: "builder A"},
+							{Name: "builder B"},
+						},
+						Reasons: []messages.Reason{
+							{
+								TestNames: []string{"test1", "test2"},
+								Step:      "step_a",
+							},
+						},
+						RegressionRanges: []messages.RegressionRange{},
 					},
 				},
 			},
