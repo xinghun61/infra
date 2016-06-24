@@ -41,6 +41,12 @@
      .infra-failure a {
        color: #fff;
      }
+     .build-failures {
+       width: 100%;
+       max-height: 200px;
+       overflow-y: auto;
+       padding-right: 20px;
+     }
      .builder a:hover {
        text-decoration: underline;
      }
@@ -73,8 +79,8 @@
       </template>
       <div id="reasons">
         <template is="dom-repeat" items="[[extension.reasons]]" as="reason">
-          <div>
             <a target="_blank" href$="[[_uberify(reason.url)]]">[[reason.step]]</a>
+          <div class="build-failures">
             <ul>
               <template is="dom-repeat" items="[[reason.test_names]]" as="testName">
                 <li>
