@@ -1,0 +1,314 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[build::cipd]/resources/bootstrap.py",
+      "--platform",
+      "linux-amd64",
+      "--dest-directory",
+      "[SLAVE_BUILD]/cipd",
+      "--json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "install cipd",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@cipd instance_id: 40-chars-fake-of-the-package-instance_id@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"executable\": \"[SLAVE_BUILD]/cipd/cipd\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"instance_id\": \"40-chars-fake-of-the-package-instance_id\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]/cipd/cipd",
+      "pkg-build",
+      "--in",
+      "[SLAVE_BUILD]/build/scripts/slave/recipe_modules/cipd",
+      "--name",
+      "infra/cipd_recipe_test/linux-amd64",
+      "--out",
+      "[SLAVE_BUILD]/test_package.cipd",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--install-mode",
+      "copy"
+    ],
+    "name": "build linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@instance_id: 40-chars-fake-of-the-package-instance_id@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/cipd_recipe_test/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]/cipd/cipd",
+      "pkg-register",
+      "[SLAVE_BUILD]/test_package.cipd",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json",
+      "--ref",
+      "latest",
+      "--tag",
+      "buildbot_build:chromium.infra/cipd-module-tester/571",
+      "--tag",
+      "git_repository:https://chromium.googlesource.com/chrome/tools/build",
+      "--tag",
+      "revision:deadbeaf"
+    ],
+    "name": "register infra/cipd_recipe_test/linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/cipd_recipe_test/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]/cipd/cipd",
+      "set-tag",
+      "infra/cipd_recipe_test/linux-amd64",
+      "--version",
+      "40-chars-fake-of-the-package-instance_id",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json",
+      "--tag",
+      "tag:cipd_test"
+    ],
+    "name": "cipd set-tag infra/cipd_recipe_test/linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/cipd_recipe_test/linux-amd64\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"pin\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/cipd_recipe_test/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]/cipd/cipd",
+      "set-ref",
+      "infra/cipd_recipe_test/linux-amd64",
+      "--version",
+      "40-chars-fake-of-the-package-instance_id",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json",
+      "--ref",
+      "cipd_test"
+    ],
+    "name": "cipd set-ref infra/cipd_recipe_test/linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/cipd_recipe_test/linux-amd64\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"pin\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/cipd_recipe_test/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]/cipd/cipd",
+      "search",
+      "infra/cipd_recipe_test/linux-amd64",
+      "--tag",
+      "revision:deadbeaf",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json"
+    ],
+    "name": "cipd search infra/cipd_recipe_test/linux-amd64 revision:deadbeaf",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/cipd_recipe_test/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]/cipd/cipd",
+      "describe",
+      "infra/cipd_recipe_test/linux-amd64",
+      "--version",
+      "40-chars-fake-of-the-package-instance_id",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json"
+    ],
+    "name": "cipd describe infra/cipd_recipe_test/linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"pin\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/cipd_recipe_test/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"refs\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@      {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"modified_by\": \"user:44-blablbla@developer.gserviceaccount.com\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"modified_ts\": 1446574210, @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"ref\": \"latest\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    ], @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"registered_by\": \"user:44-blablbla@developer.gserviceaccount.com\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"registered_ts\": 1446574210, @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"tags\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@      {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"registered_by\": \"user:44-blablbla@developer.gserviceaccount.com\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"registered_ts\": 1446574210, @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"tag\": \"git_repository:https://chromium.googlesource.com/chrome/tools/build\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }, @@@",
+      "@@@STEP_LOG_LINE@json.output@      {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"registered_by\": \"user:44-blablbla@developer.gserviceaccount.com\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"registered_ts\": 1446574210, @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"tag\": \"buildbot_build:chromium.infra/cipd-module-tester/571\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }, @@@",
+      "@@@STEP_LOG_LINE@json.output@      {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"registered_by\": \"user:44-blablbla@developer.gserviceaccount.com\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"registered_ts\": 1446574210, @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"tag\": \"revision:deadbeaf\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    ]@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]/cipd/cipd",
+      "ensure",
+      "--root",
+      "[SLAVE_BUILD]/cipd_test_package",
+      "--list",
+      "infra/cipd_recipe_test/linux-amd64 latest",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json"
+    ],
+    "name": "ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-latest----------\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/cipd_recipe_test/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]/cipd/cipd",
+      "ensure",
+      "--root",
+      "[SLAVE_BUILD]/cipd_test_package",
+      "--list",
+      "infra/cipd_recipe_test/linux-amd64 40-chars-fake-of-the-package-instance_id",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json"
+    ],
+    "name": "ensure_installed (2)",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/cipd_recipe_test/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
+      "[SLAVE_BUILD]/cipd_test_package/.cipd"
+    ],
+    "name": "rmtree .cipd package directory",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import os, sys@@@",
+      "@@@STEP_LOG_LINE@python.inline@from common import chromium_utils # Error? See https://crbug.com/584783.@@@",
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@if os.path.exists(sys.argv[1]):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  chromium_utils.RemoveDirectory(sys.argv[1])@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]/cipd/cipd",
+      "pkg-build",
+      "--in",
+      "[SLAVE_BUILD]/cipd_test_package",
+      "--name",
+      "infra/cipd_recipe_test/linux-amd64",
+      "--out",
+      "[SLAVE_BUILD]/test_package.cipd",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--install-mode",
+      "copy"
+    ],
+    "name": "build linux-amd64 (2)",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/cipd_recipe_test/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]
