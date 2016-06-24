@@ -285,3 +285,24 @@ def GenTests(api):
               {}))
   )
 
+  yield (
+      api.test('no_reference_builder') +
+      api.luci_config.get_projects((
+          'recipe_engine', 'build_limited_scripts_slave')) +
+      api.luci_config.get_project_config(
+          'build_limited_scripts_slave', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config('build_limited_scripts_slave')) +
+      api.luci_config.get_project_config(
+          'recipe_engine', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config('recipe_engine')) +
+      api.properties(
+          patches="build_limited_scripts_slave:"
+            "https://fake.code.review/123456#ps1") +
+      api.override_step_data(
+          'git_cl description (build_limited_scripts_slave)',
+          stdout=api.raw_io.output("")) +
+      api.override_step_data(
+          'parse description', api.json.output(
+              {}))
+  )
+

@@ -429,7 +429,10 @@
       "[SLAVE_BUILD]/depot_tools/depot_tools/infra/config/recipes.cfg",
       "simulation_test"
     ],
-    "name": "depot_tools tests"
+    "name": "depot_tools tests",
+    "~followup_annotations": [
+      "@@@STEP_LINK@reference builder@https://build.chromium.org/p/chromium.infra/builders/depot_tools-recipes-tests@@@"
+    ]
   },
   {
     "cmd": [
@@ -440,7 +443,10 @@
       "[SLAVE_BUILD]/recipe_engine/recipe_engine/infra/config/recipes.cfg",
       "simulation_test"
     ],
-    "name": "recipe_engine tests"
+    "name": "recipe_engine tests",
+    "~followup_annotations": [
+      "@@@STEP_LINK@reference builder@https://build.chromium.org/p/chromium.infra/builders/recipe_engine-recipes-tests@@@"
+    ]
   },
   {
     "cmd": [
@@ -455,7 +461,10 @@
       "[SLAVE_BUILD]/build/build/infra/config/recipes.cfg",
       "simulation_test"
     ],
-    "name": "build tests"
+    "name": "build tests",
+    "~followup_annotations": [
+      "@@@STEP_LINK@reference builder@https://build.chromium.org/p/chromium.tools.build/builders/recipe-simulation_trusty64@@@"
+    ]
   },
   {
     "name": "$result",

@@ -252,7 +252,10 @@
       "[SLAVE_BUILD]/build/build/infra/config/recipes.cfg",
       "simulation_test"
     ],
-    "name": "build tests"
+    "name": "build tests",
+    "~followup_annotations": [
+      "@@@STEP_LINK@reference builder@https://build.chromium.org/p/chromium.tools.build/builders/recipe-simulation_trusty64@@@"
+    ]
   },
   {
     "name": "$result",
