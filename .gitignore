@@ -15,5 +15,6 @@ appengine/milo/html/parts/graph/viz.js
 build_cache
 go/src/github.com
 recipes-py
+*.recipe_deps
 !/cipd/README.md
 reasons.sqlite

@@ -5,7 +5,7 @@
 """A recipe for actually running recipe on build/ repo patches as tryjobs.
 
 For usage - see
-https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/recipes/infra/try_recipe.md
+https://chromium.googlesource.com/infra/infra/+/master/recipes/recipes/try_recipe.md
 """
 
 import base64
@@ -14,8 +14,9 @@ import zlib
 
 
 DEPS = [
+  'build/file',
+  'depot_tools/tryserver',
   'depot_tools/bot_update',
-  'file',
   'depot_tools/gclient',
   'recipe_engine/json',
   'recipe_engine/path',
@@ -24,7 +25,6 @@ DEPS = [
   'recipe_engine/python',
   'recipe_engine/raw_io',
   'recipe_engine/step',
-  'depot_tools/tryserver'
 ]
 
 

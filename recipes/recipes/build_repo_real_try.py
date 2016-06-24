@@ -10,9 +10,10 @@ major outages.
 
 DEPS = [
   'depot_tools/bot_update',
-  'depot_tools/git',
-  'file',
   'depot_tools/gclient',
+  'depot_tools/git',
+  'depot_tools/tryserver',
+  'build/file',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -20,7 +21,6 @@ DEPS = [
   'recipe_engine/python',
   'recipe_engine/raw_io',
   'recipe_engine/step',
-  'depot_tools/tryserver'
 ]
 
 

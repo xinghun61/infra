@@ -12,7 +12,7 @@ DEPS = [
   'recipe_engine/properties',
   'recipe_engine/python',
   'recipe_engine/step',
-  'luci_config',
+  'build/luci_config',
 ]
 
 PROPERTIES = {

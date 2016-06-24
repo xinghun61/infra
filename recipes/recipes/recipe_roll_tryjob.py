@@ -5,8 +5,8 @@
 """Rolls recipes.cfg dependencies."""
 
 DEPS = [
-  'recipe_tryjob',
-  'luci_config',
+  'build/recipe_tryjob',
+  'build/luci_config',
   'recipe_engine/json',
   'recipe_engine/properties',
   'recipe_engine/raw_io',
