@@ -92,6 +92,18 @@ PROJECTS_TO_TRY = [
   'depot_tools',
 ]
 
+PROJECT_TO_CONTINUOUS_WATERFALL = {
+  'build': 'https://build.chromium.org/p/chromium.tools.build/builders/'
+    'recipe-simulation_trusty64',
+  'recipe_engine': 'https://build.chromium.org/p/chromium.infra/builders/'
+    'recipe_engine-recipes-tests',
+  'depot_tools': 'https://build.chromium.org/p/chromium.infra/builders/'
+    'depot_tools-recipes-tests',
+}
+
+FILE_BUG_FOR_CONTINUOUS_LINK = 'https://goo.gl/PoAPOJ'
+
+
 class RecipeTryjobApi(recipe_api.RecipeApi):
   """
   This is intended as a utility module for recipe tryjobs. Currently it's just a
@@ -285,11 +297,21 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
       deps_locs = {dep: locations[dep] for dep in deps[proj]}
 
       try:
-        self.simulation_test(
+        result = self.simulation_test(
           proj, recipe_configs[proj], locations[proj], deps_locs)
-      except recipe_api.StepFailure:
+      except recipe_api.StepFailure as f:
+        result = f.result
         if should_fail_build_mapping.get(proj, True):
           bad_projects.append(proj)
+      finally:
+        link = PROJECT_TO_CONTINUOUS_WATERFALL.get(proj)
+        if link:
+          result.presentation.links['reference builder'] = link
+        else:
+          result.presentation.links[
+              'no reference builder; file a bug to get one?'] = (
+                  FILE_BUG_FOR_CONTINUOUS_LINK)
+
 
     if bad_projects:
       raise recipe_api.StepFailure(
