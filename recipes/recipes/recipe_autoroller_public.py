@@ -29,7 +29,6 @@ PROPERTIES = {
 
 
 def RunSteps(api, projects):
-  api.recipe_autoroller.prepare_checkout()
   api.recipe_autoroller.roll_projects(projects)
 
 
