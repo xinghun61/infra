@@ -73,7 +73,7 @@
             <div class="horizontal layout">
               <div class="alert-title self-center">[[alert.title]] </div>
               <div id="handleLink" class="self-center" hidden$="[[!_helpLinkForAlert(alert)]]">
-                [<a href="[[_helpLinkForAlert(alert)]]">Help</a>]
+                [<a href="[[_helpLinkForAlert(alert)]]" target="_blank">Help</a>]
               </div>
               <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links">
                 <template is="dom-repeat" items="[[annotation.bugs]]" as="bug">

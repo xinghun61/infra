@@ -124,7 +124,7 @@
                   Chromium sheriffs: you now need to handle WebKit bot failures too. <a href="http://www.chromium.org/blink/sheriffing" target="_blank">More information</a>.
                 </div>
               </div>
-              <div hidden$="[[_haveAlerts]]">
+              <div id="noAlerts" hidden$="[[_haveAlerts]]">
                 No alerts!
                 <br>
                 <img src="/images/jparent-jump.gif" alt="Julie Jumping" title="Julie Jumping">
@@ -402,7 +402,7 @@
             return response.json();
           }).then( (json) => {
             this.set(['_alertsData', this._alertGroupVarName(group)], json.alerts);
-            this.set(['_alertsTimes', this._alertGrouVarName(group)], json.timestamp);
+            this.set(['_alertsTimes', this._alertGroupVarName(group)], json.timestamp);
           });
         });
       },
