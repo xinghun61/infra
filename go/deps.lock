@@ -1,8 +1,8 @@
-hash: 97d0dd605c78327252ade7f877213a17b92014b34a4a6f5cbe5137a7c355f850
-updated: 2016-06-17T19:51:30.030866359-07:00
+hash: 4ceb338d6614101f4d7c082339a714735d14b760b766d26cbf93526a7e952e27
+updated: 2016-06-25T11:35:22.762263985-07:00
 imports:
 - name: github.com/dustin/go-humanize
-  version: 499693e27ee0d14ffab67c31ad065fdb3d34ea75
+  version: fef948f2d241bd1fd0631108ecc2c9553bae60bf
   repo: https://chromium.googlesource.com/external/github.com/dustin/go-humanize.git
 - name: github.com/go-sql-driver/mysql
   version: 3654d25ec346ee8ce71a68431025458d52a38ac0
@@ -20,7 +20,7 @@ imports:
   - proto
   - protoc-gen-go
 - name: github.com/gopherjs/gopherjs
-  version: a727a4a1dd2f292e948cebe6ec9aef1a7863f145
+  version: ad712376c7b3218a7278e98928593a9959993a74
   repo: https://chromium.googlesource.com/external/github.com/gopherjs/gopherjs.git
   subpackages:
   - js
@@ -81,6 +81,9 @@ imports:
 - name: github.com/mgutz/ansi
   version: c286dcecd19ff979eeb73ea444e479b903f2cfcb
   repo: https://chromium.googlesource.com/external/github.com/mgutz/ansi.git
+- name: github.com/mitchellh/go-homedir
+  version: 756f7b183b7ab78acdbbee5c7f392838ed459dda
+  repo: https://chromium.googlesource.com/external/github.com/mitchellh/go-homedir.git
 - name: github.com/op/go-logging
   version: 970db520ece77730c7e4724c61121037378659d9
   repo: https://chromium.googlesource.com/external/github.com/op/go-logging.git
@@ -116,7 +119,7 @@ imports:
   subpackages:
   - encoding/json5
 - name: golang.org/x/net
-  version: 1961d9def2b2d7a28d7958926d2457d05a178ecd
+  version: bc3663df0ac92f928d419e31e0d2af22e683a5a2
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
@@ -128,7 +131,7 @@ imports:
   - google
   - jwt
 - name: golang.org/x/tools
-  version: a2a552218a0e22e6fb22469f49ef371b492f6178
+  version: 1727758746e7a08feaaceb9366d1468498ac2ac2
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -151,7 +154,7 @@ imports:
   - taskqueue/v1beta2
   - google-api-go-generator
 - name: google.golang.org/appengine
-  version: 7f59a8c76b8594d06044bfe0bcbe475cb2020482
+  version: 267c27e7492265b84fc6719503b14a1e17975d79
   repo: https://chromium.googlesource.com/external/github.com/golang/appengine.git
   subpackages:
   - datastore
@@ -165,7 +168,7 @@ imports:
   - user
   - cmd/aedeploy
 - name: google.golang.org/cloud
-  version: 581cbbbaf53b821281c5df8f4bb9fa69c2d5f49c
+  version: a4c7c3139dc2772ad6c3bb73d0a9236a79063f8c
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -173,7 +176,7 @@ imports:
   - pubsub
   - storage
 - name: google.golang.org/grpc
-  version: e78224b060cf3215247b7be455f80ea22e469b66
+  version: 0eb7c5dcd059d77bde1eb5bc7d953940170d0d18
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
@@ -182,7 +185,7 @@ imports:
   version: 8611c35ab31c1c28aa903d33cf8b6e44a399b09e
   repo: https://chromium.googlesource.com/external/github.com/go-fsnotify/fsnotify.git
 - name: gopkg.in/natefinch/npipe.v2
-  version: 0938d701e50e580f5925c773055eb6d6b32a0cbc
+  version: c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6
   repo: https://chromium.googlesource.com/external/github.com/natefinch/npipe.git
 - name: gopkg.in/yaml.v2
   version: a83829b6f1293c91addabc89d0571c246397bbf4
