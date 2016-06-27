@@ -420,16 +420,31 @@ def bootstrap(go_paths, logging_level):
   """
   logging.basicConfig()
   LOGGER.setLevel(logging_level)
-  updated = ensure_toolset_installed(TOOLSET_ROOT)
-  ensure_glide_installed(TOOLSET_ROOT)
-  for p in go_paths:
-    update_vendor_packages(p, force=updated)
-  if updated:
-    # GOPATH/pkg may have binaries generated with previous version of toolset,
-    # they may not be compatible and "go build" isn't smart enough to rebuild
-    # them.
+
+  # We need to build and run some Go binaries during bootstrap (e.g. glide), so
+  # make sure cross-compilation mode is disabled during bootstrap. Restore it
+  # back once bootstrap is finished.
+  prev_environ = {}
+  for k in ('GOOS', 'GOARCH', 'GOARM'):
+    prev_environ[k] = os.environ.pop(k, None)
+
+  try:
+    updated = ensure_toolset_installed(TOOLSET_ROOT)
+    ensure_glide_installed(TOOLSET_ROOT)
     for p in go_paths:
-      remove_directory([p, 'pkg'])
+      update_vendor_packages(p, force=updated)
+    if updated:
+      # GOPATH/pkg may have binaries generated with previous version of toolset,
+      # they may not be compatible and "go build" isn't smart enough to rebuild
+      # them.
+      for p in go_paths:
+        remove_directory([p, 'pkg'])
+  finally:
+    # Restore os.environ back. Have to do it key-by-key to actually modify the
+    # process environment (replacing os.environ object as a whole does nothing).
+    for k, v in prev_environ.iteritems():
+      if v is not None:
+        os.environ[k] = v
 
 
 def prepare_go_environ():
@@ -439,10 +454,10 @@ def prepare_go_environ():
   """
   bootstrap([WORKSPACE], logging.INFO)
   return get_go_environ(
-    toolset_root=TOOLSET_ROOT,
-    workspace=WORKSPACE,       # primary GOPATH with source code
-    vendor_paths=[WORKSPACE],  # where to look for deps.yaml and .vendor dirs
-    go_appengine_path=GO_APPENGINE)
+      toolset_root=TOOLSET_ROOT,
+      workspace=WORKSPACE,       # primary GOPATH with source code
+      vendor_paths=[WORKSPACE],  # where to look for deps.yaml and .vendor dirs
+      go_appengine_path=GO_APPENGINE)
 
 
 def find_executable(name, workspaces):

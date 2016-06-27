@@ -27,6 +27,13 @@ description: Example package
 builders:
   - infra-continuous-precise-64
   - ...
+# If true, it means the package is friendly to different GOOS and GOARCH. If not
+# set or false, this package will be skipped when doing cross-compilation.
+supports_cross_compilation: true
+# Optional list of go packages to 'go install' before zipping this package.
+go_packages:
+  - github.com/luci/luci-go/client/cmd/cipd
+  - ...
 # Path to the root of the package source files on the system we're building
 # the package from. Can be absolute or relative to the path of the *.yaml
 # file itself.
@@ -59,13 +66,17 @@ package: infra/tools/cipd/${platform}
 
 Available variables are defined in [build.py](build.py) in `get_package_vars`:
 
-* `${exe_suffix}` is '.exe' on Windows and empty string on other platforms.
-* `${platform}` defines where build.py is running, as '(flavor)-(bitness)'
+* `${exe_suffix}` is `.exe` on Windows and empty string on other platforms. If
+  cross-compiling to Windows, it is also set to `.exe` regardless of the host
+  platform.
+* `${platform}` defines where build.py is running (if not cross-compiling) or
+  what the target platform is (when cross-compiling), as `(flavor)-(bitness)`
   string. It is suitable for packages that do not depend much on the exact
   version of the OS, for example packages with statically linked binaries.
-  Example values:
+  All possible combinations thus far:
     * linux-amd64
     * linux-386
+    * linux-armv6l
     * mac-amd64
     * mac-386
     * windows-amd64
@@ -76,8 +87,9 @@ Available variables are defined in [build.py](build.py) in `get_package_vars`:
     * ubuntu14_04
     * mac10_9
     * win6_1
+  Not set when cross-compiling.
 * `${python_version}` defines python version as '(major)(minor)' string,
-  e.g '27'.
+  e.g '27'. Not set when cross-compiling.
 
 See [packages](packages/) for examples of package definitions.
 
@@ -88,11 +100,12 @@ Build script
 [build.py](build.py) script does the following:
 
 * Ensures python virtual environment directory (ENV) is up to date.
-* Rebuilds all infra Go code from scratch, with 'release' tag set.
-* Enumerates packages/ directory for package definition files, builds and
+* Rebuilds all necessary Go code from scratch and installs binaries into
+  `GOBIN`.
+* Enumerates `packages/` directory for package definition files, builds and
   (if `--upload` option is passed) uploads CIPD packages to
   [the repository](https://chrome-infra-packages.appspot.com).
-* Stores built packages into out/ (as *.cipd files).
+* Stores built packages into `out/` (as `*.cipd` files).
 
 Package definition files can assume that Go infra code is built and all
 artifacts are installed in `GOBIN` (which is go/bin).
@@ -139,3 +152,25 @@ Thus to test that infra_python.cipd package works, one can do the following:
 
 test_packages.py is used on CI builders to verify packages look good before
 uploading them.
+
+
+Cross compilation of Go code
+----------------------------
+
+`build.py` script recognizes `GOOS` and `GOARCH` environment variables used to
+specify a target platform when cross-compiling Go code. When it detects them, it
+builds only Go packages that have `supports_cross_compilation` property set to
+true in the package definition YAML. It also changes the meaning of
+`${platform}` and `${exe_suffix}` to match the values for the target platform.
+
+Built packages have `+${platform}` suffix in file names and coexist with native
+package in build output directory. When uploading packages (via `build.py
+--no-rebuild --upload`), `GOOS` and `GOARCH` are used to figure out what flavor
+of built packages to pick (what `+${platform}` to search for).
+
+Cross compiling toolset doesn't include C compiler, so the binaries are built in
+`CGO_ENABLED=0` mode, meaning some stdlib functions that depend on libc are not
+working or working differently compared to natively built executables.
+
+In particular `os/user` doesn't work at all, and DNS resolution in `net` uses
+different implementation.

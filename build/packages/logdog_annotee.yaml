@@ -6,6 +6,8 @@ builders:
   - infra-continuous-precise-64
   - infra-continuous-win-32
   - infra-continuous-win-64
+go_packages:
+  - github.com/luci/luci-go/client/cmd/logdog_annotee
 root: ../../go/bin
 data:
   - file: logdog_annotee${exe_suffix}

@@ -8,11 +8,11 @@
 Supposed to be invoked after build.py has run. Uses packages from out/*.cipd and
 tests from tests/*.py.
 
-Assumes cipd client is built in ../go/bin/cipd (true after build.py has run).
+Assumes cipd client is built in out/.cipd_client/cipd_* (true after build.py has
+run).
 """
 
 import argparse
-import glob
 import os
 import re
 import shutil
@@ -52,14 +52,34 @@ def get_docstring(test_script):
   return m.group(1).strip().splitlines()[0]
 
 
+def find_cipd_client(out_dir):
+  """Returns path to cipd client built by build.py.
+
+  See build_cipd_client in build.py. It puts cipd client into
+  '<out_dir>/.cipd_client/cipd_<digest>' and there's only one such file there.
+
+  Prints error message and returns None if the file cannot be found.
+  """
+  out_dir = os.path.join(out_dir, '.cipd_client')
+  files = [f for f in os.listdir(out_dir) if f.startswith('cipd_')]
+  if not files:
+    print >> sys.stderr, 'Cannot find CIPD client in %s' % out_dir
+    return None
+  if len(files) != 1:
+    print >> sys.stderr, (
+        'There should be only one cipd client binary in %s, found %s' %
+        (out_dir, files))
+    return None
+  cipd_client = os.path.join(out_dir, files[0])
+  if not os.access(cipd_client, os.X_OK):
+    print >> sys.stderr, 'CIPD client at %s is not runnable'
+    return None
+  return cipd_client
+
+
 def run_test(cipd_client, package, work_dir, test_script):
   """Extracts a package to a dir and runs test_script with cwd == work_dir."""
   print_title('Deploying %s' % os.path.basename(package))
-  if not os.access(cipd_client, os.X_OK):
-    print >> sys.stderr, (
-        'CIPD client at %s doesn\'t exist or not runnable. Run build.py to '
-        'build it.' % cipd_client)
-    return 1
   cmd_line = ['cipd', 'pkg-deploy', '-root', work_dir, package]
   print ' '.join(cmd_line)
   if subprocess.call(args=cmd_line, executable=cipd_client):
@@ -77,7 +97,6 @@ def run_test(cipd_client, package, work_dir, test_script):
 
 
 def run(
-    cipd_client,
     package_out_dir,
     package_tests_dir,
     work_dir,
@@ -88,7 +107,6 @@ def run(
   important for infra_python package that has non-trivial structure.
 
   Args:
-    cipd_client: path to cipd client executable.
     package_out_dir: where to search for built packages.
     work_dir: where to install/update packages into.
     packages: names of *.cipd files in package_out_dir or [] for all.
@@ -99,7 +117,17 @@ def run(
   # Discover what to test.
   paths = []
   if not packages:
-    paths = glob.glob(os.path.join(package_out_dir, '*.cipd'))
+    # Enumerate all known tests in tests/*.py and filter them based on
+    # availability of corresponding *.cipd package in package_out_dir. It will
+    # skip any cross-compiled packages, since they have additional '+<platform>'
+    # suffix in the package file name.
+    for test in os.listdir(package_tests_dir):
+      if not test.endswith('.py'):
+        continue
+      pkg_file = os.path.join(
+          package_out_dir, os.path.splitext(test)[0] + '.cipd')
+      if os.path.exists(pkg_file):
+        paths.append(pkg_file)
   else:
     for name in packages:
       abs_path = os.path.join(package_out_dir, name)
@@ -111,7 +139,11 @@ def run(
     print 'Nothing to test.'
     return 0
 
-  # Run all tests sequentially. There're like 2 of them tops.
+  cipd_client = find_cipd_client(package_out_dir)
+  if not cipd_client:
+    return 1
+
+  # Run all tests sequentially. Most of the are extra fast.
   nuke_temp = False
   if not work_dir:
     work_dir = tempfile.mkdtemp(suffix='cipd_test')
@@ -149,19 +181,17 @@ def run(
 
 def main(
     args,
-    go_workspace=os.path.join(ROOT, 'go'),
     package_out_dir=os.path.join(ROOT, 'build', 'out'),
     package_tests_dir=os.path.join(ROOT, 'build', 'tests')):
   parser = argparse.ArgumentParser(description='Tests infra CIPD packages')
   parser.add_argument(
       'packages', metavar='NAME', type=str, nargs='*',
-      help='name of a build package file in build/out/* to deploy and test')
+      help='name of a built package file in build/out/* to deploy and test')
   parser.add_argument(
       '--work-dir', metavar='DIR', dest='work_dir',
       help='directory to deploy packages into (temporary dir by default)')
   args = parser.parse_args(args)
   return run(
-      os.path.join(go_workspace, 'bin', 'cipd' + EXE_SUFFIX),
       package_out_dir,
       package_tests_dir,
       args.work_dir,

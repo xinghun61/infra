@@ -1,6 +1,9 @@
 package: infra/infra_python/${platform}-${os_ver}
 description: Virtual environment + 'infra' package with infra.git python code.
 root: ../../
+uses_python_env: true
+go_packages:
+  - infra/tools/cloudtail/cmd/cloudtail
 
 data:
   # Virtual environment with all third party packages.
