@@ -870,12 +870,9 @@ class NotifyBulkChangeTask(NotifyTaskBase):
       hostport, comment_text, amendments, config, project, is_member):
     """Format an email to one user listing many issues."""
 
-    if is_member:
-      from_addr = emailfmt.FormatFromAddr(
-          project, commenter_view=commenter_view, reveal_addr=is_member,
-          can_reply_to=False)
-    else:
-      from_addr = emailfmt.NoReplyAddress(commenter_view=commenter_view)
+    from_addr = emailfmt.FormatFromAddr(
+        project, commenter_view=commenter_view, reveal_addr=is_member,
+        can_reply_to=False)
 
     subject, body = self._FormatBulkIssues(
         issues, users_by_id, commenter_view, hostport, comment_text,
