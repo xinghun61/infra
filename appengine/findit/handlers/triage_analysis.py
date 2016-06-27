@@ -10,25 +10,96 @@ TODO: work on an automatic or semi-automatic way to triage analysis result.
 
 import calendar
 from datetime import datetime
+from datetime import timedelta
 
 from google.appengine.api import users
 from google.appengine.ext import ndb
+import pytz.gae
 
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
-from model.wf_analysis import WfAnalysis
 from model import result_status
+from model.wf_analysis import WfAnalysis
 from waterfall import buildbot
 
 
-@ndb.transactional
-def _UpdateAnalysisResultStatus(
-    master_name, builder_name, build_number, correct, user_name=None):
-  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-  if not analysis or not analysis.completed:
+MATCHING_ANALYSIS_HOURS_AGO_START = 24
+MATCHING_ANALYSIS_HOURS_AGO_END = 24
+MATCHING_ANALYSIS_END_BOUND_TIME_ZONE = 'US/Pacific'
+
+
+def _GenPotentialCulpritTupleList(analysis):
+  """Generates a list of potential culprit tuples.
+
+  Args:
+    analysis: the analysis from which to generate a potenial culript tuple list.
+
+  Returns:
+    A list of cultprit tuples that each could look like:
+
+        (step_name, test_name, revision)
+
+    or could look like:
+
+        (step_name, revision)
+  """
+  potential_culprit_tuple_list = []
+
+  # Iterates through the failures, tests, and suspected_cls, appending potential
+  # (step_name, test_name, revision) and (step_name, revision) culprit tuples to
+  # the list.
+  for failure in analysis.result['failures']:
+    if failure.get('tests'):
+      for test in failure['tests']:
+        for suspected_cl in test.get('suspected_cls', []):
+          potential_culprit_tuple_list.append((
+              failure['step_name'],
+              test['test_name'],
+              suspected_cl['revision']))
+    else:
+      for suspected_cl in failure['suspected_cls']:
+        potential_culprit_tuple_list.append((
+            failure['step_name'],
+            suspected_cl['revision']))
+
+  return potential_culprit_tuple_list
+
+
+def _DoAnalysesMatch(analysis_1, analysis_2):
+  """Checks if two analyses match.
+
+  Args:
+    analysis_1: The first analysis to compare.
+    analysis_2: The second analysis to compare.
+
+  Returns:
+    True if the two analyses' sorted potential culprit lists match, otherwise
+    False.
+  """
+
+  # Get list of potential culprit tuples.
+  potential_culprit_tuple_list_1 = _GenPotentialCulpritTupleList(analysis_1)
+  potential_culprit_tuple_list_2 = _GenPotentialCulpritTupleList(analysis_2)
+
+  # Both analyses must have non-empty potential culprit lists.
+  if not potential_culprit_tuple_list_1 or not potential_culprit_tuple_list_2:
     return False
 
-  if correct:
+  # Both analyses must have matching potential culprit lists.
+  return (sorted(potential_culprit_tuple_list_1) ==
+          sorted(potential_culprit_tuple_list_2))
+
+
+def _AppendTriageHistoryRecord(analysis, is_correct, user_name):
+  """Appends a triage history record to the given analysis.
+
+  Args:
+    analysis: The analysis to which to append the history record.
+    is_correct: True if the history record should indicate a correct judgement,
+        otherwise False.
+    user_name: The user_name of the person to include in the triage record.
+  """
+  if is_correct:
     if analysis.suspected_cls:
       analysis.result_status = result_status.FOUND_CORRECT
       analysis.culprit_cls = analysis.suspected_cls
@@ -53,7 +124,67 @@ def _UpdateAnalysisResultStatus(
   analysis.triage_history.append(triage_record)
 
   analysis.put()
-  return True
+
+
+@ndb.transactional
+def _UpdateAnalysisResultStatus(
+    master_name, builder_name, build_number, is_correct, user_name=None):
+  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+  if not analysis or not analysis.completed:
+    return False, None
+
+  _AppendTriageHistoryRecord(analysis, is_correct, user_name)
+
+  return True, analysis
+
+
+def _GetDuplicateAnalyses(original_analysis):
+  start_time = (original_analysis.build_start_time -
+                timedelta(hours=MATCHING_ANALYSIS_HOURS_AGO_START))
+  end_time = (original_analysis.build_start_time +
+              timedelta(hours=MATCHING_ANALYSIS_HOURS_AGO_END))
+
+  # Don't count any analyses from today (except for exactly at midnight local
+  # time).
+  # Get current time (UTC).
+  current_time_as_utc = pytz.utc.localize(datetime.utcnow())
+
+  # Convert to local time.
+  current_time_as_local = current_time_as_utc.astimezone(
+      pytz.timezone(MATCHING_ANALYSIS_END_BOUND_TIME_ZONE))
+
+  # Set hours and minutes to 0 to get midnight.
+  local_midnight_as_local = current_time_as_local.replace(
+      hour=0, minute=0, second=0, microsecond=0)
+
+  # Convert back to UTC time.
+  local_midnight_as_utc = local_midnight_as_local.astimezone(pytz.utc)
+
+  # Strip timezone.
+  local_midnight = local_midnight_as_utc.replace(tzinfo=None)
+
+  if end_time > local_midnight:
+    end_time = local_midnight
+
+  # Retrieve potential duplicate build analyses.
+  analysis_results = WfAnalysis.query(ndb.AND(
+      WfAnalysis.build_start_time >= start_time,
+      WfAnalysis.build_start_time <= end_time,
+      WfAnalysis.result_status == result_status.FOUND_UNTRIAGED
+      )).fetch()
+
+  # Further filter potential duplicates and return them.
+  return [analysis for analysis in analysis_results if
+          _DoAnalysesMatch(original_analysis, analysis) and
+          original_analysis.key is not analysis.key and
+          analysis.completed]
+
+
+def _TriageDuplicateResults(original_analysis, is_correct, user_name=None):
+  matching_analyses = _GetDuplicateAnalyses(original_analysis)
+
+  for analysis in matching_analyses:
+    _AppendTriageHistoryRecord(analysis, is_correct, user_name)
 
 
 class TriageAnalysis(BaseHandler):
@@ -74,10 +205,12 @@ class TriageAnalysis(BaseHandler):
       return {'data': {'success': False}}
     master_name, builder_name, build_number = build_info
 
-    correct = self.request.get('correct').lower() == 'true'
+    is_correct = self.request.get('correct').lower() == 'true'
     # As the permission level is CORP_USER, we could assume the current user
     # already logged in.
     user_name = users.get_current_user().email().split('@')[0]
-    success = _UpdateAnalysisResultStatus(
-        master_name, builder_name, build_number, correct, user_name)
+    success, original_analysis = _UpdateAnalysisResultStatus(
+        master_name, builder_name, build_number, is_correct, user_name)
+    if success:
+      _TriageDuplicateResults(original_analysis, is_correct, user_name)
     return {'data': {'success': success}}
