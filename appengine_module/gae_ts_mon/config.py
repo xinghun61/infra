@@ -31,6 +31,7 @@ from infra_libs.ts_mon.common import http_metrics
 from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import metric_store
 from infra_libs.ts_mon.common import monitors
+from infra_libs.ts_mon.common import standard_metrics
 from infra_libs.ts_mon.common import targets
 
 
@@ -191,6 +192,8 @@ def initialize(app=None, is_enabled_fn=None, cron_module='default',
   shared.register_global_metrics([shared.appengine_default_version])
   shared.register_global_metrics_callback(
       shared.INTERNAL_CALLBACK_NAME, _internal_callback)
+
+  standard_metrics.init()
 
   logging.info('Initialized ts_mon with service_name=%s, job_name=%s, '
                'hostname=%s', service_name, job_name, hostname)
