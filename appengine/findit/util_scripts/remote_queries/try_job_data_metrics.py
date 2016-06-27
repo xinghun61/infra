@@ -7,6 +7,7 @@
 import argparse
 from collections import defaultdict
 import datetime
+import numpy
 import os
 import sys
 
@@ -15,11 +16,42 @@ sys.path.insert(1, _REMOTE_API_DIR)
 
 import remote_api
 
-from model.wf_config import FinditConfig
 from model.wf_try_job_data import WfTryJobData
 
 
 NOT_AVAILABLE = 'N/A'
+
+
+def _GetOSPlatformName(master_name, builder_name):
+  """Returns the OS platform name based on the master and builder."""
+  builder_name = builder_name.lower()
+  master_name = master_name.lower()
+
+  if master_name == 'chromium.win':
+    return 'win'
+  elif master_name == 'chromium.linux':
+    if 'android' in builder_name:
+      return 'android'
+    else:
+      return 'unix'
+  elif master_name == 'chromium.chromiumos':
+    return 'unix'
+  else:
+    os_map = {
+        'win': 'win',
+        'linux': 'unix',
+        'chromiumos': 'unix',
+        'chromeos': 'unix',
+        'android': 'android',
+        'mac': 'mac',
+        'ios': 'ios',
+    }
+
+    for os_name, platform in os_map.iteritems():
+      if os_name in builder_name:
+        return platform
+
+    return 'unknown'
 
 
 def _GetAverageOfNumbersInList(numbers):
@@ -86,9 +118,15 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
   """
   try_jobs_per_day = NOT_AVAILABLE
   average_regression_range_size = NOT_AVAILABLE
+  median_regression_range_size = NOT_AVAILABLE
   average_execution_time = NOT_AVAILABLE
+  median_execution_time = NOT_AVAILABLE
+  average_end_to_end_time = NOT_AVAILABLE
+  median_end_to_end_time = NOT_AVAILABLE
   average_time_in_queue = NOT_AVAILABLE
+  median_execution_time = NOT_AVAILABLE
   average_commits_analyzed = NOT_AVAILABLE
+  median_commits_analyzed = NOT_AVAILABLE
   longest_execution_time = NOT_AVAILABLE
   shortest_execution_time = NOT_AVAILABLE
   detection_rate = NOT_AVAILABLE
@@ -106,6 +144,7 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
     regression_range_sizes = []
     execution_times_seconds = []
     in_queue_times = []
+    end_to_end_times = []
     commits_analyzed = []
     culprits_detected = 0
     errors_detected = 0
@@ -138,6 +177,7 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
       if try_job_data.request_time and try_job_data.end_time:
         total_time_delta = try_job_data.end_time - try_job_data.start_time
         total_time_seconds = total_time_delta.total_seconds()
+        end_to_end_times.append(total_time_seconds)
 
         if total_time_seconds < 300:  # Under 5 minutes.
           number_under_five_minutes += 1
@@ -161,18 +201,35 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
 
     average_regression_range_size = _GetAverageOfNumbersInList(
         regression_range_sizes)
+    median_regression_range_size = (
+        numpy.median(regression_range_sizes) if regression_range_sizes
+        else NOT_AVAILABLE)
     average_execution_time = (_GetAverageOfNumbersInList(
         execution_times_seconds) if execution_times_seconds else NOT_AVAILABLE)
+    median_execution_time = (
+        numpy.median(execution_times_seconds) if execution_times_seconds else
+        NOT_AVAILABLE)
+    average_end_to_end_time = (
+        _GetAverageOfNumbersInList(end_to_end_times) if end_to_end_times
+        else NOT_AVAILABLE)
+    median_end_to_end_time = (
+        numpy.median(end_to_end_times) if end_to_end_times else NOT_AVAILABLE)
     average_time_in_queue = (
         _GetAverageOfNumbersInList(in_queue_times) if in_queue_times else
         NOT_AVAILABLE)
+    median_time_in_queue = (
+        numpy.median(in_queue_times) if in_queue_times else NOT_AVAILABLE)
     average_commits_analyzed = _GetAverageOfNumbersInList(
         commits_analyzed)
+    median_commits_analyzed = (
+        numpy.median(commits_analyzed) if commits_analyzed else NOT_AVAILABLE)
     longest_execution_time = (
-        str(datetime.timedelta(seconds=max(execution_times_seconds)))
+        str(datetime.timedelta(
+            seconds=int(round(max(execution_times_seconds)))))
         if execution_times_seconds else NOT_AVAILABLE)
     shortest_execution_time = (
-        str(datetime.timedelta(seconds=min(execution_times_seconds)))
+        str(datetime.timedelta(
+            seconds=int(round(min(execution_times_seconds)))))
         if execution_times_seconds else NOT_AVAILABLE)
     detection_rate = float(culprits_detected) / total_number_of_try_jobs
     error_rate = float(errors_detected) / total_number_of_try_jobs
@@ -193,11 +250,21 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
       'try_jobs_per_day': _FormatDigits(try_jobs_per_day),
       'average_regression_range_size': _FormatDigits(
           average_regression_range_size),
-      'average_execution_time': _FormatSecondsAsHMS(
-          _FormatDigits(average_execution_time)),
+      'median_regression_range_size': median_regression_range_size,
+      'average_execution_time': _FormatSecondsAsHMS(_FormatDigits(
+          average_execution_time)),
+      'median_execution_time': _FormatSecondsAsHMS(_FormatDigits(
+          median_execution_time)),
+      'average_end_to_end_time': _FormatSecondsAsHMS(_FormatDigits(
+          average_end_to_end_time)),
+      'median_end_to_end_time': _FormatSecondsAsHMS(_FormatDigits(
+          median_end_to_end_time)),
       'average_time_in_queue': _FormatSecondsAsHMS(
           _FormatDigits(average_time_in_queue)),
+      'median_time_in_queue': _FormatSecondsAsHMS(_FormatDigits(
+          median_time_in_queue)),
       'average_commits_analyzed': _FormatDigits(average_commits_analyzed),
+      'median_commits_analyzed': median_commits_analyzed,
       'longest_execution_time': longest_execution_time,
       'shortest_execution_time': shortest_execution_time,
       'number_of_try_jobs': number_of_try_jobs,
@@ -309,6 +376,35 @@ def _SplitListByCompileTargets(try_job_data_list):
   return categorized_data_dict
 
 
+def _SplitListByError(try_job_data_list):
+  categorized_data_dict = {
+      'with error': [],
+      'without error': []
+  }
+  for try_job_data in try_job_data_list:
+    if try_job_data.error:
+      categorized_data_dict['with error'].append(try_job_data)
+    else:
+      categorized_data_dict['without error'].append(try_job_data)
+  return categorized_data_dict
+
+
+def _SplitListByPlatform(try_job_data_list):
+  categorized_data_dict = defaultdict(list)
+
+  for try_job_data in try_job_data_list:
+    builder_name = try_job_data.builder_name
+    master_name = try_job_data.master_name
+
+    if not master_name or not builder_name:
+      continue
+
+    platform = _GetOSPlatformName(master_name, builder_name)
+    categorized_data_dict[platform].append(try_job_data)
+
+  return categorized_data_dict
+
+
 def SplitListByOption(try_job_data_list, option):
   """Takes a WfTryJobData list and separates it into a dict based on arg.
 
@@ -331,7 +427,10 @@ def SplitListByOption(try_job_data_list, option):
     return _SplitListByHeuristicResults(try_job_data_list)
   elif option == 'c':  # Whether or not compile targets are included.
     return _SplitListByCompileTargets(try_job_data_list)
-  # TODO(lijeffrey): Add support for splitting by platform.
+  elif option == 'e':  # Whether or not try jobs with errors should be counted.
+    return _SplitListByError(try_job_data_list)
+  elif option == 'p':  # Split by OS platform.
+    return _SplitListByPlatform(try_job_data_list)
 
   # Unsupported flag, bail out without modification.
   return try_job_data_list
@@ -353,18 +452,23 @@ def GetArgsInOrder():
   command_line_args = sys.argv[1:]
 
   parser = argparse.ArgumentParser()
-  parser.add_argument('-t', action='store_true',
-                      help='group try job data by type (compile, test)')
-  parser.add_argument('-m', action='store_true',
-                      help='group try job data by master')
   parser.add_argument('-b', action='store_true',
                       help='group try job data by builder')
-  parser.add_argument('-r', action='store_true',
-                      help=('group try job data by those with and without '
-                            'heuristic results'))
   parser.add_argument('-c', action='store_true',
                       help=('group try job data by those with and without '
                             'compile targets'))
+  parser.add_argument('-e', action='store_true',
+                      help=('group try job data by those with and without '
+                            'errors detected'))
+  parser.add_argument('-m', action='store_true',
+                      help='group try job data by master')
+  parser.add_argument('-p', action='store_true',
+                      help='group try job data by platform')
+  parser.add_argument('-r', action='store_true',
+                      help=('group try job data by those with and without '
+                            'heuristic results'))
+  parser.add_argument('-t', action='store_true',
+                      help='group try job data by type (compile, test)')
 
   args_dict = vars(parser.parse_args())
 
@@ -384,7 +488,7 @@ if __name__ == '__main__':
   remote_api.EnableRemoteApi(app_id='findit-for-me')
 
   START_DATE = datetime.datetime(2016, 5, 1)
-  END_DATE = datetime.datetime(2016, 6, 17)
+  END_DATE = datetime.datetime(2016, 6, 23)
 
   try_job_data_query = WfTryJobData.query(
       WfTryJobData.request_time >= START_DATE,
