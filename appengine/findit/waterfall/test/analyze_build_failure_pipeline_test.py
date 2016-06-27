@@ -106,6 +106,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     root_pipeline = AnalyzeBuildFailurePipeline(master_name,
                                                 builder_name,
                                                 build_number,
+                                                False,
                                                 False)
     root_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
@@ -151,6 +152,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     root_pipeline = AnalyzeBuildFailurePipeline(master_name,
                                                 builder_name,
                                                 build_number,
+                                                False,
                                                 False)
     root_pipeline._ResetAnalysis(master_name, builder_name, build_number)
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
@@ -168,6 +170,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     root_pipeline = AnalyzeBuildFailurePipeline(master_name,
                                                 builder_name,
                                                 build_number,
+                                                False,
                                                 False)
     root_pipeline._LogUnexpectedAborting(True)
 
@@ -184,6 +187,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     root_pipeline = AnalyzeBuildFailurePipeline(master_name,
                                                 builder_name,
                                                 build_number,
+                                                False,
                                                 False)
     root_pipeline._LogUnexpectedAborting(True)
 
@@ -200,6 +204,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     root_pipeline = AnalyzeBuildFailurePipeline(master_name,
                                                 builder_name,
                                                 build_number,
+                                                False,
                                                 False)
     root_pipeline._LogUnexpectedAborting(False)
 

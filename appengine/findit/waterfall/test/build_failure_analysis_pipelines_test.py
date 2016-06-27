@@ -16,7 +16,8 @@ from waterfall import build_failure_analysis_pipelines
 class _MockRootPipeline(object):
   STARTED = False
 
-  def __init__(self, master_name, builder_name, build_number, build_completed):
+  def __init__(self, master_name, builder_name, build_number, build_completed,
+               force_try_job):
     pass
 
   def pipeline_status_path(self):
@@ -166,7 +167,8 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
         master_name, builder_name, build_number, failed_steps=['a'],
-        build_completed=False, force=False, queue_name=constants.DEFAULT_QUEUE)
+        build_completed=False, force=False, force_try_job=False,
+        queue_name=constants.DEFAULT_QUEUE)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
 

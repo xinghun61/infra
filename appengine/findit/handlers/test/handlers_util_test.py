@@ -550,6 +550,35 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     }
     self.assertEqual(expected_result, result)
 
+  def testGetAllTryJobResultsForTestNonSwarmingForcedTryJob(self):
+    tasks_info = {
+        'step1': {
+            'swarming_tasks': {
+                'm/b/119': {
+                    'task_info': {
+                        'status': result_status.NON_SWARMING_NO_RERUN
+                    },
+                    'all_tests': ['test1']
+                },
+            }
+        }
+    }
+    result = handlers_util._GetAllTryJobResultsForTest(
+        {'step1': 'm/b/119'}, tasks_info, True)
+
+    expected_result = {
+        'step1': {
+            'try_jobs': [
+                {
+                    'try_job_key': 'm/b/119',
+                    'ref_name': 'step1'
+                }
+            ]
+        }
+    }
+
+    self.assertEqual(expected_result, result)
+
   def testGetAllTryJobResultsForTestNoSwarmingTaskInfo(self):
     failure_result_map = {
         'step1': {
@@ -923,7 +952,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     }
     WfTryJob.Create('m', 'b', '119').put()
     handlers_util._GetCulpritInfoForTryJobResultForTest(
-        try_job_key, culprits_info)
+        try_job_key, culprits_info, False)
 
     expected_culprits_info = {
         'step1 on platform': {
@@ -963,7 +992,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     ]
     try_job.put()
     handlers_util._GetCulpritInfoForTryJobResultForTest(
-        try_job_key, culprits_info)
+        try_job_key, culprits_info, False)
 
     expected_culprits_info = {
         'step1 on platform': {

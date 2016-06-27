@@ -19,9 +19,11 @@ from waterfall.start_try_job_on_demand_pipeline import (
 
 class AnalyzeBuildFailurePipeline(BasePipeline):
 
-  def __init__(self, master_name, builder_name, build_number, build_completed):
+  def __init__(self, master_name, builder_name, build_number, build_completed,
+               force_rerun_try_job):
     super(AnalyzeBuildFailurePipeline, self).__init__(
-        master_name, builder_name, build_number, build_completed)
+        master_name, builder_name, build_number, build_completed,
+        force_rerun_try_job)
     self.master_name = master_name
     self.builder_name = builder_name
     self.build_number = build_number
@@ -56,7 +58,8 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     analysis.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, build_completed):
+  def run(self, master_name, builder_name, build_number, build_completed,
+          force_rerun_try_job):
     self._ResetAnalysis(master_name, builder_name, build_number)
 
     # The yield statements below return PipelineFutures, which allow subsequent
@@ -70,4 +73,5 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     heuristic_result = yield IdentifyCulpritPipeline(
         failure_info, change_logs, deps_info, signals, build_completed)
     yield StartTryJobOnDemandPipeline(
-        failure_info, signals, build_completed, heuristic_result)
+        failure_info, signals, build_completed, force_rerun_try_job,
+        heuristic_result)

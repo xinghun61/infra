@@ -345,15 +345,53 @@
       }
     }
 
+    function displayUnclassifiedFailuresToAdmins(step_name, results) {
+      if (!jQuery.isEmptyObject(results)) {
+        var tableString = '';
+        $.each(results, function(index, result) {
+          tableString += '<tr>';
+          var rowspan = result.heuristic_analysis.suspected_cls.length > 0 ? result.heuristic_analysis.suspected_cls.length : 1;
+
+          tableString += generateCommonCellsForAllCategories(step_name, 'determined', index, result.tests, result.first_failure, result.last_pass, rowspan);
+
+          var tryJob = result.try_job;
+          var tryJobCulprit = tryJob.culprit;
+
+          if (! jQuery.isEmptyObject(tryJobCulprit)) {
+            var build_number = result.try_job.try_job_key.split('/')[2];  // try_job_key would look like: 'master_name/builder_name/build_number'.
+            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/builds/' + build_number + '">' + build_number + '</a></td>';
+            var review_url = tryJobCulprit.url || tryJobCulprit.review_url || (findit.defaultGitBaseUrl + tryJobCulprit.revision);
+            tableString += '<td rowspan="' + rowspan + '"><a href="' + review_url + '">' + tryJobCulprit.commit_position || tryJobCulprit.revision + '</a></td>';
+
+          } else {
+            tableString += '<td colspan="2" rowspan="' + rowspan + '">' + findit.tryjobStatusMessageMap[tryJob.status] + '</td>';
+          }
+
+          tableString += '<td rowspan="' + rowspan + '">';
+          tableString += '<li>Note: swarming tasks are skipped for forced reruns by admins.</li>';
+          if (tryJob.try_job_url) {
+            tableString += '<li>For try job details: <a href="' + tryJob.try_job_url+ '">' + tryJob.try_job_build_number + '</a></li>';
+          }
+          tableString += '</td>';
+
+          tableString += generateHeuristicCulpritCls(result.heuristic_analysis.suspected_cls, result.supported);
+          tableString += '</tr>';
+        });
+
+        $('#unclassified_failures_table tbody').append(tableString);
+        $('#unclassified_failures_admins').removeClass('not-display');
+      }
+    }
+
     $(document).ready(function() {
       if (!findit.analysisCompleted) {
         $('#status_message').text('running, will refresh in 5 seconds...');
         $('#status_message').attr('class', 'running');
         setTimeout(function() {
           {% if show_debug_info %}
-          window.location.href = 'build-failure?url=' + findit.buildUrl + '&debug=1';
+            window.location.href = 'build-failure?url=' + findit.buildUrl + '&debug=1';
           {% else %}
-          window.location.href = 'build-failure?url=' + findit.buildUrl;
+            window.location.href = 'build-failure?url=' + findit.buildUrl;
           {% endif %}
         }, 5000);
       } else {
@@ -370,19 +408,23 @@
           if (!jQuery.isEmptyObject(findit.analysisResult)) {
             $.each(findit.analysisResult, function(step_name, step_results) {
               $.each(step_results.results, function(category, results) {
-                  if (category == 'reliable_failures') {
-                    {% if show_debug_info %}
+                if (category == 'reliable_failures') {
+                  {% if show_debug_info %}
                     displayReliableFailures(step_name, results);
-                    {% else %}
+                  {% else %}
                     displayReliableFailuresToSheriffs(step_name, results);
-                    {% endif %}
-                  } else if (category == 'unclassified_failures') {
+                  {% endif %}
+                } else if (category == 'unclassified_failures') {
+                  {% if show_debug_info %}
+                    displayUnclassifiedFailuresToAdmins(step_name, results);
+                  {% else %}
                     displayUnclassifiedFailures(step_name, results);
-                  } else if (category == 'flaky_failures') {
-                    displayFlakyFailures(step_name, results);
-                  } else {
-                    alert('Unrecongnizable category of test results, please file a bug for it.');
-                  }
+                  {% endif %}
+                } else if (category == 'flaky_failures') {
+                  displayFlakyFailures(step_name, results);
+                } else {
+                  alert('Unrecongnizable category of test results, please file a bug for it.');
+                }
               });
             });
           } else {
@@ -432,19 +474,19 @@
   <b>Heuristic analysis info:</b>
   <div id="analysis_info">
     status: <span id="status_message"></span>
-  {% if show_debug_info %}
-    {% if pipeline_status_path %}
-      <a href="{{pipeline_status_path}}">pipeline</a>
+    {% if show_debug_info %}
+      {% if pipeline_status_path %}
+        <a href="{{pipeline_status_path}}">pipeline</a>
+      {% endif %}
+      <br>
+      Requested: {{analysis_request_time | default('N/A', true)}}<br>
+      {% if analysis_duration %}
+        Duration: {{analysis_duration}} seconds. <br>
+      {% else %}
+        Started: {{analysis_start_time | default('N/A', true)}}<br>
+      {% endif %}
+      Updated: {{analysis_update_time}}<br>
     {% endif %}
-    <br>
-    Requested: {{analysis_request_time | default('N/A', true)}}<br>
-    {% if analysis_duration %}
-      Duration: {{analysis_duration}} seconds. <br>
-    {% else %}
-      Started: {{analysis_start_time | default('N/A', true)}}<br>
-    {% endif %}
-    Updated: {{analysis_update_time}}<br>
-  {% endif %}
   </div>
   <br>
 
@@ -549,7 +591,7 @@
                   <th rowspan="3" title="Failed test name" width="300px">Test(s)</th>
                   <th rowspan="3" title="The build cycle in which the step started to fail">First Failure</th>
                   <th rowspan="3" title="The last build cycle in which the step passed">Last Pass<br>Before Failure</th>
-                  <th rowspan="3" title="The reason why we're not sure about this result">Reason</th>
+                  <th rowspan="3" title="The reason we're not sure about the result">Reason</th>
                   <th colspan="4">Suspected CLs</th>
                 </tr>
                 <tr>
@@ -567,6 +609,37 @@
             </table>
             <br>
           </div>
+        </div>
+
+        <div id="unclassified_failures_admins" class='not-display'>
+          <b>Unclassified failures</b>
+          <table id="unclassified_failures_table">
+              <thead>
+                <tr>
+                  <th rowspan="3" title="Failed step name" width="150px">Step</th>
+                  <th rowspan="3" title="Failed test name" width="300px">Test(s)</th>
+                  <th rowspan="3" title="The build cycle in which the step started to fail">First Failure</th>
+                  <th rowspan="3" title="The last build cycle in which the step passed">Last Pass<br>Before Failure</th>
+                  <th colspan="8">Suspected CLs</th>
+                </tr>
+                <tr>
+                  <th colspan="3">Try Job Result</th>
+                  <th colspan="5">Heuristic Analysis Result</th>
+                </tr>
+                <tr>
+                  <th title="The build cycle in which the CL was built or tested for the first time">Build Number</th>
+                  <th title="Git commit position/hash">Commit</th>
+                  <th title="Information about related swarming rerun and try job">Swarming rerun and<br>Try Job Info</th>
+                  <th title="The build cycle in which the CL was built or tested for the first time">Build Number</th>
+                  <th title="Git commit position/hash">Commit</th>
+                  <th title="The higher score, the more suspected">Score (<a class="score-info" href="javascript:">?</a>)</th>
+                  <th title="Why this CL is related to the failure">Hints</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+          <br>
         </div>
 
         <div class="thumbs-up-down">

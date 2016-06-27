@@ -26,7 +26,7 @@ ROOT_DIR = os.path.join(os.path.dirname(__file__),
 
 SAMPLE_TRY_JOB_INFO = {
     'm/b/119': {
-        'step1 on platform':{
+        'step1 on platform': {
             'try_jobs': [
                 {
                     'ref_name': 'step1',
@@ -121,7 +121,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     for queue in self.taskqueue_stub.GetQueues():
       self.taskqueue_stub.FlushQueue(queue['name'])
 
-    def MockedGetAllTryJobResults(master_name, builder_name, build_number):
+    def MockedGetAllTryJobResults(master_name, builder_name, build_number, _):
       build_key = '%s/%s/%d' % (master_name, builder_name, build_number)
       return SAMPLE_TRY_JOB_INFO.get(build_key, None)
     self.mock(handlers_util, 'GetAllTryJobResults', MockedGetAllTryJobResults)
@@ -409,7 +409,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                 'suspected_cls': [],
                 'tests': ['test4']
             },
-           {
+            {
                 'first_failure': 120,
                 'last_pass': 119,
                 'supported': True,
@@ -420,14 +420,14 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     }
 
     updated_result = build_failure._GetAnalysisResultWithTryJobInfo(
-        organized_results, master_name, builder_name, build_number)
+        False, organized_results, master_name, builder_name, build_number)
 
     expected_result = {
-        'step1 on platform':{
+        'step1 on platform': {
             'results': {
                 'reliable_failures': [
                     {
-                        'try_job':{
+                        'try_job': {
                             'ref_name': 'step1',
                             'try_job_key': 'm/b/119',
                             'task_id': 'task1',
@@ -462,7 +462,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                         'supported': True
                     },
                     {
-                        'try_job':{
+                        'try_job': {
                             'ref_name': 'step1',
                             'try_job_key': 'm/b/119',
                             'task_id': 'task1',
@@ -503,7 +503,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                 ],
                 'flaky_failures': [
                     {
-                        'try_job':{
+                        'try_job': {
                             'ref_name': 'step1',
                             'try_job_key': 'm/b/119',
                             'status': result_status.FLAKY,
@@ -522,7 +522,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                 ],
                 'unclassified_failures': [
                     {
-                        'try_job':{
+                        'try_job': {
                             'ref_name': 'step1',
                             'try_job_key': 'm/b/120',
                             'status': result_status.UNKNOWN,
@@ -539,7 +539,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                         'supported': True
                     },
                     {
-                        'try_job':{
+                        'try_job': {
                             'ref_name': 'step1',
                             'try_job_key': 'm/b/120',
                             'status': result_status.NO_TRY_JOB_REASON_MAP[
@@ -565,10 +565,10 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
   def testGetAnalysisResultWithTryJobInfoNoTryJobInfo(self):
     organized_results = {
-        'step1 on platform':{}
+        'step1 on platform': {}
     }
     result = build_failure._GetAnalysisResultWithTryJobInfo(
-        organized_results, 'n', 'b', 120)
+        False, organized_results, 'n', 'b', 120)
     self.assertEqual({}, result)
 
   def testGetAnalysisResultWithTryJobInfoCompile(self):
@@ -596,10 +596,10 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
         ]
     }
     result = build_failure._GetAnalysisResultWithTryJobInfo(
-        organized_results, 'm', 'b', 120)
+        False, organized_results, 'm', 'b', 120)
 
     expected_result = {
-        'compile':{
+        'compile': {
             'results': {
                 'reliable_failures': [
                     {
@@ -625,8 +625,9 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                                     'commit_position': None,
                                     'url': None,
                                     'score': 2,
-                                    'hints': {('modified f99_2.cc '
-                                              '(and it was in log)'): 2
+                                    'hints': {
+                                        ('modified f99_2.cc '
+                                         '(and it was in log)'): 2
                                     },
                                 }
                             ]

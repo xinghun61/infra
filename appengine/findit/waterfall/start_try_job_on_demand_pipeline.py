@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 from common.pipeline_wrapper import BasePipeline
-from common.waterfall import failure_type
 from model.wf_analysis import WfAnalysis
 from waterfall import try_job_util
 
@@ -11,13 +10,15 @@ from waterfall import try_job_util
 class StartTryJobOnDemandPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, failure_info, signals, build_completed, heuristic_result):
+  def run(self, failure_info, signals, build_completed, force_try_job,
+          heuristic_result):
     """Starts a try job if one is needed for the given failure."""
     if not build_completed:  # Only start try-jobs for completed builds.
       return False
 
     failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
-        failure_info, signals=signals, heuristic_result=heuristic_result)
+        failure_info, signals=signals, heuristic_result=heuristic_result,
+        force_try_job=force_try_job)
 
     # Save reference to the try-jobs if any was scheduled.
     master_name = failure_info['master_name']

@@ -3,10 +3,7 @@
 # found in the LICENSE file.
 
 from collections import defaultdict
-import copy
 from datetime import datetime
-import logging
-import os
 
 from google.appengine.api import users
 
@@ -147,8 +144,8 @@ def _GetOrganizedAnalysisResultBySuspectedCL(analysis_result):
   return organized_results
 
 
-def _GetAnalysisResultWithTryJobInfo(
-    organized_results, master_name, builder_name, build_number):
+def _GetAnalysisResultWithTryJobInfo(show_debug_info, organized_results,
+                                     master_name, builder_name, build_number):
   """Reorganizes analysis result and try job result by step_name and culprit.
 
   Returns:
@@ -205,7 +202,8 @@ def _GetAnalysisResultWithTryJobInfo(
     return updated_results
 
   try_job_info = handlers_util.GetAllTryJobResults(
-      master_name, builder_name, build_number)
+      master_name, builder_name, build_number, show_debug_info)
+
   if not try_job_info:
     return updated_results
 
@@ -253,8 +251,9 @@ def _GetAnalysisResultWithTryJobInfo(
           'supported': heuristic_result['supported']
       }
 
-      if ('status' not in try_job_result or
-          try_job_result['status'] in NO_TRY_JOB_REASON_MAP.values()):
+      if (('status' not in try_job_result or
+           try_job_result['status'] in NO_TRY_JOB_REASON_MAP.values()) or
+          show_debug_info):
         # There is no try job info but only heuristic result.
         try_job_result['status'] = try_job_result.get(
             'status', result_status.UNKNOWN)
@@ -274,8 +273,7 @@ class BuildFailure(BaseHandler):
     # Show debug info only if the app is run locally during development, if the
     # currently logged-in user is an admin, or if it is explicitly requested
     # with parameter 'debug=1'.
-    return (
-            users.is_current_user_admin() or self.request.get('debug') == '1')
+    return users.is_current_user_admin() or self.request.get('debug') == '1'
 
   def _ShowTriageHelpButton(self):
     return users.is_current_user_admin()
@@ -314,7 +312,7 @@ class BuildFailure(BaseHandler):
     result = try_job.compile_results[-1]
 
     try_job_data['status'] = analysis_status.STATUS_TO_DESCRIPTION.get(
-          try_job.status, 'unknown').lower()
+        try_job.status, 'unknown').lower()
     try_job_data['url'] = result.get('url')
     try_job_data['completed'] = try_job.completed
     try_job_data['failed'] = try_job.failed
@@ -345,14 +343,16 @@ class BuildFailure(BaseHandler):
 
     return data
 
-  def _PrepareDataForTestFailures(self, analysis, build_info):
+  def _PrepareDataForTestFailures(self, analysis, build_info,
+                                  show_debug_info=False):
     data = self._PrepareCommonDataForFailure(analysis)
     data['status_message_map'] = result_status.STATUS_MESSAGE_MAP
 
     organized_results = _GetOrganizedAnalysisResultBySuspectedCL(
         analysis.result)
     analysis_result = _GetAnalysisResultWithTryJobInfo(
-        organized_results, *build_info)
+        show_debug_info, organized_results, *build_info)
+
     data['analysis_result'] = analysis_result
 
     return data
@@ -388,20 +388,24 @@ class BuildFailure(BaseHandler):
                self.request.get('force') == '1')
       build_completed = (users.is_current_user_admin() and
                          self.request.get('build_completed') == '1')
+      force_try_job = (users.is_current_user_admin() and
+                       self.request.get('force_try_job') == '1')
       analysis = build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
           master_name, builder_name, build_number,
           build_completed=build_completed, force=force,
+          force_try_job=force_try_job,
           queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
     if analysis.failure_type == failure_type.COMPILE:
       return {
-        'template': 'waterfall/compile_failure.html',
-        'data': self._PrepareDataForCompileFailure(analysis),
+          'template': 'waterfall/compile_failure.html',
+          'data': self._PrepareDataForCompileFailure(analysis),
       }
     else:
       return {
-        'template': 'build_failure.html',
-        'data': self._PrepareDataForTestFailures(analysis, build_info),
+          'template': 'build_failure.html',
+          'data': self._PrepareDataForTestFailures(analysis, build_info,
+                                                   self._ShowDebugInfo()),
       }
 
   def HandlePost(self):  # pragma: no cover

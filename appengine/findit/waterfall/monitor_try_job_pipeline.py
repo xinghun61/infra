@@ -158,7 +158,7 @@ class MonitorTryJobPipeline(BasePipeline):
   def _UpdateTryJobResult(
       self, status, master_name, builder_name, build_number, try_job_type,
       try_job_id, try_job_url, result_content=None):
-    """Updates try job result based on responsed try job status and result."""
+    """Updates try job result based on response try job status and result."""
     result = {
         'report': result_content,
         'url': try_job_url,

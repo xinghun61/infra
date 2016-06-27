@@ -5,7 +5,6 @@
 from testing_utils import testing
 
 from common.pipeline_wrapper import pipeline_handlers
-from common.waterfall import failure_type
 from model.wf_analysis import WfAnalysis
 from waterfall import try_job_util
 from waterfall.start_try_job_on_demand_pipeline import (
@@ -26,7 +25,7 @@ class StartTryJobOnDemandPipelineTest(testing.AppengineTestCase):
     requests = []
     self._MockTryJobScheduling(requests)
     pipeline = StartTryJobOnDemandPipeline()
-    self.assertFalse(pipeline.run(None, None, False, None))
+    self.assertFalse(pipeline.run(None, None, False, False, None))
     self.assertEqual(0, len(requests))
 
   def testTryJobScheduled(self):
@@ -42,7 +41,7 @@ class StartTryJobOnDemandPipelineTest(testing.AppengineTestCase):
     self._MockTryJobScheduling(requests)
 
     pipeline = StartTryJobOnDemandPipeline()
-    self.assertTrue(pipeline.run(failure_info, None, True, None))
+    self.assertTrue(pipeline.run(failure_info, None, True, False, None))
     self.assertEqual(1, len(requests))
     self.assertEqual(
         {'compile': 'try-job-key'},

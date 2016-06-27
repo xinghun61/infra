@@ -76,8 +76,10 @@ def _GenerateSwarmingTasksData(failure_result_map):
   tasks_info = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
 
   swarming_server = waterfall_config.GetSwarmingSettings()['server_host']
+
   for step_name, failure in failure_result_map.iteritems():
     step_tasks_info = tasks_info[step_name]['swarming_tasks']
+
     if isinstance(failure, dict):
       # Only swarming test failures have swarming re-runs.
       swarming_task_keys = set(failure.values())
@@ -190,9 +192,11 @@ def _OrganizeTryJobResultByCulprits(try_job_culprits):
   return organized_culprits
 
 
-def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info):
+def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info,
+                                          show_debug_info):
   referred_build_keys = try_job_key.split('/')
   try_job = WfTryJob.Get(*referred_build_keys)
+
   if not try_job or try_job.compile_results:
     return
 
@@ -201,14 +205,16 @@ def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info):
   for step_try_jobs in culprits_info.values():
     # If try job found different culprits for each test, split tests by culprit.
     additional_tests_culprit_info = []
+
     for try_job_info in step_try_jobs['try_jobs']:
       if (try_job_key != try_job_info['try_job_key']
-          or try_job_info.get('status')):
+          or (try_job_info.get('status') and not show_debug_info)):
         # Conditions that try_job_info has status are:
         # If there is no swarming task, there won't be try job;
         # If the swarming task is not completed yet, there won't be try job yet;
         # If there are flaky tests found, those tests will be marked as flaky,
         # and no try job for them will be triggered.
+        # If a try job was force triggered by an admin.
         continue
 
       try_job_info['status'] = try_job.status
@@ -228,7 +234,8 @@ def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info):
           # Uses culprits to group tests.
           culprit_tests_map = _OrganizeTryJobResultByCulprits(
               try_job_result['culprit'][ref_name])
-          ungrouped_tests = try_job_info['tests']
+
+          ungrouped_tests = try_job_info.get('tests', [])
           list_of_culprits = []
           for culprit_info in culprit_tests_map.values():
             failed_tests = culprit_info['failed_tests']
@@ -277,7 +284,9 @@ def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info):
       step_try_jobs['try_jobs'].extend(additional_tests_culprit_info)
 
 
-def _UpdateTryJobInfoBasedOnSwarming(step_tasks_info, try_jobs):
+def _UpdateTryJobInfoBasedOnSwarming(step_tasks_info, try_jobs,
+                                     show_debug_info=False,
+                                     step_name=None):
   """
   Args:
     step_tasks_info (dict): A dict of swarming task info for this step.
@@ -298,15 +307,23 @@ def _UpdateTryJobInfoBasedOnSwarming(step_tasks_info, try_jobs):
     try_job_key = try_job['try_job_key']
     task = step_tasks_info.get('swarming_tasks', {}).get(try_job_key)
 
-    if task['task_info']['status'] != analysis_status.COMPLETED:
+    if (task['task_info']['status'] != analysis_status.COMPLETED and
+        not show_debug_info):
       # There is someting wrong with swarming task or it's not done yet,
       # no try job yet or ever.
       try_job['status'] = result_status.NO_TRY_JOB_REASON_MAP[
           task['task_info']['status']]
       try_job['tests'] = task.get('all_tests', [])
     else:
-      # Swarming task is completed, group tests according to task result.
-      try_job['ref_name'] = task['ref_name']
+      # Swarming task is completed or a manual try job rerun was triggered.
+      # Group tests according to task result.
+      if task.get('ref_name'):
+        try_job['ref_name'] = task['ref_name']
+      else:
+        # A try job was forced for a non-swarming step.
+        if show_debug_info:  # pragma: no branch
+          try_job['ref_name'] = step_name.split()[0]
+
       if task.get('reliable_tests'):
         try_job['tests'] = task['reliable_tests']
         if task.get('flaky_tests'):
@@ -329,15 +346,16 @@ def _UpdateTryJobInfoBasedOnSwarming(step_tasks_info, try_jobs):
   try_jobs.extend(additional_flakiness_list)
 
 
-def _GetAllTryJobResultsForTest(failure_result_map, tasks_info):
+def _GetAllTryJobResultsForTest(failure_result_map, tasks_info,
+                                show_debug_info=False):
   culprits_info = defaultdict(lambda: defaultdict(list))
   if not tasks_info:
     return culprits_info
 
   try_job_keys = set()
+
   for step_name, step_failure_result_map in failure_result_map.iteritems():
     try_jobs = culprits_info[step_name]['try_jobs']
-
     if isinstance(step_failure_result_map, dict):
       step_try_job_keys = set()
       for try_job_key in step_failure_result_map.values():
@@ -349,18 +367,24 @@ def _GetAllTryJobResultsForTest(failure_result_map, tasks_info):
           step_try_job_keys.add(try_job_key)
       try_job_keys.update(step_try_job_keys)
     else:
-      # Try job should only be triggered for swarming tests, because we cannot
-      # identify flaky tests for non-swarming tests.
+      # By default Findit should only trigger try jobs for swarming tests,
+      # because we cannot identify flaky tests for non-swarming tests.
       try_job_dict = {
           'try_job_key': step_failure_result_map
       }
       try_jobs.append(try_job_dict)
 
-    _UpdateTryJobInfoBasedOnSwarming(tasks_info[step_name], try_jobs)
+      if show_debug_info:
+        # Include any forced try jobs trigered manually in debug mode.
+        try_job_keys.add(step_failure_result_map)
+
+    _UpdateTryJobInfoBasedOnSwarming(tasks_info[step_name], try_jobs,
+                                     show_debug_info,
+                                     step_name)
 
   for try_job_key in try_job_keys:
-    _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info)
-
+    _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info,
+                                          show_debug_info)
   return culprits_info
 
 
@@ -393,7 +417,8 @@ def _GetTryJobResultForCompile(failure_result_map):
   return culprit_info
 
 
-def GetAllTryJobResults(master_name, builder_name, build_number):
+def GetAllTryJobResults(master_name, builder_name, build_number,
+                        show_debug_info=False):
   culprits_info = {}
   is_test_failure = True
 
@@ -408,7 +433,7 @@ def GetAllTryJobResults(master_name, builder_name, build_number):
     if is_test_failure:
       tasks_info = _GenerateSwarmingTasksData(failure_result_map)
       culprits_info = _GetAllTryJobResultsForTest(
-          failure_result_map, tasks_info)
+          failure_result_map, tasks_info, show_debug_info)
     else:
       culprits_info = _GetTryJobResultForCompile(failure_result_map)
   elif analysis_result:
@@ -426,4 +451,5 @@ def GetAllTryJobResults(master_name, builder_name, build_number):
               }
           ]
       }
+
   return culprits_info

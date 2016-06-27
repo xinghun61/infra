@@ -81,7 +81,8 @@ def _CheckIfNeedNewTryJobForTestFailure(
 
 @ndb.transactional
 def _NeedANewTryJob(
-    master_name, builder_name, build_number, failed_steps, failure_result_map):
+    master_name, builder_name, build_number, failed_steps, failure_result_map,
+    force_try_job=False):
   """Checks if a new try_job is needed."""
   need_new_try_job = False
   last_pass = build_number
@@ -103,7 +104,7 @@ def _NeedANewTryJob(
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
 
     if try_job:
-      if try_job.failed:
+      if try_job.failed or force_try_job:
         try_job.status = analysis_status.PENDING
         try_job.put()
       else:
@@ -149,24 +150,15 @@ def _GetSuspectsFromHeuristicResult(heuristic_result):
 
 def _ShouldBailOutForOutdatedBuild(build):
   return (datetime.utcnow() - build.start_time).days > 0
-    
 
-def ScheduleTryJobIfNeeded(failure_info, signals, heuristic_result):
+
+def ScheduleTryJobIfNeeded(failure_info, signals, heuristic_result,
+                           force_try_job=False):
   master_name = failure_info['master_name']
   builder_name = failure_info['builder_name']
   build_number = failure_info['build_number']
   failed_steps = failure_info.get('failed_steps', [])
   builds = failure_info.get('builds', {})
-
-  # Bail out if the build data's timestamp is more than 24 hours old to
-  # avoid using outdated revisions. TODO(lijeffrey): This will also disallow
-  # manually triggering try jobs more than a day old using build_completed=1.
-  # Need to implement a flag to force try jobs regardless of timestamp.
-  build = WfBuild.Get(master_name, builder_name, build_number)
-  if _ShouldBailOutForOutdatedBuild(build):
-    logging.error(
-        'Build time is more than 24 hours old. Try job will not be triggered.')
-    return {}
 
   tryserver_mastername, tryserver_buildername = (
       waterfall_config.GetTrybotForWaterfallBuilder(master_name, builder_name))
@@ -174,16 +166,25 @@ def ScheduleTryJobIfNeeded(failure_info, signals, heuristic_result):
   if not tryserver_mastername or not tryserver_buildername:
     logging.info('%s, %s is not supported yet.', master_name, builder_name)
     return {}
-  elif (failure_info['failure_type'] == failure_type.TEST and
+
+  if not force_try_job:
+    build = WfBuild.Get(master_name, builder_name, build_number)
+
+    if _ShouldBailOutForOutdatedBuild(build):
+      logging.error('Build time %s is more than 24 hours old. '
+                    'Try job will not be triggered.' % build.start_time)
+      return {}
+
+    if (failure_info['failure_type'] == failure_type.TEST and
         waterfall_config.ShouldSkipTestTryJobs(master_name, builder_name)):
-    logging.info('Test try jobs on %s, %s are not supported yet.',
-                 master_name, builder_name)
-    return {}
+      logging.info('Test try jobs on %s, %s are not supported yet.',
+                   master_name, builder_name)
+      return {}
 
   failure_result_map = {}
   need_new_try_job, last_pass, try_job_type, targeted_tests = (
       _NeedANewTryJob(master_name, builder_name, build_number,
-                      failed_steps, failure_result_map))
+                      failed_steps, failure_result_map, force_try_job))
 
   if need_new_try_job:
     compile_targets = (_GetFailedTargetsFromSignals(
@@ -197,7 +198,8 @@ def ScheduleTryJobIfNeeded(failure_info, signals, heuristic_result):
             builds[str(last_pass)]['chromium_revision'],
             builds[str(build_number)]['chromium_revision'],
             builds[str(build_number)]['blame_list'],
-            try_job_type, compile_targets, targeted_tests, suspected_revisions))
+            try_job_type, compile_targets, targeted_tests, suspected_revisions,
+            force_try_job))
 
     pipeline.target = appengine_util.GetTargetNameForModule(
         constants.WATERFALL_BACKEND)

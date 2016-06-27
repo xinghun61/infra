@@ -8,14 +8,14 @@ import logging
 from common import appengine_util
 from common import constants
 from common.pipeline_wrapper import BasePipeline
-from common.pipeline_wrapper import pipeline
 from model import analysis_status
 from model.wf_try_job import WfTryJob
 from waterfall import try_job_pipeline
 from waterfall.try_job_type import TryJobType
 
 
-def _GetReliableTargetedTests(targeted_tests, classified_tests_by_step):
+def _GetReliableTargetedTests(targeted_tests, classified_tests_by_step,
+                              force_try_job=False):
   """Returns a dict containing a list of reliable tests for each failed step."""
   reliable_tests = defaultdict(list)
   for step_name, tests in targeted_tests.iteritems():
@@ -30,8 +30,11 @@ def _GetReliableTargetedTests(targeted_tests, classified_tests_by_step):
       # If the step is swarming but there is no result for it, it's highly
       # likely that there is some error with the task.
       # Thus skip this step for no insights from task to avoid false positive.
-        if (test in classified_tests.get('reliable_tests', [])):
+        if test in classified_tests.get('reliable_tests', []):
           reliable_tests[step_name_no_platform].append(test)
+    elif force_try_job:
+      # Try jobs were forced to be rerun regardless of being non-swarming.
+      reliable_tests[step_name] = []
   return reliable_tests
 
 
@@ -47,7 +50,7 @@ class RunTryJobForReliableFailurePipeline(BasePipeline):
   def run(
       self, master_name, builder_name, build_number, good_revision,
       bad_revision, blame_list, try_job_type, compile_targets, targeted_tests,
-      suspected_revisions, *classified_tests_by_step):
+      suspected_revisions, force_try_job, *classified_tests_by_step):
     """
     Args:
       master_name (str): Name of the master.
@@ -60,13 +63,17 @@ class RunTryJobForReliableFailurePipeline(BasePipeline):
       compile_targets (list): A list of failed targets for compile failure.
       targeted_tests (dict): A dict of failed tests for test failure.
       suspected_revisions (list): Suspected revisions for a compile failure.
+      force_try_job (bool): Whether or not a try job should be run
+          regardless of non swarming-steps.
       *classified_tests_by_step (list): A list of tuples of step_name and
           classified_tests. The format is like:
-          [('step1', {'flaky_tests': ['test1', ..], ..}), ..]
+          [('step1', {'flaky_tests': ['test1', ..], ..}),
+          ..]
     """
     if try_job_type == TryJobType.TEST:
       targeted_tests = _GetReliableTargetedTests(
-          targeted_tests, dict(classified_tests_by_step))
+          targeted_tests, dict(classified_tests_by_step), force_try_job)
+
     if targeted_tests or try_job_type == TryJobType.COMPILE:
       new_try_job_pipeline = try_job_pipeline.TryJobPipeline(
           master_name, builder_name, build_number, good_revision,
