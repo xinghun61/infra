@@ -68,9 +68,11 @@ class PeopleDetail(servlet.Servlet):
 
     project_commitments = self.services.project.GetProjectCommitments(
         mr.cnxn, mr.project_id)
+    acexclusion_ids = self.services.project.GetProjectAutocompleteExclusion(
+        mr.cnxn, mr.project_id)
     member_view = project_views.MemberView(
         mr.auth.user_id, member_id, users_by_id[member_id], mr.project,
-        project_commitments)
+        project_commitments, acexclusion_ids=acexclusion_ids)
 
     member_user = self.services.user.GetUser(mr.cnxn, member_id)
     # This ignores indirect memberships, which is ok because we are viewing
@@ -144,14 +146,15 @@ class PeopleDetail(servlet.Servlet):
   def ProcessFormData(self, mr, post_data):
     """Process the posted form."""
     # 1. Parse and validate user input.
-    user_id, role, extra_perms, notes = self.ParsePersonData(mr, post_data)
+    user_id, role, extra_perms, notes, ac_exclusion = (
+        self.ParsePersonData(mr, post_data))
     member_id = self.ValidateMemberID(mr.cnxn, user_id, mr.project)
 
     # 2. Call services layer to save changes.
     if 'remove' in post_data:
       self.ProcessRemove(mr, member_id)
     else:
-      self.ProcessSave(mr, role, extra_perms, notes, member_id)
+      self.ProcessSave(mr, role, extra_perms, notes, member_id, ac_exclusion)
 
     # 3. Determine the next page in the UI flow.
     if 'remove' in post_data:
@@ -169,9 +172,10 @@ class PeopleDetail(servlet.Servlet):
 
     self.RemoveRole(mr.cnxn, mr.project, member_id)
 
-  def ProcessSave(self, mr, role, extra_perms, notes, member_id):
+  def ProcessSave(self, mr, role, extra_perms, notes, member_id, ac_exclusion):
     """Process the posted form when the user pressed 'Save'."""
-    if not self.CanEditPerms(mr) and not self.CanEditMemberNotes(mr, member_id):
+    if (not self.CanEditPerms(mr) and
+        not self.CanEditMemberNotes(mr, member_id)):
       raise permissions.PermissionException(
           'User is not allowed to edit people in this project')
 
@@ -183,6 +187,10 @@ class PeopleDetail(servlet.Servlet):
     if self.CanEditMemberNotes(mr, member_id):
       self.services.project.UpdateCommitments(
           mr.cnxn, mr.project_id, member_id, notes)
+
+    if self.CanEditPerms(mr):
+      self.services.project.UpdateProjectAutocompleteExclusion(
+          mr.cnxn, mr.project_id, member_id, ac_exclusion)
 
   def CanEditMemberNotes(self, mr, member_id):
     """Return true if the logged in user can edit the current user's notes."""
@@ -222,7 +230,8 @@ class PeopleDetail(servlet.Servlet):
         extra_perms.append(perm)
 
     notes = post_data.get('notes', '').strip()
-    return mr.specified_user_id, role, extra_perms, notes
+    ac_exclusion = post_data.get('ac_exclude', '')
+    return mr.specified_user_id, role, extra_perms, notes, bool(ac_exclusion)
 
   def RemoveRole(self, cnxn, project, member_id):
     """Remove the given member from the project."""

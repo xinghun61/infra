@@ -112,6 +112,9 @@ class IssueOptionsJSON(jsonfeed.JsonFeed):
         mr.cnxn, [mem.user_id for mem in member_data['all_members']])
     logging.info('group_ids is %r', group_ids)
 
+    acexclusion_ids = self.services.project.GetProjectAutocompleteExclusion(
+        mr.cnxn, mr.project_id)
+
     # TODO(jrobbins): Normally, users will be allowed view the members
     # of any user group if the project From: email address is listed
     # as a group member, as well as any group that they are personally
@@ -131,7 +134,8 @@ class IssueOptionsJSON(jsonfeed.JsonFeed):
         indirect_member_views)
     # Filter out servbice accounts
     visible_member_views = [m for m in visible_member_views
-                            if not framework_helpers.IsServiceAccount(m.email)]
+                            if not framework_helpers.IsServiceAccount(m.email)
+                            and not m.user_id in acexclusion_ids]
     visible_member_email_list = list({
         uv.email for uv in visible_member_views})
     user_indexes = {email: idx

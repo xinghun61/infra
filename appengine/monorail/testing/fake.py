@@ -565,6 +565,7 @@ class ProjectService(object):
     self.unindexed_projects = set()
     self.index_counter = 0
     self.project_commitments = {}
+    self.ac_exclusion_ids = {}
 
   def TestAddProject(
       self, name, summary='', state=project_pb2.ProjectState.LIVE,
@@ -704,6 +705,9 @@ class ProjectService(object):
   def TestStoreProjectCommitments(self, project_commitments):
     key = project_commitments.project_id
     self.project_commitments[key] = project_commitments
+
+  def GetProjectAutocompleteExclusion(self, cnxn, project_id):
+    return self.ac_exclusion_ids.get(project_id, [])
 
   def UpdateProject(
       self, _cnxn, project_id, summary=None, description=None,

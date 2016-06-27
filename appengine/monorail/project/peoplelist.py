@@ -61,16 +61,20 @@ class PeopleList(servlet.Servlet):
       project_commitments = self.services.project.GetProjectCommitments(
           mr.cnxn, mr.project_id)
 
+    with self.profiler.Phase('gathering autocomple exclusion ids'):
+      acexclusion_ids = self.services.project.GetProjectAutocompleteExclusion(
+          mr.cnxn, mr.project_id)
+
     with self.profiler.Phase('making member views'):
       owner_views = self._MakeMemberViews(
           mr.auth.user_id, users_by_id, mr.project.owner_ids, mr.project,
-          project_commitments)
+          project_commitments, acexclusion_ids)
       committer_views = self._MakeMemberViews(
           mr.auth.user_id, users_by_id, mr.project.committer_ids, mr.project,
-          project_commitments)
+          project_commitments, acexclusion_ids)
       contributor_views = self._MakeMemberViews(
           mr.auth.user_id, users_by_id, mr.project.contributor_ids, mr.project,
-          project_commitments)
+          project_commitments, acexclusion_ids)
       all_member_views = owner_views + committer_views + contributor_views
 
     pagination = paginate.ArtifactPagination(
@@ -113,12 +117,12 @@ class PeopleList(servlet.Servlet):
 
   def _MakeMemberViews(
       self, logged_in_user_id, users_by_id, member_ids, project,
-      project_commitments):
+      project_commitments, acexclusion_ids):
     """Return a sorted list of MemberViews for display by EZT."""
     member_views = [
         project_views.MemberView(
             logged_in_user_id, member_id, users_by_id[member_id], project,
-            project_commitments)
+            project_commitments, acexclusion_ids=acexclusion_ids)
         for member_id in member_ids]
     member_views.sort(key=lambda mv: mv.user.email)
     return member_views

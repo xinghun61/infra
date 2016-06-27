@@ -30,6 +30,8 @@ def MakeProjectService(cache_manager, my_mox):
   project_service.membernotes_tbl = my_mox.CreateMock(sql.SQLTableManager)
   project_service.usergroupprojects_tbl = my_mox.CreateMock(
       sql.SQLTableManager)
+  project_service.acexclusion_tbl = my_mox.CreateMock(
+      sql.SQLTableManager)
   return project_service
 
 
@@ -322,6 +324,8 @@ class ProjectServiceTest(unittest.TestCase):
     self.project_service.extraperm_tbl.Delete(
         self.cnxn, project_id=234)
     self.project_service.membernotes_tbl.Delete(
+        self.cnxn, project_id=234)
+    self.project_service.acexclusion_tbl.Delete(
         self.cnxn, project_id=234)
     self.project_service.project_tbl.Delete(
         self.cnxn, project_id=234)

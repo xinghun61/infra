@@ -29,6 +29,7 @@ USER2PROJECT_TABLE_NAME = 'User2Project'
 EXTRAPERM_TABLE_NAME = 'ExtraPerm'
 MEMBERNOTES_TABLE_NAME = 'MemberNotes'
 USERGROUPPROJECTS_TABLE_NAME = 'Group2Project'
+AUTOCOMPLETEEXCLUSION_TABLE_NAME = 'AutocompleteExclusion'
 
 PROJECT_COLS = [
     'project_id', 'project_name', 'summary', 'description', 'state', 'access',
@@ -41,6 +42,7 @@ PROJECT_COLS = [
 USER2PROJECT_COLS = ['project_id', 'user_id', 'role_name']
 EXTRAPERM_COLS = ['project_id', 'user_id', 'perm']
 MEMBERNOTES_COLS = ['project_id', 'user_id', 'notes']
+AUTOCOMPLETEEXCLUSION_COLS = ['project_id', 'user_id']
 
 
 class ProjectTwoLevelCache(caches.AbstractTwoLevelCache):
@@ -140,6 +142,8 @@ class ProjectService(object):
     self.membernotes_tbl = sql.SQLTableManager(MEMBERNOTES_TABLE_NAME)
     self.usergroupprojects_tbl = sql.SQLTableManager(
         USERGROUPPROJECTS_TABLE_NAME)
+    self.acexclusion_tbl = sql.SQLTableManager(
+        AUTOCOMPLETEEXCLUSION_TABLE_NAME)
 
     # Like a dictionary {project_id: project}
     self.project_2lc = ProjectTwoLevelCache(cache_manager, self)
@@ -340,6 +344,7 @@ class ProjectService(object):
     self.usergroupprojects_tbl.Delete(cnxn, project_id=project_id)
     self.extraperm_tbl.Delete(cnxn, project_id=project_id)
     self.membernotes_tbl.Delete(cnxn, project_id=project_id)
+    self.acexclusion_tbl.Delete(cnxn, project_id=project_id)
     self.project_tbl.Delete(cnxn, project_id=project_id)
 
   ### Updating projects
@@ -638,6 +643,40 @@ class ProjectService(object):
 
     if dirty:
       self._StoreProjectCommitments(cnxn, project_commitments)
+
+  def GetProjectAutocompleteExclusion(self, cnxn, project_id):
+    """Get user ids who are excluded from autocomplete list.
+
+    Args:
+      cnxn: connection to SQL database.
+      project_id: int ID of the current project.
+
+    Returns:
+      A list of user ids who are excluded from autocomplete list for given
+      project.
+    """
+    acexclusion_rows = self.acexclusion_tbl.Select(
+        cnxn, cols=['user_id'], project_id=project_id)
+    user_ids = [row[0] for row in acexclusion_rows]
+    return user_ids
+
+  def UpdateProjectAutocompleteExclusion(
+      self, cnxn, project_id, member_id, exclude):
+    """Update autocomplete exclusion for given user.
+
+    Args:
+      cnxn: connection to SQL database.
+      project_id: int ID of the current project.
+      member_id: int user ID of the user that was edited.
+      exclude: Whether this user should be excluded.
+    """
+    if exclude:
+      self.acexclusion_tbl.InsertRows(
+        cnxn, AUTOCOMPLETEEXCLUSION_COLS, [(project_id, member_id)],
+        ignore=True)
+    else:
+      self.acexclusion_tbl.Delete(
+          cnxn, project_id=project_id, user_id=member_id)
 
 
 class Error(Exception):

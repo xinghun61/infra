@@ -125,6 +125,15 @@ CREATE TABLE MemberNotes (
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
 
+CREATE TABLE AutocompleteExclusion (
+  project_id SMALLINT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (project_id, user_id),
+  FOREIGN KEY (project_id) REFERENCES Project(project_id),
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
 
 CREATE TABLE UserStar (
   starred_user_id INT UNSIGNED NOT NULL,

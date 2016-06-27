@@ -154,7 +154,7 @@ class PeopleDetailTest(unittest.TestCase):
         path='/p/proj/people/detail?u=111',
         project=self.project)
     post_data = fake.PostData(role=['owner'])
-    u, r, ac, n = self.servlet.ParsePersonData(mr, post_data)
+    u, r, ac, n, _ = self.servlet.ParsePersonData(mr, post_data)
     self.assertEquals(111, u)
     self.assertEquals('owner', r)
     self.assertEquals([], ac)
@@ -164,7 +164,7 @@ class PeopleDetailTest(unittest.TestCase):
         path='/p/proj/people/detail?u=333',
         project=self.project)
     post_data = fake.PostData(role=['owner'])
-    u, r, ac, n = self.servlet.ParsePersonData(mr, post_data)
+    u, r, ac, n, _ = self.servlet.ParsePersonData(mr, post_data)
     self.assertEquals(333, u)
 
   def testParsePersonData(self):
@@ -173,7 +173,7 @@ class PeopleDetailTest(unittest.TestCase):
         project=self.project)
     post_data = fake.PostData(
         role=['owner'], extra_perms=['ViewQuota', 'EditIssue'])
-    u, r, ac, n = self.servlet.ParsePersonData(mr, post_data)
+    u, r, ac, n, _ = self.servlet.ParsePersonData(mr, post_data)
     self.assertEquals(111, u)
     self.assertEquals('owner', r)
     self.assertEquals(['ViewQuota', 'EditIssue'], ac)
@@ -184,23 +184,26 @@ class PeopleDetailTest(unittest.TestCase):
         'extra_perms': [' ', '  \t'],
         'notes': [''],
         })
-    u, r, ac, n = self.servlet.ParsePersonData(mr, post_data)
+    u, r, ac, n, ac_exclusion = self.servlet.ParsePersonData(mr, post_data)
     self.assertEquals(111, u)
     self.assertEquals('owner', r)
     self.assertEquals([], ac)
     self.assertEquals('', n)
+    self.assertFalse(ac_exclusion)
 
     post_data = fake.PostData({
         'username': ['jrobbins'],
         'role': ['owner'],
         'extra_perms': ['_ViewQuota', '  __EditIssue'],
         'notes': [' Our local Python expert '],
+        'ac_exclude': [123],
         })
-    u, r, ac, n = self.servlet.ParsePersonData(mr, post_data)
+    u, r, ac, n, ac_exclusion = self.servlet.ParsePersonData(mr, post_data)
     self.assertEquals(111, u)
     self.assertEquals('owner', r)
     self.assertEquals(['ViewQuota', 'EditIssue'], ac)
     self.assertEquals('Our local Python expert', n)
+    self.assertTrue(ac_exclusion)
 
   def testCanEditMemberNotes(self):
     """Only owners can edit member notes."""

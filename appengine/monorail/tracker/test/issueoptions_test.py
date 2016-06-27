@@ -29,6 +29,7 @@ class IssueOptionsJSONTest(unittest.TestCase):
     services.user.TestAddUser('user_111@domain.com', 111L)
     services.user.TestAddUser('user_222@domain.com', 222L)
     services.user.TestAddUser('user_333@domain.com', 333L)
+    services.user.TestAddUser('user_666@domain.com', 666L)
 
     # User group 888 has members: user_555 and proj@monorail.com
     services.user.TestAddUser('group888@googlegroups.com', 888L)
@@ -46,6 +47,8 @@ class IssueOptionsJSONTest(unittest.TestCase):
     self.project.contributor_ids.extend([333L])
     self.servlet = issueoptions.IssueOptionsJSON(
         'req', webapp2.Response(), services=services)
+
+    self.services = services
 
   def RunHandleRequest(self, logged_in_user_id, perms, effective_ids=None):
     mr = testing_helpers.MakeMonorailRequest(project=self.project, perms=perms)
@@ -102,6 +105,18 @@ class IssueOptionsJSONTest(unittest.TestCase):
         self.assertTrue(member['is_group'])
       else:
         self.assertNotIn('is_group', member)
+
+  def testHandleRequest_AcExclusion(self):
+    self.project.contributor_ids.extend([666L])
+
+    member_emails = self.RunAndGetMemberEmails(
+        666L, permissions.OWNER_ACTIVE_PERMISSIONSET)
+    self.assertIn('user_666@domain.com', member_emails)
+
+    self.services.project.ac_exclusion_ids[self.project.project_id] = [666L]
+    member_emails = self.RunAndGetMemberEmails(
+        666L, permissions.OWNER_ACTIVE_PERMISSIONSET)
+    self.assertNotIn('user_666@domain.com', member_emails)
 
   @unittest.skip('TODO(jrobbins): reimplement')
   def skip_testHandleRequest_Groups(self):
