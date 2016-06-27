@@ -7,11 +7,16 @@ package cmdhelper
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"regexp"
 	"strings"
+
+	"github.com/luci/luci-go/common/flag/flagenum"
 
 	crimson "infra/crimson/proto"
 )
@@ -200,11 +205,140 @@ func isIPv4(ip net.IP) bool {
 	return bytes.Equal(ip[:12], v4InV6Prefix)
 }
 
-// PrintIPRange pretty-prints a slice of IP ranges.
-func PrintIPRange(ipRanges []*crimson.IPRange) {
-	fmt.Println("site \tvlan \t IP range")
+// Formatter formats tables for printing according to -format flag.
+type Formatter interface {
+	// FormatRows formats rows of a table as strings for pretty-printing.
+	FormatRows(rows [][]string) []string
+}
+
+// CSVFormatter formats output in CSV format.
+type CSVFormatter struct{}
+
+var _ Formatter = &CSVFormatter{}
+
+// FormatRows prints all rows in CSV format.
+func (f *CSVFormatter) FormatRows(rows [][]string) []string {
+	var output []string
+	for _, row := range rows {
+		for i, val := range row {
+			if strings.Contains(val, ",") {
+				row[i] = `"` + val + `"`
+			}
+		}
+		output = append(output, strings.Join(row, ","))
+	}
+	return output
+}
+
+// TextFormatter formats output as a pretty-printed text table.
+type TextFormatter struct {
+	lengths []int
+}
+
+var _ Formatter = &TextFormatter{}
+
+func (f *TextFormatter) setSpacingFromRows(rows [][]string) {
+	for _, cols := range rows {
+		for i, col := range cols {
+			if len(f.lengths) <= i {
+				f.lengths = append(f.lengths, len(col))
+			} else if f.lengths[i] < len(col) {
+				f.lengths[i] = len(col)
+			}
+		}
+	}
+}
+
+func (f *TextFormatter) formatRow(cols []string) string {
+	s := bytes.Buffer{}
+	for i, col := range cols {
+		s.WriteString(col)
+		padding := f.lengths[i] - len(col) + 1
+		if padding < 1 {
+			padding = 1
+		}
+		for i := 0; i < padding; i++ {
+			s.WriteString(" ")
+		}
+	}
+	return s.String()
+}
+
+// FormatRows automatically computes spacing and pretty-prints all the rows.
+func (f *TextFormatter) FormatRows(rows [][]string) []string {
+	var output []string
+	f.setSpacingFromRows(rows)
+	for _, row := range rows {
+		output = append(output, f.formatRow(row))
+	}
+	return output
+}
+
+// FormatType is the type for enum values for the -format flag.
+type FormatType string
+
+var _ flag.Value = (*FormatType)(nil)
+
+const (
+	textFormat = FormatType("text")
+	csvFormat  = FormatType("csv")
+	jsonFormat = FormatType("json")
+	// DefaultFormat is the default value to use for FormatType.
+	DefaultFormat = textFormat
+)
+
+// FormatTypeEnum is the value type for the -format flag.
+var FormatTypeEnum = flagenum.Enum{
+	"text": textFormat,
+	"csv":  csvFormat,
+	"json": jsonFormat,
+}
+
+func (ft *FormatType) String() string {
+	return FormatTypeEnum.FlagString(*ft)
+}
+
+// Set implements flag.Value
+func (ft *FormatType) Set(v string) error {
+	return FormatTypeEnum.FlagSet(ft, v)
+}
+
+// FormatIPRange formats a slice of IP ranges for pretty-printing.
+func FormatIPRange(ipRanges []*crimson.IPRange, format FormatType) ([]string, error) {
+	var formatter Formatter
+
+	switch format {
+	case jsonFormat:
+		jsonBytes, err := json.Marshal(ipRanges)
+		if err != nil {
+			return []string{}, err
+		}
+		return []string{string(jsonBytes)}, nil
+	case textFormat:
+		formatter = &TextFormatter{}
+	case csvFormat:
+		formatter = &CSVFormatter{}
+	}
+	rows := [][]string{{"site", "vlan", "Start IP", "End IP"}}
 	for _, ipRange := range ipRanges {
-		fmt.Printf("%s \t %s \t%s-%s\n",
-			ipRange.Site, ipRange.Vlan, ipRange.StartIp, ipRange.EndIp)
+		rows = append(rows, []string{
+			fmt.Sprintf("%s", ipRange.Site),
+			fmt.Sprintf("%s", ipRange.Vlan),
+			fmt.Sprintf("%s", ipRange.StartIp),
+			fmt.Sprintf("%s", ipRange.EndIp),
+		})
+	}
+	return formatter.FormatRows(rows), nil
+}
+
+// PrintIPRange pretty-prints a slice of IP ranges.
+func PrintIPRange(ipRanges []*crimson.IPRange, format FormatType) {
+	lines, err := FormatIPRange(ipRanges, format)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: %s", err)
+		return
+	}
+	for _, s := range lines {
+		fmt.Println(s)
 	}
 }

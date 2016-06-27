@@ -27,6 +27,7 @@ type commonFlags struct {
 	subcommands.CommandRunBase
 	authFlags   authcli.Flags
 	backendHost string
+	format      cmdhelper.FormatType
 }
 
 type addVlanRun struct {
@@ -57,6 +58,8 @@ var (
 			c.Flags.StringVar(&c.vlan, "vlan", "", "Name of the vlan")
 			c.Flags.StringVar(&c.inputFileDHCP, "input-file-dhcp", "",
 				"Path to a dchpd.conf file containing subnet entries.")
+			c.Flags.Var(&c.format, "format", "Output format: "+
+				cmdhelper.FormatTypeEnum.Choices())
 			// The remaining argument is the IP range (ex: "192.168.0.1-192.168.0.5")
 			return c
 		},
@@ -68,6 +71,7 @@ var (
 		LongDesc:  "Reads an IP range.",
 		CommandRun: func() subcommands.CommandRun {
 			c := &queryVlanRun{}
+			c.format = cmdhelper.DefaultFormat
 			c.Flags.StringVar(&c.backendHost, "backend-host",
 				"crimson-staging.appspot.com", "Host to talk to")
 			c.Flags.StringVar(&c.site, "site", "", "Name of the site")
@@ -75,6 +79,8 @@ var (
 			c.Flags.StringVar(&c.ip, "ip", "", "IP contained within the range")
 			c.Flags.IntVar(&c.limit, "limit", 10,
 				"Maximum number of results to return")
+			c.Flags.Var(&c.format, "format", "Output format: "+
+				cmdhelper.FormatTypeEnum.Choices())
 			return c
 		},
 	}
@@ -157,7 +163,7 @@ func (c *addVlanRun) Run(a subcommands.Application, args []string) int {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 			return 1
 		}
-		cmdhelper.PrintIPRange(ranges)
+		cmdhelper.PrintIPRange(ranges, c.format)
 		// TODO(pgervais): display ranges found and ask user before proceeding.
 	} else {
 		ranges, err = ipRangeFromSiteAndVlan(c)
@@ -197,7 +203,7 @@ func (c *queryVlanRun) Run(a subcommands.Application, args []string) int {
 		return 1
 	}
 
-	cmdhelper.PrintIPRange(results.Ranges)
+	cmdhelper.PrintIPRange(results.Ranges, c.format)
 	return 0
 }
 
