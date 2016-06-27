@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import unittest
 
 from services import spam_helpers
@@ -40,5 +42,19 @@ class SpamHelpersTest(unittest.TestCase):
     self.assertEquals(12, len(features))
     self.assertEquals(['True', '0', '0', '3', '11', '7', '15', '0', '0',
         '2', '0', '1'], features)
+
+    # BMP Unicode
+    features = spam_helpers.GenerateFeatures(
+        u'abc’', u'abc ’ def', 'jan1990@bar.com', 5, ('@example.com'))
+    self.assertEquals(12, len(features))
+    self.assertEquals(['True', '0', '0', '6', '14', '11', '19', '0', '0',
+        '1', '1', '2'], features)
+
+    # Non-BMP Unicode
+    features = spam_helpers.GenerateFeatures(
+        u'abc國', u'abc 國 def', 'jan1990@bar.com', 5, ('@example.com'))
+    self.assertEquals(12, len(features))
+    self.assertEquals(['True', '0', '0', '6', '14', '11', '19', '0', '0',
+        '1', '1', '2'], features)
 
 

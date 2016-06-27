@@ -60,6 +60,8 @@ def GenerateFeatures(summary, description, author_email, num_hashes,
     num_hashes: The number of feature hashes to generate.
     whitelisted_email_suffixes: The set of email address suffixes to ignore.
   """
+  summary = summary.encode('utf-8')
+  description = description.encode('utf-8')
 
   # Compression ratio lets us know how much repeated data there is.
   uncompressed_summary_len = len(summary)
