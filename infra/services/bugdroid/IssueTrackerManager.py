@@ -221,7 +221,7 @@ class IssueTrackerManager(object):
                                             'status': issue.status,
                                             'owner': {'name': issue.owner},
                                             'labels': issue.labels,
-                                            'cc': cc}).execute()
+                                            'cc': cc}).execute(num_retries=5)
     issue.id = int(tmp['id']) # i think already int
     issue.dirty = False
     issue.new = False
@@ -259,7 +259,7 @@ class IssueTrackerManager(object):
     self.client.issues().comments().insert(projectId=self.project_name,
                                            issueId=issue.id,
                                            sendEmail=send_email,
-                                           body=body).execute()
+                                           body=body).execute(num_retries=5)
 
 
     if issue.owner == self._empty_owner_value:
@@ -276,17 +276,18 @@ class IssueTrackerManager(object):
     self.save(issue, send_email)
 
   def getCommentCount(self, issue_id):
-    feed = self.client.issues().comments().list(projectId=self.project_name,
-                                                issueId=issue_id,
-                                                startIndex=1,
-                                                maxResults=0).execute()
+    feed = self.client.issues().comments().list(
+        projectId=self.project_name,
+        issueId=issue_id,
+        startIndex=1,
+        maxResults=0).execute(num_retries=5)
     return feed.get('totalResults', '0')
 
   def getComments(self, issue_id):
     rtn = []
 
     comments_feed = self.client.issues().comments().list(
-        projectId=self.project_name,issueId=issue_id).execute()
+        projectId=self.project_name,issueId=issue_id).execute(num_retries=5)
     rtn.extend(
         [convertEntryToComment(entry) for entry in comments_feed['items']])
     total_results = comments_feed['totalResults']
@@ -298,26 +299,28 @@ class IssueTrackerManager(object):
     while len(rtn) < total_results:
       comments_feed = self.client.issues().comments().list(
           projectId=self.project_name, issueId=issue_id,
-          startIndex=len(rtn)).execute()
+          startIndex=len(rtn)).execute(num_retries=5)
       rtn.extend(
           [convertEntryToComment(entry) for entry in comments_feed['items']])
 
     return rtn
 
   def getFirstComment(self, issue_id):
-    feed = self.client.issues().comments().list(projectId=self.project_name,
-                                                issueId=issue_id,
-                                                startIndex=0,
-                                                maxResults=1).execute()
+    feed = self.client.issues().comments().list(
+        projectId=self.project_name,
+        issueId=issue_id,
+        startIndex=0,
+        maxResults=1).execute(num_retries=5)
     if 'items' in feed:
       return convertEntryToComment(feed['items'][0])
 
   def getLastComment(self, issue_id):
     total_results = self.getCommentCount(issue_id)
-    feed = self.client.issues().comments().list(projectId=self.project_name,
-                                                issueId=issue_id,
-                                                startIndex=total_results-1,
-                                                maxResults=1).execute()
+    feed = self.client.issues().comments().list( 
+        projectId=self.project_name,
+        issueId=issue_id,
+        startIndex=total_results-1,
+        maxResults=1).execute(num_retries=5)
     if 'items' in feed:
       return convertEntryToComment(feed['items'][0])
     return None
@@ -326,19 +329,20 @@ class IssueTrackerManager(object):
   def getIssue(self, issue_id):
     """Retrieve a set of issues in a project."""
     entry = self.client.issues().get(
-        projectId=self.project_name, issueId=issue_id).execute()
+        projectId=self.project_name, issueId=issue_id).execute(num_retries=5)
     return convertEntryToIssue(entry, self)
 
   def refresh(self, issue):
     if issue and not issue.new:
       entry = self.client.issues().get(
-          projectId=self.project_name, issueId=issue.id).execute()
+          projectId=self.project_name, issueId=issue.id).execute(num_retries=5)
       return convertEntryToIssue(entry, self, old_issue=issue)
 
     return issue
 
   def getAllIssues(self):
-    feed = self.client.issues().list(projectId=self.project_name).execute()
+    feed = self.client.issues().list(projectId=self.project_name).execute(
+        num_retries=5)
     return [convertEntryToIssue(entry, self) for entry in feed['items']]
 
   def getIssuesCount(self, query_str, can=CAN_ALL):
@@ -346,7 +350,7 @@ class IssueTrackerManager(object):
                                      projectId=self.project_name,
                                      q=query_str,
                                      startIndex=0,
-                                     maxResults=0).execute()
+                                     maxResults=0).execute(num_retries=5)
     total_results = feed.get('totalResults', '')
     if total_results:
       return int(total_results)
@@ -377,7 +381,7 @@ class IssueTrackerManager(object):
                                      q=query_str,
                                      startIndex=start_index,
                                      maxResults=max_results,
-                                     can=can).execute()
+                                     can=can).execute(num_retries=5)
     if 'items' in feed and len(feed['items']) > 0:
       return ([convertEntryToIssue(entry, self) for entry in feed['items']],
               feed['totalResults'])
