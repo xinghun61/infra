@@ -751,15 +751,34 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
   datastore_stub_consistency_policy = (
       datastore_stub_util.PseudoRandomHRConsistencyPolicy(probability=1))
 
-  def _create_build_runs(self, ts, tf):
+  def _create_build_runs(self, ts, tf, master='test.master'):
     pbr = PatchsetBuilderRuns(
-        issue=123456789, patchset=20001, master='test.master',
+        issue=123456789, patchset=20001, master=master,
         builder='test-builder').put()
     br_f = BuildRun(parent=pbr, buildnumber=100, result=2, time_started=ts,
                     time_finished=tf).put()
     br_s = BuildRun(parent=pbr, buildnumber=101, result=0, time_started=ts,
                     time_finished=tf).put()
     return br_f, br_s
+
+  def test_strips_master_prefix_before_calling_buildbot(self):
+    now = datetime.datetime.utcnow()
+    br_f, br_s = self._create_build_runs(
+        now - datetime.timedelta(hours=1), now, master='master.abc')
+
+    urlfetch_mock = mock.Mock()
+    urlfetch_mock.return_value.content = '{"steps":[]}'
+
+    with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
+      self.test_app.post('/issues/create_flaky_run',
+                         {'failure_run_key': br_f.urlsafe(),
+                          'success_run_key': br_s.urlsafe()})
+
+    urlfetch_mock.assert_has_calls([
+      # Verify that we've used correct URL to access buildbot JSON endpoint.
+      mock.call(
+        'http://build.chromium.org/p/abc/json/builders/test-builder/builds/100')
+    ])
 
   def test_get_flaky_run_reason_ignores_invalid_json(self):
     now = datetime.datetime.utcnow()

@@ -557,7 +557,10 @@ class CreateFlakyRun(webapp2.RequestHandler):
     # any changes to step names and step text. We should move away from parsing
     # buildbot to tools like flakiness dashboard (test-results.appspot.com),
     # which uses a standartized JSON format.
-    url = ('http://build.chromium.org/p/' + patchset_builder_runs.master +
+    master = patchset_builder_runs.master 
+    if master.startswith('master.'):
+      master = master[len('master.'):]
+    url = ('http://build.chromium.org/p/' + master +
            '/json/builders/' + patchset_builder_runs.builder +'/builds/' +
            str(failure_run.buildnumber))
     urlfetch.set_default_fetch_deadline(60)
