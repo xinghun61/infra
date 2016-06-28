@@ -162,7 +162,7 @@
         Remember to enter the new bug number above!
       </div>
       <div class="buttons">
-        <paper-button dialog-close raised on-tap="_closeBugDialog">
+        <paper-button dialog-dismiss raised>
           Close
         </paper-button>
         <paper-button dialog-confirm raised on-tap="_saveBug">
@@ -174,7 +174,7 @@
       <h2>Snooze</h2>
       <paper-input autofocus label="Amount of time (minutes):" id="snoozeTime"></paper-input>
       <div class="buttons">
-        <paper-button dialog-close raised on-tap="_closeSnooze">
+        <paper-button dialog-dismiss raised>
           Close
         </paper-button>
         <paper-button dialog-confirm raised on-tap="_snooze">
@@ -536,10 +536,6 @@
         this._filedBug = true;
       },
 
-      _closeBugDialog: function() {
-        this.$.bugDialog.close();
-      },
-
       _saveBug: function() {
         // TODO(add proper error handling)
         this._sendAnnotation(
@@ -558,11 +554,7 @@
         this.$.snoozeTime.value = DEFAULT_SNOOZE_TIME_MIN;
         this.$.snoozeDialog.open();
       },
-
-      _closeSnooze: function() {
-        this.$.snoozeDialog.close();
-      },
-
+      
       _snooze: function() {
         // TODO(add proper error handling)
         this._sendAnnotation(
