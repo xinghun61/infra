@@ -216,8 +216,9 @@ func (r *reader) BuildExtract(masterURL *messages.MasterLocation) (*messages.Bui
 
 	if code == 404 {
 		// TODO(martiniss): make this configurable per master/tree
-		if !(strings.Contains(masterURL.Name(), "internal") || strings.Contains(
-			masterURL.Name(), "official")) {
+		name := masterURL.Name()
+		if !(strings.Contains(name, "internal") || strings.Contains(
+			name, "official") || strings.Contains(name, "infra.cron")) {
 			return nil, err
 		}
 
