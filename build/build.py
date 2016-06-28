@@ -211,9 +211,26 @@ def hacked_workspace(go_workspace, goos=None, goarch=None):
   else:
     os.environ.pop('GOARM', None)
 
+  # Debug info (DW_AT_comp_dir attribute in particular) contains current
+  # working directory, which by default depends on the build directory, making
+  # the build non-deterministic. 'ld' uses os.Getcwd(), and os.Getcwd()'s doc
+  # says: "If the current directory can be reached via multiple paths (due to
+  # symbolic links), Getwd may return any one of them." It happens indeed. So we
+  # can't switch to 'new_workspace'. Switch to '/' instead, cwd is actually not
+  # important when building Go code.
+  #
+  # Protip: To view debug info in an obj file:
+  #   gobjdump -g <binary>
+  #   gobjdump -g --target=elf32-littlearm <binary>
+  # (gobjdump is part of binutils package in Homebrew).
+
+  prev_cwd = os.getcwd()
+  if sys.platform != 'win32':
+    os.chdir('/')
   try:
     yield new_workspace
   finally:
+    os.chdir(prev_cwd)
     # Apparently 'os.environ = orig_environ' doesn't actually modify process
     # environment, only modifications of os.environ object itself do.
     for k, v in orig_environ.iteritems():
