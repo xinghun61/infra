@@ -107,7 +107,7 @@ class MainHandler(webapp2.RequestHandler):
         'Strict-Transport-Security',
         'max-age=31536000; includeSubDomains; preload')
 
-    if not token:
+    if continue_url and not token:
       logging.info('Missing token')
       self.response.out.write(MISSING_TOKEN_HTML)
       return
