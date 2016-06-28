@@ -22,6 +22,7 @@ def GenTests(api):
         buildername='luci-py-linux64',
         buildnumber=123,
         mastername='chromium.infra',
-        repository='https://chromium.googlesource.com/external/github.com/luci/luci-py',
+        repository='https://chromium.googlesource.com/external/github.com/' +
+            'luci/luci-py',
     )
   )

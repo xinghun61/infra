@@ -20,17 +20,36 @@ DEPS = [
 ]
 
 
-def build_cipd_packages(api, repo, rev, mastername, buildername, buildnumber):
-  # Build packages locally.
-  api.python(
-      'cipd - build packages',
-      api.path['checkout'].join('build', 'build.py'),
-      ['--builder', api.properties.get('buildername')])
+# Builder name => [{GOOS: ..., GOARCH: ...}].
+CROSS_COMPILING_BUILDERS = {
+  'infra-continuous-precise-64': [{'GOOS': 'linux', 'GOARCH': 'arm'}],
+}
 
-  # Verify they are good.
+
+def build_cipd_packages(api, repo, rev, mastername, buildername, buildnumber,
+                        goos, goarch):
+  # 'goos' and 'goarch' used for cross-compilation of Go code.
+  step_suffix = ''
+  env = {}
+  if goos or goarch:
+    assert goos and goarch, 'Both GOOS and GOARCH should be set'
+    step_suffix = ' [GOOS:%s GOARCH:%s]' % (goos, goarch)
+    env = {'GOOS': goos, 'GOARCH': goarch}
+
+  # Build packages (don't upload them yet).
   api.python(
-      'cipd - test packages integrity',
-      api.path['checkout'].join('build', 'test_packages.py'))
+      'cipd - build packages' + step_suffix,
+      api.path['checkout'].join('build', 'build.py'),
+      ['--builder', api.properties.get('buildername')],
+      env=env)
+
+  # Verify they are good. Run tests only when building packages for the host
+  # platform, since the host can't run binaries build with cross-compilation
+  # enabled.
+  if not goos and not goarch:
+    api.python(
+        'cipd - test packages integrity',
+        api.path['checkout'].join('build', 'test_packages.py'))
 
   # Upload them, attach tags.
   tags = [
@@ -40,7 +59,7 @@ def build_cipd_packages(api, repo, rev, mastername, buildername, buildnumber):
   ]
   try:
     return api.python(
-        'cipd - upload packages',
+        'cipd - upload packages' + step_suffix,
         api.path['checkout'].join('build', 'build.py'),
         [
           '--no-rebuild',
@@ -49,7 +68,8 @@ def build_cipd_packages(api, repo, rev, mastername, buildername, buildnumber):
           api.cipd.default_bot_service_account_credentials,
           '--json-output', api.json.output(),
           '--builder', api.properties.get('buildername'),
-        ] + ['--tags'] + tags)
+        ] + ['--tags'] + tags,
+        env=env)
   finally:
     step_result = api.step.active_result
     output = step_result.json.output or {}
@@ -140,7 +160,10 @@ def RunSteps(api, mastername, buildername, buildnumber):
 
   if buildnumber != -1:
     build_cipd_packages(api, repo_name, rev, mastername, buildername,
-                        buildnumber)
+                        buildnumber, None, None)
+    for spec in CROSS_COMPILING_BUILDERS.get(buildername, []):
+      build_cipd_packages(api, repo_name, rev, mastername, buildername,
+                          buildnumber, spec['GOOS'], spec['GOARCH'])
   else:
     result = api.step('cipd - not building packages', None)
     result.presentation.status = api.step.WARNING
@@ -209,6 +232,22 @@ def GenTests(api):
         mastername='chromium.infra',
         repository='https://chromium.googlesource.com/infra/infra',
     )
+  )
+
+  yield (
+    api.test('infra-cross-compile') +
+    api.properties.git_scheduled(
+        path_config='kitchen',
+        buildername='infra-continuous-precise-64',
+        buildnumber=123,
+        mastername='chromium.infra',
+        repository='https://chromium.googlesource.com/infra/infra',
+    ) +
+    api.override_step_data(
+        'cipd - upload packages', api.json.output(cipd_json_output)) +
+    api.override_step_data(
+        'cipd - upload packages [GOOS:linux GOARCH:arm]',
+        api.json.output(cipd_json_output))
   )
 
   yield (
