@@ -930,3 +930,29 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
 
     self.assertEqual(culprit_map, expected_culprit_map)
     self.assertEqual(failed_revisions, ['rev1'])
+
+  def testNotifyCulprits(self):
+    instances = []
+    class Mocked_SendNotificationForCulpritPipeline(object):
+      def __init__(self, *args):
+        self.args = args
+        self.started = False
+        instances.append(self)
+
+      def start(self):
+        self.started = True
+
+    self.mock(
+        identify_try_job_culprit_pipeline, 'SendNotificationForCulpritPipeline',
+        Mocked_SendNotificationForCulpritPipeline)
+
+    culprits = {
+        'r1': {
+            'repo_name': 'chromium',
+            'revision': 'r1',
+        }
+    }
+
+    identify_try_job_culprit_pipeline._NotifyCulprits('m', 'b', 1, culprits)
+    self.assertEqual(1, len(instances))
+    self.assertTrue(instances[0].started)

@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from collections import defaultdict
+import logging
 
 from google.appengine.ext import ndb
 
@@ -15,6 +16,8 @@ from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall.try_job_type import TryJobType
+from waterfall.send_notification_for_culprit_pipeline import (
+    SendNotificationForCulpritPipeline)
 
 
 GIT_REPO = GitRepository(
@@ -95,6 +98,18 @@ def _GetSuspectedCLs(analysis, result):
           suspected_cls.append(test_cl_info)
 
   return suspected_cls
+
+
+def _NotifyCulprits(master_name, builder_name, build_number, culprits):
+  """Sends notifications to the identified culprits."""
+  try:
+    for culprit in (culprits or {}).itervalues():
+      pipeline = SendNotificationForCulpritPipeline(
+          master_name, builder_name, build_number,
+          culprit['repo_name'], culprit['revision'])
+      pipeline.start()
+  except Exception:  # pragma: no cover.
+    logging.exception('Failed to notify culprits.')
 
 
 class IdentifyTryJobCulpritPipeline(BasePipeline):
@@ -326,4 +341,5 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     # Add try-job results to WfAnalysis.
     UpdateWfAnalysisWithTryJobResult()
 
+    _NotifyCulprits(master_name, builder_name, build_number, culprits)
     return result.get('culprit') if result else None
