@@ -142,6 +142,9 @@ function CS_addClickListener(tableEl, handler) {
   tableEl.addEventListener('mousedown', function(event) {
     CS_lastX = event.clientX;
     CS_lastY = event.clientY;
+    if (event.button == 1) {
+      event.preventDefault();
+    }
   });
   tableEl.addEventListener('mouseup', function(event) {
     if (CS_lastX - 2 < event.clientX && CS_lastX + 2 > event.clientX &&
