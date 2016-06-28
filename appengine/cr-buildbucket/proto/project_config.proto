@@ -37,7 +37,17 @@ message Swarming {
     optional string name = 2;
     // colon-separated build properties to set.
     // A property can be overriden by "properties" build parameter.
+    //
+    // Use this field for string properties and use properties_j for other
+    // types.
     repeated string properties = 3;
+    // Same as properties, but the value must valid JSON. For example
+    //   properties_j: "a:1"
+    // means property a is a number 1, not string "1".
+    //
+    // Fields properties and properties_j can be used together, but cannot both
+    // specify values for same property.
+    repeated string properties_j = 4;
   }
 
   message Builder {

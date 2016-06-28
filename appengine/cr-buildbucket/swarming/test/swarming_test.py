@@ -52,6 +52,7 @@ class SwarmingTest(testing.AppengineTestCase):
               dimensions=['os:Linux', 'pool:Chrome'],
               recipe=project_config_pb2.Swarming.Recipe(
                   properties=['predefined-property:x'],
+                  properties_j=['predefined-property-bool:true'],
               ),
               priority=108,
           ),
@@ -246,6 +247,7 @@ class SwarmingTest(testing.AppengineTestCase):
             'blamelist': ['bob@example.com'],
             'buildername': 'builder',
             'predefined-property': 'x',
+            'predefined-property-bool': True,
             'repository': 'https://chromium.googlesource.com/chromium/src',
           }, sort_keys=True)
         ],

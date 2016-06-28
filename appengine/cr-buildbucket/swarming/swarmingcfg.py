@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import re
 
 from proto import project_config_pb2
@@ -45,29 +46,50 @@ def validate_dimensions(field_name, dimensions, ctx):
         ctx.error('no value')
 
 
-
 def validate_recipe_cfg(recipe, common_recipe, ctx):
   common_recipe = common_recipe or project_config_pb2.Swarming.Recipe()
   if not (recipe.name or common_recipe.name):
     ctx.error('name unspecified')
   if not (recipe.repository or common_recipe.repository):
     ctx.error('repository unspecified')
-  validate_recipe_properties(recipe.properties, ctx)
+  validate_recipe_properties(recipe.properties, recipe.properties_j, ctx)
 
 
-def validate_recipe_properties(properties, ctx):
+def validate_recipe_properties(properties, properties_j, ctx):
+  keys = set()
+
+  def validate_key(key):
+    if not key:
+      ctx.error('key not specified')
+    elif key =='buildername':
+      ctx.error(
+          'do not specify buildername property; '
+          'it is added by swarmbucket automatically')
+    if key in keys:
+      ctx.error('duplicate property "%s"', key)
+
   for i, p in enumerate(properties):
-    with ctx.prefix('property #%d: ', i + 1):
+    with ctx.prefix('properties #%d: ', i + 1):
       if ':' not in p:
         ctx.error('does not have colon')
       else:
         key, _ = p.split(':', 1)
-        if not key:
-          ctx.error('key not specified')
-        elif key =='buildername':
-          ctx.error(
-            'do not specify buildername property; '
-            'it is added by swarmbucket automatically')
+        validate_key(key)
+        keys.add(key)
+
+  for i, p in enumerate(properties_j):
+    with ctx.prefix('properties_j #%d: ', i + 1):
+      if ':' not in p:
+        ctx.error('does not have colon')
+      else:
+        key, value = p.split(':', 1)
+        validate_key(key)
+        keys.add(key)
+        try:
+          json.loads(value)
+        except ValueError as ex:
+          ctx.error(ex)
+
 
 def validate_builder_cfg(
     builder, ctx, bucket_has_pool_dim=False, common_recipe=None):
@@ -107,7 +129,9 @@ def validate_cfg(swarming, ctx):
   if swarming.HasField('common_recipe'):
     common_recipe = swarming.common_recipe
     with ctx.prefix('common_recipe: '):
-      validate_recipe_properties(swarming.common_recipe.properties, ctx)
+      validate_recipe_properties(
+          swarming.common_recipe.properties,
+          swarming.common_recipe.properties_j, ctx)
 
   for i, b in enumerate(swarming.builders):
     with ctx.prefix('builder %s: ' % (b.name or '#%s' % (i + 1))):

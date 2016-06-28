@@ -150,18 +150,26 @@ def validate_build_parameters(builder_name, params):
         bad('change author email not specified')
 
 
+def read_properties(recipe):
+  """Parses build properties from the recipe message."""
+  result = dict(p.split(':', 1) for p in recipe.properties)
+  for p in recipe.properties_j:
+    k, v = p.split(':', 1)
+    result[k] = json.loads(v)
+  return result
+
+
 def merge_recipe(r1, r2):
   """Merges two Recipe messages. Values in r2 overwrite values in r1."""
   if not r1:  # pragma: no branch
     return r2  # pragma: no cover
-  r1_props = dict(p.split(':', 1) for p in r1.properties)
-  r2_props = dict(p.split(':', 1) for p in r2.properties)
-  r1_props.update(r2_props)
-  return project_config_pb2.Swarming.Recipe(
+  props = read_properties(r1)
+  props.update(read_properties(r2))
+  recipe = project_config_pb2.Swarming.Recipe(
     repository=r2.repository or r1.repository,
     name=r2.name or r1.name,
-    properties=['%s:%s' % item for item in sorted(r1_props.iteritems())],
   )
+  return recipe, props
 
 
 @ndb.tasklet
@@ -189,11 +197,10 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
   is_recipe = (
       builder_cfg.HasField('recipe') or swarming_cfg.HasField('common_recipe'))
   if is_recipe:  # pragma: no branch
-    recipe = merge_recipe(swarming_cfg.common_recipe, builder_cfg.recipe)
+    recipe, build_properties = merge_recipe(
+        swarming_cfg.common_recipe, builder_cfg.recipe)
     revision = swarming_param.get('recipe', {}).get('revision') or ''
 
-    build_properties = dict(
-      p.split(':', 1) for p in recipe.properties or [])
     build_properties['buildername'] = builder_cfg.name
 
     changes = params.get(PARAM_CHANGES)

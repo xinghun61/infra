@@ -36,6 +36,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
             repository='https://x.com',
             name='foo',
             properties=['a:b'],
+            properties_j=['x:true'],
           ),
         ),
       ],
@@ -63,7 +64,13 @@ class SwarmingCfgTest(testing.AppengineTestCase):
               '',
               ':',
               'buildername:foobar',
+              'x:y',
             ],
+            properties_j=[
+              'x:"y"',
+              'y:b',
+              'z',
+            ]
           ),
           priority=-1,
         ),
@@ -87,11 +94,14 @@ class SwarmingCfgTest(testing.AppengineTestCase):
        'Either define it in the builder or in "common_dimensions"'),
       'builder b2: recipe: name unspecified',
       'builder b2: recipe: repository unspecified',
-      'builder b2: recipe: property #1: does not have colon',
-      'builder b2: recipe: property #2: key not specified',
-      ('builder b2: recipe: property #3: '
+      'builder b2: recipe: properties #1: does not have colon',
+      'builder b2: recipe: properties #2: key not specified',
+      ('builder b2: recipe: properties #3: '
        'do not specify buildername property; '
        'it is added by swarmbucket automatically'),
+      'builder b2: recipe: properties_j #1: duplicate property "x"',
+      'builder b2: recipe: properties_j #2: No JSON object could be decoded',
+      'builder b2: recipe: properties_j #3: does not have colon',
       'builder b2: priority must be in [0, 200] range; got -1',
     ])
 
@@ -127,6 +137,6 @@ class SwarmingCfgTest(testing.AppengineTestCase):
         ],
     )
     self.cfg_test(cfg, [
-      'common_recipe: property #1: does not have colon',
+      'common_recipe: properties #1: does not have colon',
       'builder debug: recipe: repository unspecified',
     ])
