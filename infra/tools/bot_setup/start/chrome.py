@@ -28,9 +28,11 @@ INTERNAL_DEPS_URL = (
     'https://chrome-internal.googlesource.com/chrome/tools/build/internal.DEPS')
 GCLIENT_FILE = """
 solutions = [
-  { "name"        : "%s.DEPS",
+  {
+    "name"        : "%s.DEPS",
     "url"         : "%s",
     "deps_file"   : ".DEPS.git",
+    "managed"     : True,
   },
 ]
 """
