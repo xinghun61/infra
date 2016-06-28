@@ -259,6 +259,10 @@
         _path: {
           type: String,
         },
+        _refreshEnabled: {
+          type: Boolean,
+          computed: '_computeRefreshEnabled(_selectedPage)',
+        },
         _refreshPosition: {
           type: Number,
           value: function() { return 0; },
@@ -295,6 +299,9 @@
       ////////////////////// Refresh ///////////////////////////
 
       _refresh: function() {
+        if (!this._refreshEnabled) {
+          return;
+        }
         this._refreshPosition  = this.$.mainHeaderPanel.$.mainContainer.scrollTop;
         this.$.annotations.generateRequest();
         this._alertsGroupsChanged(this._alertsGroups);
@@ -327,6 +334,10 @@
         }
 
         return [tree];
+      },
+
+      _computeRefreshEnabled: function(selectedPage) {
+        return selectedPage == "alertsList";
       },
 
       _computeSelectedPage: function(path) {
