@@ -86,21 +86,22 @@ def _GetBlockIDCond(cond, alias, blocking_id=False):
   kind_cond_str, kind_cond_args = _Compare(
       alias, ast_pb2.QueryOp.EQ, tracker_pb2.FieldTypes.STR_TYPE, 'kind',
       ['blockedon'])
-  left_joins = [(
-      ('IssueRelation AS {alias} ON Issue.id = {alias}.%s AND '
-       '{kind_cond}' % ret_issue_col).format(
-           alias=alias, kind_cond=kind_cond_str), kind_cond_args)]
+  left_join_str = (
+      'IssueRelation AS {alias} ON Issue.id = {alias}.{ret_issue_col} AND '
+       '{kind_cond}').format(
+           alias=alias, ret_issue_col=ret_issue_col, kind_cond=kind_cond_str)
+  left_join_args = kind_cond_args
 
   field_type, field_values = _GetFieldTypeAndValues(cond)
   if field_values:
-    where = [_Compare(
-        alias, cond.op, field_type, matching_issue_col, field_values)]
-  else:
-    # If no field values are specified display all issues which have the
-    # property.
-    where = [_CompareAlreadyJoined(alias, cond.op, ret_issue_col)]
+    related_cond_str, related_cond_args = _Compare(
+        alias, ast_pb2.QueryOp.EQ, field_type, matching_issue_col, field_values)
+    left_join_str += ' AND {related_cond}'.format(related_cond=related_cond_str)
+    left_join_args += related_cond_args
 
-  return left_joins, where
+  where = [_CompareAlreadyJoined(alias, cond.op, ret_issue_col)]
+
+  return [(left_join_str, left_join_args)], where
 
 
 def _GetFieldTypeAndValues(cond):

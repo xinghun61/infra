@@ -59,11 +59,11 @@ class AST2SelectTest(unittest.TestCase):
           cond, 'Cond1', 'Issue1')
       self.assertEqual(
           [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
-            'Cond1.kind = %s',
-            ['blockedon'])],
+            'Cond1.kind = %s AND Cond1.issue_id = %s',
+            ['blockedon', expected])],
           left_joins)
       self.assertEqual(
-          [('Cond1.issue_id = %s', [expected])],
+          [('Cond1.dst_issue_id IS NOT NULL', [])],
           where)
 
   def testBlockingIDCond_NegatedSingleValue(self):
@@ -77,11 +77,11 @@ class AST2SelectTest(unittest.TestCase):
           cond, 'Cond1', 'Issue1')
       self.assertEqual(
           [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
-            'Cond1.kind = %s',
-            ['blockedon'])],
+            'Cond1.kind = %s AND Cond1.issue_id = %s',
+            ['blockedon', expected])],
           left_joins)
       self.assertEqual(
-          [('(Cond1.issue_id IS NULL OR Cond1.issue_id != %s)', [expected])],
+          [('Cond1.dst_issue_id IS NULL', [])],
           where)
 
   def testBlockingIDCond_MultiValue(self):
@@ -96,11 +96,11 @@ class AST2SelectTest(unittest.TestCase):
           cond, 'Cond1', 'Issue1')
       self.assertEqual(
           [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
-            'Cond1.kind = %s',
-            ['blockedon'])],
+            'Cond1.kind = %s AND Cond1.issue_id IN (%s,%s,%s)',
+            ['blockedon'] + expected)],
           left_joins)
       self.assertEqual(
-          [('Cond1.issue_id IN (%s,%s,%s)', expected)],
+          [('Cond1.dst_issue_id IS NOT NULL', [])],
           where)
 
   def testBlockingIDCond_NegatedMultiValue(self):
@@ -115,12 +115,11 @@ class AST2SelectTest(unittest.TestCase):
           cond, 'Cond1', 'Issue1')
       self.assertEqual(
           [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
-            'Cond1.kind = %s',
-            ['blockedon'])],
+            'Cond1.kind = %s AND Cond1.issue_id IN (%s,%s,%s)',
+            ['blockedon'] + expected)],
           left_joins)
       self.assertEqual(
-          [('(Cond1.issue_id IS NULL OR Cond1.issue_id NOT IN (%s,%s,%s))',
-            expected)],
+          [('Cond1.dst_issue_id IS NULL', [])],
           where)
 
   def testBlockedOnIDCond_SingleValue(self):
@@ -134,11 +133,11 @@ class AST2SelectTest(unittest.TestCase):
           cond, 'Cond1', 'Issue1')
       self.assertEqual(
           [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
-            'Cond1.kind = %s',
-            ['blockedon'])],
+            'Cond1.kind = %s AND Cond1.dst_issue_id = %s',
+            ['blockedon', expected])],
           left_joins)
       self.assertEqual(
-          [('Cond1.dst_issue_id = %s', [expected])],
+          [('Cond1.issue_id IS NOT NULL', [])],
           where)
 
   def testBlockedOnIDCond_NegatedSingleValue(self):
@@ -152,12 +151,11 @@ class AST2SelectTest(unittest.TestCase):
           cond, 'Cond1', 'Issue1')
       self.assertEqual(
           [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
-            'Cond1.kind = %s',
-            ['blockedon'])],
+            'Cond1.kind = %s AND Cond1.dst_issue_id = %s',
+            ['blockedon', expected])],
           left_joins)
       self.assertEqual(
-          [('(Cond1.dst_issue_id IS NULL OR Cond1.dst_issue_id != %s)',
-            [expected])],
+          [('Cond1.issue_id IS NULL', [])],
           where)
 
   def testBlockedIDCond_MultiValue(self):
@@ -172,11 +170,11 @@ class AST2SelectTest(unittest.TestCase):
           cond, 'Cond1', 'Issue1')
       self.assertEqual(
           [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
-            'Cond1.kind = %s',
-            ['blockedon'])],
+            'Cond1.kind = %s AND Cond1.dst_issue_id IN (%s,%s,%s)',
+            ['blockedon'] + expected)],
           left_joins)
       self.assertEqual(
-          [('Cond1.dst_issue_id IN (%s,%s,%s)', expected)],
+          [('Cond1.issue_id IS NOT NULL', [])],
           where)
 
   def testBlockedIDCond_NegatedMultiValue(self):
@@ -191,13 +189,11 @@ class AST2SelectTest(unittest.TestCase):
           cond, 'Cond1', 'Issue1')
       self.assertEqual(
           [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
-            'Cond1.kind = %s',
-            ['blockedon'])],
+            'Cond1.kind = %s AND Cond1.dst_issue_id IN (%s,%s,%s)',
+            ['blockedon'] + expected)],
           left_joins)
       self.assertEqual(
-          [('(Cond1.dst_issue_id IS NULL OR'
-            ' Cond1.dst_issue_id NOT IN (%s,%s,%s))',
-            expected)],
+          [('Cond1.issue_id IS NULL', [])],
           where)
 
   def testHasBlockedCond(self):
