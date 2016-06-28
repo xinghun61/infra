@@ -28,7 +28,7 @@ import (
 	"google.golang.org/appengine"
 	"google.golang.org/grpc/codes"
 
-	"infra/crimson/proto" // 'crimson' package
+	crimson "infra/crimson/proto"
 	"infra/crimson/server/crimsondb"
 )
 
@@ -96,7 +96,7 @@ func requireAuthWeb(c *router.Context, next router.Handler) {
 }
 
 func addDbToContext(c *router.Context, next router.Handler) {
-	c.Context = context.WithValue(c.Context, "dbHandle", dbHandle)
+	c.Context = crimsondb.UseDB(c.Context, dbHandle)
 	next(c)
 }
 

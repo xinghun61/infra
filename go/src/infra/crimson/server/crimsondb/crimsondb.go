@@ -60,42 +60,115 @@ func HexStringToIP(hexIP string) net.IP {
 	return netIP
 }
 
+// scanIPRangeRows is a low-level function to scan sql results.
+// Rows must contain site, vlan, start_ip, end_ip in that order.
+func scanIPRangeRows(ctx context.Context, rows *sql.Rows) ([]IPRangeRow, error) {
+	var ipRanges []IPRangeRow
+
+	for rows.Next() {
+		var startIP, endIP string
+		ipRange := IPRangeRow{}
+		err := rows.Scan(&ipRange.Site, &ipRange.Vlan, &startIP, &endIP)
+		if err != nil {
+			logging.Errorf(ctx, "%s", err)
+			return ipRanges, err
+		}
+		ipRange.StartIP = HexStringToIP(startIP).String()
+		ipRange.EndIP = HexStringToIP(endIP).String()
+		ipRanges = append(ipRanges, ipRange)
+	}
+	err := rows.Err()
+	if err != nil {
+		logging.Errorf(ctx, "%s", err)
+		return ipRanges, err
+	}
+	return ipRanges, nil
+}
+
 // InsertIPRange adds a new IP range in the corresponding table.
-func InsertIPRange(ctx context.Context, row *crimson.IPRange) error {
-	db := ctx.Value("dbHandle").(*sql.DB)
+func InsertIPRange(ctx context.Context, row *crimson.IPRange) (err error) {
+	db := DB(ctx)
 
 	if len(row.Site) == 0 {
 		logging.Errorf(ctx, "Received empty site value.")
 		return fmt.Errorf("Received empty site value.")
 	}
 
-	var err error
 	var startIP, endIP string
 	startIP, err = IPStringToHexString(row.StartIp)
 	if err != nil {
-		return err
+		return
 	}
 	endIP, err = IPStringToHexString(row.EndIp)
 	if err != nil {
-		return err
+		return
 	}
 
-	statement := ("INSERT INTO ip_range (site, vlan, start_ip, end_ip)\n" +
+	// Open Transaction
+	var tx *sql.Tx
+	tx, err = db.Begin()
+	if err != nil {
+		logging.Errorf(ctx, "Opening transaction failed. %s", err)
+		return
+	}
+	defer func() {
+		if err == nil {
+			err = tx.Commit()
+			if err != nil {
+				logging.Errorf(ctx, "Committing transaction failed. %s", err)
+			}
+		} else {
+			tx.Rollback()
+		}
+	}()
+
+	// Lock the whole table because we must be sure no new ip ranges are inserted
+	// before we insert ours. This unfortunately also blocks read access for other
+	// connections.
+	_, err = tx.Exec("LOCK TABLES ip_range WRITE")
+	if err != nil {
+		logging.Errorf(ctx, "Locking table ip_range failed. %s", err)
+		return
+	}
+
+	// Look for existing overlapping ranges.
+	// [a,b] and [c,d] overlap iff a<=d and b>=c
+	statement := ("SELECT site, vlan, start_ip, end_ip FROM ip_range\n" +
+		"WHERE site=? AND start_ip<=? AND end_ip>=?")
+	rows, err := tx.Query(statement, row.Site, endIP, startIP)
+	if err != nil {
+		logging.Errorf(ctx, "IP range query failed. %s", err)
+		return
+	}
+	defer rows.Close()
+	ipRanges, err := scanIPRangeRows(ctx, rows)
+	if err != nil {
+		logging.Errorf(ctx, "scanIPRangeRows has failed. %s", err)
+		return
+	}
+	if len(ipRanges) > 0 {
+		err = fmt.Errorf(
+			"overlapping ranges have been found: %s, not inserting new one", ipRanges)
+		logging.Infof(ctx, "%s", err)
+		return
+	}
+
+	// No overlapping ranges have been found, insert the new one.
+	logging.Infof(ctx, "No overlapping ranges have been found, proceeding.")
+	statement = ("INSERT INTO ip_range (site, vlan, start_ip, end_ip)\n" +
 		"VALUES (?, ?, ?, ?)")
-	_, err = db.Exec(statement,
-		row.Site,
-		row.Vlan,
-		startIP,
-		endIP)
+	_, err = tx.Exec(statement, row.Site, row.Vlan, startIP, endIP)
 	if err != nil {
 		logging.Errorf(ctx, "IP range insertion failed. %s", err)
+		return
 	}
-	return err
+	return
 }
 
 // SelectIPRange returns ip ranges filtered by values in req.
 func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) []IPRangeRow {
-	db := ctx.Value("dbHandle").(*sql.DB)
+	// TODO(pgervais): Add error reporting.
+	db := DB(ctx)
 	var rows *sql.Rows
 	var err error
 	delimiter := ""
@@ -106,7 +179,7 @@ func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) []IPRangeRow 
 	statement := bytes.Buffer{}
 	params := []interface{}{}
 
-	statement.WriteString("SELECT vlan, site, start_ip, end_ip FROM ip_range")
+	statement.WriteString("SELECT site, vlan, start_ip, end_ip FROM ip_range")
 	delimiter = "\nWHERE "
 
 	if site != "" {
@@ -146,28 +219,25 @@ func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) []IPRangeRow 
 		logging.Errorf(ctx, "%s", err)
 		return []IPRangeRow{}
 	}
+	defer rows.Close()
 
 	var ipRanges []IPRangeRow
-
-	for rows.Next() {
-		var startIP, endIP string
-		ipRange := IPRangeRow{}
-		err := rows.Scan(
-			&ipRange.Vlan, &ipRange.Site, &startIP, &endIP)
-		if err != nil {
-			logging.Errorf(ctx, "%s", err)
-			return []IPRangeRow{}
-		}
-		ipRange.StartIP = HexStringToIP(startIP).String()
-		ipRange.EndIP = HexStringToIP(endIP).String()
-		ipRanges = append(ipRanges, ipRange)
-	}
-	err = rows.Err()
+	ipRanges, err = scanIPRangeRows(ctx, rows)
 	if err != nil {
 		logging.Errorf(ctx, "%s", err)
-		return []IPRangeRow{}
+		return nil
 	}
 	return ipRanges
+}
+
+// UseDB stores a db handle into a context.
+func UseDB(ctx context.Context, db *sql.DB) context.Context {
+	return context.WithValue(ctx, "dbHandle", db)
+}
+
+// DB gets the current db handle from the context.
+func DB(ctx context.Context) *sql.DB {
+	return ctx.Value("dbHandle").(*sql.DB)
 }
 
 // GetDBHandle returns a handle to the Cloud SQL instance used by this deployment.

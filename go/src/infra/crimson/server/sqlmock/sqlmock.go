@@ -6,6 +6,7 @@ package sqlmock
 
 import (
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 
@@ -27,13 +28,36 @@ var _ driver.Result = MockResult{}
 func (res MockResult) LastInsertId() (int64, error) { return 0, nil }
 func (res MockResult) RowsAffected() (int64, error) { return 0, nil }
 
-type MockRows struct{}
+type MockRows struct {
+	current int
+	rows    [][]driver.Value
+}
 
-var _ driver.Rows = MockRows{}
+var _ driver.Rows = &MockRows{}
 
-func (rows MockRows) Columns() []string              { return []string{} }
-func (rows MockRows) Close() error                   { return nil }
-func (rows MockRows) Next(dest []driver.Value) error { return nil }
+func (rows *MockRows) Columns() []string {
+	if len(rows.rows) == 0 {
+		return []string{}
+	}
+	ret := []string{}
+	for i := 0; i < len(rows.rows[0]); i += 1 {
+		ret = append(ret, "")
+	}
+	return ret
+}
+
+func (rows *MockRows) Close() error { return nil }
+
+func (rows *MockRows) Next(dest []driver.Value) error {
+	if rows.current >= len(rows.rows) {
+		return io.EOF
+	}
+	for i := 0; i < len(dest); i += 1 {
+		dest[i] = rows.rows[rows.current][i]
+	}
+	rows.current += 1
+	return nil
+}
 
 type MockStmt struct {
 	conn  *MockConn
@@ -52,16 +76,13 @@ func (st MockStmt) NumInput() int {
 }
 
 func (st MockStmt) Exec(args []driver.Value) (driver.Result, error) {
-	st.conn.lock.Lock()
-	defer st.conn.lock.Unlock()
-	st.conn.Queries = append(st.conn.Queries, FullQuery{st.query, args})
+	st.conn.extend(FullQuery{st.query, args})
 	return MockResult{}, nil
 }
 func (st MockStmt) Query(args []driver.Value) (driver.Rows, error) {
-	st.conn.lock.Lock()
-	defer st.conn.lock.Unlock()
-	st.conn.Queries = append(st.conn.Queries, FullQuery{st.query, args})
-	return MockRows{}, nil
+	st.conn.extend(FullQuery{st.query, args})
+	r := st.conn.popRows()
+	return r, nil
 }
 
 type MockTx struct{}
@@ -74,6 +95,7 @@ func (tx MockTx) Rollback() error { return nil }
 
 type MockConn struct {
 	Queries []FullQuery
+	Rows    []MockRows
 	lock    sync.Mutex
 }
 
@@ -89,6 +111,52 @@ func (conn *MockConn) Close() error {
 
 func (conn *MockConn) Begin() (driver.Tx, error) {
 	return MockTx{}, nil
+}
+
+func (conn *MockConn) extend(args ...FullQuery) {
+	conn.lock.Lock()
+	defer conn.lock.Unlock()
+	conn.Queries = append(conn.Queries, args...)
+}
+
+func (conn *MockConn) popRows() *MockRows {
+	conn.lock.Lock()
+	defer conn.lock.Unlock()
+	rows := MockRows{}
+	if len(conn.Rows) > 0 {
+		rows = conn.Rows[0]
+		conn.Rows = conn.Rows[1:]
+	}
+	return &rows
+}
+
+func (conn *MockConn) PushRows(rows [][]driver.Value) error {
+	mockRows := MockRows{}
+	conn.lock.Lock()
+	defer conn.lock.Unlock()
+	colNumRow0 := 0
+	for i, row := range rows {
+		newRow := []driver.Value{}
+		colNum := 0
+		for _, value := range row {
+			colNum += 1
+			if s, ok := value.(string); ok {
+				newRow = append(newRow, []byte(s))
+			} else {
+				newRow = append(newRow, value)
+			}
+		}
+		if i == 0 {
+			colNumRow0 = colNum
+		} else if colNum != colNumRow0 {
+			return fmt.Errorf("Inconsistent number of columns. Got %d "+
+				"when previous rows got", colNum, colNumRow0)
+		}
+
+		mockRows.rows = append(mockRows.rows, newRow)
+	}
+	conn.Rows = append(conn.Rows, mockRows)
+	return nil
 }
 
 type MockDriver struct {

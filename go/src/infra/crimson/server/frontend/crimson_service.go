@@ -7,6 +7,9 @@ package frontend
 import (
 	"golang.org/x/net/context"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
 	"infra/crimson/proto"
 	"infra/crimson/server/crimsondb"
 )
@@ -15,11 +18,13 @@ type crimsonService struct{}
 
 func (s *crimsonService) CreateIPRange(ctx context.Context, req *crimson.IPRange) (*crimson.IPRangeStatus, error) {
 
-	crimsondb.InsertIPRange(ctx, req)
+	err := crimsondb.InsertIPRange(ctx, req)
 
-	return &crimson.IPRangeStatus{
-		Error: "no error",
-	}, nil
+	if err != nil {
+		return &crimson.IPRangeStatus{}, grpc.Errorf(codes.AlreadyExists, err.Error())
+	} else {
+		return &crimson.IPRangeStatus{}, nil
+	}
 }
 
 func (s *crimsonService) ReadIPRange(ctx context.Context, req *crimson.IPRangeQuery) (*crimson.IPRanges, error) {
