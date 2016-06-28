@@ -163,7 +163,7 @@ def _GetDuplicateAnalyses(original_analysis):
   # Strip timezone.
   local_midnight = local_midnight_as_utc.replace(tzinfo=None)
 
-  if end_time > local_midnight:
+  if end_time > local_midnight:  # pragma: no branch
     end_time = local_midnight
 
   # Retrieve potential duplicate build analyses.
