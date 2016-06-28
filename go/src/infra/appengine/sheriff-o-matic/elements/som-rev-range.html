@@ -6,6 +6,12 @@
 <dom-module id="som-rev-range">
   <template>
     <style>
+      .rev-list {
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        padding-right: 20px;
+      }
       .commit {
         font-family: monospace;
         font-size: 9pt;
@@ -16,7 +22,7 @@
       [[range.repo]]: <a target="_blank" href$="[[_regressionRangeLink(range)]]">[[_regressionRange(range)]]</a>
       <iron-icon icon="[[_iconName]]"></iron-icon>
     </div>
-    <iron-collapse id="collapse">
+    <iron-collapse id="collapse" class="rev-list">
       <template is="dom-repeat" items="[[_revs]]" as="rev">
         <div class="commit">
           <a href$="https://chromium.googlesource.com/chromium/src/+/[[rev.commit]]" target="_blank">[[_shortHash(rev.commit)]]</a>

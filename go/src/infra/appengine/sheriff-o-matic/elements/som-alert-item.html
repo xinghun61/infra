@@ -1,5 +1,6 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
 
+<link rel="import" href="/bower_components/iron-flex-layout/iron-flex-layout-classes.html">
 <link rel="import" href="/bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="/bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="/bower_components/paper-button/paper-button.html">
@@ -9,6 +10,7 @@
 
 <dom-module id="som-alert-item">
   <template>
+    <style include="iron-flex iron-flex-alignment">
     <style>
      .alert {
        @apply(--layout-horizontal);
@@ -16,8 +18,23 @@
        background-color: #fff;
        border: 1px solid #ddd;
      }
+     .alert-controls {
+       text-align: center;
+       min-width:  370px;
+       padding-right: 10px;
+       height: 90px;
+     }
+     .alert-controls paper-button {
+       text-align: center;
+       min-width: 120px;
+       display: inline-block;
+     }
      .alert-expanded {
        color: #666;
+     }
+     .alert-info {
+       padding-right: 20px;
+       min-width:  400px;
      }
      .alert-title-bar {
        align-items: center;
@@ -33,9 +50,14 @@
      .alert-link {
        padding-left: 5px;
      }
+     .examine-link {
+       padding: 0 10px;
+     }
+     hr {
+       color: #ddd;
+     }
      .list-item {
-        @apply(--layout-flex);
-        @apply(--layout-vertical);
+       @apply(--layout-vertical);
      }
      paper-button {
        -webkit-transition: background .3s ease;
@@ -62,9 +84,6 @@
        width: 100%;
        background-color: #000;
      }
-     .divider {
-       width: 20px;
-     }
     </style>
     <div id="root" class$="[[_cssClass]]">
       <div class$="[[_classForAlert(alert, selected)]]">
@@ -87,25 +106,28 @@
             </div>
           </div>
           <hr/>
-          <div class="alert-expanded layout horizontal center">
-            <a href$="[[tree]]/examine/[[alert.key]]">Examine</a>
-            <paper-button class="horizontal layout center" on-tap="_fileBug" alt="Link a bug" raised noink>
-              <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
-              Link Bug
-            </paper-button>
-            <paper-button class="horizontal layout center" id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" raised noink>
-              <iron-icon class="snooze-icon" icon="[[_snoozeIcon]]">
-              </iron-icon>
-              [[_snoozeText]]
-            </paper-button>
-            <div class="divider"></div>
-            <template is="dom-if" if="[[_haveLinks(alert)]]">
-              Useful Links:
-              <template is="dom-repeat" items="[[alert.links]]" as="link">
-                <a class="alert-link" target="_blank" href$="[[_uberify(link.href)]]">[[link.title]]</a>
+          <div class="alert-expanded layout horizontal wrap">
+            <div class="alert-controls layout horizontal center flex-child">
+              <a href$="[[tree]]/examine/[[alert.key]]" class="examine-link">Examine</a>
+              <paper-button class="horizontal layout center" id="link-bug" on-tap="_fileBug" alt="Link a bug" raised noink>
+                <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
+                Link Bug
+              </paper-button>
+              <paper-button class="horizontal layout center" id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" raised noink>
+                <iron-icon class="snooze-icon" icon="[[_snoozeIcon]]">
+                </iron-icon>
+                [[_snoozeText]]
+              </paper-button>
+            </div>
+            <div class="alert-info flex">
+              <template is="dom-if" if="[[_haveLinks(alert)]]">
+                Useful Links:
+                <template is="dom-repeat" items="[[alert.links]]" as="link">
+                  <a class="alert-link" target="_blank" href$="[[_uberify(link.href)]]">[[link.title]]</a>
+                </template>
               </template>
-            </template>
-            <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]"></som-extension-build-failure>
+              <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]"></som-extension-build-failure>
+            </div>
           </div>
         </div>
       </div>

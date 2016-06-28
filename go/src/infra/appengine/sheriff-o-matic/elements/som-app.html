@@ -78,6 +78,13 @@
         border: 1px solid #666;
         border-radius: 5px;
       }
+
+      @media (max-width: 1024px) {
+        .last-updated, .user-name {
+          padding-right: 0.5em;
+          font-size: 0.9em;
+        }
+      }
     </style>
     <iron-location id="url" path="{{_path}}"></iron-location>
     <iron-ajax
