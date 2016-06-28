@@ -5,7 +5,7 @@
 """Rolls recipes.cfg dependencies for public projects."""
 
 DEPS = [
-  'build/recipe_autoroller',
+  'recipe_autoroller',
   'build/luci_config',
   'recipe_engine/properties',
   'recipe_engine/raw_io',
