@@ -42,7 +42,7 @@ done
 
 echo Checking for available backups:
 
-DUE_TIMES=($(gcloud sql backups --instance master list --project=$CLOUD_PROJECT | grep SUCCESSFUL | awk '{print $1}'))
+DUE_TIMES=($(gcloud sql backups list --instance master --project=$CLOUD_PROJECT | grep SUCCESSFUL | awk '{print $1}'))
 
 for index in ${!DUE_TIMES[*]}; do
   echo "[$index] ${DUE_TIMES[$index]}"
@@ -93,14 +93,16 @@ for i in `seq 0 9`; do
   fi
 done
 
+echo If the replica creation steps above did not succeed due to authentication
+echo errors, you may need to retry them manually.
 echo
 echo
 echo Backup restore is nearly complete.  Check the instances page on developer console to see when
 echo all of the replicas are "Runnable" status. Until then, you may encounter errors in issue search.
 echo In the mean time:
 echo - edit settings.py to change the db_replica_prefix variable to be "$NEW_REPLICA_PREFIX-"
-echo   Then either "make deploy_prod_backends" or "make stage_backends" for search to pick up the new prefix.
+echo   Then either "make deploy_prod" or "make deploy_staging" for search to pick up the new prefix.
 echo   Then set the newly deploy version for besearch and besearch2 on the dev console Versons page.
 echo Follow-up:
 echo - Submit the change.
-echo - Delete old versions of besearch and besearch2 because they run up the GAE bill.
+echo - Delete old versions of besearch because they run up the GAE bill.
