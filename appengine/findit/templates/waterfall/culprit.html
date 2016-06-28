@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<head>
+  <title>Culprit</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/common.css">
+</head>
+<body>
+  <h1>Culprit</h1>
+  <b>Project:</b> {{project_name}}<br>
+  <b>Revision:</b><a href="https://crrev.com/{{revision}}">{{revision}}</a><br>
+  {% if cr_notified %}
+    <b>Notified:</b> Yes<br>
+    <b>Notification time:</b> {{cr_notification_time}}<br>
+  {% else %}
+    <b>Notified:</b> No<br>
+  {% endif %}
+
+  <h1>Builds</h1>
+  <div id="builds">
+    <table>
+      <thead>
+        <th></th>
+        <th>Master</th>
+        <th>Builder</th>
+        <th>Build Number</th>
+      </thead>
+      <tbody>
+      {% for build in builds %}
+        <tr>
+          <td>{{loop.index}}</td>
+          <td>{{build.master_name}}</td>
+          <td>{{build.builder_name}}</td>
+          <td>
+            <a href="/waterfall/build-failure?url=https://build.chromium.org/p
+/{{build.master_name}}/builders/{{build.builder_name}}
+/builds/{{build.build_number}}">
+              {{build.build_number}}
+            </a>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</body>
