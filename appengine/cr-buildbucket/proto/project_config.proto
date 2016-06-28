@@ -67,7 +67,7 @@ message Swarming {
     // Swarming task priority.
     optional int32 priority = 5;
     // Maximum build execution time. Not to be confused with pending time.
-    // If not set, defaults to server defaults.
+    // If not set, defaults to bucket's common_execution_timeout_secs.
     optional int32 execution_timeout_secs = 7;
   }
 
@@ -92,6 +92,10 @@ message Swarming {
   // Defines a default recipe for all builders in this bucket.
   // A builder may override it or parts of it with something else.
   optional Recipe common_recipe = 6;
+
+  // Maximum build execution time. Not to be confused with pending time.
+  // If not set, defaults to server defaults.
+  optional int32 common_execution_timeout_secs = 7;
 }
 
 // Defines one bucket in buildbucket.cfg

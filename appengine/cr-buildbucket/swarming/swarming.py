@@ -265,6 +265,10 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
     swarming_cfg.common_dimensions,
     builder_cfg.dimensions
   )
+
+  if swarming_cfg.common_execution_timeout_secs > 0:
+    task_properties['execution_timeout_secs'] = (
+        swarming_cfg.common_execution_timeout_secs)
   if builder_cfg.execution_timeout_secs > 0:
     task_properties['execution_timeout_secs'] = (
         builder_cfg.execution_timeout_secs)
@@ -418,9 +422,14 @@ def _update_build(build, result):
     if state == 'CANCELED':
       build.result = model.BuildResult.CANCELED
       build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
-    elif state in ('TIMED_OUT', 'EXPIRED'):
+    elif state == 'EXPIRED':
+      # Task did not start.
       build.result = model.BuildResult.CANCELED
       build.cancelation_reason = model.CancelationReason.TIMEOUT
+    elif state == 'TIMED_OUT':
+      # Task started, but timed out.
+      build.result = model.BuildResult.FAILURE
+      build.failure_reason = model.FailureReason.INFRA_FAILURE
     elif state == 'BOT_DIED' or result.get('internal_failure'):
       build.result = model.BuildResult.FAILURE
       build.failure_reason = model.FailureReason.INFRA_FAILURE

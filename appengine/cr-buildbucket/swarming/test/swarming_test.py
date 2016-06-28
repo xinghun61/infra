@@ -148,10 +148,8 @@ class SwarmingTest(testing.AppengineTestCase):
         validate_swarming_param(p)
 
   def test_execution_timeout(self):
-    builder_cfg = project_config_pb2.Swarming.Builder(
-        name='fast-builder',
-        execution_timeout_secs=60,
-    )
+    self.bucket_cfg.swarming.common_execution_timeout_secs = 120
+    builder_cfg = project_config_pb2.Swarming.Builder(name='fast-builder')
 
     build = model.Build(
         bucket='bucket',
@@ -163,6 +161,12 @@ class SwarmingTest(testing.AppengineTestCase):
     task_def = swarming.create_task_def_async(
         self.bucket_cfg.swarming, builder_cfg, build).get_result()
 
+    self.assertEqual(
+        task_def['properties']['execution_timeout_secs'], 120)
+
+    builder_cfg.execution_timeout_secs = 60
+    task_def = swarming.create_task_def_async(
+        self.bucket_cfg.swarming, builder_cfg, build).get_result()
     self.assertEqual(
         task_def['properties']['execution_timeout_secs'], 60)
 
@@ -372,8 +376,8 @@ class SwarmingTest(testing.AppengineTestCase):
           'state': 'TIMED_OUT',
         },
         'status': model.BuildStatus.COMPLETED,
-        'result': model.BuildResult.CANCELED,
-        'cancelation_reason': model.CancelationReason.TIMEOUT,
+        'result': model.BuildResult.FAILURE,
+        'failure_reason': model.FailureReason.INFRA_FAILURE,
       },
 
       {
