@@ -566,11 +566,7 @@ class CreateFlakyRun(webapp2.RequestHandler):
     urlfetch.set_default_fetch_deadline(60)
     logging.info('get_flaky_run_reason ' + url)
     result = urlfetch.fetch(url).content
-    try:
-      json_result = json.loads(result)
-    except ValueError:
-      logging.exception('couldnt decode json for %s', url)
-      return
+    json_result = json.loads(result)
     steps = json_result['steps']
 
     failed_steps = []

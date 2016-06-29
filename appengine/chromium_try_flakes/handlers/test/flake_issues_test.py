@@ -780,18 +780,6 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
         'http://build.chromium.org/p/abc/json/builders/test-builder/builds/100')
     ])
 
-  def test_get_flaky_run_reason_ignores_invalid_json(self):
-    now = datetime.datetime.utcnow()
-    br_f, br_s = self._create_build_runs(now - datetime.timedelta(hours=1), now)
-
-    urlfetch_mock = mock.Mock()
-    urlfetch_mock.return_value.content = 'invalid-json'
-
-    with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
-      self.test_app.post('/issues/create_flaky_run',
-                         {'failure_run_key': br_f.urlsafe(),
-                          'success_run_key': br_s.urlsafe()})
-
   def test_handles_incorrect_parameters(self):
     self.test_app.post('/issues/create_flaky_run', {}, status=400)
 
