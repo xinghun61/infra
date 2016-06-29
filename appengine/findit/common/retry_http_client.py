@@ -66,7 +66,7 @@ class RetryHttpClient(object):
       return retry_backoff
 
   def _Retry(self, url, method, data=None, params=None, timeout_seconds=60,
-               max_retries=5, retry_backoff=1.5, headers=None):
+             max_retries=5, retry_backoff=1.5, headers=None):
     if params and method == 'GET':
       url = '%s?%s' % (url, urllib.urlencode(params))
 

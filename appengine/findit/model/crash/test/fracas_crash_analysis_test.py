@@ -29,7 +29,7 @@ class FracasCrashAnalysisTest(CrashTestCase):
 
   def testFracasCrashAnalysisReset(self):
     analysis = FracasCrashAnalysis()
-    analysis.historic_metadata = {}
+    analysis.historical_metadata = {}
     analysis.Reset()
     self.assertIsNone(analysis.channel)
-    self.assertIsNone(analysis.historic_metadata)
+    self.assertIsNone(analysis.historical_metadata)

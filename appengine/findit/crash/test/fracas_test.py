@@ -94,6 +94,7 @@ class FracasTest(CrashTestCase):
           'suspected_project': '',
           'suspected_components': [],
           'suspected_cls': [dummy_match_result.ToDict()],
+          'regression_range': ('50.0.1233.0', '50.0.1234.0'),
     }
     expected_tag = {
           'found_suspects': True,
@@ -113,6 +114,7 @@ class FracasTest(CrashTestCase):
           'suspected_project': '',
           'suspected_components': [],
           'suspected_cls': [],
+          'regression_range': None
     }
     expected_tag = {
           'found_suspects': False,

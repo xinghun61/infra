@@ -61,7 +61,7 @@ class FracasAnalysisPipeline(FracasBasePipeline):
     # Run the analysis.
     result, tags = fracas.FindCulpritForChromeCrash(
         analysis.signature, analysis.platform, analysis.stack_trace,
-        analysis.crashed_version, analysis.historic_metadata)
+        analysis.crashed_version, analysis.historical_metadata)
 
     # Update analysis status and save the analysis result.
     analysis.completed_time = datetime.datetime.utcnow()
@@ -107,7 +107,7 @@ class FracasCrashWrapperPipeline(BasePipeline):
 @ndb.transactional
 def _NeedsNewAnalysis(
     crash_identifiers, chrome_version, signature, client_id,
-    platform, stack_trace, channel, historic_metadata):
+    platform, stack_trace, channel, historical_metadata):
   analysis = FracasCrashAnalysis.Get(crash_identifiers)
   if analysis and not analysis.failed:
     # A new analysis is not needed if last one didn't complete or succeeded.
@@ -131,7 +131,7 @@ def _NeedsNewAnalysis(
   analysis.client_id = client_id
 
   # Set customized properties.
-  analysis.historic_metadata = historic_metadata
+  analysis.historical_metadata = historical_metadata
   analysis.channel = channel
 
   # Set analysis progress properties.
@@ -145,7 +145,7 @@ def _NeedsNewAnalysis(
 
 def ScheduleNewAnalysisForCrash(
     crash_identifiers, chrome_version, signature, client_id,
-    platform, stack_trace, channel, historic_metadata,
+    platform, stack_trace, channel, historical_metadata,
     queue_name=constants.DEFAULT_QUEUE):
   """Schedules an analysis."""
   crash_config = CrashConfig.Get()
@@ -168,8 +168,9 @@ def ScheduleNewAnalysisForCrash(
     platform = _PLATFORM_RENAME[platform]
 
   if _NeedsNewAnalysis(crash_identifiers, chrome_version, signature, client_id,
-                       platform, stack_trace, channel, historic_metadata):
+                       platform, stack_trace, channel, historical_metadata):
     analysis_pipeline = FracasCrashWrapperPipeline(crash_identifiers)
+    # Attribute defined outside __init__ - pylint: disable=W0201
     analysis_pipeline.target = appengine_util.GetTargetNameForModule(
         constants.CRASH_BACKEND_FRACAS)
     analysis_pipeline.start(queue_name=queue_name)

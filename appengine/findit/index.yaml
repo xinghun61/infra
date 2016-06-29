@@ -7,3 +7,111 @@ indexes:
     direction: asc
   - name: build_start_time
     direction: desc
+
+# For fracas crash dashboard.
+- kind: FracasCrashAnalysis
+  properties:
+  - name: found_suspects
+  - name: requested_time
+    direction: desc
+
+- kind: FracasCrashAnalysis
+  properties:
+  - name: has_regression_range
+  - name: requested_time
+    direction: desc
+
+- kind: FracasCrashAnalysis
+  properties:
+  - name: regression_range_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: FracasCrashAnalysis
+  properties:
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: FracasCrashAnalysis
+  properties:
+  - name: found_suspects
+  - name: has_regression_range
+  - name: requested_time
+    direction: desc
+
+- kind: FracasCrashAnalysis
+  properties:
+  - name: found_suspects
+  - name: regression_range_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: FracasCrashAnalysis
+  properties:
+  - name: found_suspects
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: FracasCrashAnalysis
+  properties:
+  - name: has_regression_range
+  - name: regression_range_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: FracasCrashAnalysis
+  properties:
+  - name: has_regression_range
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: FracasCrashAnalysis
+  properties:
+  - name: regression_range_triage_status
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: FracasCrashAnalysis
+  properties:
+  - name: found_suspects
+  - name: has_regression_range
+  - name: regression_range_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: FracasCrashAnalysis
+  properties:
+  - name: found_suspects
+  - name: has_regression_range
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: FracasCrashAnalysis
+  properties:
+  - name: found_suspects
+  - name: regression_range_triage_status
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: FracasCrashAnalysis
+  properties:
+  - name: has_regression_range
+  - name: regression_range_triage_status
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: FracasCrashAnalysis
+  properties:
+  - name: found_suspects
+  - name: has_regression_range
+  - name: regression_range_triage_status
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc

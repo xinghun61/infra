@@ -25,6 +25,7 @@ from handlers import verify_analysis
 from handlers import version
 from handlers.crash import crash_config
 from handlers.crash import fracas_crash
+from handlers.crash import fracas_dashboard
 from handlers.flake import check_flake
 
 # Default module.
@@ -89,6 +90,7 @@ waterfall_backend_web_application = webapp2.WSGIApplication(
 # "crash-frontend" module.
 crash_frontend_web_pages_handler_mappings = [
     ('/crash/config', crash_config.CrashConfig),
+    ('/crash/fracas-dashboard', fracas_dashboard.FracasDashBoard),
     ('/_ah/push-handlers/crash/fracas', fracas_crash.FracasCrash),
 ]
 crash_frontend_web_application = webapp2.WSGIApplication(

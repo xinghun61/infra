@@ -9,6 +9,7 @@ import unittest
 from model.crash.crash_analysis import CrashAnalysis
 from model import analysis_status
 from model import result_status
+from model import triage_status
 
 
 class CrashAnalysisTest(unittest.TestCase):
@@ -67,3 +68,18 @@ class CrashAnalysisTest(unittest.TestCase):
     self.assertIsNone(analysis.has_regression_range)
     self.assertIsNone(analysis.found_suspects)
     self.assertIsNone(analysis.solution)
+    self.assertEqual(analysis.result, {})
+    self.assertEqual(analysis.regression_range_triage_status,
+                     triage_status.UNTRIAGED)
+    self.assertEqual(analysis.suspected_cls_triage_status,
+                     triage_status.UNTRIAGED)
+    self.assertEqual(analysis.suspected_project_triage_status,
+                     triage_status.UNTRIAGED)
+    self.assertEqual(analysis.suspected_components_triage_status,
+                     triage_status.UNTRIAGED)
+    self.assertEqual(analysis.culprit_regression_range, [])
+    self.assertEqual(analysis.culprit_cls, [])
+    self.assertEqual(analysis.culprit_project, '')
+    self.assertEqual(analysis.culprit_components, [])
+    self.assertEqual(analysis.triage_history, None)
+    self.assertEqual(analysis.note, '')

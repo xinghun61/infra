@@ -13,12 +13,12 @@ from model.crash.crash_analysis import CrashAnalysis
 class FracasCrashAnalysis(CrashAnalysis):
   """Represents an analysis of a Chrome crash."""
   # Customized properties for Fracas crash.
-  historic_metadata = ndb.JsonProperty(indexed=False)
+  historical_metadata = ndb.JsonProperty(indexed=False)
   channel = ndb.StringProperty(indexed=False)
 
   def Reset(self):
     super(FracasCrashAnalysis, self).Reset()
-    self.historic_metadata = None
+    self.historical_metadata = None
     self.channel = None
 
   @staticmethod

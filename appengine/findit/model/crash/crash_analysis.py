@@ -5,6 +5,7 @@
 from google.appengine.ext import ndb
 
 from model import analysis_status
+from model import triage_status
 
 
 class CrashAnalysis(ndb.Model):
@@ -50,12 +51,37 @@ class CrashAnalysis(ndb.Model):
   ################### Properties for the analysis result. ###################
 
   # Analysis results.
-  result = ndb.JsonProperty(compressed=True, indexed=False)
+  result = ndb.JsonProperty(compressed=True, indexed=False, default={})
 
   # Tags for query and monitoring.
   has_regression_range = ndb.BooleanProperty(indexed=True)
   found_suspects = ndb.BooleanProperty(indexed=True)
+  found_project = ndb.BooleanProperty(indexed=True)
+  found_components = ndb.BooleanProperty(indexed=True)
+
   solution = ndb.StringProperty(indexed=True)  # 'core', 'blame', etc.
+
+  # Triage results.
+  regression_range_triage_status = ndb.IntegerProperty(
+      indexed=True, default=triage_status.UNTRIAGED)
+  culprit_regression_range = ndb.JsonProperty(indexed=False, default=[])
+
+  suspected_cls_triage_status = ndb.IntegerProperty(
+      indexed=True, default=triage_status.UNTRIAGED)
+  culprit_cls = ndb.JsonProperty(indexed=False, default=[])
+
+  suspected_project_triage_status = ndb.IntegerProperty(
+      indexed=True, default=triage_status.UNTRIAGED)
+  culprit_project = ndb.JsonProperty(indexed=False, default='')
+
+  suspected_components_triage_status = ndb.IntegerProperty(
+      indexed=True, default=triage_status.UNTRIAGED)
+  culprit_components = ndb.JsonProperty(indexed=False, default=[])
+
+  triage_history = ndb.JsonProperty(indexed=False)
+
+  # Triage note.
+  note = ndb.StringProperty(indexed=False, default='')
 
   def Reset(self):
     self.pipeline_status_path = None
@@ -67,6 +93,17 @@ class CrashAnalysis(ndb.Model):
     self.has_regression_range = None
     self.found_suspects = None
     self.solution = None
+    self.result = {}
+    self.regression_range_triage_status = triage_status.UNTRIAGED
+    self.culprit_regression_range = []
+    self.suspected_cls_triage_status = triage_status.UNTRIAGED
+    self.culprit_cls = []
+    self.suspected_project_triage_status = triage_status.UNTRIAGED
+    self.culprit_project = ''
+    self.suspected_components_triage_status = triage_status.UNTRIAGED
+    self.culprit_components = []
+    self.triage_history = None
+    self.note = ''
 
   @property
   def completed(self):

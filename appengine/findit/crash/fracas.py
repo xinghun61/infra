@@ -103,6 +103,7 @@ def FindCulpritForChromeCrash(signature, platform,
       {
           'found': (bool(suspected_project) or bool(suspected_components) or
                     bool(culprit_results_list)),
+          'regression_range': regression_versions,
           'suspected_project': suspected_project,
           'suspected_components': suspected_components,
           'suspected_cls': culprit_results_list,
