@@ -143,7 +143,7 @@ def get_mem_info():
   mem_total.set(mem.total)
 
 
-def get_net_info():
+def get_net_info(): # pragma: no cover
   metric_counter_names = [
       (net_up, 'bytes_sent'),
       (net_down, 'bytes_recv'),
