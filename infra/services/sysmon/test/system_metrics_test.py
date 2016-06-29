@@ -111,8 +111,7 @@ class SystemMetricsTest(unittest.TestCase):
     self.assertIsNotNone(total)
     self.assertLessEqual(free, total)
 
-  # See http://crbug.com/624369
-  def DISABLED_test_net_info(self):
+  def test_net_info(self):
     system_metrics.get_net_info()
 
     # A network interface that should always be present.
