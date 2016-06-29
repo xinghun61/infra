@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -45,8 +46,7 @@ func fetchBuilds(bucket, builder string, startingFrom time.Time) ([]*buildbucket
 		}
 
 		for _, b := range res.Builds {
-			createdAt := time.Unix(b.CreatedTs/1000000, 0)
-			if createdAt.Before(startingFrom) {
+			if parseTimestamp(b.CreatedTs).Before(startingFrom) {
 				return result, nil
 			}
 			result = append(result, b)
@@ -89,6 +89,24 @@ func groupBuilds(builds []*buildbucket.ApiBuildMessage) map[string]*buildSet {
 	return results
 }
 
+// medianTime returns median completed_time - created_time of successful builds.
+func medianTime(builds []*buildbucket.ApiBuildMessage) time.Duration {
+	if len(builds) == 0 {
+		return 0
+	}
+	durations := make(durationSlice, 0, len(builds))
+	for _, b := range builds {
+		if b.Result != "SUCCESS" {
+			continue
+		}
+		created := parseTimestamp(b.CreatedTs)
+		completed := parseTimestamp(b.CompletedTs)
+		durations = append(durations, completed.Sub(created))
+	}
+	sort.Sort(durations)
+	return durations[len(durations)/2]
+}
+
 func run() error {
 	flag.Parse()
 	if *bucket == "" {
@@ -121,51 +139,73 @@ func run() error {
 			fmt.Println()
 		}
 		fmt.Printf("builder %q\n", builder)
-		fmt.Printf("searching for all builds since timestamp %d till %d...\n",
-			startingFrom.Unix(), time.Now().Unix())
-		// We will actually fetch builds after after time.Now too, but it is fine.
-		swarmingBuilds, err := fetchBuilds(*bucket, builder+swarmingSuffix, startingFrom)
-		if err != nil {
-			return fmt.Errorf("could not fetch builds: %s", err)
+		if err := compareBuilder(builder, startingFrom); err != nil {
+			return err
 		}
-		if len(swarmingBuilds) == 0 {
-			fmt.Printf("no swarming builds for builder %q\n", builder)
+	}
+	return nil
+}
+
+func compareBuilder(builder string, startingFrom time.Time) error {
+	fmt.Printf("searching for all builds since timestamp %d till %d...\n",
+		startingFrom.Unix(), time.Now().Unix())
+	// We will actually fetch builds after after time.Now too, but it is fine.
+	swarmingBuilds, err := fetchBuilds(*bucket, builder+swarmingSuffix, startingFrom)
+	if err != nil {
+		return fmt.Errorf("could not fetch builds: %s", err)
+	}
+	if len(swarmingBuilds) == 0 {
+		fmt.Printf("no swarming builds for builder %q\n", builder)
+		return nil
+	}
+	buildbotBuilds, err := fetchBuilds(*bucket, builder, startingFrom)
+	if err != nil {
+		return fmt.Errorf("could not fetch builds: %s", err)
+	}
+	if len(buildbotBuilds) == 0 {
+		fmt.Printf("no buildbot builds for builder %q\n", builder)
+		return nil
+	}
+
+	swarmingBuildSets := groupBuilds(swarmingBuilds)
+	buildbotBuildSets := groupBuilds(buildbotBuilds)
+
+	consistentN := 0
+	inconsistentN := 0
+	for setName, swarmingSet := range swarmingBuildSets {
+		buildbotSet := buildbotBuildSets[setName]
+		if buildbotSet == nil {
+			fmt.Printf("no buildbot builds for buildset %s\n", setName)
 			continue
 		}
-		buildbotBuilds, err := fetchBuilds(*bucket, builder, startingFrom)
-		if err != nil {
-			return fmt.Errorf("could not fetch builds: %s", err)
+		if buildbotSet.bestResult == swarmingSet.bestResult {
+			consistentN++
+			continue
 		}
+		inconsistentN++
 
-		swarmingBuildSets := groupBuilds(swarmingBuilds)
-		buildbotBuildSets := groupBuilds(buildbotBuilds)
-
-		consistentN := 0
-		inconsistentN := 0
-		for setName, swarmingSet := range swarmingBuildSets {
-			buildbotSet := buildbotBuildSets[setName]
-			if buildbotSet == nil {
-				fmt.Printf("no buildbot builds for buildset %s\n", setName)
-				continue
-			}
-			if buildbotSet.bestResult == swarmingSet.bestResult {
-				consistentN++
-				continue
-			}
-			inconsistentN++
-
-			fmt.Printf("%s is inconsistent\n", setName)
-			for _, b := range swarmingSet.builds {
-				fmt.Printf("  %s %s\n", b.Result, b.Url)
-			}
-			for _, b := range buildbotSet.builds {
-				fmt.Printf("  %s %s\n", b.Result, b.Url)
-			}
+		fmt.Printf("%s is inconsistent\n", setName)
+		for _, b := range swarmingSet.builds {
+			fmt.Printf("  %s %s\n", b.Result, b.Url)
 		}
-
-		fmt.Printf("%0.2f%% consistent build sets, %d buildbot builds, %d swarming builds\n",
-			100*float64(consistentN)/float64(consistentN+inconsistentN), len(buildbotBuilds), len(swarmingBuilds))
+		for _, b := range buildbotSet.builds {
+			fmt.Printf("  %s %s\n", b.Result, b.Url)
+		}
 	}
+
+	fmt.Printf("%0.2f%% consistent build sets, %d buildbot builds, %d swarming builds\n",
+		100*float64(consistentN)/float64(consistentN+inconsistentN), len(buildbotBuilds), len(swarmingBuilds))
+
+	swarmingTime := medianTime(swarmingBuilds)
+	buildbotTime := medianTime(buildbotBuilds)
+	factor := float64(buildbotTime) / float64(swarmingTime)
+	if factor >= 1 {
+		fmt.Printf("swarming is %.1fx faster\n", factor)
+	} else {
+		fmt.Printf("swarming is %.1fx slower\n", 1/factor)
+	}
+	fmt.Printf("median times: buildbot %s, swarming %s\n", buildbotTime, swarmingTime)
+
 	return nil
 }
 
@@ -186,3 +226,16 @@ func parseTags(tags []string) map[string]string {
 	}
 	return result
 }
+
+func parseTimestamp(ts int64) time.Time {
+	if ts == 0 {
+		return time.Time{}
+	}
+	return time.Unix(ts/1000000, 0)
+}
+
+type durationSlice []time.Duration
+
+func (a durationSlice) Len() int           { return len(a) }
+func (a durationSlice) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a durationSlice) Less(i, j int) bool { return a[i] < a[j] }
