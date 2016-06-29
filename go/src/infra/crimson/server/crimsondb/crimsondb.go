@@ -17,18 +17,18 @@ import (
 	// This simply registers the mysql driver.
 	_ "github.com/go-sql-driver/mysql"
 
-	"infra/crimson/proto"
+	crimson "infra/crimson/proto"
 )
 
-// IPRangeRow describes a row in the ip_range table.
-type IPRangeRow struct {
+// IPRange describes a row in the ip_range table.
+type IPRange struct {
 	Site    string
 	Vlan    string
 	StartIP string
 	EndIP   string
 }
 
-func (row IPRangeRow) String() string {
+func (row IPRange) String() string {
 	return fmt.Sprintf("%s/%s: %s-%s",
 		row.Site, row.Vlan, row.StartIP, row.EndIP)
 }
@@ -60,18 +60,18 @@ func HexStringToIP(hexIP string) net.IP {
 	return netIP
 }
 
-// scanIPRangeRows is a low-level function to scan sql results.
+// scanIPRanges is a low-level function to scan sql results.
 // Rows must contain site, vlan, start_ip, end_ip in that order.
-func scanIPRangeRows(ctx context.Context, rows *sql.Rows) ([]IPRangeRow, error) {
-	var ipRanges []IPRangeRow
+func scanIPRanges(ctx context.Context, rows *sql.Rows) ([]IPRange, error) {
+	var ipRanges []IPRange
 
 	for rows.Next() {
 		var startIP, endIP string
-		ipRange := IPRangeRow{}
+		ipRange := IPRange{}
 		err := rows.Scan(&ipRange.Site, &ipRange.Vlan, &startIP, &endIP)
-		if err != nil {
+		if err != nil { // Users can't trigger that.
 			logging.Errorf(ctx, "%s", err)
-			return ipRanges, err
+			return nil, err
 		}
 		ipRange.StartIP = HexStringToIP(startIP).String()
 		ipRange.EndIP = HexStringToIP(endIP).String()
@@ -80,7 +80,7 @@ func scanIPRangeRows(ctx context.Context, rows *sql.Rows) ([]IPRangeRow, error) 
 	err := rows.Err()
 	if err != nil {
 		logging.Errorf(ctx, "%s", err)
-		return ipRanges, err
+		return nil, err
 	}
 	return ipRanges, nil
 }
@@ -131,7 +131,6 @@ func InsertIPRange(ctx context.Context, row *crimson.IPRange) (err error) {
 		return
 	}
 
-	// Look for existing overlapping ranges.
 	// [a,b] and [c,d] overlap iff a<=d and b>=c
 	statement := ("SELECT site, vlan, start_ip, end_ip FROM ip_range\n" +
 		"WHERE site=? AND start_ip<=? AND end_ip>=?")
@@ -141,14 +140,16 @@ func InsertIPRange(ctx context.Context, row *crimson.IPRange) (err error) {
 		return
 	}
 	defer rows.Close()
-	ipRanges, err := scanIPRangeRows(ctx, rows)
+	var ipRanges []IPRange
+	ipRanges, err = scanIPRanges(ctx, rows)
 	if err != nil {
 		logging.Errorf(ctx, "scanIPRangeRows has failed. %s", err)
 		return
 	}
 	if len(ipRanges) > 0 {
-		err = fmt.Errorf(
-			"overlapping ranges have been found: %s, not inserting new one", ipRanges)
+		err = UserErrorf(
+			AlreadyExists,
+			"overlapping range(s) have been found: %s, not inserting new one", ipRanges)
 		logging.Infof(ctx, "%s", err)
 		return
 	}
@@ -166,8 +167,7 @@ func InsertIPRange(ctx context.Context, row *crimson.IPRange) (err error) {
 }
 
 // SelectIPRange returns ip ranges filtered by values in req.
-func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) []IPRangeRow {
-	// TODO(pgervais): Add error reporting.
+func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) ([]IPRange, error) {
 	db := DB(ctx)
 	var rows *sql.Rows
 	var err error
@@ -201,7 +201,9 @@ func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) []IPRangeRow 
 		delimiter = "\nAND "
 		ip, err := IPStringToHexString(req.Ip)
 		if err != nil {
-			return nil
+			return nil, UserErrorf(
+				InvalidArgument,
+				"parsing of IP address failed: %s", req.Ip)
 		}
 		statement.WriteString("start_ip<=? AND ?<=end_ip")
 		params = append(params, ip, ip)
@@ -215,19 +217,18 @@ func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) []IPRangeRow 
 	rows, err = db.Query(statement.String(), params...)
 
 	if err != nil {
-		// TODO(pgervais): propagate the error up the stack.
 		logging.Errorf(ctx, "%s", err)
-		return []IPRangeRow{}
+		return nil, err
 	}
 	defer rows.Close()
 
-	var ipRanges []IPRangeRow
-	ipRanges, err = scanIPRangeRows(ctx, rows)
+	var ipRanges []IPRange
+	ipRanges, err = scanIPRanges(ctx, rows)
 	if err != nil {
 		logging.Errorf(ctx, "%s", err)
-		return nil
+		return nil, err
 	}
-	return ipRanges
+	return ipRanges, nil
 }
 
 // UseDB stores a db handle into a context.

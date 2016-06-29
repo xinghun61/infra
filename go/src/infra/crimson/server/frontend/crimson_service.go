@@ -16,22 +16,35 @@ import (
 
 type crimsonService struct{}
 
-func (s *crimsonService) CreateIPRange(ctx context.Context, req *crimson.IPRange) (*crimson.IPRangeStatus, error) {
-
-	err := crimsondb.InsertIPRange(ctx, req)
-
-	if err != nil {
-		return &crimson.IPRangeStatus{}, grpc.Errorf(codes.AlreadyExists, err.Error())
-	} else {
-		return &crimson.IPRangeStatus{}, nil
+// userErrorToGRPCError turns UserError into grpc.Error and pass the
+// other types through.
+func userErrorToGRPCError(err error) error {
+	if err == nil {
+		return err
 	}
+	if userError, ok := err.(*crimsondb.UserError); ok {
+		return grpc.Errorf(codes.Code(userError.Code()), userError.Error())
+	}
+	return err
+}
+
+func (s *crimsonService) CreateIPRange(ctx context.Context, req *crimson.IPRange) (*crimson.IPRangeStatus, error) {
+	// TODO(pgervais): uncouple InsertIpRange and infra/crimson/proto
+	// Create a separate proto file with grpc-independent data structures and use
+	// them here.
+	err := crimsondb.InsertIPRange(ctx, req)
+	return &crimson.IPRangeStatus{}, userErrorToGRPCError(err)
 }
 
 func (s *crimsonService) ReadIPRange(ctx context.Context, req *crimson.IPRangeQuery) (*crimson.IPRanges, error) {
 
-	rows := crimsondb.SelectIPRange(ctx, req)
+	rows, err := crimsondb.SelectIPRange(ctx, req)
 
+	if err != nil {
+		return nil, userErrorToGRPCError(err)
+	}
 	ret := crimson.IPRanges{}
+
 	for _, row := range rows {
 		ret.Ranges = append(
 			ret.Ranges,
