@@ -139,7 +139,18 @@ function CS_toggleCollapse(el) {
 var CS_lastX = 0, CS_lastY = 0;
 
 function CS_addClickListener(tableEl, handler) {
+  tableEl.addEventListener('click', function(event) {
+    if (event.target.tagName == 'A') {
+      return;
+    }
+    if (event.button == 1) {
+      event.preventDefault();
+    }
+  });
   tableEl.addEventListener('mousedown', function(event) {
+    if (event.target.tagName == 'A') {
+      return;
+    }
     CS_lastX = event.clientX;
     CS_lastY = event.clientY;
     if (event.button == 1) {
@@ -147,6 +158,9 @@ function CS_addClickListener(tableEl, handler) {
     }
   });
   tableEl.addEventListener('mouseup', function(event) {
+    if (event.target.tagName == 'A') {
+      return;
+    }
     if (CS_lastX - 2 < event.clientX && CS_lastX + 2 > event.clientX &&
         CS_lastY - 2 < event.clientY && CS_lastY + 2 > event.clientY) {
       handler(event);
