@@ -112,8 +112,9 @@
 [if-any read_only][else]
  [if-any logged_in_user][else]
   <tr>
-   <td colspan="2"></td>
+   <td></td>
    <td class="vt issuecomment">
+     <div class="issuecommentheader" style="margin-bottom:1em"></div>
      <span class="indicator">&#9658;</span> <a href="[login_url]"
      >Sign in</a> to add a comment
    </td>
