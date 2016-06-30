@@ -167,6 +167,13 @@ runOnLoad(function() {
   _onload();
 
   function delComment(sequence_num, delete_mode) {
+    var r = true;
+    if (delete_mode == 1) {
+      r = confirm('Delete this comment?');
+    }
+    if (!r) {
+      return false;
+    }
     var f = document.forms[[]"delcom"];
     f.sequence_num.value = sequence_num;
     f.mode.value = delete_mode;
