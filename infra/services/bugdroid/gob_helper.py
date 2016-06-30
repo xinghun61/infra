@@ -517,6 +517,10 @@ class GerritHelper(RestApiHelper):
 
   timestamp_format = '%Y-%m-%d %H:%M:%S.%f'
 
+  def __init__(self, api_url, logger=None, ignore_projects=None):
+    self.ignore_projects = ignore_projects or []
+    super(GerritHelper, self).__init__(api_url, logger)
+
   @classmethod
   def ParseTimeStamp(cls, timestamp):
     if isinstance(timestamp, datetime.datetime):
@@ -592,7 +596,11 @@ class GerritHelper(RestApiHelper):
 
     entries = []
     for change in changes:
-      entries.append(self.ParseChange(change))
+      if change['project'] in self.ignore_projects:
+        self.logger.info(
+            'Skip change %s in ignored git projects', change['id'])
+      else:
+        entries.append(self.ParseChange(change))
     return entries, more
 
   def GetMergedChanges(self, since=None, limit=None, start=None, fields=None):

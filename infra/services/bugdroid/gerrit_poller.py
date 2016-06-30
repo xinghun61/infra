@@ -93,11 +93,12 @@ class GerritPoller(Poller):
   def __init__(self, host_url, poller_id,
                commits_since=None, interval_in_minutes=3,
                setup_refresh_interval_minutes=0, logger=None, run_once=False,
-               with_paths=True, with_diffs=False, datadir=None):
+               with_paths=True, with_diffs=False, datadir=None,
+               git_projects=None):
     Poller.__init__(self, interval_in_minutes, setup_refresh_interval_minutes,
                     run_once)
     self.logger = logger or DEFAULT_LOGGER
-    self.gerrit = gob_helper.GerritHelper(host_url, self.logger)
+    self.gerrit = gob_helper.GerritHelper(host_url, self.logger, git_projects)
     self.poller_id = poller_id
     self.handlers = []
     self.with_paths = with_paths

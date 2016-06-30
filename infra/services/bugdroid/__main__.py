@@ -133,6 +133,18 @@ def parse_args(args):  # pragma: no cover
 
   return opts, loop_opts
 
+def _create_http(creds_data):
+  credentials = OAuth2Credentials(
+      None, creds_data['client_id'], creds_data['client_secret'],
+      creds_data['refresh_token'],
+      datetime.datetime.now() + datetime.timedelta(minutes=15),
+      'https://accounts.google.com/o/oauth2/token',
+      'bugdroid')
+
+  http = httplib2.Http()
+  http = credentials.authorize(http)
+  return http
+
 
 def main(args):  # pragma: no cover
   opts, loop_opts = parse_args(args)
@@ -140,18 +152,11 @@ def main(args):  # pragma: no cover
   with open(opts.credentials_db) as data_file:    
     creds_data = json.load(data_file)
 
-  credentials = OAuth2Credentials(
-      None, creds_data['client_id'], creds_data['client_secret'],
-      creds_data['refresh_token'],
-      datetime.datetime.now() + datetime.timedelta(minutes=15),
-      'https://accounts.google.com/o/oauth2/token',
-      'bugdroid')
-  http = httplib2.Http()
-  http = credentials.authorize(http)
-
-  if not get_data(http):
-    DEFAULT_LOGGER.error('Failed to get data files.')
-    return 1
+  # Use local json file
+  if not opts.configfile:
+    if not get_data(_create_http(creds_data)):
+      DEFAULT_LOGGER.error('Failed to get data files.')
+      return 1
 
   def outer_loop_iteration():
     return bugdroid.inner_loop(opts)
@@ -160,18 +165,12 @@ def main(args):  # pragma: no cover
       task=outer_loop_iteration,
       sleep_timeout=lambda: 60.0,
       **loop_opts)
-
-  credentials2 = OAuth2Credentials(
-      None, creds_data['client_id'], creds_data['client_secret'],
-      creds_data['refresh_token'],
-      datetime.datetime.now() + datetime.timedelta(minutes=15),
-      'https://accounts.google.com/o/oauth2/token',
-      'bugdroid')
-  http2 = httplib2.Http()
-  http2 = credentials2.authorize(http2)
-  if not update_data(http2):
-    DEFAULT_LOGGER.error('Failed to update data files.')
-    return 1
+ 
+  # In case local json file is used, do not upload
+  if not opts.configfile:
+    if not update_data(_create_http(creds_data)):
+      DEFAULT_LOGGER.error('Failed to update data files.')
+      return 1
 
   DEFAULT_LOGGER.info('Outer loop finished with result %r',
                       loop_results.success)

@@ -12,6 +12,7 @@ import os
 import sys
 import threading
 import time
+import urlparse
 
 import infra.services.bugdroid.branch_utils as branch_utils
 import infra.services.bugdroid.config_service as config_service
@@ -197,7 +198,13 @@ class Bugdroid(object):
       logging.critical('Failed to load poller configs. Aborting.')
       raise ConfigsException()
 
+    git_projects = []
+
+    # 1. Generate git pollers
     for config in configs.repos:
+      t = config_service.decode_repo_type(config.repo_type)
+      if t != 'git':
+        continue
       if config.refs_regex and config.filter_regex:
         if len(config.refs_regex) != len(config.filter_regex):
           logging.critical(
@@ -205,7 +212,24 @@ class Bugdroid(object):
               'cannot have different numbers of items.', config.repo_name)
 
           raise ConfigsException()
+      path = urlparse.urlparse(config.repo_url).path.lower()
+      if path.startswith('/a/'):
+        path = path[3:]
+      else:
+        path = path[1:]
+      if path.endswith('.git'):
+        path = path[:len(path)-4]
+      git_projects.append(path)
       poller = self.InitPoller(config.repo_name, config)
+      self.pollers.append(poller)
+
+    logging.info('Git projects %s', git_projects)
+    # 2. Generate gerrit pollers
+    for config in configs.repos:
+      t = config_service.decode_repo_type(config.repo_type)
+      if t != 'gerrit':
+        continue
+      poller = self.InitPoller(config.repo_name, config, git_projects)
       self.pollers.append(poller)
 
   def Reset(self, project_name=None):
@@ -230,7 +254,7 @@ class Bugdroid(object):
       self.trackers[project] = itm
     return self.trackers[project]
 
-  def InitPoller(self, name, config):
+  def InitPoller(self, name, config, git_projects=None):
     """Create a repository poller based on the given config."""
 
     poller = None
@@ -265,7 +289,8 @@ class Bugdroid(object):
           interval_in_minutes=interval_minutes,
           logger=logger,
           run_once=self.run_once,
-          datadir=self.datadir)
+          datadir=self.datadir,
+          git_projects=git_projects)
 
       h = BugdroidGitPollerHandler(
           bugdroid=self,
