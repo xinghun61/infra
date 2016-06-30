@@ -1,0 +1,48 @@
+<dom-module id="som-help">
+  <template>
+    <style>
+      ul, p {
+        line-height: 160%;
+      }
+    </style>
+    <h2>Sheriff-o-Matic Help</h2>
+    <p>
+      Sheriff-o-Matic (SoM) is a tool designed to help make sheriffing easier. SoM shows alerts for failures and allows you to
+      place some basic annotations on them. Some examples of things you can do on SoM include:
+    </p>
+    <ul>
+      <li><strong>Examine</strong> failures to see detailed information on related revisions. </li>
+      <li><strong>Snooze</strong> an alert to temporarily move a failure outside of your view. </li>
+      <li><strong>Link a Bug</strong> to an alert to keep track of which bug caused the failure.
+        <ul>
+          <li>Find bugs to link from the <a href="http://crbug.com" target="_blank">Chromium Issue Tracker</a>.</li>
+          <li>To link a bug, you can enter the URL or number for the bug. </li>
+          <li>If a bug does not yet exist for the failure, you can file a new bug.
+            If you do so, remember to go back to Sheriff-o-Matic to link the bug! </li>
+        </ul>
+      </li>
+    </ul>
+    <p>
+      If you encounter any issues with Sheriff-o-Matic, you can file a bug by clicking on the feedback button
+      in the bottom right corner of the screen.
+    </p>
+    <h2>Useful Links</h2>
+    <ul>
+      <li>
+        <a href="http://www.chromium.org/developers/tree-sheriffs/sheriff-details-chromium" target="_blank">How to Sheriff</a>
+      </li>
+      <li>
+        <a href="https://g.co/bugatrooper" target="_blank">How to contact a Trooper</a>
+      </li>
+    </ul>
+  </template>
+  <script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'som-help',
+    })
+  })();
+  </script>
+</dom-module>

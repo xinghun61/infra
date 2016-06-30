@@ -21,6 +21,8 @@
 <link rel="import" href="/elements/som-bug-queue.html">
 <link rel="import" href="/elements/som-drawer.html">
 <link rel="import" href="/elements/som-examine.html">
+<link rel="import" href="/elements/pages/som-help.html">
+<link rel="import" href="/elements/pages/som-rotation-calendar.html">
 
 <dom-module id="som-app">
   <template>
@@ -34,41 +36,34 @@
       paper-header-panel /deep/ #mainContainer {
         @apply(--layout-vertical);
       }
-      .last-updated, .user-name {
-        text-align: right;
-        padding-right: 1em;
-      }
       paper-header-panel[main] {
         --paper-header-panel-body: {
           background: #eee;
         }
       }
-      .title {
-        font-size: big;
-      }
-      .som-title {
-        font-weight: bold;
-      }
-      .list-item {
-        @apply(--layout-flex);
-        @apply(--layout-vertical);
-        margin: 1em;
-        border-bottom: 1px solid #ddd;
-      }
-      #refresh {
-        width: 25px;
-        height: 25px;
-        padding: 0;
-      }
       #alertsList {
-        background: white;
-        border-left: 1px solid #ddd;
+        padding: 0;
       }
       #noAlerts {
         margin: 1em;
         text-align: center;
         font-size: 2.5em;
         line-height: 150%;
+      }
+      #refresh {
+        width: 25px;
+        height: 25px;
+        padding: 0;
+      }
+      .last-updated, .user-name {
+        text-align: right;
+        padding-right: 1em;
+      }
+      .list-item {
+        @apply(--layout-flex);
+        @apply(--layout-vertical);
+        margin: 1em;
+        border-bottom: 1px solid #ddd;
       }
       .notification {
         box-sizing: border-box;
@@ -78,7 +73,17 @@
         border: 1px solid #666;
         border-radius: 5px;
       }
-
+      .page-body {
+        background: white;
+        border-left: 1px solid #ddd;
+        padding: 1em;
+      }
+      .som-title {
+        font-weight: bold;
+      }
+      .title {
+        font-size: big;
+      }
       @media (max-width: 1024px) {
         .last-updated, .user-name {
           padding-right: 0.5em;
@@ -106,7 +111,7 @@
         <paper-toolbar>
           <span class="som-title">Sheriff-o-Matic</span>
         </paper-toolbar>
-        <som-drawer id="drawer" tree="[[_tree]]" path="{{_path}}" show-infra-failures="{{showInfraFailures}}" trees="{{_trees}}"></som-drawer>
+        <som-drawer id="drawer" tree="[[_tree]]" path="{{_path}}" static-pages="[[_staticPages]]" show-infra-failures="{{showInfraFailures}}" trees="{{_trees}}"></som-drawer>
       </paper-header-panel>
       <paper-header-panel main id="mainHeaderPanel" class="flex layout vertical">
         <paper-toolbar>
@@ -123,40 +128,40 @@
           </div>
           <paper-spinner active="[[_fetchingAlerts]]"></paper-spinner>
         </paper-toolbar>
-        <div class="flex layout vertical">
-          <iron-pages attr-for-selected='id' selected="[[_selectedPage]]" class="flex layout vertical">
-            <div id="alertsList">
-              <div class="list-item" hidden$="[[_hideWebkitNotice]]">
-                <div class="notification">
-                  Chromium sheriffs: you now need to handle WebKit bot failures too. <a href="http://www.chromium.org/blink/sheriffing" target="_blank">More information</a>.
+        <iron-pages attr-for-selected='id' selected="[[_selectedPage]]" class="flex layout vertical">
+          <div id="alertsList" class="page-body">
+            <div class="list-item" hidden$="[[_hideWebkitNotice]]">
+              <div class="notification">
+                Chromium sheriffs: you now need to handle WebKit bot failures too. <a href="http://www.chromium.org/blink/sheriffing" target="_blank">More information</a>.
+              </div>
+            </div>
+            <div id="noAlerts" hidden$="[[_haveAlerts]]">
+              No alerts!
+              <br>
+              <img src="/images/jparent-jump.gif" alt="Julie Jumping" title="Julie Jumping">
+            </div>
+            <div id="alertsListInner">
+              <template is="dom-repeat" items="[[_alerts]]" as="alert">
+                <div class="list-item" tabindex$="[[tabIndex]]">
+                  <som-alert-item
+                      alert="{{alert}}"
+                      tree="[[_tree]]"
+                      selected="[[selected]]"
+                      annotation="[[_computeAnnotation(annotations, alert)]]"
+                      on-annotation-change="_handleAnnotation"
+                      on-link-bug="_handleLinkBug"
+                      on-snooze="_handleSnooze"
+                  ></som-alert-item>
                 </div>
-              </div>
-              <div id="noAlerts" hidden$="[[_haveAlerts]]">
-                No alerts!
-                <br>
-                <img src="/images/jparent-jump.gif" alt="Julie Jumping" title="Julie Jumping">
-              </div>
-              <div id="alertsListInner">
-                <template is="dom-repeat" items="[[_alerts]]" as="alert">
-                  <div class="list-item" tabindex$="[[tabIndex]]">
-                    <som-alert-item
-                        alert="{{alert}}"
-                        tree="[[_tree]]"
-                        selected="[[selected]]"
-                        annotation="[[_computeAnnotation(annotations, alert)]]"
-                        on-annotation-change="_handleAnnotation"
-                        on-link-bug="_handleLinkBug"
-                        on-snooze="_handleSnooze"
-                    ></som-alert-item>
-                  </div>
-                </template>
-              </div>
+              </template>
             </div>
-            <div id="examineAlert" class="flex layout vertical">
-              <som-examine alert="[[_examinedAlert]]" class="flex layout vertical"></som-examine>
-            </div>
-          </iron-pages>
-        </div>
+          </div>
+          <div id="examineAlert" class="flex layout vertical page-body">
+            <som-examine alert="[[_examinedAlert]]" class="flex layout vertical"></som-examine>
+          </div>
+          <som-help id="helpSOM" class="page-body"></som-help>
+          <som-rotation-calendar id="rotationCalendar" class="flex layout vertical page-body"></som-rotation-calendar>
+        </iron-pages>
       </paper-header-panel>
     </paper-drawer-panel>
     <paper-dialog id="bugDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation" on-iron-overlay-closed="_resetBugDialog">
@@ -288,6 +293,19 @@
           type: String,
           computed: '_computeTree(_path)',
         },
+        _staticPages: {
+          type: Object,
+          value: {
+            "help-som" : {
+              pageId : "helpSOM",
+              displayText : "How to Use",
+            },
+            "calendar" : {
+              pageId : "rotationCalendar",
+              displayText : "Rotation Calendar",
+            },
+          },
+        },
         _examinedAlert: {
           type: Object,
           computed: '_computeExaminedAlert(_alerts, _examinedAlertKey)',
@@ -332,7 +350,7 @@
       },
 
       _computeAlertsGroups: function(tree, trees) {
-        if (tree === '') {
+        if (tree === '' || tree in this._staticPages) {
           return [];
         }
 
@@ -352,8 +370,13 @@
         if (pathParts.length < 2) {
           console.error('error: pathParts < 2', pathParts);
         }
-        if (pathParts.length < 3) {
-          return 'alertsList';
+        if (pathParts.length == 2) {
+          if (pathParts[1] in this._staticPages) {
+            return this._staticPages[pathParts[1]].pageId;
+          } else {
+            // On the page for a tree
+            return 'alertsList';
+          }
         }
         if (pathParts[2] == 'examine') {
           return 'examineAlert';
