@@ -341,16 +341,32 @@ class AST2SelectTest(unittest.TestCase):
         [('User1.email IS NOT NULL', [])],
         where)
 
-  def testProcessCommentByIDCond(self):
+  def testProcessCommentByIDCond_EqualsUserID(self):
     fd = BUILTIN_ISSUE_FIELDS['commentby_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
     left_joins, where = ast2select._ProcessCommentByIDCond(
         cond, 'Cond1', 'User1')
     self.assertEqual(
-        [('Comment AS Cond1 ON Issue.id = Cond1.issue_id', [])],
+        [('Comment AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.commenter_id = %s',
+          [111L])],
         left_joins)
     self.assertEqual(
-        [('Cond1.commenter_id = %s', [111L])],
+        [('Cond1.commenter_id IS NOT NULL', [])],
+        where)
+
+  def testProcessCommentByIDCond_NotEqualsUserID(self):
+    fd = BUILTIN_ISSUE_FIELDS['commentby_id']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [111L])
+    left_joins, where = ast2select._ProcessCommentByIDCond(
+        cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('Comment AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.commenter_id = %s',
+          [111L])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.commenter_id IS NULL', [])],
         where)
 
   def testProcessStatusIDCond(self):

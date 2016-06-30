@@ -260,14 +260,14 @@ def _ProcessCommentByCond(cond, alias, user_alias):
 
 def _ProcessCommentByIDCond(cond, alias, _user_alias):
   """Convert a commentby_id=user_id cond to SQL."""
+  field_type, field_values = _GetFieldTypeAndValues(cond)
+  commenter_cond_str, commenter_cond_args = _Compare(
+      alias, ast_pb2.QueryOp.EQ, field_type, 'commenter_id', field_values)
   left_joins = [(
-      'Comment AS {alias} ON Issue.id = {alias}.issue_id'.format(
-          alias=alias), [])]
-  if cond.op in (ast_pb2.QueryOp.IS_DEFINED, ast_pb2.QueryOp.IS_NOT_DEFINED):
-    where = [_CompareAlreadyJoined(alias, cond.op, 'commenter_id')]
-  else:
-    field_type, field_values = _GetFieldTypeAndValues(cond)
-    where = [_Compare(alias, cond.op, field_type, 'commenter_id', field_values)]
+      'Comment AS {alias} ON Issue.id = {alias}.issue_id AND '
+      '{commenter_cond}'.format(alias=alias, commenter_cond=commenter_cond_str),
+      commenter_cond_args)]
+  where = [_CompareAlreadyJoined(alias, cond.op, 'commenter_id')]
 
   return left_joins, where
 
