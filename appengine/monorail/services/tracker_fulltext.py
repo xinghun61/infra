@@ -114,7 +114,6 @@ def _CreateIssueSearchDocuments(
         ' '.join(field_values),
         ' '.join(tracker_bizobj.GetLabels(issue)))
     assert comments, 'issues should always have at least the description'
-    # TODO(lukasperaza): index most recent description instead of initial
     description = _ExtractCommentText(comments[0], users_by_id)
     description = description[:framework_constants.MAX_FTS_FIELD_SIZE]
     all_comments = ' '. join(
@@ -166,7 +165,11 @@ def _IndexableComments(comments, users_by_id):
   for comment in comments:
     user_view = users_by_id.get(comment.user_id)
     if not (comment.deleted_by or (user_view and user_view.banned)):
-      allowed_comments.append(comment)
+      if comment.is_description and allowed_comments:
+        # index the latest description, but not older descriptions
+        allowed_comments[0] = comment
+      else:
+        allowed_comments.append(comment)
 
   reasonable_size = (framework_constants.INITIAL_COMMENTS_TO_INDEX +
                      framework_constants.FINAL_COMMENTS_TO_INDEX)
