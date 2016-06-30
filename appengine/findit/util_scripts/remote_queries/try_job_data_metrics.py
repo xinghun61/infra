@@ -7,6 +7,7 @@
 import argparse
 from collections import defaultdict
 import datetime
+import json
 import numpy
 import os
 import sys
@@ -52,6 +53,24 @@ def _GetOSPlatformName(master_name, builder_name):
         return platform
 
     return 'unknown'
+
+
+def _GetTrybotName(buildbucket_response):
+  # First try parameters_json.
+  parameters = json.loads(buildbucket_response.get('parameters_json', '{}'))
+  trybot = parameters.get('builder_name')
+
+  if not trybot:
+    # Fallback to response_details_json.
+    response_details = json.loads(
+        buildbucket_response.get('response_details_json', '{}'))
+    properties = response_details.get('properties', {})
+    trybot = properties.get('buildername')
+
+    if not trybot:
+      trybot = 'unknown'
+
+  return trybot
 
 
 def _GetAverageOfNumbersInList(numbers):
@@ -405,6 +424,19 @@ def _SplitListByPlatform(try_job_data_list):
   return categorized_data_dict
 
 
+def _SplitListByTrybot(try_job_data_list):
+  categorized_data_dict = defaultdict(list)
+
+  for try_job_data in try_job_data_list:
+    if not try_job_data.last_buildbucket_response:
+      continue
+
+    trybot = _GetTrybotName(try_job_data.last_buildbucket_response)
+    categorized_data_dict[trybot].append(try_job_data)
+
+  return categorized_data_dict
+
+
 def SplitListByOption(try_job_data_list, option):
   """Takes a WfTryJobData list and separates it into a dict based on arg.
 
@@ -417,20 +449,22 @@ def SplitListByOption(try_job_data_list, option):
     values are the corresponding lists of data.
   """
 
-  if option == 't':  # Try job type.
-    return _SplitListByTryJobType(try_job_data_list)
-  elif option == 'm':  # Main waterfall master.
-    return _SplitListByMaster(try_job_data_list)
-  elif option == 'b':  # Main waterfall builder.
+  if option == 'b':  # Main waterfall builder.
     return _SplitListByBuilder(try_job_data_list)
-  elif option == 'r':  # Whether or not heuristic results are included.
-    return _SplitListByHeuristicResults(try_job_data_list)
   elif option == 'c':  # Whether or not compile targets are included.
     return _SplitListByCompileTargets(try_job_data_list)
   elif option == 'e':  # Whether or not try jobs with errors should be counted.
     return _SplitListByError(try_job_data_list)
+  elif option == 'm':  # Main waterfall master.
+    return _SplitListByMaster(try_job_data_list)
   elif option == 'p':  # Split by OS platform.
     return _SplitListByPlatform(try_job_data_list)
+  elif option == 'r':  # Whether or not heuristic results are included.
+    return _SplitListByHeuristicResults(try_job_data_list)
+  elif option == 't':  # Try job type.
+    return _SplitListByTryJobType(try_job_data_list)
+  elif 'trybot' in option:  # Split by trybot.
+    return _SplitListByTrybot(try_job_data_list)
 
   # Unsupported flag, bail out without modification.
   return try_job_data_list
@@ -469,6 +503,8 @@ def GetArgsInOrder():
                             'heuristic results'))
   parser.add_argument('-t', action='store_true',
                       help='group try job data by type (compile, test)')
+  parser.add_argument('--trybot', action='store_true',
+                      help='group try job data by trybot')
 
   args_dict = vars(parser.parse_args())
 
@@ -476,7 +512,7 @@ def GetArgsInOrder():
   ordered_args = []
 
   for original_arg in command_line_args:
-    parsed_arg = original_arg[1:]
+    parsed_arg = original_arg.lstrip('-')
     if args_dict[parsed_arg]:
       ordered_args.append(parsed_arg)
 
