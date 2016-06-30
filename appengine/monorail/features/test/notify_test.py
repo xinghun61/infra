@@ -275,10 +275,10 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
                     for item in tasks[0].payload.split('&'))
       # obfuscated email for non-members
       if 'user' in task_params['to']:
-        self.assertIn('...', task_params['from_addr'])
+        self.assertIn('%E2%80%A6', task_params['from_addr'])
       # Full email for members
       else:
-        self.assertNotIn('...', task_params['from_addr'])
+        self.assertNotIn('%E2%80%A6', task_params['from_addr'])
 
   def testNotifyBulkChangeTask_spam(self):
     issue2 = MakeTestIssue(
