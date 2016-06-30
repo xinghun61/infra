@@ -274,7 +274,7 @@ class IssueServiceTest(unittest.TestCase):
     settings.classifier_spam_thresh = 0.9
     self.SetUpAllocateNextLocalID(789, None, None)
     self.SetUpInsertIssue()
-    self.SetUpInsertComment(7890101, True, is_description=True)
+    self.SetUpInsertComment(7890101, True, is_description=True, new_issue=True)
     self.services.spam.ClassifyIssue(mox.IgnoreArg(),
         mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
         self.classifierResult('ham', 1.0))
@@ -294,7 +294,7 @@ class IssueServiceTest(unittest.TestCase):
     settings.classifier_spam_thresh = 0.9
     self.SetUpAllocateNextLocalID(789, None, None)
     self.SetUpInsertIssue(label_rows=[])
-    self.SetUpInsertComment(7890101, True, is_description=True)
+    self.SetUpInsertComment(7890101, True, is_description=True, new_issue=True)
     self.services.spam.ClassifyIssue(mox.IgnoreArg(),
         mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
         self.classifierResult('ham', 1.0))
@@ -319,7 +319,7 @@ class IssueServiceTest(unittest.TestCase):
     settings.classifier_spam_thresh = 0.9
     self.SetUpAllocateNextSpamID(789, None, None)
     self.SetUpInsertSpamIssue()
-    self.SetUpInsertComment(7890101, True, is_description=True)
+    self.SetUpInsertComment(7890101, True, is_description=True, new_issue=True)
 
     self.services.spam.ClassifyIssue(mox.IsA(tracker_pb2.Issue),
         mox.IsA(tracker_pb2.IssueComment), None).AndReturn(
@@ -763,7 +763,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.CreateIssueComment(self.cnxn, issue.project_id,
         issue.local_id, issue.reporter_id, 'comment text',
         amendments=[], attachments=None, inbound_message=None,
-        is_description=False, is_spam=False)
+        is_description=False, is_spam=False, kept_attachments=None)
     self.services.issue.UpdateIssues(self.cnxn, [issue],
         just_derived=False, update_cols=None, commit=True, invalidate=True)
     self.services.spam.ClassifyComment('comment text', None).AndReturn(
@@ -779,7 +779,7 @@ class IssueServiceTest(unittest.TestCase):
        issue.status, issue.owner_id, issue.cc_ids, issue.labels,
        issue.field_values, issue.component_ids, [],
        [], [], [], issue.merged_into, comment='comment text',
-       timestamp=self.now)
+       timestamp=self.now, kept_attachments=None)
     self.mox.VerifyAll()
 
   def testApplyIssueComment_spam(self):
@@ -811,7 +811,8 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.CreateIssueComment(self.cnxn, issue.project_id,
         issue.local_id, issue.reporter_id, 'comment text',
         amendments=[], attachments=None, inbound_message=None, is_spam=True,
-        is_description=False).AndReturn(tracker_pb2.IssueComment())
+        is_description=False,
+        kept_attachments=None).AndReturn(tracker_pb2.IssueComment())
     self.services.issue._UpdateIssuesModified(
         self.cnxn, set(), modified_timestamp=self.now)
 
@@ -857,7 +858,8 @@ class IssueServiceTest(unittest.TestCase):
                 [(blockedon_issue.project_name, blockedon_issue.local_id)], [],
                 default_project_name=blockedon_issue.project_name)],
         attachments=None, inbound_message=None, is_spam=False,
-        is_description=False).AndReturn(tracker_pb2.IssueComment())
+        is_description=False,
+        kept_attachments=None).AndReturn(tracker_pb2.IssueComment())
     # Add a comment on the blockedon issue.
     self.services.issue.CreateIssueComment(
             self.cnxn, blockedon_issue.project_id, blockedon_issue.local_id,
@@ -1162,7 +1164,7 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
 
   def SetUpInsertComment(self, comment_id, was_escaped, is_spam=False,
-      is_description=False):
+      is_description=False, new_issue=False):
     self.services.issue.comment_tbl.InsertRow(
         self.cnxn, issue_id=78901, created=self.now, project_id=789,
         commenter_id=111L, content='content', inbound_message=None,
@@ -1173,11 +1175,15 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.issueupdate_tbl.InsertRows(
         self.cnxn, issue_svc.ISSUEUPDATE_COLS[1:], amendment_rows,
         commit=True)
-
+    
     attachment_rows = []
     self.services.issue.attachment_tbl.InsertRows(
         self.cnxn, issue_svc.ATTACHMENT_COLS[1:], attachment_rows,
         commit=True)
+
+    if is_description and not new_issue:
+      self.services.issue.attachment_tbl.Select(
+          self.cnxn, cols=issue_svc.ATTACHMENT_COLS, id=None)
 
   def testInsertComment(self):
     self.SetUpInsertComment(7890101, False)

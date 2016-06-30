@@ -1,0 +1,92 @@
+<form id="desc_update_form" style="display: none; padding: 0 0 3px .7em;"
+      action="detail.do" method="POST" enctype="multipart/form-data">
+  [# Note: user must have EditIssueComment permission to even include this file. ]
+  <div id="hidden-fields" style="display: none;">
+    [include "issue-hidden-fields.ezt"]
+    <input type="hidden" name="description" value="Yes">
+    <input type="hidden" name="status" value="[initial_status]">
+    <input type="hidden" name="owner" value="[is initial_owner "----"][else][initial_owner][end]">
+    <input type="hidden" name="cc" value="[initial_cc]">
+    <input type="hidden" name="components" value="[initial_components]">
+    [for fields]
+      [include "field-value-widgets.ezt" fields.field_def.is_multivalued_bool]
+    [end]
+    [include "label-fields.ezt" ""]
+    <input type="hidden" name="blocked_on" value="[initial_blocked_on]">
+    <input type="hidden" name="blocking" value="[initial_blocking]">
+  </div>
+  <textarea name="comment" class="issue_text" id="desc_comment_area" cols="80" rows="8">
+[for descriptions.text_runs][include "render-plain-text.ezt" descriptions.text_runs][end]</textarea></br>
+  [if-any descriptions.attachments]
+    <br><b>Attachments:</b>
+    <div class="attachments">
+      <table>
+        [for descriptions.attachments]
+          <tr>
+            <td><input type="checkbox" name="keep-attachment" checked
+                      value="[descriptions.attachments.attachment_id]"></td>
+            <td width="20">
+              <a href="attachment?aid=[descriptions.attachments.attachment_id]">
+                <img width="16" height="16" src="/static/images/paperclip.png" border="0" /></a>
+            </td>
+            <td><b>[descriptions.attachments.filename]</b></td>
+          </tr>
+        [end]
+      </table>
+    </div>
+  [end]
+  [if-any allow_attachments]
+    <div id="desc_attachmentarea"></div>
+    <span id="attachmoreprompt"><img width="16" height="16" src="/static/images/paperclip.png" border="0"
+          alt="A paperclip">
+    <a href="#" id="attachmorefiles">Attach a file</a></span>
+    <span id="attachmoremaxsize" style="margin-left:2em; display:none">Max. attachments per comment: [max_attach_size]</span><br>
+  [else]
+    <div style="color:#666">Issue attachment storage quota exceeded.</div>
+  [end]
+  [# only project members can edit descriptions, and they are not subject to action limits
+     so no captcha is necessary]
+
+  <div style="margin-top:0.5em;">
+    <input type="submit" name="btn" value="Save changes" id="desc_submit_btn">
+    <input type="button" name="nobtn" value="Discard" id="desc_discard_btn">
+    <span style="margin-left:1.5em"><label for="after_desc_update">And then:</label></span>
+    <select name="after_issue_update" id="after_desc_update">
+      <option value="0" [is after_issue_update "0"]selected=selected[end]>Go up to issue list</option>
+      <option value="1" [is after_issue_update "1"]selected=selected[end]>Stay on this issue</option>
+      <option value="2" [is after_issue_update "2"]selected=selected[end]>Go to next issue</option>
+    </select>
+    <input type="hidden" name="next_id" value="[if-any flipper.show][flipper.next_id][end]">
+
+    <input type="checkbox" checked name="send_email" id="desc_send_email" style="margin-left:1.5em">
+    <label for="desc_send_email" title="Send issue change notifications to interested users">Send email</label>
+  </div>
+</form>
+<script type="text/javascript" nonce=[nonce]>
+  $('desc_submit_btn').addEventListener('click', function (event) {
+    TKR_isDirty = false;
+  });
+
+  $('desc_discard_btn').addEventListener('click', function (event) {
+    if (!TKR_isDirty || confirm('Discard your changes?')) {
+      $('desc_comment_area').value = $('desc_comment_area').innerHTML;
+      $('desc_update_form').style.display = 'none';
+      var descCt;
+      if ($('description-select')) {
+        descCt = $('description-select').getAttribute('data-ct');
+      } else {
+        descCt = 1;  
+      }
+      $('d' + descCt).style.display = '';
+      $('edit-desc-btn').style.display = '';
+    }
+  });
+
+  if ($('attachmorefiles')) {
+    $('attachmorefiles').addEventListener('click', function(event) {
+      _addAttachmentFields('desc_attachmentarea', 'attachmoreprompt',
+        'attachmorefiles', 'attachmoremaxsize');
+      event.preventDefault();
+    });
+  }
+</script>

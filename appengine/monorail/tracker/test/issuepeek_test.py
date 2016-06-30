@@ -59,9 +59,9 @@ class IssuePeekTest(unittest.TestCase):
     issuecomment_list = [tracker_pb2.IssueComment()]
 
     # No comments yet.
-    description, visible_comments, pagination = issuepeek.PaginateComments(
+    descriptions, visible_comments, pagination = issuepeek.PaginateComments(
         mr, issue, issuecomment_list, config)
-    self.assertEqual(issuecomment_list[0], description)
+    self.assertEqual([issuecomment_list[0]], descriptions)
     self.assertEqual(issuecomment_list[1:], visible_comments)
     self.assertFalse(pagination.visible)
 
@@ -70,7 +70,7 @@ class IssuePeekTest(unittest.TestCase):
       issuecomment_list.append(tracker_pb2.IssueComment())
     description, visible_comments, pagination = issuepeek.PaginateComments(
         mr, issue, issuecomment_list, config)
-    self.assertEqual(issuecomment_list[0], description)
+    self.assertEqual([issuecomment_list[0]], description)
     self.assertEqual(issuecomment_list[1:], visible_comments)
     self.assertFalse(pagination.visible)
 
@@ -78,7 +78,7 @@ class IssuePeekTest(unittest.TestCase):
     issuecomment_list[1].deleted_by = 123
     description, visible_comments, pagination = issuepeek.PaginateComments(
         mr, issue, issuecomment_list, config)
-    self.assertEqual(issuecomment_list[0], description)
+    self.assertEqual([issuecomment_list[0]], description)
     self.assertEqual(issuecomment_list[2:], visible_comments)
     self.assertFalse(pagination.visible)
 
@@ -92,7 +92,7 @@ class IssuePeekTest(unittest.TestCase):
       issuecomment_list.append(tracker_pb2.IssueComment())
     description, visible_comments, pagination = issuepeek.PaginateComments(
         mr, issue, issuecomment_list, config)
-    self.assertEqual(issuecomment_list[0], description)
+    self.assertEqual([issuecomment_list[0]], description)
     self.assertEqual(issuecomment_list[1:], visible_comments)
     self.assertFalse(pagination.visible)
 
@@ -100,7 +100,7 @@ class IssuePeekTest(unittest.TestCase):
     issuecomment_list.append(tracker_pb2.IssueComment())
     description, visible_comments, pagination = issuepeek.PaginateComments(
         mr, issue, issuecomment_list, config)
-    self.assertEqual(issuecomment_list[0], description)
+    self.assertEqual([issuecomment_list[0]], description)
     self.assertEqual(issuecomment_list[2:], visible_comments)
     self.assertTrue(pagination.visible)
     self.assertEqual(2, pagination.last)
@@ -110,6 +110,6 @@ class IssuePeekTest(unittest.TestCase):
     issuecomment_list[1].deleted_by = 123
     description, visible_comments, pagination = issuepeek.PaginateComments(
         mr, issue, issuecomment_list, config)
-    self.assertEqual(issuecomment_list[0], description)
+    self.assertEqual([issuecomment_list[0]], description)
     self.assertEqual(issuecomment_list[2:], visible_comments)
     self.assertFalse(pagination.visible)

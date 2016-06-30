@@ -6,17 +6,36 @@
 
 <div class="cursor_off vt issuedescription" id="hc0">
 
-<pre class="issue_text" tabIndex="0">
-[for description.text_runs][include "render-rich-text.ezt" description.text_runs][end]
-</pre>
+[if-any multiple_descriptions]
+<select id="description-select" data-ct="[num_descriptions]" style="float: right;">
+  [for descriptions]
+    <option value="[descriptions.description_num]"[if-index descriptions last] selected[end]>
+      Description #[descriptions.description_num] ([descriptions.date_yyyymmdd])
+    </option>
+  [end][# for descriptions]
+</select>
+[end][# multiple_descriptions]
 
-[if-any description.attachments]
- <div class="attachments">
-  [for description.attachments]
-     [include "issue-attachment-part.ezt" "0" description.attachments description.can_delete_bool]
-  [end]
- </div>
-[end]
+<div id="all-descriptions">
+  [for descriptions]
+    <div id="d[descriptions.description_num]"
+         [if-index descriptions last][else]style="display: none;"[end]>
+      <pre class="issue_text" tabIndex="1">
+[for descriptions.text_runs][include "render-rich-text.ezt" descriptions.text_runs][end]
+      </pre>
+      [if-any descriptions.attachments]
+        <div class="attachments">
+          [for descriptions.attachments]
+            [include "issue-attachment-part.ezt" descriptions.sequence descriptions.attachments descriptions.can_delete_bool]
+          [end]
+        </div>
+      [end][# descriptions.attachments]
+    </div>
+    [if-any page_perms.EditIssue][if-index descriptions last]
+      [include "issue-description-update-form.ezt"]
+    [end][end]
+  [end][# for descriptions]
+</div>
 
 </div>[#issuedescription]
 

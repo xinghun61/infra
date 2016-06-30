@@ -54,20 +54,26 @@
      </div>
     [end]
 
-    [if-any comments.amendments]
+    [if-any comments.amendments comments.description_num]
      <table class="updates">
       <tr><td class="box-inner">
        [for comments.amendments]
         [include "issue-comment-amendment-part.ezt" comments.amendments]
        [end]
+       [if-any comments.description_num]
+        <b>Description:</b> <a href="#maincol" data-num="[comments.description_num]"
+                               id="desc-link[comments.description_num]">Show this description</a>
+       [end]
       </td></tr>
      </table>
     [end]
 
+[if-any comments.description_num][else]
 [if-any comments.content]<pre class="issue_text">
 [for comments.text_runs][include "render-rich-text.ezt" comments.text_runs][end]
-</pre>[end]
+</pre>[end][end]
 
+   [if-any comments.description_num][else]
     [if-any comments.attachments]
      <div class="attachments">
       [for comments.attachments]
@@ -76,6 +82,7 @@
       [end]
      </div>
     [end]
+   [end]
 
   </div>[#issuecommentbody]
 </div>[#issuecomment]

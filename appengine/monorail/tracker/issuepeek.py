@@ -97,7 +97,7 @@ class IssuePeek(servlet.Servlet):
       comments = self.services.issue.GetCommentsForIssue(
           mr.cnxn, issue.issue_id)
 
-    description, visible_comments, cmnt_pagination = PaginateComments(
+    descriptions, visible_comments, cmnt_pagination = PaginateComments(
         mr, issue, comments, config)
 
     with self.profiler.Phase('making user proxies'):
@@ -105,12 +105,12 @@ class IssuePeek(servlet.Servlet):
           mr.cnxn, self.services.user,
           tracker_bizobj.UsersInvolvedInIssues([issue]),
           tracker_bizobj.UsersInvolvedInCommentList(
-              [description] + visible_comments))
+              descriptions + visible_comments))
       framework_views.RevealAllEmailsToMembers(mr, users_by_id)
 
-    (issue_view, description_view,
+    (issue_view, description_views,
      comment_views) = self._MakeIssueAndCommentViews(
-         mr, issue, users_by_id, description, visible_comments, config)
+         mr, issue, users_by_id, descriptions, visible_comments, config)
 
     with self.profiler.Phase('getting starring info'):
       starred = star_promise.WaitAndGetValue()
@@ -154,7 +154,7 @@ class IssuePeek(servlet.Servlet):
     return {
         'issue_tab_mode': 'issueDetail',
         'issue': issue_view,
-        'description': description_view,
+        'description': description_views,
         'comments': comment_views,
         'labels': issue.labels,
         'num_detail_rows': len(comment_views) + 4,
@@ -198,7 +198,7 @@ class IssuePeek(servlet.Servlet):
     return previous_locations
 
   def _MakeIssueAndCommentViews(
-      self, mr, issue, users_by_id, initial_description, comments, config,
+      self, mr, issue, users_by_id, descriptions, comments, config,
       issue_reporters=None, comment_reporters=None):
     """Create view objects that help display parts of an issue.
 
@@ -206,16 +206,16 @@ class IssuePeek(servlet.Servlet):
       mr: commonly used info parsed from the request.
       issue: issue PB for the currently viewed issue.
       users_by_id: dictionary of {user_id: UserView,...}.
-      initial_description: IssueComment for the initial issue report.
+      descriptions: list of IssueComment PBs for the issue report history.
       comments: list of IssueComment PBs on the current issue.
       issue_reporters: list of user IDs who have flagged the issue as spam.
       comment_reporters: map of comment ID to list of flagging user IDs.
       config: ProjectIssueConfig for the project that contains this issue.
 
     Returns:
-      (issue_view, description_view, comment_views). One IssueView for
-      the whole issue, one IssueCommentView for the initial description,
-      and then a list of IssueCommentView's for each additional comment.
+      (issue_view, description_views, comment_views). One IssueView for
+      the whole issue, a list of IssueCommentViews for the issue descriptions,
+      and then a list of IssueCommentViews for each additional comment.
     """
     with self.profiler.Phase('getting related issues'):
       open_related, closed_related = (
@@ -234,15 +234,17 @@ class IssuePeek(servlet.Servlet):
 
     with self.profiler.Phase('autolinker object lookup'):
       all_ref_artifacts = self.services.autolink.GetAllReferencedArtifacts(
-          mr, [c.content for c in [initial_description] + comments])
+          mr, [c.content for c in descriptions + comments])
 
     with self.profiler.Phase('making comment views'):
       reporter_auth = monorailrequest.AuthData.FromUserID(
-          mr.cnxn, initial_description.user_id, self.services)
-      desc_view = tracker_views.IssueCommentView(
-          mr.project_name, initial_description, users_by_id,
-          self.services.autolink, all_ref_artifacts, mr,
-          issue, effective_ids=reporter_auth.effective_ids)
+          mr.cnxn, descriptions[0].user_id, self.services)
+      desc_views = [
+          tracker_views.IssueCommentView(
+              mr.project_name, d, users_by_id,
+              self.services.autolink, all_ref_artifacts, mr,
+              issue, effective_ids=reporter_auth.effective_ids)
+          for d in descriptions]
       # TODO(jrobbins): get effective_ids of each comment author, but
       # that is too slow right now.
       comment_views = [
@@ -256,7 +258,7 @@ class IssuePeek(servlet.Servlet):
       for c in comment_views:
         c.flagged_spam = mr.auth.user_id in comment_reporters.get(c.id, [])
 
-    return issue_view, desc_view, comment_views
+    return issue_view, desc_views, comment_views
 
   def ProcessFormData(self, mr, post_data):
     """Process the posted issue update form.
@@ -341,16 +343,20 @@ def PaginateComments(mr, issue, issuecomment_list, config):
     config: ProjectIssueConfig for the project that contains this issue.
 
   Returns:
-    A tuple (description, visible_comments, pagination), where description
-    is the IssueComment for the initial issue description, visible_comments
-    is a list of IssueComment PBs for the comments that should be displayed
-    on the current pagination page, and pagination is a VirtualPagination
-    object that keeps track of the Older and Newer links.
+    A tuple (descriptions, visible_comments, pagination), where descriptions
+    is a list of IssueComment PBs for the issue description history,
+    visible_comments is a list of IssueComment PBs for the comments that
+    should be displayed on the current pagination page, and pagination is a
+    VirtualPagination object that keeps track of the Older and Newer links.
   """
   if not issuecomment_list:
-    return None, [], None
+    return [], [], None
 
-  description = issuecomment_list[0]
+  # TODO(lukasperaza): update first comments' rows to is_description=TRUE
+  # so [issuecomment_list[0]] can be removed
+  descriptions = (
+      [issuecomment_list[0]] +
+      [comment for comment in issuecomment_list[1:] if comment.is_description])
   comments = issuecomment_list[1:]
   allowed_comments = []
   restrictions = permissions.GetRestrictions(issue)
@@ -375,4 +381,4 @@ def PaginateComments(mr, issue, issuecomment_list, config):
   visible_comments = allowed_comments[
       pagination.last - 1:pagination.start]
 
-  return description, visible_comments, pagination
+  return descriptions, visible_comments, pagination

@@ -69,11 +69,16 @@
    [is issue.star_count "1"] user [else] users [end]
   </td>
   <td class="issueheader" style="padding-left:6px; border-right: 2px solid white">
-      [if-any description.creator_role]<span class="role_label">Project Member</span>[end]
+      [if-any initial_description.creator_role]<span class="role_label">Project Member</span>[end]
       Reported by
-      [include "../framework/user-link.ezt" description.creator],
-      <span class="date" title="[description.date_tooltip] UTC">[description.date_string][description.date_relative]</span>
+      [include "../framework/user-link.ezt" initial_description.creator],
+      <span class="date" title="[initial_description.date_tooltip] UTC">[initial_description.date_string][initial_description.date_relative]</span>
       [# Note: initial issue description cannot have come via email]
+      [if-any page_perms.EditIssue]
+      <div style="float:right; margin-right:.3em; text-align:right" class="ichcommands">
+        <a href="#" id="edit-desc-btn">Edit description</a>
+      </div>
+      [end][# page_perms.EditIssue]
   </td>
   <td align="center" nowrap="nowrap" class="issueheader">
    [if-any back_to_list_url]
@@ -165,6 +170,70 @@ runOnLoad(function() {
   _fetchUserProjects(false);
 
   _onload();
+
+  function showDescription(n, changeSelect) {
+    for (var i = 1; i <= descCt; i++)
+      $('d' + i).style.display = 'none';
+    if (changeSelect)
+      $('description-select').selectedIndex = n - 1;
+    if (n) {
+      $('d' + n).style.display = '';
+      getParams.desc = n;
+      if (window.history && history.replaceState)
+        history.replaceState('', '', makeQueryString(getParams));
+    }
+  }
+
+  [if-any multiple_descriptions]
+  var descCt = parseInt($('description-select').getAttribute('data-ct'));
+
+  var getParams = function() {
+    var params = {};
+    var query = window.location.search,
+        re = /[?&]?([^=]+)=([^&]*)/g,
+        tokens;
+    while (tokens = re.exec(query))
+      params[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2]);
+    return params;
+  }();
+
+  for (var i = 1; i <= descCt; i++) {
+    if ($('desc-link' + i)) {
+      $('desc-link' + i).addEventListener('click', function(event) {
+        var linkClicked = this.getAttribute('data-num');
+        showDescription(linkClicked, true);
+      });
+    }
+  }
+
+  if (getParams.hasOwnProperty('desc')) {
+    showDescription(getParams.desc, true);
+  } else {
+    showDescription(descCt, true);
+  }
+
+  function makeQueryString (params) {
+    return '?' + Object.keys(params).map(function (key) {
+      return encodeURIComponent(key) + '=' + encodeURIComponent(params[[]key]);
+    }).join('&');
+  }
+
+  $('description-select').addEventListener('change', function(event) {
+    showDescription(this.value);
+  });
+  [else]
+  var descCt = 1;
+  [end][# multiple_descriptions]
+
+  [if-any page_perms.EditIssue]
+  $('edit-desc-btn').addEventListener('click', function (event) {
+    showDescription(0); // hide all descriptions
+    $('edit-desc-btn').style.display = 'none';
+    if ($('description-select'))
+      $('description-select').style.display = 'none';
+    $('desc_update_form').style.display = '';
+  });
+  [end][# page_perms.EditIssue]
 
   function delComment(sequence_num, delete_mode) {
     var r = true;

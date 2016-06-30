@@ -75,9 +75,9 @@ ParsedUsers = collections.namedtuple(
 ParsedBlockers = collections.namedtuple(
     'ParsedBlockers', 'entered_str, iids, dangling_refs')
 ParsedIssue = collections.namedtuple(
-    'ParsedIssue', 'summary, comment, status, users, labels, '
+    'ParsedIssue', 'summary, comment, is_description, status, users, labels, '
     'labels_remove, components, fields, template_name, attachments, '
-    'blocked_on, blocking')
+    'kept_attachments, blocked_on, blocking')
 
 
 def ParseIssueRequest(cnxn, post_data, services, errors, default_project_name):
@@ -97,6 +97,7 @@ def ParseIssueRequest(cnxn, post_data, services, errors, default_project_name):
   """
   summary = post_data.get('summary', '')
   comment = post_data.get('comment', '')
+  is_description = bool(post_data.get('description', ''))
   status = post_data.get('status', '')
   template_name = post_data.get('template_name', '')
   component_str = post_data.get('components', '')
@@ -110,6 +111,7 @@ def ParseIssueRequest(cnxn, post_data, services, errors, default_project_name):
   parsed_fields = _ParseIssueRequestFields(post_data)
   # TODO(jrobbins): change from numbered fields to a multi-valued field.
   attachments = _ParseIssueRequestAttachments(post_data)
+  kept_attachments = _ParseIssueRequestKeptAttachments(post_data)
   parsed_users = _ParseIssueRequestUsers(cnxn, post_data, services)
   parsed_blocked_on = _ParseBlockers(
       cnxn, post_data, services, errors, default_project_name, BLOCKED_ON)
@@ -117,9 +119,9 @@ def ParseIssueRequest(cnxn, post_data, services, errors, default_project_name):
       cnxn, post_data, services, errors, default_project_name, BLOCKING)
 
   parsed_issue = ParsedIssue(
-      summary, comment, status, parsed_users, labels, labels_remove,
-      parsed_components, parsed_fields, template_name, attachments,
-      parsed_blocked_on, parsed_blocking)
+      summary, comment, is_description, status, parsed_users, labels,
+      labels_remove, parsed_components, parsed_fields, template_name,
+      attachments, kept_attachments, parsed_blocked_on, parsed_blocking)
   return parsed_issue
 
 
@@ -181,6 +183,19 @@ def _ParseIssueRequestAttachments(post_data):
           filecontent.GuessContentTypeFromFilename(item.filename)))
 
   return attachments
+
+
+def _ParseIssueRequestKeptAttachments(post_data):
+  """Extract attachment ids for attachments kept when updating description
+  
+  Args:
+    post_data: dict w/ values from the user's HTTP POST form data.
+    
+  Returns:
+    a list of attachment ids for kept attachments
+  """
+  kept_attachments = post_data.getall('keep-attachment')
+  return [int(aid) for aid in kept_attachments]
 
 
 def _ParseIssueRequestUsers(cnxn, post_data, services):

@@ -93,7 +93,11 @@ td.issueheader { background: #e5ecf9; }
     text-decoration: none;
 }
 
-.issuecomment:hover .ichcommands a {
+.issueheader .ichcommands a {
+    color: #555;
+}
+
+.issuecomment:hover .ichcommands a, .issueheader:hover .ichcommands a {
     text-decoration: underline;
 }
 

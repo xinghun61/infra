@@ -322,6 +322,9 @@ class IssueCommentView(template_helpers.PBProxy):
         comment_pb.timestamp, old_format=timestr.MONTH_DAY_FMT)
     self.date_relative = timestr.FormatRelativeDate(comment_pb.timestamp)
     self.date_tooltip = time.asctime(time_tuple)
+    self.date_yyyymmdd = timestr.FormatAbsoluteDate(
+        comment_pb.timestamp, recent_format=timestr.MONTH_DAY_YEAR_FMT,
+        old_format=timestr.MONTH_DAY_YEAR_FMT)
     self.text_runs = _ParseTextRuns(comment_pb.content)
     if autolink:
       self.text_runs = autolink.MarkupAutolinks(

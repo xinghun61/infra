@@ -194,7 +194,7 @@ class IssueDetail(issuepeek.IssuePeek):
           [issue.issue_id])     
 
     with self.profiler.Phase('finishing getting comments and pagination'):
-      (description, visible_comments,
+      (descriptions, visible_comments,
        cmnt_pagination) = self._PaginatePartialComments(mr, issue)
 
     with self.profiler.Phase('making user views'):
@@ -202,16 +202,16 @@ class IssueDetail(issuepeek.IssuePeek):
           mr.cnxn, self.services.user,
           tracker_bizobj.UsersInvolvedInIssues([issue]),
           tracker_bizobj.UsersInvolvedInCommentList(
-              [description] + visible_comments))
+              descriptions + visible_comments))
       framework_views.RevealAllEmailsToMembers(mr, users_by_id)
 
     issue_flaggers, comment_flaggers = [], {}
     if issue_spam_promise:
       issue_flaggers, comment_flaggers = issue_spam_promise.WaitAndGetValue()
 
-    (issue_view, description_view,
+    (issue_view, description_views,
      comment_views) = self._MakeIssueAndCommentViews(
-         mr, issue, users_by_id, description, visible_comments, config,
+         mr, issue, users_by_id, descriptions, visible_comments, config,
          issue_flaggers, comment_flaggers)
 
     with self.profiler.Phase('getting starring info'):
@@ -279,7 +279,10 @@ class IssueDetail(issuepeek.IssuePeek):
         'issue_tab_mode': 'issueDetail',
         'issue': issue_view,
         'title_summary': issue_view.summary,  # used in <head><title>
-        'description': description_view,
+        'initial_description': description_views[0],
+        'descriptions': description_views,
+        'num_descriptions': len(description_views),
+        'multiple_descriptions': ezt.boolean(len(description_views) > 1),
         'comments': comment_views,
         'num_detail_rows': len(comment_views) + 4,
         'noisy': ezt.boolean(tracker_helpers.IsNoisy(
@@ -376,10 +379,8 @@ class IssueDetail(issuepeek.IssuePeek):
     abbr_comment_rows = self.services.issue.GetAbbrCommentsForIssue(
           mr.cnxn, issue.issue_id)
     if not abbr_comment_rows:
-      return None, [], None
+      return [], [], None
 
-    # TODO(lukasperaza): Show last description comment as description
-    description = abbr_comment_rows[0]
     comments = abbr_comment_rows[1:]
     all_comment_ids = [row[0] for row in comments]
 
@@ -393,13 +394,32 @@ class IssueDetail(issuepeek.IssuePeek):
     if pagination.last == 1 and pagination.start == len(all_comment_ids):
       pagination.visible = ezt.boolean(False)
 
-    visible_comment_ids = [description[0]] + all_comment_ids[
-        pagination.last - 1:pagination.start]
-    visible_comment_seqs = [0] + range(pagination.last, pagination.start + 1)
+    visible_comment_ids = all_comment_ids[pagination.last - 1:pagination.start]
+    visible_comment_seqs = range(pagination.last, pagination.start + 1)
     visible_comments = self.services.issue.GetCommentsByID(
           mr.cnxn, visible_comment_ids, visible_comment_seqs)
 
-    return visible_comments[0], visible_comments[1:], pagination
+    # TODO(lukasperaza): update first comments to is_description=TRUE
+    # so [abbr_comment_rows[0][0]] can be removed
+    description_ids = list(set([abbr_comment_rows[0][0]] +
+                           [row[0] for row in abbr_comment_rows if row[3]]))
+    description_seqs = [0]
+    for i, abbr_comment in enumerate(comments):
+      if abbr_comment[3]:
+        description_seqs.append(i + 1)
+    # TODO(lukasperaza): only get descriptions which haven't been deleted
+    descriptions = self.services.issue.GetCommentsByID(
+          mr.cnxn, description_ids, description_seqs)
+
+    for i, desc in enumerate(descriptions):
+      desc.description_num = str(i + 1)
+    visible_descriptions = [d for d in descriptions
+                            if d.id in visible_comment_ids]
+    desc_comments = [d for d in visible_comments if d.id in description_ids]
+    for i, comment in enumerate(desc_comments):
+      comment.description_num = visible_descriptions[i].description_num
+
+    return descriptions, visible_comments, pagination
 
 
   def _ValidateOwner(self, mr, post_data_owner, parsed_owner_id,
@@ -551,6 +571,7 @@ class IssueDetail(issuepeek.IssuePeek):
     # the current values in the issue rather than whatever strings were parsed.
     labels = parsed.labels
     summary = parsed.summary
+    is_description = parsed.is_description
     status = parsed.status
     owner_id = parsed.users.owner_id
     cc_ids = parsed.users.cc_ids
@@ -563,6 +584,7 @@ class IssueDetail(issuepeek.IssuePeek):
     dangling_blocking_refs = [tracker_bizobj.MakeDanglingIssueRef(*ref)
                               for ref in parsed.blocking.dangling_refs]
     if not permit_edit:
+      is_description = False
       labels = issue.labels
       field_values = issue.field_values
       component_ids = issue.component_ids
@@ -602,7 +624,8 @@ class IssueDetail(issuepeek.IssuePeek):
             blocked_on_iids, blocking_iids, dangling_blocked_on_refs,
             dangling_blocking_refs, merge_into_iid,
             page_gen_ts=page_generation_time, comment=parsed.comment,
-            attachments=parsed.attachments)
+            is_description=is_description, attachments=parsed.attachments,
+            kept_attachments=parsed.kept_attachments if is_description else [])
         self.services.project.UpdateRecentActivity(
             mr.cnxn, mr.project.project_id)
 

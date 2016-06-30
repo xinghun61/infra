@@ -1233,7 +1233,7 @@ class IssueService(object):
       component_ids, blocked_on, blocking, dangling_blocked_on_refs,
       dangling_blocking_refs, merged_into, index_now=True,
       page_gen_ts=None, comment=None, inbound_message=None, attachments=None,
-      is_description=False, timestamp=None):
+      kept_attachments=None, is_description=False, timestamp=None):
     """Update the issue in the database and return info for notifications.
 
     Args:
@@ -1264,6 +1264,9 @@ class IssueService(object):
       attachments: This should be a list of
           [(filename, contents, mimetype),...] attachments uploaded at
           the time the comment was made.
+      kept_attachments: This should be a list of int attachment ids for
+          attachments kept from previous descriptions, if the comment is
+          a change to the issue description
       is_description: True if the comment is a new description for the issue.
       timestamp: int timestamp set during testing, otherwise defaults to
           int(time.time()).
@@ -1496,7 +1499,7 @@ class IssueService(object):
           cnxn, project_id, local_id, reporter_id, comment,
           amendments=amendments, attachments=attachments,
           inbound_message=inbound_message, is_spam=is_spam,
-          is_description=is_description)
+          is_description=is_description, kept_attachments=kept_attachments)
       services.spam.RecordClassifierCommentVerdict(
           cnxn, comment_pb, is_spam, score)
     else:
@@ -2146,8 +2149,8 @@ class IssueService(object):
 
   def _MakeIssueComment(
       self, project_id, user_id, content, inbound_message=None,
-      amendments=None, attachments=None, timestamp=None, was_escaped=False,
-      is_spam=False, is_description=False):
+      amendments=None, attachments=None, kept_attachments=None, timestamp=None,
+      was_escaped=False, is_spam=False, is_description=False):
     """Create in IssueComment protocol buffer in RAM.
 
     Args:
@@ -2160,6 +2163,8 @@ class IssueService(object):
           metadata changes that the user made along w/ comment.
       attachments: [(filename, contents, mimetype),...] attachments uploaded at
           the time the comment was made.
+      kept_attachments: list of Attachment PBs for attachments kept from
+          previous descriptions, if the comment is a description
       timestamp: time at which the comment was made, defaults to now.
       was_escaped: True if the comment was HTML escaped already.
       is_spam: True if the comment was classified as spam.
@@ -2199,12 +2204,22 @@ class IssueService(object):
         comment.attachments.extend([attach])
         logging.info("Save attachment with object_id: %s" % gcs_object_id)
 
+    if kept_attachments:
+      for kept_attach in kept_attachments:
+        (filename, filesize, mimetype, deleted,
+         gcs_object_id) = kept_attach[3:]
+        new_attach = tracker_pb2.Attachment(
+            filename=filename, filesize=filesize, mimetype=mimetype,
+            deleted=bool(deleted), gcs_object_id=gcs_object_id)
+        comment.attachments.append(new_attach)
+        logging.info("Copy attachment with object_id: %s" % gcs_object_id)
+
     return comment
 
   def CreateIssueComment(
       self, cnxn, project_id, local_id, user_id, content, inbound_message=None,
-      amendments=None, attachments=None, timestamp=None, is_spam=False,
-      is_description=False, commit=True):
+      amendments=None, attachments=None, kept_attachments=None, timestamp=None,
+      is_spam=False, is_description=False, commit=True):
     """Create and store a new comment on the specified issue.
 
     Args:
@@ -2219,6 +2234,8 @@ class IssueService(object):
           metadata changes that the user made along w/ comment.
       attachments: [(filename, contents, mimetype),...] attachments uploaded at
           the time the comment was made.
+      kept_attachments: list of attachment ids for attachments kept from
+          previous descriptions, if the comment is an update to the description
       timestamp: time at which the comment was made, defaults to now.
       is_spam: True if the comment is classified as spam.
       is_description: True if the comment is a description for the issue.
@@ -2233,14 +2250,21 @@ class IssueService(object):
     """
     issue = self.GetIssueByLocalID(cnxn, project_id, local_id)
 
+    if is_description:
+      kept_attachments = self.GetAttachmentsByID(cnxn, kept_attachments)
+    else:
+      kept_attachments = []
+
     comment = self._MakeIssueComment(
         issue.project_id, user_id, content, amendments=amendments,
         inbound_message=inbound_message, attachments=attachments,
-        timestamp=timestamp, is_spam=is_spam, is_description=is_description)
+        timestamp=timestamp, is_spam=is_spam, is_description=is_description,
+        kept_attachments=kept_attachments)
     comment.issue_id = issue.issue_id
 
-    if attachments:
-      issue.attachment_count = issue.attachment_count + len(attachments)
+    if attachments or kept_attachments:
+      issue.attachment_count = (
+          issue.attachment_count + len(attachments) + len(kept_attachments))
       self.UpdateIssue(cnxn, issue, update_cols=['attachment_count'])
 
     self.InsertComment(cnxn, comment, commit=commit)
@@ -2323,6 +2347,22 @@ class IssueService(object):
         return attachment, comment_id, issue_id
 
     raise NoSuchAttachmentException()
+
+  def GetAttachmentsByID(self, cnxn, attachment_ids):
+    """Return all Attachment PBs by attachment ids.
+
+    Args:
+      cnxn: connection to SQL database.
+      attachment_ids: a list of comment ids.
+
+    Returns:
+      A list of the Attachment protocol buffers for the attachments with
+      these ids.
+    """
+    attachment_rows = self.attachment_tbl.Select(
+        cnxn, cols=ATTACHMENT_COLS, id=attachment_ids)
+
+    return attachment_rows
 
   def _UpdateAttachment(self, cnxn, attach, update_cols=None):
     """Update attachment metadata in the DB.

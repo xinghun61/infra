@@ -1,0 +1,14 @@
+[# This template part renders important hidden fields for issue update forms.
+]
+
+<input type="hidden" name="_charset_" value="">
+<input type="hidden" name="token" value="[form_token]">
+<input type="hidden" name="id" value="[issue.local_id]">
+<input type="hidden" name="can" value="[can]">
+<input type="hidden" name="q" value="[query]">
+<input type="hidden" name="colspec" value="[colspec]">
+<input type="hidden" name="sort" value="[sortspec]">
+<input type="hidden" name="groupby" value="[groupby]">
+<input type="hidden" name="start" value="[start]">
+<input type="hidden" name="num" value="[num]">
+<input type="hidden" name="pagegen" value="[pagegen]">

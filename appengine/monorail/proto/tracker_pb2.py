@@ -172,7 +172,7 @@ class IssueComment(messages.Message):
   if there is no IssueComment with is_description=True; otherwise, the
   IssueComment with is_description=True and the highest timestamp is
   the issue description.
-  Next available tag: 53
+  Next available tag: 54
   """
   id = messages.IntegerField(32)
   # Issue ID of the issue that was commented on.
@@ -210,7 +210,9 @@ class IssueComment(messages.Message):
   inbound_message = messages.StringField(28)
 
   is_spam = messages.BooleanField(51, default=False)
+
   is_description = messages.BooleanField(52, default=False)
+  description_num = messages.StringField(53)
 
 class SavedQuery(messages.Message):
   """Store a saved query, for either a project or a user."""

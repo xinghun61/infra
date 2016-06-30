@@ -114,11 +114,21 @@ var TKR_nextFileID = 1;
  * Function to dynamically create a new attachment upload field add
  * insert it into the page DOM.
  * @param {string} id The id of the parent HTML element.
+ *
+ * TODO(lukasperaza): use different nextFileID for separate forms on same page,
+ *  e.g. issue update form and issue description update form
  */
-function TKR_addAttachmentFields(id) {
+function TKR_addAttachmentFields(id, attachprompt_id,
+    attachafile_id, attachmaxsize_id) {
   if (TKR_nextFileID >= 16) {
     return;
   }
+  if (typeof attachprompt_id === 'undefined')
+    attachprompt_id = TKR_ATTACHPROMPT_ID;
+  if (typeof attachafile_id === 'undefined')
+    attachafile_id = TKR_ATTACHAFILE_ID;
+  if (typeof attachmaxsize_id === 'undefined')
+    attachmaxsize_id = TKR_ATTACHMAXSIZE_ID;
   var el = $(id);
   el.style.marginTop = '4px';
   var div = document.createElement('div');
@@ -135,7 +145,7 @@ function TKR_addAttachmentFields(id) {
   removeLink.addEventListener('click', function(event) {
           console.log(arguments);
           var target = event.target;
-          $('attachafile').focus();
+          $(attachafile_id).focus();
           target.parentNode.parentNode.removeChild(target.parentNode);
           event.preventDefault();
       });
@@ -143,11 +153,11 @@ function TKR_addAttachmentFields(id) {
   el.querySelector('input').focus();
   ++TKR_nextFileID;
   if (TKR_nextFileID < 16) {
-    $(TKR_ATTACHAFILE_ID).innerText = 'Attach another file';
+    $(attachafile_id).innerText = 'Attach another file';
   } else {
-    $(TKR_ATTACHPROMPT_ID).style.display = 'none';
+    $(attachprompt_id).style.display = 'none';
   }
-  $(TKR_ATTACHMAXSIZE_ID).style.display = '';
+  $(attachmaxsize_id).style.display = '';
 }
 
 

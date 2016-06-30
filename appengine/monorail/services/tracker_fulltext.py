@@ -114,6 +114,7 @@ def _CreateIssueSearchDocuments(
         ' '.join(field_values),
         ' '.join(tracker_bizobj.GetLabels(issue)))
     assert comments, 'issues should always have at least the description'
+    # TODO(lukasperaza): index most recent description instead of initial
     description = _ExtractCommentText(comments[0], users_by_id)
     description = description[:framework_constants.MAX_FTS_FIELD_SIZE]
     all_comments = ' '. join(
