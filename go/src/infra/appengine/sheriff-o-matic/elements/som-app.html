@@ -135,7 +135,7 @@
                 Chromium sheriffs: you now need to handle WebKit bot failures too. <a href="http://www.chromium.org/blink/sheriffing" target="_blank">More information</a>.
               </div>
             </div>
-            <div id="noAlerts" hidden$="[[_haveAlerts]]">
+            <div id="noAlerts" hidden$="[[_hideNoAlerts]]">
               No alerts!
               <br>
               <img src="/images/jparent-jump.gif" alt="Julie Jumping" title="Julie Jumping">
@@ -259,9 +259,13 @@
           type: Boolean,
           computed: '_computeFetchingAlerts(_activeRequests)',
         },
-        _haveAlerts: {
+        _fetchedAlerts: {
           type: Boolean,
-          computed: '_computeHaveAlerts(_alerts)',
+          value: function() { return false; },
+        },
+        _hideNoAlerts: {
+          type: Boolean,
+          computed: '_computeHideNoAlerts(_alerts, _fetchedAlerts, _tree)',
         },
         _hideWebkitNotice: {
           type: Boolean,
@@ -350,7 +354,7 @@
       },
 
       _computeAlertsGroups: function(tree, trees) {
-        if (tree === '' || tree in this._staticPages) {
+        if (tree === '' || tree in this._staticPages || Object.keys(trees).length == 0) {
           return [];
         }
 
@@ -432,20 +436,22 @@
       },
 
       _alertsGroupsChanged: function(alertsGroups) {
-        this.set('_activeRequests', this._activeRequests + alertsGroups.length);
-        this.set('_alertsData', {});
+        if (alertsGroups.length > 0) {
+          this.set('_fetchedAlerts', false);
+          this.set('_activeRequests', this._activeRequests + alertsGroups.length);
 
-        // TODO: handle webpage offline throwing an exception
-        alertsGroups.forEach((group) => {
-          fetch('/api/v1/alerts/' + group, {credentials: 'include'}).then((response) => {
-            // TODO: handle alerts not found
-            this.set('_activeRequests', this._activeRequests - 1);
-            return response.json();
-          }).then( (json) => {
-            this.set(['_alertsData', this._alertGroupVarName(group)], json.alerts);
-            this.set(['_alertsTimes', this._alertGroupVarName(group)], json.timestamp);
+          // TODO: handle webpage offline throwing an exception
+          alertsGroups.forEach((group) => {
+            let foo = fetch('/api/v1/alerts/' + group, {credentials: 'include'}).then((response) => {
+              // TODO: handle alerts not found
+              this.set('_activeRequests', this._activeRequests - 1);
+              return response.json();
+            }).then( (json) => {
+              this.set(['_alertsData', this._alertGroupVarName(group)], json.alerts);
+              this.set(['_alertsTimes', this._alertGroupVarName(group)], json.timestamp);
+            });
           });
-        });
+        }
       },
 
       _alertGroupVarName(group) {
@@ -491,12 +497,13 @@
         // (if we did refresh)
         setTimeout(() => {
           this.$.mainHeaderPanel.$.mainContainer.scrollTop = this._refreshPosition;
+          this.set('_fetchedAlerts', true);
         }, 50);
         return allAlerts;
       },
 
-      _computeHaveAlerts: function(alerts) {
-        if (!alerts) {
+      _computeHideNoAlerts: function(alerts, fetchedAlerts, tree) {
+        if (!fetchedAlerts || !alerts || tree === "") {
           return true;
         }
         return alerts.length > 0;
