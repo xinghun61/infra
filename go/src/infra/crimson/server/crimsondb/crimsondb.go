@@ -45,10 +45,44 @@ func IPStringToHexString(ip string) (string, error) {
 	return "0x" + hex.EncodeToString(ipb), nil
 }
 
+// MacAddrStringToHexString turns a mac address into a hex string.
+func MacAddrStringToHexString(macAddr string) (string, error) {
+	mac, err := net.ParseMAC(macAddr)
+	if err != nil {
+		return "", err
+	}
+	return "0x" + hex.EncodeToString(mac), nil
+}
+
+// HexStringToHardwareAddr turns an hex string into a hardware address.
+func HexStringToHardwareAddr(hexMac string) (net.HardwareAddr, error) {
+	// 6 bytes in hex + leading '0x'
+	if len(hexMac) < 14 {
+		err := fmt.Errorf("parsing of hex string failed (too short: %d characters)",
+			len(hexMac))
+		return net.HardwareAddr{}, err
+	}
+	if hexMac[:2] != "0x" {
+		return net.HardwareAddr{}, fmt.Errorf("parsing of hex string failed: %s", hexMac)
+	}
+	hwAddrRaw, err := hex.DecodeString(hexMac[2:])
+	if err != nil {
+		return net.HardwareAddr{}, err
+	}
+	hwAddr := make(net.HardwareAddr, len(hwAddrRaw))
+	for n := 0; n < len(hwAddrRaw); n++ {
+		hwAddr[n] = hwAddrRaw[n]
+	}
+	return hwAddr, nil
+}
+
 // HexStringToIP converts an hex string returned by MySQL into a net.IP structure.
-func HexStringToIP(hexIP string) net.IP {
+func HexStringToIP(hexIP string) (net.IP, error) {
 	// TODO(pgervais): Add decent error checking. Ex: check hexIP starts with '0x'.
-	ip, _ := hex.DecodeString(hexIP[2:])
+	ip, err := hex.DecodeString(hexIP[2:])
+	if err != nil {
+		return net.IP{}, err
+	}
 	length := 4
 	if len(ip) > 4 {
 		length = 16
@@ -57,7 +91,7 @@ func HexStringToIP(hexIP string) net.IP {
 	for n := 1; n <= len(ip); n++ {
 		netIP[length-n] = ip[len(ip)-n]
 	}
-	return netIP
+	return netIP, nil
 }
 
 // scanIPRanges is a low-level function to scan sql results.
@@ -67,14 +101,24 @@ func scanIPRanges(ctx context.Context, rows *sql.Rows) ([]IPRange, error) {
 
 	for rows.Next() {
 		var startIP, endIP string
+		var ip net.IP
 		ipRange := IPRange{}
 		err := rows.Scan(&ipRange.Site, &ipRange.Vlan, &startIP, &endIP)
 		if err != nil { // Users can't trigger that.
 			logging.Errorf(ctx, "%s", err)
 			return nil, err
 		}
-		ipRange.StartIP = HexStringToIP(startIP).String()
-		ipRange.EndIP = HexStringToIP(endIP).String()
+		ip, err = HexStringToIP(startIP)
+		if err != nil {
+			return nil, err
+		}
+		ipRange.StartIP = ip.String()
+
+		ip, err = HexStringToIP(endIP)
+		if err != nil {
+			return nil, err
+		}
+		ipRange.EndIP = ip.String()
 		ipRanges = append(ipRanges, ipRange)
 	}
 	err := rows.Err()
