@@ -295,6 +295,8 @@ def _ProcessLabelIDCond(cond, alias, _user_alias):
       'Issue2Label AS {alias} ON Issue.id = {alias}.issue_id AND '
       'Issue.shard = {alias}.issue_shard'.format(alias=alias))
   field_type, field_values = _GetFieldTypeAndValues(cond)
+  if not field_values and cond.op == ast_pb2.QueryOp.NE:
+    return [], []
   cond_str, cond_args = _Compare(
       alias, ast_pb2.QueryOp.EQ, field_type, 'label_id', field_values)
   left_joins = [(join_str + ' AND ' + cond_str, cond_args)]

@@ -378,7 +378,13 @@ class AST2SelectTest(unittest.TestCase):
         [('(Issue.status_id = %s OR Issue.derived_status_id = %s)', [2, 2])],
         where)
 
-  def testProcessLabelIDCond(self):
+  def testProcessLabelIDCond_NoValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['label_id']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [])
+    with self.assertRaises(ast2select.NoPossibleResults):
+      ast2select._ProcessLabelIDCond(cond, 'Cond1', 'User1')
+
+  def testProcessLabelIDCond_SingleValue(self):
     fd = BUILTIN_ISSUE_FIELDS['label_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1])
     left_joins, where = ast2select._ProcessLabelIDCond(cond, 'Cond1', 'User1')
@@ -389,6 +395,52 @@ class AST2SelectTest(unittest.TestCase):
         left_joins)
     self.assertEqual(
         [('Cond1.label_id IS NOT NULL', [])],
+        where)
+
+  def testProcessLabelIDCond_MultipleValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['label_id']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1, 2])
+    left_joins, where = ast2select._ProcessLabelIDCond(cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('Issue2Label AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Issue.shard = Cond1.issue_shard AND '
+          'Cond1.label_id IN (%s,%s)', [1, 2])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.label_id IS NOT NULL', [])],
+        where)
+
+  def testProcessLabelIDCond_NegatedNoValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['label_id']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [])
+    left_joins, where = ast2select._ProcessLabelIDCond(cond, 'Cond1', 'User1')
+    self.assertEqual([], left_joins)
+    self.assertEqual([], where)
+
+  def testProcessLabelIDCond_NegatedSingleValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['label_id']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1])
+    left_joins, where = ast2select._ProcessLabelIDCond(cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('Issue2Label AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Issue.shard = Cond1.issue_shard AND '
+          'Cond1.label_id = %s', [1])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.label_id IS NULL', [])],
+        where)
+
+  def testProcessLabelIDCond_NegatedMultipleValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['label_id']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1, 2])
+    left_joins, where = ast2select._ProcessLabelIDCond(cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('Issue2Label AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Issue.shard = Cond1.issue_shard AND '
+          'Cond1.label_id IN (%s,%s)', [1, 2])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.label_id IS NULL', [])],
         where)
 
   def testProcessComponentIDCond(self):
