@@ -44,8 +44,10 @@ TEMPLATE_PATH = framework_constants.TEMPLATE_PATH
 MAX_EMAIL_BODY_SIZE = 45000
 
 
+# TODO(jrobbins): remove project_id and local_id after we have deployed
+# a version that needs only issue_id.
 def PrepareAndSendIssueChangeNotification(
-    issue_id, project_id, local_id, hostport, commenter_id, seq_num,
+    issue_id, _project_id, _local_id, hostport, commenter_id, seq_num,
     send_email=True, old_owner_id=framework_constants.NO_USER_SPECIFIED):
   """Create a task to notify users that an issue has changed.
 
@@ -63,31 +65,34 @@ def PrepareAndSendIssueChangeNotification(
   Returns nothing.
   """
   params = dict(
-      issue_id=issue_id, project_id=project_id, id=local_id,
-      commenter_id=commenter_id, seq=seq_num, hostport=hostport,
-      old_owner_id=old_owner_id, send_email=int(send_email))
+      issue_id=issue_id, commenter_id=commenter_id, seq=seq_num,
+      hostport=hostport, old_owner_id=old_owner_id, send_email=int(send_email))
   logging.info('adding notify task with params %r', params)
   taskqueue.add(url=urls.NOTIFY_ISSUE_CHANGE_TASK + '.do', params=params)
 
 
+# TODO(jrobbins): remove project_id and local_id after we have deployed
+# a version that needs only issue_id.
 def PrepareAndSendIssueBlockingNotification(
-    issue_id, project_id, hostport, local_id, delta_blocker_iids,
+    issue_id, _project_id, hostport, _local_id, delta_blocker_iids,
     commenter_id, send_email=True):
   """Create a task to follow up on an issue blocked_on change."""
   if not delta_blocker_iids:
     return  # No notification is needed
 
   params = dict(
-      issue_id=issue_id, project_id=project_id, id=local_id,
-      commenter_id=commenter_id, hostport=hostport, send_email=int(send_email),
+      issue_id=issue_id, commenter_id=commenter_id, hostport=hostport,
+      send_email=int(send_email),
       delta_blocker_iids=','.join(str(iid) for iid in delta_blocker_iids))
 
   logging.info('adding blocking task with params %r', params)
   taskqueue.add(url=urls.NOTIFY_BLOCKING_CHANGE_TASK + '.do', params=params)
 
 
+# TODO(jrobbins): remove project_id and local_ids after we have deployed
+# a version that needs only issue_id.
 def SendIssueBulkChangeNotification(
-    issue_ids, hostport, project_id, local_ids, old_owner_ids,
+    issue_ids, hostport, _project_id, _local_ids, old_owner_ids,
     comment_text, commenter_id, amendments, send_email, users_by_id):
   """Create a task to follow up on an issue blocked_on change."""
   amendment_lines = []
@@ -100,9 +105,7 @@ def SendIssueBulkChangeNotification(
 
   params = dict(
       issue_ids=','.join(str(iid) for iid in issue_ids),
-      project_id=project_id, commenter_id=commenter_id,
-      hostport=hostport, send_email=int(send_email),
-      ids=','.join(str(lid) for lid in local_ids),
+      commenter_id=commenter_id, hostport=hostport, send_email=int(send_email),
       old_owner_ids=','.join(str(uid) for uid in old_owner_ids),
       comment_text=comment_text, amendments='\n'.join(amendment_lines))
 
@@ -178,12 +181,11 @@ class NotifyIssueChangeTask(NotifyTaskBase):
       The main goal is the side-effect of sending emails.
     """
     issue_id = mr.GetPositiveIntParam('issue_id')
-    project_id = mr.specified_project_id
-    if project_id is None:
+    if not issue_id:
       return {
           'params': {},
           'notified': [],
-          'message': 'Cannot proceed without a valid project ID.',
+          'message': 'Cannot proceed without a valid issue ID.',
       }
     commenter_id = mr.GetPositiveIntParam('commenter_id')
     seq_num = mr.seq
@@ -192,16 +194,14 @@ class NotifyIssueChangeTask(NotifyTaskBase):
     old_owner_id = mr.GetPositiveIntParam('old_owner_id')
     send_email = bool(mr.GetIntParam('send_email'))
     params = dict(
-        issue_id=issue_id, project_id=project_id, local_id=mr.local_id,
-        commenter_id=commenter_id,
+        issue_id=issue_id, commenter_id=commenter_id,
         seq_num=seq_num, hostport=hostport, old_owner_id=old_owner_id,
         omit_ids=omit_ids, send_email=send_email)
 
     logging.info('issue change params are %r', params)
-    project = self.services.project.GetProject(mr.cnxn, project_id)
-    config = self.services.config.GetProjectConfig(mr.cnxn, project_id)
-    issue = self.services.issue.GetIssueByLocalID(
-        mr.cnxn, project_id, mr.local_id)
+    issue = self.services.issue.GetIssue(mr.cnxn, issue_id)
+    project = self.services.project.GetProject(mr.cnxn, issue.project_id)
+    config = self.services.config.GetProjectConfig(mr.cnxn, issue.project_id)
 
     if issue.is_spam:
       # Don't send email for spam issues.
@@ -416,12 +416,11 @@ class NotifyBlockingChangeTask(NotifyTaskBase):
       The main goal is the side-effect of sending emails.
     """
     issue_id = mr.GetPositiveIntParam('issue_id')
-    project_id = mr.specified_project_id
-    if project_id is None:
+    if not issue_id:
       return {
           'params': {},
           'notified': [],
-          'message': 'Cannot proceed without a valid project ID.',
+          'message': 'Cannot proceed without a valid issue ID.',
       }
     commenter_id = mr.GetPositiveIntParam('commenter_id')
     omit_ids = [commenter_id]
@@ -429,14 +428,12 @@ class NotifyBlockingChangeTask(NotifyTaskBase):
     delta_blocker_iids = mr.GetIntListParam('delta_blocker_iids')
     send_email = bool(mr.GetIntParam('send_email'))
     params = dict(
-        issue_id=issue_id,
-        project_id=project_id, local_id=mr.local_id, commenter_id=commenter_id,
+        issue_id=issue_id, commenter_id=commenter_id,
         hostport=hostport, delta_blocker_iids=delta_blocker_iids,
         omit_ids=omit_ids, send_email=send_email)
 
     logging.info('blocking change params are %r', params)
-    issue = self.services.issue.GetIssueByLocalID(
-        mr.cnxn, project_id, mr.local_id)
+    issue = self.services.issue.GetIssue(mr.cnxn, issue_id)
     if issue.is_spam:
       return {
         'params': params,
@@ -596,34 +593,31 @@ class NotifyBulkChangeTask(NotifyTaskBase):
     """
     issue_ids = mr.GetIntListParam('issue_ids')
     hostport = mr.GetParam('hostport')
-    project_id = mr.specified_project_id
-    if project_id is None:
+    if not issue_ids:
       return {
           'params': {},
           'notified': [],
-          'message': 'Cannot proceed without a valid project ID.',
+          'message': 'Cannot proceed without a valid issue IDs.',
       }
 
-    local_ids = mr.local_id_list
     old_owner_ids = mr.GetIntListParam('old_owner_ids')
     comment_text = mr.GetParam('comment_text')
     commenter_id = mr.GetPositiveIntParam('commenter_id')
     amendments = mr.GetParam('amendments')
     send_email = bool(mr.GetIntParam('send_email'))
     params = dict(
-        issue_ids=issue_ids,
-        project_id=project_id, local_ids=mr.local_id_list,
-        commenter_id=commenter_id, hostport=hostport,
+        issue_ids=issue_ids, commenter_id=commenter_id, hostport=hostport,
         old_owner_ids=old_owner_ids, comment_text=comment_text,
         send_email=send_email, amendments=amendments)
 
     logging.info('bulk edit params are %r', params)
+    issues = self.services.issue.GetIssues(mr.cnxn, issue_ids)
     # TODO(jrobbins): For cross-project bulk edits, prefetch all relevant
-    # projects and configs and pass a dict of them to subroutines.
+    # projects and configs and pass a dict of them to subroutines.  For
+    # now, all issue must be in the same project.
+    project_id = issues[0].project_id
     project = self.services.project.GetProject(mr.cnxn, project_id)
     config = self.services.config.GetProjectConfig(mr.cnxn, project_id)
-    issues = self.services.issue.GetIssuesByLocalIDs(
-        mr.cnxn, project_id, local_ids)
     issues = [issue for issue in issues if not issue.is_spam]
     anon_perms = permissions.GetPermissions(None, set(), project)
 

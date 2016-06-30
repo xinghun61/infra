@@ -27,6 +27,7 @@ def MakeTestIssue(project_id, local_id, owner_id, reporter_id, is_spam=False):
   issue = tracker_pb2.Issue()
   issue.project_id = project_id
   issue.local_id = local_id
+  issue.issue_id = 1000 * project_id + local_id
   issue.owner_id = owner_id
   issue.reporter_id = reporter_id
   issue.is_spam = is_spam
@@ -49,8 +50,8 @@ class SendNotificationTest(unittest.TestCase):
   def testPrepareAndSendIssueChangeNotification(self):
     notify.PrepareAndSendIssueChangeNotification(
         issue_id=78901,
-        project_id=789,
-        local_id=1,
+        _project_id=789,
+        _local_id=1,
         hostport='testbed-test.appspotmail.com',
         commenter_id=1,
         seq_num=0,
@@ -64,9 +65,9 @@ class SendNotificationTest(unittest.TestCase):
   def testPrepareAndSendIssueBlockingNotification(self):
     notify.PrepareAndSendIssueBlockingNotification(
         issue_id=78901,
-        project_id=789,
+        _project_id=789,  # TODO(jrobbins): remove all _ params.
         hostport='testbed-test.appspotmail.com',
-        local_id=1,
+        _local_id=1,
         delta_blocker_iids=[],
         commenter_id=1,
         send_email=True)
@@ -77,9 +78,9 @@ class SendNotificationTest(unittest.TestCase):
 
     notify.PrepareAndSendIssueBlockingNotification(
         issue_id=78901,
-        project_id=789,
+        _project_id=789,
         hostport='testbed-test.appspotmail.com',
-        local_id=1,
+        _local_id=1,
         delta_blocker_iids=[2],
         commenter_id=1,
         send_email=True)
@@ -92,8 +93,8 @@ class SendNotificationTest(unittest.TestCase):
     notify.SendIssueBulkChangeNotification(
         issue_ids=[78901],
         hostport='testbed-test.appspotmail.com',
-        project_id=789,
-        local_ids=[1],
+        _project_id=789,
+        _local_ids=[1],
         old_owner_ids=[2],
         comment_text='comment',
         commenter_id=1,
@@ -113,8 +114,8 @@ class SendNotificationTest(unittest.TestCase):
     notify.SendIssueBulkChangeNotification(
         issue_ids=[78901],
         hostport='testbed-test.appspotmail.com',
-        project_id=789,
-        local_ids=[1],
+        _project_id=789,
+        _local_ids=[1],
         old_owner_ids=[2],
         comment_text='comment',
         commenter_id=1,
@@ -169,24 +170,23 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.services.project.TestAddProject(
         'test-project', owner_ids=[1, 3],
         project_id=12345)
-    issue1 = MakeTestIssue(
+    self.issue1 = MakeTestIssue(
         project_id=12345, local_id=1, owner_id=2, reporter_id=1)
-    self.services.issue.TestAddIssue(issue1)
+    self.services.issue.TestAddIssue(self.issue1)
 
   def VerifyParams(self, result, params):
     self.assertEqual(
         bool(params['send_email']), result['params']['send_email'])
-    if 'id' in params:
-      self.assertEqual(params['id'], result['params']['local_id'])
-    if 'ids' in params:
-      self.assertEqual([int(p) for p in params['ids'].split(',')],
-                       result['params']['local_ids'])
-    self.assertEqual(params['project_id'], result['params']['project_id'])
+    if 'issue_id' in params:
+      self.assertEqual(params['issue_id'], result['params']['issue_id'])
+    if 'issue_ids' in params:
+      self.assertEqual([int(p) for p in params['issue_ids'].split(',')],
+                       result['params']['issue_ids'])
 
   def testNotifyIssueChangeTask(self):
     task = notify.NotifyIssueChangeTask(
         request=None, response=None, services=self.services)
-    params = {'send_email': 1, 'project_id': 12345, 'id': 1, 'seq': 0,
+    params = {'send_email': 1, 'issue_id': 12345001, 'seq': 0,
               'commenter_id': 2}
     mr = testing_helpers.MakeMonorailRequest(
         user_info={'user_id': 1},
@@ -203,7 +203,7 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.services.issue.TestAddIssue(issue)
     task = notify.NotifyIssueChangeTask(
         request=None, response=None, services=self.services)
-    params = {'send_email': 0, 'project_id': 12345, 'id': 1, 'seq': 0,
+    params = {'send_email': 0, 'issue_id': issue.issue_id, 'seq': 0,
               'commenter_id': 2}
     mr = testing_helpers.MakeMonorailRequest(
         user_info={'user_id': 1},
@@ -219,8 +219,9 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.services.issue.TestAddIssue(issue2)
     task = notify.NotifyBlockingChangeTask(
         request=None, response=None, services=self.services)
-    params = {'send_email': 1, 'project_id': 12345, 'id': 1, 'seq': 0,
-              'delta_blocker_iids': 2, 'commenter_id': 1}
+    params = {
+        'send_email': 1, 'issue_id': issue2.issue_id, 'seq': 0,
+        'delta_blocker_iids': 2, 'commenter_id': 1}
     mr = testing_helpers.MakeMonorailRequest(
         user_info={'user_id': 1},
         params=params,
@@ -236,8 +237,9 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.services.issue.TestAddIssue(issue2)
     task = notify.NotifyBlockingChangeTask(
         request=None, response=None, services=self.services)
-    params = {'send_email': 1, 'project_id': 12345, 'id': 1, 'seq': 0,
-              'delta_blocker_iids': 2, 'commenter_id': 1}
+    params = {
+        'send_email': 1, 'issue_id': issue2.issue_id, 'seq': 0,
+        'delta_blocker_iids': 2, 'commenter_id': 1}
     mr = testing_helpers.MakeMonorailRequest(
         user_info={'user_id': 1},
         params=params,
@@ -253,8 +255,10 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.services.issue.TestAddIssue(issue2)
     task = notify.NotifyBulkChangeTask(
         request=None, response=None, services=self.services)
-    params = {'send_email': 1, 'project_id': 12345, 'ids': '1,2,3', 'seq': 0,
-              'old_owner_ids': '1,1', 'commenter_id': 1}
+    params = {
+        'send_email': 1, 'seq': 0, 
+        'issue_ids': '%d,%d' % (self.issue1.issue_id, issue2.issue_id),
+        'old_owner_ids': '1,1', 'commenter_id': 1}
     mr = testing_helpers.MakeMonorailRequest(
         user_info={'user_id': 1},
         params=params,
@@ -283,8 +287,11 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.services.issue.TestAddIssue(issue2)
     task = notify.NotifyBulkChangeTask(
         request=None, response=None, services=self.services)
-    params = {'send_email': 1, 'project_id': 12345, 'ids': '1,2', 'seq': 0,
-              'old_owner_ids': '1,1', 'commenter_id': 1}
+    params = {
+        'send_email': 1,
+        'issue_ids': '%d,%d' % (self.issue1.issue_id, issue2.issue_id),
+        'seq': 0,
+        'old_owner_ids': '1,1', 'commenter_id': 1}
     mr = testing_helpers.MakeMonorailRequest(
         user_info={'user_id': 1},
         params=params,
