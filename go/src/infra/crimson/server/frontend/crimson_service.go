@@ -57,3 +57,17 @@ func (s *crimsonService) ReadIPRange(ctx context.Context, req *crimson.IPRangeQu
 	}
 	return &ret, nil
 }
+
+func (s *crimsonService) CreateHost(ctx context.Context, req *crimson.HostList) (*crimson.HostStatus, error) {
+	err := crimsondb.InsertHost(ctx, req)
+	return &crimson.HostStatus{}, userErrorToGRPCError(err)
+}
+
+func (s *crimsonService) ReadHost(ctx context.Context, req *crimson.HostQuery) (*crimson.HostList, error) {
+	rows, err := crimsondb.SelectHost(ctx, req)
+
+	if err == nil {
+		return rows, nil
+	}
+	return nil, userErrorToGRPCError(err)
+}

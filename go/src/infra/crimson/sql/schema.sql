@@ -9,6 +9,15 @@
 CREATE TABLE ip_range (
   site varchar(20) NOT NULL,
   vlan varchar(20),
-  start_ip varbinary(16) NOT NULL,
-  end_ip varbinary(16) NOT NULL
+  start_ip varchar(34) NOT NULL,
+  end_ip varchar(34) NOT NULL
+) ENGINE=INNODB;
+
+CREATE TABLE host (
+  site varchar(20) NOT NULL,
+  hostname varchar(63) NOT NULL,
+  mac_addr varchar(14) NOT NULL,
+  ip varchar(34) NOT NULL,
+  boot_class varchar(20),
+  PRIMARY KEY (mac_addr)
 ) ENGINE=INNODB;

@@ -30,3 +30,19 @@ func (s *DecoratedCrimson) ReadIPRange(c context.Context, req *IPRangeQuery) (*I
 	}
 	return s.Service.ReadIPRange(c, req)
 }
+
+func (s *DecoratedCrimson) CreateHost(c context.Context, req *HostList) (*HostStatus, error) {
+	c, err := s.Prelude(c, "CreateHost", req)
+	if err != nil {
+		return nil, err
+	}
+	return s.Service.CreateHost(c, req)
+}
+
+func (s *DecoratedCrimson) ReadHost(c context.Context, req *HostQuery) (*HostList, error) {
+	c, err := s.Prelude(c, "ReadHost", req)
+	if err != nil {
+		return nil, err
+	}
+	return s.Service.ReadHost(c, req)
+}

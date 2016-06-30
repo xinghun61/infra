@@ -396,3 +396,169 @@ func TestInsertIPRange(t *testing.T) {
 		})
 	})
 }
+
+func TestInsertHost(t *testing.T) {
+	t.Parallel()
+	Convey("InsertHost", t, func() {
+		ctx := context.Background()
+		db, conn := sqlmock.NewMockDB()
+		ctx = UseDB(ctx, db)
+
+		Convey("with one host, generates the correct queries.", func() {
+			err := InsertHost(ctx,
+				&crimson.HostList{
+					Hosts: []*crimson.Host{{
+						Site:      "site0",
+						Hostname:  "hostname0",
+						MacAddr:   "01:23:45:67:89:ab",
+						Ip:        "1.2.3.20",
+						BootClass: "linux"}}})
+
+			query, err := conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected := ("INSERT INTO host (site, hostname, mac_addr, ip, boot_class) " +
+				"VALUES (?, ?, ?, ?, ?)")
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble,
+				[]driver.Value{
+					"site0",
+					"hostname0",
+					"0x0123456789ab",
+					"0x01020314",
+					"linux"})
+		})
+	})
+}
+
+func TestSelectHost(t *testing.T) {
+	t.Parallel()
+	Convey("SelectHost", t, func() {
+		ctx := context.Background()
+		db, conn := sqlmock.NewMockDB()
+		ctx = UseDB(ctx, db)
+
+		Convey("given a site generates a correct query", func() {
+			_, err := SelectHost(ctx,
+				&crimson.HostQuery{
+					Site: "site0",
+				})
+
+			query, err := conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected := ("SELECT site, hostname, mac_addr, ip, boot_class " +
+				"FROM host\nWHERE site=?")
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{"site0"})
+		})
+
+		Convey("given a site and a boot class generates a correct query", func() {
+			_, err := SelectHost(ctx,
+				&crimson.HostQuery{
+					Site:      "site0",
+					BootClass: "cls",
+				})
+
+			query, err := conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected := ("SELECT site, hostname, mac_addr, ip, boot_class " +
+				"FROM host\nWHERE site=?\nAND boot_class=?")
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{"site0", "cls"})
+		})
+
+		Convey("with all filters generates a correct query", func() {
+			_, err := SelectHost(ctx,
+				&crimson.HostQuery{
+					Site:      "site0",
+					Hostname:  "hostname0",
+					MacAddr:   "01:23:45:67:89:ab",
+					Ip:        "1.23.45.67",
+					BootClass: "cls",
+				})
+
+			query, err := conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected := ("SELECT site, hostname, mac_addr, ip, boot_class " +
+				"FROM host\nWHERE site=?\nAND hostname=?\nAND mac_addr=?\nAND ip=?" +
+				"\nAND boot_class=?")
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{"site0", "hostname0",
+				"0x0123456789ab", "0x01172d43", "cls"})
+		})
+
+		Convey("given a boot class and a limit generates a correct query", func() {
+			_, err := SelectHost(ctx,
+				&crimson.HostQuery{
+					Limit:     10,
+					BootClass: "cls",
+				})
+
+			query, err := conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected := ("SELECT site, hostname, mac_addr, ip, boot_class " +
+				"FROM host\nWHERE boot_class=?\nLIMIT ?")
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{"cls", int64(10)})
+		})
+
+		Convey("given a limit generates a correct query", func() {
+			_, err := SelectHost(ctx,
+				&crimson.HostQuery{
+					Limit: 10})
+
+			query, err := conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected := ("SELECT site, hostname, mac_addr, ip, boot_class " +
+				"FROM host\nLIMIT ?")
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{int64(10)})
+		})
+
+		Convey("parses resulting row properly", func() {
+			So(conn.PushRows([][]driver.Value{
+				{"site0", "hostname0", "0x0123456789ab", "0x01234567", "linux"}}),
+				ShouldBeNil)
+			hostList, err := SelectHost(ctx,
+				&crimson.HostQuery{
+					Limit: 10})
+
+			query, err := conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected := ("SELECT site, hostname, mac_addr, ip, boot_class " +
+				"FROM host\nLIMIT ?")
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{int64(10)})
+
+			So(hostList.Hosts[0], ShouldResemble,
+				&crimson.Host{
+					Site:      "site0",
+					Hostname:  "hostname0",
+					MacAddr:   "01:23:45:67:89:ab",
+					Ip:        "1.35.69.103",
+					BootClass: "linux"})
+		})
+		Convey("parses resulting row with NULL properly", func() {
+			So(conn.PushRows([][]driver.Value{
+				{"site0", "hostname0", "0x0123456789ab", "0x01234567", nil}}),
+				ShouldBeNil)
+			hostList, err := SelectHost(ctx,
+				&crimson.HostQuery{
+					Limit: 10})
+
+			query, err := conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected := ("SELECT site, hostname, mac_addr, ip, boot_class " +
+				"FROM host\nLIMIT ?")
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{int64(10)})
+
+			So(hostList.Hosts[0], ShouldResemble,
+				&crimson.Host{
+					Site:      "site0",
+					Hostname:  "hostname0",
+					MacAddr:   "01:23:45:67:89:ab",
+					Ip:        "1.35.69.103",
+					BootClass: ""})
+		})
+	})
+}

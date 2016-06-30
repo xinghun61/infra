@@ -275,6 +275,210 @@ func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) ([]IPRange, e
 	return ipRanges, nil
 }
 
+// scanHosts is a low-level function to scan sql results.
+// Rows must contain site, hostname, mac_addr, ip, boot_class in that order.
+func scanHosts(ctx context.Context, rows *sql.Rows) (*crimson.HostList, error) {
+	hostList := crimson.HostList{}
+
+	for rows.Next() {
+		var ipString, macString string
+		var hw net.HardwareAddr
+		var ip net.IP
+		var bootClass sql.NullString
+
+		host := crimson.Host{}
+		err := rows.Scan(&host.Site, &host.Hostname, &macString, &ipString,
+			&bootClass)
+		if bootClass.Valid {
+			host.BootClass = bootClass.String
+		}
+		if err != nil { // Users can't trigger that.
+			logging.Errorf(ctx, "%s", err)
+			return nil, err
+		}
+		if macString != "" {
+			hw, err = HexStringToHardwareAddr(macString)
+			if err != nil {
+				return nil, err
+			}
+			host.MacAddr = hw.String()
+		}
+
+		if ipString != "" {
+			ip, err = HexStringToIP(ipString)
+			if err != nil {
+				return nil, err
+			}
+			host.Ip = ip.String()
+		}
+		hostList.Hosts = append(hostList.Hosts, &host)
+	}
+	err := rows.Err()
+	if err != nil {
+		logging.Errorf(ctx, "%s", err)
+		return nil, err
+	}
+	return &hostList, nil
+}
+
+// InsertHost adds new hosts in the corresponding table.
+func InsertHost(ctx context.Context, req *crimson.HostList) (err error) {
+	db := DB(ctx)
+
+	if len(req.Hosts) == 0 {
+		logging.Errorf(ctx, "Received empty list of hosts to create.")
+		return UserErrorf(InvalidArgument,
+			"Received empty list of hosts to create.")
+	}
+
+	statement := bytes.Buffer{}
+	params := []interface{}{}
+
+	statement.WriteString("INSERT INTO host " +
+		"(site, hostname, mac_addr, ip, boot_class) VALUES ")
+	delimiter := ""
+
+	// Check that all required fields have been provided.
+	// TODO(pgervais): autogenerate missing values instead.
+	for i, host := range req.Hosts {
+		if host.Site == "" {
+			err = UserErrorf(InvalidArgument,
+				"Received empty host in entry #%s", i+1)
+			return
+		}
+		if host.MacAddr == "" {
+			err = UserErrorf(InvalidArgument,
+				"Received empty MAC address in entry #%s", i+1)
+			return
+		}
+		if host.Ip == "" {
+			err = UserErrorf(InvalidArgument,
+				"Received empty IP address in entry #%s", i+1)
+			return
+		}
+		if host.Hostname == "" {
+			err = UserErrorf(InvalidArgument,
+				"Received empty hostname in entry #%s", i+1)
+			return
+		}
+
+		// Compose query
+		var ip, macAddr string
+		statement.WriteString(delimiter)
+		delimiter = ", \n"
+		statement.WriteString("(?, ?, ?, ?, ?)")
+
+		ip, err = IPStringToHexString(host.Ip)
+		if err != nil {
+			return
+		}
+
+		macAddr, err = MacAddrStringToHexString(host.MacAddr)
+		if err != nil {
+			return
+		}
+
+		if host.BootClass == "" {
+			params = append(
+				params,
+				host.Site, host.Hostname, macAddr, ip, nil)
+		} else {
+			params = append(
+				params,
+				host.Site, host.Hostname, macAddr, ip, host.BootClass)
+		}
+	}
+
+	_, err = db.Exec(statement.String(), params...)
+	if err != nil {
+		logging.Errorf(ctx, "Insertion of new hosts failed. %s", err)
+		return
+	}
+
+	return
+}
+
+func SelectHost(ctx context.Context, req *crimson.HostQuery) (*crimson.HostList, error) {
+	var err error
+
+	db := DB(ctx)
+	delimiter := ""
+
+	statement := bytes.Buffer{}
+	params := []interface{}{}
+
+	statement.WriteString("SELECT site, hostname, mac_addr, ip, boot_class FROM host")
+	delimiter = "\nWHERE "
+
+	if req.Site != "" {
+		statement.WriteString(delimiter)
+		delimiter = "\nAND "
+		statement.WriteString("site=?")
+		params = append(params, req.Site)
+	}
+
+	if req.Hostname != "" {
+		statement.WriteString(delimiter)
+		delimiter = "\nAND "
+		statement.WriteString("hostname=?")
+		params = append(params, req.Hostname)
+	}
+
+	if req.MacAddr != "" {
+		statement.WriteString(delimiter)
+		delimiter = "\nAND "
+		hw, err := MacAddrStringToHexString(req.MacAddr)
+		if err != nil {
+			return nil, UserErrorf(
+				InvalidArgument,
+				"parsing of Mac address failed: %s", req.MacAddr)
+		}
+		statement.WriteString("mac_addr=?")
+		params = append(params, hw)
+	}
+
+	if req.Ip != "" {
+		statement.WriteString(delimiter)
+		delimiter = "\nAND "
+		ip, err := IPStringToHexString(req.Ip)
+		if err != nil {
+			return nil, UserErrorf(
+				InvalidArgument,
+				"parsing of IP address failed: %s", req.Ip)
+		}
+		statement.WriteString("ip=?")
+		params = append(params, ip)
+	}
+
+	if req.BootClass != "" {
+		statement.WriteString(delimiter)
+		delimiter = "\nAND "
+		statement.WriteString("boot_class=?")
+		params = append(params, req.BootClass)
+	}
+
+	if req.Limit > 0 {
+		statement.WriteString("\nLIMIT ?")
+		params = append(params, req.Limit)
+	}
+
+	sqlRows, err := db.Query(statement.String(), params...)
+
+	if err != nil {
+		logging.Errorf(ctx, "%s", err)
+		return nil, err
+	}
+	defer sqlRows.Close()
+
+	var rows *crimson.HostList
+	rows, err = scanHosts(ctx, sqlRows)
+	if err != nil {
+		logging.Errorf(ctx, "%s", err)
+		return nil, err
+	}
+	return rows, nil
+}
+
 // UseDB stores a db handle into a context.
 func UseDB(ctx context.Context, db *sql.DB) context.Context {
 	return context.WithValue(ctx, "dbHandle", db)

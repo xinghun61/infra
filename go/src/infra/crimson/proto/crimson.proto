@@ -9,6 +9,9 @@ package crimson;
 service Crimson {
   rpc CreateIPRange (IPRange) returns (IPRangeStatus) {}
   rpc ReadIPRange (IPRangeQuery) returns (IPRanges) {}
+
+  rpc CreateHost (HostList) returns (HostStatus) {}
+  rpc ReadHost (HostQuery) returns (HostList) {}
 }
 
 message IPRanges {
@@ -31,4 +34,27 @@ message IPRangeQuery {
   string vlan = 2;
   uint32 limit = 3;
   string ip = 4;
+}
+
+message Host {
+  string site = 1;
+  string hostname = 2;
+  string mac_addr = 3;
+  string ip = 4;
+  string boot_class = 5;
+}
+
+message HostList {
+  repeated Host hosts = 1;
+}
+
+message HostStatus { }
+
+message HostQuery {
+  uint32 limit = 1;
+  string site = 2;
+  string hostname = 3;
+  string mac_addr = 4;
+  string ip = 5;
+  string boot_class = 6;
 }
