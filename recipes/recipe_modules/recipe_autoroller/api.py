@@ -257,11 +257,11 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
           commit_message += '\nTBR=%s\n' % ','.join(TRIVIAL_ROLL_TBR_EMAILS)
       else:
         upload_args = ['--send-mail', '--cq-dry-run']
-      upload_args.extend(['--bypass-hooks', '-f', '-m', commit_message])
+      upload_args.extend(['--bypass-hooks', '-f'])
       upload_args.extend([
           '--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller'])
-      self.m.git(
-          'cl', 'upload', *upload_args, name='git cl upload', cwd=workdir)
+      self.m.git_cl.upload(
+          commit_message, upload_args, name='git cl upload', cwd=workdir)
       issue_result = self.m.git(
           'cl', 'issue',
           name='git cl issue', stdout=self.m.raw_io.output(),

@@ -287,15 +287,14 @@
   },
   {
     "cmd": [
-      "git",
-      "cl",
+      "RECIPE_PACKAGE_REPO[depot_tools]/git_cl.py",
       "upload",
       "--use-commit-queue",
       "--bypass-hooks",
       "-f",
-      "-m",
-      "Rebase",
-      "--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller"
+      "--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller",
+      "--message-file",
+      "Rebase"
     ],
     "cwd": "[TMP_BASE]/roll_build_tmp_2",
     "name": "build.git cl upload",

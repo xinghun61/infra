@@ -5,6 +5,7 @@ DEPS = [
 
   'depot_tools/gclient',
   'depot_tools/git',
+  'depot_tools/git_cl',
 
   'recipe_engine/json',
   'recipe_engine/path',
