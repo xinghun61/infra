@@ -180,6 +180,25 @@ class RepoService(object):
     return package_key(package_name).get()
 
   @ndb.transactional
+  def modify_package(self, package_name, callback):
+    """Fetches a package, calls the callback, puts it back.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      callback: func(package_entity) -> (True to save; False to skip saving).
+
+    Returns:
+      Package (modified by the callback) or None if no such package.
+    """
+    assert is_valid_package_name(package_name), package_name
+    pkg = self.get_package(package_name)
+    if not pkg:
+      return None
+    if callback(pkg):
+      pkg.put()
+    return pkg
+
+  @ndb.transactional
   def delete_package(self, package_name):
     """Deletes a package along with all its instances.
 
@@ -245,12 +264,13 @@ class RepoService(object):
       return False
     return True
 
-  def list_packages(self, dir_path, recursive):
+  def list_packages(self, dir_path, recursive, show_hidden=False):
     """Returns lists of package names and directory names with the given prefix.
 
     Args:
       dir_path: string directory from which to list packages.
       recursive: boolean whether to list contents of subdirectories.
+      show_hidden: if True, will also return hidden packages.
 
     Returns:
       [package name, ...], [directory name, ...]
@@ -271,8 +291,10 @@ class RepoService(object):
                   Package.key <= ndb.Key(Package, dir_path + u'\uffff')))
     pkgs = []
     dirs = set()
-    for key in query.iter(keys_only=True):
-      pkg = key.string_id()
+    for entity in query.iter():
+      if entity.hidden and not show_hidden:
+        continue
+      pkg = entity.key.string_id()
 
       # In case the index is stale since this is an eventual consistent query.
       if not pkg.startswith(dir_path):  # pragma: no cover
@@ -836,10 +858,16 @@ class Package(ndb.Model):
 
   Id is a package name.
   """
+  # Disable useless in-memory per-request cache. It's harmful in tests.
+  _use_cache = False
+
   # Who registered the package.
   registered_by = auth.IdentityProperty()
   # When the package was registered.
   registered_ts = ndb.DateTimeProperty()
+
+  # If True, the package won't show up in listings, see 'list_packages'.
+  hidden = ndb.BooleanProperty()
 
   @property
   def package_name(self):
@@ -853,6 +881,9 @@ class PackageInstance(ndb.Model):
   ID is package instance ID (SHA1 hex digest of package body).
   Parent entity is Package(id=package_name).
   """
+  # Disable useless in-memory per-request cache. It's harmful in tests.
+  _use_cache = False
+
   # Who registered the instance.
   registered_by = auth.IdentityProperty()
   # When the instance was registered.
@@ -897,6 +928,9 @@ class PackageRef(ndb.Model):
 
   ID is a reference name, parent entity is corresponding Package.
   """
+  # Disable useless in-memory per-request cache. It's harmful in tests.
+  _use_cache = False
+
   # PackageInstance the ref points to.
   instance_id = ndb.StringProperty()
   # Who added or moved this reference.
@@ -940,6 +974,9 @@ class InstanceTag(ndb.Model):
     * PackageInstance entity is fetched pretty often, no need to pull all tags
       all the time.
   """
+  # Disable useless in-memory per-request cache. It's harmful in tests.
+  _use_cache = False
+
   # The tag itself, as key:value string.
   tag = ndb.StringProperty()
   # Who added this tag.
@@ -980,6 +1017,9 @@ class ProcessingResult(ndb.Model):
   Entity ID is a processor name used to extract it. Parent entity is
   PackageInstance the information was extracted from.
   """
+  # Disable useless in-memory per-request cache. It's harmful in tests.
+  _use_cache = False
+
   # When the entity was created.
   created_ts = ndb.DateTimeProperty()
   # True if finished successfully, False if failed.

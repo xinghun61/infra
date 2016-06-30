@@ -44,6 +44,7 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
         'package_name': 'good/name',
         'registered_by': 'user:abc@example.com',
         'registered_ts': '1388534400000000',
+        'hidden': False,
       },
       'status': 'SUCCESS',
     }, resp.json_body)
@@ -65,6 +66,7 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
         'package_name': 'good/name',
         'registered_by': 'user:abc@example.com',
         'registered_ts': '1388534400000000',
+        'hidden': False,
       },
       'refs': [
         {
@@ -92,6 +94,59 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
     self.assertEqual({
       'status': 'ERROR',
       'error_message': 'Invalid package name',
+    }, resp.json_body)
+
+  def test_hide_package_ok(self):
+    self.register_fake_instance('good/name')
+    resp = self.call_api('hide_package', {'package_name': 'good/name'})
+    self.assertEqual({
+      'status': 'SUCCESS',
+      'package': {
+        'hidden': True,
+        'package_name': 'good/name',
+        'registered_by': 'user:abc@example.com',
+        'registered_ts': '1388534400000000',
+      },
+    }, resp.json_body)
+
+  def test_hide_package_no_access(self):
+    self.register_fake_instance('good/name')
+    self.mock(api.acl, 'can_modify_hidden', lambda *_: False)
+    with self.call_should_fail(403):
+      self.call_api('hide_package', {'package_name': 'good/name'})
+
+  def test_hide_package_no_such_package(self):
+    resp = self.call_api('hide_package', {'package_name': 'good/name'})
+    self.assertEqual({'status': 'PACKAGE_NOT_FOUND'}, resp.json_body)
+
+  def test_hide_package_already_hidden(self):
+    self.register_fake_instance('good/name')
+    self.call_api('hide_package', {'package_name': 'good/name'})
+    resp = self.call_api('hide_package', {'package_name': 'good/name'})
+    self.assertEqual({
+      'status': 'SUCCESS',
+      'package': {
+        'hidden': True,
+        'package_name': 'good/name',
+        'registered_by': 'user:abc@example.com',
+        'registered_ts': '1388534400000000',
+      },
+    }, resp.json_body)
+
+  # Test only basic unhide_package case, the implementation is identical to
+  # hide_package, already tested above.
+  def test_unhide_package_ok(self):
+    self.register_fake_instance('good/name')
+    self.call_api('hide_package', {'package_name': 'good/name'}) # hide first
+    resp = self.call_api('unhide_package', {'package_name': 'good/name'})
+    self.assertEqual({
+      'status': 'SUCCESS',
+      'package': {
+        'hidden': False,
+        'package_name': 'good/name',
+        'registered_by': 'user:abc@example.com',
+        'registered_ts': '1388534400000000',
+      },
     }, resp.json_body)
 
   def test_delete_package_ok(self):

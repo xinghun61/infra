@@ -60,6 +60,7 @@ class Package(messages.Message):
   package_name = messages.StringField(1, required=True)
   registered_by = messages.StringField(2, required=True)
   registered_ts = messages.IntegerField(3, required=True)
+  hidden = messages.BooleanField(4, required=True)
 
 
 def package_to_proto(entity):
@@ -67,7 +68,8 @@ def package_to_proto(entity):
   return Package(
       package_name=entity.package_name,
       registered_by=entity.registered_by.to_bytes(),
-      registered_ts=utils.datetime_to_timestamp(entity.registered_ts))
+      registered_ts=utils.datetime_to_timestamp(entity.registered_ts),
+      hidden=bool(entity.hidden)) # None and False are not the same in protorpc
 
 
 class PackageInstance(messages.Message):
@@ -223,8 +225,8 @@ def processors_protos(instance):
 ################################################################################
 
 
-class FetchPackageResponse(messages.Message):
-  """Results of fetchPackage call."""
+class PackageResponse(messages.Message):
+  """Results of fetchPackage, hidePackage and unhidePackage calls."""
   status = messages.EnumField(Status, 1, required=True)
   error_message = messages.StringField(2, required=False)
 
@@ -590,7 +592,7 @@ class PackageRepositoryApi(remote.Service):
           message_types.VoidMessage,
           package_name=messages.StringField(1, required=True),
           with_refs=messages.BooleanField(2, required=False)),
-      FetchPackageResponse,
+      PackageResponse,
       http_method='GET',
       path='package',
       name='fetchPackage')
@@ -611,15 +613,66 @@ class PackageRepositoryApi(remote.Service):
     if request.with_refs:
       refs = self.service.query_package_refs(package_name)
 
-    return FetchPackageResponse(
+    return PackageResponse(
         package=package_to_proto(pkg),
         refs=[package_ref_to_proto(r) for r in refs])
+
+
+  @endpoints_method(
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_name=messages.StringField(1, required=True)),
+      PackageResponse,
+      http_method='POST',
+      path='package/hidden',
+      name='hidePackage')
+  @auth.public  # ACL check is inside
+  def hide_package(self, request):
+    """Marks the package as hidden, it disappears from listPackages output."""
+    return self.set_package_hidden(request.package_name, True)
+
+
+  @endpoints_method(
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_name=messages.StringField(1, required=True)),
+      PackageResponse,
+      http_method='DELETE',
+      path='package/hidden',
+      name='unhidePackage')
+  @auth.public  # ACL check is inside
+  def unhide_package(self, request):
+    """Marks the package as visible, the reverse of hidePackage."""
+    return self.set_package_hidden(request.package_name, False)
+
+
+  def set_package_hidden(self, package_name, hidden):
+    """Common implementation for hide_package and unhide_package."""
+    package_name = validate_package_name(package_name)
+
+    caller = auth.get_current_identity()
+    if not acl.can_modify_hidden(package_name, caller):
+      raise auth.AuthorizationError()
+
+    def mutation(pkg):
+      if pkg.hidden == hidden:
+        return False
+      pkg.hidden = hidden
+      return True
+
+    pkg = self.service.modify_package(package_name, mutation)
+    if pkg is None:
+      raise PackageNotFoundError()
+
+    return PackageResponse(package=package_to_proto(pkg))
+
 
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
           path=messages.StringField(1, required=False),
-          recursive=messages.BooleanField(2, required=False)),
+          recursive=messages.BooleanField(2, required=False),
+          show_hidden=messages.BooleanField(3, required=False)),
       ListPackagesResponse,
       http_method='GET',
       path='package/search',
@@ -629,8 +682,9 @@ class PackageRepositoryApi(remote.Service):
     """Returns packages in the given directory and possibly subdirectories."""
     path = request.path or ''
     recursive = request.recursive or False
+    show_hidden = request.show_hidden or False
 
-    pkgs, dirs = self.service.list_packages(path, recursive)
+    pkgs, dirs = self.service.list_packages(path, recursive, show_hidden)
     caller = auth.get_current_identity()
     visible_pkgs = [p for p in pkgs if acl.can_fetch_package(p, caller)]
     visible_dirs = [d for d in dirs if acl.can_fetch_package(d, caller)]

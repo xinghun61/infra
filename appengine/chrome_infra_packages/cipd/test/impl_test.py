@@ -180,6 +180,66 @@ class TestRepoService(testing.AppengineTestCase):
     self.assertEqual((['good/sub/path'], ['good', 'good/sub']),
                      self.service.list_packages('', True))
 
+  def test_list_packages_with_hidden_packages(self):
+    self.assertIsNone(self.service.get_package('a/b'))
+    self.assertIsNone(self.service.get_package('a/c'))
+    self.register_fake_instance('a/b')
+    self.register_fake_instance('a/c')
+
+    # Both are visible initially.
+    self.assertEqual(
+        (['a/b', 'a/c'], []),
+        self.service.list_packages('a/', False, False))
+
+    def mutation(pkg):
+      pkg.hidden = True
+      return True
+    self.service.modify_package('a/c', mutation)
+
+    # 'a/c' is no longer visible.
+    self.assertEqual(
+        (['a/b'], []),
+        self.service.list_packages('a/', False, False))
+
+    # Unless asked to show hidden packages.
+    self.assertEqual(
+        (['a/b', 'a/c'], []),
+        self.service.list_packages('a/', False, True))
+
+  def test_modify_package_ok(self):
+    self.register_fake_instance('a/b')
+    pkg = self.service.get_package('a/b')
+    self.assertFalse(pkg.hidden)
+
+    def mutation(pkg):
+      pkg.hidden = True
+      return True
+    pkg = self.service.modify_package('a/b', mutation)
+    self.assertTrue(pkg.hidden)
+
+    pkg = self.service.get_package('a/b')
+    self.assertTrue(pkg.hidden)
+
+  def test_modify_package_unchanged(self):
+    self.register_fake_instance('a/b')
+    pkg = self.service.get_package('a/b')
+    self.assertFalse(pkg.hidden)
+
+    def mutation(pkg):
+      pkg.hidden = True
+      return False
+    pkg = self.service.modify_package('a/b', mutation)
+    self.assertTrue(pkg.hidden) # returns whatever 'mutation' did
+
+    pkg = self.service.get_package('a/b')
+    self.assertFalse(pkg.hidden) # the change wasn't persisted though
+
+  def test_modify_package_missing(self):
+    def mutation(_):
+      return False # pragma: no cover
+    pkg = self.service.modify_package('a/b', mutation)
+    self.assertIsNone(pkg)
+
   def test_register_instance_new(self):
     self.assertIsNone(self.service.get_instance('a/b', 'a'*40))
     self.assertIsNone(self.service.get_package('a/b'))

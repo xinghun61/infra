@@ -69,6 +69,8 @@ can_detach_tag = lambda package_path, tag, ident: is_writer(package_path, ident)
 can_fetch_acl = is_owner
 # Changing ACLs.
 can_modify_acl = is_owner
+# Changing 'hidden' flag.
+can_modify_hidden = is_owner
 
 
 ################################################################################
