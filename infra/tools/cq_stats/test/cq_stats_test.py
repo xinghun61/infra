@@ -678,6 +678,8 @@ class TestCQStats(auto_stub.TestCase):  # pragma: no cover
     stats_set['end'] = args.date + datetime.timedelta(days=7)
     stats_set['requested_begin'] = stats_set['begin']
     stats_set['requested_end'] = stats_set['end']
+    stats_set['attempt-false-reject-count'] = 4
+    stats_set['committed-patchsets-attempt-count'] = 6
 
     stats_set['patch_stats'].update({
         (123, 1): {
@@ -692,11 +694,11 @@ class TestCQStats(auto_stub.TestCase):  # pragma: no cover
             },
         },
         (456, 1): {
-            'attempts': 1,
+            'attempts': 2,
             'false-rejections': 1,
             'infra-false-rejections': 0,
             'rejections': 1,
-            'committed': False,
+            'committed': True,
             'patchset-duration': 7200,
             'patchset-duration-wallclock': 7200,
             'failed-jobs-details': {
@@ -704,11 +706,11 @@ class TestCQStats(auto_stub.TestCase):  # pragma: no cover
             },
         },
         (789, 1): {
-            'attempts': 3,
+            'attempts': 4,
             'false-rejections': 2,
             'infra-false-rejections': 1,
             'rejections': 3,
-            'committed': False,
+            'committed': True,
             'patchset-duration': 7200,
             'patchset-duration-wallclock': 7200,
             'failed-jobs-details': {

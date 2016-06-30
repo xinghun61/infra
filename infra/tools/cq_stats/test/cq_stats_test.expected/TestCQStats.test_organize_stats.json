@@ -17,6 +17,7 @@
   "attempt-reject-count": 0,
   "begin": "2014-11-04T22:00:00",
   "commit-false": [],
+  "committed-patchsets-attempt-count": 0,
   "end": "2014-11-04T22:30:00",
   "failed-checkout": [],
   "failed-commit": [],

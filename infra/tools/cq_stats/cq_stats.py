@@ -426,6 +426,7 @@ def default_stats():  # pragma: no cover
       'issue-count': 0,
       'patchset-count': 0,
       'attempt-count': 0,
+      'committed-patchsets-attempt-count': 0,
       'patch_stats': {},
       'patchset-false-reject-count': 0,  # Deprecated stats?
       'attempt-reject-count': 0,  # Num. of rejected attempts
@@ -538,6 +539,9 @@ def _derive_stats_from_patch_stats(stats):  # pragma: no cover
       patch_stats[p]['false-rejections'] for p in patch_stats)
   stats['attempt-reject-count'] = sum(
       patch_stats[p]['rejections'] for p in patch_stats)
+  stats['committed-patchsets-attempt-count'] = sum(
+      patch_stats[p]['attempts'] for p in patch_stats
+      if patch_stats[p]['committed'])
   stats['rejected-patches'] = set(
       p for p in patch_stats if not patch_stats[p]['committed'])
   stats['false-rejections'] = stats_by_count(
@@ -920,6 +924,8 @@ def print_attempt_counts(stats, name, message, item_name='', details=False,
     item_name = message
   patches = _get_patches_by_reason(stats, name, committed)
   count = sum(p['count'] for p in patches)
+  total = sum(p['attempts'] for p in stats['patch_stats'].values()
+              if committed is None or bool(p['committed']) is committed)
 
   failing_builders = {}
   for p in patches:
@@ -932,21 +938,22 @@ def print_attempt_counts(stats, name, message, item_name='', details=False,
     output(
         '%s%4d attempt%s (%.1f%% of %d attempts) %s: %d in %d%s patches',
         indent_str, count, ' ' if count == 1 else 's',
-        percentage(count, stats['attempt-count']),
-        stats['attempt-count'],
+        percentage(count, total),
+        total,
         message,
         sum(sum(d.values()) for d in failing_builders.values()),
         len(patches),
         {True: ' committed', False: ' uncommitted'}.get(committed, ''))
   else:
     output(
-        '%s%4d attempt%s (%.1f%% of %d attempts) %s in %d%s patches',
+        '%s%4d attempt%s (%.1f%% of %d attempts in %d%s patchsets) %s',
         indent_str, count, ' ' if count == 1 else 's',
-        percentage(count, stats['attempt-count']),
-        stats['attempt-count'],
-        message,
+        percentage(count, total),
+        total,
         len(patches),
-        {True: ' committed', False: ' uncommitted'}.get(committed, ''))
+        {True: ' committed', False: ' uncommitted'}.get(committed, ''),
+        message)
+
   if details:
     lines = []
     for p in patches:
@@ -1182,11 +1189,12 @@ def print_stats(args, stats):  # pragma: no cover
                          item_name='infra-flakes', committed=True)
   else:
     output(
-        '  %4d attempts (%.1f%% of %d attempts) were false rejections',
+        '  %4d attempts (%.1f%% of %d attempts in committed patchsets) were '
+        'false rejections',
         stats['attempt-false-reject-count'],
         percentage(stats['attempt-false-reject-count'],
-                   stats['attempt-count']),
-        stats['attempt-count'])
+                   stats['committed-patchsets-attempt-count']),
+        stats['committed-patchsets-attempt-count'])
 
   output()
   output('Patches which eventually land percentiles:')
@@ -1214,9 +1222,9 @@ def print_stats(args, stats):  # pragma: no cover
              day_stats['patchset-committed-durations']['50'] / 3600.0,
              day_stats['patchset-committed-durations']['90'] / 3600.0,
              percentage(sum(p['count'] for p in false_rejections),
-                        day_stats['attempt-count']),
+                        day_stats['committed-patchsets-attempt-count']),
              percentage(sum(p['count'] for p in infra_false_rejections),
-                        day_stats['attempt-count']))
+                        day_stats['committed-patchsets-attempt-count']))
 
   print_flakiness_stats(args, stats)
 
