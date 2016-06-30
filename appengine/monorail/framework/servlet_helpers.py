@@ -10,6 +10,7 @@ import logging
 import time
 import urllib
 
+from framework import framework_bizobj
 from framework import framework_helpers
 from framework import permissions
 from framework import template_helpers
@@ -146,4 +147,14 @@ def ComputeIssueEntryURL(mr, config):
       base_url, sep, urllib.quote(token),
       urllib.quote(role_name or ''), continue_url)
 
+
+def IssueListURL(mr, config, query_string=None):
+  """Make an issue list URL for non-members or members."""
+  url = '/p/%s%s' % (mr.project_name, urls.ISSUE_LIST)
+  if query_string:
+    url += '?' + query_string
+  elif framework_bizobj.UserIsInProject(mr.project, mr.auth.effective_ids):
+    if config and config.member_default_query:
+      url += '?q=' + urllib.quote_plus(config.member_default_query)
+  return url
 

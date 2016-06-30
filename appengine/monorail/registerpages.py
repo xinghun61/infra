@@ -230,7 +230,7 @@ class ServletRegistry(object):
         }, post_does_write=False)
 
     list_redir = registerpages_helpers.MakeRedirectInScope(
-        urls.ISSUE_LIST, 'p')
+        urls.ISSUE_LIST, 'p', keep_qs=True)
     self._SetupProjectServlets({
         '': list_redir,
         '/': list_redir,

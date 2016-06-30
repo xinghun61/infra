@@ -43,3 +43,14 @@ class SendRedirectInScopeTest(unittest.TestCase):
     redirector.get()
     self.assertEqual(response.location, '//example.com/p/foo/')
     self.assertEqual(response.status, '302 Moved Temporarily')
+
+  def testMakeRedirectInScope_KeepQueryString(self):
+    factory = registerpages_helpers.MakeRedirectInScope(
+        '/', 'p', keep_qs=True)
+    request = webapp2.Request.blank(
+        path='/p/foo?q=1', headers={'Host': 'example.com'})
+    response = webapp2.Response()
+    redirector = factory(request, response)
+    redirector.get()
+    self.assertEqual(response.location, '//example.com/p/foo/?q=1')
+    self.assertEqual(response.status, '302 Moved Temporarily')

@@ -41,4 +41,3 @@ class SourceRedirect(servlet.Servlet):
           self.mr, urls.ADMIN_INTRO, include_project=True)
     self.response.location = source_url
     self.response.status = httplib.MOVED_PERMANENTLY
-

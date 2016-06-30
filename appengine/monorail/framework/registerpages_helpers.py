@@ -29,7 +29,7 @@ def MakeRedirect(redirect_to_this_uri, permanent=True):
   return Redirect
 
 
-def MakeRedirectInScope(uri_in_scope, scope, permanent=True):
+def MakeRedirectInScope(uri_in_scope, scope, permanent=True, keep_qs=False):
   """Redirect to a URI within a given scope, e.g., per project or user.
 
   Args:
@@ -40,6 +40,8 @@ def MakeRedirectInScope(uri_in_scope, scope, permanent=True):
       g for group pages
     permanent: True for a HTTP 301 permanently moved response code,
       otherwise a HTTP 302 temporarily moved response will be used.
+    keep_qs: set to True to make the redirect retain the query string.
+      When true, permanent is ignored.
 
   Example:
     self._SetupProjectPage(
@@ -60,13 +62,17 @@ def MakeRedirectInScope(uri_in_scope, scope, permanent=True):
         project_or_user = split_path[1]
         url = '//%s/%s/%s%s' % (
             self.request.host, scope, project_or_user, uri_in_scope)
-        self.response.location = url
       else:
-        self.response.location = '/'
+        url = '/'
+      if keep_qs and self.request.query_string:
+        url += '?' + self.request.query_string
+      self.response.location = url
 
       self.response.headers.add('Strict-Transport-Security',
           'max-age=31536000; includeSubDomains')
-      self.response.status = (
-          httplib.MOVED_PERMANENTLY if permanent else httplib.FOUND)
+      if permanent and not keep_qs:
+        self.response.status = httplib.MOVED_PERMANENTLY
+      else:
+        self.response.status = httplib.FOUND
 
   return RedirectInScope
