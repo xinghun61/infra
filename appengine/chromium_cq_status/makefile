@@ -25,7 +25,7 @@ single-test: check
 	./node_modules/karma/bin/karma start --single-run
 
 deploy:
-	appcfg.py -A $(APP_ID)--oauth2 update app.yaml highend.yaml --version $(GIT_REVISION)
+	appcfg.py -A $(APP_ID) --oauth2 update app.yaml highend.yaml --version $(GIT_REVISION)
 
 # This is necesary if dispatch rules are updated or for new deployments.
 deploy-dispatch:
