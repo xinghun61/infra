@@ -75,6 +75,11 @@ _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS = {
     'use_chrome_build_extract': True
 }
 
+_MOCK_ACTION_SETTINGS = {
+    'cr_notification_build_threshold': 2,
+    'cr_notification_latency_limit_minutes': 1000,
+}
+
 _MOCK_VERSION_NUMBER = 12
 
 
@@ -89,7 +94,8 @@ class ConfigTest(testing.AppengineTestCase):
         'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
-        'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS
+        'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
+        'action_settings': _MOCK_ACTION_SETTINGS,
     }
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
@@ -106,6 +112,7 @@ class ConfigTest(testing.AppengineTestCase):
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
+        'action_settings': _MOCK_ACTION_SETTINGS,
         'version': 1,
         'latest_version': 1,
         'updated_by': 'test',
@@ -122,7 +129,8 @@ class ConfigTest(testing.AppengineTestCase):
         'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
-        'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS
+        'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
+        'action_settings': _MOCK_ACTION_SETTINGS,
     }
     wf_config.FinditConfig.Get().Update(users.GetCurrentUser(), True,
                                         **config_data)
@@ -137,6 +145,7 @@ class ConfigTest(testing.AppengineTestCase):
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
+        'action_settings': _MOCK_ACTION_SETTINGS,
         'version': 1,
         'latest_version': 1,
         'updated_by': 'test',
@@ -643,7 +652,8 @@ class ConfigTest(testing.AppengineTestCase):
             'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
             'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
             'swarming_settings': _MOCK_SWARMING_SETTINGS,
-            'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS
+            'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
+            'action_settings': _MOCK_ACTION_SETTINGS,
         })
     }
 
@@ -671,6 +681,7 @@ class ConfigTest(testing.AppengineTestCase):
         'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
+        'action_settings': _MOCK_ACTION_SETTINGS,
         'version': 1,
         'latest_version': 1,
         'updated_by': 'test',
@@ -678,3 +689,11 @@ class ConfigTest(testing.AppengineTestCase):
     }
 
     self.assertEquals(expected_response, response.json_body)
+
+  def testValidateActionSettings(self):
+    self.assertFalse(config._ValidateActionSettings({}))
+    self.assertTrue(config._ValidateActionSettings(
+        {
+            'cr_notification_build_threshold': 2,
+            'cr_notification_latency_limit_minutes': 1000,
+        }))

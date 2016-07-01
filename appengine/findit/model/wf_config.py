@@ -79,4 +79,10 @@ class FinditConfig(VersionedConfig):
   #     'use_chrome_build_extract': True
   # }
   download_build_data_settings = ndb.JsonProperty(indexed=False, default={})
-  
+
+  # A dict containing action settings for identified culprits or suspects.
+  # {
+  #     'cr_notification_build_threshold': 2,
+  #     'cr_notification_latency_limit_minutes': 30,
+  # }
+  action_settings = ndb.JsonProperty(indexed=False, default={})

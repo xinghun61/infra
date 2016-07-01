@@ -165,3 +165,7 @@ def GetSwarmingSettings():
 
 def GetDownloadBuildDataSettings():
   return FinditConfig().Get().download_build_data_settings
+
+
+def GetActionSettings():
+  return FinditConfig().Get().action_settings

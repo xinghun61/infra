@@ -5,11 +5,13 @@
 import json
 
 from common.git_repository import GitRepository
+from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline_handlers
 from common.waterfall import buildbucket_client
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
+from waterfall import send_notification_for_culprit_pipeline
 from waterfall import swarming_util
 from waterfall import trigger_swarming_task_pipeline
 from waterfall.swarming_task_request import SwarmingTaskRequest
@@ -184,6 +186,13 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
       return mock_change_logs.get(revision)
     self.mock(GitRepository, 'GetChangeLog', MockedGetChangeLog)
 
+  def _Mock_SendNotificationForCulpritPipeline(self):
+    class Mocked_Pipeline(BasePipeline):
+      def run(self, *args, **kwargs):  # unused arg - pylint: disable=W0612
+        pass
+    self.mock(send_notification_for_culprit_pipeline,
+              'SendNotificationForCulpritPipeline', Mocked_Pipeline)
+
   def testSuccessfullyScheduleNewTryJobForCompile(self):
     master_name = 'm'
     builder_name = 'b'
@@ -201,6 +210,7 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self._MockTriggerTryJobs(responses)
     self._MockGetTryJobs('1')
     self._MockGetChangeLog('rev2')
+    self._Mock_SendNotificationForCulpritPipeline()
 
     WfTryJob.Create(master_name, builder_name, build_number).put()
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
@@ -337,6 +347,7 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self._MockTriggerTryJobs(responses)
     self._MockGetTryJobs('2')
     self._MockGetChangeLog('rev1')
+    self._Mock_SendNotificationForCulpritPipeline()
 
     WfTryJob.Create(master_name, builder_name, build_number).put()
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)

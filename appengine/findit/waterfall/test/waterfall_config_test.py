@@ -124,4 +124,11 @@ class MastersTest(wf_testcase.WaterfallTestCase):
         waterfall_config.ShouldSkipTestTryJobs('master2', 'builder3'))
     self.assertTrue(
         waterfall_config.ShouldSkipTestTryJobs('master2', 'builder2'))
-    
+
+  def testGetActionSettings(self):
+    self.assertEqual(
+        {
+            'cr_notification_build_threshold': 2,
+            'cr_notification_latency_limit_minutes': 30,
+        },
+        waterfall_config.GetActionSettings())
