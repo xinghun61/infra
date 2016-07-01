@@ -47,11 +47,12 @@ type queryVlanRun struct {
 
 type addHostRun struct {
 	commonFlags
-	site      string
-	hostname  string
-	macAddr   string
-	ip        string
-	bootClass string
+	site         string
+	hostname     string
+	macAddr      string
+	ip           string
+	bootClass    string
+	inputFileCSV string
 }
 
 type queryHostRun struct {
@@ -118,11 +119,13 @@ var (
 			c.Flags.StringVar(&c.site, "site", "", "Name of the site")
 			c.Flags.StringVar(&c.hostname, "hostname", "", "Name of the host")
 			c.Flags.StringVar(&c.macAddr, "mac", "",
-				"Host MAC address, as xx:xx:xx:xx:xx")
+				"Host MAC address, as xx:xx:xx:xx:xx:xx")
 			c.Flags.StringVar(&c.ip, "ip", "", "IP address")
 			// The valid values here are application-specific and must be checked
 			// server-side.
 			c.Flags.StringVar(&c.bootClass, "boot-class", "", "Host boot class")
+			c.Flags.StringVar(&c.inputFileCSV, "input-file-csv", "",
+				"CSV file containing one 'site,hostname,mac,ip[,boot_class]' per line.")
 			return c
 		},
 	}
@@ -139,7 +142,7 @@ var (
 			c.Flags.StringVar(&c.site, "site", "", "Name of the site")
 			c.Flags.StringVar(&c.hostname, "hostname", "", "Name of the host")
 			c.Flags.StringVar(&c.macAddr, "mac", "",
-				"Host MAC address, as xx:xx:xx:xx:xx")
+				"Host MAC address, as xx:xx:xx:xx:xx:xx")
 			c.Flags.StringVar(&c.ip, "ip", "", "IP address")
 			// The valid values here are application-specific and must be checked
 			// server-side.
@@ -200,7 +203,7 @@ func ipRangeFromDhcpConfig(c *addVlanRun) ([]*crimson.IPRange, error) {
 
 	var ranges []*crimson.IPRange
 
-	fmt.Fprintf(os.Stderr, "Reading %s...\n", c.inputFileDHCP)
+	fmt.Fprintf(os.Stderr, "Reading %s... ", c.inputFileDHCP)
 	file, err := os.Open(c.inputFileDHCP)
 	if err != nil {
 		return nil, err
@@ -211,6 +214,7 @@ func ipRangeFromDhcpConfig(c *addVlanRun) ([]*crimson.IPRange, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Fprintf(os.Stderr, "Done.\n")
 	for _, subnet := range subnets {
 		ranges = append(ranges, subnet.IPRanges(c.site)...)
 	}
@@ -275,31 +279,52 @@ func (c *queryVlanRun) Run(a subcommands.Application, args []string) int {
 }
 
 func hostListFromRangeFromArgs(c *addHostRun) (*crimson.HostList, error) {
-	if c.site == "" {
-		return nil, fmt.Errorf("missing required -site option")
-	}
+	if c.inputFileCSV == "" {
+		if c.site == "" {
+			return nil, fmt.Errorf("missing required -site option")
+		}
 
-	if c.hostname == "" {
-		return nil, fmt.Errorf("missing required -hostname option")
-	}
+		if c.hostname == "" {
+			return nil, fmt.Errorf("missing required -hostname option")
+		}
 
-	if c.macAddr == "" {
-		return nil, fmt.Errorf("missing required -mac option")
-	}
+		if c.macAddr == "" {
+			return nil, fmt.Errorf("missing required -mac option")
+		}
 
-	if c.ip == "" {
-		return nil, fmt.Errorf("missing required -ip option")
-	}
+		if c.ip == "" {
+			return nil, fmt.Errorf("missing required -ip option")
+		}
+		hostList := crimson.HostList{
+			Hosts: []*crimson.Host{{
+				Site:      c.site,
+				Hostname:  c.hostname,
+				MacAddr:   c.macAddr,
+				Ip:        c.ip,
+				BootClass: c.bootClass,
+			}}}
+		return &hostList, nil
 
-	hostList := crimson.HostList{
-		Hosts: []*crimson.Host{{
-			Site:      c.site,
-			Hostname:  c.hostname,
-			MacAddr:   c.macAddr,
-			Ip:        c.ip,
-			BootClass: c.bootClass,
-		}}}
-	return &hostList, nil
+	}
+	if c.site != "" || c.hostname != "" || c.macAddr != "" || c.ip != "" {
+		fmt.Fprintf(os.Stderr,
+			"-input-file-csv has been provided, any of -site, -hostname, "+
+				"-mac, -ip will be ignored.")
+	}
+	fmt.Fprintf(os.Stderr, "Reading %s... ", c.inputFileCSV)
+	file, err := os.Open(c.inputFileCSV)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	hostList, err := cmdhelper.ReadCSVHostFile(file)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Fprintf(os.Stderr, "Done.\n")
+
+	return hostList, nil
 }
 
 func (c *addHostRun) Run(a subcommands.Application, args []string) int {
