@@ -122,8 +122,7 @@ func base() router.MiddlewareChain {
 	methods := auth.Authenticator{
 		server.CookieAuth,
 	}
-	return append(
-		gaemiddleware.BaseProd(),
+	return gaemiddleware.BaseProd().Extend(
 		templates.WithTemplates(templateBundle),
 		auth.Use(methods),
 		auth.Authenticate,
@@ -132,7 +131,7 @@ func base() router.MiddlewareChain {
 
 // webBase sets up authentication/authorization for http requests.
 func webBase() router.MiddlewareChain {
-	return append(base(), requireAuthWeb)
+	return base().Extend(requireAuthWeb)
 }
 
 // prpcBase returns the middleware for pRPC API handlers.
@@ -143,7 +142,7 @@ func prpcBase() router.MiddlewareChain {
 	//
 	// Authorization is checked in checkAuthorizationPrpc using a
 	// service decorator.
-	return append(gaemiddleware.BaseProd(), addDbToContext)
+	return gaemiddleware.BaseProd().Extend(addDbToContext)
 }
 
 //// Routes.

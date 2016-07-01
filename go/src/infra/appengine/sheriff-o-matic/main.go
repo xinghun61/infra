@@ -514,8 +514,7 @@ func base() router.MiddlewareChain {
 		server.CookieAuth,
 		&server.InboundAppIDAuthMethod{},
 	}
-	return append(
-		gaemiddleware.BaseProd(),
+	return gaemiddleware.BaseProd().Extend(
 		auth.Use(methods),
 	)
 }
@@ -526,7 +525,7 @@ func init() {
 
 	r := router.New()
 	basemw := base()
-	authmw := append(basemw, auth.Authenticate)
+	authmw := basemw.Extend(auth.Authenticate)
 
 	gaemiddleware.InstallHandlers(r, basemw)
 	r.GET("/api/v1/trees/", authmw, getTreesHandler)

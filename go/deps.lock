@@ -1,5 +1,5 @@
 hash: 4ceb338d6614101f4d7c082339a714735d14b760b766d26cbf93526a7e952e27
-updated: 2016-06-25T11:35:22.762263985-07:00
+updated: 2016-07-01T14:14:01.143485999-07:00
 imports:
 - name: github.com/dustin/go-humanize
   version: fef948f2d241bd1fd0631108ecc2c9553bae60bf
@@ -13,14 +13,14 @@ imports:
   subpackages:
   - golint
 - name: github.com/golang/protobuf
-  version: 0c1f6d65b5a189c2250d10e71a5506f06f9fa0a0
+  version: 3852dcfda249c2097355a6aabb199a28d97b30df
   repo: https://chromium.googlesource.com/external/github.com/golang/protobuf.git
   subpackages:
   - jsonpb
   - proto
   - protoc-gen-go
 - name: github.com/gopherjs/gopherjs
-  version: ad712376c7b3218a7278e98928593a9959993a74
+  version: 6a1c576b7adbb8ddf3a044df225011148fcc0e49
   repo: https://chromium.googlesource.com/external/github.com/gopherjs/gopherjs.git
   subpackages:
   - js
@@ -119,7 +119,7 @@ imports:
   subpackages:
   - encoding/json5
 - name: golang.org/x/net
-  version: bc3663df0ac92f928d419e31e0d2af22e683a5a2
+  version: b400c2eff1badec7022a8c8f5bea058b6315eed7
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
@@ -131,7 +131,7 @@ imports:
   - google
   - jwt
 - name: golang.org/x/tools
-  version: 1727758746e7a08feaaceb9366d1468498ac2ac2
+  version: 0d2bde8553c1385ba127c53d1d792629e5ca2529
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -144,7 +144,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: 63ade871fd3aec1225809d496e81ec91ab76ea29
+  version: 57212573ccf9e4f69f4caa0336831697e29adcd6
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - gensupport
@@ -168,7 +168,7 @@ imports:
   - user
   - cmd/aedeploy
 - name: google.golang.org/cloud
-  version: a4c7c3139dc2772ad6c3bb73d0a9236a79063f8c
+  version: ebfe3819c9ab4acaf086ae57e4cbd7dee683baf0
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -176,7 +176,7 @@ imports:
   - pubsub
   - storage
 - name: google.golang.org/grpc
-  version: 0eb7c5dcd059d77bde1eb5bc7d953940170d0d18
+  version: a0ff1e78a98cd140c2d18a0210ab0a2a183a2b4c
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
