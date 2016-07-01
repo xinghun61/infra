@@ -296,6 +296,7 @@
         _tree: {
           type: String,
           computed: '_computeTree(_path)',
+          observer: '_treeChanged',
         },
         _staticPages: {
           type: Object,
@@ -351,6 +352,10 @@
         }
 
         return pathParts[1];
+      },
+
+      _treeChanged: function() {
+        this.set('_alertsData', {});
       },
 
       _computeAlertsGroups: function(tree, trees) {
