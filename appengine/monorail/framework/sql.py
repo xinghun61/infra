@@ -100,6 +100,7 @@ class MonorailConnection(object):
       self, sql_cnxn, stmt_str, stmt_args, commit=True):
     """Execute a statement on the given database and return a cursor."""
     cursor = sql_cnxn.cursor()
+    cursor.execute('SET NAMES utf8mb4')
     start_time = time.time()
     if stmt_str.startswith('INSERT') or stmt_str.startswith('REPLACE'):
       logging.info('SQL stmt_str: \n%s', stmt_str)

@@ -845,3 +845,25 @@ CREATE TABLE AutocompleteExclusion (
   FOREIGN KEY (project_id) REFERENCES Project(project_id),
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
+
+===============================================================
+2016-06-30: Update table character encodings to allow Emoji support.
+
+/* DO NOT RUN THESE STATEMENTS ON PROD OR STAGING. They are fine for localhost
+but be warned they will lock the db for some time if you have gigs of data in
+these tables */
+
+ALTER TABLE `monorail`.`Comment` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `monorail`.`IssueUpdate` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `monorail`.`IssueSummary` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+/* This is what I ran on production: */
+% pt-online-schema-change --alter "CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci" D=monorail,t=Comment,h=<master IP> --alter-foreign-keys-method=rebuild_constraints --no-drop-old-table --recursion-method=hosts --check-slave-lag=h=<one of the replicas' IP> --print --execute
+
+% pt-online-schema-change --alter "CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci" D=monorail,t=IssueUpdate,h=<master IP> --alter-foreign-keys-method=rebuild_constraints --no-drop-old-table --recursion-method=hosts --check-slave-lag=h=<one of the replicas' IP> --print --execute
+
+% pt-online-schema-change --alter "CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci" D=monorail,t=IssueSummary,h=<master IP> --alter-foreign-keys-method=rebuild_constraints --no-drop-old-table --recursion-method=hosts --check-slave-lag=h=<one of the replicas' IP> --print --execute
+
+/* And then these two which ran very quickly: */
+ALTER TABLE `monorail`.`Template` CHANGE `content` `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `monorail`.`Template` CHANGE `summary` `summary` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
