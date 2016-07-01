@@ -20,6 +20,7 @@
   [for descriptions]
     <div id="d[descriptions.description_num]"
          [if-index descriptions last][else]style="display: none;"[end]>
+[if-any multiple_descriptions]([include "../framework/user-link.ezt" descriptions.creator])[end]
       <pre class="issue_text" tabIndex="1">
 [for descriptions.text_runs][include "render-rich-text.ezt" descriptions.text_runs][end]
       </pre>

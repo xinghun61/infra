@@ -73,6 +73,7 @@
       $('desc_update_form').style.display = 'none';
       var descCt;
       if ($('description-select')) {
+        $('description-select').style.display = '';
         descCt = $('description-select').getAttribute('data-ct');
       } else {
         descCt = 1;  
