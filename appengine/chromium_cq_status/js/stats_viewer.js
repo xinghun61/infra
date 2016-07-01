@@ -37,7 +37,8 @@ function displayStats(cqStatsList) {
 }
 
 function loadCQStatsList(callback) {
-  var url = '//chromium-cq-status.appspot.com/stats/query?project=' + project + '&interval_minutes=' + intervalMinutes;
+  var url = '//' + window.location.host + '/stats/query?project=' + project +
+    '&interval_minutes=' + intervalMinutes;
   var cqStatsList = [];
   var defaultCount = null;
   function queryCQStatsList(cursor) {

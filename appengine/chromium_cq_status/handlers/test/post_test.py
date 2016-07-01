@@ -6,14 +6,14 @@ import json
 
 from third_party.testing_utils import testing
 
-import main
+from webtest.app import AppError
 
+import main
 from model.password import Password
 from model.record import Record
 from shared.config import CQ_BOT_PASSWORD_KEY
 from shared import utils
 
-from webtest.app import AppError
 
 class TestPost(testing.AppengineTestCase):
   app_module = main.app

@@ -5,14 +5,15 @@
 import webapp2
 import cgi
 
-from shared.utils import (guess_legacy_codereview_hostname,
-                          get_full_patchset_url)
+from shared import utils
+
 
 class PatchStatus(webapp2.RequestHandler): # pragma: no cover
+  @utils.read_access
   def get(self, issue, patchset): # pylint: disable=W0221
-    codereview_hostname = guess_legacy_codereview_hostname(issue)
-    full_patchset_url = get_full_patchset_url(codereview_hostname, issue,
-                                              patchset)
+    codereview_hostname = utils.guess_legacy_codereview_hostname(issue)
+    full_patchset_url = utils.get_full_patchset_url(codereview_hostname, issue,
+                                                    patchset)
     self.response.write(open('templates/patch_status.html').read() % {
       'codereview_hostname': cgi.escape(codereview_hostname, quote=True),
       'full_patchset_url': cgi.escape(full_patchset_url, quote=True),
@@ -22,9 +23,10 @@ class PatchStatus(webapp2.RequestHandler): # pragma: no cover
 
 
 class PatchStatusV2(webapp2.RequestHandler): # pragma: no cover
+  @utils.read_access
   def get(self, codereview_hostname, issue, patchset): # pylint: disable=W0221
-    full_patchset_url = get_full_patchset_url(codereview_hostname, issue,
-                                              patchset)
+    full_patchset_url = utils.get_full_patchset_url(codereview_hostname, issue,
+                                                    patchset)
     self.response.write(open('templates/patch_status.html').read() % {
       'codereview_hostname': cgi.escape(codereview_hostname, quote=True),
       'full_patchset_url': cgi.escape(full_patchset_url, quote=True),

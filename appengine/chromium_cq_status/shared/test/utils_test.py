@@ -1,11 +1,15 @@
 # Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
+from contextlib import contextmanager
 from datetime import datetime
+import os
 
+from webtest.app import AppError
 from third_party.testing_utils import testing
+import main
 from shared import utils
+
 
 
 class MockWebApp(object):
@@ -31,43 +35,94 @@ class MockHeaders(object):
     elif key == 'Content-Type':
       self.is_json_content = (value == 'application/json')
 
-class TestUtils(testing.AppengineTestCase):
-  def test_filter_dict(self):
-    self.assertEquals(
-        {'b': 2, 'c': 3},
-        utils.filter_dict({'a': 1, 'b': 2, 'c': 3}, ('b', 'c', 'd')))
 
-  def test_is_valid_user(self):
-    self.assertFalse(utils.is_valid_user())
+@contextmanager
+def mock_host_acls(acls):
+  old = utils.HOST_ACLS['Development']
+  try:
+    utils.HOST_ACLS['Development'] = acls
+    yield
+  finally:
+    utils.HOST_ACLS['Development'] = old
 
-    self.mock_current_user('random', 'random@person.com')
-    self.assertFalse(utils.is_valid_user())
 
-    self.mock_current_user(is_admin=True)
-    self.assertTrue(utils.is_valid_user())
+class TestPermissions(testing.AppengineTestCase):
+  app_module = main.app
 
-    self.mock_current_user('real', 'real@chromium.org')
-    self.assertTrue(utils.is_valid_user())
+  def test_has_permission_chromium(self):
+    with mock_host_acls(utils.HOST_ACLS['chromium-cq-status.appspot.com']):
+      # No user.
+      self.assertTrue(utils.has_permission('read'))
+      self.assertFalse(utils.has_permission('write'))
 
-    self.mock_current_user('real', 'real@google.com')
-    self.assertTrue(utils.is_valid_user())
+      self.mock_current_user('random', 'random@person.com')
+      self.assertTrue(utils.has_permission('read'))
+      self.assertFalse(utils.has_permission('write'))
 
-    self.mock_current_user('fake', 'fake@google.comm')
-    self.assertFalse(utils.is_valid_user())
+      self.mock_current_user(is_admin=True)
+      self.assertTrue(utils.has_permission('read'))
+      self.assertTrue(utils.has_permission('write'))
 
-    self.mock_current_user('fake', 'fake@google_com')
-    self.assertFalse(utils.is_valid_user())
+      self.mock_current_user('real', 'real@chromium.org')
+      self.assertTrue(utils.has_permission('read'))
+      self.assertTrue(utils.has_permission('write'))
 
-    self.mock_current_user('fake', 'fake@chromium.orgg')
-    self.assertFalse(utils.is_valid_user())
+      self.mock_current_user('real', 'real@google.com')
+      self.assertTrue(utils.has_permission('read'))
+      self.assertTrue(utils.has_permission('write'))
 
-    self.mock_current_user('fake', 'fake@chromium_org')
-    self.assertFalse(utils.is_valid_user())
+  def test_has_permission_internal(self):
+    with mock_host_acls(utils.HOST_ACLS['internal-cq-status.appspot.com']):
+      # No user.
+      self.assertFalse(utils.has_permission('read'))
+      self.assertFalse(utils.has_permission('write'))
+
+      self.mock_current_user('random', 'random@person.com')
+      self.assertFalse(utils.has_permission('read'))
+      self.assertFalse(utils.has_permission('write'))
+
+      self.mock_current_user(is_admin=True)
+      self.assertTrue(utils.has_permission('read'))
+      self.assertTrue(utils.has_permission('write'))
+
+      self.mock_current_user('real', 'real@chromium.org')
+      self.assertFalse(utils.has_permission('read'))
+      self.assertFalse(utils.has_permission('write'))
+
+      self.mock_current_user('real', 'real@google.com')
+      self.assertTrue(utils.has_permission('read'))
+      self.assertTrue(utils.has_permission('write'))
+
+  def test_read_access_decorator(self):
+    # No user, which has read access.
+    self.assertTrue(utils.has_permission('read'))
+    self.test_app.get('/recent')
+
+    # Simulate read access requiring valid user.
+    with mock_host_acls(utils.HOST_ACLS['internal-cq-status.appspot.com']):
+      self.assertFalse(utils.has_permission('read'))
+      self.test_app.get('/recent')
+
+  def test_host_permissions(self):
+    try:
+      old = os.environ.pop('SERVER_SOFTWARE')
+      utils.HOST_ACLS[None] = {'read': 'something', 'write': True}
+      self.assertEqual(utils.get_host_permissions('read'), 'something')
+    finally:
+      utils.HOST_ACLS.pop(None)
+      os.environ['SERVER_SOFTWARE'] = old
 
   def test_password_sha1(self):
     self.assertEquals(
         '018d644a17b71b65cef51fa0a523a293f2b3266f',
         utils.password_sha1('cq'))
+
+
+class TestUtils(testing.AppengineTestCase):
+  def test_filter_dict(self):
+    self.assertEquals(
+        {'b': 2, 'c': 3},
+        utils.filter_dict({'a': 1, 'b': 2, 'c': 3}, ('b', 'c', 'd')))
 
   def test_to_unix_timestamp(self):
     self.assertEquals(100,

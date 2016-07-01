@@ -29,8 +29,7 @@ def has_end_timestamp(
   return end and end < datetime.utcnow()
 
 @utils.memcachize(cache_check=has_end_timestamp)
-def execute_query(
-    key, begin, end, tags, fields, count, cursor):
+def execute_query(key, begin, end, tags, fields, count, cursor):
   records = []
   next_cursor = ''
   if key and count > 0:
@@ -74,6 +73,7 @@ def matches_fields(fields, record):
 
 class Query(webapp2.RequestHandler):
   @utils.cross_origin_json
+  @utils.read_access
   def get(self, url_tags): # pylint: disable=W0221
     try:
       params = parse_request(self.request, {

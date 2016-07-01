@@ -16,7 +16,9 @@ from model.cq_stats import (
   ListStats,
 )
 from shared.config import LAST_CQ_STATS_CHANGE_KEY
-from shared.utils import minutes_per_day, timestamp_now
+from shared.utils import timestamp_now
+
+from handlers.stats_viewer import minutes_per_day
 
 class TestStatsQuery(testing.AppengineTestCase):
   app_module = highend.app

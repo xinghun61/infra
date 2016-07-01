@@ -37,7 +37,7 @@ def update_record(key=None, tags=None, fields=None):
 
 class Post(webapp2.RequestHandler):
   def get(self):
-    if not utils.is_valid_user():
+    if not utils.has_permission('write'):
       self.redirect(users.create_login_url('/'))
       return
 
@@ -52,7 +52,7 @@ class Post(webapp2.RequestHandler):
       self.response.write(e)
 
   def post(self):
-    if not utils.is_valid_user() and not self._is_cq_bot():
+    if not utils.has_permission('write') and not self._is_cq_bot():
       self.response.set_status(403)
       return
 

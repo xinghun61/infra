@@ -35,4 +35,20 @@ TAG_ISSUE = 'issue=%s'
 TAG_PATCHSET = 'patchset=%s'
 TAG_CODEREVIEW_HOSTNAME = 'codereview_hostname=%s'
 TRYJOBVERIFIER = 'try job'
-VALID_EMAIL_RE = re.compile(r'^.*@(chromium\.org|google\.com)$')
+
+# Maps hosts -> operation -> (either 'everyone' or a regex on email).
+HOST_ACLS = {
+  'chromium-cq-status.appspot.com': {
+    'read': 'everyone',
+    'write': re.compile(r'^.*@(chromium\.org|google\.com)$'),
+  },
+  'internal-cq-status.appspot.com': {
+    'read': re.compile(r'^.*@google\.com$'),
+    'write': re.compile(r'^.*@google\.com$'),
+  },
+  # Special case for development and default in tests.
+  'Development': {
+    'read': 'everyone',
+    'write': re.compile(r'^.*@chromium\.org$'),
+  },
+}

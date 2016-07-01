@@ -91,6 +91,7 @@ def execute_query(key, project, interval_minutes, begin, end, names,
 
 class StatsQuery(webapp2.RequestHandler):
   @utils.cross_origin_json
+  @utils.read_access
   def get(self):
     try:
       params = parse_request(self.request, {

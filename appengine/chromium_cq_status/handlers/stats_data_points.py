@@ -5,10 +5,12 @@
 import webapp2
 
 from model.cq_stats import CQStats
-from shared.utils import cross_origin_json
+from shared import utils
+
 
 class StatsDataPoints(webapp2.RequestHandler):
-  @cross_origin_json
+  @utils.cross_origin_json
+  @utils.read_access
   def get(self, ranking, name, cq_stats_key): # pylint: disable=R0201
     cq_stats = CQStats.get_by_id(int(cq_stats_key))
     assert cq_stats, '%s must match a CQStats entry.' % cq_stats_key

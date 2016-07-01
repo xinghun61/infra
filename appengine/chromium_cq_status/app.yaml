@@ -10,9 +10,6 @@ builtins:
 handlers:
 - url: /js
   static_dir: js
-- url: /recent
-  static_files: html/recent.html
-  upload: html/recent.html
 - url: /tracing/base
   static_dir: third_party/catapult/tracing/tracing/base
 - url: /tracing/core

@@ -10,7 +10,7 @@ var recentModule = (function(){
 'use strict';
 
 var indexSelected = {};
-var logServer = '//chromium-cq-status.appspot.com';
+var logServer = '//' + window.location.host;
 var tags = [];
 var cursor;
 var table;

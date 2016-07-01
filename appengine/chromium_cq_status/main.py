@@ -10,11 +10,13 @@ from handlers.index import Index
 from handlers.patch_status import PatchStatus, PatchStatusV2
 from handlers.patch_summary import PatchSummary, PatchSummaryV2
 from handlers.post import Post
+from handlers.recent import Recent
 from handlers.stats_viewer import StatsViewer
 from handlers.stats_data_points import StatsDataPoints
 
 handlers = [
   (r'/', Index),
+  (r'/recent', Recent),
   (r'/admin/(.*)', AdminDispatch),
   (r'/patchset/(.*)/(.*)', PatchStatus),  # Legacy URL for old links.
   (r'/patch-status/(.*)/(.*)', PatchStatus),

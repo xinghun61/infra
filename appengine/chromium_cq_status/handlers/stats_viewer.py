@@ -4,7 +4,9 @@
 
 import webapp2
 
-from shared.utils import minutes_per_day
+from shared import utils
+
+minutes_per_day = 24 * 60
 
 period_config = {
   '15-minutely': {
@@ -30,6 +32,7 @@ period_config = {
 }
 
 class StatsViewer(webapp2.RequestHandler): # pragma: no cover
+  @utils.read_access
   def get(self, project, period):
     assert period in period_config
     config = period_config[period]

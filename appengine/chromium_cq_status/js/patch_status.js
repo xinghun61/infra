@@ -134,7 +134,7 @@ function main() {
 }
 
 function loadPatchsetRecords(callback) {
-  var url = '//chromium-cq-status.appspot.com/query/codereview_hostname=' +
+  var url = '//' + window.location.host + '/query/codereview_hostname=' +
       codereview_hostname + '/issue=' + issue + '/patchset=' + patchset;
   var records = [];
   var moreRecords = true;

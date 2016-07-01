@@ -11,8 +11,8 @@ from model.record import Record
 from model.cq_stats import CountStats, CQStats, ListStats
 from shared.config import STATS_START_TIMESTAMP
 from shared.config import TRYJOBVERIFIER
-from shared.utils import minutes_per_day
 from handlers import update_stats
+from handlers.stats_viewer import minutes_per_day
 
 stats_start = datetime.utcfromtimestamp(STATS_START_TIMESTAMP)
 test_analysis_end = stats_start + timedelta(days=1)

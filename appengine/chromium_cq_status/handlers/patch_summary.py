@@ -19,25 +19,23 @@ from shared.config import (
   JOB_STATE,
 )
 from shared.parsing import parse_rietveld_timestamp
-from shared.utils import (
-  cross_origin_json,
-  to_unix_timestamp,
-  guess_legacy_codereview_hostname,
-)
+from shared import utils
 
 
 class PatchSummary(webapp2.RequestHandler):
-  @cross_origin_json
+  @utils.cross_origin_json
+  @utils.read_access
   def get(self, issue, patch): # pylint: disable=W0221
-    now = to_unix_timestamp(datetime.utcnow())
-    codereview_hostname = guess_legacy_codereview_hostname(issue)
+    now = utils.to_unix_timestamp(datetime.utcnow())
+    codereview_hostname = utils.guess_legacy_codereview_hostname(issue)
     return summarize_patch(codereview_hostname, issue, patch, now)
 
 
 class PatchSummaryV2(webapp2.RequestHandler):
-  @cross_origin_json
+  @utils.cross_origin_json
+  @utils.read_access
   def get(self, codereview_hostname, issue, patch): # pylint: disable=W0221
-    now = to_unix_timestamp(datetime.utcnow())
+    now = utils.to_unix_timestamp(datetime.utcnow())
     return summarize_patch(codereview_hostname, issue, patch, now)
 
 
@@ -93,7 +91,7 @@ def get_raw_attempts(codereview_hostname, issue, patch):
 
 def summarize_attempt(raw_attempt, now):
   assert len(raw_attempt) > 0
-  start_timestamp = to_unix_timestamp(raw_attempt[0].timestamp)
+  start_timestamp = utils.to_unix_timestamp(raw_attempt[0].timestamp)
   summary = blank_attempt_summary()
   job_tracker = AttemptJobTracker(start_timestamp)
   durations = summary['durations']
@@ -106,7 +104,7 @@ def summarize_attempt(raw_attempt, now):
     if action == 'patch_ready_to_commit':
       continue
     verifier = record.fields.get('verifier')
-    timestamp = to_unix_timestamp(record.timestamp)
+    timestamp = utils.to_unix_timestamp(record.timestamp)
     if last_patch_action:
       patch_state_duration = timestamp - last_patch_timestamp
 
