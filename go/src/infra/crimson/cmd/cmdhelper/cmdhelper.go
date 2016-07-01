@@ -309,7 +309,7 @@ func FormatIPRange(ipRanges []*crimson.IPRange, format FormatType) ([]string, er
 
 	switch format {
 	case jsonFormat:
-		jsonBytes, err := json.Marshal(ipRanges)
+		jsonBytes, err := json.MarshalIndent(ipRanges, "", "  ")
 		if err != nil {
 			return []string{}, err
 		}
@@ -334,6 +334,47 @@ func FormatIPRange(ipRanges []*crimson.IPRange, format FormatType) ([]string, er
 // PrintIPRange pretty-prints a slice of IP ranges.
 func PrintIPRange(ipRanges []*crimson.IPRange, format FormatType) {
 	lines, err := FormatIPRange(ipRanges, format)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: %s", err)
+		return
+	}
+	for _, s := range lines {
+		fmt.Println(s)
+	}
+}
+
+// FormatHostList formats a list of hosts for pretty-printing.
+func FormatHostList(hostList *crimson.HostList, format FormatType) ([]string, error) {
+	var formatter Formatter
+
+	switch format {
+	case jsonFormat:
+		jsonBytes, err := json.MarshalIndent(hostList.Hosts, "", "  ")
+		if err != nil {
+			return []string{}, err
+		}
+		return []string{string(jsonBytes)}, nil
+	case textFormat:
+		formatter = &TextFormatter{}
+	case csvFormat:
+		formatter = &CSVFormatter{}
+	}
+	rows := [][]string{{"mac", "ip", "site", "hostname", "class"}}
+	for _, host := range hostList.Hosts {
+		rows = append(rows, []string{
+			fmt.Sprintf("%s", host.MacAddr),
+			fmt.Sprintf("%s", host.Ip),
+			fmt.Sprintf("%s", host.Site),
+			fmt.Sprintf("%s", host.Hostname),
+			fmt.Sprintf("%s", host.BootClass),
+		})
+	}
+	return formatter.FormatRows(rows), nil
+}
+
+// PrintHostList pretty-prints a list of hosts.
+func PrintHostList(hostList *crimson.HostList, format FormatType) {
+	lines, err := FormatHostList(hostList, format)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %s", err)
 		return
