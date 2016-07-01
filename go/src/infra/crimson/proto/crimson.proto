@@ -12,6 +12,7 @@ service Crimson {
 
   rpc CreateHost (HostList) returns (HostStatus) {}
   rpc ReadHost (HostQuery) returns (HostList) {}
+  rpc DeleteHost (HostDeleteList) returns (HostStatus) {}
 }
 
 message IPRanges {
@@ -46,6 +47,21 @@ message Host {
 
 message HostList {
   repeated Host hosts = 1;
+}
+
+// Use the same numbers and fields here than as the 'Host' message, so as to
+// make it a compatible subset of it, in case we want to merge them in the 
+// future.
+message HostDelete {
+  string hostname = 2;
+  string mac_addr = 3;
+}
+
+// Use the same numbers and fields here than as the 'Host' message, so as to
+// make it a compatible subset of it, in case we want to merge them in the 
+// future.
+message HostDeleteList {
+  repeated HostDelete hosts = 1;
 }
 
 message HostStatus { }

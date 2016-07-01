@@ -71,3 +71,8 @@ func (s *crimsonService) ReadHost(ctx context.Context, req *crimson.HostQuery) (
 	}
 	return nil, userErrorToGRPCError(err)
 }
+
+func (s *crimsonService) DeleteHost(ctx context.Context, req *crimson.HostDeleteList) (*crimson.HostStatus, error) {
+	err := crimsondb.DeleteHost(ctx, req)
+	return &crimson.HostStatus{}, userErrorToGRPCError(err)
+}

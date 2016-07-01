@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
+	"strings"
 
 	"github.com/luci/luci-go/common/logging"
 	"golang.org/x/net/context"
@@ -477,6 +478,63 @@ func SelectHost(ctx context.Context, req *crimson.HostQuery) (*crimson.HostList,
 		return nil, err
 	}
 	return rows, nil
+}
+
+// DeleteHost drops hosts whose name match criteria in req.
+func DeleteHost(ctx context.Context, req *crimson.HostDeleteList) error {
+	var err error
+
+	db := DB(ctx)
+	delimiter := ""
+
+	statement := bytes.Buffer{}
+	params := []interface{}{}
+
+	// Having a 'WHERE' in this string is very important to avoid issuing
+	// 'DELETE FROM host;' by mistake ;-)
+	statement.WriteString("DELETE FROM host\nWHERE ")
+	delimiter = "("
+
+	for _, host := range req.Hosts {
+		if host.Hostname == "" && host.MacAddr == "" {
+			return fmt.Errorf("Host must be selected by either hostname or mac " +
+				"address. Got empty strings in both cases.")
+		}
+
+		if host.Hostname != "" {
+			statement.WriteString(delimiter)
+			delimiter = " AND "
+			statement.WriteString("hostname=?")
+			params = append(params, host.Hostname)
+		}
+		if host.MacAddr != "" {
+			statement.WriteString(delimiter)
+			delimiter = " AND "
+			statement.WriteString("mac_addr=?")
+			mac, err := MacAddrStringToHexString(host.MacAddr)
+			if err != nil {
+				return UserErrorf(InvalidArgument, "Invalid MAC address: %s", host.MacAddr)
+			}
+			params = append(params, mac)
+		}
+
+		statement.WriteString(")")
+		delimiter = "\nOR ("
+	}
+
+	// Defense in depth. We *really* don't want to drop every row at the same time.
+	s := statement.String()
+	if strings.Index(s, "WHERE") == -1 {
+		panic("Query generated does not contain a WHERE clause. " +
+			"Aborting before doing something wrong.")
+	}
+	_, err = db.Exec(statement.String(), params...)
+	// TODO(pgervais): return the number of rows affected.
+	if err != nil {
+		logging.Errorf(ctx, "Deletion of hosts failed. %s", err)
+		return err
+	}
+	return nil
 }
 
 // UseDB stores a db handle into a context.

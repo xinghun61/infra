@@ -562,3 +562,108 @@ func TestSelectHost(t *testing.T) {
 		})
 	})
 }
+
+func TestDeleteHost(t *testing.T) {
+	t.Parallel()
+	Convey("DeleteHost", t, func() {
+		ctx := context.Background()
+		db, conn := sqlmock.NewMockDB()
+		ctx = UseDB(ctx, db)
+
+		Convey("given one hostname generates a correct query", func() {
+			err := DeleteHost(ctx,
+				&crimson.HostDeleteList{
+					Hosts: []*crimson.HostDelete{{Hostname: "host0"}},
+				})
+
+			query, err := conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected := ("DELETE FROM host\nWHERE (hostname=?)")
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{"host0"})
+		})
+
+		Convey("given two hostnames generates a correct query", func() {
+			err := DeleteHost(ctx,
+				&crimson.HostDeleteList{
+					Hosts: []*crimson.HostDelete{
+						{Hostname: "host0"},
+						{Hostname: "host1"}},
+				})
+
+			query, err := conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected := ("DELETE FROM host\nWHERE (hostname=?)\nOR (hostname=?)")
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{"host0", "host1"})
+		})
+
+		Convey("given a hostname and a mac generates a correct query", func() {
+			err := DeleteHost(ctx,
+				&crimson.HostDeleteList{
+					Hosts: []*crimson.HostDelete{
+						{Hostname: "host0", MacAddr: "01:23:45:67:89:ab"}},
+				})
+
+			query, err := conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected := ("DELETE FROM host\nWHERE (hostname=? AND mac_addr=?)")
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{"host0", "0x0123456789ab"})
+		})
+
+		Convey("given two (hostname, mac) generates a correct query", func() {
+			err := DeleteHost(ctx,
+				&crimson.HostDeleteList{
+					Hosts: []*crimson.HostDelete{
+						{Hostname: "host0", MacAddr: "01:23:45:67:89:ab"},
+						{Hostname: "host1", MacAddr: "01:23:45:67:89:ac"}},
+				})
+
+			query, err := conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected := ("DELETE FROM host\nWHERE (hostname=? AND mac_addr=?)\n" +
+				"OR (hostname=? AND mac_addr=?)")
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble,
+				[]driver.Value{"host0", "0x0123456789ab", "host1", "0x0123456789ac"})
+		})
+
+		Convey("given a hostname then a mac generates a correct query", func() {
+			err := DeleteHost(ctx,
+				&crimson.HostDeleteList{
+					Hosts: []*crimson.HostDelete{
+						{Hostname: "host0"},
+						{MacAddr: "01:23:45:67:89:ab"}},
+				})
+
+			query, err := conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected := ("DELETE FROM host\nWHERE (hostname=?)\nOR (mac_addr=?)")
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{"host0", "0x0123456789ab"})
+		})
+
+		Convey("given a blank input returns an error", func() {
+			err := DeleteHost(ctx,
+				&crimson.HostDeleteList{
+					Hosts: []*crimson.HostDelete{{}},
+				})
+			So(err, ShouldNotBeNil)
+			_, err = conn.PopOldestQuery()
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("given an invalid mac returns an error", func() {
+			err := DeleteHost(ctx,
+				&crimson.HostDeleteList{
+					Hosts: []*crimson.HostDelete{
+						{Hostname: "host0"},
+						{MacAddr: "xx:23:45:67:89:ab"}},
+				})
+			So(err, ShouldNotBeNil)
+			_, err = conn.PopOldestQuery()
+			So(err, ShouldNotBeNil)
+		})
+	})
+}

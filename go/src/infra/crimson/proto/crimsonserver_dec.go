@@ -46,3 +46,11 @@ func (s *DecoratedCrimson) ReadHost(c context.Context, req *HostQuery) (*HostLis
 	}
 	return s.Service.ReadHost(c, req)
 }
+
+func (s *DecoratedCrimson) DeleteHost(c context.Context, req *HostDeleteList) (*HostStatus, error) {
+	c, err := s.Prelude(c, "DeleteHost", req)
+	if err != nil {
+		return nil, err
+	}
+	return s.Service.DeleteHost(c, req)
+}
