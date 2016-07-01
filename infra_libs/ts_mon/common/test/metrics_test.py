@@ -230,6 +230,17 @@ class CounterMetricTest(TestBase):
     m = metrics.CounterMetric('test')
     self.assertTrue(m.is_cumulative())
 
+  def test_get_all(self):
+    m = metrics.CounterMetric('test')
+    m.increment()
+    m.increment({'foo': 'bar'})
+    m.increment({'foo': 'baz', 'moo': 'wibble'})
+    self.assertEqual([
+        ((), 1),
+        ((('foo', 'bar'),), 1),
+        ((('foo', 'baz'), ('moo', 'wibble')), 1),
+    ], sorted(m.get_all()))
+
 
 class GaugeMetricTest(TestBase):
 

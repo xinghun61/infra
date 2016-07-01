@@ -111,19 +111,27 @@ class SystemMetricsTest(unittest.TestCase):
     self.assertIsNotNone(total)
     self.assertLessEqual(free, total)
 
-  # See http://crbug.com/624369
-  def DISABLED_test_net_info(self):  # pragma: no cover
+  def test_net_info(self):
     system_metrics.get_net_info()
+
+    interface_names = [fields[0][1]
+                       for fields, _
+                       in system_metrics.net_up.get_all()]
+    self.assertGreater(len(interface_names), 0)
 
     # A network interface that should always be present.
     if sys.platform == 'win32':  # pragma: no cover
-      interface = 'Local Area Connection'
+      self.assertTrue(
+          any(x.startswith('Local Area Connection') for x in interface_names),
+          interface_names)
     elif sys.platform == 'darwin':  # pragma: no cover
-      interface = 'en0'
+      self.assertTrue(
+          any(x.startswith('en') for x in interface_names),
+          interface_names)
     else:  # pragma: no cover
-      interface = 'lo'
+      self.assertIn('lo', interface_names)
 
-    labels = {'interface': interface}
+    labels = {'interface': interface_names[0]}
 
     self.assertIsNotNone(system_metrics.net_up.get(labels))
     self.assertIsNotNone(system_metrics.net_down.get(labels))

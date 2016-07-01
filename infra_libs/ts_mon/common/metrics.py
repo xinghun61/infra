@@ -185,6 +185,9 @@ class Metric(object):
     return interface.state.store.get(
         self.name, self._normalize_fields(fields), target_fields)
 
+  def get_all(self):
+    return interface.state.store.iter_field_values(self.name)
+
   def reset(self):
     """Clears the values of this metric.  Useful in unit tests.
 

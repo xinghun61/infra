@@ -127,6 +127,22 @@ class MetricStoreTestBase(object):
 
     self.assertIsNone(self.store.get('bar', (), None))
 
+  def test_iter_field_values(self):
+    fields1 = (('field', 'value'),)
+    fields2 = (('field', 'value2'),)
+    target_fields1 = {'region': 'rrr'}
+
+    self.store.set('foo', fields1, None, 42)
+    self.store.set('foo', fields2, None, 43)
+    self.store.set('foo', fields2, target_fields1, 44)
+
+    field_values = list(self.store.iter_field_values('foo'))
+    self.assertEquals([
+        ((('field', 'value'),), 42),
+        ((('field', 'value2'),), 43),
+        ((('field', 'value2'),), 44),
+    ], sorted(field_values))
+
   def test_set_enforce_ge(self):
     self.store.set('foo', (('field', 'value'),), None, 42, enforce_ge=True)
     self.store.set('foo', (('field', 'value'),), None, 43, enforce_ge=True)
