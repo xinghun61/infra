@@ -169,17 +169,29 @@ func TestFormatIPRange(t *testing.T) {
 
 	Convey("FormatIPRange works", t, func() {
 		ipRanges := []*crimson.IPRange{
-			{"site1", "vlan1", "123.234.0.1", "123.234.1.244"},
-			{"site2", "vlan2", "125.200.0.1", "126.233.1.255"},
+			{
+				Site:      "site1",
+				VlanId:    123,
+				VlanAlias: "vlan1",
+				StartIp:   "123.234.0.1",
+				EndIp:     "123.234.1.244",
+			},
+			{
+				Site:      "site2",
+				VlanId:    124,
+				VlanAlias: "vlan2",
+				StartIp:   "125.200.0.1",
+				EndIp:     "126.233.1.255",
+			},
 		}
 
 		Convey("for text format", func() {
 			lines, err := FormatIPRange(ipRanges, textFormat)
 			So(err, ShouldBeNil)
 			So(lines, ShouldResemble, []string{
-				"site  vlan  Start IP    End IP        ",
-				"site1 vlan1 123.234.0.1 123.234.1.244 ",
-				"site2 vlan2 125.200.0.1 126.233.1.255 ",
+				"site  vlan ID Start IP    End IP        vlan alias ",
+				"site1 123     123.234.0.1 123.234.1.244 vlan1      ",
+				"site2 124     125.200.0.1 126.233.1.255 vlan2      ",
 			})
 		})
 
@@ -187,26 +199,27 @@ func TestFormatIPRange(t *testing.T) {
 			lines, err := FormatIPRange(ipRanges, csvFormat)
 			So(err, ShouldBeNil)
 			So(lines, ShouldResemble, []string{
-				"site,vlan,Start IP,End IP",
-				"site1,vlan1,123.234.0.1,123.234.1.244",
-				"site2,vlan2,125.200.0.1,126.233.1.255",
+				"site,vlan ID,Start IP,End IP,vlan alias",
+				"site1,123,123.234.0.1,123.234.1.244,vlan1",
+				"site2,124,125.200.0.1,126.233.1.255,vlan2",
 			})
 		})
 
 		Convey("for CSV format with ',' in values", func() {
 			ipRanges = append(ipRanges, &crimson.IPRange{
-				Site:    "site,3",
-				Vlan:    "vl,an3",
-				StartIp: "1",
-				EndIp:   "2",
+				Site:      "site,3",
+				VlanId:    8,
+				VlanAlias: "vl,an3",
+				StartIp:   "1",
+				EndIp:     "2",
 			})
 			lines, err := FormatIPRange(ipRanges, csvFormat)
 			So(err, ShouldBeNil)
 			So(lines, ShouldResemble, []string{
-				"site,vlan,Start IP,End IP",
-				"site1,vlan1,123.234.0.1,123.234.1.244",
-				"site2,vlan2,125.200.0.1,126.233.1.255",
-				"\"site,3\",\"vl,an3\",1,2",
+				"site,vlan ID,Start IP,End IP,vlan alias",
+				"site1,123,123.234.0.1,123.234.1.244,vlan1",
+				"site2,124,125.200.0.1,126.233.1.255,vlan2",
+				"\"site,3\",8,1,2,\"vl,an3\"",
 			})
 		})
 

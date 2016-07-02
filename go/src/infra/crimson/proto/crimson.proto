@@ -9,6 +9,7 @@ package crimson;
 service Crimson {
   rpc CreateIPRange (IPRange) returns (IPRangeStatus) {}
   rpc ReadIPRange (IPRangeQuery) returns (IPRanges) {}
+  rpc DeleteIPRange (IPRangeDeleteList) returns (IPRangeStatus) {}
 
   rpc CreateHost (HostList) returns (HostStatus) {}
   rpc ReadHost (HostQuery) returns (HostList) {}
@@ -21,9 +22,10 @@ message IPRanges {
 
 message IPRange {
   string site = 1;
-  string vlan = 2;
+  uint32 vlan_id = 2;
   string start_ip = 3;
   string end_ip = 4;
+  string vlan_alias = 5;
 }
 
 message IPRangeStatus {
@@ -32,9 +34,20 @@ message IPRangeStatus {
 
 message IPRangeQuery {
   string site = 1;
-  string vlan = 2;
+  uint32 vlan_id = 2;
   uint32 limit = 3;
   string ip = 4;
+  string vlan_alias = 5;
+}
+
+// Keep compatible with IPRangeQuery.
+message IPRangeDelete {
+  string site = 1;
+  uint32 vlan_id = 2;
+}
+
+message IPRangeDeleteList {
+  repeated IPRangeDelete ranges = 1;
 }
 
 message Host {

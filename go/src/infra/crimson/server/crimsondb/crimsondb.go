@@ -20,17 +20,28 @@ import (
 	crimson "infra/crimson/proto"
 )
 
-// IPRange describes a row in the ip_range table.
+// IPRange describes a row in the vlan table.
 type IPRange struct {
-	Site    string
-	Vlan    string
-	StartIP string
-	EndIP   string
+	Site      string
+	VlanId    uint32
+	VlanAlias string
+	StartIP   string
+	EndIP     string
 }
 
 func (row IPRange) String() string {
-	return fmt.Sprintf("%s/%s: %s-%s",
-		row.Site, row.Vlan, row.StartIP, row.EndIP)
+	return fmt.Sprintf("%s/%d: %s-%s (%s)",
+		row.Site, row.VlanId, row.StartIP, row.EndIP, row.VlanAlias)
+}
+
+func logAndErrorf(ctx context.Context, format string, params ...interface{}) error {
+	logging.Errorf(ctx, format, params...)
+	return fmt.Errorf(format, params...)
+}
+
+func logAndUserErrorf(ctx context.Context, code int, format string, params ...interface{}) error {
+	logging.Errorf(ctx, format, params...)
+	return UserErrorf(code, format, params...)
 }
 
 // IPStringToHexString converts an IP address into a hex string suitable for MySQL.
@@ -95,7 +106,7 @@ func HexStringToIP(hexIP string) (net.IP, error) {
 }
 
 // scanIPRanges is a low-level function to scan sql results.
-// Rows must contain site, vlan, start_ip, end_ip in that order.
+// Rows must contain site, vlan_id, start_ip, end_ip, vlan_alias in that order.
 func scanIPRanges(ctx context.Context, rows *sql.Rows) ([]IPRange, error) {
 	var ipRanges []IPRange
 
@@ -103,9 +114,10 @@ func scanIPRanges(ctx context.Context, rows *sql.Rows) ([]IPRange, error) {
 		var startIP, endIP string
 		var ip net.IP
 		ipRange := IPRange{}
-		err := rows.Scan(&ipRange.Site, &ipRange.Vlan, &startIP, &endIP)
+		err := rows.Scan(&ipRange.Site, &ipRange.VlanId, &startIP, &endIP, &ipRange.VlanAlias)
 		if err != nil { // Users can't trigger that.
-			logging.Errorf(ctx, "%s", err)
+			cols, _ := rows.Columns()
+			err = logAndErrorf(ctx, "%s. Columns: %v", err, cols)
 			return nil, err
 		}
 		ip, err = HexStringToIP(startIP)
@@ -176,7 +188,7 @@ func InsertIPRange(ctx context.Context, row *crimson.IPRange) (err error) {
 	}
 
 	// [a,b] and [c,d] overlap iff a<=d and b>=c
-	statement := ("SELECT site, vlan, start_ip, end_ip FROM ip_range\n" +
+	statement := ("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM ip_range\n" +
 		"WHERE site=? AND start_ip<=? AND end_ip>=?")
 	rows, err := tx.Query(statement, row.Site, endIP, startIP)
 	if err != nil {
@@ -200,14 +212,60 @@ func InsertIPRange(ctx context.Context, row *crimson.IPRange) (err error) {
 
 	// No overlapping ranges have been found, insert the new one.
 	logging.Infof(ctx, "No overlapping ranges have been found, proceeding.")
-	statement = ("INSERT INTO ip_range (site, vlan, start_ip, end_ip)\n" +
-		"VALUES (?, ?, ?, ?)")
-	_, err = tx.Exec(statement, row.Site, row.Vlan, startIP, endIP)
+	statement = ("INSERT INTO ip_range (site, vlan_id, start_ip, end_ip, vlan_alias)\n" +
+		"VALUES (?, ?, ?, ?, ?)")
+	_, err = tx.Exec(statement, row.Site, row.VlanId, startIP, endIP, row.VlanAlias)
 	if err != nil {
 		logging.Errorf(ctx, "IP range insertion failed. %s", err)
 		return
 	}
 	return
+}
+
+// DeleteIPRange deletes an IP range from the database.
+func DeleteIPRange(ctx context.Context, deleteList *crimson.IPRangeDeleteList) error {
+	db := DB(ctx)
+
+	if len(deleteList.Ranges) == 0 {
+		return logAndUserErrorf(ctx, InvalidArgument,
+			"Received an empty list of IP ranges to delete.")
+	}
+
+	statement := bytes.Buffer{}
+	params := []interface{}{}
+
+	statement.WriteString("DELETE FROM ip_range\nWHERE ")
+	delimiter := ""
+
+	for i, r := range deleteList.Ranges {
+		if len(r.Site) == 0 {
+			return logAndUserErrorf(ctx, InvalidArgument,
+				"Received empty site value in range %d: %s", i, r)
+		}
+
+		// IEEE 802.1Q supports VLAN IDs 1-4094
+		if r.VlanId == 0 || r.VlanId > 4094 {
+			return logAndUserErrorf(ctx, InvalidArgument,
+				"vlan ID is invalid in range %d: must be between 1-4094; received %s", i, r)
+		}
+
+		statement.WriteString(delimiter)
+		statement.WriteString("(site=? AND vlan_id=?)")
+		params = append(params, r.Site, r.VlanId)
+		delimiter = "\nOR "
+	}
+	s := statement.String()
+	// Defense in depth. We *really* don't want to drop every row at the same time.
+	if strings.Index(s, "WHERE") == -1 {
+		panic("Query generated does not contain a WHERE clause. " +
+			"Aborting before doing something wrong.")
+	}
+	_, err := db.Query(s, params...)
+	if err != nil {
+		logging.Errorf(ctx, "Deletion of IP ranges failed: %s", err)
+		return err
+	}
+	return nil
 }
 
 // SelectIPRange returns ip ranges filtered by values in req.
@@ -217,27 +275,31 @@ func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) ([]IPRange, e
 	var err error
 	delimiter := ""
 
-	vlan := req.Vlan
-	site := req.Site
-
 	statement := bytes.Buffer{}
 	params := []interface{}{}
 
-	statement.WriteString("SELECT site, vlan, start_ip, end_ip FROM ip_range")
+	statement.WriteString("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM ip_range")
 	delimiter = "\nWHERE "
 
-	if site != "" {
+	if req.Site != "" {
 		statement.WriteString(delimiter)
 		delimiter = "\nAND "
 		statement.WriteString("site=?")
-		params = append(params, site)
+		params = append(params, req.Site)
 	}
 
-	if vlan != "" {
+	if req.VlanId != 0 {
 		statement.WriteString(delimiter)
 		delimiter = "\nAND "
-		statement.WriteString("vlan=?")
-		params = append(params, vlan)
+		statement.WriteString("vlan_id=?")
+		params = append(params, req.VlanId)
+	}
+
+	if req.VlanAlias != "" {
+		statement.WriteString(delimiter)
+		delimiter = "\nAND "
+		statement.WriteString("vlan_alias=?")
+		params = append(params, req.VlanAlias)
 	}
 
 	if req.Ip != "" {

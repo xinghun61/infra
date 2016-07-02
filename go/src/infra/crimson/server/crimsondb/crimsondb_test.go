@@ -210,21 +210,35 @@ func TestSelectIPRange(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("generates the correct query", func() {
-				expected := "SELECT site, vlan, start_ip, end_ip FROM ip_range"
+				expected := "SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM ip_range"
 				So(query.Query, ShouldEqual, expected)
 				So(query.Args, ShouldResemble, []driver.Value{})
 			})
 		})
 
-		Convey("with only vlan", func() {
-			SelectIPRange(ctx, &crimson.IPRangeQuery{Vlan: "xyz"})
+		Convey("with only vlan ID", func() {
+			SelectIPRange(ctx, &crimson.IPRangeQuery{VlanId: 42})
 			query, err := conn.PopOldestQuery()
 			Convey("generates a SQL query", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("generates the correct query", func() {
-				expected := ("SELECT site, vlan, start_ip, end_ip FROM ip_range\n" +
-					"WHERE vlan=?")
+				expected := ("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM ip_range\n" +
+					"WHERE vlan_id=?")
+				So(query.Query, ShouldEqual, expected)
+				So(query.Args, ShouldResemble, []driver.Value{int64(42)})
+			})
+		})
+
+		Convey("with only vlan alias", func() {
+			SelectIPRange(ctx, &crimson.IPRangeQuery{VlanAlias: "xyz"})
+			query, err := conn.PopOldestQuery()
+			Convey("generates a SQL query", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("generates the correct query", func() {
+				expected := ("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM ip_range\n" +
+					"WHERE vlan_alias=?")
 				So(query.Query, ShouldEqual, expected)
 				So(query.Args, ShouldResemble, []driver.Value{"xyz"})
 			})
@@ -237,40 +251,40 @@ func TestSelectIPRange(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("generates the correct query", func() {
-				expected := ("SELECT site, vlan, start_ip, end_ip FROM ip_range\n" +
+				expected := ("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM ip_range\n" +
 					"WHERE site=?")
 				So(query.Query, ShouldEqual, expected)
 				So(query.Args, ShouldResemble, []driver.Value{"abc"})
 			})
 		})
 
-		Convey("with vlan and site", func() {
-			SelectIPRange(ctx, &crimson.IPRangeQuery{Site: "abc", Vlan: "xyz"})
+		Convey("with vlan ID and site", func() {
+			SelectIPRange(ctx, &crimson.IPRangeQuery{Site: "abc", VlanId: 42})
 			query, err := conn.PopOldestQuery()
 			Convey("generates a SQL query", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("generates the correct query", func() {
-				expected := ("SELECT site, vlan, start_ip, end_ip FROM ip_range\n" +
+				expected := ("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM ip_range\n" +
 					"WHERE site=?\n" +
-					"AND vlan=?")
+					"AND vlan_id=?")
 				So(query.Query, ShouldEqual, expected)
-				So(query.Args, ShouldResemble, []driver.Value{"abc", "xyz"})
+				So(query.Args, ShouldResemble, []driver.Value{"abc", int64(42)})
 			})
 		})
 
-		Convey("with vlan and limit", func() {
-			SelectIPRange(ctx, &crimson.IPRangeQuery{Limit: 15, Vlan: "xyz"})
+		Convey("with vlan ID and limit", func() {
+			SelectIPRange(ctx, &crimson.IPRangeQuery{Limit: 15, VlanId: 42})
 			query, err := conn.PopOldestQuery()
 			Convey("generates a SQL query", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("generates the correct query", func() {
-				expected := ("SELECT site, vlan, start_ip, end_ip FROM ip_range\n" +
-					"WHERE vlan=?\n" +
+				expected := ("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM ip_range\n" +
+					"WHERE vlan_id=?\n" +
 					"LIMIT ?")
 				So(query.Query, ShouldEqual, expected)
-				So(query.Args, ShouldResemble, []driver.Value{"xyz", int64(15)})
+				So(query.Args, ShouldResemble, []driver.Value{int64(42), int64(15)})
 			})
 		})
 
@@ -281,7 +295,7 @@ func TestSelectIPRange(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("generates the correct query", func() {
-				expected := ("SELECT site, vlan, start_ip, end_ip FROM ip_range\n" +
+				expected := ("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM ip_range\n" +
 					"LIMIT ?")
 				So(query.Query, ShouldEqual, expected)
 				So(query.Args, ShouldResemble, []driver.Value{int64(14)})
@@ -295,7 +309,7 @@ func TestSelectIPRange(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("generates the correct query", func() {
-				expected := ("SELECT site, vlan, start_ip, end_ip FROM ip_range\n" +
+				expected := ("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM ip_range\n" +
 					"WHERE start_ip<=? AND ?<=end_ip")
 				So(query.Query, ShouldEqual, expected)
 				So(query.Args, ShouldResemble,
@@ -310,7 +324,7 @@ func TestSelectIPRange(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("generates the correct query", func() {
-				expected := ("SELECT site, vlan, start_ip, end_ip FROM ip_range\n" +
+				expected := ("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM ip_range\n" +
 					"WHERE site=?\nAND start_ip<=? AND ?<=end_ip")
 				So(query.Query, ShouldEqual, expected)
 				So(query.Args, ShouldResemble,
@@ -328,12 +342,15 @@ func TestInsertIPRange(t *testing.T) {
 		ctx = UseDB(ctx, db)
 
 		Convey("without an overlapping range, calls INSERT.", func() {
-			InsertIPRange(ctx,
+			ierr := InsertIPRange(ctx,
 				&crimson.IPRange{
-					Site:    "site0",
-					Vlan:    "vlan0",
-					StartIp: "1.2.3.4",
-					EndIp:   "1.2.3.20"})
+					Site:      "site0",
+					VlanId:    8,
+					VlanAlias: "vlan0",
+					StartIp:   "1.2.3.4",
+					EndIp:     "1.2.3.20"})
+
+			So(ierr, ShouldBeNil)
 
 			query, err := conn.PopOldestQuery()
 			So(err, ShouldBeNil)
@@ -342,7 +359,7 @@ func TestInsertIPRange(t *testing.T) {
 
 			query, err = conn.PopOldestQuery()
 			So(err, ShouldBeNil)
-			expected = ("SELECT site, vlan, start_ip, end_ip FROM ip_range\n" +
+			expected = ("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM ip_range\n" +
 				"WHERE site=? AND start_ip<=? AND end_ip>=?")
 			So(query.Query, ShouldEqual, expected)
 			So(query.Args, ShouldResemble,
@@ -353,27 +370,32 @@ func TestInsertIPRange(t *testing.T) {
 
 			query, err = conn.PopOldestQuery()
 			So(err, ShouldBeNil)
-			expected = ("INSERT INTO ip_range (site, vlan, start_ip, end_ip)\n" +
-				"VALUES (?, ?, ?, ?)")
+			expected = ("INSERT INTO ip_range (site, vlan_id, start_ip, end_ip, vlan_alias)\n" +
+				"VALUES (?, ?, ?, ?, ?)")
 			So(query.Query, ShouldEqual, expected)
 			So(query.Args, ShouldResemble,
 				[]driver.Value{
 					"site0",
-					"vlan0",
+					int64(8),
 					"0x01020304",
-					"0x01020314"})
+					"0x01020314",
+					"vlan0",
+				})
 		})
 
 		Convey("with an overlapping range, does not call INSERT.", func() {
-			So(conn.PushRows([][]driver.Value{{"site0", "vlan0", "1.2.3.4", "1.2.3.20"}}),
+			So(conn.PushRows([][]driver.Value{{
+				"site0", "08", "0x01020314", "0x01020304", "vlan0"}}),
 				ShouldBeNil)
 
-			InsertIPRange(ctx,
+			ierr := InsertIPRange(ctx,
 				&crimson.IPRange{
 					Site:    "site0",
-					Vlan:    "vlan0",
+					VlanId:  8,
 					StartIp: "1.2.3.4",
 					EndIp:   "1.2.3.20"})
+
+			So(ierr, ShouldNotBeNil)
 
 			query, err := conn.PopOldestQuery()
 			So(err, ShouldBeNil)
@@ -382,7 +404,7 @@ func TestInsertIPRange(t *testing.T) {
 
 			query, err = conn.PopOldestQuery()
 			So(err, ShouldBeNil)
-			expected = ("SELECT site, vlan, start_ip, end_ip FROM ip_range\n" +
+			expected = ("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM ip_range\n" +
 				"WHERE site=? AND start_ip<=? AND end_ip>=?")
 			So(query.Query, ShouldEqual, expected)
 			So(query.Args, ShouldResemble,
@@ -392,6 +414,60 @@ func TestInsertIPRange(t *testing.T) {
 					"0x01020304"})
 
 			query, err = conn.PopOldestQuery()
+			So(err, ShouldNotBeNil)
+		})
+	})
+}
+
+func TestDeleteIPRange(t *testing.T) {
+	t.Parallel()
+	Convey("DeleteIPRange", t, func() {
+		ctx := context.Background()
+		db, conn := sqlmock.NewMockDB()
+		ctx = UseDB(ctx, db)
+
+		Convey("with valid arguments constructs expected query", func() {
+			err := DeleteIPRange(ctx, &crimson.IPRangeDeleteList{
+				[]*crimson.IPRangeDelete{
+					{Site: "site1", VlanId: 1},
+					{Site: "site2", VlanId: 2},
+				}})
+			So(err, ShouldBeNil)
+			query, qErr := conn.PopOldestQuery()
+			So(qErr, ShouldBeNil)
+			expected := "DELETE FROM ip_range\nWHERE (site=? AND vlan_id=?)\nOR (site=? AND vlan_id=?)"
+			So(query.Query, ShouldEqual, expected)
+			// driver.Value upconverts all int types to int64.
+			So(query.Args, ShouldResemble, []driver.Value{"site1", int64(1), "site2", int64(2)})
+
+			// No extra queries
+			query, err = conn.PopOldestQuery()
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("with empty list returns an error", func() {
+			err := DeleteIPRange(ctx, &crimson.IPRangeDeleteList{})
+			So(err, ShouldNotBeNil)
+			// No queries
+			_, err = conn.PopOldestQuery()
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("with empty site returns an error", func() {
+			err := DeleteIPRange(ctx, &crimson.IPRangeDeleteList{
+				[]*crimson.IPRangeDelete{{VlanId: 1}}})
+			So(err, ShouldNotBeNil)
+			// No queries
+			_, err = conn.PopOldestQuery()
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("with invalid vlan ID returns an error", func() {
+			err := DeleteIPRange(ctx, &crimson.IPRangeDeleteList{
+				[]*crimson.IPRangeDelete{{Site: "site1", VlanId: 0}}})
+			So(err, ShouldNotBeNil)
+			// No queries
+			_, err = conn.PopOldestQuery()
 			So(err, ShouldNotBeNil)
 		})
 	})

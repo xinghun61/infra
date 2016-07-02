@@ -33,16 +33,18 @@ type commonFlags struct {
 type addVlanRun struct {
 	commonFlags
 	site          string
-	vlan          string
+	vlanId        uint
+	vlanAlias     string
 	inputFileDHCP string
 }
 
 type queryVlanRun struct {
 	commonFlags
-	limit int
-	site  string
-	vlan  string
-	ip    string
+	limit     int
+	site      string
+	vlanId    uint
+	vlanAlias string
+	ip        string
 }
 
 type addHostRun struct {
@@ -77,7 +79,10 @@ var (
 			c.Flags.StringVar(&c.backendHost, "backend-host",
 				backendHost, "Host to talk to")
 			c.Flags.StringVar(&c.site, "site", "", "Name of the site")
-			c.Flags.StringVar(&c.vlan, "vlan", "", "Name of the vlan")
+			c.Flags.UintVar(&c.vlanId, "vlan-id", 0,
+				"vlan number 1-4094, as defined by IEEE 802.1Q standard")
+			c.Flags.StringVar(&c.vlanAlias, "vlan-alias", "",
+				"Name of the vlan (usually suffix like -m1)")
 			c.Flags.StringVar(&c.inputFileDHCP, "input-file-dhcp", "",
 				"Path to a dchpd.conf file containing subnet entries.")
 			c.Flags.Var(&c.format, "format", "Output format: "+
@@ -97,7 +102,10 @@ var (
 			c.Flags.StringVar(&c.backendHost, "backend-host",
 				backendHost, "Host to talk to")
 			c.Flags.StringVar(&c.site, "site", "", "Name of the site")
-			c.Flags.StringVar(&c.vlan, "vlan", "", "Name of the vlan")
+			c.Flags.UintVar(&c.vlanId, "vlan-id", 0,
+				"vlan number 1-4094, as defined by IEEE 802.1Q standard")
+			c.Flags.StringVar(&c.vlanAlias, "vlan-alias", "",
+				"Name of the vlan (usually suffix like -m1)")
 			c.Flags.StringVar(&c.ip, "ip", "", "IP contained within the range")
 			// TODO(pgervais): tell the user when more results are available.
 			c.Flags.IntVar(&c.limit, "limit", 1000,
@@ -161,8 +169,8 @@ func ipRangeFromSiteAndVlan(c *addVlanRun) ([]*crimson.IPRange, error) {
 		return nil, fmt.Errorf("missing required -site option")
 	}
 
-	if c.vlan == "" {
-		return nil, fmt.Errorf("missing required -vlan option")
+	if c.vlanId == 0 {
+		return nil, fmt.Errorf("missing required -vlan-id option")
 	}
 
 	if c.Flags.NArg() == 0 {
@@ -189,10 +197,11 @@ func ipRangeFromSiteAndVlan(c *addVlanRun) ([]*crimson.IPRange, error) {
 	}
 
 	return []*crimson.IPRange{{
-		Site:    c.site,
-		Vlan:    c.vlan,
-		StartIp: parts[0],
-		EndIp:   parts[1]},
+		Site:      c.site,
+		VlanId:    uint32(c.vlanId),
+		VlanAlias: c.vlanAlias,
+		StartIp:   parts[0],
+		EndIp:     parts[1]},
 	}, nil
 }
 
@@ -260,10 +269,11 @@ func (c *queryVlanRun) Run(a subcommands.Application, args []string) int {
 	client := c.newCrimsonClient(ctx)
 
 	req := &crimson.IPRangeQuery{
-		Site:  c.site,
-		Vlan:  c.vlan,
-		Ip:    c.ip,
-		Limit: uint32(c.limit),
+		Site:      c.site,
+		VlanId:    uint32(c.vlanId),
+		VlanAlias: c.vlanAlias,
+		Ip:        c.ip,
+		Limit:     uint32(c.limit),
 	}
 
 	results, err := client.ReadIPRange(ctx, req)

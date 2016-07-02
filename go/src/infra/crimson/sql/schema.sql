@@ -6,11 +6,14 @@
 
 -- Create tables in the crimson DB.
 
-CREATE TABLE ip_range (
-  site varchar(20) NOT NULL,
-  vlan varchar(20),
+CREATE TABLE vlan (
+  site varchar(20),
+  -- IEEE 802.1Q supports VLAN IDs 1-4094.
+  vlan_id int,
+  vlan_alias varchar(20),
   start_ip varchar(34) NOT NULL,
-  end_ip varchar(34) NOT NULL
+  end_ip varchar(34) NOT NULL,
+  PRIMARY KEY (site, vlan_id)
 ) ENGINE=INNODB;
 
 CREATE index ip_range_start_ip_idx ON ip_range(start_ip);

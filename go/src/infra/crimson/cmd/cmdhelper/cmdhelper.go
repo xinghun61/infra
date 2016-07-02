@@ -32,7 +32,7 @@ type Pool struct {
 
 // Subnet represents a subnet section in a dhcpd.conf file.
 type Subnet struct {
-	vlan   string
+	vlanID uint32
 	suffix string
 	subnet net.IPNet
 	pools  []Pool
@@ -43,10 +43,11 @@ func (subnet *Subnet) IPRanges(site string) []*crimson.IPRange {
 	ipRange := []*crimson.IPRange{}
 	for _, pool := range subnet.pools {
 		ipRange = append(ipRange, &crimson.IPRange{
-			Vlan:    subnet.vlan,
-			Site:    site,
-			StartIp: pool.startIP,
-			EndIp:   pool.endIP,
+			Site:      site,
+			VlanId:    subnet.vlanID,
+			StartIp:   pool.startIP,
+			EndIp:     pool.endIP,
+			VlanAlias: subnet.suffix,
 		})
 	}
 	return ipRange
@@ -71,7 +72,6 @@ func ReadDhcpdConfFile(file io.Reader) ([]Subnet, error) {
 		case strings.HasPrefix(line, "subnet"):
 			subnet := readSubnetSection(line, scanner)
 			if names.vlanName != "" {
-				subnet.vlan = names.vlanName
 				subnet.suffix = names.vlanSuffix
 				names = vlanNames{}
 			}
@@ -116,6 +116,11 @@ func readSubnetSection(firstLine string, scanner *bufio.Scanner) Subnet {
 			subnet.subnet.Mask = parseIPMask(fields[ind+1])
 		}
 	}
+	// Convention: 3rd byte in IPv4 is the vlan ID.
+	// TODO(sergeyberezin): this is Chrome Infra specific, and should be
+	// moved to customization scripts.
+	subnet.vlanID = uint32(subnet.subnet.IP[2])
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if strings.HasPrefix(line, "pool") {
@@ -319,13 +324,14 @@ func FormatIPRange(ipRanges []*crimson.IPRange, format FormatType) ([]string, er
 	case csvFormat:
 		formatter = &CSVFormatter{}
 	}
-	rows := [][]string{{"site", "vlan", "Start IP", "End IP"}}
+	rows := [][]string{{"site", "vlan ID", "Start IP", "End IP", "vlan alias"}}
 	for _, ipRange := range ipRanges {
 		rows = append(rows, []string{
 			fmt.Sprintf("%s", ipRange.Site),
-			fmt.Sprintf("%s", ipRange.Vlan),
+			fmt.Sprintf("%d", ipRange.VlanId),
 			fmt.Sprintf("%s", ipRange.StartIp),
 			fmt.Sprintf("%s", ipRange.EndIp),
+			fmt.Sprintf("%s", ipRange.VlanAlias),
 		})
 	}
 	return formatter.FormatRows(rows), nil

@@ -41,7 +41,7 @@ func (rows *MockRows) Columns() []string {
 	}
 	ret := []string{}
 	for i := 0; i < len(rows.rows[0]); i += 1 {
-		ret = append(ret, "")
+		ret = append(ret, fmt.Sprintf("col%d", i))
 	}
 	return ret
 }

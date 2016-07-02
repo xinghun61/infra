@@ -36,6 +36,11 @@ func (s *crimsonService) CreateIPRange(ctx context.Context, req *crimson.IPRange
 	return &crimson.IPRangeStatus{}, userErrorToGRPCError(err)
 }
 
+func (s *crimsonService) DeleteIPRange(ctx context.Context, req *crimson.IPRangeDeleteList) (*crimson.IPRangeStatus, error) {
+	err := crimsondb.DeleteIPRange(ctx, req)
+	return &crimson.IPRangeStatus{}, userErrorToGRPCError(err)
+}
+
 func (s *crimsonService) ReadIPRange(ctx context.Context, req *crimson.IPRangeQuery) (*crimson.IPRanges, error) {
 
 	rows, err := crimsondb.SelectIPRange(ctx, req)
@@ -49,10 +54,11 @@ func (s *crimsonService) ReadIPRange(ctx context.Context, req *crimson.IPRangeQu
 		ret.Ranges = append(
 			ret.Ranges,
 			&crimson.IPRange{
-				Site:    row.Site,
-				Vlan:    row.Vlan,
-				StartIp: row.StartIP,
-				EndIp:   row.EndIP,
+				Site:      row.Site,
+				VlanId:    row.VlanId,
+				VlanAlias: row.VlanAlias,
+				StartIp:   row.StartIP,
+				EndIp:     row.EndIP,
 			})
 	}
 	return &ret, nil

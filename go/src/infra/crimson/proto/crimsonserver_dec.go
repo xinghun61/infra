@@ -31,6 +31,14 @@ func (s *DecoratedCrimson) ReadIPRange(c context.Context, req *IPRangeQuery) (*I
 	return s.Service.ReadIPRange(c, req)
 }
 
+func (s *DecoratedCrimson) DeleteIPRange(c context.Context, req *IPRangeDeleteList) (*IPRangeStatus, error) {
+	c, err := s.Prelude(c, "DeleteIPRange", req)
+	if err != nil {
+		return nil, err
+	}
+	return s.Service.DeleteIPRange(c, req)
+}
+
 func (s *DecoratedCrimson) CreateHost(c context.Context, req *HostList) (*HostStatus, error) {
 	c, err := s.Prelude(c, "CreateHost", req)
 	if err != nil {
