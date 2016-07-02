@@ -50,8 +50,6 @@ class SendNotificationTest(unittest.TestCase):
   def testPrepareAndSendIssueChangeNotification(self):
     notify.PrepareAndSendIssueChangeNotification(
         issue_id=78901,
-        _project_id=789,
-        _local_id=1,
         hostport='testbed-test.appspotmail.com',
         commenter_id=1,
         seq_num=0,
@@ -65,9 +63,7 @@ class SendNotificationTest(unittest.TestCase):
   def testPrepareAndSendIssueBlockingNotification(self):
     notify.PrepareAndSendIssueBlockingNotification(
         issue_id=78901,
-        _project_id=789,  # TODO(jrobbins): remove all _ params.
         hostport='testbed-test.appspotmail.com',
-        _local_id=1,
         delta_blocker_iids=[],
         commenter_id=1,
         send_email=True)
@@ -78,9 +74,7 @@ class SendNotificationTest(unittest.TestCase):
 
     notify.PrepareAndSendIssueBlockingNotification(
         issue_id=78901,
-        _project_id=789,
         hostport='testbed-test.appspotmail.com',
-        _local_id=1,
         delta_blocker_iids=[2],
         commenter_id=1,
         send_email=True)
@@ -93,8 +87,6 @@ class SendNotificationTest(unittest.TestCase):
     notify.SendIssueBulkChangeNotification(
         issue_ids=[78901],
         hostport='testbed-test.appspotmail.com',
-        _project_id=789,
-        _local_ids=[1],
         old_owner_ids=[2],
         comment_text='comment',
         commenter_id=1,
@@ -114,8 +106,6 @@ class SendNotificationTest(unittest.TestCase):
     notify.SendIssueBulkChangeNotification(
         issue_ids=[78901],
         hostport='testbed-test.appspotmail.com',
-        _project_id=789,
-        _local_ids=[1],
         old_owner_ids=[2],
         comment_text='comment',
         commenter_id=1,

@@ -44,17 +44,13 @@ TEMPLATE_PATH = framework_constants.TEMPLATE_PATH
 MAX_EMAIL_BODY_SIZE = 45000
 
 
-# TODO(jrobbins): remove project_id and local_id after we have deployed
-# a version that needs only issue_id.
 def PrepareAndSendIssueChangeNotification(
-    issue_id, _project_id, _local_id, hostport, commenter_id, seq_num,
+    issue_id, hostport, commenter_id, seq_num,
     send_email=True, old_owner_id=framework_constants.NO_USER_SPECIFIED):
   """Create a task to notify users that an issue has changed.
 
   Args:
     issue_id: int ID of the issue that was changed.
-    project_id: int ID of the project containing the changed issue.
-    local_id: Issue number for the issue that was updated and saved.
     hostport: string domain name and port number from the HTTP request.
     commenter_id: int user ID of the user who made the comment.
     seq_num: int index into the comments of the new comment.
@@ -71,11 +67,8 @@ def PrepareAndSendIssueChangeNotification(
   taskqueue.add(url=urls.NOTIFY_ISSUE_CHANGE_TASK + '.do', params=params)
 
 
-# TODO(jrobbins): remove project_id and local_id after we have deployed
-# a version that needs only issue_id.
 def PrepareAndSendIssueBlockingNotification(
-    issue_id, _project_id, hostport, _local_id, delta_blocker_iids,
-    commenter_id, send_email=True):
+    issue_id, hostport, delta_blocker_iids, commenter_id, send_email=True):
   """Create a task to follow up on an issue blocked_on change."""
   if not delta_blocker_iids:
     return  # No notification is needed
@@ -89,11 +82,9 @@ def PrepareAndSendIssueBlockingNotification(
   taskqueue.add(url=urls.NOTIFY_BLOCKING_CHANGE_TASK + '.do', params=params)
 
 
-# TODO(jrobbins): remove project_id and local_ids after we have deployed
-# a version that needs only issue_id.
 def SendIssueBulkChangeNotification(
-    issue_ids, hostport, _project_id, _local_ids, old_owner_ids,
-    comment_text, commenter_id, amendments, send_email, users_by_id):
+    issue_ids, hostport, old_owner_ids, comment_text, commenter_id,
+    amendments, send_email, users_by_id):
   """Create a task to follow up on an issue blocked_on change."""
   amendment_lines = []
   for up in amendments:

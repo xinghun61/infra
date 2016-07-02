@@ -470,8 +470,7 @@ class MonorailApi(remote.Service):
 
     if request.sendEmail:
       notify.PrepareAndSendIssueChangeNotification(
-          issue.issue_id, issue.project_id, issue.local_id,
-          framework_helpers.GetHostPort(),
+          issue.issue_id, framework_helpers.GetHostPort(),
           comment.user_id, seq, send_email=True, old_owner_id=old_owner_id)
 
     can_delete = permissions.CanDelete(
@@ -638,8 +637,7 @@ class MonorailApi(remote.Service):
 
     if request.sendEmail:
       notify.PrepareAndSendIssueChangeNotification(
-          new_issue.issue_id, mar.project_id, local_id,
-          framework_helpers.GetHostPort(),
+          new_issue.issue_id, framework_helpers.GetHostPort(),
           new_issue.reporter_id, 0)
 
     return api_pb2_v1_helpers.convert_issue(

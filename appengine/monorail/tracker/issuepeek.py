@@ -305,8 +305,7 @@ class IssuePeek(servlet.Servlet):
         cmnts = self.services.issue.GetCommentsForIssue(
             mr.cnxn, issue.issue_id)
         notify.PrepareAndSendIssueChangeNotification(
-            issue.issue_id, mr.project_id, mr.local_id, mr.request.host,
-            mr.auth.user_id, len(cmnts) - 1,
+            issue.issue_id, mr.request.host, mr.auth.user_id, len(cmnts) - 1,
             send_email=send_email, old_owner_id=old_owner_id)
 
     # TODO(jrobbins): allow issue merge via quick-edit.

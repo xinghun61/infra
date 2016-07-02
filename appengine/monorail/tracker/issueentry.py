@@ -308,13 +308,12 @@ class IssueEntry(servlet.Servlet):
           component_required=ezt.boolean(component_required))
       return
 
+    # Initial description is comment 0.
     notify.PrepareAndSendIssueChangeNotification(
-        issue.issue_id, mr.project_id, new_local_id, mr.request.host,
-        reporter_id, 0)  # Initial description is comment 0.
+        issue.issue_id, mr.request.host, reporter_id, 0)
 
     notify.PrepareAndSendIssueBlockingNotification(
-        issue.issue_id, mr.project_id, mr.request.host, new_local_id,
-        parsed.blocked_on.iids, reporter_id)
+        issue.issue_id, mr.request.host, parsed.blocked_on.iids, reporter_id)
 
     # format a redirect url
     return framework_helpers.FormatAbsoluteURL(

@@ -64,8 +64,8 @@ class InboundEmailTest(unittest.TestCase):
         self.cnxn, self.issue.issue_id).AndReturn(comments)
     self.mox.StubOutWithMock(notify, 'PrepareAndSendIssueChangeNotification')
     notify.PrepareAndSendIssueChangeNotification(
-        self.issue.issue_id, self.project.project_id, self.issue.local_id,
-        80, 101, len(comments) - 1, old_owner_id=self.issue.owner_id)
+        self.issue.issue_id, 80, 101, len(comments) - 1,
+        old_owner_id=self.issue.owner_id)
     self.mox.ReplayAll()
 
     self.uia.Parse(self.cnxn, self.project.project_name, 101,
