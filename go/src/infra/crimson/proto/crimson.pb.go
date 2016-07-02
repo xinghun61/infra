@@ -123,8 +123,9 @@ func (m *HostList) GetHosts() []*Host {
 	return nil
 }
 
-// Using the name numbers here than in the 'Host' message, so as to make it
-// a compatible subset of it.
+// Use the same numbers and fields here than as the 'Host' message, so as to
+// make it a compatible subset of it, in case we want to merge them in the
+// future.
 type HostDelete struct {
 	Hostname string `protobuf:"bytes,2,opt,name=hostname" json:"hostname,omitempty"`
 	MacAddr  string `protobuf:"bytes,3,opt,name=mac_addr,json=macAddr" json:"mac_addr,omitempty"`
@@ -135,6 +136,9 @@ func (m *HostDelete) String() string            { return proto.CompactTextString
 func (*HostDelete) ProtoMessage()               {}
 func (*HostDelete) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
+// Use the same numbers and fields here than as the 'Host' message, so as to
+// make it a compatible subset of it, in case we want to merge them in the
+// future.
 type HostDeleteList struct {
 	Hosts []*HostDelete `protobuf:"bytes,1,rep,name=hosts" json:"hosts,omitempty"`
 }

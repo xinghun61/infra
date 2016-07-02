@@ -15,8 +15,7 @@ import (
 	"github.com/luci/luci-go/common/logging"
 	"golang.org/x/net/context"
 
-	// This simply registers the mysql driver.
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 
 	crimson "infra/crimson/proto"
 )
@@ -392,6 +391,12 @@ func InsertHost(ctx context.Context, req *crimson.HostList) (err error) {
 
 	_, err = db.Exec(statement.String(), params...)
 	if err != nil {
+		// MySQL error 1062 is 'duplicate entry'.
+		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
+			logging.Warningf(ctx, "Insertion of new hosts failed. %s", err)
+			err = UserErrorf(AlreadyExists,
+				"Hosts couldn't be created because some entries already exist.")
+		}
 		logging.Errorf(ctx, "Insertion of new hosts failed. %s", err)
 		return
 	}

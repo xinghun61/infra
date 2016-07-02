@@ -13,10 +13,10 @@ import (
 	"github.com/luci/luci-go/client/authcli"
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/cli"
-	"github.com/luci/luci-go/common/logging/gologger"
 	"github.com/luci/luci-go/common/prpc"
 	"github.com/maruel/subcommands"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 
 	"infra/crimson/cmd/cmdhelper"
 	crimson "infra/crimson/proto"
@@ -246,14 +246,12 @@ func (c *addVlanRun) Run(a subcommands.Application, args []string) int {
 
 	for _, req := range ranges {
 		_, err := client.CreateIPRange(ctx, req)
-		// TODO: try everything even if it fails for some.
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return 1
 		}
 	}
 	// TODO(pgervais): provide some useful feedback to the user.
-	fmt.Println("Success.")
 	return 0
 }
 
@@ -322,7 +320,7 @@ func hostListFromRangeFromArgs(c *addHostRun) (*crimson.HostList, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Fprintf(os.Stderr, "Done.\n")
+	fmt.Fprintln(os.Stderr, "Done.")
 
 	return hostList, nil
 }
@@ -333,17 +331,16 @@ func (c *addHostRun) Run(a subcommands.Application, args []string) int {
 
 	hostList, err := hostListFromRangeFromArgs(c)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
 		return 1
 	}
 
 	_, err = client.CreateHost(ctx, hostList)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, "ERROR: %s\n", grpc.ErrorDesc(err))
 		return 1
 	}
 	// TODO(pgervais): provide some more useful feedback to the user.
-	fmt.Println("Success.")
 	return 0
 }
 
@@ -395,9 +392,6 @@ func main() {
 	application := &cli.Application{
 		Name:  "crimson",
 		Title: "Crimson DB Command-line Interface",
-		Context: func(ctx context.Context) context.Context {
-			return gologger.StdConfig.Use(ctx)
-		},
 		Commands: []*subcommands.Command{
 			subcommands.CmdHelp,
 			authcli.SubcommandInfo(opts, "info"),
@@ -409,5 +403,11 @@ func main() {
 			cmdQueryHost,
 		},
 	}
-	os.Exit(subcommands.Run(application, nil))
+	status := subcommands.Run(application, nil)
+	if status == 0 {
+		fmt.Fprintln(os.Stderr, "Success")
+	} else {
+		fmt.Fprintf(os.Stderr, "*** FAILURE (status %d) ***\n", status)
+	}
+	os.Exit(status)
 }
