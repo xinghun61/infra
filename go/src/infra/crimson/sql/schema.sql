@@ -13,6 +13,9 @@ CREATE TABLE ip_range (
   end_ip varchar(34) NOT NULL
 ) ENGINE=INNODB;
 
+CREATE index ip_range_start_ip_idx ON ip_range(start_ip);
+CREATE index ip_ragne_start_ip_idx ON ip_range(end_ip);
+
 CREATE TABLE host (
   site varchar(20) NOT NULL,
   hostname varchar(63) NOT NULL,
@@ -21,3 +24,6 @@ CREATE TABLE host (
   boot_class varchar(20),
   PRIMARY KEY (mac_addr)
 ) ENGINE=INNODB;
+
+CREATE index host_site_hostname_idx ON host(site, hostname);
+CREATE index host_site_ip_idx ON host(site, ip);
