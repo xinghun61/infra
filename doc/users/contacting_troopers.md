@@ -98,17 +98,9 @@ only. Other times support is provided best-effort.
 Infra holds office hours on Thursdays 2pm in MTV-43-1-171 Kampala, as well as
 on VC "cit-officehours".
 
-Infra members go on Envoys from time to time.  This is our current schedule:
-
-*   Stockholm: 9/22 - 9/25 estaab@
-*   Munich: 10/12 - 10/16 estaab@
-*   Stockholm: 10/19 - 10/23 stip@
-*   Sydney: 11/2 - 11/13 hinoka@
-*   Munich: 11/16 - 11/20 pgervais@
-
-During visit days, infra memeber generally are available to answer long standing
-questions, listen to gripes, and give a tech talk (look for it on your office
-mailing list!).
+Infra members go on Envoys from time to time. During visit days, infra memeber
+generally are available to answer long standing questions, listen to gripes, and
+give a tech talk (look for it on your office mailing list!).
 
 If you would like an infra member to visit your office, drop a line to
 chrome-infra@, we love visiting!
@@ -122,7 +114,7 @@ Common Non-Trooper Requests:
 *   [Contact a Git Admin](https://bugs.chromium.org/p/chromium/issues/entry?template=Infra-Git)
 
 [Master restart requests]: https://bugs.chromium.org/p/chromium/issues/entry?template=Build%20Infrastructure&labels=Restrict-View-Google,Infra-Troopers,Pri-2&summary=%5BMaster%20Restart%5D%20for%20%5Bmastername%5D&comment=Please%20provide%20the%20reason%20for%20restart%20(including%20CL%20link%20if%20possible).%0A%0ACc%20any%20users%20you%27d%20like%20notified%20of%20the%20restart.%0A%0ALeave%20at%20Pri-2%20for%20restart%20by%20end-of-day;%20Pri-1%20if%20you%20would%20like%20a%20restart%20sooner%20than%20that;%20or%20Pri-0%20if%20this%20is%20part%20of%20fixing%20an%20ongoing%20outage
-[Slave restart requests]: https://bugs.chromium.org/p/chromium/issues/entry?template=Build%20Infrastructure&labels=Restrict-View-Google,Infra-Troopers,Pri-2&cc=pgervais@chromium.org&summary=%5BSlave%20Restart%5D%20for%20%5Bslave%20hostame%5D&comment=Please%20provide%20the%20reason%20for%20restart.%0A%0ALeave%20at%20Pri-2%20for%20restart%20by%20end-of-day;%20Pri-1%20if%20you%20would%20like%20a%20restart%20sooner%20than%20that;%20or%20Pri-0%20if%20this%20is%20part%20of%20fixing%20an%20ongoing%20outage.
+[Slave restart requests]: https://bugs.chromium.org/p/chromium/issues/entry?template=Build%20Infrastructure&labels=Restrict-View-Google,Infra-Troopers,Pri-2&summary=%5BSlave%20Restart%5D%20for%20%5Bslave%20hostame%5D&comment=Please%20provide%20the%20reason%20for%20restart.%0A%0ALeave%20at%20Pri-2%20for%20restart%20by%20end-of-day;%20Pri-1%20if%20you%20would%20like%20a%20restart%20sooner%20than%20that;%20or%20Pri-0%20if%20this%20is%20part%20of%20fixing%20an%20ongoing%20outage.
 [Mobile device restart requests]: https://bugs.chromium.org/p/chromium/issues/entry?template=Build%20Infrastructure&labels=Restrict-View-Google,Infra-Troopers,Pri-2&components=Infra%3ELabs&summary=%5BDevice%20Restart%5D%20for%20%5Bmastername%5D&comment=Please%20provide%20the%20reason%20for%20restart.%0A%0ALeave%20at%20Pri-2%20for%20restart%20by%20end-of-day;%20Pri-1%20if%20you%20would%20like%20a%20restart%20sooner%20than%20that;%20or%20Pri-0%20if%20this%20is%20part%20of%20fixing%20an%20ongoing%20outage.
 [ChromeOS Waterfall Pin Bumps / Restarts]: https://bugs.chromium.org/p/chromium/issues/entry?template=Build%20Infrastructure&labels=Restrict-View-Google,Infra-Troopers,Pri-2&components=Infra&summary=%5BCrOS%20Chromite%20Pin%20Bump%20and%20Master%20Restart%5D&comment=Which%20Chromite%20branch%20should%20be%20updated%20(Leave%20blank%20for%20%22master%22)?%0A%0AReason%20for%20restart%20%28including%20CL%20link%20if%20possible%29:%0A%0ACc%20any%20users%20you%27d%20like%20notified%20of%20the%20restart.%0A%0ATROOPERS:%20please%20issue%20restart%20within%20a%20restart%20window%20(go/chrome-infra-cros-restart-windows).%0A%0AFor%20more%20information,%20see%20go/chrome-infra-doc-cros.
 [General requests]: https://bugs.chromium.org/p/chromium/issues/entry?template=Build%20Infrastructure&labels=Restrict-View-Google,Infra-Troopers&summary=%5BBrief%20description%20of%20problem%5D&comment=Please%20provide%20the%20details%20for%20your%20request%20here.%0A%0ASet%20Pri-0%20iff%20it%20requires%20immediate%20attention,%20Pri-1%20if%20resolution%20within%20a%20few%20hours%20is%20acceptable,%20and%20Pri-2%20if%20it%20just%20needs%20to%20be%20handled%20today.
