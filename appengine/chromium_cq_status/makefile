@@ -29,11 +29,11 @@ deploy:
 
 # This is necesary if dispatch rules are updated or for new deployments.
 deploy-dispatch:
-	appcfg.py -A $(APP_ID) --oauth2 update_dispatch --version $(GIT_REVISION)
+	appcfg.py -A $(APP_ID) --oauth2 update_dispatch .
 
 # This is necesary if index definition is updated or for new deployments.
 deploy-index:
-	appcfg.py -A $(APP_ID) --oauth2 update_index --version $(GIT_REVISION)
+	appcfg.py -A $(APP_ID) --oauth2 update_indexes .
 
 
 .PHONY: check test single-test
