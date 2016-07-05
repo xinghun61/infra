@@ -110,7 +110,7 @@ def show_all_flakes(flake, show_all):  # pragma: no cover
 
 class AllFlakeOccurrences(webapp2.RequestHandler):  # pragma: no cover
   def get(self):
-    key = self.request.get('key')
+    key = self.request.get('key').rstrip('.')
     flake = ndb.Key(urlsafe=key).get()
     show_all = self.request.get('show_all', 0)
 
