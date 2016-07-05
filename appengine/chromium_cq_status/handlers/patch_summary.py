@@ -174,6 +174,11 @@ class AttemptJobTracker(object):
         logging.warning('Unknown job state: %s', cq_job_state)
         continue
       for job_info in jobs:
+        build_number = job_info.get('buildnumber')
+        if not build_number:  # pragma: no cover
+          # Early exit: CQ is now scheduling with buildbucket,
+          # which means first events won't have a buildnumber, just build_id.
+          continue
         master = job_info.get('master')
         builder = job_info.get('builder')
         self.jobs.setdefault(master, {})
@@ -183,11 +188,6 @@ class AttemptJobTracker(object):
         # Ignore jobs from past attempts.
         if (not timestamp or  # pragma: no branch
             timestamp < self.cutoff_timestamp):
-          continue
-        build_number = job_info.get('buildnumber')
-        if not build_number:  # pragma: no cover
-          logging.warning('No build number for %s %s at %s.' % (
-              master, builder, timestamp))
           continue
         job = self.jobs[master][builder].setdefault(build_number, {})
         if len(job) == 0:
