@@ -1,5 +1,0 @@
-indexes:
-- kind: host
-  properties:
-  - name: State
-  - name: StateReported
