@@ -43,7 +43,8 @@ def summarize_patch(codereview_hostname, issue, patch, now):
   attempts = [
     summarize_attempt(raw_attempt, now)
     for raw_attempt in get_raw_attempts(codereview_hostname, issue, patch)
-  ][::-1]
+  ]
+  attempts.reverse()
   return {
     'success': any(attempt['success'] for attempt in attempts),
     'begin': maybe_min(attempt['begin'] for attempt in attempts),
@@ -67,26 +68,35 @@ def summarize_patch(codereview_hostname, issue, patch, now):
 
 
 def get_raw_attempts(codereview_hostname, issue, patch):
+  """Returns a generator for raw attempts."""
   # Do not filter by TAG_CODEREVIEW_HOSTNAME here, because it is not set for old
   # issues.
   query = Record.query().order(Record.timestamp).filter(
     Record.tags == TAG_ISSUE % issue,
     Record.tags == TAG_PATCHSET % patch)
-  raw_attempts = []
   raw_attempt = None
+  count = 0
   for record in query:
     if not record.matches_codereview_hostname(codereview_hostname):
       continue
-    if raw_attempt == None and TAG_START in record.tags:
+    if raw_attempt is None and TAG_START in record.tags:
       raw_attempt = []
-    if raw_attempt != None:  # pragma: no branch
+    if raw_attempt is not None:  # pragma: no branch
       raw_attempt.append(record)
       if TAG_STOP in record.tags:
-        raw_attempts.append(raw_attempt)
+        count += 1
+        logging.debug('attempt %d has %d records', count, len(raw_attempt))
+        yield raw_attempt
         raw_attempt = None
-  if raw_attempt != None and len(raw_attempt) > 0:  # pragma: no cover
-    raw_attempts.append(raw_attempt)
-  return raw_attempts
+  if raw_attempt:  # pragma: no cover
+    # In cq_stats and Dremel we ignore attempts that do not have patch_stop
+    # event. However, it may be not a good decision here as this app is
+    # user-facing and we don't want users to be confused why their last attempt
+    # is now shown until attempt is actually complete (or if for some reason
+    # patch_stop message was lost).
+    count += 1
+    logging.debug('attempt %d has %d records', count, len(raw_attempt))
+    yield raw_attempt
 
 
 def summarize_attempt(raw_attempt, now):
@@ -223,7 +233,7 @@ class AttemptJobTracker(object):
             job['duration'] = last_timestamp - job['begin']
           summaries[job['state']].append(job)
     for jobs in summaries.itervalues():
-      jobs.sort(cmp=lambda x, y: cmp(y['begin'], x['begin']))
+      jobs.sort(key=lambda x: x['begin'], reverse=True)
     return summaries
 
 
