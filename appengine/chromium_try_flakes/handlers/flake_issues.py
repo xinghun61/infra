@@ -20,6 +20,7 @@ import gae_ts_mon
 from issue_tracker import issue_tracker_api, issue
 from model.flake import (
     Flake, FlakeOccurrence, FlakeUpdate, FlakeUpdateSingleton, FlakyRun)
+from model.build_run import BuildRun
 from status import build_result, util
 from test_results.util import normalize_test_type, flatten_tests_trie
 
@@ -557,9 +558,7 @@ class CreateFlakyRun(webapp2.RequestHandler):
     # any changes to step names and step text. We should move away from parsing
     # buildbot to tools like flakiness dashboard (test-results.appspot.com),
     # which uses a standartized JSON format.
-    master = patchset_builder_runs.master 
-    if master.startswith('master.'):
-      master = master[len('master.'):]
+    master = BuildRun.removeMasterPrefix(patchset_builder_runs.master)
     url = ('http://build.chromium.org/p/' + master +
            '/json/builders/' + patchset_builder_runs.builder +'/builds/' +
            str(failure_run.buildnumber))

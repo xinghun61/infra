@@ -30,10 +30,18 @@ class PatchsetBuilderRuns(ndb.Model):  # pragma: no cover
 # compile flake, etc... This entity groups together all the instances that this
 # flake happened. A PatchsetBuilderRuns is always a parent of a BuildRun entity.
 class BuildRun(ndb.Model):  # pragma: no cover
+  @staticmethod
+  def removeMasterPrefix(master):
+    if master.startswith('master.'):
+      return master[len('master.'):]
+    else:
+      return master
+
   def getURL(self):
-    return ('http://build.chromium.org/p/' + self.key.parent().get().master +
-            '/builders/' + self.key.parent().get().builder + '/builds/' +
-            str(self.buildnumber))
+    parent = self.key.parent().get()
+    return ('http://build.chromium.org/p/' +
+            self.removeMasterPrefix(parent.master) + '/builders/' +
+            parent.builder + '/builds/' + str(self.buildnumber))
 
   buildnumber = ndb.IntegerProperty(required=True)
   result = ndb.IntegerProperty(required=True)
