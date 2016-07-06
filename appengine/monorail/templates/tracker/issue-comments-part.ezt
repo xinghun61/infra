@@ -10,7 +10,7 @@
 <select id="description-select" data-ct="[num_descriptions]" style="float: right;">
   [for descriptions]
     <option value="[descriptions.description_num]"[if-index descriptions last] selected[end]>
-      Description #[descriptions.description_num] ([descriptions.date_yyyymmdd])
+      Description #[descriptions.description_num] ([descriptions.creator.display_name], [descriptions.date_yyyymmdd])
     </option>
   [end][# for descriptions]
 </select>
@@ -20,7 +20,6 @@
   [for descriptions]
     <div id="d[descriptions.description_num]"
          [if-index descriptions last][else]style="display: none;"[end]>
-[if-any multiple_descriptions]([include "../framework/user-link.ezt" descriptions.creator])[end]
       <pre class="issue_text" tabIndex="1">
 [for descriptions.text_runs][include "render-rich-text.ezt" descriptions.text_runs][end]
       </pre>
