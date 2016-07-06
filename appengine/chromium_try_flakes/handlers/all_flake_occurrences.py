@@ -110,7 +110,13 @@ def show_all_flakes(flake, show_all):  # pragma: no cover
 
 class AllFlakeOccurrences(webapp2.RequestHandler):  # pragma: no cover
   def get(self):
-    key = self.request.get('key').rstrip('.')
+    # We strip trailing '.' from the key as some users copy the URL manually
+    # including the period in the end of the sentence.
+    key = self.request.get('key', '').rstrip('.')
+    if not key:
+      self.response.set_status(404, 'Flake ID is not specified')
+      return
+
     flake = ndb.Key(urlsafe=key).get()
     show_all = self.request.get('show_all', 0)
 
