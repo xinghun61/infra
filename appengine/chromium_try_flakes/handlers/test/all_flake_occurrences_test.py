@@ -8,7 +8,7 @@ from testing_utils import testing
 
 from handlers import all_flake_occurrences
 import main
-from model.flake import Flake, FlakyRun
+from model.flake import Flake, FlakyRun, FlakeOccurrence
 from model.build_run import PatchsetBuilderRuns, BuildRun
 
 
@@ -16,7 +16,7 @@ class TestAllFlakeOccurrences(testing.AppengineTestCase):
   app_module = main.app
 
   def _create_flake(self):
-    tf = datetime.datetime.utcnow()
+    tf = datetime.datetime(2016, 06, 06, 10, 20, 30)
     ts = tf - datetime.timedelta(hours=1)
     tf2 = tf - datetime.timedelta(days=5)
     ts2 = tf2 - datetime.timedelta(hours=1)
@@ -33,15 +33,23 @@ class TestAllFlakeOccurrences(testing.AppengineTestCase):
     br_s2 = BuildRun(parent=p, buildnumber=4, result=0, time_started=ts,
                      time_finished=tf).put()
     occ_key1 = FlakyRun(failure_run=br_f0, success_run=br_s2,
+                        flakes=[FlakeOccurrence(name='foo', failure='foo.bar'),
+                                FlakeOccurrence(name='foo', failure='other')],
                         failure_run_time_started=ts2,
                         failure_run_time_finished=tf2).put()
     occ_key2 = FlakyRun(failure_run=br_f1, success_run=br_s1,
+                        flakes=[FlakeOccurrence(name='bar', failure='foo.bar')],
                         failure_run_time_started=ts,
                         failure_run_time_finished=tf).put()
     occ_key3 = FlakyRun(failure_run=br_f2, success_run=br_s2,
+                        flakes=[
+                          FlakeOccurrence(
+                            name='foo', failure='foo.bar', issue_id=100),
+                          FlakeOccurrence(
+                            name='bar', failure='foo.bar', issue_id=200)],
                         failure_run_time_started=ts,
                         failure_run_time_finished=tf).put()
-    return Flake(name='foo.bar', count_day=10,
+    return Flake(name='foo.bar', count_day=10, is_step=False,
                  occurrences=[occ_key1, occ_key2, occ_key3])
 
   def test_filter_none(self):
@@ -54,6 +62,23 @@ class TestAllFlakeOccurrences(testing.AppengineTestCase):
     self.assertFalse(all_flake_occurrences._is_webkit_test_name('Foo.Bar/One'))
     self.assertTrue(all_flake_occurrences._is_webkit_test_name('foo/bar.html'))
     self.assertTrue(all_flake_occurrences._is_webkit_test_name('foo/bar.svg'))
+
+  def test_returns_correct_grouped_runs(self):
+    flake = self._create_flake()
+    flake.is_step = True  # for coverage
+    data = all_flake_occurrences.show_all_flakes(flake, False)
+
+    self.assertEqual(len(data['grouped_runs']), 2)
+    self.assertEqual(len(data['grouped_runs'][0]), 2)
+    self.assertEqual(len(data['grouped_runs'][1]), 1)
+    return [data['grouped_runs'][0][0].__dict__,
+            data['grouped_runs'][0][1].__dict__,
+            data['grouped_runs'][1][0].__dict__]
+
+  def test_correctly_generates_flakiness_dashboard_urls(self):
+    flake = self._create_flake()
+    data = all_flake_occurrences.show_all_flakes(flake, False)
+    return data['flakiness_dashboard_urls']
 
   def test_smoke(self):
     flake_key = self._create_flake().put()

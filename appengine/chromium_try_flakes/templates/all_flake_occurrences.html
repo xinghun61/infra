@@ -15,10 +15,13 @@ Current Issue ID where new flakes are reported:
 </form>
 </tr>
 
-{% if flakiness_dashboard_url %}
+{% if flakiness_dashboard_urls %}
 <tr>
 <td colspan="4">
-<a href="{{flakiness_dashboard_url}}">Flakiness Dashboard</a>
+Flakiness Dashboard URLs:
+{% for url in flakiness_dashboard_urls %}
+<a href="{{url.url}}">{{url.step_name}}</a>
+{% endfor %}
 </td>
 </tr>
 {% endif %}

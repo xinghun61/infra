@@ -1,0 +1,26 @@
+[
+  {
+    "builder": "test-builder",
+    "formatted_time": "2016-06-06 10:20:30 UTC",
+    "issue_ids": "set([])",
+    "patchset_url": "https://codereview.chromium.org/123456/#ps1",
+    "time_finished": "datetime.datetime(2016, 6, 6, 10, 20, 30)",
+    "url": "http://build.chromium.org/p/tryserver.test/builders/test-builder/builds/1"
+  },
+  {
+    "builder": "test-builder",
+    "formatted_time": "2016-06-06 10:20:30 UTC",
+    "issue_ids": "set([200, 100])",
+    "patchset_url": "https://codereview.chromium.org/123456/#ps1",
+    "time_finished": "datetime.datetime(2016, 6, 6, 10, 20, 30)",
+    "url": "http://build.chromium.org/p/tryserver.test/builders/test-builder/builds/3"
+  },
+  {
+    "builder": "test-builder",
+    "formatted_time": "2016-06-01 10:20:30 UTC",
+    "issue_ids": "set([])",
+    "patchset_url": "https://codereview.chromium.org/123456/#ps1",
+    "time_finished": "datetime.datetime(2016, 6, 1, 10, 20, 30)",
+    "url": "http://build.chromium.org/p/tryserver.test/builders/test-builder/builds/0"
+  }
+]

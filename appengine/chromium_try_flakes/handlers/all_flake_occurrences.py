@@ -20,7 +20,7 @@ FLAKINESS_DASHBOARD_URL = (
   'testType=%(normalized_step_name)s&tests=%(test_name)s')
 
 
-def RunsSortFunction(s):  # pragma: no cover
+def RunsSortFunction(s):
   return s.time_finished
 
 def filterNone(elements):
@@ -41,10 +41,13 @@ def show_all_flakes(flake, show_all):
   failure_runs_keys = []
   patchsets_keys = []
   flakes = []
+  step_names = set()
   for o in occurrences:
     failure_runs_keys.append(o.failure_run)
     patchsets_keys.append(o.failure_run.parent())
-    flakes.append(f for f in o.flakes if f.failure == flake.name)
+    matching_flakes = [f for f in o.flakes if f.failure == flake.name]
+    flakes.append(matching_flakes)
+    step_names.update(f.name for f in matching_flakes)
 
   failure_runs = filterNone(ndb.get_multi(failure_runs_keys))
   patchsets = filterNone(ndb.get_multi(patchsets_keys))
@@ -88,25 +91,25 @@ def show_all_flakes(flake, show_all):
 
   show_all_link = (len(flake.occurrences) > MAX_OCCURRENCES_DEFAULT and
                    not show_all)
-  values = {
+  data = {
     'flake': flake,
     'grouped_runs': grouped_runs,
     'show_all_link': show_all_link,
     'time_now': datetime.datetime.utcnow(),
   }
 
-  # TODO(sergiyb): Currently we do not have information about which step a
-  # given flaky test is executed in, see http://crbug.com/621454. However,
-  # since flakiness is mostly found in webkit_tests, we can use a hard-coded
-  # step name if we discover that test name looks like WebKit test. This should
-  # change after we start recording step name for each test flake.
-  if not flake.is_step and _is_webkit_test_name(flake.name):  # pragma: no cover
-    values['flakiness_dashboard_url'] = FLAKINESS_DASHBOARD_URL % {
-      'normalized_step_name': 'webkit_tests (with patch)',
-      'test_name': flake.name,
-    }
+  if not flake.is_step:
+    data['flakiness_dashboard_urls'] = [
+      {
+        'url': FLAKINESS_DASHBOARD_URL % {
+          'normalized_step_name': step_name,
+          'test_name': flake.name
+        },
+        'step_name': step_name,
+      } for step_name in step_names
+    ]
 
-  return template.render('templates/all_flake_occurrences.html', values)
+  return data
 
 class AllFlakeOccurrences(webapp2.RequestHandler):
   def get(self):
@@ -125,4 +128,6 @@ class AllFlakeOccurrences(webapp2.RequestHandler):
       return
 
     show_all = self.request.get('show_all', 0)
-    self.response.write(show_all_flakes(flake, show_all))
+    data = show_all_flakes(flake, show_all)
+    html = template.render('templates/all_flake_occurrences.html', data)
+    self.response.write(html)
