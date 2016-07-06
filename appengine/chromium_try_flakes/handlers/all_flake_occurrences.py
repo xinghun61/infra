@@ -34,7 +34,7 @@ def _is_webkit_test_name(flake_name):
   return file_name.endswith(('.html', '.xml', '.xhtml', '.xht', '.pl', '.htm',
                              '.php', '.svg', '.mht', '.pdf',))
 
-def show_all_flakes(flake, show_all):  # pragma: no cover
+def show_all_flakes(flake, show_all):
   from_index = 0 if show_all else -MAX_OCCURRENCES_DEFAULT
   occurrences = filterNone(ndb.get_multi(flake.occurrences[from_index:]))
 
@@ -100,7 +100,7 @@ def show_all_flakes(flake, show_all):  # pragma: no cover
   # since flakiness is mostly found in webkit_tests, we can use a hard-coded
   # step name if we discover that test name looks like WebKit test. This should
   # change after we start recording step name for each test flake.
-  if not flake.is_step and _is_webkit_test_name(flake.name):
+  if not flake.is_step and _is_webkit_test_name(flake.name):  # pragma: no cover
     values['flakiness_dashboard_url'] = FLAKINESS_DASHBOARD_URL % {
       'normalized_step_name': 'webkit_tests (with patch)',
       'test_name': flake.name,
@@ -108,20 +108,21 @@ def show_all_flakes(flake, show_all):  # pragma: no cover
 
   return template.render('templates/all_flake_occurrences.html', values)
 
-class AllFlakeOccurrences(webapp2.RequestHandler):  # pragma: no cover
+class AllFlakeOccurrences(webapp2.RequestHandler):
   def get(self):
     # We strip trailing '.' from the key as some users copy the URL manually
     # including the period in the end of the sentence.
     key = self.request.get('key', '').rstrip('.')
     if not key:
-      self.response.set_status(404, 'Flake ID is not specified')
+      self.response.set_status(400, 'Flake ID is not specified')
       return
 
-    flake = ndb.Key(urlsafe=key).get()
+    try:
+      flake = ndb.Key(urlsafe=key).get()
+      assert flake
+    except Exception:
+      self.response.set_status(404, 'Failed to find flake with id "%s"' % key)
+      return
+
     show_all = self.request.get('show_all', 0)
-
-    if not flake:
-      self.response.set_status(404, 'Flake with id %s does not exist' % key)
-      return
-
     self.response.write(show_all_flakes(flake, show_all))

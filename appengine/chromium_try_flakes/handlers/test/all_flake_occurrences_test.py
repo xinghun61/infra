@@ -2,12 +2,48 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
+
 from testing_utils import testing
 
 from handlers import all_flake_occurrences
+import main
+from model.flake import Flake, FlakyRun
+from model.build_run import PatchsetBuilderRuns, BuildRun
 
 
 class TestAllFlakeOccurrences(testing.AppengineTestCase):
+  app_module = main.app
+
+  def _create_flake(self):
+    tf = datetime.datetime.utcnow()
+    ts = tf - datetime.timedelta(hours=1)
+    tf2 = tf - datetime.timedelta(days=5)
+    ts2 = tf2 - datetime.timedelta(hours=1)
+    p = PatchsetBuilderRuns(issue=123456, patchset=1, master='tryserver.test',
+                            builder='test-builder').put()
+    br_f0 = BuildRun(parent=p, buildnumber=0, result=2, time_started=ts2,
+                     time_finished=tf2).put()
+    br_f1 = BuildRun(parent=p, buildnumber=1, result=2, time_started=ts,
+                     time_finished=tf).put()
+    br_s1 = BuildRun(parent=p, buildnumber=2, result=0, time_started=ts,
+                     time_finished=tf).put()
+    br_f2 = BuildRun(parent=p, buildnumber=3, result=4, time_started=ts,
+                     time_finished=tf).put()
+    br_s2 = BuildRun(parent=p, buildnumber=4, result=0, time_started=ts,
+                     time_finished=tf).put()
+    occ_key1 = FlakyRun(failure_run=br_f0, success_run=br_s2,
+                        failure_run_time_started=ts2,
+                        failure_run_time_finished=tf2).put()
+    occ_key2 = FlakyRun(failure_run=br_f1, success_run=br_s1,
+                        failure_run_time_started=ts,
+                        failure_run_time_finished=tf).put()
+    occ_key3 = FlakyRun(failure_run=br_f2, success_run=br_s2,
+                        failure_run_time_started=ts,
+                        failure_run_time_finished=tf).put()
+    return Flake(name='foo.bar', count_day=10,
+                 occurrences=[occ_key1, occ_key2, occ_key3])
+
   def test_filter_none(self):
     self.assertEqual([1, 2], all_flake_occurrences.filterNone([1, None, 2]))
 
@@ -18,3 +54,23 @@ class TestAllFlakeOccurrences(testing.AppengineTestCase):
     self.assertFalse(all_flake_occurrences._is_webkit_test_name('Foo.Bar/One'))
     self.assertTrue(all_flake_occurrences._is_webkit_test_name('foo/bar.html'))
     self.assertTrue(all_flake_occurrences._is_webkit_test_name('foo/bar.svg'))
+
+  def test_smoke(self):
+    flake_key = self._create_flake().put()
+    self.test_app.get('/all_flake_occurrences?key=%s' % flake_key.urlsafe())
+
+  def test_no_occurrences(self):
+    flake_key = Flake(name='foo.bar').put()
+    self.test_app.get('/all_flake_occurrences?key=%s' % flake_key.urlsafe())
+
+  def test_key_with_trailing_period(self):
+    flake_key = self._create_flake().put()
+    self.test_app.get('/all_flake_occurrences?key=%s.' % flake_key.urlsafe())
+
+  def test_missing_key(self):
+    response = self.test_app.get('/all_flake_occurrences?key=', status=400)
+    self.assertEqual(response.status, '400 Flake ID is not specified')
+
+  def test_all_flake_occurrences_key_with_invalid_key(self):
+    response = self.test_app.get('/all_flake_occurrences?key=foo', status=404)
+    self.assertEqual(response.status, '404 Failed to find flake with id "foo"')
