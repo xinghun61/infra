@@ -77,6 +77,8 @@ class State(object):
     self.store = store_ctor(self)
     # Cached time of the last flush. Useful mostly in AppEngine apps.
     self.last_flushed = datetime.datetime.utcfromtimestamp(0)
+    # Metric name prefix
+    self.metric_name_prefix = '/chrome/infra/'
 
   def reset_for_unittest(self):
     self.metrics = {}

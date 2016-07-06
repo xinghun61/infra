@@ -304,6 +304,13 @@ class GlobalsTest(auto_stub.TestCase):
     with self.assertRaises(SystemExit):
       config.process_argparse_options(args)
 
+  def test_metric_name_prefix(self):
+    p = argparse.ArgumentParser()
+    config.add_argparse_options(p)
+    args = p.parse_args(['--ts-mon-metric-name-prefix', '/test/random/'])
+    config.process_argparse_options(args)
+    self.assertEqual('/test/random/', interface.state.metric_name_prefix)
+
   @mock.patch('infra_libs.ts_mon.common.monitors.NullMonitor', autospec=True)
   def test_no_args(self, fake_monitor):
     singleton = mock.Mock()
@@ -313,6 +320,7 @@ class GlobalsTest(auto_stub.TestCase):
     args = p.parse_args([])
     config.process_argparse_options(args)
     self.assertEqual(1, len(fake_monitor.mock_calls))
+    self.assertEqual('/chrome/infra/', interface.state.metric_name_prefix)
     self.assertIs(interface.state.global_monitor, singleton)
 
   @mock.patch('requests.get', autospec=True)

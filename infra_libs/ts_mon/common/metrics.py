@@ -94,7 +94,7 @@ class Metric(object):
     """
 
     metric_pb = collection_pb.data.add()
-    metric_pb.metric_name_prefix = '/chrome/infra/'
+    metric_pb.metric_name_prefix = interface.state.metric_name_prefix
     metric_pb.name = self._name
     if self._description is not None:
       metric_pb.description = self._description

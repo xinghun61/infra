@@ -159,6 +159,10 @@ def add_argparse_options(parser):
       help='number (e.g. for replication) of this instance of this task '
            '(default: %(default)s)')
 
+  parser.add_argument(
+      '--ts-mon-metric-name-prefix',
+      default='/chrome/infra/',
+      help='metric name prefix for all metrics (default: %(default)s)')
 
 def process_argparse_options(args):
   """Process command line arguments to initialize the global monitor.
@@ -212,6 +216,7 @@ def process_argparse_options(args):
         hostname,
         args.ts_mon_task_number)
 
+  interface.state.metric_name_prefix = args.ts_mon_metric_name_prefix
   interface.state.global_monitor = monitors.NullMonitor()
 
   if endpoint.startswith('file://'):
