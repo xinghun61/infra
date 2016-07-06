@@ -164,32 +164,7 @@ func ninjalogForm(w http.ResponseWriter, req *http.Request) {
 	}
 	ctx := appengine.NewContext(req)
 	u := user.Current(ctx)
-	login, err := user.LoginURL(ctx, "/ninja_log/")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	logout, err := user.LogoutURL(ctx, "/ninja_log/")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(http.StatusOK)
-	data := struct {
-		User   *user.User
-		Login  string
-		Logout string
-	}{
-		User:   u,
-		Login:  login,
-		Logout: logout,
-	}
-	err = formTmpl.Execute(w, data)
-	if err != nil {
-		ctx.Errorf("formTmpl: %v", err)
-	}
-
+	authPage(w, req, http.StatusOK, formTmpl, u, "/ninja_log/")
 }
 
 func ninjalogUpload(w http.ResponseWriter, req *http.Request) {

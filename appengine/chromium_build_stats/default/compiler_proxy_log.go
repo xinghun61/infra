@@ -86,6 +86,23 @@ var (
 </body>
 </html>
 `))
+
+	compilerProxyAuthTmpl = template.Must(template.New("compiler_proxy_auth").Parse(`
+<html>
+<head>
+ <title>compiler_proxy log</title>
+</head>
+<body>
+{{if .User}}
+{{.User.Email}} is not alow to access this page.
+Please <a href="{{.Logout}}">logout</a> and login with @google.com account.
+<div align="right"><a href="{{.Logout}}">logout</a></div>
+{{else}}
+ <div align="right"><a href="{{.Login}}">login</a></div>
+You need to <a href="{{.Login}}">login</a> with @google.com account to access compiler_proxy log file.
+{{end}}
+</body>
+</html>`))
 )
 
 func init() {
@@ -95,13 +112,13 @@ func init() {
 // compilerProxyLogHandler handles /<path> for compiler_proxy.INFO log file in gs://chrome-goma-log/<path>
 func compilerProxyLogHandler(w http.ResponseWriter, req *http.Request) {
 	ctx := appengine.NewContext(req)
-	user := user.Current(ctx)
-	if user == nil {
-		http.Error(w, "Login required", http.StatusUnauthorized)
+	u := user.Current(ctx)
+	if u == nil {
+		authPage(w, req, http.StatusUnauthorized, compilerProxyAuthTmpl, u, path.Join("/compiler_proxy_log", req.URL.Path))
 		return
 	}
-	if !strings.HasSuffix(user.Email, "@google.com") {
-		http.Error(w, "Unauthorized to access", http.StatusUnauthorized)
+	if !strings.HasSuffix(u.Email, "@google.com") {
+		authPage(w, req, http.StatusUnauthorized, compilerProxyAuthTmpl, u, path.Join("/compiler_proxy_log", req.URL.Path))
 		return
 	}
 
