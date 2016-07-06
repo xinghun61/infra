@@ -20,6 +20,6 @@ commands = {
   'delete_old_flake_occurrences': cq_status.delete_old_flake_occurrences,
 }
 
-class CronDispatch(webapp2.RequestHandler):  # pragma: no cover
+class CronDispatch(webapp2.RequestHandler):
   def get(self, job):
     commands[job]()

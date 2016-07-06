@@ -24,11 +24,10 @@ MAX_OCCURRENCES_PER_FLAKE_ON_INDEX_PAGE = 4
 def filterNone(elements):
   return [e for e in elements if e is not None]
 
-def FlakeSortFunction(s):  # pragma: no cover
+def FlakeSortFunction(s):
   return s.builder + str(time.mktime(s.time_finished.timetuple()))
 
-def GetFilteredOccurences(flake, time_formatter,
-                          filter_function):  # pragma: no cover
+def GetFilteredOccurences(flake, time_formatter, filter_function):
   occurrences = filterNone(ndb.get_multi(
     flake.occurrences[-MAX_OCCURRENCES_PER_FLAKE_ON_INDEX_PAGE:]))
 
@@ -53,10 +52,9 @@ def GetFilteredOccurences(flake, time_formatter,
   return sorted(filtered_occurrences, key=FlakeSortFunction)
 
 
-class Index(webapp2.RequestHandler):  # pragma: no cover
-  def get(self):
-    time_range = self.request.get('range', default_value='day')
-    cursor = Cursor(urlsafe=self.request.get('cursor'))
+class Index(webapp2.RequestHandler):
+  @staticmethod
+  def index(time_range, cursor=None):
     flakes_query = Flake.query()
     if time_range == 'hour':
       flakes_query = flakes_query.filter(Flake.last_hour == True)
@@ -82,13 +80,13 @@ class Index(webapp2.RequestHandler):  # pragma: no cover
     def filter_by_range(t):
       if time_range == 'hour':
         return is_last_hour(t)
-      if time_range == 'day':
+      elif time_range == 'day':
         return is_last_day(t)
-      if time_range == 'week':
+      elif time_range == 'week':
         return is_last_week(t)
-      if time_range == 'month':
+      elif time_range == 'month':
         return is_last_month(t)
-      if time_range == 'all':
+      else:
         return True
 
     time_format = ''
@@ -106,10 +104,15 @@ class Index(webapp2.RequestHandler):  # pragma: no cover
       if len(f.occurrences) > MAX_OCCURRENCES_PER_FLAKE_ON_INDEX_PAGE:
         f.more_occurrences = True
 
-    values = {
+    return {
       'range': time_range,
       'flakes': flakes,
       'more': more,
       'cursor': next_cursor.urlsafe() if next_cursor else '',
     }
-    self.response.write(template.render('templates/index.html', values))
+
+  def get(self):
+    time_range = self.request.get('range', default_value='day')
+    cursor = Cursor(urlsafe=self.request.get('cursor'))
+    self.response.write(
+        template.render('templates/index.html', self.index(time_range, cursor)))
