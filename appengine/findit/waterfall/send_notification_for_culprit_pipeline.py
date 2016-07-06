@@ -14,16 +14,17 @@ from common.pipeline_wrapper import BasePipeline
 from common.rietveld import Rietveld
 from model import analysis_status as status
 from model.wf_culprit import WfCulprit
+from waterfall import build_util
 from waterfall import waterfall_config
 
 
 @ndb.transactional
 def _ShouldSendNotification(
     master_name, builder_name, build_number, repo_name, revision,
-    build_num_threshold, time_limit_passed):
+    commit_position, build_num_threshold, time_limit_passed):
   """Returns True if a notification for the culprit should be sent."""
   culprit = (WfCulprit.Get(repo_name, revision) or
-             WfCulprit.Create(repo_name, revision))
+             WfCulprit.Create(repo_name, revision, commit_position))
   if [master_name, builder_name, build_number] in culprit.builds:
     return False
 
@@ -53,17 +54,18 @@ def _UpdateNotificationStatus(repo_name, revision, new_status):
   culprit.put()
 
 
-def _SendNotificationForCulprit(repo_name, revision, code_review_url):
+def _SendNotificationForCulprit(
+    repo_name, revision, commit_position, code_review_url):
   sent = False
   if code_review_url:
     # Occasionally, a commit was not uploaded for code-review.
     culprit = WfCulprit.Get(repo_name, revision)
     rietveld = Rietveld()
     message = textwrap.dedent("""
-    Findit Try-job identified this CL (revision %s) as the culprit for failures
-    in the build cycle(s) as shown on:
+    FYI: Findit try jobs (rerunning failed compile or tests) identified this CL
+    at revision %s as the culprit for failures in the build cycles as shown on:
     https://findit-for-me.appspot.com/waterfall/culprit?key=%s
-    """) % (revision, culprit.key.urlsafe())
+    """) % (commit_position or revision, culprit.key.urlsafe())
     sent = rietveld.PostMessage(code_review_url, message)
   else:
     logging.error('No code-review url for %s/%s', repo_name, revision)
@@ -74,18 +76,18 @@ def _SendNotificationForCulprit(repo_name, revision, code_review_url):
 
 
 def _GetCulpritInfo(repo_name, revision):
-  """Returns commit time and code-review url of the given revision."""
+  """Returns commit position/time and code-review url of the given revision."""
   # TODO(stgao): get repo url at runtime based on the given repo name.
   # unused arg - pylint: disable=W0612,W0613
   repo = GitRepository(
       'https://chromium.googlesource.com/chromium/src.git', HttpClient())
   change_log = repo.GetChangeLog(revision)
-  return change_log.committer_time, change_log.code_review_url
+  return change_log.commit_position, change_log.code_review_url
 
 
-def _NotificationTimeLimitPassed(commit_time, latency_limit_minutes):
+def _NotificationTimeLimitPassed(build_end_time, latency_limit_minutes):
   """Returns True if it is too late to send notification."""
-  latency_seconds = (datetime.utcnow() - commit_time).total_seconds()
+  latency_seconds = (datetime.utcnow() - build_end_time).total_seconds()
   return latency_seconds > latency_limit_minutes * 60
 
 
@@ -100,12 +102,16 @@ class SendNotificationForCulpritPipeline(BasePipeline):
     latency_limit_minutes = action_settings.get(
         'cr_notification_latency_limit_minutes', 1)
 
-    commit_time, code_review_url = _GetCulpritInfo(repo_name, revision)
+    commit_position, code_review_url = _GetCulpritInfo(
+        repo_name, revision)
+    build_end_time = build_util.GetBuildEndTime(
+        master_name, builder_name, build_number)
     time_limit_passed = _NotificationTimeLimitPassed(
-        commit_time, latency_limit_minutes)
+        build_end_time, latency_limit_minutes)
 
     if not _ShouldSendNotification(
-      master_name, builder_name, build_number,
-      repo_name, revision, build_threshold, time_limit_passed):
+      master_name, builder_name, build_number, repo_name,
+      revision, commit_position, build_threshold, time_limit_passed):
       return False
-    return _SendNotificationForCulprit(repo_name, revision, code_review_url)
+    return _SendNotificationForCulprit(
+        repo_name, revision, commit_position, code_review_url)

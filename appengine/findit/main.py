@@ -11,6 +11,7 @@ from findit_api import FindItApi
 from handlers import build_failure
 from handlers import check_duplicate_failures
 from handlers import config
+from handlers import culprit
 from handlers import failure_log
 from handlers import help_triage
 from handlers import list_analyses
@@ -65,6 +66,7 @@ waterfall_frontend_web_pages_handler_mappings = [
      check_duplicate_failures.CheckDuplicateFailures),
     ('/waterfall/check-flake', check_flake.CheckFlake),
     ('/waterfall/config', config.Configuration),
+    ('/waterfall/culprit', culprit.Culprit),
     ('/waterfall/failure-log', failure_log.FailureLog),
     ('/waterfall/help-triage', help_triage.HelpTriage),
     ('/waterfall/list-analyses', list_analyses.ListAnalyses),

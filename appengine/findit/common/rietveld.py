@@ -15,7 +15,7 @@ _RIETVELD_ISSUE_NUMBER_RE = re.compile('^/(\d+)/?.*')
 
 class Rietveld(CodeReview):
   """The implementation of CodeReview interface for Rietveld."""
-  HTTP_CLIENT = HttpClientAppengine()
+  HTTP_CLIENT = HttpClientAppengine(follow_redirects=False)
 
   def _GetXsrfToken(self, rietveld_url):
     """Returns the xsrf token for follow-up requests."""

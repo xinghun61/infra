@@ -166,3 +166,22 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(build.data_source, build_util.BUILDBOT_MASTER)
     self.assertEqual(build.data, 'Test get build data from build master')
+
+  def testGetBuildEndTime(self):
+    cases = {
+        'null': None,
+        '1467740016': datetime.datetime(2016, 7, 5, 17, 33, 36),
+    }
+    for end_time, expected_time in cases.iteritems():
+      master_name = 'm'
+      builder_name = 'b'
+      build_number = 123
+      build = WfBuild.Create(master_name, builder_name, build_number)
+      build.data = '{"times": [1467738821, %s]}' % end_time
+      build.completed = True
+      build.last_crawled_time = self._TimeBeforeNowBySeconds(10)
+      build.put()
+
+      self.assertEqual(expected_time,
+                       build_util.GetBuildEndTime(
+                           master_name, builder_name, build_number))

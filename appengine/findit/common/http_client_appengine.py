@@ -23,6 +23,10 @@ _INTERNAL_HOSTS_TO_SCOPES = {
 class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
   """A http client for running on appengine."""
 
+  def __init__(self, follow_redirects=True, *args, **kwargs):
+    super(HttpClientAppengine, self).__init__(*args, **kwargs)
+    self.follow_redirects = follow_redirects
+
   def _ExpandAuthorizationHeaders(self, headers, scope):
     headers['Authorization'] = 'Bearer ' + auth_util.GetAuthToken(scope)
 
@@ -48,11 +52,11 @@ class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
     if method in (urlfetch.POST, urlfetch.PUT):
       result = urlfetch.fetch(
           url, payload=data, method=method, headers=headers, deadline=timeout,
-          follow_redirects=False, validate_certificate=True)
+          follow_redirects=self.follow_redirects, validate_certificate=True)
     else:
       result = urlfetch.fetch(
           url, headers=headers, deadline=timeout,
-          follow_redirects=False, validate_certificate=True)
+          follow_redirects=self.follow_redirects, validate_certificate=True)
 
     if (result.status_code != 200 and self._ShouldLogError(result.status_code)):
       logging.error('Request to %s resulted in %d, headers:%s', url,

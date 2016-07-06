@@ -178,8 +178,14 @@ def GetBuildStartTime(build_data_json):
   times = build_data_json.get('times')
   if not times:
     return None
-  # TODO: convert to PST time?
   return datetime.utcfromtimestamp(times[0])
+
+
+def GetBuildEndTime(build_data_json):
+  times = build_data_json.get('times')
+  if not times or len(times) < 2 or not times[1]:
+    return None
+  return datetime.utcfromtimestamp(times[1])
 
 
 def GetBuildResult(build_data_json):
@@ -195,6 +201,7 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
       data_json.get('properties', []), 'got_revision')
 
   build_info.build_start_time = GetBuildStartTime(data_json)
+  build_info.build_end_time = GetBuildEndTime(data_json)
   build_info.chromium_revision = chromium_revision
   build_info.completed = data_json.get('currentStep') is None
   build_info.result = GetBuildResult(data_json)

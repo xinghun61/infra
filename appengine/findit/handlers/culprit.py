@@ -36,8 +36,10 @@ class Culprit(BaseHandler):
     data = {
         'project_name': culprit.project_name,
         'revision': culprit.revision,
+        'commit_position': culprit.commit_position,
         'cr_notified': culprit.cr_notified,
         'cr_notification_time': _FormatDatetime(culprit.cr_notification_time),
         'builds': map(ConvertBuildInfoToADict, culprit.builds),
+        'key': key,
     }
     return {'template': 'waterfall/culprit.html', 'data': data}

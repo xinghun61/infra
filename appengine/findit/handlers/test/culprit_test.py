@@ -18,7 +18,7 @@ class CulpritTest(testing.AppengineTestCase):
       [('/culprit', culprit.Culprit), ], debug=True)
 
   def testGetCulpritSuccess(self):
-    wf_culprit = WfCulprit.Create('chromium', 'r1')
+    wf_culprit = WfCulprit.Create('chromium', 'r1', 123)
     wf_culprit.builds.append(['m', 'b1', 1])
     wf_culprit.builds.append(['m', 'b2', 2])
     wf_culprit.cr_notification_status = status.COMPLETED
@@ -28,6 +28,7 @@ class CulpritTest(testing.AppengineTestCase):
     expected_result = {
         'project_name': 'chromium',
         'revision': 'r1',
+        'commit_position': 123,
         'cr_notified': True,
         'cr_notification_time': '2016-06-24 10:03:00 UTC',
         'builds': [
@@ -42,6 +43,7 @@ class CulpritTest(testing.AppengineTestCase):
                 'build_number': 2,
             },
         ],
+        'key': wf_culprit.key.urlsafe(),
     }
 
     response = self.test_app.get(

@@ -12,11 +12,11 @@ from model.wf_culprit import WfCulprit
 
 class WfCulpritTest(unittest.TestCase):
   def testProjectName(self):
-    culprit = WfCulprit.Create('chromium', 'r1')
+    culprit = WfCulprit.Create('chromium', 'r1', 123)
     self.assertEqual('chromium', culprit.project_name)
 
   def testCrNotificationProcessed(self):
-    culprit = WfCulprit.Create('chromium', 'r1')
+    culprit = WfCulprit.Create('chromium', 'r1', 123)
     for s in (status.COMPLETED, status.RUNNING):
       culprit.cr_notification_status = s
       self.assertTrue(culprit.cr_notification_processed)
@@ -25,6 +25,6 @@ class WfCulpritTest(unittest.TestCase):
       self.assertFalse(culprit.cr_notification_processed)
 
   def testCrNotified(self):
-    culprit = WfCulprit.Create('chromium', 'r1')
+    culprit = WfCulprit.Create('chromium', 'r1', 123)
     culprit.cr_notification_status = status.COMPLETED
     self.assertTrue(culprit.cr_notified)

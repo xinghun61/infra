@@ -7,7 +7,7 @@
 <body>
   <h1>Culprit</h1>
   <b>Project:</b> {{project_name}}<br>
-  <b>Revision:</b><a href="https://crrev.com/{{revision}}">{{revision}}</a><br>
+  <b>Commit:</b> <a href="https://crrev.com/{{commit_position or revision}}">{{commit_position or revision}}</a><br>
   {% if cr_notified %}
     <b>Notified:</b> Yes<br>
     <b>Notification time:</b> {{cr_notification_time}}<br>
@@ -22,7 +22,7 @@
         <th></th>
         <th>Master</th>
         <th>Builder</th>
-        <th>Build Number</th>
+        <th>Build</th>
       </thead>
       <tbody>
       {% for build in builds %}
@@ -31,9 +31,7 @@
           <td>{{build.master_name}}</td>
           <td>{{build.builder_name}}</td>
           <td>
-            <a href="/waterfall/build-failure?url=https://build.chromium.org/p
-/{{build.master_name}}/builders/{{build.builder_name}}
-/builds/{{build.build_number}}">
+            <a href="https://build.chromium.org/p/{{build.master_name}}/builders/{{build.builder_name}}/builds/{{build.build_number}}">
               {{build.build_number}}
             </a>
           </td>
@@ -42,4 +40,6 @@
       </tbody>
     </table>
   </div>
+  <br>
+  <a href="https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=findit-for-waterfall&components=Tools>Test>Findit>WrongResult&summary=Wrong Findit result for {{commit_position or revision}}&comment=Detail is https://findit-for-me.appspot.com/waterfall/culprit?key={{key}}&cc=stgao@chromium.org,chanli@chromium.org,lijeffrey@chromium.org">File a bug for wrong Findit result!</a>
 </body>

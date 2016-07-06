@@ -55,3 +55,10 @@ def DownloadBuildData(master_name, builder_name, build_number):
     build.put()
 
   return build
+
+
+def GetBuildEndTime(master_name, builder_name, build_number):
+  build = DownloadBuildData(master_name, builder_name, build_number)
+  build_info = buildbot.ExtractBuildInfo(
+      master_name, builder_name, build_number, build.data)
+  return build_info.build_end_time

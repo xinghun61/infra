@@ -19,6 +19,9 @@ class WfCulprit(ndb.Model):
   # The Git hash revision of the culprit.
   revision = ndb.StringProperty(indexed=False)
 
+  # The commit position of the culprit. Might not be available for some repo.
+  commit_position = ndb.IntegerProperty(indexed=False)
+
   # When the code-review of this culprit was notified.
   cr_notification_time = ndb.DateTimeProperty(indexed=True)
 
@@ -45,10 +48,11 @@ class WfCulprit(ndb.Model):
     return ndb.Key(cls.__name__, '%s/%s' % (repo_name, revision))
 
   @classmethod
-  def Create(cls, repo_name, revision):  # pragma: no cover
+  def Create(cls, repo_name, revision, commit_position):  # pragma: no cover
     instance = cls(key=cls._CreateKey(repo_name, revision))
     instance.repo_name = repo_name
     instance.revision = revision
+    instance.commit_position = commit_position
     instance.builds = []
     return instance
 

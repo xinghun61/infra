@@ -10,6 +10,7 @@ class BuildInfo(object):  # pragma: no cover
     self.builder_name = builder_name
     self.build_number = build_number
     self.build_start_time = None
+    self.build_end_time = None
     self.chromium_revision = None
     self.completed = False
     self.result = None
@@ -23,6 +24,7 @@ class BuildInfo(object):  # pragma: no cover
     print 'builder: %s' % self.builder_name
     print 'build: %s' % self.build_number
     print 'start time: %s' % self.build_start_time
+    print 'end time: %s' % self.build_end_time
     print 'chromium revision: %s' % self.chromium_revision
     print 'completed: %s' % self.completed
     print 'result: %s' % self.result
