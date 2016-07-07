@@ -11,6 +11,10 @@ from recipe_engine import recipe_api
 
 RECIPE_TRYJOB_BYPASS_REASON_TAG = "Recipe-Tryjob-Bypass-Reason"
 
+RECIPE_DEV_WORKFLOW_DOC_LINK = (
+    'https://chromium.googlesource.com/external/github.com/luci/recipes-py/+/'
+    'master/doc/workflow.md')
+
 def get_recipes_path(project_config):
   # Returns a tuple of the path components to traverse from the root of the repo
   # to get to the directory containing recipes.
@@ -314,8 +318,14 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
 
 
     if bad_projects:
-      raise recipe_api.StepFailure(
-          "One or more projects failed tests: %s" % (
+      try:
+        self.m.python.failing_step(
+            'failed tests', "One or more projects failed tests: %r" % (
               ','.join(bad_projects)))
+      except self.m.step.StepFailure as f:
+        f.result.presentation.links['Confused? README here'] = (
+            RECIPE_DEV_WORKFLOW_DOC_LINK)
+        raise
+
 
 

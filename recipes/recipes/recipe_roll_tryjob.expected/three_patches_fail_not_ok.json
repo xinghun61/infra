@@ -469,8 +469,22 @@
     ]
   },
   {
+    "cmd": [
+      "python",
+      "-u",
+      "import sys; sys.exit(1)"
+    ],
+    "name": "failed tests",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 1",
+      "@@@STEP_TEXT@One or more projects failed tests: 'build'@@@",
+      "@@@STEP_LINK@Confused? README here@https://chromium.googlesource.com/external/github.com/luci/recipes-py/+/master/doc/workflow.md@@@",
+      "@@@STEP_FAILURE@@@"
+    ]
+  },
+  {
     "name": "$result",
-    "reason": "One or more projects failed tests: build",
+    "reason": "Step('failed tests') failed with return_code 1",
     "status_code": 1
   }
 ]
