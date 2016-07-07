@@ -8,20 +8,30 @@ from recipe_engine.recipe_api import Property
 DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
+
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
   'recipe_engine/step',
+
   'build/luci_config',
+  'build/service_account',
 ]
 
 PROPERTIES = {
   'project_under_test': Property(
-      default='build', kind=str, help='luci-config project to run tests for')
+      default='build', kind=str, help='luci-config project to run tests for'),
+  'auth_with_account': Property(
+      default=None, kind=str,
+      help="Try to authenticate with given service account."),
 }
 
 
-def RunSteps(api, project_under_test):
+def RunSteps(api, project_under_test, auth_with_account):
+  if auth_with_account:
+    api.luci_config.c.auth_token = api.service_account.get_token(
+        auth_with_account)
+
   root_dir = api.path['slave_build']
   cache_dir = root_dir.join('_cache_dir')
 
@@ -57,6 +67,21 @@ def GenTests(api):
           buildername='recipe simulation tester',
           revision='deadbeaf',
           project_under_test='build',
+      ) +
+      api.luci_config.get_projects(('build',)) +
+      api.luci_config.get_project_config(
+          'build', 'recipes.cfg',
+          'recipes_path: "foobar"')
+  )
+
+  yield (
+      api.test('with_auth') +
+      api.properties.generic(
+          mastername='chromium.tools.build',
+          buildername='recipe simulation tester',
+          revision='deadbeaf',
+          project_under_test='build',
+          auth_with_account='build_limited',
       ) +
       api.luci_config.get_projects(('build',)) +
       api.luci_config.get_project_config(
