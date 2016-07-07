@@ -394,11 +394,13 @@ def get_go_environ(
     env.pop('APPENGINE_DEV_APPSERVER', None)
 
   # Add a tag to the prompt
-  prompt = env.get('PS1')
-  if prompt:
-    prompttag = env.get('INFRA_PROMPT_TAG', '[cr go] ')
-    if prompttag not in prompt:
-      env['PS1'] = prompttag + prompt
+  infra_prompt_tag = env.get('INFRA_PROMPT_TAG')
+  if infra_prompt_tag is None:
+    infra_prompt_tag = '[cr go] '
+  if infra_prompt_tag:
+    prompt = env.get('PS1')
+    if prompt and infra_prompt_tag not in prompt:
+      env['PS1'] = infra_prompt_tag + prompt
 
   return env
 

@@ -29,10 +29,33 @@ bootstrap = imp.load_source(
 old = os.environ.copy()
 new = bootstrap.prepare_go_environ()
 
+def _escape_special(v):
+  """Returns (str): The supplied value, with special shell characters escaped.
+
+  Replace special characters with their escaped form. This will allow them
+  to be interpreted by the shell using the $'...' notation.
+
+  Args:
+    v (str): The input value to escape.
+  """
+  for f, r in (
+      ('\n', '\\n'),
+      ('\b', '\\b'),
+      ('\r', '\\r'),
+      ('\t', '\\t'),
+      ('\v', '\\v')):
+    v = v.replace(f, r)
+  return v
+
 if len(sys.argv) == 1:
   for key, value in sorted(new.iteritems()):
     if old.get(key) != value:
-      print 'export %s=%s' % (key, pipes.quote(value))
+      orig_value, value = value, _escape_special(value)
+
+      # We will only use the $'...' notation if there was an escaped character
+      # in the string.
+      print 'export %s=%s%s' % (key, ('$') if orig_value != value else (''),
+                                pipes.quote(value))
 else:
   exe = sys.argv[1]
   if exe == 'python':

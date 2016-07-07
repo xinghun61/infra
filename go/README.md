@@ -96,6 +96,11 @@ Alternatively `go/env.py` can be used as a wrapping command that sets up an
 environment and invokes some other process. It is particularly useful on
 Windows.
 
+If the `INFRA_PROMPT_TAG` environment variable is exported while running
+`go/env.py`, the new environment will include a modified `PS1` prompt containing
+the `INFRA_PROMPT_TAG` value to indicate that the modified environment is being
+used. By default, this value is "[cr go] ", but it can be changed by exporting
+a different value or disabled by exporting an empty value.
 
 ## Dependency management
 
