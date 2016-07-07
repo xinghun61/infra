@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 
 import base64
+import httplib2
+import json
 import os
 import tempfile
 import unittest
@@ -12,6 +14,7 @@ import mock
 
 from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import monitors
+from infra_libs.ts_mon.common import pb_to_popo
 from infra_libs.ts_mon.common import targets
 from infra_libs.ts_mon.protos import metrics_pb2
 import infra_libs
@@ -24,6 +27,69 @@ class MonitorTest(unittest.TestCase):
     metric1 = metrics_pb2.MetricsData(name='m1')
     with self.assertRaises(NotImplementedError):
       m.send(metric1)
+
+class HttpsMonitorTest(unittest.TestCase):
+
+  def setUp(self):
+    super(HttpsMonitorTest, self).setUp()
+
+  def message(self, pb):
+    pb = monitors.Monitor._wrap_proto(pb)
+    return json.dumps({'resource': pb_to_popo.convert(pb) })
+
+  def _test_send(self, http):
+    mon = monitors.HttpsMonitor('endpoint', '/path/to/creds.p8.json', http=http)
+    resp = mock.MagicMock(spec=httplib2.Response, status=200)
+    mon._http.request = mock.MagicMock(return_value=[resp, ""])
+
+    metric1 = metrics_pb2.MetricsData(name='m1')
+    mon.send(metric1)
+    metric2 = metrics_pb2.MetricsData(name='m2')
+    mon.send([metric1, metric2])
+    collection = metrics_pb2.MetricsCollection(data=[metric1, metric2])
+    mon.send(collection)
+
+    mon._http.request.assert_has_calls([
+      mock.call('endpoint', method='POST', body=self.message(metric1)),
+      mock.call('endpoint', method='POST',
+                body=self.message([metric1, metric2])),
+      mock.call('endpoint', method='POST', body=self.message(collection)),
+    ])
+
+  @mock.patch('infra_libs.ts_mon.common.monitors.HttpsMonitor.'
+              '_load_credentials', autospec=True)
+  def test_default_send(self, _load_creds):
+    self._test_send(None)
+
+  @mock.patch('infra_libs.ts_mon.common.monitors.HttpsMonitor.'
+              '_load_credentials', autospec=True)
+  def test_nondefault_send(self, _load_creds):
+    self._test_send(httplib2.Http())
+
+  @mock.patch('infra_libs.ts_mon.common.monitors.HttpsMonitor.'
+              '_load_credentials', autospec=True)
+  def test_send_resp_failure(self, _load_creds):
+    mon = monitors.HttpsMonitor('endpoint', '/path/to/creds.p8.json')
+    resp = mock.MagicMock(spec=httplib2.Response, status=400)
+    mon._http.request = mock.MagicMock(return_value=[resp, ""])
+
+    metric1 = metrics_pb2.MetricsData(name='m1')
+    mon.send(metric1)
+
+    mon._http.request.assert_called_once_with('endpoint', method='POST',
+                                              body=self.message(metric1))
+
+  @mock.patch('infra_libs.ts_mon.common.monitors.HttpsMonitor.'
+              '_load_credentials', autospec=True)
+  def test_send_http_failure(self, _load_creds):
+    mon = monitors.HttpsMonitor('endpoint', '/path/to/creds.p8.json')
+    mon._http.request = mock.MagicMock(side_effect=ValueError())
+
+    metric1 = metrics_pb2.MetricsData(name='m1')
+    mon.send(metric1)
+
+    mon._http.request.assert_called_once_with('endpoint', method='POST',
+                                              body=self.message(metric1))
 
 
 class PubSubMonitorTest(unittest.TestCase):

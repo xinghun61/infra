@@ -65,6 +65,32 @@ class GlobalsTest(auto_stub.TestCase):
 
   @mock.patch('requests.get', autospec=True)
   @mock.patch('socket.getfqdn', autospec=True)
+  @mock.patch('infra_libs.ts_mon.common.monitors.HttpsMonitor.'
+              '_load_credentials', autospec=True)
+  def test_https_monitor_args(self, _load_creds, fake_fqdn, fake_get):
+    print [_load_creds, fake_fqdn, fake_get]
+    fake_fqdn.return_value = 'slave1-a1.reg.tld'
+    fake_get.return_value.side_effect = requests.exceptions.ConnectionError
+    p = argparse.ArgumentParser()
+    config.add_argparse_options(p)
+    args = p.parse_args([
+        '--ts-mon-credentials', '/path/to/creds.p8.json',
+        '--ts-mon-endpoint', 'https://test/random:insert'])
+
+    config.process_argparse_options(args)
+
+    self.assertIsInstance(interface.state.global_monitor,
+                          monitors.HttpsMonitor)
+
+    self.assertIsInstance(interface.state.target, targets.DeviceTarget)
+    self.assertEquals(interface.state.target.hostname, 'slave1-a1')
+    self.assertEquals(interface.state.target.region, 'reg')
+    self.assertEquals(args.ts_mon_flush, 'auto')
+    self.assertIsNotNone(interface.state.flush_thread)
+    self.assertTrue(standard_metrics.up.get())
+
+  @mock.patch('requests.get', autospec=True)
+  @mock.patch('socket.getfqdn', autospec=True)
   def test_default_target_uppercase_fqdn(self, fake_fqdn, fake_get):
     fake_fqdn.return_value = 'SLAVE1-A1.REG.TLD'
     fake_get.return_value.side_effect = requests.exceptions.ConnectionError

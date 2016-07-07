@@ -129,6 +129,43 @@ class GetAuthenticatedHttp(unittest.TestCase):
         'creds_malformed.json',
         service_accounts_creds_root=DATA_DIR)
 
+class RetriableHttplib2Test(unittest.TestCase):
+  def setUp(self):
+    super(RetriableHttplib2Test, self).setUp()
+    self.http = infra_libs.RetriableHttp()
+    self.http._request = mock.create_autospec(self.http._request, spec_set=True)
+
+  _MOCK_REQUEST = mock.call(*([mock.ANY] * 9))
+
+  def test_succeed(self):
+    self.http._request.return_value = (
+        httplib2.Response({'status': 400}), 'content')
+    response, _ = self.http.request('http://foo/')
+    self.assertEqual(400, response.status)
+    self.http._request.assert_has_calls([ self._MOCK_REQUEST ])
+
+  def test_retry_succeed(self):
+    self.http._request.side_effect = iter([
+      (httplib2.Response({'status': 500}), 'content'),
+      httplib2.HttpLib2Error,
+      (httplib2.Response({'status': 200}), 'content')
+    ])
+    response, _ = self.http.request('http://foo/')
+    self.assertEqual(200, response.status)
+    self.http._request.assert_has_calls([ self._MOCK_REQUEST ] * 3)
+
+  def test_fail_exception(self):
+    self.http._request.side_effect = httplib2.HttpLib2Error()
+    self.assertRaises(httplib2.HttpLib2Error, self.http.request, 'http://foo/')
+    self.http._request.assert_has_calls([ self._MOCK_REQUEST ] * 5)
+
+  def test_fail_status_code(self):
+    self.http._request.return_value = (
+        httplib2.Response({'status': 500}), 'content')
+    response, _ = self.http.request('http://foo/')
+    self.assertEqual(500, response.status)
+    self.http._request.assert_has_calls([ self._MOCK_REQUEST ] * 5)
+
 
 class InstrumentedHttplib2Test(unittest.TestCase):
   def setUp(self):

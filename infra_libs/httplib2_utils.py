@@ -15,6 +15,7 @@ import time
 import httplib2
 import oauth2client.client
 
+from googleapiclient import errors
 from infra_libs.ts_mon.common import http_metrics
 
 DEFAULT_SCOPES = ['email']
@@ -160,6 +161,46 @@ def get_authenticated_http(credentials_filename,
   else:
     http = httplib2.Http(timeout=timeout)
   return creds.authorize(http)
+
+class RetriableHttp(httplib2.Http):
+  """A httplib2.Http object that retries on failure."""
+
+  def __init__(self, max_tries=5, retrying_statuses_fn=None, **kwargs):
+    """
+    Args:
+      http_obj: an httplib2.Http instance
+      max_tries: a number of maximum tries
+      retrying_statuses_fn: a function that returns True if a given status
+                            should be retried
+    """
+    super(RetriableHttp, self).__init__(**kwargs)
+    self._max_tries = max_tries
+    self._retrying_statuses_fn = retrying_statuses_fn or \
+                                 set(range(500,599)).__contains__
+
+  def request(self, uri, method='GET', body=None, *args, **kwargs):
+    for i in range(1, self._max_tries + 1):
+      try:
+        response, content = super(RetriableHttp, self).request(
+            uri, method, body, *args, **kwargs)
+
+        if self._retrying_statuses_fn(response.status):
+          logging.info('RetriableHttp: attempt %d receiving status %d, %s',
+                       i, response.status,
+                       'final attempt' if i == self._max_tries else \
+                       'will retry')
+        else:
+          break
+      except (ValueError, errors.Error,
+              socket.timeout, socket.error, socket.herror, socket.gaierror,
+              httplib2.HttpLib2Error) as error:
+        logging.info('RetriableHttp: attempt %d received exception: %s, %s',
+                     i, error, 'final attempt' if i == self._max_tries else \
+                     'will retry')
+        if i == self._max_tries:
+          raise
+
+    return response, content
 
 
 class InstrumentedHttp(httplib2.Http):

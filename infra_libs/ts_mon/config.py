@@ -83,8 +83,9 @@ def add_argparse_options(parser):
            'whitelisting and deployment of credentials. (default: %(default)s)')
   parser.add_argument(
       '--ts-mon-endpoint',
-      help='url (including file://, pubsub://project/topic) to post monitoring '
-           'metrics to. If set, overrides the value in --ts-mon-config-file')
+      help='url (including file://, pubsub://project/topic, https://) to post '
+           'monitoring metrics to. If set, overrides the value in '
+           '--ts-mon-config-file')
   parser.add_argument(
       '--ts-mon-credentials',
       help='path to a pkcs8 json credential file. If set, overrides the value '
@@ -232,6 +233,9 @@ def process_argparse_options(args):
     else:
       logging.error('ts_mon monitoring is disabled because credentials are not '
                     'available')
+  elif endpoint.startswith('https://'):
+    interface.state.global_monitor = monitors.HttpsMonitor(endpoint,
+                                                           credentials)
   elif endpoint.lower() == 'none':
     logging.info('ts_mon monitoring has been explicitly disabled')
   else:
