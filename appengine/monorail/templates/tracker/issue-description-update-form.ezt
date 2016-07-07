@@ -11,7 +11,7 @@
     [for fields]
       [include "field-value-widgets.ezt" fields.field_def.is_multivalued_bool]
     [end]
-    [include "label-fields.ezt" ""]
+    [include "label-fields.ezt" "" "hidden"]
     <input type="hidden" name="blocked_on" value="[initial_blocked_on]">
     <input type="hidden" name="blocking" value="[initial_blocking]">
   </div>

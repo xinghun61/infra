@@ -3,9 +3,10 @@
    Args:
      arg0: if "just-two" is passed, only show the first two rows
          and give the user links to click to expose more rows.
+     arg1: the ID prefix for the row divs.
 ]
 
-<div id="LF_row1" class="nowrap">
+<div id="[arg1]LF_row1" class="nowrap">
  <input type="text" class="labelinput" id="label0" size="20" autocomplete="off"
         name="label" value="[label0]">
  <input type="text" class="labelinput" id="label1" size="20" autocomplete="off"
@@ -14,7 +15,7 @@
         name="label" value="[label2]">
 </div>
 
-<div id="LF_row2" class="nowrap">
+<div id="[arg1]LF_row2" class="nowrap">
  <input type="text" class="labelinput" id="label3" size="20" autocomplete="off"
         name="label" value="[label3]">
  <input type="text" class="labelinput" id="label4" size="20" autocomplete="off"
@@ -25,7 +26,7 @@
  [is arg0 "just-two"]<span id="addrow2" class="fakelink" data-instead="LF_row3">Add a row</span>[end]
 </div>
 
-<div id="LF_row3" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
+<div id="[arg1]LF_row3" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
  <input type="text" class="labelinput" id="label6" size="20" autocomplete="off"
         name="label" value="[label6]">
  <input type="text" class="labelinput" id="label7" size="20" autocomplete="off"
@@ -36,7 +37,7 @@
  [is arg0 "just-two"]<span id="addrow3" class="fakelink" data-instead="LF_row4">Add a row</span>[end]
 </div>
 
-<div id="LF_row4" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
+<div id="[arg1]LF_row4" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
  <input type="text" class="labelinput" id="label9" size="20" autocomplete="off"
         name="label" value="[label9]">
  <input type="text" class="labelinput" id="label10" size="20" autocomplete="off"
@@ -47,7 +48,7 @@
  [is arg0 "just-two"]<span id="addrow4" class="fakelink" data-instead="LF_row5">Add a row</span>[end]
 </div>
 
-<div id="LF_row5" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
+<div id="[arg1]LF_row5" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
  <input type="text" class="labelinput" id="label12" size="20" autocomplete="off"
         name="label" value="[label12]">
  <input type="text" class="labelinput" id="label13" size="20" autocomplete="off"
@@ -58,7 +59,7 @@
  [is arg0 "just-two"]<span id="addrow5" class="fakelink" data-instead="LF_row6">Add a row</span>[end]
 </div>
 
-<div id="LF_row6" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
+<div id="[arg1]LF_row6" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
  <input type="text" class="labelinput" id="label15" size="20" autocomplete="off"
         name="label" value="[label15]">
  <input type="text" class="labelinput" id="label16" size="20" autocomplete="off"
@@ -69,7 +70,7 @@
  [is arg0 "just-two"]<span id="addrow6" class="fakelink" data-instead="LF_row7">Add a row</span>[end]
 </div>
 
-<div id="LF_row7" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
+<div id="[arg1]LF_row7" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
  <input type="text" class="labelinput" id="label18" size="20" autocomplete="off"
         name="label" value="[label18]">
  <input type="text" class="labelinput" id="label19" size="20" autocomplete="off"
@@ -80,7 +81,7 @@
  [is arg0 "just-two"]<span id="addrow7" class="fakelink" data-instead="LF_row8">Add a row</span>[end]
 </div>
 
-<div id="LF_row8" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
+<div id="[arg1]LF_row8" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
  <input type="text" class="labelinput" id="label21" size="20" autocomplete="off"
         name="label" value="[label21]">
  <input type="text" class="labelinput" id="label22" size="20" autocomplete="off"
