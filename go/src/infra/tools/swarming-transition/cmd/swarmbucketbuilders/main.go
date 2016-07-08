@@ -291,9 +291,9 @@ func writeConfig(w io.Writer, cfg *buildbucket.Swarming) error {
 	pstrlist("common_swarming_tags", cfg.CommonSwarmingTags)
 	pstrlist("common_dimensions", cfg.CommonDimensions)
 	p("common_recipe {")
-	indented.Level++
+	indented.Level += 2
 	printRecipe(cfg.CommonRecipe)
-	indented.Level--
+	indented.Level -= 2
 	p("}")
 
 	p("\n# Keep builders sorted by category, then name.")
@@ -303,7 +303,7 @@ func writeConfig(w io.Writer, cfg *buildbucket.Swarming) error {
 
 	for _, b := range builders {
 		p("\nbuilders {")
-		indented.Level++
+		indented.Level += 2
 
 		pstr("category", b.GetCategory())
 		pstr("name", b.GetName())
@@ -316,13 +316,13 @@ func writeConfig(w io.Writer, cfg *buildbucket.Swarming) error {
 		if b.Recipe.GetRepository() != "" || b.Recipe.GetName() != "" ||
 			len(b.Recipe.Properties) > 0 || len(b.Recipe.PropertiesJ) > 0 {
 			p("recipe {")
-			indented.Level++
+			indented.Level += 2
 			printRecipe(b.Recipe)
-			indented.Level--
+			indented.Level -= 2
 			p("}")
 		}
 
-		indented.Level--
+		indented.Level -= 2
 		p("}")
 	}
 
