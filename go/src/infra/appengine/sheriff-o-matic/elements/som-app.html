@@ -584,13 +584,16 @@
 
       _saveBug: function() {
         // TODO(add proper error handling)
-        this._sendAnnotation(
+        let request = this._sendAnnotation(
           this._bugModel.key, 'add', {
             bugs: [this.$.bug.value]
           }
-        ).completes.then(() => {
-          this.$.bug.value = '';
-        });
+        );
+        if (request) {
+          request.completes.then(() => {
+            this.$.bug.value = '';
+          });
+        }
       },
 
       ////////////////////// Snooze ///////////////////////////

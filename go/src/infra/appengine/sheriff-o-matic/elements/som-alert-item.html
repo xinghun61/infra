@@ -90,7 +90,7 @@
         <div class="list-item">
           <div class="alert-title-bar horizontal layout justified">
             <div class="horizontal layout">
-              <div class="alert-title self-center">[[alert.title]] </div>
+              <div class="alert-title self-center">[[alert.title]]</div>
               <div id="handleLink" class="self-center" hidden$="[[!_helpLinkForAlert(alert)]]">
                 [<a href="[[_helpLinkForAlert(alert)]]" target="_blank">Help</a>]
               </div>
@@ -225,7 +225,7 @@
 
       _alertIsWebkit(alert) {
         // TODO(zhangtiff): Find a better way to categorize alerts
-        return alert.key.includes("chromium.webkit");
+        return alert.key && alert.key.includes("chromium.webkit");
       },
 
       _classForAlert: function(alert, selected) {
