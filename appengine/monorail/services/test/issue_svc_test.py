@@ -128,7 +128,7 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.notify_rows = []
     self.fieldvalue_rows = []
     self.relation_rows = [
-        (78901, 78902, 'blockedon'), (78903, 78901, 'blockedon')]
+        (78901, 78902, 'blockedon', None), (78903, 78901, 'blockedon', None)]
     self.dangling_relation_rows = [
         (78901, 'codesite', 5001, 'blocking'),
         (78901, 'codesite', 5002, 'blockedon')]
@@ -162,7 +162,7 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
 
   def testDeserializeIssues_UnexpectedIssueRelation(self):
     unexpected_relation_rows = [
-      (78990, 78999, 'blockedon')
+      (78990, 78999, 'blockedon', None)
       ]
     self.assertRaises(
       AssertionError,

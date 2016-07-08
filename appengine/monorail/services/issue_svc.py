@@ -76,7 +76,7 @@ ABBR_COMMENT_COLS = ['Comment.id', 'commenter_id', 'deleted_by',
 ATTACHMENT_COLS = [
     'id', 'issue_id', 'comment_id', 'filename', 'filesize', 'mimetype',
     'deleted', 'gcs_object_id']
-ISSUERELATION_COLS = ['issue_id', 'dst_issue_id', 'kind']
+ISSUERELATION_COLS = ['issue_id', 'dst_issue_id', 'kind', 'rank']
 DANGLINGRELATION_COLS = [
     'issue_id', 'dst_issue_project', 'dst_issue_local_id', 'kind']
 ISSUEUPDATE_COLS = [
@@ -229,7 +229,7 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
       fv, issue_id = self._UnpackFieldValue(fv_row)
       results_dict[issue_id].field_values.append(fv)
 
-    for issue_id, dst_issue_id, kind in relation_rows:
+    for issue_id, dst_issue_id, kind, _ in relation_rows:
       src_issue = results_dict.get(issue_id)
       dst_issue = results_dict.get(dst_issue_id)
       assert src_issue or dst_issue, (
@@ -928,9 +928,9 @@ class IssueService(object):
     dangling_relation_rows = []
     for issue in issues:
       for dst_issue_id in issue.blocked_on_iids:
-        relation_rows.append((issue.issue_id, dst_issue_id, 'blockedon'))
+        relation_rows.append((issue.issue_id, dst_issue_id, 'blockedon', 0))
       for dst_issue_id in issue.blocking_iids:
-        relation_rows.append((dst_issue_id, issue.issue_id, 'blockedon'))
+        relation_rows.append((dst_issue_id, issue.issue_id, 'blockedon', 0))
       for dst_ref in issue.dangling_blocked_on_refs:
         dangling_relation_rows.append((
             issue.issue_id, dst_ref.project, dst_ref.issue_id, 'blockedon'))
@@ -938,7 +938,8 @@ class IssueService(object):
         dangling_relation_rows.append((
             issue.issue_id, dst_ref.project, dst_ref.issue_id, 'blocking'))
       if issue.merged_into:
-        relation_rows.append((issue.issue_id, issue.merged_into, 'mergedinto'))
+        relation_rows.append((
+            issue.issue_id, issue.merged_into, 'mergedinto', None))
 
     self.issuerelation_tbl.Delete(
         cnxn, issue_id=[issue.issue_id for issue in issues], commit=False)

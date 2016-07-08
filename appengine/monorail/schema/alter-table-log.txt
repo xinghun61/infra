@@ -867,3 +867,8 @@ ALTER TABLE `monorail`.`IssueSummary` CONVERT TO CHARACTER SET utf8mb4 COLLATE u
 /* And then these two which ran very quickly: */
 ALTER TABLE `monorail`.`Template` CHANGE `content` `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ALTER TABLE `monorail`.`Template` CHANGE `summary` `summary` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+===============================================================
+2016-07-07: Add rank to IssueRelation
+
+ALTER TABLE IssueRelation ADD COLUMN rank BIGINT;

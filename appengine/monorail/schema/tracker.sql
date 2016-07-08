@@ -281,6 +281,8 @@ CREATE TABLE IssueRelation (
   -- Read as: src issue is blocked on dst issue.
   kind ENUM ('blockedon', 'mergedinto') NOT NULL,
 
+  rank BIGINT,
+
   PRIMARY KEY (issue_id, dst_issue_id, kind),
   INDEX (issue_id),
   INDEX (dst_issue_id),
