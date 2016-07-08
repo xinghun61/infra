@@ -938,6 +938,27 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     self.assertTrue(Flake.get_by_id('foo8 (with patch)').is_step)
     self.assertTrue(Flake.get_by_id('Patch').is_step)
 
+  def test_does_not_create_empty_flaky_runs(self):
+    now = datetime.datetime.utcnow()
+    br_f, br_s = self._create_build_runs(now - datetime.timedelta(hours=1), now)
+    urlfetch_mock = mock.Mock(side_effect = [
+      # Buildbot reply.
+      mock.Mock(status_code=200, content=json.dumps({
+        'steps': [
+          {'results': [2], 'name': 'foo9 (with patch)', 'text': ['']},
+          {'results': [2], 'name': 'foo9 (without patch)', 'text': ['']},
+        ]
+      }))
+    ])
+
+    with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
+      self.test_app.post('/issues/create_flaky_run',
+                         {'failure_run_key': br_f.urlsafe(),
+                          'success_run_key': br_s.urlsafe()})
+
+    flaky_runs = FlakyRun.query().fetch(100)
+    self.assertEqual(len(flaky_runs), 0)
+
 
 class TestOverrideIssueID(testing.AppengineTestCase):
   app_module = main.app

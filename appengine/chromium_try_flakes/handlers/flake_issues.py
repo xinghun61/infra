@@ -627,6 +627,10 @@ class CreateFlakyRun(webapp2.RequestHandler):
         flaky_run.flakes.append(flake_occurrence)
         flakes_to_update.append((flake, is_step, normalized_step_name))
 
+    # Do not create FlakyRuns if all failed steps have been ignored.
+    if not flaky_run.flakes:
+      return
+
     flaky_run_key = flaky_run.put()
     for flake, is_step, normalized_step_name in flakes_to_update:
       self.add_failure_to_flake(
