@@ -1,5 +1,5 @@
 hash: 4ceb338d6614101f4d7c082339a714735d14b760b766d26cbf93526a7e952e27
-updated: 2016-07-01T14:14:01.143485999-07:00
+updated: 2016-07-07T20:26:08.105032112-07:00
 imports:
 - name: github.com/dustin/go-humanize
   version: fef948f2d241bd1fd0631108ecc2c9553bae60bf
@@ -20,7 +20,7 @@ imports:
   - proto
   - protoc-gen-go
 - name: github.com/gopherjs/gopherjs
-  version: 6a1c576b7adbb8ddf3a044df225011148fcc0e49
+  version: 090403452ab6979e3b7c054ceb7ee23da91b2ae4
   repo: https://chromium.googlesource.com/external/github.com/gopherjs/gopherjs.git
   subpackages:
   - js
@@ -37,13 +37,13 @@ imports:
   version: 29ae4ffbc9a6fe9fb2bc5029050ce6996ea1d3bc
   repo: https://chromium.googlesource.com/external/github.com/kardianos/osext.git
 - name: github.com/kisielk/errcheck
-  version: 8e25ad9d46f6c5d4e994edf82c57eb773a9aa73d
+  version: aa69c6199800e8aeeedf51950f830458e4cb73e3
   repo: https://chromium.googlesource.com/external/github.com/kisielk/errcheck.git
 - name: github.com/kisielk/gotool
   version: 58a7a198f2ec6ea7af221fd216e7f559d663ce02
   repo: https://chromium.googlesource.com/external/github.com/kisielk/gotool.git
 - name: github.com/kr/pretty
-  version: add1dbc86daf0f983cd4a48ceb39deb95c729b67
+  version: 7497514e37543f8a9dfdb86a97c2e8d175a0f8a0
   repo: https://chromium.googlesource.com/external/github.com/kr/pretty.git
 - name: github.com/kr/text
   version: 7cafcd837844e784b526369c9bce262804aebc60
@@ -98,10 +98,10 @@ imports:
   subpackages:
   - diffmatchpatch
 - name: github.com/smartystreets/assertions
-  version: 40711f7748186bbf9c99977cd89f21ce1a229447
+  version: 2063fd1cc7c975db70502811a34b06ad034ccdf2
   repo: https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
 - name: github.com/smartystreets/goconvey
-  version: c53abc99456fa3402dd33c15ee51c3e545e04a3f
+  version: 4622128e06c77c0174e17a7f0ed2db19a989b473
   repo: https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
   subpackages:
   - convey
@@ -119,19 +119,19 @@ imports:
   subpackages:
   - encoding/json5
 - name: golang.org/x/net
-  version: b400c2eff1badec7022a8c8f5bea058b6315eed7
+  version: f841c39de738b1d0df95b5a7187744f0e03d8112
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/oauth2
-  version: 65a8d08c6292395d47053be10b3c5e91960def76
+  version: 7357e96168422ba1e6e7f21075713b72d58764e7
   repo: https://go.googlesource.com/oauth2.git
   subpackages:
   - google
   - jwt
 - name: golang.org/x/tools
-  version: 0d2bde8553c1385ba127c53d1d792629e5ca2529
+  version: 527b253f588776e5f72a0a0d1e93195cd3f82707
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -144,7 +144,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: 57212573ccf9e4f69f4caa0336831697e29adcd6
+  version: c13a21ee847eca050f08db8373d8737494a1170e
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - gensupport
@@ -168,7 +168,7 @@ imports:
   - user
   - cmd/aedeploy
 - name: google.golang.org/cloud
-  version: ebfe3819c9ab4acaf086ae57e4cbd7dee683baf0
+  version: 00a2270cce0a73cdc800dcb7a5e5a2938b800ca8
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -176,7 +176,7 @@ imports:
   - pubsub
   - storage
 - name: google.golang.org/grpc
-  version: a0ff1e78a98cd140c2d18a0210ab0a2a183a2b4c
+  version: 4f14d195bf76d2b7e8c1bd379549b88ffe5f4ee3
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
