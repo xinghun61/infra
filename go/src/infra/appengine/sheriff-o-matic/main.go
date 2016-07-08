@@ -18,6 +18,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/appengine"
 
+	"github.com/luci/gae/impl/prod"
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/gae/service/urlfetch"
 	"github.com/luci/luci-go/appengine/gaeauth/client"
@@ -29,6 +30,9 @@ import (
 	"github.com/luci/luci-go/server/auth/identity"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/settings"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	gaeurlfetch "google.golang.org/appengine/urlfetch"
 )
 
 const authGroup = "sheriff-o-matic-access"
@@ -424,14 +428,25 @@ func postAnnotationsHandler(ctx *router.Context) {
 func getBugQueueHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
-	c = client.UseServiceAccountTransport(c, nil, nil)
-	mr := monorail.NewEndpointsClient(&http.Client{Transport: urlfetch.Get(c)}, monorailEndpoint)
+	// Have to do this because monorail doesn't play nice with the given gae
+	// urlfetch stuff already in the context.
+	aec := prod.AEContext(c)
+	client := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: google.AppEngineTokenSource(
+				aec, "https://www.googleapis.com/auth/userinfo.email"),
+			Base: &gaeurlfetch.Transport{
+				Context: aec,
+			},
+		},
+	}
+	mr := monorail.NewEndpointsClient(client, monorailEndpoint)
 	tree := p.ByName("tree")
 
 	// TODO(martiniss): make this look up request info based on Tree datastore
 	// object
 	req := &monorail.IssuesListRequest{
-		ProjectId: tree,
+		ProjectId: "chromium",
 		Can:       monorail.IssuesListRequest_OPEN,
 		Q:         fmt.Sprintf("label:Sheriff-%s", tree),
 	}

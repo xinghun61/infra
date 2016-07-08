@@ -135,6 +135,7 @@
                 Chromium sheriffs: you now need to handle WebKit bot failures too. <a href="http://www.chromium.org/blink/sheriffing" target="_blank">More information</a>.
               </div>
             </div>
+            <som-bug-queue id="bugQueue" tree="[[_tree]]"></som-bug-queue>
             <div id="noAlerts" hidden$="[[_hideNoAlerts]]">
               No alerts!
               <br>
@@ -334,6 +335,7 @@
         }
         this._refreshPosition  = this.$.mainHeaderPanel.$.mainContainer.scrollTop;
         this.$.annotations.generateRequest();
+        this.$.bugQueue.refresh();
         this._alertsGroupsChanged(this._alertsGroups);
       },
 
