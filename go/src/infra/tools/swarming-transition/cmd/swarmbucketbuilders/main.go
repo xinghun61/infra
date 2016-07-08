@@ -313,11 +313,14 @@ func writeConfig(w io.Writer, cfg *buildbucket.Swarming) error {
 			p("execution_timeout_secs: %d", b.GetExecutionTimeoutSecs())
 		}
 
-		p("recipe {")
-		indented.Level++
-		printRecipe(b.Recipe)
-		indented.Level--
-		p("}")
+		if b.Recipe.GetRepository() != "" || b.Recipe.GetName() != "" ||
+			len(b.Recipe.Properties) > 0 || len(b.Recipe.PropertiesJ) > 0 {
+			p("recipe {")
+			indented.Level++
+			printRecipe(b.Recipe)
+			indented.Level--
+			p("}")
+		}
 
 		indented.Level--
 		p("}")
