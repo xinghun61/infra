@@ -36,7 +36,7 @@ EPOCH = datetime.datetime.utcfromtimestamp(0)
 BUILDBUCKET_APP_ID = (
     'cr-buildbucket-test' if common.IS_DEV else 'cr-buildbucket')
 BUILDBUCKET_API_ROOT = (
-    'https://%s.appspot.com/_ah/api/buildbucket/v1' % BUILDBUCKET_APP_ID)
+    'https://%s.appspot.com/api/buildbucket/v1' % BUILDBUCKET_APP_ID)
 # See the convention
 # https://chromium.googlesource.com/infra/infra/+/master/appengine/cr-buildbucket/doc/index.md#buildset-tag
 BUILDSET_TAG_FORMAT = 'patch/rietveld/{hostname}/{issue}/{patch}'
@@ -179,11 +179,10 @@ def get_builds_for_patchset_async(project, issue_id, patchset_id):
         'Buildbucket returned 404 unexpectedly. Body: %s', ex.response)
     raise
   took = datetime.datetime.now() - start
-  if took.total_seconds() > 1:
-    logging.warn(
-        'Fetching %d builds for patchset %s/%s took %.1fs',
-        len(resp.get('builds', [])), issue_id, patchset_id,
-        took.total_seconds())
+  logging.info(
+      'Fetching %d builds for patchset %s/%s took %.1fs',
+      len(resp.get('builds', [])), issue_id, patchset_id,
+      took.total_seconds())
   if 'error' in resp:
     bb_error = resp.get('error', {})
     raise BuildBucketError(
