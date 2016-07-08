@@ -279,7 +279,7 @@ class IssueDetail(issuepeek.IssuePeek):
         'issue_tab_mode': 'issueDetail',
         'issue': issue_view,
         'title_summary': issue_view.summary,  # used in <head><title>
-        'initial_description': description_views[0],
+        'first_description': description_views[0],
         'descriptions': description_views,
         'num_descriptions': len(description_views),
         'multiple_descriptions': ezt.boolean(len(description_views) > 1),

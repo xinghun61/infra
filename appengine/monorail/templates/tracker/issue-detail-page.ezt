@@ -69,10 +69,10 @@
    [is issue.star_count "1"] user [else] users [end]
   </td>
   <td class="issueheader" style="padding-left:6px; border-right: 2px solid white">
-      [if-any initial_description.creator_role]<span class="role_label">Project Member</span>[end]
+      [if-any first_description.creator_role]<span class="role_label">Project Member</span>[end]
       Reported by
-      [include "../framework/user-link.ezt" initial_description.creator],
-      <span class="date" title="[initial_description.date_tooltip] UTC">[initial_description.date_string][initial_description.date_relative]</span>
+      [include "../framework/user-link.ezt" first_description.creator],
+      <span class="date" title="[first_description.date_tooltip] UTC">[first_description.date_string][first_description.date_relative]</span>
       [# Note: initial issue description cannot have come via email]
       [if-any page_perms.EditIssue]
       <div style="float:right; margin-right:.3em; text-align:right" class="ichcommands">
