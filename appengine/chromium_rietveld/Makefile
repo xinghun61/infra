@@ -15,7 +15,7 @@ APPCFG_FLAGS?=
 
 # Set dirty suffix depending on output of "git status".
 dirty=
-ifneq ($(shell git status --porcelain),)
+ifneq ($(shell git status --porcelain -- .),)
         dirty="-tainted"
 endif
 VERSION_TAG= `git show --format='%h' --no-patch`$(dirty)

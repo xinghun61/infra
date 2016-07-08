@@ -75,3 +75,11 @@ deploy to the same version twice; the version must be manually picked
 by the developer doing the deployment.  If you don't like this, just
 edit the Makefile to remove "--version $(VERSION)" and edit app.yaml
 to hardcode a version number.
+
+Deployment
+----------
+To deploy a new version, please use `make update` instead of using appcfg.py
+directly, because `make update` will also run vulcanize, which will recompile
+any changes made to the Polymer version of the app. Additionally, it will
+automatically compute correct version from the current revision and add -tainted
+suffix if you have any local changes.
