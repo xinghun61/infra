@@ -33,7 +33,7 @@ def cfg_path():
   """Returns relative buildbucket config file path."""
   try:
     appid = app_identity.get_application_id()
-  except AttributeError:
+  except AttributeError:  # pragma: no cover | does not get run on some bots
     # Raised in testbed environment because cfg_path is called
     # during decoration.
     appid = 'testbed-test'
