@@ -132,39 +132,57 @@ class GetAuthenticatedHttp(unittest.TestCase):
 class RetriableHttplib2Test(unittest.TestCase):
   def setUp(self):
     super(RetriableHttplib2Test, self).setUp()
-    self.http = infra_libs.RetriableHttp()
-    self.http._request = mock.create_autospec(self.http._request, spec_set=True)
+    self.http = infra_libs.RetriableHttp(httplib2.Http())
+    self.http._http.request = mock.create_autospec(self.http._http.request,
+                                                   spec_set=True)
 
-  _MOCK_REQUEST = mock.call(*([mock.ANY] * 9))
+  _MOCK_REQUEST = mock.call('http://foo/', 'GET', None)
+
+  def test_delegate_get_attr(self):
+    """RetriableHttp should delegate getting attribute except request() to
+       Http"""
+    self.http._http.clear_credentials = mock.create_autospec(
+        self.http._http.clear_credentials, spec_set=True)
+    self.http.clear_credentials()
+    self.http._http.clear_credentials.assert_called_once_with()
+
+  def test_delegate_set_attr(self):
+    """RetriableHttp should delegate setting attributes to Http"""
+    self.http.ignore_etag = False
+    self.assertFalse(self.http.ignore_etag)
+    self.assertFalse(self.http._http.ignore_etag)
+    self.http.ignore_etag = True
+    self.assertTrue(self.http.ignore_etag)
+    self.assertTrue(self.http._http.ignore_etag)
 
   def test_succeed(self):
-    self.http._request.return_value = (
+    self.http._http.request.return_value = (
         httplib2.Response({'status': 400}), 'content')
     response, _ = self.http.request('http://foo/')
     self.assertEqual(400, response.status)
-    self.http._request.assert_has_calls([ self._MOCK_REQUEST ])
+    self.http._http.request.assert_has_calls([ self._MOCK_REQUEST ])
 
   def test_retry_succeed(self):
-    self.http._request.side_effect = iter([
+    self.http._http.request.side_effect = iter([
       (httplib2.Response({'status': 500}), 'content'),
       httplib2.HttpLib2Error,
       (httplib2.Response({'status': 200}), 'content')
     ])
     response, _ = self.http.request('http://foo/')
     self.assertEqual(200, response.status)
-    self.http._request.assert_has_calls([ self._MOCK_REQUEST ] * 3)
+    self.http._http.request.assert_has_calls([ self._MOCK_REQUEST ] * 3)
 
   def test_fail_exception(self):
-    self.http._request.side_effect = httplib2.HttpLib2Error()
+    self.http._http.request.side_effect = httplib2.HttpLib2Error()
     self.assertRaises(httplib2.HttpLib2Error, self.http.request, 'http://foo/')
-    self.http._request.assert_has_calls([ self._MOCK_REQUEST ] * 5)
+    self.http._http.request.assert_has_calls([ self._MOCK_REQUEST ] * 5)
 
   def test_fail_status_code(self):
-    self.http._request.return_value = (
+    self.http._http.request.return_value = (
         httplib2.Response({'status': 500}), 'content')
     response, _ = self.http.request('http://foo/')
     self.assertEqual(500, response.status)
-    self.http._request.assert_has_calls([ self._MOCK_REQUEST ] * 5)
+    self.http._http.request.assert_has_calls([ self._MOCK_REQUEST ] * 5)
 
 
 class InstrumentedHttplib2Test(unittest.TestCase):

@@ -162,18 +162,18 @@ def get_authenticated_http(credentials_filename,
     http = httplib2.Http(timeout=timeout)
   return creds.authorize(http)
 
-class RetriableHttp(httplib2.Http):
+class RetriableHttp(object):
   """A httplib2.Http object that retries on failure."""
 
-  def __init__(self, max_tries=5, retrying_statuses_fn=None, **kwargs):
+  def __init__(self, http, max_tries=5, retrying_statuses_fn=None):
     """
     Args:
-      http_obj: an httplib2.Http instance
+      http: an httplib2.Http instance
       max_tries: a number of maximum tries
       retrying_statuses_fn: a function that returns True if a given status
                             should be retried
     """
-    super(RetriableHttp, self).__init__(**kwargs)
+    self._http = http
     self._max_tries = max_tries
     self._retrying_statuses_fn = retrying_statuses_fn or \
                                  set(range(500,599)).__contains__
@@ -181,8 +181,8 @@ class RetriableHttp(httplib2.Http):
   def request(self, uri, method='GET', body=None, *args, **kwargs):
     for i in range(1, self._max_tries + 1):
       try:
-        response, content = super(RetriableHttp, self).request(
-            uri, method, body, *args, **kwargs)
+        response, content = self._http.request(uri, method, body, *args,
+                                               **kwargs)
 
         if self._retrying_statuses_fn(response.status):
           logging.info('RetriableHttp: attempt %d receiving status %d, %s',
@@ -202,6 +202,14 @@ class RetriableHttp(httplib2.Http):
 
     return response, content
 
+  def __getattr__(self, name):
+    return getattr(self._http, name)
+
+  def __setattr__(self, name, value):
+    if name in ('_http', '_max_tries', '_retrying_statuses_fn'):
+      self.__dict__[name] = value
+    else:
+      setattr(self._http, name, value)
 
 class InstrumentedHttp(httplib2.Http):
   """A httplib2.Http object that reports ts_mon metrics about its requests."""
