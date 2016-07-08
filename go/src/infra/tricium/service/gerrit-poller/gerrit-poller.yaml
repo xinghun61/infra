@@ -1,0 +1,11 @@
+application: chrome-infra-tricium-dev
+module: gerrit-poller
+runtime: go
+api_version: go1
+
+handlers:
+- url: /gerrit-poller/poll
+  script: _go_app
+  login: admin
+- url: /.*
+  script: _go_app

@@ -1,0 +1,18 @@
+application: chrome-infra-tricium-dev
+dispatch:
+
+- url: "*/workflow-launcher/*"
+  module: workflow-launcher
+
+- url: "*/workflow-listener/*"
+  module: workflow-listener
+
+- url: "*/gerrit-poller/*"
+  module: gerrit-poller
+
+- url: "*/gerrit-reporter/*"
+  module: gerrit-reporter
+
+- url: "*/*"
+  module: default
+

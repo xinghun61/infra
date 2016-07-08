@@ -1,0 +1,10 @@
+queue:
+- name: workflow-launcher-queue
+  mode: push
+  rate: 1/s
+- name: workflow-listener-queue
+  mode: push
+  rate: 1/s
+- name: gerrit-reporter-queue
+  mode: push
+  rate: 1/s

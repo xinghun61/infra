@@ -1,0 +1,11 @@
+application: chrome-infra-tricium-dev
+module: workflow-launcher
+runtime: go
+api_version: go1
+
+handlers:
+ - url: /workflow-launcher/queue-handler
+   script: _go_app
+   login: admin
+ - url: /.*
+   script: _go_app

@@ -1,0 +1,11 @@
+application: chrome-infra-tricium-dev
+module: default
+runtime: go
+api_version: go1
+
+handlers:
+- url: /analyze
+  script: _go_app
+  login: admin
+- url: /.*
+  script: _go_app

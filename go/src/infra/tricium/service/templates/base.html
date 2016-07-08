@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<title>Tricium</title>
+<style>
+  body {
+    font-family: sans-serif;
+  }
+</style>
+<body>
+== T R I C I U M (Under Construction) ==
+<hr size="1">
+{{.Msg}}
+<hr size="1">
+{{if .ShowRequestForm}}
+<form action="/analyze" method="post">
+    <div><input type="submit" value="Dummy Analysis Request"></div>
+</form>
+{{end}}
+</body>
