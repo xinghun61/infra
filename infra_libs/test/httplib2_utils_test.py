@@ -138,6 +138,13 @@ class RetriableHttplib2Test(unittest.TestCase):
 
   _MOCK_REQUEST = mock.call('http://foo/', 'GET', None)
 
+  def test_authorize(self):
+    http = infra_libs.RetriableHttp(httplib2.Http())
+    creds = infra_libs.get_signed_jwt_assertion_credentials(
+      'valid_creds.json',
+      service_accounts_creds_root=DATA_DIR)
+    creds.authorize(http)
+
   def test_delegate_get_attr(self):
     """RetriableHttp should delegate getting attribute except request() to
        Http"""

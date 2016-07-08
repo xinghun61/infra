@@ -12,6 +12,7 @@ import unittest
 from googleapiclient import errors
 import mock
 
+from infra_libs import httplib2_utils
 from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import monitors
 from infra_libs.ts_mon.common import pb_to_popo
@@ -38,7 +39,7 @@ class HttpsMonitorTest(unittest.TestCase):
     return json.dumps({'resource': pb_to_popo.convert(pb) })
 
   def _test_send(self, http):
-    mon = monitors.HttpsMonitor('endpoint', '/path/to/creds.p8.json', http=http)
+    mon = monitors.HttpsMonitor('endpoint', ':gce', http=http)
     resp = mock.MagicMock(spec=httplib2.Response, status=200)
     mon._http.request = mock.MagicMock(return_value=[resp, ""])
 
@@ -56,15 +57,14 @@ class HttpsMonitorTest(unittest.TestCase):
       mock.call('endpoint', method='POST', body=self.message(collection)),
     ])
 
-  @mock.patch('infra_libs.ts_mon.common.monitors.HttpsMonitor.'
-              '_load_credentials', autospec=True)
-  def test_default_send(self, _load_creds):
+  def test_default_send(self):
     self._test_send(None)
 
-  @mock.patch('infra_libs.ts_mon.common.monitors.HttpsMonitor.'
-              '_load_credentials', autospec=True)
-  def test_nondefault_send(self, _load_creds):
+  def test_http_send(self):
     self._test_send(httplib2.Http())
+
+  def test_instrumented_http_send(self):
+    self._test_send(httplib2_utils.InstrumentedHttp('test'))
 
   @mock.patch('infra_libs.ts_mon.common.monitors.HttpsMonitor.'
               '_load_credentials', autospec=True)

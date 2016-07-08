@@ -104,7 +104,7 @@ class HttpsMonitor(Monitor):
       resp, content = self._http.request(self._endpoint, method='POST',
                                          body=body)
       if resp.status != 200:
-        logging.warning('HttpsMonitor.send received status %d: %s', resp,
+        logging.warning('HttpsMonitor.send received status %d: %s', resp.status,
                         content)
     except (ValueError, errors.Error,
             socket.timeout, socket.error, socket.herror, socket.gaierror,

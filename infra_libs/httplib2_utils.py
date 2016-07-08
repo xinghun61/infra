@@ -206,7 +206,7 @@ class RetriableHttp(object):
     return getattr(self._http, name)
 
   def __setattr__(self, name, value):
-    if name in ('_http', '_max_tries', '_retrying_statuses_fn'):
+    if name in ('request', '_http', '_max_tries', '_retrying_statuses_fn'):
       self.__dict__[name] = value
     else:
       setattr(self._http, name, value)
