@@ -3418,6 +3418,10 @@ def publish(request):
 
   if comments:
     logging.warn('Publishing %d comments', len(comments))
+
+  if request.user.email().lower() in (CQ_COMMIT_BOT_EMAIL, CQ_SERVICE_ACCOUNT):
+    issue.update_cq_status_url_if_any(form.cleaned_data['message'])
+
   # Email only the triggerer and the CL owner if it was a CQ dry run request.
   # More details are in http://crbug.com/476883.
   email_to = None

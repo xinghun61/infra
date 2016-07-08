@@ -504,6 +504,27 @@ class Issue(ndb.Model):
       return datetime.datetime.now() - landed
     return None
 
+  def update_cq_status_url_if_any(self, cq_message):
+    """Parses the cq_message for CQ status url and updates corresponding
+    patchset with it.
+    """
+    url, issue_num, patchset_num = utils.parse_cq_status_url_message(cq_message)
+    if not url:
+      return
+    if self.key.id() != issue_num:
+      logging.error('CQ posted CQ Status URL %s to the wrong issue %s',
+                    url, self.key.id())
+      return
+    for patchset in self.patchsets:
+      if patchset.key.id() == patchset_num:
+        patchset.cq_status_url = url
+        patchset.put()
+        logging.info('saved cq_status_url %s to patchset %s', url, patchset.key)
+        return
+    logging.error('CQ posted CQ Status URL %s with unrecognized patchset %s',
+                  url, patchset_num)
+
+
 
 def can_skip_checks_on_revert(landed_age):
   """Returns whether CQ checks on revert can be skipped."""
@@ -666,6 +687,7 @@ class PatchSet(ndb.Model):
   build_results = ndb.StringProperty(repeated=True)
   depends_on_patchset = ndb.StringProperty()
   dependent_patchsets = ndb.StringProperty(repeated=True)
+  cq_status_url = ndb.StringProperty()
 
   @property
   def depends_on_tokens(self):

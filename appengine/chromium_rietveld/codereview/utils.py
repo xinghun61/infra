@@ -14,6 +14,7 @@
 
 """Collection of helper functions."""
 
+import re
 import urlparse
 
 from google.appengine.ext import db
@@ -93,3 +94,23 @@ def unify_linebreaks(text):
     A string with all line breaks converted to LF.
   """
   return text.replace('\r\n', '\n').replace('\r', '\n')
+
+
+_CQ_STATUS_REGEX = re.compile(
+    '(dry run: )?CQ is trying da patch. Follow status at\s+'
+    '(https://.+/patch-status/(.+/)?(\d+)/(\d+))\s*', re.I)
+
+
+def parse_cq_status_url_message(msg):
+  """Returns url, issue, patchset parsed from CQ status message.
+
+  If parsing failed, returns None, None, None.
+  """
+  # Example of message, Dry Run prefix is optional.
+  # Dry run: CQ is trying da patch. Follow status at
+  # https://chromium-cq-status.appspot.com/v2/patch-status/codereview.chromium.org/2131593002/1
+  match = _CQ_STATUS_REGEX.match(msg)
+  if not match:
+    return None, None, None
+  _, url, _, issue, patchset = match.groups()
+  return url, int(issue), int(patchset)
