@@ -318,8 +318,7 @@ def inner_loop(args):
         datetime.datetime.utcnow() - issue_tracker_last_poll).total_seconds()
     if seconds_since_last_poll > ISSUE_TRACKER_POLLING_FREQUENCY_SEC:
       issue_tracker_last_poll = datetime.datetime.utcnow()
-      issues_per_tree = crbug_issues.query(args.crbug_service_account,
-                                           args.use_monorail)
+      issues_per_tree = crbug_issues.query(args.crbug_service_account)
       for tree, issues in issues_per_tree.iteritems():
         json_data = {'alerts': issues}
         gzipped_data = gzipped(json.dumps(json_data))

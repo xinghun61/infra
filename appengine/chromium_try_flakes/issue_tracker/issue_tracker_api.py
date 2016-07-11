@@ -52,22 +52,14 @@ class IssueTrackerAPI(object):  # pragma: no cover
   CAN_ALL = 'all'
 
   """A wrapper around the issue tracker api."""
-  def __init__(self, project_name, use_monorail):
+  def __init__(self, project_name):
     self.project_name = project_name
-    self.use_monorail = use_monorail
 
-    if use_monorail:
-      self.client = _buildClient(
-          'monorail', 'v1',
-          _createHttpObject('https://www.googleapis.com/auth/userinfo.email'),
-          'https://monorail-prod.appspot.com/_ah/api/discovery/v1/apis/{api}/'
-          '{apiVersion}/rest')
-    else:
-      self.client = _buildClient(
-          'projecthosting', 'v2',
-          _createHttpObject('https://www.googleapis.com/auth/projecthosting'),
-          'https://www.googleapis.com/discovery/v1/apis/{api}/{apiVersion}/'
-          'rest')
+    self.client = _buildClient(
+        'monorail', 'v1',
+        _createHttpObject('https://www.googleapis.com/auth/userinfo.email'),
+        'https://monorail-prod.appspot.com/_ah/api/discovery/v1/apis/{api}/'
+        '{apiVersion}/rest')
 
   def _retry_api_call(self, request, num_retries=5):
     retries = 0
@@ -114,12 +106,7 @@ class IssueTrackerAPI(object):  # pragma: no cover
     if 'status' in issue.changed:
       updates['status'] = issue.status
     if 'owner' in issue.changed:
-      # workaround for existing bug:
-      # https://code.google.com/a/google.com/p/codesite/issues/detail?id=115
-      if self.use_monorail:
-        updates['owner'] = issue.owner
-      else:
-        updates['owner'] = issue.owner if issue.owner else '----'
+      updates['owner'] = issue.owner
     if 'blocked_on' in issue.changed:
       updates['blockedOn'] = issue.blocked_on
     if issue.labels.isChanged():

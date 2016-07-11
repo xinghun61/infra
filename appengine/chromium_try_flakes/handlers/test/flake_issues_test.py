@@ -988,7 +988,7 @@ class TestOverrideIssueID(testing.AppengineTestCase):
     self.test_app.get('/override_issue_id?issue_id=foobar', status=400)
     self.test_app.get('/override_issue_id?issue_id=-5', status=400)
 
-  def test_checks_issue_is_on_monorail(self):
+  def test_checks_issue_is_on_crbug(self):
     self.test_app.get('/override_issue_id?issue_id=200', status=400)
 
   def test_overrides_issue_id(self):

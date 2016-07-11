@@ -29,7 +29,6 @@ MAX_UPDATED_ISSUES_PER_DAY = 10
 MAX_TIME_DIFFERENCE_SECONDS = 12 * 60 * 60
 MIN_REQUIRED_FLAKY_RUNS = 3
 DAYS_TILL_STALE = 30
-USE_MONORAIL = True
 DAYS_TO_REOPEN_ISSUE = 3
 MAX_INDIVIDUAL_FLAKES_PER_STEP = 50
 FLAKY_RUNS_TEMPLATE = (
@@ -287,8 +286,7 @@ class ProcessIssue(webapp2.RequestHandler):
 
   @ndb.transactional(xg=True)  # pylint: disable=E1120
   def post(self, urlsafe_key):
-    api = issue_tracker_api.IssueTrackerAPI(
-        'chromium', use_monorail=USE_MONORAIL)
+    api = issue_tracker_api.IssueTrackerAPI('chromium')
 
     # Check if we should stop processing this issue because we've posted too
     # many updates to issue tracker today already.
@@ -352,8 +350,7 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
     not being processed despite being in the appropriate queue.
     """
     issue_id = int(issue_id)
-    api = issue_tracker_api.IssueTrackerAPI(
-        'chromium', use_monorail=USE_MONORAIL)
+    api = issue_tracker_api.IssueTrackerAPI('chromium')
     flake_issue = api.getIssue(issue_id)
     now = datetime.datetime.utcnow()
 

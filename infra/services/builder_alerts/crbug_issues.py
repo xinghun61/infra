@@ -21,33 +21,21 @@ WHITELISTED_LABELS = {'sheriff-chromium': 'chromium',
 BATCH_SIZE = 10
 
 
-def _build_crbug_service(crbug_service_account,
-                         use_monorail):  # pragma: no cover
+def _build_crbug_service(crbug_service_account):  # pragma: no cover
   with open(crbug_service_account) as crbug_sa_file:
     service_account = json.load(crbug_sa_file)
 
-  if use_monorail:
-    api_name = 'monorail'
-    api_version = 'v1'
-    scope = 'https://www.googleapis.com/auth/userinfo.email'
-    discovery_url = ('https://monorail-prod.appspot.com/_ah/api/discovery/v1/'
-                     'apis/{api}/{apiVersion}/rest')
-  else:
-    api_name = 'projecthosting'
-    api_version = 'v2'
-    scope = 'https://www.googleapis.com/auth/projecthosting'
-    discovery_url = ('https://www.googleapis.com/discovery/v1/apis/{api}/'
-                     '{apiVersion}/rest')
-
   creds = client.SignedJwtAssertionCredentials(
-      service_account['client_email'], service_account['private_key'], scope)
+      service_account['client_email'], service_account['private_key'],
+      'https://www.googleapis.com/auth/userinfo.email')
   http = creds.authorize(httplib2.Http())
   return discovery.build(
-      api_name, api_version, discoveryServiceUrl=discovery_url, http=http)
+      'monorail', 'v1', discoveryServiceUrl='https://monorail-prod.appspot.com/'
+      '_ah/api/discovery/v1/apis/{api}/{apiVersion}/rest', http=http)
 
 
-def _list_issues(crbug_service_account, use_monorail):
-  service = _build_crbug_service(crbug_service_account, use_monorail)
+def _list_issues(crbug_service_account):
+  service = _build_crbug_service(crbug_service_account)
   issues = []
   seen_issue_ids = set()
   for whitelisted_label in WHITELISTED_LABELS:
@@ -82,7 +70,7 @@ def _list_issues(crbug_service_account, use_monorail):
   return issues
 
 
-def query(crbug_service_account, use_monorail):
+def query(crbug_service_account):
   """Queries issue tracker for issues with whitelisted labels.
 
   Raises QuotaExceededError if requests result in quota errors. Callers should
@@ -145,7 +133,7 @@ def query(crbug_service_account, use_monorail):
   for tree_name in whitelisted_trees:
     sheriff_issues[tree_name] = []
 
-  raw_issues = _list_issues(crbug_service_account, use_monorail)
+  raw_issues = _list_issues(crbug_service_account)
   for raw_issue in raw_issues:
     sheriff_issue = {'key': 'crbug_issue_id:%d' % raw_issue['id'],
                      'title': raw_issue['title'],
