@@ -232,19 +232,33 @@ class URLAutolinkTest(unittest.TestCase):
     self.assertEqual(test, result[0].href)
     self.assertEqual(test, result[0].content)
 
-    # Check link surrounded by angle-brackets, or quotes.
+    # Check link surrounded by angle-brackets.
     result = self.DoLinkify('<%s>' % test)
     self.assertEqual(test, result[0].href)
     self.assertEqual(test, result[0].content)
     self.assertEqual('>', result[1].content)
 
+    # Check link surrounded by double-quotes.
     result = self.DoLinkify('"%s"' % test)
     self.assertEqual(test, result[0].href)
     self.assertEqual(test, result[0].content)
     self.assertEqual('"', result[1].content)
 
-    # Check link with embedded quotes.
+    # Check link with embedded double-quotes.
     test = 'http://www.example.com/?q="a+b+c"'
+    result = self.DoLinkify('Try %s, ok?' % test)
+    self.assertEqual(test, result[0].href)
+    self.assertEqual(test, result[0].content)
+    self.assertEqual(',', result[1].content)
+
+    # Check link surrounded by single-quotes.
+    result = self.DoLinkify("'%s'" % test)
+    self.assertEqual(test, result[0].href)
+    self.assertEqual(test, result[0].content)
+    self.assertEqual("'", result[1].content)
+
+    # Check link with embedded single-quotes.
+    test = "http://www.example.com/?q='a+b+c'"
     result = self.DoLinkify('Try %s, ok?' % test)
     self.assertEqual(test, result[0].href)
     self.assertEqual(test, result[0].content)
