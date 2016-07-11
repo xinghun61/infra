@@ -203,6 +203,8 @@ def api_base_checks(request, requester, services, cnxn,
 
   if not valid_user:
     raise endpoints.UnauthorizedException('Auth error: %s' % auth_err)
+  else:
+    logging.info('API request from user %s:%s', client_id, requester.email())
 
   project_name = None
   if hasattr(request, 'projectId'):
