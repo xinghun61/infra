@@ -19,9 +19,11 @@ cpu_time = ts_mon.FloatMetric('dev/cpu/time',
                                   ' in different states.')
 
 disk_free = ts_mon.GaugeMetric('dev/disk/free',
-                               description='Available bytes on disk partition.')
+                               description='Available bytes on disk partition.',
+                               units=ts_mon.MetricsDataUnits.BYTES)
 disk_total = ts_mon.GaugeMetric('dev/disk/total',
-                                description='Total bytes on disk partition.')
+                                description='Total bytes on disk partition.',
+                                units=ts_mon.MetricsDataUnits.BYTES)
 
 # inode counts are only available on Unix.
 if os.name == 'posix':  # pragma: no cover
@@ -35,17 +37,21 @@ if os.name == 'posix':  # pragma: no cover
 mem_free = ts_mon.GaugeMetric('dev/mem/free',
                               description='Amount of memory available to a '
                                   'process (in Bytes). Buffers are considered '
-                                  'free memory.')
+                                  'free memory.',
+                              units=ts_mon.MetricsDataUnits.BYTES)
 
 mem_total = ts_mon.GaugeMetric('dev/mem/total',
-                               description='Total physical memory in Bytes.')
+                               description='Total physical memory in Bytes.',
+                               units=ts_mon.MetricsDataUnits.BYTES)
 
 START_TIME = psutil.boot_time()
 net_up = ts_mon.CounterMetric('dev/net/bytes/up', start_time=START_TIME,
-                              description='Number of bytes sent on interface.')
+                              description='Number of bytes sent on interface.',
+                              units=ts_mon.MetricsDataUnits.BYTES)
 net_down = ts_mon.CounterMetric('dev/net/bytes/down', start_time=START_TIME,
                                 description='Number of Bytes received on '
-                                    'interface.')
+                                    'interface.',
+                                units=ts_mon.MetricsDataUnits.BYTES)
 net_err_up = ts_mon.CounterMetric('dev/net/err/up', start_time=START_TIME,
                                   description='Total number of errors when '
                                       'sending (per interface).')
@@ -60,13 +66,16 @@ net_drop_down = ts_mon.CounterMetric('dev/net/drop/down', start_time=START_TIME,
                                          'packets that have been dropped.')
 
 disk_read = ts_mon.CounterMetric('dev/disk/read', start_time=START_TIME,
-                                 description='Number of Bytes read on disk.')
+                                 description='Number of Bytes read on disk.',
+                                 units=ts_mon.MetricsDataUnits.BYTES)
 disk_write = ts_mon.CounterMetric('dev/disk/write', start_time=START_TIME,
                                   description='Number of Bytes written on '
-                                      'disk.')
+                                      'disk.',
+                                  units=ts_mon.MetricsDataUnits.BYTES)
 
 uptime = ts_mon.GaugeMetric('dev/uptime',
-                            description='Machine uptime, in seconds.')
+                            description='Machine uptime, in seconds.',
+                            units=ts_mon.MetricsDataUnits.SECONDS)
 
 proc_count = ts_mon.GaugeMetric('dev/proc/count',
                                 description='Number of processes currently '

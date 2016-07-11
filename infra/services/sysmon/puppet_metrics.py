@@ -28,8 +28,11 @@ resources = ts_mon.GaugeMetric('puppet/resources',
     description='Number of resources known by the puppet client in its last '
                 'run')
 times = ts_mon.FloatMetric('puppet/times',
-    description='Time taken to perform various parts of the last puppet run')
-age = ts_mon.FloatMetric('puppet/age', description='Time since last run')
+    description='Time taken to perform various parts of the last puppet run',
+    units=ts_mon.MetricsDataUnits.SECONDS)
+age = ts_mon.FloatMetric('puppet/age',
+                         description='Time since last run',
+                         units=ts_mon.MetricsDataUnits.SECONDS)
 
 
 def _lastrunfile():  # pragma: no cover

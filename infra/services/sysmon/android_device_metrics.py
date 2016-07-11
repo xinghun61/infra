@@ -40,13 +40,16 @@ dev_type = ts_mon.StringMetric('dev/mobile/type',
 dev_os = ts_mon.StringMetric('dev/mobile/os',
                              description='operating system of the device')
 dev_uptime = ts_mon.FloatMetric('dev/mobile/uptime',
-                                description='device uptime in seconds')
+                                description='device uptime in seconds',
+                                units=ts_mon.MetricsDataUnits.SECONDS)
 mem_free = ts_mon.GaugeMetric(
     'dev/mobile/mem/free',
-    description='available memory (free + cached + buffers) in kb')
+    description='available memory (free + cached + buffers) in kb',
+    units=ts_mon.MetricsDataUnits.KIBIBYTES)
 mem_total = ts_mon.GaugeMetric(
     'dev/mobile/mem/total',
-    description='total memory (device ram - kernel leaks) in kb')
+    description='total memory (device ram - kernel leaks) in kb',
+    units=ts_mon.MetricsDataUnits.KIBIBYTES)
 proc_count = ts_mon.GaugeMetric('dev/mobile/proc/count',
                                 description='process count')
 
