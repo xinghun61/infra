@@ -23,6 +23,7 @@
   {
     "name": "$result",
     "reason": "Step('Invalid patchset list') failed with return_code 1",
+    "recipe_result": null,
     "status_code": 1
   }
 ]
