@@ -256,7 +256,7 @@ class Servlet(webapp2.RequestHandler):
            ("default-src %(scheme)s ; "
             "script-src"
             " 'unsafe-inline'"  # Only counts in browsers that lack CSP2.
-            " 'unsafe-dynamic'"  # Allows <script nonce> to load more.
+            " 'strict-dynamic'"  # Allows <script nonce> to load more.
             " https://www.gstatic.com/recaptcha/api2/"
             " %(csp_self)s 'nonce-%(nonce)s'; "
             "child-src https://www.google.com/recaptcha/; "
