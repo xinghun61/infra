@@ -371,9 +371,6 @@ def main(args):
   parser.add_argument('--crbug-service-account',
                       help='Path to a service account JSON file to be used to '
                            'search for relevant issues on crbug.com.')
-  parser.add_argument('--use-monorail', default=False, action='store_true',
-                      help='When specified, Monorail API is used to search for '
-                           'issues on crbug')
   parser.add_argument('--api-endpoint-prefix',
                       help='Endpoint prefix for posting alerts. Old API '
                            'endpoint will be formed by adding value specified '
