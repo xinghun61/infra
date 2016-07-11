@@ -44,6 +44,9 @@
       #alertsList {
         padding: 0;
       }
+      #bugDialog, #snoozeDialog {
+        width: 300px;
+      }
       #noAlerts {
         margin: 1em;
         text-align: center;
@@ -54,6 +57,10 @@
         width: 25px;
         height: 25px;
         padding: 0;
+      }
+      .error {
+        color: #cc0000;
+        margin-top: 0;
       }
       .last-updated, .user-name {
         text-align: right;
@@ -165,7 +172,7 @@
         </iron-pages>
       </paper-header-panel>
     </paper-drawer-panel>
-    <paper-dialog id="bugDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation" on-iron-overlay-closed="_resetBugDialog">
+    <paper-dialog id="bugDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
       <h2>Enter bug number</h2>
       <paper-input autofocus id="bug" label="Bug # or URL"></paper-input>
       <a hidden$="[[_filedBug]]" id="fileBugLink" target="_blank" on-tap="_fileBugClicked">
@@ -174,23 +181,25 @@
       <div hidden$="[[!_filedBug]]" id="bugReminder">
         Remember to enter the new bug number above!
       </div>
+      <div class="error">[[_bugErrorMessage]]</div>
       <div class="buttons">
         <paper-button dialog-dismiss raised>
           Close
         </paper-button>
-        <paper-button dialog-confirm raised on-tap="_saveBug">
+        <paper-button raised on-tap="_saveBug">
           Save Bug
         </paper-button>
       </div>
     </paper-dialog>
     <paper-dialog id="snoozeDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
       <h2>Snooze</h2>
-      <paper-input autofocus label="Amount of time (minutes):" id="snoozeTime"></paper-input>
+      <paper-input autofocus label="Amount of time (minutes):" id="snoozeTime" auto-validate allowed-pattern="[0-9]"></paper-input>
+      <div class="error">[[_snoozeErrorMessage]]</div>
       <div class="buttons">
         <paper-button dialog-dismiss raised>
           Close
         </paper-button>
-        <paper-button dialog-confirm raised on-tap="_snooze">
+        <paper-button raised on-tap="_snooze">
           Snooze
         </paper-button>
       </div>
@@ -251,6 +260,7 @@
           type: Object,
           value: function() { return {}; },
         },
+        _bugErrorMessage: String,
         _bugModel: Object,
         _filedBug: {
           type: Boolean,
@@ -292,6 +302,7 @@
           type: Boolean,
           value: true,
         },
+        _snoozeErrorMessage: String,
         _snoozeModel: Object,
         _trees: Object,
         _tree: {
@@ -568,20 +579,45 @@
       },
 
       ////////////////////// Bugs ///////////////////////////
+      _commentForBug: function(bugModel) {
+        let result = bugModel.title + "\n\nType: " + bugModel.type + "\n\n";
+        if (bugModel.extension) {
+          if (bugModel.extension.builders && bugModel.extension.builders.length > 0) {
+            result += "Builders failed on: ";
+            for (let i in bugModel.extension.builders) {
+              result += "\n- " + bugModel.extension.builders[i].name + ": \n  "
+                + bugModel.extension.builders[i].url;
+            }
+            result += "\n\n";
+          }
+          if (bugModel.extension.reasons && bugModel.extension.reasons.length > 0) {
+            result += "Reasons: ";
+            for (let i in bugModel.extension.reasons) {
+              result += "\n" + bugModel.extension.reasons[i].url;
+              if (bugModel.extension.reasons[i].test_names) {
+                result += "\n" + "Tests:";
+                if (bugModel.extension.reasons[i].test_names) {
+                  result += "\n* " + bugModel.extension.reasons[i].test_names.join("\n* ");
+                }
+              }
+            }
+            result += "\n\n";
+          }
+        }
+        return result;
+      },
 
       _handleLinkBug: function(evt) {
         this._bugModel = evt.model.alert;
-        // TODO(martiniss): make this link be customized per builder
-        this.$.fileBugLink.href = "https://crbug.com/new";
+        this.$.fileBugLink.href = "https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=&summary="
+          + this._bugModel.title + "&comment=" + encodeURIComponent(this._commentForBug(this._bugModel));
+        this.set("_filedBug", false);
+        this.set("_bugErrorMessage", "");
         this.$.bugDialog.open();
       },
 
       _fileBugClicked: function() {
         this._filedBug = true;
-      },
-
-      _resetBugDialog: function() {
-        this._filedBug = false;
       },
 
       _saveBug: function() {
@@ -593,7 +629,11 @@
         );
         if (request) {
           request.completes.then(() => {
+            this.set("_bugErrorMessage", "");
             this.$.bug.value = '';
+            this.$.bugDialog.close();
+          }, (error) => {
+            this.set("_bugErrorMessage", error);
           });
         }
       },
@@ -603,6 +643,7 @@
       _handleSnooze: function(evt) {
         this._snoozeModel = evt.model.alert;
         this.$.snoozeTime.value = DEFAULT_SNOOZE_TIME_MIN;
+        this.set("_snoozeErrorMessage", "");
         this.$.snoozeDialog.open();
       },
 
@@ -614,6 +655,9 @@
           }
         ).completes.then(() => {
           this.$.snoozeTime.value = '';
+          this.$.snoozeDialog.close();
+        }, (error) => {
+          this.set("_snoozeErrorMessage", error);
         });
       },
 
