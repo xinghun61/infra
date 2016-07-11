@@ -101,7 +101,8 @@ if not modules:
     ]
     # Use relative paths to shorten the command-line
     modules.extend(itertools.chain(
-      [d for d in appengine_dirs if os.path.isfile(os.path.join(d, 'app.yaml'))]
+      [d for d in appengine_dirs if os.path.isfile(os.path.join(d,
+          '.coveragerc'))]
     ))
 
 os.environ['PYTHONPATH'] = ''
