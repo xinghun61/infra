@@ -32,11 +32,12 @@ INFRA_GO_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Allowed keys in *.infra_testing dict.
 EXPECTED_INFO_KEYS = frozenset([
-  'skip_testing',
-  'expected_coverage_min',
-  'expected_coverage_max',
   'build_tags',
+  'comment',
+  'expected_coverage_max',
+  'expected_coverage_min',
   'skip_checks',
+  'skip_testing',
 ])
 
 MAGIC_FILE_EXT = 'infra_testing'
