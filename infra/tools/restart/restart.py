@@ -325,7 +325,8 @@ def run(masters, restart_time, reviewers, bug, force, no_commit,
 
     LOGGER.info('Writing back to JSON file, %d new entries' % (entries,))
     desired_state_parser.write_master_state(
-        desired_master_state, master_state_json)
+        desired_master_state, master_state_json,
+        prune_only_masters=set(m.desired_state_name for m in masters))
 
     # Step 3: Send the patch to Rietveld and commit it via the CQ.
     LOGGER.info('Committing back into repository')

@@ -339,6 +339,38 @@ class TestWritingState(auto_stub.TestCase):
         'version': desired_state_parser.VERSION,
       }, filename)
 
+  def testPruneOldEntriesFilter(self):
+    with temporary_directory() as dirname:
+      filename = os.path.join(dirname, 'desired_state.json')
+      master_state = [
+        {'desired_state': 'running',
+         'transition_time_utc': UNIX_TIMESTAMP_0500},
+        {'desired_state': 'running',
+         'transition_time_utc': UNIX_TIMESTAMP_1000},
+        {'desired_state': 'running',
+         'transition_time_utc': UNIX_TIMESTAMP_4000},
+        {'desired_state': 'offline',
+         'transition_time_utc': UNIX_TIMESTAMP_6000},
+        {'desired_state': 'offline',
+         'transition_time_utc': UNIX_TIMESTAMP_7000},
+      ]
+      # No pruning should happen here.
+      desired_state_parser.write_master_state({
+        'master_states': {
+          'master.leave.as.is': master_state[:],
+          'master.pruned': master_state[:],
+        },
+        'master_params': {},
+        'version': desired_state_parser.VERSION,
+      }, filename, prune_only_masters=set(['master.pruned']))
+
+      with open(filename) as f:
+        parsed_data = json.load(f)
+      self.assertEqual(parsed_data['master_states']['master.leave.as.is'],
+                       master_state)
+      self.assertEqual(parsed_data['master_states']['master.pruned'],
+                       master_state[1:])
+
   def testInvalidState(self):
     with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
       with temporary_directory() as dirname:

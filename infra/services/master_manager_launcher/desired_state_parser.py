@@ -215,17 +215,21 @@ def state_time(state):
   return zt
 
 
-def prune_desired_state(desired_state, buffer_secs=3600):
+def prune_desired_state(desired_state, buffer_secs=3600, only_masters=None):
   """Prune old desired_state entries.
 
   buffer_secs specifies how many seconds of buffer, only entries at least this
   many seconds in the past are considered for pruning.
+  only_masters if specified, limits entries to be pruned to only these masters.
   """
   cutoff = timestamp.utcnow_ts() - buffer_secs
 
   new_desired_state = {}
 
   for mastername, states in desired_state.iteritems():
+    if only_masters is not None and mastername not in only_masters:
+      new_desired_state[mastername] = states
+      continue
     states_before_cutoff = []
     states_after_cutoff = []
     for state in states:
@@ -249,12 +253,16 @@ def prune_desired_state(desired_state, buffer_secs=3600):
   return new_desired_state
 
 
-def write_master_state(desired_state, filename):
-  """Write a desired state file, removing old entries."""
+def write_master_state(desired_state, filename, prune_only_masters=None):
+  """Write a desired state file, removing old entries.
+
+  To limit pruning to just specific masters, specify them in prune_only_masters.
+  """
   new_desired_state = {
       'master_params': desired_state.get('master_params', {}),
       'master_states': prune_desired_state(
-          desired_state.get('master_states', {})),
+          desired_state.get('master_states', {}),
+          only_masters=prune_only_masters),
       'version': VERSION,
   }
 
