@@ -334,14 +334,19 @@
           var rowspan = result.heuristic_analysis.suspected_cls.length > 0 ? result.heuristic_analysis.suspected_cls.length : 1;
           tableString += generateCommonCellsForAllCategories(step_name, 'undetermined', index, result.tests, result.first_failure, result.last_pass, rowspan);
 
-          tableString += '<td rowspan="' + rowspan + '">' + findit.tryjobStatusMessageMap[result.try_job.status] + '</td>';
-
+          tableString += '<td id="unclassified_reason_td" rowspan="' + rowspan + '">' + findit.tryjobStatusMessageMap[result.try_job.status] + '</td>';
           tableString += generateHeuristicCulpritCls(result.heuristic_analysis.suspected_cls, result.supported);
           tableString += '</tr>';
         });
 
         $('#unclassified_failures_table tbody').append(tableString);
         $('#unclassified_failures').removeClass('not-display');
+
+        // Do not display Reason to non-admin users.
+        if (! findit.showDebugInfo) {
+          $('#unclassified_reason_th').addClass('not-display');
+          $('#unclassified_reason_td').addClass('not-display');
+        }
       }
     }
 
@@ -591,7 +596,7 @@
                   <th rowspan="3" title="Failed test name" width="300px">Test(s)</th>
                   <th rowspan="3" title="The build cycle in which the step started to fail">First Failure</th>
                   <th rowspan="3" title="The last build cycle in which the step passed">Last Pass<br>Before Failure</th>
-                  <th rowspan="3" title="The reason we're not sure about the result">Reason</th>
+                  <th id="unclassified_reason_th" rowspan="3" title="The reason we're not sure about the result">Reason</th>
                   <th colspan="4">Suspected CLs</th>
                 </tr>
                 <tr>
