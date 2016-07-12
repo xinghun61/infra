@@ -96,21 +96,19 @@ def unify_linebreaks(text):
   return text.replace('\r\n', '\n').replace('\r', '\n')
 
 
-_CQ_STATUS_REGEX = re.compile(
-    '(dry run: )?CQ is trying da patch. Follow status at\s+'
-    '(https://.+/patch-status/(.+/)?(\d+)/(\d+))\s*', re.I)
+_CQ_STATUS_URL_REGEX = re.compile(
+    '^https://.+/patch-status/(.+/)?(\d+)/(\d+)$', re.I)
 
 
-def parse_cq_status_url_message(msg):
-  """Returns url, issue, patchset parsed from CQ status message.
+def parse_cq_status_url(url):
+  """Returns issue, patchset parsed from CQ status url.
 
-  If parsing failed, returns None, None, None.
+  If parsing failed, returns None, None.
   """
-  # Example of message, Dry Run prefix is optional.
-  # Dry run: CQ is trying da patch. Follow status at
+  # Example of url:
   # https://chromium-cq-status.appspot.com/v2/patch-status/codereview.chromium.org/2131593002/1
-  match = _CQ_STATUS_REGEX.match(msg)
+  match = _CQ_STATUS_URL_REGEX.match(url)
   if not match:
-    return None, None, None
-  _, url, _, issue, patchset = match.groups()
-  return url, int(issue), int(patchset)
+    return None, None
+  _, issue, patchset = match.groups()
+  return int(issue), int(patchset)
