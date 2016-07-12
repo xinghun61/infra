@@ -4,14 +4,23 @@
 
 import datetime
 import json
+import os
+import sys
+
+REPO_ROOT_DIR = os.path.abspath(os.path.join(
+    os.path.realpath(__file__),  '..', '..', '..', '..'))
+sys.path.insert(0, os.path.join(
+    REPO_ROOT_DIR, 'luci', 'appengine', 'third_party_local'))
+
 
 from components import auth
 from components import utils
+from components.test_support import test_case
 from google.appengine.ext import ndb
+from testing_utils import testing
 import mock
 import gae_ts_mon
 
-from testing_utils import testing
 import api
 import config
 import errors
@@ -19,11 +28,12 @@ import model
 import service
 
 
-class BuildBucketApiTest(testing.EndpointsTestCase):
-  api_service_cls = api.BuildBucketApi
+class ApiTests(object):
+  test_build = None
+  future_ts = None
+  future_date = None
 
-  def setUp(self):
-    super(BuildBucketApiTest, self).setUp()
+  def setUpTests(self):
     gae_ts_mon.reset_for_unittest(disable=True)
     for a in dir(service):
       self.mock(service, a, mock.Mock())
@@ -447,8 +457,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
         'lease_expiration_ts': self.future_ts,
       }],
     }
-    with self.call_should_fail(500):
-      self.call_api('heartbeat_batch', req)
+    self.call_api('heartbeat_batch', req, status=500)
 
   ################################## SUCCEED ###################################
 
@@ -584,15 +593,13 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     req = {
       'bucket': 'non-existent',
     }
-    with self.call_should_fail(404):
-      self.call_api('get_bucket', req)
+    self.call_api('get_bucket', req, status=404)
 
   def test_get_bucket_with_auth_error(self):
     req = {
       'bucket': 'secret-project',
     }
-    with self.call_should_fail(403):
-      self.call_api('get_bucket', req)
+    self.call_api('get_bucket', req, status=403)
 
   #################################### ERRORS ##################################
 
@@ -610,6 +617,21 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.error_test(errors.LeaseExpiredError, 'LEASE_EXPIRED')
 
   def test_auth_error(self):
-    with self.call_should_fail(403):
-      service.get.side_effect = auth.AuthorizationError
-      self.call_api('get', {'id': 123})
+    service.get.side_effect = auth.AuthorizationError
+    self.call_api('get', {'id': 123}, status=403)
+
+
+class EndpointsApiTest(testing.EndpointsTestCase, ApiTests):
+  api_service_cls = api.BuildBucketApi
+
+  def setUp(self):
+    super(EndpointsApiTest, self).setUp()
+    self.setUpTests()
+
+
+class Webapp2ApiTest(test_case.Webapp2EndpointsTestCase, ApiTests):
+  api_service_cls = api.BuildBucketApi
+
+  def setUp(self):
+    super(Webapp2ApiTest, self).setUp()
+    self.setUpTests()
