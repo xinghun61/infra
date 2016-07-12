@@ -1,6 +1,8 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+import json
+import logging
 
 from google.appengine.ext import ndb
 
@@ -51,7 +53,7 @@ class CrashAnalysis(ndb.Model):
   ################### Properties for the analysis result. ###################
 
   # Analysis results.
-  result = ndb.JsonProperty(compressed=True, indexed=False, default={})
+  result = ndb.JsonProperty(compressed=True, indexed=False)
 
   # Tags for query and monitoring.
   has_regression_range = ndb.BooleanProperty(indexed=True)
@@ -64,24 +66,24 @@ class CrashAnalysis(ndb.Model):
   # Triage results.
   regression_range_triage_status = ndb.IntegerProperty(
       indexed=True, default=triage_status.UNTRIAGED)
-  culprit_regression_range = ndb.JsonProperty(indexed=False, default=[])
+  culprit_regression_range = ndb.JsonProperty(indexed=False)
 
   suspected_cls_triage_status = ndb.IntegerProperty(
       indexed=True, default=triage_status.UNTRIAGED)
-  culprit_cls = ndb.JsonProperty(indexed=False, default=[])
+  culprit_cls = ndb.JsonProperty(indexed=False)
 
   suspected_project_triage_status = ndb.IntegerProperty(
       indexed=True, default=triage_status.UNTRIAGED)
-  culprit_project = ndb.JsonProperty(indexed=False, default='')
+  culprit_project = ndb.StringProperty(indexed=False)
 
   suspected_components_triage_status = ndb.IntegerProperty(
       indexed=True, default=triage_status.UNTRIAGED)
-  culprit_components = ndb.JsonProperty(indexed=False, default=[])
+  culprit_components = ndb.JsonProperty(indexed=False)
 
   triage_history = ndb.JsonProperty(indexed=False)
 
   # Triage note.
-  note = ndb.StringProperty(indexed=False, default='')
+  note = ndb.StringProperty(indexed=False)
 
   def Reset(self):
     self.pipeline_status_path = None
@@ -93,17 +95,28 @@ class CrashAnalysis(ndb.Model):
     self.has_regression_range = None
     self.found_suspects = None
     self.solution = None
-    self.result = {}
+    self.result = None
     self.regression_range_triage_status = triage_status.UNTRIAGED
-    self.culprit_regression_range = []
+    self.culprit_regression_range = None
     self.suspected_cls_triage_status = triage_status.UNTRIAGED
-    self.culprit_cls = []
+    self.culprit_cls = None
     self.suspected_project_triage_status = triage_status.UNTRIAGED
-    self.culprit_project = ''
+    self.culprit_project = None
     self.suspected_components_triage_status = triage_status.UNTRIAGED
-    self.culprit_components = []
+    self.culprit_components = None
     self.triage_history = None
-    self.note = ''
+    self.note = None
+
+  def Update(self, update):
+    updated = False
+    for key, value in update.iteritems():
+      if not hasattr(self, key):
+        continue
+
+      setattr(self, key, value)
+      updated = True
+
+    return updated
 
   @property
   def completed(self):

@@ -28,6 +28,7 @@ from handlers.crash import crash_config
 from handlers.crash import fracas_crash
 from handlers.crash import fracas_dashboard
 from handlers.crash import fracas_result_feedback
+from handlers.crash import triage_fracas_analysis 
 from handlers.flake import check_flake
 
 # Default module.
@@ -96,6 +97,8 @@ crash_frontend_web_pages_handler_mappings = [
     ('/crash/fracas-dashboard', fracas_dashboard.FracasDashBoard),
     ('/crash/fracas-result-feedback',
      fracas_result_feedback.FracasResultFeedback),
+    ('/crash/triage-fracas-analysis',
+     triage_fracas_analysis.TriageFracasAnalysis),
     ('/_ah/push-handlers/crash/fracas', fracas_crash.FracasCrash),
 ]
 crash_frontend_web_application = webapp2.WSGIApplication(

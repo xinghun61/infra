@@ -68,7 +68,7 @@ class CrashAnalysisTest(unittest.TestCase):
     self.assertIsNone(analysis.has_regression_range)
     self.assertIsNone(analysis.found_suspects)
     self.assertIsNone(analysis.solution)
-    self.assertEqual(analysis.result, {})
+    self.assertEqual(analysis.result, None)
     self.assertEqual(analysis.regression_range_triage_status,
                      triage_status.UNTRIAGED)
     self.assertEqual(analysis.suspected_cls_triage_status,
@@ -77,9 +77,21 @@ class CrashAnalysisTest(unittest.TestCase):
                      triage_status.UNTRIAGED)
     self.assertEqual(analysis.suspected_components_triage_status,
                      triage_status.UNTRIAGED)
-    self.assertEqual(analysis.culprit_regression_range, [])
-    self.assertEqual(analysis.culprit_cls, [])
-    self.assertEqual(analysis.culprit_project, '')
-    self.assertEqual(analysis.culprit_components, [])
+    self.assertEqual(analysis.culprit_regression_range, None)
+    self.assertEqual(analysis.culprit_cls, None)
+    self.assertEqual(analysis.culprit_project, None)
+    self.assertEqual(analysis.culprit_components, None)
     self.assertEqual(analysis.triage_history, None)
-    self.assertEqual(analysis.note, '')
+    self.assertEqual(analysis.note, None)
+
+  def testUpdateCrashAnalysis(self):
+    update = {'note': 'dummy'}
+    analysis = CrashAnalysis()
+    analysis.Update(update)
+    self.assertEqual(analysis.note, update['note'])
+
+  def testUpdateCrashAnalysisWithNonExistentProperty(self):
+    update = {'dummy': 'dummy_content'}
+    analysis = CrashAnalysis()
+    analysis.Update(update)
+    self.assertFalse(hasattr(analysis, 'dummy'))
