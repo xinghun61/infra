@@ -14,6 +14,7 @@ import (
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/tsmon/field"
 	"github.com/luci/luci-go/common/tsmon/metric"
+	"github.com/luci/luci-go/common/tsmon/types"
 	"golang.org/x/net/context"
 	cloudlog "google.golang.org/api/logging/v1beta3"
 )
@@ -77,12 +78,14 @@ type ClientOptions struct {
 var (
 	entriesCounter = metric.NewCounter("cloudtail/log_entries",
 		"Log entries processed",
+		types.MetricMetadata{},
 		field.String("log"),
 		field.String("resource_type"),
 		field.String("resource_id"),
 		field.String("severity"))
 	writesCounter = metric.NewCounter("cloudtail/api_writes",
 		"Writes to Cloud Logging API",
+		types.MetricMetadata{},
 		field.String("log"),
 		field.String("resource_type"),
 		field.String("resource_id"),

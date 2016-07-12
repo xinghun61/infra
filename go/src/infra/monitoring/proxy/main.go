@@ -25,6 +25,7 @@ import (
 	"github.com/luci/luci-go/common/tsmon/distribution"
 	"github.com/luci/luci-go/common/tsmon/field"
 	"github.com/luci/luci-go/common/tsmon/metric"
+	"github.com/luci/luci-go/common/tsmon/types"
 	"golang.org/x/net/context"
 	"google.golang.org/cloud/pubsub"
 )
@@ -41,9 +42,11 @@ const (
 var (
 	sentCount = metric.NewCounter("mon_proxy/endpoint/sent",
 		"Count of messages proxied to the endpoint",
+		types.MetricMetadata{},
 		field.String("result"))
 	sentDuration = metric.NewCumulativeDistribution("mon_proxy/endpoint/duration",
 		"Time taken to send messages to the endpoint, in milliseconds",
+		types.MetricMetadata{Units: types.Milliseconds},
 		distribution.DefaultBucketer)
 )
 

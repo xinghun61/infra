@@ -17,6 +17,7 @@ import (
 	"github.com/luci/luci-go/common/tsmon/distribution"
 	"github.com/luci/luci-go/common/tsmon/field"
 	"github.com/luci/luci-go/common/tsmon/metric"
+	"github.com/luci/luci-go/common/tsmon/types"
 	"golang.org/x/net/context"
 	"google.golang.org/cloud"
 	"google.golang.org/cloud/pubsub"
@@ -39,15 +40,19 @@ var (
 
 	messageCount = metric.NewCounter("mon_proxy/pubsub/message",
 		"Count of messages pulled from pub/sub, by worker",
+		types.MetricMetadata{},
 		field.Int("worker"))
 	ackCount = metric.NewCounter("mon_proxy/pubsub/ack",
 		"Count of messages Ack'd, by success/failure",
+		types.MetricMetadata{},
 		field.String("result"))
 	pullDurationMetric = metric.NewCumulativeDistribution("mon_proxy/pubsub/pull_duration",
 		"Time taken to Pull messages from pub/sub, in milliseconds",
+		types.MetricMetadata{Units: types.Milliseconds},
 		distribution.DefaultBucketer)
 	ackDurationMetric = metric.NewCumulativeDistribution("mon_proxy/pubsub/ack_duration",
 		"Time taken to Ack messages to pub/sub, in milliseconds",
+		types.MetricMetadata{Units: types.Milliseconds},
 		distribution.DefaultBucketer)
 )
 
