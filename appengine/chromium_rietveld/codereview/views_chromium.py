@@ -393,13 +393,14 @@ def edit_flags(request):
       request.issue.cq_dry_run_last_triggered_by = user_email
       logging.info('CQ dry run has been triggered by %s for %d/%d', user_email,
                    request.issue.key.id(), last_patchset.key.id())
-    # Mail just the owner if the CQ bit was unchecked by someone other than the
-    # owner. More details in
+    # Mail just the owner and only if the CQ bit was unchecked by someone other
+    # than the owner or CQ itself. More details in
     # https://code.google.com/p/skia/issues/detail?id=3093
-    unchecked_by_non_owner = (user_email != request.issue.owner.email() and
-                              not request.issue.commit)
+    send_mail = (user_email != request.issue.owner.email() and
+                 user_email != views.CQ_COMMIT_BOT_EMAIL and
+                 not request.issue.commit)
     views.make_message(request, request.issue, commit_checked_msg,
-                       send_mail=unchecked_by_non_owner, auto_generated=True,
+                       send_mail=send_mail, auto_generated=True,
                        email_to=[request.issue.owner.email()]).put()
     request.issue.put()
     if request.issue.commit and not request.issue.cq_dry_run:
