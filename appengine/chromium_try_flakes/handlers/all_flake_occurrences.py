@@ -9,6 +9,7 @@ from model.flake import Flake
 
 import datetime
 import logging
+from test_results.util import normalize_test_type
 import time
 import webapp2
 
@@ -47,7 +48,7 @@ def show_all_flakes(flake, show_all):
     patchsets_keys.append(o.failure_run.parent())
     matching_flakes = [f for f in o.flakes if f.failure == flake.name]
     flakes.append(matching_flakes)
-    step_names.update(f.name for f in matching_flakes)
+    step_names.update(normalize_test_type(f.name) for f in matching_flakes)
 
   failure_runs = filterNone(ndb.get_multi(failure_runs_keys))
   patchsets = filterNone(ndb.get_multi(patchsets_keys))

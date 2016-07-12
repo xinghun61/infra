@@ -33,20 +33,22 @@ class TestAllFlakeOccurrences(testing.AppengineTestCase):
     br_s2 = BuildRun(parent=p, buildnumber=4, result=0, time_started=ts,
                      time_finished=tf).put()
     occ_key1 = FlakyRun(failure_run=br_f0, success_run=br_s2,
-                        flakes=[FlakeOccurrence(name='foo', failure='foo.bar'),
-                                FlakeOccurrence(name='foo', failure='other')],
+                        flakes=[
+                          FlakeOccurrence(name='foo (x)', failure='foo.bar'),
+                          FlakeOccurrence(name='foo (x)', failure='other')],
                         failure_run_time_started=ts2,
                         failure_run_time_finished=tf2).put()
     occ_key2 = FlakyRun(failure_run=br_f1, success_run=br_s1,
-                        flakes=[FlakeOccurrence(name='bar', failure='foo.bar')],
+                        flakes=[
+                          FlakeOccurrence(name='bar (y)', failure='foo.bar')],
                         failure_run_time_started=ts,
                         failure_run_time_finished=tf).put()
     occ_key3 = FlakyRun(failure_run=br_f2, success_run=br_s2,
                         flakes=[
                           FlakeOccurrence(
-                            name='foo', failure='foo.bar', issue_id=100),
+                            name='foo (x)', failure='foo.bar', issue_id=100),
                           FlakeOccurrence(
-                            name='bar', failure='foo.bar', issue_id=200)],
+                            name='bar (y)', failure='foo.bar', issue_id=200)],
                         failure_run_time_started=ts,
                         failure_run_time_finished=tf).put()
     return Flake(name='foo.bar', count_day=10, is_step=False,
