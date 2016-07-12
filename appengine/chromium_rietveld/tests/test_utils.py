@@ -24,18 +24,29 @@ from codereview import utils
 
 
 class UtilsTest(unittest.TestCase):
-  def test_parse_cq_status_url_v2(self):
+  def test_parse_cq_status_url_message_v2(self):
     url = ('https://chromium-cq-status.appspot.com/v2/'
            'patch-status/codereview.chromium.org/213/1')
-    self.assertEqual(utils.parse_cq_status_url(url), (213, 1))
+    msg = 'CQ is trying da patch. Follow status at\n' + url
+    self.assertEqual(utils.parse_cq_status_url_message(msg), (url, 213, 1))
+    msg += '\n'
+    self.assertEqual(utils.parse_cq_status_url_message(msg), (url, 213, 1))
+    msg = 'Dry run: ' + msg
+    self.assertEqual(utils.parse_cq_status_url_message(msg), (url, 213, 1))
 
   def test_parse_cq_status_url_message_v1(self):
     url = 'https://chromium-cq-status.appspot.com/patch-status/213/1'
-    self.assertEqual(utils.parse_cq_status_url(url), (213, 1))
+    msg = 'CQ is trying da patch. Follow status at\n' + url
+    self.assertEqual(utils.parse_cq_status_url_message(msg), (url, 213, 1))
+    msg += '\n'
+    self.assertEqual(utils.parse_cq_status_url_message(msg), (url, 213, 1))
+    msg = 'Dry run: ' + msg
+    self.assertEqual(utils.parse_cq_status_url_message(msg), (url, 213, 1))
 
   def test_parse_cq_status_url_message_fail(self):
-    self.assertEqual(utils.parse_cq_status_url(''), (None, None))
-    self.assertEqual(utils.parse_cq_status_url('https://bad.url'), (None, None))
+    self.assertEqual(utils.parse_cq_status_url_message(''), (None, None, None))
+    msg = 'Dry run failed because https://weird.url/patch-status/123/4'
+    self.assertEqual(utils.parse_cq_status_url_message(msg), (None, None, None))
 
 
 if __name__ == '__main__':

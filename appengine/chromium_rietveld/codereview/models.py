@@ -504,13 +504,13 @@ class Issue(ndb.Model):
       return datetime.datetime.now() - landed
     return None
 
-  def update_cq_status_url_if_any(self, url):
+  def update_cq_status_url_if_any(self, cq_message):
     """Parses the cq_message for CQ status url and updates corresponding
     patchset with it.
     """
+    url, issue_num, patchset_num = utils.parse_cq_status_url_message(cq_message)
     if not url:
       return
-    issue_num, patchset_num = utils.parse_cq_status_url(url)
     if self.key.id() != issue_num:
       logging.error('CQ posted CQ Status URL %s to the wrong issue %s',
                     url, self.key.id())
