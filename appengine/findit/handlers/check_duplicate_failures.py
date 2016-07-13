@@ -136,21 +136,21 @@ def _ModifyStatusIfDuplicate(analysis):
     build_analysis.put()
 
 
+def _FetchAndSortUntriagedAnalyses():
+  query = WfAnalysis.query(
+  WfAnalysis.result_status == result_status.FOUND_UNTRIAGED)
+  analyses = query.fetch()
+  return sorted(
+      analyses,
+      key=lambda x: (x.master_name, x.builder_name, x.build_number))
+
+
 class CheckDuplicateFailures(BaseHandler):
   PERMISSION_LEVEL = Permission.ADMIN
 
-  @staticmethod
-  def _FetchAndSortUntriagedAnalyses():
-    query = WfAnalysis.query(
-    WfAnalysis.result_status == result_status.FOUND_UNTRIAGED)
-    analyses = query.fetch()
-    return sorted(
-        analyses,
-        key=lambda x: (x.master_name, x.builder_name, x.build_number))
-
   def HandleGet(self):
     """Checks the untriaged results and mark them as duplicates if they are."""
-    analyses = CheckDuplicateFailures._FetchAndSortUntriagedAnalyses()
+    analyses = _FetchAndSortUntriagedAnalyses()
 
     for analysis in analyses:
       _ModifyStatusIfDuplicate(analysis)

@@ -687,7 +687,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     }
 
     try_job_data = (
-        build_failure.BuildFailure._PrepareTryJobDataForCompileFailure(
+        build_failure._PrepareTryJobDataForCompileFailure(
             analysis))
 
     self.assertEqual(expected_try_job_data, try_job_data)
@@ -714,7 +714,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     }
 
     data = {}
-    build_failure.BuildFailure._PopulateHeuristicDataForCompileFailure(
+    build_failure._PopulateHeuristicDataForCompileFailure(
         analysis, data)
     self.assertEqual(expected_data, data)
 

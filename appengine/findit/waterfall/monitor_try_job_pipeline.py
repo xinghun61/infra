@@ -20,6 +20,130 @@ from waterfall import waterfall_config
 from waterfall.try_job_type import TryJobType
 
 
+def _MicrosecondsToDatetime(microseconds):
+  """Returns a datetime given the number of microseconds, or None."""
+  if microseconds:
+    return datetime.utcfromtimestamp(float(microseconds) / 1000000)
+  return None
+
+
+def _GetError(buildbucket_response, buildbucket_error, timed_out):
+  """Determines whether or not a try job error occurred.
+
+  Args:
+    buildbucket_response: A dict of the json response from buildbucket.
+    buildbucket_error: A BuildBucketError object returned from the call to
+      buildbucket_client.GetTryJobs()
+    timed_out: A bool whether or not Findit abandoned monitoring the try job.
+
+  Returns:
+    A tuple containing an error dict and number representing an error code, or
+    (None, None) if no error was determined to have occurred.
+  """
+
+  if buildbucket_error:
+    return (
+        {
+            'message': buildbucket_error.message,
+            'reason': buildbucket_error.reason
+        },
+        try_job_error.BUILDBUCKET_REQUEST_ERROR)
+
+  if timed_out:
+    return (
+        {
+            'message': 'Try job monitoring was abandoned.',
+            'reason': 'Timeout after %s hours' % (
+                waterfall_config.GetTryJobSettings().get('job_timeout_hours'))
+        },
+        try_job_error.TIMEOUT)
+
+  if buildbucket_response:
+    # Check buildbucket_response.
+    buildbucket_failure_reason = buildbucket_response.get('failure_reason')
+    if buildbucket_failure_reason == 'BUILD_FAILURE':
+      # Can occurr if an exception is thrown or the disk is full.
+      return (
+          {
+              'message': 'Compile failed unexpectedly.',
+              'reason': MonitorTryJobPipeline.UNKNOWN
+          },
+          try_job_error.INFRA_FAILURE
+      )
+    elif buildbucket_failure_reason == 'INFRA_FAILURE':
+      return (
+          {
+              'message': ('Try job encountered an infra issue during '
+                          'execution.'),
+              'reason': MonitorTryJobPipeline.UNKNOWN
+          },
+          try_job_error.INFRA_FAILURE
+      )
+    elif buildbucket_failure_reason:
+      return (
+          {
+              'message': buildbucket_failure_reason,
+              'reason': MonitorTryJobPipeline.UNKNOWN
+          },
+          try_job_error.UNKNOWN
+      )
+
+    # Check result_details_json for errors.
+    result_details_json = json.loads(
+        buildbucket_response.get('result_details_json', '{}')) or {}
+    error = result_details_json.get('error', {})
+    if error:
+      return (
+          {
+              'message': 'Buildbucket reported an error.',
+              'reason': error.get('message', MonitorTryJobPipeline.UNKNOWN)
+          },
+          try_job_error.CI_REPORTED_ERROR)
+
+    if not result_details_json.get('properties', {}).get('report'):
+      # A report should always be included as part of 'properties'. If it is
+      # missing something else is wrong.
+      return (
+          {
+              'message': 'No result report was found.',
+              'reason': MonitorTryJobPipeline.UNKNOWN
+          },
+          try_job_error.UNKNOWN
+      )
+
+  return None, None
+
+
+def _UpdateTryJobMetadata(try_job_data, start_time, buildbucket_build,
+                          buildbucket_error, timed_out):
+  buildbucket_response = {}
+
+  if buildbucket_build:
+    try_job_data.request_time = (
+        try_job_data.request_time or
+        _MicrosecondsToDatetime(buildbucket_build.request_time))
+    # If start_time is unavailable, fallback to request_time.
+    try_job_data.start_time = start_time or try_job_data.request_time
+    try_job_data.end_time = _MicrosecondsToDatetime(
+        buildbucket_build.end_time)
+    try_job_data.number_of_commits_analyzed = len(
+        buildbucket_build.report.get('result', {}))
+    try_job_data.regression_range_size = buildbucket_build.report.get(
+        'metadata', {}).get('regression_range_size')
+    try_job_data.try_job_url = buildbucket_build.url
+    buildbucket_response = buildbucket_build.response
+    try_job_data.last_buildbucket_response = buildbucket_response
+
+  error_dict, error_code = _GetError(
+      buildbucket_response, buildbucket_error, timed_out)
+
+  if error_dict:
+    try_job_data.error = error_dict
+    try_job_data.error_code = error_code
+
+  try_job_data.put()
+
+
 class MonitorTryJobPipeline(BasePipeline):
   """A pipeline for monitoring a try job and recording results when it's done.
 
@@ -28,131 +152,6 @@ class MonitorTryJobPipeline(BasePipeline):
   """
 
   UNKNOWN = 'UNKNOWN'
-
-  @staticmethod
-  def _MicrosecondsToDatetime(microseconds):
-    """Returns a datetime given the number of microseconds, or None."""
-    if microseconds:
-      return datetime.utcfromtimestamp(float(microseconds) / 1000000)
-    return None
-
-  @staticmethod
-  def _GetError(buildbucket_response, buildbucket_error, timed_out):
-    """Determines whether or not a try job error occurred.
-
-    Args:
-      buildbucket_response: A dict of the json response from buildbucket.
-      buildbucket_error: A BuildBucketError object returned from the call to
-        buildbucket_client.GetTryJobs()
-      timed_out: A bool whether or not Findit abandoned monitoring the try job.
-
-    Returns:
-      A tuple containing an error dict and number representing an error code, or
-      (None, None) if no error was determined to have occurred.
-    """
-
-    if buildbucket_error:
-      return (
-          {
-              'message': buildbucket_error.message,
-              'reason': buildbucket_error.reason
-          },
-          try_job_error.BUILDBUCKET_REQUEST_ERROR)
-
-    if timed_out:
-      return (
-          {
-              'message': 'Try job monitoring was abandoned.',
-              'reason': 'Timeout after %s hours' % (
-                  waterfall_config.GetTryJobSettings().get('job_timeout_hours'))
-          },
-          try_job_error.TIMEOUT)
-
-    if buildbucket_response:
-      # Check buildbucket_response.
-      buildbucket_failure_reason = buildbucket_response.get('failure_reason')
-      if buildbucket_failure_reason == 'BUILD_FAILURE':
-        # Can occurr if an exception is thrown or the disk is full.
-        return (
-            {
-                'message': 'Compile failed unexpectedly.',
-                'reason': MonitorTryJobPipeline.UNKNOWN
-            },
-            try_job_error.INFRA_FAILURE
-        )
-      elif buildbucket_failure_reason == 'INFRA_FAILURE':
-        return (
-            {
-                'message': ('Try job encountered an infra issue during '
-                            'execution.'),
-                'reason': MonitorTryJobPipeline.UNKNOWN
-            },
-            try_job_error.INFRA_FAILURE
-        )
-      elif buildbucket_failure_reason:
-        return (
-            {
-                'message': buildbucket_failure_reason,
-                'reason': MonitorTryJobPipeline.UNKNOWN
-            },
-            try_job_error.UNKNOWN
-        )
-
-      # Check result_details_json for errors.
-      result_details_json = json.loads(
-          buildbucket_response.get('result_details_json', '{}')) or {}
-      error = result_details_json.get('error', {})
-      if error:
-        return (
-            {
-                'message': 'Buildbucket reported an error.',
-                'reason': error.get('message', MonitorTryJobPipeline.UNKNOWN)
-            },
-            try_job_error.CI_REPORTED_ERROR)
-
-      if not result_details_json.get('properties', {}).get('report'):
-        # A report should always be included as part of 'properties'. If it is
-        # missing something else is wrong.
-        return (
-            {
-                'message': 'No result report was found.',
-                'reason': MonitorTryJobPipeline.UNKNOWN
-            },
-            try_job_error.UNKNOWN
-        )
-
-    return None, None
-
-  @staticmethod
-  def _UpdateTryJobMetadata(try_job_data, start_time, buildbucket_build,
-                            buildbucket_error, timed_out):
-    buildbucket_response = {}
-
-    if buildbucket_build:
-      try_job_data.request_time = (
-          try_job_data.request_time or
-          MonitorTryJobPipeline._MicrosecondsToDatetime(
-              buildbucket_build.request_time))
-      # If start_time is unavailable, fallback to request_time.
-      try_job_data.start_time = start_time or try_job_data.request_time
-      try_job_data.end_time = MonitorTryJobPipeline._MicrosecondsToDatetime(
-          buildbucket_build.end_time)
-      try_job_data.number_of_commits_analyzed = len(
-          buildbucket_build.report.get('result', {}))
-      try_job_data.regression_range_size = buildbucket_build.report.get(
-          'metadata', {}).get('regression_range_size')
-      try_job_data.try_job_url = buildbucket_build.url
-      buildbucket_response = buildbucket_build.response
-      try_job_data.last_buildbucket_response = buildbucket_response
-
-    error_dict, error_code = MonitorTryJobPipeline._GetError(
-        buildbucket_response, buildbucket_error, timed_out)
-
-    if error_dict:
-      try_job_data.error = error_dict
-      try_job_data.error_code = error_code
-
-    try_job_data.put()
 
   @ndb.transactional
   def _UpdateTryJobResult(
@@ -212,14 +211,12 @@ class MonitorTryJobPipeline(BasePipeline):
           pipeline_wait_seconds += default_pipeline_wait_seconds
         else:  # pragma: no cover
           # Buildbucket has responded error more than 5 times, retry pipeline.
-          self._UpdateTryJobMetadata(
-              try_job_data, start_time, build, error, False)
+          _UpdateTryJobMetadata(try_job_data, start_time, build, error, False)
           raise pipeline.Retry(
               'Error "%s" occurred. Reason: "%s"' % (error.message,
                                                      error.reason))
       elif build.status == BuildbucketBuild.COMPLETED:
-        self._UpdateTryJobMetadata(
-            try_job_data, start_time, build, error, False)
+        _UpdateTryJobMetadata(try_job_data, start_time, build, error, False)
         result_to_update = self._UpdateTryJobResult(
             BuildbucketBuild.COMPLETED, master_name, builder_name, build_number,
             try_job_type, try_job_id, build.url, build.report)
@@ -233,7 +230,7 @@ class MonitorTryJobPipeline(BasePipeline):
           # It is possible this branch is skipped if a fast build goes from
           # 'SCHEDULED' to 'COMPLETED' between queries, so start_time may be
           # unavailable.
-          start_time = self._MicrosecondsToDatetime(build.updated_time)
+          start_time = _MicrosecondsToDatetime(build.updated_time)
           self._UpdateTryJobResult(
               BuildbucketBuild.STARTED, master_name, builder_name, build_number,
               try_job_type, try_job_id, build.url)
@@ -242,14 +239,14 @@ class MonitorTryJobPipeline(BasePipeline):
           # loss in case of errors.
           try_job_data.start_time = start_time
           try_job_data.request_time = (
-              MonitorTryJobPipeline._MicrosecondsToDatetime(build.request_time))
+              _MicrosecondsToDatetime(build.request_time))
           try_job_data.try_job_url = build.url
           try_job_data.put()
 
           already_set_started = True
 
       if time.time() > deadline:  # pragma: no cover
-        self._UpdateTryJobMetadata(try_job_data, start_time, build, error, True)
+        _UpdateTryJobMetadata(try_job_data, start_time, build, error, True)
         # Explicitly abort the whole pipeline.
         raise pipeline.Abort(
             'Try job %s timed out after %d hours.' % (

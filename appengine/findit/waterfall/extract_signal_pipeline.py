@@ -21,6 +21,66 @@ from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
 
 
+def _ExtractStorablePortionOfLog(log_data):
+  # For the log of a failed step in a build, the error messages usually show
+  # up at the end of the whole log. So if the log is too big to fit into a
+  # datastore entity, it's safe to just save the ending portion of the log.
+  if len(log_data) <= ExtractSignalPipeline.LOG_DATA_BYTE_LIMIT:
+    return log_data
+
+  lines = log_data.split('\n')
+  size = 0
+  for line_index in reversed(range(len(lines))):
+    size += len(lines[line_index]) + 1
+    if size > ExtractSignalPipeline.LOG_DATA_BYTE_LIMIT:
+      return '\n'.join(lines[line_index + 1:])
+  else:
+    return log_data  # pragma: no cover - this won't be reached.
+
+
+def _GetReliableTestFailureLog(gtest_result):
+  """Analyze the archived gtest json results and extract reliable failures.
+
+  Args:
+    gtest_result (str): A JSON file for failed step log.
+
+  Returns:
+    A string contains the names of reliable test failures and related
+    log content.
+    If gtest_results in gtest json result is 'invalid', we will return
+    'invalid' as the result.
+    If we find out that all the test failures in this step are flaky, we will
+    return 'flaky' as result.
+  """
+  step_failure_data = json.loads(gtest_result)
+
+  if step_failure_data['gtest_results'] == 'invalid':  # pragma: no cover
+    return 'invalid'
+
+  sio = cStringIO.StringIO()
+  for iteration in step_failure_data['gtest_results']['per_iteration_data']:
+    for test_name in iteration.keys():
+      is_reliable_failure = True
+
+      for test_run in iteration[test_name]:
+        # We will ignore the test if some of the attempts were success.
+        if test_run['status'] == 'SUCCESS':
+          is_reliable_failure = False
+          break
+
+      if is_reliable_failure:  # all attempts failed
+        for test_run in iteration[test_name]:
+          sio.write(base64.b64decode(test_run['output_snippet_base64']))
+
+  failed_test_log = sio.getvalue()
+  sio.close()
+
+  if not failed_test_log:
+    return 'flaky'
+
+  return failed_test_log
+
+
 class ExtractSignalPipeline(BasePipeline):
   """A pipeline to extract failure signals from each failed step."""
 
@@ -32,66 +92,6 @@ class ExtractSignalPipeline(BasePipeline):
   # zlib. With the minimum compress level, the log data will usually be reduced
   # to less than 20%. So for uncompressed data, a safe limit could 4000 KB.
   LOG_DATA_BYTE_LIMIT = 4000 * 1024
-
-  @staticmethod
-  def _ExtractStorablePortionOfLog(log_data):
-    # For the log of a failed step in a build, the error messages usually show
-    # up at the end of the whole log. So if the log is too big to fit into a
-    # datastore entity, it's safe to just save the ending portion of the log.
-    if len(log_data) <= ExtractSignalPipeline.LOG_DATA_BYTE_LIMIT:
-      return log_data
-
-    lines = log_data.split('\n')
-    size = 0
-    for line_index in reversed(range(len(lines))):
-      size += len(lines[line_index]) + 1
-      if size > ExtractSignalPipeline.LOG_DATA_BYTE_LIMIT:
-        return '\n'.join(lines[line_index + 1:])
-    else:
-      return log_data  # pragma: no cover - this won't be reached.
-
-  @staticmethod
-  def _GetReliableTestFailureLog(gtest_result):
-    """Analyze the archived gtest json results and extract reliable failures.
-
-    Args:
-      gtest_result (str): A JSON file for failed step log.
-
-    Returns:
-      A string contains the names of reliable test failures and related
-      log content.
-      If gtest_results in gtest json result is 'invalid', we will return
-      'invalid' as the result.
-      If we find out that all the test failures in this step are flaky, we will
-      return 'flaky' as result.
-    """
-    step_failure_data = json.loads(gtest_result)
-
-    if step_failure_data['gtest_results'] == 'invalid':  # pragma: no cover
-      return 'invalid'
-
-    sio = cStringIO.StringIO()
-    for iteration in step_failure_data['gtest_results']['per_iteration_data']:
-      for test_name in iteration.keys():
-        is_reliable_failure = True
-
-        for test_run in iteration[test_name]:
-          # We will ignore the test if some of the attempts were success.
-          if test_run['status'] == 'SUCCESS':
-            is_reliable_failure = False
-            break
-
-        if is_reliable_failure:  # all attempts failed
-          for test_run in iteration[test_name]:
-            sio.write(base64.b64decode(test_run['output_snippet_base64']))
-
-    failed_test_log = sio.getvalue()
-    sio.close()
-
-    if not failed_test_log:
-      return 'flaky'
-
-    return failed_test_log
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, failure_info):
@@ -130,7 +130,7 @@ class ExtractSignalPipeline(BasePipeline):
         gtest_result = buildbot.GetGtestResultLog(
             master_name, builder_name, build_number, step_name)
         if gtest_result:
-          failure_log = self._GetReliableTestFailureLog(gtest_result)
+          failure_log = _GetReliableTestFailureLog(gtest_result)
 
         if gtest_result is None or failure_log == 'invalid':
           if not lock_util.WaitUntilDownloadAllowed(
@@ -158,7 +158,7 @@ class ExtractSignalPipeline(BasePipeline):
           step = WfStep.Create(
               master_name, builder_name, build_number, step_name)
 
-        step.log_data = self._ExtractStorablePortionOfLog(failure_log)
+        step.log_data = _ExtractStorablePortionOfLog(failure_log)
 
         try:
           step.put()

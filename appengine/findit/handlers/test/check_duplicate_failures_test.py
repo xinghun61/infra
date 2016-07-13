@@ -548,8 +548,7 @@ class CheckDuplicateFailuresTest(testing.AppengineTestCase):
     ]
 
     analyses = (
-        check_duplicate_failures.CheckDuplicateFailures.
-        _FetchAndSortUntriagedAnalyses())
+        check_duplicate_failures._FetchAndSortUntriagedAnalyses())
     for analysis, expected_result in zip(analyses, expected_results):
       self.assertEqual(expected_result, (
           analysis.master_name, analysis.builder_name, analysis.build_number))

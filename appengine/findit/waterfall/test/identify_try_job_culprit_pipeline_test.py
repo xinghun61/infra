@@ -37,29 +37,29 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
 
   def testGetFailedRevisionFromResultsDict(self):
     self.assertIsNone(
-        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromResultsDict({}))
+        identify_try_job_culprit_pipeline._GetFailedRevisionFromResultsDict({}))
     self.assertEqual(
         None,
-        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromResultsDict(
+        identify_try_job_culprit_pipeline._GetFailedRevisionFromResultsDict(
             {'rev1': 'passed'}))
     self.assertEqual(
         'rev1',
-        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromResultsDict(
+        identify_try_job_culprit_pipeline._GetFailedRevisionFromResultsDict(
             {'rev1': 'failed'}))
     self.assertEqual(
         'rev2',
-        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromResultsDict(
+        identify_try_job_culprit_pipeline._GetFailedRevisionFromResultsDict(
             {'rev1': 'passed', 'rev2': 'failed'}))
 
   def testGetFailedRevisionFromCompileResult(self):
     self.assertIsNone(
-        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromCompileResult(
+        identify_try_job_culprit_pipeline._GetFailedRevisionFromCompileResult(
             None))
     self.assertIsNone(
-        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromCompileResult(
+        identify_try_job_culprit_pipeline._GetFailedRevisionFromCompileResult(
             {'report': {}}))
     self.assertIsNone(
-        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromCompileResult(
+        identify_try_job_culprit_pipeline._GetFailedRevisionFromCompileResult(
             {
                 'report': {
                     'result': {
@@ -69,7 +69,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
             }))
     self.assertEqual(
         'rev2',
-        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromCompileResult(
+        identify_try_job_culprit_pipeline._GetFailedRevisionFromCompileResult(
             {
                 'report': {
                     'result': {
@@ -80,7 +80,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
             }))
     self.assertEqual(
         'rev1',
-        IdentifyTryJobCulpritPipeline._GetFailedRevisionFromCompileResult(
+        identify_try_job_culprit_pipeline._GetFailedRevisionFromCompileResult(
             {
                 'report': {
                     'result': {

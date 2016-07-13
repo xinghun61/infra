@@ -100,6 +100,88 @@ def _GetSuspectedCLs(analysis, result):
   return suspected_cls
 
 
+def _GetFailedRevisionFromResultsDict(results_dict):
+  """Finds the failed revision from the given dict of revisions.
+
+  Args:
+    results_dict: (dict) A dict that maps revisions to their results. For
+    example:
+
+    {
+        'rev1': 'passed',
+        'rev2': 'passed',
+        'rev3': 'failed',
+    }
+
+    Note results_dict is expected only to have one failed revision which
+    will be the one to be returned.
+
+  Returns:
+    The revision corresponding to a failed result, if any.
+  """
+  for revision, result in results_dict.iteritems():
+    if result.lower() == 'failed':
+      return revision
+  return None
+
+
+def _GetFailedRevisionFromCompileResult(compile_result):
+  """Determines the failed revision given compile_result.
+
+  Args:
+    compile_result: A dict containing the results from a compile. Please refer
+    to try_job_result_format.md for format check.
+
+  Returns:
+    The failed revision from compile_results, or None if not found.
+  """
+  if not compile_result:
+    return None
+
+  report = compile_result.get('report')
+
+  if not report:
+    return None
+
+  if report.get('culprit'):
+    return report.get('culprit')
+
+  return _GetFailedRevisionFromResultsDict(report.get('result', {}))
+
+
+def _GetCulpritsForTestsFromResultsDict(blame_list, test_results):
+  culprit_map = {}
+  failed_revisions = set()
+
+  for revision in blame_list:
+    if not test_results.get(revision):
+      continue
+
+    for step, test_result in test_results[revision].iteritems():
+      if (not test_result['valid'] or
+          test_result['status'] != 'failed'):  # pragma: no cover
+        continue
+
+      failed_revisions.add(revision)
+
+      if step not in culprit_map:
+        culprit_map[step] = {
+            'tests': {}
+        }
+      if (not test_result['failures'] and
+          not culprit_map[step].get('revision')):
+        # Non swarming test failures, only have step level failure info.
+        culprit_map[step]['revision'] = revision
+      for failed_test in test_result['failures']:
+        # Swarming tests, gets first failed revision for each test.
+        if failed_test not in culprit_map[step]['tests']:
+          culprit_map[step]['tests'][failed_test] = {
+              'revision': revision
+          }
+
+  return culprit_map, list(failed_revisions)
+
+
 def _NotifyCulprits(master_name, builder_name, build_number, culprits):
   """Sends notifications to the identified culprits."""
   try:
@@ -134,89 +216,6 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
 
     return culprits
 
-  @staticmethod
-  def _GetFailedRevisionFromResultsDict(results_dict):
-    """Finds the failed revision from the given dict of revisions.
-
-    Args:
-      results_dict: (dict) A dict that maps revisions to their results. For
-      example:
-
-      {
-          'rev1': 'passed',
-          'rev2': 'passed',
-          'rev3': 'failed',
-      }
-
-      Note results_dict is expected only to have one failed revision which
-      will be the one to be returned.
-
-    Returns:
-      The revision corresponding to a failed result, if any.
-    """
-    for revision, result in results_dict.iteritems():
-      if result.lower() == 'failed':
-        return revision
-    return None
-
-  @staticmethod
-  def _GetFailedRevisionFromCompileResult(compile_result):
-    """Determines the failed revision given compile_result.
-
-    Args:
-      compile_result: A dict containing the results from a compile. Please refer
-      to try_job_result_format.md for format check.
-
-    Returns:
-      The failed revision from compile_results, or None if not found.
-    """
-    if not compile_result:
-      return None
-
-    report = compile_result.get('report')
-
-    if not report:
-      return None
-
-    if report.get('culprit'):
-      return report.get('culprit')
-
-    return IdentifyTryJobCulpritPipeline._GetFailedRevisionFromResultsDict(
-        report.get('result', {}))
-
-  @staticmethod
-  def _GetCulpritsForTestsFromResultsDict(blame_list, test_results):
-    culprit_map = {}
-    failed_revisions = set()
-
-    for revision in blame_list:
-      if not test_results.get(revision):
-        continue
-
-      for step, test_result in test_results[revision].iteritems():
-        if (not test_result['valid'] or
-            test_result['status'] != 'failed'):  # pragma: no cover
-          continue
-
-        failed_revisions.add(revision)
-
-        if step not in culprit_map:
-          culprit_map[step] = {
-              'tests': {}
-          }
-        if (not test_result['failures'] and
-            not culprit_map[step].get('revision')):
-          # Non swarming test failures, only have step level failure info.
-          culprit_map[step]['revision'] = revision
-        for failed_test in test_result['failures']:
-          # Swarming tests, gets first failed revision for each test.
-          if failed_test not in culprit_map[step]['tests']:
-            culprit_map[step]['tests'][failed_test] = {
-                'revision': revision
-            }
-
-    return culprit_map, list(failed_revisions)
-
   def _FindCulpritForEachTestFailure(self, blame_list, result):
     # For test failures, we need to traverse the result dict in chronological
     # order to identify the culprits for each failed step or test.
@@ -243,7 +242,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
           failed_revisions.add(revision)
       return culprit_map, list(failed_revisions)
 
-    return IdentifyTryJobCulpritPipeline._GetCulpritsForTestsFromResultsDict(
+    return _GetCulpritsForTestsFromResultsDict(
         blame_list, result['report'].get('result'))
 
   def _UpdateCulpritMapWithCulpritInfo(self, culprit_map, culprits):
@@ -284,8 +283,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
       if try_job_type == TryJobType.COMPILE:
         # For compile failures, the try job will stop if one revision fails, so
         # the culprit will be the last revision in the result.
-        failed_revision = self._GetFailedRevisionFromCompileResult(
-            result)
+        failed_revision = _GetFailedRevisionFromCompileResult(result)
         failed_revisions = [failed_revision] if failed_revision else []
         culprits = self._GetCulpritInfo(failed_revisions)
         if culprits:

@@ -734,7 +734,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
       build_info = BuildInfo('m', 'b', 123)
       build_info.failed_steps = failed_steps
       self.assertEqual(
-          expected_type, DetectFirstFailurePipeline._GetFailureType(build_info))
+          expected_type,
+          detect_first_failure_pipeline._GetFailureType(build_info))
 
   def testRemoveAllPrefixes(self):
     test_smaples = {

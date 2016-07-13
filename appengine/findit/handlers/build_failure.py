@@ -266,6 +266,42 @@ def _GetAnalysisResultWithTryJobInfo(show_debug_info, organized_results,
   return updated_results
 
 
+def _PrepareTryJobDataForCompileFailure(analysis):
+  try_job_data = {}
+  if not (analysis.failure_result_map and  # pragma: no branch.
+          constants.COMPILE_STEP_NAME in analysis.failure_result_map):
+    return try_job_data  # pragma: no cover.
+
+  referred_build_keys = analysis.failure_result_map[
+      constants.COMPILE_STEP_NAME].split('/')
+  try_job = WfTryJob.Get(*referred_build_keys)
+  if not try_job or not try_job.compile_results:
+    return try_job_data  # pragma: no cover.
+  result = try_job.compile_results[-1]
+
+  try_job_data['status'] = analysis_status.STATUS_TO_DESCRIPTION.get(
+      try_job.status, 'unknown').lower()
+  try_job_data['url'] = result.get('url')
+  try_job_data['completed'] = try_job.completed
+  try_job_data['failed'] = try_job.failed
+  try_job_data['culprit'] = result.get(
+      'culprit', {}).get(constants.COMPILE_STEP_NAME)
+
+  return try_job_data
+
+
+def _PopulateHeuristicDataForCompileFailure(analysis, data):
+  if analysis.result:  # pragma: no branch.
+    compile_failure = None
+    for failure in analysis.result.get('failures', []):
+      if failure['step_name'] == constants.COMPILE_STEP_NAME:
+        compile_failure = failure
+    if compile_failure:  # pragma: no branch.
+      data['first_failure'] = compile_failure['first_failure']
+      data['last_pass'] = compile_failure['last_pass']
+      data['suspected_cls_by_heuristic'] = compile_failure['suspected_cls']
+
+
 class BuildFailure(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
@@ -297,49 +333,13 @@ class BuildFailure(BaseHandler):
         'show_triage_help_button': self._ShowTriageHelpButton(),
     }
 
-  @staticmethod
-  def _PrepareTryJobDataForCompileFailure(analysis):
-    try_job_data = {}
-    if not (analysis.failure_result_map and  # pragma: no branch.
-            constants.COMPILE_STEP_NAME in analysis.failure_result_map):
-      return try_job_data  # pragma: no cover.
-
-    referred_build_keys = analysis.failure_result_map[
-        constants.COMPILE_STEP_NAME].split('/')
-    try_job = WfTryJob.Get(*referred_build_keys)
-    if not try_job or not try_job.compile_results:
-      return try_job_data  # pragma: no cover.
-    result = try_job.compile_results[-1]
-
-    try_job_data['status'] = analysis_status.STATUS_TO_DESCRIPTION.get(
-        try_job.status, 'unknown').lower()
-    try_job_data['url'] = result.get('url')
-    try_job_data['completed'] = try_job.completed
-    try_job_data['failed'] = try_job.failed
-    try_job_data['culprit'] = result.get(
-        'culprit', {}).get(constants.COMPILE_STEP_NAME)
-
-    return try_job_data
-
-  @staticmethod
-  def _PopulateHeuristicDataForCompileFailure(analysis, data):
-    if analysis.result:  # pragma: no branch.
-      compile_failure = None
-      for failure in analysis.result.get('failures', []):
-        if failure['step_name'] == constants.COMPILE_STEP_NAME:
-          compile_failure = failure
-      if compile_failure:  # pragma: no branch.
-        data['first_failure'] = compile_failure['first_failure']
-        data['last_pass'] = compile_failure['last_pass']
-        data['suspected_cls_by_heuristic'] = compile_failure['suspected_cls']
-
   def _PrepareDataForCompileFailure(self, analysis):
     data = self._PrepareCommonDataForFailure(analysis)
 
     # Check result from heuristic analysis.
-    self._PopulateHeuristicDataForCompileFailure(analysis, data)
+    _PopulateHeuristicDataForCompileFailure(analysis, data)
     # Check result from try job.
-    data['try_job'] = self._PrepareTryJobDataForCompileFailure(analysis)
+    data['try_job'] = _PrepareTryJobDataForCompileFailure(analysis)
 
     return data
 

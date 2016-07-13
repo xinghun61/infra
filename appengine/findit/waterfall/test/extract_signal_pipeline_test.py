@@ -8,6 +8,7 @@ from common.pipeline_wrapper import pipeline_handlers
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
 from waterfall import buildbot
+from waterfall import extract_signal_pipeline
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline
 from waterfall.test import wf_testcase
 
@@ -55,7 +56,7 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     lines = [str(i) * 99 for i in range(3)]
     log_data = '\n'.join(lines)
     expected_result = log_data
-    result = ExtractSignalPipeline._ExtractStorablePortionOfLog(log_data)
+    result = extract_signal_pipeline._ExtractStorablePortionOfLog(log_data)
     self.assertEqual(expected_result, result)
 
   def testExtractStorablePortionOfLogWithBigLogData(self):
@@ -63,7 +64,7 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     lines = [str(9 - i) * 99 for i in range(9)]
     log_data = '\n'.join(lines)
     expected_result = '\n'.join(lines[-5:])
-    result = ExtractSignalPipeline._ExtractStorablePortionOfLog(log_data)
+    result = extract_signal_pipeline._ExtractStorablePortionOfLog(log_data)
     self.assertEqual(expected_result, result)
 
   def testWfStepStdioLogAlreadyDownloaded(self):
@@ -139,7 +140,8 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     step_log = self._GetGtestResultLog(
         master_name, builder_name, build_number, step_name)
 
-    failed_test_log = ExtractSignalPipeline._GetReliableTestFailureLog(step_log)
+    failed_test_log = extract_signal_pipeline._GetReliableTestFailureLog(
+        step_log)
     self.assertEqual(expected_failure_log, failed_test_log)
 
   def testGetTestLevelFailuresFlaky(self):
@@ -153,7 +155,8 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     step_log = self._GetGtestResultLog(
         master_name, builder_name, build_number, step_name)
 
-    failed_test_log = ExtractSignalPipeline._GetReliableTestFailureLog(step_log)
+    failed_test_log = extract_signal_pipeline._GetReliableTestFailureLog(
+        step_log)
     self.assertEqual(expected_failure_log, failed_test_log)
 
   def testGetTestLevelFailuresInvalid(self):
@@ -167,7 +170,8 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     step_log = self._GetGtestResultLog(
         master_name, builder_name, build_number, step_name)
 
-    failed_test_log = ExtractSignalPipeline._GetReliableTestFailureLog(step_log)
+    failed_test_log = extract_signal_pipeline._GetReliableTestFailureLog(
+        step_log)
     self.assertEqual(expected_failure_log, failed_test_log)
 
   def MockGetGtestJsonResult(self):

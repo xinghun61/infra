@@ -11,6 +11,7 @@ from common.waterfall import try_job_error
 from model import analysis_status
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
+from waterfall import monitor_try_job_pipeline
 from waterfall import waterfall_config
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall.test import wf_testcase
@@ -129,8 +130,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   def testMicrosecondsToDatetime(self):
     self.assertEqual(
         datetime(2016, 2, 1, 22, 59, 34),
-        MonitorTryJobPipeline._MicrosecondsToDatetime(1454367574000000))
-    self.assertIsNone(MonitorTryJobPipeline._MicrosecondsToDatetime(None))
+        monitor_try_job_pipeline._MicrosecondsToDatetime(1454367574000000))
+    self.assertIsNone(monitor_try_job_pipeline._MicrosecondsToDatetime(None))
 
   def testUpdateTryJobMetadataForBuildError(self):
     error_data = {
@@ -140,7 +141,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     error = buildbucket_client.BuildbucketError(error_data)
     try_job_data = WfTryJobData.Create('1')
 
-    MonitorTryJobPipeline._UpdateTryJobMetadata(
+    monitor_try_job_pipeline._UpdateTryJobMetadata(
         try_job_data, None, None, error, False)
     self.assertEqual(try_job_data.error, error_data)
 
@@ -176,7 +177,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     }
     try_job_data = WfTryJobData.Create(try_job_id)
 
-    MonitorTryJobPipeline._UpdateTryJobMetadata(
+    monitor_try_job_pipeline._UpdateTryJobMetadata(
         try_job_data, None, build, None, False)
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertIsNone(try_job_data.error)
@@ -187,7 +188,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
                      datetime(2016, 2, 1, 22, 59, 30))
     self.assertEqual(try_job_data.try_job_url, url)
 
-    MonitorTryJobPipeline._UpdateTryJobMetadata(
+    monitor_try_job_pipeline._UpdateTryJobMetadata(
         try_job_data, None, build, None, True)
     self.assertEqual(try_job_data.error, expected_error_dict)
     self.assertEqual(try_job_data.error_code, try_job_error.TIMEOUT)
@@ -332,9 +333,9 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         })
     }
     self.assertEqual(
-        MonitorTryJobPipeline._GetError(build_response, None, False),
+        monitor_try_job_pipeline._GetError(build_response, None, False),
         (None, None))
-    self.assertEqual(MonitorTryJobPipeline._GetError({}, None, False),
+    self.assertEqual(monitor_try_job_pipeline._GetError({}, None, False),
                      (None, None))
 
   def testGetErrorForTimeout(self):
@@ -346,7 +347,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(
-        MonitorTryJobPipeline._GetError({}, None, True),
+        monitor_try_job_pipeline._GetError({}, None, True),
         (expected_error_dict, try_job_error.TIMEOUT))
 
   def testGetErrorForBuildbucketReportedError(self):
@@ -364,7 +365,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(
-        MonitorTryJobPipeline._GetError(build_response, None, False),
+        monitor_try_job_pipeline._GetError(build_response, None, False),
         (expected_error_dict, try_job_error.CI_REPORTED_ERROR))
 
   def testGetErrorUnknown(self):
@@ -382,7 +383,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(
-        MonitorTryJobPipeline._GetError(build_response, None, False),
+        monitor_try_job_pipeline._GetError(build_response, None, False),
         (expected_error_dict, try_job_error.CI_REPORTED_ERROR))
 
   def testGetErrorInfraFailure(self):
@@ -406,7 +407,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(
-        MonitorTryJobPipeline._GetError(build_response, None, False),
+        monitor_try_job_pipeline._GetError(build_response, None, False),
         (expected_error_dict, try_job_error.INFRA_FAILURE))
 
   def testGetErrorUnexpectedBuildFailure(self):
@@ -430,7 +431,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(
-        MonitorTryJobPipeline._GetError(build_response, None, False),
+        monitor_try_job_pipeline._GetError(build_response, None, False),
         (expected_error_dict, try_job_error.INFRA_FAILURE))
 
   def testGetErrorUnknownBuildbucketFailure(self):
@@ -450,7 +451,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(
-        MonitorTryJobPipeline._GetError(build_response, None, False),
+        monitor_try_job_pipeline._GetError(build_response, None, False),
         (expected_error_dict, try_job_error.UNKNOWN))
 
   def testGetErrorReportMissing(self):
@@ -466,5 +467,5 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(
-        MonitorTryJobPipeline._GetError(build_response, None, False),
+        monitor_try_job_pipeline._GetError(build_response, None, False),
         (expected_error_dict, try_job_error.UNKNOWN))

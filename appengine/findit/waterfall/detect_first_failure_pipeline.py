@@ -45,6 +45,15 @@ def _RemoveAllPrefixes(test):
   return base_test
 
 
+def _GetFailureType(build_info):
+  if not build_info.failed_steps:
+    return failure_type.UNKNOWN
+  if constants.COMPILE_STEP_NAME in build_info.failed_steps:
+    return failure_type.COMPILE
+  # TODO(http://crbug.com/602733): differentiate test steps from infra ones.
+  return failure_type.TEST
+
+
 class DetectFirstFailurePipeline(BasePipeline):
   """A pipeline to detect first failure of each step.
 
@@ -398,15 +407,6 @@ class DetectFirstFailurePipeline(BasePipeline):
 
     self._UpdateFailureInfoBuilds(failed_steps, builds)
 
-  @staticmethod
-  def _GetFailureType(build_info):
-    if not build_info.failed_steps:
-      return failure_type.UNKNOWN
-    if constants.COMPILE_STEP_NAME in build_info.failed_steps:
-      return failure_type.COMPILE
-    # TODO(http://crbug.com/602733): differentiate test steps from infra ones.
-    return failure_type.TEST
-
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number):
     """
@@ -458,7 +458,7 @@ class DetectFirstFailurePipeline(BasePipeline):
     if not build_info:  # pragma: no cover
       raise pipeline.Retry('Failed to extract build info.')
 
-    build_failure_type = self._GetFailureType(build_info)
+    build_failure_type = _GetFailureType(build_info)
 
     failure_info = {
         'failed': True,
