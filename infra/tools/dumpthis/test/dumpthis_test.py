@@ -20,6 +20,10 @@ class DumpThisTest(unittest.TestCase):
     self.assertEqual(args.src, '')
     args = parser.parse_args(['file'])
     self.assertEqual(args.src, 'file')
+    args = parser.parse_args(['-t txt'])
+    self.assertEqual(args.media_type, 'text/plain')
+    args = parser.parse_args(['--media-type=image/jpeg'])
+    self.assertEqual(args.media_type, 'image/jpeg')
 
   @mock.patch('infra.tools.dumpthis.dumpthis.gsutil_cmd')
   def test_gsutil(self, gsutil_cmd):

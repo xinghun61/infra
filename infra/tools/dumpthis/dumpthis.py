@@ -42,25 +42,48 @@ def get_destination(bucket):  # pragma: no cover
   return '%s/%s' % (bucket, name)
 
 
-def run(bucket, src):
+def run(bucket, src, media_type=None):
   LOGGER.info('Dumpthis starting.')
-  dest = get_destination(bucket)
-  gs_dest = 'gs://%s' % dest
+
+  header = []
+  if src and not media_type:
+    media_type = get_file_type(src)
+  if media_type:
+    header = ['-h', 'Content-Type:%s' % media_type]
+
+  destination = get_destination(bucket)
+  gs_dest = 'gs://%s' % destination
+
   if src:
-    cmd = ['cp', src, gs_dest]
-    meta = get_file_type(src)
-    if meta is not None:
-      cmd = ['-h', 'Content-Type:%s' % meta] + cmd
-    gsutil_cmd(cmd)
+    gsutil_cmd(header + ['cp', src, gs_dest])
   else:
-    gsutil_cmd(['cp', '-', gs_dest], pipe_stdin=True)
+    gsutil_cmd(header + ['cp', '-', gs_dest], pipe_stdin=True)
+
   print
-  print 'Use https://storage.cloud.google.com/%s' % dest
+  print 'Use https://storage.cloud.google.com/%s' % destination
+
+
+def argparse_mime_type(s):
+  s = s.strip()
+  short = {
+    'txt': 'text/plain',
+    'html': 'text/html',
+    'png': 'image/png',
+  }
+  return short.get(s) or s
 
 
 def add_argparse_options(parser):
   """Define command-line arguments."""
-  parser.add_argument('src', nargs='?',
-                      help='file you want to upload, else uses stdin')
-  parser.add_argument('-b', '--bucket', default='chrome-dumpfiles',
-                      help='a Google Storage bucket to dump to')
+  parser.add_argument(
+      'src', nargs='?', help='file you want to upload, else uses stdin')
+  parser.add_argument(
+      '-b', '--bucket', default='chrome-dumpfiles',
+      help='a Google Storage bucket to dump to')
+  parser.add_argument(
+      '-t', '--media-type', default=None, type=argparse_mime_type,
+      help='Media type. Useful if you want browser to display it, instead of '
+           'downloading. Short values of (txt, html, png) supported, otherwise '
+           'use full media type like text/plain or image/png. '
+           'See list at '
+           'http://www.iana.org/assignments/media-types/media-types.xhtml')
