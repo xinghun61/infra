@@ -130,16 +130,6 @@
     "name": "go bootstrap"
   },
   {
-    "cmd": [
-      "python",
-      "-u",
-      "[SLAVE_BUILD]/infra_internal/go/env.py",
-      "python",
-      "[SLAVE_BUILD]/infra_internal/go/test.py"
-    ],
-    "name": "go tests"
-  },
-  {
     "name": "$result",
     "recipe_result": null,
     "status_code": 0

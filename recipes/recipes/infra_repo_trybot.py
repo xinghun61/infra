@@ -71,10 +71,12 @@ def RunSteps(api):
     # Ensure go is bootstrapped as a separate step.
     api.python('go bootstrap', api.path['checkout'].join('go', 'env.py'))
 
-    # Note: env.py knows how to expand 'python' into sys.executable.
-    api.python(
-        'go tests', api.path['checkout'].join('go', 'env.py'),
-        ['python', api.path['checkout'].join('go', 'test.py')])
+    if not internal:
+      # TODO(tandrii): revert this once http://crbug.com/627773 is fixed.
+      # Note: env.py knows how to expand 'python' into sys.executable.
+      api.python(
+          'go tests', api.path['checkout'].join('go', 'env.py'),
+          ['python', api.path['checkout'].join('go', 'test.py')])
 
     if api.platform.is_linux and (deps_mod or
         any(f.startswith('appengine/chromium_rietveld') for f in files)):
