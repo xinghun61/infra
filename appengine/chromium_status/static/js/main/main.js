@@ -10,6 +10,7 @@ window.onload = function() {
   document.add_new_message.message.focus();
   help_init();
   localize_times();
+  change_init();
 };
 
 /*
@@ -116,4 +117,17 @@ function auto_submit(e) {
     return false;
   }
   return true;
+}
+
+function change_init() {
+  var form = document.add_new_message;
+  var message = form.message;
+  var initial_message_value = message.value;
+
+  var disable_change_button_if_same_message = function() {
+    form.change.disabled = message.value == initial_message_value;
+  };
+
+  message.oninput = disable_change_button_if_same_message;
+  disable_change_button_if_same_message();
 }
