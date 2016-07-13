@@ -164,7 +164,7 @@
           (issue is closed)
         {%elif issue.private%}
           (issue is private)
-        {%elif issue.cq_dry_run %}
+        {%elif issue.commit and issue.cq_dry_run %}
           (dry run)
         {% endif %}
         {%if patchset.cq_status_url%}
