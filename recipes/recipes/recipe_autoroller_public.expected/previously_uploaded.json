@@ -338,32 +338,22 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil, sys\nshutil.rmtree(sys.argv[1])\n",
+      "RECIPE_MODULE[recipe_engine::shutil]/resources/rmtree.py",
       "[TMP_BASE]/roll_build_tmp_2"
     ],
     "name": "build.rmtree [TMP_BASE]/roll_build_tmp_2",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@python.inline@@@@",
-      "@@@STEP_LOG_LINE@python.inline@import shutil, sys@@@",
-      "@@@STEP_LOG_LINE@python.inline@shutil.rmtree(sys.argv[1])@@@",
-      "@@@STEP_LOG_END@python.inline@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil, sys\nshutil.rmtree(sys.argv[1])\n",
+      "RECIPE_MODULE[recipe_engine::shutil]/resources/rmtree.py",
       "[TMP_BASE]/recipes_tmp_1"
     ],
-    "name": "rmtree [TMP_BASE]/recipes_tmp_1",
-    "~followup_annotations": [
-      "@@@STEP_LOG_LINE@python.inline@@@@",
-      "@@@STEP_LOG_LINE@python.inline@import shutil, sys@@@",
-      "@@@STEP_LOG_LINE@python.inline@shutil.rmtree(sys.argv[1])@@@",
-      "@@@STEP_LOG_END@python.inline@@@"
-    ]
+    "name": "rmtree [TMP_BASE]/recipes_tmp_1"
   },
   {
     "name": "$result",
