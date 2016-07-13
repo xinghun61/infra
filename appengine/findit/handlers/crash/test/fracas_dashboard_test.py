@@ -19,8 +19,6 @@ from model import result_status
 from model import triage_status
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
-# TODO: Remove, see crbug.com/624998
-#pylint: disable=unused-variable
 
 class FracasDashBoardTest(testing.AppengineTestCase):
   app_module = webapp2.WSGIApplication(
@@ -33,11 +31,8 @@ class FracasDashBoardTest(testing.AppengineTestCase):
     for key in self.keys:
       self.fracas_crashes.append(self._GenerateDisplayData(key))
 
-    midnight_today = datetime.combine(datetime.utcnow(), time.min)
-    midnight_yesterday = midnight_today - timedelta(days=1)
-    midnight_tomorrow = midnight_today + timedelta(days=1)
-    self.default_start_date = midnight_yesterday
-    self.default_end_date = midnight_tomorrow
+    self.default_start_date = datetime(2016, 7, 3, 0, 0, 0, 0)
+    self.default_end_date = datetime(2016, 7, 5, 0, 0, 0, 0)
 
   def testFracasDashBoardHandler(self):
     response = self.test_app.get('/fracas-dashboard')
@@ -119,20 +114,16 @@ class FracasDashBoardTest(testing.AppengineTestCase):
                           'regression_range': ['53.0.2749.0', '53.0.2750.0']}
     analyses[4].found_suspects = False
 
-    start_request_time = datetime.utcnow()
-    for i, analysis in enumerate(analyses):
-      analysis.requested_time = (start_request_time +
-                                 timedelta(minutes=10 * i))
-
-      analysis.has_regression_range = not analysis.result[
-          'regression_range'] is None
-
     self._SetResultsTriageStatus(analyses[0], triage_status.TRIAGED_INCORRECT)
     self._SetResultsTriageStatus(analyses[1], triage_status.TRIAGED_CORRECT)
     self._SetResultsTriageStatus(analyses[3], triage_status.TRIAGED_CORRECT)
     self._SetResultsTriageStatus(analyses[4], triage_status.TRIAGED_UNSURE)
 
-    for analysis in analyses:
+    for i, analysis in enumerate(analyses):
+      analysis.requested_time = (datetime(2016, 7, 4, 12, 50, 17, 0) +
+                                 timedelta(seconds=10 * i))
+      analysis.has_regression_range = not analysis.result[
+          'regression_range'] is None
       analysis.put()
 
     return keys
@@ -169,10 +160,11 @@ class FracasDashBoardTest(testing.AppengineTestCase):
         'start_date': time_util.FormatDatetime(self.default_start_date)
     }
 
-    response_json = self.test_app.get('/fracas-dashboard?format=json')
+    response_json = self.test_app.get('/fracas-dashboard?format=json'
+                                      '&start_date=2016-07-03'
+                                      '&end_date=2016-07-05')
     self.assertEqual(200, response_json.status_int)
-    # TODO: Re-enable, see crbug.com/624998
-    # self.assertEqual(expected_result, response_json.json_body)
+    self.assertEqual(expected_result, response_json.json_body)
 
   def testFilterWithFoundSuspects(self):
     expected_result = {
@@ -187,7 +179,8 @@ class FracasDashBoardTest(testing.AppengineTestCase):
     }
 
     response_json = self.test_app.get(
-        '/fracas-dashboard?found_suspects=yes&format=json')
+        '/fracas-dashboard?found_suspects=yes&format=json'
+        '&start_date=2016-07-03&end_date=2016-07-05')
     self.assertEqual(200, response_json.status_int)
     self.assertEqual(expected_result, response_json.json_body)
 
@@ -205,10 +198,10 @@ class FracasDashBoardTest(testing.AppengineTestCase):
     }
 
     response_json = self.test_app.get(
-        '/fracas-dashboard?has_regression_range=yes&format=json')
+        '/fracas-dashboard?has_regression_range=yes&format=json'
+        '&start_date=2016-07-03&end_date=2016-07-05')
     self.assertEqual(200, response_json.status_int)
-    # TODO: Re-enable, see crbug.com/624998
-    # self.assertEqual(expected_result, response_json.json_body)
+    self.assertEqual(expected_result, response_json.json_body)
 
   def testFilterWithSuspectsUntriaged(self):
     expected_result = {
@@ -222,8 +215,8 @@ class FracasDashBoardTest(testing.AppengineTestCase):
     }
 
     response_json = self.test_app.get(
-        '/fracas-dashboard?suspected_cls_triage_status=%d&format=json' %
-        triage_status.UNTRIAGED)
+        '/fracas-dashboard?suspected_cls_triage_status=%d&format=json'
+        '&start_date=2016-07-03&end_date=2016-07-05' % triage_status.UNTRIAGED)
     self.assertEqual(200, response_json.status_int)
     self.assertEqual(expected_result, response_json.json_body)
 
@@ -239,11 +232,11 @@ class FracasDashBoardTest(testing.AppengineTestCase):
     }
 
     response_json = self.test_app.get(
-        '/fracas-dashboard?suspected_cls_triage_status=%d&format=json' %
+        '/fracas-dashboard?suspected_cls_triage_status=%d&format=json'
+        '&start_date=2016-07-03&end_date=2016-07-05' %
         triage_status.TRIAGED_UNSURE)
     self.assertEqual(200, response_json.status_int)
-    # TODO: Re-enable, see crbug.com/624998
-    # self.assertEqual(expected_result, response_json.json_body)
+    self.assertEqual(expected_result, response_json.json_body)
 
   def testFilterWithRegressionRangeTriagedUnsure(self):
     expected_result = {
@@ -257,11 +250,11 @@ class FracasDashBoardTest(testing.AppengineTestCase):
     }
 
     response_json = self.test_app.get(
-        '/fracas-dashboard?regression_range_triage_status=%d&format=json' %
+        '/fracas-dashboard?regression_range_triage_status=%d&format=json'
+        '&start_date=2016-07-03&end_date=2016-07-05' %
         triage_status.TRIAGED_UNSURE)
     self.assertEqual(200, response_json.status_int)
-    # TODO: Re-enable, see crbug.com/624998
-    # self.assertEqual(expected_result, response_json.json_body)
+    self.assertEqual(expected_result, response_json.json_body)
 
   def testGetTopCountResults(self):
     expected_result = {
@@ -275,7 +268,8 @@ class FracasDashBoardTest(testing.AppengineTestCase):
         'start_date': time_util.FormatDatetime(self.default_start_date)
     }
 
-    response_json = self.test_app.get('/fracas-dashboard?count=2&format=json')
+    response_json = self.test_app.get('/fracas-dashboard?count=2&format=json'
+                                      '&start_date=2016-07-03'
+                                      '&end_date=2016-07-05')
     self.assertEqual(200, response_json.status_int)
-    # TODO: Re-enable, see crbug.com/624998
-    # self.assertEqual(expected_result, response_json.json_body)
+    self.assertEqual(expected_result, response_json.json_body)
