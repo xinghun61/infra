@@ -43,7 +43,11 @@ Priorities are set using the `Pri=N` label. Use the following as your guideline
 
 ## Life of a Request
 
-Status will be tracked using the Status field.
+Status will be tracked using the Status field, with the 'owner' field unset.
+The trooper queue relies on the 'owner' field being unset to track issues
+properly, with troopers setting the owners field for particularly long-running
+issues.  Please do not assign issues to the trooper directly, doing so may
+actually increase the time taken to respond to an issue.
 
 *   Untriaged: Your issue will show up in the queue to the trooper as untriaged.
     Once they acknowledge the bug, the status will change.
@@ -52,8 +56,8 @@ Status will be tracked using the Status field.
     *   Trooper has triaged and determined there is a suitable owner and
         appropriately assigned.
     *   If that owner is YOU this indicates that they need more information from you
-        in order to proceed.  Please provide the information, and then assign back
-        to trooper.
+        in order to proceed.  Please provide the information, and then unset
+        'owner' so the issue shows up in the queue again.
 *   Started: Your issue is being handled, either by the Trooper or other owner.
 *   Fixed: The trooper believes the issue is resolved and no further action is required on their part.
 
