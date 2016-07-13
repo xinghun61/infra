@@ -103,6 +103,9 @@ PROJECT_TO_CONTINUOUS_WATERFALL = {
     'recipe_engine-recipes-tests',
   'depot_tools': 'https://build.chromium.org/p/chromium.infra/builders/'
     'depot_tools-recipes-tests',
+  'build_limited_scripts_slave': (
+    'https://uberchromegw.corp.google.com/i/internal.infra/builders/'
+    'build-limited-recipe-tests'),
 }
 
 FILE_BUG_FOR_CONTINUOUS_LINK = 'https://goo.gl/PoAPOJ'
@@ -311,7 +314,10 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
         link = PROJECT_TO_CONTINUOUS_WATERFALL.get(proj)
         if link:
           result.presentation.links['reference builder'] = link
-        else:
+        # no cover because at the moment we don't test anything which isn't
+        # included in PROJECT_TO_TRY, and all those projects have reference
+        # builders.
+        else: #pragma: no cover
           result.presentation.links[
               'no reference builder; file a bug to get one?'] = (
                   FILE_BUG_FOR_CONTINUOUS_LINK)
