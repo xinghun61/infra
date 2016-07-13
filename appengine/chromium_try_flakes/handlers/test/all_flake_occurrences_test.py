@@ -82,9 +82,10 @@ class TestAllFlakeOccurrences(testing.AppengineTestCase):
     data = all_flake_occurrences.show_all_flakes(flake, False)
     return data['flakiness_dashboard_urls']
 
-  def test_smoke(self):
+  def test_html_output(self):
     flake_key = self._create_flake().put()
-    self.test_app.get('/all_flake_occurrences?key=%s' % flake_key.urlsafe())
+    return self.test_app.get(
+        '/all_flake_occurrences?key=%s' % flake_key.urlsafe()).body.splitlines()
 
   def test_no_occurrences(self):
     flake_key = Flake(name='foo.bar').put()
