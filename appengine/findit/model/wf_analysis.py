@@ -24,8 +24,10 @@ class WfAnalysis(BaseBuildModel):
 
   @staticmethod
   def Create(master_name, builder_name, build_number):  # pragma: no cover
-    return WfAnalysis(
+    analysis = WfAnalysis(
         key=WfAnalysis._CreateKey(master_name, builder_name, build_number))
+    analysis.failure_result_map = analysis.failure_result_map or {}
+    return analysis
 
   @staticmethod
   def Get(master_name, builder_name, build_number):  # pragma: no cover

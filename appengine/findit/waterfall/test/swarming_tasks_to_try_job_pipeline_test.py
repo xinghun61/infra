@@ -10,6 +10,7 @@ from common.pipeline_wrapper import pipeline_handlers
 from common.waterfall import buildbucket_client
 from model import result_status
 from model.wf_analysis import WfAnalysis
+from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
 from waterfall import send_notification_for_culprit_pipeline
 from waterfall import swarming_util
@@ -262,55 +263,9 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
     targeted_tests = {
-        'a_test': ['TestSuite1.PRE_test1', 'TestSuite1.test3'],
+        'a_test': ['TestSuite1.test1', 'TestSuite1.test3'],
         'b_test': [],  # Non-swarming test.
     }
-
-    # Mocks for TriggerSwarmingTaskPipeline.
-    def MockedDownloadSwarmingTaskData(*_):
-      return [{'task_id': '1'}, {'task_id': '2'}]
-    self.mock(swarming_util, 'ListSwarmingTasksDataByTags',
-              MockedDownloadSwarmingTaskData)
-
-    def MockedGetSwarmingTaskRequest(ref_task_id, *_):
-      self.assertEqual('1', ref_task_id)
-      return SwarmingTaskRequest.Deserialize({
-          'expiration_secs': 3600,
-          'name': 'ref_task_request',
-          'parent_task_id': 'pti',
-          'priority': 25,
-          'properties': {
-              'command': 'cmd',
-              'dimensions': [{'key': 'k', 'value': 'v'}],
-              'env': [
-                  {'key': 'a', 'value': '1'},
-                  {'key': 'GTEST_SHARD_INDEX', 'value': '1'},
-                  {'key': 'GTEST_TOTAL_SHARDS', 'value': '5'},
-              ],
-              'execution_timeout_secs': 3600,
-              'extra_args': ['--flag=value', '--gtest_filter=d.f'],
-              'grace_period_secs': 30,
-              'idempotent': True,
-              'inputs_ref': {'a': 1},
-              'io_timeout_secs': 1200,
-          },
-          'tags': ['master:a', 'buildername:b'],
-          'user': 'user',
-      })
-    self.mock(swarming_util, 'GetSwarmingTaskRequest',
-              MockedGetSwarmingTaskRequest)
-
-    new_request_json = {}
-    def MockedTriggerSwarmingTask(new_request, *_):
-      self.assertEqual({}, new_request_json)
-      new_request_json.update(new_request.Serialize())
-      return 'task_id1'
-    self.mock(swarming_util, 'TriggerSwarmingTask', MockedTriggerSwarmingTask)
-
-    def MockedGetSwarmingTaskName(*_):
-      return 'new_task_name'
-    self.mock(trigger_swarming_task_pipeline, '_GetSwarmingTaskName',
-              MockedGetSwarmingTaskName)
 
     # Mocks for ProcessSwarmingTaskResultPipeline.
     def MockedGetSwarmingTaskResultById(task_id, _):
@@ -349,6 +304,10 @@ class SwarmingTasksToTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self._MockGetChangeLog('rev1')
     self._Mock_SendNotificationForCulpritPipeline()
 
+    task = WfSwarmingTask.Create(
+        master_name, builder_name, build_number, 'a_test')
+    task.task_id = 'task_id1'
+    task.put()
     WfTryJob.Create(master_name, builder_name, build_number).put()
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()

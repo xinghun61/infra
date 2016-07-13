@@ -62,20 +62,18 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
 
   HTTP_CLIENT = HttpClient()
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, step_name, task_id):
+  def run(self, master_name, builder_name, build_number, step_name):
     """
     Args:
       master_name (str): The master name.
       builder_name (str): The builder name.
       build_number (str): The build number.
       step_name (str): The failed test step name.
-      task_id (str): Id for the swarming task which is triggered by Findit.
 
     Returns:
       A dict of lists for reliable/flaky tests.
     """
 
-    assert task_id
     timeout_hours = waterfall_config.GetSwarmingSettings().get(
         'task_timeout_hours')
     deadline = time.time() + timeout_hours * 60 * 60
@@ -87,6 +85,9 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
     tests_statuses = {}
     step_name_no_platform = None
 
+    task = WfSwarmingTask.Get(
+        master_name, builder_name, build_number, step_name)
+    task_id = task.task_id
     while not task_completed:
       # Keeps monitoring the swarming task, waits for it to complete.
       data = swarming_util.GetSwarmingTaskResultById(

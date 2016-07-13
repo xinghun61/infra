@@ -19,6 +19,30 @@ from waterfall import swarming_util
 
 _MAX_BUILDS_TO_CHECK = 20
 _NON_FAILURE_STATUS = ['SUCCESS', 'SKIPPED', 'UNKNOWN']
+_PRE_TEST_PREFIX = 'PRE_'
+
+
+def _RemoveAllPrefixes(test):
+  """Remove prefixes from test names.
+
+  Args:
+    test (str): A test's name, eg: 'suite1.PRE_test1'.
+
+  Returns:
+    base_test (str): A base test name, eg: 'suite1.test1'.
+  """
+  test_name_start = max(test.find('.'), 0)
+  if test_name_start == 0:
+    return test
+
+  test_suite = test[: test_name_start]
+  test_name = test[test_name_start + 1 :]
+  pre_position = test_name.find(_PRE_TEST_PREFIX)
+  while pre_position == 0:
+    test_name = test_name[len(_PRE_TEST_PREFIX):]
+    pre_position = test_name.find(_PRE_TEST_PREFIX)
+  base_test = '%s.%s' % (test_suite, test_name)
+  return base_test
 
 
 class DetectFirstFailurePipeline(BasePipeline):
@@ -195,6 +219,7 @@ class DetectFirstFailurePipeline(BasePipeline):
             failed_step['tests'][test_name] = {
                 'current_failure': failed_step['current_failure'],
                 'first_failure': failed_step['current_failure'],
+                'base_test_name': _RemoveAllPrefixes(test_name)
             }
             if failed_step.get('last_pass'):
               failed_step['tests'][test_name]['last_pass'] = (

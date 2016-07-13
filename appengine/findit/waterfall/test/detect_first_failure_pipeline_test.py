@@ -16,6 +16,7 @@ from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from model.wf_step import WfStep
 from waterfall import buildbot
+from waterfall import detect_first_failure_pipeline
 from waterfall import lock_util
 from waterfall import swarming_util
 from waterfall.build_info import BuildInfo
@@ -310,11 +311,13 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
         'tests': {
             'Unittest2.Subtest1': {
                 'current_failure': 223,
-                'first_failure': 223
+                'first_failure': 223,
+                'base_test_name': 'Unittest2.Subtest1'
             },
             'Unittest3.Subtest2': {
                 'current_failure': 223,
                 'first_failure': 223,
+                'base_test_name': 'Unittest3.Subtest2'
             }
         }
     }
@@ -390,11 +393,13 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
             'Unittest2.Subtest1': {
                 'current_failure': 223,
                 'first_failure': 223,
-                'last_pass': 223
+                'last_pass': 223,
+                'base_test_name': 'Unittest2.Subtest1'
             },
             'Unittest3.Subtest2': {
                 'current_failure': 223,
-                'first_failure': 223
+                'first_failure': 223,
+                'base_test_name': 'Unittest3.Subtest2'
             }
         }
     }
@@ -444,11 +449,13 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
             'Unittest2.Subtest1': {
                 'current_failure': 223,
                 'first_failure': 222,
-                'last_pass': 221
+                'last_pass': 221,
+                'base_test_name': 'Unittest2.Subtest1'
             },
             'Unittest3.Subtest2': {
                 'current_failure': 223,
-                'first_failure': 221
+                'first_failure': 221,
+                'base_test_name': 'Unittest3.Subtest2'
             }
         }
     }
@@ -466,7 +473,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
             'Unittest2.Subtest1': {
                 'current_failure': 223,
                 'first_failure': 223,
-                'last_pass': 223
+                'last_pass': 223,
+                'base_test_name': 'Unittest2.Subtest1'
             }
         }
     }
@@ -488,7 +496,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
             'Unittest2.Subtest1': {
                 'current_failure': 223,
                 'first_failure': 223,
-                'last_pass': 222
+                'last_pass': 222,
+                'base_test_name': 'Unittest2.Subtest1'
             }
         }
     }
@@ -516,12 +525,14 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
                 'Unittest2.Subtest1': {
                     'current_failure': 223,
                     'first_failure': 222,
-                    'last_pass': 221
+                    'last_pass': 221,
+                    'base_test_name': 'Unittest2.Subtest1'
                 },
                 'Unittest3.Subtest2': {
                     'current_failure': 223,
                     'first_failure': 222,
-                    'last_pass': 221
+                    'last_pass': 221,
+                    'base_test_name': 'Unittest3.Subtest2'
                 }
             }
         }
@@ -636,12 +647,14 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
                 'Unittest2.Subtest1': {
                     'current_failure': 223,
                     'first_failure': 222,
-                    'last_pass': 221
+                    'last_pass': 221,
+                    'base_test_name': 'Unittest2.Subtest1'
                 },
                 'Unittest3.Subtest2': {
                     'current_failure': 223,
                     'first_failure': 222,
-                    'last_pass': 221
+                    'last_pass': 221,
+                    'base_test_name': 'Unittest3.Subtest2'
                 }
             }
         }
@@ -722,3 +735,17 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
       build_info.failed_steps = failed_steps
       self.assertEqual(
           expected_type, DetectFirstFailurePipeline._GetFailureType(build_info))
+
+  def testRemoveAllPrefixes(self):
+    test_smaples = {
+        'test1': 'test1',
+        'PRE_t': 'PRE_t',
+        'TestSuite1.Test1': 'TestSuite1.Test1',
+        'TestSuite1.PRE_Test1': 'TestSuite1.Test1',
+        'TestSuite1.PRE_PRE_Test1': 'TestSuite1.Test1',
+        'PRE_TestSuite1.Test1': 'PRE_TestSuite1.Test1'
+    }
+
+    for test, expected_base_test in test_smaples.iteritems():
+      base_test = detect_first_failure_pipeline._RemoveAllPrefixes(test)
+      self.assertEqual(base_test, expected_base_test)

@@ -156,19 +156,20 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     return _SAMPLE_FAILURE_LOG
 
   def testProcessSwarmingTaskResultPipeline(self):
-    task_id = 'task_id1'
 
     self.mock(swarming_util, 'GetSwarmingTaskFailureLog',
               self._MockedGetSwarmingTaskFailureLog)
 
-    WfSwarmingTask.Create(
+    task = WfSwarmingTask.Create(
         self.master_name, self.builder_name,
-        self.build_number, self.step_name).put()
+        self.build_number, self.step_name)
+    task.task_id = 'task_id1'
+    task.put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
     step_name, task_info = pipeline.run(
         self.master_name, self.builder_name,
-        self.build_number, self.step_name, task_id)
+        self.build_number, self.step_name)
 
     self.assertEqual(self.step_name, step_name)
     self.assertEqual('abc_tests', task_info[0])
@@ -188,16 +189,17 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
                      task.completed_time)
 
   def testProcessSwarmingTaskResultPipelineTaskNotRunning(self):
-    task_id = 'task_id2'
 
-    WfSwarmingTask.Create(
+    task = WfSwarmingTask.Create(
         self.master_name, self.builder_name,
-        self.build_number, self.step_name).put()
+        self.build_number, self.step_name)
+    task.task_id = 'task_id2'
+    task.put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
     step_name, task_info = pipeline.run(
         self.master_name, self.builder_name,
-        self.build_number, self.step_name, task_id)
+        self.build_number, self.step_name)
 
     self.assertEqual(self.step_name, step_name)
     self.assertIsNone(task_info[0])
@@ -211,7 +213,6 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual({}, task.classified_tests)
 
   def testProcessSwarmingTaskResultPipelineTaskTimeOut(self):
-    task_id = 'task_id1'
 
     # Override swarming config settings to force a timeout.
     override_swarming_settings = {
@@ -220,14 +221,16 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.UpdateUnitTestConfigSettings(
         'swarming_settings', override_swarming_settings)
 
-    WfSwarmingTask.Create(
+    task = WfSwarmingTask.Create(
         self.master_name, self.builder_name,
-        self.build_number, self.step_name).put()
+        self.build_number, self.step_name)
+    task.task_id = 'task_id1'
+    task.put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
     step_name, task_info = pipeline.run(
         self.master_name, self.builder_name,
-        self.build_number, self.step_name, task_id)
+        self.build_number, self.step_name)
 
     self.assertEqual(self.step_name, step_name)
     self.assertEqual('abc_tests', task_info[0])

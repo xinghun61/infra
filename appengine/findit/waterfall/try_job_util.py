@@ -70,7 +70,7 @@ def _CheckIfNeedNewTryJobForTestFailure(
         if failure_level == 'step':
           targeted_tests[failure_name] = []
         else:
-          targeted_tests.append(failure_name)
+          targeted_tests.append(failure.get('base_test_name', failure_name))
 
     need_new_try_job = need_new_try_job or failure_need_try_job
     last_pass = (failure_last_pass if failure_last_pass and

@@ -6,6 +6,7 @@ from datetime import datetime
 
 from common import appengine_util
 from common.pipeline_wrapper import BasePipeline
+from common.pipeline_wrapper import pipeline
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
@@ -15,6 +16,8 @@ from waterfall.identify_culprit_pipeline import IdentifyCulpritPipeline
 from waterfall.pull_changelog_pipeline import PullChangelogPipeline
 from waterfall.start_try_job_on_demand_pipeline import (
     StartTryJobOnDemandPipeline)
+from waterfall.trigger_swarming_tasks_pipeline import (
+    TriggerSwarmingTasksPipeline)
 
 
 class AnalyzeBuildFailurePipeline(BasePipeline):
@@ -72,6 +75,12 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     signals = yield ExtractSignalPipeline(failure_info)
     heuristic_result = yield IdentifyCulpritPipeline(
         failure_info, change_logs, deps_info, signals, build_completed)
-    yield StartTryJobOnDemandPipeline(
-        failure_info, signals, build_completed, force_rerun_try_job,
-        heuristic_result)
+
+    with pipeline.InOrder():
+      # Triggers swarming tasks when test failure happens.
+      yield TriggerSwarmingTasksPipeline(
+          master_name, builder_name, build_number, failure_info)
+      # Checks if need a try job and starts one if yes.
+      yield StartTryJobOnDemandPipeline(
+          failure_info, signals, build_completed, force_rerun_try_job,
+          heuristic_result)

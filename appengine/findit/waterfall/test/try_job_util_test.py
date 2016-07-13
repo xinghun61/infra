@@ -368,10 +368,11 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
             'first_failure': 222,
             'last_pass': 221,
             'tests': {
-                'a.t1': {
+                'a.PRE_t1': {
                     'current_failure': 223,
                     'first_failure': 223,
-                    'last_pass': 221
+                    'last_pass': 221,
+                    'base_test_name': 'a.t1'
                 },
                 'a.t2': {
                     'current_failure': 223,
@@ -411,7 +412,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     expected_failure_result_map = {
         'a': {
-            'a.t1': 'm/b/223',
+            'a.PRE_t1': 'm/b/223',
             'a.t2': 'm/b/222',
             'a.t3': 'm/b/223'
         },
