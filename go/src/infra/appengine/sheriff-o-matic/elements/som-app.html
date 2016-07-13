@@ -27,6 +27,14 @@
 <dom-module id="som-app">
   <template>
     <style>
+      h2 {
+        font-size: 18px;
+        font-weight: bold;
+        padding: 0.5em 0.5em 0.2em;
+        margin: 1em 0.5em;
+        background-color: #eee;
+        border-bottom: 1px solid #ddd;
+      }
       paper-toolbar {
         --paper-toolbar-background: black;
       }
@@ -148,7 +156,8 @@
               <br>
               <img src="/images/jparent-jump.gif" alt="Julie Jumping" title="Julie Jumping">
             </div>
-            <div id="alertsListInner">
+            <div id="alertsListInner" hidden$="[[!_hideNoAlerts]]">
+              <h2>Failure Alerts (<a href="/help-som">Help?</a>)</h2>
               <template is="dom-repeat" items="[[_alerts]]" as="alert">
                 <div class="list-item" tabindex$="[[tabIndex]]">
                   <som-alert-item

@@ -16,7 +16,6 @@
        @apply(--layout-horizontal);
        padding: 1em;
        background-color: #fff;
-       border: 1px solid #ddd;
      }
      .alert-controls {
        text-align: center;
@@ -38,6 +37,8 @@
      }
      .alert-title-bar {
        align-items: center;
+       padding-bottom: 0.3em;
+       border-bottom: 1px solid #aaa;
      }
      .alert-title {
        font-weight: bold;
@@ -52,9 +53,6 @@
      }
      .examine-link {
        padding: 0 10px;
-     }
-     hr {
-       color: #ddd;
      }
      .list-item {
        @apply(--layout-vertical);
@@ -105,7 +103,6 @@
               [[_duration]]
             </div>
           </div>
-          <hr/>
           <div class="alert-expanded layout horizontal wrap">
             <div class="alert-controls layout horizontal center flex-child">
               <a href$="[[tree]]/examine/[[alert.key]]" class="examine-link">Examine</a>

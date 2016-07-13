@@ -6,7 +6,6 @@
   <template>
     <style>
       #main {
-        padding-left: 1em;
         background: white;
       }
       #error {
@@ -16,10 +15,16 @@
       h2 {
         font-size: 18px;
         font-weight: bold;
+        padding: 0.5em 0.5em 0.2em;
+        margin: 0 0.5em;
+        background-color: #eee;
+        border-bottom: 1px solid #ddd;
       }
       .bug {
-        padding: 0.5em;
+        padding: 0.3em 0.5em;
+        line-height: 150%;
         border-bottom: 1px solid #ddd;
+        margin: 0 1em;
       }
       .summary {
         font-weight: bold;
@@ -56,6 +61,7 @@
       properties: {
         tree: {
           type: String,
+          observer: '_changeTree',
         },
         _bugQueueJson: {
           type: Object,
@@ -69,6 +75,12 @@
 
       refresh: function() {
         this.$.bugQueueAjax.generateRequest();
+      },
+
+      _changeTree: function() {
+        this.set("_bugQueueJson", {});
+        this.set("_bugQueueJsonError", null);
+        this.refresh();
       },
 
       _haveNoBugs: function(json) {
