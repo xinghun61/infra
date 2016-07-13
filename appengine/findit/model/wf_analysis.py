@@ -16,6 +16,7 @@ class WfAnalysis(BaseBuildModel):
 
   'Wf' is short for waterfall.
   """
+
   @staticmethod
   def _CreateKey(master_name, builder_name, build_number):  # pragma: no cover
     return ndb.Key('WfAnalysis',
@@ -83,6 +84,19 @@ class WfAnalysis(BaseBuildModel):
       return False
 
     return None
+
+  @property
+  def is_duplicate(self):
+    """Returns whether the analysis result is a duplicate or not.
+
+    Returns:
+      True: duplicate.
+      False: not a duplicate.
+    """
+
+    return self.result_status in (
+        result_status.FOUND_CORRECT_DUPLICATE,
+        result_status.FOUND_INCORRECT_DUPLICATE)
 
   def Reset(self):  # pragma: no cover
     """Resets to the state as if no analysis is run."""
@@ -155,3 +169,8 @@ class WfAnalysis(BaseBuildModel):
   result_status = ndb.IntegerProperty(indexed=True)
   # Record the history of triage.
   triage_history = ndb.JsonProperty(indexed=False, compressed=True)
+  # An optional reference to the analysis that might have caused this analysis
+  # to be marked as a duplicate.
+  triage_reference_analysis_master_name = ndb.StringProperty(indexed=False)
+  triage_reference_analysis_builder_name = ndb.StringProperty(indexed=False)
+  triage_reference_analysis_build_number = ndb.IntegerProperty(indexed=False)

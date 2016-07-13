@@ -5,7 +5,6 @@
 import collections
 import json
 import logging
-import os
 
 from google.appengine.api import users
 import jinja2

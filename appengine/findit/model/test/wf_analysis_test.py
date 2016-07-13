@@ -7,12 +7,13 @@ from datetime import datetime
 import unittest
 
 from common.waterfall import failure_type
-from model.wf_analysis import WfAnalysis
 from model import analysis_status
 from model import result_status
+from model.wf_analysis import WfAnalysis
 
 
 class WfAnalysisTest(unittest.TestCase):
+
   def testWfAnalysisStatusIsCompleted(self):
     for status in (analysis_status.COMPLETED, analysis_status.ERROR):
       analysis = WfAnalysis.Create('m', 'b', 123)
@@ -64,20 +65,20 @@ class WfAnalysisTest(unittest.TestCase):
   def testWfAnalysisStatusDescription(self):
     analysis = WfAnalysis.Create('m', 'b', 123)
     analysis.status = analysis_status.PENDING
-    self.assertEqual("Pending", analysis.status_description)
+    self.assertEqual('Pending', analysis.status_description)
     analysis.status = analysis_status.RUNNING
-    self.assertEqual("Running", analysis.status_description)
+    self.assertEqual('Running', analysis.status_description)
     analysis.status = analysis_status.COMPLETED
-    self.assertEqual("Completed", analysis.status_description)
+    self.assertEqual('Completed', analysis.status_description)
     analysis.status = analysis_status.ERROR
-    self.assertEqual("Error", analysis.status_description)
+    self.assertEqual('Error', analysis.status_description)
 
   def testWfAnalysisResultStatusDescription(self):
     analysis = WfAnalysis.Create('m', 'b', 123)
 
     self.assertEqual('', analysis.result_status_description)
     analysis.result_status = result_status.FOUND_CORRECT
-    self.assertEqual("Correct - Found", analysis.result_status_description)
+    self.assertEqual('Correct - Found', analysis.result_status_description)
 
   def testWfAnalysisCorrectnessIsUnknownIfIncompletedOrFailed(self):
     for status in (analysis_status.PENDING, analysis_status.RUNNING,
@@ -88,7 +89,7 @@ class WfAnalysisTest(unittest.TestCase):
 
   def testWfAnalysisCorrectnessIsUnknownIfUntriaged(self):
     for status in (result_status.FOUND_UNTRIAGED,
-                          result_status.NOT_FOUND_UNTRIAGED):
+                   result_status.NOT_FOUND_UNTRIAGED):
       analysis = WfAnalysis.Create('m', 'b', 123)
       analysis.status = analysis_status.COMPLETED
       analysis.result_status = status
@@ -144,3 +145,24 @@ class WfAnalysisTest(unittest.TestCase):
     analysis = WfAnalysis.Create('m', 'b', 123)
     analysis.result = {'failures': [{'step_name': 'browser_tests'}]}
     self.assertEqual('test', analysis.failure_type_str)
+
+  def testWfAnalysisIsDuplicate(self):
+    for status in (
+        result_status.FOUND_CORRECT_DUPLICATE,
+        result_status.FOUND_INCORRECT_DUPLICATE):
+      analysis = WfAnalysis.Create('m', 'b', 123)
+      analysis.result_status = status
+      self.assertTrue(analysis.is_duplicate)
+
+  def testWfAnalysisIsNotDuplicate(self):
+    for status in (
+        result_status.FOUND_CORRECT,
+        result_status.FOUND_INCORRECT,
+        result_status.NOT_FOUND_INCORRECT,
+        result_status.FOUND_UNTRIAGED,
+        result_status.NOT_FOUND_UNTRIAGED,
+        result_status.NOT_FOUND_CORRECT,
+        None):
+      analysis = WfAnalysis.Create('m', 'b', 123)
+      analysis.result_status = status
+      self.assertFalse(analysis.is_duplicate)

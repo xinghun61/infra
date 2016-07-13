@@ -329,8 +329,15 @@ class BuildFailure(BaseHandler):
         'analysis_completed': analysis.completed,
         'analysis_failed': analysis.failed,
         'analysis_correct': analysis.correct,
+        'analysis_is_duplicate': analysis.is_duplicate,
         'triage_history': _GetTriageHistory(analysis),
         'show_triage_help_button': self._ShowTriageHelpButton(),
+        'triage_reference_analysis_master_name':
+            analysis.triage_reference_analysis_master_name,
+        'triage_reference_analysis_builder_name':
+            analysis.triage_reference_analysis_builder_name,
+        'triage_reference_analysis_build_number':
+            analysis.triage_reference_analysis_build_number
     }
 
   def _PrepareDataForCompileFailure(self, analysis):

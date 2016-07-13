@@ -76,7 +76,9 @@
     findit.analysisFailed = '{{analysis_failed}}' == 'True';
     findit.builderUrl = 'https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}';
     findit.buildUrl = findit.builderUrl + '/builds/{{build_number}}';
+    findit.triageReferenceAnalysisUrl = '/waterfall/build-failure?url=https://build.chromium.org/p/{{triage_reference_analysis_master_name}}/builders/{{triage_reference_analysis_builder_name}}/builds/{{triage_reference_analysis_build_number}}';
     findit.analysisCorrect = '{{analysis_correct}}';  // Possible values: 'None', 'True', or 'False'.
+    findit.analysisIsDuplicate = '{{analysis_is_duplicate}}' == 'True';
     findit.showTriageHelpButton = '{{show_triage_help_button}}' == 'True';
     findit.showDebugInfo = '{{show_debug_info}}' == 'True';
     findit.analysisResult = {{analysis_result | tojson | safe}};
@@ -96,6 +98,10 @@
         } else {
           alert('Failed to update datastore. Please refresh and try again.');
         }
+        {% if show_debug_info %}
+          $('#duplicates_marked').html('Number of matching build analyses that were also triaged: ' + data['num_duplicate_analyses']);
+          $('#duplicate_reference').html('');
+        {% endif %}
       }).error(function(xhr) {
         // Replace the whole page with errors from server side.
         document.body.outerHTML = xhr.responseText;
@@ -442,6 +448,14 @@
             $('.thumb-down').addClass('triaged').removeClass('triage');
           }
 
+          {% if show_debug_info %}
+            if (findit.analysisIsDuplicate) {
+              $('#duplicate_reference').html('This analysis was automatically triaged as a duplicate because of another build analysis: ' +
+                                             '<a href="' + findit.triageReferenceAnalysisUrl + '">{{triage_reference_analysis_master_name}}/' +
+                                             '{{triage_reference_analysis_builder_name}}/{{triage_reference_analysis_build_number}}</a>');
+            }
+          {% endif %}
+
           if (findit.showTriageHelpButton) {
             $('#triage_help_button').click(triageHelp);
           }
@@ -652,6 +666,10 @@
           <div class="triage thumb-up">Correct <img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_up_black_24dp.png"/></div>
           <div class="triage thumb-down"><img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_down_black_24dp.png"/> Incorrect</div>
         </div>
+        {% if show_debug_info %}
+          <div id="duplicates_marked"></div>
+          <div id="duplicate_reference"></div>
+        {% endif %}
       </div>
     {% endif %}
   {% endif %}

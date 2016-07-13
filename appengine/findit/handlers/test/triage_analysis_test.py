@@ -5,10 +5,8 @@
 from datetime import datetime
 from datetime import timedelta
 
-from google.appengine.ext import ndb
-import webapp2
-
 from testing_utils import testing
+import webapp2
 
 from handlers import triage_analysis
 from model import analysis_status
@@ -36,8 +34,8 @@ class TriageAnalysisTest(testing.AppengineTestCase):
         'url': 'https://codereview.chromium.org/123',
     }]
 
-    self.build_start_time = (datetime.utcnow() - timedelta(2)).replace(
-        hour=12, minute=0, second=0, microsecond=0)  # Two days ago, UTC Noon.
+    self.build_start_time = (datetime.utcnow() - timedelta(3)).replace(
+        hour=12, minute=0, second=0, microsecond=0)  # Three days ago, UTC Noon.
 
     analysis = WfAnalysis.Create(
         self.master_name, self.builder_name, self.build_number_incomplete)
@@ -125,7 +123,11 @@ class TriageAnalysisTest(testing.AppengineTestCase):
     build_url = 'http://invalid/build/url'
     response = self.test_app.get(
         '/triage-analysis',
-        params={'url': build_url, 'correct': True, 'format': 'json'})
+        params={
+            'url': build_url,
+            'correct': True,
+            'format': 'json'
+        })
     self.assertEquals(200, response.status_int)
     self.assertEquals({'success': False}, response.json_body)
 
@@ -134,18 +136,36 @@ class TriageAnalysisTest(testing.AppengineTestCase):
         self.master_name, self.builder_name, self.build_number_found)
     response = self.test_app.get(
         '/triage-analysis',
-        params={'url': build_url, 'correct': True, 'format': 'json'})
+        params={
+            'url': build_url,
+            'correct': True,
+            'format': 'json'
+        })
     self.assertEquals(200, response.status_int)
-    self.assertEquals({'success': True}, response.json_body)
+    self.assertEquals(
+        {
+            'success': True,
+            'num_duplicate_analyses': 0
+        },
+        response.json_body)
 
   def testIncompleteTriage(self):
     build_url = buildbot.CreateBuildUrl(
         self.master_name, self.builder_name, self.build_number_incomplete)
     response = self.test_app.get(
         '/triage-analysis',
-        params={'url': build_url, 'correct': True, 'format': 'json'})
+        params={
+            'url': build_url,
+            'correct': True,
+            'format': 'json'
+        })
     self.assertEquals(200, response.status_int)
-    self.assertEquals({'success': False}, response.json_body)
+    self.assertEquals(
+        {
+            'success': False,
+            'num_duplicate_analyses': 0
+        },
+        response.json_body)
 
   def testAnalysesMatch(self):
     analysis_with_empty_failures = WfAnalysis.Create(
@@ -364,11 +384,7 @@ class TriageAnalysisTest(testing.AppengineTestCase):
     analysis.result = {
         'failures': [
             {
-                'suspected_cls': [
-                    {
-                        'revision': 'abc',
-                    }
-                ],
+                'suspected_cls': self.suspected_cls,
                 'step_name': 'step_4',
             }
         ]
@@ -376,12 +392,13 @@ class TriageAnalysisTest(testing.AppengineTestCase):
     analysis.result_status = result_status.FOUND_UNTRIAGED
     analysis.build_start_time = build_start_time
     analysis.status = analysis_status.COMPLETED
+    analysis.suspected_cls = self.suspected_cls
     analysis.put()
     return analysis
 
   def testGetDuplicateAnalysesTooEarly(self):
-    # Two days ago, UTC Noon.
-    original_time = (datetime.utcnow() - timedelta(days=2)).replace(
+    # Three days ago, UTC Noon.
+    original_time = (datetime.utcnow() - timedelta(days=3)).replace(
         hour=12, minute=0, second=0, microsecond=0)
     analysis_original = self._createAnalysis(300, original_time)
 
@@ -394,8 +411,8 @@ class TriageAnalysisTest(testing.AppengineTestCase):
         len(triage_analysis._GetDuplicateAnalyses(analysis_original)), 0)
 
   def testGetDuplicateAnalysesEarlier(self):
-    # Two days ago, UTC Noon.
-    original_time = (datetime.utcnow() - timedelta(days=2)).replace(
+    # Three days ago, UTC Noon.
+    original_time = (datetime.utcnow() - timedelta(days=3)).replace(
         hour=12, minute=0, second=0, microsecond=0)
     analysis_original = self._createAnalysis(302, original_time)
 
@@ -408,8 +425,8 @@ class TriageAnalysisTest(testing.AppengineTestCase):
         len(triage_analysis._GetDuplicateAnalyses(analysis_original)), 1)
 
   def testGetDuplicateAnalysesLater(self):
-    # Two days ago, UTC Noon.
-    original_time = (datetime.utcnow() - timedelta(days=2)).replace(
+    # Three days ago, UTC Noon.
+    original_time = (datetime.utcnow() - timedelta(days=3)).replace(
         hour=12, minute=0, second=0, microsecond=0)
     analysis_original = self._createAnalysis(304, original_time)
 
@@ -422,8 +439,8 @@ class TriageAnalysisTest(testing.AppengineTestCase):
         len(triage_analysis._GetDuplicateAnalyses(analysis_original)), 1)
 
   def testGetDuplicateAnalysesTooLate(self):
-    # Two days ago, UTC Noon.
-    original_time = (datetime.utcnow() - timedelta(days=2)).replace(
+    # Three days ago, UTC Noon.
+    original_time = (datetime.utcnow() - timedelta(days=3)).replace(
         hour=12, minute=0, second=0, microsecond=0)
     analysis_original = self._createAnalysis(306, original_time)
 
@@ -435,7 +452,7 @@ class TriageAnalysisTest(testing.AppengineTestCase):
     self.assertEquals(
         len(triage_analysis._GetDuplicateAnalyses(analysis_original)), 0)
 
-  def testGetDuplicateAnalysesNotToday(self):
+  def testGetDuplicateAnalysesPastEndBoundTime(self):
     # Tomorrow, UTC Noon.
     original_time = (datetime.utcnow() + timedelta(days=1)).replace(
         hour=12, minute=0, second=0, microsecond=0)
@@ -447,19 +464,36 @@ class TriageAnalysisTest(testing.AppengineTestCase):
     self.assertEquals(
         len(triage_analysis._GetDuplicateAnalyses(analysis_original)), 0)
 
-  def testTriageDuplicateResults(self):
-    # Two days ago, UTC Noon.
-    original_time = (datetime.utcnow() - timedelta(days=2)).replace(
+  def testTriageDuplicateResultsFoundCorrectDuplicate(self):
+    # Three days ago, UTC Noon.
+    original_time = (datetime.utcnow() - timedelta(days=3)).replace(
         hour=12, minute=0, second=0, microsecond=0)
     analysis_original = self._createAnalysis(310, original_time)
 
-    # Create another analysis at the same time (also two days ago).
-    self._createAnalysis(311, original_time)
+    # Create another analysis a bit later (also three days ago).
+    self._createAnalysis(311, original_time + timedelta(minutes=1))
 
-    triage_analysis._TriageDuplicateResults(analysis_original, True)
+    triage_analysis._TriageAndCountDuplicateResults(analysis_original,
+                                                    is_correct=True)
 
     second_analysis = WfAnalysis.Get(self.master_name, self.builder_name, 311)
 
-    self.assertEquals(result_status.NOT_FOUND_CORRECT,
+    self.assertEquals(result_status.FOUND_CORRECT_DUPLICATE,
                       second_analysis.result_status)
 
+  def testTriageDuplicateResultsFoundIncorrectDuplicate(self):
+    # Three days ago, UTC Noon.
+    original_time = (datetime.utcnow() - timedelta(days=3)).replace(
+        hour=12, minute=0, second=0, microsecond=0)
+    analysis_original = self._createAnalysis(312, original_time)
+
+    # Create another analysis a bit later (also three days ago).
+    self._createAnalysis(313, original_time + timedelta(minutes=1))
+
+    triage_analysis._TriageAndCountDuplicateResults(analysis_original,
+                                                    is_correct=False)
+
+    second_analysis = WfAnalysis.Get(self.master_name, self.builder_name, 313)
+
+    self.assertEquals(result_status.FOUND_INCORRECT_DUPLICATE,
+                      second_analysis.result_status)

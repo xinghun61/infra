@@ -90,7 +90,8 @@ def _DoAnalysesMatch(analysis_1, analysis_2):
           sorted(potential_culprit_tuple_list_2))
 
 
-def _AppendTriageHistoryRecord(analysis, is_correct, user_name):
+def _AppendTriageHistoryRecord(
+    analysis, is_correct, user_name, is_duplicate=False):
   """Appends a triage history record to the given analysis.
 
   Args:
@@ -98,10 +99,17 @@ def _AppendTriageHistoryRecord(analysis, is_correct, user_name):
     is_correct: True if the history record should indicate a correct judgement,
         otherwise False.
     user_name: The user_name of the person to include in the triage record.
+    is_duplicate: Whether or not this analysis is a duplicate of another
+        analysis. If this analysis is a duplicate, then set the result_status
+        accordingly. If this analysis is not a duplicate, reset the reference to
+        the 'first-cause' analaysis.
   """
   if is_correct:
     if analysis.suspected_cls:
-      analysis.result_status = result_status.FOUND_CORRECT
+      if is_duplicate:
+        analysis.result_status = result_status.FOUND_CORRECT_DUPLICATE
+      else:
+        analysis.result_status = result_status.FOUND_CORRECT
       analysis.culprit_cls = analysis.suspected_cls
     else:
       analysis.result_status = result_status.NOT_FOUND_CORRECT
@@ -109,9 +117,25 @@ def _AppendTriageHistoryRecord(analysis, is_correct, user_name):
   else:
     analysis.culprit_cls = None
     if analysis.suspected_cls:
-      analysis.result_status = result_status.FOUND_INCORRECT
+      if is_duplicate:
+        analysis.result_status = result_status.FOUND_INCORRECT_DUPLICATE
+      else:
+        analysis.result_status = result_status.FOUND_INCORRECT
     else:
       analysis.result_status = result_status.NOT_FOUND_INCORRECT
+
+  if not is_duplicate:
+    # Resets the reference to the 'first-cause' triage analysis.
+    # When another 'first-cause' build analysis is triaged, and this build
+    # analysis is marked as a duplicate from that other 'first-cause' build
+    # analysis, these are the variables that hold the reference back to that
+    # 'first-cause' build analysis. It's possible that someone could then
+    # manually re-triage this build analysis, in which case this build analysis
+    # is no longer a duplicate, and we want to erase the reference to the
+    # no-longer-relevant 'first-cause' build_analysis.
+    analysis.triage_reference_analysis_master_name = None
+    analysis.triage_reference_analysis_builder_name = None
+    analysis.triage_reference_analysis_build_number = None
 
   triage_record = {
       'triage_timestamp': calendar.timegm(datetime.utcnow().timetuple()),
@@ -133,7 +157,8 @@ def _UpdateAnalysisResultStatus(
   if not analysis or not analysis.completed:
     return False, None
 
-  _AppendTriageHistoryRecord(analysis, is_correct, user_name)
+  _AppendTriageHistoryRecord(analysis, is_correct, user_name,
+                             is_duplicate=False)
 
   return True, analysis
 
@@ -163,7 +188,7 @@ def _GetDuplicateAnalyses(original_analysis):
   # Strip timezone.
   local_midnight = local_midnight_as_utc.replace(tzinfo=None)
 
-  if end_time > local_midnight:  # pragma: no branch
+  if end_time > local_midnight:
     end_time = local_midnight
 
   # Retrieve potential duplicate build analyses.
@@ -175,16 +200,27 @@ def _GetDuplicateAnalyses(original_analysis):
 
   # Further filter potential duplicates and return them.
   return [analysis for analysis in analysis_results if
+          analysis.completed and
+          analysis.result and
           _DoAnalysesMatch(original_analysis, analysis) and
-          original_analysis.key is not analysis.key and
-          analysis.completed]
+          original_analysis.key is not analysis.key]
 
 
-def _TriageDuplicateResults(original_analysis, is_correct, user_name=None):
+def _TriageAndCountDuplicateResults(original_analysis, is_correct,
+                                    user_name=None):
   matching_analyses = _GetDuplicateAnalyses(original_analysis)
 
   for analysis in matching_analyses:
-    _AppendTriageHistoryRecord(analysis, is_correct, user_name)
+    analysis.triage_reference_analysis_master_name = (
+        original_analysis.master_name)
+    analysis.triage_reference_analysis_builder_name = (
+        original_analysis.builder_name)
+    analysis.triage_reference_analysis_build_number = (
+        original_analysis.build_number)
+    _AppendTriageHistoryRecord(analysis, is_correct, user_name,
+                               is_duplicate=True)
+
+  return len(matching_analyses)
 
 
 class TriageAnalysis(BaseHandler):
@@ -211,6 +247,9 @@ class TriageAnalysis(BaseHandler):
     user_name = users.get_current_user().email().split('@')[0]
     success, original_analysis = _UpdateAnalysisResultStatus(
         master_name, builder_name, build_number, is_correct, user_name)
+    num_duplicate_analyses = 0
     if success:
-      _TriageDuplicateResults(original_analysis, is_correct, user_name)
-    return {'data': {'success': success}}
+      num_duplicate_analyses = _TriageAndCountDuplicateResults(
+          original_analysis, is_correct, user_name)
+    return {'data': {'success': success,
+                     'num_duplicate_analyses': num_duplicate_analyses}}
