@@ -433,7 +433,7 @@ class TestCQStats(auto_stub.TestCase):  # pragma: no cover
         }]
         entries.append({'fields': {'action': 'patch_failed',
                                    'reason': {'fail_type': reason,
-                                              'fail_details': details}},
+                                              'failed_try_jobs': details}},
                         'timestamp': time_obj['time']})
       time_obj['time'] += 1.37
       entries.append({'fields': {'action': 'patch_stop', 'message': message},

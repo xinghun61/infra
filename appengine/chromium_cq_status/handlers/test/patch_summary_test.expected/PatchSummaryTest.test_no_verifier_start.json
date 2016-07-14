@@ -13,14 +13,14 @@
       },
       "end": 10503.0,
       "fail_reason": {
-        "fail_details": [
+        "fail_type": "failed_jobs",
+        "failed_try_jobs": [
           {
             "builder": "test_suite_b_2",
             "master": "tryserver.b",
             "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_2/builds/1012"
           }
         ],
-        "fail_type": "failed_jobs",
         "verifier": "try job"
       },
       "jobs": {

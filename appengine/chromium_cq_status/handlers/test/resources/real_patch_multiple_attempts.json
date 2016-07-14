@@ -600,7 +600,7 @@
         "reason": {
           "verifier": "try job",
           "fail_type": "failed_presubmit_bot",
-          "fail_details": [
+          "failed_try_jobs": [
             {
               "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35417",
               "builder": "test_presubmit",
@@ -1254,7 +1254,7 @@
         "reason": {
           "verifier": "try job",
           "fail_type": "failed_presubmit_bot",
-          "fail_details": [
+          "failed_try_jobs": [
             {
               "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35412",
               "builder": "test_presubmit",
@@ -1907,7 +1907,7 @@
         "reason": {
           "verifier": "reviewer_lgtm",
           "fail_type": "missing_lgtm",
-          "fail_details": null
+          "failed_try_jobs": null
         },
         "done": true,
         "action": "patch_failed",

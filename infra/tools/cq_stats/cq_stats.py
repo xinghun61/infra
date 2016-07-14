@@ -785,8 +785,9 @@ def derive_patch_stats(args, begin_date, end_date,
       if fail_type in KNOWN_REASONS:
         attempt[fail_type] = True
       if fail_type == 'failed-jobs':
-        fail_details = parse_json(attempt['reason'].get('fail_details', []))
-        failed_jobs = [d['builder'] for d in fail_details]
+        failed_try_jobs = parse_json(
+            attempt['reason'].get('failed_try_jobs', []))
+        failed_jobs = [d['builder'] for d in failed_try_jobs]
         # TODO(sergeyberezin): DEPRECATE message parsing.
         if args.use_message_parsing and not failed_jobs:
           failed_jobs = parse_failing_tryjobs(

@@ -134,7 +134,7 @@ function getAttemptSummaryText(attempt) {
           text += ': ';
           if (reason.fail_type === 'failed_jobs') {
             var getBuilder = function(detail) { return detail.builder };
-            text += reason.fail_details.map(getBuilder).join(' ');
+            text += reason.failed_try_jobs.map(getBuilder).join(' ');
           } else {
             text += reason.fail_type;
           }

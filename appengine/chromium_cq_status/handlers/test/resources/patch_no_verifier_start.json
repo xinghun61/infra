@@ -38,7 +38,7 @@
       "reason": {
         "verifier": "try job",
         "fail_type": "failed_jobs",
-        "fail_details": [
+        "failed_try_jobs": [
           {
             "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_2/builds/1012",
             "master": "tryserver.b",
