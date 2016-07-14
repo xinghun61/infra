@@ -94,9 +94,10 @@ KNOWN_TROOPER_FLAKE_NAMES = [
 #  - test results: always red when another step is red (not a failure)
 #  - Uncaught Exception: summary step referring to an exception in another
 #    step (duplicates failure)
+#  - Failure reason: similar to 'recipe failure reason'
 # There are additional rules for non-trivial cases in the FlakyRun.post method.
 IGNORED_STEPS = ['steps', 'presubmit', 'recipe failure reason', 'test results',
-                 'Uncaught Exception']
+                 'Uncaught Exception', 'Failure reason']
 
 
 def is_trooper_flake(flake_name):
