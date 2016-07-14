@@ -883,7 +883,8 @@ def _SafeCreateLoginURL(mr, continue_url=None):
   # Give the user a choice of existing accounts in their session
   # or the option to add an account, even if they are currently
   # signed in to exactly one account.
-  url = url.replace('/accounts/ServiceLogin', '/a/SelectSession', 1)
+  if mr.auth.user_id:
+    url = url.replace('/accounts/ServiceLogin', '/a/SelectSession', 1)
   return url
 
 
