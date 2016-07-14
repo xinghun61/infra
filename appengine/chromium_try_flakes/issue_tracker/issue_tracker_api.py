@@ -10,6 +10,8 @@ from issue_tracker.issue import Issue
 from issue_tracker.comment import Comment
 from oauth2client.appengine import AppAssertionCredentials
 
+import gae_ts_mon
+
 
 # TODO(akuegel): Do we want to use a different timeout? Do we want to use a
 # cache? See documentation here:
@@ -50,6 +52,10 @@ def _buildClient(api_name, api_version, http,
 
 class IssueTrackerAPI(object):  # pragma: no cover
   CAN_ALL = 'all'
+
+  issue_tracker_requests = gae_ts_mon.CounterMetric(
+      'flakiness_pipeline/issue_tracker_requests',
+      description='Number of requests to the issue tracker')
 
   """A wrapper around the issue tracker api."""
   def __init__(self, project_name):
@@ -92,6 +98,8 @@ class IssueTrackerAPI(object):  # pragma: no cover
     request = self.client.issues().insert(
         projectId=self.project_name, sendEmail=send_email, body=body)
     tmp = self._retry_api_call(request)
+    self.issue_tracker_requests.increment(
+        {'source': 'chromium-try-flakes', 'operation': 'issues_insert'})
     issue.id = int(tmp['id'])
     issue.dirty = False
     return issue
@@ -130,6 +138,8 @@ class IssueTrackerAPI(object):  # pragma: no cover
         projectId=self.project_name, issueId=issue.id, sendEmail=send_email,
         body=body)
     self._retry_api_call(request)
+    self.issue_tracker_requests.increment(
+        {'source': 'chromium-try-flakes', 'operation': 'comments_insert'})
 
     if issue.owner == '----':
       issue.owner = ''
@@ -146,6 +156,8 @@ class IssueTrackerAPI(object):  # pragma: no cover
         projectId=self.project_name, issueId=issue_id, startIndex=1,
         maxResults=0)
     feed = self._retry_api_call(request)
+    self.issue_tracker_requests.increment(
+        {'source': 'chromium-try-flakes', 'operation': 'comments_list'})
     return feed.get('totalResults', '0')
 
   def getComments(self, issue_id):
@@ -154,6 +166,8 @@ class IssueTrackerAPI(object):  # pragma: no cover
     request = self.client.issues().comments().list(
         projectId=self.project_name, issueId=issue_id)
     feed = self._retry_api_call(request)
+    self.issue_tracker_requests.increment(
+        {'source': 'chromium-try-flakes', 'operation': 'comments_list'})
     rtn.extend([Comment(entry) for entry in feed['items']])
     total_results = feed['totalResults']
     if not total_results:
@@ -163,6 +177,8 @@ class IssueTrackerAPI(object):  # pragma: no cover
       request = self.client.issues().comments().list(
           projectId=self.project_name, issueId=issue_id, startIndex=len(rtn))
       feed = self._retry_api_call(request)
+      self.issue_tracker_requests.increment(
+          {'source': 'chromium-try-flakes', 'operation': 'comments_list'})
       rtn.extend([Comment(entry) for entry in feed['items']])
 
     return rtn
@@ -172,6 +188,8 @@ class IssueTrackerAPI(object):  # pragma: no cover
         projectId=self.project_name, issueId=issue_id, startIndex=0,
         maxResults=1)
     feed = self._retry_api_call(request)
+    self.issue_tracker_requests.increment(
+        {'source': 'chromium-try-flakes', 'operation': 'comments_list'})
     if 'items' in feed and len(feed['items']) > 0:
       return Comment(feed['items'][0])
     return None
@@ -182,6 +200,8 @@ class IssueTrackerAPI(object):  # pragma: no cover
         projectId=self.project_name, issueId=issue_id,
         startIndex=total_results-1, maxResults=1)
     feed = self._retry_api_call(request)
+    self.issue_tracker_requests.increment(
+        {'source': 'chromium-try-flakes', 'operation': 'comments_list'})
     if 'items' in feed and len(feed['items']) > 0:
       return Comment(feed['items'][0])
     return None
@@ -190,5 +210,7 @@ class IssueTrackerAPI(object):  # pragma: no cover
     """Retrieve a set of issues in a project."""
     request = self.client.issues().get(
         projectId=self.project_name, issueId=issue_id)
+    self.issue_tracker_requests.increment(
+        {'source': 'chromium-try-flakes', 'operation': 'issues_get'})
     entry = self._retry_api_call(request)
     return Issue(entry)

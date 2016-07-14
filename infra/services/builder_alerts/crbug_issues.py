@@ -21,6 +21,11 @@ WHITELISTED_LABELS = {'sheriff-chromium': 'chromium',
 BATCH_SIZE = 10
 
 
+issue_tracker_requests = ts_mon.CounterMetric(
+    'flakiness_pipeline/issue_tracker_requests',
+    description='Number of requests to the issue tracker')
+
+
 def _build_crbug_service(crbug_service_account):  # pragma: no cover
   with open(crbug_service_account) as crbug_sa_file:
     service_account = json.load(crbug_sa_file)
@@ -45,6 +50,8 @@ def _list_issues(crbug_service_account):
           projectId='chromium', label=whitelisted_label,
           startIndex=start_index, maxResults=BATCH_SIZE, can='open')
       response = request.execute(num_retries=5)
+      issue_tracker_requests.increment(
+          {'source': 'builder_alerts', 'operation': 'issues_list'})
   
       # Issue Tracker may omit certain issues occasionally, so counting whether
       # they add up to 'totalResults' in response is not relaible. However, we

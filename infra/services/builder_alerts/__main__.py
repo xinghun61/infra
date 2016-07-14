@@ -19,6 +19,7 @@ import requests
 import requests_cache
 
 from infra_libs import logs
+from infra_libs import ts_mon
 from infra.libs.service_utils import outer_loop
 
 from infra.services.builder_alerts import alert_builder
@@ -358,6 +359,7 @@ def main(args):
                       type=int)
   logs.add_argparse_options(parser)
   outer_loop.add_argparse_options(parser)
+  ts_mon.add_argparse_options(parser)
 
   gatekeeper_json = os.path.join(build_scripts_dir, 'slave', 'gatekeeper.json')
   parser.add_argument('--gatekeeper', action='store', default=gatekeeper_json)
@@ -384,6 +386,7 @@ def main(args):
   args = parser.parse_args(args)
   logs.process_argparse_options(args)
   loop_args = outer_loop.process_argparse_options(args)
+  ts_mon.process_argparse_options(args)
 
   # TODO(sergiyb): Remove support for data_url when builder_alerts recipes are
   # updated and using new syntax to call this script.
@@ -424,6 +427,7 @@ def main(args):
       sleep_timeout=lambda: 5,
       **loop_args)
 
+  ts_mon.flush()
   return 0 if loop_results.success else 1
 
 

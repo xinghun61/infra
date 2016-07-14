@@ -7,6 +7,7 @@ import json
 import mock
 import unittest
 
+from infra_libs import ts_mon
 from infra.services.builder_alerts import crbug_issues
 
 from apiclient.errors import HttpError
@@ -83,6 +84,7 @@ class CrbugIssuesQueryTest(unittest.TestCase):
   def setUp(self):
     list_issues_mock = mock.Mock()
     list_issues_mock.return_value = CRBUG_ISSUES_LIST_TEST_REPLY
+    ts_mon.reset_for_unittest()
 
     self._patchers = [
         mock.patch.object(crbug_issues, '_list_issues', list_issues_mock),
