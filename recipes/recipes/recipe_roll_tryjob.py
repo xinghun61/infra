@@ -53,9 +53,9 @@ PROPERTIES = {
   # apply.
   "rietveld": Property(kind=str, default="",
                        help="The Rietveld instance the issue is from"),
-  "issue": Property(kind=Single((long,int,str)), default=None,
+  "issue": Property(kind=Single((long,int,basestring)), default=None,
                     help="The Rietveld issue number to pull data from"),
-  "patchset": Property(kind=Single((int,str)), default=None,
+  "patchset": Property(kind=Single((int,basestring)), default=None,
                        help="The patchset number for the supplied issue"),
   "patch_project": Property(
       kind=str, default=None,
@@ -271,6 +271,29 @@ def GenTests(api):
         rietveld="https://fake.code.review",
         issue=12345678,
         patchset=1,
+        patch_project="build",
+      ) +
+      api.luci_config.get_projects(('recipe_engine', 'build')) +
+      api.luci_config.get_project_config(
+          'build', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config('build', ['recipe_engine'])) +
+      api.luci_config.get_project_config(
+          'recipe_engine', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config('recipe_engine')) +
+      api.override_step_data(
+          'git_cl description (build)', stdout=api.raw_io.output(
+              "")) +
+      api.override_step_data(
+          'parse description', api.json.output(
+              {}))
+  )
+
+  yield (
+      api.test('tryjob_with_unicode') +
+      api.properties(
+        rietveld="https://fake.code.review",
+        issue=u'12345678',
+        patchset=u'1',
         patch_project="build",
       ) +
       api.luci_config.get_projects(('recipe_engine', 'build')) +
