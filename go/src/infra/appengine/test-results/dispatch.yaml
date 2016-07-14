@@ -1,0 +1,5 @@
+dispatch:
+  - url: "*/testfile"
+    module: go
+  - url: "*/testfile/"
+    module: go
