@@ -162,14 +162,16 @@ class RetriableHttplib2Test(unittest.TestCase):
     self.assertTrue(self.http.ignore_etag)
     self.assertTrue(self.http._http.ignore_etag)
 
-  def test_succeed(self):
+  @mock.patch('time.sleep', autospec=True)
+  def test_succeed(self, _sleep):
     self.http._http.request.return_value = (
         httplib2.Response({'status': 400}), 'content')
     response, _ = self.http.request('http://foo/')
     self.assertEqual(400, response.status)
     self.http._http.request.assert_has_calls([ self._MOCK_REQUEST ])
 
-  def test_retry_succeed(self):
+  @mock.patch('time.sleep', autospec=True)
+  def test_retry_succeed(self, _sleep):
     self.http._http.request.side_effect = iter([
       (httplib2.Response({'status': 500}), 'content'),
       httplib2.HttpLib2Error,
@@ -179,12 +181,14 @@ class RetriableHttplib2Test(unittest.TestCase):
     self.assertEqual(200, response.status)
     self.http._http.request.assert_has_calls([ self._MOCK_REQUEST ] * 3)
 
-  def test_fail_exception(self):
+  @mock.patch('time.sleep', autospec=True)
+  def test_fail_exception(self, _sleep):
     self.http._http.request.side_effect = httplib2.HttpLib2Error()
     self.assertRaises(httplib2.HttpLib2Error, self.http.request, 'http://foo/')
     self.http._http.request.assert_has_calls([ self._MOCK_REQUEST ] * 5)
 
-  def test_fail_status_code(self):
+  @mock.patch('time.sleep', autospec=True)
+  def test_fail_status_code(self, _sleep):
     self.http._http.request.return_value = (
         httplib2.Response({'status': 500}), 'content')
     response, _ = self.http.request('http://foo/')
