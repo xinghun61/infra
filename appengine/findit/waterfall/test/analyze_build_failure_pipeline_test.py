@@ -9,6 +9,7 @@ from common import chromium_deps
 from common.pipeline_wrapper import pipeline_handlers
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
+from waterfall import analyze_build_failure_pipeline
 from waterfall import buildbot
 from waterfall import lock_util
 from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline
@@ -18,129 +19,63 @@ from waterfall.test import wf_testcase
 class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  def _MockChangeLog(
-      self, urlfetch, user_name, revision, commit_position, file_path):
-    url = ('https://chromium.googlesource.com/chromium/src.git/+/%s?format=json'
-           % revision)
-
-    COMMIT_LOG_TEMPLATE = """)]}'
-    {
-      "commit": "REVISION",
-      "tree": "tree_rev",
-      "parents": [
-        "revX"
-      ],
-      "author": {
-        "name": "USER_NAME@chromium.org",
-        "email": "USER_NAME@chromium.org",
-        "time": "Wed Jun 11 19:35:32 2014"
-      },
-      "committer": {
-        "name": "USER_NAME@chromium.org",
-        "email": "USER_NAME@chromium.org",
-        "time": "Wed Jun 11 19:35:32 2014"
-      },
-      "message":
-          "git-svn-id: svn://svn.chromium.org/chromium/src@COMMIT_POSITION bla",
-      "tree_diff": [
-        {
-          "type": "modify",
-          "old_id": "idX",
-          "old_mode": 33188,
-          "old_path": "FILE_PATH",
-          "new_id": "idY",
-          "new_mode": 33188,
-          "new_path": "FILE_PATH"
-        }
-      ]
-    }
-    """
-    commit_log = COMMIT_LOG_TEMPLATE.replace(
-        'REVISION', revision).replace('USER_NAME', user_name).replace(
-            'COMMIT_POSITION', str(commit_position)).replace(
-                'FILE_PATH', file_path)
-    urlfetch.register_handler(url, commit_log)
-
-  def _Setup(self, master_name, builder_name, build_number):
+  def _Setup(self, master_name, builder_name, build_number,
+             status=analysis_status.PENDING):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.status = analysis_status.RUNNING
+    analysis.status = status
     analysis.put()
 
-    def MockWaitUntilDownloadAllowed(*_):
-      return True
-    self.mock(
-        lock_util, 'WaitUntilDownloadAllowed', MockWaitUntilDownloadAllowed)
-
-    with self.mock_urlfetch() as urlfetch:
-      # Mock build data.
-      for i in range(2):
-        build_url = buildbot.CreateBuildUrl(
-            master_name, builder_name, build_number - i, json_api=True)
-        file_name = os.path.join(os.path.dirname(__file__), 'data',
-                                 'm_b_%s.json' % (build_number - i))
-        with open(file_name, 'r') as f:
-          urlfetch.register_handler(build_url, f.read())
-      # Mock step log.
-      step_log_url = buildbot.CreateStdioLogUrl(
-          master_name, builder_name, build_number, 'a')
-      urlfetch.register_handler(
-          step_log_url, 'error in file a/b/x.cc:89 ...')
-
-      # Mock change logs.
-      self._MockChangeLog(urlfetch, 'user1', 'some_git_hash', 8888, 'a/b/x.cc')
-      self._MockChangeLog(
-          urlfetch, 'user1', '64c72819e898e952103b63eabc12772f9640af07',
-          8887, 'd/e/y.cc')
-
-    def MockGetChromeDependency(*_):
-      return {}
-    self.mock(chromium_deps, 'GetChromeDependency', MockGetChromeDependency)
-
-  def testBuildFailurePipeline(self):
+  def testBuildFailurePipelineFlow(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
 
     self._Setup(master_name, builder_name, build_number)
 
+    self.MockPipeline(analyze_build_failure_pipeline.DetectFirstFailurePipeline,
+                      'failure_info',
+                      expected_args=[master_name, builder_name, build_number],
+                      expected_kwargs={})
+    self.MockPipeline(analyze_build_failure_pipeline.PullChangelogPipeline,
+                      'change_logs',
+                      expected_args=['failure_info'],
+                      expected_kwargs={})
+    self.MockPipeline(analyze_build_failure_pipeline.ExtractDEPSInfoPipeline,
+                      'deps_info',
+                      expected_args=['failure_info', 'change_logs'],
+                      expected_kwargs={})
+    self.MockPipeline(analyze_build_failure_pipeline.ExtractSignalPipeline,
+                      'signals',
+                      expected_args=['failure_info'],
+                      expected_kwargs={})
+    self.MockPipeline(analyze_build_failure_pipeline.IdentifyCulpritPipeline,
+                      'heuristic_result',
+                      expected_args=[
+                          'failure_info', 'change_logs', 'deps_info',
+                          'signals', False],
+                      expected_kwargs={})
+    self.MockPipeline(
+        analyze_build_failure_pipeline.TriggerSwarmingTasksPipeline,
+        None,
+        expected_args=[
+            master_name, builder_name, build_number,
+            'failure_info'],
+        expected_kwargs={})
+    self.MockPipeline(
+        analyze_build_failure_pipeline.StartTryJobOnDemandPipeline,
+        None,
+        expected_args=[
+            'failure_info', 'signals', False, True,
+            'heuristic_result'],
+        expected_kwargs={})
+
     root_pipeline = AnalyzeBuildFailurePipeline(master_name,
                                                 builder_name,
                                                 build_number,
                                                 False,
-                                                False)
+                                                True)
     root_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
-
-    expected_analysis_result = {
-        'failures': [
-            {
-                'step_name': 'a',
-                'supported': True,
-                'first_failure': 124,
-                'last_pass': 123,
-                'suspected_cls': [
-                    {
-                        'build_number': 124,
-                        'repo_name': 'chromium',
-                        'revision': 'some_git_hash',
-                        'commit_position': 8888,
-                        'url': ('https://chromium.googlesource.com/chromium'
-                                '/src.git/+/some_git_hash'),
-                        'score': 2,
-                        'hints': {
-                            'modified x.cc (and it was in log)': 2,
-                        },
-                    }
-                ],
-            }
-        ]
-    }
-
-    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    self.assertIsNotNone(analysis)
-    self.assertEqual(analysis_status.COMPLETED, analysis.status)
-    self.assertEqual(expected_analysis_result, analysis.result)
-    self.assertIsNotNone(analysis.result_status)
 
   def testBuildFailurePipelineStartWithNoneResultStatus(self):
     master_name = 'm'
@@ -160,12 +95,13 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.RUNNING, analysis.status)
     self.assertIsNone(analysis.result_status)
 
-  def testAnalyzeBuildFailurePipelineAbortedWithAnalysis(self):
+  def testAnalyzeBuildFailurePipelineAbortedIfWithError(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
 
-    self._Setup(master_name, builder_name, build_number)
+    self._Setup(master_name, builder_name, build_number,
+                status=analysis_status.RUNNING)
 
     root_pipeline = AnalyzeBuildFailurePipeline(master_name,
                                                 builder_name,
@@ -179,10 +115,13 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertIsNone(analysis.result_status)
 
-  def testAnalyzeBuildFailurePipelineAbortedWithoutAnalysis(self):
+  def testAnalyzeBuildFailurePipelineNotAbortedIfWithoutError(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
+
+    self._Setup(master_name, builder_name, build_number,
+                status=analysis_status.COMPLETED)
 
     root_pipeline = AnalyzeBuildFailurePipeline(master_name,
                                                 builder_name,
@@ -190,23 +129,6 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
                                                 False,
                                                 False)
     root_pipeline._LogUnexpectedAborting(True)
-
-    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    self.assertIsNone(analysis)
-
-  def testAnalyzeBuildFailurePipelineNotAborted(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 124
-
-    self._Setup(master_name, builder_name, build_number)
-
-    root_pipeline = AnalyzeBuildFailurePipeline(master_name,
-                                                builder_name,
-                                                build_number,
-                                                False,
-                                                False)
-    root_pipeline._LogUnexpectedAborting(False)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)

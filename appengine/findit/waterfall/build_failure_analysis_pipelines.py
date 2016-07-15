@@ -11,7 +11,7 @@ from common import appengine_util
 from common import constants
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
-from waterfall import analyze_build_failure_pipeline
+from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline
 
 
 @ndb.transactional
@@ -101,7 +101,7 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
   if NeedANewAnalysis(
       master_name, builder_name, build_number, failed_steps,
       build_completed, force):
-    pipeline_job = analyze_build_failure_pipeline.AnalyzeBuildFailurePipeline(
+    pipeline_job = AnalyzeBuildFailurePipeline(
         master_name, builder_name, build_number, build_completed,
         force_try_job)
     # Explicitly run analysis in the backend module "waterfall-backend".

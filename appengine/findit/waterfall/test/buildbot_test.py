@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import mock
 import os
 import unittest
 
@@ -146,12 +147,12 @@ class BuildBotTest(unittest.TestCase):
     build_number = 1
     expected_url = ('https://chrome-build-extract.appspot.com/p/a/builders/'
                     'b%20c/builds/1?json=1')
-    http_client = DummyHttpClient(200, 'abc')
+    http_client = mock.create_autospec(RetryHttpClient)
+    http_client.Get.return_value = (200, 'abc')
     data = buildbot.GetBuildDataFromArchive(
         master_name, builder_name, build_number, http_client)
-    self.assertEqual(http_client.response_content, data)
-    self.assertEqual(1, len(http_client.requests))
-    self.assertEqual(expected_url, http_client.requests[0])
+    self.assertEqual('abc', data)
+    http_client.assert_has_calls([mock.call.Get(expected_url)])
 
   def testGetBuildDataFromArchiveFailure(self):
     master_name = 'a'

@@ -37,15 +37,17 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     Args:
       was_aborted (bool): True if the pipeline was aborted, otherwise False.
     """
-    if was_aborted:
-      analysis = WfAnalysis.Get(
-          self.master_name, self.builder_name, self.build_number)
-      # Heuristic analysis could have already completed, while triggering the
-      # try job kept failing and lead to the abortion.
-      if analysis and not analysis.completed:
-        analysis.status = analysis_status.ERROR
-        analysis.result_status = None
-        analysis.put()
+    if not was_aborted:
+      return
+
+    analysis = WfAnalysis.Get(
+        self.master_name, self.builder_name, self.build_number)
+    # Heuristic analysis could have already completed, while triggering the
+    # try job kept failing and lead to the abortion.
+    if not analysis.completed:
+      analysis.status = analysis_status.ERROR
+      analysis.result_status = None
+      analysis.put()
 
   def finalized(self):
     self._LogUnexpectedAborting(self.was_aborted)

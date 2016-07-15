@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging
+import mock
 
 from testing_utils import testing
 
@@ -11,21 +11,6 @@ from common.pipeline_wrapper import pipeline_handlers
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from waterfall import build_failure_analysis_pipelines
-
-
-class _MockRootPipeline(object):
-  STARTED = False
-
-  def __init__(self, master_name, builder_name, build_number, build_completed,
-               force_try_job):
-    pass
-
-  def pipeline_status_path(self):
-    return ''
-
-  def start(self, queue_name):
-    _MockRootPipeline.STARTED = True
-    logging.info(queue_name)
 
 
 class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
@@ -155,15 +140,12 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     self.assertTrue(need_analysis)
 
-  def testStartPipelineForNewAnalysis(self):
+  @mock.patch(
+      'waterfall.build_failure_analysis_pipelines.AnalyzeBuildFailurePipeline')
+  def testStartPipelineForNewAnalysis(self, mocked_pipeline):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
-
-    self.mock(build_failure_analysis_pipelines.analyze_build_failure_pipeline,
-              'AnalyzeBuildFailurePipeline',
-              _MockRootPipeline)
-    _MockRootPipeline.STARTED = False
 
     build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
         master_name, builder_name, build_number, failed_steps=['a'],
@@ -171,11 +153,13 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
         queue_name=constants.DEFAULT_QUEUE)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-
-    self.assertTrue(_MockRootPipeline.STARTED)
     self.assertIsNotNone(analysis)
+    mocked_pipeline.assert_has_calls(
+        [mock.call().start(queue_name=constants.DEFAULT_QUEUE)])
 
-  def testNotStartPipelineForNewAnalysis(self):
+  @mock.patch(
+      'waterfall.build_failure_analysis_pipelines.AnalyzeBuildFailurePipeline')
+  def testNotStartPipelineForNewAnalysis(self, mocked_pipeline):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -185,13 +169,8 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
         master_name, builder_name, build_number,
         not_passed_steps, analysis_status.RUNNING)
 
-    self.mock(build_failure_analysis_pipelines.analyze_build_failure_pipeline,
-              'AnalyzeBuildFailurePipeline',
-              _MockRootPipeline)
-    _MockRootPipeline.STARTED = False
-
     build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
         master_name, builder_name, build_number, failed_steps=['a'],
         build_completed=True, force=False, queue_name=constants.DEFAULT_QUEUE)
 
-    self.assertFalse(_MockRootPipeline.STARTED)
+    self.assertFalse(mocked_pipeline.called)

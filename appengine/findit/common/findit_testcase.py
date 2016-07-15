@@ -7,7 +7,28 @@ import os
 from testing_utils import testing
 
 
-class FinditTestCase(testing.AppengineTestCase):
+class FinditTestCase(testing.AppengineTestCase):  # pragma: no cover.
   # Setup the customized queues.
   taskqueue_stub_root_path = os.path.join(
     os.path.dirname(__file__), os.path.pardir)
+
+  def MockPipeline(
+      self, pipeline_class, result, expected_args, expected_kwargs=None):
+    """ Mocks a pipeline to return a value and asserts the expected parameters.
+
+    Args:
+      pipeline_class (class): The class of the pipeline to be mocked.
+      result (object): The result to be returned by the pipeline.
+      expected_args (list): The list of positional parameters expected by the
+          pipeline.
+      expected_kwargs (dict): The dict of key-value parameters expected by the
+          pipeline. Default is None.
+    """
+    expected_kwargs = expected_kwargs or {}
+
+    def Mocked_run(_, *args, **kwargs):
+      self.assertEqual(list(args), expected_args)
+      self.assertEqual(kwargs, expected_kwargs)
+      return result
+
+    self.mock(pipeline_class, 'run', Mocked_run)
