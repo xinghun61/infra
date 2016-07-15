@@ -41,7 +41,7 @@ from tracker import tracker_views
 
 
 TEMPLATE_PATH = framework_constants.TEMPLATE_PATH
-MAX_EMAIL_BODY_SIZE = 45000
+MAX_EMAIL_BODY_SIZE = 40 * 1024
 
 
 def PrepareAndSendIssueChangeNotification(
