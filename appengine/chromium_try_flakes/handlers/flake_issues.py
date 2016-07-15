@@ -618,8 +618,7 @@ class CreateFlakyRun(webapp2.RequestHandler):
       if step_name in steps_to_ignore:
         continue
       flakes, is_step, normalized_step_name = self.get_flakes(
-          patchset_builder_runs.master, patchset_builder_runs.builder,
-          failure_run.buildnumber, step)
+          master, patchset_builder_runs.builder, failure_run.buildnumber, step)
       for flake in flakes:
         flake_occurrence = FlakeOccurrence(name=step_name, failure=flake)
         flaky_run.flakes.append(flake_occurrence)
