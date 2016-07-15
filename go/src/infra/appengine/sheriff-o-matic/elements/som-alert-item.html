@@ -12,6 +12,13 @@
   <template>
     <style include="iron-flex iron-flex-alignment">
     <style>
+      paper-button {
+        -webkit-transition: background .3s ease;
+        transition: background .3s ease;
+      }
+      paper-button:hover {
+        background-color: #eee;
+      }
      .alert {
        @apply(--layout-horizontal);
        padding: 1em;
@@ -35,52 +42,44 @@
        padding-right: 20px;
        min-width:  400px;
      }
-     .alert-title-bar {
-       align-items: center;
-       padding-bottom: 0.3em;
-       border-bottom: 1px solid #aaa;
-     }
-     .alert-title {
-       font-weight: bold;
-       font-size: larger;
+     .alert-link {
+       padding-left: 5px;
      }
      .alert-times {
        font-size: smaller;
        color: #666;
      }
-     .alert-link {
-       padding-left: 5px;
+     .alert-title {
+       font-weight: bold;
+       font-size: larger;
+     }
+     .alert-title-bar {
+       align-items: center;
+       padding-bottom: 0.3em;
+       border-bottom: 1px solid #aaa;
      }
      .examine-link {
        padding: 0 10px;
-     }
-     .list-item {
-       @apply(--layout-vertical);
-     }
-     paper-button {
-       -webkit-transition: background .3s ease;
-       transition: background .3s ease;
-     }
-     paper-button:hover {
-       background-color: #eee;
      }
      .file-bug-icon,
      .snooze-icon {
        color: #aaa;
      }
+     .list-item {
+       @apply(--layout-vertical);
+     }
      .snoozed {
        opacity: 0.5;
-     }
-     #root {
-       transition: opacity .25s;
      }
      #bugsList,
      #handleLink {
        margin-left: 15px;
      }
-     hr {
-       width: 100%;
-       background-color: #000;
+     #root {
+       transition: opacity .25s;
+     }
+     #usefulLinks {
+       margin: .5em 0;
      }
     </style>
     <div id="root" class$="[[_cssClass]]">
@@ -118,10 +117,12 @@
             </div>
             <div class="alert-info flex">
               <template is="dom-if" if="[[_haveLinks(alert)]]">
-                Useful Links:
-                <template is="dom-repeat" items="[[alert.links]]" as="link">
-                  <a class="alert-link" target="_blank" href$="[[_uberify(link.href)]]">[[link.title]]</a>
-                </template>
+                <div id="usefulLinks">
+                  Useful Links:
+                  <template is="dom-repeat" items="[[alert.links]]" as="link">
+                    <a class="alert-link" target="_blank" href$="[[_uberify(link.href)]]">[[link.title]]</a>
+                  </template>
+                </div>
               </template>
               <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]"></som-extension-build-failure>
             </div>

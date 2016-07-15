@@ -27,14 +27,6 @@
 <dom-module id="som-app">
   <template>
     <style>
-      h2 {
-        font-size: 18px;
-        font-weight: bold;
-        padding: 0.5em 0.5em 0.2em;
-        margin: 1em 0.5em;
-        background-color: #eee;
-        border-bottom: 1px solid #ddd;
-      }
       paper-toolbar {
         --paper-toolbar-background: black;
       }
@@ -51,6 +43,14 @@
       }
       #alertsList {
         padding: 0;
+      }
+      #alertsListInner h2 {
+        font-size: 18px;
+        font-weight: bold;
+        padding: 0.5em 0.5em 0.2em;
+        margin: 1em 0.5em;
+        background-color: #eee;
+        border-bottom: 1px solid #ddd;
       }
       #bugDialog, #snoozeDialog {
         width: 300px;
@@ -151,12 +151,14 @@
               </div>
             </div>
             <som-bug-queue id="bugQueue" tree="[[_tree]]"></som-bug-queue>
-            <div id="noAlerts" hidden$="[[_hideNoAlerts]]">
-              No alerts!
-              <br>
-              <img src="/images/jparent-jump.gif" alt="Julie Jumping" title="Julie Jumping">
-            </div>
-            <div id="alertsListInner" hidden$="[[!_hideNoAlerts]]">
+            <template is="dom-if" if$="[[!_hideJulie]]">
+              <div id="noAlerts">
+                No alerts!
+                <br>
+                <img src="/images/jparent-jump.gif" alt="Julie Jumping" title="Julie Jumping">
+              </div>
+            </template>
+            <div id="alertsListInner" hidden$="[[!_hideJulie]]">
               <h2>Failure Alerts (<a href="/help-som">Help?</a>)</h2>
               <template is="dom-repeat" items="[[_alerts]]" as="alert">
                 <div class="list-item" tabindex$="[[tabIndex]]">
@@ -283,9 +285,9 @@
           type: Boolean,
           value: function() { return false; },
         },
-        _hideNoAlerts: {
+        _hideJulie: {
           type: Boolean,
-          computed: '_computeHideNoAlerts(_alerts, _fetchedAlerts, _tree)',
+          computed: '_computeHideJulie(_alerts, _fetchedAlerts, _fetchingAlerts, _tree)',
         },
         _hideWebkitNotice: {
           type: Boolean,
@@ -298,10 +300,6 @@
         _refreshEnabled: {
           type: Boolean,
           computed: '_computeRefreshEnabled(_selectedPage)',
-        },
-        _refreshPosition: {
-          type: Number,
-          value: function() { return 0; },
         },
         _selectedPage: {
           type: String,
@@ -353,7 +351,6 @@
         if (!this._refreshEnabled) {
           return;
         }
-        this._refreshPosition  = this.$.mainHeaderPanel.$.mainContainer.scrollTop;
         this.$.annotations.generateRequest();
         this.$.bugQueue.refresh();
         this._alertsGroupsChanged(this._alertsGroups);
@@ -378,6 +375,7 @@
 
       _treeChanged: function() {
         this.set('_alertsData', {});
+        this.set('_fetchedAlerts', false);
       },
 
       _computeAlertsGroups: function(tree, trees) {
@@ -473,7 +471,7 @@
               // TODO: handle alerts not found
               this.set('_activeRequests', this._activeRequests - 1);
               return response.json();
-            }).then( (json) => {
+            }).then((json) => {
               this.set(['_alertsData', this._alertGroupVarName(group)], json.alerts);
               this.set(['_alertsTimes', this._alertGroupVarName(group)], json.timestamp);
             });
@@ -520,19 +518,18 @@
           return aAnn.snoozed ? 1 : -1;
         });
 
-        // After alerts have rendered, scroll to where we were when we refreshed
-        // (if we did refresh)
+        // Wait for alerts to be loaded
         setTimeout(() => {
-          this.$.mainHeaderPanel.$.mainContainer.scrollTop = this._refreshPosition;
           this.set('_fetchedAlerts', true);
-        }, 50);
+        }, 200);
         return allAlerts;
       },
 
-      _computeHideNoAlerts: function(alerts, fetchedAlerts, tree) {
-        if (!fetchedAlerts || !alerts || tree === "") {
+      _computeHideJulie: function(alerts, fetchedAlerts, fetchingAlerts, tree) {
+        if (fetchingAlerts || !fetchedAlerts || !alerts || tree === "") {
           return true;
         }
+        console.log(alerts);
         return alerts.length > 0;
       },
 
