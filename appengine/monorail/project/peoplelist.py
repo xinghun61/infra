@@ -85,6 +85,9 @@ class PeopleList(servlet.Servlet):
 
     check_abandonment = permissions.ShouldCheckForAbandonment(mr)
 
+    newly_added_views = [mv for mv in all_member_views
+                         if str(mv.user.user_id) in mr.GetParam('new', [])]
+
     return {
         'pagination': pagination,
         'subtab_mode': None,
@@ -94,6 +97,7 @@ class PeopleList(servlet.Servlet):
         'untrusted_user_groups': untrusted_user_group_proxies,
         'check_abandonment': ezt.boolean(check_abandonment),
         'total_num_owners': len(mr.project.owner_ids),
+        'newly_added_views': newly_added_views
         }
 
   def GatherHelpData(self, mr, _page_data):
@@ -177,7 +181,8 @@ class PeopleList(servlet.Servlet):
           mr, initial_add_members=add_members_str, initially_expand_form=True)
     else:
       return framework_helpers.FormatAbsoluteURL(
-          mr, urls.PEOPLE_LIST, saved=1, ts=int(time.time()))
+          mr, urls.PEOPLE_LIST, saved=1, ts=int(time.time()),
+          new=','.join([str(u) for u in new_member_ids]))
 
   def ProcessRemoveMembers(self, mr, post_data):
     """Process the user's request to remove members.

@@ -4,6 +4,17 @@
 [include "../framework/js-placeholders.ezt"]
 
 <form method="POST" action="list.do" id="membership_form">
+[if-any newly_added_views]
+  <br/>
+  The following new members were successfully added:
+  <br/>
+  [for newly_added_views]
+    <a href="[newly_added_views.detail_url]">[newly_added_views.user.display_name]</a> ([newly_added_views.role])
+    <br/>
+  [end]
+  <br/>
+[end]
+
 <div id="colcontrol">
    <div class="list">
      [if-any pagination.visible]
@@ -72,6 +83,7 @@
 [end]
 
 [include "people-add-members-form.ezt" "project"]
+
 </form>
 
 [if-any offer_membership_editing]
