@@ -18,6 +18,15 @@ poll+process cycle for the repo that it's mirroring.
         branching it off of another ref like `master`). Note that you'll
         probably also want to do a `git rm -rf` after you check out the orphan
         ref to clear the index+working copy.
+
+    ```sh
+    git checkout --orphan gsubtreed-config/main
+    git rm -rf *
+    vim config.json ## Edit the file
+    git commit -am 'Created gsubtreed config'
+    git push remote refs/gsubtreed-config/main
+    ```
+
 1.  (optional) If you have existing git mirrors (probably mirrored via git-svn),
     disable the mirroring service for them. If not, create the mirrors. By
     default if gsubtreed mirrors the path `bob` in `https://.../repo`, it will
@@ -57,6 +66,16 @@ poll+process cycle for the repo that it's mirroring.
 
 1.  At this point you should set up a new bot on the [infra cron waterfall][2]
     to run this on a regular interval.
+
+    * Request a new VM for the bot -
+      [sample ticket](http://crbug.com/626818) (internal)
+
+    * Use existing gsubtreed configs as templates in `master.cfg` and
+      `slaves.cfg` to set it up; remember to add the new bot to the
+      `Periodic` scheduler together with the other gsubtreed bots
+
+    * Push the appropriate credentials to the VM -
+      [see an example CL](http://go/chromerev/469017013) (internal).
 
 ## Usage:
 
