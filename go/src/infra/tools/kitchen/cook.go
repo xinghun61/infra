@@ -23,7 +23,6 @@ import (
 	"github.com/luci/luci-go/common/ctxcmd"
 	"github.com/luci/luci-go/common/environ"
 	"github.com/luci/luci-go/common/flag/stringlistflag"
-	ldTypes "github.com/luci/luci-go/common/logdog/types"
 )
 
 // BootstrapStepName is the name of kitchen's step where it makes preparations
@@ -72,31 +71,8 @@ var cmdCook = &subcommands.Command{
 			false,
 			"If true, print CURRENT_TIMESTAMP annotations.")
 
-		fs.StringVar(
-			&c.logdog.host,
-			"logdog-host",
-			"",
-			"The name of the LogDog host.")
-		fs.StringVar(
-			&c.logdog.project,
-			"logdog-project",
-			"",
-			"The name of the LogDog project to log into. Projects have different ACL sets, "+
-				"so choose this appropriately.")
-		fs.Var(
-			&c.logdog.prefix,
-			"logdog-prefix",
-			"The LogDog stream Prefix to use.")
-		fs.BoolVar(
-			&c.logdog.annotee,
-			"logdog-enable-annotee",
-			true,
-			"Process bootstrap STDOUT/STDERR annotations through Annotee.")
-		fs.StringVar(
-			&c.logdog.filePath,
-			"logdog-debug-out-file",
-			"",
-			"If specified, write all generated logs to this path instead of sending them.")
+		c.logdog.addFlags(fs)
+
 		return &c
 	},
 }
@@ -116,18 +92,6 @@ type cookRun struct {
 	PythonPaths          stringlistflag.Flag
 
 	logdog cookLogDogParams
-}
-
-type cookLogDogParams struct {
-	host     string
-	project  string
-	prefix   ldTypes.StreamName
-	annotee  bool
-	filePath string
-}
-
-func (p *cookLogDogParams) active() bool {
-	return p.host != "" || p.project != "" || p.prefix != ""
 }
 
 func (c *cookRun) validateFlags() error {
@@ -155,8 +119,8 @@ func (c *cookRun) validateFlags() error {
 
 	// If LogDog is enabled, all required LogDog flags must be supplied.
 	if c.logdog.active() {
-		if c.logdog.project == "" {
-			return fmt.Errorf("a LogDog project must be supplied (-logdog-project)")
+		if err := c.logdog.validate(); err != nil {
+			return err
 		}
 	}
 

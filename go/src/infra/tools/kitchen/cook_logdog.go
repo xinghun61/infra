@@ -5,6 +5,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"io"
 	"os/exec"
 	"sync"
@@ -23,11 +25,78 @@ import (
 	"github.com/luci/luci-go/common/ctxcmd"
 	"github.com/luci/luci-go/common/environ"
 	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/logdog/types"
 	log "github.com/luci/luci-go/common/logging"
 
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 )
+
+type cookLogDogParams struct {
+	host     string
+	project  string
+	prefix   types.StreamName
+	annotee  bool
+	filePath string
+}
+
+func (p *cookLogDogParams) addFlags(fs *flag.FlagSet) {
+	fs.StringVar(
+		&p.host,
+		"logdog-host",
+		"",
+		"The name of the LogDog host.")
+	fs.StringVar(
+		&p.project,
+		"logdog-project",
+		"",
+		"The name of the LogDog project to log into. Projects have different ACL sets, "+
+			"so choose this appropriately.")
+	fs.Var(
+		&p.prefix,
+		"logdog-prefix",
+		"The LogDog stream Prefix to use. If empty, one will be constructed from the Swarming "+
+			"task parameters (found in enviornment).")
+	fs.BoolVar(
+		&p.annotee,
+		"logdog-enable-annotee",
+		true,
+		"Process bootstrap STDOUT/STDERR annotations through Annotee.")
+	fs.StringVar(
+		&p.filePath,
+		"logdog-debug-out-file",
+		"",
+		"If specified, write all generated logs to this path instead of sending them.")
+}
+
+func (p *cookLogDogParams) active() bool {
+	return p.host != "" || p.project != "" || p.prefix != ""
+}
+
+func (p *cookLogDogParams) validate() error {
+	if p.project == "" {
+		return fmt.Errorf("a LogDog project must be supplied (-logdog-project)")
+	}
+	return nil
+}
+
+func (p *cookLogDogParams) getPrefix(env environ.Env) (types.StreamName, error) {
+	if p.prefix != "" {
+		return p.prefix, nil
+	}
+
+	// Construct our LogDog prefix from the Swarming task parameters.
+	host, _ := env.Get("SWARMING_SERVER")
+	if host == "" {
+		return "", errors.Reason("missing or empty SWARMING_SERVER").Err()
+	}
+	taskID, _ := env.Get("SWARMING_TASK_ID")
+	if taskID == "" {
+		return "", errors.Reason("missing or empty SWARMING_TASK_ID").Err()
+	}
+
+	return types.MakeStreamName("", "swarm", host, taskID)
+}
 
 // runWithLogdogButler rus the supplied command through the a LogDog Butler
 // engine instance. This involves:
@@ -39,7 +108,21 @@ import (
 //	  - Otherwise, wait for the process to finish.
 //	- Shut down the Butler instance.
 func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc int, err error) {
-	_ = auth.Authenticator{}
+	// Get our task's environment.
+	var env environ.Env
+	if cmd.Env != nil {
+		env = environ.New(cmd.Env)
+	} else {
+		env = environ.System()
+	}
+
+	prefix, err := c.logdog.getPrefix(env)
+	if err != nil {
+		return 0, errors.Annotate(err).Reason("failed to get LogDog prefix").Err()
+	}
+	log.Fields{
+		"prefix": prefix,
+	}.Infof(ctx, "Using LogDog prefix: %q", prefix)
 
 	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, auth.Options{
 		Scopes: out.Scopes(),
@@ -52,7 +135,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc in
 			Auth:    authenticator,
 			Host:    c.logdog.host,
 			Project: config.ProjectName(c.logdog.project),
-			Prefix:  c.logdog.prefix,
+			Prefix:  prefix,
 			SourceInfo: []string{
 				"Kitchen",
 			},
@@ -99,13 +182,6 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc in
 	// Wrap our incoming command in a CtxCmd.
 	proc := ctxcmd.CtxCmd{
 		Cmd: cmd,
-	}
-
-	var env environ.Env
-	if proc.Env != nil {
-		env = environ.New(proc.Env)
-	} else {
-		env = environ.System()
 	}
 
 	// Augment our environment with Butler parameters.
