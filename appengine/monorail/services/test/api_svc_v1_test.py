@@ -158,7 +158,8 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
     # api_base_checks is tested in AllBaseChecksTest,
     # so mock it to reduce noise.
-    self.mock(api_svc_v1, 'api_base_checks', lambda x, y, z, u, v, w: None)
+    self.mock(api_svc_v1, 'api_base_checks',
+              lambda x, y, z, u, v, w: ('id', 'email'))
 
     self.mock(tracker_fulltext, 'IndexIssues', lambda x, y, z, u, v: None)
 

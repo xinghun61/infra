@@ -46,6 +46,7 @@ from tracker import issuedetail
 from tracker import tracker_constants
 from tracker import tracker_bizobj
 
+import gae_ts_mon
 from infra_libs.ts_mon.common import http_metrics
 
 
@@ -83,11 +84,11 @@ def monorail_api_method(
         logging.info('Whitelist ID %r email %r', auth_client_ids, auth_emails)
         if self._services is None:
           self._set_services(service_manager.set_up_services())
-        api_base_checks(
+        c_id, c_email = api_base_checks(
             request, requester,
             self._services, sql.MonorailConnection(),
             auth_client_ids, auth_emails)
-        self.increment_request_limit(request)
+        self.increment_request_limit(request, c_id, c_email)
         ret = func(self, *args, **kwargs)
       except user_svc.NoSuchUserException as e:
         approximate_http_status = 404
@@ -160,7 +161,7 @@ def api_base_checks(request, requester, services, cnxn,
     auth_emails: authorized emails when client is anonymous.
 
   Returns:
-    Nothing
+    Client ID and client email.
 
   Raises:
     endpoints.UnauthorizedException: If the requester is anonymous.
@@ -255,6 +256,8 @@ def api_base_checks(request, requester, services, cnxn,
             'User is not allowed to view this issue %s:%d' %
             (project_name, issue_local_id))
 
+  return client_id, requester.email()
+
 
 @endpoints.api(name=ENDPOINTS_API_NAME, version='v1',
                description='Monorail API to manage issues.',
@@ -266,6 +269,10 @@ class MonorailApi(remote.Service):
   # Class variables. Handy to mock.
   _services = None
   _mar = None
+
+  api_requests = gae_ts_mon.CounterMetric(
+     'monorail/api_requests',
+     description='Number of requests to Monorail api')
 
   @classmethod
   def _set_services(cls, services):
@@ -305,9 +312,9 @@ class MonorailApi(remote.Service):
         mar.auth.user_id, self._services.user, delete=delete)
     return api_pb2_v1.IssuesCommentsDeleteResponse()
 
-  def increment_request_limit(self, request):
+  def increment_request_limit(self, request, client_id, client_email):
     """Check whether the requester has exceeded API quotas limit,
-    and increment request count.
+    and increment request count in DB and ts_mon.
     """
     mar = self.mar_factory(request)
     # soft_limit == hard_limit for api_request, so this function either
@@ -318,6 +325,12 @@ class MonorailApi(remote.Service):
           mar.auth.user_pb, actionlimit.API_REQUEST, delta=1)
       self._services.user.UpdateUser(
           mar.cnxn, mar.auth.user_id, mar.auth.user_pb)
+
+    # Avoid value explosision and protect PII info
+    if not framework_helpers.IsServiceAccount(client_email):
+      client_email = 'user@email.com'
+    self.api_requests.increment_by(
+        1, {'client_id': client_id, 'client_email': client_email})
 
   @monorail_api_method(
       api_pb2_v1.ISSUES_COMMENTS_DELETE_REQUEST_RESOURCE_CONTAINER,
