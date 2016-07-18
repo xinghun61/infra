@@ -38,12 +38,14 @@ import (
 )
 
 type cookLogDogParams struct {
-	host     string
-	project  string
-	prefix   types.StreamName
-	annotee  bool
-	tee      bool
-	filePath string
+	host    string
+	project string
+	prefix  types.StreamName
+	annotee bool
+	tee     bool
+
+	filePath               string
+	serviceAccountJSONPath string
 }
 
 func (p *cookLogDogParams) addFlags(fs *flag.FlagSet) {
@@ -78,6 +80,11 @@ func (p *cookLogDogParams) addFlags(fs *flag.FlagSet) {
 		"logdog-debug-out-file",
 		"",
 		"If specified, write all generated logs to this path instead of sending them.")
+	fs.StringVar(
+		&p.serviceAccountJSONPath,
+		"logdog-service-account-json-path",
+		"",
+		"If specified, use the service account JSON file at this path. Otherwise, autodetect.")
 }
 
 func (p *cookLogDogParams) active() bool {
@@ -153,9 +160,17 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc in
 	authOpts := auth.Options{
 		Scopes: out.Scopes(),
 	}
-	if !infraenv.OnGCE() {
-		// If we're not on GCE, we will need to explicitly supply the LogDog
-		// credentials path.
+	switch {
+	case c.logdog.serviceAccountJSONPath != "":
+		authOpts.ServiceAccountJSONPath = c.logdog.serviceAccountJSONPath
+
+	case infraenv.OnGCE():
+		// Do nothing, auth will automatically use GCE metadata.
+		break
+
+	default:
+		// No service account specified, so load the LogDog credentials from the
+		// local bot deployment.
 		credPath, err := infraenv.GetLogDogServiceAccountJSON()
 		if err != nil {
 			return 0, errors.Annotate(err).Reason("failed to get LogDog service account JSON path").Err()
@@ -192,10 +207,11 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc in
 	defer o.Close()
 
 	butlerCfg := butler.Config{
-		Output:     o,
-		Project:    config.ProjectName(c.logdog.project),
-		Prefix:     c.logdog.prefix,
-		BufferLogs: true,
+		Output:       o,
+		Project:      config.ProjectName(c.logdog.project),
+		Prefix:       prefix,
+		BufferLogs:   true,
+		MaxBufferAge: butler.DefaultMaxBufferAge,
 	}
 
 	// If we're teeing and we're not using Annotee, tee our subprocess' STDOUT
@@ -304,18 +320,20 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc in
 
 		// Run STDOUT/STDERR streams through the processor. This will block until
 		// both streams are closed.
+		//
+		// If we're teeing, we will tee the full stream, including annotations.
 		streams := []*annotee.Stream{
 			{
 				Reader:           stdout,
 				Name:             annotee.STDOUT,
 				Annotate:         true,
-				StripAnnotations: true,
+				StripAnnotations: !c.logdog.tee,
 			},
 			{
 				Reader:           stderr,
 				Name:             annotee.STDERR,
 				Annotate:         true,
-				StripAnnotations: true,
+				StripAnnotations: !c.logdog.tee,
 			},
 		}
 		if c.logdog.tee {
