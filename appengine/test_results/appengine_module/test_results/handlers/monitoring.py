@@ -85,25 +85,10 @@ class EventMonUploader(webapp2.RequestHandler):
     event.send()
 
   @classmethod
-  def upload(cls, master, builder, build_number, test_type, file_json):
+  def upload(cls, master, builder, build_number, test_type):
     taskqueue.add(url='/internal/monitoring/upload', params={
       'master': master,
       'builder': builder,
       'build_number': build_number,
       'test_type': test_type,
     })
-
-    # Since the task queue doesn't actually do anything yet, we currently just
-    # report stats about number of tests and characters to ts_mon to estimate
-    # size of the data that we are going to report to event_mon.
-    # TODO(sergiyb): Remove this code and file_json parameter once we get needed
-    # estimates.
-    try:
-      tests = util.flatten_tests_trie(
-          file_json.get('tests', {}), file_json.get('path_delimieter', '/'))
-      cls.num_test_results.increment_by(1)
-      cls.num_tests.increment_by(len(tests))
-      cls.num_characters.increment_by(sum(len(t) for t in tests))
-    except Exception:
-      logging.exception('Failed to parse test results %s', file_json)
-      return

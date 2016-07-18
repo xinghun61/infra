@@ -319,8 +319,7 @@ class Upload(webapp2.RequestHandler):  # pylint: disable=W0232
             is_full_results_format=True)
         BuilderState.incremental_update(master, builder, test_type,
             datetime.now())
-        EventMonUploader.upload(master, builder, build_number, test_type,
-            file_json)
+        EventMonUploader.upload(master, builder, build_number, test_type)
 
       if status_code == 200:
         logging.info(status_string)

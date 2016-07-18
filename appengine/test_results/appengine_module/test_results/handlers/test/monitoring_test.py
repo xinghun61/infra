@@ -62,7 +62,7 @@ class EventMonUploaderTest(testing.AppengineTestCase):
             for ev in log_proto.log_event]
 
   def test_creates_task_for_upload(self):
-    EventMonUploader.upload('master', 'builder', 123, 'ui_tests', TEST_JSON)
+    EventMonUploader.upload('master', 'builder', 123, 'ui_tests')
 
     tasks = self.taskqueue_stub.get_filtered_tasks()
     self.assertEqual(len(tasks), 1)
@@ -103,9 +103,6 @@ class EventMonUploaderTest(testing.AppengineTestCase):
     self.assertEqual(
         events[0].test_results.tests[0].actual,
         [event_mon.protos.chrome_infra_log_pb2.TestResultsEvent.PASS])
-
-  def test_does_not_crash_on_incorrect_tests_structure(self):
-    EventMonUploader.upload('', '', '', '', {'tests': ['foo', 'bar']})
 
   def test_returns_400_on_missing_request_params(self):
     self.test_app.post('/internal/monitoring/upload', {}, status=400)
