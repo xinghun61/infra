@@ -1,16 +1,47 @@
 # Buildbucket-Swarming integration, aka Swarmbucket
 
-go/swarmbucket
+[go/swarmbucket]
 
 Buildbucket has native integration with swarming and recipes.
-A bucket can be configured so a build for a builder is scheduled on swarming
-to run a specific recipe.
+A bucket can be configured so a build for one of configured builders is
+converted to a swarming task that runs a recipe. The results are reported back
+to buildbucket when the task compeltes.
 
 [TOC]
 
 ## Configuration
 
-### Per bucket
+There are 3 swarmbucket configuration levels.
+From global to concrete: application, bucket and build.
+A more concrete config value can override a global one.
+
+### Application
+
+Luci-config file
+[services/\<buildbucket-app-id\>:swarming_task_template.json][swarming_task_template.json]
+specifies the body of POST request that buildbucket sends to swarming when
+creating a task.
+
+In particular it contains the command line parameters.
+In general, you can specify anything you want, but to run a recipe,
+see [kitchen].
+
+#### Parameters
+
+The template may contain parameters of form `$name` in string literals.
+They will be expanded during task scheduling. Known parameters:
+
+* bucket: value of `build.bucket`.
+* builder: value of `builder_name` build parameter.
+* repository: repository URL of the recipe.
+* revision: revision of the recipe.
+* recipe: name of the recipe.
+* properties-json: a JSON string containing build properties.
+* project: LUCI project id that the bucket is defined at, e.g. "chromium".
+
+Example: [swarming_task_template.json].
+
+### Bucket level
 
 A bucket entry in buildbucket config may have `swarming` key, for example:
 
@@ -44,40 +75,22 @@ A bucket entry in buildbucket config may have `swarming` key, for example:
       }
     }
 
-For format and documentation see `Swarming` message in the
+For the format and documentation see `Swarming` message in the
 [project_config.proto](../proto/project_config.proto).
-Example:
-[nodir's bucket in cr-buildbucket-dev](https://chromium.googlesource.com/infra/experimental/+/da2edaf070a2211451289be0baf3bc74bd204a0a/cr-buildbucket-dev.cfg#27).
+Real world configuration example:
+["master.tryserver.infra" bucket](https://chromium.googlesource.com/infra/infra/+/infra/config/cr-buildbucket.cfg)
 
-### Per buildbucket instance
+### Build level
 
-Luci-config file
-[services/\<appid\>:swarming_task_template.json][swarming_task_template.json]
-specifies the body of POST request that buildbucket sends to swarming when
-creating a task.
+A buildbucket build can have `"swarming"` parameter, which is a JSON object with
+optional properties:
 
-It contains the isolate and command line parameters. In general, you can
-specify anything you want, but to run a recipe, see [Kitchen](#using-kitchen).
-
-#### Parameters
-
-The template may contain parameters of form `$name` in string literals.
-They will be expanded during task scheduling. Known parameters:
-
-* bucket: value of build.bucket.
-* builder: value of `builder_name` build parameter.
-* repository: repository URL of the recipe. Taken from the bucket config.
-* revision: revision of the recipe, the value of `swarming.recipe.revision`
-  build parameter.
-  For example: `"swarming": {"recipe": {"revision": "deadbeef" } }`
-* recipe: name of the recipe. Taken from the bucket config.
-* properties-json: JSON string containing "properties" build paramter.
-
-Example: [swarming_task_template.json].
-
+* `"recipe"`: specifies a recipe to run, an object with optional properties:
+  * `"revision"`: recipe revision
+  
 ## Tags
 
-Swarming tasks created by buildbucket have extra tags:
+A swarming task created by buildbucket has extra tags:
 
 * `buildbucket_hostname:<hostname>`
 * `buildbucket_bucket:<bucket>`
@@ -88,63 +101,33 @@ Swarming tasks created by buildbucket have extra tags:
 * all tags in `swarming_tags` of builder config.
 * all tags in build creation request.
 
-Buildbucket builds associated with swarming tasks have extra tags:
+A buildbucket build associated with a swarming task has extra tags:
 
 * `swarming_hostname:<hostname>`
 * `swarming_task_id:<task_id>`
-* `swarming_tag:<tag>` for each swarming task tag.
+* `swarming_tag:<tag>` for each swarming task tag, even if it was derived from
+  a buildbucket build tag.
 * `swarming_dimension:<dimension>` for each dimension.
 
-## Using kitchen
-
-[Kitchen][kitchen]
-is a Go binary that can fetch a repository, checkout a specific
-revision and run a recipe.
-
-    kitchen cook \
-      -repository https://chromium.googlesource.com/chromium/tools/build \
-      -revision deadbeef1 \
-      -recipe myrecipe \
-      -properties '{"mastername": "client.v8", "slavename": "vm1-m1"}'
-
-This command will clone/fetch
-https://chromium.googlesource.com/chromium/tools/build
-checkout revision `deadbeef1`, parse `infra/config/recipes.cfg`,
-find `recipes.py` and run recipe `myrecipe`.
-
-
-### Task entry point
-
-Kitchen is designed to be an entry point of swarming tasks because it has
-minimum runtime dependencies: git to checkout a repository and python to run
-recipes.
-
-### Isolation
-
-[isolate_kitchen.py] cross-compiles kitchen for 6 platforms, isolates them,
-pushes to the isolate server and prints an isolate hash.
-You can use the isolate hash in
-[swarming_task_template.json][swarming_task_template.json] file.
-
-## Life of a swarming build
+## Life of a swarmbucket build
 
 1. A user schedules a build on bucket `"foobar"` configured as above.
    The build has `"builder_name": "Linux-Release"` parameter.
-1. Linux-Release config is matched. This is a build for swarming.
+1. `Linux-Release` config is matched. This build is for swarming.
 1. Task template is rendered. Repository URL, recipe and other parameters
    are expanded to "https://chromium.googlesource.com/chromium/tools/build",
    "chromium", etc.
 1. Swarming task is created.
 1. Build entity is mutated to have extra tags, to point to the task,
    is marked as STARTED and saved.
-1. Swarming task starts. Kitchen starts, clones repository, runs "chromium"
-   recipe.
+1. Swarming task starts. Kitchen starts, runs the recipe.
 1. Swarming task completes. Swarming sends a message to buildbucket via PubSub.
-1. Buildbucket receives the message and marks the build as complete.
+1. Buildbucket receives the message and marks the build as completed.
 
 Note: swarming does not notify on task start, so buildbucket marks builds as
 STARTED right after creation.
 
-[kitchen]: https://github.com/luci/recipes-py/tree/master/go/cmd/kitchen
+[go/swarmbucket]: https://goto.google.com/swarmbucket
+[kitchen]: https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/tools/kitchen/
 [isolate_kitchen.py]: https://github.com/luci/recipes-py/blob/master/go/cmd/kitchen/isolate_kitchen.py
 [swarming_task_template.json]: https://chrome-internal.googlesource.com/infradata/config/+/master/configs/cr-buildbucket/swarming_task_template.json
