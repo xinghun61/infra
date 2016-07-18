@@ -20,7 +20,7 @@ func TestCookLogDogPrefix(t *testing.T) {
 			p cookLogDogParams
 
 			env = environ.New([]string{
-				"SWARMING_SERVER=server.appspot.com",
+				"SWARMING_SERVER=https://example.appspot.com",
 				"SWARMING_TASK_ID=1234567890abcdef",
 			})
 		)
@@ -36,7 +36,15 @@ func TestCookLogDogPrefix(t *testing.T) {
 		Convey(`Can generate a LogDog prefix`, func() {
 			pfx, err := p.getPrefix(env)
 			So(err, ShouldBeNil)
-			So(pfx, ShouldEqual, types.StreamName("swarm/server.appspot.com/1234567890abcdef"))
+			So(pfx, ShouldEqual, types.StreamName("swarm/example.appspot.com/1234567890abcdef"))
+		})
+
+		Convey(`Can generate a LogDog prefix from a host instead of a server URL`, func() {
+			env.Set("SWARMING_SERVER", "example.appspot.com")
+
+			pfx, err := p.getPrefix(env)
+			So(err, ShouldBeNil)
+			So(pfx, ShouldEqual, types.StreamName("swarm/example.appspot.com/1234567890abcdef"))
 		})
 
 		Convey(`If Swarming server is missing from the environment, will fail.`, func() {

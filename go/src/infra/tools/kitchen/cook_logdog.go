@@ -8,9 +8,13 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/url"
+	"os"
 	"os/exec"
 	"sync"
 	"time"
+
+	"infra/libs/infraenv"
 
 	"github.com/luci/luci-go/client/logdog/annotee"
 	"github.com/luci/luci-go/client/logdog/annotee/annotation"
@@ -20,6 +24,7 @@ import (
 	fileOut "github.com/luci/luci-go/client/logdog/butler/output/file"
 	out "github.com/luci/luci-go/client/logdog/butler/output/logdog"
 	"github.com/luci/luci-go/client/logdog/butlerlib/streamclient"
+	"github.com/luci/luci-go/client/logdog/butlerlib/streamproto"
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/config"
 	"github.com/luci/luci-go/common/ctxcmd"
@@ -37,6 +42,7 @@ type cookLogDogParams struct {
 	project  string
 	prefix   types.StreamName
 	annotee  bool
+	tee      bool
 	filePath string
 }
 
@@ -62,6 +68,11 @@ func (p *cookLogDogParams) addFlags(fs *flag.FlagSet) {
 		"logdog-enable-annotee",
 		true,
 		"Process bootstrap STDOUT/STDERR annotations through Annotee.")
+	fs.BoolVar(
+		&p.tee,
+		"logdog-tee",
+		true,
+		"Tee bootstrapped STDOUT and STDERR through Kitchen. If false, these will only be sent as LogDog streams")
 	fs.StringVar(
 		&p.filePath,
 		"logdog-debug-out-file",
@@ -70,7 +81,7 @@ func (p *cookLogDogParams) addFlags(fs *flag.FlagSet) {
 }
 
 func (p *cookLogDogParams) active() bool {
-	return p.host != "" || p.project != "" || p.prefix != ""
+	return p.host != "" || p.project != "" || p.prefix != "" || p.tee
 }
 
 func (p *cookLogDogParams) validate() error {
@@ -85,11 +96,25 @@ func (p *cookLogDogParams) getPrefix(env environ.Env) (types.StreamName, error) 
 		return p.prefix, nil
 	}
 
-	// Construct our LogDog prefix from the Swarming task parameters.
-	host, _ := env.Get("SWARMING_SERVER")
-	if host == "" {
-		return "", errors.Reason("missing or empty SWARMING_SERVER").Err()
+	// Construct our LogDog prefix from the Swarming task parameters. The server
+	// will be exported as a URL. We want the "host" parameter from this URL.
+	server, _ := env.Get("SWARMING_SERVER")
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return "", errors.Annotate(err).Reason("failed to parse SWARMING_SERVER URL %(value)q").
+			D("value", server).Err()
 	}
+
+	host := serverURL.Host
+	if serverURL.Scheme == "" {
+		// SWARMING_SERVER is not a full URL, so use its Path instead of its Host.
+		host = serverURL.Path
+	}
+	if host == "" {
+		return "", errors.Reason("missing or empty SWARMING_SERVER host in %(value)q").
+			D("value", server).Err()
+	}
+
 	taskID, _ := env.Get("SWARMING_TASK_ID")
 	if taskID == "" {
 		return "", errors.Reason("missing or empty SWARMING_TASK_ID").Err()
@@ -124,9 +149,20 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc in
 		"prefix": prefix,
 	}.Infof(ctx, "Using LogDog prefix: %q", prefix)
 
-	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, auth.Options{
+	// Set up authentication.
+	authOpts := auth.Options{
 		Scopes: out.Scopes(),
-	})
+	}
+	if !infraenv.OnGCE() {
+		// If we're not on GCE, we will need to explicitly supply the LogDog
+		// credentials path.
+		credPath, err := infraenv.GetLogDogServiceAccountJSON()
+		if err != nil {
+			return 0, errors.Annotate(err).Reason("failed to get LogDog service account JSON path").Err()
+		}
+		authOpts.ServiceAccountJSONPath = credPath
+	}
+	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
 
 	// Register and instantiate our LogDog Output.
 	var o output.Output
@@ -155,13 +191,25 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc in
 	}
 	defer o.Close()
 
-	ncCtx := withNonCancel(ctx)
-	b, err := butler.New(ncCtx, butler.Config{
+	butlerCfg := butler.Config{
 		Output:     o,
 		Project:    config.ProjectName(c.logdog.project),
 		Prefix:     c.logdog.prefix,
 		BufferLogs: true,
-	})
+	}
+
+	// If we're teeing and we're not using Annotee, tee our subprocess' STDOUT
+	// and STDERR through Kitchen's STDOUT/STDERR.
+	//
+	// If we're using Annotee, we will configure this in the Annotee setup
+	// directly.
+	if c.logdog.tee && !c.logdog.annotee {
+		butlerCfg.TeeStdout = os.Stdout
+		butlerCfg.TeeStderr = os.Stderr
+	}
+
+	ncCtx := withNonCancel(ctx)
+	b, err := butler.New(ncCtx, butlerCfg)
 	if err != nil {
 		err = errors.Annotate(err).Reason("failed to create Butler instance").Err()
 		return
@@ -270,6 +318,10 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc in
 				StripAnnotations: true,
 			},
 		}
+		if c.logdog.tee {
+			streams[0].Tee = os.Stdout
+			streams[1].Tee = os.Stderr
+		}
 
 		// Run the process' output streams through Annotee. This will block until
 		// they are all consumed.
@@ -281,6 +333,10 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc in
 		// Get our STDOUT / STDERR stream flags. Tailor them to match Annotee.
 		stdoutFlags := annotee.TextStreamFlags(ctx, annotee.STDOUT)
 		stderrFlags := annotee.TextStreamFlags(ctx, annotee.STDERR)
+		if c.logdog.tee {
+			stdoutFlags.Tee = streamproto.TeeStdout
+			stderrFlags.Tee = streamproto.TeeStderr
+		}
 
 		// Wait for our STDOUT / STDERR streams to complete.
 		var wg sync.WaitGroup
