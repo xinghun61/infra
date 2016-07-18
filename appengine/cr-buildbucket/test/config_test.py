@@ -72,8 +72,9 @@ class ConfigTest(testing.AppengineTestCase):
       project_id='chromium',
       revision='deadbeef',
       config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT).put()
-    cfg = config.get_bucket_async(
+    project, cfg = config.get_bucket_async(
       'master.tryserver.chromium.linux').get_result()
+    self.assertEqual(project, 'chromium')
     self.assertEqual(
       cfg,
       project_config_pb2.Bucket(
@@ -86,7 +87,7 @@ class ConfigTest(testing.AppengineTestCase):
         ]),
     )
 
-    self.assertIsNone(config.get_bucket_async('non.existing').get_result())
+    self.assertIsNone(config.get_bucket_async('non.existing').get_result()[0])
 
   def test_get_buckets_async(self):
     config.Bucket(

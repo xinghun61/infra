@@ -60,7 +60,8 @@ class SwarmingTest(testing.AppengineTestCase):
       ),
     )
     self.mock(
-        config, 'get_bucket_async', lambda name: futuristic(self.bucket_cfg))
+        config, 'get_bucket_async',
+        lambda name: futuristic(('chromium', self.bucket_cfg)))
 
     task_template = {
       'name': 'buildbucket-$bucket-$builder',
@@ -79,6 +80,7 @@ class SwarmingTest(testing.AppengineTestCase):
           '-revision', '$revision',
           '-recipe', '$recipe',
           '-properties', '$properties_json',
+          '-logdog-project', '$project',
         ],
       },
       'numerical_value_for_coverage_in_format_obj': 42,
@@ -159,14 +161,14 @@ class SwarmingTest(testing.AppengineTestCase):
     )
 
     task_def = swarming.create_task_def_async(
-        self.bucket_cfg.swarming, builder_cfg, build).get_result()
+        'chromium', self.bucket_cfg.swarming, builder_cfg, build).get_result()
 
     self.assertEqual(
         task_def['properties']['execution_timeout_secs'], 120)
 
     builder_cfg.execution_timeout_secs = 60
     task_def = swarming.create_task_def_async(
-        self.bucket_cfg.swarming, builder_cfg, build).get_result()
+        'chromium', self.bucket_cfg.swarming, builder_cfg, build).get_result()
     self.assertEqual(
         task_def['properties']['execution_timeout_secs'], 60)
 
@@ -253,7 +255,8 @@ class SwarmingTest(testing.AppengineTestCase):
             'predefined-property': 'x',
             'predefined-property-bool': True,
             'repository': 'https://chromium.googlesource.com/chromium/src',
-          }, sort_keys=True)
+          }, sort_keys=True),
+          '-logdog-project', 'chromium',
         ],
         'dimensions': sorted([
           {'key': 'cores', 'value': '8'},

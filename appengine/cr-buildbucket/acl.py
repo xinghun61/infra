@@ -115,7 +115,7 @@ def has_any_of_roles_async(bucket, roles):
   if auth.is_admin():
     raise ndb.Return(True)
 
-  bucket_cfg = yield config.get_bucket_async(bucket)
+  _, bucket_cfg = yield config.get_bucket_async(bucket)
   identity_str = auth.get_current_identity().to_bytes()
   if bucket_cfg:
     for rule in bucket_cfg.acls:

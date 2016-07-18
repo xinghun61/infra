@@ -140,11 +140,12 @@ def get_buckets_async():
 @ndb.non_transactional
 @ndb.tasklet
 def get_bucket_async(name):
-  """Returns a project_config_pb2.Bucket by name."""
+  """Returns a (project, project_config_pb2.Bucket) tuple."""
   bucket = yield Bucket.get_by_id_async(name)
   if bucket is None:
-    raise ndb.Return(None)
-  raise ndb.Return(parse_bucket_config(bucket.config_content))
+    raise ndb.Return(None, None)
+  raise ndb.Return(
+      bucket.project_id, parse_bucket_config(bucket.config_content))
 
 
 def cron_update_buckets():

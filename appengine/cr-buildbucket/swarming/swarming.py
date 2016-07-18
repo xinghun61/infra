@@ -78,7 +78,7 @@ def get_task_template_async():
 @ndb.tasklet
 def _is_for_swarming_async(bucket_name, builder_name):
   """Returns True if swarming is configured for |builder_name|."""
-  cfg = yield config.get_bucket_async(bucket_name)
+  _, cfg = yield config.get_bucket_async(bucket_name)
   if cfg and cfg.swarming:  # pragma: no branch
     for b in cfg.swarming.builders:
       if b.name == builder_name:
@@ -173,7 +173,7 @@ def merge_recipe(r1, r2):
 
 
 @ndb.tasklet
-def create_task_def_async(swarming_cfg, builder_cfg, build):
+def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
   """Creates a swarming task definition for the |build|.
 
   Supports build properties that are supported by Buildbot-Buildbucket
@@ -192,6 +192,7 @@ def create_task_def_async(swarming_cfg, builder_cfg, build):
   task_template_params = {
     'bucket': build.bucket,
     'builder': builder_cfg.name,
+    'project': project_id,
   }
 
   is_recipe = (
@@ -314,7 +315,7 @@ def create_task_async(build):
     raise errors.InvalidInputError(
       'swarming builders do not support creation of leased builds')
   builder_name = build.parameters[BUILDER_PARAMETER]
-  bucket_cfg = yield config.get_bucket_async(build.bucket)
+  project_id, bucket_cfg = yield config.get_bucket_async(build.bucket)
   builder_cfg = None
   for b in bucket_cfg.swarming.builders:  # pragma: no branch
     if b.name == builder_name:  # pragma: no branch
@@ -322,7 +323,8 @@ def create_task_async(build):
       break
   assert builder_cfg, 'Builder %s not found' % builder_name
 
-  task = yield create_task_def_async(bucket_cfg.swarming, builder_cfg, build)
+  task = yield create_task_def_async(
+      project_id, bucket_cfg.swarming, builder_cfg, build)
   res = yield _call_api_async(
     bucket_cfg.swarming.hostname, 'tasks/new', method='POST', payload=task,
     # Higher timeout than normal because if the task creation request

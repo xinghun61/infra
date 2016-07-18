@@ -50,7 +50,8 @@ class AclTest(testing.AppengineTestCase):
     bucket_map = {b.name: b for b in all_buckets}
 
     self.mock(
-      config, 'get_bucket_async', lambda name: future(bucket_map.get(name)))
+      config, 'get_bucket_async',
+      lambda name: future(('chromium', bucket_map.get(name))))
 
   def mock_is_group_member(self, groups):
     # pylint: disable=unused-argument
