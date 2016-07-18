@@ -104,16 +104,18 @@ def get_links(deps):
           link = OBJECT_URL.format(entry['name'], md5hash)
         if fname.endswith('none-any.whl'):
           if generic_link:
-            LOGGER.error(
+            LOGGER.warning(
               'Found more than one generic matching wheel for %r: %r',
               prefix, dep)
             continue
           generic_link = link
         elif plat_tag in fname:
           if binary_link:
-            LOGGER.error(
-              'Found more than one binary matching wheel for %r: %r',
-              prefix, dep)
+            LOGGER.warning(
+              'Found more than one binary matching wheel for %r: %r\n'
+              '  Picking:        %s\n'
+              '  Also available: %s\n',
+              prefix, dep, binary_link, link)
             continue
           binary_link = link
 

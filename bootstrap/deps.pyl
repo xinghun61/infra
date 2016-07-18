@@ -22,9 +22,9 @@
     'implicit': True,  # Required by WebTest
   },
   'cffi': {
-    'version': '0.9.0',
-    'build': '1',
-    'gs': 'cabed2c0ab329dc19ff4f089b26bf9f4faae55e4.tar.gz',
+    'version': '1.7.0',
+    'build': '0',
+    'gs': 'd8033f34e17c0c51bb834b27f6e8c59fc24ae72c.tar.gz',
     'implicit': True,  # Required by cryptography
   },
   'coverage': {
@@ -35,10 +35,10 @@
     'implicit': True,  # Required by expect_tests
   },
   'cryptography': {
-    'version': '0.7.2',
+    'version': '1.4',
     'build': '0',
     'repo': 'external/github.com/pyca/cryptography',
-    'rev': '9ac7d55150c8410a08ee3b00b89bfeac3dbd8e8f',
+    'rev': '69365ce2041081fe6b109496bbb9c56f86ccb7b5',
     'implicit': True,  # Required by pyOpenSSL
   },
   'devil': {
@@ -70,6 +70,20 @@
     'build': '0',
     'repo': 'external/github.com/jcgregorio/httplib2',
     'rev': '7d1b88a3cf34774242bf4c0578c09c0092bb05d8',
+  },
+  'idna': {
+    'version': '2.1',
+    'build': '0',
+    'repo': 'external/github.com/kjd/idna',
+    'rev': 'cb8ae9acf100c9faba02737ac82b31a0152d19e8',
+    'implicit': True,  # Required by cryptography
+  },
+  'ipaddress': {
+    'version': '1.0.16',
+    'build': '0',
+    'repo': 'external/github.com/phihag/ipaddress',
+    'rev': '77c528007b90de88068df498726c574e8a86f497',
+    'implicit': True,  # Required by cryptography
   },
   'Jinja2': {
     'version': '2.7.3dev_20141205',
