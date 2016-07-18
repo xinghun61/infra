@@ -884,7 +884,7 @@ def _SafeCreateLoginURL(mr, continue_url=None):
   # or the option to add an account, even if they are currently
   # signed in to exactly one account.
   if mr.auth.user_id:
-    url = url.replace('/accounts/ServiceLogin', '/a/SelectSession', 1)
+    url = url.replace('/accounts/ServiceLogin', '/accounts/AccountChooser', 1)
   return url
 
 
