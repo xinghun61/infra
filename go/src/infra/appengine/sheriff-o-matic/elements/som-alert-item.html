@@ -71,6 +71,29 @@
      .snoozed {
        opacity: 0.5;
      }
+     #bugsList .bug {
+       background: #eee;
+       border-radius: 15px;
+       padding: 0 7px 0 18px;
+       display: inline-block;
+       margin: 3px;
+       line-height: 30px;
+     }
+     #bugsList .bug paper-icon-button {
+       color: #666;
+       float: right;
+       margin: 0 3px;
+       padding: 5px;
+       height: 30px;
+       width: 30px;
+       -webkit-transition: all .3s ease;
+       transition: all .3s ease;
+       border-radius: 50%;
+     }
+     #bugsList .bug paper-icon-button:hover {
+       color: #222;
+       background-color: #aaa;
+     }
      #bugsList,
      #handleLink {
        margin-left: 15px;
@@ -93,8 +116,10 @@
               </div>
               <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links">
                 <template is="dom-repeat" items="[[annotation.bugs]]" as="bug">
+                  <div class="bug">
                   <a target="_blank" href$="[[bug]]">[[_bugLabel(bug)]]</a>
-                  <paper-button id="remove[[index]]" on-tap="_removeBug" raised>Remove</paper-button>
+                  <paper-icon-button icon="close" title="Remove" id="remove[[index]]" on-tap="_removeBug"></paper-icon-button>
+                </div>
                 </template>
               </div>
             </div>
