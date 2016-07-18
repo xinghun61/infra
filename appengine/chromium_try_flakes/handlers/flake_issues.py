@@ -414,8 +414,7 @@ class CreateFlakyRun(webapp2.RequestHandler):
   @staticmethod
   # pylint: disable=E1120
   @ndb.transactional(xg=True, propagation=ndb.TransactionOptions.INDEPENDENT)
-  def add_failure_to_flake(name, flaky_run_key, failure_time, is_step,
-                           parent_step_name):
+  def add_failure_to_flake(name, flaky_run_key, failure_time, is_step):
     flake = Flake.get_by_id(name)
     if not flake:
       flake = Flake(name=name, id=name, last_time_seen=datetime.datetime.min,
@@ -426,11 +425,6 @@ class CreateFlakyRun(webapp2.RequestHandler):
     # TODO(sergiyb): This is necessary to update existing flakes. Remove in July
     # 2016 or later.
     flake.is_step = is_step
-
-    # For test flakes, add parent step name if it wasn't recorded before.
-    if not flake.is_step and parent_step_name not in flake.parent_step_names:
-      flake.parent_step_names.append(parent_step_name)
-
     util.add_occurrence_time_to_flake(flake, failure_time)
     flake.put()
 
@@ -492,15 +486,15 @@ class CreateFlakyRun(webapp2.RequestHandler):
       step: Step name.
 
     Returns:
-      (flakes, is_step, normalized_step_name), where flakes is a list of flake
-      names, is_step is True when the whole step is a flake, in which case
-      flakes is a list containing a single entry - the name of the step.
+      (flakes, is_step), where flakes is a list of flake names and is_step is
+      True when the whole step is a flake, in which case flakes is a list
+      containing a single entry - the name of the step.
     """
     # If test results were invalid, report whole step as flaky.
     steptext = ' '.join(step['text'])
     stepname = normalize_test_type(step['name'])
     if 'TEST RESULTS WERE INVALID' in steptext:
-      return [stepname], True, stepname
+      return [stepname], True
 
     url = TEST_RESULTS_URL_TEMPLATE % {
       'mastername': urllib2.quote(mastername),
@@ -519,8 +513,8 @@ class CreateFlakyRun(webapp2.RequestHandler):
             json_result.get('tests', {}),
             json_result.get('path_delimiter', '/'))
         if len(failed) > MAX_INDIVIDUAL_FLAKES_PER_STEP:
-          return [stepname], True, stepname
-        return failed, False, stepname
+          return [stepname], True
+        return failed, False
 
       if result.status_code == 404:
         # This is quite a common case (only some failing steps are actually
@@ -531,7 +525,7 @@ class CreateFlakyRun(webapp2.RequestHandler):
     except Exception:
       logging.exception('Failed to retrieve or parse JSON from %s', url)
 
-    return [stepname], True, stepname
+    return [stepname], True
 
   @ndb.transactional(xg=True)  # pylint: disable=E1120
   def post(self):
@@ -617,21 +611,20 @@ class CreateFlakyRun(webapp2.RequestHandler):
       step_name = step['name']
       if step_name in steps_to_ignore:
         continue
-      flakes, is_step, normalized_step_name = self.get_flakes(
+      flakes, is_step = self.get_flakes(
           master, patchset_builder_runs.builder, failure_run.buildnumber, step)
       for flake in flakes:
         flake_occurrence = FlakeOccurrence(name=step_name, failure=flake)
         flaky_run.flakes.append(flake_occurrence)
-        flakes_to_update.append((flake, is_step, normalized_step_name))
+        flakes_to_update.append((flake, is_step))
 
     # Do not create FlakyRuns if all failed steps have been ignored.
     if not flaky_run.flakes:
       return
 
     flaky_run_key = flaky_run.put()
-    for flake, is_step, normalized_step_name in flakes_to_update:
-      self.add_failure_to_flake(
-          flake, flaky_run_key, failure_time, is_step, normalized_step_name)
+    for flake, is_step in flakes_to_update:
+      self.add_failure_to_flake(flake, flaky_run_key, failure_time, is_step)
     self.flaky_runs.increment_by(1)
 
 
