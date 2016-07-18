@@ -36,6 +36,9 @@ def MakeMessage(header_list, body):
   for key, value in header_list:
     msg[key] = value
   msg.set_payload(body)
+  charset = email.charset.Charset('utf-8')
+  charset.input_codec = 'utf-8'
+  msg.set_charset(charset)
   return msg
 
 
