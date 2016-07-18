@@ -9,9 +9,9 @@ it and report a result back.
 *   [Documentation](doc/index.md)
 *   Design doc: [go/buildbucket-design], explains API.
 *   Deployments:
-    *   Prod: [cr-buildbucket.appspot.com](https://cr-buildbucket.appspot.com)
-    *   Test: [cr-buildbucket-test.appspot.com](https://cr-buildbucket-test.appspot.com)
-    *   Dev: [cr-buildbucket-dev.appspot.com](https://cr-buildbucket-dev.appspot.com)
+    *   Prod: [cr-buildbucket.appspot.com](https://cr-buildbucket.appspot.com) [[API](https://cr-buildbucket.appspot.com/_ah/api/explorer)]
+    *   Test: [cr-buildbucket-test.appspot.com](https://cr-buildbucket-test.appspot.com) [[API](https://cr-buildbucket-test.appspot.com/_ah/api/explorer)]
+    *   Dev: [cr-buildbucket-dev.appspot.com](https://cr-buildbucket-dev.appspot.com) [[API](https://cr-buildbucket-dev.appspot.com/_ah/api/explorer)]
 *   Bugs: [Infra-BuildBucket label](https://crbug.com?q=label=Infra-Buildbucket)
 *   Owner: nodir@
 
