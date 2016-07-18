@@ -440,8 +440,18 @@ def update(workspace):
   Args:
     workspace: a directory where deps.yaml is located.
   """
+  lock_path = os.path.join(workspace, '.vendor', 'glide.lock')
   with unhack_vendor(workspace):
-    call(workspace, 'glide', ['update', '--force', '--delete'])
+    # For some mysterious reason Glide doesn't update all dependencies on
+    # a first try. Run it until it reports there's nothing to update.
+    deps = parse_glide_lock(read_file(lock_path))
+    while True:
+      call(workspace, 'glide', ['update', '--force', '--delete'])
+      deps_after = parse_glide_lock(read_file(lock_path))
+      if deps == deps_after:
+        break
+      print 'One more time...'
+      deps = deps_after
   return 0
 
 

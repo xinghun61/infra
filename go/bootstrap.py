@@ -72,7 +72,7 @@ GLIDE_SOURCE = {
     'url': (
         'https://chromium.googlesource.com/external/github.com/'
         'Masterminds/glide.git'),
-    'rev': 'refs/tags/0.10.2',
+    'rev': 'refs/tags/v0.11.0',
   },
 }
 
