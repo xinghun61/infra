@@ -6,9 +6,10 @@
 import os
 import subprocess
 import sys
+import argparse
 
 ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
-APPCFG = os.path.join(ROOT, '..', 'google_appengine', 'appcfg.py')
+GAEPY = os.path.join(ROOT, 'gae.py')
 
 INSTANCES = [
   'chromeos-status-hrd',
@@ -25,25 +26,39 @@ INSTANCES = [
   'webrtc-status',
 ]
 
-def main():
-  if not sys.argv[1:]:
-    print('Usage: update.py <appcfg.py command> -V <version to use>')
-    print('Examples:')
-    print('  update.py update -V r94532')
-    print('  update.py set_default_version -V r94532')
-    print('')
-    print('The following instances will be affected:')
-    for instance in INSTANCES:
-      print('  %s' % instance)
-    print('')
-    return 1
 
-  command = sys.argv[1:]
-  for instance in INSTANCES:
+class MultipleChoiceAction(argparse.Action):
+
+  def __call__(self, parser, namespace, values, option_string=None):
+    if values:
+      for value in values:
+        if value not in INSTANCES:
+          raise argparse.ArgumentError(
+              self, 'Invalid choice %s (choose from %s)' % (value, INSTANCES))
+      setattr(namespace, self.dest, values)
+    else:
+      setattr(namespace, self.dest, INSTANCES)
+
+
+def main():
+  p = argparse.ArgumentParser(
+      description='Automatically update all instances of chromium_status.')
+  p.add_argument(
+      '-x', '--switch', action='store_true',
+      help='Also switch to serving the new version')
+  p.add_argument(
+      'projects', nargs='*', action=MultipleChoiceAction,
+      help='One or more projects to update (default: all)')
+  args = p.parse_args()
+  print('The following instances will be affected:')
+  for instance in args.projects:
+    print('  %s' % instance)
+
+  s = ['-x'] if args.switch else []
+  for instance in args.projects:
     print('\nDoing %s' % instance)
     subprocess.check_call(
-        [sys.executable, APPCFG] + command + [ROOT, '-A', instance])
-  return 0
+        [sys.executable, GAEPY, 'upload', '-f'] + s + [ROOT, '-A', instance])
 
 
 if __name__ == '__main__':
