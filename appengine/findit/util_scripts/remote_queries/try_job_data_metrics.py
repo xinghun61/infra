@@ -12,6 +12,11 @@ import numpy
 import os
 import sys
 
+try:
+  from matplotlib import pyplot
+except ImportError:
+  pyplot = None
+
 _REMOTE_API_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir)
 sys.path.insert(1, _REMOTE_API_DIR)
 
@@ -95,6 +100,55 @@ def _FormatSecondsAsHMS(seconds):
   return '%d:%02d:%02d' % (hours, minutes, seconds)
 
 
+def _GetRequestSpikes(request_times, time_window_seconds=30*60,
+                      minimum_spike_size=3, show_plot=False):
+  """Calculates and plots try jobs by request time.
+
+  Args:
+    request_time: List of datetime objects representing try job request times.
+    time_window_seconds: Maximum number of seconds between requests to count
+      as a spike.
+    minimum_spike_size: Minimum number of requests within the specified time
+      window needed to count as a spike.
+    show_plot: Boolean whether to display visual graphs of the request times.
+
+  Returns:
+    spike_count: The number of spikes found.
+    average_spike_size: The average number of requests in each spike.
+    maximum_spike_size: The number of requests in the biggest spike.
+  """
+  request_times = sorted(request_times)
+
+  if show_plot:
+    if pyplot:
+      pyplot.plot(request_times, [i for i in range(len(request_times))], 'x')
+      pyplot.show()
+    else:
+      print ('In order to show plots, matplotlib needs to be installed. To '
+             'install, please run \'sudo pip install matplotlib\'')
+
+  candidate_spike_start = request_times[0]
+  points_in_spike = 1
+  spike_count = 0
+  spike_sizes = []
+
+  for point_being_examined in request_times[1:]:
+    if ((point_being_examined - candidate_spike_start).total_seconds() <
+        time_window_seconds):
+      points_in_spike += 1
+    else:
+      # The time window has passed. Need a new starting point.
+      if points_in_spike >= minimum_spike_size:
+        spike_count += 1
+        spike_sizes.append(points_in_spike)
+
+      candidate_spike_start = point_being_examined
+      points_in_spike = 1  # Start over.
+
+  return (spike_count, _GetAverageOfNumbersInList(spike_sizes),
+          max(spike_sizes) if spike_sizes else 0)
+
+
 def _GetReportInformation(try_job_data_list, start_date, end_date):
   """Computes and returns try job metadata.
 
@@ -156,12 +210,16 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
   under_fifteen_minutes_rate = NOT_AVAILABLE
   under_thirty_minutes_rate = NOT_AVAILABLE
   over_thirty_minutes_rate = NOT_AVAILABLE
+  spike_count = NOT_AVAILABLE
+  average_spike_size = NOT_AVAILABLE
+  maximum_spike_size = NOT_AVAILABLE
 
   if try_job_data_list:
     try_jobs_per_day = (
         len(try_job_data_list) / float((end_date - start_date).days))
     regression_range_sizes = []
     execution_times_seconds = []
+    request_times = []
     in_queue_times = []
     end_to_end_times = []
     commits_analyzed = []
@@ -193,19 +251,22 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
         in_queue_times.append(in_queue_time)
 
       # Total time end-to-end.
-      if try_job_data.request_time and try_job_data.end_time:
-        total_time_delta = try_job_data.end_time - try_job_data.start_time
-        total_time_seconds = total_time_delta.total_seconds()
-        end_to_end_times.append(total_time_seconds)
+      if try_job_data.request_time:
+        request_times.append(try_job_data.request_time)
 
-        if total_time_seconds < 300:  # Under 5 minutes.
-          number_under_five_minutes += 1
-        elif total_time_seconds < 900:  # Under 15 minutes.
-          number_under_fifteen_minutes += 1
-        elif total_time_seconds < 1800:  # Under 30 minutes.
-          number_under_thirty_minutes += 1
-        else:  # Over 30 minutes.
-          number_over_thirty_minutes += 1
+        if try_job_data.end_time:
+          total_time_delta = try_job_data.end_time - try_job_data.start_time
+          total_time_seconds = total_time_delta.total_seconds()
+          end_to_end_times.append(total_time_seconds)
+
+          if total_time_seconds < 300:  # Under 5 minutes.
+            number_under_five_minutes += 1
+          elif total_time_seconds < 900:  # Under 15 minutes.
+            number_under_fifteen_minutes += 1
+          elif total_time_seconds < 1800:  # Under 30 minutes.
+            number_under_thirty_minutes += 1
+          else:  # Over 30 minutes.
+            number_over_thirty_minutes += 1
 
       # Number of commits analyzed.
       if try_job_data.number_of_commits_analyzed:
@@ -265,6 +326,11 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
     over_thirty_minutes_rate = (
         float(number_over_thirty_minutes) / total_number_of_try_jobs)
 
+    # Calculate try job spikes.
+    spike_count, average_spike_size, maximum_spike_size = _GetRequestSpikes(
+        request_times, time_window_seconds=30*60, minimum_spike_size=3,
+        show_plot=False)
+
   return {
       'try_jobs_per_day': _FormatDigits(try_jobs_per_day),
       'average_regression_range_size': _FormatDigits(
@@ -294,7 +360,10 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
       'under_five_minutes_rate': _FormatDigits(under_five_minutes_rate),
       'under_fifteen_minutes_rate': _FormatDigits(under_fifteen_minutes_rate),
       'under_thirty_minutes_rate': _FormatDigits(under_thirty_minutes_rate),
-      'over_thirty_minutes_rate': _FormatDigits(over_thirty_minutes_rate)
+      'over_thirty_minutes_rate': _FormatDigits(over_thirty_minutes_rate),
+      'request_spike_count': spike_count,
+      'request_spike_average_size': average_spike_size,
+      'request_spike_maximum_size': maximum_spike_size,
   }
 
 
@@ -523,8 +592,8 @@ if __name__ == '__main__':
   # Set up the Remote API to use services on the live App Engine.
   remote_api.EnableRemoteApi(app_id='findit-for-me')
 
-  START_DATE = datetime.datetime(2016, 5, 1)
-  END_DATE = datetime.datetime(2016, 6, 23)
+  START_DATE = datetime.datetime(2016, 4, 17)
+  END_DATE = datetime.datetime(2016, 7, 15)
 
   try_job_data_query = WfTryJobData.query(
       WfTryJobData.request_time >= START_DATE,
