@@ -14,17 +14,17 @@ class WfTryJob(BaseBuildModel):
   'Wf' is short for waterfall.
   """
   # A list of dict containing results and urls of each try job for compile.
-  compile_results = ndb.JsonProperty(default=[], indexed=False, compressed=True)
+  compile_results = ndb.JsonProperty(indexed=False, compressed=True)
 
   # A list of dict containing results and urls of each try job for test.
-  test_results = ndb.JsonProperty(default=[], indexed=False, compressed=True)
+  test_results = ndb.JsonProperty(indexed=False, compressed=True)
 
   # The status of the try job.
   status = ndb.IntegerProperty(
       default=analysis_status.PENDING, indexed=False)
 
   # A list of try job IDs associated with each try job for collecting metadata.
-  try_job_ids = ndb.JsonProperty(default=[], indexed=False, compressed=True)
+  try_job_ids = ndb.JsonProperty(indexed=False, compressed=True)
 
   @staticmethod
   def _CreateKey(master_name, builder_name, build_number):  # pragma: no cover
@@ -34,8 +34,12 @@ class WfTryJob(BaseBuildModel):
 
   @staticmethod
   def Create(master_name, builder_name, build_number):  # pragma: no cover
-    return WfTryJob(
+    try_job = WfTryJob(
         key=WfTryJob._CreateKey(master_name, builder_name, build_number))
+    try_job.compile_results = try_job.compile_results or []
+    try_job.test_results = try_job.test_results or []
+    try_job.try_job_ids = try_job.try_job_ids or []
+    return try_job
 
   @staticmethod
   def Get(master_name, builder_name, build_number):  # pragma: no cover

@@ -20,7 +20,7 @@ class WfSwarmingTask(BaseBuildModel):
 
   # A dict to keep track of running information for each test:
   # number of total runs, number of each status (such as 'SUCCESS' or 'FAILED')
-  tests_statuses = ndb.JsonProperty(default={}, indexed=False, compressed=True)
+  tests_statuses = ndb.JsonProperty(indexed=False, compressed=True)
 
   # The status of the swarming task.
   status = ndb.IntegerProperty(
@@ -37,7 +37,7 @@ class WfSwarmingTask(BaseBuildModel):
   completed_time = ndb.DateTimeProperty(indexed=False)
 
   # parameters need to be stored and analyzed later.
-  parameters = ndb.JsonProperty(default={}, indexed=False, compressed=True)
+  parameters = ndb.JsonProperty(indexed=False, compressed=True)
 
   @property
   def classified_tests(self):
@@ -74,9 +74,12 @@ class WfSwarmingTask(BaseBuildModel):
   @staticmethod
   def Create(
       master_name, builder_name, build_number, step_name):  # pragma: no cover
-    return WfSwarmingTask(
+    task = WfSwarmingTask(
         key=WfSwarmingTask._CreateKey(
             master_name, builder_name, build_number, step_name))
+    task.parameters = task.parameters or {}
+    task.tests_statuses = task.tests_statuses or {}
+    return task
 
   @staticmethod
   def Get(
