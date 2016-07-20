@@ -118,7 +118,7 @@
       labelStub.onFirstCall().returns('foo');
 
       flush(function () {
-        assert.lengthOf(element.$.bugsList.children, 3);
+        assert.lengthOf(element.$.bugsList.querySelectorAll(".bug"), 1);
         assert.equal('foo', element.$.bugsList.querySelector("a").textContent);
         assert.include(element.$.bugsList.querySelector("a").href, 'foo/bar');
         done();

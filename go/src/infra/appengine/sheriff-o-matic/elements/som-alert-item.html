@@ -117,9 +117,9 @@
               <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links">
                 <template is="dom-repeat" items="[[annotation.bugs]]" as="bug">
                   <div class="bug">
-                  <a target="_blank" href$="[[bug]]">[[_bugLabel(bug)]]</a>
-                  <paper-icon-button icon="close" title="Remove" id="remove[[index]]" on-tap="_removeBug"></paper-icon-button>
-                </div>
+                    <a target="_blank" href$="[[bug]]">[[_bugLabel(bug)]]</a>
+                    <paper-icon-button icon="close" title="Remove" id="remove[[index]]" on-tap="_removeBug"></paper-icon-button>
+                  </div>
                 </template>
               </div>
             </div>
@@ -241,14 +241,14 @@
       _helpLinkForAlert: function(alert) {
         // TODO(zhangtiff): Add documentation links for other kinds of alerts
         if (this._alertIsWebkit(alert)) {
-          return "http://www.chromium.org/blink/sheriffing";
+          return 'http://www.chromium.org/blink/sheriffing';
         }
         return null;
       },
 
       _alertIsWebkit(alert) {
         // TODO(zhangtiff): Find a better way to categorize alerts
-        return alert.key && alert.key.includes("chromium.webkit");
+        return alert.key && alert.key.includes('chromium.webkit');
       },
 
       _classForAlert: function(alert, selected) {

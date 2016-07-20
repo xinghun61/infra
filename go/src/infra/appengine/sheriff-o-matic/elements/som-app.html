@@ -56,7 +56,6 @@
         width: 300px;
       }
       #noAlerts {
-        margin: 1em;
         text-align: center;
         font-size: 2.5em;
         line-height: 150%;
@@ -150,16 +149,16 @@
                 Chromium sheriffs: you now need to handle WebKit bot failures too. <a href="http://www.chromium.org/blink/sheriffing" target="_blank">More information</a>.
               </div>
             </div>
-            <som-bug-queue id="bugQueue" tree="[[_tree]]"></som-bug-queue>
-            <template is="dom-if" if$="[[!_hideJulie]]">
-              <div id="noAlerts">
-                No alerts!
-                <br>
-                <img src="/images/jparent-jump.gif" alt="Julie Jumping" title="Julie Jumping">
-              </div>
-            </template>
-            <div id="alertsListInner" hidden$="[[!_hideJulie]]">
+            <som-bug-queue id="bugQueue" bug-queue-label="[[_bugQueueLabel]]"></som-bug-queue>
+            <div id="alertsListInner">
               <h2>Failure Alerts (<a href="/help-som">Help?</a>)</h2>
+              <template is="dom-if" if="[[!_hideJulie]]">
+                <div id="noAlerts">
+                  No alerts!
+                  <br>
+                  <img src="/images/jparent-jump.gif" alt="Julie Jumping" title="Julie Jumping">
+                </div>
+              </template>
               <template is="dom-repeat" items="[[_alerts]]" as="alert">
                 <div class="list-item" tabindex$="[[tabIndex]]">
                   <som-alert-item
@@ -273,6 +272,10 @@
         },
         _bugErrorMessage: String,
         _bugModel: Object,
+        _bugQueueLabel: {
+          type: Array,
+          computed: '_computeBugQueueLabel(_tree, _trees)',
+        },
         _filedBug: {
           type: Boolean,
           value: false,
@@ -320,13 +323,13 @@
         _staticPages: {
           type: Object,
           value: {
-            "help-som" : {
-              pageId : "helpSOM",
-              displayText : "How to Use",
+            'help-som': {
+              pageId : 'helpSOM',
+              displayText : 'How to Use',
             },
-            "calendar" : {
-              pageId : "rotationCalendar",
-              displayText : "Rotation Calendar",
+            'calendar': {
+              pageId: 'rotationCalendar',
+              displayText: 'Rotation Calendar',
             },
           },
         },
@@ -363,19 +366,26 @@
 
       ////////////////////// Alerts and path ///////////////////////////
 
+      _computeBugQueueLabel: function(tree, trees) {
+        if (tree in trees) {
+          return trees[tree].bug_queue_label;
+        }
+        return '';
+      },
+
       _computeTree: function(path) {
         let pathParts = path.split('/');
-        if (pathParts.length < 2 || pathParts[1] == "") {
+        if (pathParts.length < 2 || pathParts[1] == '') {
           console.error('error: invalid pathParts', pathParts);
-          return "";
+          return '';
         }
 
         return pathParts[1];
       },
 
       _treeChanged: function() {
-        this.set('_alertsData', {});
-        this.set('_fetchedAlerts', false);
+        this._alertsData = {};
+        this._fetchedAlerts = false;
       },
 
       _computeAlertsGroups: function(tree, trees) {
@@ -391,7 +401,7 @@
       },
 
       _computeRefreshEnabled: function(selectedPage) {
-        return selectedPage == "alertsList";
+        return selectedPage == 'alertsList';
       },
 
       _computeSelectedPage: function(path) {
@@ -462,14 +472,14 @@
 
       _alertsGroupsChanged: function(alertsGroups) {
         if (alertsGroups.length > 0) {
-          this.set('_fetchedAlerts', false);
-          this.set('_activeRequests', this._activeRequests + alertsGroups.length);
+          this._fetchedAlerts = false;
+          this._activeRequests += alertsGroups.length;
 
           // TODO: handle webpage offline throwing an exception
           alertsGroups.forEach((group) => {
             let foo = fetch('/api/v1/alerts/' + group, {credentials: 'include'}).then((response) => {
               // TODO: handle alerts not found
-              this.set('_activeRequests', this._activeRequests - 1);
+              this._activeRequests -= 1;
               return response.json();
             }).then((json) => {
               this.set(['_alertsData', this._alertGroupVarName(group)], json.alerts);
@@ -480,7 +490,7 @@
       },
 
       _alertGroupVarName(group) {
-        return group.replace(".", "_");
+        return group.replace('.', '_');
       },
 
       _computeFetchingAlerts: function(activeRequests) {
@@ -520,21 +530,20 @@
 
         // Wait for alerts to be loaded
         setTimeout(() => {
-          this.set('_fetchedAlerts', true);
+          this._fetchedAlerts = true;
         }, 200);
         return allAlerts;
       },
 
       _computeHideJulie: function(alerts, fetchedAlerts, fetchingAlerts, tree) {
-        if (fetchingAlerts || !fetchedAlerts || !alerts || tree === "") {
+        if (fetchingAlerts || !fetchedAlerts || !alerts || tree === '') {
           return true;
         }
-        console.log(alerts);
         return alerts.length > 0;
       },
 
       _computeHideWebkitNotice: function(tree) {
-        return tree != "chromium";
+        return tree != 'chromium';
       },
 
       ////////////////////// Annotations ///////////////////////////
@@ -586,28 +595,28 @@
 
       ////////////////////// Bugs ///////////////////////////
       _commentForBug: function(bugModel) {
-        let result = bugModel.title + "\n\nType: " + bugModel.type + "\n\n";
+        let result = bugModel.title + '\n\nType: ' + bugModel.type + '\n\n';
         if (bugModel.extension) {
           if (bugModel.extension.builders && bugModel.extension.builders.length > 0) {
-            result += "Builders failed on: ";
+            result += 'Builders failed on: ';
             for (let i in bugModel.extension.builders) {
-              result += "\n- " + bugModel.extension.builders[i].name + ": \n  "
+              result += '\n- ' + bugModel.extension.builders[i].name + ': \n  '
                 + bugModel.extension.builders[i].url;
             }
-            result += "\n\n";
+            result += '\n\n';
           }
           if (bugModel.extension.reasons && bugModel.extension.reasons.length > 0) {
-            result += "Reasons: ";
+            result += 'Reasons: ';
             for (let i in bugModel.extension.reasons) {
-              result += "\n" + bugModel.extension.reasons[i].url;
+              result += '\n' + bugModel.extension.reasons[i].url;
               if (bugModel.extension.reasons[i].test_names) {
-                result += "\n" + "Tests:";
+                result += '\n' + 'Tests:';
                 if (bugModel.extension.reasons[i].test_names) {
-                  result += "\n* " + bugModel.extension.reasons[i].test_names.join("\n* ");
+                  result += '\n* ' + bugModel.extension.reasons[i].test_names.join('\n* ');
                 }
               }
             }
-            result += "\n\n";
+            result += '\n\n';
           }
         }
         return result;
@@ -615,10 +624,10 @@
 
       _handleLinkBug: function(evt) {
         this._bugModel = evt.model.alert;
-        this.$.fileBugLink.href = "https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=&summary="
-          + this._bugModel.title + "&comment=" + encodeURIComponent(this._commentForBug(this._bugModel));
-        this.set("_filedBug", false);
-        this.set("_bugErrorMessage", "");
+        this.$.fileBugLink.href = 'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=&summary='
+          + this._bugModel.title + '&comment=' + encodeURIComponent(this._commentForBug(this._bugModel));
+        this._filedBug = false;
+        this._bugErrorMessage = '';
         this.$.bugDialog.open();
       },
 
@@ -635,11 +644,11 @@
         );
         if (request) {
           request.completes.then(() => {
-            this.set("_bugErrorMessage", "");
+            this._bugErrorMessage = '';
             this.$.bug.value = '';
             this.$.bugDialog.close();
           }, (error) => {
-            this.set("_bugErrorMessage", error);
+            this._bugErrorMessage = error;
           });
         }
       },
@@ -649,7 +658,7 @@
       _handleSnooze: function(evt) {
         this._snoozeModel = evt.model.alert;
         this.$.snoozeTime.value = DEFAULT_SNOOZE_TIME_MIN;
-        this.set("_snoozeErrorMessage", "");
+        this._snoozeErrorMessage = '';
         this.$.snoozeDialog.open();
       },
 
@@ -663,7 +672,7 @@
           this.$.snoozeTime.value = '';
           this.$.snoozeDialog.close();
         }, (error) => {
-          this.set("_snoozeErrorMessage", error);
+          this._snoozeErrorMessage = error;
         });
       },
 

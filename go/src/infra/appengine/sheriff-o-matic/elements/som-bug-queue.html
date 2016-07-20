@@ -1,6 +1,7 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
 
 <link rel="import" href="/bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="/bower_components/paper-spinner/paper-spinner.html">
 
 <dom-module id="som-bug-queue">
   <template>
@@ -9,14 +10,19 @@
         background: white;
       }
       #error {
-        padding: 1em;
         color: red;
+      }
+      #error,
+      #loadingBugs,
+      #noBugs {
+        padding: 0.3em 0.5em;
+        margin: 0 1em;
       }
       h2 {
         font-size: 18px;
         font-weight: bold;
         padding: 0.5em 0.5em 0.2em;
-        margin: 0 0.5em;
+        margin: 1em 0.5em 0.5em;
         background-color: #eee;
         border-bottom: 1px solid #ddd;
       }
@@ -31,24 +37,25 @@
       }
     </style>
     <iron-ajax
-        auto
         id="bugQueueAjax"
-        url="/api/v1/bugqueue/[[tree]]"
+        url="/api/v1/bugqueue/[[bugQueueLabel]]"
         handle-as="json"
         last-error="{{_bugQueueJsonError}}"
         last-response="{{_bugQueueJson}}"
         debounce-duration="300"></iron-ajax>
-    <div id="main" hidden$="[[_haveNoBugs(_bugQueueJson)]]">
+    <div id="main" hidden$="[[_hideBugQueue]]">
       <h2>Bug Queue (<a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriffing-bug-queues">What to do with this?</a>):</h2>
+      <div id="error" hidden$="[[_haveNoErrors(_bugQueueJsonError)]]">
+        Error fetching bug queue: [[_bugQueueJsonError.error]]
+      </div>
+      <div id="loadingBugs" hidden$="[[_bugsLoaded]]"><paper-spinner active="[[!_bugsLoaded]]"></paper-spinner> Loading Bug Queue... </div>
+      <div id="noBugs" hidden$="[[!_showNoBugs]]">No bugs in the queue!</div>
       <template is="dom-repeat" items="[[_bugQueueJson.items]]" as="item">
         <div class="bug">
           <div class="summary">[[item.summary]]</div>
           <a href="http://crbug.com/[[item.id]]">Bug [[item.id]]</a> ([[item.status]])
         </div>
       </template>
-    </div>
-    <div id="error" hidden$="[[_haveNoErrors(_bugQueueJsonError)]]">
-      Error fetching bug queue: [[_bugQueueJsonError.error]]
     </div>
   </template>
   <script>
@@ -59,9 +66,9 @@
       is: 'som-bug-queue',
 
       properties: {
-        tree: {
+        bugQueueLabel: {
           type: String,
-          observer: '_changeTree',
+          observer: '_changeBugQueueLabel',
         },
         _bugQueueJson: {
           type: Object,
@@ -71,24 +78,50 @@
           type: Object,
           value: null,
         },
+        _bugsLoaded: {
+          type: Boolean,
+          value: function () { return false; },
+        },
+        _hideBugQueue: {
+          type:Boolean,
+          value: function () { return true; },
+          computed: '_computeHideBugQueue(bugQueueLabel)',
+        },
+        _showNoBugs: {
+          type: Boolean,
+          value: function () { return false; },
+          computed: '_computeShowNoBugs(_bugQueueJson, _bugsLoaded)',
+        },
+      },
+
+      _computeHideBugQueue: function(bugQueueLabel) {
+        // No loading or empty message is shown unless a bug queue exists.
+        return !bugQueueLabel || bugQueueLabel === '';
+      },
+
+      _computeShowNoBugs: function(json, bugsLoaded) {
+        // Show the "No bugs" message only when the queue is done loading
+        return bugsLoaded && this._haveNoBugs(json);
       },
 
       refresh: function() {
-        this.$.bugQueueAjax.generateRequest();
+        if (this._hideBugQueue) {
+          return;
+        }
+        this.$.bugQueueAjax.generateRequest().completes.then((reponse) => {
+          this._bugsLoaded = true;
+        });
       },
 
-      _changeTree: function() {
-        this.set("_bugQueueJson", {});
-        this.set("_bugQueueJsonError", null);
+      _changeBugQueueLabel: function() {
+        this._bugQueueJson = null;
+        this._bugQueueJsonError = null;
+        this._bugsLoaded = false;
         this.refresh();
       },
 
       _haveNoBugs: function(json) {
-        if (!json || !json.items) {
-          return true
-        }
-
-        return json.items.length == 0;
+        return !json || !json.items || json.items.length == 0;
       },
 
       _haveNoErrors: function(error) {

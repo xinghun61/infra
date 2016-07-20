@@ -92,6 +92,12 @@ func (settingsUIPage) Fields(c context.Context) ([]settings.UIField, error) {
 			Type:  settings.UIFieldText,
 			Help:  "Alert streams per each tree. Write only field; tree:streamA,streamB",
 		},
+		{
+			ID:    "BugQueueLabels",
+			Title: "Bug queue labels",
+			Type:  settings.UIFieldText,
+			Help:  "Bug queue label for each tree. Write only field; treeA:queueA,treeB:queueB",
+		},
 	}, nil
 }
 
@@ -141,6 +147,7 @@ func writeTrees(c context.Context, treeStr string) error {
 	return nil
 }
 
+// alertStreams format is treeA:streamA,streamB
 func writeAlertStreams(c context.Context, alertStreams string) error {
 	ds := datastore.Get(c)
 	split := strings.Split(alertStreams, ":")
@@ -162,6 +169,30 @@ func writeAlertStreams(c context.Context, alertStreams string) error {
 	return nil
 }
 
+// bugQueueLabels format is treeA:queueA,treeB:queueB
+func writeBugQueueLabels(c context.Context, bugQueueLabels string) error {
+	ds := datastore.Get(c)
+	queueLabels := strings.Split(bugQueueLabels, ",")
+	for _, label := range queueLabels {
+		split := strings.Split(label, ":")
+		if len(split) != 2 {
+			return fmt.Errorf("invalid bugQueueLabels: %q", bugQueueLabels)
+		}
+
+		t := &Tree{Name: split[0]}
+		if err := ds.Get(t); err != nil {
+			return err
+		}
+
+		t.BugQueueLabel = split[1]
+		if err := ds.Put(t); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (settingsUIPage) WriteSettings(c context.Context, values map[string]string, who, why string) error {
 	if treeStr, ok := values["Trees"]; ok {
 		if err := writeTrees(c, treeStr); err != nil {
@@ -171,6 +202,12 @@ func (settingsUIPage) WriteSettings(c context.Context, values map[string]string,
 
 	if alertStreams, ok := values["AlertStreams"]; ok && alertStreams != "" {
 		if err := writeAlertStreams(c, alertStreams); err != nil {
+			return err
+		}
+	}
+
+	if bugQueueLabels, ok := values["BugQueueLabels"]; ok && bugQueueLabels != "" {
+		if err := writeBugQueueLabels(c, bugQueueLabels); err != nil {
 			return err
 		}
 	}

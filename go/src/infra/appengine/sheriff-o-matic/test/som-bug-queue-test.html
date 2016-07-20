@@ -49,12 +49,18 @@
 
     test('renders basic', function(done) {
       assert.equal(true, element.$.main.hidden);
+
+      // Bug queue gets unhidden when we switch to a tree with a bug queue label
+      element.bugQueueLabel = 'test';
+      assert.equal(false, element.$.main.hidden);
+
       element._bugQueueJson = {
         items: [
-          { summary: "foo", status: "bar", id: 123 },
-          { summary: "baz", status: "zippy", id: 456 },
+          { summary: 'foo', status: 'bar', id: 123 },
+          { summary: 'baz', status: 'zippy', id: 456 },
         ],
       };
+      element._bugsLoaded = true;
 
       assert.equal(false, element._haveNoBugs(element._bugQueueJson));
 
