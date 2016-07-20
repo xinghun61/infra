@@ -24,7 +24,6 @@ DISALLOWED_USER_AGENTS = (
 
 from google.appengine.api import app_identity
 
-# This fiddles sys.path so infra_libs.ts_mon works.
 import gae_ts_mon
 
 # Banner for e.g. planned downtime announcements
@@ -61,7 +60,7 @@ HSTS_MAX_AGE = 60*60*24*365  # 1 year in seconds.
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.middleware.http.ConditionalGetMiddleware',
-    'infra_libs.ts_mon.DjangoMiddleware',
+    'gae_ts_mon.DjangoMiddleware',
     'codereview.middleware.RedirectToHTTPSMiddleware',
     'codereview.middleware.AddHSTSHeaderMiddleware',
     'codereview.middleware.AddUserToRequestMiddleware',

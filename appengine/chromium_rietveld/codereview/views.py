@@ -91,6 +91,7 @@ from codereview import common
 from codereview.exceptions import FetchError
 from codereview.responses import HttpTextResponse, HttpHtmlResponse, respond
 import codereview.decorators as deco
+import gae_ts_mon
 
 
 # Add our own custom template tags library.
@@ -2173,6 +2174,11 @@ def delete(request):
   return HttpResponseRedirect(reverse(mine))
 
 
+deleted_patchsets = gae_ts_mon.CounterMetric(
+    'rietveld/deleted_patchsets',
+    description='Number of patchsets that was deleted.')
+
+
 @deco.require_methods('POST')
 @deco.patchset_editor_required
 @deco.xsrf_required
@@ -2197,6 +2203,7 @@ def delete_patchset(request):
   dependency_utils.remove_as_dependent(request.patchset)
   # Delete the patchset.
   request.patchset.nuke()
+  deleted_patchsets.increment()
   return HttpResponseRedirect(reverse(show, args=[request.issue.key.id()]))
 
 
