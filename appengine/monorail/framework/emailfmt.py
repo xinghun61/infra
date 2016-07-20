@@ -75,13 +75,6 @@ def ParseEmailMessage(msg):
     # We only process plain text emails.
     if part.get_content_type() == 'text/plain':
       body = part.get_payload(decode=True)
-      # "decode=True" in the above statement applies only to the
-      # Content-Transfer-Encoding header, *not* to the Content-Type and
-      # charset. To actually decode the bytes into a Unicode string we
-      # have to do this extra step:
-      charset = part.get_charset()
-      body = body.decode(charset.input_codec)
-
       break  # Only consider the first text part.
 
   return from_addr, to_addrs, cc_addrs, references, subject, body
