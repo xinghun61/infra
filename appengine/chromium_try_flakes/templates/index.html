@@ -36,7 +36,7 @@ try run for the same patchset.
        placeholder="exact search"
        style="width:400px"
        onkeydown="if (event.keyCode == 13) location = '/search?q=' +
-         document.getElementById('search').value">
+         encodeURIComponent(document.getElementById('search').value)">
 </td></tr>
 </table>
 <br>
