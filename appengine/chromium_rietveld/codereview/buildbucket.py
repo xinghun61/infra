@@ -17,16 +17,13 @@
 import datetime
 import json
 import logging
-import os
-import urllib
+import random
+import time
 import uuid
 
 from google.appengine.api import app_identity
-from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import ndb
-
-from django.conf import settings
 
 from codereview import common
 from codereview import models
@@ -45,7 +42,7 @@ AUTH_SERVICE_ID = 'chrome-infra-auth'
 IMPERSONATION_TOKEN_MINT_URL = (
     'https://%s.appspot.com/auth_service/api/v1/delegation/token/create' %
     AUTH_SERVICE_ID)
-IMPERSONATION_TOKEN_CACHE_KEY_FORMAT = 'impersonation_token/v1/%s'
+IMPERSONATION_TOKEN_CACHE_KEY_FORMAT = 'impersonation_token/v2/%s'
 
 
 class BuildBucketError(Exception):
@@ -338,9 +335,13 @@ def _mint_delegation_token_async():
   ctx = ndb.get_context()
   # Get from cache.
   cache_key = IMPERSONATION_TOKEN_CACHE_KEY_FORMAT % account.email
-  token = yield ctx.memcache_get(cache_key)
-  if token:
-    raise ndb.Return(token)
+  token_envelope = yield ctx.memcache_get(cache_key)
+  if token_envelope:
+    # Randomize token expiration time to workaround the case when multiple
+    # concurrent requests start to refresh the token at the same time.
+    token, exp_ts, lifetime_sec = token_envelope
+    if time.time() < exp_ts - lifetime_sec * 0.05 * random.random():
+      raise ndb.Return(token)
 
   # Request a new one.
   logging.debug('Minting a delegation token for %s', account.email)
@@ -364,7 +365,11 @@ def _mint_delegation_token_async():
   assert isinstance(validity_duration_sec, int)
   if validity_duration_sec >= 10:
     validity_duration_sec -= 10  # Refresh the token 10 sec in advance.
-    yield ctx.memcache_add(cache_key, token, time=validity_duration_sec)
+    exp_ts = int(time.time() + validity_duration_sec)
+    yield ctx.memcache_set(
+        key=cache_key,
+        value=(token, exp_ts, validity_duration_sec),
+        time=exp_ts)
 
   raise ndb.Return(token)
 
