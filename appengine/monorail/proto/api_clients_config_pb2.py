@@ -18,7 +18,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='api_clients_config.proto',
   package='monorail',
-  serialized_pb='\n\x18\x61pi_clients_config.proto\x12\x08monorail\"\xa4\x01\n\x11ProjectPermission\x12\x0f\n\x07project\x18\x01 \x01(\t\x12;\n\x04role\x18\x02 \x01(\x0e\x32 .monorail.ProjectPermission.Role:\x0b\x63ontributor\x12\x19\n\x11\x65xtra_permissions\x18\x03 \x03(\t\"&\n\x04Role\x12\r\n\tcommitter\x10\x01\x12\x0f\n\x0b\x63ontributor\x10\x02\"\xe7\x01\n\x06\x43lient\x12\x14\n\x0c\x63lient_email\x18\x01 \x01(\t\x12\x14\n\x0c\x64isplay_name\x18\x02 \x01(\t\x12\x11\n\tclient_id\x18\x03 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x04 \x01(\t\x12\x38\n\x13project_permissions\x18\x05 \x03(\x0b\x32\x1b.monorail.ProjectPermission\x12\x1c\n\x0cperiod_limit\x18\x06 \x01(\x05:\x06\x31\x30\x30\x30\x30\x30\x12\x1f\n\x0elifetime_limit\x18\x07 \x01(\x05:\x07\x31\x30\x30\x30\x30\x30\x30\x12\x10\n\x08\x63ontacts\x18\x08 \x03(\t\".\n\tClientCfg\x12!\n\x07\x63lients\x18\x01 \x03(\x0b\x32\x10.monorail.Client')
+  serialized_pb='\n\x18\x61pi_clients_config.proto\x12\x08monorail\"\xa4\x01\n\x11ProjectPermission\x12\x0f\n\x07project\x18\x01 \x01(\t\x12;\n\x04role\x18\x02 \x01(\x0e\x32 .monorail.ProjectPermission.Role:\x0b\x63ontributor\x12\x19\n\x11\x65xtra_permissions\x18\x03 \x03(\t\"&\n\x04Role\x12\r\n\tcommitter\x10\x01\x12\x0f\n\x0b\x63ontributor\x10\x02\"\xff\x01\n\x06\x43lient\x12\x14\n\x0c\x63lient_email\x18\x01 \x01(\t\x12\x14\n\x0c\x64isplay_name\x18\x02 \x01(\t\x12\x11\n\tclient_id\x18\x03 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x04 \x01(\t\x12\x38\n\x13project_permissions\x18\x05 \x03(\x0b\x32\x1b.monorail.ProjectPermission\x12\x1c\n\x0cperiod_limit\x18\x06 \x01(\x05:\x06\x31\x30\x30\x30\x30\x30\x12\x1f\n\x0elifetime_limit\x18\x07 \x01(\x05:\x07\x31\x30\x30\x30\x30\x30\x30\x12\x10\n\x08\x63ontacts\x18\x08 \x03(\t\x12\x16\n\tqpm_limit\x18\t \x01(\x05:\x03\x31\x30\x30\".\n\tClientCfg\x12!\n\x07\x63lients\x18\x01 \x03(\x0b\x32\x10.monorail.Client')
 
 
 
@@ -150,6 +150,13 @@ _CLIENT = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='qpm_limit', full_name='monorail.Client.qpm_limit', index=8,
+      number=9, type=5, cpp_type=1, label=1,
+      has_default_value=True, default_value=100,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -160,7 +167,7 @@ _CLIENT = _descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=206,
-  serialized_end=437,
+  serialized_end=461,
 )
 
 
@@ -187,8 +194,8 @@ _CLIENTCFG = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=439,
-  serialized_end=485,
+  serialized_start=463,
+  serialized_end=509,
 )
 
 _PROJECTPERMISSION.fields_by_name['role'].enum_type = _PROJECTPERMISSION_ROLE

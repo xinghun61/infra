@@ -26,6 +26,7 @@ from framework import framework_views
 from framework import monorailrequest
 from framework import permissions
 from framework import profiler
+from framework import ratelimiter
 from framework import sql
 from project import project_helpers
 from proto import api_pb2_v1
@@ -88,6 +89,7 @@ def monorail_api_method(
             request, requester,
             self._services, sql.MonorailConnection(),
             auth_client_ids, auth_emails)
+        self.ratelimiter.CheckStart(c_id, c_email, start_time)
         self.increment_request_limit(request, c_id, c_email)
         ret = func(self, *args, **kwargs)
       except user_svc.NoSuchUserException as e:
@@ -114,7 +116,8 @@ def monorail_api_method(
         raise endpoints.ForbiddenException(
             'The requester has exceeded API quotas limit')
       except (usergroup_svc.GroupExistsException,
-              config_svc.InvalidComponentNameException) as e:
+              config_svc.InvalidComponentNameException,
+              ratelimiter.ApiRateLimitExceeded) as e:
         approximate_http_status = 400
         raise endpoints.BadRequestException(str(e))
       except Exception as e:
@@ -122,7 +125,10 @@ def monorail_api_method(
         logging.exception('Unexpected error in monorail API')
         raise
       finally:
-        elapsed_ms = int((time_fn() - start_time) * 1000)
+        now = time_fn()
+        elapsed_ms = int((now - start_time) * 1000)
+        if c_id and c_email:
+          self.ratelimiter.CheckEnd(c_id, c_email, now, start_time)
 
         fields = {
             # Endpoints APIs don't return the full set of http status values.
@@ -273,6 +279,8 @@ class MonorailApi(remote.Service):
   api_requests = gae_ts_mon.CounterMetric(
      'monorail/api_requests',
      description='Number of requests to Monorail api')
+
+  ratelimiter = ratelimiter.ApiRateLimiter()
 
   @classmethod
   def _set_services(cls, services):

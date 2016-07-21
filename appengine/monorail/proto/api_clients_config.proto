@@ -31,6 +31,7 @@ message Client {
   optional int32 period_limit = 6 [default = 100000];
   optional int32 lifetime_limit = 7 [default = 1000000];
   repeated string contacts = 8;
+  optional int32 qpm_limit = 9 [default = 100];
 }
 
 message ClientCfg {

@@ -22,7 +22,6 @@ from testing import testing_helpers
 
 class RateLimiterTest(unittest.TestCase):
   def setUp(self):
-    settings.ratelimiting_enabled = True
     self.testbed = testbed.Testbed()
     self.testbed.activate()
     self.testbed.init_memcache_stub()
@@ -314,3 +313,67 @@ class RateLimiterTest(unittest.TestCase):
       now = start_time + 0.01
       self.ratelimiter.CheckEnd(request, now, start_time)
       start_time = now + 0.01
+
+
+class ApiRateLimiterTest(unittest.TestCase):
+
+  def setUp(self):
+    settings.ratelimiting_enabled = True
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_memcache_stub()
+
+    self.services = service_manager.Services(
+      config=fake.ConfigService(),
+      issue=fake.IssueService(),
+      user=fake.UserService(),
+      project=fake.ProjectService(),
+    )
+
+    self.client_id = '123456789'
+    self.client_email = 'test@example.com'
+
+    self.ratelimiter = ratelimiter.ApiRateLimiter()
+    settings.api_ratelimiting_enabled = True
+
+  def tearDown(self):
+    self.testbed.deactivate()
+
+  def testCheckStart_pass(self):
+    now = 0.0
+    self.ratelimiter.CheckStart(self.client_id, self.client_email, now)
+
+  def testCheckStart_fail(self):
+    now = 0.0
+    keysets = ratelimiter._CreateApiCacheKeys(
+        self.client_id, self.client_email, now)
+    values = [{key: ratelimiter.DEFAULT_API_QPM + 1 for key in keyset} for
+              keyset in keysets]
+    for value in values:
+      memcache.add_multi(value)
+    with self.assertRaises(ratelimiter.ApiRateLimitExceeded):
+      self.ratelimiter.CheckStart(self.client_id, self.client_email, now)
+
+  def testCheckEnd(self):
+    start_time = 0.0
+    keysets = ratelimiter._CreateApiCacheKeys(
+        self.client_id, self.client_email, start_time)
+
+    now = 0.1
+    self.ratelimiter.CheckEnd(
+        self.client_id, self.client_email, now, start_time)
+    counters = memcache.get_multi(keysets[0])
+    count = sum(counters.values())
+    # No extra cost charged
+    self.assertEqual(0, count)
+
+    now = start_time + settings.api_ratelimiting_cost_thresh_ms / 1000.0 + 1
+    self.ratelimiter.CheckEnd(
+        self.client_id, self.client_email, now, start_time)
+    counters = memcache.get_multi(keysets[0])
+    count = sum(counters.values())
+    # Extra cost charged
+    self.assertEqual(settings.api_ratelimiting_cost_penalty, count)
+    
+
+

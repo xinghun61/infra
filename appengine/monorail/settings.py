@@ -308,3 +308,18 @@ ratelimiting_cost_thresh_ms = 2000
 # Requests that hit ratelimiting_cost_thresh_sec get this
 # extra amount added to their bucket at the end of the request.
 ratelimiting_cost_penalty = 1
+
+api_ratelimiting_enabled = False
+
+# Enable cost-based api rate limiting. This only applies if
+# api_ratelimiting_enabled = True
+api_ratelimiting_cost_enabled = True
+
+# API requests that take longer than this are hit with extra
+# counts added to their bucket at the end of the request.
+api_ratelimiting_cost_thresh_ms = 5000
+
+# API requests that hit ratelimiting_cost_thresh_sec get this
+# extra amount added to their bucket at the end of the request.
+api_ratelimiting_cost_penalty = 1
+

@@ -33,6 +33,7 @@ LUCI_CONFIG_URL = (
 
 client_config_svc = None
 service_account_map = None
+qpm_dict = None
 
 
 class ClientConfig(db.Model):
@@ -132,6 +133,15 @@ class ClientConfigService(object):
         names_dict[client.client_email] = client.display_name
     return names_dict
 
+  def GetQPM(self):
+    """Get client qpm limit."""
+    self.GetConfigs(use_cache=True)
+    qpm_map = {}
+    for client in self.client_configs.clients:
+      if client.display_name:
+        qpm_map[client.client_email] = client.qpm_limit
+    return qpm_map
+
 
 def GetClientConfigSvc():
   global client_config_svc
@@ -139,9 +149,17 @@ def GetClientConfigSvc():
     client_config_svc = ClientConfigService()
   return client_config_svc
 
+
 def GetServiceAccountMap():
   global service_account_map
   if service_account_map is None:
     service_account_map = GetClientConfigSvc().GetDisplayNames()
   return service_account_map
+
+
+def GetQPMDict():
+  global qpm_dict
+  if qpm_dict is None:
+    qpm_dict = GetClientConfigSvc().GetQPM()
+  return qpm_dict
   

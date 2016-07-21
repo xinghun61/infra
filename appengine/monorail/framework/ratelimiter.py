@@ -20,9 +20,13 @@ from google.appengine.api import memcache
 from google.appengine.api.modules import modules
 from google.appengine.api import users
 
+from services import client_config_svc
+
+
 N_MINUTES = 5
 EXPIRE_AFTER_SECS = 60 * 60
-DEFAULT_LIMIT = 300 # 300 requests in 5 minutes is 1 QPS.
+DEFAULT_LIMIT = 60 * N_MINUTES  # 300 requests in 5 minutes is 1 QPS.
+DEFAULT_API_QPM = 100
 
 ANON_USER = 'anon'
 
@@ -77,7 +81,21 @@ def _CacheKeys(request, now_sec):
 
   return keysets, country, ip, user_email
 
-class RateLimiter:
+
+def _CreateApiCacheKeys(client_id, client_email, now_sec):
+  now = datetime.datetime.fromtimestamp(now_sec)
+  minute_buckets = [now - datetime.timedelta(minutes=m) for m in
+                    range(N_MINUTES)]
+  keys = []
+
+  keys.append(['apiratelimit-%s-%s-%s' % (client_id, client_email,
+      str(minute_bucket.replace(second=0, microsecond=0)))
+      for minute_bucket in minute_buckets])
+  return keys
+
+
+class RateLimiter(object):
+
   blocked_requests = ts_mon.CounterMetric(
       'monorail/ratelimiter/blocked_request')
   limit_exceeded = ts_mon.CounterMetric(
@@ -103,6 +121,13 @@ class RateLimiter:
     keysets, country, ip, user_email  = _CacheKeys(request, now)
     # There are either two or three sets of keys in keysets.
     # Three if the user's country is in COUNTRY_LIMITS, otherwise two.
+    self._AuxCheckStart(
+        keysets, COUNTRY_LIMITS.get(country, DEFAULT_LIMIT),
+        settings.ratelimiting_enabled,
+        RateLimitExceeded(country=country, ip=ip, user_email=user_email))
+
+  def _AuxCheckStart(self, keysets, limit, ratelimiting_enabled,
+                     exception_obj):
     for keys in keysets:
       count = 0
       try:
@@ -113,24 +138,22 @@ class RateLimiter:
         logging.error(e)
         if not self.fail_open:
           self.checks.increment({'type': 'fail_open'})
-          raise RateLimitExceeded(country=country, ip=ip, user_email=user_email)
+          raise exception_obj
         self.checks.increment({'type': 'fail_closed'})
 
-      limit = COUNTRY_LIMITS.get(country, DEFAULT_LIMIT)
       if count > limit:
         # Since webapp2 won't let us return a 429 error code
         # <http://tools.ietf.org/html/rfc6585#section-4>, we can't
         # monitor rate limit exceeded events with our standard tools.
         # We return a 400 with a custom error message to the client,
         # and this logging is so we can monitor it internally.
-        logging.info('Rate Limit Exceeded: %s, %s, %s, %d' % (
-            country, ip, user_email, count))
+        logging.info('%s, %d' % (exception_obj.message, count))
 
         self.limit_exceeded.increment()
 
-        if settings.ratelimiting_enabled:
+        if ratelimiting_enabled:
           self.blocked_requests.increment()
-          raise RateLimitExceeded(country=country, ip=ip, user_email=user_email)
+          raise exception_obj
 
       k = keys[0]
       # Only update the latest *time* bucket for each prefix (reverse chron).
@@ -153,28 +176,85 @@ class RateLimiter:
     if elapsed_ms < settings.ratelimiting_cost_thresh_ms:
       return
 
-    self.cost_thresh_exceeded.increment()
-
     # TODO: Look into caching the keys instead of generating them twice
     # for every request. Say, return them from CheckStart so they can
     # be bassed back in here later.
     keysets, country, ip, user_email  = _CacheKeys(request, start_time)
+
+    self._AuxCheckEnd(
+        keysets,
+        'Rate Limit Cost Threshold Exceeded: %s, %s, %s' % (
+            country, ip, user_email),
+        settings.ratelimiting_cost_penalty)
+
+  def _AuxCheckEnd(self, keysets, log_str, ratelimiting_cost_penalty):
+    self.cost_thresh_exceeded.increment()
     for keys in keysets:
-      logging.info('Rate Limit Cost Threshold Exceeded: %s, %s, %s' % (
-          country, ip, user_email))
+      logging.info(log_str)
 
       # Only update the latest *time* bucket for each prefix (reverse chron).
       k = keys[0]
       memcache.add(k, 0, time=EXPIRE_AFTER_SECS)
-      memcache.incr(k, delta=settings.ratelimiting_cost_penalty,
-          initial_value=0)
+      memcache.incr(k, delta=ratelimiting_cost_penalty, initial_value=0)
+
+
+class ApiRateLimiter(RateLimiter):
+
+  blocked_requests = ts_mon.CounterMetric(
+      'monorail/apiratelimiter/blocked_request')
+  limit_exceeded = ts_mon.CounterMetric(
+      'monorail/apiratelimiter/rate_exceeded')
+  cost_thresh_exceeded = ts_mon.CounterMetric(
+      'monorail/apiratelimiter/cost_thresh_exceeded')
+  checks = ts_mon.CounterMetric(
+      'monorail/apiratelimiter/check')
+
+  #pylint: disable=arguments-differ
+  def CheckStart(self, client_id, client_email, now=None):
+    if now is None:
+      now = time.time()
+
+    keysets = _CreateApiCacheKeys(client_id, client_email, now)
+    qpm_limit = client_config_svc.GetQPMDict().get(
+        client_email, DEFAULT_API_QPM)
+    window_limit = qpm_limit * N_MINUTES
+    self._AuxCheckStart(
+        keysets, window_limit,
+        settings.api_ratelimiting_enabled,
+        ApiRateLimitExceeded(client_id, client_email))
+
+  #pylint: disable=arguments-differ
+  def CheckEnd(self, client_id, client_email, now, start_time):
+    if not settings.ratelimiting_cost_enabled:
+      return
+
+    elapsed_ms = (now - start_time) * 1000
+
+    if elapsed_ms < settings.api_ratelimiting_cost_thresh_ms:
+      return
+
+    keysets = _CreateApiCacheKeys(client_id, client_email, start_time)
+    self._AuxCheckEnd(
+        keysets,
+        'API Rate Limit Cost Threshold Exceeded: %s, %s' % (
+            client_id, client_email),
+        settings.api_ratelimiting_cost_penalty)
+  
 
 class RateLimitExceeded(Exception):
   def __init__(self, country=None, ip=None, user_email=None, **_kwargs):
     self.country = country
     self.ip = ip
     self.user_email = user_email
-
-  def __str__(self):
-    return 'RateLimitExceeded: %s, %s, %s' % (
+    message = 'RateLimitExceeded: %s, %s, %s' % (
         self.country, self.ip, self.user_email)
+    super(RateLimitExceeded, self).__init__(message)
+
+
+class ApiRateLimitExceeded(Exception):
+  def __init__(self, client_id, client_email):
+    self.client_id = client_id
+    self.client_email = client_email
+    message = 'RateLimitExceeded: %s, %s' % (
+        self.client_id, self.client_email)
+    super(ApiRateLimitExceeded, self).__init__(message)
