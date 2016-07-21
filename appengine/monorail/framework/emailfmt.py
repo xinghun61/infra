@@ -123,7 +123,7 @@ def MailDomain():
   return '%s.appspotmail.com' % app_id
 
 
-def FormatFriendly(commenter_view, sender, reveal_addr, experiment=False):
+def FormatFriendly(commenter_view, sender, reveal_addr):
   """Format the From: line to include the commenter's friendly name if given."""
   if commenter_view:
     site_name = settings.site_name
@@ -134,7 +134,7 @@ def FormatFriendly(commenter_view, sender, reveal_addr, experiment=False):
     else:
       friendly = u'%s\u2026@%s' % (
           commenter_view.obscured_username, commenter_view.domain)
-    if experiment and '@' in sender:
+    if '@' in sender:
       sender_username, sender_domain = sender.split('@', 1)
       sender = '%s+v2.%d@%s' % (
           sender_username, commenter_view.user_id, sender_domain)
@@ -152,7 +152,7 @@ def NoReplyAddress(commenter_view=None, reveal_addr=False):
   return FormatFriendly(commenter_view, sender, reveal_addr)
 
 
-def FormatFromAddr(project, commenter_view=None, reveal_addr=False,
+def FormatFromAddr(_project, commenter_view=None, reveal_addr=False,
                    can_reply_to=True):
   """Return a string to be used on the email From: line.
 
@@ -171,9 +171,7 @@ def FormatFromAddr(project, commenter_view=None, reveal_addr=False,
   addr = (settings.send_email_as if can_reply_to
                                  else settings.send_noreply_email_as)
    # TODO(jrobbins): try this on just /p/monorail, then do full launch.
-  return FormatFriendly(
-      commenter_view, addr, reveal_addr,
-      experiment=(project.project_name == 'monorail'))
+  return FormatFriendly(commenter_view, addr, reveal_addr)
 
 
 def NormalizeHeader(s):

@@ -209,16 +209,16 @@ class NoReplyAddressTest(unittest.TestCase):
   def testWithCommenter(self):
     commenter_view = framework_views.UserView(111L, 'user@example.com', True)
     self.assertEqual(
-        'user@example.com via Monorail '
-        '<no_reply@testbed-test.appspotmail.com>',
+        'User via Monorail '
+        '<no_reply+v2.111@testbed-test.appspotmail.com>',
         emailfmt.NoReplyAddress(
             commenter_view=commenter_view, reveal_addr=True))
 
   def testObscuredCommenter(self):
     commenter_view = framework_views.UserView(111L, 'user@example.com', True)
     self.assertEqual(
-        u'u\u2026@example.com via Monorail '
-        '<no_reply@testbed-test.appspotmail.com>',
+        u'U\u2026 via Monorail '
+        '<no_reply+v2.111@testbed-test.appspotmail.com>',
         emailfmt.NoReplyAddress(
             commenter_view=commenter_view, reveal_addr=False))
 
