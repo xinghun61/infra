@@ -263,8 +263,9 @@ func indexPage(ctx *router.Context) {
 	}
 
 	data := map[string]interface{}{
-		"User":      user.Email(),
-		"LogoutUrl": logoutURL,
+		"User":           user.Email(),
+		"LogoutUrl":      logoutURL,
+		"IsDevAppServer": appengine.IsDevAppServer(),
 	}
 
 	err = mainPage.Execute(w, data)
