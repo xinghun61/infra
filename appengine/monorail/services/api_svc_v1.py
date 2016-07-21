@@ -74,6 +74,8 @@ def monorail_api_method(
       approximate_http_status = 200
       request = args[0]
       ret = None
+      c_id = None
+      c_email = None
       try:
         if settings.read_only and http_method.lower() != 'get':
           raise permissions.PermissionException(
