@@ -6,9 +6,9 @@ from google.appengine.ext import ndb
 
 from common import constants
 from common.waterfall import failure_type
-from model.base_build_model import BaseBuildModel
 from model import analysis_status
 from model import result_status
+from model.base_build_model import BaseBuildModel
 
 
 class WfAnalysis(BaseBuildModel):
@@ -87,12 +87,7 @@ class WfAnalysis(BaseBuildModel):
 
   @property
   def is_duplicate(self):
-    """Returns whether the analysis result is a duplicate or not.
-
-    Returns:
-      True: duplicate.
-      False: not a duplicate.
-    """
+    """Returns whether the analysis result is a duplicate or not."""
 
     return self.result_status in (
         result_status.FOUND_CORRECT_DUPLICATE,
@@ -169,8 +164,14 @@ class WfAnalysis(BaseBuildModel):
   result_status = ndb.IntegerProperty(indexed=True)
   # Record the history of triage.
   triage_history = ndb.JsonProperty(indexed=False, compressed=True)
-  # An optional reference to the analysis that might have caused this analysis
-  # to be marked as a duplicate.
+  # Master name of the analysis the result status might be derived from.
   triage_reference_analysis_master_name = ndb.StringProperty(indexed=False)
+  # Builder name of the analysis the result status might be derived from.
   triage_reference_analysis_builder_name = ndb.StringProperty(indexed=False)
+  # Build number of the analysis the result status might be derived from.
   triage_reference_analysis_build_number = ndb.IntegerProperty(indexed=False)
+
+  # The id of the failure group. Currently, this is the
+  # [master_name, builder_name, build_number] of the build failure that opened
+  # the failure_group. Example: ['m', 'b1', 1].
+  failure_group_key = ndb.JsonProperty(indexed=False)

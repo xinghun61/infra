@@ -11,7 +11,9 @@ from common import appengine_util
 from common import constants
 from common.waterfall import failure_type
 from model import analysis_status
+from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
+from model.wf_failure_group import WfFailureGroup
 from model.wf_try_job import WfTryJob
 from waterfall import swarming_tasks_to_try_job_pipeline
 from waterfall import waterfall_config
@@ -79,10 +81,225 @@ def _CheckIfNeedNewTryJobForTestFailure(
   return targeted_tests, need_new_try_job, last_pass
 
 
+def _BlameListsIntersection(blame_list_1, blame_list_2):
+  return set(blame_list_1) & set(blame_list_2)
+
+
+def _GetStepsAndTests(failed_steps):
+  """Extracts failed steps and tests from failed_steps data structure.
+
+  Args:
+    failed_steps: Failed steps and test, plus extra information. Example:
+    {
+        'step_a': {
+            'last_pass': 4,
+            'tests': {
+                'Test1': {
+                    'last_pass': 4,
+                    'current_failure': 6,
+                    'first_failure': 5
+                },
+                'Test2': {
+                    'last_pass': 4,
+                    'current_failure': 6,
+                    'first_failure': 5
+                }
+            },
+            'current_failure': 6,
+            'first_failure': 5,
+            'list_isolated_data': [
+                {
+                    'isolatedserver': 'https://isolateserver.appspot.com',
+                    'namespace': 'default-gzip',
+                    'digest': 'abcd'
+                }
+            ]
+        },
+        'step_b': {
+            'current_failure': 3,
+            'first_failure': 2,
+            'last_pass': 1
+        }
+    }
+
+  Returns:
+    failed_steps_and_tests: Simplified dict that contains step and test names.
+    Example:
+    {
+        'step_a': ['Test1', 'Test2'],
+        'step_b': []
+    }
+  """
+
+  failed_steps_and_tests = {}
+
+  if not failed_steps:
+    return failed_steps_and_tests
+
+  for failed_step_name, failed_step in failed_steps.iteritems():
+    failed_steps_and_tests[failed_step_name] = []
+    for test_name in failed_step.get('tests', {}):
+      failed_steps_and_tests[failed_step_name].append(test_name)
+
+  return failed_steps_and_tests
+
+
+def GenPotentialCulpritTupleList(heuristic_result):
+  """Generates a list of potential culprit tuples.
+
+  Args:
+    heuristic_result: the heuristic_result from which to generate a potential
+        culprit tuple list.
+
+  Returns:
+    A list of cultprit tuples that each could look like:
+
+        (step_name, revision, test_name)
+
+    or could look like:
+
+        (step_name, revision, None)
+  """
+  potential_culprit_tuple_list = []
+
+  if not heuristic_result:
+    return potential_culprit_tuple_list
+
+  # Iterates through the failures, tests, and suspected_cls, appending potential
+  # (step_name, test_name, revision) and (step_name, revision) culprit tuples to
+  # the list.
+  for failure in heuristic_result['failures']:
+    if failure.get('tests'):
+      for test in failure['tests']:
+        for suspected_cl in test.get('suspected_cls', []):
+          potential_culprit_tuple_list.append((
+              failure['step_name'],
+              suspected_cl['revision'],
+              test['test_name']))
+    else:
+      for suspected_cl in failure['suspected_cls']:
+        potential_culprit_tuple_list.append((
+            failure['step_name'],
+            suspected_cl['revision'],
+            None))
+
+  return potential_culprit_tuple_list
+
+
+def _LinkAnalysisToBuildFailureGroup(
+    master_name, builder_name, build_number, failure_group_key):
+  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+  analysis.failure_group_key = failure_group_key
+  analysis.put()
+
+
+def _CreateBuildFailureGroup(
+    master_name, builder_name, build_number, build_failure_type, blame_list,
+    suspected_tuples, output_nodes=None, failed_steps_and_tests=None):
+  new_group = WfFailureGroup.Create(master_name, builder_name, build_number)
+  new_group.build_failure_type = build_failure_type
+  new_group.blame_list = blame_list
+  new_group.suspected_tuples = suspected_tuples
+  new_group.output_nodes = output_nodes
+  new_group.failed_steps_and_tests = failed_steps_and_tests
+  new_group.put()
+
+
+def _GetMatchingGroup(wf_failure_groups, blame_list, suspected_tuples):
+  for group in wf_failure_groups:
+    if _BlameListsIntersection(group.blame_list, blame_list):
+      if suspected_tuples == group.suspected_tuples:
+        return group
+
+  return None
+
+def _GetOutputNodes(signals):
+  if not signals or 'compile' not in signals:
+    return []
+
+  # Compile failures with no output nodes will be considered unique.
+  return signals['compile'].get('failed_output_nodes', [])
+
+
+def _GetMatchingCompileFailureGroups(output_nodes):
+  # Output nodes should already be unique and sorted.
+  return WfFailureGroup.query(ndb.AND(
+      WfFailureGroup.build_failure_type == failure_type.COMPILE,
+      WfFailureGroup.output_nodes == output_nodes
+  )).fetch()
+
+
+def _GetMatchingTestFailureGroups(failed_steps_and_tests):
+  return WfFailureGroup.query(ndb.AND(
+      WfFailureGroup.build_failure_type == failure_type.TEST,
+      WfFailureGroup.failed_steps_and_tests == failed_steps_and_tests
+  )).fetch()
+
+
+def _IsBuildFailureUniqueAcrossPlatforms(
+    master_name, builder_name, build_number, build_failure_type, blame_list,
+    failed_steps, signals, heuristic_result):
+  output_nodes = None
+  failed_steps_and_tests = None
+
+  if build_failure_type == failure_type.COMPILE:
+    output_nodes = _GetOutputNodes(signals)
+    if not output_nodes:
+      return True
+    groups = _GetMatchingCompileFailureGroups(output_nodes)
+  elif build_failure_type == failure_type.TEST:
+    failed_steps_and_tests = _GetStepsAndTests(failed_steps)
+    if not failed_steps_and_tests:
+      return True
+    groups = _GetMatchingTestFailureGroups(failed_steps_and_tests)
+  else:
+    logging.info('Grouping %s failures is not supported. Only Compile and Test'
+                 'failures can be grouped.' %
+                 failure_type.GetDescriptionForFailureType(build_failure_type))
+    return True
+
+  suspected_tuples = sorted(GenPotentialCulpritTupleList(heuristic_result))
+  existing_group = _GetMatchingGroup(groups, blame_list, suspected_tuples)
+
+  # Create a new WfFailureGroup if we've encountered a unique build failure.
+  if existing_group:
+    logging.info('A group already exists, no need for a new try job.')
+    _LinkAnalysisToBuildFailureGroup(
+        master_name, builder_name, build_number, [existing_group.master_name,
+        existing_group.builder_name, existing_group.build_number])
+  else:
+    logging.info('A new try job should be run for this unique build failure.')
+    _CreateBuildFailureGroup(
+        master_name, builder_name, build_number, build_failure_type, blame_list,
+        suspected_tuples, output_nodes, failed_steps_and_tests)
+    _LinkAnalysisToBuildFailureGroup(master_name, builder_name, build_number,
+                                     [master_name, builder_name, build_number])
+
+  return not existing_group
+
+
 @ndb.transactional
+def ReviveOrCreateTryJobEntity(
+    master_name, builder_name, build_number, force_try_job):
+  try_job_entity_revived_or_created = True
+  try_job = WfTryJob.Get(master_name, builder_name, build_number)
+
+  if try_job:
+    if try_job.failed or force_try_job:
+      try_job.status = analysis_status.PENDING
+      try_job.put()
+    else:
+      try_job_entity_revived_or_created = False
+  else:
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.put()
+
+  return try_job_entity_revived_or_created
+
+
 def _NeedANewTryJob(
-    master_name, builder_name, build_number, failed_steps, failure_result_map,
-    force_try_job=False):
+    master_name, builder_name, build_number, build_failure_type, failed_steps,
+    failure_result_map, builds, signals, heuristic_result, force_try_job=False):
   """Checks if a new try_job is needed."""
   need_new_try_job = False
   last_pass = build_number
@@ -100,18 +317,15 @@ def _NeedANewTryJob(
             'step', master_name, builder_name, build_number, failure_result_map,
             failed_steps))
 
-  if need_new_try_job:
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+  # TODO(josiahk): Integrate this into need_new_try_job boolean
+  _IsBuildFailureUniqueAcrossPlatforms(
+      master_name, builder_name, build_number, build_failure_type,
+      builds[str(build_number)]['blame_list'], failed_steps, signals,
+      heuristic_result)
 
-    if try_job:
-      if try_job.failed or force_try_job:
-        try_job.status = analysis_status.PENDING
-        try_job.put()
-      else:
-        need_new_try_job = False
-    else:
-      try_job = WfTryJob.Create(master_name, builder_name, build_number)
-      try_job.put()
+  need_new_try_job = (
+      need_new_try_job and ReviveOrCreateTryJobEntity(
+          master_name, builder_name, build_number, force_try_job))
 
   return need_new_try_job, last_pass, try_job_type, targeted_tests
 
@@ -184,7 +398,9 @@ def ScheduleTryJobIfNeeded(failure_info, signals, heuristic_result,
   failure_result_map = {}
   need_new_try_job, last_pass, try_job_type, targeted_tests = (
       _NeedANewTryJob(master_name, builder_name, build_number,
-                      failed_steps, failure_result_map, force_try_job))
+                      failure_info['failure_type'], failed_steps,
+                      failure_result_map, builds, signals, heuristic_result,
+                      force_try_job))
 
   if need_new_try_job:
     compile_targets = (_GetFailedTargetsFromSignals(

@@ -21,48 +21,11 @@ from common.base_handler import Permission
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from waterfall import buildbot
-
+from waterfall import try_job_util
 
 MATCHING_ANALYSIS_HOURS_AGO_START = 24
 MATCHING_ANALYSIS_HOURS_AGO_END = 24
 MATCHING_ANALYSIS_END_BOUND_TIME_ZONE = 'US/Pacific'
-
-
-def _GenPotentialCulpritTupleList(analysis):
-  """Generates a list of potential culprit tuples.
-
-  Args:
-    analysis: the analysis from which to generate a potenial culript tuple list.
-
-  Returns:
-    A list of cultprit tuples that each could look like:
-
-        (step_name, test_name, revision)
-
-    or could look like:
-
-        (step_name, revision)
-  """
-  potential_culprit_tuple_list = []
-
-  # Iterates through the failures, tests, and suspected_cls, appending potential
-  # (step_name, test_name, revision) and (step_name, revision) culprit tuples to
-  # the list.
-  for failure in analysis.result['failures']:
-    if failure.get('tests'):
-      for test in failure['tests']:
-        for suspected_cl in test.get('suspected_cls', []):
-          potential_culprit_tuple_list.append((
-              failure['step_name'],
-              test['test_name'],
-              suspected_cl['revision']))
-    else:
-      for suspected_cl in failure['suspected_cls']:
-        potential_culprit_tuple_list.append((
-            failure['step_name'],
-            suspected_cl['revision']))
-
-  return potential_culprit_tuple_list
 
 
 def _DoAnalysesMatch(analysis_1, analysis_2):
@@ -78,8 +41,10 @@ def _DoAnalysesMatch(analysis_1, analysis_2):
   """
 
   # Get list of potential culprit tuples.
-  potential_culprit_tuple_list_1 = _GenPotentialCulpritTupleList(analysis_1)
-  potential_culprit_tuple_list_2 = _GenPotentialCulpritTupleList(analysis_2)
+  potential_culprit_tuple_list_1 = (
+      try_job_util.GenPotentialCulpritTupleList(analysis_1.result))
+  potential_culprit_tuple_list_2 = (
+      try_job_util.GenPotentialCulpritTupleList(analysis_2.result))
 
   # Both analyses must have non-empty potential culprit lists.
   if not potential_culprit_tuple_list_1 or not potential_culprit_tuple_list_2:
@@ -100,9 +65,7 @@ def _AppendTriageHistoryRecord(
         otherwise False.
     user_name: The user_name of the person to include in the triage record.
     is_duplicate: Whether or not this analysis is a duplicate of another
-        analysis. If this analysis is a duplicate, then set the result_status
-        accordingly. If this analysis is not a duplicate, reset the reference to
-        the 'first-cause' analaysis.
+        analysis.
   """
   if is_correct:
     if analysis.suspected_cls:
