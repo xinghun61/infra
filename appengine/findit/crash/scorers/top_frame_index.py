@@ -40,6 +40,10 @@ class TopFrameIndex(Scorer):
 
   def Reason(self, top_frame_index, score):
     if score == 0:
-      return ''
+      return None
 
-    return 'Modified top crashing frame is #%d' % top_frame_index
+    return self.name, score, 'Top frame is #%d' % top_frame_index
+
+  def ChangedFiles(self, result):
+    # There is no changed file infos that top frame scorer can provide.
+    return None

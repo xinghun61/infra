@@ -21,6 +21,16 @@ class CallStackTest(StacktraceTestSuite):
         StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [1, 2]).ToString(),
         '#0 in func @ f.cc:1:1')
 
+  def testBlameUrlForStackFrame(self):
+    frame = StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [])
+    self.assertEqual(frame.BlameUrl('1'), None)
+
+    frame.repo_url = 'https://repo_url'
+    self.assertEqual(frame.BlameUrl('1'), 'https://repo_url/+blame/1/f.cc')
+
+    frame.crashed_line_numbers = [9, 10]
+    self.assertEqual(frame.BlameUrl('1'), 'https://repo_url/+blame/1/f.cc#9')
+
   def testFrameListInitCallStack(self):
     stack = CallStack(0)
     stack.extend([StackFrame(0, 'src/', '', 'func', 'f.cc', [2])])

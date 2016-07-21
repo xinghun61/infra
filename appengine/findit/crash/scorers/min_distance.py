@@ -22,11 +22,11 @@ class MinDistance(Scorer):
     self.max_distance = max_distance
 
   def GetMetric(self, result):
-    if not hasattr(result, 'min_distance'):
-      logging.warning('Scorer %s only applies to MatchResult', self.name)
-      return None
+    min_distance = float('inf')
+    for analysis_info in result.file_to_analysis_info.itervalues():
+      min_distance = min(min_distance, analysis_info['min_distance'])
 
-    return result.min_distance
+    return min_distance
 
   def Score(self, min_distance):
     if min_distance > self.max_distance:
@@ -41,6 +41,24 @@ class MinDistance(Scorer):
 
   def Reason(self, min_distance, score):
     if score == 0:
-      return ''
+      return None
 
-    return 'Modification distance (LOC) is %d' % min_distance
+    return self.name, score, 'Minimum distance is %d' % min_distance
+
+  def ChangedFiles(self, result):
+    index_to_changed_files = {}
+    for file_path, analysis_info in result.file_to_analysis_info.iteritems():
+      file_name = file_path.split('/')[-1]
+      frame = analysis_info['min_distance_frame']
+      index_to_changed_files[frame.index] = {
+          'file': file_name,
+          'blame_url': frame.BlameUrl(result.changelog.revision),
+          'info': 'Minimum distance (LOC) %d, frame #%d' % (
+              analysis_info['min_distance'], frame.index)
+      }
+
+    # Sort changed file by frame index.
+    _, changed_files = zip(*sorted(index_to_changed_files.items(),
+                                     key=lambda x: x[0]))
+
+    return list(changed_files)

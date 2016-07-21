@@ -2,20 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-_INFINITY = 1000
-
 
 class Result(object):
   """Represents findit culprit result."""
 
   def __init__(self, changelog, dep_path,
-               confidence=None, reason=None):
+               confidence=None, reasons=None, changed_files=None):
     self.changelog = changelog
     self.dep_path = dep_path
     self.confidence = confidence
-    self.reason = reason
+    self.reasons = reasons
+    self.changed_files = changed_files
 
     self.file_to_stack_infos = {}
+    self.file_to_analysis_info = {}
 
   def ToDict(self):
     return {
@@ -25,7 +25,8 @@ class Result(object):
         'project_path': self.dep_path,
         'author': self.changelog.author_email,
         'time': str(self.changelog.author_time),
-        'reason': self.reason,
+        'reasons': self.reasons,
+        'changed_files': self.changed_files,
         'confidence': self.confidence,
     }
 
@@ -51,13 +52,6 @@ class Result(object):
 class MatchResult(Result):
   """Represents findit culprit result got from match algorithm."""
 
-  def __init__(self, changelog, dep_path,
-               confidence=None, reason=None):
-    super(MatchResult, self).__init__(
-        changelog, dep_path, confidence, reason)
-
-    self.min_distance = _INFINITY
-
   def Update(self, file_path, stack_infos, blame):
     """Updates a match result with file path and its stack_infos and blame.
 
@@ -71,9 +65,8 @@ class MatchResult(Result):
 
     Args:
       file_path (str): File path of the crashed file.
-      stack_infos (list): List of (StackFrame, callstack priority) tuples,
-        represents frames of this file and the callstack priorities of those
-        frames.
+      stack_infos (list): List of stack_info dicts, represents frames of this
+        file and the callstack priorities of those frames.
       blame (Blame): Blame oject of this file.
     """
     self.file_to_stack_infos[file_path] = stack_infos
@@ -81,6 +74,8 @@ class MatchResult(Result):
     if not blame:
       return
 
+    min_distance = float('inf')
+    min_distance_frame = None
     for region in blame:
       if region.revision != self.changelog.revision:
         continue
@@ -88,8 +83,16 @@ class MatchResult(Result):
       region_lines = range(region.start, region.start + region.count)
 
       for frame, _ in stack_infos:
-        self.min_distance = min(self.min_distance, self._DistanceOfTwoRegions(
-            frame.crashed_line_numbers, region_lines))
+        distance = self._DistanceOfTwoRegions(frame.crashed_line_numbers,
+                                              region_lines)
+        if distance < min_distance:
+          min_distance = distance
+          min_distance_frame = frame
+
+    self.file_to_analysis_info[file_path] = {
+        'min_distance': min_distance,
+        'min_distance_frame': min_distance_frame,
+    }
 
   def _DistanceOfTwoRegions(self, region1, region2):
     if set(region1).intersection(set(region2)):
@@ -119,9 +122,8 @@ class MatchResults(dict):
     Args:
       file_path (str): File path of the crashed file.
       dep_path (str): Path of the dependency of the file.
-      stack_infos (list): List of (StackFrame, callstack priority) tuples,
-        represents frames of this file and the callstack priorities of those
-        frames.
+      stack_infos (list): List of stack_info dicts, represents frames of this
+        file and the callstack priorities of those frames.
       changelogs (list): List of Changelog objects in the dep in regression
         range which touched the file.
       blame (Blame): Blame of the file.
@@ -134,5 +136,4 @@ class MatchResults(dict):
         self[changelog.revision] = MatchResult(changelog, dep_path)
 
       match_result = self[changelog.revision]
-
       match_result.Update(file_path, stack_infos, blame)

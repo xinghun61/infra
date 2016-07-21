@@ -28,18 +28,20 @@ class CrashTestSuite(StacktraceTestSuite):  # pragma: no cover.
     self._VerifyTwoChangeLogsEqual(result1.changelog, result2.changelog)
     self.assertEqual(result1.dep_path, result2.dep_path)
     self.assertEqual(result1.confidence, result2.confidence)
-    self.assertEqual(result1.reason, result2.reason)
-    self.assertEqual(len(result1.file_to_stack_infos),
-                     len(result2.file_to_stack_infos))
+    self.assertEqual(result1.reasons, result2.reasons)
 
-    for (file_path1, stack_infos1), (file_path2, stack_infos2) in zip(
-        result1.file_to_stack_infos.iteritems(),
-        result2.file_to_stack_infos.iteritems()):
-      self.assertEqual(file_path1, file_path2)
-      self._VerifyTwoStackInfosEqual(stack_infos1, stack_infos2)
+    self.assertEqual(result1.file_to_stack_infos.keys(),
+                     result2.file_to_stack_infos.keys())
+    for file_path in result1.file_to_stack_infos.keys():
+      self._VerifyTwoStackInfosEqual(result1.file_to_stack_infos[file_path],
+                                     result2.file_to_stack_infos[file_path])
+
+    self.assertEqual(result1.file_to_analysis_info,
+                     result2.file_to_analysis_info)
 
   def _VerifyTwoMatchResultEqual(self, match_result1, match_result2):
-    self.assertEqual(match_result1.min_distance, match_result2.min_distance)
+    self.assertEqual(match_result1.file_to_analysis_info,
+                     match_result2.file_to_analysis_info)
     self._VerifyTwoResultEqual(match_result1, match_result2)
 
   def _VerifyTwoMatchResultsEqual(self, match_results1, match_results2):

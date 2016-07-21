@@ -11,6 +11,7 @@ from crash.type_enums import CallStackFormatType, CallStackLanguageType
 
 GENERATED_CODE_FILE_PATH_PATTERN = re.compile(r'.*out/[^/]+/gen/')
 THIRD_PARTY_FILE_PATH_MARKER = 'third_party'
+CHROMIUM_REPO_URL = 'https://chromium.googlesource.com/chromium/src.git'
 
 
 def GetFullPathForJavaFrame(function):
@@ -52,15 +53,18 @@ def GetDepPathAndNormalizedFilePath(path, deps):
     deps (dict): Map dependency path to its corresponding Dependency.
 
   Returns:
-    A tuple - (dep_path, normalized_path), dep_path is the dependency path
-    of this path.  (e.g 'src/', 'src/v8/' ...etc), '' is no match found.
+    A tuple - (dep_path, normalized_path, repo_url)
+    dep_path (str): Dependency path of this path.  (e.g 'src/', 'src/v8/'
+      ...etc), '' is no match found.
+    normalized_path (str): Normalized relative file path starting from dep_path.
+    repo_url (str): Repository url corresponding to dep_path.
   """
   # First normalize the path by retreiving the normalized path.
   normalized_path = os.path.normpath(path).replace('\\', '/')
 
   if GENERATED_CODE_FILE_PATH_PATTERN.match(normalized_path):
     logging.info('Generated code path %s', normalized_path)
-    return '', normalized_path
+    return '', normalized_path, None
 
   # Iterate through all dep paths in the parsed DEPS in an order.
   for dep_path in sorted(deps.keys(), key=lambda path: -path.count('/')):
@@ -104,7 +108,7 @@ def GetDepPathAndNormalizedFilePath(path, deps):
     if current_dep_path:
       normalized_path = normalized_path.split(current_dep_path, 1)[1]
 
-      return (dep_path, normalized_path)
+      return dep_path, normalized_path, deps[dep_path].repo_url
 
   logging.info(
       'Cannot find match of dep path for file path %s, Default to src/',
@@ -113,7 +117,7 @@ def GetDepPathAndNormalizedFilePath(path, deps):
   # For some crashes, the file path looks like this:
   # third_party/WebKit/Source/a.cc, the src/ in the beginning is trimmed, so
   # default the dep path to 'src/' if no match found.
-  return 'src/', normalized_path
+  return 'src/', normalized_path, CHROMIUM_REPO_URL
 
 
 def GetLanguageTypeFromFormatType(format_type):

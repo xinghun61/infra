@@ -27,27 +27,27 @@ class ParseUtilTest(testing.AppengineTestCase):
 
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('out/r/gen/b.cc', deps),
-        ('', 'out/r/gen/b.cc'))
+        ('', 'out/r/gen/b.cc', None))
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('src/a/b.cc', deps),
-        ('src/', 'a/b.cc'))
+        ('src/', 'a/b.cc', 'https://repo'))
 
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('src/Upper/a/b.cc', deps),
-        ('src/Upper/', 'a/b.cc'))
+        ('src/Upper/', 'a/b.cc', 'https://repo'))
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('src/upper/a/b.cc', deps),
-        ('src/Upper/', 'a/b.cc'))
+        ('src/Upper/', 'a/b.cc', 'https://repo'))
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('Upper/a/b.cc', deps),
-        ('src/Upper/', 'a/b.cc'))
+        ('src/Upper/', 'a/b.cc', 'https://repo'))
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('upper/a/b.cc', deps),
-        ('src/Upper/', 'a/b.cc'))
+        ('src/Upper/', 'a/b.cc', 'https://repo'))
 
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('dummy/path/b.cc', deps),
-        ('src/', 'dummy/path/b.cc'))
+        ('src/', 'dummy/path/b.cc', parse_util.CHROMIUM_REPO_URL))
 
   def testGetLanguageTypeFromFormatType(self):
     self.assertEqual(

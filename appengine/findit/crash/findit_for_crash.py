@@ -11,7 +11,7 @@ from crash import crash_util
 from crash.callstack import CallStack
 from crash.stacktrace import Stacktrace
 from crash.results import MatchResults
-from crash.scorers.aggregator import Aggregator
+from crash.scorers.aggregated_scorer import AggregatedScorer
 from crash.scorers.min_distance import MinDistance
 from crash.scorers.top_frame_index import TopFrameIndex
 
@@ -233,9 +233,9 @@ def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps,
   if not results:
     return []
 
-  aggregator = Aggregator([TopFrameIndex(), MinDistance()])
+  aggregator = AggregatedScorer([TopFrameIndex(), MinDistance()])
 
-  map(aggregator.ScoreAndReason, results)
+  map(aggregator.Score, results)
 
   # Filter all the 0 confidence results.
   results = filter(lambda r: r.confidence != 0, results)

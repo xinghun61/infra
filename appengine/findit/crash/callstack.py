@@ -36,15 +36,18 @@ class StackFrame(object):
       for example, /b/build/slave/mac64/build/src/v8/src/heap/
       incremental-marking-job.cc.
     crashed_line_numbers (list): Line numbers of the file that caused the crash.
+    repo_url (str): Repo url of this frame.
   """
   def __init__(self, index, dep_path, function,
-               file_path, raw_file_path, crashed_line_numbers):
+               file_path, raw_file_path, crashed_line_numbers,
+               repo_url=None):
     self.index = index
     self.dep_path = dep_path
     self.function = function
     self.file_path = file_path
     self.raw_file_path = raw_file_path
     self.crashed_line_numbers = crashed_line_numbers
+    self.repo_url = repo_url
 
   def ToString(self):
     frame_str = '#%d in %s @ %s' % (self.index, self.function, self.file_path)
@@ -57,6 +60,16 @@ class StackFrame(object):
       frame_str += ':%d' % (len(self.crashed_line_numbers) - 1)
 
     return frame_str
+
+  def BlameUrl(self, revision):
+    if not self.repo_url or not self.dep_path:
+      return None
+
+    blame_url = '%s/+blame/%s/%s' % (self.repo_url, revision, self.file_path)
+    if self.crashed_line_numbers:
+      blame_url += '#%d' % self.crashed_line_numbers[0]
+
+    return blame_url
 
   def __str__(self):
     return self.ToString()
@@ -128,7 +141,7 @@ class CallStack(list):
           match.group(2) + (match.group(3) if match.group(3) else ''))
 
     # Normalize the file path so that it can be compared to repository path.
-    dep_path, file_path = parse_util.GetDepPathAndNormalizedFilePath(
+    dep_path, file_path, repo_url = parse_util.GetDepPathAndNormalizedFilePath(
         raw_file_path, deps)
 
     # If we have the common stack frame index pattern, then use it
@@ -139,5 +152,5 @@ class CallStack(list):
     else:
       stack_frame_index = len(self)
 
-    self.append(StackFrame(stack_frame_index, dep_path, function,
-                           file_path, raw_file_path, crashed_line_numbers))
+    self.append(StackFrame(stack_frame_index, dep_path, function, file_path,
+                           raw_file_path, crashed_line_numbers, repo_url))

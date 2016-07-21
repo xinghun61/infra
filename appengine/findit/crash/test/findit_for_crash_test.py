@@ -237,8 +237,9 @@ class FinditForCrashTest(CrashTestSuite):
         'project_path': 'src/',
         'author': 'r@chromium.org',
         'time': 'Thu Mar 31 21:24:43 2016',
-        'reason': None,
+        'reasons': None,
         'confidence': None,
+        'changed_files': None
     }]
 
     match_results = findit_for_crash.FindMatchResults(
@@ -267,21 +268,23 @@ class FinditForCrashTest(CrashTestSuite):
 
     def _MockFindMatchResults(*_):
       match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', '')
+      frame1 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [1])
+      frame2 = StackFrame(1, 'src/', 'func', 'a.cc', 'src/a.cc', [7])
       match_result1.file_to_stack_infos = {
-          'a.cc': [
-              (StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [1]), 0),
-              (StackFrame(1, 'src/', 'func', 'a.cc', 'src/a.cc', [7]), 0),
-          ]
+          'a.cc': [(frame1, 0), (frame2, 0)]
       }
-      match_result1.min_distance = 0
+      match_result1.file_to_analysis_info = {
+          'a.cc': {'min_distance': 0, 'min_distance_frame': frame1}
+      }
 
       match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
+      frame3 = StackFrame(5, 'src/', 'func', 'f.cc', 'src/f.cc', [1])
       match_result2.file_to_stack_infos = {
-          'f.cc': [
-              (StackFrame(5, 'src/', 'func', 'f.cc', 'src/f.cc', [1]), 0),
-          ]
+          'f.cc': [(frame3, 0)]
       }
-      match_result2.min_distance = 20
+      match_result2.file_to_analysis_info = {
+          'a.cc': {'min_distance': 20, 'min_distance_frame': frame3}
+      }
 
       return [match_result1, match_result2]
 
@@ -289,16 +292,17 @@ class FinditForCrashTest(CrashTestSuite):
 
     expected_match_results = [
         {
-            'reason': ('(1) Modified top crashing frame is #0\n'
-                       '(2) Modification distance (LOC) is 0\n\n'
-                       'Changed file a.cc crashed in frame #0, frame #1'),
-             'time': 'Thu Mar 31 21:24:43 2016',
-             'author': 'r@chromium.org',
-             'url': 'https://repo.test/+/1',
-             'project_path': 'src/',
-             'review_url': 'https://codereview.chromium.org/3281',
-             'confidence': 1.0, 'revision': '1'
-         },
+            'reasons': [('TopFrameIndex', 1.0, 'Top frame is #0'),
+                        ('MinDistance', 1, 'Minimum distance is 0')],
+            'changed_files': [{'info': 'Minimum distance (LOC) 0, frame #0',
+                               'blame_url': None, 'file': 'a.cc'}],
+            'time': 'Thu Mar 31 21:24:43 2016',
+            'author': 'r@chromium.org',
+            'url': 'https://repo.test/+/1',
+            'project_path': 'src/',
+            'review_url': 'https://codereview.chromium.org/3281',
+            'confidence': 1.0, 'revision': '1'
+        },
     ]
 
     regression_deps_rolls = {'src/': DependencyRoll('src/', 'https://repo',
@@ -312,29 +316,32 @@ class FinditForCrashTest(CrashTestSuite):
   def testFinditForCrashFilterZeroConfidentResults(self):
     def _MockFindMatchResults(*_):
       match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', '')
+      frame1 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [1])
+      frame2 = StackFrame(1, 'src/', 'func', 'a.cc', 'src/a.cc', [7])
       match_result1.file_to_stack_infos = {
-          'a.cc': [
-              (StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [1]), 0),
-              (StackFrame(1, 'src/', 'func', 'a.cc', 'src/a.cc', [7]), 0),
-          ]
+          'a.cc': [(frame1, 0), (frame2, 0)]
       }
-      match_result1.min_distance = 1
+      match_result1.file_to_analysis_info = {
+          'a.cc': {'min_distance': 1, 'min_distance_frame': frame1}
+      }
 
       match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
+      frame3 = StackFrame(15, 'src/', 'func', 'f.cc', 'src/f.cc', [1])
       match_result2.file_to_stack_infos = {
-          'f.cc': [
-              (StackFrame(15, 'src/', 'func', 'f.cc', 'src/f.cc', [1]), 0),
-          ]
+          'f.cc': [(frame3, 0)]
       }
-      match_result2.min_distance = 20
+      match_result2.file_to_analysis_info = {
+          'f.cc': {'min_distance': 20, 'min_distance_frame': frame3}
+      }
 
       match_result3 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
+      frame4 = StackFrame(3, 'src/', 'func', 'ff.cc', 'src/ff.cc', [1])
       match_result3.file_to_stack_infos = {
-          'f.cc': [
-              (StackFrame(3, 'src/', 'func', 'ff.cc', 'src/ff.cc', [1]), 0),
-          ]
+          'f.cc': [(frame4, 0)]
       }
-      match_result3.min_distance = 60
+      match_result3.file_to_analysis_info = {
+          'f.cc': {'min_distance': 60, 'min_distance_frame': frame4}
+      }
 
       return [match_result1, match_result2, match_result3]
 
@@ -342,16 +349,25 @@ class FinditForCrashTest(CrashTestSuite):
 
     expected_match_results = [
         {
-            'reason': ('(1) Modified top crashing frame is #0\n'
-                       '(2) Modification distance (LOC) is 1\n\n'
-                       'Changed file a.cc crashed in frame #0, frame #1'),
-            'time': 'Thu Mar 31 21:24:43 2016',
             'author': 'r@chromium.org',
-            'url': 'https://repo.test/+/1',
+            'changed_files': [
+                {
+                    'blame_url': None,
+                    'file': 'a.cc',
+                    'info': 'Minimum distance (LOC) 1, frame #0'
+                }
+            ],
+            'confidence': 0.8,
             'project_path': 'src/',
+            'reasons': [
+                ('TopFrameIndex', 1.0, 'Top frame is #0'),
+                ('MinDistance', 0.8, 'Minimum distance is 1')
+            ],
             'review_url': 'https://codereview.chromium.org/3281',
-            'confidence': 0.8, 'revision': '1'
-        },
+            'revision': '1',
+            'time': 'Thu Mar 31 21:24:43 2016',
+            'url': 'https://repo.test/+/1'
+        }
     ]
 
     regression_deps_rolls = {'src/': DependencyRoll('src/', 'https://repo',
@@ -359,27 +375,31 @@ class FinditForCrashTest(CrashTestSuite):
 
     results = findit_for_crash.FindItForCrash(Stacktrace(),
                                               regression_deps_rolls, {})
+
     self.assertEqual([result.ToDict() for result in results],
                      expected_match_results)
 
   def testFinditForCrashAllMatchResultsWithZeroConfidences(self):
     def _MockFindMatchResults(*_):
       match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', '')
+      frame1 = StackFrame(20, 'src/', '', 'func', 'a.cc', [1])
+      frame2 = StackFrame(21, 'src/', '', 'func', 'a.cc', [7])
       match_result1.file_to_stack_infos = {
-          'a.cc': [
-              (StackFrame(20, 'src/', '', 'func', 'a.cc', [1]), 0),
-              (StackFrame(21, 'src/', '', 'func', 'a.cc', [7]), 0),
-          ]
+          'a.cc': [(frame1, 0), (frame2, 0)]
       }
-      match_result1.min_distance = 1
+      match_result1.file_to_analysis_info = {
+          'a.cc': {'min_distance': 1, 'min_distance_frame': frame1}
+      }
 
       match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
+      frame3 = StackFrame(15, 'src/', '', 'func', 'f.cc', [1])
       match_result2.file_to_stack_infos = {
-          'f.cc': [
-              (StackFrame(15, 'src/', '', 'func', 'f.cc', [1]), 0),
-          ]
+          'f.cc': [(frame3, 0)]
       }
       match_result2.min_distance = 20
+      match_result2.file_to_analysis_info = {
+          'f.cc': {'min_distance': 20, 'min_distance_frame': frame3}
+      }
 
       return [match_result1, match_result2]
 

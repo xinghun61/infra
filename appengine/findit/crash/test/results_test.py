@@ -68,9 +68,9 @@ DUMMY_BLAME.AddRegion(
     Region(9, 2, '3', 'k', 'k@chromium.org', 'Thu Apr 1 21:24:43 2016'))
 
 DUMMY_BLAME2 = Blame('4', 'b.cc')
-DUMMY_BLAME.AddRegion(
+DUMMY_BLAME2.AddRegion(
     Region(1, 5, '2', 'r', 'r@chromium.org', 'Thu Mar 25 21:24:43 2016'))
-DUMMY_BLAME.AddRegion(
+DUMMY_BLAME2.AddRegion(
     Region(6, 3, '1', 'e', 'e@chromium.org', 'Thu Mar 31 21:24:43 2016'))
 
 
@@ -79,7 +79,9 @@ class ResultsTest(CrashTestSuite):
   def testResultToDict(self):
 
     result = Result(DUMMY_CHANGELOG1, 'src/',
-                    confidence=1, reason='some reason')
+                    confidence=1, reasons=['MinDistance', 0.5, 'some reason'],
+                    changed_files={'file': 'f', 'blame_url': 'http://b',
+                                   'info': 'min distance (LOC) 5'})
 
     expected_result_json = {
         'url': DUMMY_CHANGELOG1.commit_url,
@@ -88,7 +90,9 @@ class ResultsTest(CrashTestSuite):
         'project_path': 'src/',
         'author': DUMMY_CHANGELOG1.author_email,
         'time': str(DUMMY_CHANGELOG1.author_time),
-        'reason': 'some reason',
+        'reasons': ['MinDistance', 0.5, 'some reason'],
+        'changed_files': {'file': 'f', 'blame_url': 'http://b',
+                          'info': 'min distance (LOC) 5'},
         'confidence': 1,
     }
 
@@ -96,8 +100,7 @@ class ResultsTest(CrashTestSuite):
 
   def testResultToString(self):
 
-    result = Result(DUMMY_CHANGELOG1, 'src/',
-                    confidence=1, reason='some reason')
+    result = Result(DUMMY_CHANGELOG1, 'src/', confidence=1)
 
     expected_result_str = ''
     self.assertEqual(result.ToString(), expected_result_str)
@@ -111,37 +114,53 @@ class ResultsTest(CrashTestSuite):
 
   def testMatchResultUpdate(self):
     # Touched lines have intersection with crashed lines.
-    result = MatchResult(DUMMY_CHANGELOG1, 'src/',
-                         confidence=1, reason='some reason')
+    result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
     stack_infos = [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7]), 0)]
 
     result.Update('a.cc', stack_infos, DUMMY_BLAME)
-    self.assertEqual(result.min_distance, 0)
+    self.assertEqual(result.file_to_analysis_info['a.cc']['min_distance'], 0)
 
     # Touched lines are before crashed lines.
-    result = MatchResult(DUMMY_CHANGELOG1, 'src/',
-                         confidence=1, reason='some reason')
+    result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
 
     stack_infos = [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [3]), 0)]
 
     result.Update('a.cc', stack_infos, DUMMY_BLAME)
-    self.assertEqual(result.min_distance, 3)
+    self.assertEqual(result.file_to_analysis_info['a.cc']['min_distance'], 3)
 
     # Touched lines are after crashed lines.
-    result = MatchResult(DUMMY_CHANGELOG1, 'src/',
-                         confidence=1, reason='some reason')
+    result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
 
     stack_infos = [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [10]), 0)]
 
     result.Update('a.cc', stack_infos, DUMMY_BLAME)
-    self.assertEqual(result.min_distance, 2)
+    self.assertEqual(result.file_to_analysis_info['a.cc']['min_distance'], 2)
+
+  def testMatchResultUpdateWithEmptyBlame(self):
+    result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
+    stack_infos = [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7]), 0)]
+
+    result.Update('a.cc', stack_infos, None)
+    self.assertEqual(result.file_to_stack_infos['a.cc'], stack_infos)
+    self.assertEqual(result.file_to_analysis_info, {})
+
+  def testMatchResultUpdateMinimumDistance(self):
+    result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
+    frame1 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7])
+    frame2 = StackFrame(2, 'src/', 'func', 'a.cc', 'src/a.cc', [20])
+    stack_infos = [(frame1, 0), (frame2, 0)]
+
+    result.Update('a.cc', stack_infos, DUMMY_BLAME)
+    self.assertEqual(result.file_to_stack_infos['a.cc'], stack_infos)
+    self.assertEqual(result.file_to_analysis_info, {'a.cc': {
+        'min_distance': 0, 'min_distance_frame': frame1}})
 
   def testMatchResultsGenerateMatchResults(self):
     match_results = MatchResults(ignore_cls=set(['2']))
-    stack_infos1 = [(StackFrame(
-        0, 'src/',  'func', 'a.cc', 'src/a.cc', [7]), 0)]
-    stack_infos2 = [(StackFrame(
-        1, 'src/',  'func', 'b.cc', 'src/b.cc', [11]), 0)]
+    frame1 = StackFrame(0, 'src/',  'func', 'a.cc', 'src/a.cc', [7])
+    frame2 = StackFrame(1, 'src/',  'func', 'b.cc', 'src/b.cc', [11])
+    stack_infos1 = [(frame1, 0)]
+    stack_infos2 = [(frame2, 0)]
     match_results.GenerateMatchResults('a.cc', 'src/', stack_infos1,
                                        [DUMMY_CHANGELOG1, DUMMY_CHANGELOG2],
                                        DUMMY_BLAME)
@@ -153,9 +172,12 @@ class ResultsTest(CrashTestSuite):
     expected_match_result = MatchResult(DUMMY_CHANGELOG1, 'src/')
     expected_match_result.file_to_stack_infos = {
         'a.cc': stack_infos1,
-        'b.cc': stack_infos2
+        'b.cc': stack_infos2,
     }
-    expected_match_result.min_distance = 0
+    expected_match_result.file_to_analysis_info = {
+        'a.cc': {'min_distance': 0, 'min_distance_frame': frame1},
+        'b.cc': {'min_distance': 3, 'min_distance_frame': frame2},
+    }
 
     expected_match_results = MatchResults(ignore_cls=set(['2']))
     expected_match_results['1'] = expected_match_result

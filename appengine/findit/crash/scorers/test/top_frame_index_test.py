@@ -25,6 +25,10 @@ class TopFrameIndexTest(ScorerTestSuite):
 
   def testReason(self):
     self.assertEqual(TopFrameIndex().Reason(0, 1),
-                     'Modified top crashing frame is #0')
+                     ('TopFrameIndex', 1, 'Top frame is #0'))
     self.assertEqual(TopFrameIndex().Reason(30, 0),
-                     '')
+                     None)
+
+  def testChangedFiles(self):
+    result = MatchResult(self._GetDummyChangeLog(), 'src/', '')
+    self.assertEqual(TopFrameIndex().ChangedFiles(result), None)
