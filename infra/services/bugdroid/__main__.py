@@ -149,6 +149,10 @@ def _create_http(creds_data):
 def main(args):  # pragma: no cover
   opts, loop_opts = parse_args(args)
 
+  if not os.path.isdir(opts.datadir):
+    DEFAULT_LOGGER.info('Creating data directory.')
+    os.makedirs(opts.datadir)
+
   with open(opts.credentials_db) as data_file:    
     creds_data = json.load(data_file)
 
