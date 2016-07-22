@@ -88,7 +88,7 @@ func (p *cookLogDogParams) addFlags(fs *flag.FlagSet) {
 }
 
 func (p *cookLogDogParams) active() bool {
-	return p.host != "" || p.project != "" || p.prefix != "" || p.tee
+	return p.host != "" || p.project != "" || p.prefix != ""
 }
 
 func (p *cookLogDogParams) validate() error {
