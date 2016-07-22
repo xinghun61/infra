@@ -126,7 +126,7 @@ def MailDomain():
 def FormatFriendly(commenter_view, sender, reveal_addr):
   """Format the From: line to include the commenter's friendly name if given."""
   if commenter_view:
-    site_name = settings.site_name
+    site_name = settings.site_name.lower()
     if commenter_view.email in client_config_svc.GetServiceAccountMap():
       friendly = commenter_view.display_name
     elif reveal_addr:
@@ -138,7 +138,7 @@ def FormatFriendly(commenter_view, sender, reveal_addr):
       sender_username, sender_domain = sender.split('@', 1)
       sender = '%s+v2.%d@%s' % (
           sender_username, commenter_view.user_id, sender_domain)
-      friendly = friendly.split('@')[0].capitalize()
+      friendly = friendly.split('@')[0]
     return '%s via %s <%s>' % (friendly, site_name, sender)
   else:
     return sender
