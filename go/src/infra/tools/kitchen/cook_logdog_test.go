@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/luci/luci-go/common/environ"
-	"github.com/luci/luci-go/common/logdog/types"
+	"github.com/luci/luci-go/logdog/common/types"
 
 	. "github.com/luci/luci-go/common/testing/assertions"
 	. "github.com/smartystreets/goconvey/convey"
