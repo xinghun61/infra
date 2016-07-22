@@ -48,7 +48,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.current_identity = auth.Identity('service', 'unittest')
     self.mock(auth, 'get_current_identity', lambda: self.current_identity)
     self.mock(acl, 'can_async', lambda *_: future(True))
-    self.mock(utils, 'utcnow', lambda: datetime.datetime(2015, 1, 1))
+    self.now = datetime.datetime(2015, 1, 1)
+    self.mock(utils, 'utcnow', lambda: self.now)
     self.mock(swarming, 'is_for_swarming_async', mock.Mock())
     self.mock(swarming, 'create_task_async', mock.Mock())
     swarming.is_for_swarming_async.return_value = ndb.Future()
@@ -822,3 +823,43 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       service.delete_many_builds(
         self.test_build.bucket, model.BuildStatus.COMPLETED)
+
+  ###########################  LONGEST_PENDING_TIME ############################
+
+  def test_longest_pending_time(self):
+    builds = [
+      model.Build(
+          bucket='chromium',
+          tags=['builder:x'],
+          create_time=self.now - datetime.timedelta(minutes=10),
+      ),
+      model.Build(
+          bucket='chromium',
+          tags=['builder:x'],
+          create_time=self.now - datetime.timedelta(minutes=20),
+      ),
+      model.Build(
+          bucket='chromium',
+          tags=['builder:y'],
+          create_time=self.now - datetime.timedelta(minutes=30),
+      ),
+    ]
+    for b in builds:
+      b.put()
+    actual = service.longest_pending_time('chromium', 'x')
+    self.assertEqual(actual, datetime.timedelta(minutes=20))
+
+  def test_longest_pending_time_invalid_input(self):
+    with self.assertRaises(errors.InvalidInputError):
+      service.longest_pending_time('', 'x')
+    with self.assertRaises(errors.InvalidInputError):
+      service.longest_pending_time('chromium', '')
+
+  def test_longest_pending_time_no_builds(self):
+    actual = service.longest_pending_time('chromium', 'x')
+    self.assertEqual(actual, datetime.timedelta(0))
+
+  def test_longest_pending_time_without_permissions(self):
+    self.mock_cannot(acl.Action.ACCESS_BUCKET)
+    with self.assertRaises(auth.AuthorizationError):
+      service.longest_pending_time('chromium', 'x')

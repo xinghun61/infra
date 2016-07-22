@@ -34,3 +34,11 @@ indexes:
   properties:
   - name: status
   - name: swarming_task_id
+
+# Computing longest pending time.
+- kind: Build
+  properties:
+    - name: bucket
+    - name: status
+    - name: tags
+    - name: create_time
