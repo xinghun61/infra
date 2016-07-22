@@ -119,7 +119,7 @@
          <tr [if-any fields.display][else]class="ifExpand"[define any_fields_to_reveal]Yes[end][end]>
           <th>[fields.field_name]:</th>
           <td colspan="2">
-            [include "field-value-widgets.ezt" fields.field_def.is_multivalued_bool]
+            [include "field-value-widgets.ezt" fields.field_def.is_multivalued_bool ""]
             <div class="fielderror" style="display:none" id="error_custom_[fields.field_id]"></div>
           </td>
          <tr>
