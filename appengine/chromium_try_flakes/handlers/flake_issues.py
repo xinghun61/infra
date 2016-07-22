@@ -556,8 +556,13 @@ class CreateFlakyRun(webapp2.RequestHandler):
            str(failure_run.buildnumber))
     urlfetch.set_default_fetch_deadline(60)
     logging.info('get_flaky_run_reason ' + url)
-    result = urlfetch.fetch(url).content
-    json_result = json.loads(result)
+    response = urlfetch.fetch(url)
+    if response.status_code == 404:
+      logging.warning(
+          'The build request %s has returned 404, which likely means it has '
+          'expired and can not be retrieved anymore.', url)
+      return
+    json_result = json.loads(response.content)
     steps = json_result['steps']
 
     failed_steps = []
