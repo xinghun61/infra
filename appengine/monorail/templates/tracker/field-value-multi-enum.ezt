@@ -13,12 +13,12 @@
     [end]
   [end]
 
-  <label for="custom_[fields.field_id]_[fields.field_def.choices.idx]" class="enum_checkbox"
+  <label for="[arg0]_custom_[fields.field_id]_[fields.field_def.choices.idx]" class="enum_checkbox"
          title="[is derived "Yes"]derived: [end][fields.field_def.choices.name][if-any fields.field_def.choices.docstring]: [fields.field_def.choices.docstring][end]"
          [is derived "Yes"]style="font-style:italic"[end]>
     <input type="checkbox" name="custom_[fields.field_id]"
            value="[fields.field_def.choices.name]"
-           id="custom_[fields.field_id]_[fields.field_def.choices.idx]"
+           id="[arg0]_custom_[fields.field_id]_[fields.field_def.choices.idx]"
            [is checked "Yes"]checked="checked"[end] [is derived "Yes"]disabled="disabled"[end]>
       [fields.field_def.choices.name]
   </label>
