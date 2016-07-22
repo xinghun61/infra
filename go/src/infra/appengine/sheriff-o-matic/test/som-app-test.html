@@ -58,6 +58,25 @@
     });
   });
 
+  suite('severity', function() {
+    test('renders severity groups', function(done) {
+      element.set(['_alertsData', 'test'], [{
+          "key": "something",
+          "severity": 2,
+      }]);
+      element._alertsTimes = {
+        test: new Date()
+      };
+
+      flush(function() {
+        assert.equal(
+            element.$$('.severity-title').textContent.trim(),
+            element._getSeverityTitle(2) + ':');
+        done();
+      });
+    });
+  });
+
   suite('annotations', function() {
     var clock;
 

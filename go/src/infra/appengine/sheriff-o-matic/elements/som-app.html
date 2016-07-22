@@ -44,13 +44,15 @@
       #alertsList {
         padding: 0;
       }
-      #alertsListInner h2 {
-        font-size: 18px;
+      h2, h3 {
         font-weight: bold;
         padding: 0.5em 0.5em 0.2em;
         margin: 1em 0.5em;
         background-color: #eee;
         border-bottom: 1px solid #ddd;
+      }
+      #alertsListInner h2 {
+        font-size: 22px;
       }
       #bugDialog, #snoozeDialog {
         width: 300px;
@@ -91,6 +93,9 @@
         background: white;
         border-left: 1px solid #ddd;
         padding: 1em;
+      }
+      .severity-title {
+        font-size: 18px;
       }
       .som-title {
         font-weight: bold;
@@ -159,18 +164,21 @@
                   <img src="/images/jparent-jump.gif" alt="Julie Jumping" title="Julie Jumping">
                 </div>
               </template>
-              <template is="dom-repeat" items="[[_alerts]]" as="alert">
-                <div class="list-item" tabindex$="[[tabIndex]]">
-                  <som-alert-item
-                      alert="{{alert}}"
-                      tree="[[_tree]]"
-                      selected="[[selected]]"
-                      annotation="[[_computeAnnotation(annotations, alert)]]"
-                      on-annotation-change="_handleAnnotation"
-                      on-link-bug="_handleLinkBug"
-                      on-snooze="_handleSnooze"
-                  ></som-alert-item>
-                </div>
+              <template is="dom-repeat" items="[[_computeSeverities(_alerts)]]" as="sev">
+                <h3 class="severity-title">[[_getSeverityTitle(sev)]]:</h3>
+                <template is="dom-repeat" items="[[_alertsWithSeverity(_alerts, sev)]]" as="alert">
+                  <div class="list-item" tabindex$="[[tabIndex]]">
+                    <som-alert-item
+                        alert="{{alert}}"
+                        tree="[[_tree]]"
+                        selected="[[selected]]"
+                        annotation="[[_computeAnnotation(annotations, alert)]]"
+                        on-annotation-change="_handleAnnotation"
+                        on-link-bug="_handleLinkBug"
+                        on-snooze="_handleSnooze"
+                    ></som-alert-item>
+                  </div>
+                </template>
               </template>
             </div>
           </div>
@@ -255,6 +263,7 @@
         // watching and notifying about changes to an array :/
         annotations: {
           type: Object,
+          value: function() { return {}; },
           computed: '_computeAnnotations(annotationsJson)',
         },
         annotationsJson: Array,
@@ -517,6 +526,10 @@
           allAlerts = allAlerts.concat(alerts);
         }
 
+        if (!allAlerts) {
+          return [];
+        }
+
         allAlerts.sort((a, b) => {
           let aAnn = this._computeAnnotation(annotations, a);
           let bAnn = this._computeAnnotation(annotations, b);
@@ -535,6 +548,7 @@
         return allAlerts;
       },
 
+
       _computeHideJulie: function(alerts, fetchedAlerts, fetchingAlerts, tree) {
         if (fetchingAlerts || !fetchedAlerts || !alerts || tree === '') {
           return true;
@@ -544,6 +558,40 @@
 
       _computeHideWebkitNotice: function(tree) {
         return tree != 'chromium';
+      },
+
+      ////////////////////// Severity ///////////////////////////
+
+      _alertsWithSeverity: function(alerts, severity) {
+        return alerts.filter(function(alert) {
+          return alert.severity == severity;
+        })
+      },
+
+
+      _computeSeverities: function(alerts) {
+        let severities = [];
+        alerts.forEach(function(alert) {
+          if (!severities.includes(alert.severity)) {
+            severities.push(alert.severity);
+          }
+        });
+
+        return severities;
+      },
+
+      _getSeverityTitle: function(severity) {
+        return {
+          1: "Tree closers",
+          2: "Stale masters",
+          3: "Probably hung builders",
+          4: "Infra failures",
+          5: "Reliable failures",
+          6: "New failures",
+          7: "Stale builders",
+          8: "Idle builders",
+          9: "Offline builders",
+        }[severity];
       },
 
       ////////////////////// Annotations ///////////////////////////

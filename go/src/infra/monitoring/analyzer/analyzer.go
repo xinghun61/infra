@@ -30,11 +30,11 @@ const (
 	// Order of severity, worst to least bad.
 	treeCloserSev = iota
 	staleMasterSev
+	hungBuilderSev
 	infraFailureSev
 	reliableFailureSev
 	newFailureSev
 	staleBuilderSev
-	hungBuilderSev
 	idleBuilderSev
 	offlineBuilderSev
 
