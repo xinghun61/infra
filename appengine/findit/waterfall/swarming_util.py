@@ -5,6 +5,7 @@
 import base64
 from collections import defaultdict
 import json
+import logging
 import urllib
 import zlib
 
@@ -252,8 +253,12 @@ def _RetrieveOutputJsonFile(output_json_content, http_client):
     get_content = base64.b64decode(json_content['content'])
   else:  # pragma: no cover
     get_content = None  # Just for precausion.
-  return json.loads(zlib.decompress(get_content)) if get_content else None
-
+  try:
+    return json.loads(zlib.decompress(get_content)) if get_content else None
+  except ValueError:  # pragma: no cover
+    logging.info(
+        'swarming result is invalid: %s' % zlib.decompress(get_content))
+    return None
 
 def _DownloadTestResults(isolated_data, http_client):
   """Downloads the output.json file and returns the json object."""

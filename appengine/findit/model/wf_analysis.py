@@ -100,6 +100,7 @@ class WfAnalysis(BaseBuildModel):
     self.request_time = None
     self.start_time = None
     self.end_time = None
+    self.failure_result_map = self.failure_result_map or {}
 
   @property
   def failure_type(self):
