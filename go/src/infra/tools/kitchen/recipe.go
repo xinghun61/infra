@@ -38,8 +38,7 @@ type recipeRun struct {
 	// The following are command line recipes.py command line arguments.
 
 	recipe               string
-	propertiesJSON       string
-	propertiesFile       string
+	propertiesFile       string // path to a JSON file containing property values
 	outputResultJSONFile string
 	workDir              string // Where to run the recipe.
 	timestamps           bool   // Whether to print CURRENT_TIMESTAMP annotations.
@@ -65,7 +64,6 @@ func (r *recipeRun) Command() (*exec.Cmd, error) {
 	cmd := exec.Command(
 		"python", recipesPy,
 		"run",
-		"--properties", r.propertiesJSON,
 		"--properties-file", r.propertiesFile,
 		"--workdir", r.workDir,
 		"--output-result-json", r.outputResultJSONFile,

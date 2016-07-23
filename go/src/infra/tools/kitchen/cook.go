@@ -132,7 +132,7 @@ func (c *cookRun) validateFlags() error {
 }
 
 // run checks out a repo, runs a recipe and returns exit code.
-func (c *cookRun) run(ctx context.Context) (recipeExitCode int, err error) {
+func (c *cookRun) run(ctx context.Context, props map[string]interface{}) (recipeExitCode int, err error) {
 	if err = checkoutRepository(ctx, c.CheckoutDir, c.RepositoryURL, c.Revision); err != nil {
 		return 0, err
 	}
@@ -155,12 +155,21 @@ func (c *cookRun) run(ctx context.Context) (recipeExitCode int, err error) {
 		c.PythonPaths[i] = p
 	}
 
+	propertiesFile, err := ioutil.TempFile("", "")
+	if err != nil {
+		return 0, err
+	}
+	defer os.Remove(propertiesFile.Name())
+
+	if err := json.NewEncoder(propertiesFile).Encode(props); err != nil {
+		return 0, fmt.Errorf("could not write properties file: %s", err)
+	}
+
 	recipe := recipeRun{
 		repositoryPath:       c.CheckoutDir,
 		workDir:              c.Workdir,
 		recipe:               c.Recipe,
-		propertiesJSON:       c.Properties,
-		propertiesFile:       c.PropertiesFile,
+		propertiesFile:       propertiesFile.Name(),
 		outputResultJSONFile: c.OutputResultJSONFile,
 		timestamps:           c.Timestamps,
 	}
@@ -169,7 +178,7 @@ func (c *cookRun) run(ctx context.Context) (recipeExitCode int, err error) {
 		return 0, err
 	}
 
-	// Build our enviornment.
+	// Build our environment.
 	env := environ.System()
 	env.Set("PYTHONPATH", strings.Join(c.PythonPaths, string(os.PathListSeparator)))
 	recipeCmd.Env = env.Sorted()
@@ -208,6 +217,18 @@ func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
 		return 1
 	}
 
+	props, err := parseProperties(c.Properties, c.PropertiesFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not parse properties: %s", err)
+		return 1
+	}
+
+	// Let infra_path recipe module know that we are using swarmbucket paths.
+	// Relevant code:
+	// https://chromium.googlesource.com/chromium/tools/depot_tools/+/248331450c05c59c8e966c806f00bd2475e36603/recipe_modules/infra_paths/api.py#12
+	// https://chromium.googlesource.com/chromium/tools/depot_tools/+/248331450c05c59c8e966c806f00bd2475e36603/recipe_modules/infra_paths/path_config.py#57
+	props["infra_path"] = "swarmbucket"
+
 	// If we're not using LogDog, send out annotations.
 	bootstapSuccess := true
 	if !c.logdog.active() {
@@ -235,11 +256,6 @@ func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
 			}
 		}()
 
-		props, err := parseProperties(c.Properties, c.PropertiesFile)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return 1
-		}
 		for k, v := range props {
 			// Order is not stable, but that is okay.
 			jv, err := json.Marshal(v)
@@ -251,7 +267,7 @@ func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
 		}
 	}
 
-	recipeExitCode, err := c.run(ctx)
+	recipeExitCode, err := c.run(ctx, props)
 	if err != nil {
 		bootstapSuccess = false
 		if err != context.Canceled {
