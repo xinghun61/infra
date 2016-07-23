@@ -227,7 +227,7 @@ func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
 	// Relevant code:
 	// https://chromium.googlesource.com/chromium/tools/depot_tools/+/248331450c05c59c8e966c806f00bd2475e36603/recipe_modules/infra_paths/api.py#12
 	// https://chromium.googlesource.com/chromium/tools/depot_tools/+/248331450c05c59c8e966c806f00bd2475e36603/recipe_modules/infra_paths/path_config.py#57
-	props["infra_path"] = "swarmbucket"
+	props["path_config"] = "swarmbucket"
 
 	// If we're not using LogDog, send out annotations.
 	bootstapSuccess := true
