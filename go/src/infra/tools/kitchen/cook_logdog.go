@@ -91,6 +91,20 @@ func (p *cookLogDogParams) active() bool {
 	return p.host != "" || p.project != "" || p.prefix != ""
 }
 
+// emitAnnotations returns true if the cook command should emit additional
+// annotations.
+//
+// If we're streaming solely to LogDog, it makes no sense to emit extra
+// annotations, since nothing will consume them; however, if we're tee-ing, we
+// will continue to emit additional annotations in case something is looking
+// at the tee'd output.
+//
+// Note that this could create an incongruity between the LogDog-emitted
+// annotations and the annotations in the STDOUT stream.
+func (p *cookLogDogParams) emitAnnotations() bool {
+	return p.tee || !p.active()
+}
+
 func (p *cookLogDogParams) validate() error {
 	if p.project == "" {
 		return fmt.Errorf("a LogDog project must be supplied (-logdog-project)")

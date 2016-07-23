@@ -231,7 +231,7 @@ func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
 
 	// If we're not using LogDog, send out annotations.
 	bootstapSuccess := true
-	if !c.logdog.active() {
+	if !c.logdog.emitAnnotations() {
 		if c.Timestamps {
 			annotateTime(ctx)
 		}
