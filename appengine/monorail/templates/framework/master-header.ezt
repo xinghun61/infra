@@ -92,8 +92,8 @@
    function runOnLoad(fn) { loadQueue.push(fn); }
 
    window.onload = function() {
-     for (var fn of loadQueue)
-       fn();
+     for (var i = 0; i < loadQueue.length; i++)
+       loadQueue[[]i]();
      delete loadQueue;
    };
 </script>
