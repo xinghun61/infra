@@ -26,6 +26,7 @@ INFRA_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 INFRA_GO_PATH = os.path.join(INFRA_PATH, 'go')
 INFRA_GO_VENDOR_SRC_PATH = os.path.join(INFRA_GO_PATH, '.vendor', 'src')
 
+
 # Do not want to mess with sys.path, load the module directly.
 go_deps = imp.load_source(
     'deps', os.path.join(INFRA_GO_PATH, 'deps.py'))
@@ -52,6 +53,14 @@ def main(argv):
   parser.add_argument('result_path',
       help='The path to write the result file.')
   opts = parser.parse_args(argv)
+
+  # Install our Python bootstrap (needed for deps.py).
+  subprocess.check_call([
+      sys.executable,
+      os.path.join(INFRA_PATH, 'bootstrap', 'bootstrap.py'),
+      '--deps_file', os.path.join(INFRA_PATH, 'bootstrap', 'deps.pyl'),
+      os.path.join(INFRA_PATH, 'ENV'),
+  ])
 
   # Update our deps.
   rv = go_deps.install(INFRA_GO_PATH)
