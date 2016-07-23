@@ -48,7 +48,7 @@
       <div id="error" hidden$="[[_haveNoErrors(_bugQueueJsonError)]]">
         Error fetching bug queue: [[_bugQueueJsonError.error]]
       </div>
-      <div id="loadingBugs" hidden$="[[_bugsLoaded]]"><paper-spinner active="[[!_bugsLoaded]]"></paper-spinner> Loading Bug Queue... </div>
+      <div id="loadingBugs" hidden$="[[!_showBugsLoading(_bugsLoaded, _bugQueueJsonError)]]"><paper-spinner active="[[!_bugsLoaded]]"></paper-spinner> Loading Bug Queue... </div>
       <div id="noBugs" hidden$="[[!_showNoBugs]]">No bugs in the queue!</div>
       <template is="dom-repeat" items="[[_bugQueueJson.items]]" as="item">
         <div class="bug">
@@ -90,18 +90,8 @@
         _showNoBugs: {
           type: Boolean,
           value: function () { return false; },
-          computed: '_computeShowNoBugs(_bugQueueJson, _bugsLoaded)',
+          computed: '_computeShowNoBugs(_bugQueueJson, _bugsLoaded, _bugQueueJsonError)',
         },
-      },
-
-      _computeHideBugQueue: function(bugQueueLabel) {
-        // No loading or empty message is shown unless a bug queue exists.
-        return !bugQueueLabel || bugQueueLabel === '';
-      },
-
-      _computeShowNoBugs: function(json, bugsLoaded) {
-        // Show the "No bugs" message only when the queue is done loading
-        return bugsLoaded && this._haveNoBugs(json);
       },
 
       refresh: function() {
@@ -111,6 +101,16 @@
         this.$.bugQueueAjax.generateRequest().completes.then((reponse) => {
           this._bugsLoaded = true;
         });
+      },
+
+      _computeHideBugQueue: function(bugQueueLabel) {
+        // No loading or empty message is shown unless a bug queue exists.
+        return !bugQueueLabel || bugQueueLabel === '';
+      },
+
+      _computeShowNoBugs: function(json, bugsLoaded, error) {
+        // Show the "No bugs" message only when the queue is done loading
+        return bugsLoaded && this._haveNoBugs(json) && this._haveNoErrors(error);
       },
 
       _changeBugQueueLabel: function() {
@@ -127,6 +127,10 @@
       _haveNoErrors: function(error) {
         return !error;
       },
+
+      _showBugsLoading: function(bugsLoaded, error) {
+        return !bugsLoaded && this._haveNoErrors(error);
+      }
     });
   })();
   </script>

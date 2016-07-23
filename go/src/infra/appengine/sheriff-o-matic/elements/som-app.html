@@ -300,6 +300,7 @@
         _hideJulie: {
           type: Boolean,
           computed: '_computeHideJulie(_alerts, _fetchedAlerts, _fetchingAlerts, _tree)',
+          value: function() { return true; },
         },
         _hideWebkitNotice: {
           type: Boolean,
