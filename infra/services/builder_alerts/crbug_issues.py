@@ -5,6 +5,7 @@
 from collections import defaultdict
 import datetime
 import json
+import logging
 
 from apiclient import discovery
 from apiclient.errors import HttpError
@@ -52,6 +53,7 @@ def _list_issues(crbug_service_account):
       response = request.execute(num_retries=5)
       issue_tracker_requests.increment(
           {'source': 'builder_alerts', 'operation': 'issues_list'})
+      logging.debug('Incremented issue_tracker_requests counter')
   
       # Issue Tracker may omit certain issues occasionally, so counting whether
       # they add up to 'totalResults' in response is not relaible. However, we

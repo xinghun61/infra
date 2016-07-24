@@ -427,7 +427,9 @@ def main(args):
       sleep_timeout=lambda: 5,
       **loop_args)
 
+  logging.debug('Flushing ts_mon starting')
   ts_mon.flush()
+  logging.debug('Flushing ts_mon completed')
   return 0 if loop_results.success else 1
 
 
