@@ -359,7 +359,13 @@ def main(args):
                       type=int)
   logs.add_argparse_options(parser)
   outer_loop.add_argparse_options(parser)
+
   ts_mon.add_argparse_options(parser)
+  parser.set_defaults(
+    ts_mon_target_type='task',
+    ts_mon_task_service_name='builder-alerts',
+    ts_mon_task_job_name='builder-alerts',
+  )
 
   gatekeeper_json = os.path.join(build_scripts_dir, 'slave', 'gatekeeper.json')
   parser.add_argument('--gatekeeper', action='store', default=gatekeeper_json)
