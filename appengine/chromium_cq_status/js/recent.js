@@ -41,6 +41,7 @@ function loadTags() {
   clearTable();
   loadNextQuery();
   updateFilterList();
+  updateRawJSONLink();
 }
 
 function clearTable() {
@@ -221,6 +222,10 @@ function updateFilterList() {
   var a = newElement('a', '[clear all]');
   a.href = '';
   filterList.appendChild(a);
+}
+
+function updateRawJSONLink() {
+  rawJSONLink.href = '/query/' + tags.join('/');
 }
 
 function newLink(text, url) {
