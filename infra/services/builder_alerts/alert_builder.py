@@ -348,6 +348,7 @@ def alerts_for_master(cache, master_url, master_json, old_alerts,
       active_builds.append(build)
 
   def process_builder(builder_name):
+    logging.debug('Thread for builder %s has started', builder_name)
     try:
       if builder_name_filter and builder_name_filter not in builder_name:
         return None
@@ -368,11 +369,16 @@ def alerts_for_master(cache, master_url, master_json, old_alerts,
       # Put all exception text into an exception and raise that so it doesn't
       # get eaten by the multiprocessing code.
       raise Exception(''.join(traceback.format_exception(*sys.exc_info())))
+    finally:
+      logging.debug('Thread for builder %s has finished', builder_name)
 
   pool = multiprocessing.dummy.Pool(processes=jobs)
+  logging.debug('Processing all threads via thread pool')
   builder_alerts = pool.map(process_builder, master_json['builders'].keys())
+  logging.debug('Closing all threads in thread pool')
   pool.close()
   pool.join()
+  logging.debug('Joined all threads in thread pool')
 
   alerts = []
   for alert in builder_alerts:
