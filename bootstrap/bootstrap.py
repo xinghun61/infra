@@ -142,8 +142,17 @@ def html_index(links):
 
 
 def install(deps):
-  bin_dir = 'Scripts' if sys.platform.startswith('win') else 'bin'
-  pip = os.path.join(sys.prefix, bin_dir, 'pip')
+  if sys.platform.startswith('win'):
+    # On Windows, "pip" is installed as a standalone binary called "pip.exe".
+    pip = [os.path.join(sys.prefix, 'Scripts', 'pip')]
+  else:
+    # On Linux, "pip" is a "#!/...python"-bootstrapped wrapper. Because of
+    # shebang length limitations, we will manually run this through the
+    # Python interpreter rather than relying on shebang interpretation.
+    pip = [
+        os.path.join(sys.prefix, 'bin', 'python'),
+        os.path.join(sys.prefix, 'bin', 'pip'),
+    ]
 
   links = get_links(deps)
   with html_index(links) as ipath:
@@ -153,7 +162,7 @@ def install(deps):
       if not deps_entry.get('implicit'):
         requirements.append('%s==%s' % (name, deps_entry['version']))
     subprocess.check_call(
-        [pip, 'install', '--no-index', '-f', ipath] + requirements)
+        pip + ['install', '--no-index', '-f', ipath] + requirements)
 
 
 def activate_env(env, deps, quiet=False, run_within_virtualenv=False):
