@@ -6,8 +6,9 @@
 package handlers
 
 import (
-	"html/template"
 	"net/http"
+
+	"infra/tricium/service/common"
 )
 
 func init() {
@@ -15,14 +16,12 @@ func init() {
 	http.HandleFunc("/gerrit-reporter/queue-handler", queueHandler)
 }
 
-var basePage = template.Must(template.ParseFiles("templates/base.html"))
-
 func statusPageHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(emso): Add Gerrit reporter stats
-	data := map[string]interface{}{
+	d := map[string]interface{}{
 		"Msg": "Status of the Gerrit Reporter ...",
 	}
-	basePage.Execute(w, data)
+	common.ShowBasePage(w, d)
 }
 
 func queueHandler(w http.ResponseWriter, r *http.Request) {

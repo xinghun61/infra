@@ -6,11 +6,12 @@
 package handlers
 
 import (
-	"html/template"
 	"net/http"
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/taskqueue"
+
+	"infra/tricium/service/common"
 )
 
 func init() {
@@ -18,14 +19,12 @@ func init() {
 	http.HandleFunc("/analyze", analyzeHandler)
 }
 
-var basePage = template.Must(template.ParseFiles("templates/base.html"))
-
 func landingPageHandler(w http.ResponseWriter, r *http.Request) {
-	data := map[string]interface{}{
+	d := map[string]interface{}{
 		"Msg":             "This service is under construction ...",
 		"ShowRequestForm": true,
 	}
-	basePage.Execute(w, data)
+	common.ShowBasePage(w, d)
 }
 
 func analyzeHandler(w http.ResponseWriter, r *http.Request) {
@@ -35,8 +34,8 @@ func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	data := map[string]interface{}{
+	d := map[string]interface{}{
 		"Msg": "Dummy analysis request sent.",
 	}
-	basePage.Execute(w, data)
+	common.ShowBasePage(w, d)
 }

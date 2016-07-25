@@ -6,11 +6,12 @@
 package handlers
 
 import (
-	"html/template"
 	"net/http"
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/taskqueue"
+
+	"infra/tricium/service/common"
 )
 
 func init() {
@@ -18,14 +19,12 @@ func init() {
 	http.HandleFunc("/workflow-launcher/queue-handler", queueHandler)
 }
 
-var basePage = template.Must(template.ParseFiles("templates/base.html"))
-
 func statusPageHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(emso): Add workflow launcher stats
-	data := map[string]interface{}{
+	d := map[string]interface{}{
 		"Msg": "Status of the Workflow Launcher ...",
 	}
-	basePage.Execute(w, data)
+	common.ShowBasePage(w, d)
 }
 
 func queueHandler(w http.ResponseWriter, r *http.Request) {
@@ -35,8 +34,8 @@ func queueHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Enqueue workflow listener task
 	t := taskqueue.NewPOSTTask("/workflow-listener/queue-handler", map[string][]string{"name": {"Workflow Launched"}})
-	if _, err := taskqueue.Add(ctx, t, "workflow-listener-queue"); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if _, e := taskqueue.Add(ctx, t, "workflow-listener-queue"); e != nil {
+		http.Error(w, e.Error(), http.StatusInternalServerError)
 		return
 	}
 }
