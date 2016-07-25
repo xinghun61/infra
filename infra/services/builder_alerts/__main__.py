@@ -13,6 +13,7 @@ import logging
 import multiprocessing
 import os
 import sys
+import threading
 import traceback
 
 import requests
@@ -60,6 +61,7 @@ class SubProcess(object):
     self._jobs = jobs
 
   def __call__(self, master_url):
+    logging.debug('Thread for master %s has started', master_url)
     try:
       master_json = buildbot.fetch_master_json(master_url)
       if not master_json:
@@ -87,6 +89,8 @@ class SubProcess(object):
           master_url,
       )
       raise Exception(msg)
+    finally:
+      logging.debug('Thread for master %s has finished', master_url)
 
 
 def query_findit(findit_api_url, alerts):
@@ -189,6 +193,7 @@ def gzipped(data):
 
 
 def inner_loop(args):
+  logging.debug('Starting inner loop')
   old_api_endpoint = string_helpers.slash_join(args.api_endpoint_prefix,
       args.old_api_path) if args.old_api_path else None
   if not old_api_endpoint:
@@ -249,11 +254,14 @@ def inner_loop(args):
   alerts = []
   suspected_cls = []
 
+  logging.debug('Processing all masters via process pool')
   pool = multiprocessing.Pool(processes=args.processes)
   master_datas = pool.map(SubProcess(cache, old_alerts, args.builder_filter,
                                      args.jobs), master_urls)
+  logging.debug('Closing all threads in master process pool')
   pool.close()
   pool.join()
+  logging.debug('Joined all threads in master process pool')
 
   for data in master_datas:
     # TODO(ojan): We should put an alert in the JSON for this master so
@@ -344,6 +352,7 @@ def inner_loop(args):
         '--crbug-service-account was not specified, can not get crbug issues')
     ret = False
 
+  logging.debug('Returning from inner loop')
   return ret
 
 
@@ -428,10 +437,12 @@ def main(args):
   def outer_loop_iteration():
     return inner_loop(args)
 
+  logging.debug('Starting outer loop')
   loop_results = outer_loop.loop(
       task=outer_loop_iteration,
       sleep_timeout=lambda: 5,
       **loop_args)
+  logging.debug('Finished outer loop')
 
   logging.debug('Flushing ts_mon starting')
   ts_mon.flush()
@@ -440,4 +451,9 @@ def main(args):
 
 
 if __name__ == '__main__':
+  logging.debug('Started main')
   sys.exit(main(sys.argv[1:]))
+  current_thread_descriptions = [t.name + (' (daemon)' if t.isDaemon() else '')
+                                 for t in threading.enumerate()]
+  logging.debug(
+      'Leaving main. Threads: %s', ', '.join(current_thread_descriptions))

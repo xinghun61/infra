@@ -373,19 +373,21 @@ def alerts_for_master(cache, master_url, master_json, old_alerts,
       logging.debug('Thread for builder %s has finished', builder_name)
 
   pool = multiprocessing.dummy.Pool(processes=jobs)
-  logging.debug('Processing all threads via thread pool')
+  logging.debug('Processing all builders via thread pool')
   builder_alerts = pool.map(process_builder, master_json['builders'].keys())
-  logging.debug('Closing all threads in thread pool')
+  logging.debug('Closing all threads in builder thread pool')
   pool.close()
   pool.join()
-  logging.debug('Joined all threads in thread pool')
+  logging.debug('Joined all threads in builder thread pool')
 
   alerts = []
   for alert in builder_alerts:
     if alert:
       alerts.extend(alert)
 
+  logging.debug('Computing alerts_for_stale_master_data')
   stale_master_data_alert = alert_for_stale_master_data(master_url, master_json)
+  logging.debug('Finished alerts_for_master')
   return (alerts, stale_master_data_alert)
 
 
