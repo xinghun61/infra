@@ -24,10 +24,13 @@ import sys
 
 INFRA_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 INFRA_GO_PATH = os.path.join(INFRA_PATH, 'go')
-INFRA_GO_VENDOR_SRC_PATH = os.path.join(INFRA_GO_PATH, '.vendor', 'src')
+
+LUCI_DEPLOY_ROOT = os.path.join(INFRA_PATH, '.luci_deploy')
 
 
 # Do not want to mess with sys.path, load the module directly.
+go_bootstrap = imp.load_source(
+    'bootstrap', os.path.join(INFRA_GO_PATH, 'bootstrap.py'))
 go_deps = imp.load_source(
     'deps', os.path.join(INFRA_GO_PATH, 'deps.py'))
 
@@ -63,14 +66,24 @@ def main(argv):
       os.path.join(INFRA_PATH, 'ENV'),
   ])
 
+  # Install our Go runtime.
+  go_dir = os.path.join(LUCI_DEPLOY_ROOT, 'golang')
+  go_bootstrap.ensure_toolset_installed(go_dir)
+  go_bootstrap.ensure_glide_installed(go_dir)
+
   # Update our deps.
-  rv = go_deps.install(INFRA_GO_PATH)
+  workspace = go_deps.WORKSPACE._replace(
+      goroot=os.path.join(go_dir, 'go'),
+      vendor_root=os.path.join(LUCI_DEPLOY_ROOT, '.vendor'),
+  )
+  rv = go_deps.install(workspace)
   if rv != 0:
     print 'Failed to install dependencies.'
     return rv
 
   # Get our source root-relative path.
-  go_src_relpath = os.path.relpath(INFRA_GO_VENDOR_SRC_PATH, opts.source_root)
+  go_src_relpath = os.path.relpath(os.path.join(workspace.vendor_root, 'src'),
+                                   opts.source_root)
 
   # Run our "Go" bootstrap.
   deps_path = os.path.join(INFRA_GO_PATH, 'deps.lock')

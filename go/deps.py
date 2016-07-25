@@ -29,6 +29,7 @@ expected), we rename glide.yaml and glide.lock into deps.yaml and deps.lock.
 """
 
 import argparse
+import collections
 import contextlib
 import json
 import os
@@ -63,13 +64,24 @@ VENDORED_TOOLS = [
 ]
 
 
-# infra/go/
-WORKSPACE = os.path.dirname(os.path.abspath(__file__))
 # infra/
-REPO_ROOT = os.path.dirname(WORKSPACE)
-# Where Go toolset is installed by bootstrap.py.
-TOOLSET_ROOT = os.path.join(os.path.dirname(REPO_ROOT), 'golang')
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+
+_Workspace = collections.namedtuple('_Workspace', (
+    # Path of the directory containing "deps", default: infra/go
+    'gobase',
+    # Path of the vendor root directory, default: infra/go/.vendor
+    'vendor_root',
+    # Path of the Go runtime root, default: golang/go
+    'goroot',
+))
+
+WORKSPACE = _Workspace(
+    gobase=os.path.join(REPO_ROOT, 'go'),
+    vendor_root=os.path.join(REPO_ROOT, 'go', '.vendor'),
+    goroot=os.path.join(os.path.dirname(REPO_ROOT), 'golang', 'go'),
+)
 
 # Name of a file to put into .vendor/* when all packages there match deps.lock.
 APPLIED_LOCK = 'applied.lock'
@@ -239,11 +251,11 @@ def unhack_vendor(workspace):
   stuff (see 'compare_deps').
 
   Args:
-    workspace: a directory where deps.yaml is located.
+    workspace: an initialized _Workspace object.
   """
   # Make empty .vendor if it didn't exist before. Makes life a bit easier below.
-  src_path = os.path.join(workspace, '.vendor', 'src')
-  vendor_path = os.path.join(workspace, '.vendor', 'vendor')
+  src_path = os.path.join(workspace.vendor_root, 'src')
+  vendor_path = os.path.join(workspace.vendor_root, 'vendor')
   if not os.path.exists(src_path):
     os.makedirs(src_path)
 
@@ -256,16 +268,16 @@ def unhack_vendor(workspace):
 
     # Copy YAMLs used by glide.
     shutil.copy(
-        os.path.join(workspace, 'deps.yaml'),
-        os.path.join(workspace, '.vendor', 'glide.yaml'))
+        os.path.join(workspace.gobase, 'deps.yaml'),
+        os.path.join(workspace.vendor_root, 'glide.yaml'))
     shutil.copy(
-        os.path.join(workspace, 'deps.lock'),
-        os.path.join(workspace, '.vendor', 'glide.lock'))
+        os.path.join(workspace.gobase, 'deps.lock'),
+        os.path.join(workspace.vendor_root, 'glide.lock'))
 
-    lock_before = read_file(os.path.join(workspace, '.vendor', 'glide.lock'))
+    lock_before = read_file(os.path.join(workspace.vendor_root, 'glide.lock'))
     deps_before = parse_glide_lock(lock_before)
     yield
-    lock_after = read_file(os.path.join(workspace, '.vendor', 'glide.lock'))
+    lock_after = read_file(os.path.join(workspace.vendor_root, 'glide.lock'))
     deps_after = parse_glide_lock(lock_after)
 
     if compare_deps(deps_before, deps_after):
@@ -273,27 +285,27 @@ def unhack_vendor(workspace):
     else:
       # No changes? Just put glide.lock back as it was, since new glide.lock
       # differs only in not very useful 'updated' timestamp field.
-      write_file(os.path.join(workspace, '.vendor', 'glide.lock'), lock_before)
+      write_file(os.path.join(workspace.vendor_root, 'glide.lock'), lock_before)
 
     # Copy modified yamls back only on success.
     shutil.copy(
-        os.path.join(workspace, '.vendor', 'glide.yaml'),
-        os.path.join(workspace, 'deps.yaml'))
+        os.path.join(workspace.vendor_root, 'glide.yaml'),
+        os.path.join(workspace.gobase, 'deps.yaml'))
     shutil.copy(
-        os.path.join(workspace, '.vendor', 'glide.lock'),
-        os.path.join(workspace, 'deps.lock'))
+        os.path.join(workspace.vendor_root, 'glide.lock'),
+        os.path.join(workspace.gobase, 'deps.lock'))
 
   except Exception:
     # Remove 'applied.lock' to make sure 'deps.py install' reinstalls
     # the packages next time, fixing the state of .vendor/.
-    applied_lock = os.path.join(workspace, '.vendor', APPLIED_LOCK)
+    applied_lock = os.path.join(workspace.vendor_root, APPLIED_LOCK)
     if os.path.exists(applied_lock):
       os.remove(applied_lock)
 
     print >> sys.stderr, BANNER_START
     print >> sys.stderr, (
-        '%s was probably left in an inconsistent state!\n' %
-        os.path.join(workspace, '.vendor'))
+        '%s was probably left in an inconsistent state!\n' % (
+            workspace.vendor_root,))
     print >> sys.stderr, (
         'You may want to remove it completely and build it again by running\n'
         '"deps.py install".')
@@ -302,8 +314,8 @@ def unhack_vendor(workspace):
 
   finally:
     # Undo everything.
-    os.remove(os.path.join(workspace, '.vendor', 'glide.lock'))
-    os.remove(os.path.join(workspace, '.vendor', 'glide.yaml'))
+    os.remove(os.path.join(workspace.vendor_root, 'glide.lock'))
+    os.remove(os.path.join(workspace.vendor_root, 'glide.yaml'))
     os.rmdir(src_path) # must still be empty
     os.rename(vendor_path, src_path)
 
@@ -315,18 +327,18 @@ def call(workspace, tool, args):
   CallFailed exception on errors.
 
   Args:
-    workspace: a directory where deps.yaml is located.
+    workspace: an initialized _Workspace object.
     tool: name of an exectuable to call, e.g. "go" or "glide".
     args: additional command line arguments to pass to it.
   """
   sfx = '.exe' if sys.platform == 'win32' else ''
-  cmd = [os.path.join(TOOLSET_ROOT, 'go', 'bin', tool + sfx)] + args
+  cmd = [os.path.join(workspace.goroot, 'bin', tool + sfx)] + args
 
   # Completely replace any existing Go env vars.
   env = os.environ.copy()
-  env['GOROOT'] = os.path.join(TOOLSET_ROOT, 'go')
-  env['GOPATH'] = os.path.join(workspace, '.vendor')
-  env['GOBIN'] = os.path.join(workspace, '.vendor', 'bin')
+  env['GOROOT'] = workspace.goroot
+  env['GOPATH'] = workspace.vendor_root
+  env['GOBIN'] = os.path.join(workspace.vendor_root, 'bin')
 
   # Glide searched for 'go' in PATH. Make it available.
   env['PATH'] = os.path.join(env['GOROOT'], 'bin') + os.pathsep + env['PATH']
@@ -380,12 +392,12 @@ def install(workspace, force=False):
   """Installs all dependencies from deps.lock into .vendor/ GOPATH.
 
   Args:
-    workspace: a directory where deps.yaml is located.
+    workspace: an initialized _Workspace object.
     force: if True, will forcefully rebuild .vendor even if it is up-to-date.
   """
-  required = read_file(os.path.join(workspace, 'deps.lock'))
+  required = read_file(os.path.join(workspace.gobase, 'deps.lock'))
   if not force:
-    installed = read_file(os.path.join(workspace, '.vendor', APPLIED_LOCK))
+    installed = read_file(os.path.join(workspace.vendor_root, APPLIED_LOCK))
     if installed == required:
       return 0
 
@@ -394,7 +406,7 @@ def install(workspace, force=False):
   # '--force' is used. So nuke entire .vendor/* and refetch everything from
   # scratch. It also helps us to avoid various lingering state corruption in
   # .vendor/*.
-  remove_directory(os.path.join(workspace, '.vendor'))
+  remove_directory(workspace.vendor_root)
 
   # Use glide to fetch all the code.
   with unhack_vendor(workspace):
@@ -407,13 +419,13 @@ def install(workspace, force=False):
   # them, their dependencies weren't fetched into .vendor/*, and they won't
   # compile.
   print 'Rebuilding libraries...'
-  assert read_file(os.path.join(workspace, 'deps.lock')) == required
+  assert read_file(os.path.join(workspace.gobase, 'deps.lock')) == required
   deps = parse_glide_lock(required)
   call(workspace, 'go', ['install', '-v'] + flatten_deps(deps))
 
   # We will install only interesting subset of executables below. Nuke
   # everything else to avoid polluting PATH with unimportant stuff.
-  remove_directory(os.path.join(workspace, '.vendor', 'bin'))
+  remove_directory(os.path.join(workspace.vendor_root, 'bin'))
 
   # Install only stuff that was vendored via glide. That way we can support
   # multiple workspaces with third party code, but keep a single VENDORED_TOOLS
@@ -422,7 +434,7 @@ def install(workspace, force=False):
   to_install = []
   for pkg in VENDORED_TOOLS:
     pkg_path = os.path.join(
-        workspace, '.vendor', 'src', pkg.replace('/', os.sep))
+        workspace.vendor_root, 'src', pkg.replace('/', os.sep))
     if os.path.isdir(pkg_path):
       to_install.append(pkg)
 
@@ -430,7 +442,7 @@ def install(workspace, force=False):
   call(workspace, 'go', ['install', '-v'] + to_install)
 
   # Put a marker file that indicates we successfully installed all deps.
-  write_file(os.path.join(workspace, '.vendor', APPLIED_LOCK), required)
+  write_file(os.path.join(workspace.vendor_root, APPLIED_LOCK), required)
   return 0
 
 
@@ -438,9 +450,9 @@ def update(workspace):
   """Updates deps.lock file to point to most recent versions of packages.
 
   Args:
-    workspace: a directory where deps.yaml is located.
+    workspace: an initialized _Workspace object.
   """
-  lock_path = os.path.join(workspace, '.vendor', 'glide.lock')
+  lock_path = os.path.join(workspace.vendor_root, 'glide.lock')
   with unhack_vendor(workspace):
     # For some mysterious reason Glide doesn't update all dependencies on
     # a first try. Run it until it reports there's nothing to update.
@@ -459,7 +471,7 @@ def add(workspace, packages):
   """Adds a bunch of packages into deps.yaml.
 
   Args:
-    workspace: a directory where deps.yaml is located.
+    workspace: an initialized _Workspace object.
     packages: a list of go packages to add to deps.yaml.
   """
   with unhack_vendor(workspace):
@@ -471,7 +483,7 @@ def remove(workspace, packages):
   """Removes a bunch of packages from deps.yaml.
 
   Args:
-    workspace: a directory where deps.yaml is located.
+    workspace: an initialized _Workspace object.
     packages: a list of go packages to remove from deps.yaml.
   """
   with unhack_vendor(workspace):
@@ -483,8 +495,11 @@ def main(args):
   parser = argparse.ArgumentParser(
       description='Utility to manage go vendored dependencies.')
   parser.add_argument(
-      '--workspace', action='store', default=WORKSPACE,
+      '--workspace', action='store', default=WORKSPACE.gobase,
       help='directory with deps.yaml, deps will be installed in .vendor subdir')
+  parser.add_argument(
+      '--goroot', action='store', default=WORKSPACE.goroot,
+      help='Go installation GOROOT directory')
 
   subparsers = parser.add_subparsers()
 
@@ -508,15 +523,22 @@ def main(args):
       'pkg', nargs='+', help='a go package to remove from deps.yaml')
 
   opts = parser.parse_args(args)
+
+  workspace = WORKSPACE
+  if opts.workspace != workspace.gobase:
+    workspace = workspace._replace(gobase=opts.workspace)
+  if opts.goroot:
+    workspace = workspace._replace(goroot=opts.goroot)
+
   try:
     if opts.action == install:
-      return install(opts.workspace, opts.force)
+      return install(workspace, opts.force)
     if opts.action == update:
-      return update(opts.workspace)
+      return update(workspace)
     if opts.action == add:
-      return add(opts.workspace, opts.pkg)
+      return add(workspace, opts.pkg)
     if opts.action == remove:
-      return remove(opts.workspace, opts.pkg)
+      return remove(workspace, opts.pkg)
     assert False, 'Unreachable'
   except CallFailed as exc:
     print >> sys.stderr, str(exc)
