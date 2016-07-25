@@ -5,7 +5,7 @@
 
 queue:
 - name: default
-  rate: 4/s
+  rate: 3/s
   max_concurrent_requests: 50
 
 - name: outboundemail
