@@ -59,6 +59,7 @@ def main(argv):
       sys.executable,
       os.path.join(INFRA_PATH, 'bootstrap', 'bootstrap.py'),
       '--deps_file', os.path.join(INFRA_PATH, 'bootstrap', 'deps.pyl'),
+      '--run-within-virtualenv',
       os.path.join(INFRA_PATH, 'ENV'),
   ])
 

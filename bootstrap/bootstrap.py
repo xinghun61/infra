@@ -156,10 +156,13 @@ def install(deps):
         [pip, 'install', '--no-index', '-f', ipath] + requirements)
 
 
-def activate_env(env, deps, quiet=False):
+def activate_env(env, deps, quiet=False, run_within_virtualenv=False):
   if hasattr(sys, 'real_prefix'):
-    LOGGER.error('Already activated environment!')
-    return
+    if not run_within_virtualenv:
+      LOGGER.error('Already activated environment!')
+      return
+    LOGGER.info('Discarding current VirtualEnv (--run-within-virtualenv)')
+    sys.prefix = sys.real_prefix
 
   if not quiet:
     print 'Activating environment: %r' % env
@@ -245,13 +248,16 @@ def main(args):
                       help='Path to deps.pyl file (may be used multiple times)')
   parser.add_argument('-q', '--quiet', action='store_true', default=False,
                       help='Supress all output')
+  parser.add_argument('-r', '--run-within-virtualenv', action='store_true',
+                      help='Run even if the script is being run within a '
+                           'VirtualEnv.')
   parser.add_argument('env_path',
                       help='Path to place environment (default: %(default)s)',
                       default='ENV')
   opts = parser.parse_args(args)
 
   deps = merge_deps(opts.deps_file)
-  activate_env(opts.env_path, deps, opts.quiet)
+  activate_env(opts.env_path, deps, opts.quiet, opts.run_within_virtualenv)
 
 
 if __name__ == '__main__':
