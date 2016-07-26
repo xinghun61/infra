@@ -57,4 +57,9 @@ class SpamHelpersTest(unittest.TestCase):
     self.assertEquals(['True', '0', '0', '6', '14', '11', '19', '0', '0',
         '1', '1', '2'], features)
 
-
+    # A non-unicode bytestring containing unicode characters
+    features = spam_helpers.GenerateFeatures(
+        'abc…', 'abc … def', 'jan1990@bar.com', 5, ('@example.com'))
+    self.assertEquals(12, len(features))
+    self.assertEquals(['True', '0', '0', '6', '14', '11', '19', '1', '0',
+        '1', '1', '1'], features)
