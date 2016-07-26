@@ -452,8 +452,10 @@ def main(args):
 
 if __name__ == '__main__':
   logging.debug('Started main')
-  sys.exit(main(sys.argv[1:]))
+  retcode = main(sys.argv[1:])
   current_thread_descriptions = [t.name + (' (daemon)' if t.isDaemon() else '')
-                                 for t in threading.enumerate()]
+                                 for t in threading.enumerate()
+                                 if t is not threading.current_thread()]
   logging.debug(
       'Leaving main. Threads: %s', ', '.join(current_thread_descriptions))
+  sys.exit(retcode)
