@@ -26,12 +26,12 @@ class SwarmingCfgTest(testing.AppengineTestCase):
     cfg = Swarming(
       hostname='chromium-swarm.appspot.com',
       common_swarming_tags=['master:master.a'],
-      common_dimensions=['cores:8', 'pool:default'],
+      common_dimensions=['cores:8', 'pool:default', 'cpu:x86-64'],
       builders=[
         Swarming.Builder(
           name='release',
           swarming_tags=['a:b'],
-          dimensions=['os:Linux'],
+          dimensions=['os:Linux', 'cpu:'],
           recipe=Swarming.Recipe(
             repository='https://x.com',
             name='foo',
@@ -83,7 +83,6 @@ class SwarmingCfgTest(testing.AppengineTestCase):
       'builder #1: name unspecified',
       'builder #1: tag #1: does not have ":": wrong2',
       'builder #1: dimension #1: no key',
-      'builder #1: dimension #1: no value',
       ('builder #1: dimension #2: '
        'key "a.b" does not match pattern "^[a-zA-Z\_\-]+$"'),
       'builder #1: recipe unspecified',

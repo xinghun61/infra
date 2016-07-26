@@ -30,7 +30,7 @@ def validate_dimensions(field_name, dimensions, ctx):
       if len(components) != 2:
         ctx.error('does not have ":"')
         continue
-      key, value = components
+      key, _ = components
       if not key:
         ctx.error('no key')
       else:
@@ -42,8 +42,6 @@ def validate_dimensions(field_name, dimensions, ctx):
           ctx.error('duplicate key %s', key)
         else:
           known_keys.add(key)
-      if not value:
-        ctx.error('no value')
 
 
 def validate_recipe_cfg(recipe, common_recipe, ctx):
@@ -138,6 +136,7 @@ def validate_cfg(swarming, ctx):
       validate_builder_cfg(
           b, ctx, bucket_has_pool_dim=has_pool_dim,
           common_recipe=common_recipe)
+
 
 def has_pool_dimension(dimensions):
   return any(d.startswith('pool:') for d in dimensions)

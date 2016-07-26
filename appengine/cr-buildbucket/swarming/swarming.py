@@ -302,7 +302,7 @@ def _prepare_dimensions(global_dims, bucket_cfg_dims, builder_cfg_dims):
   merged = {}
   for ds in (global_dims, bucket_dims, builder_dims):
     merged.update(ds)
-  return sorted({'key': k, 'value': v} for k, v in merged.iteritems())
+  return sorted({'key': k, 'value': v} for k, v in merged.iteritems() if v)
 
 
 @ndb.tasklet

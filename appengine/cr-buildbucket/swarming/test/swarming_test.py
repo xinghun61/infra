@@ -40,7 +40,7 @@ class SwarmingTest(testing.AppengineTestCase):
         hostname='chromium-swarm.appspot.com',
         url_format='https://example.com/{swarming_hostname}/{task_id}',
         common_swarming_tags=['commontag:yes'],
-        common_dimensions=['cores:8', 'pool:default'],
+        common_dimensions=['cores:8', 'pool:default', 'cpu:x86-64'],
         common_recipe=project_config_pb2.Swarming.Recipe(
           repository='https://example.com/repo',
           name='recipe',
@@ -49,7 +49,7 @@ class SwarmingTest(testing.AppengineTestCase):
           project_config_pb2.Swarming.Builder(
               name='builder',
               swarming_tags=['buildertag:yes'],
-              dimensions=['os:Linux', 'pool:Chrome'],
+              dimensions=['os:Linux', 'pool:Chrome', 'cpu:'],
               recipe=project_config_pb2.Swarming.Recipe(
                   properties=['predefined-property:x'],
                   properties_j=['predefined-property-bool:true'],

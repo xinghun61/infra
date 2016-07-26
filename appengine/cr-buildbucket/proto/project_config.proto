@@ -61,6 +61,9 @@ message Swarming {
     // "swarming_tag:builder:release"
     repeated string swarming_tags = 2;
     // Colon-delimited key-value pair of task dimensions.
+    //
+    // If value is not specified ("<key>:"), then it excludes a value for the
+    // same key specified in common_dimensions.
     repeated string dimensions = 3;
     // Specifies that a recipe to run.
     optional Recipe recipe = 4;
@@ -82,6 +85,9 @@ message Swarming {
   repeated string common_swarming_tags = 3;
 
   // Colon-delimited key-value pair of common task dimensions.
+  //
+  // If value is not specified ("<key>:"), then it excludes a value for the
+  // same key specified in swarming task template.
   repeated string common_dimensions = 4;
 
   // Configuration for each builder.
