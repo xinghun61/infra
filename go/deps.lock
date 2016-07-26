@@ -1,8 +1,8 @@
 hash: 4ceb338d6614101f4d7c082339a714735d14b760b766d26cbf93526a7e952e27
-updated: 2016-07-07T20:26:08.105032112-07:00
+updated: 2016-07-26T14:09:11.520715909-07:00
 imports:
 - name: github.com/dustin/go-humanize
-  version: fef948f2d241bd1fd0631108ecc2c9553bae60bf
+  version: 2fcb5204cdc65b4bec9fd0a87606bb0d0e3c54e8
   repo: https://chromium.googlesource.com/external/github.com/dustin/go-humanize.git
 - name: github.com/go-sql-driver/mysql
   version: 3654d25ec346ee8ce71a68431025458d52a38ac0
@@ -13,14 +13,14 @@ imports:
   subpackages:
   - golint
 - name: github.com/golang/protobuf
-  version: 3852dcfda249c2097355a6aabb199a28d97b30df
+  version: 874264fbbb43f4d91e999fecb4b40143ed611400
   repo: https://chromium.googlesource.com/external/github.com/golang/protobuf.git
   subpackages:
   - jsonpb
   - proto
   - protoc-gen-go
 - name: github.com/gopherjs/gopherjs
-  version: 090403452ab6979e3b7c054ceb7ee23da91b2ae4
+  version: 72e303cb5f235b23471872477b57e573dc1c71d0
   repo: https://chromium.googlesource.com/external/github.com/gopherjs/gopherjs.git
   subpackages:
   - js
@@ -31,19 +31,19 @@ imports:
   version: 8ddce2a84170772b95dd5d576c48d517b22cac63
   repo: https://chromium.googlesource.com/external/github.com/jtolds/gls.git
 - name: github.com/julienschmidt/httprouter
-  version: 77366a47451a56bb3ba682481eed85b64fea14e8
+  version: fb79d6a91d3e4a9ecb6d945b218d78fc0d9b1939
   repo: https://chromium.googlesource.com/external/github.com/julienschmidt/httprouter.git
 - name: github.com/kardianos/osext
   version: 29ae4ffbc9a6fe9fb2bc5029050ce6996ea1d3bc
   repo: https://chromium.googlesource.com/external/github.com/kardianos/osext.git
 - name: github.com/kisielk/errcheck
-  version: aa69c6199800e8aeeedf51950f830458e4cb73e3
+  version: 50ffcb6f3595daac70aff9e63afe8b8b277b1a1a
   repo: https://chromium.googlesource.com/external/github.com/kisielk/errcheck.git
 - name: github.com/kisielk/gotool
-  version: 58a7a198f2ec6ea7af221fd216e7f559d663ce02
+  version: 94d5dba705240ba73ce5d65d83ce44adc749b440
   repo: https://chromium.googlesource.com/external/github.com/kisielk/gotool.git
 - name: github.com/kr/pretty
-  version: 7497514e37543f8a9dfdb86a97c2e8d175a0f8a0
+  version: 737b74a46c4bf788349f72cb256fed10aea4d0ac
   repo: https://chromium.googlesource.com/external/github.com/kr/pretty.git
 - name: github.com/kr/text
   version: 7cafcd837844e784b526369c9bce262804aebc60
@@ -67,7 +67,7 @@ imports:
   subpackages:
   - cmd/pp
 - name: github.com/maruel/pre-commit-go
-  version: 7d6194a716afcf9f525d4f5c91c3f59e157a53cd
+  version: d0b732fe4b5068f76271c66f9a9a533bdb656374
   repo: https://chromium.googlesource.com/external/github.com/maruel/pre-commit-go.git
   subpackages:
   - cmd/covg
@@ -119,19 +119,19 @@ imports:
   subpackages:
   - encoding/json5
 - name: golang.org/x/net
-  version: f841c39de738b1d0df95b5a7187744f0e03d8112
+  version: 9f2c271364b418388d150f9c12ecbf12794095c1
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/oauth2
-  version: 7357e96168422ba1e6e7f21075713b72d58764e7
+  version: 1364adb2c63445016c5ed4518fc71f6a3cda6169
   repo: https://go.googlesource.com/oauth2.git
   subpackages:
   - google
   - jwt
 - name: golang.org/x/tools
-  version: 527b253f588776e5f72a0a0d1e93195cd3f82707
+  version: 053ddb97bfa3b2e3021b6eb07f873233a62b2abb
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -144,7 +144,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: c13a21ee847eca050f08db8373d8737494a1170e
+  version: 663fefdcec4e1ec9033ba302202321d3bff5fe6d
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - gensupport
@@ -168,7 +168,7 @@ imports:
   - user
   - cmd/aedeploy
 - name: google.golang.org/cloud
-  version: 00a2270cce0a73cdc800dcb7a5e5a2938b800ca8
+  version: f3b4fda9d963b307ee3260dbf1620dbe0717f7fa
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -176,7 +176,7 @@ imports:
   - pubsub
   - storage
 - name: google.golang.org/grpc
-  version: 4f14d195bf76d2b7e8c1bd379549b88ffe5f4ee3
+  version: 06d68ef15155a5e5f7f1f6e298dfcfb47e002f4e
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
@@ -188,6 +188,6 @@ imports:
   version: c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6
   repo: https://chromium.googlesource.com/external/github.com/natefinch/npipe.git
 - name: gopkg.in/yaml.v2
-  version: a83829b6f1293c91addabc89d0571c246397bbf4
+  version: e4d366fc3c7938e2958e662b4258c7a89e1f0e3e
   repo: https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git
-devImports: []
+testImports: []
