@@ -429,7 +429,7 @@ class Gerrit(object):
 
   @_not_read_only
   def set_review(self, change_id, revision_id, message=None, labels=None,
-                 notify=NOTIFY_NONE, max_message=300):
+                 notify=NOTIFY_NONE, max_message=300, tag=None):
     """Uses the Set Review endpoint of the Gerrit API to add messages and/or set
     labels for a patchset.
     Documentation:
@@ -441,6 +441,8 @@ class Gerrit(object):
       message: (str) The message to add to the patchset.
       labels: (dict) The dictionary which maps label names to their new value.
       notify: (str) Who should get a notification.
+      tag: (str) Apply this tag to the review comment message and labels(votes):
+        https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#review-input
     """
     if message:
       tail = u'\n(message too large)'
@@ -449,7 +451,7 @@ class Gerrit(object):
       logging.info('change_id: %s; comment: %s' % (change_id, message.strip()))
     payload = {}
     for var, attr in [(message, 'message'), (notify, 'notify'),
-                      (labels, 'labels')]:
+                      (labels, 'labels'), (tag, 'tag')]:
       if var is not None:
         payload[attr] = var
     code, body = self._request(
