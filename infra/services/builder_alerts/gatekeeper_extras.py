@@ -10,7 +10,7 @@ from infra.services.builder_alerts.buildbot import master_name_from_url
 
 
 def excluded_builders(master_config):
-  return master_config[0].get('*', {}).get('excluded_builders', set())
+  return master_config[0].get('excluded_builders', set())
 
 def builder_is_excluded(builder, config, master_config):
   if builder in excluded_builders(config):

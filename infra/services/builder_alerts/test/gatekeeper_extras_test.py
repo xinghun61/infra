@@ -11,12 +11,11 @@ from infra.services.builder_alerts import gatekeeper_extras
 class GatekeeperExtrasTest(unittest.TestCase):
   def test_excluded_builders(self):
     self.assertEqual(gatekeeper_extras.excluded_builders([{}]), set())
-    self.assertEqual(gatekeeper_extras.excluded_builders([{'*': {}}]), set())
     self.assertEqual(
         gatekeeper_extras.excluded_builders(
-            [{'*': {
+            [{
                 'excluded_builders': set(['test_builder1', 'test_builder2'])
-            }}]),
+            }]),
         set(['test_builder1', 'test_builder2']))
 
   @mock.patch(
