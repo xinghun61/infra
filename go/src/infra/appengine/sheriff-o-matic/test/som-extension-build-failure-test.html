@@ -35,6 +35,28 @@
         done();
       });
     });
+
+    test('renders links for test results', function(done) {
+      element.extension = {
+        reasons: [{
+          "step": "wekbit_tests",
+          "test_names": [
+            "best_test",
+          ],
+        }],
+      };
+      element._uberify = (url) => { return url; };
+      flush( () => {
+        let itm = element.$$("#test_results");
+        assert.isDefined(itm);
+        assert.equal(
+            itm.children[0].href,
+            "https://test-results.appspot.com/dashboards/flakiness_dashboard" +
+            ".html#tests=best_test&testType=wekbit_tests");
+        done();
+      });
+
+    });
   });
 })();
 </script>
