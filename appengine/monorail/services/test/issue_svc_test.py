@@ -1175,7 +1175,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.issueupdate_tbl.InsertRows(
         self.cnxn, issue_svc.ISSUEUPDATE_COLS[1:], amendment_rows,
         commit=True)
-    
+
     attachment_rows = []
     self.services.issue.attachment_tbl.InsertRows(
         self.cnxn, issue_svc.ATTACHMENT_COLS[1:], attachment_rows,
@@ -1225,7 +1225,7 @@ class IssueServiceTest(unittest.TestCase):
   def testMakeIssueComment_NonAscii(self):
     _ = self.services.issue._MakeIssueComment(
         789, 111L, 'content', timestamp=self.now,
-        inbound_message='sent by написа')
+        inbound_message=u'sent by написа')
 
   def testCreateIssueComment(self):
     _issue_1, _issue_2 = self.SetUpGetIssues()

@@ -2188,7 +2188,7 @@ class IssueService(object):
       timestamp = int(time.time())
     comment.timestamp = int(timestamp)
     if inbound_message:
-      comment.inbound_message = inbound_message.decode('utf-8')
+      comment.inbound_message = inbound_message
     if amendments:
       logging.info('amendments is %r', amendments)
       comment.amendments.extend(amendments)

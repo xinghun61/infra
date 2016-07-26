@@ -70,11 +70,13 @@ def ParseEmailMessage(msg):
   references = list({ref for ref in [in_reply_to] + references if ref})
   subject = _StripSubjectPrefixes(msg.get('subject', ''))
 
-  body = ''
+  body = u''
   for part in msg.walk():
     # We only process plain text emails.
     if part.get_content_type() == 'text/plain':
       body = part.get_payload(decode=True)
+      if not isinstance(body, unicode):
+        body = body.decode('utf-8')
       break  # Only consider the first text part.
 
   return from_addr, to_addrs, cc_addrs, references, subject, body

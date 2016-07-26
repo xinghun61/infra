@@ -61,9 +61,9 @@ def GenerateFeatures(summary, description, author_email, num_hashes,
     whitelisted_email_suffixes: The set of email address suffixes to ignore.
   """
   # If we've been passed real unicode strings, convert them to just bytestrings.
-  if type(summary) == unicode:
+  if isinstance(summary, unicode):
     summary = summary.encode('utf-8')
-  if type(description) == unicode:
+  if isinstance(description, unicode):
     description = description.encode('utf-8')
 
   # Compression ratio lets us know how much repeated data there is.
