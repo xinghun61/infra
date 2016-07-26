@@ -237,9 +237,14 @@ func respondTestFileDefault(ctx *router.Context, params URLParams) {
 
 	if params.TestListJSON {
 		tr := model.TestResults{Builder: params.Builder}
-		if err := json.NewDecoder(tf.Data).Decode(&tr); err != nil {
+		data, err := model.CleanTestResultsJSON(tf.Data)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logging.Errorf(c, "failed to unmarshal TestResults JSON: %+v: %v", tf.Data, err)
+			logging.Errorf(c, "failed to clean TestResults JSON: %+v: %v", tf.Data, err)
+		}
+		if err := json.NewDecoder(data).Decode(&tr); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logging.Errorf(c, "failed to unmarshal TestResults JSON: %+v: %v", data, err)
 			return
 		}
 		deleteKeys(tr.Tests, "results", "times")

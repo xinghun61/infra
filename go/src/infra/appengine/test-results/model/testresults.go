@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"strconv"
 
 	commerr "github.com/luci/luci-go/common/errors"
@@ -144,6 +146,27 @@ func (t *TestResults) MarshalJSON() ([]byte, error) {
 		"version": &vRaw,
 		t.Builder: &bdRaw,
 	})
+}
+
+// CleanTestResultsJSON returns the result of removing a known prefix
+// and suffix from the contents in r. If the prefix or suffix do not exist,
+// the returned io.Reader has the same contents as r.
+func CleanTestResultsJSON(r io.Reader) (io.Reader, error) {
+	pre := []byte("ADD_RESULTS(")
+	suf := []byte(");")
+
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	if bytes.HasPrefix(b, pre) && bytes.HasSuffix(b, suf) {
+		result := bytes.TrimPrefix(b, pre)
+		result = bytes.TrimSuffix(result, suf)
+		return bytes.NewReader(result), nil
+	}
+
+	return bytes.NewReader(b), nil
 }
 
 // UnmarshalJSON decodes JSON data into t.

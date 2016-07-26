@@ -1,6 +1,7 @@
 package model
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"path/filepath"
@@ -8,6 +9,30 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+func TestCleanTestResultsJSON(t *testing.T) {
+	Convey("CleanTestResultsJSON", t, func() {
+		data := `{"foo":"bar"}`
+
+		Convey("Strips prefix and suffix", func() {
+			r := bytes.NewReader([]byte(`ADD_RESULTS(` + data + `);`))
+			res, err := CleanTestResultsJSON(r)
+			So(err, ShouldBeNil)
+			b, err := ioutil.ReadAll(res)
+			So(err, ShouldBeNil)
+			So(string(b), ShouldEqual, data)
+		})
+
+		Convey("Returns original when prefix and suffix are absent", func() {
+			r := bytes.NewReader([]byte(data))
+			res, err := CleanTestResultsJSON(r)
+			So(err, ShouldBeNil)
+			b, err := ioutil.ReadAll(res)
+			So(err, ShouldBeNil)
+			So(string(b), ShouldEqual, data)
+		})
+	})
+}
 
 func TestTestResults(t *testing.T) {
 	t.Parallel()
