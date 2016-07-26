@@ -33,6 +33,7 @@ TEST_PAYLOAD = {
     'message': 'Test message.',
     'notify': 'NONE',
     'tag': 'cq',
+    'on_behalf_of': 'john@doe.net',
 }
 
 TEST_PAYLOAD_LABELS_ONLY = {
@@ -502,7 +503,8 @@ class GerritAgentTestCase(unittest.TestCase):
         '%s%s' % (GERRIT_JSON_HEADER,
                   json.dumps({'labels':{'Code-Review':1}})), 200)
     self.gerrit.set_review('change_id', 'revision_id', 'Test message.',
-                           { 'Code-Review': 1 }, tag='cq')
+                           { 'Code-Review': 1 }, tag='cq',
+                           on_behalf_of='john@doe.net')
     mock_method.assert_called_once_with(
         data=json.dumps(TEST_PAYLOAD),
         method='POST',
