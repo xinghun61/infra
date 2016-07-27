@@ -20,7 +20,6 @@ import requests
 import requests_cache
 
 from infra_libs import logs
-from infra_libs import ts_mon
 from infra.libs.service_utils import outer_loop
 
 from infra.services.builder_alerts import alert_builder
@@ -61,7 +60,6 @@ class SubProcess(object):
     self._jobs = jobs
 
   def __call__(self, master_url):
-    logging.debug('Thread for master %s has started', master_url)
     try:
       master_json = buildbot.fetch_master_json(master_url)
       if not master_json:
@@ -89,8 +87,6 @@ class SubProcess(object):
           master_url,
       )
       raise Exception(msg)
-    finally:
-      logging.debug('Thread for master %s has finished', master_url)
 
 
 def query_findit(findit_api_url, alerts):
@@ -193,7 +189,6 @@ def gzipped(data):
 
 
 def inner_loop(args):
-  logging.debug('Starting inner loop')
   old_api_endpoint = string_helpers.slash_join(args.api_endpoint_prefix,
       args.old_api_path) if args.old_api_path else None
   if not old_api_endpoint:
@@ -254,14 +249,11 @@ def inner_loop(args):
   alerts = []
   suspected_cls = []
 
-  logging.debug('Processing all masters via process pool')
   pool = multiprocessing.Pool(processes=args.processes)
   master_datas = pool.map(SubProcess(cache, old_alerts, args.builder_filter,
                                      args.jobs), master_urls)
-  logging.debug('Closing all threads in master process pool')
   pool.close()
   pool.join()
-  logging.debug('Joined all threads in master process pool')
 
   for data in master_datas:
     # TODO(ojan): We should put an alert in the JSON for this master so
@@ -352,7 +344,6 @@ def inner_loop(args):
         '--crbug-service-account was not specified, can not get crbug issues')
     ret = False
 
-  logging.debug('Returning from inner loop')
   return ret
 
 
@@ -368,13 +359,6 @@ def main(args):
                       type=int)
   logs.add_argparse_options(parser)
   outer_loop.add_argparse_options(parser)
-
-  ts_mon.add_argparse_options(parser)
-  parser.set_defaults(
-    ts_mon_target_type='task',
-    ts_mon_task_service_name='builder-alerts',
-    ts_mon_task_job_name='builder-alerts',
-  )
 
   gatekeeper_json = os.path.join(build_scripts_dir, 'slave', 'gatekeeper.json')
   parser.add_argument('--gatekeeper', action='store', default=gatekeeper_json)
@@ -401,7 +385,6 @@ def main(args):
   args = parser.parse_args(args)
   logs.process_argparse_options(args)
   loop_args = outer_loop.process_argparse_options(args)
-  ts_mon.process_argparse_options(args)
 
   # TODO(sergiyb): Remove support for data_url when builder_alerts recipes are
   # updated and using new syntax to call this script.
@@ -437,25 +420,13 @@ def main(args):
   def outer_loop_iteration():
     return inner_loop(args)
 
-  logging.debug('Starting outer loop')
   loop_results = outer_loop.loop(
       task=outer_loop_iteration,
       sleep_timeout=lambda: 5,
       **loop_args)
-  logging.debug('Finished outer loop')
 
-  logging.debug('Flushing ts_mon starting')
-  ts_mon.flush()
-  logging.debug('Flushing ts_mon completed')
   return 0 if loop_results.success else 1
 
 
 if __name__ == '__main__':
-  logging.debug('Started main')
-  retcode = main(sys.argv[1:])
-  current_thread_descriptions = [t.name + (' (daemon)' if t.isDaemon() else '')
-                                 for t in threading.enumerate()
-                                 if t is not threading.current_thread()]
-  logging.debug(
-      'Leaving main. Threads: %s', ', '.join(current_thread_descriptions))
-  sys.exit(retcode)
+  sys.exit(main(sys.argv[1:]))

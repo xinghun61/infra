@@ -12,19 +12,12 @@ from apiclient.errors import HttpError
 import httplib2
 from oauth2client import client
 
-from infra_libs import ts_mon
-
 
 # Dictionary mapping whitelisted lower-case labels to corresponding tree names.
 WHITELISTED_LABELS = {'sheriff-chromium': 'chromium',
                       'sheriff-blink': 'blink',
                       'infra-troopers': 'trooper'}
 BATCH_SIZE = 10
-
-
-issue_tracker_requests = ts_mon.CounterMetric(
-    'flakiness_pipeline/issue_tracker_requests',
-    description='Number of requests to the issue tracker')
 
 
 def _build_crbug_service(crbug_service_account):  # pragma: no cover
@@ -51,9 +44,6 @@ def _list_issues(crbug_service_account):
           projectId='chromium', label=whitelisted_label,
           startIndex=start_index, maxResults=BATCH_SIZE, can='open')
       response = request.execute(num_retries=5)
-      issue_tracker_requests.increment(
-          {'source': 'builder_alerts', 'operation': 'issues_list'})
-      logging.debug('Incremented issue_tracker_requests counter')
   
       # Issue Tracker may omit certain issues occasionally, so counting whether
       # they add up to 'totalResults' in response is not relaible. However, we
