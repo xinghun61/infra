@@ -4,15 +4,17 @@
  class="buttonify capsule_right mode_button_active">Grid</span>
 </div>
 
-[if-any grid_data]
-<div class="pagination">
- [is pagination.total_count "1"]
-  [pagination.total_count] issue shown
- [else]
-  [if-any grid_limited][grid_shown] issues of [end]
-  [pagination.total_count] issues shown
+[if-any pagination]
+ [if-any pagination.visible]
+  <div class="pagination">
+   [is pagination.total_count "1"]
+    [pagination.total_count] issue shown
+   [else]
+    [if-any grid_limited][grid_shown] issues of [end]
+    [pagination.total_count] issues shown
+   [end]
+  </div>
  [end]
-</div>
 [end]
 
  <form id="colspecform" action="list" method="GET" style="display:inline">
