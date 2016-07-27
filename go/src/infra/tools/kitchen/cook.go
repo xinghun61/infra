@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -230,6 +231,9 @@ func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
 	if _, ok := props["path_config"]; ok {
 		fmt.Fprintln(os.Stderr, `"path_config" property must not be set; it is reserved by kitchen`)
 	}
+	if props == nil {
+		props = map[string]interface{}{}
+	}
 	props["path_config"] = "swarmbucket"
 
 	// If we're not using LogDog, send out annotations.
@@ -281,9 +285,17 @@ func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
 	return recipeExitCode
 }
 
+// unmarshalJSONWithNumber unmarshals JSON, where numbers are unmarshaled as
+// json.Number.
+func unmarshalJSONWithNumber(data []byte, dest interface{}) error {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	return decoder.Decode(dest)
+}
+
 func parseProperties(properties, propertiesFile string) (result map[string]interface{}, err error) {
 	if properties != "" {
-		err = json.Unmarshal([]byte(properties), &result)
+		err = unmarshalJSONWithNumber([]byte(properties), &result)
 		if err != nil {
 			err = fmt.Errorf("could not parse properties %s\n%s", properties, err)
 		}
@@ -295,7 +307,7 @@ func parseProperties(properties, propertiesFile string) (result map[string]inter
 			err = fmt.Errorf("could not read properties file %s\n%s", propertiesFile, err)
 			return nil, err
 		}
-		err = json.Unmarshal(b, &result)
+		err = unmarshalJSONWithNumber(b, &result)
 		if err != nil {
 			err = fmt.Errorf("could not parse JSON from file %s\n%s\n%s",
 				propertiesFile, b, err)
