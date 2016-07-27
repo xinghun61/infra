@@ -95,6 +95,9 @@ class SavedQueryView(template_helpers.PBProxy):
 
 def SavedQueryToCond(saved_query):
   """Convert a SavedQuery PB to a user query condition string."""
+  if saved_query is None:
+    return ''
+
   base_cond = tracker_bizobj.GetBuiltInQuery(saved_query.base_query_id)
   cond = '%s %s' % (base_cond, saved_query.query)
   return cond.strip()

@@ -84,7 +84,7 @@ class FeaturesServiceTest(unittest.TestCase):
 
   ### Saved User and Project Queries
 
-  def testGetSavedQuery(self):
+  def testGetSavedQuery_Valid(self):
     self.features_service.savedquery_tbl.Select(
         self.cnxn, cols=features_svc.SAVEDQUERY_COLS, id=[1]).AndReturn(
         [(1, 'query1', 100, 'owner:me')])
@@ -100,6 +100,18 @@ class FeaturesServiceTest(unittest.TestCase):
     self.assertEqual(100, saved_query.base_query_id)
     self.assertEqual('owner:me', saved_query.query)
     self.assertEqual([12345], saved_query.executes_in_project_ids)
+
+  def testGetSavedQuery_Invalid(self):
+    self.features_service.savedquery_tbl.Select(
+        self.cnxn, cols=features_svc.SAVEDQUERY_COLS, id=[99]).AndReturn([])
+    self.features_service.savedqueryexecutesinproject_tbl.Select(
+        self.cnxn, cols=features_svc.SAVEDQUERYEXECUTESINPROJECT_COLS,
+        query_id=[99]).AndReturn([])
+    self.mox.ReplayAll()
+    saved_query = self.features_service.GetSavedQuery(
+        self.cnxn, 99)
+    self.mox.VerifyAll()
+    self.assertIsNone(saved_query)
 
   def SetUpUsersSavedQueries(self):
     query = tracker_bizobj.MakeSavedQuery(1, 'query1', 100, 'owner:me')

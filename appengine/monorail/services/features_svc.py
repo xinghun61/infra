@@ -133,7 +133,7 @@ class FeaturesService(object):
   def GetSavedQuery(self, cnxn, query_id):
     """Retrieve the specified SaveQuery PB."""
     saved_queries = self.GetSavedQueries(cnxn, [query_id])
-    return saved_queries[query_id]
+    return saved_queries.get(query_id)
 
   def _GetUsersSavedQueriesDict(self, cnxn, user_ids):
     """Return a dict of all SavedQuery PBs for the specified users."""

@@ -78,6 +78,9 @@ class SavedQueriesHelperTest(unittest.TestCase):
         self.query = 'query'
     saved_query = MockSavedQuery()
 
+    cond_for_missing_query = savedqueries_helpers.SavedQueryToCond(None)
+    self.assertEquals('', cond_for_missing_query)
+
     cond_with_no_base = savedqueries_helpers.SavedQueryToCond(saved_query)
     self.assertEquals('query', cond_with_no_base)
 
