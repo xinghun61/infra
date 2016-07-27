@@ -20,6 +20,30 @@ from infra_libs import ts_mon
 
 
 class SysMon(outer_loop.Application):
+  def __init__(self):
+    # make sure we call our super's init
+    super(SysMon, self).__init__()
+
+    # SysMon.task is called every minute we want to collect some metrics
+    # (e.g. os_info) only once per hour, so here we count the minutes within
+    # the hour
+    #
+    # NB: the guarantee for each call being a minute comes from
+    #  chrome_infra/manifests/sysmon.pp in the puppet repo
+    self._minute_count = 0
+
+  def count_minute(self):
+    """ should be called at the end of each call to self.task """
+    # mark that we were called
+    self._minute_count += 1
+
+    # roll over each day-ish, 60 minutes * 24 hours
+    self._minute_count %= 60 * 24
+
+  def is_hour(self):
+    """ check if this call is on the hour """
+    return self._minute_count % 60 == 0
+
   def add_argparse_options(self, parser):
     super(SysMon, self).add_argparse_options(parser)
 
@@ -46,12 +70,20 @@ class SysMon(outer_loop.Application):
       system_metrics.get_mem_info()
       system_metrics.get_net_info()
       system_metrics.get_proc_info()
+      if self.is_hour():
+        # collect once per hour
+        system_metrics.get_os_info()
+      else:
+        # clear on all other minutes
+        system_metrics.clear_os_info()
       puppet_metrics.get_puppet_summary()
       cipd_metrics.get_cipd_summary()
       android_device_metrics.get_device_statuses()
       system_metrics.get_unix_time() # must be the last in the list
+
     finally:
       ts_mon.flush()
+      self.count_minute()
     return True
 
   def sleep_timeout(self):

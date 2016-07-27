@@ -5,6 +5,8 @@
 import errno
 import os
 import logging
+import platform
+import sys
 import time
 
 import psutil
@@ -92,7 +94,20 @@ load_average = ts_mon.FloatMetric('dev/proc/load_average',
 # It is important to gather this metric right before the flush.
 unix_time = ts_mon.GaugeMetric('dev/unix_time',
                                description='Number of milliseconds since epoch '
-                                  'based on local machine clock.')
+                               'based on local machine clock.')
+
+os_name = ts_mon.StringMetric('proc/os/name',
+                              description='OS name on the machine ')
+
+os_version = ts_mon.StringMetric('proc/os/version',
+                                 description='OS version on the machine ')
+
+os_arch = ts_mon.StringMetric('proc/os/arch',
+                              description='OS architecture on this machine')
+
+python_arch = ts_mon.StringMetric('proc/python/arch',
+                                  description='python userland '
+                                  'architecture on this machine')
 
 
 def get_uptime():
@@ -173,6 +188,59 @@ def get_net_info():
         # is reloaded, so log an error and continue instead of raising an
         # exception.
         logging.error(str(ex))
+
+
+def get_os_info():
+  os_name_data    = ''
+  os_version_data = ''
+
+  os_name_data    = platform.system().lower()
+  if 'windows' in os_name_data:
+    os_name_data    = 'windows'
+    # os_release will be something like '7', 'vista', or 'xp'
+    os_version_data = platform.release()
+
+  elif 'linux' in os_name_data:
+    # will return something like ('Ubuntu', '14.04', 'trusty')
+    dist_info_data  = platform.dist()
+    os_name_data    = dist_info_data[0]
+    os_version_data = dist_info_data[1]
+
+  # on mac platform.system() reports 'darwin'
+  else:
+    # this tuple is only populated on mac systems
+    mac_ver_data    = platform.mac_ver()
+    # [0] will be '10.11.5' or similar on a valid mac or will be '' on a
+    # non-mac
+    os_version_data = mac_ver_data[0]
+    if os_version_data:
+      # we found a valid mac
+      os_name_data = 'mac'
+    else :
+      # not a mac, unable to find platform information, reset
+      os_name_data    = ''
+      os_version_data = ''
+
+  # normalize to lower case
+  os_name_data    = os_name_data.lower()
+  os_version_data = os_version_data.lower()
+
+  python_arch_data = '32'
+  if sys.maxsize > 2**32:
+    python_arch_data = '64'
+
+  # construct metrics
+  os_name.set(os_name_data)
+  os_version.set(os_version_data)
+  os_arch.set(platform.machine())
+  python_arch.set(python_arch_data)
+
+
+def clear_os_info():
+  os_name.reset()
+  os_version.reset()
+  os_arch.reset()
+  python_arch.reset()
 
 
 def get_proc_info():
