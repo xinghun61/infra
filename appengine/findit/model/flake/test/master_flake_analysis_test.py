@@ -1,0 +1,86 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+from datetime import datetime
+
+import unittest
+
+from model import analysis_status
+from model.flake.master_flake_analysis import MasterFlakeAnalysis
+
+
+class MasterFlakeAnalysisTest(unittest.TestCase):
+
+  def testMasterFlakeAnalysisStatusIsCompleted(self):
+    for status in (analysis_status.COMPLETED, analysis_status.ERROR):
+      analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+      analysis.status = status
+      self.assertTrue(analysis.completed)
+
+  def testMasterFlakeAnalysisStatusIsNotCompleted(self):
+    for status in (analysis_status.PENDING, analysis_status.RUNNING):
+      analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+      analysis.status = status
+      self.assertFalse(analysis.completed)
+
+  def testMasterFlakeAnalysisDurationWhenNotCompleted(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.status = analysis_status.RUNNING
+    self.assertIsNone(analysis.duration)
+
+  def testMasterFlakeAnalysisDurationWhenStartTimeNotSet(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.end_time = datetime(2015, 07, 30, 21, 15, 30, 40)
+    self.assertIsNone(analysis.duration)
+
+  def testMasterFlakeAnalysisDurationWhenEndTimeNotSet(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.start_time = datetime(2015, 07, 30, 21, 15, 30, 40)
+    self.assertIsNone(analysis.duration)
+
+  def testMasterFlakeAnalysisDurationWhenCompleted(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.start_time = datetime(2015, 07, 30, 21, 15, 30, 40)
+    analysis.end_time = datetime(2015, 07, 30, 21, 16, 15, 50)
+    self.assertEqual(45, analysis.duration)
+
+  def testMasterFlakeAnalysisStatusIsFailed(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.status = analysis_status.ERROR
+    self.assertTrue(analysis.failed)
+
+  def testMasterFlakeAnalysisStatusIsNotFailed(self):
+    for status in (analysis_status.PENDING, analysis_status.RUNNING,
+                   analysis_status.COMPLETED):
+      analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+      analysis.status = status
+      self.assertFalse(analysis.failed)
+
+  def testMasterFlakeAnalysisStatusDescriptionPending(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.status = analysis_status.PENDING
+    self.assertEqual('Pending', analysis.status_description)
+
+  def testMasterFlakeAnalysisStatusDescriptionRunning(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.status = analysis_status.RUNNING
+    self.assertEqual('Running', analysis.status_description)
+
+  def testMasterFlakeAnalysisStatusDescriptionCompleted(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    self.assertEqual('Completed', analysis.status_description)
+
+  def testMasterFlakeAnalysisStatusDescriptionError(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.status = analysis_status.ERROR
+    self.assertEqual('Error', analysis.status_description)
+
+  def testMasterFlakeAnalysisStepTestName(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    self.assertEqual('s', analysis.step_name)
+    self.assertEqual('t', analysis.test_name)
