@@ -10,17 +10,21 @@ from infra.services.builder_alerts import gatekeeper_extras
 
 class GatekeeperExtrasTest(unittest.TestCase):
   def test_excluded_builders(self):
-    self.assertEqual(gatekeeper_extras.excluded_builders([{}]), set())
-    self.assertEqual(
-        gatekeeper_extras.excluded_builders(
-            [{
-                'excluded_builders': set(['test_builder1', 'test_builder2'])
-            }]),
-        set(['test_builder1', 'test_builder2']))
+    self.assertFalse(gatekeeper_extras.is_excluded_builder([{}], 'hi'))
+    self.assertTrue(
+        gatekeeper_extras.is_excluded_builder([{
+          '*': {
+            'excluded_builders': set(['test_builder1', 'test_builder2'])
+          }}], 'test_builder1'))
+    self.assertTrue(
+        gatekeeper_extras.is_excluded_builder([{
+          'test_builder1': {
+            'excluded_builders': set(['test_builder1', 'test_builder2'])
+          }}], 'test_builder1'))
 
   @mock.patch(
-      'infra.services.builder_alerts.gatekeeper_extras.excluded_builders',
-      lambda config: ['Ignored'])
+      'infra.services.builder_alerts.gatekeeper_extras.is_excluded_builder',
+      lambda config, builder: builder == 'Ignored')
   @mock.patch(
       'infra.services.builder_alerts.gatekeeper_extras.would_close_tree',
       lambda config, builder, step: True)
@@ -78,7 +82,6 @@ class GatekeeperExtrasTest(unittest.TestCase):
 
     filtered_alerts = gatekeeper_extras.apply_gatekeeper_rules(
         alerts, gatekeeper_cfg, gatekeeper_trees_cfg)
-    print filtered_alerts
 
     self.assertEqual(len(filtered_alerts), 6)
     self.assertIn({'master_url': 'http://build.chromium.org/p/chromium',

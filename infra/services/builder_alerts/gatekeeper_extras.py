@@ -8,12 +8,16 @@ import logging
 
 from infra.services.builder_alerts.buildbot import master_name_from_url
 
-
-def excluded_builders(master_config):
-  return master_config[0].get('excluded_builders', set())
+def is_excluded_builder(master_config, builder):
+  cfg = master_config[0]
+  if builder in cfg:
+    cfg = cfg[builder]
+  else:
+    cfg = cfg.get('*', {})
+  return builder in cfg.get('excluded_builders', set())
 
 def builder_is_excluded(builder, config, master_config):
-  if builder in excluded_builders(config):
+  if is_excluded_builder(config, builder):
     return True
 
   if '*' in master_config:
