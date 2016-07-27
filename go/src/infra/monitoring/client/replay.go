@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"infra/monitoring/messages"
 )
@@ -66,6 +67,13 @@ func (c *replay) CrbugItems(label string) ([]messages.CrbugItem, error) {
 	res := []messages.CrbugItem{}
 	err := read(filepath.Join(c.baseDir, "crbugitems", label), res)
 	return res, err
+}
+
+// Findit fetches results from findito for a build.
+func (c *replay) Findit(master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
+	s := []*messages.FinditResult{}
+	err := read(filepath.Join(c.baseDir, "findit", master.Name(), builder, fmt.Sprintf("%d", buildNum), strings.Join(failedSteps, ",")), &s)
+	return s, err
 }
 
 // TODO(seanmccullough): Evaluate GOB encoding as a faster alternative.

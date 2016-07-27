@@ -81,6 +81,9 @@ type Reader interface {
 
 	// CrbugItems fetches a list of open issues from crbug matching the given label.
 	CrbugItems(label string) ([]messages.CrbugItem, error)
+
+	// Findit fetches items from the findit service, which identifies possible culprit CLs for a failed build.
+	Findit(master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error)
 }
 
 // Writer writes out data to other services, most notably sheriff-o-matic.
@@ -261,6 +264,37 @@ func (r *reader) CrbugItems(label string) ([]messages.CrbugItem, error) {
 	return res.Items, nil
 }
 
+type finditAPIResponse struct {
+	Results []*messages.FinditResult `json:"results"`
+}
+
+func (r *reader) Findit(master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
+	data := map[string]interface{}{
+		"master_url":   master.String(),
+		"builder_name": builder,
+		"build_number": buildNum,
+		"failed_steps": failedSteps,
+	}
+
+	b := bytes.NewBuffer(nil)
+	err := json.NewEncoder(b).Encode(data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	URL := "https://findit-for-me.appspot.com/_ah/api/findit/v1/buildfailure"
+	expvars.Add("Findit", 1)
+	defer expvars.Add("Findit", -1)
+	res := &finditAPIResponse{}
+	if code, err := r.hc.postJSON(URL, b.Bytes(), res); err != nil {
+		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
+		return nil, err
+	}
+
+	return res.Results, nil
+}
+
 func cacheable(b *messages.Build) bool {
 	return len(b.Times) > 1 && b.Times[1] != 0
 }
@@ -316,8 +350,18 @@ func (hc *trackingHTTPClient) trackRequestStats(cb func() (int64, error)) error 
 	return err
 }
 
-func (hc *trackingHTTPClient) attemptJSON(url string, v interface{}) (bool, int, int64, error) {
-	resp, err := hc.c.Get(url)
+func (hc *trackingHTTPClient) attemptJSONGet(url string, v interface{}) (bool, int, int64, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		errLog.Printf("error while creating request: %q, possibly retrying.", err.Error())
+		return false, 0, 0, err
+	}
+
+	return hc.attemptReq(req, v)
+}
+
+func (hc *trackingHTTPClient) attemptReq(r *http.Request, v interface{}) (bool, int, int64, error) {
+	resp, err := hc.c.Do(r)
 	if err != nil {
 		errLog.Printf("error: %q, possibly retrying.", err.Error())
 		return false, 0, 0, err
@@ -332,12 +376,50 @@ func (hc *trackingHTTPClient) attemptJSON(url string, v interface{}) (bool, int,
 	ct := strings.ToLower(resp.Header.Get("Content-Type"))
 	expected := "application/json"
 	if !strings.HasPrefix(ct, expected) {
-		err = fmt.Errorf("unexpected Content-Type, expected \"%s\", got \"%s\": %s", expected, ct, url)
+		err = fmt.Errorf("unexpected Content-Type, expected \"%s\", got \"%s\": %s", expected, ct, r.URL)
 		return false, status, 0, err
 	}
-	infoLog.Printf("Fetched(%d) json: %s", status, url)
+	infoLog.Printf("Fetched(%d) json: %s", status, r.URL)
 
 	return true, status, resp.ContentLength, err
+}
+
+// postJSON does a simple HTTP POST on a endpoint, with retries and backoff.
+//
+// Returns the status code and the error, if any.
+func (hc *trackingHTTPClient) postJSON(url string, data []byte, v interface{}) (status int, err error) {
+	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
+	if err != nil {
+		return 0, err
+	}
+
+	err = hc.trackRequestStats(func() (length int64, err error) {
+		attempts := 0
+		for {
+			infoLog.Printf("Fetching json (%d in flight, attempt %d of %d): %s", hc.currReqs, attempts, maxRetries, url)
+			done, tStatus, length, err := hc.attemptReq(req, v)
+			status = tStatus
+			if done {
+				return length, err
+			}
+			if err != nil {
+				errLog.Printf("Error attempting fetch: %v", err)
+			}
+
+			attempts++
+			if attempts > maxRetries {
+				return 0, fmt.Errorf("Error fetching %s, max retries exceeded.", url)
+			}
+
+			if status >= 400 && status < 500 {
+				return 0, fmt.Errorf("HTTP status %d, not retrying: %s", status, url)
+			}
+
+			time.Sleep(time.Duration(math.Pow(2, float64(attempts))) * time.Second)
+		}
+	})
+
+	return status, err
 }
 
 // getJSON does a simple HTTP GET on a getJSON endpoint.
@@ -348,7 +430,7 @@ func (hc *trackingHTTPClient) getJSON(url string, v interface{}) (status int, er
 		attempts := 0
 		for {
 			infoLog.Printf("Fetching json (%d in flight, attempt %d of %d): %s", hc.currReqs, attempts, maxRetries, url)
-			done, tStatus, length, err := hc.attemptJSON(url, v)
+			done, tStatus, length, err := hc.attemptJSONGet(url, v)
 			status = tStatus
 			if done {
 				return length, err

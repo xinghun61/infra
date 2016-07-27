@@ -22,12 +22,13 @@ func fakeNow(t time.Time) func() time.Time {
 }
 
 type mockReader struct {
-	bCache       map[string]*messages.Build
-	build        *messages.Build
-	builds       map[string]*messages.Build
-	latestBuilds map[messages.MasterLocation]map[string][]*messages.Build
-	testResults  *messages.TestResults
-	stdioForStep []string
+	bCache        map[string]*messages.Build
+	build         *messages.Build
+	builds        map[string]*messages.Build
+	latestBuilds  map[messages.MasterLocation]map[string][]*messages.Build
+	testResults   *messages.TestResults
+	stdioForStep  []string
+	finditResults []*messages.FinditResult
 	buildFetchError,
 	stepFetchError,
 	stdioForStepError error
@@ -73,6 +74,10 @@ func (m mockReader) PostAlerts(alerts *messages.Alerts) error {
 
 func (m mockReader) CrbugItems(tree string) ([]messages.CrbugItem, error) {
 	return nil, nil
+}
+
+func (m mockReader) Findit(master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
+	return m.finditResults, nil
 }
 
 func urlParse(s string, t *testing.T) *url.URL {
@@ -319,6 +324,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 		builder      string
 		recentBuilds []int64
 		builds       map[string]*messages.Build
+		finditData   []*messages.FinditResult
 		time         time.Time
 		wantAlerts   []messages.Alert
 		wantErrs     []error
@@ -389,6 +395,75 @@ func TestBuilderStepAlerts(t *testing.T) {
 							{
 								Repo:      "chromium",
 								Positions: []string{"refs/heads/master@{#291569}"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:         "one build failure with findit",
+			master:       "fake.master",
+			builder:      "fake.builder",
+			recentBuilds: []int64{0},
+			builds: map[string]*messages.Build{
+				"fake.master/fake.builder/0": {
+					Number: 0,
+					Times:  []messages.EpochTime{0, 1},
+					Steps: []messages.Step{
+						{
+							Name:       "fake_step",
+							IsFinished: true,
+							Results:    []interface{}{float64(2)},
+						},
+					},
+					Properties: [][]interface{}{
+						{"got_revision_cp", "refs/heads/master@{#291569}"},
+					},
+				},
+			},
+			finditData: []*messages.FinditResult{
+				{
+					SuspectedCLs: []messages.SuspectCL{
+						{
+							RepoName:       "repo",
+							Revision:       "deadbeef",
+							CommitPosition: 1234,
+						},
+					},
+				},
+			},
+			wantAlerts: []messages.Alert{
+				{
+					Key:      "fake.master.fake.builder.fake_step.",
+					Title:    "fake_step failing on fake.master/fake.builder",
+					Type:     messages.AlertBuildFailure,
+					Body:     "",
+					Severity: newFailureSev,
+					Extension: messages.BuildFailure{
+						Builders: []messages.AlertedBuilder{
+							{
+								Name: "fake.builder",
+								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+							},
+						},
+						Reasons: []messages.Reason{
+							{
+								Step: "fake_step",
+								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder/builds/0/steps/fake_step", t).String(),
+							},
+						},
+						RegressionRanges: []messages.RegressionRange{
+							{
+								Repo:      "chromium",
+								Positions: []string{"refs/heads/master@{#291569}"},
+							},
+						},
+						SuspectedCLs: []messages.SuspectCL{
+							{
+								RepoName:       "repo",
+								Revision:       "deadbeef",
+								CommitPosition: 1234,
 							},
 						},
 					},
@@ -706,7 +781,8 @@ func TestBuilderStepAlerts(t *testing.T) {
 	for _, test := range tests {
 		a.Now = fakeNow(time.Unix(0, 0))
 		a.Reader = mockReader{
-			builds: test.builds,
+			builds:        test.builds,
+			finditResults: test.finditData,
 		}
 
 		gotAlerts, gotErrs := a.builderStepAlerts("tree", &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.recentBuilds)

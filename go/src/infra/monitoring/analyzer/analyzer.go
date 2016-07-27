@@ -589,6 +589,17 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 	if len(importantFailures) == 0 {
 		return nil, errs
 	}
+
+	// Get findit results
+	stepNames := make([]string, len(importantFailures))
+	for i, f := range importantFailures {
+		stepNames[i] = f.step.Name
+	}
+	finditResults, err := a.Reader.Findit(master, builderName, latestBuild, stepNames)
+	if err != nil {
+		return nil, []error{fmt.Errorf("while getting findit results: %s", err)}
+	}
+
 	importantAlerts, err := a.stepFailureAlerts(tree, importantFailures)
 	if err != nil {
 		return nil, []error{err}
@@ -642,7 +653,7 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 			}
 			// At this point, there should only be one builder per failure because
 			// alert keys include the builder name.  We merge builders by step failure
-			// in another pass, after this funtion is called.
+			// in another pass, after this function is called.
 			if len(bf.Builders) != 1 {
 				errLog.Printf("bf.Builders len is not 1: %d", len(bf.Builders))
 			}
@@ -683,6 +694,12 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 
 		// Necessary for test cases to be repeatable.
 		sort.Sort(byRepo(mergedBF.RegressionRanges))
+
+		// FIXME: This is a very simplistic model, and we're throwing away a lot of the findit data.
+		// This data should really be a part of the regression range data.
+		for _, result := range finditResults {
+			mergedBF.SuspectedCLs = append(mergedBF.SuspectedCLs, result.SuspectedCLs...)
+		}
 
 		mergedAlert.Extension = mergedBF
 

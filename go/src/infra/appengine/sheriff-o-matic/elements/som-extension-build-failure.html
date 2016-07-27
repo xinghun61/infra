@@ -33,6 +33,9 @@
        background: #e0b0ff;
        color: #fff;
      }
+     .suspect-cl-results {
+       color: #f00;
+     }
      .builder a {
         font-weight: bold;
         text-decoration: none;
@@ -102,6 +105,18 @@
           </div>
         </template>
       </div>
+      <div id="suspected-cls">
+        <template is="dom-if" if="[[_haveSuspectCLs(extension)]]">
+          <strong class="suspect-cl-results">
+            Findit found results:
+          </strong>
+          <template is="dom-repeat" items="[[extension.suspected_cls]]" as="cl">
+            <a target="_blank" href$=[[_linkForCL(cl)]]>
+              [[_textForCL(cl)]]
+            </a>
+          </template>
+        </template>
+      </div>
     </div>
   </template>
   <script>
@@ -146,6 +161,10 @@
         return classes.join(' ');
       },
 
+      _haveSuspectCLs: function(extension) {
+        return !!extension.suspected_cls;
+      },
+
       _linkForTest: function(reason, testName) {
         return 'https://test-results.appspot.com/dashboards/flakiness_dashboard.html#' +
           "tests=" + encodeURIComponent(testName) +
@@ -153,9 +172,17 @@
           ;
       },
 
+      _linkForCL: function(cl) {
+        return 'https://crrev.com/' + cl.revision;
+      },
+
       _showRegressionRange: function(range) {
         return range.positions && range.positions.length > 0 &&
             range.repo != 'v8';
+      },
+
+      _textForCL: function(cl) {
+        return '(details)';
       },
     });
   })();

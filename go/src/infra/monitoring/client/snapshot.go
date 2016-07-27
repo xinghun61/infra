@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"infra/monitoring/messages"
 )
@@ -99,6 +100,18 @@ func (c *snapshot) CrbugItems(label string) ([]messages.CrbugItem, error) {
 	err = write(filepath.Join(c.baseDir, "crbugitems", label), items)
 	if err != nil {
 		errLog.Printf("Error snapshotting crbug items: %v", err)
+	}
+	return items, err
+}
+
+func (s *snapshot) Findit(master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
+	items, err := s.wrapped.Findit(master, builder, buildNum, failedSteps)
+	if err != nil {
+		return nil, err
+	}
+	err = write(filepath.Join(s.baseDir, "findit", master.Name(), builder, fmt.Sprintf("%d", buildNum), strings.Join(failedSteps, ",")), items)
+	if err != nil {
+		errLog.Printf("Error snapshotting findit: %v", err)
 	}
 	return items, err
 }

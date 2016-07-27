@@ -105,6 +105,7 @@ type BuildFailure struct {
 	Builders         []AlertedBuilder  `json:"builders"`
 	Reasons          []Reason          `json:"reasons"`
 	RegressionRanges []RegressionRange `json:"regression_ranges"`
+	SuspectedCLs     []SuspectCL       `json:"suspected_cls"`
 }
 
 // AlertedBuilder represents an individual builder.
