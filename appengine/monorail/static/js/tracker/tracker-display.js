@@ -363,8 +363,10 @@ function TKR_floatVertically(el, container) {
       el.style.top = '2px';
       if (BR_IsIE()) {
         el.parentNode.style.paddingRight = elBounds.w + 2 + 'px';
+	el.parentNode.style.paddingTop = '';
       } else {
         el.parentNode.style.minWidth = elBounds.w + 'px';
+	el.parentNode.style.height = elBounds.h + 'px';
       }
     }
     el.style.left = (6 - GetScrollLeft(window)) + 'px';
