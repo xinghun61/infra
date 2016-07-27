@@ -24,6 +24,7 @@ def RunSteps(api):
 
     api.git('config', 'user.name', 'W3C Autoroll Bot')
     api.git('config', 'user.email', 'w3c-test-updater-bot@chromium.org')
+    api.git('checkout', '-B', 'update_w3c_tests')
 
     cwd = api.path['checkout'].join('third_party', 'WebKit')
 

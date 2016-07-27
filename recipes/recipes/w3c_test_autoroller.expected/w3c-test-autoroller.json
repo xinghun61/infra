@@ -126,6 +126,16 @@
   },
   {
     "cmd": [
+      "git",
+      "checkout",
+      "-B",
+      "update_w3c_tests"
+    ],
+    "cwd": "[SLAVE_BUILD]/src",
+    "name": "git checkout"
+  },
+  {
+    "cmd": [
       "python",
       "-u",
       "[SLAVE_BUILD]/src/third_party/WebKit/Tools/Scripts/update-w3c-deps",
