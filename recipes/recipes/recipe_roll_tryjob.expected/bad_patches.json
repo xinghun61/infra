@@ -1,14 +1,6 @@
 [
   {
     "cmd": [
-      "/opt/infra-tools/authutil",
-      "token"
-    ],
-    "name": "Get auth token",
-    "stdout": "/path/to/tmp/"
-  },
-  {
-    "cmd": [
       "python",
       "-u",
       "import sys; sys.exit(1)"

@@ -1,14 +1,6 @@
 [
   {
     "cmd": [
-      "/opt/infra-tools/authutil",
-      "token"
-    ],
-    "name": "Get auth token",
-    "stdout": "/path/to/tmp/"
-  },
-  {
-    "cmd": [
       "python",
       "-u",
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
@@ -110,8 +102,6 @@
       "https://luci-config.appspot.com/_ah/api/config/v1/projects",
       "--outfile",
       "/path/to/tmp/",
-      "--headers-json",
-      "{\"Authorization\": \"Bearer ya29.foobar\"}",
       "--attempts",
       "3"
     ],
@@ -125,8 +115,6 @@
       "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Fdepot_tools%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
       "--outfile",
       "/path/to/tmp/",
-      "--headers-json",
-      "{\"Authorization\": \"Bearer ya29.foobar\"}",
       "--attempts",
       "3"
     ],
@@ -140,8 +128,6 @@
       "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Frecipe_engine%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
       "--outfile",
       "/path/to/tmp/",
-      "--headers-json",
-      "{\"Authorization\": \"Bearer ya29.foobar\"}",
       "--attempts",
       "3"
     ],
@@ -155,8 +141,6 @@
       "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Fbuild%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
       "--outfile",
       "/path/to/tmp/",
-      "--headers-json",
-      "{\"Authorization\": \"Bearer ya29.foobar\"}",
       "--attempts",
       "3"
     ],

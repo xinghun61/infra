@@ -19,19 +19,14 @@ from recipe_engine.recipe_api import Property
 from recipe_engine.config import Single
 
 
-def get_auth_token(api, service_account=None):
-  """
-  Get an auth token; this assumes the user is logged in with the infra
-  authutil command line utility.
-
-  If service_account is provided, that service account will be used when calling
-  authutil.
-  """
-  cmd = ['/opt/infra-tools/authutil', 'token']
-  if service_account: # pragma: no cover
-      cmd.extend([
-          '-service-account-json='
-          '/creds/service_accounts/service-account-%s.json' % service_account])
+def get_auth_token(api, service_account):
+  """Returns an access token for the service account."""
+  cmd = [
+    '/opt/infra-tools/authutil',
+    'token',
+    '-service-account-json',
+    '/creds/service_accounts/service-account-%s.json' % service_account
+  ]
 
   result = api.step(
       'Get auth token', cmd,
@@ -74,23 +69,24 @@ PROPERTIES = {
            "service account")
 }
 
+
 def RunSteps(api, patches_raw, rietveld, issue, patchset, patch_project,
              auth_token, service_account):
   # TODO(martiniss): use real types
   issue = int(issue) if issue else None
   patchset = int(patchset) if patchset else None
 
-  if not auth_token:
+  # if you are running the recipe locally and want to use personal credentials,
+  # run `authutil token` and put the result to "auth_token" property value.
+  if not auth_token and service_account:
     auth_token = get_auth_token(api, service_account)
-  else: # pragma: no cover
+  else:
     assert not service_account, (
         "Only one of \"service_account\" and \"auth_token\" may be set")
-
   api.luci_config.c.auth_token = auth_token
 
   api.recipe_tryjob.run_tryjob(
       patches_raw, rietveld, issue, patchset, patch_project)
-
 
 
 def GenTests(api):
@@ -103,6 +99,18 @@ def GenTests(api):
       api.luci_config.get_project_config(
           'recipe_engine', 'recipes.cfg',
           api.recipe_tryjob.make_recipe_config('recipe_engine'))
+  )
+
+  yield (
+    api.test('basic_with_service_account') +
+    api.properties(service_account='recipe_roller') +
+    api.luci_config.get_projects(('recipe_engine', 'build')) +
+    api.luci_config.get_project_config(
+        'build', 'recipes.cfg',
+        api.recipe_tryjob.make_recipe_config('build')) +
+    api.luci_config.get_project_config(
+        'recipe_engine', 'recipes.cfg',
+        api.recipe_tryjob.make_recipe_config('recipe_engine'))
   )
 
   yield (
