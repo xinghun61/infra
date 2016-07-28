@@ -84,7 +84,7 @@ STALE_FLAKES_ML = 'stale-flakes-reports@google.com'
 MAX_GAP_FOR_FLAKINESS_PERIOD = datetime.timedelta(days=3)
 KNOWN_TROOPER_FLAKE_NAMES = [
     'analyze', 'bot_update', 'compile (with patch)', 'compile',
-    'device_status_check', 'gclient runhooks (with patch)', 'Patch',
+    'device_status_check', 'gclient (with patch)', 'Patch',
     'process_dumps', 'provision_devices', 'update_scripts', 'taskkill']
 
 # Flakes in these steps are always ignored:
