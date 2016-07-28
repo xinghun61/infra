@@ -206,10 +206,10 @@
     'implicit': True,  # Required by python_dateutil, webtest, uritemplate.
   },
   'testing_support': {
-    'version': '0.2.0',
+    'version': '0.3.0',
     'build': '0',
     'repo': 'infra/testing/testing_support',
-    'rev': '1a6395d8fbd43721258d218164a2412fb398333c',
+    'rev': '11e0d2b530cc7ea119c318b795e121511c3867f4',
   },
   'tzlocal': {
     'version': '1.2',
