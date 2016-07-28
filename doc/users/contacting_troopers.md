@@ -5,8 +5,13 @@ This page can be found at: [g.co/bugatrooper](http://g.co/bugatrooper)
 Have an issue with a piece of build infrastructure?
 Our troopers are here to help.
 
+Oncall hours: primary shift is on workdays 10am-6pm MTV time. APAC and
+EMEA timezones also have trooper shifts limited mostly to P0 issues.
+
 The primary way to contact a trooper is via [crbug.com](http://crbug.com) using
-the templates and priorities established below.
+the templates and priorities established below. If you need to find the current
+trooper, check [build.chromium.org](https://build.chromium.org), or
+[vi/chrome_infra](http://vi/chrome_infra) (internal link).
 
 If you know your issue is with the physical hardware, or otherwise should be
 handled by the Systems team, please follow their
@@ -63,6 +68,15 @@ actually increase the time taken to respond to an issue.
 
 ## Master Restarts
 
+### Trooper-assisted Restart
+
+Please file a bug using the [Master restart requests] bug
+template. This is preferred method if you are not a Googler, or not a
+committer in `infradata/master-manager` repo. This is also a preferred
+method for large masters like `chromium.*` and `tryserver.chromium.*`,
+to avoid duplicate restart requests and unintended downtime during
+peak hours.
+
 ### Self-service (Googlers only)
 
 Master restarts are handled by master manager and only require running a single
@@ -81,15 +95,13 @@ cit restart chromium.fyi -r <current trooper> [-b <bug number>]
 cit restart chromium.fyi --eod -r <current trooper> [-b <bug number>]
 ```
 
-Note: if you're not in the committers list CQ will try it first and you'll
-have to ping the trooper to get an lgtm.
+Note: if you're not in the committers list CQ will try it first and
+you'll have to ping the trooper to get an lgtm. The master will be
+restarted at the requested time, or once the CL lands, whichever comes
+later.
 
 If you're having trouble you can file a bug with the trooper using the
 [Master restart requests] bug template.
-
-### Trooper-assisted Restart
-
-Please file a bug using the [Master restart requests] bug template.
 
 ## Service Hours
 
