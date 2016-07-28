@@ -186,7 +186,9 @@
             <som-examine alert="[[_examinedAlert]]" class="flex layout vertical"></som-examine>
           </div>
           <som-help id="helpSOM" class="page-body"></som-help>
-          <som-rotation-calendar id="rotationCalendar" class="flex layout vertical page-body"></som-rotation-calendar>
+          <template is="dom-if" if="[[_showRotationCalendar]]">
+            <som-rotation-calendar id="rotationCalendar" class="flex layout vertical page-body"></som-rotation-calendar>
+          </template>
         </iron-pages>
       </paper-header-panel>
     </paper-drawer-panel>
@@ -318,6 +320,10 @@
           type: String,
           computed: '_computeSelectedPage(_path)',
         },
+        _showRotationCalendar: {
+          type: Boolean,
+          value: false,
+        },
         showInfraFailures: {
           type: Boolean,
           value: true,
@@ -421,6 +427,10 @@
         }
         if (pathParts.length == 2) {
           if (pathParts[1] in this._staticPages) {
+            if (pathParts[1] === 'calendar') {
+              // Hide rotation calendar until visited because it's really big. 
+              this._showRotationCalendar = true;
+            }
             return this._staticPages[pathParts[1]].pageId;
           } else {
             // On the page for a tree
