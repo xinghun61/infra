@@ -574,6 +574,7 @@ func base() router.MiddlewareChain {
 
 //// Routes.
 func init() {
+
 	settings.RegisterUIPage(settingsKey, settingsUIPage{})
 
 	r := router.New()
@@ -596,5 +597,7 @@ func init() {
 	http.DefaultServeMux.Handle("/admin/", r)
 	http.DefaultServeMux.Handle("/auth/", r)
 	http.DefaultServeMux.Handle("/_ah/", r)
+	http.DefaultServeMux.Handle("/internal/", r)
+
 	http.DefaultServeMux.Handle("/", rootRouter)
 }

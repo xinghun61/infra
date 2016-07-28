@@ -23,6 +23,11 @@ handlers:
   script: _go_app
   secure: always
 
+- url: /internal/.*
+  script: _go_app
+  secure: always
+  login: admin
+
 - url: /.*
   script: _go_app
   secure: always
