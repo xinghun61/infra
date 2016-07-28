@@ -63,12 +63,8 @@
   </div>
 </form>
 <script type="text/javascript" nonce=[nonce]>
-  $('desc_submit_btn').addEventListener('click', function (event) {
-    TKR_isDirty = false;
-  });
-
   $('desc_discard_btn').addEventListener('click', function (event) {
-    if (!TKR_isDirty || confirm('Discard your changes?')) {
+    if (!TKR_isDirty() || confirm('Discard your changes?')) {
       $('desc_comment_area').value = $('desc_comment_area').innerHTML;
       $('desc_update_form').style.display = 'none';
       var descCt;

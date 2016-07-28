@@ -29,7 +29,6 @@ runOnLoad(function() {
          _acrob(null);
          _acof(event);
      });
-     el.addEventListener("keyup", _dirty);
   }
 });
 </script>

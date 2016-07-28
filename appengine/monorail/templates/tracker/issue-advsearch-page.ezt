@@ -81,10 +81,6 @@ runOnLoad(function() {
       $(id).addEventListener("focus", function(event) {
         _acof(event);
       });
-      $(id).addEventListener("keyup", function(event) {
-        _dirty();
-        return true;
-      });
     }
   }
 });

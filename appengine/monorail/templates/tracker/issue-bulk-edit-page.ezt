@@ -376,18 +376,11 @@ function _ignoreWidgetIfOpIsClear(selectEl, inputID) {
 
 $("bulk_form").addEventListener("submit", bulkOnSubmit);
 
-if ($("comment")) {
-  $("comment").addEventListener("keyup", function(event) {
-    _dirty();
-    return true;
-  });
-}
 if ($("statusenter")) {
   $("statusenter").addEventListener("focus", function(event) {
     _acof(event);
   });
   $("statusenter").addEventListener("keyup", function(event) {
-    _dirty();
     _checkAutoClear(event.target, "op_statusenter");
     return _confirmNovelStatus(event.target);
   });
@@ -397,7 +390,6 @@ if ($("ownerenter")) {
     _acof(event);
   });
   $("ownerenter").addEventListener("keyup", function(event) {
-    _dirty();
     _checkAutoClear(event.target, "op_ownerenter");
     return true;
   });
@@ -406,28 +398,16 @@ if ($("memberenter")) {
   $("memberenter").addEventListener("focus", function(event) {
     _acof(event);
   });
-  $("memberenter").addEventListener("keyup", function(event) {
-    _dirty();
-    return true;
-  });
 }
 if ($("componententer")) {
   $("componententer").addEventListener("focus", function(event) {
     _acof(event);
-  });
-  $("componententer").addEventListener("keyup", function(event) {
-    _dirty();
-    return true;
   });
 }
 
 if ($("move_toenter")) {
   $("move_toenter").addEventListener("focus", function(event) {
     _acof(event);
-  });
-  $("move_toenter").addEventListener("keyup", function(event) {
-    _dirty();
-    return true;
   });
 }
 
@@ -453,7 +433,6 @@ var labelInputs = document.getElementsByClassName("labelinput");
 for (var i = 0; i < labelInputs.length; ++i) {
   var labelInput = labelInputs[[]i];
   labelInput.addEventListener("keyup", function (event) {
-    _dirty();
     if (event.target.getAttribute("data-show-id") &&
         event.target.getAttribute("data-hide-id") &&
         event.target.value) {

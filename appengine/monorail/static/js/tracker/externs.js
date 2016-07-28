@@ -73,7 +73,6 @@ var _confirmNovelLabel;
 var _lfidprefix;
 var _allOrigLabels;
 var _vallab;
-var _dirty;
 var _exposeExistingLabelFields;
 var _confirmDiscardEntry;
 var _confirmDiscardUpdate;

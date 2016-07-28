@@ -55,8 +55,8 @@ function TKR_onload() {
  TKR_allColumnNames = _allColumnNames;
  TKR_labelFieldIDPrefix = _lfidprefix;
  TKR_allOrigLabels = _allOrigLabels;
+ TKR_initialFormValues = TKR_currentFormValues();
 }
-
 
 // External names for functions that are called directly from HTML.
 // JSCompiler does not rename functions that begin with an underscore.
@@ -125,7 +125,6 @@ _templateNames = TKR_templateNames;
 _confirmNovelStatus = TKR_confirmNovelStatus;
 _confirmNovelLabel = TKR_confirmNovelLabel;
 _vallab = TKR_validateLabel;
-_dirty = TKR_dirty;
 _exposeExistingLabelFields = TKR_exposeExistingLabelFields;
 _confirmDiscardEntry = TKR_confirmDiscardEntry;
 _confirmDiscardUpdate = TKR_confirmDiscardUpdate;
@@ -136,6 +135,9 @@ _checkUnrestrict = TKR_checkUnrestrict;
 
 _clearOnFirstEvent = TKR_clearOnFirstEvent;
 _forceProperTableWidth = TKR_forceProperTableWidth;
+
+_initialFormValues = TKR_initialFormValues;
+_currentFormValues = TKR_currentFormValues;
 
 _acof = _ac_onfocus;
 _acmo = _ac_mouseover;

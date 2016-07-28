@@ -14,12 +14,12 @@
  <span class="inIssueList" style="margin:0 .4em">
    <label for="can">Search</label>
     <form action="list" method="GET" style="display:inline">
-       <select id="can" name="can">
+       <select id="can" name="can" ignore-dirty>
         [include "issue-can-widget.ezt" "search"]
        </select>
        <label for="searchq">for</label>
        <span id="qq"><input type="text" size="[q_field_size]" id="searchq" name="q"
-                            value="[query]" autocomplete="off"></span>
+                            value="[query]" autocomplete="off" ignore-dirty></span>
        [if-any sortspec]<input type="hidden" id="sort" name="sort" value="[sortspec]">[end]
        [if-any groupby]<input type="hidden" id="groupby" name="groupby" value="[groupby]">[end]
        [if-any colspec]<span id="search_colspec"><input type="hidden" name="colspec" value="[colspec]"></span>[end]

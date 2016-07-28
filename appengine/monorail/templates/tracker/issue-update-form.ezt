@@ -215,7 +215,7 @@
       <input type="button" id="discard" name="nobtn"  value="Discard" data-local-id="[issue.local_id]">
       [if-any page_perms.EditIssue]
        <span style="margin-left:1.5em"><label for="after_issue_update">And then:</label></span>
-       <select name="after_issue_update" id="after_issue_update">
+       <select name="after_issue_update" id="after_issue_update" ignore-dirty>
         <option value="0" [is after_issue_update "0"]selected=selected[end]>Go up to issue list</option>
         <option value="1" [is after_issue_update "1"]selected=selected[end]>Stay on this issue</option>
         <option value="2" [is after_issue_update "2"]selected=selected[end]>Go to next issue</option>
@@ -225,13 +225,13 @@
 
       [if-any page_perms.EditIssue]
        <input type="checkbox" checked="checked" name="send_email" id="send_email"
-              style="margin-left:1.5em">
+              style="margin-left:1.5em" ignore-dirty>
        <label for="send_email" title="Send issue change notifications to interested users">Send email</label>
       [end]
 
       [if-any page_perms.DeleteIssue]
        <label for="more_actions" style="margin-left:3em">More actions:</label>
-       <select name="more_actions" id="more_actions" style="display:none">
+       <select name="more_actions" id="more_actions" style="display:none" ignore-dirty>
         <option value="0" selected="selected" disabled="1">More actions...</option>
         <option value="delete">Delete issue</option>
         <option value="copy" [if-any offer_issue_copy_move][else]disabled="disabled"[end]>Copy issue</option>
@@ -293,13 +293,6 @@ runOnLoad(function() {
     });
   }
 
-  if ($("addCommentTextArea")) {
-    $("addCommentTextArea").addEventListener("keyup", function(event) {
-      _dirty();
-      return true;
-    });
-  }
-
   if ($("submit_btn")) {
     $("submit_btn").addEventListener("focus", function(event) {
       _acrob(null);
@@ -310,7 +303,6 @@ runOnLoad(function() {
     $("submit_btn").addEventListener("click", function(event) {
       _trimCommas();
       userMadeChanges = false;
-      TKR_isDirty = false;
     });
   }
   if ($("discard")) {
@@ -334,19 +326,11 @@ runOnLoad(function() {
       _acrob(null);
       _acof(event);
     });
-    $("summary").addEventListener("keyup", function(event) {
-      _dirty();
-      return true;
-    });
   }
   if ($("blocked_on")) {
     $("blocked_on").addEventListener("focus", function(event) {
       _acrob(null);
       _acof(event);
-    });
-    $("blocked_on").addEventListener("keyup", function(event) {
-      _dirty();
-      return true;
     });
   }
   if ($("statusedit")) {
@@ -354,7 +338,6 @@ runOnLoad(function() {
       _acof(event);
     });
     $("statusedit").addEventListener("keyup", function(event) {
-      _dirty();
       return _confirmNovelStatus($("statusedit"));
     });
   }
@@ -366,10 +349,6 @@ runOnLoad(function() {
     if ($(id)) {
       $(id).addEventListener("focus", function(event) {
         _acof(event);
-      });
-      $(id).addEventListener("keyup", function(event) {
-        _dirty();
-        return true;
       });
     }
   }

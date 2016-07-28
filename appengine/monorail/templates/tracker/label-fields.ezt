@@ -97,7 +97,6 @@ runOnLoad(function() {
     var labelInput = labelInputs[[]i];
     if (labelInput.getAttribute("id").startsWith("hidden")) continue;
     labelInput.addEventListener("keyup", function (event) {
-        _dirty();
         if (event.target.getAttribute("data-show-id") &&
             event.target.getAttribute("data-hide-id") &&
             event.target.value) {

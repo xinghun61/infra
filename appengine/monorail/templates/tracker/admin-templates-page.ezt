@@ -211,8 +211,6 @@ runOnLoad(function() {
    '[projectname]', 'issueOptions', CS_env.token, [project.cached_content_timestamp]);
  _onload();
 
- _dirty = _saveTemplate;
-
  if ($("template_menu"))
    $("template_menu").addEventListener("change", function() {
        _selectTemplate($("template_menu"));

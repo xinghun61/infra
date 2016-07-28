@@ -435,7 +435,7 @@ function TKR_rebuildDefaultTemplateMenu(menuID) {
  */
 function TKR_switchTemplate(projectName, templateName) {
   var ok = true;
-  if (TKR_isDirty) {
+  if (TKR_isDirty()) {
     ok = confirm('Switching to a different template will lose the text you entered.');
   }
   if (ok) {
@@ -515,19 +515,40 @@ function _saveFieldValue(fieldID, val) {
 
 
 /**
- * This flag indicates that the user had made some edit to some form
- * field on the page.  Only a few specific pages actually update and use
- * this flag.
- */
-var TKR_isDirty = false;
+ * This is a json string encoding of an array of form values after the initial
+ * page load. It is used for comparison on page unload to prompt the user
+ * before abandoning changes. It is initialized in TKR_onload().
+*/
+var TKR_initialFormValues;
 
 
 /**
- * This function is called when the user edits a form field on a page that
- * should offer the user the option to discard his/her edits.
+ * Returns a json string encoding of an array of all the values from user
+ * input fields of interest (omits search box, e.g.)
  */
-function TKR_dirty() {
-  TKR_isDirty = true;
+function TKR_currentFormValues() {
+  var inputs = document.querySelectorAll('input, textarea, select, checkbox');
+  var values = [];
+
+  for (i = 0; i < inputs.length; i++) {
+    // Don't include blank inputs. This prevents a popup if the user
+    // clicks "add a row" for new labels but doesn't actually enter any
+    // text into them. Also ignore search box contents.
+    if (inputs[i].value && !inputs[i].hasAttribute('ignore-dirty')) {
+      values.push(inputs[i].value);
+    }
+  }
+
+  return JSON.stringify(values);
+}
+
+
+/**
+ * This function returns true if the user has made any edits to fields of
+ * interest.
+ */
+function TKR_isDirty() {
+  return TKR_initialFormValues != TKR_currentFormValues();
 }
 
 
@@ -539,8 +560,7 @@ function TKR_dirty() {
  * @param {string} nextUrl The page to show after discarding.
  */
 function TKR_confirmDiscardUpdate(nextUrl) {
- if (!TKR_isDirty || confirm(TKR_DISCARD_YOUR_CHANGES)) {
-  TKR_isDirty = false
+ if (!TKR_isDirty() || confirm(TKR_DISCARD_YOUR_CHANGES)) {
   document.location = nextUrl;
  }
 }
@@ -553,8 +573,7 @@ function TKR_confirmDiscardUpdate(nextUrl) {
  * @param {Element} discardButton The 'Discard' button.
  */
 function TKR_confirmDiscardEntry(discardButton) {
- if (!TKR_isDirty || confirm(TKR_DISCARD_YOUR_CHANGES)) {
-  TKR_isDirty = false
+ if (!TKR_isDirty() || confirm(TKR_DISCARD_YOUR_CHANGES)) {
   TKR_go('list');
  }
 }
