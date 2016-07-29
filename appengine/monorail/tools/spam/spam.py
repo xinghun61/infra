@@ -270,8 +270,8 @@ def Prep(args):
       with open(args.test, 'wb') as testfile:
         for row in csvreader:
           label = row[0]
-          summary = row[1]
-          description = row[2]
+          summary = unicode(row[1], 'utf-8')
+          description = unicode(row[2], 'utf-8')
           email = ''
           if len(row) > 3:
             email = row[3]

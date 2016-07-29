@@ -41,11 +41,16 @@ def _HashFeatures(content, num_features):
     or anything else fancy.
   """
   features = [0] * num_features
+  total = 0.0
   for blob in content:
     words = re.split('|'.join(DELIMITERS), blob)
     for w in words:
       feature_index = int(int(hashlib.sha1(w).hexdigest(), 16) % num_features)
-      features[feature_index] += 1
+      features[feature_index] += 1.0
+      total += 1.0
+
+  if total > 0:
+    features = [ f / total for f in features ]
 
   return features
 
@@ -93,6 +98,6 @@ def GenerateFeatures(summary, description, author_email, num_hashes,
     '%s' % compressed_description_len,
    ]
 
-  ret.extend(['%d' % f for f in feature_hashes])
+  ret.extend(['%f' % f for f in feature_hashes])
   return ret
 
