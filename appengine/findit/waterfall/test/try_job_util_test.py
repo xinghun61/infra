@@ -755,6 +755,81 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
+  def testNeedANewTryJobForFirstFailureInGroup(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    builds = {
+        str(build_number): {
+            'blame_list': ['a']
+        }
+    }
+    failed_steps = {
+        'compile': {
+            'current_failure': 223,
+            'first_failure': 223,
+            'last_pass': 220
+        }
+    }
+    signals = {
+        'compile': {
+            'failed_output_nodes': [
+                'abc.obj'
+            ]
+        }
+    }
+
+    # Run _NeedANewTryJob with signals that have certain failed output nodes.
+    # Observe a need for a new try job.
+    WfAnalysis.Create(master_name, builder_name, build_number).put()
+    need_try_job, _, _, _ = try_job_util._NeedANewTryJob(
+        master_name, builder_name, build_number, failure_type.COMPILE,
+        failed_steps, {}, builds, signals, None)
+    self.assertTrue(need_try_job)
+
+  def testNotNeedANewTryJobForSecondFailureInGroup(self):
+    master_name = 'm'
+    master_name_2 = 'm2'
+    builder_name = 'b'
+    build_number = 223
+    builds = {
+        str(build_number): {
+            'blame_list': ['a']
+        }
+    }
+    failed_steps = {
+        'compile': {
+            'current_failure': 223,
+            'first_failure': 223,
+            'last_pass': 220
+        }
+    }
+
+    signals = {
+        'compile': {
+            'failed_output_nodes': [
+                'abc.obj'
+            ]
+        }
+    }
+
+    # Run _NeedANewTryJob with signals that have certain failed output nodes.
+    # This should create a new wf_failure_group.
+    WfAnalysis.Create(master_name, builder_name, build_number).put()
+    try_job_util._NeedANewTryJob(
+        master_name, builder_name, build_number, failure_type.COMPILE,
+        failed_steps, {}, builds, signals, None)
+    self.assertIsNotNone(
+        WfFailureGroup.Get(master_name, builder_name, build_number))
+
+    # Run _NeedANewTryJob with signals that have the same failed output nodes.
+    # Observe no need for a new try job.
+    WfAnalysis.Create(master_name_2, builder_name, build_number).put()
+    need_try_job, _, _, _ = try_job_util._NeedANewTryJob(
+        master_name_2, builder_name, build_number, failure_type.COMPILE,
+        failed_steps, {}, builds, signals, None)
+    self.assertFalse(need_try_job)
+
   def testNotNeedANewTryJobIfOneWithResultExists(self):
     master_name = 'm'
     builder_name = 'b'
