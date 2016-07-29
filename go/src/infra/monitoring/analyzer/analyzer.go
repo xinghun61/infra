@@ -20,7 +20,7 @@ import (
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
 
-	"github.com/luci/luci-go/common/stringset"
+	"github.com/luci/luci-go/common/data/stringset"
 )
 
 const (

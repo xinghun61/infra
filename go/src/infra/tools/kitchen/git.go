@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/luci/luci-go/common/ctxcmd"
+	"github.com/luci/luci-go/common/system/ctxcmd"
 	"golang.org/x/net/context"
 )
 

@@ -18,10 +18,10 @@ import (
 
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/config"
-	"github.com/luci/luci-go/common/ctxcmd"
-	"github.com/luci/luci-go/common/environ"
 	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/system/ctxcmd"
+	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/logdog/client/annotee"
 	"github.com/luci/luci-go/logdog/client/annotee/annotation"
 	"github.com/luci/luci-go/logdog/client/butler"

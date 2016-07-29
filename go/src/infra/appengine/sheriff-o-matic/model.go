@@ -15,7 +15,7 @@ import (
 
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/stringset"
+	"github.com/luci/luci-go/common/data/stringset"
 	"golang.org/x/net/context"
 )
 

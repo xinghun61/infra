@@ -21,9 +21,9 @@ import (
 
 	"github.com/luci/luci-go/common/cli"
 	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/ctxcmd"
-	"github.com/luci/luci-go/common/environ"
 	"github.com/luci/luci-go/common/flag/stringlistflag"
+	"github.com/luci/luci-go/common/system/ctxcmd"
+	"github.com/luci/luci-go/common/system/environ"
 )
 
 // BootstrapStepName is the name of kitchen's step where it makes preparations

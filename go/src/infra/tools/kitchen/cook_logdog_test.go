@@ -7,7 +7,7 @@ package main
 import (
 	"testing"
 
-	"github.com/luci/luci-go/common/environ"
+	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/logdog/common/types"
 
 	. "github.com/luci/luci-go/common/testing/assertions"

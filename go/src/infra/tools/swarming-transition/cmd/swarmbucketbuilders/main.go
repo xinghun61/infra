@@ -15,7 +15,7 @@ import (
 	"sort"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/luci/luci-go/common/indented"
+	"github.com/luci/luci-go/common/data/text/indented"
 
 	"infra/tools/swarming-transition/cmd/swarmbucketbuilders/proto"
 )

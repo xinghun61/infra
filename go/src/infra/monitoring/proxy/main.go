@@ -20,7 +20,7 @@ import (
 	luciErrors "github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
-	"github.com/luci/luci-go/common/parallel"
+	"github.com/luci/luci-go/common/sync/parallel"
 	"github.com/luci/luci-go/common/tsmon"
 	"github.com/luci/luci-go/common/tsmon/distribution"
 	"github.com/luci/luci-go/common/tsmon/field"
