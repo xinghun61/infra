@@ -17,6 +17,32 @@
       "python",
       "-u",
       "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
+      "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Fdepot_tools%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
+      "--outfile",
+      "/path/to/tmp/",
+      "--attempts",
+      "3"
+    ],
+    "name": "Get project 'depot_tools' config 'recipes.cfg'"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
+      "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Frecipe_engine%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
+      "--outfile",
+      "/path/to/tmp/",
+      "--attempts",
+      "3"
+    ],
+    "name": "Get project 'recipe_engine' config 'recipes.cfg'"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
       "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Fbuild%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
       "--outfile",
       "/path/to/tmp/",
@@ -24,6 +50,19 @@
       "3"
     ],
     "name": "Get project 'build' config 'recipes.cfg'"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
+      "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Finfra%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
+      "--outfile",
+      "/path/to/tmp/",
+      "--attempts",
+      "3"
+    ],
+    "name": "Get project 'infra' config 'recipes.cfg'"
   },
   {
     "cmd": [
@@ -73,7 +112,7 @@
   },
   {
     "cmd": [],
-    "name": "build"
+    "name": "infra"
   },
   {
     "cmd": [
@@ -81,11 +120,11 @@
       "-u",
       "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
       "--path",
-      "[TMP_BASE]/roll_build_tmp_2",
+      "[TMP_BASE]/roll_infra_tmp_2",
       "--url",
-      "https://repo.repo/build"
+      "https://repo.repo/infra"
     ],
-    "name": "build.git setup",
+    "name": "infra.git setup",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -98,8 +137,8 @@
       "origin",
       "master"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_2",
-    "name": "build.git fetch",
+    "cwd": "[TMP_BASE]/roll_infra_tmp_2",
+    "name": "infra.git fetch",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -111,8 +150,8 @@
       "-f",
       "FETCH_HEAD"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_2",
-    "name": "build.git checkout",
+    "cwd": "[TMP_BASE]/roll_infra_tmp_2",
+    "name": "infra.git checkout",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -123,8 +162,8 @@
       "rev-parse",
       "HEAD"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_2",
-    "name": "build.read revision",
+    "cwd": "[TMP_BASE]/roll_infra_tmp_2",
+    "name": "infra.read revision",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
@@ -139,8 +178,8 @@
       "-d",
       "-x"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_2",
-    "name": "build.git clean",
+    "cwd": "[TMP_BASE]/roll_infra_tmp_2",
+    "name": "infra.git clean",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -152,8 +191,8 @@
       "user.email",
       "recipe-roller@chromium.org"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_2",
-    "name": "build.git config",
+    "cwd": "[TMP_BASE]/roll_infra_tmp_2",
+    "name": "infra.git config",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -165,8 +204,8 @@
       "user.name",
       "recipe-roller"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_2",
-    "name": "build.git config (2)",
+    "cwd": "[TMP_BASE]/roll_infra_tmp_2",
+    "name": "infra.git config (2)",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -180,8 +219,8 @@
       "roll",
       "origin/master"
     ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_2",
-    "name": "build.git checkout (2)",
+    "cwd": "[TMP_BASE]/roll_infra_tmp_2",
+    "name": "infra.git checkout (2)",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -191,13 +230,14 @@
       "[TMP_BASE]/recipes_tmp_1/recipes.py",
       "--use-bootstrap",
       "--package",
-      "[TMP_BASE]/roll_build_tmp_2/infra/config/recipes.cfg",
+      "[TMP_BASE]/roll_infra_tmp_2/infra/config/recipes.cfg",
       "autoroll",
       "--output-json",
       "/path/to/tmp/json",
-      "--project=build"
+      "--project=build",
+      "--project=infra"
     ],
-    "name": "build.roll",
+    "name": "infra.roll",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@ (already at latest revisions)@@@",
@@ -216,9 +256,9 @@
       "python",
       "-u",
       "RECIPE_MODULE[recipe_engine::shutil]/resources/rmtree.py",
-      "[TMP_BASE]/roll_build_tmp_2"
+      "[TMP_BASE]/roll_infra_tmp_2"
     ],
-    "name": "build.rmtree [TMP_BASE]/roll_build_tmp_2",
+    "name": "infra.rmtree [TMP_BASE]/roll_infra_tmp_2",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]

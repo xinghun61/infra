@@ -1,4 +1,6 @@
 DEPS = [
+  'recipe_utils',
+
   'build/cipd',
   'build/luci_config',
   'build/gsutil',

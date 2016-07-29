@@ -123,13 +123,14 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     pass
 
 
-  def roll_projects(self, projects):
+  def roll_projects(self, projects_to_roll):
     """Attempts to roll each project from the provided list.
 
     If rolling any of the projects leads to failures, other
     projects are not affected.
     """
-    project_data = self.m.luci_config.get_projects()
+    projects = self.m.luci_config.get_projects()
+    forward, _ = self.m.recipe_utils.get_deps_info(projects.keys())
 
     self.m.cipd.install_client()
     with self.m.tempfile.temp_dir('recipes') as recipes_dir:
@@ -139,10 +140,23 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
       results = []
       with recipe_api.defer_results():
-        for project in projects:
+        for project in projects_to_roll:
+          project_data = projects[project]
+
+          # We only concern ourselves with the projects we immediately depend
+          # on. Any project we depend on which can roll into another project
+          # we can depend on should be ignored by the roller, when deciding
+          # if we have rejected rolls. Any inconsistencies there will be handled
+          # by the roller when it rolls that project. See the test in the
+          # autoroller called "empty_when_dependent_repos_consistent" to see
+          # how we want the --project arguments to look.
+          my_deps = set(forward[project])
+          for dep in my_deps:
+            my_deps = my_deps - set(forward[dep])
+
           with self.m.step.nest(str(project)):
             results.append(self._roll_project(
-                project_data[project], recipes_dir))
+                project_data, list(my_deps), recipes_dir))
 
       # We need to unwrap |DeferredResult|s.
       results = [r.get_result() for r in results]
@@ -160,7 +174,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
             'roll result',
             'manual intervention needed: automated roll attempt failed')
 
-  def _roll_project(self, project_data, recipes_dir):
+  def _roll_project(self, project_data, important_projects, recipes_dir):
     with self.m.tempfile.temp_dir('roll_%s' % project_data['id']) as workdir:
       self.m.git.checkout(
           project_data['repo_url'], dir_path=workdir, submodules=False)
@@ -179,7 +193,10 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       roll_step = self.m.step(
           'roll',
           [recipes_dir.join('recipes.py'), '--use-bootstrap', '--package',
-           recipes_cfg_path, 'autoroll', '--output-json', self.m.json.output()])
+           recipes_cfg_path, 'autoroll', '--output-json', self.m.json.output()]
+          + ['--project=%s' % proj for proj in list(
+              set(list(important_projects) + [project_data['id']]))]
+      )
       roll_result = roll_step.json.output
 
       if roll_result['success']:
