@@ -6,6 +6,7 @@ import re
 
 from crash import parse_util
 from crash.type_enums import CallStackFormatType
+from crash.type_enums import CallStackLanguageType
 
 # Used to parse a line into StackFrame of a Callstack.
 CALLSTACK_FORMAT_TO_PATTERN = {
@@ -14,7 +15,7 @@ CALLSTACK_FORMAT_TO_PATTERN = {
     CallStackFormatType.SYZYASAN: re.compile(
         r'(CF: )?(.*?)( \(FPO: .*\) )?( \(CONV: .*\) )?\[(.*) @ (\d+)\]'),
     CallStackFormatType.DEFAULT: re.compile(
-        r'(.*):(\d+)(:\d+)?$')
+        r'([^:]*):(\d+)(:\d+)?$')
 }
 
 
@@ -95,12 +96,15 @@ class CallStack(list):
     language_type (CallStackLanguageType): Either CPP or JAVA language.
   """
   def __init__(self, priority, format_type=CallStackFormatType.DEFAULT,
+               language_type=CallStackLanguageType.CPP,
                frame_list=None):
     super(CallStack, self).__init__(frame_list or [])
 
     self.priority = priority
     self.format_type = format_type
-    self.language_type = parse_util.GetLanguageTypeFromFormatType(format_type)
+    self.language_type = (
+        CallStackLanguageType.JAVA if format_type == CallStackFormatType.JAVA
+        else language_type)
 
   def ParseLine(self, line, deps):
     """Parse line into StackFrame instance and append it if successfully
@@ -136,13 +140,17 @@ class CallStack(list):
         return
 
       function = ' '.join(line_parts[3:-1])
+
       raw_file_path = match.group(1)
+      # Fracas java stack has default format type.
+      if self.language_type == CallStackLanguageType.JAVA:
+        raw_file_path = parse_util.GetFullPathForJavaFrame(function)
+
       crashed_line_numbers = parse_util.GetCrashedLineRange(
           match.group(2) + (match.group(3) if match.group(3) else ''))
-
     # Normalize the file path so that it can be compared to repository path.
     dep_path, file_path, repo_url = parse_util.GetDepPathAndNormalizedFilePath(
-        raw_file_path, deps)
+        raw_file_path, deps, self.language_type == CallStackLanguageType.JAVA)
 
     # If we have the common stack frame index pattern, then use it
     # since it is more reliable.

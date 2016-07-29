@@ -13,6 +13,9 @@ GENERATED_CODE_FILE_PATH_PATTERN = re.compile(r'.*out/[^/]+/gen/')
 THIRD_PARTY_FILE_PATH_MARKER = 'third_party'
 CHROMIUM_REPO_URL = 'https://chromium.googlesource.com/chromium/src.git'
 
+JAVA_CHROMIUM_FUNCTION_MARKER = 'org.chromium.chrome.browser'
+JAVA_CHROMIUM_CODE_REPOSITORY_PATH = 'src/chrome/android/java/src'
+
 
 def GetFullPathForJavaFrame(function):
   """Uses java function package name to normalize and generate full file path.
@@ -23,7 +26,11 @@ def GetFullPathForJavaFrame(function):
   Returns:
     A string of normalized full path, for example, org/chromium/CrAct.java
   """
-  return '%s.java' % '/'.join(function.split('.')[:-1])
+  file_path = '%s.java' % '/'.join(function.split('.')[:-1])
+  if JAVA_CHROMIUM_FUNCTION_MARKER in function:
+    file_path = '%s/%s' % (JAVA_CHROMIUM_CODE_REPOSITORY_PATH, file_path)
+
+  return file_path
 
 
 def GetCrashedLineRange(line_range_str):
@@ -45,12 +52,13 @@ def GetCrashedLineRange(line_range_str):
   return range(line_number, line_number + range_length + 1)
 
 
-def GetDepPathAndNormalizedFilePath(path, deps):
+def GetDepPathAndNormalizedFilePath(path, deps, is_java=False):
   """Determines the dep of a file path and normalizes the path.
 
   Args:
     path (str): Represents a path.
     deps (dict): Map dependency path to its corresponding Dependency.
+    is_java (boolean): If the path is a java stack path.
 
   Returns:
     A tuple - (dep_path, normalized_path, repo_url)
@@ -110,6 +118,10 @@ def GetDepPathAndNormalizedFilePath(path, deps):
 
       return dep_path, normalized_path, deps[dep_path].repo_url
 
+  # If path is a java stack path, don't default dep_path to src/.
+  if is_java:
+    return '', normalized_path, None
+
   logging.info(
       'Cannot find match of dep path for file path %s, Default to src/',
       normalized_path)
@@ -118,11 +130,3 @@ def GetDepPathAndNormalizedFilePath(path, deps):
   # third_party/WebKit/Source/a.cc, the src/ in the beginning is trimmed, so
   # default the dep path to 'src/' if no match found.
   return 'src/', normalized_path, CHROMIUM_REPO_URL
-
-
-def GetLanguageTypeFromFormatType(format_type):
-  """Gets language type of a callstack from its format type."""
-  if format_type == CallStackFormatType.JAVA:
-    return CallStackLanguageType.JAVA
-
-  return CallStackLanguageType.CPP

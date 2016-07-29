@@ -9,6 +9,7 @@ from crash.detect_regression_range import GetSpikeIndexes
 from crash.detect_regression_range import GetRegressionRangeFromSpike
 from crash.detect_regression_range import DetectRegressionRange
 
+
 class DetectRegressionRangeTest(testing.AppengineTestCase):
 
   def _VerifyCasesForDetectRegressonRange(self, cases):

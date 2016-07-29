@@ -10,6 +10,7 @@ from crash.fracas_parser import FracasParser
 from crash.stacktrace import Stacktrace
 from crash.test.stacktrace_test_suite import StacktraceTestSuite
 from crash.type_enums import CallStackFormatType
+from crash.type_enums import CallStackLanguageType
 
 
 class FracasParserTest(StacktraceTestSuite):
@@ -17,9 +18,10 @@ class FracasParserTest(StacktraceTestSuite):
   def testFracasParserIsStartOfNewCallSTack(self):
     parser = FracasParser()
     self.assertEqual(parser._IsStartOfNewCallStack('dummy line'),
-                     (False, None, None))
+                     (False, None, None, None))
     self.assertEqual(parser._IsStartOfNewCallStack('CRASHED [EXC @ 0x508]'),
-                     (True, 0, CallStackFormatType.DEFAULT))
+                     (True, 0, CallStackFormatType.DEFAULT,
+                      CallStackLanguageType.CPP))
 
   def testReturnEmptyStacktraceForEmptyString(self):
     parser = FracasParser()
@@ -60,6 +62,36 @@ class FracasParserTest(StacktraceTestSuite):
         [StackFrame(0, 'src/', 'a::c(p* &d)', 'f0.cc', 'src/f0.cc', [177]),
          StackFrame(1, 'src/', 'a::d(a* c)', 'f1.cc', 'src/f1.cc', [227]),
          StackFrame(2, 'src/', 'a::e(int)', 'f2.cc', 'src/f2.cc', [87, 88])])
+
+    expected_stacktrace = Stacktrace()
+    expected_stacktrace.append(expected_callstack)
+
+    self._VerifyTwoStacktracesEqual(stacktrace, expected_stacktrace)
+
+  def testFracasParserParseLineJavaCallstack(self):
+    parser = FracasParser()
+    deps = {'src/': Dependency('src/', 'https://repo', '1')}
+    stacktrace_string = textwrap.dedent(
+        """
+        (JAVA) CRASHED [EXC @ 0x508]
+        #0 0x7fee in a.f0.c f0.java:177
+        #1 0x4b6e in org.chromium.chrome.browser.a.f1.d f1.java:227
+        #2 0x7ff9 in a.f2.e f2.java:87:1
+        """
+    )
+
+    stacktrace = parser.Parse(stacktrace_string, deps)
+
+    expected_callstack = CallStack(0, language_type=CallStackLanguageType.JAVA)
+    expected_callstack.extend(
+        [StackFrame(0, '', 'a.f0.c', 'a/f0.java', 'a/f0.java', [177]),
+         StackFrame(
+             1, 'src/', 'org.chromium.chrome.browser.a.f1.d',
+             'chrome/android/java/src/org/chromium/chrome/browser/a/f1.java',
+             'src/chrome/android/java/src/org/chromium/chrome/'
+             'browser/a/f1.java',
+             [227]),
+         StackFrame(2, '', 'a.f2.e', 'a/f2.java', 'a/f2.java', [87, 88])])
 
     expected_stacktrace = Stacktrace()
     expected_stacktrace.append(expected_callstack)

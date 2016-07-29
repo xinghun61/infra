@@ -27,5 +27,7 @@ def FilterInlineFunctionFrames(callstack):
 
     return True
 
-  return CallStack(callstack.priority, callstack.format_type,
+  return CallStack(callstack.priority,
+                   callstack.format_type,
+                   callstack.language_type,
                    filter(_IsNonInlineFunctionFrame, callstack))

@@ -6,6 +6,7 @@ from common.dependency import Dependency
 from crash.callstack import StackFrame, CallStack
 from crash.test.stacktrace_test_suite import StacktraceTestSuite
 from crash.type_enums import CallStackFormatType
+from crash.type_enums import CallStackLanguageType
 
 
 class CallStackTest(StacktraceTestSuite):
@@ -78,3 +79,14 @@ class CallStackTest(StacktraceTestSuite):
         stack[0],
         StackFrame(
             0, 'tp/webrtc/', 'func0', 'a.c', 'tp/webrtc/a.c', [38, 39, 40, 41]))
+
+  def testParseLineForFracasJavaStack(self):
+    stack = CallStack(0, CallStackFormatType.DEFAULT,
+                      CallStackLanguageType.JAVA)
+
+    stack.ParseLine('#0 0xxx in android.app.func app.java:2450', {})
+    self._VerifyTwoStackFramesEqual(
+        stack[0],
+        StackFrame(
+            0, '', 'android.app.func', 'android/app.java',
+            'android/app.java', [2450]))

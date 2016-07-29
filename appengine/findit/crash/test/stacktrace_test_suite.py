@@ -15,6 +15,7 @@ class StacktraceTestSuite(testing.AppengineTestCase):  #pragma: no cover.
     self.assertEqual(len(stack1), len(stack2))
     self.assertEqual(stack1.priority, stack2.priority)
     self.assertEqual(stack1.format_type, stack2.format_type)
+    self.assertEqual(stack1.language_type, stack2.language_type)
     map(self._VerifyTwoStackFramesEqual, stack1, stack2)
 
   def _VerifyTwoStacktracesEqual(self, stacktrace1, stacktrace2):

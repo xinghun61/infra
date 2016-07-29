@@ -14,6 +14,10 @@ class ParseUtilTest(testing.AppengineTestCase):
   def testGetFullPathForJavaFrame(self):
     self.assertEqual(parse_util.GetFullPathForJavaFrame(
         'classA.classB.function'), 'classA/classB.java')
+    self.assertEqual(
+        parse_util.GetFullPathForJavaFrame(
+            'org.chromium.chrome.browser.file.function'),
+        'src/chrome/android/java/src/org/chromium/chrome/browser/file.java')
 
   def testGetCrashedLineRange(self):
     self.assertEqual(parse_util.GetCrashedLineRange('23'),
@@ -49,15 +53,7 @@ class ParseUtilTest(testing.AppengineTestCase):
         parse_util.GetDepPathAndNormalizedFilePath('dummy/path/b.cc', deps),
         ('src/', 'dummy/path/b.cc', parse_util.CHROMIUM_REPO_URL))
 
-  def testGetLanguageTypeFromFormatType(self):
     self.assertEqual(
-        parse_util.GetLanguageTypeFromFormatType(CallStackFormatType.JAVA),
-        CallStackLanguageType.JAVA)
-
-    self.assertEqual(
-        parse_util.GetLanguageTypeFromFormatType(CallStackFormatType.SYZYASAN),
-        CallStackLanguageType.CPP)
-
-    self.assertEqual(
-        parse_util.GetLanguageTypeFromFormatType(CallStackFormatType.DEFAULT),
-        CallStackLanguageType.CPP)
+        parse_util.GetDepPathAndNormalizedFilePath('a.java', deps,
+                                                   is_java=True),
+        ('', 'a.java', None))

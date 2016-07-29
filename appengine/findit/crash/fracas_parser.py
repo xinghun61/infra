@@ -9,9 +9,11 @@ from crash.callstack_filters import FilterInlineFunctionFrames
 from crash.stacktrace import Stacktrace
 from crash.stacktrace_parser import StacktraceParser
 from crash.type_enums import CallStackFormatType
+from crash.type_enums import CallStackLanguageType
 
 
 FRACAS_CALLSTACK_START_PATTERN = re.compile(r'CRASHED \[(.*) @ 0x(.*)\]')
+JAVA_CALLSTACK_START_PATTERN = re.compile(r'\(JAVA\) CRASHED \[(.*) @ 0x(.*)\]')
 
 
 class FracasParser(StacktraceParser):
@@ -22,7 +24,7 @@ class FracasParser(StacktraceParser):
     callstack = CallStack(float('inf'))
 
     for line in stacktrace_string.splitlines():
-      is_new_callstack, stack_priority, format_type = (
+      is_new_callstack, stack_priority, format_type, language_type = (
           self._IsStartOfNewCallStack(line))
 
       if is_new_callstack:
@@ -31,7 +33,7 @@ class FracasParser(StacktraceParser):
         if callstack.priority != float('inf') and callstack:
           stacktrace.append(callstack)
 
-        callstack = CallStack(stack_priority, format_type)
+        callstack = CallStack(stack_priority, format_type, language_type)
       else:
         callstack.ParseLine(line, deps)
 
@@ -46,10 +48,14 @@ class FracasParser(StacktraceParser):
 
   def _IsStartOfNewCallStack(self, line):
     """Determine whether a line is a start of a callstack or not.
-    Returns a tuple - (is_new_callstack, stack_priority, format_type).
+    Returns a tuple - (is_new_callstack, stack_priority, format_type,
+    language type).
     """
     if FRACAS_CALLSTACK_START_PATTERN.match(line):
       #Fracas only provide magic signature stack (crash stack).
-      return True, 0, CallStackFormatType.DEFAULT
+      return True, 0, CallStackFormatType.DEFAULT, CallStackLanguageType.CPP
 
-    return False, None, None
+    if JAVA_CALLSTACK_START_PATTERN.match(line):
+      return True, 0, CallStackFormatType.DEFAULT, CallStackLanguageType.JAVA
+
+    return False, None, None, None
