@@ -270,10 +270,14 @@ type finditAPIResponse struct {
 
 func (r *reader) Findit(master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
 	data := map[string]interface{}{
-		"master_url":   master.String(),
-		"builder_name": builder,
-		"build_number": buildNum,
-		"failed_steps": failedSteps,
+		"builds": []map[string]interface{}{
+			{
+				"master_url":   master.String(),
+				"builder_name": builder,
+				"build_number": buildNum,
+				"failed_steps": failedSteps,
+			},
+		},
 	}
 
 	b := bytes.NewBuffer(nil)
@@ -389,6 +393,7 @@ func (hc *trackingHTTPClient) attemptReq(r *http.Request, v interface{}) (bool, 
 // Returns the status code and the error, if any.
 func (hc *trackingHTTPClient) postJSON(url string, data []byte, v interface{}) (status int, err error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
+	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		return 0, err
 	}

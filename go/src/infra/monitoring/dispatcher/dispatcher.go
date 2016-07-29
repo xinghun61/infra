@@ -178,7 +178,9 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 
 			for _, t := range gkts[tree] {
 				for url := range t.Masters {
-					masters = append(masters, url)
+					if a.MasterOnly == "" || (strings.Contains(url.String(), a.MasterOnly)) {
+						masters = append(masters, url)
+					}
 				}
 			}
 
