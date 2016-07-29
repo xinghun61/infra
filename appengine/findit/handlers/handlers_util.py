@@ -14,14 +14,8 @@ from waterfall import buildbot
 from waterfall import waterfall_config
 
 
-def _GetResultAndFailureResultMap(master_name, builder_name, build_number):
+def _GetFailureResultMap(master_name, builder_name, build_number):
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-
-  # If this analysis is part of a group, get the build analysis that opened the
-  # group.
-  if analysis and analysis.failure_group_key:
-    analysis = WfAnalysis.Get(*analysis.failure_group_key)
-
   if not analysis:
     return None, None
 
@@ -141,7 +135,7 @@ def _GenerateSwarmingTasksData(failure_result_map):
 
 
 def GetSwarmingTaskInfo(master_name, builder_name, build_number):
-  _, failure_result_map = _GetResultAndFailureResultMap(
+  _, failure_result_map = _GetFailureResultMap(
       master_name, builder_name, build_number)
   return (
       _GenerateSwarmingTasksData(failure_result_map)
@@ -428,7 +422,7 @@ def GetAllTryJobResults(master_name, builder_name, build_number,
   culprits_info = {}
   is_test_failure = True
 
-  analysis_result, failure_result_map = _GetResultAndFailureResultMap(
+  analysis_result, failure_result_map = _GetFailureResultMap(
       master_name, builder_name, build_number)
 
   if failure_result_map:
