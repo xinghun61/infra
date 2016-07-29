@@ -27,6 +27,10 @@ import (
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
+	"github.com/luci/luci-go/common/tsmon"
+	"github.com/luci/luci-go/common/tsmon/field"
+	"github.com/luci/luci-go/common/tsmon/metric"
+	"github.com/luci/luci-go/common/tsmon/types"
 
 	"golang.org/x/net/context"
 
@@ -76,6 +80,15 @@ var (
 	expvars          = expvar.NewMap("dispatcher")
 	errLog           = log.New(os.Stderr, "", log.Lshortfile|log.Ltime)
 	infoLog          = log.New(os.Stdout, "", log.Lshortfile|log.Ltime)
+
+	// tsmon metrics
+	iterations = metric.NewCounter("alerts_dispatcher/iterations",
+		"Number if iterations of the main polling loop.", types.MetricMetadata{}, field.String("status"))
+	postErrors = metric.NewCounter("alerts_dispatcher/post_errors",
+		"Number of posting errors.", types.MetricMetadata{})
+	alertCount = metric.NewInt("alerts_dispatcher/alert_count",
+		"Number of alerts generated.", types.MetricMetadata{},
+		field.String("tree"))
 )
 
 func init() {
@@ -198,6 +211,7 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 				}
 			}
 			alerts.Timestamp = messages.TimeToEpochTime(time.Now())
+			alertCount.Set(ctx, int64(len(alerts.Alerts)), tree)
 
 			if *alertsBaseURL == "" {
 				infoLog.Printf("No data_url provided. Writing to %s-alerts.json", tree)
@@ -221,6 +235,7 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 				err := w.PostAlerts(alerts)
 				if err != nil {
 					errLog.Printf("Couldn't post alerts: %v", err)
+					postErrors.Add(ctx, 1)
 					errs <- err
 					return
 				}
@@ -251,7 +266,6 @@ func main() {
 	ctx := context.Background()
 	ctx = gologger.StdConfig.Use(ctx)
 	logging.SetLevel(ctx, logging.Debug)
-
 	authOptions := auth.Options{
 		ServiceAccountJSONPath: *serviceAccountJSON,
 		Scopes: []string{
@@ -275,6 +289,12 @@ func main() {
 		os.Exit(1)
 	}
 	ctx = context.Background()
+
+	tsFlags := tsmon.NewFlags()
+	tsFlags.Target.TargetType = "task"
+	tsFlags.Target.TaskServiceName = "alerts-dispatcher"
+	tsFlags.Flush = "auto"
+	tsmon.InitializeFromFlags(ctx, &tsFlags)
 
 	// Start serving expvars.
 	go func() {
@@ -404,13 +424,21 @@ func main() {
 	// This is the polling/analysis/alert posting function, which will run in a loop until
 	// a timeout or max errors is reached.
 	f := func(ctx context.Context) error {
-		return mainLoop(ctx, a, trees, transport)
+		err := mainLoop(ctx, a, trees, transport)
+		if err == nil {
+			iterations.Add(ctx, 1, "success")
+		} else {
+			iterations.Add(ctx, 1, "failure")
+		}
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, duration)
 	defer cancel()
 
 	loopResults := looper.Run(ctx, f, cycle, *maxErrs, clock.GetSystemClock())
+
+	tsmon.Shutdown(ctx)
 
 	if !loopResults.Success {
 		errLog.Printf("Failed to run loop, %v errors", loopResults.Errs)
