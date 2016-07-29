@@ -111,6 +111,7 @@ ISSUE_REINDEX = '/issues/reindex'
 ISSUE_EXPORT = '/issues/export'
 ISSUE_EXPORT_JSON = '/issues/export/json'
 ISSUE_IMPORT = '/issues/import'
+ISSUE_RERANK_BLOCKED_ON = '/issues/rerankBlockedOn'
 
 # URLs of site-wide pages referenced from the framework directory.
 CAPTCHA_QUESTION = '/hosting/captcha'

@@ -872,3 +872,8 @@ ALTER TABLE `monorail`.`Template` CHANGE `summary` `summary` text CHARACTER SET 
 2016-07-07: Add rank to IssueRelation
 
 ALTER TABLE IssueRelation ADD COLUMN rank BIGINT;
+
+==============================================================
+2016-07-13: Set default rank for blockedon relations
+
+UPDATE IssueRelation SET rank = 0 WHERE kind = 'blockedon';

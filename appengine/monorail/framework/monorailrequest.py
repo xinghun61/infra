@@ -477,6 +477,12 @@ class MonorailRequest(object):
     # For issue reindexing utility servlet
     self.auto_submit = self.GetParam('auto_submit')
 
+    # For issue dependency reranking servlet
+    self.parent_id = self.GetIntParam('parent_id')
+    self.target_id = self.GetIntParam('target_id')
+    self.moved_ids = self.GetIntListParam('moved_ids')
+    self.split_above = self.GetIntParam('split_above')
+
   def _ParseFormOverrides(self):
     """Support deep linking by allowing the user to set form fields via QS."""
     allowed_overrides = {

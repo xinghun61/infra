@@ -556,3 +556,13 @@ class BizobjTest(unittest.TestCase):
         raw_value='test',
     )
     self.assertEqual('test', val)
+
+  def testSplitBlockedOnRanks(self):
+    issue = tracker_pb2.Issue()
+    issue.blocked_on_iids = [78902, 78903, 78904]
+    issue.blocked_on_ranks = [10, 20, 30]
+    rank_rows = zip(issue.blocked_on_iids, issue.blocked_on_ranks)
+    rank_rows.reverse()
+    ret = tracker_bizobj.SplitBlockedOnRanks(
+        issue, 78903, False, issue.blocked_on_iids)
+    self.assertEqual(ret, (rank_rows[:1], rank_rows[1:]))

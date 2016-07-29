@@ -1043,3 +1043,29 @@ def MergeFields(field_values, fields_add, fields_remove, field_defs):
         merged_fvs.remove(old_fv)
 
   return merged_fvs, fvs_added, fvs_removed
+
+
+def SplitBlockedOnRanks(issue, target_id, split_above, open_ids):
+  """Splits issue relation rankings by some target issue's rank
+
+  Args:
+    issue: Issue PB for the issue considered.
+    target_id: the global ID of the issue to split rankings about.
+    split_above: False to split below the target issue, True to split above.
+    open_ids: a list of global IDs of open and visible issues blocking
+      the considered issue.
+
+  Returns:
+    A tuple (lower, higher) where both are lists of
+    [(blocker_id, rank),...] of issues in rank order. If split_above is False
+    the target issue is included in higher, otherwise it is included in lower
+  """
+  issue_ranks = [issue_rank
+      for issue_rank in zip(issue.blocked_on_iids, issue.blocked_on_ranks)
+      if issue_rank[0] in open_ids]
+  # blocked_on_iids is sorted high-to-low, we need low-to-high
+  issue_ranks.reverse()
+  offset = int(split_above)
+  for i, (dst_id, _) in enumerate(issue_ranks):
+    if dst_id == target_id:
+      return issue_ranks[:i+offset], issue_ranks[i+offset:]

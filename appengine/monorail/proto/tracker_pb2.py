@@ -44,7 +44,7 @@ class Issue(messages.Message):
   Summary, Status, Owner, CC, reporter, and opened_timestamp are hard
   fields that are always there.  All other metadata is stored as
   labels or custom fields.
-  Next available tag: 54.
+  Next available tag: 55.
   """
   # Globally unique issue ID.
   issue_id = messages.IntegerField(42)
@@ -76,6 +76,10 @@ class Issue(messages.Message):
 
   # Issue IDs of issues that this issue is blocked on.
   blocked_on_iids = messages.IntegerField(16, repeated=True)
+
+  # Rank values of issue relations that are blocking this issue. The issue
+  # with id blocked_on_iids[i] has rank value blocked_on_ranks[i]
+  blocked_on_ranks = messages.IntegerField(54, repeated=True)
 
   # Issue IDs of issues that this issue is blocking.
   blocking_iids = messages.IntegerField(17, repeated=True)

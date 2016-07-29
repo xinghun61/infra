@@ -309,6 +309,9 @@ class IssueDetail(issuepeek.IssuePeek):
         'set_star_token': xsrf.GenerateToken(
             mr.auth.user_id, '/p/%s%s.do' % (
                 mr.project_name, urls.ISSUE_SETSTAR_JSON)),
+        'rerank_token': xsrf.GenerateToken(
+            mr.auth.user_id, '/p/%s%s.do' % (
+                mr.project_name, urls.ISSUE_RERANK_BLOCKED_ON)),
 
 
         # For deep linking and input correction after a failed submit.

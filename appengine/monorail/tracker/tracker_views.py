@@ -145,6 +145,7 @@ class IssueView(template_helpers.PBProxy):
           merged_into_ref, default_project_name=issue.project_name)
 
     self.blocked_on = []
+    self.has_dangling = ezt.boolean(self.dangling_blocked_on_refs)
     self.blocking = []
     current_project_name = issue.project_name
 
@@ -240,17 +241,22 @@ class IssueRefView(object):
       related_issue = closed_dict[issue_id]
       self.is_open = ezt.boolean(False)
 
+    self.issue_id = related_issue.issue_id
+
     if current_project_name == related_issue.project_name:
       self.url = 'detail?id=%s' % related_issue.local_id
       self.display_name = 'issue %s' % related_issue.local_id
+      self.issue_ref = related_issue.local_id
     else:
       self.url = '/p/%s%s?id=%s' % (
           related_issue.project_name, urls.ISSUE_DETAIL,
           related_issue.local_id)
       self.display_name = 'issue %s:%s' % (
           related_issue.project_name, related_issue.local_id)
+      self.issue_ref = self.display_name[6:]
 
     self.summary = related_issue.summary
+    self.is_dangling = ezt.boolean(False)
 
   def DebugString(self):
     if not self.visible:
@@ -278,6 +284,8 @@ class DanglingIssueRefView(object):
     self.display_name = 'issue %s:%d' % (project_name, issue_id)
     self.short_name = 'issue %s:%d' % (project_name, issue_id)
     self.summary = 'Issue %d in %s.' % (issue_id, project_name)
+    self.local_id = self.display_name[6:]
+    self.is_dangling = ezt.boolean(True)
 
   def DebugString(self):
     return 'DanglingIssueRefView(%s)' % self.display_name

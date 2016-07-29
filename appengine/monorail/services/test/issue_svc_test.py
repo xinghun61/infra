@@ -127,8 +127,12 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.cc_rows = [(78901, 333L, 0)]
     self.notify_rows = []
     self.fieldvalue_rows = []
-    self.relation_rows = [
-        (78901, 78902, 'blockedon', None), (78903, 78901, 'blockedon', None)]
+    self.blocked_on_rows = (
+        (78901, 78902, 'blockedon', 20), (78903, 78901, 'blockedon', 10))
+    self.blocking_rows = ()
+    self.merged_rows = ()
+    self.relation_rows = (
+        self.blocked_on_rows + self.blocking_rows + self.merged_rows)
     self.dangling_relation_rows = [
         (78901, 'codesite', 5001, 'blocking'),
         (78901, 'codesite', 5002, 'blockedon')]
@@ -196,9 +200,19 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
         self.cnxn, cols=issue_svc.ISSUE2FIELDVALUE_COLS, shard_id=shard_id,
         issue_id=issue_ids).AndReturn(self.fieldvalue_rows)
     self.issue_service.issuerelation_tbl.Select(
-        self.cnxn, cols=issue_svc.ISSUERELATION_COLS,  # Note: no shard
+        self.cnxn, cols=issue_svc.ISSUERELATION_COLS,
+        issue_id=issue_ids, kind='blockedon',
+        order_by=[('rank DESC', []),
+                  ('dst_issue_id', '')]).AndReturn(self.blocked_on_rows)
+    self.issue_service.issuerelation_tbl.Select(
+        self.cnxn, cols=issue_svc.ISSUERELATION_COLS,
+        dst_issue_id=issue_ids, kind='blockedon',
+        order_by=[('issue_id', '')]).AndReturn(self.blocking_rows)
+    self.issue_service.issuerelation_tbl.Select(
+        self.cnxn, cols=issue_svc.ISSUERELATION_COLS,
         where=[('(issue_id IN (%s) OR dst_issue_id IN (%s))',
-                issue_ids + issue_ids)]).AndReturn(self.relation_rows)
+                issue_ids + issue_ids),
+                ('kind != %s', ['blockedon'])]).AndReturn(self.merged_rows)
     self.issue_service.danglingrelation_tbl.Select(
         self.cnxn, cols=issue_svc.DANGLINGRELATION_COLS,  # Note: no shard
         issue_id=issue_ids).AndReturn(self.dangling_relation_rows)
@@ -521,11 +535,11 @@ class IssueServiceTest(unittest.TestCase):
     self, relation_rows=None, dangling_relation_rows=None):
     relation_rows = relation_rows or []
     dangling_relation_rows = dangling_relation_rows or []
+    self.services.issue.issuerelation_tbl.Select(
+        self.cnxn, cols=issue_svc.ISSUERELATION_COLS[:-1],
+        dst_issue_id=[78901], kind='blockedon').AndReturn([])
     self.services.issue.issuerelation_tbl.Delete(
         self.cnxn, issue_id=[78901], commit=False)
-    self.services.issue.issuerelation_tbl.Delete(
-        self.cnxn, dst_issue_id=[78901], kind='blockedon',
-        commit=False)
     self.services.issue.issuerelation_tbl.InsertRows(
         self.cnxn, issue_svc.ISSUERELATION_COLS, relation_rows,
         ignore=True, commit=False)
@@ -838,9 +852,13 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.StubOutWithMock(self.services.issue, "CreateIssueComment")
     self.mox.StubOutWithMock(self.services.issue, "GetIssues")
     self.mox.StubOutWithMock(self.services.issue, "_UpdateIssuesModified")
+    self.mox.StubOutWithMock(self.services.issue, "SortBlockedOn")
     # Call to find added blockedon issues.
     self.services.issue.GetIssues(
         self.cnxn, [blockedon_issue.issue_id]).AndReturn([blockedon_issue])
+    # Call to sort blockedon issues.
+    self.services.issue.SortBlockedOn(
+        self.cnxn, issue, [blockedon_issue.issue_id]).AndReturn(([78902], [0]))
     # Call to find removed blockedon issues.
     self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
 
@@ -1433,6 +1451,51 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, [111L, 888L], [789], 1)
     self.mox.VerifyAll()
     self.assertEqual([1, 2, 3, 4, 5], iids)
+
+  ### Issue Dependency reranking
+
+  def testSortBlockedOn(self):
+    issue = self.SetUpSortBlockedOn()
+    self.mox.ReplayAll()
+    ret = self.services.issue.SortBlockedOn(
+        self.cnxn, issue, issue.blocked_on_iids)
+    self.mox.VerifyAll()
+    self.assertEqual(ret, ([78902, 78903], [20, 10]))
+
+  def SetUpSortBlockedOn(self):
+    issue = fake.MakeTestIssue(
+        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        status='Live', issue_id=78901)
+    issue.project_name = 'proj'
+    issue.blocked_on_iids = [78902, 78903]
+    issue.blocked_on_ranks = [20, 10]
+    self.services.issue.issue_2lc.CacheItem(78901, issue)
+    blocked_on_rows = (
+        (78901, 78902, 'blockedon', 20), (78901, 78903, 'blockedon', 10))
+    self.services.issue.issuerelation_tbl.Select(
+        self.cnxn, cols=issue_svc.ISSUERELATION_COLS,
+        issue_id=issue.issue_id, dst_issue_id=issue.blocked_on_iids,
+        order_by=[('rank DESC', []), ('dst_issue_id', [])]).AndReturn(
+            blocked_on_rows)
+    return issue
+
+  def testApplyIssueRerank(self):
+    blocker_ids = [78902, 78903]
+    relations_to_change = zip(blocker_ids, [20, 10])
+    self.services.issue.issuerelation_tbl.Delete(
+        self.cnxn, issue_id=78901, dst_issue_id=blocker_ids, commit=False)
+    insert_rows = [(78901, blocker_id, 'blockedon', rank)
+                   for blocker_id, rank in relations_to_change]
+    self.services.issue.issuerelation_tbl.InsertRows(
+        self.cnxn, cols=issue_svc.ISSUERELATION_COLS, row_values=insert_rows,
+        commit=True)
+
+    self.mox.StubOutWithMock(self.services.issue, "InvalidateIIDs")
+
+    self.services.issue.InvalidateIIDs(self.cnxn, [78901])
+    self.mox.ReplayAll()
+    self.services.issue.ApplyIssueRerank(self.cnxn, 78901, relations_to_change)
+    self.mox.VerifyAll()
 
 
 class IssueServiceFunctionsTest(unittest.TestCase):

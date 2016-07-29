@@ -181,18 +181,22 @@ class RestrictionsViewTest(unittest.TestCase):
 class IssueRefViewTest(unittest.TestCase):
 
   issue1 = testing_helpers.Blank(
+      issue_id=1,
       local_id=1,
       project_name='foo',
       summary='blue screen')
   issue2 = testing_helpers.Blank(
+      issue_id=2,
       local_id=2,
       project_name='foo',
       summary='hissing noise')
   issue3 = testing_helpers.Blank(
+      issue_id=3,
       local_id=3,
       project_name='foo',
       summary='sinking feeling')
   issue4 = testing_helpers.Blank(
+      issue_id=4,
       local_id=4,
       project_name='bar',
       summary='aliens among us')

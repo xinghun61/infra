@@ -1436,6 +1436,13 @@ class IssueService(object):
       issue.project_id = move_to
     return []
 
+  def ApplyIssueRerank(
+      self, cnxn, parent_id, relations_to_change, commit=True, invalidate=True):
+    pass
+
+  def SplitRanks(self, cnxn, parent_id, target_id, open_ids, split_above=False):
+    pass
+
 
 class SpamService(object):
   """Fake version of SpamService that just works in-RAM."""

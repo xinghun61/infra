@@ -77,6 +77,7 @@ ATTACHMENT_COLS = [
     'id', 'issue_id', 'comment_id', 'filename', 'filesize', 'mimetype',
     'deleted', 'gcs_object_id']
 ISSUERELATION_COLS = ['issue_id', 'dst_issue_id', 'kind', 'rank']
+ABBR_ISSUERELATION_COLS = ['dst_issue_id', 'rank']
 DANGLINGRELATION_COLS = [
     'issue_id', 'dst_issue_project', 'dst_issue_local_id', 'kind']
 ISSUEUPDATE_COLS = [
@@ -229,7 +230,7 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
       fv, issue_id = self._UnpackFieldValue(fv_row)
       results_dict[issue_id].field_values.append(fv)
 
-    for issue_id, dst_issue_id, kind, _ in relation_rows:
+    for issue_id, dst_issue_id, kind, rank in relation_rows:
       src_issue = results_dict.get(issue_id)
       dst_issue = results_dict.get(dst_issue_id)
       assert src_issue or dst_issue, (
@@ -238,6 +239,7 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
       if src_issue:
         if kind == 'blockedon':
           src_issue.blocked_on_iids.append(dst_issue_id)
+          src_issue.blocked_on_ranks.append(rank)
         elif kind == 'mergedinto':
           src_issue.merged_into = dst_issue_id
         else:
@@ -285,10 +287,20 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
         issue_id=issue_ids)
     if issue_ids:
       ph = sql.PlaceHolders(issue_ids)
-      relation_rows = self.issue_service.issuerelation_tbl.Select(
+      blocked_on_rows = self.issue_service.issuerelation_tbl.Select(
+          cnxn, cols=ISSUERELATION_COLS, issue_id=issue_ids, kind='blockedon',
+          order_by=[('rank DESC', []), ('dst_issue_id', '')])
+      blocking_rows = self.issue_service.issuerelation_tbl.Select(
+          cnxn, cols=ISSUERELATION_COLS, dst_issue_id=issue_ids,
+          kind='blockedon', order_by=[('issue_id', '')])
+      unique_blocking = tuple(
+          row for row in blocking_rows if row not in blocked_on_rows)
+      merge_rows = self.issue_service.issuerelation_tbl.Select(
           cnxn, cols=ISSUERELATION_COLS,
           where=[('(issue_id IN (%s) OR dst_issue_id IN (%s))' % (ph, ph),
-                  issue_ids + issue_ids)])
+                  issue_ids + issue_ids),
+                 ('kind != %s', ['blockedon'])])
+      relation_rows = blocked_on_rows + unique_blocking + merge_rows
       dangling_relation_rows = self.issue_service.danglingrelation_tbl.Select(
           cnxn, cols=DANGLINGRELATION_COLS, issue_id=issue_ids)
     else:
@@ -452,6 +464,7 @@ class IssueService(object):
     if blocked_on is not None:
       iids_to_invalidate.update(blocked_on)
       issue.blocked_on_iids = blocked_on
+      issue.blocked_on_ranks = [0] * len(blocked_on)
     if blocking is not None:
       iids_to_invalidate.update(blocking)
       issue.blocking_iids = blocking
@@ -925,12 +938,14 @@ class IssueService(object):
   def _UpdateIssuesRelation(self, cnxn, issues, commit=True):
     """Update the IssueRelation table rows for the given issues."""
     relation_rows = []
+    blocking_rows = []
     dangling_relation_rows = []
     for issue in issues:
-      for dst_issue_id in issue.blocked_on_iids:
-        relation_rows.append((issue.issue_id, dst_issue_id, 'blockedon', 0))
+      for i, dst_issue_id in enumerate(issue.blocked_on_iids):
+        rank = issue.blocked_on_ranks[i]
+        relation_rows.append((issue.issue_id, dst_issue_id, 'blockedon', rank))
       for dst_issue_id in issue.blocking_iids:
-        relation_rows.append((dst_issue_id, issue.issue_id, 'blockedon', 0))
+        blocking_rows.append((dst_issue_id, issue.issue_id, 'blockedon'))
       for dst_ref in issue.dangling_blocked_on_refs:
         dangling_relation_rows.append((
             issue.issue_id, dst_ref.project, dst_ref.issue_id, 'blockedon'))
@@ -941,11 +956,18 @@ class IssueService(object):
         relation_rows.append((
             issue.issue_id, issue.merged_into, 'mergedinto', None))
 
+    old_blocking = self.issuerelation_tbl.Select(
+        cnxn, cols=ISSUERELATION_COLS[:-1],
+        dst_issue_id=[issue.issue_id for issue in issues], kind='blockedon')
+    relation_rows.extend([
+      (row + (0,)) for row in blocking_rows if row not in old_blocking])
+    delete_rows = [row for row in old_blocking if row not in blocking_rows]
+
+    for issue_id, dst_issue_id, kind in delete_rows:
+      self.issuerelation_tbl.Delete(cnxn, issue_id=issue_id,
+          dst_issue_id=dst_issue_id, kind=kind, commit=False)
     self.issuerelation_tbl.Delete(
         cnxn, issue_id=[issue.issue_id for issue in issues], commit=False)
-    self.issuerelation_tbl.Delete(
-        cnxn, dst_issue_id=[issue.issue_id for issue in issues],
-        kind='blockedon', commit=False)
     self.issuerelation_tbl.InsertRows(
         cnxn, ISSUERELATION_COLS, relation_rows, ignore=True, commit=commit)
     self.danglingrelation_tbl.Delete(
@@ -1131,7 +1153,8 @@ class IssueService(object):
           add_refs, remove_refs, default_project_name=issue.project_name))
       blocked_on = [iid for iid in old_blocked_on + blocked_on_add
                     if iid not in blocked_on_remove]
-      issue.blocked_on_iids = blocked_on
+      issue.blocked_on_iids, issue.blocked_on_ranks = self.SortBlockedOn(
+          cnxn, issue, blocked_on)
       iids_to_invalidate.update(blocked_on_add + blocked_on_remove)
 
     if blocking_add or blocking_remove:
@@ -1424,7 +1447,8 @@ class IssueService(object):
                           for ref in danglers_removed])
       amendments.append(tracker_bizobj.MakeBlockedOnAmendment(
           add_refs, remove_refs, default_project_name=issue.project_name))
-      issue.blocked_on_iids = blocked_on
+      issue.blocked_on_iids, issue.blocked_on_ranks = self.SortBlockedOn(
+          cnxn, issue, blocked_on)
       issue.dangling_blocked_on_refs = dangling_blocked_on_refs
       iids_to_invalidate.update(blockers_added + blockers_removed)
 
@@ -1569,9 +1593,11 @@ class IssueService(object):
     for src_iid, dests in issue_relation_dict.iteritems():
       for dst_iid, kind in dests:
         if kind == 'blocking':
-          relation_rows.append((dst_iid, src_iid, 'blockedon'))
-        elif kind == 'blockedon' or kind == 'mergedinto':
-          relation_rows.append((src_iid, dst_iid, kind))
+          relation_rows.append((dst_iid, src_iid, 'blockedon', 0))
+        elif kind == 'blockedon':
+          relation_rows.append((src_iid, dst_iid, 'blockedon', 0))
+        elif kind == 'mergedinto':
+          relation_rows.append((src_iid, dst_iid, 'mergedinto', None))
 
     self.issuerelation_tbl.InsertRows(
         cnxn, ISSUERELATION_COLS, relation_rows, ignore=True, commit=commit)
@@ -2545,6 +2571,52 @@ class IssueService(object):
       iids.append(row[0])
 
     return iids
+
+  ### Issue Dependency Rankings
+
+  def SortBlockedOn(self, cnxn, issue, blocked_on_iids):
+    """Sort blocked_on dependencies by rank and dst_issue_id.
+
+    Args:
+      cnxn: connection to SQL database.
+      issue: the issue being blocked.
+      blocked_on_iids: the iids of all the issue's blockers
+
+    Returns:
+      a tuple (ids, ranks), where ids is the sorted list of
+      blocked_on_iids and ranks is the list of corresponding ranks
+    """
+    rows = self.issuerelation_tbl.Select(
+        cnxn, cols=ISSUERELATION_COLS, issue_id=issue.issue_id,
+        dst_issue_id=blocked_on_iids,
+        order_by=[('rank DESC', []), ('dst_issue_id', [])])
+    ids = [row[1] for row in rows]
+    ids.extend([iid for iid in blocked_on_iids if iid not in ids])
+    ranks = [row[3] for row in rows]
+    ranks.extend([0] * (len(blocked_on_iids) - len(ranks)))
+    return ids, ranks
+
+  def ApplyIssueRerank(
+      self, cnxn, parent_id, relations_to_change, commit=True, invalidate=True):
+    """Updates rankings of blocked on issue relations to new values
+
+    Args:
+      cnxn: connection to SQL database.
+      parent_id: the global ID of the blocked issue to update
+      relations_to_change: This should be a list of
+        [(blocker_id, new_rank),...] of relations that need to be changed
+      commit: set to False to skip the DB commit and do it in the caller.
+      invalidate: set to False to leave cache invalidatation to the caller.
+    """
+    blocker_ids = [blocker for (blocker, rank) in relations_to_change]
+    self.issuerelation_tbl.Delete(
+        cnxn, issue_id=parent_id, dst_issue_id=blocker_ids, commit=False)
+    insert_rows = [(parent_id, blocker, 'blockedon', rank)
+                   for (blocker, rank) in relations_to_change]
+    self.issuerelation_tbl.InsertRows(
+        cnxn, cols=ISSUERELATION_COLS, row_values=insert_rows, commit=commit)
+    if invalidate:
+      self.InvalidateIIDs(cnxn, [parent_id])
 
 
 def _UpdateClosedTimestamp(config, issue, old_effective_status):

@@ -76,6 +76,7 @@ from tracker import issueoriginal
 from tracker import issueexport
 from tracker import issueimport
 from tracker import issuereindex
+from tracker import issuererank
 from tracker import issuetips
 from tracker import spam
 
@@ -217,6 +218,7 @@ class ServletRegistry(object):
         urls.ISSUE_EXPORT_JSON: issueexport.IssueExportJSON,
         urls.ISSUE_IMPORT: issueimport.IssueImport,
         urls.SPAM_MODERATION_QUEUE: spam.ModerationQueue,
+        urls.ISSUE_RERANK_BLOCKED_ON: issuererank.IssueRerank,
         })
 
     self._SetupUserServlets({
