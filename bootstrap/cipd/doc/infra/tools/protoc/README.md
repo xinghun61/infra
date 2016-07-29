@@ -13,7 +13,11 @@ represent it.
 
     $ cd $ROOT
 
-Clone the `protobuf` repository:
+Use a release (currently using this one):
+
+    $ curl https://github.com/google/protobuf/archive/v3.0.0.tar.gz
+
+To build from repository version, clone the `protobuf` repository:
 
     $ git clone https://github.com/google/protobuf
 
@@ -77,5 +81,12 @@ $ cipd create \
     -name <package-name> \
     -in $ROOT/PREFIX/bin \
     -install-mode copy \
-    -tag "git_commit:`git rev-parse HEAD`"
+    -tag "protobuf_version:<version>"
+```
+
+NOTE: If building from ToT, use a "git_commit" tag instead:
+
+```
+    ...
+    -tag "git_commit:`git -C $ROOT/protobuf rev-parse HEAD`"
 ```
