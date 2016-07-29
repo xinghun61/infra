@@ -54,7 +54,6 @@ masters = [
     'client.dart.fyi',
     'client.drmemory',
     'client.dynamorio',
-    'client.libvpx',
     'client.libyuv',
     'client.nacl',
     'client.nacl.ports',
