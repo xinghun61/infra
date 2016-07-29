@@ -1,6 +1,4 @@
 DEPS = [
-  'recipe_utils',
-
   'build/file',
   'build/luci_config',
 

@@ -16,19 +16,6 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
-      "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Fbuild%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
-      "--outfile",
-      "/path/to/tmp/",
-      "--attempts",
-      "3"
-    ],
-    "name": "Get project 'build' config 'recipes.cfg'"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
       "RECIPE_MODULE[build::cipd]/resources/bootstrap.py",
       "--platform",
       "linux-amd64",
@@ -194,8 +181,7 @@
       "[TMP_BASE]/roll_build_tmp_2/infra/config/recipes.cfg",
       "autoroll",
       "--output-json",
-      "/path/to/tmp/json",
-      "--project=build"
+      "/path/to/tmp/json"
     ],
     "name": "build.roll",
     "~followup_annotations": [

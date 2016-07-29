@@ -6,10 +6,7 @@
 
 DEPS = [
   'recipe_autoroller',
-  'recipe_utils',
-
   'build/luci_config',
-
   'recipe_engine/properties',
   'recipe_engine/raw_io',
 ]
@@ -40,9 +37,6 @@ def GenTests(api):
       api.test('basic') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.luci_config.get_project_config(
-          'build', 'recipes.cfg',
-          api.recipe_utils.make_recipe_config('build', [])) +
       api.recipe_autoroller.roll_data('build') +
       api.recipe_autoroller.new_upload('build')
   )
@@ -51,9 +45,6 @@ def GenTests(api):
       api.test('nontrivial') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.luci_config.get_project_config(
-          'build', 'recipes.cfg',
-          api.recipe_utils.make_recipe_config('build', [])) +
       api.recipe_autoroller.roll_data('build', trivial=False) +
       api.recipe_autoroller.new_upload('build')
   )
@@ -62,9 +53,6 @@ def GenTests(api):
       api.test('empty') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.luci_config.get_project_config(
-          'build', 'recipes.cfg',
-          api.recipe_utils.make_recipe_config('build', [])) +
       api.recipe_autoroller.roll_data('build', empty=True)
   )
 
@@ -72,9 +60,6 @@ def GenTests(api):
       api.test('failure') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.luci_config.get_project_config(
-          'build', 'recipes.cfg',
-          api.recipe_utils.make_recipe_config('build', [])) +
       api.recipe_autoroller.roll_data('build', success=False)
   )
 
@@ -82,9 +67,6 @@ def GenTests(api):
       api.test('previously_uploaded') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.luci_config.get_project_config(
-          'build', 'recipes.cfg',
-          api.recipe_utils.make_recipe_config('build', [])) +
       api.recipe_autoroller.roll_data('build') +
       api.recipe_autoroller.previously_uploaded('build')
   )
@@ -93,35 +75,9 @@ def GenTests(api):
       api.test('failed_upload') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.luci_config.get_project_config(
-          'build', 'recipes.cfg',
-          api.recipe_utils.make_recipe_config('build', [])) +
       api.recipe_autoroller.roll_data('build') +
       api.recipe_autoroller.new_upload('build') +
       api.override_step_data(
           'build.git cl issue',
           api.raw_io.stream_output('Issue number: None (None)'))
-  )
-
-  yield (
-      api.test('empty_when_dependent_repos_inconsistent') +
-      api.properties(projects=['infra']) +
-      api.luci_config.get_projects(
-          ['recipe_engine', 'depot_tools', 'build', 'infra']) +
-      api.luci_config.get_project_config(
-          'recipe_engine', 'recipes.cfg',
-          api.recipe_utils.make_recipe_config('recipe_engine', [])) +
-      api.luci_config.get_project_config(
-          'depot_tools', 'recipes.cfg',
-          api.recipe_utils.make_recipe_config('depot_tools', [
-              'recipe_engine'])) +
-      api.luci_config.get_project_config(
-          'build', 'recipes.cfg',
-          api.recipe_utils.make_recipe_config('build', [
-              'recipe_engine', 'depot_tools'])) +
-      api.luci_config.get_project_config(
-          'infra', 'recipes.cfg',
-          api.recipe_utils.make_recipe_config('build', [
-              'recipe_engine', 'depot_tools', 'build'])) +
-      api.recipe_autoroller.roll_data('infra', empty=True)
   )
