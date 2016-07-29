@@ -1,7 +1,7 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
+import copy
 import json
 
 from common.pipeline_wrapper import pipeline_handlers
@@ -117,23 +117,13 @@ class FracasCrashPipelineTest(CrashTestCase):
             crash_identifiers, chrome_version, signature, 'fracas',
             platform, None, channel, None))
 
-  def testRunningAnalysis(self):
+  def _TestRunningAnalysisForResult(self, analysis_result, analysis_tags):
     pubsub_publish_requests = []
     def Mocked_PublishMessagesToTopic(messages_data, topic):
       pubsub_publish_requests.append((messages_data, topic))
     self.mock(fracas_crash_pipeline.pubsub_util, 'PublishMessagesToTopic',
               Mocked_PublishMessagesToTopic)
 
-    analysis_result = {
-        'found': True,
-        'other_data': 'data',
-    }
-    analysis_tags = {
-        'found_suspects': True,
-        'has_regression_range': True,
-        'solution': 'core',
-        'unsupported_tag': '',
-    }
     analyzed_crashes = []
     def Mocked_FindCulpritForChromeCrash(*args):
       analyzed_crashes.append(args)
@@ -163,10 +153,22 @@ class FracasCrashPipelineTest(CrashTestCase):
     self.execute_queued_tasks()
 
     self.assertEqual(1, len(pubsub_publish_requests))
+
+    processed_analysis_result = copy.deepcopy(analysis_result)
+    processed_analysis_result['feedback_url'] = (
+        'https://findit-for-me.googleplex.com/crash/fracas-result-feedback?'
+        'key=agx0ZXN0YmVkLXRlc3RyQQsSE0ZyYWNhc0NyYXNoQW5hbHlzaXMiKGU2ZWIyNj'
+        'A2OTBlYTAyMjVjNWNjYTM3ZTNjYTlmYWExOGVmYjVlM2UM')
+
+    if 'suspected_cls' in processed_analysis_result:
+      for cl in processed_analysis_result['suspected_cls']:
+        cl['confidence'] = round(cl['confidence'], 2)
+        cl.pop('reason', None)
+
     expected_messages_data = [json.dumps({
             'crash_identifiers': crash_identifiers,
             'client_id': 'fracas',
-            'result': analysis_result,
+            'result': processed_analysis_result,
         }, sort_keys=True)]
     self.assertEqual(expected_messages_data, pubsub_publish_requests[0][0])
 
@@ -177,6 +179,64 @@ class FracasCrashPipelineTest(CrashTestCase):
 
     analysis = FracasCrashAnalysis.Get(crash_identifiers)
     self.assertEqual(analysis_result, analysis.result)
+    return analysis
+
+
+  def testRunningAnalysis(self):
+    analysis_result = {
+        'found': True,
+        'suspected_cls': [],
+        'other_data': 'data',
+    }
+    analysis_tags = {
+        'found_suspects': True,
+        'has_regression_range': True,
+        'solution': 'core',
+        'unsupported_tag': '',
+    }
+
+    analysis = self._TestRunningAnalysisForResult(
+        analysis_result, analysis_tags)
+    self.assertTrue(analysis.has_regression_range)
+    self.assertTrue(analysis.found_suspects)
+    self.assertEqual('core', analysis.solution)
+
+  def testRunningAnalysisNoSuspectsFound(self):
+    analysis_result = {
+        'found': False
+    }
+    analysis_tags = {
+        'found_suspects': False,
+        'has_regression_range': False,
+        'solution': 'core',
+        'unsupported_tag': '',
+    }
+
+    analysis = self._TestRunningAnalysisForResult(
+        analysis_result, analysis_tags)
+    self.assertFalse(analysis.has_regression_range)
+    self.assertFalse(analysis.found_suspects)
+    self.assertEqual('core', analysis.solution)
+
+  def testRunningAnalysisWithSuspectsCls(self):
+    analysis_result = {
+        'found': True,
+        'suspected_cls': [
+            {'confidence': 0.21434,
+             'reason': ['reason1', 'reason2'],
+             'other': 'data'}
+        ],
+        'other_data': 'data',
+    }
+    analysis_tags = {
+        'found_suspects': True,
+        'has_regression_range': True,
+        'solution': 'core',
+        'unsupported_tag': '',
+    }
+
+    analysis = self._TestRunningAnalysisForResult(
+        analysis_result, analysis_tags)
     self.assertTrue(analysis.has_regression_range)
     self.assertTrue(analysis.found_suspects)
     self.assertEqual('core', analysis.solution)

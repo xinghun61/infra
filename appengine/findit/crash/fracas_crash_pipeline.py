@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import base64
+import copy
 import datetime
 import json
 import logging
@@ -23,6 +24,8 @@ from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 # TODO(katesonia): Move these to config page.
 _SIGNATURE_BLACKLIST_MARKERS = ['[Android Java Exception]']
 _PLATFORM_RENAME = {'linux': 'unix'}
+_FINDIT_FEEDBACK_URL_TEMPLATE = ('https://findit-for-me.googleplex.com/crash/'
+                                 'fracas-result-feedback?key=%s')
 
 
 class FracasBasePipeline(BasePipeline):
@@ -80,14 +83,25 @@ class PublishResultPipeline(FracasBasePipeline):
       logging.error('Failed to publish analysis result for %s',
                     repr(self.crash_identifiers))
 
+  def PostProcessResults(self, analysis, crash_identifiers):
+    analysis_result = copy.deepcopy(analysis.result)
+    analysis_result['feedback_url'] = (_FINDIT_FEEDBACK_URL_TEMPLATE %
+                                       analysis.key.urlsafe())
+    if analysis_result['found']:
+      for cl in analysis_result['suspected_cls']:
+        cl['confidence'] = round(cl['confidence'], 2)
+        cl.pop('reason', None)
+
+    return {
+        'crash_identifiers': crash_identifiers,
+        'client_id': analysis.client_id,
+        'result': analysis_result,
+    }
+
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, crash_identifiers):
     analysis = FracasCrashAnalysis.Get(crash_identifiers)
-    result = {
-        'crash_identifiers': crash_identifiers,
-        'client_id': analysis.client_id,
-        'result': analysis.result,
-    }
+    result = self.PostProcessResults(analysis, crash_identifiers)
     messages_data = [json.dumps(result, sort_keys=True)]
 
     crash_config = CrashConfig.Get()
