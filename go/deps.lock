@@ -1,5 +1,5 @@
 hash: 4ceb338d6614101f4d7c082339a714735d14b760b766d26cbf93526a7e952e27
-updated: 2016-07-27T14:59:25.707495101-07:00
+updated: 2016-07-29T20:56:53.098444343-07:00
 imports:
 - name: github.com/dustin/go-humanize
   version: 2fcb5204cdc65b4bec9fd0a87606bb0d0e3c54e8
@@ -168,7 +168,7 @@ imports:
   - user
   - cmd/aedeploy
 - name: google.golang.org/cloud
-  version: 1da7ac3d5f2b6a48521b20a6ed80569f506b87ce
+  version: 30fab6304c9888af49f1884cf4eddad7027e2e7b
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -176,7 +176,7 @@ imports:
   - pubsub
   - storage
 - name: google.golang.org/grpc
-  version: 6732fdf9f82f3f11c1b7326e4a23efbb0738788e
+  version: 1aa8ce6467df467c34a92e7a5d7e526414ef40dc
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
