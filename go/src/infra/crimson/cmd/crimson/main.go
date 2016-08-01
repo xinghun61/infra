@@ -13,7 +13,7 @@ import (
 	"github.com/luci/luci-go/client/authcli"
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/cli"
-	"github.com/luci/luci-go/common/prpc"
+	"github.com/luci/luci-go/grpc/prpc"
 	"github.com/maruel/subcommands"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
