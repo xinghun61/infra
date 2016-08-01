@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from recipe_engine import config_types
 from recipe_engine import recipe_api
 
 COMMIT_MESSAGE = """Update submodule references.
@@ -11,24 +12,34 @@ visible to Codesearch.
 This commit does not exist in the underlying repository."""
 
 
-def Humanish(url):
-  if url.endswith('.git'):  # pragma: nocover
-    url = url[:-4]
-  slash = url.rfind('/')
-  if slash != -1:
-    url = url[slash + 1:]
-  return url
+# Work around some assertions in config_types.Path.__init__.
+class AbsolutePath(config_types.BasePath):
+  def __init__(self, path):
+    self._path = path
+
+  def resolve(self, test_enabled):
+    if test_enabled:
+      return "[HACK]"
+    return self._path  # pragma: no cover
 
 
 class SyncSubmodulesApi(recipe_api.RecipeApi):
   def __call__(self, source, dest, source_ref='refs/heads/master',
                dest_ref='refs/heads/master'):
-    # Subsequent git commands default to working in the 'checkout' directory.
-    source_name = Humanish(source)
-    checkout_dir = self.m.path['checkout'] = (
-        self.m.path['cwd'].join(source_name))
-
+    # remote_run creates a temporary directory for our pwd, but that means big
+    # checkouts get thrown away every build, and take 15 minutes to re-fetch
+    # even from the cache.
+    # The chromium_tests module seems to hack around this by using a
+    # 'builder_cache' path, but it's not clear where that's defined.  The
+    # infra_paths module mentions it, but I can't figure out where it's
+    # instantiated or how it's used.
+    # For now, hardcode an absolute path of '/b/build/slave/'.
+    sanitized_buildername = ''.join(
+        c if c.isalnum() else '_' for c in self.m.properties['buildername'])
+    checkout_dir = config_types.Path(AbsolutePath('/b/build/slave/'),
+                                     sanitized_buildername)
     self.m.file.makedirs('checkout', checkout_dir)
+    self.m.path['checkout'] = checkout_dir
 
     # Populate the git cache, get the path to the mirror.
     git_cache = self.m.path['git_cache']

@@ -4,7 +4,7 @@
       "python",
       "-u",
       "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
-      "[CWD]/src",
+      "[HACK]/foo_builder",
       "511"
     ],
     "name": "makedirs checkout",
@@ -30,7 +30,7 @@
       "--ignore-locks",
       "https://chromium.googlesource.com/chromium/src"
     ],
-    "cwd": "[CWD]/src",
+    "cwd": "[HACK]/foo_builder",
     "name": "git cache"
   },
   {
@@ -42,7 +42,7 @@
       "--quiet",
       "https://chromium.googlesource.com/chromium/src"
     ],
-    "cwd": "[CWD]/src",
+    "cwd": "[HACK]/foo_builder",
     "name": "git cache (2)",
     "stdout": "/path/to/tmp/"
   },
@@ -52,7 +52,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
       "--path",
-      "[CWD]/src",
+      "[HACK]/foo_builder",
       "--url",
       "/foo"
     ],
@@ -66,7 +66,7 @@
       "origin",
       "master"
     ],
-    "cwd": "[CWD]/src",
+    "cwd": "[HACK]/foo_builder",
     "name": "git fetch"
   },
   {
@@ -76,7 +76,7 @@
       "-f",
       "FETCH_HEAD"
     ],
-    "cwd": "[CWD]/src",
+    "cwd": "[HACK]/foo_builder",
     "name": "git checkout"
   },
   {
@@ -85,7 +85,7 @@
       "rev-parse",
       "HEAD"
     ],
-    "cwd": "[CWD]/src",
+    "cwd": "[HACK]/foo_builder",
     "name": "read revision",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
@@ -100,7 +100,7 @@
       "-d",
       "-x"
     ],
-    "cwd": "[CWD]/src",
+    "cwd": "[HACK]/foo_builder",
     "name": "git clean"
   },
   {
@@ -110,7 +110,7 @@
       "remove",
       "destination_repo"
     ],
-    "cwd": "[CWD]/src",
+    "cwd": "[HACK]/foo_builder",
     "name": "git remote"
   },
   {
@@ -121,7 +121,7 @@
       "destination_repo",
       "https://chromium.googlesource.com/chromium/src/codesearch"
     ],
-    "cwd": "[CWD]/src",
+    "cwd": "[HACK]/foo_builder",
     "name": "git remote (2)"
   },
   {
@@ -131,7 +131,7 @@
       "destination_repo",
       "+refs/heads/master"
     ],
-    "cwd": "[CWD]/src",
+    "cwd": "[HACK]/foo_builder",
     "name": "git fetch (2)"
   },
   {
@@ -140,7 +140,7 @@
       "rev-parse",
       "FETCH_HEAD^"
     ],
-    "cwd": "[CWD]/src",
+    "cwd": "[HACK]/foo_builder",
     "name": "git rev-parse",
     "stdout": "/path/to/tmp/"
   },
@@ -150,7 +150,7 @@
       "RECIPE_MODULE[infra::sync_submodules]/resources/deps2submodules.py",
       "DEPS"
     ],
-    "cwd": "[CWD]/src",
+    "cwd": "[HACK]/foo_builder",
     "name": "deps2submodules"
   },
   {
@@ -160,7 +160,7 @@
       "-m",
       "Update submodule references.\n\nThis is an artificial commit to make dependencies specified in the DEPS file\nvisible to Codesearch.\nThis commit does not exist in the underlying repository."
     ],
-    "cwd": "[CWD]/src",
+    "cwd": "[HACK]/foo_builder",
     "name": "git commit"
   },
   {
@@ -170,7 +170,7 @@
       "destination_repo",
       "+HEAD:refs/heads/master"
     ],
-    "cwd": "[CWD]/src",
+    "cwd": "[HACK]/foo_builder",
     "name": "git push"
   },
   {
