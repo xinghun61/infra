@@ -1,13 +1,38 @@
 [
   {
     "cmd": [
+      "git",
+      "cache",
+      "populate",
+      "--cache-dir=[GIT_CACHE]",
+      "--ignore-locks",
+      "https://chromium.googlesource.com/chromium/src"
+    ],
+    "cwd": "[CWD]/src",
+    "name": "git cache"
+  },
+  {
+    "cmd": [
+      "git",
+      "cache",
+      "exists",
+      "--cache-dir=[GIT_CACHE]",
+      "--quiet",
+      "https://chromium.googlesource.com/chromium/src"
+    ],
+    "cwd": "[CWD]/src",
+    "name": "git cache (2)",
+    "stdout": "/path/to/tmp/"
+  },
+  {
+    "cmd": [
       "python",
       "-u",
       "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
       "--path",
       "[CWD]/src",
       "--url",
-      "https://chromium.googlesource.com/chromium/src"
+      "/foo"
     ],
     "name": "git setup"
   },
@@ -100,7 +125,7 @@
   {
     "cmd": [
       "python",
-      "RECIPE_MODULE[build::sync_submodules]/resources/deps2submodules.py",
+      "RECIPE_MODULE[infra::sync_submodules]/resources/deps2submodules.py",
       "DEPS"
     ],
     "cwd": "[CWD]/src",

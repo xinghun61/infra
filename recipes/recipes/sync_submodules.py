@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 DEPS = [
-  'build/sync_submodules',
+  'sync_submodules',
   'recipe_engine/properties',
 ]
 
