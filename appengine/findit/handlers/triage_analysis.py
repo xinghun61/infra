@@ -21,7 +21,7 @@ from common.base_handler import Permission
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from waterfall import buildbot
-from waterfall import try_job_util
+from waterfall.try_job_util import GetSuspectedCLsWithFailures
 
 MATCHING_ANALYSIS_HOURS_AGO_START = 24
 MATCHING_ANALYSIS_HOURS_AGO_END = 24
@@ -36,23 +36,21 @@ def _DoAnalysesMatch(analysis_1, analysis_2):
     analysis_2: The second analysis to compare.
 
   Returns:
-    True if the two analyses' sorted potential culprit lists match, otherwise
-    False.
+    True if the two analyses' sorted suspected CLs with failures lists match,
+    otherwise False.
   """
 
-  # Get list of potential culprit tuples.
-  potential_culprit_tuple_list_1 = (
-      try_job_util.GenPotentialCulpritTupleList(analysis_1.result))
-  potential_culprit_tuple_list_2 = (
-      try_job_util.GenPotentialCulpritTupleList(analysis_2.result))
+  # Get list of suspected CLs with failures.
+  suspected_cls_with_failures_1 = GetSuspectedCLsWithFailures(analysis_1.result)
+  suspected_cls_with_failures_2 = GetSuspectedCLsWithFailures(analysis_2.result)
 
-  # Both analyses must have non-empty potential culprit lists.
-  if not potential_culprit_tuple_list_1 or not potential_culprit_tuple_list_2:
+  # Both analyses must have non-empty suspected CLs with failures lists.
+  if not suspected_cls_with_failures_1 or not suspected_cls_with_failures_2:
     return False
 
-  # Both analyses must have matching potential culprit lists.
-  return (sorted(potential_culprit_tuple_list_1) ==
-          sorted(potential_culprit_tuple_list_2))
+  # Both analyses must have matching suspected CLs with failures lists.
+  return (sorted(suspected_cls_with_failures_1) ==
+          sorted(suspected_cls_with_failures_2))
 
 
 def _AppendTriageHistoryRecord(

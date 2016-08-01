@@ -144,46 +144,45 @@ def _GetStepsAndTests(failed_steps):
   return failed_steps_and_tests
 
 
-def GenPotentialCulpritTupleList(heuristic_result):
-  """Generates a list of potential culprit tuples.
+def GetSuspectedCLsWithFailures(heuristic_result):
+  """Generates a list of suspected CLs with failures.
 
   Args:
-    heuristic_result: the heuristic_result from which to generate a potential
-        culprit tuple list.
+    heuristic_result: the heuristic_result from which to generate the list of
+    suspected CLs with failures.
 
   Returns:
-    A list of cultprit tuples that each could look like:
+    A list of suspected CLs with failures that each could look like:
 
-        (step_name, revision, test_name)
+        [step_name, revision, test_name]
 
     or could look like:
 
-        (step_name, revision, None)
+        [step_name, revision, None]
   """
-  potential_culprit_tuple_list = []
+  suspected_cls_with_failures = []
 
   if not heuristic_result:
-    return potential_culprit_tuple_list
+    return suspected_cls_with_failures
 
-  # Iterates through the failures, tests, and suspected_cls, appending potential
-  # (step_name, test_name, revision) and (step_name, revision) culprit tuples to
-  # the list.
+  # Iterates through the failures, tests, and suspected_cls, appending suspected
+  # CLs and failures to the list.
   for failure in heuristic_result['failures']:
     if failure.get('tests'):
       for test in failure['tests']:
         for suspected_cl in test.get('suspected_cls', []):
-          potential_culprit_tuple_list.append((
+          suspected_cls_with_failures.append([
               failure['step_name'],
               suspected_cl['revision'],
-              test['test_name']))
+              test['test_name']])
     else:
       for suspected_cl in failure['suspected_cls']:
-        potential_culprit_tuple_list.append((
+        suspected_cls_with_failures.append([
             failure['step_name'],
             suspected_cl['revision'],
-            None))
+            None])
 
-  return potential_culprit_tuple_list
+  return suspected_cls_with_failures
 
 
 def _LinkAnalysisToBuildFailureGroup(
@@ -212,6 +211,7 @@ def _GetMatchingGroup(wf_failure_groups, blame_list, suspected_tuples):
         return group
 
   return None
+
 
 def _GetOutputNodes(signals):
   if not signals or 'compile' not in signals:
@@ -258,15 +258,16 @@ def _IsBuildFailureUniqueAcrossPlatforms(
                  failure_type.GetDescriptionForFailureType(build_failure_type))
     return True
 
-  suspected_tuples = sorted(GenPotentialCulpritTupleList(heuristic_result))
+  suspected_tuples = sorted(GetSuspectedCLsWithFailures(heuristic_result))
   existing_group = _GetMatchingGroup(groups, blame_list, suspected_tuples)
 
   # Create a new WfFailureGroup if we've encountered a unique build failure.
   if existing_group:
     logging.info('A group already exists, no need for a new try job.')
     _LinkAnalysisToBuildFailureGroup(
-        master_name, builder_name, build_number, [existing_group.master_name,
-        existing_group.builder_name, existing_group.build_number])
+        master_name, builder_name, build_number,
+        [existing_group.master_name, existing_group.builder_name,
+         existing_group.build_number])
   else:
     logging.info('A new try job should be run for this unique build failure.')
     _CreateBuildFailureGroup(
