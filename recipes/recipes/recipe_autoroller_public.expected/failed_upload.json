@@ -86,6 +86,9 @@
       "master"
     ],
     "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
+    },
     "name": "build.git fetch",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"

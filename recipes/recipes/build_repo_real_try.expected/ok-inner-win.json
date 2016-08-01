@@ -87,6 +87,9 @@
       "master"
     ],
     "cwd": "[BUILD]\\clone",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools];%(PATH)s"
+    },
     "name": "git fetch"
   },
   {
