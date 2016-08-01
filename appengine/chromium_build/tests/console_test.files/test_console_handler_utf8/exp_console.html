@@ -204,7 +204,7 @@
                 aView("http://build.chromium.org/p/chromium/../chromium.fyi", "", "experimental"),
                 a("http://build.chromium.org/p/chromium/waterfall?show_events=true&failures_only=true", "failures", ""),
                 aView("http://build.chromium.org/p/chromium/../chromium.memory", "", "memory"),
-                aView("http://build.chromium.org/p/chromium/../chromium.memory.fyi", "", "memory fyi"),
+                aView("http://build.chromium.org/p/chromium/../chromium.memory.full", "", "memory.full"),
                 aView("http://build.chromium.org/p/chromium/../chromium.chromiumos", "", "chromiumos chrome"),
                 aView("http://build.chromium.org/p/chromium/../chromiumos", "", "chromiumos team"),
                 aView("http://build.chromium.org/p/chromium/../client.nacl", "", "NaCl")].join(' | '));
@@ -224,7 +224,7 @@
             c.chromium_chromiumos = '';
             c.webkit = '';
             c.memory = '';
-            c.memory_fyi = '';
+            c.memory.full = '';
             c.perf = '';
             c.cros = '';
             c.chrome = '';
@@ -235,7 +235,7 @@
             c.status_cros = 'http://build.chromium.org/p/chromium/../chromium.chromiumos';
             c.status_webkit = 'http://build.chromium.org/p/chromium/../chromium.webkit';
             c.status_memory = 'http://build.chromium.org/p/chromium/../chromium.memory';
-            c.status_memory_fyi = 'http://build.chromium.org/p/chromium/../chromium.memory.fyi';
+            c.status_memory.full = 'http://build.chromium.org/p/chromium/../chromium.memory.full';
             c.status_chrome = 'http://build.chromium.org/p/chromium/../chromium.chrome';
             c.status_perf = 'http://build.chromium.org/p/chromium/../chromium.perf';
             c.status_lkgr = 'http://build.chromium.org/p/chromium/../chromium.lkgr';
@@ -253,7 +253,7 @@
             c.bar = BarUrl('chromium')
             c.bar_webkit = 'https://chromium-build.appspot.com/p/chromium.webkit/horizontal_one_box_per_builder?chromiumconsole';
             c.bar_memory = BarUrl('chromium.memory');
-            c.bar_memory_fyi = BarUrl('chromium.memory.fyi');
+            c.bar_memory.full = BarUrl('chromium.memory.full');
             c.bar_perf = BarUrl('chromium.perf');
             c.bar_chrome = BarUrl('chromium.chrome');
             c.bar_lkgr = BarUrl('chromium.lkgr');
@@ -394,7 +394,7 @@
                             'LKGR', 'width="10%"', 'id="LKGRLink"') +
                 HTMLBaseBar(c.status_pyauto, c.bar_pyauto, c.pyauto,
                            'PyAuto', 'width="15%"', '') +
-                HTMLBaseBar(c.status_memory_fyi, c.bar_memory_fyi, c.memory_fyi,
+                HTMLBaseBar(c.status_memory.full, c.bar_memory.full, c.memory.full,
                            'Memory<br>FYI', 'width="50%" colspan=5', '')));
 
             setTimeout('DisplayLKGR()', 100);

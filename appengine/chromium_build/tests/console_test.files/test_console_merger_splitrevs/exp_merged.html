@@ -515,7 +515,7 @@ document.addEventListener("DOMContentLoaded", SetupView, false);
                 a("../tryserver.blink/waterfall", "tryserver.blink", ""),
                 aView("../chromium.fyi", "", "chromium.fyi"),
                 aView("../chromium.memory", "", "chromium.memory"),
-                aView("../chromium.memory.fyi", "", "chromium.memory.fyi"),
+                aView("../chromium.memory.full", "", "chromium.memory.full"),
                 aView("../chromium.chromiumos", "", "chromium.chromiumos"),
                 aView("../chromiumos", "", "chromiumos"),
                 aView("../client.nacl", "", "client.nacl"),
@@ -553,7 +553,7 @@ document.addEventListener("DOMContentLoaded", SetupView, false);
             c.linux = '';
             c.chromium_chromiumos = '';
             c.memory = '';
-            c.memory_fyi = '';
+            c.memory.full = '';
             c.perf = '';
             c.cros = '';
             c.chrome = '';
@@ -567,7 +567,7 @@ document.addEventListener("DOMContentLoaded", SetupView, false);
             c.status_linux = '../chromium.linux';
             c.status_cros = '../chromium.chromiumos';
             c.status_memory = '../chromium.memory';
-            c.status_memory_fyi = '../chromium.memory.fyi';
+            c.status_memory.full = '../chromium.memory.full';
             c.status_chrome = '../chromium.chrome';
             c.status_perf = '../chromium.perf';
             c.status_lkgr = '../chromium.lkgr';
@@ -601,7 +601,7 @@ document.addEventListener("DOMContentLoaded", SetupView, false);
             c.bar_mac = BarUrl('chromium.mac');
             c.bar_linux = BarUrl('chromium.linux');
             c.bar_memory = BarUrl('chromium.memory');
-            c.bar_memory_fyi = BarUrl('chromium.memory.fyi');
+            c.bar_memory.full = BarUrl('chromium.memory.full');
             c.bar_perf = BarUrl('chromium.perf');
             c.bar_chrome = BarUrl('chromium.chrome');
             c.bar_lkgr = BarUrl('chromium.lkgr');
@@ -766,7 +766,7 @@ document.addEventListener("DOMContentLoaded", SetupView, false);
                             'LKGR', 'width="25%"', 'id="LKGRLink"')));
 
             document.write(tr(
-                HTMLBaseBar(c.status_memory_fyi, c.bar_memory_fyi, c.memory_fyi,
+                HTMLBaseBar(c.status_memory.full, c.bar_memory.full, c.memory.full,
                            'Memory<br>FYI', 'width="100%" colspan=6', '')));
 
             document.write(tr(

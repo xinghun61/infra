@@ -1052,8 +1052,8 @@ URLS = [
     'maxage': 15*60,  # 15 mins
   },
   {
-    'remoteurl': 'http://build.chromium.org/p/chromium.memory.fyi/default.css',
-    'localpath': 'chromium.memory.fyi/default.css',
+    'remoteurl': 'http://build.chromium.org/p/chromium.memory.full/default.css',
+    'localpath': 'chromium.memory.full/default.css',
     'maxage': 15*60,  # 15 mins
   },
   {
@@ -1243,9 +1243,9 @@ URLS = [
   },
   {
     'remoteurl':
-        ('http://build.chromium.org/p/chromium.memory.fyi/'
+        ('http://build.chromium.org/p/chromium.memory.full/'
          'horizontal_one_box_per_builder'),
-    'localpath': 'chromium.memory.fyi/horizontal_one_box_per_builder',
+    'localpath': 'chromium.memory.full/horizontal_one_box_per_builder',
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
   },
