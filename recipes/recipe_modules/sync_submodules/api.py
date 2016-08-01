@@ -28,6 +28,8 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
     checkout_dir = self.m.path['checkout'] = (
         self.m.path['cwd'].join(source_name))
 
+    self.m.file.makedirs('checkout', checkout_dir)
+
     # Populate the git cache, get the path to the mirror.
     git_cache = self.m.path['git_cache']
     self.m.git(
