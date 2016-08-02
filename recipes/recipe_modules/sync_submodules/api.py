@@ -12,6 +12,15 @@ visible to Codesearch.
 This commit does not exist in the underlying repository."""
 
 
+def Humanish(url):
+  if url.endswith('.git'):  # pragma: nocover
+    url = url[:-4]
+  slash = url.rfind('/')
+  if slash != -1:
+    url = url[slash + 1:]
+  return url
+
+
 # Work around some assertions in config_types.Path.__init__.
 class AbsolutePath(config_types.BasePath):
   def __init__(self, path):
@@ -76,6 +85,7 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
     self.m.step('deps2submodules', [
         'python',
         self.resource('deps2submodules.py'),
+        '--path-prefix', Humanish(source),
         'DEPS',
     ], cwd=checkout_dir)
 
