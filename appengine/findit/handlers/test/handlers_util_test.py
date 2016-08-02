@@ -571,7 +571,10 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
             'try_jobs': [
                 {
                     'try_job_key': 'm/b/119',
-                    'ref_name': 'step1'
+                    'ref_name': 'step1',
+                    'can_force': True,
+                    'status': result_status.NON_SWARMING_NO_RERUN,
+                    'tests': ['test1']
                 }
             ]
         }
@@ -645,6 +648,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
             ]
         }
     }
+
     self.assertEqual(expected_result, result)
 
   def testUpdateTryJobInfoBasedOnSwarmingAllFlaky(self):
@@ -952,7 +956,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     }
     WfTryJob.Create('m', 'b', '119').put()
     handlers_util._GetCulpritInfoForTryJobResultForTest(
-        try_job_key, culprits_info, False)
+        try_job_key, culprits_info)
 
     expected_culprits_info = {
         'step1 on platform': {
@@ -992,7 +996,7 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     ]
     try_job.put()
     handlers_util._GetCulpritInfoForTryJobResultForTest(
-        try_job_key, culprits_info, False)
+        try_job_key, culprits_info)
 
     expected_culprits_info = {
         'step1 on platform': {

@@ -192,8 +192,7 @@ def _OrganizeTryJobResultByCulprits(try_job_culprits):
   return organized_culprits
 
 
-def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info,
-                                          show_debug_info):
+def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info):
   referred_build_keys = try_job_key.split('/')
   try_job = WfTryJob.Get(*referred_build_keys)
 
@@ -208,13 +207,12 @@ def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info,
 
     for try_job_info in step_try_jobs['try_jobs']:
       if (try_job_key != try_job_info['try_job_key']
-          or (try_job_info.get('status') and not show_debug_info)):
+          or try_job_info.get('status')):
         # Conditions that try_job_info has status are:
         # If there is no swarming task, there won't be try job;
         # If the swarming task is not completed yet, there won't be try job yet;
         # If there are flaky tests found, those tests will be marked as flaky,
         # and no try job for them will be triggered.
-        # If a try job was force triggered by an admin.
         continue
 
       try_job_info['status'] = try_job.status
@@ -307,41 +305,49 @@ def _UpdateTryJobInfoBasedOnSwarming(step_tasks_info, try_jobs,
     try_job_key = try_job['try_job_key']
     task = step_tasks_info.get('swarming_tasks', {}).get(try_job_key)
 
-    if (task['task_info']['status'] != analysis_status.COMPLETED and
-        not show_debug_info):
+    if task['task_info'].get('task_id'):
+      try_job['task_id'] = task['task_info']['task_id']
+      try_job['task_url'] = task['task_info']['task_url']
+
+    if (task['task_info']['status'] != analysis_status.COMPLETED):
       # There is someting wrong with swarming task or it's not done yet,
       # no try job yet or ever.
       try_job['status'] = result_status.NO_TRY_JOB_REASON_MAP[
           task['task_info']['status']]
       try_job['tests'] = task.get('all_tests', [])
-    else:
-      # Swarming task is completed or a manual try job rerun was triggered.
-      # Group tests according to task result.
-      if task.get('ref_name'):
-        try_job['ref_name'] = task['ref_name']
+
+      if not show_debug_info:  
+        continue
       else:
-        # A try job was forced for a non-swarming step.
-        if show_debug_info:  # pragma: no branch
-          try_job['ref_name'] = step_name.split()[0]
+        # TODO(lijeffrey): This is a hack to prevent unclassified failures
+        # from showing up as reliable in debug view . As part of the refactoring
+        # work categorizing failures and adding the ability to force trigger try
+        # jobs independently should be considered.
+        try_job['can_force'] = True
+    
+    # Swarming task is completed or a manual try job rerun was triggered.
+    # Group tests according to task result.
+    if task.get('ref_name'):
+      try_job['ref_name'] = task['ref_name']
+    else:
+      # A try job was forced for a non-swarming step.
+      if show_debug_info:  # pragma: no branch
+        try_job['ref_name'] = step_name.split()[0]
 
-      if task.get('reliable_tests'):
-        try_job['tests'] = task['reliable_tests']
-        if task.get('flaky_tests'):
-          # Split this try job into two groups: flaky group and reliable group.
-          flaky_try_job = copy.deepcopy(try_job)
-          flaky_try_job['status'] = result_status.FLAKY
-          flaky_try_job['tests'] = task['flaky_tests']
-          flaky_try_job['task_id'] = task['task_info']['task_id']
-          flaky_try_job['task_url'] = task['task_info']['task_url']
-          additional_flakiness_list.append(flaky_try_job)
-      elif task.get('flaky_tests'):  # pragma: no cover
-        # All Flaky.
-        try_job['status'] = result_status.FLAKY
-        try_job['tests'] = task['flaky_tests']
-
-    if task['task_info'].get('task_id'):
-      try_job['task_id'] = task['task_info']['task_id']
-      try_job['task_url'] = task['task_info']['task_url']
+    if task.get('reliable_tests'):
+      try_job['tests'] = task['reliable_tests']
+      if task.get('flaky_tests'):
+        # Split this try job into two groups: flaky group and reliable group.
+        flaky_try_job = copy.deepcopy(try_job)
+        flaky_try_job['status'] = result_status.FLAKY
+        flaky_try_job['tests'] = task['flaky_tests']
+        flaky_try_job['task_id'] = task['task_info']['task_id']
+        flaky_try_job['task_url'] = task['task_info']['task_url']
+        additional_flakiness_list.append(flaky_try_job)
+    elif task.get('flaky_tests'):  # pragma: no cover
+      # All Flaky.
+      try_job['status'] = result_status.FLAKY
+      try_job['tests'] = task['flaky_tests']
 
   try_jobs.extend(additional_flakiness_list)
 
@@ -349,6 +355,7 @@ def _UpdateTryJobInfoBasedOnSwarming(step_tasks_info, try_jobs,
 def _GetAllTryJobResultsForTest(failure_result_map, tasks_info,
                                 show_debug_info=False):
   culprits_info = defaultdict(lambda: defaultdict(list))
+
   if not tasks_info:
     return culprits_info
 
@@ -383,8 +390,8 @@ def _GetAllTryJobResultsForTest(failure_result_map, tasks_info,
                                      step_name)
 
   for try_job_key in try_job_keys:
-    _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info,
-                                          show_debug_info)
+    _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info)
+
   return culprits_info
 
 

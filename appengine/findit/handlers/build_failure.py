@@ -253,7 +253,7 @@ def _GetAnalysisResultWithTryJobInfo(show_debug_info, organized_results,
 
       if (('status' not in try_job_result or
            try_job_result['status'] in NO_TRY_JOB_REASON_MAP.values()) or
-          show_debug_info):
+          try_job_result.get('can_force')):
         # There is no try job info but only heuristic result.
         try_job_result['status'] = try_job_result.get(
             'status', result_status.UNKNOWN)
@@ -361,7 +361,6 @@ class BuildFailure(BaseHandler):
         show_debug_info, organized_results, *build_info)
 
     data['analysis_result'] = analysis_result
-
     return data
 
   def HandleGet(self):
