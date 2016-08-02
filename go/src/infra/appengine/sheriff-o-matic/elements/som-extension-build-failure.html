@@ -53,12 +53,9 @@
      .builder a:hover {
        text-decoration: underline;
      }
-     #builders {
-       margin: .5em 0;
-     }
-     #reasons {
-       margin: .5em auto;
-     }
+     #builders,
+     #findit-results,
+     #reasons,
      #regression-ranges {
        margin: .5em auto;
      }
@@ -107,14 +104,16 @@
       </div>
       <div id="suspected-cls">
         <template is="dom-if" if="[[_haveSuspectCLs(extension)]]">
-          <strong class="suspect-cl-results">
-            Findit found results:
-          </strong>
-          <template is="dom-repeat" items="[[extension.suspected_cls]]" as="cl">
-            <a target="_blank" href$=[[_linkForCL(cl)]]>
-              [[_textForCL(cl)]]
-            </a>
-          </template>
+          <div id="findit-results">
+            <strong class="suspect-cl-results">
+              Findit found results:
+            </strong>
+            <template is="dom-repeat" items="[[extension.suspected_cls]]" as="cl">
+              <a target="_blank" href$=[[_linkForCL(cl)]]>
+                [[_textForCL(cl)]]
+              </a>
+            </template>
+          </div>
         </template>
       </div>
     </div>
