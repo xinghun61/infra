@@ -85,7 +85,7 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
     self.m.step('deps2submodules', [
         'python',
         self.resource('deps2submodules.py'),
-        '--path-prefix', Humanish(source),
+        '--path-prefix', '%s/' % Humanish(source),
         'DEPS',
     ], cwd=checkout_dir)
 

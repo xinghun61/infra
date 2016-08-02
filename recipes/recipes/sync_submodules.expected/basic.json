@@ -152,7 +152,7 @@
       "python",
       "RECIPE_MODULE[infra::sync_submodules]/resources/deps2submodules.py",
       "--path-prefix",
-      "src",
+      "src/",
       "DEPS"
     ],
     "cwd": "[HACK]/foo_builder",
