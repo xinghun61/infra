@@ -19,12 +19,6 @@ class EventMonUploader(webapp2.RequestHandler):
   num_test_results = ts_mon.CounterMetric(
       'test_results/num_test_results',
       description='Number of reported test results')
-  num_tests = ts_mon.CounterMetric(
-      'test_results/num_tests',
-      description='Number of tests in the test results')
-  num_characters = ts_mon.CounterMetric(
-      'test_results/num_characters',
-      description='Sum of all characters in all test names')
 
   def post(self):
     # Retrieve test json from datastore based on task parameters.
@@ -66,6 +60,9 @@ class EventMonUploader(webapp2.RequestHandler):
           float(file_json['seconds_since_epoch']) * 1000 * 1000)
 
     def convert_test_result_type(json_val):
+      self.num_test_results.increment({
+          'result_type': json_val, 'master': master, 'builder': builder,
+          'test_type': test_type})
       try:
         return (event_mon.protos.chrome_infra_log_pb2.TestResultsEvent.
                 TestResultType.Value(json_val.upper().replace('+', '_')))
