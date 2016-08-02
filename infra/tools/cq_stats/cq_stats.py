@@ -1103,7 +1103,7 @@ def print_flakiness_stats(args, stats):  # pragma: no cover
                       try_job_stats[master_builder]['total'])
 
   builders = sorted(try_job_stats.iterkeys(), key=flakiness, reverse=True)
-  format_string = '%-20s %-55s %-18s|%-7s|%-7s|%-7s|%-7s|%-7s|%-7s'
+  format_string = '%-30s %-55s %-18s|%-7s|%-7s|%-7s|%-7s|%-7s|%-7s'
   output(format_string,
          'Master', 'Builder', 'Flakes',
          'Infra', 'Compile', 'Test', 'Invalid', 'Patch', 'Other')
