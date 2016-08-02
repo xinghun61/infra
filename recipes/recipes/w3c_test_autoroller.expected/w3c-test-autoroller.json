@@ -140,7 +140,9 @@
       "-u",
       "[SLAVE_BUILD]/src/third_party/WebKit/Tools/Scripts/update-w3c-deps",
       "--auto-update",
-      "wpt"
+      "wpt",
+      "--auth-refresh-token-json",
+      "/creds/refresh_tokens/blink-w3c-test-autoroller"
     ],
     "cwd": "[SLAVE_BUILD]/src/third_party/WebKit",
     "name": "update wpt"
@@ -151,7 +153,9 @@
       "-u",
       "[SLAVE_BUILD]/src/third_party/WebKit/Tools/Scripts/update-w3c-deps",
       "--auto-update",
-      "css"
+      "css",
+      "--auth-refresh-token-json",
+      "/creds/refresh_tokens/blink-w3c-test-autoroller"
     ],
     "cwd": "[SLAVE_BUILD]/src/third_party/WebKit",
     "name": "update wpt (2)"

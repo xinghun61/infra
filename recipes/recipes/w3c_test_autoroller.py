@@ -19,6 +19,7 @@ DEPS = [
 
 
 def RunSteps(api):
+    RIETVELD_REFRESH_TOKEN = '/creds/refresh_tokens/blink-w3c-test-autoroller'
     api.gclient.set_config('chromium')
     api.bot_update.ensure_checkout(force=True)
 
@@ -30,12 +31,14 @@ def RunSteps(api):
 
     api.python('update wpt',
                cwd.join('Tools', 'Scripts', 'update-w3c-deps'),
-               ['--auto-update', 'wpt'],
+               ['--auto-update', 'wpt',
+                '--auth-refresh-token-json', RIETVELD_REFRESH_TOKEN],
                cwd=cwd)
 
     api.python('update wpt',
                cwd.join('Tools', 'Scripts', 'update-w3c-deps'),
-               ['--auto-update', 'css'],
+               ['--auto-update', 'css',
+                '--auth-refresh-token-json', RIETVELD_REFRESH_TOKEN],
                cwd=cwd)
 
 
