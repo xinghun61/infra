@@ -33,10 +33,10 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
     # 'builder_cache' path, but it's not clear where that's defined.  The
     # infra_paths module mentions it, but I can't figure out where it's
     # instantiated or how it's used.
-    # For now, hardcode an absolute path of '/b/build/slave/'.
+    # For now, hardcode an absolute path of '/b/build/slave/cache_dir/'.
     sanitized_buildername = ''.join(
         c if c.isalnum() else '_' for c in self.m.properties['buildername'])
-    checkout_dir = config_types.Path(AbsolutePath('/b/build/slave/'),
+    checkout_dir = config_types.Path(AbsolutePath('/b/build/slave/cache_dir/'),
                                      sanitized_buildername)
     self.m.file.makedirs('checkout', checkout_dir)
     self.m.path['checkout'] = checkout_dir
