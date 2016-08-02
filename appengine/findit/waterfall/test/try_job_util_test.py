@@ -249,30 +249,36 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         '0', '1'], ['1', '2']))
     self.assertTrue(try_job_util._BlameListsIntersection(['1'], ['1', '2']))
 
-  def testGetFailedSteps(self):
+  def testGetFailedStepsAndTests(self):
     failed_steps = {
+        'step_c': {},
         'step_a': {
             'tests': {
-                'Test1': {}
+                'test_c': {},
+                'test_b': {},
+                'test_a': {}
             },
         },
         'step_b': {}
     }
 
-    expected_result = {
-        'step_a': ['Test1'],
-        'step_b': []
-    }
+    expected_result = [
+        ['step_a', 'test_a'],
+        ['step_a', 'test_b'],
+        ['step_a', 'test_c'],
+        ['step_b', None],
+        ['step_c', None]
+    ]
 
     self.assertEqual(
         expected_result,
         try_job_util._GetStepsAndTests(failed_steps))
 
   def testFailedStepsAbsent(self):
-    self.assertEqual({}, try_job_util._GetStepsAndTests(None))
+    self.assertEqual([], try_job_util._GetStepsAndTests(None))
 
   def testNoFailedSteps(self):
-    self.assertEqual({}, try_job_util._GetStepsAndTests({}))
+    self.assertEqual([], try_job_util._GetStepsAndTests({}))
 
   def testLinkAnalysisToBuildFailureGroup(self):
     master_name = 'm1'

@@ -38,8 +38,25 @@ class WfFailureGroup(BaseBuildModel):
   # Only not None if this group represents a compile failure.
   output_nodes = ndb.JsonProperty(indexed=True)
 
-  # The failed steps and tests of a test failure (from failed_steps).
+  # A sorted list of lists of the failed steps and tests of a test failure.
   # Only not None if this group represents a test failure.
+  # Example:
+  # [
+  #     ['step_a', 'test1'],
+  #     ['step_a', 'test2'],
+  #     ['step_b', None]
+  # ]
+  # ndb.JsonProperty uses json.dumps() without sort_keys=True, which causes
+  # dicts that are identical except for their internal key order to have
+  # different JSON representations. So, for the failed_steps_and_tests JSON
+  # property, a list is used instead of a dict (json.dumps() preserves the order
+  # of list elements). This enables a WfFailureGroup query based on equivalent
+  # failed_steps_and_tests to return all of the matching results, instead of
+  # missing some results. Missing results is a possibility if
+  # failed_steps_and_tests used a dict, and the keys of the original dict (that
+  # went to the database) were JSONified to string in a different order than the
+  # keys of the dict used in the query. For example:
+  # '{"step_a": [], "step_y": []}' versus '{"step_y": [], "step_a": []}'.
   failed_steps_and_tests = ndb.JsonProperty(indexed=True)
 
   # The sorted list of suspected tuples, if available, from heuristic analysis.

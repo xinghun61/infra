@@ -94,12 +94,12 @@ def _GetStepsAndTests(failed_steps):
         'step_a': {
             'last_pass': 4,
             'tests': {
-                'Test1': {
+                'test1': {
                     'last_pass': 4,
                     'current_failure': 6,
                     'first_failure': 5
                 },
-                'Test2': {
+                'test2': {
                     'last_pass': 4,
                     'current_failure': 6,
                     'first_failure': 5
@@ -123,25 +123,25 @@ def _GetStepsAndTests(failed_steps):
     }
 
   Returns:
-    failed_steps_and_tests: Simplified dict that contains step and test names.
+    failed_steps_and_tests: Sorted list of lists of step and test names.
     Example:
-    {
-        'step_a': ['Test1', 'Test2'],
-        'step_b': []
-    }
+    [
+        ['step_a', 'test1'],
+        ['step_a', 'test2'],
+        ['step_b', None]
+    ]
   """
 
-  failed_steps_and_tests = {}
+  failed_steps_and_tests = []
 
   if not failed_steps:
     return failed_steps_and_tests
 
-  for failed_step_name, failed_step in failed_steps.iteritems():
-    failed_steps_and_tests[failed_step_name] = []
-    for test_name in failed_step.get('tests', {}):
-      failed_steps_and_tests[failed_step_name].append(test_name)
+  for step_name, step in failed_steps.iteritems():
+    for test_name in step.get('tests', [None]):
+      failed_steps_and_tests.append([step_name, test_name])
 
-  return failed_steps_and_tests
+  return sorted(failed_steps_and_tests)
 
 
 def GetSuspectedCLsWithFailures(heuristic_result):
