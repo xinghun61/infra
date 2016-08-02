@@ -19,14 +19,22 @@ class CheckFlake(BaseHandler):
     master_name = self.request.get('master_name').strip()
     builder_name = self.request.get('builder_name').strip()
     build_number = int(self.request.get('build_number').strip())
-    step_name = self.request.get('test_target_name').strip()
+    step_name = self.request.get('step_name').strip()
     test_name = self.request.get('test_name').strip()
     force = (users.is_current_user_admin() and
              self.request.get('force') == '1')
 
-    ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, step_name,
-                             test_name, force=force,
-                             queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
+    master_flake_analysis = ScheduleAnalysisIfNeeded(
+        master_name, builder_name, build_number, step_name,
+        test_name, force=force, queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
+    data = {
+        'success_rates':[]
+    }
+    for (build_number, success_rate) in zip(
+        master_flake_analysis.build_numbers,
+        master_flake_analysis.success_rates):
+      data['success_rates'].append([build_number, success_rate])
     return {
-        'template': 'flake/result.html'
+        'template': 'flake/result.html',
+        'data': data
     }

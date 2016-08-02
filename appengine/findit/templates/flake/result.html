@@ -1,8 +1,60 @@
 <!DOCTYPE html>
 <head>
-  <title>Find Regression Range</title>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
+  <title> Find Regression Range</title>
+  <style type="text/css">
+    body {
+      font-family: Verdana, Arial, sans-serif;
+      font-size: 12px;
+    }
+    #placeholder {
+      width: 450px; 
+      height: 200px;
+    }
+    table {
+      text-align: center;
+    }
+  </style>
+  <script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+  <script type="text/javascript" language="javascript" src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.2/jquery.flot.min.js"></script>
+  <script type="text/javascript">
+    $(document).ready(function () {
+    $.plot($("#placeholder"), [{{success_rates}}],
+    {
+      grid: {
+        hoverable: true,
+        borderWidth: 1
+      },
+      legend: {
+        labelBoxBorderColor: "none",
+        position: "right"
+      }
+    }
+    )});
+  </script>
 </head>
+
 <body>
-  <p>  Your job has been submitted. </p>
+  <table>
+    <tr>
+      <td></td>
+      <td>
+        <h1>Regression range of Test</h1>
+      </td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Pass Rate</td>
+      <td>
+        <div id="placeholder"></div>
+      </td>
+      <td></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>Build Number</td>
+      <td></td>
+    </tr>
+  </table>
 </body>
+</html>

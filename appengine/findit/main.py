@@ -30,6 +30,7 @@ from handlers.crash import fracas_dashboard
 from handlers.crash import fracas_result_feedback
 from handlers.crash import triage_fracas_analysis 
 from handlers.flake import check_flake
+from handlers.flake import flake_dashboard
 
 # Default module.
 default_web_pages_handler_mappings = [
@@ -69,6 +70,7 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/waterfall/config', config.Configuration),
     ('/waterfall/culprit', culprit.Culprit),
     ('/waterfall/failure-log', failure_log.FailureLog),
+    ('/waterfall/flake-dashboard', flake_dashboard.FlakeDashboard),
     ('/waterfall/help-triage', help_triage.HelpTriage),
     ('/waterfall/list-analyses', list_analyses.ListAnalyses),
     ('/waterfall/monitor-alerts', monitor_alerts.MonitorAlerts),

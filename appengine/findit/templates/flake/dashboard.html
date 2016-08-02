@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<head>
+  <title>Flake Dashboard</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/common.css">
+</head>
+<body>
+<h1> Flake Dashboard </h1>
+<table>
+<tr>
+        <th>Master Name</th>
+        <th>Builder Name</th>
+        <th>Build Number</th>
+        <th>Step Name</th>
+        <th>Test Name</th>
+        <th>Graph</th>
+</tr>
+<tbody>
+{% for master_flake_analysis in master_flake_analyses %}
+<tr>
+<td>  {{master_flake_analysis.master_name}} </td>
+<td>  {{master_flake_analysis.builder_name}}</td>
+<td>  {{master_flake_analysis.build_number}}</td>
+<td>  {{master_flake_analysis.step_name}}</td>
+<td>  {{master_flake_analysis.test_name}}</td>
+
+<td>
+<form method="get" action="/waterfall/check-flake">
+ <input type="hidden" name="master_name" value="{{master_flake_analysis.master_name}}">
+ <input type="hidden" name="builder_name" value="{{master_flake_analysis.builder_name}}">
+ <input type="hidden" name="build_number" value="{{master_flake_analysis.build_number}}">
+ <input type="hidden" name="step_name" value="{{master_flake_analysis.step_name}}">
+ <input type="hidden" name="test_name" value="{{master_flake_analysis.test_name}}">
+<input type="submit" value="View">
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</body>
