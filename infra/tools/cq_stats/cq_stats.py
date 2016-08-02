@@ -720,20 +720,6 @@ def derive_patch_stats(args, begin_date, end_date,
         state = 'start'
         attempt['begin'] = result['timestamp']
 
-        files = result['fields'].get('files')
-        if args.path_filter_include:
-          if not files:
-            attempt['supported'] = False
-          elif not any(matches_path_filter(p, args.path_filter_include)
-                       for p in files):
-            attempt['supported'] = False
-        if args.path_filter_exclude:
-          if not files:
-            attempt['supported'] = False
-          elif any(matches_path_filter(p, args.path_filter_exclude)
-                   for p in files):
-            attempt['supported'] = False
-
     if state != 'start':
       continue
     attempt['actions'].append(result)
@@ -743,6 +729,21 @@ def derive_patch_stats(args, begin_date, end_date,
       add_attempt(attempt, attempt_counter)
       attempt = new_attempt()
       state = 'stop'
+
+      files = result['fields'].get('files')
+      if args.path_filter_include:
+        if not files:
+          attempt['supported'] = False
+        elif not any(matches_path_filter(p, args.path_filter_include)
+                     for p in files):
+          attempt['supported'] = False
+      if args.path_filter_exclude:
+        if not files:
+          attempt['supported'] = False
+        elif any(matches_path_filter(p, args.path_filter_exclude)
+                 for p in files):
+          attempt['supported'] = False
+
       # TODO(sergeyberezin): DEPRECATE this entire message parsing branch.
       if args.use_message_parsing:  # pragma: no branch
         message = result['fields'].get('message', '')
