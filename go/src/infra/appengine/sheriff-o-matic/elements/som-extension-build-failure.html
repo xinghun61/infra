@@ -161,7 +161,7 @@
       },
 
       _haveSuspectCLs: function(extension) {
-        return !!extension.suspected_cls;
+        return extension && extension.suspected_cls;
       },
 
       _linkForTest: function(reason, testName) {
