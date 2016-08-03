@@ -318,15 +318,18 @@ def _NeedANewTryJob(
             'step', master_name, builder_name, build_number, failure_result_map,
             failed_steps))
 
-  # TODO(josiahk): Integrate this into need_new_try_job boolean
-  _IsBuildFailureUniqueAcrossPlatforms(
-      master_name, builder_name, build_number, build_failure_type,
-      builds[str(build_number)]['blame_list'], failed_steps, signals,
-      heuristic_result)
 
   need_new_try_job = (
       need_new_try_job and ReviveOrCreateTryJobEntity(
           master_name, builder_name, build_number, force_try_job))
+
+  # TODO(josiahk): Integrate _IsBuildFailureUniqueAcrossPlatforms() into
+  # need_new_try_job boolean
+  if need_new_try_job:
+    _IsBuildFailureUniqueAcrossPlatforms(
+        master_name, builder_name, build_number, build_failure_type,
+        builds[str(build_number)]['blame_list'], failed_steps, signals,
+        heuristic_result)
 
   return need_new_try_job, last_pass, try_job_type, targeted_tests
 
