@@ -50,6 +50,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
     cfg = Swarming(
       common_swarming_tags=['wrong'],
       common_dimensions=[''],
+      task_template_canary_percentage=102,
       builders=[
         Swarming.Builder(
           swarming_tags=['wrong2'],
@@ -72,7 +73,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
               'z',
             ]
           ),
-          priority=-1,
+          priority=300,
         ),
       ],
     )
@@ -80,6 +81,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
       'hostname unspecified',
       'common tag #1: does not have ":": wrong',
       'common dimension #1: does not have ":"',
+      'task_template_canary_percentage must must be in [0, 100]',
       'builder #1: name unspecified',
       'builder #1: tag #1: does not have ":": wrong2',
       'builder #1: dimension #1: no key',
@@ -101,7 +103,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
       'builder b2: recipe: properties_j #1: duplicate property "x"',
       'builder b2: recipe: properties_j #2: No JSON object could be decoded',
       'builder b2: recipe: properties_j #3: does not have colon',
-      'builder b2: priority must be in [0, 200] range; got -1',
+      'builder b2: priority must be in [0, 200] range; got 300',
     ])
 
   def test_common_recipe(self):

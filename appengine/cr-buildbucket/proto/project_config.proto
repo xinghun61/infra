@@ -68,10 +68,10 @@ message Swarming {
     // Specifies that a recipe to run.
     optional Recipe recipe = 4;
     // Swarming task priority.
-    optional int32 priority = 5;
+    optional uint32 priority = 5;
     // Maximum build execution time. Not to be confused with pending time.
     // If not set, defaults to bucket's common_execution_timeout_secs.
-    optional int32 execution_timeout_secs = 7;
+    optional uint32 execution_timeout_secs = 7;
   }
 
   // Hostname of the swarming instance, e.g. "chromium-swarm.appspot.com".
@@ -101,7 +101,11 @@ message Swarming {
 
   // Maximum build execution time. Not to be confused with pending time.
   // If not set, defaults to server defaults.
-  optional int32 common_execution_timeout_secs = 7;
+  optional uint32 common_execution_timeout_secs = 7;
+
+  // Percentage of builds that should use a canary swarming task template.
+  // A value from 0 to 100.
+  optional uint32 task_template_canary_percentage = 8;
 }
 
 // Defines one bucket in buildbucket.cfg

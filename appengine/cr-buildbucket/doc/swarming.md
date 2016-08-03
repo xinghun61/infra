@@ -41,6 +41,17 @@ They will be expanded during task scheduling. Known parameters:
 
 Example: [swarming_task_template.json].
 
+
+#### Canary
+
+If luci-config file
+`services/\<buildbucket-app-id\>:swarming_task_template_canary.json` exists
+then it is used as a task template in a fraction of builds specified by bucket
+task_template_canary_percentage config value. The decision to use or not to use
+the canary template for a build is deterministic.
+
+See also "canary_template" build parameter.
+
 ### Bucket level
 
 A bucket entry in buildbucket config may have `swarming` key, for example:
@@ -87,6 +98,11 @@ optional properties:
 
 * `"recipe"`: specifies a recipe to run, an object with optional properties:
   * `"revision"`: recipe revision
+* `"canary_template"`: specifies whether canary task template must be used:
+  * `true`: use the canary template. If not found, respond with an error.
+  * `false`: do not use canary template.
+  * `null` (default): use canary template with some low probability if it
+    exists.
   
 ## Tags
 

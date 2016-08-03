@@ -110,7 +110,7 @@ def validate_builder_cfg(
     with ctx.prefix('recipe: '):
       validate_recipe_cfg(builder.recipe, common_recipe, ctx)
 
-  if builder.priority < 0 or builder.priority > 200:
+  if builder.priority > 200:
     ctx.error('priority must be in [0, 200] range; got %d', builder.priority)
 
 
@@ -123,6 +123,10 @@ def validate_cfg(swarming, ctx):
 
   validate_dimensions('common dimension', swarming.common_dimensions, ctx)
   has_pool_dim = has_pool_dimension(swarming.common_dimensions)
+
+  if swarming.task_template_canary_percentage > 100:
+    ctx.error('task_template_canary_percentage must must be in [0, 100]')
+
   common_recipe = None
   if swarming.HasField('common_recipe'):
     common_recipe = swarming.common_recipe

@@ -28,6 +28,7 @@ that checks task results of all incomplete builds every 10 min.
 import base64
 import copy
 import datetime
+import hashlib
 import json
 import logging
 import string
@@ -60,17 +61,45 @@ DEFAULT_URL_FORMAT = 'https://{swarming_hostname}/user/task/{task_id}'
 # Creation/cancellation of tasks.
 
 
+class CanaryTemplateNotFound(Exception):
+  """Raised when canary template is explicitly requested, but not found."""
+
+
 @ndb.tasklet
-def get_task_template_async():
-  """Returns a task template (dict) if it exists, otherwise None.
+def get_task_template_async(canary, canary_required=True):
+  """Gets a tuple (template_dict, canary_bool).
 
-  A template may contain $parameters that must be expanded using format_obj().
+  Args:
+    canary (bool): specifies a whether canary template should be returned.
+    canary_required (bool): controls the behavior if |canary| is True and
+      the canary template is not found. If False use the non-canary template,
+      otherwise raise CanaryTemplateNotFound.
+      Ignored if canary is False.
 
-  It is stored in luci-config, services/<appid>:swarming_task_template.json.
+  Returns:
+    Tuple (template, canary):
+      template (dict): parsed template, or None if not found.
+        May contain $parameters that must be expanded using format_obj().
+      canary (bool): True if the returned template is a canary template.
   """
-  _, text = yield component_config.get_self_config_async(
-    'swarming_task_template.json', store_last_good=True)
-  raise ndb.Return(json.loads(text) if text else None)
+  text = None
+  if canary:
+    logging.warning('using canary swarming task template')
+    _, text = yield component_config.get_self_config_async(
+        'swarming_task_template_canary.json', store_last_good=True)
+    canary = bool(text)
+    if not text:
+      if canary_required:
+        raise CanaryTemplateNotFound(
+            'canary swarming task template is requested, '
+            'but the canary template is not found')
+      logging.warning(
+          'canary swarming task template is not found. using the default one')
+
+  if not text:
+    _, text = yield component_config.get_self_config_async(
+      'swarming_task_template.json', store_last_good=True)
+  raise ndb.Return(json.loads(text) if text else None, canary)
 
 
 @utils.memcache_async(
@@ -90,7 +119,7 @@ def _is_for_swarming_async(bucket_name, builder_name):
 def is_for_swarming_async(build):
   """Returns True if |build|'s bucket and builder are designed for swarming."""
   result = False
-  task_template = yield get_task_template_async()
+  task_template, _ = yield get_task_template_async(False)
   if task_template and isinstance(build.parameters, dict):  # pragma: no branch
     builder = build.parameters.get(BUILDER_PARAMETER)
     if builder:  # pragma: no branch
@@ -100,18 +129,21 @@ def is_for_swarming_async(build):
 
 def validate_build_parameters(builder_name, params):
   """Raises errors.InvalidInputError if build parameters are invalid."""
+  params = copy.deepcopy(params)
 
   def bad(fmt, *args):
     raise errors.InvalidInputError(fmt % args)
 
-  properties = params.get(PARAM_PROPERTIES)
+  params.pop(BUILDER_PARAMETER)  # already validated
+
+  properties = params.pop(PARAM_PROPERTIES, None)
   if properties is not None:
     if not isinstance(properties, dict):
       bad('properties parameter must be an object')
     if properties.get('buildername', builder_name) != builder_name:
       bad('inconsistent builder name')
 
-  swarming = params.get(PARAM_SWARMING)
+  swarming = params.pop(PARAM_SWARMING, None)
   if swarming is not None:
     if not isinstance(swarming, dict):
       bad('swarming parameter must be an object')
@@ -126,11 +158,13 @@ def validate_build_parameters(builder_name, params):
           bad('swarming.recipe.revision parameter must be a string')
       if recipe:
         bad('unrecognized keys in swarming.recipe: %r', recipe)
-
+    canary_template = swarming.pop('canary_template', None)
+    if canary_template not in (True, False, None):
+      bad('swarming.canary_template parameter must true, false or null')
     if swarming:
-      bad('unrecognized keys: %r', swarming)
+      bad('unrecognized keys in swarming param: %r', swarming.keys())
 
-  changes = params.get(PARAM_CHANGES)
+  changes = params.pop(PARAM_CHANGES, None)
   if changes is not None:
     if not isinstance(changes, list):
       bad('changes param must be an array')
@@ -148,6 +182,9 @@ def validate_build_parameters(builder_name, params):
         bad('change author email must be a string')
       if not email:
         bad('change author email not specified')
+
+  if params:
+    bad('unrecognized params: %r', params.keys())
 
 
 def read_properties(recipe):
@@ -172,6 +209,21 @@ def merge_recipe(r1, r2):
   return recipe, props
 
 
+def should_use_canary_template(build, percentage):  # pragma: no cover
+  """Returns True if a canary template should be used for the |build|.
+
+  This function is determinstic.
+  """
+  if percentage == 0:
+    return False
+  identity = {
+    'bucket': build.bucket,
+    'parametres': build.parameters,
+  }
+  digest = hashlib.sha1(json.dumps(identity, sort_keys=True)).digest()
+  return digest[0] < 256 * percentage / 100
+
+
 @ndb.tasklet
 def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
   """Creates a swarming task definition for the |build|.
@@ -187,8 +239,19 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
   validate_build_parameters(builder_cfg.name, params)
   swarming_param = params.get(PARAM_SWARMING) or {}
 
+  # Use canary template?
+  canary = swarming_param.get('canary_template')
+  canary_required = bool(canary)
+  if canary is None:
+    canary = should_use_canary_template(
+        build, swarming_cfg.task_template_canary_percentage)
+
   # Render task template.
-  task_template = yield get_task_template_async()
+  try:
+    task_template, canary = yield get_task_template_async(
+        canary, canary_required)
+  except CanaryTemplateNotFound as ex:
+    raise errors.InvalidInputError(ex.message)
   task_template_params = {
     'bucket': build.bucket,
     'builder': builder_cfg.name,
@@ -248,6 +311,7 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
   _extend_unique(swarming_tags, [
     'buildbucket_hostname:%s' % app_identity.get_default_version_hostname(),
     'buildbucket_bucket:%s' % build.bucket,
+    'buildbucket_template_canary:%s' % str(canary).lower(),
   ])
   if is_recipe:  # pragma: no branch
     _extend_unique(swarming_tags, [

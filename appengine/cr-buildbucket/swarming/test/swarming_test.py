@@ -63,7 +63,7 @@ class SwarmingTest(testing.AppengineTestCase):
         config, 'get_bucket_async',
         lambda name: futuristic(('chromium', self.bucket_cfg)))
 
-    task_template = {
+    self.task_template = {
       'name': 'buildbucket-$bucket-$builder',
       'priority': '100',
       'expiration_secs': '3600',
@@ -85,9 +85,26 @@ class SwarmingTest(testing.AppengineTestCase):
       },
       'numerical_value_for_coverage_in_format_obj': 42,
     }
+    self.task_template_canary = self.task_template.copy()
+    self.task_template_canary['name'] += '-canary'
+
+    def get_self_config_async(path, *_args, **_kwargs):
+      if path not in ('swarming_task_template.json',
+                      'swarming_task_template_canary.json'):  # pragma: no cover
+        self.fail()
+
+      template = None
+      if path == 'swarming_task_template.json':
+        template = self.task_template
+      else:
+        template = self.task_template_canary
+      return futuristic((
+          None,
+          json.dumps(template) if template is not None else None
+      ))
+
     self.mock(config_component, 'get_self_config_async', mock.Mock())
-    config_component.get_self_config_async.return_value = (
-      futuristic((None, json.dumps(task_template))))
+    config_component.get_self_config_async.side_effect = get_self_config_async
 
     self.mock(auth, 'delegate_async', mock.Mock())
     auth.delegate_async.return_value = futuristic('blah')
@@ -109,11 +126,10 @@ class SwarmingTest(testing.AppengineTestCase):
     )
     self.assertTrue(swarming.is_for_swarming_async(build).get_result())
 
-    config_component.get_self_config_async.return_value = futuristic(
-      (None, None))
+    self.task_template = None
     self.assertFalse(swarming.is_for_swarming_async(build).get_result())
 
-  def test_build_parameters(self):
+  def test_validate_build_parameters(self):
     bad = [
       {'properties': []},
       {'properties': {'buildername': 'bar'}},
@@ -124,30 +140,18 @@ class SwarmingTest(testing.AppengineTestCase):
       {'changes': [{'author': {'email': 0}}]},
       {'changes': [{'author': {'email': ''}}]},
       {'changes': [{'author': {'email': 'a@example.com'}, 'repo_url': 0}]},
+      {'bad key': 1},
+      {'swarming': []},
+      {'swarming': {'junk': 1}},
+      {'swarming': {'recipe': []}},
+      {'swarming': {'recipe': {'junk': 1}}},
+      {'swarming': {'recipe': {'revision': 1}}},
+      {'swarming': {'canary_template': 'yes'}},
     ]
     for p in bad:
+      p['builder_name'] = 'foo'
       with self.assertRaises(errors.InvalidInputError):
-        swarming.validate_build_parameters('foo', p)
-
-  def test_validate_swarming_param(self):
-    def validate_swarming_param(value):
-      swarming.validate_build_parameters('builder', {'swarming': value})
-
-    validate_swarming_param(None)
-    validate_swarming_param({})
-    validate_swarming_param({'recipe': {}})
-    validate_swarming_param({'recipe': {'revision': 'deadbeef'}})
-
-    bad = [
-      [],
-      {'junk': 1},
-      {'recipe': []},
-      {'recipe': {'junk': 1}},
-      {'recipe': {'revision': 1}},
-    ]
-    for p in bad:
-      with self.assertRaises(errors.InvalidInputError):
-        validate_swarming_param(p)
+        swarming.validate_build_parameters(p['builder_name'], p)
 
   def test_execution_timeout(self):
     self.bucket_cfg.swarming.common_execution_timeout_secs = 120
@@ -180,6 +184,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'builder_name': 'builder',
         'swarming': {
           'recipe': {'revision': 'badcoffee'},
+          'canary_template': False,
         },
         'properties': {
           'a': 'b',
@@ -229,6 +234,7 @@ class SwarmingTest(testing.AppengineTestCase):
       'tags': [
         'buildbucket_bucket:bucket',
         'buildbucket_hostname:None',
+        'buildbucket_template_canary:false',
         'builder:builder',
         'buildertag:yes',
         'commontag:yes',
@@ -291,6 +297,165 @@ class SwarmingTest(testing.AppengineTestCase):
     })
     self.assertEqual(
       build.url, 'https://example.com/chromium-swarm.appspot.com/deadbeef')
+
+  def test_create_task_async_canary_template(self):
+    build = model.Build(
+        bucket='bucket',
+        parameters={
+          'builder_name': 'builder',
+          'swarming': {
+            'canary_template': True,
+          }        },
+    )
+
+    self.mock(net, 'json_request_async', mock.Mock(return_value=futuristic({
+      'task_id': 'deadbeef',
+      'request': {
+        'properties': {
+          'dimensions': [
+            {'key': 'cores', 'value': '8'},
+            {'key': 'os', 'value': 'Linux'},
+            {'key': 'pool', 'value': 'Chrome'},
+          ],
+        },
+        'tags': [
+          'builder:builder',
+          'buildertag:yes',
+          'commontag:yes',
+          'master:master.bucket',
+          'priority:108',
+          'recipe_name:recipe',
+          'recipe_repository:https://example.com/repo',
+        ]
+      }
+    })))
+
+    swarming.create_task_async(build).get_result()
+
+    # Test swarming request.
+    self.assertEqual(
+        net.json_request_async.call_args[0][0],
+        'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new')
+    actual_task_def = net.json_request_async.call_args[1]['payload']
+    del actual_task_def['pubsub_auth_token']
+    expected_task_def = {
+      'name': 'buildbucket-bucket-builder-canary',
+      'priority': 108,
+      'expiration_secs': '3600',
+      'tags': [
+        'buildbucket_bucket:bucket',
+        'buildbucket_hostname:None',
+        'buildbucket_template_canary:true',
+        'builder:builder',
+        'buildertag:yes',
+        'commontag:yes',
+        'recipe_name:recipe',
+        'recipe_repository:https://example.com/repo',
+        'recipe_revision:',
+      ],
+      'properties': {
+        'execution_timeout_secs': '3600',
+        'inputs_ref': {
+          'isolatedserver': 'https://isolateserver.appspot.com',
+          'namespace': 'default-gzip',
+          'isolated': 'cbacbdcbabcd'
+        },
+        'extra_args': [
+          'cook',
+          '-repository', 'https://example.com/repo',
+          '-revision', '',
+          '-recipe', 'recipe',
+          '-properties', json.dumps({
+            'buildername': 'builder',
+            'predefined-property': 'x',
+            'predefined-property-bool': True,
+          }, sort_keys=True),
+          '-logdog-project', 'chromium',
+        ],
+        'dimensions': sorted([
+          {'key': 'cores', 'value': '8'},
+          {'key': 'os', 'value': 'Linux'},
+          {'key': 'pool', 'value': 'Chrome'},
+        ]),
+      },
+      'pubsub_topic': 'projects/testbed-test/topics/swarming',
+      'pubsub_userdata': json.dumps({
+        'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
+        'swarming_hostname': 'chromium-swarm.appspot.com',
+      }, sort_keys=True),
+      'numerical_value_for_coverage_in_format_obj': 42,
+    }
+    self.assertEqual(actual_task_def, expected_task_def)
+
+    self.assertEqual(set(build.tags), {
+      'builder:builder',
+      'swarming_dimension:cores:8',
+      'swarming_dimension:os:Linux',
+      'swarming_dimension:pool:Chrome',
+      'swarming_hostname:chromium-swarm.appspot.com',
+      'swarming_tag:builder:builder',
+      'swarming_tag:buildertag:yes',
+      'swarming_tag:commontag:yes',
+      'swarming_tag:master:master.bucket',
+      'swarming_tag:priority:108',
+      'swarming_tag:recipe_name:recipe',
+      'swarming_tag:recipe_repository:https://example.com/repo',
+      'swarming_task_id:deadbeef',
+    })
+    self.assertEqual(
+        build.url, 'https://example.com/chromium-swarm.appspot.com/deadbeef')
+
+  def test_create_task_async_no_canary_template_explicit(self):
+    build = model.Build(
+        bucket='bucket',
+        parameters={
+          'builder_name': 'builder',
+          'swarming': {
+            'canary_template': True,
+          }
+        },
+    )
+
+    self.task_template_canary = None
+    with self.assertRaises(errors.InvalidInputError):
+      swarming.create_task_async(build).get_result()
+
+  def test_create_task_async_no_canary_template_implicit(self):
+    self.mock(swarming, 'should_use_canary_template', mock.Mock())
+    swarming.should_use_canary_template.return_value = True
+    self.task_template_canary = None
+
+    self.mock(net, 'json_request_async', mock.Mock(return_value=futuristic({
+      'task_id': 'deadbeef',
+      'request': {
+        'properties': {
+          'dimensions': [
+            {'key': 'cores', 'value': '8'},
+            {'key': 'os', 'value': 'Linux'},
+            {'key': 'pool', 'value': 'Chrome'},
+          ],
+        },
+        'tags': [
+          'builder:builder',
+          'buildertag:yes',
+          'commontag:yes',
+          'master:master.bucket',
+          'priority:108',
+          'recipe_name:recipe',
+          'recipe_repository:https://example.com/repo',
+          'recipe_revision:badcoffee',
+        ]
+      }
+    })))
+
+    build = model.Build(
+        bucket='bucket',
+        parameters={'builder_name': 'builder'},
+    )
+    swarming.create_task_async(build).get_result()
+
+    actual_task_def = net.json_request_async.call_args[1]['payload']
+    self.assertIn('buildbucket_template_canary:false', actual_task_def['tags'])
 
   def test_create_task_async_on_leased_build(self):
     build = model.Build(
