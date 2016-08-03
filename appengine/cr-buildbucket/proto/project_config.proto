@@ -41,9 +41,12 @@ message Swarming {
     // Use this field for string properties and use properties_j for other
     // types.
     repeated string properties = 3;
-    // Same as properties, but the value must valid JSON. For example
+    // Same as properties, but the value must valid JSON or empty. For example
     //   properties_j: "a:1"
     // means property a is a number 1, not string "1".
+    //
+    // If empty, it means no property must be defined. In particular, it removes
+    // a default value for the property, if any.
     //
     // Fields properties and properties_j can be used together, but cannot both
     // specify values for same property.
@@ -62,15 +65,13 @@ message Swarming {
     repeated string swarming_tags = 2;
     // Colon-delimited key-value pair of task dimensions.
     //
-    // If value is not specified ("<key>:"), then it excludes a value for the
-    // same key specified in common_dimensions.
+    // If value is not specified ("<key>:"), then it excludes a default value.
     repeated string dimensions = 3;
     // Specifies that a recipe to run.
     optional Recipe recipe = 4;
     // Swarming task priority.
     optional uint32 priority = 5;
     // Maximum build execution time. Not to be confused with pending time.
-    // If not set, defaults to bucket's common_execution_timeout_secs.
     optional uint32 execution_timeout_secs = 7;
   }
 
@@ -81,9 +82,14 @@ message Swarming {
   // https://{swarming_hostname}/user/task/{task_id}
   optional string url_format = 2;
 
+  // Defines default values for builders.
+  optional Builder builder_defaults = 9;
+
+  // DEPRECATED: use builder_defaults.
   // Will be put to all swarming tasks.
   repeated string common_swarming_tags = 3;
 
+  // DEPRECATED: use builder_defaults.
   // Colon-delimited key-value pair of common task dimensions.
   //
   // If value is not specified ("<key>:"), then it excludes a value for the
@@ -95,10 +101,12 @@ message Swarming {
   // explicitly specified.
   repeated Builder builders = 5;
 
+  // DEPRECATED: use builder_defaults.
   // Defines a default recipe for all builders in this bucket.
   // A builder may override it or parts of it with something else.
   optional Recipe common_recipe = 6;
 
+  // DEPRECATED: use builder_defaults.
   // Maximum build execution time. Not to be confused with pending time.
   // If not set, defaults to server defaults.
   optional uint32 common_execution_timeout_secs = 7;

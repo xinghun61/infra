@@ -44,6 +44,7 @@ from google.appengine.ext import ndb
 import webapp2
 
 from proto import project_config_pb2
+from . import swarmingcfg as swarmingcfg_module
 import config
 import errors
 import model
@@ -187,28 +188,6 @@ def validate_build_parameters(builder_name, params):
     bad('unrecognized params: %r', params.keys())
 
 
-def read_properties(recipe):
-  """Parses build properties from the recipe message."""
-  result = dict(p.split(':', 1) for p in recipe.properties)
-  for p in recipe.properties_j:
-    k, v = p.split(':', 1)
-    result[k] = json.loads(v)
-  return result
-
-
-def merge_recipe(r1, r2):
-  """Merges two Recipe messages. Values in r2 overwrite values in r1."""
-  if not r1:  # pragma: no branch
-    return r2  # pragma: no cover
-  props = read_properties(r1)
-  props.update(read_properties(r2))
-  recipe = project_config_pb2.Swarming.Recipe(
-    repository=r2.repository or r1.repository,
-    name=r2.name or r1.name,
-  )
-  return recipe, props
-
-
 def should_use_canary_template(build, percentage):  # pragma: no cover
   """Returns True if a canary template should be used for the |build|.
 
@@ -246,6 +225,14 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
     canary = should_use_canary_template(
         build, swarming_cfg.task_template_canary_percentage)
 
+  # Normalize/merge configs.
+  swarming_cfg = copy.deepcopy(swarming_cfg)
+  swarmingcfg_module.normalize_swarming_cfg(swarming_cfg)
+
+  merged = copy.deepcopy(swarming_cfg.builder_defaults)
+  swarmingcfg_module.merge_builder(merged, builder_cfg)
+  builder_cfg = merged
+
   # Render task template.
   try:
     task_template, canary = yield get_task_template_async(
@@ -258,12 +245,10 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
     'project': project_id,
   }
 
-  is_recipe = (
-      builder_cfg.HasField('recipe') or swarming_cfg.HasField('common_recipe'))
+  is_recipe = builder_cfg.HasField('recipe')
   if is_recipe:  # pragma: no branch
-    recipe, build_properties = merge_recipe(
-        swarming_cfg.common_recipe, builder_cfg.recipe)
-    revision = swarming_param.get('recipe', {}).get('revision') or ''
+    build_properties = swarmingcfg_module.read_properties(builder_cfg.recipe)
+    recipe_revision = swarming_param.get('recipe', {}).get('revision') or ''
 
     build_properties['buildername'] = builder_cfg.name
 
@@ -290,9 +275,9 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
     build_properties.update(build.parameters.get(PARAM_PROPERTIES) or {})
 
     task_template_params.update({
-      'repository': recipe.repository,
-      'revision': revision,
-      'recipe': recipe.name,
+      'repository': builder_cfg.recipe.repository,
+      'revision': recipe_revision,
+      'recipe': builder_cfg.recipe.name,
       'properties_json': json.dumps(build_properties, sort_keys=True),
     })
 
@@ -315,25 +300,21 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
   ])
   if is_recipe:  # pragma: no branch
     _extend_unique(swarming_tags, [
-      'recipe_repository:%s' % recipe.repository,
-      'recipe_revision:%s' % revision,
-      'recipe_name:%s' % recipe.name,
+      'recipe_repository:%s' % builder_cfg.recipe.repository,
+      'recipe_revision:%s' % recipe_revision,
+      'recipe_name:%s' % builder_cfg.recipe.name,
     ])
-  _extend_unique(swarming_tags, swarming_cfg.common_swarming_tags)
   _extend_unique(swarming_tags, builder_cfg.swarming_tags)
   _extend_unique(swarming_tags, build.tags)
   swarming_tags.sort()
 
   task_properties = task.setdefault('properties', {})
-  task_properties['dimensions'] = _prepare_dimensions(
-    task_properties.get('dimensions', []),
-    swarming_cfg.common_dimensions,
-    builder_cfg.dimensions
-  )
+  task_properties['dimensions'] = _to_swarming_dimensions(
+    swarmingcfg_module.merge_dimensions(
+      builder_cfg.dimensions,
+      task_properties.get('dimensions', []),
+    ))
 
-  if swarming_cfg.common_execution_timeout_secs > 0:
-    task_properties['execution_timeout_secs'] = (
-        swarming_cfg.common_execution_timeout_secs)
   if builder_cfg.execution_timeout_secs > 0:
     task_properties['execution_timeout_secs'] = (
         builder_cfg.execution_timeout_secs)
@@ -349,24 +330,13 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
   raise ndb.Return(task)
 
 
-def _prepare_dimensions(global_dims, bucket_cfg_dims, builder_cfg_dims):
-  """Computes final task dimensions.
-
-  Configs must have valid format.
-  """
-  # Make them all lists of pairs.
-  global_dims = [(d['key'], d['value']) for d in global_dims]
-  parse_cfg_dim = lambda d: d.split(':', 1)
-  bucket_dims = map(parse_cfg_dim, bucket_cfg_dims)
-  builder_dims = map(parse_cfg_dim, builder_cfg_dims)
-
-  # Note: dimensions must be unique.
-  # Overwrite global dimensions by bucket-level dimensions,
-  # then by builder-level dimensions.
-  merged = {}
-  for ds in (global_dims, bucket_dims, builder_dims):
-    merged.update(ds)
-  return sorted({'key': k, 'value': v} for k, v in merged.iteritems() if v)
+def _to_swarming_dimensions(dims):
+  """Converts dimensions from buildbucket format to swarming format."""
+  return [
+    {'key': key, 'value': value}
+    for key, value in
+    (s.split(':', 1) for s in dims)
+  ]
 
 
 @ndb.tasklet
