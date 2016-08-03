@@ -150,21 +150,26 @@ found in the LICENSE file. -->
                 input.selectionStart = range.end;
                 input.selectionEnd = input.selectionStart;
 
-                // For Safari/Chrome:
-                // Simulate the user entering the text. This makes undo work properly instead of using
-                // data binding which is like a big "replace" action.
-                var inputEvent = document.createEvent("TextEvent");
-                if (inputEvent.initTextEvent) {
-                    inputEvent.initTextEvent("textInput", true, true, window, value, 0, "en-US");
-                    input.dispatchEvent(inputEvent);
-                } else if (window.InputEvent) {
-                    // For Firefox we can just update the value and undo will work.
+                // Make sure the input is focused.
+                input.focus();
+
+                // TODO(esprehn): This is a terrible hack but there's no obvious
+                // work around since execCommand doesn't work for input in Firefox
+                // and I can't figure out how to detect that, and we shouldn't
+                // feature detect based on InputEvent otherwise it'll break Chrome
+                // later.
+                if (navigator.userAgent.contains("Firefox")) {
+                    // For Firefox we can just update the value and undo will work,
+                    // execCommand doesn't seem to update the input value.
                     input.value = input.value.to(input.selectionEnd) + value + input.value.from(input.selectionEnd);
                     input.dispatchEvent(wrap(new InputEvent("input", {
                         data: value,
                         bubbles: true,
                         cancelable:false
                     })));
+                } else {
+                    // Chrome and Safari can use execCommand.
+                    document.execCommand("InsertText", false, value);
                 }
 
                 // Put the caret back at the end of the new input. This also makes sure the input scrolls
