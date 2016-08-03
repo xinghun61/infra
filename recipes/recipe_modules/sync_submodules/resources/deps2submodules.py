@@ -36,14 +36,14 @@ def SanitizeDeps(submods, path_prefix):
 
     parts = name.split('/')[:-1]
     while parts:
-      may_conflict = '/'.join(parts)
+      may_conflict = path_prefix + '/'.join(parts)
       if may_conflict in submods:
         logging.warning('Dropping submodule "%s", because it is nested in '
                         'submodule "%s"', name, may_conflict)
         break
       parts.pop()
-
-    ret[name] = value
+    else:
+      ret[name] = value
   return ret
 
 
