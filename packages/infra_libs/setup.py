@@ -13,7 +13,11 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
     packages=find_packages(exclude=['*.test']),
-    install_requires=['googleapiclient', 'oauth2client', 'protobuf'],
+    install_requires=[
+        'google-api-python-client',
+        'oauth2client',
+        'protobuf',
+    ],
     package_data={
         '': ['*.md', '*.proto'],
     },
