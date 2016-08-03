@@ -57,17 +57,21 @@ class HandlersTest(testing.AppengineTestCase):
     time_expired = time_now - datetime.timedelta(
         seconds=shared.INSTANCE_EXPIRE_SEC+1)
 
-    shared.Instance(id='expired', task_num=0, last_updated=time_expired).put()
-    shared.Instance(id='inactive', task_num=-1, last_updated=time_expired).put()
-    shared.Instance(id='new', task_num=-1, last_updated=time_current).put()
-    shared.Instance(id='current', task_num=2, last_updated=time_current).put()
+    with shared.instance_namespace_context():
+      shared.Instance(id='expired', task_num=0, last_updated=time_expired).put()
+      shared.Instance(id='inactive', task_num=-1, last_updated=time_expired).put()
+      shared.Instance(id='new', task_num=-1, last_updated=time_current).put()
+      shared.Instance(id='current', task_num=2, last_updated=time_current).put()
 
-    handlers._assign_task_num(time_fn=lambda: time_now)
+      handlers._assign_task_num(time_fn=lambda: time_now)
 
-    self.assertIsNone(shared.Instance.get_by_id('expired'))
-    self.assertIsNone(shared.Instance.get_by_id('inactive'))
-    new = shared.Instance.get_by_id('new')
-    current = shared.Instance.get_by_id('current')
+      expired = shared.Instance.get_by_id('expired')
+      inactive = shared.Instance.get_by_id('inactive')
+      new = shared.Instance.get_by_id('new')
+      current = shared.Instance.get_by_id('current')
+
+    self.assertIsNone(expired)
+    self.assertIsNone(inactive)
     self.assertIsNotNone(new)
     self.assertIsNotNone(current)
     self.assertEqual(2, current.task_num)
