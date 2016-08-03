@@ -46,13 +46,20 @@ WIN_ENABLED_PACKAGES = [
   'infra/services/service_manager',
   'infra/services/sysmon',
 
+  # TODO(sergeyberezin): remove this section when infra_libs is removed.
   'infra_libs/event_mon',
   'infra_libs/infra_types',
   'infra_libs/logs',
   'infra_libs/time_functions',
   'infra_libs/ts_mon',
-
   'infra_libs:infra_libs.test.*',
+
+  'packages/infra_libs/infra_libs/event_mon',
+  'packages/infra_libs/infra_libs/infra_types',
+  'packages/infra_libs/infra_libs/logs',
+  'packages/infra_libs/infra_libs/time_functions',
+  'packages/infra_libs/infra_libs/ts_mon',
+  'packages/infra_libs/infra_libs:infra_libs.test.*',
 ]
 
 
@@ -102,6 +109,17 @@ if not modules:
     # Use relative paths to shorten the command-line
     modules.extend(itertools.chain(
       [d for d in appengine_dirs if os.path.isfile(os.path.join(d,
+          '.coveragerc'))]
+    ))
+  packages_dir = os.path.join(INFRA_ROOT, 'packages')
+  if sys.platform != 'win32' and os.path.isdir(packages_dir):
+    packages_dirs = [
+      os.path.join('packages', d)
+      for d in os.listdir(packages_dir)
+    ]
+    # Use relative paths to shorten the command-line
+    modules.extend(itertools.chain(
+      [d for d in packages_dirs if os.path.isfile(os.path.join(d,
           '.coveragerc'))]
     ))
 
