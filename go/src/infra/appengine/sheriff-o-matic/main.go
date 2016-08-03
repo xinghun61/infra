@@ -506,7 +506,7 @@ func getBugQueueHandler(ctx *router.Context) {
 }
 
 func getCrRevJSON(c context.Context, pos string) (map[string]string, error) {
-	c = client.UseServiceAccountTransport(c, nil)
+	c = client.UseServiceAccountTransport(c, nil, nil)
 
 	hc := &http.Client{Transport: urlfetch.Get(c)}
 
