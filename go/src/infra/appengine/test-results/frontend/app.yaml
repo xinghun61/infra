@@ -5,5 +5,10 @@ api_version: go1
 version: 1
 
 handlers:
+  - url: /testfile/uploadform
+    static_files: static/pages/uploadform.html
+    upload: static/pages/uploadform.html
+    mime_type: text/html; charset=utf-8
+
   - url: /.*
     script: _go_app

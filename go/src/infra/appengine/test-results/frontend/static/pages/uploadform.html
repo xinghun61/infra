@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<title>Upload Test Result File</title>
+<link rel="stylesheet" href="/stylesheets/form.css" />
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m
+)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-55762617-8', {'siteSpeedSampleRate': 100});
+  ga('send', 'pageview');
+</script>
+<h1>Upload Test Result File</h1>
+<form id="uploadForm" name="test_result_upload" accept="text/html" action="/upload/testfile" enctype="multipart/form-data" method="post">
+    <br>
+    <table>
+        <tbody>
+            <tr>
+                <td class=label><label>Master:</label>
+                <td><input class=inputtext type="text" name="master" placeholder="Chromium"/>
+            <tr>
+                <td class=label><label>Builder:</label>
+                <td><input class=inputtext type="text" name="builder" placeholder="Webkit"/>
+            <tr>
+                <td class=label><label>Test Type:</label>
+                <td><input class=inputtext type="text" name="testtype" placeholder="webkit_tests"/>
+    </table>
+    <br>
+    <div><input class=button type="file" name="file" multiple></div>
+    <br>
+    <div><input class=button type="submit" value="Upload"></div>
+</form>
