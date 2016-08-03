@@ -297,6 +297,10 @@ runOnLoad(function() {
      });
   }
 
+  window.onsubmit = function() {
+    TKR_initialFormValues = TKR_currentFormValues();
+  };
+
   window.onbeforeunload = function() {
     if (TKR_isDirty()) {
       // This message is ignored in recent versions of Chrome and Firefox.
