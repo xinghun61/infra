@@ -113,7 +113,6 @@ A swarming task created by buildbucket has extra tags:
 * `recipe_repository:<repo url>`
 * `recipe_revision:<revision>`
 * `recipe_name:<name>`
-* all tags in `common_swarming_tags` of swarming config.
 * all tags in `swarming_tags` of builder config.
 * all tags in build creation request.
 
