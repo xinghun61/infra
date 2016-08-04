@@ -491,7 +491,8 @@
 
         // Assume it takes less than 1 millisecond to calculate that.
         if (Date.now() - oldestDate > 1) {
-          return new Date(oldestDate * 1000).toLocaleString();
+          return new Date(oldestDate * 1000).toLocaleString(false,
+            {timeZoneName: 'short'});
         }
         return 'Unknown';
       },
