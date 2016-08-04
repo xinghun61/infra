@@ -1,0 +1,367 @@
+[
+  {
+    "cmd": [
+      "/opt/infra-tools/authutil",
+      "token",
+      "-service-account-json",
+      "/creds/service_accounts/service-account-recipe-roller.json"
+    ],
+    "name": "Get auth token",
+    "stdout": "/path/to/tmp/"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
+      "https://luci-config.appspot.com/_ah/api/config/v1/projects",
+      "--outfile",
+      "/path/to/tmp/",
+      "--headers-json",
+      "{\"Authorization\": \"Bearer ya29.foobar\"}",
+      "--attempts",
+      "3"
+    ],
+    "name": "Get luci-config projects"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[build::cipd]/resources/bootstrap.py",
+      "--platform",
+      "linux-amd64",
+      "--dest-directory",
+      "[SLAVE_BUILD]/cipd",
+      "--json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "install cipd",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@cipd instance_id: 40-chars-fake-of-the-package-instance_id@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"executable\": \"[SLAVE_BUILD]/cipd/cipd\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"instance_id\": \"40-chars-fake-of-the-package-instance_id\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]/cipd/cipd",
+      "ensure",
+      "--root",
+      "[TMP_BASE]/recipes_tmp_1",
+      "--list",
+      "infra/recipes-py latest",
+      "--json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-latest----------\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/recipes-py\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "build"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
+      "--path",
+      "[TMP_BASE]/roll_build_tmp_2",
+      "--url",
+      "https://repo.repo/build"
+    ],
+    "name": "build.git setup",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "retry",
+      "fetch",
+      "origin",
+      "master"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
+    },
+    "name": "build.git fetch",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "-f",
+      "FETCH_HEAD"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "name": "build.git checkout",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "name": "build.read revision",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-f",
+      "-d",
+      "-x"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "name": "build.git clean",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "config",
+      "user.email",
+      "recipe-roller@chromium.org"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "name": "build.git config",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "config",
+      "user.name",
+      "recipe-roller"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "name": "build.git config (2)",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "-t",
+      "-b",
+      "roll",
+      "origin/master"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "name": "build.git checkout (2)",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[TMP_BASE]/recipes_tmp_1/recipes.py",
+      "--use-bootstrap",
+      "--package",
+      "[TMP_BASE]/roll_build_tmp_2/infra/config/recipes.cfg",
+      "autoroll",
+      "--output-json",
+      "/path/to/tmp/json"
+    ],
+    "name": "build.roll",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@ (trivial)@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"picked_roll_details\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"commit_infos\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"recipe_engine\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@        {@@@",
+      "@@@STEP_LOG_LINE@json.output@          \"author\": \"foo@chromium.org\", @@@",
+      "@@@STEP_LOG_LINE@json.output@          \"message\": \"some commit message\\nR=bar@chromium.org,baz@chromium.org,invalid1,invalid2@chromium\\nBUG=123,456\", @@@",
+      "@@@STEP_LOG_LINE@json.output@          \"revision\": \"123abc\"@@@",
+      "@@@STEP_LOG_LINE@json.output@        }@@@",
+      "@@@STEP_LOG_LINE@json.output@      ]@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"spec\": \"api_version: 1\\netc: \\\"etc\\\"\\n\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"rejected_candidates_details\": [], @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"roll_details\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"commit_infos\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"recipe_engine\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@          {@@@",
+      "@@@STEP_LOG_LINE@json.output@            \"author\": \"foo@chromium.org\", @@@",
+      "@@@STEP_LOG_LINE@json.output@            \"message\": \"some commit message\\nR=bar@chromium.org,baz@chromium.org,invalid1,invalid2@chromium\\nBUG=123,456\", @@@",
+      "@@@STEP_LOG_LINE@json.output@            \"revision\": \"123abc\"@@@",
+      "@@@STEP_LOG_LINE@json.output@          }@@@",
+      "@@@STEP_LOG_LINE@json.output@        ]@@@",
+      "@@@STEP_LOG_LINE@json.output@      }, @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"spec\": \"api_version: 1\\netc: \\\"etc\\\"\\n\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ], @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"success\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"trivial\": true@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LOG_LINE@blame@recipe_engine:@@@",
+      "@@@STEP_LOG_LINE@blame@  https://crrev.com/123abc some commit message (foo@chromium.org)@@@",
+      "@@@STEP_LOG_END@blame@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "commit",
+      "-a",
+      "-m",
+      "roll recipes.cfg"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "name": "build.git commit",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "show",
+      "--format=%b"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "name": "build.git show",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@output@-some line@@@",
+      "@@@STEP_LOG_LINE@output@+some other line@@@",
+      "@@@STEP_LOG_END@output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
+      "--",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "cat",
+      "gs://recipe-roller-cl-uploads/791ad91de804e9b08076c4db2081bfa6"
+    ],
+    "name": "build.gsutil cat",
+    "stderr": "/path/to/tmp/",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@stderr@Error: No URLs matched ...@@@",
+      "@@@STEP_LOG_END@stderr@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "RECIPE_PACKAGE_REPO[depot_tools]/git_cl.py",
+      "upload",
+      "--use-commit-queue",
+      "--bypass-hooks",
+      "-f",
+      "--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller",
+      "--message-file",
+      "Roll recipe dependencies (trivial).\n\nThis is an automated CL created by the recipe roller. This CL rolls recipe\nchanges from upstream projects (e.g. depot_tools) into downstream projects\n(e.g. tools/build).\n\n\nMore info is at https://goo.gl/zkKdpD. Use https://goo.gl/noib3a to file a bug\n(or complain)\n\nrecipe_engine:\n  https://crrev.com/123abc some commit message (foo@chromium.org)\n\nR=foo@chromium.org,bar@chromium.org,baz@chromium.org\nBUG=123,456\n\nTBR=martiniss@chromium.org,phajdan.jr@chromium.org\n"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "name": "build.git cl upload",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "cl",
+      "issue"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "name": "build.git cl issue",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LINK@Issue 123456789@https://codereview.chromium.org/123456789@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
+      "--",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "cp",
+      "{\"diff_digest\": \"d4fbd1f86c94d02a0e9f2a3d08aebc1c\", \"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\"}",
+      "gs://recipe-roller-cl-uploads/791ad91de804e9b08076c4db2081bfa6"
+    ],
+    "name": "build.gsutil upload",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/recipe-roller-cl-uploads/791ad91de804e9b08076c4db2081bfa6@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::shutil]/resources/rmtree.py",
+      "[TMP_BASE]/roll_build_tmp_2"
+    ],
+    "name": "build.rmtree [TMP_BASE]/roll_build_tmp_2",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::shutil]/resources/rmtree.py",
+      "[TMP_BASE]/recipes_tmp_1"
+    ],
+    "name": "rmtree [TMP_BASE]/recipes_tmp_1"
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]
