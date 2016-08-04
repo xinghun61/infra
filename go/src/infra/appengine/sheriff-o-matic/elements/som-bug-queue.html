@@ -44,7 +44,7 @@
         last-response="{{_bugQueueJson}}"
         debounce-duration="300"></iron-ajax>
     <div id="main" hidden$="[[_hideBugQueue]]">
-      <h2>Bug Queue (<a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriffing-bug-queues">What to do with this?</a>):</h2>
+      <h2>Bug Queue (<a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriffing-bug-queues" target="_blank">What to do with this?</a>):</h2>
       <div id="error" hidden$="[[_haveNoErrors(_bugQueueJsonError)]]">
         Error fetching bug queue: [[_bugQueueJsonError.error]]
       </div>
@@ -53,7 +53,7 @@
       <template is="dom-repeat" items="[[_bugQueueJson.items]]" as="item">
         <div class="bug">
           <div class="summary">[[item.summary]]</div>
-          <a href="http://crbug.com/[[item.id]]">Bug [[item.id]]</a> ([[item.status]])
+          <a href="http://crbug.com/[[item.id]]" target="_blank">Bug [[item.id]]</a> ([[item.status]])
         </div>
       </template>
     </div>
