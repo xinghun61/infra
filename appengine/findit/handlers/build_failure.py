@@ -409,7 +409,7 @@ class BuildFailure(BaseHandler):
       }
     else:
       return {
-          'template': 'build_failure.html',
+          'template': 'waterfall/test_failure.html',
           'data': self._PrepareDataForTestFailures(analysis, build_info,
                                                    self._ShowDebugInfo()),
       }
