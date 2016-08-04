@@ -39,20 +39,20 @@
     test('renders links for test results', function(done) {
       element.extension = {
         reasons: [{
-          "step": "wekbit_tests",
-          "test_names": [
-            "best_test",
+          'step': 'wekbit_tests',
+          'test_names': [
+            'best_test',
           ],
         }],
       };
       element._uberify = (url) => { return url; };
       flush( () => {
-        let itm = element.$$("#test_results");
-        assert.isNotNull(itm);
+        let item = element.$$('#test_results');
+        assert.isNotNull(item);
         assert.equal(
-            itm.children[0].href,
-            "https://test-results.appspot.com/dashboards/flakiness_dashboard" +
-            ".html#tests=best_test&testType=wekbit_tests");
+            item.children[0].href,
+            'https://test-results.appspot.com/dashboards/flakiness_dashboard' +
+            '.html#tests=best_test&testType=wekbit_tests');
         done();
       });
 
@@ -61,9 +61,9 @@
     test('renders suspect CLs', function(done) {
       element.extension = {
         reasons: [{
-          "step": "wekbit_tests",
-          "test_names": [
-            "best_test",
+          'step': 'wekbit_tests',
+          'test_names': [
+            'best_test',
           ],
         }],
         suspected_cls: [
@@ -71,11 +71,10 @@
         ],
       };
       element._uberify = (url) => { return url; };
-      flush( () => {
-        let itm = element.$$("#findit-results");
-        assert.isNotNull(itm);
-        assert.equal(
-            itm.children[1].href, "https://crrev.com/1234");
+      flush(() => {
+        let item = element.$$('#findit-results');
+        assert.isNotNull(item);
+        assert.equal(item.children[1].href, 'https://crrev.com/1234');
         done();
       });
 

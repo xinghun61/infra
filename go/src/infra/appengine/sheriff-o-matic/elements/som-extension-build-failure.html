@@ -165,9 +165,10 @@
       },
 
       _linkForTest: function(reason, testName) {
-        return 'https://test-results.appspot.com/dashboards/flakiness_dashboard.html#' +
-          "tests=" + encodeURIComponent(testName) +
-          "&testType=" + encodeURIComponent(reason.step)
+        return 'https://test-results.appspot.com/dashboards/' +
+          'flakiness_dashboard.html#' +
+          'tests=' + encodeURIComponent(testName) +
+          '&testType=' + encodeURIComponent(reason.step)
           ;
       },
 

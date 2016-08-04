@@ -90,7 +90,7 @@
      },
 
      _regressionStart: function(range) {
-        if (!range.positions || range.positions.length == 0) {
+        if (range && (!range.positions || range.positions.length == 0)) {
           return '';
         }
 
@@ -107,6 +107,10 @@
      },
 
      _regressionRange: function(range) {
+        if (!range) {
+          return '';
+        }
+
         let start = this._regressionStart(range);
         let end = this._regressionEnd(range);
 
@@ -118,7 +122,7 @@
       },
 
       _regressionRangeLink: function(range) {
-        if (!range.positions) {
+        if (!range || !range.positions) {
           return '';
         }
         let end = this._parseCommitPosition(range.positions[0]);
