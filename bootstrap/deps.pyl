@@ -78,6 +78,12 @@
     'rev': 'cb8ae9acf100c9faba02737ac82b31a0152d19e8',
     'implicit': True,  # Required by cryptography
   },
+  'infra_libs': {
+    'version': '1.1.0',
+    'build': '0',
+    'repo': 'infra/infra/packages/infra_libs',
+    'rev': 'c3824550799149df1cc078f45f560606b0f7b652',
+  },
   'ipaddress': {
     'version': '1.0.16',
     'build': '0',

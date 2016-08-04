@@ -9,7 +9,6 @@ from testing_support import auto_stub
 from infra.libs.service_utils import outer_loop
 
 from infra_libs.ts_mon.common import interface
-from infra_libs.ts_mon.common.test import stubs
 
 
 class TestOuterLoop(auto_stub.TestCase):

@@ -46,14 +46,6 @@ WIN_ENABLED_PACKAGES = [
   'infra/services/service_manager',
   'infra/services/sysmon',
 
-  # TODO(sergeyberezin): remove this section when infra_libs is removed.
-  'infra_libs/event_mon',
-  'infra_libs/infra_types',
-  'infra_libs/logs',
-  'infra_libs/time_functions',
-  'infra_libs/ts_mon',
-  'infra_libs:infra_libs.test.*',
-
   'packages/infra_libs/infra_libs/event_mon',
   'packages/infra_libs/infra_libs/infra_types',
   'packages/infra_libs/infra_libs/logs',
@@ -98,7 +90,7 @@ if not modules:
   if sys.platform == 'win32':
     modules.extend(WIN_ENABLED_PACKAGES)
   else:
-    modules.extend(['infra', 'infra_libs'])  # TODO(pgervais): add 'test/'
+    modules.extend(['infra'])  # TODO(pgervais): add 'test/'
   appengine_dir = os.path.join(INFRA_ROOT, 'appengine')
   if sys.platform != 'win32' and os.path.isdir(appengine_dir):
     modules.extend(['appengine_module'])

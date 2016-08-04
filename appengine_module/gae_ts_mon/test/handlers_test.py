@@ -14,7 +14,6 @@ from infra_libs.ts_mon import handlers
 from infra_libs.ts_mon import shared
 from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import targets
-from infra_libs.ts_mon.common.test import stubs
 from testing_utils import testing
 
 

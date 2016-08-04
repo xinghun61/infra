@@ -20,7 +20,6 @@ from infra_libs.ts_mon.common import http_metrics
 from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import monitors
 from infra_libs.ts_mon.common import targets
-from infra_libs.ts_mon.common.test import stubs
 from protorpc import message_types
 from protorpc import remote
 from testing_utils import testing

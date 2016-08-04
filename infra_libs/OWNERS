@@ -1,4 +1,5 @@
-# Migrating to //packages/infra_libs. Please do not modify this subtree.
+# This subtree migrated to //packages/infra_libs.
+# Please do not modify this subtree. It will soon be deleted.
 set noparent
 sergeyberezin@chromium.org
 sergeyberezin@google.com
