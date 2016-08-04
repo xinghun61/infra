@@ -16,6 +16,7 @@
   var server;
   var responseHeaders = {
       json: {'Content-Type': 'application/json'},
+      text: {'Content-Type': 'text/html'},
   };
 
   setup(function() {
@@ -55,6 +56,31 @@
       assert.equal(
           element.$$('.last-updated').textContent.trim(),
           'Last updated: Unknown');
+
+      expect(element.$.fetchAlertsError).be.hidden;
+    });
+
+    test('tree not found', function(done) {
+      let tree = 'notfound';
+      let groups = [tree];
+
+      element._alertsGroupsChanged(groups);
+
+      server.respondWith(
+        'GET',
+        '/api/v1/alerts/' + tree, [
+          404,
+          responseHeaders.text,
+          'Tree not found'
+        ]
+      );
+      server.respond();
+
+      flush(function() {
+        assert.notEqual(element._fetchAlertsError, '');
+        expect(element.$.fetchAlertsError).be.visible;
+        done();
+      });
     });
   });
 

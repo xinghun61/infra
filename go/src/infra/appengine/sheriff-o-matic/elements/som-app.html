@@ -57,6 +57,10 @@
       #bugDialog, #snoozeDialog {
         width: 300px;
       }
+      #fetchAlertsError {
+        color: #f00;
+        margin: 1em;
+      }
       #noAlerts {
         text-align: center;
         font-size: 2.5em;
@@ -68,7 +72,7 @@
         padding: 0;
       }
       .error {
-        color: #cc0000;
+        color: #c00;
         margin-top: 0;
       }
       .last-updated, .user-name {
@@ -157,6 +161,7 @@
             <som-bug-queue id="bugQueue" bug-queue-label="[[_bugQueueLabel]]"></som-bug-queue>
             <div id="alertsListInner">
               <h2>Failure Alerts (<a href="/help-som">Help?</a>)</h2>
+              <div id="fetchAlertsError" hidden=[[!_fetchAlertsError]]>[[_fetchAlertsError]]</div>
               <template is="dom-if" if="[[!_hideJulie]]">
                 <div id="noAlerts">
                   No alerts!
@@ -291,6 +296,7 @@
           type: Boolean,
           value: false,
         },
+        _fetchAlertsError: String,
         _fetchingAlerts: {
           type: Boolean,
           computed: '_computeFetchingAlerts(_activeRequests)',
@@ -301,7 +307,7 @@
         },
         _hideJulie: {
           type: Boolean,
-          computed: '_computeHideJulie(_alerts, _fetchedAlerts, _fetchingAlerts, _tree)',
+          computed: '_computeHideJulie(_alerts, _fetchedAlerts, _fetchingAlerts, _fetchAlertsError, _tree)',
           value: function() { return true; },
         },
         _hideWebkitNotice: {
@@ -428,7 +434,7 @@
         if (pathParts.length == 2) {
           if (pathParts[1] in this._staticPages) {
             if (pathParts[1] === 'calendar') {
-              // Hide rotation calendar until visited because it's really big. 
+              // Hide rotation calendar until visited because it's really big.
               this._showRotationCalendar = true;
             }
             return this._staticPages[pathParts[1]].pageId;
@@ -491,19 +497,31 @@
       },
 
       _alertsGroupsChanged: function(alertsGroups) {
+        this._fetchAlertsError = '';
         if (alertsGroups.length > 0) {
           this._fetchedAlerts = false;
           this._activeRequests += alertsGroups.length;
 
-          // TODO: handle webpage offline throwing an exception
           alertsGroups.forEach((group) => {
             let foo = fetch('/api/v1/alerts/' + group, {credentials: 'include'}).then((response) => {
-              // TODO: handle alerts not found
               this._activeRequests -= 1;
+              if (response.status == 404) {
+                this._fetchAlertsError = 'Server responded with 404: ' + group
+                  + ' not found. ';
+                return false;
+              }
               return response.json();
+            }, (error) => {
+              this._activeRequests -= 1;
+              this._fetchAlertsError = 'Could not connect to the server. '
+                + error;
             }).then((json) => {
-              this.set(['_alertsData', this._alertGroupVarName(group)], json.alerts);
-              this.set(['_alertsTimes', this._alertGroupVarName(group)], json.timestamp);
+              if (json) {
+                this.set(['_alertsData', this._alertGroupVarName(group)],
+                  json.alerts);
+                this.set(['_alertsTimes', this._alertGroupVarName(group)],
+                  json.timestamp);
+              }
             });
           });
         }
@@ -560,8 +578,8 @@
       },
 
 
-      _computeHideJulie: function(alerts, fetchedAlerts, fetchingAlerts, tree) {
-        if (fetchingAlerts || !fetchedAlerts || !alerts || tree === '') {
+      _computeHideJulie: function(alerts, fetchedAlerts, fetchingAlerts, fetchAlertsError, tree) {
+        if (fetchingAlerts || !fetchedAlerts || !alerts || fetchAlertsError !== '' || tree === '') {
           return true;
         }
         return alerts.length > 0;
