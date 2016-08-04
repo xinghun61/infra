@@ -151,6 +151,9 @@ CREATE TABLE Issue (
   modified INT NOT NULL,
   opened INT,
   closed INT,
+  owner_modified INT,
+  status_modified INT,
+  component_modified INT,
 
   derived_owner_id INT UNSIGNED,
   derived_status_id INT,

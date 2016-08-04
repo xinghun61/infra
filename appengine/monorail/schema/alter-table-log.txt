@@ -820,12 +820,12 @@ CREATE TABLE Component2Label (
   FOREIGN KEY (label_id) REFERENCES LabelDef(id)
 ) ENGINE=INNODB;
 
-=======
+================================================================
 2016-05-23: Add default search for members
 
 ALTER TABLE ProjectIssueConfig ADD COLUMN member_default_query TEXT;
 
-=======
+================================================================
 2016-06-17: Add is_description column to Comment
 
 Local:
@@ -877,3 +877,20 @@ ALTER TABLE IssueRelation ADD COLUMN rank BIGINT;
 2016-07-13: Set default rank for blockedon relations
 
 UPDATE IssueRelation SET rank = 0 WHERE kind = 'blockedon';
+
+================================================================
+2016-08-01: Add timestamps for issue field changes
+
+DO NOT RUN THIS STATEMENT ON PROD OR STAGING.  It is fine for localhost
+but be warned that it will lock the db for some time if you have gigs of data in
+these tables.
+ALTER TABLE Issue 
+  ADD COLUMN owner_modified INT,
+  ADD COLUMN status_modified INT,
+  ADD COLUMN component_modified INT;
+
+Staging/Production:
+% pt-online-schema-change \
+  --alter "ADD COLUMN owner_modified INT, ADD COLUMN status_modified INT, ADD COLUMN component_modified INT" \
+  D=monorail,t=Issue,h=<master IP address>,u=$USER,p=<your mysql password> \
+  --alter-foreign-keys-method=rebuild_constraints --recursion-method=hosts --execute

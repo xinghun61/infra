@@ -74,6 +74,12 @@ class Issue(messages.Message):
   # in seconds since the Epoch.
   modified_timestamp = messages.IntegerField(13, default=0)
 
+  # These timestamps are updated whenever owner, status, or components
+  # change, including when altered by a filter rule.
+  owner_modified_timestamp = messages.IntegerField(19, default=0)
+  status_modified_timestamp = messages.IntegerField(20, default=0)
+  component_modified_timestamp = messages.IntegerField(21, default=0)
+
   # Issue IDs of issues that this issue is blocked on.
   blocked_on_iids = messages.IntegerField(16, repeated=True)
 

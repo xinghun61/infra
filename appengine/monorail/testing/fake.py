@@ -70,6 +70,9 @@ def MakeTestIssue(
   issue.is_spam = is_spam
   if opened_timestamp:
     issue.opened_timestamp = opened_timestamp
+    issue.owner_modified_timestamp = opened_timestamp
+    issue.status_modified_timestamp = opened_timestamp
+    issue.component_modified_timestamp = opened_timestamp
   if modified_timestamp:
     issue.modified_timestamp = modified_timestamp
   if closed_timestamp:

@@ -58,7 +58,9 @@ LOCALIDCOUNTER_TABLE_NAME = 'LocalIDCounter'
 
 ISSUE_COLS = [
     'id', 'project_id', 'local_id', 'status_id', 'owner_id', 'reporter_id',
-    'opened', 'closed', 'modified', 'derived_owner_id', 'derived_status_id',
+    'opened', 'closed', 'modified',
+    'owner_modified', 'status_modified', 'component_modified',
+    'derived_owner_id', 'derived_status_id',
     'deleted', 'star_count', 'attachment_count', 'is_spam']
 ISSUESUMMARY_COLS = ['issue_id', 'summary']
 ISSUE2LABEL_COLS = ['issue_id', 'label_id', 'derived']
@@ -145,7 +147,8 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
   def _UnpackIssue(self, cnxn, issue_row):
     """Partially construct an issue object using info from a DB row."""
     (issue_id, project_id, local_id, status_id, owner_id, reporter_id,
-     opened, closed, modified, derived_owner_id, derived_status_id,
+     opened, closed, modified, owner_modified, status_modified,
+     component_modified, derived_owner_id, derived_status_id,
      deleted, star_count, attachment_count, is_spam) = issue_row
 
     issue = tracker_pb2.Issue()
@@ -171,6 +174,12 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
       issue.closed_timestamp = closed
     if modified:
       issue.modified_timestamp = modified
+    if owner_modified:
+      issue.owner_modified_timestamp = owner_modified
+    if status_modified:
+      issue.status_modified_timestamp = status_modified
+    if component_modified:
+      issue.component_modified_timestamp = component_modified
     issue.star_count = star_count
     issue.attachment_count = attachment_count
     issue.is_spam = bool(is_spam)
@@ -473,6 +482,9 @@ class IssueService(object):
     timestamp = timestamp or int(time.time())
     issue.opened_timestamp = timestamp
     issue.modified_timestamp = timestamp
+    issue.owner_modified_timestamp = timestamp
+    issue.status_modified_timestamp = timestamp
+    issue.component_modified_timestamp = timestamp
 
     comment = self._MakeIssueComment(
         project_id, reporter_id, marked_description,
@@ -729,6 +741,9 @@ class IssueService(object):
            issue.opened_timestamp,
            issue.closed_timestamp,
            issue.modified_timestamp,
+           issue.owner_modified_timestamp,
+           issue.status_modified_timestamp,
+           issue.component_modified_timestamp,
            issue.derived_owner_id or None,
            self._config_service.LookupStatusID(
                cnxn, issue.project_id, issue.derived_status),
@@ -787,6 +802,9 @@ class IssueService(object):
           'opened': issue.opened_timestamp,
           'closed': issue.closed_timestamp,
           'modified': issue.modified_timestamp,
+          'owner_modified': issue.owner_modified_timestamp,
+          'status_modified': issue.status_modified_timestamp,
+          'component_modified': issue.component_modified_timestamp,
           'derived_owner_id': issue.derived_owner_id or None,
           'derived_status_id': self._config_service.LookupStatusID(
               cnxn, issue.project_id, issue.derived_status) or None,
@@ -1033,7 +1051,10 @@ class IssueService(object):
       A list of Amendment PBs that describe the set of metadata updates that
       the user made.  This tuple is later used in making the IssueComment.
     """
+    timestamp = timestamp or int(time.time())
+    old_effective_owner = tracker_bizobj.GetOwnerId(issue)
     old_effective_status = tracker_bizobj.GetStatus(issue)
+    old_components = set(issue.component_ids)
 
     # Make all user input safe to echo out again later.
     status = framework_bizobj.CanonicalizeLabel(status)
@@ -1210,7 +1231,7 @@ class IssueService(object):
 
     # update the modified_timestamp for any comment added, even if it was
     # just a text comment with no issue fields changed.
-    issue.modified_timestamp = timestamp or int(time.time())
+    issue.modified_timestamp = timestamp
 
     # Update the closed timestamp before filter rules so that rules
     # can test for closed_timestamp, and also after filter rules
@@ -1225,6 +1246,12 @@ class IssueService(object):
     filterrules_helpers.ApplyGivenRules(
         cnxn, services, issue, config, rules, predicate_asts)
     _UpdateClosedTimestamp(config, issue, old_effective_status)
+    if old_effective_owner != tracker_bizobj.GetOwnerId(issue):
+      issue.owner_modified_timestamp = timestamp
+    if old_effective_status != tracker_bizobj.GetStatus(issue):
+      issue.status_modified_timestamp = timestamp
+    if old_components != set(issue.component_ids):
+      issue.component_modified_timestamp = timestamp
 
     # Store the issue in SQL.
     self.UpdateIssue(cnxn, issue, commit=False, invalidate=False)
@@ -1304,6 +1331,7 @@ class IssueService(object):
       MidAirCollisionException: indicates that the issue has been
           changed since the user loaded the page.
     """
+    timestamp = timestamp or int(time.time())
     status = framework_bizobj.CanonicalizeLabel(status)
     labels = [framework_bizobj.CanonicalizeLabel(l) for l in labels]
     labels = [l for l in labels if l]
@@ -1318,6 +1346,10 @@ class IssueService(object):
     config = self._config_service.GetProjectConfig(cnxn, project_id)
     issue = self.GetIssueByLocalID(cnxn, project_id, local_id)
 
+    old_effective_owner = tracker_bizobj.GetOwnerId(issue)
+    old_effective_status = tracker_bizobj.GetStatus(issue)
+    old_components = set(issue.component_ids)
+
     # Store each updated value in the issue PB, and compute amendments
     amendments = []
     iids_to_invalidate = set()
@@ -1327,7 +1359,6 @@ class IssueService(object):
           summary, issue.summary))
       issue.summary = summary
 
-    old_effective_status = tracker_bizobj.GetStatus(issue)
     if status != issue.status:
       amendments.append(tracker_bizobj.MakeStatusAmendment(
           status, issue.status))
@@ -1492,12 +1523,18 @@ class IssueService(object):
 
     # update the modified_timestamp for any comment added, even if it was
     # just a text comment with no issue fields changed.
-    issue.modified_timestamp = timestamp or int(time.time())
+    issue.modified_timestamp = timestamp
 
     # Update closed_timestamp both before and after filter rules.
     _UpdateClosedTimestamp(config, issue, old_effective_status)
     filterrules_helpers.ApplyFilterRules(cnxn, services, issue, config)
     _UpdateClosedTimestamp(config, issue, old_effective_status)
+    if old_effective_owner != tracker_bizobj.GetOwnerId(issue):
+      issue.owner_modified_timestamp = timestamp
+    if old_effective_status != tracker_bizobj.GetStatus(issue):
+      issue.status_modified_timestamp = timestamp
+    if old_components != set(issue.component_ids):
+      issue.component_modified_timestamp = timestamp
 
     self.UpdateIssue(cnxn, issue)
     # TODO(jrobbins): only invalidate nonviewable if the following changed:

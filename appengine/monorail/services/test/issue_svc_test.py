@@ -120,7 +120,9 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     now = int(time.time())
     self.project_service.TestAddProject('proj', project_id=789)
     self.issue_rows = [
-        (78901, 789, 1, 1, 111L, 222L, now, now, now, 0, 0, 0, 1, 0, False)]
+        (78901, 789, 1, 1, 111L, 222L,
+         now, now, now, now, now, now,
+         0, 0, 0, 1, 0, False)]
     self.summary_rows = [(78901, 'sum')]
     self.label_rows = [(78901, 1, 0)]
     self.component_rows = []
@@ -450,7 +452,9 @@ class IssueServiceTest(unittest.TestCase):
     self.assertEqual(locations, [(781, 1), (782, 11)])
 
   def SetUpInsertIssue(self, label_rows=None):
-    row = (789, 1, 1, 111L, 111L, self.now, 0, self.now, None, 0,
+    row = (789, 1, 1, 111L, 111L,
+           self.now, 0, self.now, self.now, self.now, self.now,
+           None, 0,
            False, 0, 0, False)
     self.services.issue.issue_tbl.InsertRows(
         self.cnxn, issue_svc.ISSUE_COLS[1:], [row],
@@ -468,8 +472,9 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpUpdateIssuesRelation()
 
   def SetUpInsertSpamIssue(self):
-    row = (789, -1, 1, 111L, 111L, self.now, 0, self.now, None, 0,
-           False, 0, 0, True)
+    row = (789, -1, 1, 111L, 111L,
+           self.now, 0, self.now, self.now, self.now, self.now,
+           None, 0, False, 0, 0, True)
     self.services.issue.issue_tbl.InsertRows(
         self.cnxn, issue_svc.ISSUE_COLS[1:], [row],
         commit=False, return_generated_ids=True).AndReturn([78901])
@@ -569,6 +574,9 @@ class IssueServiceTest(unittest.TestCase):
         'opened': 123456789,
         'closed': 0,
         'modified': 123456789,
+        'owner_modified': 123456789,
+        'status_modified': 123456789,
+        'component_modified': 123456789,
         'derived_owner_id': None,
         'derived_status_id': None,
         'deleted': False,
