@@ -13,19 +13,38 @@ poll+process cycle for the repo that it's mirroring.
     the repo you intend to mirror. Its contents is determined by
     [`GsubtreedConfigRef`][1]. You must at least set the `enabled_paths`
     portion.
-    *   You should create a new line of history (e.g. `git checkout --orphan`)
-        to avoid having unecessary extra files in this ref (as opposed to
-        branching it off of another ref like `master`). Note that you'll
-        probably also want to do a `git rm -rf` after you check out the orphan
-        ref to clear the index+working copy.
+    * You should create a new line of history to avoid having unecessary extra
+      files in this ref (as opposed to branching it off of another ref like
+      `master`). Here's an example for the `infra.git` repo:
 
     ```sh
-    git checkout --orphan gsubtreed-config/main
-    git rm -rf *
-    vim config.json ## Edit the file
+    mkdir temp_dir
+    cd temp_dir
+    git init
+    vim config.json
+    git add config.json
     git commit -am 'Created gsubtreed config'
-    git push remote refs/gsubtreed-config/main
+    git push https://chromium.googlesource.com/infra/infra HEAD:refs/gsubtreed-config/main
     ```
+    To modify an existing `config.json` e.g. in `infra.git`:
+
+    ```sh
+    mkdir temp_dir
+    cd temp_dir
+    git init
+    git remote add origin https://chromium.googlesource.com/infra/infra
+    git fetch origin refs/gsubtreed-config/main
+    git checkout FETCH_HEAD
+    # hack hack
+    git commit -m 'Updated gsubtreed config'
+    git push origin HEAD:refs/gsubtreed-config/main
+    ```
+
+    Anyone with a committer status in the repo should be able to push
+    the config.  However, config modification usually means you are
+    adding or deleting a mirrored subtree, which requires creating a
+    new repo or deleting an old one. For that, you will likely need a
+    [git-admin support](https://bugs.chromium.org/p/chromium/issues/entry?template=Infra-Git).
 
 1.  (optional) If you have existing git mirrors (probably mirrored via git-svn),
     disable the mirroring service for them. If not, create the mirrors. By
