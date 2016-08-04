@@ -368,3 +368,88 @@ td.rowwidgets { padding: 2px 2px 0 7px; }
   text-decoration: none;
   margin-left: 2em;
 }
+
+#show-ranks, #hide-ranks {
+  color: #555;
+  cursor: pointer;
+}
+
+.rel_issues:hover #show-ranks, #hide-ranks:hover {
+  text-decoration: underline;
+}
+
+#blocked-scrim {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 10;
+}
+
+#blocked-table {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  border: 3px solid #333;
+  padding: 1.5em;
+  max-height: 75%;
+  overflow-y: auto;
+}
+
+#blocked-rank {
+  display: table;
+  width: 100%;
+}
+
+#blocked-rank .closed a {
+  text-decoration: line-through;
+}
+
+.drag_item[draggable=true] {
+  position: relative;
+}
+
+.drag_item[draggable=false] {
+  cursor: wait;
+}
+
+.gripper {
+  opacity: 0;
+}
+
+.drag_item:hover .gripper {
+  cursor: -moz-grab;
+  cursor: -webkit-grab;
+  cursor: grab;
+  opacity: 1;
+}
+
+.drag_container, .drag-item td {
+  border-collapse: collapse;
+}
+
+.drag_container th, .drag_container td {
+  padding: 0.5em;
+}
+
+.drag_container th {
+  color: #00c;
+  background: #e3e9ff;
+  text-align: left;
+}
+
+.drag_item:hover[draggable=true] {
+  background: #f0f0f0 !important;
+}
+
+.drag_item.top td {
+  border-top: 2px solid #888;
+}
+
+.drag_item.bottom td {
+  border-bottom: 2px solid #888;
+}

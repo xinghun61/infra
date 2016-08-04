@@ -481,7 +481,7 @@ class MonorailRequest(object):
     self.parent_id = self.GetIntParam('parent_id')
     self.target_id = self.GetIntParam('target_id')
     self.moved_ids = self.GetIntListParam('moved_ids')
-    self.split_above = self.GetIntParam('split_above')
+    self.split_above = self.GetBoolParam('split_above')
 
   def _ParseFormOverrides(self):
     """Support deep linking by allowing the user to set form fields via QS."""
@@ -637,6 +637,16 @@ class MonorailRequest(object):
       return [int(p) for p in param_list]
     except (TypeError, ValueError):
       return default_value
+
+  def GetBoolParam(self, query_param_name, default_value=None):
+    """Get a boolean param from the URL or default."""
+    value = self.request.params.get(query_param_name)
+    if value is None:
+      return default_value
+
+    if (not value) or (value.lower() == 'false'):
+      return False
+    return True
 
 
 def _ParsePathIdentifiers(path):

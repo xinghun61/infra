@@ -37,6 +37,10 @@
   [end][# for descriptions]
 </div>
 
+[if-any issue.multiple_blocked_on]
+  [include "issue-rank-table.ezt"]
+[end]
+
 </div>[#issuedescription]
 
 

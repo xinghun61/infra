@@ -174,3 +174,5 @@ _checkLeafName = TKR_checkLeafName;
 _addMultiFieldValueWidget = TKR_addMultiFieldValueWidget;
 _removeMultiFieldValueWidget = TKR_removeMultiFieldValueWidget;
 _trimCommas = TKR_trimCommas;
+
+_initDragAndDrop = TKR_initDragAndDrop;

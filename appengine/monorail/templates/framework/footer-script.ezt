@@ -13,6 +13,7 @@
 <script type="text/javascript" defer src="/static/js/tracker/ac.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/tracker/tracker-ac.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/tracker/tracker-components.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/tracker/tracker-dd.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/tracker/tracker-display.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/tracker/tracker-editing.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/tracker/tracker-fields.js?version=[app_version]" nonce="[nonce]"></script>

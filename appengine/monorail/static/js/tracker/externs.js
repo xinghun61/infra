@@ -113,3 +113,5 @@ var _addMultiFieldValueWidget;
 var _removeMultiFieldValueWidget;
 var console;
 var _trimCommas;
+
+var _initDragAndDrop;

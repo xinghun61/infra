@@ -1,0 +1,203 @@
+[# Make a table of all issues that an issue is blocked on, with drag-and-drop
+   functionality to re-rank them.
+]
+<div id="blocked-scrim" style="display: none;">
+  <div id="blocked-table">
+    <b>Blocked on[if-any page_perms.EditIssue] (drag to re-order)[end]:</b>
+    <span id="hide-ranks" style="float: right;"><a>X</a></span>
+    <table id="blocked-rank" class="striped drag_container">
+      <tr><td>Loading detail...</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- Issue ref templates -->
+<template id="ref-detail">
+  <tr>
+    <td class="gripper">&#9926;</td>
+    <td><a></a></td>
+    <td class="ref_summary"></td>
+  </tr>
+</template>
+<template id="ref-link">
+  <a></a><br>
+</template>
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  var tableContainer = $('blocked-scrim');
+  var table = $('blocked-rank');
+  var links = $('blocked-links');
+  var issues = [[]];
+  var detailTemplate = $('ref-detail');
+  var linkTemplate = $('ref-link');
+
+  function createHeader(columns, opt_colspan) {
+    var header = document.createElement('tr');
+    columns.forEach(function(column) {
+      var th = document.createElement('th');
+      if (opt_colspan)
+        th.setAttribute('colspan', opt_colspan);
+      th.textContent = column;
+      header.appendChild(th);
+    });
+    return header;
+  }
+
+  var openHeader = createHeader(['', 'ID', 'Summary']);
+  var closedHeader = createHeader(['Closed issues:'], 3);
+  var danglingHeader = createHeader(['Codesite issues:'], 3);
+
+  function renderTable(issues) {
+    while (table.firstChild)
+      table.removeChild(table.firstChild);
+
+    var openIssues = document.createElement('tbody');
+    var closedIssues = document.createElement('tbody');
+    var openDangling = document.createElement('tbody');
+    var closedDangling = document.createElement('tbody');
+    var t = detailTemplate;
+    var tr = t.content.querySelector('tr');
+    var a = t.content.querySelector('a');
+
+    issues.forEach(function(issue) {
+      if (issue.is_open && !issue.is_dangling) {
+        tr.setAttribute('data-id', issue.issue_id);
+        tr.setAttribute('class', 'drag_item');
+      } else if (!issue.is_open) {
+        tr.setAttribute('class', 'closed');
+      }
+      a.href = issue.url;
+      a.textContent = issue.issue_ref;
+      t.content.querySelector('td.ref_summary').textContent = issue.summary;
+      var clone = document.importNode(t.content, true);
+
+      if (issue.is_open && !issue.is_dangling) {
+        openIssues.appendChild(clone);
+      } else if (!issue.is_open && !issue.is_dangling) {
+        closedIssues.appendChild(clone);
+      } else if (issue.is_open) {
+        openDangling.appendChild(clone);
+      } else {
+        closedDangling.appendChild(clone);
+      }
+    });
+
+    if (openIssues.firstChild) {
+      table.appendChild(openHeader);
+      table.appendChild(openIssues);
+    }
+    if (closedIssues.firstChild) {
+      table.appendChild(closedHeader);
+      table.appendChild(closedIssues);
+    }
+    if (openDangling.firstChild || closedDangling.firstChild) {
+      table.appendChild(danglingHeader);
+      table.appendChild(openDangling);
+      table.appendChild(closedDangling);
+    }
+  }
+
+  function renderIssueLinks(issues) {
+    while (links.firstChild)
+      links.removeChild(links.firstChild);
+
+    var openIssues = document.createElement('div');
+    var closedIssues = document.createElement('div');
+    var t = linkTemplate;
+    var a = t.content.querySelector('a');
+
+    issues.forEach(function(issue) {
+      a.href = issue.url;
+      a.title = issue.display_name + ': ' + issue.summary;
+      a.textContent = issue.display_name;
+      if (issue.is_open) {
+        a.setAttribute('class', '');
+        openIssues.appendChild(document.importNode(t.content, true));
+      } else {
+        a.setAttribute('class', 'closed_ref')
+        closedIssues.appendChild(document.importNode(t.content, true));
+      }
+    });
+    links.appendChild(openIssues);
+    links.appendChild(closedIssues);
+  }
+
+  [if-any page_perms.EditIssue]
+
+  function onResponse(event) {
+    var xhr = event.target;
+    if (xhr.readyState != 4) {
+      return;
+    }
+    if (xhr.status != 200) {
+      reloadIssues(issues.slice());
+      alert(xhr.status + ': ' + xhr.statusText + '.\nPlease try again.');
+      return;
+    }
+    var response = CS_parseJSON(xhr);
+    reloadIssues(response.issues);
+    _initDragAndDrop(table, onRerank, true);
+  }
+
+  function onRerank(srcID, targetID, position) {
+    var data = {
+      parent_id: [issue.issue_id],
+      target_id: targetID,
+      moved_ids: srcID,
+      split_above: position == 'above',
+    }
+    CS_doPost('rerankBlockedOn.do', onResponse, data);
+  }
+
+  [end]
+
+  function reloadIssues(opt_issues) {
+    // clear old issues
+    while (issues.pop()) {}
+    if (typeof opt_issues === 'undefined') {
+      var data = {
+        parent_id: [issue.issue_id],
+      }
+      CS_doPost('rerankBlockedOn.do', function(event) {
+        var xhr = event.target;
+        if (xhr.readyState != 4 || xhr.status != 200)
+          return;
+        var resp = CS_parseJSON(xhr);
+        renderTable(resp.issues);
+        renderIssueLinks(resp.issues);
+        [if-any page_perms.EditIssue]
+          _initDragAndDrop(table, onRerank, true);
+        [end]
+        resp.issues.forEach(function(issue) {
+          issues.push(issue);
+        });
+      }, data, '[xhr_token]');
+    } else {
+      renderTable(opt_issues);
+      renderIssueLinks(opt_issues);
+      [if-any page_perms.EditIssue]
+        _initDragAndDrop(table, onRerank, true);
+      [end]
+      opt_issues.forEach(function(issue) {
+        issues.push(issue);
+      });
+    }
+  }
+
+  $('show-ranks').addEventListener('click', function(e) {
+    reloadIssues();
+    tableContainer.style.display = '';
+  });
+
+  $('blocked-scrim').addEventListener('click', function(e) {
+    if (event.target == this)
+      tableContainer.style.display = 'none';
+  });
+
+  $('hide-ranks').addEventListener('click', function(e) {
+    tableContainer.style.display = 'none';
+  });
+
+});
+</script>

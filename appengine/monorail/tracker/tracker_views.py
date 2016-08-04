@@ -172,6 +172,7 @@ class IssueView(template_helpers.PBProxy):
       self.blocking = [irv for irv in self.blocking if irv.visible]
       # TODO(jrobbins): sort by irv project_name and local_id
 
+    self.multiple_blocked_on = ezt.boolean(len(self.blocked_on) >= 2)
     self.detail_relative_url = tracker_helpers.FormatRelativeIssueURL(
         issue.project_name, urls.ISSUE_DETAIL, id=issue.local_id)
 
@@ -284,7 +285,7 @@ class DanglingIssueRefView(object):
     self.display_name = 'issue %s:%d' % (project_name, issue_id)
     self.short_name = 'issue %s:%d' % (project_name, issue_id)
     self.summary = 'Issue %d in %s.' % (issue_id, project_name)
-    self.local_id = self.display_name[6:]
+    self.issue_ref = self.display_name[6:]
     self.is_dangling = ezt.boolean(True)
 
   def DebugString(self):

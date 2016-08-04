@@ -167,19 +167,23 @@
 
 <div class="rel_issues widemeta">
     [if-any issue.blocked_on]
-      <br><b>Blocked on:</b><br>
-      [for issue.blocked_on][if-any issue.blocked_on.visible]
-        [if-any issue.blocked_on.is_open]
-          <a href="[issue.blocked_on.url]" title="[issue.blocked_on.display_name]: [issue.blocked_on.summary]"
-           >[issue.blocked_on.display_name]</a><br>
-        [end]
-      [end][end]
-      [for issue.blocked_on][if-any issue.blocked_on.visible]
-        [if-any issue.blocked_on.is_open][else]
-          <a href="[issue.blocked_on.url]" title="[issue.blocked_on.display_name]: [issue.blocked_on.summary]" class="closed_ref"
-           >[issue.blocked_on.display_name]</a><br>
-        [end]
-      [end][end]
+      <br><b>Blocked on:</b>
+      [if-any issue.multiple_blocked_on]<a id="show-ranks">View detail</a>[end]
+      <br>
+      <span id="blocked-links">
+        [for issue.blocked_on][if-any issue.blocked_on.visible]
+          [if-any issue.blocked_on.is_open]
+            <a href="[issue.blocked_on.url]" title="[issue.blocked_on.display_name]: [issue.blocked_on.summary]"
+            >[issue.blocked_on.display_name]</a><br>
+          [end]
+        [end][end]
+        [for issue.blocked_on][if-any issue.blocked_on.visible]
+          [if-any issue.blocked_on.is_open][else]
+            <a href="[issue.blocked_on.url]" title="[issue.blocked_on.display_name]: [issue.blocked_on.summary]" class="closed_ref"
+            >[issue.blocked_on.display_name]</a><br>
+          [end]
+        [end][end]
+      </span>
     [end]
 
     [if-any issue.blocking]
