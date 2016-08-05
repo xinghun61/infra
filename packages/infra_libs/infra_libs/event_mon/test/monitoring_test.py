@@ -357,6 +357,19 @@ class GetBuildEventTest(unittest.TestCase):
     self.assertTrue(event.HasField('build_event'))
     self.assertFalse(event.build_event.HasField('category'))
 
+  def test_get_build_event_with_head_revision_git_hash(self):
+    test_revision = 'da39a3ee5e6b4b0d3255bfef95601890afd80709'
+    log_event = monitoring.get_build_event(
+        'BUILD', 'bot.host.name', 'build_name',
+        head_revision_git_hash=test_revision).log_event()
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(
+        event.build_event.head_revision.git_hash, test_revision)
+
   def test_get_build_event_invalid_type(self):
     # An invalid type is a critical error.
     log_event = monitoring.get_build_event('INVALID_TYPE',
