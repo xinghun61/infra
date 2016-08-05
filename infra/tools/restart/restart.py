@@ -91,8 +91,9 @@ def add_argparse_options(parser):
   parser.add_argument(
       '--eod', action='store_true',
       help='schedules restart for 6:30PM Google Standard Time.')
-  parser.add_argument('-b', '--bug', default=None, type=str,
-                      help='Bug containing master restart request.')
+  parser.add_argument(
+      '-b', '--bug', default=None, type=str,
+      help='Bug containing master restart request.')
   parser.add_argument(
       '-r', '--reviewer', action='append', type=str,
       help=('Reviewer (ldap or ldap@google.com) to TBR the CL to. '
@@ -108,6 +109,9 @@ def add_argparse_options(parser):
       choices=buildbot_state.STATES['desired_buildbot_state'],
       help='which desired state to put the buildbot master in '
            '(default %(default)s)')
+  parser.add_argument(
+      '-e', '--reason', type=str, default='',
+      help='reason for restarting the master')
 
 
 def get_restart_spec(name, restart_time):
@@ -188,15 +192,19 @@ def autocomplete_and_partition(reviewers):
   return google, other
 
 def commit(
-    target, specs, reviewers, bug, force, no_commit, desired_state):
+    target, specs, reviewers, bug, force, no_commit, desired_state, reason):
   """Commits the local CL via the CQ."""
   if desired_state == 'running':
     action = 'Restarting'
   else:
     action = desired_state.title() + 'ing'
 
-  desc = '%s master(s) %s\n' % (
-      action, ', '.join([s.name for s in specs]))
+  desc = '%(action)s master%(plural)s %(names)s\n\n%(reason)s\n' % {
+      'action': action,
+      'plural': 's' if len(specs) > 1 else '',
+      'names': ', '.join([s.name for s in specs]),
+      'reason': reason,
+  }
   if bug:
     desc += '\nBUG=%s' % bug
   tbr_whom = 'an owner'
@@ -272,7 +280,7 @@ def commit(
 
 
 def run(masters, restart_time, reviewers, bug, force, no_commit,
-        desired_state):
+        desired_state, reason):
   """Restart all the masters in the list of masters.
 
   Schedules the restart for restart_time.
@@ -287,8 +295,16 @@ def run(masters, restart_time, reviewers, bug, force, no_commit,
     no_commit - doesn't set the CQ bit on upload
     desired_state - nominally 'running', picks which desired_state
                     to put the buildbot in
+    reason - a short message saying why the master is being restarted
   """
   masters = [get_restart_spec(m, restart_time) for m in sorted(set(masters))]
+
+  reason = reason.strip()
+  if not reason:
+    reason = raw_input('Please provide a reason for this restart: ').strip()
+    if not reason:
+      print 'No reason provided, exiting'
+      return 0
 
   # Step 1: Acquire a clean master state checkout.
   # This repo is too small to consider caching.
@@ -331,4 +347,4 @@ def run(masters, restart_time, reviewers, bug, force, no_commit,
     # Step 3: Send the patch to Rietveld and commit it via the CQ.
     LOGGER.info('Committing back into repository')
     commit(master_state_dir, masters, reviewers, bug, force, no_commit,
-           desired_state)
+           desired_state, reason)

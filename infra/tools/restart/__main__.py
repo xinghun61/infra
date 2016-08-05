@@ -39,7 +39,7 @@ def main(argv):
 
   return restart.run(args.masters, restart_time,
                      args.reviewer, args.bug, args.force, args.no_commit,
-                     args.desired_state)
+                     args.desired_state, args.reason)
 
 
 if __name__ == '__main__':
