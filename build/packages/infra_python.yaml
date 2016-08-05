@@ -35,11 +35,6 @@ data:
       # Depnds on infra/node/node.py and also a npm module.
       - tools/testjs
 
-  # Base infra libraries, required by infra
-  - dir: "infra_libs"
-    exclude:
-      - .*\.pyc
-
   # Launcher with dependencies, knows how to boot venv.
   - file: run.py
   - file: test.py

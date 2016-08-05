@@ -51,7 +51,6 @@ WIN_ENABLED_PACKAGES = [
   'packages/infra_libs/infra_libs/logs',
   'packages/infra_libs/infra_libs/time_functions',
   'packages/infra_libs/infra_libs/ts_mon',
-  'packages/infra_libs/infra_libs:infra_libs.test.*',
 ]
 
 
@@ -88,7 +87,9 @@ for arg in args:
 # Set up default list of packages/directories if none have been provided.
 if not modules:
   if sys.platform == 'win32':
-    modules.extend(WIN_ENABLED_PACKAGES)
+    # Only add existing paths.
+    modules.extend(p for p in WIN_ENABLED_PACKAGES
+                   if os.path.isdir(os.path.join(INFRA_ROOT, p)))
   else:
     modules.extend(['infra'])  # TODO(pgervais): add 'test/'
   appengine_dir = os.path.join(INFRA_ROOT, 'appengine')
