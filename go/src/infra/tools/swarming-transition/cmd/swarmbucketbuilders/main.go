@@ -233,7 +233,7 @@ func convert(in *buildersFile) (*buildbucket.Swarming, error) {
 		out.Builders = append(out.Builders, &buildbucket.Swarming_Builder{
 			Category:             &b.Category,
 			Dimensions:           mapToList(dims),
-			ExecutionTimeoutSecs: proto.Int32(int32(b.ExecutionTimeoutSecs)),
+			ExecutionTimeoutSecs: proto.Uint32(uint32(b.ExecutionTimeoutSecs)),
 			Name:                 proto.String(name + *builderSuffix),
 			Recipe: &buildbucket.Swarming_Recipe{
 				Name:        &recipeName,
