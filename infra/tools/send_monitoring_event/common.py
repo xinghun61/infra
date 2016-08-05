@@ -113,6 +113,8 @@ def add_argparse_options(parser):
                            help='Buildbucket ID for this build')
   build_group.add_argument('--build-event-category',
                            help='Build category, e.g. cq or git_cl_try')
+  build_group.add_argument('--build-event-head-revision-git-hash',
+                           help='Revision fetched from the Git repository')
 
   build_group.add_argument('--build-event-goma-stats-path',
                            metavar='FILENAME',
@@ -305,6 +307,7 @@ def send_build_event(args):
     patch_url=args.build_event_patch_url,
     bbucket_id=args.build_event_bbucket_id,
     category=args.build_event_category,
+    head_revision_git_hash=args.build_event_head_revision_git_hash,
     timestamp_kind=args.event_mon_timestamp_kind,
     event_timestamp=args.event_mon_event_timestamp,
     goma_stats=goma_stats,
@@ -394,7 +397,9 @@ def read_events_from_file(filename):
             service_name=args.get('event-mon-service-name'),
             patch_url=args.get('build-event-patch-url'),
             bbucket_id=args.get('build-event-bbucket-id'),
-            category=args.get('build-event-category')))
+            category=args.get('build-event-category'),
+            head_revision_git_hash=args.get(
+              'build-event-head-revision-git-hash')))
       else:
         LOGGER.warning('build-event-type field not found, skipping line '
                        '%d in %s', lineno, filename)
