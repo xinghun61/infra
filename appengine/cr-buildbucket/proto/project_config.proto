@@ -41,11 +41,11 @@ message Swarming {
     // Use this field for string properties and use properties_j for other
     // types.
     repeated string properties = 3;
-    // Same as properties, but the value must valid JSON or empty. For example
+    // Same as properties, but the value must valid JSON. For example
     //   properties_j: "a:1"
     // means property a is a number 1, not string "1".
     //
-    // If empty, it means no property must be defined. In particular, it removes
+    // If null, it means no property must be defined. In particular, it removes
     // a default value for the property, if any.
     //
     // Fields properties and properties_j can be used together, but cannot both
@@ -53,6 +53,12 @@ message Swarming {
     repeated string properties_j = 4;
   }
 
+  // A builder has a name, a category and specifies what should happen if a
+  // build is scheduled to that builder.
+  //
+  // SECURITY WARNING: if adding more fields to this message, keep in mind that
+  // a user that has permissions to schedule a build to the bucket, can override
+  // this config.
   message Builder {
     // Name of the builder. Will be propagated to "builder" build tag and
     // "buildername" recipe property.

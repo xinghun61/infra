@@ -103,7 +103,27 @@ optional properties:
   * `false`: do not use canary template.
   * `null` (default): use canary template with some low probability if it
     exists.
-  
+* `"override_builder_cfg"`: can override builder configuration defined on the
+  server. See also a section about it below.
+
+#### Override configuration dynamically
+
+`swarming.override_builder_cfg` parameter can override builder configuration
+defined on the server. For example, value
+
+
+```javascript
+{
+  "dimensions": ["cores:64"]
+}
+```
+
+(re)defines "cores" dimension to be "64" for this particular build.
+
+The format is defined by the Builder message in
+[project_config.proto](../proto/project_config.proto); in practice, it is JSONPB
+of the message.
+
 ## Tags
 
 A swarming task created by buildbucket has extra tags:

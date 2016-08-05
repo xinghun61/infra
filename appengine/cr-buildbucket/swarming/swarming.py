@@ -1,4 +1,4 @@
-# Copyright 2014 The Chromium Authors. All rights reserved.
+# Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -39,6 +39,7 @@ from components import decorators
 from components import net
 from components import utils
 from components.auth import tokens
+from components.config import validation
 from google.appengine.api import app_identity
 from google.appengine.ext import ndb
 import webapp2
@@ -49,6 +50,8 @@ import config
 import errors
 import model
 import notifications
+import protoutil
+
 
 PUBSUB_TOPIC = 'swarming'
 BUILDER_PARAMETER = 'builder_name'
@@ -137,22 +140,26 @@ def validate_build_parameters(builder_name, params):
 
   params.pop(BUILDER_PARAMETER)  # already validated
 
+
+  def assert_object(name, value):
+    if not isinstance(value, dict):
+      bad('%s parameter must be an object' % name)
+
   properties = params.pop(PARAM_PROPERTIES, None)
   if properties is not None:
-    if not isinstance(properties, dict):
-      bad('properties parameter must be an object')
+    assert_object('properties', properties)
     if properties.get('buildername', builder_name) != builder_name:
       bad('inconsistent builder name')
 
   swarming = params.pop(PARAM_SWARMING, None)
   if swarming is not None:
-    if not isinstance(swarming, dict):
-      bad('swarming parameter must be an object')
+    assert_object('swarming', swarming)
     swarming = copy.deepcopy(swarming)
     if 'recipe' in swarming:
+      logging.error(
+          'someone is still using deprecated swarming.recipe parameter')
       recipe = swarming.pop('recipe')
-      if not isinstance(recipe, dict):
-        bad('swarming.recipe parameter must be an object')
+      assert_object('swarming.recipe', recipe)
       if 'revision' in recipe:
         revision = recipe.pop('revision')
         if not isinstance(revision, basestring):
@@ -162,6 +169,24 @@ def validate_build_parameters(builder_name, params):
     canary_template = swarming.pop('canary_template', None)
     if canary_template not in (True, False, None):
       bad('swarming.canary_template parameter must true, false or null')
+
+    override_builder_cfg_data = swarming.pop('override_builder_cfg', None)
+    if override_builder_cfg_data is not None:
+      assert_object('swarming.override_builder_cfg', override_builder_cfg_data)
+      override_builder_cfg = project_config_pb2.Swarming.Builder()
+      try:
+        protoutil.merge_dict(
+            override_builder_cfg_data, override_builder_cfg)
+      except TypeError as ex:
+        bad('swarming.override_builder_cfg parameter: %s', ex)
+      if override_builder_cfg.name:
+        bad('swarming.override_builder_cfg cannot override builder name')
+      ctx = validation.Context.raise_on_error(
+          exc_type=errors.InvalidInputError,
+          prefix='swarming.override_builder_cfg parameter: ')
+      swarmingcfg_module.validate_builder_cfg(
+          override_builder_cfg, ctx, final=False)
+
     if swarming:
       bad('unrecognized keys in swarming param: %r', swarming.keys())
 
@@ -203,6 +228,31 @@ def should_use_canary_template(build, percentage):  # pragma: no cover
   return digest[0] < 256 * percentage / 100
 
 
+def _prepare_builder_config(swarming_cfg, builder_cfg, swarming_param):
+  """Returns final version of builder config to use for |build|.
+
+  Expects arguments to be valid.
+  """
+  swarming_cfg = copy.deepcopy(swarming_cfg)
+  swarmingcfg_module.normalize_swarming_cfg(swarming_cfg)
+
+  # Apply defaults.
+  result = copy.deepcopy(swarming_cfg.builder_defaults)
+  swarmingcfg_module.merge_builder(result, builder_cfg)
+
+  # Apply overrides in the swarming parameter.
+  override_builder_cfg_data = swarming_param.get('override_builder_cfg', {})
+  if override_builder_cfg_data:
+    override_builder_cfg = project_config_pb2.Swarming.Builder()
+    protoutil.merge_dict(override_builder_cfg_data, result)
+    ctx = validation.Context.raise_on_error(
+        exc_type=errors.InvalidInputError,
+        prefix='swarming.override_buider_cfg parameter: ')
+    swarmingcfg_module.merge_builder(result, override_builder_cfg)
+    swarmingcfg_module.validate_builder_cfg(result, ctx)
+  return result
+
+
 @ndb.tasklet
 def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
   """Creates a swarming task definition for the |build|.
@@ -225,13 +275,8 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
     canary = should_use_canary_template(
         build, swarming_cfg.task_template_canary_percentage)
 
-  # Normalize/merge configs.
-  swarming_cfg = copy.deepcopy(swarming_cfg)
-  swarmingcfg_module.normalize_swarming_cfg(swarming_cfg)
-
-  merged = copy.deepcopy(swarming_cfg.builder_defaults)
-  swarmingcfg_module.merge_builder(merged, builder_cfg)
-  builder_cfg = merged
+  builder_cfg = _prepare_builder_config(
+      swarming_cfg, builder_cfg, swarming_param)
 
   # Render task template.
   try:

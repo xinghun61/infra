@@ -6,6 +6,7 @@ import base64
 import contextlib
 import datetime
 import json
+import logging
 
 from components import auth
 from components import config as config_component
@@ -34,6 +35,16 @@ class SwarmingTest(testing.AppengineTestCase):
   def setUp(self):
     super(SwarmingTest, self).setUp()
     self.mock(utils, 'utcnow', lambda: datetime.datetime(2015, 11, 30))
+
+    self.json_response = None
+    def json_request_async(*_, **__):
+      if self.json_response is not None:
+        return futuristic(self.json_response)
+      self.fail('unexpected outbound request')  # pragma: no cover
+
+    self.mock(
+        net, 'json_request_async', mock.Mock(side_effect=json_request_async))
+
     self.bucket_cfg = project_config_pb2.Bucket(
       name='bucket',
       swarming=project_config_pb2.Swarming(
@@ -147,8 +158,33 @@ class SwarmingTest(testing.AppengineTestCase):
       {'swarming': {'recipe': {'junk': 1}}},
       {'swarming': {'recipe': {'revision': 1}}},
       {'swarming': {'canary_template': 'yes'}},
+      {'swarming': {'override_cfg': 0}},
+      {'swarming': {'override_cfg': {'swarming': 0}}},
+      {
+        'swarming': {
+          'override_cfg': {
+            'swarming': {'hostname': 0},
+          },
+        },
+      },
+      {
+        'swarming': {
+          'override_cfg': {
+            'swarming': {'builders': [{}]},
+          },
+        },
+      },
+      {
+        'swarming': {
+          'override_cfg': {
+            'swarming': {'common_dimensions': ['wrong_dimension']},
+          },
+        },
+      },
+      {'swarming': {'override_cfg': {'x': 0}}},
     ]
     for p in bad:
+      logging.info('testing %s', p)
       p['builder_name'] = 'foo'
       with self.assertRaises(errors.InvalidInputError):
         swarming.validate_build_parameters(p['builder_name'], p)
@@ -196,7 +232,7 @@ class SwarmingTest(testing.AppengineTestCase):
       },
     )
 
-    self.mock(net, 'json_request_async', mock.Mock(return_value=futuristic({
+    self.json_response = {
       'task_id': 'deadbeef',
       'request': {
         'properties': {
@@ -217,7 +253,7 @@ class SwarmingTest(testing.AppengineTestCase):
           'recipe_revision:badcoffee',
         ]
       }
-    })))
+    }
 
     swarming.create_task_async(build).get_result()
 
@@ -308,7 +344,7 @@ class SwarmingTest(testing.AppengineTestCase):
           }        },
     )
 
-    self.mock(net, 'json_request_async', mock.Mock(return_value=futuristic({
+    self.json_response = {
       'task_id': 'deadbeef',
       'request': {
         'properties': {
@@ -328,7 +364,7 @@ class SwarmingTest(testing.AppengineTestCase):
           'recipe_repository:https://example.com/repo',
         ]
       }
-    })))
+    }
 
     swarming.create_task_async(build).get_result()
 
@@ -425,7 +461,7 @@ class SwarmingTest(testing.AppengineTestCase):
     swarming.should_use_canary_template.return_value = True
     self.task_template_canary = None
 
-    self.mock(net, 'json_request_async', mock.Mock(return_value=futuristic({
+    self.json_response = {
       'task_id': 'deadbeef',
       'request': {
         'properties': {
@@ -446,7 +482,7 @@ class SwarmingTest(testing.AppengineTestCase):
           'recipe_revision:badcoffee',
         ]
       }
-    })))
+    }
 
     build = model.Build(
         bucket='bucket',
@@ -456,6 +492,107 @@ class SwarmingTest(testing.AppengineTestCase):
 
     actual_task_def = net.json_request_async.call_args[1]['payload']
     self.assertIn('buildbucket_template_canary:false', actual_task_def['tags'])
+
+  def test_create_task_async_override_cfg(self):
+    build = model.Build(
+        bucket='bucket',
+        parameters={
+          'builder_name': 'builder',
+          'swarming': {
+            'override_builder_cfg': {
+              # Override cores dimension.
+              'dimensions': ['cores:16'],
+            },
+          }
+        },
+    )
+
+    self.json_response = {
+      'task_id': 'deadbeef',
+      'request': {
+        'properties': {
+          'dimensions': [
+            {'key': 'cores', 'value': '16'},
+            {'key': 'os', 'value': 'Linux'},
+            {'key': 'pool', 'value': 'Chrome'},
+          ],
+        },
+        'tags': [
+          'builder:builder',
+          'buildertag:yes',
+          'commontag:yes',
+          'master:master.bucket',
+          'priority:108',
+          'recipe_name:recipe',
+          'recipe_repository:https://example.com/repo',
+          'recipe_revision:badcoffee',
+        ]
+      }
+    }
+
+    swarming.create_task_async(build).get_result()
+
+    actual_task_def = net.json_request_async.call_args[1]['payload']
+    self.assertIn(
+        {'key': 'cores', 'value': '16'},
+        actual_task_def['properties']['dimensions'])
+
+  def test_create_task_async_override_cfg_malformed(self):
+    build = model.Build(
+        bucket='bucket',
+        parameters={
+          'builder_name': 'builder',
+          'swarming': {
+            'override_builder_cfg': [],
+          }
+        },
+    )
+    with self.assertRaises(errors.InvalidInputError):
+      swarming.create_task_async(build).get_result()
+
+    build = model.Build(
+        bucket='bucket',
+        parameters={
+          'builder_name': 'builder',
+          'swarming': {
+            'override_builder_cfg': {
+              'name': 'x',
+            },
+          }
+        },
+    )
+    with self.assertRaises(errors.InvalidInputError):
+      swarming.create_task_async(build).get_result()
+
+    build = model.Build(
+        bucket='bucket',
+        parameters={
+          'builder_name': 'builder',
+          'swarming': {
+            'override_builder_cfg': {
+              'blabla': 'x',
+            },
+          }
+        },
+    )
+    with self.assertRaises(errors.InvalidInputError):
+      swarming.create_task_async(build).get_result()
+
+    # Remove a required dimension.
+    build = model.Build(
+        bucket='bucket',
+        parameters={
+          'builder_name': 'builder',
+          'swarming': {
+            'override_builder_cfg': {
+              'dimensions': ['pool:'],
+            },
+          }
+        },
+    )
+    with self.assertRaises(errors.InvalidInputError):
+      swarming.create_task_async(build).get_result()
+
 
   def test_create_task_async_on_leased_build(self):
     build = model.Build(
@@ -467,7 +604,7 @@ class SwarmingTest(testing.AppengineTestCase):
       swarming.create_task_async(build).get_result()
 
   def test_cancel_task(self):
-    self.mock(net, 'json_request_async', mock.Mock(return_value=futuristic({})))
+    self.json_response = {}
     build = model.Build(
       bucket='whatever',
       swarming_hostname='chromium-swarm.appspot.com',

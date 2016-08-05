@@ -186,7 +186,9 @@ class SwarmingCfgTest(testing.AppengineTestCase):
           Swarming.Builder(name='debug'),
           Swarming.Builder(
               name='release',
-              recipe=Swarming.Recipe(properties=['a:c'], properties_j=['x:']),
+              recipe=Swarming.Recipe(
+                  properties=['a:c'],
+                  properties_j=['x:null']),
           ),
         ],
     )

@@ -12,7 +12,6 @@ from proto import project_config_pb2
 
 
 DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')
-NO_PROPERTY = object()
 
 
 def read_properties(recipe):
@@ -25,10 +24,7 @@ def read_properties(recipe):
   result = dict(p.split(':', 1) for p in recipe.properties)
   for p in recipe.properties_j:
     k, v = p.split(':', 1)
-    if not v:
-      parsed = NO_PROPERTY
-    else:
-      parsed = json.loads(v)
+    parsed = json.loads(v)
     result[k] = parsed
   return result
 
@@ -48,7 +44,7 @@ def merge_recipe(r1, r2):
   r1.properties_j[:] = [
     '%s:%s' % (k, json.dumps(v))
     for k, v in sorted(props.iteritems())
-    if v is not NO_PROPERTY
+    if v is not None
   ]
 
 
@@ -170,11 +166,10 @@ def validate_recipe_properties(properties, properties_j, ctx):
         key, value = p.split(':', 1)
         validate_key(key)
         keys.add(key)
-        if value:
-          try:
-            json.loads(value)
-          except ValueError as ex:
-            ctx.error(ex)
+        try:
+          json.loads(value)
+        except ValueError as ex:
+          ctx.error(ex)
 
 
 def validate_builder_cfg(builder, ctx, final=True):
