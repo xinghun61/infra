@@ -20,6 +20,7 @@ PROJECTS = [
   'depot_tools',
   'build',
   'infra',
+  'chromium',
 ]
 
 
