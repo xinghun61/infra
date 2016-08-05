@@ -85,11 +85,12 @@ import:
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - gensupport
+  - google-api-go-generator
   - googleapi
   - logging/v1beta3
+  - option
   - pubsub/v1
   - taskqueue/v1beta2
-  - google-api-go-generator
 - package: google.golang.org/appengine
   version: master
   repo: https://chromium.googlesource.com/external/github.com/golang/appengine.git
@@ -104,7 +105,7 @@ import:
   - urlfetch
   - user
   - cmd/aedeploy
-- package: google.golang.org/cloud
+- package: cloud.google.com/go
   version: master
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
@@ -112,6 +113,20 @@ import:
   - compute/metadata
   - pubsub
   - storage
+# TODO(vadimsh): Remove this once we completely switch to cloud.google.com/go.
+- package: google.golang.org/cloud
+  version: master
+  repo: https://code.googlesource.com/gocloud-legacy.git
+  subpackages:
+  - bigtable
+  - compute/metadata
+  - pubsub
+  - storage
+- package: google.golang.org/genproto
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/google/go-genproto.git
+  subpackages:
+  - protobuf
 - package: google.golang.org/grpc
   version: master
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git

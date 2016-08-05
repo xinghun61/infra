@@ -1,11 +1,19 @@
-hash: 4ceb338d6614101f4d7c082339a714735d14b760b766d26cbf93526a7e952e27
-updated: 2016-07-29T20:56:53.098444343-07:00
+hash: 0967214f967693be0c31d71a9417e7b80a5af7967135a1f004526f9e2be30e80
+updated: 2016-08-04T18:11:31.084161661-07:00
 imports:
+- name: cloud.google.com/go
+  version: 943694f407d9906fa3d001b17ca7697b9e92b6ec
+  repo: https://code.googlesource.com/gocloud.git
+  subpackages:
+  - bigtable
+  - compute/metadata
+  - pubsub
+  - storage
 - name: github.com/dustin/go-humanize
   version: 2fcb5204cdc65b4bec9fd0a87606bb0d0e3c54e8
   repo: https://chromium.googlesource.com/external/github.com/dustin/go-humanize.git
 - name: github.com/go-sql-driver/mysql
-  version: 3654d25ec346ee8ce71a68431025458d52a38ac0
+  version: 0b58b37b664c21f3010e836f1b931e1d0b0b0685
   repo: https://chromium.googlesource.com/external/github.com/go-sql-driver/mysql.git
 - name: github.com/golang/lint
   version: c7bacac2b21ca01afa1dee0acf64df3ce047c28f
@@ -119,19 +127,19 @@ imports:
   subpackages:
   - encoding/json5
 - name: golang.org/x/net
-  version: 6a513affb38dc9788b449d59ffed099b8de18fa0
+  version: 7c62cfdcccc65f87b0120ec841012ba816fc1aec
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/oauth2
-  version: 1364adb2c63445016c5ed4518fc71f6a3cda6169
+  version: 04e1573abc896e70388bd387a69753c378d46466
   repo: https://go.googlesource.com/oauth2.git
   subpackages:
   - google
   - jwt
 - name: golang.org/x/tools
-  version: 9e7459099f9afd6a15464d69d93c6eed49bb545d
+  version: 337c0124d7839ba49a64f0077b59cc02dd2d591f
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -144,17 +152,18 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: fa0566afd4c8fdae644725fdf9b57b5851a20742
+  version: 82700a6837e5a35e4399ae2a57f1bd702a022f46
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - gensupport
+  - google-api-go-generator
   - googleapi
   - logging/v1beta3
+  - option
   - pubsub/v1
   - taskqueue/v1beta2
-  - google-api-go-generator
 - name: google.golang.org/appengine
-  version: 267c27e7492265b84fc6719503b14a1e17975d79
+  version: f21d98e7aefbf9ff4d5eeba05d7a925cc7ac20c3
   repo: https://chromium.googlesource.com/external/github.com/golang/appengine.git
   subpackages:
   - datastore
@@ -168,15 +177,20 @@ imports:
   - user
   - cmd/aedeploy
 - name: google.golang.org/cloud
-  version: 30fab6304c9888af49f1884cf4eddad7027e2e7b
-  repo: https://code.googlesource.com/gocloud.git
+  version: c14fbfa4d259bf20a9a236a19c03a8b05f12b444
+  repo: https://code.googlesource.com/gocloud-legacy.git
   subpackages:
   - bigtable
   - compute/metadata
   - pubsub
   - storage
+- name: google.golang.org/genproto
+  version: 9f48fed629f137e474fb7422a911dfad49e2eaae
+  repo: https://chromium.googlesource.com/external/github.com/google/go-genproto.git
+  subpackages:
+  - protobuf
 - name: google.golang.org/grpc
-  version: 1aa8ce6467df467c34a92e7a5d7e526414ef40dc
+  version: 35896af9ad39c1fb1b1cd925fe3621be361e3d81
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
