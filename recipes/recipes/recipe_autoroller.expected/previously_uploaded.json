@@ -351,6 +351,7 @@
       "--use-commit-queue",
       "--bypass-hooks",
       "-f",
+      "--rietveld",
       "--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller",
       "--message-file",
       "Rebase"

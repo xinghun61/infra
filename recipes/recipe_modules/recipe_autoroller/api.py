@@ -259,6 +259,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       else:
         upload_args = ['--send-mail', '--cq-dry-run']
       upload_args.extend(['--bypass-hooks', '-f'])
+      # git cl upload doesn't work yet with gerrit and git cache.
+      upload_args.extend(['--rietveld'])
       upload_args.extend([
           '--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller'])
       self.m.git_cl.upload(
