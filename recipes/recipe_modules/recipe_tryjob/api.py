@@ -248,23 +248,14 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
     """
     recipes_path = get_recipes_path(proj_config) + ['recipes.py']
     recipes_py_loc = repo_path.join(*recipes_path)
-    args = []
+    args = ['--use-bootstrap']
     for dep_name, location in deps.items():
       args += ['-O', '%s=%s' % (dep_name, location)]
     args += ['--package', repo_path.join('infra', 'config', 'recipes.cfg')]
 
     args += ['simulation_test']
 
-    return self._python('%s tests' % proj, recipes_py_loc, args)
-
-  def _python(self, name, script, args, **kwargs):
-    """Call python from infra's virtualenv.
-
-    This is needed because of the coverage module, which is not installed by
-    default, but which infra's python has installed."""
-    return self.m.step(name, [
-        self.m.path['checkout'].join('ENV', 'bin', 'python'),
-        '-u', script] + args, **kwargs)
+    return self.m.python('%s tests' % proj, recipes_py_loc, args)
 
   def run_tryjob(self, patches_raw, rietveld, issue, patchset, patch_project):
     patches = parse_patches(
@@ -272,12 +263,6 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
         patch_project)
 
     root_dir = self.m.path['slave_build']
-
-    # Needed to set up the infra checkout, for _python
-    self.m.gclient.set_config('infra')
-    self.m.gclient.c.solutions[0].revision = 'origin/master'
-    self.m.gclient.checkout()
-    self.m.gclient.runhooks()
 
     url_mapping = self.m.luci_config.get_projects()
 
