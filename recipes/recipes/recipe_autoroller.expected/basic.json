@@ -81,6 +81,62 @@
     "cmd": [
       "git",
       "retry",
+      "cache",
+      "populate",
+      "-c",
+      "[GIT_CACHE]",
+      "https://repo.repo/build"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
+    },
+    "name": "build.populate cache",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "cache",
+      "exists",
+      "--quiet",
+      "--cache-dir",
+      "[GIT_CACHE]",
+      "https://repo.repo/build"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
+    },
+    "name": "build.git cache",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "remote",
+      "set-url",
+      "origin",
+      "mirror_dir"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
+    },
+    "name": "build.git remote",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "retry",
       "fetch",
       "origin",
       "master"

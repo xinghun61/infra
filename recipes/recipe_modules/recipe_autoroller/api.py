@@ -163,7 +163,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
   def _roll_project(self, project_data, recipes_dir):
     with self.m.tempfile.temp_dir('roll_%s' % project_data['id']) as workdir:
       self.m.git.checkout(
-          project_data['repo_url'], dir_path=workdir, submodules=False)
+          project_data['repo_url'], dir_path=workdir, submodules=False,
+          use_git_cache=True)
 
       # Introduce ourselves to git - also needed for git cl upload to work.
       self.m.git(
