@@ -1,4 +1,5 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-a11y-keys/iron-a11y-keys.html">
 <link rel="import" href="/bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="/bower_components/iron-flex-layout/classes/iron-flex-layout.html">
 <link rel="import" href="/bower_components/iron-icons/hardware-icons.html">
@@ -197,6 +198,7 @@
         </iron-pages>
       </paper-header-panel>
     </paper-drawer-panel>
+    <iron-a11y-keys target="[[_bugInput]]" keys="enter" on-keys-pressed="_saveBug"></iron-a11y-keys>
     <paper-dialog id="bugDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
       <h2>Enter bug number</h2>
       <paper-input autofocus id="bug" label="Bug # or URL"></paper-input>
@@ -216,6 +218,7 @@
         </paper-button>
       </div>
     </paper-dialog>
+    <iron-a11y-keys target="[[_snoozeTimeInput]]" keys="enter" on-keys-pressed="_snooze"></iron-a11y-keys>
     <paper-dialog id="snoozeDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
       <h2>Snooze</h2>
       <paper-input autofocus label="Amount of time (minutes):" id="snoozeTime" auto-validate allowed-pattern="[0-9]"></paper-input>
@@ -287,6 +290,12 @@
           value: function() { return {}; },
         },
         _bugErrorMessage: String,
+        _bugInput: {
+          type: Object,
+          value: function() {
+            return this.$.bug;
+          }
+        },
         _bugModel: Object,
         _bugQueueLabel: {
           type: Array,
@@ -336,6 +345,12 @@
         },
         _snoozeErrorMessage: String,
         _snoozeModel: Object,
+        _snoozeTimeInput: {
+          type: Object,
+          value: function() {
+            return this.$.snoozeTime;
+          }
+        },
         _trees: Object,
         _tree: {
           type: String,
