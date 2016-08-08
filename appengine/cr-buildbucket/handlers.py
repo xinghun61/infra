@@ -53,6 +53,7 @@ def get_frontend_routes():  # pragma: no cover
   routes = [
     webapp2.Route(r'/', MainHandler),
     webapp2.Route(r'/b/<build_id:\d+>', BuildHandler),
+    endpoints_webapp2.discovery_service_route(),
   ]
   routes += endpoints_webapp2.api_routes(api.BuildBucketApi)
   routes += endpoints_webapp2.api_routes(swarming.SwarmbucketApi)
