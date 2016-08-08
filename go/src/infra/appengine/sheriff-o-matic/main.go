@@ -10,18 +10,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"infra/monorail"
 	"io/ioutil"
 	"net/http"
 	"strings"
 
+	"infra/monorail"
+
 	"golang.org/x/net/context"
 	"google.golang.org/appengine"
 
-	"github.com/luci/gae/impl/prod"
 	"github.com/luci/gae/service/datastore"
-	"github.com/luci/gae/service/urlfetch"
-	"github.com/luci/luci-go/appengine/gaeauth/client"
 	"github.com/luci/luci-go/appengine/gaeauth/server"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
 	"github.com/luci/luci-go/common/clock"
@@ -30,9 +28,6 @@ import (
 	"github.com/luci/luci-go/server/auth/identity"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/settings"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	gaeurlfetch "google.golang.org/appengine/urlfetch"
 )
 
 const authGroup = "sheriff-o-matic-access"
@@ -332,6 +327,7 @@ func getAlertsHandler(ctx *router.Context) {
 	w.Write(alertsJSON.Contents)
 }
 
+// TODO(martiniss): Fix CSRF weakness here.
 func postAlertsHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
@@ -402,6 +398,7 @@ func getAnnotationsHandler(ctx *router.Context) {
 	w.Write(data)
 }
 
+// TODO(martiniss): Fix CSRF weakness here.
 func postAnnotationsHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
@@ -466,17 +463,11 @@ func postAnnotationsHandler(ctx *router.Context) {
 func getBugQueueHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
-	// Have to do this because monorail doesn't play nice with the given gae
-	// urlfetch stuff already in the context.
-	aec := prod.AEContext(c)
-	client := &http.Client{
-		Transport: &oauth2.Transport{
-			Source: google.AppEngineTokenSource(
-				aec, "https://www.googleapis.com/auth/userinfo.email"),
-			Base: &gaeurlfetch.Transport{
-				Context: aec,
-			},
-		},
+	// Get authenticated monorail client.
+	client, err := getOAuthClient(ctx.Context)
+	if err != nil {
+		errStatus(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	mr := monorail.NewEndpointsClient(client, monorailEndpoint)
 	tree := p.ByName("tree")
@@ -506,9 +497,10 @@ func getBugQueueHandler(ctx *router.Context) {
 }
 
 func getCrRevJSON(c context.Context, pos string) (map[string]string, error) {
-	c = client.UseServiceAccountTransport(c, nil)
-
-	hc := &http.Client{Transport: urlfetch.Get(c)}
+	hc, err := getOAuthClient(c)
+	if err != nil {
+		return nil, err
+	}
 
 	resp, err := hc.Get(fmt.Sprintf("https://cr-rev.appspot.com/_ah/api/crrev/v1/redirect/%s", pos))
 	if err != nil {
@@ -558,6 +550,19 @@ func getRevRangeHandler(ctx *router.Context) {
 		startRev["git_sha"], endRev["git_sha"])
 
 	http.Redirect(w, r, gitilesURL, 301)
+}
+
+// getOAuthClient returns a client capable of making HTTP requests authenticated
+// with OAuth access token for userinfo.email scope.
+func getOAuthClient(c context.Context) (*http.Client, error) {
+	// Note: "https://www.googleapis.com/auth/userinfo.email" is the default
+	// scope used by GetRPCTransport(AsSelf). Use auth.WithScopes(...) option to
+	// override.
+	t, err := auth.GetRPCTransport(c, auth.AsSelf)
+	if err != nil {
+		return nil, err
+	}
+	return &http.Client{Transport: t}, nil
 }
 
 // base is the root of the middleware chain.

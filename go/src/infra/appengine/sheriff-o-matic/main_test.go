@@ -17,7 +17,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/luci/gae/service/datastore"
-	"github.com/luci/gae/service/urlfetch"
 	"github.com/luci/luci-go/appengine/gaetesting"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/clock/testclock"
@@ -442,8 +441,8 @@ func TestRevRangeHandler(t *testing.T) {
 	Convey("get rev range", t, func() {
 		Convey("ok", func() {
 			c := gaetesting.TestingContext()
+			c = authtest.MockAuthConfig(c)
 			w := httptest.NewRecorder()
-			c = urlfetch.Set(c, http.DefaultTransport)
 
 			getRevRangeHandler(&router.Context{
 				Context: c,
@@ -456,8 +455,8 @@ func TestRevRangeHandler(t *testing.T) {
 		})
 		Convey("bad request", func() {
 			c := gaetesting.TestingContext()
+			c = authtest.MockAuthConfig(c)
 			w := httptest.NewRecorder()
-			c = urlfetch.Set(c, http.DefaultTransport)
 
 			getRevRangeHandler(&router.Context{
 				Context: c,
