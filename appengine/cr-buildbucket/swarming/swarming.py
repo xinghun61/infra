@@ -233,9 +233,6 @@ def _prepare_builder_config(swarming_cfg, builder_cfg, swarming_param):
 
   Expects arguments to be valid.
   """
-  swarming_cfg = copy.deepcopy(swarming_cfg)
-  swarmingcfg_module.normalize_swarming_cfg(swarming_cfg)
-
   # Apply defaults.
   result = copy.deepcopy(swarming_cfg.builder_defaults)
   swarmingcfg_module.merge_builder(result, builder_cfg)

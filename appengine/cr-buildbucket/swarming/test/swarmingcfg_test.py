@@ -25,8 +25,10 @@ class SwarmingCfgTest(testing.AppengineTestCase):
   def test_valid(self):
     cfg = Swarming(
       hostname='chromium-swarm.appspot.com',
-      common_swarming_tags=['master:master.a'],
-      common_dimensions=['cores:8', 'pool:default', 'cpu:x86-64'],
+      builder_defaults=Swarming.Builder(
+        swarming_tags=['master:master.a'],
+        dimensions=['cores:8', 'pool:default', 'cpu:x86-64'],
+      ),
       builders=[
         Swarming.Builder(
           name='release',
@@ -67,9 +69,11 @@ class SwarmingCfgTest(testing.AppengineTestCase):
     ])
 
     cfg = Swarming(
-      common_swarming_tags=['wrong'],
-      common_dimensions=[''],
       task_template_canary_percentage=102,
+      builder_defaults=Swarming.Builder(
+          swarming_tags=['wrong'],
+          dimensions=[''],
+      ),
       builders=[
         Swarming.Builder(
           swarming_tags=['wrong2'],
@@ -120,34 +124,36 @@ class SwarmingCfgTest(testing.AppengineTestCase):
     ])
 
     cfg = Swarming(
-        common_swarming_tags=['wrong'],
-        common_dimensions=[''],
-        task_template_canary_percentage=102,
-        builders=[
-          Swarming.Builder(
-              swarming_tags=['wrong2'],
-              dimensions=[':', 'a.b:c', 'pool:default'],
-          ),
-          Swarming.Builder(
-              name='b2',
-              swarming_tags=['builder:b2'],
-              dimensions=['x:y', 'x:y2'],
-              recipe=Swarming.Recipe(
-                  properties=[
-                    '',
-                    ':',
-                    'buildername:foobar',
-                    'x:y',
-                  ],
-                  properties_j=[
-                    'x:"y"',
-                    'y:b',
-                    'z',
-                  ]
-              ),
-              priority=300,
-          ),
-        ],
+      task_template_canary_percentage=102,
+      builder_defaults=Swarming.Builder(
+        swarming_tags=['wrong'],
+        dimensions=[''],
+      ),
+      builders=[
+        Swarming.Builder(
+            swarming_tags=['wrong2'],
+            dimensions=[':', 'a.b:c', 'pool:default'],
+        ),
+        Swarming.Builder(
+            name='b2',
+            swarming_tags=['builder:b2'],
+            dimensions=['x:y', 'x:y2'],
+            recipe=Swarming.Recipe(
+                properties=[
+                  '',
+                  ':',
+                  'buildername:foobar',
+                  'x:y',
+                ],
+                properties_j=[
+                  'x:"y"',
+                  'y:b',
+                  'z',
+                ]
+            ),
+            priority=300,
+        ),
+      ],
     )
     self.cfg_test(cfg, [
       'hostname unspecified',
@@ -173,34 +179,38 @@ class SwarmingCfgTest(testing.AppengineTestCase):
     ])
 
 
-  def test_common_recipe(self):
+  def test_default_recipe(self):
     cfg = Swarming(
-        hostname='chromium-swarm.appspot.com',
-        common_dimensions=['pool:default'],
-        common_recipe=Swarming.Recipe(
-            repository='https://x.com',
-            name='foo',
-            properties=['a:b', 'x:y'],
+      hostname='chromium-swarm.appspot.com',
+      builder_defaults=Swarming.Builder(
+        dimensions=['pool:default'],
+        recipe=Swarming.Recipe(
+          repository='https://x.com',
+          name='foo',
+          properties=['a:b', 'x:y'],
         ),
-        builders=[
-          Swarming.Builder(name='debug'),
-          Swarming.Builder(
-              name='release',
-              recipe=Swarming.Recipe(
-                  properties=['a:c'],
-                  properties_j=['x:null']),
-          ),
-        ],
+      ),
+      builders=[
+        Swarming.Builder(name='debug'),
+        Swarming.Builder(
+          name='release',
+          recipe=Swarming.Recipe(
+            properties=['a:c'],
+            properties_j=['x:null']),
+        ),
+      ],
     )
     self.cfg_test(cfg, [])
 
-  def test_common_recipe_bad(self):
+  def test_default_recipe_bad(self):
     cfg = Swarming(
         hostname='chromium-swarm.appspot.com',
-        common_dimensions=['pool:default'],
-        common_recipe=Swarming.Recipe(
-            name='foo',
-            properties=['a'],
+        builder_defaults=Swarming.Builder(
+          dimensions=['pool:default'],
+          recipe=Swarming.Recipe(
+              name='foo',
+              properties=['a'],
+          ),
         ),
         builders=[
           Swarming.Builder(name='debug'),

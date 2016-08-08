@@ -89,37 +89,16 @@ message Swarming {
   optional string url_format = 2;
 
   // Defines default values for builders.
-  optional Builder builder_defaults = 9;
-
-  // DEPRECATED: use builder_defaults.
-  // Will be put to all swarming tasks.
-  repeated string common_swarming_tags = 3;
-
-  // DEPRECATED: use builder_defaults.
-  // Colon-delimited key-value pair of common task dimensions.
-  //
-  // If value is not specified ("<key>:"), then it excludes a value for the
-  // same key specified in swarming task template.
-  repeated string common_dimensions = 4;
+  optional Builder builder_defaults = 3;
 
   // Configuration for each builder.
   // Swarming tasks are created only for builds for builders that are not
   // explicitly specified.
-  repeated Builder builders = 5;
-
-  // DEPRECATED: use builder_defaults.
-  // Defines a default recipe for all builders in this bucket.
-  // A builder may override it or parts of it with something else.
-  optional Recipe common_recipe = 6;
-
-  // DEPRECATED: use builder_defaults.
-  // Maximum build execution time. Not to be confused with pending time.
-  // If not set, defaults to server defaults.
-  optional uint32 common_execution_timeout_secs = 7;
+  repeated Builder builders = 4;
 
   // Percentage of builds that should use a canary swarming task template.
   // A value from 0 to 100.
-  optional uint32 task_template_canary_percentage = 8;
+  optional uint32 task_template_canary_percentage = 5;
 }
 
 // Defines one bucket in buildbucket.cfg

@@ -75,22 +75,6 @@ def merge_builder(b1, b2):
     b1.recipe.CopyFrom(recipe)
 
 
-# TODO(nodir): remove this function once all confgis are converted
-def normalize_swarming_cfg(cfg):
-  """Converts deprecated fields into new ones.
-
-  Does not check for presence of both new and deprecated fields, because
-  configs will be migrated shortly after this change is deployed.
-  """
-  if cfg.HasField('builder_defaults'):  # pragma: no cover
-    return
-  defs = cfg.builder_defaults
-  defs.swarming_tags[:] = cfg.common_swarming_tags
-  defs.dimensions[:] = cfg.common_dimensions
-  defs.recipe.CopyFrom(cfg.common_recipe)
-  defs.execution_timeout_secs = cfg.common_execution_timeout_secs
-
-
 def validate_tag(tag, ctx):
   # a valid swarming tag is a string that contains ":"
   if ':' not in tag:
@@ -196,9 +180,6 @@ def validate_builder_cfg(builder, ctx, final=True):
 
 
 def validate_cfg(swarming, ctx):
-  swarming = copy.deepcopy(swarming)
-  normalize_swarming_cfg(swarming)
-
   def make_subctx():
     return validation.Context(
         on_message=lambda msg: ctx.msg(msg.severity, '%s', msg.text))

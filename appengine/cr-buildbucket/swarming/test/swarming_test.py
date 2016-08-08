@@ -50,11 +50,13 @@ class SwarmingTest(testing.AppengineTestCase):
       swarming=project_config_pb2.Swarming(
         hostname='chromium-swarm.appspot.com',
         url_format='https://example.com/{swarming_hostname}/{task_id}',
-        common_swarming_tags=['commontag:yes'],
-        common_dimensions=['cores:8', 'pool:default', 'cpu:x86-64'],
-        common_recipe=project_config_pb2.Swarming.Recipe(
-          repository='https://example.com/repo',
-          name='recipe',
+        builder_defaults=project_config_pb2.Swarming.Builder(
+          swarming_tags=['commontag:yes'],
+          dimensions=['cores:8', 'pool:default', 'cpu:x86-64'],
+          recipe=project_config_pb2.Swarming.Recipe(
+            repository='https://example.com/repo',
+            name='recipe',
+          ),
         ),
         builders=[
           project_config_pb2.Swarming.Builder(
@@ -158,30 +160,6 @@ class SwarmingTest(testing.AppengineTestCase):
       {'swarming': {'recipe': {'junk': 1}}},
       {'swarming': {'recipe': {'revision': 1}}},
       {'swarming': {'canary_template': 'yes'}},
-      {'swarming': {'override_cfg': 0}},
-      {'swarming': {'override_cfg': {'swarming': 0}}},
-      {
-        'swarming': {
-          'override_cfg': {
-            'swarming': {'hostname': 0},
-          },
-        },
-      },
-      {
-        'swarming': {
-          'override_cfg': {
-            'swarming': {'builders': [{}]},
-          },
-        },
-      },
-      {
-        'swarming': {
-          'override_cfg': {
-            'swarming': {'common_dimensions': ['wrong_dimension']},
-          },
-        },
-      },
-      {'swarming': {'override_cfg': {'x': 0}}},
     ]
     for p in bad:
       logging.info('testing %s', p)
@@ -190,7 +168,7 @@ class SwarmingTest(testing.AppengineTestCase):
         swarming.validate_build_parameters(p['builder_name'], p)
 
   def test_execution_timeout(self):
-    self.bucket_cfg.swarming.common_execution_timeout_secs = 120
+    self.bucket_cfg.swarming.builder_defaults.execution_timeout_secs = 120
     builder_cfg = project_config_pb2.Swarming.Builder(name='fast-builder')
 
     build = model.Build(

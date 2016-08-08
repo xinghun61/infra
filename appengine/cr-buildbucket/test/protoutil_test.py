@@ -9,14 +9,16 @@ from proto import project_config_pb2
 import protoutil
 
 
-class JsonpbTest(testing.AppengineTestCase):
+class ProtoUtilTest(testing.AppengineTestCase):
   def test_unmarshal_dict(self):
     msg = project_config_pb2.Swarming()
     data = {
-      'common_dimensions': ['a:a', 'b:b'],
-      'common_execution_timeout_secs': 600,
-      'common_recipe': {
-        'name': 'trybot',
+      'builder_defaults': {
+        'dimensions': ['a:a', 'b:b'],
+        'execution_timeout_secs': 600,
+        'recipe': {
+          'name': 'trybot',
+        },
       },
       'builders': [
         {'name': 'debug'},
@@ -24,8 +26,8 @@ class JsonpbTest(testing.AppengineTestCase):
       ],
     }
     protoutil.merge_dict(data, msg)
-    self.assertEqual(msg.common_dimensions, ['a:a', 'b:b'])
-    self.assertEqual(msg.common_execution_timeout_secs, 600)
+    self.assertEqual(msg.builder_defaults.dimensions, ['a:a', 'b:b'])
+    self.assertEqual(msg.builder_defaults.execution_timeout_secs, 600)
     self.assertEqual(len(msg.builders), 2)
     self.assertEqual(msg.builders[0].name, 'debug')
 
@@ -37,4 +39,4 @@ class JsonpbTest(testing.AppengineTestCase):
       protoutil.merge_dict({'no_such_field': 0}, msg)
 
     with self.assertRaises(TypeError):
-      protoutil.merge_dict({'common_dimensions': 0}, msg)
+      protoutil.merge_dict({'builder_defaults': 0}, msg)
