@@ -241,12 +241,16 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       # We have uploaded before, now let's check the diff hash to see if we
       # have uploaded this patchset before.
       change_data = json.loads(cat_result.stdout)
+      cat_result.presentation.links['Issue %s' % change_data['issue']] = (
+          change_data['issue_url'])
       if change_data['diff_digest'] != diff_digest:
         self.m.git('cl', 'issue', change_data['issue'], cwd=workdir)
         need_to_upload = True
         rebase = True
-      cat_result.presentation.links['Issue %s' % change_data['issue']] = (
-          change_data['issue_url'])
+      elif roll_result['trivial']:
+        # We won't be uploading. Make sure trivial rolls don't get stuck
+        # if previous CQ attempt failed because of flake.
+        self.m.git('cl', 'set-commit')
 
     if need_to_upload:
       commit_message = (

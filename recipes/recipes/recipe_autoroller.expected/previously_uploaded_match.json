@@ -336,63 +336,12 @@
     "cmd": [
       "git",
       "cl",
-      "issue",
-      "123456789"
+      "set-commit"
     ],
     "cwd": "[TMP_BASE]/roll_build_tmp_2",
     "name": "build.git cl",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "RECIPE_PACKAGE_REPO[depot_tools]/git_cl.py",
-      "upload",
-      "--use-commit-queue",
-      "--bypass-hooks",
-      "-f",
-      "--rietveld",
-      "--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller",
-      "--message-file",
-      "Rebase"
-    ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_2",
-    "name": "build.git cl upload",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "git",
-      "cl",
-      "issue"
-    ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_2",
-    "name": "build.git cl issue",
-    "stdout": "/path/to/tmp/",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LINK@Issue 123456789@https://codereview.chromium.org/123456789@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
-      "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
-      "----",
-      "cp",
-      "{\"diff_digest\": \"d4fbd1f86c94d02a0e9f2a3d08aebc1c\", \"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\"}",
-      "gs://recipe-roller-cl-uploads/791ad91de804e9b08076c4db2081bfa6"
-    ],
-    "name": "build.gsutil upload",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/recipe-roller-cl-uploads/791ad91de804e9b08076c4db2081bfa6@@@"
     ]
   },
   {

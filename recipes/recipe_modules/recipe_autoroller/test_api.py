@@ -59,13 +59,13 @@ class RecipeAutorollerTestApi(recipe_test_api.RecipeTestApi):
                                    stream='stderr'),
           retcode=1)
 
-  def previously_uploaded(self, project):
+  def previously_uploaded(self, project, diff_digest=None):
     return self.step_data('%s.gsutil cat' % project,
           self.m.raw_io.stream_output(json.dumps(
               {
                 'issue': '123456789',
                 'issue_url': 'https://codereview.chromium.org/123456789',
-                'diff_digest': 'afe53a0e969fd0b2a6b5c5f89724d0c6'
+                'diff_digest': diff_digest or 'afe53a0e969fd0b2a6b5c5f89724d0c6'
               }),
               stream='stdout'),
           self.m.raw_io.stream_output('', stream='stderr'))

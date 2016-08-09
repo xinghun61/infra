@@ -119,6 +119,15 @@ def GenTests(api):
   )
 
   yield (
+      api.test('previously_uploaded_match') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.roll_data('build') +
+      api.recipe_autoroller.previously_uploaded(
+          'build', diff_digest='d4fbd1f86c94d02a0e9f2a3d08aebc1c')
+  )
+
+  yield (
       api.test('failed_upload') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
