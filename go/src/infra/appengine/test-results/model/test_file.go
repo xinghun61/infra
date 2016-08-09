@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"math"
 	"time"
 
 	"golang.org/x/net/context"
@@ -23,32 +25,33 @@ func IsAggregateTestFile(filename string) bool {
 	}
 }
 
-// buildNum is needed to handle TestFile records with nil build_number.
-type buildNum int64
+// BuildNum is int64 that is used to handle TestFile datastore records
+// with null build_number.
+type BuildNum int64
 
-func (b *buildNum) Nil() bool { return *b == -1 }
+var _ datastore.PropertyConverter = (*BuildNum)(nil)
 
-func (b *buildNum) ToProperty() (p datastore.Property, err error) {
-	if b.Nil() {
+func (b *BuildNum) IsNil() bool { return *b == -1 }
+
+func (b *BuildNum) ToProperty() (p datastore.Property, err error) {
+	if b.IsNil() {
 		return
 	}
 	p = datastore.MkProperty(*b)
 	return
 }
 
-func (b *buildNum) FromProperty(p datastore.Property) error {
+func (b *BuildNum) FromProperty(p datastore.Property) error {
 	switch p.Type() {
 	case datastore.PTNull:
 		*b = -1
 	case datastore.PTInt:
-		*b = buildNum(p.Value().(int64))
+		*b = BuildNum(p.Value().(int64))
 	default:
 		return fmt.Errorf("wrong type for property: %s", p.Type())
 	}
 	return nil
 }
-
-var _ datastore.PropertyConverter = (*buildNum)(nil)
 
 // DataEntry represents a DataEntry record.
 type DataEntry struct {
@@ -59,27 +62,45 @@ type DataEntry struct {
 // TestFile represents a TestFile record.
 type TestFile struct {
 	ID          int64            `gae:"$id"`
-	BuildNumber buildNum         `gae:"build_number"`
+	BuildNumber BuildNum         `gae:"build_number"`
 	Builder     string           `gae:"builder"`
 	DataKeys    []*datastore.Key `gae:"data_keys,noindex"`
 	LastMod     time.Time        `gae:"date"`
 	Master      string           `gae:"master"`
 	Name        string           `gae:"name"`
-	NewDataKeys []*datastore.Key `gae:"new_data_keys,noindex"`
 	TestType    string           `gae:"test_type"`
 
 	// Data is the data in the DataEntry(s) pointed to by DataKeys.
-	//
 	// After loading a TestFile from the datastore, this field is
-	// only available after GetData is called.
+	// only available after GetData is called. To put updated
+	// data in this field to the datastore, call PutData.
 	//
-	// PutData must be called to persist the contents of this field to
-	// the datastore DataEntry(s) pointed to by DataKeys.
+	// Users should typically perform the following sequence of calls
+	// in a transaction:
+	//
+	//   - datastore.Get(tf)
+	//   - tf.GetData()
+	//   - tf.PutData()
+	//   - datastore.Put(tf)
+	//   - datastore.Delete(tf.OldDataKeys)
+	//
 	Data io.Reader `gae:"-,noindex"`
+
+	// OldDataKeys is the keys of the old DataEntry(s) used
+	// before putting the new data. This field is set after a
+	// successful call to PutData.
+	//
+	// Users are responsible for deleting the DataEntry(s)
+	// pointed to by these keys if they are no longer needed.
+	OldDataKeys []*datastore.Key `gae:"-,noindex"`
+
+	// newDataKeys is unused in this implementation. It is
+	// a remnant of the old Python implementation.
+	newDataKeys []*datastore.Key `gae:"new_data_keys,noindex"`
 }
 
 // GetData fetches data from the DataEntry(s) pointed to by tf.DataKeys
-// and updated tf.Data.
+// and sets tf.Data to the fetched data.
 func (tf *TestFile) GetData(c context.Context) error {
 	ids := make([]int64, len(tf.DataKeys))
 	for i, dk := range tf.DataKeys {
@@ -104,6 +125,77 @@ func (tf *TestFile) GetData(c context.Context) error {
 		r = append(r, bytes.NewReader(de.Data))
 	}
 	tf.Data = io.MultiReader(r...)
+	return nil
+}
+
+// PutData puts the contents of tf.Data to DataEntry(s) in the datastore
+// and updates tf.LastMod and tf.DataKeys locally.
+//
+// datastore.Put(tf) should be called after PutData to put the
+// the updated tf.LastMod and tf.DataKeys fields to the datastore.
+// PutData does has no effect on the old DataEntry(s).
+// tf.OldDataKeys will be modified only if PutData returns a non-nil
+// error.
+//
+// It is safe to call PutData within a transaction: tf.DataKeys will
+// point to the DataEntry(s) created in the successful attempt, and
+// tf.LastMod will equal the time of the successful attempt.
+func (tf *TestFile) PutData(c context.Context) error {
+	dataKeysCopy := make([]*datastore.Key, len(tf.DataKeys))
+	copy(dataKeysCopy, tf.DataKeys)
+
+	if err := tf.putDataEntries(c); err != nil {
+		return err
+	}
+
+	tf.OldDataKeys = dataKeysCopy
+	return nil
+}
+
+// putDataEntries creates DataEntry(s) in the datastore for data in
+// tf.Data and updates tf.LastMod and tf.DataKeys locally.
+// If the returned error is non-nil, tf will be unmodified,
+// except that tf.Data may have been consumed.
+func (tf *TestFile) putDataEntries(c context.Context) error {
+	// Maximum data entries in a TestFile.
+	const maxDataEntries = 30
+	// 1 megabyte is the maximum allowed blob length.
+	// See https://code.googlesource.com/gocloud/+/master/datastore/prop.go#29.
+	const maxBlobLen = 1 << 20
+
+	// TODO: Read maxBlobLen bytes at a time. See io.LimitedReader.
+
+	data, err := ioutil.ReadAll(tf.Data)
+	if err != nil {
+		return err
+	}
+
+	if len(data) > maxDataEntries*maxBlobLen {
+		return fmt.Errorf(
+			"model: data too large %d bytes (max allowed %d bytes)",
+			len(data),
+			maxDataEntries*maxBlobLen,
+		)
+	}
+
+	// Break data into chunks of max. allowed blob length.
+	numEntries := int(math.Ceil(float64(len(data)) / maxBlobLen))
+	dataEntries := make([]DataEntry, 0, numEntries)
+	for i := 0; i < numEntries*maxBlobLen; i += maxBlobLen {
+		dataEntries = append(dataEntries, DataEntry{Data: data[i : i+maxBlobLen]})
+	}
+
+	if err := datastore.Get(c).Put(dataEntries); err != nil {
+		return err
+	}
+
+	newKeys := make([]*datastore.Key, 0, len(dataEntries))
+	for _, de := range dataEntries {
+		newKeys = append(newKeys, datastore.Get(c).KeyForObj(&de))
+	}
+
+	tf.DataKeys = newKeys
+	tf.LastMod = time.Now()
 	return nil
 }
 
@@ -171,11 +263,8 @@ func updatedBlobKeys(c context.Context, old ...int64) (n []int64, err error) {
 	}
 }
 
-// TestFileQueryParams represents the parameters in a TestFile query.
-//
-// If a field has a zero value, a default value is used to make the query
-// or the constraint is omitted from the query.
-type TestFileQueryParams struct {
+// TestFileParams represents the parameters in a TestFile query.
+type TestFileParams struct {
 	Master            string
 	Builder           string
 	Name              string
@@ -190,7 +279,9 @@ type TestFileQueryParams struct {
 }
 
 // Query generates a datastore query for the parameters.
-func (p *TestFileQueryParams) Query() *datastore.Query {
+// If a field in p is the zero value, a default value is used in the query
+// or the constraint is omitted from the query.
+func (p *TestFileParams) Query() *datastore.Query {
 	const defaultLimit int32 = 100
 
 	setNonEmpty := func(q *datastore.Query, prop, value string) *datastore.Query {
@@ -210,8 +301,8 @@ func (p *TestFileQueryParams) Query() *datastore.Query {
 		q = q.Eq("build_number", *p.BuildNumber)
 	}
 	if p.OrderBuildNumbers {
-		// TODO(nishanths): This fails due to lack of index in Python app and
-		// here.
+		// TODO(nishanths): This fails due to lack of index in both the Python
+		// application and in this application.
 		q = q.Order("-build_number")
 	}
 
@@ -227,11 +318,4 @@ func (p *TestFileQueryParams) Query() *datastore.Query {
 	}
 
 	return q
-}
-
-func min(a, b int32) int32 {
-	if a < b {
-		return a
-	}
-	return b
 }

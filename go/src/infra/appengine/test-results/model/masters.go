@@ -1,8 +1,8 @@
 package model
 
 var (
-	// masters is the list of known Masters.
-	masters = []*Master{
+	// Masters is the list of known Masters.
+	Masters = []*Master{
 		{
 			Name:       "ChromiumAndroid",
 			Identifier: "chromium.android",
@@ -39,7 +39,6 @@ var (
 			Groups:     []string{"@ToT Chromium"},
 		},
 		{
-			// Swarming staging master.
 			Name:       "chromium.swarm",
 			Identifier: "chromium.swarm",
 			Groups:     []string{"ThisIsUnused"},
@@ -107,7 +106,7 @@ type Master struct {
 // MasterByIdentifier returns the first Master (if any) that has its Identifier
 // field equal to ident.
 func MasterByIdentifier(ident string) *Master {
-	for _, m := range masters {
+	for _, m := range Masters {
 		if m.Identifier == ident {
 			return m
 		}
@@ -118,7 +117,7 @@ func MasterByIdentifier(ident string) *Master {
 // MasterByName returns the first Master (if any) that has its Name field equal
 // to name.
 func MasterByName(name string) *Master {
-	for _, m := range masters {
+	for _, m := range Masters {
 		if m.Name == name {
 			return m
 		}

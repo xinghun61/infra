@@ -37,10 +37,10 @@
                     <a href="/testfile?testtype={{ .TestType }}">{{ .TestType }}</a>
                     {{ end }}
                 <td>
-                    {{ if not .BuildNumber.Nil }}
+                    {{ if not .BuildNumber.IsNil }}
                     <a href="/testfile?buildnumber={{ .BuildNumber }}" >{{ .BuildNumber }}</a>
                     {{ end }}
-                <td><a href="/testfile?builder={{ .Builder }}&name={{ .Name }}&master={{ .Master }}&testtype={{ .TestType }}{{ if not .BuildNumber.Nil }}&buildnumber={{ .BuildNumber }}{{ end }}">{{ .Name }}</a>
+                <td><a href="/testfile?builder={{ .Builder }}&name={{ .Name }}&master={{ .Master }}&testtype={{ .TestType }}{{ if not .BuildNumber.IsNil }}&buildnumber={{ .BuildNumber }}{{ end }}">{{ .Name }}</a>
                 <td>
                     <script>
                         var beforeQueryParameter = 'before={{ .LastMod | timeParams }}';

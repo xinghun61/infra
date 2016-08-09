@@ -77,7 +77,7 @@ func NewURLParams(m url.Values) (URLParams, error) {
 
 // Query creates a datastore query for the URLParams.
 func (u *URLParams) Query() *datastore.Query {
-	p := model.TestFileQueryParams{
+	p := model.TestFileParams{
 		Master:            u.Master,
 		Builder:           u.Builder,
 		Name:              u.Name,
