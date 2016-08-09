@@ -662,3 +662,46 @@ CREATE TABLE SpamVerdict (
   FOREIGN KEY (comment_id) REFERENCES Comment(id)
 
 ) ENGINE=INNODB;
+
+
+-- These are user-curated lists of issues which can be re-ordered to
+-- prioritize work.
+CREATE TABLE Hotlist (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(80) NOT NULL,
+
+  summary TEXT,
+  description TEXT,
+
+  is_private BOOLEAN DEFAULT FALSE,
+
+  PRIMARY KEY (id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE Hotlist2Issue (
+  hotlist_id INT UNSIGNED NOT NULL,
+  issue_id INT NOT NULL,
+
+  rank BIGINT NOT NULL,
+
+  PRIMARY KEY (hotlist_id, issue_id),
+  INDEX (hotlist_id),
+  INDEX (issue_id),
+  FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE Hotlist2User (
+  hotlist_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+
+  role_name ENUM ('owner', 'member', 'follower') NOT NULL,
+
+  PRIMARY KEY (hotlist_id, user_id),
+  INDEX (hotlist_id),
+  INDEX (user_id),
+  FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id),
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
+) ENGINE=INNODB;

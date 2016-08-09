@@ -894,3 +894,46 @@ Staging/Production:
   --alter "ADD COLUMN owner_modified INT, ADD COLUMN status_modified INT, ADD COLUMN component_modified INT" \
   D=monorail,t=Issue,h=<master IP address>,u=$USER,p=<your mysql password> \
   --alter-foreign-keys-method=rebuild_constraints --recursion-method=hosts --execute
+
+==============================================================
+2016-08-05: Add tables Hotlist, Hotlist2Issue, Hotlist2User
+
+CREATE TABLE Hotlist (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(80) NOT NULL,
+
+  summary TEXT,
+  description TEXT,
+
+  is_private BOOLEAN DEFAULT FALSE,
+
+  PRIMARY KEY (id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE Hotlist2Issue (
+  hotlist_id INT UNSIGNED NOT NULL,
+  issue_id INT NOT NULL,
+
+  rank BIGINT NOT NULL,
+
+  PRIMARY KEY (hotlist_id, issue_id),
+  INDEX (hotlist_id),
+  INDEX (issue_id),
+  FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE Hotlist2User (
+  hotlist_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+
+  role_name ENUM ('owner', 'member', 'follower') NOT NULL,
+
+  PRIMARY KEY (hotlist_id, user_id),
+  INDEX (hotlist_id),
+  INDEX (user_id),
+  FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id),
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
