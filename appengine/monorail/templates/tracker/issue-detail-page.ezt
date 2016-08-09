@@ -180,7 +180,8 @@ runOnLoad(function() {
       $('d' + n).style.display = '';
       getParams.desc = n;
       if (window.history && history.replaceState)
-        history.replaceState('', '', makeQueryString(getParams));
+        history.replaceState(
+            '', '', makeQueryString(getParams) + window.location.hash);
     }
   }
 
