@@ -3,10 +3,9 @@
 ]
 <div id="blocked-scrim" style="display: none;">
   <div id="blocked-table">
-    <b>Blocked on[if-any page_perms.EditIssue] (drag to re-order)[end]:</b>
+    <b id="blocked-title">Loading detail...</b>
     <span id="hide-ranks" style="float: right;"><a>X</a></span>
     <table id="blocked-rank" class="striped drag_container">
-      <tr><td>Loading detail...</td></tr>
     </table>
   </div>
 </div>
@@ -161,8 +160,13 @@ runOnLoad(function() {
       }
       CS_doPost('rerankBlockedOn.do', function(event) {
         var xhr = event.target;
-        if (xhr.readyState != 4 || xhr.status != 200)
+        if (xhr.readyState != 4)
           return;
+        if (xhr.status != 200) {
+          table.textContent = 'Error loading detail. Please try again.'
+          return;
+        }
+        $('blocked-title').textContent = 'Blocked on[if-any page_perms.EditIssue] (drag to re-order)[end]:';
         var resp = CS_parseJSON(xhr);
         renderTable(resp.issues);
         renderIssueLinks(resp.issues);
@@ -190,14 +194,18 @@ runOnLoad(function() {
     tableContainer.style.display = '';
   });
 
+  function hideTable() {
+    tableContainer.style.display = 'none';
+    $('blocked-title').textContent = 'Loading detail...';
+    table.textContent = '';
+  }
+
   $('blocked-scrim').addEventListener('click', function(e) {
     if (event.target == this)
-      tableContainer.style.display = 'none';
+      hideTable();
   });
 
-  $('hide-ranks').addEventListener('click', function(e) {
-    tableContainer.style.display = 'none';
-  });
+  $('hide-ranks').addEventListener('click', hideTable);
 
 });
 </script>
