@@ -421,7 +421,7 @@ td.rowwidgets { padding: 2px 2px 0 7px; }
   opacity: 0;
 }
 
-.drag_item:hover .gripper {
+.drag_item[draggable=true]:hover .gripper {
   cursor: -moz-grab;
   cursor: -webkit-grab;
   cursor: grab;
