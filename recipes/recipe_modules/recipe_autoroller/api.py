@@ -247,10 +247,6 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         self.m.git('cl', 'issue', change_data['issue'], cwd=workdir)
         need_to_upload = True
         rebase = True
-      elif roll_result['trivial']:
-        # We won't be uploading. Make sure trivial rolls don't get stuck
-        # if previous CQ attempt failed because of flake.
-        self.m.git('cl', 'set-commit', cwd=workdir)
 
     if need_to_upload:
       commit_message = (

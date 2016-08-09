@@ -334,18 +334,6 @@
   },
   {
     "cmd": [
-      "git",
-      "cl",
-      "set-commit"
-    ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_2",
-    "name": "build.git cl",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
       "python",
       "-u",
       "RECIPE_MODULE[recipe_engine::shutil]/resources/rmtree.py",
@@ -628,18 +616,6 @@
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LINK@Issue 123456789@https://codereview.chromium.org/123456789@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "git",
-      "cl",
-      "set-commit"
-    ],
-    "cwd": "[TMP_BASE]/roll_infra_tmp_3",
-    "name": "infra.git cl",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
