@@ -134,7 +134,13 @@ def parse_bucket_config(text):
 def get_buckets_async():
   """Returns a list of project_config_pb2.Bucket objects."""
   buckets = yield Bucket.query().fetch_async()
-  raise ndb.Return([parse_bucket_config(b.config_content) for b in buckets])
+  cfgs = []
+  for b in buckets:
+    try:
+      cfgs.append(parse_bucket_config(b.config_content))
+    except protobuf.text_format.ParseError:
+      logging.exception('could not parse config of bucket %s', b.key.id())
+  raise ndb.Return(cfgs)
 
 
 @ndb.non_transactional
