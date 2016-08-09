@@ -3,18 +3,6 @@
   "plugins": {
     "local": {
       "browsers": [ "chrome" ]
-    },
-    "istanbul": {
-      "dir": "./coverage",
-      "reporters": ["text-summary", "lcov"],
-      "include": [
-          "**/*.js",
-          "**/*.html"
-      ],
-      "exclude": [
-         "/bower_components/**",
-         "/test/alerts-data.js"
-      ]
     }
   }
 }
