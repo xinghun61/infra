@@ -5,8 +5,9 @@
 import mock
 from testing_utils import testing
 
+import main  # Fiddles sys.path so must come first.
+
 from handlers import cron_dispatch
-import main
 
 
 class TestCronDispatch(testing.AppengineTestCase):

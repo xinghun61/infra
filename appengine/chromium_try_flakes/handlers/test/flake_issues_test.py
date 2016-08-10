@@ -10,9 +10,10 @@ import urllib2
 from google.appengine.datastore import datastore_stub_util
 from google.appengine.ext import ndb
 
+import main  # Fiddles sys.path so must come first.
+
 import gae_ts_mon
 from handlers.flake_issues import ProcessIssue, CreateFlakyRun
-import main
 from model.flake import Flake, FlakyRun, FlakeOccurrence
 from model.build_run import PatchsetBuilderRuns, BuildRun
 from testing_utils import testing
