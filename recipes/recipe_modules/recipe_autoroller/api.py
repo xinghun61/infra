@@ -16,18 +16,6 @@ def get_reviewers(commit_infos):
   for commits in commit_infos.values():
     for commit in commits:
       reviewers.add(commit['author'])
-      for field in ('R', 'TBR'):
-        for m in re.findall(
-            '^%s=(.*)' % field, commit['message'], re.MULTILINE):
-          for s in m.split(','):
-            # TODO(martiniss): infer domain for email address somehow?
-            parts = s.split('@')
-            if len(parts) != 2:
-              continue
-            # This mirrors a check in depot_tools/third_party/upload.py .
-            if '.' not in parts[1]:
-              continue
-            reviewers.add(s.strip())
   return reviewers
 
 
