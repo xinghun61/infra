@@ -19,6 +19,29 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     self.builder_name = 'b'
     self.build_number = 121
 
+  def testGetResultAndFailureResultMapForGroup(self):
+    first_analysis = WfAnalysis.Create(
+        self.master_name, self.builder_name, self.build_number)
+    first_analysis.result = {
+        'failures': []
+    }
+    first_analysis.failure_result_map = {
+        'compile': 'm/b/121'
+    }
+    first_analysis.put()
+
+    second_analysis = WfAnalysis.Create(
+        'm2', self.builder_name, self.build_number)
+    second_analysis.failure_group_key = [self.master_name, self.builder_name,
+                                         self.build_number]
+    second_analysis.put()
+
+    result, failure_result_map = handlers_util._GetResultAndFailureResultMap(
+        'm2', self.builder_name, self.build_number)
+
+    self.assertEqual(result, first_analysis.result)
+    self.assertEqual(failure_result_map, first_analysis.failure_result_map)
+
   def testGetSwarmingTaskInfoNoAnalysis(self):
     data = handlers_util.GetSwarmingTaskInfo(
         self.master_name, self.builder_name, self.build_number)
