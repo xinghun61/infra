@@ -348,19 +348,6 @@
   },
   {
     "cmd": [
-      "git",
-      "cl",
-      "set-commit",
-      "--rietveld"
-    ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_2",
-    "name": "build.git cl (2)",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
       "python",
       "-u",
       "RECIPE_MODULE[recipe_engine::shutil]/resources/rmtree.py",
@@ -655,19 +642,6 @@
     ],
     "cwd": "[TMP_BASE]/roll_infra_tmp_3",
     "name": "infra.git cl",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "git",
-      "cl",
-      "set-commit",
-      "--rietveld"
-    ],
-    "cwd": "[TMP_BASE]/roll_infra_tmp_3",
-    "name": "infra.git cl (2)",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
