@@ -674,6 +674,7 @@ CREATE TABLE Hotlist (
   description TEXT,
 
   is_private BOOLEAN DEFAULT FALSE,
+  default_col_spec TEXT,
 
   PRIMARY KEY (id)
 ) ENGINE=INNODB;
@@ -697,7 +698,7 @@ CREATE TABLE Hotlist2User (
   hotlist_id INT UNSIGNED NOT NULL,
   user_id INT UNSIGNED NOT NULL,
 
-  role_name ENUM ('owner', 'member', 'follower') NOT NULL,
+  role_name ENUM ('owner', 'editor', 'follower') NOT NULL,
 
   PRIMARY KEY (hotlist_id, user_id),
   INDEX (hotlist_id),

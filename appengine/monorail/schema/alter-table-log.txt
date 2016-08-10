@@ -937,3 +937,11 @@ CREATE TABLE Hotlist2User (
   FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id),
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
+
+==============================================================
+2016-08-10: Improve Hotlist schema
+
+ALTER TABLE Hotlist ADD COLUMN default_col_spec TEXT;
+
+ALTER TABLE Hotlist2User CHANGE role_name
+  role_name ENUM('owner', 'editor', 'follower');
