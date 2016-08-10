@@ -51,11 +51,51 @@
         assert.isNotNull(item);
         assert.equal(
             item.children[0].href,
-            'https://test-results.appspot.com/dashboards/flakiness_dashboard' +
+            element.testResultsURL + 'dashboards/flakiness_dashboard' +
             '.html#tests=best_test&testType=wekbit_tests');
         done();
       });
+    });
 
+    test('renders links for code search', function(done) {
+      element.extension = {
+        reasons: [{
+          'step': 'wekbit_tests',
+          'test_names': [
+            'best_test',
+          ],
+        }],
+      };
+      element._uberify = (url) => { return url; };
+      flush( () => {
+        let item = element.$$('#test_results');
+        assert.isNotNull(item);
+        assert.equal(
+            item.children[1].href,
+            element.codeSearchURL + 'search/?q=best_test');
+        done();
+      });
+    });
+
+    test('renders links for code search, java test', function(done) {
+      element.extension = {
+        reasons: [{
+          'step': 'wekbit_tests',
+          'test_names': [
+            'test.foo.bar.TestClass#testThatJavaHasTheBestNames',
+          ],
+        }],
+      };
+      element._uberify = (url) => { return url; };
+      flush( () => {
+        let item = element.$$('#test_results');
+        assert.isNotNull(item);
+        assert.equal(
+            item.children[1].href,
+            element.codeSearchURL + 'search/?q=test.foo.bar.TestClass%20' +
+            'function:testThatJavaHasTheBestNames');
+        done();
+      });
     });
 
     test('renders suspect CLs', function(done) {

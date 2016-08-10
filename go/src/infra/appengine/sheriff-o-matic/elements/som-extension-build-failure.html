@@ -85,7 +85,7 @@
                     [[testName]]
                   </a>
                   (
-                  <a target="_blank" href="https://cs.chromium.org/[[testName]]">
+                  <a target="_blank" href$=[[_linkToCSForTest(testName)]]>
                     Code Search
                   </a>
                   )
@@ -121,6 +121,9 @@
   <script>
   (function() {
     'use strict';
+
+    const codeSearchURL = 'https://cs.chromium.org/';
+    const testResultsURL = 'https://testresults.appspot.com/';
 
     Polymer({
       is: 'som-extension-build-failure',
@@ -165,11 +168,28 @@
       },
 
       _linkForTest: function(reason, testName) {
-        return 'https://test-results.appspot.com/dashboards/' +
+        return testResultsURL + 'dashboards/' +
           'flakiness_dashboard.html#' +
           'tests=' + encodeURIComponent(testName) +
           '&testType=' + encodeURIComponent(reason.step)
           ;
+      },
+
+      _linkToCSForTest: function(testName) {
+        let url =  codeSearchURL + 'search/?q=';
+        let query = testName;
+        if (testName.includes('#')) {
+          // Guessing that it's a java test; the format expected is
+          // test.package.TestClass#testMethod. For now, just split around the #
+          let split = testName.split('#');
+
+          if (split.length > 2) {
+            console.error('invalid java test name', testName);
+          } else {
+            query = split[0] + ' function:' + split[1];
+          }
+        }
+        return url + encodeURIComponent(query);
       },
 
       _linkForCL: function(cl) {
