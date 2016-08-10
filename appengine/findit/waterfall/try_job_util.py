@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+from datetime import timedelta
 import logging
 
 from google.appengine.ext import ndb
@@ -18,6 +19,9 @@ from model.wf_try_job import WfTryJob
 from waterfall import swarming_tasks_to_try_job_pipeline
 from waterfall import waterfall_config
 from waterfall.try_job_type import TryJobType
+
+# TODO(lijeffrey): Move this to config.
+MATCHING_GROUPS_SECONDS_AGO = 24 * 60 * 60  # 24 hours.
 
 
 def _CheckFailureForTryJobKey(
@@ -196,6 +200,7 @@ def _CreateBuildFailureGroup(
     master_name, builder_name, build_number, build_failure_type, blame_list,
     suspected_tuples, output_nodes=None, failed_steps_and_tests=None):
   new_group = WfFailureGroup.Create(master_name, builder_name, build_number)
+  new_group.created_time = datetime.utcnow()
   new_group.build_failure_type = build_failure_type
   new_group.blame_list = blame_list
   new_group.suspected_tuples = suspected_tuples
@@ -221,19 +226,24 @@ def _GetOutputNodes(signals):
   return signals['compile'].get('failed_output_nodes', [])
 
 
-def _GetMatchingCompileFailureGroups(output_nodes):
-  # Output nodes should already be unique and sorted.
+def _GetMatchingFailureGroups(build_failure_type):
+  earliest_time = datetime.utcnow() - timedelta(
+      seconds=MATCHING_GROUPS_SECONDS_AGO)
   return WfFailureGroup.query(ndb.AND(
-      WfFailureGroup.build_failure_type == failure_type.COMPILE,
-      WfFailureGroup.output_nodes == output_nodes
-  )).fetch()
+      WfFailureGroup.created_time >= earliest_time,
+      WfFailureGroup.build_failure_type == build_failure_type)).fetch()
+
+
+def _GetMatchingCompileFailureGroups(output_nodes):
+  groups = _GetMatchingFailureGroups(failure_type.COMPILE)
+  # Output nodes should already be unique and sorted.
+  return [group for group in groups if group.output_nodes == output_nodes]
 
 
 def _GetMatchingTestFailureGroups(failed_steps_and_tests):
-  return WfFailureGroup.query(ndb.AND(
-      WfFailureGroup.build_failure_type == failure_type.TEST,
-      WfFailureGroup.failed_steps_and_tests == failed_steps_and_tests
-  )).fetch()
+  groups = _GetMatchingFailureGroups(failure_type.TEST)
+  return [group for group in groups
+          if group.failed_steps_and_tests == failed_steps_and_tests]
 
 
 def _IsBuildFailureUniqueAcrossPlatforms(
@@ -317,7 +327,6 @@ def _NeedANewTryJob(
         _CheckIfNeedNewTryJobForTestFailure(
             'step', master_name, builder_name, build_number, failure_result_map,
             failed_steps))
-
 
   need_new_try_job = (
       need_new_try_job and ReviveOrCreateTryJobEntity(

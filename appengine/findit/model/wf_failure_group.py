@@ -31,12 +31,15 @@ class WfFailureGroup(BaseBuildModel):
   # Refer to common/waterfall/failure_type.py for all the failure types.
   build_failure_type = ndb.IntegerProperty(indexed=True)
 
+  # When the group was created.
+  created_time = ndb.DateTimeProperty(indexed=True)
+
   # The blame list of CLs that make up the regression range for this group.
   blame_list = ndb.JsonProperty(indexed=False, compressed=True)
 
   # The list of compile failure output nodes (from signals).
   # Only not None if this group represents a compile failure.
-  output_nodes = ndb.JsonProperty(indexed=True)
+  output_nodes = ndb.JsonProperty(indexed=False)
 
   # A sorted list of lists of the failed steps and tests of a test failure.
   # Only not None if this group represents a test failure.
@@ -57,7 +60,7 @@ class WfFailureGroup(BaseBuildModel):
   # went to the database) were JSONified to string in a different order than the
   # keys of the dict used in the query. For example:
   # '{"step_a": [], "step_y": []}' versus '{"step_y": [], "step_a": []}'.
-  failed_steps_and_tests = ndb.JsonProperty(indexed=True)
+  failed_steps_and_tests = ndb.JsonProperty(indexed=False)
 
   # The sorted list of suspected tuples, if available, from heuristic analysis.
   suspected_tuples = ndb.JsonProperty(indexed=False, compressed=True)
