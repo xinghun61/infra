@@ -238,7 +238,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       elif roll_result['trivial']:
         # We won't be uploading. Make sure trivial rolls don't get stuck
         # if previous CQ attempt failed because of flake.
-        self.m.git('cl', 'set-commit', cwd=workdir)
+        # Pass --rietveld flag to match upload args below.
+        self.m.git('cl', 'set-commit', '--rietveld', cwd=workdir)
 
     if need_to_upload:
       commit_message = (

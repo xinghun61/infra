@@ -349,7 +349,8 @@
     "cmd": [
       "git",
       "cl",
-      "set-commit"
+      "set-commit",
+      "--rietveld"
     ],
     "cwd": "[TMP_BASE]/roll_build_tmp_2",
     "name": "build.git cl (2)",
@@ -660,7 +661,8 @@
     "cmd": [
       "git",
       "cl",
-      "set-commit"
+      "set-commit",
+      "--rietveld"
     ],
     "cwd": "[TMP_BASE]/roll_infra_tmp_3",
     "name": "infra.git cl (2)",
