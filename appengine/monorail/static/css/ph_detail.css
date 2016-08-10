@@ -395,8 +395,9 @@ td.rowwidgets { padding: 2px 2px 0 7px; }
   transform: translate(-50%, -50%);
   background: #fff;
   border: 3px solid #333;
-  padding: 1.5em;
+  padding: 1em;
   max-height: 75%;
+  width: 75%;
   overflow-y: auto;
 }
 

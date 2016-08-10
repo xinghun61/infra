@@ -14,8 +14,8 @@
 <template id="ref-detail">
   <tr>
     <td class="gripper">&#9926;</td>
-    <td><a></a></td>
-    <td class="ref_summary"></td>
+    <td style="white-space: nowrap"><a></a></td>
+    <td class="ref_summary" style="width: 100%"></td>
   </tr>
 </template>
 <template id="ref-link">
