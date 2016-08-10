@@ -126,6 +126,11 @@ found in the LICENSE file. -->
             }
             if (KEY_NAMES[key])
                 return KEY_NAMES[key];
+            // .key returns ArrowDown.
+            // .keyIdentifier returns Down.
+            // We normalize away the Arrow part since that's what all the users
+            // of <cr-keyboard> specify.
+            key = key.replace(/^Arrow/, "");
             return key.toLowerCase();
         }
 
