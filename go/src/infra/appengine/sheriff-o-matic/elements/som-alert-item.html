@@ -48,6 +48,7 @@
      .alert-times {
        font-size: smaller;
        color: #666;
+       min-width: 150px;
      }
      .alert-title {
        font-weight: bold;
@@ -109,12 +110,14 @@
       <div class$="[[_classForAlert(alert, selected)]]">
         <div class="list-item">
           <div class="alert-title-bar horizontal layout justified">
-            <div class="horizontal layout">
-              <div class="alert-title self-center">[[alert.title]]</div>
-              <div id="handleLink" class="self-center" hidden$="[[!_helpLinkForAlert(alert)]]">
-                [<a href="[[_helpLinkForAlert(alert)]]" target="_blank">Help</a>]
+            <div class="horizontal layout wrap">
+              <div class="layout horizontal flex-child">
+                <div class="alert-title self-center">[[alert.title]]</div>
+                <div id="handleLink" class="self-center" hidden$="[[!_helpLinkForAlert(alert)]]">
+                  [<a href="[[_helpLinkForAlert(alert)]]" target="_blank">Help</a>]
+                </div>
               </div>
-              <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links">
+              <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links flex">
                 <template is="dom-repeat" items="[[annotation.bugs]]" as="bug">
                   <div class="bug">
                     <a target="_blank" href$="[[bug]]">[[_bugLabel(bug)]]</a>
