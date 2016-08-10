@@ -35,7 +35,7 @@ def RunSteps(api):
                 '--auth-refresh-token-json', RIETVELD_REFRESH_TOKEN],
                cwd=cwd)
 
-    api.python('update wpt',
+    api.python('update css',
                cwd.join('Tools', 'Scripts', 'update-w3c-deps'),
                ['--auto-update', 'css',
                 '--auth-refresh-token-json', RIETVELD_REFRESH_TOKEN],

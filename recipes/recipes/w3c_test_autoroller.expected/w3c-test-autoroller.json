@@ -158,7 +158,7 @@
       "/creds/refresh_tokens/blink-w3c-test-autoroller"
     ],
     "cwd": "[SLAVE_BUILD]/src/third_party/WebKit",
-    "name": "update wpt (2)"
+    "name": "update css"
   },
   {
     "name": "$result",
