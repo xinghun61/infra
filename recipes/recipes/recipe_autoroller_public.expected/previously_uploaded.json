@@ -337,7 +337,8 @@
       "git",
       "cl",
       "issue",
-      "123456789"
+      "123456789",
+      "--rietveld"
     ],
     "cwd": "[TMP_BASE]/roll_build_tmp_2",
     "name": "build.git cl",

@@ -231,7 +231,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       change_data = json.loads(cat_result.stdout)
       cat_result.presentation.links['Issue %s' % change_data['issue']] = (
           change_data['issue_url'])
-      self.m.git('cl', 'issue', change_data['issue'], cwd=workdir)
+      # Pass --rietveld flag to match upload args below.
+      self.m.git('cl', 'issue', change_data['issue'], '--rietveld', cwd=workdir)
       if change_data['diff_digest'] != diff_digest:
         need_to_upload = True
         rebase = True
