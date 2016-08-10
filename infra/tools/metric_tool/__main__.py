@@ -12,14 +12,14 @@ import logging
 import sys
 
 from infra.tools.metric_tool import metric_tool
-import infra_libs
+from infra_libs import app
 
 
 # https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
 LOGGER = logging.getLogger(__name__)
 
 
-class Metric_tool(infra_libs.BaseApplication):
+class Metric_tool(app.BaseApplication):
   DESCRIPTION = sys.modules['__main__'].__doc__
   PROG_NAME = 'metric_tool'
 

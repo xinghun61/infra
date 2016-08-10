@@ -6,9 +6,9 @@ import logging
 import sys
 import traceback
 
-import infra_libs
-import infra_libs.event_mon as event_mon
-import infra_libs.ts_mon as ts_mon
+from infra_libs import app
+from infra_libs import event_mon
+from infra_libs import ts_mon
 
 from infra.tools.send_monitoring_event import common
 
@@ -17,7 +17,7 @@ success_metric = ts_mon.BooleanMetric('send_monitoring_event/success',
     description='Set to True if the monitoring event was sent successfully')
 
 
-class SendMonitoringEvent(infra_libs.BaseApplication):
+class SendMonitoringEvent(app.BaseApplication):
   DESCRIPTION = """Send an event to the monitoring pipeline.
 
     Examples:

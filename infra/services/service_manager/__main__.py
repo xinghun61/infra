@@ -7,14 +7,13 @@ import signal
 import socket
 import sys
 
+from infra_libs import app
 from infra_libs import experiments
 from infra.services.service_manager import config_watcher
 from infra.services.service_manager import root_setup
 
-import infra_libs
 
-
-class ServiceManager(infra_libs.BaseApplication):
+class ServiceManager(app.BaseApplication):
   DESCRIPTION = ('Starts and stops machine-wide infra services with arguments '
                  'from config files')
 

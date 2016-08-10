@@ -13,14 +13,14 @@ import logging
 import sys
 
 from infra.tools.list_running_masters import list_running_masters
-import infra_libs
+from infra_libs import app
 
 
 # https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
 LOGGER = logging.getLogger(__name__)
 
 
-class List_running_masters(infra_libs.BaseApplication):
+class List_running_masters(app.BaseApplication):
   DESCRIPTION = sys.modules['__main__'].__doc__
   PROG_NAME = 'list_running_masters'
 

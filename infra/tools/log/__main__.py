@@ -13,14 +13,14 @@ import logging
 import sys
 
 from infra.tools.log import log
-import infra_libs
+from infra_libs import app
 
 
 # https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
 LOGGER = logging.getLogger(__name__)
 
 
-class Log(infra_libs.BaseApplication):
+class Log(app.BaseApplication):
   DESCRIPTION = sys.modules['__main__'].__doc__
   PROG_NAME = 'log'
   USES_STANDARD_LOGGING = False

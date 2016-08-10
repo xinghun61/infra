@@ -14,14 +14,14 @@ import logging
 import sys
 
 from infra.services.git_cookie_daemon import git_cookie_daemon
-import infra_libs
+from infra_libs import app
 
 
 # https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
 LOGGER = logging.getLogger(__name__)
 
 
-class GitCookieDaemon(infra_libs.BaseApplication):
+class GitCookieDaemon(app.BaseApplication):
   DESCRIPTION = sys.modules['__main__'].__doc__
   PROG_NAME = 'git_cookie_daemon'
 

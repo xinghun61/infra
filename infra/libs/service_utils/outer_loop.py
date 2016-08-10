@@ -8,8 +8,8 @@ import collections
 import logging
 import time
 
+from infra_libs import app
 from infra_libs import ts_mon
-import infra_libs
 
 LOGGER = logging.getLogger(__name__)
 
@@ -147,11 +147,11 @@ def process_argparse_options(opts):  # pragma: no cover
   }
 
 
-class Application(infra_libs.BaseApplication):  # pragma: no cover
+class Application(app.BaseApplication):  # pragma: no cover
   """A top-level Application class for apps that use outer_loop.
 
   Subclasses must implement the task() and sleep_timeout() methods.
-  See the docs for infra_libs.BaseApplication for more details.
+  See the docs for app.BaseApplication for more details.
 
   Usage::
 

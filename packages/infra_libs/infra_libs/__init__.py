@@ -2,7 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from infra_libs.app import BaseApplication
+from . import ts_mon  # Must be imported first so httplib2_utils can import it.
+
 from infra_libs.httplib2_utils import AuthError
 from infra_libs.httplib2_utils import get_authenticated_http
 from infra_libs.httplib2_utils import get_signed_jwt_assertion_credentials
