@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"infra/monitoring/messages"
 )
@@ -109,7 +108,8 @@ func (s *snapshot) Findit(master *messages.MasterLocation, builder string, build
 	if err != nil {
 		return nil, err
 	}
-	err = write(filepath.Join(s.baseDir, "findit", master.Name(), builder, fmt.Sprintf("%d", buildNum), strings.Join(failedSteps, ",")), items)
+	// Ignore failedSteps since we assume only one call per build
+	err = write(filepath.Join(s.baseDir, "findit", master.Name(), builder, fmt.Sprintf("%d", buildNum)), items)
 	if err != nil {
 		errLog.Printf("Error snapshotting findit: %v", err)
 	}

@@ -1,53 +1,78 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2016 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package analyzer
+package step
 
 import (
-	"infra/monitoring/messages"
 	"net/url"
-	"reflect"
 	"strings"
 	"testing"
+
+	"infra/monitoring/client/test"
+	"infra/monitoring/messages"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestCompileFailureAlerts(t *testing.T) {
-	tests := []struct {
-		name       string
-		failure    stepFailure
-		stdio      string
-		wantResult *StepAnalyzerResult
-		wantErr    error
-	}{
-		{
-			name:       "empty",
-			wantResult: &StepAnalyzerResult{},
-		},
-		{
-			name: "non-compiler failure",
-			failure: stepFailure{
-				master: &messages.MasterLocation{URL: url.URL{
-					Scheme: "https",
-					Host:   "build.chromium.org",
-					Path:   "/p/fake.master",
-				}},
-				builderName: "fake_builder",
-				step: messages.Step{
-					Name: "tests_compile",
+func TestCompileFailureAnalyzer(t *testing.T) {
+	t.Parallel()
+
+	Convey("test CompileFailureAnalyzer", t, func() {
+		a := &compileFailureAnalyzer{}
+
+		Convey("Analyze", func() {
+			tests := []struct {
+				name       string
+				failures   []*messages.BuildStep
+				stdio      string
+				wantResult []messages.ReasonRaw
+				wantErr    error
+			}{
+				{
+					name:       "empty",
+					wantResult: []messages.ReasonRaw{},
 				},
-			},
-			wantResult: &StepAnalyzerResult{},
-		},
-		{
-			name: "compiler error",
-			failure: stepFailure{
-				step: messages.Step{
-					Name: "compile",
+				{
+					name: "non-compiler failure",
+					failures: []*messages.BuildStep{
+						{
+							Master: &messages.MasterLocation{URL: url.URL{
+								Scheme: "https",
+								Host:   "build.chromium.org",
+								Path:   "/p/fake.Master",
+							}},
+							Build: &messages.Build{
+								BuilderName: "fake_builder",
+							},
+							Step: &messages.Step{
+								Name: "tests_compile",
+							},
+						},
+					},
+					wantResult: []messages.ReasonRaw{
+						(*compileFailure)(nil),
+					},
 				},
-			},
-			// Taken from actual stdio logs of a compile failure:
-			stdio: `
+				{
+					name: "compiler error",
+					failures: []*messages.BuildStep{
+						{
+							Master: &messages.MasterLocation{URL: url.URL{
+								Scheme: "https",
+								Host:   "build.chromium.org",
+								Path:   "/p/fake.Master",
+							}},
+							Build: &messages.Build{
+								BuilderName: "fake_builder",
+							},
+							Step: &messages.Step{
+								Name: "compile",
+							},
+						},
+					},
+					// Taken from actual stdio logs of a compile failure:
+					stdio: `
 [4641/28337] CXX obj\third_party\angle\src\libANGLE\libANGLE.Shader.obj
 [4642/28337] CXX obj\third_party\angle\src\libANGLE\libANGLE.State.obj
 [4643/28337] CXX obj\third_party\angle\src\libANGLE\libANGLE.Surface.obj
@@ -62,39 +87,40 @@ In file included from ..\..\third_party\angle\src\common/event_tracer.h:8:
 In file included from ..\..\third_party\angle\src\common/platform.h:61:
 C:\b\depot_tools\win_toolchain\vs2013_files\win8sdk/Include/um\d3d11.h(1065,48) :  error: default initialization of an object of const type 'const CD3D11_DEFAULT' without a user-provided default constructor
 extern const DECLSPEC_SELECTANY CD3D11_DEFAULT D3D11_DEFAULT;
-                                               ^
+					       ^
 C:\b\depot_tools\win_toolchain\vs2013_files\win8sdk/Include/um\d3d11.h(1065,61) :  note: add an explicit initializer to initialize 'D3D11_DEFAULT'
 extern const DECLSPEC_SELECTANY CD3D11_DEFAULT D3D11_DEFAULT;
-                                                            ^
+							    ^
 C:\b\depot_tools\win_toolchain\vs2013_files\win8sdk/Include/um\d3d11.h(9570,54) :  error: default initialization of an object of const type 'const CD3D11_VIDEO_DEFAULT' without a user-provided default constructor
 extern const DECLSPEC_SELECTANY CD3D11_VIDEO_DEFAULT D3D11_VIDEO_DEFAULT;
-                                                     ^
+						     ^
 C:\b\depot_tools\win_toolchain\vs2013_files\win8sdk/Include/um\d3d11.h(9570,73) :  note: add an explicit initializer to initialize 'D3D11_VIDEO_DEFAULT'
 extern const DECLSPEC_SELECTANY CD3D11_VIDEO_DEFAULT D3D11_VIDEO_DEFAULT;
-                                                                        ^
+							^
 2 errors generated.
-`,
-			wantResult: &StepAnalyzerResult{
-				Reasons: []string{
-					`C:\b\depot_tools\win_toolchain\vs2013_files\win8sdk/Include/um\d3d11.h:1065`,
-					`C:\b\depot_tools\win_toolchain\vs2013_files\win8sdk/Include/um\d3d11.h:9570`,
+		`,
+					wantResult: []messages.ReasonRaw{
+						&compileFailure{
+							FailureLines: []string{
+								`C:\b\depot_tools\win_toolchain\vs2013_files\win8sdk/Include/um\d3d11.h:1065`,
+								`C:\b\depot_tools\win_toolchain\vs2013_files\win8sdk/Include/um\d3d11.h:9570`,
+							},
+						},
+					},
 				},
-				Recognized: true,
-			},
-		},
-	}
+			}
 
-	mc := &mockReader{}
-	a := &CompileFailureAnalyzer{mc}
+			mc := &test.MockReader{}
 
-	for _, test := range tests {
-		mc.stdioForStep = strings.Split(test.stdio, "\n")
-		gotResult, gotErr := a.Analyze(test.failure)
-		if !reflect.DeepEqual(gotResult, test.wantResult) {
-			t.Errorf("%s failed.\n\tGot:\n\t%+v\n\twant:\n\t%+v.", test.name, gotResult, test.wantResult)
-		}
-		if !reflect.DeepEqual(gotErr, test.wantErr) {
-			t.Errorf("%s failed. Got: %+v want: %+v.", test.name, gotErr, test.wantErr)
-		}
-	}
+			for _, test := range tests {
+				test := test
+				Convey(test.name, func() {
+					mc.StdioForStepValue = strings.Split(test.stdio, "\n")
+					gotResult, gotErr := a.Analyze(mc, test.failures)
+					So(gotErr, ShouldEqual, test.wantErr)
+					So(gotResult, ShouldResemble, test.wantResult)
+				})
+			}
+		})
+	})
 }

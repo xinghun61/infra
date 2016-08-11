@@ -6,13 +6,18 @@ package analyzer
 
 import (
 	"fmt"
-	"infra/libs/testing/ansidiff"
-	"infra/monitoring/messages"
 	"net/url"
 	"reflect"
 	"sort"
 	"testing"
 	"time"
+
+	"infra/libs/testing/ansidiff"
+	"infra/monitoring/client"
+	clientTest "infra/monitoring/client/test"
+	"infra/monitoring/messages"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func fakeNow(t time.Time) func() time.Time {
@@ -21,71 +26,53 @@ func fakeNow(t time.Time) func() time.Time {
 	}
 }
 
-type mockReader struct {
-	bCache        map[string]*messages.Build
-	build         *messages.Build
-	builds        map[string]*messages.Build
-	latestBuilds  map[messages.MasterLocation]map[string][]*messages.Build
-	testResults   *messages.TestResults
-	stdioForStep  []string
-	finditResults []*messages.FinditResult
-	buildFetchError,
-	stepFetchError,
-	stdioForStepError error
-	buildFetchErrs map[string]error
-}
-
-func (m mockReader) Build(master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
-	if m.build != nil {
-		return m.build, m.buildFetchError
-	}
-
-	key := fmt.Sprintf("%s/%s/%d", master.Name(), builder, buildNum)
-	if b, ok := m.bCache[key]; ok {
-		return b, nil
-	}
-	fmt.Printf("looking up %q: %+v\n", key, m.builds[key])
-	return m.builds[key], m.buildFetchErrs[key]
-}
-
-func (m mockReader) LatestBuilds(master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
-	return m.latestBuilds[*master][builder], nil
-}
-
-func (m mockReader) TestResults(master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
-	return m.testResults, m.stepFetchError
-}
-
-func (m mockReader) BuildExtract(url *messages.MasterLocation) (*messages.BuildExtract, error) {
-	return nil, nil
-}
-
-func (m mockReader) StdioForStep(master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
-	return m.stdioForStep, m.stdioForStepError
-}
-
-func (m mockReader) JSON(url string, v interface{}) (int, error) {
-	return 0, nil // Not actually used.
-}
-
-func (m mockReader) PostAlerts(alerts *messages.Alerts) error {
-	return nil
-}
-
-func (m mockReader) CrbugItems(tree string) ([]messages.CrbugItem, error) {
-	return nil, nil
-}
-
-func (m mockReader) Findit(master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
-	return m.finditResults, nil
-}
-
 func urlParse(s string, t *testing.T) *url.URL {
 	p, err := url.Parse(s)
 	if err != nil {
 		t.Errorf("failed to parse %s: %s", s, err)
 	}
 	return p
+}
+
+type fakeReasonRaw struct {
+	signature string
+}
+
+func (f *fakeReasonRaw) Signature() string {
+	if f.signature != "" {
+		return f.signature
+	}
+
+	return "fakeSignature"
+}
+
+func (f *fakeReasonRaw) Kind() string {
+	return "fakeKind"
+}
+
+func (f *fakeReasonRaw) Title([]*messages.BuildStep) string {
+	return "fakeTitle"
+}
+
+type fakeAnalyzer struct {
+}
+
+func (f *fakeAnalyzer) Analyze(reader client.Reader, failures []*messages.BuildStep) ([]messages.ReasonRaw, error) {
+	return fakeFinder(reader, failures)
+}
+
+func fakeFinder(Reader client.Reader, failures []*messages.BuildStep) ([]messages.ReasonRaw, error) {
+	raws := make([]messages.ReasonRaw, len(failures))
+	for i := range failures {
+		raws[i] = &fakeReasonRaw{}
+	}
+	return raws, nil
+}
+
+func newTestAnalyzer(c client.Reader, minBuilds, maxBuilds int) *Analyzer {
+	a := New(c, minBuilds, maxBuilds)
+	a.reasonFinder = fakeFinder
+	return a
 }
 
 func TestMasterAlerts(t *testing.T) {
@@ -141,7 +128,7 @@ func TestMasterAlerts(t *testing.T) {
 		},
 	}
 
-	a := New(&mockReader{}, 0, 10)
+	a := newTestAnalyzer(&clientTest.MockReader{}, 0, 10)
 
 	for _, test := range tests {
 		a.Now = fakeNow(test.t)
@@ -181,7 +168,7 @@ func TestBuilderAlerts(t *testing.T) {
 		},
 	}
 
-	a := New(&mockReader{}, 0, 10)
+	a := newTestAnalyzer(&clientTest.MockReader{}, 0, 10)
 
 	for _, test := range tests {
 		a.Now = fakeNow(test.t)
@@ -298,12 +285,12 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 		},
 	}
 
-	a := New(nil, 0, 10)
+	a := newTestAnalyzer(nil, 0, 10)
 
 	for _, test := range tests {
 		a.Now = fakeNow(test.time)
-		a.Reader = mockReader{
-			builds: test.builds,
+		a.Reader = clientTest.MockReader{
+			Builds: test.builds,
 		}
 		fmt.Printf("test %s", test.name)
 		gotAlerts, gotErrs := a.builderAlerts("tree", &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, &test.b)
@@ -318,147 +305,137 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 }
 
 func TestBuilderStepAlerts(t *testing.T) {
-	tests := []struct {
-		name         string
-		master       string
-		builder      string
-		recentBuilds []int64
-		builds       map[string]*messages.Build
-		finditData   []*messages.FinditResult
-		time         time.Time
-		wantAlerts   []messages.Alert
-		wantErrs     []error
-	}{
-		{
-			name: "empty",
-		},
-		{
-			name:         "builders ok",
-			master:       "fake.master",
-			builder:      "fake.builder",
-			recentBuilds: []int64{0},
-			builds: map[string]*messages.Build{
-				"fake.master/fake.builder/0": {
-					Number: 0,
-					Times:  []messages.EpochTime{0, 1},
-					Steps: []messages.Step{
-						{
-							Name:    "fake_step",
-							Results: []interface{}{float64(0)},
-						},
-					},
-				},
+	t.Parallel()
+
+	Convey("test BuilderStepAlerts", t, func() {
+		tests := []struct {
+			name         string
+			master       string
+			builder      string
+			recentBuilds []int64
+			builds       map[string]*messages.Build
+			finditData   []*messages.FinditResult
+			time         time.Time
+			wantAlerts   []messages.Alert
+			wantErrs     []error
+		}{
+			{
+				name: "empty",
 			},
-		},
-		{
-			name:         "one build failure",
-			master:       "fake.master",
-			builder:      "fake.builder",
-			recentBuilds: []int64{0},
-			builds: map[string]*messages.Build{
-				"fake.master/fake.builder/0": {
-					Number: 0,
-					Times:  []messages.EpochTime{0, 1},
-					Steps: []messages.Step{
-						{
-							Name:       "fake_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(2)},
-						},
-					},
-					Properties: [][]interface{}{
-						{"got_revision_cp", "refs/heads/master@{#291569}"},
-					},
-				},
-			},
-			wantAlerts: []messages.Alert{
-				{
-					Key:      "fake.master.fake.builder.fake_step.",
-					Title:    "fake_step failing on fake.master/fake.builder",
-					Type:     messages.AlertBuildFailure,
-					Body:     "",
-					Severity: newFailureSev,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
+			{
+				name:         "builders ok",
+				master:       "fake.master",
+				builder:      "fake.builder",
+				recentBuilds: []int64{0},
+				builds: map[string]*messages.Build{
+					"fake.master/fake.builder/0": {
+						Number: 0,
+						Times:  []messages.EpochTime{0, 1},
+						Steps: []messages.Step{
 							{
-								Name: "fake.builder",
-								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
-							},
-						},
-						Reasons: []messages.Reason{
-							{
-								Step: "fake_step",
-								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder/builds/0/steps/fake_step", t).String(),
-							},
-						},
-						RegressionRanges: []messages.RegressionRange{
-							{
-								Repo:      "chromium",
-								Positions: []string{"refs/heads/master@{#291569}"},
+								Name:    "fake_step",
+								Results: []interface{}{float64(0)},
 							},
 						},
 					},
 				},
 			},
-		},
-		{
-			name:         "one build failure with findit",
-			master:       "fake.master",
-			builder:      "fake.builder",
-			recentBuilds: []int64{0},
-			builds: map[string]*messages.Build{
-				"fake.master/fake.builder/0": {
-					Number: 0,
-					Times:  []messages.EpochTime{0, 1},
-					Steps: []messages.Step{
-						{
-							Name:       "fake_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(2)},
+			{
+				name:         "one build failure",
+				master:       "fake.master",
+				builder:      "fake.builder",
+				recentBuilds: []int64{0},
+				builds: map[string]*messages.Build{
+					"fake.master/fake.builder/0": {
+						BuilderName: "fake.builder",
+						Number:      0,
+						Times:       []messages.EpochTime{0, 1},
+						Steps: []messages.Step{
+							{
+								Name:       "fake_step",
+								IsFinished: true,
+								Results:    []interface{}{float64(2)},
+							},
 						},
-					},
-					Properties: [][]interface{}{
-						{"got_revision_cp", "refs/heads/master@{#291569}"},
-					},
-				},
-			},
-			finditData: []*messages.FinditResult{
-				{
-					SuspectedCLs: []messages.SuspectCL{
-						{
-							RepoName:       "repo",
-							Revision:       "deadbeef",
-							CommitPosition: 1234,
+						Properties: [][]interface{}{
+							{"got_revision_cp", "refs/heads/master@{#291569}"},
 						},
 					},
 				},
+				wantAlerts: []messages.Alert{
+					{
+						Key:      "fake.master.fake.builder.fake_step.",
+						Title:    "fakeTitle",
+						Type:     messages.AlertBuildFailure,
+						Body:     "",
+						Severity: newFailureSev,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{
+									Name: "fake.builder",
+									URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+								},
+							},
+							RegressionRanges: []messages.RegressionRange{
+								{
+									Repo:      "chromium",
+									Positions: []string{"refs/heads/master@{#291569}"},
+								},
+							},
+							StepAtFault: &messages.BuildStep{
+								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+								Build: &messages.Build{
+									BuilderName: "fake.builder",
+									Number:      0,
+									Times:       []messages.EpochTime{0, 1},
+									Steps: []messages.Step{
+										{
+											Name:       "fake_step",
+											IsFinished: true,
+											Results:    []interface{}{float64(2)},
+										},
+									},
+									Properties: [][]interface{}{
+										{"got_revision_cp", "refs/heads/master@{#291569}"},
+									},
+								},
+								Step: &messages.Step{
+									Name:       "fake_step",
+									IsFinished: true,
+									Results:    []interface{}{float64(2)},
+								},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+						},
+					},
+				},
 			},
-			wantAlerts: []messages.Alert{
-				{
-					Key:      "fake.master.fake.builder.fake_step.",
-					Title:    "fake_step failing on fake.master/fake.builder",
-					Type:     messages.AlertBuildFailure,
-					Body:     "",
-					Severity: newFailureSev,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
+			{
+				name:         "one build failure with findit",
+				master:       "fake.master",
+				builder:      "fake.builder",
+				recentBuilds: []int64{0},
+				builds: map[string]*messages.Build{
+					"fake.master/fake.builder/0": {
+						Number: 0,
+						Times:  []messages.EpochTime{0, 1},
+						Steps: []messages.Step{
 							{
-								Name: "fake.builder",
-								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+								Name:       "fake_step",
+								IsFinished: true,
+								Results:    []interface{}{float64(2)},
 							},
 						},
-						Reasons: []messages.Reason{
-							{
-								Step: "fake_step",
-								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder/builds/0/steps/fake_step", t).String(),
-							},
+						BuilderName: "fake.builder",
+						Properties: [][]interface{}{
+							{"got_revision_cp", "refs/heads/master@{#291569}"},
 						},
-						RegressionRanges: []messages.RegressionRange{
-							{
-								Repo:      "chromium",
-								Positions: []string{"refs/heads/master@{#291569}"},
-							},
-						},
+					},
+				},
+				finditData: []*messages.FinditResult{
+					{
 						SuspectedCLs: []messages.SuspectCL{
 							{
 								RepoName:       "repo",
@@ -468,335 +445,489 @@ func TestBuilderStepAlerts(t *testing.T) {
 						},
 					},
 				},
-			},
-		},
-		{
-			name:         "repeated build failure",
-			master:       "fake.master",
-			builder:      "fake.builder",
-			recentBuilds: []int64{0, 1, 2, 3},
-			builds: map[string]*messages.Build{
-				"fake.master/fake.builder/0": {
-					Number: 0,
-					Times:  []messages.EpochTime{0, 1},
-					Steps: []messages.Step{
-						{
-							Name:       "fake_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(2)},
-						},
-					},
-					Properties: [][]interface{}{
-						{"got_revision_cp", "refs/heads/master@{#291569}"},
-					},
-				},
-				"fake.master/fake.builder/1": {
-					Number: 1,
-					Times:  []messages.EpochTime{0, 1},
-					Steps: []messages.Step{
-						{
-							Name:       "fake_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(2)},
-						},
-					},
-					Properties: [][]interface{}{
-						{"got_revision_cp", "refs/heads/master@{#291570}"},
-					},
-				},
-				"fake.master/fake.builder/2": {
-					Number: 2,
-					Times:  []messages.EpochTime{0, 1},
-					Steps: []messages.Step{
-						{
-							Name:       "fake_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(2)},
-						},
-					},
-					Properties: [][]interface{}{
-						{"got_revision_cp", "refs/heads/master@{#291570}"},
-					},
-				},
-				"fake.master/fake.builder/3": {
-					Number: 3,
-					Times:  []messages.EpochTime{0, 1},
-					Steps: []messages.Step{
-						{
-							Name:       "fake_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(2)},
-						},
-					},
-				},
-			},
-			wantAlerts: []messages.Alert{
-				{
-					Key:      "fake.master.fake.builder.fake_step.",
-					Title:    "fake_step failing on fake.master/fake.builder",
-					Type:     messages.AlertBuildFailure,
-					Body:     "",
-					Severity: reliableFailureSev,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{
-								Name:          "fake.builder",
-								URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
-								FirstFailure:  0,
-								LatestFailure: 3,
+				wantAlerts: []messages.Alert{
+					{
+						Key:      "fake.master.fake.builder.fake_step.",
+						Title:    "fakeTitle",
+						Type:     messages.AlertBuildFailure,
+						Body:     "",
+						Severity: newFailureSev,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{
+									Name: "fake.builder",
+									URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+								},
 							},
-						},
-						Reasons: []messages.Reason{
-							{
-								Step: "fake_step",
-								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder/builds/3/steps/fake_step", t).String(),
+							StepAtFault: &messages.BuildStep{
+								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+								Build: &messages.Build{
+									BuilderName: "fake.builder",
+									Number:      0,
+									Times:       []messages.EpochTime{0, 1},
+									Steps: []messages.Step{
+										{
+											Name:       "fake_step",
+											IsFinished: true,
+											Results:    []interface{}{float64(2)},
+										},
+									},
+									Properties: [][]interface{}{
+										{"got_revision_cp", "refs/heads/master@{#291569}"},
+									},
+								},
+								Step: &messages.Step{
+									Name:       "fake_step",
+									IsFinished: true,
+									Results:    []interface{}{float64(2)},
+								},
 							},
-						},
-						RegressionRanges: []messages.RegressionRange{
-							{
-								Repo: "chromium",
-								Positions: []string{
-									"refs/heads/master@{#291569}",
-									"refs/heads/master@{#291570}",
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []messages.RegressionRange{
+								{
+									Repo:      "chromium",
+									Positions: []string{"refs/heads/master@{#291569}"},
+								},
+							},
+							SuspectedCLs: []messages.SuspectCL{
+								{
+									RepoName:       "repo",
+									Revision:       "deadbeef",
+									CommitPosition: 1234,
 								},
 							},
 						},
 					},
 				},
 			},
-		},
-		{
-			name:         "new double failures counted",
-			master:       "fake.master",
-			builder:      "fake.builder",
-			recentBuilds: []int64{0, 1, 2},
-			builds: map[string]*messages.Build{
-				"fake.master/fake.builder/0": {
-					Number: 0,
-					Times:  []messages.EpochTime{0, 1},
-					Steps: []messages.Step{
-						{
-							Name:       "fake_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(2)},
-						},
-					},
-					Properties: [][]interface{}{
-						{"got_revision_cp", "refs/heads/master@{#291569}"},
-					},
-				},
-				"fake.master/fake.builder/1": {
-					Number: 1,
-					Times:  []messages.EpochTime{0, 1},
-					Steps: []messages.Step{
-						{
-							Name:       "fake_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(2)},
-						},
-					},
-					Properties: [][]interface{}{
-						{"got_revision_cp", "refs/heads/master@{#291570}"},
-					},
-				},
-				"fake.master/fake.builder/2": {
-					Number: 2,
-					Times:  []messages.EpochTime{0, 1},
-					Steps: []messages.Step{
-						{
-							Name:       "fake_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(2)},
-						},
-						{
-							Name:       "other_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(2)},
-						},
-					},
-					Properties: [][]interface{}{
-						{"got_revision_cp", "refs/heads/master@{#291570}"},
-					},
-				},
-			},
-			wantAlerts: []messages.Alert{
-				{
-					Key:      "fake.master.fake.builder.other_step.",
-					Title:    "other_step failing on fake.master/fake.builder",
-					Type:     messages.AlertBuildFailure,
-					Body:     "",
-					Severity: newFailureSev,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
+			{
+				name:         "repeated build failure",
+				master:       "fake.master",
+				builder:      "fake.builder",
+				recentBuilds: []int64{0, 1, 2, 3},
+				builds: map[string]*messages.Build{
+					"fake.master/fake.builder/0": {
+						Number: 0,
+						Times:  []messages.EpochTime{0, 1},
+						Steps: []messages.Step{
 							{
-								Name:          "fake.builder",
-								URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
-								FirstFailure:  2,
-								LatestFailure: 2,
+								Name:       "fake_step",
+								IsFinished: true,
+								Results:    []interface{}{float64(2)},
 							},
 						},
-						Reasons: []messages.Reason{
+						BuilderName: "fake.builder",
+						Properties: [][]interface{}{
+							{"got_revision_cp", "refs/heads/master@{#291569}"},
+						},
+					},
+					"fake.master/fake.builder/1": {
+						Number: 1,
+						Times:  []messages.EpochTime{0, 1},
+						Steps: []messages.Step{
 							{
-								Step: "other_step",
-								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder/builds/2/steps/other_step", t).String(),
+								Name:       "fake_step",
+								IsFinished: true,
+								Results:    []interface{}{float64(2)},
 							},
 						},
-						RegressionRanges: []messages.RegressionRange{
+						BuilderName: "fake.builder",
+						Properties: [][]interface{}{
+							{"got_revision_cp", "refs/heads/master@{#291570}"},
+						},
+					},
+					"fake.master/fake.builder/2": {
+						Number: 2,
+						Times:  []messages.EpochTime{0, 1},
+						Steps: []messages.Step{
 							{
-								Repo: "chromium",
-								Positions: []string{
-									"refs/heads/master@{#291570}",
+								Name:       "fake_step",
+								IsFinished: true,
+								Results:    []interface{}{float64(2)},
+							},
+						},
+						BuilderName: "fake.builder",
+						Properties: [][]interface{}{
+							{"got_revision_cp", "refs/heads/master@{#291570}"},
+						},
+					},
+					"fake.master/fake.builder/3": {
+						Number: 3,
+						Times:  []messages.EpochTime{0, 1},
+						Steps: []messages.Step{
+							{
+								Name:       "fake_step",
+								IsFinished: true,
+								Results:    []interface{}{float64(2)},
+							},
+						},
+						BuilderName: "fake.builder",
+					},
+				},
+				wantAlerts: []messages.Alert{
+					{
+						Key:      "fake.master.fake.builder.fake_step.",
+						Title:    "fakeTitle",
+						Type:     messages.AlertBuildFailure,
+						Body:     "",
+						Severity: reliableFailureSev,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{
+									Name:          "fake.builder",
+									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									FirstFailure:  0,
+									LatestFailure: 3,
 								},
 							},
-						},
-					},
-				},
-				{
-					Key:      "fake.master.fake.builder.fake_step.",
-					Title:    "fake_step failing on fake.master/fake.builder",
-					Type:     messages.AlertBuildFailure,
-					Body:     "",
-					Severity: reliableFailureSev,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{
-								Name:          "fake.builder",
-								URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
-								FirstFailure:  0,
-								LatestFailure: 2,
-							},
-						},
-						Reasons: []messages.Reason{
-							{
-								Step: "fake_step",
-								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder/builds/2/steps/fake_step", t).String(),
-							},
-						},
-						RegressionRanges: []messages.RegressionRange{
-							{
-								Repo: "chromium",
-								Positions: []string{
-									"refs/heads/master@{#291569}",
-									"refs/heads/master@{#291570}",
+							StepAtFault: &messages.BuildStep{
+								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+								Build: &messages.Build{
+									BuilderName: "fake.builder",
+									Number:      3,
+									Times:       []messages.EpochTime{0, 1},
+									Steps: []messages.Step{
+										{
+											Name:       "fake_step",
+											IsFinished: true,
+											Results:    []interface{}{float64(2)},
+										},
+									},
+								},
+								Step: &messages.Step{
+									Name:       "fake_step",
+									IsFinished: true,
+									Results:    []interface{}{float64(2)},
 								},
 							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name:         "old failures not counted",
-			master:       "fake.master",
-			builder:      "fake.builder",
-			recentBuilds: []int64{0, 1, 2},
-			builds: map[string]*messages.Build{
-				"fake.master/fake.builder/0": {
-					Number: 0,
-					Times:  []messages.EpochTime{0, 1},
-					Steps: []messages.Step{
-						{
-							Name:       "fake_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(2)},
-						},
-						{
-							Name:       "other_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(2)},
-						},
-					},
-					Properties: [][]interface{}{
-						{"got_revision_cp", "refs/heads/master@{#291569}"},
-					},
-				},
-				"fake.master/fake.builder/1": {
-					Number: 1,
-					Times:  []messages.EpochTime{0, 1},
-					Steps: []messages.Step{
-						{
-							Name:       "fake_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(2)},
-						},
-					},
-					Properties: [][]interface{}{
-						{"got_revision_cp", "refs/heads/master@{#291570}"},
-					},
-				},
-				"fake.master/fake.builder/2": {
-					Number: 2,
-					Times:  []messages.EpochTime{0, 1},
-					Steps: []messages.Step{
-						{
-							Name:       "fake_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(2)},
-						},
-					},
-					Properties: [][]interface{}{
-						{"got_revision_cp", "refs/heads/master@{#291570}"},
-					},
-				},
-			},
-			wantAlerts: []messages.Alert{
-				{
-					Key:      "fake.master.fake.builder.fake_step.",
-					Title:    "fake_step failing on fake.master/fake.builder",
-					Type:     messages.AlertBuildFailure,
-					Body:     "",
-					Severity: reliableFailureSev,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{
-								Name:          "fake.builder",
-								URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
-								FirstFailure:  0,
-								LatestFailure: 2,
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
 							},
-						},
-						Reasons: []messages.Reason{
-							{
-								Step: "fake_step",
-								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder/builds/2/steps/fake_step", t).String(),
-							},
-						},
-						RegressionRanges: []messages.RegressionRange{
-							{
-								Repo: "chromium",
-								Positions: []string{
-									"refs/heads/master@{#291569}",
-									"refs/heads/master@{#291570}",
+							RegressionRanges: []messages.RegressionRange{
+								{
+									Repo: "chromium",
+									Positions: []string{
+										"refs/heads/master@{#291569}",
+										"refs/heads/master@{#291570}",
+									},
 								},
 							},
 						},
 					},
 				},
 			},
-		},
-	}
-
-	a := New(nil, 0, 10)
-
-	for _, test := range tests {
-		a.Now = fakeNow(time.Unix(0, 0))
-		a.Reader = mockReader{
-			builds:        test.builds,
-			finditResults: test.finditData,
+			{
+				name:         "new double failures counted",
+				master:       "fake.master",
+				builder:      "fake.builder",
+				recentBuilds: []int64{0, 1, 2},
+				builds: map[string]*messages.Build{
+					"fake.master/fake.builder/0": {
+						Number: 0,
+						Times:  []messages.EpochTime{0, 1},
+						Steps: []messages.Step{
+							{
+								Name:       "fake_step",
+								IsFinished: true,
+								Results:    []interface{}{float64(2)},
+							},
+						},
+						BuilderName: "fake.builder",
+						Properties: [][]interface{}{
+							{"got_revision_cp", "refs/heads/master@{#291569}"},
+						},
+					},
+					"fake.master/fake.builder/1": {
+						Number: 1,
+						Times:  []messages.EpochTime{0, 1},
+						Steps: []messages.Step{
+							{
+								Name:       "fake_step",
+								IsFinished: true,
+								Results:    []interface{}{float64(2)},
+							},
+						},
+						BuilderName: "fake.builder",
+						Properties: [][]interface{}{
+							{"got_revision_cp", "refs/heads/master@{#291570}"},
+						},
+					},
+					"fake.master/fake.builder/2": {
+						Number: 2,
+						Times:  []messages.EpochTime{0, 1},
+						Steps: []messages.Step{
+							{
+								Name:       "fake_step",
+								IsFinished: true,
+								Results:    []interface{}{float64(2)},
+							},
+							{
+								Name:       "other_step",
+								IsFinished: true,
+								Results:    []interface{}{float64(2)},
+							},
+						},
+						BuilderName: "fake.builder",
+						Properties: [][]interface{}{
+							{"got_revision_cp", "refs/heads/master@{#291570}"},
+						},
+					},
+				},
+				wantAlerts: []messages.Alert{
+					{
+						Key:      "fake.master.fake.builder.other_step.",
+						Title:    "fakeTitle",
+						Type:     messages.AlertBuildFailure,
+						Body:     "",
+						Severity: newFailureSev,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{
+									Name:          "fake.builder",
+									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									FirstFailure:  2,
+									LatestFailure: 2,
+								},
+							},
+							StepAtFault: &messages.BuildStep{
+								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+								Build: &messages.Build{
+									BuilderName: "fake.builder",
+									Number:      2,
+									Times:       []messages.EpochTime{0, 1},
+									Steps: []messages.Step{
+										{
+											Name:       "fake_step",
+											IsFinished: true,
+											Results:    []interface{}{float64(2)},
+										},
+										{
+											Name:       "other_step",
+											IsFinished: true,
+											Results:    []interface{}{float64(2)},
+										},
+									},
+									Properties: [][]interface{}{
+										{"got_revision_cp", "refs/heads/master@{#291570}"},
+									},
+								},
+								Step: &messages.Step{
+									Name:       "other_step",
+									IsFinished: true,
+									Results:    []interface{}{float64(2)},
+								},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []messages.RegressionRange{
+								{
+									Repo: "chromium",
+									Positions: []string{
+										"refs/heads/master@{#291570}",
+									},
+								},
+							},
+						},
+					},
+					{
+						Key:      "fake.master.fake.builder.fake_step.",
+						Title:    "fakeTitle",
+						Type:     messages.AlertBuildFailure,
+						Body:     "",
+						Severity: reliableFailureSev,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{
+									Name:          "fake.builder",
+									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									FirstFailure:  0,
+									LatestFailure: 2,
+								},
+							},
+							StepAtFault: &messages.BuildStep{
+								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+								Build: &messages.Build{
+									BuilderName: "fake.builder",
+									Number:      2,
+									Times:       []messages.EpochTime{0, 1},
+									Steps: []messages.Step{
+										{
+											Name:       "fake_step",
+											IsFinished: true,
+											Results:    []interface{}{float64(2)},
+										},
+										{
+											Name:       "other_step",
+											IsFinished: true,
+											Results:    []interface{}{float64(2)},
+										},
+									},
+									Properties: [][]interface{}{
+										{"got_revision_cp", "refs/heads/master@{#291570}"},
+									},
+								},
+								Step: &messages.Step{
+									Name:       "fake_step",
+									IsFinished: true,
+									Results:    []interface{}{float64(2)},
+								},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []messages.RegressionRange{
+								{
+									Repo: "chromium",
+									Positions: []string{
+										"refs/heads/master@{#291569}",
+										"refs/heads/master@{#291570}",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				name:         "old failures not counted",
+				master:       "fake.master",
+				builder:      "fake.builder",
+				recentBuilds: []int64{0, 1, 2},
+				builds: map[string]*messages.Build{
+					"fake.master/fake.builder/0": {
+						Number: 0,
+						Times:  []messages.EpochTime{0, 1},
+						Steps: []messages.Step{
+							{
+								Name:       "fake_step",
+								IsFinished: true,
+								Results:    []interface{}{float64(2)},
+							},
+							{
+								Name:       "other_step",
+								IsFinished: true,
+								Results:    []interface{}{float64(2)},
+							},
+						},
+						BuilderName: "fake.builder",
+						Properties: [][]interface{}{
+							{"got_revision_cp", "refs/heads/master@{#291569}"},
+						},
+					},
+					"fake.master/fake.builder/1": {
+						Number: 1,
+						Times:  []messages.EpochTime{0, 1},
+						Steps: []messages.Step{
+							{
+								Name:       "fake_step",
+								IsFinished: true,
+								Results:    []interface{}{float64(2)},
+							},
+						},
+						BuilderName: "fake.builder",
+						Properties: [][]interface{}{
+							{"got_revision_cp", "refs/heads/master@{#291570}"},
+						},
+					},
+					"fake.master/fake.builder/2": {
+						Number: 2,
+						Times:  []messages.EpochTime{0, 1},
+						Steps: []messages.Step{
+							{
+								Name:       "fake_step",
+								IsFinished: true,
+								Results:    []interface{}{float64(2)},
+							},
+						},
+						BuilderName: "fake.builder",
+						Properties: [][]interface{}{
+							{"got_revision_cp", "refs/heads/master@{#291570}"},
+						},
+					},
+				},
+				wantAlerts: []messages.Alert{
+					{
+						Key:      "fake.master.fake.builder.fake_step.",
+						Title:    "fakeTitle",
+						Type:     messages.AlertBuildFailure,
+						Body:     "",
+						Severity: reliableFailureSev,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{
+									Name:          "fake.builder",
+									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									FirstFailure:  0,
+									LatestFailure: 2,
+								},
+							},
+							StepAtFault: &messages.BuildStep{
+								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+								Build: &messages.Build{
+									BuilderName: "fake.builder",
+									Number:      2,
+									Times:       []messages.EpochTime{0, 1},
+									Steps: []messages.Step{
+										{
+											Name:       "fake_step",
+											IsFinished: true,
+											Results:    []interface{}{float64(2)},
+										},
+									},
+									Properties: [][]interface{}{
+										{"got_revision_cp", "refs/heads/master@{#291570}"},
+									},
+								},
+								Step: &messages.Step{
+									Name:       "fake_step",
+									IsFinished: true,
+									Results:    []interface{}{float64(2)},
+								},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []messages.RegressionRange{
+								{
+									Repo: "chromium",
+									Positions: []string{
+										"refs/heads/master@{#291569}",
+										"refs/heads/master@{#291570}",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		}
 
-		gotAlerts, gotErrs := a.builderStepAlerts("tree", &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.recentBuilds)
+		a := newTestAnalyzer(nil, 0, 10)
 
-		sort.Sort(sortAlerts(gotAlerts))
-		sort.Sort(sortAlerts(test.wantAlerts))
+		for _, test := range tests {
+			test := test
+			Convey(test.name, func() {
+				a.Now = fakeNow(time.Unix(0, 0))
+				a.Reader = clientTest.MockReader{
+					Builds:        test.builds,
+					FinditResults: test.finditData,
+				}
 
-		if !reflect.DeepEqual(gotAlerts, test.wantAlerts) {
-			t.Errorf("%s failed. Got:\n\t%+v\nWant:\n\t%+v\n\tDiff:\n\t%+v", test.name, gotAlerts, test.wantAlerts, ansidiff.Diff(gotAlerts, test.wantAlerts))
+				gotAlerts, gotErrs := a.builderStepAlerts("tree", &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.recentBuilds)
+
+				sort.Sort(sortAlerts(gotAlerts))
+				sort.Sort(sortAlerts(test.wantAlerts))
+
+				So(gotAlerts, ShouldResemble, test.wantAlerts)
+				if !reflect.DeepEqual(gotErrs, test.wantErrs) {
+					t.Errorf("%s failed. Got %+v, want: %+v", test.name, gotErrs, test.wantErrs)
+				}
+			})
 		}
-		if !reflect.DeepEqual(gotErrs, test.wantErrs) {
-			t.Errorf("%s failed. Got %+v, want: %+v", test.name, gotErrs, test.wantErrs)
-		}
-	}
+	})
 }
 
 type sortAlerts []messages.Alert
@@ -806,369 +937,260 @@ func (a sortAlerts) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a sortAlerts) Less(i, j int) bool { return a[i].Key > a[j].Key }
 
 func TestMergeAlertsByReason(t *testing.T) {
-	tests := []struct {
-		name     string
-		in, want []messages.Alert
-	}{
-		{
-			name: "empty",
-			want: []messages.Alert{},
-		},
-		{
-			name: "no merges",
-			in: []messages.Alert{
-				{
-					Type: messages.AlertBuildFailure,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{Name: "builder A"},
-						},
-						Reasons: []messages.Reason{
-							{
-								Step: "step_a",
+	Convey("test MergeAlertsByReason", t, func() {
+		tests := []struct {
+			name     string
+			in, want []messages.Alert
+		}{
+			{
+				name: "empty",
+				want: []messages.Alert{},
+			},
+			{
+				name: "no merges",
+				in: []messages.Alert{
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{
+									"reason_a",
+								},
+							},
+							RegressionRanges: []messages.RegressionRange{
+								{
+									Repo: "repo.a",
+								},
 							},
 						},
-						RegressionRanges: []messages.RegressionRange{
-							{
-								Repo: "repo.a",
+					},
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder B"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{
+									"reason_b",
+								},
+							},
+							RegressionRanges: []messages.RegressionRange{
+								{
+									Repo: "repo.b",
+								},
 							},
 						},
 					},
 				},
-				{
-					Type: messages.AlertBuildFailure,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{Name: "builder B"},
-						},
-						Reasons: []messages.Reason{
-							{
-								Step: "step_b",
+				want: []messages.Alert{
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{
+									"reason_a",
+								},
+							},
+							RegressionRanges: []messages.RegressionRange{
+								{
+									Repo: "repo.a",
+								},
 							},
 						},
-						RegressionRanges: []messages.RegressionRange{
-							{
-								Repo: "repo.b",
+					},
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder B"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{
+									"reason_b",
+								},
+							},
+							RegressionRanges: []messages.RegressionRange{
+								{
+									Repo: "repo.b",
+								},
 							},
 						},
 					},
 				},
 			},
-			want: []messages.Alert{
-				{
-					Type: messages.AlertBuildFailure,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{Name: "builder A"},
-						},
-						Reasons: []messages.Reason{
-							{
-								Step: "step_a",
+			{
+				name: "multiple builders fail on step_a",
+				in: []messages.Alert{
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []messages.RegressionRange{
+								{
+									Repo: "repo.a",
+								},
 							},
 						},
-						RegressionRanges: []messages.RegressionRange{
-							{
-								Repo: "repo.a",
+					},
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder B"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []messages.RegressionRange{
+								{
+									Repo: "repo.b",
+								},
+							},
+						},
+					},
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder C"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []messages.RegressionRange{
+								{
+									Repo: "repo.c",
+								},
 							},
 						},
 					},
 				},
-				{
-					Type: messages.AlertBuildFailure,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{Name: "builder B"},
-						},
-						Reasons: []messages.Reason{
-							{
-								Step: "step_b",
+				want: []messages.Alert{
+					{
+						Title: "fakeTitle",
+						Type:  messages.AlertBuildFailure,
+						Body:  "builder A, builder B, builder C",
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+								{Name: "builder B"},
+								{Name: "builder C"},
 							},
-						},
-						RegressionRanges: []messages.RegressionRange{
-							{
-								Repo: "repo.b",
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
 							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "multiple builders fail on step_a",
-			in: []messages.Alert{
-				{
-					Type: messages.AlertBuildFailure,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{Name: "builder A"},
-						},
-						Reasons: []messages.Reason{
-							{
-								Step: "step_a",
-							},
-						},
-						RegressionRanges: []messages.RegressionRange{
-							{
-								Repo: "repo.a",
-							},
-						},
-					},
-				},
-				{
-					Type: messages.AlertBuildFailure,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{Name: "builder B"},
-						},
-						Reasons: []messages.Reason{
-							{
-								Step: "step_a",
-							},
-						},
-						RegressionRanges: []messages.RegressionRange{
-							{
-								Repo: "repo.b",
-							},
-						},
-					},
-				},
-				{
-					Type: messages.AlertBuildFailure,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{Name: "builder C"},
-						},
-						Reasons: []messages.Reason{
-							{
-								Step: "step_a",
-							},
-						},
-						RegressionRanges: []messages.RegressionRange{
-							{
-								Repo: "repo.c",
+							RegressionRanges: []messages.RegressionRange{
+								{
+									Repo:      "repo.a",
+									Positions: []string{},
+								},
+								{
+									Repo:      "repo.b",
+									Positions: []string{},
+								},
+								{
+									Repo:      "repo.c",
+									Positions: []string{},
+								},
 							},
 						},
 					},
 				},
 			},
-			want: []messages.Alert{
-				{
-					Title: "step_a failing on 3 builders",
-					Type:  messages.AlertBuildFailure,
-					Body:  "builder A, builder B, builder C",
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{Name: "builder A"},
-							{Name: "builder B"},
-							{Name: "builder C"},
-						},
-						Reasons: []messages.Reason{
-							{
-								Step: "step_a",
+			{
+				name: "multiple builders fail on step_a with tests",
+				in: []messages.Alert{
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
 							},
 						},
-						RegressionRanges: []messages.RegressionRange{
-							{
-								Repo:      "repo.a",
-								Positions: []string{},
+					},
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder B"},
 							},
-							{
-								Repo:      "repo.b",
-								Positions: []string{},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
 							},
-							{
-								Repo:      "repo.c",
-								Positions: []string{},
+						},
+					},
+				},
+				want: []messages.Alert{
+					{
+						Title: "fakeTitle",
+						Type:  messages.AlertBuildFailure,
+						Body:  "builder A, builder B",
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+								{Name: "builder B"},
 							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []messages.RegressionRange{},
 						},
 					},
 				},
 			},
-		},
-		{
-			name: "multiple builders fail on step_a with tests",
-			in: []messages.Alert{
-				{
-					Type: messages.AlertBuildFailure,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{Name: "builder A"},
-						},
-						Reasons: []messages.Reason{
-							{
-								TestNames: []string{"test1", "test2"},
-								Step:      "step_a",
-							},
-						},
-					},
-				},
-				{
-					Type: messages.AlertBuildFailure,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{Name: "builder B"},
-						},
-						Reasons: []messages.Reason{
-							{
-								TestNames: []string{"test1", "test2"},
-								Step:      "step_a",
-							},
-						},
-					},
-				},
-			},
-			want: []messages.Alert{
-				{
-					Title: "step_a failing on 2 builders",
-					Type:  messages.AlertBuildFailure,
-					Body:  "builder A, builder B",
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{Name: "builder A"},
-							{Name: "builder B"},
-						},
-						Reasons: []messages.Reason{
-							{
-								TestNames: []string{"test1", "test2"},
-								Step:      "step_a",
-							},
-						},
-						RegressionRanges: []messages.RegressionRange{},
-					},
-				},
-			},
-		},
-	}
-
-	a := New(&mockReader{}, 0, 10)
-	for _, test := range tests {
-		got := a.mergeAlertsByReason(test.in)
-		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("%s failed. Got:\n\t%+v, want:\n\t%+v\nDiff: %v", test.name, got, test.want, ansidiff.Diff(got, test.want))
 		}
-	}
-}
 
-func TestUnexpected(t *testing.T) {
-	tests := []struct {
-		name                   string
-		expected, actual, want []string
-	}{
-		{
-			name: "empty",
-			want: []string{},
-		},
-		{
-			name:     "extra FAIL",
-			expected: []string{"PASS"},
-			actual:   []string{"FAIL"},
-			want:     []string{"PASS", "FAIL"},
-		},
-		{
-			name:     "FAIL FAIL",
-			expected: []string{"FAIL"},
-			actual:   []string{"FAIL"},
-			want:     []string{},
-		},
-		{
-			name:     "PASS PASS",
-			expected: []string{"PASS"},
-			actual:   []string{"PASS"},
-			want:     []string{},
-		},
-	}
-
-	for _, test := range tests {
-		got := unexpected(test.expected, test.actual)
-		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("%s failed. Got: %+v, want: %+v", test.name, got, test.want)
+		a := newTestAnalyzer(&clientTest.MockReader{}, 0, 10)
+		for _, test := range tests {
+			test := test
+			Convey(test.name, func() {
+				got := a.mergeAlertsByReason(test.in)
+				So(got, ShouldResemble, test.want)
+			})
 		}
-	}
-}
-
-func TestReasonsForFailure(t *testing.T) {
-	tests := []struct {
-		name        string
-		f           stepFailure
-		testResults *messages.TestResults
-		want        []string
-	}{
-		{
-			name:        "empty",
-			testResults: &messages.TestResults{},
-		},
-		{
-			name: "GTests",
-			f: stepFailure{
-				step: messages.Step{
-					Name: "something_tests",
-				},
-			},
-			testResults: &messages.TestResults{
-				Tests: map[string]interface{}{
-					"test a": map[string]interface{}{
-						"expected": "PASS",
-						"actual":   "FAIL",
-					},
-				},
-			},
-			want: []string{"test a"},
-		},
-	}
-
-	mc := &mockReader{}
-	a := New(mc, 0, 10)
-
-	for _, test := range tests {
-		mc.testResults = test.testResults
-		got := a.reasonsForFailure(test.f)
-		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("% s failed. Got: %+v, want: %+v", test.name, got, test.want)
-		}
-	}
+	})
 }
 
 func TestStepFailures(t *testing.T) {
-	tests := []struct {
-		name            string
-		master, builder string
-		b               *messages.Build
-		buildNum        int64
-		bCache          map[string]*messages.Build
-		want            []stepFailure
-		wantErr         error
-	}{
-		{
-			name:    "empty",
-			master:  "fake.master",
-			builder: "fake.builder",
-		},
-		{
-			name:     "breaking step",
-			master:   "stepCheck.master",
-			builder:  "fake.builder",
-			buildNum: 0,
-			bCache: map[string]*messages.Build{
-				"stepCheck.master/fake.builder/0": {
-					Steps: []messages.Step{
-						{
-							Name:       "ok_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(0)},
-						},
-						{
-							Name:       "broken_step",
-							IsFinished: true,
-							Results:    []interface{}{float64(3)},
-						},
-					},
-				},
+	t.Parallel()
+
+	Convey("test StepFailures", t, func() {
+		tests := []struct {
+			name            string
+			master, builder string
+			b               *messages.Build
+			buildNum        int64
+			bCache          map[string]*messages.Build
+			want            []*messages.BuildStep
+			wantErr         error
+		}{
+			{
+				name:    "empty",
+				master:  "fake.master",
+				builder: "fake.builder",
 			},
-			want: []stepFailure{
-				{
-					master:      &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/stepCheck.master", t)},
-					builderName: "fake.builder",
-					build: messages.Build{
+			{
+				name:     "breaking step",
+				master:   "stepCheck.master",
+				builder:  "fake.builder",
+				buildNum: 0,
+				bCache: map[string]*messages.Build{
+					"stepCheck.master/fake.builder/0": {
 						Steps: []messages.Step{
 							{
 								Name:       "ok_step",
@@ -1181,116 +1203,146 @@ func TestStepFailures(t *testing.T) {
 								Results:    []interface{}{float64(3)},
 							},
 						},
+						BuilderName: "fake.builder",
 					},
-					step: messages.Step{
-						Name:       "broken_step",
-						IsFinished: true,
-						Results:    []interface{}{float64(3)},
+				},
+				want: []*messages.BuildStep{
+					{
+						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/stepCheck.master", t)},
+						Build: &messages.Build{
+							BuilderName: "fake.builder",
+							Steps: []messages.Step{
+								{
+									Name:       "ok_step",
+									IsFinished: true,
+									Results:    []interface{}{float64(0)},
+								},
+								{
+									Name:       "broken_step",
+									IsFinished: true,
+									Results:    []interface{}{float64(3)},
+								},
+							},
+						},
+						Step: &messages.Step{
+							Name:       "broken_step",
+							IsFinished: true,
+							Results:    []interface{}{float64(3)},
+						},
 					},
 				},
 			},
-		},
-	}
-
-	mc := &mockReader{}
-	a := New(mc, 0, 10)
-
-	for _, test := range tests {
-		mc.build = test.b
-		mc.bCache = test.bCache
-		got, err := a.stepFailures(&messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.buildNum)
-		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("%s failed.\nGot:\n%+v\nwant:\n%+v", test.name, got, test.want)
 		}
-		if !reflect.DeepEqual(err, test.wantErr) {
-			t.Errorf("%s failed. Got %+v, want %+v", test.name, err, test.wantErr)
+
+		mc := &clientTest.MockReader{}
+		a := newTestAnalyzer(mc, 0, 10)
+
+		for _, test := range tests {
+			test := test
+			Convey(test.name, func() {
+				mc.BuildValue = test.b
+				mc.BCache = test.bCache
+				got, err := a.stepFailures(&messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.buildNum)
+				So(got, ShouldResemble, test.want)
+				So(err, ShouldResemble, test.wantErr)
+			})
 		}
-	}
+	})
 }
 
 func TestStepFailureAlerts(t *testing.T) {
-	tests := []struct {
-		name        string
-		failures    []stepFailure
-		testResults messages.TestResults
-		alerts      []messages.Alert
-		err         error
-	}{
-		{
-			name:   "empty",
-			alerts: []messages.Alert{},
-		},
-		{
-			name: "single failure",
-			failures: []stepFailure{
-				{
-					master:      &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
-					builderName: "fake.builder",
-					build: messages.Build{
-						Number: 2,
-						Times:  []messages.EpochTime{0, 1},
+	t.Parallel()
+
+	Convey("test StepFailureAlerts", t, func() {
+		tests := []struct {
+			name        string
+			failures    []*messages.BuildStep
+			testResults messages.TestResults
+			alerts      []messages.Alert
+			err         error
+		}{
+			{
+				name:   "empty",
+				alerts: []messages.Alert{},
+			},
+			{
+				name: "single failure",
+				failures: []*messages.BuildStep{
+					{
+						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Build: &messages.Build{
+							BuilderName: "fake.builder",
+							Number:      2,
+							Times:       []messages.EpochTime{0, 1},
+						},
+						Step: &messages.Step{
+							Name: "steps",
+						},
 					},
-					step: messages.Step{
-						Name: "steps",
+					{
+						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Build: &messages.Build{
+							BuilderName: "fake.builder",
+							Number:      42,
+							Times:       []messages.EpochTime{0, 1},
+						},
+						Step: &messages.Step{
+							Name: "fake_tests",
+						},
 					},
 				},
-				{
-					master:      &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
-					builderName: "fake.builder",
-					build: messages.Build{
-						Number: 42,
-						Times:  []messages.EpochTime{0, 1},
-					},
-					step: messages.Step{
-						Name: "fake_tests",
+				testResults: messages.TestResults{},
+				alerts: []messages.Alert{
+					{
+						Key:      "fake.master.fake.builder.fake_tests.",
+						Title:    "fakeTitle",
+						Body:     "",
+						Severity: newFailureSev,
+						Type:     messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{
+									Name:          "fake.builder",
+									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									FirstFailure:  42,
+									LatestFailure: 42,
+								},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							StepAtFault: &messages.BuildStep{
+								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+								Build: &messages.Build{
+									BuilderName: "fake.builder",
+									Number:      42,
+									Times:       []messages.EpochTime{0, 1},
+								},
+								Step: &messages.Step{
+									Name: "fake_tests",
+								},
+							},
+							RegressionRanges: []messages.RegressionRange{},
+						},
 					},
 				},
 			},
-			testResults: messages.TestResults{},
-			alerts: []messages.Alert{
-				{
-					Key:      "fake.master.fake.builder.fake_tests.",
-					Title:    "fake_tests failing on fake.master/fake.builder",
-					Body:     "",
-					Severity: newFailureSev,
-					Type:     messages.AlertBuildFailure,
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{
-								Name:          "fake.builder",
-								URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
-								FirstFailure:  42,
-								LatestFailure: 42,
-							},
-						},
-						Reasons: []messages.Reason{
-							{
-								Step: "fake_tests",
-								URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder/builds/42/steps/fake_tests", t).String(),
-							},
-						},
-						RegressionRanges: []messages.RegressionRange{},
-					},
-				},
-			},
-		},
-	}
-
-	mc := &mockReader{}
-	a := New(mc, 0, 10)
-	a.Now = fakeNow(time.Unix(0, 0))
-
-	for _, test := range tests {
-		mc.testResults = &test.testResults
-		alerts, err := a.stepFailureAlerts("tree", test.failures)
-		if !reflect.DeepEqual(alerts, test.alerts) {
-			t.Errorf("%s failed. Got:\n\t%+v, want:\n\t%+v\nDiff: %s", test.name, alerts, test.alerts,
-				ansidiff.Diff(alerts, test.alerts))
 		}
-		if !reflect.DeepEqual(err, test.err) {
-			t.Errorf("%s failed. Got %+v, want %+v", test.name, err, test.err)
+
+		mc := &clientTest.MockReader{}
+		a := newTestAnalyzer(mc, 0, 10)
+		a.Now = fakeNow(time.Unix(0, 0))
+
+		for _, test := range tests {
+			test := test
+			Convey(test.name, func() {
+				mc.TestResultsValue = &test.testResults
+				alerts, err := a.stepFailureAlerts("tree", test.failures)
+				So(alerts, ShouldResemble, test.alerts)
+				So(err, ShouldResemble, test.err)
+			})
 		}
-	}
+	})
 }
 
 func TestLatestBuildStep(t *testing.T) {
@@ -1415,7 +1467,7 @@ func TestLatestBuildStep(t *testing.T) {
 		},
 	}
 
-	a := New(&mockReader{}, 0, 10)
+	a := newTestAnalyzer(&clientTest.MockReader{}, 0, 10)
 	a.Now = fakeNow(time.Unix(0, 0))
 	for _, test := range tests {
 		gotStep, gotUpdate, gotErr := a.latestBuildStep(&test.b)
@@ -1580,7 +1632,7 @@ func TestExcludeFailure(t *testing.T) {
 		},
 	}
 
-	a := New(&mockReader{}, 0, 10)
+	a := newTestAnalyzer(&clientTest.MockReader{}, 0, 10)
 	for _, test := range tests {
 		a.Gatekeeper = NewGatekeeperRules([]*messages.GatekeeperConfig{&test.gk}, test.gkt)
 		got := a.Gatekeeper.ExcludeFailure(test.tree, &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.step)

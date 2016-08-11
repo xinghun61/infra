@@ -8,6 +8,7 @@
 package messages
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 	"time"
@@ -103,9 +104,53 @@ type Link struct {
 type BuildFailure struct {
 	TreeCloser       bool              `json:"tree_closer"`
 	Builders         []AlertedBuilder  `json:"builders"`
-	Reasons          []Reason          `json:"reasons"`
+	StepAtFault      *BuildStep        `json:"-"`
+	Reason           *Reason           `json:"reasons"`
 	RegressionRanges []RegressionRange `json:"regression_ranges"`
 	SuspectedCLs     []SuspectCL       `json:"suspected_cls"`
+}
+
+// BuildStep is a step which was run in a particular build. Useful for analyzing
+// and generating additional data for extensions.
+type BuildStep struct {
+	Master *MasterLocation
+	Build  *Build
+	Step   *Step
+}
+
+// Reason is the cause of a build extension failure.
+type Reason struct {
+	Raw ReasonRaw
+}
+
+// Signature is a unique identifier for reasons of the same Kind.
+func (r *Reason) Signature() string {
+	return r.Raw.Signature()
+}
+
+// Kind is the kind of the reason. Useful for categorization.
+func (r *Reason) Kind() string {
+	// FIXME: This is possibly duplicated with AlertType
+	return r.Raw.Kind()
+}
+
+// Title returns a title a group of build steps should have, as an alert.
+func (r *Reason) Title(bses []*BuildStep) string {
+	return r.Raw.Title(bses)
+}
+
+// MarshalJSON returns the json marshalled version of the Reason. Delegates to
+// the raw reason.
+func (r *Reason) MarshalJSON() ([]byte, error) {
+	return json.Marshal(r.Raw)
+}
+
+// ReasonRaw is the interface any results an analysis pipeline outputs must
+// implement.
+type ReasonRaw interface {
+	Signature() string
+	Kind() string
+	Title([]*BuildStep) string
 }
 
 // AlertedBuilder represents an individual builder.
@@ -117,15 +162,6 @@ type AlertedBuilder struct {
 	FirstFailure int64 `json:"first_failure"`
 	// LatestFailure is the build number of latest failure.
 	LatestFailure int64 `json:"latest_failure"`
-}
-
-// Reason contains information about why the Alert was triggered.
-type Reason struct {
-	// Could be more detailed about test failures. For instance, we could
-	// indicate expected vs. actual result.
-	TestNames []string `json:"test_names"`
-	Step      string   `json:"step"`
-	URL       string   `json:"url"`
 }
 
 // RegressionRange identifies the bounds of the location of a regression.
