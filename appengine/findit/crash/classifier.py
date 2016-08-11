@@ -91,7 +91,8 @@ class Classifier(object):
     class_infos = _GetClassOccurrenceInfos()
     class_infos = sorted(class_infos, key=rank_function)
 
-    classes = [info.name for info in class_infos]
+    # Filter all empty class.
+    classes = [info.name for info in class_infos if info.name]
 
     return classes[:max_classes]
 
