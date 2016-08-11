@@ -203,3 +203,8 @@ import:
 - package: github.com/mitchellh/go-homedir
   repo: https://chromium.googlesource.com/external/github.com/mitchellh/go-homedir.git
   version: master
+- package: golang.org/x/mobile
+  version: master
+  repo: https://go.googlesource.com/mobile.git
+  subpackages:
+  - cmd/gomobile

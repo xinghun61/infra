@@ -1,8 +1,8 @@
-hash: 0967214f967693be0c31d71a9417e7b80a5af7967135a1f004526f9e2be30e80
-updated: 2016-08-04T18:11:31.084161661-07:00
+hash: 2455b3e1659a955b07431c718e11fcce00b70435425b3414114c3c26e702f535
+updated: 2016-08-10T15:44:55.197172375-07:00
 imports:
 - name: cloud.google.com/go
-  version: 943694f407d9906fa3d001b17ca7697b9e92b6ec
+  version: 3e0a286dfa25437c4b77d04f6eb1053bc8462f0b
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -21,7 +21,7 @@ imports:
   subpackages:
   - golint
 - name: github.com/golang/protobuf
-  version: c3cefd437628a0b7d31b34fe44b3a7a540e98527
+  version: 2c1988e8c18d14b142c0b472624f71647cf39adb
   repo: https://chromium.googlesource.com/external/github.com/golang/protobuf.git
   subpackages:
   - jsonpb
@@ -39,7 +39,7 @@ imports:
   version: 8ddce2a84170772b95dd5d576c48d517b22cac63
   repo: https://chromium.googlesource.com/external/github.com/jtolds/gls.git
 - name: github.com/julienschmidt/httprouter
-  version: fb79d6a91d3e4a9ecb6d945b218d78fc0d9b1939
+  version: d8ff598a019f2c7bad0980917a588193cf26666e
   repo: https://chromium.googlesource.com/external/github.com/julienschmidt/httprouter.git
 - name: github.com/kardianos/osext
   version: 29ae4ffbc9a6fe9fb2bc5029050ce6996ea1d3bc
@@ -126,20 +126,25 @@ imports:
   repo: https://chromium.googlesource.com/external/github.com/yosuke-furukawa/json5.git
   subpackages:
   - encoding/json5
+- name: golang.org/x/mobile
+  version: 8ab5dbbea1dc4713a98b6f1d51de4582a43e3fa8
+  repo: https://go.googlesource.com/mobile.git
+  subpackages:
+  - cmd/gomobile
 - name: golang.org/x/net
-  version: 7c62cfdcccc65f87b0120ec841012ba816fc1aec
+  version: 075e191f18186a8ff2becaf64478e30f4545cdad
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/oauth2
-  version: 04e1573abc896e70388bd387a69753c378d46466
+  version: 4784bb855e56a530f1ce5d788959359ed6cb4a16
   repo: https://go.googlesource.com/oauth2.git
   subpackages:
   - google
   - jwt
 - name: golang.org/x/tools
-  version: 337c0124d7839ba49a64f0077b59cc02dd2d591f
+  version: 855bbc50ad86de9aa46f829ff040ed8edc5b4c37
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -152,7 +157,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: 82700a6837e5a35e4399ae2a57f1bd702a022f46
+  version: 8ae9b02432fd8417fb9359af58f473036b094d20
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - gensupport
@@ -163,7 +168,7 @@ imports:
   - pubsub/v1
   - taskqueue/v1beta2
 - name: google.golang.org/appengine
-  version: f21d98e7aefbf9ff4d5eeba05d7a925cc7ac20c3
+  version: e951d3868b377b14f4e60efa3a301532ee3c1ebf
   repo: https://chromium.googlesource.com/external/github.com/golang/appengine.git
   subpackages:
   - datastore
@@ -185,12 +190,12 @@ imports:
   - pubsub
   - storage
 - name: google.golang.org/genproto
-  version: 9f48fed629f137e474fb7422a911dfad49e2eaae
+  version: 364c915bc4e89ee7389c63148ecac593ac9368c4
   repo: https://chromium.googlesource.com/external/github.com/google/go-genproto.git
   subpackages:
   - protobuf
 - name: google.golang.org/grpc
-  version: 35896af9ad39c1fb1b1cd925fe3621be361e3d81
+  version: edc5ccf8cbfd321723e26d2cf177b05c16132ad9
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes

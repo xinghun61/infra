@@ -50,6 +50,7 @@ VENDORED_TOOLS = [
   'github.com/maruel/pre-commit-go/cmd/covg',
   'github.com/maruel/pre-commit-go/cmd/pcg',
   'github.com/smartystreets/goconvey',
+  'golang.org/x/mobile/cmd/gomobile',
   'golang.org/x/tools/cmd/callgraph',
   'golang.org/x/tools/cmd/fiximports',
   'golang.org/x/tools/cmd/godex',
