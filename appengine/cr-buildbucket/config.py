@@ -118,11 +118,16 @@ class Bucket(ndb.Model):
   # Bucket revision matches its config revision.
   revision = ndb.StringProperty(required=True)
   # Bucket configuration (Bucket message in project_config.proto),
-  # copied from luci-config for consistency and simplicity.
-  # Stored in text format.
+  # copied verbatim from luci-config for get_bucket API.
+  # Must not be used in by serving code paths, use config_content_binary
+  # instead.
   config_content = ndb.TextProperty(required=True)
+  # Binary equivalent of config_content.
+  # TODO(nodir): make it required when all buckets have it.
+  config_content_binary = ndb.BlobProperty()
 
 
+# TODO(nodir): remove
 def parse_bucket_config(text):
   cfg = project_config_pb2.Bucket()
   protobuf.text_format.Merge(text, cfg)
@@ -137,8 +142,10 @@ def get_buckets_async():
   cfgs = []
   for b in buckets:
     try:
+      # TODO(nodir): deserialize b.config_content_binary when all buckets have
+      # it
       cfgs.append(parse_bucket_config(b.config_content))
-    except protobuf.text_format.ParseError:
+    except protobuf.text_format.ParseError:  # pragma: no cover
       logging.exception('could not parse config of bucket %s', b.key.id())
   raise ndb.Return(cfgs)
 
@@ -150,6 +157,7 @@ def get_bucket_async(name):
   bucket = yield Bucket.get_by_id_async(name)
   if bucket is None:
     raise ndb.Return(None, None)
+  # TODO(nodir): deserialize b.config_content_binary when all buckets have it
   raise ndb.Return(
       bucket.project_id, parse_bucket_config(bucket.config_content))
 
@@ -172,7 +180,8 @@ def cron_update_buckets():
       bucket = Bucket.get_by_id(bucket_cfg.name)
       if (bucket and
           bucket.project_id == project_id and
-          bucket.revision == revision):
+          bucket.revision == revision and
+          bucket.config_content_binary):
         continue
 
       for acl in bucket_cfg.acls:
@@ -192,7 +201,8 @@ def cron_update_buckets():
             return
         if (bucket and
             bucket.project_id == project_id and
-            bucket.revision == revision):  # pragma: no coverage
+            bucket.revision == revision and
+            bucket.config_content_binary):  # pragma: no coverage
           return
 
         report_reservation = bucket is None or bucket.project_id != project_id
@@ -201,6 +211,7 @@ def cron_update_buckets():
           project_id=project_id,
           revision=revision,
           config_content=protobuf.text_format.MessageToString(bucket_cfg),
+          config_content_binary=bucket_cfg.SerializeToString(),
         ).put()
         if report_reservation:
           logging.warning(

@@ -4,13 +4,18 @@
 
 import logging
 
+from components import utils
+utils.fix_protobuf_package()
+
 from components import config as config_component
 from components.config import validation_context
 from testing_utils import testing
+from google import protobuf
 import mock
 
 from proto import project_config_pb2
 import config
+
 
 MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT = (
 '''name: "master.tryserver.chromium.linux"
@@ -63,6 +68,12 @@ acls {
   identity: "user:root@google.com"
 }
 ''')
+
+
+def text_to_binary(bucket_cfg_text):
+  cfg = project_config_pb2.Bucket()
+  protobuf.text_format.Merge(bucket_cfg_text, cfg)
+  return cfg.SerializeToString()
 
 
 class ConfigTest(testing.AppengineTestCase):
@@ -118,30 +129,6 @@ class ConfigTest(testing.AppengineTestCase):
           project_config_pb2.Acl(
             role=project_config_pb2.Acl.SCHEDULER, group='tryjob-access'),
         ]),
-    ]
-    self.assertEqual(actual, expected)
-
-  def test_get_buckets_async_with_one_bad_config(self):
-    config.Bucket(
-        id='master.tryserver.chromium.linux',
-        project_id='chromium',
-        revision='deadbeef',
-        config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT).put()
-    config.Bucket(
-        id='master.tryserver.chromium.win',
-        project_id='chromium',
-        revision='deadbeef',
-        config_content='baaad config').put()
-    actual = config.get_buckets_async().get_result()
-    expected = [
-      project_config_pb2.Bucket(
-          name='master.tryserver.chromium.linux',
-          acls=[
-            project_config_pb2.Acl(
-                role=project_config_pb2.Acl.READER, group='all'),
-            project_config_pb2.Acl(
-                role=project_config_pb2.Acl.SCHEDULER, group='tryjob-access'),
-          ]),
     ]
     self.assertEqual(actual, expected)
 
@@ -209,24 +196,30 @@ class ConfigTest(testing.AppengineTestCase):
         project_id='chromium',
         revision='deadbeef',
         config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
+        config_content_binary=text_to_binary(
+          MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT),
       ),
       config.Bucket(
         id='master.tryserver.chromium.win',
         project_id='chromium',
         revision='deadbeef',
         config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT,
+        config_content_binary=text_to_binary(
+          MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT),
       ),
       config.Bucket(
         id='master.tryserver.test',
         project_id='test',
         revision='babe',
-        config_content=MASTER_TRYSERVER_TEST_CONFIG_TEXT
+        config_content=MASTER_TRYSERVER_TEST_CONFIG_TEXT,
+        config_content_binary=text_to_binary(MASTER_TRYSERVER_TEST_CONFIG_TEXT),
       ),
       config.Bucket(
         id='master.tryserver.v8',
         project_id='v8',
         revision='sha1:cfc761d7a953a72ddea8f3d4c9a28e69777ca22c',
         config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
+        config_content_binary=text_to_binary(MASTER_TRYSERVER_V8_CONFIG_TEXT),
       ),
     ]
     self.assertEqual(actual, expected)
@@ -237,6 +230,8 @@ class ConfigTest(testing.AppengineTestCase):
       project_id='chromium',
       revision='deadbeef',
       config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
+      config_content_binary=text_to_binary(
+        MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT),
     ).put()
 
     # Will not be updated.
@@ -245,6 +240,7 @@ class ConfigTest(testing.AppengineTestCase):
       project_id='v8',
       revision='deadbeef',
       config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
+      config_content_binary=text_to_binary(MASTER_TRYSERVER_V8_CONFIG_TEXT),
     ).put()
 
     # Will be deleted.
@@ -253,6 +249,8 @@ class ConfigTest(testing.AppengineTestCase):
       project_id='chromium',
       revision='deadbeef',
       config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT,
+      config_content_binary=text_to_binary(
+        MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT),
     ).put()
 
     chromium_buildbucket_cfg = project_config_pb2.BuildbucketCfg(
@@ -315,18 +313,23 @@ class ConfigTest(testing.AppengineTestCase):
         project_id='chromium',
         revision='new!',
         config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
+        config_content_binary=text_to_binary(
+          MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT),
       ),
       config.Bucket(
         id='master.tryserver.chromium.mac',
         project_id='chromium',
         revision='new!',
         config_content=MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG_TEXT,
+        config_content_binary=text_to_binary(
+          MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG_TEXT),
       ),
       config.Bucket(
         id='master.tryserver.v8',
         project_id='v8',
         revision='deadbeef',
         config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
+        config_content_binary=text_to_binary(MASTER_TRYSERVER_V8_CONFIG_TEXT),
       ),
     ]
     self.assertEqual(actual, expected)
@@ -356,6 +359,7 @@ class ConfigTest(testing.AppengineTestCase):
         project_id='bar',
         revision='deadbeef',
         config_content='name: "bucket"\n',
+        config_content_binary=text_to_binary('name: "bucket"\n'),
       )
     ]
     self.assertEqual(actual, expected)
@@ -444,7 +448,9 @@ class ConfigTest(testing.AppengineTestCase):
       id='master.tryserver.v8',
       project_id='v8',
       revision='deadbeef',
-      config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT).put()
+      config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
+      config_content_binary=text_to_binary(MASTER_TRYSERVER_V8_CONFIG_TEXT),
+    ).put()
 
     self.cfg_validation_test(
       project_config_pb2.BuildbucketCfg(
