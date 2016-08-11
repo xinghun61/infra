@@ -31,3 +31,14 @@ class BugLineParserTest(unittest.TestCase):
       m = log_parser.BUG_LINE_REGEX.match(bug_line)
       self.assertIsNone(m, '"%s" line must not be matched (got %s)' %
                            (bug_line, m.groups()) if m else None)
+
+  def test_should_send_email(self):
+    for test_case, result in [
+      (None, True),
+      ("Random stuff\nhereman\nBug: 12", True),
+      ("Bugdroid-Send-Email: yaaaman", True),
+      ("Bugdroid-Send-Email: no", False),
+      ("Bugdroid-Send-Email: false", False),
+    ]:
+      self.assertEqual(
+          result, log_parser.should_send_email(test_case))

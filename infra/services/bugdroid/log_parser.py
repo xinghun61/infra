@@ -39,6 +39,23 @@ def normalize_project_name(project): # pragma: no cover
       }
   return mapping.get(project, project)
 
+FOOTER_PATTERN = re.compile(r'^\s*Bugdroid-Send-Email: (.*)$')
+
+def should_send_email(commit_message): # pragma: no cover
+  """If bugdroid should send email for a given commit message.
+  """
+  if not commit_message:
+    return True
+
+  bug_lines = [m.group(1) for m in
+               re.finditer(FOOTER_PATTERN, commit_message)]
+
+  if bug_lines:
+    nos = [line for line in bug_lines if line.lower() in ('no', 'false')]
+    if nos:
+      return False
+
+  return True
 
 def get_issues(log_entry, default_project): # pragma: no cover
   """Extract bug #'s from a SCM commit log message.

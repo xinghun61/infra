@@ -137,7 +137,7 @@ class BugdroidPollerHandler(poller_handlers.BasePollerHandler):
           if self.logger:
             self.logger.debug('Attempting to save issue: %d' % issue.id)
           if not self.test_mode:
-            issue.save()
+            issue.save(log_parser.should_send_email(log_entry.msg))
 
   def _CreateMessage(self, log_entry):  # pylint: disable=W0613,R0201
     raise NotImplementedError
