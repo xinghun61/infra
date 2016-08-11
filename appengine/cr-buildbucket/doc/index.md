@@ -106,7 +106,7 @@ The `buildset` tag is used to group related builds.
 If a build is related to a CL revision, buildset should have format:
 
 *   For Rietveld: `patch/rietveld/<hostname>/<issue_id>/<patchset_id>`
-*   For Gerrit: `patch/gerrit/<hostname>/<numeric_change_id>/<hash>`
+*   For Gerrit: `patch/gerrit/<hostname>/<numeric_change_id>/<numeric_patch_number>`
 
 When a build triggers a new build, the buildset tag must be copied.
 
