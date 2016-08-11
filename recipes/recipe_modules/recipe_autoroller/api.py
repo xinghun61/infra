@@ -61,12 +61,17 @@ will *NOT* CQ the change itself, so you must commit the change manually.
 """
 )
 
-COMMIT_MESSAGE_FOOTER = (
+COMMIT_MESSAGE_INFO = (
 """
 
 More info is at https://goo.gl/zkKdpD. Use https://goo.gl/noib3a to file a bug
 (or complain)
 
+""")
+
+COMMIT_MESSAGE_FOOTER = (
+"""
+Recipe-Tryjob-Bypass-Reason: Autoroller
 """)
 
 
@@ -84,7 +89,7 @@ TRIVIAL_ROLL_TBR_EMAILS = (
 ROLL_SUCCESS, ROLL_EMPTY, ROLL_FAILURE = range(3)
 
 
-def get_commit_message(roll_result):
+def get_commit_message(roll_result, tbrs=()):
   """Construct a roll commit message from 'recipes.py autoroll' result.
   """
   message = 'Roll recipe dependencies (%s).\n' % (
@@ -92,14 +97,17 @@ def get_commit_message(roll_result):
   message += COMMIT_MESSAGE_HEADER
   if not roll_result['trivial']:
     message += NON_TRIVIAL_MESSAGE
-  message += COMMIT_MESSAGE_FOOTER
+  message += COMMIT_MESSAGE_INFO
 
   commit_infos = roll_result['picked_roll_details']['commit_infos']
 
   message += '%s\n' % '\n'.join(get_blame(commit_infos))
   message += '\n'
   message += 'R=%s\n' % ','.join(get_reviewers(commit_infos))
+  if tbrs:
+    message += 'TBR=%s\n' % ','.join(tbrs)
   message += 'BUG=%s\n' % ','.join(get_bugs(commit_infos))
+  message += COMMIT_MESSAGE_FOOTER
   return message
 
 
@@ -238,13 +246,14 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         rebase = True
 
     if need_to_upload:
+      tbrs = []
+      if not rebase:
+        tbrs = TRIVIAL_ROLL_TBR_EMAILS
       commit_message = (
-          'Rebase' if rebase else get_commit_message(roll_result))
+          'Rebase' if rebase else get_commit_message(roll_result, tbrs=tbrs))
       if roll_result['trivial']:
         # Land immediately.
         upload_args = ['--use-commit-queue']
-        if not rebase:
-          commit_message += '\nTBR=%s\n' % ','.join(TRIVIAL_ROLL_TBR_EMAILS)
       else:
         upload_args = ['--send-mail', '--cq-dry-run']
       upload_args.extend(['--bypass-hooks', '-f'])
