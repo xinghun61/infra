@@ -82,7 +82,10 @@ class ConfigTest(testing.AppengineTestCase):
       id='master.tryserver.chromium.linux',
       project_id='chromium',
       revision='deadbeef',
-      config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT).put()
+      config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
+      config_content_binary=text_to_binary(
+          MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT),
+    ).put()
     project, cfg = config.get_bucket_async(
       'master.tryserver.chromium.linux').get_result()
     self.assertEqual(project, 'chromium')
@@ -105,12 +108,16 @@ class ConfigTest(testing.AppengineTestCase):
       id='master.tryserver.chromium.linux',
       project_id='chromium',
       revision='deadbeef',
-      config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT).put()
+      config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
+      config_content_binary=text_to_binary(
+          MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT)).put()
     config.Bucket(
       id='master.tryserver.chromium.win',
       project_id='chromium',
       revision='deadbeef',
-      config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT).put()
+      config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT,
+      config_content_binary=text_to_binary(
+          MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT)).put()
     actual = config.get_buckets_async().get_result()
     expected = [
       project_config_pb2.Bucket(
@@ -340,6 +347,7 @@ class ConfigTest(testing.AppengineTestCase):
       project_id='foo',
       revision='deadbeef',
       config_content='name: "bucket"',
+      config_content_binary=text_to_binary('name: "bucket"'),
     ).put()
 
     buildbucket_cfg = project_config_pb2.BuildbucketCfg(

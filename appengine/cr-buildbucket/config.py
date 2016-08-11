@@ -123,14 +123,12 @@ class Bucket(ndb.Model):
   # instead.
   config_content = ndb.TextProperty(required=True)
   # Binary equivalent of config_content.
-  # TODO(nodir): make it required when all buckets have it.
-  config_content_binary = ndb.BlobProperty()
+  config_content_binary = ndb.BlobProperty(required=True)
 
 
-# TODO(nodir): remove
-def parse_bucket_config(text):
+def parse_binary_bucket_config(cfg_bytes):
   cfg = project_config_pb2.Bucket()
-  protobuf.text_format.Merge(text, cfg)
+  cfg.MergeFromString(cfg_bytes)
   return cfg
 
 
@@ -139,15 +137,9 @@ def parse_bucket_config(text):
 def get_buckets_async():
   """Returns a list of project_config_pb2.Bucket objects."""
   buckets = yield Bucket.query().fetch_async()
-  cfgs = []
-  for b in buckets:
-    try:
-      # TODO(nodir): deserialize b.config_content_binary when all buckets have
-      # it
-      cfgs.append(parse_bucket_config(b.config_content))
-    except protobuf.text_format.ParseError:  # pragma: no cover
-      logging.exception('could not parse config of bucket %s', b.key.id())
-  raise ndb.Return(cfgs)
+  raise ndb.Return([
+    parse_binary_bucket_config(b.config_content_binary) for b in buckets
+  ])
 
 
 @ndb.non_transactional
@@ -157,9 +149,10 @@ def get_bucket_async(name):
   bucket = yield Bucket.get_by_id_async(name)
   if bucket is None:
     raise ndb.Return(None, None)
-  # TODO(nodir): deserialize b.config_content_binary when all buckets have it
   raise ndb.Return(
-      bucket.project_id, parse_bucket_config(bucket.config_content))
+      bucket.project_id,
+      parse_binary_bucket_config(bucket.config_content_binary
+  ))
 
 
 def cron_update_buckets():

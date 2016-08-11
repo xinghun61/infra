@@ -21,6 +21,7 @@ from testing_utils import testing
 import mock
 import gae_ts_mon
 
+from test import config_test
 import api
 import config
 import errors
@@ -572,6 +573,7 @@ class ApiTests(object):
         project_id='chromium',
         revision='deadbeef',
         config_content=bucket_cfg,
+        config_content_binary=config_test.text_to_binary(bucket_cfg),
     ).put()
 
     req = {
