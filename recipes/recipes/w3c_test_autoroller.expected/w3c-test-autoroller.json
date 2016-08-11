@@ -109,7 +109,7 @@
       "git",
       "config",
       "user.name",
-      "W3C Autoroll Bot"
+      "Blink W3C Test Autoroller"
     ],
     "cwd": "[SLAVE_BUILD]/src",
     "name": "git config"
@@ -119,7 +119,7 @@
       "git",
       "config",
       "user.email",
-      "w3c-test-updater-bot@chromium.org"
+      "blink-w3c-test-autoroller@chromium.org"
     ],
     "cwd": "[SLAVE_BUILD]/src",
     "name": "git config (2)"

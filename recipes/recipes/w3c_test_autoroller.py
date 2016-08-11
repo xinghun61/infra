@@ -23,8 +23,8 @@ def RunSteps(api):
     api.gclient.set_config('chromium')
     api.bot_update.ensure_checkout(force=True)
 
-    api.git('config', 'user.name', 'W3C Autoroll Bot')
-    api.git('config', 'user.email', 'w3c-test-updater-bot@chromium.org')
+    api.git('config', 'user.name', 'Blink W3C Test Autoroller')
+    api.git('config', 'user.email', 'blink-w3c-test-autoroller@chromium.org')
     api.git('checkout', '-B', 'update_w3c_tests')
 
     cwd = api.path['checkout'].join('third_party', 'WebKit')
