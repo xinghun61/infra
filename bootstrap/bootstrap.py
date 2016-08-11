@@ -254,6 +254,7 @@ def activate_env(env, deps, quiet=False, run_within_virtualenv=False):
 def main(args):
   parser = argparse.ArgumentParser()
   parser.add_argument('--deps-file', '--deps_file', action='append',
+                      required=True,
                       help='Path to deps.pyl file (may be used multiple times)')
   parser.add_argument('-q', '--quiet', action='store_true', default=False,
                       help='Supress all output')
