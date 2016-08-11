@@ -19,20 +19,15 @@
       paper-button:hover {
         background-color: #eee;
       }
-     .alert {
-       @apply(--layout-horizontal);
-       padding: 1em;
-       background-color: #fff;
-     }
      .alert-controls {
        text-align: center;
-       min-width:  370px;
-       padding-right: 10px;
+       min-width:  360px;
+       padding-right: 5px;
        height: 90px;
      }
      .alert-controls paper-button {
        text-align: center;
-       min-width: 120px;
+       min-width: 110px;
        display: inline-block;
      }
      .alert-expanded {
@@ -52,11 +47,10 @@
      }
      .alert-title {
        font-weight: bold;
-       font-size: larger;
      }
      .alert-title-bar {
        align-items: center;
-       padding-bottom: 0.3em;
+       padding-bottom: 0.25em;
        border-bottom: 1px dotted #ddd;
      }
      .examine-link {
@@ -73,11 +67,12 @@
        opacity: 0.5;
      }
      #bugsList .bug {
+       font-size: 0.9em;
        background: #eee;
        border-radius: 15px;
-       padding: 0 7px 0 18px;
+       padding: 0 2px 0 15px;
        display: inline-block;
-       margin: 3px;
+       margin: 2px;
        line-height: 30px;
      }
      #bugsList .bug paper-icon-button {
@@ -99,11 +94,15 @@
      #handleLink {
        margin-left: 15px;
      }
+     #link-bug,
+     #snooze {
+       font-size: 0.9em;
+     }
      #root {
        transition: opacity .25s;
      }
      #usefulLinks {
-       margin: .5em 0;
+       margin: .25em 0;
      }
     </style>
     <div id="root" class$="[[_cssClass]]">
