@@ -60,7 +60,7 @@ func (c *compileFailureAnalyzer) Analyze(reader client.Reader, fs []*messages.Bu
 	return results, nil
 }
 
-func (c *compileFailureAnalyzer) analyzeFailure(reader client.Reader, f *messages.BuildStep) (messages.ReasonRaw, error) {
+func (c *compileFailureAnalyzer) analyzeFailure(reader client.Reader, f *messages.BuildStep) (*compileFailure, error) {
 	if f.Step.Name != "compile" {
 		return nil, nil
 	}

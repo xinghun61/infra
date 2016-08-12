@@ -48,7 +48,7 @@ func TestTestStepFailureAlerts(t *testing.T) {
 						},
 					},
 					wantResult: []messages.ReasonRaw{
-						nil,
+						(*testFailure)(nil),
 					},
 				},
 				{
