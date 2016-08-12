@@ -467,14 +467,17 @@ class ApiTests(object):
     req = {
       'id': self.test_build.key.id(),
       'lease_key': 42,
+      'new_tags': ['bot_id:bot42'],
     }
     res = self.call_api('succeed', req).json_body
     service.succeed.assert_called_once_with(
-      req['id'], req['lease_key'], result_details=None, url=None)
+      req['id'], req['lease_key'], result_details=None, url=None,
+      new_tags=['bot_id:bot42'])
     self.assertEqual(int(res['build']['id']), req['id'])
 
   def test_succeed_with_result_details(self):
     self.test_build.result_details = {'test_coverage': 100}
+    self.test_build.tags = ['bot_id:bot42']
     service.succeed.return_value = self.test_build
     req = {
       'id': self.test_build.key.id(),
@@ -487,25 +490,29 @@ class ApiTests(object):
       kwargs['result_details'], self.test_build.result_details)
     self.assertEqual(
       res['build']['result_details_json'], req['result_details_json'])
+    self.assertIn('bot_id:bot42', res['build']['tags'])
 
   #################################### FAIL ####################################
 
   def test_infra_failure(self):
     self.test_build.result_details = {'transient_error': True}
     self.test_build.failure_reason = model.FailureReason.INFRA_FAILURE
+    self.test_build.tags = ['bot_id:bot42']
     service.fail.return_value = self.test_build
     req = {
       'id': self.test_build.key.id(),
       'lease_key': 42,
       'failure_reason': 'INFRA_FAILURE',
       'result_details_json': json.dumps(self.test_build.result_details),
+      'new_tags': ['bot_id:bot42'],
     }
     res = self.call_api('fail', req).json_body
     service.fail.assert_called_once_with(
       req['id'], req['lease_key'],
       result_details=self.test_build.result_details,
       failure_reason=model.FailureReason.INFRA_FAILURE,
-      url=None)
+      url=None,
+      new_tags=['bot_id:bot42'])
     self.assertEqual(int(res['build']['id']), req['id'])
     self.assertEqual(res['build']['failure_reason'], req['failure_reason'])
     self.assertEqual(

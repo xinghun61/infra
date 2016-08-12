@@ -678,6 +678,14 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     service.succeed(build_id, lease_key)
     service.succeed(build_id, lease_key)
 
+  def test_succeed_with_new_tags(self):
+    self.test_build.tags = ['a:1']
+    self.test_build.put()
+    self.lease()
+    self.start()
+    self.succeed(new_tags=['b:2'])
+    self.assertEqual(self.test_build.tags, ['a:1', 'b:2'])
+
   def test_fail(self):
     self.lease()
     self.start()

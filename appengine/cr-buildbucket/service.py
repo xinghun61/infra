@@ -594,10 +594,11 @@ def heartbeat_batch(heartbeats):
 
 def _complete(
     build_id, lease_key, result, result_details, failure_reason=None,
-    url=None):
+    url=None, new_tags=None):
   """Marks a build as completed. Used by succeed and fail methods."""
   validate_lease_key(lease_key)
   validate_url(url)
+  validate_tags(new_tags)
   assert result in (model.BuildResult.SUCCESS, model.BuildResult.FAILURE)
 
   @ndb.transactional
@@ -622,6 +623,9 @@ def _complete(
       build.url = url
     build.result_details = result_details
     build.failure_reason = failure_reason
+    if new_tags:
+      build.tags.extend(new_tags)
+      build.tags = sorted(set(build.tags))
     build.clear_lease()
     build.put()
     notifications.enqueue_callback_task_if_needed(build)
@@ -635,24 +639,26 @@ def _complete(
   return build
 
 
-def succeed(build_id, lease_key, result_details=None, url=None):
+def succeed(build_id, lease_key, result_details=None, url=None, new_tags=None):
   """Marks a build as succeeded. Idempotent.
 
   Args:
     build_id: id of the build to complete.
     lease_key: current lease key.
     result_details (dict): build result description.
+    new_tags (list of str): list of new tags to add to the Build.
 
   Returns:
     The succeeded Build.
   """
   return _complete(
-    build_id, lease_key, model.BuildResult.SUCCESS, result_details, url=url)
+    build_id, lease_key, model.BuildResult.SUCCESS, result_details, url=url,
+    new_tags=new_tags)
 
 
 def fail(
     build_id, lease_key, result_details=None, failure_reason=None,
-    url=None):
+    url=None, new_tags=None):
   """Marks a build as failed. Idempotent.
 
   Args:
@@ -661,6 +667,7 @@ def fail(
     failure_reason (model.FailureReason): why the build failed.
       Defaults to model.FailureReason.BUILD_FAILURE.
     result_details (dict): build result description.
+    new_tags (list of str): list of new tags to add to the Build.
 
   Returns:
     The failed Build.
@@ -668,7 +675,7 @@ def fail(
   failure_reason = failure_reason or model.FailureReason.BUILD_FAILURE
   return _complete(
     build_id, lease_key, model.BuildResult.FAILURE, result_details,
-    failure_reason, url=url)
+    failure_reason, url=url, new_tags=new_tags)
 
 
 def cancel(build_id):

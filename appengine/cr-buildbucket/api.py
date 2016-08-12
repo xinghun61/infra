@@ -525,6 +525,7 @@ class BuildBucketApi(remote.Service):
     lease_key = messages.IntegerField(1)
     result_details_json = messages.StringField(2)
     url = messages.StringField(3)
+    new_tags = messages.StringField(4, repeated=True)
 
   @buildbucket_api_method(
     id_resource_container(SucceedRequestBodyMessage), BuildResponseMessage,
@@ -536,7 +537,8 @@ class BuildBucketApi(remote.Service):
       request.id, request.lease_key,
       result_details=parse_json(
         request.result_details_json, 'result_details_json'),
-      url=request.url)
+      url=request.url,
+      new_tags=request.new_tags)
     return build_to_response_message(build)
 
   ###################################  FAIL  ###################################
@@ -546,6 +548,7 @@ class BuildBucketApi(remote.Service):
     result_details_json = messages.StringField(2)
     failure_reason = messages.EnumField(model.FailureReason, 3)
     url = messages.StringField(4)
+    new_tags = messages.StringField(5, repeated=True)
 
   @buildbucket_api_method(
     id_resource_container(FailRequestBodyMessage), BuildResponseMessage,
@@ -559,6 +562,7 @@ class BuildBucketApi(remote.Service):
         request.result_details_json, 'result_details_json'),
       failure_reason=request.failure_reason,
       url=request.url,
+      new_tags=request.new_tags,
     )
     return build_to_response_message(build)
 
