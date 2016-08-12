@@ -3,7 +3,7 @@
 ## How to create a new bucket?
 
 1.  Make sure your repository is
-    [registered](/doc/users/services/luci-config/faq.md#How-to-register-a-project).
+    [registered](/doc/users/services/luci_config/faq.md#How-to-register-a-project).
 2.  Create `cr-buildbucket.cfg` file in `infra/config` branch
     ([schema](http://luci-config.appspot.com/schemas/projects:buildbucket.cfg),
     [example](https://chromium.googlesource.com/chromium/src/+/infra/config/cr-buildbucket.cfg))
@@ -13,6 +13,6 @@
 
 ## Where ACL groups are defined?
 
-On [auth service](/doc/users/services/auth/index.md)
+On [auth service](https://chrome-infra-auth.appspot.com)
 
 [buildbucket.peek]: https://cr-buildbucket.appspot.com/_ah/api/explorer/#p/buildbucket/v1/buildbucket.peek
