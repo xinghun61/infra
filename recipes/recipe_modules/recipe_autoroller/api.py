@@ -89,6 +89,10 @@ TRIVIAL_ROLL_TBR_EMAILS = (
 ROLL_SUCCESS, ROLL_EMPTY, ROLL_FAILURE = range(3)
 
 
+_AUTH_REFRESH_TOKEN_FLAG = (
+    '--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller')
+
+
 def get_commit_message(roll_result, tbrs=()):
   """Construct a roll commit message from 'recipes.py autoroll' result.
   """
@@ -244,6 +248,12 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       if change_data['diff_digest'] != diff_digest:
         need_to_upload = True
         rebase = True
+      elif roll_result['trivial']:
+        # We won't be uploading. Make sure trivial rolls don't get stuck
+        # if previous CQ attempt failed because of flake.
+        # Pass --rietveld flag to match upload args below.
+        self.m.git('cl', 'set-commit', '--rietveld', _AUTH_REFRESH_TOKEN_FLAG,
+                   cwd=workdir)
 
     if need_to_upload:
       tbrs = []
@@ -259,8 +269,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       upload_args.extend(['--bypass-hooks', '-f'])
       # git cl upload doesn't work yet with gerrit and git cache.
       upload_args.extend(['--rietveld'])
-      upload_args.extend([
-          '--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller'])
+      upload_args.extend([_AUTH_REFRESH_TOKEN_FLAG])
       self.m.git_cl.upload(
           commit_message, upload_args, name='git cl upload', cwd=workdir)
       issue_result = self.m.git(
