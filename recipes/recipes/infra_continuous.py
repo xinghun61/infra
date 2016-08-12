@@ -5,9 +5,9 @@
 from recipe_engine.recipe_api import Property
 
 DEPS = [
-  'build/cipd',
   'build/file',
   'depot_tools/bot_update',
+  'depot_tools/cipd',
   'depot_tools/depot_tools',
   'depot_tools/gclient',
   'depot_tools/infra_paths',

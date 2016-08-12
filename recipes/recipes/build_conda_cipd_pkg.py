@@ -18,7 +18,7 @@ To build a new package for all platforms:
 """
 
 DEPS = [
-  'build/cipd',
+  'depot_tools/cipd',
   'build/conda',
   'build/file',
   'recipe_engine/path',

@@ -10,9 +10,9 @@ is down, this will fail.
 
 DEPS = [
   'depot_tools/bot_update',
+  'depot_tools/cipd',
   'depot_tools/gclient',
   'depot_tools/tryserver',
-  'build/cipd',
   'build/file',
   'recipe_engine/json',
   'recipe_engine/path',
