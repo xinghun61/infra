@@ -49,10 +49,9 @@
       flush( () => {
         let item = element.$$('#test_results');
         assert.isNotNull(item);
-        assert.equal(
-            item.children[0].href,
-            element.testResultsURL + 'dashboards/flakiness_dashboard' +
-            '.html#tests=best_test&testType=wekbit_tests');
+        assert.isTrue(item.children[0].href.endsWith(
+                'dashboards/flakiness_dashboard' +
+                '.html#tests=best_test&testType=wekbit_tests'));
         done();
       });
     });
@@ -70,9 +69,7 @@
       flush( () => {
         let item = element.$$('#test_results');
         assert.isNotNull(item);
-        assert.equal(
-            item.children[1].href,
-            element.codeSearchURL + 'search/?q=best_test');
+        assert.isTrue(item.children[1].href.endsWith('search/?q=best_test'));
         done();
       });
     });
@@ -90,10 +87,9 @@
       flush( () => {
         let item = element.$$('#test_results');
         assert.isNotNull(item);
-        assert.equal(
-            item.children[1].href,
-            element.codeSearchURL + 'search/?q=test.foo.bar.TestClass%20' +
-            'function:testThatJavaHasTheBestNames');
+        assert.isTrue(item.children[1].href.endsWith(
+            'search/?q=test.foo.bar.TestClass%20' +
+            'function%3AtestThatJavaHasTheBestNames'));
         done();
       });
     });
