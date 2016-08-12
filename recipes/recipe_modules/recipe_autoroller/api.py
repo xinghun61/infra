@@ -96,10 +96,11 @@ _AUTH_REFRESH_TOKEN_FLAG = (
 def get_commit_message(roll_result, tbrs=()):
   """Construct a roll commit message from 'recipes.py autoroll' result.
   """
+  trivial = roll_result['trivial']
   message = 'Roll recipe dependencies (%s).\n' % (
-      'trivial' if roll_result['trivial'] else 'nontrivial')
+      'trivial' if trivial else 'nontrivial')
   message += COMMIT_MESSAGE_HEADER
-  if not roll_result['trivial']:
+  if not trivial:
     message += NON_TRIVIAL_MESSAGE
   message += COMMIT_MESSAGE_INFO
 
@@ -107,7 +108,8 @@ def get_commit_message(roll_result, tbrs=()):
 
   message += '%s\n' % '\n'.join(get_blame(commit_infos))
   message += '\n'
-  message += 'R=%s\n' % ','.join(get_reviewers(commit_infos))
+  if not trivial:
+    message += 'R=%s\n' % ','.join(get_reviewers(commit_infos))
   if tbrs:
     message += 'TBR=%s\n' % ','.join(tbrs)
   message += 'BUG=%s\n' % ','.join(get_bugs(commit_infos))
