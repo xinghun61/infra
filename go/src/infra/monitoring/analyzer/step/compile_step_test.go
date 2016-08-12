@@ -51,7 +51,7 @@ func TestCompileFailureAnalyzer(t *testing.T) {
 						},
 					},
 					wantResult: []messages.ReasonRaw{
-						(*compileFailure)(nil),
+						nil,
 					},
 				},
 				{

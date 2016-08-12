@@ -56,7 +56,7 @@ func (t *testFailureAnalyzer) Analyze(reader client.Reader, fs []*messages.Build
 	return results, nil
 }
 
-func (t *testFailureAnalyzer) analyzeFailure(reader client.Reader, f *messages.BuildStep) (*testFailure, error) {
+func (t *testFailureAnalyzer) analyzeFailure(reader client.Reader, f *messages.BuildStep) (messages.ReasonRaw, error) {
 	failedTests, err := getTestNames(reader, f)
 	if err != nil {
 		return nil, err
