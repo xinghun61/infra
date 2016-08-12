@@ -204,21 +204,6 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/recipe_engine/recipe_engine/recipes.py",
-      "--use-bootstrap",
-      "--package",
-      "[SLAVE_BUILD]/recipe_engine/recipe_engine/infra/config/recipes.cfg",
-      "simulation_test"
-    ],
-    "name": "recipe_engine tests",
-    "~followup_annotations": [
-      "@@@STEP_LINK@reference builder@https://build.chromium.org/p/chromium.infra/builders/recipe_engine-recipes-tests@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
       "[SLAVE_BUILD]/build/build/recipes.py",
       "--use-bootstrap",
       "-O",

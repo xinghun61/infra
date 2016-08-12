@@ -342,3 +342,36 @@ def GenTests(api):
               {}))
   )
 
+  yield (
+      api.test('tree_simulation') +
+      api.luci_config.get_projects((
+          'recipe_engine', 'depot_tools', 'build', 'infra')) +
+      api.luci_config.get_project_config(
+          'recipe_engine', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config('recipe_engine')) +
+      api.luci_config.get_project_config(
+          'depot_tools', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config('depot_tools', [
+              'recipe_engine'])) +
+      api.luci_config.get_project_config(
+          'build', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config('build', [
+              'depot_tools', 'recipe_engine'])) +
+      api.luci_config.get_project_config(
+          'infra', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config('infra', [
+              'build', 'depot_tools', 'recipe_engine'])) +
+      api.properties(
+        rietveld="https://fake.code.review",
+        issue='12345678',
+        patchset='1',
+        patch_project="build",
+      ) +
+      api.override_step_data(
+          'git_cl description (build)', stdout=api.raw_io.output(
+              "")) +
+      api.override_step_data(
+          'parse description', api.json.output(
+              {}))
+  )
+

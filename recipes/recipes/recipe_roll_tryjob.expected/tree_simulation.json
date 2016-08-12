@@ -17,6 +17,19 @@
       "python",
       "-u",
       "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
+      "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Fdepot_tools%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
+      "--outfile",
+      "/path/to/tmp/",
+      "--attempts",
+      "3"
+    ],
+    "name": "Get project 'depot_tools' config 'recipes.cfg'"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
       "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Frecipe_engine%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
       "--outfile",
       "/path/to/tmp/",
@@ -37,6 +50,19 @@
       "3"
     ],
     "name": "Get project 'build' config 'recipes.cfg'"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
+      "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Finfra%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
+      "--outfile",
+      "/path/to/tmp/",
+      "--attempts",
+      "3"
+    ],
+    "name": "Get project 'infra' config 'recipes.cfg'"
   },
   {
     "cmd": [
@@ -139,6 +165,138 @@
       "python",
       "-u",
       "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
+      "[SLAVE_BUILD]/infra/infra",
+      "511"
+    ],
+    "name": "makedirs infra directory",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
+      "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
+      "@@@STEP_LOG_LINE@python.inline@mode = int(sys.argv[2])@@@",
+      "@@@STEP_LOG_LINE@python.inline@if not os.path.isdir(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  if os.path.exists(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@    print \"%s exists but is not a dir\" % path@@@",
+      "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
+      "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
+      "--spec",
+      "cache_dir = '[SLAVE_BUILD]/__cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://repo.repo/infra'}]",
+      "--root",
+      "infra",
+      "--revision_mapping_file",
+      "{}",
+      "--git-cache-dir",
+      "[SLAVE_BUILD]/__cache_dir",
+      "--rietveld_server",
+      "https://fake.code.review",
+      "--output_json",
+      "/path/to/tmp/json",
+      "--revision",
+      "infra@HEAD",
+      "--force",
+      "--output_manifest"
+    ],
+    "cwd": "[SLAVE_BUILD]/infra",
+    "env": {
+      "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
+    },
+    "name": "bot_update (without patch) - infra",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Some step text@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra\": \"HEAD\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"manifest\": {}, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"infra\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"properties\": {}, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"root\": \"infra\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"step_text\": \"Some step text\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
+      "[SLAVE_BUILD]/depot_tools/depot_tools",
+      "511"
+    ],
+    "name": "makedirs depot_tools directory",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
+      "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
+      "@@@STEP_LOG_LINE@python.inline@mode = int(sys.argv[2])@@@",
+      "@@@STEP_LOG_LINE@python.inline@if not os.path.isdir(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  if os.path.exists(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@    print \"%s exists but is not a dir\" % path@@@",
+      "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
+      "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
+      "--spec",
+      "cache_dir = '[SLAVE_BUILD]/__cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'depot_tools', 'url': 'https://repo.repo/depot_tools'}]",
+      "--root",
+      "depot_tools",
+      "--revision_mapping_file",
+      "{}",
+      "--git-cache-dir",
+      "[SLAVE_BUILD]/__cache_dir",
+      "--rietveld_server",
+      "https://fake.code.review",
+      "--output_json",
+      "/path/to/tmp/json",
+      "--revision",
+      "depot_tools@HEAD",
+      "--force",
+      "--output_manifest"
+    ],
+    "cwd": "[SLAVE_BUILD]/depot_tools",
+    "env": {
+      "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
+    },
+    "name": "bot_update (without patch) - depot_tools",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Some step text@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"depot_tools\": \"HEAD\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"manifest\": {}, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"depot_tools\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"properties\": {}, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"root\": \"depot_tools\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"step_text\": \"Some step text\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
       "[SLAVE_BUILD]/recipe_engine/recipe_engine",
       "511"
     ],
@@ -207,6 +365,8 @@
       "[SLAVE_BUILD]/build/build/recipes.py",
       "--use-bootstrap",
       "-O",
+      "depot_tools=[SLAVE_BUILD]/depot_tools/depot_tools",
+      "-O",
       "recipe_engine=[SLAVE_BUILD]/recipe_engine/recipe_engine",
       "--package",
       "[SLAVE_BUILD]/build/build/infra/config/recipes.cfg",
@@ -215,6 +375,27 @@
     "name": "build tests",
     "~followup_annotations": [
       "@@@STEP_LINK@reference builder@https://build.chromium.org/p/chromium.tools.build/builders/recipe-simulation_trusty64@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[SLAVE_BUILD]/infra/infra/recipes.py",
+      "--use-bootstrap",
+      "-O",
+      "depot_tools=[SLAVE_BUILD]/depot_tools/depot_tools",
+      "-O",
+      "recipe_engine=[SLAVE_BUILD]/recipe_engine/recipe_engine",
+      "-O",
+      "build=[SLAVE_BUILD]/build/build",
+      "--package",
+      "[SLAVE_BUILD]/infra/infra/infra/config/recipes.cfg",
+      "simulation_test"
+    ],
+    "name": "infra tests",
+    "~followup_annotations": [
+      "@@@STEP_LINK@no reference builder; file a bug to get one?@https://goo.gl/PoAPOJ@@@"
     ]
   },
   {

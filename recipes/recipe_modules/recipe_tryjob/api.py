@@ -94,6 +94,7 @@ PROJECTS_TO_TRY = [
   'build_limited_scripts_slave',
   'recipe_engine',
   'depot_tools',
+  'infra',
 ]
 
 PROJECT_TO_CONTINUOUS_WATERFALL = {
@@ -145,26 +146,34 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
     Returns:
       The projects we want to test, and the locations of those projects
     """
-    # TODO(martiniss): be smarter about which projects we actually run tests on
-
-    # All the projects we want to test.
-    projs_to_test  = set()
     # Projects we need to look at dependencies for.
     queue = set(patches.keys())
+    # Projects we need to checkout, but not test
+    to_checkout = set()
+    # All the projects we want to test.
+    projs_to_test  = set(queue)
     # luci config project name to file system path of the checkout
     locations = {}
 
     while queue:
       proj = queue.pop()
-      if proj not in projs_to_test:
+      if proj not in locations:
         locations[proj] = self._checkout_project(
             proj, url_mapping[proj], root_dir, patches.get(proj))
         projs_to_test.add(proj)
 
         for downstream in downstream_projects[proj]:
           queue.add(downstream)
+        for upstream in deps.get(proj, set()):
+          to_checkout.add(upstream)
+
+    while to_checkout:
+      proj = to_checkout.pop()
+      if proj not in locations:
+        locations[proj] = self._checkout_project(
+            proj, url_mapping[proj], root_dir, patches.get(proj))
         for upstream in deps[proj]:
-          queue.add(upstream)
+          to_checkout.add(upstream)
 
     return projs_to_test, locations
 
