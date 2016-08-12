@@ -2,39 +2,37 @@ package model
 
 import (
 	"bytes"
-	"math"
 	"strconv"
 )
 
-func round(f float64) int {
-	if math.Abs(f) < 0.5 {
-		return 0
-	}
-	return int(f + math.Copysign(0.5, f))
+// Node is a node in a Tests tree.
+//
+// In reality, it as almost as weak as empty interface,
+// but the unexported method allow the package to achieve
+// type safety internally.
+type Node interface {
+	node()
 }
 
-// TestNode is a node in a Tests tree.
-type TestNode interface {
-	// Children returns a map of a TestNode's children.
-	Children() map[string]TestNode
-
-	testnode()
-}
-
-// number is an integer that supports JSON unmarshaling from a string
+// Number is an integer that supports JSON unmarshaling from a string
 // and marshaling back to a string.
-type number int
+type Number int
 
-func (n *number) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON unmarshals data into n.
+// data is expected to be a JSON string. If the string
+// fails to parse to an integer, UnmarshalJSON returns
+// an error.
+func (n *Number) UnmarshalJSON(data []byte) error {
 	data = bytes.Trim(data, `"`)
 	num, err := strconv.Atoi(string(data))
 	if err != nil {
 		return err
 	}
-	*n = number(num)
+	*n = Number(num)
 	return nil
 }
 
-func (n *number) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals n into JSON string.
+func (n *Number) MarshalJSON() ([]byte, error) {
 	return []byte(strconv.Itoa(int(*n))), nil
 }

@@ -26,13 +26,16 @@ func IsAggregateTestFile(filename string) bool {
 }
 
 // BuildNum is int64 that is used to handle TestFile datastore records
-// with null build_number.
+// with null build_number. The value is >= 0 if the datastore value
+// was not null.
 type BuildNum int64
 
 var _ datastore.PropertyConverter = (*BuildNum)(nil)
 
+// IsNil returns whether b had null value in datastore.
 func (b *BuildNum) IsNil() bool { return *b == -1 }
 
+// ToProperty is for implementing datastore.PropertyConverter.
 func (b *BuildNum) ToProperty() (p datastore.Property, err error) {
 	if b.IsNil() {
 		return
@@ -41,6 +44,7 @@ func (b *BuildNum) ToProperty() (p datastore.Property, err error) {
 	return
 }
 
+// FromProperty is for implementing datastore.PropertyConverter.
 func (b *BuildNum) FromProperty(p datastore.Property) error {
 	switch p.Type() {
 	case datastore.PTNull:

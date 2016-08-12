@@ -15,24 +15,26 @@ import (
 // and "results-small.json" files are using.
 const ResultsVersion = 4
 
-var _ TestNode = (AggregateTest)(nil)
-var _ TestNode = (*AggregateTestLeaf)(nil)
+var (
+	// CleanPrefix is the prefix that CleanJSON removes.
+	CleanPrefix = []byte("ADD_RESULTS(")
+	// CleanSuffix is the suffix that CleanJSON removes.
+	CleanSuffix = []byte(");")
+)
 
-// CleanTestResultsJSON returns the result of removing a known prefix
-// and suffix from the contents in r. If the prefix or suffix do not exist,
-// the returned io.Reader has the same contents as r.
-func CleanTestResultsJSON(r io.Reader) (io.Reader, error) {
-	pre := []byte("ADD_RESULTS(")
-	suf := []byte(");")
-
+// CleanJSON returns the result of removing CleanPrefix
+// and CleanSuffix from the contents in r. If either
+// CleanPrefix or CleanSuffix does not exist, the returned
+// io.Reader has the same contents as r.
+func CleanJSON(r io.Reader) (io.Reader, error) {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
 
-	if bytes.HasPrefix(b, pre) && bytes.HasSuffix(b, suf) {
-		result := bytes.TrimPrefix(b, pre)
-		result = bytes.TrimSuffix(result, suf)
+	if bytes.HasPrefix(b, CleanPrefix) && bytes.HasSuffix(b, CleanSuffix) {
+		result := bytes.TrimPrefix(b, CleanPrefix)
+		result = bytes.TrimSuffix(result, CleanSuffix)
 		return bytes.NewReader(result), nil
 	}
 
@@ -47,14 +49,17 @@ type AggregateResult struct {
 	*BuilderInfo
 }
 
-// BuilderInfo represents aggregate information about a builder.
+// BuilderInfo represents aggregate information for a builder.
 type BuilderInfo struct {
 	// SecondsEpoch is the start time of tests expressed in seconds from
 	// the Unix epoch.
 	SecondsEpoch []int64 `json:"secondsSinceEpoch"`
 
-	BlinkRevs    []number `json:"blinkRevision"`
-	BuildNumbers []number `json:"buildNumbers"`
+	// BlinkRevs is list of Blink revisions.
+	BlinkRevs []Number `json:"blinkRevision"`
+
+	// BuildNumbers is list of build numbers.
+	BuildNumbers []Number `json:"buildNumbers"`
 
 	// ChromeRevs is a list of Chrome/Chromium revisions.
 	// The elements are strings because they can either be revision
@@ -81,6 +86,7 @@ type BuilderInfo struct {
 	FixableCounts []map[string]int `json:"fixableCounts,omitempty"`
 }
 
+// MarshalJSON marshal ag into JSON.
 func (ag *AggregateResult) MarshalJSON() ([]byte, error) {
 	v, err := json.Marshal(ag.Version)
 	if err != nil {
@@ -92,7 +98,7 @@ func (ag *AggregateResult) MarshalJSON() ([]byte, error) {
 
 	// If FailuresByType exists, do not include FixableCounts
 	// because it is deprecated.
-	if ag.FailuresByType != nil {
+	if info.FailuresByType != nil {
 		info.FixableCounts = nil
 	}
 
@@ -133,7 +139,7 @@ func (ag *AggregateResult) UnmarshalJSON(data []byte) error {
 
 	raw, ok := m[ag.Builder]
 	if !ok {
-		return fmt.Errorf("model: missing builder: %s", ag.Builder)
+		return fmt.Errorf("model: missing builder %q", ag.Builder)
 	}
 
 	var info *BuilderInfo
@@ -170,41 +176,23 @@ type fieldError struct {
 	Value interface{} // Invalid value in the field that caused error.
 }
 
-func (f fieldError) Error() string {
-	return fmt.Sprintf("model: field %s has invalid value: %v", f.Name, f.Value)
+func (f *fieldError) Error() string {
+	return fmt.Sprintf("model: field %q has invalid value: %v", f.Name, f.Value)
 }
 
 func (ag *AggregateResult) checkFields() error {
 	if ag.Version > ResultsVersion {
-		return fieldError{"Version", ag.Version}
+		return &fieldError{"Version", ag.Version}
 	}
 	if ag.BuilderInfo == nil {
-		return fieldError{"BuilderInfo", ag.BuilderInfo}
+		return &fieldError{"BuilderInfo", ag.BuilderInfo}
 	}
 	return nil
 }
 
 func (info *BuilderInfo) checkFields() error {
-	if info.SecondsEpoch == nil {
-		return fieldError{"SecondsEpoch", info.SecondsEpoch}
-	}
-	if info.BlinkRevs == nil {
-		return fieldError{"BlinkRevs", info.BlinkRevs}
-	}
 	if info.BuildNumbers == nil {
-		return fieldError{"BuildNumbers", info.BuildNumbers}
-	}
-	if info.ChromeRevs == nil {
-		return fieldError{"ChromeRevs", info.ChromeRevs}
-	}
-	if info.Tests == nil {
-		return fieldError{"Tests", info.Tests}
-	}
-	if info.FailureMap == nil {
-		return fieldError{"FailureMap", info.FailureMap}
-	}
-	if info.FailuresByType == nil && info.FixableCounts == nil {
-		return fieldError{"FailuresByType", info.FailuresByType}
+		return &fieldError{"BuildNumbers", info.BuildNumbers}
 	}
 	return nil
 }
@@ -226,7 +214,7 @@ func (info *BuilderInfo) computeFailuresByType() error {
 		for short, count := range fc {
 			long, ok := FailureLongNames[short]
 			if !ok {
-				return fmt.Errorf("model: unknown key: %s", short)
+				return fmt.Errorf("model: unknown key %q", short)
 			}
 			res[long] = append(res[long], count)
 		}
@@ -237,38 +225,40 @@ func (info *BuilderInfo) computeFailuresByType() error {
 }
 
 // AggregateTest represents Tests in a AggregateResult.
-type AggregateTest map[string]TestNode
+type AggregateTest map[string]Node
 
-func (at AggregateTest) Walk(fn func(key string, node TestNode) error) {
-	for k, v := range at {
-		if leaf, ok := v.(*AggregateTestLeaf); ok {
-			if err := fn(k, leaf); err != nil {
-				return
-			}
-			continue
-		}
+var _ Node = (AggregateTest)(nil)
 
-		if child, ok := v.(AggregateTest); ok {
-			if err := fn(k, child); err != nil {
-				return
-			}
-			child.Walk(fn)
+func (at AggregateTest) node() {}
+
+// Walk performs a depth-first traversal of the Nodes reachable
+// from the receiver, calling fn each time. The Node in fn
+// is guaranteed to be either AggregateTest or *AggregateTestLeaf.
+// The traversal order may vary across different runs.
+func (at AggregateTest) Walk(fn func(key string, node Node)) {
+	for key, node := range at {
+		switch val := node.(type) {
+		case *AggregateTestLeaf:
+			fn(key, val)
+		case AggregateTest:
+			fn(key, val)
+			val.Walk(fn)
 		}
 	}
 }
 
+// WalkLeaves is similar to Walk but only calls fn for
+// *AggregateTestLeaf.
 func (at AggregateTest) WalkLeaves(fn func(key string, leaf *AggregateTestLeaf)) {
-	at.Walk(func(k string, node TestNode) error {
+	at.Walk(func(key string, node Node) {
 		if leaf, ok := node.(*AggregateTestLeaf); ok {
-			fn(k, leaf)
+			fn(key, leaf)
 		}
-		return nil
 	})
 }
 
-func (at AggregateTest) Children() map[string]TestNode { return at }
-func (at AggregateTest) testnode()                     {}
-
+// ToTestList set the Results and Runtimes fields of all the
+// AggregateTestLeaf under the receiver AggregateTest to nil.
 func (at AggregateTest) ToTestList() {
 	at.WalkLeaves(func(_ string, leaf *AggregateTestLeaf) {
 		leaf.Results = nil
@@ -276,6 +266,7 @@ func (at AggregateTest) ToTestList() {
 	})
 }
 
+// MarshalJSON marshals at into JSON.
 func (at *AggregateTest) MarshalJSON() ([]byte, error) {
 	if at == nil {
 		return json.Marshal(nil)
@@ -295,13 +286,14 @@ func (at *AggregateTest) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m)
 }
 
+// UnmarshalJSON unmarshals the supplied data into at.
 func (at *AggregateTest) UnmarshalJSON(data []byte) error {
 	var m map[string]interface{}
 	if err := json.Unmarshal(data, &m); err != nil {
 		return err
 	}
 	if at == nil {
-		return errors.New("model: UnmarshalJSON on nil *AggregateTest")
+		return errors.New("model: UnmarshalJSON: nil *AggregateTest")
 	}
 	if *at == nil {
 		*at = AggregateTest{}
@@ -309,7 +301,7 @@ func (at *AggregateTest) UnmarshalJSON(data []byte) error {
 	return at.constructTree(m)
 }
 
-// constructTree constructs the tree of test nodes from the supplied map.
+// constructTree constructs the tree of Nodes from the supplied map.
 func (at *AggregateTest) constructTree(m map[string]interface{}) error {
 	for k, v := range m {
 		mm, ok := v.(map[string]interface{})
@@ -374,6 +366,8 @@ type AggregateTestLeaf struct {
 	Bugs     []string
 }
 
+func (l *AggregateTestLeaf) node() {}
+
 // aggregateTestLeafAux is used to marshal and unmarshal AggregateTestLeaf.
 type aggregateTestLeafAux struct {
 	Results  []ResultSummary  `json:"results,omitempty"`
@@ -382,9 +376,7 @@ type aggregateTestLeafAux struct {
 	Bugs     []string         `json:"bugs,omitempty"`
 }
 
-func (l *AggregateTestLeaf) Children() map[string]TestNode { return nil }
-func (l *AggregateTestLeaf) testnode()                     {}
-
+// MarshalJSON marshal l into JSON.
 func (l *AggregateTestLeaf) MarshalJSON() ([]byte, error) {
 	aux := aggregateTestLeafAux{
 		Results:  l.Results,
@@ -397,6 +389,7 @@ func (l *AggregateTestLeaf) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&aux)
 }
 
+// UnmarshalJSON unmarshal the supplied data into l.
 func (l *AggregateTestLeaf) UnmarshalJSON(data []byte) error {
 	var aux aggregateTestLeafAux
 	if err := json.Unmarshal(data, &aux); err != nil {
@@ -423,11 +416,14 @@ func (l *AggregateTestLeaf) defaultFields() {
 	}
 }
 
+// ResultSummary is the type of test failure and count of how many
+// times the running time occured.
 type ResultSummary struct {
 	Count int
 	Type  string
 }
 
+// MarshalJSON marshals rs into JSON.
 func (rs *ResultSummary) MarshalJSON() ([]byte, error) {
 	return json.Marshal([]interface{}{
 		rs.Count,
@@ -435,34 +431,38 @@ func (rs *ResultSummary) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// UnmarshalJSON unmarshals the provided data into rs.
 func (rs *ResultSummary) UnmarshalJSON(data []byte) error {
 	var tmp []interface{}
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
 	if len(tmp) != 2 {
-		return fmt.Errorf("ResultSummary: wrong length: %d, expect: %d", len(tmp), 2)
+		return fmt.Errorf("model: UnmarshalJSON: ResultSummary wrong length: %d, expect: %d", len(tmp), 2)
 	}
 
 	count, ok := tmp[0].(float64)
 	if !ok {
-		return fmt.Errorf("ResultSummary: wrong format: %v", tmp)
+		return fmt.Errorf("model: UnmarshalJSON: ResultSummary wrong type: %v", tmp)
 	}
 	rs.Count = int(count)
 
 	rs.Type, ok = tmp[1].(string)
 	if !ok {
-		return fmt.Errorf("ResultSummary: wrong format: %v", tmp)
+		return fmt.Errorf("model: UnmarshalJSON: ResultSummary wrong type: %v", tmp)
 	}
 
 	return nil
 }
 
+// RuntimeSummary is the running time of a test and count of how many
+// times the running time occured.
 type RuntimeSummary struct {
 	Count   int
 	Runtime float64
 }
 
+// MarshalJSON marshals rs into JSON.
 func (rs *RuntimeSummary) MarshalJSON() ([]byte, error) {
 	return json.Marshal([]float64{
 		float64(rs.Count),
@@ -470,13 +470,14 @@ func (rs *RuntimeSummary) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// UnmarshalJSON unmarshals the provided data into rs.
 func (rs *RuntimeSummary) UnmarshalJSON(data []byte) error {
 	var tmp []float64
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
 	if len(tmp) != 2 {
-		return fmt.Errorf("RuntimeSummary: wrong length: %d, expect: %d", len(tmp), 2)
+		return fmt.Errorf("model: UnmarshalJSON: RuntimeSummary wrong length: %d, expect: %d", len(tmp), 2)
 	}
 
 	rs.Count = int(tmp[0])

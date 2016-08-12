@@ -10,13 +10,13 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestCleanTestResultsJSON(t *testing.T) {
-	Convey("CleanTestResultsJSON", t, func() {
+func TestCleanJSON(t *testing.T) {
+	Convey("CleanJSON", t, func() {
 		data := `{"foo":"bar"}`
 
 		Convey("Strips prefix and suffix", func() {
 			r := bytes.NewReader([]byte(`ADD_RESULTS(` + data + `);`))
-			res, err := CleanTestResultsJSON(r)
+			res, err := CleanJSON(r)
 			So(err, ShouldBeNil)
 			b, err := ioutil.ReadAll(res)
 			So(err, ShouldBeNil)
@@ -25,7 +25,7 @@ func TestCleanTestResultsJSON(t *testing.T) {
 
 		Convey("Returns original when prefix and suffix are absent", func() {
 			r := bytes.NewReader([]byte(data))
-			res, err := CleanTestResultsJSON(r)
+			res, err := CleanJSON(r)
 			So(err, ShouldBeNil)
 			b, err := ioutil.ReadAll(res)
 			So(err, ShouldBeNil)
@@ -261,14 +261,6 @@ func TestAggregateResult(t *testing.T) {
 						So(err, ShouldNotBeNil)
 					})
 
-					Convey("Wrong secondsSinceEpoch list type", func() {
-						tm["foo_builder"].(map[string]interface{})["secondsSinceEpoch"] =
-							nil
-						b := marshal(tm)
-						err := json.Unmarshal(b, &t)
-						So(err, ShouldNotBeNil)
-					})
-
 					Convey("Valid secondsSinceEpoch", func() {
 						b := marshal(tm)
 						err := json.Unmarshal(b, &t)
@@ -287,18 +279,11 @@ func TestAggregateResult(t *testing.T) {
 						So(err, ShouldNotBeNil)
 					})
 
-					Convey("Wrong blinkRevision list type", func() {
-						tm["foo_builder"].(map[string]interface{})["blinkRevision"] = nil
-						b := marshal(tm)
-						err := json.Unmarshal(b, &t)
-						So(err, ShouldNotBeNil)
-					})
-
 					Convey("Valid blinkRevision", func() {
 						b := marshal(tm)
 						err := json.Unmarshal(b, &t)
 						So(err, ShouldBeNil)
-						So(t.BlinkRevs, ShouldResemble, []number{100, 200, 0, -50})
+						So(t.BlinkRevs, ShouldResemble, []Number{100, 200, 0, -50})
 					})
 				})
 
@@ -322,7 +307,7 @@ func TestAggregateResult(t *testing.T) {
 						b := marshal(tm)
 						err := json.Unmarshal(b, &t)
 						So(err, ShouldBeNil)
-						So(t.BuildNumbers, ShouldResemble, []number{9000, 7500, -42, 0})
+						So(t.BuildNumbers, ShouldResemble, []Number{9000, 7500, -42, 0})
 					})
 				})
 
@@ -330,13 +315,6 @@ func TestAggregateResult(t *testing.T) {
 					Convey("Wrong chromeRevision element type", func() {
 						tm["foo_builder"].(map[string]interface{})["chromeRevision"] =
 							[]interface{}{"900", false, "str"}
-						b := marshal(tm)
-						err := json.Unmarshal(b, &t)
-						So(err, ShouldNotBeNil)
-					})
-
-					Convey("Wrong chromeRevision list type", func() {
-						tm["foo_builder"].(map[string]interface{})["chromeRevision"] = nil
 						b := marshal(tm)
 						err := json.Unmarshal(b, &t)
 						So(err, ShouldNotBeNil)

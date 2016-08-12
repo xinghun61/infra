@@ -209,10 +209,16 @@ func respondTestFileDefault(ctx *router.Context, params URLParams) {
 	finalData := tf.Data
 
 	if params.TestListJSON {
-		aggr := model.AggregateResult{Builder: params.Builder}
-		if err := json.NewDecoder(tf.Data).Decode(&aggr); err != nil {
+		data, err := model.CleanJSON(tf.Data)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logging.Errorf(c, "failed to unmarshal TestResults JSON: %+v: %v", tf.Data, err)
+			logging.Errorf(c, "failed to clean test results JSON: %v", err)
+			return
+		}
+		aggr := model.AggregateResult{Builder: params.Builder}
+		if err := json.NewDecoder(data).Decode(&aggr); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logging.Errorf(c, "failed to unmarshal test results JSON: %+v: %v", data, err)
 			return
 		}
 		aggr.Tests.ToTestList()
