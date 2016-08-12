@@ -33,8 +33,20 @@ type StatusError struct {
 }
 
 func (e *StatusError) Error() string {
-	return fmt.Sprintf("buildextract: response error: %s", e.Status)
+	return fmt.Sprintf("buildextract: response status code: %d", e.StatusCode)
 }
+
+// Interface is the methods that a buildextract client should provide.
+//
+// See Client for an implementation of this interface that
+// communicates with the live service.
+// See TestingClient for a client that can be used in external package tests.
+type Interface interface {
+	GetMasterJSON(master string) (io.ReadCloser, error)
+	GetBuildsJSON(builder, master string, numBuilds int) (io.ReadCloser, error)
+}
+
+var _ Interface = (*Client)(nil)
 
 // Client is the HTTP client and configuration used to make requests.
 // Safe for concurrent use.

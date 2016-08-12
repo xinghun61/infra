@@ -9,7 +9,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestBuildbot(t *testing.T) {
+func TestClient(t *testing.T) {
 	t.Parallel()
 
 	// Data is not representative of actual data from live API.
@@ -46,8 +46,8 @@ func TestBuildbot(t *testing.T) {
 			BaseURL:    srv.URL,
 		}
 
-		Convey("GetMasterJSON", func() {
-			Convey("exists", func() {
+		Convey("exists", func() {
+			Convey("GetMasterJSON", func() {
 				data, err := c.GetMasterJSON("chromium.mac")
 				So(err, ShouldBeNil)
 				defer data.Close()
@@ -55,16 +55,7 @@ func TestBuildbot(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(b, ShouldResemble, []byte(`{ "life": 42 }`))
 			})
-
-			Convey("does not exist", func() {
-				_, err := c.GetMasterJSON("non-existent")
-				So(err, ShouldHaveSameTypeAs, &StatusError{})
-				So(err.(*StatusError).StatusCode, ShouldEqual, http.StatusNotFound)
-			})
-		})
-
-		Convey("GetBuildsJSON", func() {
-			Convey("exists", func() {
+			Convey("GetBuildsJSON", func() {
 				data, err := c.GetBuildsJSON("ios.simulator", "chromium.mac", 1)
 				So(err, ShouldBeNil)
 				defer data.Close()
@@ -73,11 +64,20 @@ func TestBuildbot(t *testing.T) {
 				So(b, ShouldResemble, []byte(`{ "hello": "world" }`))
 			})
 
-			Convey("does not exist", func() {
+		})
+		Convey("does not exist", func() {
+			Convey("GetMasterJSON", func() {
+				_, err := c.GetMasterJSON("non-existent")
+				So(err, ShouldHaveSameTypeAs, &StatusError{})
+				So(err.(*StatusError).StatusCode, ShouldEqual, http.StatusNotFound)
+
+			})
+			Convey("GetBuildsJSON", func() {
 				_, err := c.GetBuildsJSON("non-existent", "chromium.mac", 1)
 				So(err, ShouldHaveSameTypeAs, &StatusError{})
 				So(err.(*StatusError).StatusCode, ShouldEqual, http.StatusNotFound)
 			})
 		})
+
 	})
 }
