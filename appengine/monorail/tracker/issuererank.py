@@ -77,7 +77,7 @@ class IssueRerank(jsonfeed.JsonFeed):
           'url': issue.url,
           'is_open': issue.is_open,
           'is_dangling': False,
-        } for issue in blocked_on_issues]
+        } for issue in blocked_on_issues if issue.visible]
     issues.extend([{
         'display_name': issue.display_name,
         'issue_ref': issue.issue_ref,
@@ -85,7 +85,7 @@ class IssueRerank(jsonfeed.JsonFeed):
         'url': issue.url,
         'is_open': issue.is_open,
         'is_dangling': True,
-        } for issue in dangling_blocked_on_issues])
+        } for issue in dangling_blocked_on_issues if issue.visible])
     return {'issues': issues}
 
   def _GetIssues(self, mr):
