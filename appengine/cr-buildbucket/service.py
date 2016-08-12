@@ -141,7 +141,7 @@ def add_async(
   build = model.Build(
     id=model.new_build_id(),
     bucket=bucket,
-    tags=tags,
+    tags=sorted(set(tags)),
     parameters=parameters,
     status=model.BuildStatus.SCHEDULED,
     created_by=identity,
