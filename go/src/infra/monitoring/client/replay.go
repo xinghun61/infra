@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"infra/monitoring/messages"
 )
@@ -71,8 +72,7 @@ func (c *replay) CrbugItems(label string) ([]messages.CrbugItem, error) {
 // Findit fetches results from findito for a build.
 func (c *replay) Findit(master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
 	s := []*messages.FinditResult{}
-	// Ignore failedSteps since we assume only one call per build
-	err := read(filepath.Join(c.baseDir, "findit", master.Name(), builder, fmt.Sprintf("%d", buildNum)), &s)
+	err := read(filepath.Join(c.baseDir, "findit", master.Name(), builder, fmt.Sprintf("%d", buildNum), strings.Join(failedSteps, ",")), &s)
 	return s, err
 }
 
