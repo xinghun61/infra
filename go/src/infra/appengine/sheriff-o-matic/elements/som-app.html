@@ -164,9 +164,9 @@
         </paper-toolbar>
         <iron-pages attr-for-selected='id' selected="[[_selectedPage]]" class="flex layout vertical">
           <div id="alertsList" class="page-body">
-            <div class="list-item" hidden$="[[_hideWebkitNotice]]">
+            <div class="list-item">
               <div class="notification">
-                Chromium sheriffs: you now need to handle WebKit bot failures too. <a href="http://www.chromium.org/blink/sheriffing" target="_blank">More information</a>.
+                Start at the top and try to clear all the alerts. Help links are provided for additional guidance. 
               </div>
             </div>
             <som-bug-queue id="bugQueue" bug-queue-label="[[_bugQueueLabel]]"></som-bug-queue>
@@ -340,10 +340,6 @@
           type: Boolean,
           computed: '_computeHideJulie(_alerts, _fetchedAlerts, _fetchingAlerts, _fetchAlertsError, _tree)',
           value: function() { return true; },
-        },
-        _hideWebkitNotice: {
-          type: Boolean,
-          computed: '_computeHideWebkitNotice(_tree)',
         },
         logoutUrl: String,
         _path: {
@@ -622,10 +618,6 @@
           return true;
         }
         return alerts.length > 0;
-      },
-
-      _computeHideWebkitNotice: function(tree) {
-        return tree != 'chromium';
       },
 
       ////////////////////// Severity ///////////////////////////
