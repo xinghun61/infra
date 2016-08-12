@@ -7,6 +7,7 @@ import json
 import time
 
 from common.waterfall import buildbucket_client
+from common.waterfall import failure_type
 from common.waterfall import try_job_error
 from model import analysis_status
 from model.wf_try_job import WfTryJob
@@ -15,7 +16,6 @@ from waterfall import monitor_try_job_pipeline
 from waterfall import waterfall_config
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall.test import wf_testcase
-from waterfall.try_job_type import TryJobType
 
 
 # A counter to enable different responses to requests in a loop.
@@ -216,7 +216,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline = MonitorTryJobPipeline()
     compile_result = pipeline.run(
-        master_name, builder_name, build_number, TryJobType.COMPILE,
+        master_name, builder_name, build_number, failure_type.COMPILE,
         try_job_id)
 
     expected_compile_result = {
@@ -266,7 +266,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline = MonitorTryJobPipeline()
     test_result = pipeline.run(
-        master_name, builder_name, build_number, TryJobType.TEST,
+        master_name, builder_name, build_number, failure_type.TEST,
         try_job_id)
 
     expected_test_result = {
@@ -307,7 +307,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = MonitorTryJobPipeline()
     pipeline._UpdateTryJobResult(
         buildbucket_client.BuildbucketBuild.STARTED, master_name, builder_name,
-        build_number, TryJobType.TEST, try_job_id, 'url')
+        build_number, failure_type.TEST, try_job_id, 'url')
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(analysis_status.RUNNING, try_job.status)
 

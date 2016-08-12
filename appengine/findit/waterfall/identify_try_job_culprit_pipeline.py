@@ -10,12 +10,12 @@ from google.appengine.ext import ndb
 from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
+from common.waterfall import failure_type
 from model import analysis_status
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
-from waterfall.try_job_type import TryJobType
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 
@@ -280,7 +280,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     culprits = None
     if result and result.get('report'):
       try_job_data = WfTryJobData.Get(try_job_id)
-      if try_job_type == TryJobType.COMPILE:
+      if try_job_type == failure_type.COMPILE:
         # For compile failures, the try job will stop if one revision fails, so
         # the culprit will be the last revision in the result.
         failed_revision = _GetFailedRevisionFromCompileResult(result)
@@ -307,7 +307,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
       if culprits:
         result_to_update = (
             try_job_result.compile_results if
-            try_job_type == TryJobType.COMPILE else
+            try_job_type == failure_type.COMPILE else
             try_job_result.test_results)
         if (result_to_update and
             result_to_update[-1]['try_job_id'] == try_job_id):

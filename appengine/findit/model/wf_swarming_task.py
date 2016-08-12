@@ -64,6 +64,10 @@ class WfSwarmingTask(BaseBuildModel):
         classified_tests['reliable_tests'].append(test_name)
     return classified_tests
 
+  @property
+  def reliable_tests(self):
+    return self.classified_tests.get('reliable_tests', [])
+
   @staticmethod
   def _CreateKey(
       master_name, builder_name, build_number, step_name):  # pragma: no cover

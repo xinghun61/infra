@@ -41,3 +41,5 @@ class WfSwarmingTaskTest(unittest.TestCase):
     }
 
     self.assertEqual(expected_classified_tests, task.classified_tests)
+    self.assertEqual(expected_classified_tests['reliable_tests'],
+                     task.reliable_tests)

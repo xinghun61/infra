@@ -11,13 +11,13 @@ from google.appengine.ext import ndb
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
 from common.waterfall import buildbucket_client
+from common.waterfall import failure_type
 from common.waterfall import try_job_error
 from common.waterfall.buildbucket_client import BuildbucketBuild
 from model import analysis_status
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall import waterfall_config
-from waterfall.try_job_type import TryJobType
 
 
 def _MicrosecondsToDatetime(microseconds):
@@ -165,7 +165,7 @@ class MonitorTryJobPipeline(BasePipeline):
     }
 
     try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
-    if try_job_type == TryJobType.COMPILE:
+    if try_job_type == failure_type.COMPILE:
       result_to_update = try_job_result.compile_results
     else:
       result_to_update = try_job_result.test_results

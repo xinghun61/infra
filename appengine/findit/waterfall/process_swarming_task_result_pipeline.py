@@ -144,4 +144,4 @@ class ProcessSwarmingTaskResultPipeline(BasePipeline):
     task.completed_time = _ConvertDateTime(data.get('completed_ts'))
     task.put()
 
-    return step_name, (step_name_no_platform, task.classified_tests)
+    return step_name, (step_name_no_platform, task.reliable_tests)

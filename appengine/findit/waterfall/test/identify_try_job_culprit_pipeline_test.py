@@ -5,6 +5,7 @@
 from testing_utils import testing
 
 from common.git_repository import GitRepository
+from common.waterfall import failure_type
 from model import analysis_status
 from model import result_status
 from model.wf_analysis import WfAnalysis
@@ -13,7 +14,6 @@ from model.wf_try_job_data import WfTryJobData
 from waterfall import identify_try_job_culprit_pipeline
 from waterfall.identify_try_job_culprit_pipeline import(
     IdentifyTryJobCulpritPipeline)
-from waterfall.try_job_type import TryJobType
 
 
 class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
@@ -391,7 +391,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit = pipeline.run(
         master_name, builder_name, build_number, ['rev1'],
-        TryJobType.COMPILE, '1', None)
+        failure_type.COMPILE, '1', None)
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
 
     self.assertEqual(analysis_status.COMPLETED, try_job.status)
@@ -437,7 +437,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit = pipeline.run(
         master_name, builder_name, build_number, ['rev1'],
-        TryJobType.COMPILE, '1', compile_result)
+        failure_type.COMPILE, '1', compile_result)
 
     expected_culprit = 'rev2'
     expected_suspected_cl = {
@@ -498,7 +498,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit = pipeline.run(
         master_name, builder_name, build_number, ['rev1'],
-        TryJobType.COMPILE, '1', compile_result)
+        failure_type.COMPILE, '1', compile_result)
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
 
     self.assertIsNone(culprit)
@@ -526,7 +526,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit = pipeline.run(
         master_name, builder_name, build_number, ['rev1', 'rev2'],
-        TryJobType.TEST, '1', None)
+        failure_type.TEST, '1', None)
 
     self.assertIsNone(culprit)
 
@@ -562,7 +562,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit = pipeline.run(
         master_name, builder_name, build_number, ['rev1', 'rev2'],
-        TryJobType.TEST, '1', None)
+        failure_type.TEST, '1', None)
 
     self.assertIsNone(culprit)
 
@@ -604,7 +604,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
 
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit = pipeline.run(
-        master_name, builder_name, build_number, [], TryJobType.TEST, '1',
+        master_name, builder_name, build_number, [], failure_type.TEST, '1',
         test_result)
 
     self.assertIsNone(culprit)
@@ -646,7 +646,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
 
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit = pipeline.run(
-        master_name, builder_name, build_number, ['rev3'], TryJobType.TEST,
+        master_name, builder_name, build_number, ['rev3'], failure_type.TEST,
         '1', test_result)
 
     expected_suspected_cl = {
@@ -733,7 +733,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit = pipeline.run(
         master_name, builder_name, build_number, ['rev1', 'rev2'],
-        TryJobType.TEST, '1', test_result)
+        failure_type.TEST, '1', test_result)
 
     a_test1_suspected_cl = {
         'revision': 'rev1',
@@ -879,7 +879,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
 
     pipeline = IdentifyTryJobCulpritPipeline()
     pipeline.run(master_name, builder_name, build_number, ['rev1'],
-                 TryJobType.COMPILE, '1', compile_result)
+                 failure_type.COMPILE, '1', compile_result)
 
     self.assertEqual(analysis.result_status,
                      result_status.FOUND_UNTRIAGED)

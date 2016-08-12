@@ -13,24 +13,18 @@ from model.wf_failure_group import WfFailureGroup
 from model.wf_try_job import WfTryJob
 from waterfall import try_job_util
 from waterfall.test import wf_testcase
-from waterfall.try_job_type import TryJobType
-
-
-class _MockRootPipeline(object):
-  STARTED = False
-
-  def __init__(self, *_):
-    pass
-
-  def start(self, *_, **__):
-    _MockRootPipeline.STARTED = True
-
-  @property
-  def pipeline_status_path(self):
-    return 'path'
 
 
 class TryJobUtilTest(wf_testcase.WaterfallTestCase):
+
+  def testShouldBailOutforOutdatedBuild(self):
+    yesterday = datetime.utcnow() - timedelta(days=1)
+    build = WfBuild.Create('m', 'b', 1)
+    build.start_time = yesterday
+    self.assertTrue(try_job_util._ShouldBailOutForOutdatedBuild(build))
+
+    build.start_time = yesterday + timedelta(hours=1)
+    self.assertFalse(try_job_util._ShouldBailOutForOutdatedBuild(build))
 
   def testNotNeedANewTryJobIfBuilderIsNotSupportedYet(self):
     master_name = 'master3'
@@ -65,19 +59,14 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
                 'blame_list': ['223-1', '223-2', '223-3'],
                 'chromium_revision': '223-3'
             }
-        }
+        },
+        'failure_type': failure_type.COMPILE
     }
 
-    self.mock(
-        try_job_util.swarming_tasks_to_try_job_pipeline,
-        'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
-    _MockRootPipeline.STARTED = False
+    need_try_job = try_job_util.NeedANewTryJob(
+        master_name, builder_name, build_number, failure_info, None, None)
 
-    failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
-        failure_info, None, None)
-
-    self.assertFalse(_MockRootPipeline.STARTED)
-    self.assertEqual({}, failure_result_map)
+    self.assertFalse(need_try_job)
 
   def testBailOutForTestTryJob(self):
     master_name = 'master2'
@@ -100,10 +89,10 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         try_job_util, '_ShouldBailOutForOutdatedBuild',
         _MockShouldBailOutForOutdatedBuild)
 
-    failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
-        failure_info, None, None)
+    need_try_job = try_job_util.NeedANewTryJob(
+        master_name, builder_name, build_number, failure_info, None, None)
 
-    self.assertEqual({}, failure_result_map)
+    self.assertFalse(need_try_job)
 
   def testBailOutForTryJobWithOutdatedTimestamp(self):
     master_name = 'master1'
@@ -121,17 +110,13 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
                 'last_pass': 220
             }
         },
+        'failure_type': failure_type.COMPILE
     }
 
     yesterday = datetime.utcnow() - timedelta(days=1)
     build = WfBuild.Create(master_name, builder_name, build_number)
     build.start_time = yesterday
     build.put()
-
-    self.mock(
-        try_job_util.swarming_tasks_to_try_job_pipeline,
-        'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
-    _MockRootPipeline.STARTED = False
 
     def _MockShouldBailOutForOutdatedBuild(*_):
       return True
@@ -140,52 +125,10 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         try_job_util, '_ShouldBailOutForOutdatedBuild',
         _MockShouldBailOutForOutdatedBuild)
 
-    failure_result_map = try_job_util.ScheduleTryJobIfNeeded(
-        failure_info, None, None, False)
+    need_try_job = try_job_util.NeedANewTryJob(
+        master_name, builder_name, build_number, failure_info, None, None)
 
-    self.assertFalse(_MockRootPipeline.STARTED)
-    self.assertEqual({}, failure_result_map)
-
-  def testForceTryJob(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 223
-    WfAnalysis.Create(master_name, builder_name, build_number).put()
-    failure_info = {
-        'master_name': master_name,
-        'builder_name': builder_name,
-        'build_number': build_number,
-        'failed_steps': {
-            'compile': {
-                'current_failure': 223,
-                'first_failure': 223,
-                'last_pass': 222
-            }
-        },
-        'builds': {
-            '222': {
-                'blame_list': ['222-1'],
-                'chromium_revision': '222-1'
-            },
-            '223': {
-                'blame_list': ['223-1', '223-2', '223-3'],
-                'chromium_revision': '223-3'
-            }
-        },
-        'failure_type': failure_type.COMPILE
-    }
-
-    self.mock(
-        try_job_util.swarming_tasks_to_try_job_pipeline,
-        'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
-    _MockRootPipeline.STARTED = False
-
-    try_job_util.ScheduleTryJobIfNeeded(failure_info, None, None, True)
-
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
-
-    self.assertTrue(_MockRootPipeline.STARTED)
-    self.assertIsNotNone(try_job)
+    self.assertFalse(need_try_job)
 
   def testNotNeedANewTryJobIfNotFirstTimeFailure(self):
     master_name = 'm'
@@ -224,21 +167,18 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         'failure_type': failure_type.COMPILE
     }
 
-    self.mock(
-        try_job_util.swarming_tasks_to_try_job_pipeline,
-        'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
-    _MockRootPipeline.STARTED = False
+    WfAnalysis.Create(master_name, builder_name, build_number).put()
 
     def _MockShouldBailOutForOutdatedBuild(*_):
       return False
-
     self.mock(
         try_job_util, '_ShouldBailOutForOutdatedBuild',
         _MockShouldBailOutForOutdatedBuild)
 
-    try_job_util.ScheduleTryJobIfNeeded(failure_info, None, None)
+    need_try_job = try_job_util.NeedANewTryJob(
+        master_name, builder_name, build_number, failure_info, None, None)
 
-    self.assertFalse(_MockRootPipeline.STARTED)
+    self.assertFalse(need_try_job)
 
   def testBlameListsIntersect(self):
     self.assertFalse(try_job_util._BlameListsIntersection(['0'], ['1']))
@@ -863,97 +803,29 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
-  def testNeedANewTryJobForFirstFailureInGroup(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 223
-    builds = {
-        str(build_number): {
-            'blame_list': ['a']
-        }
-    }
-    failed_steps = {
-        'compile': {
-            'current_failure': 223,
-            'first_failure': 223,
-            'last_pass': 220
-        }
-    }
-    signals = {
-        'compile': {
-            'failed_output_nodes': [
-                'abc.obj'
-            ]
-        }
-    }
-
-    # Run _NeedANewTryJob with signals that have certain failed output nodes.
-    # Observe a need for a new try job.
-    WfAnalysis.Create(master_name, builder_name, build_number).put()
-    need_try_job, _, _, _ = try_job_util._NeedANewTryJob(
-        master_name, builder_name, build_number, failure_type.COMPILE,
-        failed_steps, {}, builds, signals, None)
-    self.assertTrue(need_try_job)
-
-  def testNotNeedANewTryJobForSecondFailureInGroup(self):
-    master_name = 'm'
-    master_name_2 = 'm2'
-    builder_name = 'b'
-    build_number = 223
-    builds = {
-        str(build_number): {
-            'blame_list': ['a']
-        }
-    }
-    failed_steps = {
-        'compile': {
-            'current_failure': 223,
-            'first_failure': 223,
-            'last_pass': 220
-        }
-    }
-
-    signals = {
-        'compile': {
-            'failed_output_nodes': [
-                'abc.obj'
-            ]
-        }
-    }
-
-    # Run _NeedANewTryJob with signals that have certain failed output nodes.
-    # This should create a new wf_failure_group.
-    WfAnalysis.Create(master_name, builder_name, build_number).put()
-    try_job_util._NeedANewTryJob(
-        master_name, builder_name, build_number, failure_type.COMPILE,
-        failed_steps, {}, builds, signals, None)
-    self.assertIsNotNone(
-        WfFailureGroup.Get(master_name, builder_name, build_number))
-
-    # Run _NeedANewTryJob with signals that have the same failed output nodes.
-    # Observe no need for a new try job.
-    WfAnalysis.Create(master_name_2, builder_name, build_number).put()
-    need_try_job, _, _, _ = try_job_util._NeedANewTryJob(
-        master_name_2, builder_name, build_number, failure_type.COMPILE,
-        failed_steps, {}, builds, signals, None)
-    self.assertFalse(need_try_job)
-
   def testNotNeedANewTryJobIfOneWithResultExists(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
-    WfAnalysis.Create(master_name, builder_name, build_number).put()
-    builds = {
-        str(build_number): {
-            'blame_list': ['a']
-        }
-    }
-    failed_steps = {
-        'compile': {
-            'current_failure': 223,
-            'first_failure': 223,
-            'last_pass': 220
-        }
+    failure_info = {
+        'failed_steps': {
+            'compile': {
+                'current_failure': 223,
+                'first_failure': 223,
+                'last_pass': 220
+            }
+        },
+        'builds': {
+            '222': {
+                'blame_list': ['222-1'],
+                'chromium_revision': '222-1'
+            },
+            '223': {
+                'blame_list': ['223-1', '223-2', '223-3'],
+                'chromium_revision': '223-3'
+            }
+        },
+        'failure_type': failure_type.COMPILE
     }
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
@@ -961,196 +833,164 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     try_job.status = analysis_status.COMPLETED
     try_job.put()
 
-    failure_result_map = {}
-    need_try_job, last_pass, try_job_type, targeted_tests = (
-        try_job_util._NeedANewTryJob(master_name, builder_name, build_number,
-                                     failure_type.COMPILE, failed_steps,
-                                     failure_result_map, builds, None, None))
+    WfAnalysis.Create(master_name, builder_name, build_number).put()
 
-    expected_failure_result_map = {
-        'compile': 'm/b/223'
-    }
+    def _MockShouldBailOutForOutdatedBuild(*_):
+      return False
+    self.mock(
+        try_job_util, '_ShouldBailOutForOutdatedBuild',
+        _MockShouldBailOutForOutdatedBuild)
+
+    need_try_job = try_job_util.NeedANewTryJob(
+        master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
-    self.assertEqual(expected_failure_result_map, failure_result_map)
-    self.assertEqual(220, last_pass)
-    self.assertEqual(TryJobType.COMPILE, try_job_type)
-    self.assertIsNone(targeted_tests)
 
   def testNeedANewTryJobIfExistingOneHasError(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
-    WfAnalysis.Create(master_name, builder_name, build_number).put()
-    builds = {
-        str(build_number): {
-            'blame_list': ['a']
-        }
-    }
-    failed_steps = {
-        'compile': {
-            'current_failure': 223,
-            'first_failure': 223,
-            'last_pass': 220
-        }
+    failure_info = {
+        'failed_steps': {
+            'compile': {
+                'current_failure': 223,
+                'first_failure': 223,
+                'last_pass': 220
+            }
+        },
+        'builds': {
+            '222': {
+                'blame_list': ['222-1'],
+                'chromium_revision': '222-1'
+            },
+            '223': {
+                'blame_list': ['223-1', '223-2', '223-3'],
+                'chromium_revision': '223-3'
+            }
+        },
+        'failure_type': failure_type.COMPILE
     }
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.status = analysis_status.ERROR
     try_job.put()
 
-    failure_result_map = {}
-    need_try_job, last_pass, try_job_type, targeted_tests = (
-        try_job_util._NeedANewTryJob(master_name, builder_name, build_number,
-                                     failure_type.COMPILE, failed_steps,
-                                     failure_result_map, builds, None, None))
+    WfAnalysis.Create(master_name, builder_name, build_number).put()
 
-    expected_failure_result_map = {
-        'compile': 'm/b/223'
-    }
+    def _MockShouldBailOutForOutdatedBuild(*_):
+      return False
+    self.mock(
+        try_job_util, '_ShouldBailOutForOutdatedBuild',
+        _MockShouldBailOutForOutdatedBuild)
+
+    need_try_job = try_job_util.NeedANewTryJob(
+        master_name, builder_name, build_number, failure_info, None, None)
+
     self.assertTrue(need_try_job)
-    self.assertEqual(expected_failure_result_map, failure_result_map)
-    self.assertEqual(220, last_pass)
-    self.assertEqual(TryJobType.COMPILE, try_job_type)
-    self.assertIsNone(targeted_tests)
 
-  def testNotNeedANewTryJobIfLastPassCannotDetermine(self):
+  def testNotNeedANewTryJobIfNoNewFailure(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
-    WfAnalysis.Create(master_name, builder_name, build_number).put()
-    builds = {
-        str(build_number): {
-            'blame_list': ['a']
-        }
-    }
-    failed_steps = {
-        'compile': {
-            'current_failure': 223,
-            'first_failure': 223
-        }
+    failure_info = {
+        'failed_steps': {
+            'a': {
+                'current_failure': 223,
+                'first_failure': 222,
+                'last_pass': 221,
+                'tests': {
+                    'a.t2': {
+                        'current_failure': 223,
+                        'first_failure': 222,
+                        'last_pass': 221
+                    }
+                }
+            }
+        },
+        'failure_type': failure_type.TEST
     }
 
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = analysis_status.ERROR
-    try_job.put()
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.failure_result_map = {
+        'a': {
+            'a.t2': 'm/b/222'
+        }
+    }
+    analysis.put()
 
-    failure_result_map = {}
-    need_try_job, last_pass, try_job_type, targeted_tests = (
-        try_job_util._NeedANewTryJob(master_name, builder_name, build_number,
-                                     failure_type.COMPILE, failed_steps,
-                                     failure_result_map, builds, None, None))
+    def _MockShouldBailOutForOutdatedBuild(*_):
+      return False
+    self.mock(
+        try_job_util, '_ShouldBailOutForOutdatedBuild',
+        _MockShouldBailOutForOutdatedBuild)
+
+    need_try_job = try_job_util.NeedANewTryJob(
+        master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
-    self.assertEqual({}, failure_result_map)
-    self.assertIsNone(last_pass)
-    self.assertEqual(TryJobType.COMPILE, try_job_type)
-    self.assertIsNone(targeted_tests)
-
-  def testNeedANewTryJobIfTestFailureNonSwarming(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 223
-    WfAnalysis.Create(master_name, builder_name, build_number).put()
-    builds = {
-        str(build_number): {
-            'blame_list': ['a']
-        }
-    }
-    failed_steps = {
-        'a': {
-            'current_failure': 223,
-            'first_failure': 223,
-            'last_pass': 222
-        },
-        'b': {
-            'current_failure': 223,
-            'first_failure': 222,
-            'last_pass': 221
-        }
-    }
-
-    failure_result_map = {}
-    need_try_job, last_pass, try_job_type, targeted_tests = (
-        try_job_util._NeedANewTryJob(master_name, builder_name, build_number,
-                                     failure_type.TEST, failed_steps,
-                                     failure_result_map, builds, None, None))
-
-    expected_failure_result_map = {
-        'a': 'm/b/223',
-        'b': 'm/b/222'
-    }
-
-    expected_targeted_tests = {
-        'a': []
-    }
-
-    self.assertTrue(need_try_job)
-    self.assertEqual(expected_failure_result_map, failure_result_map)
-    self.assertEqual(222, last_pass)
-    self.assertEqual('test', try_job_type)
-    self.assertEqual(expected_targeted_tests, targeted_tests)
 
   def testNeedANewTryJobIfTestFailureSwarming(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
-    WfAnalysis.Create(master_name, builder_name, build_number).put()
-    builds = {
-        str(build_number): {
-            'blame_list': ['a']
-        }
-    }
-    failed_steps = {
-        'a': {
-            'current_failure': 223,
-            'first_failure': 222,
-            'last_pass': 221,
-            'tests': {
-                'a.PRE_t1': {
-                    'current_failure': 223,
-                    'first_failure': 223,
-                    'last_pass': 221,
-                    'base_test_name': 'a.t1'
-                },
-                'a.t2': {
-                    'current_failure': 223,
-                    'first_failure': 222,
-                    'last_pass': 221
-                },
-                'a.t3': {
-                    'current_failure': 223,
-                    'first_failure': 223,
-                    'last_pass': 222
+    failure_info = {
+        'failed_steps': {
+            'a': {
+                'current_failure': 223,
+                'first_failure': 222,
+                'last_pass': 221,
+                'tests': {
+                    'a.PRE_t1': {
+                        'current_failure': 223,
+                        'first_failure': 223,
+                        'last_pass': 221,
+                        'base_test_name': 'a.t1'
+                    },
+                    'a.t2': {
+                        'current_failure': 223,
+                        'first_failure': 222,
+                        'last_pass': 221
+                    },
+                    'a.t3': {
+                        'current_failure': 223,
+                        'first_failure': 223,
+                        'last_pass': 222
+                    }
+                }
+            },
+            'b': {
+                'current_failure': 223,
+                'first_failure': 222,
+                'last_pass': 221,
+                'tests': {
+                    'b.t1': {
+                        'current_failure': 223,
+                        'first_failure': 222,
+                        'last_pass': 221
+                    },
+                    'b.t2': {
+                        'current_failure': 223,
+                        'first_failure': 222,
+                        'last_pass': 221
+                    }
                 }
             }
         },
-        'b': {
-            'current_failure': 223,
-            'first_failure': 222,
-            'last_pass': 221,
-            'tests': {
-                'b.t1': {
-                    'current_failure': 223,
-                    'first_failure': 222,
-                    'last_pass': 221
-                },
-                'b.t2': {
-                    'current_failure': 223,
-                    'first_failure': 222,
-                    'last_pass': 221
-                }
+        'builds': {
+            '222': {
+                'blame_list': ['222-1'],
+                'chromium_revision': '222-1'
+            },
+            '223': {
+                'blame_list': ['223-1', '223-2', '223-3'],
+                'chromium_revision': '223-3'
             }
-        }
+        },
+        'failure_type': failure_type.TEST
     }
 
-    failure_result_map = {}
-    need_try_job, last_pass, try_job_type, targeted_tests = (
-        try_job_util._NeedANewTryJob(master_name, builder_name, build_number,
-                                     failure_type.TEST, failed_steps,
-                                     failure_result_map, builds, None, None))
-
-    expected_failure_result_map = {
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.failure_result_map = {
         'a': {
             'a.PRE_t1': 'm/b/223',
             'a.t2': 'm/b/222',
@@ -1159,18 +999,20 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         'b': {
             'b.t1': 'm/b/222',
             'b.t2': 'm/b/222'
-        },
+        }
     }
+    analysis.put()
 
-    expected_targeted_tests = {
-        'a': ['a.t1', 'a.t3']
-    }
+    def _MockShouldBailOutForOutdatedBuild(*_):
+      return False
+    self.mock(
+        try_job_util, '_ShouldBailOutForOutdatedBuild',
+        _MockShouldBailOutForOutdatedBuild)
+
+    need_try_job = try_job_util.NeedANewTryJob(
+        master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertTrue(need_try_job)
-    self.assertEqual(expected_failure_result_map, failure_result_map)
-    self.assertEqual(221, last_pass)
-    self.assertEqual('test', try_job_type)
-    self.assertEqual(expected_targeted_tests, targeted_tests)
 
   def testNeedANewTryJob(self):
     master_name = 'm'
@@ -1200,73 +1042,138 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         'failure_type': failure_type.COMPILE
     }
 
-    self.mock(
-        try_job_util.swarming_tasks_to_try_job_pipeline,
-        'SwarmingTasksToTryJobPipeline', _MockRootPipeline)
-    _MockRootPipeline.STARTED = False
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.failure_result_map = {
+        'compile': 'm/b/223'
+    }
+    analysis.put()
 
     def _MockShouldBailOutForOutdatedBuild(*_):
       return False
-
     self.mock(
         try_job_util, '_ShouldBailOutForOutdatedBuild',
         _MockShouldBailOutForOutdatedBuild)
 
-    try_job_util.ScheduleTryJobIfNeeded(failure_info, None, None)
+    need_try_job = try_job_util.NeedANewTryJob(
+        master_name, builder_name, build_number, failure_info, None, None)
 
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertTrue(need_try_job)
 
-    self.assertTrue(_MockRootPipeline.STARTED)
-    self.assertIsNotNone(try_job)
-
-  def testUseFailedOutputNodesFromSignals(self):
-    signals = {
-        'compile': {
-            'failed_targets': [
-                {'target': 'a.exe'},
-                {'source': 'b.cc', 'target': 'b.o'},
-            ],
-            'failed_output_nodes': ['a', 'b'],
-        }
+  def testNotNeedANewTryJobForOtherType(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    failure_info = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failed_steps': {},
+        'builds': {
+            '222': {
+                'blame_list': ['222-1'],
+                'chromium_revision': '222-1'
+            },
+            '223': {
+                'blame_list': ['223-1', '223-2', '223-3'],
+                'chromium_revision': '223-3'
+            }
+        },
+        'failure_type': failure_type.UNKNOWN
     }
 
-    self.assertEqual(
-        try_job_util._GetFailedTargetsFromSignals(signals, 'm', 'b'),
-        ['a', 'b'])
+    def _MockShouldBailOutForOutdatedBuild(*_):
+      return False
+    self.mock(
+        try_job_util, '_ShouldBailOutForOutdatedBuild',
+        _MockShouldBailOutForOutdatedBuild)
 
-  def testGetFailedTargetsFromSignals(self):
-    self.assertEqual(
-        try_job_util._GetFailedTargetsFromSignals({}, 'm', 'b'), [])
+    need_try_job = try_job_util.NeedANewTryJob(
+        master_name, builder_name, build_number, failure_info, None, None)
 
-    self.assertEqual(
-        try_job_util._GetFailedTargetsFromSignals({'compile': {}}, 'm', 'b'),
-        [])
+    self.assertFalse(need_try_job)
 
-    signals = {
-        'compile': {
-            'failed_targets': [
-                {'target': 'a.exe'},
-                {'source': 'b.cc',
-                 'target': 'b.o'}]
-        }
+  def testNotNeedANewTryJobForCompileTypeNoFailureInfo(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    failure_info = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failed_steps': {},
+        'builds': {
+            '222': {
+                'blame_list': ['222-1'],
+                'chromium_revision': '222-1'
+            },
+            '223': {
+                'blame_list': ['223-1', '223-2', '223-3'],
+                'chromium_revision': '223-3'
+            }
+        },
+        'failure_type': failure_type.COMPILE
     }
 
-    self.assertEqual(
-        try_job_util._GetFailedTargetsFromSignals(signals, 'm', 'b'), ['a.exe'])
+    def _MockShouldBailOutForOutdatedBuild(*_):
+      return False
+    self.mock(
+        try_job_util, '_ShouldBailOutForOutdatedBuild',
+        _MockShouldBailOutForOutdatedBuild)
 
-  def testUseObjectFilesAsFailedTargetIfStrictRegexUsed(self):
-    signals = {
-        'compile': {
-            'failed_targets': [
-                {'source': 'b.cc', 'target': 'b.o'},
-            ]
-        }
+    need_try_job = try_job_util.NeedANewTryJob(
+        master_name, builder_name, build_number, failure_info, None, None)
+
+    self.assertFalse(need_try_job)
+
+  def testForceTryJob(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    failure_info = {
+        'failed_steps': {
+            'a': {
+                'current_failure': 223,
+                'first_failure': 223,
+                'last_pass': 222,
+                'tests': {
+                    'a.t2': {
+                        'current_failure': 223,
+                        'first_failure': 223,
+                        'last_pass': 222
+                    }
+                }
+            }
+        },
+        'builds': {
+            '222': {
+                'blame_list': ['222-1'],
+                'chromium_revision': '222-1'
+            },
+            '223': {
+                'blame_list': ['223-1', '223-2', '223-3'],
+                'chromium_revision': '223-3'
+            }
+        },
+        'failure_type': failure_type.TEST
     }
 
-    self.assertEqual(
-        try_job_util._GetFailedTargetsFromSignals(
-            signals, 'master1', 'builder1'),
-        ['b.o'])
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.compile_results = [['rev', 'failed']]
+    try_job.status = analysis_status.COMPLETED
+    try_job.put()
+
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.failure_result_map = {
+        'a': {
+            'a.t2': 'm/b/223'
+        }
+    }
+    analysis.put()
+
+    need_try_job = try_job_util.NeedANewTryJob(
+        master_name, builder_name, build_number, failure_info, None, None, True)
+
+    self.assertTrue(need_try_job)
 
   def testGetSuspectedCLsWithFailuresNoHeuristicResult(self):
     heuristic_result = None
@@ -1342,64 +1249,51 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         expected_suspected_revisions,
         sorted(try_job_util.GetSuspectedCLsWithFailures(heuristic_result)))
 
-  def testGetSuspectsFromHeuristicResultForCompile(self):
-    heuristic_result = {
-        'failures': [
-            {
-                'step_name': 'compile',
-                'suspected_cls': [
-                    {
-                        'revision': 'r1',
-                    },
-                    {
-                        'revision': 'r2',
-                    },
-                ],
-            },
-        ]
+  def testUseFailedOutputNodesFromSignals(self):
+    signals = {
+        'compile': {
+            'failed_targets': [
+                {'target': 'a.exe'},
+                {'source': 'b.cc', 'target': 'b.o'},
+            ],
+            'failed_output_nodes': ['a', 'b'],
+        }
     }
-    expected_suspected_revisions = ['r1', 'r2']
-    self.assertEqual(
-        expected_suspected_revisions,
-        try_job_util._GetSuspectsFromHeuristicResult(heuristic_result))
 
-  def testGetSuspectsFromHeuristicResultForTest(self):
-    heuristic_result = {
-        'failures': [
-            {
-                'step_name': 'step1',
-                'suspected_cls': [
-                    {
-                        'revision': 'r1',
-                    },
-                    {
-                        'revision': 'r2',
-                    },
-                ],
-            },
-            {
-                'step_name': 'step2',
-                'suspected_cls': [
-                    {
-                        'revision': 'r1',
-                    },
-                    {
-                        'revision': 'r3',
-                    },
-                ],
-            },
-        ]
+    self.assertEqual(
+        try_job_util.GetFailedTargetsFromSignals(signals, 'm', 'b'),
+        ['a', 'b'])
+
+  def testGetFailedTargetsFromSignals(self):
+    self.assertEqual(
+        try_job_util.GetFailedTargetsFromSignals({}, 'm', 'b'), [])
+
+    self.assertEqual(
+        try_job_util.GetFailedTargetsFromSignals({'compile': {}}, 'm', 'b'),
+        [])
+
+    signals = {
+        'compile': {
+            'failed_targets': [
+                {'target': 'a.exe'},
+                {'source': 'b.cc',
+                 'target': 'b.o'}]
+        }
     }
-    expected_suspected_revisions = ['r1', 'r2', 'r3']
+
     self.assertEqual(
-        expected_suspected_revisions,
-        try_job_util._GetSuspectsFromHeuristicResult(heuristic_result))
+        try_job_util.GetFailedTargetsFromSignals(signals, 'm', 'b'), ['a.exe'])
 
-  def testShouldBailOutforOutdatedBuild(self):
-    yesterday = datetime.utcnow() - timedelta(days=1)
-    build = WfBuild.Create('m', 'b', 1)
-    build.start_time = yesterday
-    self.assertTrue(try_job_util._ShouldBailOutForOutdatedBuild(build))
+  def testUseObjectFilesAsFailedTargetIfStrictRegexUsed(self):
+    signals = {
+        'compile': {
+            'failed_targets': [
+                {'source': 'b.cc', 'target': 'b.o'},
+            ]
+        }
+    }
 
-    build.start_time = yesterday + timedelta(hours=1)
-    self.assertFalse(try_job_util._ShouldBailOutForOutdatedBuild(build))
+    self.assertEqual(
+        try_job_util.GetFailedTargetsFromSignals(
+            signals, 'master1', 'builder1'),
+        ['b.o'])

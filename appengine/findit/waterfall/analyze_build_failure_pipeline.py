@@ -70,6 +70,8 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     # The yield statements below return PipelineFutures, which allow subsequent
     # pipelines to refer to previous output values.
     # https://github.com/GoogleCloudPlatform/appengine-pipelines/wiki/Python
+
+    # Heuristic Approach.
     failure_info = yield DetectFirstFailurePipeline(
         master_name, builder_name, build_number)
     change_logs = yield PullChangelogPipeline(failure_info)
@@ -78,11 +80,14 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     heuristic_result = yield IdentifyCulpritPipeline(
         failure_info, change_logs, deps_info, signals, build_completed)
 
+    # Try job Approach.
     with pipeline.InOrder():
-      # Triggers swarming tasks when test failure happens.
+      # Swarming rerun.
+      # Triggers swarming tasks when first time test failure happens.
+      # This pipeline will run before build completes.
       yield TriggerSwarmingTasksPipeline(
           master_name, builder_name, build_number, failure_info)
-      # Checks if need a try job and starts one if yes.
+      # Checks if first time failures happen and starts a try job if yes.
       yield StartTryJobOnDemandPipeline(
-          failure_info, signals, build_completed, force_rerun_try_job,
-          heuristic_result)
+          master_name, builder_name, build_number, failure_info,
+          signals, heuristic_result, build_completed, force_rerun_try_job)

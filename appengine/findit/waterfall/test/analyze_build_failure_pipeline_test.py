@@ -7,6 +7,7 @@ import os
 from common import constants
 from common import chromium_deps
 from common.pipeline_wrapper import pipeline_handlers
+from common.waterfall import failure_type
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from waterfall import analyze_build_failure_pipeline
@@ -58,22 +59,21 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
         analyze_build_failure_pipeline.TriggerSwarmingTasksPipeline,
         None,
         expected_args=[
-            master_name, builder_name, build_number,
-            'failure_info'],
+            master_name, builder_name, build_number, 'failure_info'],
         expected_kwargs={})
     self.MockPipeline(
         analyze_build_failure_pipeline.StartTryJobOnDemandPipeline,
-        None,
+        'try_job_result',
         expected_args=[
-            'failure_info', 'signals', False, True,
-            'heuristic_result'],
+            master_name, builder_name, build_number, 'failure_info', 'signals',
+            'heuristic_result', False, False],
         expected_kwargs={})
 
     root_pipeline = AnalyzeBuildFailurePipeline(master_name,
                                                 builder_name,
                                                 build_number,
                                                 False,
-                                                True)
+                                                False)
     root_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 

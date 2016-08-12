@@ -173,7 +173,7 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(self.step_name, step_name)
     self.assertEqual('abc_tests', task_info[0])
-    self.assertEqual(_EXPECTED_CLASSIFIED_TESTS, task_info[1])
+    self.assertEqual(_EXPECTED_CLASSIFIED_TESTS['reliable_tests'], task_info[1])
 
     task = WfSwarmingTask.Get(
         self.master_name, self.builder_name, self.build_number, self.step_name)
@@ -203,7 +203,7 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(self.step_name, step_name)
     self.assertIsNone(task_info[0])
-    self.assertEqual({}, task_info[1])
+    self.assertEqual([], task_info[1])
 
     task = WfSwarmingTask.Get(
         self.master_name, self.builder_name, self.build_number, self.step_name)
@@ -234,7 +234,7 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(self.step_name, step_name)
     self.assertEqual('abc_tests', task_info[0])
-    self.assertEqual({}, task_info[1])
+    self.assertEqual([], task_info[1])
 
     task = WfSwarmingTask.Get(
         self.master_name, self.builder_name, self.build_number, self.step_name)
