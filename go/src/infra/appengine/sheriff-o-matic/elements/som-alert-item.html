@@ -5,6 +5,7 @@
 <link rel="import" href="/bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="/bower_components/paper-button/paper-button.html">
 <link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/elements/som-examine.html">
 <link rel="import" href="/elements/som-extension-build-failure.html">
 <link rel="import" href="/elements/som-uberify-behavior.html">
 
@@ -133,8 +134,9 @@
           </div>
           <div class="alert-expanded layout horizontal wrap">
             <div class="alert-controls layout horizontal center flex-child">
-              <a href$="[[tree]]/examine/[[alert.key]]" class="examine-link">Examine</a>
-              <paper-button class="horizontal layout center" id="link-bug" on-tap="_fileBug" alt="Link a bug" raised noink>
+              <a href$="[[tree]]/examine/[[alert.key]]" class="examine-link" hidden$="[[examining]]">Examine</a>
+              <a href$="[[tree]]" class="examine-link" hidden$="[[!examining]]">[[tree]]</a>
+              <paper-button class="horizontal layout center" id="link-bug" on-tap="_linkBug" alt="Link a bug" raised noink>
                 <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
                 Link Bug
               </paper-button>
@@ -193,6 +195,10 @@
 
       properties: {
         alert: Object,
+        examining: {
+          type: Boolean,
+          value: false,
+        },
         tree: String,
         annotation: Object,
         _cssClass: {
@@ -275,7 +281,7 @@
         return snoozed ? 'alarm-off' : 'alarm';
       },
 
-      _fileBug: function(evt) {
+      _linkBug: function(evt) {
         this.fire('link-bug');
       },
 

@@ -58,6 +58,9 @@
       #bugDialog, #snoozeDialog {
         width: 300px;
       }
+      #examineAlert {
+        height: 100%;
+      }
       #fetchAlertsError {
         color: #f00;
         margin: 1em;
@@ -194,9 +197,20 @@
               </template>
             </div>
           </div>
-          <div id="examineAlert" class="flex layout vertical page-body">
-            <som-examine alert="[[_examinedAlert]]" class="flex layout vertical"></som-examine>
-          </div>
+          <template is="dom-if" if="[[_examinedAlert]]">
+            <div id="examineAlert" class="flex layout vertical page-body">
+              <som-alert-item
+                  alert="{{_examinedAlert}}"
+                  tree="[[_tree]]"
+                  annotation="[[_computeAnnotation(annotations, _examinedAlert)]]"
+                  on-annotation-change="_handleAnnotation"
+                  on-link-bug="_handleLinkBug"
+                  on-snooze="_handleSnooze"
+                  examining
+              ></som-alert-item>
+              <som-examine alert="[[_examinedAlert]]" class="flex layout vertical"></som-examine>
+            </div>
+          </template>
           <som-help id="helpSOM" class="page-body"></som-help>
           <template is="dom-if" if="[[_showRotationCalendar]]">
             <som-rotation-calendar id="rotationCalendar" class="flex layout vertical page-body"></som-rotation-calendar>
@@ -497,6 +511,7 @@
         if (examinedAlert) {
           return examinedAlert;
         }
+        return {};
       },
 
       _computeLastUpdated: function(alertsTimes) {
@@ -671,7 +686,7 @@
 
       _handleAnnotation: function(evt) {
         this._sendAnnotation(
-          evt.model.alert.key, evt.detail.type,
+          evt.target.alert.key, evt.detail.type,
           evt.detail.change);
       },
 
@@ -722,7 +737,7 @@
       },
 
       _handleLinkBug: function(evt) {
-        this._bugModel = evt.model.alert;
+        this._bugModel = evt.target.alert;
         this.$.fileBugLink.href = 'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=&summary='
           + this._bugModel.title + '&comment=' + encodeURIComponent(this._commentForBug(this._bugModel));
         this._filedBug = false;
@@ -755,7 +770,7 @@
       ////////////////////// Snooze ///////////////////////////
 
       _handleSnooze: function(evt) {
-        this._snoozeModel = evt.model.alert;
+        this._snoozeModel = evt.target.alert;
         this.$.snoozeTime.value = DEFAULT_SNOOZE_TIME_MIN;
         this._snoozeErrorMessage = '';
         this.$.snoozeDialog.open();
