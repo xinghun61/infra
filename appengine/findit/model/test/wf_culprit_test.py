@@ -4,17 +4,11 @@
 
 import unittest
 
-from google.appengine.ext import ndb
-
 from model import analysis_status as status
 from model.wf_culprit import WfCulprit
 
 
 class WfCulpritTest(unittest.TestCase):
-  def testProjectName(self):
-    culprit = WfCulprit.Create('chromium', 'r1', 123)
-    self.assertEqual('chromium', culprit.project_name)
-
   def testCrNotificationProcessed(self):
     culprit = WfCulprit.Create('chromium', 'r1', 123)
     for s in (status.COMPLETED, status.RUNNING):
