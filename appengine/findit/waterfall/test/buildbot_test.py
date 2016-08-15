@@ -333,7 +333,6 @@ class BuildBotTest(unittest.TestCase):
         'sbox_integration_tests',
         'sbox_validation_tests',
         'sql_unittests',
-        'sync_unit_tests',
         'ui_base_unittests',
         'url_unittests',
         'views_unittests',

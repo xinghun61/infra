@@ -317,10 +317,6 @@
     ], 
     [
       "stdio", 
-      "http://build.chromium.org/p/chromium.win/builders/XP%20Tests%20%281%29/builds/34239/steps/sync_unit_tests/logs/stdio"
-    ], 
-    [
-      "stdio", 
       "http://build.chromium.org/p/chromium.win/builders/XP%20Tests%20%281%29/builds/34239/steps/ui_base_unittests/logs/stdio"
     ], 
     [
@@ -2251,27 +2247,6 @@
       "times": [
         1417473327.668274, 
         1417473350.846288
-      ]
-    }, 
-    {
-      "isFinished": true, 
-      "isStarted": true, 
-      "logs": [
-        [
-          "stdio", 
-          "http://build.chromium.org/p/chromium.win/builders/XP%20Tests%20%281%29/builds/34239/steps/sync_unit_tests/logs/stdio"
-        ]
-      ], 
-      "name": "sync_unit_tests", 
-      "step_number": 53, 
-      "text": [
-        "sync_unit_tests", 
-        "sync_unit_tests", 
-        "3 disabled"
-      ], 
-      "times": [
-        1417473350.847098, 
-        1417473407.304111
       ]
     }, 
     {
