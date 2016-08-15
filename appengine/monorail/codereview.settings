@@ -3,9 +3,10 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
-# This file is used by gcl to get repository specific information.
 CODE_REVIEW_SERVER: https://codereview.chromium.org
-VIEW_VC: https://chromium.googlesource.com/infra/infra/+/
-CC_LIST: chromium-reviews@chromium.org, infra-reviews+infra@chromium.org, jrobbins+catch-up@google.com
-PROJECT: infra
 BUG_PREFIX: monorail:
+CC_LIST: chromium-reviews@chromium.org, infra-reviews+infra@chromium.org, jrobbins+catch-up@google.com
+GERRIT_HOST: True
+GERRIT_SQUASH_UPLOADS: True
+PROJECT: infra
+VIEW_VC: https://chromium.googlesource.com/infra/infra/+/
