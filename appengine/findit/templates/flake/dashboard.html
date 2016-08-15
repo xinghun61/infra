@@ -3,6 +3,11 @@
   <title>Flake Dashboard</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
+  <style type="text/css">
+    input[type="text"] {
+      width: 200px;
+    }
+  </style>
 </head>
 <body>
 <h1> Flake Dashboard </h1>
@@ -15,6 +20,7 @@
     <p> test_name <input type="text" name="test_name" id="test_name" size="200"/> </p>
     <input type="submit" value="Filter Regression Ranges">
   </form>
+<br><br><br>
 <table>
 <tr>
         <th>Master Name</th>
@@ -32,7 +38,6 @@
 <td>  {{master_flake_analysis.build_number}}</td>
 <td>  {{master_flake_analysis.step_name}}</td>
 <td>  {{master_flake_analysis.test_name}}</td>
-
 <td>
 <form method="get" action="/waterfall/check-flake">
  <input type="hidden" name="master_name" value="{{master_flake_analysis.master_name}}">

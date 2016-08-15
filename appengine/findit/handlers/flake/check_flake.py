@@ -28,7 +28,7 @@ class CheckFlake(BaseHandler):
         master_name, builder_name, build_number, step_name,
         test_name, force=force, queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
     data = {
-        'success_rates':[]
+        'success_rates': []
     }
     for (build_number, success_rate) in zip(
         master_flake_analysis.build_numbers,
