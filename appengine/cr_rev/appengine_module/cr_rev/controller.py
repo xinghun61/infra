@@ -532,10 +532,10 @@ def fetch_by_number(number, numbering_type, repo=None, project=None, ref=None):
   return fetch_obj
 
 
-RIETVELD_REGEX = re.compile(r'\d{8,39}')
+RIETVELD_REGEX = re.compile(r'\d{8,39}$')
 NUMBER_REGEX = re.compile(r'\d{1,8}$')
-SHORT_GIT_SHA = re.compile(r'[a-fA-F0-9]{6,39}')
-FULL_GIT_SHA = re.compile(r'[a-fA-F0-9]{40}')
+SHORT_GIT_SHA = re.compile(r'[a-fA-F0-9]{6,39}$')
+FULL_GIT_SHA = re.compile(r'[a-fA-F0-9]{40}$')
 
 
 def fetch_default_number(number):
@@ -591,6 +591,10 @@ def calculate_redirect(arg):
           git_sha=revision_map.git_sha,
           repo_url=repo_url,
       )
+    return models.Redirect(
+        redirect_type=models.RedirectType.GIT_FULL,
+        redirect_url='https://chromium.googlesource.com/chromium/src/+/%s' % (
+          arg,))
 
   if RIETVELD_REGEX.match(arg):
     return models.Redirect(

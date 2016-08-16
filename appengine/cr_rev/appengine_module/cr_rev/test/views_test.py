@@ -118,3 +118,10 @@ class TestViews(testing.AppengineTestCase):
     self.assertEqual(
         response.location,
         'https://chromium.googlesource.com/chromium/src/+/deadbeef')
+
+  def test_redirect_semi_short_git_sha(self):
+    """Test that partially numeric git shas aren't considered rietveld."""
+    response = self.test_app.get('/10000000e', status=302)
+    self.assertEqual(
+        response.location,
+        'https://chromium.googlesource.com/chromium/src/+/10000000e')

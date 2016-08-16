@@ -224,7 +224,7 @@ class TestController(testing.AppengineTestCase):
     generated = controller.calculate_redirect(query)
 
     expected = models.Redirect(
-        redirect_type=models.RedirectType.GIT_SHORT,
+        redirect_type=models.RedirectType.GIT_FULL,
         redirect_url='https://chromium.googlesource.com/chromium/src/+/%s' % (
           query,),
     )
