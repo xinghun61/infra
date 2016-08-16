@@ -119,7 +119,7 @@ func TestFullResult(t *testing.T) {
 								},
 								"baax": &AggregateTestLeaf{
 									Results:  []ResultSummary{{1, "PAC"}},
-									Runtimes: []RuntimeSummary{{1, 20.9}},
+									Runtimes: []RuntimeSummary{{1, 21}},
 									Expected: []string{"PASS", "CRASH"},
 									Bugs:     []string{"crbug.com/700", "crbug.com/900"},
 								},

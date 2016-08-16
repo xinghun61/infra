@@ -1,0 +1,105 @@
+ADD_RESULTS({
+    "seconds_since_epoch": 1368146629,
+    "tests": {
+        "media": {
+            "encrypted-media": {
+                "random-test-1.html": {
+                    "bugs": ["crbug.com/1234"],
+                    "expected": "TIMEOUT",
+                    "actual": "TIMEOUT",
+                    "time": 6.0
+                },
+                "random-test-2.html": {
+                    "expected": "TIMEOUT",
+                    "actual": "TIMEOUT"
+                }
+            },
+            "progress-events-generated-correctly.html": {
+                "expected": "PASS FAIL IMAGE TIMEOUT CRASH MISSING",
+                "actual": "TIMEOUT",
+                "time": 6.0
+            },
+            "W3C": {
+                "audio": {
+                    "src": {
+                        "src_removal_does_not_trigger_loadstart.html": {
+                            "expected": "PASS",
+                            "actual": "PASS",
+                            "time": 3.5
+                        }
+                    }
+                },
+                "video": {
+                    "src": {
+                        "src_removal_does_not_trigger_loadstart.html": {
+                            "expected": "PASS",
+                            "actual": "PASS",
+                            "time": 1.1
+                        },
+                        "notrun.html": {
+                            "expected": "NOTRUN",
+                            "actual": "SKIP",
+                            "time": 1.1
+                        }
+                    }
+                }
+            },
+            "unexpected-skip.html": {
+                "expected": "PASS",
+                "actual": "SKIP"
+            },
+            "unexpected-fail.html": {
+                "expected": "PASS",
+                "actual": "FAIL"
+            },
+            "flaky-failed.html": {
+                "expected": "PASS FAIL",
+                "actual": "FAIL"
+            },
+            "media-document-audio-repaint.html": {
+                "expected": "IMAGE",
+                "actual": "IMAGE",
+                "time": 0.1
+            },
+            "unexpected-leak.html": {
+                "expected": "PASS",
+                "actual": "LEAK"
+            },
+            "unexpected-flake.html": {
+                "expected": "PASS",
+                "actual": "FAIL PASS"
+            },
+            "unexpected-unexpected.html": {
+                "expected": "PASS",
+                "actual": "NOT_A_REAL_RESULT_TYPE"
+            }
+        }
+    },
+    "skipped": 2,
+    "num_regressions": 0,
+    "build_number": "3",
+    "interrupted": false,
+    "layout_tests_dir": "\/tmp\/cr\/src\/third_party\/WebKit\/LayoutTests",
+    "version": 3,
+    "builder_name": "Webkit",
+    "num_passes": 10,
+    "pixel_tests_enabled": true,
+    "has_pretty_patch": true,
+    "fixable": 25,
+    "num_flaky": 0,
+    "num_failures_by_type": {
+        "CRASH": 3,
+        "MISSING": 0,
+        "TEXT": 3,
+        "IMAGE": 1,
+        "PASS": 10,
+        "SKIP": 2,
+        "TIMEOUT": 16,
+        "IMAGE+TEXT": 0,
+        "FAIL": 2,
+        "AUDIO": 0,
+        "LEAK": 1
+    },
+    "has_wdiff": true,
+    "chromium_revision": "5678"
+});

@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"errors"
+	"math"
 	"strings"
 )
 
@@ -283,11 +284,18 @@ func (l *FullTestLeaf) AggregateTestLeaf() (AggregateTestLeaf, error) {
 
 	var time float64
 	if l.Runtime != nil {
-		time = *l.Runtime
+		time = float64(round(*l.Runtime))
 	}
 	ret.Runtimes = []RuntimeSummary{{1, time}}
 
 	return ret, nil
+}
+
+func round(f float64) int {
+	if math.Abs(f) < 0.5 {
+		return 0
+	}
+	return int(f + math.Copysign(0.5, f))
 }
 
 // MarshalJSON marshals l into JSON.

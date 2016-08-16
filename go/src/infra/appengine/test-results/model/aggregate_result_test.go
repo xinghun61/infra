@@ -413,3 +413,1460 @@ func TestAggregateResult(t *testing.T) {
 		})
 	})
 }
+
+func TestMerge(t *testing.T) {
+	t.Parallel()
+
+	Convey("Merge", t, func() {
+		Convey("AggregateTestLeaf", func() {
+			leaf := &AggregateTestLeaf{
+				Bugs:     []string{"crbug.com/baz"},
+				Expected: []string{"FAIL"},
+				Results:  []ResultSummary{{2, "P"}, {30, "F"}},
+				Runtimes: []RuntimeSummary{{1, 500}, {4, 750}, {1, 250}},
+			}
+			x := &AggregateTestLeaf{
+				Bugs:     []string{"crbug.com/foo", "crbug.com/bar"},
+				Results:  []ResultSummary{{1, "P"}, {42, "X"}},
+				Runtimes: []RuntimeSummary{{2, 5000}, {4, 5000}, {8, 6000}},
+			}
+
+			Convey("Use x.Bugs, x.Expected", func() {
+				x.Expected = []string{"FAIL PASS"}
+				So(leaf.Merge(x), ShouldBeNil)
+				So(leaf.Bugs, ShouldResemble, x.Bugs)
+				So(leaf.Expected, ShouldResemble, x.Expected)
+			})
+
+			Convey(`Do not use x.Expected if == "PASS"`, func() {
+				x.Expected = []string{"PASS"}
+				So(leaf.Merge(x), ShouldBeNil)
+				So(leaf.Bugs, ShouldResemble, x.Bugs)
+				So(leaf.Expected, ShouldResemble, []string{"FAIL"})
+			})
+
+			Convey("Merge matching Results", func() {
+				So(leaf.Merge(x), ShouldBeNil)
+				So(leaf.Results, ShouldResemble, []ResultSummary{
+					{42, "X"},
+					{3, "P"},
+					{30, "F"},
+				})
+			})
+
+			Convey("Merge matching Runtimes", func() {
+				So(leaf.Merge(x), ShouldBeNil)
+				So(leaf.Runtimes, ShouldResemble, []RuntimeSummary{
+					{8, 6000},
+					{6, 5000},
+					{1, 500},
+					{4, 750},
+					{1, 250},
+				})
+			})
+		})
+
+		Convey("AggregateTest", func() {
+			Convey("Join all AggregateTest multi-level", func() {
+				at := AggregateTest{
+					"foo": &AggregateTestLeaf{
+						Results:  []ResultSummary{{10, "P"}},
+						Runtimes: []RuntimeSummary{{1, 2}},
+					},
+					"qux": AggregateTest{
+						"experiment": &AggregateTestLeaf{
+							Results:  []ResultSummary{{20, "A"}},
+							Runtimes: []RuntimeSummary{{3, 5}},
+						},
+						"paper": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "B"}},
+							Runtimes: []RuntimeSummary{{30, 10}},
+						},
+					},
+				}
+				x := AggregateTest{
+					"bar": &AggregateTestLeaf{
+						Results:  []ResultSummary{{20, "F"}},
+						Runtimes: []RuntimeSummary{{3, 0}},
+					},
+					"qux": AggregateTest{
+						"paper": &AggregateTestLeaf{
+							Results:  []ResultSummary{{6, "F"}},
+							Runtimes: []RuntimeSummary{{2, 3}},
+						},
+						"pencil": &AggregateTestLeaf{
+							Results:  []ResultSummary{{75, "Z"}},
+							Runtimes: []RuntimeSummary{{15, 60}},
+						},
+					},
+				}
+				expected := AggregateTest{
+					"foo": &AggregateTestLeaf{
+						Results:  []ResultSummary{{1, "N"}, {10, "P"}},
+						Runtimes: []RuntimeSummary{{1, 0}, {1, 2}},
+					},
+					"bar": &AggregateTestLeaf{
+						Results:  []ResultSummary{{20, "F"}},
+						Runtimes: []RuntimeSummary{{3, 0}},
+					},
+					"qux": AggregateTest{
+						"experiment": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "N"}, {20, "A"}},
+							Runtimes: []RuntimeSummary{{1, 0}, {3, 5}},
+						},
+						"paper": &AggregateTestLeaf{
+							Results:  []ResultSummary{{6, "F"}, {1, "B"}},
+							Runtimes: []RuntimeSummary{{2, 3}, {30, 10}},
+						},
+						"pencil": &AggregateTestLeaf{
+							Results:  []ResultSummary{{75, "Z"}},
+							Runtimes: []RuntimeSummary{{15, 60}},
+						},
+					},
+				}
+				So(at.Merge(x), ShouldBeNil)
+				So(at, ShouldResemble, expected)
+			})
+
+			Convey("Mismatched type", func() {
+				Convey("Merge AggregateTestLeaf into AggregateTest", func() {
+					at := AggregateTest{
+						"foo": AggregateTest{
+							"bar": &AggregateTestLeaf{
+								Results:  []ResultSummary{{10, "P"}},
+								Runtimes: []RuntimeSummary{{1, 2}},
+							},
+						},
+					}
+					x := AggregateTest{
+						"foo": AggregateTest{
+							"bar": AggregateTest{
+								"baz": &AggregateTestLeaf{
+									Results:  []ResultSummary{{20, "F"}},
+									Runtimes: []RuntimeSummary{{3, 0}},
+								},
+							},
+						},
+					}
+					err := at.Merge(x)
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, " *AggregateTestLeaf")
+				})
+
+				Convey("Merge AggregateTest into AggregateTestLeaf", func() {
+					at := AggregateTest{
+						"foo": AggregateTest{
+							"bar": &AggregateTestLeaf{
+								Results:  []ResultSummary{{10, "P"}},
+								Runtimes: []RuntimeSummary{{1, 2}},
+							},
+						},
+					}
+					x := AggregateTest{
+						"foo": &AggregateTestLeaf{
+							Results:  []ResultSummary{{20, "F"}},
+							Runtimes: []RuntimeSummary{{3, 0}},
+						},
+					}
+					err := at.Merge(x)
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, " AggregateTest")
+				})
+			})
+
+			Convey("Merge (all together)", func() {
+				at := AggregateTest{
+					"presentation": AggregateTest{
+						"presentation": &AggregateTestLeaf{
+							Results:  []ResultSummary{{10, "P"}},
+							Runtimes: []RuntimeSummary{{1, 2}},
+						},
+						"readme": &AggregateTestLeaf{
+							Results:  []ResultSummary{{20, "Q"}},
+							Runtimes: []RuntimeSummary{{3, 4}},
+						},
+					},
+					"io": AggregateTest{
+						"serial": &AggregateTestLeaf{
+							Results:  []ResultSummary{{40, "S"}},
+							Runtimes: []RuntimeSummary{{8, 9}},
+						},
+					},
+					"hello": AggregateTest{
+						"world": AggregateTest{
+							"main": &AggregateTestLeaf{
+								Results:  []ResultSummary{{50, "T"}},
+								Runtimes: []RuntimeSummary{{10, 11}},
+							},
+						},
+					},
+				}
+				x := AggregateTest{
+					"presentation": AggregateTest{
+						"presentation": &AggregateTestLeaf{
+							Results:  []ResultSummary{{10, "A"}},
+							Runtimes: []RuntimeSummary{{1, 2}},
+						},
+						"readme": &AggregateTestLeaf{
+							Results:  []ResultSummary{{10, "B"}},
+							Runtimes: []RuntimeSummary{{1, 2}},
+						},
+					},
+					"io": AggregateTest{
+						"analog": &AggregateTestLeaf{
+							Results:  []ResultSummary{{10, "D"}},
+							Runtimes: []RuntimeSummary{{3, 0}},
+						},
+						"parallel": AggregateTest{
+							"duplex": &AggregateTestLeaf{
+								Results:  []ResultSummary{{10, "E"}},
+								Runtimes: []RuntimeSummary{{3, 5}},
+							},
+							"simplex": &AggregateTestLeaf{
+								Results:  []ResultSummary{{60, "H"}},
+								Runtimes: []RuntimeSummary{{30, 50}},
+							},
+						},
+					},
+					"cool": AggregateTest{
+						"world": AggregateTest{
+							"main": &AggregateTestLeaf{
+								Results:  []ResultSummary{{10, "F"}},
+								Runtimes: []RuntimeSummary{{3, 6}},
+							},
+						},
+					},
+				}
+				expected := AggregateTest{
+					"presentation": AggregateTest{
+						"presentation": &AggregateTestLeaf{
+							Results:  []ResultSummary{{10, "A"}, {10, "P"}},
+							Runtimes: []RuntimeSummary{{2, 2}},
+						},
+						"readme": &AggregateTestLeaf{
+							Results:  []ResultSummary{{10, "B"}, {20, "Q"}},
+							Runtimes: []RuntimeSummary{{1, 2}, {3, 4}},
+						},
+					},
+					"io": AggregateTest{
+						"serial": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "N"}, {40, "S"}},
+							Runtimes: []RuntimeSummary{{1, 0}, {8, 9}},
+						},
+						"analog": &AggregateTestLeaf{
+							Results:  []ResultSummary{{10, "D"}},
+							Runtimes: []RuntimeSummary{{3, 0}},
+						},
+						"parallel": AggregateTest{
+							"duplex": &AggregateTestLeaf{
+								Results:  []ResultSummary{{10, "E"}},
+								Runtimes: []RuntimeSummary{{3, 5}},
+							},
+							"simplex": &AggregateTestLeaf{
+								Results:  []ResultSummary{{60, "H"}},
+								Runtimes: []RuntimeSummary{{30, 50}},
+							},
+						},
+					},
+					"hello": AggregateTest{
+						"world": AggregateTest{
+							"main": &AggregateTestLeaf{
+								Results:  []ResultSummary{{1, "N"}, {50, "T"}},
+								Runtimes: []RuntimeSummary{{1, 0}, {10, 11}},
+							},
+						},
+					},
+					"cool": AggregateTest{
+						"world": AggregateTest{
+							"main": &AggregateTestLeaf{
+								Results:  []ResultSummary{{10, "F"}},
+								Runtimes: []RuntimeSummary{{3, 6}},
+							},
+						},
+					},
+				}
+				So(at.Merge(x), ShouldBeNil)
+				So(at, ShouldResemble, expected)
+			})
+		})
+
+		Convey("AggregateResult", func() {
+			Convey("Basic merge with same test names", func() {
+				ag := &AggregateResult{
+					Version: ResultsVersion,
+					Builder: "foo_builder",
+					BuilderInfo: &BuilderInfo{
+						SecondsEpoch: []int64{1, 2},
+						BlinkRevs:    []Number{3, 4},
+						BuildNumbers: []Number{5, 6},
+						ChromeRevs:   []string{"a", "1"},
+						Tests: AggregateTest{
+							"foo": &AggregateTestLeaf{
+								Results:  []ResultSummary{{1, "A"}, {3, "B"}},
+								Runtimes: []RuntimeSummary{{1, 2}, {3, 4}},
+							},
+						},
+						FailureMap: FailureLongNames,
+						FailuresByType: map[string][]int{
+							"AUDIO": {1, 2, 3, 4},
+							"CRASH": {100, 200},
+							"LEAKY": {0},
+							"PASS":  {5},
+						},
+					},
+				}
+				x := &AggregateResult{
+					Builder: "foo_builder",
+					BuilderInfo: &BuilderInfo{
+						SecondsEpoch: []int64{10, 20},
+						BlinkRevs:    []Number{30, 40},
+						BuildNumbers: []Number{50, 60},
+						ChromeRevs:   []string{"b", "c"},
+						Tests: AggregateTest{
+							"foo": &AggregateTestLeaf{
+								Results:  []ResultSummary{{1, "C"}, {3, "D"}},
+								Runtimes: []RuntimeSummary{{10, 20}, {30, 40}},
+							},
+						},
+						FailureMap: map[string]string{},
+						FailuresByType: map[string][]int{
+							"AUDIO":   {80, 90},
+							"CRASH":   {110, 220},
+							"FAILURE": {42},
+							"LEAKY":   {2},
+						},
+					},
+				}
+				expected := &AggregateResult{
+					Version: ResultsVersion,
+					Builder: "foo_builder",
+					BuilderInfo: &BuilderInfo{
+						SecondsEpoch: []int64{10, 20, 1, 2},
+						BlinkRevs:    []Number{30, 40, 3, 4},
+						BuildNumbers: []Number{50, 60, 5, 6},
+						ChromeRevs:   []string{"b", "c", "a", "1"},
+						Tests: AggregateTest{
+							"foo": &AggregateTestLeaf{
+								Results:  []ResultSummary{{3, "D"}, {1, "C"}, {1, "A"}, {3, "B"}},
+								Runtimes: []RuntimeSummary{{30, 40}, {10, 20}, {1, 2}, {3, 4}},
+							},
+						},
+						FailureMap: FailureLongNames,
+						FailuresByType: map[string][]int{
+							"AUDIO":   {80, 90, 1, 2, 3, 4},
+							"CRASH":   {110, 220, 100, 200},
+							"FAILURE": {42},
+							"PASS":    {5},
+							"LEAKY":   {2, 0},
+						},
+					},
+				}
+				So(ag.Merge(x), ShouldBeNil)
+				So(ag, ShouldResemble, expected)
+			})
+		})
+	})
+}
+
+// TestMergeAndTrim tests are ported from "model/test/jsonresults_test.py"
+// in the Python implementation.
+func TestMergeAndTrim(t *testing.T) {
+	t.Parallel()
+
+	Convey("Test Merge/Trim", t, func() {
+		Convey("empty aggregated results", func() {
+			aggr := &AggregateResult{}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{200, "F"}},
+							Runtimes: []RuntimeSummary{{200, 0}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{200, "F"}},
+							Runtimes: []RuntimeSummary{{200, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("duplicate build number", func() {
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{100, "F"}},
+							Runtimes: []RuntimeSummary{{100, 0}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "F"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldEqual, ErrBuildNumberConflict)
+		})
+
+		Convey("incremental single test single run same result", func() {
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{200, "F"}},
+							Runtimes: []RuntimeSummary{{200, 0}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "F"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{201, "F"}},
+							Runtimes: []RuntimeSummary{{201, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("single test single run different result", func() {
+			aggr := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{200, "F"}},
+							Runtimes: []RuntimeSummary{{200, 0}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "I"}},
+							Runtimes: []RuntimeSummary{{1, 1}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "I"}, {200, "F"}},
+							Runtimes: []RuntimeSummary{{1, 1}, {200, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("single test single run, result changed", func() {
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{200, "F"}, {10, "I"}},
+							Runtimes: []RuntimeSummary{{200, 0}, {10, 1}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "I"}},
+							Runtimes: []RuntimeSummary{{1, 1}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "I"}, {200, "F"}, {10, "I"}},
+							Runtimes: []RuntimeSummary{{1, 1}, {200, 0}, {10, 1}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("multiple tests single run", func() {
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{200, "F"}},
+							Runtimes: []RuntimeSummary{{200, 0}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{100, "I"}},
+							Runtimes: []RuntimeSummary{{100, 1}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "F"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "I"}},
+							Runtimes: []RuntimeSummary{{1, 1}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{201, "F"}},
+							Runtimes: []RuntimeSummary{{201, 0}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{101, "I"}},
+							Runtimes: []RuntimeSummary{{101, 1}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("multiple tests single run no result", func() {
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{200, "F"}},
+							Runtimes: []RuntimeSummary{{200, 0}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{100, "I"}},
+							Runtimes: []RuntimeSummary{{100, 1}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3},
+					Tests: AggregateTest{
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "I"}},
+							Runtimes: []RuntimeSummary{{1, 1}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "N"}, {200, "F"}},
+							Runtimes: []RuntimeSummary{{201, 0}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{101, "I"}},
+							Runtimes: []RuntimeSummary{{101, 1}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("single test multiple runs", func() {
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{200, "F"}},
+							Runtimes: []RuntimeSummary{{200, 0}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{4, 3},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{2, "I"}, {1, "Q"}},
+							Runtimes: []RuntimeSummary{{3, 2}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{4, 3, 2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "Q"}, {2, "I"}, {200, "F"}},
+							Runtimes: []RuntimeSummary{{3, 2}, {200, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("multiple tests multiple runs", func() {
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{200, "F"}},
+							Runtimes: []RuntimeSummary{{200, 0}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{10, "Z"}},
+							Runtimes: []RuntimeSummary{{10, 0}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{4, 3},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{2, "I"}},
+							Runtimes: []RuntimeSummary{{2, 2}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "C"}},
+							Runtimes: []RuntimeSummary{{1, 1}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{4, 3, 2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{2, "I"}, {200, "F"}},
+							Runtimes: []RuntimeSummary{{2, 2}, {200, 0}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "C"}, {10, "Z"}},
+							Runtimes: []RuntimeSummary{{1, 1}, {10, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("incremental result older build", func() {
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{5, "F"}},
+							Runtimes: []RuntimeSummary{{5, 0}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "F"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{2, 3, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{6, "F"}},
+							Runtimes: []RuntimeSummary{{6, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("incremental result same build", func() {
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{5, "F"}},
+							Runtimes: []RuntimeSummary{{5, 0}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3, 2},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{2, "F"}},
+							Runtimes: []RuntimeSummary{{2, 0}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{7, "F"}},
+							Runtimes: []RuntimeSummary{{7, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("remove new test", func() {
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{199, "F"}},
+							Runtimes: []RuntimeSummary{{199, 0}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "F"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "P"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+						"notrun.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "Y"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+						"003.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "N"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{200, "F"}},
+							Runtimes: []RuntimeSummary{{200, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr.Trim(200), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("remove test", func() {
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"directory": AggregateTest{
+							"directory": AggregateTest{
+								"001.html": &AggregateTestLeaf{
+									Results:  []ResultSummary{{200, "P"}},
+									Runtimes: []RuntimeSummary{{200, 0}},
+								},
+							},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{10, "F"}},
+							Runtimes: []RuntimeSummary{{10, 0}},
+						},
+						"003.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{190, "P"}, {9, "N"}, {1, "F"}},
+							Runtimes: []RuntimeSummary{{200, 0}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3},
+					Tests: AggregateTest{
+						"directory": AggregateTest{
+							"directory": AggregateTest{
+								"001.html": &AggregateTestLeaf{
+									Results:  []ResultSummary{{1, "P"}},
+									Runtimes: []RuntimeSummary{{1, 0}},
+								},
+							},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "P"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+						"003.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "P"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 1},
+					Tests: AggregateTest{
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "P"}, {10, "F"}},
+							Runtimes: []RuntimeSummary{{11, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr.Trim(200), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("updates expected", func() {
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"directory": AggregateTest{
+							"directory": AggregateTest{
+								"001.html": &AggregateTestLeaf{
+									Expected: []string{"FAIL"},
+									Results:  []ResultSummary{{200, "P"}},
+									Runtimes: []RuntimeSummary{{200, 0}},
+								},
+							},
+						},
+						"002.html": &AggregateTestLeaf{
+							Bugs:     []string{"crbug.com/1234"},
+							Expected: []string{"FAIL"},
+							Results:  []ResultSummary{{10, "F"}},
+							Runtimes: []RuntimeSummary{{10, 0}},
+						},
+						"003.html": &AggregateTestLeaf{
+							Expected: []string{"FAIL"},
+							Results:  []ResultSummary{{190, "P"}, {9, "N"}, {1, "F"}},
+							Runtimes: []RuntimeSummary{{200, 0}},
+						},
+						"004.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{199, "P"}, {1, "F"}},
+							Runtimes: []RuntimeSummary{{200, 0}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3},
+					Tests: AggregateTest{
+						"002.html": &AggregateTestLeaf{
+							Expected: []string{"PASS"},
+							Results:  []ResultSummary{{1, "P"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+						"003.html": &AggregateTestLeaf{
+							Expected: []string{"TIMEOUT"},
+							Results:  []ResultSummary{{1, "P"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+						"004.html": &AggregateTestLeaf{
+							Bugs:     []string{"crbug.com/1234"},
+							Results:  []ResultSummary{{1, "P"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 1},
+					Tests: AggregateTest{
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "P"}, {10, "F"}},
+							Runtimes: []RuntimeSummary{{11, 0}},
+						},
+						"003.html": &AggregateTestLeaf{
+							Expected: []string{"TIMEOUT"},
+							Results:  []ResultSummary{{191, "P"}, {9, "N"}},
+							Runtimes: []RuntimeSummary{{200, 0}},
+						},
+						"004.html": &AggregateTestLeaf{
+							Bugs:     []string{"crbug.com/1234"},
+							Results:  []ResultSummary{{200, "P"}},
+							Runtimes: []RuntimeSummary{{200, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr.Trim(200), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("keep test with all pass but slow time", func() {
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{200, "P"}},
+							Runtimes: []RuntimeSummary{{200, runtimeThresholdNormal}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{10, "F"}},
+							Runtimes: []RuntimeSummary{{10, 0}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "P"}},
+							Runtimes: []RuntimeSummary{{1, 1}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "P"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{201, "P"}},
+							Runtimes: []RuntimeSummary{{1, 1}, {200, runtimeThresholdNormal}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "P"}, {10, "F"}},
+							Runtimes: []RuntimeSummary{{11, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("pruning slow tests for debug builders", func() {
+			aggr := &AggregateResult{
+				Builder: "MockBuilder(dbg)",
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{200, "P"}},
+							Runtimes: []RuntimeSummary{{200, runtimeThresholdDebug}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{10, "F"}},
+							Runtimes: []RuntimeSummary{{10, 0}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				Builder: "MockBuilder(dbg)",
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "P"}},
+							Runtimes: []RuntimeSummary{{1, 1}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "P"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+						"003.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "P"}},
+							Runtimes: []RuntimeSummary{{1, 3}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				Builder: "MockBuilder(dbg)",
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{201, "P"}},
+							Runtimes: []RuntimeSummary{{1, 1}, {200, runtimeThresholdDebug}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "P"}, {10, "F"}},
+							Runtimes: []RuntimeSummary{{11, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr.Trim(ResultsSize), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("prune extra results", func() {
+			size := ResultsSize
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{size, "F"}, {1, "I"}},
+							Runtimes: []RuntimeSummary{{size, 0}, {1, 1}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "T"}},
+							Runtimes: []RuntimeSummary{{1, 1}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "T"}, {size, "F"}},
+							Runtimes: []RuntimeSummary{{1, 1}, {size, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr.Trim(size), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("prune extra results small", func() {
+			size := ResultsSmallSize
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{size, "F"}, {1, "I"}},
+							Runtimes: []RuntimeSummary{{size, 0}, {1, 1}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "T"}},
+							Runtimes: []RuntimeSummary{{1, 1}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "T"}, {size, "F"}},
+							Runtimes: []RuntimeSummary{{1, 1}, {size, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr.Trim(size), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("prune extra results with new results of same type", func() {
+			size := ResultsSmallSize
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{size, "F"}, {1, "N"}},
+							Runtimes: []RuntimeSummary{{size, 0}, {1, 1}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "F"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{size, "F"}},
+							Runtimes: []RuntimeSummary{{size, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr.Trim(size), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("merge build directory hierarchy", func() {
+			aggr := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"bar": AggregateTest{
+							"baz": AggregateTest{
+								"003.html": &AggregateTestLeaf{
+									Results:  []ResultSummary{{25, "F"}},
+									Runtimes: []RuntimeSummary{{25, 0}},
+								},
+							},
+						},
+						"foo": AggregateTest{
+							"001.html": &AggregateTestLeaf{
+								Results:  []ResultSummary{{50, "F"}},
+								Runtimes: []RuntimeSummary{{50, 0}},
+							},
+							"002.html": &AggregateTestLeaf{
+								Results:  []ResultSummary{{100, "I"}},
+								Runtimes: []RuntimeSummary{{100, 0}},
+							},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3},
+					Tests: AggregateTest{
+						"baz": AggregateTest{
+							"004.html": &AggregateTestLeaf{
+								Results:  []ResultSummary{{1, "I"}},
+								Runtimes: []RuntimeSummary{{1, 0}},
+							},
+						},
+						"foo": AggregateTest{
+							"001.html": &AggregateTestLeaf{
+								Results:  []ResultSummary{{1, "F"}},
+								Runtimes: []RuntimeSummary{{1, 0}},
+							},
+							"002.html": &AggregateTestLeaf{
+								Results:  []ResultSummary{{1, "I"}},
+								Runtimes: []RuntimeSummary{{1, 0}},
+							},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 1},
+					Tests: AggregateTest{
+						"bar": AggregateTest{
+							"baz": AggregateTest{
+								"003.html": &AggregateTestLeaf{
+									Results:  []ResultSummary{{1, "N"}, {25, "F"}},
+									Runtimes: []RuntimeSummary{{26, 0}},
+								},
+							},
+						},
+						"baz": AggregateTest{
+							"004.html": &AggregateTestLeaf{
+								Results:  []ResultSummary{{1, "I"}},
+								Runtimes: []RuntimeSummary{{1, 0}},
+							},
+						},
+						"foo": AggregateTest{
+							"001.html": &AggregateTestLeaf{
+								Results:  []ResultSummary{{51, "F"}},
+								Runtimes: []RuntimeSummary{{51, 0}},
+							},
+							"002.html": &AggregateTestLeaf{
+								Results:  []ResultSummary{{101, "I"}},
+								Runtimes: []RuntimeSummary{{101, 0}},
+							},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("treats multiple results as a unique type", func() {
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{5, "F"}},
+							Runtimes: []RuntimeSummary{{5, 0}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{3, "FQ"}},
+							Runtimes: []RuntimeSummary{{3, 0}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "FIQ"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "FQ"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{2, 3, 1},
+					Tests: AggregateTest{
+						"001.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "FIQ"}, {5, "F"}},
+							Runtimes: []RuntimeSummary{{6, 0}},
+						},
+						"002.html": &AggregateTestLeaf{
+							Results:  []ResultSummary{{4, "FQ"}},
+							Runtimes: []RuntimeSummary{{4, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+
+		Convey("gtest", func() {
+			aggr := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{2, 1},
+					Tests: AggregateTest{
+						"foo.bar": &AggregateTestLeaf{
+							Results:  []ResultSummary{{50, "F"}},
+							Runtimes: []RuntimeSummary{{50, 0}},
+						},
+						"foo.bar2": &AggregateTestLeaf{
+							Results:  []ResultSummary{{100, "I"}},
+							Runtimes: []RuntimeSummary{{100, 0}},
+						},
+						"test.failed": &AggregateTestLeaf{
+							Results:  []ResultSummary{{5, "Q"}},
+							Runtimes: []RuntimeSummary{{5, 0}},
+						},
+					},
+				},
+			}
+			x := &AggregateResult{
+				BuilderInfo: &BuilderInfo{
+					BuildNumbers: []Number{3},
+					Tests: AggregateTest{
+						"foo.bar2": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "I"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+						"foo.bar3": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "F"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+						"test.failed": &AggregateTestLeaf{
+							Results:  []ResultSummary{{5, "Q"}},
+							Runtimes: []RuntimeSummary{{5, 0}},
+						},
+					},
+				},
+			}
+			expected := &AggregateResult{
+				Version: ResultsVersion,
+				BuilderInfo: &BuilderInfo{
+					FailureMap:   FailureLongNames,
+					BuildNumbers: []Number{3, 2, 1},
+					Tests: AggregateTest{
+						"foo.bar": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "N"}, {50, "F"}},
+							Runtimes: []RuntimeSummary{{51, 0}},
+						},
+						"foo.bar2": &AggregateTestLeaf{
+							Results:  []ResultSummary{{101, "I"}},
+							Runtimes: []RuntimeSummary{{101, 0}},
+						},
+						"foo.bar3": &AggregateTestLeaf{
+							Results:  []ResultSummary{{1, "F"}},
+							Runtimes: []RuntimeSummary{{1, 0}},
+						},
+						"test.failed": &AggregateTestLeaf{
+							Results:  []ResultSummary{{10, "Q"}},
+							Runtimes: []RuntimeSummary{{10, 0}},
+						},
+					},
+				},
+			}
+			So(aggr.Merge(x), ShouldBeNil)
+			So(aggr, ShouldResemble, expected)
+		})
+	})
+}

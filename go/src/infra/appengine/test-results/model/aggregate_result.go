@@ -366,7 +366,7 @@ type AggregateTestLeaf struct {
 	Bugs     []string
 }
 
-func (l *AggregateTestLeaf) node() {}
+func (leaf *AggregateTestLeaf) node() {}
 
 // aggregateTestLeafAux is used to marshal and unmarshal AggregateTestLeaf.
 type aggregateTestLeafAux struct {
@@ -377,42 +377,42 @@ type aggregateTestLeafAux struct {
 }
 
 // MarshalJSON marshal l into JSON.
-func (l *AggregateTestLeaf) MarshalJSON() ([]byte, error) {
+func (leaf *AggregateTestLeaf) MarshalJSON() ([]byte, error) {
 	aux := aggregateTestLeafAux{
-		Results:  l.Results,
-		Runtimes: l.Runtimes,
-		Bugs:     l.Bugs,
+		Results:  leaf.Results,
+		Runtimes: leaf.Runtimes,
+		Bugs:     leaf.Bugs,
 	}
-	if s := strings.Join(l.Expected, " "); len(s) > 0 {
+	if s := strings.Join(leaf.Expected, " "); len(s) > 0 {
 		aux.Expected = &s
 	}
 	return json.Marshal(&aux)
 }
 
 // UnmarshalJSON unmarshal the supplied data into l.
-func (l *AggregateTestLeaf) UnmarshalJSON(data []byte) error {
+func (leaf *AggregateTestLeaf) UnmarshalJSON(data []byte) error {
 	var aux aggregateTestLeafAux
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 
-	l.Results = aux.Results
-	l.Runtimes = aux.Runtimes
+	leaf.Results = aux.Results
+	leaf.Runtimes = aux.Runtimes
 	if aux.Expected != nil {
-		l.Expected = strings.Split(*aux.Expected, " ")
+		leaf.Expected = strings.Split(*aux.Expected, " ")
 	}
-	l.Bugs = aux.Bugs
+	leaf.Bugs = aux.Bugs
 
 	return nil
 }
 
 // defaultFields sets default values for missing/invalid fields.
-func (l *AggregateTestLeaf) defaultFields() {
-	if len(l.Results) == 0 {
-		l.Results = []ResultSummary{{1, "N"}}
+func (leaf *AggregateTestLeaf) defaultFields() {
+	if len(leaf.Results) == 0 {
+		leaf.Results = []ResultSummary{{1, "N"}}
 	}
-	if len(l.Runtimes) == 0 {
-		l.Runtimes = []RuntimeSummary{{1, 0}}
+	if len(leaf.Runtimes) == 0 {
+		leaf.Runtimes = []RuntimeSummary{{1, 0}}
 	}
 }
 
@@ -483,4 +483,263 @@ func (rs *RuntimeSummary) UnmarshalJSON(data []byte) error {
 	rs.Count = int(tmp[0])
 	rs.Runtime = tmp[1]
 	return nil
+}
+
+var (
+	// ErrBuildNumberConflict is returned when the build numbers
+	// are the same when merging.
+	ErrBuildNumberConflict = errors.New("build number conflict")
+
+	// ErrBuilderNameConflict is returned when the builder names
+	// do not match when merging.
+	ErrBuilderNameConflict = errors.New("builder name conflict")
+)
+
+// Merge merges other into ag.
+func (ag *AggregateResult) Merge(other *AggregateResult) error {
+	if ag.Builder != other.Builder {
+		return ErrBuilderNameConflict
+	}
+	if ag.BuilderInfo == nil {
+		ag.BuilderInfo = &BuilderInfo{}
+	}
+	ag.Version = ResultsVersion
+	return ag.BuilderInfo.Merge(other.BuilderInfo)
+}
+
+// Merge merges other into info.
+//
+// The returned error is ErrBuildNumberConflict when
+// other.BuildNumbers[0] already has the latest build number.
+func (info *BuilderInfo) Merge(other *BuilderInfo) error {
+	if len(info.BuildNumbers) > 0 && len(other.BuildNumbers) > 0 {
+		if info.BuildNumbers[0] == other.BuildNumbers[0] {
+			return ErrBuildNumberConflict
+		}
+	}
+
+	info.SecondsEpoch = append(other.SecondsEpoch, info.SecondsEpoch...)
+	info.BlinkRevs = append(other.BlinkRevs, info.BlinkRevs...)
+	info.BuildNumbers = append(other.BuildNumbers, info.BuildNumbers...)
+	info.ChromeRevs = append(other.ChromeRevs, info.ChromeRevs...)
+
+	if info.FailuresByType == nil && other.FailuresByType != nil {
+		info.FailuresByType = make(map[string][]int)
+	}
+	for k, v := range other.FailuresByType {
+		info.FailuresByType[k] = append(v, info.FailuresByType[k]...)
+	}
+
+	info.FailureMap = FailureLongNames
+
+	if info.Tests == nil {
+		info.Tests = AggregateTest{}
+	}
+
+	info.Tests.WalkLeaves(func(_ string, leaf *AggregateTestLeaf) {
+		leaf.Expected = nil
+		leaf.Bugs = nil
+	})
+
+	return info.Tests.Merge(other.Tests)
+}
+
+// Merge merges other into at.
+func (at *AggregateTest) Merge(other AggregateTest) error {
+	// Shallow copy but OK. We take care to not modify otherCopy
+	// values; instead always create new objects
+	// and assign to otherCopy[key].
+	otherCopy := make(AggregateTest, len(other))
+	for k, v := range other {
+		otherCopy[k] = v
+	}
+
+	for k, v := range *at {
+		if _, ok := otherCopy[k]; !ok {
+			switch v.(type) {
+			case *AggregateTestLeaf:
+				l := &AggregateTestLeaf{}
+				l.defaultFields()
+				otherCopy[k] = l
+			case AggregateTest:
+				otherCopy[k] = AggregateTest{}
+			}
+		}
+	}
+
+	for k, v := range otherCopy {
+		// Key does not exist: assign entire subtree.
+		if _, ok := (*at)[k]; !ok {
+			if *at == nil {
+				*at = AggregateTest{}
+			}
+			(*at)[k] = v
+			continue
+		}
+
+		// Leaf node.
+		if leaf1, ok := (*at)[k].(*AggregateTestLeaf); ok {
+			leaf2, ok := v.(*AggregateTestLeaf)
+			if !ok {
+				return errors.New("model: Merge: expected *AggregateTestLeaf")
+			}
+			if err := leaf1.Merge(leaf2); err != nil {
+				return err
+			}
+			continue
+		}
+
+		// Not leaf node: merge subtree recursively.
+		at1, ok := (*at)[k].(AggregateTest)
+		if !ok {
+			return errors.New("model: Merge: expected AggregateTest")
+		}
+		at2, ok := v.(AggregateTest)
+		if !ok {
+			return errors.New("model: Merge: expected AggregateTest")
+		}
+		if err := at1.Merge(at2); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Merge merges other into leaf.
+func (leaf *AggregateTestLeaf) Merge(other *AggregateTestLeaf) error {
+	// Bugs and Expected should come from from other only.
+	leaf.Bugs = other.Bugs
+	if len(other.Expected) == 1 && other.Expected[0] != "PASS" {
+		leaf.Expected = other.Expected
+	}
+
+	for _, r := range other.Results {
+		if len(leaf.Results) > 0 && r.Type == leaf.Results[0].Type {
+			leaf.Results[0].Count += r.Count
+		} else {
+			leaf.Results = append([]ResultSummary{r}, leaf.Results...)
+		}
+	}
+
+	for _, r := range other.Runtimes {
+		if len(leaf.Runtimes) > 0 && r.Runtime == leaf.Runtimes[0].Runtime {
+			leaf.Runtimes[0].Count += r.Count
+		} else {
+			leaf.Runtimes = append([]RuntimeSummary{r}, leaf.Runtimes...)
+		}
+	}
+
+	return nil
+}
+
+const (
+	// ResultsSize is the size that "results.json" should be trimmed to.
+	ResultsSize = 500
+
+	// ResultsSmallSize is the size that "results_small.json" should
+	// be trimmed to.
+	ResultsSmallSize = 100
+
+	runtimeThresholdNormal float64 = 3 // In seconds.
+	runtimeThresholdDebug  float64 = 9 // In seconds.
+)
+
+func isDebugBuilder(builder string) bool {
+	for _, s := range []string{"debug", "dbg"} {
+		if strings.Contains(strings.ToLower(builder), s) {
+			return true
+		}
+	}
+	return false
+}
+
+// Trim trims the leaves of Tests in ar to the specified size.
+func (ag *AggregateResult) Trim(size int) error {
+	t := runtimeThresholdNormal
+
+	if isDebugBuilder(ag.Builder) {
+		t = runtimeThresholdDebug
+	}
+
+	return ag.Tests.trim(size, t)
+}
+
+func (at AggregateTest) trim(size int, threshold float64) error {
+	for k, v := range at {
+		if leaf, ok := v.(*AggregateTestLeaf); ok {
+			leaf.trim(size)
+			if leaf.shouldDelete(threshold) {
+				delete(at, k)
+			}
+			continue
+		}
+
+		child, ok := v.(AggregateTest)
+		if !ok {
+			return errors.New("model: trim: expected AggregateTest")
+		}
+		if err := child.trim(size, threshold); err != nil {
+			return err
+		}
+		if len(child) == 0 {
+			delete(at, k)
+		}
+	}
+	return nil
+}
+
+func (leaf *AggregateTestLeaf) trim(size int) {
+	n := 0
+
+	for i, r := range leaf.Results {
+		leaf.Results[i].Count = min(r.Count, size)
+		n += r.Count
+		if n >= size {
+			leaf.Results = leaf.Results[:i+1]
+			break
+		}
+	}
+
+	n = 0
+
+	for i, r := range leaf.Runtimes {
+		leaf.Runtimes[i].Count = min(r.Count, size)
+		n += r.Count
+		if n >= size {
+			leaf.Runtimes = leaf.Runtimes[:i+1]
+			break
+		}
+	}
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+var deletableTypes = map[string]bool{"P": true, "N": true, "Y": true}
+
+func (leaf *AggregateTestLeaf) shouldDelete(threshold float64) bool {
+	if len(leaf.Expected) == 1 && leaf.Expected[0] != "PASS" {
+		return false
+	}
+	if leaf.Bugs != nil {
+		return false
+	}
+
+	for _, r := range leaf.Results {
+		if !deletableTypes[r.Type] {
+			return false
+		}
+	}
+	for _, r := range leaf.Runtimes {
+		if r.Runtime >= threshold {
+			return false
+		}
+	}
+
+	return true
 }
