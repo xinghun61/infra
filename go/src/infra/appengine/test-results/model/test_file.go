@@ -186,7 +186,8 @@ func (tf *TestFile) putDataEntries(c context.Context) error {
 	numEntries := int(math.Ceil(float64(len(data)) / maxBlobLen))
 	dataEntries := make([]DataEntry, 0, numEntries)
 	for i := 0; i < numEntries*maxBlobLen; i += maxBlobLen {
-		dataEntries = append(dataEntries, DataEntry{Data: data[i : i+maxBlobLen]})
+		end := min(i+maxBlobLen, len(data))
+		dataEntries = append(dataEntries, DataEntry{Data: data[i:end]})
 	}
 
 	if err := datastore.Get(c).Put(dataEntries); err != nil {
