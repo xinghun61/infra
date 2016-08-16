@@ -27,7 +27,7 @@ func IsAggregateTestFile(filename string) bool {
 
 // BuildNum is int64 that is used to handle TestFile datastore records
 // with null build_number. The value is >= 0 if the datastore value
-// was not null.
+// was not null. The value is -1 for null datastore value.
 type BuildNum int64
 
 var _ datastore.PropertyConverter = (*BuildNum)(nil)
@@ -65,28 +65,35 @@ type DataEntry struct {
 
 // TestFile represents a TestFile record.
 type TestFile struct {
-	ID          int64            `gae:"$id"`
-	BuildNumber BuildNum         `gae:"build_number"`
-	Builder     string           `gae:"builder"`
-	DataKeys    []*datastore.Key `gae:"data_keys,noindex"`
-	LastMod     time.Time        `gae:"date"`
-	Master      string           `gae:"master"`
-	Name        string           `gae:"name"`
-	TestType    string           `gae:"test_type"`
+	ID          int64    `gae:"$id"`
+	BuildNumber BuildNum `gae:"build_number"`
+	Builder     string   `gae:"builder"`
+	Master      string   `gae:"master"`
+	Name        string   `gae:"name"`
+	TestType    string   `gae:"test_type"`
+
+	// DataKeys is the keys to the DataEntry(s) that contain
+	// the data for this TestFile.
+	DataKeys []*datastore.Key `gae:"data_keys,noindex"`
+
+	// LastMod is the last modified time.
+	LastMod time.Time `gae:"date"`
 
 	// Data is the data in the DataEntry(s) pointed to by DataKeys.
 	// After loading a TestFile from the datastore, this field is
 	// only available after GetData is called. To put updated
 	// data in this field to the datastore, call PutData.
 	//
-	// Users should typically perform the following sequence of calls
+	// Users will typically perform the following sequence of calls
 	// in a transaction:
 	//
-	//   - datastore.Get(tf)
-	//   - tf.GetData()
-	//   - tf.PutData()
-	//   - datastore.Put(tf)
-	//   - datastore.Delete(tf.OldDataKeys)
+	//   ds = datastore.Get(ctx)
+	//   err = ds.Get(tf)
+	//   err = tf.GetData(ctx)
+	//   // manipulate tf.Data
+	//   err = tf.PutData(ctx)
+	//   err = ds.Put(tf)
+	//   err = ds.Delete(tf.OldDataKeys)
 	//
 	Data io.Reader `gae:"-,noindex"`
 
@@ -98,9 +105,9 @@ type TestFile struct {
 	// pointed to by these keys if they are no longer needed.
 	OldDataKeys []*datastore.Key `gae:"-,noindex"`
 
-	// newDataKeys is unused in this implementation. It is
+	// NewDataKeys is UNUSED in this implementation. It is
 	// a remnant of the old Python implementation.
-	newDataKeys []*datastore.Key `gae:"new_data_keys,noindex"`
+	NewDataKeys []*datastore.Key `gae:"new_data_keys,noindex"`
 }
 
 // GetData fetches data from the DataEntry(s) pointed to by tf.DataKeys
@@ -167,7 +174,7 @@ func (tf *TestFile) putDataEntries(c context.Context) error {
 	// See https://code.googlesource.com/gocloud/+/master/datastore/prop.go#29.
 	const maxBlobLen = 1 << 20
 
-	// TODO: Read maxBlobLen bytes at a time. See io.LimitedReader.
+	// TODO(maybe): Read maxBlobLen bytes at a time. See io.LimitedReader.
 
 	data, err := ioutil.ReadAll(tf.Data)
 	if err != nil {
@@ -200,7 +207,7 @@ func (tf *TestFile) putDataEntries(c context.Context) error {
 	}
 
 	tf.DataKeys = newKeys
-	tf.LastMod = time.Now()
+	tf.LastMod = time.Now().UTC()
 	return nil
 }
 
