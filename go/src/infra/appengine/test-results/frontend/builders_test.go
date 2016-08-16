@@ -11,7 +11,31 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func TestCleanTestType(t *testing.T) {
+	t.Parallel()
+
+	Convey("cleanTestType", t, func() {
+		type testCase struct {
+			input, output string
+		}
+		testCases := []testCase{
+			{"base_unittests", "base_unittests"},
+			{"base_unittests on Windows XP", "base_unittests"},
+			{"base_unittests on Windows XP (with patch)", "base_unittests (with patch)"},
+			{"base_unittests on ATI GPU on Windows (with patch) on Windows", "base_unittests (with patch)"},
+			{"base_unittests (ATI GPU) on Windows (with patch) on Windows", "base_unittests (with patch)"},
+			{"base_unittests on ATI GPU on Windows (without patch) on Windows", "base_unittests"},
+			{"Instrumentation test content_shell_test_apk (with patch)", "content_shell_test_apk (with patch)"},
+		}
+		for _, tc := range testCases {
+			So(cleanTestType(tc.input), ShouldEqual, tc.output)
+		}
+	})
+}
+
 func TestBuilders(t *testing.T) {
+	t.Parallel()
+
 	Convey("builders", t, func() {
 		Convey("getBuilderData", func() {
 			Convey("normal", func() {

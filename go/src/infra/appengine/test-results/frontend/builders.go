@@ -29,6 +29,7 @@ type BuilderData struct {
 	NoUploadTestTypes []string `json:"no_upload_test_types"`
 }
 
+// Master represents information about a build master.
 type Master struct {
 	Name       string          `json:"name"`
 	Identifier string          `json:"url_name"`
@@ -36,6 +37,7 @@ type Master struct {
 	Tests      map[string]Test `json:"tests"`
 }
 
+// Test represents information about Tests in a master.
 type Test struct {
 	Builders []string `json:"builders"`
 }
@@ -71,7 +73,7 @@ func makeBuildExtractClient(ctx context.Context) *buildextract.Client {
 	})
 }
 
-func GetBuilders(ctx *router.Context) {
+func getBuildersHandler(ctx *router.Context) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
 	var res []byte
 	item, err := memcache.Get(c).Get(buildbotMemcacheKey)
@@ -120,7 +122,7 @@ func GetBuilders(ctx *router.Context) {
 	}
 }
 
-func UpdateBuilders(ctx *router.Context) {
+func updateBuildersHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 
 	start := time.Now()
@@ -186,7 +188,7 @@ func getBuilderData(ctx context.Context, list []*masters.Master, client buildext
 			Name:       master.Name,
 			Identifier: master.Identifier,
 			Groups:     master.Groups,
-			Tests:      map[string]Test{},
+			Tests:      make(map[string]Test),
 		}
 
 		go func() {
@@ -194,6 +196,10 @@ func getBuilderData(ctx context.Context, list []*masters.Master, client buildext
 			builders, err := getBuilderNames(ctx, m.Identifier, client)
 			if err != nil {
 				results <- result{Err: err}
+				return
+			}
+
+			if len(builders) == 0 {
 				return
 			}
 
@@ -212,6 +218,7 @@ func getBuilderData(ctx context.Context, list []*masters.Master, client buildext
 					m.Tests[s] = t
 				}
 			}
+
 			results <- result{Master: m}
 		}()
 	}
@@ -326,7 +333,7 @@ func cleanTestStep(name string) (clean string, ok bool) {
 	}
 
 	for _, n := range nonTestStepNames {
-		if strings.HasPrefix(name, n) {
+		if strings.Contains(name, n) {
 			return "", false
 		}
 	}

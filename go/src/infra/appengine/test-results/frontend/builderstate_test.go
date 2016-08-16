@@ -27,8 +27,8 @@ func TestBuilderState(t *testing.T) {
 	}
 	r := router.New()
 	mw := router.NewMiddlewareChain(WithTestingContext)
-	r.GET("/builderstate", mw, GetBuilderState)
-	r.GET("/updatebuilderstate", mw, UpdateBuilderState)
+	r.GET("/builderstate", mw, getBuilderStateHandler)
+	r.GET("/updatebuilderstate", mw, updateBuilderStateHandler)
 
 	srv := httptest.NewServer(r)
 	client := &http.Client{}

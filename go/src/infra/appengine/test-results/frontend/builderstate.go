@@ -18,9 +18,9 @@ import (
 // It is global to allow mocking in tests.
 var refreshFunc = builderstate.RefreshCache
 
-// GetBuilderState gets data from the builder state memcache
+// getBuilderStateHandler gets data from the builder state memcache
 // and serves it as JSON.
-func GetBuilderState(ctx *router.Context) {
+func getBuilderStateHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 
 	item, err := memcache.Get(c).Get(builderstate.MemcacheKey)
@@ -50,9 +50,9 @@ func GetBuilderState(ctx *router.Context) {
 	logging.Debugf(c, "took %s to write response", time.Since(start))
 }
 
-// UpdateBuilderState refreshes data in the builder state
+// updateBuilderStateHandler refreshes data in the builder state
 // memcache.
-func UpdateBuilderState(ctx *router.Context) {
+func updateBuilderStateHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 	_, err := refreshFunc(c)
 
