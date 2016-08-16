@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import base64
 import hashlib
 import json
 import re
@@ -186,7 +187,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       roll_result = roll_step.json.output
 
       if roll_result['success']:
-        self._process_successful_roll(roll_step, roll_result, workdir)
+        self._process_successful_roll(
+            project_data['repo_url'], roll_step, roll_result, workdir)
         return ROLL_SUCCESS
       else:
         if (not roll_result['roll_details'] and
@@ -196,7 +198,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         else:
           return ROLL_FAILURE
 
-  def _process_successful_roll(self, roll_step, roll_result, workdir):
+  def _process_successful_roll(
+      self, repo_url, roll_step, roll_result, workdir):
     roll_step.presentation.logs['blame'] = get_blame(
         roll_result['picked_roll_details']['commit_infos'])
 
@@ -299,3 +302,12 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
           self.m.json.input(change_data),
           'recipe-roller-cl-uploads',
           cfg_digest)
+
+    repo_data = {
+      'issue': change_data['issue'],
+      'trivial': roll_result['trivial'],
+    }
+    self.m.gsutil.upload(
+        self.m.json.input(repo_data),
+        'recipe-roller-cl-uploads',
+        'repo_metadata/%s' % base64.urlsafe_b64encode(repo_url))
