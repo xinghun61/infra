@@ -945,3 +945,9 @@ ALTER TABLE Hotlist ADD COLUMN default_col_spec TEXT;
 
 ALTER TABLE Hotlist2User CHANGE role_name
   role_name ENUM('owner', 'editor', 'follower');
+
+==============================================================
+2016-08-15: Add hotlist to Invalidate table
+
+ALTER TABLE Invalidate CHANGE kind
+  kind ENUM('user', 'project', 'issue', 'issue_id', 'hotlist');

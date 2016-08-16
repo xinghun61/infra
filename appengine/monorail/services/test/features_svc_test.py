@@ -9,12 +9,59 @@ import unittest
 
 import mox
 
+from google.appengine.ext import testbed
+
 from features import filterrules_helpers
 from framework import sql
 from services import features_svc
 from testing import fake
 from tracker import tracker_bizobj
 from tracker import tracker_constants
+
+
+def MakeFeaturesService(cache_manager, my_mox):
+  features_service = features_svc.FeaturesService(cache_manager)
+  features_service.hotlist_tbl = my_mox.CreateMock(sql.SQLTableManager)
+  features_service.hotlist2issue_tbl = my_mox.CreateMock(sql.SQLTableManager)
+  features_service.hotlist2user_tbl = my_mox.CreateMock(sql.SQLTableManager)
+  return features_service
+
+
+class HotlistTwoLevelCacheTest(unittest.TestCase):
+
+  def setUp(self):
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_memcache_stub()
+
+    self.mox = mox.Mox()
+    self.cnxn = self.mox.CreateMock(sql.MonorailConnection)
+    self.cache_manager = fake.CacheManager()
+    self.features_service = MakeFeaturesService(self.cache_manager, self.mox)
+
+  def testDeserializeHotlists(self):
+    hotlist_rows = [
+        (123, 'hot1', 'test hot 1', 'test hotlist', False, ''),
+        (234, 'hot2', 'test hot 2', 'test hotlist', False, '')]
+    issue_rows = [
+        (123, 567, 10), (123, 678, 9),
+        (234, 567, 0)]
+    role_rows = [
+        (123, 111L, 'owner'), (123, 444L, 'owner'),
+        (123, 222L, 'editor'),
+        (123, 333L, 'follower'),
+        (234, 111L, 'owner')]
+    hotlist_dict = self.features_service.hotlist_2lc._DeserializeHotlists(
+        hotlist_rows, issue_rows, role_rows)
+
+    self.assertItemsEqual([123, 234], hotlist_dict.keys())
+    self.assertEqual(123, hotlist_dict[123].hotlist_id)
+    self.assertEqual('hot1', hotlist_dict[123].name)
+    self.assertItemsEqual([111L, 444L], hotlist_dict[123].owner_ids)
+    self.assertItemsEqual([222L], hotlist_dict[123].editor_ids)
+    self.assertItemsEqual([333L], hotlist_dict[123].follower_ids)
+    self.assertEqual(234, hotlist_dict[234].hotlist_id)
+    self.assertItemsEqual([111L], hotlist_dict[234].owner_ids)
 
 
 class FeaturesServiceTest(unittest.TestCase):
@@ -33,7 +80,8 @@ class FeaturesServiceTest(unittest.TestCase):
         'user2savedquery_tbl', 'quickedithistory_tbl',
         'quickeditmostrecent_tbl', 'savedquery_tbl',
         'savedqueryexecutesinproject_tbl', 'project2savedquery_tbl',
-        'filterrule_tbl']:
+        'filterrule_tbl', 'hotlist_tbl', 'hotlist2issue_tbl',
+        'hotlist2user_tbl']:
       setattr(self.features_service, table_var, self.MakeMockTable())
 
   def tearDown(self):
@@ -345,4 +393,48 @@ class FeaturesServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.features_service.ExpungeFilterRules(
         self.cnxn, 12345)
+    self.mox.VerifyAll()
+
+  ### Hotlists
+
+  def SetUpCreateHotlist(self):
+    # Check for the existing hotlist: there should be none.
+    self.features_service.hotlist_tbl.Select(
+        self.cnxn, cols=['id', 'name'], name=('hot1',)).AndReturn([])
+
+    # Inserting the hotlist returns the id.
+    self.features_service.hotlist_tbl.InsertRow(
+        self.cnxn, name='hot1', summary='hot 1', description='test hotlist',
+        is_private=False, default_col_spec='').AndReturn(123)
+
+    # Insert the issues: there are none.
+    self.features_service.hotlist2issue_tbl.InsertRows(
+        self.cnxn, ['hotlist_id', 'issue_id', 'rank'], [], commit=False)
+
+    # Insert the users: there is one owner and one editor.
+    self.features_service.hotlist2user_tbl.InsertRows(
+        self.cnxn, ['hotlist_id', 'user_id', 'role_name'],
+        [(123, 567, 'owner'), (123, 678, 'editor')])
+
+  def testCreateHotlist(self):
+    self.SetUpCreateHotlist()
+    self.mox.ReplayAll()
+    self.features_service.CreateHotlist(
+        self.cnxn, 'hot1', 'hot 1', 'test hotlist', [567], [678])
+    self.mox.VerifyAll()
+
+  def SetUpLookupHotlistIDs(self):
+    self.features_service.hotlist_tbl.Select(
+        self.cnxn, cols=['id', 'name'], name=('hot1',)).AndReturn([
+          (123, 'hot1')])
+    self.features_service.hotlist2user_tbl.Select(
+        self.cnxn, cols=['hotlist_id', 'owner_id'], hotlist_id=[123],
+        user_id=(567,), role_name='owner').AndReturn([(123, 567)])
+
+  def testLookupHotlistIDs(self):
+    self.SetUpLookupHotlistIDs()
+    self.mox.ReplayAll()
+    ret = self.features_service.LookupHotlistIDs(
+        self.cnxn, ['hot1'], [567])
+    self.assertEqual(ret, {('hot1', 567) : 123})
     self.mox.VerifyAll()

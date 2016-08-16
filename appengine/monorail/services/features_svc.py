@@ -5,14 +5,18 @@
 
 """A class that provides persistence for Monorail's additional features.
 
-Business objects are described in tracker_pb2.py and tracker_bizobj.py.
+Business objects are described in tracker_pb2.py, features_pb2.py, and
+tracker_bizobj.py.
 """
 
 import collections
 import logging
 
 from features import filterrules_helpers
+from framework import framework_bizobj
 from framework import sql
+from proto import features_pb2
+from services import caches
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 
@@ -23,7 +27,9 @@ PROJECT2SAVEDQUERY_TABLE_NAME = 'Project2SavedQuery'
 SAVEDQUERYEXECUTESINPROJECT_TABLE_NAME = 'SavedQueryExecutesInProject'
 USER2SAVEDQUERY_TABLE_NAME = 'User2SavedQuery'
 FILTERRULE_TABLE_NAME = 'FilterRule'
-FILTERRULE_COLS = ['project_id', 'rank', 'predicate', 'consequence']
+HOTLIST_TABLE_NAME = 'Hotlist'
+HOTLIST2ISSUE_TABLE_NAME = 'Hotlist2Issue'
+HOTLIST2USER_TABLE_NAME = 'Hotlist2User'
 
 
 QUICKEDITHISTORY_COLS = [
@@ -33,6 +39,80 @@ SAVEDQUERY_COLS = ['id', 'name', 'base_query_id', 'query']
 PROJECT2SAVEDQUERY_COLS = ['project_id', 'rank', 'query_id']
 SAVEDQUERYEXECUTESINPROJECT_COLS = ['query_id', 'project_id']
 USER2SAVEDQUERY_COLS = ['user_id', 'rank', 'query_id', 'subscription_mode']
+FILTERRULE_COLS = ['project_id', 'rank', 'predicate', 'consequence']
+HOTLIST_COLS = [
+    'id', 'name', 'summary', 'description', 'is_private', 'default_col_spec']
+HOTLIST_ABBR_COLS = ['id', 'name', 'summary', 'is_private']
+HOTLIST2ISSUE_COLS = ['hotlist_id', 'issue_id', 'rank']
+HOTLIST2USER_COLS = ['hotlist_id', 'user_id', 'role_name']
+
+
+class HotlistTwoLevelCache(caches.AbstractTwoLevelCache):
+  """Class to manage both RAM and memcache for Project PBs."""
+
+  def __init__(self, cachemanager, features_service):
+    super(HotlistTwoLevelCache, self).__init__(
+        cachemanager, 'hotlist', 'hotlist:', features_pb2.Hotlist)
+    self.features_service = features_service
+
+  def _DeserializeHotlists(
+      self, hotlist_rows, issue_rows, role_rows):
+    """Convert database rows into a dictionary of Hotlist PB keyed by ID.
+
+    Args:
+      hotlist_rows: a list of hotlist rows from HOTLIST_TABLE_NAME.
+      issue_rows: a list of issue rows from HOTLIST2ISSUE_TABLE_NAME,
+        ordered by rank DESC, issue_id.
+      role_rows: a list of role rows from HOTLIST2USER_TABLE_NAME
+
+    Returns:
+      a dict mapping hotlist_id to hotlist PB"""
+    hotlist_dict = {}
+
+    for hotlist_row in hotlist_rows:
+      (hotlist_id, hotlist_name, summary, description, is_private,
+       default_col_spec) = hotlist_row
+      hotlist = features_pb2.MakeHotlist(
+          hotlist_name, hotlist_id=hotlist_id, summary=summary,
+          description=description, is_private=is_private,
+          default_col_spec=default_col_spec)
+      hotlist_dict[hotlist_id] = hotlist
+
+    for (hotlist_id, issue_id, rank) in issue_rows:
+      hotlist = hotlist_dict.get(hotlist_id)
+      if hotlist:
+        hotlist.iid_rank_pairs.append(
+            features_pb2.MakeHotlistIssue(issue_id=issue_id, rank=rank))
+      else:
+        logging.warn('hotlist %d not found', hotlist_id)
+
+    for (hotlist_id, user_id, role_name) in role_rows:
+      hotlist = hotlist_dict.get(hotlist_id)
+      if not hotlist:
+        logging.warn('hotlist %d not found', hotlist_id)
+      elif role_name == 'owner':
+        hotlist.owner_ids.append(user_id)
+      elif role_name == 'editor':
+        hotlist.editor_ids.append(user_id)
+      elif role_name == 'follower':
+        hotlist.follower_ids.append(user_id)
+      else:
+        logging.info('unknown role name %s', role_name)
+
+    return hotlist_dict
+
+  def FetchItems(self, cnxn, keys):
+    """On RAM and memcache miss, hit the database to get missing hotlists."""
+    hotlist_rows = self.features_service.hotlist_tbl.Select(
+        cnxn, cols=HOTLIST_COLS, hotlist_id=keys)
+    issue_rows = self.features_service.hotlist2issue_tbl.Select(
+        cnxn, cols=HOTLIST2ISSUE_COLS, hotlist_id=keys,
+        order_by=[('rank DESC', ''), ('issue_id', '')])
+    role_rows = self.features_service.hotlist2user_tbl.Select(
+        cnxn, cols=HOTLIST2USER_COLS, hotlist_id=keys)
+    retrieved_dict = self._DeserializeHotlists(
+        hotlist_rows, issue_rows, role_rows)
+    return retrieved_dict
 
 
 class FeaturesService(object):
@@ -57,7 +137,14 @@ class FeaturesService(object):
 
     self.filterrule_tbl = sql.SQLTableManager(FILTERRULE_TABLE_NAME)
 
+    self.hotlist_tbl = sql.SQLTableManager(HOTLIST_TABLE_NAME)
+    self.hotlist2issue_tbl = sql.SQLTableManager(HOTLIST2ISSUE_TABLE_NAME)
+    self.hotlist2user_tbl = sql.SQLTableManager(HOTLIST2USER_TABLE_NAME)
+
     self.saved_query_cache = cache_manager.MakeCache('user', max_size=1000)
+
+    self.hotlist_2lc = HotlistTwoLevelCache(cache_manager, self)
+    self.hotlist_names_owner_to_ids = cache_manager.MakeCache('hotlist')
 
   ### QuickEdit command history
 
@@ -382,3 +469,100 @@ class FeaturesService(object):
   def ExpungeFilterRules(self, cnxn, project_id):
     """Completely destroy filter rule info for the specified project."""
     self.filterrule_tbl.Delete(cnxn, project_id=project_id)
+
+  ### Creating hotlists
+
+  def CreateHotlist(
+      self, cnxn, name, summary, description, owner_ids, editor_ids,
+      issue_ids=None, is_private=None, default_col_spec=None):
+    """Create and store a Hotlist with the given attributes.
+
+    Args:
+      cnxn: connection to SQL database.
+      name: a valid hotlist name.
+      summary: one-line explanation of the hotlist.
+      description: one-page explanation of the hotlist.
+      owner_ids: a list of user IDs for the hotlist owners.
+      editor_ids: a list of user IDs for the hotlist editors.
+      issue_ids: a list of issue IDs for the hotlist issues.
+      is_private: True if the hotlist can only be viewed by owners and editors.
+      default_col_spec: the default columns that show in list view.
+
+    Returns:
+      The int id of the new hotlist.
+
+    Raises:
+      HotlistAlreadyExists: if any of the owners already own a hotlist with
+        the same name.
+    """
+    assert framework_bizobj.IsValidHotlistName(name)
+    if self.LookupHotlistIDs(cnxn, [name], owner_ids):
+      raise HotlistAlreadyExists()
+
+    iid_rank_pairs = [(issue_id, 0) for issue_id in (issue_ids or [])]
+    hotlist = features_pb2.MakeHotlist(
+        name, iid_rank_pairs=iid_rank_pairs, summary=summary,
+        description=description, is_private=is_private, owner_ids=owner_ids,
+        editor_ids=editor_ids, default_col_spec=default_col_spec)
+    hotlist.hotlist_id = self._InsertHotlist(cnxn, hotlist)
+    return hotlist.hotlist_id
+
+  def _InsertHotlist(self, cnxn, hotlist):
+    """Insert the given hotlist into the database."""
+    hotlist_id = self.hotlist_tbl.InsertRow(
+        cnxn, name=hotlist.name, summary=hotlist.summary,
+        description=hotlist.description, is_private=hotlist.is_private,
+        default_col_spec=hotlist.default_col_spec)
+    logging.info('stored hotlist was given id %d', hotlist_id)
+
+    self.hotlist2issue_tbl.InsertRows(
+        cnxn, HOTLIST2ISSUE_COLS,
+        [(hotlist_id, issue.issue_id, issue.rank)
+         for issue in hotlist.iid_rank_pairs],
+        commit=False)
+    self.hotlist2user_tbl.InsertRows(
+        cnxn, HOTLIST2USER_COLS,
+        [(hotlist_id, user_id, 'owner')
+         for user_id in hotlist.owner_ids] +
+        [(hotlist_id, user_id, 'editor')
+         for user_id in hotlist.editor_ids] +
+        [(hotlist_id, user_id, 'follower')
+         for user_id in hotlist.follower_ids])
+
+    return hotlist_id
+
+  ### Lookup hotlist IDs
+
+  def LookupHotlistIDs(self, cnxn, hotlist_names, owner_ids):
+    """Return a dict of (name, owner_id) mapped to hotlist_id for all hotlists
+    with one of the given names and any of the given owners. Hotlists that
+    match multiple owners will be in the dict multiple times."""
+    id_dict, missed_keys = self.hotlist_names_owner_to_ids.GetAll(
+        # name.lower() for case-insensitive uniqueness
+        [(name.lower(), owner_id)
+         for name in hotlist_names for owner_id in owner_ids])
+    if missed_keys:
+      missed_names, missed_owners = zip(*missed_keys)
+      hotlist_rows = self.hotlist_tbl.Select(
+          cnxn, cols=['id', 'name'], name=missed_names)
+      if hotlist_rows:
+        id_to_name = dict(hotlist_rows)
+        hotlist_ids = [row[0] for row in hotlist_rows]
+        role_rows = self.hotlist2user_tbl.Select(
+            cnxn, cols=['hotlist_id', 'owner_id'], hotlist_id=hotlist_ids,
+            user_id=missed_owners, role_name='owner')
+        retrieved_dict = {
+            (id_to_name[hotlist_id], owner_id) : hotlist_id
+            for (hotlist_id, owner_id) in role_rows}
+        to_cache = {
+            (name.lower(), owner_id) : hotlist_id
+            for ((name, owner_id), hotlist_id) in retrieved_dict.items()}
+        self.hotlist_names_owner_to_ids.CacheAll(to_cache)
+        id_dict.update(retrieved_dict)
+
+    return id_dict
+
+
+class HotlistAlreadyExists(Exception):
+  """Tried to create a hotlist with the same name as another hotlist
+  with the same owner."""

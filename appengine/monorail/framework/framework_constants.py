@@ -100,6 +100,8 @@ DEFAULT_DOOM_PERIOD = SECS_PER_DAY * 90
 MAX_PROJECT_PEOPLE = 1000
 MAX_PROJECT_NAME_LENGTH = 63
 
+MAX_HOTLIST_NAME_LENGTH = 80
+
 # When logging potentially long debugging strings, only show this many chars.
 LOGGING_MAX_LENGTH = 2000
 

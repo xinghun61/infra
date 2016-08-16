@@ -154,3 +154,18 @@ def MergeLabels(labels_list, labels_add, labels_remove, excl_prefixes):
                    if lab.lower() not in labels_remove_lower]
 
   return merged_labels, labels_add, labels_remove
+
+
+# Pattern to match a valid hotlist name.
+_RE_HOTLIST_NAME_PATTERN = r"[a-zA-Z][-0-9a-zA-Z]*"
+
+
+# Compiled regexp to match the hotlist name and nothing more before or after.
+RE_HOTLIST_NAME = re.compile(
+    '^%s$' % _RE_HOTLIST_NAME_PATTERN, re.VERBOSE)
+
+
+def IsValidHotlistName(s):
+  """Return true if the given string is a valid hotlist name."""
+  return (RE_HOTLIST_NAME.match(s) and
+          len(s) <= framework_constants.MAX_HOTLIST_NAME_LENGTH)

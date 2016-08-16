@@ -18,7 +18,7 @@ from google.appengine.api import memcache
 from framework import framework_constants
 
 
-INVALIDATE_KIND_VALUES = ['user', 'project', 'issue', 'issue_id']
+INVALIDATE_KIND_VALUES = ['user', 'project', 'issue', 'issue_id', 'hotlist']
 DEFAULT_MAX_SIZE = 10000
 
 
