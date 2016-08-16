@@ -221,9 +221,9 @@ func respondTestFileDefault(ctx *router.Context, params URLParams) {
 			logging.Errorf(c, "failed to unmarshal test results JSON: %+v: %v", data, err)
 			return
 		}
-		aggr.Tests.ToTestList()
+		tl := aggr.ToTestList()
 		buf := &bytes.Buffer{}
-		if err := json.NewEncoder(buf).Encode(aggr.Tests); err != nil {
+		if err := json.NewEncoder(buf).Encode(&tl); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logging.Errorf(c, "failed to marshal test list JSON: %+v, %v", aggr.Tests, err)
 			return

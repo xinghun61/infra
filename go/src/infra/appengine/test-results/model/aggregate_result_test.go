@@ -381,33 +381,25 @@ func TestAggregateResult(t *testing.T) {
 			Convey("Testing with testdata/*.json", func() {
 				good, err := ioutil.ReadFile(filepath.Join("testdata", "results.json"))
 				So(err, ShouldBeNil)
+				t := AggregateResult{}
+				So(json.Unmarshal(good, &t), ShouldBeNil)
 
-				Convey("Absent builder", func() {
-					t := AggregateResult{Builder: "non_existent_builder"}
-					So(json.Unmarshal(good, &t), ShouldNotBeNil)
+				Convey("Has correct version", func() {
+					So(t.Version, ShouldEqual, 4)
 				})
 
-				Convey("Existing builder", func() {
-					t := AggregateResult{Builder: "win_chromium_rel_ng"}
-					So(json.Unmarshal(good, &t), ShouldBeNil)
+				Convey("Marshal and Unmarshal should be inverse ops", func() {
+					var (
+						repeater = AggregateResult{Builder: "win_chromium_rel_ng"}
+						actual   = AggregateResult{Builder: "win_chromium_rel_ng"}
+					)
 
-					Convey("Has correct version", func() {
-						So(t.Version, ShouldEqual, 4)
-					})
+					So(json.Unmarshal(good, &repeater), ShouldBeNil)
+					b, err := json.Marshal(&repeater)
+					So(err, ShouldBeNil)
 
-					Convey("Marshal and Unmarshal should be inverse ops", func() {
-						var (
-							repeater = AggregateResult{Builder: "win_chromium_rel_ng"}
-							actual   = AggregateResult{Builder: "win_chromium_rel_ng"}
-						)
-
-						So(json.Unmarshal(good, &repeater), ShouldBeNil)
-						b, err := json.Marshal(&repeater)
-						So(err, ShouldBeNil)
-
-						So(json.Unmarshal(b, &actual), ShouldBeNil)
-						So(actual, ShouldResemble, t)
-					})
+					So(json.Unmarshal(b, &actual), ShouldBeNil)
+					So(actual, ShouldResemble, t)
 				})
 			})
 		})

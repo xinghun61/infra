@@ -42,7 +42,6 @@ func CleanJSON(r io.Reader) (io.Reader, error) {
 }
 
 // AggregateResult represents "results.json" and "results-small.json" files.
-// The Builder field must be set to the expected builder name before unmarshaling.
 type AggregateResult struct {
 	Version int
 	Builder string
@@ -86,6 +85,37 @@ type BuilderInfo struct {
 	FixableCounts []map[string]int `json:"fixableCounts,omitempty"`
 }
 
+// TestList is a representation an AggregateResult in which
+// the Results and Runtimes fields of all the AggregateTestLeafs
+// are set to nil.
+type TestList struct {
+	Builder string
+	Tests   AggregateTest
+}
+
+// MarshalJSON marshals tl into JSON.
+func (tl *TestList) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]map[string]AggregateTest{
+		tl.Builder: {
+			"tests": tl.Tests,
+		},
+	})
+}
+
+// ToTestList returns a TestList representation of ag.
+// The receiver's Tests field will be modified in the process.
+func (ag *AggregateResult) ToTestList() TestList {
+	tl := TestList{
+		Builder: ag.Builder,
+		Tests:   ag.Tests,
+	}
+	tl.Tests.WalkLeaves(func(_ string, leaf *AggregateTestLeaf) {
+		leaf.Results = nil
+		leaf.Runtimes = nil
+	})
+	return tl
+}
+
 // MarshalJSON marshal ag into JSON.
 func (ag *AggregateResult) MarshalJSON() ([]byte, error) {
 	v, err := json.Marshal(ag.Version)
@@ -114,6 +144,18 @@ func (ag *AggregateResult) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// extractBuilderName gets the builder name from the supplied map.
+// This depends on the fact that AggregateResults are expected to
+// only have two top-level keys: (1) "version" (2) the builder name.
+func extractBuilderName(m map[string]json.RawMessage) (string, error) {
+	for k := range m {
+		if k != "version" {
+			return k, nil
+		}
+	}
+	return "", errors.New("builder name not found")
+}
+
 // UnmarshalJSON decodes JSON data into t.
 //
 // The expected format is a modified version of the format described in the URL
@@ -135,15 +177,18 @@ func (ag *AggregateResult) UnmarshalJSON(data []byte) error {
 	}
 	ag.Version = n
 
+	// Builder name.
+
+	builder, err := extractBuilderName(m)
+	if err != nil {
+		return err
+	}
+	ag.Builder = builder
+
 	// BuilderInfo.
 
-	raw, ok := m[ag.Builder]
-	if !ok {
-		return fmt.Errorf("model: missing builder %q", ag.Builder)
-	}
-
 	var info *BuilderInfo
-	if err := json.Unmarshal(raw, &info); err != nil {
+	if err := json.Unmarshal(m[builder], &info); err != nil {
 		return err
 	}
 	ag.BuilderInfo = info
@@ -177,7 +222,7 @@ type fieldError struct {
 }
 
 func (f *fieldError) Error() string {
-	return fmt.Sprintf("model: field %q has invalid value: %v", f.Name, f.Value)
+	return fmt.Sprintf("model: field %q has invalid value: %v (%T)", f.Name, f.Value, f.Value)
 }
 
 func (ag *AggregateResult) checkFields() error {
@@ -257,15 +302,6 @@ func (at AggregateTest) WalkLeaves(fn func(key string, leaf *AggregateTestLeaf))
 	})
 }
 
-// ToTestList set the Results and Runtimes fields of all the
-// AggregateTestLeaf under the receiver AggregateTest to nil.
-func (at AggregateTest) ToTestList() {
-	at.WalkLeaves(func(_ string, leaf *AggregateTestLeaf) {
-		leaf.Results = nil
-		leaf.Runtimes = nil
-	})
-}
-
 // MarshalJSON marshals at into JSON.
 func (at *AggregateTest) MarshalJSON() ([]byte, error) {
 	if at == nil {
@@ -334,7 +370,7 @@ func (at *AggregateTest) constructTree(m map[string]interface{}) error {
 	return nil
 }
 
-// isAggregateTestLeaf returns true if the supplied map is likely represents a
+// isAggregateTestLeaf returns true if the supplied map is likely an
 // AggregateTestLeaf.
 func isAggregateTestLeaf(m map[string]interface{}) bool {
 	for key, val := range m {
@@ -376,7 +412,7 @@ type aggregateTestLeafAux struct {
 	Bugs     []string         `json:"bugs,omitempty"`
 }
 
-// MarshalJSON marshal l into JSON.
+// MarshalJSON marshals leaf into JSON.
 func (leaf *AggregateTestLeaf) MarshalJSON() ([]byte, error) {
 	aux := aggregateTestLeafAux{
 		Results:  leaf.Results,
@@ -389,7 +425,7 @@ func (leaf *AggregateTestLeaf) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&aux)
 }
 
-// UnmarshalJSON unmarshal the supplied data into l.
+// UnmarshalJSON unmarshals the supplied data into leaf.
 func (leaf *AggregateTestLeaf) UnmarshalJSON(data []byte) error {
 	var aux aggregateTestLeafAux
 	if err := json.Unmarshal(data, &aux); err != nil {
@@ -654,13 +690,18 @@ func isDebugBuilder(builder string) bool {
 	return false
 }
 
-// Trim trims the leaves of Tests in ar to the specified size.
+// Trim trims ag's fields to the specified size.
 func (ag *AggregateResult) Trim(size int) error {
 	t := runtimeThresholdNormal
 
 	if isDebugBuilder(ag.Builder) {
 		t = runtimeThresholdDebug
 	}
+
+	ag.SecondsEpoch = ag.SecondsEpoch[:min(size, len(ag.SecondsEpoch))]
+	ag.BlinkRevs = ag.BlinkRevs[:min(size, len(ag.BlinkRevs))]
+	ag.ChromeRevs = ag.ChromeRevs[:min(size, len(ag.ChromeRevs))]
+	ag.BuildNumbers = ag.BuildNumbers[:min(size, len(ag.BuildNumbers))]
 
 	return ag.Tests.trim(size, t)
 }

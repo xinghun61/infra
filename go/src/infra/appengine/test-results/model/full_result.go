@@ -155,7 +155,6 @@ func (ft *FullTest) UnmarshalJSON(data []byte) error {
 }
 
 // constructTree constructs the tree of Nodes from the supplied map.
-// constructTree returns an error if the receiver is nil.
 func (ft *FullTest) constructTree(m map[string]interface{}) error {
 	for k, v := range m {
 		mm, ok := v.(map[string]interface{})
