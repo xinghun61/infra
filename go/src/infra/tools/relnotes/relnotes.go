@@ -20,6 +20,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"text/template"
 )
 
 const monorailURL = "https://bugs.chromium.org/p/%s/issues/detail?id=%s"
@@ -31,16 +32,52 @@ var (
 	monorailRE = regexp.MustCompile("\n    BUG=([a-z]+):([0-9]+)")
 	authorRE   = regexp.MustCompile("\nAuthor:.+<(.+)>")
 	hashRE     = regexp.MustCompile("commit (.*)\n")
+	reviewRE   = regexp.MustCompile("\n    (Review-Url|Reviewed-on): (.*)\n")
+
+	markdownTxt = `
+# Release Notes
+
+- {{len .Commits}} commits, {{.NumBugs}} bugs affected since {{.Since}}
+- {{len .Authors}} Authors:
+{{- range .Authors}}
+  - {{ . }}
+{{- end}}
+
+## Changes in this release
+
+{{range .Commits -}}
+- [{{.Summary}}]({{.ReviewURL}}) ({{.Author}})
+{{end}}
+
+## Bugs updated, by author
+{{range $author, $bugs := .Bugs -}}
+### {{$author}}
+  {{range $bug, $unused := $bugs -}}
+    [{{$bug}}]({{$bug}})
+  {{end}}
+{{end}}
+`
+	markdownTmpl = template.Must(template.New("markdown").Parse(markdownTxt))
 )
+
+type tmplData struct {
+	NumBugs int
+	Since   string
+	Authors []string
+	Commits []*commit
+	Bugs    map[string]map[string]bool
+}
 
 type commit struct {
 	hash      string
-	author    string
+	Author    string
 	committer string
+	Summary   string
+	ReviewURL string
 	bugs      []string
 }
 
-func parseCommit(s string) *commit {
+func parsecommit(s string) *commit {
 	c := &commit{}
 	bugs := bugRE.FindAllStringSubmatch(s, -1)
 	for _, b := range bugs {
@@ -54,7 +91,7 @@ func parseCommit(s string) *commit {
 
 	authors := authorRE.FindAllStringSubmatch(s, -1)
 	for _, a := range authors {
-		c.author = a[1]
+		c.Author = a[1]
 	}
 
 	hashes := hashRE.FindAllStringSubmatch(s, -1)
@@ -62,22 +99,40 @@ func parseCommit(s string) *commit {
 		c.hash = h[1]
 	}
 
-	if strings.Trim(c.author, "\n\t ") == "" {
+	c.Summary = strings.Trim(strings.Split(s, "\n")[4], " \t")
+	reviewURL := reviewRE.FindAllStringSubmatch(s, -1)
+	if len(reviewURL) > 0 && len(reviewURL[0]) > 2 {
+		c.ReviewURL = reviewURL[0][2]
+	}
+
+	if strings.Trim(c.Author, "\n\t ") == "" {
 		fmt.Print(s)
 	}
 	return c
 }
 
+func usage() {
+	fmt.Fprintf(os.Stderr, "Usage of %s <flags> [relative path]:\n", os.Args[0])
+	flag.PrintDefaults()
+}
+
 func main() {
+	flag.Usage = usage
 	flag.Parse()
+	args := flag.Args()
+	path := "."
+	if len(args) > 0 {
+		path = args[0]
+	}
+
 	var cmd *exec.Cmd
 	switch {
 	case *hash != "":
-		cmd = exec.Command("git", "log", fmt.Sprintf("%s..", *hash), ".")
+		cmd = exec.Command("git", "log", fmt.Sprintf("%s..", *hash), path)
 	case *date != "":
-		cmd = exec.Command("git", "log", "--since", *date, ".")
+		cmd = exec.Command("git", "log", "--since", *date, path)
 	default:
-		fmt.Printf("Please specify either --hash or --date\n")
+		fmt.Printf("Please specify either --since-hash or --since-date\n")
 		os.Exit(1)
 	}
 	cmd.Stderr = os.Stderr
@@ -96,26 +151,33 @@ func main() {
 	}
 	text := string(bytes)
 	re := regexp.MustCompile("(^|\n)commit ")
-	commits := re.Split(text, -1)[1:]
+	commitMsgs := re.Split(text, -1)[1:]
 
 	commitsByBug := map[string][]*commit{}
 	commitsByAuthor := map[string][]*commit{}
 	authors := map[string]bool{}
 	bugs := map[string]bool{}
 	bugsByAuthor := map[string]map[string]bool{}
+	summaries := []string{}
+	commits := []*commit{}
 
-	for _, cstr := range commits {
-		c := parseCommit(cstr)
+	for _, cstr := range commitMsgs {
+		c := parsecommit(cstr)
+		if c.ReviewURL == "" {
+			continue
+		}
+		commits = append(commits, c)
+		summaries = append(summaries, c.Summary)
 		for _, b := range c.bugs {
 			commitsByBug[b] = append(commitsByBug[b], c)
 			bugs[b] = true
-			if _, ok := bugsByAuthor[c.author]; !ok {
-				bugsByAuthor[c.author] = map[string]bool{}
+			if _, ok := bugsByAuthor[c.Author]; !ok {
+				bugsByAuthor[c.Author] = map[string]bool{}
 			}
-			bugsByAuthor[c.author][b] = true
+			bugsByAuthor[c.Author][b] = true
 		}
-		commitsByAuthor[c.author] = append(commitsByAuthor[c.author], c)
-		authors[c.author] = true
+		commitsByAuthor[c.Author] = append(commitsByAuthor[c.Author], c)
+		authors[c.Author] = true
 	}
 
 	fixed := []string{}
@@ -128,14 +190,16 @@ func main() {
 		toNotify = append(toNotify, a)
 	}
 
-	fmt.Printf("%d Patches since %s %s\n", len(commits), *hash, *date)
-	fmt.Printf("%d Authors:\n%v\n\n", len(toNotify), strings.Join(toNotify, ", "))
-	fmt.Printf("%d Bugs\n", len(fixed))
-
-	for a, bugs := range bugsByAuthor {
-		fmt.Printf("\n%s's bugs:\n", a)
-		for b := range bugs {
-			fmt.Printf("%s\n", b)
-		}
+	data := tmplData{
+		NumBugs: len(fixed),
+		Since:   fmt.Sprintf("%s%s", *hash, *date),
+		Authors: toNotify,
+		Commits: commits,
+		Bugs:    bugsByAuthor,
 	}
+
+	f := bufio.NewWriter(os.Stdout)
+	markdownTmpl.Execute(f, data)
+
+	f.Flush()
 }
