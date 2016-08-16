@@ -67,7 +67,7 @@ class PackageDef(object):
     """Returns a list of Go packages that must be installed for this package."""
     return self.pkg_def.get('go_packages') or []
 
-  def should_build(self, builder):
+  def should_build(self, builder, host_vars):
     """Returns True if package should be built in the current environment.
 
     Takes into account 'builders' and 'supports_cross_compilation' properties of
@@ -80,8 +80,16 @@ class PackageDef(object):
       return False
 
     # If cross-compiling, pick only packages that support cross-compilation.
-    if is_cross_compiling():
-      return bool(self.pkg_def.get('supports_cross_compilation'))
+    if (is_cross_compiling() and
+        not self.pkg_def.get('supports_cross_compilation')):
+      return False
+
+    # Verify target platform is supported for the package if they're specified.
+    supported_platforms = self.pkg_def.get('supported_platforms')
+    if supported_platforms:
+      target_platform = (os.environ.get('GOOS') or
+                         host_vars['platform'].split('-')[0])
+      return target_platform in supported_platforms
 
     return True
 
@@ -93,6 +101,13 @@ def is_cross_compiling():
   the other is specified as well.
   """
   return bool(os.environ.get('GOOS')) or bool(os.environ.get('GOARCH'))
+
+
+def get_env_dot_py():
+  if os.environ.get('GOOS') == 'android':
+    return 'mobile_env.py'
+  else:
+    return 'env.py'
 
 
 def run_python(script, args):
@@ -253,7 +268,7 @@ def bootstrap_go_toolset(go_workspace):
     # env.py does the actual job of bootstrapping if the toolset is missing.
     output = subprocess.check_output(
         args=[
-          'python', '-u', os.path.join(new_workspace, 'env.py'),
+          'python', '-u', os.path.join(new_workspace, get_env_dot_py()),
           'go', 'env',
         ],
         executable=sys.executable)
@@ -286,7 +301,7 @@ def run_go_clean(go_workspace, packages, goos=None, goarch=None):
     print_go_step_title('Cleaning:\n  %s' % '\n  '.join(packages))
     subprocess.check_call(
         args=[
-          'python', '-u', os.path.join(new_workspace, 'env.py'),
+          'python', '-u', os.path.join(new_workspace, get_env_dot_py()),
           'go', 'clean', '-i', '-r',
         ] + list(packages),
         executable=sys.executable,
@@ -316,7 +331,7 @@ def run_go_install(
     print_go_step_title('%s:\n  %s' % (title, '\n  '.join(packages)))
     subprocess.check_call(
         args=[
-          'python', '-u', os.path.join(new_workspace, 'env.py'),
+          'python', '-u', os.path.join(new_workspace, get_env_dot_py()),
           'go', 'install', '-v',
         ] + rebuild_opt + list(packages),
         executable=sys.executable,
@@ -341,7 +356,7 @@ def run_go_build(
     print_go_step_title('%s %s' % (title, package))
     subprocess.check_call(
         args=[
-          'python', '-u', os.path.join(new_workspace, 'env.py'),
+          'python', '-u', os.path.join(new_workspace, get_env_dot_py()),
           'go', 'build',
         ] + rebuild_opt + ['-v', '-o', output, package],
         executable=sys.executable,
@@ -772,7 +787,8 @@ def run(
   tags.append('build_host_os_ver:' + host_vars['os_ver'])
 
   all_packages = enumerate_packages(py_venv, package_def_dir, package_def_files)
-  packages_to_build = [p for p in all_packages if p.should_build(builder)]
+  packages_to_build = [p for p in all_packages if p.should_build(builder,
+                                                                 host_vars)]
 
   print_title('Overview')
   if upload:

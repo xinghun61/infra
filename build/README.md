@@ -30,6 +30,11 @@ builders:
 # If true, it means the package is friendly to different GOOS and GOARCH. If not
 # set or false, this package will be skipped when doing cross-compilation.
 supports_cross_compilation: true
+# Optional list of OSes for which to build this package. Supported values: win,
+# linux, mac, android
+supported_platforms:
+  - android
+  - ...
 # Optional list of go packages to 'go install' before zipping this package.
 go_packages:
   - github.com/luci/luci-go/cipd/client/cmd/cipd

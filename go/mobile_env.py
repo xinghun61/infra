@@ -59,9 +59,10 @@ def _get_android_env(env):
 
 
 # Run `gomobile init` to fetch the android NDK.
+cwd = os.path.dirname(os.path.realpath(__file__))
 if not os.path.exists(ANDROID_NDK_PATH):
   cmd = [sys.executable, 'env.py', 'gomobile', 'init']
-  subprocess.check_call(cmd)
+  subprocess.check_call(cmd, cwd=cwd)
 
 # Keep track of any changed env vars for printing to stdout later.
 old = os.environ.copy()
