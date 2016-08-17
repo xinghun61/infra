@@ -14,6 +14,7 @@ import settings
 from features import autolink
 from features import cues
 from features import filterrules
+from features import userhotlists
 from features import inboundemail
 from features import notify
 from features import savedqueries
@@ -223,6 +224,7 @@ class ServletRegistry(object):
 
     self._SetupUserServlets({
         urls.SAVED_QUERIES: savedqueries.SavedQueries,
+        urls.HOTLISTS: userhotlists.UserHotlists,
         })
 
     # These servlets accept POST, but never write to the database, so they can

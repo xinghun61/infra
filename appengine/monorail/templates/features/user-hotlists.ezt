@@ -1,0 +1,22 @@
+[# this is a placeholder for the actual page (another CL)]
+<ul>
+[for owner_of_hotlists]
+  <li><b>[owner_of_hotlists.name]:</b> [owner_of_hotlists.summary]<br>
+    <i>[owner_of_hotlists.description]</i><br>
+    Role: Owner</li>
+[end]
+[for editor_of_hotlists]
+  <li><b>[editor_of_hotlists.name]:</b> [editor_of_hotlists.summary]<br>
+    <i>[editor_of_hotlists.description]</i><br>
+    Role: Editor</li>
+[end]
+</ul>
+[if-any follower_of_hotlists]
+Hotlists starred by [if-any viewing_self]me[else][viewed_username][end]
+<ul>
+[for follower_of_hotlists]
+  <li><b>[follower_of_hotlists.name]:</b> [follower_of_hotlists.summary]<br>
+    <i>[follower_of_hotlists.description]</i></li>
+[end]
+</ul>
+[end]

@@ -68,6 +68,7 @@ LOAD_API_CLIENT_CONFIGS_CRON = '/_cron/loadApiClientConfigs'
 # URLs of User pages
 SAVED_QUERIES = '/queries'
 DASHBOARD = '/dashboard'
+HOTLISTS = '/hotlists'
 
 # URLs of issue tracker project pages
 ISSUE_LIST = '/issues/list'

@@ -74,7 +74,7 @@ class HotlistTwoLevelCache(caches.AbstractTwoLevelCache):
        default_col_spec) = hotlist_row
       hotlist = features_pb2.MakeHotlist(
           hotlist_name, hotlist_id=hotlist_id, summary=summary,
-          description=description, is_private=is_private,
+          description=description, is_private=bool(is_private),
           default_col_spec=default_col_spec)
       hotlist_dict[hotlist_id] = hotlist
 
@@ -104,7 +104,7 @@ class HotlistTwoLevelCache(caches.AbstractTwoLevelCache):
   def FetchItems(self, cnxn, keys):
     """On RAM and memcache miss, hit the database to get missing hotlists."""
     hotlist_rows = self.features_service.hotlist_tbl.Select(
-        cnxn, cols=HOTLIST_COLS, hotlist_id=keys)
+        cnxn, cols=HOTLIST_COLS, id=keys)
     issue_rows = self.features_service.hotlist2issue_tbl.Select(
         cnxn, cols=HOTLIST2ISSUE_COLS, hotlist_id=keys,
         order_by=[('rank DESC', ''), ('issue_id', '')])
@@ -145,6 +145,7 @@ class FeaturesService(object):
 
     self.hotlist_2lc = HotlistTwoLevelCache(cache_manager, self)
     self.hotlist_names_owner_to_ids = cache_manager.MakeCache('hotlist')
+    self.hotlist_user_to_ids = cache_manager.MakeCache('hotlist')
 
   ### QuickEdit command history
 
@@ -538,7 +539,6 @@ class FeaturesService(object):
     with one of the given names and any of the given owners. Hotlists that
     match multiple owners will be in the dict multiple times."""
     id_dict, missed_keys = self.hotlist_names_owner_to_ids.GetAll(
-        # name.lower() for case-insensitive uniqueness
         [(name.lower(), owner_id)
          for name in hotlist_names for owner_id in owner_ids])
     if missed_keys:
@@ -561,6 +561,35 @@ class FeaturesService(object):
         id_dict.update(retrieved_dict)
 
     return id_dict
+
+  def LookupUserHotlists(self, cnxn, user_ids):
+    """Return a dict of user_id mapped to hotlist_id for all given users."""
+    id_dict, missed_ids = self.hotlist_user_to_ids.GetAll(user_ids)
+    if missed_ids:
+      retrieved_dict = {user_id: [] for user_id in missed_ids}
+      id_rows = self.hotlist2user_tbl.Select(
+          cnxn, cols=['user_id', 'hotlist_id'], user_id=user_ids)
+      for (user_id, hotlist_id) in id_rows:
+        retrieved_dict[user_id].append(hotlist_id)
+      self.hotlist_user_to_ids.CacheAll(retrieved_dict)
+      id_dict.update(retrieved_dict)
+
+    return id_dict
+
+  ### Get hotlists
+
+  def GetHotlists(self, cnxn, hotlist_ids, use_cache=True):
+    hotlists_dict, _missed_ids = self.hotlist_2lc.GetAll(
+        cnxn, hotlist_ids, use_cache=use_cache)
+    return [hotlists_dict[hotlist_id] for hotlist_id in hotlist_ids
+            if hotlist_id in hotlists_dict]
+
+  def GetHotlistsByUserID(self, cnxn, user_id, use_cache=True):
+    """Get a list of hotlist PBs for a given user."""
+    hotlist_id_dict = self.LookupUserHotlists(cnxn, [user_id])
+    hotlists = self.GetHotlists(
+        cnxn, hotlist_id_dict.get(user_id, []), use_cache=use_cache)
+    return hotlists
 
 
 class HotlistAlreadyExists(Exception):
