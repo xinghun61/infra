@@ -16,8 +16,8 @@ func init() {
 	r := router.New()
 	baseMW := base()
 
-	r.GET("/testfile", baseMW, GetHandler)
-	r.GET("/testfile/", baseMW, GetHandler)
+	r.GET("/testfile", baseMW, getHandler)
+	r.GET("/testfile/", baseMW, getHandler)
 
 	http.DefaultServeMux.Handle("/", r)
 }

@@ -108,8 +108,8 @@ func getBuildersHandler(ctx *router.Context) {
 	}
 
 	var out io.Reader = bytes.NewReader(res)
-	if callback := r.FormValue("callback"); callback != "" {
-		out = wrapCallback(out, callback)
+	if c := r.FormValue("callback"); callbackNameRx.MatchString(c) {
+		out = wrapCallback(out, c)
 	}
 
 	n, err := io.Copy(w, out)

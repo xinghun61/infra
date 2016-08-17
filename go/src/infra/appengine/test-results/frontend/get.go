@@ -35,8 +35,8 @@ const (
 // JavaScript function names. Not a comprehensive solution.
 var callbackNameRx = regexp.MustCompile(`^[A-Za-z0-9_]+$`)
 
-// GetHandler is the HTTP handler for GET /testfile requests.
-func GetHandler(ctx *router.Context) {
+// getHandler is the HTTP handler for GET /testfile requests.
+func getHandler(ctx *router.Context) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -75,11 +75,12 @@ func respondTestFileData(ctx *router.Context, params URLParams) {
 
 	tf := model.TestFile{ID: key.IntID()}
 
-	if err := datastore.Get(c).Get(&tf); err == datastore.ErrNoSuchEntity {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		logging.Errorf(c, "TestFile with ID %v not found: %v", key.IntID(), err)
-		return
-	} else if err != nil {
+	if err := datastore.Get(c).Get(&tf); err != nil {
+		if err == datastore.ErrNoSuchEntity {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			logging.Errorf(c, "TestFile with ID %v not found: %v", key.IntID(), err)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		logging.Errorf(c, "failed to get TestFile with ID %v: %v", key.IntID(), err)
 		return
@@ -115,15 +116,6 @@ func respondTestFileList(ctx *router.Context, params URLParams) {
 		return
 	}
 
-	args := templates.Args{
-		"Master":      params.Master,
-		"Builder":     params.Builder,
-		"TestType":    params.TestType,
-		"BuildNumber": params.BuildNumber,
-		"Name":        params.Name,
-		"Files":       testFiles,
-	}
-
 	if params.Callback != "" {
 		b, err := keysJSON(c, testFiles)
 		if err != nil {
@@ -135,7 +127,14 @@ func respondTestFileList(ctx *router.Context, params URLParams) {
 		return
 	}
 
-	templates.MustRender(c, w, "pages/showfilelist.html", args)
+	templates.MustRender(c, w, "pages/showfilelist.html", templates.Args{
+		"Master":      params.Master,
+		"Builder":     params.Builder,
+		"TestType":    params.TestType,
+		"BuildNumber": params.BuildNumber,
+		"Name":        params.Name,
+		"Files":       testFiles,
+	})
 }
 
 func keysJSON(c context.Context, tfiles []*model.TestFile) ([]byte, error) {
@@ -221,14 +220,15 @@ func respondTestFileDefault(ctx *router.Context, params URLParams) {
 			logging.Errorf(c, "failed to unmarshal test results JSON: %+v: %v", data, err)
 			return
 		}
+
 		tl := aggr.ToTestList()
-		buf := &bytes.Buffer{}
-		if err := json.NewEncoder(buf).Encode(&tl); err != nil {
+		buf := bytes.Buffer{}
+		if err := json.NewEncoder(&buf).Encode(&tl); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logging.Errorf(c, "failed to marshal test list JSON: %+v, %v", aggr.Tests, err)
 			return
 		}
-		finalData = buf
+		finalData = &buf
 	}
 
 	respondJSON(c, w, finalData, tf.LastMod, params.Callback)
