@@ -138,13 +138,15 @@
   'pyasn1': {
     'version': '0.1.7',
     'build': '0',
-    'gs': 'e32b91c5a5d9609fb1d07d8685a884bab22ca6d0.tar.gz',
+    'repo': 'external/github.com/etingof/pyasn1',
+    'rev': '4181b2379eeae3d6fd9f4f76d0e6ae3789ed56e7',
     'implicit': True,  # Required by oauth2client
   },
   'pyasn1_modules': {
     'version': '0.0.5',
     'build': '0',
-    'gs': '108bdef1b3ca7050ff93c59e7ef7225c9c1a8b07.tar.gz',
+    'repo': 'external/github.com/etingof/pyasn1-modules',
+    'rev': '956fee4f8e5fd3b1c500360dc4aa12dc5a766cb2',
     'implicit': True,  # Required by oauth2client
   },
   'python_dateutil': {
