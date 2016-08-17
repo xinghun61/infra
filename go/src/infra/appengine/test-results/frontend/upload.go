@@ -389,12 +389,14 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 		// code errors over other errors.
 		var e error
 		for _, err := range errs {
-			logging.WithError(err).Errorf(c, "updateIncremental")
-			se, ok := err.(statusError)
-			if ok && se.code == http.StatusInternalServerError {
-				return se
+			if err != nil {
+				logging.WithError(err).Errorf(c, "updateIncremental: inside transaction")
+				se, ok := err.(statusError)
+				if ok && se.code == http.StatusInternalServerError {
+					return se
+				}
+				e = err
 			}
-			e = err
 		}
 		return e
 	}, &datastore.TransactionOptions{XG: true})
