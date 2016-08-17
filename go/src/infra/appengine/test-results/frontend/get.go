@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"infra/appengine/test-results/masters"
 	"infra/appengine/test-results/model"
 	"io"
 	"net/http"
@@ -153,9 +154,9 @@ func respondTestFileDefault(ctx *router.Context, params URLParams) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	m := model.MasterByIdentifier(params.Master)
+	m := masters.ByIdentifier(params.Master)
 	if m == nil {
-		m = model.MasterByName(params.Name)
+		m = masters.ByName(params.Name)
 		if m == nil {
 			http.Error(w,
 				fmt.Sprintf("master not found by identifier: %s and by name: %s", params.Master, params.Name),

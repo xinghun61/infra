@@ -20,6 +20,7 @@ import (
 	"github.com/luci/luci-go/server/router"
 
 	"infra/appengine/test-results/builderstate"
+	"infra/appengine/test-results/masters"
 	"infra/appengine/test-results/model"
 )
 
@@ -90,7 +91,7 @@ func withParsedUploadForm(ctx *router.Context, next router.Handler) {
 	u := &UploadParams{}
 
 	if v := r.MultipartForm.Value["master"]; len(v) > 0 {
-		if m := model.MasterByName(v[0]); m != nil {
+		if m := masters.ByName(v[0]); m != nil {
 			u.Master = m.Identifier
 			u.DeprecatedMaster = v[0]
 		} else {

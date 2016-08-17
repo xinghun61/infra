@@ -1,4 +1,4 @@
-package model
+package masters
 
 import (
 	"testing"
@@ -13,7 +13,7 @@ func TestMasters(t *testing.T) {
 		Convey("Known Masters", func() {
 			Convey("ByName", func() {
 				Convey("existing", func() {
-					So(MasterByName("TryServerChromiumMac"), ShouldResemble, &Master{
+					So(ByName("TryServerChromiumMac"), ShouldResemble, &Master{
 						Name:       "TryServerChromiumMac",
 						Identifier: "tryserver.chromium.mac",
 						Groups:     []string{"Unused"},
@@ -21,14 +21,14 @@ func TestMasters(t *testing.T) {
 				})
 
 				Convey("not existing", func() {
-					So(MasterByName("FooBar"), ShouldBeNil)
-					So(MasterByName("tryserver.chromium.mac"), ShouldBeNil)
+					So(ByName("FooBar"), ShouldBeNil)
+					So(ByName("tryserver.chromium.mac"), ShouldBeNil)
 				})
 			})
 
 			Convey("ByIdentifier", func() {
 				Convey("existing", func() {
-					So(MasterByIdentifier("tryserver.chromium.linux"), ShouldResemble, &Master{
+					So(ByIdentifier("tryserver.chromium.linux"), ShouldResemble, &Master{
 						Name:       "TryServerChromiumLinux",
 						Identifier: "tryserver.chromium.linux",
 						Groups:     []string{"Unused"},
@@ -36,8 +36,8 @@ func TestMasters(t *testing.T) {
 				})
 
 				Convey("not existing", func() {
-					So(MasterByIdentifier("foo.bar"), ShouldBeNil)
-					So(MasterByIdentifier("TryServerChromiumLinux"), ShouldBeNil)
+					So(ByIdentifier("foo.bar"), ShouldBeNil)
+					So(ByIdentifier("TryServerChromiumLinux"), ShouldBeNil)
 				})
 			})
 		})

@@ -105,9 +105,9 @@ type Master struct {
 	Groups     []string
 }
 
-// MasterByIdentifier returns the first Master (if any) in the list of
+// ByIdentifier returns the first Master (if any) in the list of
 // known masters that has its Identifier field equal to ident.
-func MasterByIdentifier(ident string) *Master {
+func ByIdentifier(ident string) *Master {
 	for _, m := range Known {
 		if m.Identifier == ident {
 			return m
@@ -116,9 +116,9 @@ func MasterByIdentifier(ident string) *Master {
 	return nil
 }
 
-// MasterByName returns the first Master (if any) in the list of
+// ByName returns the first Master (if any) in the list of
 // known masters that has its Name field equal to name.
-func MasterByName(name string) *Master {
+func ByName(name string) *Master {
 	for _, m := range Known {
 		if m.Name == name {
 			return m
