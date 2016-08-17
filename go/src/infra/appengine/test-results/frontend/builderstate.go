@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/luci/gae/service/memcache"
 	"github.com/luci/luci-go/common/logging"
@@ -31,23 +30,23 @@ func getBuilderStateHandler(ctx *router.Context) {
 			if err == memcache.ErrCacheMiss {
 				err = fmt.Errorf("builderstate: builder data not generated: %v", err)
 			}
-			logging.Errorf(c, err.Error())
+			logging.WithError(err).Errorf(c, "getBuilderStateHandler")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
-
-	start := time.Now()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	n, err := w.Write(item.Value())
 
 	if err != nil {
-		logging.Errorf(c, "error writing response: wrote %d bytes of %s, %s", n, item.Value(), err)
+		logging.Fields{
+			logging.ErrorKey: err,
+			"n":              n,
+			"bytes":          item.Value(),
+		}.Errorf(c, "getBuilderStateHandler: error writing HTTP response")
 	}
-
-	logging.Debugf(c, "took %s to write response", time.Since(start))
 }
 
 // updateBuilderStateHandler refreshes data in the builder state
@@ -66,6 +65,9 @@ func updateBuilderStateHandler(ctx *router.Context) {
 	n, err := io.WriteString(w, "OK")
 
 	if err != nil {
-		logging.Errorf(c, "error writing response: wrote %d bytes of %s, %s", n, "OK", err)
+		logging.Fields{
+			logging.ErrorKey: err,
+			"n":              n,
+		}.Errorf(c, "updateBuilderStateHandler: error writing HTTP response")
 	}
 }

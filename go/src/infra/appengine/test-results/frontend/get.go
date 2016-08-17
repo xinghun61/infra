@@ -68,8 +68,8 @@ func respondTestFileData(ctx *router.Context, params URLParams) {
 
 	key, err := datastore.NewKeyEncoded(params.Key)
 	if err != nil {
+		logging.Fields{logging.ErrorKey: err, "key": key}.Errorf(c, "encode key")
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		logging.Errorf(c, "failed to encode key: %v: %v", key, err)
 		return
 	}
 
@@ -93,6 +93,7 @@ func respondTestFileData(ctx *router.Context, params URLParams) {
 	}
 
 	if err := tf.GetData(c); err != nil {
+		logging.WithError(err).Errorf(c, "respondTestFileData: GetData")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -112,7 +113,7 @@ func respondTestFileList(ctx *router.Context, params URLParams) {
 	if len(testFiles) == 0 {
 		e := fmt.Sprintf("no TestFile found for query: %+v", q)
 		http.Error(w, e, http.StatusNotFound)
-		logging.Errorf(c, e)
+		logging.Infof(c, e)
 		return
 	}
 
@@ -252,7 +253,7 @@ func getFirstTestFile(c context.Context, q *datastore.Query) (*model.TestFile, e
 	}
 	if len(tfs) == 0 {
 		e := ErrNoMatches(fmt.Sprintf("no TestFile found for query: %+v", q))
-		logging.Errorf(c, e.Error())
+		logging.Infof(c, e.Error())
 		return nil, e
 	}
 	return tfs[0], nil

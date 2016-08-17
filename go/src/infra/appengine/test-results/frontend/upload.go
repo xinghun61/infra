@@ -78,10 +78,11 @@ func SetUploadParams(c context.Context, p *UploadParams) context.Context {
 // values are missing, WithParsed writes the HTTP error
 // to the response writer and stops execution of the request.
 func withParsedUploadForm(ctx *router.Context, next router.Handler) {
-	w, r := ctx.Writer, ctx.Request
+	c, w, r := ctx.Context, ctx.Writer, ctx.Request
 	const _1M = 1 << 20
 
 	if err := r.ParseMultipartForm(_1M); err != nil {
+		logging.WithError(err).Errorf(c, "withParsedUploadForm: error parsing form")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -100,6 +101,7 @@ func withParsedUploadForm(ctx *router.Context, next router.Handler) {
 	if v := r.MultipartForm.Value["builder"]; len(v) > 0 {
 		u.Builder = v[0]
 	} else {
+		logging.Errorf(c, "withParsedUploadForm: missing builder")
 		http.Error(w, "missing builder", http.StatusBadRequest)
 		return
 	}
@@ -109,6 +111,7 @@ func withParsedUploadForm(ctx *router.Context, next router.Handler) {
 	}
 
 	if _, ok := r.MultipartForm.File["file"]; !ok {
+		logging.Errorf(c, "withParsedUploadForm: missing file")
 		http.Error(w, "missing file", http.StatusBadRequest)
 		return
 	}
@@ -125,6 +128,7 @@ func uploadHandler(ctx *router.Context) {
 
 	for _, fh := range fileheaders {
 		if err := doFileUpload(c, fh); err != nil {
+			logging.WithError(err).Errorf(c, "uploadHandler")
 			code := http.StatusInternalServerError
 			if se, ok := err.(statusError); ok {
 				code = se.code
@@ -140,6 +144,7 @@ func uploadHandler(ctx *router.Context) {
 func doFileUpload(c context.Context, fh *multipart.FileHeader) error {
 	file, err := fh.Open()
 	if err != nil {
+		logging.WithError(err).Errorf(c, "doFileUpload: file open")
 		return statusError{err, http.StatusInternalServerError}
 	}
 	defer file.Close()
@@ -148,6 +153,7 @@ func doFileUpload(c context.Context, fh *multipart.FileHeader) error {
 	case "incremental_results.json":
 		var incr model.AggregateResult
 		if err := json.NewDecoder(file).Decode(&incr); err != nil {
+			logging.WithError(err).Errorf(c, "doFileUpload: incremental_results.json: unmarshal JSON")
 			return statusError{err, http.StatusBadRequest}
 		}
 		return updateIncremental(c, &incr)
@@ -155,6 +161,7 @@ func doFileUpload(c context.Context, fh *multipart.FileHeader) error {
 	case "full_results.json":
 		bn, data, err := extractBuildNumber(file)
 		if err != nil {
+			logging.WithError(err).Errorf(c, "doFileUpload")
 			if err == ErrInvalidBuildNumber {
 				return statusError{err, http.StatusBadRequest}
 			}
@@ -171,7 +178,7 @@ func doFileUpload(c context.Context, fh *multipart.FileHeader) error {
 		go func() {
 			defer wg.Done()
 			if err := builderstate.Update(c, p.Master, p.Builder, p.TestType, time.Now().UTC()); err != nil {
-				logging.WithError(err).Errorf(c, "builderstate update")
+				logging.WithError(err).Errorf(c, "doFileUpload: full_results.json: builderstate update")
 			}
 		}()
 
@@ -238,6 +245,7 @@ func extractBuildNumber(data io.Reader) (int, io.Reader, error) {
 func uploadTestFile(c context.Context, data io.Reader, filename string) error {
 	bn, data, err := extractBuildNumber(data)
 	if err != nil {
+		logging.Fields{logging.ErrorKey: err, "filename": filename}.Errorf(c, "uploadTestFile")
 		if err == ErrInvalidBuildNumber {
 			return statusError{err, http.StatusBadRequest}
 		}
@@ -254,6 +262,7 @@ func uploadTestFile(c context.Context, data io.Reader, filename string) error {
 		Data:        data,
 	}
 	if err := tf.PutData(c); err != nil {
+		logging.Fields{logging.ErrorKey: err, "filename": filename}.Errorf(c, "uploadTestFile: PutData")
 		return statusError{err, http.StatusInternalServerError}
 	}
 
@@ -273,18 +282,22 @@ func updateFullResults(c context.Context, data io.Reader) error {
 
 	var f model.FullResult
 	if err := dec.Decode(&f); err != nil {
+		logging.WithError(err).Errorf(c, "updateFullResults: unmarshal JSON")
 		return statusError{err, http.StatusBadRequest}
 	}
 
 	if err := uploadTestFile(c, io.MultiReader(buf, dec.Buffered()), "full_results.json"); err != nil {
+		logging.WithError(err).Errorf(c, "updateFullResults: uploadTestFile")
 		return statusError{err, http.StatusInternalServerError}
 	}
 
 	incr, err := f.AggregateResult()
 	if err != nil {
+		logging.WithError(err).Errorf(c, "updateFullResults: convert to AggregateResult")
 		return statusError{err, http.StatusBadRequest}
 	}
 	if err := updateIncremental(c, &incr); err != nil {
+		logging.WithError(err).Errorf(c, "updateFullResults: updateIncremental")
 		return statusError{err, http.StatusInternalServerError}
 	}
 
@@ -330,15 +343,18 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 					}
 					return
 				}
+				logging.WithError(err).Errorf(c, "updateIncremental: getTestFileAlt")
 				files[i].err = err
 				return
 			}
 			if err := tf.GetData(c); err != nil {
+				logging.WithError(err).Errorf(c, "updateIncremental: GetData")
 				files[i].err = err
 				return
 			}
 			var a model.AggregateResult
 			if err := json.NewDecoder(tf.Data).Decode(&a); err != nil {
+				logging.WithError(err).Errorf(c, "updateIncremental: unmarshal TestFile data")
 				files[i].err = err
 				return
 			}
@@ -372,6 +388,7 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 		// code errors over other errors.
 		var e error
 		for _, err := range errs {
+			logging.WithError(err).Errorf(c, "updateIncremental")
 			se, ok := err.(statusError)
 			if ok && se.code == http.StatusInternalServerError {
 				return se
@@ -425,6 +442,7 @@ func updateAggregate(c context.Context, tf *model.TestFile, aggr, incr *model.Ag
 		aggr = incr
 	} else {
 		if err := aggr.Merge(incr); err != nil {
+			logging.WithError(err).Errorf(c, "updateAggregate: merge")
 			switch err {
 			case model.ErrBuilderNameConflict:
 				return statusError{err, http.StatusBadRequest}
@@ -437,20 +455,24 @@ func updateAggregate(c context.Context, tf *model.TestFile, aggr, incr *model.Ag
 	}
 
 	if err := aggr.Trim(size); err != nil {
+		logging.WithError(err).Errorf(c, "updateAggregate: trim")
 		return statusError{err, http.StatusInternalServerError}
 	}
 
 	b := &bytes.Buffer{}
 	if err := json.NewEncoder(b).Encode(&aggr); err != nil {
+		logging.WithError(err).Errorf(c, "updateAggregate: marshal JSON")
 		return statusError{err, http.StatusInternalServerError}
 	}
 
 	tf.Data = b
 	if err := tf.PutData(c); err != nil {
+		logging.WithError(err).Errorf(c, "updateAggregate: PutData")
 		return statusError{err, http.StatusInternalServerError}
 	}
 
 	if err := datastore.Get(c).Put(tf); err != nil {
+		logging.WithError(err).Errorf(c, "updateAggregate: datastore.Put")
 		return statusError{err, http.StatusInternalServerError}
 	}
 	if err := deleteKeys(c, tf.OldDataKeys); err != nil {

@@ -83,26 +83,34 @@ func getBuildersHandler(ctx *router.Context) {
 		start := time.Now()
 		data, err := getBuilderData(c, masters.Known, makeBuildExtractClient(c))
 		if err != nil {
-			logging.WithError(err).Errorf(c, "builders: GetBuilders: failed to fetch builders")
+			logging.WithError(err).Errorf(c, "getBuildersHandler: getBuilderData")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		logging.Fields{"duration": time.Since(start)}.Infof(c, "builders: getBuilderData")
+		logging.Fields{"duration": time.Since(start)}.Infof(c, "getBuildersHandler: getBuilderData")
 
 		res, err = json.Marshal(&data)
 		if err != nil {
-			logging.WithError(err).Errorf(c, "builders: GetBuilders")
+			logging.WithError(err).Errorf(c, "getBuildersHandler: marshal JSON")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		item.SetValue(res)
-		memcache.Get(c).Set(item) // Ignore error: setting to memcache is not critical to current operation.
+		if err := memcache.Get(c).Set(item); err != nil {
+			// Log this error but do not return to the client because it is not critical
+			// for this handler.
+			logging.Fields{
+				logging.ErrorKey: err,
+				"item":           item,
+			}.Errorf(c, "getBuildersHandler: set memcache")
+		}
 
 	case nil:
 		res = item.Value()
 
 	default:
-		logging.WithError(err).Errorf(c, "builders: GetBuilders")
+		logging.WithError(err).Errorf(c, "getBuildersHandler")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -118,7 +126,7 @@ func getBuildersHandler(ctx *router.Context) {
 		logging.Fields{
 			logging.ErrorKey: err,
 			"n":              n,
-		}.Errorf(c, "builders: GetBuilders: failed to write response")
+		}.Errorf(c, "getBuildersHandler: error writing HTTP response")
 	}
 }
 
@@ -128,15 +136,15 @@ func updateBuildersHandler(ctx *router.Context) {
 	start := time.Now()
 	data, err := getBuilderData(c, masters.Known, makeBuildExtractClient(c))
 	if err != nil {
-		logging.WithError(err).Errorf(c, "builders: UpdateBuilders: failed to fetch builders")
+		logging.WithError(err).Errorf(c, "updateBuildersHandler: getBuilderData")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	logging.Fields{"duration": time.Since(start)}.Infof(c, "builders: getBuilderData")
+	logging.Fields{"duration": time.Since(start)}.Infof(c, "updateBuildersHandler: getBuilderData")
 
 	b, err := json.Marshal(&data)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "builders: UpdateBuilders")
+		logging.WithError(err).Errorf(c, "updateBuildersHandler: unmarshal JSON")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -145,7 +153,7 @@ func updateBuildersHandler(ctx *router.Context) {
 	item.SetValue(b)
 
 	if err := memcache.Get(c).Set(item); err != nil {
-		logging.WithError(err).Errorf(c, "builders: UpdateBuilders: failed to set memcache")
+		logging.WithError(err).Errorf(c, "updateBuildersHandler: set memcache")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -156,7 +164,7 @@ func updateBuildersHandler(ctx *router.Context) {
 		logging.Fields{
 			logging.ErrorKey: err,
 			"n":              n,
-		}.Errorf(c, "builders: UpdateBuilders: failed to write response")
+		}.Errorf(c, "updateBuildersHandler: error writing HTTP response")
 	}
 }
 
@@ -227,6 +235,7 @@ func getBuilderData(ctx context.Context, list []*masters.Master, client buildext
 	close(results)
 	for res := range results {
 		if res.Err != nil {
+			logging.WithError(res.Err).Errorf(ctx, "getBuilderData")
 			return BuilderData{}, res.Err
 		}
 		builderData.Masters = append(builderData.Masters, res.Master)
@@ -263,6 +272,10 @@ func removeDuplicates(list []string) []string {
 func getBuilderNames(ctx context.Context, master string, client buildextract.Interface) ([]string, error) {
 	r, err := client.GetMasterJSON(master)
 	if err != nil {
+		logging.Fields{
+			logging.ErrorKey: err,
+			"master":         master,
+		}.Errorf(ctx, "getBuilderNames: GetMasterJSON")
 		return nil, err
 	}
 	defer r.Close()
@@ -271,6 +284,10 @@ func getBuilderNames(ctx context.Context, master string, client buildextract.Int
 		Builders map[string]struct{} `json:"builders"`
 	}{}
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
+		logging.Fields{
+			logging.ErrorKey: err,
+			"master":         master,
+		}.Errorf(ctx, "getBuilderNames: unmarshal JSON")
 		return nil, err
 	}
 
@@ -288,9 +305,15 @@ func getStepNames(ctx context.Context, master string, builder string, client bui
 	if err != nil {
 		if se, ok := err.(*buildextract.StatusError); ok {
 			if se.StatusCode == http.StatusNotFound {
+				logging.Fields{
+					"master": master, "builder": builder,
+				}.Infof(ctx, "getStepNames: builds JSON not found")
 				return nil, nil
 			}
 		}
+		logging.Fields{
+			logging.ErrorKey: err, "master": master, "builder": builder,
+		}.Infof(ctx, "getStepNames")
 		return nil, err
 	}
 	defer r.Close()
@@ -303,6 +326,9 @@ func getStepNames(ctx context.Context, master string, builder string, client bui
 		} `json:"builds"`
 	}{}
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
+		logging.Fields{
+			logging.ErrorKey: err, "master": master, "builder": builder,
+		}.Errorf(ctx, "getStepNames: error unmarshaling JSON")
 		return nil, err
 	}
 	if len(data.Builds) == 0 {
