@@ -8,11 +8,15 @@ DEPS = [
   'build/file',
   'build/gsutil',
   'build/zip',
+  'depot_tools/cipd',
   'depot_tools/git',
+  'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/platform',
   'recipe_engine/properties',
+  'recipe_engine/raw_io',
   'recipe_engine/step',
+  'recipe_engine/tempfile',
 ]
 
 from recipe_engine.recipe_api import Property
@@ -57,9 +61,71 @@ def RunSteps(api, revision):
               api.path['checkout'].join('man', 'html'), DOC_UPLOAD_URL],
              name='upload docs')
 
+  api.cipd.install_client()
+
+  # upload git cipd package
+
+
+  # TODO(crbug.com/638337): cipd module doesn't allow `create` to work in this
+  # way.
+  def create(pkg_dir, step_title, refs=()):
+    """Pushes given package directory up to CIPD with provided refs."""
+    cmd = [
+      api.cipd.get_executable(),
+      'create',
+      '-in', pkg_dir,
+      '-name', 'infra/depot_tools/git_installer/windows-amd64',
+      '-service-account-json',
+      api.cipd.default_bot_service_account_credentials,
+    ]
+    for r in refs:
+      cmd += ['-ref', r]
+    api.step('create installer package (%s)' % step_title, cmd)
+
+  def pull_and_upload(version, step_title, refs=()):
+    """Pulls given version from google storage, then pushes it up to CIPD.
+
+    Sets package refs to the provided ones, plus an additional ref of the
+    specific version number provided.
+
+    version (str) - A version string for one of the git installers in
+      gs://chrome-infra, like "2.8.3".
+    """
+    with api.tempfile.temp_dir('git_installer') as git_cipd_dir:
+      outfile = git_cipd_dir.join('git-installer.exe')
+      api.gsutil.download(
+        'chrome-infra', 'PortableGit-%s-64-bit.7z.exe' % version, outfile,
+        name='fetch git installer (v%s)' % version)
+
+      create(git_cipd_dir, step_title, [version]+refs)
+
+
+  bs_win = api.path['checkout'].join('bootstrap', 'win')
+
+  version = api.file.read('read git version', bs_win.join('git_version.txt'),
+    test_data='1.2.3\n').strip()
+  api.step.active_result.presentation.step_text = 'got %r' % version
+
+  bleeding_edge = api.file.read('read git version (bleeding_edge)',
+    bs_win.join('git_version_bleeding_edge.txt'), test_data='2.2.3\n').strip()
+  api.step.active_result.presentation.step_text = 'got %r' % bleeding_edge
+
+  if version == bleeding_edge:
+    pull_and_upload(version, 'normal and bleeding_edge',
+                    ['latest', 'bleeding_edge'])
+  else:
+    pull_and_upload(version, 'normal', ['latest'])
+    pull_and_upload(bleeding_edge, 'bleeding_edge', ['bleeding_edge'])
+
 
 def GenTests(api):
   yield (
       api.test('basic') +
       api.properties(path_config='kitchen', revision='deadbeef')
+  )
+
+  yield (
+    api.test('identical normal+bleeding_edge git versions') +
+    api.properties(path_config='kitchen', revision='deadbeef') +
+    api.step_data('read git version', api.raw_io.output('2.2.3'))
   )
