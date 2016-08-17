@@ -1,0 +1,9 @@
+dispatch:
+  - url: "*/builders"
+    module: go
+  - url: "*/updatebuilders"
+    module: go
+  - url: "*/builderstate"
+    module: go
+  - url: "*/updatebuilderstate"
+    module: go

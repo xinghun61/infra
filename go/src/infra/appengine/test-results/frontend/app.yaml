@@ -2,7 +2,6 @@ application: test-results-hrd
 module: go
 runtime: go
 api_version: go1
-version: 1
 
 handlers:
   - url: /testfile/uploadform
