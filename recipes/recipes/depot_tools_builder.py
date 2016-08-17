@@ -43,6 +43,7 @@ def RunSteps(api, revision):
 
   with api.step.nest('clone + checkout'):
     api.git('clone', '--single-branch', '-n', REPO_URL, api.path['checkout'])
+    api.step.active_result.presentation.properties['got_revision'] = revision
     api.git('config', 'core.autocrlf', 'false', name='set autocrlf')
     api.git('config', 'core.filemode', 'false', name='set filemode')
     api.git('config', 'core.symlinks', 'false', name='set symlinks')
