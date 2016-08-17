@@ -1,30 +1,54 @@
 package frontend
 
 import (
+	"encoding/json"
 	"html/template"
 	"net/http"
 	"time"
 
 	"google.golang.org/appengine"
 
+	"github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
+	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
 )
 
+const (
+	defaultQueueName    = "default"
+	deleteKeysQueueName = "delete-keys"
+)
+
 func init() {
 	r := router.New()
-	baseMW := base()
 
-	r.GET("/testfile", baseMW, getHandler)
-	r.GET("/testfile/", baseMW, getHandler)
+	baseMW := gaemiddleware.BaseProd()
+	getMW := baseMW.Extend(templatesMiddleware())
+
+	gaemiddleware.InstallHandlers(r, baseMW)
+
+	r.GET("/testfile", getMW, getHandler)
+	r.GET("/testfile/", getMW, getHandler)
+	r.POST("/testfile/upload", baseMW.Extend(withParsedUploadForm), uploadHandler)
+
+	r.GET("/builders", baseMW, getBuildersHandler)
+	r.GET("/updatebuilders", baseMW, updateBuildersHandler)
+	r.GET("/builderstate", baseMW, getBuilderStateHandler)
+	r.GET("/updatebuilderstate", baseMW, updateBuilderStateHandler)
+
+	r.POST(
+		"/internal/delete-keys",
+		baseMW.Extend(gaemiddleware.RequireTaskQueue(deleteKeysQueueName)),
+		deleteKeysHandler,
+	)
 
 	http.DefaultServeMux.Handle("/", r)
 }
 
-// base returns the root middleware chain.
-func base() router.MiddlewareChain {
-	templateBundle := &templates.Bundle{
+// templatesMiddleware returns the templates middleware.
+func templatesMiddleware() router.Middleware {
+	return templates.WithTemplates(&templates.Bundle{
 		Loader:    templates.FileSystemLoader("templates"),
 		DebugMode: appengine.IsDevAppServer(),
 		FuncMap: template.FuncMap{
@@ -35,9 +59,38 @@ func base() router.MiddlewareChain {
 				return t.Unix() * 1000
 			},
 		},
+	})
+}
+
+// deleteKeysHandler is task queue handler for deleting keys.
+func deleteKeysHandler(ctx *router.Context) {
+	c, w, r := ctx.Context, ctx.Writer, ctx.Request
+
+	keys := struct {
+		Keys []string `json:"keys"`
+	}{}
+	if err := json.NewDecoder(r.Body).Decode(&keys); err != nil {
+		logging.WithError(err).Errorf(c, "deleteKeysHandler: error decoding")
+		w.WriteHeader(http.StatusOK) // Prevent retrying with the same r.Body.
+		return
 	}
 
-	return gaemiddleware.BaseProd().Extend(
-		templates.WithTemplates(templateBundle),
-	)
+	dkeys := make([]*datastore.Key, 0, len(keys.Keys))
+	for _, k := range keys.Keys {
+		dk, err := datastore.NewKeyEncoded(k)
+		if err != nil {
+			logging.WithError(err).Errorf(c, "deleteKeysHandler")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		dkeys = append(dkeys, dk)
+	}
+
+	if err := datastore.Get(c).Delete(dkeys); err != nil {
+		logging.WithError(err).Errorf(c, "deleteKeysHandler")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
