@@ -280,7 +280,7 @@
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json",
       "-ref",
-      "2.2.3",
+      "v2_2_3",
       "-ref",
       "latest",
       "-ref",

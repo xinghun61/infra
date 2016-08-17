@@ -87,10 +87,11 @@ def RunSteps(api, revision):
     """Pulls given version from google storage, then pushes it up to CIPD.
 
     Sets package refs to the provided ones, plus an additional ref of the
-    specific version number provided.
+    specific version number provided (prepended with 'v' and with '.'s replaced
+    with '_'). So version=='2.8.3' will create a ref 'v2_8_3'.
 
     version (str) - A version string for one of the git installers in
-      gs://chrome-infra, like "2.8.3".
+      gs://chrome-infra, like '2.8.3'.
     """
     with api.tempfile.temp_dir('git_installer') as git_cipd_dir:
       outfile = git_cipd_dir.join('git-installer.exe')
@@ -98,7 +99,7 @@ def RunSteps(api, revision):
         'chrome-infra', 'PortableGit-%s-64-bit.7z.exe' % version, outfile,
         name='fetch git installer (v%s)' % version)
 
-      create(git_cipd_dir, step_title, [version]+refs)
+      create(git_cipd_dir, step_title, ['v'+version.replace('.', '_')]+refs)
 
 
   bs_win = api.path['checkout'].join('bootstrap', 'win')
