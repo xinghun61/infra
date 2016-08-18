@@ -363,6 +363,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         '--issue', repo_data['issue'],
         '--rietveld',
         '--field', 'status',
+        _AUTH_REFRESH_TOKEN_FLAG,
         name='git cl status', stdout=self.m.raw_io.output(),
         cwd=workdir,
         step_test_data=lambda: self.m.raw_io.test_api.stream_output(

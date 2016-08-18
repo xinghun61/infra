@@ -261,7 +261,8 @@
       "123456789",
       "--rietveld",
       "--field",
-      "status"
+      "status",
+      "--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller"
     ],
     "cwd": "[TMP_BASE]/roll_build_tmp_2",
     "name": "build.git cl status",
