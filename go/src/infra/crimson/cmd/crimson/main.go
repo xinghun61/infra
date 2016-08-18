@@ -33,7 +33,7 @@ type commonFlags struct {
 type addVlanRun struct {
 	commonFlags
 	site          string
-	vlanId        uint
+	vlanID        uint
 	vlanAlias     string
 	inputFileDHCP string
 }
@@ -42,7 +42,7 @@ type queryVlanRun struct {
 	commonFlags
 	limit     int
 	site      string
-	vlanId    uint
+	vlanID    uint
 	vlanAlias string
 	ip        string
 }
@@ -79,7 +79,7 @@ var (
 			c.Flags.StringVar(&c.backendHost, "backend-host",
 				backendHost, "Host to talk to")
 			c.Flags.StringVar(&c.site, "site", "", "Name of the site")
-			c.Flags.UintVar(&c.vlanId, "vlan-id", 0,
+			c.Flags.UintVar(&c.vlanID, "vlan-id", 0,
 				"vlan number 1-4094, as defined by IEEE 802.1Q standard")
 			c.Flags.StringVar(&c.vlanAlias, "vlan-alias", "",
 				"Name of the vlan (usually suffix like -m1)")
@@ -102,7 +102,7 @@ var (
 			c.Flags.StringVar(&c.backendHost, "backend-host",
 				backendHost, "Host to talk to")
 			c.Flags.StringVar(&c.site, "site", "", "Name of the site")
-			c.Flags.UintVar(&c.vlanId, "vlan-id", 0,
+			c.Flags.UintVar(&c.vlanID, "vlan-id", 0,
 				"vlan number 1-4094, as defined by IEEE 802.1Q standard")
 			c.Flags.StringVar(&c.vlanAlias, "vlan-alias", "",
 				"Name of the vlan (usually suffix like -m1)")
@@ -169,7 +169,7 @@ func ipRangeFromSiteAndVlan(c *addVlanRun) ([]*crimson.IPRange, error) {
 		return nil, fmt.Errorf("missing required -site option")
 	}
 
-	if c.vlanId == 0 {
+	if c.vlanID == 0 {
 		return nil, fmt.Errorf("missing required -vlan-id option")
 	}
 
@@ -198,7 +198,7 @@ func ipRangeFromSiteAndVlan(c *addVlanRun) ([]*crimson.IPRange, error) {
 
 	return []*crimson.IPRange{{
 		Site:      c.site,
-		VlanId:    uint32(c.vlanId),
+		VlanId:    uint32(c.vlanID),
 		VlanAlias: c.vlanAlias,
 		StartIp:   parts[0],
 		EndIp:     parts[1]},
@@ -270,7 +270,7 @@ func (c *queryVlanRun) Run(a subcommands.Application, args []string) int {
 
 	req := &crimson.IPRangeQuery{
 		Site:      c.site,
-		VlanId:    uint32(c.vlanId),
+		VlanId:    uint32(c.vlanID),
 		VlanAlias: c.vlanAlias,
 		Ip:        c.ip,
 		Limit:     uint32(c.limit),

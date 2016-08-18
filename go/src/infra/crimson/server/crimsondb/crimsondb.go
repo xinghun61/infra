@@ -23,7 +23,7 @@ import (
 // IPRange describes a row in the vlan table.
 type IPRange struct {
 	Site      string
-	VlanId    uint32
+	VlanID    uint32
 	VlanAlias string
 	StartIP   string
 	EndIP     string
@@ -31,7 +31,7 @@ type IPRange struct {
 
 func (row IPRange) String() string {
 	return fmt.Sprintf("%s/%d: %s-%s (%s)",
-		row.Site, row.VlanId, row.StartIP, row.EndIP, row.VlanAlias)
+		row.Site, row.VlanID, row.StartIP, row.EndIP, row.VlanAlias)
 }
 
 func logAndErrorf(ctx context.Context, format string, params ...interface{}) error {
@@ -114,7 +114,7 @@ func scanIPRanges(ctx context.Context, rows *sql.Rows) ([]IPRange, error) {
 		var startIP, endIP string
 		var ip net.IP
 		ipRange := IPRange{}
-		err := rows.Scan(&ipRange.Site, &ipRange.VlanId, &startIP, &endIP, &ipRange.VlanAlias)
+		err := rows.Scan(&ipRange.Site, &ipRange.VlanID, &startIP, &endIP, &ipRange.VlanAlias)
 		if err != nil { // Users can't trigger that.
 			cols, _ := rows.Columns()
 			err = logAndErrorf(ctx, "%s. Columns: %v", err, cols)
@@ -160,7 +160,8 @@ func InsertIPRange(ctx context.Context, row *crimson.IPRange) (err error) {
 		return
 	}
 
-	// Open Transaction
+	// Need a transaction to guarantee the same connection for multiple
+	// SQL statements.
 	var tx *sql.Tx
 	tx, err = db.Begin()
 	if err != nil {
@@ -180,15 +181,21 @@ func InsertIPRange(ctx context.Context, row *crimson.IPRange) (err error) {
 
 	// Lock the whole table because we must be sure no new ip ranges are inserted
 	// before we insert ours. This unfortunately also blocks read access for other
-	// connections.
-	_, err = tx.Exec("LOCK TABLES ip_range WRITE")
+	// connections. It also commits the actual SQL transaction, but we don't care.
+	_, err = tx.Exec("LOCK TABLES vlan WRITE")
 	if err != nil {
-		logging.Errorf(ctx, "Locking table ip_range failed. %s", err)
+		logging.Errorf(ctx, "Locking table vlan failed. %s", err)
 		return
 	}
+	defer func() {
+		_, err := tx.Exec("UNLOCK TABLES")
+		if err != nil {
+			logging.Errorf(ctx, "Unlocking table vlan failed. %s", err)
+		}
+	}()
 
 	// [a,b] and [c,d] overlap iff a<=d and b>=c
-	statement := ("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM ip_range\n" +
+	statement := ("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM vlan\n" +
 		"WHERE site=? AND start_ip<=? AND end_ip>=?")
 	rows, err := tx.Query(statement, row.Site, endIP, startIP)
 	if err != nil {
@@ -212,7 +219,7 @@ func InsertIPRange(ctx context.Context, row *crimson.IPRange) (err error) {
 
 	// No overlapping ranges have been found, insert the new one.
 	logging.Infof(ctx, "No overlapping ranges have been found, proceeding.")
-	statement = ("INSERT INTO ip_range (site, vlan_id, start_ip, end_ip, vlan_alias)\n" +
+	statement = ("INSERT INTO vlan (site, vlan_id, start_ip, end_ip, vlan_alias)\n" +
 		"VALUES (?, ?, ?, ?, ?)")
 	_, err = tx.Exec(statement, row.Site, row.VlanId, startIP, endIP, row.VlanAlias)
 	if err != nil {
@@ -234,7 +241,7 @@ func DeleteIPRange(ctx context.Context, deleteList *crimson.IPRangeDeleteList) e
 	statement := bytes.Buffer{}
 	params := []interface{}{}
 
-	statement.WriteString("DELETE FROM ip_range\nWHERE ")
+	statement.WriteString("DELETE FROM vlan\nWHERE ")
 	delimiter := ""
 
 	for i, r := range deleteList.Ranges {
@@ -278,7 +285,7 @@ func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) ([]IPRange, e
 	statement := bytes.Buffer{}
 	params := []interface{}{}
 
-	statement.WriteString("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM ip_range")
+	statement.WriteString("SELECT site, vlan_id, start_ip, end_ip, vlan_alias FROM vlan")
 	delimiter = "\nWHERE "
 
 	if req.Site != "" {
@@ -355,7 +362,7 @@ func scanHosts(ctx context.Context, rows *sql.Rows) (*crimson.HostList, error) {
 			host.BootClass = bootClass.String
 		}
 		if err != nil { // Users can't trigger that.
-			logging.Errorf(ctx, "%s", err)
+			logging.Errorf(ctx, "scanHost: didn't match columns: %s", err)
 			return nil, err
 		}
 		if macString != "" {
@@ -377,7 +384,7 @@ func scanHosts(ctx context.Context, rows *sql.Rows) (*crimson.HostList, error) {
 	}
 	err := rows.Err()
 	if err != nil {
-		logging.Errorf(ctx, "%s", err)
+		logging.Errorf(ctx, "scanHosts: error iterating over rows: %s", err)
 		return nil, err
 	}
 	return &hostList, nil
@@ -466,6 +473,7 @@ func InsertHost(ctx context.Context, req *crimson.HostList) (err error) {
 	return
 }
 
+// SelectHost returns a list of hosts filtered by values in req.
 func SelectHost(ctx context.Context, req *crimson.HostQuery) (*crimson.HostList, error) {
 	var err error
 
@@ -533,7 +541,7 @@ func SelectHost(ctx context.Context, req *crimson.HostQuery) (*crimson.HostList,
 	sqlRows, err := db.Query(statement.String(), params...)
 
 	if err != nil {
-		logging.Errorf(ctx, "%s", err)
+		logging.Errorf(ctx, "SelectHost failed the query: %s", err)
 		return nil, err
 	}
 	defer sqlRows.Close()
@@ -541,7 +549,7 @@ func SelectHost(ctx context.Context, req *crimson.HostQuery) (*crimson.HostList,
 	var rows *crimson.HostList
 	rows, err = scanHosts(ctx, sqlRows)
 	if err != nil {
-		logging.Errorf(ctx, "%s", err)
+		logging.Errorf(ctx, "SelectHost failed to scan the rows: %s", err)
 		return nil, err
 	}
 	return rows, nil

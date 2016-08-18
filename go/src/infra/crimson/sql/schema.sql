@@ -16,8 +16,8 @@ CREATE TABLE vlan (
   PRIMARY KEY (site, vlan_id)
 ) ENGINE=INNODB;
 
-CREATE index ip_range_start_ip_idx ON ip_range(start_ip);
-CREATE index ip_ragne_start_ip_idx ON ip_range(end_ip);
+CREATE index vlan_start_ip_idx ON vlan(start_ip);
+CREATE index vlan_end_ip_idx   ON vlan(end_ip);
 
 CREATE TABLE host (
   site varchar(20) NOT NULL,
@@ -29,4 +29,4 @@ CREATE TABLE host (
 ) ENGINE=INNODB;
 
 CREATE index host_site_hostname_idx ON host(site, hostname);
-CREATE index host_site_ip_idx ON host(site, ip);
+CREATE index host_site_ip_idx       ON host(site, ip);

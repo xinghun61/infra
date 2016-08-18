@@ -55,7 +55,7 @@ func (s *crimsonService) ReadIPRange(ctx context.Context, req *crimson.IPRangeQu
 			ret.Ranges,
 			&crimson.IPRange{
 				Site:      row.Site,
-				VlanId:    row.VlanId,
+				VlanId:    row.VlanID,
 				VlanAlias: row.VlanAlias,
 				StartIp:   row.StartIP,
 				EndIp:     row.EndIP,
