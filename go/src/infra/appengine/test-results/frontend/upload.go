@@ -154,6 +154,8 @@ func doFileUpload(c context.Context, fh *multipart.FileHeader) error {
 	}
 	defer file.Close()
 
+	var r io.Reader = file
+
 	switch fh.Filename {
 	case "incremental_results.json":
 		var incr model.AggregateResult
@@ -164,7 +166,7 @@ func doFileUpload(c context.Context, fh *multipart.FileHeader) error {
 		return updateIncremental(c, &incr)
 
 	case "full_results.json":
-		bn, data, err := extractBuildNumber(file)
+		bn, data, err := extractBuildNumber(r)
 		if err != nil {
 			logging.WithError(err).Errorf(c, "doFileUpload")
 			if err == ErrInvalidBuildNumber {
@@ -206,8 +208,16 @@ func doFileUpload(c context.Context, fh *multipart.FileHeader) error {
 		wg.Wait()
 		return nil
 
+	case "failing_results.json":
+		r, err = model.CleanJSON(r)
+		if err != nil {
+			logging.WithError(err).Errorf(c, "doFileUpload: CleanJSON")
+			return statusError{err, http.StatusInternalServerError}
+		}
+		fallthrough
+
 	default:
-		return uploadTestFile(c, file, fh.Filename)
+		return uploadTestFile(c, r, fh.Filename)
 	}
 }
 
