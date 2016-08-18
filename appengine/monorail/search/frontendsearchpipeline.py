@@ -717,7 +717,6 @@ def _StartBackendSearchCall(
   backend_host = modules.get_hostname(module='besearch')
   url = 'http://%s%s' % (backend_host, framework_helpers.FormatURL(
       mr, urls.BACKEND_SEARCH,
-      skip_filtering=True,  # TODO(jrobbins): remove after next release.
       projects=','.join(query_project_names),
       q=mr.query, start=0, num=mr.start + mr.num,
       logged_in_user_id=mr.auth.user_id or 0,
