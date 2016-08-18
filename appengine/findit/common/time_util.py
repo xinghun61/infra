@@ -2,9 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import calendar
 from datetime import datetime
 from datetime import time
 from datetime import timedelta
+
+
+def GetUTCNow():  # pragma: no cover.
+  """Returns the datetime.utcnow. This is to mock for testing."""
+  return datetime.utcnow()
+
+
+def GetUTCNowTimestamp():  # pragma: no cover.
+  """Returns the timestamp for datetime.utcnow. This is to mock for testing."""
+  return calendar.timegm(GetUTCNow().timetuple())
 
 
 def RemoveMicrosecondsFromDelta(delta):

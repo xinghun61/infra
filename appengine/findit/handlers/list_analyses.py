@@ -5,6 +5,7 @@ import datetime
 
 from google.appengine.ext import ndb
 
+from common import time_util
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
 from model.wf_analysis import WfAnalysis
@@ -52,7 +53,7 @@ class ListAnalyses(BaseHandler):
       count = _DEFAULT_DISPLAY_COUNT
 
     if self.request.get('days'):  # pragma: no cover
-      start_date = datetime.datetime.utcnow() - datetime.timedelta(
+      start_date = time_util.GetUTCNow() - datetime.timedelta(
           int(self.request.get('days')))
       start_date = start_date.replace(
           hour=0, minute=0, second=0, microsecond=0)

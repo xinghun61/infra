@@ -5,6 +5,7 @@ from datetime import datetime
 from datetime import time
 from datetime import timedelta
 
+from common import time_util
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
 from model.wf_try_job_data import WfTryJobData
@@ -13,30 +14,10 @@ from model.wf_try_job_data import WfTryJobData
 NOT_AVAILABLE = 'N/A'
 
 
-# TODO(lijeffrey): Refactor formatting functions into a separate module that
-# can be shared across Findit.
-def _RemoveMicrosecondsFromDelta(delta):
-  """Returns a timedelta object without microseconds based on delta."""
-  return delta - timedelta(microseconds=delta.microseconds)
-
-
 def _FormatDuration(start_time, end_time):
   if not start_time or not end_time:
     return NOT_AVAILABLE
-  return _FormatTimedelta(end_time - start_time)
-
-
-def _FormatTimedelta(delta):
-  hours, remainder = divmod(delta.seconds, 3600)
-  minutes, seconds = divmod(remainder, 60)
-  return '%02d:%02d:%02d' % (hours, minutes, seconds)
-
-
-def _FormatDatetime(date):
-  if not date:
-    return None
-  else:
-    return date.strftime('%Y-%m-%d %H:%M:%S UTC')
+  return time_util.FormatTimedelta(end_time - start_time)
 
 
 class TryJobDashboard(BaseHandler):
@@ -44,7 +25,7 @@ class TryJobDashboard(BaseHandler):
 
   def HandleGet(self):
     """Shows a list of Findit try job results and statuses in an HTML page."""
-    midnight_today = datetime.combine(datetime.utcnow(), time.min)
+    midnight_today = datetime.combine(time_util.GetUTCNow(), time.min)
     midnight_yesterday = midnight_today - timedelta(days=1)
     midnight_tomorrow = midnight_today + timedelta(days=1)
 
@@ -83,13 +64,13 @@ class TryJobDashboard(BaseHandler):
           'try_job_type': try_job_data.try_job_type,
           'pending_time': _FormatDuration(
               try_job_data.request_time, try_job_data.start_time),
-          'request_time': _FormatDatetime(try_job_data.request_time),
+          'request_time': time_util.FormatDatetime(try_job_data.request_time),
           'try_job_url': try_job_data.try_job_url
       }
 
       if not try_job_data.end_time and not try_job_data.error:
         try_job_display_data['elapsed_time'] = (
-            _FormatDuration(try_job_data.request_time, datetime.utcnow()) if
+            _FormatDuration(try_job_data.request_time, time_util.GetUTCNow()) if
             try_job_data.request_time else None)
         try_job_display_data['status'] = (
             'running' if try_job_data.start_time else 'pending')
@@ -107,8 +88,8 @@ class TryJobDashboard(BaseHandler):
         successfully_completed_try_jobs.append(try_job_display_data)
 
     data = {
-        'start_date': _FormatDatetime(start_date),
-        'end_date': _FormatDatetime(end_date),
+        'start_date': time_util.FormatDatetime(start_date),
+        'end_date': time_util.FormatDatetime(end_date),
         'try_jobs_in_progress': try_jobs_in_progress,
         'try_jobs_with_error': try_jobs_with_error,
         'successfully_completed_try_jobs': successfully_completed_try_jobs

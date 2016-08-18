@@ -8,6 +8,7 @@ import textwrap
 
 from google.appengine.ext import ndb
 
+from common import time_util
 from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
@@ -50,7 +51,7 @@ def _UpdateNotificationStatus(repo_name, revision, new_status):
   culprit = WfCulprit.Get(repo_name, revision)
   culprit.cr_notification_status = new_status
   if culprit.cr_notified:
-    culprit.cr_notification_time = datetime.utcnow()
+    culprit.cr_notification_time = time_util.GetUTCNow()
   culprit.put()
 
 
@@ -87,7 +88,7 @@ def _GetCulpritInfo(repo_name, revision):
 
 def _NotificationTimeLimitPassed(build_end_time, latency_limit_minutes):
   """Returns True if it is too late to send notification."""
-  latency_seconds = (datetime.utcnow() - build_end_time).total_seconds()
+  latency_seconds = (time_util.GetUTCNow() - build_end_time).total_seconds()
   return latency_seconds > latency_limit_minutes * 60
 
 

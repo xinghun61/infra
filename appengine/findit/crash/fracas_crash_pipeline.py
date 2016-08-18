@@ -4,7 +4,6 @@
 
 import base64
 import copy
-import datetime
 import json
 import logging
 
@@ -13,6 +12,7 @@ from google.appengine.ext import ndb
 from common import appengine_util
 from common import constants
 from common import pubsub_util
+from common import time_util
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
 from crash import fracas
@@ -57,7 +57,7 @@ class FracasAnalysisPipeline(FracasBasePipeline):
     # Update analysis status.
     analysis.pipeline_status_path = self.pipeline_status_path()
     analysis.status = analysis_status.RUNNING
-    analysis.started_time = datetime.datetime.utcnow()
+    analysis.started_time = time_util.GetUTCNow()
     analysis.findit_version = appengine_util.GetCurrentVersion()
     analysis.put()
 
@@ -67,7 +67,7 @@ class FracasAnalysisPipeline(FracasBasePipeline):
         analysis.crashed_version, analysis.historical_metadata)
 
     # Update analysis status and save the analysis result.
-    analysis.completed_time = datetime.datetime.utcnow()
+    analysis.completed_time = time_util.GetUTCNow()
     analysis.result = result
     for tag_name, tag_value in tags.iteritems():
       # TODO(http://crbug.com/602702): make it possible to add arbitrary tags.
@@ -150,7 +150,7 @@ def _NeedsNewAnalysis(
 
   # Set analysis progress properties.
   analysis.status = analysis_status.PENDING
-  analysis.requested_time = datetime.datetime.utcnow()
+  analysis.requested_time = time_util.GetUTCNow()
 
   analysis.put()
 

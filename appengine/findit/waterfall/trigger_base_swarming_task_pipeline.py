@@ -3,12 +3,12 @@
 # found in the LICENSE file.
 
 import copy
-from datetime import datetime
 import logging
 import time
 
 from google.appengine.ext import ndb
 
+from common import time_util
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
 from model import analysis_status
@@ -29,7 +29,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline): #pragma: no cover.
 
   def _GetSwarmingTaskName(self, ref_task_id):  # pragma: no cover.
     return 'findit/deflake/ref_task_id/%s/%s' % (
-        ref_task_id, datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S %f'))
+        ref_task_id, time_util.GetUTCNow().strftime('%Y-%m-%d %H:%M:%S %f'))
 
   def _CreateNewSwarmingTaskRequest(self, ref_task_id, ref_request, master_name,
                                     builder_name, build_number,step_name,

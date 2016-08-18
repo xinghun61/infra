@@ -4,13 +4,12 @@
 
 """This module is to handle manual triage of fracas crash analysis result."""
 
-import calendar
-from datetime import datetime
 import json
 
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
+from common import time_util
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
 from model import triage_status
@@ -35,7 +34,7 @@ def _UpdateAnalysis(key, user_name, update_data):
     return success
 
   triage_record = {
-      'triage_timestamp': calendar.timegm(datetime.utcnow().timetuple()),
+      'triage_timestamp': time_util.GetUTCNowTimestamp(),
       'user_name': user_name,
       'result_property': result_property,
       'triage_status': triage_status.TRIAGE_STATUS_TO_DESCRIPTION[status],

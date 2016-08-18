@@ -8,14 +8,13 @@ This handler will flag the analysis result as correct or incorrect.
 TODO: work on an automatic or semi-automatic way to triage analysis result.
 """
 
-import calendar
-from datetime import datetime
 from datetime import timedelta
 
 from google.appengine.api import users
 from google.appengine.ext import ndb
 import pytz.gae
 
+from common import time_util
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
 from model import result_status
@@ -99,7 +98,7 @@ def _AppendTriageHistoryRecord(
     analysis.triage_reference_analysis_build_number = None
 
   triage_record = {
-      'triage_timestamp': calendar.timegm(datetime.utcnow().timetuple()),
+      'triage_timestamp': time_util.GetUTCNowTimestamp(),
       'user_name': user_name,
       'result_status': analysis.result_status,
       'version': analysis.version,
@@ -133,7 +132,7 @@ def _GetDuplicateAnalyses(original_analysis):
   # Don't count any analyses from today (except for exactly at midnight local
   # time).
   # Get current time (UTC).
-  current_time_as_utc = pytz.utc.localize(datetime.utcnow())
+  current_time_as_utc = pytz.utc.localize(time_util.GetUTCNow())
 
   # Convert to local time.
   current_time_as_local = current_time_as_utc.astimezone(

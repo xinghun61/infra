@@ -40,14 +40,6 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
       return MockedChangeLog()
     self.mock(GitRepository, 'GetChangeLog', Mocked_GetChangeLog)
 
-  def _MockDatetimeUtcNow(self):
-    class Mocked_Datetime(object):
-      @staticmethod
-      def utcnow():
-        return _MOCKED_DATETIME_UTCNOW
-    self.mock(send_notification_for_culprit_pipeline,
-              'datetime', Mocked_Datetime)
-
   def _MockBuildEndTime(self):
     def Mocked_GetBuildEndTime(*_):
       return _MOCKED_BUILD_END_TIME
@@ -88,7 +80,7 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     rietveld_requests = []
     self._MockRietveld(rietveld_requests)
     self._MockGitRepository('url')
-    self._MockDatetimeUtcNow()
+    self.MockUTCNow(_MOCKED_DATETIME_UTCNOW)
     self._MockBuildEndTime()
 
     pipeline = SendNotificationForCulpritPipeline()
@@ -99,7 +91,7 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     rietveld_requests = []
     self._MockRietveld(rietveld_requests)
     self._MockGitRepository(None)
-    self._MockDatetimeUtcNow()
+    self.MockUTCNow(_MOCKED_DATETIME_UTCNOW)
     self._MockBuildEndTime()
     culprit = WfCulprit.Create('chromium', 'r5', 123)
     culprit.builds.append(['m', 'b51', 51])
@@ -113,7 +105,7 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     rietveld_requests = []
     self._MockRietveld(rietveld_requests)
     self._MockGitRepository('url')
-    self._MockDatetimeUtcNow()
+    self.MockUTCNow(_MOCKED_DATETIME_UTCNOW)
     self._MockBuildEndTime()
     culprit = WfCulprit.Create('chromium', 'r6', 123)
     culprit.builds.append(['m', 'b61', 61])

@@ -27,7 +27,7 @@ class FracasDashBoard(BaseHandler):
 
   def HandleGet(self):
     """Shows Fracas crash analysis results in an HTML page."""
-    midnight_today = datetime.combine(datetime.utcnow(), time.min)
+    midnight_today = datetime.combine(time_util.GetUTCNow(), time.min)
     midnight_yesterday = midnight_today - timedelta(days=1)
     midnight_tomorrow = midnight_today + timedelta(days=1)
 

@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import datetime
 
+from common import time_util
 from common.pipeline_wrapper import BasePipeline
 from model import result_status
 from model import analysis_status
@@ -78,7 +78,7 @@ class IdentifyCulpritPipeline(BasePipeline):
     analysis.status = analysis_status.COMPLETED
     analysis.result_status = _GetResultAnalysisStatus(analysis_result)
     analysis.suspected_cls = _GetSuspectedCLs(analysis_result)
-    analysis.end_time = datetime.utcnow()
+    analysis.end_time = time_util.GetUTCNow()
     analysis.put()
 
     return analysis_result

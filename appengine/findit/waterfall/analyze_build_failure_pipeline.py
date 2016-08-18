@@ -2,9 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import datetime
-
 from common import appengine_util
+from common import time_util
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
 from model import analysis_status
@@ -57,7 +56,7 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     analysis.pipeline_status_path = self.pipeline_status_path()
     analysis.status = analysis_status.RUNNING
     analysis.result_status = None
-    analysis.start_time = datetime.utcnow()
+    analysis.start_time = time_util.GetUTCNow()
     analysis.version = appengine_util.GetCurrentVersion()
     analysis.end_time = None
     analysis.put()

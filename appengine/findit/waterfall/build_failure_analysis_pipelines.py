@@ -2,13 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import datetime
 import logging
 
 from google.appengine.ext import ndb
 
 from common import appengine_util
 from common import constants
+from common import time_util
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline
@@ -34,7 +34,7 @@ def NeedANewAnalysis(
     # The build failure is not analyzed yet.
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = analysis_status.PENDING
-    analysis.request_time = datetime.utcnow()
+    analysis.request_time = time_util.GetUTCNow()
     analysis.put()
     return True
   elif force:
@@ -45,7 +45,7 @@ def NeedANewAnalysis(
       return False
 
     analysis.Reset()
-    analysis.request_time = datetime.utcnow()
+    analysis.request_time = time_util.GetUTCNow()
     analysis.put()
     return True
   elif failed_steps and analysis.completed:
@@ -57,7 +57,7 @@ def NeedANewAnalysis(
 
       logging.info('At least one new failed step is detected: %s', step)
       analysis.Reset()
-      analysis.request_time = datetime.utcnow()
+      analysis.request_time = time_util.GetUTCNow()
       analysis.put()
       return True
 

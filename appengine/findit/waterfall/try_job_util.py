@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from collections import defaultdict
-from datetime import datetime
 from datetime import timedelta
 import logging
 
@@ -11,6 +9,7 @@ from google.appengine.ext import ndb
 
 from common import appengine_util
 from common import constants
+from common import time_util
 from common.waterfall import failure_type
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
@@ -24,7 +23,7 @@ MATCHING_GROUPS_SECONDS_AGO = 24 * 60 * 60  # 24 hours.
 
 
 def _ShouldBailOutForOutdatedBuild(build):
-  return (datetime.utcnow() - build.start_time).days > 0
+  return (time_util.GetUTCNow() - build.start_time).days > 0
 
 
 def _CurrentBuildKey(master_name, builder_name, build_number):
@@ -146,7 +145,7 @@ def _CreateBuildFailureGroup(
     master_name, builder_name, build_number, build_failure_type, blame_list,
     suspected_tuples, output_nodes=None, failed_steps_and_tests=None):
   new_group = WfFailureGroup.Create(master_name, builder_name, build_number)
-  new_group.created_time = datetime.utcnow()
+  new_group.created_time = time_util.GetUTCNow()
   new_group.build_failure_type = build_failure_type
   new_group.blame_list = blame_list
   new_group.suspected_tuples = suspected_tuples
@@ -173,7 +172,7 @@ def _GetOutputNodes(signals):
 
 
 def _GetMatchingFailureGroups(build_failure_type):
-  earliest_time = datetime.utcnow() - timedelta(
+  earliest_time = time_util.GetUTCNow() - timedelta(
       seconds=MATCHING_GROUPS_SECONDS_AGO)
   return WfFailureGroup.query(ndb.AND(
       WfFailureGroup.created_time >= earliest_time,
@@ -283,7 +282,6 @@ def _CurrentBuildKeyInFailureResultMap(master_name, builder_name, build_number):
 
 def _NeedANewTestTryJob(
     master_name, builder_name, build_number, failure_info, force_try_job):
-
   if failure_info['failure_type'] != failure_type.TEST:
     return False
 

@@ -34,15 +34,6 @@ class TryJobDashboardTest(testing.AppengineTestCase):
       for field, expected_data in expected_try_job_data.iteritems():
         self.assertEqual(expected_data, actual_try_job_data.get(field))
 
-  def testRemoveMicrosecondsFromDelta(self):
-    date1 = datetime(2016, 5, 1, 1, 1, 1, 1)
-    date2 = datetime(2016, 5, 1, 1, 1, 1, 2)
-    delta = date2 - date1
-
-    self.assertEqual(
-        try_job_dashboard._RemoveMicrosecondsFromDelta(delta).microseconds,
-        0)
-
   def testFormatDuration(self):
     self.assertEqual(try_job_dashboard._FormatDuration(None, None),
                      try_job_dashboard.NOT_AVAILABLE)
@@ -56,22 +47,6 @@ class TryJobDashboardTest(testing.AppengineTestCase):
         try_job_dashboard._FormatDuration(datetime(2016, 1, 2, 1, 2, 3),
                                           datetime(2016, 1, 2, 1, 2, 4)),
         '00:00:01')
-
-  def testFormatTimedelta(self):
-    self.assertEqual(try_job_dashboard._FormatTimedelta(timedelta(0, 1)),
-                     '00:00:01')
-    self.assertEqual(try_job_dashboard._FormatTimedelta(timedelta(0, 60)),
-                     '00:01:00')
-    self.assertEqual(try_job_dashboard._FormatTimedelta(timedelta(0, 3600)),
-                     '01:00:00')
-    self.assertEqual(try_job_dashboard._FormatTimedelta(timedelta(0, 0, 1)),
-                     '00:00:00')
-
-  def testFormatDatetime(self):
-    self.assertIsNone(try_job_dashboard._FormatDatetime(None))
-    self.assertEqual(
-        try_job_dashboard._FormatDatetime(datetime(2016, 1, 2, 1, 2, 3)),
-        '2016-01-02 01:02:03 UTC')
 
   def testGet(self):
     try_job_in_progress = WfTryJobData.Create(1)

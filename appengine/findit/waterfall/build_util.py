@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import datetime
-
+from common import time_util
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from model.wf_build import WfBuild
 from waterfall import buildbot
@@ -20,7 +19,8 @@ BUILDBOT_MASTER = 'BM'
 def _BuildDataNeedUpdating(build):
   return (not build.data or (
       not build.completed and (
-          datetime.utcnow() - build.last_crawled_time).total_seconds() >= 300))
+          time_util.GetUTCNow() - build.last_crawled_time
+              ).total_seconds() >= 300))
 
 
 def DownloadBuildData(master_name, builder_name, build_number):
@@ -51,7 +51,7 @@ def DownloadBuildData(master_name, builder_name, build_number):
           master_name, builder_name, build_number, HTTP_CLIENT_LOGGING_ERRORS)
       build.data_source = BUILDBOT_MASTER
 
-    build.last_crawled_time = datetime.utcnow()
+    build.last_crawled_time = time_util.GetUTCNow()
     build.put()
 
   return build

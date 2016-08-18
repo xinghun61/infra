@@ -6,6 +6,8 @@ import os
 
 from testing_utils import testing
 
+from common import time_util
+
 
 class FinditTestCase(testing.AppengineTestCase):  # pragma: no cover.
   # Setup the customized queues.
@@ -14,7 +16,7 @@ class FinditTestCase(testing.AppengineTestCase):  # pragma: no cover.
 
   def MockPipeline(
       self, pipeline_class, result, expected_args, expected_kwargs=None):
-    """ Mocks a pipeline to return a value and asserts the expected parameters.
+    """Mocks a pipeline to return a value and asserts the expected parameters.
 
     Args:
       pipeline_class (class): The class of the pipeline to be mocked.
@@ -32,3 +34,7 @@ class FinditTestCase(testing.AppengineTestCase):  # pragma: no cover.
       return result
 
     self.mock(pipeline_class, 'run', Mocked_run)
+
+  def MockUTCNow(self, mocked_utcnow):
+    """Mocks utcnow with the given value for testing."""
+    self.mock(time_util, 'GetUTCNow', lambda: mocked_utcnow)
