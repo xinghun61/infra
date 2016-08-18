@@ -170,9 +170,12 @@ func (tf *TestFile) PutData(c context.Context) error {
 func (tf *TestFile) putDataEntries(c context.Context) error {
 	// Maximum data entries in a TestFile.
 	const maxDataEntries = 30
-	// 1 megabyte is the maximum allowed blob length.
+
+	// 1 megabyte is the maximum allowed length for a datastore
+	// entity. But use a smaller value because App Engine errors
+	// when we get close to the limit.
 	// See https://code.googlesource.com/gocloud/+/master/datastore/prop.go#29.
-	const maxBlobLen = 1 << 20
+	const maxBlobLen = (1 << 20) - 2048
 
 	// TODO(maybe): Read maxBlobLen bytes at a time. See io.LimitedReader.
 
@@ -191,19 +194,21 @@ func (tf *TestFile) putDataEntries(c context.Context) error {
 
 	// Break data into chunks of max. allowed blob length.
 	numEntries := int(math.Ceil(float64(len(data)) / maxBlobLen))
-	dataEntries := make([]DataEntry, 0, numEntries)
+	dataEntries := make([]*DataEntry, 0, numEntries)
 	for i := 0; i < numEntries*maxBlobLen; i += maxBlobLen {
 		end := min(i+maxBlobLen, len(data))
-		dataEntries = append(dataEntries, DataEntry{Data: data[i:end]})
+		dataEntries = append(dataEntries, &DataEntry{Data: data[i:end]})
 	}
 
-	if err := datastore.Get(c).Put(dataEntries); err != nil {
-		return err
+	for _, de := range dataEntries {
+		if err := datastore.Get(c).Put(de); err != nil {
+			return err
+		}
 	}
 
 	newKeys := make([]*datastore.Key, 0, len(dataEntries))
 	for _, de := range dataEntries {
-		newKeys = append(newKeys, datastore.Get(c).KeyForObj(&de))
+		newKeys = append(newKeys, datastore.Get(c).KeyForObj(de))
 	}
 
 	tf.DataKeys = newKeys
