@@ -263,11 +263,24 @@ func main() {
 	flag.Var(&gatekeeperJSON, "gatekeeper", "Location of gatekeeper json file. Can have multiple comma separated values.")
 	flag.Var(&gatekeeperTreesJSON, "gatekeeper-trees", "Location of gatekeeper tree json file. Can have multiple comma separated values.")
 
-	flag.Parse()
-
 	ctx := context.Background()
 	ctx = gologger.StdConfig.Use(ctx)
 	logging.SetLevel(ctx, logging.Debug)
+
+	tsFlags := tsmon.NewFlags()
+	tsFlags.Target.TargetType = "task"
+	tsFlags.Target.TaskJobName = "alerts-dispatcher"
+	tsFlags.Target.TaskServiceName = "alerts-dispatcher"
+	tsFlags.Flush = "auto"
+
+	tsFlags.Register(flag.CommandLine)
+	flag.Parse()
+
+	if err := tsmon.InitializeFromFlags(ctx, &tsFlags); err != nil {
+		errLog.Printf("tsmon couldn't initialize from flags: %v", err)
+		os.Exit(1)
+	}
+
 	authOptions := auth.Options{
 		ServiceAccountJSONPath: *serviceAccountJSON,
 		Scopes: []string{
@@ -291,12 +304,6 @@ func main() {
 		os.Exit(1)
 	}
 	ctx = context.Background()
-
-	tsFlags := tsmon.NewFlags()
-	tsFlags.Target.TargetType = "task"
-	tsFlags.Target.TaskServiceName = "alerts-dispatcher"
-	tsFlags.Flush = "auto"
-	tsmon.InitializeFromFlags(ctx, &tsFlags)
 
 	// Start serving expvars.
 	go func() {
