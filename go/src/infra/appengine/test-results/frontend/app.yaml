@@ -2,6 +2,7 @@ application: test-results-hrd
 module: go
 runtime: go
 api_version: go1
+instance_class: F4
 
 handlers:
   - url: /testfile/uploadform
