@@ -273,12 +273,6 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       if change_data['diff_digest'] != diff_digest:
         need_to_upload = True
         rebase = True
-      elif roll_result['trivial']:
-        # We won't be uploading. Make sure trivial rolls don't get stuck
-        # if previous CQ attempt failed because of flake.
-        # Pass --rietveld flag to match upload args below.
-        self.m.git('cl', 'set-commit', '--rietveld', _AUTH_REFRESH_TOKEN_FLAG,
-                   cwd=workdir)
 
     if need_to_upload:
       tbrs = []
