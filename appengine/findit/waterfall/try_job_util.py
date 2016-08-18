@@ -93,6 +93,19 @@ def _GetStepsAndTests(failed_steps):
   return sorted(failed_steps_and_tests)
 
 
+def _RemovePlatformFromStepName(step_name):
+  """Returns step name without platform.
+
+  Args:
+    step_name: Raw step name. Example: 'net_unittests on Windows-10'.
+
+  Returns:
+    Step name without platform or the string ' on '. Example: 'net_unittests'.
+  """
+  separator = ' on '
+  return step_name.split(separator)[0]
+
+
 def GetSuspectedCLsWithFailures(heuristic_result):
   """Generates a list of suspected CLs with failures.
 
@@ -121,13 +134,13 @@ def GetSuspectedCLsWithFailures(heuristic_result):
       for test in failure['tests']:
         for suspected_cl in test.get('suspected_cls', []):
           suspected_cls_with_failures.append([
-              failure['step_name'],
+              _RemovePlatformFromStepName(failure['step_name']),
               suspected_cl['revision'],
               test['test_name']])
     else:
       for suspected_cl in failure['suspected_cls']:
         suspected_cls_with_failures.append([
-            failure['step_name'],
+            _RemovePlatformFromStepName(failure['step_name']),
             suspected_cl['revision'],
             None])
 

@@ -1175,6 +1175,14 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertTrue(need_try_job)
 
+  def testRemovePlatformFromStepName(self):
+    self.assertEqual('a_tests',
+        try_job_util._RemovePlatformFromStepName('a_tests on Platform'))
+    self.assertEqual('a_tests',
+        try_job_util._RemovePlatformFromStepName('a_tests on Other-Platform'))
+    self.assertEqual('a_tests',
+        try_job_util._RemovePlatformFromStepName('a_tests'))
+
   def testGetSuspectedCLsWithFailuresNoHeuristicResult(self):
     heuristic_result = None
     expected_suspected_revisions = []
