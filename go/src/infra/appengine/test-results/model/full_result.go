@@ -222,12 +222,15 @@ type FullTestLeaf struct {
 
 	// These fields are layout test specific.
 
-	RepaintOverlay    *bool   `json:"has_repaint_overlay,omitempty"`
-	MissingAudio      *bool   `json:"is_missing_audio,omitempty"`
-	MissingText       *bool   `json:"is_missing_text,omitempty"`
-	MissingVideo      *bool   `json:"is_missing_video,omitempty"`
-	UsedTestHarness   *bool   `json:"is_testharness_test,omitempty"`
-	ReferenceTestType *string `json:"reftest_type,omitempty"`
+	RepaintOverlay  *bool `json:"has_repaint_overlay,omitempty"`
+	MissingAudio    *bool `json:"is_missing_audio,omitempty"`
+	MissingText     *bool `json:"is_missing_text,omitempty"`
+	MissingVideo    *bool `json:"is_missing_video,omitempty"`
+	UsedTestHarness *bool `json:"is_testharness_test,omitempty"`
+	// ReferenceTestType is documented at the JSON Test Results
+	// Format (https://www.chromium.org/developers/the-json-test-results-format)
+	// as string, but uploaders use []string.
+	ReferenceTestType []string `json:"reftest_type,omitempty"`
 }
 
 var _ Node = (*FullTestLeaf)(nil)
