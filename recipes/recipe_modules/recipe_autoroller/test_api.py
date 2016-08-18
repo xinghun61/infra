@@ -69,3 +69,16 @@ class RecipeAutorollerTestApi(recipe_test_api.RecipeTestApi):
               }),
               stream='stdout'),
           self.m.raw_io.stream_output('', stream='stderr'))
+
+  def repo_data(self, project, trivial, status):
+    return (self.override_step_data('%s.gsutil repo_state' % project,
+          self.m.raw_io.stream_output(json.dumps(
+              {
+                'issue': '123456789',
+                'issue_url': 'https://codereview.chromium.org/123456789',
+                'trivial': trivial,
+              }),
+              stream='stdout'),
+          self.m.raw_io.stream_output('', stream='stderr')) +
+        self.step_data('%s.git cl status' % project,
+            self.m.raw_io.stream_output(status)))

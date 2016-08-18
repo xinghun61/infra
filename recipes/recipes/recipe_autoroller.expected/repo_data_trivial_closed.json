@@ -248,8 +248,42 @@
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@stderr@No URLs matched@@@",
-      "@@@STEP_LOG_END@stderr@@@"
+      "@@@STEP_TEXT@ (trivial)@@@",
+      "@@@STEP_LINK@Issue 123456789@https://codereview.chromium.org/123456789@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "cl",
+      "status",
+      "--issue",
+      "123456789",
+      "--rietveld",
+      "--field",
+      "status"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "name": "build.git cl status",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "cl",
+      "set-close",
+      "--issue",
+      "123456789",
+      "--rietveld",
+      "--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller"
+    ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
+    "name": "build.git cl",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -349,21 +383,8 @@
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LINK@Issue 123456789@https://codereview.chromium.org/123456789@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "git",
-      "cl",
-      "issue",
-      "123456789",
-      "--rietveld"
-    ],
-    "cwd": "[TMP_BASE]/roll_build_tmp_2",
-    "name": "build.git cl",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
+      "@@@STEP_LOG_LINE@stderr@Error: No URLs matched ...@@@",
+      "@@@STEP_LOG_END@stderr@@@"
     ]
   },
   {
@@ -376,7 +397,7 @@
       "--rietveld",
       "--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller",
       "--message-file",
-      "Rebase"
+      "Roll recipe dependencies (trivial).\n\nThis is an automated CL created by the recipe roller. This CL rolls recipe\nchanges from upstream projects (e.g. depot_tools) into downstream projects\n(e.g. tools/build).\n\n\nMore info is at https://goo.gl/zkKdpD. Use https://goo.gl/noib3a to file a bug\n(or complain)\n\nrecipe_engine:\n  https://crrev.com/123abc some commit message (foo@chromium.org)\n\nTBR=martiniss@chromium.org,phajdan.jr@chromium.org\nBUG=123,456\n\nRecipe-Tryjob-Bypass-Reason: Autoroller\n"
     ],
     "cwd": "[TMP_BASE]/roll_build_tmp_2",
     "name": "build.git cl upload",

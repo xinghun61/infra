@@ -177,6 +177,26 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       # git cl upload cannot work with detached HEAD, it requires a branch.
       self.m.git('checkout', '-t', '-b', 'roll', 'origin/master', cwd=workdir)
 
+      # Check status of last known CL for this repo. Ensure there's always
+      # at most one roll CL in flight.
+      repo_data, cl_status = self._get_pending_cl_status(
+          project_data['repo_url'])
+      if repo_data:
+        # Allow trivial rolls in CQ to finish.
+        if repo_data['trivial'] and cl_status == 'commit':
+          return ROLL_SUCCESS
+
+        # Allow non-trivial rolls to wait for review comments.
+        if not repo_data['trivial'] and cl_status != 'closed':
+          return ROLL_SUCCESS
+
+        # We're about to upload a new CL, so close the old one.
+        # Pass --rietveld flag to match upload args below.
+        self.m.git('cl', 'set-close',
+                   '--issue', repo_data['issue'],
+                   '--rietveld',
+                   _AUTH_REFRESH_TOKEN_FLAG, cwd=workdir)
+
       recipes_cfg_path = workdir.join('infra', 'config', 'recipes.cfg')
 
       # Use the recipes bootstrap to checkout coverage.
@@ -305,9 +325,53 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
     repo_data = {
       'issue': change_data['issue'],
+      'issue_url': change_data['issue_url'],
       'trivial': roll_result['trivial'],
     }
     self.m.gsutil.upload(
         self.m.json.input(repo_data),
         'recipe-roller-cl-uploads',
         'repo_metadata/%s' % base64.urlsafe_b64encode(repo_url))
+
+  def _get_pending_cl_status(self, repo_url):
+    """Returns (current_repo_data, git_cl_status_string) of the last known
+    roll CL for given repo.
+
+    If no such CL has been recorded, returns (None, None).
+    """
+    cat_result = self.m.gsutil.cat(
+        'gs://recipe-roller-cl-uploads/repo_metadata/%s' % (
+            base64.urlsafe_b64encode(repo_url)),
+        stdout=self.m.raw_io.output(),
+        stderr=self.m.raw_io.output(),
+        ok_ret=(0,1),
+        name='repo_state',
+        step_test_data=lambda: self.m.raw_io.test_api.stream_output(
+            'No URLs matched', stream='stderr', retcode=1))
+
+    if cat_result.retcode:
+      cat_result.presentation.logs['stderr'] = [
+          self.m.step.active_result.stderr]
+      if not re.search('No URLs matched', cat_result.stderr): # pragma: no cover
+        raise Exception('gsutil failed in an unexpected way; see stderr log')
+      return None, None
+
+    repo_data = json.loads(cat_result.stdout)
+    # TODO(phajdan.jr): remove when all repos have this key.
+    if 'issue_url' in repo_data:
+      cat_result.presentation.links['Issue %s' % repo_data['issue']] = (
+          repo_data['issue_url'])
+    if repo_data['trivial']:
+      cat_result.presentation.step_text += ' (trivial)'
+
+    status_result = self.m.git(
+        'cl', 'status',
+        '--issue', repo_data['issue'],
+        '--rietveld',
+        '--field', 'status',
+        name='git cl status', stdout=self.m.raw_io.output(),
+        step_test_data=lambda: self.m.raw_io.test_api.stream_output(
+            'foo')
+    ).stdout.strip()
+
+    return repo_data, status_result

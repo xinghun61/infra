@@ -140,3 +140,26 @@ def GenTests(api):
           'build.git cl issue',
           api.raw_io.stream_output('Issue number: None (None)'))
   )
+
+  yield (
+      api.test('repo_data_trivial_cq') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.repo_data('build', trivial=True, status='commit')
+  )
+
+  yield (
+      api.test('repo_data_trivial_closed') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.repo_data('build', trivial=True, status='closed') +
+      api.recipe_autoroller.roll_data('build') +
+      api.recipe_autoroller.new_upload('build')
+  )
+
+  yield (
+      api.test('repo_data_nontrivial_open') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.repo_data('build', trivial=False, status='waiting')
+  )
