@@ -97,6 +97,8 @@ class CacheManager(object):
         order_by=[('timestep DESC', [])],
         limit=MAX_INVALIDATE_ROWS_TO_CONSIDER)
 
+    cnxn.Commit()
+
     if len(rows) == MAX_INVALIDATE_ROWS_TO_CONSIDER:
       logging.info('Invaliditing all caches: there are too many invalidations')
       self._InvalidateAllCaches()

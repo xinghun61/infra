@@ -13,6 +13,7 @@ from framework import sql
 from services import cachemanager_svc
 from services import caches
 from services import service_manager
+from testing import fake
 from testing import testing_helpers
 
 
@@ -20,7 +21,7 @@ class CacheManagerServiceTest(unittest.TestCase):
 
   def setUp(self):
     self.mox = mox.Mox()
-    self.cnxn = 'fake connection'
+    self.cnxn = fake.MonorailConnection()
     self.cache_manager = cachemanager_svc.CacheManager()
     self.cache_manager.invalidate_tbl = self.mox.CreateMock(
         sql.SQLTableManager)
