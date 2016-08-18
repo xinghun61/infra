@@ -179,9 +179,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
       # Check status of last known CL for this repo. Ensure there's always
       # at most one roll CL in flight.
-      with self.m.step.context({'cwd': workdir}):
-        repo_data, cl_status = self._get_pending_cl_status(
-            project_data['repo_url'])
+      repo_data, cl_status = self._get_pending_cl_status(
+          project_data['repo_url'], workdir)
       if repo_data:
         # Allow trivial rolls in CQ to finish.
         if repo_data['trivial'] and cl_status == 'commit':
@@ -334,7 +333,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         'recipe-roller-cl-uploads',
         'repo_metadata/%s' % base64.urlsafe_b64encode(repo_url))
 
-  def _get_pending_cl_status(self, repo_url):
+  def _get_pending_cl_status(self, repo_url, workdir):
     """Returns (current_repo_data, git_cl_status_string) of the last known
     roll CL for given repo.
 
@@ -371,6 +370,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         '--rietveld',
         '--field', 'status',
         name='git cl status', stdout=self.m.raw_io.output(),
+        cwd=workdir,
         step_test_data=lambda: self.m.raw_io.test_api.stream_output(
             'foo')
     ).stdout.strip()
