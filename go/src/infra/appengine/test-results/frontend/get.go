@@ -156,12 +156,12 @@ func respondTestFileDefault(ctx *router.Context, params URLParams) {
 
 	m := masters.ByIdentifier(params.Master)
 	if m == nil {
-		m = masters.ByName(params.Name)
+		m = masters.ByName(params.Master)
 		if m == nil {
-			http.Error(w,
-				fmt.Sprintf("master not found by identifier: %s and by name: %s", params.Master, params.Name),
-				http.StatusNotFound,
-			)
+			logging.Fields{"master": params.Master}.Infof(c, "master not found")
+			http.Error(w, fmt.Sprintf(
+				"master %q not found by identifier or name", params.Master,
+			), http.StatusNotFound)
 			return
 		}
 	}
