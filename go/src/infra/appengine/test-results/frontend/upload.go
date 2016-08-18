@@ -80,9 +80,13 @@ func SetUploadParams(c context.Context, p *UploadParams) context.Context {
 // to the response writer and stops execution of the request.
 func withParsedUploadForm(ctx *router.Context, next router.Handler) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
-	const _1M = 1 << 20
 
-	if err := r.ParseMultipartForm(_1M); err != nil {
+	// Use 20 megabytes in memory. If the files are larger that 20
+	// megabytes, App Engine will return an error when accessing the
+	// file system to store the remaining parts.
+	const maxMem = 20 * (1 << 20)
+
+	if err := r.ParseMultipartForm(maxMem); err != nil {
 		logging.WithError(err).Errorf(c, "withParsedUploadForm: error parsing form")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
