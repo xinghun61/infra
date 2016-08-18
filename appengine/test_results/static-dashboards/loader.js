@@ -147,6 +147,7 @@ loader.Loader.prototype = {
         var resultsFileLocation = pathToBuilderResultsFile(builder) + resultsFilename;
         loader.request(resultsFileLocation,
                 partial(function(loader, builder, xhr) {
+                    console.log(resultsFileLocation);
                     loader._handleResultsFileLoaded(builder, xhr.responseText);
                 }, this, builder),
                 partial(function(loader, builder, xhr) {
@@ -176,7 +177,14 @@ loader.Loader.prototype = {
     },
     _processResultsJSONData: function(builder, fileData)
     {
-        var builds = JSON.parse(fileData);
+        try {
+            var builds = JSON.parse(fileData);
+        } catch (e) {
+            console.log(builder);
+            console.log(fileData.substring(0, 100));
+            console.log(e);
+            return;
+        }
 
         if (builder.builderName == 'version' || builder.builderName == 'failure_map')
              return;
