@@ -345,7 +345,8 @@ def GenTests(api):
   yield (
       api.test('tree_simulation') +
       api.luci_config.get_projects((
-          'recipe_engine', 'depot_tools', 'build', 'infra')) +
+          'recipe_engine', 'depot_tools', 'build',
+          'build_limited_scripts_slave')) +
       api.luci_config.get_project_config(
           'recipe_engine', 'recipes.cfg',
           api.recipe_tryjob.make_recipe_config('recipe_engine')) +
@@ -358,8 +359,8 @@ def GenTests(api):
           api.recipe_tryjob.make_recipe_config('build', [
               'depot_tools', 'recipe_engine'])) +
       api.luci_config.get_project_config(
-          'infra', 'recipes.cfg',
-          api.recipe_tryjob.make_recipe_config('infra', [
+          'build_limited_scripts_slave', 'recipes.cfg',
+          api.recipe_tryjob.make_recipe_config('build_limited_scripts_slave', [
               'build', 'depot_tools', 'recipe_engine'])) +
       api.properties(
         rietveld="https://fake.code.review",
