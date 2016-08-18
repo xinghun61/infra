@@ -13,3 +13,5 @@ dispatch:
     module: go
   - url: "*/testfile/upload"
     module: go
+  - url: "*/internal/delete-keys"
+    module: go

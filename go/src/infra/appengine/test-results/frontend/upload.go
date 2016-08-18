@@ -518,7 +518,7 @@ func deleteKeys(c context.Context, k []*datastore.Key) error {
 	}.Infof(c, "deleteKeys: enqueing")
 
 	return taskqueue.Get(c).Add(&taskqueue.Task{
-		Path:    "/internal/delete",
+		Path:    deleteKeysPath,
 		Payload: payload,
 		Header:  h,
 		Method:  "POST",

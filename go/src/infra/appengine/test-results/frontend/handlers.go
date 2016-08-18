@@ -18,6 +18,8 @@ import (
 const (
 	defaultQueueName    = "default"
 	deleteKeysQueueName = "delete-keys"
+
+	deleteKeysPath = "/internal/delete-keys"
 )
 
 func init() {
@@ -38,7 +40,7 @@ func init() {
 	r.GET("/updatebuilderstate", baseMW, updateBuilderStateHandler)
 
 	r.POST(
-		"/internal/delete-keys",
+		deleteKeysPath,
 		baseMW.Extend(gaemiddleware.RequireTaskQueue(deleteKeysQueueName)),
 		deleteKeysHandler,
 	)
