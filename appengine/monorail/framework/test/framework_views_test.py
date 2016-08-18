@@ -28,21 +28,18 @@ class LabelViewTest(unittest.TestCase):
     view = framework_views.LabelView('Priority-High', None)
     self.assertEquals('Priority-High', view.name)
     self.assertIsNone(view.is_restrict)
-    self.assertEquals('Priority-High', view.tooltip)
     self.assertEquals('', view.docstring)
     self.assertEquals('Priority', view.prefix)
     self.assertEquals('High', view.value)
 
     view = framework_views.LabelView('%s-%s' % (LONG_STR, LONG_STR), None)
     self.assertEquals('%s-%s' % (LONG_STR, LONG_STR), view.name)
-    self.assertEquals('%s-%s' % (LONG_STR, LONG_STR), view.tooltip)
     self.assertEquals('', view.docstring)
     self.assertEquals(LONG_STR, view.prefix)
     self.assertEquals(LONG_STR, view.value)
 
     view = framework_views.LabelView(LONG_PART_STR, None)
     self.assertEquals(LONG_PART_STR, view.name)
-    self.assertEquals(LONG_PART_STR, view.tooltip)
     self.assertEquals('', view.docstring)
     self.assertEquals('OnePartThatWillNotFit', view.prefix)
     self.assertEquals('OneShort', view.value)
@@ -69,13 +66,11 @@ class StatusViewTest(unittest.TestCase):
 
     view = framework_views.StatusView('Accepted', None)
     self.assertEquals('Accepted', view.name)
-    self.assertEquals('Accepted', view.tooltip)
     self.assertEquals('', view.docstring)
     self.assertEquals('yes', view.means_open)
 
     view = framework_views.StatusView(LONG_STR, None)
     self.assertEquals(LONG_STR, view.name)
-    self.assertEquals(LONG_STR, view.tooltip)
     self.assertEquals('', view.docstring)
     self.assertEquals('yes', view.means_open)
 

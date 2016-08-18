@@ -12,11 +12,11 @@
         [is issue.derived_status.name ""]
          ----
         [else]
-          <i title="Derived[if-any issue.derived_status.tooltip issue.derived_status.docstring]:[end] [issue.derived_status.tooltip] [issue.derived_status.docstring]"
+          <i title="Derived: [issue.derived_status.name] [if-any issue.derived_status.docstring]= [end][issue.derived_status.docstring]"
              >[issue.derived_status.name]</i>
         [end]
        [else]
-        <span title="[issue.status.tooltip] [issue.status.docstring]">[issue.status.name]</span>
+        <span title="[issue.status.name] [if-any issue.status.docstring]= [end][issue.status.docstring]">[issue.status.name]</span>
        [end]
       </td>
      </tr>
@@ -96,7 +96,7 @@
            [for issue.components]
              <div><a href="list?q=component:[issue.components.path]" class="fieldvalue"
                      [if-any issue.components.derived]style="font-style:italic"[end]
-                     title="[if-any issue.components.derived]Derived: [end][issue.components.docstring_short]"
+                     title="[if-any issue.components.derived]Derived: [end][issue.components.path] [if-any issue.components.docstring_short]= [end][issue.components.docstring_short]"
                      >[issue.components.path]</a></div>
            [end]
          </td>
@@ -112,12 +112,12 @@
           [if-any issue.fields.values issue.fields.derived_values]
             [for issue.fields.values]
               <a href="list?q=[issue.fields.field_name]=&quot;[format "url"][issue.fields.values.val][end]&quot;" class="fieldvalue"
-                      title="[issue.fields.values.val] [issue.fields.values.docstring]">[issue.fields.values.val]</a
+                      title="[issue.fields.values.val] [if-any issue.fields.values.docstring]= [end][issue.fields.values.docstring]">[issue.fields.values.val]</a
                >[if-index issue.fields.values last][if-any issue.fields.derived_values],[end][else],[end]
             [end]
             [for issue.fields.derived_values]
               <a href="list?q=[issue.fields.field_name]=&quot;[format "url"][issue.fields.derived_values.val][end]&quot;" class="fieldvalue"
-                      title="derived: [issue.fields.derived_values.val] [issue.fields.derived_values.docstring]"><i>[issue.fields.derived_values.val]</i></a>[if-index issue.fields.derived_values last][else],[end]
+                      title="derived: [issue.fields.derived_values.val] [if-any issue.fields.derived_values.docstring]= [end][issue.fields.derived_values.docstring]"><i>[issue.fields.derived_values.val]</i></a>[if-index issue.fields.derived_values last][else],[end]
             [end]
           [else]
             ----
@@ -132,11 +132,11 @@
       <div style="padding-top:2px">
        [is issue.labels.prefix ""]
          <a href="list?q=label:[issue.labels.name]"
-            title="[if-any issue.labels.tooltip][issue.labels.tooltip] [end][issue.labels.docstring]"
+            title="[issue.labels.name] [if-any issue.labels.docstring]= [end][issue.labels.docstring]"
             class="label">[issue.labels.name]</a>
        [else]
          <a href="list?q=label:[issue.labels.name]"
-            title="[if-any issue.labels.tooltip][issue.labels.tooltip] [end][issue.labels.docstring]"
+            title="[issue.labels.name] [if-any issue.labels.docstring]= [end][issue.labels.docstring]"
             class="label"><b>[issue.labels.prefix]-</b>[issue.labels.value]</a>
        [end]
       </div>
@@ -148,7 +148,7 @@
         <tr>
 	  <td colspan="2" class="widemeta">
 	    <a href="list?q=label:[issue.derived_labels.name]"
-               title="Derived[if-any issue.derived_labels.tooltip issue.derived_labels.docstring]: [end][issue.derived_labels.tooltip] [issue.derived_labels.docstring]"
+               title="Derived: [issue.derived_labels.name] [if-any issue.derived_labels.docstring]= [end][issue.derived_labels.docstring]"
                class="derived label">[issue.derived_labels.name]</a>
           </td>
         </tr>
@@ -156,7 +156,7 @@
         <tr>
           <td colspan="2" class="widemeta">
             <a href="list?q=label:[issue.derived_labels.name]"
-               title="Derived[if-any issue.derived_labels.tooltip issue.derived_labels.docstring]: [end][issue.derived_labels.tooltip] [issue.derived_labels.docstring]"
+               title="Derived: [issue.derived_labels.name] [if-any issue.derived_labels.docstring]= [end][issue.derived_labels.docstring]"
                class="derived label"><b>[issue.derived_labels.prefix]-</b>[issue.derived_labels.value]</a>
           </td>
         </tr>

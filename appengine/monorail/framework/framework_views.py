@@ -30,7 +30,6 @@ class LabelView(object):
       config: PB with a well_known_labels list, or None.
     """
     self.name = label
-    self.tooltip = label
     self.is_restrict = ezt.boolean(permissions.IsRestrictLabel(label))
 
     self.docstring = ''
@@ -57,7 +56,6 @@ class StatusView(object):
     """
 
     self.name = status
-    self.tooltip = status
 
     self.docstring = ''
     self.means_open = ezt.boolean(True)
