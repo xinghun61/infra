@@ -179,8 +179,9 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
       # Check status of last known CL for this repo. Ensure there's always
       # at most one roll CL in flight.
-      repo_data, cl_status = self._get_pending_cl_status(
-          project_data['repo_url'])
+      with self.m.step.context({'cwd': workdir}):
+        repo_data, cl_status = self._get_pending_cl_status(
+            project_data['repo_url'])
       if repo_data:
         # Allow trivial rolls in CQ to finish.
         if repo_data['trivial'] and cl_status == 'commit':

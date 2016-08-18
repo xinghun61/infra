@@ -243,6 +243,7 @@
       "cat",
       "gs://recipe-roller-cl-uploads/repo_metadata/aHR0cHM6Ly9yZXBvLnJlcG8vYnVpbGQ="
     ],
+    "cwd": "[TMP_BASE]/roll_build_tmp_2",
     "name": "build.gsutil repo_state",
     "stderr": "/path/to/tmp/",
     "stdout": "/path/to/tmp/",
