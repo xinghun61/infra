@@ -113,6 +113,8 @@ def ListSwarmingTasksDataByTags(
 
 
 def _GenerateIsolatedData(outputs_ref):
+  if not outputs_ref:
+    return {}
   return {
       'digest': outputs_ref['isolated'],
       'namespace': outputs_ref['namespace'],

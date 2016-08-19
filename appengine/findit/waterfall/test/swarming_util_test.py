@@ -576,3 +576,6 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   def testGetTagValueInvalidTag(self):
     tags = ['a:1', 'b:2']
     self.assertIsNone(swarming_util.GetTagValue(tags, 'c'))
+
+  def testGenerateIsolatedDataOutputsrefNone(self):
+    self.assertEqual({}, swarming_util._GenerateIsolatedData(None))
