@@ -290,6 +290,11 @@ func updateFullResults(c context.Context, data io.Reader) error {
 	go func() {
 		defer wg.Done()
 
+		delim := "/"
+		if f.PathDelim != nil {
+			delim = *f.PathDelim
+		}
+
 		payload, err := json.Marshal(struct {
 			Master       string         `json:"master"`
 			Builder      string         `json:"builder"`
@@ -307,7 +312,7 @@ func updateFullResults(c context.Context, data io.Reader) error {
 			Interrupted:  f.Interrupted,
 			Version:      f.Version,
 			SecondsEpoch: f.SecondsEpoch,
-			FlatTests:    f.Tests.Flatten(),
+			FlatTests:    f.Tests.Flatten(delim),
 		})
 		if err != nil {
 			logging.WithError(err).Errorf(c, "taskqueue: %s", monitoringPath)

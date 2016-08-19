@@ -99,7 +99,7 @@ func TestFullResult(t *testing.T) {
 							Unexpected: &unexpected,
 						},
 					}
-					So(ft.Flatten(), ShouldResemble, expected)
+					So(ft.Flatten("/"), ShouldResemble, expected)
 				})
 
 				Convey("basic 2", func() {
@@ -124,16 +124,16 @@ func TestFullResult(t *testing.T) {
 							Actual:   []string{"FAIL", "PASS"},
 							Expected: []string{"..."},
 						},
-						"a/1": &FullTestLeaf{
+						"a.1": &FullTestLeaf{
 							Actual:   []string{"..."},
 							Expected: []string{"SKIP"},
 						},
-						"a/2": &FullTestLeaf{
+						"a.2": &FullTestLeaf{
 							Actual:   []string{"..."},
 							Expected: []string{"..."},
 						},
 					}
-					So(ft.Flatten(), ShouldResemble, expected)
+					So(ft.Flatten("."), ShouldResemble, expected)
 				})
 			})
 		})

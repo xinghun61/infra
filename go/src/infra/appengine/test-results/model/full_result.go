@@ -83,23 +83,22 @@ func (ft FullTest) node() {}
 // FlatTest is a flattened representation of FullTest.
 type FlatTest map[string]*FullTestLeaf
 
-// FlatDelimiter is the separator for key names in FlatTest.
-const FlatDelimiter = "/"
-
 // Flatten flattens the test trie ft.
-func (ft FullTest) Flatten() FlatTest {
+// delim is the delimiter between test names. Usually it is set
+// to the value of the PathDelim field on the parent FullResult of ft.
+func (ft FullTest) Flatten(delim string) FlatTest {
 	result := make(FlatTest)
-	ft.flatten([]string(nil), result)
+	ft.flatten([]string(nil), result, delim)
 	return result
 }
 
-func (ft FullTest) flatten(prefixes []string, res FlatTest) {
+func (ft FullTest) flatten(prefixes []string, res FlatTest, delim string) {
 	for key, node := range ft {
 		switch t := node.(type) {
 		case FullTest:
-			t.flatten(append(prefixes, key), res)
+			t.flatten(append(prefixes, key), res, delim)
 		case *FullTestLeaf:
-			res[strings.Join(append(prefixes, key), FlatDelimiter)] = t
+			res[strings.Join(append(prefixes, key), delim)] = t
 		}
 	}
 }
