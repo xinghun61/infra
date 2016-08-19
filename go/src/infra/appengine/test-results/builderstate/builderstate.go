@@ -1,3 +1,7 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 // Package builderstate provides methods to get and set
 // builder state data and update last modified times for builders.
 package builderstate
