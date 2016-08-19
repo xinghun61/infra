@@ -16,7 +16,7 @@ from common.http_client_appengine import HttpClientAppengine as HttpClient
 _ROLE_EMAIL = 'IF_BREAK_CONTACT_stgao@chromium.org'
 _BUILDBUCKET_HOST = 'cr-buildbucket.appspot.com'
 _BUILDBUCKET_PUT_GET_ENDPOINT = (
-    'https://{hostname}/_ah/api/buildbucket/v1/builds'.format(
+    'https://{hostname}/api/buildbucket/v1/builds'.format(
         hostname=_BUILDBUCKET_HOST))
 
 

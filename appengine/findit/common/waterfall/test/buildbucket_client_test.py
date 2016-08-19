@@ -102,7 +102,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
 
   def _MockUrlFetch(self, build_id, try_job_request, content, status_code=200):
     base_url = (
-        'https://cr-buildbucket.appspot.com/_ah/api/buildbucket/v1/builds')
+        'https://cr-buildbucket.appspot.com/api/buildbucket/v1/builds')
     headers = {
         'Content-Type': 'application/json; charset=UTF-8'
     }
