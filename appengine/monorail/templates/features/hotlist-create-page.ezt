@@ -1,0 +1,63 @@
+[define title]Create a new hotlist[end]
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "hidetabs"]
+
+<h2>Create a hotlist</h2>
+
+<form action="createHotlist.do" method="POST" id="create_hotlist_form"
+      style="margin: 1em;">
+  <input type="hidden" name="token" value="[form_token]">
+
+  <label for="hotlistname">Hotlist Name:</label><br>
+  <input type="text" id="hotlistname" name="hotlistname" size="30" autocomplete="off"
+         value="[initial_name]">
+  <span class="graytext">Example: My-Hotlist-Name</span>
+  <div class="fielderror">&nbsp;
+    <span id="hotlistnamefeedback">
+       [if-any errors.hotlistname][errors.hotlistname][end]
+    </span>
+  </div>
+
+  <label for="summary">Summary</label><br>
+  <input type="text" id="summary" name="summary" size="75" autocomplete="off"
+         value="[initial_summary]">
+  <div class="fielderror">&nbsp;
+    <span id="summaryfeedback">
+      [if-any errors.summary][errors.summary][end]
+    </span>
+  </div>
+
+  <label for="description">Description</label><br>
+  <textarea id="description" name="description" rows="20" cols="90" wrap="soft"></textarea>
+  <br><br>
+
+  <label for="issues">Issues</label><br>
+  <input type="text" id="issues" name="issues" size="75" autocomplete="off">
+  <span class="graytext">Example: monorail:1234, chromium:12345</span>
+  <div class="fielderror">&nbsp;
+    <span id="issuesfeedback">
+      [if-any errors.issues][errors.issues][end]
+    </span>
+  </div>
+
+  <label for="editors">Editors</label><br>
+  <input type="text" id="editors" name="editors" size="75" autocomplete="off">
+  <span class="graytext">Example: user@email.com, example@email.com</span>
+  <div class="fielderror">&nbsp;
+    <span id="editorsfeedback">
+      [if-any errors.editors][errors.editors][end]
+    <span>
+  </div>
+
+  <label for="privacy">Viewable by:</label>
+  <select name="is_private" id="privacy">
+    <option disabled="disabled">Select an access level...</option>
+    <option value="no">Anyone on the internet</option>
+    <option value="yes">Hotlist members</option>
+  </select>
+  <br><br>
+
+  <input type="submit" value="Create hotlist">
+</form>
+
+[include "../framework/master-footer.ezt"]

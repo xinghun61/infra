@@ -114,6 +114,9 @@ ISSUE_EXPORT_JSON = '/issues/export/json'
 ISSUE_IMPORT = '/issues/import'
 ISSUE_RERANK_BLOCKED_ON = '/issues/rerankBlockedOn'
 
+# URLs for hotlist features
+HOTLIST_CREATE = '/hosting/createHotlist'
+
 # URLs of site-wide pages referenced from the framework directory.
 CAPTCHA_QUESTION = '/hosting/captcha'
 EXCESSIVE_ACTIVITY = '/hosting/excessiveActivity'

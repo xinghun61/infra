@@ -400,7 +400,7 @@ class FeaturesServiceTest(unittest.TestCase):
   def SetUpCreateHotlist(self):
     # Check for the existing hotlist: there should be none.
     self.features_service.hotlist_tbl.Select(
-        self.cnxn, cols=['id', 'name'], name=('hot1',)).AndReturn([])
+        self.cnxn, cols=['id', 'name'], name=['hot1']).AndReturn([])
 
     # Inserting the hotlist returns the id.
     self.features_service.hotlist_tbl.InsertRow(
@@ -425,11 +425,11 @@ class FeaturesServiceTest(unittest.TestCase):
 
   def SetUpLookupHotlistIDs(self):
     self.features_service.hotlist_tbl.Select(
-        self.cnxn, cols=['id', 'name'], name=('hot1',)).AndReturn([
+        self.cnxn, cols=['id', 'name'], name=['hot1']).AndReturn([
           (123, 'hot1')])
     self.features_service.hotlist2user_tbl.Select(
-        self.cnxn, cols=['hotlist_id', 'owner_id'], hotlist_id=[123],
-        user_id=(567,), role_name='owner').AndReturn([(123, 567)])
+        self.cnxn, cols=['hotlist_id', 'user_id'], hotlist_id=[123],
+        user_id=[567], role_name='owner').AndReturn([(123, 567)])
 
   def testLookupHotlistIDs(self):
     self.SetUpLookupHotlistIDs()

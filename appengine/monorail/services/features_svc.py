@@ -530,6 +530,8 @@ class FeaturesService(object):
         [(hotlist_id, user_id, 'follower')
          for user_id in hotlist.follower_ids])
 
+    self.hotlist_user_to_ids.InvalidateKeys(cnxn, hotlist.owner_ids)
+
     return hotlist_id
 
   ### Lookup hotlist IDs
@@ -542,14 +544,14 @@ class FeaturesService(object):
         [(name.lower(), owner_id)
          for name in hotlist_names for owner_id in owner_ids])
     if missed_keys:
-      missed_names, missed_owners = zip(*missed_keys)
+      missed_names, missed_owners = map(list, zip(*missed_keys))
       hotlist_rows = self.hotlist_tbl.Select(
           cnxn, cols=['id', 'name'], name=missed_names)
       if hotlist_rows:
         id_to_name = dict(hotlist_rows)
         hotlist_ids = [row[0] for row in hotlist_rows]
         role_rows = self.hotlist2user_tbl.Select(
-            cnxn, cols=['hotlist_id', 'owner_id'], hotlist_id=hotlist_ids,
+            cnxn, cols=['hotlist_id', 'user_id'], hotlist_id=hotlist_ids,
             user_id=missed_owners, role_name='owner')
         retrieved_dict = {
             (id_to_name[hotlist_id], owner_id) : hotlist_id

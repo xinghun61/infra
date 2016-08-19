@@ -12,7 +12,7 @@
     <div>Hotlists allow you to group and rank issues independently of projects and with other users.</div><br>
     [if-any viewing_self]
     <div>
-      <a href="createHotlist" title="Create a new hotlist">
+      <a href="/hosting/createHotlist" title="Create a new hotlist">
         <input type="button" value="Create hotlist">
       </a>
     </div><br>

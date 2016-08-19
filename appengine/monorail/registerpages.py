@@ -12,6 +12,7 @@ import webapp2
 import settings
 
 from features import autolink
+from features import hotlistcreate
 from features import cues
 from features import filterrules
 from features import userhotlists
@@ -287,6 +288,7 @@ class ServletRegistry(object):
         urls.GROUP_CREATE: groupcreate.GroupCreate,
         urls.GROUP_LIST: grouplist.GroupList,
         urls.GROUP_DELETE: grouplist.GroupList,
+        urls.HOTLIST_CREATE: hotlistcreate.HotlistCreate,
         })
 
     self._SetupUserServlets({

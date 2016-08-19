@@ -71,6 +71,7 @@ EDIT_ISSUE_CC = 'EditIssueCc'
 DELETE_ISSUE = 'DeleteIssue'
 ADD_ISSUE_COMMENT = 'AddIssueComment'
 VIEW_INBOUND_MESSAGES = 'ViewInboundMessages'
+CREATE_HOTLIST = 'CreateHotlist'
 # Note, there is no separate DELETE_ATTACHMENT perm.  We
 # allow a user to delete an attachment iff they could soft-delete
 # the comment that holds the attachment.
@@ -284,7 +285,7 @@ ADMIN_PERMISSIONSET = PermissionSet(
      VIEW_INBOUND_MESSAGES,
      DELETE_ANY, EDIT_ANY_MEMBER_NOTES,
      CREATE_GROUP, EDIT_GROUP, DELETE_GROUP, VIEW_GROUP,
-     MODERATE_SPAM],
+     MODERATE_SPAM, CREATE_HOTLIST],
     consider_restrictions=False)
 
 GROUP_IMPORT_BORG_PERMISSIONSET = PermissionSet(
@@ -328,7 +329,7 @@ _PERMISSIONS_TABLE = {
 
     # Permissions for site pages, e.g., creating a new project
     (USER_ROLE, UNDEFINED_STATUS, UNDEFINED_ACCESS):
-      PermissionSet([CREATE_PROJECT, CREATE_GROUP]),
+      PermissionSet([CREATE_PROJECT, CREATE_GROUP, CREATE_HOTLIST]),
     }
 
 
