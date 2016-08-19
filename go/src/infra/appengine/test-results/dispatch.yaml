@@ -13,6 +13,8 @@ dispatch:
     module: go
   - url: "*/testfile/upload"
     module: go
+  - url: "*/revision_range"
+    module: go
   - url: "*/internal/delete-keys"
     module: go
   - url: "*/internal/cron/ts_mon/housekeeping"
