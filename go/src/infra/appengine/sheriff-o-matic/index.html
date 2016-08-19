@@ -3,7 +3,16 @@
 <link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon">
 <base href="/">
 <script src="bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
-<link rel="import" href="elements/som-app.html">
+
+<script>
+function loadNonVulcanized() {
+  var link = document.createElement('link');
+  link.rel = 'import';
+  link.href = 'elements/som-app.html';
+  document.documentElement.appendChild(link);
+}
+</script>
+<link rel="import" href="elements/som-app.vulcanized.html" onerror="loadNonVulcanized()">
 <style>
   body {
     font-family: sans-serif;

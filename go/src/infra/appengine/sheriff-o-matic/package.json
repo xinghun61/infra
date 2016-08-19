@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "polylint": "^2.9.0",
+    "vulcanize": "~1.14.8",
     "web-component-tester": "^4.1.0"
   },
   "devDependencies": {

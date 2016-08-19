@@ -49,7 +49,7 @@ google-chrome ./coverage/lcov-report/index.html
 
 To deploy:
 ```sh
-./gae.py upload
+make deploy
 ```
 
 ## Configuring and populating devserver SoM with alerts
@@ -73,5 +73,3 @@ See [alerts-dispatcher's README](https://chromium.googlesource.com/infra/infra/+
 We don't currently run the `WCT` tests on CQ. So *please* be sure to run them
 yourself before submitting. Also keep an eye on test coverage as you make
 changes. It should not decrease with new commits.
-
-
