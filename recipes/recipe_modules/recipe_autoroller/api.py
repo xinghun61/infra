@@ -164,59 +164,66 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
             'manual intervention needed: automated roll attempt failed')
 
   def _roll_project(self, project_data, recipes_dir):
-    with self.m.tempfile.temp_dir('roll_%s' % project_data['id']) as workdir:
-      self.m.git.checkout(
-          project_data['repo_url'], dir_path=workdir, submodules=False,
-          use_git_cache=True)
+    # Keep persistent checkout. Speeds up the roller for large repos
+    # like chromium/src.
+    workdir = self.m.path['cache'].join(
+        'recipe_autoroller', project_data['id'])
 
-      # Introduce ourselves to git - also needed for git cl upload to work.
-      self.m.git(
-          'config', 'user.email', 'recipe-roller@chromium.org', cwd=workdir)
-      self.m.git('config', 'user.name', 'recipe-roller', cwd=workdir)
+    self.m.git.checkout(
+        project_data['repo_url'], dir_path=workdir, submodules=False,
+        use_git_cache=True)
 
-      # git cl upload cannot work with detached HEAD, it requires a branch.
-      self.m.git('checkout', '-t', '-b', 'roll', 'origin/master', cwd=workdir)
+    # Introduce ourselves to git - also needed for git cl upload to work.
+    self.m.git(
+        'config', 'user.email', 'recipe-roller@chromium.org', cwd=workdir)
+    self.m.git('config', 'user.name', 'recipe-roller', cwd=workdir)
 
-      # Check status of last known CL for this repo. Ensure there's always
-      # at most one roll CL in flight.
-      repo_data, cl_status = self._get_pending_cl_status(
-          project_data['repo_url'], workdir)
-      if repo_data:
-        # Allow trivial rolls in CQ to finish.
-        if repo_data['trivial'] and cl_status == 'commit':
-          return ROLL_SUCCESS
+    # Clean up possibly left over roll branch. Ignore errors.
+    self.m.git('branch', '-D', 'roll', ok_ret='any')
 
-        # Allow non-trivial rolls to wait for review comments.
-        if not repo_data['trivial'] and cl_status != 'closed':
-          return ROLL_SUCCESS
+    # git cl upload cannot work with detached HEAD, it requires a branch.
+    self.m.git('checkout', '-t', '-b', 'roll', 'origin/master', cwd=workdir)
 
-        # We're about to upload a new CL, so close the old one.
-        # Pass --rietveld flag to match upload args below.
-        self.m.git('cl', 'set-close',
-                   '--issue', repo_data['issue'],
-                   '--rietveld',
-                   _AUTH_REFRESH_TOKEN_FLAG, cwd=workdir)
-
-      recipes_cfg_path = workdir.join('infra', 'config', 'recipes.cfg')
-
-      # Use the recipes bootstrap to checkout coverage.
-      roll_step = self.m.step(
-          'roll',
-          [recipes_dir.join('recipes.py'), '--use-bootstrap', '--package',
-           recipes_cfg_path, 'autoroll', '--output-json', self.m.json.output()])
-      roll_result = roll_step.json.output
-
-      if roll_result['success']:
-        self._process_successful_roll(
-            project_data['repo_url'], roll_step, roll_result, workdir)
+    # Check status of last known CL for this repo. Ensure there's always
+    # at most one roll CL in flight.
+    repo_data, cl_status = self._get_pending_cl_status(
+        project_data['repo_url'], workdir)
+    if repo_data:
+      # Allow trivial rolls in CQ to finish.
+      if repo_data['trivial'] and cl_status == 'commit':
         return ROLL_SUCCESS
+
+      # Allow non-trivial rolls to wait for review comments.
+      if not repo_data['trivial'] and cl_status != 'closed':
+        return ROLL_SUCCESS
+
+      # We're about to upload a new CL, so close the old one.
+      # Pass --rietveld flag to match upload args below.
+      self.m.git('cl', 'set-close',
+                 '--issue', repo_data['issue'],
+                 '--rietveld',
+                 _AUTH_REFRESH_TOKEN_FLAG, cwd=workdir)
+
+    recipes_cfg_path = workdir.join('infra', 'config', 'recipes.cfg')
+
+    # Use the recipes bootstrap to checkout coverage.
+    roll_step = self.m.step(
+        'roll',
+        [recipes_dir.join('recipes.py'), '--use-bootstrap', '--package',
+         recipes_cfg_path, 'autoroll', '--output-json', self.m.json.output()])
+    roll_result = roll_step.json.output
+
+    if roll_result['success']:
+      self._process_successful_roll(
+          project_data['repo_url'], roll_step, roll_result, workdir)
+      return ROLL_SUCCESS
+    else:
+      if (not roll_result['roll_details'] and
+          not roll_result['rejected_candidates_details']):
+        roll_step.presentation.step_text += ' (already at latest revisions)'
+        return ROLL_EMPTY
       else:
-        if (not roll_result['roll_details'] and
-            not roll_result['rejected_candidates_details']):
-          roll_step.presentation.step_text += ' (already at latest revisions)'
-          return ROLL_EMPTY
-        else:
-          return ROLL_FAILURE
+        return ROLL_FAILURE
 
   def _process_successful_roll(
       self, repo_url, roll_step, roll_result, workdir):
