@@ -26,7 +26,7 @@ def RunSteps(api):
   api.gclient.set_config(project)
   api.bot_update.ensure_checkout(
     force=True, patch_root=project, patch_oauth2=internal,
-    use_site_config_creds=False)
+    use_site_config_creds=False, gerrit_rebase_patch_ref=True)
 
   api.git('-c', 'user.email=commit-bot@chromium.org',
           '-c', 'user.name=The Commit Bot',
