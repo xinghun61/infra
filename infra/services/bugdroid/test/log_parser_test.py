@@ -39,6 +39,30 @@ class BugLineParserTest(unittest.TestCase):
       ("Bugdroid-Send-Email: yaaaman", True),
       ("Bugdroid-Send-Email: no", False),
       ("Bugdroid-Send-Email: false", False),
+      ("""
+Whitespace CL to test bugdroid
+
+BUG=637024
+
+Change-Id: Ib273794c41ea206f11c33fceac2182a0b8e637ee
+Bugdroid-Send-Email: False
+Reviewed-on: https://chromium-review.googlesource.com/367879
+Reviewed-by: Daniel Jacques <dnj@chromium.org>
+Commit-Queue: Stephen Martinis <martiniss@chromium.org>
+       """, False),
+      ("""
+Whitespace CL to test bugdroid
+
+BUG=637024
+I love that Bugdroid-Send-Email: False doesn't work if it's not
+in proper git footer style!
+Bugdroid-Send-Email: False
+
+Change-Id: Ib273794c41ea206f11c33fceac2182a0b8e637ee
+Reviewed-on: https://chromium-review.googlesource.com/367879
+Reviewed-by: Daniel Jacques <dnj@chromium.org>
+Commit-Queue: Stephen Martinis <martiniss@chromium.org>
+       """, True),
     ]:
       self.assertEqual(
-          result, log_parser.should_send_email(test_case))
+          result, log_parser.should_send_email(test_case), test_case)
