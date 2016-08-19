@@ -1,6 +1,5 @@
 {
-  "comment": "TODO(nishanths): min. coverage should be at least 60%",
   "skip_testing": ["windows"],
-  "expected_coverage_min": 10.0,
+  "expected_coverage_min": 60.0,
   "expected_coverage_max": 100.0
 }
