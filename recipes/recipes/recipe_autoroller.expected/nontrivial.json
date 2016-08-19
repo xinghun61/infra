@@ -334,6 +334,20 @@
   },
   {
     "cmd": [
+      "git",
+      "commit",
+      "-a",
+      "-m",
+      "roll recipes.cfg"
+    ],
+    "cwd": "[CACHE]/recipe_autoroller/build",
+    "name": "build.git commit",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
       "RECIPE_PACKAGE_REPO[depot_tools]/git_cl.py",
       "upload",
       "--send-mail",

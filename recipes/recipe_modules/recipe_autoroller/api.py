@@ -255,6 +255,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     else:
       roll_step.presentation.status = self.m.step.FAILURE
 
+    self.m.git('commit', '-a', '-m', 'roll recipes.cfg', cwd=workdir)
+
     tbrs = []
     if roll_result['trivial']:
       # Land immediately.
