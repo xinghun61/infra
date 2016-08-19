@@ -18,6 +18,8 @@ var (
 	errLog  = log.New(os.Stderr, "", log.Lshortfile|log.Ltime)
 )
 
+// AlertType is a type of alert; used for categorizing and grouping alerts on
+// the SOM frontend.
 type AlertType string
 
 const (

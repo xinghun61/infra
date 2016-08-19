@@ -38,6 +38,8 @@ def mk_checker(*tool_name):
   tool_name = list(tool_name)
 
   def _inner(_verbose, filestream):
+    found_errs = []
+    retcode = 0
     for fpaths in group_by_dir(filestream):
       proc = subprocess.Popen(
           tool_name+fpaths,
@@ -45,9 +47,12 @@ def mk_checker(*tool_name):
           stderr=subprocess.STDOUT)
       out = proc.communicate()[0].strip()
       if out or proc.returncode:
-        print out or 'Unrecognized error'
-        return proc.returncode or 1
-      return 0
+        found_errs.append(out or 'Unrecognized error')
+        retcode = proc.returncode or 1
+
+    for err in found_errs:
+      print err
+    return retcode
   return _inner
 
 

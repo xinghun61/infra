@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"infra/monitoring/messages"
 )
@@ -104,12 +103,13 @@ func (c *snapshot) CrbugItems(label string) ([]messages.CrbugItem, error) {
 	return items, err
 }
 
-func (s *snapshot) Findit(master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
-	items, err := s.wrapped.Findit(master, builder, buildNum, failedSteps)
+func (c *snapshot) Findit(master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
+	items, err := c.wrapped.Findit(master, builder, buildNum, failedSteps)
 	if err != nil {
 		return nil, err
 	}
-	err = write(filepath.Join(s.baseDir, "findit", master.Name(), builder, fmt.Sprintf("%d", buildNum), strings.Join(failedSteps, ",")), items)
+	// Ignore failedSteps since we assume only one call per build
+	err = write(filepath.Join(c.baseDir, "findit", master.Name(), builder, fmt.Sprintf("%d", buildNum)), items)
 	if err != nil {
 		errLog.Printf("Error snapshotting findit: %v", err)
 	}

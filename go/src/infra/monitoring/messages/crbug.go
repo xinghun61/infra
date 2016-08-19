@@ -13,7 +13,7 @@ type CrbugSearchResults struct {
 
 // CrbugAuthor is the author of an issue.
 type CrbugAuthor struct {
-	HtmlLink string `json:"htmlLink"`
+	HTMLLink string `json:"htmlLink"`
 	Kind     string `json:"kind"`
 	Name     string `json:"name"`
 }
@@ -23,10 +23,10 @@ type CrbugItem struct {
 	Author     CrbugAuthor `json:"author"`
 	CanComment bool        `json:"canComment"`
 	CanEdit    bool        `json:"canEdit"`
-	Id         float64     `json:"id"`
+	ID         float64     `json:"id"`
 	Kind       string      `json:"kind"`
 	Labels     []string    `json:"labels"`
-	ProjectId  string      `json:"projectId"`
+	ProjectID  string      `json:"projectId"`
 	Published  string      `json:"published"`
 	Starred    bool        `json:"starred"`
 	Stars      float64     `json:"stars"`
