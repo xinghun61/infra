@@ -323,6 +323,8 @@ func FormatIPRange(ipRanges []*crimson.IPRange, format FormatType) ([]string, er
 		formatter = &TextFormatter{}
 	case csvFormat:
 		formatter = &CSVFormatter{}
+	default:
+		panic(fmt.Errorf("Unknown formatter: %v", formatter))
 	}
 	rows := [][]string{{"site", "vlan ID", "Start IP", "End IP", "vlan alias"}}
 	for _, ipRange := range ipRanges {
@@ -364,6 +366,8 @@ func FormatHostList(hostList *crimson.HostList, format FormatType) ([]string, er
 		formatter = &TextFormatter{}
 	case csvFormat:
 		formatter = &CSVFormatter{}
+	default:
+		panic(fmt.Errorf("Unknown formatter: %v", formatter))
 	}
 	rows := [][]string{{"mac", "ip", "site", "hostname", "class"}}
 	for _, host := range hostList.Hosts {
