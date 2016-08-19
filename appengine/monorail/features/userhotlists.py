@@ -6,6 +6,7 @@
 """Page for showing a user's hotlists."""
 
 from features import hotlist_views
+from framework import framework_views
 from framework import servlet
 
 
@@ -30,7 +31,11 @@ class UserHotlists(servlet.Servlet):
     follower_of_hotlists = [hotlist_view for hotlist_view in visible_hotlists
                          if hotlist_view.role_name == '']
 
+    viewed_user_display_name = framework_views.GetViewedUserDisplayName(mr)
+
     return {
+        'user_tab_mode': 'st6',
+        'viewed_user_display_name': viewed_user_display_name,
         'owner_of_hotlists': owner_of_hotlists,
         'editor_of_hotlists': editor_of_hotlists,
         'follower_of_hotlists': follower_of_hotlists,

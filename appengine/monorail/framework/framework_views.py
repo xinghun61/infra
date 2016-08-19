@@ -210,3 +210,21 @@ def RevealAllEmails(users_by_id):
   """
   for user_view in users_by_id.itervalues():
     user_view.RevealEmail()
+
+
+def GetViewedUserDisplayName(mr):
+  """Get display name of the viewed user given the logged-in user."""
+  # Do not obscure email if current user is a site admin. Do not obscure
+  # email if current user is viewing their own profile. For all other
+  # cases do whatever obscure_email setting for the user is.
+  viewing_self = mr.auth.user_id == mr.viewed_user_auth.user_id
+  email_obscured = (not(mr.auth.user_pb.is_site_admin or viewing_self)
+                    and mr.viewed_user_auth.user_view.obscure_email)
+  if email_obscured:
+    _, domain, obscured_username = ParseAndObscureAddress(
+        mr.viewed_user_auth.email)
+    viewed_user_display_name = '%s...@%s' % (obscured_username, domain)
+  else:
+    viewed_user_display_name = mr.viewed_user_auth.email
+
+  return viewed_user_display_name

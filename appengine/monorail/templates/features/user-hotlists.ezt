@@ -1,22 +1,115 @@
-[# this is a placeholder for the actual page (another CL)]
-<ul>
-[for owner_of_hotlists]
-  <li><b>[owner_of_hotlists.name]:</b> [owner_of_hotlists.summary]<br>
-    <i>[owner_of_hotlists.description]</i><br>
-    Role: Owner</li>
-[end]
-[for editor_of_hotlists]
-  <li><b>[editor_of_hotlists.name]:</b> [editor_of_hotlists.summary]<br>
-    <i>[editor_of_hotlists.description]</i><br>
-    Role: Editor</li>
-[end]
-</ul>
-[if-any follower_of_hotlists]
-Hotlists starred by [if-any viewing_self]me[else][viewed_username][end]
-<ul>
-[for follower_of_hotlists]
-  <li><b>[follower_of_hotlists.name]:</b> [follower_of_hotlists.summary]<br>
-    <i>[follower_of_hotlists.description]</i></li>
-[end]
-</ul>
-[end]
+[define title][if-any viewing_self]My[else][viewed_user_display_name][end] hotlists[end]
+[define category_css]css/ph_detail.css[end]
+
+[include "../framework/master-header.ezt" "showusertabs" "t5"]
+
+
+<h3>Hotlists</h3>
+
+<div class="section">
+
+  <div class="closed">
+    <div>Hotlists allow you to group and rank issues independently of projects and with other users.</div><br>
+    [if-any viewing_self]
+    <div>
+      <a href="createHotlist" title="Create a new hotlist">
+        <input type="button" value="Create hotlist">
+      </a>
+    </div><br>
+    [end]
+
+    <div class="list">
+      <table style="width:100%;" cellspacing="0" cellpadding="0">
+        <tr>
+          <th style="text-align:left;">Hotlists</th>
+        </tr>
+      </table>
+    </div>
+    <table cellspacing="0" cellpadding="2" border="0" class="results striped" width="100%">
+      <tr id="headingrow">
+        [if-any viewing_self][else]<th style="white-space:nowrap; width:3%;">&nbsp;</th>[end]
+        <th style="white-space:nowrap; width:15%;">Role</th>
+        <th style="white-space:nowrap; width:25%">Hotlist</th>
+        <th style="white-space:nowrap; width:10%;">Issues</th>
+        <th style="white-space:nowrap; width:[if-any viewing_self]50[else]47[end]%;">Summary</th>
+      </tr>
+    [if-any owner_of_hotlists editor_of_hotlists]
+      [for owner_of_hotlists]
+        <tr data-url="[owner_of_hotlists.url]">
+          [if-any logged_in_user][if-any viewing_self][else]
+            <td class="rowwidgets">
+              <a class="star"
+                 style="color:[if-any owner_of_hotlists.is_starred]cornflowerblue[else]gray[end]"
+                 title="[if-any owner_of_hotlists.is_starred]Un-s][else]S[end]tar this hotlist"
+                 data-hotlist-name="[owner_of_hotlists.name]">
+             [if-any owner_of_hotlists.is_starred]&#9733;[else]&#9734;[end]
+              </a>
+            </td>
+          [end][end]
+          <td>Owner</td>
+          <td class="id" name="owner">
+            <a href="[owner_of_hotlists.url]">[owner_of_hotlists.name]</a></td>
+          <td>[owner_of_hotlists.num_issues]</td>
+          <td>[owner_of_hotlists.summary]</td>
+        </tr>
+      [end]
+      [for editor_of_hotlists]
+        <tr data-url="[editor_of_hotlists.url]">
+          [if-any logged_in_user][if-any viewing_self][else]
+            <td class="rowwidgets">
+              <a class="star"
+                 style="color:[if-any editor_of_hotlists.is_starred]cornflowerblue[else]gray[end]"
+                 title="[if-any editor_of_hotlists.is_starred]Un-s][else]S[end]tar this hotlist"
+                 data-hotlist-name="[editor_of_hotlists.name]">
+             [if-any editor_of_hotlists.is_starred]&#9733;[else]&#9734;[end]
+            </td>
+          [end][end]
+          <td>Editor</td>
+          <td class="id" name="editor">
+            <a href="[editor_of_hotlists.url]">[editor_of_hotlists.name]</a></td>
+          <td>[editor_of_hotlists.num_issues]</td>
+          <td>[editor_of_hotlists.summary]</td>
+        </tr>
+      [end]
+    [else]
+      <td colspan="4"><i>No hotlists.</i></td>
+    [end]
+    </table>
+    [if-any follower_of_hotlists]
+      <div class="list">
+        <table style="width:100%;" cellspacing="0" cellpadding="0">
+          <tr>
+            <th style="text-align:left;">Hotlists starred by [if-any viewing_self]you[else][viewed_user_display_name][end]</th>
+          </tr>
+        </table>
+      </div>
+      <table cellspacing="0" cellpadding="2" border="0" class="results striped" width="100%">
+        <tr>
+          <th style="white-space:nowrap; width:3%;">&nbsp;</th>
+          <th style="white-space:nowrap; width:30%;">Hotlist</th>
+          <th style="white-space:nowrap; width:10%;">Issues</th>
+          <th style="white-space:nowrap; width:57%;">Summary</th>
+        </tr>
+        [for follower_of_hotlists]
+          <tr data-url="[follower_of_hotlists.url]">
+            <td class="rowwidgets">
+              <a class="star"
+                 style="color:[if-any follower_of_hotlists.is_starred]cornflowerblue[else]gray[end]"
+                 title="[if-any follower_of_hotlists.is_starred]Un-s][else]S[end]tar this hotlist"
+                 data-hotlist-name="[follower_of_hotlists.name]">
+             [if-any follower_of_hotlists.is_starred]&#9733;[else]&#9734;[end]
+            </td>
+            <td class="id" name="follower">
+              <a href="[follower_of_hotlists.url]">[follower_of_hotlists.name]</a></td>
+            </td>
+            <td>[follower_of_hotlists.num_issues]</td>
+            <td>[follower_of_hotlists.summary]</td>
+          </tr>
+        [end]
+      </table>
+    [end]
+
+  </div>
+</div>
+
+[include "../framework/master-footer.ezt"]

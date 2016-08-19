@@ -35,8 +35,6 @@ class UserProfile(AbstractUserPage):
 
   def GatherPageData(self, mr):
     """Build up a dictionary of data values to use when rendering the page."""
-    viewing_self = mr.viewed_user_auth.user_id == mr.auth.user_id
-
     if self.services.usergroup.GetGroupSettings(
         mr.cnxn, mr.viewed_user_auth.user_id):
       url = framework_helpers.FormatAbsoluteURL(
@@ -52,17 +50,7 @@ class UserProfile(AbstractUserPage):
       (visible_ownership, visible_archived, visible_membership,
        visible_contrib) = project_lists
 
-    # Do not obscure email if current user is a site admin. Do not obscure
-    # email if current user is viewing his/her own profile. For all other
-    # cases do whatever obscure_email setting for the user is.
-    email_obscured = (not(mr.auth.user_pb.is_site_admin or viewing_self)
-                      and mr.viewed_user_auth.user_view.obscure_email)
-    if email_obscured:
-      _, domain, obscured_username = framework_views.ParseAndObscureAddress(
-          mr.viewed_user_auth.email)
-      viewed_user_display_name = '%s...@%s' % (obscured_username, domain)
-    else:
-      viewed_user_display_name = mr.viewed_user_auth.email
+    viewed_user_display_name = framework_views.GetViewedUserDisplayName(mr)
 
     with self.profiler.Phase('GetStarredProjects'):
       starred_projects = sitewide_helpers.GetViewableStarredProjects(

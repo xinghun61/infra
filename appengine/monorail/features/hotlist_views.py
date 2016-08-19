@@ -19,6 +19,8 @@ class HotlistView(template_helpers.PBProxy):
       user_ids_to_names=None):
     super(HotlistView, self).__init__(hotlist_pb)
 
+    # TODO(lukasperaza): pass user's effective IDs to CanViewHotlist instead
+    # of just the user's ID
     self.visible = permissions.CanViewHotlist({logged_in_user_id}, hotlist_pb)
     if not self.visible:
       return
@@ -37,4 +39,5 @@ class HotlistView(template_helpers.PBProxy):
     elif viewed_user_id in hotlist_pb.editor_ids:
       self.role_name = 'editor'
 
+    self.num_issues = len(hotlist_pb.iid_rank_pairs)
     self.is_starred = ezt.boolean(logged_in_user_id in hotlist_pb.follower_ids)
