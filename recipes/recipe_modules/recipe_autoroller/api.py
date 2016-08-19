@@ -179,7 +179,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     self.m.git('config', 'user.name', 'recipe-roller', cwd=workdir)
 
     # Clean up possibly left over roll branch. Ignore errors.
-    self.m.git('branch', '-D', 'roll', ok_ret='any')
+    self.m.git('branch', '-D', 'roll', ok_ret='any', cwd=workdir)
 
     # git cl upload cannot work with detached HEAD, it requires a branch.
     self.m.git('checkout', '-t', '-b', 'roll', 'origin/master', cwd=workdir)

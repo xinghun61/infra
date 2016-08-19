@@ -563,7 +563,7 @@
       "-D",
       "roll"
     ],
-    "cwd": "[CACHE]/recipe_autoroller/build",
+    "cwd": "[CACHE]/recipe_autoroller/infra",
     "name": "infra.git branch",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
