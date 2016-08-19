@@ -263,8 +263,8 @@ func (l *FullTestLeaf) node() {}
 // fullTestLeafAlias helps unmarshal and marshal FullTestLeaf.
 type fullTestLeafAlias FullTestLeaf
 
-// testResultAux helps unmarshal and marshal FullTestLeaf.
-type testResultAux struct {
+// fullTestLeafAux helps unmarshal and marshal FullTestLeaf.
+type fullTestLeafAux struct {
 	Actual   string `json:"actual"`
 	Expected string `json:"expected"`
 	*fullTestLeafAlias
@@ -325,7 +325,7 @@ func round(f float64) int {
 
 // MarshalJSON marshals l into JSON.
 func (l *FullTestLeaf) MarshalJSON() ([]byte, error) {
-	aux := testResultAux{fullTestLeafAlias: (*fullTestLeafAlias)(l)}
+	aux := fullTestLeafAux{fullTestLeafAlias: (*fullTestLeafAlias)(l)}
 	aux.Actual = strings.Join(l.Actual, " ")
 	aux.Expected = strings.Join(l.Expected, " ")
 	return json.Marshal(&aux)
@@ -333,7 +333,7 @@ func (l *FullTestLeaf) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshals the supplied data into l.
 func (l *FullTestLeaf) UnmarshalJSON(data []byte) error {
-	aux := testResultAux{fullTestLeafAlias: (*fullTestLeafAlias)(l)}
+	aux := fullTestLeafAux{fullTestLeafAlias: (*fullTestLeafAlias)(l)}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
