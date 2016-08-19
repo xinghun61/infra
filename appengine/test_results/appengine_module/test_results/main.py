@@ -47,6 +47,7 @@ routes = [
     ('/builderstate', builderstatehandler.GetBuilderState),
     ('/updatebuilderstate', builderstatehandler.Update),
     ('/internal/monitoring/upload', monitoring.EventMonUploader),
+    ('/internal/v2/monitoring/upload', monitoring.MonitoringUploadV2),
     ('/', menu.Menu),
     webapp2.Route('/revision_range', webapp2.RedirectHandler, defaults={
         '_uri': redirector.get_googlesource_url}),

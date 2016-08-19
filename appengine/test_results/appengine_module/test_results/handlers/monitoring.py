@@ -14,6 +14,60 @@ from appengine_module.test_results.model.testfile import TestFile
 from infra_libs import ts_mon
 from infra_libs import event_mon
 
+class MonitoringUploadV2(webapp2.RequestHandler):
+  num_test_results = ts_mon.CounterMetric(
+      'test_results/num_test_results',
+      description='Number of reported test results')
+
+  def post(self):
+    data = json.loads(self.request.body)
+
+    master = data.get('master')
+    builder = data.get('builder')
+    build_number = data.get('build_number')
+    test_type = data.get('test_type')
+
+    if not master or not builder or not build_number or not test_type:
+      logging.error(
+          'Missing required parameters: (master=%s, builder=%s, '
+          'build_number=%s, test_type=%s)' %
+          (master, builder, build_number, test_type))
+      self.response.set_status(400)
+      return
+
+    # Create a proto event and send it to event_mon.
+    event = event_mon.Event('POINT')
+    test_results = event.proto.test_results
+    test_results.master_name = master
+    test_results.builder_name = builder
+    test_results.build_number = int(build_number)
+    test_results.test_type = test_type
+    if 'interrupted' in data:
+      test_results.interrupted = data['interrupted']
+    test_results.version = data['version']
+    test_results.usec_since_epoch = long(
+          float(data['seconds_since_epoch']) * 1000 * 1000)
+
+    def convert_test_result_type(json_val):
+      self.num_test_results.increment({
+          'result_type': json_val, 'master': master, 'builder': builder,
+          'test_type': test_type})
+      try:
+        return (event_mon.protos.chrome_infra_log_pb2.TestResultsEvent.
+                TestResultType.Value(json_val.upper().replace('+', '_')))
+      except ValueError:
+        return event_mon.protos.chrome_infra_log_pb2.TestResultsEvent.UNKNOWN
+
+    tests = data.get('flat_tests', {})
+    for name, test in tests.iteritems():
+      test_result = test_results.tests.add()
+      test_result.test_name = name
+      test_result.actual.extend(
+          convert_test_result_type(res) for res in test['actual'].split(' '))
+      test_result.expected.extend(
+          convert_test_result_type(res) for res in test['expected'].split(' '))
+
+    event.send()
 
 class EventMonUploader(webapp2.RequestHandler):
   num_test_results = ts_mon.CounterMetric(
