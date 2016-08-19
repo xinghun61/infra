@@ -29,7 +29,7 @@ import (
 
 type statusError struct {
 	error
-	code int
+	code int // HTTP status code.
 }
 
 // MarshalJSON marshals status error to JSON.
@@ -45,12 +45,12 @@ func (se *statusError) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-// UploadParams is the multipart form values in a
+// UploadParams represents the multipart form values in a
 // TestFile upload request.
 type UploadParams struct {
 	Master string
 	// DeprecatedMaster is set when master.Name was provided
-	// in the request, instead of master.Identifer.
+	// in the request instead of master.Identifer.
 	DeprecatedMaster string
 	Builder          string
 	TestType         string
@@ -79,8 +79,8 @@ func SetUploadParams(c context.Context, p *UploadParams) context.Context {
 // multipart form upload data to the context.
 //
 // If there is an error parsing the form or required
-// values are missing, WithParsed writes the HTTP error
-// to the response writer and stops execution of the request.
+// values are missing, the function writes the HTTP error
+// to the response writer and does not call next.
 func withParsedUploadForm(ctx *router.Context, next router.Handler) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
 
@@ -218,7 +218,7 @@ func extractBuildNumber(data io.Reader) (int, io.Reader, error) {
 	return bn, io.MultiReader(&buf, dec.Buffered()), nil
 }
 
-// uploadTestFile creates a new TestFile from the values in context
+// uploadTestFile creates a new TestFile from the UploadParams in context
 // and supplied data, and puts it to the datastore.
 func uploadTestFile(c context.Context, data io.Reader, filename string) error {
 	bn, data, err := extractBuildNumber(data)
@@ -251,7 +251,7 @@ func uploadTestFile(c context.Context, data io.Reader, filename string) error {
 // to the datastore, and updates corresponding "results.json" and
 // "results-small.json" files in the datastore.
 //
-// The supplied data should unmarshal into model.FullResults.
+// The supplied data should unmarshal into model.FullResult.
 // Otherwise, an error is returned.
 func updateFullResults(c context.Context, data io.Reader) error {
 	buf := &bytes.Buffer{}
@@ -341,7 +341,7 @@ func updateFullResults(c context.Context, data io.Reader) error {
 }
 
 // updateIncremental gets "results.json" and "results-small.json"
-// for values in context, merges incr into them, and puts the updated
+// for UploadParams in context, merges incr into them, and puts the updated
 // files to the datastore.
 func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 	u := GetUploadParams(c)
@@ -522,6 +522,7 @@ func updateAggregate(c context.Context, tf *model.TestFile, aggr, incr *model.Ag
 	return nil
 }
 
+// deleteKeys posts the supplied keys to the delete keys task queue.
 func deleteKeys(c context.Context, k []*datastore.Key) error {
 	if len(k) == 0 {
 		return nil

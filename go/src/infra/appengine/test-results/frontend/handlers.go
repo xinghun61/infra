@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// Package frontend implements the App Engine based HTTP server
+// behind test-results.appspot.com.
 package frontend
 
 import (
