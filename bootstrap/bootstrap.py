@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 from util import STORAGE_URL, OBJECT_URL, LOCAL_STORAGE_PATH, LOCAL_OBJECT_URL
 from util import read_deps, merge_deps, print_deps, platform_tag
@@ -50,10 +51,21 @@ def check_pydistutils():
 
 def ls(prefix):
   from pip._vendor import requests  # pylint: disable=E0611
-  data = requests.get(STORAGE_URL, params=dict(
-      prefix=prefix,
-      fields='items(name,md5Hash)'
-  )).json()
+  for retry in range(4):
+    try:
+      data = requests.get(STORAGE_URL, params=dict(
+          prefix=prefix,
+          fields='items(name,md5Hash)'
+      )).json()
+      break
+    except requests.exceptions.SSLError as ex:
+      delay = 4 ** (retry-1)
+      print >> sys.stderr, (
+        "caught SSLError: %s: retrying in %f sec" % (ex, delay))
+      time.sleep(delay)
+      continue
+  else:
+    raise Exception("exceeded allowed retries!")
   entries = data.get('items', [])
   for entry in entries:
     entry['md5Hash'] = entry['md5Hash'].decode('base64').encode('hex')
