@@ -69,13 +69,13 @@ def RunSteps(api, revision):
 
   # TODO(crbug.com/638337): cipd module doesn't allow `create` to work in this
   # way.
-  def create(pkg_dir, step_title, refs=()):
+  def create(pkg_dir, step_title, platform, refs=()):
     """Pushes given package directory up to CIPD with provided refs."""
     cmd = [
       api.cipd.get_executable(),
       'create',
       '-in', pkg_dir,
-      '-name', 'infra/depot_tools/git_installer/windows-amd64',
+      '-name', 'infra/depot_tools/git_installer/%s' % platform,
       '-service-account-json',
       api.cipd.default_bot_service_account_credentials,
     ]
@@ -93,13 +93,19 @@ def RunSteps(api, revision):
     version (str) - A version string for one of the git installers in
       gs://chrome-infra, like '2.8.3'.
     """
+    refs = ['v' + version.replace('.', '_')] + refs
     with api.tempfile.temp_dir('git_installer') as git_cipd_dir:
       outfile = git_cipd_dir.join('git-installer.exe')
+
       api.gsutil.download(
         'chrome-infra', 'PortableGit-%s-64-bit.7z.exe' % version, outfile,
-        name='fetch git installer (v%s)' % version)
+        name='fetch 64-bit git installer (v%s)' % version)
+      create(git_cipd_dir, step_title, 'windows-amd64', refs)
 
-      create(git_cipd_dir, step_title, ['v'+version.replace('.', '_')]+refs)
+      api.gsutil.download(
+        'chrome-infra', 'PortableGit-%s-32-bit.7z.exe' % version, outfile,
+        name='fetch 32-bit git installer (v%s)' % version)
+      create(git_cipd_dir, step_title, 'windows-386', refs)
 
 
   bs_win = api.path['checkout'].join('bootstrap', 'win')

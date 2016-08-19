@@ -267,7 +267,7 @@
       "gs://chrome-infra/PortableGit-2.2.3-64-bit.7z.exe",
       "[TMP_BASE]/git_installer_tmp_1/git-installer.exe"
     ],
-    "name": "gsutil fetch git installer (v2.2.3)"
+    "name": "gsutil fetch 64-bit git installer (v2.2.3)"
   },
   {
     "cmd": [
@@ -287,6 +287,39 @@
       "bleeding_edge"
     ],
     "name": "create installer package (normal and bleeding_edge)"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
+      "--",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "cp",
+      "gs://chrome-infra/PortableGit-2.2.3-32-bit.7z.exe",
+      "[TMP_BASE]/git_installer_tmp_1/git-installer.exe"
+    ],
+    "name": "gsutil fetch 32-bit git installer (v2.2.3)"
+  },
+  {
+    "cmd": [
+      "[SLAVE_BUILD]/cipd/cipd",
+      "create",
+      "-in",
+      "[TMP_BASE]/git_installer_tmp_1",
+      "-name",
+      "infra/depot_tools/git_installer/windows-386",
+      "-service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json",
+      "-ref",
+      "v2_2_3",
+      "-ref",
+      "latest",
+      "-ref",
+      "bleeding_edge"
+    ],
+    "name": "create installer package (normal and bleeding_edge) (2)"
   },
   {
     "cmd": [
