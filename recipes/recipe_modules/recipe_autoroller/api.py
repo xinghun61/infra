@@ -255,100 +255,44 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     else:
       roll_step.presentation.status = self.m.step.FAILURE
 
-    # We use recipes.cfg hashes to uniquely identify changes (which might be
-    # rebased).
-    cfg_contents = roll_result['picked_roll_details']['spec']
-    cfg_digest = hashlib.md5(cfg_contents).hexdigest()
-
-    # We use diff hashes to uniquely identify patchsets within a change.
-    self.m.git('commit', '-a', '-m', 'roll recipes.cfg', cwd=workdir)
-    diff_result = self.m.git(
-        'show', '--format=%b',
-        stdout=self.m.raw_io.output(),
+    tbrs = []
+    if roll_result['trivial']:
+      # Land immediately.
+      upload_args = ['--use-commit-queue']
+      tbrs = TRIVIAL_ROLL_TBR_EMAILS
+    else:
+      upload_args = ['--send-mail', '--cq-dry-run']
+    upload_args.extend(['--bypass-hooks', '-f'])
+    # git cl upload doesn't work yet with gerrit and git cache.
+    upload_args.extend(['--rietveld'])
+    upload_args.extend([_AUTH_REFRESH_TOKEN_FLAG])
+    commit_message = get_commit_message(roll_result, tbrs=tbrs)
+    self.m.git_cl.upload(
+        commit_message, upload_args, name='git cl upload', cwd=workdir)
+    issue_result = self.m.git(
+        'cl', 'issue',
+        name='git cl issue', stdout=self.m.raw_io.output(),
         cwd=workdir,
         step_test_data=lambda: self.m.raw_io.test_api.stream_output(
-            '-some line\n+some other line\n'))
-    diff = diff_result.stdout
-    diff_result.presentation.logs['output'] = diff.splitlines()
-    diff_digest = hashlib.md5(diff).hexdigest()
+            'Issue number: '
+            '123456789 (https://codereview.chromium.org/123456789)'))
 
-    # Check if we have uploaded this before.
-    need_to_upload = False
-    rebase = False
-    cat_result = self.m.gsutil.cat(
-        'gs://recipe-roller-cl-uploads/%s' % cfg_digest,
-        stdout=self.m.raw_io.output(),
-        stderr=self.m.raw_io.output(),
-        ok_ret=(0,1))
-
-    if cat_result.retcode:
-      cat_result.presentation.logs['stderr'] = [
-          self.m.step.active_result.stderr]
-      assert re.search('No URLs matched', cat_result.stderr), (
-          'gsutil failed in an unexpected way; see stderr log')
-      # We have never uploaded this change before.
-      need_to_upload = True
-
-    if not need_to_upload:
-      # We have uploaded before, now let's check the diff hash to see if we
-      # have uploaded this patchset before.
-      change_data = json.loads(cat_result.stdout)
-      cat_result.presentation.links['Issue %s' % change_data['issue']] = (
-          change_data['issue_url'])
-      # Pass --rietveld flag to match upload args below.
-      self.m.git('cl', 'issue', change_data['issue'], '--rietveld', cwd=workdir)
-      if change_data['diff_digest'] != diff_digest:
-        need_to_upload = True
-        rebase = True
-
-    if need_to_upload:
-      tbrs = []
-      if not rebase:
-        tbrs = TRIVIAL_ROLL_TBR_EMAILS
-      commit_message = (
-          'Rebase' if rebase else get_commit_message(roll_result, tbrs=tbrs))
-      if roll_result['trivial']:
-        # Land immediately.
-        upload_args = ['--use-commit-queue']
-      else:
-        upload_args = ['--send-mail', '--cq-dry-run']
-      upload_args.extend(['--bypass-hooks', '-f'])
-      # git cl upload doesn't work yet with gerrit and git cache.
-      upload_args.extend(['--rietveld'])
-      upload_args.extend([_AUTH_REFRESH_TOKEN_FLAG])
-      self.m.git_cl.upload(
-          commit_message, upload_args, name='git cl upload', cwd=workdir)
-      issue_result = self.m.git(
-          'cl', 'issue',
-          name='git cl issue', stdout=self.m.raw_io.output(),
-          cwd=workdir,
-          step_test_data=lambda: self.m.raw_io.test_api.stream_output(
-              'Issue number: '
-              '123456789 (https://codereview.chromium.org/123456789)'))
-
-      m = re.match('Issue number: (\d+) \((\S*)\)', issue_result.stdout.strip())
-      if not m:
-        self.m.python.failing_step(
-            'git cl upload failed', 'git cl issue output "%s" is not valid' %
-                                    issue_result.stdout.strip())
-
-      change_data = {
-        'issue': m.group(1),
-        'issue_url': m.group(2),
-        'diff_digest': diff_digest,
-      }
-      issue_result.presentation.links['Issue %s' % change_data['issue']] = (
-          change_data['issue_url'])
-      self.m.gsutil.upload(
-          self.m.json.input(change_data),
-          'recipe-roller-cl-uploads',
-          cfg_digest)
+    # TODO(phajdan.jr): add machine-readable output to git-cl, do not parse.
+    m = re.match('Issue number: (\d+) \((\S*)\)', issue_result.stdout.strip())
+    if not m:
+      self.m.python.failing_step(
+          'git cl upload failed', 'git cl issue output "%s" is not valid' %
+                                  issue_result.stdout.strip())
 
     repo_data = {
-      'issue': change_data['issue'],
-      'issue_url': change_data['issue_url'],
+      'issue': m.group(1),
+      'issue_url': m.group(2),
       'trivial': roll_result['trivial'],
     }
+
+    issue_result.presentation.links['Issue %s' % repo_data['issue']] = (
+        repo_data['issue_url'])
+
     self.m.gsutil.upload(
         self.m.json.input(repo_data),
         'recipe-roller-cl-uploads',

@@ -77,24 +77,21 @@ def GenTests(api):
       api.test('basic') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.roll_data('build') +
-      api.recipe_autoroller.new_upload('build')
+      api.recipe_autoroller.roll_data('build')
   )
 
   yield (
       api.test('with_auth') +
       api.properties(projects=['build'], service_account='recipe-roller') +
       api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.roll_data('build') +
-      api.recipe_autoroller.new_upload('build')
+      api.recipe_autoroller.roll_data('build')
   )
 
   yield (
       api.test('nontrivial') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.roll_data('build', trivial=False) +
-      api.recipe_autoroller.new_upload('build')
+      api.recipe_autoroller.roll_data('build', trivial=False)
   )
 
   yield (
@@ -112,31 +109,10 @@ def GenTests(api):
   )
 
   yield (
-      api.test('previously_uploaded') +
-      api.properties(projects=['build']) +
-      api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.roll_data('build') +
-      api.recipe_autoroller.previously_uploaded('build')
-  )
-
-  yield (
-      api.test('previously_uploaded_match') +
-      api.properties(projects=['build', 'infra']) +
-      api.luci_config.get_projects(['build', 'infra']) +
-      api.recipe_autoroller.roll_data('build') +
-      api.recipe_autoroller.roll_data('infra') +
-      api.recipe_autoroller.previously_uploaded(
-          'build', diff_digest='d4fbd1f86c94d02a0e9f2a3d08aebc1c') +
-      api.recipe_autoroller.previously_uploaded(
-          'infra', diff_digest='d4fbd1f86c94d02a0e9f2a3d08aebc1c')
-  )
-
-  yield (
       api.test('failed_upload') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.roll_data('build') +
-      api.recipe_autoroller.new_upload('build') +
       api.override_step_data(
           'build.git cl issue',
           api.raw_io.stream_output('Issue number: None (None)'))
@@ -154,8 +130,7 @@ def GenTests(api):
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.repo_data('build', trivial=True, status='closed') +
-      api.recipe_autoroller.roll_data('build') +
-      api.recipe_autoroller.new_upload('build')
+      api.recipe_autoroller.roll_data('build')
   )
 
   yield (

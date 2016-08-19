@@ -334,56 +334,6 @@
   },
   {
     "cmd": [
-      "git",
-      "commit",
-      "-a",
-      "-m",
-      "roll recipes.cfg"
-    ],
-    "cwd": "[CACHE]/recipe_autoroller/build",
-    "name": "build.git commit",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "git",
-      "show",
-      "--format=%b"
-    ],
-    "cwd": "[CACHE]/recipe_autoroller/build",
-    "name": "build.git show",
-    "stdout": "/path/to/tmp/",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@output@-some line@@@",
-      "@@@STEP_LOG_LINE@output@+some other line@@@",
-      "@@@STEP_LOG_END@output@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[build::gsutil]/resources/gsutil_wrapper.py",
-      "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
-      "----",
-      "cat",
-      "gs://recipe-roller-cl-uploads/791ad91de804e9b08076c4db2081bfa6"
-    ],
-    "name": "build.gsutil cat",
-    "stderr": "/path/to/tmp/",
-    "stdout": "/path/to/tmp/",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@stderr@Error: No URLs matched ...@@@",
-      "@@@STEP_LOG_END@stderr@@@"
-    ]
-  },
-  {
-    "cmd": [
       "RECIPE_PACKAGE_REPO[depot_tools]/git_cl.py",
       "upload",
       "--use-commit-queue",
