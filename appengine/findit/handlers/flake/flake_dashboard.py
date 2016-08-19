@@ -11,7 +11,8 @@ class FlakeDashboard(BaseHandler):
   PERMISSION_LEVEL = Permission.CORP_USER
 
   def HandleGet(self):
-    master_flake_analyses = MasterFlakeAnalysis.query().fetch()
+    master_flake_analyses = MasterFlakeAnalysis.query().order(
+        -MasterFlakeAnalysis.updated_time).fetch()
     data = {
         'master_flake_analyses': master_flake_analyses
     }

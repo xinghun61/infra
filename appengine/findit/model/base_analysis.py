@@ -19,6 +19,7 @@ class BaseAnalysis(ndb.Model):
   def duration(self):
     if not self.completed or not self.end_time or not self.start_time:
       return None
+
     return int((self.end_time - self.start_time).total_seconds())
 
   @property
@@ -41,6 +42,6 @@ class BaseAnalysis(ndb.Model):
   # When the analysis actually ended.
   end_time = ndb.DateTimeProperty(indexed=False)
   # When the analysis was updated.
-  updated_time = ndb.DateTimeProperty(indexed=False, auto_now=True)
+  updated_time = ndb.DateTimeProperty(indexed=True, auto_now=True)
   # Record which version of analysis.
   version = ndb.StringProperty(indexed=False)

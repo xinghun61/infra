@@ -40,6 +40,11 @@
       <td></td>
       <td>
         <h1>Regression range of Test</h1>
+        Status of Analysis:  {{analysis_status}}
+        {% if suspected_flake_build_number %}
+        <br>
+        Suspected Build Number of Culprit: {{suspected_flake_build_number}}
+        {% endif %}
       </td>
       <td></td>
     </tr>

@@ -7,6 +7,7 @@ from google.appengine.api import users
 from common import constants
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
+from model.analysis_status import STATUS_TO_DESCRIPTION
 from waterfall.flake.initialize_flake_pipeline import ScheduleAnalysisIfNeeded
 
 
@@ -28,11 +29,16 @@ class CheckFlake(BaseHandler):
         master_name, builder_name, build_number, step_name,
         test_name, force=force, queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
     data = {
-        'success_rates': []
+        'success_rates': [],
+        'analysis_status': STATUS_TO_DESCRIPTION.get(
+            master_flake_analysis.status),
+        'suspected_flake_build_number':(
+            master_flake_analysis.suspected_flake_build_number)
     }
-    for (build_number, success_rate) in zip(
-        master_flake_analysis.build_numbers,
-        master_flake_analysis.success_rates):
+    zipped = zip(master_flake_analysis.build_numbers,
+                 master_flake_analysis.success_rates)
+    zipped.sort(key = lambda x: x[0])
+    for (build_number, success_rate) in zipped:
       data['success_rates'].append([build_number, success_rate])
     return {
         'template': 'flake/result.html',

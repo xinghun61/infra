@@ -9,9 +9,11 @@ from google.appengine.ext import ndb
 from common import appengine_util
 from common import constants
 from model import analysis_status
-from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
+
+# TODO(lijeffrey): Move to config.
+MAX_BUILD_NUMBERS_TO_LOOK_BACK = 1000
 
 
 @ndb.transactional
@@ -27,7 +29,7 @@ def NeedANewAnalysis(
     True if an analysis is needed, otherwise False.
   """
   master_flake_analysis = MasterFlakeAnalysis.Get(
-      master_name, builder_name, build_number,step_name, test_name)
+      master_name, builder_name, build_number, step_name, test_name)
 
   if not master_flake_analysis:
     master_flake_analysis = MasterFlakeAnalysis.Create(
@@ -50,6 +52,7 @@ def NeedANewAnalysis(
     master_flake_analysis.put()
     return True
 
+
 # Unused arguments - pylint: disable=W0612, W0613
 def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, step_name,
                              test_name, force=False,
@@ -71,9 +74,22 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, step_name,
   """
   if NeedANewAnalysis(
       master_name, builder_name, build_number, step_name, test_name):
+    flakiness_algorithm_results_dict = {
+        'flakes_in_a_row': 0,
+        'stable_in_a_row': 0,
+        'stabled_out': False,
+        'flaked_out': False,
+        'last_build_number': max(
+            0, build_number - MAX_BUILD_NUMBERS_TO_LOOK_BACK),
+        'lower_boundary': None,
+        'upper_boundary': None,
+        'lower_boundary_result': None,
+        'sequential_run_index': 0
+    }
     pipeline_job = RecursiveFlakePipeline(
         master_name, builder_name, build_number, step_name, test_name,
-        master_build_number=build_number)
+        master_build_number=build_number,
+        flakiness_algorithm_results_dict=flakiness_algorithm_results_dict)
     pipeline_job.target = appengine_util.GetTargetNameForModule(
         constants.WATERFALL_BACKEND)
     pipeline_job.start(queue_name=queue_name)

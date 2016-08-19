@@ -7,6 +7,7 @@ import webapp2
 from handlers.flake import check_flake
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model import analysis_status
+from model.analysis_status import STATUS_TO_DESCRIPTION
 from waterfall.test import wf_testcase
 
 
@@ -70,6 +71,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     self.assertEquals(200, response.status_int)
     expected_check_flake_result ={
-        'success_rates': [[int(build_number), success_rate]]
+        'success_rates': [[int(build_number), success_rate]],
+        'analysis_status': STATUS_TO_DESCRIPTION.get(
+            master_flake_analysis.status),
+        'suspected_flake_build_number': None
     }
     self.assertEqual(expected_check_flake_result, response.json_body)

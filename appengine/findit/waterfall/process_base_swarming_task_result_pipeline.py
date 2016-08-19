@@ -10,7 +10,6 @@ import time
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
 from model import analysis_status
-from model.wf_swarming_task import WfSwarmingTask
 from waterfall import swarming_util
 from waterfall import waterfall_config
 
@@ -28,7 +27,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
     # Checks result status for each test run and saves the numbers accordingly.
     # Should be overridden by subclass.
     raise NotImplementedError(
-    '_CheckTestsRunStatuses should be implemented in the child class')
+        '_CheckTestsRunStatuses should be implemented in the child class')
 
   def _ConvertDateTime(self, time_string):
     """Convert UTC time string to datetime.datetime."""
@@ -47,7 +46,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
     # Get the appropriate kind of Swarming Task (Wf or Flake).
     # Should be overwritten by subclass.
     raise NotImplementedError(
-    '_GetSwarmingTask should be implemented in the child class')
+        '_GetSwarmingTask should be implemented in the child class')
 
   def _GetArgs(self):
     # Return list of arguments to call _CheckTestsRunStatuses with - output_json
@@ -57,7 +56,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number,
-          step_name, task_id, *args): #pragma: no cover.
+          step_name, task_id, *args): # pragma: no cover.
     """
     Args:
       master_name (str): The master name.

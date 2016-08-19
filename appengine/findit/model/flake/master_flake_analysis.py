@@ -4,13 +4,14 @@
 
 from google.appengine.ext import ndb
 
-from model import analysis_status
 from model.base_build_model import BaseBuildModel
 from model.base_analysis import BaseAnalysis
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 
+
 class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel):
   """Represents an analysis of a flaky test in a Chromium Waterfall."""
+
   @staticmethod
   def CreateAnalysisId(master_name, builder_name,
                        build_number, step_name, test_name):
@@ -53,3 +54,4 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel):
   success_rates = ndb.FloatProperty(indexed=False, repeated=True)
   flake_swarming_tasks = ndb.KeyProperty(
       kind='FlakeSwarmingTask', repeated=True)
+  suspected_flake_build_number = ndb.IntegerProperty()
