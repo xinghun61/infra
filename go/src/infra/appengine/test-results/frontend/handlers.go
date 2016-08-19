@@ -45,6 +45,8 @@ func init() {
 		deleteKeysHandler,
 	)
 
+	r.GET("/revision_range", baseMW, revisionHandler)
+
 	http.DefaultServeMux.Handle("/", r)
 }
 
