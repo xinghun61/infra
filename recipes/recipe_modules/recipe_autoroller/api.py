@@ -223,6 +223,26 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         roll_step.presentation.step_text += ' (already at latest revisions)'
         return ROLL_EMPTY
       else:
+        candidate_number = 0
+        for roll_candidate in roll_result['roll_details']:
+          candidate_number += 1
+
+          logs = []
+          if 'recipes_simulation_test' in roll_candidate:
+            logs.append('recipes_simulation_test (rc=%d):' %
+                roll_candidate['recipes_simulation_test']['rc'])
+            output = roll_candidate['recipes_simulation_test']['output']
+            logs.extend(['  %s' % line for line in output.splitlines()])
+          if 'recipes_simulation_test_train' in roll_candidate:
+            logs.append('recipes_simulation_test_train (rc=%d):' %
+                roll_candidate['recipes_simulation_test_train']['rc'])
+            output = roll_candidate['recipes_simulation_test_train']['output']
+            logs.extend(['  %s' % line for line in output.splitlines()])
+
+          logs.append('blame:')
+          logs.extend(['  %s' % line for line in
+                      get_blame(roll_candidate['commit_infos'])])
+          roll_step.presentation.logs['candidate #%d' % candidate_number] = logs
         return ROLL_FAILURE
 
   def _process_successful_roll(

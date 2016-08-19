@@ -29,6 +29,14 @@ class RecipeAutorollerTestApi(recipe_test_api.RecipeTestApi):
           },
         ],
       },
+      'recipes_simulation_test': {
+        'rc': 0 if success else 1,
+        'output': 'foo\nbar\nbaz',
+      },
+      'recipes_simulation_test_train': {
+        'rc': 0 if success else 1,
+        'output': 'train:\nfoo\nbar\nbaz',
+      },
       'spec': 'api_version: 1\netc: "etc"\n',
     }
 
