@@ -3,7 +3,9 @@
   <title>Try Job Dashboard</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
+  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/jquery-ui.min.js"></script>
   <script>
     function createUrl(parameters) {
       var params = [];
@@ -30,6 +32,20 @@
     };
 
     $(document).ready(function() {
+      $('#buildbucket-response-dialog').dialog({
+        autoOpen: false,
+        modal: true,
+        width: 1200,
+      });
+      $('.show-response').each(function() {
+        $(this).click(function() {
+          var lastBuildbucketResponseRawText = $(this).attr('data-text');
+          var lastBuildbucketResponseJson = JSON.parse(lastBuildbucketResponseRawText);
+          var lastBuildbucketResponseFormattedString = JSON.stringify(lastBuildbucketResponseJson, null, 2);
+          $('#buildbucket-response-dialog').html("Note: json fields have been converted to dicts for display purposes." + "<pre>" + lastBuildbucketResponseFormattedString + "</pre>")
+          $('#buildbucket-response-dialog').dialog('open');
+        })
+      });
       $('#submit').click(requestDataBetweenDateRange);
     });
   </script>
@@ -57,6 +73,7 @@
           <th>Elapsed Time</th>
           <th>Status</th>
           <th>Try Job URL</th>
+          <th>Last Buildbucket Response</th>
         </tr>
         <tbody>
           {% for try_job_display_data in try_jobs_in_progress %}
@@ -81,6 +98,9 @@
                   <a href="{{ try_job_display_data.try_job_url }}" target="_blank">link</a>
                 {% endif %}
               </td>
+              <td>
+                <button class="show-response" id="in_progress_response_{{ loop.index }}" data-text="{{ try_job_display_data.last_buildbucket_response }}">show</button>
+              </td>
             </tr>
           {% endfor %}
       </tbody>
@@ -104,6 +124,7 @@
           <th>Execution Time</th>
           <th>Error Message</th>
           <th>Try Job URL</th>
+          <th>Last Buildbucket Response</th>
         </tr>
         <tbody>
           {% for try_job_display_data in try_jobs_with_error %}
@@ -128,6 +149,9 @@
                   <a href="{{ try_job_display_data.try_job_url }}" target="_blank">link</a>
                 {% endif %}
               </td>
+              <td>
+                <button class="show-response" id="error_response_{{ loop.index }}" data-text="{{ try_job_display_data.last_buildbucket_response }}">show</button>
+              </td>
             </tr>
           {% endfor %}
         </tbody>
@@ -151,6 +175,7 @@
           <th>Execution Time</th>
           <th>Culprit Found</th>
           <th>Try Job URL</th>
+          <th>Last Buildbucket Response</th>
         </tr>
         <tbody>
           {% for try_job_display_data in successfully_completed_try_jobs %}
@@ -175,6 +200,9 @@
                   <a href="{{ try_job_display_data.try_job_url }}" target="_blank">link</a>
                 {% endif %}
               </td>
+              <td>
+                <button class="show-response" id="completed_response_{{ loop.index }}" data-text="{{ try_job_display_data.last_buildbucket_response }}">show</button>
+              </td>
             </tr>
           {% endfor %}
         </tbody>
@@ -183,4 +211,5 @@
       No try-jobs have completed within the time range requested
     {% endif %}
   </div>
+  <div id="buildbucket-response-dialog" title="Buildbucket response"></div>
 </body>

@@ -4,6 +4,8 @@
 
 from datetime import datetime
 from datetime import timedelta
+import json
+
 import webapp2
 
 from handlers import try_job_dashboard
@@ -48,6 +50,31 @@ class TryJobDashboardTest(testing.AppengineTestCase):
                                           datetime(2016, 1, 2, 1, 2, 4)),
         '00:00:01')
 
+  def testPrepareBuildbucketResponseForDisplayNoData(self):
+    self.assertEqual(
+        try_job_dashboard._PrepareBuildbucketResponseForDisplay(None),
+        None)
+    self.assertEqual(
+        try_job_dashboard._PrepareBuildbucketResponseForDisplay({}),
+        {})
+
+  def testPrepareBuildbucketResponseForDisplayWithJson(self):
+    properties = {
+        'a': 1,
+        'b': 2
+    }
+    buildbucket_response = {
+        'has_json': json.dumps(properties),
+        'blabla': 'blabla'
+    }
+    self.assertEqual(
+        try_job_dashboard._PrepareBuildbucketResponseForDisplay(
+            buildbucket_response),
+        {
+            'blabla': 'blabla',
+            'has_json': properties
+        })
+
   def testGet(self):
     try_job_in_progress = WfTryJobData.Create(1)
     try_job_in_progress.master_name = 'm'
@@ -57,6 +84,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
     try_job_in_progress.start_time = datetime(2016, 5, 4, 0, 0, 1)
     try_job_in_progress.request_time = datetime(2016, 5, 4, 0, 0, 0)
     try_job_in_progress.try_job_url = 'url1'
+    try_job_in_progress.last_buildbucket_response = {'status': 'STARTED'}
     try_job_in_progress.put()
 
     try_job_with_error = WfTryJobData.Create(2)
@@ -71,6 +99,9 @@ class TryJobDashboardTest(testing.AppengineTestCase):
     try_job_with_error.error = {
         'message': 'some error',
         'reason': 'some reason'
+    }
+    try_job_with_error.last_buildbucket_response = {
+        'failure_reason': 'INFRA_FAILURE'
     }
     try_job_with_error.put()
 
@@ -88,6 +119,9 @@ class TryJobDashboardTest(testing.AppengineTestCase):
             '12345': 'failed'
         }
     }
+    try_job_completed.last_buildbucket_response = {
+        'status': 'COMPLETED'
+    }
     try_job_completed.put()
 
     expected_try_job_in_progress_display_data = {
@@ -97,7 +131,8 @@ class TryJobDashboardTest(testing.AppengineTestCase):
         'try_job_type': 'compile',
         'request_time': '2016-05-04 00:00:00 UTC',
         'try_job_url': 'url1',
-        'status': 'running'
+        'status': 'running',
+        'last_buildbucket_response': '{"status": "STARTED"}'
     }
 
     expected_try_job_with_error_display_data = {
@@ -108,6 +143,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
         'request_time': '2016-05-04 00:00:00 UTC',
         'try_job_url': 'url2',
         'error': 'some error',
+        'last_buildbucket_response': '{"failure_reason": "INFRA_FAILURE"}'
     }
 
     expected_try_job_completed_display_data = {
@@ -117,7 +153,8 @@ class TryJobDashboardTest(testing.AppengineTestCase):
         'try_job_type': 'compile',
         'request_time': '2016-05-04 00:00:00 UTC',
         'try_job_url': 'url3',
-        'culprit_found': True
+        'culprit_found': True,
+        'last_buildbucket_response': '{"status": "COMPLETED"}'
     }
 
     response = self.test_app.get(
@@ -138,4 +175,3 @@ class TryJobDashboardTest(testing.AppengineTestCase):
     self.validateTryJobDisplayData(
         [expected_try_job_completed_display_data],
         successfully_completed_try_jobs)
-    

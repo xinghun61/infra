@@ -426,7 +426,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     }
 
     expected_error_dict = {
-        'message': 'Compile failed unexpectedly.',
+        'message': 'Buildbucket reported a general error.',
         'reason': MonitorTryJobPipeline.UNKNOWN
     }
 

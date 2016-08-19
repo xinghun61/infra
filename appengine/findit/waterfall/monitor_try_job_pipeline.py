@@ -62,10 +62,11 @@ def _GetError(buildbucket_response, buildbucket_error, timed_out):
     # Check buildbucket_response.
     buildbucket_failure_reason = buildbucket_response.get('failure_reason')
     if buildbucket_failure_reason == 'BUILD_FAILURE':
-      # Can occurr if an exception is thrown or the disk is full.
+      # Generic buildbucket-reported error which can occurr if an exception is
+      # thrown, disk is full, compile fails during a test try job, etc.
       return (
           {
-              'message': 'Compile failed unexpectedly.',
+              'message': 'Buildbucket reported a general error.',
               'reason': MonitorTryJobPipeline.UNKNOWN
           },
           try_job_error.INFRA_FAILURE

@@ -1,9 +1,11 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 from datetime import datetime
 from datetime import time
 from datetime import timedelta
+import json
 
 from common import time_util
 from common.base_handler import BaseHandler
@@ -18,6 +20,34 @@ def _FormatDuration(start_time, end_time):
   if not start_time or not end_time:
     return NOT_AVAILABLE
   return time_util.FormatTimedelta(end_time - start_time)
+
+
+def _PrepareBuildbucketResponseForDisplay(buildbucket_response):
+  """Prepares a buildbucket response for display in the template.
+
+    buildbucket_response contains json inside json, which causes problems when
+    pretty printing in the corresponding template file. This function reformats
+    internal json as a dict.
+
+  Args:
+    buildbucket_response: A raw buildbucket response json object.
+
+  Returns:
+    A copy of the original buildbucket response dict, with json fields replaced
+    by dicts.
+  """
+  if buildbucket_response is None:
+    return None
+
+  new_response = {}
+
+  for key, value in buildbucket_response.iteritems():
+    if 'json' in key:
+      value = json.loads(value)
+
+    new_response[key] = value
+
+  return new_response
 
 
 class TryJobDashboard(BaseHandler):
@@ -65,7 +95,10 @@ class TryJobDashboard(BaseHandler):
           'pending_time': _FormatDuration(
               try_job_data.request_time, try_job_data.start_time),
           'request_time': time_util.FormatDatetime(try_job_data.request_time),
-          'try_job_url': try_job_data.try_job_url
+          'try_job_url': try_job_data.try_job_url,
+          'last_buildbucket_response': json.dumps(
+              _PrepareBuildbucketResponseForDisplay(
+                  try_job_data.last_buildbucket_response), sort_keys=True)
       }
 
       if not try_job_data.end_time and not try_job_data.error:
