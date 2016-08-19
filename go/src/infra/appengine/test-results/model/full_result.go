@@ -80,6 +80,30 @@ var _ Node = (FullTest)(nil)
 
 func (ft FullTest) node() {}
 
+// FlatTest is a flattened representation of FullTest.
+type FlatTest map[string]*FullTestLeaf
+
+// FlatDelimiter is the separator for key names in FlatTest.
+const FlatDelimiter = "/"
+
+// Flatten flattens the test trie ft.
+func (ft FullTest) Flatten() FlatTest {
+	result := make(FlatTest)
+	ft.flatten([]string(nil), result)
+	return result
+}
+
+func (ft FullTest) flatten(prefixes []string, res FlatTest) {
+	for key, node := range ft {
+		switch t := node.(type) {
+		case FullTest:
+			t.flatten(append(prefixes, key), res)
+		case *FullTestLeaf:
+			res[strings.Join(append(prefixes, key), FlatDelimiter)] = t
+		}
+	}
+}
+
 // AggregateTest converts ft to an AggregateTest. The returned
 // AggregateTest does not share references to objects referenced
 // by ft.
