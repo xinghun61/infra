@@ -7,7 +7,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"strconv"
 	"sync"
 	"time"
@@ -166,47 +165,7 @@ func doFileUpload(c context.Context, fh *multipart.FileHeader) error {
 		return updateIncremental(c, &incr)
 
 	case "full_results.json":
-		bn, data, err := extractBuildNumber(r)
-		if err != nil {
-			logging.WithError(err).Errorf(c, "doFileUpload")
-			if err == ErrInvalidBuildNumber {
-				return statusError{err, http.StatusBadRequest}
-			}
-			return statusError{err, http.StatusInternalServerError}
-		}
-		if err := updateFullResults(c, data); err != nil {
-			return err
-		}
-
-		p := GetUploadParams(c)
-		wg := sync.WaitGroup{}
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := builderstate.Update(c, p.Master, p.Builder, p.TestType, time.Now().UTC()); err != nil {
-				logging.WithError(err).Errorf(c, "doFileUpload: full_results.json: builderstate update")
-			}
-		}()
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := taskqueue.Get(c).Add(
-				taskqueue.NewPOSTTask("/internal/monitoring/upload", url.Values{
-					"master":       {p.Master},
-					"builder":      {p.Builder},
-					"build_number": {strconv.Itoa(bn)},
-					"test_type":    {p.TestType},
-				}),
-				defaultQueueName,
-			); err != nil {
-				logging.WithError(err).Errorf(c, "taskqueue add: /internal/monitoring/upload")
-			}
-		}()
-
-		wg.Wait()
-		return nil
+		return updateFullResults(c, r)
 
 	case "failing_results.json":
 		r, err = model.CleanJSON(r)
@@ -316,6 +275,59 @@ func updateFullResults(c context.Context, data io.Reader) error {
 		return statusError{err, http.StatusInternalServerError}
 	}
 
+	p := GetUploadParams(c)
+	wg := sync.WaitGroup{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := builderstate.Update(c, p.Master, p.Builder, p.TestType, time.Now().UTC()); err != nil {
+			logging.WithError(err).Errorf(c, "doFileUpload: full_results.json: builderstate update")
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		payload, err := json.Marshal(struct {
+			Master       string         `json:"master"`
+			Builder      string         `json:"builder"`
+			BuildNumber  model.Number   `json:"build_number"`
+			TestType     string         `json:"test_type"`
+			Interrupted  *bool          `json:"interrupted,omitempty"`
+			Version      int            `json:"version"`
+			SecondsEpoch int64          `json:"seconds_since_epoch"`
+			FlatTests    model.FlatTest `json:"flat_tests"`
+		}{
+			Master:       p.Master,
+			Builder:      p.Builder,
+			BuildNumber:  f.BuildNumber,
+			TestType:     p.TestType,
+			Interrupted:  f.Interrupted,
+			Version:      f.Version,
+			SecondsEpoch: f.SecondsEpoch,
+			FlatTests:    f.Tests.Flatten(),
+		})
+		if err != nil {
+			logging.WithError(err).Errorf(c, "taskqueue: %s", monitoringPath)
+			return
+		}
+
+		h := make(http.Header)
+		h.Set("Content-Type", "application/json")
+
+		if err := taskqueue.Get(c).Add(&taskqueue.Task{
+			Path:    monitoringPath,
+			Payload: payload,
+			Header:  h,
+			Method:  "POST",
+		}, monitoringQueueName); err != nil {
+			logging.WithError(err).Errorf(c, "taskqueue: %s", monitoringPath)
+		}
+	}()
+
+	wg.Wait()
 	return nil
 }
 
