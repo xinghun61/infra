@@ -41,6 +41,3 @@ handlers:
   script: appengine_module.test_results.main.app
   login: admin
   secure: always
-
-includes:
-- gae_ts_mon  # handle /internal/cron/ts_mon/send

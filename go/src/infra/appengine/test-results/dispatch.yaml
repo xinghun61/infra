@@ -15,3 +15,5 @@ dispatch:
     module: go
   - url: "*/internal/delete-keys"
     module: go
+  - url: "*/internal/cron/ts_mon/housekeeping"
+    module: go
