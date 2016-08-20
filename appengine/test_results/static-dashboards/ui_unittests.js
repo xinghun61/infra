@@ -38,7 +38,7 @@ test('ui.html.range', 1, function() {
 test('ui.html.navbar', 3, function() {
     var container = document.createElement('div');
     container.innerHTML = ui.html.navbar();
-    equal(container.querySelectorAll('span').length, 5);
+    equal(container.querySelectorAll('span').length, 3);
     equal(container.querySelectorAll('input').length, 1);
 
     container.innerHTML = ui.html.navbar('<div id="test-div"></div>');

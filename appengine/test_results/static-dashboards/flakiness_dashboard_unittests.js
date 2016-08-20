@@ -630,7 +630,8 @@ test('htmlForPopupForBuild', 2, function() {
     var name = 'Master1';
     builders.masters[name] = new builders.Master({name: name, url_name: name, tests: tests});
 
-    equal(htmlForPopupForBuild(builder.key(), 0), '12/31/1969 4:20:34 PM' +
+    equal(htmlForPopupForBuild(builder.key(), 0), '12/31/1969 ' +
+        new Date(1234000).toLocaleTimeString(undefined, {timeZoneName: 'short'}) +
         '<ul>' +
             '<li>' +
                 '<a href="http://build.chromium.org/p/Master1/builders/WebKit Linux (dbg)/builds/4" target="_blank">' +
@@ -646,7 +647,8 @@ test('htmlForPopupForBuild', 2, function() {
         '</ul>');
 
     // This lacks a previous revision, so it can't show the right regression ranges.
-    equal(htmlForPopupForBuild(builder.key(), 1), '12/31/1969 4:20:34 PM' +
+    equal(htmlForPopupForBuild(builder.key(), 1), '12/31/1969 ' +
+        new Date(1234000).toLocaleTimeString(undefined, {timeZoneName: 'short'}) +
         '<ul>' +
             '<li>' +
                 '<a href="http://build.chromium.org/p/Master1/builders/WebKit Linux (dbg)/builds/3" target="_blank">' +
@@ -677,7 +679,8 @@ test('htmlForPopupForBuildWithGitHashes', 1, function() {
     var name = 'Master1';
     builders.masters[name] = new builders.Master({name: name, url_name: name, tests: tests});
 
-    equal(htmlForPopupForBuild(builder.key(), 0), '12/31/1969 4:20:34 PM' +
+    equal(htmlForPopupForBuild(builder.key(), 0), '12/31/1969 ' +
+        new Date(1234000).toLocaleTimeString(undefined, {timeZoneName: 'short'}) +
         '<ul>' +
             '<li>' +
                 '<a href="http://build.chromium.org/p/Master1/builders/WebKit Linux (dbg)/builds/4" target="_blank">' +
