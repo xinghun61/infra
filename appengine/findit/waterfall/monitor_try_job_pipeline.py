@@ -145,6 +145,37 @@ def _UpdateTryJobMetadata(try_job_data, start_time, buildbucket_build,
   try_job_data.put()
 
 
+def _DictsAreEqual(dict_1, dict_2, exclude_keys=None):
+  if dict_1 == dict_2:
+    return True
+
+  if dict_1 is None or dict_2 is None:
+    return False
+
+  if exclude_keys is None:
+    exclude_keys = []
+
+  for key, value in dict_1.iteritems():
+    if key not in exclude_keys and (key not in dict_2 or dict_2[key] != value):
+      return False
+
+  for key, value in dict_2.iteritems():
+    if key not in exclude_keys and (key not in dict_1 or dict_1[key] != value):
+      return False
+
+  return True
+
+
+def _UpdateLastBuildbucketResponse(try_job_data, build):
+  if not build or not build.response:
+    return
+
+  if not _DictsAreEqual(try_job_data.last_buildbucket_response,
+                        build.response, exclude_keys=['utcnow_ts']):
+    try_job_data.last_buildbucket_response = build.response
+    try_job_data.put()
+
+
 class MonitorTryJobPipeline(BasePipeline):
   """A pipeline for monitoring a try job and recording results when it's done.
 
@@ -206,6 +237,7 @@ class MonitorTryJobPipeline(BasePipeline):
     start_time = None
     while True:
       error, build = buildbucket_client.GetTryJobs([try_job_id])[0]
+
       if error:
         if allowed_response_error_times > 0:
           allowed_response_error_times -= 1
@@ -252,5 +284,9 @@ class MonitorTryJobPipeline(BasePipeline):
         raise pipeline.Abort(
             'Try job %s timed out after %d hours.' % (
                 try_job_id, timeout_hours))
+
+      # Ensure last_buildbucket_response is always the most recent
+      # whenever available during intermediate queries.
+      _UpdateLastBuildbucketResponse(try_job_data, build)
 
       time.sleep(pipeline_wait_seconds)  # pragma: no cover

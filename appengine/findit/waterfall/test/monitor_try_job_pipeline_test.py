@@ -133,6 +133,32 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         monitor_try_job_pipeline._MicrosecondsToDatetime(1454367574000000))
     self.assertIsNone(monitor_try_job_pipeline._MicrosecondsToDatetime(None))
 
+  def testDictsAreEqual(self):
+    self.assertTrue(monitor_try_job_pipeline._DictsAreEqual(None, None))
+    self.assertTrue(monitor_try_job_pipeline._DictsAreEqual({}, {}))
+    self.assertTrue(monitor_try_job_pipeline._DictsAreEqual({'a': 1}, {'a': 1}))
+    self.assertTrue(monitor_try_job_pipeline._DictsAreEqual(
+        {'a': 1},
+        {'a': 1, 'b': 2},
+        exclude_keys=['b']))
+    self.assertTrue(monitor_try_job_pipeline._DictsAreEqual(
+        {'a': 1, 'b': 1},
+        {'a': 1, 'b': 2},
+        exclude_keys=['b']))
+    self.assertTrue(monitor_try_job_pipeline._DictsAreEqual(
+        {'a': 1},
+        {},
+        exclude_keys=['a']))
+    self.assertFalse(monitor_try_job_pipeline._DictsAreEqual(
+        {'a': 1},
+        {'a': 2}))
+    self.assertFalse(monitor_try_job_pipeline._DictsAreEqual(
+        {'a': 1, 'b': 2},
+        {'a': 1}))
+    self.assertFalse(monitor_try_job_pipeline._DictsAreEqual(
+        {'a': 1},
+        {'a': 1, 'b': 2}))
+
   def testUpdateTryJobMetadataForBuildError(self):
     error_data = {
         'reason': 'BUILD_NOT_FOUND',
