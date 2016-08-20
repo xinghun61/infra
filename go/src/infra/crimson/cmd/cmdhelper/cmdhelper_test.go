@@ -6,12 +6,56 @@ package cmdhelper
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
 	crimson "infra/crimson/proto"
 )
+
+func TestReadDhcpdConfFile(t *testing.T) {
+	t.Parallel()
+	Convey("Reading dhcpd.*.conf file works", t, func() {
+		Convey("for a valid file", func() {
+			fileName := filepath.Join("testdata", "dhcpd.good.conf")
+			file, err := os.Open(fileName)
+			So(err, ShouldBeNil)
+			defer file.Close()
+
+			site := "test-site"
+			expected := []*crimson.IPRange{
+				{
+					Site:      site,
+					VlanId:    42,
+					StartIp:   "192.168.42.1",
+					EndIp:     "192.168.42.244",
+					VlanAlias: "vlan_42",
+				},
+				{
+					Site:      site,
+					VlanId:    42,
+					StartIp:   "192.168.42.250",
+					EndIp:     "192.168.43.254",
+					VlanAlias: "vlan_42",
+				},
+				{
+					Site:      "test-site",
+					VlanId:    1,
+					StartIp:   "127.0.0.0",
+					EndIp:     "127.0.3.255",
+					VlanAlias: "localhost-no-ranges",
+				},
+			}
+
+			ranges, err := ReadDhcpdConfFile(file, site)
+			So(err, ShouldBeNil)
+			So(ranges, ShouldResemble, expected)
+		})
+
+	})
+}
 
 func TestGetVlanFromCommentVlanName(t *testing.T) {
 	t.Parallel()

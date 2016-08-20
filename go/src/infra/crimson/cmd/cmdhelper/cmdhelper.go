@@ -32,10 +32,11 @@ type Pool struct {
 
 // Subnet represents a subnet section in a dhcpd.conf file.
 type Subnet struct {
-	vlanID uint32
-	suffix string
-	subnet net.IPNet
-	pools  []Pool
+	vlanID   uint32
+	vlanName string
+	suffix   string
+	subnet   net.IPNet
+	pools    []Pool
 }
 
 // IPRanges converts a Subnet into an array of IPRange.
@@ -47,15 +48,14 @@ func (subnet *Subnet) IPRanges(site string) []*crimson.IPRange {
 			VlanId:    subnet.vlanID,
 			StartIp:   pool.startIP,
 			EndIp:     pool.endIP,
-			VlanAlias: subnet.suffix,
+			VlanAlias: subnet.vlanName,
 		})
 	}
 	return ipRange
 }
 
 // ReadDhcpdConfFile reads the subnet sections in a dhcpd.conf file.
-func ReadDhcpdConfFile(file io.Reader) ([]Subnet, error) {
-	// TODO(pgervais): test this function
+func ReadDhcpdConfFile(file io.Reader, site string) ([]*crimson.IPRange, error) {
 	var subnets []Subnet
 
 	scanner := bufio.NewScanner(file)
@@ -70,15 +70,25 @@ func ReadDhcpdConfFile(file io.Reader) ([]Subnet, error) {
 			// Ignore errors here, it's fine.
 			names.getVlanFromComment(line)
 		case strings.HasPrefix(line, "subnet"):
-			subnet := readSubnetSection(line, scanner)
+			subnet, err := readSubnetSection(line, scanner)
+			if err != nil {
+				return nil, err
+			}
 			if names.vlanName != "" {
+				subnet.vlanName = names.vlanName
 				subnet.suffix = names.vlanSuffix
 				names = vlanNames{}
 			}
 			subnets = append(subnets, subnet)
 		}
 	}
-	return subnets, nil
+
+	var ranges []*crimson.IPRange
+	for _, subnet := range subnets {
+		ranges = append(ranges, subnet.IPRanges(site)...)
+	}
+
+	return ranges, nil
 }
 
 type vlanNames struct {
@@ -103,7 +113,7 @@ func (names *vlanNames) getVlanFromComment(line string) error {
 	return nil
 }
 
-func readSubnetSection(firstLine string, scanner *bufio.Scanner) Subnet {
+func readSubnetSection(firstLine string, scanner *bufio.Scanner) (Subnet, error) {
 	// TODO(pgervais) Double-Check firstLine starts with 'subnet'
 	subnet := Subnet{}
 
@@ -112,19 +122,29 @@ func readSubnetSection(firstLine string, scanner *bufio.Scanner) Subnet {
 		switch field {
 		case "subnet":
 			subnet.subnet.IP = net.ParseIP(fields[ind+1])
+			if subnet.subnet.IP == nil {
+				return subnet, fmt.Errorf("Failed to parse subnet IP in %s", firstLine)
+			}
 		case "netmask":
 			subnet.subnet.Mask = parseIPMask(fields[ind+1])
+			if subnet.subnet.Mask == nil {
+				return subnet, fmt.Errorf("Failed to parse subnet mask in %s", firstLine)
+			}
 		}
 	}
-	// Convention: 3rd byte in IPv4 is the vlan ID.
+	// Convention: 3rd byte in IPv4 is the vlan ID. IPv4 can be encoded as IPv6.
 	// TODO(sergeyberezin): this is Chrome Infra specific, and should be
 	// moved to customization scripts.
-	subnet.vlanID = uint32(subnet.subnet.IP[2])
+	ip := subnet.subnet.IP
+	subnet.vlanID = uint32(ip[len(ip)-2])
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if strings.HasPrefix(line, "pool") {
-			pool := readPoolSection(line, scanner)
+			pool, err := readPoolSection(line, scanner)
+			if err != nil {
+				return subnet, err
+			}
 			subnet.pools = append(subnet.pools, pool)
 		}
 		if line == "}" {
@@ -134,16 +154,15 @@ func readSubnetSection(firstLine string, scanner *bufio.Scanner) Subnet {
 
 	if len(subnet.pools) == 0 {
 		startIP, endIP := subnetExtremeIPs(subnet.subnet)
-
 		pool := Pool{}
 		pool.startIP = startIP.String()
 		pool.endIP = endIP.String()
 		subnet.pools = append(subnet.pools, pool)
 	}
-	return subnet
+	return subnet, nil
 }
 
-func readPoolSection(firstLine string, scanner *bufio.Scanner) Pool {
+func readPoolSection(firstLine string, scanner *bufio.Scanner) (Pool, error) {
 	// TODO(pgervais): double-check firstLine starts with 'pool'
 	pool := Pool{}
 	for scanner.Scan() {
@@ -151,6 +170,9 @@ func readPoolSection(firstLine string, scanner *bufio.Scanner) Pool {
 		if strings.HasPrefix(line, "range") {
 			line = strings.TrimRight(line, ";")
 			fields := strings.Fields(line)
+			if len(fields) < 2 {
+				return pool, fmt.Errorf("Failed to parse pool range: %s", line)
+			}
 			pool.startIP = fields[1]
 			pool.endIP = fields[2]
 		}
@@ -158,7 +180,7 @@ func readPoolSection(firstLine string, scanner *bufio.Scanner) Pool {
 			break
 		}
 	}
-	return pool
+	return pool, nil
 }
 
 func subnetExtremeIPs(subnet net.IPNet) (net.IP, net.IP) {

@@ -244,8 +244,6 @@ func ipRangeFromDhcpConfig(c *addVlanRun) ([]*crimson.IPRange, error) {
 		return nil, fmt.Errorf("Missing required -site option.")
 	}
 
-	var ranges []*crimson.IPRange
-
 	fmt.Fprintf(os.Stderr, "Reading %s... ", c.inputFileDHCP)
 	file, err := os.Open(c.inputFileDHCP)
 	if err != nil {
@@ -253,14 +251,11 @@ func ipRangeFromDhcpConfig(c *addVlanRun) ([]*crimson.IPRange, error) {
 	}
 	defer file.Close()
 
-	subnets, err := cmdhelper.ReadDhcpdConfFile(file)
+	ranges, err := cmdhelper.ReadDhcpdConfFile(file, c.site)
 	if err != nil {
 		return nil, err
 	}
 	fmt.Fprintf(os.Stderr, "Done.\n")
-	for _, subnet := range subnets {
-		ranges = append(ranges, subnet.IPRanges(c.site)...)
-	}
 	return ranges, nil
 }
 

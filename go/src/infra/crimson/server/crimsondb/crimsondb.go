@@ -7,7 +7,6 @@ package crimsondb
 import (
 	"bytes"
 	"database/sql"
-	"encoding/hex"
 	"fmt"
 	"net"
 	"strings"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 
+	"infra/crimson/common/netutil"
 	crimson "infra/crimson/proto"
 )
 
@@ -44,67 +44,6 @@ func logAndUserErrorf(ctx context.Context, code int, format string, params ...in
 	return UserErrorf(code, format, params...)
 }
 
-// IPStringToHexString converts an IP address into a hex string suitable for MySQL.
-func IPStringToHexString(ip string) (string, error) {
-	ipb := net.ParseIP(ip)
-	if ipb == nil {
-		return "", fmt.Errorf("parsing of IP address failed: %s", ip)
-	}
-	if ipb.DefaultMask() != nil {
-		ipb = ipb.To4()
-	}
-	return "0x" + hex.EncodeToString(ipb), nil
-}
-
-// MacAddrStringToHexString turns a mac address into a hex string.
-func MacAddrStringToHexString(macAddr string) (string, error) {
-	mac, err := net.ParseMAC(macAddr)
-	if err != nil {
-		return "", err
-	}
-	return "0x" + hex.EncodeToString(mac), nil
-}
-
-// HexStringToHardwareAddr turns an hex string into a hardware address.
-func HexStringToHardwareAddr(hexMac string) (net.HardwareAddr, error) {
-	// 6 bytes in hex + leading '0x'
-	if len(hexMac) < 14 {
-		err := fmt.Errorf("parsing of hex string failed (too short: %d characters)",
-			len(hexMac))
-		return net.HardwareAddr{}, err
-	}
-	if hexMac[:2] != "0x" {
-		return net.HardwareAddr{}, fmt.Errorf("parsing of hex string failed: %s", hexMac)
-	}
-	hwAddrRaw, err := hex.DecodeString(hexMac[2:])
-	if err != nil {
-		return net.HardwareAddr{}, err
-	}
-	hwAddr := make(net.HardwareAddr, len(hwAddrRaw))
-	for n := 0; n < len(hwAddrRaw); n++ {
-		hwAddr[n] = hwAddrRaw[n]
-	}
-	return hwAddr, nil
-}
-
-// HexStringToIP converts an hex string returned by MySQL into a net.IP structure.
-func HexStringToIP(hexIP string) (net.IP, error) {
-	// TODO(pgervais): Add decent error checking. Ex: check hexIP starts with '0x'.
-	ip, err := hex.DecodeString(hexIP[2:])
-	if err != nil {
-		return net.IP{}, err
-	}
-	length := 4
-	if len(ip) > 4 {
-		length = 16
-	}
-	netIP := make(net.IP, length)
-	for n := 1; n <= len(ip); n++ {
-		netIP[length-n] = ip[len(ip)-n]
-	}
-	return netIP, nil
-}
-
 // scanIPRanges is a low-level function to scan sql results.
 // Rows must contain site, vlan_id, start_ip, end_ip, vlan_alias in that order.
 func scanIPRanges(ctx context.Context, rows *sql.Rows) ([]IPRange, error) {
@@ -120,13 +59,13 @@ func scanIPRanges(ctx context.Context, rows *sql.Rows) ([]IPRange, error) {
 			err = logAndErrorf(ctx, "%s. Columns: %v", err, cols)
 			return nil, err
 		}
-		ip, err = HexStringToIP(startIP)
+		ip, err = netutil.HexStringToIP(startIP)
 		if err != nil {
 			return nil, err
 		}
 		ipRange.StartIP = ip.String()
 
-		ip, err = HexStringToIP(endIP)
+		ip, err = netutil.HexStringToIP(endIP)
 		if err != nil {
 			return nil, err
 		}
@@ -151,13 +90,19 @@ func InsertIPRange(ctx context.Context, row *crimson.IPRange) (err error) {
 	}
 
 	var startIP, endIP string
-	startIP, err = IPStringToHexString(row.StartIp)
+	startIP, err = netutil.IPStringToHexString(row.StartIp)
 	if err != nil {
 		return
 	}
-	endIP, err = IPStringToHexString(row.EndIp)
+	endIP, err = netutil.IPStringToHexString(row.EndIp)
 	if err != nil {
 		return
+	}
+
+	// IEEE 802.1Q supports VLAN IDs 1-4094
+	if row.VlanId == 0 || row.VlanId > 4094 {
+		return logAndUserErrorf(ctx, InvalidArgument,
+			"vlan ID in %v is invalid: must be between 1-4094; received %s", row)
 	}
 
 	// Need a transaction to guarantee the same connection for multiple
@@ -253,7 +198,7 @@ func DeleteIPRange(ctx context.Context, deleteList *crimson.IPRangeDeleteList) e
 		// IEEE 802.1Q supports VLAN IDs 1-4094
 		if r.VlanId == 0 || r.VlanId > 4094 {
 			return logAndUserErrorf(ctx, InvalidArgument,
-				"vlan ID is invalid in range %d: must be between 1-4094; received %s", i, r)
+				"vlan ID in %v is invalid: must be between 1-4094", r)
 		}
 
 		statement.WriteString(delimiter)
@@ -312,7 +257,7 @@ func SelectIPRange(ctx context.Context, req *crimson.IPRangeQuery) ([]IPRange, e
 	if req.Ip != "" {
 		statement.WriteString(delimiter)
 		delimiter = "\nAND "
-		ip, err := IPStringToHexString(req.Ip)
+		ip, err := netutil.IPStringToHexString(req.Ip)
 		if err != nil {
 			return nil, UserErrorf(
 				InvalidArgument,
@@ -366,7 +311,7 @@ func scanHosts(ctx context.Context, rows *sql.Rows) (*crimson.HostList, error) {
 			return nil, err
 		}
 		if macString != "" {
-			hw, err = HexStringToHardwareAddr(macString)
+			hw, err = netutil.HexStringToHardwareAddr(macString)
 			if err != nil {
 				return nil, err
 			}
@@ -374,7 +319,7 @@ func scanHosts(ctx context.Context, rows *sql.Rows) (*crimson.HostList, error) {
 		}
 
 		if ipString != "" {
-			ip, err = HexStringToIP(ipString)
+			ip, err = netutil.HexStringToIP(ipString)
 			if err != nil {
 				return nil, err
 			}
@@ -437,12 +382,12 @@ func InsertHost(ctx context.Context, req *crimson.HostList) (err error) {
 		delimiter = ", \n"
 		statement.WriteString("(?, ?, ?, ?, ?)")
 
-		ip, err = IPStringToHexString(host.Ip)
+		ip, err = netutil.IPStringToHexString(host.Ip)
 		if err != nil {
 			return
 		}
 
-		macAddr, err = MacAddrStringToHexString(host.MacAddr)
+		macAddr, err = netutil.MacAddrStringToHexString(host.MacAddr)
 		if err != nil {
 			return
 		}
@@ -503,7 +448,7 @@ func SelectHost(ctx context.Context, req *crimson.HostQuery) (*crimson.HostList,
 	if req.MacAddr != "" {
 		statement.WriteString(delimiter)
 		delimiter = "\nAND "
-		hw, err := MacAddrStringToHexString(req.MacAddr)
+		hw, err := netutil.MacAddrStringToHexString(req.MacAddr)
 		if err != nil {
 			return nil, UserErrorf(
 				InvalidArgument,
@@ -516,7 +461,7 @@ func SelectHost(ctx context.Context, req *crimson.HostQuery) (*crimson.HostList,
 	if req.Ip != "" {
 		statement.WriteString(delimiter)
 		delimiter = "\nAND "
-		ip, err := IPStringToHexString(req.Ip)
+		ip, err := netutil.IPStringToHexString(req.Ip)
 		if err != nil {
 			return nil, UserErrorf(
 				InvalidArgument,
@@ -586,7 +531,7 @@ func DeleteHost(ctx context.Context, req *crimson.HostDeleteList) error {
 			statement.WriteString(delimiter)
 			delimiter = " AND "
 			statement.WriteString("mac_addr=?")
-			mac, err := MacAddrStringToHexString(host.MacAddr)
+			mac, err := netutil.MacAddrStringToHexString(host.MacAddr)
 			if err != nil {
 				return UserErrorf(InvalidArgument, "Invalid MAC address: %s", host.MacAddr)
 			}
