@@ -74,6 +74,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'success_rates': [[int(build_number), success_rate]],
         'analysis_status': STATUS_TO_DESCRIPTION.get(
             master_flake_analysis.status),
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': int(build_number),
+        'step_name': step_name,
+        'test_name': test_name,
         'suspected_flake_build_number': None
     }
     self.assertEqual(expected_check_flake_result, response.json_body)

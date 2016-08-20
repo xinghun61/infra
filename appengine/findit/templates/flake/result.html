@@ -8,7 +8,7 @@
       font-size: 12px;
     }
     #placeholder {
-      width: 450px; 
+      width: 450px;
       height: 200px;
     }
     table {
@@ -21,6 +21,14 @@
     $(document).ready(function () {
     $.plot($("#placeholder"), [{{success_rates}}],
     {
+      series: {
+        lines: {
+          show: true
+        },
+        points: {
+          show: true
+        }
+      },
       grid: {
         hoverable: true,
         borderWidth: 1
@@ -29,8 +37,29 @@
         labelBoxBorderColor: "none",
         position: "right"
       }
-    }
-    )});
+    });
+    $("<div id='tooltip'></div>").css({
+      position: "absolute",
+      display: "none",
+      border: "1px solid #fdd",
+      padding: "2px",
+      "background-color": "#fee",
+      opacity: 0.80
+    }).appendTo("body");
+
+   $("#placeholder").bind("plothover", function (event, pos, item) {
+      if (item) {
+        var x = Math.round(item.datapoint[0].toFixed(2));
+        var y = item.datapoint[1].toFixed(2);
+
+        $("#tooltip").html("Build Number: " + x + "<br> Pass rate: " + y)
+        .css({top: item.pageY+5, left: item.pageX+5})
+        .fadeIn(200);
+      }
+      else {
+        $("#tooltip").hide();
+      }
+    })});
   </script>
 </head>
 
@@ -43,7 +72,7 @@
         Status of Analysis:  {{analysis_status}}
         {% if suspected_flake_build_number %}
         <br>
-        Suspected Build Number of Culprit: {{suspected_flake_build_number}}
+        Regressed in Build: {{suspected_flake_build_number}}
         {% endif %}
       </td>
       <td></td>
@@ -53,7 +82,13 @@
       <td>
         <div id="placeholder"></div>
       </td>
-      <td></td>
+      <td>
+        Master Name: {{master_name}} <br>
+        Builder Name: {{builder_name}} <br>
+        Starting Build Number: {{build_number}} <br>
+        Step Name: {{step_name}} <br>
+        Test Name: {{test_name}} <br>
+      </td>
     </tr>
     <tr>
       <td></td>

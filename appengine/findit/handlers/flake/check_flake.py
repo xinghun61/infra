@@ -32,8 +32,13 @@ class CheckFlake(BaseHandler):
         'success_rates': [],
         'analysis_status': STATUS_TO_DESCRIPTION.get(
             master_flake_analysis.status),
-        'suspected_flake_build_number':(
-            master_flake_analysis.suspected_flake_build_number)
+        'suspected_flake_build_number': (
+            master_flake_analysis.suspected_flake_build_number),
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': step_name,
+        'test_name': test_name
     }
     zipped = zip(master_flake_analysis.build_numbers,
                  master_flake_analysis.success_rates)
