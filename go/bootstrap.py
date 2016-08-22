@@ -10,6 +10,7 @@
 - Fetches code dependencies via deps.py.
 """
 
+import collections
 import contextlib
 import json
 import logging
@@ -86,6 +87,70 @@ GAE_PKGS = frozenset(('appengine', 'appengine_internal', 'github.com'))
 # GAE SDK for running apps locally and doing app uploads, remove their hacks.
 GAE_HACK_PKGS = frozenset(('appengine_internal/init',))
 
+# Layout is the layout of the bootstrap installation.
+_Layout = collections.namedtuple('Layout', (
+    # The path where the Go toolset is checked out at.
+    'toolset_root',
+
+    # The workspace path.
+    'workspace',
+
+    # The list of vendor directories. Each will have a Glide "deps.yaml" in it.
+    'vendor_paths',
+
+    # List of additional paths to add to GOPATH.
+    'go_paths',
+
+    # The path to the Go AppEngine checkout.
+    'go_appengine_path',
+
+    # The list of DEPS'd in paths that contain Go sources. This is used to
+    # determine when our vendored tools need to be re-installed.
+    'go_deps_paths',
+
+    # Go package paths of tools to install into the bootstrap environment.
+    'go_install_tools',
+))
+
+class Layout(_Layout):
+
+  @property
+  def go_repo_versions_path(self):
+    """The path where the latest installed Go repository versions are recorded.
+    """
+    return os.path.join(self.workspace, '.deps_repo_versions.json')
+
+
+# A base empty Layout.
+_EMPTY_LAYOUT = Layout(
+    toolset_root=None,
+    workspace=None,
+    vendor_paths=None,
+    go_paths=None,
+    go_appengine_path=None,
+    go_deps_paths=None,
+    go_install_tools=None)
+
+
+# Infra standard layout.
+LAYOUT = Layout(
+    toolset_root=TOOLSET_ROOT,
+    workspace=WORKSPACE,
+    vendor_paths=[WORKSPACE],
+    go_deps_paths=[os.path.join(WORKSPACE, _p) for _p in (
+        'src/github.com/luci/gae',
+        'src/github.com/luci/luci-go',
+    )],
+    go_install_tools=[
+        'github.com/luci/gae/tools/proto-gae',
+        'github.com/luci/luci-go/tools/cmd/...',
+        'github.com/luci/luci-go/grpc/cmd/...',
+        'github.com/luci/luci-go/deploytool/cmd/luci_deploy',
+    ],
+    go_paths=None,
+    go_appengine_path=GO_APPENGINE,
+)
+
 
 class Failure(Exception):
   """Bootstrap failed."""
@@ -145,7 +210,7 @@ def remove_directory(path):
   p = os.path.join(*path)
   if not os.path.exists(p):
     return
-  LOGGER.info('Removing %s', p)
+  LOGGER.debug('Removing %s', p)
   # Crutch to remove read-only file (.git/* in particular) on Windows.
   def onerror(func, path, _exc_info):
     if not os.access(path, os.W_OK):
@@ -213,9 +278,11 @@ def check_hello_world(toolset_root):
         package main
         func main() { println("hello, world\n") }
     """)
+    layout = _EMPTY_LAYOUT._replace(toolset_root=toolset_root)
+
     out = subprocess.check_output(
         [get_go_exe(toolset_root), 'run', path],
-        env=get_go_environ(toolset_root, tmp),
+        env=get_go_environ(layout),
         stderr=subprocess.STDOUT)
     if out.strip() != 'hello, world':
       LOGGER.error('Failed to run sample program:\n%s', out)
@@ -278,10 +345,14 @@ def ensure_glide_installed(toolset_root):
     return
 
   def install(workspace, pkg):
+    layout = _EMPTY_LAYOUT._replace(
+        toolset_root=toolset_root,
+        workspace=workspace)
+
     subprocess.check_call(
         [get_go_exe(toolset_root), 'install', pkg],
         cwd=tmp,
-        env=get_go_environ(toolset_root, workspace),
+        env=get_go_environ(layout),
         stdout=sys.stderr)
     # Windows os.rename doesn't support overwrites.
     name = pkg[pkg.rfind('/')+1:]
@@ -311,47 +382,97 @@ def fetch_glide_code(workspace, spec):
     git(['checkout', repo['rev']], cwd=path)
 
 
+def get_git_repository_head(path):
+  head = subprocess.check_output([GIT_EXE, '-C', path, 'rev-parse', 'HEAD'])
+  return head.strip()
+
+
+def get_deps_repo_versions(layout):
+  """Loads the repository version object stored at GO_REPO_VERSIONS.
+
+  If no version object exists, an empty dictionary will be returned.
+  """
+  if not os.path.isfile(layout.go_repo_versions_path):
+    return {}
+  with open(layout.go_repo_versions_path, 'r') as fd:
+    return json.load(fd)
+
+
+def save_deps_repo_versions(layout, v):
+  """Records the repository version object, "v", as JSON at GO_REPO_VERSIONS."""
+  with open(layout.go_repo_versions_path, 'w') as fd:
+    json.dump(v, fd, indent=2, sort_keys=True)
+
+
+def install_deps_tools(layout, force):
+  if not layout.go_install_tools:
+    return False
+
+  # Load the current HEAD for our Go dependency paths.
+  current_versions = {}
+  for path in (layout.go_deps_paths or ()):
+    current_versions[path] = get_git_repository_head(path)
+
+  # Only install the tools if our checkout versions have changed.
+  if not force and get_deps_repo_versions(layout) == current_versions:
+    return False
+
+  # (Re)install all of our Go packages.
+  LOGGER.info('Installing Go tools: %s', layout.go_install_tools)
+  env = get_go_environ(layout)
+  subprocess.check_call([get_go_exe(layout.toolset_root), 'install'] +
+                        list(layout.go_install_tools),
+                        stdout=sys.stderr, stderr=sys.stderr, env=env)
+  save_deps_repo_versions(layout, current_versions)
+  return True
+
+
 def update_vendor_packages(workspace, force=False):
-  """Runs deps.py to fetch and install pinned packages."""
+  """Runs deps.py to fetch and install pinned packages.
+
+  Returns (bool): True if the dependencies were actually updated, False if they
+      were already at the correct version.
+  """
   if not os.path.isfile(os.path.join(workspace, 'deps.lock')):
-    return
-  cmd = [
-    sys.executable, '-u', os.path.join(ROOT, 'go', 'deps.py'),
-    '--workspace', workspace, 'install',
-  ]
-  if force:
-    cmd.append('--force')
-  subprocess.check_call(cmd, stdout=sys.stderr)
+    return False
+
+  # We will pass "deps.py" the "--update-out" argument, which will create a
+  # file at a temporary path if the deps were actually updated. We use this to
+  # derive our return value.
+  with temp_dir(workspace) as tdir:
+    update_out_path = os.path.join(tdir, 'deps_updated.json')
+    cmd = [
+      sys.executable, '-u', os.path.join(ROOT, 'go', 'deps.py'),
+      '--workspace', workspace, 'install',
+      '--update-out', update_out_path,
+    ]
+    if force:
+      cmd.append('--force')
+    subprocess.check_call(cmd, stdout=sys.stderr)
+    return os.path.isfile(update_out_path)
 
 
-def get_go_environ(
-    toolset_root,
-    workspace=None,
-    go_paths=(),
-    vendor_paths=(),
-    go_appengine_path=None):
+def get_go_environ(layout):
   """Returns a copy of os.environ with added GO* environment variables.
 
   Overrides GOROOT, GOPATH and GOBIN. Keeps everything else. Idempotent.
 
   Args:
-    toolset_root: GOROOT would be <toolset_root>/go.
-    workspace: main workspace directory or None if compiling in GOROOT.
-    go_paths: additional paths to add to GOPATH (used by bootstrap_internal.py).
-    vendor_paths: directories with .vendor directories.
-    go_appengine_path: path to GAE Go SDK to add to PATH.
+    layout: The Layout to derive the environment from.
   """
   env = os.environ.copy()
-  env['GOROOT'] = os.path.join(toolset_root, 'go')
-  if workspace:
-    env['GOBIN'] = os.path.join(workspace, 'bin')
+  env['GOROOT'] = os.path.join(layout.toolset_root, 'go')
+  if layout.workspace:
+    env['GOBIN'] = os.path.join(layout.workspace, 'bin')
   else:
     env.pop('GOBIN', None)
 
+  vendor_paths = layout.vendor_paths or ()
   all_go_paths = [os.path.join(p, '.vendor') for p in vendor_paths]
-  all_go_paths.extend(go_paths)
-  if workspace:
-    all_go_paths.append(workspace)
+  if layout.go_paths:
+    all_go_paths.extend(layout.go_paths)
+  if layout.workspace:
+    all_go_paths.append(layout.workspace)
   env['GOPATH'] = os.pathsep.join(all_go_paths)
 
   # Remove preexisting bin/ paths (including .vendor/bin) pointing to infra
@@ -376,8 +497,8 @@ def get_go_environ(
     os.path.join(ROOT, 'luci', 'appengine', 'components', 'tools'),
   ]
   paths_to_add.extend(os.path.join(p, '.vendor', 'bin') for p in vendor_paths)
-  if go_appengine_path:
-    paths_to_add.append(go_appengine_path)
+  if layout.go_appengine_path:
+    paths_to_add.append(layout.go_appengine_path)
 
   # Make sure not to add duplicates entries to PATH over and over again when
   # get_go_environ is invoked multiple times.
@@ -387,9 +508,9 @@ def get_go_environ(
   # APPENGINE_DEV_APPSERVER is used by "appengine/aetest" package. If it's
   # missing, aetest will scan PATH looking for dev_appserver.py, possibly
   # finding it in some other place.
-  if go_appengine_path:
+  if layout.go_appengine_path:
     env['APPENGINE_DEV_APPSERVER'] = os.path.join(
-        go_appengine_path, 'dev_appserver.py')
+        layout.go_appengine_path, 'dev_appserver.py')
   else:
     env.pop('APPENGINE_DEV_APPSERVER', None)
 
@@ -410,7 +531,7 @@ def get_go_exe(toolset_root):
   return os.path.join(toolset_root, 'go', 'bin', 'go' + EXE_SFX)
 
 
-def bootstrap(go_paths, logging_level):
+def bootstrap(layout, logging_level):
   """Installs all dependencies in default locations.
 
   Supposed to be called at the beginning of some script (it modifies logger).
@@ -431,16 +552,18 @@ def bootstrap(go_paths, logging_level):
     prev_environ[k] = os.environ.pop(k, None)
 
   try:
-    updated = ensure_toolset_installed(TOOLSET_ROOT)
-    ensure_glide_installed(TOOLSET_ROOT)
-    for p in go_paths:
-      update_vendor_packages(p, force=updated)
-    if updated:
+    toolset_updated = ensure_toolset_installed(layout.toolset_root)
+    ensure_glide_installed(layout.toolset_root)
+    vendor_updated = toolset_updated
+    for p in layout.vendor_paths:
+      vendor_updated |= update_vendor_packages(p, force=toolset_updated)
+    if toolset_updated:
       # GOPATH/pkg may have binaries generated with previous version of toolset,
       # they may not be compatible and "go build" isn't smart enough to rebuild
       # them.
-      for p in go_paths:
+      for p in layout.vendor_paths:
         remove_directory([p, 'pkg'])
+    install_deps_tools(layout, vendor_updated)
   finally:
     # Restore os.environ back. Have to do it key-by-key to actually modify the
     # process environment (replacing os.environ object as a whole does nothing).
@@ -454,12 +577,8 @@ def prepare_go_environ():
 
   Installs or updates the toolset and vendored dependencies if necessary.
   """
-  bootstrap([WORKSPACE], logging.INFO)
-  return get_go_environ(
-      toolset_root=TOOLSET_ROOT,
-      workspace=WORKSPACE,       # primary GOPATH with source code
-      vendor_paths=[WORKSPACE],  # where to look for deps.yaml and .vendor dirs
-      go_appengine_path=GO_APPENGINE)
+  bootstrap(LAYOUT, logging.INFO)
+  return get_go_environ(LAYOUT)
 
 
 def find_executable(name, workspaces):
@@ -467,7 +586,7 @@ def find_executable(name, workspaces):
   basename = name
   if EXE_SFX and basename.endswith(EXE_SFX):
     basename = basename[:-len(EXE_SFX)]
-  roots = [os.path.join(TOOLSET_ROOT, 'go', 'bin')]
+  roots = [os.path.join(LAYOUT.toolset_root, 'go', 'bin')]
   for path in workspaces:
     roots.extend([
       os.path.join(path, '.vendor', 'bin'),
@@ -481,7 +600,7 @@ def find_executable(name, workspaces):
 
 
 def main():
-  bootstrap([WORKSPACE], logging.DEBUG)
+  bootstrap(LAYOUT, logging.DEBUG)
   return 0
 
 

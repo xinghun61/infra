@@ -389,7 +389,7 @@ def grab_doc(func):
 ## Subcommands.
 
 
-def install(workspace, force=False):
+def install(workspace, force=False, update_out=None):
   """Installs all dependencies from deps.lock into .vendor/ GOPATH.
 
   Args:
@@ -436,14 +436,18 @@ def install(workspace, force=False):
   for pkg in VENDORED_TOOLS:
     pkg_path = os.path.join(
         workspace.vendor_root, 'src', pkg.replace('/', os.sep))
-    if os.path.isdir(pkg_path):
-      to_install.append(pkg)
+    if not os.path.isdir(pkg_path):
+      print 'No Go package for vendored tool [%s] at: %s' % (pkg, pkg_path)
+      continue
+    to_install.append(pkg)
 
   print 'Rebuilding tools...'
   call(workspace, 'go', ['install', '-v'] + to_install)
 
   # Put a marker file that indicates we successfully installed all deps.
   write_file(os.path.join(workspace.vendor_root, APPLIED_LOCK), required)
+  if update_out:
+    write_file(update_out, required)
   return 0
 
 
@@ -509,6 +513,10 @@ def main(args):
   parser_install.add_argument(
       '--force', action='store_true', default=False,
       help='forcefully reinstall all dependencies')
+  parser_install.add_argument(
+      '--update-out', action='store', default=None,
+      help='if supplied, the updated list of Go packages will be written here '
+           'if an update occurred.')
 
   parser_update = subparsers.add_parser('update', help=grab_doc(update))
   parser_update.set_defaults(action=update)
@@ -533,7 +541,7 @@ def main(args):
 
   try:
     if opts.action == install:
-      return install(workspace, opts.force)
+      return install(workspace, opts.force, opts.update_out)
     if opts.action == update:
       return update(workspace)
     if opts.action == add:
