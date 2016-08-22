@@ -77,14 +77,18 @@ function generatePage(historyInstance)
 
     // tests expands to all tests that match the CSV list.
     // result expands to all tests that ever have the given result
-    if (historyInstance.dashboardSpecificState.tests || historyInstance.dashboardSpecificState.result)
+    if (historyInstance.dashboardSpecificState.tests || historyInstance.dashboardSpecificState.result) {
         generatePageForIndividualTests(individualTests());
-    else
+    } else if (currentBuilders.length) {
         generatePageForBuilder(builders.builderFromKey(historyInstance.dashboardSpecificState.builder) || currentBuilders[0]);
-
-    currentBuilders.forEach(function(builder) {
-        processTestResultsForBuilderAsync(builder);
-    });
+        currentBuilders.forEach(function(builder) {
+            processTestResultsForBuilderAsync(builder);
+        });
+    } else {
+        appendHTML(htmlForNavBar() + '<br><strong>No builders found for the ' +
+            'given test type. Please select another.</strong>');
+        hideLoadingUI();
+    }
 
     postHeightChangedMessage();
 }
