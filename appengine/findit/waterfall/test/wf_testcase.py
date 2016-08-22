@@ -75,7 +75,8 @@ _DEFAULT_TRY_BOT_MAPPING = {
 _DEFAULT_TRY_JOB_SETTINGS = {
     'server_query_interval_seconds': 60,
     'job_timeout_hours': 5,
-    'allowed_response_error_times': 5
+    'allowed_response_error_times': 5,
+    'max_seconds_look_back_for_group': 86400
 }
 
 

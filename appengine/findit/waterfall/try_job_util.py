@@ -18,9 +18,6 @@ from model.wf_failure_group import WfFailureGroup
 from model.wf_try_job import WfTryJob
 from waterfall import waterfall_config
 
-# TODO(lijeffrey): Move this to config.
-MATCHING_GROUPS_SECONDS_AGO = 24 * 60 * 60  # 24 hours.
-
 
 def _ShouldBailOutForOutdatedBuild(build):
   return (time_util.GetUTCNow() - build.start_time).days > 0
@@ -186,7 +183,8 @@ def _GetOutputNodes(signals):
 
 def _GetMatchingFailureGroups(build_failure_type):
   earliest_time = time_util.GetUTCNow() - timedelta(
-      seconds=MATCHING_GROUPS_SECONDS_AGO)
+      seconds=waterfall_config.GetTryJobSettings().get(
+          'max_seconds_look_back_for_group'))
   return WfFailureGroup.query(ndb.AND(
       WfFailureGroup.created_time >= earliest_time,
       WfFailureGroup.build_failure_type == build_failure_type)).fetch()
@@ -300,9 +298,9 @@ def _NeedANewTestTryJob(
 
   if (not force_try_job and
       waterfall_config.ShouldSkipTestTryJobs(master_name, builder_name)):
-      logging.info('Test try jobs on %s, %s are not supported yet.',
-                   master_name, builder_name)
-      return False
+    logging.info('Test try jobs on %s, %s are not supported yet.',
+                 master_name, builder_name)
+    return False
 
   return _CurrentBuildKeyInFailureResultMap(
       master_name, builder_name, build_number)
@@ -328,11 +326,12 @@ def NeedANewTryJob(
                     'Try job will not be triggered.' % build.start_time)
       return False
 
-  need_new_try_job = (_NeedANewCompileTryJob(
-      master_name, builder_name, build_number, failure_info)
-      if try_job_type == failure_type.COMPILE else
-      _NeedANewTestTryJob(
-          master_name, builder_name, build_number, failure_info, force_try_job))
+  if try_job_type == failure_type.COMPILE:
+    need_new_try_job = _NeedANewCompileTryJob(
+        master_name, builder_name, build_number, failure_info)
+  else:
+    need_new_try_job = _NeedANewTestTryJob(
+        master_name, builder_name, build_number, failure_info, force_try_job)
 
   if need_new_try_job:
     # TODO(josiahk): Integrate this into need_new_try_job boolean

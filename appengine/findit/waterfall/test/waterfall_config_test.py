@@ -83,7 +83,8 @@ class MastersTest(wf_testcase.WaterfallTestCase):
         {
             'server_query_interval_seconds': 60,
             'job_timeout_hours': 5,
-            'allowed_response_error_times': 5
+            'allowed_response_error_times': 5,
+            'max_seconds_look_back_for_group': 86400
         },
         waterfall_config.GetTryJobSettings())
 

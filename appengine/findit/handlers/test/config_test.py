@@ -54,7 +54,8 @@ _MOCK_BUILDERS_TO_TRYBOTS = {
 _MOCK_TRY_JOB_SETTINGS = {
     'server_query_interval_seconds': 60,
     'job_timeout_hours': 5,
-    'allowed_response_error_times': 1
+    'allowed_response_error_times': 1,
+    'max_seconds_look_back_for_group': 1
 }
 
 _MOCK_SWARMING_SETTINGS = {
@@ -462,24 +463,28 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertFalse(config._ValidateTryJobSettings({
         'server_query_interval_seconds': '1',  # Should be an int.
         'job_timeout_hours': 1,
-        'allowed_response_error_times': 1
+        'allowed_response_error_times': 1,
+        'max_seconds_look_back_for_group': 1
     }))
     self.assertFalse(config._ValidateTryJobSettings({
         'server_query_interval_seconds': 1,
         'job_timeout_hours': '1',  # Should be an int.
-        'allowed_response_error_times': 1
+        'allowed_response_error_times': 1,
+        'max_seconds_look_back_for_group': 1
     }))
     self.assertFalse(config._ValidateTryJobSettings({
         'server_query_interval_seconds': 1,
         'job_timeout_hours': 1,
         'allowed_response_error_times': '1',  # Should be an int.
+        'max_seconds_look_back_for_group': 1
     }))
-    self.assertTrue(config._ValidateTryJobSettings({
+    self.assertFalse(config._ValidateTryJobSettings({
         'server_query_interval_seconds': 1,
         'job_timeout_hours': 1,
-        'allowed_response_error_times': 1
+        'allowed_response_error_times': 1,
+        'max_seconds_look_back_for_group': 'a'  # Should be an int.
     }))
-    self.assertTrue(config._ValidateSwarmingSettings(_MOCK_SWARMING_SETTINGS))
+    self.assertTrue(config._ValidateTryJobSettings(_MOCK_TRY_JOB_SETTINGS))
 
   def testValidateSwarmingSettings(self):
     self.assertFalse(config._ValidateSwarmingSettings([]))
