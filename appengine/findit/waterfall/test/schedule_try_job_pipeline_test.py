@@ -58,7 +58,7 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(properties, expected_properties)
 
   @mock.patch.object(schedule_try_job_pipeline, 'buildbucket_client')
-  def testTriggerTryJob(self, mock_other):
+  def testTriggerTryJob(self, mock_module):
     master_name = 'm'
     builder_name = 'b'
     response = {
@@ -69,7 +69,7 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
     results = [(None, buildbucket_client.BuildbucketBuild(response['build']))]
-    mock_other.TriggerTryJobs.return_value = results
+    mock_module.TriggerTryJobs.return_value = results
 
     try_job_pipeline = ScheduleTryJobPipeline()
     build_id = try_job_pipeline._TriggerTryJob(

@@ -4,6 +4,7 @@
 
 from datetime import datetime
 import json
+import mock
 import time
 
 from common.waterfall import buildbucket_client
@@ -18,110 +19,7 @@ from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall.test import wf_testcase
 
 
-# A counter to enable different responses to requests in a loop.
-REQUEST_COUNTER = {
-    '1': 0,
-    '2': 0,
-    '3': 0
-}
-
-
 class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
-
-  def _MockGetTryJobs(self, build_id):
-    def Mocked_GetTryJobs(*_):
-      data = {
-          '1': [
-              {
-                  'build': {
-                      'id': '1',
-                      'url': 'url',
-                      'status': 'COMPLETED',
-                      'result_details_json': json.dumps({
-                          'properties': {
-                              'report': {
-                                  'result': {
-                                      'rev1': 'passed',
-                                      'rev2': 'failed'
-                                  },
-                                  'metadata': {
-                                      'regression_range_size': 2
-                                  }
-                              }
-                          }
-                      })
-                  }
-              }
-          ],
-          '3': [
-              {
-                  'build': {
-                      'id': '3',
-                      'url': 'url',
-                      'status': 'STARTED'
-                  }
-              },
-              {
-                  'error': {
-                      'reason': 'BUILD_NOT_FOUND',
-                      'message': 'message',
-                  }
-              },
-              {
-                  'build': {
-                      'id': '3',
-                      'url': 'url',
-                      'status': 'STARTED'
-                  }
-              },
-              {
-                  'error': {
-                      'reason': 'BUILD_NOT_FOUND',
-                      'message': 'message',
-                  }
-              },
-              {
-                  'build': {
-                      'id': '3',
-                      'url': 'url',
-                      'status': 'COMPLETED',
-                      'result_details_json': json.dumps({
-                          'properties': {
-                              'report': {
-                                  'result': {
-                                      'rev1': {
-                                          'a_test': {
-                                              'status': 'passed',
-                                              'valid': True
-                                          }
-                                      },
-                                      'rev2': {
-                                          'a_test': {
-                                              'status': 'failed',
-                                              'valid': True,
-                                              'failures': ['test1', 'test2']
-                                          }
-                                      }
-                                  }
-                              }
-                          }
-                      })
-                  }
-              }
-          ]
-      }
-      try_job_results = []
-      build_error = data.get(build_id)[REQUEST_COUNTER[build_id]]
-      if build_error.get('error'):
-        try_job_results.append((
-            buildbucket_client.BuildbucketError(build_error['error']), None))
-      else:
-        try_job_results.append((
-            None, buildbucket_client.BuildbucketBuild(build_error['build'])))
-      REQUEST_COUNTER[build_id] += 1
-      return try_job_results
-
-    self.mock(buildbucket_client, 'GetTryJobs', Mocked_GetTryJobs)
 
   def setUp(self):
     super(MonitorTryJobPipelineTest, self).setUp()
@@ -219,7 +117,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(try_job_data.error, expected_error_dict)
     self.assertEqual(try_job_data.error_code, try_job_error.TIMEOUT)
 
-  def testGetTryJobsForCompileSuccess(self):
+  @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
+  def testGetTryJobsForCompileSuccess(self, mock_module):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -238,7 +137,27 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     ]
     try_job.status = analysis_status.RUNNING
     try_job.put()
-    self._MockGetTryJobs(try_job_id)
+
+    build_response = {
+        'id': '1',
+        'url': 'url',
+        'status': 'COMPLETED',
+        'result_details_json': json.dumps({
+            'properties': {
+                'report': {
+                    'result': {
+                        'rev1': 'passed',
+                        'rev2': 'failed'
+                    },
+                    'metadata': {
+                        'regression_range_size': 2
+                    }
+                }
+            }
+        })
+    }
+    mock_module.GetTryJobs.return_value = [
+        (None, buildbucket_client.BuildbucketBuild(build_response))]
 
     pipeline = MonitorTryJobPipeline()
     compile_result = pipeline.run(
@@ -268,7 +187,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertEqual(try_job_data.regression_range_size, regression_range_size)
 
-  def testGetTryJobsForTestSuccess(self):
+  @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
+  def testGetTryJobsForTestSuccess(self, mock_module):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -288,7 +208,70 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_data = WfTryJobData.Create(try_job_id)
     try_job_data.put()
 
-    self._MockGetTryJobs(try_job_id)
+    data = [
+        {
+            'build': {
+                'id': '3',
+                'url': 'url',
+                'status': 'STARTED'
+            }
+        },
+        {
+            'error': {
+                'reason': 'BUILD_NOT_FOUND',
+                'message': 'message',
+            }
+        },
+        {
+            'build': {
+                'id': '3',
+                'url': 'url',
+                'status': 'STARTED'
+            }
+        },
+        {
+            'error': {
+                'reason': 'BUILD_NOT_FOUND',
+                'message': 'message',
+            }
+        },
+        {
+            'build': {
+                'id': '3',
+                'url': 'url',
+                'status': 'COMPLETED',
+                'result_details_json': json.dumps({
+                    'properties': {
+                        'report': {
+                            'result': {
+                                'rev1': {
+                                    'a_test': {
+                                        'status': 'passed',
+                                        'valid': True
+                                    }
+                                },
+                                'rev2': {
+                                    'a_test': {
+                                        'status': 'failed',
+                                        'valid': True,
+                                        'failures': ['test1', 'test2']
+                                    }
+                                }
+                            }
+                        }
+                    }
+                })
+            }
+        }
+    ]
+
+    mock_module.GetTryJobs.side_effect = [
+        [(None, buildbucket_client.BuildbucketBuild(data[0]['build']))],
+        [(buildbucket_client.BuildbucketError(data[1]['error']), None)],
+        [(None, buildbucket_client.BuildbucketBuild(data[2]['build']))],
+        [(buildbucket_client.BuildbucketError(data[3]['error']), None)],
+        [(None, buildbucket_client.BuildbucketBuild(data[4]['build']))],
+    ]
 
     pipeline = MonitorTryJobPipeline()
     test_result = pipeline.run(

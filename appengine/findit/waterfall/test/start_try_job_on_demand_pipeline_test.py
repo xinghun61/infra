@@ -90,16 +90,16 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(list(result), [])
 
   @mock.patch.object(start_try_job_on_demand_pipeline, 'try_job_util')
-  def testNotScheduleTryJobIfDontNeedTryJob(self, mock_other):
-    mock_other.NeedANewTryJob.return_value = False
+  def testNotScheduleTryJobIfDontNeedTryJob(self, mock_module):
+    mock_module.NeedANewTryJob.return_value = False
     pipeline = start_try_job_on_demand_pipeline.StartTryJobOnDemandPipeline()
     result = pipeline.run(
         'm', 'b', 1, {}, {}, {}, True, False)
     self.assertEqual(list(result), [])
 
   @mock.patch.object(start_try_job_on_demand_pipeline, 'try_job_util')
-  def testNotScheduleTryJobIfUnsupportedFailureType(self, mock_other):
-    mock_other.NeedANewTryJob.return_value = True
+  def testNotScheduleTryJobIfUnsupportedFailureType(self, mock_module):
+    mock_module.NeedANewTryJob.return_value = True
     try_job_type = failure_type.UNKNOWN
     failure_info = {
         'failure_type': try_job_type,
@@ -126,7 +126,7 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(list(result), [])
 
   @mock.patch.object(start_try_job_on_demand_pipeline, 'try_job_util')
-  def testCompileTryJob(self, mock_other):
+  def testCompileTryJob(self, mock_module):
 
     master_name = 'm'
     builder_name = 'b'
@@ -155,8 +155,8 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
     bad_revision = 'r2'
     WfTryJob.Create('m', 'b', 1).put()
 
-    mock_other.NeedANewTryJob.return_value = True
-    mock_other.GetFailedTargetsFromSignals.return_value = {}
+    mock_module.NeedANewTryJob.return_value = True
+    mock_module.GetFailedTargetsFromSignals.return_value = {}
 
     self.MockPipeline(
         start_try_job_on_demand_pipeline.ScheduleCompileTryJobPipeline,
@@ -186,7 +186,7 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertNotEqual(list(result), [])
 
   @mock.patch.object(start_try_job_on_demand_pipeline, 'try_job_util')
-  def testTestTryJob(self, mock_other):
+  def testTestTryJob(self, mock_module):
 
     master_name = 'm'
     builder_name = 'b'
@@ -231,8 +231,8 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
     good_revision = 'r1'
     bad_revision = 'r2'
 
-    mock_other.NeedANewTryJob.return_value = True
-    mock_other.GetFailedTargetsFromSignals.return_value = {}
+    mock_module.NeedANewTryJob.return_value = True
+    mock_module.GetFailedTargetsFromSignals.return_value = {}
 
     self.MockPipeline(
         start_try_job_on_demand_pipeline.ScheduleTestTryJobPipeline,

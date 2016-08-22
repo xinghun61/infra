@@ -4,6 +4,7 @@
 
 from datetime import datetime
 from datetime import timedelta
+import mock
 
 from common.waterfall import failure_type
 from model import analysis_status
@@ -68,7 +69,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(need_try_job)
 
-  def testBailOutForTestTryJob(self):
+  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  def testBailOutForTestTryJob(self, mock_fn):
     master_name = 'master2'
     builder_name = 'builder2'
     build_number = 223
@@ -83,18 +85,15 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         'failure_type': failure_type.TEST
     }
 
-    def _MockShouldBailOutForOutdatedBuild(*_):
-      return False
-    self.mock(
-        try_job_util, '_ShouldBailOutForOutdatedBuild',
-        _MockShouldBailOutForOutdatedBuild)
+    mock_fn.return_value = False
 
     need_try_job = try_job_util.NeedANewTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
 
-  def testBailOutForTryJobWithOutdatedTimestamp(self):
+  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  def testBailOutForTryJobWithOutdatedTimestamp(self, mock_fn):
     master_name = 'master1'
     builder_name = 'builder1'
     build_number = 223
@@ -118,19 +117,15 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     build.start_time = yesterday
     build.put()
 
-    def _MockShouldBailOutForOutdatedBuild(*_):
-      return True
-
-    self.mock(
-        try_job_util, '_ShouldBailOutForOutdatedBuild',
-        _MockShouldBailOutForOutdatedBuild)
+    mock_fn.return_value = True
 
     need_try_job = try_job_util.NeedANewTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
 
-  def testNotNeedANewTryJobIfNotFirstTimeFailure(self):
+  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  def testNotNeedANewTryJobIfNotFirstTimeFailure(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -169,11 +164,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
 
-    def _MockShouldBailOutForOutdatedBuild(*_):
-      return False
-    self.mock(
-        try_job_util, '_ShouldBailOutForOutdatedBuild',
-        _MockShouldBailOutForOutdatedBuild)
+    mock_fn.return_value = False
 
     need_try_job = try_job_util.NeedANewTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
@@ -803,7 +794,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
-  def testNotNeedANewTryJobIfOneWithResultExists(self):
+  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  def testNotNeedANewTryJobIfOneWithResultExists(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -835,18 +827,15 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
 
-    def _MockShouldBailOutForOutdatedBuild(*_):
-      return False
-    self.mock(
-        try_job_util, '_ShouldBailOutForOutdatedBuild',
-        _MockShouldBailOutForOutdatedBuild)
+    mock_fn.return_value = False
 
     need_try_job = try_job_util.NeedANewTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
 
-  def testNeedANewTryJobIfExistingOneHasError(self):
+  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  def testNeedANewTryJobIfExistingOneHasError(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -877,18 +866,15 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
 
-    def _MockShouldBailOutForOutdatedBuild(*_):
-      return False
-    self.mock(
-        try_job_util, '_ShouldBailOutForOutdatedBuild',
-        _MockShouldBailOutForOutdatedBuild)
+    mock_fn.return_value = False
 
     need_try_job = try_job_util.NeedANewTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertTrue(need_try_job)
 
-  def testNotNeedANewTryJobIfNoNewFailure(self):
+  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  def testNotNeedANewTryJobIfNoNewFailure(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -918,18 +904,15 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
     analysis.put()
 
-    def _MockShouldBailOutForOutdatedBuild(*_):
-      return False
-    self.mock(
-        try_job_util, '_ShouldBailOutForOutdatedBuild',
-        _MockShouldBailOutForOutdatedBuild)
+    mock_fn.return_value = False
 
     need_try_job = try_job_util.NeedANewTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
 
-  def testNeedANewTryJobIfTestFailureSwarming(self):
+  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  def testNeedANewTryJobIfTestFailureSwarming(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -1003,18 +986,15 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
     analysis.put()
 
-    def _MockShouldBailOutForOutdatedBuild(*_):
-      return False
-    self.mock(
-        try_job_util, '_ShouldBailOutForOutdatedBuild',
-        _MockShouldBailOutForOutdatedBuild)
+    mock_fn.return_value = False
 
     need_try_job = try_job_util.NeedANewTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertTrue(need_try_job)
 
-  def testNeedANewTryJob(self):
+  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  def testNeedANewTryJob(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -1048,18 +1028,15 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
     analysis.put()
 
-    def _MockShouldBailOutForOutdatedBuild(*_):
-      return False
-    self.mock(
-        try_job_util, '_ShouldBailOutForOutdatedBuild',
-        _MockShouldBailOutForOutdatedBuild)
+    mock_fn.return_value = False
 
     need_try_job = try_job_util.NeedANewTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertTrue(need_try_job)
 
-  def testNotNeedANewTryJobForOtherType(self):
+  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  def testNotNeedANewTryJobForOtherType(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -1081,18 +1058,15 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         'failure_type': failure_type.UNKNOWN
     }
 
-    def _MockShouldBailOutForOutdatedBuild(*_):
-      return False
-    self.mock(
-        try_job_util, '_ShouldBailOutForOutdatedBuild',
-        _MockShouldBailOutForOutdatedBuild)
+    mock_fn.return_value = False
 
     need_try_job = try_job_util.NeedANewTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
 
-  def testNotNeedANewTryJobForCompileTypeNoFailureInfo(self):
+  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  def testNotNeedANewTryJobForCompileTypeNoFailureInfo(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -1114,11 +1088,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         'failure_type': failure_type.COMPILE
     }
 
-    def _MockShouldBailOutForOutdatedBuild(*_):
-      return False
-    self.mock(
-        try_job_util, '_ShouldBailOutForOutdatedBuild',
-        _MockShouldBailOutForOutdatedBuild)
+    mock_fn.return_value = False
 
     need_try_job = try_job_util.NeedANewTryJob(
         master_name, builder_name, build_number, failure_info, None, None)

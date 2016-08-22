@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
 import textwrap
 
 import webapp2
@@ -145,7 +146,9 @@ class MonitorAlertsTest(wf_testcase.WaterfallTestCase):
     build_failures = monitor_alerts._GetLatestBuildFailures(http_client)
     self.assertEqual(expected_build_failures, build_failures)
 
-  def testAnalysisScheduled(self):
+  @mock.patch.object(monitor_alerts, '_GetLatestBuildFailures')
+  @mock.patch.object(monitor_alerts, 'build_failure_analysis_pipelines')
+  def testAnalysisScheduled(self, mock_module, mock_fn):
     build_failures = [
         {
             'master_name': 'm3',
@@ -155,28 +158,12 @@ class MonitorAlertsTest(wf_testcase.WaterfallTestCase):
         },
     ]
 
-    def MockGetLatestBuildFailures(*_):
-      return build_failures
-    self.mock(
-        monitor_alerts, '_GetLatestBuildFailures', MockGetLatestBuildFailures)
-
-    expected_scheduled_analyses = [
-        ('m3', 'b3', 3, ['s3'], False,
-         constants.WATERFALL_ANALYSIS_QUEUE),
-    ]
-
-    scheduled_analyses = []
-    def MockScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
-                                     failed_steps, force, queue_name):
-      scheduled_analyses.append(
-          (master_name, builder_name, build_number,
-           failed_steps, force, queue_name))
-
-    self.mock(build_failure_analysis_pipelines, 'ScheduleAnalysisIfNeeded',
-              MockScheduleAnalysisIfNeeded)
+    mock_fn.return_value = build_failures
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     response = self.test_app.get('/monitor-alerts')
     self.assertEqual(200, response.status_int)
 
-    self.assertEqual(expected_scheduled_analyses, scheduled_analyses)
+    mock_module.ScheduleAnalysisIfNeeded.assert_called_with(
+        'm3', 'b3', 3, failed_steps=['s3'], force=False,
+        queue_name=constants.WATERFALL_ANALYSIS_QUEUE)

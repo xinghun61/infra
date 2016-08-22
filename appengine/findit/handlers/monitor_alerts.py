@@ -85,7 +85,6 @@ class MonitorAlerts(BaseHandler):
 
   def HandleGet(self):
     build_failures = _GetLatestBuildFailures(self.HTTP_CLIENT)
-
     for build_failure in build_failures:
       build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
           build_failure['master_name'],

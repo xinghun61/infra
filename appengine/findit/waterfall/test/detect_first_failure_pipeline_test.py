@@ -4,6 +4,7 @@
 
 import datetime
 import json
+import mock
 import os
 import urllib
 import zlib
@@ -324,7 +325,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_failed_step, failed_step)
 
-  def testCheckFirstKnownFailureForSwarmingTestsFoundFlaky(self):
+  @mock.patch.object(detect_first_failure_pipeline, 'swarming_util')
+  def testCheckFirstKnownFailureForSwarmingTestsFoundFlaky(self, mock_module):
     master_name = 'm'
     builder_name = 'b'
     build_number = 221
@@ -361,19 +363,10 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     step.isolated = True
     step.put()
 
-    def MockGetIsolatedDataForFailedBuild(*_):
-      return True
-    self.mock(
-        swarming_util, 'GetIsolatedDataForFailedBuild',
-        MockGetIsolatedDataForFailedBuild)
-
-    def MockRetrieveShardedTestResultsFromIsolatedServer(*_):
-      return json.loads(
-          self._GetSwarmingData(
-              'isolated-plain', 'm_b_223_abc_test_flaky.json'))
-    self.mock(
-        swarming_util, 'RetrieveShardedTestResultsFromIsolatedServer',
-        MockRetrieveShardedTestResultsFromIsolatedServer)
+    mock_module.GetIsolatedDataForFailedBuild.return_value = True
+    mock_module.RetrieveShardedTestResultsFromIsolatedServer.return_value = (
+      json.loads(self._GetSwarmingData(
+          'isolated-plain', 'm_b_223_abc_test_flaky.json')))
 
     pipeline = DetectFirstFailurePipeline()
     pipeline._CheckFirstKnownFailureForSwarmingTests(

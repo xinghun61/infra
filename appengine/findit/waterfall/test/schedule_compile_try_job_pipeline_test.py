@@ -40,7 +40,7 @@ class ScheduleCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(schedule_try_job_pipeline, 'buildbucket_client')
   def testSuccessfullyScheduleNewTryJobForCompileWithSuspectedRevisions(
-      self, mock_other):
+      self, mock_module):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -57,7 +57,7 @@ class ScheduleCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
     results = [(None, buildbucket_client.BuildbucketBuild(response['build']))]
-    mock_other.TriggerTryJobs.return_value = results
+    mock_module.TriggerTryJobs.return_value = results
 
     WfTryJob.Create(master_name, builder_name, build_number).put()
 
