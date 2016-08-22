@@ -82,6 +82,8 @@ from tracker import issuererank
 from tracker import issuetips
 from tracker import spam
 
+from api import api_service
+
 
 class ServletRegistry(object):
 
@@ -143,6 +145,7 @@ class ServletRegistry(object):
     self._RegisterIssueHandlers()
     self._RegisterRedirects()
     self._RegisterInboundMail()
+    api_service.RegisterApiHandlers(self)
     autolink.RegisterAutolink(services)
     # Error pages should be the last to register.
     self._RegisterErrorPages()
