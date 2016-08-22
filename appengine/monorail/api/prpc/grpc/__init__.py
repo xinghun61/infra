@@ -83,8 +83,18 @@ def method_handlers_generic_handler(service, method_handlers):
 
 class Server(object):
 
-  def __init__(self):
+  def __init__(self, service_modules=None):
     self._generic_handlers = {}
+    self._discovery_servicer = None
+
+    if service_modules is not None:
+      from discovery import discovery_service, service_pb2
+      self._discovery_servicer = discovery_service.DiscoveryServicer()
+      service_pb2.add_DiscoveryServicer_to_server(
+          self._discovery_servicer, self)
+      self._discovery_servicer.add_file(service_pb2)
+      for module in service_modules:
+        self._discovery_servicer.add_file(module)
 
   def add_generic_rpc_handlers(self, generic_handler_tuple):
     """Registers grpc handlers, wrapping them in the pRPC protocol.
@@ -101,6 +111,9 @@ class Server(object):
         raise ValueError(
             'Tried to double-register handlers for service %s' % service)
       self._generic_handlers[service] = generic_handler
+
+      if self._discovery_servicer:
+        self._discovery_servicer.add_service(generic_handler)
 
   def get_routes(self):
     """Returns a list of webapp2.Route for all the routes the API handles."""

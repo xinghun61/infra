@@ -41,7 +41,8 @@ class UsersServicer(monorail_pb2.UsersServicer):
 
 
 def RegisterApiHandlers(registry):
-  server = grpc.Server()
+  server = grpc.Server(service_modules=[
+      monorail_pb2])
   monorail_pb2.add_UsersServicer_to_server(UsersServicer(), server)
   # Additional 'add_*Servicer_to_server' calls go here.
   registry.routes.extend(server.get_routes())
