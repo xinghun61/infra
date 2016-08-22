@@ -9,6 +9,7 @@ DEPS = [
 
   'build/luci_config',
 
+  'recipe_engine/json',
   'recipe_engine/properties',
   'recipe_engine/raw_io',
   'recipe_engine/step',
@@ -115,7 +116,7 @@ def GenTests(api):
       api.recipe_autoroller.roll_data('build') +
       api.override_step_data(
           'build.git cl issue',
-          api.raw_io.stream_output('Issue number: None (None)'))
+          api.json.output({'issue': None, 'issue_url': None}))
   )
 
   yield (

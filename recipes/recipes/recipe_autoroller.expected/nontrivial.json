@@ -369,13 +369,19 @@
     "cmd": [
       "git",
       "cl",
-      "issue"
+      "issue",
+      "--json",
+      "/path/to/tmp/json"
     ],
     "cwd": "[CACHE]/recipe_autoroller/build",
     "name": "build.git cl issue",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue\": 123456789, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue_url\": \"https://codereview.chromium.org/123456789\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
       "@@@STEP_LINK@Issue 123456789@https://codereview.chromium.org/123456789@@@"
     ]
   },

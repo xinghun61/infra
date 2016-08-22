@@ -368,13 +368,19 @@
     "cmd": [
       "git",
       "cl",
-      "issue"
+      "issue",
+      "--json",
+      "/path/to/tmp/json"
     ],
     "cwd": "[CACHE]/recipe_autoroller/build",
     "name": "build.git cl issue",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue_url\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
     ]
   },
   {
@@ -387,7 +393,7 @@
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "step returned non-zero exit code: 1",
-      "@@@STEP_TEXT@git cl issue output \"Issue number: None (None)\" is not valid@@@",
+      "@@@STEP_TEXT@no issue metadata returned@@@",
       "@@@STEP_FAILURE@@@"
     ]
   },

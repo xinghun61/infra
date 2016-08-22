@@ -271,28 +271,26 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     commit_message = get_commit_message(roll_result, tbrs=tbrs)
     self.m.git_cl.upload(
         commit_message, upload_args, name='git cl upload', cwd=workdir)
-    issue_result = self.m.git(
-        'cl', 'issue',
-        name='git cl issue', stdout=self.m.raw_io.output(),
+    issue_step = self.m.git(
+        'cl', 'issue', '--json', self.m.json.output(),
+        name='git cl issue',
         cwd=workdir,
-        step_test_data=lambda: self.m.raw_io.test_api.stream_output(
-            'Issue number: '
-            '123456789 (https://codereview.chromium.org/123456789)'))
+        step_test_data=lambda: self.m.json.test_api.output({
+            'issue': 123456789,
+            'issue_url': 'https://codereview.chromium.org/123456789'}))
+    issue_result = issue_step.json.output
 
-    # TODO(phajdan.jr): add machine-readable output to git-cl, do not parse.
-    m = re.match('Issue number: (\d+) \((\S*)\)', issue_result.stdout.strip())
-    if not m:
+    if not issue_result['issue'] or not issue_result['issue_url']:
       self.m.python.failing_step(
-          'git cl upload failed', 'git cl issue output "%s" is not valid' %
-                                  issue_result.stdout.strip())
+          'git cl upload failed', 'no issue metadata returned')
 
     repo_data = {
-      'issue': m.group(1),
-      'issue_url': m.group(2),
+      'issue': str(issue_result['issue']),
+      'issue_url': issue_result['issue_url'],
       'trivial': roll_result['trivial'],
     }
 
-    issue_result.presentation.links['Issue %s' % repo_data['issue']] = (
+    issue_step.presentation.links['Issue %s' % repo_data['issue']] = (
         repo_data['issue_url'])
 
     self.m.gsutil.upload(
