@@ -196,7 +196,8 @@
   'rsa': {
     'version': '3.1.4',
     'build': '0',
-    'gs': '208583c49489b7ab415a4455eae7618b7055feca.tar.gz',
+    'repo': 'external/github.com/sybrenstuvel/python-rsa',
+    'rev': '75117e4a1fad188da8599ff18939d1484cc53335',
     'implicit': True,  # Required by oauth2client
   },
   'simplejson': {
