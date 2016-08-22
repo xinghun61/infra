@@ -2,11 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import base64
 import copy
 import json
 import logging
 
+from google.appengine.api import app_identity
 from google.appengine.ext import ndb
 
 from common import appengine_util
@@ -24,8 +24,8 @@ from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 # TODO(katesonia): Move these to config page.
 _SIGNATURE_BLACKLIST_MARKERS = ['[Android Java Exception]']
 _PLATFORM_RENAME = {'linux': 'unix'}
-_FINDIT_FEEDBACK_URL_TEMPLATE = ('https://findit-for-me.googleplex.com/crash/'
-                                 'fracas-result-feedback?key=%s')
+
+_FINDIT_FEEDBACK_URL_TEMPLATE = '%s/crash/fracas-result-feedback?key=%s'
 
 
 class FracasBasePipeline(BasePipeline):
@@ -85,8 +85,8 @@ class PublishResultPipeline(FracasBasePipeline):
 
   def PostProcessResults(self, analysis, crash_identifiers):
     analysis_result = copy.deepcopy(analysis.result)
-    analysis_result['feedback_url'] = (_FINDIT_FEEDBACK_URL_TEMPLATE %
-                                       analysis.key.urlsafe())
+    analysis_result['feedback_url'] = _FINDIT_FEEDBACK_URL_TEMPLATE % (
+        app_identity.get_default_version_hostname(), analysis.key.urlsafe())
     if analysis_result['found']:
       for cl in analysis_result['suspected_cls']:
         cl['confidence'] = round(cl['confidence'], 2)

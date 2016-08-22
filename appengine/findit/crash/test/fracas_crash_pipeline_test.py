@@ -4,6 +4,8 @@
 import copy
 import json
 
+from google.appengine.api import app_identity
+
 from common.pipeline_wrapper import pipeline_handlers
 from crash import fracas_crash_pipeline
 from crash.test.crash_testcase import CrashTestCase
@@ -145,6 +147,9 @@ class FracasCrashPipelineTest(CrashTestCase):
     chrome_version = '50.2500.0.0'
     historic_metadata = {'50.2500.0.0': 1.0}
 
+    mock_host = 'https://host.com'
+    self.mock(app_identity, 'get_default_version_hostname', lambda: mock_host)
+
     self.assertTrue(
         fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
             crash_identifiers, chrome_version, signature, 'fracas',
@@ -153,10 +158,10 @@ class FracasCrashPipelineTest(CrashTestCase):
     self.execute_queued_tasks()
 
     self.assertEqual(1, len(pubsub_publish_requests))
-
+    
     processed_analysis_result = copy.deepcopy(analysis_result)
     processed_analysis_result['feedback_url'] = (
-        'https://findit-for-me.googleplex.com/crash/fracas-result-feedback?'
+        mock_host + '/crash/fracas-result-feedback?'
         'key=agx0ZXN0YmVkLXRlc3RyQQsSE0ZyYWNhc0NyYXNoQW5hbHlzaXMiKGU2ZWIyNj'
         'A2OTBlYTAyMjVjNWNjYTM3ZTNjYTlmYWExOGVmYjVlM2UM')
 
