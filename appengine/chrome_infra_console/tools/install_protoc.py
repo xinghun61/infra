@@ -1,1 +1,0 @@
-../../../luci/appengine/components/tools/install_protoc.py

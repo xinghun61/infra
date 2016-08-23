@@ -44,7 +44,6 @@ JSHINT_PROJECTS = [
   'appengine/chromium_cq_status',
   'appengine/chromium_status',
   'appengine/milo',
-  'appengine/chrome_infra_console_loadtest',
   'appengine/chrome_infra_packages',
 ]
 # List of blacklisted directories that we don't want to jshint.
