@@ -9,6 +9,7 @@ import (
 	"expvar"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"regexp"
 	"sort"
@@ -16,7 +17,6 @@ import (
 	"sync"
 	"time"
 
-	"infra/monitoring/analyzer/step"
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
 
@@ -56,6 +56,24 @@ var (
 	errNoCompletedBuilds = errors.New("No completed builds")
 )
 
+// StepAnalyzer reasons about a stepFailure and produces a set of reasons for the
+// failure.  It also indicates whether or not it recognizes the stepFailure.
+type StepAnalyzer interface {
+	// Analyze returns a list of reasons for the step failure, and a boolean
+	// value indicating whether or not the step failure was recognized by
+	// the analyzer.
+	Analyze(f stepFailure) (*StepAnalyzerResult, error)
+}
+
+// StepAnalyzerResult is the result of running analysis on a stepFailure.
+type StepAnalyzerResult struct {
+	// Recognized is true if the StepFailureAnalyzer recognized the stepFailure.
+	Recognized bool
+
+	// Reasons lists the reasons for the stepFailure determined by the StepFailureAnalyzer.
+	Reasons []string
+}
+
 // Analyzer runs the process of checking masters, builders, test results and so on,
 // in order to produce alerts.
 type Analyzer struct {
@@ -64,6 +82,10 @@ type Analyzer struct {
 
 	// MinRecentBuilds is the minimum number of recent builds to check, per builder.
 	MinRecentBuilds int
+
+	// StepAnalzers are the set of build step failure analyzers to be checked on
+	// build step failures.
+	StepAnalyzers []StepAnalyzer
 
 	// Reader is the Reader implementation for fetching json from CBE, builds, etc.
 	Reader client.Reader
@@ -96,8 +118,6 @@ type Analyzer struct {
 	rslck             *sync.Mutex
 	revisionSummaries map[string]messages.RevisionSummary
 
-	reasonFinder step.ReasonFinder
-
 	// Now is useful for mocking the system clock in testing and simulating time
 	// during replay.
 	Now func() time.Time
@@ -118,10 +138,13 @@ func New(c client.Reader, minBuilds, maxBuilds int) *Analyzer {
 		OfflineBuilderThresh:   90 * time.Minute,
 		IdleBuilderCountThresh: 50,
 		StaleMasterThreshold:   10 * time.Minute,
-		Gatekeeper:             &GatekeeperRules{},
-		rslck:                  &sync.Mutex{},
-		revisionSummaries:      map[string]messages.RevisionSummary{},
-		reasonFinder:           step.ReasonsForFailures,
+		StepAnalyzers: []StepAnalyzer{
+			&TestFailureAnalyzer{Reader: c},
+			&CompileFailureAnalyzer{Reader: c},
+		},
+		Gatekeeper:        &GatekeeperRules{},
+		rslck:             &sync.Mutex{},
+		revisionSummaries: map[string]messages.RevisionSummary{},
 		Now: func() time.Time {
 			return time.Now()
 		},
@@ -398,9 +421,12 @@ func (a *Analyzer) mergeAlertsByReason(alerts []messages.Alert) []messages.Alert
 			mergedAlerts = append(mergedAlerts, alert)
 			continue
 		}
-		r := bf.Reason
-		k := r.Kind() + "|" + r.Signature()
-		byReason[k] = append(byReason[k], alert)
+		for _, r := range bf.Reasons {
+			testNames := r.TestNames
+			sort.Strings(testNames)
+			reason := strings.Join(append([]string{r.Step}, testNames...), ",")
+			byReason[reason] = append(byReason[reason], alert)
+		}
 	}
 
 	sortedReasons := []string{}
@@ -426,17 +452,6 @@ func (a *Analyzer) mergeAlertsByReason(alerts []messages.Alert) []messages.Alert
 		if len(mergedBF.Builders) > 1 {
 			errLog.Printf("Alert shouldn't have multiple builders before merging by reason: %+v", reason)
 		}
-
-		stepsAtFault := make([]*messages.BuildStep, len(stepAlerts))
-		for i := range stepAlerts {
-			bf, ok := stepAlerts[i].Extension.(messages.BuildFailure)
-			if !ok {
-				continue
-			}
-
-			stepsAtFault[i] = bf.StepAtFault
-		}
-		merged.Title = mergedBF.Reason.Title(stepsAtFault)
 
 		// Clear out the list of builders because we're going to reconstruct it.
 		mergedBF.Builders = []messages.AlertedBuilder{}
@@ -504,6 +519,7 @@ func (a *Analyzer) mergeAlertsByReason(alerts []messages.Alert) []messages.Alert
 		sort.Sort(byRepo(mergedBF.RegressionRanges))
 
 		if len(mergedBF.Builders) > 1 {
+			merged.Title = fmt.Sprintf("%s failing on %d builders", mergedBF.Reasons[0].Step, len(mergedBF.Builders))
 			builderNames := []string{}
 			for _, b := range mergedBF.Builders {
 				builderNames = append(builderNames, b.Name)
@@ -578,7 +594,7 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 	// Get findit results
 	stepNames := make([]string, len(importantFailures))
 	for i, f := range importantFailures {
-		stepNames[i] = f.Step.Name
+		stepNames[i] = f.step.Name
 	}
 	finditResults, err := a.Reader.Findit(master, builderName, latestBuild, stepNames)
 	if err != nil {
@@ -724,7 +740,8 @@ func (a byRepo) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byRepo) Less(i, j int) bool { return a[i].Repo < a[j].Repo }
 
 // stepFailures returns the steps that have failed recently on builder builderName.
-func (a *Analyzer) stepFailures(master *messages.MasterLocation, builderName string, bID int64) ([]*messages.BuildStep, error) {
+func (a *Analyzer) stepFailures(master *messages.MasterLocation, builderName string, bID int64) ([]stepFailure, error) {
+
 	var err error // To avoid re-scoping b in the nested conditional below with a :=.
 	b, err := a.Reader.Build(master, builderName, bID)
 	if err != nil || b == nil {
@@ -732,7 +749,7 @@ func (a *Analyzer) stepFailures(master *messages.MasterLocation, builderName str
 		return nil, err
 	}
 
-	ret := []*messages.BuildStep{}
+	ret := []stepFailure{}
 
 	for _, s := range b.Steps {
 		if !s.IsFinished || len(s.Results) == 0 {
@@ -752,13 +769,11 @@ func (a *Analyzer) stepFailures(master *messages.MasterLocation, builderName str
 		}
 
 		// We have a failure of some kind, so queue it up to check later.
-
-		// Done so below reference doesn't point to the last element in this loop
-		s := s
-		ret = append(ret, &messages.BuildStep{
-			Master: master,
-			Build:  b,
-			Step:   &s,
+		ret = append(ret, stepFailure{
+			master:      master,
+			builderName: builderName,
+			build:       *b,
+			step:        s,
 		})
 	}
 
@@ -767,10 +782,10 @@ func (a *Analyzer) stepFailures(master *messages.MasterLocation, builderName str
 
 // stepFailureAlerts returns alerts generated from step failures. It applies filtering
 // logic specified in the gatekeeper config to ignore some failures.
-func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep) ([]messages.Alert, error) {
+func (a *Analyzer) stepFailureAlerts(tree string, failures []stepFailure) ([]messages.Alert, error) {
 	ret := []messages.Alert{}
 	type res struct {
-		f   *messages.BuildStep
+		f   stepFailure
 		a   *messages.Alert
 		err error
 	}
@@ -778,58 +793,51 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 	// Might not need full capacity buffer, since some failures are ignored below.
 	rs := make(chan res, len(failures))
 
-	filteredFailures := []*messages.BuildStep{}
-
+	scannedFailures := []stepFailure{}
 	for _, failure := range failures {
-		if failure.Step.Name == "steps" {
-			// The actual breaking step will appear later.
+		// goroutine/channel because the reasonsForFailure call potentially
+		// blocks on IO.
+		if failure.step.Name == "steps" {
+			infoLog.Printf("steps results failed, skipping ahead to actual failure: %s %s", failure.master.Name(), failure.builderName)
 			continue
+			// The actual breaking step will appear later.
 		}
 
 		// Check the gatekeeper configs to see if this is ignorable.
-		if a.Gatekeeper.ExcludeFailure(tree, failure.Master, failure.Build.BuilderName, failure.Step.Name) {
+		if a.Gatekeeper.ExcludeFailure(tree, failure.master, failure.builderName, failure.step.Name) {
 			continue
 		}
 
-		filteredFailures = append(filteredFailures, failure)
-	}
-
-	reasons := a.reasonFinder(a.Reader, filteredFailures)
-
-	scannedFailures := []*messages.BuildStep{}
-	for i, failure := range filteredFailures {
-		if len(failure.Step.Results) > 0 {
+		if len(failure.step.Results) > 0 {
 			// Check results to see if it's an array of [4]
 			// That's a purple failure, which should go to infra/trooper.
-			// TODO(martiniss): move this logic into package step
-			if r, ok := failure.Step.Results[0].(float64); ok && r == resInfraFailure {
-				infoLog.Printf("INFRA FAILURE: %s/%s/%s", failure.Master.Name(), failure.Build.BuilderName, failure.Step.Name)
-				bf := messages.BuildFailure{
-					Builders: []messages.AlertedBuilder{
-						{
-							Name:          failure.Build.BuilderName,
-							URL:           client.BuilderURL(failure.Master, failure.Build.BuilderName).String(),
-							StartTime:     failure.Build.Times[0],
-							FirstFailure:  failure.Build.Number,
-							LatestFailure: failure.Build.Number,
-						},
-					},
-					TreeCloser:  a.Gatekeeper.WouldCloseTree(failure.Master, failure.Build.BuilderName, failure.Step.Name),
-					Reason:      &messages.Reason{Raw: reasons[i]},
-					StepAtFault: failure,
-				}
-
+			if r, ok := failure.step.Results[0].(float64); ok && r == resInfraFailure {
+				infoLog.Printf("INFRA FAILURE: %s/%s/%s", failure.master.Name(), failure.builderName, failure.step.Name)
 				alr := messages.Alert{
-					Title:     fmt.Sprintf("%s failing on %s/%s", failure.Step.Name, failure.Master.Name(), failure.Build.BuilderName),
+					Title:     fmt.Sprintf("%s failing on %s/%s", failure.step.Name, failure.master.Name(), failure.builderName),
 					Body:      "infrastructure failure",
 					Type:      messages.AlertInfraFailure,
-					StartTime: failure.Build.Times[0],
-					Time:      failure.Build.Times[0],
+					StartTime: failure.build.Times[0],
+					Time:      failure.build.Times[0],
 					Severity:  infraFailureSev,
-					Key:       alertKey(failure.Master.Name(), failure.Build.BuilderName, failure.Step.Name, fmt.Sprintf("%v", failure.Step.Results[1])),
-					Extension: bf,
+					Key:       alertKey(failure.master.Name(), failure.builderName, failure.step.Name, fmt.Sprintf("%v", failure.step.Results[1])),
+					Extension: messages.BuildFailure{
+						Reasons: []messages.Reason{{
+							Step: failure.step.Name,
+							URL:  failure.URL().String(),
+						}},
+						Builders: []messages.AlertedBuilder{
+							{
+								Name:          failure.builderName,
+								URL:           client.BuilderURL(failure.master, failure.builderName).String(),
+								StartTime:     failure.build.Times[0],
+								FirstFailure:  failure.build.Number,
+								LatestFailure: failure.build.Number,
+							},
+						},
+						TreeCloser: a.Gatekeeper.WouldCloseTree(failure.master, failure.builderName, failure.step.Name),
+					},
 				}
-
 				scannedFailures = append(scannedFailures, failure)
 				rs <- res{
 					f:   failure,
@@ -841,7 +849,7 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 		}
 
 		// Gets the named revision number from gnumbd metadata.
-		getCommitPos := func(b *messages.Build, name string) (string, bool) {
+		getCommitPos := func(b messages.Build, name string) (string, bool) {
 			for _, p := range b.Properties {
 				if p[0] == name {
 					s, ok := p[1].(string)
@@ -852,15 +860,15 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 		}
 
 		scannedFailures = append(scannedFailures, failure)
-		i := i
-		go func(f *messages.BuildStep) {
+		go func(f stepFailure) {
 			expvars.Add("StepFailures", 1)
 			defer expvars.Add("StepFailures", -1)
-
 			alr := messages.Alert{
+				Title:     fmt.Sprintf("%s failing on %s/%s", f.step.Name, f.master.Name(), f.builderName),
 				Body:      "",
-				Time:      f.Build.Times[0],
-				StartTime: f.Build.Times[0],
+				Time:      f.build.Times[0],
+				StartTime: f.build.Times[0],
+				Type:      messages.AlertBuildFailure,
 				Severity:  newFailureSev,
 			}
 
@@ -868,7 +876,7 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 			revisionsByRepo := map[string][]string{}
 
 			// Get gnumbd sequence numbers for whatever this build pulled in.
-			chromiumPos, ok := getCommitPos(f.Build, "got_revision_cp")
+			chromiumPos, ok := getCommitPos(f.build, "got_revision_cp")
 			if ok {
 				regRanges = append(regRanges, messages.RegressionRange{
 					Repo:      "chromium",
@@ -876,7 +884,7 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 				})
 			}
 
-			blinkPos, ok := getCommitPos(f.Build, "got_webkit_revision_cp")
+			blinkPos, ok := getCommitPos(f.build, "got_webkit_revision_cp")
 			if ok {
 				regRanges = append(regRanges, messages.RegressionRange{
 					Repo:      "blink",
@@ -884,7 +892,7 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 				})
 			}
 
-			v8Pos, ok := getCommitPos(f.Build, "got_v8_revision_cp")
+			v8Pos, ok := getCommitPos(f.build, "got_v8_revision_cp")
 			if ok {
 				regRanges = append(regRanges, messages.RegressionRange{
 					Repo:      "v8",
@@ -892,7 +900,7 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 				})
 			}
 
-			naclPos, ok := getCommitPos(f.Build, "got_nacl_revision_cp")
+			naclPos, ok := getCommitPos(f.build, "got_nacl_revision_cp")
 			if ok {
 				regRanges = append(regRanges, messages.RegressionRange{
 					Repo:      "nacl",
@@ -902,7 +910,7 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 
 			// TODO(seanmccullough):  Nix this? It adds a lot to the alerts json size.
 			// Consider posting this information to a separate endpoint.
-			for _, change := range f.Build.SourceStamp.Changes {
+			for _, change := range f.build.SourceStamp.Changes {
 				revisionsByRepo[change.Repository] = append(revisionsByRepo[change.Repository], change.Revision)
 				// change.Revision is *not* always a git hash. Sometimes it is a position from gnumbd.
 				// change.Revision is git hash or gnumbd depending on what exactly? Not obvious at this time.
@@ -939,26 +947,30 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 			bf := messages.BuildFailure{
 				Builders: []messages.AlertedBuilder{
 					{
-						Name:          f.Build.BuilderName,
-						URL:           client.BuilderURL(f.Master, f.Build.BuilderName).String(),
-						StartTime:     f.Build.Times[0],
-						FirstFailure:  f.Build.Number,
-						LatestFailure: f.Build.Number,
+						Name:          f.builderName,
+						URL:           client.BuilderURL(f.master, f.builderName).String(),
+						StartTime:     f.build.Times[0],
+						FirstFailure:  f.build.Number,
+						LatestFailure: f.build.Number,
 					},
 				},
-				TreeCloser:       a.Gatekeeper.WouldCloseTree(f.Master, f.Build.BuilderName, f.Step.Name),
+				TreeCloser:       a.Gatekeeper.WouldCloseTree(f.master, f.builderName, f.step.Name),
 				RegressionRanges: regRanges,
-				StepAtFault:      f,
 			}
 
 			if bf.TreeCloser {
 				alr.Severity = treeCloserSev
 			}
-			bf.Reason = &messages.Reason{Raw: reasons[i]}
 
-			alr.Title = reasons[i].Title([]*messages.BuildStep{f})
-			alr.Type = messages.AlertBuildFailure
-			alr.Key = alertKey(f.Master.Name(), f.Build.BuilderName, f.Step.Name, "")
+			reasons := a.reasonsForFailure(f)
+
+			bf.Reasons = append(bf.Reasons, messages.Reason{
+				TestNames: reasons,
+				Step:      f.step.Name,
+				URL:       f.URL().String(),
+			})
+
+			alr.Key = alertKey(f.master.Name(), f.builderName, f.step.Name, "")
 			alr.Extension = bf
 
 			rs <- res{
@@ -984,4 +996,70 @@ func trunc(s string) string {
 		return s
 	}
 	return s[:100]
+}
+
+// reasonsForFailure examines the step failure and applies some heuristics to
+// to find the cause. It may make blocking IO calls in the process.
+func (a *Analyzer) reasonsForFailure(f stepFailure) []string {
+	ret := []string(nil)
+	recognized := false
+	infoLog.Printf("Checking for reasons for failure step: %v", f.step.Name)
+	for _, sfa := range a.StepAnalyzers {
+		res, err := sfa.Analyze(f)
+		if err != nil {
+			// TODO: return something that contains errors *and* reasons.
+			errLog.Printf("Error getting reasons from StepAnalyzer: %v", err)
+			continue
+		}
+		if res.Recognized {
+			recognized = true
+			ret = append(ret, res.Reasons...)
+		}
+	}
+
+	if !recognized {
+		// TODO: log and report frequently encountered unrecognized builder step
+		// failure names.
+		errLog.Printf("Unrecognized step step failure type, unable to find reasons: %s", f.step.Name)
+	}
+
+	return ret
+}
+
+// unexpected returns the set of expected xor actual.
+func unexpected(expected, actual []string) []string {
+	e, a := make(map[string]bool), make(map[string]bool)
+	for _, s := range expected {
+		e[s] = true
+	}
+	for _, s := range actual {
+		a[s] = true
+	}
+
+	ret := []string{}
+	for k := range e {
+		if !a[k] {
+			ret = append(ret, k)
+		}
+	}
+
+	for k := range a {
+		if !e[k] {
+			ret = append(ret, k)
+		}
+	}
+
+	return ret
+}
+
+type stepFailure struct {
+	master      *messages.MasterLocation
+	builderName string
+	build       messages.Build
+	step        messages.Step
+}
+
+// URL returns a url to builder step failure page.
+func (f stepFailure) URL() *url.URL {
+	return client.StepURL(f.master, f.builderName, f.step.Name, f.build.Number)
 }
