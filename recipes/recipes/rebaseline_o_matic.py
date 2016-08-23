@@ -25,7 +25,7 @@ DEPS = [
 def RunSteps(api):
   RIETVELD_REFRESH_TOKEN = '/creds/refresh_tokens/blink_rebaseline_bot_rietveld'
 
-  api.gclient.set_config('chromium')
+  api.gclient.set_config('chromium', GIT_MODE=True)
   api.bot_update.ensure_checkout(force=True)
 
   cwd = api.path['checkout'].join('third_party', 'WebKit')

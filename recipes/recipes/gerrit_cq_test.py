@@ -12,7 +12,7 @@ REPO = 'https://chromium.googlesource.com/playground/gerrit-cq/normal'
 
 
 def RunSteps(api):
-  api.gclient.set_config('gerrit_test_cq_normal')
+  api.gclient.set_config('gerrit_test_cq_normal', GIT_MODE=True)
   api.bot_update.ensure_checkout(patch=True, force=True);
 
 

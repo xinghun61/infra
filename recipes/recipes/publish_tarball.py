@@ -181,7 +181,7 @@ def RunSteps(api):
   if 'chromium-%s.tar.xz' % version in ls_result:
     return
 
-  api.gclient.set_config('chromium')
+  api.gclient.set_config('chromium', GIT_MODE=True)
   solution = api.gclient.c.solutions[0]
   solution.revision = 'refs/tags/%s' % version
   api.bot_update.ensure_checkout(force=True, with_branch_heads=True)
