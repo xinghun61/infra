@@ -445,6 +445,7 @@ func (a *Analyzer) mergeAlertsByReason(alerts []messages.Alert) []messages.Alert
 			continue
 		}
 
+		sort.Sort(messages.Alerts(stepAlerts))
 		merged := stepAlerts[0]
 
 		mergedBF := merged.Extension.(messages.BuildFailure)

@@ -188,14 +188,15 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 			bes := fetchBuildExtracts(ctx, a.Reader, masters)
 			infoLog.Printf("Build Extracts read: %d", len(bes))
 
-			alerts := &messages.Alerts{
+			alerts := &messages.AlertsSummary{
 				RevisionSummaries: map[string]messages.RevisionSummary{},
 			}
 			for master, be := range bes {
 				alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(ctx, a, tree, &master, be)...)
 			}
 
-			sort.Sort(bySeverity(alerts.Alerts))
+			sort.Sort(messages.Alerts(alerts.Alerts))
+			sort.Stable(bySeverity(alerts.Alerts))
 
 			// Make sure we have summaries for each revision implicated in a builder failure.
 			for _, alert := range alerts.Alerts {

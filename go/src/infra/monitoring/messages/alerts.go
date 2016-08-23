@@ -71,8 +71,8 @@ func TimeToEpochTime(t time.Time) EpochTime {
 	return EpochTime(t.Unix())
 }
 
-// Alerts is the top-level entity in alerts.json.
-type Alerts struct {
+// AlertsSummary is the top-level entity in alerts.json.
+type AlertsSummary struct {
 	Alerts            []Alert                    `json:"alerts"`
 	RevisionSummaries map[string]RevisionSummary `json:"revision_summaries"`
 	Timestamp         EpochTime                  `json:"timestamp"`
@@ -93,6 +93,15 @@ type Alert struct {
 	// Extension may take on different concrete types depending on the
 	// code that generates the Alert.
 	Extension interface{} `json:"extension"`
+}
+
+// Alerts is a slice of alerts, sorted by Key by default
+type Alerts []Alert
+
+func (a Alerts) Len() int      { return len(a) }
+func (a Alerts) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a Alerts) Less(i, j int) bool {
+	return a[i].Key < a[j].Key
 }
 
 // Link can be attached to an alert to provide more context to the sheriff.

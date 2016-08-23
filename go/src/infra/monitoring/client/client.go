@@ -89,7 +89,7 @@ type Reader interface {
 // Writer writes out data to other services, most notably sheriff-o-matic.
 type Writer interface {
 	// PostAlerts posts alerts to Sheriff-o-Matic.
-	PostAlerts(alerts *messages.Alerts) error
+	PostAlerts(alerts *messages.AlertsSummary) error
 }
 
 type trackingHTTPClient struct {
@@ -312,7 +312,7 @@ func NewWriter(alertsBase string, transport http.RoundTripper) Writer {
 	}, alertsBase: alertsBase}
 }
 
-func (w *writer) PostAlerts(alerts *messages.Alerts) error {
+func (w *writer) PostAlerts(alerts *messages.AlertsSummary) error {
 	return w.hc.trackRequestStats(func() (length int64, err error) {
 		infoLog.Printf("POSTing alerts to %s", w.alertsBase)
 		expvars.Add("PostAlerts", 1)
