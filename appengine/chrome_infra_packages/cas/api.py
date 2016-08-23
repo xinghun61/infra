@@ -5,6 +5,7 @@
 """Cloud Endpoints API for Content Addressable Storage."""
 
 import endpoints
+import gae_ts_mon
 
 from protorpc import message_types
 from protorpc import messages
@@ -109,6 +110,7 @@ class CASServiceApi(remote.Service):
       # Hex hash digest of a file client wants to upload.
       file_hash = messages.StringField(2, required=True))
 
+  @gae_ts_mon.instrument_endpoint()
   @auth.endpoints_method(
       ITEM_RESOURCE_CONTAINER,
       FetchResponse,
@@ -132,6 +134,7 @@ class CASServiceApi(remote.Service):
     url = service.generate_fetch_url(hash_algo, request.file_hash)
     return FetchResponse(status=FetchResponse.Status.SUCCESS, fetch_url=url)
 
+  @gae_ts_mon.instrument_endpoint()
   @auth.endpoints_method(
       ITEM_RESOURCE_CONTAINER,
       BeginUploadResponse,
@@ -185,6 +188,7 @@ class CASServiceApi(remote.Service):
       # Upload operation ID as returned by beginUpload.
       upload_session_id = messages.StringField(1, required=True))
 
+  @gae_ts_mon.instrument_endpoint()
   @auth.endpoints_method(
       FINISH_UPLOAD_RESOURCE_CONTAINER,
       FinishUploadResponse,

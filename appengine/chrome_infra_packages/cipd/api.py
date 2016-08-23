@@ -8,6 +8,7 @@ import functools
 import logging
 
 import endpoints
+import gae_ts_mon
 
 from protorpc import message_types
 from protorpc import messages
@@ -587,6 +588,7 @@ class PackageRepositoryApi(remote.Service):
   ### Package methods.
 
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
@@ -618,6 +620,7 @@ class PackageRepositoryApi(remote.Service):
         refs=[package_ref_to_proto(r) for r in refs])
 
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
@@ -632,6 +635,7 @@ class PackageRepositoryApi(remote.Service):
     return self.set_package_hidden(request.package_name, True)
 
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
@@ -667,6 +671,7 @@ class PackageRepositoryApi(remote.Service):
     return PackageResponse(package=package_to_proto(pkg))
 
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
@@ -691,6 +696,7 @@ class PackageRepositoryApi(remote.Service):
 
     return ListPackagesResponse(packages=visible_pkgs, directories=visible_dirs)
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
@@ -717,6 +723,7 @@ class PackageRepositoryApi(remote.Service):
   ### PackageInstance methods.
 
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
@@ -742,6 +749,7 @@ class PackageRepositoryApi(remote.Service):
         fetch_url=self.service.generate_fetch_url(instance),
         processors=processors_protos(instance))
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
@@ -791,6 +799,7 @@ class PackageRepositoryApi(remote.Service):
   ### Refs methods.
 
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           SetRefRequest,
@@ -820,6 +829,7 @@ class PackageRepositoryApi(remote.Service):
         now=utils.utcnow())
     return SetRefResponse(ref=package_ref_to_proto(ref_entity))
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
@@ -860,6 +870,7 @@ class PackageRepositoryApi(remote.Service):
   ### Tags methods.
 
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
@@ -893,6 +904,7 @@ class PackageRepositoryApi(remote.Service):
 
     return FetchTagsResponse(tags=[tag_to_proto(tag) for tag in attached])
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           AttachTagsRequest,
@@ -923,6 +935,7 @@ class PackageRepositoryApi(remote.Service):
         now=utils.utcnow())
     return AttachTagsResponse(tags=[tag_to_proto(attached[t]) for t in tags])
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
@@ -956,6 +969,7 @@ class PackageRepositoryApi(remote.Service):
   ### Search methods.
 
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
@@ -993,6 +1007,7 @@ class PackageRepositoryApi(remote.Service):
     return SearchResponse(instances=[instance_to_proto(i) for i in found])
 
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
@@ -1029,6 +1044,7 @@ class PackageRepositoryApi(remote.Service):
   ### ACL methods.
 
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
@@ -1052,6 +1068,7 @@ class PackageRepositoryApi(remote.Service):
           for role in acl.ROLES
         }))
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           ModifyACLRequest,
@@ -1087,6 +1104,7 @@ class PackageRepositoryApi(remote.Service):
   ### ClientBinary methods.
 
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,

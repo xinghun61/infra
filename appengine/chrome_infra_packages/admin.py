@@ -13,6 +13,7 @@ Callers have to be in 'administrators' group.
 
 import cloudstorage
 import endpoints
+import gae_ts_mon
 import logging
 
 from protorpc import message_types
@@ -52,6 +53,7 @@ class GoogleStorageConfig(messages.Message):
 class AdminApi(remote.Service):
   """Administration API accessibly only by the service admins."""
 
+  @gae_ts_mon.instrument_endpoint()
   @auth.endpoints_method(ServiceAccountInfo, name='setServiceAccount')
   @auth.require(auth.is_admin)
   def service_account(self, request):
@@ -69,6 +71,7 @@ class AdminApi(remote.Service):
 
     return message_types.VoidMessage()
 
+  @gae_ts_mon.instrument_endpoint()
   @auth.endpoints_method(GoogleStorageConfig, name='setGoogleStorageConfig')
   @auth.require(auth.is_admin)
   def gs_config(self, request):
