@@ -13,6 +13,6 @@ cron:
   schedule: every 1 hours synchronized
 
 - description: Send ts_mon metrics
+  target: backend
   url: /internal/cron/ts_mon/send
   schedule: every 1 minutes
-  target: backend

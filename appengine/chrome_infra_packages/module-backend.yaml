@@ -13,6 +13,7 @@ handlers:
 
 includes:
 - components/ereporter2
+- gae_ts_mon
 
 libraries:
 - name: endpoints
