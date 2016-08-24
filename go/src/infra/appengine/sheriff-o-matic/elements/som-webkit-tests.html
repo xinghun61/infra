@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<dom-module id="som-webkit-tests">
+  <template>
+    <style>
+    #container {
+      display: flex;
+      align-items: stretch;
+      flex-grow: 1;
+    }
+
+    #expected,
+    #actual,
+    #diff {
+      display: flex;
+      flex-grow: 1;
+      flex-direction: column;
+      border: 1px solid black;
+    }
+
+    #expectedIframes,
+    #actualIframes,
+    #diffIframes {
+      display: flex;
+      flex-grow: 1;
+      flex-direction: column;
+    }
+
+    iframe {
+      border: 0;
+      flex-grow: 1;
+    }
+    </style>
+    <div id="testName">[[testName]]</div>
+    <div id="container">
+    <div id="expected">
+      <h3>Expected</h3>
+      <div id="expectedIframes"></div>
+    </div>
+    <div id="actual">
+      <h3>Actual</h3>
+      <div id="actualIframes"></div>
+    </div>
+    <div id="diff">
+      <h3>Diff</h3>
+      <div id="diffIframes"></div>
+   </div>
+    </div>
+  </template>
+  <script>
+  (function() {
+    'use strict';
+    const archivePrefix =
+        'https://storage.googleapis.com/chromium-layout-test-archives/';
+
+    Polymer({
+      is: 'som-webkit-tests',
+      properties: {
+        builder: {
+          type: Object,
+          value: function() { return {}; },
+        },
+        testName: {
+          type: String,
+          value: '',
+          observer: '_testNameChanged',
+        },
+        actualUrls: {
+          type: Array,
+          value: [],
+          observer: '_actualUrlsChanged',
+        },
+        expectedUrls: {
+          type: Array,
+          value: [],
+          observer: '_expectedUrlsChanged',
+        },
+        diffUrls: {
+          type: Array,
+          value: [],
+          observer: '_diffUrlsChanged',
+        },
+      },
+
+      _actualUrlsChanged: function(urls) {
+        this._emptyNode(this.$.actualIframes);
+        urls.forEach((url) => { this._attachIFrame(url, this.$.actualIframes)});
+      },
+
+      _expectedUrlsChanged: function(urls) {
+        this._emptyNode(this.$.expectedIframes);
+        urls.forEach((url) => { this._attachIFrame(url, this.$.expectedIframes)});
+      },
+
+      _diffUrlsChanged: function(urls) {
+        this._emptyNode(this.$.diffIframes);
+        urls.forEach((url) => { this._attachIFrame(url, this.$.diffIframes)});
+      },
+
+      _emptyNode: function(node) {
+        while (node.childNodes.length) {
+          node.removeChild(node.firstChild);
+        }
+      },
+
+      _attachIFrame: function(url, el) {
+        // This is to avoid polluting the browser navigation history with
+        // the contents of IFrames. By setting the iframe src *before* adding
+        // the IFrame to the DOM, we avoid adding src to the top level nav
+        // history.
+        let iframe = document.createElement('iframe');
+        iframe.style.border = '0';
+        iframe.style.flexGrow = 1;
+        iframe.src = url;
+        el.appendChild(iframe);
+      },
+
+      _testNameChanged: function(testName) {
+        if (!this.builder.name) {
+          return;
+        }
+        let builderPath = this.builder.name.replace(/[ .()]/g, '_');
+        let buildNumber = this.builder.latest_failure;
+        let testBase = testName.substr(0,
+            testName.lastIndexOf('.')) || testName;
+        let basePath = archivePrefix +
+            `${builderPath}/${buildNumber}/layout-test-results/${testBase}`;
+
+        // Depending on the extension of the failing test name, we look for
+        // different sets of expected/actual/diff files. This is very ad-hoc
+        // and not all tests produce the full set of output files. There should
+        // be a mapping somewhere of which tests produce which but I don't
+        // know where it is/should be.
+        // Old SoM would ping every possible result file pattern with HEAD
+        // requests to GCS to test for their existence, and render any that
+        // existed on GCS.
+        if (testName.endsWith('.svg')) {
+          this.actualUrls = [basePath + '-actual.png', basePath + '-actual.txt'];
+          this.expectedUrls = [basePath + '-expected.png', basePath + '-expected.txt'];
+          this.diffUrls = [basePath + '-diff.png', basePath + '-diff.txt',
+              basePath + '-pretty-diff.html', basePath + '-overlay.html'];
+        } else if (testName.endsWith('.html')) {
+          this.actualUrls = [basePath + '-actual.txt'];
+          this.expectedUrls = [basePath + '-expected.txt'];
+          this.diffUrls = [basePath + '-diff.txt',
+              basePath + '-overlay.html'];
+         } else if (testName.endsWith('.xhtml')) {
+          this.actualUrls = [basePath + '-actual.txt'];
+          this.expectedUrls = [basePath + '-expected.txt'];
+          this.diffUrls = [basePath + '-diff.txt',
+              basePath + '-pretty-diff.html', basePath + '-wdiff.html'];
+        } else if (testName.endsWith('.txt')) { // does this happen?
+        }
+      },
+    });
+  })();
+  </script>
+</dom-module>

@@ -7,6 +7,7 @@
 <link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
 <link rel="import" href="../elements/som-uberify-behavior.html">
+<link rel="import" href="../elements/som-webkit-tests.html">
 
 <dom-module id="som-examine">
   <template>
@@ -25,6 +26,17 @@
       .builder-page {
         padding: 1em;
       }
+      som-webkit-tests {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+      }
+      .horizontal {
+        display: flex;
+      }
+      #test-menu {
+        flex-grow: 1;
+      }
     </style>
     <div class="horizontal">
       <paper-dropdown-menu id="step-menu" label="Failing step">
@@ -37,7 +49,7 @@
 
       <paper-dropdown-menu id="test-menu" label="Failing test" hidden$="[[hideTests]]">
         <paper-listbox class="dropdown-content" attr-for-selected="value" selected="{{selectedTest}}">
-          <template is="dom-repeat" items="[[_computeFailingTests(selectedStep)]]" as="test">
+          <template is="dom-repeat" items="[[_computeFailingTests(selectedBuilder, selectedStep)]]" as="test">
             <paper-item value="[[test]]">[[test]]</paper-item>
           </template>
         </paper-listbox>
@@ -62,6 +74,8 @@
         <div id$="[[builder.name]]" class="builder-page flex layout vertical">
           <div>Builds: [[builder.first_failure]]-[[builder.latest_failure]]</div>
           <div class="flex layout vertical">
+            <som-webkit-tests builder="[[builder]]" test-name="[[selectedTest]]" hidden$="[[hideWebKitTests]]">
+            </som-webkit-tests>
             <iframe
                 src$="[[_uberify(builder.url,builder.latest_failure,selectedStep)]]"
                 class="flex"
@@ -101,6 +115,10 @@
           hideTests: {
             type: Boolean,
             value: true,
+          },
+          hideWebKitTests: {
+            type: Boolean,
+            value: true,
           }
         },
 
@@ -122,8 +140,10 @@
           if (reason && reason.test_names) {
             this.hideTests = false;
             this.selectedTest = reason.test_names[0];
+            this.hideWebKitTests = !reason.step.startsWith('webkit_tests');
           } else {
             this.hideTests = true;
+            this.hideWebKitTests = true;
           }
         },
 
@@ -136,7 +156,7 @@
           return builder.name;
         },
 
-        _computeFailingTests: function(step) {
+        _computeFailingTests: function(builder, step) {
           if (!this.alert.extension || !this.alert.extension.reasons) {
             return undefined;
           }
@@ -145,6 +165,9 @@
           });
 
           if (reason) {
+            if (reason.test_names) {
+              this.selectedTest = reason.test_names[0];
+            }
             return reason.test_names;
           }
           return undefined;

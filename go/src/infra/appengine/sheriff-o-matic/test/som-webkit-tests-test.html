@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="/test/alerts-data.js"></script>
+<script src="/bower_components/webcomponentsjs/webcomponents.min.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="/elements/som-webkit-tests.html">
+<test-fixture id="basic">
+  <template>
+    <som-webkit-tests></som-webkit-tests>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+
+    const WEBKIT_TEST_FAILURE = TEST_ALERTS.alerts[4];
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('renders bare minimum', function() {
+      element.builder = {
+        name: 'WebKit Linux (dbg)',
+        latest_failure: 42
+      };
+      element.testName = '/foo/bar/baz.html';
+      assert.equal(element.$.testName.textContent, element.testName);
+      assert.equal(1, element.actualUrls.length);
+      assert(element.actualUrls[0].endsWith('-actual.txt'));
+      assert.equal(1, element.expectedUrls.length);
+      assert(element.expectedUrls[0].endsWith('-expected.txt'));
+      assert.equal(2, element.diffUrls.length);
+    });
+  });
+})();
+</script>
+

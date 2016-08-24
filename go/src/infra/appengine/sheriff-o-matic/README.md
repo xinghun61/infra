@@ -55,7 +55,11 @@ make deploy
 ## Configuring and populating devserver SoM with alerts
 
 Once you have a server running locally, you'll want to add at least one
-tree configuration to the datastore. TODO(martiniss): Fill out this section.
+tree configuration to the datastore. Make sure you are logged in locally
+as an admin user (admin checkbox on fake devserver login page).
+
+Navigate to `http://localhost:8080/admin/settings` and fill out the tree(s)
+you wish to test with locally.
 
 After you have at least one tree configured, you'll want to populate your
 local SoM using alerts-dispatcher. From `infra/go` in your checkout,
