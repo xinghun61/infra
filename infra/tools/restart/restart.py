@@ -267,7 +267,6 @@ def commit(
   upload_cmd = [
       'git', 'cl', 'upload',
       '-m', desc,
-      '-t', desc, # Title becomes the message of CL. TBR and BUG must be there.
       '-f',
   ]
   if not reviewers:
