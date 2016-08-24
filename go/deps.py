@@ -37,6 +37,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import time
 
 
 # Whitelist of packages with executables we want to be available in PATH. Will
@@ -388,6 +389,7 @@ def grab_doc(func):
 ################################################################################
 ## Subcommands.
 
+GLIDE_INSTALL_RETRIES = 4
 
 def install(workspace, force=False, update_out=None):
   """Installs all dependencies from deps.lock into .vendor/ GOPATH.
@@ -411,7 +413,19 @@ def install(workspace, force=False, update_out=None):
 
   # Use glide to fetch all the code.
   with unhack_vendor(workspace):
-    call(workspace, 'glide', ['install'])
+    for retry in xrange(GLIDE_INSTALL_RETRIES):
+      try:
+        call(workspace, 'glide', ['install'])
+        break
+      except subprocess.CalledProcessError as e:
+        if retry < GLIDE_INSTALL_RETRIES - 1:
+          delay = 2 ** retry
+          print 'Failed to install dependencies. Retrying after %d seconds.' % (
+              delay)
+          time.sleep(delay)
+        else:
+          raise e
+
 
   # Prebuild all packages specified in deps.lock into *.a archives. It should
   # speed up compilation of code that depends on them. Note that doing simple
