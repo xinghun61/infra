@@ -185,6 +185,9 @@ class IssueWrapper(messages.Message):
   projectId = messages.StringField(22, required=True)
   mergedInto = messages.MessageField(IssueRef, 23)
   fieldValues = messages.MessageField(FieldValue, 24, repeated=True)
+  owner_modified = message_types.DateTimeField(25)
+  status_modified = message_types.DateTimeField(26)
+  component_modified = message_types.DateTimeField(27)
 
 
 class ProjectWrapper(messages.Message):
@@ -345,6 +348,9 @@ class IssuesGetInsertResponse(messages.Message):
   components = messages.StringField(22, repeated=True)
   mergedInto = messages.MessageField(IssueRef, 23)
   fieldValues = messages.MessageField(FieldValue, 24, repeated=True)
+  owner_modified = message_types.DateTimeField(25)
+  status_modified = message_types.DateTimeField(26)
+  component_modified = message_types.DateTimeField(27)
 
 
 """Request to list issues."""

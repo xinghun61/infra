@@ -191,6 +191,44 @@ class ApiV1HelpersTest(unittest.TestCase):
     self.assertEquals(1, len(result))
     self.assertEquals(100001, result[0])
 
+  def testConvertIssue(self):
+    """Convert an internal Issue PB to an IssueWrapper API PB."""
+    svcs = service_manager.Services(
+        issue=fake.IssueService(),
+        project=fake.ProjectService(),
+        config=fake.ConfigService(),
+        issue_star=fake.IssueStarService(),
+        user=fake.UserService())
+    svcs.project.TestAddProject(
+        'test-project', owner_ids=[2], project_id=12345)
+    mar = mock.Mock()
+    mar.cnxn = None
+    mar.project_name = 'test-project'
+    mar.project_id = 12345
+    mar.auth.effective_ids = {111L}
+    mar.perms = permissions.EMPTY_PERMISSIONSET
+
+    now = 1472067725
+    now_dt = datetime.datetime.fromtimestamp(now)
+
+    issue = fake.MakeTestIssue(12345, 1, 'one', 'New', 111L)
+    issue.opened_timestamp = now
+    issue.owner_modified_timestamp = now
+    issue.status_modified_timestamp = now
+    issue.component_modified_timestamp = now
+    # TODO(jrobbins): set up a lot more fields.
+
+    for cls in [api_pb2_v1.IssueWrapper, api_pb2_v1.IssuesGetInsertResponse]:
+      result = api_pb2_v1_helpers.convert_issue(cls, issue, mar, svcs)
+      self.assertEquals(1, result.id)
+      self.assertEquals('one', result.title)
+      self.assertEquals('one', result.summary)
+      self.assertEquals(now_dt, result.published)
+      self.assertEquals(now_dt, result.owner_modified)
+      self.assertEquals(now_dt, result.status_modified)
+      self.assertEquals(now_dt, result.component_modified)
+      # TODO(jrobbins): check a lot more fields.
+
   def testConvertAttachment(self):
     """Test convert_attachment."""
 

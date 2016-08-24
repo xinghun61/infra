@@ -211,6 +211,15 @@ def convert_issue(cls, issue, mar, services):
     resp.closed = datetime.datetime.fromtimestamp(issue.closed_timestamp)
   if issue.merged_into:
     resp.mergedInto=convert_issue_ids([issue.merged_into], mar, services)[0]
+  if issue.owner_modified_timestamp:
+    resp.owner_modified = datetime.datetime.fromtimestamp(
+        issue.owner_modified_timestamp)
+  if issue.status_modified_timestamp:
+    resp.status_modified = datetime.datetime.fromtimestamp(
+        issue.status_modified_timestamp)
+  if issue.component_modified_timestamp:
+    resp.component_modified = datetime.datetime.fromtimestamp(
+        issue.component_modified_timestamp)
   return resp
 
 
