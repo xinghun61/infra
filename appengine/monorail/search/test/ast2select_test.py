@@ -44,7 +44,7 @@ class AST2SelectTest(unittest.TestCase):
           'OR Issue.derived_owner_id = Cond0.user_id)', [])],
         left_joins)
     self.assertEqual(
-        [('LOWER(Cond0.email) LIKE %s', ['%example.com%']),
+        [('(LOWER(Cond0.email) LIKE %s)', ['%example.com%']),
          ('Issue.reporter_id = %s', [111L])],
         where)
 
@@ -233,7 +233,7 @@ class AST2SelectTest(unittest.TestCase):
           'OR Issue.derived_owner_id = Cond1.user_id)', [])],
         left_joins)
     self.assertEqual(
-        [('LOWER(Cond1.email) LIKE %s', ['%example.com%'])],
+        [('(LOWER(Cond1.email) LIKE %s)', ['%example.com%'])],
         where)
 
   def testProcessOwnerIDCond(self):
@@ -255,7 +255,7 @@ class AST2SelectTest(unittest.TestCase):
         [('User AS Cond1 ON Issue.reporter_id = Cond1.user_id', [])],
         left_joins)
     self.assertEqual(
-        [('LOWER(Cond1.email) LIKE %s', ['%example.com%'])],
+        [('(LOWER(Cond1.email) LIKE %s)', ['%example.com%'])],
         where)
 
   def testProcessReporterIDCond(self):
@@ -268,19 +268,66 @@ class AST2SelectTest(unittest.TestCase):
         [('Issue.reporter_id = %s', [111L])],
         where)
 
-  def testProcessCcCond(self):
+  def testProcessCcCond_SinglePositive(self):
     fd = BUILTIN_ISSUE_FIELDS['cc']
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['example.com'], [])
     left_joins, where = ast2select._ProcessCcCond(cond, 'Cond1', 'User1')
     self.assertEqual(
         [('(Issue2Cc AS Cond1 JOIN User AS User1 '
-          'ON Cond1.cc_id = User1.user_id AND LOWER(User1.email) LIKE %s) '
+          'ON Cond1.cc_id = User1.user_id AND (LOWER(User1.email) LIKE %s)) '
           'ON Issue.id = Cond1.issue_id AND Issue.shard = Cond1.issue_shard',
           ['%example.com%'])],
         left_joins)
     self.assertEqual(
         [('User1.email IS NOT NULL', [])],
+        where)
+
+  def testProcessCcCond_MultiplePositive(self):
+    fd = BUILTIN_ISSUE_FIELDS['cc']
+    cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.TEXT_HAS, [fd], ['.com', '.org'], [])
+    left_joins, where = ast2select._ProcessCcCond(cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('(Issue2Cc AS Cond1 JOIN User AS User1 '
+          'ON Cond1.cc_id = User1.user_id AND '
+          '(LOWER(User1.email) LIKE %s OR LOWER(User1.email) LIKE %s)) '
+          'ON Issue.id = Cond1.issue_id AND Issue.shard = Cond1.issue_shard',
+          ['%.com%', '%.org%'])],
+        left_joins)
+    self.assertEqual(
+        [('User1.email IS NOT NULL', [])],
+        where)
+
+  def testProcessCcCond_SingleNegative(self):
+    fd = BUILTIN_ISSUE_FIELDS['cc']
+    cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.NOT_TEXT_HAS, [fd], ['example.com'], [])
+    left_joins, where = ast2select._ProcessCcCond(cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('(Issue2Cc AS Cond1 JOIN User AS User1 '
+          'ON Cond1.cc_id = User1.user_id AND (LOWER(User1.email) LIKE %s)) '
+          'ON Issue.id = Cond1.issue_id AND Issue.shard = Cond1.issue_shard',
+          ['%example.com%'])],
+        left_joins)
+    self.assertEqual(
+        [('User1.email IS NULL', [])],
+        where)
+
+  def testProcessCcCond_Multiplenegative(self):
+    fd = BUILTIN_ISSUE_FIELDS['cc']
+    cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.NOT_TEXT_HAS, [fd], ['.com', '.org'], [])
+    left_joins, where = ast2select._ProcessCcCond(cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('(Issue2Cc AS Cond1 JOIN User AS User1 '
+          'ON Cond1.cc_id = User1.user_id AND '
+          '(LOWER(User1.email) LIKE %s OR LOWER(User1.email) LIKE %s)) '
+          'ON Issue.id = Cond1.issue_id AND Issue.shard = Cond1.issue_shard',
+          ['%.com%', '%.org%'])],
+        left_joins)
+    self.assertEqual(
+        [('User1.email IS NULL', [])],
         where)
 
   def testProcessCcIDCond(self):
@@ -305,7 +352,7 @@ class AST2SelectTest(unittest.TestCase):
         cond, 'Cond1', 'User1')
     self.assertEqual(
         [('(IssueStar AS Cond1 JOIN User AS User1 '
-          'ON Cond1.user_id = User1.user_id AND LOWER(User1.email) LIKE %s) '
+          'ON Cond1.user_id = User1.user_id AND (LOWER(User1.email) LIKE %s)) '
           'ON Issue.id = Cond1.issue_id', ['%example.com%'])],
         left_joins)
     self.assertEqual(
@@ -334,7 +381,7 @@ class AST2SelectTest(unittest.TestCase):
     self.assertEqual(
         [('(Comment AS Cond1 JOIN User AS User1 '
           'ON Cond1.commenter_id = User1.user_id '
-          'AND LOWER(User1.email) LIKE %s) '
+          'AND (LOWER(User1.email) LIKE %s)) '
           'ON Issue.id = Cond1.issue_id', ['%example.com%'])],
         left_joins)
     self.assertEqual(
@@ -493,7 +540,7 @@ class AST2SelectTest(unittest.TestCase):
           [False])],
         left_joins)
     self.assertEqual(
-        [('Cond1.filename LIKE %s', ['%jpg%'])],
+        [('(Cond1.filename LIKE %s)', ['%jpg%'])],
         where)
 
   def testCompare_IntTypes(self):
@@ -564,7 +611,7 @@ class AST2SelectTest(unittest.TestCase):
 
     cond_str, cond_args = ast2select._Compare(
         'Alias', ast_pb2.QueryOp.TEXT_HAS, val_type, 'col', ['a'])
-    self.assertEqual('Alias.col LIKE %s', cond_str)
+    self.assertEqual('(Alias.col LIKE %s)', cond_str)
     self.assertEqual(['%a%'], cond_args)
 
     cond_str, cond_args = ast2select._Compare(

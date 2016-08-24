@@ -175,8 +175,8 @@ def _ProcessReporterIDCond(cond, _alias, _user_alias):
 def _ProcessCcCond(cond, alias, user_alias):
   """Convert a cc:substring cond to SQL."""
   email_cond_str, email_cond_args = _Compare(
-      user_alias, cond.op, tracker_pb2.FieldTypes.STR_TYPE, 'email',
-      cond.str_values)
+      user_alias, ast_pb2.QueryOp.TEXT_HAS, tracker_pb2.FieldTypes.STR_TYPE,
+      'email', cond.str_values)
   # Note: email_cond_str will have parens, if needed.
   left_joins = [(
       '(Issue2Cc AS {alias} JOIN User AS {user_alias} '
@@ -244,8 +244,8 @@ def _ProcessStarredByIDCond(cond, alias, _user_alias):
 def _ProcessCommentByCond(cond, alias, user_alias):
   """Convert a commentby:substring cond to SQL."""
   email_cond_str, email_cond_args = _Compare(
-      user_alias, cond.op, tracker_pb2.FieldTypes.STR_TYPE, 'email',
-      cond.str_values)
+      user_alias, ast_pb2.QueryOp.TEXT_HAS, tracker_pb2.FieldTypes.STR_TYPE,
+      'email', cond.str_values)
   # Note: email_cond_str will have parens, if needed.
   left_joins = [(
       '(Comment AS {alias} JOIN User AS {user_alias} '
@@ -496,6 +496,16 @@ def _Compare(alias, op, val_type, col, vals):
       comp = Fmt('{alias_col} NOT IN ({vals_ph})')
     return '(%s IS NULL OR %s)' % (alias_col, comp), vals
 
+  wild_vals = ['%' + val + '%' for val in vals]
+  if op == ast_pb2.QueryOp.TEXT_HAS:
+    cond_str = ' OR '.join(Fmt('{alias_col} LIKE %s') for v in vals)
+    return ('(%s)' % cond_str), wild_vals
+  if op == ast_pb2.QueryOp.NOT_TEXT_HAS:
+    cond_str = (Fmt('{alias_col} IS NULL OR ') +
+                ' AND '.join(Fmt('{alias_col} NOT LIKE %s') for v in vals))
+    return ('(%s)' % cond_str), wild_vals
+
+
   # Note: These operators do not support quick-OR
   val = vals[0]
 
@@ -508,17 +518,6 @@ def _Compare(alias, op, val_type, col, vals):
   if op == ast_pb2.QueryOp.LE:
     return Fmt('{alias_col} <= %s'), [val]
 
-  if op == ast_pb2.QueryOp.TEXT_MATCHES:
-    return Fmt('{alias_col} LIKE %s'), [val]
-  if op == ast_pb2.QueryOp.NOT_TEXT_MATCHES:
-    return Fmt('({alias_col} IS NULL OR {alias_col} NOT LIKE %s)'), [val]
-
-  if op == ast_pb2.QueryOp.TEXT_HAS:
-    return Fmt('{alias_col} LIKE %s'), ['%' + val + '%']
-  if op == ast_pb2.QueryOp.NOT_TEXT_HAS:
-    return (Fmt('({alias_col} IS NULL OR {alias_col} NOT LIKE %s)'),
-            ['%' + val + '%'])
-
   logging.error('unknown op: %r', op)
 
 
@@ -528,11 +527,10 @@ def _CompareAlreadyJoined(alias, op, col):
     return cond_str.format(alias_col='%s.%s' % (alias, col))
 
   if op in (ast_pb2.QueryOp.EQ, ast_pb2.QueryOp.TEXT_HAS,
-            ast_pb2.QueryOp.TEXT_MATCHES, ast_pb2.QueryOp.IS_DEFINED):
+            ast_pb2.QueryOp.IS_DEFINED):
     return Fmt('{alias_col} IS NOT NULL'), []
 
   if op in (ast_pb2.QueryOp.NE, ast_pb2.QueryOp.NOT_TEXT_HAS,
-            ast_pb2.QueryOp.NOT_TEXT_MATCHES,
             ast_pb2.QueryOp.IS_NOT_DEFINED):
     return Fmt('{alias_col} IS NULL'), []
 

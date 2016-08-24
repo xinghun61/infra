@@ -585,8 +585,14 @@ SHORTHAND = {
     'compare_op': COMPARE_OP_PAT,
     'opt_asc_desc': '( ASC| DESC)?',
     'opt_alias': '( AS %s)?' % TABLE_PAT,
-    'email_cond': (r'LOWER\(User\d+\.email\) '
-                   r'(%s %%s|IN \(%%s(, ?%%s)*\))' % COMPARE_OP_PAT),
+    'email_cond': (r'\(?'
+                   r'('
+                   r'(LOWER\(User\d+\.email\) IS NULL OR )?'
+                   r'LOWER\(User\d+\.email\) '
+                   r'(%s %%s|IN \(%%s(, ?%%s)*\))'
+                   r'( (AND|OR) )?'
+                   r')+'
+                   r'\)?' % COMPARE_OP_PAT),
     }
 
 
@@ -629,8 +635,8 @@ JOIN_RE_LIST = [
         r'\({tab_col} = {tab_col} OR {tab_col} = {tab_col}\)$'),
     _MakeRE(
         r'^\({table} AS {table} JOIN User AS {table} '
-        r'ON {tab_col} = {tab_col} '
-        r'AND {email_cond}\) ON Issue.id = {tab_col}'),
+        r'ON {tab_col} = {tab_col} AND {email_cond}\) '
+        r'ON Issue.id = {tab_col}'),
     _MakeRE(
         r'^{table} AS {table} ON {tab_col} = {tab_col} '
         r'LEFT JOIN {table} AS {table} ON {tab_col} = {tab_col}'),

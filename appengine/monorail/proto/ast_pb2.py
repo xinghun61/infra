@@ -55,8 +55,6 @@ class QueryOp(messages.Enum):
   GE = 6
   TEXT_HAS = 7
   NOT_TEXT_HAS = 8
-  TEXT_MATCHES = 9
-  NOT_TEXT_MATCHES = 10
   IS_DEFINED = 11
   IS_NOT_DEFINED = 12
   KEY_HAS = 13
