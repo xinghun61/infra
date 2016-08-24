@@ -94,6 +94,7 @@ PROJECTS_TO_TRY = [
   'build_limited_scripts_slave',
   'recipe_engine',
   'depot_tools',
+  'chromium',
 ]
 
 PROJECT_TO_CONTINUOUS_WATERFALL = {
