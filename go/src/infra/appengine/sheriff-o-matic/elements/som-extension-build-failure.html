@@ -75,25 +75,22 @@
         </div>
       </template>
       <div id="reasons">
-        <template is="dom-repeat" items="[[extension.reasons]]" as="reason">
-            <a target="_blank" href$="[[_uberify(reason.url)]]">[[reason.step]]</a>
-          <div class="build-failures">
-            <ul>
-              <template is="dom-repeat" items="[[reason.test_names]]" as="testName">
-                <li id="test_results">
-                  <a target="_blank" href$=[[_linkForTest(reason,testName)]]>
-                    [[testName]]
-                  </a>
-                  (
-                  <a target="_blank" href$=[[_linkToCSForTest(testName)]]>
-                    Code Search
-                  </a>
-                  )
-                </li>
-              </template>
-            </ul>
-          </div>
-        </template>
+        <div class="build-failures">
+          <ul>
+            <template is="dom-repeat" items="[[extension.reason.test_names]]" as="testName">
+              <li id="test_results">
+                <a target="_blank" href$=[[_linkForTest(extension.reason,testName)]]>
+                  [[testName]]
+                </a>
+                (
+                <a target="_blank" href$=[[_linkToCSForTest(testName)]]>
+                  Code Search
+                </a>
+                )
+              </li>
+            </template>
+          </ul>
+        </div>
       </div>
       <div id="regression-ranges">
         <template is="dom-repeat" items="[[extension.regression_ranges]]" as="regressionRange" filter="_showRegressionRange">
