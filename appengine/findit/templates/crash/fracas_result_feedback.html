@@ -275,14 +275,25 @@
           <tr>
             <th>Suspected cls</th>
             <th>Score</th>
-            <th>Reason</th>
+            <th>Reasons</th>
           </tr>
           <tbody>
             {% for suspected_cl in suspected_cls %}
               <tr>
                 <td align="center"> <a href={{suspected_cl.url}}>{{suspected_cl.revision}}</a> </td>
                 <td align="center"> {{suspected_cl.confidence}} </td>
-                <td align="left"><pre>{{suspected_cl.reason}}</pre></td>
+                <td align="left">
+                {% if suspected_cl.reason %}
+                  <pre>{{suspected_cl.reason}}</pre>
+                {% else %}
+                  {% for changed_file in suspected_cl.changed_files %}
+                    <li>
+                    <a href={{changed_file.blame_url}}>{{changed_file.file}}</a> <br>
+                    <pre>{{changed_file.info}}</pre>
+                    </li>
+                  {% endfor %}
+                {% endif %}
+                </td>
               </tr>
             {% endfor %}
           </tbody>
