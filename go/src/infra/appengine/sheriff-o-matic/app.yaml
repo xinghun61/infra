@@ -23,6 +23,11 @@ handlers:
   script: _go_app
   secure: always
 
+- url: /_cron/.*
+  script: _go_app
+  secure: always
+  login: admin
+
 - url: /internal/.*
   script: _go_app
   secure: always

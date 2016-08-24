@@ -347,6 +347,38 @@ func TestMain(t *testing.T) {
 					})
 				})
 			})
+
+			Convey("/bugqueue", func() {
+				// Bug queue is weird to test because it relies on network requests.
+				Convey("get bug queue handler", func() {
+					getBugQueueHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makeGetRequest(),
+					})
+
+					_, err := ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					So(w.Code, ShouldEqual, 500)
+				})
+
+				Convey("refresh bug queue handler", func() {
+					refreshBugQueueHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makeGetRequest(),
+					})
+
+					_, err := ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					So(w.Code, ShouldEqual, 500)
+				})
+
+				Convey("refresh bug queue", func() {
+					_, err := refreshBugQueue(c, "tree")
+					So(err, ShouldNotBeNil)
+				})
+			})
 		})
 	})
 }

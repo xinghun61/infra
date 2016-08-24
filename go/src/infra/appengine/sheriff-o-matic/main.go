@@ -20,6 +20,7 @@ import (
 	"google.golang.org/appengine"
 
 	"github.com/luci/gae/service/datastore"
+	"github.com/luci/gae/service/memcache"
 	"github.com/luci/luci-go/appengine/gaeauth/server"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
 	"github.com/luci/luci-go/common/clock"
@@ -30,7 +31,11 @@ import (
 	"github.com/luci/luci-go/server/settings"
 )
 
-const authGroup = "sheriff-o-matic-access"
+const (
+	authGroup           = "sheriff-o-matic-access"
+	bugQueueCacheFormat = "bugqueue-%s"
+	settingsKey         = "tree"
+)
 
 var (
 	mainPage         = template.Must(template.ParseFiles("./index.html"))
@@ -62,8 +67,6 @@ var requireGoogler = func(w http.ResponseWriter, c context.Context) bool {
 	}
 	return true
 }
-
-const settingsKey = "tree"
 
 type settingsUIPage struct {
 	settings.BaseUIPage
@@ -463,14 +466,35 @@ func postAnnotationsHandler(ctx *router.Context) {
 func getBugQueueHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
-	// Get authenticated monorail client.
-	client, err := getOAuthClient(ctx.Context)
+	tree := p.ByName("tree")
+
+	mc := memcache.Get(c)
+	key := fmt.Sprintf(bugQueueCacheFormat, tree)
+
+	item, err := mc.Get(key)
+
+	if err == memcache.ErrCacheMiss {
+		item, err = refreshBugQueue(c, tree)
+	}
+
 	if err != nil {
 		errStatus(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(item.Value())
+}
+
+func refreshBugQueue(c context.Context, tree string) (memcache.Item, error) {
+	// Get authenticated monorail client.
+	client, err := getOAuthClient(c)
+
+	if err != nil {
+		return nil, err
+	}
+
 	mr := monorail.NewEndpointsClient(client, monorailEndpoint)
-	tree := p.ByName("tree")
 
 	// TODO(martiniss): make this look up request info based on Tree datastore
 	// object
@@ -482,18 +506,40 @@ func getBugQueueHandler(ctx *router.Context) {
 
 	res, err := mr.IssuesList(c, req)
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
-		return
+		return nil, err
 	}
 
 	bytes, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	mc := memcache.Get(c)
+	key := fmt.Sprintf(bugQueueCacheFormat, tree)
+
+	item := mc.NewItem(key).SetValue(bytes)
+
+	err = mc.Set(item)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return item, nil
+}
+
+func refreshBugQueueHandler(ctx *router.Context) {
+	c, w, p := ctx.Context, ctx.Writer, ctx.Params
+	tree := p.ByName("tree")
+	item, err := refreshBugQueue(c, tree)
+
 	if err != nil {
 		errStatus(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(bytes)
+	w.Write(item.Value())
 }
 
 func getCrRevJSON(c context.Context, pos string) (map[string]string, error) {
@@ -594,10 +640,12 @@ func init() {
 	r.POST("/api/v1/annotations/:annKey/:action", authmw, postAnnotationsHandler)
 	r.GET("/api/v1/bugqueue/:tree", authmw, getBugQueueHandler)
 	r.GET("/api/v1/revrange/:start/:end", basemw, getRevRangeHandler)
+	r.GET("/_cron/refresh/bugqueue/:tree", authmw, refreshBugQueueHandler)
 
 	rootRouter := router.New()
 	rootRouter.GET("/*path", authmw, indexPage)
 
+	http.DefaultServeMux.Handle("/_cron/", r)
 	http.DefaultServeMux.Handle("/api/", r)
 	http.DefaultServeMux.Handle("/admin/", r)
 	http.DefaultServeMux.Handle("/auth/", r)
