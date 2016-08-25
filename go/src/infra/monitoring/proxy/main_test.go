@@ -10,11 +10,12 @@ import (
 	"fmt"
 	"testing"
 
+	"infra/monitoring/proxy/mock"
+
+	"cloud.google.com/go/pubsub"
 	"github.com/luci/luci-go/common/retry"
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/net/context"
-	"google.golang.org/cloud/pubsub"
-	"infra/monitoring/proxy/mock"
 )
 
 type endpointServiceMock struct {
@@ -88,7 +89,7 @@ func TestMain(t *testing.T) {
 		}()
 
 		Convey(`Will consume messages from Pub/Sub.`, func() {
-			pubsubMock.ackC = make(chan []string, 1024)
+			pubsubMock.ackC = make(chan []*pubsub.Message, 1024)
 			buf := make([]byte, binary.MaxVarintLen64)
 			missing := make(map[int]bool)
 			for i := 0; i < 1024; i++ {
@@ -102,7 +103,7 @@ func TestMain(t *testing.T) {
 				}
 				copy(msg.Data, buf)
 				pubsubMock.MockCall("Pull", "test-subscription", 64).WithResult([]*pubsub.Message{msg}, nil)
-				pubsubMock.MockCall("Ack", "test-subscription", []string{msg.AckID}).WithResult(nil)
+				pubsubMock.MockCall("Ack", "test-subscription", []*pubsub.Message{msg}).WithResult(nil)
 				endpointMock.MockCall("send", mock.Ignore, msg.Data).WithResult(nil)
 			}
 
@@ -126,7 +127,7 @@ func TestMain(t *testing.T) {
 		})
 
 		Convey(`Will refuse to process a message that is too large, and will ACK it.`, func() {
-			pubsubMock.ackC = make(chan []string, 1024)
+			pubsubMock.ackC = make(chan []*pubsub.Message, 1024)
 			msgs := []*pubsub.Message{
 				{
 					ID:    "msg-big",

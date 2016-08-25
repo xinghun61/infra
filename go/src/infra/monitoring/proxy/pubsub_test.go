@@ -7,12 +7,13 @@ package main
 import (
 	"testing"
 
+	"infra/monitoring/proxy/mock"
+
+	"cloud.google.com/go/pubsub"
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/retry"
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/net/context"
-	"google.golang.org/cloud/pubsub"
-	"infra/monitoring/proxy/mock"
 )
 
 // testPubSubService implements pubSubService using testing stubs.
@@ -20,7 +21,7 @@ type testPubSubService struct {
 	mock.Mock
 
 	infinitePull bool
-	ackC         chan []string
+	ackC         chan []*pubsub.Message
 }
 
 var _ pubSubService = (*testPubSubService)(nil)
@@ -58,10 +59,10 @@ func (s *testPubSubService) Pull(sub string, count int) (msgs []*pubsub.Message,
 	return
 }
 
-func (s *testPubSubService) Ack(sub string, ackIDs []string) (err error) {
-	s.Pop("Ack", sub, ackIDs).BindResult(&err)
+func (s *testPubSubService) Ack(sub string, msgs []*pubsub.Message) (err error) {
+	s.Pop("Ack", sub, msgs).BindResult(&err)
 	if s.ackC != nil {
-		s.ackC <- ackIDs
+		s.ackC <- msgs
 	}
 	return
 }
@@ -140,7 +141,7 @@ func TestPubSub(t *testing.T) {
 				svc.MockCall("Pull", "test-subscription", 64).WithResult(msgs, nil)
 
 				Convey(`Returns and ACKs that message.`, func() {
-					svc.MockCall("Ack", "test-subscription", []string{"ack0"}).WithResult(nil)
+					svc.MockCall("Ack", "test-subscription", []*pubsub.Message{msgs[0]}).WithResult(nil)
 
 					var pullMsg []*pubsub.Message
 					err := client.pullAckMessages(ctx, 1, func(msg []*pubsub.Message) {
@@ -152,7 +153,7 @@ func TestPubSub(t *testing.T) {
 				})
 
 				Convey(`ACKs the message even if the handler panics.`, func() {
-					svc.MockCall("Ack", "test-subscription", []string{"ack0"}).WithResult(nil)
+					svc.MockCall("Ack", "test-subscription", []*pubsub.Message{msgs[0]}).WithResult(nil)
 
 					So(func() {
 						client.pullAckMessages(ctx, 1, func(msg []*pubsub.Message) {

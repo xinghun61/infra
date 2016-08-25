@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"cloud.google.com/go/compute/metadata"
 	"github.com/luci/luci-go/common/errors"
-	"google.golang.org/cloud/compute/metadata"
 )
 
 // ErrNotFound is returned if the requested credential is not found.

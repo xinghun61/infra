@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"cloud.google.com/go/pubsub"
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/errors"
@@ -19,8 +20,7 @@ import (
 	"github.com/luci/luci-go/common/tsmon/metric"
 	"github.com/luci/luci-go/common/tsmon/types"
 	"golang.org/x/net/context"
-	"google.golang.org/cloud"
-	"google.golang.org/cloud/pubsub"
+	"google.golang.org/api/option"
 )
 
 const (
@@ -86,46 +86,74 @@ type pubSubService interface {
 	TopicExists(string) (bool, error)
 	CreateTopic(string) error
 	Pull(sub string, count int) ([]*pubsub.Message, error)
-	Ack(string, []string) error
+	Ack(string, []*pubsub.Message) error
 }
 
 // pubSubServiceImpl is an implementation of the pubSubService that uses the
 // Pub/Sub API.
 type pubSubServiceImpl struct {
-	ctx context.Context
+	ctx    context.Context
+	client *pubsub.Client
 }
 
 func newPubSubService(ctx context.Context, config pubsubConfig, client *http.Client) (pubSubService, error) {
 	if config.project == "" {
 		return nil, errors.New("pubsub: you must supply a project")
 	}
+	pc, err := pubsub.NewClient(ctx, config.project, option.WithHTTPClient(client))
+	if err != nil {
+		return nil, err
+	}
 	return &pubSubServiceImpl{
-		ctx: cloud.WithContext(ctx, config.project, client),
+		ctx:    ctx,
+		client: pc,
 	}, nil
 }
 
 func (s *pubSubServiceImpl) SubExists(sub string) (bool, error) {
-	return pubsub.SubExists(s.ctx, sub)
+	return s.client.Subscription(sub).Exists(s.ctx)
 }
 
 func (s *pubSubServiceImpl) CreatePullSub(sub string, topic string) error {
-	return pubsub.CreateSub(s.ctx, sub, topic, 0, "")
+	_, err := s.client.NewSubscription(s.ctx, sub, s.client.Topic(topic), 0, &pubsub.PushConfig{Endpoint: ""})
+	return err
 }
 
 func (s *pubSubServiceImpl) TopicExists(topic string) (bool, error) {
-	return pubsub.TopicExists(s.ctx, topic)
+	return s.client.Topic(topic).Exists(s.ctx)
 }
 
 func (s *pubSubServiceImpl) CreateTopic(topic string) error {
-	return pubsub.CreateTopic(s.ctx, topic)
+	_, err := s.client.NewTopic(s.ctx, topic)
+	return err
 }
 
 func (s *pubSubServiceImpl) Pull(sub string, count int) ([]*pubsub.Message, error) {
-	return pubsub.Pull(s.ctx, sub, count)
+	it, err := s.client.Subscription(sub).Pull(s.ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer it.Stop()
+	var msgs []*pubsub.Message
+
+	for i := 0; i < count; i++ {
+		msg, err := it.Next()
+		if err == pubsub.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		msgs = append(msgs, msg)
+	}
+	return msgs, nil
 }
 
-func (s *pubSubServiceImpl) Ack(sub string, ackIDs []string) error {
-	return pubsub.Ack(s.ctx, sub, ackIDs...)
+func (s *pubSubServiceImpl) Ack(sub string, msgs []*pubsub.Message) error {
+	for _, m := range msgs {
+		m.Done(true)
+	}
+	return nil
 }
 
 // A pubsubClient interfaces with a Cloud Pub/Sub subscription.
@@ -301,26 +329,26 @@ func (p *pubsubClient) pullAckMessages(ctx context.Context, workerID int, handle
 // ackMessages ACKs the supplied messages. If a message is nil, it will be
 // ignored.
 func (p *pubsubClient) ackMessages(ctx context.Context, messages []*pubsub.Message) (int, error) {
-	messageIds := make([]string, 0, len(messages))
+	var ackMsgs []*pubsub.Message
 	skipped := 0
 	for _, msg := range messages {
 		if msg != nil {
-			messageIds = append(messageIds, msg.AckID)
+			ackMsgs = append(ackMsgs, msg)
 		} else {
 			skipped++
 		}
 	}
-	if len(messageIds) == 0 {
+	if len(ackMsgs) == 0 {
 		return 0, nil
 	}
 
 	startTime := clock.Now(ctx)
 	ctx = log.SetFields(ctx, log.Fields{
-		"count":   len(messageIds),
+		"count":   len(ackMsgs),
 		"skipped": skipped,
 	})
 	err := retryCall(ctx, "Ack()", func() error {
-		return p.wrapTransient(p.service.Ack(p.subscription, messageIds))
+		return p.wrapTransient(p.service.Ack(p.subscription, ackMsgs))
 	})
 	duration := clock.Now(ctx).Sub(startTime)
 
@@ -339,7 +367,7 @@ func (p *pubsubClient) ackMessages(ctx context.Context, messages []*pubsub.Messa
 		"duration": duration,
 	}.Debugf(ctx, "Successfully ACK messages.")
 	ackCount.Add(ctx, int64(len(messages)), "success")
-	return len(messageIds), nil
+	return len(ackMsgs), nil
 }
 
 // wrapTransient examines the supplied error. If it's not a recognized error

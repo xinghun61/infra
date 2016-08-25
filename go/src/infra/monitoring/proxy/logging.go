@@ -15,12 +15,12 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/compute/metadata"
 	"github.com/luci/luci-go/common/clock"
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/retry"
 	"golang.org/x/net/context"
 	cloudlog "google.golang.org/api/logging/v1beta3"
-	"google.golang.org/cloud/compute/metadata"
 )
 
 const (

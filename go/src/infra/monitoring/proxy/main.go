@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"cloud.google.com/go/pubsub"
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/clock"
 	luciErrors "github.com/luci/luci-go/common/errors"
@@ -27,7 +28,6 @@ import (
 	"github.com/luci/luci-go/common/tsmon/metric"
 	"github.com/luci/luci-go/common/tsmon/types"
 	"golang.org/x/net/context"
-	"google.golang.org/cloud/pubsub"
 )
 
 const (
