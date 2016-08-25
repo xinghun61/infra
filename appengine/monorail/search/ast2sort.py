@@ -29,12 +29,17 @@ from proto import tracker_pb2
 
 
 NATIVE_SORTABLE_FIELDS = [
-    'id', 'stars', 'attachments', 'opened', 'closed', 'modified']
+    'id', 'stars', 'attachments', 'opened', 'closed', 'modified',
+    'ownermodified', 'statusmodified', 'componentmodified',
+    ]
 
 FIELDS_TO_COLUMNS = {
     'id': 'local_id',
     'stars': 'star_count',
     'attachments': 'attachment_count',
+    'ownermodified': 'owner_modified',
+    'statusmodified': 'status_modified',
+    'componentmodified': 'component_modified',
     }
 
 

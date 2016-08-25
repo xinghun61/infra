@@ -208,3 +208,9 @@ class AST2SortTest(unittest.TestCase):
         self.harmonized_fields)
     self.assertEqual([], left_joins)
     self.assertEqual([('Issue.star_count DESC', [])], order_by)
+
+    left_joins, order_by = ast2sort._OneSortDirective(
+        1, 'componentmodified', self.harmonized_labels,
+        self.harmonized_statuses, self.harmonized_fields)
+    self.assertEqual([], left_joins)
+    self.assertEqual([('Issue.component_modified ASC', [])], order_by)
