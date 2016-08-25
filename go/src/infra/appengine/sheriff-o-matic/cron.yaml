@@ -3,7 +3,6 @@ cron:
   url: /internal/cron/ts_mon/housekeeping
   schedule: every 1 minutes
 
-cron:
 - description: Update bug queue
   url: /_cron/refresh/bugqueue/chromium
   schedule: every 1 minutes
