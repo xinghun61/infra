@@ -35,7 +35,10 @@ NATIVE_SEARCHABLE_FIELDS = {
     'opened': 'opened',
     'closed': 'closed',
     'modified': 'modified',
-    'spam': 'is_spam'
+    'spam': 'is_spam',
+    'ownermodified': 'owner_modified',
+    'statusmodified': 'status_modified',
+    'componentmodified': 'component_modified',
     }
 
 
@@ -496,7 +499,7 @@ def _Compare(alias, op, val_type, col, vals):
       comp = Fmt('{alias_col} NOT IN ({vals_ph})')
     return '(%s IS NULL OR %s)' % (alias_col, comp), vals
 
-  wild_vals = ['%' + val + '%' for val in vals]
+  wild_vals = ['%%%s%%' % val for val in vals]
   if op == ast_pb2.QueryOp.TEXT_HAS:
     cond_str = ' OR '.join(Fmt('{alias_col} LIKE %s') for v in vals)
     return ('(%s)' % cond_str), wild_vals

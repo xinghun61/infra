@@ -120,7 +120,10 @@ _DATE_FIELDS = (
     'closed',
     'modified',
     'opened',
-)
+    'ownermodified',
+    'statusmodified',
+    'componentmodified',
+    )
 
 # Add all _DATE_FIELDS to _ISSUE_FIELDS_LIST.
 _ISSUE_FIELDS_LIST.extend((date_field, DATE) for date_field in _DATE_FIELDS)
@@ -230,7 +233,7 @@ def _ParseCond(cond_str, fields, warnings, now=None):
     op = op_match.group('op')
     val = op_match.group('value')
     # Special case handling to continue to support old date query terms from
-    # codesite. See monorail:151 for more details.
+    # code.google.com. See monorail:151 for more details.
     if prefix.startswith(_DATE_FIELDS):
       for date_suffix in _DATE_FIELD_SUFFIX_TO_OP:
         if prefix.endswith(date_suffix):
