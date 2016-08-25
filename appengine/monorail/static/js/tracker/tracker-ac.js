@@ -257,6 +257,21 @@ function TKR_addACItem(items, docDict, item, docStr) {
 }
 
 /**
+ * Adds a group of three items related to a date field.
+ */
+function TKR_addACDateItems(items, docDict, fieldName, humanReadable) {
+    var today = new Date();
+    var todayStr = (today.getFullYear() + '/' + (today.getMonth() + 1) + '/' +
+		    today.getDate());
+    TKR_addACItem(items, docDict, fieldName + '>today-1',
+		  humanReadable + ' within the last N days');
+    TKR_addACItem(items, docDict, fieldName + '>' + todayStr,
+		  humanReadable + ' after the specified date');
+    TKR_addACItem(items, docDict, fieldName + '<today-1',
+		  humanReadable + ' more than N days ago');
+}
+
+/**
  * Add several autocomplete items to a word list that will be used to construct
  * an autocomplete store.  Also, keep track of description strings for each
  * item.  A search operator is prepended to the name of each item.  The opt_old
@@ -419,33 +434,14 @@ function TKR_setUpSearchStore(
   TKR_addACItem(searchWords, docDict, 'is:spam', 'Issues classified as spam');
   // We do not suggest -is:spam because it is implicit.
 
-  var today = new Date();
-  var todayStr = (today.getFullYear() + '/' + (today.getMonth() + 1) + '/' +
-                  today.getDate());
-  TKR_addACItem(searchWords, docDict, 'opened>today-1',
-                'Opened within the last N days');
-  TKR_addACItem(searchWords, docDict, 'opened>' + todayStr,
-                'Opened after the specified date');
-  TKR_addACItem(searchWords, docDict, 'opened<today-1',
-                'Opened more than N days ago');
-  TKR_addACItem(searchWords, docDict, 'opened<' + todayStr,
-                'Opened before the specified date');
-  TKR_addACItem(searchWords, docDict, 'modified>today-1',
-                'Modified within the last N days');
-  TKR_addACItem(searchWords, docDict, 'modified>' + todayStr,
-                'Modified after the specified date');
-  TKR_addACItem(searchWords, docDict, 'modified<today-1',
-                'Modified more than N days ago');
-  TKR_addACItem(searchWords, docDict, 'modified<' + todayStr,
-                'Modified before the specified date');
-  TKR_addACItem(searchWords, docDict, 'closed>today-1',
-                'Closed within the last N days');
-  TKR_addACItem(searchWords, docDict, 'closed>' + todayStr,
-                'Closed after the specified date');
-  TKR_addACItem(searchWords, docDict, 'closed<today-1',
-                'Closed more than N days ago');
-  TKR_addACItem(searchWords, docDict, 'closed<' + todayStr,
-                'Closed before the specified date');
+  TKR_addACDateItems(searchWords, docDict, 'opened', 'Opened');
+  TKR_addACDateItems(searchWords, docDict, 'modified', 'Modified');
+  TKR_addACDateItems(searchWords, docDict, 'closed', 'Closed');
+  TKR_addACDateItems(searchWords, docDict, 'ownermodified', 'Owner modified');
+  TKR_addACDateItems(searchWords, docDict, 'ownermodified', 'Owner modified');
+  TKR_addACDateItems(searchWords, docDict, 'statusmodified', 'Status modified');
+  TKR_addACDateItems(
+      searchWords, docDict, 'componentmodified', 'Component modified');
 
   TKR_projectQueryStore = new _AC_SimpleStore(searchWords);
   TKR_projectQueryStore.docstrings = docDict;
