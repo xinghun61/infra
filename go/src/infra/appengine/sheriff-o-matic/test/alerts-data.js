@@ -98,20 +98,14 @@ const TEST_ALERTS = {
             "url": "https://build.chromium.org/p/chromium.webkit/builders/WebKit%20Win7"
           }
         ],
-        "reasons": [
-          {
-            "step": "webkit_tests",
-            "test_names": [
-              "paint/selection/invalidation-rect-includes-newline-for-rtl.html",
-              "paint/selection/invalidation-rect-includes-newline-for-vertical-lr.html",
-              "paint/selection/invalidation-rect-includes-newline-for-vertical-rl.html",
-              "paint/selection/invalidation-rect-includes-newline.html",
-              "paint/selection/invalidation-rect-with-br-includes-newline.html",
-              "transforms/3d/point-mapping/3d-point-mapping-preserve-3d.html"
-            ],
-            "url": "https://build.chromium.org/p/chromium.webkit/builders/WebKit%20Win7/builds/42524/steps/webkit_tests"
-          }
-        ],
+        "reason": {
+          "test_names": [
+            "virtual/scalefactor150/fast/hidpi/static/data-suggestion-picker-appearance.html",
+            "virtual/scalefactor150/fast/hidpi/static/popup-menu-appearance.html",
+            "virtual/scalefactor200/fast/hidpi/static/popup-menu-appearance.html",
+            "virtual/scalefactor200withzoom/fast/hidpi/static/popup-menu-appearance.html"
+          ]
+        },
         "regression_ranges": [
           {
             "positions": [
@@ -209,19 +203,14 @@ const TEST_ALERTS = {
             "url": "https://build.chromium.org/p/chromium.webkit/builders/WebKit%20Win7%20%28dbg%29"
           }
         ],
-        "reasons": [
-          {
-            "step": "webkit_tests",
-            "test_names": [
-              "paint/selection/invalidation-rect-includes-newline-for-rtl.html",
-              "paint/selection/invalidation-rect-includes-newline-for-vertical-lr.html",
-              "paint/selection/invalidation-rect-includes-newline-for-vertical-rl.html",
-              "paint/selection/invalidation-rect-includes-newline.html",
-              "paint/selection/invalidation-rect-with-br-includes-newline.html"
-            ],
-            "url": "https://build.chromium.org/p/chromium.webkit/builders/WebKit%20Win7%20%28dbg%29/builds/5702/steps/webkit_tests"
-          }
-        ],
+        "reason": {
+          "test_names": [
+            "virtual/scalefactor150/fast/hidpi/static/data-suggestion-picker-appearance.html",
+            "virtual/scalefactor150/fast/hidpi/static/popup-menu-appearance.html",
+            "virtual/scalefactor200/fast/hidpi/static/popup-menu-appearance.html",
+            "virtual/scalefactor200withzoom/fast/hidpi/static/popup-menu-appearance.html"
+          ]
+        },
         "regression_ranges": [
           {
             "positions": [
@@ -278,15 +267,14 @@ const TEST_ALERTS = {
             "url": "https://build.chromium.org/p/chromium.webkit/builders/WebKit%20Linux%20Trusty"
           }
         ],
-        "reasons": [
-          {
-            "step": "webkit_tests",
-            "test_names": [
-              "transforms/3d/point-mapping/3d-point-mapping-preserve-3d.html"
-            ],
-            "url": "https://build.chromium.org/p/chromium.webkit/builders/WebKit%20Linux%20Trusty/builds/12559/steps/webkit_tests"
-          }
-        ],
+        "reason": {
+          "test_names": [
+            "virtual/scalefactor150/fast/hidpi/static/data-suggestion-picker-appearance.html",
+            "virtual/scalefactor150/fast/hidpi/static/popup-menu-appearance.html",
+            "virtual/scalefactor200/fast/hidpi/static/popup-menu-appearance.html",
+            "virtual/scalefactor200withzoom/fast/hidpi/static/popup-menu-appearance.html"
+          ]
+        },
         "regression_ranges": [
           {
             "positions": [

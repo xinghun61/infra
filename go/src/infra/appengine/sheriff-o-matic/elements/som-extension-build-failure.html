@@ -168,8 +168,11 @@
         return testResultsURL + 'dashboards/' +
           'flakiness_dashboard.html#' +
           'tests=' + encodeURIComponent(testName) +
-          '&testType=' + encodeURIComponent(reason.step)
-          ;
+          // TODO(martiniss): Fix this because it's broken by
+          // https://chromium-review.googlesource.com/c/374719/
+          // Either put the step name back into the reason, or figure out
+          // some other way to plumb the testType through to here.
+          '&testType=' + encodeURIComponent(reason.step);
       },
 
       _linkToCSForTest: function(testName) {

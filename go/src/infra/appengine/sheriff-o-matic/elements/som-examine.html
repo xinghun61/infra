@@ -39,14 +39,6 @@
       }
     </style>
     <div class="horizontal">
-      <paper-dropdown-menu id="step-menu" label="Failing step">
-        <paper-listbox class="dropdown-content" attr-for-selected="value" selected="{{selectedStep}}">
-          <template is="dom-repeat" items="[[alert.extension.reasons]]" as="reason">
-            <paper-item id$="reason-[[reason.step]]" value="[[reason.step]]">[[reason.step]]</paper-item>
-          </template>
-        </paper-listbox>
-      </paper-dropdown-menu>
-
       <paper-dropdown-menu id="test-menu" label="Failing test" hidden$="[[hideTests]]">
         <paper-listbox class="dropdown-content" attr-for-selected="value" selected="{{selectedTest}}">
           <template is="dom-repeat" items="[[_computeFailingTests(selectedBuilder, selectedStep)]]" as="test">
@@ -123,24 +115,29 @@
         },
 
         _alertChanged: function() {
-          if (!this.alert || !this.alert.extension || !this.alert.extension.reasons) {
+          if (!this.alert || !this.alert.extension || !this.alert.extension.reason) {
             return;
           }
           this.selectedBuilder = this.alert.extension.builders[0].name;
-          this.selectedStep = this.alert.extension.reasons[0].step;
+          if (this.alert.extension.reason.name) {
+            this.selectedStep = this.alert.extension.reason.name;
+          } else if (this.alert.extension.reason.test_names) {
+            this.selectedStep = 'tests';
+          }
         },
 
         _selectedStepChanged: function() {
-          if (!this.alert.extension || !this.alert.extension.reasons) {
+          if (!this.alert.extension || !this.alert.extension.reason) {
             return undefined;
           }
-          let reason = this.alert.extension.reasons.find( (reason) => {
-            return reason.step == this.selectedStep;
-          });
+          let reason = this.alert.extension.reason;
           if (reason && reason.test_names) {
             this.hideTests = false;
             this.selectedTest = reason.test_names[0];
-            this.hideWebKitTests = !reason.step.startsWith('webkit_tests');
+            // TODO(martiniss): put the failing step name back into the alert
+            // JSON so we don't have to peek at the alert title to tell if
+            // if the failing step is webkit_tests.
+            this.hideWebKitTests = !this.alert.title.startsWith('webkit_tests');
           } else {
             this.hideTests = true;
             this.hideWebKitTests = true;
@@ -157,12 +154,10 @@
         },
 
         _computeFailingTests: function(builder, step) {
-          if (!this.alert.extension || !this.alert.extension.reasons) {
+          if (!this.alert.extension || !this.alert.extension.reason) {
             return undefined;
           }
-          let reason = this.alert.extension.reasons.find( (reason) => {
-            return reason.step == step;
-          });
+          let reason = this.alert.extension.reason;
 
           if (reason) {
             if (reason.test_names) {

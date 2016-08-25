@@ -24,16 +24,6 @@
       element = fixture('basic');
     });
 
-    test('sets step menu', function(done) {
-      element.alert = WEBKIT_TEST_FAILURE;
-      flush(function() {
-        let menu = element.$$('#step-menu');
-        assert.isDefined(menu);
-        assert.isDefined(menu.selectedItem);
-        done();
-      });
-    });
-
     test('sets test menu', function(done) {
       element.alert = WEBKIT_TEST_FAILURE;
       flush(function() {
@@ -118,7 +108,7 @@
         assert(!tests.hidden);
         assert.equal('WebKit Linux', tests.builder.name);
         assert.equal(
-            'transforms/3d/point-mapping/3d-point-mapping-preserve-3d.html',
+            'virtual/scalefactor150/fast/hidpi/static/data-suggestion-picker-appearance.html',
             tests.testName);
 
         done();

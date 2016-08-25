@@ -26,7 +26,7 @@
           {name: 'dummy builder 1', first_failure:0, latest_failure:0},
           {name: 'dummy builder 2', first_failure:0, latest_failure:0},
         ],
-        reasons: [],
+        reason: {},
         regression_ranges: []
       };
       element._uberify = (url) => { return url; };
@@ -38,12 +38,11 @@
 
     test('renders links for test results', function(done) {
       element.extension = {
-        reasons: [{
-          'step': 'wekbit_tests',
+        reason: {
           'test_names': [
             'best_test',
           ],
-        }],
+        },
       };
       element._uberify = (url) => { return url; };
       flush( () => {
@@ -58,12 +57,11 @@
 
     test('renders links for code search', function(done) {
       element.extension = {
-        reasons: [{
-          'step': 'wekbit_tests',
+        reason: {
           'test_names': [
             'best_test',
           ],
-        }],
+        },
       };
       element._uberify = (url) => { return url; };
       flush( () => {
@@ -76,12 +74,11 @@
 
     test('renders links for code search, java test', function(done) {
       element.extension = {
-        reasons: [{
-          'step': 'wekbit_tests',
+        reason: {
           'test_names': [
             'test.foo.bar.TestClass#testThatJavaHasTheBestNames',
           ],
-        }],
+        },
       };
       element._uberify = (url) => { return url; };
       flush( () => {
@@ -96,12 +93,11 @@
 
     test('renders suspect CLs', function(done) {
       element.extension = {
-        reasons: [{
-          'step': 'wekbit_tests',
+        reason: {
           'test_names': [
             'best_test',
           ],
-        }],
+        },
         suspected_cls: [
           {revision: '1234'},
         ],
