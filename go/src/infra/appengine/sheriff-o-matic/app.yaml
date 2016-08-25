@@ -44,4 +44,13 @@ skip_files:
 - ^(.*/)?.*/RCS/.*$
 - ^(.*/)?\..*$
 - ^node_modules$
-- ^bower_components$
+- ^bower_components/web-component-tester$
+- ^bower_components/accessibility-developer-tools$
+- ^bower_components/async$
+- ^bower_components/chai$
+- ^bower_components/lodash$
+- ^bower_components/mocha$
+- ^bower_components/sinon-chai$
+- ^bower_components/sinonjs$
+- ^bower_components/stacky$
+- ^bower_components/test-fixture$
