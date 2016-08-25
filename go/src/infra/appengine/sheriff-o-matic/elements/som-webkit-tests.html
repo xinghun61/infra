@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<script src="urlfmt.js"></script>
 <dom-module id="som-webkit-tests">
   <template>
     <style>
@@ -30,20 +31,23 @@
       flex-grow: 1;
     }
     </style>
+    <div>
+      <a href="[[allResultsUrl]]" target="_blank">All layout test results</a>
+    </div>
     <div id="testName">[[testName]]</div>
     <div id="container">
-    <div id="expected">
-      <h3>Expected</h3>
-      <div id="expectedIframes"></div>
-    </div>
-    <div id="actual">
-      <h3>Actual</h3>
-      <div id="actualIframes"></div>
-    </div>
-    <div id="diff">
-      <h3>Diff</h3>
-      <div id="diffIframes"></div>
-   </div>
+      <div id="expected">
+        <h3>Expected</h3>
+        <div id="expectedIframes"></div>
+      </div>
+      <div id="actual">
+        <h3>Actual</h3>
+        <div id="actualIframes"></div>
+      </div>
+      <div id="diff">
+        <h3>Diff</h3>
+        <div id="diffIframes"></div>
+      </div>
     </div>
   </template>
   <script>
@@ -78,6 +82,10 @@
           type: Array,
           value: [],
           observer: '_diffUrlsChanged',
+        },
+        allResultsUrl: {
+          type: String,
+          value: '',
         },
       },
 
@@ -118,12 +126,15 @@
         if (!this.builder.name) {
           return;
         }
-        let builderPath = this.builder.name.replace(/[ .()]/g, '_');
-        let buildNumber = this.builder.latest_failure;
-        let testBase = testName.substr(0,
-            testName.lastIndexOf('.')) || testName;
-        let basePath = archivePrefix +
-            `${builderPath}/${buildNumber}/layout-test-results/${testBase}`;
+        let basePath = urlFmt.layoutTest(this.builder.name,
+            this.builder.latest_failure, testName);
+
+        // TODO: Think about replacing all of this with just an iframe to this
+        // URL. It appears to contain all of the same information we want to
+        // display here, and it doesn't try to do any guessing about what
+        // test output files should exist
+        this.allResultsUrl = urlFmt.layoutTestAll(this.builder.name,
+            this.builder.latest_failure);
 
         // Depending on the extension of the failing test name, we look for
         // different sets of expected/actual/diff files. This is very ad-hoc
