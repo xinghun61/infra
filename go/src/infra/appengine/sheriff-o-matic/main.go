@@ -82,7 +82,7 @@ func (settingsUIPage) Fields(c context.Context) ([]settings.UIField, error) {
 			ID:    "Trees",
 			Title: "Trees in SOM",
 			Type:  settings.UIFieldText,
-			Help:  "Trees listed in SOM. Comma separated values.",
+			Help:  "Trees listed in SOM. Comma separated values. treeA:DisplayNameA,treeB:DisplayNameB",
 		},
 		{
 			ID:    "AlertStreams",
@@ -105,7 +105,7 @@ func (settingsUIPage) ReadSettings(c context.Context) (map[string]string, error)
 	datastore.Get(c).GetAll(q, &results)
 	stringed := make([]string, len(results))
 	for i, tree := range results {
-		stringed[i] = tree.Name
+		stringed[i] = fmt.Sprintf("%s:%s", tree.Name, tree.DisplayName)
 	}
 
 	return map[string]string{
@@ -119,25 +119,27 @@ func writeTrees(c context.Context, treeStr string) error {
 	q := datastore.NewQuery("Tree")
 	trees := []*Tree{}
 	datastore.Get(c).GetAll(q, &trees)
+	// Always replace the existing list of trees. Otherwise there's no "delete"
+	// capability.
+	datastore.Get(c).Delete(trees)
 
 	toMake := strings.Split(treeStr, ",")
-	for _, tree := range trees {
-		for i, it := range toMake {
-			if it == tree.Name {
-				toMake[i] = ""
-			}
-		}
-	}
-
 	for _, it := range toMake {
 		it = strings.TrimSpace(it)
 		if len(it) == 0 {
 			continue
 		}
 
+		nameParts := strings.Split(it, ":")
+		name := nameParts[0]
+		displayName := strings.Replace(strings.Title(name), "_", " ", -1)
+		if len(nameParts) == 2 {
+			displayName = nameParts[1]
+		}
+
 		if err := ds.Put(&Tree{
-			Name:        it,
-			DisplayName: strings.Replace(strings.Title(it), "_", " ", -1),
+			Name:        name,
+			DisplayName: displayName,
 		}); err != nil {
 			return err
 		}

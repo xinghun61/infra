@@ -436,8 +436,16 @@ func TestWriteSettings(t *testing.T) {
 			So(ds.Put(tree), ShouldBeNil)
 			ds.Testable().CatchupIndexes()
 
-			Convey("don't overwrite tree", func() {
+			Convey("overwrite tree", func() {
 				err := writeTrees(c, "oak")
+				So(err, ShouldBeNil)
+
+				So(ds.Get(tree), ShouldBeNil)
+				So(tree.DisplayName, ShouldEqual, "Oak")
+			})
+
+			Convey("overwrite tree with new display name", func() {
+				err := writeTrees(c, "oak:Oaakk")
 				So(err, ShouldBeNil)
 
 				So(ds.Get(tree), ShouldBeNil)
