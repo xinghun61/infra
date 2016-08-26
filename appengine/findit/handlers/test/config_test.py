@@ -66,7 +66,9 @@ _MOCK_SWARMING_SETTINGS = {
     'task_timeout_hours': 23,
     'isolated_server': 'https://isolateserver.appspot.com',
     'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-    'iterations_to_rerun': 10
+    'iterations_to_rerun': 10,
+    'get_swarming_task_id_timeout_seconds': 5 * 60,  # 5 minutes.
+    'get_swarming_task_id_wait_seconds': 10
 }
 
 
@@ -79,6 +81,14 @@ _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS = {
 _MOCK_ACTION_SETTINGS = {
     'cr_notification_build_threshold': 2,
     'cr_notification_latency_limit_minutes': 1000,
+}
+
+_MOCK_CHECK_FLAKE_SETTINGS = {
+    'lower_flake_threshold': 0.02,
+    'upper_flake_threshold': 0.98,
+    'max_flake_in_a_row': 4,
+    'max_stable_in_a_row': 4,
+    'iterations_to_rerun': 100
 }
 
 _MOCK_VERSION_NUMBER = 12
@@ -97,6 +107,7 @@ class ConfigTest(testing.AppengineTestCase):
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'action_settings': _MOCK_ACTION_SETTINGS,
+        'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS
     }
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
@@ -114,6 +125,7 @@ class ConfigTest(testing.AppengineTestCase):
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'action_settings': _MOCK_ACTION_SETTINGS,
+        'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
         'version': 1,
         'latest_version': 1,
         'updated_by': 'test',
@@ -132,6 +144,7 @@ class ConfigTest(testing.AppengineTestCase):
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'action_settings': _MOCK_ACTION_SETTINGS,
+        'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS
     }
     wf_config.FinditConfig.Get().Update(users.GetCurrentUser(), True,
                                         **config_data)
@@ -147,6 +160,7 @@ class ConfigTest(testing.AppengineTestCase):
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'action_settings': _MOCK_ACTION_SETTINGS,
+        'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
         'version': 1,
         'latest_version': 1,
         'updated_by': 'test',
@@ -497,7 +511,9 @@ class ConfigTest(testing.AppengineTestCase):
         'task_timeout_hours': 23,
         'isolated_server': 'https://isolateserver.appspot.com',
         'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10
+        'iterations_to_rerun': 10,
+        'get_swarming_task_id_timeout_seconds': 300,
+        'get_swarming_task_id_wait_seconds': 10
     }))
     self.assertFalse(config._ValidateSwarmingSettings({
         'server_host': 'chromium-swarm.appspot.com',
@@ -507,7 +523,9 @@ class ConfigTest(testing.AppengineTestCase):
         'task_timeout_hours': 23,
         'isolated_server': 'https://isolateserver.appspot.com',
         'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10
+        'iterations_to_rerun': 10,
+        'get_swarming_task_id_timeout_seconds': 300,
+        'get_swarming_task_id_wait_seconds': 10
     }))
     self.assertFalse(config._ValidateSwarmingSettings({
         'server_host': 'chromium-swarm.appspot.com',
@@ -517,7 +535,9 @@ class ConfigTest(testing.AppengineTestCase):
         'task_timeout_hours': 23,
         'isolated_server': 'https://isolateserver.appspot.com',
         'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10
+        'iterations_to_rerun': 10,
+        'get_swarming_task_id_timeout_seconds': 300,
+        'get_swarming_task_id_wait_seconds': 10
     }))
     self.assertFalse(config._ValidateSwarmingSettings({
         'server_host': 'chromium-swarm.appspot.com',
@@ -527,7 +547,9 @@ class ConfigTest(testing.AppengineTestCase):
         'task_timeout_hours': 23,
         'isolated_server': 'https://isolateserver.appspot.com',
         'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10
+        'iterations_to_rerun': 10,
+        'get_swarming_task_id_timeout_seconds': 300,
+        'get_swarming_task_id_wait_seconds': 10
     }))
     self.assertFalse(config._ValidateSwarmingSettings({
         'server_host': 'chromium-swarm.appspot.com',
@@ -537,7 +559,9 @@ class ConfigTest(testing.AppengineTestCase):
         'task_timeout_hours': None,  # should be an int.
         'isolated_server': 'https://isolateserver.appspot.com',
         'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10
+        'iterations_to_rerun': 10,
+        'get_swarming_task_id_timeout_seconds': 300,
+        'get_swarming_task_id_wait_seconds': 10
     }))
     self.assertFalse(config._ValidateSwarmingSettings({
         'server_host': 'chromium-swarm.appspot.com',
@@ -547,7 +571,9 @@ class ConfigTest(testing.AppengineTestCase):
         'task_timeout_hours': 23,
         'isolated_server': 1,  # Should be a string.
         'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10
+        'iterations_to_rerun': 10,
+        'get_swarming_task_id_timeout_seconds': 300,
+        'get_swarming_task_id_wait_seconds': 10
     }))
     self.assertFalse(config._ValidateSwarmingSettings({
         'server_host': 'chromium-swarm.appspot.com',
@@ -557,7 +583,9 @@ class ConfigTest(testing.AppengineTestCase):
         'task_timeout_hours': 23,
         'isolated_server': 'https://isolateserver.appspot.com',
         'isolated_storage_url': 3.2,  # Should be a string.
-        'iterations_to_rerun': 10
+        'iterations_to_rerun': 10,
+        'get_swarming_task_id_timeout_seconds': 300,
+        'get_swarming_task_id_wait_seconds': 10
     }))
     self.assertFalse(config._ValidateSwarmingSettings({
         'server_host': 'chromium-swarm.appspot.com',
@@ -567,7 +595,33 @@ class ConfigTest(testing.AppengineTestCase):
         'task_timeout_hours': 23,
         'isolated_server': 'https://isolateserver.appspot.com',
         'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 1.0  # Should be an int.
+        'iterations_to_rerun': 1.0,  # Should be an int.
+        'get_swarming_task_id_timeout_seconds': 300,
+        'get_swarming_task_id_wait_seconds': 10
+    }))
+    self.assertFalse(config._ValidateSwarmingSettings({
+        'server_host': 'chromium-swarm.appspot.com',
+        'default_request_priority': 150,
+        'request_expiration_hours': 20,
+        'server_query_interval_seconds': 60,
+        'task_timeout_hours': 23,
+        'isolated_server': 'https://isolateserver.appspot.com',
+        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+        'iterations_to_rerun': 1,
+        'get_swarming_task_id_timeout_seconds': '300',  # Should be an int.
+        'get_swarming_task_id_wait_seconds': 10
+    }))
+    self.assertFalse(config._ValidateSwarmingSettings({
+        'server_host': 'chromium-swarm.appspot.com',
+        'default_request_priority': 150,
+        'request_expiration_hours': 20,
+        'server_query_interval_seconds': 60,
+        'task_timeout_hours': 23,
+        'isolated_server': 'https://isolateserver.appspot.com',
+        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+        'iterations_to_rerun': 1,
+        'get_swarming_task_id_timeout_seconds': 300,
+        'get_swarming_task_id_wait_seconds': []  # Should be an int.
     }))
     self.assertTrue(config._ValidateSwarmingSettings({
         'server_host': 'chromium-swarm.appspot.com',
@@ -577,7 +631,9 @@ class ConfigTest(testing.AppengineTestCase):
         'task_timeout_hours': 23,
         'isolated_server': 'https://isolateserver.appspot.com',
         'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10
+        'iterations_to_rerun': 10,
+        'get_swarming_task_id_timeout_seconds': 300,
+        'get_swarming_task_id_wait_seconds': 10
     }))
 
   def testValidateDownloadBuildDataSettings(self):
@@ -659,6 +715,7 @@ class ConfigTest(testing.AppengineTestCase):
             'swarming_settings': _MOCK_SWARMING_SETTINGS,
             'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
             'action_settings': _MOCK_ACTION_SETTINGS,
+            'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS
         })
     }
 
@@ -687,6 +744,7 @@ class ConfigTest(testing.AppengineTestCase):
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'action_settings': _MOCK_ACTION_SETTINGS,
+        'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
         'version': 1,
         'latest_version': 1,
         'updated_by': 'test',
@@ -701,4 +759,55 @@ class ConfigTest(testing.AppengineTestCase):
         {
             'cr_notification_build_threshold': 2,
             'cr_notification_latency_limit_minutes': 1000,
+        }))
+
+  def testValidateCheckFlakeSettings(self):
+    self.assertFalse(config._ValidateCheckFlakeSettings({}))
+    self.assertFalse(config._ValidateCheckFlakeSettings(
+        {
+            'lower_flake_threshold': 1,  # Should be a float.
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 100
+        }))
+    self.assertFalse(config._ValidateCheckFlakeSettings(
+        {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 'a',  # Should be a float.
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 100
+        }))
+    self.assertFalse(config._ValidateCheckFlakeSettings(
+        {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': [],  # Should be an int.
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 100
+        }))
+    self.assertFalse(config._ValidateCheckFlakeSettings(
+        {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': {},  # Should be an int.
+            'iterations_to_rerun': 100
+        }))
+    self.assertFalse(config._ValidateCheckFlakeSettings(
+        {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 3.2  # Should be an int.
+        }))
+    self.assertTrue(config._ValidateCheckFlakeSettings(
+        {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 100
         }))

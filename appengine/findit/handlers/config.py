@@ -164,7 +164,10 @@ def _ValidateSwarmingSettings(settings):
           isinstance(settings.get('task_timeout_hours'), int) and
           isinstance(settings.get('isolated_server'), basestring) and
           isinstance(settings.get('isolated_storage_url'), basestring) and
-          isinstance(settings.get('iterations_to_rerun'), int))
+          isinstance(settings.get('iterations_to_rerun'), int) and
+          isinstance(
+              settings.get('get_swarming_task_id_timeout_seconds'), int) and
+          isinstance(settings.get('get_swarming_task_id_wait_seconds'), int))
 
 
 def _ValidateDownloadBuildDataSettings(settings):
@@ -182,6 +185,15 @@ def _ValidateActionSettings(settings):
               settings.get('cr_notification_latency_limit_minutes'), int))
 
 
+def _ValidateCheckFlakeSettings(settings):
+  return (isinstance(settings, dict) and
+          isinstance(settings.get('lower_flake_threshold'), float) and
+          isinstance(settings.get('upper_flake_threshold'), float) and
+          isinstance(settings.get('max_flake_in_a_row'), int) and
+          isinstance(settings.get('max_stable_in_a_row'), int) and
+          isinstance(settings.get('iterations_to_rerun'), int))
+
+
 # Maps config properties to their validation functions.
 _CONFIG_VALIDATION_FUNCTIONS = {
     'steps_for_masters_rules': _ValidateMastersAndStepsRulesMapping,
@@ -190,6 +202,7 @@ _CONFIG_VALIDATION_FUNCTIONS = {
     'swarming_settings': _ValidateSwarmingSettings,
     'download_build_data_settings': _ValidateDownloadBuildDataSettings,
     'action_settings': _ValidateActionSettings,
+    'check_flake_settings': _ValidateCheckFlakeSettings,
 }
 
 
@@ -253,6 +266,7 @@ class Configuration(BaseHandler):
         'swarming_settings': settings.swarming_settings,
         'download_build_data_settings': settings.download_build_data_settings,
         'action_settings': settings.action_settings,
+        'check_flake_settings': settings.check_flake_settings,
         'version': settings.version,
         'latest_version': latest_version,
         'updated_by': settings.updated_by,

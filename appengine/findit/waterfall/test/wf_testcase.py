@@ -88,7 +88,9 @@ _DEFAULT_SWARMING_SETTINGS = {
     'task_timeout_hours': 23,
     'isolated_server': 'https://isolateserver.appspot.com',
     'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-    'iterations_to_rerun': 10
+    'iterations_to_rerun': 10,
+    'get_swarming_task_id_timeout_seconds': 5 * 60,  # 5 minutes.
+    'get_swarming_task_id_wait_seconds': 10,
 }
 
 
@@ -105,6 +107,15 @@ _DEFAULT_ACTION_SETTINGS = {
 }
 
 
+_DEFAULT_CHECK_FLAKE_SETTINGS = {
+    'lower_flake_threshold': 0.02,
+    'upper_flake_threshold': 0.98,
+    'max_flake_in_a_row': 4,
+    'max_stable_in_a_row': 4,
+    'iterations_to_rerun': 100
+}
+
+
 DEFAULT_CONFIG_DATA = {
     'steps_for_masters_rules': _DEFAULT_STEPS_FOR_MASTERS_RULES,
     'builders_to_trybots': _DEFAULT_TRY_BOT_MAPPING,
@@ -112,6 +123,7 @@ DEFAULT_CONFIG_DATA = {
     'swarming_settings': _DEFAULT_SWARMING_SETTINGS,
     'download_build_data_settings': _DEFAULT_DOWNLOAD_BUILD_DATA_SETTINGS,
     'action_settings': _DEFAULT_ACTION_SETTINGS,
+    'check_flake_settings': _DEFAULT_CHECK_FLAKE_SETTINGS
 }
 
 

@@ -2,34 +2,28 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import copy
-from datetime import datetime
-
 from common import appengine_util
 from common import constants
 from common.pipeline_wrapper import BasePipeline
 
 from model import analysis_status
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.flake.flake_swarming_task import FlakeSwarmingTask
-from waterfall.trigger_flake_swarming_task_pipeline import (
-    TriggerFlakeSwarmingTaskPipeline)
+from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from waterfall import waterfall_config
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
-
-# TODO(lijeffrey): Move to config.
-LOWER_FLAKE_THRESHOLD = .02
-UPPER_FLAKE_THRESHOLD = .98
-MAX_FLAKE_IN_A_ROW = 4
-MAX_STABLE_IN_A_ROW = 4
+from waterfall.trigger_flake_swarming_task_pipeline import (
+    TriggerFlakeSwarmingTaskPipeline)
 
 
 class RecursiveFlakePipeline(BasePipeline):
+
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, run_build_number, step_name,
           test_name, master_build_number, flakiness_algorithm_results_dict,
           queue_name=constants.DEFAULT_QUEUE):
-    """
+    """Pipeline to determine the regression range of a flaky test.
+
     Args:
       master_name (str): The master name.
       builder_name (str): The builder name.
@@ -40,6 +34,7 @@ class RecursiveFlakePipeline(BasePipeline):
       flakiness_algorithm_results_dict (dict): A dictionary used by
         NextBuildNumberPipeline
       queue_name (str): Which queue to run on.
+
     Returns:
       A dict of lists for reliable/flaky tests.
     """
@@ -58,61 +53,72 @@ class RecursiveFlakePipeline(BasePipeline):
 
 
 def get_next_run(master, flakiness_algorithm_results_dict):
-    # A description of this algorithm can be found at:
-    # https://docs.google.com/document/d/1wPYFZ5OT998Yn7O8wGDOhgfcQ98mknoX13AesJaS6ig/edit
-    # Get the last result.
-    last_result = master.success_rates[-1]
-    cur_run = min(master.build_numbers)
-    if (last_result < LOWER_FLAKE_THRESHOLD or
-        last_result > UPPER_FLAKE_THRESHOLD): # Stable result.
-      flakiness_algorithm_results_dict['stable_in_a_row'] += 1
-      if (flakiness_algorithm_results_dict['stable_in_a_row'] >
-          MAX_STABLE_IN_A_ROW): #Identified a stable region.
-        flakiness_algorithm_results_dict['stabled_out'] = True
-      if (flakiness_algorithm_results_dict['stabled_out'] and
-          not flakiness_algorithm_results_dict['flaked_out']):
-        # Identified a candidate for the upper boundary.
-        # Earliest stable point to the right of a flaky region.
-        flakiness_algorithm_results_dict['upper_boundary'] = cur_run
-        flakiness_algorithm_results_dict['lower_boundary'] = None
-      elif (flakiness_algorithm_results_dict['flaked_out'] and
-            not flakiness_algorithm_results_dict['stabled_out'] and
-            not flakiness_algorithm_results_dict['lower_boundary']):
-        # Identified a candidate for the lower boundary.
-        # Latest stable point to the left of a flaky region.
-        flakiness_algorithm_results_dict['lower_boundary'] = cur_run
-        flakiness_algorithm_results_dict['lower_boundary_result'] = 'STABLE'
-      flakiness_algorithm_results_dict['flakes_in_a_row'] = 0
-      step_size = flakiness_algorithm_results_dict['stable_in_a_row'] + 1
-    else: # Flaky result.
-      flakiness_algorithm_results_dict['flakes_in_a_row'] += 1
-      if (flakiness_algorithm_results_dict['flakes_in_a_row'] >
-          MAX_FLAKE_IN_A_ROW): #Identified a flaky region.
-        flakiness_algorithm_results_dict['flaked_out'] = True
-      if (flakiness_algorithm_results_dict['flaked_out'] and
-          not flakiness_algorithm_results_dict['stabled_out']):
-        # Identified a candidate for the upper boundary.
-        # Earliest flaky point to the right of a stable region.
-        flakiness_algorithm_results_dict['upper_boundary'] = cur_run
-        flakiness_algorithm_results_dict['lower_boundary'] = None
-      elif (flakiness_algorithm_results_dict['stabled_out'] and
-            not flakiness_algorithm_results_dict['flaked_out'] and
-            not flakiness_algorithm_results_dict['lower_boundary']):
-        # Identified a candidate for the lower boundary.
-        # Latest flaky point to the left of a stable region.
-        flakiness_algorithm_results_dict['lower_boundary'] = cur_run
-        flakiness_algorithm_results_dict['lower_boundary_result'] = 'FLAKE'
-      flakiness_algorithm_results_dict['stable_in_a_row'] = 0
-      step_size = flakiness_algorithm_results_dict['flakes_in_a_row'] + 1
-    next_run = cur_run - step_size
-    return next_run
+  # A description of this algorithm can be found at:
+  # https://docs.google.com/document/d/1wPYFZ5OT998Yn7O8wGDOhgfcQ98mknoX13AesJaS6ig/edit
+  # Get the last result.
+  last_result = master.success_rates[-1]
+  cur_run = min(master.build_numbers)
+  flake_settings = waterfall_config.GetCheckFlakeSettings()
+  lower_flake_threshold = flake_settings.get('lower_flake_threshold')
+  upper_flake_threshold = flake_settings.get('upper_flake_threshold')
+  max_stable_in_a_row = flake_settings.get('max_stable_in_a_row')
+  max_flake_in_a_row = flake_settings.get('max_flake_in_a_row')
+
+  if (last_result < lower_flake_threshold or
+      last_result > upper_flake_threshold):  # Stable result.
+    flakiness_algorithm_results_dict['stable_in_a_row'] += 1
+    if (flakiness_algorithm_results_dict['stable_in_a_row'] >
+        max_stable_in_a_row):  # Identified a stable region.
+      flakiness_algorithm_results_dict['stabled_out'] = True
+    if (flakiness_algorithm_results_dict['stabled_out'] and
+        not flakiness_algorithm_results_dict['flaked_out']):
+      # Identified a candidate for the upper boundary.
+      # Earliest stable point to the right of a flaky region.
+      flakiness_algorithm_results_dict['upper_boundary'] = cur_run
+      flakiness_algorithm_results_dict['lower_boundary'] = None
+    elif (flakiness_algorithm_results_dict['flaked_out'] and
+          not flakiness_algorithm_results_dict['stabled_out'] and
+          not flakiness_algorithm_results_dict['lower_boundary']):
+      # Identified a candidate for the lower boundary.
+      # Latest stable point to the left of a flaky region.
+      flakiness_algorithm_results_dict['lower_boundary'] = cur_run
+      flakiness_algorithm_results_dict['lower_boundary_result'] = 'STABLE'
+    flakiness_algorithm_results_dict['flakes_in_a_row'] = 0
+    step_size = flakiness_algorithm_results_dict['stable_in_a_row'] + 1
+  else:
+    # Flaky result.
+    flakiness_algorithm_results_dict['flakes_in_a_row'] += 1
+    if (flakiness_algorithm_results_dict['flakes_in_a_row'] >
+        max_flake_in_a_row):  # Identified a flaky region.
+      flakiness_algorithm_results_dict['flaked_out'] = True
+    if (flakiness_algorithm_results_dict['flaked_out'] and
+        not flakiness_algorithm_results_dict['stabled_out']):
+      # Identified a candidate for the upper boundary.
+      # Earliest flaky point to the right of a stable region.
+      flakiness_algorithm_results_dict['upper_boundary'] = cur_run
+      flakiness_algorithm_results_dict['lower_boundary'] = None
+    elif (flakiness_algorithm_results_dict['stabled_out'] and
+          not flakiness_algorithm_results_dict['flaked_out'] and
+          not flakiness_algorithm_results_dict['lower_boundary']):
+      # Identified a candidate for the lower boundary.
+      # Latest flaky point to the left of a stable region.
+      flakiness_algorithm_results_dict['lower_boundary'] = cur_run
+      flakiness_algorithm_results_dict['lower_boundary_result'] = 'FLAKE'
+    flakiness_algorithm_results_dict['stable_in_a_row'] = 0
+    step_size = flakiness_algorithm_results_dict['flakes_in_a_row'] + 1
+  next_run = cur_run - step_size
+  return next_run
 
 
 def sequential_next_run(master, flakiness_algorithm_results_dict):
   last_result = master.success_rates[-1]
   last_result_status = 'FLAKE'
-  if (last_result < LOWER_FLAKE_THRESHOLD or
-      last_result > UPPER_FLAKE_THRESHOLD):
+  flake_settings = waterfall_config.GetCheckFlakeSettings()
+  lower_flake_threshold = flake_settings.get('lower_flake_threshold')
+  upper_flake_threshold = flake_settings.get('upper_flake_threshold')
+
+  if (last_result < lower_flake_threshold or
+      last_result > upper_flake_threshold):
     last_result_status = 'STABLE'
   if flakiness_algorithm_results_dict['sequential_run_index'] > 0:
     if (last_result_status !=
@@ -126,6 +132,7 @@ def sequential_next_run(master, flakiness_algorithm_results_dict):
   return (flakiness_algorithm_results_dict['lower_boundary'] +
           flakiness_algorithm_results_dict['sequential_run_index'])
 
+
 class NextBuildNumberPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
@@ -133,7 +140,6 @@ class NextBuildNumberPipeline(BasePipeline):
   def run(self, master_name, builder_name, master_build_number,
           run_build_number, step_name, test_name, test_result_future,
           queue_name, flakiness_algorithm_results_dict):
-
 
     # Get MasterFlakeAnalysis success list corresponding to parameters.
     master = MasterFlakeAnalysis.Get(master_name, builder_name,
@@ -155,7 +161,7 @@ class NextBuildNumberPipeline(BasePipeline):
     else:
       next_run = get_next_run(master, flakiness_algorithm_results_dict)
 
-    if (next_run < flakiness_algorithm_results_dict['last_build_number']):
+    if next_run < flakiness_algorithm_results_dict['last_build_number']:
       next_run = 0
 
     if next_run:

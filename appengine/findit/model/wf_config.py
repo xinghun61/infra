@@ -68,7 +68,9 @@ class FinditConfig(VersionedConfig):
   #     'task_timeout_hours': 23,
   #     'isolated_server': 'https://isolateserver.appspot.com',
   #     'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-  #     'iterations_to_rerun': 10
+  #     'iterations_to_rerun': 10,
+  #     'get_swarming_task_id_timeout_seconds': 300,
+  #     'get_swarming_task_id_wait_seconds': 10
   # }
   swarming_settings = ndb.JsonProperty(indexed=False, default={})
 
@@ -86,3 +88,14 @@ class FinditConfig(VersionedConfig):
   #     'cr_notification_latency_limit_minutes': 30,
   # }
   action_settings = ndb.JsonProperty(indexed=False, default={})
+
+  # A dict containing settings for identifying the regression range that
+  # introduces test flakiness. For example,
+  # {
+  #     'lower_flake_threshold': 0.02,
+  #     'upper_flake_threshold': 0.98,
+  #     'max_flake_in_a_row': 4,
+  #     'max_stable_in_a_row': 4,
+  #     'iterations_to_rerun': 100
+  # }
+  check_flake_settings = ndb.JsonProperty(indexed=False, default={})

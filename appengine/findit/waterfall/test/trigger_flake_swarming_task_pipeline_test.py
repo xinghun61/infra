@@ -1,5 +1,8 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
 import time
-import json
 
 from model import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
@@ -120,7 +123,7 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
             ],
             'execution_timeout_secs': 3600,
             'extra_args': [
-                '--flag=value', '--gtest_repeat=10',
+                '--flag=value', '--gtest_repeat=100',
                 '--test-launcher-retry-limit=0',
                 '--gtest_filter=a.b'],
             'grace_period_secs': 30,

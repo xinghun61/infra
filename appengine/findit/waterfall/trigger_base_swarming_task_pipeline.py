@@ -6,8 +6,6 @@ import copy
 import logging
 import time
 
-from google.appengine.ext import ndb
-
 from common import time_util
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
@@ -16,11 +14,7 @@ from waterfall import swarming_util
 from waterfall import waterfall_config
 
 
-SLEEP_TIME_SECONDS = 10
-DEADLINE_SECONDS = 5 * 60 # 5 minutes.
-
-
-class TriggerBaseSwarmingTaskPipeline(BasePipeline): #pragma: no cover.
+class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
   """A pipeline to trigger a Swarming task to re-run selected tests of a step.
 
   This pipeline only supports test steps that run on Swarming and support the
@@ -32,9 +26,10 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline): #pragma: no cover.
         ref_task_id, time_util.GetUTCNow().strftime('%Y-%m-%d %H:%M:%S %f'))
 
   def _CreateNewSwarmingTaskRequest(self, ref_task_id, ref_request, master_name,
-                                    builder_name, build_number,step_name,
+                                    builder_name, build_number, step_name,
                                     tests, iterations):
     """Returns a SwarmingTaskRequest instance to run the given tests only."""
+
     # Make a copy of the referred request and drop or overwrite some fields.
     new_request = copy.deepcopy(ref_request)
     new_request.name = self._GetSwarmingTaskName(ref_task_id)
@@ -72,21 +67,24 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline): #pragma: no cover.
     return new_request
 
   def _GetArgs(self, master_name, builder_name, build_number, step_name, tests):
-    #returns an array you can pass into _GetSwarmingTask, _CreateSwarmingTask,
-    #_NeedANewSwarmingTask as the arguments
-    #Should be overwritten in child method
+    # Returns an array you can pass into _GetSwarmingTask, _CreateSwarmingTask,
+    # _NeedANewSwarmingTask as the arguments.
+
+    # Should be overwritten in child method.
     raise NotImplementedError(
         '_GetArgs should be implemented in child class')
 
   def _GetSwarmingTask(self):
-    # Get the appropriate kind of Swarming Task (Wf or Flake)
-    # Should be overwritten in child method
+    # Get the appropriate kind of Swarming Task (Wf or Flake).
+
+    # Should be overwritten in child method.
     raise NotImplementedError(
         '_GetSwarmingTask should be implemented in child class')
 
   def _CreateSwarmingTask(self):
     # Create the appropriate kind of Swarming Task (Wf or Flake)
-    # Should be overwritten in child method
+
+    # Should be overwritten in child method.
     raise NotImplementedError(
         '_CreateSwarmingTask should be implemented in child class')
 
@@ -103,8 +101,12 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline): #pragma: no cover.
       return False
 
   def _GetSwarmingTaskId(self, *args):
+    swarming_settings = waterfall_config.GetSwarmingSettings()
+    wait_seconds = swarming_settings.get('get_swarming_task_id_wait_seconds')
+    timeout_seconds = swarming_settings.get(
+        'get_swarming_task_id_timeout_seconds')
+    deadline = time.time() + timeout_seconds
 
-    deadline = time.time() + DEADLINE_SECONDS
     while time.time() < deadline:
       swarming_task = self._GetSwarmingTask(*args)
 
@@ -115,7 +117,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline): #pragma: no cover.
         return swarming_task.task_id
 
       # Wait for the existing pipeline to start the Swarming task.
-      time.sleep(SLEEP_TIME_SECONDS)
+      time.sleep(wait_seconds)
 
     raise Exception('Time out!')  # pragma: no cover. Pipeline will retry.
 
@@ -138,7 +140,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline): #pragma: no cover.
 
     Returns:
       task_id (str): The new Swarming task that re-run the given tests.
-   """
+    """
     call_args = self._GetArgs(master_name, builder_name,
                               build_number, step_name, tests)
     # Check if a new Swarming Task is really needed.

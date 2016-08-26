@@ -169,3 +169,7 @@ def GetDownloadBuildDataSettings():
 
 def GetActionSettings():
   return FinditConfig().Get().action_settings
+
+
+def GetCheckFlakeSettings():
+  return FinditConfig().Get().check_flake_settings
