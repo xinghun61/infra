@@ -14,7 +14,8 @@ from proto import user_pb2
 DEFAULT_COL_SPEC = 'ID Type Status Priority Milestone Owner Summary'
 OTHER_BUILT_IN_COLS = ['Attachments', 'Stars', 'Opened', 'Closed', 'Modified',
                        'BlockedOn', 'Blocking', 'Blocked', 'MergedInto',
-                       'Reporter', 'Cc', 'Project', 'Component']
+                       'Reporter', 'Cc', 'Project', 'Component',
+                       'OwnerModified', 'StatusModified', 'ComponentModified']
 
 # These are label prefixes that would conflict with built-in column names.
 # E.g., no issue should have a *label* id-1234 or status-foo because any

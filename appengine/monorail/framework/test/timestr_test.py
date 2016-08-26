@@ -48,24 +48,24 @@ class TimeStrTest(unittest.TestCase):
   def testFormatRelativeDate(self):
     now = time.mktime(datetime.datetime(2008, 1, 1).timetuple())
 
-    def TestSecsAgo(secs_ago, expected, expected_recent_only):
+    def TestSecsAgo(secs_ago, expected, expected_days_only):
       test_time = now - secs_ago
       actual = timestr.FormatRelativeDate(
           test_time, clock=lambda: now)
       self.assertEquals(actual, expected)
-      actual_recent_only = timestr.FormatRelativeDate(
-          test_time, clock=lambda: now, recent_only=True)
-      self.assertEquals(actual_recent_only, expected_recent_only)
+      actual_days_only = timestr.FormatRelativeDate(
+          test_time, clock=lambda: now, days_only=True)
+      self.assertEquals(actual_days_only, expected_days_only)
 
-    TestSecsAgo(10 * 24 * 60 * 60, ', 2007', '')
-    TestSecsAgo(5 * 24 * 60 * 60 - 1, ' (4 days ago)', '4 days ago')
-    TestSecsAgo(5 * 60 * 60 - 1, ' (4 hours ago)', '4 hours ago')
-    TestSecsAgo(5 * 60 - 1, ' (4 minutes ago)', '4 minutes ago')
-    TestSecsAgo(2 * 60 - 1, ' (1 minute ago)', '1 minute ago')
-    TestSecsAgo(60 - 1, ' (moments ago)', 'moments ago')
-    TestSecsAgo(0, ' (moments ago)', 'moments ago')
-    TestSecsAgo(-10, ' (moments ago)', 'moments ago')
-    TestSecsAgo(-100, ' (in the future)', '')
+    TestSecsAgo(10 * 24 * 60 * 60, '', '10 days ago')
+    TestSecsAgo(5 * 24 * 60 * 60 - 1, '4 days ago', '4 days ago')
+    TestSecsAgo(5 * 60 * 60 - 1, '4 hours ago', '')
+    TestSecsAgo(5 * 60 - 1, '4 minutes ago', '')
+    TestSecsAgo(2 * 60 - 1, '1 minute ago', '')
+    TestSecsAgo(60 - 1, 'moments ago', '')
+    TestSecsAgo(0, 'moments ago', '')
+    TestSecsAgo(-10, 'moments ago', '')
+    TestSecsAgo(-100, '', '')
 
   def testGetHumanScaleDate(self):
     """Tests GetHumanScaleDate()."""

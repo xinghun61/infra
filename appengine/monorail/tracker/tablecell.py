@@ -10,7 +10,6 @@ import time
 from third_party import ezt
 
 from framework import table_view_helpers
-from framework import timestr
 from tracker import tracker_bizobj
 
 # pylint: disable=unused-argument
@@ -112,64 +111,61 @@ class TableCellAttachments(table_view_helpers.TableCell):
         align='right')
 
 
-class TableCellOpened(table_view_helpers.TableCell):
+class TableCellOpened(table_view_helpers.TableCellDate):
   """TableCell subclass specifically for showing issue opened date."""
 
-  # Make instances of this class render with whitespace:nowrap.
-  NOWRAP = ezt.boolean(True)
-
   def __init__(
       self, issue, col, users_by_id, non_col_labels, label_values,
       _related_issues, _config):
-    date_str = timestr.FormatRelativeDate(
-        issue.opened_timestamp, recent_only=True)
-    if not date_str:
-      date_str = timestr.FormatAbsoluteDate(issue.opened_timestamp)
-
-    table_view_helpers.TableCell.__init__(
-        self, table_view_helpers.CELL_TYPE_UNFILTERABLE, [date_str])
+    table_view_helpers.TableCellDate.__init__(self, issue.opened_timestamp)
 
 
-class TableCellClosed(table_view_helpers.TableCell):
+class TableCellClosed(table_view_helpers.TableCellDate):
   """TableCell subclass specifically for showing issue closed date."""
 
-  # Make instances of this class render with whitespace:nowrap.
-  NOWRAP = ezt.boolean(True)
-
   def __init__(
       self, issue, col, users_by_id, non_col_labels, label_values,
       _related_issues, _config):
-    values = []
-    if issue.closed_timestamp:
-      date_str = timestr.FormatRelativeDate(
-          issue.closed_timestamp, recent_only=True)
-      if not date_str:
-        date_str = timestr.FormatAbsoluteDate(issue.closed_timestamp)
-      values = [date_str]
-
-    table_view_helpers.TableCell.__init__(
-        self, table_view_helpers.CELL_TYPE_UNFILTERABLE, values)
+    table_view_helpers.TableCellDate.__init__(self, issue.closed_timestamp)
 
 
-class TableCellModified(table_view_helpers.TableCell):
+class TableCellModified(table_view_helpers.TableCellDate):
   """TableCell subclass specifically for showing issue modified date."""
 
-  # Make instances of this class render with whitespace:nowrap.
-  NOWRAP = ezt.boolean(True)
+  def __init__(
+      self, issue, col, users_by_id, non_col_labels, label_values,
+      _related_issues, _config):
+    table_view_helpers.TableCellDate.__init__(self, issue.modified_timestamp)
+
+
+class TableCellOwnerModified(table_view_helpers.TableCellDate):
+  """TableCell subclass specifically for showing owner modified age."""
 
   def __init__(
       self, issue, col, users_by_id, non_col_labels, label_values,
       _related_issues, _config):
-    values = []
-    if issue.modified_timestamp:
-      date_str = timestr.FormatRelativeDate(
-          issue.modified_timestamp, recent_only=True)
-      if not date_str:
-        date_str = timestr.FormatAbsoluteDate(issue.modified_timestamp)
-      values = [date_str]
+    table_view_helpers.TableCellDate.__init__(
+        self, issue.owner_modified_timestamp, days_only=True)
 
-    table_view_helpers.TableCell.__init__(
-        self, table_view_helpers.CELL_TYPE_UNFILTERABLE, values)
+
+class TableCellStatusModified(table_view_helpers.TableCellDate):
+  """TableCell subclass specifically for showing status modified age."""
+
+  def __init__(
+      self, issue, col, users_by_id, non_col_labels, label_values,
+      _related_issues, _config):
+    table_view_helpers.TableCellDate.__init__(
+        self, issue.status_modified_timestamp, days_only=True)
+
+
+class TableCellComponentModified(table_view_helpers.TableCellDate):
+  """TableCell subclass specifically for showing component modified age."""
+
+  def __init__(
+      self, issue, col, users_by_id, non_col_labels, label_values,
+      _related_issues, _config):
+    table_view_helpers.TableCellDate.__init__(
+        self, issue.component_modified_timestamp, days_only=True)
 
 
 class TableCellBlockedOn(table_view_helpers.TableCell):
@@ -289,6 +285,9 @@ CELL_FACTORIES = {
     'blocking': TableCellBlocking,
     'blocked': TableCellBlocked,
     'mergedinto': TableCellMergedInto,
+    'ownermodified': TableCellOwnerModified,
+    'statusmodified': TableCellStatusModified,
+    'componentmodified': TableCellComponentModified,
     }
 
 

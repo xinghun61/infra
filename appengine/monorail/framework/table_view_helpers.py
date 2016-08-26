@@ -17,6 +17,7 @@ from third_party import ezt
 
 from framework import framework_constants
 from framework import template_helpers
+from framework import timestr
 from proto import tracker_pb2
 from tracker import tracker_bizobj
 
@@ -527,6 +528,23 @@ class TableCellSummary(TableCell):
     TableCell.__init__(
         self, CELL_TYPE_SUMMARY, [art.summary],
         non_column_labels=non_col_labels)
+
+
+class TableCellDate(TableCell):
+  """TableCell subclass for showing any kind of date timestamp."""
+
+  # Make instances of this class render with whitespace:nowrap.
+  NOWRAP = ezt.boolean(True)
+
+  def __init__(self, timestamp, days_only=False):
+    values = []
+    if timestamp:
+      date_str = timestr.FormatRelativeDate(timestamp, days_only=days_only)
+      if not date_str:
+        date_str = timestr.FormatAbsoluteDate(timestamp)
+      values = [date_str]
+
+    TableCell.__init__(self, CELL_TYPE_UNFILTERABLE, values)
 
 
 class TableCellCustom(TableCell):

@@ -76,18 +76,16 @@ def FormatAbsoluteDate(
   return time.strftime(fmt, time.localtime(timestamp)).replace(' 0', ' ')
 
 
-def FormatRelativeDate(timestamp, recent_only=False, clock=None):
+def FormatRelativeDate(timestamp, days_only=False, clock=None):
   """Return a short string that makes timestamp more meaningful to the user.
 
   Describe the timestamp relative to the current time, e.g., '4
   hours ago'.  In cases where the timestamp is more than 6 days ago,
-  we simply show the year, so that the combined absolute and
-  relative parts look like 'Sep 05, 2005'.
+  we return '' so that an alternative display can be used instead.
 
   Args:
     timestamp: Seconds since the epoch in UTC.
-    recent_only: If True, only return a description of recent relative
-      dates. Do not return the year, and do not put results inside parentheses.
+    days_only: If True, return 'N days ago' even for more than 6 days.
     clock: optional function to return an int time, like int(time.time()).
 
   Returns:
@@ -103,35 +101,25 @@ def FormatRelativeDate(timestamp, recent_only=False, clock=None):
   d_minutes = delta // 60
   d_hours = d_minutes // 60
   d_days = d_hours // 24
-  if recent_only:
-    if d_days > 6:
+  if days_only:
+    if d_days > 1:
+      return '%s days ago' % d_days
+    else:
       return ''
-    if d_days > 1:
-      return '%s days ago' % d_days     # starts at 2 days
-    if d_hours > 1:
-      return '%s hours ago' % d_hours  # starts at 2 hours
-    if d_minutes > 1:
-      return '%s minutes ago' % d_minutes
-    if d_minutes > 0:
-      return '1 minute ago'
-    if delta > -MAX_CLOCK_SKEW_SEC:
-      return 'moments ago'
+
+  if d_days > 6:
     return ''
-  else:
-    if d_days > 6:
-      return ', %s' % (time.localtime(timestamp))[0]
-    if d_days > 1:
-      return ' (%s days ago)' % d_days     # starts at 2 days
-    if d_hours > 1:
-      return ' (%s hours ago)' % d_hours  # starts at 2 hours
-    if d_minutes > 1:
-      return ' (%s minutes ago)' % d_minutes
-    if d_minutes > 0:
-      return ' (1 minute ago)'
-    if delta > -MAX_CLOCK_SKEW_SEC:
-      return ' (moments ago)'
-    # Only say something is in the future if it is more than just clock skew.
-    return ' (in the future)'
+  if d_days > 1:
+    return '%s days ago' % d_days  # starts at 2 days
+  if d_hours > 1:
+    return '%s hours ago' % d_hours  # starts at 2 hours
+  if d_minutes > 1:
+    return '%s minutes ago' % d_minutes
+  if d_minutes > 0:
+    return '1 minute ago'
+  if delta > -MAX_CLOCK_SKEW_SEC:
+    return 'moments ago'
+  return ''
 
 
 def GetHumanScaleDate(timestamp, now=None):
