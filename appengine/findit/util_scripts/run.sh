@@ -53,15 +53,17 @@ print_command_for_queue_cron_dispatch() {
 run_unittests() {
   local findit="appengine/findit"
   local coverage_report_parent_dir="${TMP_DIR}/coverage"
-  if [ ! -d ${coverage_report_parent_dir} ]; then
-    mkdir -p ${coverage_report_parent_dir}
-  fi
+  # TODO: move this directory autovivification to test.py itself
+  mkdir -p ${coverage_report_parent_dir}
   python ${INFRA_DIR}/test.py test ${findit} --html-report ${coverage_report_parent_dir}
   echo "Code coverage report file://${coverage_report_parent_dir}/${findit}/index.html"
 }
 
 run_findit_locally() {
-  local options="--storage_path ${TMP_DIR}/findit"
+  local storage_path="${TMP_DIR}/findit"
+  local options="--storage_path ${storage_path}"
+  # TODO: move this directory autovivification to dev_appserver.py itself
+  mkdir -p "${storage_path}"
   python ${GOOGLE_APP_ENGINE_DIR}/dev_appserver.py ${options} ${FINDIT_DIR}/dispatch.yaml ${FINDIT_MODULES}
 }
 
