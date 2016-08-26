@@ -35,7 +35,7 @@
       flush( () => {
         assert.equal('chromium: 398901 - 398946',
             element.$$('div').textContent.trim());
-        assert.equal(true, element.$.loadingMessage.hidden)
+        assert.equal(true, element.$.loadingMessage.hidden);
         assert.equal(false, element.$.collapse.opened);
         done();
       });

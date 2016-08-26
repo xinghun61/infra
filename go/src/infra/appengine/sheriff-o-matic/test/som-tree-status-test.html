@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents.min.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="/elements/som-tree-status.html">
+<test-fixture id="basic">
+  <template>
+    <som-tree-status></som-tree-status>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+    var server;
+    var responseHeaders = {
+        json: {'Content-Type': 'application/json'},
+    };
+
+    setup(function() {
+      element = fixture('basic');
+      server = sinon.fakeServer.create();
+    });
+
+    test('does not render if no status app exists', function(done) {
+      element.tree = 'faketree';
+      flush(function () {
+        assert.equal(false, element._hasStatusApp);
+        assert.equal(false, element._hasError);
+        assert.equal(true, element._hideNotice);
+
+        assert.equal(true, element.$.treeClosed.hidden);
+        assert.equal(true, element.$.error.hidden);
+        done();
+      });
+    });
+
+    test('does not render if tree is open', function(done) {
+      element.tree = 'chromium';
+
+      server.respondWith(
+        'GET',
+        'https://chromium-status.appspot.com/current?format=json', [
+          200,
+          responseHeaders.json,
+          '{"general_state": "open"}'
+        ]
+      );
+
+      server.respond();
+
+      flush(function () {
+        assert.equal(true, element._hasStatusApp);
+        assert.equal(false, element._hasError);
+        assert.equal(true, element._hideNotice);
+        assert.equal(false, element._isClosed);
+
+        assert.equal(true, element.$.treeClosed.hidden);
+        assert.equal(true, element.$.error.hidden);
+
+        done();
+      });
+    });
+
+    test('renders if tree closed', function(done) {
+      element.tree = 'chromium';
+
+      server.respondWith(
+        'GET',
+        'https://chromium-status.appspot.com/current?format=json', [
+          200,
+          responseHeaders.json,
+          '{"general_state": "closed", "username": "fake@email.com", "message": "test"}'
+        ]
+      );
+
+      server.respond();
+
+      flush(function () {
+        assert.equal(true, element._hasStatusApp);
+        assert.equal(false, element._hideNotice);
+        assert.equal(true, element._isClosed);
+
+        assert.equal(false, element.$.treeClosed.hidden);
+        assert.equal(true, element.$.error.hidden);
+
+        assert.equal('fake@email.com', element._email);
+        assert.equal('test', element._message);
+
+        done();
+      });
+    });
+
+    test('shows error on response error', function(done) {
+      element.tree = 'chromium';
+
+      server.respondWith(
+        'GET',
+        'https://chromium-status.appspot.com/current?format=json', [
+          500,
+          responseHeaders.json,
+          '{"error": "Failure!"}'
+        ]
+      );
+
+      server.respond();
+
+      flush(function () {
+        assert.equal(true, element._hasStatusApp);
+        assert.equal(true, element._hideNotice);
+
+        assert.equal(true, element.$.treeClosed.hidden);
+        assert.equal(false, element.$.error.hidden);
+
+        done();
+      });
+    });
+
+    test('get username from email', function() {
+      element._statusJson = {username: 'test@email.com'};
+
+      assert.equal('test@email.com', element._email);
+
+      assert.equal('test', element._username);
+    });
+  });
+})();
+</script>

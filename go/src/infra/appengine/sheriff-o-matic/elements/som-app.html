@@ -22,6 +22,7 @@
 <link rel="import" href="../elements/som-bug-queue.html">
 <link rel="import" href="../elements/som-drawer.html">
 <link rel="import" href="../elements/som-examine.html">
+<link rel="import" href="../elements/som-tree-status.html">
 <link rel="import" href="../elements/pages/som-help.html">
 <link rel="import" href="../elements/pages/som-rotation-calendar.html">
 <link rel="import" href="../elements/pages/som-welcome.html">
@@ -97,7 +98,7 @@
         box-sizing: border-box;
         width: 100%;
         padding: 8px 10px;
-        margin: 10px auto 20px;
+        margin: 5px auto 10px;
         border: 1px solid #666;
         border-radius: 5px;
       }
@@ -165,8 +166,9 @@
         <iron-pages attr-for-selected='id' selected="[[_selectedPage]]" class="flex layout vertical">
           <div id="alertsList" class="page-body">
             <div class="list-item">
+              <som-tree-status tree="[[_tree]]" id="treeStatus"></som-tree-status>
               <div class="notification">
-                Start at the top and try to clear all the alerts. Help links are provided for additional guidance. 
+                Start at the top and try to clear all the alerts. Help links are provided for additional guidance.
               </div>
             </div>
             <som-bug-queue id="bugQueue" bug-queue-label="[[_bugQueueLabel]]"></som-bug-queue>
@@ -411,6 +413,7 @@
         }
         this.$.annotations.generateRequest();
         this.$.bugQueue.refresh();
+        this.$.treeStatus.refresh();
         this._alertsGroupsChanged(this._alertsGroups);
       },
 
