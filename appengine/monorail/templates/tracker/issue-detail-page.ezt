@@ -250,6 +250,7 @@ runOnLoad(function() {
     [# TODO(jrobbins): submit in a subframe,XHR or ask user before losing comment in-progress ]
     var loading = $('comment-action-loading-' + sequence_num);
     loading.style.display = 'inline';
+    TKR_initialFormValues = TKR_currentFormValues();
     f.submit();
     return false;
   }
@@ -282,6 +283,7 @@ runOnLoad(function() {
     var loading = $('comment-action-loading-' + sequence_num);
     loading.style.display = 'inline';
 
+    TKR_initialFormValues = TKR_currentFormValues();
     f.submit();
     return false;
   }
