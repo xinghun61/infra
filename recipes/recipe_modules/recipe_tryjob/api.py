@@ -195,8 +195,7 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
     # Not working yet, but maybe??
     #api.file.rmtree('clean old %s repo' % proj, checkout_path)
 
-    config = self.m.gclient.make_config(
-        GIT_MODE=True, CACHE_DIR=root_dir.join("__cache_dir"))
+    config = self.m.gclient.make_config(CACHE_DIR=root_dir.join("__cache_dir"))
     soln = config.solutions.add()
     soln.name = proj
     soln.url = proj_config['repo_url']

@@ -35,7 +35,7 @@ def RunSteps(api, project_under_test, auth_with_account):
   root_dir = api.path['slave_build']
   cache_dir = root_dir.join('_cache_dir')
 
-  c = api.gclient.make_config(CACHE_DIR=cache_dir, GIT_MODE=True)
+  c = api.gclient.make_config(CACHE_DIR=cache_dir)
   soln = c.solutions.add()
   soln.name = project_under_test
   soln.url = api.luci_config.get_project_metadata(
