@@ -2,18 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import datetime
-
 from google.appengine.ext import ndb
 
 from common import appengine_util
 from common import constants
 from model import analysis_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from waterfall import waterfall_config
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
-
-# TODO(lijeffrey): Move to config.
-MAX_BUILD_NUMBERS_TO_LOOK_BACK = 1000
 
 
 @ndb.transactional
@@ -74,13 +70,16 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, step_name,
   """
   if NeedANewAnalysis(
       master_name, builder_name, build_number, step_name, test_name):
+    check_flake_settings = waterfall_config.GetCheckFlakeSettings()
+    max_build_numbers_to_look_back = check_flake_settings.get(
+        'max_build_numbers_to_look_back')
     flakiness_algorithm_results_dict = {
         'flakes_in_a_row': 0,
         'stable_in_a_row': 0,
         'stabled_out': False,
         'flaked_out': False,
         'last_build_number': max(
-            0, build_number - MAX_BUILD_NUMBERS_TO_LOOK_BACK),
+            0, build_number - max_build_numbers_to_look_back),
         'lower_boundary': None,
         'upper_boundary': None,
         'lower_boundary_result': None,

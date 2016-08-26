@@ -191,7 +191,8 @@ def _ValidateCheckFlakeSettings(settings):
           isinstance(settings.get('upper_flake_threshold'), float) and
           isinstance(settings.get('max_flake_in_a_row'), int) and
           isinstance(settings.get('max_stable_in_a_row'), int) and
-          isinstance(settings.get('iterations_to_rerun'), int))
+          isinstance(settings.get('iterations_to_rerun'), int) and
+          isinstance(settings.get('max_build_numbers_to_look_back'), int))
 
 
 # Maps config properties to their validation functions.
