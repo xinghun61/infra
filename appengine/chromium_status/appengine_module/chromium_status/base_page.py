@@ -32,6 +32,10 @@ class GlobalConfig(db.Model):
   public_access = db.BooleanProperty()
   # Flag indicating that this is a ChromiumOS status page
   is_chromiumos = db.BooleanProperty(default=False)
+  # Preamble text to appear directly above status-editing field
+  preamble = db.StringProperty(required=False)
+  # Postamble text to appear directly beneath status-editing field
+  postamble = db.StringProperty(required=False)
 
 
 class BasePage(webapp.RequestHandler):
@@ -42,6 +46,8 @@ class BasePage(webapp.RequestHandler):
   _VALID_PRIVATE_EMAIL = re.compile(r"^.*@(google\.com)$")
   PUBLIC_ACCESS = False
   IS_CHROMIUMOS = False
+  PREAMBLE = ''
+  POSTAMBLE = ''
 
   def __init__(self, *args, **kwargs):  # pragma: no cover
     super(BasePage, self).__init__(*args, **kwargs)
@@ -189,6 +195,8 @@ def bootstrap():  # pragma: no cover
   BasePage.APP_NAME = config.app_name
   BasePage.PUBLIC_ACCESS = config.public_access
   BasePage.IS_CHROMIUMOS = config.is_chromiumos
+  BasePage.PREAMBLE = config.preamble
+  BasePage.POSTAMBLE = config.postamble
 
   if db.GqlQuery('SELECT __key__ FROM Passwords').get() is None:
     # Insert a dummy Passwords so it can be edited through the admin console

@@ -419,7 +419,10 @@ class MainPage(BasePage):
     template_values['last_status_key'] = current_status.key()
     template_values['error_message'] = error_message
     template_values['limit'] = limit
+    template_values['preamble'] = self.PREAMBLE
+    template_values['postamble'] = self.POSTAMBLE
     self.DisplayTemplate('main.html', template_values)
+
 
   @utils.requires_login
   @utils.requires_write_access
