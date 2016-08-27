@@ -11,7 +11,7 @@ THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE:-$0}" )" && pwd )"
 FINDIT_DIR="${THIS_SCRIPT_DIR}/.."
 INFRA_DIR="${FINDIT_DIR}/../.."
 GOOGLE_APP_ENGINE_DIR="${INFRA_DIR}/../google_appengine"
-has_realpath="$(which realpath && echo 0)"
+has_realpath="$(which realpath > /dev/null && echo 0)"
 if [[ has_realpath == "0" ]]; then
   FINDIT_DIR="$(realpath ${FINDIT_DIR})"
   INFRA_DIR="$(realpath ${INFRA_DIR})"
