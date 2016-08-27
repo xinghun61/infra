@@ -1,100 +1,131 @@
 <!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
-  <title> Find Regression Range</title>
+  <title> Find Regression Range for Flaky Test</title>
   <style type="text/css">
-    body {
-      font-family: Verdana, Arial, sans-serif;
-      font-size: 12px;
-    }
-    #placeholder {
+    #flake-trend {
       width: 450px;
       height: 200px;
-    }
-    table {
-      text-align: center;
     }
   </style>
   <script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
   <script type="text/javascript" language="javascript" src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.2/jquery.flot.min.js"></script>
   <script type="text/javascript">
-    $(document).ready(function () {
-    $.plot($("#placeholder"), [{{success_rates}}],
-    {
-      series: {
-        lines: {
-          show: true
-        },
-        points: {
-          show: true
+    var findit = {};
+    findit.masterName = "{{ master_name }}";
+    findit.builderName = "{{ builder_name }}";
+    findit.regressedBuildNumber = {{ suspected_flake_build_number or -1 }};
+    findit.passRates = {{ success_rates | tojson | safe }};
+
+    $(document).ready(function() {
+      if (findit.passRates.length == 0) {
+        $('#flake-trend').html('No data available yet.');
+        return;
+      }
+
+      // Convert pass rate from [0, 1] to a percentage.
+      $.each(findit.passRates, function(index, value) {
+        value[1] = (value[1] * 100).toFixed(0);
+      });
+
+      var plot = $.plot($("#flake-trend"), [
+        {
+          data: findit.passRates,
         }
-      },
-      grid: {
-        hoverable: true,
-        borderWidth: 1
-      },
-      legend: {
-        labelBoxBorderColor: "none",
-        position: "right"
+      ], {
+        series: {
+          lines: {
+            show: true
+          },
+          points: {
+            show: true
+          },
+          highlightColor: 'red',
+        },
+        grid: {
+          hoverable: true,
+          clickable: true,
+          borderWidth: 1,
+          autoHighlight: false,
+        },
+        xaxis:
+        {
+          tickDecimals: 0,
+        },
+        yaxis: {
+          min: 0,
+          max: 100,
+          tickFormatter: function(val, axis) {
+            return val + '%';
+          },
+        },
+      });
+
+      $("<div id='tooltip'></div>").css({
+        position: "absolute",
+        display: "none",
+        border: "1px solid #fdd",
+        padding: "2px",
+        "background-color": "#fee",
+        opacity: 0.80
+      }).appendTo("body");
+
+      function showTooltipForDataPoint(item) {
+        var buildNumber = item.datapoint[0];
+        var passRate = item.datapoint[1];
+
+        $("#tooltip").html('Build #: <a href="https://build.chromium.org/p/' + findit.masterName + '/builders/' + findit.builderName + '/builds/' + buildNumber + '" target="_blank">' + buildNumber + "</a><br> Pass rate: " + passRate + '%').css({top: item.pageY + 5, left: item.pageX + 5}).show();
       }
+
+      var dataPointSelected = false;
+      $("#flake-trend").bind("plothover", function (event, pos, item) {
+        if (dataPointSelected)
+          return;  // A data point is selected due to a click.
+
+        if (item) {
+          showTooltipForDataPoint(item);
+        } else {
+          $("#tooltip").hide();
+        }
+      });
+      $("#flake-trend").bind("plotclick", function (event, pos, item) {
+        if (item) {
+          dataPointSelected = true;  // Set selected data point upon click.
+          showTooltipForDataPoint(item);
+        } else {
+          dataPointSelected = false;  // Unselect the data point.
+          $("#tooltip").hide();
+        }
+      });
+
+      $.each(findit.passRates, function(index, value) {
+        if (value[0] == findit.regressedBuildNumber)
+          plot.highlight(0, index);
+      });
     });
-    $("<div id='tooltip'></div>").css({
-      position: "absolute",
-      display: "none",
-      border: "1px solid #fdd",
-      padding: "2px",
-      "background-color": "#fee",
-      opacity: 0.80
-    }).appendTo("body");
-
-   $("#placeholder").bind("plothover", function (event, pos, item) {
-      if (item) {
-        var x = Math.round(item.datapoint[0].toFixed(2));
-        var y = item.datapoint[1].toFixed(2);
-
-        $("#tooltip").html("Build Number: " + x + "<br> Pass rate: " + y)
-        .css({top: item.pageY+5, left: item.pageX+5})
-        .fadeIn(200);
-      }
-      else {
-        $("#tooltip").hide();
-      }
-    })});
   </script>
 </head>
 
 <body>
-  <table>
-    <tr>
-      <td></td>
-      <td>
-        <h1>Regression range of Test</h1>
-        Status of Analysis:  {{analysis_status}}
-        {% if suspected_flake_build_number %}
-        <br>
-        Regressed in Build: {{suspected_flake_build_number}}
-        {% endif %}
-      </td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>Pass Rate</td>
-      <td>
-        <div id="placeholder"></div>
-      </td>
-      <td>
-        Master Name: {{master_name}} <br>
-        Builder Name: {{builder_name}} <br>
-        Starting Build Number: {{build_number}} <br>
-        Step Name: {{step_name}} <br>
-        Test Name: {{test_name}} <br>
-      </td>
-    </tr>
-    <tr>
-      <td></td>
-      <td>Build Number</td>
-      <td></td>
-    </tr>
-  </table>
+  <div>
+    <b>Flaky Test:</b><br>
+    Master: {{ master_name }} <br>
+    Builder: {{ builder_name }} <br>
+    Step: {{ step_name }} <br>
+    Test: {{ test_name }} <br>
+  </div>
+  <br>
+  <div>
+    <b>Analysis Result:</b><br>
+    Status:  {{ analysis_status }}<br>
+    {% if suspected_flake_build_number %}
+    Flakiness <b>started</b> in Build: <a href="https://build.chromium.org/p/{{ master_name }}/builders/{{ builder_name }}/builds/{{ suspected_flake_build_number }}" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake_build_number }}</a>
+    {% endif %}
+  </div>
+  <br>
+  <div>
+    <b>Pass Rate (%) by Build:</b><br>
+    <div id="flake-trend"></div>
+  </div>
 </body>
 </html>
