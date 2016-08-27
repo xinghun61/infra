@@ -15,6 +15,7 @@ Swarming = project_config_pb2.Swarming
 
 
 class SwarmingCfgTest(testing.AppengineTestCase):
+  maxDiff = None
   def cfg_test(self, cfg, expected_errors):
     ctx = config_component.validation.Context()
     swarmingcfg.validate_cfg(cfg, ctx)
@@ -34,6 +35,11 @@ class SwarmingCfgTest(testing.AppengineTestCase):
           name='release',
           swarming_tags=['a:b'],
           dimensions=['os:Linux', 'cpu:'],
+          cipd_packages=[Swarming.Builder.CipdPackage(
+            package_name='infra/test',
+            path='third_party',
+            version='latest',
+          )],
           recipe=Swarming.Recipe(
             repository='https://x.com',
             name='foo',
@@ -83,6 +89,18 @@ class SwarmingCfgTest(testing.AppengineTestCase):
           name='b2',
           swarming_tags=['builder:b2'],
           dimensions=['x:y', 'x:y2'],
+          cipd_packages=[
+            Swarming.Builder.CipdPackage(
+              package_name='',
+              path='/',
+              version='::',
+            ),
+            Swarming.Builder.CipdPackage(
+              package_name='$name',
+              path='\\path',
+              version='VER_1',
+            )
+          ],
           recipe=Swarming.Recipe(
             properties=[
               '',
@@ -112,6 +130,17 @@ class SwarmingCfgTest(testing.AppengineTestCase):
       ('builder b2: tag #1: do not specify builder tag; '
        'it is added by swarmbucket automatically'),
       'builder b2: dimension #2: duplicate key x',
+      ('builder b2: cipd_package #1: '
+       'package_name must be a valid CIPD package name template'),
+      'builder b2: cipd_package #1: CIPD package path cannot start with "/"',
+      ('builder b2: cipd_package #1: '
+       'version must be a valid CIPD package version'),
+      ('builder b2: cipd_package #2: '
+       'package_name must be a valid CIPD package name template'),
+      ('builder b2: cipd_package #2: CIPD package path cannot contain \\. '
+       'On Windows forward-slashes will be replaced with back-slashes.'),
+      ('builder b2: cipd_package #2: '
+       'version must be a valid CIPD package version'),
       'builder b2: recipe: properties #1: does not have colon',
       'builder b2: recipe: properties #2: key not specified',
       ('builder b2: recipe: properties #3: '
@@ -138,6 +167,16 @@ class SwarmingCfgTest(testing.AppengineTestCase):
             name='b2',
             swarming_tags=['builder:b2'],
             dimensions=['x:y', 'x:y2'],
+            cipd_packages=[
+              Swarming.Builder.CipdPackage(
+                package_name='${foo}',
+              ),
+              Swarming.Builder.CipdPackage(
+                package_name='${platform}',
+                path='..',
+                version='$ref',
+              ),
+            ],
             recipe=Swarming.Recipe(
                 properties=[
                   '',
@@ -167,6 +206,15 @@ class SwarmingCfgTest(testing.AppengineTestCase):
       ('builder b2: tag #1: do not specify builder tag; '
        'it is added by swarmbucket automatically'),
       'builder b2: dimension #2: duplicate key x',
+      ('builder b2: cipd_package #1: '
+       'package_name must be a valid CIPD package name template'),
+      ('builder b2: cipd_package #1: CIPD package path is required. '
+       'Use "." to install to run dirname'),
+      ('builder b2: cipd_package #1: '
+       'version must be a valid CIPD package version'),
+      'builder b2: cipd_package #2: CIPD package path cannot contain ".."',
+      ('builder b2: cipd_package #2: '
+       'version must be a valid CIPD package version'),
       'builder b2: recipe: properties #1: does not have colon',
       'builder b2: recipe: properties #2: key not specified',
       ('builder b2: recipe: properties #3: '

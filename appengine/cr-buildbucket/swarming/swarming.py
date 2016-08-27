@@ -357,6 +357,14 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
       task_properties.get('dimensions', []),
     ))
 
+  if builder_cfg.cipd_packages:  # pragma: no branch
+    cipd_input = task_properties.setdefault('cipd_input', {})
+    packages = cipd_input.get('packages', [])
+    for p in _to_swarming_cipd_packages(builder_cfg.cipd_packages):
+      if p not in packages:
+        packages.append(p)
+    cipd_input['packages'] = packages
+ 
   if builder_cfg.execution_timeout_secs > 0:
     task_properties['execution_timeout_secs'] = (
         builder_cfg.execution_timeout_secs)
@@ -378,6 +386,14 @@ def _to_swarming_dimensions(dims):
     {'key': key, 'value': value}
     for key, value in
     (s.split(':', 1) for s in dims)
+  ]
+
+
+def _to_swarming_cipd_packages(packages):
+  """Converts CIPD packages from buildbucket format to swarming format."""
+  return [
+    {'package_name': p.package_name, 'path': p.path, 'version': p.version}
+    for p in packages
   ]
 
 

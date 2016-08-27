@@ -57,6 +57,13 @@ class SwarmingTest(testing.AppengineTestCase):
             repository='https://example.com/repo',
             name='recipe',
           ),
+          cipd_packages=[
+            project_config_pb2.Swarming.Builder.CipdPackage(
+              package_name='infra/test/foo/${platform}',
+              path='third_party',
+              version='stable',
+            ),
+          ],
         ),
         builders=[
           project_config_pb2.Swarming.Builder(
@@ -67,6 +74,13 @@ class SwarmingTest(testing.AppengineTestCase):
                   properties=['predefined-property:x'],
                   properties_j=['predefined-property-bool:true'],
               ),
+              cipd_packages=[
+                project_config_pb2.Swarming.Builder.CipdPackage(
+                  package_name='infra/test/baz',
+                  path='.',
+                  version='lkgr',
+                )
+              ],
               priority=108,
           ),
         ],
@@ -95,6 +109,20 @@ class SwarmingTest(testing.AppengineTestCase):
           '-properties', '$properties_json',
           '-logdog-project', '$project',
         ],
+        'cipd_input': {
+          'packages': [
+            {
+              'package_name': 'infra/test/foo/${platform}',
+              'path': 'third_party',
+              'version': 'stable',
+            },
+            {
+              'package_name': 'infra/test/bar/${os_ver}',
+              'path': '.',
+              'version': 'latest',
+            },
+          ],
+        },
       },
       'numerical_value_for_coverage_in_format_obj': 42,
     }
@@ -283,6 +311,25 @@ class SwarmingTest(testing.AppengineTestCase):
           {'key': 'os', 'value': 'Linux'},
           {'key': 'pool', 'value': 'Chrome'},
         ]),
+        'cipd_input': {
+          'packages': [
+            {
+              'package_name': 'infra/test/foo/${platform}',
+              'path': 'third_party',
+              'version': 'stable',
+            },
+            {
+              'package_name': 'infra/test/bar/${os_ver}',
+              'path': '.',
+              'version': 'latest',
+            },
+            {
+              'package_name': 'infra/test/baz',
+              'path': '.',
+              'version': 'lkgr',
+            },
+          ],
+        },
       },
       'pubsub_topic': 'projects/testbed-test/topics/swarming',
       'pubsub_userdata': json.dumps({
@@ -391,6 +438,25 @@ class SwarmingTest(testing.AppengineTestCase):
           {'key': 'os', 'value': 'Linux'},
           {'key': 'pool', 'value': 'Chrome'},
         ]),
+        'cipd_input': {
+          'packages': [
+            {
+              'package_name': 'infra/test/foo/${platform}',
+              'path': 'third_party',
+              'version': 'stable',
+            },
+            {
+              'package_name': 'infra/test/bar/${os_ver}',
+              'path': '.',
+              'version': 'latest',
+            },
+            {
+              'package_name': 'infra/test/baz',
+              'path': '.',
+              'version': 'lkgr',
+            },
+          ],
+        }
       },
       'pubsub_topic': 'projects/testbed-test/topics/swarming',
       'pubsub_userdata': json.dumps({

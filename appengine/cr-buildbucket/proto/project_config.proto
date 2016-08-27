@@ -60,6 +60,21 @@ message Swarming {
   // a user that has permissions to schedule a build to the bucket, can override
   // this config.
   message Builder {
+    message CipdPackage {
+      // A template of a full CIPD package name, e.g
+      // "infra/tools/authutil/${platform}". This can be parametrized using
+      // ${platform} and ${os_ver} parameters, where ${platform} will be
+      // expanded into "<os>-<architecture>" and ${os_ver} will be expanded to
+      // OS version name.
+      optional string package_name = 1;
+      // Path to dir, relative to the task working dir, where to install the
+      // package. The path cannot start with a slash. If empty, the package will
+      // be installed a the root of the mapped directory.
+      optional string path = 2;
+      // Valid package version for all packages matched by package name.
+      optional string version = 3;
+    }
+
     // Name of the builder. Will be propagated to "builder" build tag and
     // "buildername" recipe property.
     optional string name = 1;
@@ -73,6 +88,8 @@ message Swarming {
     //
     // If value is not specified ("<key>:"), then it excludes a default value.
     repeated string dimensions = 3;
+    // CIPD packages to install on the builder.
+    repeated CipdPackage cipd_packages = 8;
     // Specifies that a recipe to run.
     optional Recipe recipe = 4;
     // Swarming task priority.
