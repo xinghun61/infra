@@ -237,9 +237,12 @@ func uploadTestFile(c context.Context, data io.Reader, filename string) error {
 		TestType:    p.TestType,
 		BuildNumber: model.BuildNum(bn),
 		Name:        filename,
-		Data:        data,
 	}
-	if err := tf.PutData(c); err != nil {
+	err = tf.PutData(c, func(w io.Writer) error {
+		_, err := io.Copy(w, data)
+		return err
+	})
+	if err != nil {
 		logging.Fields{logging.ErrorKey: err, "filename": filename}.Errorf(c, "uploadTestFile: PutData")
 		return statusError{err, http.StatusInternalServerError}
 	}
@@ -286,7 +289,8 @@ func updateFullResults(c context.Context, data io.Reader) error {
 	go func() {
 		defer wg.Done()
 		if err := builderstate.Update(c, p.Master, p.Builder, p.TestType, time.Now().UTC()); err != nil {
-			logging.WithError(err).Errorf(c, "doFileUpload: full_results.json: builderstate update")
+			// This isn't a fatal error; log at something less attention-seeking.
+			logging.WithError(err).Infof(c, "doFileUpload: full_results.json: builderstate update")
 		}
 	}()
 
@@ -326,13 +330,14 @@ func updateFullResults(c context.Context, data io.Reader) error {
 		h := make(http.Header)
 		h.Set("Content-Type", "application/json")
 
+		logging.Debugf(c, "adding taskqueue task for [%s], with payload size %d", monitoringPath, len(payload))
 		if err := taskqueue.Get(c).Add(&taskqueue.Task{
 			Path:    monitoringPath,
 			Payload: payload,
 			Header:  h,
 			Method:  "POST",
 		}, monitoringQueueName); err != nil {
-			logging.WithError(err).Errorf(c, "taskqueue: %s", monitoringPath)
+			logging.WithError(err).Errorf(c, "Failed to add task queue task.")
 		}
 	}()
 
@@ -383,13 +388,15 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 				files[i].err = err
 				return
 			}
-			if err := tf.GetData(c); err != nil {
+
+			reader, err := tf.DataReader(c)
+			if err != nil {
 				logging.WithError(err).Errorf(c, "updateIncremental: GetData")
 				files[i].err = err
 				return
 			}
 			var a model.AggregateResult
-			if err := json.NewDecoder(tf.Data).Decode(&a); err != nil {
+			if err := json.NewDecoder(reader).Decode(&a); err != nil {
 				logging.WithError(err).Errorf(c, "updateIncremental: unmarshal TestFile data")
 				files[i].err = err
 				return
@@ -400,8 +407,12 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 	}
 
 	wg.Wait()
-	for _, file := range files {
+	for idx, file := range files {
 		if file.err != nil {
+			logging.Fields{
+				logging.ErrorKey: file.err,
+				"index":          idx,
+			}.Errorf(c, "File encountered error.")
 			return file.err
 		}
 	}
@@ -497,14 +508,14 @@ func updateAggregate(c context.Context, tf *model.TestFile, aggr, incr *model.Ag
 		return statusError{err, http.StatusInternalServerError}
 	}
 
-	b := &bytes.Buffer{}
-	if err := json.NewEncoder(b).Encode(&aggr); err != nil {
-		logging.WithError(err).Errorf(c, "updateAggregate: marshal JSON")
-		return statusError{err, http.StatusInternalServerError}
-	}
-
-	tf.Data = b
-	if err := tf.PutData(c); err != nil {
+	err := tf.PutData(c, func(w io.Writer) error {
+		if err := json.NewEncoder(w).Encode(&aggr); err != nil {
+			logging.WithError(err).Errorf(c, "updateAggregate: marshal JSON")
+			return err
+		}
+		return nil
+	})
+	if err != nil {
 		logging.WithError(err).Errorf(c, "updateAggregate: PutData")
 		return statusError{err, http.StatusInternalServerError}
 	}

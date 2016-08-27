@@ -5,7 +5,7 @@
 package model
 
 import (
-	"bytes"
+	"io"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
@@ -61,8 +61,9 @@ func TestTestFile(t *testing.T) {
 			})
 
 			Convey("fetch data from multiple DataEntrys", func() {
-				So(tf1.GetData(c), ShouldBeNil)
-				b, err := ioutil.ReadAll(tf1.Data)
+				reader, err := tf1.DataReader(c)
+				So(err, ShouldBeNil)
+				b, err := ioutil.ReadAll(reader)
 				So(err, ShouldBeNil)
 				So(string(b), ShouldResemble, "hello, world")
 			})
@@ -73,10 +74,12 @@ func TestTestFile(t *testing.T) {
 				data, err := ioutil.ReadFile(filepath.Join("testdata", "results.json"))
 				So(err, ShouldBeNil)
 				tf := TestFile{
-					ID:   1,
-					Data: bytes.NewReader(data),
+					ID: 1,
 				}
-				So(tf.PutData(c), ShouldBeNil)
+				So(tf.PutData(c, func(w io.Writer) error {
+					_, err := w.Write(data)
+					return err
+				}), ShouldBeNil)
 				So(ds.Put(&tf), ShouldBeNil)
 
 				ds.Testable().CatchupIndexes()
@@ -84,25 +87,32 @@ func TestTestFile(t *testing.T) {
 				tf = TestFile{ID: 1}
 				So(ds.Get(&tf), ShouldBeNil)
 				So(tf.ID, ShouldEqual, 1)
-				So(tf.GetData(c), ShouldBeNil)
-				b, err := ioutil.ReadAll(tf.Data)
+
+				reader, err := tf.DataReader(c)
+				So(err, ShouldBeNil)
+				b, err := ioutil.ReadAll(reader)
 				So(err, ShouldBeNil)
 				So(b, ShouldResemble, data)
 			})
 
 			Convey("PutData updates DataKeys and OldDataKeys", func() {
 				tf := TestFile{
-					ID:   1,
-					Data: bytes.NewReader([]byte(`{"hello":"world"}`)),
+					ID: 1,
 				}
-				So(tf.PutData(c), ShouldBeNil)
+				So(tf.PutData(c, func(w io.Writer) error {
+					_, err := w.Write([]byte(`{"hello":"world"}`))
+					return err
+				}), ShouldBeNil)
 				So(tf.DataKeys, ShouldNotBeNil)
 				So(ds.Put(&tf), ShouldBeNil)
 
 				k := make([]*datastore.Key, len(tf.DataKeys))
 				copy(k, tf.DataKeys)
-				tf.Data = bytes.NewReader([]byte(`{"new":"data"}`))
-				So(tf.PutData(c), ShouldBeNil)
+
+				So(tf.PutData(c, func(w io.Writer) error {
+					_, err := w.Write([]byte(`{"new":"data"}`))
+					return err
+				}), ShouldBeNil)
 				So(tf.OldDataKeys, ShouldResemble, k)
 				So(ds.Put(&tf), ShouldBeNil)
 
@@ -110,8 +120,9 @@ func TestTestFile(t *testing.T) {
 					ds.Testable().CatchupIndexes()
 
 					tmp := TestFile{DataKeys: k}
-					So(tmp.GetData(c), ShouldBeNil)
-					b, err := ioutil.ReadAll(tmp.Data)
+					reader, err := tmp.DataReader(c)
+					So(err, ShouldBeNil)
+					b, err := ioutil.ReadAll(reader)
 					So(err, ShouldBeNil)
 					So(b, ShouldResemble, []byte(`{"hello":"world"}`))
 				})

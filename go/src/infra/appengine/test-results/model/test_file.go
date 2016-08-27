@@ -5,18 +5,17 @@
 package model
 
 import (
-	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"math"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"github.com/luci/gae/service/datastore"
+	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/sync/parallel"
 )
 
 // IsAggregateTestFile returns whether filename is that of an aggregate test file.
@@ -83,24 +82,6 @@ type TestFile struct {
 	// LastMod is the last modified time.
 	LastMod time.Time `gae:"date"`
 
-	// Data is the data in the DataEntry(s) pointed to by DataKeys.
-	// After loading a TestFile from the datastore, this field is
-	// only available after GetData is called. To put updated
-	// data in this field to the datastore, call PutData.
-	//
-	// Users will typically perform the following sequence of calls
-	// in a transaction:
-	//
-	//   ds = datastore.Get(ctx)
-	//   err = ds.Get(tf)
-	//   err = tf.GetData(ctx)
-	//   // manipulate tf.Data
-	//   err = tf.PutData(ctx)
-	//   err = ds.Put(tf)
-	//   err = ds.Delete(tf.OldDataKeys)
-	//
-	Data io.Reader `gae:"-,noindex"`
-
 	// OldDataKeys is the keys of the old DataEntry(s) used
 	// before putting the new data. This field is set after a
 	// successful call to PutData.
@@ -114,33 +95,29 @@ type TestFile struct {
 	NewDataKeys []*datastore.Key `gae:"new_data_keys,noindex"`
 }
 
-// GetData fetches data from the DataEntry(s) pointed to by tf.DataKeys
+// DataReader fetches data from the DataEntry(s) pointed to by tf.DataKeys
 // and sets tf.Data to the fetched data.
-func (tf *TestFile) GetData(c context.Context) error {
+func (tf *TestFile) DataReader(c context.Context) (io.Reader, error) {
 	ids := make([]int64, len(tf.DataKeys))
 	for i, dk := range tf.DataKeys {
 		ids[i] = dk.IntID() // Intentional: ignores the Kind stored in dk.
 	}
 	ids, err := updatedBlobKeys(c, ids...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	dataEntries := make([]*DataEntry, len(tf.DataKeys))
+	keys := make([]*datastore.Key, len(ids))
+	ds := datastore.Get(c)
 	for i, id := range ids {
-		dataEntries[i] = &DataEntry{ID: id}
-	}
-	if err := datastore.Get(c).Get(dataEntries); err != nil {
-		logging.Errorf(c, "failed to get DataEntry(s) for TestFile: %v: %v", tf, err)
-		return err
+		de := &DataEntry{ID: id}
+		keys[i] = ds.KeyForObj(de)
 	}
 
-	r := make([]io.Reader, 0, len(dataEntries))
-	for _, de := range dataEntries {
-		r = append(r, bytes.NewReader(de.Data))
-	}
-	tf.Data = io.MultiReader(r...)
-	return nil
+	return &dataEntryReader{
+		Context: c,
+		keys:    keys,
+	}, nil
 }
 
 // PutData puts the contents of tf.Data to DataEntry(s) in the datastore
@@ -155,11 +132,11 @@ func (tf *TestFile) GetData(c context.Context) error {
 // It is safe to call PutData within a transaction: tf.DataKeys will
 // point to the DataEntry(s) created in the successful attempt, and
 // tf.LastMod will equal the time of the successful attempt.
-func (tf *TestFile) PutData(c context.Context) error {
+func (tf *TestFile) PutData(c context.Context, dataFunc func(io.Writer) error) error {
 	dataKeysCopy := make([]*datastore.Key, len(tf.DataKeys))
 	copy(dataKeysCopy, tf.DataKeys)
 
-	if err := tf.putDataEntries(c); err != nil {
+	if err := tf.putDataEntries(c, dataFunc); err != nil {
 		return err
 	}
 
@@ -171,53 +148,112 @@ func (tf *TestFile) PutData(c context.Context) error {
 // tf.Data and updates tf.LastMod and tf.DataKeys locally.
 // If the returned error is non-nil, tf will be unmodified,
 // except that tf.Data may have been consumed.
-func (tf *TestFile) putDataEntries(c context.Context) error {
-	// Maximum data entries in a TestFile.
-	const maxDataEntries = 30
+func (tf *TestFile) putDataEntries(c context.Context, dataFunc func(io.Writer) error) error {
+	var keys []*datastore.Key
+	r, w := io.Pipe()
+	err := parallel.RunMulti(c, 0, func(mr parallel.MultiRunner) error {
+		return mr.RunMulti(func(workC chan<- func() error) {
+			// Encode our data to the "writer" end of a pipe. We will read the data from
+			// the pipe and load it into datastore.
+			workC <- func() error {
+				defer w.Close()
 
+				if err := dataFunc(w); err != nil {
+					logging.WithError(err).Errorf(c, "Failed to write TestFile data.")
+					return err
+				}
+				return nil
+			}
+
+			// Ferry the data from the read end of the pipe into Datastore.
+			workC <- func() (err error) {
+				defer r.Close()
+
+				keys, err = writeDataEntries(c, r)
+				if err != nil {
+					logging.WithError(err).Errorf(c, "Failed to write data entries.")
+				}
+				return
+			}
+		})
+	})
+	if err != nil {
+		logging.WithError(err).Errorf(c, "Failed to create DataEntry entries.")
+
+		// Best effort: delete any keys that were created.
+		if len(keys) > 0 {
+			if derr := datastore.Get(c).Delete(keys); derr != nil {
+				logging.Fields{
+					logging.ErrorKey: derr,
+					"count":          len(keys),
+				}.Warningf(c, "Failed to delete DataEntry keys on failure.")
+			}
+		}
+		return err
+	}
+
+	// We should never have zero keys (minimum JSON should result in some data).
+	if len(keys) == 0 {
+		panic(errors.New("zero keys generated for entry"))
+	}
+
+	tf.DataKeys = keys
+	tf.LastMod = clock.Get(c).Now().UTC()
+	return nil
+}
+
+func writeDataEntries(c context.Context, r io.Reader) ([]*datastore.Key, error) {
 	// 1 megabyte is the maximum allowed length for a datastore
 	// entity. But use a smaller value because App Engine errors
 	// when we get close to the limit.
 	// See https://code.googlesource.com/gocloud/+/master/datastore/prop.go#29.
 	const maxBlobLen = (1 << 20) - 2048
 
-	// TODO(maybe): Read maxBlobLen bytes at a time. See io.LimitedReader.
+	// This may write a lot of entries, and so we do NOT want a transactional
+	// datastore handle here. This is fine, since each DataEntry will be a new
+	// auto-generated ID, so there will not be any conflicts.
+	ds := datastore.GetNoTxn(c)
 
-	data, err := ioutil.ReadAll(tf.Data)
-	if err != nil {
-		return err
-	}
+	// Read data from "r" one blob at a time.
+	buf := make([]byte, maxBlobLen)
+	var keys []*datastore.Key
+	finished := false
+	for !finished {
+		// Read as much as possible into "buf". If we read any data, add another
+		// DataEntry and keep reading.
+		count, err := io.ReadFull(r, buf)
+		switch err {
+		case io.EOF, io.ErrUnexpectedEOF:
+			finished = true
 
-	if len(data) > maxDataEntries*maxBlobLen {
-		return fmt.Errorf(
-			"model: data too large %d bytes (max allowed %d bytes)",
-			len(data),
-			maxDataEntries*maxBlobLen,
-		)
-	}
+		case nil:
+			break
 
-	// Break data into chunks of max. allowed blob length.
-	numEntries := int(math.Ceil(float64(len(data)) / maxBlobLen))
-	dataEntries := make([]*DataEntry, 0, numEntries)
-	for i := 0; i < numEntries*maxBlobLen; i += maxBlobLen {
-		end := min(i+maxBlobLen, len(data))
-		dataEntries = append(dataEntries, &DataEntry{Data: data[i:end]})
-	}
+		default:
+			// Actual Reader error.
+			logging.WithError(err).Errorf(c, "Failed to read from Reader.")
+			return keys, err
+		}
 
-	for _, de := range dataEntries {
-		if err := datastore.Get(c).Put(de); err != nil {
-			return err
+		if count > 0 {
+			dataEntry := &DataEntry{
+				Data: buf[:count],
+			}
+			if err := ds.Put(dataEntry); err != nil {
+				logging.WithError(err).Errorf(c, "Failed to put DataEntry #%d.", len(keys))
+				return keys, err
+			}
+
+			logging.Fields{
+				"index": len(keys),
+				"size":  len(dataEntry.Data),
+				"id":    dataEntry.ID,
+			}.Debugf(c, "Added data entry.")
+			keys = append(keys, ds.KeyForObj(dataEntry))
 		}
 	}
 
-	newKeys := make([]*datastore.Key, 0, len(dataEntries))
-	for _, de := range dataEntries {
-		newKeys = append(newKeys, datastore.Get(c).KeyForObj(de))
-	}
-
-	tf.DataKeys = newKeys
-	tf.LastMod = time.Now().UTC()
-	return nil
+	return keys, nil
 }
 
 // updatedBlobKeys fetches the updated blob keys for the old keys from their blobstore migration
@@ -339,4 +375,49 @@ func (p *TestFileParams) Query() *datastore.Query {
 	}
 
 	return q
+}
+
+// dataEntryReader is an io.Reader that reads from sequential DataEntry.
+type dataEntryReader struct {
+	context.Context
+
+	keys    []*datastore.Key
+	current []byte
+}
+
+func (r *dataEntryReader) Read(buf []byte) (int, error) {
+	count := 0
+	for len(buf) > 0 {
+		// Do we have current data?
+		if len(r.current) > 0 {
+			// Yes, load its remaining data into "buf".
+			amount := copy(buf, r.current)
+			buf, r.current = buf[amount:], r.current[amount:]
+			count += amount
+			continue
+		}
+
+		// No. Load the next blob from datastore.
+		if len(r.keys) == 0 {
+			// No more keys, so no more data.
+			return count, io.EOF
+		}
+
+		ds := datastore.Get(r)
+		de := &DataEntry{}
+		if !datastore.PopulateKey(de, r.keys[0]) {
+			return count, errors.Reason("failed to populate object key").Err()
+		}
+
+		logging.Debugf(r, "Read loading DataEntry ID: %v", de.ID)
+		if err := ds.Get(de); err != nil {
+			return count, errors.Annotate(err).Reason("failed to load DataEntry object").Err()
+		}
+
+		// Entry loaded. Re-enter our read loop.
+		r.keys = r.keys[1:]
+		r.current = de.Data
+	}
+
+	return count, nil
 }

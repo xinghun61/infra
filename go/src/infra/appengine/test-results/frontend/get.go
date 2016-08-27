@@ -97,12 +97,13 @@ func respondTestFileData(ctx *router.Context, params URLParams) {
 		return
 	}
 
-	if err := tf.GetData(c); err != nil {
-		logging.WithError(err).Errorf(c, "respondTestFileData: GetData")
+	reader, err := tf.DataReader(c)
+	if err != nil {
+		logging.WithError(err).Errorf(c, "respondTestFileData: DataReader")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	respondJSON(c, w, tf.Data, tf.LastMod, params.Callback)
+	respondJSON(c, w, reader, tf.LastMod, params.Callback)
 }
 
 func respondTestFileList(ctx *router.Context, params URLParams) {
@@ -206,15 +207,15 @@ func respondTestFileDefault(ctx *router.Context, params URLParams) {
 		return
 	}
 
-	if err := tf.GetData(c); err != nil {
+	reader, err := tf.DataReader(c)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	finalData := tf.Data
+	finalData := reader
 
 	if params.TestListJSON {
-		data, err := model.CleanJSON(tf.Data)
+		data, err := model.CleanJSON(reader)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logging.Errorf(c, "failed to clean test results JSON: %v", err)

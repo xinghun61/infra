@@ -3,6 +3,8 @@ module: go
 runtime: go
 api_version: go1
 instance_class: F4_1G
+automatic_scaling:
+  max_concurrent_requests: 4
 
 handlers:
   - url: /favicon.ico

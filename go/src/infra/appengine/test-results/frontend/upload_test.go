@@ -189,8 +189,9 @@ func TestUploadTestFile(t *testing.T) {
 				tf, err := getFirstTestFile(ctx, q)
 				So(err, ShouldBeNil)
 
-				So(tf.GetData(ctx), ShouldBeNil)
-				b, err := ioutil.ReadAll(tf.Data)
+				reader, err := tf.DataReader(ctx)
+				So(err, ShouldBeNil)
+				b, err := ioutil.ReadAll(reader)
 				So(err, ShouldBeNil)
 				So(bytes.TrimSpace(b), ShouldResemble, data)
 			})
@@ -220,9 +221,11 @@ func TestUpdateIncremental(t *testing.T) {
 				TestType:    "content_unittests",
 				Builder:     "Linux Swarm",
 				BuildNumber: -1,
-				Data:        bytes.NewReader(data),
 			}
-			So(resultsTf.PutData(ctx), ShouldBeNil)
+			So(resultsTf.PutData(ctx, func(w io.Writer) error {
+				_, err := w.Write(data)
+				return err
+			}), ShouldBeNil)
 			So(ds.Put(&resultsTf), ShouldBeNil)
 			ds.Testable().CatchupIndexes()
 
@@ -248,9 +251,10 @@ func TestUpdateIncremental(t *testing.T) {
 				tf, err := getFirstTestFile(ctx, q)
 				So(err, ShouldBeNil)
 
-				So(tf.GetData(ctx), ShouldBeNil)
+				reader, err := tf.DataReader(ctx)
+				So(err, ShouldBeNil)
 				var updated model.AggregateResult
-				So(json.NewDecoder(tf.Data).Decode(&updated), ShouldBeNil)
+				So(json.NewDecoder(reader).Decode(&updated), ShouldBeNil)
 
 				// TODO(nishanths): also check `updated` ShouldResemble `expected`.
 			})
