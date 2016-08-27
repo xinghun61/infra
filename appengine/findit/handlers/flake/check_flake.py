@@ -12,7 +12,7 @@ from waterfall.flake.initialize_flake_pipeline import ScheduleAnalysisIfNeeded
 
 
 class CheckFlake(BaseHandler):
-  PERMISSION_LEVEL = Permission.CORP_USER
+  PERMISSION_LEVEL = Permission.ANYONE
 
   def HandleGet(self):
     # Get input parameters.
@@ -24,10 +24,25 @@ class CheckFlake(BaseHandler):
     test_name = self.request.get('test_name').strip()
     force = (users.is_current_user_admin() and
              self.request.get('force') == '1')
+    allow_new_analysis = self.IsCorpUserOrAdmin()
 
     master_flake_analysis = ScheduleAnalysisIfNeeded(
-        master_name, builder_name, build_number, step_name,
-        test_name, force=force, queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
+        master_name, builder_name, build_number, step_name, test_name,
+        allow_new_analysis, force=force,
+        queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
+
+    if not master_flake_analysis:  # pragma: no cover.
+      return {
+          'template': 'error.html',
+          'data': {
+              'error_message':
+                  ('You could schedule an analysis for flaky test only after '
+                   'you login with google.com account.'),
+              'login_url': self.GetLoginUrl(),
+          },
+          'return_code': 401,
+      }
+
     data = {
         'success_rates': [],
         'analysis_status': STATUS_TO_DESCRIPTION.get(
@@ -38,7 +53,7 @@ class CheckFlake(BaseHandler):
         'builder_name': builder_name,
         'build_number': build_number,
         'step_name': step_name,
-        'test_name': test_name
+        'test_name': test_name,
     }
     zipped = zip(master_flake_analysis.build_numbers,
                  master_flake_analysis.success_rates)

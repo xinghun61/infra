@@ -2,7 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import re
+
 import webapp2
+import webtest
 
 from handlers.flake import check_flake
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
@@ -25,14 +28,14 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.put()
     return analysis
 
-  def testBasicFlowNoData(self):
+  def testCorpUserCanScheduleANewAnalysis(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = '123'
     step_name = 's'
     test_name = 't'
 
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+    self.mock_current_user(user_email='test@google.com')
 
     response = self.test_app.get('/waterfall/check-flake', params={
         'master_name': master_name,
@@ -43,7 +46,28 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     self.assertEquals(200, response.status_int)
 
-  def testBasicFlowWithData(self):
+  def testNoneCorpUserCanNotScheduleANewAnalysis(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = '123'
+    step_name = 's'
+    test_name = 't'
+
+    self.assertRaisesRegexp(
+        webtest.app.AppError,
+        re.compile('.*401 Unauthorized.*',
+                   re.MULTILINE | re.DOTALL),
+        self.test_app.get,
+        '/waterfall/check-flake',
+        params={
+            'master_name': master_name,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'step_name': step_name,
+            'test_name': test_name
+        })
+
+  def testAnyoneCanViewScheduledAnalysis(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = '123'
@@ -58,8 +82,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     master_flake_analysis.build_numbers.append(int(build_number))
     master_flake_analysis.success_rates.append(success_rate)
     master_flake_analysis.put()
-
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
     response = self.test_app.get('/waterfall/check-flake', params={
         'master_name': master_name,

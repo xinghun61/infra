@@ -45,17 +45,19 @@ class BaseHandler(webapp2.RequestHandler):
     elif self.PERMISSION_LEVEL == Permission.ANYONE:
       return True
     elif self.PERMISSION_LEVEL == Permission.CORP_USER:
-      if users.is_current_user_admin():
-        return True
-
-      # Only give access to google accounts.
-      user = users.get_current_user()
-      return user and user.email().endswith('@google.com')
+      # Only give access to google accounts or admins.
+      return self.IsCorpUserOrAdmin()
     elif self.PERMISSION_LEVEL == Permission.ADMIN:
       return users.is_current_user_admin()
     else:
       logging.error('Unknown permission level: %s' % self.PERMISSION_LEVEL)
       return False
+
+  def IsCorpUserOrAdmin(self):
+    """Returns True if the user logged in with corp account or as admin."""
+    user = users.get_current_user()
+    return ((user and user.email().endswith('@google.com')) or
+        users.is_current_user_admin())
 
   @staticmethod
   def CreateError(error_message, return_code=500):
@@ -141,20 +143,21 @@ class BaseHandler(webapp2.RequestHandler):
     self.response.headers['Content-Type'] = content_type
     self.response.write(data)
 
+  def GetLoginUrl(self):
+    if self.request.referer:
+      return users.create_login_url(self.request.referer)
+    else:
+      return users.create_login_url(self.request.uri)
+
   def _Handle(self, handler_func):
     try:
       if not self._HasPermission():
-        if self.request.referer:
-          login_url = users.create_login_url(self.request.referer)
-        else:
-          login_url = users.create_login_url(self.request.uri)
-
         template = 'error.html'
         data = {
             'error_message':
                 ('Either not login or no permission. '
                  'Please login with your google.com account.'),
-            'login_url': login_url
+            'login_url': self.GetLoginUrl(),
         }
         return_code = 401
         cache_expiry = None

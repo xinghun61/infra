@@ -14,7 +14,8 @@ from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 
 @ndb.transactional
 def NeedANewAnalysis(
-    master_name, builder_name, build_number, step_name, test_name):
+    master_name, builder_name, build_number, step_name, test_name,
+    allow_new_analysis=False):
   """Checks status of analysis for the test and decides if a new one is needed.
 
   A MasterFlakeAnalysis entity for the given parameters will be created if none
@@ -28,6 +29,8 @@ def NeedANewAnalysis(
       master_name, builder_name, build_number, step_name, test_name)
 
   if not master_flake_analysis:
+    if not allow_new_analysis:
+      return False
     master_flake_analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number, step_name, test_name)
     master_flake_analysis.status = analysis_status.PENDING
@@ -51,7 +54,7 @@ def NeedANewAnalysis(
 
 # Unused arguments - pylint: disable=W0612, W0613
 def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, step_name,
-                             test_name, force=False,
+                             test_name, allow_new_analysis=False, force=False,
                              queue_name=constants.DEFAULT_QUEUE):
   """Schedules an analysis if needed and returns the MasterFlakeAnalysis.
 
@@ -64,12 +67,17 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, step_name,
     build_number (int): The build number of the failed test
     step_name (str): The name of the test suite
     test_name (str): The single test we are checking
+    allow_new_analysis (bool): Indicate whether a new analysis is allowed.
+    force (bool): Indicate whether to force a rerun of current analysis.
+    queue_name (str): The App Engine queue to run the analysis.
 
   Returns:
     A MasterFlakeAnalysis instance.
+    None if no analysis was scheduled and the user has no permission to.
   """
   if NeedANewAnalysis(
-      master_name, builder_name, build_number, step_name, test_name):
+      master_name, builder_name, build_number, step_name, test_name,
+      allow_new_analysis):
     check_flake_settings = waterfall_config.GetCheckFlakeSettings()
     max_build_numbers_to_look_back = check_flake_settings.get(
         'max_build_numbers_to_look_back')

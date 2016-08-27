@@ -24,7 +24,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis.status = status
     analysis.put()
 
-  def testAnalysisIsNeededWhenNoneExists(self):
+  def testAnalysisIsNotNeededWhenNoneExistsAndNotAllowedToSchedule(self):
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
@@ -32,7 +32,21 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
 
     need_analysis = NeedANewAnalysis(
-        master_name, builder_name, build_number, step_name, test_name)
+        master_name, builder_name, build_number, step_name, test_name,
+        allow_new_analysis=False)
+
+    self.assertFalse(need_analysis)
+
+  def testAnalysisIsNeededWhenNoneExistsAndAllowedToSchedule(self):
+    master_name = 'm'
+    builder_name = 'b 1'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+
+    need_analysis = NeedANewAnalysis(
+        master_name, builder_name, build_number, step_name, test_name,
+        allow_new_analysis=True)
 
     self.assertTrue(need_analysis)
 
@@ -85,7 +99,8 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     dif_test_name = 'd'
     need_analysis = NeedANewAnalysis(
-        master_name, builder_name, build_number, step_name, dif_test_name)
+        master_name, builder_name, build_number, step_name, dif_test_name,
+        allow_new_analysis=True)
 
     self.assertTrue(need_analysis)
 
@@ -100,7 +115,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     ScheduleAnalysisIfNeeded(
         master_name, builder_name, build_number,
-        step_name, test_name,
+        step_name, test_name, allow_new_analysis=True,
         queue_name=constants.DEFAULT_QUEUE)
 
     analysis = MasterFlakeAnalysis.Get(master_name, builder_name,

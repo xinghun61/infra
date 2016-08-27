@@ -29,8 +29,8 @@ def FilterMasterFlakeAnalysis(master_flake_analysis_query, master_name,
   return master_flake_analysis_query.fetch()
 
 
-class FilterFlake(BaseHandler):
-  PERMISSION_LEVEL = Permission.CORP_USER
+class ListFlakes(BaseHandler):
+  PERMISSION_LEVEL = Permission.ANYONE
 
   def HandleGet(self):
     master_name = self.request.get('master_name').strip()

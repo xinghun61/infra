@@ -8,9 +8,15 @@
 # deploying Findit to App Engine.
 
 THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE:-$0}" )" && pwd )"
-FINDIT_DIR="$(realpath ${THIS_SCRIPT_DIR}/..)"
-INFRA_DIR="$(realpath ${FINDIT_DIR}/../..)"
-GOOGLE_APP_ENGINE_DIR="$(realpath ${INFRA_DIR}/../google_appengine)"
+FINDIT_DIR="${THIS_SCRIPT_DIR}/.."
+INFRA_DIR="${FINDIT_DIR}/../.."
+GOOGLE_APP_ENGINE_DIR="${INFRA_DIR}/../google_appengine"
+has_realpath="$(which realpath && echo 0)"
+if [[ has_realpath == "0" ]]; then
+  FINDIT_DIR="$(realpath ${FINDIT_DIR})"
+  INFRA_DIR="$(realpath ${INFRA_DIR})"
+  GOOGLE_APP_ENGINE_DIR="$(realpath ${GOOGLE_APP_ENGINE_DIR})"
+fi
 APP_CFG="${GOOGLE_APP_ENGINE_DIR}/appcfg.py"
 FINDIT_MODULES="${FINDIT_DIR}/app.yaml ${FINDIT_DIR}/waterfall-frontend.yaml ${FINDIT_DIR}/waterfall-backend.yaml ${FINDIT_DIR}/crash-frontend.yaml ${FINDIT_DIR}/crash-backend-fracas.yaml"
 

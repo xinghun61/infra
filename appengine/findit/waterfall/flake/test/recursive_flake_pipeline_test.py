@@ -59,6 +59,11 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     }
 
+    self._CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, master_build_number, step_name,
+        test_name, status=analysis_status.PENDING
+    )
+
     self.MockPipeline(
         recursive_flake_pipeline.TriggerFlakeSwarmingTaskPipeline,
         'task_id',

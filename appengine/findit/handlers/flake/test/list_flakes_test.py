@@ -5,14 +5,14 @@
 import webapp2
 
 from waterfall.test import wf_testcase
-from handlers.flake import filter_flake
-from handlers.flake.filter_flake import FilterMasterFlakeAnalysis
+from handlers.flake import list_flakes
+from handlers.flake.list_flakes import FilterMasterFlakeAnalysis
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
 
 class FilterFlakeTest(wf_testcase.WaterfallTestCase):
   app_module = webapp2.WSGIApplication([
-      ('/waterfall/filter-flake', filter_flake.FilterFlake),
+      ('/waterfall/list-flakes', list_flakes.ListFlakes),
   ], debug=True)
 
   def _CreateAndSaveMasterFlakeAnalysis(
@@ -122,14 +122,12 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
                                self.master_flake_analysis3])
 
   def testNormalFlow(self):
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    response = self.test_app.get('/waterfall/filter-flake')
+    response = self.test_app.get('/waterfall/list-flakes')
     self.assertEquals(200, response.status_int)
 
   def testNormalFlowWithFilter(self):
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     response = self.test_app.get(
-        '/waterfall/filter-flake',
+        '/waterfall/list-flakes',
         params={'build_number': self.build_number1,
                 'format': 'json'}
     )

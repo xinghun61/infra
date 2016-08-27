@@ -38,6 +38,11 @@ class RecursiveFlakePipeline(BasePipeline):
     Returns:
       A dict of lists for reliable/flaky tests.
     """
+    master = MasterFlakeAnalysis.Get(master_name, builder_name,
+                                     master_build_number, step_name, test_name)
+    if master.status != analysis_status.RUNNING:  # pragma: no branch
+      master.status = analysis_status.RUNNING
+      master.put()
 
     # Call trigger pipeline (flake style).
     task_id = yield TriggerFlakeSwarmingTaskPipeline(
