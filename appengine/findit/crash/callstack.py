@@ -15,7 +15,7 @@ CALLSTACK_FORMAT_TO_PATTERN = {
     CallStackFormatType.SYZYASAN: re.compile(
         r'(CF: )?(.*?)( \(FPO: .*\) )?( \(CONV: .*\) )?\[(.*) @ (\d+)\]'),
     CallStackFormatType.DEFAULT: re.compile(
-        r'([^:]*):(\d+)(:\d+)?$')
+        r'(.*?):(\d+)(:\d+)?$')
 }
 
 

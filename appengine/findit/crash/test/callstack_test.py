@@ -80,6 +80,13 @@ class CallStackTest(StacktraceTestSuite):
         StackFrame(
             0, 'tp/webrtc/', 'func0', 'a.c', 'tp/webrtc/a.c', [38, 39, 40, 41]))
 
+    stack.ParseLine('#1 0x526 in func::func2::func3 tp/webrtc/a.c:3:2', deps)
+    self._VerifyTwoStackFramesEqual(
+        stack[1],
+        StackFrame(
+            1, 'tp/webrtc/', 'func::func2::func3', 'a.c', 'tp/webrtc/a.c',
+            [3, 4, 5]))
+
   def testParseLineForFracasJavaStack(self):
     stack = CallStack(0, CallStackFormatType.DEFAULT,
                       CallStackLanguageType.JAVA)
