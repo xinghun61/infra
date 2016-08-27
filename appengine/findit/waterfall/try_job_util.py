@@ -186,8 +186,8 @@ def _GetMatchingFailureGroups(build_failure_type):
       seconds=waterfall_config.GetTryJobSettings().get(
           'max_seconds_look_back_for_group'))
   return WfFailureGroup.query(ndb.AND(
-      WfFailureGroup.created_time >= earliest_time,
-      WfFailureGroup.build_failure_type == build_failure_type)).fetch()
+      WfFailureGroup.build_failure_type == build_failure_type,
+      WfFailureGroup.created_time >= earliest_time)).fetch()
 
 
 def _GetMatchingCompileFailureGroups(output_nodes):
@@ -333,12 +333,15 @@ def NeedANewTryJob(
     need_new_try_job = _NeedANewTestTryJob(
         master_name, builder_name, build_number, failure_info, force_try_job)
 
+  # TODO(chanli): enable the feature to trigger single try job for a group
+  # when notification is ready.
+  # We still call _IsBuildFailureUniqueAcrossPlatforms just so we have data for
+  # failure groups.
   if need_new_try_job:
-    # TODO(josiahk): Integrate this into need_new_try_job boolean
     _IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, try_job_type,
-        failure_info['builds'][str(build_number)]['blame_list'],
-        failure_info['failed_steps'], signals, heuristic_result)
+      master_name, builder_name, build_number, try_job_type,
+      failure_info['builds'][str(build_number)]['blame_list'],
+      failure_info['failed_steps'], signals, heuristic_result)
 
   need_new_try_job = need_new_try_job and ReviveOrCreateTryJobEntity(
       master_name, builder_name, build_number, force_try_job)

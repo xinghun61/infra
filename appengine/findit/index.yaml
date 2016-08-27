@@ -8,6 +8,13 @@ indexes:
   - name: build_start_time
     direction: desc
 
+- kind: WfFailureGroup
+  properties:
+  - name: build_failure_type
+    direction: asc
+  - name: created_time
+    direction: desc
+
 # For fracas crash dashboard.
 - kind: FracasCrashAnalysis
   properties:
