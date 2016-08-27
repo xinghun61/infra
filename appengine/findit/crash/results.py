@@ -65,8 +65,8 @@ class MatchResult(Result):
 
     Args:
       file_path (str): File path of the crashed file.
-      stack_infos (list): List of stack_info dicts, represents frames of this
-        file and the callstack priorities of those frames.
+      stack_infos (list): List of (frame, stack_priority), represents frames of
+        this file and the callstack priorities of those frames.
       blame (Blame): Blame oject of this file.
     """
     self.file_to_stack_infos[file_path] = stack_infos
@@ -75,7 +75,7 @@ class MatchResult(Result):
       return
 
     min_distance = float('inf')
-    min_distance_frame = None
+    min_distance_frame = stack_infos[0][0]
     for region in blame:
       if region.revision != self.changelog.revision:
         continue

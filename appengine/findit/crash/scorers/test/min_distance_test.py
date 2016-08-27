@@ -44,9 +44,47 @@ class MinDistanceTest(ScorerTestSuite):
         'src/f.cc': {'min_distance': 0, 'min_distance_frame': frame}
     }
 
-    self.assertEqual(MinDistance().ChangedFiles(result),
+    self.assertEqual(MinDistance().ChangedFiles(result, 1),
                      [{'file': 'f.cc',
                        'blame_url': ('https://repo_url/+blame/%s/f.cc#2' %
+                                     dummy_changelog.revision),
+                       'info': 'Minimum distance (LOC) 0, frame #0'}])
+
+  def testChangedFilesInfMinDistance(self):
+    dummy_changelog = self._GetDummyChangeLog()
+    result = MatchResult(dummy_changelog, 'src/', '')
+    frame = StackFrame(0, 'src/', 'func', 'f.cc', 'a/b/src/f.cc', [2],
+                       repo_url='https://repo_url')
+    result.file_to_stack_infos = {
+        'src/f.cc': [(frame, 0)]
+    }
+    result.file_to_analysis_info = {
+        'src/f.cc': {'min_distance': float('inf'), 'min_distance_frame': frame}
+    }
+
+    self.assertIsNone(MinDistance().ChangedFiles(result, 0))
+
+  def testChangedFilesSkipFileInfMinDistance(self):
+    dummy_changelog = self._GetDummyChangeLog()
+    result = MatchResult(dummy_changelog, 'src/', '')
+    frame0 = StackFrame(0, 'src/', 'func0', 'f0.cc', 'a/b/src/f0.cc', [2],
+                        repo_url='https://repo_url')
+    frame1 = StackFrame(1, 'src/', 'func1', 'f1.cc', 'a/b/src/f1.cc', [5],
+                        repo_url='https://repo_url')
+    result.file_to_stack_infos = {
+        'src/f0.cc': [(frame0, 0)],
+        'src/f1.cc': [(frame1, 0)]
+    }
+    result.file_to_analysis_info = {
+        'src/f0.cc': {'min_distance': 0,
+                      'min_distance_frame': frame0},
+        'src/f1.cc': {'min_distance': float('inf'),
+                      'min_distance_frame': frame1},
+    }
+
+    self.assertEqual(MinDistance().ChangedFiles(result, 1),
+                     [{'file': 'f0.cc',
+                       'blame_url': ('https://repo_url/+blame/%s/f0.cc#2' %
                                      dummy_changelog.revision),
                        'info': 'Minimum distance (LOC) 0, frame #0'}])
 

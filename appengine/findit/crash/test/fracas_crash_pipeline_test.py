@@ -158,7 +158,7 @@ class FracasCrashPipelineTest(CrashTestCase):
     self.execute_queued_tasks()
 
     self.assertEqual(1, len(pubsub_publish_requests))
-    
+
     processed_analysis_result = copy.deepcopy(analysis_result)
     processed_analysis_result['feedback_url'] = (
         mock_host + '/crash/fracas-result-feedback?'

@@ -23,7 +23,7 @@ class Scorer(object):  # pragma: no cover.
     """Gives the reason of this score."""
     raise NotImplementedError()
 
-  def ChangedFiles(self, result):
+  def ChangedFiles(self, result, score):
     """Returns the changed files info dict."""
     raise NotImplementedError()
 
@@ -37,7 +37,7 @@ class Scorer(object):  # pragma: no cover.
 
     score = self.Score(metric)
     reason = self.Reason(metric, score)
-    changed_files = self.ChangedFiles(result)
+    changed_files = self.ChangedFiles(result, score)
     return score, reason, changed_files
 
   @property

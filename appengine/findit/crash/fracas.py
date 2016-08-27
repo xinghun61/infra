@@ -30,24 +30,43 @@ def FindCulpritForChromeCrash(signature, platform,
   Returns:
     (analysis_result_dict, tag_dict)
     The analysis result is a dict like below:
-      {
-        "found": True,  # Indicate whether anything is found.
-        "suspected_project": "src/v8",  # The full path to the dependency.
-        # Components to file bug against.
-        "suspected_components": ["blink>javascript"],
-        "culprits": [
-          {
-            "url": "https://chromium.googlesource.com/chromium/.../+/hash",
-            "revision": "commit-hash",
-            "code_review_url": "https://codereview.chromium.org/ISSUE",
-            "project_path": "src/v8",
-            "author": "who@chromium.org",
-            "time": "2015-08-17 03:38:16",  # When the revision was committed.
-            "reason": "A plain string with '\n' as line break to explain why",
-            "confidence": "0.6",  # Optional confidence score.
-          },
+    {
+        "found": true, # Indicate whether Findit found any suspects.
+        "suspected_project": "chromium-v8",  # Which project is most suspected.
+        "feedback_url": "https://.."
+        "suspected_cls": [
+            {
+                "revision": "commit-hash",
+                "url": "https://chromium.googlesource.com/chromium/src/+/ha...",
+                "review_url": "https://codereview.chromium.org/issue-number",
+                "project_path": "third_party/pdfium",
+                "author": "who@chromium.org",
+                "time": "2015-08-17 03:38:16",
+                "reason": "a plain string with '\n' as line break to explain..."
+                "reason": [('MinDistance', 1, 'minimum distance is 0.'),
+                           ('TopFrame', 0.9, 'top frame is2nd frame.')],
+                "changed_files": [
+                    {"file": "file_name1.cc",
+                     "blame_url": "https://...",
+                     "info": "minimum distance (LOC) 0, frame #2"},
+                    {"file": "file_name2.cc",
+                     "blame_url": "https://...",
+                     "info": "minimum distance (LOC) 20, frame #4"},
+                    ...
+                ],
+                "confidence": 0.60
+            },
+            ...,
         ],
-      }
+        "regression_range": [  # Detected regression range.
+            "53.0.2765.0",
+            "53.0.2766.0"
+        ],
+        "suspected_components": [  # A list of crbug components to file bugs.
+            "Blink>JavaScript"
+        ]
+    }
+
     The code review url might not always be available, because not all commits
     go through code review. In that case, commit url should be used instead.
 

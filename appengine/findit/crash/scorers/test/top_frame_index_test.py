@@ -31,4 +31,4 @@ class TopFrameIndexTest(ScorerTestSuite):
 
   def testChangedFiles(self):
     result = MatchResult(self._GetDummyChangeLog(), 'src/', '')
-    self.assertEqual(TopFrameIndex().ChangedFiles(result), None)
+    self.assertEqual(TopFrameIndex().ChangedFiles(result, 1), None)

@@ -188,6 +188,9 @@ def FindMatchResults(dep_to_file_to_changelogs,
 
         blame = git_repository.GetBlame(crashed_file_path,
                                         stack_deps[dep].revision)
+
+        # Generate/update each result(changelog) in changelogs, blame is used
+        # to calculate distance between touched lines and crashed lines in file.
         match_results.GenerateMatchResults(
             crashed_file_path, dep, stack_infos, changelogs, blame)
 
@@ -213,7 +216,10 @@ def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps,
 
   # Findit will only analyze the top n frames in each callstacks.
   stack_trace = Stacktrace([
-      CallStack(stack.priority, stack.format_type, stack[:top_n])
+      CallStack(stack.priority,
+                format_type=stack.format_type,
+                language_type=stack.language_type,
+                frame_list=stack[:top_n])
       for stack in stacktrace])
 
   # We are only interested in the deps in crash stack (the callstack that
@@ -233,9 +239,10 @@ def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps,
   if not results:
     return []
 
-  aggregator = AggregatedScorer([TopFrameIndex(), MinDistance()])
+  aggregated_scorer = AggregatedScorer([TopFrameIndex(), MinDistance()])
 
-  map(aggregator.Score, results)
+  # Set result.confidence, result.reasons and result.changed_files.
+  map(aggregated_scorer.Score, results)
 
   # Filter all the 0 confidence results.
   results = filter(lambda r: r.confidence != 0, results)

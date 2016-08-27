@@ -2,7 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Aggregator that aggregates results from different scorers."""
+"""Aggregated scorer which uses aggregators to aggregate results from
+different scorers."""
 
 from crash.scorers import aggregators
 

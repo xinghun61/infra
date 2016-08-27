@@ -45,11 +45,32 @@ class MinDistance(Scorer):
 
     return self.name, score, 'Minimum distance is %d' % min_distance
 
-  def ChangedFiles(self, result):
+  def ChangedFiles(self, result, score):
+    """Returns a list of changed file infos related to this scorer.
+
+    For example:
+    [
+      {
+        "blame_url": "https://chr.com/../render_frame_impl.cc#1586",
+        "file": "render_frame_impl.cc",
+        "info": "Minimum distance (LOC) 1, frame #5"
+      }
+    ]
+    """
+    if score == 0:
+      return None
+
     index_to_changed_files = {}
+
     for file_path, analysis_info in result.file_to_analysis_info.iteritems():
       file_name = file_path.split('/')[-1]
       frame = analysis_info['min_distance_frame']
+
+      # It is possible that a changelog doesn't show in the blame of a file,
+      # in this case, treat the changelog as if it didn't change the file.
+      if analysis_info['min_distance'] == float('inf'):
+        continue
+
       index_to_changed_files[frame.index] = {
           'file': file_name,
           'blame_url': frame.BlameUrl(result.changelog.revision),
@@ -59,6 +80,6 @@ class MinDistance(Scorer):
 
     # Sort changed file by frame index.
     _, changed_files = zip(*sorted(index_to_changed_files.items(),
-                                     key=lambda x: x[0]))
+                                   key=lambda x: x[0]))
 
     return list(changed_files)

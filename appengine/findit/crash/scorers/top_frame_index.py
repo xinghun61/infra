@@ -44,6 +44,6 @@ class TopFrameIndex(Scorer):
 
     return self.name, score, 'Top frame is #%d' % top_frame_index
 
-  def ChangedFiles(self, result):
+  def ChangedFiles(self, result, score):
     # There is no changed file infos that top frame scorer can provide.
     return None
