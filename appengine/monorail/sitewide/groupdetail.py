@@ -36,6 +36,8 @@ class GroupDetail(servlet.Servlet):
     group_id = mr.viewed_user_auth.user_id
     group_settings = self.services.usergroup.GetGroupSettings(
         mr.cnxn, group_id)
+    if not group_settings:
+      return
 
     member_ids, owner_ids = self.services.usergroup.LookupAllMembers(
           mr.cnxn, [group_id])
@@ -55,6 +57,8 @@ class GroupDetail(servlet.Servlet):
     group_id = mr.viewed_user_auth.user_id
     group_settings = self.services.usergroup.GetGroupSettings(
         mr.cnxn, group_id)
+    if not group_settings:
+      raise usergroup_svc.NoSuchGroupException()
 
     member_ids_dict, owner_ids_dict = (
         self.services.usergroup.LookupVisibleMembers(

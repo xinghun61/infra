@@ -52,6 +52,7 @@ from services import issue_svc
 from services import project_svc
 from services import secrets_svc
 from services import user_svc
+from services import usergroup_svc
 from tracker import tracker_views
 
 NONCE_LENGTH = 32
@@ -181,6 +182,10 @@ class Servlet(webapp2.RequestHandler):
     except user_svc.NoSuchUserException as e:
       logging.warning('Trapped NoSuchUserException %s', e)
       self.abort(404, 'user not found')
+
+    except usergroup_svc.NoSuchGroupException as e:
+      logging.warning('Trapped NoSuchGroupException %s', e)
+      self.abort(404, 'user group not found')
 
     except monorailrequest.InputException as e:
       logging.info('Rejecting invalid input: %r', e)

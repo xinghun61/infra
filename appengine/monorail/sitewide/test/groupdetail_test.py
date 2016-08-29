@@ -9,6 +9,7 @@ import unittest
 
 from framework import permissions
 from services import service_manager
+from services import usergroup_svc
 from sitewide import groupdetail
 from testing import fake
 from testing import testing_helpers
@@ -42,6 +43,14 @@ class GroupDetailTest(unittest.TestCase):
         permissions.PermissionException,
         self.servlet.AssertBasePermission, mr)
     self.services.usergroup.TestAddMembers(888L, [111L], 'member')
+    self.servlet.AssertBasePermission(mr)
+
+  def testAssertBasePermission_IgnoreNoSuchGroup(self):
+    """The permission check does not crash for non-existent user groups."""
+    mr = testing_helpers.MakeMonorailRequest(
+        perms=permissions.GetPermissions(None, {}, None))
+    mr.viewed_user_auth.user_id = 404L
+    mr.auth.effective_ids = set([111L])
     self.servlet.AssertBasePermission(mr)
 
   def testAssertBasePermission_IndirectMembership(self):
@@ -123,4 +132,12 @@ class GroupDetailTest(unittest.TestCase):
     mr.viewed_user_auth.user_id = 888L
     mr.auth.effective_ids = set([111L])
     self.servlet.ProcessFormData(mr, {})
+
+  def testGatherPagData_NoSuchUserGroup(self):
+    """If there is no such user group, raise an exception."""
+    self.mr.viewed_user_auth.user_id = 404L
+    self.assertRaises(
+        usergroup_svc.NoSuchGroupException,
+        self.servlet.GatherPageData, self.mr)
+
 

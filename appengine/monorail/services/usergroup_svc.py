@@ -541,3 +541,8 @@ class CircularGroupException(Error):
 class GroupExistsException(Error):
   """Group already exists exception."""
   pass
+
+
+class NoSuchGroupException(Error):
+  """Requested group was not found exception."""
+  pass
