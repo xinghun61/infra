@@ -23,7 +23,7 @@
 
 <tbody class="collapse"> [# collapse/expand controls undelete-able comments]
  <tr>
-  <td nowrap="nowrap" class="vt h3 issuemetaheader" style="min-width:8em">
+  <td nowrap="nowrap" class="vt h3 issuemetaheader" style="min-width:9em">
    [define user_can_star]false[end]
    [if-any page_perms.SetStar]
     [if-any read_only][else]
