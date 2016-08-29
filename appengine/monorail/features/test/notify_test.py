@@ -290,7 +290,8 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     result = task.HandleRequest(mr)
     self.assertEquals(1, len(result['notified']))
 
-  def testOutboundEmailTask(self):
+  def testOutboundEmailTask_Normal(self):
+    """We can send an email."""
     task = notify.OutboundEmailTask(
         request=None, response=None, services=self.services)
     params = {
@@ -306,3 +307,39 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     result = task.HandleRequest(mr)
     self.assertEqual(params['from_addr'], result['sender'])
     self.assertEqual(params['subject'], result['subject'])
+
+  def testOutboundEmailTask_MissingTo(self):
+    """We skip emails that don't specify the To-line."""
+    task = notify.OutboundEmailTask(
+        request=None, response=None, services=self.services)
+    params = {
+        'from_addr': 'requester@example.com',
+        'reply_to': 'user@example.com',
+        'subject': 'Test subject'}
+    mr = testing_helpers.MakeMonorailRequest(
+        user_info={'user_id': 1},
+        params=params,
+        method='POST',
+        services=self.services)
+    result = task.HandleRequest(mr)
+    self.assertEqual('Skipping because no "to" address found.', result['note'])
+    self.assertNotIn('from_addr', result)
+
+  def testOutboundEmailTask_BannedUser(self):
+    """We don't send emails to banned users.."""
+    task = notify.OutboundEmailTask(
+        request=None, response=None, services=self.services)
+    params = {
+        'from_addr': 'requester@example.com',
+        'reply_to': 'user@example.com',
+        'to': 'banned@example.com',
+        'subject': 'Test subject'}
+    mr = testing_helpers.MakeMonorailRequest(
+        user_info={'user_id': 1},
+        params=params,
+        method='POST',
+        services=self.services)
+    self.services.user.TestAddUser('banned@example.com', 404L, banned=True)
+    result = task.HandleRequest(mr)
+    self.assertEqual('Skipping because user is banned.', result['note'])
+    self.assertNotIn('from_addr', result)

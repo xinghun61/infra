@@ -34,6 +34,7 @@ from framework import monorailrequest
 from framework import permissions
 from framework import template_helpers
 from framework import urls
+from services import user_svc
 from tracker import component_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
@@ -924,7 +925,18 @@ class OutboundEmailTask(jsonfeed.InternalTask):
     to = mr.GetParam('to')
     if not to:
       # Cannot proceed if we cannot create a valid EmailMessage.
-      return
+      return {'note': 'Skipping because no "to" address found.'}
+
+    # Don't send emails to any banned users.
+    try:
+      user_id = self.services.user.LookupUserID(mr.cnxn, to)
+      user = self.services.user.GetUser(mr.cnxn, user_id)
+      if user.banned:
+        logging.info('Not notifying banned user %r', user.email)
+        return {'note': 'Skipping because user is banned.'}
+    except user_svc.NoSuchUserException:
+      pass
+
     references = mr.GetParam('references')
     subject = mr.GetParam('subject')
     body = mr.GetParam('body')
