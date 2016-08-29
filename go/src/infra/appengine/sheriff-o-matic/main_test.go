@@ -472,6 +472,37 @@ func TestWriteSettings(t *testing.T) {
 			})
 
 		})
+
+		Convey("writeBugQueueLabels", func() {
+			tree := &Tree{
+				Name:          "oak",
+				DisplayName:   "Oak",
+				BugQueueLabel: "test",
+			}
+
+			So(ds.Put(tree), ShouldBeNil)
+			ds.Testable().CatchupIndexes()
+
+			Convey("basic", func() {
+				err := writeBugQueueLabels(c, "oak:thing")
+				So(err, ShouldBeNil)
+
+				So(ds.Get(tree), ShouldBeNil)
+				So(tree.Name, ShouldEqual, "oak")
+				So(tree.DisplayName, ShouldEqual, "Oak")
+				So(tree.BugQueueLabel, ShouldEqual, "thing")
+			})
+
+			Convey("remove label", func() {
+				err := writeBugQueueLabels(c, "oak:")
+				So(err, ShouldBeNil)
+
+				So(ds.Get(tree), ShouldBeNil)
+				So(tree.Name, ShouldEqual, "oak")
+				So(tree.DisplayName, ShouldEqual, "Oak")
+				So(tree.BugQueueLabel, ShouldEqual, "")
+			})
+		})
 	})
 }
 

@@ -98,7 +98,7 @@ func (settingsUIPage) Fields(c context.Context) ([]settings.UIField, error) {
 			ID:    "BugQueueLabels",
 			Title: "Bug queue labels",
 			Type:  settings.UIFieldText,
-			Help:  "Bug queue label for each tree. Write only field; treeA:queueA,treeB:queueB",
+			Help:  "Bug queue label for each tree. treeA:queueA,treeB:queueB",
 		},
 	}, nil
 }
@@ -107,14 +107,17 @@ func (settingsUIPage) ReadSettings(c context.Context) (map[string]string, error)
 	q := datastore.NewQuery("Tree")
 	results := []*Tree{}
 	datastore.Get(c).GetAll(q, &results)
-	stringed := make([]string, len(results))
+	trees := make([]string, len(results))
+	queues := make([]string, len(results))
 	for i, tree := range results {
-		stringed[i] = fmt.Sprintf("%s:%s", tree.Name, tree.DisplayName)
+		trees[i] = fmt.Sprintf("%s:%s", tree.Name, tree.DisplayName)
+		queues[i] = fmt.Sprintf("%s:%s", tree.Name, tree.BugQueueLabel)
 	}
 
 	return map[string]string{
-		"Trees":        strings.Join(stringed, ","),
-		"AlertStreams": "",
+		"Trees":          strings.Join(trees, ","),
+		"AlertStreams":   "",
+		"BugQueueLabels": strings.Join(queues, ","),
 	}, nil
 }
 
