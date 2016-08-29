@@ -58,6 +58,10 @@ def parse_config(content, filename='<unknown>'):
                  "File: %s", filename)
     error_occurred = True
 
+  # Make sure all arguments are passed as strings.
+  if 'cmd' in config:
+    config['cmd'] = [str(x) for x in config['cmd']]
+
   # 'args', 'stop_time' are optional
 
   # We gathered enough errors, bail out.

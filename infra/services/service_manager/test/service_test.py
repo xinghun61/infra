@@ -117,7 +117,7 @@ class ServiceTest(TestBase):
           {
               "name": "foo",
               "root_directory": "/rootdir",
-              "cmd": ["bar", "one", "two"],
+              "cmd": ["bar", "one", "two", 42],
               "stop_time": 86
           }"""),
         None,
@@ -177,8 +177,8 @@ class ServiceTest(TestBase):
           'pid': 777,
           'starttime': 888,
           'version': {'foo': 'bar'},
-          'args': ['bar', 'one', 'two'],
-          'cmd': ['bar', 'one', 'two'],
+          'args': ['bar', 'one', 'two', '42'],
+          'cmd': ['bar', 'one', 'two', '42'], # Note: all args must be strings
       }, json.load(fh))
 
   @unittest.skipIf(sys.platform == 'win32', 'windows')
@@ -253,6 +253,7 @@ class ServiceTest(TestBase):
         'bar',
         'one',
         'two',
+        '42',
     ])
 
   def test_stop_not_running(self):
@@ -357,7 +358,7 @@ class ServiceTest(TestBase):
 
   def test_has_cmd_changed_no(self):
     state = service.ProcessState(
-        pid=1234, starttime=5678, version=1, cmd=['bar', 'one', 'two'])
+        pid=1234, starttime=5678, version=1, cmd=['bar', 'one', 'two', '42'])
     self.assertFalse(self.s.has_cmd_changed(state))
 
   def test_has_cmd_changed_yes(self):
