@@ -278,7 +278,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     Please refer to try_job_result_format.md for format check.
     """
     culprits = None
-    if result and result.get('report'):
+    if try_job_id and result and result.get('report'):
       try_job_data = WfTryJobData.Get(try_job_id)
       if try_job_type == failure_type.COMPILE:
         # For compile failures, the try job will stop if one revision fails, so

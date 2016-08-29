@@ -99,11 +99,6 @@ class StartTryJobOnDemandPipeline(BasePipeline):
       try_job_id = yield ScheduleCompileTryJobPipeline(
           master_name, builder_name, build_number, good_revision, bad_revision,
           try_job_type, compile_targets, suspected_revisions)
-      try_job_result = yield MonitorTryJobPipeline(
-          master_name, builder_name, build_number, try_job_type, try_job_id)
-      yield IdentifyTryJobCulpritPipeline(
-          master_name, builder_name, build_number, blame_list, try_job_type,
-          try_job_id, try_job_result)
     else:
       # If try_job_type is other type, the pipeline has returned.
       # So here the try_job_type is failure_type.TEST.
@@ -122,8 +117,9 @@ class StartTryJobOnDemandPipeline(BasePipeline):
       try_job_id = yield ScheduleTestTryJobPipeline(
           master_name, builder_name, build_number, good_revision, bad_revision,
           try_job_type, suspected_revisions, *reliable_tests)
-      try_job_result = yield MonitorTryJobPipeline(
-          master_name, builder_name, build_number, try_job_type, try_job_id)
-      yield IdentifyTryJobCulpritPipeline(
-          master_name, builder_name, build_number, blame_list, try_job_type,
-          try_job_id, try_job_result)
+
+    try_job_result = yield MonitorTryJobPipeline(
+        master_name, builder_name, build_number, try_job_type, try_job_id)
+    yield IdentifyTryJobCulpritPipeline(
+        master_name, builder_name, build_number, blame_list, try_job_type,
+        try_job_id, try_job_result)

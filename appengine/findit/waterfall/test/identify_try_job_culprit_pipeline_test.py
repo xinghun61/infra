@@ -956,3 +956,18 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     identify_try_job_culprit_pipeline._NotifyCulprits('m', 'b', 1, culprits)
     self.assertEqual(1, len(instances))
     self.assertTrue(instances[0].started)
+
+  def testReturnNoneIfNoTryJob(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 8
+
+    try_job = WfTryJob.Create(master_name, builder_name, build_number).put()
+    pipeline = IdentifyTryJobCulpritPipeline()
+    culprit = pipeline.run(master_name, builder_name, build_number, ['rev1'],
+                 failure_type.TEST, None, None)
+    self.assertIsNone(culprit)
+
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(try_job.test_results, [])
+    self.assertEqual(try_job.status, analysis_status.COMPLETED)

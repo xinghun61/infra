@@ -478,3 +478,13 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         monitor_try_job_pipeline._GetError(build_response, None, False),
         (expected_error_dict, try_job_error.UNKNOWN))
+
+  def testReturnNoneIfNoTryJobId(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    pipeline = MonitorTryJobPipeline()
+    test_result = pipeline.run(
+        master_name, builder_name, build_number, failure_type.TEST,
+        None)
+    self.assertIsNone(test_result)

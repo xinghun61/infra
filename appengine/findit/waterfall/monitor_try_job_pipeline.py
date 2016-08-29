@@ -218,7 +218,8 @@ class MonitorTryJobPipeline(BasePipeline):
   # TODO(chanli): Handle try job for test failures later.
   def run(
       self, master_name, builder_name, build_number, try_job_type, try_job_id):
-    assert try_job_id
+    if not try_job_id:
+      return None
 
     timeout_hours = waterfall_config.GetTryJobSettings().get(
         'job_timeout_hours')
