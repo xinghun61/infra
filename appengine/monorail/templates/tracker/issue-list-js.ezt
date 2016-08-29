@@ -47,6 +47,7 @@ runOnLoad(function() {
     while (target && target.tagName != "TH") target = target.parentNode;
     var colIndex = target.getAttribute("data-col-index");
     _showBelow("pop_" + colIndex, target);
+    event.preventDefault();
   }
   $("resultstablehead").addEventListener("click", _handleHeaderClick);
 });
