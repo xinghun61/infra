@@ -15,6 +15,10 @@ handlers:
   static_dir: elements
   secure: always
 
+- url: /scripts
+  static_dir: scripts
+  secure: always
+
 - url: /test
   static_dir: test
   secure: always

@@ -25,6 +25,8 @@ import (
 	"github.com/luci/luci-go/appengine/gaemiddleware"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/tsmon/metric"
+	"github.com/luci/luci-go/common/tsmon/types"
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/auth/identity"
 	"github.com/luci/luci-go/server/router"
@@ -41,6 +43,8 @@ var (
 	mainPage         = template.Must(template.ParseFiles("./index.html"))
 	accessDeniedPage = template.Must(template.ParseFiles("./access-denied.html"))
 	monorailEndpoint = "https://monorail-prod.appspot.com/_ah/api/monorail/v1/"
+	jsErrors         = metric.NewCounter("sheriff_o_matic/js_errors",
+		"Number of uncaught javascript errors.", types.MetricMetadata{})
 )
 
 var errStatus = func(w http.ResponseWriter, status int, msg string) {
@@ -600,6 +604,24 @@ func getRevRangeHandler(ctx *router.Context) {
 	http.Redirect(w, r, gitilesURL, 301)
 }
 
+func postECatcherHandler(ctx *router.Context) {
+	c, w, r := ctx.Context, ctx.Writer, ctx.Request
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		errStatus(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := r.Body.Close(); err != nil {
+		errStatus(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	jsErrors.Add(c, 1)
+	logging.Errorf(c, "ecatcher report: %s", string(data))
+}
+
 // getOAuthClient returns a client capable of making HTTP requests authenticated
 // with OAuth access token for userinfo.email scope.
 func getOAuthClient(c context.Context) (*http.Client, error) {
@@ -643,6 +665,7 @@ func init() {
 	r.GET("/api/v1/bugqueue/:tree", authmw, getBugQueueHandler)
 	r.GET("/api/v1/revrange/:start/:end", basemw, getRevRangeHandler)
 	r.GET("/_cron/refresh/bugqueue/:tree", authmw, refreshBugQueueHandler)
+	r.POST("/_/ecatcher", authmw, postECatcherHandler)
 
 	rootRouter := router.New()
 	rootRouter.GET("/*path", authmw, indexPage)
@@ -653,6 +676,7 @@ func init() {
 	http.DefaultServeMux.Handle("/auth/", r)
 	http.DefaultServeMux.Handle("/_ah/", r)
 	http.DefaultServeMux.Handle("/internal/", r)
+	http.DefaultServeMux.Handle("/_/", r)
 
 	http.DefaultServeMux.Handle("/", rootRouter)
 }
