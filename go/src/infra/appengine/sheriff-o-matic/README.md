@@ -18,7 +18,7 @@ npm install -g web-component-tester-istanbul
 
 ## Getting up and running
 
-After inital checkout, make sure you have all of the bower dependencies
+After initial checkout, make sure you have all of the bower dependencies
 installed. Also run this whenever bower.json is updated:
 
 ```sh
@@ -71,6 +71,23 @@ go build infra/monitoring/dispatcher
 ```
 
 See [alerts-dispatcher's README](https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/monitoring/dispatcher/) for more information about using this tool.
+
+## Testing the bug queue locally
+Testing the bug queue locally requires access to Monorail production. To do
+this, you will need to get credentials for a, App Engine service account.
+
+* Navigate to Google Cloud console -> IAM & Admin -> Service accounts. e.g. [link](https://pantheon.corp.google.com/iam-admin/serviceaccounts/project?project=sheriff-o-matic-staging&organizationId=433637338589)
+* Select the three-dot menu on the "App Engine default service account" item and
+click "Create Key".
+* Select the "JSON" option from the radio buttons and then click the "Create" button.
+* A JSON file containing your key will download.
+
+Once you have the key for your service account, add the key to your environment
+variables:
+
+```sh
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials/file.json
+```
 
 ## Contributors
 

@@ -109,7 +109,24 @@
         assert.equal(item.children[1].href, 'https://crrev.com/1234');
         done();
       });
+    });
 
+    test('removes duplicate suspect CLs', function() {
+      element.extension = {
+        reason: {
+          'test_names': [
+            'best_test',
+          ],
+        },
+        suspected_cls: [
+          {revision: '1234'},
+          {revision: '1234'},
+          {revision: '12345'},
+          {revision: '1234'},
+        ],
+      };
+
+      assert.equal(element._suspectedCls.length, 2);
     });
   });
 })();

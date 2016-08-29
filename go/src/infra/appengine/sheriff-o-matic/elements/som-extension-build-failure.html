@@ -105,10 +105,10 @@
             <strong class="suspect-cl-results">
               Findit found results:
             </strong>
-            <template is="dom-repeat" items="[[extension.suspected_cls]]" as="cl">
+            <template is="dom-repeat" items="[[_suspectedCls]]" as="cl">
               <a target="_blank" href$=[[_linkForCL(cl)]]>
                 [[_textForCL(cl)]]
-              </a>
+              </a> &nbsp;
             </template>
           </div>
         </template>
@@ -135,6 +135,10 @@
           type: String,
           value: ''
         },
+        _suspectedCls: {
+          type: Array,
+          computed: '_computeSuspectedCls(extension)',
+        },
       },
 
       _haveBuilders: function(extension) {
@@ -158,6 +162,18 @@
           classes.push('infra-failure');
         }
         return classes.join(' ');
+      },
+
+      // This is necessary because FindIt sometimes returns duplicate results
+      _computeSuspectedCls: function(extension) {
+        if (!this._haveSuspectCLs(extension)) {
+          return [];
+        }
+        let revisions = {};
+        for (var i in extension.suspected_cls) {
+          revisions[extension.suspected_cls[i].revision] = true;
+        }
+        return Object.keys(revisions);
       },
 
       _haveSuspectCLs: function(extension) {
@@ -193,7 +209,7 @@
       },
 
       _linkForCL: function(cl) {
-        return 'https://crrev.com/' + cl.revision;
+        return 'https://crrev.com/' + cl;
       },
 
       _showRegressionRange: function(range) {
@@ -202,7 +218,7 @@
       },
 
       _textForCL: function(cl) {
-        return '(details)';
+        return '(' + cl.substring(0, 7) + ')';
       },
     });
   })();
