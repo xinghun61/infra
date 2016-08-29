@@ -58,12 +58,14 @@ A Build JSON object may have the following keys:
         definition of the build. See `result_details_json` for more info.
 *   `cancelation_reason`: why the build was canceled. Can be one of:
     *   `"CANCELED_EXPLICITLY"`: the build canceled was requested externally.
-    *   `"TIMEOUT"`: the build was canceled on timeout. Not supported yet.
+    *   `"TIMEOUT"`: the build was canceled on timeout. Currently happens only
+        for builds that are in `SCHEDULED` or `STARTED` state for more than
+        48 hours.
 *   `updated_ts`: timestamp when the build was modified last time.
     A modification includes leasing.
 *   `utcnow_ts`: current UTC time on the server.
 
-All timestamps are in milliseconds since Unix Epoch.
+All timestamps are in microseconds since Unix Epoch.
 
 ## API
 
