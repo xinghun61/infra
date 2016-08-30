@@ -17,7 +17,8 @@ type testFailure struct {
 	// Could be more detailed about test failures. For instance, we could
 	// indicate expected vs. actual result.
 	TestNames []string `json:"test_names"`
-	StepName  string   `json:"-"`
+	//FIXME: Rename to TestSuite (needs to be synchronized with SOM)
+	StepName string `json:"step"`
 }
 
 func (t *testFailure) Signature() string {
