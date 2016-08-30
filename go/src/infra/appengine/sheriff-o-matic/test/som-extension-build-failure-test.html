@@ -42,6 +42,7 @@
           'test_names': [
             'best_test',
           ],
+          'step': 'webkit_tests',
         },
       };
       element._uberify = (url) => { return url; };
@@ -50,7 +51,7 @@
         assert.isNotNull(item);
         assert.isTrue(item.children[0].href.endsWith(
                 'dashboards/flakiness_dashboard' +
-                '.html#tests=best_test&testType=wekbit_tests'));
+                '.html#tests=best_test&testType=webkit_tests'));
         done();
       });
     });

@@ -8,12 +8,11 @@
   },
   "dependencies": {
     "polylint": "^2.9.0",
-    "vulcanize": "~1.14.8",
-    "web-component-tester": "^4.1.0"
+    "vulcanize": "~1.14.8"
   },
   "devDependencies": {
     "istanbul": "^0.4.4",
-    "web-component-tester": "^4.3.1",
+    "web-component-tester": "^4.3.4",
     "web-component-tester-istanbul": "https://github.com/t2ym/web-component-tester-istanbul/tarball/0.10.1"
   },
   "scripts": {
