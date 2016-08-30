@@ -768,16 +768,6 @@ func (a *Analyzer) stepFailures(master *messages.MasterLocation, builderName str
 // stepFailureAlerts returns alerts generated from step failures. It applies filtering
 // logic specified in the gatekeeper config to ignore some failures.
 func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep) ([]messages.Alert, error) {
-	ret := []messages.Alert{}
-	type res struct {
-		f   *messages.BuildStep
-		a   *messages.Alert
-		err error
-	}
-
-	// Might not need full capacity buffer, since some failures are ignored below.
-	rs := make(chan res, len(failures))
-
 	filteredFailures := []*messages.BuildStep{}
 
 	for _, failure := range failures {
@@ -794,6 +784,15 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 		filteredFailures = append(filteredFailures, failure)
 	}
 
+	ret := []messages.Alert{}
+	type res struct {
+		f   *messages.BuildStep
+		a   *messages.Alert
+		err error
+	}
+
+	// Might not need full capacity buffer, since some failures are ignored below.
+	rs := make(chan res, len(filteredFailures))
 	reasons := a.reasonFinder(a.Reader, filteredFailures)
 
 	scannedFailures := []*messages.BuildStep{}
@@ -969,7 +968,7 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 		}(failure)
 	}
 
-	for range scannedFailures {
+	for range filteredFailures {
 		r := <-rs
 		if r.a != nil {
 			ret = append(ret, *r.a)
