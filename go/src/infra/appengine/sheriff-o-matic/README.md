@@ -76,7 +76,7 @@ See [alerts-dispatcher's README](https://chromium.googlesource.com/infra/infra/+
 Testing the bug queue locally requires access to Monorail production. To do
 this, you will need to get credentials for a, App Engine service account.
 
-* Navigate to Google Cloud console -> IAM & Admin -> Service accounts. e.g. [link](https://pantheon.corp.google.com/iam-admin/serviceaccounts/project?project=sheriff-o-matic-staging&organizationId=433637338589)
+* Navigate to Google Cloud console -> IAM & Admin -> Service accounts.
 * Select the three-dot menu on the "App Engine default service account" item and
 click "Create Key".
 * Select the "JSON" option from the radio buttons and then click the "Create" button.
