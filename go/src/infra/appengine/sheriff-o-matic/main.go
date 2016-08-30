@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"infra/monorail"
 
@@ -37,6 +38,8 @@ const (
 	authGroup           = "sheriff-o-matic-access"
 	bugQueueCacheFormat = "bugqueue-%s"
 	settingsKey         = "tree"
+	// annotations will expire after this amount of time
+	annotationExpiration = time.Hour * 24 * 5
 )
 
 var (
@@ -472,6 +475,40 @@ func postAnnotationsHandler(ctx *router.Context) {
 	w.Write(data)
 }
 
+func flushOldAnnotationsHandler(ctx *router.Context) {
+	c, w := ctx.Context, ctx.Writer
+
+	numDeleted, err := flushOldAnnotations(c)
+	if err != nil {
+		errStatus(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf("deleted %d annotations", numDeleted)))
+}
+
+func flushOldAnnotations(c context.Context) (int, error) {
+	ds := datastore.Get(c)
+
+	q := datastore.NewQuery("Annotation")
+	q = q.Lt("ModificationTime", clock.Get(c).Now().Add(-annotationExpiration))
+	q = q.KeysOnly(true)
+
+	results := []*Annotation{}
+	err := ds.GetAll(q, &results)
+	if err != nil {
+		return 0, fmt.Errorf("while fetching annotations to delete: %s", err)
+	}
+
+	err = ds.Delete(results)
+	if err != nil {
+		return 0, fmt.Errorf("while deleting annotations: %s", err)
+	}
+
+	return len(results), nil
+}
+
 func getBugQueueHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
@@ -667,7 +704,10 @@ func init() {
 	r.POST("/api/v1/annotations/:annKey/:action", authmw, postAnnotationsHandler)
 	r.GET("/api/v1/bugqueue/:tree", authmw, getBugQueueHandler)
 	r.GET("/api/v1/revrange/:start/:end", basemw, getRevRangeHandler)
+
 	r.GET("/_cron/refresh/bugqueue/:tree", authmw, refreshBugQueueHandler)
+	r.GET("/_cron/annotations/flush_old/", basemw, flushOldAnnotationsHandler)
+
 	r.POST("/_/ecatcher", authmw, postECatcherHandler)
 
 	rootRouter := router.New()

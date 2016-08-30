@@ -246,7 +246,7 @@ func TestMain(t *testing.T) {
 						Key:              "foobar",
 						Bugs:             []string{"hi", "bugz"},
 						SnoozeTime:       123123,
-						ModificationTime: clock.Now(c).Add(4 * time.Hour),
+						ModificationTime: cl.Now().Add(4 * time.Hour),
 					}
 					So(ds.Put(ann), ShouldBeNil)
 					ds.Testable().CatchupIndexes()
@@ -377,6 +377,69 @@ func TestMain(t *testing.T) {
 				Convey("refresh bug queue", func() {
 					_, err := refreshBugQueue(c, "tree")
 					So(err, ShouldNotBeNil)
+				})
+			})
+		})
+		Convey("cron", func() {
+			Convey("flushOldAnnotations", func() {
+				getAllAnns := func() []*Annotation {
+					anns := []*Annotation{}
+					So(ds.GetAll(datastore.NewQuery("Annotation"), &anns), ShouldBeNil)
+					return anns
+				}
+
+				ann := &Annotation{
+					KeyDigest:        fmt.Sprintf("%x", sha1.Sum([]byte("foobar"))),
+					Key:              "foobar",
+					ModificationTime: datastore.RoundTime(cl.Now()),
+				}
+				So(ds.Put(ann), ShouldBeNil)
+				ds.Testable().CatchupIndexes()
+
+				Convey("current not deleted", func() {
+					num, err := flushOldAnnotations(c)
+					So(err, ShouldBeNil)
+					So(num, ShouldEqual, 0)
+					So(getAllAnns(), ShouldResemble, []*Annotation{ann})
+				})
+
+				ann.ModificationTime = cl.Now().Add(-(annotationExpiration + time.Hour))
+				So(ds.Put(ann), ShouldBeNil)
+				ds.Testable().CatchupIndexes()
+
+				Convey("old deleted", func() {
+					num, err := flushOldAnnotations(c)
+					So(err, ShouldBeNil)
+					So(num, ShouldEqual, 1)
+					So(getAllAnns(), ShouldResemble, []*Annotation{})
+				})
+
+				ds.Testable().CatchupIndexes()
+				q := datastore.NewQuery("Annotation")
+				anns := []*Annotation{}
+				ds.Testable().CatchupIndexes()
+				ds.GetAll(q, &anns)
+				ds.Delete(anns)
+				anns = []*Annotation{
+					{
+						KeyDigest:        fmt.Sprintf("%x", sha1.Sum([]byte("foobar2"))),
+						Key:              "foobar2",
+						ModificationTime: datastore.RoundTime(cl.Now()),
+					},
+					{
+						KeyDigest:        fmt.Sprintf("%x", sha1.Sum([]byte("foobar"))),
+						Key:              "foobar",
+						ModificationTime: datastore.RoundTime(cl.Now().Add(-(annotationExpiration + time.Hour))),
+					},
+				}
+				So(ds.Put(anns), ShouldBeNil)
+				ds.Testable().CatchupIndexes()
+
+				Convey("only delete old", func() {
+					num, err := flushOldAnnotations(c)
+					So(err, ShouldBeNil)
+					So(num, ShouldEqual, 1)
+					So(getAllAnns(), ShouldResemble, anns[:1])
 				})
 			})
 		})

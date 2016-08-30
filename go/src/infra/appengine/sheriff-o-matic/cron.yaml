@@ -6,3 +6,7 @@ cron:
 - description: Update bug queue
   url: /_cron/refresh/bugqueue/chromium
   schedule: every 1 minutes
+
+- description: Delete old annotations
+  url: /_cron/annotations/flush_old
+  schedule: every 1 hour
