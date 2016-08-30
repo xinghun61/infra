@@ -9,4 +9,4 @@ cron:
 
 - description: Delete old annotations
   url: /_cron/annotations/flush_old
-  schedule: every 1 hour
+  schedule: every 1 hours
