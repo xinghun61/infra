@@ -42,7 +42,10 @@
   <div class="issuecommentheading" style="background:none; padding:2px 6px">
     Reported by
     [include "../framework/user-link.ezt" description.creator],
-    <span class="date" title="[description.date_tooltip]">[description.date_string][description.date_relative]</span>
+    <span class="date" title="[description.date_tooltip]">
+      [description.date_string]
+      [if-any description.date_relative]([description.date_relative])[end]
+    </span>
   </div>
  [include "issue-comments-part.ezt" ""]
 

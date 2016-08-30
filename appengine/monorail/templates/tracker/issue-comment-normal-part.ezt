@@ -7,8 +7,10 @@
          href="[project_home_url]/issues/detail?id=[issue.local_id]#c[comments.sequence]">Comment [comments.sequence]</a>
       by
       [include "../framework/user-link.ezt" comments.creator]</span>,
-      <span class="date" title="[comments.date_tooltip] UTC"
-            >[comments.date_string][comments.date_relative]</span>
+      <span class="date" title="[comments.date_tooltip] UTC">
+        [comments.date_string]
+        [if-any comments.date_relative]([comments.date_relative])[end]
+      </span>
     [if-any page_perms.ViewInboundMessages comments.can_delete_bool][if-any comments.inbound_message]
       via <a target="_blank" href="original?id=[issue.local_id]&seq=[comments.sequence]">email</a>
     [end][end]

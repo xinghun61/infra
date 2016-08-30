@@ -328,7 +328,7 @@ class IssueCommentView(template_helpers.PBProxy):
 
     time_tuple = time.localtime(comment_pb.timestamp)
     self.date_string = timestr.FormatAbsoluteDate(
-        comment_pb.timestamp, old_format=timestr.MONTH_DAY_FMT)
+        comment_pb.timestamp, old_format=timestr.MONTH_DAY_YEAR_FMT)
     self.date_relative = timestr.FormatRelativeDate(comment_pb.timestamp)
     self.date_tooltip = time.asctime(time_tuple)
     self.date_yyyymmdd = timestr.FormatAbsoluteDate(
