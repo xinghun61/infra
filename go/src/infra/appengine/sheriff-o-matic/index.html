@@ -19,7 +19,7 @@ function loadNonVulcanized() {
     font-family: sans-serif;
   }
 </style>
-<som-app user="{{.User}}" logout-url="{{.LogoutUrl}}"></som-app>
+<som-app user="{{.User}}" logout-url="{{.LogoutUrl}}" xsrf-token="{{.XsrfToken}}"></som-app>
 
 {{if not .IsDevAppServer}}
 <script>

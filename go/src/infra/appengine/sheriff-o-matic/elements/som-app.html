@@ -399,6 +399,7 @@
           computed: '_computeExaminedAlertKey(_path)',
         },
         user: String,
+        xsrfToken: String,
       },
 
       created: function() {
@@ -699,7 +700,11 @@
       },
 
       _sendAnnotation: function(key, type, change) {
-        this.$.annotationPost.body = JSON.stringify(change);
+        let data = {
+          xsrf_token: this.xsrfToken,
+          data: change,
+        }
+        this.$.annotationPost.body = JSON.stringify(data);
         this.$.annotationPost.url = '/api/v1/annotations/' + key + '/' + type;
         return this.$.annotationPost.generateRequest();
       },

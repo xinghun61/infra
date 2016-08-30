@@ -5,7 +5,9 @@
 package som
 
 import (
+	"bytes"
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -22,6 +24,7 @@ import (
 	"github.com/luci/luci-go/common/clock/testclock"
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/auth/authtest"
+	"github.com/luci/luci-go/server/auth/xsrf"
 	"github.com/luci/luci-go/server/router"
 	"golang.org/x/net/context"
 
@@ -35,11 +38,14 @@ func TestMain(t *testing.T) {
 
 	Convey("main", t, func() {
 		c := gaetesting.TestingContext()
-		cl := testclock.New(testclock.TestTimeUTC)
+		cl := testclock.New(testclock.TestRecentTimeUTC)
 		c = clock.Set(c, cl)
 
 		ds := datastore.Get(c)
 		w := httptest.NewRecorder()
+
+		tok, err := xsrf.Token(c)
+		So(err, ShouldBeNil)
 
 		Convey("index", func() {
 			c = auth.SetAuthenticator(c, []auth.Method(nil))
@@ -221,7 +227,12 @@ func TestMain(t *testing.T) {
 					So(results, ShouldHaveLength, 1)
 					itm := results[0]
 					So(itm.Tree, ShouldResemble, alerts.Tree)
-					So(string(itm.Contents), ShouldEqual, `{"date":"0001-02-03 04:05:06.000000007 +0000 UTC","thing":"FOOBAR"}`)
+					rslt := make(map[string]interface{})
+					So(json.NewDecoder(bytes.NewReader(itm.Contents)).Decode(&rslt), ShouldBeNil)
+					So(rslt, ShouldResemble, map[string]interface{}{
+						"date":  "2016-02-03 04:05:06.000000007 +0000 UTC",
+						"thing": "FOOBAR",
+					})
 				})
 			})
 
@@ -246,7 +257,7 @@ func TestMain(t *testing.T) {
 						Key:              "foobar",
 						Bugs:             []string{"hi", "bugz"},
 						SnoozeTime:       123123,
-						ModificationTime: cl.Now().Add(4 * time.Hour),
+						ModificationTime: datastore.RoundTime(clock.Now(c).Add(4 * time.Hour)),
 					}
 					So(ds.Put(ann), ShouldBeNil)
 					ds.Testable().CatchupIndexes()
@@ -262,7 +273,10 @@ func TestMain(t *testing.T) {
 						So(err, ShouldBeNil)
 						body := string(r)
 						So(w.Code, ShouldEqual, 200)
-						So(body, ShouldEqual, `[{"KeyDigest":"8843d7f92416211de9ebb963ff4ce28125932878","key":"foobar","bugs":["hi","bugz"],"snoozeTime":123123,"ModificationTime":"0001-02-03T08:05:06Z"}]`)
+						rslt := []*Annotation{}
+						So(json.NewDecoder(strings.NewReader(body)).Decode(&rslt), ShouldBeNil)
+						So(rslt, ShouldHaveLength, 1)
+						So(rslt[0], ShouldResemble, ann)
 					})
 				})
 				Convey("POST", func() {
@@ -279,17 +293,26 @@ func TestMain(t *testing.T) {
 					ann := &Annotation{
 						Key:              "foobar",
 						KeyDigest:        fmt.Sprintf("%x", sha1.Sum([]byte("foobar"))),
-						ModificationTime: cl.Now(),
+						ModificationTime: datastore.RoundTime(clock.Now(c)),
 					}
 					cl.Add(time.Hour)
 
+					makeChange := func(data map[string]interface{}) string {
+						change, err := json.Marshal(map[string]interface{}{
+							"xsrf_token": tok,
+							"data":       data,
+						})
+						So(err, ShouldBeNil)
+						return string(change)
+					}
 					Convey("add", func() {
-						change := `{"snoozeTime":123123}`
 						postAnnotationsHandler(&router.Context{
 							Context: c,
 							Writer:  w,
-							Request: makePostRequest(change),
-							Params:  makeParams("annKey", "foobar", "action", "add"),
+							Request: makePostRequest(makeChange(map[string]interface{}{
+								"snoozeTime": 123123,
+							})),
+							Params: makeParams("annKey", "foobar", "action", "add"),
 						})
 
 						So(w.Code, ShouldEqual, 200)
@@ -302,8 +325,10 @@ func TestMain(t *testing.T) {
 							postAnnotationsHandler(&router.Context{
 								Context: c,
 								Writer:  w,
-								Request: makePostRequest(`{"bugs":["oooops"]}`),
-								Params:  makeParams("annKey", "foobar", "action", "add"),
+								Request: makePostRequest(makeChange(map[string]interface{}{
+									"bugs": []string{"ooooops"},
+								})),
+								Params: makeParams("annKey", "foobar", "action", "add"),
 							})
 
 							So(w.Code, ShouldEqual, 400)
@@ -319,7 +344,7 @@ func TestMain(t *testing.T) {
 							postAnnotationsHandler(&router.Context{
 								Context: c,
 								Writer:  w,
-								Request: makePostRequest(""),
+								Request: makePostRequest(makeChange(nil)),
 								Params:  makeParams("annKey", "foobar", "action", "remove"),
 							})
 
@@ -335,8 +360,10 @@ func TestMain(t *testing.T) {
 							postAnnotationsHandler(&router.Context{
 								Context: c,
 								Writer:  w,
-								Request: makePostRequest(`{"snoozeTime":true}`),
-								Params:  makeParams("annKey", "foobar", "action", "remove"),
+								Request: makePostRequest(makeChange(map[string]interface{}{
+									"snoozeTime": true,
+								})),
+								Params: makeParams("annKey", "foobar", "action", "remove"),
 							})
 
 							So(w.Code, ShouldEqual, 200)

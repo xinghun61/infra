@@ -6,6 +6,7 @@
 package som
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
@@ -30,6 +31,7 @@ import (
 	"github.com/luci/luci-go/common/tsmon/types"
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/auth/identity"
+	"github.com/luci/luci-go/server/auth/xsrf"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/settings"
 )
@@ -272,10 +274,16 @@ func indexPage(ctx *router.Context) {
 		return
 	}
 
+	tok, err := xsrf.Token(c)
+	if err != nil {
+		logging.Errorf(c, "while getting xrsf token: %s", err)
+	}
+
 	data := map[string]interface{}{
 		"User":           user.Email(),
 		"LogoutUrl":      logoutURL,
 		"IsDevAppServer": appengine.IsDevAppServer(),
+		"XsrfToken":      tok,
 	}
 
 	err = mainPage.Execute(w, data)
@@ -342,7 +350,6 @@ func getAlertsHandler(ctx *router.Context) {
 	w.Write(alertsJSON.Contents)
 }
 
-// TODO(martiniss): Fix CSRF weakness here.
 func postAlertsHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
@@ -413,7 +420,11 @@ func getAnnotationsHandler(ctx *router.Context) {
 	w.Write(data)
 }
 
-// TODO(martiniss): Fix CSRF weakness here.
+type postRequest struct {
+	XSRFToken string           `json:"xsrf_token"`
+	Data      *json.RawMessage `json:"data"`
+}
+
 func postAnnotationsHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
@@ -430,22 +441,36 @@ func postAnnotationsHandler(ctx *router.Context) {
 		return
 	}
 
+	req := &postRequest{}
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err != nil {
+		errStatus(w, http.StatusBadRequest, fmt.Sprintf("while decoding request: %s", err))
+		return
+	}
+
+	if err := xsrf.Check(c, req.XSRFToken); err != nil {
+		errStatus(w, http.StatusForbidden, err.Error())
+		return
+	}
+
 	annotation := &Annotation{
 		KeyDigest: fmt.Sprintf("%x", sha1.Sum([]byte(annKey))),
 		Key:       annKey,
 	}
 
-	err := ds.Get(annotation)
+	err = ds.Get(annotation)
 	if action == "remove" && err != nil {
+		logging.Errorf(c, "while getting %s: %s", annKey, err)
 		errStatus(w, http.StatusNotFound, fmt.Sprintf("Annotation %s not found", annKey))
 		return
 	}
 	// The annotation probably doesn't exist if we're adding something
 
+	data := bytes.NewReader([]byte(*req.Data))
 	if action == "add" {
-		err = annotation.add(c, r.Body)
+		err = annotation.add(c, data)
 	} else if action == "remove" {
-		err = annotation.remove(c, r.Body)
+		err = annotation.remove(c, data)
 	}
 
 	if err != nil {
@@ -465,14 +490,14 @@ func postAnnotationsHandler(ctx *router.Context) {
 		return
 	}
 
-	data, err := json.Marshal(annotation)
+	resp, err := json.Marshal(annotation)
 	if err != nil {
 		errStatus(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+	w.Write(resp)
 }
 
 func flushOldAnnotationsHandler(ctx *router.Context) {
@@ -676,14 +701,18 @@ func getOAuthClient(c context.Context) (*http.Client, error) {
 }
 
 // base is the root of the middleware chain.
-func base() router.MiddlewareChain {
-	methods := auth.Authenticator{
+func base(includeCookie bool) router.MiddlewareChain {
+	methods := []auth.Method{
 		&server.OAuth2Method{Scopes: []string{server.EmailScope}},
-		server.CookieAuth,
 		&server.InboundAppIDAuthMethod{},
 	}
+	if includeCookie {
+		methods = append(methods, server.CookieAuth)
+	}
+
 	return gaemiddleware.BaseProd().Extend(
 		auth.Use(methods),
+		auth.Authenticate,
 	)
 }
 
@@ -693,25 +722,27 @@ func init() {
 	settings.RegisterUIPage(settingsKey, settingsUIPage{})
 
 	r := router.New()
-	basemw := base()
-	authmw := basemw.Extend(auth.Authenticate)
+	basemw := base(true)
 
 	gaemiddleware.InstallHandlers(r, basemw)
-	r.GET("/api/v1/trees/", authmw, getTreesHandler)
-	r.GET("/api/v1/alerts/:tree", authmw, getAlertsHandler)
-	r.POST("/api/v1/alerts/:tree", authmw, postAlertsHandler)
-	r.GET("/api/v1/annotations/", authmw, getAnnotationsHandler)
-	r.POST("/api/v1/annotations/:annKey/:action", authmw, postAnnotationsHandler)
-	r.GET("/api/v1/bugqueue/:tree", authmw, getBugQueueHandler)
+	r.GET("/api/v1/trees/", basemw, getTreesHandler)
+	r.GET("/api/v1/alerts/:tree", basemw, getAlertsHandler)
+
+	// Disallow cookies because this handler should not be accessible by regular
+	// users.
+	r.POST("/api/v1/alerts/:tree", base(false), postAlertsHandler)
+	r.GET("/api/v1/annotations/", basemw, getAnnotationsHandler)
+	r.POST("/api/v1/annotations/:annKey/:action", basemw, postAnnotationsHandler)
+	r.GET("/api/v1/bugqueue/:tree", basemw, getBugQueueHandler)
 	r.GET("/api/v1/revrange/:start/:end", basemw, getRevRangeHandler)
 
-	r.GET("/_cron/refresh/bugqueue/:tree", authmw, refreshBugQueueHandler)
+	r.GET("/_cron/refresh/bugqueue/:tree", basemw, refreshBugQueueHandler)
 	r.GET("/_cron/annotations/flush_old/", basemw, flushOldAnnotationsHandler)
 
-	r.POST("/_/ecatcher", authmw, postECatcherHandler)
+	r.POST("/_/ecatcher", basemw, postECatcherHandler)
 
 	rootRouter := router.New()
-	rootRouter.GET("/*path", authmw, indexPage)
+	rootRouter.GET("/*path", basemw, indexPage)
 
 	http.DefaultServeMux.Handle("/_cron/", r)
 	http.DefaultServeMux.Handle("/api/", r)
