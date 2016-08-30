@@ -12,6 +12,7 @@ import (
 
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/clock/testclock"
+	"github.com/luci/luci-go/common/errors"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -87,61 +88,68 @@ func TestPushBuffer(t *testing.T) {
 		So(client.getEntries()[0].TextPayload, ShouldEqual, "a\nb")
 	})
 
-	Convey("Retry works", t, func() {
-		cl := testclock.New(time.Time{})
-		cl.SetTimerCallback(func(time.Duration, clock.Timer) {
-			cl.Add(1 * time.Second)
+	Convey("With mocked timer", t, func() {
+		cl := testclock.New(testclock.TestRecentTimeUTC)
+		cl.SetTimerCallback(func(d time.Duration, t clock.Timer) {
+			if testclock.HasTags(t, "retry-timer") {
+				cl.Add(d)
+			}
 		})
 
-		client := &fakeClient{brokenReplies: 4, clock: cl}
-		buf := NewPushBuffer(PushBufferOptions{
-			Client:          client,
-			Clock:           cl,
-			MaxPushAttempts: 10,
-			PushRetryDelay:  1 * time.Second,
-		})
-		buf.Add(make([]Entry, 1))
-		So(buf.Stop(nil), ShouldBeNil)
-		So(len(client.getCalls()), ShouldEqual, 5) // 4 failures, 1 success
-	})
-
-	Convey("Gives up retrying", t, func() {
-		cl := testclock.New(time.Time{})
-		cl.SetTimerCallback(func(time.Duration, clock.Timer) {
-			cl.Add(1 * time.Second)
+		Convey("Retry works", func() {
+			client := &fakeClient{transientErrors: 4, clock: cl}
+			buf := NewPushBuffer(PushBufferOptions{
+				Client:          client,
+				Clock:           cl,
+				MaxPushAttempts: 10,
+				PushRetryDelay:  500 * time.Millisecond,
+			})
+			buf.Add(make([]Entry, 1))
+			So(buf.Stop(nil), ShouldBeNil)
+			So(len(client.getCalls()), ShouldEqual, 5) // 4 failures, 1 success
 		})
 
-		client := &fakeClient{brokenReplies: 10000, clock: cl}
-		buf := NewPushBuffer(PushBufferOptions{
-			Client:          client,
-			Clock:           cl,
-			MaxPushAttempts: 5,
-			PushRetryDelay:  1 * time.Second,
-		})
-		buf.Add(make([]Entry, 1))
-		So(buf.Stop(nil), ShouldNotBeNil)
-		So(len(client.calls), ShouldEqual, 5)
-	})
-
-	Convey("Stop timeout works", t, func() {
-		startTs := time.Time{}
-		cl := testclock.New(startTs)
-		cl.SetTimerCallback(func(time.Duration, clock.Timer) {
-			cl.Add(1 * time.Second)
+		Convey("Gives up retrying after N attempts", func() {
+			client := &fakeClient{transientErrors: 10000, clock: cl}
+			buf := NewPushBuffer(PushBufferOptions{
+				Client:          client,
+				Clock:           cl,
+				MaxPushAttempts: 5,
+				PushRetryDelay:  500 * time.Millisecond,
+			})
+			buf.Add(make([]Entry, 1))
+			So(buf.Stop(nil), ShouldNotBeNil)
+			So(len(client.calls), ShouldEqual, 5)
 		})
 
-		client := &fakeClient{brokenReplies: 10000, clock: cl}
-		buf := NewPushBuffer(PushBufferOptions{
-			Client:          client,
-			Clock:           cl,
-			MaxPushAttempts: 5,
-			PushRetryDelay:  100 * time.Second,
-			StopTimeout:     1 * time.Second,
+		Convey("Gives up retrying on fatal errors", func() {
+			client := &fakeClient{transientErrors: 5, fatalErrors: 1, clock: cl}
+			buf := NewPushBuffer(PushBufferOptions{
+				Client:          client,
+				Clock:           cl,
+				MaxPushAttempts: 500,
+				PushRetryDelay:  500 * time.Millisecond,
+			})
+			buf.Add(make([]Entry, 1))
+			So(buf.Stop(nil), ShouldNotBeNil)
+			So(len(client.calls), ShouldEqual, 6)
 		})
-		buf.Add(make([]Entry, 1))
-		So(buf.Stop(nil), ShouldNotBeNil)
-		So(len(client.calls), ShouldEqual, 1)
-		So(cl.Now().Sub(startTs), ShouldBeLessThan, 100*time.Second)
+
+		// TODO(vadimsh): This test is flaky.
+		SkipConvey("Stop timeout works", func() {
+			client := &fakeClient{transientErrors: 10000, clock: cl}
+			buf := NewPushBuffer(PushBufferOptions{
+				Client:          client,
+				Clock:           cl,
+				MaxPushAttempts: 1000,
+				PushRetryDelay:  100 * time.Millisecond,
+				StopTimeout:     10 * time.Second,
+			})
+			buf.Add(make([]Entry, 1))
+			So(buf.Stop(nil), ShouldNotBeNil)
+			So(len(client.calls), ShouldEqual, 8)
+			So(cl.Now().Sub(testclock.TestRecentTimeUTC), ShouldBeLessThan, 30*time.Second)
+		})
 	})
 }
 
@@ -151,11 +159,12 @@ type pushEntriesCall struct {
 }
 
 type fakeClient struct {
-	clock         testclock.TestClock
-	lock          sync.Mutex
-	calls         []pushEntriesCall
-	ch            chan pushEntriesCall
-	brokenReplies int
+	clock           testclock.TestClock
+	lock            sync.Mutex
+	calls           []pushEntriesCall
+	ch              chan pushEntriesCall
+	transientErrors int
+	fatalErrors     int
 }
 
 func (c *fakeClient) PushEntries(entries []Entry) error {
@@ -169,9 +178,13 @@ func (c *fakeClient) PushEntries(entries []Entry) error {
 	if c.ch != nil {
 		c.ch <- call
 	}
-	if c.brokenReplies > 0 {
-		c.brokenReplies--
-		return fmt.Errorf("broken")
+	if c.transientErrors > 0 {
+		c.transientErrors--
+		return errors.WrapTransient(fmt.Errorf("transient error"))
+	}
+	if c.fatalErrors > 0 {
+		c.fatalErrors--
+		return fmt.Errorf("fatal error")
 	}
 	return nil
 }

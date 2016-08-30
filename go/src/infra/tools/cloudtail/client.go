@@ -11,12 +11,15 @@ import (
 	"os"
 	"time"
 
+	"golang.org/x/net/context"
+	"google.golang.org/api/googleapi"
+	cloudlog "google.golang.org/api/logging/v1beta3"
+
+	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/tsmon/field"
 	"github.com/luci/luci-go/common/tsmon/metric"
 	"github.com/luci/luci-go/common/tsmon/types"
-	"golang.org/x/net/context"
-	cloudlog "google.golang.org/api/logging/v1beta3"
 )
 
 // DefaultResourceType is used by NewClient if ClientOptions doesn't specify
@@ -43,6 +46,8 @@ type Entry struct {
 // Client knows how to send entries to Cloud Logging log.
 type Client interface {
 	// PushEntries sends entries to Cloud Logging. No retries.
+	//
+	// May return fatal or transient errors. Check with errors.IsTransient.
 	PushEntries(entries []Entry) error
 }
 
@@ -131,16 +136,19 @@ func NewClient(opts ClientOptions) (Client, error) {
 		},
 		serviceName: "compute.googleapis.com",
 		writeFunc: func(projID, logID string, req *cloudlog.WriteLogEntriesRequest) error {
-			if !opts.Debug {
-				_, err := service.Projects.Logs.Entries.Write(projID, logID, req).Do()
-				return err
+			if opts.Debug {
+				buf, err := json.MarshalIndent(req, "", "  ")
+				if err != nil {
+					return err
+				}
+				fmt.Printf("----------\nTo %s/%s:\n%s\n----------\n", projID, logID, string(buf))
+				return nil
 			}
-			buf, err := json.MarshalIndent(req, "", "  ")
-			if err != nil {
-				return err
+			_, err := service.Projects.Logs.Entries.Write(projID, logID, req).Do()
+			if apiErr, _ := err.(*googleapi.Error); apiErr != nil && apiErr.Code >= 500 {
+				return errors.WrapTransient(err)
 			}
-			fmt.Printf("----------\n%s\n----------\n", string(buf))
-			return nil
+			return err
 		},
 	}, nil
 }

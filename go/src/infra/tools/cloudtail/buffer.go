@@ -7,16 +7,18 @@ package cloudtail
 import (
 	"time"
 
-	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/logging"
 	"golang.org/x/net/context"
+
+	"github.com/luci/luci-go/common/clock"
+	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/logging"
 )
 
 // Default config for PushBuffer if none is provided.
 const (
 	DefaultFlushThreshold  = 1000
 	DefaultFlushTimeout    = 5 * time.Second
-	DefaultMaxPushAttempts = 100
+	DefaultMaxPushAttempts = 5
 	DefaultPushRetryDelay  = 1 * time.Second
 	DefaultStopTimeout     = 10 * time.Second
 )
@@ -44,6 +46,8 @@ type PushBufferOptions struct {
 	MaxPushAttempts int
 
 	// PushRetryDelay is how long to wait before retrying a failed push.
+	//
+	// Will be doubled on each failed retry attempt.
 	PushRetryDelay time.Duration
 
 	// StopTimeout is how long to wait for Stop to flush pending data.
@@ -128,7 +132,7 @@ func (b *pushBufferImpl) Stop(abort <-chan struct{}) error {
 	go func() {
 		select {
 		case <-abort:
-		case <-b.Clock.After(bctx, b.StopTimeout):
+		case <-b.Clock.After(clock.Tag(bctx, "stop-timer"), b.StopTimeout):
 		}
 		close(b.stopCh)
 	}()
@@ -213,20 +217,22 @@ func (b *pushBufferImpl) flush() {
 // MaxPushAttempts number of times before giving up.
 func (b *pushBufferImpl) pushWithRetries(entries []Entry) error {
 	attempt := 0
+	delay := b.PushRetryDelay
 	for {
 		attempt++
 		err := b.Client.PushEntries(entries)
-		if err == nil {
+		switch {
+		case err == nil:
 			return nil
-		}
-		if attempt >= b.MaxPushAttempts {
+		case attempt >= b.MaxPushAttempts || !errors.IsTransient(err):
 			return err
 		}
-		b.Logger.Warningf("failed to send %d entries (%s), retrying...", len(entries), err)
+		b.Logger.Warningf("failed to send %d entries (%s), retrying in %s...", len(entries), err, delay)
 		select {
 		case <-b.stopCh:
 			return err
-		case <-b.Clock.After(bctx, b.PushRetryDelay):
+		case <-b.Clock.After(clock.Tag(bctx, "retry-timer"), delay):
+			delay *= 2
 		}
 	}
 }
