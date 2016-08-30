@@ -15,7 +15,6 @@ Swarming = project_config_pb2.Swarming
 
 
 class SwarmingCfgTest(testing.AppengineTestCase):
-  maxDiff = None
   def cfg_test(self, cfg, expected_errors):
     ctx = config_component.validation.Context()
     swarmingcfg.validate_cfg(cfg, ctx)

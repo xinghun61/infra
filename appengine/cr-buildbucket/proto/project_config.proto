@@ -68,8 +68,7 @@ message Swarming {
       // OS version name.
       optional string package_name = 1;
       // Path to dir, relative to the task working dir, where to install the
-      // package. The path cannot start with a slash. If empty, the package will
-      // be installed a the root of the mapped directory.
+      // package. The path cannot be empty or start with a slash.
       optional string path = 2;
       // Valid package version for all packages matched by package name.
       optional string version = 3;
