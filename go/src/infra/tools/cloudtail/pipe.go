@@ -9,19 +9,37 @@ import (
 	"io"
 
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/tsmon/metric"
+	"github.com/luci/luci-go/common/tsmon/types"
+	"golang.org/x/net/context"
+)
+
+var (
+	droppedCounter = metric.NewCounter("cloudtail/pipe_drops",
+		"Log entries read from a pipe and dropped because the sender couldn't keep up",
+		types.MetricMetadata{})
 )
 
 // PipeFromReader reads log lines from io.Reader, parses them and pushes to
 // the buffer.
-func PipeFromReader(src io.Reader, parser LogParser, buf PushBuffer, logger logging.Logger) error {
+func PipeFromReader(src io.Reader, parser LogParser, buf PushBuffer, ctx context.Context, lineBufferSize int) error {
 	scanner := bufio.NewScanner(src)
-	source := make(chan string)
+	source := make(chan string, lineBufferSize)
 	go func() {
 		defer close(source)
 		for scanner.Scan() {
-			source <- scanner.Text()
+			if lineBufferSize == 0 {
+				source <- scanner.Text() // Blocking.
+			} else {
+				select {
+				case source <- scanner.Text():
+				default:
+					// The buffer is full - drop this log line rather than blocking the pipe.
+					droppedCounter.Add(ctx, 1)
+				}
+			}
 		}
 	}()
-	drainChannel(source, parser, buf, logger)
+	drainChannel(source, parser, buf, logging.Get(ctx))
 	return scanner.Err()
 }

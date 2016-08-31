@@ -277,6 +277,9 @@ var cmdPipe = &subcommands.Command{
 	CommandRun: func() subcommands.CommandRun {
 		c := &pipeRun{}
 		c.commonOptions.registerFlags(&c.Flags, true)
+		c.Flags.IntVar(&c.lineBufferSize, "line-buffer-size", 100000,
+			"Number of log lines to buffer in-memory.  0 disables buffering and "+
+				"makes cloudtail block while flushing lines to the API.")
 		return c
 	},
 }
@@ -284,6 +287,8 @@ var cmdPipe = &subcommands.Command{
 type pipeRun struct {
 	subcommands.CommandRunBase
 	commonOptions
+
+	lineBufferSize int
 }
 
 func (c *pipeRun) Run(a subcommands.Application, args []string) int {
@@ -301,7 +306,7 @@ func (c *pipeRun) Run(a subcommands.Application, args []string) int {
 	defer tsmon.Shutdown(state.context)
 
 	err1 := cloudtail.PipeFromReader(
-		os.Stdin, cloudtail.StdParser(), state.buffer, logging.Get(state.context))
+		os.Stdin, cloudtail.StdParser(), state.buffer, ctx, c.lineBufferSize)
 	if err1 != nil {
 		fmt.Fprintln(os.Stderr, err1)
 	}
