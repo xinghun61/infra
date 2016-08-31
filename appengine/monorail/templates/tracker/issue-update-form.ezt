@@ -170,7 +170,7 @@
         </td>
        </tr>
 
-       <tr id="copy_issue_form_fragment" style="display:none">
+       <tr id="copy_issue_form_fragment" [if-any errors.copy_to_project][else]style="display:none"[end]>
         <td style="white-space:nowrap">
           <b><label for="copy_to">Copy to project:</label> </b>
         </td>
@@ -184,7 +184,7 @@
         </td>
        </tr>
 
-       <tr id="move_issue_form_fragment" style="display:none">
+       <tr id="move_issue_form_fragment" [if-any errors.move_to_project][else]style="display:none"[end]>
         <td style="white-space:nowrap">
           <b><label for="move_to">Move to project:</label> </b>
         </td>
