@@ -439,6 +439,7 @@ function TKR_switchTemplate(projectName, templateName) {
     ok = confirm('Switching to a different template will lose the text you entered.');
   }
   if (ok) {
+    TKR_initialFormValues = TKR_currentFormValues();
     window.location = '/p/' + projectName +
       '/issues/entry?template=' + templateName;
   }
