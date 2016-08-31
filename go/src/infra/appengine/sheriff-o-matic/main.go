@@ -669,22 +669,28 @@ func getRevRangeHandler(ctx *router.Context) {
 	http.Redirect(w, r, gitilesURL, 301)
 }
 
+type eCatcherReq struct {
+	Errors    map[string]int `json:"errors"`
+	XSRFToken string         `json:"xsrf_token"`
+}
+
 func postECatcherHandler(ctx *router.Context) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
+	req := &eCatcherReq{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		errStatus(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := r.Body.Close(); err != nil {
-		errStatus(w, http.StatusBadRequest, err.Error())
+	logging.Errorf(c, "token: %q", req.XSRFToken)
+	if err := xsrf.Check(c, req.XSRFToken); err != nil {
+		errStatus(w, http.StatusForbidden, err.Error())
 		return
 	}
 
 	jsErrors.Add(c, 1)
-	logging.Errorf(c, "ecatcher report: %s", string(data))
+	logging.Errorf(c, "ecatcher report: %v", req.Errors)
 }
 
 // getOAuthClient returns a client capable of making HTTP requests authenticated

@@ -11,6 +11,7 @@ function loadNonVulcanized() {
   link.rel = 'import';
   link.href = 'elements/som-app.html';
   document.documentElement.appendChild(link);
+  window.xsrfToken = '{{.XsrfToken}}';
 }
 </script>
 <link rel="import" href="elements/som-app.vulcanized.html" onerror="loadNonVulcanized()">

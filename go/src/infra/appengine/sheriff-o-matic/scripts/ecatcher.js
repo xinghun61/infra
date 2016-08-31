@@ -22,10 +22,14 @@
   }
 
   let flushErrs = throttle(function() {
-    // TODO(seanmccullough): Add xsrf token.
+    // TODO: refresh xsrf tokens, which expire after 4 hours.
     fetch('/_/ecatcher', {
       method: 'POST',
-      body: JSON.stringify(errBuff)
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        errors: errBuff,
+        xsrf_token: window.xsrfToken,
+      })
     }).catch(error => {
       window.console.error('Failed to report JS erors.', error);
     });
@@ -43,6 +47,5 @@
     errBuff[signature] += 1;
     flushErrs();
   });
-
 })(window);
 
