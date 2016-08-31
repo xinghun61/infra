@@ -112,11 +112,16 @@ def get_queue_details(flake_name):
 
 
 class ProcessIssue(webapp2.RequestHandler):
-  reporting_delay = gae_ts_mon.FloatMetric(
-      'flakiness_pipeline/reporting_delay',
+  time_since_first_flake = gae_ts_mon.FloatMetric(
+      'flakiness_pipeline/time_since_first_flake',
       description='The delay in seconds from the moment first flake occurrence '
                   'in this flakiness period happens and until the time an '
                   'issue is created to track it.')
+  time_since_threshold_exceeded = gae_ts_mon.FloatMetric(
+      'flakiness_pipeline/time_since_threshold_exceeded',
+      description='The delay in seconds from the moment when the last flake '
+                  'occurrence happens that makes a flake exceed the threshold '
+                  'and until the time an issue is created to track it.')
   issue_updates = gae_ts_mon.CounterMetric(
       'flakiness_pipeline/issue_updates',
       description='Issues updated/created')
@@ -155,19 +160,38 @@ class ProcessIssue(webapp2.RequestHandler):
 
   @staticmethod
   @ndb.non_transactional
-  def _get_first_flake_occurrence_time(flake):
+  def _find_flakiness_period_occurrences(flake):
+    """Finds all occurrences in the current flakiness period."""
     assert flake.occurrences, 'Flake entity has no occurrences'
-    flaky_runs = ndb.get_multi(flake.occurrences)
-    flaky_runs = [run for run in flaky_runs if run is not None]
-    rev_occ = sorted(flaky_runs, key=lambda run: run.failure_run_time_finished,
-                     reverse=True)
-    last_occ_time = rev_occ[0].failure_run_time_finished
-    for occ in rev_occ[1:]:
-      occ_time = occ.failure_run_time_finished
-      if last_occ_time - occ_time > MAX_GAP_FOR_FLAKINESS_PERIOD:
-        break
-      last_occ_time = occ_time
-    return last_occ_time
+    flaky_runs = sorted([run for run in ndb.get_multi(flake.occurrences)
+                             if run is not None],
+                        key=lambda run: run.failure_run_time_finished)
+
+    cur = flaky_runs[-1]
+    for i, prev in enumerate(reversed(flaky_runs[:-1])):
+      if (cur.failure_run_time_finished - prev.failure_run_time_finished > 
+          MAX_GAP_FOR_FLAKINESS_PERIOD):
+        return flaky_runs[-i-1:]  # not including prev, but including cur
+      cur = prev
+    return flaky_runs
+
+  @staticmethod
+  def _get_time_threshold_exceeded(flakiness_period_occurrences):
+    assert flakiness_period_occurrences, 'No occurrences in flakiness period'
+    window = []
+    for flaky_run in flakiness_period_occurrences:  # pragma: no cover
+      window.append(flaky_run)
+
+      # Remove flaky runs that happened more than a day before the latest run.
+      flaky_run_finished = flaky_run.failure_run_time_finished
+      window = [
+          prev_run for prev_run in window
+          if flaky_run_finished - prev_run.failure_run_time_finished <=
+             datetime.timedelta(days=1)
+      ]
+
+      if len(window) >= MIN_REQUIRED_FLAKY_RUNS:
+        return flaky_run.failure_run_time_finished
 
   @ndb.transactional
   def _recreate_issue_for_flake(self, flake):
@@ -281,9 +305,27 @@ class ProcessIssue(webapp2.RequestHandler):
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
                  flake.name)
 
-    delay = (now - self._get_first_flake_occurrence_time(flake)).total_seconds()
-    self.reporting_delay.set(delay)
-    logging.info('Reported reporting_delay %d for flake %s', delay, flake.name)
+    # Find all flakes in the current flakiness period to compute metrics. The
+    # flakiness period is a series of flakes with a gap no larger than
+    # MAX_GAP_FOR_FLAKINESS_PERIOD seconds.
+    period_flakes = self._find_flakiness_period_occurrences(flake)
+
+    # Compute the delay since the first flake in the current flakiness period.
+    time_since_first_flake = (
+        now - period_flakes[0].failure_run_time_finished).total_seconds()
+    self.time_since_first_flake.set(time_since_first_flake)
+    logging.info('Reported time_since_first_flake %d for flake %s',
+                 time_since_first_flake, flake.name)
+
+    # Find the first flake that exceeded the threshold needed to create an
+    # issue and report delay from the moment this flake happend and until we've
+    # actually created the issue.
+    time_since_threshold_exceeded = (
+        now - self._get_time_threshold_exceeded(period_flakes)).total_seconds()
+    self.time_since_threshold_exceeded.set(time_since_threshold_exceeded)
+    logging.info('Reported time_since_threshold_exceeded %d for flake %s',
+                 time_since_threshold_exceeded, flake.name)
+
 
   @ndb.transactional(xg=True)  # pylint: disable=E1120
   def post(self, urlsafe_key):

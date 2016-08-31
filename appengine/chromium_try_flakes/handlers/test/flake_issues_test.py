@@ -695,7 +695,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     self.assertEqual(updated_flake.issue_id, issue.id)
     self.assertEqual(updated_flake.old_issue_id, 0)
 
-  def test_correctly_finds_first_flake(self):
+  def test_correctly_finds_flakiness_period(self):
     fake_run = ndb.Key('BuildRun', 'fake')
     def flaky_run(dt):
       return FlakyRun(failure_run=fake_run, success_run=fake_run,
@@ -708,17 +708,35 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     fr5 = flaky_run(datetime.datetime(2015, 10, 19, 11, 0, 0))
 
     self.assertEqual(
-        ProcessIssue._get_first_flake_occurrence_time(
+        ProcessIssue._find_flakiness_period_occurrences(
           Flake(name='foo', occurrences=[fr1, fr2, fr3, fr4, fr5])),
-        datetime.datetime(2015, 10, 18, 8, 0, 0))
+        [fr3.get(), fr4.get(), fr5.get()])
     self.assertEqual(
-        ProcessIssue._get_first_flake_occurrence_time(
+        ProcessIssue._find_flakiness_period_occurrences(
           Flake(name='foo', occurrences=[fr1, fr2])),
-        datetime.datetime(2015, 10, 12, 8, 0, 0))
+        [fr1.get(), fr2.get()])
     self.assertEqual(
-        ProcessIssue._get_first_flake_occurrence_time(
+        ProcessIssue._find_flakiness_period_occurrences(
           Flake(name='foo', occurrences=[fr5])),
-        datetime.datetime(2015, 10, 19, 11, 0, 0))
+        [fr5.get()])
+
+  def test_correctly_finds_time_threshold_exceeded(self):
+    fake_run = ndb.Key('BuildRun', 'fake')
+    def flaky_run(dt):
+      return FlakyRun(failure_run=fake_run, success_run=fake_run,
+                      failure_run_time_finished=dt)
+
+    flakiness_period = [
+      flaky_run(datetime.datetime(2015, 10, 17, 7, 0, 0)),
+      flaky_run(datetime.datetime(2015, 10, 17, 12, 0, 0)),
+      flaky_run(datetime.datetime(2015, 10, 18, 8, 0, 0)),
+      flaky_run(datetime.datetime(2015, 10, 18, 11, 0, 0)),
+      flaky_run(datetime.datetime(2015, 10, 19, 11, 0, 0)),
+    ]
+
+    self.assertEqual(
+        ProcessIssue._get_time_threshold_exceeded(flakiness_period),
+        datetime.datetime(2015, 10, 18, 11, 0, 0))
 
   def test_handles_non_existant_flaky_runs_correctly(self):
     now = datetime.datetime.utcnow()
@@ -729,7 +747,8 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     fake_flaky_run = ndb.Key('FlakyRun', 123456)
 
     flake = Flake(name='FooBar', occurrences=[flaky_run, fake_flaky_run])
-    self.assertEqual(ProcessIssue._get_first_flake_occurrence_time(flake), now)
+    self.assertEqual(
+        len(ProcessIssue._find_flakiness_period_occurrences(flake)), 1)
 
   def test_handles_flaky_runs_in_a_flake_not_sorted_by_date_correctly(self):
     now = datetime.datetime.utcnow()
@@ -742,8 +761,8 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
         success_run = ndb.Key('BuildRun', 2),
         failure_run_time_finished=now - datetime.timedelta(days=1)).put()
     flake = Flake(name='FooBar', occurrences=[run_hour_ago, run_day_ago])
-    self.assertEqual(ProcessIssue._get_first_flake_occurrence_time(flake),
-                     now - datetime.timedelta(days=1))
+    self.assertEqual(ProcessIssue._find_flakiness_period_occurrences(flake),
+                     [run_day_ago.get(), run_hour_ago.get()])
 
 
 class CreateFlakyRunTestCase(testing.AppengineTestCase):
