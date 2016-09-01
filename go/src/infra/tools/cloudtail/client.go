@@ -51,8 +51,25 @@ type Client interface {
 	PushEntries(entries []Entry) error
 }
 
+// ClientID uniquely identifies the log entries sent by this process.  Its
+// values are included in monitoring metrics.
+type ClientID struct {
+	// ResourceType identifies a kind of entity that produces this log (e.g.
+	// 'machine', 'master'). Default is DefaultResourceType.
+	ResourceType string
+
+	// ResourceID identifies exact instance of provided resource type (e.g
+	// 'vm12-m4', 'master.chromium.fyi'). Default is machine hostname.
+	ResourceID string
+
+	// LogID identifies what sort of log this is. Must be set.
+	LogID string
+}
+
 // ClientOptions is passed to NewClient.
 type ClientOptions struct {
+	ClientID
+
 	// Client is used http.Client (that must implement proper authentication).
 	Client *http.Client
 
@@ -64,17 +81,6 @@ type ClientOptions struct {
 
 	// ProjectID is Cloud project to sends logs to. Must be set.
 	ProjectID string
-
-	// ResourceType identifies a kind of entity that produces this log (e.g.
-	// 'machine', 'master'). Default is DefaultResourceType.
-	ResourceType string
-
-	// ResourceID identifies exact instance of provided resource type (e.g
-	// 'vm12-m4', 'master.chromium.fyi'). Default is machine hostname.
-	ResourceID string
-
-	// LogID identifies what sort of log this is. Must be set.
-	LogID string
 
 	// Debug is true to print log entries to stdout instead of sending them.
 	Debug bool

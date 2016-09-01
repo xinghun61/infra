@@ -39,6 +39,8 @@ func TestPipeFromReader(t *testing.T) {
 		ctx := context.Background()
 		ctx, _ = tsmon.WithDummyInMemory(ctx)
 
+		id := ClientID{"foo", "bar", "baz"}
+
 		Convey("works", func() {
 			client := &fakeClient{}
 			buf := NewPushBuffer(PushBufferOptions{Client: client})
@@ -49,7 +51,7 @@ func TestPipeFromReader(t *testing.T) {
         last one
         `
 
-			PipeFromReader(strings.NewReader(body), NullParser(), buf, ctx, 0)
+			PipeFromReader(id, strings.NewReader(body), NullParser(), buf, ctx, 0)
 			So(buf.Stop(nil), ShouldBeNil)
 
 			text := []string{}
@@ -86,12 +88,12 @@ func TestPipeFromReader(t *testing.T) {
 				c.So(writer.Close(), ShouldBeNil)
 			}()
 
-			PipeFromReader(reader, NullParser(), &buf, ctx, 1)
+			PipeFromReader(id, reader, NullParser(), &buf, ctx, 1)
 			So(len(buf.entries), ShouldEqual, 2)
 			So(buf.entries[0].TextPayload, ShouldEqual, "first line")
 			So(buf.entries[1].TextPayload, ShouldEqual, "second line")
 
-			droppedCount, err := droppedCounter.Get(ctx)
+			droppedCount, err := droppedCounter.Get(ctx, "baz", "foo", "bar")
 			So(err, ShouldBeNil)
 			So(droppedCount, ShouldEqual, 1)
 		})

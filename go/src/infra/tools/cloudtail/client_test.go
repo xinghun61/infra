@@ -17,11 +17,13 @@ import (
 func TestClient(t *testing.T) {
 	Convey("PushEntries works", t, func() {
 		opts := ClientOptions{
-			Client:       http.DefaultClient,
-			ProjectID:    "proj-id",
-			ResourceType: "res-type",
-			ResourceID:   "res-id",
-			LogID:        "log-id",
+			ClientID: ClientID{
+				ResourceType: "res-type",
+				ResourceID:   "res-id",
+				LogID:        "log-id",
+			},
+			Client:    http.DefaultClient,
+			ProjectID: "proj-id",
 		}
 
 		requests := []*logging.WriteLogEntriesRequest{}

@@ -9,6 +9,7 @@ import (
 	"io"
 
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/tsmon/field"
 	"github.com/luci/luci-go/common/tsmon/metric"
 	"github.com/luci/luci-go/common/tsmon/types"
 	"golang.org/x/net/context"
@@ -17,12 +18,15 @@ import (
 var (
 	droppedCounter = metric.NewCounter("cloudtail/pipe_drops",
 		"Log entries read from a pipe and dropped because the sender couldn't keep up",
-		types.MetricMetadata{})
+		types.MetricMetadata{},
+		field.String("log"),
+		field.String("resource_type"),
+		field.String("resource_id"))
 )
 
 // PipeFromReader reads log lines from io.Reader, parses them and pushes to
 // the buffer.
-func PipeFromReader(src io.Reader, parser LogParser, buf PushBuffer, ctx context.Context, lineBufferSize int) error {
+func PipeFromReader(id ClientID, src io.Reader, parser LogParser, buf PushBuffer, ctx context.Context, lineBufferSize int) error {
 	scanner := bufio.NewScanner(src)
 	source := make(chan string, lineBufferSize)
 	go func() {
@@ -35,7 +39,7 @@ func PipeFromReader(src io.Reader, parser LogParser, buf PushBuffer, ctx context
 				case source <- scanner.Text():
 				default:
 					// The buffer is full - drop this log line rather than blocking the pipe.
-					droppedCounter.Add(ctx, 1)
+					droppedCounter.Add(ctx, 1, id.LogID, id.ResourceType, id.ResourceID)
 				}
 			}
 		}

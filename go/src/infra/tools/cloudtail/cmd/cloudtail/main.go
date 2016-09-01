@@ -59,6 +59,7 @@ type commonOptions struct {
 
 type state struct {
 	context context.Context
+	id      cloudtail.ClientID
 	client  cloudtail.Client
 	buffer  cloudtail.PushBuffer
 }
@@ -121,14 +122,17 @@ func (opts *commonOptions) processFlags(ctx context.Context) (state, error) {
 	if err != nil {
 		return state{}, err
 	}
-	client, err := cloudtail.NewClient(cloudtail.ClientOptions{
-		Client:       httpClient,
-		Logger:       logging.Get(ctx),
-		ProjectID:    opts.projectID,
+	id := cloudtail.ClientID{
 		ResourceType: opts.resourceType,
 		ResourceID:   opts.resourceID,
 		LogID:        opts.logID,
-		Debug:        opts.debug,
+	}
+	client, err := cloudtail.NewClient(cloudtail.ClientOptions{
+		ClientID:  id,
+		Client:    httpClient,
+		Logger:    logging.Get(ctx),
+		ProjectID: opts.projectID,
+		Debug:     opts.debug,
 	})
 	if err != nil {
 		return state{}, err
@@ -140,7 +144,7 @@ func (opts *commonOptions) processFlags(ctx context.Context) (state, error) {
 		Logger: logging.Get(ctx),
 	})
 
-	return state{ctx, client, buffer}, nil
+	return state{ctx, id, client, buffer}, nil
 }
 
 // defaultServiceAccountJSON returns path to a default service account
@@ -306,7 +310,7 @@ func (c *pipeRun) Run(a subcommands.Application, args []string) int {
 	defer tsmon.Shutdown(state.context)
 
 	err1 := cloudtail.PipeFromReader(
-		os.Stdin, cloudtail.StdParser(), state.buffer, ctx, c.lineBufferSize)
+		state.id, os.Stdin, cloudtail.StdParser(), state.buffer, ctx, c.lineBufferSize)
 	if err1 != nil {
 		fmt.Fprintln(os.Stderr, err1)
 	}
