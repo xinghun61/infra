@@ -229,9 +229,10 @@ def get_os_info():
   if sys.maxsize > 2**32:
     python_arch_data = '64'
 
-  # construct metrics
-  os_name.set(os_name_data)
-  os_version.set(os_version_data)
+  # Construct metrics.  This metric has a legacy hostname field that must still
+  # be set so the metric definition doesn't conflict with existing uses.
+  os_name.set(os_name_data, fields={'hostname': ''})
+  os_version.set(os_version_data, fields={'hostname': ''})
   os_arch.set(platform.machine())
   python_arch.set(python_arch_data)
 

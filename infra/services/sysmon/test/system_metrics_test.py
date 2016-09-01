@@ -178,8 +178,9 @@ class SystemMetricsTest(unittest.TestCase):
     platform_mac_ver_mock.assert_called_once_with()
     platform_machine_mock.assert_called_once_with()
 
-    self.assertEqual('mac', system_metrics.os_name.get())
-    self.assertEqual('10.11.5', system_metrics.os_version.get())
+    self.assertEqual('mac', system_metrics.os_name.get(fields={'hostname': ''}))
+    self.assertEqual('10.11.5',
+                     system_metrics.os_version.get(fields={'hostname': ''}))
     self.assertEqual('x86_64', system_metrics.os_arch.get())
     self.assertEqual('64', system_metrics.python_arch.get())
 
@@ -206,8 +207,8 @@ class SystemMetricsTest(unittest.TestCase):
     platform_mac_ver_mock.assert_called_once_with()
     platform_machine_mock.assert_called_once_with()
 
-    self.assertEqual('', system_metrics.os_name.get())
-    self.assertEqual('', system_metrics.os_version.get())
+    self.assertEqual('', system_metrics.os_name.get(fields={'hostname': ''}))
+    self.assertEqual('', system_metrics.os_version.get(fields={'hostname': ''}))
     self.assertEqual('', system_metrics.os_arch.get())
     self.assertEqual('64', system_metrics.python_arch.get())
 
@@ -231,18 +232,20 @@ class SystemMetricsTest(unittest.TestCase):
     platform_release_mock.assert_called_once_with()
     platform_machine_mock.assert_called_once_with()
 
-    self.assertEqual('windows', system_metrics.os_name.get())
-    self.assertEqual('7', system_metrics.os_version.get())
+    self.assertEqual('windows',
+                     system_metrics.os_name.get(fields={'hostname': ''}))
+    self.assertEqual('7',
+                     system_metrics.os_version.get(fields={'hostname': ''}))
     self.assertEqual('x86', system_metrics.os_arch.get())
     self.assertEqual('32', system_metrics.python_arch.get())
 
     # test that clearing the metrics keeps them emtpy on subsequent runs
     system_metrics.clear_os_info()
 
-    self.assertEqual(None, system_metrics.os_name.get())
-    self.assertEqual(None, system_metrics.os_version.get())
-    self.assertEqual(None, system_metrics.os_arch.get())
-    self.assertEqual(None, system_metrics.python_arch.get())
+    self.assertIsNone(system_metrics.os_name.get(fields={'hostname': ''}))
+    self.assertIsNone(system_metrics.os_version.get(fields={'hostname': ''}))
+    self.assertIsNone(system_metrics.os_arch.get())
+    self.assertIsNone(system_metrics.python_arch.get())
 
   # this first patch doesn't need to be an arg
   @mock.patch('sys.maxsize', 2147483647)
@@ -264,8 +267,10 @@ class SystemMetricsTest(unittest.TestCase):
     platform_release_mock.assert_called_once_with()
     platform_machine_mock.assert_called_once_with()
 
-    self.assertEqual('windows', system_metrics.os_name.get())
-    self.assertEqual('7', system_metrics.os_version.get())
+    self.assertEqual('windows',
+                     system_metrics.os_name.get(fields={'hostname': ''}))
+    self.assertEqual('7',
+                     system_metrics.os_version.get(fields={'hostname': ''}))
     self.assertEqual('x86', system_metrics.os_arch.get())
     self.assertEqual('32', system_metrics.python_arch.get())
 
@@ -289,8 +294,10 @@ class SystemMetricsTest(unittest.TestCase):
     platform_dist_mock.assert_called_once_with()
     platform_machine_mock.assert_called_once_with()
 
-    self.assertEqual('ubuntu', system_metrics.os_name.get())
-    self.assertEqual('14.04', system_metrics.os_version.get())
+    self.assertEqual('ubuntu',
+                     system_metrics.os_name.get(fields={'hostname': ''}))
+    self.assertEqual('14.04',
+                     system_metrics.os_version.get(fields={'hostname': ''}))
     self.assertEqual('i686', system_metrics.os_arch.get())
     self.assertEqual('32', system_metrics.python_arch.get())
 
@@ -314,8 +321,10 @@ class SystemMetricsTest(unittest.TestCase):
     platform_dist_mock.assert_called_once_with()
     platform_machine_mock.assert_called_once_with()
 
-    self.assertEqual('ubuntu', system_metrics.os_name.get())
-    self.assertEqual('14.04', system_metrics.os_version.get())
+    self.assertEqual('ubuntu',
+                     system_metrics.os_name.get(fields={'hostname': ''}))
+    self.assertEqual('14.04',
+                     system_metrics.os_version.get(fields={'hostname': ''}))
     self.assertEqual('x86_64', system_metrics.os_arch.get())
     self.assertEqual('32', system_metrics.python_arch.get())
 
@@ -339,8 +348,10 @@ class SystemMetricsTest(unittest.TestCase):
     platform_dist_mock.assert_called_once_with()
     platform_machine_mock.assert_called_once_with()
 
-    self.assertEqual('ubuntu', system_metrics.os_name.get())
-    self.assertEqual('14.04', system_metrics.os_version.get())
+    self.assertEqual('ubuntu',
+                     system_metrics.os_name.get(fields={'hostname': ''}))
+    self.assertEqual('14.04',
+                     system_metrics.os_version.get(fields={'hostname': ''}))
     self.assertEqual('x86_64', system_metrics.os_arch.get())
     self.assertEqual('64', system_metrics.python_arch.get())
 
