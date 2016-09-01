@@ -8,11 +8,13 @@ package som
 import (
 	"bytes"
 	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -22,8 +24,10 @@ import (
 	"google.golang.org/appengine"
 
 	"github.com/luci/gae/service/datastore"
+	"github.com/luci/gae/service/info"
 	"github.com/luci/gae/service/memcache"
 	"github.com/luci/luci-go/appengine/gaeauth/server"
+	"github.com/luci/luci-go/appengine/gaeauth/server/gaesigner"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
@@ -56,26 +60,6 @@ var errStatus = func(c context.Context, w http.ResponseWriter, status int, msg s
 	logging.Errorf(c, "Status %d msg %s", status, msg)
 	w.WriteHeader(status)
 	w.Write([]byte(msg))
-}
-
-var requireGoogler = func(w http.ResponseWriter, c context.Context) bool {
-	if appengine.IsDevAppServer() {
-		return true
-	}
-
-	isMember, err := auth.IsMember(c, authGroup)
-	if !isMember || err != nil {
-		msg := ""
-		if !isMember {
-			msg = "Access Denied"
-		} else {
-			msg = err.Error()
-		}
-
-		errStatus(c, w, http.StatusForbidden, msg)
-		return false
-	}
-	return true
 }
 
 type settingsUIPage struct {
@@ -296,10 +280,6 @@ func indexPage(ctx *router.Context) {
 func getTreesHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 
-	if !requireGoogler(w, c) {
-		return
-	}
-
 	q := datastore.NewQuery("Tree")
 	results := []*Tree{}
 	err := datastore.Get(c).GetAll(q, &results)
@@ -320,10 +300,6 @@ func getTreesHandler(ctx *router.Context) {
 
 func getAlertsHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
-
-	if !requireGoogler(w, c) {
-		return
-	}
 
 	ds := datastore.Get(c)
 
@@ -353,10 +329,6 @@ func getAlertsHandler(ctx *router.Context) {
 
 func postAlertsHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
-
-	if !requireGoogler(w, c) {
-		return
-	}
 
 	tree := p.ByName("tree")
 	ds := datastore.Get(c)
@@ -403,10 +375,6 @@ func postAlertsHandler(ctx *router.Context) {
 func getAnnotationsHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 
-	if !requireGoogler(w, c) {
-		return
-	}
-
 	q := datastore.NewQuery("Annotation")
 	results := []*Annotation{}
 	datastore.Get(c).GetAll(q, &results)
@@ -428,10 +396,6 @@ type postRequest struct {
 
 func postAnnotationsHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
-
-	if !requireGoogler(w, c) {
-		return
-	}
 
 	annKey := p.ByName("annKey")
 	action := p.ByName("action")
@@ -705,6 +669,46 @@ func postECatcherHandler(ctx *router.Context) {
 	logging.Errorf(c, "ecatcher report: %v", req.Errors)
 }
 
+func getTreeLogoHandler(ctx *router.Context) {
+	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
+
+	i := info.Get(c)
+	sa, err := i.ServiceAccount()
+	if err != nil {
+		logging.Errorf(c, "failed to get service account: %v", err)
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	tree := p.ByName("tree")
+	resource := fmt.Sprintf("/%s.appspot.com/logos/%s.png", i.AppID(), tree)
+	expStr := fmt.Sprintf("%d", time.Now().Add(10*time.Minute).Unix())
+	sl := []string{
+		"GET",
+		"", // Optional MD5, which we don't have.
+		"", // Content type, ommitted because it breaks the signature.
+		expStr,
+		resource,
+	}
+	unsigned := strings.Join(sl, "\n")
+	signer := gaesigner.Signer{}
+	_, b, err := signer.SignBytes(c, []byte(unsigned))
+	if err != nil {
+		logging.Errorf(c, "failed to sign bytes: %v", err)
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	sig := base64.StdEncoding.EncodeToString(b)
+	params := url.Values{
+		"GoogleAccessId": {sa},
+		"Expires":        {expStr},
+		"Signature":      {sig},
+	}
+
+	signedURL := fmt.Sprintf("https://storage.googleapis.com%s?%s", resource, params.Encode())
+	http.Redirect(w, r, signedURL, http.StatusFound)
+}
+
 // getOAuthClient returns a client capable of making HTTP requests authenticated
 // with OAuth access token for userinfo.email scope.
 func getOAuthClient(c context.Context) (*http.Client, error) {
@@ -734,6 +738,18 @@ func base(includeCookie bool) router.MiddlewareChain {
 	)
 }
 
+func requireGoogler(c *router.Context, next router.Handler) {
+	isGoogler, err := auth.IsMember(c.Context, authGroup)
+	switch {
+	case err != nil:
+		errStatus(c.Context, c.Writer, http.StatusInternalServerError, err.Error())
+	case !isGoogler:
+		errStatus(c.Context, c.Writer, http.StatusForbidden, err.Error())
+	default:
+		next(c)
+	}
+}
+
 //// Routes.
 func init() {
 
@@ -742,21 +758,22 @@ func init() {
 	r := router.New()
 	basemw := base(true)
 
+	protected := basemw.Extend(requireGoogler)
+
 	gaemiddleware.InstallHandlers(r, basemw)
-	r.GET("/api/v1/trees/", basemw, getTreesHandler)
-	r.GET("/api/v1/alerts/:tree", basemw, getAlertsHandler)
+	r.GET("/api/v1/trees/", protected, getTreesHandler)
+	r.GET("/api/v1/alerts/:tree", protected, getAlertsHandler)
 
 	// Disallow cookies because this handler should not be accessible by regular
 	// users.
 	r.POST("/api/v1/alerts/:tree", base(false), postAlertsHandler)
-	r.GET("/api/v1/annotations/", basemw, getAnnotationsHandler)
-	r.POST("/api/v1/annotations/:annKey/:action", basemw, postAnnotationsHandler)
-	r.GET("/api/v1/bugqueue/:tree", basemw, getBugQueueHandler)
-	r.GET("/api/v1/revrange/:start/:end", basemw, getRevRangeHandler)
-
+	r.GET("/api/v1/annotations/", protected, getAnnotationsHandler)
+	r.POST("/api/v1/annotations/:annKey/:action", protected, postAnnotationsHandler)
+	r.GET("/api/v1/bugqueue/:tree", protected, getBugQueueHandler)
+	r.GET("/api/v1/revrange/:start/:end", protected, getRevRangeHandler)
+	r.GET("/logos/:tree", protected, getTreeLogoHandler)
 	r.GET("/_cron/refresh/bugqueue/:tree", basemw, refreshBugQueueHandler)
 	r.GET("/_cron/annotations/flush_old/", basemw, flushOldAnnotationsHandler)
-
 	r.POST("/_/ecatcher", basemw, postECatcherHandler)
 
 	rootRouter := router.New()
@@ -769,6 +786,7 @@ func init() {
 	http.DefaultServeMux.Handle("/_ah/", r)
 	http.DefaultServeMux.Handle("/internal/", r)
 	http.DefaultServeMux.Handle("/_/", r)
+	http.DefaultServeMux.Handle("/logos/", r)
 
 	http.DefaultServeMux.Handle("/", rootRouter)
 }

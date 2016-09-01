@@ -26,7 +26,6 @@ import (
 	"github.com/luci/luci-go/server/auth/authtest"
 	"github.com/luci/luci-go/server/auth/xsrf"
 	"github.com/luci/luci-go/server/router"
-	"golang.org/x/net/context"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -120,11 +119,6 @@ func TestMain(t *testing.T) {
 				},
 			}
 			ds.Testable().AddIndexes(&alertsIdx)
-
-			isGoogler := true
-			requireGoogler = func(w http.ResponseWriter, c context.Context) bool {
-				return isGoogler
-			}
 
 			Convey("/trees", func() {
 				Convey("no trees yet", func() {
