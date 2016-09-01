@@ -48,7 +48,7 @@ var (
 	mainPage         = template.Must(template.ParseFiles("./index.html"))
 	accessDeniedPage = template.Must(template.ParseFiles("./access-denied.html"))
 	monorailEndpoint = "https://monorail-prod.appspot.com/_ah/api/monorail/v1/"
-	jsErrors         = metric.NewCounter("sheriff_o_matic/js_errors",
+	jsErrors         = metric.NewCounter("frontend/js_errors",
 		"Number of uncaught javascript errors.", types.MetricMetadata{})
 )
 
