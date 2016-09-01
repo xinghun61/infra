@@ -28,6 +28,8 @@ const (
 	// FYI https://github.com/golang/go/issues/9405 in Go 1.4
 	// http timeout errors are logged as "use of closed network connection"
 	timeout = 5 * time.Second
+
+	chromeBuildExtractURL = "https://chrome-build-extract.appspot.com"
 )
 
 var (
@@ -142,14 +144,31 @@ func (r *reader) Build(master *messages.MasterLocation, builder string, buildNum
 	}
 
 	build = &messages.Build{}
-	URL := fmt.Sprintf("%s/json/builders/%s/builds/%d",
-		master, builder, buildNum)
+	URL := fmt.Sprintf("%s/p/%s/builders/%s/builds/%d?json=1",
+		chromeBuildExtractURL, master.Name(), builder, buildNum)
 
 	expvars.Add("Build", 1)
 	defer expvars.Add("Build", -1)
-	if code, err := r.hc.getJSON(URL, build); err != nil {
+	code, err := r.hc.getJSON(URL, build)
+	if err != nil {
 		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
+	}
+
+	if code == 404 {
+		if !master.Internal() {
+			return nil, fmt.Errorf("Error (%d) fetching %s. Not retrying", code, URL)
+		}
+
+		expvars.Add("DirectPoll", 1)
+		defer expvars.Add("DirectPoll", -1)
+		URL = fmt.Sprintf("%s/json/builders/%s/builds/%d",
+			master, builder, buildNum)
+		if code, err := r.hc.getJSON(URL, build); err != nil {
+			errLog.Printf("Error (%d) fetching %s: %v", code, master.String(), err)
+			return nil, err
+		}
+		return build, nil
 	}
 
 	return build, nil
@@ -160,7 +179,7 @@ func (r *reader) LatestBuilds(master *messages.MasterLocation, builder string) (
 	v.Add("master", master.Name())
 	v.Add("builder", builder)
 
-	URL := fmt.Sprintf("https://chrome-build-extract.appspot.com/get_builds?%s", v.Encode())
+	URL := fmt.Sprintf("%s/get_builds?%s", chromeBuildExtractURL, v.Encode())
 	res := struct {
 		Builds []*messages.Build `json:"builds"`
 	}{}
@@ -205,7 +224,7 @@ func (r *reader) TestResults(master *messages.MasterLocation, builderName, stepN
 }
 
 func (r *reader) BuildExtract(masterURL *messages.MasterLocation) (*messages.BuildExtract, error) {
-	URL := fmt.Sprintf("https://chrome-build-extract.appspot.com/get_master/%s", masterURL.Name())
+	URL := fmt.Sprintf("%s/get_master/%s", chromeBuildExtractURL, masterURL.Name())
 	ret := &messages.BuildExtract{}
 
 	expvars.Add("BuildExtract", 1)
@@ -218,11 +237,8 @@ func (r *reader) BuildExtract(masterURL *messages.MasterLocation) (*messages.Bui
 	}
 
 	if code == 404 {
-		// TODO(martiniss): make this configurable per master/tree
-		name := masterURL.Name()
-		if !(strings.Contains(name, "internal") || strings.Contains(
-			name, "official") || strings.Contains(name, "infra.cron")) {
-			return nil, err
+		if !masterURL.Internal() {
+			return nil, fmt.Errorf("Error (%d) fetching %s. Not retrying", code, URL)
 		}
 
 		URL = fmt.Sprintf("%s/json", masterURL.String())

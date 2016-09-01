@@ -85,6 +85,14 @@ func (m *MasterLocation) Name() string {
 	return parts[len(parts)-1]
 }
 
+// Internal returns if this master
+func (m *MasterLocation) Internal() bool {
+	// TODO(martiniss): Fix this, and make it not even necessary.
+	name := m.Name()
+	return (strings.Contains(name, "internal") || strings.Contains(
+		name, "official") || strings.Contains(name, "infra.cron"))
+}
+
 // MarshalJSON returns the JSON serialized version of a master location.
 func (m *MasterLocation) MarshalJSON() ([]byte, error) {
 	return []byte(m.String()), nil
