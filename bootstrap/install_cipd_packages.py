@@ -78,8 +78,10 @@ ARCH_CONFIG_MAP = {
 def get_platform_config():
   machine = platform.machine().lower()
   system = platform.system()
-  if machine == 'amd64':
-    machine = 'x86_64'
+  machine = ({
+    'amd64': 'x86_64',
+    'i686': 'x86',
+  }).get(machine, machine)
   if (machine == 'x86_64' and system == 'Linux' and
       sys.maxsize == (2 ** 31) - 1):
     # This is 32bit python on 64bit CPU on linux, which probably means the
