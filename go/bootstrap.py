@@ -73,7 +73,7 @@ GLIDE_SOURCE = {
     'url': (
         'https://chromium.googlesource.com/external/github.com/'
         'Masterminds/glide.git'),
-    'rev': 'refs/tags/v0.11.0',
+    'rev': 'refs/tags/v0.12.1',
   },
 }
 
@@ -448,7 +448,11 @@ def update_vendor_packages(workspace, force=False):
     ]
     if force:
       cmd.append('--force')
-    subprocess.check_call(cmd, stdout=sys.stderr)
+    env = os.environ.copy()
+    env['PATH'] = os.pathsep.join([
+        os.path.join(ROOT, 'cipd'), env.get('PATH', '')
+    ])
+    subprocess.check_call(cmd, stdout=sys.stderr, env=env)
     return os.path.isfile(update_out_path)
 
 

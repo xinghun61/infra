@@ -31,12 +31,14 @@ expected), we rename glide.yaml and glide.lock into deps.yaml and deps.lock.
 import argparse
 import collections
 import contextlib
+import hashlib
 import json
 import os
 import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 import time
 
 
@@ -59,10 +61,20 @@ VENDORED_TOOLS = [
   'golang.org/x/tools/cmd/gomvpkg',
   'golang.org/x/tools/cmd/gorename',
   'golang.org/x/tools/cmd/guru',
-  'golang.org/x/tools/cmd/oracle',
   'golang.org/x/tools/cmd/stringer',
   'google.golang.org/api/google-api-go-generator',
   'google.golang.org/appengine/cmd/aedeploy',
+]
+
+
+# Stuff NOT to include in the CIPD bundle, as a list of regexps for linux-style
+# paths rooted at .vendor/src/.
+#
+# Use 'deps.py bundle --to-file=bundle.zip' to build and examine a bundle
+# without actually uploading it.
+GARBAGE = [
+  # Unneeded Java stuff, long paths, breaks on Windows.
+  r'golang\.org/x/mobile/misc/androidstudio/.*'
 ]
 
 
@@ -77,16 +89,35 @@ _Workspace = collections.namedtuple('_Workspace', (
     'vendor_root',
     # Path of the Go runtime root, default: golang/go
     'goroot',
+    # Name of a CIPD package with prefetched deps, default: infra/go-deps
+    'deps_cipd_pkg',
+    # URL of a CIPD package repository to use, default: chrome-infra-packages
+    'cipd_service_url',
+    # Path to a service account key to use when talking to CIPD, default: None
+    'service_account_json',
 ))
+
 
 WORKSPACE = _Workspace(
     gobase=os.path.join(REPO_ROOT, 'go'),
     vendor_root=os.path.join(REPO_ROOT, 'go', '.vendor'),
     goroot=os.path.join(os.path.dirname(REPO_ROOT), 'golang', 'go'),
+    deps_cipd_pkg='infra/go-deps',
+    cipd_service_url='https://chrome-infra-packages.appspot.com',
+    service_account_json=None,  # usually set via CLI args
 )
 
-# Name of a file to put into .vendor/* when all packages there match deps.lock.
+
+# Name of a Glide lock file to put into .vendor/* when all packages there are
+# fully installed. Acts as a marker of successful installation.
 APPLIED_LOCK = 'applied.lock'
+
+# Name of a Glide lock file to put in a CIPD package with bundled dependencies.
+# Descrbies what's there.
+BUNDLED_LOCK = 'bundled.lock'
+
+# Name of a CIPD package tag that specifies the version of bundled deps.
+BUNDLE_FORMAT_TAG = 'go_deps_lock'
 
 
 # Printed to bring attention because users usually ignore walls of text.
@@ -330,7 +361,7 @@ def call(workspace, tool, args):
 
   Args:
     workspace: an initialized _Workspace object.
-    tool: name of an exectuable to call, e.g. "go" or "glide".
+    tool: name of an executable to call, e.g. "go" or "glide".
     args: additional command line arguments to pass to it.
   """
   sfx = '.exe' if sys.platform == 'win32' else ''
@@ -342,8 +373,14 @@ def call(workspace, tool, args):
   env['GOPATH'] = workspace.vendor_root
   env['GOBIN'] = os.path.join(workspace.vendor_root, 'bin')
 
-  # Glide searched for 'go' in PATH. Make it available.
+  # Glide searches for 'go' in PATH. Make it available.
   env['PATH'] = os.path.join(env['GOROOT'], 'bin') + os.pathsep + env['PATH']
+
+  # Forbid Glide to mess with global ~/.glide or system temp.
+  # TODO(vadimsh): .glide/cache can have really long paths, may be problematic
+  # on Windows.
+  env['GLIDE_HOME'] = os.path.join(workspace.gobase, '.glide')
+  env['GLIDE_TMP'] = os.path.join(workspace.gobase, '.glide')
 
   ret_code = subprocess.call(cmd, env=env, cwd=env['GOPATH'])
   if ret_code:
@@ -362,6 +399,13 @@ def read_file(path):
 
 def write_file(path, blob):
   """Writes a blob into a file."""
+  # Files originally installed from CIPD packages are read-only, need to make
+  # them writable before overwriting.
+  try:
+    st = os.stat(path)
+    os.chmod(path, st.st_mode | stat.S_IWUSR)
+  except OSError:
+    pass # doesn't exist yet probably
   with open(path, 'wb') as f:
     return f.write(blob)
 
@@ -381,6 +425,54 @@ def remove_directory(p):
   shutil.rmtree(p, onerror=onerror if sys.platform == 'win32' else None)
 
 
+@contextlib.contextmanager
+def temp_file(body=None, root=None):
+  """Creates a temp file and returns path to it."""
+  fd, tmp = tempfile.mkstemp(suffix='go_deps_py', dir=root)
+  try:
+    if body:
+      with os.fdopen(fd, 'wb') as f:
+        f.write(body)
+    else:
+      os.close(fd)
+    yield tmp
+  finally:
+    os.remove(tmp)
+
+
+def cipd(workspace, args, silent=False):
+  """Calls 'cipd' tool (from PATH), returns the process exit code."""
+  cmd = ['cipd.exe' if sys.platform == 'win32' else 'cipd']
+  cmd += args
+  if args[0] not in ['pkg-build']:  # non-local op?
+    if workspace.service_account_json:
+      cmd += ['-service-account-json', workspace.service_account_json]
+    cmd += ['-service-url', workspace.cipd_service_url]
+  proc = subprocess.Popen(
+      cmd,
+      stdout=subprocess.PIPE if silent else None,
+      stderr=subprocess.PIPE if silent else None)
+  proc.communicate()
+  return proc.returncode
+
+
+def get_bundle_ver(lock_file_body):
+  """Returns a version with a CIPD bundle corresponding to this lock file."""
+  # There's a "hash" field in glide.lock. It is a trap. It doesn't change when
+  # version of the dependencies change. So instead just hash the (sanitized)
+  # manifest itself.
+  glide_lock = parse_glide_lock(lock_file_body)
+  glide_lock.pop('hash', None)
+  glide_lock.pop('updated', None)
+  sha1 = hashlib.sha1(json.dumps(glide_lock, sort_keys=True)).hexdigest()
+  return '%s:%s' % (BUNDLE_FORMAT_TAG, sha1)
+
+
+def is_existing_bundle(workspace, pkg, ver):
+  """Returns True if there exists a bundle with given version."""
+  return cipd(workspace, ['resolve', pkg, '-version', ver], silent=True) == 0
+
+
 def grab_doc(func):
   """Extracts help for CLI from a function doc string."""
   return func.__doc__.splitlines()[0].lower().strip('.')
@@ -389,14 +481,24 @@ def grab_doc(func):
 ################################################################################
 ## Subcommands.
 
+
 GLIDE_INSTALL_RETRIES = 4
 
-def install(workspace, force=False, update_out=None):
+
+def install(workspace, force=False, update_out=None, skip_bundle=False):
   """Installs all dependencies from deps.lock into .vendor/ GOPATH.
+
+  Will try to use a CIPD bundle with dependencies if it exists. See 'bundle'
+  command.
 
   Args:
     workspace: an initialized _Workspace object.
     force: if True, will forcefully rebuild .vendor even if it is up-to-date.
+    update_out: path to write deps.lock to if did install something.
+    skip_bundle: if True, fetch everything from git, not from CIPD bundle.
+
+  Returns:
+    Exit code.
   """
   required = read_file(os.path.join(workspace.gobase, 'deps.lock'))
   if not force:
@@ -411,21 +513,55 @@ def install(workspace, force=False, update_out=None):
   # .vendor/*.
   remove_directory(workspace.vendor_root)
 
-  # Use glide to fetch all the code.
-  with unhack_vendor(workspace):
-    for retry in xrange(GLIDE_INSTALL_RETRIES):
-      try:
-        call(workspace, 'glide', ['install'])
-        break
-      except subprocess.CalledProcessError as e:
-        if retry < GLIDE_INSTALL_RETRIES - 1:
-          delay = 2 ** retry
-          print 'Failed to install dependencies. Retrying after %d seconds.' % (
-              delay)
-          time.sleep(delay)
-        else:
-          raise e
+  # Now we need to fetch all the source code into empty 'vendor_root'. There
+  # are two choices: either we use Glide (and clone each deps repo one by one),
+  # or we fetch a single CIPD package with all deps bundled already.
+  use_bundle = False
+  pkg = workspace.deps_cipd_pkg
+  ver = get_bundle_ver(required)
+  if not skip_bundle:
+    print 'Searching for a bundle with dependencies in CIPD...'
+    print '-'*80
+    print 'CIPD package name:    %s' % pkg
+    print 'CIPD package version: %s' % ver
+    print '-'*80
+    use_bundle = is_existing_bundle(workspace, pkg, ver)
+    if not use_bundle:
+      print 'Not found, falling back to using "glide install".'
 
+  if use_bundle:
+    # Don't retry, cipd does retries itself.
+    ensure_spec = '%s %s' % (pkg, ver)
+    with temp_file(body=ensure_spec, root=workspace.gobase) as tmp:
+      ret = cipd(
+          workspace, ['ensure', '-list', tmp, '-root', workspace.vendor_root])
+    if ret:
+      print 'Failed to install dependencies from the bundle. See logs.'
+      return ret
+
+    # Double check we've got what we requested.
+    bundled = read_file(os.path.join(workspace.vendor_root, BUNDLED_LOCK))
+    if get_bundle_ver(bundled) != ver:
+      print (
+          'deps.lock in repo doesn\'t match bundled.lock in CIPD bundle.\n'
+          'Possibly the bundle was built from a corrupted checkout.\n'
+          'Build a new version.')
+      return 1
+
+  else:
+    with unhack_vendor(workspace):
+      for retry in xrange(GLIDE_INSTALL_RETRIES):
+        try:
+          call(workspace, 'glide', ['install'])
+          break
+        except CallFailed as e:
+          if retry < GLIDE_INSTALL_RETRIES - 1:
+            delay = 2 ** retry
+            print 'Failed to install dependencies. Retrying after %d sec.' % (
+                delay)
+            time.sleep(delay)
+          else:
+            raise e
 
   # Prebuild all packages specified in deps.lock into *.a archives. It should
   # speed up compilation of code that depends on them. Note that doing simple
@@ -477,7 +613,7 @@ def update(workspace):
     # a first try. Run it until it reports there's nothing to update.
     deps = parse_glide_lock(read_file(lock_path))
     while True:
-      call(workspace, 'glide', ['update', '--force', '--delete'])
+      call(workspace, 'glide', ['update', '--force'])
       deps_after = parse_glide_lock(read_file(lock_path))
       if deps == deps_after:
         break
@@ -510,6 +646,69 @@ def remove(workspace, packages):
   return 0
 
 
+def bundle(workspace, out_file=None):
+  """Builds and uploads a CIPD package with all vendored dependencies.
+
+  This CIPD package is then used by 'deps.py install' to speed up the
+  installation. Uses a digest of deps.lock as a version identifier for the CIPD
+  package.
+
+  Expects 'cipd' tool to be in PATH.
+  """
+  lock_file = read_file(os.path.join(workspace.gobase, 'deps.lock'))
+
+  pkg = workspace.deps_cipd_pkg
+  ver = get_bundle_ver(lock_file)
+  print '-'*80
+  print 'CIPD package name:    %s' % workspace.deps_cipd_pkg
+  print 'CIPD package version: %s' % ver
+  print '-'*80
+
+  if not out_file:
+    print 'Checking whether the bundle is already uploaded...'
+    if is_existing_bundle(workspace, pkg, ver):
+      print 'Yep, no need to upload it.'
+      return 0
+    print 'Nope. Uploading it...'
+
+  # Make sure we have all deps installed for git.
+  if install(workspace, force=True, skip_bundle=True):
+    return 1
+
+  # Put a description of what's there in the bundle.
+  write_file(os.path.join(workspace.vendor_root, BUNDLED_LOCK), lock_file)
+
+  # Bundle only the source code (no 'pkg' and 'bin').
+  pkg_def = {
+    'package': pkg,
+    'root': '.',  # assumes temp_file() creates files in vendor_root
+    'install_mode': 'copy',
+    'data': [
+      {
+        'dir': 'src',
+        'exclude': GARBAGE,
+      },
+      {
+        'file': BUNDLED_LOCK,
+      },
+      {
+        'version_file': 'CIPD_VERSION.json',
+      },
+    ],
+  }
+  with temp_file(body=json.dumps(pkg_def), root=workspace.vendor_root) as tmp:
+    if out_file:
+      cmd = ['pkg-build', '-pkg-def', tmp, '-out', out_file]
+    else:
+      cmd = ['create', '-pkg-def', tmp, '-tag', ver, '-ref', 'latest']
+    if cipd(workspace, cmd):
+      print 'FAILED! See logs.'
+      return 1
+
+  print 'Done!'
+  return 0
+
+
 def main(args):
   parser = argparse.ArgumentParser(
       description='Utility to manage go vendored dependencies.')
@@ -524,6 +723,9 @@ def main(args):
 
   parser_install = subparsers.add_parser('install', help=grab_doc(install))
   parser_install.set_defaults(action=install)
+  parser_install.add_argument(
+      '--service-account-json', action='store', default=None,
+      help='path to a service account key to pass to CIPD client')
   parser_install.add_argument(
       '--force', action='store_true', default=False,
       help='forcefully reinstall all dependencies')
@@ -545,6 +747,16 @@ def main(args):
   parser_remove.add_argument(
       'pkg', nargs='+', help='a go package to remove from deps.yaml')
 
+  parser_bundle = subparsers.add_parser('bundle', help=grab_doc(bundle))
+  parser_bundle.set_defaults(action=bundle)
+  parser_bundle.add_argument(
+      '--service-account-json', action='store', default=None,
+      help='path to a service account key to pass to CIPD client')
+  parser_bundle.add_argument(
+      '--to-file', action='store', default=None,
+      help='if given, will not contact CIPD backend and will dump the bundle '
+           'as a file on disk at the specified location')
+
   opts = parser.parse_args(args)
 
   workspace = WORKSPACE
@@ -552,6 +764,9 @@ def main(args):
     workspace = workspace._replace(gobase=opts.workspace)
   if opts.goroot:
     workspace = workspace._replace(goroot=opts.goroot)
+  if getattr(opts, 'service_account_json', None):
+    workspace = workspace._replace(
+        service_account_json=opts.service_account_json)
 
   try:
     if opts.action == install:
@@ -562,6 +777,8 @@ def main(args):
       return add(workspace, opts.pkg)
     if opts.action == remove:
       return remove(workspace, opts.pkg)
+    if opts.action == bundle:
+      return bundle(workspace, opts.to_file)
     assert False, 'Unreachable'
   except CallFailed as exc:
     print >> sys.stderr, str(exc)

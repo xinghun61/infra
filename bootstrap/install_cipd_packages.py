@@ -30,6 +30,8 @@ CIPD_LIST_DIR = os.path.join(BOOTSTRAP_DIR, 'cipd')
 CIPD_DOC_DIR = os.path.join(CIPD_LIST_DIR, 'doc')
 # Default sysroot install root.
 DEFAULT_INSTALL_ROOT = os.path.join(ROOT, 'cipd')
+# For Windows.
+EXE_SFX = '.exe' if sys.platform == 'win32' else ''
 
 # Path to CA certs bundle file to use by default.
 DEFAULT_CERT_FILE = os.path.join(ROOT, 'data', 'cacert.pem')
@@ -42,7 +44,7 @@ DEFAULT_CERT_FILE = os.path.join(ROOT, 'data', 'cacert.pem')
 # It is ideal to use a raw `instance_id` as the version to avoid an unnecessary
 # CIPD server round-trip lookup. This can be obtained for a given package via:
 # $ cipd resolve \
-#      infra/tools/cipd/ \
+#     infra/tools/cipd/ \
 #     -version=git_revision:12e14e0a2f61d7d19e79fd4b700cfb14147174c8
 ARCH_CONFIG_MAP = {
   ('Linux', 'x86_64'): {
@@ -50,10 +52,25 @@ ARCH_CONFIG_MAP = {
     'cipd_package_version': 'b7b69d5bb6f43d3203d218c8cae96c0d55148422',
     'cipd_install_list': 'cipd_linux_amd64.txt',
   },
+  ('Linux', 'x86'): {
+    'cipd_package': 'infra/tools/cipd/linux-386',
+    'cipd_package_version': 'b571cda5376f039f6afc15053adbd6c96e9459e2',
+    'cipd_install_list': None,
+  },
   ('Darwin', 'x86_64'): {
     'cipd_package': 'infra/tools/cipd/mac-amd64',
     'cipd_package_version': 'c68c98cb7617f4c422b893ed1cb0313bdb8a7dd9',
     'cipd_install_list': 'cipd_mac_amd64.txt',
+  },
+  ('Windows', 'x86_64'): {
+    'cipd_package': 'infra/tools/cipd/windows-amd64',
+    'cipd_package_version': 'ec8b8236bbe8d6f0086c998964e0ff2adaf318eb',
+    'cipd_install_list': None,
+  },
+  ('Windows', 'x86'): {
+    'cipd_package': 'infra/tools/cipd/windows-386',
+    'cipd_package_version': '321f068fa2645bee94c62b073133b4cec81ef1ee',
+    'cipd_install_list': None,
   },
 }
 
@@ -61,6 +78,8 @@ ARCH_CONFIG_MAP = {
 def get_platform_config():
   machine = platform.machine().lower()
   system = platform.system()
+  if machine == 'amd64':
+    machine = 'x86_64'
   if (machine == 'x86_64' and system == 'Linux' and
       sys.maxsize == (2 ** 31) - 1):
     # This is 32bit python on 64bit CPU on linux, which probably means the
@@ -229,7 +248,7 @@ class CipdClient(object):
     logging.info('Installing CIPD client [%s] ID [%s]', package, instance_id)
 
     # Is this the version that's already installed?
-    cipd_client = CipdClient(cipd_backend, os.path.join(root, 'cipd'))
+    cipd_client = CipdClient(cipd_backend, os.path.join(root, 'cipd' + EXE_SFX))
     current = cipd_client.read_tag()
     if current == (package, instance_id) and os.path.isfile(cipd_client.path):
       logging.info('CIPD client already installed.')
@@ -256,7 +275,6 @@ class CipdClient(object):
     os.chmod(cipd_client.path, 0755)
     cipd_client.write_tag(package, instance_id)
     return cipd_client
-
 
 
 def fetch_url(url, headers=None):
