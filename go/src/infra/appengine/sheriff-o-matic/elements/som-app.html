@@ -25,7 +25,6 @@
 <link rel="import" href="../elements/som-tree-status.html">
 <link rel="import" href="../elements/pages/som-help.html">
 <link rel="import" href="../elements/pages/som-rotation-calendar.html">
-<link rel="import" href="../elements/pages/som-welcome.html">
 
 <dom-module id="som-app">
   <template>
@@ -214,7 +213,6 @@
               <som-examine alert="[[_examinedAlert]]" class="flex layout vertical"></som-examine>
             </div>
           </template>
-          <som-welcome id="welcome" class="page-body"></som-welcome>
           <som-help id="helpSOM" class="page-body"></som-help>
           <template is="dom-if" if="[[_showRotationCalendar]]">
             <som-rotation-calendar id="rotationCalendar" class="flex layout vertical page-body"></som-rotation-calendar>
@@ -359,10 +357,7 @@
           type: Boolean,
           value: false,
         },
-        showInfraFailures: {
-          type: Boolean,
-          value: false,
-        },
+        showInfraFailures: Boolean,
         _snoozeErrorMessage: String,
         _snoozeModel: Object,
         _snoozeTimeInput: {
@@ -466,7 +461,7 @@
         let pathParts = path.split('/');
         if (pathParts.length < 2 || pathParts[1] == '') {
           // Default page
-          return 'welcome';
+          return 'help-som';
         }
         if (pathParts.length == 2) {
           if (pathParts[1] in this._staticPages) {

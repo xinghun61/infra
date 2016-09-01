@@ -76,6 +76,10 @@
         showInfraFailures: {
           type: Boolean,
           notify: true,
+          value: function () {
+            return !!localStorage.getItem('showInfraFailures');
+          },
+          observer: '_showInfraFailuresChanged',
         },
         _staticPageList: {
           type: Array,
@@ -108,11 +112,33 @@
         treeList.forEach(function(tree) {
           trees[tree.name] = tree;
         });
+        let defaultTree = localStorage.getItem('defaultTree');
+        if (this.path === '/') {
+          if (defaultTree && defaultTree in trees) {
+            this.path = '/' + defaultTree;
+          } else {
+            this.path = '/help-som';
+          }
+        }
         return trees;
       },
 
       _onSelected: function(evt) {
-        this.path = '/' + evt.srcElement.value;
+        let tree = evt.srcElement.value;
+        this.path = '/' + tree;
+
+        if (tree && tree in this.trees) {
+          localStorage.setItem('defaultTree', tree);
+        }
+      },
+
+      _showInfraFailuresChanged: function () {
+        // To account for the weirdness of local sotrage only accepting Strings
+        if (this.showInfraFailures) {
+          localStorage.setItem('showInfraFailures', 'true');
+        } else {
+          localStorage.removeItem('showInfraFailures');
+        }
       },
     });
   })();
