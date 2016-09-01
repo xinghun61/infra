@@ -113,15 +113,6 @@ import:
   - compute/metadata
   - pubsub
   - storage
-# TODO(vadimsh): Remove this once we completely switch to cloud.google.com/go.
-- package: google.golang.org/cloud
-  version: master
-  repo: https://code.googlesource.com/gocloud-legacy.git
-  subpackages:
-  - bigtable
-  - compute/metadata
-  - pubsub
-  - storage
 - package: google.golang.org/genproto
   version: master
   repo: https://chromium.googlesource.com/external/github.com/google/go-genproto.git
@@ -172,6 +163,7 @@ import:
   version: master
   repo: https://chromium.googlesource.com/external/github.com/kisielk/errcheck.git
 - package: github.com/maruel/panicparse
+  version: master
   repo: https://chromium.googlesource.com/external/github.com/maruel/panicparse.git
   subpackages:
   - cmd/pp
@@ -201,8 +193,8 @@ import:
   version: master
   repo: https://chromium.googlesource.com/external/github.com/go-sql-driver/mysql.git
 - package: github.com/mitchellh/go-homedir
-  repo: https://chromium.googlesource.com/external/github.com/mitchellh/go-homedir.git
   version: master
+  repo: https://chromium.googlesource.com/external/github.com/mitchellh/go-homedir.git
 - package: golang.org/x/mobile
   version: master
   repo: https://go.googlesource.com/mobile.git
