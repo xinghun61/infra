@@ -125,7 +125,7 @@
         }
       }
     </style>
-    <iron-location id="url" path="{{_path}}"></iron-location>
+    <iron-location id="url" path="{{_path}}" url-space-regex="^(?!(/_ah/|/auth/))"></iron-location>
     <iron-ajax
         auto
         id="annotations"
