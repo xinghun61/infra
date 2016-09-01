@@ -52,7 +52,8 @@ var (
 		"Number of uncaught javascript errors.", types.MetricMetadata{})
 )
 
-var errStatus = func(w http.ResponseWriter, status int, msg string) {
+var errStatus = func(c context.Context, w http.ResponseWriter, status int, msg string) {
+	logging.Errorf(c, "Status %d msg %s", status, msg)
 	w.WriteHeader(status)
 	w.Write([]byte(msg))
 }
@@ -71,7 +72,7 @@ var requireGoogler = func(w http.ResponseWriter, c context.Context) bool {
 			msg = err.Error()
 		}
 
-		errStatus(w, http.StatusForbidden, msg)
+		errStatus(c, w, http.StatusForbidden, msg)
 		return false
 	}
 	return true
@@ -240,7 +241,7 @@ func indexPage(ctx *router.Context) {
 	if user.Kind() == identity.Anonymous {
 		url, err := auth.LoginURL(c, "/")
 		if err != nil {
-			errStatus(w, http.StatusInternalServerError, fmt.Sprintf(
+			errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf(
 				"You must login. Additionally, an error was encountered while serving this request: %s", err.Error()))
 		} else {
 			http.Redirect(w, r, url, http.StatusFound)
@@ -252,14 +253,14 @@ func indexPage(ctx *router.Context) {
 	isGoogler, err := auth.IsMember(c, authGroup)
 
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	logoutURL, err := auth.LogoutURL(c, "/")
 
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -303,13 +304,13 @@ func getTreesHandler(ctx *router.Context) {
 	results := []*Tree{}
 	err := datastore.Get(c).GetAll(q, &results)
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	txt, err := json.Marshal(results)
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -335,13 +336,13 @@ func getAlertsHandler(ctx *router.Context) {
 	results := []*AlertsJSON{}
 	err := ds.GetAll(q, &results)
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	if len(results) == 0 {
 		logging.Warningf(c, "No alerts found for tree %s", tree)
-		errStatus(w, http.StatusNotFound, fmt.Sprintf("Tree \"%s\" not found", tree))
+		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("Tree \"%s\" not found", tree))
 		return
 	}
 
@@ -366,12 +367,12 @@ func postAlertsHandler(ctx *router.Context) {
 	}
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		errStatus(w, http.StatusBadRequest, err.Error())
+		errStatus(c, w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := r.Body.Close(); err != nil {
-		errStatus(w, http.StatusBadRequest, err.Error())
+		errStatus(c, w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -379,7 +380,7 @@ func postAlertsHandler(ctx *router.Context) {
 	err = json.Unmarshal(data, &out)
 
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -387,14 +388,14 @@ func postAlertsHandler(ctx *router.Context) {
 	data, err = json.Marshal(out)
 
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	alerts.Contents = data
 	err = datastore.Get(c).Put(&alerts)
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 }
@@ -412,7 +413,7 @@ func getAnnotationsHandler(ctx *router.Context) {
 
 	data, err := json.Marshal(results)
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -437,19 +438,19 @@ func postAnnotationsHandler(ctx *router.Context) {
 	ds := datastore.Get(c)
 
 	if !(action == "add" || action == "remove") {
-		errStatus(w, http.StatusNotFound, "Invalid action")
+		errStatus(c, w, http.StatusNotFound, "Invalid action")
 		return
 	}
 
 	req := &postRequest{}
 	err := json.NewDecoder(r.Body).Decode(req)
 	if err != nil {
-		errStatus(w, http.StatusBadRequest, fmt.Sprintf("while decoding request: %s", err))
+		errStatus(c, w, http.StatusBadRequest, fmt.Sprintf("while decoding request: %s", err))
 		return
 	}
 
 	if err := xsrf.Check(c, req.XSRFToken); err != nil {
-		errStatus(w, http.StatusForbidden, err.Error())
+		errStatus(c, w, http.StatusForbidden, err.Error())
 		return
 	}
 
@@ -461,7 +462,7 @@ func postAnnotationsHandler(ctx *router.Context) {
 	err = ds.Get(annotation)
 	if action == "remove" && err != nil {
 		logging.Errorf(c, "while getting %s: %s", annKey, err)
-		errStatus(w, http.StatusNotFound, fmt.Sprintf("Annotation %s not found", annKey))
+		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("Annotation %s not found", annKey))
 		return
 	}
 	// The annotation probably doesn't exist if we're adding something
@@ -474,25 +475,25 @@ func postAnnotationsHandler(ctx *router.Context) {
 	}
 
 	if err != nil {
-		errStatus(w, http.StatusBadRequest, err.Error())
+		errStatus(c, w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	err = r.Body.Close()
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	err = ds.Put(annotation)
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	resp, err := json.Marshal(annotation)
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -505,12 +506,14 @@ func flushOldAnnotationsHandler(ctx *router.Context) {
 
 	numDeleted, err := flushOldAnnotations(c)
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
+	s := fmt.Sprintf("deleted %d annotations", numDeleted)
+	logging.Debugf(c, s)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("deleted %d annotations", numDeleted)))
+	w.Write([]byte(s))
 }
 
 func flushOldAnnotations(c context.Context) (int, error) {
@@ -524,6 +527,10 @@ func flushOldAnnotations(c context.Context) (int, error) {
 	err := ds.GetAll(q, &results)
 	if err != nil {
 		return 0, fmt.Errorf("while fetching annotations to delete: %s", err)
+	}
+
+	for _, ann := range results {
+		logging.Debugf(c, "Deleting %#v\n", ann)
 	}
 
 	err = ds.Delete(results)
@@ -545,11 +552,12 @@ func getBugQueueHandler(ctx *router.Context) {
 	item, err := mc.Get(key)
 
 	if err == memcache.ErrCacheMiss {
+		logging.Debugf(c, "No bug queue data for %s in memcache, refreshing...", tree)
 		item, err = refreshBugQueue(c, tree)
 	}
 
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -575,10 +583,14 @@ func refreshBugQueue(c context.Context, tree string) (memcache.Item, error) {
 		Q:         fmt.Sprintf("label:Sheriff-%s", tree),
 	}
 
+	before := clock.Now(c)
+
 	res, err := mr.IssuesList(c, req)
 	if err != nil {
 		return nil, err
 	}
+
+	logging.Debugf(c, "Fetch to monorail took %v. Got %d bugs.", clock.Now(c).Sub(before), res.TotalResults)
 
 	bytes, err := json.Marshal(res)
 	if err != nil {
@@ -605,7 +617,7 @@ func refreshBugQueueHandler(ctx *router.Context) {
 	item, err := refreshBugQueue(c, tree)
 
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -645,19 +657,19 @@ func getRevRangeHandler(ctx *router.Context) {
 	start := p.ByName("start")
 	end := p.ByName("end")
 	if start == "" || end == "" {
-		errStatus(w, http.StatusBadRequest, "Start and end parameters must be set.")
+		errStatus(c, w, http.StatusBadRequest, "Start and end parameters must be set.")
 		return
 	}
 
 	startRev, err := getCrRevJSON(c, start)
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	endRev, err := getCrRevJSON(c, end)
 	if err != nil {
-		errStatus(w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -679,13 +691,13 @@ func postECatcherHandler(ctx *router.Context) {
 
 	req := &eCatcherReq{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		errStatus(w, http.StatusBadRequest, err.Error())
+		errStatus(c, w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	logging.Errorf(c, "token: %q", req.XSRFToken)
 	if err := xsrf.Check(c, req.XSRFToken); err != nil {
-		errStatus(w, http.StatusForbidden, err.Error())
+		errStatus(c, w, http.StatusForbidden, err.Error())
 		return
 	}
 
