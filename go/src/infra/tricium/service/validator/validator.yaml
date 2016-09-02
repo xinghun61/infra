@@ -1,0 +1,10 @@
+application: chrome-infra-tricium-dev
+module: validator
+runtime: go
+api_version: go1
+
+handlers:
+- url: /validate
+  script: _go_app
+- url: /.*
+  script: _go_app

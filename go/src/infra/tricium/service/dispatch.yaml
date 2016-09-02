@@ -13,6 +13,9 @@ dispatch:
 - url: "*/gerrit-reporter/*"
   module: gerrit-reporter
 
+- url: "*/validate"
+  module: validator
+
 - url: "*/*"
   module: default
 
