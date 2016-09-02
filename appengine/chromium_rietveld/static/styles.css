@@ -729,6 +729,10 @@ span.visualtab {
   border-left: 1px solid lightgray;
 }
 
+.issue-list table tr:hover {
+  background-color: #eee;
+}
+
 .issue-list form {
   display: inline;
 }
