@@ -112,6 +112,11 @@
       .som-title {
         font-weight: bold;
       }
+      .som-title img {
+        max-width: 30px;
+        max-height: 30px;
+        vertical-align: middle;
+      }
       .title {
         font-size: big;
       }
@@ -143,7 +148,12 @@
     <paper-drawer-panel responsive-width="1024px">
       <paper-header-panel drawer>
         <paper-toolbar>
-          <span class="som-title">Sheriff-o-Matic</span>
+          <span class="som-title">
+            <template is="dom-if" if="[[_treeLogo]]">
+              <a href="/[[_tree]]"><img src="[[_treeLogo]]" alt="[[_tree]]" title="[[_tree]]" /></a>
+            </template>
+            Sheriff-o-Matic
+          </span>
         </paper-toolbar>
         <som-drawer id="drawer" tree="[[_tree]]" path="{{_path}}" static-pages="[[_staticPages]]" show-infra-failures="{{showInfraFailures}}" trees="{{_trees}}"></som-drawer>
       </paper-header-panel>
@@ -172,7 +182,7 @@
             </div>
             <som-bug-queue id="bugQueue" bug-queue-label="[[_bugQueueLabel]]"></som-bug-queue>
             <div id="alertsListInner">
-              <h2>Failure Alerts (<a href="/help-som">Help?</a>)</h2>
+              <h2>[[_treeDisplayName]] Failure Alerts (<a href="/help-som">Help?</a>)</h2>
               <div id="fetchAlertsError" hidden=[[!_fetchAlertsError]]>[[_fetchAlertsError]]</div>
               <template is="dom-if" if="[[!_hideJulie]]">
                 <div id="noAlerts">
@@ -372,6 +382,14 @@
           computed: '_computeTree(_path)',
           observer: '_treeChanged',
         },
+        _treeDisplayName: {
+          type: String,
+          computed: '_computeTreeDisplayName(_tree, _trees)',
+        },
+        _treeLogo: {
+          type: String,
+          computed: '_computeTreeLogo(_tree, _trees)',
+        },
         _staticPages: {
           type: Object,
           value: {
@@ -434,6 +452,20 @@
         }
 
         return pathParts[1];
+      },
+
+      _computeTreeLogo: function(tree, trees, errored) {
+        if (!errored && tree in trees) {
+          return `/logos/${tree}`;
+        }
+        return null;
+      },
+
+      _computeTreeDisplayName: function(tree, trees) {
+        if (tree in trees) {
+          return trees[tree].display_name;
+        }
+        return tree;
       },
 
       _treeChanged: function() {
