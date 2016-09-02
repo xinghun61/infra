@@ -156,10 +156,7 @@ func (r *reader) Build(master *messages.MasterLocation, builder string, buildNum
 	}
 
 	if code == 404 {
-		if !master.Internal() {
-			return nil, fmt.Errorf("Error (%d) fetching %s. Not retrying", code, URL)
-		}
-
+		// FIXME: Don't directly poll so many builders.
 		expvars.Add("DirectPoll", 1)
 		defer expvars.Add("DirectPoll", -1)
 		URL = fmt.Sprintf("%s/json/builders/%s/builds/%d",
@@ -237,10 +234,7 @@ func (r *reader) BuildExtract(masterURL *messages.MasterLocation) (*messages.Bui
 	}
 
 	if code == 404 {
-		if !masterURL.Internal() {
-			return nil, fmt.Errorf("Error (%d) fetching %s. Not retrying", code, URL)
-		}
-
+		// FIXME: Don't directly poll so many builders.
 		URL = fmt.Sprintf("%s/json", masterURL.String())
 		expvars.Add("DirectPoll", 1)
 		defer expvars.Add("DirectPoll", -1)
