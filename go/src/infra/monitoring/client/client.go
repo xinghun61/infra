@@ -381,6 +381,7 @@ func (hc *trackingHTTPClient) attemptJSONGet(url string, v interface{}) (bool, i
 }
 
 func (hc *trackingHTTPClient) attemptReq(r *http.Request, v interface{}) (bool, int, int64, error) {
+	r.Header.Set("User-Agent", "Go-http-client/1.1 alerts_dispatcher")
 	resp, err := hc.c.Do(r)
 	if err != nil {
 		errLog.Printf("error: %q, possibly retrying.", err.Error())
@@ -409,6 +410,7 @@ func (hc *trackingHTTPClient) attemptReq(r *http.Request, v interface{}) (bool, 
 // Returns the status code and the error, if any.
 func (hc *trackingHTTPClient) postJSON(url string, data []byte, v interface{}) (status int, err error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
+	req.Header.Set("User-Agent", "Go-http-client/1.1 alerts_dispatcher")
 	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		return 0, err
