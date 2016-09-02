@@ -7,6 +7,7 @@ import json
 from google.appengine.api import app_identity
 
 from common.pipeline_wrapper import pipeline_handlers
+from crash import findit_for_fracas
 from crash import fracas_crash_pipeline
 from crash.test.crash_testcase import CrashTestCase
 from model import analysis_status
@@ -82,7 +83,7 @@ class FracasCrashPipelineTest(CrashTestCase):
   def testBlackListSignatureSipped(self):
     self.assertFalse(
         fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
-            {}, None, '[Android Java Exception] signature', 'fracas', 'win',
+            {}, None, 'Blacklist marker signature', 'fracas', 'win',
             None, 'canary',  None))
 
   def testPlatformRename(self):
@@ -130,7 +131,7 @@ class FracasCrashPipelineTest(CrashTestCase):
     def Mocked_FindCulpritForChromeCrash(*args):
       analyzed_crashes.append(args)
       return analysis_result, analysis_tags
-    self.mock(fracas_crash_pipeline.fracas, 'FindCulpritForChromeCrash',
+    self.mock(findit_for_fracas, 'FindCulpritForChromeCrash',
               Mocked_FindCulpritForChromeCrash)
     chrome_version = '1'
     signature = 'signature'

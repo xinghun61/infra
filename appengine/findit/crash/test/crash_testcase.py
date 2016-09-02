@@ -19,38 +19,41 @@ DEFAULT_CONFIG_DATA = {
             'canary': ['win', 'mac', 'linux'],
             'supported_channel': ['supported_platform'],
         },
+        'platform_rename': {'linux': 'unix'},
+        'signature_blacklist_markers': ['Blacklist marker'],
+        'top_n': 7
     },
     'component_classifier': {
-        "path_function_component": [
+        'path_function_component': [
             [
-              "src/comp1.*",
-              "",
-              "Comp1>Dummy"
+                'src/comp1.*',
+                '',
+                'Comp1>Dummy'
             ],
             [
-              "src/comp2.*",
-              "func2.*",
-              "Comp2>Dummy"
+                'src/comp2.*',
+                'func2.*',
+                'Comp2>Dummy'
             ],
         ],
-        "top_n": 4
+        'top_n': 4
     },
     'project_classifier': {
-        "file_path_marker_to_project_name": {
-            "googleplex-android/": "android_os",
+        'file_path_marker_to_project_name': {
+            'googleplex-android/': 'android_os',
         },
-        "function_marker_to_project_name": {
-            "org.chromium": "chromium",
-            "android.": "android_os",
+        'function_marker_to_project_name': {
+            'org.chromium': 'chromium',
+            'android.': 'android_os',
         },
-        "host_directories": [
-            "src/"
+        'host_directories': [
+            'src/'
         ],
-        "non_chromium_project_rank_priority": {
-            "android_os": "-1",
-            "others": "-2",
+        'non_chromium_project_rank_priority': {
+            'android_os': '-1',
+            'others': '-2',
         },
-        "top_n": 4
+        'top_n': 4
     }
 }
 

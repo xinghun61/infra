@@ -249,7 +249,7 @@ class FinditForCrashTest(CrashTestSuite):
 
   def testFindItForCrashNoRegressionRange(self):
     self.assertEqual(
-        findit_for_crash.FindItForCrash(Stacktrace(), {}, {}),
+        findit_for_crash.FindItForCrash(Stacktrace(), {}, {}, 7),
         [])
 
   def testFindItForCrashNoMatchFound(self):
@@ -262,7 +262,7 @@ class FinditForCrashTest(CrashTestSuite):
     regression_deps_rolls = {'src/': DependencyRoll('src/', 'https://repo',
                                                     '1', '2')}
     self.assertEqual(findit_for_crash.FindItForCrash(
-        Stacktrace(), regression_deps_rolls, {}), [])
+        Stacktrace(), regression_deps_rolls, {}, 7), [])
 
   def testFindItForCrash(self):
 
@@ -309,7 +309,7 @@ class FinditForCrashTest(CrashTestSuite):
                                                     '1', '2')}
 
     results = findit_for_crash.FindItForCrash(Stacktrace(),
-                                              regression_deps_rolls, {})
+                                              regression_deps_rolls, {}, 7)
     self.assertEqual([result.ToDict() for result in results],
                      expected_match_results)
 
@@ -374,7 +374,7 @@ class FinditForCrashTest(CrashTestSuite):
                                                     '1', '2')}
 
     results = findit_for_crash.FindItForCrash(Stacktrace(),
-                                              regression_deps_rolls, {})
+                                              regression_deps_rolls, {}, 7)
 
     self.assertEqual([result.ToDict() for result in results],
                      expected_match_results)
@@ -409,4 +409,4 @@ class FinditForCrashTest(CrashTestSuite):
                                                     '1', '2')}
 
     self.assertEqual(findit_for_crash.FindItForCrash(
-        Stacktrace(), regression_deps_rolls, {}), [])
+        Stacktrace(), regression_deps_rolls, {}, 7), [])

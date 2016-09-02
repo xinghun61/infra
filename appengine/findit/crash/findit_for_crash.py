@@ -16,10 +16,6 @@ from crash.scorers.min_distance import MinDistance
 from crash.scorers.top_frame_index import TopFrameIndex
 
 
-#TODO(katesonia): Move this to config page.
-_TOP_N_FRAMES = 7
-
-
 def GetDepsInCrashStack(crash_stack, crash_deps):
   """Gets Dependencies in crash stack."""
   if not crash_stack:
@@ -197,8 +193,7 @@ def FindMatchResults(dep_to_file_to_changelogs,
   return match_results.values()
 
 
-def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps,
-                   top_n=_TOP_N_FRAMES):
+def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps, top_n):
   """Finds culprit results for crash.
 
   Args:
@@ -207,6 +202,7 @@ def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps,
       regression range.
     crashed_deps (dict of Dependencys): Represents all the dependencies of
       crashed revision.
+    top_n (int): Top n frames of each stack to be analyzed.
 
   Returns:
     List of Results, sorted by confidence from highest to lowest.

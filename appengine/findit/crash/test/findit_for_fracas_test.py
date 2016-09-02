@@ -5,7 +5,7 @@
 from common import chromium_deps
 from common.dependency import DependencyRoll
 from crash import detect_regression_range
-from crash import fracas
+from crash import findit_for_fracas
 from crash import fracas_parser
 from crash import findit_for_crash
 from crash.callstack import CallStack
@@ -33,7 +33,7 @@ class FracasTest(CrashTestCase):
     expected_tag = {'found_suspects': False,
                     'has_regression_range': False}
 
-    results, tag = fracas.FindCulpritForChromeCrash(
+    results, tag = findit_for_fracas.FindCulpritForChromeCrash(
         'signature', 'win', 'frame1\nframe2', '50.0.1234.0',
         [{'chrome_version': '50.0.1234.0', 'cpm': 0.6}])
 
@@ -85,7 +85,7 @@ class FracasTest(CrashTestCase):
     expected_results = {'found': False}
     expected_tag = {'found_suspects': False}
 
-    results, tag = fracas.FindCulpritForChromeCrash(
+    results, tag = findit_for_fracas.FindCulpritForChromeCrash(
         'signature', 'win', 'frame1\nframe2', '50.0.1234.0',
         [{'chrome_version': '50.0.1234.0', 'cpm': 0.6}])
 
@@ -105,7 +105,7 @@ class FracasTest(CrashTestCase):
     self.assertEqual(expected_results, results)
     self.assertEqual(expected_tag, tag)
 
-    results, tag = fracas.FindCulpritForChromeCrash(
+    results, tag = findit_for_fracas.FindCulpritForChromeCrash(
         'signature', 'win', 'frame1\nframe2', '50.0.1234.0',
         [])
 

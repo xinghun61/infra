@@ -12,6 +12,11 @@ from crash import findit_for_crash
 from crash.fracas_parser import FracasParser
 from crash.project_classifier import ProjectClassifier
 from crash.component_classifier import ComponentClassifier
+from model.crash.crash_config import CrashConfig
+
+# TODO(katesonia): Remove the default value after adding validity check to
+# config.
+_DEFAULT_TOP_N = 7
 
 
 def FindCulpritForChromeCrash(signature, platform,
@@ -107,8 +112,10 @@ def FindCulpritForChromeCrash(signature, platform,
     regression_deps_rolls = chromium_deps.GetDEPSRollsDict(
         last_good_version, first_bad_version, platform)
 
+  crash_config = CrashConfig.Get()
   culprit_results = findit_for_crash.FindItForCrash(
-      stacktrace, regression_deps_rolls, crash_deps)
+      stacktrace, regression_deps_rolls, crash_deps, crash_config.fracas.get(
+          'top_n', _DEFAULT_TOP_N))
 
   crash_stack = stacktrace.crash_stack
   suspected_project = ProjectClassifier().Classify(
