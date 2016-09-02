@@ -17,6 +17,7 @@ var (
 		basicAnalyzer,
 		compileFailureAnalyzer,
 		testFailureAnalyzer,
+		perfDeviceAnalyzer,
 	}
 	errLog = log.New(os.Stderr, "", log.Lshortfile|log.Ltime)
 )
