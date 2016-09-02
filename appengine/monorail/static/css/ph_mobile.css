@@ -80,7 +80,10 @@
     width: 90%;
   }
 
-  #maincol input, #maincol select, #maincol textarea {
+  #maincol input[type="button"],
+  #maincol input[type="submit"],
+  #maincol select,
+  #maincol textarea {
     font-size: 100%;
     width: 100%;
     margin-bottom: 8px;
@@ -92,6 +95,11 @@
 
   #maincol div.tip {
     display: none;
+  }
+
+  #maincol .enum_checkbox {
+    width: 31%;
+    padding: 3px;
   }
 
 
@@ -108,7 +116,9 @@
     padding: 10px 0;
   }
 
-  input[type="button"], input[type="submit"], a.buttonify { /* make all types of buttons easier to click */
+  input[type="button"],
+  input[type="submit"],
+  a.buttonify { /* make all types of buttons easier to click */
     padding: 5px;
   }
 
