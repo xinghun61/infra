@@ -454,3 +454,13 @@ td.rowwidgets { padding: 2px 2px 0 7px; }
 .drag_item.bottom td {
   border-bottom: 2px solid #888;
 }
+
+.component-suggestion {
+  display: inline-block;
+  cursor: pointer;
+  padding: 0.25em;
+  margin: 0.25em;
+  border: 1px solid #ddd;
+  border-radius: 0.25em;
+  background-color: #e3e9ff;
+}
