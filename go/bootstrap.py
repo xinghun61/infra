@@ -498,6 +498,7 @@ def get_go_environ(layout):
     os.path.join(env['GOROOT'], 'bin'),
     env.get('GOBIN'),
     os.path.join(ROOT, 'cipd'),
+    os.path.join(ROOT, 'cipd', 'bin'),
     os.path.join(ROOT, 'luci', 'appengine', 'components', 'tools'),
   ]
   paths_to_add.extend(os.path.join(p, '.vendor', 'bin') for p in vendor_paths)

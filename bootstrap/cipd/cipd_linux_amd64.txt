@@ -8,5 +8,8 @@
 # Proto3 Protocol Buffers generator (protoc).
 infra/tools/protoc/linux-amd64    protobuf_version:v3.0.0
 
+# Node.js deployment.
+infra/nodejs/nodejs/linux-amd64   node_version:4.5.0
+
 # TODO: move this to depot_tools eventually?
 infra/tools/authutil/linux-amd64  git_revision:342ee7e69e360c5e9188e19df321992fbd301572
