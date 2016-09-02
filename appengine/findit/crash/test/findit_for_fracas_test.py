@@ -17,7 +17,7 @@ from crash.callstack import CallStack
 from crash.test.crash_testcase import CrashTestCase
 
 
-class FracasTest(CrashTestCase):
+class FinditForFracasTest(CrashTestCase):
 
   def testFindCulpritForChromeCrashEmptyStacktrace(self):
     def _MockGetChromeDependency(*_):

@@ -10,19 +10,20 @@ import re
 import webapp2
 import webtest
 
+from crash import crash_pipeline
 from crash.test.crash_testcase import CrashTestCase
-from handlers.crash import fracas_crash
+from handlers.crash import crash_handler
 
 
-class FracasCrashTest(CrashTestCase):
+class CrashHandlerTest(CrashTestCase):
   app_module = webapp2.WSGIApplication([
-      ('/_ah/push-handlers/crash/fracas', fracas_crash.FracasCrash),
+      ('/_ah/push-handlers/crash/fracas', crash_handler.CrashHandler),
   ], debug=True)
 
   def _MockScheduleNewAnalysisForCrash(self, requested_crashes):
     def Mocked_ScheduleNewAnalysisForCrash(*crash_data, **_):
       requested_crashes.append(crash_data)
-    self.mock(fracas_crash.fracas_crash_pipeline, 'ScheduleNewAnalysisForCrash',
+    self.mock(crash_pipeline, 'ScheduleNewAnalysisForCrash',
               Mocked_ScheduleNewAnalysisForCrash)
 
   def testAnalysisScheduled(self):

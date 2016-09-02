@@ -23,16 +23,16 @@ from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 _FINDIT_FEEDBACK_URL_TEMPLATE = '%s/crash/fracas-result-feedback?key=%s'
 
 
-class FracasBasePipeline(BasePipeline):
+class CrashBasePipeline(BasePipeline):
   def __init__(self, crash_identifiers):
-    super(FracasBasePipeline, self).__init__(crash_identifiers)
+    super(CrashBasePipeline, self).__init__(crash_identifiers)
     self.crash_identifiers = crash_identifiers
 
   def run(self, *args, **kwargs):
     raise NotImplementedError()
 
 
-class FracasAnalysisPipeline(FracasBasePipeline):
+class CrashAnalysisPipeline(CrashBasePipeline):
   def _SetErrorIfAborted(self, aborted):
     if not aborted:
       return
@@ -72,7 +72,7 @@ class FracasAnalysisPipeline(FracasBasePipeline):
     analysis.put()
 
 
-class PublishResultPipeline(FracasBasePipeline):
+class PublishResultPipeline(CrashBasePipeline):
   def finalized(self):
     if self.was_aborted:  # pragma: no cover.
       logging.error('Failed to publish analysis result for %s',
@@ -105,10 +105,10 @@ class PublishResultPipeline(FracasBasePipeline):
     logging.info('Published analysis result for %s', repr(crash_identifiers))
 
 
-class FracasCrashWrapperPipeline(BasePipeline):
+class CrashWrapperPipeline(BasePipeline):
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, crash_identifiers):
-    run_analysis = yield FracasAnalysisPipeline(crash_identifiers)
+    run_analysis = yield CrashAnalysisPipeline(crash_identifiers)
     with pipeline.After(run_analysis):
       yield PublishResultPipeline(crash_identifiers)
 
@@ -184,7 +184,7 @@ def ScheduleNewAnalysisForCrash(
 
   if _NeedsNewAnalysis(crash_identifiers, chrome_version, signature, client_id,
                        platform, stack_trace, channel, historical_metadata):
-    analysis_pipeline = FracasCrashWrapperPipeline(crash_identifiers)
+    analysis_pipeline = CrashWrapperPipeline(crash_identifiers)
     # Attribute defined outside __init__ - pylint: disable=W0201
     analysis_pipeline.target = appengine_util.GetTargetNameForModule(
         constants.CRASH_BACKEND_FRACAS)

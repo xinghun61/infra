@@ -7,14 +7,14 @@ import json
 from google.appengine.api import app_identity
 
 from common.pipeline_wrapper import pipeline_handlers
+from crash import crash_pipeline
 from crash import findit_for_fracas
-from crash import fracas_crash_pipeline
 from crash.test.crash_testcase import CrashTestCase
 from model import analysis_status
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 
-class FracasCrashPipelineTest(CrashTestCase):
+class CrashPipelineTest(CrashTestCase):
   app_module = pipeline_handlers._APP
 
   def testNoAnalysisIfLastOneIsNotFailed(self):
@@ -33,7 +33,7 @@ class FracasCrashPipelineTest(CrashTestCase):
       analysis = FracasCrashAnalysis.Create(crash_identifiers)
       analysis.status = status
       analysis.put()
-      self.assertFalse(fracas_crash_pipeline._NeedsNewAnalysis(
+      self.assertFalse(crash_pipeline._NeedsNewAnalysis(
           crash_identifiers, chrome_version, signature, 'fracas',
           platform, None, None, None))
 
@@ -51,7 +51,7 @@ class FracasCrashPipelineTest(CrashTestCase):
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.status = analysis_status.ERROR
     analysis.put()
-    self.assertTrue(fracas_crash_pipeline._NeedsNewAnalysis(
+    self.assertTrue(crash_pipeline._NeedsNewAnalysis(
           crash_identifiers, chrome_version, signature, 'fracas',
           platform, None, None, None))
 
@@ -66,23 +66,23 @@ class FracasCrashPipelineTest(CrashTestCase):
       'platform': platform,
       'process_type': 'browser',
     }
-    self.assertTrue(fracas_crash_pipeline._NeedsNewAnalysis(
+    self.assertTrue(crash_pipeline._NeedsNewAnalysis(
           crash_identifiers, chrome_version, signature, 'fracas',
           platform, None, None, None))
 
   def testUnsupportedChannelOrPlatformSkipped(self):
     self.assertFalse(
-        fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
+        crash_pipeline.ScheduleNewAnalysisForCrash(
             {}, None, None, 'fracas', 'win',
             None, 'unsupported_channel',  None))
     self.assertFalse(
-        fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
+        crash_pipeline.ScheduleNewAnalysisForCrash(
             {}, None, None, 'fracas', 'unsupported_platform',
             None, 'unsupported_channel',  None))
 
   def testBlackListSignatureSipped(self):
     self.assertFalse(
-        fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
+        crash_pipeline.ScheduleNewAnalysisForCrash(
             {}, None, 'Blacklist marker signature', 'fracas', 'win',
             None, 'canary',  None))
 
@@ -93,9 +93,9 @@ class FracasCrashPipelineTest(CrashTestCase):
                         'canary', None))
       return False
 
-    self.mock(fracas_crash_pipeline, '_NeedsNewAnalysis', _MockNeedsNewAnalysis)
+    self.mock(crash_pipeline, '_NeedsNewAnalysis', _MockNeedsNewAnalysis)
 
-    fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
+    crash_pipeline.ScheduleNewAnalysisForCrash(
         {}, None, 'signature', 'fracas', 'linux',
         None, 'canary',  None)
 
@@ -116,7 +116,7 @@ class FracasCrashPipelineTest(CrashTestCase):
     analysis.put()
 
     self.assertFalse(
-        fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
+        crash_pipeline.ScheduleNewAnalysisForCrash(
             crash_identifiers, chrome_version, signature, 'fracas',
             platform, None, channel, None))
 
@@ -124,7 +124,7 @@ class FracasCrashPipelineTest(CrashTestCase):
     pubsub_publish_requests = []
     def Mocked_PublishMessagesToTopic(messages_data, topic):
       pubsub_publish_requests.append((messages_data, topic))
-    self.mock(fracas_crash_pipeline.pubsub_util, 'PublishMessagesToTopic',
+    self.mock(crash_pipeline.pubsub_util, 'PublishMessagesToTopic',
               Mocked_PublishMessagesToTopic)
 
     analyzed_crashes = []
@@ -152,7 +152,7 @@ class FracasCrashPipelineTest(CrashTestCase):
     self.mock(app_identity, 'get_default_version_hostname', lambda: mock_host)
 
     self.assertTrue(
-        fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
+        crash_pipeline.ScheduleNewAnalysisForCrash(
             crash_identifiers, chrome_version, signature, 'fracas',
             platform, stack_trace, channel, historic_metadata))
 
@@ -262,7 +262,7 @@ class FracasCrashPipelineTest(CrashTestCase):
     analysis.status = analysis_status.RUNNING
     analysis.put()
 
-    pipeline = fracas_crash_pipeline.FracasAnalysisPipeline(crash_identifiers)
+    pipeline = crash_pipeline.CrashAnalysisPipeline(crash_identifiers)
     pipeline._SetErrorIfAborted(True)
     analysis = FracasCrashAnalysis.Get(crash_identifiers)
     self.assertEqual(analysis_status.ERROR, analysis.status)

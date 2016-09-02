@@ -9,10 +9,10 @@ import logging
 from common import constants
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
-from crash import fracas_crash_pipeline
+from crash import crash_pipeline
 
 
-class FracasCrash(BaseHandler):
+class CrashHandler(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
   def HandlePost(self):
@@ -20,35 +20,44 @@ class FracasCrash(BaseHandler):
 
     The crash data should be in the following json format:
     {
-      "customized_data": {
-        "channel": "beta",
-        "historic_metadata": [
+        'customized_data': {...},
+        'chrome_version': '51.0.2704.28',
+        'signature': 'blink::FramePainter::paintContents',
+        'client_id': 'fracas|cracas|clusterfuzz',
+        'platform': 'android',
+        'crash_identifiers': {...},
+        'stack_trace': 'CRASHED [SIGILL @ 0x5320e570]\\n#0 0x5320e570...'
+    }
+
+    customized_data, client_id and crash_identifiers vary from client to client.
+    For example, for fracas,
+
+    customized_data: {
+        'trend_type': 'd',  # *see supported types below
+        'channel': 'beta',
+        'historical_metadata': [
           {
-            "chrome_version": "51.0.2693.2",
-            "cpm": 0.0610491148
+              'report_number': 0,
+              'cpm': 0.0,
+              'client_number': 0,
+              'chrome_version': '51.0.2704.103'
           },
+          ...
           {
-            "chrome_version": "51.0.2704.10",
-            "cpm": 0.0490386976
+              'report_number': 10,
+              'cpm': 2.1,
+              'client_number': 8,
+              'chrome_version': '53.0.2768.0'
           },
-          {
-            "chrome_version": "52.0.2718.2",
-            "cpm": 0.0040353297
-          }
         ]
-      },
-      "chrome_version": "51.0.2704.28",
-      "signature": "blink::FramePainter::paintContents",
-      "client_id": "fracas",
-      "platform": "android",
-      "crash_identifiers": {
-        "chrome_version": "51.0.2704.28",
-        "signature": "blink::FramePainter::paintContents",
-        "channel": "beta",
-        "platform": "android",
-        "process_type": null
-      },
-      "stack_trace": "CRASHED [SIGILL @ 0x5320e570]\\n#0 0x5320e570..."
+    }
+
+    crash_identifiers: {
+        'platform': 'mac',
+        'version': '52.0.2743.41',
+        'process_type': 'browser',
+        'channel': 'beta',
+        'signature': '[ThreadWatcher UI hang] base::MessagePumpBase::Run'
     }
     """
     try:
@@ -62,7 +71,7 @@ class FracasCrash(BaseHandler):
 
       logging.info('Crash data is %s', json.dumps(crash_data))
 
-      fracas_crash_pipeline.ScheduleNewAnalysisForCrash(
+      crash_pipeline.ScheduleNewAnalysisForCrash(
           crash_data['crash_identifiers'],
           crash_data['chrome_version'],
           crash_data['signature'],
@@ -74,5 +83,5 @@ class FracasCrash(BaseHandler):
           queue_name=constants.CRASH_ANALYSIS_FRACAS_QUEUE)
     except (KeyError, ValueError):  # pragma: no cover.
       # TODO: save exception in datastore and create a page to show them.
-      logging.exception('Failed to process fracas message')
+      logging.exception('Failed to process crash message')
       logging.info(self.request.body)

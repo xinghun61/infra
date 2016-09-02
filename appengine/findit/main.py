@@ -25,10 +25,10 @@ from handlers import try_job_result
 from handlers import verify_analysis
 from handlers import version
 from handlers.crash import crash_config
-from handlers.crash import fracas_crash
+from handlers.crash import crash_handler
 from handlers.crash import fracas_dashboard
 from handlers.crash import fracas_result_feedback
-from handlers.crash import triage_fracas_analysis 
+from handlers.crash import triage_fracas_analysis
 from handlers.flake import check_flake
 from handlers.flake import list_flakes
 
@@ -101,7 +101,7 @@ crash_frontend_web_pages_handler_mappings = [
      fracas_result_feedback.FracasResultFeedback),
     ('/crash/triage-fracas-analysis',
      triage_fracas_analysis.TriageFracasAnalysis),
-    ('/_ah/push-handlers/crash/fracas', fracas_crash.FracasCrash),
+    ('/_ah/push-handlers/crash/fracas', crash_handler.CrashHandler),
 ]
 crash_frontend_web_application = webapp2.WSGIApplication(
     crash_frontend_web_pages_handler_mappings, debug=False)
