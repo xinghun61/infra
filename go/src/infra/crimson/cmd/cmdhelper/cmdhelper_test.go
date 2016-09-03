@@ -286,3 +286,78 @@ func TestFormatIPRange(t *testing.T) {
 		})
 	})
 }
+
+func TestFormatHostList(t *testing.T) {
+	t.Parallel()
+
+	Convey("FormatHostList works", t, func() {
+		hostList := &crimson.HostList{Hosts: []*crimson.Host{
+			{
+				Site:      "site1",
+				Hostname:  "host1",
+				MacAddr:   "de:ed:be:ef:f0:0d",
+				Ip:        "127.0.0.1",
+				BootClass: "boot1",
+			},
+			{
+				Site:      "site2",
+				Hostname:  "host2",
+				MacAddr:   "ba:dc:0f:ee:f0:0d",
+				Ip:        "127.0.0.2",
+				BootClass: "boot2",
+			},
+		}}
+
+		Convey("for CSV format", func() {
+			expected := []string{
+				"site,hostname,mac,ip,boot_class",
+				"site1,host1,de:ed:be:ef:f0:0d,127.0.0.1,boot1",
+				"site2,host2,ba:dc:0f:ee:f0:0d,127.0.0.2,boot2",
+			}
+			lines, err := FormatHostList(hostList, csvFormat, false)
+			So(err, ShouldBeNil)
+			So(lines, ShouldResemble, expected)
+
+			lines, err = FormatHostList(hostList, csvFormat, true)
+			So(err, ShouldBeNil)
+			So(lines, ShouldResemble, expected[1:])
+		})
+
+		Convey("for text format", func() {
+			expected := []string{
+				"site  hostname mac               ip        boot_class ",
+				"site1 host1    de:ed:be:ef:f0:0d 127.0.0.1 boot1      ",
+				"site2 host2    ba:dc:0f:ee:f0:0d 127.0.0.2 boot2      ",
+			}
+			lines, err := FormatHostList(hostList, textFormat, false)
+			So(err, ShouldBeNil)
+			So(lines, ShouldResemble, expected)
+
+			expected = []string{
+				"site1 host1 de:ed:be:ef:f0:0d 127.0.0.1 boot1 ",
+				"site2 host2 ba:dc:0f:ee:f0:0d 127.0.0.2 boot2 ",
+			}
+			lines, err = FormatHostList(hostList, textFormat, true)
+			So(err, ShouldBeNil)
+			So(lines, ShouldResemble, expected)
+		})
+
+		Convey("for JSON format", func() {
+			lines, err := FormatHostList(hostList, jsonFormat, false)
+			So(err, ShouldBeNil)
+			So(len(lines), ShouldEqual, 1)
+			var hosts []*crimson.Host
+			json.Unmarshal([]byte(lines[0]), &hosts)
+			So(hosts, ShouldResemble, hostList.Hosts)
+		})
+
+		Convey("for DHCP format", func() {
+			lines, err := FormatHostList(hostList, dhcpFormat, false)
+			So(err, ShouldBeNil)
+			So(lines, ShouldResemble, []string{
+				`host host1 { hardware ethernet de:ed:be:ef:f0:0d; fixed-address 127.0.0.1; ddns-hostname "host1"; option host-name "host1"; }`,
+				`host host2 { hardware ethernet ba:dc:0f:ee:f0:0d; fixed-address 127.0.0.2; ddns-hostname "host2"; option host-name "host2"; }`,
+			})
+		})
+	})
+}

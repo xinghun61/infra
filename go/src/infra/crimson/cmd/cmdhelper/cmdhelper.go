@@ -310,6 +310,7 @@ const (
 	textFormat = FormatType("text")
 	csvFormat  = FormatType("csv")
 	jsonFormat = FormatType("json")
+	dhcpFormat = FormatType("dhcp")
 	// DefaultFormat is the default value to use for FormatType.
 	DefaultFormat = textFormat
 )
@@ -319,6 +320,7 @@ var FormatTypeEnum = flagenum.Enum{
 	"text": textFormat,
 	"csv":  csvFormat,
 	"json": jsonFormat,
+	"dhcp": dhcpFormat,
 }
 
 func (ft *FormatType) String() string {
@@ -346,6 +348,8 @@ func FormatIPRange(ipRanges []*crimson.IPRange,
 		formatter = &TextFormatter{}
 	case csvFormat:
 		formatter = &CSVFormatter{}
+	case dhcpFormat:
+		panic(fmt.Errorf("dhcp format is not supported for VLANs"))
 	default:
 		panic(fmt.Errorf("Unknown formatter: %v", formatter))
 	}
@@ -377,6 +381,14 @@ func PrintIPRange(ipRanges []*crimson.IPRange, format FormatType, skipHeader boo
 	}
 }
 
+func formatDhcpHostList(hosts []*crimson.Host) (out []string) {
+	for _, host := range hosts {
+		out = append(out, fmt.Sprintf(`host %s { hardware ethernet %s; fixed-address %s; ddns-hostname "%s"; option host-name "%s"; }`,
+			host.Hostname, host.MacAddr, host.Ip, host.Hostname, host.Hostname))
+	}
+	return
+}
+
 // FormatHostList formats a list of hosts for pretty-printing.
 func FormatHostList(
 	hostList *crimson.HostList,
@@ -394,6 +406,8 @@ func FormatHostList(
 		formatter = &TextFormatter{}
 	case csvFormat:
 		formatter = &CSVFormatter{}
+	case dhcpFormat:
+		return formatDhcpHostList(hostList.Hosts), nil
 	default:
 		panic(fmt.Errorf("Unknown formatter: %v", formatter))
 	}
