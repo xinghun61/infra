@@ -28,6 +28,7 @@ type commonFlags struct {
 	authFlags   authcli.Flags
 	backendHost string
 	format      cmdhelper.FormatType
+	skipHeader  bool
 }
 
 type vlanFlags struct {
@@ -88,6 +89,7 @@ func commonFlagVars(c *commonFlags) {
 	c.Flags.Var(&c.format, "format", "Output format: "+
 		cmdhelper.FormatTypeEnum.Choices())
 	c.format = cmdhelper.DefaultFormat
+	c.Flags.BoolVar(&c.skipHeader, "skip-header", false, "Skip column names in the output")
 }
 
 func vlanFlagVars(c *vlanFlags) {
@@ -280,7 +282,7 @@ func (c *addVlanRun) Run(a subcommands.Application, args []string) int {
 			return 1
 		}
 	}
-	cmdhelper.PrintIPRange(ranges, c.format)
+	cmdhelper.PrintIPRange(ranges, c.format, c.skipHeader)
 
 	for _, req := range ranges {
 		_, err := client.CreateIPRange(ctx, req)
@@ -311,7 +313,7 @@ func (c *queryVlanRun) Run(a subcommands.Application, args []string) int {
 		return 1
 	}
 
-	cmdhelper.PrintIPRange(results.Ranges, c.format)
+	cmdhelper.PrintIPRange(results.Ranges, c.format, c.skipHeader)
 	return 0
 }
 
@@ -424,7 +426,7 @@ func (c *queryHostRun) Run(a subcommands.Application, args []string) int {
 		return 1
 	}
 
-	cmdhelper.PrintHostList(hostList, c.format)
+	cmdhelper.PrintHostList(hostList, c.format, c.skipHeader)
 	return 0
 }
 

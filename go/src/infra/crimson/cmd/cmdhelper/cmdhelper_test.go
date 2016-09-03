@@ -230,7 +230,7 @@ func TestFormatIPRange(t *testing.T) {
 		}
 
 		Convey("for text format", func() {
-			lines, err := FormatIPRange(ipRanges, textFormat)
+			lines, err := FormatIPRange(ipRanges, textFormat, false)
 			So(err, ShouldBeNil)
 			So(lines, ShouldResemble, []string{
 				"site  vlan ID Start IP    End IP        vlan alias ",
@@ -240,10 +240,19 @@ func TestFormatIPRange(t *testing.T) {
 		})
 
 		Convey("for CSV format", func() {
-			lines, err := FormatIPRange(ipRanges, csvFormat)
+			lines, err := FormatIPRange(ipRanges, csvFormat, false)
 			So(err, ShouldBeNil)
 			So(lines, ShouldResemble, []string{
 				"site,vlan ID,Start IP,End IP,vlan alias",
+				"site1,123,123.234.0.1,123.234.1.244,vlan1",
+				"site2,124,125.200.0.1,126.233.1.255,vlan2",
+			})
+		})
+
+		Convey("for CSV format without header", func() {
+			lines, err := FormatIPRange(ipRanges, csvFormat, true)
+			So(err, ShouldBeNil)
+			So(lines, ShouldResemble, []string{
 				"site1,123,123.234.0.1,123.234.1.244,vlan1",
 				"site2,124,125.200.0.1,126.233.1.255,vlan2",
 			})
@@ -257,7 +266,7 @@ func TestFormatIPRange(t *testing.T) {
 				StartIp:   "1",
 				EndIp:     "2",
 			})
-			lines, err := FormatIPRange(ipRanges, csvFormat)
+			lines, err := FormatIPRange(ipRanges, csvFormat, false)
 			So(err, ShouldBeNil)
 			So(lines, ShouldResemble, []string{
 				"site,vlan ID,Start IP,End IP,vlan alias",
@@ -268,7 +277,7 @@ func TestFormatIPRange(t *testing.T) {
 		})
 
 		Convey("for JSON format", func() {
-			lines, err := FormatIPRange(ipRanges, jsonFormat)
+			lines, err := FormatIPRange(ipRanges, jsonFormat, false)
 			So(err, ShouldBeNil)
 			So(len(lines), ShouldEqual, 1)
 			var outIPRanges []*crimson.IPRange

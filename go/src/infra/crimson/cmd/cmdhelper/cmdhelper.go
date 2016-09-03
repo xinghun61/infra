@@ -331,7 +331,8 @@ func (ft *FormatType) Set(v string) error {
 }
 
 // FormatIPRange formats a slice of IP ranges for pretty-printing.
-func FormatIPRange(ipRanges []*crimson.IPRange, format FormatType) ([]string, error) {
+func FormatIPRange(ipRanges []*crimson.IPRange,
+	format FormatType, skipHeader bool) ([]string, error) {
 	var formatter Formatter
 
 	switch format {
@@ -348,7 +349,10 @@ func FormatIPRange(ipRanges []*crimson.IPRange, format FormatType) ([]string, er
 	default:
 		panic(fmt.Errorf("Unknown formatter: %v", formatter))
 	}
-	rows := [][]string{{"site", "vlan ID", "Start IP", "End IP", "vlan alias"}}
+	rows := [][]string{}
+	if !skipHeader {
+		rows = append(rows, []string{"site", "vlan ID", "Start IP", "End IP", "vlan alias"})
+	}
 	for _, ipRange := range ipRanges {
 		rows = append(rows, []string{
 			fmt.Sprintf("%s", ipRange.Site),
@@ -362,8 +366,8 @@ func FormatIPRange(ipRanges []*crimson.IPRange, format FormatType) ([]string, er
 }
 
 // PrintIPRange pretty-prints a slice of IP ranges.
-func PrintIPRange(ipRanges []*crimson.IPRange, format FormatType) {
-	lines, err := FormatIPRange(ipRanges, format)
+func PrintIPRange(ipRanges []*crimson.IPRange, format FormatType, skipHeader bool) {
+	lines, err := FormatIPRange(ipRanges, format, skipHeader)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %s", err)
 		return
@@ -374,7 +378,9 @@ func PrintIPRange(ipRanges []*crimson.IPRange, format FormatType) {
 }
 
 // FormatHostList formats a list of hosts for pretty-printing.
-func FormatHostList(hostList *crimson.HostList, format FormatType) ([]string, error) {
+func FormatHostList(
+	hostList *crimson.HostList,
+	format FormatType, skipHeader bool) ([]string, error) {
 	var formatter Formatter
 
 	switch format {
@@ -391,13 +397,16 @@ func FormatHostList(hostList *crimson.HostList, format FormatType) ([]string, er
 	default:
 		panic(fmt.Errorf("Unknown formatter: %v", formatter))
 	}
-	rows := [][]string{{"mac", "ip", "site", "hostname", "class"}}
+	rows := [][]string{}
+	if !skipHeader {
+		rows = append(rows, []string{"site", "hostname", "mac", "ip", "boot_class"})
+	}
 	for _, host := range hostList.Hosts {
 		rows = append(rows, []string{
-			fmt.Sprintf("%s", host.MacAddr),
-			fmt.Sprintf("%s", host.Ip),
 			fmt.Sprintf("%s", host.Site),
 			fmt.Sprintf("%s", host.Hostname),
+			fmt.Sprintf("%s", host.MacAddr),
+			fmt.Sprintf("%s", host.Ip),
 			fmt.Sprintf("%s", host.BootClass),
 		})
 	}
@@ -405,8 +414,8 @@ func FormatHostList(hostList *crimson.HostList, format FormatType) ([]string, er
 }
 
 // PrintHostList pretty-prints a list of hosts.
-func PrintHostList(hostList *crimson.HostList, format FormatType) {
-	lines, err := FormatHostList(hostList, format)
+func PrintHostList(hostList *crimson.HostList, format FormatType, skipHeader bool) {
+	lines, err := FormatHostList(hostList, format, skipHeader)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %s", err)
 		return
