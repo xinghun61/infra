@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import base64
+
 from google.appengine.ext import ndb
 
 from common import constants
@@ -14,18 +16,19 @@ class FlakeSwarmingTask(BaseSwarmingTask, BaseBuildModel):
   """
 
   @staticmethod
-  def CreateSwarmingTaskId(
+  def _CreateSwarmingTaskId(
       master_name, builder_name, build_number,
       step_name, test_name):  # pragma: no cover
+    encoded_test_name = base64.urlsafe_b64encode(test_name)
     return '%s/%s/%s/%s/%s' % (master_name, builder_name,
-                               build_number, step_name, test_name)
+                               build_number, step_name, encoded_test_name)
 
   @staticmethod
   def _CreateKey(
        master_name, builder_name, build_number,
        step_name, test_name):  # pragma: no cover
     return ndb.Key('FlakeSwarmingTask',
-                   FlakeSwarmingTask.CreateSwarmingTaskId(
+                   FlakeSwarmingTask._CreateSwarmingTaskId(
                        master_name, builder_name, build_number,
                        step_name, test_name))
 
@@ -42,7 +45,7 @@ class FlakeSwarmingTask(BaseSwarmingTask, BaseBuildModel):
 
   @ndb.ComputedProperty
   def test_name(self):
-    return self.key.pairs()[0][1].split('/')[4]
+    return base64.urlsafe_b64decode(self.key.pairs()[0][1].split('/')[4])
 
 
   @staticmethod
@@ -50,8 +53,8 @@ class FlakeSwarmingTask(BaseSwarmingTask, BaseBuildModel):
       master_name, builder_name, build_number,
       step_name, test_name):  # pragma: no cover
     return FlakeSwarmingTask._CreateKey(
-        master_name, builder_name, build_number, step_name, test_name).get(
-)
+        master_name, builder_name, build_number, step_name, test_name).get()
+
   # Number of runs the test passed.
   successes = ndb.IntegerProperty(default=0, indexed=False)
   # How many times the test was rerun.
