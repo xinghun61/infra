@@ -75,6 +75,10 @@ args = sys.argv[2:]
 
 modules = []
 flags = []
+# BUG: this will append everything after the first flag to `flags`. Thus,
+# it fails to catch when (a) someone doesn't pass a directory after
+# "--html-report", nor (b) if they pass multiple directories after that
+# flag.
 for arg in args:
   if arg.startswith('-'):
     flags.append(arg)
