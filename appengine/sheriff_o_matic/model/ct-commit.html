@@ -27,13 +27,9 @@ CTCommit.createIncomplete = function(baseUrl, revision, repository) {
 }
 
 CTCommit.findRevision = function(message) {
-  var svnRegexp = /^git-svn-id:[^@]*@(\d+).*$/m;
   var gitRegexp = /^Cr-Commit-Position\:\ refs\/heads\/master@\{#(\d+)\}.*$/m;
 
-  var match = svnRegexp.exec(message);
-  if (!match)
-    match = gitRegexp.exec(message);
-
+  match = gitRegexp.exec(message);
   if (match)
     return parseInt(match[1], 10);
   return null;
