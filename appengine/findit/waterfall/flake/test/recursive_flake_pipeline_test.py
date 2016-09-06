@@ -635,3 +635,143 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         test_result_future, queue_name, flakiness_algorithm_results_dict)
     self.assertEquals(
         flakiness_algorithm_results_dict['sequential_run_index'], 1)
+
+  def testNextBuildWhenTestNotExistingAfterStableInARow(self):
+    master = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
+    master.success_rates = [0.8, 1.0, 1.0, -1]
+    master.build_numbers = [100, 80, 70, 60]
+    flakiness_algorithm_results_dict = {
+        'flakes_in_a_row': 0,
+        'stable_in_a_row': 2,
+        'stabled_out': False,
+        'flaked_out': False,
+        'last_build_number': 0,
+        'lower_boundary': None,
+        'upper_boundary': None,
+        'lower_boundary_result': None,
+        'sequential_run_index': 0,
+    }
+
+    next_run = get_next_run(master, flakiness_algorithm_results_dict)
+    self.assertEqual(81, next_run)
+    self.assertTrue(flakiness_algorithm_results_dict['stabled_out'])
+    self.assertTrue(flakiness_algorithm_results_dict['flaked_out'])
+    self.assertEqual(80, flakiness_algorithm_results_dict['lower_boundary'])
+    self.assertEqual('STABLE',
+                     flakiness_algorithm_results_dict['lower_boundary_result'])
+
+  def testNextBuildWhenTestNotExistingAfterFlakeInARow(self):
+    master = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
+    master.success_rates = [0.8, 0.7, 0.75, -1]
+    master.build_numbers = [100, 80, 70, 60]
+    flakiness_algorithm_results_dict = {
+        'flakes_in_a_row': 3,
+        'stable_in_a_row': 0,
+        'stabled_out': False,
+        'flaked_out': False,
+        'last_build_number': 0,
+        'lower_boundary': None,
+        'upper_boundary': None,
+        'lower_boundary_result': None,
+        'sequential_run_index': 0,
+    }
+
+    next_run = get_next_run(master, flakiness_algorithm_results_dict)
+    self.assertEqual(61, next_run)
+    self.assertTrue(flakiness_algorithm_results_dict['stabled_out'])
+    self.assertTrue(flakiness_algorithm_results_dict['flaked_out'])
+    self.assertEqual(60, flakiness_algorithm_results_dict['lower_boundary'])
+    self.assertEqual('STABLE',
+                     flakiness_algorithm_results_dict['lower_boundary_result'])
+
+  def testNextBuildNumberIsLargerThanStartingBuildNumber(self):
+    master_name = 'm'
+    builder_name = 'b'
+    master_build_number = 100
+    build_number = 60
+    step_name = 's'
+    test_name = 't'
+    test_result_future = 'trf'
+    queue_name = constants.DEFAULT_QUEUE
+    flakiness_algorithm_results_dict = {
+        'flakes_in_a_row': 0,
+        'stable_in_a_row': 3,
+        'stabled_out': False,
+        'flaked_out': False,
+        'last_build_number': 0,
+        'lower_boundary': None,
+        'upper_boundary': None,
+        'lower_boundary_result': None,
+        'sequential_run_index': 0
+    }
+    self._CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, master_build_number, step_name,
+        test_name, status=analysis_status.RUNNING
+    )
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.COMPLETED
+    )
+    analysis = MasterFlakeAnalysis.Get(
+        master_name, builder_name,
+        master_build_number, step_name, test_name)
+    analysis.success_rates = [1.0, 1.0, 1.0, -1]
+    analysis.build_numbers = [100, 80, 70, 60]
+    analysis.put()
+
+    pipeline = NextBuildNumberPipeline()
+    pipeline.run(
+        master_name, builder_name,
+        master_build_number, build_number, step_name, test_name,
+        test_result_future, queue_name, flakiness_algorithm_results_dict)
+
+    analysis = MasterFlakeAnalysis.Get(
+        master_name, builder_name,
+        master_build_number, step_name, test_name)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)
+
+  def testNextBuildNumberIsSmallerThanLastBuildNumber(self):
+    master_name = 'm'
+    builder_name = 'b'
+    master_build_number = 100
+    build_number = 60
+    step_name = 's'
+    test_name = 't'
+    test_result_future = 'trf'
+    queue_name = constants.DEFAULT_QUEUE
+    flakiness_algorithm_results_dict = {
+        'flakes_in_a_row': 0,
+        'stable_in_a_row': 3,
+        'stabled_out': False,
+        'flaked_out': False,
+        'last_build_number': 59,
+        'lower_boundary': None,
+        'upper_boundary': None,
+        'lower_boundary_result': None,
+        'sequential_run_index': 0
+    }
+    self._CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, master_build_number, step_name,
+        test_name, status=analysis_status.RUNNING
+    )
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.COMPLETED
+    )
+    analysis = MasterFlakeAnalysis.Get(
+        master_name, builder_name,
+        master_build_number, step_name, test_name)
+    analysis.success_rates = [1.0, 1.0, 1.0, 1.0]
+    analysis.build_numbers = [100, 80, 70, 60]
+    analysis.put()
+
+    pipeline = NextBuildNumberPipeline()
+    pipeline.run(
+        master_name, builder_name,
+        master_build_number, build_number, step_name, test_name,
+        test_result_future, queue_name, flakiness_algorithm_results_dict)
+
+    analysis = MasterFlakeAnalysis.Get(
+        master_name, builder_name,
+        master_build_number, step_name, test_name)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)

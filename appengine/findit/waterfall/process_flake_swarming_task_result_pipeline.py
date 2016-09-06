@@ -47,25 +47,30 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     if not output_json:
       return tests_statuses
 
+    for iteration in output_json.get('per_iteration_data'):
+      for name, test_runs in iteration.iteritems():
+        tests_statuses[name]['total_run'] += len(test_runs)
+        for test_run in test_runs:
+          tests_statuses[name][test_run['status']] += 1
+
+    # Should query by test name, because some test has dependencies which
+    # are also run, like TEST and PRE_TEST in browser_tests.
+    tries = tests_statuses.get(test_name, {}).get('total_run', 0)
+    successes = tests_statuses.get(test_name, {}).get('SUCCESS', 0)
+
+    if tries > 0:
+      success_rate = successes * 1.0 / tries
+    else:
+      success_rate = -1 # Special value to indicate test is not existing.
+
     master_flake_analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
                                                     master_build_number,
                                                     step_name, test_name)
     flake_swarming_task = FlakeSwarmingTask.Get(
         master_name, builder_name, build_number, step_name, test_name)
 
-    successes = 0
-    tries = 0
-    for iteration in output_json.get('per_iteration_data'):
-      for test_name, tests in iteration.iteritems():
-        tries += 1
-        tests_statuses[test_name]['total_run'] += len(tests)
-        for test in tests:
-          if test['status'] == 'SUCCESS':
-            successes += 1
-          tests_statuses[test_name][test['status']] += 1
-
     master_flake_analysis.build_numbers.append(build_number)
-    master_flake_analysis.success_rates.append(float(successes) / tries)
+    master_flake_analysis.success_rates.append(success_rate)
     flake_swarming_task.tries = tries
     flake_swarming_task.successes = successes
     flake_swarming_task.put()

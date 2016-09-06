@@ -69,7 +69,19 @@ def get_next_run(master, flakiness_algorithm_results_dict):
   max_stable_in_a_row = flake_settings.get('max_stable_in_a_row')
   max_flake_in_a_row = flake_settings.get('max_flake_in_a_row')
 
-  if (last_result < lower_flake_threshold or
+  if last_result < 0: # Test doesn't exist in the current build number.
+    flakiness_algorithm_results_dict['stable_in_a_row'] += 1
+    flakiness_algorithm_results_dict['stabled_out'] = True
+    flakiness_algorithm_results_dict['flaked_out'] = True
+    flakiness_algorithm_results_dict['lower_boundary_result'] = 'STABLE'
+
+    lower_boundary = master.build_numbers[
+        -flakiness_algorithm_results_dict['stable_in_a_row']]
+
+    flakiness_algorithm_results_dict['lower_boundary'] = lower_boundary
+    flakiness_algorithm_results_dict['sequential_run_index'] += 1
+    return lower_boundary + 1
+  elif (last_result < lower_flake_threshold or
       last_result > upper_flake_threshold):  # Stable result.
     flakiness_algorithm_results_dict['stable_in_a_row'] += 1
     if (flakiness_algorithm_results_dict['stable_in_a_row'] >
@@ -90,6 +102,7 @@ def get_next_run(master, flakiness_algorithm_results_dict):
       flakiness_algorithm_results_dict['lower_boundary_result'] = 'STABLE'
     flakiness_algorithm_results_dict['flakes_in_a_row'] = 0
     step_size = flakiness_algorithm_results_dict['stable_in_a_row'] + 1
+    return cur_run - step_size
   else:
     # Flaky result.
     flakiness_algorithm_results_dict['flakes_in_a_row'] += 1
@@ -111,8 +124,7 @@ def get_next_run(master, flakiness_algorithm_results_dict):
       flakiness_algorithm_results_dict['lower_boundary_result'] = 'FLAKE'
     flakiness_algorithm_results_dict['stable_in_a_row'] = 0
     step_size = flakiness_algorithm_results_dict['flakes_in_a_row'] + 1
-  next_run = cur_run - step_size
-  return next_run
+    return cur_run - step_size
 
 
 def sequential_next_run(master, flakiness_algorithm_results_dict):
@@ -153,7 +165,6 @@ class NextBuildNumberPipeline(BasePipeline):
     flake_swarming_task = FlakeSwarmingTask.Get(
         master_name, builder_name, run_build_number, step_name, test_name)
 
-    # TODO(stgao): Handle case where test doesn't exist.
     if flake_swarming_task.status == analysis_status.ERROR:
       master.status = analysis_status.ERROR
       master.put()
@@ -167,6 +178,8 @@ class NextBuildNumberPipeline(BasePipeline):
       next_run = get_next_run(master, flakiness_algorithm_results_dict)
 
     if next_run < flakiness_algorithm_results_dict['last_build_number']:
+      next_run = 0
+    elif next_run >= master_build_number:
       next_run = 0
 
     if next_run:

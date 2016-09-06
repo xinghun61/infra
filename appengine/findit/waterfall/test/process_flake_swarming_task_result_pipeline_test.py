@@ -135,7 +135,7 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.builder_name = 'b'
     self.build_number = 121
     self.step_name = 'abc_tests on platform'
-    self.test_name = 'test'
+    self.test_name = 'TestSuite1.test1'
     self.mock(swarming_util, 'GetSwarmingTaskResultById',
               self._MockedGetSwarmingTaskResultById)
 
@@ -171,6 +171,36 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
             self.pipeline,
             _SAMPLE_FAILURE_LOG, *call_params))
     self.assertEqual(_EXPECTED_TESTS_STATUESE, tests_statuses)
+
+  def testCheckTestsRunStatusesWhenTestNotExist(self):
+    test_name = 'TestSuite1.new_test'
+    analysis = MasterFlakeAnalysis.Create(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name, test_name)
+    analysis.put()
+
+    task = FlakeSwarmingTask.Create(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name, test_name)
+    task.put()
+
+    pipeline = ProcessFlakeSwarmingTaskResultPipeline()
+    tests_statuses = pipeline._CheckTestsRunStatuses(
+        _SAMPLE_FAILURE_LOG, self.master_name, self.builder_name,
+        self.build_number, self.step_name, self.build_number, test_name)
+
+    self.assertEqual(_EXPECTED_TESTS_STATUESE, tests_statuses)
+
+    task = FlakeSwarmingTask.Get(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name, test_name)
+    self.assertEqual(0, task.tries)
+    self.assertEqual(0, task.successes)
+
+    analysis = MasterFlakeAnalysis.Get(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name, test_name)
+    self.assertTrue(analysis.success_rates[-1] < 0)
 
   def _MockedGetSwarmingTaskFailureLog(self, *_):
     return _SAMPLE_FAILURE_LOG
@@ -212,6 +242,7 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
                      task.started_time)
     self.assertEqual(datetime.datetime(2016, 2, 10, 18, 33, 9),
                      task.completed_time)
+
   def testProcessFlakeSwarmingTaskResultPipelineTaskNotRunning(self):
     task = FlakeSwarmingTask.Create(
         self.master_name, self.builder_name,
