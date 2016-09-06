@@ -306,7 +306,7 @@ class IssueCommentView(template_helpers.PBProxy):
       users_by_id: dict mapping user_ids to UserViews, including
           the user that entered the comment, and any changed participants.
       autolink: utility object for automatically linking to other
-        issues, svn revisions, etc.
+        issues, git revisions, etc.
       all_referenced_artifacts: opaque object with details of referenced
         artifacts that is needed by autolink.
       mr: common information parsed from the HTTP request.

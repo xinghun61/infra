@@ -109,7 +109,7 @@ def DecodeFileContents(file_contents, path=None):
   is one of the encodings that we know that we can handle.
 
   Args:
-    file_contents: byte string from svn file.  It could be text in almost
+    file_contents: byte string from uploaded file.  It could be text in almost
       any encoding, or binary.  We cannot trust the user-supplied encoding
       in the mime-type property.
     path: string pathname of file.

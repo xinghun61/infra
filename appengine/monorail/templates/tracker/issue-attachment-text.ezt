@@ -22,7 +22,6 @@
     </em></p>
   [else]
 
-    [define revision]None[end]
     [include "../framework/file-content-part.ezt"]
     [include "../framework/file-content-js.ezt"]
 
