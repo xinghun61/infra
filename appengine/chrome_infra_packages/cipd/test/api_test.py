@@ -1297,6 +1297,132 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
       'status': 'AMBIGUOUS_VERSION',
     }, resp.json_body)
 
+  def test_read_counter_ok(self):
+    self.register_fake_instance('good/name')
+    resp = self.call_api('read_counter', {
+        'package_name': 'good/name',
+        'instance_id': 'a'*40,
+        'counter_name': 'test.counter',
+    })
+    self.assertEqual({
+      'status': 'SUCCESS',
+      'value': '0',
+    }, resp.json_body)
+
+  def test_increment_read_counter_ok(self):
+    self.register_fake_instance('good/name')
+    self.mock(utils, 'utcnow', lambda: datetime.datetime(2014, 1, 1))
+    resp = self.call_api('increment_counter', {
+        'package_name': 'good/name',
+        'instance_id': 'a'*40,
+        'counter_name': 'test.counter',
+        'delta': 1,
+    })
+    self.assertEqual({
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
+    resp = self.call_api('read_counter', {
+        'package_name': 'good/name',
+        'instance_id': 'a'*40,
+        'counter_name': 'test.counter',
+    })
+    self.assertEqual({
+      'created_ts': '1388534400000000',
+      'status': 'SUCCESS',
+      'updated_ts': '1388534400000000',
+      'value': '1',
+    }, resp.json_body)
+
+  def test_read_counter_no_access(self):
+    self.register_fake_instance('good/name')
+    self.mock(api.acl, 'can_read_counter', lambda *_: False)
+    with self.call_should_fail(403):
+      self.call_api('read_counter', {
+        'package_name': 'good/name',
+        'instance_id': 'a'*40,
+        'counter_name': 'test.counter',
+    })
+
+  def test_increment_counter_no_access(self):
+    self.register_fake_instance('good/name')
+    self.mock(api.acl, 'can_modify_counter', lambda *_: False)
+    with self.call_should_fail(403):
+      self.call_api('increment_counter', {
+        'package_name': 'good/name',
+        'instance_id': 'a'*40,
+        'counter_name': 'test.counter',
+        'delta': 1,
+    })
+
+  def test_read_counter_no_such_package(self):
+    resp = self.call_api('read_counter', {
+        'package_name': 'good/name',
+        'instance_id': 'a'*40,
+        'counter_name': 'test.counter',
+    })
+    self.assertEqual({
+      'status': 'PACKAGE_NOT_FOUND',
+    }, resp.json_body)
+
+  def test_increment_counter_no_such_package(self):
+    resp = self.call_api('increment_counter', {
+        'package_name': 'good/name',
+        'instance_id': 'a'*40,
+        'counter_name': 'test.counter',
+        'delta': 1,
+    })
+    self.assertEqual({
+      'status': 'PACKAGE_NOT_FOUND',
+    }, resp.json_body)
+
+  def test_read_counter_bad_name(self):
+    resp = self.call_api('read_counter', {
+        'package_name': 'good/name',
+        'instance_id': 'a'*40,
+        'counter_name': 'bad counter name',
+    })
+    self.assertEqual({
+      'error_message': 'Invalid counter name',
+      'status': 'ERROR',
+    }, resp.json_body)
+
+  def test_increment_counter_bad_name(self):
+    resp = self.call_api('increment_counter', {
+        'package_name': 'good/name',
+        'instance_id': 'a'*40,
+        'counter_name': 'bad counter name',
+        'delta': 1,
+    })
+    self.assertEqual({
+      'error_message': 'Invalid counter name',
+      'status': 'ERROR',
+    }, resp.json_body)
+
+  def test_increment_counter_negative_delta(self):
+    resp = self.call_api('increment_counter', {
+        'package_name': 'good/name',
+        'instance_id': 'a'*40,
+        'counter_name': 'test.counter',
+        'delta': -1,
+    })
+    self.assertEqual({
+      'error_message': 'Delta must be either 0 or 1',
+      'status': 'ERROR',
+    }, resp.json_body)
+
+  def test_increment_counter_delta_2(self):
+    resp = self.call_api('increment_counter', {
+        'package_name': 'good/name',
+        'instance_id': 'a'*40,
+        'counter_name': 'test.counter',
+        'delta': 2,
+    })
+    self.assertEqual({
+      'error_message': 'Delta must be either 0 or 1',
+      'status': 'ERROR',
+    }, resp.json_body)
+
 
 class MockedRepoService(impl.RepoService):
   """Almost like a real one, except CAS part is stubbed."""

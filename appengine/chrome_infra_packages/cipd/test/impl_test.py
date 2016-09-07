@@ -4,6 +4,7 @@
 
 import datetime
 import hashlib
+import random
 import StringIO
 import unittest
 import zipfile
@@ -72,6 +73,15 @@ class TestValidators(unittest.TestCase):
     self.assertFalse(impl.is_valid_instance_tag('key'))
     self.assertFalse(impl.is_valid_instance_tag('KEY:'))
     self.assertFalse(impl.is_valid_instance_tag('key:' + 'a'*500))
+
+  def test_is_valid_counter_name(self):
+    self.assertTrue(impl.is_valid_counter_name('cipd.installed'))
+    self.assertTrue(impl.is_valid_counter_name('abc123-_.'))
+    self.assertTrue(impl.is_valid_counter_name('a' * 300))
+    self.assertFalse(impl.is_valid_counter_name('a' * 301))
+    self.assertFalse(impl.is_valid_counter_name('ABC'))
+    self.assertFalse(impl.is_valid_counter_name('k:v'))
+    self.assertFalse(impl.is_valid_counter_name('a/b'))
 
 
 class TestRepoService(testing.AppengineTestCase):
@@ -734,6 +744,47 @@ class TestRepoService(testing.AppengineTestCase):
     res = self.service.resolve_version('a/b', 'tag1:value1', 2)
     self.assertEqual(2, len(res))
     self.assertTrue(set(['a'*40, 'b'*40, 'c'*40]).issuperset(res))
+
+  def test_read_missing_counter(self):
+    counter = self.service.read_counter('a/b', 'a'*40, 'test.counter')
+    self.assertEqual(0, counter.value)
+    self.assertIsNone(counter.created_ts)
+    self.assertIsNone(counter.updated_ts)
+
+  def test_touch_counter(self):
+    self.mock(utils, 'utcnow', lambda: datetime.datetime(2014, 1, 1))
+
+    self.service.increment_counter('a/b', 'a'*40, 'test.counter', 0)
+    counter = self.service.read_counter('a/b', 'a'*40, 'test.counter')
+    self.assertEqual(0, counter.value)
+    self.assertEqual(datetime.datetime(2014, 1, 1), counter.created_ts)
+    self.assertEqual(datetime.datetime(2014, 1, 1), counter.updated_ts)
+
+  def test_increment_counter_timestamps(self):
+    self.mock(utils, 'utcnow', lambda: datetime.datetime(2014, 1, 1))
+    self.service.increment_counter('a/b', 'a'*40, 'test.counter', 1)
+
+    self.mock(utils, 'utcnow', lambda: datetime.datetime(2014, 1, 2))
+    self.service.increment_counter('a/b', 'a'*40, 'test.counter', 1)
+
+    self.mock(utils, 'utcnow', lambda: datetime.datetime(2014, 1, 3))
+    self.service.increment_counter('a/b', 'a'*40, 'test.counter', 1)
+
+    counter = self.service.read_counter('a/b', 'a'*40, 'test.counter')
+    self.assertEqual(3, counter.value)
+    self.assertEqual(datetime.datetime(2014, 1, 1), counter.created_ts)
+    self.assertEqual(datetime.datetime(2014, 1, 3), counter.updated_ts)
+
+  def test_increment_counter_same_shard(self):
+    self.mock(utils, 'utcnow', lambda: datetime.datetime(2014, 1, 1))
+    self.mock(random, 'randint', lambda a, b: 42)
+    self.service.increment_counter('a/b', 'a'*40, 'test.counter', 1)
+    self.service.increment_counter('a/b', 'a'*40, 'test.counter', 1)
+
+    counter = self.service.read_counter('a/b', 'a'*40, 'test.counter')
+    self.assertEqual(2, counter.value)
+    self.assertEqual(datetime.datetime(2014, 1, 1), counter.created_ts)
+    self.assertEqual(datetime.datetime(2014, 1, 1), counter.updated_ts)
 
 
 class MockedCASService(object):

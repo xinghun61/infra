@@ -71,6 +71,10 @@ can_fetch_acl = is_owner
 can_modify_acl = is_owner
 # Changing 'hidden' flag.
 can_modify_hidden = is_owner
+# Incrementing or touching counters.
+can_modify_counter = is_reader
+# Reading counter values.
+can_read_counter = is_owner
 
 
 ################################################################################

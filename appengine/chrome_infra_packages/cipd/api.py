@@ -432,6 +432,30 @@ class FetchClientBinaryResponse(messages.Message):
 ################################################################################
 
 
+class IncrementCounterRequest(messages.Message):
+  """Body of incrementCounter call."""
+  delta = messages.IntegerField(1, required=True)
+
+
+class IncrementCounterResponse(messages.Message):
+  """Results of incrementCounter call."""
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+
+class ReadCounterResponse(messages.Message):
+  """Results of readCounter call."""
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+  value = messages.IntegerField(3, required=False)
+  created_ts = messages.IntegerField(4, required=False)
+  updated_ts = messages.IntegerField(5, required=False)
+
+
+################################################################################
+
+
 class Error(Exception):
   status = Status.ERROR
 
@@ -503,6 +527,12 @@ def validate_instance_version(version):
   if not impl.is_valid_instance_version(version):
     raise ValidationError('Not a valid instance ID or tag: "%s"' % version)
   return version
+
+
+def validate_counter_name(counter_name):
+  if not impl.is_valid_counter_name(counter_name):
+    raise ValidationError('Invalid counter name')
+  return counter_name
 
 
 def endpoints_method(request_message, response_message, **kwargs):
@@ -1142,3 +1172,77 @@ class PackageRepositoryApi(remote.Service):
             sha1=client_info.sha1,
             size=client_info.size,
             fetch_url=client_info.fetch_url))
+
+
+  # Counter methods.
+
+
+  @gae_ts_mon.instrument_endpoint()
+  @endpoints_method(
+      endpoints.ResourceContainer(
+          IncrementCounterRequest,
+          package_name=messages.StringField(1, required=True),
+          instance_id=messages.StringField(2, required=True),
+          counter_name=messages.StringField(3, required=True)),
+      IncrementCounterResponse,
+      path='counter',
+      http_method='POST',
+      name='incrementCounter')
+  @auth.public  # ACL check is inside
+  def increment_counter(self, request):
+    """Increments a counter on a package instance."""
+    package_name = validate_package_name(request.package_name)
+    instance_id = validate_instance_id(request.instance_id)
+    counter_name = validate_counter_name(request.counter_name)
+    delta = request.delta
+
+    if delta not in (0, 1):
+      raise ValidationError('Delta must be either 0 or 1')
+
+    caller = auth.get_current_identity()
+    if not acl.can_modify_counter(package_name, caller):
+      raise auth.AuthorizationError()
+    self.verify_instance_exists(package_name, instance_id)
+
+    self.service.increment_counter(
+        package_name=package_name,
+        instance_id=instance_id,
+        counter_name=counter_name,
+        delta=delta)
+    return IncrementCounterResponse()
+
+
+  @gae_ts_mon.instrument_endpoint()
+  @endpoints_method(
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_name=messages.StringField(1, required=True),
+          instance_id=messages.StringField(2, required=True),
+          counter_name=messages.StringField(3, required=True)),
+      ReadCounterResponse,
+      path='counter',
+      http_method='GET',
+      name='readCounter')
+  @auth.public  # ACL check is inside
+  def read_counter(self, request):
+    """Increments a counter on a package instance."""
+    package_name = validate_package_name(request.package_name)
+    instance_id = validate_instance_id(request.instance_id)
+    counter_name = validate_counter_name(request.counter_name)
+
+    caller = auth.get_current_identity()
+    if not acl.can_read_counter(package_name, caller):
+      raise auth.AuthorizationError()
+    self.verify_instance_exists(package_name, instance_id)
+
+    counter = self.service.read_counter(
+        package_name=package_name,
+        instance_id=instance_id,
+        counter_name=counter_name)
+
+    response = ReadCounterResponse(value=counter.value)
+    if counter.created_ts is not None:
+      response.created_ts = utils.datetime_to_timestamp(counter.created_ts)
+    if counter.updated_ts is not None:
+      response.updated_ts = utils.datetime_to_timestamp(counter.updated_ts)
+    return response

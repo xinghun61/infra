@@ -96,6 +96,8 @@ import collections
 import hashlib
 import json
 import logging
+import operator
+import random
 import re
 import webapp2
 
@@ -130,8 +132,14 @@ TAG_MAX_LEN = 400
 # Regular expression for a valid tag key.
 TAG_KEY_RE = re.compile(r'^[a-z0-9_\-]+$')
 
+# Regular expression for a valid counter name.
+COUNTER_NAME_RE = re.compile(r'^[a-z0-9_\.\-]{1,300}$')
+
 # Hash algorithm used to derive package instance ID from package data.
 DIGEST_ALGO = 'SHA1'
+
+# Total number of counter shards per counter.
+MAX_COUNTER_SHARDS = 100
 
 
 # Information about extract CIPD client binary, see get_client_binary_info.
@@ -798,6 +806,44 @@ class RepoService(object):
           'Some processors are not finished yet for instance %s: %s' %
           (instance_id, ' '.join(inst.processors_pending)))
 
+  @ndb.transactional
+  def increment_counter(self, package_name, instance_id, counter_name, delta):
+    now = utils.utcnow()
+    index = random.randint(0, MAX_COUNTER_SHARDS - 1)
+    key = counter_shard_key(package_name, instance_id, counter_name, index)
+    entity = key.get()
+    if entity is None:
+      entity = CounterShard(
+          key=key,
+          value=delta,
+          created_ts=now,
+          updated_ts=now)
+    else:
+      entity.value += delta
+      entity.update_ts = now
+    entity.put()
+
+  def read_counter(self, package_name, instance_id, counter_name):
+    shards = ndb.get_multi(
+        counter_shard_key(package_name, instance_id, counter_name, index)
+        for index in xrange(0, MAX_COUNTER_SHARDS))
+
+    def merge_ts(a, b, op):
+      if a is None:
+        return b
+      return a if op(a, b) else b
+
+    merged = CounterShard(value=0)
+    for shard in shards:
+      if shard is not None:
+        merged.value += shard.value
+        merged.created_ts = merge_ts(
+            merged.created_ts, shard.created_ts, operator.lt)
+        merged.updated_ts = merge_ts(
+            merged.updated_ts, shard.updated_ts, operator.gt)
+
+    return merged
+
 
 def is_valid_package_name(package_name):
   """True if string looks like a valid package name."""
@@ -833,6 +879,11 @@ def is_valid_instance_version(version):
       is_valid_instance_id(version) or
       is_valid_package_ref(version) or
       is_valid_instance_tag(version))
+
+
+def is_valid_counter_name(counter_name):
+  """True if string looks like a counter package name."""
+  return counter_name and bool(COUNTER_NAME_RE.match(counter_name))
 
 
 def get_repo_service():
@@ -1036,6 +1087,45 @@ def processing_result_key(package_name, instance_id, processor_name):
   return ndb.Key(
       ProcessingResult, processor_name,
       parent=package_instance_key(package_name, instance_id))
+
+
+################################################################################
+## Package counters.
+
+
+class CounterShard(ndb.Model):
+  """One shard of a sharded package counter.
+
+  Entities never have a parent so they can be updated independently.
+  Keys are of the format:
+
+    <package name>:<instance ID>:<counter name>:<shard index>:<max shards>
+
+  where 0 <= shard index < max shards.
+  """
+
+  # Speed up writes in exchange for slower reads.
+  _use_cache = False
+  _use_memcache = False
+
+  # The value of this counter shard.
+  value = ndb.IntegerProperty(indexed=False)
+  # When the entity was created.
+  created_ts = ndb.DateTimeProperty(indexed=False)
+  # When the entity was last incremented or touched.
+  updated_ts = ndb.DateTimeProperty(indexed=False)
+
+
+def counter_shard_key(package_name, instance_id, counter_name, shard_index):
+  """Returns ndb.Key of CounterShard entity."""
+  assert is_valid_package_path(package_name), package_name
+  assert is_valid_instance_id(instance_id), instance_id
+  assert is_valid_counter_name(counter_name), counter_name
+  assert 0 <= shard_index < MAX_COUNTER_SHARDS, shard_index
+
+  return ndb.Key(CounterShard, '%s:%s:%s:%d:%d' % (
+      package_name, instance_id, counter_name, shard_index,
+      MAX_COUNTER_SHARDS), parent=None)
 
 
 ################################################################################
