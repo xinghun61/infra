@@ -24,6 +24,7 @@ from features import stars
 
 from framework import artifactcollision
 from framework import banned
+from framework import clientmon
 from framework import csp_report
 from framework import excessiveactivity
 from framework import reap
@@ -270,6 +271,7 @@ class ServletRegistry(object):
         urls.SPAM_DATA_EXPORT_CRON: spammodel.TrainingDataExport,
         urls.LOAD_API_CLIENT_CONFIGS_CRON: (
             client_config_svc.LoadApiClientConfigs),
+        urls.CLIENT_MON: clientmon.ClientMonitor,
         })
 
     self._SetupProjectServlets({

@@ -124,6 +124,7 @@ BANNED = '/hosting/noAccess'
 NONPROJECT_COLLISION = '/hosting/collision'
 # This is for collisions that happen within a project, based at /p/projectname
 ARTIFACT_COLLISION = '/collision'
+CLIENT_MON = '/_/clientmon'
 
 CSP_REPORT = '/csp'
 TOKEN_REFRESH = '/hosting/tokenRefresh'
