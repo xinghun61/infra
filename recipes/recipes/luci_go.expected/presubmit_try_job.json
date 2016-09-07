@@ -30,7 +30,6 @@
       "infra@origin/master",
       "--revision",
       "infra/go/src/github.com/luci/luci-go@HEAD",
-      "--force",
       "--output_manifest"
     ],
     "env": {

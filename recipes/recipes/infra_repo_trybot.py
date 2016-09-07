@@ -25,8 +25,7 @@ def RunSteps(api):
   internal = (project == 'infra_internal')
   api.gclient.set_config(project)
   api.bot_update.ensure_checkout(
-    force=True, patch_root=project, patch_oauth2=internal,
-    use_site_config_creds=False)
+    patch_root=project, patch_oauth2=internal, use_site_config_creds=False)
 
   api.git('-c', 'user.email=commit-bot@chromium.org',
           '-c', 'user.name=The Commit Bot',

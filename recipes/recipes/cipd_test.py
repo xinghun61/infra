@@ -40,7 +40,7 @@ def RunSteps(api):
 def outer(api):
   """Check out itself, maybe apply patch, and then run real itself."""
   api.gclient.set_config('build')
-  step = api.bot_update.ensure_checkout(force=True, patch_root='build')
+  step = api.bot_update.ensure_checkout(patch_root='build')
 
   properties = {}
   for attr in ['buildername', 'mastername', 'buildnumber', 'slavename']:

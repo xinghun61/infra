@@ -26,7 +26,6 @@
       "/path/to/tmp/json",
       "--revision",
       "gerrit-test-cq-normal@HEAD",
-      "--force",
       "--output_manifest"
     ],
     "env": {

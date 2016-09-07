@@ -16,7 +16,6 @@
       "/path/to/tmp/json",
       "--revision",
       "recipes-py@HEAD",
-      "--force",
       "--output_manifest"
     ],
     "env": {

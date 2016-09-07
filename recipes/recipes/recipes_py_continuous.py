@@ -24,7 +24,7 @@ def RunSteps(api, mastername, buildername, buildnumber):
       api.cipd.default_bot_service_account_credentials)
 
   api.gclient.set_config('recipes_py_bare')
-  bot_update_step = api.bot_update.ensure_checkout(force=True)
+  bot_update_step = api.bot_update.ensure_checkout()
 
   tags = {
     'buildbot_build' : '%s/%s/%s' % (mastername, buildername, buildnumber),

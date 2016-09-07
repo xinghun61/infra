@@ -42,9 +42,7 @@ def RunSteps(api, project_under_test, auth_with_account):
       project_under_test)['repo_url']
   soln.revision = 'HEAD'
 
-  api.bot_update.ensure_checkout(
-      force=True, gclient_config=c,
-      cwd=root_dir)
+  api.bot_update.ensure_checkout(gclient_config=c, cwd=root_dir)
 
   # TODO(martiniss): allow recipes.cfg patches to take affect
   # This requires getting the refs.cfg from luci_config, reading the local

@@ -39,7 +39,7 @@ def encode(x):
 def RunSteps(api):
   """Check out itself, maybe apply patch, and then execute_inner real itself."""
   api.gclient.set_config('build')
-  api.bot_update.ensure_checkout(force=True, patch_root='build')
+  api.bot_update.ensure_checkout(patch_root='build')
 
   try:
     # Windows machine often fails to fetch deps because of some weird git.bat

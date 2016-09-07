@@ -19,7 +19,7 @@ DEPS = [
 def RunSteps(api):
   api.gclient.set_config('infradata_master_manager')
   api.bot_update.ensure_checkout(
-      force=True, patch_root='infra-data-master-manager', patch_oauth2=True,
+      patch_root='infra-data-master-manager', patch_oauth2=True,
       use_site_config_creds=False)
   api.gclient.runhooks()
 

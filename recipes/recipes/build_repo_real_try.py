@@ -51,7 +51,7 @@ def execute_inner(api, name, **properties):
 def outer(api):
   """Check out itself, maybe apply patch, and then execute_inner real itself."""
   api.gclient.set_config('build')
-  api.bot_update.ensure_checkout(force=True, patch_root='build')
+  api.bot_update.ensure_checkout(patch_root='build')
 
   execute_inner(api, 'ci actual execute_inner')
 
@@ -70,7 +70,7 @@ def outer(api):
 def inner(api):
   """Actually performs basic tasks common to most recipes."""
   api.gclient.set_config('build')
-  api.bot_update.ensure_checkout(force=True, patch_root='build')
+  api.bot_update.ensure_checkout(patch_root='build')
 
   api.git.checkout(
       url='https://chromium.googlesource.com/chromium/tools/build',

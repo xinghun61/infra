@@ -203,7 +203,6 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
     kwargs = {
         'suffix': proj,
         'gclient_config': config,
-        'force': True,
         'cwd': checkout_path,
     }
     if patch:

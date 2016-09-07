@@ -32,7 +32,6 @@
       "/path/to/tmp/json",
       "--revision",
       "infra_internal@HEAD",
-      "--force",
       "--output_manifest"
     ],
     "env": {

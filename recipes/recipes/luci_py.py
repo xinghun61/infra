@@ -11,7 +11,7 @@ DEPS = [
 
 def RunSteps(api):
   api.gclient.set_config('luci_py')
-  api.bot_update.ensure_checkout(force=True)
+  api.bot_update.ensure_checkout()
   # TODO(tandrii): trigger tests without PRESUBMIT.py .
 
 

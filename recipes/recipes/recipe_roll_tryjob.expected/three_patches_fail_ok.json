@@ -154,7 +154,6 @@
       "/path/to/tmp/json",
       "--revision",
       "depot_tools@HEAD",
-      "--force",
       "--output_manifest"
     ],
     "cwd": "[SLAVE_BUILD]/depot_tools",
@@ -224,7 +223,6 @@
       "/path/to/tmp/json",
       "--revision",
       "build@HEAD",
-      "--force",
       "--output_manifest"
     ],
     "cwd": "[SLAVE_BUILD]/build",
@@ -288,7 +286,6 @@
       "/path/to/tmp/json",
       "--revision",
       "recipe_engine@HEAD",
-      "--force",
       "--output_manifest"
     ],
     "cwd": "[SLAVE_BUILD]/recipe_engine",

@@ -56,8 +56,7 @@ def RunSteps(api):
     if 'github.com/luci/gae' in path:
       patch_root = path
       break
-  bot_update_step = api.bot_update.ensure_checkout(force=True,
-                                                   patch_root=patch_root)
+  bot_update_step = api.bot_update.ensure_checkout(patch_root=patch_root)
 
   is_presubmit = 'presubmit' in api.properties.get('buildername', '').lower()
   if is_presubmit:
