@@ -68,19 +68,52 @@ class LinkableText(object):
   @classmethod
   def bootstrap(cls, is_chromiumos):
     """Add conversions (possibly specific to |app_name| instance)"""
-    # Convert CrOS bug links.  Support the forms:
-    # http://crbug.com/1234
-    # http://crosbug.com/1234
-    # crbug/1234
-    # crosbug/p/1234
+    # Convert Chromium bug links.  Support the forms:
+    # chromium:1234
+    # The project list comes from: https://bugs.chromium.org/hosting/
+    # $ curl -s https://bugs.chromium.org/hosting/ | \
+    #   grep -o 'href="/p/[^/"]*/"' | \
+    #   sed -e 's:.*/p/::' -e 's:/"::'
+    chromium_projects = (
+        'angleproject',
+        'aomedia',
+        'boringssl',
+        'chromedriver',
+        'chromium',
+        'crashpad',
+        'gerrit',
+        'google-breakpad',
+        'gyp',
+        'libyuv',
+        'linux-syscall-support',
+        'monorail',
+        'nativeclient',
+        'oss-fuzz',
+        'pdfium',
+        'project-zero',
+        'skia',
+        'swiftshader',
+        'v8',
+        'webm',
+        'webp',
+        'webports',
+        'webrtc',
+    )
     cls.register_converter(
-        #   1   2      3      4        5       6 7
-        r'\b((http://)?((crbug|crosbug)(\.com)?(/(p/)?[0-9]+)))\b',
-        r'http://\4.com\6', r'\1', False)
+        r'\b((%s):([0-9]+))\b' % r'|'.join(chromium_projects),
+        r'https://bugs.chromium.org/p/\2/issues/detail?id=\3', r'\1', False)
 
-    # Convert internal b/ bug links.
+    # Convert <project>:<number> bug links.  Support the forms:
+    # chromium:1234
+    # chromium-os:1234
     cls.register_converter(
-        r'\b(http://)?(b/([0-9]+))\b',
+        #   1   2        3      4        5       6 7
+        r'\b((https?://)?((crbug|crosbug)(\.com)?(/(p/)?[0-9]+)))\b',
+        r'https://\4.com\6', r'\1', False)
+
+    # Convert internal b/ & b: bug links.
+    cls.register_converter(
+        r'\b(https?://)?(b[:/]([0-9]+))\b',
         r'https://b.corp.google.com/\3', r'\2', False)
 
     # Convert e-mail addresses.
