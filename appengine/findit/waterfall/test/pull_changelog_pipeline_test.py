@@ -27,7 +27,7 @@ REV1_COMMIT_LOG = """)]}'
     "email": "someone@chromium.org",
     "time": "Wed Jun 11 19:35:32 2014"
   },
-  "message": "git-svn-id: svn://svn.chromium.org/chromium/src@175976 blabla",
+  "message": "Cr-Commit-Position: refs/heads/master@{#175976}",
   "tree_diff": [
     {
       "type": "add",
@@ -68,7 +68,7 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
       'rev1': {
         'author_name': 'someone@chromium.org',
         'message':
-          'git-svn-id: svn://svn.chromium.org/chromium/src@175976 blabla',
+          'Cr-Commit-Position: refs/heads/master@{#175976}',
         'committer_email': 'someone@chromium.org',
         'commit_position': 175976,
         'author_email': 'someone@chromium.org',

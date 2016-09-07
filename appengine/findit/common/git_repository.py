@@ -18,8 +18,6 @@ from common.change_log import FileChangeInfo
 from common.repository import Repository
 
 
-SVN_REVISION_PATTERN = re.compile(
-    '^git\-svn\-id: svn://[^@]*@(\d+) [a-z0-9\-]*$', re.IGNORECASE)
 COMMIT_POSITION_PATTERN = re.compile(
     '^Cr-Commit-Position: refs/heads/master@{#(\d+)}$', re.IGNORECASE)
 CODE_REVIEW_URL_PATTERN = re.compile(
@@ -88,8 +86,6 @@ class GitRepository(Repository):
     for line in lines:
       if commit_position is None:
         match = COMMIT_POSITION_PATTERN.match(line)
-        if not match:
-          match = SVN_REVISION_PATTERN.match(line)
         if match:
           commit_position = int(match.group(1))
 

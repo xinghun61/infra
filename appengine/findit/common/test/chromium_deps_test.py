@@ -45,8 +45,8 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
 
     self.mock(git_repository, 'GitRepository', DummyGitRepository)
 
-    content = chromium_deps.DEPSDownloader(check_deps_git_first=True).Load(
-        'https://src.git', revision, 'DEPS')
+    content = chromium_deps.DEPSDownloader().Load(
+        chromium_deps._CHROMIUM_REPO_MASTER, revision, 'DEPS')
     self.assertEqual(expected_content, content)
 
   def testNotUseDEPS_GIT(self):
@@ -64,8 +64,24 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
 
     self.mock(git_repository, 'GitRepository', DummyGitRepository)
 
-    content = chromium_deps.DEPSDownloader(check_deps_git_first=False).Load(
+    content = chromium_deps.DEPSDownloader().Load(
         'https://src.git', revision, 'DEPS')
+    self.assertEqual(expected_content, content)
+
+  def testUseFallbackDEPS(self):
+    revision = 'abc'
+    expected_content = 'DEPS test'
+
+    DummyGitRepository.RESPONSES = {
+        self.DEPS: {
+            revision: expected_content
+        },
+    }
+
+    self.mock(git_repository, 'GitRepository', DummyGitRepository)
+
+    content = chromium_deps.DEPSDownloader().Load(
+        'https://src.git', revision, 'NONEXISTENT_DEPS')
     self.assertEqual(expected_content, content)
 
   def testUseSlaveDEPS(self):
@@ -83,7 +99,7 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
 
     self.mock(git_repository, 'GitRepository', DummyGitRepository)
 
-    content = chromium_deps.DEPSDownloader(check_deps_git_first=True).Load(
+    content = chromium_deps.DEPSDownloader().Load(
         'https://src.git', revision, 'slave.DEPS')
     self.assertEqual(expected_content, content)
 

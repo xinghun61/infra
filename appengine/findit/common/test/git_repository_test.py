@@ -17,8 +17,7 @@ from common.change_log import ChangeLog
 COMMIT_MESSAGE = ('Add popover for snapshot canvas log.\n\n'
                   'Review URL: https://codereview.chromium.org/320423004\n\n'
                   'Review URL: https://codereview.chromium.org/328113005\n\n'
-                  'git-svn-id: svn://svn.chromium.org/blink/trunk@175976 '
-                  'bbb929c8-8fbe-4397-9dbb-9b2b20218538\n')
+                  'Cr-Commit-Position: refs/heads/master@{#175976}')
 
 COMMIT_LOG = """)]}'
 {
@@ -326,41 +325,9 @@ class GitRepositoryTest(testing.AppengineTestCase):
                 '\n'
                 'Review URL: https://codereview.chromium.org/469523002\n'
                 '\n'
-                'Cr-Commit-Position: refs/heads/master@{#289120}\n'
-                'git-svn-id: svn://svn.chromium.org/chrome/trunk/src@289120 '
-                '0039d316-1c4b-4281-b951-d872f2087c98',
+                'Cr-Commit-Position: refs/heads/master@{#289120}',
             'commit_position': 289120,
             'code_review_url': 'https://codereview.chromium.org/469523002',
-        },
-        {
-            'message':
-                'balabala...\n'
-                '\n'
-                'BUG=none\n'
-                'NOTRY=true\n'
-                '\n'
-                'Review URL: https://chromiumcodereview.appspot.com/18862002\n'
-                '\n'
-                'git-svn-id: svn://svn.chromium.org/chrome/trunk/src@210392 '
-                '0039d316-1c4b-4281-b951-d872f2087c98',
-            'commit_position': 210392,
-            'code_review_url':
-                'https://chromiumcodereview.appspot.com/18862002',
-        },
-        {
-            'message':
-                'balabala...\n'
-                '\n'
-                'BUG=none\n'
-                'NOTRY=true\n'
-                '\n'
-                'Review URL: https://chromiumcodereview.appspot.com/1862002 .\n'
-                '\n'
-                'git-svn-id: svn://svn.chromium.org/chrome/trunk/src@12345 '
-                '0039d316-1c4b-4281-b951-d872f2087c98',
-            'commit_position': 12345,
-            'code_review_url':
-                'https://chromiumcodereview.appspot.com/1862002',
         },
         {
             'message': None,
