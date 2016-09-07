@@ -162,7 +162,7 @@ class RoleChange(messages.Message):
     REVOKE = 2
   # Action to perform.
   action = messages.EnumField(Action, 1, required=True)
-  # Role to modify ('OWNER', 'WRITER', 'READER', ...).
+  # Role to modify ('OWNER', 'WRITER', 'READER', 'COUNTER_WRITER'...).
   role = messages.StringField(2, required=True)
   # Principal ('user:...' or 'group:...') to grant or revoke a role for.
   principal = messages.StringField(3, required=True)

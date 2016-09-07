@@ -21,6 +21,7 @@ ROLES = [
   'OWNER',
   'WRITER',
   'READER',
+  'COUNTER_WRITER',
 ]
 
 
@@ -48,6 +49,13 @@ def is_reader(package_path, identity):
       is_writer(package_path, identity))
 
 
+def is_counter_writer(package_path, identity):
+  """True if |identity| has COUNTER_WRITER role or better for package subpath"""
+  return (
+      has_role(package_path, 'COUNTER_WRITER', identity) or
+      is_writer(package_path, identity))
+
+
 ################################################################################
 ## Granular actions and mapping to roles. API uses these.
 
@@ -72,7 +80,7 @@ can_modify_acl = is_owner
 # Changing 'hidden' flag.
 can_modify_hidden = is_owner
 # Incrementing or touching counters.
-can_modify_counter = is_reader
+can_modify_counter = is_counter_writer
 # Reading counter values.
 can_read_counter = is_owner
 
