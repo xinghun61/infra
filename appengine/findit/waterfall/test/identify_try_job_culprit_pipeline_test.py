@@ -931,6 +931,22 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     self.assertEqual(culprit_map, expected_culprit_map)
     self.assertEqual(failed_revisions, ['rev1'])
 
+  def testReturnNoneIfNoTryJob(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 8
+
+    try_job = WfTryJob.Create(master_name, builder_name, build_number).put()
+    pipeline = IdentifyTryJobCulpritPipeline()
+    culprit = pipeline.run(master_name, builder_name, build_number, ['rev1'],
+                 failure_type.TEST, None, None)
+    self.assertIsNone(culprit)
+
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(try_job.test_results, [])
+    self.assertEqual(try_job.status, analysis_status.COMPLETED)
+
+
   def testNotifyCulprits(self):
     instances = []
     class Mocked_SendNotificationForCulpritPipeline(object):
@@ -952,22 +968,105 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
             'revision': 'r1',
         }
     }
+    heuristic_cls = [('chromium', 'r1')]
 
-    identify_try_job_culprit_pipeline._NotifyCulprits('m', 'b', 1, culprits)
+    identify_try_job_culprit_pipeline._NotifyCulprits(
+        'm', 'b', 1, culprits, heuristic_cls, None)
     self.assertEqual(1, len(instances))
     self.assertTrue(instances[0].started)
 
-  def testReturnNoneIfNoTryJob(self):
+  def testGetSuspectedCLFoundByHeuristicForCompile(self):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 8
+    build_number = 9
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.result = {
+        'failures': [
+            {
+                'step_name': 'other_step',
+                'suspected_cls': [
+                    {
+                        'repo_name': 'chromium',
+                        'revision': 'rev1'
+                    }
+                ]
+            },
+            {
+                'step_name': 'compile',
+                'suspected_cls': [
+                    {
+                        'repo_name': 'chromium',
+                        'revision': 'rev1'
+                    }
+                ]
+            }
+        ]
+    }
+    analysis.put()
 
-    try_job = WfTryJob.Create(master_name, builder_name, build_number).put()
-    pipeline = IdentifyTryJobCulpritPipeline()
-    culprit = pipeline.run(master_name, builder_name, build_number, ['rev1'],
-                 failure_type.TEST, None, None)
-    self.assertIsNone(culprit)
+    cl = (identify_try_job_culprit_pipeline.\
+          _GetSuspectedCLFoundByHeuristicForCompile(analysis))
 
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
-    self.assertEqual(try_job.test_results, [])
-    self.assertEqual(try_job.status, analysis_status.COMPLETED)
+    expected_cl = {
+        'repo_name': 'chromium',
+        'revision': 'rev1'
+    }
+
+    self.assertEqual(cl, expected_cl)
+
+  def testGetSuspectedCLFoundByHeuristicForCompileReturnNoneIfNoAnalysis(self):
+    self.assertIsNone(identify_try_job_culprit_pipeline.\
+                      _GetSuspectedCLFoundByHeuristicForCompile(None))
+
+  def testGetSuspectedCLFoundByHeuristicForCompileReturnNone(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 9
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.result = {
+      'failures': [
+          {
+              'step_name': 'other_step',
+              'suspected_cls': [
+                  {
+                    'repo_name': 'chromium',
+                    'revision': 'rev1'
+                  }
+              ]
+          }
+      ]
+    }
+    analysis.put()
+
+    self.assertIsNone(identify_try_job_culprit_pipeline.\
+                      _GetSuspectedCLFoundByHeuristicForCompile(analysis))
+
+  def testNotifyCulpritsIfHeuristicFoundCulpritForCompile(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 9
+    heuristic_cls = [('chromium', 'rev1')]
+    compile_suspected_cl = {
+        'repo_name': 'chromium',
+        'revision': 'rev1'
+    }
+
+    instances = []
+    class Mocked_SendNotificationForCulpritPipeline(object):
+      def __init__(self, *args):
+        self.args = args
+        self.started = False
+        instances.append(self)
+
+      def start(self):
+        self.started = True
+
+    self.mock(
+        identify_try_job_culprit_pipeline, 'SendNotificationForCulpritPipeline',
+        Mocked_SendNotificationForCulpritPipeline)
+
+    identify_try_job_culprit_pipeline._NotifyCulprits(
+        master_name, builder_name, build_number, None,
+        heuristic_cls, compile_suspected_cl)
+    self.assertEqual(1, len(instances))
+    self.assertTrue(instances[0].started)

@@ -46,46 +46,55 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self.mock(build_util, 'GetBuildEndTime', Mocked_GetBuildEndTime)
 
   def testShouldNotSendNotificationForSingleFailedBuild(self):
+    additional_criteria = {
+        'within_time_limit': True
+    }
     self.assertFalse(
         send_notification_for_culprit_pipeline._ShouldSendNotification(
-            'm', 'b1', 1, 'chromium', 'r1', 123, 2, False))
+            'm', 'b1', 1, 'chromium', 'r1', 123, 2, additional_criteria, False))
     culprit = WfCulprit.Get('chromium', 'r1')
     self.assertIsNotNone(culprit)
     self.assertEqual([['m', 'b1', 1]], culprit.builds)
 
   def testShouldNotSendNotificationForSameFailedBuild(self):
+    additional_criteria = {
+        'within_time_limit': True
+    }
+    self.assertTrue(
+        send_notification_for_culprit_pipeline._ShouldSendNotification(
+            'm', 'b2', 2, 'chromium', 'r2', 123, 2, additional_criteria, True))
     self.assertFalse(
         send_notification_for_culprit_pipeline._ShouldSendNotification(
-            'm', 'b2', 2, 'chromium', 'r2', 123, 2, False))
-    self.assertFalse(
-        send_notification_for_culprit_pipeline._ShouldSendNotification(
-            'm', 'b2', 2, 'chromium', 'r2', 123, 2, False))
+            'm', 'b2', 2, 'chromium', 'r2', 123, 2, additional_criteria, True))
     culprit = WfCulprit.Get('chromium', 'r2')
     self.assertIsNotNone(culprit)
     self.assertEqual([['m', 'b2', 2]], culprit.builds)
+    self.assertEqual(status.RUNNING, culprit.cr_notification_status)
 
   def testShouldSendNotificationForSecondFailedBuild(self):
+    additional_criteria = {
+      'within_time_limit': True
+    }
     self.assertFalse(
         send_notification_for_culprit_pipeline._ShouldSendNotification(
-            'm', 'b31', 31, 'chromium', 'r3', 123, 2, False))
+            'm', 'b31', 31, 'chromium', 'r3', 123, 2, additional_criteria,
+            False))
     self.assertTrue(
         send_notification_for_culprit_pipeline._ShouldSendNotification(
-            'm', 'b32', 32, 'chromium', 'r3', 123, 2, False))
+            'm', 'b32', 32, 'chromium', 'r3', 123, 2, additional_criteria,
+            False))
     culprit = WfCulprit.Get('chromium', 'r3')
     self.assertIsNotNone(culprit)
     self.assertEqual(status.RUNNING, culprit.cr_notification_status)
     self.assertEqual([['m', 'b31', 31], ['m', 'b32', 32]], culprit.builds)
 
-  def testShouldNotSendNotificationForFirstFailedBuildCycle(self):
-    rietveld_requests = []
-    self._MockRietveld(rietveld_requests)
-    self._MockGitRepository('url')
-    self.MockUTCNow(_MOCKED_DATETIME_UTCNOW)
-    self._MockBuildEndTime()
-
-    pipeline = SendNotificationForCulpritPipeline()
-    self.assertFalse(pipeline.run('m', 'b4', 4, 'chromium', 'r4'))
-    self.assertEqual(0, len(rietveld_requests))
+  def testShouldNotSendNotificationIfTimePassed(self):
+    additional_criteria = {
+        'within_time_limit': False
+    }
+    self.assertFalse(
+      send_notification_for_culprit_pipeline._ShouldSendNotification(
+        'm', 'b2', 2, 'chromium', 'r2', 123, 2, additional_criteria, True))
 
   def testShouldNotSendNotificationIfNoCodeReview(self):
     rietveld_requests = []
@@ -98,7 +107,7 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline = SendNotificationForCulpritPipeline()
-    self.assertFalse(pipeline.run('m', 'b52', 52, 'chromium', 'r5'))
+    self.assertFalse(pipeline.run('m', 'b52', 52, 'chromium', 'r5', False))
     self.assertEqual(0, len(rietveld_requests))
 
   def testSendNotificationSuccess(self):
@@ -112,5 +121,19 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline = SendNotificationForCulpritPipeline()
-    self.assertTrue(pipeline.run('m', 'b62', 62, 'chromium', 'r6'))
+    self.assertTrue(pipeline.run('m', 'b62', 62, 'chromium', 'r6', False))
     self.assertEqual(1, len(rietveld_requests))
+
+  def testDontSendNotificationIfShouldNot(self):
+    rietveld_requests = []
+    self._MockRietveld(rietveld_requests)
+    self._MockGitRepository('url')
+    self.MockUTCNow(_MOCKED_DATETIME_UTCNOW)
+    self._MockBuildEndTime()
+    culprit = WfCulprit.Create('chromium', 'r7', 123)
+    culprit.builds.append(['m', 'b71', 71])
+    culprit.put()
+
+    pipeline = SendNotificationForCulpritPipeline()
+    self.assertFalse(pipeline.run('m', 'b71', 71, 'chromium', 'r7', False))
+    self.assertEqual(0, len(rietveld_requests))

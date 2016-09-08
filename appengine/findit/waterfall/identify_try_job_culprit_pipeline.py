@@ -182,16 +182,63 @@ def _GetCulpritsForTestsFromResultsDict(blame_list, test_results):
   return culprit_map, list(failed_revisions)
 
 
-def _NotifyCulprits(master_name, builder_name, build_number, culprits):
-  """Sends notifications to the identified culprits."""
+def _GetSuspectedCLFoundByHeuristicForCompile(analysis):
+  """For compile failure, gets the suspected revision found by heuristic."""
+  if not analysis or not analysis.result:
+    return None
+
+  for failure in analysis.result.get('failures', []):
+    if (failure['step_name'].lower() == 'compile' and
+        len(failure['suspected_cls']) == 1):
+      # Based on confidence calculation, suspected_cl found by heuristic for
+      # compile is very likely to be the culprit.
+      # Since the current confidence calculation is for results with single
+      # suspected_cl, we might need to have the same regulation here.
+      return failure['suspected_cls'][0]
+  return None
+
+
+def _GetHeuristicSuspectedCLs(analysis):
+  """Gets revisions of suspected cls found by heuristic approach."""
+  if analysis and analysis.suspected_cls:
+    return [(cl['repo_name'], cl['revision']) for cl in analysis.suspected_cls]
+  return []
+
+
+def _StartSendNotificationPipeline(
+    master_name, builder_name, build_number, repo_name, revision,
+    send_notification_right_now):
   try:
-    for culprit in (culprits or {}).itervalues():
-      pipeline = SendNotificationForCulpritPipeline(
-          master_name, builder_name, build_number,
-          culprit['repo_name'], culprit['revision'])
-      pipeline.start()
+    pipeline = SendNotificationForCulpritPipeline(
+        master_name, builder_name, build_number, repo_name, revision,
+        send_notification_right_now)
+    pipeline.start()
   except Exception:  # pragma: no cover.
-    logging.exception('Failed to notify culprits.')
+    logging.exception('Failed to notify culprit.')
+
+
+def _NotifyCulprits(master_name, builder_name, build_number, culprits,
+                    heuristic_cls, compile_suspected_cl):
+  """Sends notifications to the identified culprits."""
+
+  if culprits:
+    # There is a try job result, so check if any of the culprits
+    # was also found by heuristic analysis.
+    for culprit in culprits.itervalues():
+      send_notification_right_now = False
+      send_notification_right_now = (
+          culprit['repo_name'], culprit['revision']) in heuristic_cls
+      _StartSendNotificationPipeline(
+          master_name, builder_name, build_number,
+          culprit['repo_name'], culprit['revision'],
+          send_notification_right_now)
+  elif compile_suspected_cl:
+    # A special case where try job didn't find any suspected cls, but
+    # heuristic found a suspected_cl.
+    _StartSendNotificationPipeline(
+        master_name, builder_name, build_number,
+        compile_suspected_cl['repo_name'], compile_suspected_cl['revision'],
+        send_notification_right_now=True)
 
 
 class IdentifyTryJobCulpritPipeline(BasePipeline):
@@ -322,9 +369,9 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
       if not culprits:
         return
 
+      analysis = WfAnalysis.Get(master_name, builder_name, build_number)
       # Update analysis result and suspected CLs with results of this try job if
       # culprits were found.
-      analysis = WfAnalysis.Get(master_name, builder_name, build_number)
       updated_result_status = _GetResultAnalysisStatus(analysis, result)
       updated_suspected_cls = _GetSuspectedCLs(analysis, result)
 
@@ -336,8 +383,18 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
 
     # Store try-job results.
     UpdateTryJobResult()
+
+    # Saves cls found by heuristic approach for later use.
+    # This part must be before UpdateWfAnalysisWithTryJobResult().
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    heuristic_cls = _GetHeuristicSuspectedCLs(analysis)
+    compile_suspected_cl = (
+        _GetSuspectedCLFoundByHeuristicForCompile(analysis)
+        if try_job_type == failure_type.COMPILE else None)
+
     # Add try-job results to WfAnalysis.
     UpdateWfAnalysisWithTryJobResult()
 
-    _NotifyCulprits(master_name, builder_name, build_number, culprits)
+    _NotifyCulprits(master_name, builder_name, build_number, culprits,
+                    heuristic_cls, compile_suspected_cl)
     return result.get('culprit') if result else None
