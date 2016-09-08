@@ -820,7 +820,7 @@ class RepoService(object):
           updated_ts=now)
     else:
       entity.value += delta
-      entity.update_ts = now
+      entity.updated_ts = now
     entity.put()
 
   def read_counter(self, package_name, instance_id, counter_name):

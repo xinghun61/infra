@@ -779,12 +779,14 @@ class TestRepoService(testing.AppengineTestCase):
     self.mock(utils, 'utcnow', lambda: datetime.datetime(2014, 1, 1))
     self.mock(random, 'randint', lambda a, b: 42)
     self.service.increment_counter('a/b', 'a'*40, 'test.counter', 1)
+
+    self.mock(utils, 'utcnow', lambda: datetime.datetime(2014, 1, 2))
     self.service.increment_counter('a/b', 'a'*40, 'test.counter', 1)
 
     counter = self.service.read_counter('a/b', 'a'*40, 'test.counter')
     self.assertEqual(2, counter.value)
     self.assertEqual(datetime.datetime(2014, 1, 1), counter.created_ts)
-    self.assertEqual(datetime.datetime(2014, 1, 1), counter.updated_ts)
+    self.assertEqual(datetime.datetime(2014, 1, 2), counter.updated_ts)
 
 
 class MockedCASService(object):
