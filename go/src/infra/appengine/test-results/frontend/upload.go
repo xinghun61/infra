@@ -298,29 +298,29 @@ func updateFullResults(c context.Context, data io.Reader) error {
 	go func() {
 		defer wg.Done()
 
-		delim := "/"
-		if f.PathDelim != nil {
-			delim = *f.PathDelim
-		}
+		//delim := "/"
+		//if f.PathDelim != nil {
+		//	delim = *f.PathDelim
+		//}
 
 		payload, err := json.Marshal(struct {
-			Master       string         `json:"master"`
-			Builder      string         `json:"builder"`
-			BuildNumber  model.Number   `json:"build_number"`
-			TestType     string         `json:"test_type"`
-			Interrupted  *bool          `json:"interrupted,omitempty"`
-			Version      int            `json:"version"`
-			SecondsEpoch int64          `json:"seconds_since_epoch"`
-			FlatTests    model.FlatTest `json:"flat_tests"`
+			Master      string       `json:"master"`
+			Builder     string       `json:"builder"`
+			BuildNumber model.Number `json:"build_number"`
+			TestType    string       `json:"test_type"`
+			//Interrupted  *bool        `json:"interrupted,omitempty"`
+			//Version      int          `json:"version"`
+			//SecondsEpoch int64        `json:"seconds_since_epoch"`
+			//FlatTests    model.FlatTest `json:"flat_tests"`
 		}{
-			Master:       p.Master,
-			Builder:      p.Builder,
-			BuildNumber:  f.BuildNumber,
-			TestType:     p.TestType,
-			Interrupted:  f.Interrupted,
-			Version:      f.Version,
-			SecondsEpoch: f.SecondsEpoch,
-			FlatTests:    f.Tests.Flatten(delim),
+			Master:      p.Master,
+			Builder:     p.Builder,
+			BuildNumber: f.BuildNumber,
+			TestType:    p.TestType,
+			//Interrupted:  f.Interrupted,
+			//Version:      f.Version,
+			//SecondsEpoch: f.SecondsEpoch,
+			//FlatTests:    f.Tests.Flatten(delim),
 		})
 		if err != nil {
 			logging.WithError(err).Errorf(c, "taskqueue: %s", monitoringPath)

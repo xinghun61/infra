@@ -29,7 +29,7 @@ const (
 
 	// monitoringPath is the tsmon and event_mon monitoring path.
 	// It should be kept in sync with the Python implementation.
-	monitoringPath = "/internal/v2/monitoring/upload"
+	monitoringPath = "/internal/monitoring/upload"
 )
 
 func init() {
