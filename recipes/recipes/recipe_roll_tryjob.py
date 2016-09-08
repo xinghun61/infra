@@ -110,7 +110,8 @@ def GenTests(api):
         api.recipe_tryjob.make_recipe_config('build')) +
     api.luci_config.get_project_config(
         'recipe_engine', 'recipes.cfg',
-        api.recipe_tryjob.make_recipe_config('recipe_engine'))
+        api.recipe_tryjob.make_recipe_config('recipe_engine')) +
+    api.whitelist('Get auth token')
   )
 
   yield (
@@ -162,6 +163,7 @@ def GenTests(api):
               {}))
   )
 
+  # Failing a test is not allowed, because no bypass reason is given.
   yield (
       api.test('three_patches_fail_not_ok') +
       api.luci_config.get_projects(('recipe_engine', 'build', 'depot_tools')) +
@@ -191,9 +193,11 @@ def GenTests(api):
       api.override_step_data(
           'parse description (2)', api.json.output(
               {})) +
-      api.override_step_data("build tests", retcode=1)
+      api.override_step_data("build tests", retcode=1) +
+      api.whitelist('$result')
   )
 
+  # Failing a test is allowed, because of the tryjob bypass reason
   yield (
       api.test('three_patches_fail_ok') +
       api.luci_config.get_projects(('recipe_engine', 'build', 'depot_tools')) +
@@ -223,7 +227,8 @@ def GenTests(api):
       api.override_step_data(
           'parse description (2)', api.json.output(
               {'Recipe-Tryjob-Bypass-Reason': []})) +
-      api.override_step_data("build tests", retcode=1)
+      api.override_step_data("build tests", retcode=1) +
+      api.whitelist('$result')
   )
 
   yield (
@@ -247,7 +252,8 @@ def GenTests(api):
           'parse description', api.json.output({})) +
       api.override_step_data(
           'git_cl description (recipe_engine)', stdout=api.raw_io.output(
-              "foo"))
+              "foo")) +
+      api.whitelist('build tests')
   )
 
   yield (
@@ -293,7 +299,8 @@ def GenTests(api):
               "")) +
       api.override_step_data(
           'parse description', api.json.output(
-              {}))
+              {})) +
+      api.whitelist('build tests')
   )
 
   yield (
@@ -316,9 +323,11 @@ def GenTests(api):
               "")) +
       api.override_step_data(
           'parse description', api.json.output(
-              {}))
+              {})) +
+      api.whitelist('build tests')
   )
 
+  # No way to assert a step doesn't happen, yet :/
   yield (
       api.test('tryjob_dont_test_untouched_code') +
       api.properties(
@@ -339,7 +348,8 @@ def GenTests(api):
               "")) +
       api.override_step_data(
           'parse description', api.json.output(
-              {}))
+              {})) +
+      api.whitelist('build tests')
   )
 
   yield (
@@ -373,6 +383,9 @@ def GenTests(api):
               "")) +
       api.override_step_data(
           'parse description', api.json.output(
-              {}))
+              {})) +
+      api.whitelist('build tests') +
+      api.whitelist('build_limited_scripts_slave tests')
+
   )
 
