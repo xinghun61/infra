@@ -18,7 +18,10 @@ from infra_libs import httplib2_utils
 from infra_libs.ts_mon.common import http_metrics
 from infra_libs.ts_mon.common import pb_to_popo
 from infra_libs.ts_mon.protos import metrics_pb2
-from oauth2client import gce
+try: # pragma: no cover
+  from oauth2client import gce
+except ImportError: # pragma: no cover
+  from oauth2client.contrib import gce
 from oauth2client.client import GoogleCredentials
 from oauth2client.file import Storage
 
