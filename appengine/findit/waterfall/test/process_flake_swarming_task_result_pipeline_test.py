@@ -106,6 +106,7 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     swarming_task_results = {
         'task_id1': {
             'state': 'COMPLETED',
+            'exit_code': '1',
             'tags': [
                 'priority:25',
                 'ref_name:abc_tests'

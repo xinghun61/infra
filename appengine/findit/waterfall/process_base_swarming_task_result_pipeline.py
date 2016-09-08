@@ -86,12 +86,15 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
       data = swarming_util.GetSwarmingTaskResultById(
           task_id, self.HTTP_CLIENT)
       task_state = data['state']
+      exit_code = (data['exit_code'] if
+                   task_state == swarming_util.STATE_COMPLETED else None)
       step_name_no_platform = swarming_util.GetTagValue(
           data.get('tags', {}), 'ref_name')
       if task_state not in swarming_util.STATES_RUNNING:
         task_completed = True
         task = self._GetSwarmingTask(*call_args)
-        if task_state == swarming_util.STATE_COMPLETED:
+        if (task_state == swarming_util.STATE_COMPLETED and
+            int(exit_code) != swarming_util.TASK_FAILED):
           outputs_ref = data.get('outputs_ref')
           output_json = swarming_util.GetSwarmingTaskFailureLog(
               outputs_ref, self.HTTP_CLIENT)
@@ -101,8 +104,12 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
           task.tests_statuses = tests_statuses
         else:
           task.status = analysis_status.ERROR
-          logging.error('Swarming task stopped with status: %s' % (
-              task_state))
+          logging_str = 'Swarming task stopped with status: %s' % task_state
+          if exit_code:
+            logging_str += ' and exit_code: %s - %s' % (
+                exit_code, swarming_util.EXIT_CODE_DESCRIPTIONS[int(exit_code)])
+          logging.error(logging_str)
+
         priority_str = swarming_util.GetTagValue(
             data.get('tags', {}), 'priority')
         if priority_str:

@@ -579,3 +579,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
   def testGenerateIsolatedDataOutputsrefNone(self):
     self.assertEqual({}, swarming_util._GenerateIsolatedData(None))
+
+  def testFetchOutputJsonInfoFromIsolatedServerReturnNone(self):
+    self.assertIsNone(swarming_util._FetchOutputJsonInfoFromIsolatedServer(
+        None, self.http_client))

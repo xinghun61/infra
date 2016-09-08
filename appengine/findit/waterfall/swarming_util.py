@@ -22,6 +22,16 @@ STATE_COMPLETED = 'COMPLETED'
 STATES_NOT_RUNNING = (
     'EXPIRED', 'TIMED_OUT', 'BOT_DIED', 'CANCELED', 'COMPLETED')
 
+ALL_TESTS_PASSED = 0
+SOME_TESTS_FAILED = 1
+TASK_FAILED = 2
+
+EXIT_CODE_DESCRIPTIONS = {
+    ALL_TESTS_PASSED: 'all tests passed',
+    SOME_TESTS_FAILED: 'some tests failed',
+    TASK_FAILED: 'swarming task failed'
+}
+
 
 def _SendRequestToServer(url, http_client, post_data=None):
   """Sends GET/POST request to arbitrary url and returns response content."""
@@ -213,6 +223,9 @@ def _FetchOutputJsonInfoFromIsolatedServer(isolated_data, http_client):
     1. hash code for the output.json file,
     2. the redirect url.
   """
+  if not isolated_data:
+    return None
+
   post_data = {
       'digest': isolated_data['digest'],
       'namespace': {
