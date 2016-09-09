@@ -58,7 +58,7 @@ NON_TRIVIAL_MESSAGE = (
 """
 
 Please review the expectation changes, and LGTM as normal. The recipe roller
-will *NOT* CQ the change itself, so you must commit the change manually.
+will *NOT* CQ the change itself, so you must CQ the change manually.
 """
 )
 
