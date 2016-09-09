@@ -4,9 +4,7 @@
 
 from testing_utils import testing
 
-from crash.detect_regression_range import GetAttributesListFromHistoricData
-from crash.detect_regression_range import GetSpikeIndexes
-from crash.detect_regression_range import GetRegressionRangeFromSpike
+from crash.detect_regression_range import GetSpikes
 from crash.detect_regression_range import DetectRegressionRange
 
 
@@ -22,21 +20,19 @@ class DetectRegressionRangeTest(testing.AppengineTestCase):
                                                  result))
 
 
-  def testGetSpikeIndexes(self):
-    self.assertEqual(GetSpikeIndexes([]),
+  # TODO(wrengr): make this test more comprehensive.
+  def testGetSpikes(self):
+    get_value = lambda x: x[1]
+    e0 = ('1', 0.5)
+    e1 = ('1', 0)
+    e2 = ('2', 0.5)
+    self.assertEqual(GetSpikes([], get_value),
                      [])
-    self.assertEqual(GetSpikeIndexes([('1', 0.5)]),
+    self.assertEqual(GetSpikes([e0], get_value),
                      [])
-    self.assertEqual(GetSpikeIndexes([('1', 0), ('2', 0.5)]),
-                     [1])
+    self.assertEqual(GetSpikes([e1, e2], get_value),
+                     [(e1, e2)])
 
-  def testGetRegressionRangeFromSpike(self):
-    self.assertEqual(GetRegressionRangeFromSpike(0, ['1', '2']),
-                     None)
-    self.assertEqual(GetRegressionRangeFromSpike(3, ['1', '2']),
-                     None)
-    self.assertEqual(GetRegressionRangeFromSpike(1, ['1', '2']),
-                     ('1', '2'))
 
   def testReturnNoneForEmptyCrashData(self):
     self.assertEqual(DetectRegressionRange([]), None)
@@ -80,14 +76,3 @@ class DetectRegressionRangeTest(testing.AppengineTestCase):
 
     self._VerifyCasesForDetectRegressonRange(cases)
 
-  def testGetAttributesListFromHistoricData(self):
-    historic_metadata = [{'chrome_version': '1', 'cpm': 0},
-                         {'chrome_version': '2', 'cpm': 0}]
-
-    attribute_list = GetAttributesListFromHistoricData(historic_metadata,
-                                                       ['chrome_version'])
-    expected_list = ['1', '2']
-    self.assertEqual(attribute_list, expected_list)
-
-    attribute_list = GetAttributesListFromHistoricData(historic_metadata, [])
-    self.assertEqual(attribute_list, [])

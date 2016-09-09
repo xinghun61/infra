@@ -4,120 +4,113 @@
 
 import logging
 
-# Maximum number of versions to look back.
+# Default value for the maximum number of versions to look back.
 _MAXIMUM_WINDOW_SIZE = 30
 
-# Add epsilon to avoid dividing by zero when computing spike score.
+# Add epsilon to avoid dividing by zero when computing spikiness.
 _EPSILON = 0.00000001
 
-# Default value to control weight of current data when computing spike score.
+# Default value to control weight of current data when computing spikiness.
 _DEFAULT_ALPHA = 0.9
 
-# Threshold of spike score.
-_SPIKENESS_THRESHOLD = 20
+# Threshold for calling something a spike.
+_SPIKINESS_THRESHOLD = 20
 
 
-# TODO(http://crbug.com/644406): This code needs cleaning/refactoring 
-def GetSpikeIndexes(data_series, alpha=_DEFAULT_ALPHA,
-                    threshold=_SPIKENESS_THRESHOLD):
-  """Given a time series, determine anomolous spikes.
+# TODO(wrengr): make this streaming, rather than holding onto the whole list.
+def GetSpikes(events, get_value, alpha=_DEFAULT_ALPHA,
+              threshold=_SPIKINESS_THRESHOLD):
+  """Given a time series, detect regression ranges for anomalous spikes.
   
-  The time series is represented by a list of (x,y) tuples, where the
-  position of the tuple in the list is the time at which the event
-  occured, x is an abstract name for that time, and y is the value of
-  the time series at that point in time. We detect spikes by determining
-  when the time series diverges too much from the running average (of
-  the y values). The alpha parameter determines how readily we update
-  the running average; which is to say, how much weight we give each
-  new event compared to the weight we give to the current running
-  average. The threshold parameter defines when we've deviated 'too far'
-  from the running average, and therefore say that this event is in fact
-  a spike.
-
+  The time series is represented by a list of "events" together with
+  a function for computing the "value" of each event. We assume the
+  events are given in order, and the only thing we care about them is
+  their value. As we scan through the list, if we notice any "spikes" in
+  the course of values (i.e., the current value seems anomalous compared
+  to the values we've seen previously), then we produce a tuple of the
+  events bracketing the spike. Since there can be many spikes, we return
+  a list of these tuples.
+  
+  The model we use for detecting spikes is exponential smoothing. This
+  model is based on the running average of the events' values, and it has
+  two parameters: the alpha parameter determines how readily we update
+  the running average each time we see a new event, and the threshold
+  parameter determines when an event's value deviates far enough from the
+  running average that we call it a spike. N.B., in time series analysis
+  more generally, exponential smoothing is considered a naive model since
+  it cannot account for things like scaling (i.e., if we multiply all
+  the values by some constant, then we'll need to adjust the threshold
+  by that constant too) and noise (i.e., if we add noise to the values,
+  then we'll need to adjust the threshold to try and filter that noise
+  out). However, based on some preliminary tests, this naive model seems
+  to be good enough for our particular task.
+  
   Args:
-    data_series (list): A list of (x, y) tuples where y is a number.
-    alpha (float): In (0, 1], it controls the weight of current data
-      when computing the running mean, a higher value has more weight.
-    threshold (float): Threshold for when something counts as a spike.
+    events (list): A list of objects representing "events" in a time
+      series. The events themselves can be any sort of object (including
+      None), all we care about is their value according to get_value. We
+      assume the events are already in order, but we do not care about
+      their exact position within the list.
+    get_value (callable): a valuation function mapping events to numbers.
+    alpha (float): In (0, 1], controls how we balance between evidence
+      from new events vs the running average. When alpha=0 we completely
+      ignore the new event; when alpha=1 we completely ignore the running
+      average.
+    threshold (float): How far away from the running average something
+      can be before we consider it a spike.
 
   Returns:
-    A list of spike indexes (i.e., positions in the data_series list;
-    not the abstract names associated with those indices)
+    A list of event pairs, each of which denotes the regression range
+    for a spike. That is, for each pair, the first component is the
+    event just before the spike, and the second component is the event
+    just after the spike. Thus, the pairs are always of events which
+    were adjacent in the event list. If the event list has fewer than
+    two elements, then we return the empty list (rather than returning
+    None or throwing an exception).
   """
-  spike_indexes = []
+  # TODO(wrengr): assert callable(get_value), so we can give a decent
+  # error message if it's not.
 
-  if not data_series or len(data_series) == 1:
-    return spike_indexes
-
-  logging.info('For data series %s', repr(data_series))
-  logging.info('Threshold is %f', threshold)
-
-  previous_mean = data_series[0][1]
-  for i, (_, y) in enumerate(data_series[1:]):
-    current_mean = (1 - alpha) * previous_mean + alpha * y
-
-    # Spike score is basically relative increase. Add epsilon
-    # to both numerator and denominator to avoid dividing by zero error.
-    spike_score = ((current_mean - previous_mean + _EPSILON) /
-                   (previous_mean + _EPSILON))
-    logging.info('The spike score for data %s is %s',
-                 repr(data_series[i]), spike_score)
-    if spike_score > threshold:
-      spike_indexes.append(i + 1)
-
-    previous_mean = current_mean
-
-  return spike_indexes
-
-
-def GetRegressionRangeFromSpike(spike_index, versions):
-  """Get the regression range based on spike_index and versions."""
-  if spike_index < 1 or spike_index >= len(versions):
-    return None
-
-  return (versions[spike_index - 1], versions[spike_index])
-
-
-def GetAttributesListFromHistoricData(historic_metadata, attributes):
-  """Returns a list of attributes from historic_metadata.
-
-  Args:
-    historic_metadata (list): A list of dict of metadata, for example:
-      [{'chrome_version': '1', 'cpm': 0}, {'chrome_version': '2', 'cpm': 0}]
-    attributes (list): A list of attribute names.
-
-  Returns:
-    A list of strs(attributes has only 1 element), or tuples
-  """
-  if not attributes:
+  # TODO(wrengr): would it be better to return None so callers fail fast?
+  if not events or len(events) == 1:
     return []
 
-  attributes_list = []
+  logging.info('For data series %s', repr(events))
+  logging.info('Alpha is %f', alpha)
+  logging.info('Threshold is %f', threshold)
 
-  for data in historic_metadata:
-    attributes_entry = []
+  # TODO(wrengr): do we care enough about precision to avoid the floating
+  # point issues of computing the mean in the naive/straightforward way?
+  spikes = []
+  previous_event = events[0]
+  previous_mean = get_value(previous_event)
+  for event in events[1:]:
+    current_value = get_value(event)
+    current_mean = (1 - alpha) * previous_mean + alpha * current_value
 
-    for attribute in attributes:
-      attributes_entry.append(data[attribute])
+    # Spikiness is basically relative increase. Add epsilon to both
+    # numerator and denominator to avoid dividing by zero error.
+    spikiness = ((current_mean - previous_mean + _EPSILON) /
+                 (previous_mean + _EPSILON))
+    logging.info('The spikiness of event %s is %s', repr(event), spikiness)
+    if spikiness > threshold:
+      spikes.append((previous_event, event))
 
-    if len(attributes_entry) == 1:
-      attributes_list.append(attributes_entry[0])
-    else:
-      attributes_list.append(tuple(attributes_entry))
+    previous_event = event
+    previous_mean = current_mean
 
-  return attributes_list
+  return spikes
 
 
 def DetectRegressionRange(historic_metadata, max_win_size=_MAXIMUM_WINDOW_SIZE):
   """Detect regression range from historic_metadata data.
 
   Args:
-    historic_metadata (list): A list of dict of metadata, the list is sorted by
-      'chrome_version' from oldest to latest.
-      For example:
+    historic_metadata (list): A list of dict of metadata, the list is
+      sorted by 'chrome_version' from oldest to latest. For example:
       [{'chrome_version': '1', 'cpm': 0}, {'chrome_version': '2', 'cpm': 0}]
-    max_win_size (int): Number of versions to look back from
-      the currect version.
+    max_win_size (int): Number of versions to look back from the current
+      version.
 
   Returns:
     A tuple, (last_good_version, first_bad_version) or None if none found.
@@ -127,16 +120,14 @@ def DetectRegressionRange(historic_metadata, max_win_size=_MAXIMUM_WINDOW_SIZE):
 
   # Truncate the historic data so we only analyze data for max_win_size of
   # latest versions.
-  versions_to_cpm = GetAttributesListFromHistoricData(
-      historic_metadata[-max_win_size:], ['chrome_version', 'cpm'])
+  spikes = GetSpikes(historic_metadata[-max_win_size:], lambda x: x['cpm'])
 
-  versions, _ = zip(*versions_to_cpm)
-  spike_indexes = GetSpikeIndexes(versions_to_cpm)
-
-  if not spike_indexes:
+  if not spikes:
     logging.warning('Failed to find spikes in history data %s' % repr(
         historic_metadata))
     return None
 
-  # Only return the latest regression range.
-  return GetRegressionRangeFromSpike(spike_indexes[-1], versions)
+  # Only return the last/most-recent regression range.
+  last_good, first_bad = spikes[-1]
+  return last_good['chrome_version'], first_bad['chrome_version']
+
