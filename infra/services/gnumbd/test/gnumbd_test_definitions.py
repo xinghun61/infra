@@ -22,13 +22,6 @@ def gnumbd_test(f):
   return f
 
 
-def svn_footers(num):
-  return {
-    gnumbd.GIT_SVN_ID: [
-      'svn://repo/path@%s 0039d316-1c4b-4281-b951-d872f2087c98' % num]
-  }
-
-
 def gnumbd_footers(ref, num):
   return {
     gnumbd.COMMIT_POSITION: [gnumbd.FMT_COMMIT_POSITION(ref, num)]
@@ -59,20 +52,6 @@ def no_pending_tag(origin, _local, _config_ref, RUN, CHECKPOINT):
 def bad_position_footer(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
       'Base commit', footers={gnumbd.COMMIT_POSITION: ['BlobbyGumpus!']})
-  for ref in (PEND, PEND_TAG):
-    origin[ref].fast_forward(base_commit)
-
-  origin[PEND].make_full_tree_commit('Hello world')
-  CHECKPOINT('Bad master commit footer')
-  RUN()
-  CHECKPOINT('Should be the same')
-  assert origin[REAL].commit == base_commit
-
-
-@gnumbd_test
-def bad_svn_footer(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].make_full_tree_commit(
-      'Base commit', footers={gnumbd.GIT_SVN_ID: ['BlobbyGumpus!']})
   for ref in (PEND, PEND_TAG):
     origin[ref].fast_forward(base_commit)
 
@@ -155,22 +134,6 @@ def no_number_on_parent(origin, local, _config_ref, RUN, CHECKPOINT):
   CHECKPOINT('Should still only have 1 commit')
   assert local[PEND].commit == user_commit
   assert local[REAL].commit == base_commit
-
-
-# Normal cases
-@gnumbd_test
-def incoming_svn_id_drops(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].make_full_tree_commit(
-    'Base commit', footers=svn_footers(100))
-  for ref in (PEND, PEND_TAG):
-    origin[ref].fast_forward(base_commit)
-
-  user_commit = origin[PEND].make_full_tree_commit('Hello world')
-  CHECKPOINT('Two commits in origin')
-  RUN()
-  CHECKPOINT('Hello world should be 101')
-  assert content_of(origin[REAL].commit) == content_of(user_commit)
-  assert origin[REAL].commit.parent == base_commit
 
 
 # pending > master == tag
@@ -521,7 +484,6 @@ def extra_user_footer_bad(origin, _local, _config_ref, RUN, CHECKPOINT):
   user_commit = origin[PEND].make_full_tree_commit(
       'Hello world', footers=collections.OrderedDict([
           ('Cr-Double-Secret', ['I can impersonate the daemon!']),
-          ('git-svn-id', ['Well... this should never happen'])
       ]))
   CHECKPOINT('Two commits')
   RUN()
@@ -559,49 +521,6 @@ def enforce_commit_timestamps(origin, _local, _config_ref, RUN, CHECKPOINT):
       origin[REAL].commit.data.committer.timestamp.secs >
       origin[REAL].commit.parent.data.committer.timestamp.secs
   )
-
-
-# git_svn_mode test.
-
-@gnumbd_test
-def svn_mode_uses_svn_rev(origin, _local, config_ref, RUN, CHECKPOINT):
-  config_ref.update(git_svn_mode=True)
-
-  base_commit = origin[REAL].make_full_tree_commit(
-    'Base commit', footers=svn_footers(100))
-  for ref in (PEND, PEND_TAG):
-    origin[ref].fast_forward(base_commit)
-
-  user_commit = origin[PEND].make_full_tree_commit(
-    'Hello world', footers=svn_footers(200))
-  CHECKPOINT('Two commits in origin')
-  RUN()
-  CHECKPOINT('Hello world should be 200')
-  assert content_of(origin[REAL].commit) == content_of(user_commit)
-  assert origin[REAL].commit.parent == base_commit
-
-
-@gnumbd_test
-def push_extra(origin, _local, config_ref, RUN, CHECKPOINT):
-  config_ref.update(
-    git_svn_mode=True,
-    push_synth_extra={
-      'refs/heads/master': ['refs/heads/crazy-times']
-    }
-  )
-
-  base_commit = origin[REAL].make_full_tree_commit(
-    'Base commit', footers=svn_footers(100))
-  for ref in (PEND, PEND_TAG):
-    origin[ref].fast_forward(base_commit)
-
-  user_commit = origin[PEND].make_full_tree_commit(
-    'Hello world', footers=svn_footers(200))
-  CHECKPOINT('Two commits in origin')
-  RUN()
-  CHECKPOINT('Should have crazy-times')
-  assert content_of(origin[REAL].commit) == content_of(user_commit)
-  assert origin[REAL].commit.parent == base_commit
 
 
 @gnumbd_test

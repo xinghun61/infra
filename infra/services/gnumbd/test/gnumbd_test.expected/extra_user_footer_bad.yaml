@@ -11,11 +11,10 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
       refs/pending/heads/master:
-        25efd930528d32f140214ad054561b5c3b0b4acd:
+        9f4cef2b683ec5fe27ba339487eccc5f696b5a31:
         - Hello world
         - ''
         - 'Cr-Double-Secret: I can impersonate the daemon!'
-        - 'git-svn-id: Well... this should never happen'
         f493b56e446fb46797fa09bbf5888790acb039f2:
         - Base commit
         - ''
@@ -24,7 +23,7 @@
   - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: Synthesized 1 commits for Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: Running (''git'', ''push'', ''origin'', ''156a5777ca8cbf94172d6f1e392359b261fd5a02:refs/heads/master'')'
-  - 'INFO: Running (''git'', ''push'', ''origin'', ''25efd930528d32f140214ad054561b5c3b0b4acd:refs/pending-tags/heads/master'')'
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''9f4cef2b683ec5fe27ba339487eccc5f696b5a31:refs/pending-tags/heads/master'')'
 - inner_loop success: true
   synthesized_commits:
   - commit: 156a5777ca8cbf94172d6f1e392359b261fd5a02
@@ -46,21 +45,19 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
       refs/pending-tags/heads/master:
-        25efd930528d32f140214ad054561b5c3b0b4acd:
+        9f4cef2b683ec5fe27ba339487eccc5f696b5a31:
         - Hello world
         - ''
         - 'Cr-Double-Secret: I can impersonate the daemon!'
-        - 'git-svn-id: Well... this should never happen'
         f493b56e446fb46797fa09bbf5888790acb039f2:
         - Base commit
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
       refs/pending/heads/master:
-        25efd930528d32f140214ad054561b5c3b0b4acd:
+        9f4cef2b683ec5fe27ba339487eccc5f696b5a31:
         - Hello world
         - ''
         - 'Cr-Double-Secret: I can impersonate the daemon!'
-        - 'git-svn-id: Well... this should never happen'
         f493b56e446fb46797fa09bbf5888790acb039f2:
         - Base commit
         - ''

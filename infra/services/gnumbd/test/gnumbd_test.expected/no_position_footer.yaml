@@ -19,7 +19,7 @@
         - 'Sup: Not a footer'
 - log output:
   - 'INFO: Running (''git'', ''fetch'')'
-  - 'ERROR: NoPositionData No ''Cr-Commit-Position'' or git-svn-id found for Commit(TestRepo(''local''),
+  - 'ERROR: NoPositionData No ''Cr-Commit-Position'' found for Commit(TestRepo(''local''),
     ''0c244b2bf58ddbacbd80a1162b851bf69ed66cf3'')'
 - inner_loop success: false
   synthesized_commits: []

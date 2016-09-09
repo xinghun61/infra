@@ -14,7 +14,6 @@ from infra.libs.git2 import config_ref
 from infra.libs.git2 import repo
 
 from infra.services.gnumbd.gnumbd import FOOTER_PREFIX
-from infra.services.gnumbd.gnumbd import GIT_SVN_ID
 from infra.services.gnumbd.gnumbd import PUSH_TIMEOUT
 
 LOGGER = logging.getLogger(__name__)
@@ -207,7 +206,7 @@ def process_path(path, origin_repo, config):
         # Replace original Cr- footers
         # to indicate them as the /original/ values.
         footers = [
-          (GIT_SVN_ID, None),
+          ('git-svn-id', None),
         ]
         for key, val in commit.data.footers.iteritems():
           if key.startswith(FOOTER_PREFIX):
