@@ -6,6 +6,7 @@ from google.appengine.ext import ndb
 
 from model import analysis_status
 
+
 class BaseSwarmingTask(ndb.Model):
   """Represents the progress of a general swarming task."""
   # The id of the Swarming task scheduled or running on Swarming Server.
@@ -18,6 +19,14 @@ class BaseSwarmingTask(ndb.Model):
   # The status of the swarming task.
   status = ndb.IntegerProperty(
       default=analysis_status.PENDING, indexed=False)
+
+  # An error dict containing an error code and message should this task fail
+  # unexpectedly. For example:
+  # {
+  #     'code': 1,
+  #     'message': 'Timed out'
+  # }
+  error = ndb.JsonProperty(indexed=False)
 
   # The revision of the failed build.
   build_revision = ndb.StringProperty(indexed=False)
