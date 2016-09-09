@@ -69,7 +69,7 @@
       "python",
       "-u",
       "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
-      "[SLAVE_BUILD]/build/build",
+      "[SLAVE_BUILD]/build",
       "511"
     ],
     "name": "makedirs build directory",
@@ -138,7 +138,7 @@
       "python",
       "-u",
       "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
-      "[SLAVE_BUILD]/recipe_engine/recipe_engine",
+      "[SLAVE_BUILD]/recipe_engine",
       "511"
     ],
     "name": "makedirs recipe_engine directory",

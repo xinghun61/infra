@@ -189,8 +189,7 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
       Path to repo on disk.
     """
     checkout_path = root_dir.join(proj)
-    repo_path = checkout_path.join(proj)
-    self.m.file.makedirs('%s directory' % proj, repo_path)
+    self.m.file.makedirs('%s directory' % proj, checkout_path)
 
     # Not working yet, but maybe??
     #api.file.rmtree('clean old %s repo' % proj, checkout_path)
@@ -213,7 +212,7 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
       kwargs['patch'] = False
 
     self.m.bot_update.ensure_checkout(**kwargs)
-    return repo_path
+    return checkout_path.join(proj)
 
   def get_fail_build_info(self, downstream_projects, patches):
     fail_build = collections.defaultdict(lambda: True)
