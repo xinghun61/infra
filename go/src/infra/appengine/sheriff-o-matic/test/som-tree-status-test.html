@@ -126,6 +126,53 @@
 
       assert.equal('test', element._username);
     });
+
+    test('message fragments catch URL', function() {
+      let link = 'http://build.chromium.org/p/chromium.chrome/builders/Google%20Chrome%20Linux%20x64/builds/13369';
+      let text = 'Tree is closed: ';
+      let fragments = element._computeMessageFragments(text + link);
+
+      assert.equal(2, fragments.length);
+
+      assert.equal(text, fragments[0].text);
+
+      assert.equal('build.chromium.org', fragments[1].linkText);
+      assert.equal(link, fragments[1].link);
+    });
+
+    test('message fragments catch email', function() {
+      let email = 'test@email.com';
+      let text = 'Tree is closed: ';
+      let fragments = element._computeMessageFragments(text + email);
+
+      assert.equal(2, fragments.length);
+
+      assert.equal(text, fragments[0].text);
+
+      assert.equal('test', fragments[1].linkText);
+      assert.equal('mailto:' + email, fragments[1].link);
+    });
+
+    test('message fragments catch email list', function() {
+      // A list of emails delimited by commas is a common case that this tests.
+      let usernames = ['tiff', 'joe', 'bob', 'i.have.dots'];
+      let domains = ['chromium.org', 'google.com', 'intel.com', 'test.rocks'];
+      let testMessage = '';
+      for (let i in usernames) {
+        testMessage += usernames[i] + '@' + domains[i] + ',';
+      }
+
+      let fragments = element._computeMessageFragments(testMessage);
+
+      // Each of the commas ends up being a separate fragment
+      assert.equal(usernames.length * 2, fragments.length);
+
+      for (let i in usernames) {
+        let email = usernames[i] + '@' + domains[i];
+        assert.equal(usernames[i], fragments[i * 2].linkText);
+        assert.equal('mailto:' + email, fragments[i * 2].link);
+      }
+    });
   });
 })();
 </script>

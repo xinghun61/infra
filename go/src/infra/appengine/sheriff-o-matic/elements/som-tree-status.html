@@ -15,8 +15,7 @@
       background-color: #E75D54;
       border-radius: 5px;
     }
-    #error a,
-    #treeClosed a {
+    a, a:active, a:visited {
       color: #fff;
     }
     </style>
@@ -31,7 +30,10 @@
       Error fetching tree status from <a href="[[_statusUrl]]" target="_blank">[[_statusUrl]]</a>
     </div>
     <div id="treeClosed" hidden$="[[_hideNotice]]">
-      [[_message]] by <a href="mailto:[[_email]]">[[_username]]</a> on [[_time]] (<a href="[[_statusUrl]]" target="_blank">More</a>)
+      <template is="dom-repeat" items="[[_computeMessageFragments(_message)]]" as="fragment">
+        <template is="dom-if" if="[[fragment.link]]"><a href="[[fragment.link]]" target="_blank">[[fragment.linkText]]</a></template>[[fragment.text]]
+      </template>
+      by <a href="mailto:[[_email]]">[[_username]]</a> on [[_time]] (<a href="[[_statusUrl]]" target="_blank">More</a>)
     </div>
   </template>
   <script>
@@ -144,6 +146,57 @@
           return 'Unknown';
         }
         return json.message;
+      },
+
+      // To add links to status messages without injecting arbitrary HTML, we're
+      // splitting the message up into fragments that Polymer iterates through.
+      // A message fragment is treated as a link if the link property is set
+      _computeMessageFragments(message) {
+        if (!message) {
+          return [];
+        }
+
+        // Regex is bad but the data is unstructured.
+        let emailRegex = /((^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+)@([a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$))/;
+        let urlRegex = /(https?:\/\/(www\.)?([-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6})\b([-a-zA-Z0-9@:%_\+.~#?&//=]*))/;
+
+        // Commas are included because they are often used to delimit emails
+        let words = message.split(/(\s|,)/);
+        let currentFragment = '';
+        let result = [];
+        for (let i in words) {
+          let w = words[i];
+          let emailMatch = w.match(emailRegex);
+          let urlMatch = w.match(urlRegex);
+
+          if (emailMatch || urlMatch) {
+            if (currentFragment !== '') {
+              result.push({text: currentFragment});
+              currentFragment = '';
+            }
+
+            if (emailMatch) {
+              result.push({
+                // Capture group for the "username" section of the email
+                linkText: emailMatch[2],
+                link: 'mailto:' + emailMatch[0], // The whole email
+              });
+            } else if (urlMatch) {
+              result.push({
+                // Capture group for the domain/subdomain section of the link
+                linkText: urlMatch[3],
+                link: urlMatch[1], // The whole link
+              });
+            }
+          } else {
+            currentFragment += w;
+          }
+        }
+        // Add trailing fragment
+        if (currentFragment !== '') {
+          result.push(currentFragment);
+        }
+        return result;
       },
 
       _computeTime(json) {
