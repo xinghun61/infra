@@ -94,9 +94,9 @@ found in the LICENSE file. -->
                 </div>
             </div>
             <div class="issue-base-url issue-meta-item">
-                <div class="issue-meta-type">Base url</div>
+                <div class="issue-meta-type">Project</div>
                 <div class="issue-meta-value">
-                    {{ issue.baseUrl }}
+                    <a class="issue-project" href="/search?project={{ issue.project }}" title="{{ issue.project }}">{{ issue.project }}</a>
                 </div>
             </div>
             <template if="{{ issue.targetRef }}">

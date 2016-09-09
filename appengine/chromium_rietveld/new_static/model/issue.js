@@ -19,7 +19,7 @@ function Issue(id)
     this.editAllowed = false;
     this.offer_cq = true;
     this.private = false;
-    this.baseUrl = "";
+    this.project = "";
     this.targetRef = "";
     this.subject = "";
     this.created = ""; // Date
@@ -106,7 +106,7 @@ Issue.prototype.parseData = function(data)
     var issue = this;
     if (this.id !== data.issue)
         throw new Error("Incorrect issue loaded " + this.id + " != " + data.issue);
-    this.baseUrl = data.base_url || "";
+    this.project = data.project || "";
     this.targetRef = data.target_ref || "";
     this.closed = data.closed || false;
     this.commit = data.commit || false;
