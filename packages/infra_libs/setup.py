@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='infra_libs',
-    version='1.1.0',
+    version='1.1.1',
     description='Chrome Infra Libraries',
     long_description='Chrome Infra Libraries',
     classifiers=[
@@ -17,6 +17,7 @@ setup(
         'google-api-python-client',
         'oauth2client',
         'protobuf',
+        'requests',
     ],
     package_data={
         '': ['*.md', '*.proto'],
