@@ -92,12 +92,13 @@ class FrontendSearchPipeline(object):
 
     # The following fields are filled in as the pipeline progresses.
     # The value None means that we still need to compute that value.
+    # A shard_id is an integer shard ID number.
+    # A shard_key is also currently an integer shard ID number.
     self.users_by_id = {}
     self.nonviewable_iids = {}  # {shard_id: set(iid)}
-    self.unfiltered_iids = {}  # {shard_id: [iid, ...]} needing perm checks.
-    self.filtered_iids = {}  # {shard_id: [iid, ...]} already perm checked.
-    self.search_limit_reached = {}  # {shard_id: [bool, ...]}.
-    self.counts = {}
+    self.unfiltered_iids = {}  # {shard_key: [iid, ...]} needing perm checks.
+    self.filtered_iids = {}  # {shard_key: [iid, ...]} already perm checked.
+    self.search_limit_reached = {}  # {shard_key: [bool, ...]}.
     self.allowed_iids = []  # Matching iids that user is permitted to view.
     self.allowed_results = None  # results that the user is permitted to view.
     self.visible_results = None  # allowed_results on current pagination page.
@@ -134,27 +135,35 @@ class FrontendSearchPipeline(object):
                     self.error_responses)
 
     with self.profiler.Phase('Filtering cached results'):
-      for shard_id in self.unfiltered_iids:
+      for shard_key in self.unfiltered_iids:
+        shard_id = shard_key  # TODO(jrobbins): make shard_key a tuple.
         if shard_id not in self.nonviewable_iids:
           logging.error(
             'Not displaying shard %r because of no nonviewable_iids', shard_id)
           self.error_responses.add(shard_id)
           filtered_shard_iids = []
         else:
-          unfiltered_shard_iids = self.unfiltered_iids[shard_id]
+          unfiltered_shard_iids = self.unfiltered_iids[shard_key]
           nonviewable_shard_iids = self.nonviewable_iids[shard_id]
           # TODO(jrobbins): avoid creating large temporary lists.
           filtered_shard_iids = [iid for iid in unfiltered_shard_iids
                                  if iid not in nonviewable_shard_iids]
         if self.grid_mode:
-          self.filtered_iids[shard_id] = filtered_shard_iids
+          self.filtered_iids[shard_key] = filtered_shard_iids
         else:
-          self.filtered_iids[shard_id] = filtered_shard_iids[
+          self.filtered_iids[shard_key] = filtered_shard_iids[
               :self.mr.start + self.mr.num]
-        self.counts[shard_id] = len(filtered_shard_iids)
+
+    seen_iids = set()
+    with self.profiler.Phase('Dedupping result IIDs across shards'):
+      for shard_key in self.filtered_iids:
+        deduped = [iid for iid in self.filtered_iids[shard_key]
+                   if iid not in seen_iids]
+        self.filtered_iids[shard_key] = deduped
+        seen_iids.update(deduped)
 
     with self.profiler.Phase('Counting all filtered results'):
-      self.total_count = sum(self.counts.itervalues())
+      self.total_count = len(seen_iids)
 
   def MergeAndSortIssues(self):
     """Merge and sort results from all shards into one combined list."""
@@ -177,7 +186,7 @@ class FrontendSearchPipeline(object):
           self.mr.cnxn, self.allowed_iids)
 
     # Note: At this point, we have results that are only sorted within
-    # each backend's shard. We still need to sort the merged result.
+    # each backend's shard.  We still need to sort the merged result.
     self._LookupNeededUsers(self.allowed_results)
     with self.profiler.Phase('merging and sorting issues'):
       self.allowed_results = _SortIssues(
@@ -217,19 +226,22 @@ class FrontendSearchPipeline(object):
     self._LookupNeededUsers(sample_issues)
     sample_issues = _SortIssues(
         self.mr, sample_issues, self.harmonized_config, self.users_by_id)
-    sample_iids = [issue.issue_id for issue in sample_issues]
+    sample_iid_tuples = [
+        (issue.issue_id, issue.issue_id % settings.num_logical_shards)
+        for issue in sample_issues]
 
     # 2. Trim off some IIDs that are sure to be positioned after last.
-    num_trimmed_end = _TrimEndShardedIIDs(self.filtered_iids, sample_iids, last)
+    num_trimmed_end = _TrimEndShardedIIDs(
+        self.filtered_iids, sample_iid_tuples, last)
     logging.info('Trimmed %r issues from the end of shards', num_trimmed_end)
 
     # 3. Trim off some IIDs that are sure to be posiitoned before start.
     keep = _TotalLength(self.filtered_iids) - self.mr.start
     # Reverse the sharded lists.
     _ReverseShards(self.filtered_iids)
-    sample_iids.reverse()
+    sample_iid_tuples.reverse()
     self.num_skipped_at_start = _TrimEndShardedIIDs(
-        self.filtered_iids, sample_iids, keep)
+        self.filtered_iids, sample_iid_tuples, keep)
     logging.info('Trimmed %r issues from the start of shards',
                  self.num_skipped_at_start)
     # Reverse sharded lists again to get back into forward order.
@@ -254,7 +266,7 @@ class FrontendSearchPipeline(object):
       return None, None, None
 
     # 2. Choose and retrieve sample issues in each shard.
-    samples_by_shard = {}  # {shard_id: {iid: issue}}
+    samples_by_shard = {}  # {shard_key: {iid: issue}}
     needed_iids = []
     for shard_id in self.filtered_iids:
       samples_by_shard[shard_id] = {}
@@ -267,13 +279,13 @@ class FrontendSearchPipeline(object):
       samples_by_shard[shard_id][retrieved_iid] = retrieved_issue
 
     # 3. Build up partial results for each shard.
-    preceeding_counts = {}  # dict {shard_id: num_issues_preceeding_current}
+    preceeding_counts = {}  # dict {shard_key: num_issues_preceeding_current}
     prev_candidates, next_candidates = [], []
-    for shard_id in self.filtered_iids:
+    for shard_key in self.filtered_iids:
       prev_candidate, index_in_shard, next_candidate = (
           self._DetermineIssuePositionInShard(
-              shard_id, issue, samples_by_shard[shard_id]))
-      preceeding_counts[shard_id] = index_in_shard
+              shard_key, issue, samples_by_shard[shard_key]))
+      preceeding_counts[shard_key] = index_in_shard
       if prev_candidate:
         prev_candidates.append(prev_candidate)
       if next_candidate:
@@ -290,13 +302,13 @@ class FrontendSearchPipeline(object):
 
     return prev_iid, index, next_iid
 
-  def _DetermineIssuePositionInShard(self, shard_id, issue, sample_dict):
+  def _DetermineIssuePositionInShard(self, shard_key, issue, sample_dict):
     """Determine where the given issue would fit into results from a shard."""
     # See the design doc for details.  Basically, it first surveys the results
     # to bound a range where the given issue would belong, then it fetches the
     # issues in that range and sorts them.
 
-    filtered_shard_iids = self.filtered_iids[shard_id]
+    filtered_shard_iids = self.filtered_iids[shard_key]
 
     # 1. Select a sample of issues, leveraging ones we have in RAM already.
     issues_on_hand = sample_dict.values()
@@ -440,10 +452,10 @@ def _StartBackendSearch(
     query_project_ids: list of project IDs to search.
     harmonized_config: combined ProjectIssueConfig for all projects being
         searched.
-    unfiltered_iids_dict: dict {shard_id: [iid, ...]} of unfiltered search
+    unfiltered_iids_dict: dict {shard_key: [iid, ...]} of unfiltered search
         results to accumulate into.  They need to be later filtered by
         permissions and merged into filtered_iids_dict.
-    search_limit_reached_dict: dict{shard_id: [bool, ...]} to determine if
+    search_limit_reached_dict: dict{shard_key: [bool, ...]} to determine if
         the search limit of any shard was reached.
     nonviewable_iids: dict {shard_id: set(iid)} of restricted issues in the
         projects being searched that the signed in user cannot view.
@@ -459,37 +471,40 @@ def _StartBackendSearch(
     unfiltered_iids_dict for those shards.
   """
   rpc_tuples = []
-  needed_shard_ids = set(range(settings.num_logical_shards))
+  needed_shard_keys = set()
+  for shard_id in range(settings.num_logical_shards):
+    needed_shard_keys.add(shard_id)
 
   # 1. Get whatever we can from memcache.  Cache hits are only kept if they are
-  # not already expired.  Each kept cache hit will have unfiltered IIDs, so we
-  # need to get the at-risk IIDs to efficiently filter them based on perms.
+  # not already expired.
   project_shard_timestamps = _GetProjectTimestamps(
-      query_project_ids, needed_shard_ids)
+      query_project_ids, needed_shard_keys)
 
   if mr.use_cached_searches:
     cached_unfiltered_iids_dict, cached_search_limit_reached_dict = (
         _GetCachedSearchResults(
-            mr, query_project_ids, needed_shard_ids, harmonized_config,
-            project_shard_timestamps, services))
+            mr, query_project_ids, needed_shard_keys,
+            harmonized_config, project_shard_timestamps, services))
     unfiltered_iids_dict.update(cached_unfiltered_iids_dict)
     search_limit_reached_dict.update(cached_search_limit_reached_dict)
-  for cache_hit_shard_id in unfiltered_iids_dict:
-    needed_shard_ids.remove(cache_hit_shard_id)
+  for cache_hit_shard_key in unfiltered_iids_dict:
+    needed_shard_keys.remove(cache_hit_shard_key)
 
+  # 2. Each kept cache hit will have unfiltered IIDs, so we filter them by
+  # removing non-viewable IDs.
   _GetNonviewableIIDs(
     query_project_ids, mr.auth.user_id, set(range(settings.num_logical_shards)),
     rpc_tuples, nonviewable_iids, project_shard_timestamps,
     services.cache_manager.processed_invalidations_up_to,
     mr.use_cached_searches)
 
-  # 2. Hit backends for any shards that are still needed.  When these results
-  # come back, they are also put into unfiltered_iids_dict..
-  for shard_id in needed_shard_ids:
+  # 3. Hit backends for any shards that are still needed.  When these results
+  # come back, they are also put into unfiltered_iids_dict.
+  for shard_key in needed_shard_keys:
     rpc = _StartBackendSearchCall(
-        mr, query_project_names, shard_id,
+        mr, query_project_names, shard_key,
         services.cache_manager.processed_invalidations_up_to)
-    rpc_tuple = (time.time(), shard_id, rpc)
+    rpc_tuple = (time.time(), shard_key, rpc)
     rpc.callback = _MakeBackendCallback(
         _HandleBackendSearchResponse, mr, query_project_names, rpc_tuple,
         rpc_tuples, settings.backend_retries, unfiltered_iids_dict,
@@ -504,13 +519,13 @@ def _StartBackendSearch(
 def _FinishBackendSearch(rpc_tuples):
   """Wait for all backend calls to complete, including any retries."""
   while rpc_tuples:
-    active_rpcs = [rpc for (_time, _shard_id, rpc) in rpc_tuples]
+    active_rpcs = [rpc for (_time, _shard_key, rpc) in rpc_tuples]
     # Wait for any active RPC to complete.  It's callback function will
     # automatically be called.
     finished_rpc = apiproxy_stub_map.UserRPC.wait_any(active_rpcs)
     # Figure out which rpc_tuple finished and remove it from our list.
     for rpc_tuple in rpc_tuples:
-      _time, _shard_id, rpc = rpc_tuple
+      _time, _shard_key, rpc = rpc_tuple
       if rpc == finished_rpc:
         rpc_tuples.remove(rpc_tuple)
         break
@@ -518,16 +533,16 @@ def _FinishBackendSearch(rpc_tuples):
       raise ValueError('We somehow finished an RPC that is not in rpc_tuples')
 
 
-def _GetProjectTimestamps(query_project_ids, needed_shard_ids):
+def _GetProjectTimestamps(query_project_ids, needed_shard_keys):
   """Get a dict of modified_ts values for all specified project-shards."""
   project_shard_timestamps = {}
   if query_project_ids:
     keys = []
     for pid in query_project_ids:
-      for sid in needed_shard_ids:
+      for sid in needed_shard_keys:
         keys.append('%d;%d' % (pid, sid))
   else:
-    keys = [('all;%d' % sid) for sid in needed_shard_ids]
+    keys = [('all;%d' % sid) for sid in needed_shard_keys]
 
   timestamps_for_project = memcache.get_multi(keys=keys)
   for key, timestamp in timestamps_for_project.iteritems():
@@ -604,7 +619,7 @@ def _AccumulateNonviewableIIDs(
 
 
 def _GetCachedSearchResults(
-    mr, query_project_ids, needed_shard_ids, harmonized_config,
+    mr, query_project_ids, needed_shard_keys, harmonized_config,
     project_shard_timestamps, services):
   """Return a dict of cached search results that are not already stale.
 
@@ -623,7 +638,7 @@ def _GetCachedSearchResults(
     mr: common information parsed from the request.
     query_project_ids: list of project ID numbers for all projects being
         searched.
-    needed_shard_ids: set of shard IDs that need to be checked.
+    needed_shard_keys: set of shard keys that need to be checked.
     harmonized_config: ProjectIsueConfig with combined information for all
         projects involved in this search.
     project_shard_timestamps: a dict {(project_id, shard_id): timestamp, ...}
@@ -650,27 +665,35 @@ def _GetCachedSearchResults(
       mr.me_user_id, mr.query)
 
   sd = sorting.ComputeSortDirectives(mr, harmonized_config)
-  memcache_prefix = ';'.join([projects_str, canned_query, user_query,
-                              ' '.join(sd), ''])
+  sd_str = ' '.join(sd)
+
   cached_dict = memcache.get_multi(
-      [str(sid) for sid in needed_shard_ids], key_prefix=memcache_prefix)
-  search_limit_memcache_prefix = ';'.join(
-      [projects_str, canned_query, user_query,
-       ' '.join(sd), 'search_limit_reached', ''])
+      ['%s;%s;%s;%s;%d' % (projects_str, canned_query, user_query, sd_str, sid)
+       for sid in needed_shard_keys])
+
   cached_search_limit_reached_dict = memcache.get_multi(
-      [str(sid) for sid in needed_shard_ids],
-      key_prefix=search_limit_memcache_prefix)
+    ['%s;%s;%s;%s;search_limit_reached;%d' % (
+        projects_str, canned_query, user_query, sd_str, sid)
+     for sid in needed_shard_keys])
 
   unfiltered_dict = {}
   search_limit_reached_dict = {}
-  for shard_id in needed_shard_ids:
-    if str(shard_id) not in cached_dict:
-      logging.info('memcache miss on shard %r', shard_id)
+  memcache_key_prefix = '%s;%s;%s;%s' % (
+      projects_str, canned_query, user_query, sd_str)
+  limit_reached_key_prefix = '%s;%s;%s;%s;search_limit_reached' % (
+        projects_str, canned_query, user_query, sd_str)
+  for shard_key in needed_shard_keys:
+    shard_id = shard_key  # TODO(jrobbins): convert to tuple.
+    memcache_key = '%s;%d' % (memcache_key_prefix, shard_id)
+    limit_reached_key = '%s;%d' % (limit_reached_key_prefix, shard_id)
+    if memcache_key not in cached_dict:
+      logging.info('memcache miss on shard %r', shard_key)
       continue
 
-    cached_iids, cached_ts = cached_dict[str(shard_id)]
-    if cached_search_limit_reached_dict.get(str(shard_id)):
-      search_limit_reached, _ = cached_search_limit_reached_dict[str(shard_id)]
+    cached_iids, cached_ts = cached_dict[memcache_key]
+    if cached_search_limit_reached_dict.get(limit_reached_key):
+      search_limit_reached, _ = cached_search_limit_reached_dict[
+          limit_reached_key]
     else:
       search_limit_reached = False
 
@@ -691,9 +714,9 @@ def _GetCachedSearchResults(
                      shard_id)
 
     if not stale:
-      logging.info('memcache hit on %r', shard_id)
-      unfiltered_dict[shard_id] = cached_iids
-      search_limit_reached_dict[shard_id] = search_limit_reached
+      logging.info('memcache hit on %r', shard_key)
+      unfiltered_dict[shard_key] = cached_iids
+      search_limit_reached_dict[shard_key] = search_limit_reached
 
   return unfiltered_dict, search_limit_reached_dict
 
@@ -711,9 +734,10 @@ def _MakeBackendRequestHeaders(failfast):
 
 
 def _StartBackendSearchCall(
-    mr, query_project_names, shard_id, invalidation_timestep,
+    mr, query_project_names, shard_key, invalidation_timestep,
     deadline=None, failfast=True):
   """Ask a backend to query one shard of the database."""
+  shard_id = shard_key  # TODO(jrobbins): convert to tuple.
   backend_host = modules.get_hostname(module='besearch')
   url = 'http://%s%s' % (backend_host, framework_helpers.FormatURL(
       mr, urls.BACKEND_SEARCH,
@@ -755,7 +779,7 @@ def _HandleBackendSearchResponse(
     unfiltered_iids, search_limit_reached, invalidation_timestep,
     error_responses):
   """Process one backend response and retry if there was an error."""
-  start_time, shard_id, rpc = rpc_tuple
+  start_time, shard_key, rpc = rpc_tuple
   duration_sec = time.time() - start_time
 
   try:
@@ -767,27 +791,27 @@ def _HandleBackendSearchResponse(
                  json_content[:framework_constants.LOGGING_MAX_LENGTH],
                  len(json_content))
     json_data = json.loads(json_content)
-    unfiltered_iids[shard_id] = json_data['unfiltered_iids']
-    search_limit_reached[shard_id] = json_data['search_limit_reached']
+    unfiltered_iids[shard_key] = json_data['unfiltered_iids']
+    search_limit_reached[shard_key] = json_data['search_limit_reached']
 
   except Exception as e:
     if duration_sec > FAIL_FAST_LIMIT_SEC:  # Don't log fail-fast exceptions.
       logging.exception(e)
     if not remaining_retries:
       logging.error('backend search retries exceeded')
-      error_responses.add(shard_id)
+      error_responses.add(shard_key)
       return  # Used all retries, so give up.
 
     if duration_sec >= settings.backend_deadline:
-      logging.error('backend search on %r took too long', shard_id)
-      error_responses.add(shard_id)
+      logging.error('backend search on %r took too long', shard_key)
+      error_responses.add(shard_key)
       return  # That backend shard is overloaded, so give up.
 
-    logging.error('backend call for shard %r failed, retrying', shard_id)
+    logging.error('backend call for shard %r failed, retrying', shard_key)
     retry_rpc = _StartBackendSearchCall(
-        mr, query_project_names, shard_id, invalidation_timestep,
+        mr, query_project_names, shard_key, invalidation_timestep,
         failfast=remaining_retries > 2)
-    retry_rpc_tuple = (time.time(), shard_id, retry_rpc)
+    retry_rpc_tuple = (time.time(), shard_key, retry_rpc)
     retry_rpc.callback = _MakeBackendCallback(
         _HandleBackendSearchResponse, mr, query_project_names,
         retry_rpc_tuple, rpc_tuples, remaining_retries - 1, unfiltered_iids,
@@ -846,17 +870,18 @@ def _TotalLength(sharded_iids):
 
 def _ReverseShards(sharded_iids):
   """Reverse each issue_iids list in place."""
-  for shard_id in sharded_iids:
-    sharded_iids[shard_id].reverse()
+  for shard_key in sharded_iids:
+    sharded_iids[shard_key].reverse()
 
 
-def _TrimEndShardedIIDs(sharded_iids, sample_iids, num_needed):
+def _TrimEndShardedIIDs(sharded_iids, sample_iid_tuples, num_needed):
   """Trim the IIDs to keep at least num_needed items.
 
   Args:
-    sharded_iids: dict {shard_id: issue_id_list} for search results.  This is
+    sharded_iids: dict {shard_key: issue_id_list} for search results.  This is
         modified in place to remove some trailing issue IDs.
-    sample_iids: list of IIDs from a sorted list of sample issues.
+    sample_iid_tuples: list of (iid, shard_key) from a sorted list of sample
+        issues.
     num_needed: int minimum total number of items to keep.  Some IIDs that are
         known to belong in positions > num_needed will be trimmed off.
 
@@ -864,16 +889,15 @@ def _TrimEndShardedIIDs(sharded_iids, sample_iids, num_needed):
     The total number of IIDs removed from the IID lists.
   """
   # 1. Get (sample_iid, position_in_shard) for each sample.
-  sample_positions = _CalcSamplePositions(sharded_iids, sample_iids)
+  sample_positions = _CalcSamplePositions(sharded_iids, sample_iid_tuples)
 
   # 2. Walk through the samples, computing a combined lower bound at each
   # step until we know that we have passed at least num_needed IIDs.
   lower_bound_per_shard = {}
   excess_samples = []
   for i in range(len(sample_positions)):
-    sample_iid, pos = sample_positions[i]
-    shard_id = sample_iid % settings.num_logical_shards
-    lower_bound_per_shard[shard_id] = pos
+    _sample_iid, sample_shard_key, pos = sample_positions[i]
+    lower_bound_per_shard[sample_shard_key] = pos
     overall_lower_bound = sum(lower_bound_per_shard.itervalues())
     if overall_lower_bound >= num_needed:
       excess_samples = sample_positions[i + 1:]
@@ -884,31 +908,29 @@ def _TrimEndShardedIIDs(sharded_iids, sample_iids, num_needed):
   # 3. Truncate each shard at the first excess sample in that shard.
   already_trimmed = set()
   num_trimmed = 0
-  for sample_iid, pos in excess_samples:
-    shard_id = sample_iid % settings.num_logical_shards
-    if shard_id not in already_trimmed:
-      num_trimmed += len(sharded_iids[shard_id]) - pos
-      sharded_iids[shard_id] = sharded_iids[shard_id][:pos]
-      already_trimmed.add(shard_id)
+  for _sample_iid, sample_shard_key, pos in excess_samples:
+    if sample_shard_key not in already_trimmed:
+      num_trimmed += len(sharded_iids[sample_shard_key]) - pos
+      sharded_iids[sample_shard_key] = sharded_iids[sample_shard_key][:pos]
+      already_trimmed.add(sample_shard_key)
 
   return num_trimmed
 
 
 # TODO(jrobbins): Convert this to a python generator.
 def _CalcSamplePositions(sharded_iids, sample_iids):
-  """Return [(sample_iid, position_in_shard), ...] for each sample."""
+  """Return [(iid, shard_key, position_in_shard), ...] for each sample."""
   # We keep track of how far index() has scanned in each shard to avoid
   # starting over at position 0 when looking for the next sample in
   # the same shard.
   scan_positions = collections.defaultdict(lambda: 0)
   sample_positions = []
-  for sample_iid in sample_iids:
-    shard_id = sample_iid % settings.num_logical_shards
+  for sample_iid, sample_shard_key in sample_iids:
     try:
-      pos = sharded_iids.get(shard_id, []).index(
-          sample_iid, scan_positions[shard_id])
-      scan_positions[shard_id] = pos
-      sample_positions.append((sample_iid, pos))
+      pos = sharded_iids.get(sample_shard_key, []).index(
+          sample_iid, scan_positions[sample_shard_key])
+      scan_positions[sample_shard_key] = pos
+      sample_positions.append((sample_iid, sample_shard_key, pos))
     except ValueError:
       pass
 

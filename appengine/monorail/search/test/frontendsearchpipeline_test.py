@@ -91,7 +91,6 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     pipeline.SearchForIIDs()
     self.mox.VerifyAll()
     self.assertEqual(2, pipeline.total_count)
-    self.assertEqual(2, pipeline.counts[1])
     self.assertEqual([1001, 1011], pipeline.filtered_iids[1])
 
   def testMergeAndSortIssues_EmptyResult(self):
@@ -798,7 +797,9 @@ class FrontendSearchPipelineShardMethodsTest(unittest.TestCase):
     self.assertEqual({}, empty_sharded_iids)
 
     frontendsearchpipeline._TrimEndShardedIIDs(
-        empty_sharded_iids, [100, 88, 99], 12)
+        empty_sharded_iids, 
+        [(100, 0), (88, 8), (99, 9)],
+        12)
     self.assertEqual({}, empty_sharded_iids)
 
   def testTrimShardedIIDs_NoSamples(self):
@@ -817,7 +818,7 @@ class FrontendSearchPipelineShardMethodsTest(unittest.TestCase):
 
   def testTrimShardedIIDs_Normal(self):
     """The first 3 samples contribute all needed IIDs, so trim off the rest."""
-    samples = [30, 41, 62, 40, 81]
+    samples = [(30, 0), (41, 1), (62, 2), (40, 0), (81, 1)]
     num_trimmed = frontendsearchpipeline._TrimEndShardedIIDs(
         self.sharded_iids, samples, 5)
     self.assertEqual(2 + 1 + 0 + 0, num_trimmed)
@@ -844,12 +845,16 @@ class FrontendSearchPipelineShardMethodsTest(unittest.TestCase):
     # E.g., the IIDs 2 and 4 might have been trimmed out in the forward phase.
     # But we still have them in the list for the backwards phase, and they
     # should just not contribute anything to the result.
-    samples = [2, 4]
+    samples = [(2, 2), (4, 4)]
     self.assertEqual(
       [], frontendsearchpipeline._CalcSamplePositions(sharded_iids, samples))
 
   def testCalcSamplePositions_Normal(self):
-    samples = [30, 41, 62, 40, 81]
+    samples = [(30, 0), (41, 1), (62, 2), (40, 0), (81, 1)]
     self.assertEqual(
-      [(30, 2), (41, 1), (62, 2), (40, 3), (81, 3)],
+      [(30, 0, 2),
+       (41, 1, 1),
+       (62, 2, 2),
+       (40, 0, 3),
+       (81, 1, 3)],
       frontendsearchpipeline._CalcSamplePositions(self.sharded_iids, samples))
