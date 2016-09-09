@@ -1,10 +1,10 @@
 (function(window) {
   // TODO: make this dynamic so it works on prod too.
    const PREDICT_ENDPOINT =
-       'https://predict.monorail-staging.appspot.com/_predict';
+       'https://monorail-predict.appspot.com/_predict';
    const DEBOUNCE_THRESH_MS = 2000;
    const LOG_ENDPOINT =
-       'https://predict.monorail-staging.appspot.com/_log';
+       'https://monorail-predict.appspot.com/_log';
 
   // Simple debouncer to handle text input. Don't try to get suggestions
   // until the user has stopped typing for a few seconds.
@@ -86,22 +86,24 @@
 
   function gatherTextAndPredict() {
     var textArea = window.document.getElementById('comment');
-    var req = {
-      comment: textArea.value,
+    var data = {
+      text: textArea.value,
       // TODO: other values?
     };
-    fetch(PREDICT_ENDPOINT, {
-      method: 'POST',
-      body: JSON.stringify(req)
-    }).catch(function(error) {
-      window.console.error('Failed to POST predict query.', error);
-    }).then(function(resp) {
-      updateSuggestions(res.components);
-    });
+
+    CS_doPost(PREDICT_ENDPOINT, function(evt) {
+      if (evt.target.responseText) {
+        resp = JSON.parse(evt.target.responseText);
+        updateComponents(resp);
+      }
+    }, data);
   }
 
   window.addEventListener('load', function() {
     var textArea = window.document.getElementById('comment');
+    if (!textArea) {
+      return;
+    }
     // TODO: call gatherTextAndPredict here on pageload too, for existing
     // issues that don't have components assigned.
     var safeGatherTextAndPredict = debounce(gatherTextAndPredict);
