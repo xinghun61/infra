@@ -179,8 +179,7 @@ def ScheduleNewAnalysisForCrash(
   # TODO(katesonia): Remove the default value after adding validity check to
   # config.
   platform_rename = crash_config.fracas.get('platform_rename', {})
-  if platform in platform_rename:
-    platform = platform_rename[platform]
+  platform = platform_rename.get(platform,platform)
 
   if _NeedsNewAnalysis(crash_identifiers, chrome_version, signature, client_id,
                        platform, stack_trace, channel, historical_metadata):

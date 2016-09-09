@@ -38,8 +38,9 @@ def DefaultRankFunction(class_info):
   return -len(class_info.occurrences), class_info.occurrences[0]
 
 
+# TODO(http://crbug.com/644476): this class needs a better name.
 class Classifier(object):
-  """Classifys results or crash stack into a class or a list of classes."""
+  """Classifies results or crash stack into a class or a list of classes."""
 
   def GetClassFromStackFrame(self, frame):  # pragma: no cover.
     raise NotImplementedError()

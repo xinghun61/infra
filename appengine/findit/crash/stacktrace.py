@@ -5,12 +5,18 @@
 import logging
 import re
 
+# TODO(wrengr): it would be clearer if this file and callstack.py were
+# combined into a single file defining all three classes (StackFrame,
+# CallStack, StackTrace)
 
+# TODO(http://crbug.com/644476): this class needs a better name.
 class Stacktrace(list):
-  """Interface Represents Stacktrace object.
-
-  Contains a list of callstacks, because one stacktrace may have more than
-  one callstacks."""
+  """A collection of callstacks which together provide a trace of
+  what happened. For instance, when doing memory debugging we will
+  have callstacks for (1) when the crash occured, (2) when the object
+  causing the crash was allocated, (3) when the the object causing the
+  crash was freed (for use-after-free crashes), etc. What exactly the
+  set of callstacks is differs for different tools."""
   def __init__(self, stack_list=None, signature=None):
     super(Stacktrace, self).__init__(stack_list or [])
 
@@ -18,13 +24,17 @@ class Stacktrace(list):
       # Filter out the types of signature, for example [Out of Memory].
       signature = re.sub('[[][^]]*[]]\s*', '', signature)
 
+    # TODO(wrengr): rather than splitting on newlines every time we call
+    # crash_stack, we should just do the splitting here and store the
+    # list of parts. If we wish to allow clients to change the signature
+    # after this object is built, then we should turn it into a property.
     self.signature = signature
     self._crash_stack = None
 
   @property
   def crash_stack(self):
-    """Gets the crash stack with the highest (lowest number) priority in
-    stacktrace."""
+    """Get the callstack with the highest priority (i.e., whose priority
+    field is numerically the smallest) in the stacktrace."""
     if not self:
       logging.warning('Cannot get crash stack for empty stacktrace: %s', self)
       return None

@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 
+# TODO(http://crbug.com/644476): this class needs a better name.
 class Result(object):
   """Represents findit culprit result."""
 
@@ -94,6 +95,8 @@ class MatchResult(Result):
         'min_distance_frame': min_distance_frame,
     }
 
+  # TODO(wrengr): this method in no way depends on self; why not make
+  # it a function which only takes the two regions?
   def _DistanceOfTwoRegions(self, region1, region2):
     if set(region1).intersection(set(region2)):
       return 0

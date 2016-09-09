@@ -17,17 +17,32 @@ _DEFAULT_ALPHA = 0.9
 _SPIKENESS_THRESHOLD = 20
 
 
+# TODO(http://crbug.com/644406): This code needs cleaning/refactoring 
 def GetSpikeIndexes(data_series, alpha=_DEFAULT_ALPHA,
                     threshold=_SPIKENESS_THRESHOLD):
-  """Finds all the spikes in a data_series.
+  """Given a time series, determine anomolous spikes.
+  
+  The time series is represented by a list of (x,y) tuples, where the
+  position of the tuple in the list is the time at which the event
+  occured, x is an abstract name for that time, and y is the value of
+  the time series at that point in time. We detect spikes by determining
+  when the time series diverges too much from the running average (of
+  the y values). The alpha parameter determines how readily we update
+  the running average; which is to say, how much weight we give each
+  new event compared to the weight we give to the current running
+  average. The threshold parameter defines when we've deviated 'too far'
+  from the running average, and therefore say that this event is in fact
+  a spike.
+
   Args:
     data_series (list): A list of (x, y) tuples where y is a number.
     alpha (float): In (0, 1], it controls the weight of current data
       when computing the running mean, a higher value has more weight.
-    threshold (float): Threshold of spike score.
+    threshold (float): Threshold for when something counts as a spike.
 
   Returns:
-    A list of spike indexes.
+    A list of spike indexes (i.e., positions in the data_series list;
+    not the abstract names associated with those indices)
   """
   spike_indexes = []
 

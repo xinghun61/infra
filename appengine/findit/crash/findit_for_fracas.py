@@ -123,6 +123,8 @@ def FindCulpritForChromeCrash(signature, platform,
   suspected_components = ComponentClassifier().Classify(
       culprit_results, crash_stack)
 
+  # TODO(http://crbug.com/644411): the caller should convert things to
+  # JSON, not us.
   culprit_results_list = [result.ToDict() for result in culprit_results]
 
   return (
