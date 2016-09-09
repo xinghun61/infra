@@ -82,7 +82,7 @@
     'version': '1.1.0',
     'build': '0',
     'repo': 'infra/infra/packages/infra_libs',
-    'rev': '15ea0920b5f83d0aff4bd042e95bc388d069d51c',
+    'rev': 'b078b02f877c3ca56367c525f15e1e5e47ef84da',
   },
   'ipaddress': {
     'version': '1.0.16',
