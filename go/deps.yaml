@@ -106,7 +106,9 @@ import:
   - user
   - cmd/aedeploy
 - package: cloud.google.com/go
-  version: master
+  # TODO(crbug.com/645648): Fix test breakages when gocloud gets rolled past
+  #                         this revision.
+  version: bdbde4dc7e9c0d48d900460402be1d4a7c0902cf
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -200,3 +202,6 @@ import:
   repo: https://go.googlesource.com/mobile.git
   subpackages:
   - cmd/gomobile
+- package: github.com/VividCortex/godaemon
+  repo: https://chromium.googlesource.com/external/github.com/VividCortex/godaemon.git
+  version: master

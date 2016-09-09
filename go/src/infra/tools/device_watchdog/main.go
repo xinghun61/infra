@@ -17,21 +17,29 @@ package main
 import "C"
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 	"unsafe"
 
+	"github.com/VividCortex/godaemon"
 	"github.com/luci/luci-go/common/runtime/paniccatcher"
 )
 
 var (
-	logHeader = C.CString("CIT_DeviceWatchdog")
+	logHeader  = C.CString("CIT_DeviceWatchdog")
+	errTimeout = errors.New("timeout")
+)
+
+const (
+	stdInFd  = 0
+	stdOutFd = 1
+	stdErrFd = 2
 )
 
 type logLevel int
@@ -40,12 +48,6 @@ const (
 	logInfo = iota
 	logWarning
 	logError
-)
-
-const (
-	stdInFd  = 0
-	stdOutFd = 1
-	stdErrFd = 2
 )
 
 func (l logLevel) getLogLevel() C.int {
@@ -67,38 +69,15 @@ func logcatLog(level logLevel, format string, args ...interface{}) {
 	C.__android_log_write(level.getLogLevel(), logHeader, cmsg)
 }
 
-// Spawn a child process via fork, create new process group, chdir and
-// redirect std in and out to /dev/null.
-func daemonize() (int, error) {
-	ret, _, errno := syscall.Syscall(syscall.SYS_FORK, 0, 0, 0)
-	pid := int(ret)
-	if errno != 0 {
-		return 0, errno
-	}
-	if pid > 0 {
-		return pid, nil
-	}
-
-	_, err := syscall.Setsid()
-	if err != nil {
-		return 0, err
-	}
-
-	f, err := os.Open("/dev/null")
-	if err != nil {
-		return 0, err
-	}
-	fd := f.Fd()
-	syscall.Dup2(int(fd), stdInFd)
-	syscall.Dup2(int(fd), stdOutFd)
-	syscall.Dup2(int(fd), stdErrFd)
-
-	return pid, nil
+type uptimeResult struct {
+	Uptime time.Duration
+	Err    error
 }
 
 // Read from /proc/uptime. Expected format:
 // "uptime_in_seconds cpu_idle_time_in_seconds"
-func getDeviceUptime() (time.Duration, error) {
+// Return the uptime via a channel for use with timeouts.
+func readUptime() (time.Duration, error) {
 	bytes, err := ioutil.ReadFile("/proc/uptime")
 	if err != nil {
 		return 0, fmt.Errorf("unable to open /proc/uptime: %s", err.Error())
@@ -113,6 +92,28 @@ func getDeviceUptime() (time.Duration, error) {
 		return 0, fmt.Errorf("unable to parse uptime: %s", err.Error())
 	}
 	return time.Duration(uptime * float64(time.Second)), nil
+}
+
+func getUptime(requestQueue chan<- chan<- uptimeResult, timeoutPeriod time.Duration) (time.Duration, error) {
+	request := make(chan uptimeResult, 1)
+	defer close(request)
+
+	timer := time.NewTimer(timeoutPeriod)
+	defer timer.Stop()
+
+	select {
+	case requestQueue <- request:
+		break
+	case <-timer.C:
+		return 0, errTimeout
+	}
+
+	select {
+	case resp := <-request:
+		return resp.Uptime, resp.Err
+	case <-timer.C:
+		return 0, errTimeout
+	}
 }
 
 // Reboot device by writing to sysrq-trigger. See:
@@ -131,26 +132,42 @@ func rebootDevice() error {
 }
 
 func realMain() int {
+	godaemon.MakeDaemon(&godaemon.DaemonAttr{})
+
 	maxUptimeFlag := flag.Int("max-uptime", 120, "Maximum uptime in minutes before a reboot is triggered.")
 	flag.Parse()
 
-	os.Chdir("/")
-	pid, err := daemonize()
-	if err != nil {
-		logcatLog(logError, "Failed to daemonize: %s", err.Error())
-		return 1
-	}
-	if pid > 0 {
-		logcatLog(logInfo, "Child spawned with pid %d, exiting parent\n", pid)
-		return 0
-	}
+	requestQueue := make(chan chan<- uptimeResult)
+	go func() {
+		for request := range requestQueue {
+			uptime, err := readUptime()
+			request <- uptimeResult{Uptime: uptime, Err: err}
+		}
+	}()
+	defer close(requestQueue)
 
 	maxUptime := time.Duration(*maxUptimeFlag) * time.Minute
+	consecutiveTimeouts := 0
+	const maxTimeouts = 5
 	for {
-		uptime, err := getDeviceUptime()
-		if err != nil {
+		uptime, err := getUptime(requestQueue, 5*time.Second)
+		switch err {
+		case nil:
+			consecutiveTimeouts = 0
+		case errTimeout:
+			consecutiveTimeouts++
+		default:
 			logcatLog(logError, "Failed to get uptime: %s", err.Error())
 			return 1
+		}
+		if consecutiveTimeouts >= maxTimeouts {
+			logcatLog(logError, "%d consective timeouts when fetching uptime. Triggering reboot", consecutiveTimeouts)
+			break
+		}
+		if consecutiveTimeouts > 0 {
+			logcatLog(logError, "Timeout when fetching uptime. Sleeping for 60s and trying again.")
+			time.Sleep(60 * time.Second)
+			continue
 		}
 
 		if uptime > maxUptime {
@@ -158,9 +175,11 @@ func realMain() int {
 			break
 		}
 		logcatLog(logInfo, "No need to reboot, uptime < max_uptime: (%s < %s)\n", uptime, maxUptime)
+		// Add an additional second to the sleep to ensure it doesn't
+		// sleep several times in less than a second.
 		time.Sleep(maxUptime - uptime + time.Second)
 	}
-	if err = rebootDevice(); err != nil {
+	if err := rebootDevice(); err != nil {
 		logcatLog(logError, "Failed to reboot device: %s", err.Error())
 		return 1
 	}

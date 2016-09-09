@@ -1,5 +1,5 @@
-hash: 10c29d5f53e6e3ae1b74d29cbe5426f83ba716ecfc2053b13d03ab32a973c6e6
-updated: 2016-09-01T12:21:50.575783852-07:00
+hash: 19be8e6379c3586dc04a226858dfb2abf1e97c357e3e3f054594548dacc75701
+updated: 2016-09-09T14:30:19.38146804-07:00
 imports:
 - name: cloud.google.com/go
   version: bdbde4dc7e9c0d48d900460402be1d4a7c0902cf
@@ -28,7 +28,7 @@ imports:
   - proto
   - protoc-gen-go
 - name: github.com/gopherjs/gopherjs
-  version: 45518c130e5bd1525f20110830a4986365a153de
+  version: 05b9d708f1c9b4cbe71da718f3ce23665031021a
   repo: https://chromium.googlesource.com/external/github.com/gopherjs/gopherjs.git
   subpackages:
   - js
@@ -118,6 +118,9 @@ imports:
   repo: https://chromium.googlesource.com/external/github.com/texttheater/golang-levenshtein.git
   subpackages:
   - levenshtein
+- name: github.com/VividCortex/godaemon
+  version: 3d9f6e0b234fe7d17448b345b2e14ac05814a758
+  repo: https://chromium.googlesource.com/external/github.com/VividCortex/godaemon.git
 - name: github.com/xtgo/set
   version: 4431f6b51265b1e0b76af4dafc09d6f12c2bdcd0
   repo: https://chromium.googlesource.com/external/github.com/xtgo/set.git
@@ -127,24 +130,24 @@ imports:
   subpackages:
   - encoding/json5
 - name: golang.org/x/mobile
-  version: 7573efae754bbd3a44d66cff513c65fa5a62e408
+  version: e99a906c3a3ac5959fa4b8d08f90dd5f75d3b27c
   repo: https://go.googlesource.com/mobile.git
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: 1358eff22f0dd0c54fc521042cc607f6ff4b531a
+  version: 9313baa13d9262e49d07b20ed57dceafcd7240cc
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/oauth2
-  version: 4d549c893be7d4011bab739cc585d091a7188d27
+  version: 3c3a985cb79f52a3190fbc056984415ca6763d01
   repo: https://go.googlesource.com/oauth2.git
   subpackages:
   - google
   - jwt
 - name: golang.org/x/tools
-  version: 9deed8c6c1c89e0b6d68d727f215de8e851d1064
+  version: 86ad1193da6aba71355e71191641b9cfb26daa67
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -157,7 +160,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: 5310de6094f77748865537eae0700eba04acde45
+  version: a69f0f19d246419bb931b0ac8f4f8d3f3e6d4feb
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - gensupport
@@ -187,7 +190,7 @@ imports:
   subpackages:
   - protobuf
 - name: google.golang.org/grpc
-  version: 79b7c349179cdd6efd8bac4a1ce7f01b98c16e9b
+  version: 28707e14b1d2b2f5da81474dea2790d71e526987
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
