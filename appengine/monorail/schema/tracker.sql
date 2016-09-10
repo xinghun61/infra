@@ -319,7 +319,6 @@ CREATE TABLE Comment (
   content TEXT,
   inbound_message TEXT,
 
-  was_escaped BOOLEAN DEFAULT FALSE,
   deleted_by INT UNSIGNED,
   is_spam BOOLEAN DEFAULT FALSE,
   -- TODO(lukasperaza) Update first comments SET is_description=TRUE

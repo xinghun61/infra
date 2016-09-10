@@ -290,7 +290,7 @@ class IssueServiceTest(unittest.TestCase):
     settings.classifier_spam_thresh = 0.9
     self.SetUpAllocateNextLocalID(789, None, None)
     self.SetUpInsertIssue()
-    self.SetUpInsertComment(7890101, True, is_description=True, new_issue=True)
+    self.SetUpInsertComment(7890101, is_description=True, new_issue=True)
     self.services.spam.ClassifyIssue(mox.IgnoreArg(),
         mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
         self.classifierResult('ham', 1.0))
@@ -310,7 +310,7 @@ class IssueServiceTest(unittest.TestCase):
     settings.classifier_spam_thresh = 0.9
     self.SetUpAllocateNextLocalID(789, None, None)
     self.SetUpInsertIssue(label_rows=[])
-    self.SetUpInsertComment(7890101, True, is_description=True, new_issue=True)
+    self.SetUpInsertComment(7890101, is_description=True, new_issue=True)
     self.services.spam.ClassifyIssue(mox.IgnoreArg(),
         mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
         self.classifierResult('ham', 1.0))
@@ -335,7 +335,7 @@ class IssueServiceTest(unittest.TestCase):
     settings.classifier_spam_thresh = 0.9
     self.SetUpAllocateNextSpamID(789, None, None)
     self.SetUpInsertSpamIssue()
-    self.SetUpInsertComment(7890101, True, is_description=True, new_issue=True)
+    self.SetUpInsertComment(7890101, is_description=True, new_issue=True)
 
     self.services.spam.ClassifyIssue(mox.IsA(tracker_pb2.Issue),
         mox.IsA(tracker_pb2.IssueComment), None).AndReturn(
@@ -1089,7 +1089,7 @@ class IssueServiceTest(unittest.TestCase):
   def SetUpCommentRows(self):
     comment_rows = [
         (7890101, 78901, self.now, 789, 111L,
-         'content', None, True, None, False, False)]
+         'content', None, None, False, False)]
     amendment_rows = [
         (1, 78901, 7890101, 'cc', 'old', 'new val', 222, None, None)]
     attachment_rows = []
@@ -1108,7 +1108,7 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, cols=['Comment.id'] + issue_svc.COMMENT_COLS[1:],
         where=None, issue_id=issue_ids, order_by=[('created', [])]).AndReturn([
             (issue_id + 1000, issue_id, self.now, 789, 111L, 'content',
-             None, True, None, False, False) for issue_id in issue_ids])
+             None, None, False, False) for issue_id in issue_ids])
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
@@ -1139,7 +1139,7 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, cols=['Comment.id'] + issue_svc.COMMENT_COLS[1:],
         where=None, id=comment_id, order_by=[('created', [])]).AndReturn([
             (comment_id, int(comment_id / 100), self.now, 789, 111L, 'content',
-             None, True, None, False, True)])
+             None, None, False, True)])
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
@@ -1189,12 +1189,12 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, issue_ids=[100001, 100002])
     self.mox.VerifyAll()
 
-  def SetUpInsertComment(self, comment_id, was_escaped, is_spam=False,
+  def SetUpInsertComment(self, comment_id, is_spam=False,
       is_description=False, new_issue=False):
     self.services.issue.comment_tbl.InsertRow(
         self.cnxn, issue_id=78901, created=self.now, project_id=789,
         commenter_id=111L, content='content', inbound_message=None,
-        was_escaped=was_escaped, deleted_by=None, is_spam=is_spam,
+        deleted_by=None, is_spam=is_spam,
         is_description=is_description, commit=True).AndReturn(comment_id)
 
     amendment_rows = []
@@ -1212,11 +1212,11 @@ class IssueServiceTest(unittest.TestCase):
           self.cnxn, cols=issue_svc.ATTACHMENT_COLS, id=None)
 
   def testInsertComment(self):
-    self.SetUpInsertComment(7890101, False)
+    self.SetUpInsertComment(7890101)
     self.mox.ReplayAll()
     comment = tracker_pb2.IssueComment(
         issue_id=78901, timestamp=self.now, project_id=789, user_id=111L,
-        content='content', was_escaped=False)
+        content='content')
     self.services.issue.InsertComment(self.cnxn, comment, commit=True)
     self.mox.VerifyAll()
     self.assertEqual(7890101, comment.id)
@@ -1236,7 +1236,7 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     comment = tracker_pb2.IssueComment(
         id=7890101, issue_id=78901, timestamp=self.now, project_id=789,
-        user_id=111L, content='new content', was_escaped=True, deleted_by=222L,
+        user_id=111L, content='new content', deleted_by=222L,
         is_spam=False)
     self.services.issue._UpdateComment(self.cnxn, comment)
     self.mox.VerifyAll()
@@ -1256,7 +1256,7 @@ class IssueServiceTest(unittest.TestCase):
   def testCreateIssueComment(self):
     _issue_1, _issue_2 = self.SetUpGetIssues()
     self.services.issue.issue_id_2lc.CacheItem((789, 1), 78901)
-    self.SetUpInsertComment(7890101, False)
+    self.SetUpInsertComment(7890101)
     self.mox.ReplayAll()
     comment = self.services.issue.CreateIssueComment(
         self.cnxn, 789, 1, 111L, 'content', timestamp=self.now)
@@ -1266,7 +1266,7 @@ class IssueServiceTest(unittest.TestCase):
   def testCreateIssueComment_spam(self):
     _issue_1, _issue_2 = self.SetUpGetIssues()
     self.services.issue.issue_id_2lc.CacheItem((789, 1), 78901)
-    self.SetUpInsertComment(7890101, False, is_spam=True)
+    self.SetUpInsertComment(7890101, is_spam=True)
     self.mox.ReplayAll()
     comment = self.services.issue.CreateIssueComment(
         self.cnxn, 789, 1, 111L, 'content', timestamp=self.now, is_spam=True)

@@ -204,10 +204,6 @@ class IssueComment(messages.Message):
 
   attachments = messages.MessageField(Attachment, 20, repeated=True)
 
-  # TODO(jrobbins): Always store unescaped text and let EZT do the
-  # escaping on output. Then I can eliminate this.
-  was_escaped = messages.BooleanField(25, default=True)
-
   # Sequence number of the comment
   # The field is optional for compatibility with code existing before
   # this field was added.

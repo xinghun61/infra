@@ -71,7 +71,7 @@ ISSUE2FIELDVALUE_COLS = [
     'issue_id', 'field_id', 'int_value', 'str_value', 'user_id', 'derived']
 COMMENT_COLS = [
     'Comment.id', 'issue_id', 'created', 'Comment.project_id', 'commenter_id',
-    'content', 'inbound_message', 'was_escaped', 'deleted_by',
+    'content', 'inbound_message', 'deleted_by',
     'Comment.is_spam', 'is_description']
 ABBR_COMMENT_COLS = ['Comment.id', 'commenter_id', 'deleted_by',
     'is_description']
@@ -488,7 +488,7 @@ class IssueService(object):
 
     comment = self._MakeIssueComment(
         project_id, reporter_id, marked_description,
-        attachments=attachments, timestamp=timestamp, was_escaped=True,
+        attachments=attachments, timestamp=timestamp,
         is_description=True)
 
     # Set the closed_timestamp both before and after filter rules.
@@ -1683,8 +1683,7 @@ class IssueService(object):
       # Create the same summary comment as the target issue.
       comment = self._MakeIssueComment(
           dest_project.project_id, copier_id, initial_summary_comment.content,
-          attachments=attachments, timestamp=timestamp, was_escaped=True,
-          is_description=True)
+          attachments=attachments, timestamp=timestamp, is_description=True)
 
       new_issue.local_id = self.AllocateNextLocalID(
           cnxn, dest_project.project_id)
@@ -1933,8 +1932,7 @@ class IssueService(object):
   def _UnpackComment(self, comment_row):
     """Partially construct a Comment PB from a DB row."""
     (comment_id, issue_id, created, project_id, commenter_id, content,
-     inbound_message, was_escaped, deleted_by, is_spam,
-     is_description) = comment_row
+     inbound_message, deleted_by, is_spam, is_description) = comment_row
     comment = tracker_pb2.IssueComment()
     comment.id = comment_id
     comment.issue_id = issue_id
@@ -1943,7 +1941,6 @@ class IssueService(object):
     comment.user_id = commenter_id
     comment.content = content or ''
     comment.inbound_message = inbound_message or ''
-    comment.was_escaped = bool(was_escaped)
     comment.deleted_by = deleted_by or 0
     comment.is_spam = bool(is_spam)
     comment.is_description = bool(is_description)
@@ -2156,7 +2153,6 @@ class IssueService(object):
         project_id=comment.project_id,
         commenter_id=comment.user_id, content=comment.content,
         inbound_message=comment.inbound_message,
-        was_escaped=comment.was_escaped,
         deleted_by=comment.deleted_by or None,
         is_spam=comment.is_spam, is_description=comment.is_description,
         commit=commit)
@@ -2214,7 +2210,7 @@ class IssueService(object):
   def _MakeIssueComment(
       self, project_id, user_id, content, inbound_message=None,
       amendments=None, attachments=None, kept_attachments=None, timestamp=None,
-      was_escaped=False, is_spam=False, is_description=False):
+      is_spam=False, is_description=False):
     """Create in IssueComment protocol buffer in RAM.
 
     Args:
@@ -2230,7 +2226,6 @@ class IssueService(object):
       kept_attachments: list of Attachment PBs for attachments kept from
           previous descriptions, if the comment is a description
       timestamp: time at which the comment was made, defaults to now.
-      was_escaped: True if the comment was HTML escaped already.
       is_spam: True if the comment was classified as spam.
       is_description: True if the comment is a description for the issue.
     Returns:
@@ -2244,7 +2239,6 @@ class IssueService(object):
     comment.project_id = project_id
     comment.user_id = user_id
     comment.content = content or ''
-    comment.was_escaped = was_escaped
     comment.is_spam = is_spam
     comment.is_description = is_description
     if not timestamp:

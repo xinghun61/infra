@@ -951,3 +951,9 @@ ALTER TABLE Hotlist2User CHANGE role_name
 
 ALTER TABLE Invalidate CHANGE kind
   kind ENUM('user', 'project', 'issue', 'issue_id', 'hotlist');
+
+================================================================
+2016-09-10: Drop was_escaped after Comment table is made smaller
+
+-- TODO(jrobbins): drop was_escaped.  It cannot be done in production yet
+-- because the Comment table is too big.
