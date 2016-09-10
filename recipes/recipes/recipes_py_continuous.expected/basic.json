@@ -6,7 +6,7 @@
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec",
       "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'recipes-py', 'url': 'https://chromium.googlesource.com/external/github.com/luci/recipes-py'}]",
-      "--root",
+      "--patch_root",
       "recipes-py",
       "--revision_mapping_file",
       "{\"recipes-py\": \"got_revision\"}",

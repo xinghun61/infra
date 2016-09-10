@@ -30,7 +30,7 @@
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec",
       "cache_dir = '[SLAVE_BUILD]/_cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://repo.repo/build'}]",
-      "--root",
+      "--patch_root",
       "build",
       "--revision_mapping_file",
       "{}",

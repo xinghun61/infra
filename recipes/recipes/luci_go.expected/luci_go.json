@@ -6,7 +6,7 @@
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec",
       "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
-      "--root",
+      "--patch_root",
       "infra/go/src/github.com/luci/luci-go",
       "--revision_mapping_file",
       "{\"infra/go/src/github.com/luci/luci-go\": \"got_revision\"}",

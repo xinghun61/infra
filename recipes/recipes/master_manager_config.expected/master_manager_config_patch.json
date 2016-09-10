@@ -6,7 +6,7 @@
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec",
       "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra_internal', 'url': 'https://chrome-internal.googlesource.com/infra/infra_internal.git'}, {'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra-data-master-manager', 'url': 'https://chrome-internal.googlesource.com/infradata/master-manager.git'}]",
-      "--root",
+      "--patch_root",
       "infra-data-master-manager",
       "--revision_mapping_file",
       "{\"infra-data-master-manager\": \"got_revision\", \"infra_internal\": \"got_revision\"}",
