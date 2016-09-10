@@ -6,8 +6,8 @@
 ]
 
 <table cellspacing="0" cellpadding="0">
-     <tr><th align="left" valign="top" style="padding-right:.3em">Status:</th>
-      <td width="100%" valign="top">
+     <tr><th align="left" style="padding-right:.3em">Status:</th>
+      <td width="100%">
        [is issue.status.name ""]
         [is issue.derived_status.name ""]
          ----
@@ -17,9 +17,6 @@
         [end]
        [else]
         <span title="[issue.status.name] [if-any issue.status.docstring]= [end][issue.status.docstring]">[issue.status.name]</span>
-        [if-any issue.status_modified]
-          <div>Modified [issue.status_modified]</div>
-        [end]
        [end]
       </td>
      </tr>
@@ -34,7 +31,7 @@
      [end]
 
      [if-any arg0]
-       <tr><th align="left" valign="top">Owner:</th><td valign="top">
+       <tr><th align="left">Owner:</th><td>
           [is issue.owner.username ""]
             [is issue.derived_owner.username ""]
              ----
@@ -43,9 +40,6 @@
             [end]
           [else]
            [include "../framework/user-link.ezt" issue.owner]
-           [if-any issue.owner_modified]
-             <div>Modified [issue.owner_modified]</div>
-           [end]
           [end]
          </td>
        </tr>
@@ -104,9 +98,6 @@
                      [if-any issue.components.derived]style="font-style:italic"[end]
                      title="[if-any issue.components.derived]Derived: [end][issue.components.path] [if-any issue.components.docstring_short]= [end][issue.components.docstring_short]"
                      >[issue.components.path]</a></div>
-           [end]
-           [if-any issue.component_modified]
-             <div>Modified [issue.component_modified]</div>
            [end]
          </td>
        </tr>

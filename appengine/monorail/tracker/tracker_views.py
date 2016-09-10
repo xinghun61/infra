@@ -111,24 +111,6 @@ class IssueView(template_helpers.PBProxy):
     else:
       self.closed = ''
 
-    if issue.owner_modified_timestamp > issue.opened_timestamp:
-      self.owner_modified = timestr.FormatRelativeDate(
-        issue.owner_modified_timestamp, days_only=True) or 'today'
-    else:
-      self.owner_modified = None
-
-    if issue.status_modified_timestamp > issue.opened_timestamp:
-      self.status_modified = timestr.FormatRelativeDate(
-        issue.status_modified_timestamp, days_only=True) or 'today'
-    else:
-      self.status_modified = None
-
-    if issue.component_modified_timestamp > issue.opened_timestamp:
-      self.component_modified = timestr.FormatRelativeDate(
-        issue.component_modified_timestamp, days_only=True) or 'today'
-    else:
-      self.component_modified = None
-
     blocked_on_iids = issue.blocked_on_iids
     blocking_iids = issue.blocking_iids
 
