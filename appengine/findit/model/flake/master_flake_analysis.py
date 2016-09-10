@@ -55,6 +55,4 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel):
   # We need to keep these sorted manually.
   build_numbers = ndb.IntegerProperty(indexed=False, repeated=True)
   success_rates = ndb.FloatProperty(indexed=False, repeated=True)
-  flake_swarming_tasks = ndb.KeyProperty(
-      kind='FlakeSwarmingTask', repeated=True)
   suspected_flake_build_number = ndb.IntegerProperty()

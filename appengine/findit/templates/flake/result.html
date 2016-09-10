@@ -24,6 +24,7 @@
       }
 
       // Convert pass rate from [0, 1] to a percentage.
+      // TODO: -1 means that the test doesn't exist at the build.
       $.each(findit.passRates, function(index, value) {
         value[1] = (value[1] * 100).toFixed(0);
       });
