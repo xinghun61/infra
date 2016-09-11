@@ -16,7 +16,6 @@ https://gerrit.googlesource.com/gitiles/+/master/Documentation/markdown.md#Navig
 * [Users](/doc/users/index.md)
 * [Developers](/doc/developers.md)
 * [Troopers](http://go/trooper)
-* [Search](https://cr-doc.appspot.com)
 * [Internal Doc](http://go/chrome-infra-docs-internal)
 
 [home]: /doc/index.md
