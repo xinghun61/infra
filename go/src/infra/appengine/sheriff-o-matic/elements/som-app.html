@@ -155,7 +155,8 @@
             Sheriff-o-Matic
           </span>
         </paper-toolbar>
-        <som-drawer id="drawer" tree="[[_tree]]" path="{{_path}}" static-pages="[[_staticPages]]" show-infra-failures="{{showInfraFailures}}" trees="{{_trees}}"></som-drawer>
+        <som-drawer id="drawer" tree="[[_tree]]" path="{{_path}}" static-pages="[[_staticPages]]"
+          show-infra-failures="{{showInfraFailures}}" use-uberify="{{useUberify}}" trees="{{_trees}}"></som-drawer>
       </paper-header-panel>
       <paper-header-panel main id="mainHeaderPanel" class="flex layout vertical">
         <paper-toolbar>
@@ -200,6 +201,7 @@
                         tree="[[_tree]]"
                         selected="[[selected]]"
                         annotation="[[_computeAnnotation(annotations, alert)]]"
+                        use-uberify="[[useUberify]]"
                         on-annotation-change="_handleAnnotation"
                         on-link-bug="_handleLinkBug"
                         on-snooze="_handleSnooze"
@@ -215,12 +217,13 @@
                   alert="{{_examinedAlert}}"
                   tree="[[_tree]]"
                   annotation="[[_computeAnnotation(annotations, _examinedAlert)]]"
+                  use-uberify="[[useUberify]]"
                   on-annotation-change="_handleAnnotation"
                   on-link-bug="_handleLinkBug"
                   on-snooze="_handleSnooze"
                   examining
               ></som-alert-item>
-              <som-examine alert="[[_examinedAlert]]" class="flex layout vertical"></som-examine>
+              <som-examine alert="[[_examinedAlert]]" use-uberify="[[useUberify]]" class="flex layout vertical"></som-examine>
             </div>
           </template>
           <som-help id="helpSOM" class="page-body"></som-help>
@@ -412,6 +415,7 @@
           computed: '_computeExaminedAlertKey(_path)',
         },
         user: String,
+        useUberify: Boolean,
         xsrfToken: String,
       },
 

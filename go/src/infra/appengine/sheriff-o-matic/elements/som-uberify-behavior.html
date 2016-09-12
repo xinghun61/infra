@@ -8,6 +8,12 @@
         }
         u.protocol = 'https:'
         return u.toString();
+      },
+      _uberifyIfEnabled: function(setting, url) {
+        if (setting) {
+          return this._uberify(url);
+        }
+        return url;
       }
     };
 </script>

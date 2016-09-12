@@ -150,11 +150,11 @@
                 <div id="usefulLinks">
                   Useful Links:
                   <template is="dom-repeat" items="[[alert.links]]" as="link">
-                    <a class="alert-link" target="_blank" href$="[[_uberify(link.href)]]">[[link.title]]</a>
+                    <a class="alert-link" target="_blank" href$="[[_uberifyIfEnabled(useUberify, link.href)]]">[[link.title]]</a>
                   </template>
                 </div>
               </template>
-              <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]"></som-extension-build-failure>
+              <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]" use-uberify="[[useUberify]]"></som-extension-build-failure>
             </div>
           </div>
         </div>

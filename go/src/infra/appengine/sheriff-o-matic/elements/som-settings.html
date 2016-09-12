@@ -1,0 +1,46 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-localstorage/iron-localstorage.html">
+
+<dom-module id="som-settings">
+  <template>
+    <iron-localstorage
+      name="defaultTree"
+      value="{{defaultTree}}"></iron-localstorage>
+    <iron-localstorage
+      name="showInfraFailures"
+      value="{{showInfraFailures}}"></iron-localstorage>
+    <iron-localstorage
+      name="useUberify"
+      value="{{useUberify}}"
+      on-iron-localstorage-load-empty="_initializeTrue"></iron-localstorage>
+  </template>
+  <script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'som-settings',
+
+      properties: {
+        defaultTree: {
+          type: String,
+          notify: true,
+        },
+        showInfraFailures: {
+          type: Boolean,
+          notify: true,
+        },
+        useUberify: {
+          type: Boolean,
+          notify: true,
+        },
+      },
+
+      _initializeTrue: function (evt) {
+        evt.target.value = true;
+      },
+    });
+  })();
+
+  </script>
+</dom-module>

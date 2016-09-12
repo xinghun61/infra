@@ -12,23 +12,25 @@
 <script>
 (function() {
   'use strict';
+  var element;
+  var server;
+  var responseHeaders = {
+      json: { 'Content-Type': 'application/json' },
+  };
+
+  var chromiumUrl = 'https://build.chromium.org/p/chromium.webkit/builders/WebKit%20Win7';
+  var uberUrl = 'https://uberchromegw.corp.google.com/i/chromium.webkit/builders/WebKit%20Win7';
+
+  setup(function() {
+    element = fixture('basic');
+    server = sinon.fakeServer.create();
+  });
+
+  teardown(function() {
+    server.restore();
+  });
 
   suite('basic tests', function() {
-    var element;
-    var server;
-    var responseHeaders = {
-        json: { 'Content-Type': 'application/json' },
-    };
-
-    setup(function() {
-      element = fixture('basic');
-      server = sinon.fakeServer.create();
-    });
-
-    teardown(function() {
-      server.restore();
-    });
-
     test('renders bare minimum', function() {
       element.alert = {
         title: 'test title',
@@ -122,6 +124,36 @@
         assert.equal('foo', element.$.bugsList.querySelector("a").textContent);
         assert.include(element.$.bugsList.querySelector("a").href, 'foo/bar');
         done();
+      });
+
+      test('render useful links', function(done) {
+        element.alert.links = [
+          {title: 'one', href: chromiumUrl},
+          {title: 'two', href: uberUrl}
+        ];
+        flush(function() {
+          let links = element.$.usefulLinks.querySelectorAll(".alert-link");
+          assert.equal(2, links.length);
+          assert.equal('one', links[0].innerHTML);
+        });
+      });
+
+      test('uberify useful links', function(done) {
+        element.alert.links = [{title: '', href: chromiumUrl}];
+        element.useUberify = true;
+        flush(function() {
+          assert.equal(uberUrl,
+            element.$.usefulLinks.querySelector(".alert-link").href);
+        });
+      });
+
+      test('do not uberify useful links when uberify disabled', function(done) {
+        element.alert.links = [{title: '', href: chromiumUrl}];
+        element.useUberify = false;
+        flush(function() {
+          assert.equal(chromiumUrl,
+             element.$.usefulLinks.querySelector(".alert-link").href);
+        });
       });
 
     });

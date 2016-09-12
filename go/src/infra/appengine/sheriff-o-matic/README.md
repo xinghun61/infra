@@ -72,9 +72,13 @@ go build infra/monitoring/dispatcher
 
 See [alerts-dispatcher's README](https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/monitoring/dispatcher/) for more information about using this tool.
 
-## Testing the bug queue locally
-Testing the bug queue locally requires access to Monorail production. To do
-this, you will need to get credentials for a, App Engine service account.
+## Authorize local server for external APIs
+Currently, Sheriff-o-Matic accesses two APIs that require service account credentials:
+
+* Monorail - for the bug queue
+* Google Cloud Storage - for secure storage of the tree logo images
+
+To test these features locally you will need to get credentials for an App Engine service account.
 
 * Navigate to Google Cloud console -> IAM & Admin -> Service accounts.
 * Select the three-dot menu on the "App Engine default service account" item and

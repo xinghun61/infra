@@ -4,6 +4,7 @@
 <link rel="import" href="../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="../bower_components/paper-menu/paper-menu.html">
+<link rel="import" href="../elements/som-settings.html">
 
 <dom-module id="som-drawer">
   <template>
@@ -23,6 +24,7 @@
         height: 25px;
       }
       paper-checkbox {
+        padding-left: 30px;
         padding-bottom: 10px;
       }
       paper-item {
@@ -43,6 +45,11 @@
         verbose
         last-response="{{_treeList}}"
     ></iron-ajax>
+    <som-settings
+        show-infra-failures="{{showInfraFailures}}"
+        use-uberify="{{useUberify}}"
+        default-tree="{{defaultTree}}"
+    ></som-settings>
     <paper-menu attr-for-selected="value" selected="[[tree]]" selectable="paper-item" id="menu">
       <h2><iron-icon icon="folder"></iron-icon>Trees</h2>
       <template is="dom-repeat" items="[[_treeList]]" as="tree">
@@ -55,8 +62,9 @@
       </template>
 
       <h2><iron-icon icon="settings"></iron-icon>Settings</h2>
-      <div class="vertical layout center">
-        <paper-checkbox class="center" checked="{{showInfraFailures}}">Show infra failures</paper-checkbox>
+      <div class="vertical layout">
+        <paper-checkbox checked="{{showInfraFailures}}">Show infra failures</paper-checkbox>
+        <paper-checkbox checked="{{useUberify}}">Use uberchromegw</paper-checkbox>
       </div>
     </paper-menu>
   </template>
@@ -68,6 +76,7 @@
       is: 'som-drawer',
 
       properties: {
+        defaultTree: String,
         tree: String,
         path: {
            type: String,
@@ -95,6 +104,10 @@
           notify: true,
           computed: '_computeTrees(_treeList)',
         },
+        useUberify: {
+          type: Boolean,
+          notify: true,
+        },
       },
 
       _computeStaticPageList(staticPages) {
@@ -112,7 +125,7 @@
         treeList.forEach(function(tree) {
           trees[tree.name] = tree;
         });
-        let defaultTree = localStorage.getItem('defaultTree');
+        let defaultTree = this.defaultTree;
         if (this.path === '/') {
           if (defaultTree && defaultTree in trees) {
             this.path = '/' + defaultTree;
@@ -128,16 +141,7 @@
         this.path = '/' + tree;
 
         if (tree && tree in this.trees) {
-          localStorage.setItem('defaultTree', tree);
-        }
-      },
-
-      _showInfraFailuresChanged: function () {
-        // To account for the weirdness of local sotrage only accepting Strings
-        if (this.showInfraFailures) {
-          localStorage.setItem('showInfraFailures', 'true');
-        } else {
-          localStorage.removeItem('showInfraFailures');
+          this.defaultTree = tree;
         }
       },
     });

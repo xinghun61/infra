@@ -53,7 +53,7 @@
       <template is="dom-repeat" items="[[alert.extension.builders]]" as="builder">
         <paper-tab id$="[[builder.name]]">
           [[_tabTitle(builder)]]
-          <a href$="[[_uberify(builder.url, builder.latest_failure, selectedStep)]]"
+          <a href$="[[_uberifyIfEnabled(useUberify, builder.url, builder.latest_failure, selectedStep)]]"
               title="Open in a new window"
               target="_blank">
             <iron-icon icon="open-in-new"></iron-icon>
@@ -69,7 +69,7 @@
             <som-webkit-tests builder="[[builder]]" test-name="[[selectedTest]]" hidden$="[[hideWebKitTests]]">
             </som-webkit-tests>
             <iframe
-                src$="[[_uberify(builder.url,builder.latest_failure,selectedStep)]]"
+                src$="[[_uberifyIfEnabled(useUberify, builder.url,builder.latest_failure,selectedStep)]]"
                 class="flex"
             ></iframe>
           </div>
