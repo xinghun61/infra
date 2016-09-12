@@ -54,9 +54,9 @@ def BuildSQLQuery(query_ast):
   """
   left_joins = []
   where = []
-  # TODO(jrobbins): Handle "OR" in queries.  For now, we just process the
-  # first conjunction and assume that it is the only one.
-  assert len(query_ast.conjunctions) == 1, 'TODO(jrobbins) handle "OR" queries'
+  # OR-queries are broken down into multiple simpler queries before they
+  # are sent to the backends, so we should never see an "OR"..
+  assert len(query_ast.conjunctions) == 1, 'OR-query should have been split'
   conj = query_ast.conjunctions[0]
 
   for cond_num, cond in enumerate(conj.conds):

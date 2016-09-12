@@ -74,7 +74,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.mox.ResetAll()
 
   def testSearchForIIDs_AllResultsCached_AllAtRiskCached(self):
-    unfiltered_iids = {1: [1001, 1011]}
+    unfiltered_iids = {(1, 'p:v'): [1001, 1011]}
     nonviewable_iids = {1: set()}
     self.mox.StubOutWithMock(frontendsearchpipeline, '_StartBackendSearch')
     frontendsearchpipeline._StartBackendSearch(
@@ -91,7 +91,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     pipeline.SearchForIIDs()
     self.mox.VerifyAll()
     self.assertEqual(2, pipeline.total_count)
-    self.assertEqual([1001, 1011], pipeline.filtered_iids[1])
+    self.assertEqual([1001, 1011], pipeline.filtered_iids[(1, 'p:v')])
 
   def testMergeAndSortIssues_EmptyResult(self):
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
@@ -219,42 +219,79 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.assertEqual(2, index)
     self.assertEqual(None, next_cand)
 
-  def testAccumulateSampleIssues_Empty(self):
+  def testFetchAllSamples_Empty(self):
+    filtered_iids = {}
+    pipeline = frontendsearchpipeline.FrontendSearchPipeline(
+        self.mr, self.services, self.profiler, 100)
+    samples_by_shard, sample_iids_to_shard = pipeline._FetchAllSamples(
+        filtered_iids)
+    self.assertEqual({}, samples_by_shard)
+    self.assertEqual({}, sample_iids_to_shard)
+
+  def testFetchAllSamples_SmallResultsPerShard(self):
+    filtered_iids = {
+        0: [100, 110, 120],
+        1: [101, 111, 121],
+        }
+    pipeline = frontendsearchpipeline.FrontendSearchPipeline(
+        self.mr, self.services, self.profiler, 100)
+
+    samples_by_shard, sample_iids_to_shard = pipeline._FetchAllSamples(
+        filtered_iids)
+    self.assertEqual(2, len(samples_by_shard))
+    self.assertEqual(0, len(sample_iids_to_shard))
+
+  def testFetchAllSamples_Normal(self):
+    pipeline = frontendsearchpipeline.FrontendSearchPipeline(
+        self.mr, self.services, self.profiler, 100)
+    issues = self.MakeIssues(23)
+    filtered_iids = {
+        0: [issue.issue_id for issue in issues],
+        }
+
+    samples_by_shard, sample_iids_to_shard = pipeline._FetchAllSamples(
+        filtered_iids)
+    self.assertEqual(1, len(samples_by_shard))
+    self.assertEqual(2, len(samples_by_shard[0]))
+    self.assertEqual(2, len(sample_iids_to_shard))
+    for sample_iid in sample_iids_to_shard:
+      shard_key = sample_iids_to_shard[sample_iid]
+      self.assertIn(sample_iid, filtered_iids[shard_key])
+
+  def testChooseSampleIssues_Empty(self):
     """When the search gave no results, there cannot be any samples."""
-    sample_dict = {}
-    needed_iids = []
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
       self.mr, self.services, self.profiler, 100)
     issue_ids = []
-    pipeline._AccumulateSampleIssues(issue_ids, sample_dict, needed_iids)
-    self.assertEqual({}, sample_dict)
+    on_hand_issues, needed_iids = pipeline._ChooseSampleIssues(issue_ids)
+    self.assertEqual({}, on_hand_issues)
     self.assertEqual([], needed_iids)
 
-  def testAccumulateSampleIssues_Small(self):
+  def testChooseSampleIssues_Small(self):
     """When the search gave few results, don't bother with samples."""
-    sample_dict = {}
-    needed_iids = []
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
       self.mr, self.services, self.profiler, 100)
     issue_ids = [78901, 78902]
-    pipeline._AccumulateSampleIssues(issue_ids, sample_dict, needed_iids)
-    self.assertEqual({}, sample_dict)
+    on_hand_issues, needed_iids = pipeline._ChooseSampleIssues(issue_ids)
+    self.assertEqual({}, on_hand_issues)
     self.assertEqual([], needed_iids)
 
-  def testAccumulateSampleIssues_Normal(self):
-    """We will choose at least one sample for every 10 results in a shard."""
-    sample_dict = {}
-    needed_iids = []
-    pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+  def MakeIssues(self, num_issues):
     issues = []
-    for i in range(23):
+    for i in range(num_issues):
       issue = fake.MakeTestIssue(789, 100 + i, 'samp test', 'New', 111L)
       issues.append(issue)
       self.services.issue.TestAddIssue(issue)
+    return issues
 
+  def testChooseSampleIssues_Normal(self):
+    """We will choose at least one sample for every 10 results in a shard."""
+    pipeline = frontendsearchpipeline.FrontendSearchPipeline(
+      self.mr, self.services, self.profiler, 100)
+    issues = self.MakeIssues(23)
     issue_ids = [issue.issue_id for issue in issues]
-    pipeline._AccumulateSampleIssues(issue_ids, sample_dict, needed_iids)
+    on_hand_issues, needed_iids = pipeline._ChooseSampleIssues(issue_ids)
+    self.assertEqual({}, on_hand_issues)
     self.assertEqual(2, len(needed_iids))
     for sample_iid in needed_iids:
       self.assertIn(sample_iid, issue_ids)
@@ -334,11 +371,11 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     self.assertEqual({}, project_shard_timestamps)
 
     project_shard_timestamps = frontendsearchpipeline._GetProjectTimestamps(
-      [], [0, 1, 2, 3, 4])
+      [], [(0, (0, 'p:v')), (1, (1, 'p:v')), (2, (2, 'p:v'))])
     self.assertEqual({}, project_shard_timestamps)
 
     project_shard_timestamps = frontendsearchpipeline._GetProjectTimestamps(
-      [789], [0, 1, 2, 3, 4])
+      [789], [(0, (0, 'p:v')), (1, (1, 'p:v')), (2, (2, 'p:v'))])
     self.assertEqual({}, project_shard_timestamps)
 
   def testGetProjectTimestamps_SpecificProjects(self):
@@ -346,7 +383,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     memcache.set('789;1', NOW - 1000)
     memcache.set('789;2', NOW - 3000)
     project_shard_timestamps = frontendsearchpipeline._GetProjectTimestamps(
-      [789], [0, 1, 2])
+      [789], [(0, (0, 'p:v')), (1, (1, 'p:v')), (2, (2, 'p:v'))])
     self.assertEqual(
       { (789, 0): NOW,
         (789, 1): NOW - 1000,
@@ -358,7 +395,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     memcache.set('790;1', NOW - 10000)
     memcache.set('790;2', NOW - 30000)
     project_shard_timestamps = frontendsearchpipeline._GetProjectTimestamps(
-      [789, 790], [0, 1, 2])
+      [789, 790], [(0, (0, 'p:v')), (1, (1, 'p:v')), (2, (2, 'p:v'))])
     self.assertEqual(
       { (789, 0): NOW,
         (789, 1): NOW - 1000,
@@ -374,7 +411,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     memcache.set('all;1', NOW - 10000)
     memcache.set('all;2', NOW - 30000)
     project_shard_timestamps = frontendsearchpipeline._GetProjectTimestamps(
-      [], [0, 1, 2])
+      [], [(0, (0, 'p:v')), (1, (1, 'p:v')), (2, (2, 'p:v'))])
     self.assertEqual(
       { ('all', 0): NOW,
         ('all', 1): NOW - 10000,
@@ -558,7 +595,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(path='/p/proj/issues/list?q=foo')
     mr.me_user_id = 111L
     frontendsearchpipeline._StartBackendSearchCall(
-      mr, ['proj'], 2, processed_invalidations_up_to)
+      mr, ['proj'], (2, 'priority=high'), processed_invalidations_up_to)
     self.mox.VerifyAll()
 
   def testStartBackendNonviewableCall(self):
@@ -758,10 +795,10 @@ class FrontendSearchPipelineShardMethodsTest(unittest.TestCase):
 
   def setUp(self):
     self.sharded_iids = {
-      0: [10, 20, 30, 40, 50],
-      1: [21, 41, 61, 81],
-      2: [42, 52, 62, 72, 102],
-      3: [],
+      (0, 'p:v'): [10, 20, 30, 40, 50],
+      (1, 'p:v'): [21, 41, 61, 81],
+      (2, 'p:v'): [42, 52, 62, 72, 102],
+      (3, 'p:v'): [],
       }
 
   def testTotalLength_Empty(self):
@@ -783,10 +820,10 @@ class FrontendSearchPipelineShardMethodsTest(unittest.TestCase):
     """Reversing a sharded list reverses each shard."""
     frontendsearchpipeline._ReverseShards(self.sharded_iids)
     self.assertEqual(
-        {0: [50, 40, 30, 20, 10],
-         1: [81, 61, 41, 21],
-         2: [102, 72, 62, 52, 42],
-         3: [],
+        {(0, 'p:v'): [50, 40, 30, 20, 10],
+         (1, 'p:v'): [81, 61, 41, 21],
+         (2, 'p:v'): [102, 72, 62, 52, 42],
+         (3, 'p:v'): [],
          },
         self.sharded_iids)
 
@@ -797,8 +834,8 @@ class FrontendSearchPipelineShardMethodsTest(unittest.TestCase):
     self.assertEqual({}, empty_sharded_iids)
 
     frontendsearchpipeline._TrimEndShardedIIDs(
-        empty_sharded_iids, 
-        [(100, 0), (88, 8), (99, 9)],
+        empty_sharded_iids,
+        [(100, (0, 'p:v')), (88, (8, 'p:v')), (99, (9, 'p:v'))],
         12)
     self.assertEqual({}, empty_sharded_iids)
 
@@ -818,16 +855,17 @@ class FrontendSearchPipelineShardMethodsTest(unittest.TestCase):
 
   def testTrimShardedIIDs_Normal(self):
     """The first 3 samples contribute all needed IIDs, so trim off the rest."""
-    samples = [(30, 0), (41, 1), (62, 2), (40, 0), (81, 1)]
+    samples = [(30, (0, 'p:v')), (41, (1, 'p:v')), (62, (2, 'p:v')),
+               (40, (0, 'p:v')), (81, (1, 'p:v'))]
     num_trimmed = frontendsearchpipeline._TrimEndShardedIIDs(
         self.sharded_iids, samples, 5)
     self.assertEqual(2 + 1 + 0 + 0, num_trimmed)
     self.assertEqual(
         {  # shard_id: iids before lower-bound + iids before 1st excess sample.
-         0: [10, 20] + [30],
-         1: [21] + [41, 61],
-         2: [42, 52] + [62, 72, 102],
-         3: [] + []},
+         (0, 'p:v'): [10, 20] + [30],
+         (1, 'p:v'): [21] + [41, 61],
+         (2, 'p:v'): [42, 52] + [62, 72, 102],
+         (3, 'p:v'): [] + []},
         self.sharded_iids)
 
   def testCalcSamplePositions_Empty(self):
@@ -845,16 +883,17 @@ class FrontendSearchPipelineShardMethodsTest(unittest.TestCase):
     # E.g., the IIDs 2 and 4 might have been trimmed out in the forward phase.
     # But we still have them in the list for the backwards phase, and they
     # should just not contribute anything to the result.
-    samples = [(2, 2), (4, 4)]
+    samples = [(2, (2, 'p:v')), (4, (4, 'p:v'))]
     self.assertEqual(
       [], frontendsearchpipeline._CalcSamplePositions(sharded_iids, samples))
 
   def testCalcSamplePositions_Normal(self):
-    samples = [(30, 0), (41, 1), (62, 2), (40, 0), (81, 1)]
+    samples = [(30, (0, 'p:v')), (41, (1, 'p:v')), (62, (2, 'p:v')),
+               (40, (0, 'p:v')), (81, (1, 'p:v'))]
     self.assertEqual(
-      [(30, 0, 2),
-       (41, 1, 1),
-       (62, 2, 2),
-       (40, 0, 3),
-       (81, 1, 3)],
+      [(30, (0, 'p:v'), 2),
+       (41, (1, 'p:v'), 1),
+       (62, (2, 'p:v'), 2),
+       (40, (0, 'p:v'), 3),
+       (81, (1, 'p:v'), 3)],
       frontendsearchpipeline._CalcSamplePositions(self.sharded_iids, samples))

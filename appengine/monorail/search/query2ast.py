@@ -184,9 +184,6 @@ def ParseUserQuery(
   # Convert the overall query into one or more OR'd subqueries.
   subqueries = query.split(' OR ')
 
-  if len(subqueries) > 1:  # TODO(jrobbins): temporary limitation just for now.
-    raise InvalidQueryError('Logical operator OR is not supported yet.')
-
   # Make a dictionary of all fields: built-in + custom in each project.
   combined_fields = collections.defaultdict(
       list, {field_name: [field_def]

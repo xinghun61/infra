@@ -92,8 +92,7 @@ class FrontendSearchPipeline(object):
 
     # The following fields are filled in as the pipeline progresses.
     # The value None means that we still need to compute that value.
-    # A shard_id is an integer shard ID number.
-    # A shard_key is also currently an integer shard ID number.
+    # A shard_key is a tuple (shard_id, subquery).
     self.users_by_id = {}
     self.nonviewable_iids = {}  # {shard_id: set(iid)}
     self.unfiltered_iids = {}  # {shard_key: [iid, ...]} needing perm checks.
@@ -136,7 +135,7 @@ class FrontendSearchPipeline(object):
 
     with self.profiler.Phase('Filtering cached results'):
       for shard_key in self.unfiltered_iids:
-        shard_id = shard_key  # TODO(jrobbins): make shard_key a tuple.
+        shard_id, _subquery = shard_key
         if shard_id not in self.nonviewable_iids:
           logging.error(
             'Not displaying shard %r because of no nonviewable_iids', shard_id)
@@ -215,19 +214,18 @@ class FrontendSearchPipeline(object):
 
     # 1. Get sample issues in each shard and sort them all together.
     last = self.mr.start + self.mr.num
-    on_hand_samples = {}
-    needed_iids = []
-    for shard_id in self.filtered_iids:
-      self._AccumulateSampleIssues(
-          self.filtered_iids[shard_id], on_hand_samples, needed_iids)
-    retrieved_samples = self.services.issue.GetIssuesDict(
-        self.mr.cnxn, needed_iids)
-    sample_issues = on_hand_samples.values() + retrieved_samples.values()
+
+    samples_by_shard, sample_iids_to_shard = self._FetchAllSamples(
+        self.filtered_iids)
+    sample_issues = []
+    for issue_dict in samples_by_shard.values():
+      sample_issues.extend(issue_dict.values())
+
     self._LookupNeededUsers(sample_issues)
     sample_issues = _SortIssues(
         self.mr, sample_issues, self.harmonized_config, self.users_by_id)
     sample_iid_tuples = [
-        (issue.issue_id, issue.issue_id % settings.num_logical_shards)
+        (issue.issue_id, sample_iids_to_shard[issue.issue_id])
         for issue in sample_issues]
 
     # 2. Trim off some IIDs that are sure to be positioned after last.
@@ -266,17 +264,7 @@ class FrontendSearchPipeline(object):
       return None, None, None
 
     # 2. Choose and retrieve sample issues in each shard.
-    samples_by_shard = {}  # {shard_key: {iid: issue}}
-    needed_iids = []
-    for shard_id in self.filtered_iids:
-      samples_by_shard[shard_id] = {}
-      self._AccumulateSampleIssues(
-          self.filtered_iids[shard_id], samples_by_shard[shard_id], needed_iids)
-    retrieved_samples = self.services.issue.GetIssuesDict(
-        self.mr.cnxn, needed_iids)
-    for retrieved_iid, retrieved_issue in retrieved_samples.iteritems():
-      shard_id = retrieved_iid % settings.num_logical_shards
-      samples_by_shard[shard_id][retrieved_iid] = retrieved_issue
+    samples_by_shard, _ = self._FetchAllSamples(self.filtered_iids)
 
     # 3. Build up partial results for each shard.
     preceeding_counts = {}  # dict {shard_key: num_issues_preceeding_current}
@@ -363,17 +351,54 @@ class FrontendSearchPipeline(object):
 
     return prev_candidate, fetch_start + index_in_fetched, next_candidate
 
-  def _AccumulateSampleIssues(self, issue_ids, sample_dict, needed_iids):
-    """Select a scattering of issues from the list, leveraging RAM cache."""
+  def _FetchAllSamples(self, filtered_iids):
+    """Return a dict {shard_key: {iid: sample_issue}}."""
+    samples_by_shard = {}  # {shard_key: {iid: sample_issue}}
+    sample_iids_to_shard = {}  # {iid: shard_key}
+    all_needed_iids = []  # List of iids to retrieve.
+
+    for shard_key in filtered_iids:
+      on_hand_issues, shard_needed_iids = self._ChooseSampleIssues(
+          filtered_iids[shard_key])
+      samples_by_shard[shard_key] = on_hand_issues
+      for iid in on_hand_issues:
+        sample_iids_to_shard[iid] = shard_key
+      for iid in shard_needed_iids:
+        sample_iids_to_shard[iid] = shard_key
+      all_needed_iids.extend(shard_needed_iids)
+
+    retrieved_samples = self.services.issue.GetIssuesDict(
+        self.mr.cnxn, all_needed_iids)
+    for retrieved_iid, retrieved_issue in retrieved_samples.iteritems():
+      retr_shard_key = sample_iids_to_shard[retrieved_iid]
+      samples_by_shard[retr_shard_key][retrieved_iid] = retrieved_issue
+
+    return samples_by_shard, sample_iids_to_shard
+
+  def _ChooseSampleIssues(self, issue_ids):
+    """Select a scattering of issues from the list, leveraging RAM cache.
+
+    Args:
+      issue_ids: A list of issue IDs that comprise the results in a shard.
+
+    Returns:
+      A pair (on_hand_issues, needed_iids) where on_hand_issues is
+      an issue dict {iid: issue} of issues already in RAM, and
+      shard_needed_iids is a list of iids of issues that need to be retrieved.
+    """
+    on_hand_issues = {}  # {iid: issue} of sample issues already in RAM.
+    needed_iids = []  # [iid, ...] of sample issues not in RAM yet.
     chunk_size = max(MIN_SAMPLE_CHUNK_SIZE, min(MAX_SAMPLE_CHUNK_SIZE,
         int(len(issue_ids) / PREFERRED_NUM_CHUNKS)))
     for i in range(chunk_size, len(issue_ids), chunk_size):
       issue = self.services.issue.GetAnyOnHandIssue(
           issue_ids, start=i, end=min(i + chunk_size, len(issue_ids)))
       if issue:
-        sample_dict[issue.issue_id] = issue
+        on_hand_issues[issue.issue_id] = issue
       else:
         needed_iids.append(issue_ids[i])
+
+    return on_hand_issues, needed_iids
 
   def _LookupNeededUsers(self, issues):
     """Look up user info needed to sort issues, if any."""
@@ -455,7 +480,7 @@ def _StartBackendSearch(
     unfiltered_iids_dict: dict {shard_key: [iid, ...]} of unfiltered search
         results to accumulate into.  They need to be later filtered by
         permissions and merged into filtered_iids_dict.
-    search_limit_reached_dict: dict{shard_key: [bool, ...]} to determine if
+    search_limit_reached_dict: dict {shard_key: [bool, ...]} to determine if
         the search limit of any shard was reached.
     nonviewable_iids: dict {shard_id: set(iid)} of restricted issues in the
         projects being searched that the signed in user cannot view.
@@ -471,9 +496,11 @@ def _StartBackendSearch(
     unfiltered_iids_dict for those shards.
   """
   rpc_tuples = []
+  subqueries = mr.query.split(' OR ')
   needed_shard_keys = set()
   for shard_id in range(settings.num_logical_shards):
-    needed_shard_keys.add(shard_id)
+    for subquery in subqueries:
+      needed_shard_keys.add((shard_id, subquery))
 
   # 1. Get whatever we can from memcache.  Cache hits are only kept if they are
   # not already expired.
@@ -539,10 +566,11 @@ def _GetProjectTimestamps(query_project_ids, needed_shard_keys):
   if query_project_ids:
     keys = []
     for pid in query_project_ids:
-      for sid in needed_shard_keys:
+      for sid, _subquery in needed_shard_keys:
         keys.append('%d;%d' % (pid, sid))
   else:
-    keys = [('all;%d' % sid) for sid in needed_shard_keys]
+    keys = [('all;%d' % sid)
+            for sid, _subquery in needed_shard_keys]
 
   timestamps_for_project = memcache.get_multi(keys=keys)
   for key, timestamp in timestamps_for_project.iteritems():
@@ -661,31 +689,28 @@ def _GetCachedSearchResults(
   logging.info('canned query is %r', canned_query)
   canned_query = searchpipeline.ReplaceKeywordsWithUserID(
       mr.me_user_id, canned_query)
-  user_query = searchpipeline.ReplaceKeywordsWithUserID(
-      mr.me_user_id, mr.query)
 
   sd = sorting.ComputeSortDirectives(mr, harmonized_config)
   sd_str = ' '.join(sd)
+  memcache_key_prefix = '%s;%s' % (projects_str, canned_query)
+  limit_reached_key_prefix = '%s;%s' % (projects_str, canned_query)
 
   cached_dict = memcache.get_multi(
-      ['%s;%s;%s;%s;%d' % (projects_str, canned_query, user_query, sd_str, sid)
-       for sid in needed_shard_keys])
-
+      ['%s;%s;%s;%d' % (memcache_key_prefix, subquery, sd_str, sid)
+       for sid, subquery in needed_shard_keys])
   cached_search_limit_reached_dict = memcache.get_multi(
-    ['%s;%s;%s;%s;search_limit_reached;%d' % (
-        projects_str, canned_query, user_query, sd_str, sid)
-     for sid in needed_shard_keys])
+      ['%s;%s;%s;search_limit_reached;%d' % (
+          limit_reached_key_prefix, subquery, sd_str, sid)
+       for sid, subquery in needed_shard_keys])
 
   unfiltered_dict = {}
   search_limit_reached_dict = {}
-  memcache_key_prefix = '%s;%s;%s;%s' % (
-      projects_str, canned_query, user_query, sd_str)
-  limit_reached_key_prefix = '%s;%s;%s;%s;search_limit_reached' % (
-        projects_str, canned_query, user_query, sd_str)
   for shard_key in needed_shard_keys:
-    shard_id = shard_key  # TODO(jrobbins): convert to tuple.
-    memcache_key = '%s;%d' % (memcache_key_prefix, shard_id)
-    limit_reached_key = '%s;%d' % (limit_reached_key_prefix, shard_id)
+    shard_id, subquery = shard_key
+    memcache_key = '%s;%s;%s;%d' % (
+        memcache_key_prefix, subquery, sd_str, shard_id)
+    limit_reached_key = '%s;%s;%s;search_limit_reached;%d' % (
+        limit_reached_key_prefix, subquery, sd_str, shard_id)
     if memcache_key not in cached_dict:
       logging.info('memcache miss on shard %r', shard_key)
       continue
@@ -737,12 +762,12 @@ def _StartBackendSearchCall(
     mr, query_project_names, shard_key, invalidation_timestep,
     deadline=None, failfast=True):
   """Ask a backend to query one shard of the database."""
-  shard_id = shard_key  # TODO(jrobbins): convert to tuple.
+  shard_id, subquery = shard_key
   backend_host = modules.get_hostname(module='besearch')
   url = 'http://%s%s' % (backend_host, framework_helpers.FormatURL(
       mr, urls.BACKEND_SEARCH,
       projects=','.join(query_project_names),
-      q=mr.query, start=0, num=mr.start + mr.num,
+      q=subquery, start=0, num=mr.start + mr.num,
       logged_in_user_id=mr.auth.user_id or 0,
       me_user_id=mr.me_user_id, shard_id=shard_id,
       invalidation_timestep=invalidation_timestep))

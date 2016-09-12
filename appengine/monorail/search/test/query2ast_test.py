@@ -46,18 +46,7 @@ class QueryParsingUnitTest(unittest.TestCase):
     self.default_config = tracker_bizobj.MakeDefaultProjectIssueConfig(
         self.project_id)
 
-  def testParseUserQuery_OrClauseDisabled(self):
-    """We warn users that OR is not supported yet."""
-
-    with self.assertRaises(query2ast.InvalidQueryError):
-      query2ast.ParseUserQuery(
-          'ham OR fancy', '', BUILTIN_ISSUE_FIELDS, self.default_config)
-
-  @unittest.skip('TODO(jrobbins): fully support OR')
-  def skip_testParseUserQuery_OrClause(self):
-    # ParseUserQuery extends _ParseORQuery with specialized
-    # handling of "OR" operators in a user query
-
+  def testParseUserQuery_OrClause(self):
     # an "OR" query, which should look like two separate simple querys
     # joined together by a pipe.
     ast = query2ast.ParseUserQuery(

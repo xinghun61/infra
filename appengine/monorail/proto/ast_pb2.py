@@ -13,10 +13,9 @@ conjunction.
 Monorail also supports a quick-or feature: [Type=Defect,Enhancement].  That
 will match any issue that has labels Type-Defect or Type-Enhancement, or both.
 
-TODO(jrobbins): Monorail should also support a top-level "OR" keyword that can
+Monorail supports a top-level "OR" keyword that can
 be used to logically OR a series of conjunctions.  For example:
-[Type=Defect stars>10 OR Type=Enhancement stars>50].  Right now, these queries
-are parsed and represented in the AST, but not fully processed.
+[Type=Defect stars>10 OR Type=Enhancement stars>50].
 
 There are no parenthesis and no "AND" keyword.  So, the AST is always exactly
 two levels:  the overall tree consistes of a list of conjunctions, and each
