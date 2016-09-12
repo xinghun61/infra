@@ -5,6 +5,7 @@
 import errno
 import json
 import os
+import resource
 import signal
 import sys
 import tempfile
@@ -118,7 +119,10 @@ class ServiceTest(TestBase):
               "name": "foo",
               "root_directory": "/rootdir",
               "cmd": ["bar", "one", "two", 42],
-              "stop_time": 86
+              "stop_time": 86,
+              "working_directory": "/workingdir",
+              "environment": {"MY_ENV": "hello"},
+              "resources": {"num_files": [8192, 8192]}
           }"""),
         None,
         _time_fn=self.mock_time,
@@ -134,12 +138,15 @@ class ServiceTest(TestBase):
     self.mock_exit = mock.patch('os._exit', autospec=True).start()
     self.mock_fdopen = mock.patch('os.fdopen', autospec=True).start()
     self.mock_waitpid = mock.patch('os.waitpid', autospec=True).start()
-    self.mock_execv = mock.patch('os.execv', autospec=True).start()
+    self.mock_execve = mock.patch('os.execve', autospec=True).start()
     self.mock_kill = mock.patch('os.kill', autospec=True).start()
     self.mock_become_daemon = mock.patch(
         'infra.libs.service_utils.daemon.become_daemon', autospec=True).start()
     self.mock_close_all_fds = mock.patch(
         'infra.libs.service_utils.daemon.close_all_fds', autospec=True).start()
+    self.mock_chdir = mock.patch('os.chdir', autospec=True).start()
+    self.mock_setrlimit = (
+        mock.patch('resource.setrlimit', autospec=True).start())
 
   def test_start_already_running(self):
     self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
@@ -249,12 +256,20 @@ class ServiceTest(TestBase):
     self.mock_close_all_fds.assert_called_once_with(keep_fds={1, 2})
     self.assertEqual('{"pid": 555}', self._all_writes(mock_pipe_object))
     mock_pipe_object.close.assert_called_once_with()
-    self.mock_execv.assert_called_once_with('bar', [
+
+    # Starting a service shouldn't make a change in the parent's environment.
+    self.assertFalse('MY_ENV' in os.environ)
+    environment = os.environ.copy()
+    environment['MY_ENV'] = 'hello'
+    self.mock_execve.assert_called_once_with('bar', [
         'bar',
         'one',
         'two',
         '42',
-    ])
+    ], environment)
+    self.assertFalse('MY_ENV' in os.environ)
+    self.mock_setrlimit.assert_called_once_with(resource.RLIMIT_NOFILE,
+                                                [8192, 8192])
 
   def test_stop_not_running(self):
     self.s.stop()
