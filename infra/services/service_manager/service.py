@@ -9,8 +9,8 @@ import os.path
 import platform
 
 try:
-  import resource
-except ImportError:
+  import resource #pragma: no cover
+except ImportError: #pragma: no cover
   # resource module is only available in *nix platforms.
   resource = None
 

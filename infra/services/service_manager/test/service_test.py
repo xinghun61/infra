@@ -6,8 +6,8 @@ import errno
 import json
 import os
 try:
-  import resource
-except ImportError:
+  import resource #pragma: no cover
+except ImportError: #pragma: no cover
   # resource module is only available in *nix platforms.
   resource = None
 
@@ -135,10 +135,11 @@ class ServiceTest(TestBase):
 
     if sys.platform == 'win32':  # pragma: no cover
       self.mock_fork = mock.Mock()
-      self.mock_setrlimit = (
-          mock.patch('resource.setrlimit', autospec=True).start())
+      self.mock_setrlimit = mock.Mock()
     else:
       self.mock_fork = mock.patch('os.fork', autospec=True).start()
+      self.mock_setrlimit = (
+          mock.patch('resource.setrlimit', autospec=True).start())
 
     self.mock_pipe = mock.patch('os.pipe', autospec=True).start()
     self.mock_close = mock.patch('os.close', autospec=True).start()
