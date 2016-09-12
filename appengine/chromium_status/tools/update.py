@@ -56,7 +56,8 @@ def main():
   for instance in args.projects:
     print('\nDoing %s' % instance)
     subprocess.check_call(
-        [sys.executable, GAEPY, 'upload', '-f'] + s + [ROOT, '-A', instance])
+        [sys.executable, GAEPY, 'upload', '-f'] + s + ['-A', instance],
+        cwd=ROOT)
 
 
 if __name__ == '__main__':
