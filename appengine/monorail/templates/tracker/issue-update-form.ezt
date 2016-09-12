@@ -231,7 +231,7 @@
 
       [if-any page_perms.DeleteIssue]
        <label for="more_actions" style="margin-left:3em">More actions:</label>
-       <select name="more_actions" id="more_actions" style="display:none" ignore-dirty>
+       <select name="more_actions" id="more_actions" ignore-dirty>
         <option value="0" selected="selected" disabled="1">More actions...</option>
         <option value="delete">Delete issue</option>
         <option value="copy" [if-any offer_issue_copy_move][else]disabled="disabled"[end]>Copy issue</option>
@@ -245,36 +245,16 @@
   </form>
 
  [if-any page_perms.DeleteIssue]
-  <div id="delete_div"><br><br>
-  <form action="delete.do" method="post" id="delete_form">
-    <input type="hidden" name="token" value="[delete_form_token]">
-    <input type="hidden" name="id" value="[issue.local_id]">
-    <input type="hidden" name="delete" value="true">
-    <input type="submit" name="deletebtn" value="Delete issue">
-  </form>
-  </div>
-
   <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-   [# Hide the non-js UI and show a better UI to users that have JS enabled.]
    [if-any errors.copy_to][else]
      document.getElementById('copy_issue_form_fragment').style.display = "none";
    [end]
    [if-any errors.move_to][else]
      document.getElementById('move_issue_form_fragment').style.display = "none";
    [end]
-   [if-any page_perms.DeleteIssue]
-     document.getElementById('delete_div').style.display = "none";
-   [end]
 
    // TODO(jobbins): _attachIssueMoveValidator('move_to', '[issue.local_id]');
-});
-  </script>
-
-  <script type="text/javascript" nonce="[nonce]">
-runOnLoad(function() {
-     var more_actions = document.getElementById('more_actions');
-     more_actions.style.display = "";
 });
   </script>
  [end]
