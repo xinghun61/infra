@@ -2,11 +2,11 @@
 
 <table>
 <tr>
-<td colspan="4">All flaky occurrences of <b>{{flake.name}}</b>.</td>
+<td colspan="5">All flaky occurrences of <b>{{flake.name}}</b>.</td>
 </tr>
 
 <tr>
-<td colspan="4">
+<td colspan="5">
 <form action="/override_issue_id" method="GET">
 Current Issue ID where new flakes are reported:
 <input type="hidden" name="key" value="{{flake.key.urlsafe}}"/>
@@ -17,7 +17,7 @@ Current Issue ID where new flakes are reported:
 
 {% if flakiness_dashboard_urls %}
 <tr>
-<td colspan="4">
+<td colspan="5">
 Flakiness Dashboard URLs:
 {% for url in flakiness_dashboard_urls %}
 <a href="{{url.url}}">{{url.step_name}}</a>
@@ -35,6 +35,11 @@ Flakiness Dashboard URLs:
 <tr>
 
 <td><a href="{{f.url}}">try run at {{f.formatted_time}}</a></td>
+<td>
+  {% if f.milo_url %}
+  (<a href="{{f.milo_url}}">milo</a>)
+  {% endif %}
+</td>
 <td><a href="{{f.patchset_url}}">patchset</a></td>
 <td>{{f.builder}} </td>
 <td>

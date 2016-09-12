@@ -54,9 +54,10 @@ def show_all_flakes(flake, show_all):
   patchsets = filterNone(ndb.get_multi(patchsets_keys))
 
   class FailureRunExtended:
-    def __init__(self, url, patchset_url, builder, formatted_time, issue_ids,
-                 time_finished):
+    def __init__(self, url, milo_url, patchset_url, builder, formatted_time,
+                 issue_ids, time_finished):
       self.url = url
+      self.milo_url = milo_url
       self.patchset_url = patchset_url
       self.builder = builder
       self.formatted_time = formatted_time
@@ -67,6 +68,7 @@ def show_all_flakes(flake, show_all):
   for index, fr in enumerate(failure_runs):
     failure_runs_extended.append(FailureRunExtended(
       fr.getURL(),
+      fr.getMiloURL(),
       patchsets[index].getURL(),
       patchsets[index].builder,
       fr.time_finished.strftime('%Y-%m-%d %H:%M:%S UTC'),

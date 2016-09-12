@@ -16,7 +16,7 @@ class TestAllFlakeOccurrences(testing.AppengineTestCase):
   app_module = main.app
 
   def _create_flake(self):
-    tf = datetime.datetime(2016, 06, 06, 10, 20, 30)
+    tf = datetime.datetime(2016, 8, 6, 10, 20, 30)
     ts = tf - datetime.timedelta(hours=1)
     tf2 = tf - datetime.timedelta(days=5)
     ts2 = tf2 - datetime.timedelta(hours=1)

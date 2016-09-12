@@ -43,6 +43,15 @@ class BuildRun(ndb.Model):  # pragma: no cover
             self.removeMasterPrefix(parent.master) + '/builders/' +
             parent.builder + '/builds/' + str(self.buildnumber))
 
+  def getMiloURL(self):
+    # In July 2016, protobuf changed and URLs for earlier builds do not open.
+    if self.time_finished < datetime.datetime(2016, 8, 1):
+      return
+    parent = self.key.parent().get()
+    return ('https://luci-milo.appspot.com/buildbot/' +
+            self.removeMasterPrefix(parent.master) + '/' + parent.builder +
+            '/' + str(self.buildnumber))
+
   buildnumber = ndb.IntegerProperty(required=True)
   result = ndb.IntegerProperty(required=True)
   time_finished = ndb.DateTimeProperty(required=True)
