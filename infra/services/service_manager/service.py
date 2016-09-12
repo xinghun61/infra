@@ -7,7 +7,6 @@ import json
 import logging
 import os.path
 import platform
-import resource
 import signal
 import subprocess
 import sys
@@ -245,9 +244,6 @@ class Service(object):
     self._sleep_fn = _sleep_fn
 
     self._process_creator = ProcessCreator.for_platform(self)
-    self.environment = service_config.get('environment')
-    self.resources = service_config.get('resources')
-    self.working_directory = service_config.get('working_directory')
 
   # Defining 'cmd' as a property to be able to use autospec=True in mock.patch.
   @property
@@ -255,7 +251,7 @@ class Service(object):
     return self._cmd
 
   def get_running_process_state(self):
-    """Returns a ProcessState object about the process.
+    """Returns a ProcessState object about about the process.
 
     Raises some subclass of ProcessStateError if the process is not running.
     """
@@ -455,10 +451,6 @@ class UnixProcessCreator(ProcessCreator):  # pragma: no cover
     # Detach from the parent but keep FDs open so we can write to the log still.
     daemon.become_daemon(keep_fds=True)
 
-    # Change the current working directory if specified.
-    if self.service.working_directory:
-      os.chdir(self.service.working_directory)
-
     # Write our new PID to the pipe and close it.
     json.dump({'pid': os.getpid()}, control_fh)
     control_fh.close()
@@ -474,16 +466,8 @@ class UnixProcessCreator(ProcessCreator):  # pragma: no cover
     os.dup2(output_fh.fileno(), 2)
     daemon.close_all_fds(keep_fds={1, 2})
 
-    # Set environment variables and resource limits if given.
-    environment = os.environ.copy()
-    if self.service.environment:
-      environment.update(self.service.environment)
-
-    if self.service.resources:
-      self._setrlimits(self.service.resources)
-
     # Exec the service.
-    os.execve(self.service.cmd[0], self.service.cmd, environment)
+    os.execv(self.service.cmd[0], self.service.cmd)
 
   def _start_parent(self, pipe, child_pid):
     """The part of start() that runs in the parent process.
@@ -511,33 +495,6 @@ class UnixProcessCreator(ProcessCreator):  # pragma: no cover
           self.service.name)
 
     return data['pid']
-
-  def _setrlimits(self, resources):
-    """Sets the given resource limits onto the current process.
-    To get detail information for each resource limit, please visit
-    the following page: https://docs.python.org/2/library/resource.html
-
-    Args:
-      resources: a dict containing a list of (name, (softlimit, hardlimit)).
-    """
-    resources_by_name = {
-        # The maximum amount of processor time (in seconds).
-        'cpu': resource.RLIMIT_CPU,
-        # The maximum size of the virtual memory (address space) in bytes.
-        'memory': resource.RLIMIT_AS,
-        # The maximum number of open file descriptors for the process.
-        'num_files': resource.RLIMIT_NOFILE,
-        # The maximum number of processes the process may create.
-        'num_processes': resource.RLIMIT_NOFILE,
-        # The maximum size (in bytes) of the call stack for the process.
-        'stack': resource.RLIMIT_STACK,
-    }
-
-    for name, limits in resources.iteritems():
-      res = resources_by_name.get(name)
-      if res:
-        unlimited = (resource.RLIM_INFINITY, resource.RLIM_INFINITY)
-        resource.setrlimit(res, limits or unlimited)
 
 
 class WindowsProcessCreator(ProcessCreator):  # pragma: no cover

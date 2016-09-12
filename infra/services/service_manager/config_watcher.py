@@ -62,8 +62,7 @@ def parse_config(content, filename='<unknown>'):
   if 'cmd' in config:
     config['cmd'] = [str(x) for x in config['cmd']]
 
-  # 'args', 'environment', 'resources', 'stop_time', 'working_directory' are
-  # optional
+  # 'args', 'stop_time' are optional
 
   # We gathered enough errors, bail out.
   if error_occurred:
