@@ -565,7 +565,7 @@ class WindowsProcessCreator(ProcessCreator):  # pragma: no cover
           creationflags=self.CREATE_NO_WINDOW,
           stderr=output_fh,
           stdout=output_fh,
-          env=environment
+          env=environment,
       )
     finally:
       output_fh.close()

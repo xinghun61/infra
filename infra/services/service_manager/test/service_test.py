@@ -5,7 +5,12 @@
 import errno
 import json
 import os
-import resource
+try:
+  import resource
+except ImportError:
+  # resource module is only available in *nix platforms.
+  resource = None
+
 import signal
 import sys
 import tempfile
@@ -130,6 +135,8 @@ class ServiceTest(TestBase):
 
     if sys.platform == 'win32':  # pragma: no cover
       self.mock_fork = mock.Mock()
+      self.mock_setrlimit = (
+          mock.patch('resource.setrlimit', autospec=True).start())
     else:
       self.mock_fork = mock.patch('os.fork', autospec=True).start()
 
@@ -145,8 +152,6 @@ class ServiceTest(TestBase):
     self.mock_close_all_fds = mock.patch(
         'infra.libs.service_utils.daemon.close_all_fds', autospec=True).start()
     self.mock_chdir = mock.patch('os.chdir', autospec=True).start()
-    self.mock_setrlimit = (
-        mock.patch('resource.setrlimit', autospec=True).start())
 
   def test_start_already_running(self):
     self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
