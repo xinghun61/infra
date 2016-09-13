@@ -78,10 +78,12 @@ def UsersInvolvedInConfig(config):
   """Return a set of all user IDs referenced in the ProjectIssueConfig."""
   result = set()
   for template in config.templates:
-    result.add(template.owner_id)
+    if template.owner_id:
+      result.add(template.owner_id)
     result.update(template.admin_ids)
   for field in config.field_defs:
     result.update(field.admin_ids)
+  # TODO(jrobbins): add component owners, auto-cc, and admins.
   return result
 
 

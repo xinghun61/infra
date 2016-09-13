@@ -71,6 +71,142 @@ class BizobjTest(unittest.TestCase):
     config.default_template_for_users = 2
     self.CheckDefaultConfig(config)
 
+  def testUsersInvolvedInConfig_Empty(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    self.assertEqual(set(), tracker_bizobj.UsersInvolvedInConfig(config))
+
+  def testUsersInvolvedInConfig_Default(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    self.assertEqual(set(), tracker_bizobj.UsersInvolvedInConfig(config))
+
+  def testUsersInvolvedInConfig_Normal(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.templates[0].owner_id = 111L
+    config.templates[0].admin_ids = [111L, 222L]
+    config.field_defs = [tracker_pb2.FieldDef(admin_ids=[333L])]
+    self.assertEqual(
+        {111L, 222L, 333L},
+        tracker_bizobj.UsersInvolvedInConfig(config))
+
+  def testFindFieldDef_Empty(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    self.assertIsNone(tracker_bizobj.FindFieldDef('EstDays', config))
+
+  def testFindFieldDef_Default(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    self.assertIsNone(tracker_bizobj.FindFieldDef('EstDays', config))
+
+  def testFindFieldDef_Normal(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    fd = tracker_pb2.FieldDef(field_name='EstDays')
+    config.field_defs = [fd]
+    self.assertEqual(fd, tracker_bizobj.FindFieldDef('EstDays', config))
+    self.assertEqual(fd, tracker_bizobj.FindFieldDef('ESTDAYS', config))
+    self.assertIsNone(tracker_bizobj.FindFieldDef('Unknown', config))
+
+  def testFindFieldDefByID_Empty(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    self.assertIsNone(tracker_bizobj.FindFieldDefByID(1, config))
+
+  def testFindFieldDefByID_Default(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    self.assertIsNone(tracker_bizobj.FindFieldDefByID(1, config))
+
+  def testFindFieldDefByID_Normal(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    fd = tracker_pb2.FieldDef(field_id=1)
+    config.field_defs = [fd]
+    self.assertEqual(fd, tracker_bizobj.FindFieldDefByID(1, config))
+    self.assertIsNone(tracker_bizobj.FindFieldDefByID(99, config))
+
+  def testGetGrantedPerms_Empty(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    issue = tracker_pb2.Issue()
+    self.assertEqual(
+        set(), tracker_bizobj.GetGrantedPerms(issue, {111L}, config))
+
+  def testGetGrantedPerms_Default(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    issue = tracker_pb2.Issue()
+    self.assertEqual(
+        set(), tracker_bizobj.GetGrantedPerms(issue, {111L}, config))
+
+  def testGetGrantedPerms_Normal(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    fd = tracker_pb2.FieldDef(field_id=1, grants_perm='Highlight')
+    config.field_defs = [fd]
+    fv = tracker_pb2.FieldValue(field_id=1, user_id=222L)
+    issue = tracker_pb2.Issue(field_values=[fv])
+    self.assertEqual(
+        set(),
+        tracker_bizobj.GetGrantedPerms(issue, {111L}, config))
+    self.assertEqual(
+        set(['highlight']),
+        tracker_bizobj.GetGrantedPerms(issue, {111L, 222L}, config))
+
+  def testLabelIsMaskedByField(self):
+    self.assertIsNone(tracker_bizobj.LabelIsMaskedByField('UI', []))
+    self.assertIsNone(tracker_bizobj.LabelIsMaskedByField('P-1', []))
+    field_names = ['priority', 'size']
+    self.assertIsNone(tracker_bizobj.LabelIsMaskedByField(
+        'UI', field_names))
+    self.assertIsNone(tracker_bizobj.LabelIsMaskedByField(
+        'OS-All', field_names))
+    self.assertEqual(
+        'size', tracker_bizobj.LabelIsMaskedByField('size-xl', field_names))
+    self.assertEqual(
+        'size', tracker_bizobj.LabelIsMaskedByField('Size-XL', field_names))
+
+  def testNonMaskedLabels(self):
+    self.assertEqual([], tracker_bizobj.NonMaskedLabels([], []))
+    field_names = ['priority', 'size']
+    self.assertEqual([], tracker_bizobj.NonMaskedLabels([], field_names))
+    self.assertEqual(
+        [], tracker_bizobj.NonMaskedLabels(['Size-XL'], field_names))
+    self.assertEqual(
+        ['Hot'], tracker_bizobj.NonMaskedLabels(['Hot'], field_names))
+    self.assertEqual(
+        ['Hot'],
+        tracker_bizobj.NonMaskedLabels(['Hot', 'Size-XL'], field_names))
+
+  def testMakeFieldDef_Basic(self):
+    fd = tracker_bizobj.MakeFieldDef(
+        1, 789, 'Size', tracker_pb2.FieldTypes.USER_TYPE, None, None,
+        False, False, None, None, None, False,
+        None, None, None, 'Some field', False)
+    self.assertEqual(1, fd.field_id)
+
+  def testMakeFieldDef_Full(self):
+    fd = tracker_bizobj.MakeFieldDef(
+        1, 789, 'Size', tracker_pb2.FieldTypes.INT_TYPE, None, None,
+        False, False, 1, 100, None, False,
+        None, None, None, 'Some field', False)
+    self.assertEqual(1, fd.min_value)
+    self.assertEqual(100, fd.max_value)
+
+    fd = tracker_bizobj.MakeFieldDef(
+        1, 789, 'Size', tracker_pb2.FieldTypes.STR_TYPE, None, None,
+        False, False, None, None, 'A.*Z', False,
+        'EditIssue', None, None, 'Some field', False)
+    self.assertEqual('A.*Z', fd.regex)
+    self.assertEqual('EditIssue', fd.needs_perm)
+
+  def testMakeFieldValue(self):
+    # Only the first value counts.
+    fv = tracker_bizobj.MakeFieldValue(1, 42, 'yay', 111L, True)
+    self.assertEqual(1, fv.field_id)
+    self.assertEqual(42, fv.int_value)
+    self.assertIsNone(fv.str_value)
+    self.assertEqual(0, fv.user_id)
+
+    fv = tracker_bizobj.MakeFieldValue(1, None, 'yay', 111L, True)
+    self.assertEqual('yay', fv.str_value)
+    self.assertEqual(0, fv.user_id)
+
+    fv = tracker_bizobj.MakeFieldValue(1, None, None, 111L, True)
+    self.assertEqual(111L, fv.user_id)
+    self.assertEqual(True, fv.derived)
+
   def testConvertDictToTemplate(self):
     template = tracker_bizobj.ConvertDictToTemplate(
         dict(name='name', content='content', summary='summary',
