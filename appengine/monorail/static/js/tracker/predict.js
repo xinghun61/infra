@@ -98,19 +98,5 @@
       }
     }, data);
   }
-
-  window.addEventListener('load', function() {
-    var textArea = window.document.getElementById('comment');
-    if (!textArea) {
-      return;
-    }
-    // TODO: call gatherTextAndPredict here on pageload too, for existing
-    // issues that don't have components assigned.
-    var safeGatherTextAndPredict = debounce(gatherTextAndPredict);
-
-    // TODO: other events, like what if they paste text in rather than
-    // manually typing it.
-    textArea.addEventListener('keyup', safeGatherTextAndPredict);
-  });
 })(window);
 
