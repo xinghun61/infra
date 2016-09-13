@@ -525,7 +525,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 					},
 					"fake.master/fake.builder/1": {
 						Number: 1,
-						Times:  []messages.EpochTime{0, 1},
+						Times:  []messages.EpochTime{2, 3},
 						Steps: []messages.Step{
 							{
 								Name:       "fake_step",
@@ -540,7 +540,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 					},
 					"fake.master/fake.builder/2": {
 						Number: 2,
-						Times:  []messages.EpochTime{0, 1},
+						Times:  []messages.EpochTime{4, 5},
 						Steps: []messages.Step{
 							{
 								Name:       "fake_step",
@@ -555,7 +555,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 					},
 					"fake.master/fake.builder/3": {
 						Number: 3,
-						Times:  []messages.EpochTime{0, 1},
+						Times:  []messages.EpochTime{6, 7},
 						Steps: []messages.Step{
 							{
 								Name:       "fake_step",
@@ -573,6 +573,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						Type:     messages.AlertBuildFailure,
 						Body:     "",
 						Severity: reliableFailureSev,
+						Time:     6,
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{
 								{
@@ -587,7 +588,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								Build: &messages.Build{
 									BuilderName: "fake.builder",
 									Number:      3,
-									Times:       []messages.EpochTime{0, 1},
+									Times:       []messages.EpochTime{6, 7},
 									Steps: []messages.Step{
 										{
 											Name:       "fake_step",
@@ -610,7 +611,6 @@ func TestBuilderStepAlerts(t *testing.T) {
 									Repo: "chromium",
 									Positions: []string{
 										"refs/heads/master@{#291569}",
-										"refs/heads/master@{#291570}",
 									},
 								},
 							},
@@ -641,7 +641,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 					},
 					"fake.master/fake.builder/1": {
 						Number: 1,
-						Times:  []messages.EpochTime{0, 1},
+						Times:  []messages.EpochTime{2, 3},
 						Steps: []messages.Step{
 							{
 								Name:       "fake_step",
@@ -656,7 +656,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 					},
 					"fake.master/fake.builder/2": {
 						Number: 2,
-						Times:  []messages.EpochTime{0, 1},
+						Times:  []messages.EpochTime{4, 5},
 						Steps: []messages.Step{
 							{
 								Name:       "fake_step",
@@ -677,11 +677,13 @@ func TestBuilderStepAlerts(t *testing.T) {
 				},
 				wantAlerts: []messages.Alert{
 					{
-						Key:      "fake.master.fake.builder.other_step.",
-						Title:    "fakeTitle",
-						Type:     messages.AlertBuildFailure,
-						Body:     "",
-						Severity: newFailureSev,
+						Key:       "fake.master.fake.builder.other_step.",
+						Title:     "fakeTitle",
+						Type:      messages.AlertBuildFailure,
+						Body:      "",
+						Time:      4,
+						StartTime: 4,
+						Severity:  newFailureSev,
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{
 								{
@@ -689,6 +691,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									FirstFailure:  2,
 									LatestFailure: 2,
+									StartTime:     4,
 								},
 							},
 							StepAtFault: &messages.BuildStep{
@@ -696,7 +699,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								Build: &messages.Build{
 									BuilderName: "fake.builder",
 									Number:      2,
-									Times:       []messages.EpochTime{0, 1},
+									Times:       []messages.EpochTime{4, 5},
 									Steps: []messages.Step{
 										{
 											Name:       "fake_step",
@@ -733,11 +736,13 @@ func TestBuilderStepAlerts(t *testing.T) {
 						},
 					},
 					{
-						Key:      "fake.master.fake.builder.fake_step.",
-						Title:    "fakeTitle",
-						Type:     messages.AlertBuildFailure,
-						Body:     "",
-						Severity: reliableFailureSev,
+						Key:       "fake.master.fake.builder.fake_step.",
+						Title:     "fakeTitle",
+						Type:      messages.AlertBuildFailure,
+						Body:      "",
+						Severity:  reliableFailureSev,
+						Time:      4,
+						StartTime: 0,
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{
 								{
@@ -752,7 +757,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								Build: &messages.Build{
 									BuilderName: "fake.builder",
 									Number:      2,
-									Times:       []messages.EpochTime{0, 1},
+									Times:       []messages.EpochTime{4, 5},
 									Steps: []messages.Step{
 										{
 											Name:       "fake_step",
@@ -783,7 +788,6 @@ func TestBuilderStepAlerts(t *testing.T) {
 									Repo: "chromium",
 									Positions: []string{
 										"refs/heads/master@{#291569}",
-										"refs/heads/master@{#291570}",
 									},
 								},
 							},
@@ -819,7 +823,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 					},
 					"fake.master/fake.builder/1": {
 						Number: 1,
-						Times:  []messages.EpochTime{0, 1},
+						Times:  []messages.EpochTime{2, 3},
 						Steps: []messages.Step{
 							{
 								Name:       "fake_step",
@@ -834,7 +838,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 					},
 					"fake.master/fake.builder/2": {
 						Number: 2,
-						Times:  []messages.EpochTime{0, 1},
+						Times:  []messages.EpochTime{4, 5},
 						Steps: []messages.Step{
 							{
 								Name:       "fake_step",
@@ -855,6 +859,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						Type:     messages.AlertBuildFailure,
 						Body:     "",
 						Severity: reliableFailureSev,
+						Time:     4,
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{
 								{
@@ -869,7 +874,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								Build: &messages.Build{
 									BuilderName: "fake.builder",
 									Number:      2,
-									Times:       []messages.EpochTime{0, 1},
+									Times:       []messages.EpochTime{4, 5},
 									Steps: []messages.Step{
 										{
 											Name:       "fake_step",
@@ -895,7 +900,6 @@ func TestBuilderStepAlerts(t *testing.T) {
 									Repo: "chromium",
 									Positions: []string{
 										"refs/heads/master@{#291569}",
-										"refs/heads/master@{#291570}",
 									},
 								},
 							},

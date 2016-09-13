@@ -624,6 +624,7 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 		if !ok {
 			errLog.Printf("Couldn't cast extension as BuildFailure: %s", mergedAlert.Type)
 		}
+		earliestBuildStartTime := mergedBF.Builders[0].StartTime
 
 		for _, alr := range keyedAlerts[1:] {
 			if alr.Title != mergedAlert.Title {
@@ -658,7 +659,13 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 				mergedBuilder.StartTime = firstBuilder.StartTime
 			}
 			mergedBF.Builders[0] = mergedBuilder
-			mergedBF.RegressionRanges = append(mergedBF.RegressionRanges, bf.RegressionRanges...)
+			// Only use the earliest implicated regression range. We use the build
+			// start time instead of build number because master restarts mean
+			// build numbers are unreliable for ordering.
+			if bf.Builders[0].StartTime < earliestBuildStartTime {
+				earliestBuildStartTime = bf.Builders[0].StartTime
+				mergedBF.RegressionRanges = bf.RegressionRanges
+			}
 		}
 
 		// Now merge regression ranges by repo.
