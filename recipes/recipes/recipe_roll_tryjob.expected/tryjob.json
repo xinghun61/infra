@@ -58,7 +58,6 @@
       "/path/to/tmp/json"
     ],
     "name": "parse description",
-    "stdin": "",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{}@@@",
       "@@@STEP_LOG_END@json.output@@@"

@@ -25,7 +25,6 @@
     "name": "fetch https://omahaproxy.appspot.com/history"
   },
   {
-    "cmd": [],
     "name": "trigger",
     "trigger_specs": [
       {
