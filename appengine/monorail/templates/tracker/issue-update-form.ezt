@@ -245,6 +245,13 @@
   </form>
 
  [if-any page_perms.DeleteIssue]
+  <form action="delete.do" method="post" id="delete_form">
+    <input type="hidden" name="token" value="[delete_form_token]">
+    <input type="hidden" name="id" value="[issue.local_id]">
+    <input type="hidden" name="delete" value="true">
+  </form>
+
+
   <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
    [if-any errors.copy_to][else]
