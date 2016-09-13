@@ -957,3 +957,18 @@ ALTER TABLE Invalidate CHANGE kind
 
 -- TODO(jrobbins): drop was_escaped.  It cannot be done in production yet
 -- because the Comment table is too big.
+
+================================================================
+2016-09-07: First steps toward splitting Comment table
+
+CREATE TABLE CommentContent (
+  id INT NOT NULL AUTO_INCREMENT,
+  -- TODO(jrobbins) drop comment_id after Comment.commentcontent_id is added.
+  comment_id INT NOT NULL,  -- Note: no forign key reference.
+  content TEXT,
+  inbound_message TEXT,
+
+  PRIMARY KEY (id),
+  UNIQUE KEY (comment_id)  -- TODO: drop this too.
+) ENGINE=INNODB;
+

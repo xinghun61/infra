@@ -38,8 +38,9 @@ def MakeIssueService(project_service, config_service, cache_manager, my_mox):
       'issue_tbl', 'issuesummary_tbl', 'issue2label_tbl',
       'issue2component_tbl', 'issue2cc_tbl', 'issue2notify_tbl',
       'issue2fieldvalue_tbl', 'issuerelation_tbl', 'danglingrelation_tbl',
-      'issueformerlocations_tbl', 'comment_tbl', 'issueupdate_tbl',
-      'attachment_tbl', 'reindexqueue_tbl', 'localidcounter_tbl']:
+      'issueformerlocations_tbl', 'comment_tbl', 'commentcontent_tbl',
+      'issueupdate_tbl', 'attachment_tbl',
+      'reindexqueue_tbl', 'localidcounter_tbl']:
     setattr(issue_service, table_var, my_mox.CreateMock(sql.SQLTableManager))
 
   return issue_service
@@ -1083,7 +1084,7 @@ class IssueServiceTest(unittest.TestCase):
   ### Comments
 
   def testDeserializeComments_Empty(self):
-    comments = self.services.issue._DeserializeComments([], [], [])
+    comments = self.services.issue._DeserializeComments([], [], [], [])
     self.assertEqual([], comments)
 
   def SetUpCommentRows(self):
@@ -1095,10 +1096,17 @@ class IssueServiceTest(unittest.TestCase):
     attachment_rows = []
     return comment_rows, amendment_rows, attachment_rows
 
-  def testDeserializeComments(self):
+  def testDeserializeComments_NothingInCommentContent(self):
     comment_rows, amendment_rows, attachment_rows = self.SetUpCommentRows()
     comments = self.services.issue._DeserializeComments(
-        comment_rows, amendment_rows, attachment_rows)
+        comment_rows, [], amendment_rows, attachment_rows)
+    self.assertEqual(1, len(comments))
+
+  def testDeserializeComments_StringsInCommentContent(self):
+    comment_rows, amendment_rows, attachment_rows = self.SetUpCommentRows()
+    commentcontent_rows = [(7890101, 'replcement content', 'replacement msg')]
+    comments = self.services.issue._DeserializeComments(
+        comment_rows, commentcontent_rows, amendment_rows, attachment_rows)
     self.assertEqual(1, len(comments))
 
   def SetUpGetComments(self, issue_ids):
@@ -1109,6 +1117,9 @@ class IssueServiceTest(unittest.TestCase):
         where=None, issue_id=issue_ids, order_by=[('created', [])]).AndReturn([
             (issue_id + 1000, issue_id, self.now, 789, 111L, 'content',
              None, None, False, False) for issue_id in issue_ids])
+    self.services.issue.commentcontent_tbl.Select(
+        self.cnxn, cols=['comment_id', 'content', 'inbound_message'],
+        comment_id=[issue_id + 1000 for issue_id in issue_ids]).AndReturn([])
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
@@ -1140,6 +1151,9 @@ class IssueServiceTest(unittest.TestCase):
         where=None, id=comment_id, order_by=[('created', [])]).AndReturn([
             (comment_id, int(comment_id / 100), self.now, 789, 111L, 'content',
              None, None, False, True)])
+    self.services.issue.commentcontent_tbl.Select(
+        self.cnxn, cols=['comment_id', 'content', 'inbound_message'],
+        comment_id=[comment_id]).AndReturn([])
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
@@ -1160,6 +1174,9 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.comment_tbl.Select(
         self.cnxn, cols=['Comment.id'] + issue_svc.COMMENT_COLS[1:],
         where=None, id=comment_id, order_by=[('created', [])]).AndReturn([])
+    self.services.issue.commentcontent_tbl.Select(
+        self.cnxn, cols=['comment_id', 'content', 'inbound_message'],
+        comment_id=[]).AndReturn([])
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
@@ -1196,6 +1213,9 @@ class IssueServiceTest(unittest.TestCase):
         commenter_id=111L, content='content', inbound_message=None,
         deleted_by=None, is_spam=is_spam,
         is_description=is_description, commit=True).AndReturn(comment_id)
+    self.services.issue.commentcontent_tbl.InsertRow(
+        self.cnxn, comment_id=comment_id, content='content',
+        inbound_message=None, commit=True).AndReturn(comment_id * 10)
 
     amendment_rows = []
     self.services.issue.issueupdate_tbl.InsertRows(
@@ -1224,7 +1244,6 @@ class IssueServiceTest(unittest.TestCase):
   def SetUpUpdateComment(self, comment_id, delta=None):
     delta = delta or {
         'commenter_id': 111L,
-        'content': 'new content',
         'deleted_by': 222L,
         'is_spam': False,
         }

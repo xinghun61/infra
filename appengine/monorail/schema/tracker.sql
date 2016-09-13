@@ -316,6 +316,8 @@ CREATE TABLE Comment (
   project_id SMALLINT UNSIGNED NOT NULL,
 
   commenter_id INT UNSIGNED NOT NULL,
+
+  -- TODO(jrobbins): drop these once they are safely moved to CommentContent
   content TEXT,
   inbound_message TEXT,
 
@@ -332,6 +334,18 @@ CREATE TABLE Comment (
   FOREIGN KEY (issue_id) REFERENCES Issue(id),
   FOREIGN KEY (commenter_id) REFERENCES User(user_id),
   FOREIGN KEY (deleted_by) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE CommentContent (
+  id INT NOT NULL AUTO_INCREMENT,
+  -- TODO(jrobbins): drop comment_id after Comment.commentcontent_id is added.
+  comment_id INT NOT NULL,  -- Note: no forign key reference.
+  content TEXT,
+  inbound_message TEXT,
+
+  PRIMARY KEY (id),
+  UNIQUE KEY (comment_id)  -- TODO: drop this too.
 ) ENGINE=INNODB;
 
 
