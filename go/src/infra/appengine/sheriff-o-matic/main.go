@@ -744,7 +744,7 @@ func requireGoogler(c *router.Context, next router.Handler) {
 	case err != nil:
 		errStatus(c.Context, c.Writer, http.StatusInternalServerError, err.Error())
 	case !isGoogler:
-		errStatus(c.Context, c.Writer, http.StatusForbidden, err.Error())
+		errStatus(c.Context, c.Writer, http.StatusForbidden, "Access denied")
 	default:
 		next(c)
 	}
@@ -770,7 +770,7 @@ func init() {
 	r.GET("/api/v1/annotations/", protected, getAnnotationsHandler)
 	r.POST("/api/v1/annotations/:annKey/:action", protected, postAnnotationsHandler)
 	r.GET("/api/v1/bugqueue/:tree", protected, getBugQueueHandler)
-	r.GET("/api/v1/revrange/:start/:end", protected, getRevRangeHandler)
+	r.GET("/api/v1/revrange/:start/:end", basemw, getRevRangeHandler)
 	r.GET("/logos/:tree", protected, getTreeLogoHandler)
 	r.GET("/_cron/refresh/bugqueue/:tree", basemw, refreshBugQueueHandler)
 	r.GET("/_cron/annotations/flush_old/", basemw, flushOldAnnotationsHandler)
