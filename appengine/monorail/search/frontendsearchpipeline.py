@@ -147,22 +147,26 @@ class FrontendSearchPipeline(object):
           # TODO(jrobbins): avoid creating large temporary lists.
           filtered_shard_iids = [iid for iid in unfiltered_shard_iids
                                  if iid not in nonviewable_shard_iids]
-        if self.grid_mode:
-          self.filtered_iids[shard_key] = filtered_shard_iids
-        else:
-          self.filtered_iids[shard_key] = filtered_shard_iids[
-              :self.mr.start + self.mr.num]
+        self.filtered_iids[shard_key] = filtered_shard_iids
 
-    seen_iids = set()
+    seen_iids_by_shard_id = collections.defaultdict(set)
     with self.profiler.Phase('Dedupping result IIDs across shards'):
       for shard_key in self.filtered_iids:
+        shard_id, _subquery = shard_key
         deduped = [iid for iid in self.filtered_iids[shard_key]
-                   if iid not in seen_iids]
+                   if iid not in seen_iids_by_shard_id[shard_id]]
         self.filtered_iids[shard_key] = deduped
-        seen_iids.update(deduped)
+        seen_iids_by_shard_id[shard_id].update(deduped)
 
     with self.profiler.Phase('Counting all filtered results'):
-      self.total_count = len(seen_iids)
+      for shard_key in self.filtered_iids:
+        self.total_count += len(self.filtered_iids[shard_key])
+
+    if not self.grid_mode:
+      with self.profiler.Phase('Trimming results beyond pagination page'):
+        for shard_key in self.filtered_iids:
+          self.filtered_iids[shard_key] = self.filtered_iids[shard_key][
+              :self.mr.start + self.mr.num]
 
   def MergeAndSortIssues(self):
     """Merge and sort results from all shards into one combined list."""
