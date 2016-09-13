@@ -71,6 +71,10 @@ func (p *perfDeviceFailure) Title(bses []*messages.BuildStep) string {
 
 // perfFailureAnalyzer looks for perf device failures.
 func perfDeviceAnalyzer(reader client.Reader, failures []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
+	if len(failures) == 0 {
+		return []messages.ReasonRaw{}, nil
+	}
+
 	isStepFailure := make(map[string]bool)
 	for _, failure := range failures {
 		isStepFailure[failure.Step.Name] = true

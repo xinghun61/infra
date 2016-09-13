@@ -40,6 +40,13 @@ func TestPerfDeviceAnalyzer(t *testing.T) {
 	}
 
 	Convey("test analyze", t, func() {
+		Convey("no failures", func() {
+			reasons, err := perfDeviceAnalyzer(nil, makeSteps([]messages.Step{}))
+
+			So(err, ShouldBeNil)
+			So(reasons, ShouldResemble, []messages.ReasonRaw{})
+		})
+
 		Convey("empty", func() {
 			steps := []messages.Step{
 				{
