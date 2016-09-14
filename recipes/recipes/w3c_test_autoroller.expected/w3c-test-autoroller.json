@@ -105,7 +105,7 @@
       "Blink W3C Test Autoroller"
     ],
     "cwd": "[SLAVE_BUILD]/src",
-    "name": "git config"
+    "name": "set git config user.name"
   },
   {
     "cmd": [
@@ -115,7 +115,7 @@
       "blink-w3c-test-autoroller@chromium.org"
     ],
     "cwd": "[SLAVE_BUILD]/src",
-    "name": "git config (2)"
+    "name": "set git config user.email"
   },
   {
     "cmd": [
@@ -125,7 +125,7 @@
       "update_w3c_tests"
     ],
     "cwd": "[SLAVE_BUILD]/src",
-    "name": "git checkout"
+    "name": "move to new branch update_w3c_tests"
   },
   {
     "cmd": [

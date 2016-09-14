@@ -23,9 +23,12 @@ def RunSteps(api):
     api.gclient.set_config('chromium')
     api.bot_update.ensure_checkout()
 
-    api.git('config', 'user.name', 'Blink W3C Test Autoroller')
-    api.git('config', 'user.email', 'blink-w3c-test-autoroller@chromium.org')
-    api.git('checkout', '-B', 'update_w3c_tests')
+    api.git('config', 'user.name', 'Blink W3C Test Autoroller',
+            name='set git config user.name')
+    api.git('config', 'user.email', 'blink-w3c-test-autoroller@chromium.org',
+            name='set git config user.email')
+    api.git('checkout', '-B', 'update_w3c_tests',
+            name='move to new branch update_w3c_tests')
 
     cwd = api.path['checkout'].join('third_party', 'WebKit')
 
@@ -43,7 +46,7 @@ def RunSteps(api):
 
 
 def GenTests(api):
-  yield  (api.test('w3c-test-autoroller') +
-          api.properties(mastername='chromium.infra.cron',
-                         buildername='w3c-test-autoroller',
-                         slavename='fake-slave'))
+  yield (api.test('w3c-test-autoroller') +
+         api.properties(mastername='chromium.infra.cron',
+                        buildername='w3c-test-autoroller',
+                        slavename='fake-slave'))
