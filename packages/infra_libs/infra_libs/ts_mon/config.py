@@ -165,6 +165,11 @@ def add_argparse_options(parser):
       default='/chrome/infra/',
       help='metric name prefix for all metrics (default: %(default)s)')
 
+  parser.add_argument(
+      '--ts-mon-use-new-proto',
+      default=False, action='store_true',
+      help='use the new proto schema (default: false)')
+
 def process_argparse_options(args):
   """Process command line arguments to initialize the global monitor.
 
@@ -234,8 +239,8 @@ def process_argparse_options(args):
       logging.error('ts_mon monitoring is disabled because credentials are not '
                     'available')
   elif endpoint.startswith('https://'):
-    interface.state.global_monitor = monitors.HttpsMonitor(endpoint,
-                                                           credentials)
+    interface.state.global_monitor = monitors.HttpsMonitor(
+        endpoint, credentials)
   elif endpoint.lower() == 'none':
     logging.info('ts_mon monitoring has been explicitly disabled')
   else:
@@ -243,6 +248,7 @@ def process_argparse_options(args):
                   ' is invalid or not supported: %s', endpoint)
 
   interface.state.flush_mode = args.ts_mon_flush
+  interface.state.use_new_proto = args.ts_mon_use_new_proto
 
   if args.ts_mon_flush == 'auto':
     interface.state.flush_thread = interface._FlushThread(
@@ -250,3 +256,4 @@ def process_argparse_options(args):
     interface.state.flush_thread.start()
 
   standard_metrics.init()
+

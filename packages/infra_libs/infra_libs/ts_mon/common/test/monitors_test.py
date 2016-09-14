@@ -17,7 +17,8 @@ from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import monitors
 from infra_libs.ts_mon.common import pb_to_popo
 from infra_libs.ts_mon.common import targets
-from infra_libs.ts_mon.protos import metrics_pb2
+from infra_libs.ts_mon.protos.current import metrics_pb2
+from infra_libs.ts_mon.protos.new import metrics_pb2 as new_metrics_pb2
 import infra_libs
 
 
@@ -32,7 +33,8 @@ class MonitorTest(unittest.TestCase):
 class HttpsMonitorTest(unittest.TestCase):
 
   def setUp(self):
-    super(HttpsMonitorTest, self).setUp()
+    interface.state.reset_for_unittest()
+    interface.state.use_new_proto = False
 
   def message(self, pb):
     pb = monitors.Monitor._wrap_proto(pb)
@@ -90,6 +92,20 @@ class HttpsMonitorTest(unittest.TestCase):
 
     mon._http.request.assert_called_once_with('endpoint', method='POST',
                                               body=self.message(metric1))
+
+  def test_send_new(self):
+    interface.state.use_new_proto = True
+    mon = monitors.HttpsMonitor('endpoint', ':gce', http=httplib2.Http())
+    resp = mock.MagicMock(spec=httplib2.Response, status=200)
+    mon._http.request = mock.MagicMock(return_value=[resp, ""])
+
+    payload = new_metrics_pb2.MetricsPayload()
+    mon.send(payload)
+
+    mon._http.request.assert_has_calls([
+      mock.call('endpoint', method='POST',
+                body=json.dumps({'payload': pb_to_popo.convert(payload)})),
+    ])
 
 
 class PubSubMonitorTest(unittest.TestCase):

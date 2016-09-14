@@ -29,6 +29,7 @@ class GlobalsTest(auto_stub.TestCase):
 
   def setUp(self):
     super(GlobalsTest, self).setUp()
+    interface.state = interface.State()
     self.mock(config, 'load_machine_config', lambda x: {})
 
   def tearDown(self):
@@ -36,8 +37,6 @@ class GlobalsTest(auto_stub.TestCase):
     # because any FlushThread started by the test is stored in that mock state
     # and needs to be stopped before running any other tests.
     interface.close()
-    # This should probably live in interface.close()
-    interface.state = interface.State()
     super(GlobalsTest, self).tearDown()
 
   @mock.patch('requests.get', autospec=True)
