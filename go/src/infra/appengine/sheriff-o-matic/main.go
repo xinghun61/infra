@@ -646,11 +646,11 @@ func getRevRangeHandler(ctx *router.Context) {
 }
 
 type eCatcherReq struct {
-	Errors    map[string]int `json:"errors"`
-	XSRFToken string         `json:"xsrf_token"`
+	Errors    map[string]int64 `json:"errors"`
+	XSRFToken string           `json:"xsrf_token"`
 }
 
-func postECatcherHandler(ctx *router.Context) {
+func postClientMonHandler(ctx *router.Context) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
 
 	req := &eCatcherReq{}
@@ -659,14 +659,15 @@ func postECatcherHandler(ctx *router.Context) {
 		return
 	}
 
-	logging.Errorf(c, "token: %q", req.XSRFToken)
 	if err := xsrf.Check(c, req.XSRFToken); err != nil {
 		errStatus(c, w, http.StatusForbidden, err.Error())
 		return
 	}
 
-	jsErrors.Add(c, 1)
-	logging.Errorf(c, "ecatcher report: %v", req.Errors)
+	for _, errCount := range req.Errors {
+		jsErrors.Add(c, errCount)
+	}
+	logging.Errorf(c, "clientmon report: %v", req.Errors)
 }
 
 func getTreeLogoHandler(ctx *router.Context) {
@@ -774,7 +775,7 @@ func init() {
 	r.GET("/logos/:tree", protected, getTreeLogoHandler)
 	r.GET("/_cron/refresh/bugqueue/:tree", basemw, refreshBugQueueHandler)
 	r.GET("/_cron/annotations/flush_old/", basemw, flushOldAnnotationsHandler)
-	r.POST("/_/ecatcher", basemw, postECatcherHandler)
+	r.POST("/_/clientmon", basemw, postClientMonHandler)
 
 	rootRouter := router.New()
 	rootRouter.GET("/*path", basemw, indexPage)

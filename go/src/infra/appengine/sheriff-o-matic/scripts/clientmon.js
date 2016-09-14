@@ -23,7 +23,7 @@
 
   let flushErrs = throttle(function() {
     // TODO: refresh xsrf tokens, which expire after 4 hours.
-    fetch('/_/ecatcher', {
+    fetch('/_/clientmon', {
       method: 'POST',
       credentials: 'same-origin',
       body: JSON.stringify({
@@ -37,7 +37,7 @@
   });
 
   window.addEventListener('error', evt => {
-    let signature = evt.error.toString();
+    let signature = evt.message;
     if (evt.error instanceof Error) {
       signature += '\n' + evt.error.stack;
     }
