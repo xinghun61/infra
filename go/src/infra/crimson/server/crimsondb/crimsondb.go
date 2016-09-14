@@ -212,7 +212,7 @@ func DeleteIPRange(ctx context.Context, deleteList *crimson.IPRangeDeleteList) e
 		panic("Query generated does not contain a WHERE clause. " +
 			"Aborting before doing something wrong.")
 	}
-	_, err := db.Query(s, params...)
+	_, err := db.Exec(s, params...)
 	if err != nil {
 		logging.Errorf(ctx, "Deletion of IP ranges failed: %s", err)
 		return err
@@ -570,5 +570,12 @@ func DB(ctx context.Context) *sql.DB {
 // GetDBHandle returns a handle to the Cloud SQL instance used by this deployment.
 func GetDBHandle() (*sql.DB, error) {
 	// TODO(pgervais): do not hard-code the name of the database.
-	return sql.Open("mysql", "root@cloudsql(crimson-staging:crimson-staging)/crimson")
+	db, err := sql.Open("mysql", "root@cloudsql(crimson-staging:crimson-staging)/crimson")
+	if err != nil {
+		return nil, err
+	}
+	// AppEngine instance can have at most 12 concurrent
+	// connections. Additional connections would fail with 'error 2'.
+	db.SetMaxOpenConns(12)
+	return db, nil
 }
