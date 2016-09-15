@@ -72,18 +72,42 @@ go build infra/monitoring/dispatcher
 
 See [alerts-dispatcher's README](https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/monitoring/dispatcher/) for more information about using this tool.
 
-## Authorize local server for external APIs
+### Populating alerts from a JSON file
+
+In some instances, you may want to input specific alert JSON data into
+Sheriff-o-Matic. For example, you may wish to send a JSON file containing a
+snapshot of old alerts, or you may wish to tailor JSON data for a specific case
+you are testing.
+
+To do this, you can use curl to directly post alerts to Sheriff-o-Matic. For
+example, the following command would post the contents of a JSON file
+containing alert data to the chromium tree.
+
+```sh
+curl -X POST -d @/path/to/alerts.json localhost:8080/api/v1/alerts/chromium
+```
+
+An example of the alerts JSON format used by Sheriff-o-Matic can be found at
+test/alerts-data.js
+
+For more detailed information on the alert JSON format, see
+[alert-dispatcher's Alert struct](https://cs.chromium.org/chromium/infra/go/src/infra/monitoring/messages/alerts.go)
+
+## Setting up credentials for local testing
+
 Currently, Sheriff-o-Matic accesses two APIs that require service account credentials:
 
 * Monorail - for the bug queue
 * Google Cloud Storage - for secure storage of the tree logo images
 
-To test these features locally you will need to get credentials for an App Engine service account.
+To test these features locally you will need to get credentials for an App
+Engine service account.
 
 * Navigate to Google Cloud console -> IAM & Admin -> Service accounts.
 * Select the three-dot menu on the "App Engine default service account" item and
 click "Create Key".
-* Select the "JSON" option from the radio buttons and then click the "Create" button.
+* Select the "JSON" option from the radio buttons and then click the "Create"
+button.
 * A JSON file containing your key will download.
 
 Once you have the key for your service account, add the key to your environment
