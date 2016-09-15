@@ -72,8 +72,7 @@ ISSUE2FIELDVALUE_COLS = [
     'issue_id', 'field_id', 'int_value', 'str_value', 'user_id', 'derived']
 COMMENT_COLS = [
     'Comment.id', 'issue_id', 'created', 'Comment.project_id', 'commenter_id',
-    'content', 'inbound_message', 'deleted_by',
-    'Comment.is_spam', 'is_description']
+    'deleted_by', 'Comment.is_spam', 'is_description']
 COMMENTCONTENT_COLS = [
     'CommentContent.id', 'comment_id', 'content', 'inbound_message']
 ABBR_COMMENT_COLS = ['Comment.id', 'commenter_id', 'deleted_by',
@@ -1935,16 +1934,16 @@ class IssueService(object):
 
   def _UnpackComment(self, comment_row):
     """Partially construct a Comment PB from a DB row."""
-    (comment_id, issue_id, created, project_id, commenter_id, content,
-     inbound_message, deleted_by, is_spam, is_description) = comment_row
+    (comment_id, issue_id, created, project_id, commenter_id,
+     deleted_by, is_spam, is_description) = comment_row
     comment = tracker_pb2.IssueComment()
     comment.id = comment_id
     comment.issue_id = issue_id
     comment.timestamp = created
     comment.project_id = project_id
     comment.user_id = commenter_id
-    comment.content = content or ''
-    comment.inbound_message = inbound_message or ''
+    comment.content = ''  # Set from the CommentContent row.
+    comment.inbound_message = ''  # Set from the CommentContent row.
     comment.deleted_by = deleted_by or 0
     comment.is_spam = bool(is_spam)
     comment.is_description = bool(is_description)
@@ -2169,8 +2168,7 @@ class IssueService(object):
     comment_id = self.comment_tbl.InsertRow(
         cnxn, issue_id=comment.issue_id, created=comment.timestamp,
         project_id=comment.project_id,
-        commenter_id=comment.user_id, content=comment.content,
-        inbound_message=comment.inbound_message,
+        commenter_id=comment.user_id,
         deleted_by=comment.deleted_by or None,
         is_spam=comment.is_spam, is_description=comment.is_description,
         commit=commit)

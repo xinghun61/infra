@@ -1090,7 +1090,7 @@ class IssueServiceTest(unittest.TestCase):
   def SetUpCommentRows(self):
     comment_rows = [
         (7890101, 78901, self.now, 789, 111L,
-         'content', None, None, False, False)]
+         None, False, False)]
     amendment_rows = [
         (1, 78901, 7890101, 'cc', 'old', 'new val', 222, None, None)]
     attachment_rows = []
@@ -1104,7 +1104,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testDeserializeComments_StringsInCommentContent(self):
     comment_rows, amendment_rows, attachment_rows = self.SetUpCommentRows()
-    commentcontent_rows = [(7890101, 'replcement content', 'replacement msg')]
+    commentcontent_rows = [(7890101, 'content', 'msg')]
     comments = self.services.issue._DeserializeComments(
         comment_rows, commentcontent_rows, amendment_rows, attachment_rows)
     self.assertEqual(1, len(comments))
@@ -1115,11 +1115,12 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.comment_tbl.Select(
         self.cnxn, cols=['Comment.id'] + issue_svc.COMMENT_COLS[1:],
         where=None, issue_id=issue_ids, order_by=[('created', [])]).AndReturn([
-            (issue_id + 1000, issue_id, self.now, 789, 111L, 'content',
-             None, None, False, False) for issue_id in issue_ids])
+            (issue_id + 1000, issue_id, self.now, 789, 111L,
+             None, False, False) for issue_id in issue_ids])
     self.services.issue.commentcontent_tbl.Select(
         self.cnxn, cols=['comment_id', 'content', 'inbound_message'],
-        comment_id=[issue_id + 1000 for issue_id in issue_ids]).AndReturn([])
+        comment_id=[issue_id + 1000 for issue_id in issue_ids]).AndReturn([
+            (issue_id + 1000, 'content', None) for issue_id in issue_ids])
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
@@ -1149,11 +1150,12 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.comment_tbl.Select(
         self.cnxn, cols=['Comment.id'] + issue_svc.COMMENT_COLS[1:],
         where=None, id=comment_id, order_by=[('created', [])]).AndReturn([
-            (comment_id, int(comment_id / 100), self.now, 789, 111L, 'content',
-             None, None, False, True)])
+            (comment_id, int(comment_id / 100), self.now, 789, 111L,
+             None, False, True)])
     self.services.issue.commentcontent_tbl.Select(
         self.cnxn, cols=['comment_id', 'content', 'inbound_message'],
-        comment_id=[comment_id]).AndReturn([])
+        comment_id=[comment_id]).AndReturn([
+            (comment_id, 'content', None)])
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
@@ -1210,8 +1212,7 @@ class IssueServiceTest(unittest.TestCase):
       is_description=False, new_issue=False):
     self.services.issue.comment_tbl.InsertRow(
         self.cnxn, issue_id=78901, created=self.now, project_id=789,
-        commenter_id=111L, content='content', inbound_message=None,
-        deleted_by=None, is_spam=is_spam,
+        commenter_id=111L, deleted_by=None, is_spam=is_spam,
         is_description=is_description, commit=True).AndReturn(comment_id)
     self.services.issue.commentcontent_tbl.InsertRow(
         self.cnxn, comment_id=comment_id, content='content',
