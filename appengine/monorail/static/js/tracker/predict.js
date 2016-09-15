@@ -61,17 +61,23 @@
       suggestionsEl.style.display = 'flex';
       suggestionsEl.style.flexWrap = 'wrap';
       suggestionsEl.style.margin = '0.5em 0 0.5em 0';
-      var labelEl = document.createElement('div');
-      labelEl.textContent = 'Suggested Components:';
-      labelEl.style.margin = '0.25em';
-      labelEl.style.padding = '0.25em';
-      suggestionsEl.appendChild(labelEl);
-    } else {
+   } else {
       // Clear it out.
       while (suggestionsEl.firstChild) {
         suggestionsEl.removeChild(suggestionsEl.firstChild);
       }
     }
+
+    if (!resp.components || resp.components.length == 0) {
+      return;
+    }
+
+    var labelEl = document.createElement('div');
+    labelEl.textContent = 'Suggested Components:';
+    labelEl.style.margin = '0.25em';
+    labelEl.style.padding = '0.25em';
+    suggestionsEl.appendChild(labelEl);
+
     resp.components.forEach(function(component) {
       var comp = document.createElement('div');
       comp.textContent = component;
@@ -98,5 +104,25 @@
       }
     }, data);
   }
+
+  window.addEventListener('load', function() {
+    // Only use this for chromium issues.
+    if (window.location.href.indexOf('/p/chromium') == -1) {
+      return;
+    }
+
+    var textArea = window.document.getElementById('comment');
+    if (!textArea) {
+      return;
+    }
+    // TODO: call gatherTextAndPredict here on pageload too, for existing
+    // issues that don't have components assigned.
+    var safeGatherTextAndPredict = debounce(gatherTextAndPredict);
+ 
+    // TODO: other events, like what if they paste text in rather than
+    // manually typing it.
+    textArea.addEventListener('keyup', safeGatherTextAndPredict);
+  });
+
 })(window);
 
