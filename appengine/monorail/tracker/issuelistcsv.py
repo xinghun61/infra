@@ -71,6 +71,9 @@ _CSV_COLS_TO_REPLACE = {
     'opened': ['Opened', 'OpenedTimestamp'],
     'closed': ['Closed', 'ClosedTimestamp'],
     'modified': ['Modified', 'ModifiedTimestamp'],
+    'ownermodified': ['OwnerModified', 'OwnerModifiedTimestamp'],
+    'statusmodified': ['StatusModified', 'StatusModifiedTimestamp'],
+    'componentmodified': ['ComponentModified', 'ComponentModifiedTimestamp'],
     }
 
 

@@ -273,6 +273,51 @@ class TableCellCSVTest(unittest.TestCase):
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 1200000000)
 
+  def testTableCellOwnerModifiedTimestamp(self):
+    test_issue = MakeTestIssue(4, 4, 'Four')
+    test_issue.owner_modified_timestamp = 0
+
+    cell = tablecell.TableCellOwnerModifiedTimestamp(
+        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
+    self.assertEqual(cell.values[0].item, 0)
+
+    test_issue.owner_modified_timestamp = 1200000000
+    cell = tablecell.TableCellOwnerModifiedTimestamp(
+        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
+    self.assertEqual(cell.values[0].item, 1200000000)
+
+  def testTableCellStatusModifiedTimestamp(self):
+    test_issue = MakeTestIssue(4, 4, 'Four')
+    test_issue.status_modified_timestamp = 0
+
+    cell = tablecell.TableCellStatusModifiedTimestamp(
+        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
+    self.assertEqual(cell.values[0].item, 0)
+
+    test_issue.status_modified_timestamp = 1200000000
+    cell = tablecell.TableCellStatusModifiedTimestamp(
+        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
+    self.assertEqual(cell.values[0].item, 1200000000)
+
+  def testTableCellComponentModifiedTimestamp(self):
+    test_issue = MakeTestIssue(4, 4, 'Four')
+    test_issue.component_modified_timestamp = 0
+
+    cell = tablecell.TableCellComponentModifiedTimestamp(
+        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
+    self.assertEqual(cell.values[0].item, 0)
+
+    test_issue.component_modified_timestamp = 1200000000
+    cell = tablecell.TableCellComponentModifiedTimestamp(
+        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
+    self.assertEqual(cell.values[0].item, 1200000000)
+
   def testTableCellAllLabels(self):
     labels = ['A', 'B', 'C', 'D-E', 'F-G']
     derived_labels = ['W', 'X', 'Y-Z']

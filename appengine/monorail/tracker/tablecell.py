@@ -405,6 +405,81 @@ class TableCellClosedTimestamp(table_view_helpers.TableCell):
         [issue.closed_timestamp])
 
 
+class TableCellOwnerModifiedCSV(table_view_helpers.TableCell):
+  """TableCell subclass specifically for showing owner modified date."""
+
+  def __init__(
+      self, issue, col, users_by_id, non_col_labels, label_values,
+      _related, _config):
+    values = []
+    if issue.modified_timestamp:
+      values = [TimeStringForCSV(issue.owner_modified_timestamp)]
+
+    table_view_helpers.TableCell.__init__(
+        self, table_view_helpers.CELL_TYPE_UNFILTERABLE, values)
+
+
+class TableCellOwnerModifiedTimestamp(table_view_helpers.TableCell):
+  """TableCell subclass specifically for showing owner modified timestamp."""
+
+  def __init__(
+      self, issue, col, users_by_id, non_col_labels, label_values,
+      _related, _config):
+    table_view_helpers.TableCell.__init__(
+        self, table_view_helpers.CELL_TYPE_UNFILTERABLE,
+        [issue.owner_modified_timestamp])
+
+
+class TableCellStatusModifiedCSV(table_view_helpers.TableCell):
+  """TableCell subclass specifically for showing status modified date."""
+
+  def __init__(
+      self, issue, col, users_by_id, non_col_labels, label_values,
+      _related, _config):
+    values = []
+    if issue.modified_timestamp:
+      values = [TimeStringForCSV(issue.status_modified_timestamp)]
+
+    table_view_helpers.TableCell.__init__(
+        self, table_view_helpers.CELL_TYPE_UNFILTERABLE, values)
+
+
+class TableCellStatusModifiedTimestamp(table_view_helpers.TableCell):
+  """TableCell subclass specifically for showing status modified timestamp."""
+
+  def __init__(
+      self, issue, col, users_by_id, non_col_labels, label_values,
+      _related, _config):
+    table_view_helpers.TableCell.__init__(
+        self, table_view_helpers.CELL_TYPE_UNFILTERABLE,
+        [issue.status_modified_timestamp])
+
+
+class TableCellComponentModifiedCSV(table_view_helpers.TableCell):
+  """TableCell subclass specifically for showing component modified date."""
+
+  def __init__(
+      self, issue, col, users_by_id, non_col_labels, label_values,
+      _related, _config):
+    values = []
+    if issue.modified_timestamp:
+      values = [TimeStringForCSV(issue.component_modified_timestamp)]
+
+    table_view_helpers.TableCell.__init__(
+        self, table_view_helpers.CELL_TYPE_UNFILTERABLE, values)
+
+
+class TableCellComponentModifiedTimestamp(table_view_helpers.TableCell):
+  """TableCell subclass for showing component modified timestamp."""
+
+  def __init__(
+      self, issue, col, users_by_id, non_col_labels, label_values,
+      _related, _config):
+    table_view_helpers.TableCell.__init__(
+        self, table_view_helpers.CELL_TYPE_UNFILTERABLE,
+        [issue.component_modified_timestamp])
+
+
 # Maps column names to factories/constructors that make table cells.
 # Uses the defaults in issuelist.py but changes the factory for the
 # summary cell to properly escape the data for CSV files.
@@ -418,4 +493,10 @@ CSV_CELL_FACTORIES.update({
     'closedtimestamp': TableCellClosedTimestamp,
     'modified': TableCellModifiedCSV,
     'modifiedtimestamp': TableCellModifiedTimestamp,
+    'ownermodified': TableCellOwnerModifiedCSV,
+    'ownermodifiedtimestamp': TableCellOwnerModifiedTimestamp,
+    'statusmodified': TableCellStatusModifiedCSV,
+    'statusmodifiedtimestamp': TableCellStatusModifiedTimestamp,
+    'componentmodified': TableCellComponentModifiedCSV,
+    'componentmodifiedtimestamp': TableCellComponentModifiedTimestamp,
     })

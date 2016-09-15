@@ -31,6 +31,9 @@ class IssueListCSVTest(unittest.TestCase):
     self.assertEqual('Closed ClosedTimestamp Modified ModifiedTimestamp',
                      issuelistcsv._RewriteColspec('Closed Modified'))
 
+    self.assertEqual('OwnerModified OwnerModifiedTimestamp',
+                     issuelistcsv._RewriteColspec('OwnerModified'))
+
 
   def testGatherPageData_AnonUsers(self):
     """Anonymous users cannot download the issue list."""
