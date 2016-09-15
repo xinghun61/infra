@@ -75,23 +75,11 @@ class EventMonUploader(webapp2.RequestHandler):
       description='Number of reported test results')
 
   def post(self):
-    if not self.request.body:
-      logging.error('Missing request payload')
-      self.response.set_status(400)
-      return
-
-    try:
-      payload = json.loads(self.request.body)
-    except ValueError:
-      logging.error('Failed to parse request payload as JSON')
-      self.response.set_status(400)
-      return
-
     # Retrieve test json from datastore based on task parameters.
-    master = payload.get('master')
-    builder = payload.get('builder')
-    build_number = payload.get('build_number')
-    test_type = payload.get('test_type')
+    master = self.request.get('master')
+    builder = self.request.get('builder')
+    build_number = self.request.get('build_number')
+    test_type = self.request.get('test_type')
     if not master or not builder or not build_number or not test_type:
       logging.error(
           'Missing required parameters: (master=%s, builder=%s, '
