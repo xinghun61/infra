@@ -438,7 +438,6 @@ function TKR_setUpSearchStore(
   TKR_addACDateItems(searchWords, docDict, 'modified', 'Modified');
   TKR_addACDateItems(searchWords, docDict, 'closed', 'Closed');
   TKR_addACDateItems(searchWords, docDict, 'ownermodified', 'Owner modified');
-  TKR_addACDateItems(searchWords, docDict, 'ownermodified', 'Owner modified');
   TKR_addACDateItems(searchWords, docDict, 'statusmodified', 'Status modified');
   TKR_addACDateItems(
       searchWords, docDict, 'componentmodified', 'Component modified');
