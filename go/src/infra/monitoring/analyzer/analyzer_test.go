@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"infra/libs/testing/ansidiff"
+	analyzertest "infra/monitoring/analyzer/test"
 	"infra/monitoring/client"
 	clientTest "infra/monitoring/client/test"
 	"infra/monitoring/messages"
@@ -198,23 +199,9 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 			name:    "builders ok",
 			master:  "fake.master",
 			builder: "fake.builder",
-			builds: map[string]*messages.Build{
-				"fake.master/fake.builder/0": {
-					Steps: []messages.Step{
-						{
-							Name: "fake_step",
-							Times: []messages.EpochTime{
-								messages.TimeToEpochTime(time.Unix(10, 0)),
-								messages.TimeToEpochTime(time.Unix(100, 0)),
-							},
-						},
-					},
-					Times: []messages.EpochTime{
-						messages.TimeToEpochTime(time.Unix(10, 0)),
-						messages.TimeToEpochTime(time.Unix(100, 0)),
-					},
-				},
-			},
+			builds: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+				Build(0).Times(10, 100).
+				Step("fake_step").Times(10, 100).BuilderFaker.Builds,
 			b: messages.Builder{
 				State:        messages.StateBuilding,
 				BuilderName:  "fake.builder",
@@ -227,38 +214,11 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 			name:    "builder building for too long",
 			master:  "fake.master",
 			builder: "hung.builder",
-			builds: map[string]*messages.Build{
-				"fake.master/hung.builder/0": {
-					Number: 0,
-					Times: []messages.EpochTime{
-						messages.TimeToEpochTime(time.Unix(10, 0)),
-						messages.TimeToEpochTime(time.Unix(100, 0)),
-					},
-					Steps: []messages.Step{
-						{
-							Name: "fake_step",
-							Times: []messages.EpochTime{
-								messages.TimeToEpochTime(time.Unix(10, 0)),
-								messages.TimeToEpochTime(time.Unix(100, 0)),
-							},
-						},
-					},
-				},
-				"fake.master/hung.builder/1": {
-					Number: 1,
-					Times: []messages.EpochTime{
-						messages.TimeToEpochTime(time.Unix(100, 0)),
-					},
-					Steps: []messages.Step{
-						{
-							Name: "fake_step",
-							Times: []messages.EpochTime{
-								messages.TimeToEpochTime(time.Unix(100, 0)),
-							},
-						},
-					},
-				},
-			},
+			builds: analyzertest.NewBuilderFaker("fake.master", "hung.builder").
+				Build(0).Times(10, 100).
+				Step("fake_step").Times(10, 100).BuilderFaker.
+				Build(1).Times(100, 0).
+				Step("fake_step").Times(100, 0).BuilderFaker.Builds,
 			b: messages.Builder{
 				State:        messages.StateBuilding,
 				BuilderName:  "fake.builder",
@@ -327,41 +287,17 @@ func TestBuilderStepAlerts(t *testing.T) {
 				master:       "fake.master",
 				builder:      "fake.builder",
 				recentBuilds: []int64{0},
-				builds: map[string]*messages.Build{
-					"fake.master/fake.builder/0": {
-						Number: 0,
-						Times:  []messages.EpochTime{0, 1},
-						Steps: []messages.Step{
-							{
-								Name:    "fake_step",
-								Results: []interface{}{float64(0)},
-							},
-						},
-					},
-				},
+				builds: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(0, 1).Step("fake_step").Results(0).BuilderFaker.Builds,
 			},
 			{
 				name:         "one build failure",
 				master:       "fake.master",
 				builder:      "fake.builder",
 				recentBuilds: []int64{0},
-				builds: map[string]*messages.Build{
-					"fake.master/fake.builder/0": {
-						BuilderName: "fake.builder",
-						Number:      0,
-						Times:       []messages.EpochTime{0, 1},
-						Steps: []messages.Step{
-							{
-								Name:       "fake_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(2)},
-							},
-						},
-						Properties: [][]interface{}{
-							{"got_revision_cp", "refs/heads/master@{#291569}"},
-						},
-					},
-				},
+				builds: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(0, 1).GotRevision("refs/heads/master@{#291569}").
+					Step("fake_step").Results(2).BuilderFaker.Builds,
 				wantAlerts: []messages.Alert{
 					{
 						Key:      "fake.master.fake.builder.fake_step.",
@@ -417,23 +353,9 @@ func TestBuilderStepAlerts(t *testing.T) {
 				master:       "fake.master",
 				builder:      "fake.builder",
 				recentBuilds: []int64{0},
-				builds: map[string]*messages.Build{
-					"fake.master/fake.builder/0": {
-						Number: 0,
-						Times:  []messages.EpochTime{0, 1},
-						Steps: []messages.Step{
-							{
-								Name:       "fake_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(2)},
-							},
-						},
-						BuilderName: "fake.builder",
-						Properties: [][]interface{}{
-							{"got_revision_cp", "refs/heads/master@{#291569}"},
-						},
-					},
-				},
+				builds: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(0, 1).GotRevision("refs/heads/master@{#291569}").
+					Step("fake_step").Results(2).BuilderFaker.Builds,
 				finditData: []*messages.FinditResult{
 					{
 						SuspectedCLs: []messages.SuspectCL{
@@ -507,65 +429,15 @@ func TestBuilderStepAlerts(t *testing.T) {
 				master:       "fake.master",
 				builder:      "fake.builder",
 				recentBuilds: []int64{0, 1, 2, 3},
-				builds: map[string]*messages.Build{
-					"fake.master/fake.builder/0": {
-						Number: 0,
-						Times:  []messages.EpochTime{0, 1},
-						Steps: []messages.Step{
-							{
-								Name:       "fake_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(2)},
-							},
-						},
-						BuilderName: "fake.builder",
-						Properties: [][]interface{}{
-							{"got_revision_cp", "refs/heads/master@{#291569}"},
-						},
-					},
-					"fake.master/fake.builder/1": {
-						Number: 1,
-						Times:  []messages.EpochTime{2, 3},
-						Steps: []messages.Step{
-							{
-								Name:       "fake_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(2)},
-							},
-						},
-						BuilderName: "fake.builder",
-						Properties: [][]interface{}{
-							{"got_revision_cp", "refs/heads/master@{#291570}"},
-						},
-					},
-					"fake.master/fake.builder/2": {
-						Number: 2,
-						Times:  []messages.EpochTime{4, 5},
-						Steps: []messages.Step{
-							{
-								Name:       "fake_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(2)},
-							},
-						},
-						BuilderName: "fake.builder",
-						Properties: [][]interface{}{
-							{"got_revision_cp", "refs/heads/master@{#291570}"},
-						},
-					},
-					"fake.master/fake.builder/3": {
-						Number: 3,
-						Times:  []messages.EpochTime{6, 7},
-						Steps: []messages.Step{
-							{
-								Name:       "fake_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(2)},
-							},
-						},
-						BuilderName: "fake.builder",
-					},
-				},
+				builds: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(0, 1).GotRevision("refs/heads/master@{#291569}").
+					Step("fake_step").Results(2).BuilderFaker.
+					Build(1).Times(2, 3).GotRevision("refs/heads/master@{#291570}").
+					Step("fake_step").Results(2).BuilderFaker.
+					Build(2).Times(4, 5).GotRevision("refs/heads/master@{#291570}").
+					Step("fake_step").Results(2).BuilderFaker.
+					Build(3).Times(6, 7).GotRevision("refs/heads/master@{#291570}").
+					Step("fake_step").Results(2).BuilderFaker.Builds,
 				wantAlerts: []messages.Alert{
 					{
 						Key:      "fake.master.fake.builder.fake_step.",
@@ -596,6 +468,9 @@ func TestBuilderStepAlerts(t *testing.T) {
 											Results:    []interface{}{float64(2)},
 										},
 									},
+									Properties: [][]interface{}{
+										{"got_revision_cp", "refs/heads/master@{#291570}"},
+									},
 								},
 								Step: &messages.Step{
 									Name:       "fake_step",
@@ -623,58 +498,14 @@ func TestBuilderStepAlerts(t *testing.T) {
 				master:       "fake.master",
 				builder:      "fake.builder",
 				recentBuilds: []int64{0, 1, 2},
-				builds: map[string]*messages.Build{
-					"fake.master/fake.builder/0": {
-						Number: 0,
-						Times:  []messages.EpochTime{0, 1},
-						Steps: []messages.Step{
-							{
-								Name:       "fake_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(2)},
-							},
-						},
-						BuilderName: "fake.builder",
-						Properties: [][]interface{}{
-							{"got_revision_cp", "refs/heads/master@{#291569}"},
-						},
-					},
-					"fake.master/fake.builder/1": {
-						Number: 1,
-						Times:  []messages.EpochTime{2, 3},
-						Steps: []messages.Step{
-							{
-								Name:       "fake_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(2)},
-							},
-						},
-						BuilderName: "fake.builder",
-						Properties: [][]interface{}{
-							{"got_revision_cp", "refs/heads/master@{#291570}"},
-						},
-					},
-					"fake.master/fake.builder/2": {
-						Number: 2,
-						Times:  []messages.EpochTime{4, 5},
-						Steps: []messages.Step{
-							{
-								Name:       "fake_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(2)},
-							},
-							{
-								Name:       "other_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(2)},
-							},
-						},
-						BuilderName: "fake.builder",
-						Properties: [][]interface{}{
-							{"got_revision_cp", "refs/heads/master@{#291570}"},
-						},
-					},
-				},
+				builds: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(0, 1).GotRevision("refs/heads/master@{#291569}").
+					Step("fake_step").Results(2).BuilderFaker.
+					Build(1).Times(2, 3).GotRevision("refs/heads/master@{#291570}").
+					Step("fake_step").Results(2).BuilderFaker.
+					Build(2).Times(4, 5).GotRevision("refs/heads/master@{#291570}").
+					Step("fake_step").Results(2).BuildFaker.
+					Step("other_step").Results(2).BuilderFaker.Builds,
 				wantAlerts: []messages.Alert{
 					{
 						Key:       "fake.master.fake.builder.other_step.",
@@ -800,58 +631,14 @@ func TestBuilderStepAlerts(t *testing.T) {
 				master:       "fake.master",
 				builder:      "fake.builder",
 				recentBuilds: []int64{0, 1, 2},
-				builds: map[string]*messages.Build{
-					"fake.master/fake.builder/0": {
-						Number: 0,
-						Times:  []messages.EpochTime{0, 1},
-						Steps: []messages.Step{
-							{
-								Name:       "fake_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(2)},
-							},
-							{
-								Name:       "other_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(2)},
-							},
-						},
-						BuilderName: "fake.builder",
-						Properties: [][]interface{}{
-							{"got_revision_cp", "refs/heads/master@{#291569}"},
-						},
-					},
-					"fake.master/fake.builder/1": {
-						Number: 1,
-						Times:  []messages.EpochTime{2, 3},
-						Steps: []messages.Step{
-							{
-								Name:       "fake_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(2)},
-							},
-						},
-						BuilderName: "fake.builder",
-						Properties: [][]interface{}{
-							{"got_revision_cp", "refs/heads/master@{#291570}"},
-						},
-					},
-					"fake.master/fake.builder/2": {
-						Number: 2,
-						Times:  []messages.EpochTime{4, 5},
-						Steps: []messages.Step{
-							{
-								Name:       "fake_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(2)},
-							},
-						},
-						BuilderName: "fake.builder",
-						Properties: [][]interface{}{
-							{"got_revision_cp", "refs/heads/master@{#291570}"},
-						},
-					},
-				},
+				builds: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(0, 1).GotRevision("refs/heads/master@{#291569}").
+					Step("fake_step").Results(2).BuildFaker.
+					Step("other_step").Results(2).BuilderFaker.
+					Build(1).Times(2, 3).GotRevision("refs/heads/master@{#291570}").
+					Step("fake_step").Results(2).BuilderFaker.
+					Build(2).Times(4, 5).GotRevision("refs/heads/master@{#291570}").
+					Step("fake_step").Results(2).BuilderFaker.Builds,
 				wantAlerts: []messages.Alert{
 					{
 						Key:      "fake.master.fake.builder.fake_step.",
@@ -1193,23 +980,9 @@ func TestStepFailures(t *testing.T) {
 				master:   "stepCheck.master",
 				builder:  "fake.builder",
 				buildNum: 0,
-				bCache: map[string]*messages.Build{
-					"stepCheck.master/fake.builder/0": {
-						Steps: []messages.Step{
-							{
-								Name:       "ok_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(0)},
-							},
-							{
-								Name:       "broken_step",
-								IsFinished: true,
-								Results:    []interface{}{float64(3)},
-							},
-						},
-						BuilderName: "fake.builder",
-					},
-				},
+				bCache: analyzertest.NewBuilderFaker("stepCheck.master", "fake.builder").
+					Build(0).Step("ok_step").Results(0).BuildFaker.
+					Step("broken_step").Results(3).BuilderFaker.Builds,
 				want: []*messages.BuildStep{
 					{
 						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/stepCheck.master", t)},

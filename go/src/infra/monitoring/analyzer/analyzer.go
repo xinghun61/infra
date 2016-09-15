@@ -735,7 +735,7 @@ func (a *Analyzer) stepFailures(master *messages.MasterLocation, builderName str
 	var err error // To avoid re-scoping b in the nested conditional below with a :=.
 	b, err := a.Reader.Build(master, builderName, bID)
 	if err != nil || b == nil {
-		errLog.Printf("Error fetching build: %v", err)
+		errLog.Printf("Error fetching build %s/%s/%d: %v", master, builderName, bID, err)
 		return nil, err
 	}
 
