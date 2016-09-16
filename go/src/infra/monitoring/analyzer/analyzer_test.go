@@ -445,7 +445,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						Type:     messages.AlertBuildFailure,
 						Body:     "",
 						Severity: reliableFailureSev,
-						Time:     6,
+						Time:     messages.EpochTime(6),
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{
 								{
@@ -486,6 +486,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 									Repo: "chromium",
 									Positions: []string{
 										"refs/heads/master@{#291569}",
+										"refs/heads/master@{#291570}",
 									},
 								},
 							},
@@ -512,17 +513,17 @@ func TestBuilderStepAlerts(t *testing.T) {
 						Title:     "fakeTitle",
 						Type:      messages.AlertBuildFailure,
 						Body:      "",
-						Time:      4,
-						StartTime: 4,
+						Time:      messages.EpochTime(4),
+						StartTime: messages.EpochTime(4),
 						Severity:  newFailureSev,
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{
 								{
 									Name:          "fake.builder",
 									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									StartTime:     messages.EpochTime(4),
 									FirstFailure:  2,
 									LatestFailure: 2,
-									StartTime:     4,
 								},
 							},
 							StepAtFault: &messages.BuildStep{
@@ -567,13 +568,12 @@ func TestBuilderStepAlerts(t *testing.T) {
 						},
 					},
 					{
-						Key:       "fake.master.fake.builder.fake_step.",
-						Title:     "fakeTitle",
-						Type:      messages.AlertBuildFailure,
-						Body:      "",
-						Severity:  reliableFailureSev,
-						Time:      4,
-						StartTime: 0,
+						Key:      "fake.master.fake.builder.fake_step.",
+						Title:    "fakeTitle",
+						Type:     messages.AlertBuildFailure,
+						Body:     "",
+						Severity: reliableFailureSev,
+						Time:     messages.EpochTime(4),
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{
 								{
@@ -619,6 +619,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 									Repo: "chromium",
 									Positions: []string{
 										"refs/heads/master@{#291569}",
+										"refs/heads/master@{#291570}",
 									},
 								},
 							},
@@ -646,7 +647,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						Type:     messages.AlertBuildFailure,
 						Body:     "",
 						Severity: reliableFailureSev,
-						Time:     4,
+						Time:     messages.EpochTime(4),
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{
 								{
@@ -687,6 +688,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 									Repo: "chromium",
 									Positions: []string{
 										"refs/heads/master@{#291569}",
+										"refs/heads/master@{#291570}",
 									},
 								},
 							},
