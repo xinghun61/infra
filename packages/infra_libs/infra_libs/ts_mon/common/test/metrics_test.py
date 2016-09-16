@@ -653,6 +653,7 @@ class DistributionMetricTest(TestBase):
           10, data.distribution_value.linear_buckets.num_finite_buckets)
       self.assertEqual(1, data.distribution_value.linear_buckets.width)
       self.assertEqual(stream_kind, data_set.stream_kind)
+      self.assertEqual(7, data.distribution_value.count)
 
   def test_generate_geomertic_distribution(self):
     bucketer = distribution.GeometricBucketer(growth_factor=10**2,
@@ -674,6 +675,7 @@ class DistributionMetricTest(TestBase):
       self.assertEqual(
           10**2, data.distribution_value.exponential_buckets.growth_factor)
       self.assertEqual(stream_kind, data_set.stream_kind)
+      self.assertEqual(7, data.distribution_value.count)
 
   def test_populate_is_cumulative(self):
     pb = metrics_pb2.MetricsData()

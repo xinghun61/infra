@@ -557,6 +557,7 @@ class DistributionMetric(Metric):
         value.buckets.get(i, 0) for i in
         xrange(0, value.bucketer.total_buckets))
 
+    pb.count = value.count
     pb.mean = float(value.sum) / max(value.count, 1)
 
   def _populate_value_type(self, data_set_pb):
