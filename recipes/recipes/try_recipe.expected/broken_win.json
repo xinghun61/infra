@@ -93,6 +93,7 @@
     "name": "fetch recipe engine deps from scratch."
   },
   {
+    "cmd": [],
     "name": "properties (0)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@properties@{@@@",

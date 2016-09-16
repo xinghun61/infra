@@ -65,6 +65,7 @@
     "name": "fetch recipe engine deps"
   },
   {
+    "cmd": [],
     "name": "properties (0)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@properties@{@@@",

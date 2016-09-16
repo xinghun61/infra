@@ -104,6 +104,7 @@
     "name": "infra go tests"
   },
   {
+    "cmd": [],
     "name": "cipd - not building packages",
     "~followup_annotations": [
       "@@@STEP_WARNINGS@@@"

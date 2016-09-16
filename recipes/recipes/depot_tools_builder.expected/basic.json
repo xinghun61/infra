@@ -1,5 +1,6 @@
 [
   {
+    "cmd": [],
     "name": "clean workspace"
   },
   {
@@ -50,6 +51,7 @@
     ]
   },
   {
+    "cmd": [],
     "name": "clone + checkout"
   },
   {
