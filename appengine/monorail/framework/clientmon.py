@@ -33,12 +33,16 @@ class ClientMonitor(jsonfeed.JsonFeed):
 
     post_data = mr.request.POST
     errors = post_data.get('errors')
-    errors = json.loads(errors)
+    try:
+      errors = json.loads(errors)
 
-    total_errors = 0
-    for error_key in errors:
-      total_errors += errors[error_key]
-    logging.error('client monitor report (%d): %s', total_errors,
-        post_data.get('errors'))
-    self.js_errors.increment_by(total_errors)
+      total_errors = 0
+      for error_key in errors:
+        total_errors += errors[error_key]
+      logging.error('client monitor report (%d): %s', total_errors,
+          post_data.get('errors'))
+      self.js_errors.increment_by(total_errors)
+    except Exception as e:
+      logging.error('Problem processing client monitor report: %r', e)
+
     return {}

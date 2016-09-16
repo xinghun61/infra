@@ -31,10 +31,9 @@
       }
     };
   }
-
   var flushErrs = throttle(function() {
     var data = {errors: JSON.stringify(errBuff)};
-    CS_doPost('/_/clientmon.do', null, data)
+    CS_doPost('/_/clientmon.do', null, data);
     errBuff = {};
   });
 
