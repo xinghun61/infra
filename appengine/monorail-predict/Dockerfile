@@ -15,7 +15,7 @@ RUN mkdir -p /sdk
 RUN bash ./install.sh --disable-prompts --install-dir /sdk
 RUN /sdk/google-cloud-sdk/bin/gcloud components update --quiet app app-engine-python
 
-RUN pip install gunicorn flask
+RUN pip install gunicorn flask futures
 
 RUN apt-get update; \
     apt-get install -y \
@@ -30,6 +30,6 @@ RUN update-alternatives --set libblas.so.3 \
 RUN pip install -U numpy scipy scikit-learn
 RUN pip install --upgrade google-api-python-client
 
-ENTRYPOINT [ "gunicorn", "-b", ":8080", "service:app" ]
+ENTRYPOINT [ "gunicorn", "-b", ":8080", "--workers", "1", "--threads", "5", "service:app" ]
 
 EXPOSE 8080
