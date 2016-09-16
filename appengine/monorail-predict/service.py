@@ -172,5 +172,5 @@ if __name__ == '__main__':
   # can respond to _ah/health requests with 503s rather than appearing to
   # not have started at all.
   loading_thread.start()
-  app.run(host='0.0.0.0:8080')
+  app.run(host='0.0.0.0', port='5000')
 
