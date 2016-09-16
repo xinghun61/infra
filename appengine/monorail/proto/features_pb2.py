@@ -47,10 +47,10 @@ def MakeHotlist(name, iid_rank_pairs=None, **kwargs):
     hotlist_id, summary, description, is_private, owner_ids, editor_ids,
     follower_ids, default_col_spec"""
   hotlist = Hotlist(name=name, **kwargs)
-  
+
   if iid_rank_pairs is not None:
     for (issue_id, rank) in iid_rank_pairs:
-      hotlist.issues.append(Hotlist.HotlistIssue(issue_id=issue_id, rank=rank))
+      hotlist.iid_rank_pairs.append(Hotlist.HotlistIssue(issue_id=issue_id, rank=rank))
 
   return hotlist
 
