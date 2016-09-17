@@ -22,7 +22,7 @@ ANDROID_DEVICE_FILE = os.path.join(os.path.expanduser('~'),
                                    'android_device_status.json')
 
 # Don't read a file older than this many seconds.
-ANDROID_DEVICE_FILE_STALENESS_S = 120
+ANDROID_DEVICE_FILE_STALENESS_S = 2 * 60 * 60 # 2 hour
 
 PORT_PATH_RE = re.compile(r'\d+\/\d+')
 
