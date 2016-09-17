@@ -438,3 +438,53 @@ func PrintHostList(hostList *crimson.HostList, format FormatType, skipHeader boo
 		fmt.Println(s)
 	}
 }
+
+// CheckDuplicateHosts does quick local sanity checks: hosts must have
+// distinct hostnames, IPs and MAC addresses per each site.
+func CheckDuplicateHosts(hostList *crimson.HostList) []error {
+	hostnames := make(map[string]map[string]*crimson.Host)
+	macs := make(map[string]map[string]*crimson.Host)
+	ips := make(map[string]map[string]*crimson.Host)
+
+	var errs []error
+
+	for _, h := range hostList.Hosts {
+		if h.Site == "" || h.Hostname == "" || h.MacAddr == "" || h.Ip == "" {
+			errs = append(errs, fmt.Errorf("At least one of the required fields "+
+				"(site, hostname, MAC, IP) is missing in host:\n  %s", h.String()))
+			continue
+		}
+
+		if _, ok := hostnames[h.Site]; !ok {
+			hostnames[h.Site] = make(map[string]*crimson.Host)
+		}
+		if _, ok := macs[h.Site]; !ok {
+			macs[h.Site] = make(map[string]*crimson.Host)
+		}
+		if _, ok := ips[h.Site]; !ok {
+			ips[h.Site] = make(map[string]*crimson.Host)
+		}
+
+		if h2, ok := hostnames[h.Site][h.Hostname]; !ok {
+			hostnames[h.Site][h.Hostname] = h
+		} else {
+			errs = append(errs, fmt.Errorf("Duplicate hostname in:\n  %s\n, "+
+				"already present in:\n  %s", h.String(), h2.String()))
+		}
+
+		if h2, ok := macs[h.Site][h.MacAddr]; !ok {
+			macs[h.Site][h.MacAddr] = h
+		} else {
+			errs = append(errs, fmt.Errorf("Duplicate MAC address in:\n  %s\n, "+
+				"already present in:\n  %s", h.String(), h2.String()))
+		}
+
+		if h2, ok := ips[h.Site][h.Ip]; !ok {
+			ips[h.Site][h.Ip] = h
+		} else {
+			errs = append(errs, fmt.Errorf("Duplicate IP in\n  %s\n, "+
+				"already present in:\n  %s", h.String(), h2.String()))
+		}
+	}
+	return errs
+}

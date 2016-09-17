@@ -361,3 +361,73 @@ func TestFormatHostList(t *testing.T) {
 		})
 	})
 }
+
+func TestCheckDuplicateHosts(t *testing.T) {
+	t.Parallel()
+
+	Convey("CheckDuplicateHosts works", t, func() {
+		hosts := &crimson.HostList{Hosts: []*crimson.Host{
+			{
+				Site:      "site1",
+				MacAddr:   "mac1",
+				Hostname:  "host1",
+				Ip:        "IP1",
+				BootClass: "boot1",
+			},
+			{
+				Site:      "site2",
+				MacAddr:   "mac2",
+				Hostname:  "host2",
+				Ip:        "IP2",
+				BootClass: "boot2",
+			},
+		}}
+		Convey("without duplicates", func() {
+			So(len(CheckDuplicateHosts(hosts)), ShouldEqual, 0)
+		})
+
+		Convey("duplicate hosts in different sites are OK", func() {
+			hosts.Hosts = append(hosts.Hosts, &crimson.Host{
+				Site:      "site2",
+				MacAddr:   "mac3",
+				Hostname:  "host1",
+				Ip:        "IP3",
+				BootClass: "boot3",
+			})
+			So(len(CheckDuplicateHosts(hosts)), ShouldEqual, 0)
+		})
+
+		Convey("catches duplicate host", func() {
+			hosts.Hosts = append(hosts.Hosts, &crimson.Host{
+				Site:      "site1",
+				MacAddr:   "mac3",
+				Hostname:  "host1",
+				Ip:        "IP3",
+				BootClass: "boot3",
+			})
+			So(len(CheckDuplicateHosts(hosts)), ShouldEqual, 1)
+		})
+
+		Convey("catches duplicate MAC address", func() {
+			hosts.Hosts = append(hosts.Hosts, &crimson.Host{
+				Site:      "site1",
+				MacAddr:   "mac1",
+				Hostname:  "host3",
+				Ip:        "IP3",
+				BootClass: "boot3",
+			})
+			So(len(CheckDuplicateHosts(hosts)), ShouldEqual, 1)
+		})
+
+		Convey("catches duplicate IP", func() {
+			hosts.Hosts = append(hosts.Hosts, &crimson.Host{
+				Site:      "site2",
+				MacAddr:   "mac3",
+				Hostname:  "host3",
+				Ip:        "IP2",
+				BootClass: "boot3",
+			})
+			So(len(CheckDuplicateHosts(hosts)), ShouldEqual, 1)
+		})
+	})
+}

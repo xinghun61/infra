@@ -398,6 +398,15 @@ func (c *addHostRun) Run(a subcommands.Application, args []string) int {
 		return 1
 	}
 
+	errs := cmdhelper.CheckDuplicateHosts(hostList)
+
+	if len(errs) > 0 {
+		for _, e := range errs {
+			fmt.Fprintf(os.Stderr, "ERROR: %s\n", e)
+		}
+		return 1
+	}
+
 	_, err = client.CreateHost(ctx, hostList)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %s\n", grpc.ErrorDesc(err))
