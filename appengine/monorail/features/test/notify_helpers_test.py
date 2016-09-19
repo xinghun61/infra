@@ -24,9 +24,9 @@ class ComputeIssueChangeAddressPermListTest(unittest.TestCase):
 
   def setUp(self):
     self.users_by_id = {
-        111L: framework_views.UserView(111L, 'owner@example.com', True),
-        222L: framework_views.UserView(222L, 'member@example.com', True),
-        999L: framework_views.UserView(999L, 'visitor@example.com', True),
+        111L: framework_views.StuffUserView(111L, 'owner@example.com', True),
+        222L: framework_views.StuffUserView(222L, 'member@example.com', True),
+        999L: framework_views.StuffUserView(999L, 'visitor@example.com', True),
         }
     self.services = service_manager.Services(
         project=fake.ProjectService(),
@@ -121,7 +121,7 @@ class MakeBulletedEmailWorkItemsTest(unittest.TestCase):
 
   def setUp(self):
     self.project = fake.Project(project_name='proj1')
-    self.commenter_view = framework_views.UserView(
+    self.commenter_view = framework_views.StuffUserView(
         111L, 'test@example.com', True)
     self.issue = fake.MakeTestIssue(
         self.project.project_id, 1234, 'summary', 'New', 111L)
@@ -143,7 +143,7 @@ class MakeEmailWorkItemTest(unittest.TestCase):
   def setUp(self):
     self.project = fake.Project(project_name='proj1')
     self.project.process_inbound_email = True
-    self.commenter_view = framework_views.UserView(
+    self.commenter_view = framework_views.StuffUserView(
         111L, 'test@example.com', True)
     self.expected_html_footer = (
         'You received this message because:<br/>  1. reason<br/><br/>You may '

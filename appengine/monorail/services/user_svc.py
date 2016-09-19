@@ -46,6 +46,12 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
         max_size=settings.user_cache_max_size)
     self.user_service = user_service
 
+  def _CheckCompatibility(self, value):
+    """Ignore old-format cached Users that lack user_id."""
+    # TODO(jrobbins): remove this method after the version has been deployed
+    # and memcache has been cleared.
+    return value.user_id is not None
+
   def _DeserializeUsersByID(
       self, user_rows, actionlimit_rows, dismissedcue_rows):
     """Convert database row tuples into User PBs.
@@ -67,7 +73,7 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
        email_compact_subject, email_view_widget, banned,
        after_issue_update, keep_people_perms_open, preview_on_hover,
        ignore_action_limits, obscure_email) = row
-      user = user_pb2.MakeUser()
+      user = user_pb2.MakeUser(user_id)
       user.email = email
       user.is_site_admin = bool(is_site_admin)
       user.notify_issue_change = bool(notify_issue_change)
@@ -345,7 +351,8 @@ class UserService(object):
 
     # Provide default values for any user ID that was not found.
     result_dict.update(
-        (user_id, user_pb2.MakeUser()) for user_id in missed_ids)
+        (user_id, user_pb2.MakeUser(user_id))
+        for user_id in missed_ids)
 
     return result_dict
 

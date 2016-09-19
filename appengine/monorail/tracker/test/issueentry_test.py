@@ -66,7 +66,7 @@ class IssueEntryTest(unittest.TestCase):
   def testGatherPageData(self):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry', services=self.services)
-    mr.auth.user_view = framework_views.UserView(100, 'user@invalid', True)
+    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
     user = self.services.user.TestAddUser('user@invalid', 100)
 
     self.mox.StubOutWithMock(self.services.user, 'GetUser')
@@ -84,7 +84,7 @@ class IssueEntryTest(unittest.TestCase):
   def testGatherPageData_TemplateAllowsKeepingSummary(self):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry', services=self.services)
-    mr.auth.user_view = framework_views.UserView(100, 'user@invalid', True)
+    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
     user = self.services.user.TestAddUser('user@invalid', 100)
 
     self.mox.StubOutWithMock(self.services.user, 'GetUser')
@@ -105,7 +105,7 @@ class IssueEntryTest(unittest.TestCase):
   def testGatherPageData_DeepLinkSetsSummary(self):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry?summary=foo', services=self.services)
-    mr.auth.user_view = framework_views.UserView(100, 'user@invalid', True)
+    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
     user = self.services.user.TestAddUser('user@invalid', 100)
 
     self.mox.StubOutWithMock(self.services.user, 'GetUser')
@@ -123,7 +123,7 @@ class IssueEntryTest(unittest.TestCase):
   def testProcessFormData_RedirectToEnteredIssue(self):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry')
-    mr.auth.user_view = framework_views.UserView(100, 'user@invalid', True)
+    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
     mr.perms = permissions.EMPTY_PERMISSIONSET
     post_data = fake.PostData(
         summary=['fake summary'],
@@ -135,7 +135,7 @@ class IssueEntryTest(unittest.TestCase):
   def testProcessFormData_RejectPlacedholderSummary(self):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry')
-    mr.auth.user_view = framework_views.UserView(100, 'user@invalid', True)
+    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
     mr.perms = permissions.EMPTY_PERMISSIONSET
     post_data = fake.PostData(
         summary=[issueentry.PLACEHOLDER_SUMMARY],
@@ -158,7 +158,7 @@ class IssueEntryTest(unittest.TestCase):
   def testProcessFormData_RejectUnmodifiedTemplate(self):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry')
-    mr.auth.user_view = framework_views.UserView(100, 'user@invalid', True)
+    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
     mr.perms = permissions.EMPTY_PERMISSIONSET
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     template = config.templates[0]

@@ -227,14 +227,20 @@ class AbstractTwoLevelCache(object):
     for key_str, serialized_value in cached_dict.iteritems():
       value = self._StrToValue(serialized_value)
       key = self._StrToKey(key_str)
-      memcache_hits[key] = value
-      self.cache.CacheItem(key, value)
+      if self._CheckCompatibility(value):
+        memcache_hits[key] = value
+        self.cache.CacheItem(key, value)
 
     still_missing_keys = [key for key in keys if key not in memcache_hits]
     logging.info(
         'decoded %d values from memcache %s, missing %d',
         len(memcache_hits), self.memcache_prefix, len(still_missing_keys))
     return memcache_hits, still_missing_keys
+
+  # pylint: disable=unused-argument
+  def _CheckCompatibility(self, value):
+    """Subclasses can check if value is usable by the current app version."""
+    return True
 
   def _WriteToMemcache(self, retrieved_dict):
     """Write entries for each key-value pair to memcache.  Encode PBs."""

@@ -67,9 +67,9 @@ class ProjectViewTest(unittest.TestCase):
 class MemberViewTest(unittest.TestCase):
 
   def setUp(self):
-    self.alice_view = framework_views.UserView(111L, 'alice', True)
-    self.bob_view = framework_views.UserView(222L, 'bob', True)
-    self.carol_view = framework_views.UserView(333L, 'carol', True)
+    self.alice_view = framework_views.StuffUserView(111L, 'alice', True)
+    self.bob_view = framework_views.StuffUserView(222L, 'bob', True)
+    self.carol_view = framework_views.StuffUserView(333L, 'carol', True)
 
     self.project = project_pb2.Project()
     self.project.project_name = 'proj'

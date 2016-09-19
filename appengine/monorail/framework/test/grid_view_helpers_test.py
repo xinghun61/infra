@@ -29,7 +29,7 @@ class GridViewHelpersTest(unittest.TestCase):
         789, 1, 'a summary', 'New', 111L, star_count=12, merged_into=200001,
         labels='Priority-Medium Type-DEFECT Hot Mstone-1 Mstone-2')
     self.users_by_id = {
-        111L: framework_views.UserView(111, 'foo@example.com', True),
+        111L: framework_views.StuffUserView(111, 'foo@example.com', True),
         }
 
   def testSortGridHeadings(self):

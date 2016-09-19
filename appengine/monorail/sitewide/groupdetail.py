@@ -72,13 +72,11 @@ class GroupDetail(servlet.Servlet):
         mr.cnxn, owner_ids)
     member_dict = {}
     for user_id, user_pb in member_pbs_dict.iteritems():
-      member_view = group_helpers.GroupMemberView(
-          user_id, user_pb.email, user_pb.obscure_email, group_id, 'member')
+      member_view = group_helpers.GroupMemberView(user_pb, group_id, 'member')
       member_dict[user_id] = member_view
     owner_dict = {}
     for user_id, user_pb in owner_pbs_dict.iteritems():
-      member_view = group_helpers.GroupMemberView(
-          user_id, user_pb.email, user_pb.obscure_email, group_id, 'owner')
+      member_view = group_helpers.GroupMemberView(user_pb, group_id, 'owner')
       owner_dict[user_id] = member_view
 
     member_user_views = []

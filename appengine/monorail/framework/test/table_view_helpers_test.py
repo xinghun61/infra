@@ -217,7 +217,7 @@ class TableViewHelpersTest(unittest.TestCase):
   def testExtractUniqueValues_ExplicitResults(self):
     cols = ['priority', 'owner', 'status', 'stars', 'mstone', 'foo']
     users_by_id = {
-        111L: framework_views.UserView(111, 'foo@example.com', True),
+        111L: framework_views.StuffUserView(111, 'foo@example.com', True),
         }
     column_values = table_view_helpers.ExtractUniqueValues(
         cols, SEARCH_RESULTS_WITH_LABELS, users_by_id, self.config)
@@ -248,7 +248,7 @@ class TableViewHelpersTest(unittest.TestCase):
   def testExtractUniqueValues_CombinedColumns(self):
     cols = ['priority/pri', 'owner', 'status', 'stars', 'mstone/milestone']
     users_by_id = {
-        111L: framework_views.UserView(111, 'foo@example.com', True),
+        111L: framework_views.StuffUserView(111, 'foo@example.com', True),
         }
     issue = fake.MakeTestIssue(
         789, 5, 'sum 5', 'New', 111L, merged_into=200001,
@@ -278,9 +278,9 @@ class TableViewHelpersTest(unittest.TestCase):
   def testExtractUniqueValues_DerivedValues(self):
     cols = ['priority', 'milestone', 'owner', 'status']
     users_by_id = {
-        111L: framework_views.UserView(111, 'foo@example.com', True),
-        222L: framework_views.UserView(222, 'bar@example.com', True),
-        333L: framework_views.UserView(333, 'lol@example.com', True),
+        111L: framework_views.StuffUserView(111, 'foo@example.com', True),
+        222L: framework_views.StuffUserView(222, 'bar@example.com', True),
+        333L: framework_views.StuffUserView(333, 'lol@example.com', True),
         }
     search_results = [
         fake.MakeTestIssue(

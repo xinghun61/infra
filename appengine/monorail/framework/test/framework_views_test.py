@@ -103,7 +103,7 @@ class RevealEmailsToMembersTest(unittest.TestCase):
 
   def CheckRevealAllToMember(
       self, logged_in_user_id, expected, viewed_user_id=333L, group_id=None):
-    user_view = framework_views.UserView(
+    user_view = framework_views.StuffUserView(
         viewed_user_id, 'user@example.com', True)
 
     if group_id:
@@ -165,10 +165,10 @@ class RevealAllEmailsTest(unittest.TestCase):
 
   def testRevealAllEmail(self):
     users_by_id = {
-        111L: framework_views.UserView(111L, 'a@a.com', True),
-        222L: framework_views.UserView(222L, 'b@b.com', True),
-        333L: framework_views.UserView(333L, 'c@c.com', True),
-        999L: framework_views.UserView(999L, 'z@z.com', True),
+        111L: framework_views.StuffUserView(111L, 'a@a.com', True),
+        222L: framework_views.StuffUserView(222L, 'b@b.com', True),
+        333L: framework_views.StuffUserView(333L, 'c@c.com', True),
+        999L: framework_views.StuffUserView(999L, 'z@z.com', True),
         }
     # Assert display names are obscured before the reveal.
     self.assertEqual('a...@a.com', users_by_id[111L].display_name)

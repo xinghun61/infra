@@ -7,6 +7,7 @@
 
 import unittest
 
+from proto import user_pb2
 from proto import usergroup_pb2
 from sitewide import group_helpers
 
@@ -25,8 +26,8 @@ class GroupHelpersTest(unittest.TestCase):
     self.assertEqual('Group Owners', gvv_owners.name)
 
   def testGroupMemberView(self):
-    gmv = group_helpers.GroupMemberView(
-        1L, 'test@example.com', 't...@example.com', 888L, 'member')
+    user = user_pb2.MakeUser(1L, email='test@example.com')
+    gmv = group_helpers.GroupMemberView(user, 888L, 'member')
     self.assertEqual(888L, gmv.group_id)
     self.assertEqual('member', gmv.role)
 
@@ -45,4 +46,3 @@ class GroupHelpersTest(unittest.TestCase):
   def testBuildUserGroupTypeOptions(self):
     group_types = group_helpers.BuildUserGroupTypeOptions()
     self.assertEqual(3, len(group_types))
-    

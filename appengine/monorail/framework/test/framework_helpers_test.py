@@ -322,7 +322,7 @@ class UserSettingsTest(unittest.TestCase):
 
   def testGatherUnifiedSettingsPageData(self):
     mr = testing_helpers.MakeMonorailRequest()
-    mr.auth.user_view = framework_views.UserView(100, 'user@invalid', True)
+    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
     mr.auth.user_view.profile_url = '/u/profile/url'
     page_data = framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
         mr.auth.user_id, mr.auth.user_view, mr.auth.user_pb)

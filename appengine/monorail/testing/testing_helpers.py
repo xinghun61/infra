@@ -85,7 +85,7 @@ def GetRequestObjects(
       user_info=user_info, project=project, perms=perms, params=params)
   mr.ParseRequest(
       request, services, profiler.Profiler(), do_user_lookups=False)
-  mr.auth.user_pb = user_pb2.MakeUser()
+  mr.auth.user_pb = user_pb2.MakeUser(0)
 
   return request, mr
 

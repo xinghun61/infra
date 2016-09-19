@@ -435,7 +435,7 @@ class BizobjTest(unittest.TestCase):
 
   def testAmendmentString(self):
     users_by_id = {
-        111L: framework_views.UserView(111L, 'username@gmail.com', True)
+        111L: framework_views.StuffUserView(111L, 'username@gmail.com', True)
         }
     summary_amendment = tracker_bizobj.MakeSummaryAmendment('new summary', None)
     self.assertEqual(
@@ -460,9 +460,9 @@ class BizobjTest(unittest.TestCase):
 
   def testAmendmentLinks(self):
     users_by_id = {
-        111L: framework_views.UserView(111L, 'foo@gmail.com', False),
-        222L: framework_views.UserView(222L, 'bar@gmail.com', False),
-        333L: framework_views.UserView(333L, 'baz@gmail.com', False)
+        111L: framework_views.StuffUserView(111L, 'foo@gmail.com', False),
+        222L: framework_views.StuffUserView(222L, 'bar@gmail.com', False),
+        333L: framework_views.StuffUserView(333L, 'baz@gmail.com', False)
         }
     # SUMMARY
     summary_amendment = tracker_bizobj.MakeSummaryAmendment('new summary', None)

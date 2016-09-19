@@ -224,8 +224,7 @@ def api_base_checks(request, requester, services, cnxn,
   # This could raise user_svc.NoSuchUserException
   requester_id = services.user.LookupUserID(cnxn, requester.email())
   requester_pb = services.user.GetUser(cnxn, requester_id)
-  requester_view = framework_views.UserView(
-      requester_id, requester.email(), requester_pb.obscure_email)
+  requester_view = framework_views.UserView(requester_pb)
   if permissions.IsBanned(requester_pb, requester_view):
     raise permissions.BannedUserException(
         'The user %s has been banned from using Monorail' %

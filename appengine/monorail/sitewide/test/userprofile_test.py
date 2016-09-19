@@ -38,8 +38,7 @@ def MakeReqInfo(
   mr.viewed_user_auth.user_pb = viewed_user_pb
   mr.viewed_user_auth.user_id = viewed_user_id
   mr.viewed_user_auth.effective_ids = {viewed_user_id}
-  mr.viewed_user_auth.user_view = framework_views.UserView(
-      viewed_user_id, viewed_user_pb.email, viewed_user_pb.obscure_email)
+  mr.viewed_user_auth.user_view = framework_views.UserView(viewed_user_pb)
   mr.viewed_user_name = viewed_user_name
   return mr
 

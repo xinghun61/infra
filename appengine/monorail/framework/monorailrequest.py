@@ -61,7 +61,7 @@ class AuthData(object):
     self.user_id = 0
     self.effective_ids = set()
     self.user_view = None
-    self.user_pb = user_pb2.MakeUser()
+    self.user_pb = user_pb2.MakeUser(0)
     self.email = None
 
   @classmethod
@@ -142,9 +142,7 @@ class AuthData(object):
       auth.effective_ids.add(auth.user_id)
       auth.user_pb = services.user.GetUser(cnxn, auth.user_id)
       if auth.user_pb:
-        auth.user_view = framework_views.UserView(
-            auth.user_id, auth.email,
-            auth.user_pb.obscure_email)
+        auth.user_view = framework_views.UserView(auth.user_pb)
 
 
 class MonorailApiRequest(object):

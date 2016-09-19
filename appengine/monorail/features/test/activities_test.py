@@ -69,7 +69,7 @@ class ActivitiesTest(unittest.TestCase):
 
   def createAndAssertUpdates(self, project_ids=None, user_ids=None,
                              ascending=True):
-    user = user_pb2.MakeUser()
+    user = user_pb2.MakeUser(self.user_id)
     comment_1 = tracker_pb2.IssueComment(
         id=self.comment_id, issue_id=self.issue_id,
         project_id=self.project_id, user_id=self.user_id,

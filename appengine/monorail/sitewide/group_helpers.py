@@ -38,10 +38,9 @@ class GroupTypeView(object):
 class GroupMemberView(framework_views.UserView):
   """Wrapper class to display basic group member information in a template."""
 
-  def __init__(self, user_id, email, obscure_email, group_id, role):
+  def __init__(self, user, group_id, role):
     assert role in ['member', 'owner']
-    super(GroupMemberView, self).__init__(
-        user_id, email, obscure_email)
+    super(GroupMemberView, self).__init__(user)
     self.group_id = group_id
     self.role = role
 

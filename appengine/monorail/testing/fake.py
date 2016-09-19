@@ -395,7 +395,7 @@ class UserService(object):
 
     user = None
     if add_user:
-      user = user_pb2.MakeUser()
+      user = user_pb2.MakeUser(user_id)
       user.is_site_admin = False
       user.email = email
       user.obscure_email = True

@@ -138,7 +138,7 @@ class InboundEmailTest(unittest.TestCase):
     self.services.user.TestAddUser('user@example.com', 111L)
     class MockAuthData:
       def __init__(self):
-        self.user_pb = user_pb2.MakeUser()
+        self.user_pb = user_pb2.MakeUser(111L)
         self.effective_ids = set([1, 2, 3])
         self.user_id = 111L
     mock_auth_data = MockAuthData()
@@ -166,7 +166,7 @@ class InboundEmailTest(unittest.TestCase):
     self.services.user.TestAddUser('user@example.com', 111L)
     class MockAuthData:
       def __init__(self):
-        self.user_pb = user_pb2.MakeUser()
+        self.user_pb = user_pb2.MakeUser(111L)
         self.effective_ids = set([1, 2, 3])
         self.user_id = 111L
     mock_auth_data = MockAuthData()

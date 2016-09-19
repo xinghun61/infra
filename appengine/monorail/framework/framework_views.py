@@ -11,6 +11,7 @@ from framework import framework_bizobj
 from framework import framework_constants
 from framework import permissions
 from framework import template_helpers
+from proto import user_pb2
 from services import client_config_svc
 import settings
 
@@ -69,12 +70,12 @@ class StatusView(object):
 class UserView(object):
   """Wrapper class to easily display basic user information in a template."""
 
-  def __init__(self, user_id, email, obscure_email):
-    email = email or ''
-    self.user_id = user_id
+  def __init__(self, user):
+    email = user.email or ''
+    self.user_id = user.user_id
     self.email = email
-    self.profile_url = '/u/%s/' % user_id
-    self.obscure_email = obscure_email
+    self.profile_url = '/u/%s/' % user.user_id
+    self.obscure_email = user.obscure_email
     self.banned = ''
 
     (self.username, self.domain,
@@ -106,14 +107,20 @@ def MakeAllUserViews(cnxn, user_service, *list_of_user_id_lists):
   distinct_user_ids = set()
   distinct_user_ids.update(*list_of_user_id_lists)
   user_dict = user_service.GetUsersByIDs(cnxn, distinct_user_ids)
-  return {user_id: UserView(user_id, user_pb.email, user_pb.obscure_email)
+  return {user_id: UserView(user_pb)
           for user_id, user_pb in user_dict.iteritems()}
 
 
 def MakeUserView(cnxn, user_service, user_id):
   """Make a UserView for the given user ID."""
   user = user_service.GetUser(cnxn, user_id)
-  return UserView(user_id, user.email, user.obscure_email)
+  return UserView(user)
+
+
+def StuffUserView(user_id, email, obscure_email):
+  """Construct a UserView with the given parameters for testing."""
+  user = user_pb2.MakeUser(user_id, email=email, obscure_email=obscure_email)
+  return UserView(user)
 
 
 def ParseAndObscureAddress(email):

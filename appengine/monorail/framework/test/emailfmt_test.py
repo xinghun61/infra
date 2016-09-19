@@ -207,7 +207,8 @@ class NoReplyAddressTest(unittest.TestCase):
         emailfmt.NoReplyAddress())
 
   def testWithCommenter(self):
-    commenter_view = framework_views.UserView(111L, 'user@example.com', True)
+    commenter_view = framework_views.StuffUserView(
+        111L, 'user@example.com', True)
     self.assertEqual(
         'user via monorail '
         '<no_reply+v2.111@testbed-test.appspotmail.com>',
@@ -215,7 +216,8 @@ class NoReplyAddressTest(unittest.TestCase):
             commenter_view=commenter_view, reveal_addr=True))
 
   def testObscuredCommenter(self):
-    commenter_view = framework_views.UserView(111L, 'user@example.com', True)
+    commenter_view = framework_views.StuffUserView(
+        111L, 'user@example.com', True)
     self.assertEqual(
         u'u\u2026 via monorail '
         '<no_reply+v2.111@testbed-test.appspotmail.com>',
@@ -245,14 +247,16 @@ class FormatFromAddrTest(unittest.TestCase):
                      emailfmt.FormatFromAddr(self.project, can_reply_to=False))
 
   def testWithCommenter(self):
-    commenter_view = framework_views.UserView(111L, 'user@example.com', True)
+    commenter_view = framework_views.StuffUserView(
+        111L, 'user@example.com', True)
     self.assertEqual(
         u'user via monorail <monorail+v2.111@chromium.org>',
         emailfmt.FormatFromAddr(
             self.project, commenter_view=commenter_view, reveal_addr=True))
 
   def testObscuredCommenter(self):
-    commenter_view = framework_views.UserView(111L, 'user@example.com', True)
+    commenter_view = framework_views.StuffUserView(
+        111L, 'user@example.com', True)
     self.assertEqual(
         u'u\u2026 via monorail <monorail+v2.111@chromium.org>',
         emailfmt.FormatFromAddr(
@@ -260,7 +264,8 @@ class FormatFromAddrTest(unittest.TestCase):
 
   def testServiceAccountCommenter(self):
     johndoe_bot = '123456789@developer.gserviceaccount.com'
-    commenter_view = framework_views.UserView(111L, johndoe_bot, True)
+    commenter_view = framework_views.StuffUserView(
+        111L, johndoe_bot, True)
     self.assertEqual(
         ('johndoe via monorail <monorail+v2.111@chromium.org>'),
         emailfmt.FormatFromAddr(

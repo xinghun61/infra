@@ -154,8 +154,7 @@ class ComponentDetail(servlet.Servlet):
     user = self.services.user.GetUser(mr.cnxn, user_id) if user_id else None
     user_view = None
     if user:
-      user_view = framework_views.UserView(
-          user_id, user.email, user.obscure_email)
+      user_view = framework_views.UserView(user)
       viewing_self = mr.auth.user_id == user_id
       # Do not obscure email if current user is a site admin. Do not obscure
       # email if current user is the same as the creator. For all other

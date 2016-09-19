@@ -60,6 +60,8 @@ class IssueUpdateNav(messages.Enum):
 
 class User(messages.Message):
   """In-memory busines object for representing users."""
+  user_id = messages.IntegerField(1)  # TODO(jrobbins): make it required.
+
   # Is this user a site administer?
   is_site_admin = messages.BooleanField(4, required=True, default=False)
 
@@ -115,9 +117,11 @@ class User(messages.Message):
   api_request_limit = messages.MessageField(ActionLimit, 44)
 
 
-def MakeUser():
+def MakeUser(user_id, email=None, obscure_email=False):
   """Create and return a new user record in RAM."""
-  user = User()
+  user = User(user_id=user_id, obscure_email=obscure_email)
+  if email:
+    user.email = email
   user.project_creation_limit = ActionLimit()
   user.issue_comment_limit = ActionLimit()
   user.issue_attachment_limit = ActionLimit()

@@ -556,24 +556,24 @@ class PermissionsTest(unittest.TestCase):
         {111L}, group_settings, {222L}, {333L}, {789}))
 
   def testIsBanned_AnonUser(self):
-    user_view = framework_views.UserView(None, None, True)
+    user_view = framework_views.StuffUserView(None, None, True)
     self.assertFalse(permissions.IsBanned(None, user_view))
 
   def testIsBanned_NormalUser(self):
     user = user_pb2.User()
-    user_view = framework_views.UserView(None, None, True)
+    user_view = framework_views.StuffUserView(None, None, True)
     self.assertFalse(permissions.IsBanned(user, user_view))
 
   def testIsBanned_BannedUser(self):
     user = user_pb2.User()
     user.banned = 'spammer'
-    user_view = framework_views.UserView(None, None, True)
+    user_view = framework_views.StuffUserView(None, None, True)
     self.assertTrue(permissions.IsBanned(user, user_view))
 
   def testIsBanned_BadDomainUser(self):
     settings.banned_user_domains = ['spammer.com', 'phisher.com']
     user = user_pb2.User()
-    user_view = framework_views.UserView(None, None, True)
+    user_view = framework_views.StuffUserView(None, None, True)
     user_view.domain = 'spammer.com'
     self.assertTrue(permissions.IsBanned(user, user_view))
 
