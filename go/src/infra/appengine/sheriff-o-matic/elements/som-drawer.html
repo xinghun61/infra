@@ -85,10 +85,6 @@
         showInfraFailures: {
           type: Boolean,
           notify: true,
-          value: function () {
-            return !!localStorage.getItem('showInfraFailures');
-          },
-          observer: '_showInfraFailuresChanged',
         },
         _staticPageList: {
           type: Array,

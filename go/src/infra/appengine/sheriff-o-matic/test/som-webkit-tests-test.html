@@ -30,13 +30,12 @@
       };
       element.testName = '/foo/bar/baz.html';
       assert.equal(element.$.testName.textContent, element.testName);
-      assert.equal(1, element.actualUrls.length);
-      assert(element.actualUrls[0].endsWith('-actual.txt'));
-      assert.equal(1, element.expectedUrls.length);
-      assert(element.expectedUrls[0].endsWith('-expected.txt'));
-      assert.equal(2, element.diffUrls.length);
+      assert.equal(2, element.actualUrls.length);
+      assert(element.actualUrls[0].endsWith('-actual.png'));
+      assert.equal(2, element.expectedUrls.length);
+      assert(element.expectedUrls[0].endsWith('-expected.png'));
+      assert.equal(5, element.diffUrls.length);
     });
   });
 })();
 </script>
-

@@ -12,10 +12,13 @@
     #expected,
     #actual,
     #diff {
+      box-sizing: border-box;
       display: flex;
       flex-grow: 1;
       flex-direction: column;
       border: 1px solid black;
+      padding: 0.5em;
+      width: 33.33%;
     }
 
     #expectedIframes,
@@ -24,6 +27,11 @@
       display: flex;
       flex-grow: 1;
       flex-direction: column;
+      overflow: auto;
+    }
+
+    h3 {
+      margin: 0.5em 0;
     }
 
     iframe {
@@ -31,8 +39,11 @@
       flex-grow: 1;
     }
     </style>
+
     <div>
-      <a href="[[allResultsUrl]]" target="_blank">All layout test results</a>
+      <a href="[[allResultsUrl]]" target="_blank">All layout test results</a> -
+      <a href="https://test-results.appspot.com/dashboards/flakiness_dashboard.html#tests=[[testName]]&testType=webkit_tests&showChrome=true"
+        target="_blank">View on Flakiness Dashboard</a>
     </div>
     <div id="testName">[[testName]]</div>
     <div id="container">
@@ -91,23 +102,38 @@
 
       _actualUrlsChanged: function(urls) {
         this._emptyNode(this.$.actualIframes);
-        urls.forEach((url) => { this._attachIFrame(url, this.$.actualIframes)});
+        urls.forEach((url) => {
+          this._appendIfExists(url, this.$.actualIframes);
+        });
       },
 
       _expectedUrlsChanged: function(urls) {
         this._emptyNode(this.$.expectedIframes);
-        urls.forEach((url) => { this._attachIFrame(url, this.$.expectedIframes)});
+        urls.forEach((url) => {
+          this._appendIfExists(url, this.$.expectedIframes);
+        });
       },
 
       _diffUrlsChanged: function(urls) {
         this._emptyNode(this.$.diffIframes);
-        urls.forEach((url) => { this._attachIFrame(url, this.$.diffIframes)});
+        urls.forEach((url) => {
+          this._appendIfExists(url, this.$.diffIframes);
+        });
       },
 
       _emptyNode: function(node) {
         while (node.childNodes.length) {
           node.removeChild(node.firstChild);
         }
+      },
+
+      _appendIfExists: function(url, el) {
+        // Check to see if the URL exists before adding it to the page.
+        fetch(url, {method: 'HEAD'}).then((response) => {
+          if (response.status === 200) {
+            this._attachIFrame(url, el);
+          }
+        });
       },
 
       _attachIFrame: function(url, el) {
@@ -136,31 +162,14 @@
         this.allResultsUrl = urlFmt.layoutTestAll(this.builder.name,
             this.builder.latest_failure);
 
-        // Depending on the extension of the failing test name, we look for
-        // different sets of expected/actual/diff files. This is very ad-hoc
-        // and not all tests produce the full set of output files. There should
-        // be a mapping somewhere of which tests produce which but I don't
-        // know where it is/should be.
-        // Old SoM would ping every possible result file pattern with HEAD
-        // requests to GCS to test for their existence, and render any that
-        // existed on GCS.
-        if (testName.endsWith('.svg')) {
-          this.actualUrls = [basePath + '-actual.png', basePath + '-actual.txt'];
-          this.expectedUrls = [basePath + '-expected.png', basePath + '-expected.txt'];
-          this.diffUrls = [basePath + '-diff.png', basePath + '-diff.txt',
-              basePath + '-pretty-diff.html', basePath + '-overlay.html'];
-        } else if (testName.endsWith('.html')) {
-          this.actualUrls = [basePath + '-actual.txt'];
-          this.expectedUrls = [basePath + '-expected.txt'];
-          this.diffUrls = [basePath + '-diff.txt',
-              basePath + '-overlay.html'];
-         } else if (testName.endsWith('.xhtml')) {
-          this.actualUrls = [basePath + '-actual.txt'];
-          this.expectedUrls = [basePath + '-expected.txt'];
-          this.diffUrls = [basePath + '-diff.txt',
-              basePath + '-pretty-diff.html', basePath + '-wdiff.html'];
-        } else if (testName.endsWith('.txt')) { // does this happen?
-        }
+        // This will try loading every possible output file that might exist on
+        // GCS and show only the ones that actually exist. It's hackish, but
+        // there does not appear to be a better way to tell which tests map
+        // to which outputs.
+        this.actualUrls = [basePath + '-actual.png', basePath + '-actual.txt'];
+        this.expectedUrls = [basePath + '-expected.png', basePath + '-expected.txt'];
+        this.diffUrls = [basePath + '-diff.png', basePath + '-diff.txt',
+            basePath + '-pretty-diff.html', basePath + '-wdiff.html', basePath + '-overlay.html'];
       },
     });
   })();
