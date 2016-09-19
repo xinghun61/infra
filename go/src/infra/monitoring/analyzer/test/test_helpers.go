@@ -2,9 +2,18 @@ package test
 
 import (
 	"fmt"
+	"net/url"
 
 	"infra/monitoring/messages"
 )
+
+func urlParse(s string) *url.URL {
+	p, err := url.Parse(s)
+	if err != nil {
+		panic(err)
+	}
+	return p
+}
 
 /*
 
@@ -53,6 +62,35 @@ func (f *BuilderFaker) Build(buildNum int) *BuildFaker {
 	return ret
 }
 
+// StepsAtFault is useful to create a list of build steps, which can be inserted
+// into a messages.BuildFailure, when creating tests.
+func StepsAtFault(f *BuilderFaker, builds []int, stepNames []string) []messages.BuildStep {
+	buildSteps := []messages.BuildStep(nil)
+
+	for i, build := range builds {
+		stepName := stepNames[i]
+		path := fmt.Sprintf("%s/%s/%d", f.MasterName, f.BuilderName, build)
+		found := false
+		for _, step := range f.Builds[path].Steps {
+			step := step
+			if step.Name == stepName {
+				buildSteps = append(buildSteps, messages.BuildStep{
+					Step:   &step,
+					Master: &messages.MasterLocation{URL: *urlParse(fmt.Sprintf("https://build.chromium.org/p/%s", f.MasterName))},
+					Build:  f.Builds[path],
+				})
+				found = true
+				break
+			}
+		}
+		if !found {
+			panic(fmt.Sprintf("bad test data. %q not found in %#v", stepName, f.Builds[path].Steps))
+		}
+	}
+
+	return buildSteps
+}
+
 // BuildFaker helps construct individual build records.
 type BuildFaker struct {
 	Build        *messages.Build
@@ -69,19 +107,21 @@ func (f *BuildFaker) Times(time ...int) *BuildFaker {
 
 // IncludeChanges adds Change records to the Build with fake commit comments
 // referencing positions in Cr-Commit-Position headers.
-func (f *BuildFaker) IncludeChanges(positions ...string) *BuildFaker {
+func (f *BuildFaker) IncludeChanges(URL string, positions ...string) *BuildFaker {
 	for _, pos := range positions {
-		change := messages.Change{}
+		revision := "unknown"
+		for i, c := range pos {
+			if c == '#' {
+				revision = pos[i+1 : len(pos)-1]
+			}
+
+		}
+		change := messages.Change{
+			Repository: URL,
+			Revision:   revision,
+		}
 		change.Comments = fmt.Sprintf("some change comment\n\nCr-Commit-Position: %s\n\n", pos)
 		f.Build.SourceStamp.Changes = append(f.Build.SourceStamp.Changes, change)
-	}
-	return f
-}
-
-// GotRevision adds a "got_revision_cp" build Property for ref.
-func (f *BuildFaker) GotRevision(ref string) *BuildFaker {
-	f.Build.Properties = [][]interface{}{
-		{"got_revision_cp", ref},
 	}
 	return f
 }

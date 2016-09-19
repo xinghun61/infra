@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"infra/libs/testing/ansidiff"
+	"infra/monitoring/analyzer/regrange"
 	analyzertest "infra/monitoring/analyzer/test"
 	"infra/monitoring/client"
 	clientTest "infra/monitoring/client/test"
@@ -73,6 +74,7 @@ func fakeFinder(Reader client.Reader, failures []*messages.BuildStep) []messages
 func newTestAnalyzer(c client.Reader, minBuilds, maxBuilds int) *Analyzer {
 	a := New(c, minBuilds, maxBuilds)
 	a.reasonFinder = fakeFinder
+	a.regrangeFinder = regrange.Default
 	return a
 }
 
@@ -268,16 +270,21 @@ func TestBuilderStepAlerts(t *testing.T) {
 	t.Parallel()
 
 	Convey("test BuilderStepAlerts", t, func() {
+		regrange.URLToNameMapping = map[string]string{
+			"http://test": "test",
+		}
 		tests := []struct {
-			name         string
-			master       string
-			builder      string
-			recentBuilds []int64
-			builds       map[string]*messages.Build
-			finditData   []*messages.FinditResult
-			time         time.Time
-			wantAlerts   []messages.Alert
-			wantErrs     []error
+			name          string
+			master        string
+			builder       string
+			recentBuilds  []int64
+			testData      *analyzertest.BuilderFaker
+			finditData    []*messages.FinditResult
+			time          time.Time
+			buildsAtFault []int
+			stepsAtFault  []string
+			wantAlerts    []messages.Alert
+			wantErrs      []error
 		}{
 			{
 				name: "empty",
@@ -287,17 +294,19 @@ func TestBuilderStepAlerts(t *testing.T) {
 				master:       "fake.master",
 				builder:      "fake.builder",
 				recentBuilds: []int64{0},
-				builds: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
-					Build(0).Times(0, 1).Step("fake_step").Results(0).BuilderFaker.Builds,
+				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(0, 1).Step("fake_step").Results(0).BuilderFaker,
 			},
 			{
 				name:         "one build failure",
 				master:       "fake.master",
 				builder:      "fake.builder",
 				recentBuilds: []int64{0},
-				builds: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
-					Build(0).Times(0, 1).GotRevision("refs/heads/master@{#291569}").
-					Step("fake_step").Results(2).BuilderFaker.Builds,
+				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
+					Step("fake_step").Results(2).BuilderFaker,
+				buildsAtFault: []int{0},
+				stepsAtFault:  []string{"fake_step"},
 				wantAlerts: []messages.Alert{
 					{
 						Key:      "fake.master.fake.builder.fake_step.",
@@ -312,33 +321,12 @@ func TestBuilderStepAlerts(t *testing.T) {
 									URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 								},
 							},
-							RegressionRanges: []messages.RegressionRange{
+							RegressionRanges: []*messages.RegressionRange{
 								{
-									Repo:      "chromium",
+									Repo:      "test",
+									URL:       "http://test",
+									Revisions: []string{"291569"},
 									Positions: []string{"refs/heads/master@{#291569}"},
-								},
-							},
-							StepAtFault: &messages.BuildStep{
-								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
-								Build: &messages.Build{
-									BuilderName: "fake.builder",
-									Number:      0,
-									Times:       []messages.EpochTime{0, 1},
-									Steps: []messages.Step{
-										{
-											Name:       "fake_step",
-											IsFinished: true,
-											Results:    []interface{}{float64(2)},
-										},
-									},
-									Properties: [][]interface{}{
-										{"got_revision_cp", "refs/heads/master@{#291569}"},
-									},
-								},
-								Step: &messages.Step{
-									Name:       "fake_step",
-									IsFinished: true,
-									Results:    []interface{}{float64(2)},
 								},
 							},
 							Reason: &messages.Reason{
@@ -353,9 +341,9 @@ func TestBuilderStepAlerts(t *testing.T) {
 				master:       "fake.master",
 				builder:      "fake.builder",
 				recentBuilds: []int64{0},
-				builds: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
-					Build(0).Times(0, 1).GotRevision("refs/heads/master@{#291569}").
-					Step("fake_step").Results(2).BuilderFaker.Builds,
+				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
+					Step("fake_step").Results(2).BuilderFaker,
 				finditData: []*messages.FinditResult{
 					{
 						SuspectedCLs: []messages.SuspectCL{
@@ -367,6 +355,8 @@ func TestBuilderStepAlerts(t *testing.T) {
 						},
 					},
 				},
+				buildsAtFault: []int{0},
+				stepsAtFault:  []string{"fake_step"},
 				wantAlerts: []messages.Alert{
 					{
 						Key:      "fake.master.fake.builder.fake_step.",
@@ -381,35 +371,14 @@ func TestBuilderStepAlerts(t *testing.T) {
 									URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 								},
 							},
-							StepAtFault: &messages.BuildStep{
-								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
-								Build: &messages.Build{
-									BuilderName: "fake.builder",
-									Number:      0,
-									Times:       []messages.EpochTime{0, 1},
-									Steps: []messages.Step{
-										{
-											Name:       "fake_step",
-											IsFinished: true,
-											Results:    []interface{}{float64(2)},
-										},
-									},
-									Properties: [][]interface{}{
-										{"got_revision_cp", "refs/heads/master@{#291569}"},
-									},
-								},
-								Step: &messages.Step{
-									Name:       "fake_step",
-									IsFinished: true,
-									Results:    []interface{}{float64(2)},
-								},
-							},
 							Reason: &messages.Reason{
 								Raw: &fakeReasonRaw{},
 							},
-							RegressionRanges: []messages.RegressionRange{
+							RegressionRanges: []*messages.RegressionRange{
 								{
-									Repo:      "chromium",
+									Repo:      "test",
+									URL:       "http://test",
+									Revisions: []string{"291569"},
 									Positions: []string{"refs/heads/master@{#291569}"},
 								},
 							},
@@ -429,15 +398,17 @@ func TestBuilderStepAlerts(t *testing.T) {
 				master:       "fake.master",
 				builder:      "fake.builder",
 				recentBuilds: []int64{0, 1, 2, 3},
-				builds: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
-					Build(0).Times(0, 1).GotRevision("refs/heads/master@{#291569}").
+				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
 					Step("fake_step").Results(2).BuilderFaker.
-					Build(1).Times(2, 3).GotRevision("refs/heads/master@{#291570}").
+					Build(1).Times(2, 3).IncludeChanges("http://test", "refs/heads/master@{#291570}").
 					Step("fake_step").Results(2).BuilderFaker.
-					Build(2).Times(4, 5).GotRevision("refs/heads/master@{#291570}").
+					Build(2).Times(4, 5).IncludeChanges("http://test", "refs/heads/master@{#291570}").
 					Step("fake_step").Results(2).BuilderFaker.
-					Build(3).Times(6, 7).GotRevision("refs/heads/master@{#291570}").
-					Step("fake_step").Results(2).BuilderFaker.Builds,
+					Build(3).Times(6, 7).IncludeChanges("http://test", "refs/heads/master@{#291570}").
+					Step("fake_step").Results(2).BuilderFaker,
+				buildsAtFault: []int{3},
+				stepsAtFault:  []string{"fake_step"},
 				wantAlerts: []messages.Alert{
 					{
 						Key:      "fake.master.fake.builder.fake_step.",
@@ -455,38 +426,18 @@ func TestBuilderStepAlerts(t *testing.T) {
 									LatestFailure: 3,
 								},
 							},
-							StepAtFault: &messages.BuildStep{
-								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
-								Build: &messages.Build{
-									BuilderName: "fake.builder",
-									Number:      3,
-									Times:       []messages.EpochTime{6, 7},
-									Steps: []messages.Step{
-										{
-											Name:       "fake_step",
-											IsFinished: true,
-											Results:    []interface{}{float64(2)},
-										},
-									},
-									Properties: [][]interface{}{
-										{"got_revision_cp", "refs/heads/master@{#291570}"},
-									},
-								},
-								Step: &messages.Step{
-									Name:       "fake_step",
-									IsFinished: true,
-									Results:    []interface{}{float64(2)},
-								},
-							},
 							Reason: &messages.Reason{
 								Raw: &fakeReasonRaw{},
 							},
-							RegressionRanges: []messages.RegressionRange{
+							RegressionRanges: []*messages.RegressionRange{
 								{
-									Repo: "chromium",
+									Repo: "test",
+									URL:  "http://test",
+									Revisions: []string{
+										"291569",
+									},
 									Positions: []string{
 										"refs/heads/master@{#291569}",
-										"refs/heads/master@{#291570}",
 									},
 								},
 							},
@@ -499,14 +450,16 @@ func TestBuilderStepAlerts(t *testing.T) {
 				master:       "fake.master",
 				builder:      "fake.builder",
 				recentBuilds: []int64{0, 1, 2},
-				builds: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
-					Build(0).Times(0, 1).GotRevision("refs/heads/master@{#291569}").
+				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
 					Step("fake_step").Results(2).BuilderFaker.
-					Build(1).Times(2, 3).GotRevision("refs/heads/master@{#291570}").
+					Build(1).Times(2, 3).IncludeChanges("http://test", "refs/heads/master@{#291570}").
 					Step("fake_step").Results(2).BuilderFaker.
-					Build(2).Times(4, 5).GotRevision("refs/heads/master@{#291570}").
+					Build(2).Times(4, 5).IncludeChanges("http://test", "refs/heads/master@{#291570}").
 					Step("fake_step").Results(2).BuildFaker.
-					Step("other_step").Results(2).BuilderFaker.Builds,
+					Step("other_step").Results(2).BuilderFaker,
+				buildsAtFault: []int{2, 2},
+				stepsAtFault:  []string{"other_step", "fake_step"},
 				wantAlerts: []messages.Alert{
 					{
 						Key:       "fake.master.fake.builder.other_step.",
@@ -526,43 +479,15 @@ func TestBuilderStepAlerts(t *testing.T) {
 									LatestFailure: 2,
 								},
 							},
-							StepAtFault: &messages.BuildStep{
-								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
-								Build: &messages.Build{
-									BuilderName: "fake.builder",
-									Number:      2,
-									Times:       []messages.EpochTime{4, 5},
-									Steps: []messages.Step{
-										{
-											Name:       "fake_step",
-											IsFinished: true,
-											Results:    []interface{}{float64(2)},
-										},
-										{
-											Name:       "other_step",
-											IsFinished: true,
-											Results:    []interface{}{float64(2)},
-										},
-									},
-									Properties: [][]interface{}{
-										{"got_revision_cp", "refs/heads/master@{#291570}"},
-									},
-								},
-								Step: &messages.Step{
-									Name:       "other_step",
-									IsFinished: true,
-									Results:    []interface{}{float64(2)},
-								},
-							},
 							Reason: &messages.Reason{
 								Raw: &fakeReasonRaw{},
 							},
-							RegressionRanges: []messages.RegressionRange{
+							RegressionRanges: []*messages.RegressionRange{
 								{
-									Repo: "chromium",
-									Positions: []string{
-										"refs/heads/master@{#291570}",
-									},
+									Repo:      "test",
+									URL:       "http://test",
+									Revisions: []string{"291570"},
+									Positions: []string{"refs/heads/master@{#291570}"},
 								},
 							},
 						},
@@ -583,43 +508,18 @@ func TestBuilderStepAlerts(t *testing.T) {
 									LatestFailure: 2,
 								},
 							},
-							StepAtFault: &messages.BuildStep{
-								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
-								Build: &messages.Build{
-									BuilderName: "fake.builder",
-									Number:      2,
-									Times:       []messages.EpochTime{4, 5},
-									Steps: []messages.Step{
-										{
-											Name:       "fake_step",
-											IsFinished: true,
-											Results:    []interface{}{float64(2)},
-										},
-										{
-											Name:       "other_step",
-											IsFinished: true,
-											Results:    []interface{}{float64(2)},
-										},
-									},
-									Properties: [][]interface{}{
-										{"got_revision_cp", "refs/heads/master@{#291570}"},
-									},
-								},
-								Step: &messages.Step{
-									Name:       "fake_step",
-									IsFinished: true,
-									Results:    []interface{}{float64(2)},
-								},
-							},
 							Reason: &messages.Reason{
 								Raw: &fakeReasonRaw{},
 							},
-							RegressionRanges: []messages.RegressionRange{
+							RegressionRanges: []*messages.RegressionRange{
 								{
-									Repo: "chromium",
+									Repo: "test",
+									URL:  "http://test",
+									Revisions: []string{
+										"291569",
+									},
 									Positions: []string{
 										"refs/heads/master@{#291569}",
-										"refs/heads/master@{#291570}",
 									},
 								},
 							},
@@ -632,14 +532,16 @@ func TestBuilderStepAlerts(t *testing.T) {
 				master:       "fake.master",
 				builder:      "fake.builder",
 				recentBuilds: []int64{0, 1, 2},
-				builds: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
-					Build(0).Times(0, 1).GotRevision("refs/heads/master@{#291569}").
+				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
 					Step("fake_step").Results(2).BuildFaker.
 					Step("other_step").Results(2).BuilderFaker.
-					Build(1).Times(2, 3).GotRevision("refs/heads/master@{#291570}").
+					Build(1).Times(2, 3).IncludeChanges("http://test", "refs/heads/master@{#291570}").
 					Step("fake_step").Results(2).BuilderFaker.
-					Build(2).Times(4, 5).GotRevision("refs/heads/master@{#291570}").
-					Step("fake_step").Results(2).BuilderFaker.Builds,
+					Build(2).Times(4, 5).IncludeChanges("http://test", "refs/heads/master@{#291570}").
+					Step("fake_step").Results(2).BuilderFaker,
+				buildsAtFault: []int{2},
+				stepsAtFault:  []string{"fake_step"},
 				wantAlerts: []messages.Alert{
 					{
 						Key:      "fake.master.fake.builder.fake_step.",
@@ -657,38 +559,18 @@ func TestBuilderStepAlerts(t *testing.T) {
 									LatestFailure: 2,
 								},
 							},
-							StepAtFault: &messages.BuildStep{
-								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
-								Build: &messages.Build{
-									BuilderName: "fake.builder",
-									Number:      2,
-									Times:       []messages.EpochTime{4, 5},
-									Steps: []messages.Step{
-										{
-											Name:       "fake_step",
-											IsFinished: true,
-											Results:    []interface{}{float64(2)},
-										},
-									},
-									Properties: [][]interface{}{
-										{"got_revision_cp", "refs/heads/master@{#291570}"},
-									},
-								},
-								Step: &messages.Step{
-									Name:       "fake_step",
-									IsFinished: true,
-									Results:    []interface{}{float64(2)},
-								},
-							},
 							Reason: &messages.Reason{
 								Raw: &fakeReasonRaw{},
 							},
-							RegressionRanges: []messages.RegressionRange{
+							RegressionRanges: []*messages.RegressionRange{
 								{
-									Repo: "chromium",
+									Repo: "test",
+									URL:  "http://test",
+									Revisions: []string{
+										"291569",
+									},
 									Positions: []string{
 										"refs/heads/master@{#291569}",
-										"refs/heads/master@{#291570}",
 									},
 								},
 							},
@@ -704,10 +586,28 @@ func TestBuilderStepAlerts(t *testing.T) {
 			test := test
 			Convey(test.name, func() {
 				a.Now = fakeNow(time.Unix(0, 0))
+				var builds map[string]*messages.Build
+				if test.testData != nil {
+					builds = test.testData.Builds
+				}
+
 				a.Reader = clientTest.MockReader{
-					Builds:        test.builds,
+					Builds:        builds,
 					FinditResults: test.finditData,
 				}
+
+				So(test.buildsAtFault, ShouldHaveLength, len(test.wantAlerts))
+				So(test.stepsAtFault, ShouldHaveLength, len(test.wantAlerts))
+
+				newAlerts := []messages.Alert(nil)
+				stepsAtFault := analyzertest.StepsAtFault(test.testData, test.buildsAtFault, test.stepsAtFault)
+				for i, alr := range test.wantAlerts {
+					ext := alr.Extension.(messages.BuildFailure)
+					ext.StepAtFault = &stepsAtFault[i]
+					alr.Extension = ext
+					newAlerts = append(newAlerts, alr)
+				}
+				test.wantAlerts = newAlerts
 
 				gotAlerts, gotErrs := a.builderStepAlerts("tree", &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.recentBuilds)
 
@@ -753,7 +653,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 									"reason_a",
 								},
 							},
-							RegressionRanges: []messages.RegressionRange{
+							RegressionRanges: []*messages.RegressionRange{
 								{
 									Repo: "repo.a",
 								},
@@ -771,7 +671,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 									"reason_b",
 								},
 							},
-							RegressionRanges: []messages.RegressionRange{
+							RegressionRanges: []*messages.RegressionRange{
 								{
 									Repo: "repo.b",
 								},
@@ -791,7 +691,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 									"reason_a",
 								},
 							},
-							RegressionRanges: []messages.RegressionRange{
+							RegressionRanges: []*messages.RegressionRange{
 								{
 									Repo: "repo.a",
 								},
@@ -809,7 +709,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 									"reason_b",
 								},
 							},
-							RegressionRanges: []messages.RegressionRange{
+							RegressionRanges: []*messages.RegressionRange{
 								{
 									Repo: "repo.b",
 								},
@@ -830,7 +730,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 							Reason: &messages.Reason{
 								Raw: &fakeReasonRaw{},
 							},
-							RegressionRanges: []messages.RegressionRange{
+							RegressionRanges: []*messages.RegressionRange{
 								{
 									Repo: "repo.a",
 								},
@@ -846,7 +746,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 							Reason: &messages.Reason{
 								Raw: &fakeReasonRaw{},
 							},
-							RegressionRanges: []messages.RegressionRange{
+							RegressionRanges: []*messages.RegressionRange{
 								{
 									Repo: "repo.b",
 								},
@@ -862,7 +762,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 							Reason: &messages.Reason{
 								Raw: &fakeReasonRaw{},
 							},
-							RegressionRanges: []messages.RegressionRange{
+							RegressionRanges: []*messages.RegressionRange{
 								{
 									Repo: "repo.c",
 								},
@@ -884,7 +784,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 							Reason: &messages.Reason{
 								Raw: &fakeReasonRaw{},
 							},
-							RegressionRanges: []messages.RegressionRange{
+							RegressionRanges: []*messages.RegressionRange{
 								{
 									Repo:      "repo.a",
 									Positions: []string{},
@@ -941,7 +841,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 							Reason: &messages.Reason{
 								Raw: &fakeReasonRaw{},
 							},
-							RegressionRanges: []messages.RegressionRange{},
+							RegressionRanges: []*messages.RegressionRange{},
 						},
 					},
 				},
@@ -1101,7 +1001,6 @@ func TestStepFailureAlerts(t *testing.T) {
 									Name: "fake_tests",
 								},
 							},
-							RegressionRanges: []messages.RegressionRange{},
 						},
 					},
 				},

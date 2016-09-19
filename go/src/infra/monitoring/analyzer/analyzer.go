@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"infra/monitoring/analyzer/regrange"
 	"infra/monitoring/analyzer/step"
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
@@ -47,7 +47,6 @@ var (
 	errLog  = log.New(os.Stderr, "", log.Lshortfile|log.Ltime)
 	infoLog = log.New(os.Stdout, "", log.Lshortfile|log.Ltime)
 	expvars = expvar.NewMap("analyzer")
-	cpRE    = regexp.MustCompile("Cr-Commit-Position: (.*)@{#([0-9]+)}")
 )
 
 var (
@@ -96,7 +95,8 @@ type Analyzer struct {
 	rslck             *sync.Mutex
 	revisionSummaries map[string]messages.RevisionSummary
 
-	reasonFinder step.ReasonFinder
+	reasonFinder   step.ReasonFinder
+	regrangeFinder regrange.Finder
 
 	// Now is useful for mocking the system clock in testing and simulating time
 	// during replay.
@@ -122,6 +122,7 @@ func New(c client.Reader, minBuilds, maxBuilds int) *Analyzer {
 		rslck:                  &sync.Mutex{},
 		revisionSummaries:      map[string]messages.RevisionSummary{},
 		reasonFinder:           step.ReasonsForFailures,
+		regrangeFinder:         regrange.Default,
 		Now: func() time.Time {
 			return time.Now()
 		},
@@ -387,6 +388,7 @@ func (a *Analyzer) builderAlerts(tree string, master *messages.MasterLocation, b
 
 // mergeAlertsByReason merges alerts for step failures occurring across multiple builders into
 // one alert with multiple builders indicated.
+// FIXME: Move the regression range logic into package regrange
 func (a *Analyzer) mergeAlertsByReason(alerts []messages.Alert) []messages.Alert {
 	mergedAlerts := []messages.Alert{}
 	byReason := map[string][]messages.Alert{}
@@ -440,10 +442,10 @@ func (a *Analyzer) mergeAlertsByReason(alerts []messages.Alert) []messages.Alert
 
 		// Clear out the list of builders because we're going to reconstruct it.
 		mergedBF.Builders = []messages.AlertedBuilder{}
-		mergedBF.RegressionRanges = []messages.RegressionRange{}
+		mergedBF.RegressionRanges = []*messages.RegressionRange{}
 
 		builders := map[string]messages.AlertedBuilder{}
-		regressionRanges := map[string][]messages.RegressionRange{}
+		regressionRanges := map[string][]*messages.RegressionRange{}
 
 		for _, alert := range stepAlerts { // stepAlerts[1:]? already have [0] in mergedBf
 			bf := alert.Extension.(messages.BuildFailure)
@@ -493,15 +495,15 @@ func (a *Analyzer) mergeAlertsByReason(alerts []messages.Alert) []messages.Alert
 			posByRepo[regRange.Repo] = append(posByRepo[regRange.Repo], regRange.Positions...)
 		}
 
-		mergedBF.RegressionRanges = []messages.RegressionRange{}
+		mergedBF.RegressionRanges = []*messages.RegressionRange{}
 		for repo, pos := range posByRepo {
-			mergedBF.RegressionRanges = append(mergedBF.RegressionRanges, messages.RegressionRange{
+			mergedBF.RegressionRanges = append(mergedBF.RegressionRanges, &messages.RegressionRange{
 				Repo:      repo,
 				Positions: uniques(pos),
 			})
 		}
 
-		sort.Sort(byRepo(mergedBF.RegressionRanges))
+		sort.Sort(regrange.ByRepo(mergedBF.RegressionRanges))
 
 		if len(mergedBF.Builders) > 1 {
 			builderNames := []string{}
@@ -514,7 +516,7 @@ func (a *Analyzer) mergeAlertsByReason(alerts []messages.Alert) []messages.Alert
 			merged.Body = strings.Join(builderNames, ", ")
 		}
 
-		shrunkRegressionRanges := []messages.RegressionRange{}
+		shrunkRegressionRanges := []*messages.RegressionRange{}
 
 		// Save space for long commit position lists by just keeping the first and last.
 		for _, r := range mergedBF.RegressionRanges {
@@ -625,6 +627,7 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 			errLog.Printf("Couldn't cast extension as BuildFailure: %s", mergedAlert.Type)
 		}
 
+		firstFailingBuild := mergedBF
 		for _, alr := range keyedAlerts[1:] {
 			if alr.Title != mergedAlert.Title {
 				// Sanity checking.
@@ -648,8 +651,11 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 			// These failure numbers are build numbers. The UI should probably indicate
 			// gnumbd sequence numbers instead or in addition to build numbers.
 
+			// FIXME: Use timestamps or revision info instead of build numbers, in
+			// case of a master restart.
 			if firstBuilder.FirstFailure < mergedBuilder.FirstFailure {
 				mergedBuilder.FirstFailure = firstBuilder.FirstFailure
+				firstFailingBuild = bf
 			}
 			if firstBuilder.LatestFailure > mergedBuilder.LatestFailure {
 				mergedBuilder.LatestFailure = firstBuilder.LatestFailure
@@ -658,27 +664,12 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 				mergedBuilder.StartTime = firstBuilder.StartTime
 			}
 			mergedBF.Builders[0] = mergedBuilder
-			mergedBF.RegressionRanges = append(mergedBF.RegressionRanges, bf.RegressionRanges...)
 		}
 
-		// Now merge regression ranges by repo.
-		positionsByRepo := map[string][]string{}
-		for _, rr := range mergedBF.RegressionRanges {
-			positionsByRepo[rr.Repo] = append(positionsByRepo[rr.Repo], rr.Positions...)
-		}
-
-		mergedBF.RegressionRanges = []messages.RegressionRange{}
-
-		for repo, pos := range positionsByRepo {
-			mergedBF.RegressionRanges = append(mergedBF.RegressionRanges,
-				messages.RegressionRange{
-					Repo:      repo,
-					Positions: uniques(pos),
-				})
-		}
+		mergedBF.RegressionRanges = firstFailingBuild.RegressionRanges
 
 		// Necessary for test cases to be repeatable.
-		sort.Sort(byRepo(mergedBF.RegressionRanges))
+		sort.Sort(regrange.ByRepo(mergedBF.RegressionRanges))
 
 		// FIXME: This is a very simplistic model, and we're throwing away a lot of the findit data.
 		// This data should really be a part of the regression range data.
@@ -716,12 +707,6 @@ func uniques(s []string) []string {
 	sort.Strings(ret)
 	return ret
 }
-
-type byRepo []messages.RegressionRange
-
-func (a byRepo) Len() int           { return len(a) }
-func (a byRepo) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a byRepo) Less(i, j int) bool { return a[i].Repo < a[j].Repo }
 
 // stepFailures returns the steps that have failed recently on builder builderName.
 func (a *Analyzer) stepFailures(master *messages.MasterLocation, builderName string, bID int64) ([]*messages.BuildStep, error) {
@@ -839,17 +824,6 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 			}
 		}
 
-		// Gets the named revision number from gnumbd metadata.
-		getCommitPos := func(b *messages.Build, name string) (string, bool) {
-			for _, p := range b.Properties {
-				if p[0] == name {
-					s, ok := p[1].(string)
-					return s, ok
-				}
-			}
-			return "", false
-		}
-
 		scannedFailures = append(scannedFailures, failure)
 		i := i
 		go func(f *messages.BuildStep) {
@@ -863,54 +837,13 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 				Severity:  newFailureSev,
 			}
 
-			regRanges := []messages.RegressionRange{}
-			revisionsByRepo := map[string][]string{}
+			regRanges := a.regrangeFinder(f.Build)
 
-			// Get gnumbd sequence numbers for whatever this build pulled in.
-			chromiumPos, ok := getCommitPos(f.Build, "got_revision_cp")
-			if ok {
-				regRanges = append(regRanges, messages.RegressionRange{
-					Repo:      "chromium",
-					Positions: []string{chromiumPos},
-				})
-			}
-
-			blinkPos, ok := getCommitPos(f.Build, "got_webkit_revision_cp")
-			if ok {
-				regRanges = append(regRanges, messages.RegressionRange{
-					Repo:      "blink",
-					Positions: []string{blinkPos},
-				})
-			}
-
-			v8Pos, ok := getCommitPos(f.Build, "got_v8_revision_cp")
-			if ok {
-				regRanges = append(regRanges, messages.RegressionRange{
-					Repo:      "v8",
-					Positions: []string{v8Pos},
-				})
-			}
-
-			naclPos, ok := getCommitPos(f.Build, "got_nacl_revision_cp")
-			if ok {
-				regRanges = append(regRanges, messages.RegressionRange{
-					Repo:      "nacl",
-					Positions: []string{naclPos},
-				})
-			}
-
-			// TODO(seanmccullough):  Nix this? It adds a lot to the alerts json size.
-			// Consider posting this information to a separate endpoint.
 			for _, change := range f.Build.SourceStamp.Changes {
-				revisionsByRepo[change.Repository] = append(revisionsByRepo[change.Repository], change.Revision)
-				// change.Revision is *not* always a git hash. Sometimes it is a position from gnumbd.
-				// change.Revision is git hash or gnumbd depending on what exactly? Not obvious at this time.
-				// A potential problem here is when multiple repos have overlapping gnumbd ranges.
-				parts := cpRE.FindAllStringSubmatch(change.Comments, -1)
-				pos, branch := "", ""
-				if len(parts) > 0 {
-					branch = parts[0][1]
-					pos = parts[0][2]
+				branch, pos, err := change.CommitPosition()
+				if err != nil {
+					errLog.Printf("while getting commit position for %v: %s", change, err)
+					continue
 				}
 				a.rslck.Lock()
 				a.revisionSummaries[change.Revision] = messages.RevisionSummary{
@@ -923,13 +856,6 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 					Branch:      branch,
 				}
 				a.rslck.Unlock()
-			}
-
-			for repo, revisions := range revisionsByRepo {
-				regRanges = append(regRanges, messages.RegressionRange{
-					Repo:      repo,
-					Revisions: revisions,
-				})
 			}
 
 			// If the builder has been failing on the same step for multiple builds in a row,

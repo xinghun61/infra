@@ -113,12 +113,12 @@ type Link struct {
 
 // BuildFailure is an Extension.
 type BuildFailure struct {
-	TreeCloser       bool              `json:"tree_closer"`
-	Builders         []AlertedBuilder  `json:"builders"`
-	StepAtFault      *BuildStep        `json:"-"`
-	Reason           *Reason           `json:"reason"`
-	RegressionRanges []RegressionRange `json:"regression_ranges"`
-	SuspectedCLs     []SuspectCL       `json:"suspected_cls"`
+	TreeCloser       bool               `json:"tree_closer"`
+	Builders         []AlertedBuilder   `json:"builders"`
+	StepAtFault      *BuildStep         `json:"-"`
+	Reason           *Reason            `json:"reason"`
+	RegressionRanges []*RegressionRange `json:"regression_ranges"`
+	SuspectedCLs     []SuspectCL        `json:"suspected_cls"`
 }
 
 // BuildStep is a step which was run in a particular build. Useful for analyzing
@@ -186,7 +186,7 @@ type RegressionRange struct {
 // RevisionSummary summarizes some information about a revision.
 type RevisionSummary struct {
 	GitHash     string    `json:"git_hash"`
-	Position    string    `json:"commit_position"`
+	Position    int       `json:"commit_position"`
 	Branch      string    `json:"branch"`
 	Link        string    `json:"link"`
 	Description string    `json:"description"`

@@ -18,6 +18,7 @@ func TestBuilderFaker(t *testing.T) {
 	}
 
 	b.Build(0).IncludeChanges(
+		"http://thing",
 		"refs/heads/master@{1}",
 		"refs/heads/master@{2}",
 		"refs/heads/master@{3}",
@@ -48,10 +49,10 @@ func TestBuilderFaker(t *testing.T) {
 	}
 
 	// All together now.
-	got := NewBuilderFaker("fake.master", "fake.builder").
-		Build(0).Times(0, 1).GotRevision("refs/heads/master@{#291569}").
+	bf := NewBuilderFaker("fake.master", "fake.builder").
+		Build(0).Times(0, 1).IncludeChanges("http://repo", "refs/heads/master@{#291569}").
 		Step("fake_step").Results(2).BuildFaker.
-		Step("other step").Results(2).BuilderFaker.Builds["fake.master/fake.builder/0"]
+		Step("other step").Results(2).BuilderFaker
 	expected := &messages.Build{
 		BuilderName: "fake.builder",
 		Number:      0,
@@ -68,11 +69,38 @@ func TestBuilderFaker(t *testing.T) {
 				Results:    []interface{}{float64(2)},
 			},
 		},
-		Properties: [][]interface{}{
-			{"got_revision_cp", "refs/heads/master@{#291569}"},
+		SourceStamp: messages.SourceStamp{
+			Changes: []messages.Change{
+				{
+					Repository: "http://repo",
+					Revision:   "291569",
+					Comments:   "some change comment\n\nCr-Commit-Position: refs/heads/master@{#291569}\n\n",
+				},
+			},
 		},
 	}
+
+	got := bf.Builds["fake.master/fake.builder/0"]
 	if !reflect.DeepEqual(got, expected) {
 		t.Errorf("Didn't construct builds properly. Got \n\t%+v, want\n\t%+v", got, expected)
 	}
+
+	buildSteps := StepsAtFault(bf, []int{0, 0}, []string{"fake_step", "other step"})
+	expectedSteps := []messages.BuildStep{
+		{
+			Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master")},
+			Build:  expected,
+			Step:   &expected.Steps[0],
+		},
+		{
+			Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master")},
+			Build:  expected,
+			Step:   &expected.Steps[1],
+		},
+	}
+
+	if !reflect.DeepEqual(buildSteps, expectedSteps) {
+		t.Errorf("Didn't construct build steps properly. Got \n\t%+v, want\n\t%+v", buildSteps, expectedSteps)
+	}
+
 }

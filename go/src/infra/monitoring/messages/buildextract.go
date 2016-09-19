@@ -7,6 +7,11 @@
 
 package messages
 
+import (
+	"regexp"
+	"strconv"
+)
+
 const (
 	// StateBuilding is the builder "building" state.
 	StateBuilding = "building"
@@ -113,6 +118,25 @@ type Change struct {
 	Revlink    string          `json:"revlink"`
 	When       EpochTime       `json:"when"`
 	Who        string          `json:"who"`
+}
+
+var cpRE = regexp.MustCompile("Cr-Commit-Position: (.*)@{#([0-9]+)}")
+
+// CommitPosition parses the comments of a change to find something which
+// looks like a commit position git footer.
+func (c *Change) CommitPosition() (string, int, error) {
+	parts := cpRE.FindAllStringSubmatch(c.Comments, -1)
+	branch, pos := "", 0
+	if len(parts) > 0 {
+		branch = parts[0][1]
+		var err error
+		pos, err = strconv.Atoi(parts[0][2])
+		if err != nil {
+			return "", 0, err
+		}
+	}
+
+	return branch, pos, nil
 }
 
 // ChangeSource is an automatically generated type.
