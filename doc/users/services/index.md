@@ -12,3 +12,4 @@
 * Tree status: prevents CLs from landing when source tree is
   broken.
 * [Monorail](/appengine/monorail/README.md): The issue tracking tool for chromium-related projects.
+* [Code Search](code_search/index.md): Searches code and navigates code.
