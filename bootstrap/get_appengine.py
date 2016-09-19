@@ -1,26 +1,66 @@
 #!/usr/bin/env python
-# Copyright (c) 2011 The Chromium Authors. All rights reserved.
+# Copyright (c) 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import argparse
+import contextlib
 import datetime
+import json
 import logging
-import optparse
 import os
 import re
 import shutil
+import subprocess
 import sys
 import time
 import tempfile
-import urllib2
 import zipfile
 
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BOOTSTRAP_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(BOOTSTRAP_DIR)
 
-URLOPEN_RETRIES = 5
+# Path to "depot_tools"'s "gsutil.py".
+GSUTIL_PY = os.path.join(
+    os.path.dirname(BASE_DIR), 'depot_tools', 'gsutil.py')
 
-SDK_URL_BASE = 'https://storage.googleapis.com/appengine-sdks/featured/'
+# Base Google Storage bucket name.
+SDK_GS_BUCKET_BASE = 'gs://appengine-sdks/featured'
+
+# Extracts the version from a given filename.
+VERSION_RE = re.compile(r'^.*[-_](\d+)\.(\d+)\.(\d+)\.zip$')
+
+
+def parse_yaml(content):
+  """Parses deps.lock YAML file content and returns it as python dict."""
+  # YAML lib is in venv, not activated here. Do some ugly hacks, they at least
+  # don't touch python module import madness. Importing a package from another
+  # venv directly into the process space is non-trivial and dangerous.
+  oneliner = (
+      'import json, sys, yaml; '
+      'out = yaml.safe_load(sys.stdin); '
+      'json.dump(out, sys.stdout)')
+  if sys.platform == 'win32':
+    python_venv_path = ('Scripts', 'python.exe')
+  else:
+    python_venv_path = ('bin', 'python')
+  executable = os.path.join(BASE_DIR, 'ENV', *python_venv_path)
+  env = os.environ.copy()
+  env.pop('PYTHONPATH', None)
+  proc = subprocess.Popen(
+      [executable, '-c', oneliner],
+      executable=executable,
+      stdin=subprocess.PIPE,
+      stdout=subprocess.PIPE,
+      env=env)
+  return json.loads(proc.communicate(content)[0])
+
+
+def gsutil(*cmd):
+  command = [sys.executable, GSUTIL_PY] + list(cmd)
+  logging.debug('Running gsutil command: %s', ' '.join(command))
+  return subprocess.check_output(command)
 
 
 def get_gae_sdk_version(gae_path):
@@ -52,33 +92,53 @@ def get_sdk_dirname(for_golang):
   return 'google_appengine'
 
 
-def get_sdk_url(for_golang, version):
-  """Returns the expected URL to download the GAE SDK."""
-  return SDK_URL_BASE + get_sdk_zip_basename(for_golang) + version + '.zip'
+def get_sdk_gs_path(for_golang, version):
+  """Returns the expected Google Storage URL to download the GAE SDK."""
+  return '%s/%s%s.zip' % (
+      SDK_GS_BUCKET_BASE, get_sdk_zip_basename(for_golang), version)
+
+
+def read_gae_sdk_version_file():
+  version_yaml = gsutil('cat', SDK_GS_BUCKET_BASE + '/VERSION')
+  version = parse_yaml(version_yaml)
+  return version.get('release')
+
+
+def confirm_sdk_for_version_is_usable(for_golang, version):
+  sdk_path = get_sdk_gs_path(for_golang, version)
+  try:
+    # Read the first byte of the file. This confirms that the file both exists
+    # and is readable by this user.
+    gsutil('cat', '-r', '-1', sdk_path)
+    return True
+  except subprocess.CalledProcessError:
+    return False
 
 
 def get_latest_gae_sdk_version(for_golang):
-  """Returns the url to get the latest GAE SDK and its version."""
-  url = 'https://cloud.google.com/appengine/downloads.html'
-  logging.debug('%s', url)
+  """Returns the latest GAE SDK and its version."""
+  # Attempt to load the VERSION YAML. If we see a version there, confirm that
+  # the file for that version is usable.
+  try:
+    version = read_gae_sdk_version_file()
+    if confirm_sdk_for_version_is_usable(for_golang, version):
+      return version
+  except Exception:
+    logging.exception('Failed to get VERSION; scanning...')
 
-  for retry in xrange(URLOPEN_RETRIES):
-    try:
-      content = urllib2.urlopen(url).read()
-      break
-    except urllib2.HTTPError as e:
-      if e.code == 500 and retry < URLOPEN_RETRIES - 1:
-        delay = 2 ** retry
-        logging.info('Failed to get %s. Retrying after %d seconds.', url, delay)
-        time.sleep(delay)
-      else:
-        raise e
-
-  # Calculate the version from the url.
-  re_base = re.escape(SDK_URL_BASE + get_sdk_zip_basename(for_golang))
-  m = re.search(re_base + r'([0-9\.]+?)\.zip', content)
-  if m:
-    return m.group(1)
+  # VERSION failed. Scan the directory and cherry-pick the latest version.
+  base_name = get_sdk_zip_basename(for_golang)
+  glob_path = '%s/%s*' % (SDK_GS_BUCKET_BASE, base_name)
+  contents = gsutil('ls', glob_path).splitlines()
+  versions = [
+      (m.group(1), m.group(2), m.group(3)) for m in [
+          VERSION_RE.match(v)
+          for v in contents]
+      if m is not None]
+  if not versions:
+    raise Exception('No versions for [%s] could be identified.' % (base_name,))
+  versions.sort(reverse=True)
+  return '.'.join(versions[0])
 
 
 def extract_zip(z, root_path):
@@ -99,6 +159,17 @@ def extract_zip(z, root_path):
   print('Extracted %d files' % count)
 
 
+@contextlib.contextmanager
+def tempdir():
+  path = None
+  try:
+    path = tempfile.mkdtemp(suffix='infra_get_appengine')
+    yield path
+  finally:
+    if path:
+      shutil.rmtree(path)
+
+
 def install_gae_sdk(root_path, for_golang, dry_run, new_version):
   # The zip file already contains 'google_appengine' (for python) or
   # 'go_appengine' (for go) in its path so it's a bit
@@ -113,52 +184,39 @@ def install_gae_sdk(root_path, for_golang, dry_run, new_version):
   else:
     print('Didn\'t find an SDK')
 
-  url = get_sdk_url(for_golang, new_version)
-  print('Fetching %s' % url)
+  gs_path = get_sdk_gs_path(for_golang, new_version)
+  print('Fetching %s' % gs_path)
   if not dry_run:
-    try:
-      u = urllib2.urlopen(url)
-    except urllib2.HTTPError as exc:
-      # If we fail to download the new version, maintain the old one in place.
-      # http://crbug.com/593481
-      print ('Failed to download sdk: %s' % url)
-      print exc
-      return 1
+    with tempdir() as tdir:
+      tmpname = os.path.join(tdir, 'appengine_sdk.zip')
+      gsutil('cp', gs_path, tmpname)
 
-    if os.path.isdir(gae_path):
-      print('Removing previous version')
-      if not dry_run:
-        shutil.rmtree(gae_path)
-
-    with tempfile.NamedTemporaryFile() as f:
-      while True:
-        chunk = u.read(2 ** 20)
-        if not chunk:
-          break
-        f.write(chunk)
-      # Assuming we're extracting there. In fact, we have no idea.
       print('Extracting into %s' % gae_path)
-      z = zipfile.ZipFile(f, 'r')
-      try:
+      if os.path.isdir(gae_path):
+        print('Removing previous version')
+        if not dry_run:
+          shutil.rmtree(gae_path)
+
+      # Assuming we're extracting there. In fact, we have no idea.
+      with zipfile.ZipFile(tmpname, 'r') as z:
         extract_zip(z, root_path)
-      finally:
-        z.close()
+
   return 0
 
 
 def main():
-  parser = optparse.OptionParser(prog='python -m %s' % __package__)
-  parser.add_option('-v', '--verbose', action='store_true')
-  parser.add_option(
+  parser = argparse.ArgumentParser(prog='python -m %s' % __package__)
+  parser.add_argument('-v', '--verbose', action='store_true')
+  parser.add_argument(
       '-g', '--go', action='store_true', help='Defaults to python SDK')
-  parser.add_option(
+  parser.add_argument(
       '-d', '--dest', default=os.path.dirname(BASE_DIR), help='Output')
-  parser.add_option('--version', help='Specify which version to fetch')
-  parser.add_option('--dry-run', action='store_true', help='Do not download')
-  options, args = parser.parse_args()
-  if args:
-    parser.error('Unsupported args: %s' % ' '.join(args))
-  logging.basicConfig(level=logging.DEBUG if options.verbose else logging.ERROR)
+  parser.add_argument('--version', help='Specify which version to fetch')
+  parser.add_argument('--dry-run', action='store_true', help='Do not download')
+  options = parser.parse_args()
+
+  if options.verbose:
+    logging.getLogger().setLevel(logging.DEBUG)
 
   if not options.version:
     options.version = get_latest_gae_sdk_version(options.go)
@@ -173,4 +231,5 @@ def main():
 
 
 if __name__ == '__main__':
+  logging.basicConfig(level=logging.ERROR)
   sys.exit(main())
