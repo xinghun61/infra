@@ -534,7 +534,7 @@ class UnixProcessCreator(ProcessCreator):  # pragma: no cover
         # The maximum number of open file descriptors for the process.
         'num_files': resource.RLIMIT_NOFILE,
         # The maximum number of processes the process may create.
-        'num_processes': resource.RLIMIT_NOFILE,
+        'num_processes': resource.RLIMIT_NPROC,
         # The maximum size (in bytes) of the call stack for the process.
         'stack': resource.RLIMIT_STACK,
     }
