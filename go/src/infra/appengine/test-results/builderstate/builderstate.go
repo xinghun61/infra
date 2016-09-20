@@ -139,7 +139,7 @@ func lastUpdated(c context.Context, master, builder, testType string) (t time.Ti
 	q := p.Query()
 
 	var tfs []*model.TestFile
-	if err := datastore.Get(c).GetAll(q, &tfs); err != nil {
+	if err := datastore.GetAll(c, q, &tfs); err != nil {
 		return time.Time{}, err
 	}
 	if len(tfs) == 0 {
@@ -176,7 +176,7 @@ func (bs *BuilderState) setLastUpdated(c context.Context) error {
 // If the returned error is nil, the returned memcache.Item will
 // contain the new data.
 func RefreshCache(c context.Context) (memcache.Item, error) {
-	item, err := memcache.Get(c).Get(BuildbotMemcacheKey)
+	item, err := memcache.GetKey(c, BuildbotMemcacheKey)
 	if err != nil {
 		return nil, err
 	}
@@ -194,9 +194,9 @@ func RefreshCache(c context.Context) (memcache.Item, error) {
 		return nil, err
 	}
 
-	newItem := memcache.Get(c).NewItem(MemcacheKey)
+	newItem := memcache.NewItem(c, MemcacheKey)
 	newItem.SetValue(b)
-	_ = memcache.Get(c).Set(newItem) // Ignore error: not critical to this function.
+	_ = memcache.Set(c, newItem) // Ignore error: not critical to this function.
 	return newItem, nil
 }
 
@@ -207,7 +207,7 @@ func RefreshCache(c context.Context) (memcache.Item, error) {
 // If an error occurs when getting the item from memcache,
 // the error is returned and the function has no effect.
 func Update(c context.Context, master, builder, testType string, modified time.Time) error {
-	item, err := memcache.Get(c).Get(MemcacheKey)
+	item, err := memcache.GetKey(c, MemcacheKey)
 	if err != nil {
 		return err
 	}
@@ -248,5 +248,5 @@ func Update(c context.Context, master, builder, testType string, modified time.T
 		return err
 	}
 	item.SetValue(b)
-	return memcache.Get(c).CompareAndSwap(item)
+	return memcache.CompareAndSwap(c, item)
 }

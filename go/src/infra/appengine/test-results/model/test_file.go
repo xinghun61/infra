@@ -108,10 +108,9 @@ func (tf *TestFile) DataReader(c context.Context) (io.Reader, error) {
 	}
 
 	keys := make([]*datastore.Key, len(ids))
-	ds := datastore.Get(c)
 	for i, id := range ids {
 		de := &DataEntry{ID: id}
-		keys[i] = ds.KeyForObj(de)
+		keys[i] = datastore.KeyForObj(c, de)
 	}
 
 	return &dataEntryReader{
@@ -182,7 +181,7 @@ func (tf *TestFile) putDataEntries(c context.Context, dataFunc func(io.Writer) e
 
 		// Best effort: delete any keys that were created.
 		if len(keys) > 0 {
-			if derr := datastore.Get(c).Delete(keys); derr != nil {
+			if derr := datastore.Delete(c, keys); derr != nil {
 				logging.Fields{
 					logging.ErrorKey: derr,
 					"count":          len(keys),
@@ -212,7 +211,7 @@ func writeDataEntries(c context.Context, r io.Reader) ([]*datastore.Key, error) 
 	// This may write a lot of entries, and so we do NOT want a transactional
 	// datastore handle here. This is fine, since each DataEntry will be a new
 	// auto-generated ID, so there will not be any conflicts.
-	ds := datastore.GetNoTxn(c)
+	c = datastore.WithoutTransaction(c)
 
 	// Read data from "r" one blob at a time.
 	buf := make([]byte, maxBlobLen)
@@ -239,7 +238,7 @@ func writeDataEntries(c context.Context, r io.Reader) ([]*datastore.Key, error) 
 			dataEntry := &DataEntry{
 				Data: buf[:count],
 			}
-			if err := ds.Put(dataEntry); err != nil {
+			if err := datastore.Put(c, dataEntry); err != nil {
 				logging.WithError(err).Errorf(c, "Failed to put DataEntry #%d.", len(keys))
 				return keys, err
 			}
@@ -249,7 +248,7 @@ func writeDataEntries(c context.Context, r io.Reader) ([]*datastore.Key, error) 
 				"size":  len(dataEntry.Data),
 				"id":    dataEntry.ID,
 			}.Debugf(c, "Added data entry.")
-			keys = append(keys, ds.KeyForObj(dataEntry))
+			keys = append(keys, datastore.KeyForObj(c, dataEntry))
 		}
 	}
 
@@ -257,12 +256,11 @@ func writeDataEntries(c context.Context, r io.Reader) ([]*datastore.Key, error) 
 }
 
 // updatedBlobKeys fetches the updated blob keys for the old keys from their blobstore migration
-// records. len(n) will equal len(old) if there is no error. If len(old)>1 and there is an error,
+// recordatastore. len(n) will equal len(old) if there is no error. If len(old)>1 and there is an error,
 // err will be of type MultiError and the error at index i will correspond to the
 // error in retrieving the updated blob key for the key at index i in old. A
 // nil error indicates that all values returned in n are valid.
 func updatedBlobKeys(c context.Context, old ...int64) (n []int64, err error) {
-	ds := datastore.Get(c)
 	type record struct {
 		ID         int64  `gae:"$id"`
 		Kind       string `gae:"$kind,__MigrationRecord__"`
@@ -274,7 +272,7 @@ func updatedBlobKeys(c context.Context, old ...int64) (n []int64, err error) {
 		records[i] = &record{ID: old[i]}
 	}
 
-	err = ds.Get(records)
+	err = datastore.Get(c, records)
 	errs, isMultiError := err.(errors.MultiError)
 
 	switch {
@@ -403,14 +401,13 @@ func (r *dataEntryReader) Read(buf []byte) (int, error) {
 			return count, io.EOF
 		}
 
-		ds := datastore.Get(r)
 		de := &DataEntry{}
 		if !datastore.PopulateKey(de, r.keys[0]) {
 			return count, errors.Reason("failed to populate object key").Err()
 		}
 
 		logging.Debugf(r, "Read loading DataEntry ID: %v", de.ID)
-		if err := ds.Get(de); err != nil {
+		if err := datastore.Get(r, de); err != nil {
 			return count, errors.Annotate(err).Reason("failed to load DataEntry object").Err()
 		}
 

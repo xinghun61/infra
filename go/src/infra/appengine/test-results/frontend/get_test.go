@@ -17,6 +17,7 @@ import (
 	"github.com/luci/gae/impl/memory"
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/server/router"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -40,7 +41,6 @@ func TestGetHandler(t *testing.T) {
 
 	Convey("getHandler", t, func() {
 		ctx := memory.Use(context.Background())
-		ds := datastore.Get(ctx)
 
 		dataEntries := []model.DataEntry{
 			{Data: []byte("foo"), ID: 1},
@@ -49,21 +49,21 @@ func TestGetHandler(t *testing.T) {
 			{Data: []byte("qux"), ID: 4},
 		}
 		for _, de := range dataEntries {
-			So(ds.Put(&de), ShouldBeNil)
+			So(datastore.Put(ctx, &de), ShouldBeNil)
 		}
 		dataKeys := make([]*datastore.Key, len(dataEntries))
 		for i, de := range dataEntries {
-			dataKeys[i] = ds.KeyForObj(&de)
+			dataKeys[i] = datastore.KeyForObj(ctx, &de)
 		}
 		tf := model.TestFile{
 			ID:       1,
 			DataKeys: dataKeys,
 		}
-		So(ds.Put(&tf), ShouldBeNil)
+		So(datastore.Put(ctx, &tf), ShouldBeNil)
 
 		withTestingContext := func(c *router.Context, next router.Handler) {
 			c.Context = ctx
-			ds.Testable().CatchupIndexes()
+			datastore.GetTestable(ctx).CatchupIndexes()
 			next(c)
 		}
 
@@ -74,7 +74,7 @@ func TestGetHandler(t *testing.T) {
 
 		Convey("respondTestFileData", func() {
 			Convey("succeeds", func() {
-				resp, err := client.Get(srv.URL + "/testfile?key=" + ds.KeyForObj(&tf).Encode())
+				resp, err := client.Get(srv.URL + "/testfile?key=" + datastore.KeyForObj(ctx, &tf).Encode())
 				So(err, ShouldBeNil)
 				defer resp.Body.Close()
 				b, err := ioutil.ReadAll(resp.Body)

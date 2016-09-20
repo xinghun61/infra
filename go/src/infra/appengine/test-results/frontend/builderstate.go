@@ -26,7 +26,7 @@ var refreshFunc = builderstate.RefreshCache
 func getBuilderStateHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 
-	item, err := memcache.Get(c).Get(builderstate.MemcacheKey)
+	item, err := memcache.GetKey(c, builderstate.MemcacheKey)
 
 	if err != nil {
 		item, err = refreshFunc(c)

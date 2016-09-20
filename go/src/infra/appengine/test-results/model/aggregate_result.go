@@ -446,7 +446,7 @@ func (leaf *AggregateTestLeaf) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// defaultFields sets default values for missing/invalid fields.
+// defaultFields sets default values for missing/invalid fieldatastore.
 func (leaf *AggregateTestLeaf) defaultFields() {
 	if len(leaf.Results) == 0 {
 		leaf.Results = []ResultSummary{{1, "N"}}
@@ -681,8 +681,8 @@ const (
 	// be trimmed to.
 	ResultsSmallSize = 100
 
-	runtimeThresholdNormal float64 = 3 // In seconds.
-	runtimeThresholdDebug  float64 = 9 // In seconds.
+	runtimeThresholdNormal float64 = 3 // In secondatastore.
+	runtimeThresholdDebug  float64 = 9 // In secondatastore.
 )
 
 func isDebugBuilder(builder string) bool {

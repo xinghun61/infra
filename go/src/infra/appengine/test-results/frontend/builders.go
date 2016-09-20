@@ -80,7 +80,7 @@ func makeBuildExtractClient(ctx context.Context) *buildextract.Client {
 func getBuildersHandler(ctx *router.Context) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
 	var res []byte
-	item, err := memcache.Get(c).Get(buildbotMemcacheKey)
+	item, err := memcache.GetKey(c, buildbotMemcacheKey)
 
 	switch err {
 	case memcache.ErrCacheMiss:
@@ -101,7 +101,7 @@ func getBuildersHandler(ctx *router.Context) {
 		}
 
 		item.SetValue(res)
-		if err := memcache.Get(c).Set(item); err != nil {
+		if err := memcache.Set(c, item); err != nil {
 			// Log this error but do not return to the client because it is not critical
 			// for this handler.
 			logging.Fields{
@@ -153,10 +153,10 @@ func updateBuildersHandler(ctx *router.Context) {
 		return
 	}
 
-	item := memcache.Get(c).NewItem(buildbotMemcacheKey)
+	item := memcache.NewItem(c, buildbotMemcacheKey)
 	item.SetValue(b)
 
-	if err := memcache.Get(c).Set(item); err != nil {
+	if err := memcache.Set(c, item); err != nil {
 		logging.WithError(err).Errorf(c, "updateBuildersHandler: set memcache")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -405,7 +405,7 @@ test('collapsedRevisionListChromium', 1, function() {
     var test = 'dummytest.html';
 
     var builder1 = new builders.Builder('Master1', 'WebKit Linux 1');
-    // Note: r1235 results were generated twice by two separate builds.
+    // Note: r1235 results were generated twice by two separate buildatastore.
     g_resultsByBuilder[builder1.key()] = {builder: builder1, buildNumbers: [2, 1, 3, 4], chromeRevision: [1235, 1235, 1234, 1232], failure_map: FAILURE_MAP};
 
     var builder2 = new builders.Builder('Master1', 'WebKit Linux 2');
@@ -424,7 +424,7 @@ test('collapsedRevisionListChromiumGitHashes', 1, function() {
     var test = 'dummytest.html';
 
     var builder1 = new builders.Builder('Master1', 'WebKit Linux 1');
-    // Note: r1235 results were generated twice by two separate builds.
+    // Note: r1235 results were generated twice by two separate buildatastore.
     g_resultsByBuilder[builder1.key()] = {builder: builder1, buildNumbers: [2, 1, 3, 4], chromeRevision: ['1234', 'asdf', '1111', '2222'], failure_map: FAILURE_MAP};
 
     var builder2 = new builders.Builder('Master1', 'WebKit Linux 2');
@@ -444,7 +444,7 @@ test('htmlForTestsWithMultipleRunsAtTheSameRevision', 6, function() {
     var test = 'dummytest.html';
 
     var builder1 = new builders.Builder('Master1', 'WebKit Linux (dbg)');
-    // Note: r1235 results were generated thrice by three separate builds.
+    // Note: r1235 results were generated thrice by three separate buildatastore.
     g_resultsByBuilder[builder1.key()] = {buildNumbers: [4, 3, 2, 1, 0], chromeRevision: [1235, 1235, 1235, 1234, 1233], failure_map: FAILURE_MAP};
 
     var builder2 = new builders.Builder('Master1', 'WebKit Win (dbg)');

@@ -247,7 +247,7 @@ func uploadTestFile(c context.Context, data io.Reader, filename string) error {
 		return statusError{err, http.StatusInternalServerError}
 	}
 
-	return datastore.Get(c).Put(&tf)
+	return datastore.Put(c, &tf)
 }
 
 // updateFullResults puts the supplied data as "full_results.json"
@@ -331,12 +331,12 @@ func updateFullResults(c context.Context, data io.Reader) error {
 		h.Set("Content-Type", "application/json")
 
 		logging.Debugf(c, "adding taskqueue task for [%s], with payload size %d", monitoringPath, len(payload))
-		if err := taskqueue.Get(c).Add(&taskqueue.Task{
+		if err := taskqueue.Add(c, monitoringQueueName, &taskqueue.Task{
 			Path:    monitoringPath,
 			Payload: payload,
 			Header:  h,
 			Method:  "POST",
-		}, monitoringQueueName); err != nil {
+		}); err != nil {
 			logging.WithError(err).Errorf(c, "Failed to add task queue task.")
 		}
 	}()
@@ -417,7 +417,7 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 		}
 	}
 
-	return datastore.Get(c).RunInTransaction(func(c context.Context) error {
+	return datastore.RunInTransaction(c, func(c context.Context) error {
 		wg = sync.WaitGroup{}
 		errs := make([]error, len(files))
 
@@ -520,7 +520,7 @@ func updateAggregate(c context.Context, tf *model.TestFile, aggr, incr *model.Ag
 		return statusError{err, http.StatusInternalServerError}
 	}
 
-	if err := datastore.Get(c).Put(tf); err != nil {
+	if err := datastore.Put(c, tf); err != nil {
 		logging.WithError(err).Errorf(c, "updateAggregate: datastore.Put")
 		return statusError{err, http.StatusInternalServerError}
 	}
@@ -560,11 +560,11 @@ func deleteKeys(c context.Context, k []*datastore.Key) error {
 		"keys": keys,
 	}.Infof(c, "deleteKeys: enqueing")
 
-	return taskqueue.Get(c).Add(&taskqueue.Task{
+	return taskqueue.Add(c, deleteKeysQueueName, &taskqueue.Task{
 		Path:    deleteKeysPath,
 		Payload: payload,
 		Header:  h,
 		Method:  "POST",
 		Delay:   time.Duration(30) * time.Minute,
-	}, deleteKeysQueueName)
+	})
 }

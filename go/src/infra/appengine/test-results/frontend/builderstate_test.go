@@ -16,6 +16,7 @@ import (
 	"github.com/luci/gae/impl/memory"
 	"github.com/luci/gae/service/memcache"
 	"github.com/luci/luci-go/server/router"
+
 	. "github.com/smartystreets/goconvey/convey"
 
 	"infra/appengine/test-results/builderstate"
@@ -57,7 +58,7 @@ func TestBuilderState(t *testing.T) {
 			Convey("cache miss, refresh success: HTTP status 200", func() {
 				refreshFunc = func(c context.Context) (memcache.Item, error) {
 					refreshed = true
-					n := memcache.Get(c).NewItem(builderstate.MemcacheKey)
+					n := memcache.NewItem(c, builderstate.MemcacheKey)
 					n.SetValue(bsJSON)
 					return n, nil
 				}
@@ -73,9 +74,9 @@ func TestBuilderState(t *testing.T) {
 			})
 
 			Convey("cache hit: HTTP status 200 and does not call refreshFunc", func() {
-				item := memcache.Get(testCtx).NewItem(builderstate.MemcacheKey)
+				item := memcache.NewItem(testCtx, builderstate.MemcacheKey)
 				item.SetValue(bsJSON)
-				memcache.Get(testCtx).Set(item)
+				memcache.Set(testCtx, item)
 
 				refreshFunc = func(c context.Context) (memcache.Item, error) {
 					refreshed = true
@@ -109,7 +110,7 @@ func TestBuilderState(t *testing.T) {
 			Convey("refresh success", func() {
 				refreshFunc = func(c context.Context) (memcache.Item, error) {
 					refreshed = true
-					return memcache.Get(c).NewItem(builderstate.MemcacheKey), nil
+					return memcache.NewItem(c, builderstate.MemcacheKey), nil
 				}
 
 				resp, err := client.Get(srv.URL + "/updatebuilderstate")

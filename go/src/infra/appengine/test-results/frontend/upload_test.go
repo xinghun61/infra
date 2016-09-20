@@ -23,6 +23,7 @@ import (
 	"github.com/luci/gae/impl/memory"
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/server/router"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -34,12 +35,11 @@ func TestUploadAndGetHandlers(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	ds := datastore.Get(ctx)
-	ds.Testable().AddIndexes(testFileIdx...)
+	datastore.GetTestable(ctx).AddIndexes(testFileIdx...)
 
 	withTestingContext := func(c *router.Context, next router.Handler) {
 		c.Context = ctx
-		ds.Testable().CatchupIndexes()
+		datastore.GetTestable(ctx).CatchupIndexes()
 		next(c)
 	}
 
@@ -62,7 +62,7 @@ func TestUploadAndGetHandlers(t *testing.T) {
 			So(err, ShouldBeNil)
 			_, err = io.Copy(multiFile, f)
 			So(err, ShouldBeNil)
-			// Form fields.
+			// Form fieldatastore.
 			fields := []struct {
 				key, val string
 			}{
@@ -180,7 +180,7 @@ func TestUploadTestFile(t *testing.T) {
 			So(uploadTestFile(ctx, bytes.NewReader(data), "full_results.json"), ShouldBeNil)
 
 			Convey("get uploaded data", func() {
-				datastore.Get(ctx).Testable().CatchupIndexes()
+				datastore.GetTestable(ctx).CatchupIndexes()
 				q := datastore.NewQuery("TestFile")
 				q = q.Eq("master", "foo")
 				q = q.Eq("builder", "bar")
@@ -207,9 +207,8 @@ func TestUpdateIncremental(t *testing.T) {
 			ctx := memory.Use(context.Background())
 			idx, err := datastore.FindAndParseIndexYAML(filepath.Join("testdata"))
 			So(err, ShouldBeNil)
-			ds := datastore.Get(ctx)
-			ds.Testable().AddIndexes(idx...)
-			ds.Testable().CatchupIndexes()
+			datastore.GetTestable(ctx).AddIndexes(idx...)
+			datastore.GetTestable(ctx).CatchupIndexes()
 
 			data, err := ioutil.ReadFile(filepath.Join("testdata", "results_0.json"))
 			So(err, ShouldBeNil)
@@ -226,8 +225,8 @@ func TestUpdateIncremental(t *testing.T) {
 				_, err := w.Write(data)
 				return err
 			}), ShouldBeNil)
-			So(ds.Put(&resultsTf), ShouldBeNil)
-			ds.Testable().CatchupIndexes()
+			So(datastore.Put(ctx, &resultsTf), ShouldBeNil)
+			datastore.GetTestable(ctx).CatchupIndexes()
 
 			incr := model.AggregateResult{
 				Builder: "Linux Swarm",
@@ -242,7 +241,7 @@ func TestUpdateIncremental(t *testing.T) {
 			}), &incr), ShouldBeNil)
 
 			Convey("updates without error", func() {
-				ds.Testable().CatchupIndexes()
+				datastore.GetTestable(ctx).CatchupIndexes()
 				q := datastore.NewQuery("TestFile")
 				q = q.Eq("master", "chromium.swarm")
 				q = q.Eq("test_type", "content_unittests")

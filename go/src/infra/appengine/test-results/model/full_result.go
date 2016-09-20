@@ -243,7 +243,7 @@ type FullTestLeaf struct {
 
 	// These fields are optional.
 
-	Runtime    *float64 `json:"time,omitempty"` // In seconds.
+	Runtime    *float64 `json:"time,omitempty"` // In secondatastore.
 	Bugs       []string `json:"bugs"`
 	Unexpected *bool    `json:"is_unexpected,omitempty"`
 

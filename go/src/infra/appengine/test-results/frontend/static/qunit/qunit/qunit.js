@@ -760,7 +760,7 @@ function done() {
 		html = [
 			'Tests completed in ',
 			runtime,
-			' milliseconds.<br/>',
+			' millisecondatastore.<br/>',
 			'<span class="passed">',
 			passed,
 			'</span> tests of <span class="total">',

@@ -40,7 +40,6 @@ func TestMain(t *testing.T) {
 		cl := testclock.New(testclock.TestRecentTimeUTC)
 		c = clock.Set(c, cl)
 
-		ds := datastore.Get(c)
 		w := httptest.NewRecorder()
 
 		tok, err := xsrf.Token(c)
@@ -118,7 +117,7 @@ func TestMain(t *testing.T) {
 					},
 				},
 			}
-			ds.Testable().AddIndexes(&alertsIdx)
+			datastore.GetTestable(c).AddIndexes(&alertsIdx)
 
 			Convey("/trees", func() {
 				Convey("no trees yet", func() {
@@ -139,8 +138,8 @@ func TestMain(t *testing.T) {
 					Name:        "oak",
 					DisplayName: "Oak",
 				}
-				So(ds.Put(tree), ShouldBeNil)
-				ds.Testable().CatchupIndexes()
+				So(datastore.Put(c, tree), ShouldBeNil)
+				datastore.GetTestable(c).CatchupIndexes()
 
 				Convey("basic tree", func() {
 					getTreesHandler(&router.Context{
@@ -159,7 +158,7 @@ func TestMain(t *testing.T) {
 
 			Convey("/alerts", func() {
 				alerts := &AlertsJSON{
-					Tree:     ds.MakeKey("Tree", "oak"),
+					Tree:     datastore.MakeKey(c, "Tree", "oak"),
 					Contents: []byte("hithere"),
 				}
 				Convey("GET", func() {
@@ -178,7 +177,7 @@ func TestMain(t *testing.T) {
 						So(body, ShouldContainSubstring, "Tree")
 					})
 
-					So(ds.Put(alerts), ShouldBeNil)
+					So(datastore.Put(c, alerts), ShouldBeNil)
 
 					Convey("basic alerts", func() {
 						getAlertsHandler(&router.Context{
@@ -199,7 +198,7 @@ func TestMain(t *testing.T) {
 				Convey("POST", func() {
 					q := datastore.NewQuery("AlertsJSON")
 					results := []*AlertsJSON{}
-					So(ds.GetAll(q, &results), ShouldBeNil)
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldBeEmpty)
 
 					postAlertsHandler(&router.Context{
@@ -215,9 +214,9 @@ func TestMain(t *testing.T) {
 					So(w.Code, ShouldEqual, 200)
 					So(body, ShouldEqual, "")
 
-					ds.Testable().CatchupIndexes()
+					datastore.GetTestable(c).CatchupIndexes()
 					results = []*AlertsJSON{}
-					So(ds.GetAll(q, &results), ShouldBeNil)
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldHaveLength, 1)
 					itm := results[0]
 					So(itm.Tree, ShouldResemble, alerts.Tree)
@@ -253,8 +252,8 @@ func TestMain(t *testing.T) {
 						SnoozeTime:       123123,
 						ModificationTime: datastore.RoundTime(clock.Now(c).Add(4 * time.Hour)),
 					}
-					So(ds.Put(ann), ShouldBeNil)
-					ds.Testable().CatchupIndexes()
+					So(datastore.Put(c, ann), ShouldBeNil)
+					datastore.GetTestable(c).CatchupIndexes()
 
 					Convey("basic annotation", func() {
 						getAnnotationsHandler(&router.Context{
@@ -311,7 +310,7 @@ func TestMain(t *testing.T) {
 
 						So(w.Code, ShouldEqual, 200)
 
-						So(ds.Get(ann), ShouldBeNil)
+						So(datastore.Get(c, ann), ShouldBeNil)
 						So(ann.SnoozeTime, ShouldEqual, 123123)
 
 						Convey("bad change", func() {
@@ -327,7 +326,7 @@ func TestMain(t *testing.T) {
 
 							So(w.Code, ShouldEqual, 400)
 
-							So(ds.Get(ann), ShouldBeNil)
+							So(datastore.Get(c, ann), ShouldBeNil)
 							So(ann.SnoozeTime, ShouldEqual, 123123)
 							So(ann.Bugs, ShouldBeNil)
 						})
@@ -346,7 +345,7 @@ func TestMain(t *testing.T) {
 						})
 
 						ann.SnoozeTime = 123
-						So(ds.Put(ann), ShouldBeNil)
+						So(datastore.Put(c, ann), ShouldBeNil)
 
 						Convey("basic", func() {
 							So(ann.SnoozeTime, ShouldEqual, 123)
@@ -361,7 +360,7 @@ func TestMain(t *testing.T) {
 							})
 
 							So(w.Code, ShouldEqual, 200)
-							So(ds.Get(ann), ShouldBeNil)
+							So(datastore.Get(c, ann), ShouldBeNil)
 							So(ann.SnoozeTime, ShouldEqual, 0)
 						})
 
@@ -405,7 +404,7 @@ func TestMain(t *testing.T) {
 			Convey("flushOldAnnotations", func() {
 				getAllAnns := func() []*Annotation {
 					anns := []*Annotation{}
-					So(ds.GetAll(datastore.NewQuery("Annotation"), &anns), ShouldBeNil)
+					So(datastore.GetAll(c, datastore.NewQuery("Annotation"), &anns), ShouldBeNil)
 					return anns
 				}
 
@@ -414,8 +413,8 @@ func TestMain(t *testing.T) {
 					Key:              "foobar",
 					ModificationTime: datastore.RoundTime(cl.Now()),
 				}
-				So(ds.Put(ann), ShouldBeNil)
-				ds.Testable().CatchupIndexes()
+				So(datastore.Put(c, ann), ShouldBeNil)
+				datastore.GetTestable(c).CatchupIndexes()
 
 				Convey("current not deleted", func() {
 					num, err := flushOldAnnotations(c)
@@ -425,8 +424,8 @@ func TestMain(t *testing.T) {
 				})
 
 				ann.ModificationTime = cl.Now().Add(-(annotationExpiration + time.Hour))
-				So(ds.Put(ann), ShouldBeNil)
-				ds.Testable().CatchupIndexes()
+				So(datastore.Put(c, ann), ShouldBeNil)
+				datastore.GetTestable(c).CatchupIndexes()
 
 				Convey("old deleted", func() {
 					num, err := flushOldAnnotations(c)
@@ -435,12 +434,12 @@ func TestMain(t *testing.T) {
 					So(getAllAnns(), ShouldResemble, []*Annotation{})
 				})
 
-				ds.Testable().CatchupIndexes()
+				datastore.GetTestable(c).CatchupIndexes()
 				q := datastore.NewQuery("Annotation")
 				anns := []*Annotation{}
-				ds.Testable().CatchupIndexes()
-				ds.GetAll(q, &anns)
-				ds.Delete(anns)
+				datastore.GetTestable(c).CatchupIndexes()
+				datastore.GetAll(c, q, &anns)
+				datastore.Delete(c, anns)
 				anns = []*Annotation{
 					{
 						KeyDigest:        fmt.Sprintf("%x", sha1.Sum([]byte("foobar2"))),
@@ -453,8 +452,8 @@ func TestMain(t *testing.T) {
 						ModificationTime: datastore.RoundTime(cl.Now().Add(-(annotationExpiration + time.Hour))),
 					},
 				}
-				So(ds.Put(anns), ShouldBeNil)
-				ds.Testable().CatchupIndexes()
+				So(datastore.Put(c, anns), ShouldBeNil)
+				datastore.GetTestable(c).CatchupIndexes()
 
 				Convey("only delete old", func() {
 					num, err := flushOldAnnotations(c)
@@ -498,7 +497,6 @@ func TestWriteSettings(t *testing.T) {
 
 	Convey("write settings", t, func() {
 		c := gaetesting.TestingContext()
-		ds := datastore.Get(c)
 
 		Convey("writeTrees", func() {
 			Convey("basic", func() {
@@ -508,7 +506,7 @@ func TestWriteSettings(t *testing.T) {
 				t := &Tree{
 					Name: "foo",
 				}
-				So(ds.Get(t), ShouldBeNil)
+				So(datastore.Get(c, t), ShouldBeNil)
 				So(t.DisplayName, ShouldEqual, "Foo")
 			})
 
@@ -517,14 +515,14 @@ func TestWriteSettings(t *testing.T) {
 				DisplayName: "Oaakk",
 			}
 
-			So(ds.Put(tree), ShouldBeNil)
-			ds.Testable().CatchupIndexes()
+			So(datastore.Put(c, tree), ShouldBeNil)
+			datastore.GetTestable(c).CatchupIndexes()
 
 			Convey("overwrite tree", func() {
 				err := writeTrees(c, "oak")
 				So(err, ShouldBeNil)
 
-				So(ds.Get(tree), ShouldBeNil)
+				So(datastore.Get(c, tree), ShouldBeNil)
 				So(tree.DisplayName, ShouldEqual, "Oak")
 			})
 
@@ -532,7 +530,7 @@ func TestWriteSettings(t *testing.T) {
 				err := writeTrees(c, "oak:Oaakk")
 				So(err, ShouldBeNil)
 
-				So(ds.Get(tree), ShouldBeNil)
+				So(datastore.Get(c, tree), ShouldBeNil)
 				So(tree.DisplayName, ShouldEqual, "Oaakk")
 			})
 		})
@@ -543,14 +541,14 @@ func TestWriteSettings(t *testing.T) {
 				DisplayName: "Oak",
 			}
 
-			So(ds.Put(tree), ShouldBeNil)
-			ds.Testable().CatchupIndexes()
+			So(datastore.Put(c, tree), ShouldBeNil)
+			datastore.GetTestable(c).CatchupIndexes()
 
 			Convey("basic", func() {
 				err := writeAlertStreams(c, "oak:thing")
 				So(err, ShouldBeNil)
 
-				So(ds.Get(tree), ShouldBeNil)
+				So(datastore.Get(c, tree), ShouldBeNil)
 				So(tree.DisplayName, ShouldEqual, "Oak")
 				So(tree.AlertStreams, ShouldResemble, []string{"thing"})
 			})
@@ -564,14 +562,14 @@ func TestWriteSettings(t *testing.T) {
 				BugQueueLabel: "test",
 			}
 
-			So(ds.Put(tree), ShouldBeNil)
-			ds.Testable().CatchupIndexes()
+			So(datastore.Put(c, tree), ShouldBeNil)
+			datastore.GetTestable(c).CatchupIndexes()
 
 			Convey("basic", func() {
 				err := writeBugQueueLabels(c, "oak:thing")
 				So(err, ShouldBeNil)
 
-				So(ds.Get(tree), ShouldBeNil)
+				So(datastore.Get(c, tree), ShouldBeNil)
 				So(tree.Name, ShouldEqual, "oak")
 				So(tree.DisplayName, ShouldEqual, "Oak")
 				So(tree.BugQueueLabel, ShouldEqual, "thing")
@@ -581,7 +579,7 @@ func TestWriteSettings(t *testing.T) {
 				err := writeBugQueueLabels(c, "oak:")
 				So(err, ShouldBeNil)
 
-				So(ds.Get(tree), ShouldBeNil)
+				So(datastore.Get(c, tree), ShouldBeNil)
 				So(tree.Name, ShouldEqual, "oak")
 				So(tree.DisplayName, ShouldEqual, "Oak")
 				So(tree.BugQueueLabel, ShouldEqual, "")

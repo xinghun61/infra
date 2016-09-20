@@ -28,7 +28,6 @@ func TestAnnotation(t *testing.T) {
 		c := gaetesting.TestingContext()
 		cl := testclock.New(testclock.TestTimeUTC)
 		c = clock.Set(c, cl)
-		ds := datastore.Get(c)
 
 		ann := &Annotation{
 			Key:              "foobar",
@@ -40,14 +39,14 @@ func TestAnnotation(t *testing.T) {
 		Convey("allows weird keys", func() {
 			ann.Key = "hihih\"///////%20     lol"
 			ann.KeyDigest = fmt.Sprintf("%x", sha1.Sum([]byte(ann.Key)))
-			So(ds.Put(ann), ShouldBeNil)
+			So(datastore.Put(c, ann), ShouldBeNil)
 		})
 
 		Convey("allows long keys", func() {
 			// App engine key size limit is 500 characters
 			ann.Key = strings.Repeat("annnn", 200)
 			ann.KeyDigest = fmt.Sprintf("%x", sha1.Sum([]byte(ann.Key)))
-			So(ds.Put(ann), ShouldBeNil)
+			So(datastore.Put(c, ann), ShouldBeNil)
 		})
 
 		Convey("validBug", func() {

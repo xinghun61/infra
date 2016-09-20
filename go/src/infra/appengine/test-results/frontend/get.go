@@ -80,7 +80,7 @@ func respondTestFileData(ctx *router.Context, params URLParams) {
 
 	tf := model.TestFile{ID: key.IntID()}
 
-	if err := datastore.Get(c).Get(&tf); err != nil {
+	if err := datastore.Get(c, &tf); err != nil {
 		if err == datastore.ErrNoSuchEntity {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			logging.Errorf(c, "TestFile with ID %v not found: %v", key.IntID(), err)
@@ -111,7 +111,7 @@ func respondTestFileList(ctx *router.Context, params URLParams) {
 
 	q := params.Query()
 	var testFiles []*model.TestFile
-	if err := datastore.Get(c).GetAll(q, &testFiles); err != nil {
+	if err := datastore.GetAll(c, q, &testFiles); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		logging.Errorf(c, "GetAll failed for query: %+v: %v", q, err)
 		return
@@ -150,7 +150,7 @@ func keysJSON(c context.Context, tfiles []*model.TestFile) ([]byte, error) {
 	}
 	keys := make([]K, len(tfiles))
 	for i, tf := range tfiles {
-		keys[i] = K{datastore.Get(c).KeyForObj(tf).Encode()}
+		keys[i] = K{datastore.KeyForObj(c, tf).Encode()}
 	}
 	return json.Marshal(keys)
 }
@@ -253,7 +253,7 @@ func (e ErrNoMatches) Error() string {
 func getFirstTestFile(c context.Context, q *datastore.Query) (*model.TestFile, error) {
 	q = q.Limit(1)
 	var tfs []*model.TestFile
-	if err := datastore.Get(c).GetAll(q, &tfs); err != nil {
+	if err := datastore.GetAll(c, q, &tfs); err != nil {
 		logging.Errorf(c, "GetAll failed for query: %+v: %v", q, err)
 		return nil, err
 	}

@@ -21,7 +21,6 @@ func TestDeleteKeysHandler(t *testing.T) {
 
 	Convey("deleteKeysHandler", t, func() {
 		ctx := memory.Use(context.Background())
-		ds := datastore.Get(ctx)
 
 		dataEntries := []model.DataEntry{
 			{Data: []byte("foo"), ID: 1},
@@ -30,16 +29,16 @@ func TestDeleteKeysHandler(t *testing.T) {
 			{Data: []byte("qux"), ID: 4},
 		}
 		for _, de := range dataEntries {
-			So(ds.Put(&de), ShouldBeNil)
+			So(datastore.Put(ctx, &de), ShouldBeNil)
 		}
 		dataKeys := make([]*datastore.Key, len(dataEntries))
 		for i, de := range dataEntries {
-			dataKeys[i] = ds.KeyForObj(&de)
+			dataKeys[i] = datastore.KeyForObj(ctx, &de)
 		}
 
 		withTestingContext := func(c *router.Context, next router.Handler) {
 			c.Context = ctx
-			ds.Testable().CatchupIndexes()
+			datastore.GetTestable(ctx).CatchupIndexes()
 			next(c)
 		}
 
@@ -62,10 +61,10 @@ func TestDeleteKeysHandler(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(resp.StatusCode, ShouldEqual, http.StatusOK)
 
-			res, err := ds.Exists(dataKeys[:2])
+			res, err := datastore.Exists(ctx, dataKeys[:2])
 			So(err, ShouldBeNil)
 			So(!res.Any(), ShouldBeTrue)
-			res, err = ds.Exists(dataKeys[2:])
+			res, err = datastore.Exists(ctx, dataKeys[2:])
 			So(err, ShouldBeNil)
 			So(res.All(), ShouldBeTrue)
 		})

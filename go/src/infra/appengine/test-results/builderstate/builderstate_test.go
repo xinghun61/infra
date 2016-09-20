@@ -33,12 +33,10 @@ func TestBuilderState(t *testing.T) {
 		// memcache, datastore setup.
 
 		c := memory.Use(context.Background())
-		mem := memcache.Get(c)
-		ds := datastore.Get(c)
 		testFileIdx, err := datastore.FindAndParseIndexYAML("testdata")
 		So(err, ShouldBeNil)
-		ds.Testable().AddIndexes(testFileIdx...)
-		ds.Testable().CatchupIndexes()
+		datastore.GetTestable(c).AddIndexes(testFileIdx...)
+		datastore.GetTestable(c).CatchupIndexes()
 
 		buildbotDataJSON := []byte(`{
 			"masters": [{
@@ -113,12 +111,12 @@ func TestBuilderState(t *testing.T) {
 			})
 
 			Convey("with existing state", func() {
-				item := mem.NewItem(MemcacheKey)
+				item := memcache.NewItem(c, MemcacheKey)
 				item.SetValue(builderStateDataJSON)
-				mem.Set(item)
+				memcache.Set(c, item)
 
 				So(Update(c, masterName, builder, testType, modTime), ShouldBeNil)
-				item, err := mem.Get(MemcacheKey)
+				item, err := memcache.GetKey(c, MemcacheKey)
 				So(err, ShouldBeNil)
 
 				var actual BuilderState
@@ -131,14 +129,14 @@ func TestBuilderState(t *testing.T) {
 			})
 
 			Convey("updating unknown master should not change data", func() {
-				item := mem.NewItem(MemcacheKey)
+				item := memcache.NewItem(c, MemcacheKey)
 				item.SetValue(builderStateDataJSON)
-				mem.Set(item)
+				memcache.Set(c, item)
 
 				err := Update(c, "UnknownMaster", builder, testType, modTime)
 				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldContainSubstring, "master") // master not found.
-				item, err = mem.Get(MemcacheKey)
+				item, err = memcache.GetKey(c, MemcacheKey)
 				So(err, ShouldBeNil)
 
 				var actual BuilderState
@@ -148,14 +146,14 @@ func TestBuilderState(t *testing.T) {
 			})
 
 			Convey("updating unknown test type should not change data", func() {
-				item := mem.NewItem(MemcacheKey)
+				item := memcache.NewItem(c, MemcacheKey)
 				item.SetValue(builderStateDataJSON)
-				mem.Set(item)
+				memcache.Set(c, item)
 
 				err := Update(c, masterName, builder, "unknown-test", modTime)
 				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldContainSubstring, "testType") // testType not found.
-				item, err = mem.Get(MemcacheKey)
+				item, err = memcache.GetKey(c, MemcacheKey)
 				So(err, ShouldBeNil)
 
 				var actual BuilderState
@@ -170,14 +168,14 @@ func TestBuilderState(t *testing.T) {
 			Convey("no builder data", func() {
 				_, err := RefreshCache(c)
 				So(err, ShouldEqual, memcache.ErrCacheMiss)
-				_, err = mem.Get(MemcacheKey)
+				_, err = memcache.GetKey(c, MemcacheKey)
 				So(err, ShouldEqual, memcache.ErrCacheMiss)
 			})
 
 			Convey("TestFile does not exist: no last updated change", func() {
-				item := mem.NewItem("buildbot_data")
+				item := memcache.NewItem(c, "buildbot_data")
 				item.SetValue(buildbotDataJSON)
-				mem.Set(item)
+				memcache.Set(c, item)
 
 				item, err := RefreshCache(c)
 				So(err, ShouldBeNil)
@@ -195,12 +193,12 @@ func TestBuilderState(t *testing.T) {
 					TestType: testType,
 					LastMod:  modTime,
 				}
-				So(ds.Put(&tf1), ShouldBeNil)
-				ds.Testable().CatchupIndexes()
+				So(datastore.Put(c, &tf1), ShouldBeNil)
+				datastore.GetTestable(c).CatchupIndexes()
 
-				item := mem.NewItem("buildbot_data")
+				item := memcache.NewItem(c, "buildbot_data")
 				item.SetValue(buildbotDataJSON)
-				mem.Set(item)
+				memcache.Set(c, item)
 
 				item, err := RefreshCache(c)
 				So(err, ShouldBeNil)
@@ -241,8 +239,8 @@ func TestBuilderState(t *testing.T) {
 					TestType: testType,
 					LastMod:  t2,
 				}
-				So(ds.Put(&tf1, &tf2), ShouldBeNil)
-				ds.Testable().CatchupIndexes()
+				So(datastore.Put(c, &tf1, &tf2), ShouldBeNil)
+				datastore.GetTestable(c).CatchupIndexes()
 
 				mod, err := lastUpdated(c, masterName, builder, testType)
 				So(err, ShouldBeNil)

@@ -22,10 +22,9 @@ func TestTestFile(t *testing.T) {
 
 	Convey("TestFile", t, func() {
 		c := memory.Use(context.Background())
-		ds := datastore.Get(c)
 		testFileIdx, err := datastore.FindAndParseIndexYAML("testdata")
 		So(err, ShouldBeNil)
-		ds.Testable().AddIndexes(testFileIdx...)
+		datastore.GetTestable(c).AddIndexes(testFileIdx...)
 
 		Convey("Get", func() {
 			dataEntries := []DataEntry{
@@ -34,12 +33,12 @@ func TestTestFile(t *testing.T) {
 			}
 
 			for _, de := range dataEntries {
-				So(ds.Put(&de), ShouldBeNil)
+				So(datastore.Put(c, &de), ShouldBeNil)
 			}
 
 			dataKeys := make([]*datastore.Key, len(dataEntries))
 			for i, de := range dataEntries {
-				dataKeys[i] = ds.KeyForObj(&de)
+				dataKeys[i] = datastore.KeyForObj(c, &de)
 			}
 
 			tf1 := TestFile{
@@ -49,12 +48,12 @@ func TestTestFile(t *testing.T) {
 				DataKeys: dataKeys,
 			}
 
-			So(ds.Put(&tf1), ShouldBeNil)
-			ds.Testable().CatchupIndexes()
+			So(datastore.Put(c, &tf1), ShouldBeNil)
+			datastore.GetTestable(c).CatchupIndexes()
 
 			Convey("get an existing TestFile by ID", func() {
 				tf := TestFile{ID: 1}
-				So(ds.Get(&tf), ShouldBeNil)
+				So(datastore.Get(c, &tf), ShouldBeNil)
 				So(tf.ID, ShouldEqual, 1)
 				So(tf.Name, ShouldEqual, "full_results.json")
 				So(tf.Master, ShouldEqual, "Chromium")
@@ -80,12 +79,12 @@ func TestTestFile(t *testing.T) {
 					_, err := w.Write(data)
 					return err
 				}), ShouldBeNil)
-				So(ds.Put(&tf), ShouldBeNil)
+				So(datastore.Put(c, &tf), ShouldBeNil)
 
-				ds.Testable().CatchupIndexes()
+				datastore.GetTestable(c).CatchupIndexes()
 
 				tf = TestFile{ID: 1}
-				So(ds.Get(&tf), ShouldBeNil)
+				So(datastore.Get(c, &tf), ShouldBeNil)
 				So(tf.ID, ShouldEqual, 1)
 
 				reader, err := tf.DataReader(c)
@@ -104,7 +103,7 @@ func TestTestFile(t *testing.T) {
 					return err
 				}), ShouldBeNil)
 				So(tf.DataKeys, ShouldNotBeNil)
-				So(ds.Put(&tf), ShouldBeNil)
+				So(datastore.Put(c, &tf), ShouldBeNil)
 
 				k := make([]*datastore.Key, len(tf.DataKeys))
 				copy(k, tf.DataKeys)
@@ -114,10 +113,10 @@ func TestTestFile(t *testing.T) {
 					return err
 				}), ShouldBeNil)
 				So(tf.OldDataKeys, ShouldResemble, k)
-				So(ds.Put(&tf), ShouldBeNil)
+				So(datastore.Put(c, &tf), ShouldBeNil)
 
 				Convey("OldDataKeys referenced DataEntry still exists", func() {
-					ds.Testable().CatchupIndexes()
+					datastore.GetTestable(c).CatchupIndexes()
 
 					tmp := TestFile{DataKeys: k}
 					reader, err := tmp.DataReader(c)

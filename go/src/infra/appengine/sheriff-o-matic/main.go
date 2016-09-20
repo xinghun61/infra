@@ -96,7 +96,7 @@ func (settingsUIPage) Fields(c context.Context) ([]settings.UIField, error) {
 func (settingsUIPage) ReadSettings(c context.Context) (map[string]string, error) {
 	q := datastore.NewQuery("Tree")
 	results := []*Tree{}
-	datastore.Get(c).GetAll(q, &results)
+	datastore.GetAll(c, q, &results)
 	trees := make([]string, len(results))
 	queues := make([]string, len(results))
 	for i, tree := range results {
@@ -112,13 +112,12 @@ func (settingsUIPage) ReadSettings(c context.Context) (map[string]string, error)
 }
 
 func writeTrees(c context.Context, treeStr string) error {
-	ds := datastore.Get(c)
 	q := datastore.NewQuery("Tree")
 	trees := []*Tree{}
-	datastore.Get(c).GetAll(q, &trees)
+	datastore.GetAll(c, q, &trees)
 	// Always replace the existing list of trees. Otherwise there's no "delete"
 	// capability.
-	datastore.Get(c).Delete(trees)
+	datastore.Delete(c, trees)
 
 	toMake := strings.Split(treeStr, ",")
 	for _, it := range toMake {
@@ -134,7 +133,7 @@ func writeTrees(c context.Context, treeStr string) error {
 			displayName = nameParts[1]
 		}
 
-		if err := ds.Put(&Tree{
+		if err := datastore.Put(c, &Tree{
 			Name:        name,
 			DisplayName: displayName,
 		}); err != nil {
@@ -146,7 +145,6 @@ func writeTrees(c context.Context, treeStr string) error {
 
 // alertStreams format is treeA:streamA,streamB
 func writeAlertStreams(c context.Context, alertStreams string) error {
-	ds := datastore.Get(c)
 	split := strings.Split(alertStreams, ":")
 	if len(split) != 2 {
 		return fmt.Errorf("invalid alertStreams: %q", alertStreams)
@@ -154,12 +152,12 @@ func writeAlertStreams(c context.Context, alertStreams string) error {
 
 	t := &Tree{Name: split[0]}
 
-	if err := ds.Get(t); err != nil {
+	if err := datastore.Get(c, t); err != nil {
 		return err
 	}
 
 	t.AlertStreams = strings.Split(split[1], ",")
-	if err := ds.Put(t); err != nil {
+	if err := datastore.Put(c, t); err != nil {
 		return err
 	}
 
@@ -168,7 +166,6 @@ func writeAlertStreams(c context.Context, alertStreams string) error {
 
 // bugQueueLabels format is treeA:queueA,treeB:queueB
 func writeBugQueueLabels(c context.Context, bugQueueLabels string) error {
-	ds := datastore.Get(c)
 	queueLabels := strings.Split(bugQueueLabels, ",")
 	for _, label := range queueLabels {
 		split := strings.Split(label, ":")
@@ -177,12 +174,12 @@ func writeBugQueueLabels(c context.Context, bugQueueLabels string) error {
 		}
 
 		t := &Tree{Name: split[0]}
-		if err := ds.Get(t); err != nil {
+		if err := datastore.Get(c, t); err != nil {
 			return err
 		}
 
 		t.BugQueueLabel = split[1]
-		if err := ds.Put(t); err != nil {
+		if err := datastore.Put(c, t); err != nil {
 			return err
 		}
 	}
@@ -282,7 +279,7 @@ func getTreesHandler(ctx *router.Context) {
 
 	q := datastore.NewQuery("Tree")
 	results := []*Tree{}
-	err := datastore.Get(c).GetAll(q, &results)
+	err := datastore.GetAll(c, q, &results)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
@@ -301,16 +298,14 @@ func getTreesHandler(ctx *router.Context) {
 func getAlertsHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
-	ds := datastore.Get(c)
-
 	tree := p.ByName("tree")
 	q := datastore.NewQuery("AlertsJSON")
-	q = q.Ancestor(ds.MakeKey("Tree", tree))
+	q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
 	q = q.Order("-Date")
 	q = q.Limit(1)
 
 	results := []*AlertsJSON{}
-	err := ds.GetAll(q, &results)
+	err := datastore.GetAll(c, q, &results)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
@@ -331,10 +326,9 @@ func postAlertsHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
 	tree := p.ByName("tree")
-	ds := datastore.Get(c)
 
 	alerts := AlertsJSON{
-		Tree: ds.MakeKey("Tree", tree),
+		Tree: datastore.MakeKey(c, "Tree", tree),
 		Date: clock.Now(c),
 	}
 	data, err := ioutil.ReadAll(r.Body)
@@ -365,7 +359,7 @@ func postAlertsHandler(ctx *router.Context) {
 	}
 
 	alerts.Contents = data
-	err = datastore.Get(c).Put(&alerts)
+	err = datastore.Put(c, &alerts)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
@@ -377,7 +371,7 @@ func getAnnotationsHandler(ctx *router.Context) {
 
 	q := datastore.NewQuery("Annotation")
 	results := []*Annotation{}
-	datastore.Get(c).GetAll(q, &results)
+	datastore.GetAll(c, q, &results)
 
 	data, err := json.Marshal(results)
 	if err != nil {
@@ -399,7 +393,6 @@ func postAnnotationsHandler(ctx *router.Context) {
 
 	annKey := p.ByName("annKey")
 	action := p.ByName("action")
-	ds := datastore.Get(c)
 
 	if !(action == "add" || action == "remove") {
 		errStatus(c, w, http.StatusNotFound, "Invalid action")
@@ -423,7 +416,7 @@ func postAnnotationsHandler(ctx *router.Context) {
 		Key:       annKey,
 	}
 
-	err = ds.Get(annotation)
+	err = datastore.Get(c, annotation)
 	if action == "remove" && err != nil {
 		logging.Errorf(c, "while getting %s: %s", annKey, err)
 		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("Annotation %s not found", annKey))
@@ -449,7 +442,7 @@ func postAnnotationsHandler(ctx *router.Context) {
 		return
 	}
 
-	err = ds.Put(annotation)
+	err = datastore.Put(c, annotation)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
@@ -481,14 +474,12 @@ func flushOldAnnotationsHandler(ctx *router.Context) {
 }
 
 func flushOldAnnotations(c context.Context) (int, error) {
-	ds := datastore.Get(c)
-
 	q := datastore.NewQuery("Annotation")
 	q = q.Lt("ModificationTime", clock.Get(c).Now().Add(-annotationExpiration))
 	q = q.KeysOnly(true)
 
 	results := []*Annotation{}
-	err := ds.GetAll(q, &results)
+	err := datastore.GetAll(c, q, &results)
 	if err != nil {
 		return 0, fmt.Errorf("while fetching annotations to delete: %s", err)
 	}
@@ -497,7 +488,7 @@ func flushOldAnnotations(c context.Context) (int, error) {
 		logging.Debugf(c, "Deleting %#v\n", ann)
 	}
 
-	err = ds.Delete(results)
+	err = datastore.Delete(c, results)
 	if err != nil {
 		return 0, fmt.Errorf("while deleting annotations: %s", err)
 	}
@@ -510,10 +501,9 @@ func getBugQueueHandler(ctx *router.Context) {
 
 	tree := p.ByName("tree")
 
-	mc := memcache.Get(c)
 	key := fmt.Sprintf(bugQueueCacheFormat, tree)
 
-	item, err := mc.Get(key)
+	item, err := memcache.GetKey(c, key)
 
 	if err == memcache.ErrCacheMiss {
 		logging.Debugf(c, "No bug queue data for %s in memcache, refreshing...", tree)
@@ -561,12 +551,11 @@ func refreshBugQueue(c context.Context, tree string) (memcache.Item, error) {
 		return nil, err
 	}
 
-	mc := memcache.Get(c)
 	key := fmt.Sprintf(bugQueueCacheFormat, tree)
 
-	item := mc.NewItem(key).SetValue(bytes)
+	item := memcache.NewItem(c, key).SetValue(bytes)
 
-	err = mc.Set(item)
+	err = memcache.Set(c, item)
 
 	if err != nil {
 		return nil, err
@@ -673,8 +662,7 @@ func postClientMonHandler(ctx *router.Context) {
 func getTreeLogoHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
-	i := info.Get(c)
-	sa, err := i.ServiceAccount()
+	sa, err := info.ServiceAccount(c)
 	if err != nil {
 		logging.Errorf(c, "failed to get service account: %v", err)
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
@@ -682,7 +670,7 @@ func getTreeLogoHandler(ctx *router.Context) {
 	}
 
 	tree := p.ByName("tree")
-	resource := fmt.Sprintf("/%s.appspot.com/logos/%s.png", i.AppID(), tree)
+	resource := fmt.Sprintf("/%s.appspot.com/logos/%s.png", info.AppID(c), tree)
 	expStr := fmt.Sprintf("%d", time.Now().Add(10*time.Minute).Unix())
 	sl := []string{
 		"GET",

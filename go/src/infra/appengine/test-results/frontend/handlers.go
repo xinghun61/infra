@@ -100,7 +100,7 @@ func deleteKeysHandler(ctx *router.Context) {
 		dkeys = append(dkeys, dk)
 	}
 
-	if err := datastore.Get(c).Delete(dkeys); err != nil {
+	if err := datastore.Delete(c, dkeys); err != nil {
 		logging.WithError(err).Errorf(c, "deleteKeysHandler")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
