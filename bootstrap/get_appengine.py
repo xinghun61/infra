@@ -21,9 +21,29 @@ import zipfile
 BOOTSTRAP_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(BOOTSTRAP_DIR)
 
-# Path to "depot_tools"'s "gsutil.py".
-GSUTIL_PY = os.path.join(
-    os.path.dirname(BASE_DIR), 'depot_tools', 'gsutil.py')
+def find_gsutil_py():
+  """Find depot_tools/gsutil.py by recursing up the directory tree until
+  it is found.
+
+  If ths path could not be resolved, an Exception will be raised.
+
+  This is implemented this way because the bootstrap depends on "gsutil.py", but
+  due to other users in different directory structures cannot rely on the
+  script being at a predetermined path. Instead, we rely on the script being
+  somewhere in the script's directory hierarchy.
+
+  TODO(dnj): Replace this horrible hack with CIPD GAE SDK
+  packaging/installation.
+  """
+  curdir, lastdir = BASE_DIR, None
+  while curdir != lastdir:
+    path = os.path.join(curdir, 'depot_tools', 'gsutil.py')
+    if os.path.isfile(path):
+      return path
+    curdir, lastdir = os.path.dirname(curdir), curdir
+  raise Exception('Unable to find "gsutil.py" in "depot_tools"')
+
+GSUTIL_PY = find_gsutil_py()
 
 # Base Google Storage bucket name.
 SDK_GS_BUCKET_BASE = 'gs://appengine-sdks/featured'
