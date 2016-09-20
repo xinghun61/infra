@@ -20,7 +20,8 @@
     };
   }
 
-  var componentsEl, commentEl, suggestionsEl;
+  var componentsEl, commentEl, suggestionsEl, newIssueTextArea,
+      addCommentTextArea, issueSummaryInput, existingComments, componentEdit;
 
   // The user has clicked on a suggestion, which we assume means they accept
   // it. Add it to the list of components in the input and remvoe the
@@ -56,12 +57,16 @@
   // Update the list of suggested components.
   function updateComponents(resp) {
     componentsEl = document.getElementById('components');
+    if (!componentsEl) {
+      componentsEl = document.getElementById('componentedit');
+    }
+
     if (!suggestionsEl) {
       suggestionsEl = document.createElement('div');
       suggestionsEl.style.display = 'flex';
       suggestionsEl.style.flexWrap = 'wrap';
       suggestionsEl.style.margin = '0.5em 0 0.5em 0';
-   } else {
+    } else {
       // Clear it out.
       while (suggestionsEl.firstChild) {
         suggestionsEl.removeChild(suggestionsEl.firstChild);
@@ -91,9 +96,37 @@
   }
 
   function gatherTextAndPredict() {
-    var textArea = window.document.getElementById('comment');
+    // Only suggest components if there are none already.
+    if (componentEdit && componentEdit.value.trim() != '') {
+      return;
+    }
+
+    var text = [];
+
+    if (issueSummaryInput) {
+      text.push(issueSummaryInput.value.trim())
+    }
+
+    if (newIssueTextArea) {
+      text.push(newIssueTextArea.value.trim());
+    }
+
+    if (addCommentTextArea) {
+      text.push(addCommentTextArea.value.trim());
+    }
+
+    if (existingComments) {
+      for (var i = 0; i < existingComments.length; i++) {
+        // Do not double-include the issue summary text, which also appears
+        // in the #desc_comment_area textarea input.
+        if (existingComments[i].id != 'desc_comment_area') {
+          text.push(existingComments[i].textContent.trim());
+        }
+      }
+    }
+
     var data = {
-      text: textArea.value,
+      text: text.join('\n').trim(),
       // TODO: other values?
     };
 
@@ -107,21 +140,42 @@
 
   window.addEventListener('load', function() {
     // Only use this for chromium issues.
-    if (window.location.href.indexOf('/p/chromium') == -1) {
+    var href = window.location.href;
+    if (href.indexOf('/p/chromium') == -1) {
       return;
     }
 
-    var textArea = window.document.getElementById('comment');
-    if (!textArea) {
-      return;
-    }
     // TODO: call gatherTextAndPredict here on pageload too, for existing
     // issues that don't have components assigned.
     var safeGatherTextAndPredict = debounce(gatherTextAndPredict);
  
-    // TODO: other events, like what if they paste text in rather than
-    // manually typing it.
-    textArea.addEventListener('keyup', safeGatherTextAndPredict);
+    newIssueTextArea = window.document.getElementById('comment');
+    if (newIssueTextArea) {
+      // TODO: other events, like what if they paste text in rather than
+      // manually typing it.
+      newIssueTextArea.addEventListener('keyup', safeGatherTextAndPredict);
+    }
+
+    addCommentTextArea =
+        window.document.getElementById('addCommentTextArea');
+    if (addCommentTextArea) {
+      addCommentTextArea.addEventListener('keyup', safeGatherTextAndPredict);
+    }
+
+    issueSummaryInput = document.getElementById('summary');
+    if (issueSummaryInput) {
+      issueSummaryInput.addEventListener('keyup', safeGatherTextAndPredict);
+    }
+
+    existingComments = document.getElementsByClassName('issue_text');
+
+    // If this is an issue edit page and the issue has no components assigned,
+    // get some component suggestions on page load.
+    componentEdit = document.getElementById('componentedit');
+    if (href.indexOf('/p/chromium/issues/detail?id=') != -1 &&
+        componentEdit && componentEdit.value.trim() == '') {
+      gatherTextAndPredict();
+    }
   });
 
 })(window);

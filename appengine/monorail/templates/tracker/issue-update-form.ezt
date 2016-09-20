@@ -58,7 +58,7 @@
     </tr>
     <tr>
      <td>
-      <table cellspacing="0" cellpadding="3" border="0" class="rowmajor">
+      <table cellspacing="0" cellpadding="3" border="0" class="rowmajor vt">
       [# Only show specific issue fields if the user can edit them.]
       [if-any page_perms.EditIssue page_perms.EditIssueSummary]
        <tr><th style="width: 1em"><label for="summary">Summary:</label></th>
