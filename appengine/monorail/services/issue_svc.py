@@ -72,7 +72,8 @@ ISSUE2FIELDVALUE_COLS = [
     'issue_id', 'field_id', 'int_value', 'str_value', 'user_id', 'derived']
 COMMENT_COLS = [
     'Comment.id', 'issue_id', 'created', 'Comment.project_id', 'commenter_id',
-    'deleted_by', 'Comment.is_spam', 'is_description']
+    'content', 'inbound_message', 'deleted_by',
+    'Comment.is_spam', 'is_description']
 COMMENTCONTENT_COLS = [
     'CommentContent.id', 'comment_id', 'content', 'inbound_message']
 ABBR_COMMENT_COLS = ['Comment.id', 'commenter_id', 'deleted_by',
@@ -1934,16 +1935,16 @@ class IssueService(object):
 
   def _UnpackComment(self, comment_row):
     """Partially construct a Comment PB from a DB row."""
-    (comment_id, issue_id, created, project_id, commenter_id,
-     deleted_by, is_spam, is_description) = comment_row
+    (comment_id, issue_id, created, project_id, commenter_id, content,
+     inbound_message, deleted_by, is_spam, is_description) = comment_row
     comment = tracker_pb2.IssueComment()
     comment.id = comment_id
     comment.issue_id = issue_id
     comment.timestamp = created
     comment.project_id = project_id
     comment.user_id = commenter_id
-    comment.content = ''  # Set from the CommentContent row.
-    comment.inbound_message = ''  # Set from the CommentContent row.
+    comment.content = content or ''
+    comment.inbound_message = inbound_message or ''
     comment.deleted_by = deleted_by or 0
     comment.is_spam = bool(is_spam)
     comment.is_description = bool(is_description)
@@ -2024,8 +2025,13 @@ class IssueService(object):
     for commentcontent_row in commentcontent_rows:
       comment_id, content, inbound_message = commentcontent_row
       try:
-        results_dict[comment_id].content = content
-        results_dict[comment_id].inbound_message = inbound_message
+        # For now we favor strings found in the Comment table.
+        # Next step is to eliminate references to CommentContent again.
+        # Then redefine CommentContent.  Then put this code back.
+        if not results_dict[comment_id].content:
+          results_dict[comment_id].content = content or ''
+        if not results_dict[comment_id].inbound_message:
+          results_dict[comment_id].inbound_message = inbound_message or ''
       except KeyError:
         logging.error('Found content for missing comment: %r', comment_id)
 
@@ -2168,7 +2174,8 @@ class IssueService(object):
     comment_id = self.comment_tbl.InsertRow(
         cnxn, issue_id=comment.issue_id, created=comment.timestamp,
         project_id=comment.project_id,
-        commenter_id=comment.user_id,
+        commenter_id=comment.user_id, content=comment.content,
+        inbound_message=comment.inbound_message,
         deleted_by=comment.deleted_by or None,
         is_spam=comment.is_spam, is_description=comment.is_description,
         commit=commit)
