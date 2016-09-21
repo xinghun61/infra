@@ -50,7 +50,7 @@ def ParseAuthenticatedRepo(repo_url):
 
 class GitCommitPath(object):
   """Wrapper class for basic git commit file data."""
-  
+
   def __init__(self, action, filename, copy_from_path):
     self.action = action
     self.filename = filename
@@ -484,7 +484,7 @@ class GitilesHelper(RestApiHelper):
     splitter = re.compile(r'(?P<commit>[0-9a-fA-F]+)\s+(?P<ref>[^\s]+)$')
     ref_res = [(re.compile('.*'), None)]
     if refs_regex:
-      ref_res = [[re.compile(ref_reg), None] for ref_reg in refs_regex]
+      ref_res = [[re.compile(ref_reg + '$'), None] for ref_reg in refs_regex]
       for idx, filter_reg in enumerate(filter_regex or []):
         ref_res[idx][1] = filter_reg
     all_refs = []
