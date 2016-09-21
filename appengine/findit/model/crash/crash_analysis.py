@@ -1,6 +1,8 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+import hashlib
 import json
 import logging
 
@@ -133,3 +135,16 @@ class CrashAnalysis(ndb.Model):
       return None
 
     return int((self.completed_time - self.started_time).total_seconds())
+
+  @classmethod
+  def _CreateKey(cls, crash_identifiers):
+    return ndb.Key(cls.__name__, hashlib.sha1(
+        json.dumps(crash_identifiers, sort_keys=True)).hexdigest())
+
+  @classmethod
+  def Get(cls, crash_identifiers):
+    return cls._CreateKey(crash_identifiers).get()
+
+  @classmethod
+  def Create(cls, crash_identifiers):
+    return cls(key=cls._CreateKey(crash_identifiers))

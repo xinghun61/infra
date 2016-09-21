@@ -7,6 +7,6 @@ from google.appengine.ext import ndb
 from model.crash.chrome_crash_analysis import ChromeCrashAnalysis
 
 
-class FracasCrashAnalysis(ChromeCrashAnalysis):
-  """Represents an analysis of a Chrome crash on Fracas."""
+class CracasCrashAnalysis(ChromeCrashAnalysis):
+  """Represents an analysis of a Chrome crash on Cracas."""
   pass

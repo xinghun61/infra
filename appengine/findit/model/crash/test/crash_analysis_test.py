@@ -4,15 +4,14 @@
 
 from datetime import datetime
 
-import unittest
-
+from crash.test.crash_testcase import CrashTestCase
 from model.crash.crash_analysis import CrashAnalysis
 from model import analysis_status
 from model import result_status
 from model import triage_status
 
 
-class CrashAnalysisTest(unittest.TestCase):
+class CrashAnalysisTest(CrashTestCase):
   def testCrashAnalysisStatusIsCompleted(self):
     for status in (analysis_status.COMPLETED, analysis_status.ERROR):
       analysis = CrashAnalysis()
@@ -95,3 +94,10 @@ class CrashAnalysisTest(unittest.TestCase):
     analysis = CrashAnalysis()
     analysis.Update(update)
     self.assertFalse(hasattr(analysis, 'dummy'))
+
+  def testCreateCrashAnalysis(self):
+    crash_identifiers = {'signature': 'sig'}
+    analysis = CrashAnalysis.Create(crash_identifiers)
+    analysis.put()
+    self.assertIsNotNone(analysis)
+    self.assertEqual(CrashAnalysis.Get(crash_identifiers), analysis)

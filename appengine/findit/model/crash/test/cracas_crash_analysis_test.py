@@ -7,10 +7,10 @@ from datetime import datetime
 from crash.test.crash_testcase import CrashTestCase
 from model import analysis_status
 from model import result_status
-from model.crash.fracas_crash_analysis import FracasCrashAnalysis
+from model.crash.cracas_crash_analysis import CracasCrashAnalysis
 
 
-class FracasCrashAnalysisTest(CrashTestCase):
+class CracasCrashAnalysisTest(CrashTestCase):
 
   def testDoNotUseIdentifiersToSetProperties(self):
     crash_identifiers = {
@@ -20,8 +20,8 @@ class FracasCrashAnalysisTest(CrashTestCase):
       'platform': 'win',
       'process_type': 'browser',
     }
-    FracasCrashAnalysis.Create(crash_identifiers).put()
-    analysis = FracasCrashAnalysis.Get(crash_identifiers)
+    CracasCrashAnalysis.Create(crash_identifiers).put()
+    analysis = CracasCrashAnalysis.Get(crash_identifiers)
     self.assertIsNone(analysis.crashed_version)
     self.assertIsNone(analysis.signature)
     self.assertIsNone(analysis.channel)

@@ -21,6 +21,7 @@ from crash.type_enums import CrashClient
 from model import analysis_status
 from model.crash.crash_config import CrashConfig
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
+from model.crash.cracas_crash_analysis import CracasCrashAnalysis
 
 # TODO(katesonia): Move this to fracas config.
 _FINDIT_FRACAS_FEEDBACK_URL_TEMPLATE = '%s/crash/fracas-result-feedback?key=%s'
@@ -77,8 +78,7 @@ def GetAnalysisForClient(crash_identifiers, client_id):
   if client_id == CrashClient.FRACAS:
     return FracasCrashAnalysis.Get(crash_identifiers)
   elif client_id == CrashClient.CRACAS:  # pragma: no cover.
-    # TODO(katesonia): Add CracasCrashAnalysis model.
-    return None
+    return CracasCrashAnalysis.Get(crash_identifiers)
   elif client_id == CrashClient.CLUSTERFUZZ:  # pragma: no cover.
     # TODO(katesonia): Add ClusterfuzzCrashAnalysis model.
     return None
