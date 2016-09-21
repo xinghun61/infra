@@ -23,19 +23,33 @@
   var componentsEl, commentEl, suggestionsEl, newIssueTextArea,
       addCommentTextArea, issueSummaryInput, existingComments, componentEdit;
 
+  function currentComponents() {
+    var current = componentsEl.value.split(',').map(function(el) {
+      return el.trim();
+    }).filter(function(el) {
+      return (!!el);
+    });
+    return current;
+  }
+
+  function caseInsensitiveContains(array, item) {
+    return array.some(function(a) {
+      return a.toLowerCase() == item.toLowerCase();
+    });
+   }
+
   // The user has clicked on a suggestion, which we assume means they accept
-  // it. Add it to the list of components in the input and remvoe the
+  // it. Add it to the list of components in the input and remove the
   // suggestion from the UI. Also remove the whole suggestions element if
   // the list is now empty, and log the accept so we know if it was useful
   // or not.
   function acceptSuggestion(evt) {
     var suggestion = evt.target.textContent;
-    var current = componentsEl.value.split(',').map(function(el) {
-      return el.trim();
-    }).filter(function(el) {
-      return el != '';
-    });
-    current.push(suggestion);
+    var current = currentComponents();
+    if (!caseInsensitiveContains(current, suggestion)) {
+      current.push(suggestion);
+    }
+
     componentsEl.value = current.join(', ');
     suggestionsEl.removeChild(evt.target);
     if (suggestionsEl.childElementCount == 1) { // 1 being the label div.
@@ -73,7 +87,13 @@
       }
     }
 
-    if (!resp.components || resp.components.length == 0) {
+    var suggested = resp.components || [];
+    var current = currentComponents();
+    suggested = suggested.filter(function(comp) {
+      return !caseInsensitiveContains(current, comp);
+    });
+
+    if (suggested.length == 0) {
       return;
     }
 
@@ -83,7 +103,7 @@
     labelEl.style.padding = '0.25em';
     suggestionsEl.appendChild(labelEl);
 
-    resp.components.forEach(function(component) {
+    suggested.forEach(function(component) {
       var comp = document.createElement('div');
       comp.textContent = component;
       comp.className = 'component-suggestion';
