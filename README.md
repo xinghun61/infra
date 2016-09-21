@@ -3,7 +3,9 @@
 Welcome to the Chrome Infra repository!
 
 Wondering where to start? Check out [General Chrome Infrastructure
-documentation](doc/index.md). The rest of this page is specific to this repo.
+documentation](doc/index.md). In particular, to check out this repo and the rest
+of the infrastructure code, follow the instructions [here](doc/source.md).
+The rest of this page is specific to this repo.
 
 ## Entry points
 
