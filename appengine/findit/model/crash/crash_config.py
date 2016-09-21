@@ -19,17 +19,34 @@ class CrashConfig(VersionedConfig):
     super(CrashConfig, self).__init__(*args, **kargs)
     self.cached_component_classifier = None
 
-  # Fracas-specific parameters.
+  # An example of fracas-specific parameters:
   # {
   #   "analysis_result_pubsub_topic": "projects/project-name/topics/name",
   #   "supported_platform_list_by_channel": {
   #     "canary": ["win", "mac"],
   #   },
+  #   "platform_rename": {
+  #     "linux": "unix"
+  #   },
+  #   "signature_blacklist_markers": [],
   # }
   fracas = ndb.JsonProperty(indexed=False, default={})
 
+  # An example of cracas-specific parameters:
+  # {
+  #   "analysis_result_pubsub_topic": "projects/project-name/topics/name",
+  #   "supported_platform_list_by_channel": {
+  #     "canary": ["win", "mac"],
+  #   },
+  #   "platform_rename": {
+  #     "linux": "unix"
+  #   },
+  #   "signature_blacklist_markers": [],
+  # }
+  cracas = ndb.JsonProperty(indexed=False, default={})
+
   ################## Settings shared by Fracas/Clusterfuzz. ##################
-  # Project classifier settings:
+  # An example of project classifier settings:
   # {
   #   "host_directories": [
   #     "src/chrome/browser/resources/",
@@ -71,7 +88,7 @@ class CrashConfig(VersionedConfig):
   # }
   project_classifier = ndb.JsonProperty(indexed=False, default={})
 
-  # Component classifier settings:
+  # An example of component classifier settings:
   # {
   #   # Number of frames on top to consider when deciding the crashed
   #   #component.

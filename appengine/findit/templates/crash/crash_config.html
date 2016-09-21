@@ -7,6 +7,7 @@
   <script>
     var crash = {};
     crash.fracas = {{ fracas | tojson | safe }};
+    crash.cracas = {{ cracas | tojson | safe }};
     crash.component_classifier = {{ component_classifier | tojson | safe }};
     crash.project_classifier = {{ project_classifier | tojson | safe }};
 
@@ -21,6 +22,7 @@
     function save(e) {
       var newConfig = {
         'fracas': getJsonOfTextarea('fracas'),
+        'cracas': getJsonOfTextarea('cracas'),
         'component_classifier': getJsonOfTextarea('component-classifier'),
         'project_classifier': getJsonOfTextarea('project-classifier'),
       };
@@ -36,6 +38,7 @@
     $(document).ready(function() {
       $('#save-button').click(save);
       $('#fracas').val(getStringFromJson(crash.fracas));
+      $('#cracas').val(getStringFromJson(crash.cracas));
       $('#component-classifier').val(getStringFromJson(crash.component_classifier));
       $('#project-classifier').val(getStringFromJson(crash.project_classifier));
     });
@@ -46,6 +49,10 @@
   <div>
     Settings for Fracas:<br>
     <textarea id="fracas" rows="20" cols="80"></textarea>
+  </div>
+  <div>
+    Settings for Cracas:<br>
+    <textarea id="cracas" rows="20" cols="80"></textarea>
   </div>
   <div>
     Settings for component classifier:<br>

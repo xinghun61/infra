@@ -21,6 +21,7 @@ class CrashConfig(BaseHandler):
 
     data = {
         'fracas': settings.fracas,
+        'cracas': settings.cracas,
         'component_classifier': settings.component_classifier,
         'project_classifier': settings.project_classifier,
     }
