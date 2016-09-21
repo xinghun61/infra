@@ -20,11 +20,12 @@ To run the app locally, you need to have a local MySQL database. Install MySQL
 according to the canonical instructions for your platform. Then create
 a new database an import our schema:
 
-  mysql> create database monorail;
-  mysql> source /path/to/infra/appengine/monorail/schema/framework.sql;
-  mysql> source /path/to/infra/appengine/monorail/schema/project.sql;
-  mysql> source /path/to/infra/appengine/monorail/schema/tracker.sql;
-  mysql> exit;
+    mysql> create database monorail;
+    mysql> use monorail;
+    mysql> source /path/to/infra/appengine/monorail/schema/framework.sql;
+    mysql> source /path/to/infra/appengine/monorail/schema/project.sql;
+    mysql> source /path/to/infra/appengine/monorail/schema/tracker.sql;
+    mysql> exit;
 
 Then you can run the development server locally with just `make serve`.
 
