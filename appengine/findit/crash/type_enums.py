@@ -12,3 +12,9 @@ class CallStackFormatType(object):
 class CallStackLanguageType(object):
   CPP = 1
   JAVA = 2
+
+
+class CrashClient(object):
+  FRACAS = 'fracas'
+  CRACAS = 'cracas'
+  CLUSTERFUZZ = 'clusterfuzz'

@@ -4,6 +4,7 @@
 
 import os
 
+from google.appengine.api import app_identity
 from google.appengine.api import modules
 
 
@@ -15,6 +16,11 @@ def IsInDevServer():  # pragma: no cover.
 def GetCurrentVersion():  # pragma: no cover.
   """Returns the version of this module."""
   return modules.get_current_version_name()
+
+
+def GetDefaultVersionHostname():  # pragma: no cover.
+  """Returns the default version hostname of this service."""
+  return app_identity.get_default_version_hostname()
 
 
 def GetTargetNameForModule(module_name, version=None):  # pragma: no cover.

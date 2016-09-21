@@ -59,6 +59,37 @@ class CrashHandler(BaseHandler):
         'channel': 'beta',
         'signature': '[ThreadWatcher UI hang] base::MessagePumpBase::Run'
     }
+
+    customized_data, client_id and crash_identifiers vary from client to client.
+    For example, for fracas,
+
+    customized_data: {
+      "trend_type": "d",  # *see supported types below
+      "channel": "beta",
+      "historical_metadata": [
+        {
+          "report_number": 0,
+          "cpm": 0.0,
+          "client_number": 0,
+          "chrome_version": "51.0.2704.103"
+        },
+        ...
+        {
+          "report_number": 10,
+          "cpm": 2.1,
+          "client_number": 8,
+          "chrome_version": "53.0.2768.0"
+        },
+      ]
+    }
+
+    crash_identifiers: {
+      "platform": "mac",
+      "version": "52.0.2743.41",
+      "process_type": "browser",
+      "channel": "beta",
+      "signature": "[ThreadWatcher UI hang] base::MessagePumpCFRunLoopBase::Run"
+    }
     """
     try:
       received_message = json.loads(self.request.body)
@@ -78,9 +109,8 @@ class CrashHandler(BaseHandler):
           crash_data['client_id'],
           crash_data['platform'],
           crash_data['stack_trace'],
-          crash_data['customized_data']['channel'],
-          crash_data['customized_data']['historical_metadata'],
-          queue_name=constants.CRASH_ANALYSIS_FRACAS_QUEUE)
+          crash_data['customized_data'],
+          queue_name=constants.CRASH_ANALYSIS_QUEUE[crash_data['client_id']])
     except (KeyError, ValueError):  # pragma: no cover.
       # TODO: save exception in datastore and create a page to show them.
       logging.exception('Failed to process crash message')

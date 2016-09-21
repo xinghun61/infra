@@ -83,5 +83,6 @@ class CrashHandlerTest(CrashTestCase):
     self.assertEqual(1, len(requested_crashes))
     self.assertEqual(
         (crash_identifiers, chrome_version, signature, client_id,
-         platform, stack_trace, channel, historic_metadata),
+         platform, stack_trace, {'channel': channel,
+                                 'historical_metadata': historic_metadata}),
         requested_crashes[0])

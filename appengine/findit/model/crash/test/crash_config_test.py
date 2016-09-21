@@ -7,6 +7,7 @@ import re
 from google.appengine.api import users
 
 from common.findit_testcase import FinditTestCase
+from crash.type_enums import CrashClient
 from model.crash.crash_config import CrashConfig
 
 
@@ -96,3 +97,7 @@ class CrashAnalysisTest(FinditTestCase):
         crash_config.compiled_component_classifier,
         DUMMY_COMPILED_COMPONENT_PATTERNS)
 
+  def testGetClientConfig(self):
+    crash_config = CrashConfig.Get()
+    self.assertIsNotNone(crash_config.GetClientConfig(CrashClient.FRACAS))
+    self.assertIsNone(crash_config.GetClientConfig('Unsupported_client'))

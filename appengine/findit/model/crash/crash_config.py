@@ -8,6 +8,7 @@ import re
 
 from google.appengine.ext import ndb
 
+from crash.type_enums import CrashClient
 from model.versioned_config import VersionedConfig
 
 
@@ -104,3 +105,16 @@ class CrashConfig(VersionedConfig):
       }
 
     return self.cached_component_classifier
+
+  def GetClientConfig(self, client_id):
+    """Gets client specific config using client_id."""
+    if client_id == CrashClient.FRACAS:
+      return self.fracas
+    elif client_id == CrashClient.CRACAS:  # pragma: no cover.
+      # TODO(katesonia): Add crash config of cracas.
+      return None
+    elif client_id == CrashClient.CLUSTERFUZZ:  # pragma: no cover.
+      # TODO(katesonia): Add crash config of clusterfuzz.
+      return None
+
+    return None
