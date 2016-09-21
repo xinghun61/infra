@@ -972,3 +972,23 @@ CREATE TABLE CommentContent (
   UNIQUE KEY (comment_id)  -- TODO: drop this too.
 ) ENGINE=INNODB;
 
+================================================================
+2016-09-21: Recreate the CommentContent table with emoji support.
+
+Only do this if you have all comment strings in the Comment table
+and are running an app version that does not refernce CommentContent.
+
+-- RENAME TABLE CommentContent TO CommentContent_Backup;
+-- test the app to make sure that you can view a detail page and see comments.
+-- D R O P TABLE CommentContent_Backup;
+
+CREATE TABLE CommentContent (
+  id INT NOT NULL AUTO_INCREMENT,
+  -- TODO(jrobbins): drop comment_id after Comment.commentcontent_id is added.
+  comment_id INT NOT NULL,  -- Note: no forign key reference.
+  content MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
+  inbound_message MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
+
+  PRIMARY KEY (id),
+  UNIQUE KEY (comment_id)  -- TODO: drop this too.
+) ENGINE=INNODB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

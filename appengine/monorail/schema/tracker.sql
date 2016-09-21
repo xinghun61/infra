@@ -185,11 +185,11 @@ CREATE TABLE Issue (
 -- any very wide columns in the Issue table that would slow it down.
 CREATE TABLE IssueSummary (
   issue_id INT NOT NULL,
-  summary TEXT,
+  summary mediumtext COLLATE utf8mb4_unicode_ci,
 
   PRIMARY KEY (issue_id),
   FOREIGN KEY (issue_id) REFERENCES Issue(id)
-) ENGINE=INNODB;
+) ENGINE=INNODB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 CREATE TABLE Issue2Component (
@@ -318,8 +318,8 @@ CREATE TABLE Comment (
   commenter_id INT UNSIGNED NOT NULL,
 
   -- TODO(jrobbins): drop these once they are safely moved to CommentContent
-  content TEXT,
-  inbound_message TEXT,
+  content MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
+  inbound_message MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
 
   deleted_by INT UNSIGNED,
   is_spam BOOLEAN DEFAULT FALSE,
@@ -334,19 +334,19 @@ CREATE TABLE Comment (
   FOREIGN KEY (issue_id) REFERENCES Issue(id),
   FOREIGN KEY (commenter_id) REFERENCES User(user_id),
   FOREIGN KEY (deleted_by) REFERENCES User(user_id)
-) ENGINE=INNODB;
+) ENGINE=INNODB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 CREATE TABLE CommentContent (
   id INT NOT NULL AUTO_INCREMENT,
   -- TODO(jrobbins): drop comment_id after Comment.commentcontent_id is added.
   comment_id INT NOT NULL,  -- Note: no forign key reference.
-  content TEXT,
-  inbound_message TEXT,
+  content MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
+  inbound_message MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
 
   PRIMARY KEY (id),
   UNIQUE KEY (comment_id)  -- TODO: drop this too.
-) ENGINE=INNODB;
+) ENGINE=INNODB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 CREATE TABLE Attachment (
@@ -376,8 +376,8 @@ CREATE TABLE IssueUpdate (
   field ENUM (
   'summary', 'status', 'owner', 'cc', 'labels', 'blockedon', 'blocking', 'mergedinto',
   'project', 'components', 'custom', 'is_spam' ) NOT NULL,
-  old_value TEXT,
-  new_value TEXT,
+  old_value MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
+  new_value MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
   added_user_id INT UNSIGNED,
   removed_user_id INT UNSIGNED,
   custom_field_name VARCHAR(255),
@@ -389,7 +389,7 @@ CREATE TABLE IssueUpdate (
   FOREIGN KEY (issue_id) REFERENCES Issue(id)
   -- FOREIGN KEY (added_user_id) REFERENCES User(user_id),
   -- FOREIGN KEY (removed_user_id) REFERENCES User(user_id)
-) ENGINE=INNODB;
+) ENGINE=INNODB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 CREATE TABLE IssueFormerLocations (
