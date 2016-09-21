@@ -48,7 +48,7 @@ ISSUE2CC_TABLE_NAME = 'Issue2Cc'
 ISSUE2NOTIFY_TABLE_NAME = 'Issue2Notify'
 ISSUE2FIELDVALUE_TABLE_NAME = 'Issue2FieldValue'
 COMMENT_TABLE_NAME = 'Comment'
-COMMENTCONTENT_TABLE_NAME = 'CommentContent'
+# SOON(jrobbins): COMMENTCONTENT_TABLE_NAME = 'CommentContent'
 ATTACHMENT_TABLE_NAME = 'Attachment'
 ISSUERELATION_TABLE_NAME = 'IssueRelation'
 DANGLINGRELATION_TABLE_NAME = 'DanglingIssueRelation'
@@ -74,8 +74,8 @@ COMMENT_COLS = [
     'Comment.id', 'issue_id', 'created', 'Comment.project_id', 'commenter_id',
     'content', 'inbound_message', 'deleted_by',
     'Comment.is_spam', 'is_description']
-COMMENTCONTENT_COLS = [
-    'CommentContent.id', 'comment_id', 'content', 'inbound_message']
+# SOON(jrobbins): COMMENTCONTENT_COLS = [
+#    'CommentContent.id', 'comment_id', 'content', 'inbound_message']
 ABBR_COMMENT_COLS = ['Comment.id', 'commenter_id', 'deleted_by',
     'is_description']
 ATTACHMENT_COLS = [
@@ -351,7 +351,8 @@ class IssueService(object):
 
     # Tables that represent comments.
     self.comment_tbl = sql.SQLTableManager(COMMENT_TABLE_NAME)
-    self.commentcontent_tbl = sql.SQLTableManager(COMMENTCONTENT_TABLE_NAME)
+    # SOON(jrobbins): self.commentcontent_tbl = sql.SQLTableManager(
+    # COMMENTCONTENT_TABLE_NAME)
     self.issueupdate_tbl = sql.SQLTableManager(ISSUEUPDATE_TABLE_NAME)
     self.attachment_tbl = sql.SQLTableManager(ATTACHMENT_TABLE_NAME)
 
@@ -2012,7 +2013,7 @@ class IssueService(object):
     return attach, comment_id
 
   def _DeserializeComments(
-      self, comment_rows, commentcontent_rows, amendment_rows, attachment_rows):
+      self, comment_rows, amendment_rows, attachment_rows):
     """Turn rows into IssueComment PBs."""
     results = []  # keep objects in the same order as the rows
     results_dict = {}  # for fast access when joining.
@@ -2022,18 +2023,7 @@ class IssueService(object):
       results.append(comment)
       results_dict[comment.id] = comment
 
-    for commentcontent_row in commentcontent_rows:
-      comment_id, content, inbound_message = commentcontent_row
-      try:
-        # For now we favor strings found in the Comment table.
-        # Next step is to eliminate references to CommentContent again.
-        # Then redefine CommentContent.  Then put this code back.
-        if not results_dict[comment_id].content:
-          results_dict[comment_id].content = content or ''
-        if not results_dict[comment_id].inbound_message:
-          results_dict[comment_id].inbound_message = inbound_message or ''
-      except KeyError:
-        logging.error('Found content for missing comment: %r', comment_id)
+    # SOON(jrobbins): commentcontent loop.
 
     for amendment_row in amendment_rows:
       amendment, comment_id = self._UnpackAmendment(amendment_row)
@@ -2065,16 +2055,16 @@ class IssueService(object):
         cnxn, cols=COMMENT_COLS, where=where,
         order_by=order_by, **kwargs)
     cids = [row[0] for row in comment_rows]
-    content_rows = self.commentcontent_tbl.Select(
-        cnxn, cols=['comment_id', 'content', 'inbound_message'],
-        comment_id=cids)
+    # SOON(jrobbins):     content_rows = self.commentcontent_tbl.Select(
+    #    cnxn, cols=['comment_id', 'content', 'inbound_message'],
+    #    comment_id=cids)
     amendment_rows = self.issueupdate_tbl.Select(
         cnxn, cols=ISSUEUPDATE_COLS, comment_id=cids)
     attachment_rows = self.attachment_tbl.Select(
         cnxn, cols=ATTACHMENT_COLS, comment_id=cids)
 
     comments = self._DeserializeComments(
-        comment_rows, content_rows, amendment_rows, attachment_rows)
+        comment_rows, amendment_rows, attachment_rows)
     return comments
 
   def GetComment(self, cnxn, comment_id):
@@ -2117,16 +2107,16 @@ class IssueService(object):
     order_by = [('created ASC', [])]
     comment_rows = self.comment_tbl.Select(
         cnxn, cols=COMMENT_COLS, order_by=order_by, id=comment_ids)
-    content_rows = self.commentcontent_tbl.Select(
-        cnxn, cols=['comment_id', 'content', 'inbound_message'],
-        comment_id=comment_ids)
+    # SOON(jrobbins): content_rows = self.commentcontent_tbl.Select(
+    #    cnxn, cols=['comment_id', 'content', 'inbound_message'],
+    #    comment_id=comment_ids)
     amendment_rows = self.issueupdate_tbl.Select(
         cnxn, cols=ISSUEUPDATE_COLS, comment_id=comment_ids)
     attachment_rows = self.attachment_tbl.Select(
         cnxn, cols=ATTACHMENT_COLS, comment_id=comment_ids)
 
     comments = self._DeserializeComments(
-        comment_rows, content_rows, amendment_rows, attachment_rows)
+        comment_rows, amendment_rows, attachment_rows)
 
     for i in xrange(len(comment_ids)):
       comments[i].sequence = sequences[i]
@@ -2181,9 +2171,9 @@ class IssueService(object):
         commit=commit)
     comment.id = comment_id
 
-    _commentcontent_id = self.commentcontent_tbl.InsertRow(
-        cnxn, comment_id=comment_id, content=comment.content,
-        inbound_message=comment.inbound_message, commit=commit)
+    # SOON(jrobbins): _commentcontent_id = self.commentcontent_tbl.InsertRow(
+    #    cnxn, comment_id=comment_id, content=comment.content,
+    #    inbound_message=comment.inbound_message, commit=commit)
 
     amendment_rows = []
     for amendment in comment.amendments:
