@@ -739,6 +739,10 @@ func requireGoogler(c *router.Context, next router.Handler) {
 	}
 }
 
+func noopHandler(ctx *router.Context) {
+	return
+}
+
 //// Routes.
 func init() {
 
@@ -765,6 +769,10 @@ func init() {
 	r.GET("/_cron/annotations/flush_old/", basemw, flushOldAnnotationsHandler)
 	r.POST("/_/clientmon", basemw, postClientMonHandler)
 
+	// Ingore reqeuests from builder-alerts rather than 404.
+	r.GET("/alerts", gaemiddleware.BaseProd(), noopHandler)
+	r.POST("/alerts", gaemiddleware.BaseProd(), noopHandler)
+
 	rootRouter := router.New()
 	rootRouter.GET("/*path", basemw, indexPage)
 
@@ -776,6 +784,7 @@ func init() {
 	http.DefaultServeMux.Handle("/internal/", r)
 	http.DefaultServeMux.Handle("/_/", r)
 	http.DefaultServeMux.Handle("/logos/", r)
+	http.DefaultServeMux.Handle("/alerts", r)
 
 	http.DefaultServeMux.Handle("/", rootRouter)
 }
