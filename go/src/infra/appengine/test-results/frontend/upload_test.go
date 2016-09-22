@@ -260,3 +260,38 @@ func TestUpdateIncremental(t *testing.T) {
 		})
 	})
 }
+
+func TestUses409ResponseCodeForBuildNumberConflict(t *testing.T) {
+	t.Parallel()
+
+	Convey("Return HTTP response code 409 for build with same number", t, func() {
+		ctx := memory.Use(context.Background())
+		testFileIdx, err := datastore.FindAndParseIndexYAML(
+			filepath.Join("testdata"))
+		if err != nil {
+			panic(err)
+		}
+		datastore.GetTestable(ctx).AddIndexes(testFileIdx...)
+		datastore.GetTestable(ctx).CatchupIndexes()
+
+		ctx = SetUploadParams(ctx, &UploadParams{
+			Master:   "foo",
+			Builder:  "bar",
+			TestType: "baz",
+		})
+		data, err := ioutil.ReadFile(
+			filepath.Join("testdata", "full_results_0.json"))
+		data = bytes.TrimSpace(data)
+		So(err, ShouldBeNil)
+
+		So(updateFullResults(ctx, bytes.NewReader(data)), ShouldBeNil)
+
+		// Ensure that the file is saved in datastore. See http://crbug.com/648817.
+		datastore.GetTestable(ctx).CatchupIndexes()
+
+		err = updateFullResults(ctx, bytes.NewReader(data))
+		se, ok := err.(statusError)
+		So(ok, ShouldBeTrue)
+		So(se.code, ShouldEqual, 409)
+	})
+}

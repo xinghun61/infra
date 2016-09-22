@@ -279,7 +279,11 @@ func updateFullResults(c context.Context, data io.Reader) error {
 	}
 	if err := updateIncremental(c, &incr); err != nil {
 		logging.WithError(err).Errorf(c, "updateFullResults: updateIncremental")
-		return statusError{err, http.StatusInternalServerError}
+		code := http.StatusInternalServerError
+		if se, ok := err.(statusError); ok {
+			code = se.code
+		}
+		return statusError{err, code}
 	}
 
 	p := GetUploadParams(c)
