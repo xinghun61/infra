@@ -364,7 +364,7 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
       if p not in packages:
         packages.append(p)
     cipd_input['packages'] = packages
- 
+
   if builder_cfg.execution_timeout_secs > 0:
     task_properties['execution_timeout_secs'] = (
         builder_cfg.execution_timeout_secs)
@@ -684,6 +684,7 @@ class CronUpdateBuilds(webapp2.RequestHandler):
       if build.status != model.BuildStatus.STARTED:  # pragma: no cover
         return
 
+      need_put = False
       if not result:
         logging.error(
             'Task %s/%s referenced by build %s is not found',
@@ -702,9 +703,14 @@ class CronUpdateBuilds(webapp2.RequestHandler):
           }
         }
         build.clear_lease()
+        need_put = True
+      else:
+        need_put = _update_build(build, result)
+
+      if need_put:  # pragma: no branch
         yield build.put_async()
-      elif _update_build(build, result):  # pragma: no branch
-        yield build.put_async()
+        if build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
+          notifications.enqueue_callback_task_if_needed(build)
 
     yield txn(build.key)
 
