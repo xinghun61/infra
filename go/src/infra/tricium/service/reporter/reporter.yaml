@@ -1,13 +1,13 @@
 application: chrome-infra-tricium-dev
-module: default
+module: reporter
 runtime: go
 api_version: go1
 
 handlers:
-- url: /analyze
+- url: /results
   script: _go_app
   login: admin
-- url: /queue-handler
+- url: /reporter/queue-handler
   script: _go_app
   login: admin
 - url: /.*

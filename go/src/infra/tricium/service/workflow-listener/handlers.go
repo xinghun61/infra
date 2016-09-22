@@ -32,9 +32,9 @@ func queueHandler(w http.ResponseWriter, r *http.Request) {
 
 	// TODO(emso): Process task (find LogDog streams to listen to) and listen to events.
 
-	// Enqueue gerrit reporter task.
-	t := taskqueue.NewPOSTTask("/gerrit-reporter/queue-handler", map[string][]string{"name": {"Workflow Event"}})
-	if _, e := taskqueue.Add(ctx, t, "gerrit-reporter-queue"); e != nil {
+	// Enqueue reporter task.
+	t := taskqueue.NewPOSTTask("/reporter/queue-handler", map[string][]string{"name": {"Workflow Event"}})
+	if _, e := taskqueue.Add(ctx, t, "reporter-queue"); e != nil {
 		http.Error(w, e.Error(), http.StatusInternalServerError)
 		return
 	}

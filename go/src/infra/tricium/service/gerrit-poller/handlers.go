@@ -32,9 +32,9 @@ func pollHandler(w http.ResponseWriter, r *http.Request) {
 
 	// TODO(emso): Poll Gerrit and convert changes to workflow event tasks.
 
-	// Enqueue workflow event task.
-	t := taskqueue.NewPOSTTask("/workflow-launcher/queue-handler", map[string][]string{"name": {"Analysis Request"}})
-	if _, e := taskqueue.Add(ctx, t, "workflow-launcher-queue"); e != nil {
+	// Enqueue service task.
+	t := taskqueue.NewPOSTTask("/queue-handler", map[string][]string{"name": {"Gerrit Analysis Request"}})
+	if _, e := taskqueue.Add(ctx, t, "service-queue"); e != nil {
 		http.Error(w, e.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -17,6 +17,7 @@ import (
 func init() {
 	http.HandleFunc("/", landingPageHandler)
 	http.HandleFunc("/analyze", analyzeHandler)
+	http.HandleFunc("/queue-handler", queueHandler)
 }
 
 func landingPageHandler(w http.ResponseWriter, r *http.Request) {
@@ -29,8 +30,8 @@ func landingPageHandler(w http.ResponseWriter, r *http.Request) {
 
 func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
-	t := taskqueue.NewPOSTTask("/workflow-launcher/queue-handler", map[string][]string{"name": {"Analyze Request"}})
-	if _, err := taskqueue.Add(ctx, t, "workflow-launcher-queue"); err != nil {
+	t := taskqueue.NewPOSTTask("/queue-handler", map[string][]string{"name": {"Analyze Request"}})
+	if _, err := taskqueue.Add(ctx, t, "service-queue"); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -38,4 +39,16 @@ func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 		"Msg": "Dummy analysis request sent.",
 	}
 	common.ShowBasePage(w, d)
+}
+
+func queueHandler(w http.ResponseWriter, r *http.Request) {
+
+	// TODO(emso): Register run in data store
+
+	ctx := appengine.NewContext(r)
+	t := taskqueue.NewPOSTTask("/workflow-launcher/queue-handler", map[string][]string{"name": {"Analyze Request"}})
+	if _, err := taskqueue.Add(ctx, t, "workflow-launcher-queue"); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
