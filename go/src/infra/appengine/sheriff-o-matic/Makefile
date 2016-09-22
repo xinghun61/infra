@@ -23,6 +23,10 @@ test: deps
 
 
 # In the future we can add different commends for prod and staging.
+deploy-prod: build
+	./gae.py upload -A sheriff-o-matic
+	rm elements/som-app.vulcanized.html
+
 deploy: build
 	./gae.py upload
 	rm elements/som-app.vulcanized.html

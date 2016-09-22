@@ -45,7 +45,9 @@ const (
 	bugQueueCacheFormat = "bugqueue-%s"
 	settingsKey         = "tree"
 	// annotations will expire after this amount of time
-	annotationExpiration = time.Hour * 24 * 5
+	annotationExpiration  = time.Hour * 24 * 10
+	productionAnalyticsID = "UA-55762617-1"
+	stagingAnalyticsID    = "UA-55762617-22"
 )
 
 var (
@@ -261,11 +263,17 @@ func indexPage(ctx *router.Context) {
 		logging.Errorf(c, "while getting xrsf token: %s", err)
 	}
 
+	AnalyticsID := stagingAnalyticsID
+	if !strings.HasPrefix(info.AppID(c), "-staging") {
+		AnalyticsID = productionAnalyticsID
+	}
+
 	data := map[string]interface{}{
 		"User":           user.Email(),
 		"LogoutUrl":      logoutURL,
 		"IsDevAppServer": appengine.IsDevAppServer(),
 		"XsrfToken":      tok,
+		"AnalyticsID":    AnalyticsID,
 	}
 
 	err = mainPage.Execute(w, data)
