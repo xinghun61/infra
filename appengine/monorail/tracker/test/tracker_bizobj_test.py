@@ -11,6 +11,7 @@ from framework import framework_constants
 from framework import framework_views
 from proto import tracker_pb2
 from tracker import tracker_bizobj
+from tracker import tracker_constants
 
 
 class BizobjTest(unittest.TestCase):
@@ -56,20 +57,6 @@ class BizobjTest(unittest.TestCase):
     issue.labels.extend(['d', 'e', 'f'])
     self.assertEquals(tracker_bizobj.GetLabels(issue),
                       ['d', 'e', 'f', 'a', 'b', 'c'])
-
-  def CheckDefaultConfig(self, config):
-    self.assertTrue(len(config.well_known_statuses) > 0)
-    self.assertTrue(config.statuses_offer_merge > 0)
-    self.assertTrue(len(config.well_known_labels) > 0)
-    self.assertTrue(len(config.templates) > 0)
-    self.assertTrue(len(config.exclusive_label_prefixes) > 0)
-    # TODO(jrobbins): test actual values from default config
-
-  def testMakeDefaultProjectIssueConfig(self):
-    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
-    config.default_template_for_developers = 1
-    config.default_template_for_users = 2
-    self.CheckDefaultConfig(config)
 
   def testUsersInvolvedInConfig_Empty(self):
     config = tracker_pb2.ProjectIssueConfig()
@@ -206,143 +193,6 @@ class BizobjTest(unittest.TestCase):
     fv = tracker_bizobj.MakeFieldValue(1, None, None, 111L, True)
     self.assertEqual(111L, fv.user_id)
     self.assertEqual(True, fv.derived)
-
-  def testConvertDictToTemplate(self):
-    template = tracker_bizobj.ConvertDictToTemplate(
-        dict(name='name', content='content', summary='summary',
-             status='status', owner_id=111L))
-    self.assertEqual('name', template.name)
-    self.assertEqual('content', template.content)
-    self.assertEqual('summary', template.summary)
-    self.assertEqual('status', template.status)
-    self.assertEqual(111L, template.owner_id)
-    self.assertFalse(template.summary_must_be_edited)
-    self.assertTrue(template.owner_defaults_to_member)
-    self.assertFalse(template.component_required)
-
-    template = tracker_bizobj.ConvertDictToTemplate(
-        dict(name='name', content='content', labels=['a', 'b', 'c']))
-    self.assertListEqual(
-        ['a', 'b', 'c'], list(template.labels))
-
-    template = tracker_bizobj.ConvertDictToTemplate(
-        dict(name='name', content='content', summary_must_be_edited=True,
-             owner_defaults_to_member=True, component_required=True))
-    self.assertTrue(template.summary_must_be_edited)
-    self.assertTrue(template.owner_defaults_to_member)
-    self.assertTrue(template.component_required)
-
-    template = tracker_bizobj.ConvertDictToTemplate(
-        dict(name='name', content='content', summary_must_be_edited=False,
-             owner_defaults_to_member=False, component_required=False))
-    self.assertFalse(template.summary_must_be_edited)
-    self.assertFalse(template.owner_defaults_to_member)
-    self.assertFalse(template.component_required)
-
-  def testHarmonizeConfigs_Empty(self):
-    harmonized = tracker_bizobj.HarmonizeConfigs([])
-    self.CheckDefaultConfig(harmonized)
-
-  def testHarmonizeConfigs(self):
-    c1 = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
-    harmonized = tracker_bizobj.HarmonizeConfigs([c1])
-    self.assertListEqual(
-        [stat.status for stat in c1.well_known_statuses],
-        [stat.status for stat in harmonized.well_known_statuses])
-    self.assertListEqual(
-        [lab.label for lab in c1.well_known_labels],
-        [lab.label for lab in harmonized.well_known_labels])
-    self.assertEqual('', harmonized.default_sort_spec)
-
-    c2 = tracker_bizobj.MakeDefaultProjectIssueConfig(678)
-    tracker_bizobj.SetConfigStatuses(c2, [
-        ('Unconfirmed', '', True, False),
-        ('New', '', True, True),
-        ('Accepted', '', True, False),
-        ('Begun', '', True, False),
-        ('Fixed', '', False, False),
-        ('Obsolete', '', False, False)])
-    tracker_bizobj.SetConfigLabels(c2, [
-        ('Pri-0', '', False),
-        ('Priority-High', '', True),
-        ('Pri-1', '', False),
-        ('Priority-Medium', '', True),
-        ('Pri-2', '', False),
-        ('Priority-Low', '', True),
-        ('Pri-3', '', False),
-        ('Pri-4', '', False)])
-    c2.default_sort_spec = 'Pri -status'
-
-    harmonized = tracker_bizobj.HarmonizeConfigs([c1, c2])
-    result_statuses = [stat.status
-                       for stat in harmonized.well_known_statuses]
-    result_labels = [lab.label
-                     for lab in harmonized.well_known_labels]
-    self.assertListEqual(
-        ['Unconfirmed', 'New', 'Accepted', 'Begun', 'Started', 'Fixed',
-         'Obsolete', 'Verified', 'Invalid', 'Duplicate', 'WontFix', 'Done'],
-        result_statuses)
-    self.assertListEqual(
-        ['Pri-0', 'Type-Defect', 'Type-Enhancement', 'Type-Task',
-         'Type-Other', 'Priority-Critical', 'Priority-High',
-         'Pri-1', 'Priority-Medium', 'Pri-2', 'Priority-Low', 'Pri-3',
-         'Pri-4'],
-        result_labels[:result_labels.index('OpSys-All')])
-    self.assertEqual('Pri -status', harmonized.default_sort_spec.strip())
-
-  def testCombineOrderedLists_Empty(self):
-    self.assertEqual([], tracker_bizobj._CombineOrderedLists([]))
-
-  def testCombineOrderedLists_Normal(self):
-    a = ['Mon', 'Wed', 'Fri']
-    b = ['Mon', 'Tue']
-    c = ['Wed', 'Thu']
-    self.assertEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-                     tracker_bizobj._CombineOrderedLists([a, b, c]))
-
-    d = ['Mon', 'StartOfWeek', 'Wed', 'MidWeek', 'Fri', 'EndOfWeek']
-    self.assertEqual(['Mon', 'StartOfWeek', 'Tue', 'Wed', 'MidWeek', 'Thu',
-                      'Fri', 'EndOfWeek'],
-                     tracker_bizobj._CombineOrderedLists([a, b, c, d]))
-
-  def testUsersInvolvedInComment(self):
-    comment = tracker_pb2.IssueComment()
-    self.assertEqual({0}, tracker_bizobj.UsersInvolvedInComment(comment))
-
-    comment.user_id = 111L
-    self.assertEqual(
-        {111L}, tracker_bizobj.UsersInvolvedInComment(comment))
-
-    amendment = tracker_pb2.Amendment(newvalue='foo')
-    comment.amendments.append(amendment)
-    self.assertEqual(
-        {111L}, tracker_bizobj.UsersInvolvedInComment(comment))
-
-    amendment.added_user_ids.append(222L)
-    amendment.removed_user_ids.append(333L)
-    self.assertEqual({111L, 222L, 333L},
-                     tracker_bizobj.UsersInvolvedInComment(comment))
-
-  def testUsersInvolvedInCommentList(self):
-    self.assertEqual(set(), tracker_bizobj.UsersInvolvedInCommentList([]))
-
-    c1 = tracker_pb2.IssueComment()
-    c1.user_id = 111L
-    c1.amendments.append(tracker_pb2.Amendment(newvalue='foo'))
-
-    c2 = tracker_pb2.IssueComment()
-    c2.user_id = 111L
-    c2.amendments.append(tracker_pb2.Amendment(
-        added_user_ids=[222L], removed_user_ids=[333L]))
-
-    self.assertEqual({111L},
-                     tracker_bizobj.UsersInvolvedInCommentList([c1]))
-
-    self.assertEqual({111L, 222L, 333L},
-                     tracker_bizobj.UsersInvolvedInCommentList([c2]))
-
-    self.assertEqual({111L, 222L, 333L},
-                     tracker_bizobj.UsersInvolvedInCommentList([c1, c2]))
 
   def testMakeAmendment(self):
     amendment = tracker_bizobj.MakeAmendment(
@@ -692,6 +542,385 @@ class BizobjTest(unittest.TestCase):
         raw_value='test',
     )
     self.assertEqual('test', val)
+
+  def testFindComponentDef_Empty(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    actual = tracker_bizobj.FindComponentDef('DB', config)
+    self.assertIsNone(actual)
+
+  def testFindComponentDef_NoMatch(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    cd = tracker_pb2.ComponentDef(path='UI>Splash')
+    config.component_defs.append(cd)
+    actual = tracker_bizobj.FindComponentDef('DB', config)
+    self.assertIsNone(actual)
+
+  def testFindComponentDef_MatchFound(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    cd = tracker_pb2.ComponentDef(path='UI>Splash')
+    config.component_defs.append(cd)
+    actual = tracker_bizobj.FindComponentDef('UI>Splash', config)
+    self.assertEqual(cd, actual)
+
+  def testFindMatchingComponentIDs_Empty(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    actual = tracker_bizobj.FindMatchingComponentIDs('DB', config)
+    self.assertEqual([], actual)
+    actual = tracker_bizobj.FindMatchingComponentIDs('DB', config, exact=False)
+    self.assertEqual([], actual)
+
+  def testFindMatchingComponentIDs_NoMatch(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.component_defs.append(tracker_pb2.ComponentDef(
+        component_id=1, path='UI>Splash'))
+    config.component_defs.append(tracker_pb2.ComponentDef(
+        component_id=2, path='UI>AboutBox'))
+    actual = tracker_bizobj.FindMatchingComponentIDs('DB', config)
+    self.assertEqual([], actual)
+    actual = tracker_bizobj.FindMatchingComponentIDs('DB', config, exact=False)
+    self.assertEqual([], actual)
+
+  def testFindMatchingComponentIDs_Match(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.component_defs.append(tracker_pb2.ComponentDef(
+        component_id=1, path='UI>Splash'))
+    config.component_defs.append(tracker_pb2.ComponentDef(
+        component_id=2, path='UI>AboutBox'))
+    config.component_defs.append(tracker_pb2.ComponentDef(
+        component_id=3, path='DB>Attachments'))
+    actual = tracker_bizobj.FindMatchingComponentIDs('DB', config)
+    self.assertEqual([], actual)
+    actual = tracker_bizobj.FindMatchingComponentIDs('DB', config, exact=False)
+    self.assertEqual([3], actual)
+
+  def testFindMatchingComponentIDs_MatchMultiple(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.component_defs.append(tracker_pb2.ComponentDef(
+        component_id=1, path='UI>Splash'))
+    config.component_defs.append(tracker_pb2.ComponentDef(
+        component_id=2, path='UI>AboutBox'))
+    config.component_defs.append(tracker_pb2.ComponentDef(
+        component_id=22, path='UI>AboutBox'))
+    config.component_defs.append(tracker_pb2.ComponentDef(
+        component_id=3, path='DB>Attachments'))
+    actual = tracker_bizobj.FindMatchingComponentIDs('UI>AboutBox', config)
+    self.assertEqual([2, 22], actual)
+    actual = tracker_bizobj.FindMatchingComponentIDs('UI', config, exact=False)
+    self.assertEqual([1, 2, 22], actual)
+
+  def testFindComponentDefByID_Empty(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    actual = tracker_bizobj.FindComponentDefByID(999, config)
+    self.assertIsNone(actual)
+
+  def testFindComponentDefByID_NoMatch(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.component_defs.append(tracker_pb2.ComponentDef(
+        component_id=1, path='UI>Splash'))
+    config.component_defs.append(tracker_pb2.ComponentDef(
+        component_id=2, path='UI>AboutBox'))
+    actual = tracker_bizobj.FindComponentDefByID(999, config)
+    self.assertIsNone(actual)
+
+  def testFindComponentDefByID_MatchFound(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    cd = tracker_pb2.ComponentDef(component_id=1, path='UI>Splash')
+    config.component_defs.append(cd)
+    config.component_defs.append(tracker_pb2.ComponentDef(
+        component_id=2, path='UI>AboutBox'))
+    actual = tracker_bizobj.FindComponentDefByID(1, config)
+    self.assertEqual(cd, actual)
+
+  def testFindAncestorComponents_Empty(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    cd = tracker_pb2.ComponentDef(component_id=1, path='UI>Splash')
+    actual = tracker_bizobj.FindAncestorComponents(config, cd)
+    self.assertEqual([], actual)
+
+  def testFindAncestorComponents_NoMatch(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    cd = tracker_pb2.ComponentDef(component_id=1, path='UI>Splash')
+    config.component_defs.append(tracker_pb2.ComponentDef(
+        component_id=2, path='UI>AboutBox'))
+    actual = tracker_bizobj.FindAncestorComponents(config, cd)
+    self.assertEqual([], actual)
+
+  def testFindAncestorComponents_NoComponents(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    cd = tracker_pb2.ComponentDef(component_id=1, path='UI')
+    config.component_defs.append(cd)
+    cd2 = tracker_pb2.ComponentDef(component_id=2, path='UI>Splash')
+    config.component_defs.append(cd2)
+    actual = tracker_bizobj.FindAncestorComponents(config, cd2)
+    self.assertEqual([cd], actual)
+
+  def testGetIssueComponentsAndAncestors_AffectsNoComponents(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    cd = tracker_pb2.ComponentDef(component_id=1, path='UI')
+    config.component_defs.append(cd)
+    cd2 = tracker_pb2.ComponentDef(component_id=2, path='UI>Splash')
+    config.component_defs.append(cd2)
+    issue = tracker_pb2.Issue(component_ids=[])
+    actual = tracker_bizobj.GetIssueComponentsAndAncestors(issue, config)
+    self.assertEqual([], actual)
+
+  def testGetIssueComponentsAndAncestors_AffectsSomeComponents(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    cd = tracker_pb2.ComponentDef(component_id=1, path='UI')
+    config.component_defs.append(cd)
+    cd2 = tracker_pb2.ComponentDef(component_id=2, path='UI>Splash')
+    config.component_defs.append(cd2)
+    issue = tracker_pb2.Issue(component_ids=[2])
+    actual = tracker_bizobj.GetIssueComponentsAndAncestors(issue, config)
+    self.assertEqual([cd, cd2], actual)
+
+  def testFindDescendantComponents_Empty(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    cd = tracker_pb2.ComponentDef(component_id=1, path='UI')
+    actual = tracker_bizobj.FindDescendantComponents(config, cd)
+    self.assertEqual([], actual)
+
+  def testFindDescendantComponents_NoMatch(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    cd = tracker_pb2.ComponentDef(component_id=1, path='UI')
+    config.component_defs.append(cd)
+    actual = tracker_bizobj.FindDescendantComponents(config, cd)
+    self.assertEqual([], actual)
+
+  def testFindDescendantComponents_SomeMatch(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    cd = tracker_pb2.ComponentDef(component_id=1, path='UI')
+    config.component_defs.append(cd)
+    cd2 = tracker_pb2.ComponentDef(component_id=2, path='UI>Splash')
+    config.component_defs.append(cd2)
+    actual = tracker_bizobj.FindDescendantComponents(config, cd)
+    self.assertEqual([cd2], actual)
+
+  def testMakeComponentDef(self):
+    cd = tracker_bizobj.MakeComponentDef(
+      1, 789, 'UI', 'doc', False, [111L], [222L], 1234567890,
+      111L)
+    self.assertEqual(1, cd.component_id)
+    self.assertEqual([111L], cd.admin_ids)
+    self.assertEqual([], cd.label_ids)
+
+  def testMakeSavedQuery(self):
+    sq = tracker_bizobj.MakeSavedQuery(
+      100, 'my query', 2, 'priority:high',
+      subscription_mode='immediate', executes_in_project_ids=[789])
+    self.assertEqual(100, sq.query_id)
+    self.assertEqual('immediate', sq.subscription_mode)
+    self.assertEqual([789], sq.executes_in_project_ids)
+
+  def testConvertDictToTemplate(self):
+    template = tracker_bizobj.ConvertDictToTemplate(
+        dict(name='name', content='content', summary='summary',
+             status='status', owner_id=111L))
+    self.assertEqual('name', template.name)
+    self.assertEqual('content', template.content)
+    self.assertEqual('summary', template.summary)
+    self.assertEqual('status', template.status)
+    self.assertEqual(111L, template.owner_id)
+    self.assertFalse(template.summary_must_be_edited)
+    self.assertTrue(template.owner_defaults_to_member)
+    self.assertFalse(template.component_required)
+
+    template = tracker_bizobj.ConvertDictToTemplate(
+        dict(name='name', content='content', labels=['a', 'b', 'c']))
+    self.assertListEqual(
+        ['a', 'b', 'c'], list(template.labels))
+
+    template = tracker_bizobj.ConvertDictToTemplate(
+        dict(name='name', content='content', summary_must_be_edited=True,
+             owner_defaults_to_member=True, component_required=True))
+    self.assertTrue(template.summary_must_be_edited)
+    self.assertTrue(template.owner_defaults_to_member)
+    self.assertTrue(template.component_required)
+
+    template = tracker_bizobj.ConvertDictToTemplate(
+        dict(name='name', content='content', summary_must_be_edited=False,
+             owner_defaults_to_member=False, component_required=False))
+    self.assertFalse(template.summary_must_be_edited)
+    self.assertFalse(template.owner_defaults_to_member)
+    self.assertFalse(template.component_required)
+
+  def CheckDefaultConfig(self, config):
+    self.assertTrue(len(config.well_known_statuses) > 0)
+    self.assertTrue(config.statuses_offer_merge > 0)
+    self.assertTrue(len(config.well_known_labels) > 0)
+    self.assertTrue(len(config.templates) > 0)
+    self.assertTrue(len(config.exclusive_label_prefixes) > 0)
+    # TODO(jrobbins): test actual values from default config
+
+  def testMakeDefaultProjectIssueConfig(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.default_template_for_developers = 1
+    config.default_template_for_users = 2
+    self.CheckDefaultConfig(config)
+
+  def testHarmonizeConfigs_Empty(self):
+    harmonized = tracker_bizobj.HarmonizeConfigs([])
+    self.CheckDefaultConfig(harmonized)
+
+  def testHarmonizeConfigs(self):
+    c1 = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    harmonized = tracker_bizobj.HarmonizeConfigs([c1])
+    self.assertListEqual(
+        [stat.status for stat in c1.well_known_statuses],
+        [stat.status for stat in harmonized.well_known_statuses])
+    self.assertListEqual(
+        [lab.label for lab in c1.well_known_labels],
+        [lab.label for lab in harmonized.well_known_labels])
+    self.assertEqual('', harmonized.default_sort_spec)
+
+    c2 = tracker_bizobj.MakeDefaultProjectIssueConfig(678)
+    tracker_bizobj.SetConfigStatuses(c2, [
+        ('Unconfirmed', '', True, False),
+        ('New', '', True, True),
+        ('Accepted', '', True, False),
+        ('Begun', '', True, False),
+        ('Fixed', '', False, False),
+        ('Obsolete', '', False, False)])
+    tracker_bizobj.SetConfigLabels(c2, [
+        ('Pri-0', '', False),
+        ('Priority-High', '', True),
+        ('Pri-1', '', False),
+        ('Priority-Medium', '', True),
+        ('Pri-2', '', False),
+        ('Priority-Low', '', True),
+        ('Pri-3', '', False),
+        ('Pri-4', '', False)])
+    c2.default_sort_spec = 'Pri -status'
+
+    harmonized = tracker_bizobj.HarmonizeConfigs([c1, c2])
+    result_statuses = [stat.status
+                       for stat in harmonized.well_known_statuses]
+    result_labels = [lab.label
+                     for lab in harmonized.well_known_labels]
+    self.assertListEqual(
+        ['Unconfirmed', 'New', 'Accepted', 'Begun', 'Started', 'Fixed',
+         'Obsolete', 'Verified', 'Invalid', 'Duplicate', 'WontFix', 'Done'],
+        result_statuses)
+    self.assertListEqual(
+        ['Pri-0', 'Type-Defect', 'Type-Enhancement', 'Type-Task',
+         'Type-Other', 'Priority-Critical', 'Priority-High',
+         'Pri-1', 'Priority-Medium', 'Pri-2', 'Priority-Low', 'Pri-3',
+         'Pri-4'],
+        result_labels[:result_labels.index('OpSys-All')])
+    self.assertEqual('Pri -status', harmonized.default_sort_spec.strip())
+
+  def testHarmonizeLabelOrStatusRows_Empty(self):
+    def_rows = []
+    actual = tracker_bizobj.HarmonizeLabelOrStatusRows(def_rows)
+    self.assertEqual([], actual)
+
+  def testHarmonizeLabelOrStatusRows_Normal(self):
+    def_rows = [
+        (100, 789, 1, 'Priority-High'),
+        (101, 789, 2, 'Priority-Normal'),
+        (103, 789, 3, 'Priority-Low'),
+        (199, 789, None, 'Monday'),
+        (200, 678, 1, 'Priority-High'),
+        (201, 678, 2, 'Priority-Medium'),
+        (202, 678, 3, 'Priority-Low'),
+        (299, 678, None, 'Hot'),
+        ]
+    actual = tracker_bizobj.HarmonizeLabelOrStatusRows(def_rows)
+    self.assertEqual(
+        [(199, None, 'Monday'),
+         (299, None, 'Hot'),
+         (200, 1, 'Priority-High'),
+         (100, 1, 'Priority-High'),
+         (101, 2, 'Priority-Normal'),
+         (201, 2, 'Priority-Medium'),
+         (202, 3, 'Priority-Low'),
+         (103, 3, 'Priority-Low')
+         ],
+        actual)
+
+  def testCombineOrderedLists_Empty(self):
+    self.assertEqual([], tracker_bizobj._CombineOrderedLists([]))
+
+  def testCombineOrderedLists_Normal(self):
+    a = ['Mon', 'Wed', 'Fri']
+    b = ['Mon', 'Tue']
+    c = ['Wed', 'Thu']
+    self.assertEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                     tracker_bizobj._CombineOrderedLists([a, b, c]))
+
+    d = ['Mon', 'StartOfWeek', 'Wed', 'MidWeek', 'Fri', 'EndOfWeek']
+    self.assertEqual(['Mon', 'StartOfWeek', 'Tue', 'Wed', 'MidWeek', 'Thu',
+                      'Fri', 'EndOfWeek'],
+                     tracker_bizobj._CombineOrderedLists([a, b, c, d]))
+
+  def testGetBuiltInQuery(self):
+    self.assertEqual(
+        'is:open', tracker_bizobj.GetBuiltInQuery(2))
+    self.assertEqual(
+        '', tracker_bizobj.GetBuiltInQuery(101))
+
+  def testUsersInvolvedInComment(self):
+    comment = tracker_pb2.IssueComment()
+    self.assertEqual({0}, tracker_bizobj.UsersInvolvedInComment(comment))
+
+    comment.user_id = 111L
+    self.assertEqual(
+        {111L}, tracker_bizobj.UsersInvolvedInComment(comment))
+
+    amendment = tracker_pb2.Amendment(newvalue='foo')
+    comment.amendments.append(amendment)
+    self.assertEqual(
+        {111L}, tracker_bizobj.UsersInvolvedInComment(comment))
+
+    amendment.added_user_ids.append(222L)
+    amendment.removed_user_ids.append(333L)
+    self.assertEqual({111L, 222L, 333L},
+                     tracker_bizobj.UsersInvolvedInComment(comment))
+
+  def testUsersInvolvedInCommentList(self):
+    self.assertEqual(set(), tracker_bizobj.UsersInvolvedInCommentList([]))
+
+    c1 = tracker_pb2.IssueComment()
+    c1.user_id = 111L
+    c1.amendments.append(tracker_pb2.Amendment(newvalue='foo'))
+
+    c2 = tracker_pb2.IssueComment()
+    c2.user_id = 111L
+    c2.amendments.append(tracker_pb2.Amendment(
+        added_user_ids=[222L], removed_user_ids=[333L]))
+
+    self.assertEqual({111L},
+                     tracker_bizobj.UsersInvolvedInCommentList([c1]))
+
+    self.assertEqual({111L, 222L, 333L},
+                     tracker_bizobj.UsersInvolvedInCommentList([c2]))
+
+    self.assertEqual({111L, 222L, 333L},
+                     tracker_bizobj.UsersInvolvedInCommentList([c1, c2]))
+
+  def testUsersInvolvedInIssues(self):
+    pass  # TODO(jrobbins): Write this test.
+
+  def testMakeFieldAmendment(self):
+    pass  # TODO(jrobbins): Write this test.
+
+  def testMakeFieldClearedAmendment(self):
+    pass  # TODO(jrobbins): Write this test.
+
+  def testMakeComponentsAmendment(self):
+    pass  # TODO(jrobbins): Write this test.
+
+  def testMakeProjectAmendment(self):
+    pass  # TODO(jrobbins): Write this test.
+
+  def testGetAmendmentFieldName(self):
+    pass  # TODO(jrobbins): Write this test.
+
+  def testMakeDanglingIssueRef(self):
+    pass  # TODO(jrobbins): Write this test.
+
+  def testMergeFields(self):
+    pass  # TODO(jrobbins): Write this test.
 
   def testSplitBlockedOnRanks(self):
     issue = tracker_pb2.Issue()
