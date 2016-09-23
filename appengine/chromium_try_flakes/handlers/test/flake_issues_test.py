@@ -12,6 +12,7 @@ from google.appengine.ext import ndb
 
 import main  # Fiddles sys.path so must come first.
 
+from apiclient.errors import HttpError
 import gae_ts_mon
 from handlers.flake_issues import ProcessIssue, CreateFlakyRun
 from model.flake import Flake, FlakyRun, FlakeOccurrence
@@ -146,6 +147,8 @@ class MockIssueTrackerAPI(object):
     return issue
 
   def getIssue(self, issue_id):
+    if issue_id not in self.issues:
+      raise HttpError(mock.Mock(status=404), '')
     return self.issues[issue_id]
 
   def getComments(self, issue_id):
@@ -1030,7 +1033,12 @@ class TestOverrideIssueID(testing.AppengineTestCase):
     self.test_app.get('/override_issue_id?issue_id=-5', status=400)
 
   def test_checks_issue_is_on_crbug(self):
-    self.test_app.get('/override_issue_id?issue_id=200', status=400)
+    self.test_app.get('/override_issue_id?issue_id=200', status=404)
+
+  def test_returns_500_on_non_404_error_from_monorail(self):
+    self.mock_api.getIssue = mock.Mock(
+        side_effect=HttpError(mock.Mock(status=500), ''))
+    self.test_app.get('/override_issue_id?issue_id=200', status=500)
 
   def test_overrides_issue_id(self):
     issue = self.mock_api.create(MockIssue({}))

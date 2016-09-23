@@ -16,6 +16,7 @@ from google.appengine.api import urlfetch
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
+from apiclient.errors import HttpError
 import gae_ts_mon
 from issue_tracker import issue_tracker_api, issue
 from model.flake import (
@@ -688,7 +689,7 @@ class OverrideIssueId(webapp2.RequestHandler):
 
     try:
       issue_id = int(self.request.get('issue_id'))
-    except Exception as e:
+    except (TypeError, ValueError) as e:
       self.response.set_status(400)
       self.response.write('Failed to parse Issue ID as an integer.')
       return
@@ -699,11 +700,13 @@ class OverrideIssueId(webapp2.RequestHandler):
       return
 
     if issue_id != 0:
+      api = issue_tracker_api.IssueTrackerAPI('chromium')
       try:
-        api = issue_tracker_api.IssueTrackerAPI('chromium', True)
         api.getIssue(issue_id)
-      except Exception as e:
-        self.response.set_status(400)
+      except HttpError as e:
+        if e.resp.status != 404:
+          raise
+        self.response.set_status(404)
         self.response.write(
             'Failed to find issue %d on issue tracker: %s.' % (issue_id, e))
         return
