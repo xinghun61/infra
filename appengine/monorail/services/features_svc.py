@@ -593,7 +593,15 @@ class FeaturesService(object):
         cnxn, hotlist_id_dict.get(user_id, []), use_cache=use_cache)
     return hotlists
 
+  def GetHotlist(self, cnxn, hotlist_id, use_cache=True):
+    hotlist_dict = self.GetHotlists(cnxn, [hotlist_id], use_cache=use_cache)
+    return hotlist_dict[0]
 
 class HotlistAlreadyExists(Exception):
   """Tried to create a hotlist with the same name as another hotlist
   with the same owner."""
+  pass
+
+class NoSuchHotlistException(Exception):
+  """The requested hotlist was not found."""
+  pass

@@ -13,6 +13,7 @@ import settings
 
 from features import autolink
 from features import hotlistcreate
+from features import hotlistissues
 from features import cues
 from features import filterrules
 from features import userhotlists
@@ -27,6 +28,7 @@ from framework import banned
 from framework import clientmon
 from framework import csp_report
 from framework import excessiveactivity
+from framework import framework_bizobj
 from framework import reap
 from framework import registerpages_helpers
 from framework import tokenrefresh
@@ -90,6 +92,9 @@ class ServletRegistry(object):
 
   _PROJECT_NAME_REGEX = r'[a-z0-9][-a-z0-9]*[a-z0-9]'
   _USERNAME_REGEX = r'[-+\w=.%]+(@([a-z0-9]+\.)*[a-z0-9]+)?'
+  _HOTLIST_ID_REGEX = r'\d+'
+  # TODO(jojwang): use this for friendly url support
+  # framework_bizobj.RE_HOTLIST_NAME_PATTERN
 
   def __init__(self):
     self.routes = []
@@ -136,6 +141,14 @@ class ServletRegistry(object):
     """Register each of the given servlets in the user group URI space."""
     self._SetupServlets(
         spec_dict, base='/g/<viewed_username:%s>' % self._USERNAME_REGEX,
+        post_does_write=post_does_write)
+
+  def _SetupUserHotlistServlets(self, spec_dict, post_does_write=True):
+    """ Register given user hotlist servlets in the user URI space."""
+    self._SetupServlets(
+        spec_dict,
+        base ='/u/<viewed_username:%s>/hotlists/<hotlist_id:%s>'
+        % (self._USERNAME_REGEX, self._HOTLIST_ID_REGEX),
         post_does_write=post_does_write)
 
   def Register(self, services):
@@ -303,6 +316,10 @@ class ServletRegistry(object):
         urls.USER_UPDATES_MINE: userupdates.UserUpdatesIndividual,
         })
 
+    self._SetupUserHotlistServlets({
+      urls.HOTLIST_ISSUES: hotlistissues.HotlistIssues
+        })
+
     profile_redir = registerpages_helpers.MakeRedirectInScope(
         urls.USER_PROFILE, 'u')
     self._SetupUserServlets({'': profile_redir})
@@ -350,4 +367,3 @@ class ServletRegistry(object):
     self._AddRoute(
         '/p/<project_name:%s>/<unrecognized:.+>' % self._PROJECT_NAME_REGEX,
         custom_404.ErrorPage, 'GET')
-

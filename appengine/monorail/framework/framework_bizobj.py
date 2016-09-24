@@ -158,7 +158,7 @@ def MergeLabels(labels_list, labels_add, labels_remove, excl_prefixes):
 
 # Pattern to match a valid hotlist name.
 _RE_HOTLIST_NAME_PATTERN = r"[a-zA-Z][-0-9a-zA-Z]*"
-
+#TODO(jojwang): delete first underscore to make available to other files
 
 # Compiled regexp to match the hotlist name and nothing more before or after.
 RE_HOTLIST_NAME = re.compile(

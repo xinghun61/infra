@@ -360,29 +360,40 @@ class CalcDefaultQueryTest(unittest.TestCase):
 
 class TestMonorailRequestFunctions(unittest.TestCase):
 
-  def testExtractPathIdenifiers_ProjectOnly(self):
-    username, project_name = monorailrequest._ParsePathIdentifiers(
+  def testExtractPathIdentifiers_ProjectOnly(self):
+    username, project_name, hotlist_id = monorailrequest._ParsePathIdentifiers(
         '/p/proj/issues/list?q=foo+OR+bar&ts=1234')
     self.assertIsNone(username)
+    self.assertIsNone(hotlist_id)
     self.assertEquals('proj', project_name)
 
-  def testExtractPathIdenifiers_ViewedUserOnly(self):
-    username, project_name = monorailrequest._ParsePathIdentifiers(
+  def testExtractPathIdentifiers_ViewedUserOnly(self):
+    username, project_name, hotlist_id = monorailrequest._ParsePathIdentifiers(
         '/u/jrobbins@example.com/')
     self.assertEquals('jrobbins@example.com', username)
     self.assertIsNone(project_name)
+    self.assertIsNone(hotlist_id)
 
-  def testExtractPathIdenifiers_ViewedUserURLSpace(self):
-    username, project_name = monorailrequest._ParsePathIdentifiers(
+  def testExtractPathIdentifiers_ViewedUserURLSpace(self):
+    username, project_name, hotlist_id = monorailrequest._ParsePathIdentifiers(
         '/u/jrobbins@example.com/updates')
     self.assertEquals('jrobbins@example.com', username)
     self.assertIsNone(project_name)
+    self.assertIsNone(hotlist_id)
 
-  def testExtractPathIdenifiers_ViewedGroupURLSpace(self):
-    username, project_name = monorailrequest._ParsePathIdentifiers(
+  def testExtractPathIdentifiers_ViewedGroupURLSpace(self):
+    username, project_name, hotlist_id = monorailrequest._ParsePathIdentifiers(
         '/g/user-group@example.com/updates')
     self.assertEquals('user-group@example.com', username)
     self.assertIsNone(project_name)
+    self.assertIsNone(hotlist_id)
+
+  def testExtractPathIdentifiers_HotlistIssuesURLSpace(self):
+    username, project_name, hotlist_id = monorailrequest._ParsePathIdentifiers(
+        '/u/jrobbins@example.com/hotlists/13124?q=stuff&ts=more')
+    self.assertIsNone(project_name)
+    self.assertEquals('jrobbins@example.com', username)
+    self.assertEquals(13124, hotlist_id)
 
   def testParseColSpec(self):
     parse = monorailrequest.ParseColSpec

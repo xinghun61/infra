@@ -88,6 +88,7 @@ class Servlet(webapp2.RequestHandler):
   MAIN_TAB_PROCESS = 't4'
   MAIN_TAB_UPDATES = 't5'
   MAIN_TAB_ADMIN = 't6'
+  MAIN_TAB_DETAILS = 't7'
   PROCESS_TAB_SUMMARY = 'st1'
   PROCESS_TAB_STATUSES = 'st3'
   PROCESS_TAB_LABELS = 'st4'

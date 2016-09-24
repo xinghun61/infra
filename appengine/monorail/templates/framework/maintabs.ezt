@@ -34,6 +34,8 @@
       </th>
     [end]
 
+    [# TODO(jojwang): add if-any hotlistname]
+
     [if-any viewed_user]
       <th class="padded">
         User: [viewed_user.display_name]

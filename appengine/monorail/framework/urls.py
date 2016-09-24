@@ -70,6 +70,11 @@ SAVED_QUERIES = '/queries'
 DASHBOARD = '/dashboard'
 HOTLISTS = '/hotlists'
 
+# URLS of User hotlist pages
+HOTLIST_ISSUES = ''
+HOTLIST_PEOPLE = '/people'
+HOTLIST_DETAIL = '/details'
+
 # URLs of issue tracker project pages
 ISSUE_LIST = '/issues/list'
 ISSUE_DETAIL = '/issues/detail'

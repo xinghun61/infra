@@ -35,7 +35,6 @@ class HotlistView(template_helpers.PBProxy):
     self.role_name = ''
     if viewed_user_id in hotlist_pb.owner_ids:
       self.role_name = 'owner'
-      self.url = str(hotlist_pb.hotlist_id)
     elif viewed_user_id in hotlist_pb.editor_ids:
       self.role_name = 'editor'
 

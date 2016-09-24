@@ -175,7 +175,8 @@ class MonorailApiRequest(object):
       'q': '',
       'sort': '',
       'groupby': '',
-      'projects': []}
+      'projects': [],
+      'hotlists':[]}
     self.use_cached_searches = True
     self.warnings = []
     self.errors = template_helpers.EZTError()
@@ -318,6 +319,8 @@ class MonorailRequest(object):
     self.viewed_username = None
     self.viewed_user_auth = AuthData()
 
+    self.hotlist_id = None
+
   @property
   def project_id(self):
     return self.project.project_id if self.project else None
@@ -349,8 +352,8 @@ class MonorailRequest(object):
       logging.info('Request: %s', self.current_page_url)
 
     with prof.Phase('path parsing'):
-      viewed_user_val, self.project_name = _ParsePathIdentifiers(
-          self.request.path)
+      (viewed_user_val, self.project_name,
+       self.hotlist_id) =_ParsePathIdentifiers(self.request.path)
       self.viewed_username = _GetViewedEmail(
           viewed_user_val, self.cnxn, services)
     with prof.Phase('qs parsing'):
@@ -658,6 +661,7 @@ def _ParsePathIdentifiers(path):
   """
   viewed_user_val = None
   project_name = None
+  hotlist_id = None
 
   # Strip off any query params
   split_path = path.lstrip('/').split('?')[0].split('/')
@@ -667,10 +671,16 @@ def _ParsePathIdentifiers(path):
       project_name = split_path[1]
     if split_path[0] == 'u':
       viewed_user_val = urllib.unquote(split_path[1])
+      if len(split_path) >= 4:
+        #TODO(jojwang): when friendly url, check if hotlist name or id
+        try:
+          hotlist_id = int(urllib.unquote(split_path[3]))
+        except ValueError:
+          raise InputException('Could not parse hotlist id')
     if split_path[0] == 'g':
       viewed_user_val = urllib.unquote(split_path[1])
 
-  return viewed_user_val, project_name
+  return viewed_user_val, project_name, hotlist_id
 
 
 def _GetViewedEmail(viewed_user_val, cnxn, services):

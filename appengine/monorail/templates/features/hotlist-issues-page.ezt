@@ -1,0 +1,7 @@
+[define title]Hotlist[hotlist.name][end]
+[define category_css]css/ph_list.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+<h1>This will be the hotlist-issues page, where the issues of the hotlist [hotlist.name] are listed</h1>
+
+[include "../framework/master-footer.ezt"]
