@@ -135,6 +135,217 @@ class HelpersTest(unittest.TestCase):
     self.assertEqual({}, parsed.fields.vals_remove)
     self.assertEqual([], parsed.fields.fields_clear)
 
+  def testClassifyPlusMinusItems(self):
+    add, remove = tracker_helpers._ClassifyPlusMinusItems([])
+    self.assertEquals([], add)
+    self.assertEquals([], remove)
+
+    add, remove = tracker_helpers._ClassifyPlusMinusItems(
+        ['', ' ', '  \t', '-'])
+    self.assertItemsEqual([], add)
+    self.assertItemsEqual([], remove)
+
+    add, remove = tracker_helpers._ClassifyPlusMinusItems(
+        ['a', 'b', 'c'])
+    self.assertItemsEqual(['a', 'b', 'c'], add)
+    self.assertItemsEqual([], remove)
+
+    add, remove = tracker_helpers._ClassifyPlusMinusItems(
+        ['a-a-a', 'b-b', 'c-'])
+    self.assertItemsEqual(['a-a-a', 'b-b', 'c-'], add)
+    self.assertItemsEqual([], remove)
+
+    add, remove = tracker_helpers._ClassifyPlusMinusItems(
+        ['-a'])
+    self.assertItemsEqual([], add)
+    self.assertItemsEqual(['a'], remove)
+
+    add, remove = tracker_helpers._ClassifyPlusMinusItems(
+        ['-a', 'b', 'c-c'])
+    self.assertItemsEqual(['b', 'c-c'], add)
+    self.assertItemsEqual(['a'], remove)
+
+    add, remove = tracker_helpers._ClassifyPlusMinusItems(
+        ['-a', '-b-b', '-c-'])
+    self.assertItemsEqual([], add)
+    self.assertItemsEqual(['a', 'b-b', 'c-'], remove)
+
+    # We dedup, but we don't cancel out items that are both added and removed.
+    add, remove = tracker_helpers._ClassifyPlusMinusItems(
+        ['a', 'a', '-a'])
+    self.assertItemsEqual(['a'], add)
+    self.assertItemsEqual(['a'], remove)
+
+  def testParseIssueRequestFields(self):
+    pass  # TODO(jrobbins): Write this test.
+
+  def testParseIssueRequestAttachments(self):
+    file1 = testing_helpers.Blank(
+        filename='hello.c',
+        value='hello world')
+
+    file2 = testing_helpers.Blank(
+        filename='README',
+        value='Welcome to our project')
+
+    file3 = testing_helpers.Blank(
+        filename='c:\\dir\\subdir\\FILENAME.EXT',
+        value='Abort, Retry, or Fail?')
+
+    # Browsers send this if FILE field was not filled in.
+    file4 = testing_helpers.Blank(
+        filename='',
+        value='')
+
+    attachments = tracker_helpers._ParseIssueRequestAttachments({})
+    self.assertEquals([], attachments)
+
+    attachments = tracker_helpers._ParseIssueRequestAttachments(fake.PostData({
+        'file1': [file1],
+        }))
+    self.assertEquals(
+        [('hello.c', 'hello world', 'text/plain')],
+        attachments)
+
+    attachments = tracker_helpers._ParseIssueRequestAttachments(fake.PostData({
+        'file1': [file1],
+        'file2': [file2],
+        }))
+    self.assertEquals(
+        [('hello.c', 'hello world', 'text/plain'),
+         ('README', 'Welcome to our project', 'text/plain')],
+        attachments)
+
+    attachments = tracker_helpers._ParseIssueRequestAttachments(fake.PostData({
+        'file3': [file3],
+        }))
+    self.assertEquals(
+        [('FILENAME.EXT', 'Abort, Retry, or Fail?',
+          'application/octet-stream')],
+        attachments)
+
+    attachments = tracker_helpers._ParseIssueRequestAttachments(fake.PostData({
+        'file1': [file4],  # Does not appear in result
+        'file3': [file3],
+        'file4': [file4],  # Does not appear in result
+        }))
+    self.assertEquals(
+        [('FILENAME.EXT', 'Abort, Retry, or Fail?',
+          'application/octet-stream')],
+        attachments)
+
+  def testParseIssueRequestKeptAttachments(self):
+    pass  # TODO(jrobbins): Write this test.
+
+  def testParseIssueRequestUsers(self):
+    post_data = {}
+    parsed_users = tracker_helpers._ParseIssueRequestUsers(
+        'fake connection', post_data, self.services)
+    self.assertEquals('', parsed_users.owner_username)
+    self.assertEquals(
+        framework_constants.NO_USER_SPECIFIED, parsed_users.owner_id)
+    self.assertEquals([], parsed_users.cc_usernames)
+    self.assertEquals([], parsed_users.cc_usernames_remove)
+    self.assertEquals([], parsed_users.cc_ids)
+    self.assertEquals([], parsed_users.cc_ids_remove)
+
+    post_data = fake.PostData({
+        'owner': [''],
+        })
+    parsed_users = tracker_helpers._ParseIssueRequestUsers(
+        'fake connection', post_data, self.services)
+    self.assertEquals('', parsed_users.owner_username)
+    self.assertEquals(
+        framework_constants.NO_USER_SPECIFIED, parsed_users.owner_id)
+    self.assertEquals([], parsed_users.cc_usernames)
+    self.assertEquals([], parsed_users.cc_usernames_remove)
+    self.assertEquals([], parsed_users.cc_ids)
+    self.assertEquals([], parsed_users.cc_ids_remove)
+
+    post_data = fake.PostData({
+        'owner': [' \t'],
+        })
+    parsed_users = tracker_helpers._ParseIssueRequestUsers(
+        'fake connection', post_data, self.services)
+    self.assertEquals('', parsed_users.owner_username)
+    self.assertEquals(
+        framework_constants.NO_USER_SPECIFIED, parsed_users.owner_id)
+    self.assertEquals([], parsed_users.cc_usernames)
+    self.assertEquals([], parsed_users.cc_usernames_remove)
+    self.assertEquals([], parsed_users.cc_ids)
+    self.assertEquals([], parsed_users.cc_ids_remove)
+
+    post_data = fake.PostData({
+        'owner': ['b@example.com'],
+        })
+    parsed_users = tracker_helpers._ParseIssueRequestUsers(
+        'fake connection', post_data, self.services)
+    self.assertEquals('b@example.com', parsed_users.owner_username)
+    self.assertEquals(TEST_ID_MAP['b@example.com'], parsed_users.owner_id)
+    self.assertEquals([], parsed_users.cc_usernames)
+    self.assertEquals([], parsed_users.cc_usernames_remove)
+    self.assertEquals([], parsed_users.cc_ids)
+    self.assertEquals([], parsed_users.cc_ids_remove)
+
+    post_data = fake.PostData({
+        'owner': ['b@example.com'],
+        })
+    parsed_users = tracker_helpers._ParseIssueRequestUsers(
+        'fake connection', post_data, self.services)
+    self.assertEquals('b@example.com', parsed_users.owner_username)
+    self.assertEquals(TEST_ID_MAP['b@example.com'], parsed_users.owner_id)
+    self.assertEquals([], parsed_users.cc_usernames)
+    self.assertEquals([], parsed_users.cc_usernames_remove)
+    self.assertEquals([], parsed_users.cc_ids)
+    self.assertEquals([], parsed_users.cc_ids_remove)
+
+    post_data = fake.PostData({
+        'cc': ['b@example.com'],
+        })
+    parsed_users = tracker_helpers._ParseIssueRequestUsers(
+        'fake connection', post_data, self.services)
+    self.assertEquals('', parsed_users.owner_username)
+    self.assertEquals(
+        framework_constants.NO_USER_SPECIFIED, parsed_users.owner_id)
+    self.assertEquals(['b@example.com'], parsed_users.cc_usernames)
+    self.assertEquals([], parsed_users.cc_usernames_remove)
+    self.assertEquals([TEST_ID_MAP['b@example.com']], parsed_users.cc_ids)
+    self.assertEquals([], parsed_users.cc_ids_remove)
+
+    post_data = fake.PostData({
+        'cc': ['-b@example.com, c@example.com,,'
+               'a@example.com,'],
+        })
+    parsed_users = tracker_helpers._ParseIssueRequestUsers(
+        'fake connection', post_data, self.services)
+    self.assertEquals('', parsed_users.owner_username)
+    self.assertEquals(
+        framework_constants.NO_USER_SPECIFIED, parsed_users.owner_id)
+    self.assertItemsEqual(['c@example.com', 'a@example.com'],
+                          parsed_users.cc_usernames)
+    self.assertEquals(['b@example.com'], parsed_users.cc_usernames_remove)
+    self.assertItemsEqual([TEST_ID_MAP['c@example.com'],
+                           TEST_ID_MAP['a@example.com']],
+                          parsed_users.cc_ids)
+    self.assertEquals([TEST_ID_MAP['b@example.com']],
+                      parsed_users.cc_ids_remove)
+
+    post_data = fake.PostData({
+        'owner': ['fuhqwhgads@example.com'],
+        'cc': ['c@example.com, fuhqwhgads@example.com'],
+        })
+    parsed_users = tracker_helpers._ParseIssueRequestUsers(
+        'fake connection', post_data, self.services)
+    self.assertEquals('fuhqwhgads@example.com', parsed_users.owner_username)
+    gen_uid = framework_helpers.MurmurHash3_x86_32(parsed_users.owner_username)
+    self.assertEquals(gen_uid, parsed_users.owner_id)  # autocreated user
+    self.assertItemsEqual(
+        ['c@example.com', 'fuhqwhgads@example.com'], parsed_users.cc_usernames)
+    self.assertEquals([], parsed_users.cc_usernames_remove)
+    self.assertItemsEqual(
+       [TEST_ID_MAP['c@example.com'], gen_uid], parsed_users.cc_ids)
+    self.assertEquals([], parsed_users.cc_ids_remove)
+
   def testParseBlockers_BlockedOnNothing(self):
     """Was blocked on nothing, still nothing."""
     post_data = {tracker_helpers.BLOCKED_ON: ''}
@@ -258,234 +469,6 @@ class HelpersTest(unittest.TestCase):
     self.assertEqual([('otherproj', 2)], parsed_blockers.dangling_refs)
     settings.recognized_codesite_projects = real_codesite_projects
 
-  def testMeansOpenInProject(self):
-    config = _MakeConfig()
-
-    # ensure open means open
-    self.assertTrue(tracker_helpers.MeansOpenInProject('New', config))
-    self.assertTrue(tracker_helpers.MeansOpenInProject('new', config))
-
-    # ensure an unrecognized status means open
-    self.assertTrue(tracker_helpers.MeansOpenInProject(
-        '_undefined_status_', config))
-
-    # ensure closed means closed
-    self.assertFalse(tracker_helpers.MeansOpenInProject('Old', config))
-    self.assertFalse(tracker_helpers.MeansOpenInProject('old', config))
-    self.assertFalse(tracker_helpers.MeansOpenInProject(
-        'StatusThatWeDontUseAnymore', config))
-
-  def testIsNoisy(self):
-    self.assertTrue(tracker_helpers.IsNoisy(778, 320))
-    self.assertFalse(tracker_helpers.IsNoisy(20, 500))
-    self.assertFalse(tracker_helpers.IsNoisy(500, 20))
-    self.assertFalse(tracker_helpers.IsNoisy(1, 1))
-
-  def testClassifyPlusMinusItems(self):
-    add, remove = tracker_helpers._ClassifyPlusMinusItems([])
-    self.assertEquals([], add)
-    self.assertEquals([], remove)
-
-    add, remove = tracker_helpers._ClassifyPlusMinusItems(
-        ['', ' ', '  \t', '-'])
-    self.assertItemsEqual([], add)
-    self.assertItemsEqual([], remove)
-
-    add, remove = tracker_helpers._ClassifyPlusMinusItems(
-        ['a', 'b', 'c'])
-    self.assertItemsEqual(['a', 'b', 'c'], add)
-    self.assertItemsEqual([], remove)
-
-    add, remove = tracker_helpers._ClassifyPlusMinusItems(
-        ['a-a-a', 'b-b', 'c-'])
-    self.assertItemsEqual(['a-a-a', 'b-b', 'c-'], add)
-    self.assertItemsEqual([], remove)
-
-    add, remove = tracker_helpers._ClassifyPlusMinusItems(
-        ['-a'])
-    self.assertItemsEqual([], add)
-    self.assertItemsEqual(['a'], remove)
-
-    add, remove = tracker_helpers._ClassifyPlusMinusItems(
-        ['-a', 'b', 'c-c'])
-    self.assertItemsEqual(['b', 'c-c'], add)
-    self.assertItemsEqual(['a'], remove)
-
-    add, remove = tracker_helpers._ClassifyPlusMinusItems(
-        ['-a', '-b-b', '-c-'])
-    self.assertItemsEqual([], add)
-    self.assertItemsEqual(['a', 'b-b', 'c-'], remove)
-
-    # We dedup, but we don't cancel out items that are both added and removed.
-    add, remove = tracker_helpers._ClassifyPlusMinusItems(
-        ['a', 'a', '-a'])
-    self.assertItemsEqual(['a'], add)
-    self.assertItemsEqual(['a'], remove)
-
-  def testParseIssueRequestAttachments(self):
-    file1 = testing_helpers.Blank(
-        filename='hello.c',
-        value='hello world')
-
-    file2 = testing_helpers.Blank(
-        filename='README',
-        value='Welcome to our project')
-
-    file3 = testing_helpers.Blank(
-        filename='c:\\dir\\subdir\\FILENAME.EXT',
-        value='Abort, Retry, or Fail?')
-
-    # Browsers send this if FILE field was not filled in.
-    file4 = testing_helpers.Blank(
-        filename='',
-        value='')
-
-    attachments = tracker_helpers._ParseIssueRequestAttachments({})
-    self.assertEquals([], attachments)
-
-    attachments = tracker_helpers._ParseIssueRequestAttachments(fake.PostData({
-        'file1': [file1],
-        }))
-    self.assertEquals(
-        [('hello.c', 'hello world', 'text/plain')],
-        attachments)
-
-    attachments = tracker_helpers._ParseIssueRequestAttachments(fake.PostData({
-        'file1': [file1],
-        'file2': [file2],
-        }))
-    self.assertEquals(
-        [('hello.c', 'hello world', 'text/plain'),
-         ('README', 'Welcome to our project', 'text/plain')],
-        attachments)
-
-    attachments = tracker_helpers._ParseIssueRequestAttachments(fake.PostData({
-        'file3': [file3],
-        }))
-    self.assertEquals(
-        [('FILENAME.EXT', 'Abort, Retry, or Fail?',
-          'application/octet-stream')],
-        attachments)
-
-    attachments = tracker_helpers._ParseIssueRequestAttachments(fake.PostData({
-        'file1': [file4],  # Does not appear in result
-        'file3': [file3],
-        'file4': [file4],  # Does not appear in result
-        }))
-    self.assertEquals(
-        [('FILENAME.EXT', 'Abort, Retry, or Fail?',
-          'application/octet-stream')],
-        attachments)
-
-  def testParseIssueRequestUsers(self):
-    post_data = {}
-    parsed_users = tracker_helpers._ParseIssueRequestUsers(
-        'fake connection', post_data, self.services)
-    self.assertEquals('', parsed_users.owner_username)
-    self.assertEquals(
-        framework_constants.NO_USER_SPECIFIED, parsed_users.owner_id)
-    self.assertEquals([], parsed_users.cc_usernames)
-    self.assertEquals([], parsed_users.cc_usernames_remove)
-    self.assertEquals([], parsed_users.cc_ids)
-    self.assertEquals([], parsed_users.cc_ids_remove)
-
-    post_data = fake.PostData({
-        'owner': [''],
-        })
-    parsed_users = tracker_helpers._ParseIssueRequestUsers(
-        'fake connection', post_data, self.services)
-    self.assertEquals('', parsed_users.owner_username)
-    self.assertEquals(
-        framework_constants.NO_USER_SPECIFIED, parsed_users.owner_id)
-    self.assertEquals([], parsed_users.cc_usernames)
-    self.assertEquals([], parsed_users.cc_usernames_remove)
-    self.assertEquals([], parsed_users.cc_ids)
-    self.assertEquals([], parsed_users.cc_ids_remove)
-
-    post_data = fake.PostData({
-        'owner': [' \t'],
-        })
-    parsed_users = tracker_helpers._ParseIssueRequestUsers(
-        'fake connection', post_data, self.services)
-    self.assertEquals('', parsed_users.owner_username)
-    self.assertEquals(
-        framework_constants.NO_USER_SPECIFIED, parsed_users.owner_id)
-    self.assertEquals([], parsed_users.cc_usernames)
-    self.assertEquals([], parsed_users.cc_usernames_remove)
-    self.assertEquals([], parsed_users.cc_ids)
-    self.assertEquals([], parsed_users.cc_ids_remove)
-
-    post_data = fake.PostData({
-        'owner': ['b@example.com'],
-        })
-    parsed_users = tracker_helpers._ParseIssueRequestUsers(
-        'fake connection', post_data, self.services)
-    self.assertEquals('b@example.com', parsed_users.owner_username)
-    self.assertEquals(TEST_ID_MAP['b@example.com'], parsed_users.owner_id)
-    self.assertEquals([], parsed_users.cc_usernames)
-    self.assertEquals([], parsed_users.cc_usernames_remove)
-    self.assertEquals([], parsed_users.cc_ids)
-    self.assertEquals([], parsed_users.cc_ids_remove)
-
-    post_data = fake.PostData({
-        'owner': ['b@example.com'],
-        })
-    parsed_users = tracker_helpers._ParseIssueRequestUsers(
-        'fake connection', post_data, self.services)
-    self.assertEquals('b@example.com', parsed_users.owner_username)
-    self.assertEquals(TEST_ID_MAP['b@example.com'], parsed_users.owner_id)
-    self.assertEquals([], parsed_users.cc_usernames)
-    self.assertEquals([], parsed_users.cc_usernames_remove)
-    self.assertEquals([], parsed_users.cc_ids)
-    self.assertEquals([], parsed_users.cc_ids_remove)
-
-    post_data = fake.PostData({
-        'cc': ['b@example.com'],
-        })
-    parsed_users = tracker_helpers._ParseIssueRequestUsers(
-        'fake connection', post_data, self.services)
-    self.assertEquals('', parsed_users.owner_username)
-    self.assertEquals(
-        framework_constants.NO_USER_SPECIFIED, parsed_users.owner_id)
-    self.assertEquals(['b@example.com'], parsed_users.cc_usernames)
-    self.assertEquals([], parsed_users.cc_usernames_remove)
-    self.assertEquals([TEST_ID_MAP['b@example.com']], parsed_users.cc_ids)
-    self.assertEquals([], parsed_users.cc_ids_remove)
-
-    post_data = fake.PostData({
-        'cc': ['-b@example.com, c@example.com,,'
-               'a@example.com,'],
-        })
-    parsed_users = tracker_helpers._ParseIssueRequestUsers(
-        'fake connection', post_data, self.services)
-    self.assertEquals('', parsed_users.owner_username)
-    self.assertEquals(
-        framework_constants.NO_USER_SPECIFIED, parsed_users.owner_id)
-    self.assertItemsEqual(['c@example.com', 'a@example.com'],
-                          parsed_users.cc_usernames)
-    self.assertEquals(['b@example.com'], parsed_users.cc_usernames_remove)
-    self.assertItemsEqual([TEST_ID_MAP['c@example.com'],
-                           TEST_ID_MAP['a@example.com']],
-                          parsed_users.cc_ids)
-    self.assertEquals([TEST_ID_MAP['b@example.com']],
-                      parsed_users.cc_ids_remove)
-
-    post_data = fake.PostData({
-        'owner': ['fuhqwhgads@example.com'],
-        'cc': ['c@example.com, fuhqwhgads@example.com'],
-        })
-    parsed_users = tracker_helpers._ParseIssueRequestUsers(
-        'fake connection', post_data, self.services)
-    self.assertEquals('fuhqwhgads@example.com', parsed_users.owner_username)
-    gen_uid = framework_helpers.MurmurHash3_x86_32(parsed_users.owner_username)
-    self.assertEquals(gen_uid, parsed_users.owner_id)  # autocreated user
-    self.assertItemsEqual(
-        ['c@example.com', 'fuhqwhgads@example.com'], parsed_users.cc_usernames)
-    self.assertEquals([], parsed_users.cc_usernames_remove)
-    self.assertItemsEqual(
-       [TEST_ID_MAP['c@example.com'], gen_uid], parsed_users.cc_ids)
-    self.assertEquals([], parsed_users.cc_ids_remove)
-
   def testIsValidIssueOwner(self):
     project = project_pb2.Project()
     project.owner_ids.extend([1L, 2L])
@@ -523,6 +506,9 @@ class HelpersTest(unittest.TestCase):
         'fake cnxn', project, 999L,
         self.services)
     self.assertFalse(valid)
+
+  def testGetAllowedOpenedAndClosedIssues(self):
+    pass  # TOOD(jrobbins): Write this test.
 
   def testGetAllowedOpenAndClosedRelatedIssues(self):
     gaoacri = tracker_helpers.GetAllowedOpenAndClosedRelatedIssues
@@ -580,6 +566,121 @@ class HelpersTest(unittest.TestCase):
     self.assertEqual({100003: closed[100003],
                       100004: closed[100004]}, closed_dict)
 
+  # MakeViewsForUsersInIssuesTest is tested in MakeViewsForUsersInIssuesTest.
+
+  def testFormatIssueListURL_NoCurrentState(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    path = '/p/proj/issues/detail?id=123'
+    mr = testing_helpers.MakeMonorailRequest(
+        path=path, headers={'Host': 'code.google.com'})
+    mr.ComputeColSpec(config)
+
+    absolute_base_url = 'http://code.google.com'
+
+    url_1 = tracker_helpers.FormatIssueListURL(mr, config)
+    self.assertEquals(
+        '%s/p/proj/issues/list?%s&q=' % (
+            absolute_base_url, self.default_colspec_param),
+        url_1)
+
+    url_2 = tracker_helpers.FormatIssueListURL(
+        mr, config, foo=123)
+    self.assertEquals(
+        '%s/p/proj/issues/list?%s&foo=123&q=' % (
+            absolute_base_url, self.default_colspec_param),
+        url_2)
+
+    url_3 = tracker_helpers.FormatIssueListURL(
+        mr, config, foo=123, bar='abc')
+    self.assertEquals(
+        '%s/p/proj/issues/list?bar=abc&%s&foo=123&q=' % (
+            absolute_base_url, self.default_colspec_param),
+        url_3)
+
+    url_4 = tracker_helpers.FormatIssueListURL(
+        mr, config, baz='escaped+encoded&and100% "safe"')
+    self.assertEquals(
+        '%s/p/proj/issues/list?'
+        'baz=escaped%%2Bencoded%%26and100%%25%%20%%22safe%%22&%s&q=' % (
+            absolute_base_url, self.default_colspec_param),
+        url_4)
+
+  def testFormatIssueListURL_KeepCurrentState(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    path = '/p/proj/issues/detail?id=123&sort=aa&colspec=a b c&groupby=d'
+    mr = testing_helpers.MakeMonorailRequest(
+        path=path, headers={'Host': 'localhost:8080'})
+    mr.ComputeColSpec(config)
+
+    absolute_base_url = 'http://localhost:8080'
+
+    url_1 = tracker_helpers.FormatIssueListURL(mr, config)
+    self.assertEquals(
+        '%s/p/proj/issues/list?colspec=a%%20b%%20c'
+        '&groupby=d&q=&sort=aa' % absolute_base_url,
+        url_1)
+
+    url_2 = tracker_helpers.FormatIssueListURL(
+        mr, config, foo=123)
+    self.assertEquals(
+        '%s/p/proj/issues/list?'
+        'colspec=a%%20b%%20c&foo=123&groupby=d&q=&sort=aa' % absolute_base_url,
+        url_2)
+
+    url_3 = tracker_helpers.FormatIssueListURL(
+        mr, config, colspec='X Y Z')
+    self.assertEquals(
+        '%s/p/proj/issues/list?colspec=a%%20b%%20c'
+        '&groupby=d&q=&sort=aa' % absolute_base_url,
+        url_3)
+
+  def testFormatRelativeIssueURL(self):
+    self.assertEquals(
+        '/p/proj/issues/attachment',
+        tracker_helpers.FormatRelativeIssueURL(
+            'proj', urls.ISSUE_ATTACHMENT))
+
+    self.assertEquals(
+        '/p/proj/issues/detail?id=123',
+        tracker_helpers.FormatRelativeIssueURL(
+            'proj', urls.ISSUE_DETAIL, id=123))
+
+  def testComputeNewQuotaBytesUsed(self):
+    pass  # TODO(jrobbins): Write this test.
+
+  def testIsUnderSoftAttachmentQuota(self):
+    pass  # TODO(jrobbins): Write this test.
+
+  # GetAllIssueProjects is tested in GetAllIssueProjectsTest.
+
+  def testGetPermissionsInAllProjects(self):
+    pass  # TODO(jrobbins): Write this test.
+
+  # FilterOutNonViewableIssues is tested in FilterOutNonViewableIssuesTest.
+
+  def testMeansOpenInProject(self):
+    config = _MakeConfig()
+
+    # ensure open means open
+    self.assertTrue(tracker_helpers.MeansOpenInProject('New', config))
+    self.assertTrue(tracker_helpers.MeansOpenInProject('new', config))
+
+    # ensure an unrecognized status means open
+    self.assertTrue(tracker_helpers.MeansOpenInProject(
+        '_undefined_status_', config))
+
+    # ensure closed means closed
+    self.assertFalse(tracker_helpers.MeansOpenInProject('Old', config))
+    self.assertFalse(tracker_helpers.MeansOpenInProject('old', config))
+    self.assertFalse(tracker_helpers.MeansOpenInProject(
+        'StatusThatWeDontUseAnymore', config))
+
+  def testIsNoisy(self):
+    self.assertTrue(tracker_helpers.IsNoisy(778, 320))
+    self.assertFalse(tracker_helpers.IsNoisy(20, 500))
+    self.assertFalse(tracker_helpers.IsNoisy(500, 20))
+    self.assertFalse(tracker_helpers.IsNoisy(1, 1))
+
   def testMergeCCsAndAddComment(self):
     target_issue = fake.MakeTestIssue(
         789, 10, 'Target issue', 'New', 111L)
@@ -627,7 +728,7 @@ class HelpersTest(unittest.TestCase):
         'fake cnxn', 789, 10)
     self.assertNotIn(0L, updated_target_issue.cc_ids)
 
-  def testMergeCCsAndAddCommentRestrictedSourceIssue(self):
+  def testMergeCCsAndAddComment_RestrictedSourceIssue(self):
     target_issue = fake.MakeTestIssue(
         789, 10, 'Target issue', 'New', 222L)
     target_issue_2 = fake.MakeTestIssue(
@@ -671,82 +772,30 @@ class HelpersTest(unittest.TestCase):
         'fake cnxn', 789, 11)
     self.assertIn(111L, updated_target_issue_2.cc_ids)
 
-  def testFormatIssueListURLNoCurrentState(self):
-    config = tracker_pb2.ProjectIssueConfig()
-    path = '/p/proj/issues/detail?id=123'
-    mr = testing_helpers.MakeMonorailRequest(
-        path=path, headers={'Host': 'code.google.com'})
-    mr.ComputeColSpec(config)
+  def testMergeCCsAndAddCommentMultipleIssues(self):
+    pass  # TODO(jrobbins): Write this test.
 
-    absolute_base_url = 'http://code.google.com'
+  def testGetAttachmentIfAllowed(self):
+    pass  # TODO(jrobbins): Write this test.
 
-    url_1 = tracker_helpers.FormatIssueListURL(mr, config)
-    self.assertEquals(
-        '%s/p/proj/issues/list?%s&q=' % (
-            absolute_base_url, self.default_colspec_param),
-        url_1)
+  def testLabelsMaskedByFields(self):
+    pass  # TODO(jrobbins): Write this test.
 
-    url_2 = tracker_helpers.FormatIssueListURL(
-        mr, config, foo=123)
-    self.assertEquals(
-        '%s/p/proj/issues/list?%s&foo=123&q=' % (
-            absolute_base_url, self.default_colspec_param),
-        url_2)
+  def testLabelsNotMaskedByFields(self):
+    pass  # TODO(jrobbins): Write this test.
 
-    url_3 = tracker_helpers.FormatIssueListURL(
-        mr, config, foo=123, bar='abc')
-    self.assertEquals(
-        '%s/p/proj/issues/list?bar=abc&%s&foo=123&q=' % (
-            absolute_base_url, self.default_colspec_param),
-        url_3)
+  def testLookupComponentIDs(self):
+    pass  # TODO(jrobbins): Write this test.
 
-    url_4 = tracker_helpers.FormatIssueListURL(
-        mr, config, baz='escaped+encoded&and100% "safe"')
-    self.assertEquals(
-        '%s/p/proj/issues/list?'
-        'baz=escaped%%2Bencoded%%26and100%%25%%20%%22safe%%22&%s&q=' % (
-            absolute_base_url, self.default_colspec_param),
-        url_4)
+  def testParseAdminUsers(self):
+    pass  # TODO(jrobbins): Write this test.
 
-  def testFormatIssueListURLKeepCurrentState(self):
-    config = tracker_pb2.ProjectIssueConfig()
-    path = '/p/proj/issues/detail?id=123&sort=aa&colspec=a b c&groupby=d'
-    mr = testing_helpers.MakeMonorailRequest(
-        path=path, headers={'Host': 'localhost:8080'})
-    mr.ComputeColSpec(config)
+  def testFilterIssueTypes(self):
+    pass  # TODO(jrobbins): Write this test.
 
-    absolute_base_url = 'http://localhost:8080'
-
-    url_1 = tracker_helpers.FormatIssueListURL(mr, config)
-    self.assertEquals(
-        '%s/p/proj/issues/list?colspec=a%%20b%%20c'
-        '&groupby=d&q=&sort=aa' % absolute_base_url,
-        url_1)
-
-    url_2 = tracker_helpers.FormatIssueListURL(
-        mr, config, foo=123)
-    self.assertEquals(
-        '%s/p/proj/issues/list?'
-        'colspec=a%%20b%%20c&foo=123&groupby=d&q=&sort=aa' % absolute_base_url,
-        url_2)
-
-    url_3 = tracker_helpers.FormatIssueListURL(
-        mr, config, colspec='X Y Z')
-    self.assertEquals(
-        '%s/p/proj/issues/list?colspec=a%%20b%%20c'
-        '&groupby=d&q=&sort=aa' % absolute_base_url,
-        url_3)
-
-  def testFormatRelativeIssueURL(self):
-    self.assertEquals(
-        '/p/proj/issues/attachment',
-        tracker_helpers.FormatRelativeIssueURL(
-            'proj', urls.ISSUE_ATTACHMENT))
-
-    self.assertEquals(
-        '/p/proj/issues/detail?id=123',
-        tracker_helpers.FormatRelativeIssueURL(
-            'proj', urls.ISSUE_DETAIL, id=123))
+  # ParseMergeFields is tested in IssueMergeTest.
+  # AddIssueStarrers is tested in IssueMergeTest.testMergeIssueStars().
+  # IsMergeAllowed is tested in IssueMergeTest.
 
 
 class MakeViewsForUsersInIssuesTest(unittest.TestCase):

@@ -601,9 +601,7 @@ class QueryParsingUnitTest(unittest.TestCase):
         query2ast.ParseUserQuery(
             'modified>=' + val, '', BUILTIN_ISSUE_FIELDS,
             self.default_config)
-        self.assertEqual('Could not parse date: ' + val,
-                         cm.exception.message)
-
+      self.assertEqual('Could not parse date: ' + val, cm.exception.message)
 
   def testParseUserQuery_SyntaxErrors(self):
     """Bad queries should report warnings."""
