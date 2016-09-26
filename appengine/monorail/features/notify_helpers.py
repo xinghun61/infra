@@ -27,6 +27,12 @@ from tracker import component_helpers
 from tracker import tracker_bizobj
 
 
+# Email tasks can get too large for AppEngine to handle. In order to prevent
+# that, we set a maximum body size, and may truncate messages to that length.
+# We set this value to 40k so that the total of 40k body + 40k html_body +
+# metadata does not exceed AppEngine's limit of 100k.
+MAX_EMAIL_BODY_SIZE = 40 * 1024
+
 # When sending change notification emails, choose the reply-to header and
 # footer message based on three levels of the the recipient's permissions
 # for that issue.
@@ -195,7 +201,7 @@ def ComputeIssueNotificationAddrList(issue, omit_addrs):
 
 def MakeBulletedEmailWorkItems(
     group_reason_list, issue, body_for_non_members, body_for_members,
-    project, hostport, commenter_view, seq_num=None, detail_url=None):
+    project, hostport, commenter_view, detail_url, seq_num=None):
   """Make a list of dicts describing email-sending tasks to notify users.
 
   Args:
@@ -206,8 +212,8 @@ def MakeBulletedEmailWorkItems(
     project: Project that contains the issue.
     hostport: string hostname and port number for links to the site.
     commenter_view: UserView for the user who made the comment.
+    detail_url: str direct link to the issue.
     seq_num: optional int sequence number of the comment.
-    detail_url: optional str direct link to the issue.
 
   Returns:
     A list of dictionaries, each with all needed info to send an individual
@@ -224,16 +230,24 @@ def MakeBulletedEmailWorkItems(
   for memb_addr_perm, reasons in addr_reasons_dict.iteritems():
     email_tasks.append(_MakeEmailWorkItem(
         memb_addr_perm, reasons, issue, body_for_non_members,
-        body_for_members, project, hostport, commenter_view, seq_num=seq_num,
-        detail_url=detail_url))
+        body_for_members, project, hostport, commenter_view, detail_url,
+        seq_num=seq_num))
 
   return email_tasks
+
+
+def _TruncateBody(body):
+  """Truncate body string if it exceeds size limit."""
+  if len(body) > MAX_EMAIL_BODY_SIZE:
+    logging.info('Truncate body since its size %d exceeds limit', len(body))
+    return body[:MAX_EMAIL_BODY_SIZE] + '...'
+  return body
 
 
 def _MakeEmailWorkItem(
     (recipient_is_member, to_addr, user, reply_perm), reasons, issue,
     body_for_non_members, body_for_members, project, hostport, commenter_view,
-    seq_num=None, detail_url=None):
+     detail_url, seq_num=None):
   """Make one email task dict for one user, includes a detailed reason."""
   subject_format = 'Issue %(local_id)d in %(project_name)s: %(summary)s'
   if user and user.email_compact_subject:
@@ -250,12 +264,12 @@ def _MakeEmailWorkItem(
     footer = footer.encode('utf-8')
   if recipient_is_member:
     logging.info('got member %r', to_addr)
-    body = body_for_members
+    body = _TruncateBody(body_for_members) + footer
   else:
     logging.info('got non-member %r', to_addr)
-    body = body_for_non_members
+    body = _TruncateBody(body_for_non_members) + footer
 
-  logging.info('sending body + footer: %r', body + footer)
+  logging.info('sending body: %r', body)
   can_reply_to = (
       reply_perm != REPLY_NOT_ALLOWED and project.process_inbound_email)
   from_addr = emailfmt.FormatFromAddr(
@@ -268,24 +282,22 @@ def _MakeEmailWorkItem(
   refs = emailfmt.GetReferences(
     to_addr, subject, seq_num,
     '%s@%s' % (project.project_name, emailfmt.MailDomain()))
-  # If detail_url is specified then we can use markup to display a convenient
-  # link that takes users directly to the issue without clicking on the email.
+  # We use markup to display a convenient link that takes users directly to the
+  # issue without clicking on the email.
   html_body = None
-  if detail_url:
-    # cgi.escape the body and additionally escape single quotes which are
-    # occassionally used to contain HTML attributes and event handler
-    # definitions.
-    html_escaped_body = cgi.escape(body + footer, quote=1).replace("'", '&#39;')
-    template = HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE
-    if user and not user.email_view_widget:
-      template = HTML_BODY_WITHOUT_GMAIL_ACTION_TEMPLATE
-    html_body = template % {
-        'url': detail_url,
-        'body': _AddHTMLTags(html_escaped_body.decode('utf-8')),
-        }
-  return dict(to=to_addr, subject=subject, body=body + footer,
-              html_body=html_body, from_addr=from_addr, reply_to=reply_to,
-              references=refs)
+  # cgi.escape the body and additionally escape single quotes which are
+  # occassionally used to contain HTML attributes and event handler
+  # definitions.
+  html_escaped_body = cgi.escape(body, quote=1).replace("'", '&#39;')
+  template = HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE
+  if user and not user.email_view_widget:
+    template = HTML_BODY_WITHOUT_GMAIL_ACTION_TEMPLATE
+  html_body = template % {
+      'url': detail_url,
+      'body': _AddHTMLTags(html_escaped_body.decode('utf-8')),
+      }
+  return dict(to=to_addr, subject=subject, body=body, html_body=html_body,
+              from_addr=from_addr, reply_to=reply_to, references=refs)
 
 
 def _AddHTMLTags(body):
