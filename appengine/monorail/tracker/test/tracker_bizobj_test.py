@@ -194,256 +194,6 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual(111L, fv.user_id)
     self.assertEqual(True, fv.derived)
 
-  def testMakeAmendment(self):
-    amendment = tracker_bizobj.MakeAmendment(
-        tracker_pb2.FieldID.STATUS, 'new', [111L], [222L])
-    self.assertEqual(tracker_pb2.FieldID.STATUS, amendment.field)
-    self.assertEqual('new', amendment.newvalue)
-    self.assertEqual([111L], amendment.added_user_ids)
-    self.assertEqual([222L], amendment.removed_user_ids)
-
-  def testPlusMinusString(self):
-    self.assertEqual('', tracker_bizobj._PlusMinusString([], []))
-    self.assertEqual('-a -b c d',
-                     tracker_bizobj._PlusMinusString(['c', 'd'], ['a', 'b']))
-
-  def testPlusMinusAmendment(self):
-    amendment = tracker_bizobj._PlusMinusAmendment(
-        tracker_pb2.FieldID.STATUS, ['add1', 'add2'], ['remove1'])
-    self.assertEqual(tracker_pb2.FieldID.STATUS, amendment.field)
-    self.assertEqual('-remove1 add1 add2', amendment.newvalue)
-
-  def testPlusMinusRefsAmendment(self):
-    ref1 = (None, 1)
-    ref2 = ('other-proj', 2)
-    amendment = tracker_bizobj._PlusMinusRefsAmendment(
-        tracker_pb2.FieldID.STATUS, [ref1], [ref2])
-    self.assertEqual(tracker_pb2.FieldID.STATUS, amendment.field)
-    self.assertEqual('-other-proj:2 1', amendment.newvalue)
-
-  def testMakeSummaryAmendment(self):
-    amendment = tracker_bizobj.MakeSummaryAmendment('', None)
-    self.assertEqual(tracker_pb2.FieldID.SUMMARY, amendment.field)
-    self.assertEqual('', amendment.newvalue)
-    self.assertEqual(None, amendment.oldvalue)
-
-    amendment = tracker_bizobj.MakeSummaryAmendment('new summary', '')
-    self.assertEqual(tracker_pb2.FieldID.SUMMARY, amendment.field)
-    self.assertEqual('new summary', amendment.newvalue)
-    self.assertEqual('', amendment.oldvalue)
-
-  def testMakeStatusAmendment(self):
-    amendment = tracker_bizobj.MakeStatusAmendment('', None)
-    self.assertEqual(tracker_pb2.FieldID.STATUS, amendment.field)
-    self.assertEqual('', amendment.newvalue)
-    self.assertEqual(None, amendment.oldvalue)
-
-    amendment = tracker_bizobj.MakeStatusAmendment('New', '')
-    self.assertEqual(tracker_pb2.FieldID.STATUS, amendment.field)
-    self.assertEqual('New', amendment.newvalue)
-    self.assertEqual('', amendment.oldvalue)
-
-  def testMakeOwnerAmendment(self):
-    amendment = tracker_bizobj.MakeOwnerAmendment(111L, 0)
-    self.assertEqual(tracker_pb2.FieldID.OWNER, amendment.field)
-    self.assertEqual('', amendment.newvalue)
-    self.assertEqual([111L], amendment.added_user_ids)
-    self.assertEqual([0], amendment.removed_user_ids)
-
-  def testMakeCcAmendment(self):
-    amendment = tracker_bizobj.MakeCcAmendment([111L], [222L])
-    self.assertEqual(tracker_pb2.FieldID.CC, amendment.field)
-    self.assertEqual('', amendment.newvalue)
-    self.assertEqual([111L], amendment.added_user_ids)
-    self.assertEqual([222L], amendment.removed_user_ids)
-
-  def testMakeLabelsAmendment(self):
-    amendment = tracker_bizobj.MakeLabelsAmendment(['added1'], ['removed1'])
-    self.assertEqual(tracker_pb2.FieldID.LABELS, amendment.field)
-    self.assertEqual('-removed1 added1', amendment.newvalue)
-
-  def testMakeBlockedOnAmendment(self):
-    ref1 = (None, 1)
-    ref2 = ('other-proj', 2)
-    amendment = tracker_bizobj.MakeBlockedOnAmendment([ref1], [ref2])
-    self.assertEqual(tracker_pb2.FieldID.BLOCKEDON, amendment.field)
-    self.assertEqual('-other-proj:2 1', amendment.newvalue)
-
-  def testMakeBlockingAmendment(self):
-    ref1 = (None, 1)
-    ref2 = ('other-proj', 2)
-    amendment = tracker_bizobj.MakeBlockingAmendment([ref1], [ref2])
-    self.assertEqual(tracker_pb2.FieldID.BLOCKING, amendment.field)
-    self.assertEqual('-other-proj:2 1', amendment.newvalue)
-
-  def testMakeMergedIntoAmendment(self):
-    ref1 = (None, 1)
-    ref2 = ('other-proj', 2)
-    amendment = tracker_bizobj.MakeMergedIntoAmendment(ref1, ref2)
-    self.assertEqual(tracker_pb2.FieldID.MERGEDINTO, amendment.field)
-    self.assertEqual('-other-proj:2 1', amendment.newvalue)
-
-  def testAmendmentString(self):
-    users_by_id = {
-        111L: framework_views.StuffUserView(111L, 'username@gmail.com', True)
-        }
-    summary_amendment = tracker_bizobj.MakeSummaryAmendment('new summary', None)
-    self.assertEqual(
-        'new summary',
-        tracker_bizobj.AmendmentString(summary_amendment, users_by_id))
-
-    status_amendment = tracker_bizobj.MakeStatusAmendment('', None)
-    self.assertEqual(
-        '', tracker_bizobj.AmendmentString(status_amendment, users_by_id))
-    status_amendment = tracker_bizobj.MakeStatusAmendment('Assigned', 'New')
-    self.assertEqual(
-        'Assigned',
-        tracker_bizobj.AmendmentString(status_amendment, users_by_id))
-
-    owner_amendment = tracker_bizobj.MakeOwnerAmendment(0, 0)
-    self.assertEqual(
-        '----', tracker_bizobj.AmendmentString(owner_amendment, users_by_id))
-    owner_amendment = tracker_bizobj.MakeOwnerAmendment(111L, 0)
-    self.assertEqual(
-        'usern...@gmail.com',
-        tracker_bizobj.AmendmentString(owner_amendment, users_by_id))
-
-  def testAmendmentLinks(self):
-    users_by_id = {
-        111L: framework_views.StuffUserView(111L, 'foo@gmail.com', False),
-        222L: framework_views.StuffUserView(222L, 'bar@gmail.com', False),
-        333L: framework_views.StuffUserView(333L, 'baz@gmail.com', False)
-        }
-    # SUMMARY
-    summary_amendment = tracker_bizobj.MakeSummaryAmendment('new summary', None)
-    self.assertEqual(
-        [{'value': 'new summary', 'url': None}],
-        tracker_bizobj.AmendmentLinks(summary_amendment, users_by_id, 'proj'))
-
-    # OWNER
-    owner_amendment = tracker_bizobj.MakeOwnerAmendment(0, 0)
-    self.assertEqual(
-        [{'value': '----', 'url': None}],
-        tracker_bizobj.AmendmentLinks(owner_amendment, users_by_id, 'proj'))
-    owner_amendment = tracker_bizobj.MakeOwnerAmendment(111L, 0)
-    self.assertEqual(
-        [{'value': 'foo@gmail.com', 'url': None}],
-        tracker_bizobj.AmendmentLinks(owner_amendment, users_by_id, 'proj'))
-
-    # BLOCKEDON, BLOCKING, MERGEDINTO
-    blocking_amendment = tracker_bizobj.MakeBlockingAmendment(
-        [(None, 123), ('blah', 234)], [(None, 345), ('blah', 456)])
-    self.assertEqual([
-        {'value': '-345', 'url': '/p/proj/issues/detail?id=345'},
-        {'value': '-blah:456', 'url': '/p/blah/issues/detail?id=456'},
-        {'value': '123', 'url': '/p/proj/issues/detail?id=123'},
-        {'value': 'blah:234', 'url': '/p/blah/issues/detail?id=234'}],
-        tracker_bizobj.AmendmentLinks(blocking_amendment, users_by_id, 'proj'))
-
-    # newvalue catchall
-    label_amendment = tracker_bizobj.MakeLabelsAmendment(
-        ['My-Label', 'Your-Label'], ['Their-Label'])
-    self.assertEqual([
-        {'value': '-Their-Label', 'url': None},
-        {'value': 'My-Label', 'url': None},
-        {'value': 'Your-Label', 'url': None}],
-        tracker_bizobj.AmendmentLinks(label_amendment, users_by_id, 'proj'))
-
-    # CC, or CUSTOM with user type
-    cc_amendment = tracker_bizobj.MakeCcAmendment([222L, 333L], [111L])
-    self.assertEqual([
-        {'value': '-foo@gmail.com', 'url': None},
-        {'value': 'bar@gmail.com', 'url': None},
-        {'value': 'baz@gmail.com', 'url': None}],
-        tracker_bizobj.AmendmentLinks(cc_amendment, users_by_id, 'proj'))
-    user_amendment = tracker_bizobj.MakeAmendment(
-        tracker_pb2.FieldID.CUSTOM, None, [222L, 333L], [111L], 'ultracc')
-    self.assertEqual([
-        {'value': '-foo@gmail.com', 'url': None},
-        {'value': 'bar@gmail.com', 'url': None},
-        {'value': 'baz@gmail.com', 'url': None}],
-        tracker_bizobj.AmendmentLinks(user_amendment, users_by_id, 'proj'))
-
-
-  def testDiffValueLists(self):
-    added, removed = tracker_bizobj.DiffValueLists([], [])
-    self.assertItemsEqual([], added)
-    self.assertItemsEqual([], removed)
-
-    added, removed = tracker_bizobj.DiffValueLists([], None)
-    self.assertItemsEqual([], added)
-    self.assertItemsEqual([], removed)
-
-    added, removed = tracker_bizobj.DiffValueLists([1, 2], [])
-    self.assertItemsEqual([1, 2], added)
-    self.assertItemsEqual([], removed)
-
-    added, removed = tracker_bizobj.DiffValueLists([], [8, 9])
-    self.assertItemsEqual([], added)
-    self.assertItemsEqual([8, 9], removed)
-
-    added, removed = tracker_bizobj.DiffValueLists([1, 2], [8, 9])
-    self.assertItemsEqual([1, 2], added)
-    self.assertItemsEqual([8, 9], removed)
-
-    added, removed = tracker_bizobj.DiffValueLists([1, 2, 5, 6], [5, 6, 8, 9])
-    self.assertItemsEqual([1, 2], added)
-    self.assertItemsEqual([8, 9], removed)
-
-    added, removed = tracker_bizobj.DiffValueLists([5, 6], [5, 6, 8, 9])
-    self.assertItemsEqual([], added)
-    self.assertItemsEqual([8, 9], removed)
-
-    added, removed = tracker_bizobj.DiffValueLists([1, 2, 5, 6], [5, 6])
-    self.assertItemsEqual([1, 2], added)
-    self.assertItemsEqual([], removed)
-
-    added, removed = tracker_bizobj.DiffValueLists(
-        [1, 2, 2, 5, 6], [5, 6, 8, 9])
-    self.assertItemsEqual([1, 2, 2], added)
-    self.assertItemsEqual([8, 9], removed)
-
-    added, removed = tracker_bizobj.DiffValueLists(
-        [1, 2, 5, 6], [5, 6, 8, 8, 9])
-    self.assertItemsEqual([1, 2], added)
-    self.assertItemsEqual([8, 8, 9], removed)
-
-  def testFormatIssueRef(self):
-    self.assertEqual('', tracker_bizobj.FormatIssueRef(None))
-
-    self.assertEqual(
-        'p:1', tracker_bizobj.FormatIssueRef(('p', 1)))
-
-    self.assertEqual(
-        '1', tracker_bizobj.FormatIssueRef((None, 1)))
-
-  def testParseIssueRef(self):
-    self.assertEqual(None, tracker_bizobj.ParseIssueRef(''))
-    self.assertEqual(None, tracker_bizobj.ParseIssueRef('  \t '))
-
-    ref_pn, ref_id = tracker_bizobj.ParseIssueRef('1')
-    self.assertEqual(None, ref_pn)
-    self.assertEqual(1, ref_id)
-
-    ref_pn, ref_id = tracker_bizobj.ParseIssueRef('-1')
-    self.assertEqual(None, ref_pn)
-    self.assertEqual(1, ref_id)
-
-    ref_pn, ref_id = tracker_bizobj.ParseIssueRef('p:2')
-    self.assertEqual('p', ref_pn)
-    self.assertEqual(2, ref_id)
-
-    ref_pn, ref_id = tracker_bizobj.ParseIssueRef('-p:2')
-    self.assertEqual('p', ref_pn)
-    self.assertEqual(2, ref_id)
-
-  def testSafeParseIssueRef(self):
-    self.assertEqual(None, tracker_bizobj._SafeParseIssueRef('-'))
-    self.assertEqual(None, tracker_bizobj._SafeParseIssueRef('test:'))
-    ref_pn, ref_id = tracker_bizobj.ParseIssueRef('p:2')
-    self.assertEqual('p', ref_pn)
-    self.assertEqual(2, ref_id)
-
   def testGetFieldValueWithRawValue(self):
     class MockUser(object):
       def __init__(self):
@@ -898,29 +648,439 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual({111L, 222L, 333L},
                      tracker_bizobj.UsersInvolvedInCommentList([c1, c2]))
 
-  def testUsersInvolvedInIssues(self):
-    pass  # TODO(jrobbins): Write this test.
+  def testUsersInvolvedInIssues_Empty(self):
+    self.assertEqual(set(), tracker_bizobj.UsersInvolvedInIssues([]))
 
-  def testMakeFieldAmendment(self):
-    pass  # TODO(jrobbins): Write this test.
+  def testUsersInvolvedInIssues_Normal(self):
+    issue1 = tracker_pb2.Issue(
+        reporter_id=111L, owner_id=222L, cc_ids=[222L, 333L])
+    issue2 = tracker_pb2.Issue(
+        reporter_id=333L, owner_id=444L, derived_cc_ids=[222L, 444L])
+    issue2.field_values = [tracker_pb2.FieldValue(user_id=555L)]
+    self.assertEqual(
+        set([0L, 111L, 222L, 333L, 444L, 555L]),
+        tracker_bizobj.UsersInvolvedInIssues([issue1, issue2]))
 
-  def testMakeFieldClearedAmendment(self):
-    pass  # TODO(jrobbins): Write this test.
+  def testMakeAmendment(self):
+    amendment = tracker_bizobj.MakeAmendment(
+        tracker_pb2.FieldID.STATUS, 'new', [111L], [222L])
+    self.assertEqual(tracker_pb2.FieldID.STATUS, amendment.field)
+    self.assertEqual('new', amendment.newvalue)
+    self.assertEqual([111L], amendment.added_user_ids)
+    self.assertEqual([222L], amendment.removed_user_ids)
 
-  def testMakeComponentsAmendment(self):
-    pass  # TODO(jrobbins): Write this test.
+  def testPlusMinusString(self):
+    self.assertEqual('', tracker_bizobj._PlusMinusString([], []))
+    self.assertEqual('-a -b c d',
+                     tracker_bizobj._PlusMinusString(['c', 'd'], ['a', 'b']))
+
+  def testPlusMinusAmendment(self):
+    amendment = tracker_bizobj._PlusMinusAmendment(
+        tracker_pb2.FieldID.STATUS, ['add1', 'add2'], ['remove1'])
+    self.assertEqual(tracker_pb2.FieldID.STATUS, amendment.field)
+    self.assertEqual('-remove1 add1 add2', amendment.newvalue)
+
+  def testPlusMinusRefsAmendment(self):
+    ref1 = (None, 1)
+    ref2 = ('other-proj', 2)
+    amendment = tracker_bizobj._PlusMinusRefsAmendment(
+        tracker_pb2.FieldID.STATUS, [ref1], [ref2])
+    self.assertEqual(tracker_pb2.FieldID.STATUS, amendment.field)
+    self.assertEqual('-other-proj:2 1', amendment.newvalue)
+
+  def testMakeSummaryAmendment(self):
+    amendment = tracker_bizobj.MakeSummaryAmendment('', None)
+    self.assertEqual(tracker_pb2.FieldID.SUMMARY, amendment.field)
+    self.assertEqual('', amendment.newvalue)
+    self.assertEqual(None, amendment.oldvalue)
+
+    amendment = tracker_bizobj.MakeSummaryAmendment('new summary', '')
+    self.assertEqual(tracker_pb2.FieldID.SUMMARY, amendment.field)
+    self.assertEqual('new summary', amendment.newvalue)
+    self.assertEqual('', amendment.oldvalue)
+
+  def testMakeStatusAmendment(self):
+    amendment = tracker_bizobj.MakeStatusAmendment('', None)
+    self.assertEqual(tracker_pb2.FieldID.STATUS, amendment.field)
+    self.assertEqual('', amendment.newvalue)
+    self.assertEqual(None, amendment.oldvalue)
+
+    amendment = tracker_bizobj.MakeStatusAmendment('New', '')
+    self.assertEqual(tracker_pb2.FieldID.STATUS, amendment.field)
+    self.assertEqual('New', amendment.newvalue)
+    self.assertEqual('', amendment.oldvalue)
+
+  def testMakeOwnerAmendment(self):
+    amendment = tracker_bizobj.MakeOwnerAmendment(111L, 0)
+    self.assertEqual(tracker_pb2.FieldID.OWNER, amendment.field)
+    self.assertEqual('', amendment.newvalue)
+    self.assertEqual([111L], amendment.added_user_ids)
+    self.assertEqual([0], amendment.removed_user_ids)
+
+  def testMakeCcAmendment(self):
+    amendment = tracker_bizobj.MakeCcAmendment([111L], [222L])
+    self.assertEqual(tracker_pb2.FieldID.CC, amendment.field)
+    self.assertEqual('', amendment.newvalue)
+    self.assertEqual([111L], amendment.added_user_ids)
+    self.assertEqual([222L], amendment.removed_user_ids)
+
+  def testMakeLabelsAmendment(self):
+    amendment = tracker_bizobj.MakeLabelsAmendment(['added1'], ['removed1'])
+    self.assertEqual(tracker_pb2.FieldID.LABELS, amendment.field)
+    self.assertEqual('-removed1 added1', amendment.newvalue)
+
+  def testDiffValueLists(self):
+    added, removed = tracker_bizobj.DiffValueLists([], [])
+    self.assertItemsEqual([], added)
+    self.assertItemsEqual([], removed)
+
+    added, removed = tracker_bizobj.DiffValueLists([], None)
+    self.assertItemsEqual([], added)
+    self.assertItemsEqual([], removed)
+
+    added, removed = tracker_bizobj.DiffValueLists([1, 2], [])
+    self.assertItemsEqual([1, 2], added)
+    self.assertItemsEqual([], removed)
+
+    added, removed = tracker_bizobj.DiffValueLists([], [8, 9])
+    self.assertItemsEqual([], added)
+    self.assertItemsEqual([8, 9], removed)
+
+    added, removed = tracker_bizobj.DiffValueLists([1, 2], [8, 9])
+    self.assertItemsEqual([1, 2], added)
+    self.assertItemsEqual([8, 9], removed)
+
+    added, removed = tracker_bizobj.DiffValueLists([1, 2, 5, 6], [5, 6, 8, 9])
+    self.assertItemsEqual([1, 2], added)
+    self.assertItemsEqual([8, 9], removed)
+
+    added, removed = tracker_bizobj.DiffValueLists([5, 6], [5, 6, 8, 9])
+    self.assertItemsEqual([], added)
+    self.assertItemsEqual([8, 9], removed)
+
+    added, removed = tracker_bizobj.DiffValueLists([1, 2, 5, 6], [5, 6])
+    self.assertItemsEqual([1, 2], added)
+    self.assertItemsEqual([], removed)
+
+    added, removed = tracker_bizobj.DiffValueLists(
+        [1, 2, 2, 5, 6], [5, 6, 8, 9])
+    self.assertItemsEqual([1, 2, 2], added)
+    self.assertItemsEqual([8, 9], removed)
+
+    added, removed = tracker_bizobj.DiffValueLists(
+        [1, 2, 5, 6], [5, 6, 8, 8, 9])
+    self.assertItemsEqual([1, 2], added)
+    self.assertItemsEqual([8, 8, 9], removed)
+
+  def testMakeFieldAmendment_NoSuchFieldDef(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    with self.assertRaises(ValueError):
+      tracker_bizobj.MakeFieldAmendment(1, config, ['Large'], ['Small'])
+
+  def testMakeFieldAmendment_MultiValued(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    fd = tracker_pb2.FieldDef(
+        field_id=1, field_name='Days', is_multivalued=True)
+    config.field_defs.append(fd)
+    self.assertEqual(
+        tracker_bizobj.MakeAmendment(
+            tracker_pb2.FieldID.CUSTOM, '-Mon Tue Wed', [], [], 'Days'),
+        tracker_bizobj.MakeFieldAmendment(1, config, ['Tue', 'Wed'], ['Mon']))
+    self.assertEqual(
+        tracker_bizobj.MakeAmendment(
+            tracker_pb2.FieldID.CUSTOM, '-Mon', [], [], 'Days'),
+        tracker_bizobj.MakeFieldAmendment(1, config, [], ['Mon']))
+
+  def testMakeFieldAmendment_MultiValuedUser(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    fd = tracker_pb2.FieldDef(
+        field_id=1, field_name='Friends', is_multivalued=True,
+        field_type=tracker_pb2.FieldTypes.USER_TYPE)
+    config.field_defs.append(fd)
+    self.assertEqual(
+        tracker_bizobj.MakeAmendment(
+            tracker_pb2.FieldID.CUSTOM, '', [111L], [222L], 'Friends'),
+        tracker_bizobj.MakeFieldAmendment(1, config, [111L], [222L]))
+    self.assertEqual(
+        tracker_bizobj.MakeAmendment(
+            tracker_pb2.FieldID.CUSTOM, '', [], [222L], 'Friends'),
+        tracker_bizobj.MakeFieldAmendment(1, config, [], [222L]))
+
+  def testMakeFieldAmendment_SingleValued(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    fd = tracker_pb2.FieldDef(field_id=1, field_name='Size')
+    config.field_defs.append(fd)
+    self.assertEqual(
+        tracker_bizobj.MakeAmendment(
+            tracker_pb2.FieldID.CUSTOM, 'Large', [], [], 'Size'),
+        tracker_bizobj.MakeFieldAmendment(1, config, ['Large'], ['Small']))
+    self.assertEqual(
+        tracker_bizobj.MakeAmendment(
+            tracker_pb2.FieldID.CUSTOM, '----', [], [], 'Size'),
+        tracker_bizobj.MakeFieldAmendment(1, config, [], ['Small']))
+
+  def testMakeFieldAmendment_SingleValuedUser(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    fd = tracker_pb2.FieldDef(
+        field_id=1, field_name='Friend',
+        field_type=tracker_pb2.FieldTypes.USER_TYPE)
+    config.field_defs.append(fd)
+    self.assertEqual(
+        tracker_bizobj.MakeAmendment(
+            tracker_pb2.FieldID.CUSTOM, '', [111L], [], 'Friend'),
+        tracker_bizobj.MakeFieldAmendment(1, config, [111L], [222L]))
+    self.assertEqual(
+        tracker_bizobj.MakeAmendment(
+            tracker_pb2.FieldID.CUSTOM, '', [], [], 'Friend'),
+        tracker_bizobj.MakeFieldAmendment(1, config, [], [222L]))
+
+  def testMakeFieldClearedAmendment_FieldNotFound(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    with self.assertRaises(ValueError):
+      tracker_bizobj.MakeFieldClearedAmendment(1, config)
+
+  def testMakeFieldClearedAmendment_Normal(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    fd = tracker_pb2.FieldDef(field_id=1, field_name='Rabbit')
+    config.field_defs.append(fd)
+    self.assertEqual(
+        tracker_bizobj.MakeAmendment(
+            tracker_pb2.FieldID.CUSTOM, '----', [], [], 'Rabbit'),
+        tracker_bizobj.MakeFieldClearedAmendment(1, config))
+
+  def testMakeComponentsAmendment_NoChange(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.component_defs = [
+        tracker_pb2.ComponentDef(component_id=1, path='UI'),
+        tracker_pb2.ComponentDef(component_id=2, path='DB')]
+    self.assertEqual(
+        tracker_bizobj.MakeAmendment(
+            tracker_pb2.FieldID.COMPONENTS, '', [], []),
+        tracker_bizobj.MakeComponentsAmendment([], [], config))
+
+  def testMakeComponentsAmendment_Normal(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.component_defs = [
+        tracker_pb2.ComponentDef(component_id=1, path='UI'),
+        tracker_pb2.ComponentDef(component_id=2, path='DB')]
+    self.assertEqual(
+        tracker_bizobj.MakeAmendment(
+            tracker_pb2.FieldID.COMPONENTS, '-UI DB', [], []),
+        tracker_bizobj.MakeComponentsAmendment([2], [1], config))
+
+  def testMakeBlockedOnAmendment(self):
+    ref1 = (None, 1)
+    ref2 = ('other-proj', 2)
+    amendment = tracker_bizobj.MakeBlockedOnAmendment([ref1], [ref2])
+    self.assertEqual(tracker_pb2.FieldID.BLOCKEDON, amendment.field)
+    self.assertEqual('-other-proj:2 1', amendment.newvalue)
+
+    amendment = tracker_bizobj.MakeBlockedOnAmendment([ref2], [ref1])
+    self.assertEqual(tracker_pb2.FieldID.BLOCKEDON, amendment.field)
+    self.assertEqual('-1 other-proj:2', amendment.newvalue)
+
+  def testMakeBlockingAmendment(self):
+    ref1 = (None, 1)
+    ref2 = ('other-proj', 2)
+    amendment = tracker_bizobj.MakeBlockingAmendment([ref1], [ref2])
+    self.assertEqual(tracker_pb2.FieldID.BLOCKING, amendment.field)
+    self.assertEqual('-other-proj:2 1', amendment.newvalue)
+
+  def testMakeMergedIntoAmendment(self):
+    ref1 = (None, 1)
+    ref2 = ('other-proj', 2)
+    amendment = tracker_bizobj.MakeMergedIntoAmendment(ref1, ref2)
+    self.assertEqual(tracker_pb2.FieldID.MERGEDINTO, amendment.field)
+    self.assertEqual('-other-proj:2 1', amendment.newvalue)
 
   def testMakeProjectAmendment(self):
-    pass  # TODO(jrobbins): Write this test.
+    self.assertEqual(
+        tracker_bizobj.MakeAmendment(
+            tracker_pb2.FieldID.PROJECT, 'moonshot', [], []),
+        tracker_bizobj.MakeProjectAmendment('moonshot'))
 
-  def testGetAmendmentFieldName(self):
-    pass  # TODO(jrobbins): Write this test.
+  def testAmendmentString(self):
+    users_by_id = {
+        111L: framework_views.StuffUserView(111L, 'username@gmail.com', True)
+        }
+    summary_amendment = tracker_bizobj.MakeSummaryAmendment('new summary', None)
+    self.assertEqual(
+        'new summary',
+        tracker_bizobj.AmendmentString(summary_amendment, users_by_id))
+
+    status_amendment = tracker_bizobj.MakeStatusAmendment('', None)
+    self.assertEqual(
+        '', tracker_bizobj.AmendmentString(status_amendment, users_by_id))
+    status_amendment = tracker_bizobj.MakeStatusAmendment('Assigned', 'New')
+    self.assertEqual(
+        'Assigned',
+        tracker_bizobj.AmendmentString(status_amendment, users_by_id))
+
+    owner_amendment = tracker_bizobj.MakeOwnerAmendment(0, 0)
+    self.assertEqual(
+        '----', tracker_bizobj.AmendmentString(owner_amendment, users_by_id))
+    owner_amendment = tracker_bizobj.MakeOwnerAmendment(111L, 0)
+    self.assertEqual(
+        'usern...@gmail.com',
+        tracker_bizobj.AmendmentString(owner_amendment, users_by_id))
+
+  def testAmendmentLinks(self):
+    users_by_id = {
+        111L: framework_views.StuffUserView(111L, 'foo@gmail.com', False),
+        222L: framework_views.StuffUserView(222L, 'bar@gmail.com', False),
+        333L: framework_views.StuffUserView(333L, 'baz@gmail.com', False)
+        }
+    # SUMMARY
+    summary_amendment = tracker_bizobj.MakeSummaryAmendment('new summary', None)
+    self.assertEqual(
+        [{'value': 'new summary', 'url': None}],
+        tracker_bizobj.AmendmentLinks(summary_amendment, users_by_id, 'proj'))
+    summary_amendment = tracker_bizobj.MakeSummaryAmendment(
+        'new summary', 'old info')
+    self.assertEqual(
+        [{'value': 'new summary (was: old info)', 'url': None}],
+        tracker_bizobj.AmendmentLinks(summary_amendment, users_by_id, 'proj'))
+
+    # OWNER
+    owner_amendment = tracker_bizobj.MakeOwnerAmendment(0, 0)
+    self.assertEqual(
+        [{'value': '----', 'url': None}],
+        tracker_bizobj.AmendmentLinks(owner_amendment, users_by_id, 'proj'))
+    owner_amendment = tracker_bizobj.MakeOwnerAmendment(111L, 0)
+    self.assertEqual(
+        [{'value': 'foo@gmail.com', 'url': None}],
+        tracker_bizobj.AmendmentLinks(owner_amendment, users_by_id, 'proj'))
+
+    # BLOCKEDON, BLOCKING, MERGEDINTO
+    blocking_amendment = tracker_bizobj.MakeBlockingAmendment(
+        [(None, 123), ('blah', 234)], [(None, 345), ('blah', 456)])
+    self.assertEqual([
+        {'value': '-345', 'url': '/p/proj/issues/detail?id=345'},
+        {'value': '-blah:456', 'url': '/p/blah/issues/detail?id=456'},
+        {'value': '123', 'url': '/p/proj/issues/detail?id=123'},
+        {'value': 'blah:234', 'url': '/p/blah/issues/detail?id=234'}],
+        tracker_bizobj.AmendmentLinks(blocking_amendment, users_by_id, 'proj'))
+
+    # newvalue catchall
+    label_amendment = tracker_bizobj.MakeLabelsAmendment(
+        ['My-Label', 'Your-Label'], ['Their-Label'])
+    self.assertEqual([
+        {'value': '-Their-Label', 'url': None},
+        {'value': 'My-Label', 'url': None},
+        {'value': 'Your-Label', 'url': None}],
+        tracker_bizobj.AmendmentLinks(label_amendment, users_by_id, 'proj'))
+
+    # CC, or CUSTOM with user type
+    cc_amendment = tracker_bizobj.MakeCcAmendment([222L, 333L], [111L])
+    self.assertEqual([
+        {'value': '-foo@gmail.com', 'url': None},
+        {'value': 'bar@gmail.com', 'url': None},
+        {'value': 'baz@gmail.com', 'url': None}],
+        tracker_bizobj.AmendmentLinks(cc_amendment, users_by_id, 'proj'))
+    user_amendment = tracker_bizobj.MakeAmendment(
+        tracker_pb2.FieldID.CUSTOM, None, [222L, 333L], [111L], 'ultracc')
+    self.assertEqual([
+        {'value': '-foo@gmail.com', 'url': None},
+        {'value': 'bar@gmail.com', 'url': None},
+        {'value': 'baz@gmail.com', 'url': None}],
+        tracker_bizobj.AmendmentLinks(user_amendment, users_by_id, 'proj'))
+
+  def testGetAmendmentFieldName_Custom(self):
+    amendment = tracker_bizobj.MakeAmendment(
+        tracker_pb2.FieldID.CUSTOM, None, [222L, 333L], [111L], 'Rabbit')
+    self.assertEqual('Rabbit', tracker_bizobj.GetAmendmentFieldName(amendment))
+
+  def testGetAmendmentFieldName_Builtin(self):
+    amendment = tracker_bizobj.MakeAmendment(
+        tracker_pb2.FieldID.SUMMARY, 'It broke', [], [])
+    self.assertEqual('Summary', tracker_bizobj.GetAmendmentFieldName(amendment))
 
   def testMakeDanglingIssueRef(self):
-    pass  # TODO(jrobbins): Write this test.
+    di_ref = tracker_bizobj.MakeDanglingIssueRef('proj', 123)
+    self.assertEqual('proj', di_ref.project)
+    self.assertEqual(123, di_ref.issue_id)
 
-  def testMergeFields(self):
-    pass  # TODO(jrobbins): Write this test.
+  def testFormatIssueURL_NoRef(self):
+    self.assertEqual('', tracker_bizobj.FormatIssueURL(None))
+
+  def testFormatIssueRef(self):
+    self.assertEqual('', tracker_bizobj.FormatIssueRef(None))
+
+    self.assertEqual(
+        'p:1', tracker_bizobj.FormatIssueRef(('p', 1)))
+
+    self.assertEqual(
+        '1', tracker_bizobj.FormatIssueRef((None, 1)))
+
+  def testParseIssueRef(self):
+    self.assertEqual(None, tracker_bizobj.ParseIssueRef(''))
+    self.assertEqual(None, tracker_bizobj.ParseIssueRef('  \t '))
+
+    ref_pn, ref_id = tracker_bizobj.ParseIssueRef('1')
+    self.assertEqual(None, ref_pn)
+    self.assertEqual(1, ref_id)
+
+    ref_pn, ref_id = tracker_bizobj.ParseIssueRef('-1')
+    self.assertEqual(None, ref_pn)
+    self.assertEqual(1, ref_id)
+
+    ref_pn, ref_id = tracker_bizobj.ParseIssueRef('p:2')
+    self.assertEqual('p', ref_pn)
+    self.assertEqual(2, ref_id)
+
+    ref_pn, ref_id = tracker_bizobj.ParseIssueRef('-p:2')
+    self.assertEqual('p', ref_pn)
+    self.assertEqual(2, ref_id)
+
+  def testSafeParseIssueRef(self):
+    self.assertEqual(None, tracker_bizobj._SafeParseIssueRef('-'))
+    self.assertEqual(None, tracker_bizobj._SafeParseIssueRef('test:'))
+    ref_pn, ref_id = tracker_bizobj.ParseIssueRef('p:2')
+    self.assertEqual('p', ref_pn)
+    self.assertEqual(2, ref_id)
+
+  def testMergeFields_NoChange(self):
+    fv1 = tracker_bizobj.MakeFieldValue(1, 42, None, None, False)
+    merged_fvs, fvs_added, fvs_removed = tracker_bizobj.MergeFields(
+        [fv1], [], [], [])
+    self.assertEqual([fv1], merged_fvs)
+    self.assertEqual([], fvs_added)
+    self.assertEqual([], fvs_removed)
+
+  def testMergeFields_SingleValued(self):
+    fd = tracker_pb2.FieldDef(field_id=1, field_name='foo')
+    fv1 = tracker_bizobj.MakeFieldValue(1, 42, None, None, False)
+    fv2 = tracker_bizobj.MakeFieldValue(1, 43, None, None, False)
+    fv3 = tracker_bizobj.MakeFieldValue(1, 44, None, None, False)
+
+    # Adding one replaces all values since the field is single-valued.
+    merged_fvs, fvs_added, fvs_removed = tracker_bizobj.MergeFields(
+        [fv1, fv2], [fv3], [], [fd])
+    self.assertEqual([fv3], merged_fvs)
+    self.assertEqual([fv3], fvs_added)
+    self.assertEqual([], fvs_removed)
+
+    # Removing one just removes it, does not reset.
+    merged_fvs, fvs_added, fvs_removed = tracker_bizobj.MergeFields(
+        [fv1, fv2], [], [fv2], [fd])
+    self.assertEqual([fv1], merged_fvs)
+    self.assertEqual([], fvs_added)
+    self.assertEqual([fv2], fvs_removed)
+
+  def testMergeFields_MultiValued(self):
+    fd = tracker_pb2.FieldDef(
+        field_id=1, field_name='foo', is_multivalued=True)
+    fv1 = tracker_bizobj.MakeFieldValue(1, 42, None, None, False)
+    fv2 = tracker_bizobj.MakeFieldValue(1, 43, None, None, False)
+    fv3 = tracker_bizobj.MakeFieldValue(1, 44, None, None, False)
+    fv4 = tracker_bizobj.MakeFieldValue(1, 42, None, None, False)
+    fv5 = tracker_bizobj.MakeFieldValue(1, 99, None, None, False)
+
+    merged_fvs, fvs_added, fvs_removed = tracker_bizobj.MergeFields(
+        [fv1, fv2], [fv2, fv3], [fv4, fv5], [fd])
+    self.assertEqual([fv2, fv3], merged_fvs)
+    self.assertEqual([fv3], fvs_added)
+    self.assertEqual([fv4], fvs_removed)
 
   def testSplitBlockedOnRanks(self):
     issue = tracker_pb2.Issue()

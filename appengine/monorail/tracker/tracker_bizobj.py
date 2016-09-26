@@ -916,7 +916,7 @@ def AmendmentLinks(amendment, users_by_id, project_name):
                            tracker_pb2.FieldID.MERGEDINTO):
     values = amendment.newvalue.split()
     bug_refs = [_SafeParseIssueRef(v.strip()) for v in values]
-    issue_urls = [FormatIssueUrl(ref, default_project_name=project_name)
+    issue_urls = [FormatIssueURL(ref, default_project_name=project_name)
                   for ref in bug_refs]
     # TODO(jrobbins): Permission checks on referenced issues to allow
     # showing summary on hover.
@@ -951,7 +951,7 @@ def MakeDanglingIssueRef(project_name, issue_id):
   return ret
 
 
-def FormatIssueUrl(issue_ref_tuple, default_project_name=None):
+def FormatIssueURL(issue_ref_tuple, default_project_name=None):
   """Format an issue url from an issue ref."""
   if issue_ref_tuple is None:
     return ''
