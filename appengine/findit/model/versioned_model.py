@@ -26,21 +26,47 @@ class _GroupRoot(ndb.Model):
 class VersionedModel(ndb.Model):
   """A model that supports versioning.
 
-  Subclass will automatically be versioned, if use GetVersion() to
-  read and use Save() to write.
+  Subclasses will automatically be versioned. To create the first instance of a
+  versioned entity, use Create(key) with optional key to differentiate between
+  multiple unique entities of the same subclass. Use GetVersion() to read and
+  Save() to write.
   """
 
   @property
+  def _root_id(self):
+    return self.key.pairs()[0][1] if self.key else None
+
+  @property
   def version(self):
-    return self.key.integer_id() if self.key else 0
+    # Ndb treats key.integer_id() of 0 as None, so default to 0.
+    return self.key.integer_id() or 0 if self.key else 0
 
   @classmethod
-  def GetVersion(cls, version=None):
+  def Create(cls, key=None):
+    """Creates an instance of cls that is to become the first version.
+
+    The calling function of Create() should be responsible first for checking
+    no previous version of the proposed entity already exists.
+
+    Args:
+      key: Any user-specified value that will serve as the id for the root
+        entity's key.
+
+    Returns:
+      An instance of cls meant to be the first version. Note for this instance
+        to be committed to the datastore Save() would need to be called on the
+        instance returned by this method.
+    """
+    return cls(key=ndb.Key(cls, 0, parent=cls._GetRootKey(key)))
+
+  @classmethod
+  def GetVersion(cls, key=None, version=None):
     """Returns a version of the entity, the latest if version=None."""
     assert not ndb.in_transaction()
 
-    root_key = cls._GetRootKey()
+    root_key = cls._GetRootKey(key)
     root = root_key.get()
+
     if not root or not root.current:
       return None
 
@@ -53,20 +79,31 @@ class VersionedModel(ndb.Model):
     return ndb.Key(cls, version, parent=root_key).get()
 
   @classmethod
-  def GetLatestVersionNumber(cls):
-    root_entity = cls._GetRootKey().get()
+  def GetLatestVersionNumber(cls, key=None):
+    root_entity = cls._GetRootKey(key).get()
     if not root_entity:
       return -1
     return root_entity.current
 
-  def Save(self):
-    """Saves the current entity, but as a new version."""
-    root_key = self._GetRootKey()
+  def Save(self, retry_on_conflict=True):
+    """Saves the current entity, but as a new version.
+
+    Args:
+      retry_on_conflict (bool): Whether or not the next version number should
+        automatically be tried in case another transaction writes the entity
+        first with the same proposed new version number.
+
+    Returns:
+      The key of the newly written version, and a boolean whether or not this
+      call to Save() was responsible for creating it.
+    """
+    root_key = self._GetRootKey(self._root_id)
     root = root_key.get() or self._GetRootModel()(key=root_key)
 
     def SaveData():
       if self.key.get():
         return False  # The entity exists, should retry.
+
       ndb.put_multi([self, root])
       return True
 
@@ -77,11 +114,17 @@ class VersionedModel(ndb.Model):
     SetNewKey()
     while True:
       while self.key.get():
-        SetNewKey()
+        if retry_on_conflict:
+          SetNewKey()
+        else:
+          # Another transaction had already written the proposed new version, so
+          # return that version's key and False indicating this call to Save()
+          # was not responsible for creating it.
+          return self.key, False
 
       try:
         if ndb.transaction(SaveData, retries=0):
-          return self.key
+          return self.key, True
       except (
           datastore_errors.InternalError,
           datastore_errors.Timeout,
@@ -95,7 +138,13 @@ class VersionedModel(ndb.Model):
           RuntimeError) as e:
         logging.info('Transaction failure: %s', e)
       else:
-        SetNewKey()
+        if retry_on_conflict:
+          SetNewKey()
+        else:
+          # Another transaction had already written the proposed new version, so
+          # return that version's key and False indicating this call to Save()
+          # was not responsible for creating it.
+          return self.key, False
 
   @classmethod
   def _GetRootModel(cls):
@@ -111,5 +160,5 @@ class VersionedModel(ndb.Model):
     return _RootModel
 
   @classmethod
-  def _GetRootKey(cls):
-    return ndb.Key(cls._GetRootModel(), 1)
+  def _GetRootKey(cls, key=None):
+    return ndb.Key(cls._GetRootModel(), key if key is not None else 1)

@@ -26,7 +26,7 @@ class VersionedConfig(VersionedModel):
   @classmethod
   def Get(cls, version=None):
     """Returns the version of the config entity, the latest if not specified."""
-    config_data = cls.GetVersion(version)
+    config_data = cls.GetVersion(version=version)
     return config_data or cls() if version is None else config_data
 
   def Update(self, user, is_admin, **kwargs):
