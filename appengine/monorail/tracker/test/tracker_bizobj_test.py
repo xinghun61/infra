@@ -75,6 +75,10 @@ class BizobjTest(unittest.TestCase):
         {111L, 222L, 333L},
         tracker_bizobj.UsersInvolvedInConfig(config))
 
+  def testFindFieldDef_None(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    self.assertIsNone(tracker_bizobj.FindFieldDef(None, config))
+
   def testFindFieldDef_Empty(self):
     config = tracker_pb2.ProjectIssueConfig()
     self.assertIsNone(tracker_bizobj.FindFieldDef('EstDays', config))

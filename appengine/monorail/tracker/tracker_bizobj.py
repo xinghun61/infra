@@ -89,6 +89,8 @@ def UsersInvolvedInConfig(config):
 
 def FindFieldDef(field_name, config):
   """Find the specified field, or return None."""
+  if not field_name:
+    return None
   field_name_lower = field_name.lower()
   for fd in config.field_defs:
     if fd.field_name.lower() == field_name_lower:
