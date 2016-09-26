@@ -106,9 +106,7 @@ import:
   - user
   - cmd/aedeploy
 - package: cloud.google.com/go
-  # TODO(crbug.com/645648): Fix test breakages when gocloud gets rolled past
-  #                         this revision.
-  version: bdbde4dc7e9c0d48d900460402be1d4a7c0902cf
+  version: 9409d3d8cd1df211d448094ae1e4ca95b0e17130
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable

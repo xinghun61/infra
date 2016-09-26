@@ -1,8 +1,8 @@
-hash: 19be8e6379c3586dc04a226858dfb2abf1e97c357e3e3f054594548dacc75701
-updated: 2016-09-09T14:30:19.38146804-07:00
+hash: 521d68365c5e0d3368ff0a325c79816e5f580163c4119460e4b73a48aefaa273
+updated: 2016-09-26T17:58:59.344260751+10:00
 imports:
 - name: cloud.google.com/go
-  version: bdbde4dc7e9c0d48d900460402be1d4a7c0902cf
+  version: 9409d3d8cd1df211d448094ae1e4ca95b0e17130
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -10,7 +10,7 @@ imports:
   - pubsub
   - storage
 - name: github.com/dustin/go-humanize
-  version: 2fcb5204cdc65b4bec9fd0a87606bb0d0e3c54e8
+  version: bd88f87ad3a420f7bcf05e90566fd1ceb351fa7f
   repo: https://chromium.googlesource.com/external/github.com/dustin/go-humanize.git
 - name: github.com/go-sql-driver/mysql
   version: 0b58b37b664c21f3010e836f1b931e1d0b0b0685
@@ -28,7 +28,7 @@ imports:
   - proto
   - protoc-gen-go
 - name: github.com/gopherjs/gopherjs
-  version: 05b9d708f1c9b4cbe71da718f3ce23665031021a
+  version: 50101461d59f26b13c876f57aab314ce55387671
   repo: https://chromium.googlesource.com/external/github.com/gopherjs/gopherjs.git
   subpackages:
   - js
@@ -45,10 +45,10 @@ imports:
   version: c2c54e542fb797ad986b31721e1baedf214ca413
   repo: https://chromium.googlesource.com/external/github.com/kardianos/osext.git
 - name: github.com/kisielk/errcheck
-  version: be8bde424340d8085b929edc6468b056ff9455c7
+  version: 9c1292e1c962175f76516859f4a88aabd86dc495
   repo: https://chromium.googlesource.com/external/github.com/kisielk/errcheck.git
 - name: github.com/kisielk/gotool
-  version: 94d5dba705240ba73ce5d65d83ce44adc749b440
+  version: 5e136deb9b893bbe6c8f23236ff4378b7a8a0dbb
   repo: https://chromium.googlesource.com/external/github.com/kisielk/gotool.git
 - name: github.com/kr/pretty
   version: cfb55aafdaf3ec08f0db22699ab822c50091b1c4
@@ -130,12 +130,12 @@ imports:
   subpackages:
   - encoding/json5
 - name: golang.org/x/mobile
-  version: e99a906c3a3ac5959fa4b8d08f90dd5f75d3b27c
+  version: 8b28d19931a076562c21c1db79486127a7464e17
   repo: https://go.googlesource.com/mobile.git
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: 9313baa13d9262e49d07b20ed57dceafcd7240cc
+  version: f09c4662a0bd6bd8943ac7b4931e185df9471da4
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
@@ -147,7 +147,7 @@ imports:
   - google
   - jwt
 - name: golang.org/x/tools
-  version: 86ad1193da6aba71355e71191641b9cfb26daa67
+  version: c2ef61f450233d3c629ade8eb2083e43fa75c97a
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -160,7 +160,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: a69f0f19d246419bb931b0ac8f4f8d3f3e6d4feb
+  version: 80a862db7ac7755c3d6584e3791d1916363acbfc
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - gensupport
@@ -171,7 +171,7 @@ imports:
   - pubsub/v1
   - taskqueue/v1beta2
 - name: google.golang.org/appengine
-  version: 4f7eeb5305a4ba1966344836ba4af9996b7b4e05
+  version: 45688856612892bdabe348fff413e5075ac72f46
   repo: https://chromium.googlesource.com/external/github.com/golang/appengine.git
   subpackages:
   - cmd/aedeploy
@@ -190,7 +190,7 @@ imports:
   subpackages:
   - protobuf
 - name: google.golang.org/grpc
-  version: 28707e14b1d2b2f5da81474dea2790d71e526987
+  version: 71d2ea4f75286a63b606aca2422cd17ff37fd5b8
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
@@ -202,6 +202,6 @@ imports:
   version: c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6
   repo: https://chromium.googlesource.com/external/github.com/natefinch/npipe.git
 - name: gopkg.in/yaml.v2
-  version: e4d366fc3c7938e2958e662b4258c7a89e1f0e3e
+  version: 31c299268d302dd0aa9a0dcf765a3d58971ac83f
   repo: https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git
 testImports: []
