@@ -115,7 +115,7 @@ func (s *pubSubServiceImpl) SubExists(sub string) (bool, error) {
 }
 
 func (s *pubSubServiceImpl) CreatePullSub(sub string, topic string) error {
-	_, err := s.client.NewSubscription(s.ctx, sub, s.client.Topic(topic), 0, &pubsub.PushConfig{Endpoint: ""})
+	_, err := s.client.CreateSubscription(s.ctx, sub, s.client.Topic(topic), 0, &pubsub.PushConfig{Endpoint: ""})
 	return err
 }
 
@@ -124,7 +124,7 @@ func (s *pubSubServiceImpl) TopicExists(topic string) (bool, error) {
 }
 
 func (s *pubSubServiceImpl) CreateTopic(topic string) error {
-	_, err := s.client.NewTopic(s.ctx, topic)
+	_, err := s.client.CreateTopic(s.ctx, topic)
 	return err
 }
 

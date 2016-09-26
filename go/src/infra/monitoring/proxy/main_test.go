@@ -97,9 +97,8 @@ func TestMain(t *testing.T) {
 				count := binary.PutUvarint(buf, uint64(i))
 
 				msg := &pubsub.Message{
-					ID:    fmt.Sprintf("msg-%d", i),
-					AckID: fmt.Sprintf("ack-%d", i),
-					Data:  make([]byte, count),
+					ID:   fmt.Sprintf("msg-%d", i),
+					Data: make([]byte, count),
 				}
 				copy(msg.Data, buf)
 				pubsubMock.MockCall("Pull", "test-subscription", 64).WithResult([]*pubsub.Message{msg}, nil)
@@ -130,14 +129,12 @@ func TestMain(t *testing.T) {
 			pubsubMock.ackC = make(chan []*pubsub.Message, 1024)
 			msgs := []*pubsub.Message{
 				{
-					ID:    "msg-big",
-					AckID: "ack-big",
-					Data:  bytes.Repeat([]byte{0xAA}, maxMessageSize+1),
+					ID:   "msg-big",
+					Data: bytes.Repeat([]byte{0xAA}, maxMessageSize+1),
 				},
 				{
-					ID:    "msg-legit",
-					AckID: "ack-legit",
-					Data:  bytes.Repeat([]byte{0x55}, maxMessageSize),
+					ID:   "msg-legit",
+					Data: bytes.Repeat([]byte{0x55}, maxMessageSize),
 				},
 			}
 
