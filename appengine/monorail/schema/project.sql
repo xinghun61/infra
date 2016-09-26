@@ -5,7 +5,7 @@
 -- https://developers.google.com/open-source/licenses/bsd
 
 
--- Create project-realted tables in monorail db.
+-- Create project-related tables in monorail db.
 
 
 CREATE TABLE User (

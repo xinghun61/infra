@@ -16,7 +16,7 @@ from proto import site_pb2
 
 # This file is divided into the following parts:
 # 1. Settings you must edit before deploying your site.
-# 2. Settings you would edit on certainoccasions while maintaining your site.
+# 2. Settings you would edit on certain occasions while maintaining your site.
 # 3. Settings enable specific features.
 # 4. Settings that you can usually leave as-is.
 
@@ -210,7 +210,7 @@ recognized_codesite_projects = [
   'chrome-os-partner',
 ]
 
-###
+####
 # Part 5:  Instance-specific settings that override lines above.
 
 # We usually use a DB instance named "master" for writes.
