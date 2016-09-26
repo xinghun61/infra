@@ -42,11 +42,11 @@ const (
 var (
 	sentCount = metric.NewCounter("mon_proxy/endpoint/sent",
 		"Count of messages proxied to the endpoint",
-		types.MetricMetadata{},
+		nil,
 		field.String("result"))
 	sentDuration = metric.NewCumulativeDistribution("mon_proxy/endpoint/duration",
 		"Time taken to send messages to the endpoint, in milliseconds",
-		types.MetricMetadata{Units: types.Milliseconds},
+		&types.MetricMetadata{Units: types.Milliseconds},
 		distribution.DefaultBucketer)
 )
 

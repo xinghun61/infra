@@ -11,14 +11,13 @@ import (
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/tsmon/field"
 	"github.com/luci/luci-go/common/tsmon/metric"
-	"github.com/luci/luci-go/common/tsmon/types"
 	"golang.org/x/net/context"
 )
 
 var (
 	droppedCounter = metric.NewCounter("cloudtail/pipe_drops",
 		"Log entries read from a pipe and dropped because the sender couldn't keep up",
-		types.MetricMetadata{},
+		nil,
 		field.String("log"),
 		field.String("resource_type"),
 		field.String("resource_id"))

@@ -30,7 +30,6 @@ import (
 	"github.com/luci/luci-go/common/tsmon"
 	"github.com/luci/luci-go/common/tsmon/field"
 	"github.com/luci/luci-go/common/tsmon/metric"
-	"github.com/luci/luci-go/common/tsmon/types"
 
 	"golang.org/x/net/context"
 
@@ -83,11 +82,15 @@ var (
 
 	// tsmon metrics
 	iterations = metric.NewCounter("alerts_dispatcher/iterations",
-		"Number if iterations of the main polling loop.", types.MetricMetadata{}, field.String("status"))
+		"Number of iterations of the main polling loop.",
+		nil,
+		field.String("status"))
 	postErrors = metric.NewCounter("alerts_dispatcher/post_errors",
-		"Number of posting errors.", types.MetricMetadata{})
+		"Number of posting errors.",
+		nil)
 	alertCount = metric.NewInt("alerts_dispatcher/alert_count",
-		"Number of alerts generated.", types.MetricMetadata{},
+		"Number of alerts generated.",
+		nil,
 		field.String("tree"))
 )
 

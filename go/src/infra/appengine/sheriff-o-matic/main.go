@@ -31,7 +31,6 @@ import (
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/tsmon/metric"
-	"github.com/luci/luci-go/common/tsmon/types"
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/auth/identity"
 	"github.com/luci/luci-go/server/auth/xsrf"
@@ -54,7 +53,7 @@ var (
 	accessDeniedPage = template.Must(template.ParseFiles("./access-denied.html"))
 	monorailEndpoint = "https://monorail-prod.appspot.com/_ah/api/monorail/v1/"
 	jsErrors         = metric.NewCounter("frontend/js_errors",
-		"Number of uncaught javascript errors.", types.MetricMetadata{})
+		"Number of uncaught javascript errors.", nil)
 )
 
 var errStatus = func(c context.Context, w http.ResponseWriter, status int, msg string) {

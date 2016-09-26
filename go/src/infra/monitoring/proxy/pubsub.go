@@ -40,19 +40,19 @@ var (
 
 	messageCount = metric.NewCounter("mon_proxy/pubsub/message",
 		"Count of messages pulled from pub/sub, by worker",
-		types.MetricMetadata{},
+		nil,
 		field.Int("worker"))
 	ackCount = metric.NewCounter("mon_proxy/pubsub/ack",
 		"Count of messages Ack'd, by success/failure",
-		types.MetricMetadata{},
+		nil,
 		field.String("result"))
 	pullDurationMetric = metric.NewCumulativeDistribution("mon_proxy/pubsub/pull_duration",
 		"Time taken to Pull messages from pub/sub, in milliseconds",
-		types.MetricMetadata{Units: types.Milliseconds},
+		&types.MetricMetadata{Units: types.Milliseconds},
 		distribution.DefaultBucketer)
 	ackDurationMetric = metric.NewCumulativeDistribution("mon_proxy/pubsub/ack_duration",
 		"Time taken to Ack messages to pub/sub, in milliseconds",
-		types.MetricMetadata{Units: types.Milliseconds},
+		&types.MetricMetadata{Units: types.Milliseconds},
 		distribution.DefaultBucketer)
 )
 
