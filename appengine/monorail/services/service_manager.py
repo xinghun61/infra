@@ -25,7 +25,7 @@ class Services(object):
 
   def __init__(
       self, project=None, user=None, issue=None, config=None,
-      inboundemail=None, usergroup=None, cache_manager=None, autolink_obj=None,
+      usergroup=None, cache_manager=None, autolink_obj=None,
       user_star=None, project_star=None, issue_star=None, features=None,
       spam=None):
     # Persistence services
@@ -38,12 +38,11 @@ class Services(object):
     self.project_star = project_star
     self.issue_star = issue_star
     self.features = features
-    self.spam = spam
 
     # Misc. services
     self.cache_manager = cache_manager
-    self.inboundemail = inboundemail
     self.autolink = autolink_obj
+    self.spam = spam
 
 
 def set_up_services():
@@ -51,18 +50,23 @@ def set_up_services():
 
   global svcs
   if svcs is None:
-    svcs = Services()
-    svcs.autolink = autolink.Autolink()
-    svcs.cache_manager = cachemanager_svc.CacheManager()
-    svcs.user = user_svc.UserService(svcs.cache_manager)
-    svcs.user_star = star_svc.UserStarService(svcs.cache_manager)
-    svcs.project_star = star_svc.ProjectStarService(svcs.cache_manager)
-    svcs.issue_star = star_svc.IssueStarService(svcs.cache_manager)
-    svcs.project = project_svc.ProjectService(svcs.cache_manager)
-    svcs.usergroup = usergroup_svc.UserGroupService(svcs.cache_manager)
-    svcs.config = config_svc.ConfigService(svcs.cache_manager)
-    svcs.issue = issue_svc.IssueService(
-        svcs.project, svcs.config, svcs.cache_manager)
-    svcs.features = features_svc.FeaturesService(svcs.cache_manager)
-    svcs.spam = spam_svc.SpamService()
+    # Sorted as: cache_manager first, everything which depends on it,
+    # issue (which depends on project and config), things with no deps.
+    cache_manager = cachemanager_svc.CacheManager()
+    config = config_svc.ConfigService(cache_manager)
+    features = features_svc.FeaturesService(cache_manager)
+    issue_star = star_svc.IssueStarService(cache_manager)
+    project = project_svc.ProjectService(cache_manager)
+    project_star = star_svc.ProjectStarService(cache_manager)
+    user = user_svc.UserService(cache_manager)
+    user_star = star_svc.UserStarService(cache_manager)
+    usergroup = usergroup_svc.UserGroupService(cache_manager)
+    issue = issue_svc.IssueService(project, config, cache_manager)
+    autolink_obj = autolink.Autolink()
+    spam = spam_svc.SpamService()
+    svcs = Services(
+      cache_manager=cache_manager, config=config, features=features,
+      issue_star=issue_star, project=project, project_star=project_star,
+      user=user, user_star=user_star, usergroup=usergroup, issue=issue,
+      autolink_obj=autolink_obj, spam=spam)
   return svcs
