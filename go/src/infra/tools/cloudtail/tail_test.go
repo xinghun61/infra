@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -43,9 +45,14 @@ func TestTailer(t *testing.T) {
 }
 
 func runTest(c C, opts TailerOptions) {
+	// This test is more like a smoke test (it uses real file system), do not
+	// mock the clock.
+	ctx := context.Background()
+
 	// Use buffered channel to avoid deadlocking if something goes wrong.
 	client := &fakeClient{ch: make(chan pushEntriesCall, 100)}
 	buf := NewPushBuffer(PushBufferOptions{Client: client, FlushTimeout: 1 * time.Millisecond})
+	buf.Start(ctx)
 
 	dir, err := ioutil.TempDir("", "cloudtail_test")
 	So(err, ShouldBeNil)
@@ -117,6 +124,13 @@ func runTest(c C, opts TailerOptions) {
 	opts.initializedSignal = initializedSignal
 	tailer, err := NewTailer(opts)
 	So(err, ShouldBeNil)
+
+	done := make(chan struct{})
+	go func() {
+		tailer.Run(ctx)
+		close(done)
+	}()
+
 	<-initializedSignal
 
 	manyLines := strings.Repeat("manylines\n", 1000)
@@ -137,9 +151,10 @@ func runTest(c C, opts TailerOptions) {
 	putData(1000, manyLines)
 	putData(1, bigLine+"\n")
 
-	So(tailer.Stop(), ShouldBeNil)
-	So(tailer.Wait(), ShouldBeNil)
-	So(buf.Stop(nil), ShouldBeNil)
+	tailer.Stop()
+	<-done
+
+	So(buf.Stop(ctx), ShouldBeNil)
 
 	text := []string{}
 	for _, e := range client.getEntries() {

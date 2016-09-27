@@ -8,13 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/luci/luci-go/common/logging"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestDrainChannel(t *testing.T) {
 	Convey("Works", t, func() {
+		ctx := testContext()
 		client := &fakeClient{}
 		buf := NewPushBuffer(PushBufferOptions{Client: client})
 
@@ -28,8 +27,9 @@ func TestDrainChannel(t *testing.T) {
 			close(ch)
 		}()
 
-		drainChannel(ch, NullParser(), buf, nil)
-		So(buf.Stop(nil), ShouldBeNil)
+		buf.Start(ctx)
+		drainChannel(ctx, ch, NullParser(), buf)
+		So(buf.Stop(ctx), ShouldBeNil)
 
 		text := []string{}
 		for _, e := range client.getEntries() {
@@ -39,6 +39,7 @@ func TestDrainChannel(t *testing.T) {
 	})
 
 	Convey("Rejects unparsed lines", t, func() {
+		ctx := testContext()
 		client := &fakeClient{}
 		buf := NewPushBuffer(PushBufferOptions{Client: client})
 		parser := &callbackParser{
@@ -51,8 +52,9 @@ func TestDrainChannel(t *testing.T) {
 			close(ch)
 		}()
 
-		drainChannel(ch, parser, buf, logging.Null)
-		So(buf.Stop(nil), ShouldBeNil)
+		buf.Start(ctx)
+		drainChannel(ctx, ch, parser, buf)
+		So(buf.Stop(ctx), ShouldBeNil)
 		So(len(client.getEntries()), ShouldEqual, 0)
 	})
 }

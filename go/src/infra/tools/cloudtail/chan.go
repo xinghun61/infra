@@ -11,70 +11,55 @@ import (
 	"fmt"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	"github.com/luci/luci-go/common/logging"
 )
 
-// drainChannel reads non-empty log lines from a channel (until it is closed),
-// extracts logging metadata from them (severity, timestamp, etc) via given
-// parser and pushes log entries to the push buffer. Doesn't return errors: use
-// buf.Stop() to check for any errors during sending.
-func drainChannel(src chan string, parser LogParser, buf PushBuffer, logger logging.Logger) {
-	batch := []Entry(nil)
-
-	// Helper function to parse log line into an Entry and add it to 'batch'.
-	addEntry := func(line string) {
+// drainChannel reads log lines from the channel and pushes them to the buffer.
+//
+// It reads non-empty log lines from a channel (until it is closed), extracts
+// logging metadata from them (severity, timestamp, etc) via the given parser
+// and pushes log entries to the push buffer.
+//
+// Doesn't return errors: use buf.Stop() to check for any errors during sending.
+func drainChannel(ctx context.Context, src chan string, parser LogParser, buf PushBuffer) {
+	// Helper function to parse log line into an Entry.
+	parseEntry := func(line string) *Entry {
 		line = strings.TrimSpace(line)
 		if line == "" {
-			return
+			return nil
 		}
 		entry := parser.ParseLogLine(line)
 		if entry == nil {
-			if logger != nil {
-				logger.Errorf("skipping line, unrecognized format: %s", line)
-			}
-			return
+			logging.Errorf(ctx, "skipping line, unrecognized format: %s", line)
+			return nil
 		}
 		if entry.InsertID == "" {
 			insertID, err := computeInsertID(entry)
 			if err != nil {
-				if logger != nil {
-					logger.Errorf("skipping line, can't compute insertId: %s", err)
-				}
-				return
+				logging.WithError(err).Errorf(ctx, "skipping line, can't compute insertId")
+				return nil
 			}
 			entry.InsertID = insertID
 		}
-		batch = append(batch, *entry)
+		return entry
 	}
 
 	line := ""
 	alive := true
 
-	for alive {
-		// Wait for the first entry.
+	// Note: ignore ctx.Done() here, since we don't want to block the pipeline
+	// when context is canceled. Instead we'll run the loop as usual and send the
+	// entries to buf.Send() which would just drop them. That way we don't block
+	// the producer and let it finish what it's doing.
+	for {
 		line, alive = <-src
 		if !alive {
-			return
+			break
 		}
-		addEntry(line)
-
-		// Fetch the rest of them in non blocking way.
-		blocks := false
-		for alive && !blocks {
-			select {
-			case line, alive = <-src:
-				if alive {
-					addEntry(line)
-				}
-			default:
-				blocks = true
-			}
-		}
-
-		// Send them all.
-		if len(batch) != 0 {
-			buf.Add(batch)
-			batch = nil
+		if entry := parseEntry(line); entry != nil {
+			buf.Send(ctx, *entry)
 		}
 	}
 }

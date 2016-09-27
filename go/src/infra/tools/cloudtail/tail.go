@@ -11,8 +11,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/luci/luci-go/common/logging"
+	"golang.org/x/net/context"
 	"gopkg.in/fsnotify.v1"
+
+	"github.com/luci/luci-go/common/clock"
+	"github.com/luci/luci-go/common/logging"
 
 	"infra/tools/cloudtail/internal"
 )
@@ -21,7 +24,7 @@ import (
 const (
 	DefaultRotationCheckPeriod = 5 * time.Second
 	DefaultPollingPeriod       = 500 * time.Millisecond
-	DefaultReadBufferLen       = 1024 * 64
+	DefaultReadBufferLen       = 1024 * 256
 )
 
 // TailerOptions is passed to NewTailer.
@@ -34,9 +37,6 @@ type TailerOptions struct {
 
 	// Parser converts text lines into log entries, default is StdParser().
 	Parser LogParser
-
-	// Logger is used for local tailer own log messages.
-	Logger logging.Logger
 
 	// SeekToEnd is true to seek to file's end before tailing.
 	SeekToEnd bool
@@ -62,12 +62,13 @@ type TailerOptions struct {
 
 // Tailer watches a file for changes and pushes new lines to a the buffer.
 type Tailer struct {
+	opts     TailerOptions
 	stopping chan struct{} // closed when Stop is called
-	stopped  chan struct{} // closed when internal goroutine has finished
 }
 
-// NewTailer spawn a goroutine that watches a file for changes and pushes
-// new lines to the buffer.
+// NewTailer prepares a Tailer.
+//
+// Use its 'Run' method to start tailing a file.
 func NewTailer(opts TailerOptions) (*Tailer, error) {
 	var err error
 	opts.Path, err = filepath.Abs(opts.Path)
@@ -76,9 +77,6 @@ func NewTailer(opts TailerOptions) (*Tailer, error) {
 	}
 	if opts.Parser == nil {
 		opts.Parser = StdParser()
-	}
-	if opts.Logger == nil {
-		opts.Logger = logging.Null
 	}
 	if opts.RotationCheckPeriod == 0 {
 		opts.RotationCheckPeriod = DefaultRotationCheckPeriod
@@ -90,59 +88,85 @@ func NewTailer(opts TailerOptions) (*Tailer, error) {
 		opts.ReadBufferLen = DefaultReadBufferLen
 	}
 
-	tailer := &Tailer{
+	return &Tailer{
+		opts:     opts,
 		stopping: make(chan struct{}),
-		stopped:  make(chan struct{}),
-	}
+	}, nil
+}
 
-	// Wakes up on file change notifications. Closes after 'stopping' is closed
+// Run watches a file for changes and pushes new lines to the buffer.
+//
+// Use Stop() (from another goroutine) to gracefully terminate the tailer, or
+// cancel the context to abort it ASAP.
+func (tailer *Tailer) Run(ctx context.Context) {
+	// The inner context is canceled when tailer.Stop is called. It aborts all
+	// tailer guts, but doesn't stop 'drainChannel' (so all pending data still can
+	// be sent).
+	innerCtx, abort := context.WithCancel(ctx)
+	go func() {
+		select {
+		case <-tailer.stopping:
+			abort()
+		case <-innerCtx.Done(): // to avoid leaking this goroutine
+		}
+	}()
+	defer abort() // this would kill the goroutine above for sure
+
+	// Wakes up on file change notifications. Closes after innerCtx is closed
 	// and all pending notifications are sent.
 	var changeSignal chan checkType
-	if !opts.UsePolling {
+	if !tailer.opts.UsePolling {
 		var err error
-		changeSignal, err = signalOnChanges(opts.Path, opts.Logger, opts.PollingPeriod, tailer.stopping)
+		changeSignal, err = signalOnChanges(innerCtx, tailer.opts.Path, tailer.opts.PollingPeriod)
 		if err != nil {
-			opts.Logger.Warningf("Failed to initialize fsnotify, polling instead: %s", err)
+			logging.Warningf(innerCtx, "Failed to initialize fsnotify, polling instead: %s", err)
 		}
 	}
 	if changeSignal == nil {
-		changeSignal = signalPeriodically(opts.PollingPeriod, tailer.stopping)
+		changeSignal = signalPeriodically(innerCtx, tailer.opts.PollingPeriod)
 	}
 
 	// poller.Poll() -> source -> PushBuffer (in drainChannel).
 	source := make(chan string)
 	go func() {
 		defer close(source)
-		defer close(tailer.stopped)
 
-		poller := filePoller{path: opts.Path}
-		poller.Init(opts.SeekToEnd, opts.ReadBufferLen)
+		poller := filePoller{path: tailer.opts.Path}
+		poller.Init(tailer.opts.SeekToEnd, tailer.opts.ReadBufferLen)
 		defer poller.Close()
-		if opts.initializedSignal != nil {
-			close(opts.initializedSignal)
+		if tailer.opts.initializedSignal != nil {
+			close(tailer.opts.initializedSignal)
 		}
 
 		lastCheck := time.Time{}
 		forceCheck := true
 
+		// The final poll is happening with the outer context. So if inner context
+		// is canceled (e.g. on Stop), we are still able to send stuff (to terminate
+		// gracefully). If outer context is canceled too, 'Poll' does nothing.
+		defer func() {
+			logging.Debugf(ctx, "Doing the final tailer poll...")
+			poller.Poll(ctx, false, source)
+		}()
+
 		for {
 			// Do os.Stat scan after each wakeup timeout (forceCheck == true) or at
 			// least each RotationCheckPeriod.
-			now := time.Now()
-			checkExistence := forceCheck || now.Sub(lastCheck) > opts.RotationCheckPeriod
+			now := clock.Now(innerCtx)
+			checkExistence := forceCheck || now.Sub(lastCheck) > tailer.opts.RotationCheckPeriod
 			if checkExistence {
 				lastCheck = now
 			}
 			forceCheck = false
 
 			// Read new lines, push them downstream (via 'source' channel).
-			err := poller.Poll(checkExistence, source, tailer.stopping)
+			err := poller.Poll(innerCtx, checkExistence, source)
 			if err != nil && !os.IsNotExist(err) {
-				opts.Logger.Errorf("tail error: %s", err)
+				logging.Errorf(innerCtx, "tail error: %s", err)
 			}
 
 			// Wake up periodically to make os.Stat check to detect file truncation.
-			wakeupIn := lastCheck.Add(opts.RotationCheckPeriod).Sub(time.Now())
+			wakeupIn := lastCheck.Add(tailer.opts.RotationCheckPeriod).Sub(clock.Now(innerCtx))
 			if wakeupIn < 0 {
 				wakeupIn = 0
 			}
@@ -151,7 +175,10 @@ func NewTailer(opts TailerOptions) (*Tailer, error) {
 			// changeSignal is closed when the watcher goroutine exits (happens when
 			// tailer.stopping is closed, i.e. when Stop() is called).
 			select {
-			case <-time.After(wakeupIn):
+			case res := <-clock.After(innerCtx, wakeupIn):
+				if res.Err != nil {
+					return // the context was canceled
+				}
 				forceCheck = true
 			case check, alive := <-changeSignal:
 				if !alive {
@@ -178,23 +205,16 @@ func NewTailer(opts TailerOptions) (*Tailer, error) {
 			}
 		}
 	}()
-	go drainChannel(source, opts.Parser, opts.PushBuffer, opts.Logger)
 
-	return tailer, nil
+	// Note: canceled context here would cause all logs from 'source' to be simply
+	// dropped.
+	drainChannel(ctx, source, tailer.opts.Parser, tailer.opts.PushBuffer)
 }
 
-// Stop asynchronously notifies tailer to stop. Panics if called twice.
-func (t *Tailer) Stop() error {
-	close(t.stopping)
-	return nil
-}
-
-// Wait waits for the tailer to be in stopped state (i.e. no more messages
-// will be pushed to the buffer). There still can be unsent messages in-flight
-// in PushBuffer though.
-func (t *Tailer) Wait() error {
-	<-t.stopped
-	return nil
+// Stop asynchronously notifies tailer to stop (i.e. 'Run' to unblock and
+// return). Panics if called twice.
+func (tailer *Tailer) Stop() {
+	close(tailer.stopping)
 }
 
 /// File state poller.
@@ -229,7 +249,9 @@ func (p *filePoller) Init(seekToEnd bool, readBufferLen int) {
 }
 
 // Poll reads all new lines since last call to Poll and pushes them to 'sink'.
-func (p *filePoller) Poll(checkExistence bool, sink chan string, stop chan struct{}) error {
+//
+// Exits ASAP if the context is canceled.
+func (p *filePoller) Poll(ctx context.Context, checkExistence bool, sink chan string) error {
 	// Slow code path (doing extra os.Stat) if there's suspicion the file has
 	// been moved.
 	if checkExistence {
@@ -252,9 +274,12 @@ func (p *filePoller) Poll(checkExistence bool, sink chan string, stop chan struc
 		// still open file handle and close it. New one is reopened below.
 		if p.file != nil {
 			if !exists || !os.SameFile(p.stat, stat) || stat.Size() < p.offset {
-				p.readLines(sink, stop)
+				p.readLines(ctx, sink)
 				if len(p.incompleteLine) != 0 {
-					sink <- string(p.incompleteLine)
+					select {
+					case sink <- string(p.incompleteLine):
+					case <-ctx.Done():
+					}
 				}
 				p.reset()
 			}
@@ -266,7 +291,7 @@ func (p *filePoller) Poll(checkExistence bool, sink chan string, stop chan struc
 			return err
 		}
 	}
-	p.readLines(sink, stop)
+	p.readLines(ctx, sink)
 	return nil
 }
 
@@ -304,19 +329,8 @@ func (p *filePoller) reset() {
 	p.incompleteLine = nil
 }
 
-func (p *filePoller) readLines(sink chan string, stop chan struct{}) {
-	// Read as much as possible. Check 'stop' signal only before reading next
-	// block: that way we don't have to deal with read but unparsed data later.
-	// It assumes len(p.buf) is relatively small (so outer 'for' loop spins
-	// relatively fast).
-loop:
+func (p *filePoller) readLines(ctx context.Context, sink chan string) {
 	for {
-		select {
-		case <-stop:
-			break loop
-		default:
-		}
-
 		size, err := p.file.Read(p.buf)
 		p.offset += int64(size)
 
@@ -333,15 +347,26 @@ loop:
 			buf = buf[idx+1:] // skip '\n' itself
 			// Avoid uselessly copying newLine into new buffer.
 			if p.incompleteLine == nil {
-				sink <- string(newLine)
+				select {
+				case sink <- string(newLine):
+				case <-ctx.Done():
+				}
 			} else {
 				p.incompleteLine = append(p.incompleteLine, newLine...)
-				sink <- string(p.incompleteLine)
+				select {
+				case sink <- string(p.incompleteLine):
+				case <-ctx.Done():
+				}
 				p.incompleteLine = nil
 			}
 		}
 
 		if err != nil {
+			return // usually EOF
+		}
+
+		// Canceled?
+		if ctx.Err() != nil {
 			return
 		}
 	}
@@ -362,17 +387,21 @@ const (
 )
 
 // signalPeriodically returns a channel that receives normalCheck value each
-// 'interval' milliseconds. Can be used for dumb polling of the file state.
-// Returned channel closes when 'done' channel is closed.
-func signalPeriodically(interval time.Duration, done chan struct{}) chan checkType {
+// 'interval' milliseconds.
+//
+// Can be used for dumb polling of the file state.
+//
+// Returned channel closes when the context is canceled.
+func signalPeriodically(ctx context.Context, interval time.Duration) chan checkType {
 	out := make(chan checkType)
 	go func() {
 		defer close(out)
 		for {
 			select {
-			case <-done:
-				return
-			case <-time.After(interval):
+			case res := <-clock.After(ctx, interval):
+				if res.Err != nil {
+					return // context closed
+				}
 				out <- normalCheck
 			}
 		}
@@ -381,11 +410,14 @@ func signalPeriodically(interval time.Duration, done chan struct{}) chan checkTy
 }
 
 // signalOnChanges returns a channel that receives some checkType whenever
-// file specified by 'path' changes. Caller must be prepared for false events,
-// for the file being unexpectedly missing and all other conditions.
-// Consider 'signalOnChanges' to be a smart version of 'signalPeriodically' that
-// Returned channel closes when 'done' channel is closed.
-func signalOnChanges(path string, logger logging.Logger, interval time.Duration, done chan struct{}) (chan checkType, error) {
+// file specified by 'path' changes.
+//
+// Caller must be prepared for false events, for the file being unexpectedly
+// missing and all other conditions. Consider 'signalOnChanges' to be a smart
+// version of 'signalPeriodically'.
+//
+// The returned channel closes when the context is closed.
+func signalOnChanges(ctx context.Context, path string, interval time.Duration) (chan checkType, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
@@ -401,7 +433,7 @@ func signalOnChanges(path string, logger logging.Logger, interval time.Duration,
 		spamLog := func(f string, args ...interface{}) {
 			msg := fmt.Sprintf(f, args...)
 			if lastLogMsg != msg {
-				logger.Debugf(msg)
+				logging.Debugf(ctx, msg)
 				lastLogMsg = msg
 			}
 		}
@@ -417,15 +449,18 @@ func signalOnChanges(path string, logger logging.Logger, interval time.Duration,
 					added = true
 				}
 			}
-			var timeout <-chan time.Time
+			var timeout <-chan clock.TimerResult
 			if !added {
-				timeout = time.After(interval)
+				timeout = clock.After(ctx, interval)
 			}
 
 			select {
-			case <-done:
+			case <-ctx.Done():
 				return
-			case <-timeout:
+			case res := <-timeout:
+				if res.Err != nil {
+					return // the context was canceled
+				}
 				out <- statCheck
 			case err := <-watcher.Errors:
 				watcher.Remove(path)

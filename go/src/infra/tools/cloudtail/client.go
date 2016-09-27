@@ -9,12 +9,14 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"golang.org/x/net/context"
 	"google.golang.org/api/googleapi"
 	cloudlog "google.golang.org/api/logging/v1beta3"
 
+	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/tsmon/field"
@@ -29,14 +31,19 @@ const DefaultResourceType = "machine"
 type Entry struct {
 	// InsertId can be used to deduplicate log entries.
 	InsertID string
+
 	// Timestamp is an optional timestamp.
 	Timestamp time.Time
+
 	// Severity is the severity of the log entry.
 	Severity Severity
+
 	// TextPayload is the log entry payload, represented as a text string.
 	TextPayload string
+
 	// StructPayload is the log entry payload, represented as a JSONish structure.
 	StructPayload interface{}
+
 	// ParsedBy is the parser that parsed this line, or nil if it fell through to
 	// the default parser.
 	ParsedBy LogParser
@@ -47,11 +54,15 @@ type Client interface {
 	// PushEntries sends entries to Cloud Logging. No retries.
 	//
 	// May return fatal or transient errors. Check with errors.IsTransient.
-	PushEntries(entries []Entry) error
+	//
+	// Respects context deadline.
+	PushEntries(ctx context.Context, entries []*Entry) error
 }
 
-// ClientID uniquely identifies the log entries sent by this process.  Its
-// values are included in monitoring metrics.
+// ClientID uniquely identifies the log entries sent by this process.
+//
+// Its values are used to identify the log in Cloud Logging and also included in
+// monitoring metrics.
 type ClientID struct {
 	// ResourceType identifies a kind of entity that produces this log (e.g.
 	// 'machine', 'master'). Default is DefaultResourceType.
@@ -67,13 +78,11 @@ type ClientID struct {
 
 // ClientOptions is passed to NewClient.
 type ClientOptions struct {
+	// ClientID uniquely identifies the log entries sent by this process.
 	ClientID
 
-	// Client is used http.Client (that must implement proper authentication).
+	// Client is http.Client to use (that must implement proper authentication).
 	Client *http.Client
-
-	// Logger is used to emit local log messages related to the client itself.
-	Logger logging.Logger
 
 	// UserAgent is an optional string appended to User-Agent HTTP header.
 	UserAgent string
@@ -102,12 +111,14 @@ var (
 		field.String("result"))
 )
 
+const (
+	minBackoffSleep = 5 * time.Second
+	maxBackoffSleep = 15 * time.Minute
+)
+
 // NewClient returns new object that knows how to push log entries to a single
 // log in Cloud Logging.
 func NewClient(opts ClientOptions) (Client, error) {
-	if opts.Logger == nil {
-		opts.Logger = logging.Null
-	}
 	if opts.ProjectID == "" {
 		return nil, fmt.Errorf("no ProjectID is provided")
 	}
@@ -130,41 +141,35 @@ func NewClient(opts ClientOptions) (Client, error) {
 		return nil, err
 	}
 	service.UserAgent = opts.UserAgent
-	return &loggingClient{
-		opts: opts,
-		ctx: logging.SetFactory(context.Background(), func(context.Context) logging.Logger {
-			return opts.Logger
-		}),
+
+	client := &loggingClient{
+		opts:    opts,
+		service: service,
 		commonLabels: map[string]string{
 			"compute.googleapis.com/resource_id":   opts.ResourceID,
 			"compute.googleapis.com/resource_type": opts.ResourceType,
 		},
 		serviceName: "compute.googleapis.com",
-		writeFunc: func(projID, logID string, req *cloudlog.WriteLogEntriesRequest) error {
-			if opts.Debug {
-				buf, err := json.MarshalIndent(req, "", "  ")
-				if err != nil {
-					return err
-				}
-				fmt.Printf("----------\nTo %s/%s:\n%s\n----------\n", projID, logID, string(buf))
-				return nil
-			}
-			_, err := service.Projects.Logs.Entries.Write(projID, logID, req).Do()
-			if apiErr, _ := err.(*googleapi.Error); apiErr != nil && apiErr.Code >= 500 {
-				return errors.WrapTransient(err)
-			}
-			return err
-		},
-	}, nil
+	}
+	if opts.Debug {
+		client.writeFunc = client.debugWriteFunc
+	} else {
+		client.writeFunc = client.cloudLoggingWriteFunc
+	}
+	return client, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type writeFunc func(projID, logID string, req *cloudlog.WriteLogEntriesRequest) error
+type writeFunc func(ctx context.Context, projID, logID string, req *cloudlog.WriteLogEntriesRequest) error
 
 type loggingClient struct {
-	opts ClientOptions
-	ctx  context.Context
+	opts    ClientOptions
+	service *cloudlog.Service
+
+	// To sleep on HTTP 429.
+	lock         sync.Mutex
+	backoffSleep time.Duration
 
 	// These are passed to Cloud Logging API as is.
 	commonLabels map[string]string
@@ -174,7 +179,7 @@ type loggingClient struct {
 	writeFunc writeFunc
 }
 
-func (c *loggingClient) PushEntries(entries []Entry) error {
+func (c *loggingClient) PushEntries(ctx context.Context, entries []*Entry) error {
 	req := cloudlog.WriteLogEntriesRequest{
 		CommonLabels: c.commonLabels,
 		Entries:      make([]*cloudlog.LogEntry, len(entries)),
@@ -183,7 +188,7 @@ func (c *loggingClient) PushEntries(entries []Entry) error {
 		metadata := &cloudlog.LogEntryMetadata{ServiceName: c.serviceName}
 		if e.Severity != "" {
 			if err := e.Severity.Validate(); err != nil {
-				c.opts.Logger.Warningf("invalid severity, ignoring: %s", e.Severity)
+				logging.Warningf(ctx, "invalid severity, ignoring: %s", e.Severity)
 			} else {
 				metadata.Severity = string(e.Severity)
 			}
@@ -197,13 +202,78 @@ func (c *loggingClient) PushEntries(entries []Entry) error {
 			TextPayload:   e.TextPayload,
 			StructPayload: e.StructPayload,
 		}
-		entriesCounter.Add(c.ctx, 1, c.opts.LogID, c.opts.ResourceType, c.opts.ResourceID, metadata.Severity)
+		entriesCounter.Add(ctx, 1, c.opts.LogID, c.opts.ResourceType, c.opts.ResourceID, metadata.Severity)
 	}
-	if err := c.writeFunc(c.opts.ProjectID, c.opts.LogID, &req); err != nil {
-		writesCounter.Add(c.ctx, 1, c.opts.LogID, c.opts.ResourceType, c.opts.ResourceID, "failure")
+	if err := c.writeFunc(ctx, c.opts.ProjectID, c.opts.LogID, &req); err != nil {
+		writesCounter.Add(ctx, 1, c.opts.LogID, c.opts.ResourceType, c.opts.ResourceID, "failure")
 		return err
 	}
 
-	writesCounter.Add(c.ctx, 1, c.opts.LogID, c.opts.ResourceType, c.opts.ResourceID, "success")
+	writesCounter.Add(ctx, 1, c.opts.LogID, c.opts.ResourceType, c.opts.ResourceID, "success")
 	return nil
+}
+
+func (c *loggingClient) debugWriteFunc(ctx context.Context, projID, logID string, req *cloudlog.WriteLogEntriesRequest) error {
+	buf, err := json.MarshalIndent(req, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Printf("----------\nTo %s/%s:\n%s\n", projID, logID, string(buf))
+	clock.Sleep(ctx, 30*time.Millisecond)
+	fmt.Println("----------")
+	if os.Getenv("CLOUDTAIL_DEBUG_EMULATE_429") != "" {
+		c.sleepOnRateLimiting(ctx)
+		return errors.WrapTransient(fmt.Errorf("emulated HTTP 429"))
+	}
+	return nil
+}
+
+func (c *loggingClient) cloudLoggingWriteFunc(ctx context.Context, projID, logID string, req *cloudlog.WriteLogEntriesRequest) error {
+	_, err := c.service.Projects.Logs.Entries.Write(projID, logID, req).Context(ctx).Do()
+	if err == nil {
+		c.lock.Lock()
+		c.backoffSleep = 0
+		c.lock.Unlock()
+		return nil
+	}
+
+	if apiErr, _ := err.(*googleapi.Error); apiErr != nil {
+		if apiErr.Code >= 500 {
+			return errors.WrapTransient(err)
+		}
+		// HTTP 429 error happens when Cloud Logging is trying to throttle request
+		// rate. This is global condition, so we keep the sleeping logic in the
+		// loggingClient itself.
+		if apiErr.Code == 429 {
+			c.sleepOnRateLimiting(ctx)
+			return errors.WrapTransient(err)
+		}
+		return err
+	}
+
+	// The context is dead? Probably fatal error then.
+	if ctx.Err() != nil {
+		return err
+	}
+
+	// Non API errors are usually transient, like connection timeout or DNS
+	// resolution problems.
+	return errors.WrapTransient(err)
+}
+
+func (c *loggingClient) sleepOnRateLimiting(ctx context.Context) {
+	c.lock.Lock()
+	if c.backoffSleep == 0 {
+		c.backoffSleep = minBackoffSleep
+	} else {
+		c.backoffSleep *= 2
+		if c.backoffSleep > maxBackoffSleep {
+			c.backoffSleep = maxBackoffSleep
+		}
+	}
+	toSleep := c.backoffSleep
+	c.lock.Unlock()
+
+	logging.Warningf(ctx, "Received HTTP 429, sleeping %s", toSleep)
+	clock.Sleep(ctx, toSleep)
 }

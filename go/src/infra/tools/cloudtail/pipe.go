@@ -6,12 +6,16 @@ package cloudtail
 
 import (
 	"bufio"
+	"fmt"
 	"io"
+	"time"
 
+	"golang.org/x/net/context"
+
+	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/tsmon/field"
 	"github.com/luci/luci-go/common/tsmon/metric"
-	"golang.org/x/net/context"
 )
 
 var (
@@ -23,26 +27,98 @@ var (
 		field.String("resource_id"))
 )
 
-// PipeFromReader reads log lines from io.Reader, parses them and pushes to
-// the buffer.
-func PipeFromReader(id ClientID, src io.Reader, parser LogParser, buf PushBuffer, ctx context.Context, lineBufferSize int) error {
-	scanner := bufio.NewScanner(src)
-	source := make(chan string, lineBufferSize)
+// PipeReader reads lines from io.Reader, parses and pushes them to the buffer.
+type PipeReader struct {
+	// ClientID identifies the log stream for monitoring.
+	ClientID ClientID
+
+	// Source is a reader to read logs from.
+	Source io.Reader
+
+	// PushBuffer knows how to forward log entries to the client.
+	PushBuffer PushBuffer
+
+	// Parser converts text lines into log entries, default is StdParser().
+	Parser LogParser
+
+	// LineBufferSize defines how many log lines to accumulate (if the flush is
+	// blocked) before starting to drop them.
+	//
+	// Default is 0, which means to never drop lines (stop reading from the
+	// source instead).
+	LineBufferSize int
+
+	// OnEOF is called immediately when EOF (or reading error) is encountered.
+	//
+	// Note that this happens before 'Run' returns, because 'Run' waits for data
+	// to be pushed to the PushBuffer.
+	OnEOF func()
+}
+
+// Run reads from the reader until EOF or until the context is closed.
+//
+// Returns error only if reading from io.Reader fails. On EOF or on context
+// cancellation returns nil. Always returns same error as was sent to OnEOF.
+//
+// Waits for all read data to be pushed to PushBuffer.
+func (r *PipeReader) Run(ctx context.Context) error {
+	source := make(chan string, r.LineBufferSize)
+	result := make(chan error, 1)
+
 	go func() {
-		defer close(source)
+		scanner := bufio.NewScanner(r.Source)
+
+		droppedTotal := 0
+		droppedReport := 0
+		nextDropReport := clock.Now(ctx).Add(time.Second)
+
+		defer func() {
+			if r.OnEOF != nil {
+				r.OnEOF()
+			}
+			close(source)
+			err := scanner.Err()
+			if err == nil && droppedTotal != 0 {
+				err = fmt.Errorf("%d lines in total were dropped due to insufficient line buffer size", droppedTotal)
+			}
+			result <- err
+			close(result)
+		}()
+
+		logDropped := func(force bool) {
+			if force || clock.Now(ctx).After(nextDropReport) {
+				if droppedReport != 0 {
+					logging.Warningf(ctx, "%d lines were dropped due to insufficient line buffer size", droppedReport)
+					droppedReport = 0
+				}
+				nextDropReport = clock.Now(ctx).Add(time.Second)
+			}
+		}
+
 		for scanner.Scan() {
-			if lineBufferSize == 0 {
-				source <- scanner.Text() // Blocking.
+			if r.LineBufferSize == 0 {
+				select {
+				case <-ctx.Done():
+					return
+				case source <- scanner.Text(): // Blocking.
+				}
 			} else {
 				select {
+				case <-ctx.Done():
+					logDropped(true)
+					return
 				case source <- scanner.Text():
 				default:
 					// The buffer is full - drop this log line rather than blocking the pipe.
-					droppedCounter.Add(ctx, 1, id.LogID, id.ResourceType, id.ResourceID)
+					droppedCounter.Add(ctx, 1, r.ClientID.LogID, r.ClientID.ResourceType, r.ClientID.ResourceID)
+					droppedReport++
+					droppedTotal++
 				}
+				logDropped(false)
 			}
 		}
 	}()
-	drainChannel(source, parser, buf, logging.Get(ctx))
-	return scanner.Err()
+
+	drainChannel(ctx, source, r.Parser, r.PushBuffer)
+	return <-result
 }

@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	logging "google.golang.org/api/logging/v1beta3"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -16,6 +18,8 @@ import (
 
 func TestClient(t *testing.T) {
 	Convey("PushEntries works", t, func() {
+		ctx := testContext()
+
 		opts := ClientOptions{
 			ClientID: ClientID{
 				ResourceType: "res-type",
@@ -27,7 +31,7 @@ func TestClient(t *testing.T) {
 		}
 
 		requests := []*logging.WriteLogEntriesRequest{}
-		writeFunc := func(projID, logID string, req *logging.WriteLogEntriesRequest) error {
+		writeFunc := func(ctx context.Context, projID, logID string, req *logging.WriteLogEntriesRequest) error {
 			So(projID, ShouldEqual, "proj-id")
 			So(logID, ShouldEqual, "log-id")
 			requests = append(requests, req)
@@ -39,7 +43,7 @@ func TestClient(t *testing.T) {
 
 		c, err := clientWithMockWrite(opts, writeFunc)
 		So(err, ShouldBeNil)
-		err = c.PushEntries([]Entry{
+		err = c.PushEntries(ctx, []*Entry{
 			{
 				InsertID:    "insert-id",
 				Timestamp:   ts,
