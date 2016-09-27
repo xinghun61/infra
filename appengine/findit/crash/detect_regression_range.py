@@ -68,8 +68,9 @@ def GetSpikes(events, get_value, alpha=_DEFAULT_ALPHA,
     two elements, then we return the empty list (rather than returning
     None or throwing an exception).
   """
-  # TODO(wrengr): assert callable(get_value), so we can give a decent
-  # error message if it's not.
+  # TODO(wrengr): Is there a way to raise a more helpful error whenever
+  # get_value is not callable? The default error is totally correct for
+  # tracking down the bug, but it may not be what the end user wants to see.
 
   # TODO(wrengr): would it be better to return None so callers fail fast?
   if not events or len(events) == 1:

@@ -137,7 +137,7 @@ def _DefaultKeyGenerator(func, args, kwargs):
   """Generates a key from the function and arguments passed to it.
 
   Args:
-    func (function): An abitrary function.
+    func (function): An arbitrary function.
     args (list): Positional arguments passed to ``func``.
     kwargs (dict): Keyword arguments passed to ``func``.
 

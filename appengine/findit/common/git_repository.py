@@ -70,6 +70,13 @@ class GitRepository(Repository):
   def ExtractCommitPositionAndCodeReviewUrl(self, message):
     """Returns the commit position and code review url in the commit message.
 
+    A "commit position" is something similar to SVN version ids; i.e.,
+    numeric identifiers which are issued in sequential order. The reason
+    we care about them is that they're easier for humans to read than
+    the hashes that Git uses internally for identifying commits. We
+    should never actually use them for *identifying* commits; they're
+    only for pretty printing to humans.
+
     Returns:
       (commit_position, code_review_url)
     """
@@ -167,6 +174,7 @@ class GitRepository(Repository):
         reverted_revision)
 
   def GetChangeLog(self, revision):
+    """Returns the change log of the given revision."""
     _, data = self._DownloadChangeLogData(revision)
     if not data:
       return None

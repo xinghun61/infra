@@ -11,12 +11,13 @@ import re
 
 # TODO(http://crbug.com/644476): this class needs a better name.
 class Stacktrace(list):
-  """A collection of callstacks which together provide a trace of
-  what happened. For instance, when doing memory debugging we will
-  have callstacks for (1) when the crash occured, (2) when the object
-  causing the crash was allocated, (3) when the the object causing the
-  crash was freed (for use-after-free crashes), etc. What exactly the
-  set of callstacks is differs for different tools."""
+  """A collection of callstacks which together provide a trace of what happened.
+
+  For instance, when doing memory debugging we will have callstacks for
+  (1) when the crash occurred, (2) when the object causing the crash
+  was allocated, (3) when the object causing the crash was freed (for
+  use-after-free crashes), etc. What callstacks are included in the
+  trace is unspecified, since this differs for different tools."""
   def __init__(self, stack_list=None, signature=None):
     super(Stacktrace, self).__init__(stack_list or [])
 

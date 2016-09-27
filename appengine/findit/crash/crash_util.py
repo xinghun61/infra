@@ -8,8 +8,13 @@ from collections import defaultdict
 def IsSameFilePath(path_1, path_2):
   """Determines if two paths represent same path.
 
-  Compares the name of the folders in the path (by split('/')), and checks
-  if they match either more than 3 or min of path lengths.
+  First we split each path into a list of directories (via split('/')),
+  then we treat those lists as multisets (i.e., ignore the order of
+  directories, but keep track of their multiplicities) and take the
+  multiset intersection. Finally, we return whether the number of elements
+  in the intersection is at least 3 (or, when one of the paths has
+  fewer than 3 parts, we return whether all those parts are also in the
+  other path)
 
   Args:
     path_1 (str): First path.

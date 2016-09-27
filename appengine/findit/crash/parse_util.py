@@ -67,7 +67,7 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False):
     normalized_path (str): Normalized relative file path starting from dep_path.
     repo_url (str): Repository url corresponding to dep_path.
   """
-  # First normalize the path by retreiving the normalized path.
+  # First normalize the path by retrieving the normalized path.
   normalized_path = os.path.normpath(path).replace('\\', '/')
 
   if GENERATED_CODE_FILE_PATH_PATTERN.match(normalized_path):
@@ -93,7 +93,7 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False):
 
     if (normalized_path.startswith(trimmed_dep_path) or
         normalized_path.startswith(trimmed_dep_path_lower)):
-      # Case when the retreived path is in lowercase.
+      # Case when the retrieved path is in lowercase.
       if normalized_path.startswith(trimmed_dep_path):
         current_dep_path = trimmed_dep_path
       else:

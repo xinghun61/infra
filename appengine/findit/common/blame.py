@@ -4,7 +4,7 @@
 
 
 class Region(object):
-  """Represents a region in a file blame."""
+  """A region of some (unspecified) file at a (known) revision."""
   def __init__(self, start, count, revision,
                author_name, author_email, author_time):
     self.start = start
@@ -26,7 +26,7 @@ class Region(object):
 
 
 class Blame(list):
-  """Represents a file blame."""
+  """A list of regions for a (known) revision of a (known) file."""
   def __init__(self, revision, path):
     super(Blame, self).__init__()
     self.revision = revision

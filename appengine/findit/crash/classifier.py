@@ -13,10 +13,10 @@ from model.crash.crash_config import CrashConfig
 class ClassOccurrenceInfo(object):
   """Represents information of a class in results or crash_stack.
 
-  Class information includes the name of the class, a list of indice (index in
-  results list or in the crash_stack) of occurrences.
-  Class can be project name, like 'chromium', 'chromium-skia', or component name
-  like 'Blink>API', 'Blink>DOM'.
+  Class information includes the name of the class, a list of indices
+  (index in results list or in the crash_stack) of occurrences. Class
+  can be project name, like 'chromium', 'chromium-skia', or component
+  name like 'Blink>API', 'Blink>DOM'.
   """
 
   def __init__(self, name, occurrences):
@@ -80,7 +80,7 @@ class Classifier(object):
 
       infos = {}
 
-      # Get occurences information of each class.
+      # Get occurrences information of each class.
       for index, class_name in enumerate(class_list):
         if class_name not in infos:
           infos[class_name] = ClassOccurrenceInfo(class_name, [index])
