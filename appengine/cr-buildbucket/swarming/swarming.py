@@ -710,7 +710,7 @@ class CronUpdateBuilds(webapp2.RequestHandler):
       if need_put:  # pragma: no branch
         yield build.put_async()
         if build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
-          notifications.enqueue_callback_task_if_needed(build)
+          yield notifications.enqueue_callback_task_if_needed_async(build)
 
     yield txn(build.key)
 

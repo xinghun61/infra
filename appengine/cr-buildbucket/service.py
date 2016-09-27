@@ -755,7 +755,7 @@ def _timeout_async(build_id):
   build.cancelation_reason = model.CancelationReason.TIMEOUT
   yield build.put_async()
   logging.info('Build %s: timeout', build_id)
-  notifications.enqueue_callback_task_if_needed(build)
+  yield notifications.enqueue_callback_task_if_needed_async(build)
   metrics.increment_complete_count(build)
 
 

@@ -1,4 +1,4 @@
-# Copyright 2014 The Chromium Authors. All rights reserved.
+# Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -9,6 +9,7 @@ import webapp2
 
 import api
 import config
+import notifications
 import service
 import swarming
 
@@ -68,4 +69,7 @@ def get_backend_routes():
     webapp2.Route(
       r'/internal/cron/buildbucket/update_buckets',
       CronUpdateBuckets),
+    webapp2.Route(
+      r'/internal/task/buildbucket/notify/<build_id:\d+>',
+      notifications.TaskPublishNotification),
   ]

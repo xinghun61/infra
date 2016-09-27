@@ -1,0 +1,5 @@
+queue:
+
+- name: backend-default
+  target: backend
+  rate: 100/s
