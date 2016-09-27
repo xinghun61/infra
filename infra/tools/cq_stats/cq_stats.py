@@ -596,7 +596,13 @@ def derive_stats(args, begin_date, init_stats=None):  # pragma: no cover
   patch_stats = {}
   # Fetch and process each patchset log
   def get_patch_stats(patch_id):
-    return derive_patch_stats(args, begin_date, end_date, patch_id)
+    try:
+      return derive_patch_stats(args, begin_date, end_date, patch_id)
+    except simplejson.JSONDecodeError as e:  # pragma: no cover
+      # This can happen e.g. for private issues where we can't fetch the JSON
+      # without authentication.
+      logging.warn('%r (issue:%s, patchset:%s)', e, patch_id[0], patch_id[1])
+      return (patch_id, {'supported': False})
 
   if args.seq or not args.thread_pool:
     iterable = map(get_patch_stats, raw_patches)
