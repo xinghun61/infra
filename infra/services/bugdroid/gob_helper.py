@@ -277,7 +277,10 @@ class RestApiHelper(object):
     nrc = netrc.netrc()
     self.http = httplib2_utils.InstrumentedHttp('gob:%s' % urlp.path)
     self.headers = {}
-    self.headers['Authorization'] = 'OAuth %s' % nrc.hosts[urlp.netloc][2]
+    if urlp.netloc in nrc.hosts:
+      self.headers['Authorization'] = 'OAuth %s' % nrc.hosts[urlp.netloc][2]
+    else:
+      logging.warning('No auth token found for host %s!' % urlp.netloc)
 
 
 class GitilesHelper(RestApiHelper):
