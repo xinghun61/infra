@@ -16,6 +16,8 @@ from google.appengine.api import app_identity
 from google.appengine.api import urlfetch
 from google.appengine.ext import db
 
+from infra_libs import ts_mon
+
 import settings
 from framework import framework_constants
 from proto import api_clients_config_pb2
@@ -42,6 +44,9 @@ class ClientConfig(db.Model):
 
 # Note: The cron job must have hit the servlet before this will work.
 class LoadApiClientConfigs(webapp2.RequestHandler):
+
+  config_loads = ts_mon.CounterMetric('monorail/client_config_svc/loads')
+
   def get(self):
     authorization_token, _ = app_identity.get_access_token(
       framework_constants.OAUTH_SCOPE)
@@ -51,16 +56,56 @@ class LoadApiClientConfigs(webapp2.RequestHandler):
       follow_redirects=False,
       headers={'Content-Type': 'application/json; charset=UTF-8',
               'Authorization': 'Bearer ' + authorization_token})
-    if response.status_code == 200:
-      content = json.loads(response.content)
-      config_content = content['content']
-      content_text = base64.b64decode(config_content)
-      logging.info('luci-config content decoded: %r.', content_text)
-      configs = ClientConfig(configs=content_text,
-                              key_name='api_client_configs')
-      configs.put()
-    else:
+
+    if response.status_code != 200:
       logging.error('Invalid response from luci-config: %r', response)
+      self.config_loads.increment({'success': False, 'type': 'luci-cfg-error'})
+      self.abort(500, 'Invalid response from luci-config')
+
+    try:
+      content_text = self._process_response(response)
+    except Exception as e:
+      self.abort(500, str(e))
+
+    logging.info('luci-config content decoded: %r.', content_text)
+    configs = ClientConfig(configs=content_text,
+                            key_name='api_client_configs')
+    configs.put()
+    self.config_loads.increment({'success': True, 'type': 'success'})
+
+  def _process_response(self, response):
+    try:
+      content = json.loads(response.content)
+    except ValueError:
+      logging.error('Response was not JSON: %r', response.content)
+      self.config_loads.increment({'success': False, 'type': 'json-load-error'})
+      raise
+
+    try:
+      config_content = content['content']
+    except KeyError:
+      logging.error('JSON contained no content: %r', content)
+      self.config_loads.increment({'success': False, 'type': 'json-key-error'})
+      raise
+
+    try:
+      content_text = base64.b64decode(config_content)
+    except TypeError:
+      logging.error('Content was not b64: %r', config_content)
+      self.config_loads.increment({'success': False,
+                                   'type': 'b64-decode-error'})
+      raise
+
+    try:
+      cfg = api_clients_config_pb2.ClientCfg()
+      protobuf.text_format.Merge(content_text, cfg)
+    except:
+      logging.error('Content was not a valid ClientCfg proto: %r', content_text)
+      self.config_loads.increment({'success': False,
+                                   'type': 'proto-load-error'})
+      raise
+
+    return content_text
 
 
 class ClientConfigService(object):
@@ -87,13 +132,13 @@ class ClientConfigService(object):
 
     if force_load:
       if settings.dev_mode or settings.unit_test_mode:
-        self._ReadFromLocal()
+        self._ReadFromFilesystem()
       else:
-        self._ReadFromLuciConfig()
-      
+        self._ReadFromDatastore()
+
     return self.client_configs
 
-  def _ReadFromLocal(self):
+  def _ReadFromFilesystem(self):
     try:
       with open(CONFIG_FILE_PATH, 'r') as f:
         content_text = f.read()
@@ -102,12 +147,10 @@ class ClientConfigService(object):
       protobuf.text_format.Merge(content_text, cfg)
       self.client_configs = cfg
       self.load_time = int(time.time())
-    except Exception as ex:
-      logging.exception(
-          'Failed to read client configs: %s',
-          str(ex))
+    except Exception as e:
+      logging.exception('Failed to read client configs: %s', e)
 
-  def _ReadFromLuciConfig(self):
+  def _ReadFromDatastore(self):
     entity = ClientConfig.get_by_key_name('api_client_configs')
     if entity:
       cfg = api_clients_config_pb2.ClientCfg()
@@ -162,4 +205,3 @@ def GetQPMDict():
   if qpm_dict is None:
     qpm_dict = GetClientConfigSvc().GetQPM()
   return qpm_dict
-  

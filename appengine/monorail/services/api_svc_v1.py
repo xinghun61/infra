@@ -47,8 +47,7 @@ from tracker import issuedetail
 from tracker import tracker_constants
 from tracker import tracker_bizobj
 
-import gae_ts_mon
-from infra_libs.ts_mon.common import http_metrics
+from infra_libs import ts_mon
 
 
 ENDPOINTS_API_NAME = 'monorail'
@@ -141,14 +140,17 @@ def monorail_api_method(
             'is_robot': False,
         }
 
-        http_metrics.server_durations.add(elapsed_ms, fields=fields)
-        http_metrics.server_response_status.increment(fields=fields)
-        http_metrics.server_request_bytes.add(len(protojson.encode_message(
-            request)), fields=fields)
+        ts_mon.common.http_metrics.server_durations.add(
+            elapsed_ms, fields=fields)
+        ts_mon.common.http_metrics.server_response_status.increment(
+            fields=fields)
+        ts_mon.common.http_metrics.server_request_bytes.add(
+            len(protojson.encode_message(request)), fields=fields)
         response_size = 0
         if ret:
           response_size = len(protojson.encode_message(ret))
-        http_metrics.server_response_bytes.add(response_size, fields=fields)
+        ts_mon.common.http_metrics.server_response_bytes.add(
+            response_size, fields=fields)
 
       return ret
 
@@ -277,7 +279,7 @@ class MonorailApi(remote.Service):
   _services = None
   _mar = None
 
-  api_requests = gae_ts_mon.CounterMetric(
+  api_requests = ts_mon.CounterMetric(
      'monorail/api_requests',
      description='Number of requests to Monorail api')
 

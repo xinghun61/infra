@@ -5,9 +5,48 @@
 
 """Tests for the client config service."""
 
+import base64
 import unittest
 
 from services import client_config_svc
+
+
+class LoadApiClientConfigsTest(unittest.TestCase):
+
+  class FakeResponse(object):
+    def __init__(self, content):
+      self.content = content
+
+  def setUp(self):
+    self.handler = client_config_svc.LoadApiClientConfigs()
+
+  def testProcessResponse_InvalidJSON(self):
+    r = self.FakeResponse('}{')
+    with self.assertRaises(ValueError):
+      self.handler._process_response(r)
+
+  def testProcessResponse_NoContent(self):
+    r = self.FakeResponse('{"wrong-key": "some-value"}')
+    with self.assertRaises(KeyError):
+      self.handler._process_response(r)
+
+  def testProcessResponse_NotB64(self):
+    # 'asd' is not a valid base64-encoded string.
+    r = self.FakeResponse('{"content": "asd"}')
+    with self.assertRaises(TypeError):
+      self.handler._process_response(r)
+
+  def testProcessResponse_NotProto(self):
+    # 'asdf' is a valid base64-encoded string.
+    r = self.FakeResponse('{"content": "asdf"}')
+    with self.assertRaises(Exception):
+      self.handler._process_response(r)
+
+  def testProcessResponse_Success(self):
+    with open(client_config_svc.CONFIG_FILE_PATH) as f:
+      r = self.FakeResponse('{"content": "%s"}' % base64.b64encode(f.read()))
+    c = self.handler._process_response(r)
+    assert '123456789.apps.googleusercontent.com' in c
 
 
 class ClientConfigServiceTest(unittest.TestCase):
