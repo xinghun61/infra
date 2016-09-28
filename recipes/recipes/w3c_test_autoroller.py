@@ -8,6 +8,8 @@ This recipe imports the latest changes to the w3c test repo and attempts
 to upload and commit them if they pass on all commit queue try jobs
 """
 
+import contextlib
+
 DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
@@ -19,30 +21,41 @@ DEPS = [
 
 
 def RunSteps(api):
-    RIETVELD_REFRESH_TOKEN = '/creds/refresh_tokens/blink-w3c-test-autoroller'
-    api.gclient.set_config('chromium')
-    api.bot_update.ensure_checkout()
+  api.gclient.set_config('chromium')
+  api.bot_update.ensure_checkout()
+  api.git('config', 'user.name', 'Blink W3C Test Autoroller',
+          name='set git config user.name')
+  api.git('config', 'user.email', 'blink-w3c-test-autoroller@chromium.org',
+          name='set git config user.email')
+  blink_dir = api.path['checkout'].join('third_party', 'WebKit')
 
-    api.git('config', 'user.name', 'Blink W3C Test Autoroller',
-            name='set git config user.name')
-    api.git('config', 'user.email', 'blink-w3c-test-autoroller@chromium.org',
-            name='set git config user.email')
-    api.git('checkout', '-B', 'update_w3c_tests',
-            name='move to new branch update_w3c_tests')
+  @contextlib.contextmanager
+  def new_branch(name):
+    def delete_branch(name):
+      # Get off branch, if any, otherwise delete fails.
+      api.git('checkout', 'origin/master')
+      api.git('branch', '-D', name, ok_ret='any')
+    delete_branch(name)
+    api.git.new_branch(name)
+    try:
+      yield
+    finally:
+      delete_branch(name)
 
-    cwd = api.path['checkout'].join('third_party', 'WebKit')
+  def update_w3c_repo(name):
+    script = blink_dir.join('Tools', 'Scripts', 'update-w3c-deps')
+    args = [
+      '--auto-update',
+      '--auth-refresh-token-json',
+      '/creds/refresh_tokens/blink-w3c-test-autoroller',
+      name,
+    ]
+    api.python('update ' + name, script, args, cwd=blink_dir)
 
-    api.python('update wpt',
-               cwd.join('Tools', 'Scripts', 'update-w3c-deps'),
-               ['--auto-update', 'wpt',
-                '--auth-refresh-token-json', RIETVELD_REFRESH_TOKEN],
-               cwd=cwd)
-
-    api.python('update css',
-               cwd.join('Tools', 'Scripts', 'update-w3c-deps'),
-               ['--auto-update', 'css',
-                '--auth-refresh-token-json', RIETVELD_REFRESH_TOKEN],
-               cwd=cwd)
+  with new_branch('update_wpt'):
+    update_w3c_repo('wpt')
+  with new_branch('update_css'):
+    update_w3c_repo('css')
 
 
 def GenTests(api):

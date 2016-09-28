@@ -121,11 +121,32 @@
     "cmd": [
       "git",
       "checkout",
-      "-B",
-      "update_w3c_tests"
+      "origin/master"
     ],
     "cwd": "[SLAVE_BUILD]/src",
-    "name": "move to new branch update_w3c_tests"
+    "name": "git checkout"
+  },
+  {
+    "cmd": [
+      "git",
+      "branch",
+      "-D",
+      "update_wpt"
+    ],
+    "cwd": "[SLAVE_BUILD]/src",
+    "name": "git branch"
+  },
+  {
+    "cmd": [
+      "git",
+      "new-branch",
+      "update_wpt"
+    ],
+    "cwd": "[SLAVE_BUILD]/src",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
+    },
+    "name": "git new-branch update_wpt"
   },
   {
     "cmd": [
@@ -133,25 +154,94 @@
       "-u",
       "[SLAVE_BUILD]/src/third_party/WebKit/Tools/Scripts/update-w3c-deps",
       "--auto-update",
-      "wpt",
       "--auth-refresh-token-json",
-      "/creds/refresh_tokens/blink-w3c-test-autoroller"
+      "/creds/refresh_tokens/blink-w3c-test-autoroller",
+      "wpt"
     ],
     "cwd": "[SLAVE_BUILD]/src/third_party/WebKit",
     "name": "update wpt"
   },
   {
     "cmd": [
+      "git",
+      "checkout",
+      "origin/master"
+    ],
+    "cwd": "[SLAVE_BUILD]/src",
+    "name": "git checkout (2)"
+  },
+  {
+    "cmd": [
+      "git",
+      "branch",
+      "-D",
+      "update_wpt"
+    ],
+    "cwd": "[SLAVE_BUILD]/src",
+    "name": "git branch (2)"
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "origin/master"
+    ],
+    "cwd": "[SLAVE_BUILD]/src",
+    "name": "git checkout (3)"
+  },
+  {
+    "cmd": [
+      "git",
+      "branch",
+      "-D",
+      "update_css"
+    ],
+    "cwd": "[SLAVE_BUILD]/src",
+    "name": "git branch (3)"
+  },
+  {
+    "cmd": [
+      "git",
+      "new-branch",
+      "update_css"
+    ],
+    "cwd": "[SLAVE_BUILD]/src",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
+    },
+    "name": "git new-branch update_css"
+  },
+  {
+    "cmd": [
       "python",
       "-u",
       "[SLAVE_BUILD]/src/third_party/WebKit/Tools/Scripts/update-w3c-deps",
       "--auto-update",
-      "css",
       "--auth-refresh-token-json",
-      "/creds/refresh_tokens/blink-w3c-test-autoroller"
+      "/creds/refresh_tokens/blink-w3c-test-autoroller",
+      "css"
     ],
     "cwd": "[SLAVE_BUILD]/src/third_party/WebKit",
     "name": "update css"
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "origin/master"
+    ],
+    "cwd": "[SLAVE_BUILD]/src",
+    "name": "git checkout (4)"
+  },
+  {
+    "cmd": [
+      "git",
+      "branch",
+      "-D",
+      "update_css"
+    ],
+    "cwd": "[SLAVE_BUILD]/src",
+    "name": "git branch (4)"
   },
   {
     "name": "$result",
