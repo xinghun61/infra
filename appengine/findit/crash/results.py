@@ -81,11 +81,13 @@ class MatchResult(Result):
       if region.revision != self.changelog.revision:
         continue
 
-      region_lines = range(region.start, region.start + region.count)
-
+      region_start = region.start
+      region_end = region_start + region.count - 1
       for frame, _ in stack_infos:
-        distance = self._DistanceOfTwoRegions(frame.crashed_line_numbers,
-                                              region_lines)
+        frame_start = frame.crashed_line_numbers[0]
+        frame_end = frame.crashed_line_numbers[-1]
+        distance = _DistanceBetweenLineRanges((frame_start, frame_end),
+                                              (region_start, region_end))
         if distance < min_distance:
           min_distance = distance
           min_distance_frame = frame
@@ -95,16 +97,25 @@ class MatchResult(Result):
         'min_distance_frame': min_distance_frame,
     }
 
-  # TODO(wrengr): this method in no way depends on self; why not make
-  # it a function which only takes the two regions?
-  def _DistanceOfTwoRegions(self, region1, region2):
-    if set(region1).intersection(set(region2)):
-      return 0
 
-    if region1[-1] < region2[0]:
-      return region2[0] - region1[-1]
+def _DistanceBetweenLineRanges((start1, end1), (start2, end2)):
+  """Given two ranges, compute the (unsigned) distance between them.
 
-    return region1[0] - region2[-1]
+  Args:
+    start1: the start of the first range
+    end1: the end of the first range. Must be greater than start1.
+    start2: the start of the second range
+    end2: the end of the second range. Must be greater than start2.
+
+  Returns:
+    If the end of the earlier range comes before the start of the later
+    range, then the difference between those points. Otherwise, returns
+    zero (because the ranges overlap)."""
+  assert end1 >= start1
+  assert end2 >= start2
+  # There are six possible cases, but in all the cases where the two
+  # ranges overlap, the latter two differences will be negative.
+  return max(0, start2 - end1, start1 - end2)
 
 
 class MatchResults(dict):

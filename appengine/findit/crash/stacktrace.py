@@ -21,16 +21,15 @@ class Stacktrace(list):
   def __init__(self, stack_list=None, signature=None):
     super(Stacktrace, self).__init__(stack_list or [])
 
+    self._crash_stack = None
+    self._signature_parts = None
     if signature:
       # Filter out the types of signature, for example [Out of Memory].
       signature = re.sub('[[][^]]*[]]\s*', '', signature)
+      # For clusterfuzz crash, the signature is crash state. It is
+      # usually the top 3 important stack frames separated by '\n'.
+      self._signature_parts = signature.split('\n')
 
-    # TODO(wrengr): rather than splitting on newlines every time we call
-    # crash_stack, we should just do the splitting here and store the
-    # list of parts. If we wish to allow clients to change the signature
-    # after this object is built, then we should turn it into a property.
-    self.signature = signature
-    self._crash_stack = None
 
   @property
   def crash_stack(self):
@@ -40,14 +39,10 @@ class Stacktrace(list):
       logging.warning('Cannot get crash stack for empty stacktrace: %s', self)
       return None
 
-    if self._crash_stack is None and self.signature:
-      # For clusterfuzz crash, the signature is crash state, it is usually the
-      # top 3 crash functions seperated by '\n'.
-      signature_parts = self.signature.split('\n')
-
+    if self._crash_stack is None and self._signature_parts:
       def _IsSignatureCallstack(callstack):
         for index, frame in enumerate(callstack):
-          for signature_part in signature_parts:
+          for signature_part in self._signature_parts:
             if signature_part in frame.function:
               return True, index
 
