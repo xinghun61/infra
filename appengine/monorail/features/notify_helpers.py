@@ -296,8 +296,16 @@ def _MakeEmailWorkItem(
       'url': detail_url,
       'body': _AddHTMLTags(html_escaped_body.decode('utf-8')),
       }
-  return dict(to=to_addr, subject=subject, body=body, html_body=html_body,
+  task = dict(to=to_addr, subject=subject, body=body, html_body=html_body,
               from_addr=from_addr, reply_to=reply_to, references=refs)
+  # TODO(agable): Remove this when monorail:1274 is closed.
+  len_dict = {k: len(v) for k, v in task.iteritems()}
+  logging.debug('Email task dict has following sizes:\n'
+                'to: %(to)d, subject: %(subject)d, body: %(body)d, '
+                'html_body: %(html_body)d, from_addr: %(from_addr)d, '
+                'reply_to: %(reply_to)d, references: %(references)d.'
+                % len_dict)
+  return task
 
 
 def _AddHTMLTags(body):
