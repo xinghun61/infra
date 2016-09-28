@@ -3,10 +3,7 @@
 # found in the LICENSE file.
 
 import logging
-
 from crash.classifier import Classifier
-from model.crash.crash_config import CrashConfig
-
 
 class ComponentClassifier(Classifier):
   """Determines the component of a crash.
@@ -14,25 +11,25 @@ class ComponentClassifier(Classifier):
   For example: ['Blink>DOM', 'Blink>HTML'].
   """
 
-  def __init__(self):
+  def __init__(self, components, top_n):
+    """Build a classifier for components.
+
+    Args:
+      components (list of crash.component.Component): the components to
+        check for.
+      top_n (int): how many frames of the callstack to look at"""
     super(ComponentClassifier, self).__init__()
-    self.component_classifier_config = (
-        CrashConfig.Get().compiled_component_classifier)
+    if not components:
+      logging.warning('Empty configuration for component classifier.')
+      components = []
+    self.components = components
+    self.top_n = top_n
 
   def GetClassFromStackFrame(self, frame):
-    """Gets the component from file path and function of a frame."""
-    for path_regex, function_regex, component in (
-        self.component_classifier_config['path_function_component']):
-      path_match = path_regex.match(frame.dep_path + frame.file_path)
-      if not path_match:
-        continue
-
-      if not function_regex:
-        return component
-
-      function_match = function_regex.match(frame.function)
-      if function_match:
-        return component
+    """Determine which component is responsible for this frame."""
+    for component in self.components:
+      if component.MatchesStackFrame(frame):
+        return component.component_name
 
     return ''
 
@@ -60,9 +57,4 @@ class ComponentClassifier(Classifier):
     Returns:
       List of top 2 components.
     """
-    if not self.component_classifier_config:
-      logging.warning('Empty configuration for component classifier.')
-      return []
-
-    return self._Classify(results, crash_stack,
-                          self.component_classifier_config['top_n'], 2)
+    return self._Classify(results, crash_stack, self.top_n, 2)

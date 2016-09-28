@@ -11,6 +11,7 @@ from crash import detect_regression_range
 from crash import findit_for_crash
 from crash.fracas_parser import FracasParser
 from crash.project_classifier import ProjectClassifier
+from crash.component import Component
 from crash.component_classifier import ComponentClassifier
 from model.crash.crash_config import CrashConfig
 
@@ -120,8 +121,16 @@ def FindCulpritForChromeCrash(signature, platform,
   crash_stack = stacktrace.crash_stack
   suspected_project = ProjectClassifier().Classify(
       culprit_results, crash_stack)
-  suspected_components = ComponentClassifier().Classify(
-      culprit_results, crash_stack)
+
+  component_classifier_config = CrashConfig.Get().compiled_component_classifier
+  suspected_components = ComponentClassifier(
+      # TODO(wrengr): have the config return Component objects directly,
+      # rather than needing to convert them here.
+      [Component(component_name, path_regex, function_regex)
+          for path_regex, function_regex, component_name
+          in component_classifier_config['path_function_component']],
+      component_classifier_config['top_n']
+    ).Classify(culprit_results, crash_stack)
 
   # TODO(http://crbug.com/644411): the caller should convert things to
   # JSON, not us.
