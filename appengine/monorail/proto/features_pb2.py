@@ -59,5 +59,4 @@ def MakeHotlistIssue(issue_id, rank=None):
   issue = Hotlist.HotlistIssue(issue_id=issue_id)
   if rank is not None:
     issue.rank = rank
-  
   return issue

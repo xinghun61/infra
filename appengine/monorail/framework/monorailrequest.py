@@ -671,7 +671,7 @@ def _ParsePathIdentifiers(path):
       project_name = split_path[1]
     if split_path[0] == 'u':
       viewed_user_val = urllib.unquote(split_path[1])
-      if len(split_path) >= 4:
+      if len(split_path) >= 4 and split_path[2] == 'hotlists':
         #TODO(jojwang): when friendly url, check if hotlist name or id
         try:
           hotlist_id = int(urllib.unquote(split_path[3]))

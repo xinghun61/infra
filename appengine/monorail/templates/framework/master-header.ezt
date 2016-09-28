@@ -70,6 +70,9 @@
     [if-any category_css]
      <link type="text/css" rel="stylesheet" href="/static/[category_css]?version=[app_version]">
     [end]
+    [if-any category2_css]
+     <link type="text/css" rel="stylesheet" href="/static/[category2_css]?version=[app_version]">
+    [end]
     [if-any page_css]
      <link type="text/css" rel="stylesheet" href="/static/[page_css]?version=[app_version]">
     [end]

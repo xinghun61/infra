@@ -1,9 +1,15 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is govered by a BSD-style
+# license that can be found in the LICENSE file or at
+# https://developers.google.com/open-source/licenses/bsd
 
 """Classes that implement the hotlistissues page and related forms."""
 
 from features import hotlist_views
+from features import features_bizobj
 from framework import servlet
 from framework import permissions
+from framework import framework_views
 from services import features_svc
 
 class HotlistIssues(servlet.Servlet):
@@ -32,33 +38,41 @@ class HotlistIssues(servlet.Servlet):
     Returns:
       Dict of values used by EZT for rendering the page.
     """
-    if mr.hotlist_id is None:
-      self.abort(404, 'no hotlist specified')
-    with self.profiler.Phase('finishing getting hostlist'):
-      hotlist_view = self._GetHotlistView(mr)
-      if hotlist_view is None:
-        self.abort(404, 'hostlist not found')
+    with self.profiler.Phase('getting hotlist'):
+      if mr.hotlist_id is None:
+        self.abort(404, 'no hotlist specified')
+
+    with self.profiler.Phase('making views'):
+      users_by_id = framework_views.MakeAllUserViews(
+          mr.cnxn, self.services.user,
+          features_bizobj.UsersInvolvedInHotlists([self._GetHotlist(mr)]))
+      hotlist_view = self._GetHotlistView(mr, users_by_id)
+      # TODO(jojwang): find some better design rather than passing
+      # users_by_id into _GetHotlistView
+
     return {
         'hotlist': hotlist_view,
         }
 
-  def _GetHotlistView(self, mr):
+  def _GetHotlistView(self, mr, users_by_id):
     """Retrieve the current hostlist_view."""
     hotlist = self._GetHotlist(mr)
     if hotlist is None:
       return None
-    user_emails = self.services.user.LookupUserEmails(
-        mr.cnxn, [hotlist.owner_ids[0]])
     hotlist_view = hotlist_views.HotlistView(
-        hotlist, mr.auth.user_id, mr.viewed_user_auth.user_id, user_emails)
+        hotlist, mr.auth.user_id, mr.viewed_user_auth.user_id,
+        users_by_id)
     return hotlist_view
-  #TODO(jojwang): when friendly url is added, loop through hotlist_view's
-  #friendly_url and url and decide if hotlist should have
-  #view.url = view.friendly_url or view.url = the url with ID
+  # TODO(jojwang): when friendly url is added, loop through hotlist_view's
+  # friendly_url and url and decide if hotlist should have
+  # view.url = view.friendly_url or view.url = the url with ID
 
   def _GetHotlist(self, mr):
     """Retrieve the current hotlist."""
     if mr.hotlist_id is None:
       return None
-    hotlist = self.services.features.GetHotlist( mr.cnxn, mr.hotlist_id)
-    return hotlist
+    try:
+      hotlist = self.services.features.GetHotlist( mr.cnxn, mr.hotlist_id)
+      return hotlist
+    except features_svc.NoSuchHotlistException:
+      self.abort(404, 'hotlist not found')

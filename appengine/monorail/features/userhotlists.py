@@ -5,10 +5,10 @@
 
 """Page for showing a user's hotlists."""
 
+from features import features_bizobj
 from features import hotlist_views
 from framework import framework_views
 from framework import servlet
-
 
 class UserHotlists(servlet.Servlet):
   """Servlet to display all of a user's hotlists."""
@@ -18,10 +18,11 @@ class UserHotlists(servlet.Servlet):
   def GatherPageData(self, mr):
     hotlists = self.services.features.GetHotlistsByUserID(
         mr.cnxn, mr.viewed_user_auth.user_id)
-    user_emails = self.services.user.LookupUserEmails(
-        mr.cnxn, [hotlist.owner_ids[0] for hotlist in hotlists])
+    users_by_id = framework_views.MakeAllUserViews(
+        mr.cnxn, self.services.user,
+        features_bizobj.UsersInvolvedInHotlists(hotlists))
     views = [hotlist_views.HotlistView(
-        hotlist_pb, mr.auth.user_id, mr.viewed_user_auth.user_id, user_emails)
+        hotlist_pb, mr.auth.user_id, mr.viewed_user_auth.user_id, users_by_id)
         for hotlist_pb in hotlists]
     visible_hotlists = [view for view in views if view.visible]
     owner_of_hotlists = [hotlist_view for hotlist_view in visible_hotlists

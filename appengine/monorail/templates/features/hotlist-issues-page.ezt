@@ -1,7 +1,35 @@
 [define title]Hotlist[hotlist.name][end]
 [define category_css]css/ph_list.css[end]
+[define category2_css]css/ph_detail.css[end]
 [include "../framework/master-header.ezt" "showtabs"]
 
-<h1>This will be the hotlist-issues page, where the issues of the hotlist [hotlist.name] are listed</h1>
+<table width="100%" cellpadding="0" cellspacing="0" border="0" class="hotlist-issues-page" id="meta-container">
+<tbody class="collapse">
+  <tr>
+    <td nowrap="nowrap" style="min-width:9em" class="issuemetaheader">
+      <a href="[viewed_user.profile_url]hotlists/[hotlist_id]">Hotlist [hotlist.name]</a>
+    </td>
+    <td nowrap="nowrap" width="80%" style="border-right: 2px solid white" class="issueheader">
+      <span class="h3" style="padding-left:4px">Description: [hotlist.description]</span>
+    </td>
+  </tr>
+  <tr>
+    <td nowrap="nowrap" class="issuemetaheader">
+      Followed by [hotlist.num_followers]
+    </td>
+  </tr>
+
+  <tr>
+    <td id="issuemeta">
+      <div id="meta-float">
+        [include "hotlist-meta-part.ezt"]
+      </div>
+    </td>
+  </tr>
+
+</tbody>
+</table>
+
+[#TODO(jojwang):make pretty]
 
 [include "../framework/master-footer.ezt"]

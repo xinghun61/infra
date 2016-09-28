@@ -595,7 +595,10 @@ class FeaturesService(object):
 
   def GetHotlist(self, cnxn, hotlist_id, use_cache=True):
     hotlist_dict = self.GetHotlists(cnxn, [hotlist_id], use_cache=use_cache)
-    return hotlist_dict[0]
+    try:
+      return hotlist_dict[0]
+    except IndexError:
+      raise NoSuchHotlistException()
 
 class HotlistAlreadyExists(Exception):
   """Tried to create a hotlist with the same name as another hotlist

@@ -591,6 +591,8 @@ class Servlet(webapp2.RequestHandler):
         'project_home_page': project_home_page,
         'project_thumbnail_url': project_thumbnail_url,
 
+        'hotlist_id': mr.hotlist_id,
+
         'hostport': mr.request.host,
         'absolute_base_url': '%s://%s' % (mr.request.scheme, mr.request.host),
         'project_home_url': None,
@@ -627,6 +629,7 @@ class Servlet(webapp2.RequestHandler):
         'continue_issue_id': mr.continue_issue_id,
         'feedback_email': settings.feedback_email,
         'category_css': None,  # Used to specify a category of stylesheet
+        'category2_css': None, # specify a 2nd category of stylesheet if needed.
         'page_css': None,  # Used to add a stylesheet to a specific page.
 
         'can': mr.can,
