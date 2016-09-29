@@ -37,7 +37,9 @@ def FindCulpritForChromeCrash(signature, platform,
     (analysis_result_dict, tag_dict)
     The analysis result is a dict like below:
     {
-        "found": true, # Indicate whether Findit found any suspects.
+        # Indicate if Findit found any suspects_cls, suspected_project,
+        # suspected_components or regression_range.
+        "found": true,
         "suspected_project": "chromium-v8",  # Which project is most suspected.
         "feedback_url": "https://.."
         "suspected_cls": [
@@ -147,7 +149,7 @@ def FindCulpritForChromeCrash(signature, platform,
   return (
       {
           'found': (bool(suspected_project) or bool(suspected_components) or
-                    bool(culprit_results_list)),
+                    bool(culprit_results_list) or bool(regression_versions)),
           'regression_range': regression_versions,
           'suspected_project': suspected_project,
           'suspected_components': suspected_components,
@@ -155,6 +157,8 @@ def FindCulpritForChromeCrash(signature, platform,
       },
       {
           'found_suspects': bool(culprit_results_list),
+          'found_project': bool(suspected_project),
+          'found_components': bool(suspected_components),
           'has_regression_range': bool(regression_versions),
           'solution': 'core_algorithm',
       }

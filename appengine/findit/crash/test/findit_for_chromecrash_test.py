@@ -101,6 +101,8 @@ class FinditForChromeCrashTest(CrashTestCase):
     }
     expected_tag = {
           'found_suspects': True,
+          'found_project': False,
+          'found_components': False,
           'has_regression_range': True,
           'solution': 'core_algorithm',
     }
@@ -121,6 +123,8 @@ class FinditForChromeCrashTest(CrashTestCase):
     }
     expected_tag = {
           'found_suspects': False,
+          'found_project': False,
+          'found_components': False,
           'has_regression_range': False,
           'solution': 'core_algorithm',
     }
