@@ -110,8 +110,16 @@ def FindCulpritForChromeCrash(signature, platform,
                  first_bad_version)
 
     # Get regression deps and crash deps.
-    regression_deps_rolls = chromium_deps.GetDEPSRollsDict(
+    dep_rolls = chromium_deps.GetDEPSRollsDict(
         last_good_version, first_bad_version, platform)
+
+    # Regression of a dep added/deleted (old_revision/new_revision is None) can
+    # not be known for sure and this case rarely happens, so just filter them
+    # out.
+    for dep_path, dep_roll in dep_rolls.iteritems():
+      if not dep_roll.old_revision or not dep_roll.new_revision:
+        continue
+      regression_deps_rolls[dep_path] = dep_roll
 
   crash_config = CrashConfig.Get()
   culprit_results = findit_for_crash.FindItForCrash(

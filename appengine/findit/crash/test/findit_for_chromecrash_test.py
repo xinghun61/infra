@@ -56,7 +56,10 @@ class FinditForChromeCrashTest(CrashTestCase):
       return None
 
     def _MockGetDEPSRollsDict(*_):
-      return {'src/': DependencyRoll('src/', 'https://repo', '1', '2')}
+      return {'src/': DependencyRoll('src/', 'https://repo', '1', '2'),
+              'src/add': DependencyRoll('src/add', 'https://repo1', None, '2'),
+              'src/delete': DependencyRoll('src/delete', 'https://repo2',
+                                           '2', None)}
 
     dummy_match_result = MatchResult(self.GetDummyChangeLog(), 'src/')
     def _MockFindItForCrash(*args):
