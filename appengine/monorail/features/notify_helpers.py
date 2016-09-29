@@ -263,13 +263,13 @@ def _MakeEmailWorkItem(
   if isinstance(footer, unicode):
     footer = footer.encode('utf-8')
   if recipient_is_member:
-    logging.info('got member %r', to_addr)
+    logging.info('got member %r, sending body for members', to_addr)
     body = _TruncateBody(body_for_members) + footer
   else:
-    logging.info('got non-member %r', to_addr)
+    logging.info('got non-member %r, sending body for non-members', to_addr)
     body = _TruncateBody(body_for_non_members) + footer
+  logging.info('sending message footer:\n%r', footer)
 
-  logging.info('sending body: %r', body)
   can_reply_to = (
       reply_perm != REPLY_NOT_ALLOWED and project.process_inbound_email)
   from_addr = emailfmt.FormatFromAddr(
@@ -296,16 +296,8 @@ def _MakeEmailWorkItem(
       'url': detail_url,
       'body': _AddHTMLTags(html_escaped_body.decode('utf-8')),
       }
-  task = dict(to=to_addr, subject=subject, body=body, html_body=html_body,
+  return dict(to=to_addr, subject=subject, body=body, html_body=html_body,
               from_addr=from_addr, reply_to=reply_to, references=refs)
-  # TODO(agable): Remove this when monorail:1274 is closed.
-  len_dict = {k: len(v) for k, v in task.iteritems()}
-  logging.debug('Email task dict has following sizes:\n'
-                'to: %(to)d, subject: %(subject)d, body: %(body)d, '
-                'html_body: %(html_body)d, from_addr: %(from_addr)d, '
-                'reply_to: %(reply_to)d, references: %(references)d.'
-                % len_dict)
-  return task
 
 
 def _AddHTMLTags(body):

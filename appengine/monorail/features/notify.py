@@ -14,11 +14,13 @@ set.
 
 import collections
 import logging
+import os
 
 from third_party import ezt
 
 from google.appengine.api import mail
 from google.appengine.api import taskqueue
+from google.appengine.api import urlfetch
 from google.appengine.runtime import apiproxy_errors
 
 import settings
@@ -112,10 +114,69 @@ def _EnqueueOutboundEmail(message_dict):
   Args:
     message_dict: dict with all needed info for the task.
   """
-  logging.info('Queuing an email task with params %r', message_dict)
+  size = _ComputeTaskSize(urls.OUTBOUND_EMAIL_TASK + '.do', message_dict)
+  logging.info('Queuing an email task with size %r.' % size)
+  if size >= 102400:
+    logging.warning('Email task is going to be too large.\n%r' % message_dict)
   taskqueue.add(
       url=urls.OUTBOUND_EMAIL_TASK + '.do', params=message_dict,
       queue_name='outboundemail')
+
+
+# TODO(agable): Remove this when issue 1274 is resolved.
+def _ComputeTaskSize(url, params):
+  """Computes task size, using same method as appengine.api.taskqueue."""
+  import urllib
+  import urlparse
+  # The following ~15 lines are a distillation of what taskqueue.Task.size()
+  # does. Some method calls have been flattened, since they were __dunderscore
+  # methods that would not be available to this module.
+  HEADER_SEPERATOR = ': \r\n'
+  method = 'POST'  # The default, which we don't change in _EnqueueOutboundEmail
+  headers_dict = urlfetch._CaselessDict()
+  for header_name, environ_name in (
+      ('X-AppEngine-Default-Namespace', 'HTTP_X_APPENGINE_DEFAULT_NAMESPACE'),):
+    value = os.environ.get(environ_name)
+    if value is not None:
+      headers_dict.setdefault(header_name, value)
+
+  def _flatten_params(params):
+    def get_string(value):
+      if isinstance(value, unicode):
+        return unicode(value).encode('utf-8')
+      else:
+        return str(value)
+    param_list = []
+    for key, value in params.iteritems():
+      key = get_string(key)
+      if isinstance(value, basestring):
+        param_list.append((key, get_string(value)))
+      else:
+        try:
+          iterator = iter(value)
+        except TypeError:
+          param_list.append((key, str(value)))
+        else:
+          param_list.extend((key, get_string(v)) for v in iterator)
+    return param_list
+
+  headers_list = _flatten_params(headers_dict)
+  # This is what (method == 'POST' && params is not None) results in:
+  payload = urllib.urlencode(_flatten_params(params))
+  headers_dict.setdefault('content-type', 'application/x-www-form-urlencoded')
+  _, _, relative_url, _, _ = urlparse.urlsplit(url)
+  header_size = sum((len(key) + len(value) + len(HEADER_SEPERATOR))
+                    for key, value in headers_list)
+
+  logging.info('Sizes:\nmethod: %r, payload: %r, url: %r, headers: %r' %
+               (len(method), len(payload), len(relative_url), header_size))
+  params_sizes_list = []
+  for k, v in sorted(params.items()):
+    params_sizes_list.append('%r: %r' % (k, len(v)))
+  params_sizes = ', '.join(params_sizes_list)
+  logging.info('Within payload:\n%r' % params_sizes)
+
+  return (len(method) + len(payload) + len(relative_url) + header_size)
 
 
 def AddAllEmailTasks(tasks):
@@ -262,6 +323,9 @@ class NotifyIssueChangeTask(NotifyTaskBase):
         project.project_name, comment, users_by_id,
         autolinker, {}, mr, issue)
     body_for_members = self.email_template.GetResponse(email_data)
+
+    logging.info('body for non-members is:\n%r' % body_for_non_members)
+    logging.info('body for members is:\n%r' % body_for_members)
 
     commenter_email = users_by_id[comment.user_id].email
     omit_addrs = set([commenter_email] +
