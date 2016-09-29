@@ -129,8 +129,7 @@ class CrashConfig(VersionedConfig):
     if client_id == CrashClient.FRACAS:
       return self.fracas
     elif client_id == CrashClient.CRACAS:  # pragma: no cover.
-      # TODO(katesonia): Add crash config of cracas.
-      return None
+      return self.cracas
     elif client_id == CrashClient.CLUSTERFUZZ:  # pragma: no cover.
       # TODO(katesonia): Add crash config of clusterfuzz.
       return None

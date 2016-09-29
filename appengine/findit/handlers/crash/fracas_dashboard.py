@@ -77,10 +77,12 @@ class FracasDashBoard(BaseHandler):
           'platform': crash.platform,
           'regression_range': ('' if not crash.has_regression_range else
                                crash.result['regression_range']),
-          'suspected_cls': crash.result.get('suspected_cls', []),
-          'suspected_project': crash.result.get('suspected_project', ''),
-          'suspected_components': crash.result.get(
-              'suspected_components', []),
+          'suspected_cls': (crash.result.get('suspected_cls', [])
+                            if crash.result else []),
+          'suspected_project': (crash.result.get('suspected_project', '')
+                                if crash.result else ''),
+          'suspected_components': (crash.result.get('suspected_components', [])
+                                   if crash.result else []),
           'stack_trace': crash.stack_trace,
           'historical_metadata': json.dumps(crash.historical_metadata),
           'key': crash.key.urlsafe()

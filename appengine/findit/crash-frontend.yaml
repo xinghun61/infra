@@ -24,7 +24,7 @@ handlers:
   upload: static/common.css
 
 # PubSub push endpoint.
-- url: /_ah/push-handlers/crash/fracas
+- url: /_ah/push-handlers/crash/.*
   script: main.crash_frontend_web_application
   secure: always
   login: admin

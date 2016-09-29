@@ -26,23 +26,23 @@ from model.crash.cracas_crash_analysis import CracasCrashAnalysis
 # TODO(katesonia): Move this to fracas config.
 _FINDIT_FRACAS_FEEDBACK_URL_TEMPLATE = '%s/crash/fracas-result-feedback?key=%s'
 # TODO(katesonia): Move this to a common config in config page.
-_SUPPORTED_CLIENTS = [CrashClient.FRACAS]
+_SUPPORTED_CLIENTS = [CrashClient.FRACAS, CrashClient.CRACAS]
 
 
 def CheckPolicyForClient(crash_identifiers, chrome_version, signature,
                          client_id, platform, stack_trace, customized_data):
   """Checks if args pass client policy and updates parameters."""
   if client_id not in _SUPPORTED_CLIENTS:
+    logging.info('Client %s is not supported by findit right now', client_id)
     return False, None
 
-  crash_config = CrashConfig.Get()
-
+  config = CrashConfig.Get().GetClientConfig(client_id)
   # Cracas and Fracas share the sampe policy.
   if client_id == CrashClient.FRACAS or client_id == CrashClient.CRACAS:
     channel = customized_data.get('channel')
     # TODO(katesonia): Remove the default value after adding validity check to
     # config.
-    if platform not in crash_config.fracas.get(
+    if platform not in config.get(
         'supported_platform_list_by_channel', {}).get(channel, []):
       # Bail out if either the channel or platform is not supported yet.
       logging.info('Ananlysis of channel %s, platform %s is not supported. '
@@ -52,8 +52,7 @@ def CheckPolicyForClient(crash_identifiers, chrome_version, signature,
 
     # TODO(katesonia): Remove the default value after adding validity check to
     # config.
-    for blacklist_marker in crash_config.fracas.get(
-        'signature_blacklist_markers', []):
+    for blacklist_marker in config.get('signature_blacklist_markers', []):
       if blacklist_marker in signature:
         logging.info('%s signature is not supported. '
                      'No analysis is scheduled for %s', blacklist_marker,
@@ -62,7 +61,7 @@ def CheckPolicyForClient(crash_identifiers, chrome_version, signature,
 
     # TODO(katesonia): Remove the default value after adding validity check to
     # config.
-    platform_rename = crash_config.fracas.get('platform_rename', {})
+    platform_rename = config.get('platform_rename', {})
     platform = platform_rename.get(platform, platform)
 
   elif client_id == CrashClient.CLUSTERFUZZ:  # pragma: no cover.
@@ -91,8 +90,7 @@ def CreateAnalysisForClient(crash_identifiers, client_id):
   if client_id == CrashClient.FRACAS:
     return FracasCrashAnalysis.Create(crash_identifiers)
   elif client_id == CrashClient.CRACAS:  # pragma: no cover.
-    # TODO(katesonia): define CracasCrashAnalysis.
-    return None
+    return CracasCrashAnalysis.Create(crash_identifiers)
   elif client_id == CrashClient.CLUSTERFUZZ: # pragma: no cover.
     # TODO(katesonia): define ClusterfuzzCrashAnalysis.
     return None
