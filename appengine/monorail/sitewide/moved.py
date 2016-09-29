@@ -14,6 +14,7 @@ from framework import framework_bizobj
 from framework import framework_helpers
 from framework import monorailrequest
 from framework import servlet
+from framework import urls
 
 
 class ProjectMoved(servlet.Servlet):
@@ -43,9 +44,10 @@ class ProjectMoved(servlet.Servlet):
       self.abort(400, 'This project has not been moved')
 
     if framework_bizobj.RE_PROJECT_NAME.match(project.moved_to):
-      moved_to_url = framework_helpers.FormatMovedProjectURL(
-          mr, project.moved_to)
-    elif project.moved_to.startswith('http'):
+      moved_to_url = framework_helpers.FormatAbsoluteURL(
+          mr, urls.SUMMARY, include_project=True, project_name=project.moved_to)
+    elif (project.moved_to.startswith('https://') or
+          project.moved_to.startswith('http://')):
       moved_to_url = project.moved_to
     else:
       # Prevent users from using javascript: or any other tricky URL scheme.

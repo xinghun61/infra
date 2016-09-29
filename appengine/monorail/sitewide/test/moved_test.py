@@ -21,37 +21,81 @@ class MovedTest(unittest.TestCase):
     self.services = service_manager.Services(
         project=fake.ProjectService())
     self.servlet = moved.ProjectMoved('req', 'res', services=self.services)
+    self.old_project = 'old-project'
 
-  def testGatherPageData(self):
-    project_name = 'my-project'
-    moved_to = 'http://we-are-outta-here.com/'
-    _request, mr = testing_helpers.GetRequestObjects(
-        path='/hosting/moved?project=my-project')
+  def testGatherPageData_NoSuchProject(self):
+    # Project doesn't exist, so 404 NOT FOUND.
+    _, mr = testing_helpers.GetRequestObjects(
+        path='/hosting/moved?project=nonexistent')
 
     with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet.GatherPageData(mr)
     self.assertEquals(404, cm.exception.code)
 
-    project = self.services.project.TestAddProject(project_name)
+  def testGatherPageData_NotMoved(self):
     # Project exists but has not been moved, so 400 BAD_REQUEST.
+    self.services.project.TestAddProject(self.old_project)
+    _, mr = testing_helpers.GetRequestObjects(
+        path='/hosting/moved?project=%s' % self.old_project)
+
     with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet.GatherPageData(mr)
     self.assertEquals(400, cm.exception.code)
 
+  def testGatherPageData_URL(self):
     # Display the moved_to url if it is valid.
-    project.moved_to = moved_to
-    page_data = self.servlet.GatherPageData(mr)
-    self.assertItemsEqual(
-        ['project_name', 'moved_to_url'],
-        page_data.keys())
-    self.assertEqual(project_name, page_data['project_name'])
-    self.assertEqual(moved_to, page_data['moved_to_url'])
+    project = self.services.project.TestAddProject(self.old_project)
+    project.moved_to = 'https://other-tracker.bugs'
+    _, mr = testing_helpers.GetRequestObjects(
+        path='/hosting/moved?project=%s' % self.old_project)
 
-    # We only display URLs that start with 'http'.
-    project.moved_to = 'javascript:alert(1)'
     page_data = self.servlet.GatherPageData(mr)
     self.assertItemsEqual(
         ['project_name', 'moved_to_url'],
         page_data.keys())
-    self.assertEqual(project_name, page_data['project_name'])
+    self.assertEqual(self.old_project, page_data['project_name'])
+    self.assertEqual('https://other-tracker.bugs', page_data['moved_to_url'])
+
+  def testGatherPageData_ProjectName(self):
+    # Construct the moved-to url from just the project name.
+    project = self.services.project.TestAddProject(self.old_project)
+    project.moved_to = 'new-project'
+    _, mr = testing_helpers.GetRequestObjects(
+        path='/hosting/moved?project=%s' % self.old_project)
+
+    page_data = self.servlet.GatherPageData(mr)
+    self.assertItemsEqual(
+        ['project_name', 'moved_to_url'],
+        page_data.keys())
+    self.assertEqual(self.old_project, page_data['project_name'])
+    self.assertEqual('http://127.0.0.1/p/new-project/',
+                     page_data['moved_to_url'])
+
+  def testGatherPageData_HttpProjectName(self):
+    # A project named "http-foo" gets treated as a project, not a url.
+    project = self.services.project.TestAddProject(self.old_project)
+    project.moved_to = 'http-project'
+    _, mr = testing_helpers.GetRequestObjects(
+        path='/hosting/moved?project=%s' % self.old_project)
+
+    page_data = self.servlet.GatherPageData(mr)
+    self.assertItemsEqual(
+        ['project_name', 'moved_to_url'],
+        page_data.keys())
+    self.assertEqual(self.old_project, page_data['project_name'])
+    self.assertEqual('http://127.0.0.1/p/http-project/',
+                     page_data['moved_to_url'])
+
+  def testGatherPageData_BadScheme(self):
+    # We only display URLs that start with 'http(s)://'.
+    project = self.services.project.TestAddProject(self.old_project)
+    project.moved_to = 'javascript:alert(1)'
+    _, mr = testing_helpers.GetRequestObjects(
+        path='/hosting/moved?project=%s' % self.old_project)
+
+    page_data = self.servlet.GatherPageData(mr)
+    self.assertItemsEqual(
+        ['project_name', 'moved_to_url'],
+        page_data.keys())
+    self.assertEqual(self.old_project, page_data['project_name'])
     self.assertEqual('#invalid-destination-url', page_data['moved_to_url'])
