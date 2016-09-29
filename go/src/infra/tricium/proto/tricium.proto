@@ -10,7 +10,7 @@ package tricium;
 
 // The global configuration lists available task definitions, of
 // which some may miss project-specific implementations.
-message GlobalConfig {
+message ServiceConfig {
   repeated TaskDef task_def = 1;
 }
 

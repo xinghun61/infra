@@ -17,8 +17,8 @@ func init() {
 
 func validateHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(emso): Add validation code.
-	// This handler should validate the provided config (project and/or global),
-	// get the global config if needed from luci-config, merge configs, validate
+	// This handler should validate the provided config (project and/or service),
+	// get the service config if needed from luci-config, merge configs, validate
 	// the merged config. Return merged config together with validation results
 	// in the response.
 	d := map[string]interface{}{
