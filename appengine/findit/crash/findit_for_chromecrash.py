@@ -9,7 +9,7 @@ import logging
 from common import chromium_deps
 from crash import detect_regression_range
 from crash import findit_for_crash
-from crash.fracas_parser import FracasParser
+from crash.chromecrash_parser import ChromeCrashParser
 from crash.project_classifier import ProjectClassifier
 from crash.component import Component
 from crash.component_classifier import ComponentClassifier
@@ -96,7 +96,7 @@ def FindCulpritForChromeCrash(signature, platform,
       }
   """
   crash_deps = chromium_deps.GetChromeDependency(crashed_version, platform)
-  stacktrace = FracasParser().Parse(stack_trace, crash_deps, signature)
+  stacktrace = ChromeCrashParser().Parse(stack_trace, crash_deps, signature)
   if not stacktrace:
     logging.warning('Failed to parse the stacktrace %s', stack_trace)
     return {'found': False}, {'found_suspects': False,

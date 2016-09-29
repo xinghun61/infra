@@ -16,12 +16,12 @@ FRACAS_CALLSTACK_START_PATTERN = re.compile(r'CRASHED \[(.*) @ 0x(.*)\]')
 JAVA_CALLSTACK_START_PATTERN = re.compile(r'\(JAVA\) CRASHED \[(.*) @ 0x(.*)\]')
 
 
-class FracasParser(StacktraceParser):
+class ChromeCrashParser(StacktraceParser):
 
   def Parse(self, stacktrace_string, deps, signature=None):
     """Parse fracas stacktrace string into Stacktrace instance."""
     stacktrace = Stacktrace()
-    # TODO(http://crbug.com/644441): testing against infinity is confusing.    
+    # TODO(http://crbug.com/644441): testing against infinity is confusing.
     callstack = CallStack(float('inf'))
 
     for line in stacktrace_string.splitlines():

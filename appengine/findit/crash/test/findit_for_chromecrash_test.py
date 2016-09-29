@@ -6,7 +6,7 @@ from common import chromium_deps
 from common.dependency import DependencyRoll
 from crash import detect_regression_range
 from crash import findit_for_chromecrash
-from crash import fracas_parser
+from crash import chromecrash_parser
 from crash import findit_for_crash
 from crash.callstack import CallStack
 from crash.component_classifier import ComponentClassifier
@@ -27,7 +27,7 @@ class FinditForChromeCrashTest(CrashTestCase):
       return Stacktrace()
 
     self.mock(chromium_deps, 'GetChromeDependency', _MockGetChromeDependency)
-    self.mock(fracas_parser.FracasParser, 'Parse', _MockParse)
+    self.mock(chromecrash_parser.ChromeCrashParser, 'Parse', _MockParse)
 
     expected_results = {'found': False}
     expected_tag = {'found_suspects': False,
@@ -76,7 +76,7 @@ class FinditForChromeCrashTest(CrashTestCase):
       return ''
 
     self.mock(chromium_deps, 'GetChromeDependency', _MockGetChromeDependency)
-    self.mock(fracas_parser.FracasParser, 'Parse', _MockParse)
+    self.mock(chromecrash_parser.ChromeCrashParser, 'Parse', _MockParse)
     self.mock(detect_regression_range, 'DetectRegressionRange',
               _MockDetectRegressionRange)
     self.mock(chromium_deps, 'GetDEPSRollsDict', _MockGetDEPSRollsDict)

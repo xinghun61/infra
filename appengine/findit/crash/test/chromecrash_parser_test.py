@@ -6,17 +6,17 @@ import textwrap
 
 from common.dependency import Dependency
 from crash.callstack import StackFrame, CallStack
-from crash.fracas_parser import FracasParser
+from crash.chromecrash_parser import ChromeCrashParser
 from crash.stacktrace import Stacktrace
 from crash.test.stacktrace_test_suite import StacktraceTestSuite
 from crash.type_enums import CallStackFormatType
 from crash.type_enums import CallStackLanguageType
 
 
-class FracasParserTest(StacktraceTestSuite):
+class ChromeCrashParserTest(StacktraceTestSuite):
 
-  def testFracasParserIsStartOfNewCallSTack(self):
-    parser = FracasParser()
+  def testChromeCrashParserIsStartOfNewCallSTack(self):
+    parser = ChromeCrashParser()
     self.assertEqual(parser._IsStartOfNewCallStack('dummy line'),
                      (False, None, None, None))
     self.assertEqual(parser._IsStartOfNewCallStack('CRASHED [EXC @ 0x508]'),
@@ -24,14 +24,14 @@ class FracasParserTest(StacktraceTestSuite):
                       CallStackLanguageType.CPP))
 
   def testReturnEmptyStacktraceForEmptyString(self):
-    parser = FracasParser()
+    parser = ChromeCrashParser()
     deps = {'src/': Dependency('src/', 'https://repo', '1')}
 
     self._VerifyTwoStacktracesEqual(parser.Parse('', deps),
                                     Stacktrace())
 
-  def testFracasParserParseLineMalformatedCallstack(self):
-    parser = FracasParser()
+  def testChromeCrashParserParseLineMalformatedCallstack(self):
+    parser = ChromeCrashParser()
     deps = {'src/': Dependency('src/', 'https://repo', '1')}
     stacktrace_string = textwrap.dedent(
         """
@@ -43,8 +43,8 @@ class FracasParserTest(StacktraceTestSuite):
     self._VerifyTwoStacktracesEqual(parser.Parse(stacktrace_string, deps),
                                     Stacktrace())
 
-  def testFracasParserParseLineOneCallstack(self):
-    parser = FracasParser()
+  def testChromeCrashParserParseLineOneCallstack(self):
+    parser = ChromeCrashParser()
     deps = {'src/': Dependency('src/', 'https://repo', '1')}
     stacktrace_string = textwrap.dedent(
         """
@@ -68,8 +68,8 @@ class FracasParserTest(StacktraceTestSuite):
 
     self._VerifyTwoStacktracesEqual(stacktrace, expected_stacktrace)
 
-  def testFracasParserParseLineJavaCallstack(self):
-    parser = FracasParser()
+  def testChromeCrashParserParseLineJavaCallstack(self):
+    parser = ChromeCrashParser()
     deps = {'src/': Dependency('src/', 'https://repo', '1')}
     stacktrace_string = textwrap.dedent(
         """
@@ -98,8 +98,8 @@ class FracasParserTest(StacktraceTestSuite):
 
     self._VerifyTwoStacktracesEqual(stacktrace, expected_stacktrace)
 
-  def testFracasParserParseLineMultipleCallstacks(self):
-    parser = FracasParser()
+  def testChromeCrashParserParseLineMultipleCallstacks(self):
+    parser = ChromeCrashParser()
     deps = {'src/': Dependency('src/', 'https://repo', '1')}
     stacktrace_string = textwrap.dedent(
         """
