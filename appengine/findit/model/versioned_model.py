@@ -37,7 +37,7 @@ class VersionedModel(ndb.Model):
     return self.key.pairs()[0][1] if self.key else None
 
   @property
-  def version(self):
+  def version_number(self):
     # Ndb treats key.integer_id() of 0 as None, so default to 0.
     return self.key.integer_id() or 0 if self.key else 0
 

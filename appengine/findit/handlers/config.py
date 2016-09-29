@@ -268,7 +268,7 @@ class Configuration(BaseHandler):
         'download_build_data_settings': settings.download_build_data_settings,
         'action_settings': settings.action_settings,
         'check_flake_settings': settings.check_flake_settings,
-        'version': settings.version,
+        'version': settings.version_number,
         'latest_version': latest_version,
         'updated_by': settings.updated_by,
         'updated_ts': _FormatTimestamp(settings.updated_ts)

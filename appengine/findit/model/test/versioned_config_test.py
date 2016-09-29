@@ -38,7 +38,7 @@ class VersionedConfigTest(testing.AppengineTestCase):
 
     config = _Config.Get()
     self.assertIsNotNone(config)
-    self.assertEqual(2, config.version)
+    self.assertEqual(2, config.version_number)
     self.assertEqual(2, config.a)
 
   def testNotUpdateWhenNotChanged(self):
@@ -50,5 +50,5 @@ class VersionedConfigTest(testing.AppengineTestCase):
 
     config = _Config.Get()
     self.assertIsNotNone(config)
-    self.assertEqual(1, config.version)
+    self.assertEqual(1, config.version_number)
     self.assertEqual(1, config.a)

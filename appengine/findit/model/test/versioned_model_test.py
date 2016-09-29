@@ -23,8 +23,8 @@ class VersionedModelTest(testing.AppengineTestCase):
     self.assertEqual(3, root_model_class(current=3).current)
 
   def testDefaultVersionIsZero(self):
-    self.assertEqual(0, _Entity.Create().version)
-    self.assertEqual(0, _Entity.Create('m1').version)
+    self.assertEqual(0, _Entity.Create().version_number)
+    self.assertEqual(0, _Entity.Create('m1').version_number)
 
   def testRootId(self):
     self.assertEqual(1, _Entity.Create()._root_id)
@@ -48,7 +48,7 @@ class VersionedModelTest(testing.AppengineTestCase):
     entity.Save()
 
     entity = _Entity.GetVersion()
-    self.assertEqual(2, entity.version)
+    self.assertEqual(2, entity.version_number)
     self.assertEqual(2, entity.value)
 
   def testGetSpecificVersion(self):
@@ -59,7 +59,7 @@ class VersionedModelTest(testing.AppengineTestCase):
     entity.Save()
 
     entity_version_2 = _Entity.GetVersion(version=2)
-    self.assertEqual(2, entity_version_2.version)
+    self.assertEqual(2, entity_version_2.version_number)
     self.assertEqual(2, entity_version_2.value)
     self.assertIsNone(_Entity.GetVersion(version=0))
     self.assertIsNone(_Entity.GetVersion(version=3))
@@ -76,7 +76,7 @@ class VersionedModelTest(testing.AppengineTestCase):
     entity.value = 2
     entity.Save()
 
-    self.assertEqual(2, _Entity.GetVersion('m1').version)
+    self.assertEqual(2, _Entity.GetVersion('m1').version_number)
     self.assertEqual(2, _Entity.GetVersion('m1').value)
     self.assertIsNone(_Entity.GetVersion('m1', version=0))
     self.assertIsNone(_Entity.GetVersion('m1', version=3))
@@ -95,7 +95,7 @@ class VersionedModelTest(testing.AppengineTestCase):
     self.assertTrue(saved)
 
     entity = _Entity.GetVersion()
-    self.assertEqual(1, entity.version)
+    self.assertEqual(1, entity.version_number)
     self.assertEqual(1, entity.value)
 
   def testSaveEntityWithRootId(self):
@@ -105,7 +105,7 @@ class VersionedModelTest(testing.AppengineTestCase):
     entity.value = 3
     entity.Save()
 
-    self.assertEqual(entity.version, 2)
+    self.assertEqual(entity.version_number, 2)
     self.assertEqual(entity.value, 3)
 
   def testSaveNewVersionOfEntityWithKeyId(self):
