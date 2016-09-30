@@ -1,5 +1,0 @@
-cron:
-- description: Clean up old annotations
-  url: /internal/cron/cleanup_old_annotations
-  schedule: every 2 hours
-

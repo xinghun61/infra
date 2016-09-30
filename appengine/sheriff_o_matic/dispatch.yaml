@@ -1,4 +1,0 @@
-dispatch:
-
-- url: "*/*"
-  module: default
