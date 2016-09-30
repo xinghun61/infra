@@ -17,6 +17,7 @@ from handlers.result_status import NO_TRY_JOB_REASON_MAP
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
+from model.result_status import FOUND_INCORRECT
 from model.result_status import RESULT_STATUS_TO_DESCRIPTION
 from waterfall import build_failure_analysis_pipelines
 from waterfall import buildbot
@@ -41,12 +42,14 @@ def _GetTriageHistory(analysis):
 
   triage_history = []
   for triage_record in analysis.triage_history:
+    cl_status = (FOUND_INCORRECT if triage_record.get('cl_status') == 1
+                 else triage_record.get('cl_status'))
+    status = triage_record.get('result_status', cl_status)
     triage_history.append({
         'triage_time': _FormatDatetime(
             datetime.utcfromtimestamp(triage_record['triage_timestamp'])),
         'user_name': triage_record['user_name'],
-        'result_status': RESULT_STATUS_TO_DESCRIPTION.get(
-            triage_record['result_status']),
+        'result_status': RESULT_STATUS_TO_DESCRIPTION.get(status),
         'version': triage_record.get('version'),
     })
 
