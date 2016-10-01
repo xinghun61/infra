@@ -136,7 +136,12 @@ class FindItApi(remote.Service):
       return None
 
     if build_failure_type == failure_type.COMPILE:
+      if not try_job.compile_results:  # pragma: no cover.
+        return None
       return try_job.compile_results[-1].get('culprit', {}).get(step_name)
+
+    if not try_job.test_results:  # pragma: no cover.
+      return None
 
     if test_name is None:
       step_info = try_job.test_results[-1].get('culprit', {}).get(step_name)
