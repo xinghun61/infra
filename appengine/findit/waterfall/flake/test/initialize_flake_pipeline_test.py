@@ -122,7 +122,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name, test_name)
     self.assertIsNotNone(analysis)
     mocked_pipeline.assert_has_calls(
-        [mock.call().start(queue_name=constants.DEFAULT_QUEUE)])
+        [mock.call().StartOffPSTPeakHours(queue_name=constants.DEFAULT_QUEUE)])
 
   @mock.patch(
       'waterfall.flake.recursive_flake_pipeline.RecursiveFlakePipeline')

@@ -8,6 +8,8 @@ from common import time_util
 from datetime import datetime
 from datetime import timedelta
 
+import pytz
+
 
 class DiffTest(unittest.TestCase):
   def testRemoveMicrosecondsFromDelta(self):
@@ -35,3 +37,12 @@ class DiffTest(unittest.TestCase):
     self.assertEqual(
         time_util.FormatDatetime(datetime(2016, 1, 2, 1, 2, 3)),
         '2016-01-02 01:02:03 UTC')
+
+  def testGetDateTimeInTimezone(self):
+    utc_datetime = datetime(2016, 9, 27, 20, 46, 18, 1, pytz.utc)
+    result_pst_datetime = time_util.GetDatetimeInTimezone(
+        'US/Pacific', utc_datetime)
+    expected_pst_datetime = datetime(2016, 9, 27, 13, 46, 18, 1,
+                                     pytz.timezone('US/Pacific'))
+    self.assertEqual(result_pst_datetime.date(), expected_pst_datetime.date())
+    self.assertEqual(result_pst_datetime.time(), expected_pst_datetime.time())

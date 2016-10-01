@@ -38,3 +38,7 @@ class FinditTestCase(testing.AppengineTestCase):  # pragma: no cover.
   def MockUTCNow(self, mocked_utcnow):
     """Mocks utcnow with the given value for testing."""
     self.mock(time_util, 'GetUTCNow', lambda: mocked_utcnow)
+
+  def MockUTCNowWithTimezone(self, mocked_utcnow):
+    """Mocks utcnow with the given value for testing."""
+    self.mock(time_util, 'GetUTCNowWithTimezone', lambda: mocked_utcnow)

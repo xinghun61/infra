@@ -2,6 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
+
+import pytz
+
 from common import constants
 from common.pipeline_wrapper import pipeline_handlers
 from model import analysis_status
@@ -43,6 +47,41 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
       data_point.build_number = build_numbers[i]
       data_points.append(data_point)
     return data_points
+
+  def testGetETAToStartAnalysisWhenManuallyTriggered(self):
+    mocked_utcnow = datetime.utcnow()
+    self.MockUTCNow(mocked_utcnow)
+    self.assertEqual(mocked_utcnow,
+                     recursive_flake_pipeline._GetETAToStartAnalysis(True))
+
+  def testGetETAToStartAnalysisWhenTriggeredOnPSTWeekend(self):
+    # Sunday 1pm in PST.
+    mocked_utcnow = datetime(2016, 9, 04, 20, 0, 0, 0, pytz.utc)
+    self.MockUTCNow(mocked_utcnow)
+    self.MockUTCNowWithTimezone(mocked_utcnow)
+    self.assertEqual(mocked_utcnow,
+                     recursive_flake_pipeline._GetETAToStartAnalysis(False))
+
+  def testGetETAToStartAnalysisWhenTriggeredOffPeakHoursOnPSTWeekday(self):
+    # Tuesday 1am in PST.
+    mocked_utcnow = datetime(2016, 9, 20, 8, 0, 0, 0, pytz.utc)
+    self.MockUTCNow(mocked_utcnow)
+    self.MockUTCNowWithTimezone(mocked_utcnow)
+    self.assertEqual(mocked_utcnow,
+                     recursive_flake_pipeline._GetETAToStartAnalysis(False))
+
+  def testGetETAToStartAnalysisWhenTriggeredInPeakHoursOnPSTWeekday(self):
+    # Tuesday 1pm in PST.
+    mocked_utcnow = datetime(2016, 9, 20, 20, 0, 0, 0, pytz.utc)
+    self.MockUTCNow(mocked_utcnow)
+    self.MockUTCNowWithTimezone(mocked_utcnow)
+    eta = recursive_flake_pipeline._GetETAToStartAnalysis(False)
+    self.assertEqual(2016, eta.year)
+    self.assertEqual(9, eta.month)
+    self.assertEqual(21, eta.day)
+    self.assertEqual(1, eta.hour)
+    seconds = eta.minute * 60 + eta.second
+    self.assertTrue(seconds >= 0 and seconds <= 30 * 60)
 
   def testRecursiveFlakePipeline(self):
     master_name = 'm'
@@ -95,16 +134,14 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         '',
         expected_args=[master_name, builder_name, master_build_number,
                        build_number, step_name, test_name,
-                       analysis.version_number,
-                       test_result_future, queue_name,
+                       analysis.version_number, test_result_future,
                        flakiness_algorithm_results_dict],
-        expected_kwargs={})
+        expected_kwargs={'manually_triggered': False})
 
     rfp = RecursiveFlakePipeline(
         master_name, builder_name, build_number, step_name, test_name,
         analysis.version_number, master_build_number,
-        flakiness_algorithm_results_dict=flakiness_algorithm_results_dict,
-        queue_name=queue_name)
+        flakiness_algorithm_results_dict=flakiness_algorithm_results_dict)
 
     rfp.start(queue_name=queue_name)
     self.execute_queued_tasks()
@@ -117,7 +154,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     test_result_future = 'trf'
-    queue_name = constants.DEFAULT_QUEUE
     flakiness_algorithm_results_dict = {
         'flakes_in_a_row': 0,
         'stable_in_a_row': 0,
@@ -150,7 +186,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name, test_name,
-        analysis.version_number, test_result_future, queue_name,
+        analysis.version_number, test_result_future,
         flakiness_algorithm_results_dict)
     self.assertEquals(flakiness_algorithm_results_dict['flakes_in_a_row'], 1)
 
@@ -162,7 +198,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     test_result_future = 'trf'
-    queue_name = constants.DEFAULT_QUEUE
     flakiness_algorithm_results_dict = {
         'flakes_in_a_row': 0,
         'stable_in_a_row': 0,
@@ -173,7 +208,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'upper_boundary': None,
         'lower_boundary_result': None,
         'sequential_run_index': 0
-
     }
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
@@ -194,7 +228,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name,
-        test_name, analysis.version_number, test_result_future, queue_name,
+        test_name, analysis.version_number, test_result_future,
         flakiness_algorithm_results_dict)
     self.assertEquals(flakiness_algorithm_results_dict['stable_in_a_row'], 1)
 
@@ -206,7 +240,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     test_result_future = 'trf'
-    queue_name = constants.DEFAULT_QUEUE
     flakiness_algorithm_results_dict = {
         'flakes_in_a_row': 0,
         'stable_in_a_row': 4,
@@ -238,7 +271,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name,
-        test_name, analysis.version_number, test_result_future, queue_name,
+        test_name, analysis.version_number, test_result_future,
         flakiness_algorithm_results_dict)
     self.assertEquals(flakiness_algorithm_results_dict['stabled_out'], True)
 
@@ -250,7 +283,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     test_result_future = 'trf'
-    queue_name = constants.DEFAULT_QUEUE
     flakiness_algorithm_results_dict = {
         'flakes_in_a_row': 4,
         'stable_in_a_row': 0,
@@ -282,7 +314,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name,
-        test_name, analysis.version_number, test_result_future, queue_name,
+        test_name, analysis.version_number, test_result_future,
         flakiness_algorithm_results_dict)
     self.assertEquals(flakiness_algorithm_results_dict['flaked_out'], True)
 
@@ -294,7 +326,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     test_result_future = 'trf'
-    queue_name = constants.DEFAULT_QUEUE
     flakiness_algorithm_results_dict = {
         'flakes_in_a_row': 0,
         'stable_in_a_row': 0,
@@ -323,7 +354,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     queue_name = {'x': False}
-    def my_mocked_run(arg1, queue_name):  # pylint: disable=unused-argument
+    def my_mocked_run(*_, **__):
       queue_name['x'] = True  # pragma: no cover
 
     self.mock(
@@ -331,7 +362,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name, test_name,
-        analysis.version_number, test_result_future, queue_name,
+        analysis.version_number, test_result_future,
         flakiness_algorithm_results_dict)
     self.assertFalse(queue_name['x'])
 
@@ -343,7 +374,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     test_result_future = 'trf'
-    queue_name = constants.DEFAULT_QUEUE
     flakiness_algorithm_results_dict = {
         'flakes_in_a_row': 0,
         'stable_in_a_row': 0,
@@ -373,7 +403,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     queue_name = {'x': False}
-    def my_mocked_run(arg1, queue_name):  # pylint: disable=unused-argument
+    def my_mocked_run(*_, **__):
       queue_name['x'] = True  # pragma: no cover
 
     self.mock(
@@ -381,7 +411,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name, test_name, 1,
-        test_result_future, queue_name, flakiness_algorithm_results_dict)
+        test_result_future, flakiness_algorithm_results_dict)
     self.assertFalse(queue_name['x'])
 
   def testNextBuildPipelineForNewRecursionStabledFlakedOut(self):
@@ -421,7 +451,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     queue_name = {'x': False}
-    def my_mocked_run(arg1, queue_name):  # pylint: disable=unused-argument
+    def my_mocked_run(*_, **__):
       queue_name['x'] = True  # pragma: no cover
 
     self.mock(
@@ -429,7 +459,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name, test_name,
-        analysis.version_number, test_result_future, queue_name,
+        analysis.version_number, test_result_future,
         flakiness_algorithm_results_dict)
     self.assertTrue(queue_name['x'])
 
@@ -643,7 +673,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     test_result_future = 'trf'
-    queue_name = constants.DEFAULT_QUEUE
     flakiness_algorithm_results_dict = {
         'flakes_in_a_row': 0,
         'stable_in_a_row': 0,
@@ -675,7 +704,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name, test_name,
-        analysis.version_number, test_result_future, queue_name,
+        analysis.version_number, test_result_future,
         flakiness_algorithm_results_dict)
     self.assertEquals(
         flakiness_algorithm_results_dict['sequential_run_index'], 1)
@@ -737,7 +766,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     test_result_future = 'trf'
-    queue_name = constants.DEFAULT_QUEUE
     flakiness_algorithm_results_dict = {
         'flakes_in_a_row': 0,
         'stable_in_a_row': 3,
@@ -766,7 +794,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.run(
         master_name, builder_name,
         master_build_number, build_number, step_name, test_name,
-        analysis.version_number, test_result_future, queue_name,
+        analysis.version_number, test_result_future,
         flakiness_algorithm_results_dict)
 
     analysis = MasterFlakeAnalysis.GetVersion(
@@ -781,7 +809,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     test_result_future = 'trf'
-    queue_name = constants.DEFAULT_QUEUE
     flakiness_algorithm_results_dict = {
         'flakes_in_a_row': 0,
         'stable_in_a_row': 3,
@@ -808,7 +835,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.run(
         master_name, builder_name,
         master_build_number, build_number, step_name, test_name,
-        analysis.version_number, test_result_future, queue_name,
+        analysis.version_number, test_result_future,
         flakiness_algorithm_results_dict)
 
     analysis = MasterFlakeAnalysis.GetVersion(

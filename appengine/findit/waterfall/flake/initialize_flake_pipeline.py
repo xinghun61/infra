@@ -53,6 +53,7 @@ def NeedANewAnalysis(
 # Unused arguments - pylint: disable=W0612, W0613
 def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, step_name,
                              test_name, allow_new_analysis=False, force=False,
+                             manually_triggered=False,
                              queue_name=constants.DEFAULT_QUEUE):
   """Schedules an analysis if needed and returns the MasterFlakeAnalysis.
 
@@ -67,6 +68,8 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, step_name,
     test_name (str): The single test we are checking
     allow_new_analysis (bool): Indicate whether a new analysis is allowed.
     force (bool): Indicate whether to force a rerun of current analysis.
+    manually_triggered (bool): True if the analysis is from manual request, like
+        by a Chromium sheriff.
     queue_name (str): The App Engine queue to run the analysis.
 
   Returns:
@@ -115,10 +118,11 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, step_name,
     pipeline_job = RecursiveFlakePipeline(
         master_name, builder_name, build_number, step_name, test_name,
         version_number, master_build_number=build_number,
-        flakiness_algorithm_results_dict=flakiness_algorithm_results_dict)
+        flakiness_algorithm_results_dict=flakiness_algorithm_results_dict,
+        manually_triggered=manually_triggered)
     pipeline_job.target = appengine_util.GetTargetNameForModule(
         constants.WATERFALL_BACKEND)
-    pipeline_job.start(queue_name=queue_name)
+    pipeline_job.StartOffPSTPeakHours(queue_name=queue_name)
   return MasterFlakeAnalysis.GetVersion(
       master_name, builder_name, build_number, step_name, test_name,
       version=version_number)

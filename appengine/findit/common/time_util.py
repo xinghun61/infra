@@ -7,10 +7,17 @@ from datetime import datetime
 from datetime import time
 from datetime import timedelta
 
+import pytz
+
 
 def GetUTCNow():  # pragma: no cover.
   """Returns the datetime.utcnow. This is to mock for testing."""
   return datetime.utcnow()
+
+
+def GetUTCNowWithTimezone():  # pragma: no cover.
+  """Returns datetime.now but in utc timezone. This is to mock for testing."""
+  return datetime.now(pytz.utc)
 
 
 def GetUTCNowTimestamp():  # pragma: no cover.
@@ -36,3 +43,18 @@ def FormatDatetime(date):
     return None
   else:
     return date.strftime('%Y-%m-%d %H:%M:%S UTC')
+
+
+def GetDatetimeInTimezone(timezone_name, date_time=None):
+  """Returns the datetime.datetime of the given one in the specified timezone.
+
+  Args:
+    timezone_name (str): The name of any timezone supported by pytz.
+    date_time (datetime.datetime): The optional datetime to be converted into
+        the new timezone. If not given, default to UTC now.
+
+  Returns:
+    A datetime.datetime of the given one in the specified timezone.
+  """
+  date_time = date_time or GetUTCNowWithTimezone()
+  return date_time.astimezone(pytz.timezone(timezone_name))

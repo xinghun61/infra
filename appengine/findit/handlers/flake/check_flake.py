@@ -28,7 +28,7 @@ class CheckFlake(BaseHandler):
 
     master_flake_analysis = ScheduleAnalysisIfNeeded(
         master_name, builder_name, build_number, step_name, test_name,
-        allow_new_analysis, force=force,
+        allow_new_analysis, force=force, manually_triggered=True,
         queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
     if not master_flake_analysis:  # pragma: no cover.
@@ -56,12 +56,10 @@ class CheckFlake(BaseHandler):
         'test_name': test_name,
     }
 
-    build_numbers = []
-    pass_rates = []
     coordinates = []
 
     for data_point in master_flake_analysis.data_points:
-      coordinates.append((data_point.build_number, data_point.pass_rate))
+      coordinates.append([data_point.build_number, data_point.pass_rate])
 
     # Order by build number from earliest to latest.
     coordinates.sort(key=lambda x: x[0])
