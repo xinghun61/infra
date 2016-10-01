@@ -1,5 +1,5 @@
 application: test-results-hrd
-version: 1
+module: python
 runtime: python27
 api_version: 1
 threadsafe: true
@@ -9,16 +9,8 @@ handlers:
 - url: /appengine_module/components
   static_dir: appengine_module/components
 
-- url: /testfile/delete
-  script: appengine_module.test_results.main.app
-  login: admin
-
 - url: /.*
   script: appengine_module.test_results.main.app
-
-- url: /updatebuilders
-  script: appengine_module.test_results.main.app
-  login: admin
 
 - url: /internal/monitoring/upload
   script: appengine_module.test_results.main.app

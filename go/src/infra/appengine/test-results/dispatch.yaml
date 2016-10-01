@@ -1,21 +1,5 @@
 dispatch:
-  - url: "*/builders"
-    module: go
-  - url: "*/updatebuilders"
-    module: go
-  - url: "*/builderstate"
-    module: go
-  - url: "*/updatebuilderstate"
-    module: go
-  - url: "*/testfile*"
-    module: go
-  - url: "*/revision_range"
-    module: go
-  - url: "*/internal/delete-keys"
-    module: go
-  - url: "*/internal/cron/ts_mon/housekeeping"
-    module: go
-  - url: "*/dashboards*"
-    module: go
-  - url: "*/stylesheets*"
-    module: go
+  - url: "*/internal/monitoring/upload"
+    module: python
+  - url: "*/appengine_module/components"
+    module: python

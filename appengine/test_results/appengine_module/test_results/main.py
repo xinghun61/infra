@@ -30,25 +30,12 @@ import webapp2
 
 import gae_ts_mon
 import gae_event_mon
-from appengine_module.test_results.handlers import buildershandler
-from appengine_module.test_results.handlers import builderstatehandler
-from appengine_module.test_results.handlers import menu
 from appengine_module.test_results.handlers import monitoring
 from appengine_module.test_results.handlers import redirector
-from appengine_module.test_results.handlers import testfilehandler
 
 routes = [
-    ('/testfile/delete', testfilehandler.DeleteFile),
-    ('/testfile/upload', testfilehandler.Upload),
-    ('/testfile/uploadform', testfilehandler.UploadForm),
-    ('/testfile/?', testfilehandler.GetFile),
-    ('/builders', buildershandler.GetBuilders),
-    ('/updatebuilders', buildershandler.UpdateBuilders),
-    ('/builderstate', builderstatehandler.GetBuilderState),
-    ('/updatebuilderstate', builderstatehandler.Update),
     ('/internal/monitoring/upload', monitoring.EventMonUploader),
     ('/internal/v2/monitoring/upload', monitoring.MonitoringUploadV2),
-    ('/', menu.Menu),
     webapp2.Route('/revision_range', webapp2.RedirectHandler, defaults={
         '_uri': redirector.get_googlesource_url}),
 ]

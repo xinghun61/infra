@@ -1,5 +1,5 @@
 application: test-results-hrd
-module: go
+module: default
 runtime: go
 api_version: go1
 instance_class: F4_1G
@@ -11,6 +11,10 @@ handlers:
     static_files: static/favicon.ico
     upload: static/favicon.ico
 
+  - url: /robots.txt
+    static_files: static/robots.txt
+    upload: static/robots.txt
+
   - url: /stylesheets
     static_dir: static/stylesheets
 
@@ -20,6 +24,11 @@ handlers:
   - url: /testfile/uploadform
     static_files: static/pages/uploadform.html
     upload: static/pages/uploadform.html
+    mime_type: text/html; charset=utf-8
+
+  - url: /
+    static_files: static/pages/menu.html
+    upload: static/pages/menu.html
     mime_type: text/html; charset=utf-8
 
   - url: /.*
