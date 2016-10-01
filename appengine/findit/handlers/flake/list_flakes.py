@@ -26,6 +26,9 @@ def FilterMasterFlakeAnalysis(master_flake_analysis_query, master_name,
   if test_name:
     master_flake_analysis_query = master_flake_analysis_query.filter(
         MasterFlakeAnalysis.test_name == test_name)
+  if not (master_name or builder_name or build_number or
+          step_name or test_name):
+    master_flake_analysis_query.order(-MasterFlakeAnalysis.request_time)
   return master_flake_analysis_query.fetch()
 
 

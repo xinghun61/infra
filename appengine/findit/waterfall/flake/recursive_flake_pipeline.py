@@ -22,7 +22,7 @@ from waterfall.trigger_flake_swarming_task_pipeline import (
 
 
 def _UpdateAnalysisStatusUponCompletion(master_flake_analysis, status, error):
-  master_flake_analysis.completed_time = time_util.GetUTCNow()
+  master_flake_analysis.end_time = time_util.GetUTCNow()
   master_flake_analysis.status = status
 
   if error:
@@ -112,6 +112,7 @@ class RecursiveFlakePipeline(BasePipeline):
 
     if flake_analysis.status != analysis_status.RUNNING:  # pragma: no branch
       flake_analysis.status = analysis_status.RUNNING
+      flake_analysis.start_time = time_util.GetUTCNow()
       flake_analysis.put()
 
     # Call trigger pipeline (flake style).

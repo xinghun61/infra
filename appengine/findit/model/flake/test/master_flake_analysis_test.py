@@ -101,6 +101,5 @@ class MasterFlakeAnalysisTest(unittest.TestCase):
     self.assertEqual(analysis_status.PENDING, analysis.status)
     self.assertIsNone(analysis.correct_regression_range)
     self.assertIsNone(analysis.correct_culprit)
-    self.assertIsNone(analysis.completed_time)
     self.assertIsNone(analysis.suspected_flake_build_number)
     self.assertEqual([], analysis.data_points)

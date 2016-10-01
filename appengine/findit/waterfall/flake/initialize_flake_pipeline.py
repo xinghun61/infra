@@ -35,8 +35,9 @@ def NeedANewAnalysis(
       return False
     master_flake_analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number, step_name, test_name)
-    master_flake_analysis.created_time = time_util.GetUTCNow()
+    master_flake_analysis.request_time = time_util.GetUTCNow()
     master_flake_analysis.status = analysis_status.PENDING
+    master_flake_analysis.version = appengine_util.GetCurrentVersion()
     _, saved = master_flake_analysis.Save()
     return saved
   elif (master_flake_analysis.status == analysis_status.COMPLETED or
@@ -46,6 +47,9 @@ def NeedANewAnalysis(
   else:
     # The previous analysis had some error, so reset and run as a new version.
     master_flake_analysis.Reset()
+    master_flake_analysis.request_time = time_util.GetUTCNow()
+    master_flake_analysis.status = analysis_status.PENDING
+    master_flake_analysis.version = appengine_util.GetCurrentVersion()
     _, saved = master_flake_analysis.Save()
     return saved
 

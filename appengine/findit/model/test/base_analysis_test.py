@@ -81,3 +81,18 @@ class BaseModelTest(unittest.TestCase):
   def testBaseAnalysisStatusDescriptionError(self):
     self.dummy_model.status = analysis_status.ERROR
     self.assertEqual('Error', self.dummy_model.status_description)
+
+  def testReset(self):
+    self.dummy_model.pipeline_status_path = 'a'
+    self.dummy_model.status = analysis_status.COMPLETED
+    self.dummy_model.request_time = datetime.now()
+    self.dummy_model.start_time = datetime.now()
+    self.dummy_model.end_time = datetime.now()
+    self.dummy_model.version = 'a'
+    self.dummy_model.Reset()
+    self.assertIsNone(self.dummy_model.pipeline_status_path)
+    self.assertEqual(analysis_status.PENDING, self.dummy_model.status)
+    self.assertIsNone(self.dummy_model.request_time)
+    self.assertIsNone(self.dummy_model.start_time)
+    self.assertIsNone(self.dummy_model.end_time)
+    self.assertIsNone(self.dummy_model.version)

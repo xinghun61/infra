@@ -6,7 +6,6 @@ import base64
 
 from google.appengine.ext import ndb
 
-from common import time_util
 from model import analysis_status
 from model.base_analysis import BaseAnalysis
 from model.base_build_model import BaseBuildModel
@@ -55,9 +54,7 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel):
         version=version)
 
   def Reset(self):
-    self.created_time = time_util.GetUTCNow()
-    self.status = analysis_status.PENDING
-    self.completed_time = None
+    super(MasterFlakeAnalysis, self).Reset()
     self.swarming_rerun_results = []
     self.error = None
     self.correct_regression_range = None
@@ -65,12 +62,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel):
     self.algorithm_parameters = None
     self.suspected_flake_build_number = None
     self.data_points = []
-
-  # The UTC timestamp this analysis was requested.
-  created_time = ndb.DateTimeProperty(indexed=True)
-
-  # The UTC timestamp this analysis was completed.
-  completed_time = ndb.DateTimeProperty(indexed=True)
 
   # A list of dicts containing information about each swarming rerun's results
   # that were involved in this analysis. The contents of this list will be used
