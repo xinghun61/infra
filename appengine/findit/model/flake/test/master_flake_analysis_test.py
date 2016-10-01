@@ -7,6 +7,7 @@ from datetime import datetime
 import unittest
 
 from model import analysis_status
+from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
 
@@ -84,3 +85,22 @@ class MasterFlakeAnalysisTest(unittest.TestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     self.assertEqual('s', analysis.step_name)
     self.assertEqual('t', analysis.test_name)
+
+  def testReset(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.swarming_rerun_results = [{}]
+    analysis.status = analysis_status.RUNNING
+    analysis.correct_regression_range = True
+    analysis.correct_culprit = False
+    analysis.correct_culprit = None
+    analysis.data_points = [DataPoint()]
+    analysis.suspected_flake_build_number = 123
+    analysis.Reset()
+
+    self.assertEqual([], analysis.swarming_rerun_results)
+    self.assertEqual(analysis_status.PENDING, analysis.status)
+    self.assertIsNone(analysis.correct_regression_range)
+    self.assertIsNone(analysis.correct_culprit)
+    self.assertIsNone(analysis.completed_time)
+    self.assertIsNone(analysis.suspected_flake_build_number)
+    self.assertEqual([], analysis.data_points)

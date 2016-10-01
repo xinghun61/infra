@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from collections import defaultdict
 import datetime
 import logging
 import time
@@ -56,7 +55,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number,
-          step_name, task_id, *args): # pragma: no cover.
+          step_name, task_id, *args):  # pragma: no cover.
     """
     Args:
       master_name (str): The master name.
@@ -130,7 +129,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         task.put()
         logging.error('Swarming task timed out after %d hours.' % timeout_hours)
         break  # Stops the loop and return.
-    # Update swarming task metadate.
+    # Update swarming task metadata.
     task = self._GetSwarmingTask(*call_args)
     task.created_time = self._ConvertDateTime(data.get('created_ts'))
     task.started_time = self._ConvertDateTime(data.get('started_ts'))

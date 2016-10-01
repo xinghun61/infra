@@ -44,7 +44,7 @@ class CheckFlake(BaseHandler):
       }
 
     data = {
-        'success_rates': [],
+        'pass_rates': [],
         'analysis_status': STATUS_TO_DESCRIPTION.get(
             master_flake_analysis.status),
         'suspected_flake_build_number': (
@@ -55,11 +55,19 @@ class CheckFlake(BaseHandler):
         'step_name': step_name,
         'test_name': test_name,
     }
-    zipped = zip(master_flake_analysis.build_numbers,
-                 master_flake_analysis.success_rates)
-    zipped.sort(key = lambda x: x[0])
-    for (build_number, success_rate) in zipped:
-      data['success_rates'].append([build_number, success_rate])
+
+    build_numbers = []
+    pass_rates = []
+    coordinates = []
+
+    for data_point in master_flake_analysis.data_points:
+      coordinates.append((data_point.build_number, data_point.pass_rate))
+
+    # Order by build number from earliest to latest.
+    coordinates.sort(key=lambda x: x[0])
+
+    data['pass_rates'] = coordinates
+
     return {
         'template': 'flake/result.html',
         'data': data

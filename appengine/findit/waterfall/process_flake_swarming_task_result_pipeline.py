@@ -2,12 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 from collections import defaultdict
 
-from common.pipeline_wrapper import BasePipeline
-
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.flake.flake_swarming_task import FlakeSwarmingTask
+from model.flake.master_flake_analysis import DataPoint
+from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.process_base_swarming_task_result_pipeline import (
     ProcessBaseSwarmingTaskResultPipeline)
 
@@ -23,7 +24,7 @@ class ProcessFlakeSwarmingTaskResultPipeline(
   # Arguments number differs from overridden method - pylint: disable=W0221
   def _CheckTestsRunStatuses(self, output_json, master_name,
                              builder_name, build_number, step_name,
-                             master_build_number, test_name):
+                             master_build_number, test_name, version_number):
     """Checks result status for each test run and saves the numbers accordingly.
 
     Args:
@@ -32,8 +33,9 @@ class ProcessFlakeSwarmingTaskResultPipeline(
       builder_name (dict): Name of builder of swarming rerun.
       build_number (int): Build Number of swarming rerun.
       step_name (dict): Name of step of swarming rerun.
-      master_build_number (int): Build number of corresponding mfa
-      test_name (string): Name of test of swarming rerun
+      master_build_number (int): Build number of corresponding mfa.
+      test_name (string): Name of test of swarming rerun.
+      version_number (int): The version to save analysis results and ` to.
 
     Returns:
       tests_statuses (dict): A dict of different statuses for each test.
@@ -59,21 +61,35 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     successes = tests_statuses.get(test_name, {}).get('SUCCESS', 0)
 
     if tries > 0:
-      success_rate = successes * 1.0 / tries
+      pass_rate = successes * 1.0 / tries
     else:
-      success_rate = -1 # Special value to indicate test is not existing.
+      pass_rate = -1  # Special value to indicate test is not existing.
 
-    master_flake_analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                                    master_build_number,
-                                                    step_name, test_name)
+    master_flake_analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, master_build_number, step_name, test_name,
+        version=version_number)
+    logging.info(
+        'Updating MasterFlakeAnalysis data %s/%s/%s/%s/%s',
+        master_name, builder_name, build_number, step_name, test_name)
+    logging.info('MasterFlakeAnalysis %s version %s',
+                 master_flake_analysis, master_flake_analysis.version_number)
+
+    data_point = DataPoint()
+    data_point.build_number = build_number
+    data_point.pass_rate = pass_rate
+    master_flake_analysis.data_points.append(data_point)
+
     flake_swarming_task = FlakeSwarmingTask.Get(
         master_name, builder_name, build_number, step_name, test_name)
-
-    master_flake_analysis.build_numbers.append(build_number)
-    master_flake_analysis.success_rates.append(success_rate)
     flake_swarming_task.tries = tries
     flake_swarming_task.successes = successes
     flake_swarming_task.put()
+
+    results = flake_swarming_task.GetFlakeSwarmingTaskData()
+    # TODO(lijeffrey): Determine whether or not this flake swarming task
+    # was a cache hit (already ran results for more iterations than were
+    # requested) and update results['cache_hit'] accordingly.
+    master_flake_analysis.swarming_rerun_results.append(results)
     master_flake_analysis.put()
     return tests_statuses
 
@@ -81,12 +97,13 @@ class ProcessFlakeSwarmingTaskResultPipeline(
                step_name, *args):
     master_build_number = args[0]
     test_name = args[1]
+    version_number = args[2]
     return (master_name, builder_name, build_number, step_name,
-            master_build_number, test_name)
+            master_build_number, test_name, version_number)
 
   # Unused Argument - pylint: disable=W0612,W0613
   def _GetSwarmingTask(self, master_name, builder_name, build_number,
-                       step_name, master_build_number, test_name):
+                       step_name, master_build_number, test_name, _):
     # Get the appropriate kind of Swarming Task (Flake).
     return FlakeSwarmingTask.Get(master_name, builder_name,
                                  build_number, step_name, test_name)

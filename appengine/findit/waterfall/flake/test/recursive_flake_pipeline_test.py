@@ -5,8 +5,9 @@
 from common import constants
 from common.pipeline_wrapper import pipeline_handlers
 from model import analysis_status
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.flake.flake_swarming_task import FlakeSwarmingTask
+from model.flake.master_flake_analysis import DataPoint
+from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.flake import recursive_flake_pipeline
 from waterfall.flake.recursive_flake_pipeline import get_next_run
 from waterfall.flake.recursive_flake_pipeline import NextBuildNumberPipeline
@@ -19,12 +20,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
   def _CreateAndSaveMasterFlakeAnalysis(
-      self, master_name, builder_name, build_number,
-      step_name, test_name, status):
+      self, master_name, builder_name, build_number, step_name,
+      test_name, status):
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number, step_name, test_name)
     analysis.status = status
-    analysis.put()
+    analysis.Save()
 
   def _CreateAndSaveFlakeSwarmingTask(
       self, master_name, builder_name, build_number,
@@ -33,6 +34,15 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name, test_name)
     flake_swarming_task.status = status
     flake_swarming_task.put()
+
+  def _GenerateDataPoints(self, pass_rates, build_numbers):
+    data_points = []
+    for i in range(0, len(pass_rates)):
+      data_point = DataPoint()
+      data_point.pass_rate = pass_rates[i]
+      data_point.build_number = build_numbers[i]
+      data_points.append(data_point)
+    return data_points
 
   def testRecursiveFlakePipeline(self):
     master_name = 'm'
@@ -59,10 +69,10 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     }
 
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, master_build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, master_build_number, step_name, test_name)
+    analysis.status = analysis_status.PENDING
+    analysis.Save()
 
     self.MockPipeline(
         recursive_flake_pipeline.TriggerFlakeSwarmingTaskPipeline,
@@ -76,7 +86,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'test_result_future',
         expected_args=[master_name, builder_name,
                        run_build_number, step_name, task_id,
-                       master_build_number, test_name],
+                       master_build_number, test_name,
+                       analysis.version_number],
         expected_kwargs={})
 
     self.MockPipeline(
@@ -84,15 +95,16 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         '',
         expected_args=[master_name, builder_name, master_build_number,
                        build_number, step_name, test_name,
+                       analysis.version_number,
                        test_result_future, queue_name,
                        flakiness_algorithm_results_dict],
         expected_kwargs={})
 
-    rfp = RecursiveFlakePipeline(master_name, builder_name, build_number,
-                                 step_name, test_name, master_build_number,
-                                 flakiness_algorithm_results_dict=
-                                 flakiness_algorithm_results_dict,
-                                 queue_name=queue_name)
+    rfp = RecursiveFlakePipeline(
+        master_name, builder_name, build_number, step_name, test_name,
+        analysis.version_number, master_build_number,
+        flakiness_algorithm_results_dict=flakiness_algorithm_results_dict,
+        queue_name=queue_name)
 
     rfp.start(queue_name=queue_name)
     self.execute_queued_tasks()
@@ -126,16 +138,20 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.COMPLETED
     )
-    analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                       build_number, step_name, test_name)
-    analysis.success_rates.append(.08)
-    analysis.build_numbers.append(100)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+
+    data_point = DataPoint()
+    data_point.pass_rate = .08
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
     analysis.put()
 
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name, test_name,
-        test_result_future, queue_name, flakiness_algorithm_results_dict)
+        analysis.version_number, test_result_future, queue_name,
+        flakiness_algorithm_results_dict)
     self.assertEquals(flakiness_algorithm_results_dict['flakes_in_a_row'], 1)
 
   def testNextBuildPipelineForNewRecursionFirstStable(self):
@@ -167,16 +183,18 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.COMPLETED
     )
-    analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                       build_number, step_name, test_name)
-    analysis.success_rates.append(0)
-    analysis.build_numbers.append(100)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = 0
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
     analysis.put()
 
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name,
-        test_name, test_result_future, queue_name,
+        test_name, analysis.version_number, test_result_future, queue_name,
         flakiness_algorithm_results_dict)
     self.assertEquals(flakiness_algorithm_results_dict['stable_in_a_row'], 1)
 
@@ -209,16 +227,18 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.COMPLETED
     )
-    analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                       build_number, step_name, test_name)
-    analysis.success_rates.append(0)
-    analysis.build_numbers.append(100)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = 0
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
     analysis.put()
 
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name,
-        test_name, test_result_future, queue_name,
+        test_name, analysis.version_number, test_result_future, queue_name,
         flakiness_algorithm_results_dict)
     self.assertEquals(flakiness_algorithm_results_dict['stabled_out'], True)
 
@@ -251,19 +271,20 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.COMPLETED
     )
-    analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                       build_number, step_name, test_name)
-    analysis.success_rates.append(.50)
-    analysis.build_numbers.append(100)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = .5
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
     analysis.put()
 
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name,
-        test_name, test_result_future, queue_name,
+        test_name, analysis.version_number, test_result_future, queue_name,
         flakiness_algorithm_results_dict)
     self.assertEquals(flakiness_algorithm_results_dict['flaked_out'], True)
-
 
   def testNextBuildPipelineForNewRecursionLessThanLastBuildNumber(self):
     master_name = 'm'
@@ -293,10 +314,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.COMPLETED
     )
-    analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                       build_number, step_name, test_name)
-    analysis.success_rates.append(.50)
-    analysis.build_numbers.append(100)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = .5
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
     analysis.put()
 
     queue_name = {'x': False}
@@ -308,7 +331,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name, test_name,
-        test_result_future, queue_name, flakiness_algorithm_results_dict)
+        analysis.version_number, test_result_future, queue_name,
+        flakiness_algorithm_results_dict)
     self.assertFalse(queue_name['x'])
 
   def testNextBuildPipelineForFailedSwarmingTask(self):
@@ -340,10 +364,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.ERROR
     )
-    analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                       build_number, step_name, test_name)
-    analysis.success_rates.append(.50)
-    analysis.build_numbers.append(100)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = .5
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
     analysis.put()
 
     queue_name = {'x': False}
@@ -354,7 +380,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         recursive_flake_pipeline.RecursiveFlakePipeline, 'start', my_mocked_run)
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
-        master_build_number, build_number, step_name, test_name,
+        master_build_number, build_number, step_name, test_name, 1,
         test_result_future, queue_name, flakiness_algorithm_results_dict)
     self.assertFalse(queue_name['x'])
 
@@ -386,10 +412,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.COMPLETED
     )
-    analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                       build_number, step_name, test_name)
-    analysis.success_rates.append(.50)
-    analysis.build_numbers.append(100)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = .5
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
     analysis.put()
 
     queue_name = {'x': False}
@@ -401,7 +429,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name, test_name,
-        test_result_future, queue_name, flakiness_algorithm_results_dict)
+        analysis.version_number, test_result_future, queue_name,
+        flakiness_algorithm_results_dict)
     self.assertTrue(queue_name['x'])
 
   def testGetNextRunSetStableLowerBoundary(self):
@@ -414,10 +443,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.PENDING
     )
-    analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                       build_number, step_name, test_name)
-    analysis.success_rates.append(1)
-    analysis.build_numbers.append(100)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = 1
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
     analysis.put()
 
     flakiness_algorithm_results_dict = {
@@ -431,6 +462,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary_result': None,
         'sequential_run_index': 0
     }
+
     get_next_run(analysis, flakiness_algorithm_results_dict)
     self.assertEqual(flakiness_algorithm_results_dict['lower_boundary'],
                      build_number)
@@ -447,10 +479,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.PENDING
     )
-    analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                       build_number, step_name, test_name)
-    analysis.success_rates.append(.5)
-    analysis.build_numbers.append(100)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = .5
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
     analysis.put()
 
     flakiness_algorithm_results_dict = {
@@ -480,10 +514,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.PENDING
     )
-    analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                       build_number, step_name, test_name)
-    analysis.success_rates.append(.5)
-    analysis.build_numbers.append(100)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = .5
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
     analysis.put()
 
     flakiness_algorithm_results_dict = {
@@ -510,10 +546,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.PENDING
     )
-    analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                       build_number, step_name, test_name)
-    analysis.success_rates.append(.5)
-    analysis.build_numbers.append(100)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = .5
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
     analysis.put()
 
     flakiness_algorithm_results_dict = {
@@ -541,10 +579,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.PENDING
     )
-    analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                       build_number, step_name, test_name)
-    analysis.success_rates.append(1)
-    analysis.build_numbers.append(100)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = 1
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
     analysis.put()
 
     flakiness_algorithm_results_dict = {
@@ -562,7 +602,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(next_run, False)
     self.assertEqual(analysis.suspected_flake_build_number, 101)
 
-
   def testSequentialDidntFindBorderStable(self):
     master_name = 'm'
     builder_name = 'b'
@@ -573,10 +612,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.PENDING
     )
-    analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                       build_number, step_name, test_name)
-    analysis.success_rates.append(1)
-    analysis.build_numbers.append(100)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = 1
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
     analysis.put()
 
     flakiness_algorithm_results_dict = {
@@ -623,23 +664,27 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.COMPLETED
     )
-    analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                       build_number, step_name, test_name)
-    analysis.success_rates.append(1)
-    analysis.build_numbers.append(50)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = 1
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
     analysis.put()
 
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name, test_name,
-        test_result_future, queue_name, flakiness_algorithm_results_dict)
+        analysis.version_number, test_result_future, queue_name,
+        flakiness_algorithm_results_dict)
     self.assertEquals(
         flakiness_algorithm_results_dict['sequential_run_index'], 1)
 
   def testNextBuildWhenTestNotExistingAfterStableInARow(self):
     master = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
-    master.success_rates = [0.8, 1.0, 1.0, -1]
-    master.build_numbers = [100, 80, 70, 60]
+    master.data_points = self._GenerateDataPoints(
+        pass_rates=[0.8, 1.0, 1.0, -1], build_numbers=[100, 80, 70, 60])
+
     flakiness_algorithm_results_dict = {
         'flakes_in_a_row': 0,
         'stable_in_a_row': 2,
@@ -662,8 +707,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
   def testNextBuildWhenTestNotExistingAfterFlakeInARow(self):
     master = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
-    master.success_rates = [0.8, 0.7, 0.75, -1]
-    master.build_numbers = [100, 80, 70, 60]
+    master.data_points = self._GenerateDataPoints(
+        pass_rates=[0.8, 0.7, 0.75, -1], build_numbers=[100, 80, 70, 60])
     flakiness_algorithm_results_dict = {
         'flakes_in_a_row': 3,
         'stable_in_a_row': 0,
@@ -706,28 +751,26 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     }
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, master_build_number, step_name,
-        test_name, status=analysis_status.RUNNING
-    )
+        test_name, status=analysis_status.RUNNING)
     self._CreateAndSaveFlakeSwarmingTask(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED
-    )
-    analysis = MasterFlakeAnalysis.Get(
-        master_name, builder_name,
-        master_build_number, step_name, test_name)
-    analysis.success_rates = [1.0, 1.0, 1.0, -1]
-    analysis.build_numbers = [100, 80, 70, 60]
+        test_name, status=analysis_status.COMPLETED)
+
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, master_build_number, step_name, test_name)
+    analysis.data_points = self._GenerateDataPoints(
+        pass_rates=[1.0, 1.0, 1.0, -1], build_numbers=[100, 80, 70, 60])
     analysis.put()
 
     pipeline = NextBuildNumberPipeline()
     pipeline.run(
         master_name, builder_name,
         master_build_number, build_number, step_name, test_name,
-        test_result_future, queue_name, flakiness_algorithm_results_dict)
+        analysis.version_number, test_result_future, queue_name,
+        flakiness_algorithm_results_dict)
 
-    analysis = MasterFlakeAnalysis.Get(
-        master_name, builder_name,
-        master_build_number, step_name, test_name)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, master_build_number, step_name, test_name)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
 
   def testNextBuildNumberIsSmallerThanLastBuildNumber(self):
@@ -750,28 +793,24 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary_result': None,
         'sequential_run_index': 0
     }
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, master_build_number, step_name,
-        test_name, status=analysis_status.RUNNING
-    )
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, master_build_number, step_name, test_name)
+    analysis.data_points = self._GenerateDataPoints(
+        pass_rates=[1.0, 1.0, 1.0, 1.0], build_numbers=[100, 80, 70, 60])
+    analysis.status = analysis_status.RUNNING
+    analysis.Save()
+
     self._CreateAndSaveFlakeSwarmingTask(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED
-    )
-    analysis = MasterFlakeAnalysis.Get(
-        master_name, builder_name,
-        master_build_number, step_name, test_name)
-    analysis.success_rates = [1.0, 1.0, 1.0, 1.0]
-    analysis.build_numbers = [100, 80, 70, 60]
-    analysis.put()
+        test_name, status=analysis_status.COMPLETED)
 
     pipeline = NextBuildNumberPipeline()
     pipeline.run(
         master_name, builder_name,
         master_build_number, build_number, step_name, test_name,
-        test_result_future, queue_name, flakiness_algorithm_results_dict)
+        analysis.version_number, test_result_future, queue_name,
+        flakiness_algorithm_results_dict)
 
-    analysis = MasterFlakeAnalysis.Get(
-        master_name, builder_name,
-        master_build_number, step_name, test_name)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, master_build_number, step_name, test_name)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)

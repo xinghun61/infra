@@ -83,7 +83,7 @@ _SAMPLE_FAILURE_LOG = {
         }
     ]
 }
-_EXPECTED_TESTS_STATUESE = {
+_EXPECTED_TEST_STATUS = {
     'TestSuite1.test1': {
         'total_run': 2,
         'SUCCESS': 2
@@ -137,6 +137,7 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.build_number = 121
     self.step_name = 'abc_tests on platform'
     self.test_name = 'TestSuite1.test1'
+    self.version_number = 1
     self.mock(swarming_util, 'GetSwarmingTaskResultById',
               self._MockedGetSwarmingTaskResultById)
 
@@ -144,18 +145,17 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     call_params = ProcessFlakeSwarmingTaskResultPipeline._GetArgs(
         self.pipeline, self.master_name, self.builder_name,
         self.build_number, self.step_name, self.build_number,
-        self.test_name)
+        self.test_name, self.version_number)
     tests_statuses = (
         ProcessFlakeSwarmingTaskResultPipeline._CheckTestsRunStatuses(
-            self.pipeline, None, *call_params
-        ))
+            self.pipeline, None, *call_params))
     self.assertEqual({}, tests_statuses)
 
   def testCheckTestsRunStatuses(self):
     analysis = MasterFlakeAnalysis.Create(
         self.master_name, self.builder_name,
         self.build_number, self.step_name, self.test_name)
-    analysis.put()
+    analysis.Save()
 
     task = FlakeSwarmingTask.Create(
         self.master_name, self.builder_name,
@@ -165,20 +165,20 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     call_params = ProcessFlakeSwarmingTaskResultPipeline._GetArgs(
         self.pipeline, self.master_name, self.builder_name,
         self.build_number, self.step_name, self.build_number,
-        self.test_name)
+        self.test_name, self.version_number)
 
     tests_statuses = (
         ProcessFlakeSwarmingTaskResultPipeline._CheckTestsRunStatuses(
             self.pipeline,
             _SAMPLE_FAILURE_LOG, *call_params))
-    self.assertEqual(_EXPECTED_TESTS_STATUESE, tests_statuses)
+    self.assertEqual(_EXPECTED_TEST_STATUS, tests_statuses)
 
-  def testCheckTestsRunStatusesWhenTestNotExist(self):
+  def testCheckTestsRunStatusesWhenTestDoesNotExist(self):
     test_name = 'TestSuite1.new_test'
     analysis = MasterFlakeAnalysis.Create(
         self.master_name, self.builder_name,
         self.build_number, self.step_name, test_name)
-    analysis.put()
+    analysis.Save()
 
     task = FlakeSwarmingTask.Create(
         self.master_name, self.builder_name,
@@ -188,9 +188,10 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = ProcessFlakeSwarmingTaskResultPipeline()
     tests_statuses = pipeline._CheckTestsRunStatuses(
         _SAMPLE_FAILURE_LOG, self.master_name, self.builder_name,
-        self.build_number, self.step_name, self.build_number, test_name)
+        self.build_number, self.step_name, self.build_number, test_name,
+        self.version_number)
 
-    self.assertEqual(_EXPECTED_TESTS_STATUESE, tests_statuses)
+    self.assertEqual(_EXPECTED_TEST_STATUS, tests_statuses)
 
     task = FlakeSwarmingTask.Get(
         self.master_name, self.builder_name,
@@ -198,10 +199,10 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(0, task.tries)
     self.assertEqual(0, task.successes)
 
-    analysis = MasterFlakeAnalysis.Get(
+    analysis = MasterFlakeAnalysis.GetVersion(
         self.master_name, self.builder_name,
-        self.build_number, self.step_name, test_name)
-    self.assertTrue(analysis.success_rates[-1] < 0)
+        self.build_number, self.step_name, test_name, self.version_number)
+    self.assertTrue(analysis.data_points[-1].pass_rate < 0)
 
   def _MockedGetSwarmingTaskFailureLog(self, *_):
     return _SAMPLE_FAILURE_LOG
@@ -220,13 +221,14 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(
         self.master_name, self.builder_name,
         self.build_number, self.step_name, self.test_name)
-    analysis.put()
+    analysis.Save()
 
     pipeline = ProcessFlakeSwarmingTaskResultPipeline()
     step_name, task_info = pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name,
-        'task_id1', self.build_number, self.test_name)
+        'task_id1', self.build_number, self.test_name,
+        analysis.version_number)
     self.assertEqual('abc_tests', task_info)
     self.assertEqual(self.step_name, step_name)
 
@@ -235,7 +237,7 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
         self.step_name, self.test_name)
 
     self.assertEqual(analysis_status.COMPLETED, task.status)
-    self.assertEqual(_EXPECTED_TESTS_STATUESE, task.tests_statuses)
+    self.assertEqual(_EXPECTED_TEST_STATUS, task.tests_statuses)
 
     self.assertEqual(datetime.datetime(2016, 2, 10, 18, 32, 6, 538220),
                      task.created_time)
@@ -254,19 +256,18 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(
         self.master_name, self.builder_name,
         self.build_number, self.step_name, self.test_name)
-    analysis.put()
+    analysis.Save()
 
     pipeline = ProcessFlakeSwarmingTaskResultPipeline()
     step_name, task_info = pipeline.run(
-        self.master_name, self.builder_name,
-        self.build_number, self.step_name,
-        'task_id2', self.build_number, self.test_name)
+        self.master_name, self.builder_name, self.build_number, self.step_name,
+        'task_id2', self.build_number, self.test_name, analysis.version_number)
     self.assertEqual(None, task_info)
     self.assertEqual(self.step_name, step_name)
 
     task = FlakeSwarmingTask.Get(
-        self.master_name, self.builder_name,
-        self.build_number, self.step_name, self.test_name)
+        self.master_name, self.builder_name, self.build_number, self.step_name,
+        self.test_name)
 
     self.assertEqual(analysis_status.ERROR, task.status)
 
@@ -279,21 +280,20 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
         'swarming_settings', override_swarming_settings)
 
     task = FlakeSwarmingTask.Create(
-        self.master_name, self.builder_name,
-        self.build_number, self.step_name, self.test_name)
+        self.master_name, self.builder_name, self.build_number, self.step_name,
+        self.test_name)
     task.task_id = 'task_id1'
     task.put()
 
     pipeline = ProcessFlakeSwarmingTaskResultPipeline()
     step_name, task_info = pipeline.run(
-        self.master_name, self.builder_name,
-        self.build_number, self.step_name,
-        'task_id1', self.build_number, self.test_name)
+        self.master_name, self.builder_name, self.build_number, self.step_name,
+        'task_id1', self.build_number, self.test_name, self.version_number)
     self.assertEqual('abc_tests', task_info)
     self.assertEqual(self.step_name, step_name)
 
     task = FlakeSwarmingTask.Get(
-        self.master_name, self.builder_name, self.build_number,
-        self.step_name, self.test_name)
+        self.master_name, self.builder_name, self.build_number, self.step_name,
+        self.test_name)
     self.assertEqual(analysis_status.ERROR, task.status)
     self.assertEqual({}, task.tests_statuses)

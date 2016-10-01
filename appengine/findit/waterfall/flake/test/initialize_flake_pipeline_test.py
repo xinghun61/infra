@@ -22,7 +22,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number, step_name, test_name)
     analysis.status = status
-    analysis.put()
+    analysis.Save()
 
   def testAnalysisIsNotNeededWhenNoneExistsAndNotAllowedToSchedule(self):
     master_name = 'm'
@@ -118,8 +118,8 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
         step_name, test_name, allow_new_analysis=True,
         queue_name=constants.DEFAULT_QUEUE)
 
-    analysis = MasterFlakeAnalysis.Get(master_name, builder_name,
-                                       build_number, step_name, test_name)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
     self.assertIsNotNone(analysis)
     mocked_pipeline.assert_has_calls(
         [mock.call().start(queue_name=constants.DEFAULT_QUEUE)])

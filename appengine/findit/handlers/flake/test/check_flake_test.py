@@ -8,6 +8,7 @@ import webapp2
 import webtest
 
 from handlers.flake import check_flake
+from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model import analysis_status
 from model.analysis_status import STATUS_TO_DESCRIPTION
@@ -18,15 +19,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
   app_module = webapp2.WSGIApplication([
       ('/waterfall/check-flake', check_flake.CheckFlake),
   ], debug=True)
-
-  def _CreateAndSaveMasterFlakeAnalysis(
-      self, master_name, builder_name, build_number,
-      step_name, test_name, status):
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number, step_name, test_name)
-    analysis.status = status
-    analysis.put()
-    return analysis
 
   def testCorpUserCanScheduleANewAnalysis(self):
     master_name = 'm'
@@ -74,14 +66,15 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     success_rate = .9
-    status = analysis_status.PENDING
 
-    master_flake_analysis = self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status)
-    master_flake_analysis.build_numbers.append(int(build_number))
-    master_flake_analysis.success_rates.append(success_rate)
-    master_flake_analysis.put()
+    master_flake_analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number, step_name, test_name)
+    master_flake_analysis.status = analysis_status.PENDING
+    data_point = DataPoint()
+    data_point.build_number = int(build_number)
+    data_point.pass_rate = success_rate
+    master_flake_analysis.data_points.append(data_point)
+    master_flake_analysis.Save()
 
     response = self.test_app.get('/waterfall/check-flake', params={
         'master_name': master_name,
@@ -91,9 +84,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'test_name': test_name,
         'format': 'json'})
 
-    self.assertEquals(200, response.status_int)
-    expected_check_flake_result ={
-        'success_rates': [[int(build_number), success_rate]],
+    expected_check_flake_result = {
+        'pass_rates': [[int(build_number), success_rate]],
         'analysis_status': STATUS_TO_DESCRIPTION.get(
             master_flake_analysis.status),
         'master_name': master_name,
@@ -103,4 +95,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'test_name': test_name,
         'suspected_flake_build_number': None
     }
+
+    self.assertEquals(200, response.status_int)
     self.assertEqual(expected_check_flake_result, response.json_body)

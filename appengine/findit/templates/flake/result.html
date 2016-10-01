@@ -15,7 +15,7 @@
     findit.masterName = "{{ master_name }}";
     findit.builderName = "{{ builder_name }}";
     findit.regressedBuildNumber = {{ suspected_flake_build_number or -1 }};
-    findit.passRates = {{ success_rates | tojson | safe }};
+    findit.passRates = {{ pass_rates | tojson | safe }};
 
     $(document).ready(function() {
       if (findit.passRates.length == 0) {
