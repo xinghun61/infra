@@ -40,6 +40,7 @@ type BuildExtract struct {
 
 // Build represents a buildbot build.
 type Build struct {
+	Master           string          `json:"master"`
 	Blame            []string        `json:"blame"`
 	BuilderName      string          `json:"builderName"`
 	CreatedTimestamp EpochTime       `json:"created_timestamp"`
