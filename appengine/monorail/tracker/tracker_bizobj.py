@@ -15,6 +15,7 @@ import logging
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
+from framework import timestr
 from framework import urls
 from proto import tracker_pb2
 from tracker import tracker_constants
@@ -173,7 +174,8 @@ def MakeFieldDef(
   return fd
 
 
-def MakeFieldValue(field_id, int_value, str_value, user_id, derived):
+def MakeFieldValue(
+    field_id, int_value, str_value, user_id, date_value, derived):
   """Make a FieldValue based on the given information."""
   fv = tracker_pb2.FieldValue(field_id=field_id, derived=derived)
   if int_value is not None:
@@ -182,6 +184,8 @@ def MakeFieldValue(field_id, int_value, str_value, user_id, derived):
     fv.str_value = str_value
   elif user_id is not None:
     fv.user_id = user_id
+  elif date_value is not None:
+    fv.date_value = date_value
 
   return fv
 
@@ -226,6 +230,8 @@ def GetFieldValue(fv, users_by_id):
     else:
       logging.info('Failed to lookup user %d when getting field', fv.user_id)
       return fv.user_id
+  elif fv.date_value is not None:
+    return timestr.TimestampToDateWidgetStr(fv.date_value)
   else:
     return None
 

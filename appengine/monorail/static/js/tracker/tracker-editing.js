@@ -1382,13 +1382,18 @@ function TKR_addMultiFieldValueWidget(
       _acof(event);
      });
   }
-  if (field_type == 'int') {
+  if (field_type == 'int' || field_type == 'date') {
     widget.style.textAlign = 'right';
     widget.style.width = '12em';
-    widget.type = 'number';
     widget.min = opt_validate_1;
     widget.max = opt_validate_2;
   }
+  if (field_type == 'int') {
+    widget.type = 'number';
+  } else if (field_type == 'date') {
+    widget.type = 'date';
+  }
+
   el.parentNode.insertBefore(widget, el);
 
   var del_button = document.createElement('U');

@@ -69,7 +69,8 @@ ISSUE2COMPONENT_COLS = ['issue_id', 'component_id', 'derived']
 ISSUE2CC_COLS = ['issue_id', 'cc_id', 'derived']
 ISSUE2NOTIFY_COLS = ['issue_id', 'email']
 ISSUE2FIELDVALUE_COLS = [
-    'issue_id', 'field_id', 'int_value', 'str_value', 'user_id', 'derived']
+    'issue_id', 'field_id', 'int_value', 'str_value', 'user_id', 'date_value',
+    'derived']
 COMMENT_COLS = [
     'Comment.id', 'issue_id', 'created', 'Comment.project_id', 'commenter_id',
     'deleted_by', 'Comment.is_spam', 'is_description']
@@ -189,9 +190,10 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
 
   def _UnpackFieldValue(self, fv_row):
     """Construct a field value object from a DB row."""
-    (issue_id, field_id, int_value, str_value, user_id, derived) = fv_row
+    (issue_id, field_id, int_value, str_value, user_id, date_value,
+     derived) = fv_row
     fv = tracker_bizobj.MakeFieldValue(
-        field_id, int_value, str_value, user_id, bool(derived))
+        field_id, int_value, str_value, user_id, date_value, bool(derived))
     return fv, issue_id
 
   def _DeserializeIssues(
@@ -899,7 +901,7 @@ class IssueService(object):
       for fv in issue.field_values:
         fieldvalue_rows.append(
             (issue.issue_id, fv.field_id, fv.int_value, fv.str_value,
-             fv.user_id or None, fv.derived, issue_shard))
+             fv.user_id or None, fv.date_value, fv.derived, issue_shard))
 
     self.issue2fieldvalue_tbl.Delete(
         cnxn, issue_id=[issue.issue_id for issue in issues], commit=False)

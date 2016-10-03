@@ -13,6 +13,7 @@ from framework import framework_bizobj
 from framework import framework_constants
 from framework import monorailrequest
 from framework import permissions
+from framework import timestr
 from proto import tracker_pb2
 from services import config_svc
 from services import user_svc
@@ -133,13 +134,13 @@ def _ParseOneFieldValue(cnxn, user_service, fd, val_str):
   if fd.field_type == tracker_pb2.FieldTypes.INT_TYPE:
     try:
       return tracker_bizobj.MakeFieldValue(
-          fd.field_id, int(val_str), None, None, False)
+          fd.field_id, int(val_str), None, None, None, False)
     except ValueError:
       return None  # TODO(jrobbins): should bounce
 
   elif fd.field_type == tracker_pb2.FieldTypes.STR_TYPE:
     return tracker_bizobj.MakeFieldValue(
-        fd.field_id, None, val_str, None, False)
+        fd.field_id, None, val_str, None, None, False)
 
   elif fd.field_type == tracker_pb2.FieldTypes.USER_TYPE:
     if val_str:
@@ -149,9 +150,17 @@ def _ParseOneFieldValue(cnxn, user_service, fd, val_str):
         # Set to invalid user ID to display error during the validation step.
         user_id = INVALID_USER_ID
       return tracker_bizobj.MakeFieldValue(
-          fd.field_id, None, None, user_id, False)
+          fd.field_id, None, None, user_id, None, False)
     else:
       return None
+
+  if fd.field_type == tracker_pb2.FieldTypes.DATE_TYPE:
+    try:
+      timestamp = timestr.DateWidgetStrToTimestamp(val_str)
+      return tracker_bizobj.MakeFieldValue(
+          fd.field_id, None, None, None, timestamp, False)
+    except ValueError:
+      return None  # TODO(jrobbins): should bounce
 
   else:
     logging.error('Cant parse field with unexpected type %r', fd.field_type)
@@ -211,6 +220,10 @@ def _ValidateOneCustomField(mr, services, field_def, field_val):
             field_def.needs_perm, auth.effective_ids, mr.project, [])
         if not has_perm:
           return 'User must have permission "%s"' % field_def.needs_perm
+
+  elif field_def.field_type == tracker_pb2.FieldTypes.DATE_TYPE:
+    # TODO(jrobbins): date validation
+    pass
 
   return None
 

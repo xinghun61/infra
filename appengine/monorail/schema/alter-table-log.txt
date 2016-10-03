@@ -992,3 +992,12 @@ CREATE TABLE CommentContent (
   PRIMARY KEY (id),
   UNIQUE KEY (comment_id)  -- TODO: drop this too.
 ) ENGINE=INNODB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+================================================================
+2016-10-03: Add date-type custom fields
+
+ALTER TABLE Issue2FieldValue ADD date_value INT;
+ALTER TABLE Issue2FieldValue ADD INDEX (field_id, issue_shard, date_value);
+ALTER TABLE Template2FieldValue ADD date_value INT;
+ALTER TABLE FieldDef CHANGE field_type field_type ENUM (
+    'enum_type', 'int_type', 'str_type', 'user_type', 'date_type') NOT NULL;

@@ -184,18 +184,22 @@ class BizobjTest(unittest.TestCase):
 
   def testMakeFieldValue(self):
     # Only the first value counts.
-    fv = tracker_bizobj.MakeFieldValue(1, 42, 'yay', 111L, True)
+    fv = tracker_bizobj.MakeFieldValue(1, 42, 'yay', 111L, None, True)
     self.assertEqual(1, fv.field_id)
     self.assertEqual(42, fv.int_value)
     self.assertIsNone(fv.str_value)
-    self.assertEqual(0, fv.user_id)
+    self.assertEqual(None, fv.user_id)
 
-    fv = tracker_bizobj.MakeFieldValue(1, None, 'yay', 111L, True)
+    fv = tracker_bizobj.MakeFieldValue(1, None, 'yay', 111L, None, True)
     self.assertEqual('yay', fv.str_value)
-    self.assertEqual(0, fv.user_id)
+    self.assertEqual(None, fv.user_id)
 
-    fv = tracker_bizobj.MakeFieldValue(1, None, None, 111L, True)
+    fv = tracker_bizobj.MakeFieldValue(1, None, None, 111L, None, True)
     self.assertEqual(111L, fv.user_id)
+    self.assertEqual(True, fv.derived)
+
+    fv = tracker_bizobj.MakeFieldValue(1, None, None, None, 1234567890, True)
+    self.assertEqual(1234567890, fv.date_value)
     self.assertEqual(True, fv.derived)
 
   def testGetFieldValueWithRawValue(self):
@@ -205,10 +209,12 @@ class BizobjTest(unittest.TestCase):
     users_by_id = {111: MockUser()}
 
     class MockFieldValue(object):
-      def __init__(self, int_value=None, str_value=None, user_id=None):
+      def __init__(
+          self, int_value=None, str_value=None, user_id=None, date_value=None):
         self.int_value = int_value
         self.str_value = str_value
         self.user_id = user_id
+        self.date_value = date_value
 
     # Test user types.
     # Use user_id from the field_value and get user from users_by_id.
@@ -1044,7 +1050,7 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual(2, ref_id)
 
   def testMergeFields_NoChange(self):
-    fv1 = tracker_bizobj.MakeFieldValue(1, 42, None, None, False)
+    fv1 = tracker_bizobj.MakeFieldValue(1, 42, None, None, None, False)
     merged_fvs, fvs_added, fvs_removed = tracker_bizobj.MergeFields(
         [fv1], [], [], [])
     self.assertEqual([fv1], merged_fvs)
@@ -1053,9 +1059,9 @@ class BizobjTest(unittest.TestCase):
 
   def testMergeFields_SingleValued(self):
     fd = tracker_pb2.FieldDef(field_id=1, field_name='foo')
-    fv1 = tracker_bizobj.MakeFieldValue(1, 42, None, None, False)
-    fv2 = tracker_bizobj.MakeFieldValue(1, 43, None, None, False)
-    fv3 = tracker_bizobj.MakeFieldValue(1, 44, None, None, False)
+    fv1 = tracker_bizobj.MakeFieldValue(1, 42, None, None, None, False)
+    fv2 = tracker_bizobj.MakeFieldValue(1, 43, None, None, None, False)
+    fv3 = tracker_bizobj.MakeFieldValue(1, 44, None, None, None, False)
 
     # Adding one replaces all values since the field is single-valued.
     merged_fvs, fvs_added, fvs_removed = tracker_bizobj.MergeFields(
@@ -1074,11 +1080,11 @@ class BizobjTest(unittest.TestCase):
   def testMergeFields_MultiValued(self):
     fd = tracker_pb2.FieldDef(
         field_id=1, field_name='foo', is_multivalued=True)
-    fv1 = tracker_bizobj.MakeFieldValue(1, 42, None, None, False)
-    fv2 = tracker_bizobj.MakeFieldValue(1, 43, None, None, False)
-    fv3 = tracker_bizobj.MakeFieldValue(1, 44, None, None, False)
-    fv4 = tracker_bizobj.MakeFieldValue(1, 42, None, None, False)
-    fv5 = tracker_bizobj.MakeFieldValue(1, 99, None, None, False)
+    fv1 = tracker_bizobj.MakeFieldValue(1, 42, None, None, None, False)
+    fv2 = tracker_bizobj.MakeFieldValue(1, 43, None, None, None, False)
+    fv3 = tracker_bizobj.MakeFieldValue(1, 44, None, None, None, False)
+    fv4 = tracker_bizobj.MakeFieldValue(1, 42, None, None, None, False)
+    fv5 = tracker_bizobj.MakeFieldValue(1, 99, None, None, None, False)
 
     merged_fvs, fvs_added, fvs_removed = tracker_bizobj.MergeFields(
         [fv1, fv2], [fv2, fv3], [fv4, fv5], [fd])

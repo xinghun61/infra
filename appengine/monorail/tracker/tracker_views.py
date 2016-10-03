@@ -613,14 +613,13 @@ def MakeFieldValueView(
         labels, field_name_lower, label_docs)
     derived_values = _ConvertLabelsToFieldValues(
         derived_labels, field_name_lower, label_docs)
-
   else:
     values = FindFieldValues(
         [fv for fv in field_values if not fv.derived],
-        fd.field_id, fd.field_type, users_by_id)
+        fd.field_id, users_by_id)
     derived_values = FindFieldValues(
         [fv for fv in field_values if fv.derived],
-        fd.field_id, fd.field_type, users_by_id)
+        fd.field_id, users_by_id)
 
   issue_types = set()
   for lab in list(derived_labels) + list(labels):
@@ -630,27 +629,14 @@ def MakeFieldValueView(
   return FieldValueView(fd, config, values, derived_values, issue_types)
 
 
-def FindFieldValues(field_values, field_id, field_type, users_by_id):
+def FindFieldValues(field_values, field_id, users_by_id):
   """Accumulate appropriate int, string, or user values in the given fields."""
   result = []
   for fv in field_values:
     if fv.field_id != field_id:
       continue
 
-    if field_type == tracker_pb2.FieldTypes.INT_TYPE:
-      val = fv.int_value
-    elif field_type == tracker_pb2.FieldTypes.STR_TYPE:
-      val = fv.str_value
-    elif field_type == tracker_pb2.FieldTypes.USER_TYPE:
-      if fv.user_id in users_by_id:
-        val = users_by_id[fv.user_id].email
-      else:
-        val = 'USER_%d' % fv.user_id  # Should never be visible
-    else:
-      logging.error('unexpected field type %r', field_type)
-      val = ''
-
-    # Use ellipsis in the display val if the val is too long.
+    val = tracker_bizobj.GetFieldValue(fv, users_by_id)
     result.append(template_helpers.EZTItem(
         val=val, docstring=val, idx=len(result)))
 

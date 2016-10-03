@@ -35,4 +35,12 @@
   [end]
 [end]
 
+[is fields.field_def.type_name "DATE_TYPE"]
+  [if-any arg0]
+    [include "field-value-multi-date.ezt" arg1]
+  [else]
+    [include "field-value-single-date.ezt" arg1]
+  [end]
+[end]
+
 [# TODO(jrobbins): more field types. ]

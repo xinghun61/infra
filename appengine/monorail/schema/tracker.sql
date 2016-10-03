@@ -98,7 +98,7 @@ CREATE TABLE FieldDef (
 
   field_name VARCHAR(80) BINARY NOT NULL,
   -- TODO(jrobbins): more types
-  field_type ENUM ('enum_type', 'int_type', 'str_type', 'user_type') NOT NULL,
+  field_type ENUM ('enum_type', 'int_type', 'str_type', 'user_type', 'date_type') NOT NULL,
   applicable_type VARCHAR(80),   -- No value means: offered for all issue types
   applicable_predicate TEXT,   -- No value means: TRUE
   is_required BOOLEAN,  -- true means required if applicable
@@ -228,6 +228,7 @@ CREATE TABLE Issue2FieldValue (
   int_value INT,
   str_value VARCHAR(1024),
   user_id INT UNSIGNED,
+  date_value INT,
 
   derived BOOLEAN DEFAULT FALSE,
 
@@ -235,6 +236,7 @@ CREATE TABLE Issue2FieldValue (
   INDEX (field_id, issue_shard, int_value),
   INDEX (field_id, issue_shard, str_value(255)),
   INDEX (field_id, issue_shard, user_id),
+  INDEX (field_id, issue_shard, date_value),
 
   FOREIGN KEY (issue_id) REFERENCES Issue(id),
   FOREIGN KEY (field_id) REFERENCES FieldDef(id),
@@ -449,6 +451,7 @@ CREATE TABLE Template2FieldValue (
   int_value INT,
   str_value VARCHAR(1024),
   user_id INT UNSIGNED,
+  date_value INT,
 
   INDEX (template_id, field_id),
 

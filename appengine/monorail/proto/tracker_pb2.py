@@ -19,7 +19,8 @@ class FieldValue(messages.Message):
   # Only one of the following fields will hve any value.
   int_value = messages.IntegerField(2)
   str_value = messages.StringField(3)
-  user_id = messages.IntegerField(4, default=0)
+  user_id = messages.IntegerField(4)
+  date_value = messages.IntegerField(6)
 
   derived = messages.BooleanField(5, default=False)
 

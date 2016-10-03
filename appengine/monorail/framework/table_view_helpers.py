@@ -559,7 +559,7 @@ class TableCellCustom(TableCell):
       # TODO(jrobbins): for cross-project search this could be a list.
       fd = tracker_bizobj.FindFieldDefByID(fv.field_id, config)
       if fd.field_name.lower() == col:
-        val = self.ExtractValue(fv, users_by_id)
+        val = tracker_bizobj.GetFieldValue(fv, users_by_id)
         if fv.derived:
           derived_values.append(val)
         else:
@@ -571,43 +571,32 @@ class TableCellCustom(TableCell):
   def ExtractValue(self, fv, _users_by_id):
     return 'field-id-%d-not-implemented-yet' % fv.field_id
 
+# TODO(jrobbins): eliminate these subclasses and just use TableCellCustom
+# for all custom fields, but have word wrap for strings.
 
 class TableCellCustomInt(TableCellCustom):
   """TableCell subclass specifically for showing custom int fields."""
-
-  def ExtractValue(self, fv, _users_by_id):
-    return fv.int_value
+  pass
 
 
 class TableCellCustomStr(TableCellCustom):
   """TableCell subclass specifically for showing custom str fields."""
-
-  def ExtractValue(self, fv, _users_by_id):
-    return fv.str_value
+  pass
 
 
 class TableCellCustomUser(TableCellCustom):
   """TableCell subclass specifically for showing custom user fields."""
-
-  def ExtractValue(self, fv, users_by_id):
-    if fv.user_id in users_by_id:
-      return users_by_id[fv.user_id].email
-    return 'USER_%d' % fv.user_id
+  pass
 
 
 class TableCellCustomDate(TableCellCustom):
   """TableCell subclass specifically for showing custom date fields."""
-
-  def ExtractValue(self, fv, _users_by_id):
-    # TODO(jrobbins): convert timestamp to formatted date and time
-    return fv.int_value
+  NOWRAP = ezt.boolean(True)
 
 
 class TableCellCustomBool(TableCellCustom):
   """TableCell subclass specifically for showing custom int fields."""
-
-  def ExtractValue(self, fv, _users_by_id):
-    return 'Yes' if fv.int_value else 'No'
+  pass
 
 
 _CUSTOM_FIELD_CELL_FACTORIES = {

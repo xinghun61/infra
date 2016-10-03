@@ -105,6 +105,7 @@ def _CreateIssueSearchDocuments(
 
     field_values = [str(tracker_bizobj.GetFieldValue(fv, users_by_id))
                     for fv in issue.field_values]
+
     metadata = '%s %s %s %s %s %s' % (
         tracker_bizobj.GetStatus(issue),
         owner_email,

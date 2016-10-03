@@ -48,7 +48,8 @@ TEMPLATE2LABEL_COLS = ['template_id', 'label']
 TEMPLATE2COMPONENT_COLS = ['template_id', 'component_id']
 TEMPLATE2ADMIN_COLS = ['template_id', 'admin_id']
 TEMPLATE2FIELDVALUE_COLS = [
-    'template_id', 'field_id', 'int_value', 'str_value', 'user_id']
+    'template_id', 'field_id', 'int_value', 'str_value', 'date_value',
+    'user_id']
 PROJECTISSUECONFIG_COLS = [
     'project_id', 'statuses_offer_merge', 'exclusive_label_prefixes',
     'default_template_for_developers', 'default_template_for_users',
@@ -308,9 +309,10 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
         template.admin_ids.append(admin_id)
 
     for fv_row in template2fieldvalue_rows:
-      template_id, field_id, int_value, str_value, user_id = fv_row
+      (template_id, field_id, int_value, str_value, user_id,
+       date_value) = fv_row
       fv = tracker_bizobj.MakeFieldValue(
-          field_id, int_value, str_value, user_id, False)
+          field_id, int_value, str_value, user_id, date_value, False)
       template = template_dict.get(template_id)
       if template:
         template.field_values.append(fv)
@@ -884,7 +886,7 @@ class ConfigService(object):
       for fv in template.field_values:
         template2fieldvalue_rows.append(
             (template.template_id, fv.field_id, fv.int_value, fv.str_value,
-             fv.user_id or None))
+             fv.user_id or None, fv.date_value))
 
     self.template2label_tbl.InsertRows(
         cnxn, TEMPLATE2LABEL_COLS, template2label_rows, ignore=True,

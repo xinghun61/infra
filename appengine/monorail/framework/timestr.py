@@ -15,6 +15,7 @@ class Error(Exception):
 
 
 HTML_TIME_FMT = '%a, %d %b %Y %H:%M:%S GMT'
+HTML_DATE_WIDGET_FORMAT = '%Y-%m-%d'
 
 MONTH_YEAR_FMT = '%b %Y'
 MONTH_DAY_FMT = '%b %d'
@@ -29,6 +30,16 @@ def TimeForHTMLHeader(when=None):
   if when is None:
     when = int(time.time())
   return time.strftime(HTML_TIME_FMT, time.gmtime(when))
+
+
+def TimestampToDateWidgetStr(when):
+  """Format a timestamp int for use by HTML <input type="date">."""
+  return time.strftime(HTML_DATE_WIDGET_FORMAT, time.gmtime(when))
+
+
+def DateWidgetStrToTimestamp(val_str):
+  """Parse the HTML <input type="date"> string into a timestamp int."""
+  return int(time.mktime(time.strptime(val_str, HTML_DATE_WIDGET_FORMAT)))
 
 
 def FormatAbsoluteDate(

@@ -167,6 +167,8 @@ class IssueExportJSON(jsonfeed.JsonFeed):
       field_value_json['str_value'] = field.str_value
     if field.user_id:
       field_value_json['user_value'] = email_dict.get(field.user_id)
+    if field.date_value:
+      field_value_json['date_value'] = field.date_value
     return field_value_json
 
   def _MakeIssueJSON(
