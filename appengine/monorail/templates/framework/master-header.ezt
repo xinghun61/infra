@@ -46,12 +46,13 @@
 
     <title>
       [if-any title][title] - [end]
+      [if-any title_summary][title_summary] - [end]
       [if-any projectname]
         [projectname] -
       [else]
         [if-any viewing_user_page][viewed_user.display_name] - [end]
       [end]
-      [if-any title_summary][title_summary] - [else]
+      [if-any title_summary][else]
         [if-any project_summary][project_summary] - [end]
       [end]
       [site_name]

@@ -1,4 +1,4 @@
-[define title]Issue [issue.local_id][end]
+[define title][issue.local_id][end]
 [define category_css]css/ph_detail.css[end]
 [include "../framework/master-header.ezt" "showtabs"]
 
