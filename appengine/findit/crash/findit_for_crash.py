@@ -8,7 +8,7 @@ from common.diff import ChangeType
 from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine
 from crash import crash_util
-from crash.callstack import CallStack
+from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
 from crash.results import MatchResults
 from crash.scorers.aggregated_scorer import AggregatedScorer

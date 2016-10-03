@@ -6,7 +6,8 @@ import logging
 import os
 import re
 
-from crash.type_enums import CallStackFormatType, CallStackLanguageType
+from crash.type_enums import CallStackFormatType
+from crash.type_enums import CallStackLanguageType
 
 
 GENERATED_CODE_FILE_PATH_PATTERN = re.compile(r'.*out/[^/]+/gen/')

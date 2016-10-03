@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 from testing_utils import testing
-
 from crash.detect_regression_range import GetSpikes
 from crash.detect_regression_range import DetectRegressionRange
 

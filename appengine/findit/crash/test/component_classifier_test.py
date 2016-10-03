@@ -3,8 +3,9 @@
 # found in the LICENSE file.
 
 from common.pipeline_wrapper import pipeline_handlers
-from crash.callstack import StackFrame, CallStack
-from crash.component import Component
+from crash.stacktrace import StackFrame
+from crash.stacktrace import CallStack
+from crash.component_classifier import Component
 from crash.component_classifier import ComponentClassifier
 from crash.results import Result
 from crash.test.crash_testcase import CrashTestCase

@@ -10,7 +10,7 @@ from crash import detect_regression_range
 from crash import findit_for_crash
 from crash.chromecrash_parser import ChromeCrashParser
 from crash.project_classifier import ProjectClassifier
-from crash.component import Component
+from crash.component_classifier import Component
 from crash.component_classifier import ComponentClassifier
 from model.crash.crash_config import CrashConfig
 

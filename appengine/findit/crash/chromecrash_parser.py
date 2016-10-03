@@ -4,8 +4,8 @@
 
 import re
 
-from crash.callstack import CallStack
 from crash.callstack_filters import FilterInlineFunctionFrames
+from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
 from crash.stacktrace_parser import StacktraceParser
 from crash.type_enums import CallStackFormatType

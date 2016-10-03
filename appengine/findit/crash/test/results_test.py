@@ -2,10 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from common.blame import Region, Blame
+from common.blame import Region
+from common.blame import Blame
 from common.change_log import ChangeLog
-from crash.callstack import StackFrame
-from crash.results import Result, MatchResult, MatchResults
+from crash.stacktrace import StackFrame
+from crash.results import Result
+from crash.results import MatchResult
+from crash.results import MatchResults
 from crash.test.crash_test_suite import CrashTestSuite
 
 DUMMY_CHANGELOG1 = ChangeLog.FromDict({

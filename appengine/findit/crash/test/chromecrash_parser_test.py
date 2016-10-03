@@ -5,8 +5,9 @@
 import textwrap
 
 from common.dependency import Dependency
-from crash.callstack import StackFrame, CallStack
 from crash.chromecrash_parser import ChromeCrashParser
+from crash.stacktrace import StackFrame
+from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
 from crash.test.stacktrace_test_suite import StacktraceTestSuite
 from crash.type_enums import CallStackFormatType

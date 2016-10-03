@@ -3,9 +3,7 @@
 # found in the LICENSE file.
 
 from common.change_log import ChangeLog
-
 from testing_utils import testing
-
 
 DUMMY_CHANGELOG = ChangeLog.FromDict({
     'author_name': 'r@chromium.org',

@@ -1,8 +1,9 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-from crash.callstack import StackFrame
-from crash.results import Result, MatchResult
+from crash.stacktrace import StackFrame
+from crash.results import Result
+from crash.results import MatchResult
 from crash.scorers.min_distance import MinDistance
 from crash.scorers.test.scorer_test_suite import ScorerTestSuite
 

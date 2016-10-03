@@ -8,12 +8,11 @@ from crash import detect_regression_range
 from crash import findit_for_chromecrash
 from crash import chromecrash_parser
 from crash import findit_for_crash
-from crash.callstack import CallStack
 from crash.component_classifier import ComponentClassifier
 from crash.project_classifier import ProjectClassifier
 from crash.results import MatchResult
+from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
-from crash.callstack import CallStack
 from crash.test.crash_testcase import CrashTestCase
 
 

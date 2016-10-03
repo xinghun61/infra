@@ -4,7 +4,7 @@
 
 import re
 
-from crash.callstack import CallStack
+from crash.stacktrace import CallStack
 
 
 _INLINE_FUNCTION_FILE_PATH_MARKERS = [

@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from crash.callstack import StackFrame
+from crash.stacktrace import StackFrame
 from crash.results import MatchResult
 from crash.scorers import aggregators
 from crash.scorers.aggregated_scorer import AggregatedScorer

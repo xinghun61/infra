@@ -2,12 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from collections import namedtuple
+import collections
 import re
 
 
 # TODO(wrengr): write the coverage tests the old version was lacking.
-class Component(namedtuple('Component',
+class Component(collections.namedtuple('Component',
     ['component_name', 'path_regex', 'function_regex'])): # pragma: no cover
   """A representation of a "component" in Chromium.
 

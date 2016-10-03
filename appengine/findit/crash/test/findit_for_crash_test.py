@@ -4,14 +4,17 @@
 
 from collections import defaultdict
 
-from common.blame import Region, Blame
+from common.blame import Region
+from common.blame import Blame
 from common.change_log import ChangeLog
-from common.dependency import Dependency, DependencyRoll
+from common.dependency import Dependency
+from common.dependency import DependencyRoll
 from common.git_repository import GitRepository
 from crash import findit_for_crash
-from crash.callstack import StackFrame, CallStack
-from crash.results import MatchResult
+from crash.stacktrace import StackFrame
+from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
+from crash.results import MatchResult
 from crash.test.crash_test_suite import CrashTestSuite
 
 
