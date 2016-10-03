@@ -231,7 +231,6 @@ class TestController(testing.AppengineTestCase):
 
     self.assertEquals(generated, expected)
 
-
   def test_redirect_over_breakpoint(self):
     """Test that requesting a number above the SVN->git switch goes to git."""
     my_repo = model_helpers.create_repo()
@@ -248,6 +247,67 @@ class TestController(testing.AppengineTestCase):
     generated = controller.calculate_redirect('291562')
 
     self.assertEqual(generated, None)
+
+  def test_redirect_full_log(self):
+    my_repo = model_helpers.create_repo()
+    my_repo.put()
+    first_commit = model_helpers.create_commit()
+    first_commit.put()
+    second_commit = model_helpers.create_commit()
+    second_commit.put()
+
+    query = '%s..%s' % (first_commit.git_sha, second_commit.git_sha)
+    generated = controller.calculate_redirect(query)
+    expected_url = 'https://cool.googlesource.com/cool_src/+log/%s' % query
+    expected = models.Redirect(
+        redirect_type=models.RedirectType.GIT_LOG,
+        redirect_url=expected_url,
+        repo=first_commit.repo,
+        repo_url='https://cool.googlesource.com/cool_src/',
+    )
+    self.assertEqual(generated, expected)
+
+  def test_redirect_unknown_full_log(self):
+    query = ('deadbeefdeadbeefdeadbeefdeadbeefdeadbeef..'
+             'baddecabaddecabaddecabaddecaffffbaddecaf')
+    generated = controller.calculate_redirect(query)
+
+    expected = models.Redirect(
+        redirect_type=models.RedirectType.GIT_LOG,
+        redirect_url=('https://chromium.googlesource.com/chromium/src/+log/%s'
+                      % query),
+    )
+
+    self.assertEqual(generated, expected)
+
+  def test_redirect_short_log(self):
+    query = 'deadbeef..baddecaf'
+    generated = controller.calculate_redirect(query)
+
+    expected = models.Redirect(
+        redirect_type=models.RedirectType.GIT_LOG,
+        redirect_url=('https://chromium.googlesource.com/chromium/src/+log/%s'
+                      % query),
+    )
+
+    self.assertEquals(generated, expected)
+
+  def test_redirect_crazy_log(self):
+    my_repo = model_helpers.create_repo()
+    my_repo.put()
+    my_commit = model_helpers.create_commit()
+    my_commit.put()
+
+    query = '%s^^!...HEAD@' % my_commit.git_sha
+    generated = controller.calculate_redirect(query)
+    expected_url = 'https://cool.googlesource.com/cool_src/+log/%s' % query
+    expected = models.Redirect(
+        redirect_type=models.RedirectType.GIT_LOG,
+        redirect_url=expected_url,
+        repo=my_commit.repo,
+        repo_url='https://cool.googlesource.com/cool_src/',
+    )
+    self.assertEqual(generated, expected)
 
   def test_gitiles_call(self):
     gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'

@@ -11,6 +11,6 @@ app = webapp2.WSGIApplication([
     ('/_ah/start', views.StartPage),
     ('/admin/scan_projects', views.ScanProjects),
     ('/admin/scan_repos', views.ScanRepos),
-    (r'/(\w+)(/.*)?', views.Redirect),
+    (r'/([^/]+)(/.*)?', views.Redirect),
     ('/', views.MainPage),
 ])

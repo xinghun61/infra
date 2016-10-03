@@ -536,6 +536,8 @@ RIETVELD_REGEX = re.compile(r'\d{8,39}$')
 NUMBER_REGEX = re.compile(r'\d{1,8}$')
 SHORT_GIT_SHA = re.compile(r'[a-fA-F0-9]{6,39}$')
 FULL_GIT_SHA = re.compile(r'[a-fA-F0-9]{40}$')
+GIT_LOG_REGEX = re.compile(r'')
+GIT_LOG_FIRST_ARG = re.compile(r'^([a-fA-F0-9]{6,40})')
 
 
 def fetch_default_number(number):
@@ -606,6 +608,31 @@ def calculate_redirect(arg):
         redirect_type=models.RedirectType.GIT_SHORT,
         redirect_url='https://chromium.googlesource.com/chromium/src/+/%s' % (
           arg,))
+
+  if GIT_LOG_REGEX.match(arg) and not NUMBER_REGEX.match(arg):
+    m = GIT_LOG_FIRST_ARG.match(arg)
+    first_arg = None
+    if m:
+      first_arg = m.group(1)
+    if first_arg:
+      if len(first_arg) == 40:
+        revision_map = ndb.Key(models.RevisionMap, first_arg).get()
+        if revision_map:
+          repo_obj = models.Repo.get_key_by_id(
+              revision_map.project, revision_map.repo).get()
+          repo_url = calculate_repo_url(repo_obj)
+          redirect_url = '%s+log/%s' % (repo_url, arg)
+          return models.Redirect(
+              redirect_type=models.RedirectType.GIT_LOG,
+              redirect_url=redirect_url,
+              repo=revision_map.repo,
+              repo_url=repo_url,
+          )
+      redirect_url = ('https://chromium.googlesource.com/chromium/src/+log/%s'
+                      % arg)
+      return models.Redirect(
+          redirect_type=models.RedirectType.GIT_LOG,
+          redirect_url=redirect_url)
 
   return None
 
