@@ -24,18 +24,44 @@ func statusPageHandler(w http.ResponseWriter, r *http.Request) {
 	d := map[string]interface{}{
 		"Msg": "Status of the Workflow Launcher ...",
 	}
-	common.ShowBasePage(w, d)
+	common.ShowBasePage(appengine.NewContext(r), w, d)
 }
 
 func queueHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 
+	// Get the Run entry from the key in the queue
+	strID := r.FormValue("ID")
+	key, err := common.GetRunKey(ctx, strID)
+	if err != nil {
+		common.ReportServerError(ctx, w, err)
+		return
+	}
+	run, err := common.GetRun(ctx, key)
+	if err != nil {
+		common.ReportServerError(ctx, w, err)
+		return
+	}
+
 	// TODO(emso): Process request (merge configs, compute workflow) and launch workflow
 
+	// Register that this run is now launched
+	run.RunState = common.LAUNCHED
+
+	err = common.StoreRunUpdates(ctx, key, run)
+	if err != nil {
+		common.ReportServerError(ctx, w, err)
+		return
+	}
+
 	// Enqueue workflow listener task
-	t := taskqueue.NewPOSTTask("/workflow-listener/queue-handler", map[string][]string{"name": {"Workflow Launched"}})
+	e := map[string][]string{
+		"Name": {"Workflow Listener Task"},
+		"ID":   {strID},
+	}
+	t := taskqueue.NewPOSTTask("/workflow-listener/queue-handler", e)
 	if _, e := taskqueue.Add(ctx, t, "workflow-listener-queue"); e != nil {
-		http.Error(w, e.Error(), http.StatusInternalServerError)
+		common.ReportServerError(ctx, w, err)
 		return
 	}
 }

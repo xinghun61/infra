@@ -8,6 +8,8 @@ package handlers
 import (
 	"net/http"
 
+	"google.golang.org/appengine"
+
 	"infra/tricium/service/common"
 )
 
@@ -24,5 +26,5 @@ func validateHandler(w http.ResponseWriter, r *http.Request) {
 	d := map[string]interface{}{
 		"Msg": "Status of the validator ...",
 	}
-	common.ShowBasePage(w, d)
+	common.ShowBasePage(appengine.NewContext(r), w, d)
 }

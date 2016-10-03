@@ -8,6 +8,8 @@ package handlers
 import (
 	"net/http"
 
+	"google.golang.org/appengine"
+
 	"infra/tricium/service/common"
 )
 
@@ -21,7 +23,7 @@ func statusPageHandler(w http.ResponseWriter, r *http.Request) {
 	d := map[string]interface{}{
 		"Msg": "Status of the Gerrit Reporter ...",
 	}
-	common.ShowBasePage(w, d)
+	common.ShowBasePage(appengine.NewContext(r), w, d)
 }
 
 func queueHandler(w http.ResponseWriter, r *http.Request) {

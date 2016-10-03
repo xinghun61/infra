@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<title>Tricium</title>
+<style>
+  body {
+    font-family: sans-serif;
+  }
+</style>
+<body>
+== T R I C I U M (Under Construction) ==
+<hr size="1">
+Runs:<br>
+<table>
+<tr>
+  <th><b>Received</b></th>
+  <th><b>ID</b></th>
+  <th><b>Kind</b></th>
+  <th><b>State</b></th>
+</tr>
+{{range .Runs}}
+<tr>
+  <td>{{ .Received }}</td>
+  <td>{{ .ID }}</td>
+  <td>{{ .RunKind }}</td>
+  <td>{{ .RunState }}</td>
+</tr>
+{{end}}
+</table>
+</body>

@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"google.golang.org/appengine"
+	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/taskqueue"
 
 	"infra/tricium/service/common"
@@ -20,22 +21,58 @@ func init() {
 }
 
 func resultsPageHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO(emso): Show results and progress of current workflows
-	d := map[string]interface{}{
-		"Msg": "Results and progress workflows ...",
+	ctx := appengine.NewContext(r)
+
+	// Read run state from datastore
+	q := datastore.NewQuery("Run").Order("-Received").Limit(20)
+	var runs []common.Run
+	_, err := q.GetAll(ctx, &runs)
+	if err != nil {
+		common.ReportServerError(ctx, w, err)
+		return
 	}
-	common.ShowBasePage(w, d)
+	common.ShowResultsPage(appengine.NewContext(r), w, runs)
 }
 
 func queueHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 
-	// TODO(emso): Process request (put progress/results in data store)
+	// Get the key for the string repsentation of the run id.
+	strID := r.FormValue("ID")
+	key, err := common.GetRunKey(ctx, strID)
+	if err != nil {
+		common.ReportServerError(ctx, w, err)
+		return
+	}
 
-	// TODO(emso): Check which reporter to reroute to, for now, enqueue a Gerrit reporter task
-	t := taskqueue.NewPOSTTask("/gerrit-reporter/queue-handler", map[string][]string{"name": {"Gerrit Reporter Event"}})
+	// Get the run entry.
+	run, err := common.GetRun(ctx, key)
+	if err != nil {
+		common.ReportServerError(ctx, w, err)
+		return
+	}
+
+	// TODO(emso): Also read progress and results from the queue.
+	// TODO(emso): Process request (put progress/results in data store).
+
+	// Register that this run is now done.
+	run.RunState = common.DONE
+
+	if err := common.StoreRunUpdates(ctx, key, run); err != nil {
+		common.ReportServerError(ctx, w, err)
+		return
+	}
+
+	// TODO(emso): Check which reporter to re-route to, for now, enqueue a Gerrit reporter task.
+
+	// Enqueue Gerrit reporter task
+	e := map[string][]string{
+		"Name": {"Gerrit Reporter Task"},
+		"ID":   {strID},
+	}
+	t := taskqueue.NewPOSTTask("/gerrit-reporter/queue-handler", e)
 	if _, e := taskqueue.Add(ctx, t, "gerrit-reporter-queue"); e != nil {
-		http.Error(w, e.Error(), http.StatusInternalServerError)
+		common.ReportServerError(ctx, w, err)
 		return
 	}
 }

@@ -7,6 +7,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/taskqueue"
@@ -25,30 +26,47 @@ func landingPageHandler(w http.ResponseWriter, r *http.Request) {
 		"Msg":             "This service is under construction ...",
 		"ShowRequestForm": true,
 	}
-	common.ShowBasePage(w, d)
+	common.ShowBasePage(appengine.NewContext(r), w, d)
 }
 
 func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
-	t := taskqueue.NewPOSTTask("/queue-handler", map[string][]string{"name": {"Analyze Request"}})
+
+	// Add to the service queue.
+	e := map[string][]string{
+		"Name": {"Service Task"},
+	}
+	t := taskqueue.NewPOSTTask("/queue-handler", e)
 	if _, err := taskqueue.Add(ctx, t, "service-queue"); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		common.ReportServerError(ctx, w, err)
 		return
 	}
+
+	// Show request added page.
 	d := map[string]interface{}{
 		"Msg": "Dummy analysis request sent.",
 	}
-	common.ShowBasePage(w, d)
+	common.ShowBasePage(appengine.NewContext(r), w, d)
 }
 
 func queueHandler(w http.ResponseWriter, r *http.Request) {
-
-	// TODO(emso): Register run in data store
-
 	ctx := appengine.NewContext(r)
-	t := taskqueue.NewPOSTTask("/workflow-launcher/queue-handler", map[string][]string{"name": {"Analyze Request"}})
+
+	// Create and add run entry
+	id, err := common.NewRun(ctx)
+	if err != nil {
+		common.ReportServerError(ctx, w, err)
+		return
+	}
+
+	// Pass on to the workflow launcher
+	e := map[string][]string{
+		"Name": {"Workflow Launcher Task"},
+		"ID":   {strconv.FormatInt(id, 10)},
+	}
+	t := taskqueue.NewPOSTTask("/workflow-launcher/queue-handler", e)
 	if _, err := taskqueue.Add(ctx, t, "workflow-launcher-queue"); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		common.ReportServerError(ctx, w, err)
 		return
 	}
 }

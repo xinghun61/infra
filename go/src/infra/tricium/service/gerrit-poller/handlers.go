@@ -24,7 +24,7 @@ func statusPageHandler(w http.ResponseWriter, r *http.Request) {
 	d := map[string]interface{}{
 		"Msg": "Status of the Gerrit Poller ...",
 	}
-	common.ShowBasePage(w, d)
+	common.ShowBasePage(appengine.NewContext(r), w, d)
 }
 
 func pollHandler(w http.ResponseWriter, r *http.Request) {
@@ -33,9 +33,12 @@ func pollHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(emso): Poll Gerrit and convert changes to workflow event tasks.
 
 	// Enqueue service task.
-	t := taskqueue.NewPOSTTask("/queue-handler", map[string][]string{"name": {"Gerrit Analysis Request"}})
-	if _, e := taskqueue.Add(ctx, t, "service-queue"); e != nil {
-		http.Error(w, e.Error(), http.StatusInternalServerError)
+	e := map[string][]string{
+		"Name": {"Gerrit Analysis Request"},
+	}
+	t := taskqueue.NewPOSTTask("/queue-handler", e)
+	if _, err := taskqueue.Add(ctx, t, "service-queue"); err != nil {
+		common.ReportServerError(ctx, w, err)
 		return
 	}
 }

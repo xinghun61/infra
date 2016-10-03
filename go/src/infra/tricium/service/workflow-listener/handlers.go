@@ -24,18 +24,38 @@ func statusPageHandler(w http.ResponseWriter, r *http.Request) {
 	d := map[string]interface{}{
 		"Msg": "Status of the Workflow Listener ...",
 	}
-	common.ShowBasePage(w, d)
+	common.ShowBasePage(appengine.NewContext(r), w, d)
 }
 
 func queueHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 
+	// Get the run key from the ID in the queue.
+	strID := r.FormValue("ID")
+	key, err := common.GetRunKey(ctx, strID)
+	if err != nil {
+		common.ReportServerError(ctx, w, err)
+		return
+	}
+
+	// Get the run entry from the key.
+	// TODO(emso): Use the returned run entry.
+	_, err = common.GetRun(ctx, key)
+	if err != nil {
+		common.ReportServerError(ctx, w, err)
+		return
+	}
+
 	// TODO(emso): Process task (find LogDog streams to listen to) and listen to events.
 
 	// Enqueue reporter task.
-	t := taskqueue.NewPOSTTask("/reporter/queue-handler", map[string][]string{"name": {"Workflow Event"}})
-	if _, e := taskqueue.Add(ctx, t, "reporter-queue"); e != nil {
-		http.Error(w, e.Error(), http.StatusInternalServerError)
+	e := map[string][]string{
+		"Name": {"Reporter Event"},
+		"ID":   {strID},
+	}
+	t := taskqueue.NewPOSTTask("/reporter/queue-handler", e)
+	if _, err := taskqueue.Add(ctx, t, "reporter-queue"); err != nil {
+		common.ReportServerError(ctx, w, err)
 		return
 	}
 }
