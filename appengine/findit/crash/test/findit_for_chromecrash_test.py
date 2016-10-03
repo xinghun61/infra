@@ -33,9 +33,9 @@ class FinditForChromeCrashTest(CrashTestCase):
     expected_tag = {'found_suspects': False,
                     'has_regression_range': False}
 
-    results, tag = findit_for_chromecrash.FindCulpritForChromeCrash(
+    results, tag = findit_for_chromecrash.FinditForChromeCrash().FindCulprit(
         'signature', 'win', 'frame1\nframe2', '50.0.1234.0',
-        [{'chrome_version': '50.0.1234.0', 'cpm': 0.6}])
+        [{'chrome_version': '50.0.1234.0', 'cpm': 0.6}]).ToDicts()
 
     self.assertEqual(expected_results, results)
     self.assertEqual(expected_tag, tag)
@@ -88,10 +88,13 @@ class FinditForChromeCrashTest(CrashTestCase):
     expected_results = {'found': False}
     expected_tag = {'found_suspects': False}
 
-    results, tag = findit_for_chromecrash.FindCulpritForChromeCrash(
+    results, tag = findit_for_chromecrash.FinditForChromeCrash().FindCulprit(
         'signature', 'win', 'frame1\nframe2', '50.0.1234.0',
-        [{'chrome_version': '50.0.1234.0', 'cpm': 0.6}])
+        [{'chrome_version': '50.0.1234.0', 'cpm': 0.6}]).ToDicts()
 
+    # TODO(wrengr): compare the Culprit object directly to these values,
+    # rather than converting to dicts first. We can make a different
+    # unit test for comparing the dicts, if we actually need/want to.
     expected_results = {
           'found': True,
           'suspected_project': '',
@@ -110,9 +113,9 @@ class FinditForChromeCrashTest(CrashTestCase):
     self.assertEqual(expected_results, results)
     self.assertEqual(expected_tag, tag)
 
-    results, tag = findit_for_chromecrash.FindCulpritForChromeCrash(
+    results, tag = findit_for_chromecrash.FinditForChromeCrash().FindCulprit(
         'signature', 'win', 'frame1\nframe2', '50.0.1234.0',
-        [])
+        []).ToDicts()
 
     expected_results = {
           'found': False,

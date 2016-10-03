@@ -104,6 +104,10 @@ class CrashConfig(VersionedConfig):
   def ClearCache(self):
     self.cached_component_classifier = None
 
+  # TODO: remove this property. It is only used by
+  # model/crash/test/crash_config_test.py, and is no longer necessary for
+  # crash/findit_for_chromecrash.py, which compiles and caches things
+  # on its own.
   @property
   def compiled_component_classifier(self):
     """Returns the component classifier with all re patterns compiled."""
@@ -111,7 +115,6 @@ class CrashConfig(VersionedConfig):
       compiled_path_function_component = []
       for path, function, component in self.component_classifier[
           'path_function_component']:
-        # TODO(wrengr): build Component objects here, rather than later.
         compiled_path_function_component.append(
             [re.compile(path),
              re.compile(function) if function else None,

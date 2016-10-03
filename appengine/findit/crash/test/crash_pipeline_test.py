@@ -132,11 +132,15 @@ class CrashPipelineTest(CrashTestCase):
               Mocked_PublishMessagesToTopic)
 
     analyzed_crashes = []
-    def Mocked_FindCulpritForChromeCrash(*args):
-      analyzed_crashes.append(args)
-      return analysis_result, analysis_tags
-    self.mock(findit_for_chromecrash, 'FindCulpritForChromeCrash',
-              Mocked_FindCulpritForChromeCrash)
+    class Mocked_FinditForChromeCrash(object):
+      def __init__(self, *_):
+        pass
+      def FindCulprit(self, *args):
+        analyzed_crashes.append(args)
+        return analysis_result, analysis_tags
+    self.mock(findit_for_chromecrash, 'FinditForChromeCrash',
+        Mocked_FinditForChromeCrash)
+
     chrome_version = '1'
     signature = 'signature'
     platform = 'win'

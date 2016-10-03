@@ -10,7 +10,8 @@ from crash.type_enums import CallStackLanguageType
 from model.crash.crash_config import CrashConfig
 
 
-class ClassOccurrenceInfo(object):
+class ClassOccurrenceInfo(namedtuple('ClassOccurrenceInfo',
+    ['name', 'occurrences'])):
   """Represents information of a class in results or crash_stack.
 
   Class information includes the name of the class, a list of indices
@@ -18,10 +19,6 @@ class ClassOccurrenceInfo(object):
   can be project name, like 'chromium', 'chromium-skia', or component
   name like 'Blink>API', 'Blink>DOM'.
   """
-
-  def __init__(self, name, occurrences):
-    self.name = name
-    self.occurrences = occurrences
 
 
 def DefaultRankFunction(class_info):

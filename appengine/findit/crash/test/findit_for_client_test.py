@@ -200,11 +200,13 @@ class FinditForClientTest(CrashTestCase):
     expected_tags = {'found_suspects': False,
                      'has_regression_range': False}
 
-    def _MockFindCulpritForChromeCrash(*_):
-      return expected_result, expected_tags
-
-    self.mock(findit_for_chromecrash, 'FindCulpritForChromeCrash',
-              _MockFindCulpritForChromeCrash)
+    class _MockFinditForChromeCrash(object):
+      def __init__(self, *_):
+        pass
+      def FindCulprit(self, *_):
+        return expected_result, expected_tags
+    self.mock(findit_for_chromecrash, 'FinditForChromeCrash',
+              _MockFinditForChromeCrash)
 
     analysis = FracasCrashAnalysis.Create({'signature': 'sig'})
     analysis.client_id = CrashClient.FRACAS
