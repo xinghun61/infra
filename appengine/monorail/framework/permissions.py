@@ -957,6 +957,22 @@ def CanViewHotlist(effective_ids, hotlist):
   return any([user_id in (hotlist.owner_ids + hotlist.editor_ids)
               for user_id in effective_ids])
 
+def CanCreateHotlist(perms):
+  """Return True if the given user may create a hotlist.
+
+  Args:
+    perms: Permissionset for the current user.
+
+  Returns:
+    True if the user should be allowed to create a hotlist.
+  """
+  if (settings.hotlist_creation_restriction ==
+      site_pb2.UserTypeRestriction.ANYONE):
+    return perms.HasPerm(CREATE_HOTLIST, None, None)
+
+  if (settings.hotlist_creation_restriction ==
+      site_pb2.UserTypeRestriction.ADMIN_ONLY):
+    return perms.HasPerm(ADMINISTER_SITE, None, None)
 
 class Error(Exception):
   """Base class for errors from this module."""

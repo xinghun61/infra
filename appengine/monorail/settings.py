@@ -81,6 +81,9 @@ allowed_access_levels = [
 # Who is allowed to create user groups?  Set to ANYONE or ADMIN_ONLY.
 group_creation_restriction = site_pb2.UserTypeRestriction.ADMIN_ONLY
 
+# Who is allowed to create hotlists? Set to ANYONE or ADMIN_ONLY.
+hotlist_creation_restriction = site_pb2.UserTypeRestriction.ANYONE
+
 ####
 # Part 2: Settings you would edit on certain occasions.
 
@@ -322,4 +325,3 @@ api_ratelimiting_cost_thresh_ms = 5000
 # API requests that hit ratelimiting_cost_thresh_sec get this
 # extra amount added to their bucket at the end of the request.
 api_ratelimiting_cost_penalty = 1
-

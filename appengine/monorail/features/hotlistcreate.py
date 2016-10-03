@@ -6,6 +6,7 @@
 """Servlet for creating new hotlists."""
 
 import logging
+import re
 
 from framework import framework_bizobj
 from framework import framework_helpers
@@ -14,13 +15,16 @@ from framework import servlet
 from framework import urls
 from services import features_svc
 from services import user_svc
+from proto import api_pb2_v1
 
 
 _MSG_HOTLIST_NAME_NOT_AVAIL = 'You already have a hotlist with that name.'
 _MSG_MISSING_HOTLIST_NAME = 'Missing hotlist name'
 _MSG_INVALID_HOTLIST_NAME = 'Invalid hotlist name'
 _MSG_MISSING_HOTLIST_SUMMARY = 'Missing hotlist summary'
-
+_MSG_INVALID_ISSUES_INPUT = "Issues input is invalid"
+# pylint: disable=line-too-long
+_ISSUE_INPUT_REGEX = "[a-z0-9][-a-z0-9]*[a-z0-9]:\d+(([,]|\s)+[a-z0-9][-a-z0-9]*[a-z0-9]:\d+)*"
 
 class HotlistCreate(servlet.Servlet):
   """HotlistCreate shows a simple page with a form to create a hotlist."""
@@ -34,7 +38,7 @@ class HotlistCreate(servlet.Servlet):
       mr: commonly used info parsed from the request.
     """
     super(HotlistCreate, self).AssertBasePermission(mr)
-    if not self.CheckPerm(mr, permissions.CREATE_HOTLIST):
+    if not permissions.CanCreateHotlist(mr.perms):
       raise permissions.PermissionException(
           'User is not allowed to create a hotlist.')
 
@@ -48,6 +52,27 @@ class HotlistCreate(servlet.Servlet):
         'initial_editors': '',
         'initial_privacy': 'no',
         }
+
+  def ParseIssueRefs(self, mr, issue_refs_string):
+    """Parses the string or project:issue_id pairs to return global issue_ids.
+
+    Args:
+      mr: commonly used info parsed from the request.
+      issue_refs_string: a string list of project name and local_id for
+          relevant issues, eg.  'monorail:1234, chromium:12345'.
+
+    Returns:
+      A list of global issue_ids.
+    """
+    string_pairs = [pair.strip() for pair in issue_refs_string.split(',')]
+    issue_refs_tuples = [(pair.split(':')[0],
+                          int(pair.split(':')[1].strip())) for pair in
+                         string_pairs]
+    project_names = [pair.split(':')[0] for pair in string_pairs]
+    projects_dict = self.services.project.GetProjectsByName(
+        mr.cnxn, project_names)
+    return self.services.issue.ResolveIssueRefs(
+        mr.cnxn, projects_dict, mr.project_name, issue_refs_tuples)
 
   def ProcessFormData(self, mr, post_data):
     """Process the hotlist create form.
@@ -70,8 +95,13 @@ class HotlistCreate(servlet.Servlet):
       mr.errors.summary = _MSG_MISSING_HOTLIST_SUMMARY
 
     description = post_data.get('description', '')
-    # TODO(lukasperaza): parse issue_refs into global issue IDs
-    issue_refs = post_data.get('issues')
+    issue_refs_string = post_data.get('issues')
+    if issue_refs_string:
+      pattern = re.compile(_ISSUE_INPUT_REGEX)
+      if pattern.match(issue_refs_string) is not None:
+        issue_ids = self.ParseIssueRefs(mr, issue_refs_string)
+      else:
+        mr.errors.invalidinput = _MSG_INVALID_ISSUES_INPUT
 
     editors = post_data.get('editors', '')
     editor_ids = []
@@ -88,21 +118,20 @@ class HotlistCreate(servlet.Servlet):
 
     if not mr.errors.AnyErrors():
       try:
-        self.services.features.CreateHotlist(
+        hotlist_id = self.services.features.CreateHotlist(
             mr.cnxn, hotlist_name, summary, description,
             owner_ids=[mr.auth.user_id], editor_ids=editor_ids,
-            is_private=(is_private == 'yes'))
+            issue_ids = issue_ids, is_private=(is_private == 'yes'))
       except features_svc.HotlistAlreadyExists:
         mr.errors.hotlistname = _MSG_HOTLIST_NAME_NOT_AVAIL
 
     if mr.errors.AnyErrors():
       self.PleaseCorrect(
           mr, initial_name=hotlist_name, initial_summary=summary,
-          initial_description=description, initial_issues=issue_refs,
+          initial_description=description, initial_issues=issue_refs_string,
           initial_editors=editors, initial_privacy=is_private)
     else:
-      # TODO(lukasperaza): redirect to hotlist issues page, not 
-      # user hotlists tab
       return framework_helpers.FormatAbsoluteURL(
-          mr, '/u/%s%s' % (mr.auth.user_id, urls.HOTLISTS),
+          mr, '/u/%s/hotlists%s/%d' % (mr.auth.user_id,
+                                       urls.HOTLIST_ISSUES, hotlist_id),
           include_project=False)
