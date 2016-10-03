@@ -15,7 +15,7 @@ function load() {
 }
 
 function success(data) {
-  var tbody = document.getElementById('builder-state-test-table'); 
+  var tbody = document.getElementById('builder-state-test-table');
   if (tbody) {
     tbody.innerHTML += generateHtml(data);
   }
