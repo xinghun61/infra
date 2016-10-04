@@ -131,7 +131,7 @@ class NullCulprit(object):
         {'found': False},
         {'found_suspects': False,
          'has_regression_range': False}
-      )
+    )
 
 
 # TODO(wrengr): better name for this class. Given the "findit_for_*.py"

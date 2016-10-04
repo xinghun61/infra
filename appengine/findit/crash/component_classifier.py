@@ -26,7 +26,6 @@ class Component(namedtuple('Component',
       re.compile(path_regex),
       re.compile(function_regex) if function_regex else None)
 
-
   def MatchesStackFrame(self, frame):
     """Return true if this component matches the frame."""
     if not self.path_regex.match(frame.dep_path + frame.file_path):
@@ -55,7 +54,7 @@ class ComponentClassifier(Classifier):
     super(ComponentClassifier, self).__init__()
     if not components:
       logging.warning('Empty configuration for component classifier.')
-      components = []
+      components = [] # Ensure self.components is not None
     self.components = components
     self.top_n = top_n
 

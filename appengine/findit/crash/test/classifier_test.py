@@ -4,14 +4,16 @@
 
 from common import constants
 from common.pipeline_wrapper import pipeline_handlers
-from crash import classifier
+from crash.classifier import Occurrence
+from crash.classifier import Classifier
+from crash.classifier import DefaultRankFunction
 from crash.stacktrace import StackFrame
 from crash.stacktrace import CallStack
 from crash.results import Result
 from crash.test.crash_testcase import CrashTestCase
 
 
-class DummyClassifier(classifier.Classifier):
+class DummyClassifier(Classifier):
 
   def GetClassFromStackFrame(self, frame):
     if frame.dep_path == 'src/':
@@ -33,12 +35,9 @@ class DummyClassifier(classifier.Classifier):
 class ClassifierTest(CrashTestCase):
 
   def testDefaultRankFunction(self):
-    self.assertEqual(classifier.DefaultRankFunction(
-        classifier.ClassOccurrenceInfo('c1', [0])),
+    self.assertEqual(DefaultRankFunction(Occurrence('c1', [0])),
         (-1, 0))
-
-    self.assertEqual(classifier.DefaultRankFunction(
-        classifier.ClassOccurrenceInfo('c1', [0, 1])),
+    self.assertEqual(DefaultRankFunction(Occurrence('c1', [0, 1])),
         (-float('inf'), 0))
 
   def testClassifyCrashStack(self):

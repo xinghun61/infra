@@ -78,9 +78,9 @@ class ProjectClassifier(classifier.Classifier):
 
     def _GetRankFunction(language_type):
       if language_type == CallStackLanguageType.JAVA:
-        def _RankFunctionForJava(class_occurrences_info):
-          project_name = class_occurrences_info.name
-          return (len(class_occurrences_info.occurrences),
+        def _RankFunctionForJava(occurrence):
+          project_name = occurrence.name
+          return (len(occurrence),
                   0 if 'chromium' in project_name else
                   self.project_classifier_config[
                       'non_chromium_project_rank_priority'][project_name])
