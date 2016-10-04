@@ -953,34 +953,7 @@ ALTER TABLE Invalidate CHANGE kind
   kind ENUM('user', 'project', 'issue', 'issue_id', 'hotlist');
 
 ================================================================
-2016-09-10: Drop was_escaped after Comment table is made smaller
-
--- TODO(jrobbins): drop was_escaped.  It cannot be done in production yet
--- because the Comment table is too big.
-
-================================================================
-2016-09-07: First steps toward splitting Comment table
-
-CREATE TABLE CommentContent (
-  id INT NOT NULL AUTO_INCREMENT,
-  -- TODO(jrobbins) drop comment_id after Comment.commentcontent_id is added.
-  comment_id INT NOT NULL,  -- Note: no forign key reference.
-  content TEXT,
-  inbound_message TEXT,
-
-  PRIMARY KEY (id),
-  UNIQUE KEY (comment_id)  -- TODO: drop this too.
-) ENGINE=INNODB;
-
-================================================================
-2016-09-21: Recreate the CommentContent table with emoji support.
-
-Only do this if you have all comment strings in the Comment table
-and are running an app version that does not refernce CommentContent.
-
--- RENAME TABLE CommentContent TO CommentContent_Backup;
--- test the app to make sure that you can view a detail page and see comments.
--- D R O P TABLE CommentContent_Backup;
+2016-09-21: Create the CommentContent table with emoji support.
 
 CREATE TABLE CommentContent (
   id INT NOT NULL AUTO_INCREMENT,
@@ -992,6 +965,23 @@ CREATE TABLE CommentContent (
   PRIMARY KEY (id),
   UNIQUE KEY (comment_id)  -- TODO: drop this too.
 ) ENGINE=INNODB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+To copy comment strings from Comment to CommentContent, use
+the SQL procedure in monorail/tools/copy-comment-to-commentcontent.sql.
+
+If you need to roll back, you can reverse the process by reading
+and carefully using the SQL procedure in
+monorail/tools/copy-new-commentcontent-back-to-comment.sql.
+
+Optionally, after you have all comment content strings in
+CommentContent, you can reduce the size of the Comment table by using
+the procedure in monorail/tools/null-comment-table-strings.sql.
+This can make it faster to make more changes to the Comment table.
+
+================================================================
+2016-09-29: Drop was_escaped after Comment table is made smaller
+
+ALTER TABLE Comment DROP COLUMN was_escaped;
 
 ================================================================
 2016-10-03: Add date-type custom fields
