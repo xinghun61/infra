@@ -174,7 +174,7 @@ class GerritAgentTestCase(unittest.TestCase):
         method='GET',
         params=None,
         url=('https://chromium-review.googlesource.com'
-             '/a/accounts/does.not@exist.com'),
+             '/a/accounts/does.not%40exist.com'),
         headers=HEADERS,
         hooks=self.gerrit._instrumentation_hooks)
     self.assertEqual(result, None)

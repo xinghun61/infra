@@ -157,7 +157,8 @@ class Gerrit(object):
       None if no such account, AccountInfo dict otherwise.
     """
     assert '/' not in account_id
-    code, body = self._request('GET', '/accounts/%s' % account_id)
+    code, body = self._request(
+        'GET', '/accounts/%s' % urllib.quote(account_id, safe=''))
     if code == 200:
       return body
     if code == 404:
@@ -245,7 +246,7 @@ class Gerrit(object):
       raise ValueError('Invalid account id: %s' % account_id)
     code, body = self._request(
         method='GET',
-        request_path='/accounts/%s/active' % account_id)
+        request_path='/accounts/%s/active' % urllib.quote(account_id, safe=''))
     if code == 200:
       return True
     if code == 204:
