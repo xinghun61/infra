@@ -254,6 +254,7 @@ class TestController(testing.AppengineTestCase):
     first_commit = model_helpers.create_commit()
     first_commit.put()
     second_commit = model_helpers.create_commit()
+    second_commit.git_sha = 'baddecaf' * 5
     second_commit.put()
 
     query = '%s..%s' % (first_commit.git_sha, second_commit.git_sha)
@@ -268,8 +269,7 @@ class TestController(testing.AppengineTestCase):
     self.assertEqual(generated, expected)
 
   def test_redirect_unknown_full_log(self):
-    query = ('deadbeefdeadbeefdeadbeefdeadbeefdeadbeef..'
-             'baddecabaddecabaddecabaddecaffffbaddecaf')
+    query = 'deadbeef' * 5 + '..' + 'baddecaf' * 5
     generated = controller.calculate_redirect(query)
 
     expected = models.Redirect(
@@ -298,7 +298,7 @@ class TestController(testing.AppengineTestCase):
     my_commit = model_helpers.create_commit()
     my_commit.put()
 
-    query = '%s^^!...HEAD@' % my_commit.git_sha
+    query = '%s^^!...FEEDCAFEB33F@' % my_commit.git_sha
     generated = controller.calculate_redirect(query)
     expected_url = 'https://cool.googlesource.com/cool_src/+log/%s' % query
     expected = models.Redirect(
@@ -308,6 +308,82 @@ class TestController(testing.AppengineTestCase):
         repo_url='https://cool.googlesource.com/cool_src/',
     )
     self.assertEqual(generated, expected)
+
+  def test_redirect_numeric_log(self):
+    # It's necessary to overwrite the model_helpers defaults with chromium/src
+    # so that the numbering (which only works in chromium/src) can look up
+    # the fake commits we create.
+    my_repo = model_helpers.create_repo()
+    my_repo.project = 'chromium'
+    my_repo.repo = 'chromium/src'
+    my_repo.put()
+    first_commit = model_helpers.create_commit()
+    first_commit.git_sha = 'deadbeef' * 5
+    first_commit.project = my_repo.project
+    first_commit.repo = my_repo.repo
+    first_commit.put()
+    second_commit = model_helpers.create_commit()
+    second_commit.git_sha = 'baddecaf' * 5
+    second_commit.project = my_repo.project
+    second_commit.repo = my_repo.repo
+    second_commit.put()
+    my_numberings = model_helpers.create_numberings()
+    my_numberings[1].git_sha = 'deadbeef' * 5
+    my_numberings[1].project = my_repo.project
+    my_numberings[1].repo = my_repo.repo
+    my_numberings.append(models.NumberingMap(
+      numbering_type=models.NumberingType.COMMIT_POSITION,
+      numbering_identifier='refs/heads/master',
+      number=123456,
+      project='chromium',
+      repo='chromium/src',
+      git_sha=second_commit.git_sha,
+      redirect_url='https://crrev.com/%s' % second_commit.git_sha
+    ))
+
+    for numbering in my_numberings:
+      numbering.put()
+
+    generated = controller.calculate_redirect('100..123456')
+    expected_url = ('https://chromium.googlesource.com/chromium/src/+log/'
+                    'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef..'
+                    'baddecafbaddecafbaddecafbaddecafbaddecaf')
+    expected = models.Redirect(
+        redirect_type=models.RedirectType.GIT_LOG,
+        redirect_url=expected_url,
+        repo=first_commit.repo,
+        repo_url='https://chromium.googlesource.com/chromium/src/',
+    )
+
+    self.assertEqual(generated, expected)
+
+  def test_redirect_numeric_log_fallback(self):
+    # If we don't know about one of the numbers, assume they're short hashes.
+    my_repo = model_helpers.create_repo()
+    my_repo.project = 'chromium'
+    my_repo.repo = 'chromium/src'
+    my_repo.put()
+    first_commit = model_helpers.create_commit()
+    first_commit.git_sha = 'deadbeef' * 5
+    first_commit.project = my_repo.project
+    first_commit.repo = my_repo.repo
+    first_commit.put()
+    my_numberings = model_helpers.create_numberings()
+    my_numberings[1].git_sha = 'deadbeef' * 5
+    my_numberings[1].project = my_repo.project
+    my_numberings[1].repo = my_repo.repo
+
+    for numbering in my_numberings:
+      numbering.put()
+
+    query = '100..123456'
+    generated = controller.calculate_redirect(query)
+    expected = models.Redirect(
+        redirect_type=models.RedirectType.GIT_LOG,
+        redirect_url=('https://chromium.googlesource.com/chromium/src/+log/%s'
+                      % query),
+    )
+    self.assertEquals(generated, expected)
 
   def test_gitiles_call(self):
     gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'
