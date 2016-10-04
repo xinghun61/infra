@@ -131,6 +131,12 @@ hooks = [
   {
     "pattern": ".",
     "action": [
+      "python", "-u", "./infra/bootstrap/install_cipd_packages.py", "-v",
+    ],
+  },
+  {
+    "pattern": ".",
+    "action": [
       "python", "-u", "./infra/bootstrap/get_appengine.py", "--dest=.",
     ],
     # extract in google_appengine/
@@ -142,12 +148,6 @@ hooks = [
       "--go",
     ],
     # extract in go_appengine/
-  },
-  {
-    "pattern": ".",
-    "action": [
-      "python", "-u", "./infra/bootstrap/install_cipd_packages.py", "-v",
-    ],
   },
 ]
 

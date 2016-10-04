@@ -76,6 +76,11 @@ ARCH_CONFIG_MAP = {
 
 
 def get_platform_config():
+  key = get_platform()
+  return key, ARCH_CONFIG_MAP.get(key)
+
+
+def get_platform():
   machine = platform.machine().lower()
   system = platform.system()
   machine = ({
@@ -88,8 +93,7 @@ def get_platform_config():
     # entire userland is 32bit and thus we should play along and install 32bit
     # packages.
     machine = 'x86'
-  key = (system, machine)
-  return key, ARCH_CONFIG_MAP.get(key)
+  return system, machine
 
 
 def dump_json(obj):
