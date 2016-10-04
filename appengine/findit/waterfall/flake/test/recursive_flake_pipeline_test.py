@@ -3,8 +3,7 @@
 # found in the LICENSE file.
 
 from datetime import datetime
-
-import pytz
+import mock
 
 from common import constants
 from common.pipeline_wrapper import pipeline_handlers
@@ -55,33 +54,48 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                      recursive_flake_pipeline._GetETAToStartAnalysis(True))
 
   def testGetETAToStartAnalysisWhenTriggeredOnPSTWeekend(self):
-    # Sunday 1pm in PST.
-    mocked_utcnow = datetime(2016, 9, 04, 20, 0, 0, 0, pytz.utc)
-    self.MockUTCNow(mocked_utcnow)
-    self.MockUTCNowWithTimezone(mocked_utcnow)
-    self.assertEqual(mocked_utcnow,
-                     recursive_flake_pipeline._GetETAToStartAnalysis(False))
+    # Sunday 1pm in PST, and Sunday 8pm in UTC.
+    mocked_pst_now = datetime(2016, 9, 04, 13, 0, 0, 0)
+    mocked_utc_now = datetime(2016, 9, 04, 20, 0, 0, 0)
+    self.MockUTCNow(mocked_utc_now)
+    self.MockUTCNowWithTimezone(mocked_utc_now)
+    with mock.patch('common.time_util.GetDatetimeInTimezone') as timezone_func:
+      timezone_func.side_effect = [mocked_pst_now, None]
+      self.assertEqual(mocked_utc_now,
+                       recursive_flake_pipeline._GetETAToStartAnalysis(False))
 
   def testGetETAToStartAnalysisWhenTriggeredOffPeakHoursOnPSTWeekday(self):
-    # Tuesday 1am in PST.
-    mocked_utcnow = datetime(2016, 9, 20, 8, 0, 0, 0, pytz.utc)
-    self.MockUTCNow(mocked_utcnow)
-    self.MockUTCNowWithTimezone(mocked_utcnow)
-    self.assertEqual(mocked_utcnow,
-                     recursive_flake_pipeline._GetETAToStartAnalysis(False))
+    # Tuesday 1am in PST, and Tuesday 8am in UTC.
+    mocked_pst_now = datetime(2016, 9, 20, 1, 0, 0, 0)
+    mocked_utc_now = datetime(2016, 9, 20, 8, 0, 0, 0)
+    self.MockUTCNow(mocked_utc_now)
+    self.MockUTCNowWithTimezone(mocked_utc_now)
+    with mock.patch('common.time_util.GetDatetimeInTimezone') as timezone_func:
+      timezone_func.side_effect = [mocked_pst_now, None]
+      self.assertEqual(mocked_utc_now,
+                       recursive_flake_pipeline._GetETAToStartAnalysis(False))
 
   def testGetETAToStartAnalysisWhenTriggeredInPeakHoursOnPSTWeekday(self):
-    # Tuesday 1pm in PST.
-    mocked_utcnow = datetime(2016, 9, 20, 20, 0, 0, 0, pytz.utc)
-    self.MockUTCNow(mocked_utcnow)
-    self.MockUTCNowWithTimezone(mocked_utcnow)
-    eta = recursive_flake_pipeline._GetETAToStartAnalysis(False)
-    self.assertEqual(2016, eta.year)
-    self.assertEqual(9, eta.month)
-    self.assertEqual(21, eta.day)
-    self.assertEqual(1, eta.hour)
-    seconds = eta.minute * 60 + eta.second
-    self.assertTrue(seconds >= 0 and seconds <= 30 * 60)
+    # Tuesday 1pm in PST, and Tuesday 8pm in UTC.
+    seconds_delay = 10
+    mocked_pst_now = datetime(2016, 9, 20, 13, 0, 0, 0)
+    mocked_utc_now = datetime(2016, 9, 20, 20, 0, 0, 0)
+    mocked_pst_eta = datetime(
+        2016, 9, 20, 18, 0, seconds_delay, 0)  # With arbitrary delay of 10s.
+    mocked_utc_eta = datetime(2016, 9, 21, 1, 0, 0, 0)  # Without delay.
+    self.MockUTCNow(mocked_utc_now)
+    self.MockUTCNowWithTimezone(mocked_utc_now)
+    with mock.patch('common.time_util.GetDatetimeInTimezone') as (
+        timezone_func), mock.patch('random.randint') as random_func:
+      timezone_func.side_effect = [mocked_pst_now, mocked_utc_eta]
+      random_func.side_effect = [seconds_delay, None]
+      self.assertEqual(mocked_utc_eta,
+                       recursive_flake_pipeline._GetETAToStartAnalysis(False))
+      self.assertEqual(2, timezone_func.call_count)
+      self.assertEqual(mock.call('US/Pacific', mocked_utc_now),
+                       timezone_func.call_args_list[0])
+      self.assertEqual(mock.call('UTC', mocked_pst_eta),
+                       timezone_func.call_args_list[1])
 
   def testRecursiveFlakePipeline(self):
     master_name = 'm'
@@ -146,7 +160,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     rfp.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
-  def testNextBuildPipelineForNewRecursionFirstFlake(self):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
+  def testNextBuildPipelineForNewRecursionFirstFlake(self, _mocked_eta_func):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -190,7 +206,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         flakiness_algorithm_results_dict)
     self.assertEquals(flakiness_algorithm_results_dict['flakes_in_a_row'], 1)
 
-  def testNextBuildPipelineForNewRecursionFirstStable(self):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
+  def testNextBuildPipelineForNewRecursionFirstStable(self, _mocked_eta_func):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -232,7 +250,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         flakiness_algorithm_results_dict)
     self.assertEquals(flakiness_algorithm_results_dict['stable_in_a_row'], 1)
 
-  def testNextBuildPipelineForNewRecursionFlakeInARow(self):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
+  def testNextBuildPipelineForNewRecursionFlakeInARow(self, _mocked_eta_func):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -275,7 +295,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         flakiness_algorithm_results_dict)
     self.assertEquals(flakiness_algorithm_results_dict['stabled_out'], True)
 
-  def testNextBuildPipelineForNewRecursionStableInARow(self):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
+  def testNextBuildPipelineForNewRecursionStableInARow(self, _mocked_eta_func):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -318,7 +340,10 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         flakiness_algorithm_results_dict)
     self.assertEquals(flakiness_algorithm_results_dict['flaked_out'], True)
 
-  def testNextBuildPipelineForNewRecursionLessThanLastBuildNumber(self):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
+  def testNextBuildPipelineForNewRecursionLessThanLastBuildNumber(
+      self, _mocked_eta_func):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -366,7 +391,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         flakiness_algorithm_results_dict)
     self.assertFalse(queue_name['x'])
 
-  def testNextBuildPipelineForFailedSwarmingTask(self):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
+  def testNextBuildPipelineForFailedSwarmingTask(self, _mocked_eta_func):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -414,7 +441,10 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         test_result_future, flakiness_algorithm_results_dict)
     self.assertFalse(queue_name['x'])
 
-  def testNextBuildPipelineForNewRecursionStabledFlakedOut(self):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
+  def testNextBuildPipelineForNewRecursionStabledFlakedOut(
+      self, _mocked_eta_func):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -665,7 +695,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(next_run, 102)
     self.assertEqual(analysis.suspected_flake_build_number, None)
 
-  def testNextBuildPipelineStabledOutFlakedOutFirstTime(self):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
+  def testNextBuildPipelineStabledOutFlakedOutFirstTime(self, _mocked_eta_func):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100

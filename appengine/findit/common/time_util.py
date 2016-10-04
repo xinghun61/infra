@@ -45,16 +45,15 @@ def FormatDatetime(date):
     return date.strftime('%Y-%m-%d %H:%M:%S UTC')
 
 
-def GetDatetimeInTimezone(timezone_name, date_time=None):
+def GetDatetimeInTimezone(timezone_name, date_time):
   """Returns the datetime.datetime of the given one in the specified timezone.
 
   Args:
     timezone_name (str): The name of any timezone supported by pytz.
     date_time (datetime.datetime): The optional datetime to be converted into
-        the new timezone. If not given, default to UTC now.
+        the new timezone.
 
   Returns:
     A datetime.datetime of the given one in the specified timezone.
   """
-  date_time = date_time or GetUTCNowWithTimezone()
   return date_time.astimezone(pytz.timezone(timezone_name))

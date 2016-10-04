@@ -48,21 +48,21 @@ def _GetETAToStartAnalysis(manually_triggered):
     # If the analysis is manually triggered, run it right away.
     return time_util.GetUTCNow()
 
-  now_at_mtv = time_util.GetDatetimeInTimezone(
+  now_at_pst = time_util.GetDatetimeInTimezone(
       'US/Pacific', time_util.GetUTCNowWithTimezone())
-  if now_at_mtv.weekday() >= 5:  # PST Saturday or Sunday.
+  if now_at_pst.weekday() >= 5:  # PST Saturday or Sunday.
     return time_util.GetUTCNow()
 
-  if now_at_mtv.hour < 11 or now_at_mtv.hour >= 18:  # Before 11am or after 6pm.
+  if now_at_pst.hour < 11 or now_at_pst.hour >= 18:  # Before 11am or after 6pm.
     return time_util.GetUTCNow()
 
   # Set ETA time to 6pm, and also with a random latency within 30 minutes to
   # avoid sudden burst traffic to Swarming.
-  diff = timedelta(hours=18 - now_at_mtv.hour,
-                   minutes=-now_at_mtv.minute,
-                   seconds=-now_at_mtv.second + random.randint(0, 30 * 60),
-                   microseconds=-now_at_mtv.microsecond)
-  eta = now_at_mtv + diff
+  diff = timedelta(hours=18 - now_at_pst.hour,
+                   minutes=-now_at_pst.minute,
+                   seconds=-now_at_pst.second + random.randint(0, 30 * 60),
+                   microseconds=-now_at_pst.microsecond)
+  eta = now_at_pst + diff
 
   # Convert back to UTC.
   return time_util.GetDatetimeInTimezone('UTC', eta)

@@ -2,13 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
 import unittest
 
 from common import time_util
 from datetime import datetime
 from datetime import timedelta
-
-import pytz
 
 
 class DiffTest(unittest.TestCase):
@@ -38,11 +37,11 @@ class DiffTest(unittest.TestCase):
         time_util.FormatDatetime(datetime(2016, 1, 2, 1, 2, 3)),
         '2016-01-02 01:02:03 UTC')
 
-  def testGetDateTimeInTimezone(self):
-    utc_datetime = datetime(2016, 9, 27, 20, 46, 18, 1, pytz.utc)
-    result_pst_datetime = time_util.GetDatetimeInTimezone(
-        'US/Pacific', utc_datetime)
-    expected_pst_datetime = datetime(2016, 9, 27, 13, 46, 18, 1,
-                                     pytz.timezone('US/Pacific'))
-    self.assertEqual(result_pst_datetime.date(), expected_pst_datetime.date())
-    self.assertEqual(result_pst_datetime.time(), expected_pst_datetime.time())
+  @mock.patch('common.time_util.pytz')
+  def testGetDateTimeInTimezoneWithGivenDatetime(self, mocked_pytz_module):
+    mocked_datetime = mock.MagicMock()
+    mocked_datetime.astimezone.return_value = 'expected'
+
+    self.assertEqual('expected',
+                     time_util.GetDatetimeInTimezone('PST', mocked_datetime))
+    mocked_pytz_module.timezone.assert_called_with('PST')
