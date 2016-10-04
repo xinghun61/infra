@@ -73,6 +73,11 @@ runOnLoad(function() {
   })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
   ga('create', '[analytics_id]', {'siteSpeedSampleRate': 100});
+  [if-any viewing_user_page]
+    [# Keep anything that looks like an email address out of GA.]
+    ga('set', 'title', 'A user page');
+  [end]
+
   ga('send', 'pageview');
 });
 </script>
