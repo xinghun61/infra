@@ -13,6 +13,7 @@ set.
 """
 
 import collections
+import json
 import logging
 import os
 
@@ -114,69 +115,14 @@ def _EnqueueOutboundEmail(message_dict):
   Args:
     message_dict: dict with all needed info for the task.
   """
-  size = _ComputeTaskSize(urls.OUTBOUND_EMAIL_TASK + '.do', message_dict)
-  logging.info('Queuing an email task with size %r.' % size)
-  if size >= 102400:
-    logging.warning('Email task is going to be too large.\n%r' % message_dict)
+  # We use a JSON-encoded payload because it ensures that the task size is
+  # effectively the same as the sum of the email bodies. Using params results
+  # in the dict being urlencoded, which can (worst case) triple the size of
+  # an email body containing many characters which need to be escaped.
+  payload = json.dumps(message_dict)
   taskqueue.add(
-      url=urls.OUTBOUND_EMAIL_TASK + '.do', params=message_dict,
-      queue_name='outboundemail')
-
-
-# TODO(agable): Remove this when issue 1274 is resolved.
-def _ComputeTaskSize(url, params):
-  """Computes task size, using same method as appengine.api.taskqueue."""
-  import urllib
-  import urlparse
-  # The following ~15 lines are a distillation of what taskqueue.Task.size()
-  # does. Some method calls have been flattened, since they were __dunderscore
-  # methods that would not be available to this module.
-  HEADER_SEPERATOR = ': \r\n'
-  method = 'POST'  # The default, which we don't change in _EnqueueOutboundEmail
-  headers_dict = urlfetch._CaselessDict()
-  for header_name, environ_name in (
-      ('X-AppEngine-Default-Namespace', 'HTTP_X_APPENGINE_DEFAULT_NAMESPACE'),):
-    value = os.environ.get(environ_name)
-    if value is not None:
-      headers_dict.setdefault(header_name, value)
-
-  def _flatten_params(params):
-    def get_string(value):
-      if isinstance(value, unicode):
-        return unicode(value).encode('utf-8')
-      else:
-        return str(value)
-    param_list = []
-    for key, value in params.iteritems():
-      key = get_string(key)
-      if isinstance(value, basestring):
-        param_list.append((key, get_string(value)))
-      else:
-        try:
-          iterator = iter(value)
-        except TypeError:
-          param_list.append((key, str(value)))
-        else:
-          param_list.extend((key, get_string(v)) for v in iterator)
-    return param_list
-
-  headers_list = _flatten_params(headers_dict)
-  # This is what (method == 'POST' && params is not None) results in:
-  payload = urllib.urlencode(_flatten_params(params))
-  headers_dict.setdefault('content-type', 'application/x-www-form-urlencoded')
-  _, _, relative_url, _, _ = urlparse.urlsplit(url)
-  header_size = sum((len(key) + len(value) + len(HEADER_SEPERATOR))
-                    for key, value in headers_list)
-
-  logging.info('Sizes:\nmethod: %r, payload: %r, url: %r, headers: %r' %
-               (len(method), len(payload), len(relative_url), header_size))
-  params_sizes_list = []
-  for k, v in sorted(params.items()):
-    params_sizes_list.append('%r: %r' % (k, len(v)))
-  params_sizes = ', '.join(params_sizes_list)
-  logging.info('Within payload:\n%r' % params_sizes)
-
-  return (len(method) + len(payload) + len(relative_url) + header_size)
+    url=urls.OUTBOUND_EMAIL_TASK + '.do', payload=payload,
+    queue_name='outboundemail')
 
 
 def AddAllEmailTasks(tasks):
@@ -969,11 +915,14 @@ class OutboundEmailTask(jsonfeed.InternalTask):
       Results dictionary in JSON format which is useful just for debugging.
       The main goal is the side-effect of sending emails.
     """
+    # To avoid urlencoding the email body, the most salient parameters to this
+    # method are passed as a json-encoded POST body.
+    email_params = json.loads(self.request.body)
     # If running on a GAFYD domain, you must define an app alias on the
     # Application Settings admin web page.
-    sender = mr.GetParam('from_addr')
-    reply_to = mr.GetParam('reply_to')
-    to = mr.GetParam('to')
+    sender = email_params.get('from_addr')
+    reply_to = email_params.get('reply_to')
+    to = email_params.get('to')
     if not to:
       # Cannot proceed if we cannot create a valid EmailMessage.
       return {'note': 'Skipping because no "to" address found.'}
@@ -988,10 +937,10 @@ class OutboundEmailTask(jsonfeed.InternalTask):
     except user_svc.NoSuchUserException:
       pass
 
-    references = mr.GetParam('references')
-    subject = mr.GetParam('subject')
-    body = mr.GetParam('body')
-    html_body = mr.GetParam('html_body')
+    references = email_params.get('references')
+    subject = email_params.get('subject')
+    body = email_params.get('body')
+    html_body = email_params.get('html_body')
 
     if settings.dev_mode:
       to_format = settings.send_dev_email_to

@@ -46,8 +46,8 @@ def MakeMonorailRequest(*args, **kwargs):
 
 
 def GetRequestObjects(
-    headers=None, path='/', params=None, user_info=None, project=None,
-    method='GET', perms=None, services=None):
+    headers=None, path='/', params=None, payload=None, user_info=None,
+    project=None, method='GET', perms=None, services=None):
   """Make fake request and MonorailRequest objects for testing.
 
   Host param will override the 'Host' header, and has a default value of
@@ -71,7 +71,11 @@ def GetRequestObjects(
   params = params or {}
 
   headers.setdefault('Host', DEFAULT_HOST)
-  post_items = params if method == 'POST' else None
+  post_items=None
+  if method == 'POST' and payload:
+    post_items = payload
+  elif method == 'POST' and params:
+    post_items = params
 
   if not services:
     services = service_manager.Services(

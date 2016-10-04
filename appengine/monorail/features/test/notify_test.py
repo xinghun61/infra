@@ -5,6 +5,7 @@
 
 """Tests for notify.py."""
 
+import json
 import os
 import unittest
 import urllib
@@ -246,7 +247,7 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     task = notify.NotifyBulkChangeTask(
         request=None, response=None, services=self.services)
     params = {
-        'send_email': 1, 'seq': 0, 
+        'send_email': 1, 'seq': 0,
         'issue_ids': '%d,%d' % (self.issue1.issue_id, issue2.issue_id),
         'old_owner_ids': '1,1', 'commenter_id': 1}
     mr = testing_helpers.MakeMonorailRequest(
@@ -261,14 +262,13 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
         url=urls.OUTBOUND_EMAIL_TASK + '.do')
     self.assertEqual(2, len(tasks))
     for task in tasks:
-      task_params = dict(item.split('=')
-                    for item in tasks[0].payload.split('&'))
+      task_params = json.loads(task.payload)
       # obfuscated email for non-members
       if 'user' in task_params['to']:
-        self.assertIn('%E2%80%A6', task_params['from_addr'])
+        self.assertIn(u'\u2026', task_params['from_addr'])
       # Full email for members
-      else:
-        self.assertNotIn('%E2%80%A6', task_params['from_addr'])
+      if 'member' in task_params['to']:
+        self.assertNotIn(u'\u2026', task_params['from_addr'])
 
   def testNotifyBulkChangeTask_spam(self):
     issue2 = MakeTestIssue(
@@ -292,16 +292,18 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
 
   def testOutboundEmailTask_Normal(self):
     """We can send an email."""
-    task = notify.OutboundEmailTask(
-        request=None, response=None, services=self.services)
     params = {
         'from_addr': 'requester@example.com',
         'reply_to': 'user@example.com',
         'to': 'user@example.com',
         'subject': 'Test subject'}
+    body = json.dumps(params)
+    request = webapp2.Request.blank('/', body=body)
+    task = notify.OutboundEmailTask(
+        request=request, response=None, services=self.services)
     mr = testing_helpers.MakeMonorailRequest(
         user_info={'user_id': 1},
-        params=params,
+        payload=body,
         method='POST',
         services=self.services)
     result = task.HandleRequest(mr)
@@ -310,15 +312,17 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
 
   def testOutboundEmailTask_MissingTo(self):
     """We skip emails that don't specify the To-line."""
-    task = notify.OutboundEmailTask(
-        request=None, response=None, services=self.services)
     params = {
         'from_addr': 'requester@example.com',
         'reply_to': 'user@example.com',
         'subject': 'Test subject'}
+    body = json.dumps(params)
+    request = webapp2.Request.blank('/', body=body)
+    task = notify.OutboundEmailTask(
+        request=request, response=None, services=self.services)
     mr = testing_helpers.MakeMonorailRequest(
         user_info={'user_id': 1},
-        params=params,
+        payload=body,
         method='POST',
         services=self.services)
     result = task.HandleRequest(mr)
@@ -327,16 +331,18 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
 
   def testOutboundEmailTask_BannedUser(self):
     """We don't send emails to banned users.."""
-    task = notify.OutboundEmailTask(
-        request=None, response=None, services=self.services)
     params = {
         'from_addr': 'requester@example.com',
         'reply_to': 'user@example.com',
         'to': 'banned@example.com',
         'subject': 'Test subject'}
+    body = json.dumps(params)
+    request = webapp2.Request.blank('/', body=body)
+    task = notify.OutboundEmailTask(
+        request=request, response=None, services=self.services)
     mr = testing_helpers.MakeMonorailRequest(
         user_info={'user_id': 1},
-        params=params,
+        payload=body,
         method='POST',
         services=self.services)
     self.services.user.TestAddUser('banned@example.com', 404L, banned=True)

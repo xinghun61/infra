@@ -35,21 +35,21 @@ test_no_coverage:
 # Commands for running locally using dev_appserver.
 serve:
 	@echo "---[Starting SDK AppEngine Server]---"
-	$(GAE_PY) devserver $(DEV_APPSERVER_FLAGS)
+	$(GAE_PY) devserver -- $(DEV_APPSERVER_FLAGS)
 
 serve_email:
 	@echo "---[Starting SDK AppEngine Server]---"
-	$(GAE_PY) devserver $(DEV_APPSERVER_FLAGS) --enable_sendmail=True
+	$(GAE_PY) devserver -- $(DEV_APPSERVER_FLAGS) --enable_sendmail=True
 
 # The _remote commands expose the app on 0.0.0.0, so that it is externally
 # accessible by hostname:port, rather than just localhost:port.
 serve_remote:
 	@echo "---[Starting SDK AppEngine Server]---"
-	$(GAE_PY) devserver -o $(DEV_APPSERVER_FLAGS)
+	$(GAE_PY) devserver -o -- $(DEV_APPSERVER_FLAGS)
 
 serve_remote_email:
 	@echo "---[Starting SDK AppEngine Server]---"
-	$(GAE_PY) devserver -o $(DEV_APPSERVER_FLAGS) --enable_sendmail=True
+	$(GAE_PY) devserver -o -- $(DEV_APPSERVER_FLAGS) --enable_sendmail=True
 
 run: serve
 
