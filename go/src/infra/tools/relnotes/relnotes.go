@@ -21,13 +21,22 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
+
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2/google"
+	"gopkg.in/yaml.v2"
+
+	appengine "google.golang.org/api/appengine/v1"
 )
 
 const monorailURL = "https://bugs.chromium.org/p/%s/issues/detail?id=%s"
 
 var (
-	date       = flag.String("since-date", "", "YYYY-MM-DD. All changes since this date.")
-	hash       = flag.String("since-hash", "", "All changes since this long hash.")
+	appName    = flag.String("app", "", "Name of the application")
+	date       = flag.String("date", "", "YYYY-MM-DD. Release date.")
+	sinceDate  = flag.String("since-date", "", "YYYY-MM-DD. All changes since this date.")
+	sinceHash  = flag.String("since-hash", "", "All changes since this long hash.")
 	bugRE      = regexp.MustCompile("\n    BUG=([0-9]+)")
 	monorailRE = regexp.MustCompile("\n    BUG=([a-z]+):([0-9]+)")
 	authorRE   = regexp.MustCompile("\nAuthor:.+<(.+)>")
@@ -35,7 +44,7 @@ var (
 	reviewRE   = regexp.MustCompile("\n    (Review-Url|Reviewed-on): (.*)\n")
 
 	markdownTxt = `
-# Release Notes
+# Release Notes {{.AppName}} {{.Date}}
 
 - {{len .Commits}} commits, {{.NumBugs}} bugs affected since {{.Since}}
 - {{len .Authors}} Authors:
@@ -49,11 +58,11 @@ var (
 - [{{.Summary}}]({{.ReviewURL}}) ({{.Author}})
 {{end}}
 
-## Bugs updated, by author
+## Bugs upsinceDated, by author
 {{range $author, $bugs := .Bugs -}}
-### {{$author}}
+- {{$author}}:
   {{range $bug, $unused := $bugs -}}
-    [{{$bug}}]({{$bug}})
+  -  [{{$bug}}]({{$bug}})
   {{end}}
 {{end}}
 `
@@ -61,6 +70,8 @@ var (
 )
 
 type tmplData struct {
+	AppName string
+	Date    string
 	NumBugs int
 	Since   string
 	Authors []string
@@ -116,6 +127,82 @@ func usage() {
 	flag.PrintDefaults()
 }
 
+func gaeService() (*appengine.APIService, error) {
+	creds := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+	if creds == "" {
+		fmt.Printf("Warning: you do not have the GOOGLE_APPLICATION_CREDENTIALS environment variable set. Cloud API calls may not work properly.\n")
+	} else {
+		fmt.Printf("Using GOOGLE_APPLICATION_CREDENTIALS: %s\n", creds)
+	}
+
+	ctx := context.Background()
+	client, err := google.DefaultClient(ctx, appengine.CloudPlatformScope)
+	if err != nil {
+		return nil, err
+	}
+	appengineService, err := appengine.New(client)
+	return appengineService, err
+}
+
+// getDeployedApp returns the hash and date string, or an error.
+func getDeployedApp(service, module string) (string, string, error) {
+	gaeSvc, err := gaeService()
+	if err != nil {
+		return "", "", err
+	}
+
+	appsSvc := appengine.NewAppsService(gaeSvc)
+	versionsListCall := appsSvc.Services.Versions.List(*appName, "default")
+	versionsList, err := versionsListCall.Do()
+	if err != nil {
+		return "", "", err
+	}
+	var deployedVers *appengine.Version
+	// This is a heuristic to determine which version is "deployed" - use
+	// the latest verison (by creation timestamp) that is "SERVING". More
+	// accurate would be to look at traffic splits and pick the one that
+	// has the most (or all) traffic going to it. Unfortunately the API
+	// doesn't appear to expose that information(!).
+	for _, vers := range versionsList.Versions {
+		if vers.ServingStatus == "SERVING" && (deployedVers == nil ||
+			deployedVers.CreateTime < vers.CreateTime) {
+			deployedVers = vers
+		}
+	}
+
+	if deployedVers == nil {
+		return "", "", fmt.Errorf("Could not determine currently deployed version.\n")
+	}
+
+	versRE := regexp.MustCompile("([0-9]+)-([0-9a-f]+)")
+	matches := versRE.FindAllStringSubmatch(deployedVers.Id, -1)
+
+	return matches[0][2], deployedVers.CreateTime, nil
+}
+
+func getAppNameFromYAML() (string, error) {
+	type appStruct struct {
+		Application string
+	}
+
+	in, err := os.Open("app.yaml")
+	if err != nil {
+		return "", err
+	}
+
+	b, err := ioutil.ReadAll(in)
+	if err != nil {
+		return "", err
+	}
+
+	app := &appStruct{}
+	if err := yaml.Unmarshal(b, app); err != nil {
+		return "", err
+	}
+
+	return app.Application, nil
+}
+
 func main() {
 	flag.Usage = usage
 	flag.Parse()
@@ -125,12 +212,33 @@ func main() {
 		path = args[0]
 	}
 
+	if *appName == "" {
+		s, err := getAppNameFromYAML()
+		if err != nil {
+			fmt.Printf("Error getting app name from app.yaml: %v", err)
+			os.Exit(1)
+		}
+		appName = &s
+		fmt.Printf("Got app name from app.yaml: %s\n", *appName)
+	}
+
+	if *sinceHash == "" && *sinceDate == "" {
+		hash, date, err := getDeployedApp(*appName, "default")
+		if err != nil {
+			fmt.Printf("Error trying to get currently deployed app hash: %v\n", err)
+			fmt.Printf("Please specify either --since-hash or --since-date\n")
+			os.Exit(1)
+		}
+		sinceHash = &hash
+		sinceDate = &date
+	}
+
 	var cmd *exec.Cmd
 	switch {
-	case *hash != "":
-		cmd = exec.Command("git", "log", fmt.Sprintf("%s..", *hash), path)
-	case *date != "":
-		cmd = exec.Command("git", "log", "--since", *date, path)
+	case *sinceHash != "":
+		cmd = exec.Command("git", "log", fmt.Sprintf("%s..", *sinceHash), path)
+	case *sinceDate != "":
+		cmd = exec.Command("git", "log", "--since", *sinceDate, path)
 	default:
 		fmt.Printf("Please specify either --since-hash or --since-date\n")
 		os.Exit(1)
@@ -190,9 +298,16 @@ func main() {
 		toNotify = append(toNotify, a)
 	}
 
+	if *date == "" {
+		today := time.Now().Format("2006-01-02")
+		date = &today
+	}
+
 	data := tmplData{
+		AppName: *appName,
+		Date:    *date,
 		NumBugs: len(fixed),
-		Since:   fmt.Sprintf("%s%s", *hash, *date),
+		Since:   fmt.Sprintf("%s %s", *sinceHash, *sinceDate),
 		Authors: toNotify,
 		Commits: commits,
 		Bugs:    bugsByAuthor,
