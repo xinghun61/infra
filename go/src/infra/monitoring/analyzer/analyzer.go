@@ -330,7 +330,6 @@ func (a *Analyzer) builderAlerts(tree string, master *messages.MasterLocation, b
 			alerts = append(alerts, messages.Alert{
 				Key:       fmt.Sprintf("%s.%s.hung", master.Name(), builderName),
 				Title:     fmt.Sprintf("%s.%s is hung in step %s.", master.Name(), builderName, lastStep),
-				Body:      fmt.Sprintf("%s.%s has been building for %v (last step update %s), past the alerting threshold of %v", master.Name(), builderName, elapsed, lastUpdated.Time(), a.HungBuilderThresh),
 				Severity:  hungBuilderSev,
 				Time:      messages.TimeToEpochTime(a.Now()),
 				StartTime: messages.TimeToEpochTime(lastUpdated.Time()),
@@ -345,7 +344,6 @@ func (a *Analyzer) builderAlerts(tree string, master *messages.MasterLocation, b
 			alerts = append(alerts, messages.Alert{
 				Key:       fmt.Sprintf("%s.%s.offline", master.Name(), builderName),
 				Title:     fmt.Sprintf("%s.%s is offline.", master.Name(), builderName),
-				Body:      fmt.Sprintf("%s.%s has been offline for %v (last step update %s %v), past the alerting threshold of %v", master.Name(), builderName, elapsed, lastUpdated.Time(), float64(lastUpdated), a.OfflineBuilderThresh),
 				Severity:  offlineBuilderSev,
 				Time:      messages.TimeToEpochTime(a.Now()),
 				StartTime: messages.TimeToEpochTime(lastUpdated.Time()),
@@ -354,11 +352,11 @@ func (a *Analyzer) builderAlerts(tree string, master *messages.MasterLocation, b
 			})
 		}
 	case messages.StateIdle:
+		// FIXME: We should also look at amount of time idle, not just number of builds that the builder has idle.
 		if b.PendingBuilds > a.IdleBuilderCountThresh {
 			alerts = append(alerts, messages.Alert{
 				Key:       fmt.Sprintf("%s.%s.idle", master.Name(), builderName),
-				Title:     fmt.Sprintf("%s.%s is idle with too many pending builds.", master.Name(), builderName),
-				Body:      fmt.Sprintf("%s.%s is idle with %d pending builds, past the alerting threshold of %d", master.Name(), builderName, b.PendingBuilds, a.IdleBuilderCountThresh),
+				Title:     fmt.Sprintf("%s.%s is idle with %d pending builds.", master.Name(), builderName, b.PendingBuilds),
 				Severity:  idleBuilderSev,
 				Time:      messages.TimeToEpochTime(a.Now()),
 				StartTime: messages.TimeToEpochTime(lastUpdated.Time()),

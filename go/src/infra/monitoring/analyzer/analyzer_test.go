@@ -5,7 +5,6 @@
 package analyzer
 
 import (
-	"fmt"
 	"net/url"
 	"reflect"
 	"sort"
@@ -183,87 +182,190 @@ func TestBuilderAlerts(t *testing.T) {
 }
 
 func TestLittleBBuilderAlerts(t *testing.T) {
-	tests := []struct {
-		name       string
-		master     string
-		builder    string
-		b          messages.Builder
-		builds     map[string]*messages.Build
-		time       time.Time
-		wantAlerts []messages.Alert
-		wantErrs   []error
-	}{
-		{
-			name:     "empty",
-			wantErrs: []error{errNoRecentBuilds},
-		},
-		{
-			name:    "builders ok",
-			master:  "fake.master",
-			builder: "fake.builder",
-			builds: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
-				Build(0).Times(10, 100).
-				Step("fake_step").Times(10, 100).BuilderFaker.Builds,
-			b: messages.Builder{
-				State:        messages.StateBuilding,
-				BuilderName:  "fake.builder",
-				CachedBuilds: []int64{0},
+	Convey("builderAlerts", t, func() {
+		tests := []struct {
+			name       string
+			master     string
+			builder    string
+			b          messages.Builder
+			builds     map[string]*messages.Build
+			time       time.Time
+			wantAlerts []messages.Alert
+			wantErrs   []error
+		}{
+			{
+				name:     "empty",
+				wantErrs: []error{errNoRecentBuilds},
 			},
-			wantAlerts: []messages.Alert{},
-			wantErrs:   []error{},
-		},
-		{
-			name:    "builder building for too long",
-			master:  "fake.master",
-			builder: "hung.builder",
-			builds: analyzertest.NewBuilderFaker("fake.master", "hung.builder").
-				Build(0).Times(10, 100).
-				Step("fake_step").Times(10, 100).BuilderFaker.
-				Build(1).Times(100, 0).
-				Step("fake_step").Times(100, 0).BuilderFaker.Builds,
-			b: messages.Builder{
-				State:        messages.StateBuilding,
-				BuilderName:  "fake.builder",
-				CachedBuilds: []int64{0, 1},
+			{
+				name:    "builders ok",
+				master:  "fake.master",
+				builder: "fake.builder",
+				builds: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(10, 100).
+					Step("fake_step").Times(10, 100).BuilderFaker.Builds,
+				b: messages.Builder{
+					State:        messages.StateBuilding,
+					BuilderName:  "fake.builder",
+					CachedBuilds: []int64{0},
+				},
+				wantAlerts: []messages.Alert{},
+				wantErrs:   []error{},
 			},
-			time: time.Unix(0, 0).Add(4 * time.Hour),
-			wantAlerts: []messages.Alert{
-				{
-					Key:       "fake.master.hung.builder.hung",
-					Title:     "fake.master.hung.builder is hung in step fake_step.",
-					Type:      messages.AlertHungBuilder,
-					StartTime: 100,
-					Time:      messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour)),
-					Body:      "fake.master.hung.builder has been building for 3h58m20s (last step update 1970-01-01 00:01:40 +0000 UTC), past the alerting threshold of 3h0m0s",
-					Severity:  hungBuilderSev,
-					Links: []messages.Link{
-						{Title: "Builder", Href: urlParse("https://build.chromium.org/p/fake.master/builders/hung.builder", t).String()},
-						{Title: "Last build", Href: urlParse("https://build.chromium.org/p/fake.master/builders/hung.builder/builds/1", t).String()},
-						{Title: "Last build step", Href: urlParse("https://build.chromium.org/p/fake.master/builders/hung.builder/builds/1/steps/fake_step", t).String()},
+			{
+				name:    "builder building for too long",
+				master:  "fake.master",
+				builder: "hung.builder",
+				builds: analyzertest.NewBuilderFaker("fake.master", "hung.builder").
+					Build(0).Times(10, 100).
+					Step("fake_step").Times(10, 100).BuilderFaker.
+					Build(1).Times(100, 0).
+					Step("fake_step").Times(100, 0).BuilderFaker.Builds,
+				b: messages.Builder{
+					State:        messages.StateBuilding,
+					BuilderName:  "fake.builder",
+					CachedBuilds: []int64{0, 1},
+				},
+				time: time.Unix(0, 0).Add(4 * time.Hour),
+				wantAlerts: []messages.Alert{
+					{
+						Key:       "fake.master.hung.builder.hung",
+						Title:     "fake.master.hung.builder is hung in step fake_step.",
+						Type:      messages.AlertHungBuilder,
+						StartTime: 100,
+						Time:      messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour)),
+						Severity:  hungBuilderSev,
+						Links: []messages.Link{
+							{Title: "Builder", Href: urlParse("https://build.chromium.org/p/fake.master/builders/hung.builder", t).String()},
+							{Title: "Last build", Href: urlParse("https://build.chromium.org/p/fake.master/builders/hung.builder/builds/1", t).String()},
+							{Title: "Last build step", Href: urlParse("https://build.chromium.org/p/fake.master/builders/hung.builder/builds/1/steps/fake_step", t).String()},
+						},
 					},
 				},
+				wantErrs: []error{},
 			},
-			wantErrs: []error{},
-		},
-	}
+			{
+				name:    "builder offline for not long enough",
+				master:  "fake.master",
+				builder: "offline.builder",
+				builds: analyzertest.NewBuilderFaker("fake.master", "offline.builder").
+					Build(0).Times(10, 100).
+					Step("fake_step").Times(0, 60*60).BuilderFaker.
+					Build(1).Times(100, 0).
+					Step("fake_step").Times(60*60, 0).BuilderFaker.Builds,
+				b: messages.Builder{
+					State:        messages.StateOffline,
+					BuilderName:  "offline.builder",
+					CachedBuilds: []int64{0, 1},
+				},
+				// Last step is at an hour, 1.5 hours is the timeout
+				time:       time.Unix(0, 0).Add(2 * time.Hour).Add(30 * time.Minute).Add(-time.Second),
+				wantAlerts: []messages.Alert{},
+				wantErrs:   []error{},
+			},
+			{
+				name:    "builder offline for too long",
+				master:  "fake.master",
+				builder: "offline.builder",
+				builds: analyzertest.NewBuilderFaker("fake.master", "offline.builder").
+					Build(0).Times(10, 100).
+					Step("fake_step").Times(0, 2.5*60*60).BuilderFaker.
+					Build(1).Times(100, 0).
+					Step("fake_step").Times(2.5*60*60, 0).BuilderFaker.Builds,
+				b: messages.Builder{
+					State:        messages.StateOffline,
+					BuilderName:  "offline.builder",
+					CachedBuilds: []int64{0, 1},
+				},
+				// Last step is at an hour, 1.5 hours is the timeout
+				time: time.Unix(0, 0).Add(4 * time.Hour).Add(time.Second),
+				wantAlerts: []messages.Alert{
+					{
+						Key:       "fake.master.offline.builder.offline",
+						Title:     "fake.master.offline.builder is offline.",
+						Type:      messages.AlertOfflineBuilder,
+						StartTime: 2.5 * 60 * 60,
+						Time:      messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour).Add(time.Second)),
+						Severity:  offlineBuilderSev,
+						Links: []messages.Link{
+							{Title: "Builder", Href: urlParse("https://build.chromium.org/p/fake.master/builders/offline.builder", t).String()},
+							{Title: "Last build", Href: urlParse("https://build.chromium.org/p/fake.master/builders/offline.builder/builds/1", t).String()},
+							{Title: "Last build step", Href: urlParse("https://build.chromium.org/p/fake.master/builders/offline.builder/builds/1/steps/fake_step", t).String()},
+						},
+					},
+				},
+				wantErrs: []error{},
+			},
+			{
+				name:    "builder idle, not enough pending builds",
+				master:  "fake.master",
+				builder: "idle.builder",
+				builds: analyzertest.NewBuilderFaker("fake.master", "idle.builder").
+					Build(0).Times(10, 100).
+					Step("fake_step").Times(10, 100).BuilderFaker.
+					Build(1).Times(100, 0).
+					Step("fake_step").Times(100, 0).BuilderFaker.Builds,
+				b: messages.Builder{
+					State:         messages.StateIdle,
+					BuilderName:   "idle.builder",
+					CachedBuilds:  []int64{0, 1},
+					PendingBuilds: 49,
+				},
+				time:       time.Unix(0, 0).Add(4 * time.Hour),
+				wantAlerts: []messages.Alert{},
+				wantErrs:   []error{},
+			},
+			{
+				name:    "builder idle, too many pending builds",
+				master:  "fake.master",
+				builder: "idle.builder",
+				builds: analyzertest.NewBuilderFaker("fake.master", "idle.builder").
+					Build(0).Times(10, 100).
+					Step("fake_step").Times(10, 100).BuilderFaker.
+					Build(1).Times(100, 0).
+					Step("fake_step").Times(100, 0).BuilderFaker.Builds,
+				b: messages.Builder{
+					State:         messages.StateIdle,
+					BuilderName:   "idle.builder",
+					CachedBuilds:  []int64{0, 1},
+					PendingBuilds: 51,
+				},
+				time: time.Unix(0, 0).Add(4 * time.Hour),
+				wantAlerts: []messages.Alert{
+					{
+						Key:       "fake.master.idle.builder.idle",
+						Title:     "fake.master.idle.builder is idle with 51 pending builds.",
+						Type:      messages.AlertIdleBuilder,
+						StartTime: 100,
+						Time:      messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour)),
+						Severity:  idleBuilderSev,
+						Links: []messages.Link{
+							{Title: "Builder", Href: urlParse("https://build.chromium.org/p/fake.master/builders/idle.builder", t).String()},
+							{Title: "Last build", Href: urlParse("https://build.chromium.org/p/fake.master/builders/idle.builder/builds/1", t).String()},
+							{Title: "Last build step", Href: urlParse("https://build.chromium.org/p/fake.master/builders/idle.builder/builds/1/steps/fake_step", t).String()},
+						},
+					},
+				},
+				wantErrs: []error{},
+			},
+		}
 
-	a := newTestAnalyzer(nil, 0, 10)
+		a := newTestAnalyzer(nil, 0, 10)
 
-	for _, test := range tests {
-		a.Now = fakeNow(test.time)
-		a.Reader = clientTest.MockReader{
-			Builds: test.builds,
+		for _, test := range tests {
+			test := test
+			Convey(test.name, func() {
+				a.Now = fakeNow(test.time)
+				a.Reader = clientTest.MockReader{
+					Builds: test.builds,
+				}
+
+				gotAlerts, gotErrs := a.builderAlerts("tree", &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, &test.b)
+				So(gotAlerts, ShouldResemble, test.wantAlerts)
+				So(gotErrs, ShouldResemble, test.wantErrs)
+			})
 		}
-		fmt.Printf("test %s", test.name)
-		gotAlerts, gotErrs := a.builderAlerts("tree", &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, &test.b)
-		if !reflect.DeepEqual(gotAlerts, test.wantAlerts) {
-			t.Errorf("%s failed. Got:\n%+v, want:\n%+v\nDiff: %v", test.name, gotAlerts, test.wantAlerts,
-				ansidiff.Diff(gotAlerts, test.wantAlerts))
-		}
-		if !reflect.DeepEqual(gotErrs, test.wantErrs) {
-			t.Errorf("%s failed. Got %+v, want: %+v", test.name, gotErrs, test.wantErrs)
-		}
-	}
+	})
 }
 
 func TestBuilderStepAlerts(t *testing.T) {
