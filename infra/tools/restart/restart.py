@@ -300,10 +300,21 @@ def run(masters, restart_time, reviewers, bug, force, no_commit,
 
   reason = reason.strip()
   if not reason:
-    reason = raw_input('Please provide a reason for this restart: ').strip()
+    default_reason = ''
+    if bug:
+      default_reason = 'Restart for https://crbug.com/%s' % bug
+    prompt = 'Please provide a reason for this restart'
+    if default_reason:
+      prompt += ' [%s]: ' % default_reason
+    else:
+      prompt += ': '
+    reason = raw_input(prompt).strip()
     if not reason:
-      print 'No reason provided, exiting'
-      return 0
+      if default_reason:
+        reason = default_reason
+      else:
+        print 'No reason provided, exiting'
+        return 0
 
   # Step 1: Acquire a clean master state checkout.
   # This repo is too small to consider caching.
