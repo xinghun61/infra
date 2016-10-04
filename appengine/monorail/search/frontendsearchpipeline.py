@@ -32,6 +32,7 @@ from features import savedqueries_helpers
 from framework import framework_constants
 from framework import framework_helpers
 from framework import paginate
+from framework import permissions
 from framework import sorting
 from framework import urls
 from search import query2ast
@@ -74,16 +75,20 @@ class FrontendSearchPipeline(object):
     self.num_skipped_at_start = 0
     self.total_count = 0
 
-    self.query_project_names = set()
+    self.query_projects = []
     if mr.query_project_names:
-      self.query_project_names.update(mr.query_project_names)
-
-    projects = services.project.GetProjectsByName(
-        mr.cnxn, self.query_project_names).values()
-    self.query_project_ids = [p.project_id for p in projects]
+      consider_projects = services.project.GetProjectsByName(
+        mr.cnxn, mr.query_project_names).values()
+      self.query_projects = [
+          p for p in consider_projects
+          if permissions.UserCanViewProject(
+              mr.auth.user_pb, mr.auth.effective_ids, p)]
     if mr.project_name:
-      self.query_project_ids.append(mr.project_id)
-      self.query_project_names.add(mr.project_name)
+      self.query_projects.append(mr.project)
+    self.query_project_ids = sorted([
+        p.project_id for p in self.query_projects])
+    self.query_project_names = sorted([
+        p.project_name for p in self.query_projects])
 
     config_dict = self.services.config.GetProjectConfigs(
         mr.cnxn, self.query_project_ids)
@@ -102,11 +107,6 @@ class FrontendSearchPipeline(object):
     self.allowed_results = None  # results that the user is permitted to view.
     self.visible_results = None  # allowed_results on current pagination page.
     self.error_responses = set()
-
-    # Projects that contain the result issues.  This starts off as a dict of
-    # all the query projects, but it can grow based on the found issues in the
-    # case where the user is searching across the entire site.
-    self.issue_projects = {p.project_id: p for p in projects}
 
     error_msg = query2ast.CheckSyntax(
         self.mr.query, self.harmonized_config, warnings=self.mr.warnings)

@@ -78,7 +78,55 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     nonviewable_iids = {1: set()}
     self.mox.StubOutWithMock(frontendsearchpipeline, '_StartBackendSearch')
     frontendsearchpipeline._StartBackendSearch(
-      self.mr, set(['proj']), [789], mox.IsA(tracker_pb2.ProjectIssueConfig),
+      self.mr, ['proj'], [789], mox.IsA(tracker_pb2.ProjectIssueConfig),
+      unfiltered_iids, {}, nonviewable_iids, set(), self.services).AndReturn([])
+    self.mox.StubOutWithMock(frontendsearchpipeline, '_FinishBackendSearch')
+    frontendsearchpipeline._FinishBackendSearch([])
+    self.mox.ReplayAll()
+
+    pipeline = frontendsearchpipeline.FrontendSearchPipeline(
+      self.mr, self.services, self.profiler, 100)
+    pipeline.unfiltered_iids = unfiltered_iids
+    pipeline.nonviewable_iids = nonviewable_iids
+    pipeline.SearchForIIDs()
+    self.mox.VerifyAll()
+    self.assertEqual(2, pipeline.total_count)
+    self.assertEqual([1001, 1011], pipeline.filtered_iids[(1, 'p:v')])
+
+  def testSearchForIIDs_CrossProject_AllViewable(self):
+    self.services.project.TestAddProject('other', project_id=790)
+    unfiltered_iids = {(1, 'p:v'): [1001, 1011, 2001]}
+    nonviewable_iids = {1: set()}
+    self.mr.query_project_names = ['other']
+    self.mox.StubOutWithMock(frontendsearchpipeline, '_StartBackendSearch')
+    frontendsearchpipeline._StartBackendSearch(
+      self.mr, ['other', 'proj'], [789, 790],
+      mox.IsA(tracker_pb2.ProjectIssueConfig),
+      unfiltered_iids, {}, nonviewable_iids, set(), self.services).AndReturn([])
+    self.mox.StubOutWithMock(frontendsearchpipeline, '_FinishBackendSearch')
+    frontendsearchpipeline._FinishBackendSearch([])
+    self.mox.ReplayAll()
+
+    pipeline = frontendsearchpipeline.FrontendSearchPipeline(
+      self.mr, self.services, self.profiler, 100)
+    pipeline.unfiltered_iids = unfiltered_iids
+    pipeline.nonviewable_iids = nonviewable_iids
+    pipeline.SearchForIIDs()
+    self.mox.VerifyAll()
+    self.assertEqual(3, pipeline.total_count)
+    self.assertEqual([1001, 1011, 2001], pipeline.filtered_iids[(1, 'p:v')])
+
+  def testSearchForIIDs_CrossProject_MembersOnlyOmitted(self):
+    self.services.project.TestAddProject(
+        'other', project_id=790, access=project_pb2.ProjectAccess.MEMBERS_ONLY)
+    unfiltered_iids = {(1, 'p:v'): [1001, 1011]}
+    nonviewable_iids = {1: set()}
+    # project 'other' gets filtered out before the backend call.
+    self.mr.query_project_names = ['other']
+    self.mox.StubOutWithMock(frontendsearchpipeline, '_StartBackendSearch')
+    frontendsearchpipeline._StartBackendSearch(
+      self.mr, ['proj'], [789],
+      mox.IsA(tracker_pb2.ProjectIssueConfig),
       unfiltered_iids, {}, nonviewable_iids, set(), self.services).AndReturn([])
     self.mox.StubOutWithMock(frontendsearchpipeline, '_FinishBackendSearch')
     frontendsearchpipeline._FinishBackendSearch([])

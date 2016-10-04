@@ -76,9 +76,6 @@ class BackendSearchPipeline(object):
     self.result_iids = None  # Sorted issue IDs that match the query
     self.search_limit_reached = False  # True if search results limit is hit.
 
-    # Projects that contain the result issues.
-    self.issue_projects = {p.project_id: p for p in self.query_project_list}
-
     self._MakePromises()
 
   def _MakePromises(self):
