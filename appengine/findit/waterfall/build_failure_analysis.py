@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import collections
+from collections import defaultdict
 import os
 import re
 
@@ -233,7 +233,7 @@ class _Justification(object):
 
   def __init__(self):
     self._score = 0
-    self._hints = collections.defaultdict(int)
+    self._hints = defaultdict(int)
 
   @property
   def score(self):
@@ -565,7 +565,7 @@ def _CheckFiles(failure_signal, change_log, deps_info):
     failure; otherwise None.
   """
   # Use a dict to map each file name of the touched files to their occurrences.
-  file_name_occurrences = collections.defaultdict(int)
+  file_name_occurrences = defaultdict(int)
   for touched_file in change_log['touched_files']:
     change_type = touched_file['change_type']
     if (change_type in (ChangeType.ADD, ChangeType.COPY,
@@ -600,9 +600,53 @@ def _CheckFiles(failure_signal, change_log, deps_info):
     return justification.ToDict()
 
 
+class _CLInfo(object):
+  """A object of information we need for a suspected CL.
+
+  The information is specific to current build.
+  """
+  def __init__(self):
+    self.failures = defaultdict(list)
+    self.top_score = 0
+    self.url = None
+
+
+def _SaveFailureToMap(
+    cl_failure_map, new_suspected_cl_dict, step_name, test_name, top_score):
+  """Saves a failure's info to the cl that caused it."""
+  cl_key = (
+      new_suspected_cl_dict['repo_name'], new_suspected_cl_dict['revision'],
+      new_suspected_cl_dict['commit_position'])
+
+  if test_name:
+    cl_failure_map[cl_key].failures[step_name].append(test_name)
+  else:
+    cl_failure_map[cl_key].failures[step_name] = []
+  # Ignores the case where in the same build for the same cl,
+  # we have different scores.
+  # Not sure if we need to handle it since it should be rare.
+  cl_failure_map[cl_key].top_score = (
+      cl_failure_map[cl_key].top_score or top_score)
+  cl_failure_map[cl_key].url = (
+      cl_failure_map[cl_key].url or new_suspected_cl_dict['url'])
+
+
+def _ConvertCLFailureMapToList(cl_failure_map):
+  suspected_cls = []
+  for cl_key, cl_info in cl_failure_map.iteritems():
+    suspected_cl = {}
+    (suspected_cl['repo_name'], suspected_cl['revision'],
+     suspected_cl['commit_position']) = cl_key
+    suspected_cl['url'] = cl_info.url
+    suspected_cl['failures'] = cl_info.failures
+    suspected_cl['top_score'] = cl_info.top_score
+
+    suspected_cls.append(suspected_cl)
+  return suspected_cls
+
 def AnalyzeBuildFailure(
     failure_info, change_logs, deps_info, failure_signals):
-  """Analyze the given failure signals, and figure out culprit CLs.
+  """Analyzes the given failure signals, and figure out culprit CLs.
 
   Args:
     failure_info (dict): Output of pipeline DetectFirstFailurePipeline.
@@ -639,6 +683,21 @@ def AnalyzeBuildFailure(
         ...
       ]
     }
+
+    And a list of suspected_cls format as below:
+    [
+        {
+            'repo_name': 'chromium',
+            'revision': 'r98_1',
+            'commit_position': None,
+            'url': None,
+            'failures': {
+                'b': ['Unittest2.Subtest1', 'Unittest3.Subtest2']
+            },
+            'top_score': 4
+        },
+        ...
+    ]
   """
   analysis_result = {
       'failures': []
@@ -646,7 +705,7 @@ def AnalyzeBuildFailure(
 
   if not failure_info['failed'] or not failure_info['chromium_revision']:
     # Bail out if no failed step or no chromium revision.
-    return analysis_result
+    return analysis_result, []
 
   def CreateCLInfoDict(justification_dict, build_number, change_log):
     # TODO(stgao): remove hard-coded 'chromium' when DEPS file parsing is
@@ -665,7 +724,9 @@ def AnalyzeBuildFailure(
 
   failed_steps = failure_info['failed_steps']
   builds = failure_info['builds']
-  master_name = failure_info.get('master_name')
+  master_name = failure_info['master_name']
+
+  cl_failure_map = defaultdict(_CLInfo)
 
   for step_name, step_failure_info in failed_steps.iteritems():
     is_test_level = step_failure_info.get('tests') is not None
@@ -716,6 +777,10 @@ def AnalyzeBuildFailure(
               test_analysis_result['suspected_cls'].append(
                   new_suspected_cl_dict)
 
+              _SaveFailureToMap(
+                  cl_failure_map, new_suspected_cl_dict, step_name, test_name,
+                  max(justification_dict['hints'].values()))
+
           # Checks Files on step level using step level signals
           # regardless of test level signals so we can make sure
           # no duplicate justifications added to the step result.
@@ -726,11 +791,18 @@ def AnalyzeBuildFailure(
           if not justification_dict:
             continue
 
-          step_analysis_result['suspected_cls'].append(
-              CreateCLInfoDict(justification_dict, build_number,
-                               change_logs[revision]))
+          new_suspected_cl_dict = CreateCLInfoDict(
+              justification_dict, build_number, change_logs[revision])
+          step_analysis_result['suspected_cls'].append(new_suspected_cl_dict)
+
+          if not is_test_level:
+            _SaveFailureToMap(
+                cl_failure_map, new_suspected_cl_dict, step_name, None,
+                max(justification_dict['hints'].values()))
 
     # TODO(stgao): sort CLs by score.
     analysis_result['failures'].append(step_analysis_result)
 
-  return analysis_result
+  suspected_cls = _ConvertCLFailureMapToList(cl_failure_map)
+
+  return analysis_result, suspected_cls

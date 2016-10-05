@@ -33,6 +33,24 @@ class ListAnalysesTest(testing.AppengineTestCase):
     analysis.put()
     return analysis
 
+  def _GetSuspectedCLs(self, analysis_result):
+    """Returns the suspected CLs we found in analysis."""
+    suspected_cls = []
+    if not analysis_result or not analysis_result['failures']:
+      return suspected_cls
+
+    for failure in analysis_result['failures']:
+      for suspected_cl in failure['suspected_cls']:
+        cl_info = {
+            'repo_name': suspected_cl['repo_name'],
+            'revision': suspected_cl['revision'],
+            'commit_position': suspected_cl['commit_position'],
+            'url': suspected_cl['url']
+        }
+        if cl_info not in suspected_cls:
+          suspected_cls.append(cl_info)
+    return suspected_cls
+
   def _AddAnalysisResults(self):
     """Create and store dummy data."""
     analyses = []
@@ -245,8 +263,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
     }
 
     for analysis in analyses:
-      analysis.suspected_cls = identify_culprit_pipeline._GetSuspectedCLs(
-          analysis.result)
+      analysis.suspected_cls = self._GetSuspectedCLs(analysis.result)
       analysis.result_status = (identify_culprit_pipeline.
           _GetResultAnalysisStatus(analysis.result))
       analysis.put()

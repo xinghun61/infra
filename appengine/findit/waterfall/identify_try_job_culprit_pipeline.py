@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from collections import defaultdict
+import copy
 import logging
 
 from google.appengine.ext import ndb
@@ -11,6 +12,7 @@ from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
 from common.waterfall import failure_type
+from model import analysis_approach_type
 from model import analysis_status
 from model import result_status
 from model.wf_analysis import WfAnalysis
@@ -18,6 +20,7 @@ from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
+from waterfall import suspected_cl_util
 
 
 GIT_REPO = GitRepository(
@@ -51,13 +54,14 @@ def _GetResultAnalysisStatus(analysis, result):
   return old_result_status
 
 
-def _GetSuspectedCLs(analysis, result):
+def _GetSuspectedCLs(analysis, try_job_type, result, culprits):
   """Returns a list of suspected CLs.
 
   Args:
     analysis: The WfAnalysis entity corresponding to this try job.
-    result: A result dict containing the culprit from the results of
-      this try job.
+    try_job_type: Try job type, COMPILE or TEST, the same with failure type.
+    result: A result dict containing the result of this try job.
+    culprits: A list of suspected CLs found by the try job.
 
   Returns:
     A combined list of suspected CLs from those already in analysis and those
@@ -65,37 +69,19 @@ def _GetSuspectedCLs(analysis, result):
   """
   suspected_cls = analysis.suspected_cls[:] if analysis.suspected_cls else []
   suspected_cl_revisions = [cl['revision'] for cl in suspected_cls]
-  culprit = result.get('culprit')
-  compile_cl_info = culprit.get('compile')
 
-  if compile_cl_info:
-    # Suspected CL is from compile failure.
-    revision = compile_cl_info.get('revision')
+  for revision, try_job_suspected_cl in culprits.iteritems():
+    suspected_cl_copy = copy.deepcopy(try_job_suspected_cl)
     if revision not in suspected_cl_revisions:
       suspected_cl_revisions.append(revision)
-      suspected_cls.append(compile_cl_info)
-    return suspected_cls
-
-  # Suspected CLs are from test failures.
-  for results in culprit.itervalues():
-    if results.get('revision'):
-      # Non swarming test failures, only have step level failure info.
-      revision = results.get('revision')
-      cl_info = {
-          'url': results.get('url'),
-          'repo_name': results.get('repo_name'),
-          'revision': results.get('revision'),
-          'commit_position': results.get('commit_position')
-      }
-      if revision not in suspected_cl_revisions:
-        suspected_cl_revisions.append(revision)
-        suspected_cls.append(cl_info)
-    else:
-      for test_cl_info in results['tests'].values():
-        revision = test_cl_info.get('revision')
-        if revision not in suspected_cl_revisions:
-          suspected_cl_revisions.append(revision)
-          suspected_cls.append(test_cl_info)
+      if try_job_type == failure_type.COMPILE:
+        failures = {'compile': []}
+      else:
+        failures = _GetTestFailureCausedByCL(
+          result.get('report', {}).get('result', {}).get(revision))
+      suspected_cl_copy['failures'] = failures
+      suspected_cl_copy['top_score'] = None
+      suspected_cls.append(suspected_cl_copy)
 
   return suspected_cls
 
@@ -168,10 +154,6 @@ def _GetCulpritsForTestsFromResultsDict(blame_list, test_results):
         culprit_map[step] = {
             'tests': {}
         }
-      if (not test_result['failures'] and
-          not culprit_map[step].get('revision')):
-        # Non swarming test failures, only have step level failure info.
-        culprit_map[step]['revision'] = revision
       for failed_test in test_result['failures']:
         # Swarming tests, gets first failed revision for each test.
         if failed_test not in culprit_map[step]['tests']:
@@ -241,6 +223,18 @@ def _NotifyCulprits(master_name, builder_name, build_number, culprits,
         send_notification_right_now=True)
 
 
+def _GetTestFailureCausedByCL(result):
+  if not result:
+    return None
+
+  failures = {}
+  for step_name, step_result in result.iteritems():
+    if step_result['status'] == 'failed':
+      failures[step_name] = step_result['failures']
+
+  return failures
+
+
 class IdentifyTryJobCulpritPipeline(BasePipeline):
   """A pipeline to identify culprit CL info based on try job compile results."""
 
@@ -270,7 +264,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     culprit_map = defaultdict(dict)
     failed_revisions = set()
 
-    # Recipe should return culprits with the farmat as:
+    # Recipe should return culprits with the format as:
     # 'culprits': {
     #     'step1': {
     #         'test1': 'rev1',
@@ -295,11 +289,6 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
   def _UpdateCulpritMapWithCulpritInfo(self, culprit_map, culprits):
     """Fills in commit_position and review url for each failed rev in map."""
     for step_culprit in culprit_map.values():
-      if step_culprit.get('revision'):
-        culprit = culprits[step_culprit['revision']]
-        step_culprit['commit_position'] = culprit['commit_position']
-        step_culprit['url'] = culprit['url']
-        step_culprit['repo_name'] = culprit['repo_name']
       for test_culprit in step_culprit.get('tests', {}).values():
         test_revision = test_culprit['revision']
         test_culprit.update(culprits[test_revision])
@@ -308,12 +297,9 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     """Gets culprit revision for each failure for try job metadata."""
     culprit_data = {}
     for step, step_culprit in culprit_map.iteritems():
-      if step_culprit['tests']:
-        culprit_data[step] = {}
-        for test, test_culprit in step_culprit['tests'].iteritems():
-          culprit_data[step][test] = test_culprit['revision']
-      else:
-        culprit_data[step] = step_culprit['revision']
+      culprit_data[step] = {}
+      for test, test_culprit in step_culprit['tests'].iteritems():
+        culprit_data[step][test] = test_culprit['revision']
     return culprit_data
 
   # Arguments number differs from overridden method - pylint: disable=W0221
@@ -373,13 +359,31 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
       # Update analysis result and suspected CLs with results of this try job if
       # culprits were found.
       updated_result_status = _GetResultAnalysisStatus(analysis, result)
-      updated_suspected_cls = _GetSuspectedCLs(analysis, result)
-
+      updated_suspected_cls = _GetSuspectedCLs(
+          analysis, try_job_type, result, culprits)
       if (analysis.result_status != updated_result_status or
           analysis.suspected_cls != updated_suspected_cls):
         analysis.result_status = updated_result_status
         analysis.suspected_cls = updated_suspected_cls
         analysis.put()
+
+    def UpdateSuspectedCLs():
+      if not culprits:
+        return
+
+      # Creates or updates each suspected_cl.
+      for culprit in culprits.values():
+        revision = culprit['revision']
+        if try_job_type == failure_type.COMPILE:
+          failures = {'compile': []}
+        else:
+          failures = _GetTestFailureCausedByCL(
+              result.get('report', {}).get('result', {}).get(revision))
+
+        suspected_cl_util.UpdateSuspectedCL(
+            culprit['repo_name'], revision, culprit.get('commit_position'),
+            analysis_approach_type.TRY_JOB, master_name, builder_name,
+            build_number, try_job_type, failures, None)
 
     # Store try-job results.
     UpdateTryJobResult()
@@ -394,6 +398,11 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
 
     # Add try-job results to WfAnalysis.
     UpdateWfAnalysisWithTryJobResult()
+
+    # TODO (chanli): Update suspected_cl for builds in the same group with
+    # current build.
+    # Updates suspected_cl.
+    UpdateSuspectedCLs()
 
     _NotifyCulprits(master_name, builder_name, build_number, culprits,
                     heuristic_cls, compile_suspected_cl)

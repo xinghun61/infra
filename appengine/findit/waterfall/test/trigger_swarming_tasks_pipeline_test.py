@@ -5,13 +5,13 @@
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline_handlers
 from common.waterfall import failure_type
+from model.base_build_model import BaseBuildModel
 from model.wf_analysis import WfAnalysis
 from waterfall import trigger_swarming_task_pipeline
 from waterfall import trigger_swarming_tasks_pipeline
 from waterfall.test import wf_testcase
 from waterfall.trigger_swarming_tasks_pipeline import (
     TriggerSwarmingTasksPipeline)
-from waterfall.trigger_swarming_task_pipeline import TriggerSwarmingTaskPipeline
 
 
 class TriggerSwarmingTasksPipelineTest(wf_testcase.WaterfallTestCase):
@@ -75,9 +75,9 @@ class TriggerSwarmingTasksPipelineTest(wf_testcase.WaterfallTestCase):
     }
     expected_failure_result_map = {
         'abc_test': {
-            'Unittest2.Subtest1': '%s/%s/%d' % (
+            'Unittest2.Subtest1': BaseBuildModel.CreateBuildId(
                 master_name, builder_name, build_number),
-            'Unittest3.Subtest2': '%s/%s/%d' % (
+            'Unittest3.Subtest2': BaseBuildModel.CreateBuildId(
                 master_name, builder_name, 1)
         }
     }

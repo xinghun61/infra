@@ -7,11 +7,10 @@ import logging
 
 from google.appengine.ext import ndb
 
-from common import appengine_util
-from common import constants
 from common import time_util
 from common.waterfall import failure_type
 from model import analysis_status
+from model.base_build_model import BaseBuildModel
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from model.wf_failure_group import WfFailureGroup
@@ -21,10 +20,6 @@ from waterfall import waterfall_config
 
 def _ShouldBailOutForOutdatedBuild(build):
   return (time_util.GetUTCNow() - build.start_time).days > 0
-
-
-def _CurrentBuildKey(master_name, builder_name, build_number):
-  return '%s/%s/%d' % (master_name, builder_name, build_number)
 
 
 def _BlameListsIntersection(blame_list_1, blame_list_2):
@@ -270,7 +265,7 @@ def _NeedANewCompileTryJob(
   compile_failure = failure_info['failed_steps'].get('compile', {})
   if compile_failure:
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    analysis.failure_result_map['compile'] = '%s/%s/%d' % (
+    analysis.failure_result_map['compile'] = BaseBuildModel.CreateBuildId(
         master_name, builder_name, compile_failure['first_failure'])
     analysis.put()
 
@@ -280,10 +275,12 @@ def _NeedANewCompileTryJob(
   return False
 
 
-def _CurrentBuildKeyInFailureResultMap(master_name, builder_name, build_number):
+def GetBuildKeyForBuildInfoInFailureResultMap(
+    master_name, builder_name, build_number):
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   failure_result_map = analysis.failure_result_map
-  current_build_key = _CurrentBuildKey(master_name, builder_name, build_number)
+  current_build_key = BaseBuildModel.CreateBuildId(
+      master_name, builder_name, build_number)
   for step_keys in failure_result_map.itervalues():
     for test_key in step_keys.itervalues():
       if test_key == current_build_key:
@@ -302,7 +299,7 @@ def _NeedANewTestTryJob(
                  master_name, builder_name)
     return False
 
-  return _CurrentBuildKeyInFailureResultMap(
+  return GetBuildKeyForBuildInfoInFailureResultMap(
       master_name, builder_name, build_number)
 
 
@@ -337,6 +334,10 @@ def NeedANewTryJob(
   # when notification is ready.
   # We still call _IsBuildFailureUniqueAcrossPlatforms just so we have data for
   # failure groups.
+
+  # TODO(chanli): Add checking for culprits of the group when enabling
+  # single try job: add current build to suspected_cl.builds if the try job for
+  # this group has already completed.
   if need_new_try_job:
     _IsBuildFailureUniqueAcrossPlatforms(
       master_name, builder_name, build_number, try_job_type,

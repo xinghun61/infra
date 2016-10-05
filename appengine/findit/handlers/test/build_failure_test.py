@@ -13,6 +13,7 @@ import webtest
 from handlers import build_failure
 from handlers import handlers_util
 from handlers import result_status
+from model.base_build_model import BaseBuildModel
 from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from model import analysis_status
@@ -122,7 +123,8 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
       self.taskqueue_stub.FlushQueue(queue['name'])
 
     def MockedGetAllTryJobResults(master_name, builder_name, build_number, _):
-      build_key = '%s/%s/%d' % (master_name, builder_name, build_number)
+      build_key = BaseBuildModel.CreateBuildId(
+          master_name, builder_name, build_number)
       return SAMPLE_TRY_JOB_INFO.get(build_key, None)
     self.mock(handlers_util, 'GetAllTryJobResults', MockedGetAllTryJobResults)
 

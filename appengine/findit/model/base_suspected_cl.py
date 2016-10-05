@@ -4,6 +4,8 @@
 
 from google.appengine.ext import ndb
 
+from common import time_util
+
 
 class BaseSuspectedCL(ndb.Model):
   """Represents base information about a suspected cl."""
@@ -38,6 +40,7 @@ class BaseSuspectedCL(ndb.Model):
     instance.repo_name = repo_name
     instance.revision = revision
     instance.commit_position = commit_position
+    instance.identified_time = time_util.GetUTCNow()
     return instance
 
   @classmethod

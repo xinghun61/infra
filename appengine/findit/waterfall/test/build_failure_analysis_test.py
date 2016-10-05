@@ -9,6 +9,7 @@ from common.blame import Region
 from common.change_log import FileChangeInfo
 from common.diff import ChangeType
 from common.git_repository import GitRepository
+from common.waterfall import failure_type
 from waterfall import build_failure_analysis
 from waterfall.failure_signal import FailureSignal
 from waterfall.test import wf_testcase
@@ -539,22 +540,27 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     failure_info = {
         'failed': False,
     }
-    result = build_failure_analysis.AnalyzeBuildFailure(
+    result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs=None, deps_info=None, failure_signals=None)
     self.assertEqual(0, len(result['failures']))
+    self.assertEqual([], suspected_cls)
 
   def testAnalyzeBuildWithoutValidChromiumRevision(self):
     failure_info = {
         'failed': True,
         'chromium_revision': None,
     }
-    result = build_failure_analysis.AnalyzeBuildFailure(
+    result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs=None, deps_info=None, failure_signals=None)
     self.assertEqual(0, len(result['failures']))
+    self.assertEqual([], suspected_cls)
 
   def testAnalyzeBuildFailure(self):
     failure_info = {
         'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 99,
+        'failure_type': failure_type.TEST,
         'failed': True,
         'chromium_revision': 'r99_2',
         'failed_steps': {
@@ -696,15 +702,43 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         ]
     }
 
-    analysis_result = build_failure_analysis.AnalyzeBuildFailure(
+    expected_suspected_cl = [
+        {
+          'repo_name': 'chromium',
+          'revision': 'r99_2',
+          'commit_position': None,
+          'url': None,
+          'failures': {
+            'a': []
+          },
+          'top_score': 2
+        },
+        {
+            'repo_name': 'chromium',
+            'revision': 'r97_1',
+            'commit_position': None,
+            'url': None,
+            'failures': {
+                'b': []
+            },
+            'top_score': 5
+        }
+    ]
+
+    analysis_result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs, deps_info, failure_signals_json)
+
     self.assertEqual(expected_analysis_result, analysis_result)
+    self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
 
   def testAnalyzeBuildFailureTestLevel(self):
     failure_info = {
         'failed': True,
         'chromium_revision': 'r99_2',
         'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 99,
+        'failure_type': failure_type.TEST,
         'failed_steps': {
             'a': {
                 'current_failure': 99,
@@ -975,14 +1009,51 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         ]
     }
 
-    analysis_result = build_failure_analysis.AnalyzeBuildFailure(
+    expected_suspected_cl = [
+        {
+          'repo_name': 'chromium',
+          'revision': 'r99_2',
+          'commit_position': None,
+          'url': None,
+          'failures': {
+            'a': []
+          },
+          'top_score': 2
+        },
+        {
+            'repo_name': 'chromium',
+            'revision': 'r97_1',
+            'commit_position': None,
+            'url': None,
+            'failures': {
+                'b': ['Unittest1.Subtest1']
+            },
+            'top_score': 5
+        },
+        {
+            'repo_name': 'chromium',
+            'revision': 'r98_1',
+            'commit_position': None,
+            'url': None,
+            'failures': {
+                'b': ['Unittest2.Subtest1', 'Unittest3.Subtest2']
+            },
+            'top_score': 4
+        }
+    ]
+
+    analysis_result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs, deps_info, failure_signals_json)
 
     self.assertEqual(expected_analysis_result, analysis_result)
+    self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
 
   def testAnalyzeBuildFailureForUnsupportedStep(self):
     failure_info = {
         'master_name': 'master1',
+        'builder_name': 'b',
+        'build_number': 99,
+        'failure_type': failure_type.TEST,
         'failed': True,
         'chromium_revision': 'r99_2',
         'failed_steps': {
@@ -1021,9 +1092,10 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         ]
     }
 
-    analysis_result = build_failure_analysis.AnalyzeBuildFailure(
+    analysis_result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs, deps_info, failure_signals_json)
     self.assertEqual(expected_analysis_result, analysis_result)
+    self.assertEqual([], suspected_cls)
 
   def testGetGitBlame(self):
     repo_info = {

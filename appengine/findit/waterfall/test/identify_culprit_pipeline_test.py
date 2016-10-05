@@ -5,129 +5,17 @@
 from testing_utils import testing
 
 from common.pipeline_wrapper import pipeline_handlers
+from common.waterfall import failure_type
 from model import analysis_status
 from model import result_status
 from model.wf_analysis import WfAnalysis
+from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import build_failure_analysis
 from waterfall import identify_culprit_pipeline
 
 
 class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
   app_module = pipeline_handlers._APP
-
-  def testGetSuspectedCLs(self):
-    dummy_result = {
-        'failures': [
-            {
-                'step_name': 'a',
-                'first_failure': 98,
-                'last_pass': None,
-                'suspected_cls': [
-                    {
-                        'build_number': 99,
-                        'repo_name': 'chromium',
-                        'revision': 'r99_1',
-                        'commit_position': None,
-                        'url': None,
-                        'score': 1,
-                        'hints': {
-                            'modified f99_2.cc (and it was in log)': 1,
-                        },
-                    }
-                ],
-            },
-            {
-                'step_name': 'b',
-                'first_failure': 98,
-                'last_pass': None,
-                'suspected_cls': [
-                    {
-                        'build_number': 99,
-                        'repo_name': 'chromium',
-                        'revision': 'r99_2',
-                        'commit_position': None,
-                        'url': None,
-                        'score': 5,
-                        'hints': {
-                            'added x/y/f99_1.cc (and it was in log)': 5,
-                        },
-                    }
-                ],
-            }
-        ]
-    }
-
-    expected_suspected_cls = [
-        {
-            'repo_name': 'chromium',
-            'revision': 'r99_1',
-            'commit_position': None,
-            'url': None
-        },
-        {
-            'repo_name': 'chromium',
-            'revision': 'r99_2',
-            'commit_position': None,
-            'url': None
-        }
-    ]
-
-    self.assertEqual(expected_suspected_cls,
-                     identify_culprit_pipeline._GetSuspectedCLs(dummy_result))
-
-  def testGetSuspectedCLsNoDuplicates(self):
-    dummy_result = {
-        'failures': [
-            {
-                'step_name': 'a',
-                'first_failure': 98,
-                'last_pass': None,
-                'suspected_cls': [
-                    {
-                        'build_number': 99,
-                        'repo_name': 'chromium',
-                        'revision': 'r99_1',
-                        'commit_position': None,
-                        'url': None,
-                        'score': 1,
-                        'hints': {
-                            'modified f99_2.cc (and it was in log)': 1,
-                        },
-                    }
-                ],
-            },
-            {
-                'step_name': 'b',
-                'first_failure': 98,
-                'last_pass': None,
-                'suspected_cls': [
-                    {
-                        'build_number': 99,
-                        'repo_name': 'chromium',
-                        'revision': 'r99_1',
-                        'commit_position': None,
-                        'url': None,
-                        'score': 5,
-                        'hints': {
-                            'added x/y/f99_1.cc (and it was in log)': 5,
-                        },
-                    }
-                ],
-            }
-        ]
-    }
-
-    expected_suspected_cls = [
-        {
-            'repo_name': 'chromium',
-            'revision': 'r99_1',
-            'commit_position': None,
-            'url': None
-        }
-    ]
-
-    self.assertEqual(expected_suspected_cls,
-                     identify_culprit_pipeline._GetSuspectedCLs(dummy_result))
 
   def testGetResultAnalysisStatusFoundUntriaged(self):
     dummy_result = {
@@ -211,6 +99,7 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
       'master_name': master_name,
       'builder_name': builder_name,
       'build_number': build_number,
+      'failure_type': failure_type.TEST
     }
     change_logs = {}
     deps_info = {}
@@ -219,7 +108,7 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
     dummy_result = {'failures': []}
 
     def MockAnalyzeBuildFailure(*_):
-      return dummy_result
+      return dummy_result, []
 
     self.mock(build_failure_analysis,
               'AnalyzeBuildFailure', MockAnalyzeBuildFailure)
@@ -238,3 +127,54 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
     self.assertIsNone(analysis.result_status)
     self.assertEqual(expected_suspected_cls, analysis.suspected_cls)
+
+  def testSaveSuspectedCLs(self):
+    suspected_cls = [
+        {
+            'repo_name': 'chromium',
+            'revision': 'r98_1',
+            'commit_position': None,
+            'url': None,
+            'failures': {
+                'b': ['Unittest2.Subtest1', 'Unittest3.Subtest2']
+            },
+            'top_score': 4
+        }
+    ]
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 98
+    test_type = failure_type.TEST
+
+    identify_culprit_pipeline._SaveSuspectedCLs(
+        suspected_cls, master_name, builder_name, build_number, test_type)
+
+    suspected_cl = WfSuspectedCL.Get('chromium', 'r98_1')
+    self.assertIsNotNone(suspected_cl)
+
+  def testGetSuspectedCLsWithOnlyCLInfo(self):
+    suspected_cls = [
+        {
+            'repo_name': 'chromium',
+            'revision': 'r98_1',
+            'commit_position': None,
+            'url': None,
+            'failures': {
+                'b': ['Unittest2.Subtest1', 'Unittest3.Subtest2']
+            },
+            'top_score': 4
+        }
+    ]
+
+    expected_new_suspected_cls = [
+        {
+            'repo_name': 'chromium',
+            'revision': 'r98_1',
+            'commit_position': None,
+            'url': None
+        }
+    ]
+
+    self.assertEqual(
+        expected_new_suspected_cls,
+        identify_culprit_pipeline._GetSuspectedCLsWithOnlyCLInfo(suspected_cls))
