@@ -56,8 +56,6 @@ class GetServiceEventTest(unittest.TestCase):
     code_version = [
       {'source_url': 'https://fake.url/thing',
        'revision': '708329c2aeece8aac33af6a5a772ffb14b55903f'},
-      {'source_url': 'svn://fake_svn.url/other_thing',
-       'revision': '123456'},
       {'source_url': 'https://other_fake.url/yet_another_thing',
        'version': 'v2.0'},
       {'source_url': 'https://other_fake2.url/yet_another_thing2',
@@ -73,23 +71,15 @@ class GetServiceEventTest(unittest.TestCase):
     self.assertEqual(code_version_p[0].source_url,
                      code_version[0]['source_url'])
     self.assertEqual(code_version_p[0].git_hash, code_version[0]['revision'])
-    self.assertFalse(code_version_p[0].HasField('svn_revision'))
 
     self.assertEqual(code_version_p[1].source_url,
                      code_version[1]['source_url'])
-    self.assertEqual(code_version_p[1].svn_revision,
-                     int(code_version[1]['revision']))
-    self.assertFalse(code_version_p[1].HasField('git_hash'))
+    self.assertEqual(code_version_p[1].version,
+                     code_version[1]['version'])
 
     self.assertEqual(code_version_p[2].source_url,
                      code_version[2]['source_url'])
-    self.assertFalse(code_version_p[2].HasField('svn_revision'))
-    self.assertEqual(code_version_p[2].version,
-                     code_version[2]['version'])
-
-    self.assertEqual(code_version_p[3].source_url,
-                     code_version[3]['source_url'])
-    self.assertEqual(code_version_p[3].dirty, True)
+    self.assertEqual(code_version_p[2].dirty, True)
 
   def test_get_service_event_stop(self):
     self.assertIsInstance(config._router, router._Router)
