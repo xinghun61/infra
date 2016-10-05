@@ -13,6 +13,6 @@ def GetDescriptionForFailureType(failure_type):  # pragma: no cover.
       UNKNOWN: 'unknown',
       INFRA: 'infra',
       COMPILE: 'compile',
-      TEST: 'test',
+      TEST: 'test'
   }
   return description.get(failure_type, 'No description for %s' % failure_type)

@@ -5,14 +5,16 @@
 from google.appengine.ext import ndb
 
 from model import analysis_status as status
-from model.wf_suspected_cl import WfSuspectedCL
+from model.base_suspected_cl import BaseSuspectedCL
 
 
-class WfCulprit(WfSuspectedCL):
+class WfCulprit(BaseSuspectedCL):
   """Represents a culprit that causes a group of failures on Chromium waterfall.
 
   'Wf' is short for waterfall.
   """
+  # The list of builds in which the culprit caused some breakage.
+  builds = ndb.JsonProperty(indexed=False)
 
   # When the code-review of this culprit was notified.
   cr_notification_time = ndb.DateTimeProperty(indexed=True)
@@ -27,3 +29,12 @@ class WfCulprit(WfSuspectedCL):
   @property
   def cr_notified(self):
     return self.cr_notification_status == status.COMPLETED
+
+  @classmethod
+  def Create(cls, repo_name, revision, commit_position):  # pragma: no cover
+    instance = cls(key=cls._CreateKey(repo_name, revision))
+    instance.repo_name = repo_name
+    instance.revision = revision
+    instance.commit_position = commit_position
+    instance.builds = []
+    return instance

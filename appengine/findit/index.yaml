@@ -15,6 +15,17 @@ indexes:
   - name: created_time
     direction: desc
 
+- kind: WfSuspectedCL
+  properties:
+  - name: status
+    direction: asc
+  - name: approaches
+    direction: asc
+  - name: failure_type
+    direction: asc
+  - name: updated_time
+    direction: desc
+
 # For fracas crash dashboard.
 - kind: FracasCrashAnalysis
   properties:

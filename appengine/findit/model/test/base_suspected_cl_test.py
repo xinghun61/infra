@@ -4,10 +4,10 @@
 
 import unittest
 
-from model.wf_suspected_cl import WfSuspectedCL
+from model.base_suspected_cl import BaseSuspectedCL
 
 
-class WfSuspectedCLTest(unittest.TestCase):
+class BaseSuspectedCLTest(unittest.TestCase):
   def testProjectName(self):
-    culprit = WfSuspectedCL.Create('chromium', 'r1', 123)
+    culprit = BaseSuspectedCL.Create('chromium', 'r1', 123)
     self.assertEqual('chromium', culprit.project_name)
