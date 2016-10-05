@@ -17,6 +17,7 @@ from google.appengine.api import users
 from google.appengine.ext import ndb
 
 from apiclient.errors import HttpError
+from findit import findit
 import gae_ts_mon
 from issue_tracker import issue_tracker_api, issue
 from model.flake import (
@@ -215,6 +216,11 @@ class ProcessIssue(webapp2.RequestHandler):
           occ.issue_id = issue_id
     ndb.put_multi(new_flaky_runs)
 
+  @staticmethod
+  @ndb.non_transactional
+  def _report_flakes_to_findit(flake, flaky_runs):
+    findit.FindItAPI().flake(flake, flaky_runs)
+
   @ndb.transactional
   def _update_issue(self, api, flake, new_flakes, now):
     """Updates an issue on the issue tracker."""
@@ -271,6 +277,8 @@ class ProcessIssue(webapp2.RequestHandler):
     flake.num_reported_flaky_runs = len(flake.occurrences)
     flake.issue_last_updated = now
 
+    self._report_flakes_to_findit(flake, new_flakes)
+
   @ndb.transactional
   def _create_issue(self, api, flake, new_flakes, now):
     _, qlabel = get_queue_details(flake.name)
@@ -305,6 +313,8 @@ class ProcessIssue(webapp2.RequestHandler):
     self.issue_updates.increment_by(1, {'operation': 'create'})
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
                  flake.name)
+
+    self._report_flakes_to_findit(flake, new_flakes)
 
     # Find all flakes in the current flakiness period to compute metrics. The
     # flakiness period is a series of flakes with a gap no larger than

@@ -1,51 +1,8 @@
 """Provides API wrapper for the codesite issue tracker"""
 
-import httplib2
-import logging
-import time
-
-from apiclient import discovery
-from apiclient.errors import HttpError
+from endpoints import endpoints
 from issue_tracker.issue import Issue
 from issue_tracker.comment import Comment
-from oauth2client.appengine import AppAssertionCredentials
-
-
-# TODO(akuegel): Do we want to use a different timeout? Do we want to use a
-# cache? See documentation here:
-# https://github.com/jcgregorio/httplib2/blob/master/python2/httplib2/__init__.py#L1142
-def _createHttpObject(scope):  # pragma: no cover
-  credentials = AppAssertionCredentials(scope=scope)
-  return credentials.authorize(httplib2.Http())
-
-
-def _buildClient(api_name, api_version, http,
-                 discovery_url):  # pragma: no cover
-  # This occassionally hits a 503 "Backend Error". Hopefully a simple retry
-  # can recover.
-  tries_left = 5
-  tries_wait = 10
-  while tries_left:
-    tries_left -= 1
-    try:
-      client = discovery.build(
-          api_name, api_version,
-          discoveryServiceUrl=discovery_url,
-          http=http)
-      break
-    except HttpError as e:
-      if tries_left:
-        logging.error(
-            'apiclient.discovery.build() failed for %s: %s', api_name, e)
-        logging.error(
-            'Retrying apiclient.discovery.build() in %s seconds.', tries_wait)
-        time.sleep(tries_wait)
-      else:
-        logging.exception(
-            'apiclient.discovery.build() failed for %s too many times.',
-            api_name)
-        raise e
-  return client
 
 
 class IssueTrackerAPI(object):  # pragma: no cover
@@ -54,24 +11,9 @@ class IssueTrackerAPI(object):  # pragma: no cover
   """A wrapper around the issue tracker api."""
   def __init__(self, project_name):
     self.project_name = project_name
-
-    self.client = _buildClient(
-        'monorail', 'v1',
-        _createHttpObject('https://www.googleapis.com/auth/userinfo.email'),
-        'https://monorail-prod.appspot.com/_ah/api/discovery/v1/apis/{api}/'
-        '{apiVersion}/rest')
-
-  def _retry_api_call(self, request, num_retries=5):
-    retries = 0
-    while True:
-      try:
-        return request.execute()
-      except HttpError as e:
-        # This retries internal server (500, 503) and quota (403) errors.
-        if retries == num_retries or e.resp.status not in [403, 500, 503]:
-          raise
-        time.sleep(2**retries)
-        retries += 1
+    self.client = endpoints.build_client(
+        'monorail', 'v1', 'https://monorail-prod.appspot.com/_ah/api/discovery'
+        '/v1/apis/{api}/{apiVersion}/rest')
 
   def create(self, issue, send_email=True):
     body = {}
@@ -91,7 +33,7 @@ class IssueTrackerAPI(object):  # pragma: no cover
       body['cc'] = [{'name': user} for user in issue.cc]
     request = self.client.issues().insert(
         projectId=self.project_name, sendEmail=send_email, body=body)
-    tmp = self._retry_api_call(request)
+    tmp = endpoints._retry__request(request)
     issue.id = int(tmp['id'])
     issue.dirty = False
     return issue
@@ -129,7 +71,7 @@ class IssueTrackerAPI(object):  # pragma: no cover
     request = self.client.issues().comments().insert(
         projectId=self.project_name, issueId=issue.id, sendEmail=send_email,
         body=body)
-    self._retry_api_call(request)
+    endpoints.retry_request(request)
 
     if issue.owner == '----':
       issue.owner = ''
@@ -145,7 +87,7 @@ class IssueTrackerAPI(object):  # pragma: no cover
     request = self.client.issues().comments().list(
         projectId=self.project_name, issueId=issue_id, startIndex=1,
         maxResults=0)
-    feed = self._retry_api_call(request)
+    feed = endpoints.retry_request(request)
     return feed.get('totalResults', '0')
 
   def getComments(self, issue_id):
@@ -153,7 +95,7 @@ class IssueTrackerAPI(object):  # pragma: no cover
 
     request = self.client.issues().comments().list(
         projectId=self.project_name, issueId=issue_id)
-    feed = self._retry_api_call(request)
+    feed = endpoints.retry_request(request)
     rtn.extend([Comment(entry) for entry in feed['items']])
     total_results = feed['totalResults']
     if not total_results:
@@ -162,7 +104,7 @@ class IssueTrackerAPI(object):  # pragma: no cover
     while len(rtn) < total_results:
       request = self.client.issues().comments().list(
           projectId=self.project_name, issueId=issue_id, startIndex=len(rtn))
-      feed = self._retry_api_call(request)
+      feed = endpoints.retry_request(request)
       rtn.extend([Comment(entry) for entry in feed['items']])
 
     return rtn
@@ -171,7 +113,7 @@ class IssueTrackerAPI(object):  # pragma: no cover
     request = self.client.issues().comments().list(
         projectId=self.project_name, issueId=issue_id, startIndex=0,
         maxResults=1)
-    feed = self._retry_api_call(request)
+    feed = endpoints.retry_request(request)
     if 'items' in feed and len(feed['items']) > 0:
       return Comment(feed['items'][0])
     return None
@@ -181,7 +123,7 @@ class IssueTrackerAPI(object):  # pragma: no cover
     request = self.client.issues().comments().list(
         projectId=self.project_name, issueId=issue_id,
         startIndex=total_results-1, maxResults=1)
-    feed = self._retry_api_call(request)
+    feed = endpoints.retry_request(request)
     if 'items' in feed and len(feed['items']) > 0:
       return Comment(feed['items'][0])
     return None
@@ -190,5 +132,5 @@ class IssueTrackerAPI(object):  # pragma: no cover
     """Retrieve a set of issues in a project."""
     request = self.client.issues().get(
         projectId=self.project_name, issueId=issue_id)
-    entry = self._retry_api_call(request)
+    entry = endpoints.retry_request(request)
     return Issue(entry)
