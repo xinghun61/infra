@@ -19,6 +19,7 @@
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
 <link rel="import" href="../elements/som-alert-item.html">
+<link rel="import" href="../elements/som-annotation-manager-behavior.html">
 <link rel="import" href="../elements/som-bug-queue.html">
 <link rel="import" href="../elements/som-drawer.html">
 <link rel="import" href="../elements/som-examine.html">
@@ -48,10 +49,12 @@
       }
       h2, h3 {
         font-weight: bold;
+        font-size: 18px;
+      }
+      .header {
         padding: 0.5em 0.5em 0.2em;
         margin: 1em 0.5em;
         background-color: #eee;
-        border-bottom: 1px solid #ddd;
       }
       #alertsListInner h2 {
         font-size: 22px;
@@ -107,7 +110,10 @@
         padding: 1em;
       }
       .severity-title {
-        font-size: 18px;
+        padding: 0.5em 0.5em 0.2em;
+        margin: 1em 0.5em;
+        background-color: #eee;
+        border-bottom: 1px solid #ddd;
       }
       .som-title {
         font-weight: bold;
@@ -131,20 +137,6 @@
       }
     </style>
     <iron-location id="url" path="{{_path}}" url-space-regex="^(?!(/_ah/|/auth/))"></iron-location>
-    <iron-ajax
-        auto
-        id="annotations"
-        url="/api/v1/annotations"
-        handle-as="json"
-        last-error="{{_annotationsJsonError}}"
-        last-response="{{annotationsJson}}"
-        debounce-duration="300"></iron-ajax>
-    <iron-ajax
-        id="annotationPost"
-        method="post"
-        handle-as="json"
-        last-error="{{_annotationPostError}}"
-        on-response="_postResponse"></iron-ajax>
     <paper-drawer-panel responsive-width="1024px">
       <paper-header-panel drawer>
         <paper-toolbar>
@@ -155,8 +147,16 @@
             Sheriff-o-Matic
           </span>
         </paper-toolbar>
-        <som-drawer id="drawer" tree="[[_tree]]" path="{{_path}}" static-pages="[[_staticPages]]"
-          show-infra-failures="{{showInfraFailures}}" use-uberify="{{useUberify}}" trees="{{_trees}}"></som-drawer>
+        <som-drawer
+            id="drawer"
+            tree="[[_tree]]"
+            path="{{_path}}"
+            static-pages="[[_staticPages]]"
+            show-infra-failures="{{showInfraFailures}}"
+            use-uberify="{{useUberify}}"
+            trees="{{_trees}}"
+            use-compact-view="{{useCompactView}}"
+            ></som-drawer>
       </paper-header-panel>
       <paper-header-panel main id="mainHeaderPanel" class="flex layout vertical">
         <paper-toolbar>
@@ -181,9 +181,16 @@
                 Start at the top and try to clear all the alerts. Help links are provided for additional guidance.
               </div>
             </div>
+            <div>
+              <template is="dom-if" if="[[_haveAnnotationError(annotationError.*)]]">
+                <span class="error header">
+                  [[annotationError.action]] failed: [[annotationError.message]]
+                </span>
+              </template>
+            </div>
             <som-bug-queue id="bugQueue" bug-queue-label="[[_bugQueueLabel]]"></som-bug-queue>
             <div id="alertsListInner">
-              <h2>[[_treeDisplayName]] Failure Alerts (<a href="/help-som">Help?</a>)</h2>
+              <h2 class="header">[[_treeDisplayName]] Failure Alerts (<a href="/help-som">Help?</a>)</h2>
               <div id="fetchAlertsError" hidden=[[!_fetchAlertsError]]>[[_fetchAlertsError]]</div>
               <template is="dom-if" if="[[!_hideJulie]]">
                 <div id="noAlerts">
@@ -193,18 +200,32 @@
                 </div>
               </template>
               <template is="dom-repeat" items="[[_computeSeverities(_alerts)]]" as="sev">
-                <h3 class="severity-title">[[_getSeverityTitle(sev)]]:</h3>
+                <div class="severity-title layout horizontal justified">
+                  <h3 class="self-center">[[_getSeverityTitle(sev)]]:</h3>
+                  <template is="dom-if" if="[[useCompactView]]">
+                    <div class="self-center end section-buttons">
+                      <paper-button raised on-tap="collapseAll">
+                        Collapse all
+                      </paper-button>
+                      <paper-button raised on-tap="expandAll">
+                        Expand all
+                      </paper-button>
+                    </div>
+                  </template>
+                </div>
                 <template is="dom-repeat" items="[[_alertsWithSeverity(_alerts, sev)]]" as="alert">
                   <div class="list-item" tabindex$="[[tabIndex]]">
                     <som-alert-item
                         alert="{{alert}}"
                         tree="[[_tree]]"
                         selected="[[selected]]"
-                        annotation="[[_computeAnnotation(annotations, alert)]]"
+                        annotation="[[computeAnnotation(annotations, alert)]]"
                         use-uberify="[[useUberify]]"
                         on-annotation-change="_handleAnnotation"
                         on-link-bug="_handleLinkBug"
                         on-snooze="_handleSnooze"
+                        on-opened-change="_handleOpenedChange"
+                        use-compact-view="[[useCompactView]]"
                     ></som-alert-item>
                   </div>
                 </template>
@@ -216,7 +237,7 @@
               <som-alert-item
                   alert="{{_examinedAlert}}"
                   tree="[[_tree]]"
-                  annotation="[[_computeAnnotation(annotations, _examinedAlert)]]"
+                  annotation="[[computeAnnotation(annotations, _examinedAlert)]]"
                   use-uberify="[[useUberify]]"
                   on-annotation-change="_handleAnnotation"
                   on-link-bug="_handleLinkBug"
@@ -279,6 +300,7 @@
 
     Polymer({
       is: 'som-app',
+      behaviors: [AnnotationManagerBehavior],
       properties: {
         _activeRequests: {
           type: Number,
@@ -303,26 +325,13 @@
           computed: '_computeAlertsGroups(_tree, _trees)',
           observer: '_alertsGroupsChanged',
         },
-        // We don't convert the array into an object because the polymer data
-        // binding doesn't seem to like mutations to an object, but it's fine
-        // watching and notifying about changes to an array :/
-        annotations: {
-          type: Object,
-          value: function() { return {}; },
-          computed: '_computeAnnotations(annotationsJson)',
+        annotationError: {
+         type: Object,
+         value: function() { return {}; },
         },
-        annotationsJson: Array,
         _lastUpdated: {
           type: Date,
           computed: '_computeLastUpdated(_alertsTimes.*)',
-        },
-        _annotationsJsonError: {
-          type: Object,
-          value: function() { return {}; },
-        },
-        _annotationPostError: {
-          type: Object,
-          value: function() { return {}; },
         },
         _bugErrorMessage: String,
         _bugInput: {
@@ -415,6 +424,7 @@
           computed: '_computeExaminedAlertKey(_path)',
         },
         user: String,
+        useCompactView: Boolean,
         useUberify: Boolean,
         xsrfToken: String,
       },
@@ -423,13 +433,30 @@
         this.async(this._refreshAsync, refreshDelayMs);
       },
 
+      ready: function() {
+        this._fetchAnnotations();
+      },
+
+      _fetchAnnotations: function() {
+        this.annotationError.action = "Fetching all annotations";
+        this.fetchAnnotations().catch((error) => {
+          let old = this.annotationError;
+          this.annotationError.message = error;
+          this.notifyPath('annotationError.message');
+        });
+      },
+
+      _haveAnnotationError: function(annotationError) {
+        return !!annotationError.base.message;
+      },
+
       ////////////////////// Refresh ///////////////////////////
 
       _refresh: function() {
         if (!this._refreshEnabled) {
           return;
         }
-        this.$.annotations.generateRequest();
+        this._fetchAnnotations();
         this.$.bugQueue.refresh();
         this.$.treeStatus.refresh();
         this._alertsGroupsChanged(this._alertsGroups);
@@ -630,11 +657,20 @@
         }
 
         allAlerts.sort((a, b) => {
-          let aAnn = this._computeAnnotation(annotations, a);
-          let bAnn = this._computeAnnotation(annotations, b);
+          let aAnn = this.computeAnnotation(annotations, a);
+          let bAnn = this.computeAnnotation(annotations, b);
 
           if (aAnn.snoozed == bAnn.snoozed) {
-            return a.severity - b.severity;
+            if(a.severity != b.severity) {
+              return a.severity - b.severity;
+            }
+            if (a.title < b.title) {
+              return -1;
+            }
+            if (a.title > b.title) {
+              return 1;
+            }
+            return 0;
           }
 
           return aAnn.snoozed ? 1 : -1;
@@ -660,7 +696,7 @@
       _alertsWithSeverity: function(alerts, severity) {
         return alerts.filter(function(alert) {
           return alert.severity == severity;
-        })
+        });
       },
 
 
@@ -691,56 +727,54 @@
 
       ////////////////////// Annotations ///////////////////////////
 
-      _computeAnnotations: function(annotationsJson) {
-        let annotations = {};
-        if (!annotationsJson) {
-          return annotations;
+      collapseAll: function(evt) {
+        if (!this.useCompactView) {
+          return;
         }
-        annotationsJson.forEach(function(annotation) {
-          annotations[annotation.key] = annotation;
+
+        this.mutateLocalState((newState) => {
+          this._alertsWithSeverity(this._alerts, evt.model.dataHost.dataHost.sev).forEach((alr) => {
+            newState[alr.key] = Object.assign(newState[alr.key] || {}, {opened: false});
+          })
         });
-        return annotations;
       },
 
-      _computeAnnotation: function(annotations, alert) {
-        let key = alert.key;
+      expandAll: function(evt) {
+        if (!this.useCompactView) {
+          return;
+        }
 
-        let ann = annotations[key];
-        return {
-          key: key,
-          snoozed: ann && ann.snoozeTime ? Date.now() < ann.snoozeTime : false,
-          bugs: ann && ann.bugs,
-        };
+        this.mutateLocalState((newState) => {
+          this._alertsWithSeverity(this._alerts, evt.model.dataHost.dataHost.sev).forEach((alr) => {
+            newState[alr.key] = Object.assign(newState[alr.key] || {}, {opened: true});
+          })
+        });
+      },
+
+      _handleOpenedChange: function(evt) {
+        this.setLocalStateKey(evt.target.alert.key, {opened: evt.detail.value});
       },
 
       _handleAnnotation: function(evt) {
-        this._sendAnnotation(
-          evt.target.alert.key, evt.detail.type,
-          evt.detail.change);
-      },
+        this.annotationError.action = "Fetching all annotations";
+        let request = this.sendAnnotation(
+          evt.target.alert.key, evt.detail.type, evt.detail.change);
 
-      _postResponse: function(evt) {
-        let response = evt.detail.response;
-        let annotations = this.annotations;
-        annotations[response.key] = response;
-        let newArray = [];
-        Object.keys(annotations).forEach(function(k) {
-          newArray.push(annotations[k]);
-        });
-        this.annotationsJson = newArray;
-      },
-
-      _sendAnnotation: function(key, type, change) {
-        let data = {
-          xsrf_token: this.xsrfToken,
-          data: change,
+        if (request) {
+          request.then((response) => {
+            this.setLocalStateKey(response.key, {
+              opened: false
+            });
+          }).catch((error) => {
+            let old = this.annotationError;
+            this.annotationError.message = error;
+            this.notifyPath('annotationError.message');
+          });
         }
-        this.$.annotationPost.body = JSON.stringify(data);
-        this.$.annotationPost.url = '/api/v1/annotations/' + key + '/' + type;
-        return this.$.annotationPost.generateRequest();
       },
 
       ////////////////////// Bugs ///////////////////////////
+
       _commentForBug: function(bugModel) {
         let result = bugModel.title + '\n\nType: ' + bugModel.type + '\n\n';
         if (bugModel.extension) {
@@ -784,16 +818,20 @@
 
       _saveBug: function() {
         // TODO(add proper error handling)
-        let request = this._sendAnnotation(
+        let request = this.sendAnnotation(
           this._bugModel.key, 'add', {
             bugs: [this.$.bug.value]
           }
         );
         if (request) {
-          request.completes.then(() => {
+          request.then((response) => {
             this._bugErrorMessage = '';
             this.$.bug.value = '';
             this.$.bugDialog.close();
+
+            this.setLocalStateKey(response.key, {
+              opened: false
+            });
           }, (error) => {
             this._bugErrorMessage = error;
           });
@@ -811,18 +849,24 @@
 
       _snooze: function() {
         // TODO(add proper error handling)
-        this._sendAnnotation(
+        let request = this.sendAnnotation(
           this._snoozeModel.key, 'add', {
             snoozeTime: Date.now() + ONE_MIN_MS * this.$.snoozeTime.value
           }
-        ).completes.then(() => {
-          this.$.snoozeTime.value = '';
-          this.$.snoozeDialog.close();
-        }, (error) => {
-          this._snoozeErrorMessage = error;
-        });
-      },
+        );
+        if (request) {
+          request.then((response) => {
+            this.$.snoozeTime.value = '';
+            this.$.snoozeDialog.close();
 
+            this.setLocalStateKey(response.key, {
+              opened: false
+            });
+          }, (error) => {
+            this._snoozeErrorMessage = error;
+          });
+        }
+      },
     });
   })();
   </script>

@@ -45,7 +45,6 @@
   });
 
   suite('basic tests', function() {
-
     test('renders bare minimum', function() {
       element._alertsData = {
         test: []
@@ -103,97 +102,11 @@
     });
   });
 
-  suite('annotations', function() {
+  suite('alert streams', function() {
     var clock;
 
     setup(function() {
       clock = sinon.useFakeTimers();
-    });
-
-    teardown(function() {
-      server.restore();
-    });
-
-    test('gets annotations from server', function(done) {
-      element.$.annotations.generateRequest();
-      server.respondWith(
-        'GET',
-        '/api/v1/annotations', [
-          200,
-          responseHeaders.json,
-          '[{"key":"foobar"}]'
-        ]
-      );
-      server.respond();
-
-      flush(function () {
-        assert.deepEqual(element.annotations, {foobar: {key: 'foobar'}});
-        done();
-      });
-    });
-
-    test('annotation request hits the server', function(done) {
-      let data = {
-        bugs: ["123123"],
-        snoozeTime: null,
-        key: "annKey"
-      };
-      element.annotationsJson = [];
-      server.respondWith('POST', '/api/v1/annotations/annKey/add', [
-          200,
-          responseHeaders.json,
-          JSON.stringify(data)
-      ]);
-      element._sendAnnotation("annKey", 'add', [data]);
-      server.respond();
-
-      flush(function() {
-        assert.deepEqual(element.annotations, {annKey: data});
-        done();
-      });
-    });
-
-    test('compute annotations object correctly', function() {
-      let annotations = [{key: 'foo', bugs: ['bar']}];
-      assert.deepEqual({
-        foo: {
-          key: 'foo',
-          bugs: ['bar']
-        }
-      }, element._computeAnnotations(annotations));
-    });
-
-    test('compute per item annotation correctly', function() {
-      clock.tick(100);
-      let annotations = {
-        foo: {
-          key: 'foo',
-          snoozeTime: 0,
-        },
-        bar: {
-          key: 'bar',
-          bugs: ["bar"],
-        }
-      };
-
-      assert.deepEqual(element._computeAnnotation(annotations, {key: 'foo'}), {
-          key: 'foo',
-          snoozed: false,
-          bugs: undefined,
-        });
-
-      annotations.foo.snoozeTime = 200;
-      assert.deepEqual(element._computeAnnotation(annotations, {key: 'foo'}), {
-          key: 'foo',
-          snoozed: true,
-          bugs:undefined,
-        });
-
-      assert.deepEqual(element._computeAnnotation(annotations, {key: 'bar'}), {
-          key: 'bar',
-          snoozed: false,
-          bugs:['bar'],
-        });
     });
 
     test('merge multiple alert streams', function() {
@@ -326,7 +239,7 @@
     });
 
     test('save bug saves an annotation', function() {
-      let sendStub = sinon.stub(element, '_sendAnnotation');
+      let sendStub = sinon.stub(element, 'sendAnnotation');
 
       element.$.bug.value = 'bar';
       element._bugModel = {key: 'foo'};

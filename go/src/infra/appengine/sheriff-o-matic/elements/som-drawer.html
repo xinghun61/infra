@@ -48,6 +48,7 @@
     <som-settings
         show-infra-failures="{{showInfraFailures}}"
         use-uberify="{{useUberify}}"
+        use-compact-view="{{useCompactView}}"
         default-tree="{{defaultTree}}"
     ></som-settings>
     <paper-menu attr-for-selected="value" selected="[[tree]]" selectable="paper-item" id="menu">
@@ -64,6 +65,7 @@
       <h2><iron-icon icon="settings"></iron-icon>Settings</h2>
       <div class="vertical layout">
         <paper-checkbox checked="{{showInfraFailures}}">Show infra failures</paper-checkbox>
+        <paper-checkbox checked="{{useCompactView}}">Use compact alerts view</paper-checkbox>
         <paper-checkbox checked="{{useUberify}}">Use uberchromegw</paper-checkbox>
       </div>
     </paper-menu>
@@ -99,6 +101,10 @@
           type: Object,
           notify: true,
           computed: '_computeTrees(_treeList)',
+        },
+        useCompactView: {
+          type: Boolean,
+          notify: true,
         },
         useUberify: {
           type: Boolean,

@@ -1,0 +1,134 @@
+<link rel="import" href="../bower_components/iron-ajax/iron-request.html">
+
+<script>
+  function jsonParsePromise(resp) {
+    if (!resp.ok) {
+      throw Error(resp.statusText);
+    }
+    return resp.json();
+  }
+  // Manages annotation state. Includes a localState object, which holds local
+  // annotations to alerts.
+  //
+  // Note: Must have a xrsf token property on object which has this behavior.
+  AnnotationManagerBehavior = {
+    properties: {
+      // All alert annotations. Includes values from localState.
+      annotations: {
+        type: Object,
+        value: function() { return {}; },
+        computed: '_computeAnnotations(_annotationsResp, localState)'
+      },
+      // The raw response from the server of annotations.
+      _annotationsResp: {
+        type: Array,
+        value: function() { return []; },
+      },
+      // Local in browser annotations for alerts, like if the alert is collapsed
+      // or not.
+      localState: {
+        type: Object,
+        value: function() { return {}; },
+      },
+    },
+
+    _computeAnnotations: function(annotationsJson, localState) {
+      let annotations = {};
+      if (!annotationsJson) {
+        annotationsJson = [];
+      }
+
+      Object.keys(localState).forEach((key) => {
+        annotations[key] = localState[key];
+      });
+      annotationsJson.forEach((annotation) => {
+        // If we've already added something here through local state, copy that
+        // over.
+        if (annotations[annotation.key]) {
+          Object.assign(annotation, annotations[annotation.key]);
+        }
+        annotations[annotation.key] = annotation;
+      });
+      return annotations;
+    },
+
+    // Compute the annotation for a given alert.
+    computeAnnotation: function(annotations, alert) {
+      let key = alert.key;
+
+      let ann = annotations[key];
+      let returnVal = {
+        key: key,
+      };
+
+      if( ann && ann.snoozeTime != undefined) {
+        returnVal.snoozed = Date.now() < ann.snoozeTime;
+      }
+
+      if (ann && ann.bugs != undefined)  {
+        returnVal.bugs = ann.bugs
+      }
+
+      returnVal.opened = (ann && ann.opened ) || false;
+      return returnVal;
+    },
+
+    // Handle the result of the response of a post to the server.
+    _postResponse: function(response) {
+      let annotations = this.annotations;
+      annotations[response.key] = response;
+      let newArray = [];
+      Object.keys(annotations).forEach((k) => {
+        newArray.push(annotations[k]);
+      });
+      this._annotationsResp = newArray;
+
+      return response;
+    },
+
+    // Fetches new annotations from the server.
+    fetchAnnotations: function() {
+      return window.fetch('/api/v1/annotations', {
+        credentials: 'include'
+      }).then(jsonParsePromise).then((req) => {
+        this._annotationsResp = [];
+        this._annotationsResp = req;
+      });
+    },
+
+    // Mutating local state. This exists because we often change the value of
+    // items in localState. The key to these items is the alert key, which often
+    // has periods in it, making calls to notifyPath not work. So, we follow
+    // the instructions at
+    // https://www.polymer-project.org/1.0/docs/devguide/model-data#override-dirty-check
+    mutateLocalState: function(callback){
+      let old = this.localState;
+      callback(old);
+      this.localState = {};
+      this.localState = old;
+    },
+
+    // Send an annotation change. Also updates the in memory annotation database.
+    // Returns a promise of the POST request to the server to carry out the
+    // annotation change.
+    sendAnnotation: function(key, type, change) {
+      let data = {
+        xsrf_token: this.xsrfToken,
+        data: change,
+      }
+
+      return window.fetch('/api/v1/annotations/' + key + '/' + type, {
+        body: JSON.stringify(data),
+        method: 'POST',
+        credentials: 'include',
+      }).then(jsonParsePromise).then(this._postResponse.bind(this));
+    },
+
+    // Set a key in local state.
+    setLocalStateKey: function(key, newValues){
+      this.mutateLocalState((newState) => {
+        newState[key] = Object.assign(newState[key] || {}, newValues)
+      });
+    },
+  };
+</script>

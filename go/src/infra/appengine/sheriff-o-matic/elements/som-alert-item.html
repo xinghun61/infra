@@ -4,6 +4,7 @@
 <link rel="import" href="../bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-ripple/paper-ripple.html">
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../elements/som-extension-build-failure.html">
 <link rel="import" href="../elements/som-uberify-behavior.html">
@@ -52,6 +53,10 @@
        align-items: center;
        padding-bottom: 0.25em;
        border-bottom: 1px dotted #ddd;
+       position: relative;
+     }
+     .alert-title-bar:hover {
+       cursor: pointer;
      }
      .examine-link {
        padding: 0 10px;
@@ -66,24 +71,28 @@
      .snoozed {
        opacity: 0.5;
      }
+
+     #expand-tip {
+       color: #a9a9a9;
+       font-size: 13.3333px;
+       padding-right: 1em;
+     }
      #bugsList .bug {
-       font-size: 0.9em;
+       font-size: 0.8em;
        background: #eee;
        border-radius: 15px;
-       padding: 0 2px 0 15px;
+       padding: 1px 2px 1px 5px;
        display: inline-block;
-       margin: 2px;
-       line-height: 30px;
+       margin: 0 2px;
        white-space: nowrap;
        overflow: hidden;
      }
      #bugsList .bug paper-icon-button {
        color: #666;
-       float: right;
-       margin: 0 3px;
-       padding: 5px;
-       height: 30px;
-       width: 30px;
+       padding: 0;
+       margin: 0 2px;
+       height: 15px;
+       width: 15px;
        -webkit-transition: all .3s ease;
        transition: all .3s ease;
        border-radius: 50%;
@@ -96,9 +105,15 @@
      #handleLink {
        margin-left: 15px;
      }
+     #collapse {
+       transition: height 3s ease;
+     }
      #link-bug,
      #snooze {
        font-size: 0.9em;
+     }
+     #ripple {
+       pointer-events: none;
      }
      #root {
        transition: opacity .25s;
@@ -110,7 +125,9 @@
     <div id="root" class$="[[_cssClass]]">
       <div class$="[[_classForAlert(alert, selected)]]">
         <div class="list-item">
-          <div class="alert-title-bar horizontal layout justified">
+          <div class="alert-title-bar horizontal layout justified" on-tap="toggle">
+            <paper-ripple>
+            </paper-ripple>
             <div class="horizontal layout wrap">
               <div class="layout horizontal flex-child">
                 <div class="alert-title self-center">[[alert.title]]</div>
@@ -118,7 +135,7 @@
                   [<a href="[[_helpLinkForAlert(alert)]]" target="_blank">Help</a>]
                 </div>
               </div>
-              <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links flex">
+              <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links self-center flex">
                 <template is="dom-repeat" items="[[annotation.bugs]]" as="bug">
                   <div class="bug">
                     <a target="_blank" href$="[[bug]]">[[_bugLabel(bug)]]</a>
@@ -127,11 +144,18 @@
                 </template>
               </div>
             </div>
-            <div class="alert-times">
-              [[_duration]]
+            <div class="horizontal layout end">
+              <template is="dom-if" if="[[useCompactView]]">
+                <span id="expand-tip" class="layout end">
+                  Click to expand
+                </span>
+              </template>
+              <div class="alert-times">
+                [[_duration]]
+              </div>
             </div>
           </div>
-          <div class="alert-expanded layout horizontal wrap">
+          <div id="collapse" hidden$="[[_isHidden(annotation.opened, useCompactView)]]" class="alert-expanded layout horizontal wrap">
             <div class="alert-controls layout horizontal center flex-child">
               <a href$="[[tree]]/examine/[[alert.key]]" class="examine-link" hidden$="[[examining]]">Examine</a>
               <a href$="[[tree]]" class="examine-link" hidden$="[[!examining]]">[[tree]]</a>
@@ -228,6 +252,7 @@
           type: String,
           computed: '_formatTimestamp(alert.start_time)'
         },
+        useCompactView: Boolean,
       },
 
       _bugLabel: function(bugUrl) {
@@ -313,6 +338,30 @@
         } else {
           this.fire('snooze');
         }
+        evt.preventDefault();
+      },
+
+      toggle: function(evt) {
+        let path = evt.path;
+        for (let i = 0; i < path.length; i ++) {
+          let itm = path[i];
+          if (itm.classList && itm.classList.contains('bug')) {
+            // Clicking on a bug shouldn't affect toggled state.
+            return;
+          }
+        }
+
+        this.fire('opened-change', {
+          value: !this.annotation.opened
+        });
+      },
+
+      _isHidden: function(opened, useCompactView) {
+        if (!useCompactView) {
+          return false;
+        }
+
+        return opened ? false : true;
       },
     });
   })();

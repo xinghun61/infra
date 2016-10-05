@@ -14,7 +14,7 @@
   ],
   "dependencies": {
     "iron-ajax": "PolymerElements/iron-ajax#~1.1.1",
-    "iron-fit-behavior": "PolymerElements/iron-fit-behavior#~1.0.5",
+    "iron-fit-behavior": "PolymerElements/iron-fit-behavior#~1.2.0",
     "iron-page-url": "PolymerElements/iron-page-url#~0.7.0",
     "iron-test-helpers": "PolymerElements/iron-test-helpers#~1.1.3",
     "paper-button": "PolymerElements/paper-button#^1.0.11",
@@ -42,6 +42,7 @@
     "paper-listbox": "polymerelements/paper-listbox#^1.1.2",
     "paper-checkbox": "PolymerElements/paper-checkbox#^1.2.0",
     "iron-a11y-keys": "^1.0.6",
-    "iron-localstorage": "^1.0.6"
+    "iron-localstorage": "^1.0.6",
+    "paper-ripple": "PolymerElements/paper-ripple#^1.0.9"
   }
 }

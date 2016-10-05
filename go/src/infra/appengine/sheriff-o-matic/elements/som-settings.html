@@ -10,6 +10,9 @@
       name="showInfraFailures"
       value="{{showInfraFailures}}"></iron-localstorage>
     <iron-localstorage
+      name="useCompactView"
+      value="{{useCompactView}}"></iron-localstorage>
+    <iron-localstorage
       name="useUberify"
       value="{{useUberify}}"
       on-iron-localstorage-load-empty="_initializeTrue"></iron-localstorage>
@@ -27,6 +30,10 @@
           notify: true,
         },
         showInfraFailures: {
+          type: Boolean,
+          notify: true,
+        },
+        useCompactView: {
           type: Boolean,
           notify: true,
         },
