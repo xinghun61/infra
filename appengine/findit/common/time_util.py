@@ -33,7 +33,7 @@ def RemoveMicrosecondsFromDelta(delta):
 def FormatTimedelta(delta):
   if not delta:
     return None
-  hours, remainder = divmod(delta.seconds, 3600)
+  hours, remainder = divmod(delta.total_seconds(), 3600)
   minutes, seconds = divmod(remainder, 60)
   return '%02d:%02d:%02d' % (hours, minutes, seconds)
 

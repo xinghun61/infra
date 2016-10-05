@@ -3,9 +3,12 @@
 # found in the LICENSE file.
 
 import json
+import mock
+import re
 
 import endpoints
 from google.appengine.api import taskqueue
+import webtest
 
 from testing_utils import testing
 
@@ -702,3 +705,53 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(
         expected_payload_json,
         json.loads(self.taskqueue_requests[0].get('payload')))
+
+  @mock.patch.object(
+      findit_api.flake_analysis_service,
+      'ScheduleAnalysisForFlake', return_value=None)
+  def testUnauthorizedRequestToAnalyzeFlake(self, _mocked_object):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=False)
+
+    flake = {
+        'name': 'suite.test',
+        'is_step': False,
+        'bug_id': 123,
+        'build_steps': [
+            {
+                'master_name': 'm',
+                'builder_name': 'b',
+                'build_number': 456,
+                'step_name': 'name (with patch) on Windows-7-SP1',
+            }
+        ]
+    }
+
+    self.assertRaisesRegexp(
+        webtest.app.AppError,
+        re.compile('.*401 Unauthorized.*',
+                   re.MULTILINE | re.DOTALL),
+        self.call_api, 'AnalyzeFlake', body=flake)
+
+  @mock.patch.object(
+      findit_api.flake_analysis_service,
+      'ScheduleAnalysisForFlake', return_value=True)
+  def testAuthorizedRequestToAnalyzeFlake(self, _mocked_object):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+
+    flake = {
+        'name': 'suite.test',
+        'is_step': False,
+        'bug_id': 123,
+        'build_steps': [
+            {
+                'master_name': 'm',
+                'builder_name': 'b',
+                'build_number': 456,
+                'step_name': 'name (with patch) on Windows-7-SP1',
+            }
+        ]
+    }
+
+    response = self.call_api('AnalyzeFlake', body=flake)
+    self.assertEqual(200, response.status_int)
+    self.assertTrue(response.json_body.get('analysis_triggered'))

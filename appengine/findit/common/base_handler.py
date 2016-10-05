@@ -10,6 +10,7 @@ from google.appengine.api import users
 import jinja2
 import webapp2
 
+from common import auth_util
 from common import constants
 
 
@@ -48,16 +49,16 @@ class BaseHandler(webapp2.RequestHandler):
       # Only give access to google accounts or admins.
       return self.IsCorpUserOrAdmin()
     elif self.PERMISSION_LEVEL == Permission.ADMIN:
-      return users.is_current_user_admin()
+      return auth_util.IsCurrentUserAdmin()
     else:
       logging.error('Unknown permission level: %s' % self.PERMISSION_LEVEL)
       return False
 
   def IsCorpUserOrAdmin(self):
     """Returns True if the user logged in with corp account or as admin."""
-    user = users.get_current_user()
-    return ((user and user.email().endswith('@google.com')) or
-        users.is_current_user_admin())
+    user_email = auth_util.GetUserEmail()
+    return ((user_email and user_email.endswith('@google.com')) or
+        auth_util.IsCurrentUserAdmin())
 
   @staticmethod
   def CreateError(error_message, return_code=500):
@@ -144,10 +145,8 @@ class BaseHandler(webapp2.RequestHandler):
     self.response.write(data)
 
   def GetLoginUrl(self):
-    if self.request.referer:
-      return users.create_login_url(self.request.referer)
-    else:
-      return users.create_login_url(self.request.uri)
+    """Returns the login url."""
+    return users.create_login_url(self.request.referer or self.request.uri)
 
   def _Handle(self, handler_func):
     try:

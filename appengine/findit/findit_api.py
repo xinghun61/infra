@@ -7,6 +7,7 @@
 Current APIs include:
 1. Analysis of compile/test failures in Chromium waterfalls.
    Analyzes failures and detects suspected CLs.
+2. Analysis of flakes on Commit Queue.
 """
 
 import json
@@ -18,13 +19,17 @@ from protorpc import messages
 from protorpc import remote
 
 from common import appengine_util
+from common import auth_util
 from common import constants
+from common import time_util
 from common.waterfall import failure_type
+from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
 from waterfall import buildbot
 from waterfall import waterfall_config
+from waterfall.flake import flake_analysis_service
 
 
 # This is used by the underlying ProtoRpc when creating names for the ProtoRPC
@@ -78,6 +83,33 @@ class _BuildFailureAnalysisResult(messages.Message):
 class _BuildFailureAnalysisResultCollection(messages.Message):
   """Represents a response to the client, eg. builder_alerts."""
   results = messages.MessageField(_BuildFailureAnalysisResult, 1, repeated=True)
+
+
+class _BuildStep(messages.Message):
+  master_name = messages.StringField(1, required=True)
+  builder_name = messages.StringField(2, required=True)
+  build_number = messages.IntegerField(
+      3, variant=messages.Variant.INT32, required=True)
+  step_name = messages.StringField(4, required=True)
+
+
+class _Flake(messages.Message):
+  name = messages.StringField(1, required=True)
+  is_step = messages.BooleanField(2, required=False, default=False)
+  bug_id = messages.IntegerField(
+      3, variant=messages.Variant.INT32, required=True)
+  build_steps = messages.MessageField(_BuildStep, 4, repeated=True)
+
+
+class _Build(messages.Message):
+  master_name = messages.StringField(1, required=True)
+  builder_name = messages.StringField(2, required=True)
+  build_number = messages.IntegerField(
+      3, variant=messages.Variant.INT32, required=True)
+
+
+class _FlakeAnalysis(messages.Message):
+  analysis_triggered = messages.BooleanField(1, required=True)
 
 
 def _TriggerNewAnalysesOnDemand(builds):
@@ -250,3 +282,28 @@ class FindItApi(remote.Service):
       logging.exception('Failed to trigger new analyses on demand.')
 
     return _BuildFailureAnalysisResultCollection(results=results)
+
+  @endpoints.method(_Flake, _FlakeAnalysis, path='flake', name='flake')
+  def AnalyzeFlake(self, request):
+    """Analyze a flake on Commit Queue. Currently only supports flaky tests."""
+    user_email = auth_util.GetUserEmail()
+    is_admin = auth_util.IsCurrentUserAdmin()
+
+    def CreateFlakeAnalysisRequest(flake):
+      analysis_request = FlakeAnalysisRequest.Create(
+          flake.name, flake.is_step, flake.bug_id)
+      for step in flake.build_steps:
+        analysis_request.AddBuildStep(step.master_name, step.builder_name,
+                                      step.build_number, step.step_name,
+                                      time_util.GetUTCNow())
+      return analysis_request
+
+    logging.info('Flake: %s', CreateFlakeAnalysisRequest(request))
+    analysis_triggered = flake_analysis_service.ScheduleAnalysisForFlake(
+        CreateFlakeAnalysisRequest(request), user_email, is_admin)
+
+    if analysis_triggered is None:
+      raise endpoints.UnauthorizedException(
+          'No permission for a new analysis! User is %s' % user_email)
+
+    return _FlakeAnalysis(analysis_triggered=analysis_triggered)
