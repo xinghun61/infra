@@ -28,26 +28,6 @@
 
 module('loader');
 
-test('loading steps', 1, function() {
-    resetGlobals();
-    var loadedSteps = [];
-    g_history._handleLocationChange = function() {
-        deepEqual(loadedSteps, ['step 1', 'step 2']);
-    }
-    var resourceLoader = new loader.Loader();
-    function loadingStep1() {
-        loadedSteps.push('step 1');
-        resourceLoader.load();
-    }
-    function loadingStep2() {
-        loadedSteps.push('step 2');
-        resourceLoader.load();
-    }
-
-    resourceLoader._loadingSteps = [loadingStep1, loadingStep2];
-    resourceLoader.load();
-});
-
 // Total number of assertions is 1 for the deepEqual of the builder lists
 // and then 2 per builder (one for ok, one for deepEqual of tests).
 test('results files loading', 13, function() {
@@ -56,7 +36,7 @@ test('results files loading', 13, function() {
     var expectedLoadedBuilderKeys =  ['chromium.webkit:WebKit Linux', 'chromium.webkit:WebKit Linux (dbg)', 'chromium.webkit:WebKit Linux (deps)', 'chromium.webkit:WebKit Mac10.7', 'chromium.webkit:WebKit Win', 'chromium.webkit:WebKit Win (dbg)'];
     var loadedBuilderKeys = [];
     var resourceLoader = new loader.Loader();
-    resourceLoader._loadNext = function() {
+    resourceLoader._completeLoading = function() {
         deepEqual(loadedBuilderKeys.sort(), expectedLoadedBuilderKeys);
         loadedBuilderKeys.forEach(function(builderKey) {
             ok('secondsSinceEpoch' in g_resultsByBuilder[builderKey]);
@@ -128,7 +108,7 @@ test('addBuilderLoadErrors', 1, function() {
 
     resourceLoader._builderKeysThatFailedToLoad = ['FailMaster1:FailBuilder1', 'FailMaster2.fyi:FailBuilder2'];
     resourceLoader._staleBuilderKeys = ['StaleMaster:StaleBuilder'];
-    resourceLoader._addErrors();
+    resourceLoader._completeLoading();
     resourceLoader.showErrors();
     equal(resourceLoader._errors._containerElement.innerHTML,
           '<div><h3>Data is missing for builders:</h3><ul>' +

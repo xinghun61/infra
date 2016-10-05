@@ -61,11 +61,6 @@ loader.request = function(url, success, error, opt_isBinaryData)
 
 loader.Loader = function()
 {
-    this._loadingSteps = [
-        this._loadBuilders,
-        this._loadResultsFiles,
-    ];
-
     this._builderKeysThatFailedToLoad = [];
     this._staleBuilderKeys = [];
     this._errors = new ui.Errors();
@@ -97,7 +92,8 @@ loader.Loader._flattenTrie = function(trie, prefix)
 loader.Loader.prototype = {
     load: function()
     {
-        this._loadNext();
+        this._builders = builders.getBuilders(this._history.crossDashboardState.testType);
+        this._loadResultsFiles();
     },
     showErrors: function()
     {
@@ -109,28 +105,12 @@ loader.Loader.prototype = {
     staleBuilderKeys: function() {
         return this._staleBuilderKeys;
     },
-    _loadNext: function()
-    {
-        var loadingStep = this._loadingSteps.shift();
-        if (!loadingStep) {
-            this._addErrors();
-            this._history.initialize();
-            return;
-        }
-        loadingStep.apply(this);
-    },
-    _loadBuilders: function()
-    {
-        this._builders = builders.getBuilders(this._history.crossDashboardState.testType);
-        this._loadNext();
-    },
     _loadResultsFiles: function()
     {
-        if (this._builders.length)
+        if (this._builders && this._builders.length)
             this._builders.forEach(this._loadResultsFileForBuilder.bind(this));
         else
-            this._loadNext();
-
+            this._completeLoading();
     },
     _loadResultsFileForBuilder: function(builder)
     {
@@ -220,8 +200,9 @@ loader.Loader.prototype = {
     },
     _handleResourceLoad: function()
     {
-        if (this._haveResultsFilesLoaded())
-            this._loadNext();
+        if (this._haveResultsFilesLoaded()) {
+          this._completeLoading();
+        }
     },
     _haveResultsFilesLoaded: function()
     {
@@ -232,14 +213,18 @@ loader.Loader.prototype = {
         }
         return true;
     },
-    _addErrors: function()
+    _completeLoading: function()
     {
+        // Add errors
         if (this._builderKeysThatFailedToLoad.length) {
             this._errors.addMissing(this._builderKeysThatFailedToLoad);
         }
         if (this._staleBuilderKeys.length) {
             this._errors.addStale(this._staleBuilderKeys);
         }
+
+        // Display page
+        this._history.initialize();
     }
 }
 
