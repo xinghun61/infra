@@ -48,9 +48,20 @@ google-chrome ./coverage/lcov-report/index.html
 ```
 
 To deploy:
+
+First create a new CL for the RELNOTES.md update. Then run:
 ```sh
-make deploy
+go run ../../tools/relnotes/relnotes.go -app sheriff-o-matic
 ```
+
+Copy and paste the output into the top of `README.md` and make any manual edits
+if necessary. You can also use the optional flags `-since-date YYYY-MM-DD` or
+`-since-hash=<git short hash>` if you need to manually specify the range
+of commits to include. Then:
+
+- Send the RELNOTES.md update CL for review by OWNERS.
+- Land CL.
+- run `make deploy-prod`
 
 ## Configuring and populating devserver SoM with alerts
 
