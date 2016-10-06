@@ -106,7 +106,7 @@ import:
   - user
   - cmd/aedeploy
 - package: cloud.google.com/go
-  version: 9409d3d8cd1df211d448094ae1e4ca95b0e17130
+  version: master
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -192,6 +192,9 @@ import:
 - package: github.com/go-sql-driver/mysql
   version: master
   repo: https://chromium.googlesource.com/external/github.com/go-sql-driver/mysql.git
+- package: github.com/DATA-DOG/go-sqlmock
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/DATA-DOG/go-sqlmock.git
 - package: github.com/mitchellh/go-homedir
   version: master
   repo: https://chromium.googlesource.com/external/github.com/mitchellh/go-homedir.git
