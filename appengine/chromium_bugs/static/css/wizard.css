@@ -118,6 +118,11 @@ div.activestep .wizstep {
     margin-bottom: .7em;
 }
 
+.wizmenu td:nth-of-type(2) {
+    min-width: 10em;
+    padding-right: 1em;
+}
+
 th {
    text-align: right;
 }

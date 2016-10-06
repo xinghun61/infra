@@ -1,0 +1,116 @@
+<dl>
+  <dt>Which <a href="https://bugs.chromium.org/p/chromium/adminComponents" target="_blank">component</a> does this fall under?
+  </dt>
+  <dd>
+    <select name="label1" aria-label="Which component does this fall under?" >
+      <option value="" selected="selected">Not sure - I don't know</option>
+      <option value="Blink>Animation">Blink>Animation</option>
+      <option value="Blink>BackgroundSync">Blink>BackgroundSync</option>
+      <option value="Blink>Bindings">Blink>Bindings</option>
+      <option value="Blink>Bluetooth">Blink>Bluetooth</option>
+      <option value="Blink>Canvas">Blink>Canvas</option>
+      <option value="Blink>Compositing">Blink>Compositing</option>
+      <option value="Blink>CSS">Blink>CSS</option>
+      <option value="Blink>DataTransfer">Blink>DataTransfer</option>
+      <option value="Blink>DOM">Blink>DOM</option>
+      <option value="Blink>Editing">Blink>Editing</option>
+      <option value="Blink>FileAPI">Blink>FileAPI</option>
+      <option value="Blink>Focus">Blink>Focus</option>
+      <option value="Blink>Fonts">Blink>Fonts</option>
+      <option value="Blink>Forms">Blink>Forms</option>
+      <option value="Blink>Fullscreen">Blink>Fullscreen</option>
+      <option value="Blink>GamepadAPI">Blink>GamepadAPI</option>
+      <option value="Blink>GetUserMedia">Blink>GetUserMedia</option>
+      <option value="Blink>HitTesting">Blink>HitTesting</option>
+      <option value="Blink>HTML">Blink>HTML</option>
+      <option value="Blink>Image">Blink>Image</option>
+      <option value="Blink>Input">Blink>Input</option>
+      <option value="Blink>Internals">Blink>Internals</option>
+      <option value="Blink>Javascript">Blink>Javascript</option>
+      <option value="Blink>Layout">Blink>Layout</option>
+      <option value="Blink>Loader">Blink>Loader</option>
+      <option value="Blink>Location">Blink>Location</option>
+      <option value="Blink>Media">Blink>Media</option>
+      <option value="Blink>MediaStream">Blink>MediaStream</option>
+      <option value="Blink>MemoryAllocator">Blink>MemoryAllocator</option>
+      <option value="Blink>Messaging">Blink>Messaging</option>
+      <option value="Blink>Network">Blink>Network</option>
+      <option value="Blink>Paint">Blink>Paint</option>
+      <option value="Blink>Payments">Blink>Payments</option>
+      <option value="Blink>PerformanceAPIs">Blink>PerformanceAPIs</option>
+      <option value="Blink>PermissionsAPI">Blink>PermissionsAPI</option>
+      <option value="Blink>PresentationAPI">Blink>PresentationAPI</option>
+      <option value="Blink>PushAPI">Blink>PushAPI</option>
+      <option value="Blink>SavePage">Blink>SavePage</option>
+      <option value="Blink>Scheduling">Blink>Scheduling</option>
+      <option value="Blink>Scroll">Blink>Scroll</option>
+      <option value="Blink>SecurityFeature">Blink>SecurityFeature</option>
+      <option value="Blink>ServiceWorker">Blink>ServiceWorker</option>
+      <option value="Blink>Speech">Blink>Speech</option>
+      <option value="Blink>Storage">Blink>Storage</option>
+      <option value="Blink>SVG">Blink>SVG</option>
+      <option value="Blink>TextAutosize">Blink>TextAutosize</option>
+      <option value="Blink>TextEncoding">Blink>TextEncoding</option>
+      <option value="Blink>TextSelection">Blink>TextSelection</option>
+      <option value="Blink>USB">Blink>USB</option>
+      <option value="Blink>Vibration">Blink>Vibration</option>
+      <option value="Blink>ViewSource">Blink>ViewSource</option>
+      <option value="Blink>WebAudio">Blink>WebAudio</option>
+      <option value="Blink>WebComponents">Blink>WebComponents</option>
+      <option value="Blink>WebCrypto">Blink>WebCrypto</option>
+      <option value="Blink>WebFonts">Blink>WebFonts</option>
+      <option value="Blink>WebGL">Blink>WebGL</option>
+      <option value="Blink>WebMIDI">Blink>WebMIDI</option>
+      <option value="Blink>WebRTC">Blink>WebRTC</option>
+      <option value="Blink>WebShare">Blink>WebShare</option>
+      <option value="Blink>WebVR">Blink>WebVR</option>
+      <option value="Blink>WindowDialog">Blink>WindowDialog</option>
+      <option value="Blink>Workers">Blink>Workers</option>
+      <option value="Blink>XML">Blink>XML</option>
+    </select>
+  </dd>
+
+  <dt>Do you have a reduced test case?
+  </dt>
+  <dd>
+    <label><input type="radio" name="reduced" value="Yes">
+	  Yes - Please attach the file here</label><br>
+    <div style="padding:1em; padding-top:0">
+      <div id="reduced_attachmentarea"></div>
+      <div id="reduced_attachprompt">
+        <img width="15" height="15" src="/static/images/paperclip.gif" border="0"
+	     ><a href="#" onclick="addAttachmentFields('reduced_'); return false" id="reduced_attachafile">Attach a file</a>
+        <span id="reduced_attachmaxsize" style="margin-left:1.2em; display:none">Max. attachments: 10.0 MB</span>
+      </div>
+    </div>
+
+    <label><input type="radio" name="reduced" value="No">
+	  No - I realize that it is harder to resolve problems that lack test cases</label>
+  </dd>
+
+  <dt>Does this feature work correctly in other browsers?
+  </dt>
+  <dd>
+    <p>Tip: Use <a href="https://www.browserstack.com/" target="_blank">browserstack.com</a>
+      to compare behavior on different browser versions.
+    </p>
+    <select name="works_others" onchange="exposeQuestion(this.value, 'works_which', ['No'])"
+	    aria-label="Does this feature work correctly in other browsers?" >
+      <option value="N/A" selected="selected">Not sure - I don't know</option>
+      <option value="Yes">Yes - This is just a Chromium problem</option>
+      <option value="No">No - I can reproduce the problem in another browser</option>
+    </select>
+
+  </dd>
+
+  <dt id="q_works_which" class="conditional">Details of interop issue</dt>
+  <dd id="a_works_which" class="conditional">
+   <p>Please describe what the behavior is on other browsers and link to any
+     <a href="https://browser-issue-tracker-search.appspot.com/" target="_blank"
+	>existing bugs</a>.</p>
+   <textarea name="works_which" cols="60" rows="4" 
+	     aria-label="Details of interoperability issue" ></textarea>
+
+  </dd>
+
+</dl>

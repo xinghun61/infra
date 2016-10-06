@@ -11,15 +11,15 @@ var debug = $("debug");
 
 function guessChannel(json_data) {
     if (json_data && json_data['channel']) {
-	$("channel").value = json_data['channel'];
+        $("channel").value = json_data['channel'];
     }
 }
 
 
 function getFlashVersion() {
     if (FlashDetect) {
-	var flash_version = FlashDetect.raw;
-	$("flashversion").value = flash_version;
+        var flash_version = FlashDetect.raw;
+        $("flashversion").value = flash_version;
     }
 }
 
@@ -32,15 +32,31 @@ function goStep(step_num, opt_focus_id) {
 function showStep(step_num, opt_focus_id) {
     if (!step_num) step_num = 1;
     for (var i = 1; i <= 4; ++i) {
-	var step = $("step" + i);
-	if (step) {
-	    step.className = "";
-	}
+        var step = $("step" + i);
+        if (step) {
+            step.className = "";
+        }
     }
     $("step" + step_num).className = "activestep";
 
     if (opt_focus_id) {
-	$(opt_focus_id).focus();
+        $(opt_focus_id).focus();
+    }
+}
+
+function selectRole(role_name) {
+    $("user_menu").style.display = "none";
+    $("dev_menu").style.display = "none";
+    $(role_name + "_menu").style.display = "";
+    $("next2").disabled = "disabled";
+
+    var devRadios = $("dev_menu").querySelectorAll('input');
+    for (var i = 0; i < devRadios.length; i++) {
+        devRadios[i].checked = "";
+    }
+    var userRadios = $("user_menu").querySelectorAll('input');
+    for (var i = 0; i < userRadios.length; i++) {
+        userRadios[i].checked = "";
     }
 }
 
@@ -57,15 +73,15 @@ function getDetailPanel(component_name) {
     var component_page_name = component_name.replace(/\W/g, "").toLowerCase();
     var xmlhttp = new XMLHttpRequest();
     xmlhttp.onreadystatechange=function() {
-	if (xmlhttp.readyState==4 && xmlhttp.status==200) {
-	    $("detail_area").innerHTML = xmlhttp.responseText;
-	    if ($("put_in_actual_instructions")) {
-		$("actual_instructions").innerHTML = $("put_in_actual_instructions").innerHTML;
-	    }
-	    if ($("put_in_actual_password_warning")) {
-		$("actual_password_warning").innerHTML = $("put_in_actual_password_warning").innerHTML;
-	    }
-	}
+        if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+            $("detail_area").innerHTML = xmlhttp.responseText;
+            if ($("put_in_actual_instructions")) {
+                $("actual_instructions").innerHTML = $("put_in_actual_instructions").innerHTML;
+            }
+            if ($("put_in_actual_password_warning")) {
+                $("actual_password_warning").innerHTML = $("put_in_actual_password_warning").innerHTML;
+            }
+        }
     }
     xmlhttp.open("GET", "ajah/" + component_page_name + ".html?cd=" + Math.random(), true);
     xmlhttp.send();
@@ -81,11 +97,12 @@ var nextFileID = 1;
   * insert it into the page DOM.
   * @param {string} id The id of the parent HTML element.
   */
- function addAttachmentFields(id) {
+ function addAttachmentFields(idPrefix) {
+   idPrefix = idPrefix || '';
    if (nextFileID >= 16) {
      return;
    }
-   var el = $('attachmentarea');
+   var el = $(idPrefix + 'attachmentarea');
    el.style.marginTop = '4px';
    var div = document.createElement('div');
    div.innerHTML = '<input type="file" name="file' + nextFileID +
@@ -96,11 +113,11 @@ var nextFileID = 1;
    el.appendChild(div);
    ++nextFileID;
    if (nextFileID < 16) {
-     $(ATTACHAFILE_ID).innerHTML = 'Attach another file'; // TODO: i18n
+     $(idPrefix + ATTACHAFILE_ID).innerHTML = 'Attach another file'; // TODO: i18n
    } else {
-     $(ATTACHPROMPT_ID).style.display = 'none';
+     $(idPrefix + ATTACHPROMPT_ID).style.display = 'none';
    }
-   $(ATTACHMAXSIZE_ID).style.display = '';
+   $(idPrefix + ATTACHMAXSIZE_ID).style.display = '';
  }
 
 
@@ -118,7 +135,7 @@ var originalDescriptionParts = [
     "about:sync contents: $ABOUT_SYNC",
     "Did this work before? $WORKED_BEFORE $WHEN_WORKED",
     "Is it a problem with Flash or HTML5? $FLASH_OR_HTML5",
-    "Does this work in other browsers? $WORKS_OTHERS $WORKS_WHICH",
+    "Does this work in other browsers? $WORKS_OTHERS\n $WORKS_WHICH",
     ("Chrome version: $CHROMEVERSION  Channel: $CHANNEL\n" +
      "OS Version: $OSVERSION\n"  +
      "Flash Version: $FLASHVERSION"),
@@ -133,15 +150,15 @@ function expandDescriptionPart(descriptionPart) {
     var expandedPart = descriptionPart;
     inputElements = $("input_form").elements;
     for (var i = 0; i < inputElements.length; ++i) {
-	var fieldName = inputElements[i].name;
-	if (fieldName) {
-	    var varName = "$" + fieldName.toUpperCase();
-	    var newValue = "";
-	    if (inputElements[i].value) {
-		newValue = inputElements[i].value;
-	    }
-	    expandedPart = expandedPart.replace(varName, newValue);
-	}
+        var fieldName = inputElements[i].name;
+        if (fieldName) {
+            var varName = "$" + fieldName.toUpperCase();
+            var newValue = "";
+            if (inputElements[i].value) {
+                newValue = inputElements[i].value;
+            }
+            expandedPart = expandedPart.replace(varName, newValue);
+        }
     }
     return expandedPart;
 }
@@ -156,23 +173,23 @@ function expandDescriptionPart(descriptionPart) {
 function expandDescriptionTemplate() {
     var expanded = "";
     for (var i = 0; i < descriptionParts.length; ++i) {
-	var expandedPart = expandDescriptionPart(descriptionParts[i]);
-	// Only display parts that have some valid expansion.
-	if (expandedPart != descriptionParts[i]) {
-	    expanded += expandedPart + "\n\n";
-	}
+        var expandedPart = expandDescriptionPart(descriptionParts[i]);
+        // Only display parts that have some valid expansion.
+        if (expandedPart != descriptionParts[i]) {
+            expanded += expandedPart + "\n\n";
+        }
     }
 
     var platform = $('platform').value;
     if (platform != "OS-iOS" && platform != "OS-Android") {
-	var ua_text = "UserAgent: " + navigator.userAgent + "\n";
-	var plat_text = "\n";
-	var platformline = $('aboutplatformline').value;
-	if (platformline) {
-	    plat_text = "Platform: " + platformline + "\n";
-	}
+        var ua_text = "UserAgent: " + navigator.userAgent + "\n";
+        var plat_text = "\n";
+        var platformline = $('aboutplatformline').value;
+        if (platformline) {
+            plat_text = "Platform: " + platformline + "\n";
+        }
 
-	expanded = ua_text + plat_text + "\n" + expanded;
+        expanded = ua_text + plat_text + "\n" + expanded;
     }
 
     // Trim off any excessive blank lines or whitespace.
@@ -187,43 +204,43 @@ function expandDescriptionTemplate() {
 function preformatValues() {
     // For content.html
     if (document.forms[0].multiple_sites) {
-	var affectsMultipleSites = (document.forms[0].multiple_sites.value == "Yes");
-	if (affectsMultipleSites) {
-	    document.forms[0].label1.value = "Cr-Blink";
-	    document.forms[0].label9.value = "Type-Bug";
-	} else {
-	    document.forms[0].label1.value = "";
-	    document.forms[0].label9.value = "Type-Compat";
-	}
+        var affectsMultipleSites = (document.forms[0].multiple_sites.value == "Yes");
+        if (affectsMultipleSites) {
+            document.forms[0].label1.value = "Cr-Blink";
+            document.forms[0].label9.value = "Type-Bug";
+        } else {
+            document.forms[0].label1.value = "";
+            document.forms[0].label9.value = "Type-Compat";
+        }
     }
 
     // For appsextensionswebstore.html
     if (document.forms[0].software_kind) {
-	var kind = document.forms[0].software_kind;
-	var label1 = document.forms[0].label1;
-	if (kind.value == "Extension") {
-	    label1.value = "Cr-Platform-Extensions";
-	} else if (kind.value == "Theme") {
-	    label1.value = "Cr-UI-Browser-Themes";
-	}
+        var kind = document.forms[0].software_kind;
+        var label1 = document.forms[0].label1;
+        if (kind.value == "Extension") {
+            label1.value = "Cr-Platform-Extensions";
+        } else if (kind.value == "Theme") {
+            label1.value = "Cr-UI-Browser-Themes";
+        }
     }
 
     // For other.html
     if (document.forms[0].other_type) {
-	var other_type = document.forms[0].other_type;
-	var label1 = document.forms[0].label1;
-	var label9 = document.forms[0].label9;
-	if (other_type.value == "N/A") {
-	    label9.value = "Type-Bug";
-	} else if (other_type.value == "feature") {
-	    label9.value = "Type-Feature";
-	} else if (other_type.value == "regression") {
-	    label9.value = "Type-Bug-Regression";
-	} else if (other_type.value == "bug") {
-	    label9.value = "Type-Bug";
-	} else if (other_type.value == "localization") {
-	    label1.value = "Cr-UI-I18N";
-	}
+        var other_type = document.forms[0].other_type;
+        var label1 = document.forms[0].label1;
+        var label9 = document.forms[0].label9;
+        if (other_type.value == "N/A") {
+            label9.value = "Type-Bug";
+        } else if (other_type.value == "feature") {
+            label9.value = "Type-Feature";
+        } else if (other_type.value == "regression") {
+            label9.value = "Type-Bug-Regression";
+        } else if (other_type.value == "bug") {
+            label9.value = "Type-Bug";
+        } else if (other_type.value == "localization") {
+            label1.value = "Cr-UI-I18N";
+        }
     }
 
 }
@@ -242,10 +259,10 @@ function stuffDataAndSubmit() {
 
     
     for (var labelNum = 1; labelNum < 10; labelNum++) {
-	var el = document.forms[0].elements["label" + labelNum];
-	if (el) {
-	    $("post_label" + labelNum).value = el.value;
-	}
+        var el = document.forms[0].elements["label" + labelNum];
+        if (el) {
+            $("post_label" + labelNum).value = el.value;
+        }
     }
 
     $("post_label_os").value = document.forms[0].platform.value;
@@ -255,23 +272,26 @@ function stuffDataAndSubmit() {
       $("post_label_bitness").value = 'Arch-x86_64';
     }
 
-    while ($('attachmentarea').hasChildNodes()) {
-	$('submit_attachmentarea').appendChild($('attachmentarea').firstChild);
+    if ($("reduced_attachmentarea")) {
+        while ($('reduced_attachmentarea').hasChildNodes()) {
+            $('submit_attachmentarea').appendChild($('reduced_attachmentarea').firstChild);
+        }
     }
 
-    // If the wizard is not posting to codesite this time, convert label1
-    // to a component value.
-    // TODO(jrobbins): after chromium is migrated to monorail, simplify
-    // this logic and use a components field all the time instad of label1.
+    while ($('attachmentarea').hasChildNodes()) {
+        $('submit_attachmentarea').appendChild($('attachmentarea').firstChild);
+    }
+
     $("post_components").value = "";
-    var isMonorail = !location.search.includes('code.google.com');
     var compLabelEl = document.forms[0].label1;
-    if (isMonorail && compLabelEl && compLabelEl.value.startsWith(CR_PREFIX)) {
-	var compValue = compLabelEl.value;
-	compValue = compValue.substring(CR_PREFIX.length);
-	compValue = compValue.replace(/-/g, '>');
-	$("post_components").value = compValue;
-	$("post_label1").value = "";
+    if (compLabelEl) {
+        var compValue = compLabelEl.value;
+        if (compValue.startsWith(CR_PREFIX)) {
+            compValue = compValue.substring(CR_PREFIX.length);
+            compValue = compValue.replace(/-/g, '>');
+        }
+        $("post_components").value = compValue;
+        $("post_label1").value = "";
     }
 
     $("submit_form").submit();
@@ -282,12 +302,12 @@ function exposeQuestion(actualValue, conditionalQuestionID, exposeValues) {
     var questionEl = $("q_"+ conditionalQuestionID);
     var answerEl = $("a_"+ conditionalQuestionID);
     if (exposeValues.indexOf(actualValue) != -1) {
-	questionEl.style.display = "block";
-	answerEl.style.display = "block";
+        questionEl.style.display = "block";
+        answerEl.style.display = "block";
     } else {
-	questionEl.style.display = "";
-	answerEl.style.display = "";
-	answerEl.value = "";
+        questionEl.style.display = "";
+        answerEl.style.display = "";
+        answerEl.value = "";
     }
 }
 
@@ -302,15 +322,15 @@ function checkSubmit() {
     var disabled = false;
     var formElements = document.forms[0].elements;
     for (var i = 0; i < formElements.length; ++i) {
-	var el = formElements[i];
-	if (el.value != "") continue;
-	var dd = el.parentNode;
-	while (dd && dd.nodeName != "DD") {
-	    dd = dd.parentNode;
-	}
-	if (dd && dd.className.indexOf("required") != -1) {
-	    disabled = true;
-	}
+        var el = formElements[i];
+        if (el.value != "") continue;
+        var dd = el.parentNode;
+        while (dd && dd.nodeName != "DD") {
+            dd = dd.parentNode;
+        }
+        if (dd && dd.className.indexOf("required") != -1) {
+            disabled = true;
+        }
     }
     $("submit_button").disabled = (disabled ? "disabled" : "");
 }

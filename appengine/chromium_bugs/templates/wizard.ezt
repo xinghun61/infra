@@ -131,7 +131,34 @@
     
     <div id="step2"><div class="wizstep">
       <h3>New issue wizard</h3>
-      <div class="wizbody">
+      <div class="wizbody wizmenu">
+	<h4>Are you a web user or web developer?</h4>
+        <table cellspacing="6">
+	  <tr>
+	    <td><input type="radio" name="userrole" value="user" id="ur_opt_1" onclick="selectRole(this.value)" checked="checked"/></td>
+	    <td><label for="ur_opt_1">End user</label></td>
+	    <td><label for="">I am a user trying to do something on a website</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="userrole" value="dev" id="ur_opt_2" onclick="selectRole(this.value)" /></td>
+	    <td><label for="ur_opt_2">Web developer</label></td>
+	    <td><label for="">I am a web developer trying to build something</label></td>
+	  </tr>
+	</table>
+      </div>
+
+      <div class="wizbody wizmenu" id="dev_menu" style="display:none">
+	<h4>Which of the following best describes the issue that you are reporting?</h4>
+        <table cellspacing="4">
+	  <tr>
+	    <td><input type="radio" name="comp" value="API" id="dev_opt_1" onclick="selectComp(this.value)" /></td>
+	    <td><label for="dev_opt_1">API</label></td>
+	    <td><label for="">I found a problem with a browser API</label></td>
+	  </tr>
+        </table>
+      </div>
+
+      <div class="wizbody wizmenu" id="user_menu">
 	<h4>Which of the following best describes the issue that you are reporting?</h4>
         <table cellspacing="4">
 	  <tr>
@@ -225,7 +252,7 @@
     <div id="step3"><div class="wizstep">
       <h3>New issue wizard</h3>
       <div class="wizbody">	
-        <h4>Details for component <span id="component_name"></span>: </h4>
+        <h4>Details for problems with <span id="component_name"></span>: </h4>
 	
 	<dl>
 	  <dt>Please enter a one-line summary:</dt>
@@ -281,9 +308,9 @@
 	  </dd>
 
 
-	  <dt id="q_when_worked" class="conditional">When did it work?</dt>
+	  <dt id="q_when_worked" class="conditional">Latest version when it worked?</dt>
 	  <dd><input name="when_worked" size="80" id="a_when_worked" class="conditional"
-		     aria-label="When did it work?"></dd>
+		     aria-label="Latest version when it worked?"></dd>
 	  
 
 	  <dt>Any other comments?</dt>
