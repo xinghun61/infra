@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/luci/gae/service/datastore"
@@ -47,6 +49,17 @@ func TestMain(t *testing.T) {
 
 		Convey("index", func() {
 			c = auth.SetAuthenticator(c, []auth.Method(nil))
+
+			Convey("pathless", func() {
+				indexPage(&router.Context{
+					Context: c,
+					Writer:  w,
+					Request: makeGetRequest(),
+					Params:  makeParams("path", ""),
+				})
+
+				So(w.Code, ShouldEqual, 302)
+			})
 
 			Convey("anonymous", func() {
 				indexPage(&router.Context{
@@ -227,6 +240,23 @@ func TestMain(t *testing.T) {
 						"thing": "FOOBAR",
 					})
 				})
+
+				Convey("POST err", func() {
+					q := datastore.NewQuery("AlertsJSON")
+					results := []*AlertsJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldBeEmpty)
+
+					postAlertsHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makePostRequest(`not valid json`),
+						Params:  makeParams("tree", "oak"),
+					})
+
+					So(w.Code, ShouldEqual, http.StatusBadRequest)
+				})
+
 			})
 
 			Convey("/annotations", func() {
@@ -283,6 +313,18 @@ func TestMain(t *testing.T) {
 
 						So(w.Code, ShouldEqual, 404)
 					})
+
+					Convey("invalid json", func() {
+						postAnnotationsHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makePostRequest("invalid json"),
+							Params:  makeParams("annKey", "foobar", "action", "add"),
+						})
+
+						So(w.Code, ShouldEqual, http.StatusBadRequest)
+					})
+
 					ann := &Annotation{
 						Key:              "foobar",
 						KeyDigest:        fmt.Sprintf("%x", sha1.Sum([]byte("foobar"))),
@@ -290,7 +332,7 @@ func TestMain(t *testing.T) {
 					}
 					cl.Add(time.Hour)
 
-					makeChange := func(data map[string]interface{}) string {
+					makeChange := func(data map[string]interface{}, tok string) string {
 						change, err := json.Marshal(map[string]interface{}{
 							"xsrf_token": tok,
 							"data":       data,
@@ -298,13 +340,26 @@ func TestMain(t *testing.T) {
 						So(err, ShouldBeNil)
 						return string(change)
 					}
+					Convey("add, bad xsrf token", func() {
+						postAnnotationsHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makePostRequest(makeChange(map[string]interface{}{
+								"snoozeTime": 123123,
+							}, "no good token")),
+							Params: makeParams("annKey", "foobar", "action", "add"),
+						})
+
+						So(w.Code, ShouldEqual, http.StatusForbidden)
+					})
+
 					Convey("add", func() {
 						postAnnotationsHandler(&router.Context{
 							Context: c,
 							Writer:  w,
 							Request: makePostRequest(makeChange(map[string]interface{}{
 								"snoozeTime": 123123,
-							})),
+							}, tok)),
 							Params: makeParams("annKey", "foobar", "action", "add"),
 						})
 
@@ -320,7 +375,7 @@ func TestMain(t *testing.T) {
 								Writer:  w,
 								Request: makePostRequest(makeChange(map[string]interface{}{
 									"bugs": []string{"ooooops"},
-								})),
+								}, tok)),
 								Params: makeParams("annKey", "foobar", "action", "add"),
 							})
 
@@ -337,7 +392,7 @@ func TestMain(t *testing.T) {
 							postAnnotationsHandler(&router.Context{
 								Context: c,
 								Writer:  w,
-								Request: makePostRequest(makeChange(nil)),
+								Request: makePostRequest(makeChange(nil, tok)),
 								Params:  makeParams("annKey", "foobar", "action", "remove"),
 							})
 
@@ -355,7 +410,7 @@ func TestMain(t *testing.T) {
 								Writer:  w,
 								Request: makePostRequest(makeChange(map[string]interface{}{
 									"snoozeTime": true,
-								})),
+								}, tok)),
 								Params: makeParams("annKey", "foobar", "action", "remove"),
 							})
 
@@ -395,8 +450,15 @@ func TestMain(t *testing.T) {
 				})
 
 				Convey("refresh bug queue", func() {
+					// HACK:
+					oldOAClient := getOAuthClient
+					getOAuthClient = func(c context.Context) (*http.Client, error) {
+						return &http.Client{}, nil
+					}
+
 					_, err := refreshBugQueue(c, "tree")
 					So(err, ShouldNotBeNil)
+					getOAuthClient = oldOAClient
 				})
 			})
 		})
@@ -461,9 +523,74 @@ func TestMain(t *testing.T) {
 					So(num, ShouldEqual, 1)
 					So(getAllAnns(), ShouldResemble, anns[:1])
 				})
+
+				Convey("handler", func() {
+					ctx := &router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makePostRequest(""),
+						Params:  makeParams("annKey", "foobar", "action", "add"),
+					}
+
+					flushOldAnnotationsHandler(ctx)
+				})
 			})
 		})
+
+		Convey("clientmon", func() {
+			c = auth.SetAuthenticator(c, []auth.Method(nil))
+			body := &eCatcherReq{XSRFToken: tok}
+			bodyBytes, err := json.Marshal(body)
+			So(err, ShouldBeNil)
+			ctx := &router.Context{
+				Context: c,
+				Writer:  w,
+				Request: makePostRequest(string(bodyBytes)),
+				Params:  makeParams("xsrf_token", tok),
+			}
+
+			postClientMonHandler(ctx)
+			So(w.Code, ShouldEqual, 200)
+		})
+
+		Convey("treelogo", func() {
+			c = auth.SetAuthenticator(c, []auth.Method(nil))
+			ctx := &router.Context{
+				Context: c,
+				Writer:  w,
+				Request: makeGetRequest(),
+				Params:  makeParams("tree", "chromium"),
+			}
+
+			getTreeLogo(ctx, "", &noopSigner{})
+			So(w.Code, ShouldEqual, 302)
+		})
+
+		Convey("treelogo fail", func() {
+			c = auth.SetAuthenticator(c, []auth.Method(nil))
+			ctx := &router.Context{
+				Context: c,
+				Writer:  w,
+				Request: makeGetRequest(),
+				Params:  makeParams("tree", "chromium"),
+			}
+
+			getTreeLogo(ctx, "", &noopSigner{fmt.Errorf("fail")})
+			So(w.Code, ShouldEqual, 500)
+		})
+
+		Convey("noop", func() {
+			noopHandler(nil)
+		})
 	})
+}
+
+type noopSigner struct {
+	err error
+}
+
+func (n *noopSigner) SignBytes(c context.Context, b []byte) (string, []byte, error) {
+	return string(b), b, n.err
 }
 
 func makeGetRequest() *http.Request {
@@ -585,6 +712,33 @@ func TestWriteSettings(t *testing.T) {
 				So(tree.BugQueueLabel, ShouldEqual, "")
 			})
 		})
+
+		Convey("/settings", func() {
+			Convey("Fields", func() {
+				settingsPage := settingsUIPage{}
+				fields, err := settingsPage.Fields(c)
+				So(err, ShouldBeNil)
+				So(len(fields), ShouldEqual, 3)
+			})
+
+			Convey("ReadSettings", func() {
+				settingsPage := settingsUIPage{}
+				settings, err := settingsPage.ReadSettings(c)
+				So(err, ShouldBeNil)
+				So(len(settings), ShouldBeGreaterThan, 0)
+			})
+
+			Convey("WriteSettings", func() {
+				settingsPage := settingsUIPage{}
+				values := map[string]string{
+					"Trees":          "tree1",
+					"AlertStreams":   "tree1:stream1",
+					"BugQueueLabels": "tree1:bug-queue-label",
+				}
+				err := settingsPage.WriteSettings(c, values, "who", "why")
+				So(err, ShouldBeNil)
+			})
+		})
 	})
 }
 
@@ -605,6 +759,23 @@ func TestRevRangeHandler(t *testing.T) {
 			})
 
 			So(w.Code, ShouldEqual, 301)
+		})
+		Convey("bad oauth", func() {
+			c := gaetesting.TestingContext()
+			c = authtest.MockAuthConfig(c)
+			w := httptest.NewRecorder()
+			oldOAuth := getOAuthClient
+			getOAuthClient = func(ctx context.Context) (*http.Client, error) {
+				return nil, fmt.Errorf("not today")
+			}
+			getRevRangeHandler(&router.Context{
+				Context: c,
+				Writer:  w,
+				Request: makeGetRequest(),
+				Params:  makeParams("start", "123", "end", "456"),
+			})
+			getOAuthClient = oldOAuth
+			So(w.Code, ShouldEqual, http.StatusInternalServerError)
 		})
 		Convey("bad request", func() {
 			c := gaetesting.TestingContext()

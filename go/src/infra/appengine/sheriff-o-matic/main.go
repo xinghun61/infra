@@ -353,7 +353,7 @@ func postAlertsHandler(ctx *router.Context) {
 	err = json.Unmarshal(data, &out)
 
 	if err != nil {
-		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		errStatus(c, w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -667,7 +667,7 @@ func postClientMonHandler(ctx *router.Context) {
 }
 
 func getTreeLogoHandler(ctx *router.Context) {
-	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
+	c, w := ctx.Context, ctx.Writer
 
 	sa, err := info.ServiceAccount(c)
 	if err != nil {
@@ -676,6 +676,15 @@ func getTreeLogoHandler(ctx *router.Context) {
 		return
 	}
 
+	getTreeLogo(ctx, sa, gaesigner.Signer{})
+}
+
+type signer interface {
+	SignBytes(c context.Context, b []byte) (string, []byte, error)
+}
+
+func getTreeLogo(ctx *router.Context, sa string, sign signer) {
+	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 	tree := p.ByName("tree")
 	resource := fmt.Sprintf("/%s.appspot.com/logos/%s.png", info.AppID(c), tree)
 	expStr := fmt.Sprintf("%d", time.Now().Add(10*time.Minute).Unix())
@@ -687,8 +696,7 @@ func getTreeLogoHandler(ctx *router.Context) {
 		resource,
 	}
 	unsigned := strings.Join(sl, "\n")
-	signer := gaesigner.Signer{}
-	_, b, err := signer.SignBytes(c, []byte(unsigned))
+	_, b, err := sign.SignBytes(c, []byte(unsigned))
 	if err != nil {
 		logging.Errorf(c, "failed to sign bytes: %v", err)
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
@@ -707,7 +715,7 @@ func getTreeLogoHandler(ctx *router.Context) {
 
 // getOAuthClient returns a client capable of making HTTP requests authenticated
 // with OAuth access token for userinfo.email scope.
-func getOAuthClient(c context.Context) (*http.Client, error) {
+var getOAuthClient = func(c context.Context) (*http.Client, error) {
 	// Note: "https://www.googleapis.com/auth/userinfo.email" is the default
 	// scope used by GetRPCTransport(AsSelf). Use auth.WithScopes(...) option to
 	// override.
