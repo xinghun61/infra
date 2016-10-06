@@ -520,6 +520,16 @@ class QueryParsingUnitTest(unittest.TestCase):
     self.assertEqual(
         MakeCond(GE, [BUILTIN_ISSUE_FIELDS['modified']], [], [ts1]), cond1)
 
+    # query with quick-or
+    ast = query2ast.ParseUserQuery(
+        'modified=2009-5-12,2009-5-13', '', BUILTIN_ISSUE_FIELDS,
+        self.default_config)
+    cond1 = ast.conjunctions[0].conds[0]
+    ts1 = int(time.mktime(datetime.datetime(2009, 5, 12).timetuple()))
+    ts2 = int(time.mktime(datetime.datetime(2009, 5, 13).timetuple()))
+    self.assertEqual(
+        MakeCond(EQ, [BUILTIN_ISSUE_FIELDS['modified']], [], [ts1, ts2]), cond1)
+
     # query with multiple dateranges
     ast = query2ast.ParseUserQuery(
         'modified>=2009-5-12 opened<2008/1/1', '',

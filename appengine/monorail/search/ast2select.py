@@ -330,31 +330,48 @@ def _ProcessCustomFieldCond(cond, alias, user_alias):
   # TODO(jrobbins): handle ambiguous field names that map to multiple
   # field definitions, especially for cross-project search.
   field_def = cond.field_defs[0]
-  val_type = field_def.field_type
+  field_type = field_def.field_type
+  left_joins = []
 
   join_str = (
       'Issue2FieldValue AS {alias} ON Issue.id = {alias}.issue_id AND '
       'Issue.shard = {alias}.issue_shard AND '
       '{alias}.field_id = %s'.format(alias=alias))
-  left_joins = [(join_str, [field_def.field_id])]
-  if val_type == tracker_pb2.FieldTypes.INT_TYPE:
-    where = [_Compare(alias, cond.op, val_type, 'int_value', cond.int_values)]
-  elif val_type == tracker_pb2.FieldTypes.STR_TYPE:
-    where = [_Compare(alias, cond.op, val_type, 'str_value', cond.str_values)]
-  elif val_type == tracker_pb2.FieldTypes.USER_TYPE:
-    if cond.int_values or cond.op in (
-        ast_pb2.QueryOp.IS_DEFINED, ast_pb2.QueryOp.IS_NOT_DEFINED):
-      where = [_Compare(alias, cond.op, val_type, 'user_id', cond.int_values)]
-    else:
-      email_cond_str, email_cond_args = _Compare(
-          user_alias, cond.op, val_type, 'email', cond.str_values)
-      left_joins.append((
-          'User AS {user_alias} ON {alias}.user_id = {user_alias}.user_id '
-          'AND {email_cond}'.format(
-              alias=alias, user_alias=user_alias, email_cond=email_cond_str),
-          email_cond_args))
-      where = [_CompareAlreadyJoined(user_alias, cond.op, 'email')]
+  join_args = [field_def.field_id]
 
+  if cond.op not in (
+      ast_pb2.QueryOp.IS_DEFINED, ast_pb2.QueryOp.IS_NOT_DEFINED):
+    op = cond.op
+    if op == ast_pb2.QueryOp.NE:
+      op = ast_pb2.QueryOp.EQ  # Negation is done in WHERE clause.
+    if field_type == tracker_pb2.FieldTypes.INT_TYPE:
+      cond_str, cond_args = _Compare(
+          alias, op, field_type, 'int_value', cond.int_values)
+    elif field_type == tracker_pb2.FieldTypes.STR_TYPE:
+      cond_str, cond_args = _Compare(
+          alias, op, field_type, 'str_value', cond.str_values)
+    elif field_type == tracker_pb2.FieldTypes.USER_TYPE:
+      if cond.int_values:
+        cond_str, cond_args = _Compare(
+            alias, op, field_type, 'user_id', cond.int_values)
+      else:
+        email_cond_str, email_cond_args = _Compare(
+            user_alias, op, field_type, 'email', cond.str_values)
+        left_joins.append((
+            'User AS {user_alias} ON {alias}.user_id = {user_alias}.user_id '
+            'AND {email_cond}'.format(
+                alias=alias, user_alias=user_alias, email_cond=email_cond_str),
+            email_cond_args))
+        cond_str, cond_args = '', []
+    if field_type == tracker_pb2.FieldTypes.DATE_TYPE:
+      cond_str, cond_args = _Compare(
+          alias, op, field_type, 'date_value', cond.int_values)
+    if cond_str or cond_args:
+      join_str += ' AND ' + cond_str
+      join_args.extend(cond_args)
+
+  left_joins.append((join_str, join_args))
+  where = [_CompareAlreadyJoined(alias, cond.op, 'field_id')]
   return left_joins, where
 
 
@@ -366,12 +383,12 @@ def _ProcessAttachmentCond(cond, alias, _user_alias):
                       'attachment_count', cond.int_values)]
   else:
     field_def = cond.field_defs[0]
-    val_type = field_def.field_type
+    field_type = field_def.field_type
     left_joins = [
       ('Attachment AS {alias} ON Issue.id = {alias}.issue_id AND '
        '{alias}.deleted = %s'.format(alias=alias),
        [False])]
-    where = [_Compare(alias, cond.op, val_type, 'filename', cond.str_values)]
+    where = [_Compare(alias, cond.op, field_type, 'filename', cond.str_values)]
 
   return left_joins, where
 
@@ -529,15 +546,11 @@ def _CompareAlreadyJoined(alias, op, col):
   def Fmt(cond_str):
     return cond_str.format(alias_col='%s.%s' % (alias, col))
 
-  if op in (ast_pb2.QueryOp.EQ, ast_pb2.QueryOp.TEXT_HAS,
-            ast_pb2.QueryOp.IS_DEFINED):
-    return Fmt('{alias_col} IS NOT NULL'), []
-
   if op in (ast_pb2.QueryOp.NE, ast_pb2.QueryOp.NOT_TEXT_HAS,
             ast_pb2.QueryOp.IS_NOT_DEFINED):
     return Fmt('{alias_col} IS NULL'), []
-
-  logging.error('unknown op: %r', op)
+  else:
+    return Fmt('{alias_col} IS NOT NULL'), []
 
 
 class Error(Exception):

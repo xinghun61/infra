@@ -5,6 +5,8 @@
 
 """Tests for the ast2select module."""
 
+import datetime
+import time
 import unittest
 
 from proto import ast_pb2
@@ -504,8 +506,96 @@ class AST2SelectTest(unittest.TestCase):
         [('Cond1.component_id IS NOT NULL', [])],
         where)
 
-  def testProcessCustomFieldCond(self):
-    pass  # TODO(jrobbins): fill in this test case.
+  def testProcessCustomFieldCond_IntType(self):
+    fd = tracker_pb2.FieldDef(
+      field_id=1, project_id=789, field_name='EstDays',
+      field_type=tracker_pb2.FieldTypes.INT_TYPE)
+    val = 42
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [val])
+    left_joins, where = ast2select._ProcessCustomFieldCond(
+        cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Issue.shard = Cond1.issue_shard AND '
+          'Cond1.field_id = %s AND '
+          'Cond1.int_value = %s', [1, val])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.field_id IS NOT NULL', [])],
+        where)
+
+  def testProcessCustomFieldCond_StrType(self):
+    fd = tracker_pb2.FieldDef(
+      field_id=1, project_id=789, field_name='Nickname',
+      field_type=tracker_pb2.FieldTypes.STR_TYPE)
+    val = 'Fuzzy'
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [val], [])
+    left_joins, where = ast2select._ProcessCustomFieldCond(
+        cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Issue.shard = Cond1.issue_shard AND '
+          'Cond1.field_id = %s AND '
+          'Cond1.str_value = %s', [1, val])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.field_id IS NOT NULL', [])],
+        where)
+
+  def testProcessCustomFieldCond_UserType_ByID(self):
+    fd = tracker_pb2.FieldDef(
+      field_id=1, project_id=789, field_name='ExecutiveProducer',
+      field_type=tracker_pb2.FieldTypes.USER_TYPE)
+    val = 111L
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [val])
+    left_joins, where = ast2select._ProcessCustomFieldCond(
+        cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Issue.shard = Cond1.issue_shard AND '
+          'Cond1.field_id = %s AND '
+          'Cond1.user_id = %s', [1, val])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.field_id IS NOT NULL', [])],
+        where)
+
+  def testProcessCustomFieldCond_UserType_ByEmail(self):
+    fd = tracker_pb2.FieldDef(
+      field_id=1, project_id=789, field_name='ExecutiveProducer',
+      field_type=tracker_pb2.FieldTypes.USER_TYPE)
+    val = 'exec@example.com'
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [val], [])
+    left_joins, where = ast2select._ProcessCustomFieldCond(
+        cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('User AS User1 ON Cond1.user_id = User1.user_id AND '
+          'LOWER(User1.email) = %s', [val]),
+         ('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Issue.shard = Cond1.issue_shard AND '
+          'Cond1.field_id = %s', [1])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.field_id IS NOT NULL', [])],
+        where)
+
+  def testProcessCustomFieldCond_DateType(self):
+    fd = tracker_pb2.FieldDef(
+      field_id=1, project_id=789, field_name='Deadline',
+      field_type=tracker_pb2.FieldTypes.DATE_TYPE)
+    val = int(time.mktime(datetime.datetime(2016, 10, 5).timetuple()))
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [val])
+    left_joins, where = ast2select._ProcessCustomFieldCond(
+        cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Issue.shard = Cond1.issue_shard AND '
+          'Cond1.field_id = %s AND '
+          'Cond1.date_value = %s', [1, val])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.field_id IS NOT NULL', [])],
+        where)
 
   def testProcessAttachmentCond_HasAttachment(self):
     fd = BUILTIN_ISSUE_FIELDS['attachment']

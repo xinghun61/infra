@@ -310,8 +310,8 @@ def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
     # define the same custom field name, and one is a date and another is not.
     first_field = fields[prefix][0]
     if first_field.field_type == DATE:
-      date_value = _ParseDateValue(unquoted_value, now=now)
-      return ast_pb2.MakeCond(op, fields[prefix], [], [date_value])
+      date_values = [_ParseDateValue(val, now=now) for val in quick_or_vals]
+      return ast_pb2.MakeCond(op, fields[prefix], [], date_values)
     else:
       quick_or_ints = []
       for qov in quick_or_vals:
