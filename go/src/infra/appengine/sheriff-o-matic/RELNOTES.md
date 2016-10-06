@@ -1,4 +1,24 @@
 
+# Release Notes sheriff-o-matic 2016-10-06
+
+- 4 commits, 1 bugs affected since d872a7c 2016-10-03T16:51:20.000Z
+- 3 Authors:
+  - seanmccullough@chromium.org
+  - martiniss@chromium.org
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [[som] Add RELNOTES.md instructions to README.md](https://chromium-review.googlesource.com/394886) (seanmccullough@chromium.org)
+- [SOM: Collapse alerts, sort by title](https://chromium-review.googlesource.com/388860) (martiniss@chromium.org)
+- [SoM: Improve help page.](https://chromium-review.googlesource.com/393267) (zhangtiff@google.com)
+- [[som] Add release notes for today's push](https://chromium-review.googlesource.com/391750) (seanmccullough@chromium.org)
+
+
+## Bugs updated since, by author
+- zhangtiff@google.com:
+  -  [https://crbug.com/637340](https://crbug.com/637340)
+
 # Sheriff-o-Matic Release Notes 2016-10-03
 
 - 7 commits, 2 bugs affected since 2016-09-22
