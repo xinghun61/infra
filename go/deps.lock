@@ -1,5 +1,5 @@
-hash: 521d68365c5e0d3368ff0a325c79816e5f580163c4119460e4b73a48aefaa273
-updated: 2016-09-26T17:58:59.344260751+10:00
+hash: f935b709a9e69a6f772d73249bcc8579a0a0233a39bb782e1138096874e04b5b
+updated: 2016-10-06T11:18:55.53581449+02:00
 imports:
 - name: cloud.google.com/go
   version: 9409d3d8cd1df211d448094ae1e4ca95b0e17130
@@ -129,6 +129,11 @@ imports:
   repo: https://chromium.googlesource.com/external/github.com/yosuke-furukawa/json5.git
   subpackages:
   - encoding/json5
+- name: golang.org/x/build
+  version: 44209b0bd3bb18a3c25367a2204a626e2144228b
+  repo: https://go.googlesource.com/build.git
+  subpackages:
+  - gerrit
 - name: golang.org/x/mobile
   version: 8b28d19931a076562c21c1db79486127a7464e17
   repo: https://go.googlesource.com/mobile.git

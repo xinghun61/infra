@@ -202,4 +202,8 @@ import:
   - cmd/gomobile
 - package: github.com/VividCortex/godaemon
   repo: https://chromium.googlesource.com/external/github.com/VividCortex/godaemon.git
+- package: golang.org/x/build
   version: master
+  repo: https://go.googlesource.com/build.git
+  subpackages:
+  - gerrit
