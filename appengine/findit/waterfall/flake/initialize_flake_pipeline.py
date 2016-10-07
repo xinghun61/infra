@@ -13,48 +13,59 @@ from waterfall import waterfall_config
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 
 
-def NeedANewAnalysis(
+def _NeedANewAnalysis(
     master_name, builder_name, build_number, step_name, test_name,
-    allow_new_analysis=False):
+    algorithm_parameters, allow_new_analysis=False, force=False):
   """Checks status of analysis for the test and decides if a new one is needed.
 
   A MasterFlakeAnalysis entity for the given parameters will be created if none
   exists. When a new analysis is needed, this function will create and
   save a MasterFlakeAnalysis entity to the datastore.
 
-  TODO(lijeffrey): add support for a force flag to rerun this analysis.
+  Args:
+    master_name (str): The master name on Waterfall.
+    builder_name (str): The builder name on Waterfall.
+    build_number (int): The build number on Waterfall.
+    step_name (str): The step in which the flaky test is found.
+    test_name (str): The flaky test to be analyzed.
+    allow_new_analysis (bool): Indicate whether a new analysis is allowed.
+    force (bool): Indicate whether to force a rerun of current analysis.
 
   Returns:
-    True if an analysis is needed, otherwise False.
+    (need_new_analysis, analysis)
+    need_new_analysis (bool): True if an analysis is needed, otherwise False.
+    analysis (MasterFlakeAnalysis): The MasterFlakeAnalysis entity.
   """
-  master_flake_analysis = MasterFlakeAnalysis.GetVersion(
+  analysis = MasterFlakeAnalysis.GetVersion(
       master_name, builder_name, build_number, step_name, test_name)
 
-  if not master_flake_analysis:
+  if not analysis:
     if not allow_new_analysis:
-      return False
-    master_flake_analysis = MasterFlakeAnalysis.Create(
+      return False, None
+    analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number, step_name, test_name)
-    master_flake_analysis.request_time = time_util.GetUTCNow()
-    master_flake_analysis.status = analysis_status.PENDING
-    master_flake_analysis.version = appengine_util.GetCurrentVersion()
-    _, saved = master_flake_analysis.Save()
-    return saved
-  elif (master_flake_analysis.status == analysis_status.COMPLETED or
-        master_flake_analysis.status == analysis_status.PENDING or
-        master_flake_analysis.status == analysis_status.RUNNING):
-    return False
+    analysis.request_time = time_util.GetUTCNow()
+    analysis.status = analysis_status.PENDING
+    analysis.algorithm_parameters = algorithm_parameters
+    analysis.version = appengine_util.GetCurrentVersion()
+    _, saved = analysis.Save()
+    return saved, analysis
+  elif (analysis.status == analysis_status.PENDING or
+        analysis.status == analysis_status.RUNNING):
+    return False, analysis
+  elif allow_new_analysis and force and analysis.status in (
+      analysis_status.ERROR, analysis_status.COMPLETED):
+    analysis.Reset()
+    analysis.request_time = time_util.GetUTCNow()
+    analysis.status = analysis_status.PENDING
+    analysis.algorithm_parameters = algorithm_parameters
+    analysis.version = appengine_util.GetCurrentVersion()
+    _, saved = analysis.Save()
+    return saved, analysis
   else:
-    # The previous analysis had some error, so reset and run as a new version.
-    master_flake_analysis.Reset()
-    master_flake_analysis.request_time = time_util.GetUTCNow()
-    master_flake_analysis.status = analysis_status.PENDING
-    master_flake_analysis.version = appengine_util.GetCurrentVersion()
-    _, saved = master_flake_analysis.Save()
-    return saved
+    return False, analysis
 
 
-# Unused arguments - pylint: disable=W0612, W0613
 def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, step_name,
                              test_name, allow_new_analysis=False, force=False,
                              manually_triggered=False,
@@ -80,31 +91,22 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, step_name,
     A MasterFlakeAnalysis instance.
     None if no analysis was scheduled and the user has no permission to.
   """
+  algorithm_parameters = waterfall_config.GetCheckFlakeSettings()
 
-  version_number = None
-
-  if NeedANewAnalysis(
+  need_new_analysis, analysis = _NeedANewAnalysis(
       master_name, builder_name, build_number, step_name, test_name,
-      allow_new_analysis):
+      algorithm_parameters, allow_new_analysis, force)
 
-    # NeedANewAnalysis just created master_flake_analysis. Use the latest
+  if need_new_analysis:
+    # _NeedANewAnalysis just created master_flake_analysis. Use the latest
     # version number and pass that along to the other pipelines for updating
     # results and data.
-    master_flake_analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    version_number = master_flake_analysis.version_number
     logging.info(
         'A new master flake analysis was successfully saved for %s/%s/%s/%s/%s '
         'and will be captured in version %s', master_name, builder_name,
-        build_number, step_name, test_name, version_number)
+        build_number, step_name, test_name, analysis.version_number)
 
-    # TODO(lijeffrey): Allow for reruns with custom parameters if the user is
-    # not satisfied with the results. Record the custom parameters here.
-    check_flake_settings = waterfall_config.GetCheckFlakeSettings()
-    master_flake_analysis.algorithm_parameters = check_flake_settings
-    master_flake_analysis.put()
-
-    max_build_numbers_to_look_back = check_flake_settings.get(
+    max_build_numbers_to_look_back = algorithm_parameters.get(
         'max_build_numbers_to_look_back')
     flakiness_algorithm_results_dict = {
         'flakes_in_a_row': 0,
@@ -121,12 +123,11 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, step_name,
 
     pipeline_job = RecursiveFlakePipeline(
         master_name, builder_name, build_number, step_name, test_name,
-        version_number, master_build_number=build_number,
+        analysis.version_number, master_build_number=build_number,
         flakiness_algorithm_results_dict=flakiness_algorithm_results_dict,
         manually_triggered=manually_triggered)
     pipeline_job.target = appengine_util.GetTargetNameForModule(
         constants.WATERFALL_BACKEND)
     pipeline_job.StartOffPSTPeakHours(queue_name=queue_name)
-  return MasterFlakeAnalysis.GetVersion(
-      master_name, builder_name, build_number, step_name, test_name,
-      version=version_number)
+
+  return analysis

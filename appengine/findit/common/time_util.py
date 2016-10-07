@@ -31,6 +31,7 @@ def RemoveMicrosecondsFromDelta(delta):
 
 
 def FormatTimedelta(delta):
+  """Returns a string representing the given time delta."""
   if not delta:
     return None
   hours, remainder = divmod(delta.total_seconds(), 3600)
@@ -39,10 +40,18 @@ def FormatTimedelta(delta):
 
 
 def FormatDatetime(date):
+  """Returns a string representing the given UTC datetime."""
   if not date:
     return None
   else:
     return date.strftime('%Y-%m-%d %H:%M:%S UTC')
+
+
+def FormatDuration(datetime_start, datetime_end):
+  """Returns a string representing the given time duration or None."""
+  if not datetime_start or not datetime_end:
+    return None
+  return FormatTimedelta(datetime_end - datetime_start)
 
 
 def GetDatetimeInTimezone(timezone_name, date_time):

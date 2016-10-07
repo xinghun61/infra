@@ -6,6 +6,7 @@ from google.appengine.ext import ndb
 
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
+from common import time_util
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
 
@@ -55,8 +56,17 @@ class ListFlakes(BaseHandler):
           'builder_name': master_flake_analysis.builder_name,
           'build_number': master_flake_analysis.build_number,
           'step_name': master_flake_analysis.step_name,
-          'test_name': master_flake_analysis.test_name
+          'test_name': master_flake_analysis.test_name,
+          'status': master_flake_analysis.status_description,
+          'suspected_build': master_flake_analysis.suspected_flake_build_number,
+          'request_time': time_util.FormatDatetime(
+              master_flake_analysis.request_time),
       })
+
+    # TODO (stgao): use index instead of in-memory sort.
+    # Index doesn't work for now, possibly due to legacy data.
+    data['master_flake_analyses'].sort(
+        key=lambda e : e['request_time'], reverse=True)
 
     return {
         'template': 'flake/dashboard.html',

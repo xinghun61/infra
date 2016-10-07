@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import re
 
 import webapp2
@@ -67,14 +68,19 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
     success_rate = .9
 
-    master_flake_analysis = MasterFlakeAnalysis.Create(
+    analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number, step_name, test_name)
-    master_flake_analysis.status = analysis_status.PENDING
     data_point = DataPoint()
     data_point.build_number = int(build_number)
     data_point.pass_rate = success_rate
-    master_flake_analysis.data_points.append(data_point)
-    master_flake_analysis.Save()
+    analysis.data_points.append(data_point)
+    analysis.status = analysis_status.COMPLETED
+    analysis.suspected_flake_build_number = 100
+    analysis.request_time = datetime.datetime(2016, 10, 01, 12, 10, 00)
+    analysis.start_time = datetime.datetime(2016, 10, 01, 12, 10, 05)
+    analysis.end_time = datetime.datetime(2016, 10, 01, 13, 10, 00)
+    analysis.algorithm_parameters = {'iterations_to_rerun': 100}
+    analysis.Save()
 
     response = self.test_app.get('/waterfall/check-flake', params={
         'master_name': master_name,
@@ -86,14 +92,19 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     expected_check_flake_result = {
         'pass_rates': [[int(build_number), success_rate]],
-        'analysis_status': STATUS_TO_DESCRIPTION.get(
-            master_flake_analysis.status),
+        'analysis_status': STATUS_TO_DESCRIPTION.get(analysis.status),
         'master_name': master_name,
         'builder_name': builder_name,
         'build_number': int(build_number),
         'step_name': step_name,
         'test_name': test_name,
-        'suspected_flake_build_number': None
+        'request_time': '2016-10-01 12:10:00 UTC',
+        'task_number': 1,
+        'error': None,
+        'iterations_to_rerun': 100,
+        'pending_time': '00:00:05',
+        'duration': '00:59:55',
+        'suspected_flake_build_number': 100,
     }
 
     self.assertEquals(200, response.status_int)

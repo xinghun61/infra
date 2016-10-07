@@ -150,3 +150,4 @@ class WaterfallTestCase(FinditTestCase):  # pragma: no cover.
   def setUp(self):
     super(WaterfallTestCase, self).setUp()
     self.UpdateUnitTestConfigSettings()
+    self.maxDiff = None

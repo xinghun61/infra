@@ -45,3 +45,10 @@ class DiffTest(unittest.TestCase):
     self.assertEqual('expected',
                      time_util.GetDatetimeInTimezone('PST', mocked_datetime))
     mocked_pytz_module.timezone.assert_called_with('PST')
+
+  def testFormatDuration(self):
+    date1 = datetime(2016, 5, 1, 1, 1, 1)
+    date2 = datetime(2016, 5, 1, 1, 2, 1)
+    self.assertIsNone(time_util.FormatDuration(None, date1))
+    self.assertIsNone(time_util.FormatDuration(date1, None))
+    self.assertEqual('00:01:00', time_util.FormatDuration(date1, date2))

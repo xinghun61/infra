@@ -2,12 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
+
 import webapp2
 
-from waterfall.test import wf_testcase
 from handlers.flake import list_flakes
 from handlers.flake.list_flakes import FilterMasterFlakeAnalysis
+from model import analysis_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from waterfall.test import wf_testcase
 
 
 class FilterFlakeTest(wf_testcase.WaterfallTestCase):
@@ -20,12 +23,13 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
       step_name, test_name):
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number, step_name, test_name)
+    analysis.request_time = datetime.datetime(2016, 10, 01)
+    analysis.status = analysis_status.COMPLETED
     analysis.put()
     return analysis
 
   def setUp(self):
     super(FilterFlakeTest, self).setUp()
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     self.master_name1 = 'm1'
     self.master_name2 = 'm2'
     self.builder_name1 = 'b1'
@@ -133,11 +137,15 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
     )
     expected_result = {
         'master_flake_analyses': [
-            {'step_name': self.step_name1,
-             'master_name': self.master_name1,
-             'build_number': self.build_number1,
-             'builder_name': self.builder_name1,
-             'test_name': self.test_name1
+            {
+                'master_name': self.master_name1,
+                'builder_name': self.builder_name1,
+                'build_number': self.build_number1,
+                'step_name': self.step_name1,
+                'test_name': self.test_name1,
+                'status': 'Completed',
+                'suspected_build': None,
+                'request_time': '2016-10-01 00:00:00 UTC',
             }
         ]
     }

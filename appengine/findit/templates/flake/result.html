@@ -119,14 +119,32 @@
   <div>
     <b>Analysis Result:</b><br>
     Status:  {{ analysis_status }}<br>
+    {% if error %}
+    Error info: {{ error }}<br>
+    {% endif %}
     {% if suspected_flake_build_number %}
     Flakiness <b>started</b> in Build: <a href="https://build.chromium.org/p/{{ master_name }}/builders/{{ builder_name }}/builds/{{ suspected_flake_build_number }}" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake_build_number }}</a>
     {% endif %}
   </div>
   <br>
   <div>
-    <b>Pass Rate (%) by Build:</b><br>
+    <b>Pass Rate by Build:</b><br>
     <div id="flake-trend"></div>
+  </div>
+  <br>
+  <div>
+    <b>Statistics:</b><br>
+    Rerun of the test per build: {{ iterations_to_rerun }}<br>
+    {% if request_time %}
+    Request time: {{ request_time }}<br>
+    {% endif %}
+    {% if pending_time %}
+    Pending time: {{ pending_time }}<br>
+    {% endif %}
+    {% if duration %}
+    Duration: {{ duration }}<br>
+    {% endif %}
+    Number of Swarm tasks: {{ task_number }}
   </div>
 </body>
 </html>

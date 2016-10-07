@@ -4,34 +4,40 @@
 
 from google.appengine.api import users
 
+from common import auth_util
 from common import constants
+from common import time_util
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
-from model.analysis_status import STATUS_TO_DESCRIPTION
-from waterfall.flake.initialize_flake_pipeline import ScheduleAnalysisIfNeeded
+from model import analysis_status
+from waterfall.flake import initialize_flake_pipeline
 
 
 class CheckFlake(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
   def HandleGet(self):
-    # Get input parameters.
-    # pylint: disable=W0612
     master_name = self.request.get('master_name').strip()
     builder_name = self.request.get('builder_name').strip()
-    build_number = int(self.request.get('build_number').strip())
+    build_number = int(self.request.get('build_number', '0').strip())
     step_name = self.request.get('step_name').strip()
     test_name = self.request.get('test_name').strip()
-    force = (users.is_current_user_admin() and
+
+    if not (master_name and builder_name and build_number and
+            step_name and test_name):  # pragma: no cover.
+      return self.CreateError(
+          'Invalid value of master/builder/build_number/step/test', 400)
+
+    force = (auth_util.IsCurrentUserAdmin() and
              self.request.get('force') == '1')
     allow_new_analysis = self.IsCorpUserOrAdmin()
 
-    master_flake_analysis = ScheduleAnalysisIfNeeded(
+    analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
         master_name, builder_name, build_number, step_name, test_name,
         allow_new_analysis, force=force, manually_triggered=True,
         queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
-    if not master_flake_analysis:  # pragma: no cover.
+    if not analysis:  # pragma: no cover.
       return {
           'template': 'error.html',
           'data': {
@@ -45,27 +51,37 @@ class CheckFlake(BaseHandler):
 
     data = {
         'pass_rates': [],
-        'analysis_status': STATUS_TO_DESCRIPTION.get(
-            master_flake_analysis.status),
+        'analysis_status': analysis.status_description,
         'suspected_flake_build_number': (
-            master_flake_analysis.suspected_flake_build_number),
+            analysis.suspected_flake_build_number),
         'master_name': master_name,
         'builder_name': builder_name,
         'build_number': build_number,
         'step_name': step_name,
         'test_name': test_name,
+        'request_time': time_util.FormatDatetime(
+            analysis.request_time),
+        'task_number': len(analysis.data_points),
+        'error': analysis.error_message,
+        'iterations_to_rerun': analysis.iterations_to_rerun,
     }
 
-    coordinates = []
+    data['pending_time'] = time_util.FormatDuration(
+        analysis.request_time,
+        analysis.start_time or time_util.GetUTCNow())
+    if analysis.status != analysis_status.PENDING:
+      data['duration'] = time_util.FormatDuration(
+          analysis.start_time,
+          analysis.end_time or time_util.GetUTCNow())
 
-    for data_point in master_flake_analysis.data_points:
+    coordinates = []
+    for data_point in analysis.data_points:
       coordinates.append([data_point.build_number, data_point.pass_rate])
 
     # Order by build number from earliest to latest.
     coordinates.sort(key=lambda x: x[0])
 
     data['pass_rates'] = coordinates
-
     return {
         'template': 'flake/result.html',
         'data': data

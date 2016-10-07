@@ -11,7 +11,7 @@
 </head>
 <body>
 <h1> Flaky tests </h1>
-  <form method="get" action="/waterfall/list-flake">
+  <form method="get" action="/waterfall/list-flakes">
     <p> master_name <input type="text" name="master_name" id="master_name" size="200"/> </p>
     <p> builder_name <input type="text" name="builder_name" id="builder_name" size="200"/> </p>
     <p> build_number <input type="text" name="build_number" id="build_number" size="200"/> </p>
@@ -22,33 +22,32 @@
 <br><br><br>
 <table>
 <tr>
+        <th>Request Time</th>
         <th>Master Name</th>
         <th>Builder Name</th>
         <th>Build Number</th>
         <th>Step Name</th>
         <th>Test Name</th>
+        <th>Status</th>
+        <th>Suspected Build</th>
         <th>Graph</th>
 </tr>
 <tbody>
-{% for master_flake_analysis in master_flake_analyses %}
-<tr>
-<td>  {{master_flake_analysis.master_name}} </td>
-<td>  {{master_flake_analysis.builder_name}}</td>
-<td>  {{master_flake_analysis.build_number}}</td>
-<td>  {{master_flake_analysis.step_name}}</td>
-<td>  {{master_flake_analysis.test_name}}</td>
-<td>
-<form method="get" action="/waterfall/check-flake">
- <input type="hidden" name="master_name" value="{{master_flake_analysis.master_name}}">
- <input type="hidden" name="builder_name" value="{{master_flake_analysis.builder_name}}">
- <input type="hidden" name="build_number" value="{{master_flake_analysis.build_number}}">
- <input type="hidden" name="step_name" value="{{master_flake_analysis.step_name}}">
- <input type="hidden" name="test_name" value="{{master_flake_analysis.test_name}}">
- <input type="submit" value="View">
-</form>
-</td>
-</tr>
-{% endfor %}
+  {% for master_flake_analysis in master_flake_analyses %}
+  <tr>
+    <td>  {{master_flake_analysis.request_time or ''}} </td>
+    <td>  {{master_flake_analysis.master_name}} </td>
+    <td>  {{master_flake_analysis.builder_name}}</td>
+    <td>  {{master_flake_analysis.build_number}}</td>
+    <td>  {{master_flake_analysis.step_name}}</td>
+    <td>  {{master_flake_analysis.test_name}}</td>
+    <td>  {{master_flake_analysis.status}}</td>
+    <td>  {{master_flake_analysis.suspected_build or ''}}</td>
+    <td>
+      <a href="/waterfall/check-flake?master_name={{master_flake_analysis.master_name}}&builder_name={{master_flake_analysis.builder_name}}&build_number={{master_flake_analysis.build_number}}&step_name={{master_flake_analysis.step_name}}&test_name={{master_flake_analysis.test_name}}">Link</a>
+    </td>
+  </tr>
+  {% endfor %}
 </tbody>
 </table>
 </body>

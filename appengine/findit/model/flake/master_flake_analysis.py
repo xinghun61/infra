@@ -19,7 +19,7 @@ class DataPoint(ndb.Model):
 
 
 class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel):
-  """Represents an analysis of a flaky test in a Chromium Waterfall."""
+  """Represents an analysis of a flaky test on a Waterfall test cycle."""
 
   @ndb.ComputedProperty
   def step_name(self):
@@ -28,6 +28,18 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel):
   @ndb.ComputedProperty
   def test_name(self):
     return base64.urlsafe_b64decode(self.key.pairs()[0][1].split('/')[4])
+
+  @property
+  def error_message(self):
+    if not self.error:
+      return None
+    return self.error.get('message')
+
+  @property
+  def iterations_to_rerun(self):
+    if not self.algorithm_parameters:
+      return -1
+    return self.algorithm_parameters.get('iterations_to_rerun')
 
   @staticmethod
   def _CreateAnalysisId(

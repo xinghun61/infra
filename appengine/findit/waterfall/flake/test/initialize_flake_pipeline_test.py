@@ -8,13 +8,11 @@ from common import constants
 from common.pipeline_wrapper import pipeline_handlers
 from model import analysis_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from waterfall.flake.initialize_flake_pipeline import NeedANewAnalysis
-from waterfall.flake.initialize_flake_pipeline import ScheduleAnalysisIfNeeded
+from waterfall.flake import initialize_flake_pipeline
 from waterfall.test import wf_testcase
 
 
 class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
-  app_module = pipeline_handlers._APP
 
   def _CreateAndSaveMasterFlakeAnalysis(
       self, master_name, builder_name, build_number,
@@ -31,11 +29,12 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
 
-    need_analysis = NeedANewAnalysis(
-        master_name, builder_name, build_number, step_name, test_name,
+    need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
+        master_name, builder_name, build_number, step_name, test_name, None,
         allow_new_analysis=False)
 
     self.assertFalse(need_analysis)
+    self.assertIsNone(analysis)
 
   def testAnalysisIsNeededWhenNoneExistsAndAllowedToSchedule(self):
     master_name = 'm'
@@ -44,65 +43,48 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
 
-    need_analysis = NeedANewAnalysis(
-        master_name, builder_name, build_number, step_name, test_name,
+    need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
+        master_name, builder_name, build_number, step_name, test_name, None,
         allow_new_analysis=True)
 
     self.assertTrue(need_analysis)
+    self.assertIsNotNone(analysis)
 
-  def testAnalysisIsNeededAfterCrashedAnalysis(self):
+  def testAnalysisIsNeededForCrashedAnalysisWithForce(self):
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
     step_name = 's'
     test_name = 't'
-    status = analysis_status.ERROR
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
-        test_name, status=status)
+        test_name, status=analysis_status.ERROR)
 
-    need_analysis = NeedANewAnalysis(
-        master_name, builder_name, build_number, step_name, test_name)
+    need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
+        master_name, builder_name, build_number, step_name, test_name, None,
+        allow_new_analysis=True, force=True)
 
     self.assertTrue(need_analysis)
+    self.assertIsNotNone(analysis)
+    self.assertTrue(analysis.version_number > 1)
 
-  def testAnalysisIsNotNeededAfterCompletedAnalysis(self):
+  def testAnalysisIsNotNeededForIncompletedAnalysis(self):
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
     step_name = 's'
     test_name = 't'
-    for status in [analysis_status.RUNNING,
-                   analysis_status.PENDING,
-                   analysis_status.COMPLETED]:
+    for status in [analysis_status.RUNNING, analysis_status.PENDING]:
       self._CreateAndSaveMasterFlakeAnalysis(
           master_name, builder_name, build_number,
           step_name, test_name, status=status)
 
-      need_analysis = NeedANewAnalysis(
-          master_name, builder_name, build_number, step_name, test_name)
+      need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
+          master_name, builder_name, build_number, step_name, test_name, None,
+          allow_new_analysis=True, force=True)
 
       self.assertFalse(need_analysis)
-
-  def testAnalysisIsNeededAfterCompletedDifferentAnalysis(self):
-    master_name = 'm'
-    builder_name = 'b 1'
-    build_number = 123
-    step_name = 's'
-    test_name = 't'
-    for status in [analysis_status.RUNNING,
-                   analysis_status.PENDING,
-                   analysis_status.COMPLETED]:
-      self._CreateAndSaveMasterFlakeAnalysis(
-          master_name, builder_name, build_number,
-          step_name, test_name, status=status)
-
-    dif_test_name = 'd'
-    need_analysis = NeedANewAnalysis(
-        master_name, builder_name, build_number, step_name, dif_test_name,
-        allow_new_analysis=True)
-
-    self.assertTrue(need_analysis)
+      self.assertIsNotNone(analysis)
 
   @mock.patch(
       'waterfall.flake.initialize_flake_pipeline.RecursiveFlakePipeline')
@@ -113,13 +95,11 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
 
-    ScheduleAnalysisIfNeeded(
+    analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
         master_name, builder_name, build_number,
-        step_name, test_name, allow_new_analysis=True,
+        step_name, test_name, allow_new_analysis=True, force=False,
         queue_name=constants.DEFAULT_QUEUE)
 
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
     self.assertIsNotNone(analysis)
     mocked_pipeline.assert_has_calls(
         [mock.call().StartOffPSTPeakHours(queue_name=constants.DEFAULT_QUEUE)])
@@ -137,9 +117,10 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name, test_name,
         status=analysis_status.COMPLETED)
 
-    ScheduleAnalysisIfNeeded(
+    analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
         master_name, builder_name, build_number,
         step_name, test_name,
         queue_name=constants.DEFAULT_QUEUE)
 
     self.assertFalse(mocked_pipeline.called)
+    self.assertIsNotNone(analysis)

@@ -103,3 +103,23 @@ class MasterFlakeAnalysisTest(unittest.TestCase):
     self.assertIsNone(analysis.correct_culprit)
     self.assertIsNone(analysis.suspected_flake_build_number)
     self.assertEqual([], analysis.data_points)
+
+  def testGetErrorMessage(self):
+    cases = [
+        (None, None),
+        ('error', {'message': 'error', 'code': 'code'}),
+    ]
+    for expected_error_message, error in cases:
+      analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+      analysis.error = error
+      self.assertEqual(expected_error_message, analysis.error_message)
+
+  def testGetIterationsToRerun(self):
+    cases = [
+        (-1, {}),
+        (5, {'key': 'value', 'iterations_to_rerun': 5}),
+    ]
+    for expected_rerun, algorithm_parameters in cases:
+      analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+      analysis.algorithm_parameters = algorithm_parameters
+      self.assertEqual(expected_rerun, analysis.iterations_to_rerun)
