@@ -153,7 +153,17 @@
 	  <tr>
 	    <td><input type="radio" name="comp" value="API" id="dev_opt_1" onclick="selectComp(this.value)" /></td>
 	    <td><label for="dev_opt_1">API</label></td>
-	    <td><label for="">I found a problem with a browser API</label></td>
+	    <td><label for="">Problems with a browser API</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Javascript" id="dev_opt_11" onclick="selectComp(this.value)" /></td>
+	    <td><label for="dev_opt_11">Javascript</label></td>
+	    <td><label for="">Problems with the Javascript interpreter</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Developer Tools" id="dev_opt_12" onclick="selectComp(this.value)" /></td>
+	    <td><label for="dev_opt_12">Developer Tools</label></td>
+	    <td><label for="">Problems with the Developer tool chain/ inspector</label></td>
 	  </tr>
         </table>
       </div>
@@ -210,16 +220,6 @@
 	    <td><input type="radio" name="comp" value="Installation" id="opt_10" onclick="selectComp(this.value)" /></td>
 	    <td><label for="opt_10">Installation</label></td>
 	    <td><label for="">Problem installing Chrome</label></td>
-	  </tr>
-	  <tr>
-	    <td><input type="radio" name="comp" value="Javascript" id="opt_11" onclick="selectComp(this.value)" /></td>
-	    <td><label for="opt_11">Javascript</label></td>
-	    <td><label for="">Problems w/ the Javascript interpreter</label></td>
-	  </tr>
-	  <tr>
-	    <td><input type="radio" name="comp" value="Developer Tools" id="opt_12" onclick="selectComp(this.value)" /></td>
-	    <td><label for="opt_12">Developer Tools</label></td>
-	    <td><label for="">Problems w/ the Developer tool chain/ inspector</label></td>
 	  </tr>
 	  <tr>
 	    <td><input type="radio" name="comp" value="Crashes" id="opt_13" onclick="selectComp(this.value)" /></td>
