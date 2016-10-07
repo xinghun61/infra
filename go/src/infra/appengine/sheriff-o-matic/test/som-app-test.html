@@ -19,8 +19,12 @@
       text: {'Content-Type': 'text/html'},
   };
 
+  // FIXME: Use stub elements to mock out som-drawer
+  // https://www.polymer-project.org/1.0/docs/tools/tests#create-stub-elements
   setup(function() {
     element = fixture('basic');
+    sinon.stub(window, 'fetch');
+
     server = sinon.fakeServer.create();
     server.respondWith(
       'GET',
@@ -30,18 +34,12 @@
         '[]'
       ]
     );
-    server.respondWith(
-      'GET',
-      '/api/v1/alerts/test', [
-        200,
-        responseHeaders.json,
-        '[]'
-      ]
-    );
   });
 
   teardown(function() {
     server.restore();
+
+    window.fetch.restore();
   });
 
   suite('basic tests', function() {
@@ -63,17 +61,42 @@
       let tree = 'notfound';
       let groups = [tree];
 
+      let res = new window.Response(null, {
+        status: 404,
+        headers: {
+          'Content-type': 'application/json',
+        }
+      });
+
+      window.fetch.returns(Promise.resolve(res));
+
       element._alertsGroupsChanged(groups);
 
-      server.respondWith(
-        'GET',
-        '/api/v1/alerts/' + tree, [
-          404,
-          responseHeaders.text,
-          'Tree not found'
-        ]
-      );
-      server.respond();
+      assert.isTrue(window.fetch.calledOnce);
+
+      flush(function() {
+        assert.notEqual(element._fetchAlertsError, '');
+        expect(element.$.fetchAlertsError).be.visible;
+        done();
+      });
+    });
+
+    test('tree error', function(done) {
+      let tree = 'notfound';
+      let groups = [tree];
+
+      let res = new window.Response(null, {
+        status: 500,
+        headers: {
+          'Content-type': 'application/json',
+        }
+      });
+
+      window.fetch.returns(Promise.resolve(res));
+
+      element._alertsGroupsChanged(groups);
+
+      assert.isTrue(window.fetch.calledOnce);
 
       flush(function() {
         assert.notEqual(element._fetchAlertsError, '');

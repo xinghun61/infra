@@ -600,11 +600,15 @@
           this._activeRequests += alertsGroups.length;
 
           alertsGroups.forEach((group) => {
-            let foo = fetch('/api/v1/alerts/' + group, {credentials: 'include'}).then((response) => {
+            window.fetch('/api/v1/alerts/' + group, {credentials: 'include'}).then((response) => {
               this._activeRequests -= 1;
               if (response.status == 404) {
                 this._fetchAlertsError = 'Server responded with 404: ' + group
                   + ' not found. ';
+                return false;
+              }
+              if (!response.ok) {
+                this._fetchAlertsError = 'Server responded with ' + response.status + ': ' + response.statusText;
                 return false;
               }
               return response.json();
