@@ -87,16 +87,26 @@ def TriggerSwarmingTask(request, http_client):
 
 
 def ListSwarmingTasksDataByTags(
-    master_name, builder_name, build_number, http_client, step_name=None):
-  """Downloads tasks data from swarming server."""
+    master_name, builder_name, build_number, http_client,
+    additional_tag_filters=None):
+  """Downloads tasks data from swarming server.
+
+  Args:
+    master_name(str): Value of the master tag.
+    builder_name(str): Value of the buildername tag.
+    build_number(int): Value of the buildnumber tag.
+    http_client(RetryHttpClient): The http client to send HTTPs requests.
+    additional_tag_filters(dict): More tag filters to be added.
+  """
   base_url = ('https://%s/_ah/api/swarming/v1/tasks/'
               'list?tags=%s&tags=%s&tags=%s') % (
                   waterfall_config.GetSwarmingSettings().get('server_host'),
                   urllib.quote('master:%s' % master_name),
                   urllib.quote('buildername:%s' % builder_name),
                   urllib.quote('buildnumber:%d' % build_number))
-  if step_name:
-    base_url += '&tags=%s' % urllib.quote('stepname:%s' % step_name)
+  additional_tag_filters = additional_tag_filters or {}
+  for tag_name, tag_value in additional_tag_filters.iteritems():
+    base_url += '&tags=%s' % urllib.quote('%s:%s' % (tag_name, tag_value))
 
   items = []
   cursor = None
@@ -202,7 +212,7 @@ def GetIsolatedDataForStep(
   """Returns the isolated data for a specific step."""
   step_isolated_data = []
   data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
-                                     http_client, step_name)
+                                     http_client, {'stepname': step_name})
   if not data:
     return step_isolated_data
 

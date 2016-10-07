@@ -55,6 +55,11 @@ class BuildStep(ndb.Model):
         step_name=step_name,
         reported_time=reported_time)
 
+  @property
+  def has_matching_waterfall_step(self):
+    return None not in (self.wf_master_name, self.wf_builder_name,
+                        self.wf_build_number, self.wf_step_name)
+
 
 class FlakeAnalysisRequest(VersionedModel):
   """Represents a request to analyze a flake.

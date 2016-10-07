@@ -134,7 +134,8 @@ class TriggerSwarmingTaskPipeline(BasePipeline):
 
     # 0. Retrieve existing Swarming task ids for the given step.
     swarming_task_items = swarming_util.ListSwarmingTasksDataByTags(
-        master_name, builder_name, build_number, http_client, step_name)
+        master_name, builder_name, build_number, http_client,
+        {'stepname': step_name})
     assert len(swarming_task_items) > 0, 'No Swarming task was run.'
     ref_task_id = swarming_task_items[0]['task_id']
 

@@ -22,6 +22,15 @@ class FlakeAnalysisRequestTest(unittest.TestCase):
       self.assertEqual(expected_name,
                        BuildStep._StripMasterPrefix(original_name))
 
+  def testBuildStapHasMatchingWaterfallStep(self):
+    build_step = BuildStep.Create('m', 'b', 0, 's', datetime.utcnow())
+    self.assertFalse(build_step.has_matching_waterfall_step)
+    build_step.wf_master_name = 'm'
+    build_step.wf_builder_name = 'b'
+    build_step.wf_build_number = 0
+    build_step.wf_step_name = 's'
+    self.assertTrue(build_step.has_matching_waterfall_step)
+
   def testAddBuildStep(self):
     t1 = datetime(2016, 10, 1, 0, 0, 0)
     t2 = datetime(2016, 10, 2, 0, 0, 0)

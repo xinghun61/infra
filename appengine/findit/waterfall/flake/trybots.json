@@ -1,0 +1,1020 @@
+{
+  "tryserver.blink": {
+    "builders": {
+      "linux_precise_blink_compile_dbg": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Linux (dbg)", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "linux_precise_blink_compile_rel": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Linux", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "linux_precise_blink_dbg": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Linux (dbg)", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "linux_precise_blink_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Linux", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "linux_trusty_blink_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Linux Trusty", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "mac10.10_blink_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Mac10.10", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "mac10.11_blink_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Mac10.11", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "mac10.11_retina_blink_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Mac10.11 (retina)", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "mac10.9_blink_compile_dbg": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Mac10.11 (dbg)", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "mac10.9_blink_compile_rel": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Mac10.9", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "mac10.9_blink_dbg": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Mac10.11 (dbg)", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "mac10.9_blink_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Mac10.9", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "win10_blink_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Win10", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "win7_blink_compile_dbg": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Win7 (dbg)", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "win7_blink_compile_rel": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Win7", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "win7_blink_dbg": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Win7 (dbg)", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "win7_blink_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Win7", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }
+    }
+  }, 
+  "tryserver.chromium.android": {
+    "builders": {
+      "android_archive_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Android", 
+            "mastername": "chromium"
+          }
+        ]
+      }, 
+      "android_arm64_dbg_recipe": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Android Arm64 Builder (dbg)", 
+            "mastername": "chromium.linux"
+          }
+        ]
+      }, 
+      "android_blink_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Android (Nexus4)", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "android_clang_dbg_recipe": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Android Clang Builder (dbg)", 
+            "mastername": "chromium.linux"
+          }
+        ]
+      }, 
+      "android_compile_dbg": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Android Builder (dbg)", 
+            "mastername": "chromium.linux"
+          }
+        ]
+      }, 
+      "android_compile_mips_dbg": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Android MIPS Builder (dbg)", 
+            "mastername": "chromium.android"
+          }
+        ]
+      }, 
+      "android_compile_rel": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Android Builder", 
+            "mastername": "chromium.linux"
+          }
+        ]
+      }, 
+      "android_compile_x64_dbg": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Android x64 Builder (dbg)", 
+            "mastername": "chromium.android"
+          }
+        ]
+      }, 
+      "android_compile_x86_dbg": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Android x86 Builder (dbg)", 
+            "mastername": "chromium.android"
+          }
+        ]
+      }, 
+      "android_coverage": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Android Coverage (dbg)", 
+            "mastername": "chromium.fyi"
+          }
+        ]
+      }, 
+      "android_cronet": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Android Cronet Builder", 
+            "mastername": "chromium.android"
+          }
+        ]
+      }, 
+      "android_n5x_swarming_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Android N5X Swarm Builder", 
+            "mastername": "chromium.android"
+          }
+        ]
+      }, 
+      "android_optional_gpu_tests_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Android Release (Nexus 5X)", 
+            "mastername": "chromium.gpu.fyi"
+          }
+        ]
+      }, 
+      "cast_shell_android": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Cast Android (dbg)", 
+            "mastername": "chromium.linux"
+          }
+        ]
+      }, 
+      "linux_android_dbg_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Android Builder (dbg)", 
+            "mastername": "chromium.linux", 
+            "tester": "Android Tests (dbg)"
+          }
+        ]
+      }, 
+      "linux_android_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Android Builder", 
+            "mastername": "chromium.linux", 
+            "tester": "Android Tests"
+          }
+        ]
+      }
+    }
+  }, 
+  "tryserver.chromium.angle": {
+    "builders": {
+      "android_angle_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Android Release (Nexus 5X)", 
+            "mastername": "chromium.gpu.fyi"
+          }
+        ]
+      }, 
+      "linux_angle_chromeos_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Linux ChromiumOS Builder", 
+            "mastername": "chromium.gpu.fyi"
+          }
+        ]
+      }, 
+      "linux_angle_dbg_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "GPU Linux Builder (dbg)", 
+            "mastername": "chromium.gpu.fyi"
+          }
+        ]
+      }, 
+      "linux_angle_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "GPU Linux Builder", 
+            "mastername": "chromium.gpu.fyi", 
+            "tester": "Linux Release (NVIDIA)"
+          }
+        ]
+      }, 
+      "mac_angle_dbg_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "GPU Mac Builder (dbg)", 
+            "mastername": "chromium.gpu.fyi"
+          }
+        ]
+      }, 
+      "mac_angle_rel_ng": {
+        "bot_ids": [
+          {
+            "buildername": "GPU Mac Builder", 
+            "mastername": "chromium.gpu.fyi", 
+            "tester": "Mac 10.10 Release (Intel)"
+          }, 
+          {
+            "buildername": "GPU Mac Builder", 
+            "mastername": "chromium.gpu.fyi", 
+            "tester": "Mac Retina Release"
+          }, 
+          {
+            "buildername": "GPU Mac Builder", 
+            "mastername": "chromium.gpu.fyi", 
+            "tester": "Mac 10.10 Retina Release (AMD)"
+          }
+        ]
+      }, 
+      "win_angle_dbg_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "GPU Win Builder (dbg)", 
+            "mastername": "chromium.gpu.fyi"
+          }
+        ]
+      }, 
+      "win_angle_rel_ng": {
+        "bot_ids": [
+          {
+            "buildername": "GPU Win Builder", 
+            "mastername": "chromium.gpu.fyi", 
+            "tester": "Win7 Release (NVIDIA)"
+          }, 
+          {
+            "buildername": "GPU Win Builder", 
+            "mastername": "chromium.gpu.fyi", 
+            "tester": "Win7 Release (ATI)"
+          }
+        ]
+      }, 
+      "win_angle_x64_dbg_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "GPU Win x64 Builder (dbg)", 
+            "mastername": "chromium.gpu.fyi"
+          }
+        ]
+      }, 
+      "win_angle_x64_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "GPU Win x64 Builder", 
+            "mastername": "chromium.gpu.fyi", 
+            "tester": "Win7 x64 Release (NVIDIA)"
+          }
+        ]
+      }
+    }
+  }, 
+  "tryserver.chromium.linux": {
+    "builders": {
+      "blimp_linux_dbg": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Blimp Linux (dbg)", 
+            "mastername": "chromium.linux"
+          }
+        ]
+      }, 
+      "cast_shell_linux": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Cast Linux", 
+            "mastername": "chromium.linux"
+          }
+        ]
+      }, 
+      "chromeos_amd64-generic_chromium_compile_only_ng": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "ChromiumOS amd64-generic Compile", 
+            "mastername": "chromium.chromiumos"
+          }
+        ]
+      }, 
+      "chromeos_daisy_chromium_compile_only_ng": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "ChromiumOS daisy Compile", 
+            "mastername": "chromium.chromiumos"
+          }
+        ]
+      }, 
+      "chromeos_x86-generic_chromium_compile_only_ng": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "ChromiumOS x86-generic Compile", 
+            "mastername": "chromium.chromiumos"
+          }
+        ]
+      }, 
+      "linux_arm": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Linux ARM", 
+            "mastername": "chromium.fyi"
+          }
+        ]
+      }, 
+      "linux_chromium_archive_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Linux x64", 
+            "mastername": "chromium"
+          }
+        ]
+      }, 
+      "linux_chromium_asan_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Linux ASan LSan Builder", 
+            "mastername": "chromium.memory", 
+            "tester": "Linux ASan LSan Tests (1)"
+          }
+        ]
+      }, 
+      "linux_chromium_browser_side_navigation_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Browser Side Navigation Linux", 
+            "mastername": "chromium.fyi"
+          }
+        ]
+      }, 
+      "linux_chromium_cfi_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "CFI Linux", 
+            "mastername": "chromium.fyi"
+          }
+        ]
+      }, 
+      "linux_chromium_chromeos_asan_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Linux Chromium OS ASan LSan Builder", 
+            "mastername": "chromium.memory", 
+            "tester": "Linux Chromium OS ASan LSan Tests (1)"
+          }
+        ]
+      }, 
+      "linux_chromium_chromeos_compile_dbg_ng": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Linux ChromiumOS Builder (dbg)", 
+            "mastername": "chromium.chromiumos"
+          }
+        ]
+      }, 
+      "linux_chromium_chromeos_compile_rel_ng": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Linux ChromiumOS Builder", 
+            "mastername": "chromium.chromiumos"
+          }
+        ]
+      }, 
+      "linux_chromium_chromeos_dbg_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Linux ChromiumOS Builder (dbg)", 
+            "mastername": "chromium.chromiumos", 
+            "tester": "Linux ChromiumOS Tests (dbg)(1)"
+          }
+        ]
+      }, 
+      "linux_chromium_chromeos_msan_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Chromium Linux ChromeOS MSan Builder", 
+            "mastername": "chromium.memory.full", 
+            "tester": "Linux ChromeOS MSan Tests"
+          }
+        ]
+      }, 
+      "linux_chromium_chromeos_ozone_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Linux ChromiumOS Ozone Builder", 
+            "mastername": "chromium.chromiumos", 
+            "tester": "Linux ChromiumOS Ozone Tests (1)"
+          }
+        ]
+      }, 
+      "linux_chromium_chromeos_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Linux ChromiumOS Builder", 
+            "mastername": "chromium.chromiumos", 
+            "tester": "Linux ChromiumOS Tests (1)"
+          }
+        ]
+      }, 
+      "linux_chromium_clobber_rel_ng": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Linux x64", 
+            "mastername": "chromium"
+          }
+        ]
+      }, 
+      "linux_chromium_compile_dbg_32_ng": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Linux Builder (dbg)(32)", 
+            "mastername": "chromium.linux"
+          }
+        ]
+      }, 
+      "linux_chromium_compile_dbg_ng": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Linux Builder (dbg)", 
+            "mastername": "chromium.linux"
+          }
+        ]
+      }, 
+      "linux_chromium_compile_rel_ng": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Linux Builder", 
+            "mastername": "chromium.linux"
+          }
+        ]
+      }, 
+      "linux_chromium_dbg_32_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Linux Builder (dbg)(32)", 
+            "mastername": "chromium.linux", 
+            "tester": "Linux Tests (dbg)(1)(32)"
+          }
+        ]
+      }, 
+      "linux_chromium_dbg_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Linux Builder (dbg)", 
+            "mastername": "chromium.linux", 
+            "tester": "Linux Tests (dbg)(1)"
+          }
+        ]
+      }, 
+      "linux_chromium_headless_dbg": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Headless Linux (dbg)", 
+            "mastername": "chromium.fyi"
+          }
+        ]
+      }, 
+      "linux_chromium_msan_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Chromium Linux MSan Builder", 
+            "mastername": "chromium.memory.full", 
+            "tester": "Linux MSan Tests"
+          }
+        ]
+      }, 
+      "linux_chromium_rel_ng": {
+        "bot_ids": [
+          {
+            "buildername": "Linux Builder", 
+            "mastername": "chromium.linux", 
+            "tester": "Linux Tests"
+          }, 
+          {
+            "buildername": "GPU Linux Builder", 
+            "mastername": "chromium.gpu", 
+            "tester": "Linux Release (NVIDIA)"
+          }
+        ]
+      }, 
+      "linux_chromium_tsan_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Chromium Linux TSan Builder", 
+            "mastername": "chromium.memory.full", 
+            "tester": "Linux TSan Tests"
+          }
+        ]
+      }, 
+      "linux_layout_tests_slimming_paint_v2": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Linux slimming_paint_v2 Dummy Builder", 
+            "mastername": "chromium.fyi"
+          }
+        ]
+      }, 
+      "linux_optional_gpu_tests_rel": {
+        "bot_ids": [
+          {
+            "buildername": "GPU Linux Builder", 
+            "mastername": "chromium.gpu.fyi", 
+            "tester": "Optional Linux Release (NVIDIA)"
+          }
+        ]
+      }, 
+      "linux_site_isolation": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Site Isolation Linux", 
+            "mastername": "chromium.fyi"
+          }
+        ]
+      }
+    }
+  }, 
+  "tryserver.chromium.mac": {
+    "builders": {
+      "mac_chromium_10.10_macviews": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Chromium Mac 10.10 MacViews", 
+            "mastername": "chromium.fyi"
+          }
+        ]
+      }, 
+      "mac_chromium_10.10_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Mac Builder", 
+            "mastername": "chromium.mac", 
+            "tester": "Mac10.10 Tests"
+          }
+        ]
+      }, 
+      "mac_chromium_archive_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Mac", 
+            "mastername": "chromium"
+          }
+        ]
+      }, 
+      "mac_chromium_asan_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Mac ASan 64 Builder", 
+            "mastername": "chromium.memory", 
+            "tester": "Mac ASan 64 Tests (1)"
+          }
+        ]
+      }, 
+      "mac_chromium_compile_dbg_ng": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Mac Builder (dbg)", 
+            "mastername": "chromium.mac"
+          }
+        ]
+      }, 
+      "mac_chromium_compile_rel_ng": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Mac Builder", 
+            "mastername": "chromium.mac"
+          }
+        ]
+      }, 
+      "mac_chromium_dbg_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Mac Builder (dbg)", 
+            "mastername": "chromium.mac", 
+            "tester": "Mac10.9 Tests (dbg)"
+          }
+        ]
+      }, 
+      "mac_chromium_rel_ng": {
+        "bot_ids": [
+          {
+            "buildername": "Mac Builder", 
+            "mastername": "chromium.mac", 
+            "tester": "Mac10.9 Tests"
+          }, 
+          {
+            "buildername": "GPU Mac Builder", 
+            "mastername": "chromium.gpu", 
+            "tester": "Mac 10.10 Release (Intel)"
+          }, 
+          {
+            "buildername": "GPU Mac Builder", 
+            "mastername": "chromium.gpu", 
+            "tester": "Mac 10.10 Retina Release (AMD)"
+          }
+        ]
+      }, 
+      "mac_optional_gpu_tests_rel": {
+        "bot_ids": [
+          {
+            "buildername": "GPU Mac Builder", 
+            "mastername": "chromium.gpu.fyi", 
+            "tester": "Optional Mac 10.10 Release (Intel)"
+          }, 
+          {
+            "buildername": "GPU Mac Builder", 
+            "mastername": "chromium.gpu.fyi", 
+            "tester": "Optional Mac Retina Release"
+          }, 
+          {
+            "buildername": "GPU Mac Builder", 
+            "mastername": "chromium.gpu.fyi", 
+            "tester": "Optional Mac 10.10 Retina Release (AMD)"
+          }
+        ], 
+        "deapply_patch": false
+      }
+    }
+  }, 
+  "tryserver.chromium.win": {
+    "builders": {
+      "win10_chromium_x64_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Win x64 Builder", 
+            "mastername": "chromium.win", 
+            "tester": "Win10 Tests x64"
+          }
+        ]
+      }, 
+      "win10_chromium_x64_rel_ng_exp": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Win x64 Builder", 
+            "mastername": "chromium.win", 
+            "tester": "Win10 Tests x64"
+          }
+        ]
+      }, 
+      "win_archive": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Win", 
+            "mastername": "chromium"
+          }
+        ]
+      }, 
+      "win_chrome_official": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Google Chrome Win", 
+            "mastername": "chromium.chrome"
+          }
+        ]
+      }, 
+      "win_chromium_compile_dbg_ng": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Win Builder (dbg)", 
+            "mastername": "chromium.win"
+          }
+        ]
+      }, 
+      "win_chromium_compile_rel_ng": {
+        "analyze_mode": "compile", 
+        "bot_ids": [
+          {
+            "buildername": "Win Builder", 
+            "mastername": "chromium.win"
+          }
+        ]
+      }, 
+      "win_chromium_dbg_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Win Builder (dbg)", 
+            "mastername": "chromium.win", 
+            "tester": "Win7 Tests (dbg)(1)"
+          }
+        ]
+      }, 
+      "win_chromium_rel_ng": {
+        "bot_ids": [
+          {
+            "buildername": "Win Builder", 
+            "mastername": "chromium.win", 
+            "tester": "Win7 Tests (1)"
+          }, 
+          {
+            "buildername": "GPU Win Builder", 
+            "mastername": "chromium.gpu", 
+            "tester": "Win7 Release (NVIDIA)"
+          }
+        ]
+      }, 
+      "win_chromium_syzyasan_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Win SyzyAsan (rel)", 
+            "mastername": "chromium.fyi"
+          }
+        ]
+      }, 
+      "win_chromium_x64_rel_ng": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Win x64 Builder", 
+            "mastername": "chromium.win", 
+            "tester": "Win 7 Tests x64 (1)"
+          }
+        ]
+      }, 
+      "win_clang": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "WinClang64 (dbg)", 
+            "mastername": "chromium.win"
+          }
+        ]
+      }, 
+      "win_clang_dbg": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "CrWinClang(dbg)", 
+            "mastername": "chromium.fyi"
+          }
+        ]
+      }, 
+      "win_clang_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "CrWinClang", 
+            "mastername": "chromium.fyi"
+          }
+        ]
+      }, 
+      "win_clang_x64_dbg": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "CrWinClang64(dbg)", 
+            "mastername": "chromium.fyi"
+          }
+        ]
+      }, 
+      "win_clang_x64_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "CrWinClang64", 
+            "mastername": "chromium.fyi"
+          }
+        ]
+      }, 
+      "win_optional_gpu_tests_rel": {
+        "bot_ids": [
+          {
+            "buildername": "GPU Win Builder", 
+            "mastername": "chromium.gpu.fyi", 
+            "tester": "Optional Win7 Release (NVIDIA)"
+          }, 
+          {
+            "buildername": "GPU Win Builder", 
+            "mastername": "chromium.gpu.fyi", 
+            "tester": "Win7 Release (ATI)"
+          }
+        ]
+      }, 
+      "win_x64_archive": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "Win x64", 
+            "mastername": "chromium"
+          }
+        ]
+      }
+    }
+  }, 
+  "tryserver.v8": {
+    "builders": {
+      "v8_android_chromium_gn_dbg": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "V8 Android GN (dbg)", 
+            "mastername": "client.v8.fyi"
+          }
+        ]
+      }, 
+      "v8_linux_blink_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "WebKit Linux", 
+            "mastername": "chromium.webkit"
+          }
+        ]
+      }, 
+      "v8_linux_chromium_gn_rel": {
+        "analyze_mode": null, 
+        "bot_ids": [
+          {
+            "buildername": "V8 Linux GN", 
+            "mastername": "client.v8.fyi"
+          }
+        ]
+      }
+    }
+  }
+}
