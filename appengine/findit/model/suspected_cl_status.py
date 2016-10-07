@@ -10,9 +10,9 @@ PARTIALLY_CORRECT = 2
 PARTIALLY_TRIAGED = 3
 
 
-RESULT_STATUS_TO_DESCRIPTION = {
+CL_STATUS_TO_DESCRIPTION = {
     CORRECT: 'Correct',
     INCORRECT: 'Incorrect',
     PARTIALLY_CORRECT: 'Partially Correct',
-    PARTIALLY_TRIAGED: 'Partially triaged'
+    PARTIALLY_TRIAGED: 'Partially Triaged'
 }

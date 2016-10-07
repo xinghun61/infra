@@ -18,6 +18,7 @@ from handlers import list_analyses
 from handlers import monitor_alerts
 from handlers import swarming_task
 from handlers import triage_analysis
+from handlers import triage_suspected_cl
 from handlers import trigger_analyses
 from handlers import try_job
 from handlers import try_job_dashboard
@@ -76,6 +77,7 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/waterfall/monitor-alerts', monitor_alerts.MonitorAlerts),
     ('/waterfall/swarming-task', swarming_task.SwarmingTask),
     ('/waterfall/triage-analysis', triage_analysis.TriageAnalysis),
+    ('/waterfall/triage-suspected-cl', triage_suspected_cl.TriageSuspectedCl),
     ('/waterfall/try-job', try_job.TryJob),
     ('/waterfall/try-job-dashboard', try_job_dashboard.TryJobDashboard),
     ('/waterfall/try-job-result', try_job_result.TryJobResult),

@@ -76,6 +76,21 @@
 
     {% block constant %}{% endblock constant %}
 
+    function triageSuspectedCL(e) {
+      $.getJSON('/waterfall/triage-suspected-cl?cl_info=' + e.name +'&status=' + e.value + '&url=' + findit.buildUrl, function(data) {
+        if (! data[success]) {
+          alert('Failed to update datastore. Please refresh and try again.');
+        } else {
+          $('#cl_result_triaged').html('Result has been recorded. Thank you.')
+        }
+      }).error(function(xhr) {
+        // Replace the whole page with errors from server side.
+        document.body.outerHTML = xhr.responseText;
+      });
+
+      e.preventDefault();
+    }
+
     function triageAnalysisResult(e) {
       var target = $(this);
       if (target.hasClass('triaged'))
@@ -157,12 +172,6 @@
 
           {% block failure_classification %}{% endblock failure_classification %}
 
-          if (findit.analysisCorrect == 'True') {
-            $('.thumb-up').addClass('triaged').removeClass('triage');
-          } else if (findit.analysisCorrect == 'False') {
-            $('.thumb-down').addClass('triaged').removeClass('triage');
-          }
-
           {% if show_debug_info %}
             if (findit.analysisIsDuplicate) {
               $('#duplicate_reference').html('This analysis was automatically triaged as a duplicate because of another build analysis: ' +
@@ -232,10 +241,31 @@
   {% if analysis_completed %}
   <br>
   <div>
-    <b>Feedback on Findit result:</b><br>
-    <div class="thumbs-up-down">
-      <div class="triage thumb-up">Correct <img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_up_black_24dp.png"/></div>
-      <div class="triage thumb-down"><img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_down_black_24dp.png"/> Incorrect</div>
+    <div id="triage_cls">
+      {% if suspected_cls %}
+        <b>Feedback on Findit result:</b>
+        <table>
+          {% for suspected_cl in suspected_cls %}
+            <tr>
+              <td>{{suspected_cl.repo_name}}&nbsp;<a href="{{suspected_cl.url}}">{{ suspected_cl.commit_position or suspected_cl.revision}}</a></td>
+              <td>
+                {% set cl_info = suspected_cl.repo_name + '/' + suspected_cl.revision %}
+                  {% if suspected_cl.status == 0 %}
+                    <input type="radio" name="{{ cl_info }}" value="0" checked="checked" onchange="triageSuspectedCL(this)">Correct &nbsp;&nbsp;
+                    <input type="radio" name="{{ cl_info }}" value="1" onchange="triageSuspectedCL(this)">Inorrect
+                  {% elif suspected_cl.status == 1 %}
+                    <input type="radio" name="{{ cl_info }}" value="0" onchange="triageSuspectedCL(this)">Correct &nbsp;&nbsp;
+                    <input type="radio" name="{{ cl_info }}" value="1" checked="checked" onchange="triageSuspectedCL(this)">Inorrect
+                  {% else %}
+                    <input type="radio" name="{{ cl_info }}" value="0" onchange="triageSuspectedCL(this)">Correct &nbsp;&nbsp;
+                    <input type="radio" name="{{ cl_info }}" value="1" onchange="triageSuspectedCL(this)">Inorrect
+                  {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </table>
+      {% endif %}
+      <div id="cl_result_triaged"></div>
     </div>
     {% if show_debug_info %}
       <div id="duplicates_marked"></div>
@@ -259,12 +289,13 @@
     <b>Triage history:</b>
     <div>
       <table>
-        <tr><th>When</th><th>Who</th><th>Result</th><th>Version</th></tr>
+        <tr><th>When</th><th>Who</th><th>CL</th><th>Result</th><th>Version</th></tr>
         <tbody>
           {% for triage_record in triage_history %}
             <tr>
               <td>{{triage_record.triage_time}}</td>
               <td>{{triage_record.user_name}}</td>
+              <td>{{triage_record.triaged_cl.repo_name}} <a href="{{triage_record.triaged_cl.url}}">{{triage_record.triaged_cl.commit_position or triage_record.triaged_cl.revision}}</a></td>
               <td>{{triage_record.result_status}}</td>
               <td>{{triage_record.version | default('N/A', true)}}</td>
             </tr>

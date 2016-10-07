@@ -61,13 +61,14 @@
 
 {% block result_tables %}
   <div>
+    <br>
     <b>Heuristic result:</b>
     {% if analysis_failed %}
       <div class="error">No result because of some error in analysis!</div>
     {% elif suspected_cls_by_heuristic|length == 0 %}
       <div>No culprit is found!</div>
     {% else %}
-      <div id="suspected_cls">
+      <div id="heuristic_result">
         <table>
           <tr>
             <th title="The build cycle in which the culprit was in">Build Number</th>

@@ -13,11 +13,13 @@ import webtest
 from handlers import build_failure
 from handlers import handlers_util
 from handlers import result_status
+from model import analysis_approach_type
+from model import analysis_status
+from model import suspected_cl_status
 from model.base_build_model import BaseBuildModel
 from model.wf_analysis import WfAnalysis
+from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_try_job import WfTryJob
-from model import analysis_status
-from model.wf_analysis import WfAnalysis
 from waterfall import buildbot
 from waterfall.test import wf_testcase
 
@@ -141,15 +143,41 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     ]
     self.assertIsNone(build_failure._GetTriageHistory(analysis))
 
+  def testGetCLDict(self):
+    analysis = WfAnalysis.Create('m', 'b', 1)
+    analysis.suspected_cls = [
+        {
+            'repo_name': 'chromium',
+            'revision': 'rev2',
+            'url': 'url',
+            'commit_position': 123
+        }
+    ]
+    analysis.put()
+    cl_info = 'chromium/rev1'
+    self.assertEqual({}, build_failure._GetCLDict(analysis, cl_info))
+
+  def testGetCLDictNone(self):
+    self.assertEqual({}, build_failure._GetCLDict(None, None))
+
   def testGetTriageHistoryWhenUserIsAdmin(self):
     analysis = WfAnalysis.Create('m', 'b', 1)
     analysis.status = analysis_status.COMPLETED
+    analysis.suspected_cls = [
+        {
+            'repo_name': 'chromium',
+            'revision': 'rev1',
+            'url': 'url',
+            'commit_position': 123
+        }
+    ]
     analysis.triage_history = [
         {
             'triage_timestamp': 1438380761,
             'user_name': 'test',
             'result_status': 'dummy status',
             'version': 'dummy version',
+            'triaged_cl': 'chromium/rev1'
         }
     ]
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
@@ -173,6 +201,14 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = analysis_status.COMPLETED
+    analysis.suspected_cls = [
+        {
+            'repo_name': 'chromium',
+            'revision': 'r99_2',
+            'commit_position': None,
+            'url': None,
+        }
+    ]
     analysis.put()
 
     response = self.test_app.get('/build-failure',
@@ -739,6 +775,14 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
         'compile': 'm/b/122',
     }
     analysis.status = analysis_status.COMPLETED
+    analysis.suspected_cls = [
+        {
+            'repo_name': 'chromium',
+            'revision': 'rev',
+            'commit_position': 122,
+            'url': None
+        }
+    ]
     analysis.put()
 
     try_job = WfTryJob.Create('m', 'b', 122)
@@ -755,6 +799,19 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     ]
     try_job.put()
 
+    suspected_cl = WfSuspectedCL.Create('chromium', 'rev', 122)
+    suspected_cl.builds = {
+        'm/b/123': {
+            'failure_type': 'compile',
+            'failures': None,
+            'status': suspected_cl_status.CORRECT,
+            'approach': analysis_approach_type.HEURISTIC,
+            'top_score': 5,
+            'Confidence': 97.9
+        }
+    }
+    suspected_cl.put()
+
     expected_try_job_result = {
         'status': 'completed',
         'url': 'build/url',
@@ -765,9 +822,64 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
         'failed': False,
     }
 
+    expected_suspected_cls = [
+        {
+            'repo_name': 'chromium',
+            'revision': 'rev',
+            'commit_position': 122,
+            'url': None,
+            'status': suspected_cl_status.CORRECT
+        }
+    ]
+
     build_url = buildbot.CreateBuildUrl('m', 'b', 123)
     response = self.test_app.get('/build-failure',
                                  params={'url': build_url, 'format': 'json'})
 
     self.assertEquals(200, response.status_int)
     self.assertEqual(expected_try_job_result, response.json_body['try_job'])
+    self.assertEqual(
+        expected_suspected_cls, response.json_body['suspected_cls'])
+
+  def testGetAllSuspectedCLsAndCheckStatus(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.suspected_cls = [
+        {
+            'repo_name': 'chromium',
+            'revision': 'rev',
+            'commit_position': 122,
+            'url': None
+        }
+    ]
+    analysis.put()
+    suspected_cl = WfSuspectedCL.Create('chromium', 'rev', 122)
+    suspected_cl.builds = {
+        'm/b/122': {
+            'failure_type': 'compile',
+            'failures': None,
+            'status': suspected_cl_status.CORRECT,
+            'approach': analysis_approach_type.HEURISTIC,
+            'top_score': 5,
+            'Confidence': 97.9
+        }
+    }
+    suspected_cl.put()
+
+    expected_suspected_cls = [
+        {
+            'repo_name': 'chromium',
+            'revision': 'rev',
+            'commit_position': 122,
+            'url': None,
+            'status': None
+        }
+    ]
+
+    suspected_cls = build_failure._GetAllSuspectedCLsAndCheckStatus(
+        master_name, builder_name, build_number, analysis)
+    self.assertEqual(
+        expected_suspected_cls, suspected_cls)
+

@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from collections import defaultdict
+import copy
 from datetime import datetime
 
 from google.appengine.api import users
@@ -15,10 +16,14 @@ from handlers import handlers_util
 from handlers import result_status
 from handlers.result_status import NO_TRY_JOB_REASON_MAP
 from model import analysis_status
-from model.wf_analysis import WfAnalysis
-from model.wf_try_job import WfTryJob
-from model.result_status import FOUND_INCORRECT
+from model import result_status as analysis_result_status
+from model import suspected_cl_status
+from model.base_build_model import BaseBuildModel
 from model.result_status import RESULT_STATUS_TO_DESCRIPTION
+from model.suspected_cl_status import CL_STATUS_TO_DESCRIPTION
+from model.wf_analysis import WfAnalysis
+from model.wf_suspected_cl import WfSuspectedCL
+from model.wf_try_job import WfTryJob
 from waterfall import build_failure_analysis_pipelines
 from waterfall import buildbot
 from waterfall import waterfall_config
@@ -27,11 +32,30 @@ from waterfall import waterfall_config
 NON_SWARMING = object()
 
 
+_ANALYSIS_CL_STATUS_MAP = {
+    analysis_result_status.FOUND_CORRECT: suspected_cl_status.CORRECT,
+    analysis_result_status.FOUND_INCORRECT: suspected_cl_status.INCORRECT
+}
+
+
 def _FormatDatetime(dt):
   if not dt:
     return None
   else:
     return dt.strftime('%Y-%m-%d %H:%M:%S UTC')
+
+
+def _GetCLDict(analysis, cl_info):
+  if not cl_info:
+    return {}
+
+  cl_keys = cl_info.split('/')
+  repo_name = cl_keys[0]
+  revision = cl_keys[1]
+  for cl in analysis.suspected_cls:
+    if cl['repo_name'] == repo_name and cl['revision'] == revision:
+      return cl
+  return {}
 
 
 def _GetTriageHistory(analysis):
@@ -42,14 +66,14 @@ def _GetTriageHistory(analysis):
 
   triage_history = []
   for triage_record in analysis.triage_history:
-    cl_status = (FOUND_INCORRECT if triage_record.get('cl_status') == 1
-                 else triage_record.get('cl_status'))
-    status = triage_record.get('result_status', cl_status)
     triage_history.append({
         'triage_time': _FormatDatetime(
             datetime.utcfromtimestamp(triage_record['triage_timestamp'])),
         'user_name': triage_record['user_name'],
-        'result_status': RESULT_STATUS_TO_DESCRIPTION.get(status),
+        'triaged_cl': _GetCLDict(analysis, triage_record.get('triaged_cl')),
+        'result_status': (
+            RESULT_STATUS_TO_DESCRIPTION.get(triage_record.get('result_status'))
+            or CL_STATUS_TO_DESCRIPTION.get(triage_record.get('cl_status'))),
         'version': triage_record.get('version'),
     })
 
@@ -305,6 +329,27 @@ def _PopulateHeuristicDataForCompileFailure(analysis, data):
       data['suspected_cls_by_heuristic'] = compile_failure['suspected_cls']
 
 
+def _GetAllSuspectedCLsAndCheckStatus(
+    master_name, builder_name, build_number, analysis):
+  build_key = BaseBuildModel.CreateBuildId(
+      master_name, builder_name, build_number)
+  suspected_cls = copy.deepcopy(analysis.suspected_cls)
+  if not suspected_cls:
+    return []
+
+  for cl in suspected_cls:
+    cl['status'] = _ANALYSIS_CL_STATUS_MAP.get(analysis.result_status, None)
+    suspected_cl = WfSuspectedCL.Get(cl['repo_name'], cl['revision'])
+    if not suspected_cl:
+      continue
+
+    build = suspected_cl.builds.get(build_key)
+    if build:
+      cl['status'] = build['status']
+
+  return suspected_cls
+
+
 class BuildFailure(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
@@ -343,19 +388,16 @@ class BuildFailure(BaseHandler):
             analysis.triage_reference_analysis_build_number
     }
 
-  def _PrepareDataForCompileFailure(self, analysis):
-    data = self._PrepareCommonDataForFailure(analysis)
+  def _PrepareDataForCompileFailure(self, analysis, data):
 
     # Check result from heuristic analysis.
     _PopulateHeuristicDataForCompileFailure(analysis, data)
     # Check result from try job.
     data['try_job'] = _PrepareTryJobDataForCompileFailure(analysis)
 
-    return data
-
-  def _PrepareDataForTestFailures(self, analysis, build_info,
+  def _PrepareDataForTestFailures(self, analysis, build_info, data,
                                   show_debug_info=False):
-    data = self._PrepareCommonDataForFailure(analysis)
+
     data['status_message_map'] = result_status.STATUS_MESSAGE_MAP
 
     organized_results = _GetOrganizedAnalysisResultBySuspectedCL(
@@ -405,16 +447,22 @@ class BuildFailure(BaseHandler):
           force_try_job=force_try_job,
           queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
+    data = self._PrepareCommonDataForFailure(analysis)
+    data['suspected_cls'] = _GetAllSuspectedCLsAndCheckStatus(
+        master_name, builder_name, build_number, analysis)
+
     if analysis.failure_type == failure_type.COMPILE:
+      self._PrepareDataForCompileFailure(analysis, data)
       return {
-          'template': 'waterfall/compile_failure.html',
-          'data': self._PrepareDataForCompileFailure(analysis),
+        'template': 'waterfall/compile_failure.html',
+        'data': data
       }
     else:
+      self._PrepareDataForTestFailures(
+        analysis, build_info, data, self._ShowDebugInfo())
       return {
-          'template': 'waterfall/test_failure.html',
-          'data': self._PrepareDataForTestFailures(analysis, build_info,
-                                                   self._ShowDebugInfo()),
+        'template': 'waterfall/test_failure.html',
+        'data': data
       }
 
   def HandlePost(self):  # pragma: no cover

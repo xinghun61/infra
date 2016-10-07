@@ -17,11 +17,20 @@ indexes:
 
 - kind: WfSuspectedCL
   properties:
-  - name: status
-    direction: asc
   - name: approaches
     direction: asc
   - name: failure_type
+    direction: asc
+  - name: status
+    direction: asc
+  - name: updated_time
+    direction: desc
+
+- kind: WfSuspectedCL
+  properties:
+  - name: approaches
+    direction: asc
+  - name: status
     direction: asc
   - name: updated_time
     direction: desc
