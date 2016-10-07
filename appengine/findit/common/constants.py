@@ -34,6 +34,14 @@ WATERFALL_ALERTS_URL = 'https://sheriff-o-matic.appspot.com/alerts'
 COMPILE_STEP_NAME = 'compile'
 
 
+# TODO: move this to config.
+# Whitelisted app ids for authorized access.
+WHITELISTED_APP_ACCOUNTS = [
+    'chromium-try-flakes@appspot.gserviceaccount.com',
+    'findit-for-me@appspot.gserviceaccount.com',
+]
+
+
 # Directory of html templates.
 HTML_TEMPLATE_DIR = os.path.realpath(
     os.path.join(os.path.dirname(__file__), os.path.pardir, 'templates'))

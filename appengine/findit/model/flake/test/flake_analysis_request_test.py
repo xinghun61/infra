@@ -4,14 +4,14 @@
 
 from datetime import datetime
 
-import unittest
-
+from common.findit_testcase import FinditTestCase
 from model import analysis_status
 from model.flake.flake_analysis_request import BuildStep
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
 
-class FlakeAnalysisRequestTest(unittest.TestCase):
+class FlakeAnalysisRequestTest(FinditTestCase):
 
   def testStripMasterPrefix(self):
     cases = {
@@ -46,3 +46,21 @@ class FlakeAnalysisRequestTest(unittest.TestCase):
                      request.build_steps[0])
     self.assertEqual(BuildStep.Create('m', 'b2', 9, 's', t4),
                      request.build_steps[1])
+
+  def testCopyFrom(self):
+    request1 = FlakeAnalysisRequest.Create('flaky_test', False, 123)
+
+    request2 = FlakeAnalysisRequest.Create('flaky_test', True, 456)
+    request2.AddBuildStep('m', 'b1', 1, 's', datetime(2016, 10, 1))
+    request2.user_emails = ['email']
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
+    analysis.Save()
+    request2.analyses.append(analysis.key)
+
+    request1.CopyFrom(request2)
+
+    self.assertEqual(request2.is_step, request1.is_step)
+    self.assertEqual(request2.bug_id, request1.bug_id)
+    self.assertEqual(request2.user_emails, request1.user_emails)
+    self.assertEqual(request2.build_steps, request1.build_steps)
+    self.assertEqual(request2.analyses, request1.analyses)

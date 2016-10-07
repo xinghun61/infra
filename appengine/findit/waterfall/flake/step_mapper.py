@@ -8,7 +8,7 @@ import os
 import logging
 
 from common import cache_decorator
-from common.http_client_appengine import HttpClientAppEngine as HttpClient
+from common.http_client_appengine import HttpClientAppengine as HttpClient
 from waterfall import buildbot
 from waterfall import swarming_util
 
@@ -68,7 +68,7 @@ def _GetMatchingWaterfallBuildStep(
     logging.info(
         '%s/%s/%s is not Swarmed yet.',
         cq_build_step.master_name, cq_build_step.builder_name,
-        cq_build_step.build_step)
+        cq_build_step.step_name)
     return no_matching_result  # Not on Swarm yet.
 
   # Name of the step in the tags of a Swarming task.
@@ -104,7 +104,7 @@ def _GetMatchingWaterfallBuildStep(
       logging.info(
           '%s/%s/%s is mapped to %s/%s/%s',
           cq_build_step.master_name, cq_build_step.builder_name,
-          cq_build_step.build_step, wf_master_name, wf_builder_name,
+          cq_build_step.step_name, wf_master_name, wf_builder_name,
           wf_step_name)
       return wf_master_name, wf_builder_name, builds[0], wf_step_name
 

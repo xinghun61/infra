@@ -36,8 +36,8 @@ class BuildStep(ndb.Model):
   # Indicate whether analysis on the step is supported.
   supported = ndb.BooleanProperty(indexed=False, default=False)
 
-  # Indicate whether the flake on this configuration is analyzed.
-  analyzed = ndb.BooleanProperty(indexed=False, default=False)
+  # Indicate whether the analysis of flake on this configuration is scheduled.
+  scheduled = ndb.BooleanProperty(indexed=False, default=False)
 
   @staticmethod
   def _StripMasterPrefix(name):
@@ -119,3 +119,12 @@ class FlakeAnalysisRequest(VersionedModel):
         BuildStep.Create(
             master_name, builder_name, build_number, step_name, reported_time))
     return True
+
+  def CopyFrom(self, other):
+    """Copies all states from the given request."""
+    assert isinstance(other, FlakeAnalysisRequest)
+    self.is_step = other.is_step
+    self.bug_id = other.bug_id
+    self.user_emails = other.user_emails
+    self.build_steps = other.build_steps
+    self.analyses = other.analyses
