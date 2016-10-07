@@ -31,6 +31,9 @@ class CrashAnalysis(ndb.Model):
   # ID to differentiate different client.
   client_id = ndb.StringProperty(indexed=False)
 
+  # Chrome regression range.
+  regression_range = ndb.JsonProperty(indexed=False)
+
   ################### Properties for the analysis progress. ###################
 
   # The url path to the pipeline status page.
@@ -54,33 +57,32 @@ class CrashAnalysis(ndb.Model):
 
   ################### Properties for the analysis result. ###################
 
+  solution = ndb.StringProperty(indexed=True)  # 'core', 'blame', etc.
+
   # Analysis results.
   result = ndb.JsonProperty(compressed=True, indexed=False)
 
-  # Tags for query and monitoring.
+  # Flag to check whether there is a result.
   has_regression_range = ndb.BooleanProperty(indexed=True)
   found_suspects = ndb.BooleanProperty(indexed=True)
   found_project = ndb.BooleanProperty(indexed=True)
   found_components = ndb.BooleanProperty(indexed=True)
 
-  solution = ndb.StringProperty(indexed=True)  # 'core', 'blame', etc.
-
-  # Triage results.
-  regression_range_triage_status = ndb.IntegerProperty(
-      indexed=True, default=triage_status.UNTRIAGED)
+  # Correct results.
   culprit_regression_range = ndb.JsonProperty(indexed=False)
-
-  suspected_cls_triage_status = ndb.IntegerProperty(
-      indexed=True, default=triage_status.UNTRIAGED)
   culprit_cls = ndb.JsonProperty(indexed=False)
-
-  suspected_project_triage_status = ndb.IntegerProperty(
-      indexed=True, default=triage_status.UNTRIAGED)
+  culprit_components = ndb.JsonProperty(indexed=False)
   culprit_project = ndb.StringProperty(indexed=False)
 
+  # Triage status - 'Untriaged', 'Incorrect', 'Correct', 'Unsure'.
+  regression_range_triage_status = ndb.IntegerProperty(
+      indexed=True, default=triage_status.UNTRIAGED)
+  suspected_cls_triage_status = ndb.IntegerProperty(
+      indexed=True, default=triage_status.UNTRIAGED)
   suspected_components_triage_status = ndb.IntegerProperty(
       indexed=True, default=triage_status.UNTRIAGED)
-  culprit_components = ndb.JsonProperty(indexed=False)
+  suspected_project_triage_status = ndb.IntegerProperty(
+      indexed=True, default=triage_status.UNTRIAGED)
 
   triage_history = ndb.JsonProperty(indexed=False)
 

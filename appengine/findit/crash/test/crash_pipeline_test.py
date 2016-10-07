@@ -153,8 +153,8 @@ class CrashPipelineTest(CrashTestCase):
       'process_type': 'browser',
     }
     stack_trace = 'frame1\nframe2\nframe3'
-    chrome_version = '50.2500.0.0'
-    historical_metadata = {'50.2500.0.0': 1.0}
+    chrome_version = '50.2500.0.1'
+    historical_metadata = None
 
     mock_host = 'https://host.com'
     self.mock(app_identity, 'get_default_version_hostname', lambda: mock_host)
@@ -189,7 +189,7 @@ class CrashPipelineTest(CrashTestCase):
 
     self.assertEqual(1, len(analyzed_crashes))
     self.assertEqual(
-        (signature, platform, stack_trace, chrome_version, historical_metadata),
+        (signature, platform, stack_trace, chrome_version, None),
         analyzed_crashes[0])
 
     analysis = FracasCrashAnalysis.Get(crash_identifiers)

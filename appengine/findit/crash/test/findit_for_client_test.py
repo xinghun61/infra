@@ -7,8 +7,10 @@ import json
 
 from google.appengine.api import app_identity
 
+from crash import detect_regression_range
 from crash import findit_for_client
 from crash import findit_for_chromecrash
+from crash.chromecrash_parser import ChromeCrashParser
 from crash.test.crash_testcase import CrashTestCase
 from crash.type_enums import CrashClient
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
@@ -103,12 +105,13 @@ class FinditForClientTest(CrashTestCase):
       'process_type': 'browser',
     }
     customized_data = {'channel': 'canary'}
+    regression_range = ['53.0.1235.1', '53.0.1235.1']
 
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
 
     findit_for_client.ResetAnalysis(
         analysis, chrome_version, signature, CrashClient.FRACAS, platform,
-        stack_trace, customized_data)
+        stack_trace, customized_data, regression_range)
 
     analysis = FracasCrashAnalysis.Get(crash_identifiers)
     self.assertEqual(analysis.crashed_version, chrome_version)
@@ -116,6 +119,7 @@ class FinditForClientTest(CrashTestCase):
     self.assertEqual(analysis.platform, platform)
     self.assertEqual(analysis.stack_trace, stack_trace)
     self.assertEqual(analysis.channel, customized_data['channel'])
+    self.assertEqual(analysis.regression_range, regression_range)
 
   def testCreateAnalysisForClient(self):
     crash_identifiers = {'signature': 'sig'}
@@ -214,3 +218,28 @@ class FinditForClientTest(CrashTestCase):
     result, tags = findit_for_client.FindCulprit(analysis)
     self.assertEqual(result, expected_result)
     self.assertEqual(tags, expected_tags)
+
+    analysis.client_id = 'unsupported_client'
+    result, tags = findit_for_client.FindCulprit(analysis)
+    self.assertEqual(result, expected_result)
+    self.assertEqual(tags, expected_tags)
+
+
+  def testGetRegressionRange(self):
+    expected_regression_range = ['51.0.1233.1', '51.0.1233.2']
+    def _MockDetectRegressionRange(*_):
+      return expected_regression_range
+
+    self.mock(detect_regression_range, 'DetectRegressionRange',
+              _MockDetectRegressionRange)
+    historical_metadata = [{'chrome_version': '51.0.1233.0', 'cpm': 0},
+                           {'chrome_version': '51.0.1233.1', 'cpm': 0},
+                           {'chrome_version': '51.0.1233.2', 'cpm': 0.89}]
+
+    regression_range = findit_for_client.GetRegressionRange(
+        CrashClient.FRACAS, {'historical_metadata': historical_metadata})
+    self.assertEqual(regression_range, expected_regression_range)
+
+    regression_range = findit_for_client.GetRegressionRange(
+        'unsupported_client', {'historical_metadata': historical_metadata})
+    self.assertEqual(regression_range, None)

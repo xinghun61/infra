@@ -48,12 +48,6 @@ class FinditForChromeCrashTest(CrashTestCase):
       stack.append(CallStack(0))
       return stack
 
-    def _MockDetectRegressionRange(historic):
-      if historic:
-        return '50.0.1233.0', '50.0.1234.0'
-
-      return None
-
     def _MockGetDEPSRollsDict(*_):
       return {'src/': DependencyRoll('src/', 'https://repo', '1', '2'),
               'src/add': DependencyRoll('src/add', 'https://repo1', None, '2'),
@@ -76,8 +70,6 @@ class FinditForChromeCrashTest(CrashTestCase):
 
     self.mock(chromium_deps, 'GetChromeDependency', _MockGetChromeDependency)
     self.mock(chromecrash_parser.ChromeCrashParser, 'Parse', _MockParse)
-    self.mock(detect_regression_range, 'DetectRegressionRange',
-              _MockDetectRegressionRange)
     self.mock(chromium_deps, 'GetDEPSRollsDict', _MockGetDEPSRollsDict)
     self.mock(findit_for_crash, 'FindItForCrash', _MockFindItForCrash)
 
@@ -89,7 +81,7 @@ class FinditForChromeCrashTest(CrashTestCase):
 
     results, tag = findit_for_chromecrash.FinditForChromeCrash().FindCulprit(
         'signature', 'win', 'frame1\nframe2', '50.0.1234.0',
-        [{'chrome_version': '50.0.1234.0', 'cpm': 0.6}]).ToDicts()
+        ['50.0.1233.0', '50.0.1234.0']).ToDicts()
 
     # TODO(wrengr): compare the Culprit object directly to these values,
     # rather than converting to dicts first. We can make a different
@@ -99,7 +91,7 @@ class FinditForChromeCrashTest(CrashTestCase):
           'suspected_project': '',
           'suspected_components': [],
           'suspected_cls': [dummy_match_result.ToDict()],
-          'regression_range': ('50.0.1233.0', '50.0.1234.0'),
+          'regression_range': ['50.0.1233.0', '50.0.1234.0']
     }
     expected_tag = {
           'found_suspects': True,
@@ -113,8 +105,7 @@ class FinditForChromeCrashTest(CrashTestCase):
     self.assertEqual(expected_tag, tag)
 
     results, tag = findit_for_chromecrash.FinditForChromeCrash().FindCulprit(
-        'signature', 'win', 'frame1\nframe2', '50.0.1234.0',
-        []).ToDicts()
+        'signature', 'win', 'frame1\nframe2', '50.0.1234.0', None).ToDicts()
 
     expected_results = {
           'found': False,

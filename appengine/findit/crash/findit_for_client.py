@@ -16,6 +16,7 @@ from google.appengine.ext import ndb
 
 from common import appengine_util
 from common import time_util
+from crash import detect_regression_range
 from crash import findit_for_chromecrash
 from crash.type_enums import CrashClient
 from model import analysis_status
@@ -99,7 +100,8 @@ def CreateAnalysisForClient(crash_identifiers, client_id):
 
 
 def ResetAnalysis(analysis, chrome_version, signature,
-                  client_id, platform, stack_trace, customized_data):
+                  client_id, platform, stack_trace, customized_data,
+                  regression_range):
   """Sets necessary info in the analysis for findit to run analysis."""
   analysis.Reset()
 
@@ -109,6 +111,7 @@ def ResetAnalysis(analysis, chrome_version, signature,
   analysis.signature = signature
   analysis.platform = platform
   analysis.client_id = client_id
+  analysis.regression_range = regression_range
 
   if client_id == CrashClient.FRACAS or client_id == CrashClient.CRACAS:
     # Set customized properties.
@@ -148,18 +151,27 @@ def GetPublishResultFromAnalysis(analysis, crash_identifiers, client_id):
   }
 
 
-def FindCulprit(analysis):
-  result = {'found': False}
-  tags = {'found_suspects': False,
-          'has_regression_range': False}
+def GetRegressionRange(client_id, customized_data):
+  if client_id == CrashClient.FRACAS or client_id == CrashClient.CRACAS:
+    return detect_regression_range.DetectRegressionRange(
+        customized_data.get('historical_metadata'))
+  elif client_id == CrashClient.CLUSTERFUZZ: # pragma: no cover.
+    # TODO(katesonia): Get regression range from customized_data from
+    # clusterfuzz.
+    return None
 
+  return None
+
+
+def FindCulprit(analysis):
   if (analysis.client_id == CrashClient.FRACAS or
       analysis.client_id == CrashClient.CRACAS):
-    result, tags = findit_for_chromecrash.FinditForChromeCrash().FindCulprit(
+    return findit_for_chromecrash.FinditForChromeCrash().FindCulprit(
         analysis.signature, analysis.platform, analysis.stack_trace,
-        analysis.crashed_version, analysis.historical_metadata)
-  elif analysis.client_id == CrashClient.CLUSTERFUZZ:  # pragma: no cover.
+        analysis.crashed_version, analysis.regression_range)
+  elif analysis.client_id == CrashClient.CLUSTERFUZZ: # pragma: no cover.
     # TODO(katesonia): Implement findit_for_clusterfuzz.
-    pass
+    return {}, {}
 
-  return result, tags
+  return {'found': False}, {'found_suspects': False,
+                            'has_regression_range': False}

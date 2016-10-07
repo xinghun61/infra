@@ -21,7 +21,7 @@ _SPIKINESS_THRESHOLD = 20
 def GetSpikes(events, get_value, alpha=_DEFAULT_ALPHA,
               threshold=_SPIKINESS_THRESHOLD):
   """Given a time series, detect regression ranges for anomalous spikes.
-  
+
   The time series is represented by a list of "events" together with
   a function for computing the "value" of each event. We assume the
   events are given in order, and the only thing we care about them is
@@ -30,7 +30,7 @@ def GetSpikes(events, get_value, alpha=_DEFAULT_ALPHA,
   to the values we've seen previously), then we produce a tuple of the
   events bracketing the spike. Since there can be many spikes, we return
   a list of these tuples.
-  
+
   The model we use for detecting spikes is exponential smoothing. This
   model is based on the running average of the events' values, and it has
   two parameters: the alpha parameter determines how readily we update
@@ -44,7 +44,7 @@ def GetSpikes(events, get_value, alpha=_DEFAULT_ALPHA,
   then we'll need to adjust the threshold to try and filter that noise
   out). However, based on some preliminary tests, this naive model seems
   to be good enough for our particular task.
-  
+
   Args:
     events (list): A list of objects representing "events" in a time
       series. The events themselves can be any sort of object (including
@@ -131,4 +131,3 @@ def DetectRegressionRange(historic_metadata, max_win_size=_MAXIMUM_WINDOW_SIZE):
   # Only return the last/most-recent regression range.
   last_good, first_bad = spikes[-1]
   return last_good['chrome_version'], first_bad['chrome_version']
-

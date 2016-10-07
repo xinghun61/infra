@@ -97,10 +97,10 @@ class Culprit(namedtuple('Culprit',
     # are empty; so that, in turn, we can get rid of the NullCulprit class.
     return (
         {
-          'found': (bool(self.project)
-                    or bool(self.components)
-                    or bool(cls_list)
-                    or bool(self.regression_range)),
+          'found': (bool(self.project) or
+                    bool(self.components) or
+                    bool(cls_list) or
+                    bool(self.regression_range)),
           'regression_range': self.regression_range,
           'suspected_project': self.project,
           'suspected_components': self.components,
@@ -151,7 +151,6 @@ class FinditForChromeCrash(object):
   on CrashConfig; thereby decoupling the analysis itself from UX concerns
   about deciding how to run those analyses.
   """
-
   # TODO(wrengr): remove the dependency on CrashConfig entirely, by
   # passing the relevant data as arguments to this constructor.
   def __init__(self):
@@ -171,11 +170,10 @@ class FinditForChromeCrash(object):
     # TODO(wrengr); fix ProjectClassifier so it doesn't depend on CrashConfig.
     self.project_classifier = ProjectClassifier()
 
-
   # TODO(wrengr): since this is the only method of interest, it would
   # be better IMO to rename it to __call__ to reduce verbosity.
   def FindCulprit(self, signature, platform, stack_trace, crashed_version,
-                  historic_metadata):
+                  regression_range):
     """Finds culprits for a Chrome crash.
 
     Args:
@@ -184,8 +182,7 @@ class FinditForChromeCrash(object):
         'android', 'ios', etc.
       stack_trace (str): A string containing the stack trace of a crash.
       crashed_version (str): The version of Chrome in which the crash occurred.
-      historic_metadata (list): list of dicts mapping from Chrome version to
-        historic metadata.
+      regression_range (list or None): [good_version, bad_revision] or None.
 
     Returns:
       A Culprit object.
@@ -199,8 +196,6 @@ class FinditForChromeCrash(object):
 
     # Get regression deps and crash deps.
     regression_deps_rolls = {}
-    regression_range = detect_regression_range.DetectRegressionRange(
-        historic_metadata)
     if regression_range:
       last_good_version, first_bad_version = regression_range
       logging.info('Find regression range %s:%s', last_good_version,

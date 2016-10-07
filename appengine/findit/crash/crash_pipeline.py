@@ -108,10 +108,10 @@ def _NeedsNewAnalysis(
     platform, stack_trace, customized_data):
   analysis = findit_for_client.GetAnalysisForClient(crash_identifiers,
                                                     client_id)
-  if analysis and not analysis.failed:
-    # A new analysis is not needed if last one didn't complete or succeeded.
-    # TODO(http://crbug.com/600535): re-analyze if stack trace or regression
-    # range changed.
+  regression_range = findit_for_client.GetRegressionRange(client_id,
+                                                          customized_data)
+  if (analysis and not analysis.failed and
+      regression_range == analysis.regression_range):
     logging.info('The analysis of %s has already been done.',
                  repr(crash_identifiers))
     return False
@@ -122,8 +122,8 @@ def _NeedsNewAnalysis(
                                                          client_id)
 
   findit_for_client.ResetAnalysis(analysis, chrome_version, signature,
-                                  client_id,  platform, stack_trace,
-                                  customized_data)
+                                  client_id, platform, stack_trace,
+                                  customized_data, regression_range)
   return True
 
 
