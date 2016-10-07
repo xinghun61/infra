@@ -178,7 +178,13 @@
             <div class="list-item">
               <som-tree-status tree="[[_tree]]" id="treeStatus"></som-tree-status>
               <div class="notification">
-                Start at the top and try to clear all the alerts. Help links are provided for additional guidance.
+                Start at the top and try to clear all the alerts. For additional guidance, see:
+                <span hidden="[[!_helpLink]]">
+                  <a href="[[_helpLink]]" target="_blank">[[_treeDisplayName]] Help</a>
+                </span>
+                <span hidden="[[_helpLink]]">
+                  <a href="/help-som">The Help Page</a>
+                </span>
               </div>
             </div>
             <div>
@@ -367,6 +373,10 @@
         _path: {
           type: String,
         },
+        _helpLink: {
+          type: String,
+          computed: '_computeHelpLink(_tree, _trees)',
+        },
         _refreshEnabled: {
           type: Boolean,
           computed: '_computeRefreshEnabled(_selectedPage)',
@@ -472,6 +482,13 @@
       _computeBugQueueLabel: function(tree, trees) {
         if (tree in trees) {
           return trees[tree].bug_queue_label;
+        }
+        return '';
+      },
+
+      _computeHelpLink: function(tree, trees) {
+        if (tree in trees) {
+          return trees[tree].help_link;
         }
         return '';
       },
