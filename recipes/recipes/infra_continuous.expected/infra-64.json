@@ -221,7 +221,7 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\n# Apparently, shutil.copy fails if files are binary-equal on *nix OSes.\n# See http://crbug.com/636168#c8.\nif hasattr(shutil, '_samefile'):\n  if shutil._samefile(sys.argv[1], sys.argv[2]):\n    sys.exit(0)\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
       "[SLAVE_BUILD]/infra/go/bin/file 1.sha1",
       "/path/to/tmp/"
     ],
@@ -234,7 +234,7 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\n# Apparently, shutil.copy fails if files are binary-equal on *nix OSes.\n# See http://crbug.com/636168#c8.\nif hasattr(shutil, '_samefile'):\n  if shutil._samefile(sys.argv[1], sys.argv[2]):\n    sys.exit(0)\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
       "[SLAVE_BUILD]/infra/go/bin/file 2.sha1",
       "/path/to/tmp/"
     ],
