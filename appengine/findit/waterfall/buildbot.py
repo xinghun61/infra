@@ -5,6 +5,7 @@
 import contextlib
 from datetime import datetime
 import gzip
+import logging
 import json
 import re
 import urllib
@@ -27,6 +28,24 @@ _STEP_URL_PATTERN = re.compile(r'^https?://build\.chromium\.org/p/([^/]+)/'
 # These values are buildbot constants used for Build and BuildStep.
 # This line was copied from buildbot/master/buildbot/status/results.py.
 SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY, CANCELLED = range(7)
+
+
+def GetRecentCompletedBuilds(master_name, builder_name, http_client):
+  """Returns a sorted list of recent completed builds for the given builder.
+
+  Sorted by completed time, newer builds at beginning of the returned list.
+  """
+  url = 'https://build.chromium.org/p/%s/json/builders/' % master_name
+  status_code, data = http_client.Get(url)
+  if status_code != 200:
+    logging.error('Failed to retrieve recent builds for %s/%s',
+                  master_name, builder_name)
+    return []
+  data_json = json.loads(data)
+  metadata = data_json.get(builder_name, {})
+  cachedBuilds = metadata.get('cachedBuilds', [])
+  currentBuilds = metadata.get('currentBuilds', [])
+  return sorted(set(cachedBuilds) - set(currentBuilds), reverse=True)
 
 
 def GetMasterNameFromUrl(url):

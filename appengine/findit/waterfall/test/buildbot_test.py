@@ -35,6 +35,31 @@ class DummyHttpClient(RetryHttpClient):
 
 class BuildBotTest(unittest.TestCase):
 
+  def testFailToGetRecentCompletedBuilds(self):
+    mocked_http_client = mock.Mock()
+    mocked_http_client.Get.side_effect = [(404, '404'), None]
+    self.assertEqual(
+        [], buildbot.GetRecentCompletedBuilds('m', 'b', mocked_http_client))
+    mocked_http_client.assert_has_calls(
+        mock.call('https://build.chromium.org/p/m/json/builders/'))
+
+  def testGetRecentCompletedBuilds(self):
+    builders_json_data = """
+    {
+      "b": {
+        "cachedBuilds": [33, 32, 34, 35],
+        "currentBuilds": [35]
+      }
+    }
+    """
+    mocked_http_client = mock.Mock()
+    mocked_http_client.Get.return_value = (200, builders_json_data)
+    self.assertEqual(
+        [34, 33, 32],
+        buildbot.GetRecentCompletedBuilds('m', 'b', mocked_http_client))
+    mocked_http_client.assert_has_calls(
+        mock.call('https://build.chromium.org/p/m/json/builders/'))
+
   def testGetMasternameFromUrl(self):
     cases = {
         None: None,
