@@ -10,6 +10,7 @@ from google.appengine.ext import testbed
 import webapp2
 import webtest
 
+from common.waterfall import failure_type
 from handlers import build_failure
 from handlers import handlers_util
 from handlers import result_status
@@ -17,6 +18,8 @@ from model import analysis_approach_type
 from model import analysis_status
 from model import suspected_cl_status
 from model.base_build_model import BaseBuildModel
+from model.suspected_cl_confidence import ConfidenceInformation
+from model.suspected_cl_confidence import SuspectedCLConfidence
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_try_job import WfTryJob
@@ -109,6 +112,18 @@ SAMPLE_TRY_JOB_INFO = {
     }
 }
 
+SAMPLE_HEURISTIC_1 = ConfidenceInformation(
+    correct=100, total=100, confidence=1.0, score=5)
+
+SAMPLE_HEURISTIC_2 = ConfidenceInformation(
+    correct=90, total=100, confidence=0.9, score=4)
+
+SAMPLE_TRY_JOB = ConfidenceInformation(
+    correct=99, total=100, confidence=0.99, score=None)
+
+SAMPLE_HEURISTIC_TRY_JOB = ConfidenceInformation(
+    correct=98, total=100, confidence=0.98, score=None)
+
 
 class BuildFailureTest(wf_testcase.WaterfallTestCase):
   app_module = webapp2.WSGIApplication([
@@ -129,6 +144,17 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
           master_name, builder_name, build_number)
       return SAMPLE_TRY_JOB_INFO.get(build_key, None)
     self.mock(handlers_util, 'GetAllTryJobResults', MockedGetAllTryJobResults)
+
+    self.cl_confidences = SuspectedCLConfidence.Create()
+    self.cl_confidences.compile_heuristic = [
+        SAMPLE_HEURISTIC_1, SAMPLE_HEURISTIC_2]
+    self.cl_confidences.test_heuristic = [
+        SAMPLE_HEURISTIC_2, SAMPLE_HEURISTIC_1]
+    self.cl_confidences.compile_try_job = SAMPLE_TRY_JOB
+    self.cl_confidences.test_try_job = SAMPLE_TRY_JOB
+    self.cl_confidences.compile_heuristic_try_job = SAMPLE_HEURISTIC_TRY_JOB
+    self.cl_confidences.test_heuristic_try_job = SAMPLE_HEURISTIC_TRY_JOB
+    self.cl_confidences.Save()
 
   def testGetTriageHistoryWhenUserIsNotAdmin(self):
     analysis = WfAnalysis.Create('m', 'b', 1)
@@ -802,12 +828,12 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     suspected_cl = WfSuspectedCL.Create('chromium', 'rev', 122)
     suspected_cl.builds = {
         'm/b/123': {
-            'failure_type': 'compile',
+            'failure_type': failure_type.COMPILE,
             'failures': None,
             'status': suspected_cl_status.CORRECT,
-            'approach': analysis_approach_type.HEURISTIC,
-            'top_score': 5,
-            'Confidence': 97.9
+            'approaches': [analysis_approach_type.HEURISTIC,
+                           analysis_approach_type.TRY_JOB],
+            'top_score': 5
         }
     }
     suspected_cl.put()
@@ -828,7 +854,9 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
             'revision': 'rev',
             'commit_position': 122,
             'url': None,
-            'status': suspected_cl_status.CORRECT
+            'status': suspected_cl_status.CORRECT,
+            'confidence': build_failure._PercentFormat(
+                self.cl_confidences.compile_heuristic_try_job.confidence)
         }
     ]
 
@@ -858,12 +886,11 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     suspected_cl = WfSuspectedCL.Create('chromium', 'rev', 122)
     suspected_cl.builds = {
         'm/b/122': {
-            'failure_type': 'compile',
+            'failure_type': failure_type.COMPILE,
             'failures': None,
             'status': suspected_cl_status.CORRECT,
-            'approach': analysis_approach_type.HEURISTIC,
-            'top_score': 5,
-            'Confidence': 97.9
+            'approaches': [analysis_approach_type.TRY_JOB],
+            'top_score': 5
         }
     }
     suspected_cl.put()
@@ -874,7 +901,8 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
             'revision': 'rev',
             'commit_position': 122,
             'url': None,
-            'status': None
+            'status': None,
+            'confidence': None
         }
     ]
 
@@ -883,3 +911,119 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         expected_suspected_cls, suspected_cls)
 
+  def testGetConfidenceScoreTestHeuristic(self):
+    build = {
+        'failure_type': failure_type.TEST,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.HEURISTIC],
+        'top_score': 5
+    }
+
+    self.assertEqual(
+        build_failure._PercentFormat(
+            self.cl_confidences.test_heuristic[1].confidence),
+        build_failure._GetConfidenceScore(self.cl_confidences, build))
+
+  def testGetConfidenceScoreCompileHeuristic(self):
+    build = {
+        'failure_type': failure_type.COMPILE,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.HEURISTIC],
+        'top_score': 4
+    }
+
+    self.assertEqual(
+        build_failure._PercentFormat(
+            self.cl_confidences.compile_heuristic[1].confidence),
+        build_failure._GetConfidenceScore(self.cl_confidences, build))
+
+  def testGetConfidenceScoreTestTryJob(self):
+    build = {
+        'failure_type': failure_type.TEST,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.TRY_JOB],
+        'top_score': 5
+    }
+
+    self.assertEqual(
+        build_failure._PercentFormat(
+            self.cl_confidences.test_try_job.confidence),
+        build_failure._GetConfidenceScore(self.cl_confidences, build))
+
+  def testGetConfidenceScoreCompileTryJob(self):
+    build = {
+        'failure_type': failure_type.COMPILE,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.TRY_JOB],
+        'top_score': 5
+    }
+
+    self.assertEqual(
+        build_failure._PercentFormat(
+            self.cl_confidences.test_try_job.confidence),
+        build_failure._GetConfidenceScore(self.cl_confidences, build))
+
+  def testGetConfidenceScoreTestHeuristicTryJob(self):
+    build = {
+        'failure_type': failure_type.TEST,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.HEURISTIC,
+                       analysis_approach_type.TRY_JOB],
+        'top_score': 5
+    }
+
+    self.assertEqual(
+        build_failure._PercentFormat(
+            self.cl_confidences.test_heuristic_try_job.confidence),
+        build_failure._GetConfidenceScore(self.cl_confidences, build))
+
+  def testGetConfidenceScoreNone(self):
+    self.assertIsNone(build_failure._GetConfidenceScore(None, None))
+
+  def testGetConfidenceScoreUnexpected(self):
+    build = {
+        'failure_type': failure_type.COMPILE,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.HEURISTIC],
+        'top_score': 2
+    }
+
+    self.assertIsNone(build_failure._GetConfidenceScore(
+        self.cl_confidences, build))
+
+  def testGetConfidenceScoreCompileNone(self):
+    build = {
+      'failure_type': failure_type.COMPILE,
+      'approaches': []
+    }
+    self.assertIsNone(build_failure._GetConfidenceScore(
+        self.cl_confidences, build))
+
+  def testGetConfidenceScoreUnexpectedTest(self):
+    build = {
+        'failure_type': failure_type.TEST,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.HEURISTIC],
+        'top_score': 2
+    }
+
+    self.assertIsNone(build_failure._GetConfidenceScore(
+        self.cl_confidences, build))
+
+  def testGetConfidenceScoreTestNone(self):
+    build = {
+      'failure_type': failure_type.TEST,
+      'approaches': []
+    }
+    self.assertIsNone(build_failure._GetConfidenceScore(
+        self.cl_confidences, build))
+
+  def testPercentFormatNone(self):
+    self.assertIsNone(build_failure._PercentFormat(None))

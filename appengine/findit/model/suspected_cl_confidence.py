@@ -75,7 +75,7 @@ class SuspectedCLConfidence(VersionedModel):
   @classmethod
   def Get(cls, version=None):
     confidences = cls.GetVersion(version=version)
-    return (confidences or VersionedModel.Create() if version is None
+    return (confidences or SuspectedCLConfidence.Create() if version is None
             else confidences)
 
   def Update(
@@ -93,7 +93,4 @@ class SuspectedCLConfidence(VersionedModel):
     self.test_try_job = test_try_job
     self.test_heuristic_try_job = test_heuristic_try_job
 
-    if self.end_date <= end_date:
-      self.put()
-    else:
-      self.Save()
+    self.Save()

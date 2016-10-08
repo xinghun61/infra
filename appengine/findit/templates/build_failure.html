@@ -245,9 +245,11 @@
       {% if suspected_cls %}
         <b>Feedback on Findit result:</b>
         <table>
+          <tr><th>CL</th><th>Confidence</th><th>Feedback</th></tr>
           {% for suspected_cl in suspected_cls %}
             <tr>
-              <td>{{suspected_cl.repo_name}}&nbsp;<a href="{{suspected_cl.url}}">{{ suspected_cl.commit_position or suspected_cl.revision}}</a></td>
+              <td>{{ suspected_cl.repo_name }}&nbsp;<a href="{{ suspected_cl.url }}">{{ suspected_cl.commit_position or suspected_cl.revision }}</a></td>
+              <td>{{ suspected_cl.confidence }}</td>
               <td>
                 {% set cl_info = suspected_cl.repo_name + '/' + suspected_cl.revision %}
                   {% if suspected_cl.status == 0 %}
