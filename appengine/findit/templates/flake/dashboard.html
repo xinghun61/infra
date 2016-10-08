@@ -7,6 +7,12 @@
     input[type="text"] {
       width: 200px;
     }
+    .truncated {
+      width: 300px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   </style>
 </head>
 <body>
@@ -21,28 +27,30 @@
   </form>
 <br><br><br>
 <table>
-<tr>
+<thead>
+  <tr>
         <th>Request Time</th>
-        <th>Master Name</th>
-        <th>Builder Name</th>
-        <th>Build Number</th>
-        <th>Step Name</th>
-        <th>Test Name</th>
+        <th>Master</th>
+        <th>Builder</th>
+        <th>Build</th>
+        <th style="width:100px">Step</th>
+        <th style="width:300px">Test</th>
         <th>Status</th>
         <th>Suspected Build</th>
         <th>Graph</th>
-</tr>
+  </tr>
+</thead>
 <tbody>
   {% for master_flake_analysis in master_flake_analyses %}
   <tr>
     <td>  {{master_flake_analysis.request_time or ''}} </td>
     <td>  {{master_flake_analysis.master_name}} </td>
-    <td>  {{master_flake_analysis.builder_name}}</td>
-    <td>  {{master_flake_analysis.build_number}}</td>
-    <td>  {{master_flake_analysis.step_name}}</td>
-    <td>  {{master_flake_analysis.test_name}}</td>
-    <td>  {{master_flake_analysis.status}}</td>
-    <td>  {{master_flake_analysis.suspected_build or ''}}</td>
+    <td>  {{master_flake_analysis.builder_name}} </td>
+    <td>  {{master_flake_analysis.build_number}} </td>
+    <td>  <div title="{{master_flake_analysis.step_name}}" class="truncated">{{master_flake_analysis.step_name}}</div> </td>
+    <td>  <div title="{{master_flake_analysis.test_name}}" class="truncated">{{master_flake_analysis.test_name}}</div> </td>
+    <td>  {{master_flake_analysis.status}} </td>
+    <td>  {{master_flake_analysis.suspected_build or ''}} </td>
     <td>
       <a href="/waterfall/check-flake?master_name={{master_flake_analysis.master_name}}&builder_name={{master_flake_analysis.builder_name}}&build_number={{master_flake_analysis.build_number}}&step_name={{master_flake_analysis.step_name}}&test_name={{master_flake_analysis.test_name}}">Link</a>
     </td>

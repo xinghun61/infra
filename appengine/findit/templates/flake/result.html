@@ -3,13 +3,37 @@
   <meta charset="UTF-8">
   <title> Find Regression Range for Flaky Test</title>
   <style type="text/css">
-    #flake-trend {
-      width: 450px;
-      height: 200px;
+    .container {
+      box-sizing: border-box;
+      width: 600px;
+      height: 300px;
+      padding: 20px 20px 20px 20px;
+      border: 1px solid #ddd;
+      background: #fff;
+      background: linear-gradient(#f6f6f6 0, #fff 50px);
+      background: -o-linear-gradient(#f6f6f6 0, #fff 50px);
+      background: -ms-linear-gradient(#f6f6f6 0, #fff 50px);
+      background: -moz-linear-gradient(#f6f6f6 0, #fff 50px);
+      background: -webkit-linear-gradient(#f6f6f6 0, #fff 50px);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+      -o-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      -ms-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      -moz-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      -webkit-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+    .flake-trend {
+      width: 100%;
+      height: 100%;
+      font-size: 16px;
+      line-height: 1.2em;
     }
   </style>
-  <script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
-  <script type="text/javascript" language="javascript" src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.2/jquery.flot.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/jquery-ui.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.resize.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.symbol.js"></script>
   <script type="text/javascript">
     var findit = {};
     findit.masterName = "{{ master_name }}";
@@ -17,29 +41,53 @@
     findit.regressedBuildNumber = {{ suspected_flake_build_number or -1 }};
     findit.passRates = {{ pass_rates | tojson | safe }};
 
-    $(document).ready(function() {
+    function DrawFlakeTrend() {
       if (findit.passRates.length == 0) {
-        $('#flake-trend').html('No data available yet.');
+        $('#flake-data').html('No data available yet.');
         return;
       }
 
-      // Convert pass rate from [0, 1] to a percentage.
-      // TODO: -1 means that the test doesn't exist at the build.
+      var not_run_data = [];
+      var run_data = [];
       $.each(findit.passRates, function(index, value) {
-        value[1] = (value[1] * 100).toFixed(0);
+        // Convert pass rate from [0, 1] to a percentage.
+        var rate = (value[1] * 100).toFixed(0);
+        // -1 means that the test doesn't exist or is disabled at the build.
+        if (rate < 0) {
+          not_run_data.push([value[0], 100]);
+        } else {
+          run_data.push([value[0], rate]);
+        }
       });
 
-      var plot = $.plot($("#flake-trend"), [
-        {
-          data: findit.passRates,
-        }
-      ], {
+      var data_series = [];
+      var run_data_sery_index = 0;
+      if (not_run_data.length > 0) {
+        data_series.push({
+          data: not_run_data,
+          color: "gray",
+          points: {
+            symbol: "cross",
+          },
+          label: "disabled or nonexistent",
+        });
+        run_data_sery_index = 1;
+      }
+      data_series.push({
+        data: run_data,
+        points: {
+          symbol: "circle",
+        },
+      });
+
+      var options = {
         series: {
           lines: {
             show: true
           },
           points: {
-            show: true
+            show: true,
+            radius: 3,
           },
           highlightColor: 'red',
         },
@@ -60,6 +108,15 @@
             return val + '%';
           },
         },
+      };
+
+      var plot = $.plot($("#flake-data"), data_series, options);
+
+      $(".container").resizable({
+          maxWidth: 2000,
+          maxHeight: 1000,
+          minWidth: 500,
+          minHeight: 300
       });
 
       $("<div id='tooltip'></div>").css({
@@ -79,7 +136,7 @@
       }
 
       var dataPointSelected = false;
-      $("#flake-trend").bind("plothover", function (event, pos, item) {
+      $("#flake-data").bind("plothover", function (event, pos, item) {
         if (dataPointSelected)
           return;  // A data point is selected due to a click.
 
@@ -89,7 +146,7 @@
           $("#tooltip").hide();
         }
       });
-      $("#flake-trend").bind("plotclick", function (event, pos, item) {
+      $("#flake-data").bind("plotclick", function (event, pos, item) {
         if (item) {
           dataPointSelected = true;  // Set selected data point upon click.
           showTooltipForDataPoint(item);
@@ -99,11 +156,12 @@
         }
       });
 
-      $.each(findit.passRates, function(index, value) {
+      $.each(run_data, function(index, value) {
         if (value[0] == findit.regressedBuildNumber)
-          plot.highlight(0, index);
+          plot.highlight(run_data_sery_index, index);
       });
-    });
+    }
+    $(document).ready(DrawFlakeTrend);
   </script>
 </head>
 
@@ -129,7 +187,9 @@
   <br>
   <div>
     <b>Pass Rate by Build:</b><br>
-    <div id="flake-trend"></div>
+    <div class="container">
+      <div id="flake-data" class="flake-trend"></div>
+    </div>
   </div>
   <br>
   <div>

@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <head>
-  <title>Flakiness Regression Range</title>
+  <title>Flakiness</title>
   <meta charset="utf-8">
 </head>
 <body>
-  <h3>Submit a test to get information about its flakiness</h3>
+  <h3>Information of the flaky Swarmed Gtest:</h3>
   <form method="get" action="/waterfall/check-flake">
+    <!--TODO: Auto-fill with a URL-->
     <p> master_name <input type="text" name="master_name" id="master_name" size="200"/> </p>
     <p> builder_name <input type="text" name="builder_name" id="builder_name" size="200"/> </p>
     <p> build_number <input type="text" name="build_number" id="build_number" size="200"/> </p>
