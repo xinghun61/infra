@@ -7,6 +7,7 @@ from google.appengine.ext import ndb
 from common.time_util import GetUTCNow
 from model.versioned_model import VersionedModel
 
+
 class ConfidenceInformation(ndb.Model):
   correct = ndb.IntegerProperty()
   total = ndb.IntegerProperty()
@@ -42,8 +43,7 @@ class SuspectedCLConfidence(VersionedModel):
   """
 
   # Start date of querying suspected CLs.
-  # Note: the confidence scores will be for all the CLs up until end_date,
-  # not just for CLs from start date to end_date.
+  # Note: the start date will be 6 months before end date.
   start_date = ndb.DateTimeProperty(indexed=False)
 
   # End date of querying suspected CLs.
@@ -75,7 +75,8 @@ class SuspectedCLConfidence(VersionedModel):
   @classmethod
   def Get(cls, version=None):
     confidences = cls.GetVersion(version=version)
-    return confidences or cls() if version is None else confidences
+    return (confidences or VersionedModel.Create() if version is None
+            else confidences)
 
   def Update(
       self, start_date, end_date,

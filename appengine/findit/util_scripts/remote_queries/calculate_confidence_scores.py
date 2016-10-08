@@ -36,7 +36,7 @@ TRIAGED_STATUS = [
 ]
 
 
-def _AddConfidenceInformation(result, score=None):
+def _CreateConfidenceInformation(result, score=None):
   correct_number = result[suspected_cl_status.CORRECT]
   incorrect_number = result[suspected_cl_status.INCORRECT]
   total_number = correct_number + incorrect_number
@@ -51,7 +51,7 @@ def _CalculateConfidenceLevelsForHeuristic(new_results):
   updated_results = []
 
   for score, result in new_results.iteritems():
-    updated_results.append(_AddConfidenceInformation(result, score=score))
+    updated_results.append(_CreateConfidenceInformation(result, score=score))
 
   return updated_results
 
@@ -63,13 +63,13 @@ def _SavesNewCLConfidence(
        result_heuristic[failure_type.COMPILE])
    new_test_heuristic = _CalculateConfidenceLevelsForHeuristic(
        result_heuristic[failure_type.TEST])
-   new_compile_try_job = _AddConfidenceInformation(
+   new_compile_try_job = _CreateConfidenceInformation(
        result_try_job[failure_type.COMPILE])
-   new_test_try_job = _AddConfidenceInformation(
+   new_test_try_job = _CreateConfidenceInformation(
        result_try_job[failure_type.TEST])
-   new_compile_heuristic_try_job = _AddConfidenceInformation(
+   new_compile_heuristic_try_job = _CreateConfidenceInformation(
        result_both[failure_type.COMPILE])
-   new_test_heuristic_try_job = _AddConfidenceInformation(
+   new_test_heuristic_try_job = _CreateConfidenceInformation(
        result_both[failure_type.TEST])
 
    SuspectedCLConfidence.Get().Update(
