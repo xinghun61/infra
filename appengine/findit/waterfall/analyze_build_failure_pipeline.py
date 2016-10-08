@@ -11,6 +11,8 @@ from model.wf_analysis import WfAnalysis
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 from waterfall.extract_deps_info_pipeline import ExtractDEPSInfoPipeline
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline
+from waterfall.flake.trigger_flake_analyses_pipeline import (
+    TriggerFlakeAnalysesPipeline)
 from waterfall.identify_culprit_pipeline import IdentifyCulpritPipeline
 from waterfall.pull_changelog_pipeline import PullChangelogPipeline
 from waterfall.start_try_job_on_demand_pipeline import (
@@ -79,14 +81,19 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     heuristic_result = yield IdentifyCulpritPipeline(
         failure_info, change_logs, deps_info, signals, build_completed)
 
-    # Try job Approach.
+    # Try job approach.
     with pipeline.InOrder():
       # Swarming rerun.
       # Triggers swarming tasks when first time test failure happens.
       # This pipeline will run before build completes.
       yield TriggerSwarmingTasksPipeline(
           master_name, builder_name, build_number, failure_info)
+
       # Checks if first time failures happen and starts a try job if yes.
       yield StartTryJobOnDemandPipeline(
           master_name, builder_name, build_number, failure_info,
           signals, heuristic_result, build_completed, force_rerun_try_job)
+
+      # Trigger flake analysis on flaky tests, if any.
+      yield TriggerFlakeAnalysesPipeline(
+          master_name, builder_name, build_number)
