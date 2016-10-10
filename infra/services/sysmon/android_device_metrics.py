@@ -26,6 +26,15 @@ ANDROID_DEVICE_FILE_STALENESS_S = 2 * 60 * 60 # 2 hour
 
 PORT_PATH_RE = re.compile(r'\d+\/\d+')
 
+ANDROID_DEVICE_CPU_TEMP_SENSORS = {
+  # most nexus devices
+  'tsens_tz_sensor0',
+  # android one
+  'mtktscpu',
+  # nexus 9
+  'CPU-therm',
+}
+
 
 cpu_temp = ts_mon.FloatMetric('dev/mobile/cpu/temperature',
                               description='device CPU temperature in deg C')
@@ -85,8 +94,15 @@ def get_device_statuses(device_file=ANDROID_DEVICE_FILE, now=None):
     status = device.get('state')
     status = 'good' if status == 'available' else status
 
+    cpu_temp_value = None
+    temps = device.get('temp', {})
+    for sensor_name in ANDROID_DEVICE_CPU_TEMP_SENSORS:
+      cpu_temp_value = temps.get(sensor_name)
+      if cpu_temp_value:
+        break
+
     for metric, value in (
-        (cpu_temp, device.get('temp', {}).get('emmc_therm')),
+        (cpu_temp, cpu_temp_value),
         (batt_temp, battery_temp),
         (batt_charge, device.get('battery', {}).get('level')),
         (dev_os, build.get('build.id')),

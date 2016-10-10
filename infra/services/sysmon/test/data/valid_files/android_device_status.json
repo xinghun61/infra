@@ -47,7 +47,8 @@
         "emmc_therm": 26.0, 
         "pa_therm0": 26.0, 
         "pm8841_tz": 37.0, 
-        "pm8941_tz": 28.561
+        "pm8941_tz": 28.561,
+        "tsens_tz_sensor0": 27.0
       }, 
       "uptime": 2178.14
     }, 
@@ -98,7 +99,8 @@
         "emmc_therm": 25.0, 
         "pa_therm0": 25.0, 
         "pm8841_tz": 37.0, 
-        "pm8941_tz": 24.582
+        "pm8941_tz": 24.582,
+        "tsens_tz_sensor0": 27.0
       }, 
       "uptime": 2173.13
     }, 
@@ -149,7 +151,8 @@
         "emmc_therm": 25.0, 
         "pa_therm0": 25.0, 
         "pm8841_tz": 37.0, 
-        "pm8941_tz": 28.139
+        "pm8941_tz": 28.139,
+        "tsens_tz_sensor0": 27.0
       }, 
       "uptime": 2146.92
     }, 
@@ -200,7 +203,8 @@
         "emmc_therm": 25.0, 
         "pa_therm0": 25.0, 
         "pm8841_tz": 37.0, 
-        "pm8941_tz": 26.248
+        "pm8941_tz": 26.248,
+        "tsens_tz_sensor0": 27.0
       }, 
       "uptime": 2138.82
     }, 
@@ -251,7 +255,8 @@
         "emmc_therm": 25.0, 
         "pa_therm0": 25.0, 
         "pm8841_tz": 37.0, 
-        "pm8941_tz": 27.381
+        "pm8941_tz": 27.381,
+        "tsens_tz_sensor0": 27.0
       }, 
       "uptime": 2156.99
     }, 
@@ -311,7 +316,8 @@
         "emmc_therm": 26.0, 
         "pa_therm0": 26.0, 
         "pm8841_tz": 37.0, 
-        "pm8941_tz": 29.299
+        "pm8941_tz": 29.299,
+        "tsens_tz_sensor0": 27.0
       }, 
       "uptime": 2162.74
     }
