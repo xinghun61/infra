@@ -261,7 +261,7 @@ function TKR_addACItem(items, docDict, item, docStr) {
  */
 function TKR_addACDateItems(items, docDict, fieldName, humanReadable) {
     var today = new Date();
-    var todayStr = (today.getFullYear() + '/' + (today.getMonth() + 1) + '/' +
+    var todayStr = (today.getFullYear() + '-' + (today.getMonth() + 1) + '-' +
 		    today.getDate());
     TKR_addACItem(items, docDict, fieldName + '>today-1',
 		  humanReadable + ' within the last N days');
@@ -331,6 +331,10 @@ function TKR_setUpSearchStore(
     } else if (fieldType == '3') {  // string types
       TKR_addACItem(searchWords, docDict, fieldName + ':',
           fieldDefs[i]['docstring']);
+    } else if (fieldType == '5') {  // string types
+      TKR_addACItem(searchWords, docDict, fieldName + ':',
+          fieldDefs[i]['docstring']);
+      TKR_addACDateItems(searchWords, docDict, fieldName, fieldName);
     } else {
       TKR_addACItem(searchWords, docDict, fieldName + '=',
           fieldDefs[i]['docstring']);
