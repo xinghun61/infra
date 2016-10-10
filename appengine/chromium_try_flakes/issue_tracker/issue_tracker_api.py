@@ -1,3 +1,7 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
 """Provides API wrapper for the codesite issue tracker"""
 
 from endpoints import endpoints
@@ -5,7 +9,7 @@ from issue_tracker.issue import Issue
 from issue_tracker.comment import Comment
 
 
-class IssueTrackerAPI(object):  # pragma: no cover
+class IssueTrackerAPI(object):
   CAN_ALL = 'all'
 
   """A wrapper around the issue tracker api."""
@@ -33,9 +37,9 @@ class IssueTrackerAPI(object):  # pragma: no cover
       body['cc'] = [{'name': user} for user in issue.cc]
     request = self.client.issues().insert(
         projectId=self.project_name, sendEmail=send_email, body=body)
-    tmp = endpoints._retry__request(request)
-    issue.id = int(tmp['id'])
-    issue.dirty = False
+    tmp = endpoints.retry_request(request)
+    issue.id = tmp['id']
+    issue.setClean()
     return issue
 
   def update(self, issue, comment=None, send_email=True):
@@ -76,12 +80,8 @@ class IssueTrackerAPI(object):  # pragma: no cover
     if issue.owner == '----':
       issue.owner = ''
 
-    issue.dirty = False
+    issue.setClean()
     return issue
-
-  def addComment(self, issue_id, comment, send_email=True):
-    issue = self.getIssue(issue_id)
-    self.update(issue, comment, send_email)
 
   def getCommentCount(self, issue_id):
     request = self.client.issues().comments().list(
@@ -97,9 +97,7 @@ class IssueTrackerAPI(object):  # pragma: no cover
         projectId=self.project_name, issueId=issue_id)
     feed = endpoints.retry_request(request)
     rtn.extend([Comment(entry) for entry in feed['items']])
-    total_results = feed['totalResults']
-    if not total_results:
-      return rtn
+    total_results = int(feed['totalResults'])
 
     while len(rtn) < total_results:
       request = self.client.issues().comments().list(
@@ -108,25 +106,6 @@ class IssueTrackerAPI(object):  # pragma: no cover
       rtn.extend([Comment(entry) for entry in feed['items']])
 
     return rtn
-
-  def getFirstComment(self, issue_id):
-    request = self.client.issues().comments().list(
-        projectId=self.project_name, issueId=issue_id, startIndex=0,
-        maxResults=1)
-    feed = endpoints.retry_request(request)
-    if 'items' in feed and len(feed['items']) > 0:
-      return Comment(feed['items'][0])
-    return None
-
-  def getLastComment(self, issue_id):
-    total_results = self.getCommentCount(issue_id)
-    request = self.client.issues().comments().list(
-        projectId=self.project_name, issueId=issue_id,
-        startIndex=total_results-1, maxResults=1)
-    feed = endpoints.retry_request(request)
-    if 'items' in feed and len(feed['items']) > 0:
-      return Comment(feed['items'][0])
-    return None
 
   def getIssue(self, issue_id):
     """Retrieve a set of issues in a project."""

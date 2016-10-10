@@ -5,18 +5,19 @@
 """A wrapper around list that keep track of changes to it."""
 
 
-class ChangeTrackingList(list):  # pragma: no cover
+class ChangeTrackingList(list):
   def __init__(self, seq=()):
     list.__init__(self, seq)
     self.added = set()
     self.removed = set()
 
-  def append(self, p_object):
-    list.append(self, p_object)
-    if p_object in self.removed:
-      self.removed.remove(p_object)
+  def append(self, value):
+    list.append(self, value)
+
+    if value in self.removed:
+      self.removed.remove(value)
     else:
-      self.added.add(p_object)
+      self.added.add(value)
 
   def remove(self, value):
     list.remove(self, value)
@@ -27,7 +28,7 @@ class ChangeTrackingList(list):  # pragma: no cover
       self.removed.add(value)
 
   def isChanged(self):
-    return (len(self.added) + len(self.removed)) > 0
+    return len(self.added) + len(self.removed) > 0
 
   def reset(self):
     self.added.clear()
