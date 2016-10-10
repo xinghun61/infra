@@ -4,9 +4,6 @@
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
   <style type="text/css">
-    input[type="text"] {
-      width: 200px;
-    }
     .truncated {
       width: 300px;
       white-space: nowrap;
@@ -18,11 +15,28 @@
 <body>
 <h1> Flaky tests </h1>
   <form method="get" action="/waterfall/list-flakes">
-    <p> master_name <input type="text" name="master_name" id="master_name" size="200"/> </p>
-    <p> builder_name <input type="text" name="builder_name" id="builder_name" size="200"/> </p>
-    <p> build_number <input type="text" name="build_number" id="build_number" size="200"/> </p>
-    <p> step_name <input type="text" name="step_name" id="step_name" size="200"/> </p>
-    <p> test_name <input type="text" name="test_name" id="test_name" size="200"/> </p>
+    <table>
+      <tr>
+        <td style="text-align:right">Master:</td>
+        <td><input type="text" name="master_name" id="master_name" size="150" placeholder="chromium.mac"/></td>
+      </tr>
+      <tr>
+        <td style="text-align:right">Builder:</td>
+        <td><input type="text" name="builder_name" id="builder_name" size="150" placeholder="Mac10.9 Tests"/></td>
+      </tr>
+      <tr>
+        <td style="text-align:right">Build Number:</td>
+        <td><input type="text" name="build_number" id="build_number" size="150" placeholder="28133"/></td>
+      </tr>
+      <tr>
+        <td style="text-align:right">Step:</td>
+        <td><input type="text" name="step_name" id="step_name" size="150" placeholder="unit_tests on Mac-10.9"/></td>
+      </tr>
+      <tr>
+        <td style="text-align:right">Test:</td>
+        <td><input type="text" name="test_name" id="test_name" size="150" placeholder="DesktopEngagementServiceTest.TestTimeoutDiscount"/></td>
+      </tr>
+    </table>
     <input type="submit" value="Filter">
   </form>
 <br><br><br>
