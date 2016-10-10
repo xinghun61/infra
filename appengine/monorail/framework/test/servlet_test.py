@@ -126,6 +126,22 @@ class ServletTest(unittest.TestCase):
         xsrf.TokenIncorrect, self.page_class._DoFormProcessing, request, mr)
     self.assertEqual(None, self.page_class.seen_post_data)
 
+  def testProcessForm_RawResponse(self):
+    user_id = 111L
+    token = xsrf.GenerateToken(user_id, '/we/we/we')
+
+    request, mr = testing_helpers.GetRequestObjects(
+        path='/we/we/we?so=excited',
+        params={'yesterday': 'thursday', 'today': 'friday', 'token': token},
+        user_info={'user_id': user_id},
+        method='POST',
+    )
+    self.page_class.do_post_redirect = False
+    self.page_class._DoFormProcessing(request, mr)
+    self.assertEqual(
+        'sending raw data to browser',
+        self.page_class.response.body)
+
   def testProcessForm_Normal(self):
     user_id = 111L
     token = xsrf.GenerateToken(user_id, '/we/we/we')

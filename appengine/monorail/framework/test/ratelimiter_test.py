@@ -101,7 +101,7 @@ class RateLimiterTest(unittest.TestCase):
 
     # Call CheckStart more than DEFAULT_LIMIT times in the same minute.
     with self.assertRaises(ratelimiter.RateLimitExceeded):
-      for _ in range(ratelimiter.DEFAULT_LIMIT + 2):
+      for _ in range(ratelimiter.DEFAULT_LIMIT + 2):  # pragma: no branch
         now = now + 0.001
         self.ratelimiter.CheckStart(request, now)
 
@@ -123,7 +123,7 @@ class RateLimiterTest(unittest.TestCase):
     # Exceed the limit, but only for one IP address. The
     # others should be fine.
     with self.assertRaises(ratelimiter.RateLimitExceeded):
-      for m in range(ratelimiter.DEFAULT_LIMIT):
+      for m in range(ratelimiter.DEFAULT_LIMIT):  # pragma: no branch
         request, _ = testing_helpers.GetRequestObjects(
           project=self.project)
         request.headers['X-AppEngine-Country'] = 'US'
@@ -163,7 +163,7 @@ class RateLimiterTest(unittest.TestCase):
     # Exceed the limit, but only for one userID+IP address. The
     # others should be fine.
     with self.assertRaises(ratelimiter.RateLimitExceeded):
-      for m in range(ratelimiter.DEFAULT_LIMIT + 2):
+      for m in range(ratelimiter.DEFAULT_LIMIT + 2):  # pragma: no branch
         request, _ = testing_helpers.GetRequestObjects(
           project=self.project)
         request.headers['X-AppEngine-Country'] = 'US'
@@ -209,7 +209,7 @@ class RateLimiterTest(unittest.TestCase):
     now = 0.0
 
     with self.assertRaises(ratelimiter.RateLimitExceeded):
-      for m in range(ratelimiter.DEFAULT_LIMIT + 2):
+      for m in range(ratelimiter.DEFAULT_LIMIT + 2):  # pragma: no branch
         self.ratelimiter.CheckStart(request, now)
         # Vary remote address to make sure the limit covers
         # the whole country, regardless of IP.
@@ -228,7 +228,7 @@ class RateLimiterTest(unittest.TestCase):
     # And regular rate limits work per-IP.
     request.remote_addr = '192.168.1.1'
     with self.assertRaises(ratelimiter.RateLimitExceeded):
-      for m in range(ratelimiter.DEFAULT_LIMIT):
+      for m in range(ratelimiter.DEFAULT_LIMIT):  # pragma: no branch
         self.ratelimiter.CheckStart(request, now)
         # Vary remote address to make sure the limit covers
         # the whole country, regardless of IP.

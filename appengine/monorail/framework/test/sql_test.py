@@ -31,17 +31,15 @@ class MockSQLCnxn(object):
     self.last_executed = stmt_str
     self.last_executed_args = tuple(args)
 
-    if stmt_str.startswith('INSERT'):
-      self.lastrowid = 123
+    # sql.py only calls executemany() for INSERT.
+    assert stmt_str.startswith('INSERT')
+    self.lastrowid = 123
 
   def fetchall(self):
     return self.result_rows
 
   def cursor(self):
     return self
-
-  def close(self):
-    pass
 
   def commit(self):
     pass

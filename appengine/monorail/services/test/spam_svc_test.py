@@ -278,8 +278,7 @@ class SpamServiceTest(unittest.TestCase):
     issue = fake.MakeTestIssue(
         project_id=789, local_id=1, reporter_id=111L, owner_id=456,
         summary='sum', status='Live', issue_id=78901, is_spam=True)
-    self.spam_service._predict = lambda body: (
-        {'outputLabel': 'spam'})
+    self.spam_service._predict = 'unused function'
  
     # Prevent missing service inits to fail the test.
     self.spam_service.prediction_service = True
@@ -311,8 +310,7 @@ class SpamServiceTest(unittest.TestCase):
     self.assertEqual('spam', res['outputLabel'])
 
   def testClassifyComment_spamExempt(self):
-    self.spam_service._predict = lambda body: (
-        {'outputLabel': 'spam'})
+    self.spam_service._predict = 'unused function'
 
     # Prevent missing service inits to fail the test.
     self.spam_service.prediction_service = True

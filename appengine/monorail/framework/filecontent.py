@@ -160,18 +160,17 @@ def DecodeFileContents(file_contents, path=None):
   # to the lower limit, but is more restrictive than just using a single
   # large character limit.
   is_binary = False
-  if lines:
-    lower_count = 0
-    for line in itertools.islice(lines, SOURCE_FILE_MAX_LINES):
-      size = len(line)
-      if size <= _MAX_SOURCE_LINE_LEN_LOWER:
-        lower_count += 1
-      elif size > _MAX_SOURCE_LINE_LEN_UPPER:
-        is_binary = True
-        break
-
-    ratio = lower_count / float(len(lines))
-    if ratio < _SOURCE_LINE_LEN_LOWER_RATIO:
+  lower_count = 0
+  for line in itertools.islice(lines, SOURCE_FILE_MAX_LINES):
+    size = len(line)
+    if size <= _MAX_SOURCE_LINE_LEN_LOWER:
+      lower_count += 1
+    elif size > _MAX_SOURCE_LINE_LEN_UPPER:
       is_binary = True
+      break
+
+  ratio = lower_count / float(max(1, len(lines)))
+  if ratio < _SOURCE_LINE_LEN_LOWER_RATIO:
+    is_binary = True
 
   return u_str, is_binary, is_long

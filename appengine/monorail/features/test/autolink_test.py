@@ -434,8 +434,11 @@ class TrackerAutolinkTest(unittest.TestCase):
     replacement_runs = autolink.ReplaceIssueRef(mr, match, comp_ref_artifacts)
     return replacement_runs
 
-  def testReplaceIssueRef(self):
+  def testReplaceIssueRef_NoMatch(self):
+    result = self.DoReplaceIssueRef('What is this all about?')
+    self.assertIsNone(result)
 
+  def testReplaceIssueRef(self):
     result = self.DoReplaceIssueRef('This relates to issue 1')
     self.assertEquals('/p/proj/issues/detail?id=1', result[0].href)
     self.assertEquals('issue 1', result[0].content)

@@ -333,7 +333,7 @@ class TableViewHelpersTest(unittest.TestCase):
     cell_factories = {}
     table_data = table_view_helpers.MakeTableData(
         visible_results, [], lower_columns, lower_columns,
-        cell_factories, [], lambda art: 'id', {}, self.config)
+        cell_factories, [], 'unused function', {}, self.config)
     self.assertEqual([], table_data)
 
     lower_columns = ['type', 'priority', 'summary', 'stars']
@@ -344,7 +344,7 @@ class TableViewHelpersTest(unittest.TestCase):
 
     table_data = table_view_helpers.MakeTableData(
         visible_results, [], lower_columns, [], {},
-        cell_factories, lambda art: 'id', {}, self.config)
+        cell_factories, 'unused function', {}, self.config)
     self.assertEqual([], table_data)
 
   def testMakeTableData_Normal(self):

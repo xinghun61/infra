@@ -437,6 +437,14 @@ class UserGroupServiceTest(unittest.TestCase):
         usergroup_pb2.MakeSettings('owners', 'mdb'))
     self.mox.VerifyAll()
 
+  def testUpdateSettings_WithFriends(self):
+    self.SetUpUpdateSettings(888L, 'anyone', friend_projects=[789])
+    self.mox.ReplayAll()
+    self.usergroup_service.UpdateSettings(
+        self.cnxn, 888L,
+        usergroup_pb2.MakeSettings('anyone', friend_projects=[789]))
+    self.mox.VerifyAll()
+
   def SetUpDAG(self, group_id_rows, usergroup_rows):
     self.usergroup_service.usergroupsettings_tbl.Select(
         self.cnxn, cols=['group_id']).AndReturn(group_id_rows)

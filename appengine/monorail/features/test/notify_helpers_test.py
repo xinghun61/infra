@@ -46,8 +46,7 @@ class ComputeIssueChangeAddressPermListTest(unittest.TestCase):
   def testEmptyIDs(self):
     cnxn = 'fake cnxn'
     addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
-        cnxn, [], self.project, self.issue, self.services, [], {},
-        pref_check_function=lambda *args: True)
+        cnxn, [], self.project, self.issue, self.services, [], {})
     self.assertEqual([], addr_perm_list)
 
   def testRecipientIsMember(self):
