@@ -159,7 +159,7 @@ class ProjectService(object):
   def CreateProject(
       self, cnxn, project_name, owner_ids, committer_ids, contributor_ids,
       summary, description, state=project_pb2.ProjectState.LIVE,
-      access=None, read_only=None, home_page=None, docs_url=None,
+      access=None, read_only_reason=None, home_page=None, docs_url=None,
       source_url=None, logo_gcs_id=None, logo_file_name=None):
     """Create and store a Project with the given attributes.
 
@@ -173,8 +173,8 @@ class ProjectService(object):
       description: one-page explanation of the project.
       state: a project state enum defined in project_pb2.
       access: optional project access enum defined in project.proto.
-      read_only: if given, provides a status message and marks the project as
-        read-only.
+      read_only_reason: if given, provides a status message and marks
+        the project as read-only.
       home_page: home page of the project
       docs_url: url to redirect to for wiki/documentation links
       source_url: url to redirect to for source browser links
@@ -195,7 +195,7 @@ class ProjectService(object):
         project_name, state=state, access=access,
         description=description, summary=summary,
         owner_ids=owner_ids, committer_ids=committer_ids,
-        contributor_ids=contributor_ids, read_only=read_only,
+        contributor_ids=contributor_ids, read_only_reason=read_only_reason,
         home_page=home_page, docs_url=docs_url, source_url=source_url,
         logo_gcs_id=logo_gcs_id, logo_file_name=logo_file_name)
 

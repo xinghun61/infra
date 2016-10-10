@@ -645,7 +645,8 @@ class ProjectService(object):
   def CreateProject(
       self, _cnxn, project_name, owner_ids, committer_ids,
       contributor_ids, summary, description,
-      state=project_pb2.ProjectState.LIVE, access=None, read_only=None,
+      state=project_pb2.ProjectState.LIVE, access=None,
+      read_only_reason=None,
       home_page=None, docs_url=None, source_url=None,
       logo_gcs_id=None, logo_file_name=None):
     """Create and store a Project with the given attributes."""

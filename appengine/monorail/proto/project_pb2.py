@@ -197,7 +197,7 @@ def MakeProject(
     access=ProjectAccess.ANYONE, summary=None, description=None,
     moved_to=None, cached_content_timestamp=None,
     owner_ids=None, committer_ids=None, contributor_ids=None,
-    read_only=None, home_page=None, docs_url=None, source_url=None,
+    read_only_reason=None, home_page=None, docs_url=None, source_url=None,
     logo_gcs_id=None, logo_file_name=None):
   """Returns a project protocol buffer with the given attributes."""
   project = Project(
@@ -227,7 +227,7 @@ def MakeProject(
   project.committer_ids.extend(committer_ids or [])
   project.contributor_ids.extend(contributor_ids or [])
 
-  if read_only is not None:
-    project.read_only = read_only
+  if read_only_reason is not None:
+    project.read_only_reason = read_only_reason
 
   return project
