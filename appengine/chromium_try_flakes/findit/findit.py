@@ -22,7 +22,7 @@ class FindItAPI(object):
     body['build_steps'] = []
     for flaky_run in flaky_runs:
       failure_run = flaky_run.failure_run.get()
-      patchset_build_run = failure_run.parent.get()
+      patchset_build_run = flaky_run.failure_run.parent().get()
       for occurrence in flaky_run.flakes:
         body['build_steps'].append({
           'master_name': patchset_build_run.master,
