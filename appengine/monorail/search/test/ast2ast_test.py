@@ -58,7 +58,7 @@ class AST2ASTTest(unittest.TestCase):
     label_id_field = BUILTIN_ISSUE_FIELDS['label_id']
     status_id_field = BUILTIN_ISSUE_FIELDS['status_id']
     conds = [
-        ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [open_field], [], [1]),
+        ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [open_field], [], []),
         ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [label_field], ['Hot'], [])]
 
     ast = ast_pb2.QueryAST()
@@ -82,7 +82,7 @@ class AST2ASTTest(unittest.TestCase):
 
     # is:open  -> status_id!=closed_status_ids
     cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.EQ, [open_field], [], [1])
+        ast_pb2.QueryOp.EQ, [open_field], [], [])
     new_cond = ast2ast._PreprocessIsOpenCond(
         self.cnxn, cond, [789], self.services, self.config)
     self.assertEqual(ast_pb2.QueryOp.NE, new_cond.op)
@@ -92,7 +92,7 @@ class AST2ASTTest(unittest.TestCase):
 
     # -is:open  -> status_id=closed_status_ids
     cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.EQ, [open_field], [], [0])
+        ast_pb2.QueryOp.NE, [open_field], [], [])
     new_cond = ast2ast._PreprocessIsOpenCond(
         self.cnxn, cond, [789], self.services, self.config)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
@@ -179,10 +179,11 @@ class AST2ASTTest(unittest.TestCase):
 
   def testPreprocessIsBlockedCond(self):
     blocked_field = BUILTIN_ISSUE_FIELDS['blockedon_id']
-    for int_val, expected_op in ((1, ast_pb2.QueryOp.IS_DEFINED),
-                                 (0, ast_pb2.QueryOp.IS_NOT_DEFINED)):
+    for input_op, expected_op in (
+        (ast_pb2.QueryOp.EQ, ast_pb2.QueryOp.IS_DEFINED),
+        (ast_pb2.QueryOp.NE, ast_pb2.QueryOp.IS_NOT_DEFINED)):
       cond = ast_pb2.MakeCond(
-          ast_pb2.QueryOp.EQ, [blocked_field], [], [int_val])
+          input_op, [blocked_field], [], [])
       new_cond = ast2ast._PreprocessIsBlockedCond(
           self.cnxn, cond, [100], self.services, None)
       self.assertEqual(expected_op, new_cond.op)
@@ -288,6 +289,20 @@ class AST2ASTTest(unittest.TestCase):
         'Searching for issues accross multiple/all projects without '
         'project prefixes is ambiguous and is currently not supported.',
         cm.exception.message)
+
+  def testPreprocessIsSpamCond(self):
+    spam_field = BUILTIN_ISSUE_FIELDS['spam']
+    is_spam_field = BUILTIN_ISSUE_FIELDS['is_spam']
+    for input_op, int_values in (
+        (ast_pb2.QueryOp.EQ, [1]), (ast_pb2.QueryOp.NE, [0])):
+      cond = ast_pb2.MakeCond(
+          input_op, [spam_field], [], [])
+      new_cond = ast2ast._PreprocessIsSpamCond(
+          self.cnxn, cond, [789], self.services, None)
+      self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
+      self.assertEqual([is_spam_field], new_cond.field_defs)
+      self.assertEqual(int_values, new_cond.int_values)
+      self.assertEqual([], new_cond.str_values)
 
   def testPreprocessStatusCond(self):
     status_field = BUILTIN_ISSUE_FIELDS['status']

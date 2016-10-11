@@ -98,6 +98,7 @@ _ISSUE_FIELDS_LIST = [
     ('component_id', NUM),
     ('description', TXT),
     ('id', NUM),
+    ('is_spam', BOOL),
     ('label', TXT),
     ('label_id', NUM),
     ('mergedinto', NUM),
@@ -281,11 +282,6 @@ def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
   # multiple values, like set membership.  E.g., [Priority=High,Critical].
   quick_or_vals = [v.strip() for v in unquoted_value.split(',')]
 
-  if ((prefix == 'is' or prefix == '-is') and
-      unquoted_value in ['open', 'blocked', 'spam']):
-    return ast_pb2.MakeCond(
-        EQ, fields[unquoted_value], [], [int(prefix == 'is')])
-
   op = OPS[op_str]
   negate = False
   if prefix.startswith('-'):
@@ -295,6 +291,10 @@ def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
     elif op == TEXT_HAS:
       op = NOT_TEXT_HAS
     prefix = prefix[1:]
+
+  if prefix == 'is' and unquoted_value in ['open', 'blocked', 'spam']:
+    return ast_pb2.MakeCond(
+        NE if negate else EQ, fields[unquoted_value], [], [])
 
   # Search entries with or without any value in the specified field.
   if prefix == 'has':

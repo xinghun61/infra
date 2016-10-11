@@ -198,13 +198,13 @@ class QueryParsingUnitTest(unittest.TestCase):
           'is:' + keyword, '', BUILTIN_ISSUE_FIELDS, self.default_config)
       cond1 = ast.conjunctions[0].conds[0]
       self.assertEqual(
-          MakeCond(EQ, [BUILTIN_ISSUE_FIELDS[keyword]], [], [True]),
+          MakeCond(EQ, [BUILTIN_ISSUE_FIELDS[keyword]], [], []),
           cond1)
       ast = query2ast.ParseUserQuery(
           '-is:' + keyword, '', BUILTIN_ISSUE_FIELDS, self.default_config)
       cond1 = ast.conjunctions[0].conds[0]
       self.assertEqual(
-          MakeCond(EQ, [BUILTIN_ISSUE_FIELDS[keyword]], [], [False]),
+          MakeCond(NE, [BUILTIN_ISSUE_FIELDS[keyword]], [], []),
           cond1)
 
   def testParseUserQuery_HasOperator(self):
@@ -461,11 +461,11 @@ class QueryParsingUnitTest(unittest.TestCase):
   def testParseUserQuery_SearchWithinCustomFields(self):
     """Enums are treated as labels, other fields are kept as fields."""
     fd1 = tracker_bizobj.MakeFieldDef(
-        1, self.project_id, 'Size', tracker_pb2.FieldTypes.ENUM_TYPE, 
+        1, self.project_id, 'Size', tracker_pb2.FieldTypes.ENUM_TYPE,
         'applic', 'applic', False, False, None, None, None, False, None,
         None, None, 'doc', False)
     fd2 = tracker_bizobj.MakeFieldDef(
-        1, self.project_id, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE, 
+        1, self.project_id, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE,
         'applic', 'applic', False, False, None, None, None, False, None,
         None, None, 'doc', False)
     self.default_config.field_defs.extend([fd1, fd2])

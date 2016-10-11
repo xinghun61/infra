@@ -35,7 +35,6 @@ NATIVE_SEARCHABLE_FIELDS = {
     'opened': 'opened',
     'closed': 'closed',
     'modified': 'modified',
-    'spam': 'is_spam',
     'ownermodified': 'owner_modified',
     'statusmodified': 'status_modified',
     'componentmodified': 'component_modified',

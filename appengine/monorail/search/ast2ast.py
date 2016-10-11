@@ -80,20 +80,47 @@ def _PreprocessIsOpenCond(
   else:
     closed_status_ids = services.config.LookupClosedStatusIDsAnyProject(cnxn)
 
-  is_closed = not bool(cond.int_values[0])
+  # Invert the operator, because we're comparing against *closed* statuses.
+  if cond.op == ast_pb2.QueryOp.EQ:
+    op = ast_pb2.QueryOp.NE
+  elif cond.op == ast_pb2.QueryOp.NE:
+    op = ast_pb2.QueryOp.EQ
+  else:
+    raise ValueError('Open condidtion got nonsensical op %r' % cond.op)
+
   return ast_pb2.Condition(
-      op=ast_pb2.QueryOp.EQ if is_closed else ast_pb2.QueryOp.NE,
-      field_defs=[query2ast.BUILTIN_ISSUE_FIELDS['status_id']],
+      op=op, field_defs=[query2ast.BUILTIN_ISSUE_FIELDS['status_id']],
       int_values=closed_status_ids)
 
 
 def _PreprocessIsBlockedCond(
     _cnxn, cond, _project_ids, _services, _harmonized_config):
   """Preprocess an is:blocked cond into issues that are blocked."""
-  op = (ast_pb2.QueryOp.IS_DEFINED if bool(cond.int_values[0])
-                                   else ast_pb2.QueryOp.IS_NOT_DEFINED)
+  if cond.op == ast_pb2.QueryOp.EQ:
+    op = ast_pb2.QueryOp.IS_DEFINED
+  elif cond.op == ast_pb2.QueryOp.NE:
+    op = ast_pb2.QueryOp.IS_NOT_DEFINED
+  else:
+    raise ValueError('Blocked condition got nonsensical op %r' % cond.op)
+
   return ast_pb2.Condition(
       op=op, field_defs=[query2ast.BUILTIN_ISSUE_FIELDS['blockedon_id']])
+
+
+def _PreprocessIsSpamCond(
+    _cnxn, cond, _project_ids, _services, _harmonized_config):
+  """Preprocess an is:spam cond into is_spam == 1."""
+  if cond.op == ast_pb2.QueryOp.EQ:
+    int_values = [1]
+  elif cond.op == ast_pb2.QueryOp.NE:
+    int_values = [0]
+  else:
+    raise ValueError('Spam condition got nonsensical op %r' % cond.op)
+
+  return ast_pb2.Condition(
+      op=ast_pb2.QueryOp.EQ,
+      field_defs=[query2ast.BUILTIN_ISSUE_FIELDS['is_spam']],
+      int_values=int_values)
 
 
 def _PreprocessBlockedOnCond(
@@ -373,6 +400,7 @@ def _PreprocessCustomCond(cnxn, cond, services):
 _PREPROCESSORS = {
     'open': _PreprocessIsOpenCond,
     'blocked': _PreprocessIsBlockedCond,
+    'spam': _PreprocessIsSpamCond,
     'blockedon': _PreprocessBlockedOnCond,
     'blocking': _PreprocessBlockingCond,
     'status': _PreprocessStatusCond,
