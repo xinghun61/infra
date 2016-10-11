@@ -1,3 +1,5 @@
+<input type="hidden" name="label2" value="" id="hotlist_label">
+
 <dl>
   <dt>Which <a href="https://bugs.chromium.org/p/chromium/adminComponents" target="_blank">component</a> does this fall under?
   </dt>
@@ -94,7 +96,8 @@
     <p>Tip: Use <a href="https://www.browserstack.com/" target="_blank">browserstack.com</a>
       to compare behavior on different browser versions.
     </p>
-    <select name="works_others" onchange="exposeQuestion(this.value, 'works_which', ['No'])"
+    <select name="works_others"
+	    onchange="exposeQuestion(this.value, 'works_which', ['No']); updateHotlist(this.value);"
 	    aria-label="Does this feature work correctly in other browsers?" >
       <option value="N/A" selected="selected">Not sure - I don't know</option>
       <option value="Yes">Yes - This is just a Chromium problem</option>

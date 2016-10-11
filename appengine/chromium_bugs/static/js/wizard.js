@@ -63,7 +63,16 @@ function selectRole(role_name) {
 function selectComp(component_name) {
     $("next2").disabled = "";
     $("component_name").innerHTML = component_name;
+    $("post_label8").value = "Via-Wizard-" + component_name;
     getDetailPanel(component_name);
+}
+
+function updateHotlist(selectValue) {
+    if (selectValue == "Yes") {
+        $("hotlist_label").value = "Hotlist-Interop";
+    } else {
+        $("hotlist_label").value = "";
+    }
 }
 
 function getDetailPanel(component_name) {
