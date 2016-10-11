@@ -49,6 +49,10 @@ PROJECTS = {
         'tree-status': TREE_STATUS_URL % 'skia-tree',
         'repo': 'https://skia.googlesource.com/skia',
     },
+    'webrtc': {
+        'tree-status': TREE_STATUS_URL % 'webrtc',
+        'repo': 'https://chromium.googlesource.com/external/webrtc',
+    },
 }
 # Map of intervals to minutes.
 INTERVALS = {
