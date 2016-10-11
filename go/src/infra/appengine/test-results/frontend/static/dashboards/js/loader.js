@@ -180,8 +180,10 @@ loader.Loader.prototype = {
         if ((Date.now() / 1000) - lastRunSeconds > ONE_DAY_SECONDS)
             this._staleBuilderKeys.push(builder.key());
 
-        builds[builder.builderName][results.TESTS] = loader.Loader._flattenTrie(builds[builder.builderName][results.TESTS]);
-        g_resultsByBuilder[builder.key()] = builds[builder.builderName];
+        var build = builds[builder.builderName];
+        build[results.TESTS] = loader.Loader._flattenTrie(build[results.TESTS]);
+        results.simplifyFailureMap(build[results.FAILURE_MAP]);
+        g_resultsByBuilder[builder.key()] = build;
     },
     _handleResultsFileLoadError: function(builder)
     {

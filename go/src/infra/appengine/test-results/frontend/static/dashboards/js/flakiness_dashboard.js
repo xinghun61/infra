@@ -1538,8 +1538,13 @@ function showLegend()
     // Just grab the first failureMap. Technically, different builders can have different maps if they
     // haven't all cycled after the map was changed, but meh.
     var failureMap = g_resultsByBuilder[Object.keys(g_resultsByBuilder)[0]][results.FAILURE_MAP];
+    var seen = {};
     for (var expectation in failureMap) {
         var failureString = failureMap[expectation];
+        if (failureString in seen) {
+          continue;
+        }
+        seen[failureString] = true;
         html += '<div class=' + classNameForFailureString(failureString) + '>' + failureString + '</div>';
     }
 

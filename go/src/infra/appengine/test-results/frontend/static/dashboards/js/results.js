@@ -128,4 +128,15 @@ results.determineFlakiness = function(failureMap, testResults, out)
     out.isFlaky = flipCount > 1;
 }
 
+// Convert AUDIO, IMAGE, TEXT, and IMAGE+TEXT statuses into FAIL. This function
+// should be removed once crbug.com/654500 is resolved.
+results.simplifyFailureMap = function(failureMap) {
+  var failSet = {"IMAGE":true, "AUDIO":true, "TEXT":true, "IMAGE+TEXT":true};
+  for (var key in failureMap) {
+    if (failureMap[key] in failSet) {
+      failureMap[key] = "FAIL";
+    }
+  }
+}
+
 })();

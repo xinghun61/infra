@@ -108,5 +108,26 @@ test('results.determineFlakiness', 12, function() {
     results.determineFlakiness(failureMap, inputResults, out);
     equal(out.isFlaky, true);
     equal(out.flipCount, 3);
-
 });
+
+test('results.simplifyFailureMap', 1, function() {
+    var failureMap = {
+        'C': 'CRASH',
+        'P': 'PASS',
+        'I': 'IMAGE',
+        'Z': 'TEXT',
+        'T': 'TIMEOUT',
+    };
+
+    var simpleFailureMap = {
+        'C': 'CRASH',
+        'P': 'PASS',
+        'I': 'FAIL',
+        'Z': 'FAIL',
+        'T': 'TIMEOUT',
+    };
+
+    results.simplifyFailureMap(failureMap);
+    deepEqual(failureMap, simpleFailureMap);
+});
+
