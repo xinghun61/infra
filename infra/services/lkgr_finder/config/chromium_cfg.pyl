@@ -1,6 +1,5 @@
 {
   'project': 'chromium',
-  'source_vcs': 'git',
   'source_url': 'https://chromium.googlesource.com/chromium/src',
   'error_recipients': 'chrome-build-alerts@google.com',
   'masters': {
