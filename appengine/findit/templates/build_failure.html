@@ -78,7 +78,7 @@
 
     function triageSuspectedCL(e) {
       $.getJSON('/waterfall/triage-suspected-cl?cl_info=' + e.name +'&status=' + e.value + '&url=' + findit.buildUrl, function(data) {
-        if (! data[success]) {
+        if (! data['success']) {
           alert('Failed to update datastore. Please refresh and try again.');
         } else {
           $('#cl_result_triaged').html('Result has been recorded. Thank you.')
@@ -87,8 +87,6 @@
         // Replace the whole page with errors from server side.
         document.body.outerHTML = xhr.responseText;
       });
-
-      e.preventDefault();
     }
 
     function triageAnalysisResult(e) {

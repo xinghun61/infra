@@ -74,6 +74,27 @@ class TriageSuspectedClTest(testing.AppengineTestCase):
       },
       response.json_body)
 
+  def testUpdateSuspectedCLNonFirstTimeFailure(self):
+    suspected_cl = WfSuspectedCL.Create(
+        self.repo_name, self.revision_1, self.commit_position)
+
+    suspected_cl.builds = {
+        self.build_key_1: {
+            'failure_type': 'test',
+            'failures': {
+                's1': ['t1', 't2']
+            },
+            'status': None,
+            'approaches': [analysis_approach_type.HEURISTIC,
+                           analysis_approach_type.TRY_JOB],
+            'top_score': None,
+            'Confidence': 80.0
+        }
+    }
+    suspected_cl.put()
+    self.assertTrue(triage_suspected_cl._UpdateSuspectedCL(
+        self.repo_name, self.revision_1, self.build_key_2,None))
+
   def testUpdateSuspectedCLCorrect(self):
     suspected_cl = WfSuspectedCL.Create(
         self.repo_name, self.revision_1, self.commit_position)
@@ -101,9 +122,7 @@ class TriageSuspectedClTest(testing.AppengineTestCase):
 
     self.assertEqual(
         suspected_cl.builds[self.build_key_1]['status'], cl_status)
-    self.assertEqual(
-        suspected_cl.status, cl_status)
-
+    self.assertEqual(suspected_cl.status, cl_status)
 
   def testUpdateSuspectedCLIncorrect(self):
     suspected_cl = WfSuspectedCL.Create(

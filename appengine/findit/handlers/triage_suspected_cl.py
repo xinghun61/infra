@@ -25,9 +25,13 @@ from waterfall.suspected_cl_util import GetCLInfo
 def _UpdateSuspectedCL(
     repo_name, revision, build_key, cl_status, updated_time=None):
   suspected_cl = WfSuspectedCL.Get(repo_name, revision)
-  if (not suspected_cl or not suspected_cl.builds or
-      not suspected_cl.builds.get(build_key)):
+  if (not suspected_cl or not suspected_cl.builds):
     return False
+
+  if not suspected_cl.builds.get(build_key):
+    # The failure is not a first time failure.
+    # Will not update suspected_cl but will update analysis.
+    return True
 
   suspected_cl.builds[build_key]['status'] = cl_status
 
