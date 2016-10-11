@@ -73,37 +73,6 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
         'project': 'blink',
       }
     },
-    # Ignored because jobs is not a dict.
-    {
-      'fields': {
-        'action': 'verifier_jobs_update',
-        'verifier': 'try job',
-        'project': 'chromium',
-        'jobs': 'foobar',
-      }
-    },
-    # Ignored because jobs entry is not a list.
-    {
-      'fields': {
-        'action': 'verifier_jobs_update',
-        'verifier': 'try job',
-        'project': 'chromium',
-        'jobs': {
-          'JOB_SUCCEEDED': 'foobar',
-        },
-      }
-    },
-    # Ignored because list of builds contains non-dict.
-    {
-      'fields': {
-        'action': 'verifier_jobs_update',
-        'verifier': 'try job',
-        'project': 'chromium',
-        'jobs': {
-          'JOB_SUCCEEDED': ['foobar'],
-        },
-      }
-    },
     {
       'fields': {
         'action': 'verifier_jobs_update',

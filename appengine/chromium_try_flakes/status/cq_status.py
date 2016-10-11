@@ -194,9 +194,11 @@ def delete_old_flake_occurrences():
                    len(old_occurrences), len(invalid_occurrences), flake.name)
 
 
-def get_first_int(properties, key):
+def get_int_value(properties, key):
+  if not key in properties:
+    raise ValueError('key not found')
   value = properties[key]
-  if isinstance(value, list):
+  if type(value) == type(list()):
     value = value[0]
   return int(value)
 
@@ -221,35 +223,35 @@ def parse_cq_data(json_data):
     if fields.get('project') != 'chromium':
       continue
 
-    job_states = fields.get('jobs', {})
-    if not isinstance(job_states, dict):
-      continue
+    job_states = fields.get('jobs', [])
+    for state in job_states:
+      # Just go by |result|.
+      #if state not in ['JOB_SUCCEEDED', 'JOB_FAILED', 'JOB_TIMED_OUT']:
+      #  continue
 
-    # We ignore job states in the keys and instead rely on result field below.
-    for jobs in job_states.itervalues():
-      if not isinstance(jobs, list):
-        continue
-
-      for job in jobs:
-        if not isinstance(job, dict):
+      for job in job_states[state]:
+        build_properties = job.get('build_properties')
+        if not build_properties:
           continue
 
         try:
           master = job['master']
           builder = job['builder']
-          result = int(job['result'])
+          result = job['result']
           timestamp_tz = dateutil.parser.parse(job['timestamp'])
           # We assume timestamps from chromium-cq-status are already in UTC.
           timestamp = timestamp_tz.replace(tzinfo=None)
+        except KeyError:
+          continue
 
-          build_properties = job['build_properties']
-          buildnumber = get_first_int(build_properties, 'buildnumber')
-          issue = get_first_int(build_properties, 'issue')
-          patchset = get_first_int(build_properties, 'patchset')
-          attempt_start_ts = get_first_int(build_properties, 'attempt_start_ts')
+        try:
+          buildnumber = get_int_value(build_properties, 'buildnumber')
+          issue = get_int_value(build_properties, 'issue')
+          patchset = get_int_value(build_properties, 'patchset')
+          attempt_start_ts = get_int_value(build_properties, 'attempt_start_ts')
           time_started = datetime.datetime.utcfromtimestamp(
               attempt_start_ts / 1000000)
-        except (KeyError, ValueError):
+        except ValueError:
           continue
 
         if build_result.isResultPending(result):
