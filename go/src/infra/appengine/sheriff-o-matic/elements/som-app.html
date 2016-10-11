@@ -75,6 +75,9 @@
         line-height: 150%;
       }
       #refresh {
+        max-width: 30px;
+      }
+      #refresh paper-icon-button {
         width: 25px;
         height: 25px;
         padding: 0;
@@ -84,7 +87,7 @@
         margin-top: 0;
       }
       .last-updated {
-        min-width: 180px;
+        min-width: 200px;
       }
       .last-updated, .user-name {
         text-align: right;
@@ -130,9 +133,23 @@
         .last-updated, .user-name {
           padding-right: 0.5em;
           font-size: 0.9em;
+          line-height: 100%;
         }
         .user-name {
           @apply(--layout-flex);
+        }
+      }
+      @media (max-width: 540px) {
+        .last-updated, .user-name {
+          font-size: 0.8em;
+          min-width: 10%;
+          text-align: left;
+        }
+        #fetchingAlerts {
+          display: none;
+        }
+        #tree-title {
+          display: none;
         }
       }
     </style>
@@ -162,16 +179,18 @@
         <paper-toolbar>
           <div class="layout horizontal flex">
             <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-            <div class="flex title">[[_tree]]</div>
+            <div class="flex title" id="tree-title">[[_tree]]</div>
             <div hidden$="[[_lastUpdate]]" class="flex last-updated">
               Last updated: [[_lastUpdated]]
             </div>
-            <div class="user-name">
+            <div class="horizontal user-name">
               [[user]] (<a href$="[[logoutUrl]]">Log Out </a>)
             </div>
-            <paper-icon-button on-tap="_refresh" id="refresh" icon="refresh"></paper-icon-button>
+            <div id="refresh" class="flex">
+              <paper-icon-button on-tap="_refresh" icon="refresh"></paper-icon-button>
+            </div>
           </div>
-          <paper-spinner active="[[_fetchingAlerts]]"></paper-spinner>
+          <paper-spinner id="fetchingAlerts" active="[[_fetchingAlerts]]"></paper-spinner>
         </paper-toolbar>
         <iron-pages attr-for-selected='id' selected="[[_selectedPage]]" class="flex layout vertical">
           <div id="alertsList" class="page-body">
@@ -194,7 +213,7 @@
                 </span>
               </template>
             </div>
-            <som-bug-queue id="bugQueue" bug-queue-label="[[_bugQueueLabel]]"></som-bug-queue>
+            <som-bug-queue id="bugQueue" bug-queue-label="[[_bugQueueLabel]]" tree-display-name="[[_treeDisplayName]]"></som-bug-queue>
             <div id="alertsListInner">
               <h2 class="header">[[_treeDisplayName]] Failure Alerts (<a href="/help-som">Help?</a>)</h2>
               <div id="fetchAlertsError" hidden=[[!_fetchAlertsError]]>[[_fetchAlertsError]]</div>
