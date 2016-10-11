@@ -16,9 +16,6 @@ import oauth2client.appengine
 AUTH_SCOPE = 'https://www.googleapis.com/auth/userinfo.email'
 
 
-# TODO(akuegel): Do we want to use a different timeout? Do we want to use a
-# cache? See documentation here:
-# https://github.com/jcgregorio/httplib2/blob/master/python2/httplib2/__init__.py#L1142
 def _authenticated_http(http, scope):
   credentials = oauth2client.appengine.AppAssertionCredentials(scope=scope)
   return credentials.authorize(http or httplib2.Http())

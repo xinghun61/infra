@@ -4,6 +4,8 @@
 
 """Provides API wrapper for FindIt"""
 
+import httplib2
+
 from endpoints import endpoints
 
 
@@ -12,7 +14,7 @@ class FindItAPI(object):
   def __init__(self):
     self.client = endpoints.build_client(
         'findit', 'v1', 'https://findit-for-me.appspot.com/_ah/api/discovery/v1'
-        '/apis/{api}/{apiVersion}/rest')
+        '/apis/{api}/{apiVersion}/rest', http=httplib2.Http(timeout=60))
 
   def flake(self, flake, flaky_runs):
     body = {}
