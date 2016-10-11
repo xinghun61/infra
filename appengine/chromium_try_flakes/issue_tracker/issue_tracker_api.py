@@ -8,6 +8,12 @@ from endpoints import endpoints
 from issue_tracker.issue import Issue
 from issue_tracker.comment import Comment
 
+from google.appengine.api import app_identity
+
+
+DISCOVERY_URL = ('https://monorail%s.appspot.com/_ah/api/discovery/v1/apis/'
+                 '{api}/{apiVersion}/rest')
+
 
 class IssueTrackerAPI(object):
   CAN_ALL = 'all'
@@ -15,9 +21,14 @@ class IssueTrackerAPI(object):
   """A wrapper around the issue tracker api."""
   def __init__(self, project_name):
     self.project_name = project_name
-    self.client = endpoints.build_client(
-        'monorail', 'v1', 'https://monorail-prod.appspot.com/_ah/api/discovery'
-        '/v1/apis/{api}/{apiVersion}/rest')
+
+    app_id = app_identity.get_application_id()
+    if app_id.endswith('-staging'):
+      discovery_url = DISCOVERY_URL % '-staging'
+    else:
+      discovery_url = DISCOVERY_URL % '-prod'
+
+    self.client = endpoints.build_client('monorail', 'v1', discovery_url)
 
   def create(self, issue, send_email=True):
     body = {}

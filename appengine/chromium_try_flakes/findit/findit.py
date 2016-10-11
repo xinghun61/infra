@@ -8,13 +8,24 @@ import httplib2
 
 from endpoints import endpoints
 
+from google.appengine.api import app_identity
+
+
+DISCOVERY_URL = ('https://findit-for-me%s.appspot.com/_ah/api/discovery/v1/'
+                 'apis/{api}/{apiVersion}/rest')
+
 
 class FindItAPI(object):
   """A wrapper around the FindIt api."""
   def __init__(self):
+    app_id = app_identity.get_application_id()
+    if app_id.endswith('-staging'):
+      discovery_url = DISCOVERY_URL % '-staging'
+    else:
+      discovery_url = DISCOVERY_URL % ''
+
     self.client = endpoints.build_client(
-        'findit', 'v1', 'https://findit-for-me.appspot.com/_ah/api/discovery/v1'
-        '/apis/{api}/{apiVersion}/rest', http=httplib2.Http(timeout=60))
+        'findit', 'v1', discovery_url, http=httplib2.Http(timeout=60))
 
   def flake(self, flake, flaky_runs):
     body = {}

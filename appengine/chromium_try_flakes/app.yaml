@@ -1,4 +1,4 @@
-application: chromium-try-flakes
+application: chromium-try-flakes-staging
 version: 19
 runtime: python27
 api_version: 1

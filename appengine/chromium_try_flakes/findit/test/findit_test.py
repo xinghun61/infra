@@ -28,9 +28,9 @@ class FindItAPITestCase(testing.AppengineTestCase):
     gae_ts_mon.reset_for_unittest(disable=True)
     self.maxDiff = None
     self.client = mock.Mock()
+    self.build_client = mock.Mock(return_value=self.client)
     self.patchers = [
-        mock.patch('endpoints.endpoints.build_client',
-                   lambda *_, **__: self.client),
+        mock.patch('endpoints.endpoints.build_client', self.build_client),
         mock.patch('endpoints.endpoints.retry_request', mock.Mock()),
     ]
     for patcher in self.patchers:
@@ -99,3 +99,23 @@ class FindItAPITestCase(testing.AppengineTestCase):
         }
       ]
     })
+
+  @mock.patch('google.appengine.api.app_identity.get_application_id',
+              lambda: 'x-staging')
+  def test_uses_staging_instance(self):
+    findit.FindItAPI()
+    self.assertEquals(self.build_client.call_count, 1)
+    self.assertEquals(self.build_client.call_args[0][0], 'findit')
+    self.assertEquals(self.build_client.call_args[0][1], 'v1')
+    self.assertEquals(
+        self.build_client.call_args[0][2], 'https://findit-for-me-staging.'
+        'appspot.com/_ah/api/discovery/v1/apis/{api}/{apiVersion}/rest')
+
+  def test_uses_prod_instance_by_default(self):
+    findit.FindItAPI()
+    self.assertEquals(self.build_client.call_count, 1)
+    self.assertEquals(self.build_client.call_args[0][0], 'findit')
+    self.assertEquals(self.build_client.call_args[0][1], 'v1')
+    self.assertEquals(
+        self.build_client.call_args[0][2], 'https://findit-for-me.appspot.com/'
+        '_ah/api/discovery/v1/apis/{api}/{apiVersion}/rest')
