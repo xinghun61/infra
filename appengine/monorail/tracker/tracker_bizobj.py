@@ -286,6 +286,9 @@ def GetIssueComponentsAndAncestors(issue, config):
   result = set()
   for component_id in issue.component_ids:
     cd = FindComponentDefByID(component_id, config)
+    if cd is None:
+      logging.error('Tried to look up non-existent component %r' % component_id)
+      continue
     ancestors = FindAncestorComponents(config, cd)
     result.add(cd)
     result.update(ancestors)
