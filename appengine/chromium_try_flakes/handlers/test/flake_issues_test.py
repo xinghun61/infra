@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import httplib
 import json
 import mock
 import urllib2
@@ -174,11 +175,12 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     super(FlakeIssuesTestCase, self).setUp()
     gae_ts_mon.reset_for_unittest(disable=True)
     self.mock_api = MockIssueTrackerAPI()
+    self.mock_findit = mock.Mock()
     self.patchers = [
         mock.patch('issue_tracker.issue_tracker_api.IssueTrackerAPI',
                    lambda *args, **kwargs: self.mock_api),
         mock.patch('issue_tracker.issue.Issue', MockIssue),
-        mock.patch('findit.findit.FindItAPI', mock.Mock()),
+        mock.patch('findit.findit.FindItAPI', self.mock_findit),
     ]
     for patcher in self.patchers:
       patcher.start()
@@ -767,6 +769,43 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     flake = Flake(name='FooBar', occurrences=[run_hour_ago, run_day_ago])
     self.assertEqual(ProcessIssue._find_flakiness_period_occurrences(flake),
                      [run_day_ago.get(), run_hour_ago.get()])
+
+  def test_sends_new_flakes_to_findit(self):
+    flake_method = mock.Mock()
+    self.mock_findit.return_value.flake = flake_method
+
+    flake = self._create_flake()
+    flake.put()
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      response = self.test_app.post('/issues/process/%s' % flake.key.urlsafe())
+      self.assertEqual(200, response.status_int)
+
+    self.assertEquals(flake_method.call_count, 1)
+    call_args = flake_method.call_args[0]
+    self.assertEquals(call_args[0].name, 'foo.bar')
+    self.assertEquals(len(call_args[1]), 2)
+
+  def test_sends_new_occurrences_to_findit(self):
+    flake_method = mock.Mock()
+    self.mock_findit.return_value.flake = flake_method
+
+    issue = self.mock_api.create(MockIssue({}))
+    flake = self._create_flake()
+    flake.num_reported_flaky_runs = 2
+    flake.issue_id = issue.id
+    flake.put()
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 1):
+      response = self.test_app.post('/issues/process/%s' % flake.key.urlsafe())
+      self.assertEqual(200, response.status_int)
+
+    self.assertEquals(flake_method.call_count, 1)
+    call_args = flake_method.call_args[0]
+    self.assertEquals(call_args[0].name, 'foo.bar')
+    self.assertEquals(len(call_args[1]), 1)
+
+  def test_does_not_throw_exceptions_on_request_error_to_findit(self):
+    self.mock_findit.return_value.flake.side_effect = httplib.HTTPException()
+    ProcessIssue._report_flakes_to_findit(None, None)
 
 
 class CreateFlakyRunTestCase(testing.AppengineTestCase):

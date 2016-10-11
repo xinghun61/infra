@@ -5,6 +5,7 @@
 """Task queue endpoints for creating and updating issues on issue tracker."""
 
 import datetime
+import httplib
 import json
 import logging
 import urllib2
@@ -219,7 +220,10 @@ class ProcessIssue(webapp2.RequestHandler):
   @staticmethod
   @ndb.non_transactional
   def _report_flakes_to_findit(flake, flaky_runs):
-    findit.FindItAPI().flake(flake, flaky_runs)
+    try:
+      findit.FindItAPI().flake(flake, flaky_runs)
+    except httplib.HTTPException:
+      logging.warning('Failed to send flakes to FindIt')
 
   @ndb.transactional
   def _update_issue(self, api, flake, new_flakes, now):
