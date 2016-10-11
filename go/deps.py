@@ -177,6 +177,11 @@ def flatten_deps(deps):
   return sorted(out)
 
 
+def contains_subpackages(workspace, path):
+  stdout, _ = call(workspace, 'go', ['list', path + '...'], capture_output=True)
+  return stdout != ''
+
+
 def compare_deps(before, after):
   """Analyzes a difference in old and new deps, and prints some helpful stuff.
 
@@ -353,7 +358,7 @@ def unhack_vendor(workspace):
     os.rename(vendor_path, src_path)
 
 
-def call(workspace, tool, args):
+def call(workspace, tool, args, capture_output=False):
   """Invokes a tool from GOROOT/bin, setting GOPATH to <workspace>/.vendor.
 
   Note that 'glide' is installed by bootstrap.py into GOROOT/bin too. Raises
@@ -363,6 +368,11 @@ def call(workspace, tool, args):
     workspace: an initialized _Workspace object.
     tool: name of an executable to call, e.g. "go" or "glide".
     args: additional command line arguments to pass to it.
+    capture_output: whether to capture return the child process' stdout and
+      stderr.
+
+  Returns:
+    A string containing the child process' stdout if capture_output was True.
   """
   sfx = '.exe' if sys.platform == 'win32' else ''
   cmd = [os.path.join(workspace.goroot, 'bin', tool + sfx)] + args
@@ -382,10 +392,21 @@ def call(workspace, tool, args):
   env['GLIDE_HOME'] = os.path.join(workspace.gobase, '.glide')
   env['GLIDE_TMP'] = os.path.join(workspace.gobase, '.glide')
 
-  ret_code = subprocess.call(cmd, env=env, cwd=env['GOPATH'])
-  if ret_code:
+  kwargs = {
+      'env': env,
+      'cwd': env['GOPATH'],
+  }
+  if capture_output:
+    kwargs['stdout'] = subprocess.PIPE
+    kwargs['stderr'] = subprocess.PIPE
+
+  proc = subprocess.Popen(cmd, **kwargs)
+  stdout, stderr = proc.communicate()
+
+  if proc.returncode:
     raise CallFailed(
         '"%s %s" FAILED, see the log' % (tool, ' '.join(args)))
+  return stdout, stderr
 
 
 def read_file(path):
@@ -571,8 +592,9 @@ def install(workspace, force=False, update_out=None, skip_bundle=False):
   # compile.
   print 'Rebuilding libraries...'
   assert read_file(os.path.join(workspace.gobase, 'deps.lock')) == required
-  deps = parse_glide_lock(required)
-  call(workspace, 'go', ['install', '-v'] + flatten_deps(deps))
+  deps = [path for path in flatten_deps(parse_glide_lock(required))
+          if contains_subpackages(workspace, path)]
+  call(workspace, 'go', ['install', '-v'] + deps)
 
   # We will install only interesting subset of executables below. Nuke
   # everything else to avoid polluting PATH with unimportant stuff.
