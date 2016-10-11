@@ -917,7 +917,11 @@ class OutboundEmailTask(jsonfeed.InternalTask):
     """
     # To avoid urlencoding the email body, the most salient parameters to this
     # method are passed as a json-encoded POST body.
-    email_params = json.loads(self.request.body)
+    try:
+      email_params = json.loads(self.request.body)
+    except ValueError:
+      logging.error(self.request.body)
+      raise
     # If running on a GAFYD domain, you must define an app alias on the
     # Application Settings admin web page.
     sender = email_params.get('from_addr')
