@@ -10,8 +10,8 @@
 [include "../framework/js-placeholders.ezt" "showtabs"]
 
 <div id="colcontrol">
- [if-any is_missing_shards]
-   <div class="error" style="text-align:center">[missing_shard_count] search backends did not respond or had errors. These results are probably incomplete.</div>
+ [if-any search_error_message]
+   <div class="error" style="text-align:center">[search_error_message]</div>
  [end]
 
  [if-any grid_mode]

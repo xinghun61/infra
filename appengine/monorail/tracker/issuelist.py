@@ -56,6 +56,8 @@ class IssueList(servlet.Servlet):
     Returns:
       Dict of values used by EZT for rendering the page.
     """
+    search_error_message = ''
+
     # Check if the user's query is just the ID of an existing issue.
     # TODO(jrobbins): consider implementing this for cross-project search.
     if mr.project and tracker_constants.JUMP_RE.match(mr.query):
@@ -142,6 +144,12 @@ class IssueList(servlet.Servlet):
           permissions.CREATE_ISSUE,
           permissions.EDIT_ISSUE)
 
+    if pipeline.error_responses:
+      search_error_message = (
+          '%d search backends did not respond or had errors. '
+          'These results are probably incomplete.'
+          % len(pipeline.error_responses))
+
     # Update page data with variables that are shared between list and
     # grid view.
     page_data.update({
@@ -156,9 +164,8 @@ class IssueList(servlet.Servlet):
         'set_star_token': xsrf.GenerateToken(
             mr.auth.user_id, '/p/%s%s.do' % (
                 mr.project_name, urls.ISSUE_SETSTAR_JSON)),
-        'is_missing_shards': ezt.boolean(len(pipeline.error_responses)),
-        'missing_shard_count': len(pipeline.error_responses),
-        })
+        'search_error_message': search_error_message,
+    })
 
     return page_data
 
