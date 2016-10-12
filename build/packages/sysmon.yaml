@@ -1,0 +1,14 @@
+package: infra/monitoring/sysmon/${platform}
+description: sysmon reports machine tsmon metrics.
+builders:
+  - infra-continuous-mac-10.9-64
+  - infra-continuous-precise-32
+  - infra-continuous-precise-64
+  - infra-continuous-win-32
+  - infra-continuous-win-64
+go_packages:
+  - infra/monitoring/sysmon/cmd/sysmon
+root: ../../go/bin
+data:
+  - file: sysmon${exe_suffix}
+  - version_file: .versions/sysmon${exe_suffix}.cipd_version
