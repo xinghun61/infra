@@ -106,13 +106,13 @@ class QueryParsingUnitTest(unittest.TestCase):
     self.assertEqual(
         MakeCond(TEXT_HAS, [ANY_FIELD], ['fancy'], []), ft_cond2)
 
-    # Use word with special prefix.
-    word_with_special_prefix = '%stest' % fulltext_helpers.NON_OP_PREFIXES[0]
+    # Use word with non-operator prefix.
+    word_with_non_op_prefix = '%stest' % fulltext_helpers.NON_OP_PREFIXES[0]
     ast = query2ast.ParseUserQuery(
-        word_with_special_prefix, '', BUILTIN_ISSUE_FIELDS, self.default_config)
+        word_with_non_op_prefix, '', BUILTIN_ISSUE_FIELDS, self.default_config)
     fulltext_cond = ast.conjunctions[0].conds[0]
     self.assertEqual(
-        MakeCond(TEXT_HAS, [ANY_FIELD], [word_with_special_prefix], []),
+        MakeCond(TEXT_HAS, [ANY_FIELD], ['"%s"' % word_with_non_op_prefix], []),
         fulltext_cond)
 
     # mix positive and negative words
@@ -183,8 +183,7 @@ class QueryParsingUnitTest(unittest.TestCase):
   def testParseUserQuery_CodeSyntaxThatWeNeedToCopeWith(self):
     # positive phrases
     ast = query2ast.ParseUserQuery(
-        'Base::Tuple', '', BUILTIN_ISSUE_FIELDS,
-        self.default_config)
+        'Base::Tuple', '', BUILTIN_ISSUE_FIELDS, self.default_config)
     cond = ast.conjunctions[0].conds[0]
     self.assertEqual(
         MakeCond(TEXT_HAS, [ANY_FIELD],
@@ -457,6 +456,23 @@ class QueryParsingUnitTest(unittest.TestCase):
         MakeCond(TEXT_HAS,
                  [BUILTIN_ISSUE_FIELDS['label']], ['priority-high'], []),
         cond1)
+
+    ast = query2ast.ParseUserQuery(
+        'blockedon:other:123', '', BUILTIN_ISSUE_FIELDS, self.default_config)
+    cond1 = ast.conjunctions[0].conds[0]
+    self.assertEqual(
+        MakeCond(TEXT_HAS, [BUILTIN_ISSUE_FIELDS['blockedon']],
+                 ['other:123'], []),
+        cond1)
+
+    ast = query2ast.ParseUserQuery(
+        'cost=-2', '', BUILTIN_ISSUE_FIELDS, self.default_config)
+    cond1 = ast.conjunctions[0].conds[0]
+    self.assertEqual(
+        MakeCond(EQ, [BUILTIN_ISSUE_FIELDS['label']],
+                 ['cost--2'], []),
+        cond1)
+
 
   def testParseUserQuery_SearchWithinCustomFields(self):
     """Enums are treated as labels, other fields are kept as fields."""

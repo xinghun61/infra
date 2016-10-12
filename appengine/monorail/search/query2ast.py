@@ -74,7 +74,7 @@ TERM_RE = re.compile(
 OP_RE = re.compile(
     r'^(?P<prefix>[-_\w]*?)'
     r'(?P<op>%s)'
-    r'(?P<value>([-,.@>/_\*\w]+|"[^"]+"))$' %
+    r'(?P<value>([-\w][-\*,./:<=>@\w]*|"[^"]+"))$' %
     OPS_PATTERN,
     flags=re.UNICODE)
 
@@ -353,16 +353,11 @@ def _ExtractConds(query):
       special_prefixes_match = any(
           word_label.startswith(p) for p in fulltext_helpers.NON_OP_PREFIXES)
       match = OP_RE.match(word_label)
-      if match:
+      if match and not special_prefixes_match:
         label = match.group('prefix')
         op = match.group('op')
         word = match.group('value')
-        if special_prefixes_match:
-          # Do not include quotes if any of the special prefixes match because
-          # we do not want to treat the label as key:value search terms.
-          terms.append('%s%s%s' % (label, op, word))
-        else:
-          terms.append('%s%s"%s"' % (label, op, word))
+        terms.append('%s%s"%s"' % (label, op, word))
       else:
         # It looked like a key:value cond, but not exactly, so treat it
         # as fulltext search.  It is probably a tiny bit of source code.
