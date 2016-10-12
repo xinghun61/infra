@@ -122,7 +122,7 @@ def ParseProjectAccess(project, access_num_str):
   return access
 
 
-def MembersWithout(project, exclude_ids):
+def MembersWithoutGivenIDs(project, exclude_ids):
   """Return three lists of member user IDs, with member_ids not in them."""
   owner_ids = [user_id for user_id in project.owner_ids
                if user_id not in exclude_ids]
@@ -134,7 +134,7 @@ def MembersWithout(project, exclude_ids):
   return owner_ids, committer_ids, contributor_ids
 
 
-def MembersWith(project, new_member_ids, role):
+def MembersWithGivenIDs(project, new_member_ids, role):
   """Return three lists of member IDs with the new IDs in the right one.
 
   Args:
@@ -149,7 +149,7 @@ def MembersWith(project, new_member_ids, role):
   Raises:
     ValueError: if the role is not one of owner, committer, or contributor.
   """
-  owner_ids, committer_ids, contributor_ids = MembersWithout(
+  owner_ids, committer_ids, contributor_ids = MembersWithoutGivenIDs(
       project, new_member_ids)
 
   if role == 'owner':

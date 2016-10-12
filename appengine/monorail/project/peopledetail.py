@@ -235,8 +235,9 @@ class PeopleDetail(servlet.Servlet):
 
   def RemoveRole(self, cnxn, project, member_id):
     """Remove the given member from the project."""
-    owner_ids, committer_ids, contributor_ids = project_helpers.MembersWithout(
-        project, {member_id})
+    (owner_ids, committer_ids,
+     contributor_ids) = project_helpers.MembersWithoutGivenIDs(
+         project, {member_id})
     self.services.project.UpdateProjectRoles(
         cnxn, project.project_id, owner_ids, committer_ids, contributor_ids)
 
@@ -248,8 +249,9 @@ class PeopleDetail(servlet.Servlet):
     if role == framework_helpers.GetRoleName({member_id}, project).lower():
       return  # No change needed
 
-    owner_ids, committer_ids, contributor_ids = project_helpers.MembersWith(
-        project, {member_id}, role)
+    (owner_ids, committer_ids,
+     contributor_ids) = project_helpers.MembersWithGivenIDs(
+         project, {member_id}, role)
 
     self.services.project.UpdateProjectRoles(
         cnxn, project.project_id, owner_ids, committer_ids, contributor_ids)

@@ -1160,7 +1160,7 @@ class ClientConfigApi(remote.Service):
             logging.info('Update project %s role %s for user %s',
                          project.project_name, role, client.client_email)
             owner_ids, committer_ids, contributor_ids = (
-                project_helpers.MembersWith(project, {user_id}, role))
+                project_helpers.MembersWithGivenIDs(project, {user_id}, role))
             self._services.project.UpdateProjectRoles(
                 mar.cnxn, p_id, owner_ids, committer_ids,
                 contributor_ids)
@@ -1195,5 +1195,3 @@ class ClientConfigApi(remote.Service):
       logging.warning('Cannot find projects for specified name %s',
                       project_str)
     return result
-
-
