@@ -10,7 +10,7 @@ help:
 	@echo "Supported commands: deploy_staging deploy_prod"
 
 deploy_staging:
-	$(GAE_PY) upload -A chromium-try-flakes-staging
+	$(GAE_PY) upload -A chromium-try-flakes-staging -f
 
 deploy_prod:
 	$(GAE_PY) upload -A chromium-try-flakes
