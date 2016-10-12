@@ -808,7 +808,7 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 					StartTime: failure.Build.Times[0],
 					Time:      failure.Build.Times[0],
 					Severity:  infraFailureSev,
-					Key:       alertKey(failure.Master.Name(), failure.Build.BuilderName, failure.Step.Name, fmt.Sprintf("%v", failure.Step.Results[1])),
+					Key:       alertKey(failure.Master.Name(), failure.Build.BuilderName, failure.Step.Name, fmt.Sprintf("%v", failure.Step.Results[0])),
 					Extension: bf,
 				}
 

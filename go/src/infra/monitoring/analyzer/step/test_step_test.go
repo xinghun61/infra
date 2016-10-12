@@ -173,3 +173,56 @@ func TestUnexpected(t *testing.T) {
 		}
 	})
 }
+
+func TestTraverseResults(t *testing.T) {
+	Convey("empty", t, func() {
+		s, err := traverseResults("", nil)
+		So(len(s), ShouldEqual, 0)
+		So(err, ShouldEqual, nil)
+	})
+
+	Convey("recurse", t, func() {
+		s, err := traverseResults("", map[string]interface{}{
+			"test1": map[string]interface{}{
+				"subtest1": map[string]interface{}{
+					"expected": "PASS",
+					"actual":   "FAIL",
+				},
+			},
+		})
+		So(len(s), ShouldEqual, 0)
+		So(err, ShouldEqual, nil)
+	})
+
+	Convey("recurse, results", t, func() {
+		s, err := traverseResults("", map[string]interface{}{
+			"test1": map[string]interface{}{
+				"subtest1": map[string]interface{}{
+					"expected":      "PASS",
+					"actual":        "FAIL",
+					"is_unexpected": true,
+				},
+			},
+		})
+		So(len(s), ShouldEqual, 1)
+		So(err, ShouldEqual, nil)
+	})
+}
+
+func TestBasicFailure(t *testing.T) {
+	Convey("basicFailure", t, func() {
+		bf := &basicFailure{Name: "basic"}
+		title := bf.Title([]*messages.BuildStep{
+			{
+				Master: &messages.MasterLocation{},
+				Build:  &messages.Build{BuilderName: "basic.builder"},
+				Step:   &messages.Step{Name: "step"},
+			},
+		})
+
+		So(title, ShouldEqual, "step failing on /basic.builder")
+
+		So(bf.Signature(), ShouldEqual, bf.Name)
+		So(bf.Kind(), ShouldEqual, "basic")
+	})
+}

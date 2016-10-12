@@ -280,11 +280,39 @@ func main() {
 	tsFlags.Register(flag.CommandLine)
 	flag.Parse()
 
+	if *snapshot != "" && *replay != "" {
+		errLog.Printf("Cannot use snapshot and replay flags at the same time.")
+		os.Exit(1)
+	}
+
 	if err := tsmon.InitializeFromFlags(ctx, &tsFlags); err != nil {
 		errLog.Printf("tsmon couldn't initialize from flags: %v", err)
 		os.Exit(1)
 	}
 
+	// Start serving expvars.
+	go func() {
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			errLog.Printf("Listen: %s", err)
+			os.Exit(1)
+		}
+
+		infoLog.Printf("expvars listening on %v", listener.Addr())
+
+		err = http.Serve(listener, nil)
+		if err != nil {
+			errLog.Printf("http.Serve: %s", err)
+			os.Exit(1)
+		}
+	}()
+
+	if err := loadConfigsAndRun(ctx); err != nil {
+		errLog.Printf("Error loading configs and/or running: %v", err)
+	}
+}
+
+func loadConfigsAndRun(ctx context.Context) error {
 	authOptions := auth.Options{
 		ServiceAccountJSONPath: *serviceAccountJSON,
 		Scopes: []string{
@@ -305,37 +333,20 @@ func main() {
 		if !*login {
 			errLog.Printf("Consider re-running with -login")
 		}
-		os.Exit(1)
+		return err
 	}
 	ctx = context.Background()
-
-	// Start serving expvars.
-	go func() {
-		listener, err := net.Listen("tcp", "127.0.0.1:0")
-		if err != nil {
-			errLog.Printf("Listen: %s", err)
-			os.Exit(1)
-		}
-
-		infoLog.Printf("expvars listening on %v", listener.Addr())
-
-		err = http.Serve(listener, nil)
-		if err != nil {
-			errLog.Printf("http.Serve: %s", err)
-			os.Exit(1)
-		}
-	}()
 
 	duration, err := time.ParseDuration(*durationStr)
 	if err != nil {
 		errLog.Printf("Error parsing duration: %v", err)
-		os.Exit(1)
+		return err
 	}
 
 	cycle, err := time.ParseDuration(*cycleStr)
 	if err != nil {
 		errLog.Printf("Error parsing cycle: %v", err)
-		os.Exit(1)
+		return err
 	}
 
 	for _, gkFile := range gatekeeperJSON {
@@ -343,7 +354,7 @@ func main() {
 		err = readJSONFile(gkFile, &gk)
 		if err != nil {
 			errLog.Printf("Error reading gatekeeper json: %v", err)
-			os.Exit(1)
+			return err
 		}
 
 		gks = append(gks, &gk)
@@ -354,17 +365,12 @@ func main() {
 		err = readJSONFile(treeFile, &tree)
 		if err != nil {
 			errLog.Printf("Error reading gatekeeper trees json: %v", err)
-			os.Exit(1)
+			return err
 		}
 
 		for treeName, config := range tree {
 			gkts[treeName] = append(gkts[treeName], config)
 		}
-	}
-
-	if *snapshot != "" && *replay != "" {
-		errLog.Printf("Cannot use snapshot and replay flags at the same time.")
-		os.Exit(1)
 	}
 
 	r := client.NewReader()
@@ -377,12 +383,16 @@ func main() {
 		r = client.NewReplay(*replay)
 	}
 
+	return run(ctx, transport, cycle, duration, r, gks, gkts)
+}
+
+func run(ctx context.Context, transport http.RoundTripper, cycle, duration time.Duration, r client.Reader, gks []*messages.GatekeeperConfig, gkts map[string][]messages.TreeMasterConfig) error {
 	a := analyzer.New(r, 5, 100)
 	if *replayTime != "" {
 		t, err := time.Parse(time.RFC3339, *replayTime)
 		if err != nil {
 			errLog.Printf("Couldn't parse replay-time: %s", err)
-			os.Exit(1)
+			return err
 		}
 		start := time.Now()
 		a.Now = func() time.Time {
@@ -394,12 +404,12 @@ func main() {
 		defer f.Close()
 		if err != nil {
 			errLog.Printf("Couldn't open replay dir: %s", err)
-			os.Exit(1)
+			return err
 		}
 		stat, err := f.Stat()
 		if err != nil {
 			errLog.Printf("Couldn't stat replay dir: %s", err)
-			os.Exit(1)
+			return err
 		}
 		start := time.Now()
 		t := stat.ModTime()
@@ -429,8 +439,7 @@ func main() {
 
 	for tree := range trees {
 		if _, ok := gkts[tree]; !ok {
-			errLog.Printf("Unrecognized tree name: %s", tree)
-			os.Exit(1)
+			return fmt.Errorf("Unrecognized tree name: %s", tree)
 		}
 	}
 
@@ -454,7 +463,8 @@ func main() {
 	tsmon.Shutdown(ctx)
 
 	if !loopResults.Success {
-		errLog.Printf("Failed to run loop, %v errors", loopResults.Errs)
-		os.Exit(1)
+		return fmt.Errorf("Failed to run loop, %v errors", loopResults.Errs)
 	}
+
+	return nil
 }

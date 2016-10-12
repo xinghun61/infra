@@ -159,10 +159,23 @@ func TestBuilderAlerts(t *testing.T) {
 			wantMasters:  []messages.Alert{},
 		},
 		{
+			name: "No Builders",
+			url:  "https://build.chromium.org/p/fake.master/json",
+			be: messages.BuildExtract{
+				CreatedTimestamp: messages.EpochTime(100),
+			},
+			t:            time.Unix(100, 0),
+			wantBuilders: []messages.Alert{},
+			wantMasters:  []messages.Alert{},
+		},
+		{
 			name: "No Alerts",
 			url:  "https://build.chromium.org/p/fake.master/json",
 			be: messages.BuildExtract{
 				CreatedTimestamp: messages.EpochTime(100),
+				Builders: map[string]messages.Builder{
+					"fake.builder": {},
+				},
 			},
 			t:            time.Unix(100, 0),
 			wantBuilders: []messages.Alert{},
@@ -1107,6 +1120,71 @@ func TestStepFailureAlerts(t *testing.T) {
 					},
 				},
 			},
+			{
+				name: "single infra failure",
+				failures: []*messages.BuildStep{
+					{
+						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Build: &messages.Build{
+							BuilderName: "fake.builder",
+							Number:      2,
+							Times:       []messages.EpochTime{0, 1},
+						},
+						Step: &messages.Step{
+							Name: "steps",
+						},
+					},
+					{
+						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Build: &messages.Build{
+							BuilderName: "fake.builder",
+							Number:      42,
+							Times:       []messages.EpochTime{0, 1},
+						},
+						Step: &messages.Step{
+							Name:    "fake_tests",
+							Results: []interface{}{float64(resInfraFailure)},
+							Times:   []messages.EpochTime{0, 1},
+						},
+					},
+				},
+				testResults: messages.TestResults{},
+				alerts: []messages.Alert{
+					{
+						Key:      "fake.master.fake.builder.fake_tests.4",
+						Title:    "fake_tests failing on fake.master/fake.builder",
+						Body:     "infrastructure failure",
+						Severity: infraFailureSev,
+						Type:     messages.AlertInfraFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{
+									Name:          "fake.builder",
+									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									FirstFailure:  42,
+									LatestFailure: 42,
+								},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							StepAtFault: &messages.BuildStep{
+								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+								Build: &messages.Build{
+									BuilderName: "fake.builder",
+									Number:      42,
+									Times:       []messages.EpochTime{0, 1},
+								},
+								Step: &messages.Step{
+									Name:    "fake_tests",
+									Results: []interface{}{float64(resInfraFailure)},
+									Times:   []messages.EpochTime{0, 1},
+								},
+							},
+						},
+					},
+				},
+			},
 		}
 
 		mc := &clientTest.MockReader{}
@@ -1261,6 +1339,38 @@ func TestLatestBuildStep(t *testing.T) {
 			t.Errorf("%s failed. Got %s, want %s.", test.name, gotErr, test.wantErr)
 		}
 	}
+}
+
+func TestWouldCloseTree(t *testing.T) {
+	Convey("gatekepeer", t, func() {
+		gkr := NewGatekeeperRules([]*messages.GatekeeperConfig{
+			{
+				Masters: map[string][]messages.MasterConfig{
+					"https://build.chromium.org/p/fake.master": {{
+						Builders: map[string]messages.BuilderConfig{
+							"fake.builder": {
+								ClosingSteps: []string{"*"},
+							},
+						},
+						ExcludedBuilders: []string{"other.builder"},
+					}},
+				},
+			},
+		}, map[string][]messages.TreeMasterConfig{
+			"test_tree": {
+				messages.TreeMasterConfig{
+					Masters: map[messages.MasterLocation][]string{
+						messages.MasterLocation{URL: *urlParse(
+							"https://build.chromium.org/p/fake.master", t)}: {"fake.builder", "other.builder"},
+					},
+				},
+			},
+		})
+
+		loc := &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)}
+		So(gkr.WouldCloseTree(loc, "fake.builder", "fake.step"), ShouldEqual, true)
+		So(gkr.WouldCloseTree(loc, "other.builder", "fake.step"), ShouldEqual, false)
+	})
 }
 
 func TestExcludeFailure(t *testing.T) {
