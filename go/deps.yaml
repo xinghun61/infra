@@ -186,6 +186,11 @@ import:
   - cmd/guru
   - cmd/oracle
   - cmd/stringer
+- package: golang.org/x/sys
+  version: master
+  repo: https://go.googlesource.com/sys.git
+  subpackages:
+  - windows
 - package: github.com/kisielk/gotool
   version: master
   repo: https://chromium.googlesource.com/external/github.com/kisielk/gotool.git
@@ -210,3 +215,15 @@ import:
   repo: https://go.googlesource.com/build.git
   subpackages:
   - gerrit
+- package: github.com/shirou/gopsutil
+  version: v2.0.0
+  repo: https://chromium.googlesource.com/external/github.com/shirou/gopsutil.git
+- package: github.com/shirou/w32
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/shirou/w32.git
+- package: github.com/StackExchange/wmi
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/StackExchange/wmi.git
+- package: github.com/go-ole/go-ole
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/go-ole/go-ole.git

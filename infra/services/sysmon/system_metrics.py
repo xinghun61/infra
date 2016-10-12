@@ -97,10 +97,10 @@ unix_time = ts_mon.GaugeMetric('dev/unix_time',
                                'based on local machine clock.')
 
 os_name = ts_mon.StringMetric('proc/os/name',
-                              description='OS name on the machine ')
+                              description='OS name on the machine')
 
 os_version = ts_mon.StringMetric('proc/os/version',
-                                 description='OS version on the machine ')
+                                 description='OS version on the machine')
 
 os_arch = ts_mon.StringMetric('proc/os/arch',
                               description='OS architecture on this machine')

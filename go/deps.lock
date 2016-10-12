@@ -1,8 +1,8 @@
-hash: b8cb71203434d956785ac8a5785f4b5cf3a2c3a1d42a27891b1ad5bdca433d57
-updated: 2016-10-06T13:18:27.254514115-07:00
+hash: 024ba7408bcd8d1075109551ff95ccb62da415c98f34aa672230ff0bd5907f98
+updated: 2016-10-11T17:19:48.308244432+11:00
 imports:
 - name: cloud.google.com/go
-  version: 89a2f04642bc4dd6b3e9c9579fc432bee67db56d
+  version: c44d791531bbf4873313fe7a9d5b6e7fdbd3df1a
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -15,6 +15,9 @@ imports:
 - name: github.com/dustin/go-humanize
   version: bd88f87ad3a420f7bcf05e90566fd1ceb351fa7f
   repo: https://chromium.googlesource.com/external/github.com/dustin/go-humanize.git
+- name: github.com/go-ole/go-ole
+  version: 7dfdcf409020452e29b4babcbb22f984d2aa308a
+  repo: https://chromium.googlesource.com/external/github.com/go-ole/go-ole.git
 - name: github.com/go-sql-driver/mysql
   version: 0b58b37b664c21f3010e836f1b931e1d0b0b0685
   repo: https://chromium.googlesource.com/external/github.com/go-sql-driver/mysql.git
@@ -108,6 +111,12 @@ imports:
   repo: https://chromium.googlesource.com/external/github.com/sergi/go-diff.git
   subpackages:
   - diffmatchpatch
+- name: github.com/shirou/gopsutil
+  version: e8f7a95747d711f34ddfe9dd9b825a84bd059dec
+  repo: https://chromium.googlesource.com/external/github.com/shirou/gopsutil.git
+- name: github.com/shirou/w32
+  version: bb4de0191aa41b5507caa14b0650cdbddcd9280b
+  repo: https://chromium.googlesource.com/external/github.com/shirou/w32.git
 - name: github.com/smartystreets/assertions
   version: 2063fd1cc7c975db70502811a34b06ad034ccdf2
   repo: https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
@@ -116,6 +125,9 @@ imports:
   repo: https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
   subpackages:
   - convey
+- name: github.com/StackExchange/wmi
+  version: e54cbda6595d7293a7a468ccf9525f6bc8887f99
+  repo: https://chromium.googlesource.com/external/github.com/StackExchange/wmi.git
 - name: github.com/texttheater/golang-levenshtein
   version: 1298e830a5c134c6830b6d472b7b81faa9492c0a
   repo: https://chromium.googlesource.com/external/github.com/texttheater/golang-levenshtein.git
@@ -133,7 +145,7 @@ imports:
   subpackages:
   - encoding/json5
 - name: golang.org/x/build
-  version: 44209b0bd3bb18a3c25367a2204a626e2144228b
+  version: 4ec90df133d854be993ee564d62995c76f2a65e6
   repo: https://go.googlesource.com/build.git
   subpackages:
   - gerrit
@@ -143,19 +155,24 @@ imports:
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: 2a824cf9226006580a06d9fa8f10901c17b49ed5
+  version: cf4effbb9db1f3ef07f7e1891402991b6afbb276
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/oauth2
-  version: 3c3a985cb79f52a3190fbc056984415ca6763d01
+  version: 1e695b1c8febf17aad3bfa7bf0a819ef94b98ad5
   repo: https://go.googlesource.com/oauth2.git
   subpackages:
   - google
   - jwt
+- name: golang.org/x/sys
+  version: 67f277b6fe017c42fc3b4a445edc999dd99edd58
+  repo: https://go.googlesource.com/sys.git
+  subpackages:
+  - windows
 - name: golang.org/x/tools
-  version: b5358b5feea9734b97ff1e792ca6bc55170bc92a
+  version: 8453f27cc7e9bc769059b8eb7c88f61da9382d1e
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -168,7 +185,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: 3cf64a039723963488f603d140d0aec154fdcd20
+  version: 45c1c8fbb52e06888fad4b269d9e1c280d638f42
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - gensupport
@@ -179,7 +196,7 @@ imports:
   - pubsub/v1
   - taskqueue/v1beta2
 - name: google.golang.org/appengine
-  version: f0736ac333e5fc3b54a4b79e80af8d9561acfc3e
+  version: 3f4dbbc0ec153a39878fd524ece9f39732bd4998
   repo: https://chromium.googlesource.com/external/github.com/golang/appengine.git
   subpackages:
   - cmd/aedeploy
@@ -193,12 +210,12 @@ imports:
   - urlfetch
   - user
 - name: google.golang.org/genproto
-  version: 44808ed2d86e258615bb701d395cbbfe6686a3e6
+  version: 9359a8d303c45e3212571b77610f1cefb0c6f3eb
   repo: https://chromium.googlesource.com/external/github.com/google/go-genproto.git
   subpackages:
   - protobuf
 - name: google.golang.org/grpc
-  version: b1a2821ca5a4fd6b6e48ddfbb7d6d7584d839d21
+  version: 72d072e4c18c02bfe6c98fc661a4df74da546145
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes

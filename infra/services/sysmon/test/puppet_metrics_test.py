@@ -91,8 +91,8 @@ class PuppetMetricsTest(unittest.TestCase):
     filebucket: 0.06
     package: 0.07
     schedule: 0.08
-    service: 0.08
-    total: 0.09
+    service: 0.09
+    total: 0.10
     last_run: 1440132466
   changes:
     total: 4
@@ -133,7 +133,7 @@ class PuppetMetricsTest(unittest.TestCase):
     self.assertEqual(0.06, puppet_metrics.times.get({'step': 'filebucket'}))
     self.assertEqual(0.07, puppet_metrics.times.get({'step': 'package'}))
     self.assertEqual(0.08, puppet_metrics.times.get({'step': 'schedule'}))
-    self.assertEqual(0.08, puppet_metrics.times.get({'step': 'service'}))
+    self.assertEqual(0.09, puppet_metrics.times.get({'step': 'service'}))
     self.assertEqual(None, puppet_metrics.times.get({'step': 'total'}))
     self.assertEqual(123, puppet_metrics.age.get())
 
