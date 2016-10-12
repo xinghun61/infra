@@ -2,11 +2,11 @@
 
 Monorail API v1 aims to provide nearly identical interface to Google Code issue tracker's API for existing clients' smooth transition. You can get a high-level overview from the documents below.
 
-* [One-page getting started](https://docs.google.com/document/d/1asuQNC5tAUvKDf9G9G3IxymuhDxnPCn_fSzX2wwcC6M)
+* [One-page getting started](https://docs.google.com/document/d/1SLK0AYokyaIGG_riOgQJ9UUMXhC58kqmj8l4vZT42vM)
 * [Code example in python](example.py)
 * [Design doc](https://docs.google.com/document/d/1UIyWru7L-hJamgZb9JGYxkX6aF_w23TD0m3YoQub2PE)
-  
-  
+
+
 
 This API provides the following methods to read/write user/issue/comment objects in Monorail:
 
@@ -21,7 +21,7 @@ This API provides the following methods to read/write user/issue/comment objects
 	* who_can_view_members(required, string): The visibility setting of the group. Available options are 'ANYONE', 'MEMBERS' and 'OWNERS'.
 	* ext_group_type(string): The type of the source group if the new group is imported from the source. Available options are 'BAGGINS', 'CHROME_INFRA_AUTH' and 'MDB'.
 * Return message:
-	* groupID(int): The ID of the newly created group. 
+	* groupID(int): The ID of the newly created group.
 * Error code:
 	* 400: The group already exists.
 	* 403: The requester has no permission to create a group.
@@ -37,7 +37,7 @@ This API provides the following methods to read/write user/issue/comment objects
 	* groupSettings(dict):
 		* groupName(string): The name of the group.
 		* who_can_view_members(string): The visibility setting of the group.
-		* ext_group_type(string): The type of the source group. 
+		* ext_group_type(string): The type of the source group.
 		* last_sync_time(int): The timestamp when the group was last synced from the source. This field is only meaningful for groups with ext_group_type set.
 	* groupOwners(list): A list of group owners' emails.
 	* groupMembers(list): A list of group members' emails.
@@ -55,7 +55,7 @@ This API provides the following methods to read/write user/issue/comment objects
 	* groupSettings(list of dict):
 		* groupName(string): The name of the group.
 		* who_can_view_members(string): The visibility setting of the group.
-		* ext_group_type(string): The type of the source group. 
+		* ext_group_type(string): The type of the source group.
 		* last_sync_time(int): The timestamp when the group was last synced from the source. This field is only meaningful for groups with ext_group_type set.
 * Error code: None.
 
@@ -66,7 +66,7 @@ This API provides the following methods to read/write user/issue/comment objects
 * Parameters:
 	* groupName(required, string): The name of the group to edit.
 	* who_can_view_members(string): The visibility setting of the group.
-	* ext_group_type(string): The type of the source group. 
+	* ext_group_type(string): The type of the source group.
 	* last_sync_time(int): The timestamp when the group was last synced from the source.
 	* body(dict):
 		* groupOwners(list of string): A list of owner emails.
@@ -82,7 +82,7 @@ This API provides the following methods to read/write user/issue/comment objects
 * Parameters:
 	* projectId(required, string): The name of the project.
 	* issueId(required, int): The ID of the issue.
-	* commentId(required, int): The ID of the comment. 
+	* commentId(required, int): The ID of the comment.
 * Return message: Empty.
 * Error code:
 	* 403: The requester has no permission to delete this comment.
@@ -152,7 +152,7 @@ This API provides the following methods to read/write user/issue/comment objects
 * Parameters:
 	* projectId(required, string): The name of the project.
 	* issueId(required, int): The ID of the issue.
-	* commentId(required, int): The ID of the comment. 
+	* commentId(required, int): The ID of the comment.
 * Return message: Empty.
 * Error code:
 	* 403: The requester has no permission to delete this comment.
@@ -253,7 +253,7 @@ This API provides the following methods to read/write user/issue/comment objects
 	* items(list of dict): A list of issues.
 		* author(dict): The reporter of this issue.
 		* blockedOn(list of dict): The issues on which the current issue is blocked.
-		* blocking(list of dict): The issues which the current issue is blocking. 
+		* blocking(list of dict): The issues which the current issue is blocking.
 		* canComment(boolean): Whether the requester can comment on this issue.
 		* canEdit(boolean): Whether the requester can edit this issue.
 		* cc(list of string): The list of emails to cc.
