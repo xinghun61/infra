@@ -9,7 +9,7 @@ import (
 // InMemAlertStore implements the AlertStore interface with in-memory storage.
 // Use this only for testing or command-line utility debugging.
 type InMemAlertStore struct {
-	storedAlerts map[string]*StoredAlert
+	StoredAlerts map[string]*StoredAlert
 	nextID       int
 }
 
@@ -21,7 +21,7 @@ func NewInMemAlertStore() *InMemAlertStore {
 
 // StoreAlert stores the alert in memory.
 func (s *InMemAlertStore) StoreAlert(sig string, alert *StoredAlert) {
-	s.storedAlerts[sig] = alert
+	s.StoredAlerts[sig] = alert
 }
 
 func (s *InMemAlertStore) newID() string {
@@ -45,7 +45,7 @@ func (s *InMemAlertStore) NewAlert(step *messages.BuildStep) *StoredAlert {
 // ActiveAlertForSignature returns the currently active alert matching the signature,
 // if any is currently active.
 func (s *InMemAlertStore) ActiveAlertForSignature(sig string) *StoredAlert {
-	if alert, ok := s.storedAlerts[sig]; ok && alert.Status == StatusActive {
+	if alert, ok := s.StoredAlerts[sig]; ok && alert.Status == StatusActive {
 		return alert
 	}
 	return nil
@@ -55,12 +55,12 @@ func (s *InMemAlertStore) ActiveAlertForSignature(sig string) *StoredAlert {
 func (s *InMemAlertStore) ActiveAlertsForBuilder(builderName string) []*StoredAlert {
 	ret := []*StoredAlert{}
 	keys := []string{}
-	for key := range s.storedAlerts {
+	for key := range s.StoredAlerts {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
-		alert := s.storedAlerts[key]
+		alert := s.StoredAlerts[key]
 		if alert.FailingBuilders[builderName] {
 			ret = append(ret, alert)
 		}

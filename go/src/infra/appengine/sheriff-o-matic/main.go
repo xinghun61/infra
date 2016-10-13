@@ -636,6 +636,7 @@ func init() {
 	r.GET("/_cron/refresh/bugqueue/:tree", basemw, refreshBugQueueHandler)
 	r.GET("/_cron/annotations/flush_old/", basemw, flushOldAnnotationsHandler)
 	r.POST("/_/clientmon", basemw, postClientMonHandler)
+	r.POST("/_ah/push-handlers/milo", basemw, postMiloPubSubHandler)
 
 	// Ingore reqeuests from builder-alerts rather than 404.
 	r.GET("/alerts", gaemiddleware.BaseProd(), noopHandler)

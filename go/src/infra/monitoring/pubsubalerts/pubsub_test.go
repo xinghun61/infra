@@ -96,7 +96,7 @@ func TestHandleBuild(t *testing.T) {
 			failingBuilds = append(failingBuilds, build)
 		}
 
-		So(len(inMemStore.storedAlerts), ShouldEqual, 2)
+		So(len(inMemStore.StoredAlerts), ShouldEqual, 2)
 
 		alerts := inMemStore.ActiveAlertsForBuilder("fake.builder")
 		So(len(alerts), ShouldEqual, 2)
@@ -142,7 +142,7 @@ func TestHandleBuild(t *testing.T) {
 			failingBuilds = append(failingBuilds, build)
 		}
 
-		So(len(inMemStore.storedAlerts), ShouldEqual, 2)
+		So(len(inMemStore.StoredAlerts), ShouldEqual, 2)
 
 		alerts := inMemStore.ActiveAlertsForBuilder("fake.builder")
 		So(len(alerts), ShouldEqual, 1)
@@ -180,7 +180,7 @@ func TestHandleBuild(t *testing.T) {
 			failingBuilds = append(failingBuilds, build)
 		}
 
-		So(len(inMemStore.storedAlerts), ShouldEqual, 2)
+		So(len(inMemStore.StoredAlerts), ShouldEqual, 2)
 
 		alerts := inMemStore.ActiveAlertsForBuilder("fake.builder")
 		So(len(alerts), ShouldEqual, 1)
@@ -218,7 +218,7 @@ func TestHandleBuild(t *testing.T) {
 			failingBuilds = append(failingBuilds, build)
 		}
 
-		So(len(inMemStore.storedAlerts), ShouldEqual, 2)
+		So(len(inMemStore.StoredAlerts), ShouldEqual, 2)
 
 		alerts := inMemStore.ActiveAlertsForBuilder("fake.builder")
 		So(len(alerts), ShouldEqual, 2)

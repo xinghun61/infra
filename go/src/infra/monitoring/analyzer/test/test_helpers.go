@@ -62,6 +62,15 @@ func (f *BuilderFaker) Build(buildNum int) *BuildFaker {
 	return ret
 }
 
+// GetBuilds returns an array of builds.
+func (f *BuilderFaker) GetBuilds() []*messages.Build {
+	ret := []*messages.Build{}
+	for _, b := range f.Builds {
+		ret = append(ret, b)
+	}
+	return ret
+}
+
 // StepsAtFault is useful to create a list of build steps, which can be inserted
 // into a messages.BuildFailure, when creating tests.
 func StepsAtFault(f *BuilderFaker, builds []int, stepNames []string) []messages.BuildStep {

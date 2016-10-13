@@ -37,11 +37,14 @@ handlers:
   secure: always
   login: admin
 
+- url: /_ah/push-handlers/.*
+  script: _go_app
+  login: admin
+
 - url: /google03daf1850f438695\.html
   static_files: static/google03daf1850f438695.html
   secure: always
   upload: static/google03daf1850f438695.html
-
 
 - url: /.*
   script: _go_app
