@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"compress/zlib"
 	"encoding/json"
-	"fmt"
-	"net/http"
 
 	"infra/monitoring/messages"
 	sompubsub "infra/monitoring/pubsubalerts"
@@ -35,20 +33,20 @@ func postMiloPubSubHandler(ctx *router.Context) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
 	msg := &pushRequest{}
 	if err := json.NewDecoder(r.Body).Decode(msg); err != nil {
-		errStatus(c, w, http.StatusBadRequest, fmt.Sprintf("Could not json decode body: %v", err))
+		logging.Errorf(c, "Could not json decode body: %v", err)
 		return
 	}
 
 	reader, err := zlib.NewReader(bytes.NewReader(msg.Message.Data))
 	if err != nil {
-		errStatus(c, w, http.StatusBadRequest, fmt.Sprintf("Could not zlib decode message data: %v", err))
+		logging.Errorf(c, "Could not zlib decode message data: %v", err)
 		return
 	}
 
 	dec := json.NewDecoder(reader)
 	extract := buildMasterMsg{}
 	if err = dec.Decode(&extract); err != nil {
-		errStatus(c, w, http.StatusBadRequest, fmt.Sprintf("Could not decode build extract: %v", err))
+		logging.Errorf(c, "Could not decode build extract: %v", err)
 		return
 	}
 
@@ -56,7 +54,9 @@ func postMiloPubSubHandler(ctx *router.Context) {
 		return
 	}
 
-	logging.Debugf(c, "Contains %d builds for %d builders.", len(extract.Builds), len(extract.Master.Builders))
+	if extract.Master != nil {
+		logging.Debugf(c, "Contains %d builds for %d builders.", len(extract.Builds), len(extract.Master.Builders))
+	}
 
 	// TODO(seanmccullough): Replace this the persistent store. This is here just to evaluate
 	// a single milo push message without any other context.
@@ -65,8 +65,7 @@ func postMiloPubSubHandler(ctx *router.Context) {
 
 	for _, b := range extract.Builds {
 		if err := miloPubSubHandler.HandleBuild(b); err != nil {
-			errStatus(c, w, http.StatusBadRequest, fmt.Sprintf("Could not handle build extract: %v", err))
-			return
+			logging.Errorf(c, "Could not handle build: %v", err)
 		}
 	}
 

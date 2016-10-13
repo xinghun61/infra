@@ -31,7 +31,7 @@ func TestPostMiloPubSubHandler(t *testing.T) {
 		}
 		postMiloPubSubHandler(ctx)
 
-		So(w.Code, ShouldEqual, http.StatusBadRequest)
+		So(w.Code, ShouldEqual, http.StatusOK)
 	})
 
 	Convey("bad message data", t, func() {
@@ -49,7 +49,7 @@ func TestPostMiloPubSubHandler(t *testing.T) {
 		}
 		postMiloPubSubHandler(ctx)
 
-		So(w.Code, ShouldEqual, http.StatusBadRequest)
+		So(w.Code, ShouldEqual, http.StatusOK)
 	})
 
 	Convey("bad message build extract", t, func() {
@@ -72,7 +72,7 @@ func TestPostMiloPubSubHandler(t *testing.T) {
 		}
 		postMiloPubSubHandler(ctx)
 
-		So(w.Code, ShouldEqual, http.StatusBadRequest)
+		So(w.Code, ShouldEqual, http.StatusOK)
 	})
 
 	Convey("good message empty build extract", t, func() {
