@@ -991,3 +991,18 @@ ALTER TABLE Issue2FieldValue ADD INDEX (field_id, issue_shard, date_value);
 ALTER TABLE Template2FieldValue ADD date_value INT;
 ALTER TABLE FieldDef CHANGE field_type field_type ENUM (
     'enum_type', 'int_type', 'str_type', 'user_type', 'date_type') NOT NULL;
+
+================================================================
+2016-10-13: Follow-up on splitting the Comment table
+
+ALTER TABLE Comment
+    DROP COLUMN content,
+    DROP COLUMN inbound_message,
+    ADD COLUMN commentcontent_id INT;
+
+ALTER TABLE Comment
+     ADD FOREIGN KEY (commentcontent_id) REFERENCES CommentContent(id);
+
+After making those schema changes, run the commands in
+tools/backfill-commentcontent-id.sql to fill in commentcontent_id
+for existing comments.

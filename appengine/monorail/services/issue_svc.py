@@ -73,7 +73,7 @@ ISSUE2FIELDVALUE_COLS = [
     'derived']
 COMMENT_COLS = [
     'Comment.id', 'issue_id', 'created', 'Comment.project_id', 'commenter_id',
-    'deleted_by', 'Comment.is_spam', 'is_description']
+    'deleted_by', 'Comment.is_spam', 'is_description', 'commentcontent_id']
 COMMENTCONTENT_COLS = [
     'CommentContent.id', 'comment_id', 'content', 'inbound_message']
 ABBR_COMMENT_COLS = ['Comment.id', 'commenter_id', 'deleted_by',
@@ -1937,7 +1937,7 @@ class IssueService(object):
   def _UnpackComment(self, comment_row):
     """Partially construct a Comment PB from a DB row."""
     (comment_id, issue_id, created, project_id, commenter_id,
-     deleted_by, is_spam, is_description) = comment_row
+     deleted_by, is_spam, is_description, _commentcontent_id) = comment_row
     comment = tracker_pb2.IssueComment()
     comment.id = comment_id
     comment.issue_id = issue_id
@@ -2060,6 +2060,7 @@ class IssueService(object):
     comment_rows = self.comment_tbl.Select(
         cnxn, cols=COMMENT_COLS, where=where,
         order_by=order_by, **kwargs)
+    # SOON(jrobbins): change this to look at Comment.commentcontent_id.
     cids = [row[0] for row in comment_rows]
     content_rows = self.commentcontent_tbl.Select(
         cnxn, cols=['comment_id', 'content', 'inbound_message'],
@@ -2176,9 +2177,16 @@ class IssueService(object):
         commit=commit)
     comment.id = comment_id
 
-    _commentcontent_id = self.commentcontent_tbl.InsertRow(
+    commentcontent_id = self.commentcontent_tbl.InsertRow(
         cnxn, comment_id=comment_id, content=comment.content,
         inbound_message=comment.inbound_message, commit=commit)
+
+    # SOON(jrobbins): Reverse the order of statements above to write the
+    # CommentContent row first and then use that ID when writing the
+    # Comment rows.  Then remove this update statement.
+    self.comment_tbl.Update(
+        cnxn, {'commentcontent_id': commentcontent_id}, id=comment_id,
+        commit=commit)
 
     amendment_rows = []
     for amendment in comment.amendments:

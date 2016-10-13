@@ -311,6 +311,18 @@ CREATE TABLE DanglingIssueRelation (
 ) ENGINE=INNODB;
 
 
+CREATE TABLE CommentContent (
+  id INT NOT NULL AUTO_INCREMENT,
+  -- TODO(jrobbins): drop comment_id after Comment.commentcontent_id is added.
+  comment_id INT NOT NULL,  -- Note: no forign key reference.
+  content MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
+  inbound_message MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
+
+  PRIMARY KEY (id),
+  UNIQUE KEY (comment_id)  -- TODO: drop this too.
+) ENGINE=INNODB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 CREATE TABLE Comment (
   id INT NOT NULL AUTO_INCREMENT,
   issue_id INT NOT NULL,
@@ -318,10 +330,7 @@ CREATE TABLE Comment (
   project_id SMALLINT UNSIGNED NOT NULL,
 
   commenter_id INT UNSIGNED NOT NULL,
-
-  -- TODO(jrobbins): drop these once they are safely moved to CommentContent
-  content MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
-  inbound_message MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
+  commentcontent_id INT,  -- TODO(jrobbins) make this NOT NULL.
 
   deleted_by INT UNSIGNED,
   is_spam BOOLEAN DEFAULT FALSE,
@@ -335,19 +344,8 @@ CREATE TABLE Comment (
   FOREIGN KEY (project_id) REFERENCES Project(project_id),
   FOREIGN KEY (issue_id) REFERENCES Issue(id),
   FOREIGN KEY (commenter_id) REFERENCES User(user_id),
-  FOREIGN KEY (deleted_by) REFERENCES User(user_id)
-) ENGINE=INNODB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
-CREATE TABLE CommentContent (
-  id INT NOT NULL AUTO_INCREMENT,
-  -- TODO(jrobbins): drop comment_id after Comment.commentcontent_id is added.
-  comment_id INT NOT NULL,  -- Note: no forign key reference.
-  content MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
-  inbound_message MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
-
-  PRIMARY KEY (id),
-  UNIQUE KEY (comment_id)  -- TODO: drop this too.
+  FOREIGN KEY (deleted_by) REFERENCES User(user_id),
+  FOREIGN KEY (commentcontent_id) REFERENCES CommentContent(id)
 ) ENGINE=INNODB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
