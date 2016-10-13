@@ -479,12 +479,26 @@ def get_go_environ(layout):
     all_go_paths.append(layout.workspace)
   env['GOPATH'] = os.pathsep.join(all_go_paths)
 
+  # New PATH entries. Order is important. None's are filtered below.
+  paths_to_add = [
+    os.path.join(env['GOROOT'], 'bin'),
+    os.path.join(ROOT, 'cipd'),
+    os.path.join(ROOT, 'cipd', 'bin'),
+    os.path.join(ROOT, 'luci', 'appengine', 'components', 'tools'),
+    layout.go_appengine_path,
+  ]
+  paths_to_add.extend(os.path.join(p, '.vendor', 'bin') for p in vendor_paths)
+  paths_to_add.append(env.get('GOBIN'))
+
   # Remove preexisting bin/ paths (including .vendor/bin) pointing to infra
   # or infra_internal Go workspaces. It's important when switching from
   # infra_internal to infra environments: infra_internal bin paths should
   # be removed.
   path = env['PATH'].split(os.pathsep)
   def should_keep(p):
+    # Keep the entry where it is if we are going to add it anyway.
+    if p in paths_to_add:
+      return True
     # TODO(vadimsh): This code knows about gclient checkout layout.
     gclient_root = os.path.dirname(ROOT)
     for d in ['infra', 'infra_internal']:
@@ -492,18 +506,6 @@ def get_go_environ(layout):
         return False
     return True
   path = filter(should_keep, path)
-
-  # New PATH entries.
-  paths_to_add = [
-    os.path.join(env['GOROOT'], 'bin'),
-    env.get('GOBIN'),
-    os.path.join(ROOT, 'cipd'),
-    os.path.join(ROOT, 'cipd', 'bin'),
-    os.path.join(ROOT, 'luci', 'appengine', 'components', 'tools'),
-  ]
-  paths_to_add.extend(os.path.join(p, '.vendor', 'bin') for p in vendor_paths)
-  if layout.go_appengine_path:
-    paths_to_add.append(layout.go_appengine_path)
 
   # Make sure not to add duplicates entries to PATH over and over again when
   # get_go_environ is invoked multiple times.
