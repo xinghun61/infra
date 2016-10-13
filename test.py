@@ -21,8 +21,9 @@ def usage():
   Examples:
   Run all tests:
     ./test.py test
-  Run all tests in the infra package:
+  Run all tests in the given package:
     ./test.py test infra
+    ./test.py test appengine/cr-buildbucket
   Run all tests and generate an HTML report:
     ./test.py test infra --html-report /path/to/report/folder
   Run one given test in the infra package:
