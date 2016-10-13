@@ -39,15 +39,17 @@
       }
 
       Object.keys(localState).forEach((key) => {
+        key = decodeURIComponent(key);
         annotations[key] = localState[key];
       });
       annotationsJson.forEach((annotation) => {
         // If we've already added something here through local state, copy that
         // over.
-        if (annotations[annotation.key]) {
-          Object.assign(annotation, annotations[annotation.key]);
+        let key = decodeURIComponent(annotation.key);
+        if (annotations[key]) {
+          Object.assign(annotation, annotations[key]);
         }
-        annotations[annotation.key] = annotation;
+        annotations[key] = annotation;
       });
       return annotations;
     },
@@ -76,9 +78,10 @@
     // Handle the result of the response of a post to the server.
     _postResponse: function(response) {
       let annotations = this.annotations;
-      annotations[response.key] = response;
+      annotations[decodeURIComponent(response.key)] = response;
       let newArray = [];
       Object.keys(annotations).forEach((k) => {
+        k = decodeURIComponent(k);
         newArray.push(annotations[k]);
       });
       this._annotationsResp = newArray;
@@ -117,7 +120,7 @@
         data: change,
       }
 
-      return window.fetch('/api/v1/annotations/' + key + '/' + type, {
+      return window.fetch('/api/v1/annotations/' + encodeURIComponent(key) + '/' + type, {
         body: JSON.stringify(data),
         method: 'POST',
         credentials: 'include',
