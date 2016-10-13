@@ -103,4 +103,7 @@ func TestBuilderFaker(t *testing.T) {
 		t.Errorf("Didn't construct build steps properly. Got \n\t%+v, want\n\t%+v", buildSteps, expectedSteps)
 	}
 
+	if len(bf.GetBuilds()) != 1 {
+		t.Errorf("GetBuilds returned wrong number of builds: Wanted 1, got %d", len(bf.GetBuilds()))
+	}
 }
