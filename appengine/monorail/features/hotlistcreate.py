@@ -101,7 +101,7 @@ class HotlistCreate(servlet.Servlet):
       if pattern.match(issue_refs_string) is not None:
         issue_ids = self.ParseIssueRefs(mr, issue_refs_string)
       else:
-        mr.errors.invalidinput = _MSG_INVALID_ISSUES_INPUT
+        mr.errors.issues = _MSG_INVALID_ISSUES_INPUT
 
     editors = post_data.get('editors', '')
     editor_ids = []

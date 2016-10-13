@@ -32,12 +32,15 @@ import webapp2
 
 import settings
 from features import savedqueries_helpers
+from features import features_bizobj
+from features import hotlist_views
 from framework import actionlimit
 from framework import alerts
 from framework import captcha
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
+from framework import framework_views
 from framework import monorailrequest
 from framework import permissions
 from framework import profiler
@@ -535,6 +538,17 @@ class Servlet(webapp2.RequestHandler):
       # TODO(jrobbins): should this be a ProjectView?
       project_view = template_helpers.PBProxy(mr.project)
 
+    hotlist_view = None
+    if mr.hotlist:
+      users_by_id = framework_views.MakeAllUserViews(
+          mr.cnxn, self.services.user,
+          features_bizobj.UsersInvolvedInHotlists([mr.hotlist]))
+      hotlist_view = hotlist_views.HotlistView(
+          mr.hotlist, mr.auth.user_id, mr.viewed_user_auth.user_id, users_by_id)
+      # TODO(jojwang): when friendly url is added, loop through hotlist_view's
+      # friendly_url and url and decide if hotlist should have
+      # view.url = view.friendly_url or view.url = the url with ID
+
     app_version = os.environ.get('CURRENT_VERSION_ID')
 
     viewed_username = None
@@ -592,6 +606,7 @@ class Servlet(webapp2.RequestHandler):
         'project_thumbnail_url': project_thumbnail_url,
 
         'hotlist_id': mr.hotlist_id,
+        'hotlist': hotlist_view,
 
         'hostport': mr.request.host,
         'absolute_base_url': '%s://%s' % (mr.request.scheme, mr.request.host),

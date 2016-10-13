@@ -600,6 +600,7 @@ class FeaturesService(object):
     except IndexError:
       raise NoSuchHotlistException()
 
+
 class HotlistAlreadyExists(Exception):
   """Tried to create a hotlist with the same name as another hotlist
   with the same owner."""

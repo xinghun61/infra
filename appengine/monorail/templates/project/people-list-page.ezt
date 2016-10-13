@@ -3,7 +3,7 @@
 [include "../framework/master-header.ezt" "showtabs"]
 [include "../framework/js-placeholders.ezt"]
 
-<form method="POST" action="list.do" id="membership_form">
+<form method="POST" action=[if-any is_hotlist]"people.do"[else]"list.do"[end] id="membership_form">
 [if-any newly_added_views]
   <br/>
   The following new members were successfully added:
@@ -24,7 +24,8 @@
          [if-any pagination.next_url]<a href="[pagination.next_url]">Next <b>&rsaquo;</b></a>[end]
        </div>
      [end]
-     <b style="margin-right:1em">Project People</b>
+
+     <b style="margin-right:1em">[if-any is_hotlist]Hotlist[else]Project[end] People</b>
 
      [if-any offer_membership_editing]
      <input type="button" value="Add members" style="font-size:80%"
@@ -46,19 +47,22 @@
 
        <th style="white-space:nowrap">Name</th>
        <th style="white-space:nowrap">Role</th>
+       [if-any is_hotlist]
+       [else]
        <th style="white-space:nowrap">Autocomplete</th>
        <th style="white-space:nowrap">Notes</th>
+       [end]
       </tr>
 
       [for pagination.visible_results]
-        [include "people-list-row-part.ezt"]
+        [include "people-list-row-part.ezt" "hotlist"]
       [end]
 
    [else]
     <tr>
      <td colspan="40" class="id">
       <div style="padding: 3em; text-align: center">
-       This project does not have any members.
+       This [if-any is_hotlist]hotlist[else]project[end] does not have any members.
       </div>
      </td>
     </tr>
@@ -82,7 +86,12 @@
   </div>
 [end]
 
+[if-any is_hotlist]
+[include "people-add-members-form.ezt" "hotlist"]
+[else]
 [include "people-add-members-form.ezt" "project"]
+[end]
+[# TODO(jojwang): make more elegant later, just one line]
 
 </form>
 

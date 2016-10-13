@@ -12,6 +12,7 @@ import time
 
 from framework import framework_helpers
 from framework import framework_views
+from proto import features_pb2
 from proto import project_pb2
 from services import service_manager
 from testing import fake
@@ -91,6 +92,32 @@ class HelperFunctionsTest(unittest.TestCase):
     self.assertEquals(
         'Contributor',
         framework_helpers.GetRoleName({333L, 999L}, proj))
+
+  def testGetHotlistRoleName(self):
+    hotlist = features_pb2.Hotlist()
+    hotlist.owner_ids.append(111L)
+    hotlist.editor_ids.append(222L)
+    hotlist.follower_ids.append(333L)
+
+    self.assertEquals(None, framework_helpers.GetHotlistRoleName(
+        set(), hotlist))
+
+    self.assertEquals(
+        'Owner', framework_helpers.GetHotlistRoleName({111L}, hotlist))
+    self.assertEquals(
+        'Editor', framework_helpers.GetHotlistRoleName({222L}, hotlist))
+    self.assertEquals(
+        'Follower', framework_helpers.GetHotlistRoleName({333L}, hotlist))
+
+    self.assertEquals(
+        'Owner',
+        framework_helpers.GetHotlistRoleName({111L, 222L, 999L}, hotlist))
+    self.assertEquals(
+        'Editor',
+        framework_helpers.GetHotlistRoleName({222L, 333L, 999L}, hotlist))
+    self.assertEquals(
+        'Follower',
+        framework_helpers.GetHotlistRoleName({333L, 999L}, hotlist))
 
 
 class UrlFormattingTest(unittest.TestCase):

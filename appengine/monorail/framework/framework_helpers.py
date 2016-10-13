@@ -321,7 +321,6 @@ def ComputeListDeltas(old_list, new_list):
   removed.difference_update(new_list)
   return list(added), list(removed)
 
-
 def GetRoleName(effective_ids, project):
   """Determines the name of the role a member has for a given project.
 
@@ -338,6 +337,17 @@ def GetRoleName(effective_ids, project):
     return 'Committer'
   if not effective_ids.isdisjoint(project.contributor_ids):
     return 'Contributor'
+  return None
+
+
+def GetHotlistRoleName(effective_ids, hotlist):
+  """Determines the name of the role a member has for a given hotlist."""
+  if not effective_ids.isdisjoint(hotlist.owner_ids):
+    return 'Owner'
+  if not effective_ids.isdisjoint(hotlist.editor_ids):
+    return 'Editor'
+  if not effective_ids.isdisjoint(hotlist.follower_ids):
+    return 'Follower'
   return None
 
 

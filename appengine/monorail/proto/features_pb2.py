@@ -30,6 +30,7 @@ class Hotlist(messages.Message):
   editor_ids = messages.IntegerField(8, repeated=True)
   follower_ids = messages.IntegerField(9, repeated=True)
 
+
   class HotlistIssue(messages.Message):
     """Nested message for a hotlist to issue relation."""
     issue_id = messages.IntegerField(1, required=True)

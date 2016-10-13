@@ -25,3 +25,11 @@ def UsersInvolvedInHotlists(hotlists):
     result.update(hotlist.editor_ids)
     result.update(hotlist.follower_ids)
   return result
+
+def UserOwnsHotlist(hotlist, effective_ids):
+  return not effective_ids.isdisjoint(hotlist.owner_ids or set())
+
+def UserIsInHotlist(hotlist, effective_ids):
+  return (UserOwnsHotlist(hotlist, effective_ids) or
+          not effective_ids.isdisjoint(hotlist.editor_ids or set()) or
+          not effective_ids.isdisjoint(hotlist.follower_ids or set()))

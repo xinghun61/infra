@@ -15,6 +15,7 @@ from framework import framework_constants
 from framework import framework_views
 from framework import monorailrequest
 from framework import permissions
+from proto import features_pb2
 from proto import project_pb2
 from proto import site_pb2
 from proto import tracker_pb2
@@ -1175,3 +1176,41 @@ class IssuePermissionsTest(unittest.TestCase):
     self.assertFalse(permissions.CanEditTemplate(
         {111L}, permissions.PermissionSet([]),
         None, td))
+
+  def testCanViewHotlist_Private(self):
+    hotlist = features_pb2.Hotlist()
+    hotlist.is_private = True
+    hotlist.owner_ids.append(111L)
+    hotlist.editor_ids.append(222L)
+
+    self.assertTrue(permissions.CanViewHotlist({222L}, hotlist))
+    self.assertTrue(permissions.CanViewHotlist({111L, 333L}, hotlist))
+    self.assertFalse(permissions.CanViewHotlist({333L, 444L}, hotlist))
+
+  def testCanViewHotlist_Public(self):
+    hotlist = features_pb2.Hotlist()
+    hotlist.is_private = False
+    hotlist.owner_ids.append(111L)
+    hotlist.editor_ids.append(222L)
+
+    self.assertTrue(permissions.CanViewHotlist({222L}, hotlist))
+    self.assertTrue(permissions.CanViewHotlist({111L, 333L}, hotlist))
+    self.assertTrue(permissions.CanViewHotlist({333L, 444L}, hotlist))
+
+  def testCanEditHotlist(self):
+    hotlist = features_pb2.Hotlist()
+    hotlist.owner_ids.append(111L)
+    hotlist.editor_ids.append(222L)
+
+    self.assertTrue(permissions.CanEditHotlist({222L}, hotlist))
+    self.assertTrue(permissions.CanEditHotlist({111L, 333L}, hotlist))
+    self.assertFalse(permissions.CanEditHotlist({333L, 444L}, hotlist))
+
+  def testCanAdministerHotlist(self):
+    hotlist = features_pb2.Hotlist()
+    hotlist.owner_ids.append(111L)
+    hotlist.editor_ids.append(222L)
+
+    self.assertFalse(permissions.CanAdministerHotlist({222L}, hotlist))
+    self.assertTrue(permissions.CanAdministerHotlist({111L, 333L}, hotlist))
+    self.assertFalse(permissions.CanAdministerHotlist({333L, 444L}, hotlist))

@@ -42,30 +42,9 @@ class HotlistIssues(servlet.Servlet):
       if mr.hotlist_id is None:
         self.abort(404, 'no hotlist specified')
 
-    with self.profiler.Phase('making views'):
-      users_by_id = framework_views.MakeAllUserViews(
-          mr.cnxn, self.services.user,
-          features_bizobj.UsersInvolvedInHotlists([self._GetHotlist(mr)]))
-      hotlist_view = self._GetHotlistView(mr, users_by_id)
-      # TODO(jojwang): find some better design rather than passing
-      # users_by_id into _GetHotlistView
-
+    # Note: The HotlistView is created and returned in servlet.py
     return {
-        'hotlist': hotlist_view,
         }
-
-  def _GetHotlistView(self, mr, users_by_id):
-    """Retrieve the current hostlist_view."""
-    hotlist = self._GetHotlist(mr)
-    if hotlist is None:
-      return None
-    hotlist_view = hotlist_views.HotlistView(
-        hotlist, mr.auth.user_id, mr.viewed_user_auth.user_id,
-        users_by_id)
-    return hotlist_view
-  # TODO(jojwang): when friendly url is added, loop through hotlist_view's
-  # friendly_url and url and decide if hotlist should have
-  # view.url = view.friendly_url or view.url = the url with ID
 
   def _GetHotlist(self, mr):
     """Retrieve the current hotlist."""

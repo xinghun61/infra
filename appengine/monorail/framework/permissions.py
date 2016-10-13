@@ -286,11 +286,10 @@ ADMIN_PERMISSIONSET = PermissionSet(
      DELETE_ANY, EDIT_ANY_MEMBER_NOTES,
      CREATE_GROUP, EDIT_GROUP, DELETE_GROUP, VIEW_GROUP,
      MODERATE_SPAM, CREATE_HOTLIST],
-    consider_restrictions=False)
+     consider_restrictions=False)
 
 GROUP_IMPORT_BORG_PERMISSIONSET = PermissionSet(
     [CREATE_GROUP, VIEW_GROUP, EDIT_GROUP])
-
 
 # Permissions for project pages, e.g., the project summary page
 _PERMISSIONS_TABLE = {
@@ -331,7 +330,6 @@ _PERMISSIONS_TABLE = {
     (USER_ROLE, UNDEFINED_STATUS, UNDEFINED_ACCESS):
       PermissionSet([CREATE_PROJECT, CREATE_GROUP, CREATE_HOTLIST]),
     }
-
 
 def GetPermissions(user, effective_ids, project):
   """Return a permission set appropriate for the user and project.
@@ -957,6 +955,18 @@ def CanViewHotlist(effective_ids, hotlist):
   return any([user_id in (hotlist.owner_ids + hotlist.editor_ids)
               for user_id in effective_ids])
 
+
+def CanEditHotlist(effective_ids, hotlist):
+  """Return True if a user is editor(add/remove issues and change rankings)."""
+  return any([user_id in (hotlist.owner_ids + hotlist.editor_ids)
+              for user_id in effective_ids])
+
+
+def CanAdministerHotlist(effective_ids, hotlist):
+  """Return True if user is owner(add/remove members, edit/delte hotlist)."""
+  return any([user_id in hotlist.owner_ids for user_id in effective_ids])
+
+
 def CanCreateHotlist(perms):
   """Return True if the given user may create a hotlist.
 
@@ -973,6 +983,7 @@ def CanCreateHotlist(perms):
   if (settings.hotlist_creation_restriction ==
       site_pb2.UserTypeRestriction.ADMIN_ONLY):
     return perms.HasPerm(ADMINISTER_SITE, None, None)
+
 
 class Error(Exception):
   """Base class for errors from this module."""

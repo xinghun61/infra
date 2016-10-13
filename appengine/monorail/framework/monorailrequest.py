@@ -316,10 +316,11 @@ class MonorailRequest(object):
     self.project = None
     self.config = None
 
+    self.hotlist_id = None
+    self.hotlist = None
+
     self.viewed_username = None
     self.viewed_user_auth = AuthData()
-
-    self.hotlist_id = None
 
   @property
   def project_id(self):
@@ -365,6 +366,9 @@ class MonorailRequest(object):
       self._LookupProject(services, prof)
     if self.project_id and services.config:
       self.config = services.config.GetProjectConfig(self.cnxn, self.project_id)
+
+    if not self.hotlist:
+      self._LookupHotlist(services, prof)
 
     if do_user_lookups:
       if self.viewed_username:
@@ -537,6 +541,17 @@ class MonorailRequest(object):
             self.cnxn, self.project_name)
         if not self.project:
           webapp2.abort(404, 'invalid project')
+
+  def _LookupHotlist(self, services, prof):
+    """Get information about the current hotlist (if any) from the request."""
+    with prof.Phase('get current hotlist, if any'):
+      if not self.hotlist_id:
+        logging.info('no hotlist_id, so no hotlist')
+      else:
+        self.hotlist = services.features.GetHotlist(
+            self.cnxn, self.hotlist_id)
+        if not self.hotlist:
+          webapp2.abort(404, 'invalid hotlist')
 
   def _LookupLoggedInUser(self, services, prof):
     """Get information about the signed-in user (if any) from the request."""

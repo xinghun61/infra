@@ -25,3 +25,25 @@ class FeaturesBizobjTest(unittest.TestCase):
     self.assertEqual(set([111L, 222L, 333L, 444L, 555L, 123L]),
                      features_bizobj.UsersInvolvedInHotlists([hotlist1,
                                                               hotlist2]))
+
+  def testUserIsInHotlist(self):
+    h = features_pb2.Hotlist()
+    self.assertFalse(features_bizobj.UserIsInHotlist(h, {9}))
+    self.assertFalse(features_bizobj.UserIsInHotlist(h, set()))
+
+    h.owner_ids.extend([1, 2, 3])
+    h.editor_ids.extend([4, 5, 6])
+    h.follower_ids.extend([7, 8, 9])
+    self.assertTrue(features_bizobj.UserIsInHotlist(h, {1}))
+    self.assertTrue(features_bizobj.UserIsInHotlist(h, {4}))
+    self.assertTrue(features_bizobj.UserIsInHotlist(h, {7}))
+    self.assertFalse(features_bizobj.UserIsInHotlist(h, {10}))
+
+    # Membership via group membership
+    self.assertTrue(features_bizobj.UserIsInHotlist(h, {10, 4}))
+
+    # Membership via several group memberships
+    self.assertTrue(features_bizobj.UserIsInHotlist(h, {1, 4}))
+
+    # Several irrelevant group memberships
+    self.assertFalse(features_bizobj.UserIsInHotlist(h, {10, 11, 12}))

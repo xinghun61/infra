@@ -24,7 +24,7 @@
    <td rowspan="3">
        <div class="tip" style="margin-top:0; margin-left:4px">
            Enter the email addresses of users that you would like to
-           add to this [is arg0 "project"]project[else]group[end].<br><br>
+           add to this [is arg0 "project"]project[else][is arg0 "hotlist"]hotlist[else]group[end][end].<br><br>
            Each email address must correspond to an existing Google Account.
        </div>
     </td>
@@ -48,6 +48,14 @@
        <label for="contributor">Contributor: starts with the same permissions
        as non-members.</label><br>
        [# TODO(jrobbins): custom roles]
+    [else][is arg0 "hotlist"]
+       <input type="radio" name="role" value="owner" id="owner">
+       <label for="owner">Owner: may make any change to this
+       hotlist.</label><br>
+
+       <input type="radio" name="role" value="editor" id="editor"
+              checked="checked">
+       <label for="editor">Editor: may add/remove/rank issues.</label><br>
     [else]
        <input type="radio" name="role" value="owner" id="owner">
        <label for="owner">Owner: may make any change to this
@@ -56,7 +64,7 @@
        <input type="radio" name="role" value="member" id="member"
               checked="checked">
        <label for="member">Member: member of this user group.</label><br>
-    [end]
+    [end][end]
     </td>
 
     </tr>

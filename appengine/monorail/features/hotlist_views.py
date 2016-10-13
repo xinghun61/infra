@@ -5,10 +5,36 @@
 
 """Classes to display hotlists in templates."""
 
-import ezt
+from third_party import ezt
 
+from framework import framework_helpers
 from framework import permissions
 from framework import template_helpers
+
+
+class MemberView(object):
+  """EZT-view of details of how a person is participating in a project."""
+
+  def __init__(self, logged_in_user_id, member_id, user_view, hotlist,
+               effective_ids=None):
+    """Initialize a MemberView with the given information.
+
+    Args:
+      logged_in_user_id: int user ID of the viewing user, or 0 for anon.
+      member_id: int user ID of the hotlist member being viewed.
+      user_ivew: UserView object for this member
+      hotlist: Hotlist PB for the currently viewed hotlist
+      effective_ids: optional set of user IDs for this user, if supplied
+          we show the highest role that they have via any group membership.
+    """
+
+    self.viewing_self = ezt.boolean(logged_in_user_id == member_id)
+
+    self.user = user_view
+    member_qs_param = user_view.user_id
+    self.detail_url = '/u/%s/' % member_qs_param
+    self.role = framework_helpers.GetHotlistRoleName(
+        effective_ids or {member_id}, hotlist)
 
 
 class HotlistView(template_helpers.PBProxy):
