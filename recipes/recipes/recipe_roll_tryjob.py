@@ -15,8 +15,9 @@ DEPS = [
   'recipe_engine/step',
 ]
 
-from recipe_engine.recipe_api import Property
 from recipe_engine.config import Single
+from recipe_engine.post_process import Filter
+from recipe_engine.recipe_api import Property
 
 
 def get_auth_token(api, service_account):
@@ -111,7 +112,7 @@ def GenTests(api):
     api.luci_config.get_project_config(
         'recipe_engine', 'recipes.cfg',
         api.recipe_tryjob.make_recipe_config('recipe_engine')) +
-    api.whitelist('Get auth token')
+    api.post_process(Filter('Get auth token'))
   )
 
   yield (
@@ -194,7 +195,7 @@ def GenTests(api):
           'parse description (2)', api.json.output(
               {})) +
       api.override_step_data("build tests", retcode=1) +
-      api.whitelist('$result')
+      api.post_process(Filter('$result'))
   )
 
   # Failing a test is allowed, because of the tryjob bypass reason
@@ -228,7 +229,7 @@ def GenTests(api):
           'parse description (2)', api.json.output(
               {'Recipe-Tryjob-Bypass-Reason': []})) +
       api.override_step_data("build tests", retcode=1) +
-      api.whitelist('$result')
+      api.post_process(Filter('$result'))
   )
 
   yield (
@@ -253,7 +254,7 @@ def GenTests(api):
       api.override_step_data(
           'git_cl description (recipe_engine)', stdout=api.raw_io.output(
               "foo")) +
-      api.whitelist('build tests')
+      api.post_process(Filter('build tests'))
   )
 
   yield (
@@ -300,7 +301,7 @@ def GenTests(api):
       api.override_step_data(
           'parse description', api.json.output(
               {})) +
-      api.whitelist('build tests')
+      api.post_process(Filter('build tests'))
   )
 
   yield (
@@ -324,7 +325,7 @@ def GenTests(api):
       api.override_step_data(
           'parse description', api.json.output(
               {})) +
-      api.whitelist('build tests')
+      api.post_process(Filter('build tests'))
   )
 
   # No way to assert a step doesn't happen, yet :/
@@ -349,7 +350,7 @@ def GenTests(api):
       api.override_step_data(
           'parse description', api.json.output(
               {})) +
-      api.whitelist('build tests')
+      api.post_process(Filter('build tests'))
   )
 
   yield (
@@ -384,8 +385,7 @@ def GenTests(api):
       api.override_step_data(
           'parse description', api.json.output(
               {})) +
-      api.whitelist('build tests') +
-      api.whitelist('build_limited_scripts_slave tests')
-
+      api.post_process(Filter(
+        'build tests', 'build_limited_scripts_slave tests'))
   )
 
