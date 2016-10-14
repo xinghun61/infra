@@ -1,8 +1,8 @@
-hash: 024ba7408bcd8d1075109551ff95ccb62da415c98f34aa672230ff0bd5907f98
-updated: 2016-10-11T17:19:48.308244432+11:00
+hash: 88fe2a472a9ecd63aa379925b6c6caa054c443af55cf30a2788e1400b1c9214a
+updated: 2016-10-14T11:29:23.786585139+02:00
 imports:
 - name: cloud.google.com/go
-  version: c44d791531bbf4873313fe7a9d5b6e7fdbd3df1a
+  version: 44b3a7d2be2df066b6625227cf4e4988d35a2cd1
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -22,17 +22,20 @@ imports:
   version: 0b58b37b664c21f3010e836f1b931e1d0b0b0685
   repo: https://chromium.googlesource.com/external/github.com/go-sql-driver/mysql.git
 - name: github.com/golang/lint
-  version: 55ae771cfa82f3846897c972e262ed5d54d47d48
+  version: 3390df4df2787994aea98de825b964ac7944b817
   repo: https://chromium.googlesource.com/external/github.com/golang/lint.git
   subpackages:
   - golint
 - name: github.com/golang/protobuf
-  version: df1d3ca07d2d07bba352d5b73c4313b4e2a6203e
+  version: 98fa357170587e470c5f27d3c3ea0947b71eb455
   repo: https://chromium.googlesource.com/external/github.com/golang/protobuf.git
   subpackages:
   - jsonpb
   - proto
   - protoc-gen-go
+- name: github.com/googleapis/gax-go
+  version: ed6ab759ab548d1e6e070f53f9d1105d2d8128b0
+  repo: https://chromium.googlesource.com/external/github.com/googleapis/gax-go.git
 - name: github.com/gopherjs/gopherjs
   version: 59875158f8d2a03a3020d62afe84745286acd908
   repo: https://chromium.googlesource.com/external/github.com/gopherjs/gopherjs.git
@@ -56,6 +59,14 @@ imports:
 - name: github.com/kisielk/gotool
   version: 5e136deb9b893bbe6c8f23236ff4378b7a8a0dbb
   repo: https://chromium.googlesource.com/external/github.com/kisielk/gotool.git
+- name: github.com/klauspost/compress
+  version: d0763f13d86e630f5d3ea9fa848a6ecc68255297
+  repo: https://chromium.googlesource.com/external/github.com/klauspost/compress.git
+  subpackages:
+  - zlib
+- name: github.com/klauspost/cpuid
+  version: 09cded8978dc9e80714c4d85b0322337b0a1e5e0
+  repo: https://chromium.googlesource.com/external/github.com/klauspost/cpuid.git
 - name: github.com/kr/pretty
   version: cfb55aafdaf3ec08f0db22699ab822c50091b1c4
   repo: https://chromium.googlesource.com/external/github.com/kr/pretty.git
@@ -145,17 +156,17 @@ imports:
   subpackages:
   - encoding/json5
 - name: golang.org/x/build
-  version: 4ec90df133d854be993ee564d62995c76f2a65e6
+  version: c87bb98f3f9aef7212ef4a849e64708f48ef1b1c
   repo: https://go.googlesource.com/build.git
   subpackages:
   - gerrit
 - name: golang.org/x/mobile
-  version: 6ea0bb537040ee2926a37608791a60803db71171
+  version: 91c29e2bb7a5d71704025176b5e99ce3fed17629
   repo: https://go.googlesource.com/mobile.git
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: cf4effbb9db1f3ef07f7e1891402991b6afbb276
+  version: 8b4af36cd21a1f85a7484b49feb7c79363106d8e
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
@@ -167,12 +178,12 @@ imports:
   - google
   - jwt
 - name: golang.org/x/sys
-  version: 67f277b6fe017c42fc3b4a445edc999dd99edd58
+  version: 9bb9f0998d48b31547d975974935ae9b48c7a03c
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - windows
 - name: golang.org/x/tools
-  version: 8453f27cc7e9bc769059b8eb7c88f61da9382d1e
+  version: 69f6f5b782e1f090edb33f68be67d96673a8059e
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -196,7 +207,7 @@ imports:
   - pubsub/v1
   - taskqueue/v1beta2
 - name: google.golang.org/appengine
-  version: 3f4dbbc0ec153a39878fd524ece9f39732bd4998
+  version: 1177123117f15f0e04f58d3623a02e38ece70baa
   repo: https://chromium.googlesource.com/external/github.com/golang/appengine.git
   subpackages:
   - cmd/aedeploy
@@ -215,7 +226,7 @@ imports:
   subpackages:
   - protobuf
 - name: google.golang.org/grpc
-  version: 72d072e4c18c02bfe6c98fc661a4df74da546145
+  version: 9eaed1a74af580b44448989c8ed830bc210bddf4
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes

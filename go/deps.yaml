@@ -227,3 +227,14 @@ import:
 - package: github.com/go-ole/go-ole
   version: master
   repo: https://chromium.googlesource.com/external/github.com/go-ole/go-ole.git
+- package: github.com/klauspost/compress
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/klauspost/compress.git
+  subpackages:
+  - zlib
+- package: github.com/klauspost/cpuid
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/klauspost/cpuid.git
+- package: github.com/googleapis/gax-go
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/googleapis/gax-go.git
