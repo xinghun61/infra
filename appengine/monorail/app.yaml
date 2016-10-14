@@ -53,6 +53,7 @@ handlers:
 
 inbound_services:
 - mail
+- mail_bounce
 
 libraries:
 - name: endpoints

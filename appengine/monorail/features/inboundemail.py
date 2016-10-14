@@ -12,6 +12,7 @@ import urllib
 from third_party import ezt
 
 from google.appengine.api import mail
+from google.appengine.ext.webapp.mail_handlers import BounceNotificationHandler
 
 import webapp2
 
@@ -260,3 +261,20 @@ def _MakeErrorMessageReplyTask(
   logging.info('sending email error reply: %r', email_task)
 
   return [email_task]
+
+
+class BouncedEmail(BounceNotificationHandler):
+  """Handler to notice when email to given user is bouncing."""
+
+  # For docs on AppEngine's bounce email handling, see:
+  # https://cloud.google.com/appengine/docs/python/mail/bounce
+  # Source code is in file:
+  # google_appengine/google/appengine/ext/webapp/mail_handlers.py
+
+  def receive(self, bounce_message):
+    # TODO(jrobbins): Look up that user and set the
+    # bounce_email_timestamp for that user.
+    logging.info('Received bounce post ... [%s]', self.request)
+    logging.info('Bounce original: %s', bounce_message.original)
+    logging.info('Bounce notification: %s', bounce_message.notification)
+    logging.info('Bounce was sent to: %r', bounce_message.original.get('to'))

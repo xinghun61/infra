@@ -358,10 +358,14 @@ class ServletRegistry(object):
     self._SetupGroupServlets({'': group_redir})
 
   def _RegisterInboundMail(self):
-    """Register a handler for inbound email."""
+    """Register a handler for inbound email and email bounces."""
     self.routes.append(webapp2.Route(
         '/_ah/mail/<project_addr:.+>',
         handler=inboundemail.InboundEmail,
+        methods=['POST', 'GET']))
+    self.routes.append(webapp2.Route(
+        '/_ah/bounce',
+        handler=inboundemail.BouncedEmail,
         methods=['POST', 'GET']))
 
   def _RegisterErrorPages(self):
