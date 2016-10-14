@@ -29,6 +29,10 @@ func (t *testFailure) Kind() string {
 	return "test"
 }
 
+func (t *testFailure) Severity() messages.Severity {
+	return messages.NoSeverity
+}
+
 func (t *testFailure) Title(bses []*messages.BuildStep) string {
 	f := bses[0]
 	if len(bses) == 1 {

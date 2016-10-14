@@ -182,6 +182,73 @@ func TestPerfDeviceAnalyzer(t *testing.T) {
 			})
 		})
 
+		Convey("multiple perf steps, Host Info", func() {
+			steps := []messages.Step{
+				{
+					Name: "first",
+					Results: []interface{}{
+						2,
+					},
+				},
+				{
+					Name: "Host Info",
+					Results: []interface{}{
+						2,
+					},
+				},
+				{
+					Name: "perf step",
+					Text: []string{
+						"<br>Device Affinity: 4",
+					},
+					Results: []interface{}{
+						2,
+					},
+				},
+				{
+					Name: "perf step 2",
+					Text: []string{
+						"<br>Device Affinity: 4",
+					},
+					Results: []interface{}{
+						2,
+					},
+				},
+				{
+					Name: "perf step 3",
+					Text: []string{
+						"<br>Device Affinity: 4",
+					},
+					Results: []interface{}{
+						2,
+					},
+				},
+			}
+
+			reasons, err := perfDeviceAnalyzer(nil, makeSteps(steps))
+
+			So(err, ShouldBeNil)
+			So(reasons, ShouldResemble, []messages.ReasonRaw{
+				nil,
+				&perfDeviceFailure{
+					Builder: "fake_builder",
+					Devices: []int{4},
+				},
+				&perfDeviceFailure{
+					Builder: "fake_builder",
+					Devices: []int{4},
+				},
+				&perfDeviceFailure{
+					Builder: "fake_builder",
+					Devices: []int{4},
+				},
+				&perfDeviceFailure{
+					Builder: "fake_builder",
+					Devices: []int{4},
+				},
+			})
+		})
+
 		Convey("one device dead, one test fails", func() {
 			steps := []messages.Step{
 				{

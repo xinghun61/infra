@@ -2,6 +2,7 @@ package step
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -48,6 +49,7 @@ func (p *perfDeviceFailure) Signature() string {
 // devicesStr is a string representation of the device affinities which have
 // failed.
 func (p *perfDeviceFailure) devicesStr() string {
+	sort.Ints(p.Devices)
 	devicesStr := make([]string, len(p.Devices))
 	for i, device := range p.Devices {
 		devicesStr[i] = strconv.Itoa(device)
@@ -60,13 +62,17 @@ func (p *perfDeviceFailure) Kind() string {
 	return "perf-device"
 }
 
+func (p *perfDeviceFailure) Severity() messages.Severity {
+	return messages.InfraFailure
+}
+
 func (p *perfDeviceFailure) Title(bses []*messages.BuildStep) string {
-	if len(bses) == 1 {
-		f := bses[0]
-		return fmt.Sprintf("device affinity %s is broken on %s/%s", p.devicesStr(), f.Master.Name(), p.Builder)
+	if len(bses) == 0 {
+		return fmt.Sprintf("device affinity %s broken", p.devicesStr())
 	}
 
-	return fmt.Sprintf("device affinity %s is broken, affecting %d tests", p.devicesStr(), len(bses))
+	f := bses[0]
+	return fmt.Sprintf("device affinity %s is broken on %s/%s, affecting %d tests", p.devicesStr(), f.Master.Name(), p.Builder, len(bses))
 }
 
 // perfFailureAnalyzer looks for perf device failures.
@@ -108,6 +114,11 @@ func perfDeviceAnalyzer(reader client.Reader, failures []*messages.BuildStep) ([
 	}
 
 	for i, f := range failures {
+		if f.Step.Name == "Host Info" {
+			results[i] = devFailure
+			continue
+		}
+
 		recognized, num, _ := getDeviceAffinity(f.Step)
 
 		if recognized && !deviceWithPassingTests[num] {

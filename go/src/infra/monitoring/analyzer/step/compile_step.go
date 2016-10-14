@@ -31,6 +31,10 @@ func (c *compileFailure) Kind() string {
 	return "compile"
 }
 
+func (c *compileFailure) Severity() messages.Severity {
+	return messages.NoSeverity
+}
+
 func (c *compileFailure) Title(bses []*messages.BuildStep) string {
 	f := bses[0]
 	if len(bses) == 1 {

@@ -79,12 +79,40 @@ type AlertsSummary struct {
 	Timestamp         EpochTime                  `json:"timestamp"`
 }
 
+// Severity is a sorted order of how severe an alert is.
+type Severity int
+
+const (
+	// TreeCloser is an alert which closes the tree. Highest priority alert.
+	TreeCloser Severity = iota
+	// StaleMaster is an alert about stale master data.
+	StaleMaster
+	// HungBuilder is an alert about a builder being hung (stuck running a particular step)
+	HungBuilder
+	// InfraFailure is an infrastructure failure. It is higher severity than a reliable failure
+	// because if there is an infrastructure failure, the test code is not even run,
+	// and so we are losing data about if the tests pass or not.
+	InfraFailure
+	// ReliableFailure is a failure which has shown up multiple times.
+	ReliableFailure
+	// NewFailure is a failure which just started happening.
+	NewFailure
+	// IdleBuilder is a builder which is "idle" (buildbot term) and which has above
+	// a certain threshold of pending builds.
+	IdleBuilder
+	// OfflineBuilder is a builder which is offline.
+	OfflineBuilder
+	// NoSeverity is a placeholder Severity value which means nothing. Used by analysis
+	// to indicate that it doesn't have a particular Severity to assign to an alert.
+	NoSeverity
+)
+
 // Alert represents a condition that should be examined by a human.
 type Alert struct {
 	Key       string    `json:"key"`
 	Title     string    `json:"title"`
 	Body      string    `json:"body"`
-	Severity  int       `json:"severity"` // TODO: consider using an enum.
+	Severity  Severity  `json:"severity"` // TODO: consider using an enum.
 	Time      EpochTime `json:"time"`
 	StartTime EpochTime `json:"start_time"`
 	Links     []Link    `json:"links"`
@@ -161,6 +189,7 @@ func (r *Reason) MarshalJSON() ([]byte, error) {
 type ReasonRaw interface {
 	Signature() string
 	Kind() string
+	Severity() Severity
 	Title([]*BuildStep) string
 }
 

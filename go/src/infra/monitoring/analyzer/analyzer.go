@@ -27,17 +27,6 @@ const (
 	// StepCompletedRun is a synthetic step name used to indicate the build run is complete.
 	StepCompletedRun = "completed run"
 
-	// Order of severity, worst to least bad.
-	treeCloserSev = iota
-	staleMasterSev
-	hungBuilderSev
-	infraFailureSev
-	reliableFailureSev
-	newFailureSev
-	staleBuilderSev
-	idleBuilderSev
-	offlineBuilderSev
-
 	// Step result values.
 	resOK           = float64(1)
 	resInfraFailure = float64(4)
@@ -147,7 +136,7 @@ func (a *Analyzer) MasterAlerts(master *messages.MasterLocation, be *messages.Bu
 			Title:     fmt.Sprintf("Stale %s master data", master),
 			Body:      fmt.Sprintf("%dh %2dm elapsed since last update.", int(elapsed.Hours()), int(elapsed.Minutes())),
 			StartTime: messages.TimeToEpochTime(be.CreatedTimestamp.Time()),
-			Severity:  staleMasterSev,
+			Severity:  messages.StaleMaster,
 			Time:      messages.TimeToEpochTime(a.Now()),
 			Links:     []messages.Link{{"Master", master.URL.String()}},
 			Type:      messages.AlertStaleMaster,
@@ -330,7 +319,7 @@ func (a *Analyzer) builderAlerts(tree string, master *messages.MasterLocation, b
 			alerts = append(alerts, messages.Alert{
 				Key:       fmt.Sprintf("%s.%s.hung", master.Name(), builderName),
 				Title:     fmt.Sprintf("%s.%s is hung in step %s.", master.Name(), builderName, lastStep),
-				Severity:  hungBuilderSev,
+				Severity:  messages.HungBuilder,
 				Time:      messages.TimeToEpochTime(a.Now()),
 				StartTime: messages.TimeToEpochTime(lastUpdated.Time()),
 				Links:     links,
@@ -344,7 +333,7 @@ func (a *Analyzer) builderAlerts(tree string, master *messages.MasterLocation, b
 			alerts = append(alerts, messages.Alert{
 				Key:       fmt.Sprintf("%s.%s.offline", master.Name(), builderName),
 				Title:     fmt.Sprintf("%s.%s is offline.", master.Name(), builderName),
-				Severity:  offlineBuilderSev,
+				Severity:  messages.OfflineBuilder,
 				Time:      messages.TimeToEpochTime(a.Now()),
 				StartTime: messages.TimeToEpochTime(lastUpdated.Time()),
 				Links:     links,
@@ -357,7 +346,7 @@ func (a *Analyzer) builderAlerts(tree string, master *messages.MasterLocation, b
 			alerts = append(alerts, messages.Alert{
 				Key:       fmt.Sprintf("%s.%s.idle", master.Name(), builderName),
 				Title:     fmt.Sprintf("%s.%s is idle with %d pending builds.", master.Name(), builderName, b.PendingBuilds),
-				Severity:  idleBuilderSev,
+				Severity:  messages.IdleBuilder,
 				Time:      messages.TimeToEpochTime(a.Now()),
 				StartTime: messages.TimeToEpochTime(lastUpdated.Time()),
 				Links:     links,
@@ -679,7 +668,7 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 
 		for _, failingBuilder := range mergedBF.Builders {
 			if failingBuilder.LatestFailure-failingBuilder.FirstFailure > 0 {
-				mergedAlert.Severity = reliableFailureSev
+				mergedAlert.Severity = messages.ReliableFailure
 			}
 			if failingBuilder.StartTime < mergedAlert.StartTime || mergedAlert.StartTime == 0 {
 				mergedAlert.StartTime = failingBuilder.StartTime
@@ -807,7 +796,7 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 					Type:      messages.AlertInfraFailure,
 					StartTime: failure.Build.Times[0],
 					Time:      failure.Build.Times[0],
-					Severity:  infraFailureSev,
+					Severity:  messages.InfraFailure,
 					Key:       alertKey(failure.Master.Name(), failure.Build.BuilderName, failure.Step.Name, fmt.Sprintf("%v", failure.Step.Results[0])),
 					Extension: bf,
 				}
@@ -832,7 +821,7 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 				Body:      "",
 				Time:      f.Build.Times[0],
 				StartTime: f.Build.Times[0],
-				Severity:  newFailureSev,
+				Severity:  messages.NewFailure,
 			}
 
 			regRanges := a.regrangeFinder(f.Build)
@@ -875,11 +864,16 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 			}
 
 			if bf.TreeCloser {
-				alr.Severity = treeCloserSev
+				alr.Severity = messages.TreeCloser
 			}
 			bf.Reason = &messages.Reason{Raw: reasons[i]}
 
 			alr.Title = reasons[i].Title([]*messages.BuildStep{f})
+			reasonSeverity := reasons[i].Severity()
+			if reasonSeverity != messages.NoSeverity {
+				alr.Severity = reasonSeverity
+			}
+
 			alr.Type = messages.AlertBuildFailure
 			alr.Key = alertKey(f.Master.Name(), f.Build.BuilderName, f.Step.Name, "")
 			alr.Extension = bf

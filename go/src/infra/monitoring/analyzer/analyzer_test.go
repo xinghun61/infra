@@ -55,6 +55,10 @@ func (f *fakeReasonRaw) Title([]*messages.BuildStep) string {
 	return "fakeTitle"
 }
 
+func (f *fakeReasonRaw) Severity() messages.Severity {
+	return messages.NewFailure
+}
+
 type fakeAnalyzer struct {
 }
 
@@ -111,7 +115,7 @@ func TestMasterAlerts(t *testing.T) {
 					Key:       "stale master: https://build.chromium.org/p/fake.master",
 					Title:     "Stale https://build.chromium.org/p/fake.master master data",
 					Type:      messages.AlertStaleMaster,
-					Severity:  staleMasterSev,
+					Severity:  messages.StaleMaster,
 					Body:      "0h 20m elapsed since last update.",
 					Time:      messages.TimeToEpochTime(time.Unix(100, 0).Add(20 * time.Minute)),
 					Links:     []messages.Link{{"Master", urlParse("https://build.chromium.org/p/fake.master", t).String()}},
@@ -247,7 +251,7 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 						Type:      messages.AlertHungBuilder,
 						StartTime: 100,
 						Time:      messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour)),
-						Severity:  hungBuilderSev,
+						Severity:  messages.HungBuilder,
 						Links: []messages.Link{
 							{Title: "Builder", Href: urlParse("https://build.chromium.org/p/fake.master/builders/hung.builder", t).String()},
 							{Title: "Last build", Href: urlParse("https://build.chromium.org/p/fake.master/builders/hung.builder/builds/1", t).String()},
@@ -299,7 +303,7 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 						Type:      messages.AlertOfflineBuilder,
 						StartTime: 2.5 * 60 * 60,
 						Time:      messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour).Add(time.Second)),
-						Severity:  offlineBuilderSev,
+						Severity:  messages.OfflineBuilder,
 						Links: []messages.Link{
 							{Title: "Builder", Href: urlParse("https://build.chromium.org/p/fake.master/builders/offline.builder", t).String()},
 							{Title: "Last build", Href: urlParse("https://build.chromium.org/p/fake.master/builders/offline.builder/builds/1", t).String()},
@@ -351,7 +355,7 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 						Type:      messages.AlertIdleBuilder,
 						StartTime: 100,
 						Time:      messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour)),
-						Severity:  idleBuilderSev,
+						Severity:  messages.IdleBuilder,
 						Links: []messages.Link{
 							{Title: "Builder", Href: urlParse("https://build.chromium.org/p/fake.master/builders/idle.builder", t).String()},
 							{Title: "Last build", Href: urlParse("https://build.chromium.org/p/fake.master/builders/idle.builder/builds/1", t).String()},
@@ -428,7 +432,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						Title:    "fakeTitle",
 						Type:     messages.AlertBuildFailure,
 						Body:     "",
-						Severity: newFailureSev,
+						Severity: messages.NewFailure,
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{
 								{
@@ -478,7 +482,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						Title:    "fakeTitle",
 						Type:     messages.AlertBuildFailure,
 						Body:     "",
-						Severity: newFailureSev,
+						Severity: messages.NewFailure,
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{
 								{
@@ -530,7 +534,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						Title:    "fakeTitle",
 						Type:     messages.AlertBuildFailure,
 						Body:     "",
-						Severity: reliableFailureSev,
+						Severity: messages.ReliableFailure,
 						Time:     messages.EpochTime(6),
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{
@@ -583,7 +587,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						Body:      "",
 						Time:      messages.EpochTime(4),
 						StartTime: messages.EpochTime(4),
-						Severity:  newFailureSev,
+						Severity:  messages.NewFailure,
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{
 								{
@@ -612,7 +616,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						Title:    "fakeTitle",
 						Type:     messages.AlertBuildFailure,
 						Body:     "",
-						Severity: reliableFailureSev,
+						Severity: messages.ReliableFailure,
 						Time:     messages.EpochTime(4),
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{
@@ -663,7 +667,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						Title:    "fakeTitle",
 						Type:     messages.AlertBuildFailure,
 						Body:     "",
-						Severity: reliableFailureSev,
+						Severity: messages.ReliableFailure,
 						Time:     messages.EpochTime(4),
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{
@@ -1091,7 +1095,7 @@ func TestStepFailureAlerts(t *testing.T) {
 						Key:      "fake.master.fake.builder.fake_tests.",
 						Title:    "fakeTitle",
 						Body:     "",
-						Severity: newFailureSev,
+						Severity: messages.NewFailure,
 						Type:     messages.AlertBuildFailure,
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{
@@ -1154,7 +1158,7 @@ func TestStepFailureAlerts(t *testing.T) {
 						Key:      "fake.master.fake.builder.fake_tests.4",
 						Title:    "fake_tests failing on fake.master/fake.builder",
 						Body:     "infrastructure failure",
-						Severity: infraFailureSev,
+						Severity: messages.InfraFailure,
 						Type:     messages.AlertInfraFailure,
 						Extension: messages.BuildFailure{
 							Builders: []messages.AlertedBuilder{

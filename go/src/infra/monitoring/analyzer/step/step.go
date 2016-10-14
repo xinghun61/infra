@@ -68,6 +68,10 @@ func (b *basicFailure) Kind() string {
 	return "basic"
 }
 
+func (b *basicFailure) Severity() messages.Severity {
+	return messages.NoSeverity
+}
+
 func (b *basicFailure) Title(bses []*messages.BuildStep) string {
 	f := bses[0]
 	if len(bses) == 1 {

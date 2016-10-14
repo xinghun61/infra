@@ -127,3 +127,32 @@ func TestReasonsForFailures(t *testing.T) {
 		})
 	})
 }
+
+func TestBasicAnalyzer(t *testing.T) {
+	Convey("basicAnalyzer", t, func() {
+		Convey("basic", func() {
+			reasons, err := basicAnalyzer(nil, []*messages.BuildStep{
+				{
+					Step: &messages.Step{
+						Name: "foo",
+					},
+				},
+				{
+					Step: &messages.Step{
+						Name: "bar",
+					},
+				},
+			})
+			So(err, ShouldBeNil)
+			So(reasons, ShouldResemble, []messages.ReasonRaw{
+				&basicFailure{
+					Name: "foo",
+				},
+				&basicFailure{
+					Name: "bar",
+				},
+			})
+		})
+
+	})
+}
