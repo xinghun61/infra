@@ -565,7 +565,7 @@ class FeaturesService(object):
     return id_dict
 
   def LookupUserHotlists(self, cnxn, user_ids):
-    """Return a dict of user_id mapped to hotlist_id for all given users."""
+    """Return a dict of {user_id: [hotlist_id,...]} for all user_ids."""
     id_dict, missed_ids = self.hotlist_user_to_ids.GetAll(user_ids)
     if missed_ids:
       retrieved_dict = {user_id: [] for user_id in missed_ids}
@@ -581,24 +581,26 @@ class FeaturesService(object):
   ### Get hotlists
 
   def GetHotlists(self, cnxn, hotlist_ids, use_cache=True):
-    hotlists_dict, _missed_ids = self.hotlist_2lc.GetAll(
+    """Returns dict of {hotlist_id: hotlist PB}."""
+    hotlists_dict, missed_ids = self.hotlist_2lc.GetAll(
         cnxn, hotlist_ids, use_cache=use_cache)
-    return [hotlists_dict[hotlist_id] for hotlist_id in hotlist_ids
-            if hotlist_id in hotlists_dict]
+
+    if missed_ids:
+      raise NoSuchHotlistException()
+
+    return hotlists_dict
 
   def GetHotlistsByUserID(self, cnxn, user_id, use_cache=True):
     """Get a list of hotlist PBs for a given user."""
     hotlist_id_dict = self.LookupUserHotlists(cnxn, [user_id])
     hotlists = self.GetHotlists(
         cnxn, hotlist_id_dict.get(user_id, []), use_cache=use_cache)
-    return hotlists
+    return hotlists.values()
 
   def GetHotlist(self, cnxn, hotlist_id, use_cache=True):
+    """Returns hotlist PB."""
     hotlist_dict = self.GetHotlists(cnxn, [hotlist_id], use_cache=use_cache)
-    try:
-      return hotlist_dict[0]
-    except IndexError:
-      raise NoSuchHotlistException()
+    return hotlist_dict[hotlist_id]
 
 
 class HotlistAlreadyExists(Exception):

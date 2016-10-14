@@ -14,11 +14,13 @@ from framework import framework_helpers
 from framework import monorailrequest
 from framework import permissions
 from framework import validate
+from proto import features_pb2
 from proto import project_pb2
 from proto import tracker_pb2
 from proto import user_pb2
 from proto import usergroup_pb2
 from services import caches
+from services import features_svc
 from services import issue_svc
 from services import project_svc
 from services import user_svc
@@ -32,7 +34,8 @@ BOUNDARY = '-----thisisaboundary'
 OWNER_ROLE = 'OWNER_ROLE'
 COMMITTER_ROLE = 'COMMITTER_ROLE'
 CONTRIBUTOR_ROLE = 'CONTRIBUTOR_ROLE'
-
+EDITOR_ROLE = 'EDITOR_ROLE'
+FOLLOWER_ROLE = 'FOLLOWER_ROLE'
 
 def Project(
     project_name='proj', project_id=None, state=project_pb2.ProjectState.LIVE,
@@ -1506,6 +1509,105 @@ class FeaturesService(object):
     self.expunged_saved_queries = []
     self.expunged_filter_rules = []
     self.expunged_quick_edit = []
+
+    # hotlists
+    self.test_hotlists = {} # hotlist_name => hotlist_pb
+    self.hotlists_by_id = {}
+
+  def TestAddHotlist(self, name, summary='', owner_ids=None, editor_ids=None,
+                     follower_ids=None, description=None, hotlist_id=None,
+                     is_private=False):
+    """Add a hotlist to the fake FeaturesService object.
+
+    Args:
+      name: the name of the hotlist. Will replace any existing hotlist under
+        the same name.
+      summary: the summary string of the hotlist
+      owner_ids: List of user ids for the hotlist owners
+      editor_ids: List of user ids for the hotlist editors
+      follower_ids: List of user ids for the hotlist followers
+      description: The description string for this hotlist
+      hotlist_id: A unique integer identifier for the created hotlist
+      is_private: A boolean indicating whether the hotlist is private/public
+
+    Returns:
+      A populated hotlist PB.
+    """
+    hotlist_pb = features_pb2.Hotlist()
+    hotlist_pb.hotlist_id = hotlist_id or hash(name) % 100000
+    hotlist_pb.hotlist_name = name
+    hotlist_pb.summary = summary
+    hotlist_pb.is_private = is_private
+    if description is not None:
+      hotlist_pb.description = description
+
+    self.TestAddHotlistMembers(owner_ids, hotlist_pb, OWNER_ROLE)
+    self.TestAddHotlistMembers(follower_ids, hotlist_pb, FOLLOWER_ROLE)
+    self.TestAddHotlistMembers(editor_ids, hotlist_pb, EDITOR_ROLE)
+
+    self.test_hotlists[name] = hotlist_pb
+    self.hotlists_by_id[hotlist_pb.hotlist_id] = hotlist_pb
+    return hotlist_pb
+
+  def TestAddHotlistMembers(self, user_id_list, hotlist_pb, role):
+    if user_id_list is not None:
+      for user_id in user_id_list:
+        if role == OWNER_ROLE:
+          hotlist_pb.owner_ids.append(user_id)
+        elif role == EDITOR_ROLE:
+          hotlist_pb.editor_ids.append(user_id)
+        elif role == FOLLOWER_ROLE:
+          hotlist_pb.follower_ids.append(user_id)
+
+
+  def LookupHotlistIDs(self, cnxn, hotlist_names, owner_ids):
+    # function in real service not being called yet.
+    # TODO(jojwang): implement this before above statement becomes false
+    pass
+
+  def CreateHotlist(
+      self, _cnxn, hotlist_name, summary, description, owner_ids, editor_ids,
+      issue_ids=None, is_private=None, default_col_spec=None):
+    """Create and store a Hotlist with the given attributes."""
+    if hotlist_name in self.test_hotlists:
+      raise features_svc.HotlistAlreadyExists()
+    self.TestAddHotlist(hotlist_name, summary=summary, owner_ids=owner_ids,
+                        editor_ids=editor_ids,
+                        description=description, is_private=is_private)
+
+  def LookupUserHotlists(self, cnxn, user_ids):
+    """Return dict of {user_id: [hotlist_id, hotlist_id...]}."""
+    hotlists = self.test_hotlists.values()
+    users_hotlists_dict = {}
+    for user_id in user_ids:
+      user_hotlists = [hotlist for hotlist in hotlists if user_id in (
+          hotlist.ower_ids + hotlist.editor_ids + hotlist.follower_ids)]
+      users_hotlists_dict[user_id] = [
+          user_hotlist.hotlist_id for user_hotlist in user_hotlists]
+    return users_hotlists_dict
+
+  def GetHotlists(self, cnxn, hotlist_ids, use_cache=True):
+    """Returns dict of {hotlist_id: hotlist PB}."""
+    result = {}
+    for hotlist_id in hotlist_ids:
+      hotlist = self.hotlists_by_id.get(hotlist_id)
+      if hotlist:
+        result[hotlist_id] = hotlist
+    return result
+
+  def GetHotlistsByUserID(self, cnxn, user_id, use_cache=True):
+    """Get a list of hotlist PBs for a given user."""
+    hotlist_id_dict = self.LookupUserHotlists(cnxn, [user_id])
+    hotlists = self.GetHotlists(cnxn, hotlist_id_dict.get(
+        user_id, []), use_cache=use_cache)
+    return hotlists.values()
+
+  def GetHotlist(self, cnxn, hotlist_id, use_cache=True):
+    """Return hotlist PB."""
+    hotlist_id_dict = self.GetHotlists(cnxn, [hotlist_id], use_cache=use_cache)
+    return hotlist_id_dict.get(hotlist_id)
+
+  # end of Hotlist functions
 
   def ExpungeSavedQueriesExecuteInProject(self, _cnxn, project_id):
     self.expunged_saved_queries.append(project_id)

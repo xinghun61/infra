@@ -10,6 +10,7 @@ import unittest
 
 from services import cachemanager_svc
 from services import config_svc
+from services import features_svc
 from services import issue_svc
 from services import project_svc
 from services import star_svc
@@ -25,6 +26,7 @@ fake_class_map = {
     fake.IssueService: issue_svc.IssueService,
     fake.UserGroupService: usergroup_svc.UserGroupService,
     fake.UserService: user_svc.UserService,
+    fake.FeaturesService: features_svc.FeaturesService,
     }
 
 
