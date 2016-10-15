@@ -10,12 +10,14 @@ from common import time_util
 from model import analysis_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import waterfall_config
+from waterfall.flake import triggering_sources
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 
 
 def _NeedANewAnalysis(
     master_name, builder_name, build_number, step_name, test_name,
-    algorithm_parameters, allow_new_analysis=False, force=False):
+    algorithm_parameters, allow_new_analysis=False, force=False,
+    user_email='', triggering_source=triggering_sources.FINDIT_PIPELINE):
   """Checks status of analysis for the test and decides if a new one is needed.
 
   A MasterFlakeAnalysis entity for the given parameters will be created if none
@@ -30,6 +32,8 @@ def _NeedANewAnalysis(
     test_name (str): The flaky test to be analyzed.
     allow_new_analysis (bool): Indicate whether a new analysis is allowed.
     force (bool): Indicate whether to force a rerun of current analysis.
+    user_email (str): The user triggering this analysis.
+    triggering_source (int): The source from which this analysis was triggered.
 
   Returns:
     (need_new_analysis, analysis)
@@ -48,6 +52,8 @@ def _NeedANewAnalysis(
     analysis.status = analysis_status.PENDING
     analysis.algorithm_parameters = algorithm_parameters
     analysis.version = appengine_util.GetCurrentVersion()
+    analysis.triggering_user_email = user_email
+    analysis.triggering_source = triggering_source
     _, saved = analysis.Save()
     return saved, analysis
   elif (analysis.status == analysis_status.PENDING or
@@ -60,16 +66,19 @@ def _NeedANewAnalysis(
     analysis.status = analysis_status.PENDING
     analysis.algorithm_parameters = algorithm_parameters
     analysis.version = appengine_util.GetCurrentVersion()
+    analysis.triggering_user_email = user_email
+    analysis.triggering_source = triggering_source
     _, saved = analysis.Save()
     return saved, analysis
   else:
     return False, analysis
 
 
-def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, step_name,
-                             test_name, allow_new_analysis=False, force=False,
-                             manually_triggered=False,
-                             queue_name=constants.DEFAULT_QUEUE):
+def ScheduleAnalysisIfNeeded(
+    master_name, builder_name, build_number, step_name, test_name,
+    allow_new_analysis=False, force=False, manually_triggered=False,
+    user_email='', triggering_source=triggering_sources.FINDIT_PIPELINE,
+    queue_name=constants.DEFAULT_QUEUE):
   """Schedules an analysis if needed and returns the MasterFlakeAnalysis.
 
   When the build failure was already analyzed and a new analysis is scheduled,
@@ -83,8 +92,11 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, step_name,
     test_name (str): The single test we are checking
     allow_new_analysis (bool): Indicate whether a new analysis is allowed.
     force (bool): Indicate whether to force a rerun of current analysis.
-    manually_triggered (bool): True if the analysis is from manual request, like
-        by a Chromium sheriff.
+    manually_triggered (bool): True if the analysis was requested manually,
+      such as by a Chromium sheriff.
+    user_email (str): The email of the user requesting the analysis.
+    triggering_source (int): From where this analysis was triggered, such as
+      through Findit pipeline, UI, or through Findit API.
     queue_name (str): The App Engine queue to run the analysis.
 
   Returns:
@@ -95,7 +107,8 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, step_name,
 
   need_new_analysis, analysis = _NeedANewAnalysis(
       master_name, builder_name, build_number, step_name, test_name,
-      algorithm_parameters, allow_new_analysis, force)
+      algorithm_parameters, allow_new_analysis, force,
+      user_email, triggering_source)
 
   if need_new_analysis:
     # _NeedANewAnalysis just created master_flake_analysis. Use the latest

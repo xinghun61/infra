@@ -176,19 +176,21 @@ def _IsAuthorizedUser(user_email):
       user_email.endswith('@google.com'))
 
 
-def ScheduleAnalysisForFlake(request, user_email, is_admin):
+def ScheduleAnalysisForFlake(request, user_email, is_admin, triggering_source):
   """Schedules an analysis on the flake in the given request if needed.
 
   Args:
     request (FlakeAnalysisRequest): The request to analyze a flake.
     user_email (str): The email of the requester.
     is_admin (bool): Whether the requester is an admin.
+    triggering_source (int): Where the request is coming from, either Findit
+      UI (check flake page), pipeline (from analysis) or Findit API.
 
   Returns:
     True if an analysis was scheduled; False if a new analysis is not needed;
     None if the user has no permission to.
   """
-  assert len(request.build_steps) > 0, 'At least 1 build step is needed!'
+  assert len(request.build_steps), 'At least 1 build step is needed!'
 
   if not is_admin and not _IsAuthorizedUser(user_email):
     return None
@@ -207,7 +209,8 @@ def ScheduleAnalysisForFlake(request, user_email, is_admin):
         build_step.wf_master_name, build_step.wf_builder_name,
         build_step.wf_build_number, build_step.wf_step_name,
         request.name, allow_new_analysis=True,
-        manually_triggered=manually_triggered,
+        manually_triggered=manually_triggered, user_email=user_email,
+        triggering_source=triggering_source,
         queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
     if analysis:
       # TODO: put this in a transaction.
@@ -219,7 +222,7 @@ def ScheduleAnalysisForFlake(request, user_email, is_admin):
                    analysis.key)
       return True
     else:
-      logging.info('But no new analysis was not triggered!')
+      logging.error('But new analysis was not triggered!')
   else:
     logging.info('No new analysis is needed: %s', request)
 

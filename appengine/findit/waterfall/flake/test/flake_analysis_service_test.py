@@ -9,6 +9,7 @@ from common import constants
 from model.flake.flake_analysis_request import BuildStep
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from waterfall.flake import flake_analysis_service
+from waterfall.flake import triggering_sources
 from waterfall.test import wf_testcase
 
 
@@ -27,7 +28,6 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         (False, False, None),
         flake_analysis_service._CheckFlakeSwarmedAndSupported(request))
-
 
   def testNeedNewAnalysisWhenNoPreviousOneAndNotStepLevelFlake(self):
     request = FlakeAnalysisRequest.Create('flake', False, 123)
@@ -193,10 +193,10 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     request.build_steps = [step]
 
     self.assertIsNone(flake_analysis_service.ScheduleAnalysisForFlake(
-        request, 'test@chromium.org', False))
+        request, 'test@chromium.org', False, triggering_sources.FINDIT_UI))
 
   @mock.patch.object(
-      flake_analysis_service, '_CheckForNewAnalysis', return_value= (0, None))
+      flake_analysis_service, '_CheckForNewAnalysis', return_value=(0, None))
   @mock.patch.object(
       flake_analysis_service.step_mapper, 'FindMatchingWaterfallStep')
   def testAuthorizedAccessButNoNewAnalysisNeeded(self, _mock1, _mock2):
@@ -205,7 +205,7 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     request.build_steps = [step]
 
     self.assertFalse(flake_analysis_service.ScheduleAnalysisForFlake(
-        request, 'test@chromium.org', True))
+        request, 'test@chromium.org', True, triggering_sources.FINDIT_UI))
 
   @mock.patch.object(
       flake_analysis_service.step_mapper, 'FindMatchingWaterfallStep')
@@ -213,6 +213,8 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     step = BuildStep.Create('m', 'b', 80, 's', datetime(2016, 10, 20))
     request = FlakeAnalysisRequest.Create('flake', False, 123)
     request.build_steps = [step]
+    user_email = 'test@chromium.org'
+    triggering_source = triggering_sources.FINDIT_UI
 
     def CheckForNewAnalysis(*_):
       step.wf_master_name = 'wf_m'
@@ -228,17 +230,19 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
         flake_analysis_service, '_CheckForNewAnalysis',
         side_effect=CheckForNewAnalysis) as (
             mocked_CheckForNewAnalysis), mock.patch.object(
-          flake_analysis_service.initialize_flake_pipeline,
-          'ScheduleAnalysisIfNeeded', return_value=mocked_analysis) as (
-              mocked_ScheduleAnalysisIfNeeded), mock.patch.object(
-            flake_analysis_service.FlakeAnalysisRequest,
-            'GetVersion', return_value=mocked_request) as mocked_GetVersion:
+                flake_analysis_service.initialize_flake_pipeline,
+                'ScheduleAnalysisIfNeeded', return_value=mocked_analysis) as (
+                    mocked_ScheduleAnalysisIfNeeded), mock.patch.object(
+                        flake_analysis_service.FlakeAnalysisRequest,
+                        'GetVersion', return_value=mocked_request) as (
+                            mocked_GetVersion):
       self.assertTrue(flake_analysis_service.ScheduleAnalysisForFlake(
-          request, 'test@chromium.org', True))
+          request, user_email, True, triggering_source))
       mocked_CheckForNewAnalysis.assert_called_once_with(request)
       mocked_ScheduleAnalysisIfNeeded.assert_called_once_with(
           'wf_m', 'wf_b', 100, 'wf_s', 'flake',
           allow_new_analysis=True, manually_triggered=False,
+          user_email=user_email, triggering_source=triggering_source,
           queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
       mocked_GetVersion.assert_called_once_with(key='flake', version=1)
       mocked_request.assert_has_calls([
@@ -252,6 +256,8 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     step = BuildStep.Create('m', 'b', 80, 's', datetime(2016, 10, 20))
     request = FlakeAnalysisRequest.Create('flake', False, 123)
     request.build_steps = [step]
+    user_email = 'test@chromium.org'
+    triggering_source = triggering_sources.FINDIT_UI
 
     def CheckForNewAnalysis(*_):
       step.wf_master_name = 'wf_m'
@@ -264,16 +270,17 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
         flake_analysis_service, '_CheckForNewAnalysis',
         side_effect=CheckForNewAnalysis) as (
             mocked_CheckForNewAnalysis), mock.patch.object(
-          flake_analysis_service.initialize_flake_pipeline,
-          'ScheduleAnalysisIfNeeded', return_value=None) as (
-              mocked_ScheduleAnalysisIfNeeded), mock.patch.object(
-            flake_analysis_service.FlakeAnalysisRequest,
-            'GetVersion', return_value=None) as mocked_GetVersion:
+                flake_analysis_service.initialize_flake_pipeline,
+                'ScheduleAnalysisIfNeeded', return_value=None) as (
+                    mocked_ScheduleAnalysisIfNeeded), mock.patch.object(
+                        flake_analysis_service.FlakeAnalysisRequest,
+                        'GetVersion', return_value=None) as mocked_GetVersion:
       self.assertFalse(flake_analysis_service.ScheduleAnalysisForFlake(
-          request, 'test@chromium.org', True))
+          request, user_email, True, triggering_sources.FINDIT_UI))
       mocked_CheckForNewAnalysis.assert_called_once_with(request)
       mocked_ScheduleAnalysisIfNeeded.assert_called_once_with(
           'wf_m', 'wf_b', 100, 'wf_s', 'flake',
           allow_new_analysis=True, manually_triggered=False,
+          user_email=user_email, triggering_source=triggering_source,
           queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
       mocked_GetVersion.assert_not_called()

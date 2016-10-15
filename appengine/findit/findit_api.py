@@ -30,6 +30,7 @@ from model.wf_try_job import WfTryJob
 from waterfall import buildbot
 from waterfall import waterfall_config
 from waterfall.flake import flake_analysis_service
+from waterfall.flake import triggering_sources
 
 
 # This is used by the underlying ProtoRpc when creating names for the ProtoRPC
@@ -304,7 +305,8 @@ class FindItApi(remote.Service):
 
     logging.info('Flake: %s', CreateFlakeAnalysisRequest(request))
     analysis_triggered = flake_analysis_service.ScheduleAnalysisForFlake(
-        CreateFlakeAnalysisRequest(request), user_email, is_admin)
+        CreateFlakeAnalysisRequest(request), user_email, is_admin,
+        triggering_sources.FINDIT_API)
 
     if analysis_triggered is None:
       raise endpoints.UnauthorizedException(

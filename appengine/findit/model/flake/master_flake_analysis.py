@@ -6,7 +6,6 @@ import base64
 
 from google.appengine.ext import ndb
 
-from model import analysis_status
 from model.base_analysis import BaseAnalysis
 from model.base_build_model import BaseBuildModel
 from model.flake.flake_swarming_task import FlakeSwarmingTaskData
@@ -112,3 +111,11 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel):
   # The data points used to plot the flakiness graph build over build.
   data_points = ndb.LocalStructuredProperty(
       DataPoint, repeated=True, compressed=True)
+
+  # Whether the analysis was triggered by a manual request through check flake,
+  # Findit's automatic analysis upon detection, or Findit API.
+  triggering_source = ndb.IntegerProperty(default=None, indexed=True)
+
+  # Who triggered the analysis. Used for differentiating between manual and
+  # automatic runs, and determining the most active users to gather feedback.
+  triggering_user_email = ndb.StringProperty(default=None, indexed=False)

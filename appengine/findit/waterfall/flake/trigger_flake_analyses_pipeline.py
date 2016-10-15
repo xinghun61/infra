@@ -4,13 +4,13 @@
 
 import logging
 
-from common import constants
 from common import time_util
 from common.pipeline_wrapper import BasePipeline
 from model.flake. flake_analysis_request import FlakeAnalysisRequest
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall.flake import flake_analysis_service
+from waterfall.flake import triggering_sources
 
 
 class TriggerFlakeAnalysesPipeline(BasePipeline):
@@ -55,7 +55,8 @@ class TriggerFlakeAnalysesPipeline(BasePipeline):
           master_name, builder_name, build_number, step,
           time_util.GetUTCNow())
       scheduled = flake_analysis_service.ScheduleAnalysisForFlake(
-          request, 'findit-for-me@appspot.gserviceaccount.com', False)
+          request, 'findit-for-me@appspot.gserviceaccount.com', False,
+          triggering_sources.FINDIT_PIPELINE)
 
       if scheduled:  # pragma: no branch
         logging.info('%s/%s/%s has %s flaky tests.',
