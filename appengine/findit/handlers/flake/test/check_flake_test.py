@@ -3,10 +3,13 @@
 # found in the LICENSE file.
 
 import datetime
+import mock
 import re
 
 import webapp2
 import webtest
+
+from google.appengine.api import users
 
 from handlers.flake import check_flake
 from model.flake.master_flake_analysis import DataPoint
@@ -104,8 +107,50 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'iterations_to_rerun': 100,
         'pending_time': '00:00:05',
         'duration': '00:59:55',
-        'suspected_flake_build_number': 100,
+        'suspected_flake': {
+            'build_number': 100,
+            'triage_result': 0
+        },
+        'version_number': 1,
+        'show_debug_info': False
     }
 
     self.assertEquals(200, response.status_int)
     self.assertEqual(expected_check_flake_result, response.json_body)
+
+  @mock.patch.object(users, 'is_current_user_admin', return_value=True)
+  def testGetTriageHistory(self, _):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = '123'
+    step_name = 's'
+    test_name = 't'
+    suspected_flake_build_number = 123
+    triage_result = 2
+    user_name = 'test'
+
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number, step_name, test_name)
+    analysis.status = analysis_status.COMPLETED
+    analysis.suspected_flake_build_number = 100
+    analysis.Save()
+    analysis.UpdateTriageResult(
+        triage_result, {'build_number': suspected_flake_build_number}, 'test')
+
+    response = self.test_app.get('/waterfall/check-flake', params={
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': step_name,
+        'test_name': test_name,
+        'format': 'json'})
+
+    # Because TriagedResult uses auto_now=True, a direct dict comparison will
+    # always fail. Instead only compare the relevant fields for trige_history.
+    triage_history = response.json_body.get('triage_history')
+    self.assertEqual(len(triage_history), 1)
+    self.assertEqual(triage_history[0].get('triage_result'), 'Correct')
+    self.assertEqual(triage_history[0].get('user_name'), user_name)
+    self.assertEqual(
+        triage_history[0].get('suspect_info', {}).get('build_number'),
+        suspected_flake_build_number)

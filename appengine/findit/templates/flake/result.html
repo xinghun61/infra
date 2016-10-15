@@ -27,6 +27,19 @@
       font-size: 16px;
       line-height: 1.2em;
     }
+    .triage-table, .triage-header, .triage-cell {
+      border: 1px solid;
+      border-collapse: collapse;
+    }
+    .triage-header, .triage-cell {
+      padding: 5px;
+    }
+    .triage-header {
+      text-align: center;
+    }
+    .triage-cell {
+      text-align: left;
+    }
   </style>
   <link rel="stylesheet" type="text/css" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
@@ -38,7 +51,7 @@
     var findit = {};
     findit.masterName = "{{ master_name }}";
     findit.builderName = "{{ builder_name }}";
-    findit.regressedBuildNumber = {{ suspected_flake_build_number or -1 }};
+    findit.regressedBuildNumber = {{ suspected_flake.build_number or -1 }};
     findit.passRates = {{ pass_rates | tojson | safe }};
 
     function DrawFlakeTrend() {
@@ -161,10 +174,23 @@
           plot.highlight(run_data_sery_index, index);
       });
     }
+
+    function triageSuspectedFlake(e) {
+      $.getJSON('/waterfall/triage-flake-analysis?flake_info=' + e.name + '&triage_result=' + e.value, function(data) {
+        if (! data['success']) {
+          alert('Failed to update datastore. Please refresh and try again.');
+        } else {
+          $('#flake_result_triaged').html('Result has been recorded. Thank you.')
+        }
+      }).error(function(xhr) {
+        // Replace the whole page with errors from server side.
+        document.body.outerHTML = xhr.responseText;
+      });
+    }
+
     $(document).ready(DrawFlakeTrend);
   </script>
 </head>
-
 <body>
   <div>
     <b>Flaky Test:</b><br>
@@ -206,5 +232,61 @@
     {% endif %}
     Number of Swarm tasks: {{ task_number }}
   </div>
+  <br>
+  <div id="triage_flake">
+    {% if suspected_flake %}
+      <b>Feedback on Flake Analysis result:</b>
+      <table class="triage-table">
+        <tr>
+          <th class="triage-header">Suspected Flake Build Number</th>
+          <th class="triage-header">Feedback</th>
+        </tr>
+        <tr>
+          <td class="triage-cell"><a href="https://build.chromium.org/p/{{ master_name }}/builders/{{ builder_name }}/builds/{{ suspected_flake.build_number }}" target="_blank">{{ suspected_flake.build_number }}</a></a></td>
+          <td class="triage-cell">
+            {% set flake_info = master_name + '/' + builder_name + '/' + build_number | string + '/' + step_name + '/' + test_name + '/' + version_number | string + '/' + suspected_flake.build_number | string %}
+              {% if suspected_flake.triage_result == 1 %}
+                <input type="radio" name="{{ flake_info }}" value="2" onchange="triageSuspectedFlake(this)">Correct &nbsp;&nbsp;
+                <input type="radio" name="{{ flake_info }}" value="1" checked="checked"onchange= "triageSuspectedFlake(this)">Incorrect
+              {% elif suspected_flake.triage_result == 2 %}
+                <input type="radio" name="{{ flake_info }}" value="2" checked="checked" onchange="triageSuspectedFlake(this)">Correct &nbsp;&nbsp;
+                <input type="radio" name="{{ flake_info }}" value="1" onchange= "triageSuspectedFlake(this)">Incorrect
+              {% else %}
+                <input type="radio" name="{{ flake_info }}" value="2" onchange="triageSuspectedFlake(this)">Correct &nbsp;&nbsp;
+                <input type="radio" name="{{ flake_info }}" value="1" onchange= "triageSuspectedFlake(this)">Incorrect
+              {% endif %}
+          </td>
+        </tr>
+      </table>
+    {% endif %}
+    <div id="flake_result_triaged"></div>
+  </div>
+
+  {% if show_debug_info and triage_history %}
+    <br>
+    <b>Triage history:</b>
+    <div>
+      <table class="triage-table">
+        <tr>
+          <th class="triage-header">When</th>
+          <th class="triage-header">Who</th>
+          <th class="triage-header">Suspected Build Number</th>
+          <th class="triage-header">Result</th>
+          <th class="triage-header">Analysis Version Number</th>
+        </tr>
+        <tbody>
+          {% for triage_record in triage_history %}
+            <tr>
+              <td class="triage-cell">{{ triage_record.triaged_time }}</td>
+              <td class="triage-cell">{{ triage_record.user_name }}</td>
+              <td class="triage-cell"><a href="https://build.chromium.org/p/{{ master_name }}/builders/{{ builder_name }}/builds/{{ triage_record.suspect_info.build_number }}" target="_blank">{{ triage_record.suspect_info.build_number }}</a></a></td>
+              <td class="triage-cell">{{ triage_record.triage_result }}</td>
+              <td class="triage-cell">{{ triage_record.version_number }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
 </body>
 </html>

@@ -2,14 +2,29 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from google.appengine.api import users
+
 from common import auth_util
 from common import constants
 from common import time_util
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
 from model import analysis_status
+from model import triage_status
 from waterfall.flake import initialize_flake_pipeline
 from waterfall.flake import triggering_sources
+
+
+def _GetSuspectedFlakeAnalysisAndTriageResult(analysis):
+  if analysis.suspected_flake_build_number is not None:
+    return {
+        'build_number': analysis.suspected_flake_build_number,
+        'triage_result': (
+            analysis.triage_history[-1].triage_result if analysis.triage_history
+            else triage_status.UNTRIAGED)
+    }
+
+  return {}
 
 
 class CheckFlake(BaseHandler):
@@ -51,22 +66,29 @@ class CheckFlake(BaseHandler):
           'return_code': 401,
       }
 
+    suspected_flake = _GetSuspectedFlakeAnalysisAndTriageResult(analysis)
+
     data = {
         'pass_rates': [],
         'analysis_status': analysis.status_description,
-        'suspected_flake_build_number': (
-            analysis.suspected_flake_build_number),
         'master_name': master_name,
         'builder_name': builder_name,
         'build_number': build_number,
         'step_name': step_name,
         'test_name': test_name,
+        'version_number': analysis.version_number,
+        'suspected_flake': suspected_flake,
         'request_time': time_util.FormatDatetime(
             analysis.request_time),
         'task_number': len(analysis.data_points),
         'error': analysis.error_message,
         'iterations_to_rerun': analysis.iterations_to_rerun,
+        'show_debug_info': self._ShowDebugInfo()
     }
+
+    if (users.is_current_user_admin() and analysis.completed and
+        analysis.triage_history):
+      data['triage_history'] = analysis.GetTriageHistory()
 
     data['pending_time'] = time_util.FormatDuration(
         analysis.request_time,

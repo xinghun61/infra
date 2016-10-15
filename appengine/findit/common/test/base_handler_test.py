@@ -2,11 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
 import re
 import urllib
 
 import webapp2
 import webtest
+
+from google.appengine.api import users
 
 from testing_utils import testing
 
@@ -77,6 +80,22 @@ class PermissionTest(testing.AppengineTestCase):
     # Corp users and admin has access.
     self._VerifyAuthorizedAccess('test@google.com')
     self._VerifyAuthorizedAccess('test@chromium.org', True)
+
+  @mock.patch.object(users, 'is_current_user_admin', return_value=True)
+  def testShowDebugInfoForAdmin(self, _):
+    self.assertTrue(BaseHandler()._ShowDebugInfo())
+
+  @mock.patch.object(users, 'is_current_user_admin', return_value=False)
+  def testShowDebugInfoForNonAdmin(self, _):
+    handler = BaseHandler()
+    handler.request = {}
+    self.assertFalse(handler._ShowDebugInfo())
+
+  @mock.patch.object(users, 'is_current_user_admin', return_value=False)
+  def testShowDebugInfoWithDebugFlag(self, _):
+    handler = BaseHandler()
+    handler.request = {'debug': '1'}
+    self.assertTrue(handler._ShowDebugInfo())
 
   def testAccessByTaskQueue(self):
     for permission in (Permission.ANYONE, Permission.CORP_USER,
@@ -224,6 +243,7 @@ class ResultFormatTest(testing.AppengineTestCase):
 
   def testToJson(self):
     self.assertEqual('{}', base_handler.ToJson({}))
+
 
 class InternalExceptionHandler(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE

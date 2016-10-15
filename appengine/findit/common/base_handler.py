@@ -58,7 +58,13 @@ class BaseHandler(webapp2.RequestHandler):
     """Returns True if the user logged in with corp account or as admin."""
     user_email = auth_util.GetUserEmail()
     return ((user_email and user_email.endswith('@google.com')) or
-        auth_util.IsCurrentUserAdmin())
+            auth_util.IsCurrentUserAdmin())
+
+  def _ShowDebugInfo(self):
+    # Show debug info only if the app is run locally during development, if the
+    # currently logged-in user is an admin, or if it is explicitly requested
+    # with parameter 'debug=1'.
+    return users.is_current_user_admin() or self.request.get('debug') == '1'
 
   @staticmethod
   def CreateError(error_message, return_code=500):

@@ -10,6 +10,7 @@ from model.base_analysis import BaseAnalysis
 from model.base_build_model import BaseBuildModel
 from model.flake.flake_swarming_task import FlakeSwarmingTaskData
 from model.versioned_model import VersionedModel
+from model.base_triaged_model import TriagedModel
 
 
 class DataPoint(ndb.Model):
@@ -17,7 +18,8 @@ class DataPoint(ndb.Model):
   pass_rate = ndb.FloatProperty(indexed=False)
 
 
-class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel):
+class MasterFlakeAnalysis(
+    BaseAnalysis, BaseBuildModel, VersionedModel, TriagedModel):
   """Represents an analysis of a flaky test on a Waterfall test cycle."""
 
   @ndb.ComputedProperty

@@ -252,13 +252,13 @@
                 {% set cl_info = suspected_cl.repo_name + '/' + suspected_cl.revision %}
                   {% if suspected_cl.status == 0 %}
                     <input type="radio" name="{{ cl_info }}" value="0" checked="checked" onchange="triageSuspectedCL(this)">Correct &nbsp;&nbsp;
-                    <input type="radio" name="{{ cl_info }}" value="1" onchange="triageSuspectedCL(this)">Inorrect
+                    <input type="radio" name="{{ cl_info }}" value="1" onchange="triageSuspectedCL(this)">Incorrect
                   {% elif suspected_cl.status == 1 %}
                     <input type="radio" name="{{ cl_info }}" value="0" onchange="triageSuspectedCL(this)">Correct &nbsp;&nbsp;
-                    <input type="radio" name="{{ cl_info }}" value="1" checked="checked" onchange="triageSuspectedCL(this)">Inorrect
+                    <input type="radio" name="{{ cl_info }}" value="1" checked="checked" onchange="triageSuspectedCL(this)">Incorrect
                   {% else %}
                     <input type="radio" name="{{ cl_info }}" value="0" onchange="triageSuspectedCL(this)">Correct &nbsp;&nbsp;
-                    <input type="radio" name="{{ cl_info }}" value="1" onchange="triageSuspectedCL(this)">Inorrect
+                    <input type="radio" name="{{ cl_info }}" value="1" onchange="triageSuspectedCL(this)">Incorrect
                   {% endif %}
               </td>
             </tr>

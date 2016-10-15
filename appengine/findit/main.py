@@ -32,6 +32,8 @@ from handlers.crash import fracas_result_feedback
 from handlers.crash import triage_fracas_analysis
 from handlers.flake import check_flake
 from handlers.flake import list_flakes
+from handlers.flake import triage_flake_analysis
+
 
 # Default module.
 default_web_pages_handler_mappings = [
@@ -77,6 +79,8 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/waterfall/monitor-alerts', monitor_alerts.MonitorAlerts),
     ('/waterfall/swarming-task', swarming_task.SwarmingTask),
     ('/waterfall/triage-analysis', triage_analysis.TriageAnalysis),
+    ('/waterfall/triage-flake-analysis',
+     triage_flake_analysis.TriageFlakeAnalysis),
     ('/waterfall/triage-suspected-cl', triage_suspected_cl.TriageSuspectedCl),
     ('/waterfall/try-job', try_job.TryJob),
     ('/waterfall/try-job-dashboard', try_job_dashboard.TryJobDashboard),

@@ -397,12 +397,6 @@ def _GetAllSuspectedCLsAndCheckStatus(
 class BuildFailure(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
-  def _ShowDebugInfo(self):
-    # Show debug info only if the app is run locally during development, if the
-    # currently logged-in user is an admin, or if it is explicitly requested
-    # with parameter 'debug=1'.
-    return users.is_current_user_admin() or self.request.get('debug') == '1'
-
   def _ShowTriageHelpButton(self):
     return users.is_current_user_admin()
 
