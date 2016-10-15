@@ -346,6 +346,19 @@ class HelpersTest(unittest.TestCase):
        [TEST_ID_MAP['c@example.com'], gen_uid], parsed_users.cc_ids)
     self.assertEquals([], parsed_users.cc_ids_remove)
 
+    post_data = fake.PostData({
+        'cc': ['C@example.com, b@exAmple.cOm'],
+        })
+    parsed_users = tracker_helpers._ParseIssueRequestUsers(
+        'fake connection', post_data, self.services)
+    self.assertItemsEqual(
+        ['c@example.com', 'b@example.com'], parsed_users.cc_usernames)
+    self.assertEquals([], parsed_users.cc_usernames_remove)
+    self.assertItemsEqual(
+       [TEST_ID_MAP['c@example.com'], TEST_ID_MAP['b@example.com']],
+       parsed_users.cc_ids)
+    self.assertEquals([], parsed_users.cc_ids_remove)
+
   def testParseBlockers_BlockedOnNothing(self):
     """Was blocked on nothing, still nothing."""
     post_data = {tracker_helpers.BLOCKED_ON: ''}

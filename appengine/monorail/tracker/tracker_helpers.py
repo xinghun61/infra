@@ -219,8 +219,8 @@ def _ParseIssueRequestUsers(cnxn, post_data, services):
     or email address is invalid.
   """
   # Get the user-entered values from post_data.
-  cc_username_str = post_data.get('cc', '')
-  owner_email = post_data.get('owner', '').strip()
+  cc_username_str = post_data.get('cc', '').lower()
+  owner_email = post_data.get('owner', '').strip().lower()
 
   cc_usernames, cc_usernames_remove = _ClassifyPlusMinusItems(
       re.split('[,;\s]+', cc_username_str))
