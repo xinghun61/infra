@@ -16,10 +16,10 @@ from handlers import failure_log
 from handlers import help_triage
 from handlers import list_analyses
 from handlers import monitor_alerts
+from handlers import process_failure_analysis_requests
 from handlers import swarming_task
 from handlers import triage_analysis
 from handlers import triage_suspected_cl
-from handlers import trigger_analyses
 from handlers import try_job
 from handlers import try_job_dashboard
 from handlers import try_job_result
@@ -89,7 +89,8 @@ waterfall_frontend_web_application = webapp2.WSGIApplication(
 
 # "waterfall-backend" module.
 waterfall_backend_web_pages_handler_mappings = [
-    ('/waterfall/trigger-analyses', trigger_analyses.TriggerAnalyses),
+    ('/waterfall/process-failure-analysis-requests',
+     process_failure_analysis_requests.ProcessFailureAnalysisRequests),
 ]
 waterfall_backend_web_application = webapp2.WSGIApplication(
     waterfall_backend_web_pages_handler_mappings, debug=False)

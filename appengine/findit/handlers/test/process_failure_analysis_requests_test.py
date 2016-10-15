@@ -12,16 +12,17 @@ import webtest
 from testing_utils import testing
 
 from model.wf_build import WfBuild
-from handlers import trigger_analyses
+from handlers import process_failure_analysis_requests
 from waterfall import buildbot
 from waterfall import build_util
 from waterfall import build_failure_analysis_pipelines
 from waterfall.build_info import BuildInfo
 
 
-class TriggerAnalyseseTest(testing.AppengineTestCase):
+class ProcessFailureAnalysisRequestsTest(testing.AppengineTestCase):
   app_module = webapp2.WSGIApplication([
-      ('/trigger-analyses', trigger_analyses.TriggerAnalyses),
+      ('/process-failure-analysis-requests',
+       process_failure_analysis_requests.ProcessFailureAnalysisRequests),
   ], debug=True)
 
   def _MockDownloadBuildData(self, build):
@@ -55,7 +56,7 @@ class TriggerAnalyseseTest(testing.AppengineTestCase):
         },
     ]
 
-    trigger_analyses._TriggerNewAnalysesOnDemand(builds)
+    process_failure_analysis_requests._TriggerNewAnalysesOnDemand(builds)
     self.assertEqual(0, len(requests))
 
   def testWhenBuildDataIsNotAvailable(self):
@@ -76,7 +77,7 @@ class TriggerAnalyseseTest(testing.AppengineTestCase):
         },
     ]
 
-    trigger_analyses._TriggerNewAnalysesOnDemand(builds)
+    process_failure_analysis_requests._TriggerNewAnalysesOnDemand(builds)
     self.assertEqual(0, len(requests))
 
   def testWhenBuildDataIsDownloadedSuccessfully(self):
@@ -99,7 +100,7 @@ class TriggerAnalyseseTest(testing.AppengineTestCase):
             'failed_steps': [],
         },
     ]
-    trigger_analyses._TriggerNewAnalysesOnDemand(builds)
+    process_failure_analysis_requests._TriggerNewAnalysesOnDemand(builds)
     self.assertEqual(1, len(requests))
     self.assertFalse(requests[0][1]['build_completed'])
 
@@ -110,7 +111,7 @@ class TriggerAnalyseseTest(testing.AppengineTestCase):
                    'Error: Either not login or no permission.*',
                    re.MULTILINE | re.DOTALL),
         self.test_app.post,
-        '/trigger-analyses',
+        '/process-failure-analysis-requests',
         params=json.dumps({'builds': []}))
 
   def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(self):
@@ -137,7 +138,7 @@ class TriggerAnalyseseTest(testing.AppengineTestCase):
     ]
 
     response = self.test_app.post(
-        '/trigger-analyses',
+        '/process-failure-analysis-requests',
         params=json.dumps({'builds': builds}))
     self.assertEquals(200, response.status_int)
     self.assertEqual(1, len(requests))

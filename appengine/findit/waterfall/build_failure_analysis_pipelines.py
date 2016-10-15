@@ -42,6 +42,7 @@ def NeedANewAnalysis(
     if not analysis.completed:
       # TODO: start a new analysis if the last one has started running but it
       # has no update for a considerable amount of time, eg. 10 minutes.
+      logging.info('Existing analysis is not completed yet. No new analysis.')
       return False
 
     analysis.Reset()
@@ -69,6 +70,7 @@ def NeedANewAnalysis(
   # TODO: support following cases
   # * Automatically retry if last analysis failed with errors.
   # * Analysis is not complete and no update in the last 5 minutes.
+  logging.info('Not match any cases. No new analysis.')
   return False
 
 
@@ -118,5 +120,8 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
     logging.info('An analysis was scheduled for build %s, %s, %s: %s',
                  master_name, builder_name, build_number,
                  pipeline_job.pipeline_status_path())
+  else:
+    logging.info('An analysis is not needed for build %s, %s, %s',
+                 master_name, builder_name, build_number)
 
   return WfAnalysis.Get(master_name, builder_name, build_number)

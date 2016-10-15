@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import json
+import logging
 
 from common import constants
 from common.base_handler import BaseHandler
@@ -20,11 +21,13 @@ def _TriggerNewAnalysesOnDemand(builds):
     build_number = build['build_number']
     failed_steps = build.get('failed_steps')
 
-    # TODO(stgao): make builder_alerts send information of whether a build
+    # TODO(stgao): make alerts-dispatcher send information of whether a build
     # is completed.
     build = build_util.DownloadBuildData(
         master_name, builder_name, build_number)
     if not build or not build.data:
+      logging.error('Failed to retrieve build data for %s/%s/%s, steps=%s',
+                   master_name, builder_name, build_number, repr(failed_steps))
       continue  # Skip the build, wait for next request to recheck.
 
     build_info = buildbot.ExtractBuildInfo(
@@ -36,11 +39,11 @@ def _TriggerNewAnalysesOnDemand(builds):
         force=False, queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
 
-class TriggerAnalyses(BaseHandler):
+class ProcessFailureAnalysisRequests(BaseHandler):
   """Triggers new analyses on demand.
 
   This handler checks the build failures in the request, and triggers new
-  analyes for a build in two situations:
+  analyses for a build in two situations:
   1. A new step failed.
   2. The build became completed after last analysis. This will potentially
      trigger a try-job run.

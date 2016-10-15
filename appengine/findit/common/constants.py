@@ -20,7 +20,7 @@ CRASH_BACKEND = {
 DEFAULT_QUEUE = 'default'
 WATERFALL_ANALYSIS_QUEUE = 'waterfall-analysis-queue'
 WATERFALL_TRY_JOB_QUEUE = 'waterfall-try-job-queue'
-WATERFALL_SERIAL_QUEUE = 'waterfall-serial-queue'
+WATERFALL_FAILURE_ANALYSIS_REQUEST_QUEUE = 'waterfall-failure-analysis-request'
 CRASH_ANALYSIS_QUEUE = {
     'fracas': 'crash-analysis-fracas-queue',
     'cracas': 'crash-analysis-cracas-queue',
@@ -29,7 +29,7 @@ CRASH_ANALYSIS_QUEUE = {
 
 
 # Waterfall-related.
-WATERFALL_TRIGGER_ANALYSIS_URL = '/waterfall/trigger-analyses'
+WATERFALL_TRIGGER_ANALYSIS_URL = '/waterfall/process-failure-analysis-requests'
 WATERFALL_ALERTS_URL = 'https://sheriff-o-matic.appspot.com/alerts'
 COMPILE_STEP_NAME = 'compile'
 

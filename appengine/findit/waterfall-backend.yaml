@@ -15,7 +15,7 @@ handlers:
   upload: robots.txt
 
 # Handler for the request process queue.
-- url: /waterfall/trigger-analyses
+- url: /waterfall/process-failure-analysis-requests
   script: main.waterfall_backend_web_application
   secure: always
 

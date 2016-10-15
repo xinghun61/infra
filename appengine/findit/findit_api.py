@@ -117,8 +117,9 @@ def _TriggerNewAnalysesOnDemand(builds):
   target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
   payload = json.dumps({'builds': builds})
   taskqueue.add(
-      url=constants.WATERFALL_TRIGGER_ANALYSIS_URL, payload=payload,
-      target=target, queue_name=constants.WATERFALL_SERIAL_QUEUE)
+      url=constants.WATERFALL_TRIGGER_ANALYSIS_URL,
+      payload=payload, target=target,
+      queue_name=constants.WATERFALL_FAILURE_ANALYSIS_REQUEST_QUEUE)
 
 
 # Create a Cloud Endpoints API.
@@ -248,6 +249,8 @@ class FindItApi(remote.Service):
     for build in request.builds:
       master_name = buildbot.GetMasterNameFromUrl(build.master_url)
       if not (master_name and waterfall_config.MasterIsSupported(master_name)):
+        logging.info('%s/%s/%s is not supported',
+                     build.master_url, build.builder_name, build.build_number)
         continue
 
       supported_builds.append({
@@ -279,7 +282,8 @@ class FindItApi(remote.Service):
     except Exception:  # pragma: no cover.
       # If we fail to post a task to the task queue, we ignore and wait for next
       # request.
-      logging.exception('Failed to trigger new analyses on demand.')
+      logging.exception('Failed to add analysis request to task queue: %s',
+                        repr(supported_builds))
 
     return _BuildFailureAnalysisResultCollection(results=results)
 
