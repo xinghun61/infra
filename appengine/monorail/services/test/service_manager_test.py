@@ -35,3 +35,7 @@ class ServiceManagerTest(unittest.TestCase):
     self.assertIsInstance(svcs.config, config_svc.ConfigService)
     self.assertIsInstance(svcs.issue, issue_svc.IssueService)
     self.assertIsInstance(svcs.features, features_svc.FeaturesService)
+
+    # Calling it again should give the same object
+    svcs2 = service_manager.set_up_services()
+    self.assertTrue(svcs is svcs2)

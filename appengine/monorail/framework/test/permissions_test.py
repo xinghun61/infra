@@ -572,11 +572,17 @@ class PermissionsTest(unittest.TestCase):
     self.assertTrue(permissions.IsBanned(user, user_view))
 
   def testIsBanned_BadDomainUser(self):
-    settings.banned_user_domains = ['spammer.com', 'phisher.com']
     user = user_pb2.User()
+    self.assertFalse(permissions.IsBanned(user, None))
+
     user_view = framework_views.StuffUserView(None, None, True)
     user_view.domain = 'spammer.com'
+    self.assertFalse(permissions.IsBanned(user, user_view))
+
+    orig_banned_user_domains = settings.banned_user_domains
+    settings.banned_user_domains = ['spammer.com', 'phisher.com']
     self.assertTrue(permissions.IsBanned(user, user_view))
+    settings.banned_user_domains = orig_banned_user_domains
 
   def testGetCustomPermissions(self):
     project = project_pb2.Project()
@@ -589,6 +595,12 @@ class PermissionsTest(unittest.TestCase):
 
     project.extra_perms.append(project_pb2.Project.ExtraPerms(
         perms=['Silver', 'Gold', 'Bronze']))
+    self.assertListEqual(['Bronze', 'Core', 'Elite', 'Gold', 'Silver'],
+                         permissions.GetCustomPermissions(project))
+
+    # View is not returned because it is a starndard permission.
+    project.extra_perms.append(project_pb2.Project.ExtraPerms(
+        perms=['Bronze', permissions.VIEW]))
     self.assertListEqual(['Bronze', 'Core', 'Elite', 'Gold', 'Silver'],
                          permissions.GetCustomPermissions(project))
 
@@ -769,6 +781,21 @@ class RestrictionLabelsTest(unittest.TestCase):
   ORIG_SUMMARY = 'this is the orginal summary'
   ORIG_LABELS = ['one', 'two']
 
+  def testIsRestrictLabel(self):
+    self.assertFalse(permissions.IsRestrictLabel('Usability'))
+    self.assertTrue(permissions.IsRestrictLabel('Restrict-View-CoreTeam'))
+    # Doing it again will test the cached results.
+    self.assertFalse(permissions.IsRestrictLabel('Usability'))
+    self.assertTrue(permissions.IsRestrictLabel('Restrict-View-CoreTeam'))
+
+    self.assertFalse(permissions.IsRestrictLabel('Usability', perm='View'))
+    self.assertTrue(permissions.IsRestrictLabel(
+        'Restrict-View-CoreTeam', perm='View'))
+
+    # This one is a restriction label, but not the kind that we want.
+    self.assertFalse(permissions.IsRestrictLabel(
+        'Restrict-View-CoreTeam', perm='Delete'))
+
   def testGetRestrictions_NoIssue(self):
     self.assertEqual([], permissions.GetRestrictions(None))
 
@@ -947,6 +974,11 @@ class IssuePermissionsTest(unittest.TestCase):
         self.REGULAR_ISSUE))
 
   def testCanEditIssue(self):
+    # Anon users cannot edit issues.
+    self.assertFalse(permissions.CanEditIssue(
+        {}, permissions.READ_ONLY_PERMISSIONSET,
+        self.PROJECT, self.REGULAR_ISSUE))
+
     # Non-members and contributors cannot edit issues,
     # even if they reported them.
     self.assertFalse(permissions.CanEditIssue(
@@ -978,6 +1010,11 @@ class IssuePermissionsTest(unittest.TestCase):
         self.PROJECT, self.REGULAR_ISSUE))
 
   def testCanEditIssue_Restricted(self):
+    # Anon users cannot edit restricted issues.
+    self.assertFalse(permissions.CanEditIssue(
+        {}, permissions.COMMITTER_ACTIVE_PERMISSIONSET,
+        self.PROJECT, self.RESTRICTED_ISSUE3))
+
     # Project committers cannot edit issues with a restriction to a custom
     # permission that they don't have.
     self.assertFalse(permissions.CanEditIssue(

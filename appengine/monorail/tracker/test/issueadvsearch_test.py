@@ -47,6 +47,10 @@ class IssueAdvSearchTest(unittest.TestCase):
     url = self.servlet.ProcessFormData(mr, post_data)
     self.assertTrue('starcount%3A42' in url)
 
+    post_data['starcount'] = -1
+    url = self.servlet.ProcessFormData(mr, post_data)
+    self.assertTrue('starcount' not in url)
+
   def _testAND(self, operator, field, post_data, query):
     self.servlet._AccumulateANDTerm(operator, field, post_data, query)
     return query

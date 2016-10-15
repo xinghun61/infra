@@ -54,6 +54,18 @@ OPS = {
     '>=': GE,
 }
 
+# When the query has a leading minus, switch the operator for its opposite.
+NEGATED_OPS = {
+    EQ: NE,
+    NE: EQ,
+    LT: GE,
+    GT: LE,
+    LE: GT,
+    GE: LT,
+    TEXT_HAS: NOT_TEXT_HAS,
+    # IS_DEFINED is handled separately.
+    }
+
 # This is a partial regular expression that matches all of our comparison
 # operators, such as =, 1=, >, and <.  Longer ones listed first so that the
 # shorter ones don't cause premature matches.
@@ -213,7 +225,7 @@ def _ParseConjunction(subquery, scope, fields, warnings, now=None):
   """Parse part of a user query into a Conjunction PB."""
   logging.info('Parsing sub query: %r in scope %r', subquery, scope)
   scoped_query = ('%s %s' % (scope, subquery)).lower()
-  cond_strs = _ExtractConds(scoped_query)
+  cond_strs = _ExtractConds(scoped_query, warnings)
   conds = [_ParseCond(cond_str, fields, warnings, now=now)
            for cond_str in cond_strs]
   conds = [cond for cond in conds if cond]
@@ -286,10 +298,7 @@ def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
   negate = False
   if prefix.startswith('-'):
     negate = True
-    if op == EQ:
-      op = NE
-    elif op == TEXT_HAS:
-      op = NOT_TEXT_HAS
+    op = NEGATED_OPS.get(op, op)
     prefix = prefix[1:]
 
   if prefix == 'is' and unquoted_value in ['open', 'blocked', 'spam']:
@@ -329,11 +338,12 @@ def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
   return ast_pb2.MakeCond(op, fields['label'], quick_or_labels, [])
 
 
-def _ExtractConds(query):
+def _ExtractConds(query, warnings):
   """Parse a query string into a list of individual condition strings.
 
   Args:
     query: UTF-8 encoded search query string.
+    warnings: list to accumulate warning messages.
 
   Returns:
     A list of query condition strings.
@@ -366,6 +376,9 @@ def _ExtractConds(query):
     # Case 3: Simple words.
     elif word:
       terms.append(word)
+
+    else:  # pragma: no coverage
+      warnings.append('Unparsable search term')
 
   return terms
 

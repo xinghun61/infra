@@ -190,6 +190,11 @@ class QueryParsingUnitTest(unittest.TestCase):
                  ['"base::tuple"'], []),
         cond)
 
+    # stuff we just ignore
+    ast = query2ast.ParseUserQuery(
+        ':: - -- .', '', BUILTIN_ISSUE_FIELDS, self.default_config)
+    self.assertEqual([], ast.conjunctions[0].conds)
+
   def testParseUserQuery_IsOperator(self):
     """Test is:open, is:spam, and is:blocked."""
     for keyword in ['open', 'spam', 'blocked']:
@@ -618,6 +623,17 @@ class QueryParsingUnitTest(unittest.TestCase):
     ts3 = int(time.mktime(datetime.datetime(2007, 2, 1).timetuple()))
     self.assertEqual(
         MakeCond(GT, [BUILTIN_ISSUE_FIELDS['closed']], [], [ts3]), cond3)
+
+  def testCalculatePastDate(self):
+    ts1 = query2ast._CalculatePastDate(0, now=NOW)
+    self.assertEqual(NOW, ts1)
+
+    ts2 = query2ast._CalculatePastDate(13, now=NOW)
+    self.assertEqual(ts2, NOW - 13 * 24 * 60 * 60)
+
+    # Try it once with time.time() instead of a known timestamp.
+    ts_system_clock = query2ast._CalculatePastDate(13)
+    self.assertTrue(ts_system_clock < int(time.time()))
 
   def testParseUserQuery_BadDates(self):
     bad_dates = ['today-13h', 'yesterday', '2/2', 'm/y/d',

@@ -21,6 +21,10 @@ class SpamHelpersTest(unittest.TestCase):
         spam_helpers._EmailIsSketchy('jan1990@foo.com', ('@example.com')))
 
   def testHashFeatures(self):
+    hashes = spam_helpers._HashFeatures(tuple(), 5)
+    self.assertEqual(5, len(hashes))
+    self.assertEquals([0, 0, 0, 0, 0], hashes)
+
     hashes = spam_helpers._HashFeatures(('', ''), 5)
     self.assertEqual(5, len(hashes))
     self.assertEquals([1.0, 0, 0, 0, 0], hashes)
