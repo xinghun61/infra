@@ -30,6 +30,7 @@ from services import tracker_fulltext
 
 NATIVE_SEARCHABLE_FIELDS = {
     'id': 'local_id',
+    'is_spam': 'is_spam',
     'stars': 'star_count',
     'attachments': 'attachment_count',
     'opened': 'opened',
