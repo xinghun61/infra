@@ -20,19 +20,6 @@ def get_reviewers(commit_infos):
   return reviewers
 
 
-def get_bugs(commit_infos):
-  """Return a set of bug IDs from 'recipes.py autoroll' commit infos.
-  """
-  bugs = set()
-  for commits in commit_infos.values():
-    for commit in commits:
-      for m in re.findall('^BUG=(.*)', commit['message'], re.MULTILINE):
-        for s in m.split(','):
-          if s:
-            bugs.add(s.strip())
-  return bugs
-
-
 def get_blame(commit_infos):
   blame = []
   for project, commits in commit_infos.iteritems():
@@ -114,7 +101,6 @@ def get_commit_message(roll_result, tbrs=()):
     message += 'R=%s\n' % ','.join(get_reviewers(commit_infos))
   if tbrs:
     message += 'TBR=%s\n' % ','.join(tbrs)
-  message += 'BUG=%s\n' % ','.join(get_bugs(commit_infos))
   message += COMMIT_MESSAGE_FOOTER
   return message
 
