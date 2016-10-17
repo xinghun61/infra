@@ -7,7 +7,6 @@
   "",
   "False Rejections:",
   "   0 attempts (0.0% of 0 attempts in 0 committed patchsets) were false rejections",
-  "   0 attempts (0.0% of 0 attempts in 0 committed patchsets) were infra false rejections",
   "",
   "Patches which eventually land percentiles:",
   " 10:  0.0 hrs,  0 attempts,  0 tryjob retries,  0 global retry quota",
