@@ -1006,3 +1006,11 @@ ALTER TABLE Comment
 After making those schema changes, run the commands in
 tools/backfill-commentcontent-id.sql to fill in commentcontent_id
 for existing comments.
+
+================================================================
+2016-10-13: Add new User fields
+
+ALTER TABLE User
+    ADD COLUMN last_visit_timestamp INT,
+    ADD COLUMN email_bounce_timestamp INT,
+    ADD COLUMN vacation_message VARCHAR(80);

@@ -23,6 +23,9 @@ CREATE TABLE User (
   keep_people_perms_open BOOLEAN DEFAULT FALSE,
   preview_on_hover BOOLEAN DEFAULT TRUE,
   ignore_action_limits BOOLEAN DEFAULT FALSE,
+  last_visit_timestamp INT,
+  email_bounce_timestamp INT,
+  vacation_message VARCHAR(80),
 
   PRIMARY KEY (user_id),
   UNIQUE KEY (email)
@@ -124,6 +127,7 @@ CREATE TABLE MemberNotes (
   FOREIGN KEY (project_id) REFERENCES Project(project_id),
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
+
 
 CREATE TABLE AutocompleteExclusion (
   project_id SMALLINT UNSIGNED NOT NULL,

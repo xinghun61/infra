@@ -22,7 +22,7 @@ def SetUpGetUsers(user_service, cnxn):
   user_service.user_tbl.Select(
       cnxn, cols=user_svc.USER_COLS, user_id=[333L]).AndReturn(
           [(333L, 'c@example.com', False, False, False, False, True, 'Spammer',
-            'stay_same_issue', False, False, False, True)])
+            'stay_same_issue', False, False, False, True, 0, 0, None)])
   user_service.actionlimit_tbl.Select(
       cnxn, cols=user_svc.ACTIONLIMIT_COLS, user_id=[333L]).AndReturn([])
   user_service.dismissedcues_tbl.Select(
@@ -52,9 +52,9 @@ class UserTwoLevelCacheTest(unittest.TestCase):
   def testDeserializeUsersByID(self):
     user_rows = [
         (111L, 'a@example.com', False, False, False, False, True, '',
-         'stay_same_issue', False, False, False, True),
+         'stay_same_issue', False, False, False, True, 0, 0, None),
         (222L, 'b@example.com', False, False, False, False, True, '',
-         'next_in_list', False, False, False, True),
+         'next_in_list', False, False, False, True, 0, 0, None),
         ]
     actionlimit_rows = []
     dismissedcues_rows = []
@@ -205,6 +205,9 @@ class UserServiceTest(unittest.TestCase):
         'obscure_email': True,
         'email_compact_subject': False,
         'email_view_widget': True,
+        'last_visit_timestamp': 0,
+        'email_bounce_timestamp': 0,
+        'vacation_message': None,
     }
     self.user_service.user_tbl.Update(
         self.cnxn, delta, user_id=111L, commit=False)

@@ -116,10 +116,14 @@ class User(messages.Message):
   flag_spam_limit = messages.MessageField(ActionLimit, 43)
   api_request_limit = messages.MessageField(ActionLimit, 44)
 
+  last_visit_timestamp = messages.IntegerField(45, default=0)
+  email_bounce_timestamp = messages.IntegerField(46, default=0)
+  vacation_message = messages.StringField(47)
+
 
 def MakeUser(user_id, email=None, obscure_email=False):
   """Create and return a new user record in RAM."""
-  user = User(user_id=user_id, obscure_email=obscure_email)
+  user = User(user_id=user_id, obscure_email=bool(obscure_email))
   if email:
     user.email = email
   user.project_creation_limit = ActionLimit()

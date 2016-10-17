@@ -406,6 +406,7 @@ class Servlet(webapp2.RequestHandler):
       page_data.update(self.GatherPageData(mr))
       page_data.update(mr.form_overrides)
       template_helpers.ExpandLabels(page_data)
+      self._RecordVisitTime(mr)
 
     return page_data
 
@@ -818,6 +819,16 @@ class Servlet(webapp2.RequestHandler):
     """Show the same form again so that the user can correct their input."""
     mr.PrepareForReentry(echo_data)
     self.get()
+
+  def _RecordVisitTime(self, mr, now=None):
+    """Record the signed in user's last visit time, if possible."""
+    now = now or int(time.time())
+    if not settings.read_only and mr.auth.user_pb:
+      user_pb = mr.auth.user_pb
+      if (user_pb.last_visit_timestamp <
+          now - framework_constants.VISIT_RESOLUTION):
+        user_pb.last_visit_timestamp = now
+        self.services.user.UpdateUser(mr.cnxn, user_pb.user_id, user_pb)
 
 
 def _CalcProjectAlert(project):

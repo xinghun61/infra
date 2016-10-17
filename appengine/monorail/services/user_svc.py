@@ -29,7 +29,8 @@ USER_COLS = [
     'user_id', 'email', 'is_site_admin', 'notify_issue_change',
     'notify_starred_issue_change', 'email_compact_subject', 'email_view_widget',
     'banned', 'after_issue_update', 'keep_people_perms_open',
-    'preview_on_hover', 'ignore_action_limits', 'obscure_email']
+    'preview_on_hover', 'ignore_action_limits', 'obscure_email',
+    'last_visit_timestamp', 'email_bounce_timestamp', 'vacation_message']
 ACTIONLIMIT_COLS = [
     'user_id', 'action_kind', 'recent_count', 'reset_timestamp',
     'lifetime_count', 'lifetime_limit', 'period_soft_limit',
@@ -72,15 +73,15 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
        notify_issue_change, notify_starred_issue_change,
        email_compact_subject, email_view_widget, banned,
        after_issue_update, keep_people_perms_open, preview_on_hover,
-       ignore_action_limits, obscure_email) = row
-      user = user_pb2.MakeUser(user_id)
-      user.email = email
+       ignore_action_limits, obscure_email, last_visit_timestamp,
+       email_bounce_timestamp, vacation_message) = row
+      user = user_pb2.MakeUser(
+          user_id, email=email, obscure_email=obscure_email)
       user.is_site_admin = bool(is_site_admin)
       user.notify_issue_change = bool(notify_issue_change)
       user.notify_starred_issue_change = bool(notify_starred_issue_change)
       user.email_compact_subject = bool(email_compact_subject)
       user.email_view_widget = bool(email_view_widget)
-      user.obscure_email = bool(obscure_email)
       if banned:
         user.banned = banned
       if after_issue_update:
@@ -89,6 +90,10 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
       user.keep_people_perms_open = bool(keep_people_perms_open)
       user.preview_on_hover = bool(preview_on_hover)
       user.ignore_action_limits = bool(ignore_action_limits)
+      user.last_visit_timestamp = last_visit_timestamp or 0
+      user.email_bounce_timestamp = email_bounce_timestamp or 0
+      if vacation_message:
+        user.vacation_message = vacation_message
       result_dict[user_id] = user
 
     # Make an ActionLimit for each actionlimit row and attach it to a User PB.
@@ -385,6 +390,9 @@ class UserService(object):
         'preview_on_hover': user.preview_on_hover,
         'ignore_action_limits': user.ignore_action_limits,
         'obscure_email': user.obscure_email,
+        'last_visit_timestamp': user.last_visit_timestamp,
+        'email_bounce_timestamp': user.email_bounce_timestamp,
+        'vacation_message': user.vacation_message,
         }
     # Start sending UPDATE statements, but don't COMMIT until the end.
     self.user_tbl.Update(cnxn, delta, user_id=user_id, commit=False)
@@ -426,7 +434,8 @@ class UserService(object):
       obscure_email=None, after_issue_update=None,
       is_site_admin=None, ignore_action_limits=None,
       is_banned=None, banned_reason=None, action_limit_updates=None,
-      dismissed_cues=None, keep_people_perms_open=None, preview_on_hover=None):
+      dismissed_cues=None, keep_people_perms_open=None, preview_on_hover=None,
+      vacation_message=None):
     """Update the preferences of the specified user.
 
     Args:
@@ -472,6 +481,10 @@ class UserService(object):
         user.banned = banned_reason or 'No reason given'
       else:
         user.reset('banned')
+
+    # user availablity
+    if vacation_message is not None:
+      user.vacation_message = vacation_message
 
     # action limits
     if action_limit_updates:

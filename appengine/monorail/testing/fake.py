@@ -477,7 +477,8 @@ class UserService(object):
       obscure_email=None, after_issue_update=None,
       is_site_admin=None, ignore_action_limits=None,
       is_banned=None, banned_reason=None, action_limit_updates=None,
-      dismissed_cues=None, keep_people_perms_open=None, preview_on_hover=None):
+      dismissed_cues=None, keep_people_perms_open=None, preview_on_hover=None,
+      vacation_message=None):
     self.UpdateUser(cnxn, user_id, user)
 
 
