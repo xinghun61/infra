@@ -19,6 +19,7 @@ import (
 	"golang.org/x/net/context"
 
 	"cloud.google.com/go/pubsub"
+	"google.golang.org/api/iterator"
 )
 
 var (
@@ -71,7 +72,7 @@ func main() {
 
 	for i := 0; i < *numConsume; i++ {
 		m, err := it.Next()
-		if err == pubsub.Done {
+		if err == iterator.Done {
 			break
 		}
 		if err != nil {

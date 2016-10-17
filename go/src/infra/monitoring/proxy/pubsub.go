@@ -20,6 +20,7 @@ import (
 	"github.com/luci/luci-go/common/tsmon/metric"
 	"github.com/luci/luci-go/common/tsmon/types"
 	"golang.org/x/net/context"
+	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
 
@@ -138,7 +139,7 @@ func (s *pubSubServiceImpl) Pull(sub string, count int) ([]*pubsub.Message, erro
 
 	for i := 0; i < count; i++ {
 		msg, err := it.Next()
-		if err == pubsub.Done {
+		if err == iterator.Done {
 			break
 		}
 		if err != nil {
