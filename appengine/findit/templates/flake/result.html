@@ -206,8 +206,8 @@
     {% if error %}
     Error info: {{ error }}<br>
     {% endif %}
-    {% if suspected_flake_build_number %}
-    Flakiness <b>started</b> in Build: <a href="https://build.chromium.org/p/{{ master_name }}/builders/{{ builder_name }}/builds/{{ suspected_flake_build_number }}" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake_build_number }}</a>
+    {% if suspected_flake.build_number %}
+    Flakiness <b>started</b> in Build: <a href="https://build.chromium.org/p/{{ master_name }}/builders/{{ builder_name }}/builds/{{ suspected_flake.build_number }}" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.build_number }}</a>
     {% endif %}
   </div>
   <br>
