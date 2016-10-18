@@ -203,81 +203,6 @@
     });
   });
 
-  suite('bugs', function() {
-    test('filing a bug reminds you to enter the new bug', function() {
-      assert.equal(element._filedBug, false);
-      expect(element.$.fileBugLink).be.visible;
-      expect(element.$.bugReminder).be.hidden;
-
-      element.$.fileBugLink.click();
-
-      assert.equal(element._filedBug, true);
-      expect(element.$.fileBugLink).be.hidden;
-      expect(element.$.bugReminder).be.visible;
-    });
-
-    test('filing a bug generates comment for new bug', function() {
-      let bugModel = {
-        title: "WebKit Win7 step failure",
-        type: "build-failure",
-        extension: {
-          builders: [
-            {
-              name: "WebKit Win7",
-              url: "https://build.chromium.org/p/chromium.webkit/builders/WebKit%20Win7"
-            }
-          ],
-          reasons: [
-            {
-              step: "webkit_tests",
-              test_names: [
-                "paint/selection/invalidation-rect-includes-newline-for-rtl.html",
-                "paint/selection/invalidation-rect-includes-newline-for-vertical-lr.html",
-                "paint/selection/invalidation-rect-includes-newline-for-vertical-rl.html",
-                "paint/selection/invalidation-rect-includes-newline.html",
-                "paint/selection/invalidation-rect-with-br-includes-newline.html",
-                "transforms/3d/point-mapping/3d-point-mapping-preserve-3d.html"
-              ],
-              url: "https://build.chromium.org/p/chromium.webkit/builders/WebKit%20Win7/builds/42524/steps/webkit_tests"
-            }
-          ]
-        }
-      };
-      assert.equal(element._commentForBug(bugModel),
-        "WebKit Win7 step failure\n\n" +
-        "Type: build-failure\n\n" +
-        "Builders failed on: \n" +
-        "- WebKit Win7: \n" +
-        "  https://build.chromium.org/p/chromium.webkit/builders/WebKit%20Win7\n\n" +
-        "Reasons: \n" +
-        "https://build.chromium.org/p/chromium.webkit/builders/WebKit%20Win7/builds/42524/steps/webkit_tests\n" +
-        "Tests:\n" +
-        "* paint/selection/invalidation-rect-includes-newline-for-rtl.html\n" +
-        "* paint/selection/invalidation-rect-includes-newline-for-vertical-lr.html\n" +
-        "* paint/selection/invalidation-rect-includes-newline-for-vertical-rl.html\n" +
-        "* paint/selection/invalidation-rect-includes-newline.html\n" +
-        "* paint/selection/invalidation-rect-with-br-includes-newline.html\n" +
-        "* transforms/3d/point-mapping/3d-point-mapping-preserve-3d.html\n\n"
-      );
-    });
-
-    test('save bug saves an annotation', function() {
-      let sendStub = sinon.stub(element, 'sendAnnotation');
-
-      element.$.bug.value = 'bar';
-      element._bugModel = {key: 'foo'};
-
-      element._saveBug();
-
-      sinon.assert.calledOnce(sendStub);
-      sendStub.calledWith('foo', [{
-        add: {
-          bugs: ['bar']
-        }
-      }]);
-    });
-  });
-
   suite('navigation', function() {
     setup(function() {
       element.$.url.path = '/chromium';
@@ -317,7 +242,6 @@
         done();
       });
     });
-
   });
 })();
 </script>

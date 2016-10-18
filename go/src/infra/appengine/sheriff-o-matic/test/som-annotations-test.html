@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents.min.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="/elements/som-annotations.html">
+<test-fixture id="basic">
+  <template>
+    <som-annotations></som-annotations>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+  var element;
+  var server;
+  var responseHeaders = {
+      json: {'Content-Type': 'application/json'},
+      text: {'Content-Type': 'text/html'},
+  };
+
+  // FIXME: Use stub elements to mock out som-drawer
+  // https://www.polymer-project.org/1.0/docs/tools/tests#create-stub-elements
+  setup(function() {
+    element = fixture('basic');
+    sinon.stub(window, 'fetch');
+  });
+
+  teardown(function() {
+    server.restore();
+
+    window.fetch.restore();
+  });
+
+  suite('network requests', function() {
+    test('send fetch all annotation request', function(done) {
+      let res = new window.Response(JSON.stringify({
+        hi: 3
+      }), {
+        status: 200,
+        headers: {
+          'Content-type': 'application/json',
+        }
+      });
+
+      window.fetch.returns(Promise.resolve(res));
+
+      element.fetchAnnotations();
+      flush(() => {
+        assert.equal(window.fetch.callCount, 1);
+        assert.deepEqual(element._annotationsResp, {hi:3});
+        done();
+      });
+    });
+
+    test('send change annotation request', function(done) {
+      let res = new window.Response(JSON.stringify({
+        key: "bestkey",
+        hi: 3,
+      }), {
+        status: 200,
+        headers: {
+          'Content-type': 'application/json',
+        }
+      });
+
+      window.fetch.returns(Promise.resolve(res));
+
+      let promise = element.sendAnnotation("bestkey", "type", {
+        foo: "bar"
+      });
+      flush(() => {
+        assert.equal(window.fetch.callCount, 1);
+        let args = window.fetch.firstCall.args;
+        assert.equal(args[0], '/api/v1/annotations/bestkey/type');
+        let parsed = args[1];
+        assert.isDefined(parsed.body);
+        parsed.body = JSON.parse(parsed.body);
+        assert.deepEqual(parsed, {
+          body: {
+            xsrf_token: "xr",
+            data: {
+              foo: "bar"
+            }
+          },
+          method: 'POST',
+          credentials: 'include',
+        });
+
+        assert.deepEqual(element._annotationsResp, [{key: "bestkey", hi:3}]);
+        promise.then((value) => {
+          assert.deepEqual(value, {
+            key: "bestkey",
+            hi: 3,
+          });
+          done();
+        });
+      });
+    });
+  });
+
+  suite('compute annotations', function() {
+    var clock;
+
+    setup(function() {
+      clock = sinon.useFakeTimers();
+    });
+
+    test('compute annotations object correctly', function() {
+      let annotations = [{key: 'foo', bugs: ['bar']}];
+      assert.deepEqual({
+        foo: {
+          key: 'foo',
+          bugs: ['bar']
+        }
+      }, element._computeAnnotations(annotations, {}));
+    });
+
+    test('compute per item annotation correctly', function() {
+      let annotations = {
+        foo: {
+          key: 'foo',
+          snoozeTime: 0,
+        },
+        bar: {
+          key: 'bar',
+          bugs: ["bar"],
+        },
+        baz: {
+          key: 'baz',
+          opened: true,
+        }
+      };
+
+      assert.deepEqual(element.computeAnnotation(annotations, {key: 'foo'}), {
+          key: 'foo',
+          snoozed: false,
+          opened: false,
+        });
+
+      assert.deepEqual(element.computeAnnotation(annotations, {key: 'baz'}), {
+          key: 'baz',
+          snoozed: false,
+          opened: true,
+        });
+
+      annotations.foo.snoozeTime = 200;
+      assert.deepEqual(element.computeAnnotation(annotations, {key: 'foo'}), {
+          key: 'foo',
+          snoozed: true,
+          opened: false,
+        });
+
+      assert.deepEqual(element.computeAnnotation(annotations, {key: 'bar'}), {
+          key: 'bar',
+          bugs:['bar'],
+          snoozed: false,
+          opened: false,
+        });
+    });
+  });
+
+  suite('bugs', function() {
+    test('filing a bug reminds you to enter the new bug', function() {
+      assert.equal(element._filedBug, false);
+      expect(element.$.fileBugLink).be.visible;
+      expect(element.$.bugReminder).be.hidden;
+
+      element.$.fileBugLink.click();
+
+      assert.equal(element._filedBug, true);
+      expect(element.$.fileBugLink).be.hidden;
+      expect(element.$.bugReminder).be.visible;
+    });
+
+    test('filing a bug generates comment for new bug', function() {
+      let bugModel = {
+        title: "WebKit Win7 step failure",
+        type: "build-failure",
+        extension: {
+          builders: [
+            {
+              name: "WebKit Win7",
+              url: "https://build.chromium.org/p/chromium.webkit/builders/WebKit%20Win7"
+            }
+          ],
+          reasons: [
+            {
+              step: "webkit_tests",
+              test_names: [
+                "paint/selection/invalidation-rect-includes-newline-for-rtl.html",
+                "paint/selection/invalidation-rect-includes-newline-for-vertical-lr.html",
+                "paint/selection/invalidation-rect-includes-newline-for-vertical-rl.html",
+                "paint/selection/invalidation-rect-includes-newline.html",
+                "paint/selection/invalidation-rect-with-br-includes-newline.html",
+                "transforms/3d/point-mapping/3d-point-mapping-preserve-3d.html"
+              ],
+              url: "https://build.chromium.org/p/chromium.webkit/builders/WebKit%20Win7/builds/42524/steps/webkit_tests"
+            }
+          ]
+        }
+      };
+      assert.equal(element._commentForBug(bugModel),
+        "WebKit Win7 step failure\n\n" +
+        "Type: build-failure\n\n" +
+        "Builders failed on: \n" +
+        "- WebKit Win7: \n" +
+        "  https://build.chromium.org/p/chromium.webkit/builders/WebKit%20Win7\n\n" +
+        "Reasons: \n" +
+        "https://build.chromium.org/p/chromium.webkit/builders/WebKit%20Win7/builds/42524/steps/webkit_tests\n" +
+        "Tests:\n" +
+        "* paint/selection/invalidation-rect-includes-newline-for-rtl.html\n" +
+        "* paint/selection/invalidation-rect-includes-newline-for-vertical-lr.html\n" +
+        "* paint/selection/invalidation-rect-includes-newline-for-vertical-rl.html\n" +
+        "* paint/selection/invalidation-rect-includes-newline.html\n" +
+        "* paint/selection/invalidation-rect-with-br-includes-newline.html\n" +
+        "* transforms/3d/point-mapping/3d-point-mapping-preserve-3d.html\n\n"
+      );
+    });
+
+    test('save bug saves an annotation', function() {
+      let sendStub = sinon.stub(element, 'sendAnnotation');
+
+      element.$.bug.value = 'bar';
+      element._bugModel = {key: 'foo'};
+
+      element._saveBug();
+
+      sinon.assert.calledOnce(sendStub);
+      sendStub.calledWith('foo', [{
+        add: {
+          bugs: ['bar']
+        }
+      }]);
+    });
+  });
+
+  suite('comments', function() {
+
+    test('no comments list when no bugs', function() {
+      // The template counts as an element
+      assert.equal(1, element.$.commentsList.childElementCount);
+    })
+
+    test('renders comment list when comments exist', function(done) {
+      element._annotationsResp =  [{
+        key: 'commentkey',
+        comments: [{
+            'text': 'foo',
+            'user': 'test@example.com',
+            'time': '2016-10-13T22:22:55.798814Z'
+          }, {
+            'text': 'bar',
+            'user': 'hello@world.com',
+            'time': '2016-10-13T22:22:55.798814Z'
+          }]
+      }];
+      element._commentsModel = {key: 'commentkey'};
+
+      flush(function () {
+        let comments = element.$.commentsList.querySelectorAll('li');
+        assert.lengthOf(comments, 2);
+
+        let users = element.$.commentsList.getElementsByClassName('user-info');
+        let text = element.$.commentsList.getElementsByClassName('comment-text');
+
+        assert.equal('test', users[0].textContent.trim());
+        assert.equal('hello', users[1].textContent.trim());
+
+        assert.equal('foo', text[0].textContent.trim());
+        assert.equal('bar', text[1].textContent.trim());
+        done();
+      });
+    });
+
+    test('removing comment sends an annotations', function(done) {
+      let sendStub = sinon.stub(element, 'sendAnnotation');
+
+      element._commentsModel = {key: 'commentkey'};
+
+      element._removeComment({model: {index: 1}});
+
+      flush(function () {
+        sinon.assert.calledOnce(sendStub);
+        sendStub.calledWith('commentkey', [{
+          remove: {
+            comments: [1]
+          }
+        }]);
+        done();
+      });
+    });
+
+    test('add comment saves an annotation', function(done) {
+      let sendStub = sinon.stub(element, 'sendAnnotation');
+
+      element.$.commentText.value = 'fake comment';
+      element._commentsModel = {key: 'commentkey'};
+
+      element._addComment();
+
+      flush(function () {
+        sinon.assert.calledOnce(sendStub);
+        sendStub.calledWith('commentkey', [{
+          add: {
+            comments: ['fake comment']
+          }
+        }]);
+        done();
+      });
+    });
+  });
+
+})();
+</script>

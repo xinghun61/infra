@@ -13,45 +13,12 @@
   // Note: Must have a xrsf token property on object which has this behavior.
   AnnotationManagerBehavior = {
     properties: {
-      // All alert annotations. Includes values from localState.
-      annotations: {
-        type: Object,
-        value: function() { return {}; },
-        computed: '_computeAnnotations(_annotationsResp, localState)'
-      },
-      // The raw response from the server of annotations.
-      _annotationsResp: {
-        type: Array,
-        value: function() { return []; },
-      },
       // Local in browser annotations for alerts, like if the alert is collapsed
       // or not.
       localState: {
         type: Object,
         value: function() { return {}; },
       },
-    },
-
-    _computeAnnotations: function(annotationsJson, localState) {
-      let annotations = {};
-      if (!annotationsJson) {
-        annotationsJson = [];
-      }
-
-      Object.keys(localState).forEach((key) => {
-        key = decodeURIComponent(key);
-        annotations[key] = localState[key];
-      });
-      annotationsJson.forEach((annotation) => {
-        // If we've already added something here through local state, copy that
-        // over.
-        let key = decodeURIComponent(annotation.key);
-        if (annotations[key]) {
-          Object.assign(annotation, annotations[key]);
-        }
-        annotations[key] = annotation;
-      });
-      return annotations;
     },
 
     // Compute the annotation for a given alert.
@@ -63,7 +30,10 @@
         key: key,
       };
 
-      if( ann && ann.snoozeTime != undefined) {
+      // We want to make sure snoozed is not undefined because this makes later
+      // checks weirdly falsey
+      returnVal.snoozed = false;
+      if (ann && ann.snoozeTime) {
         returnVal.snoozed = Date.now() < ann.snoozeTime;
       }
 
@@ -71,32 +41,12 @@
         returnVal.bugs = ann.bugs
       }
 
+      if (ann && ann.comments != undefined)  {
+        returnVal.comments = ann.comments
+      }
+
       returnVal.opened = (ann && ann.opened ) || false;
       return returnVal;
-    },
-
-    // Handle the result of the response of a post to the server.
-    _postResponse: function(response) {
-      let annotations = this.annotations;
-      annotations[decodeURIComponent(response.key)] = response;
-      let newArray = [];
-      Object.keys(annotations).forEach((k) => {
-        k = decodeURIComponent(k);
-        newArray.push(annotations[k]);
-      });
-      this._annotationsResp = newArray;
-
-      return response;
-    },
-
-    // Fetches new annotations from the server.
-    fetchAnnotations: function() {
-      return window.fetch('/api/v1/annotations', {
-        credentials: 'include'
-      }).then(jsonParsePromise).then((req) => {
-        this._annotationsResp = [];
-        this._annotationsResp = req;
-      });
     },
 
     // Mutating local state. This exists because we often change the value of
@@ -109,22 +59,6 @@
       callback(old);
       this.localState = {};
       this.localState = old;
-    },
-
-    // Send an annotation change. Also updates the in memory annotation database.
-    // Returns a promise of the POST request to the server to carry out the
-    // annotation change.
-    sendAnnotation: function(key, type, change) {
-      let data = {
-        xsrf_token: this.xsrfToken,
-        data: change,
-      }
-
-      return window.fetch('/api/v1/annotations/' + encodeURIComponent(key) + '/' + type, {
-        body: JSON.stringify(data),
-        method: 'POST',
-        credentials: 'include',
-      }).then(jsonParsePromise).then(this._postResponse.bind(this));
     },
 
     // Set a key in local state.

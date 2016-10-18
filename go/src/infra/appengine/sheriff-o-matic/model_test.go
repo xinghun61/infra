@@ -84,6 +84,7 @@ func TestAnnotation(t *testing.T) {
 					So(err, ShouldBeNil)
 					So(ann.SnoozeTime, ShouldEqual, 123123)
 					So(ann.Bugs, ShouldBeNil)
+					So(ann.Comments, ShouldBeNil)
 					So(ann.ModificationTime, ShouldResemble, cl.Now())
 				})
 
@@ -104,6 +105,7 @@ func TestAnnotation(t *testing.T) {
 
 							So(ann.SnoozeTime, ShouldEqual, 0)
 							So(ann.Bugs, ShouldResemble, []string{"https://crbug.com/123123"})
+							So(ann.Comments, ShouldBeNil)
 							So(ann.ModificationTime, ShouldResemble, cl.Now())
 						})
 					})
@@ -114,14 +116,43 @@ func TestAnnotation(t *testing.T) {
 						So(err, ShouldNotBeNil)
 						So(ann.SnoozeTime, ShouldEqual, 0)
 						So(ann.Bugs, ShouldBeNil)
+						So(ann.Comments, ShouldBeNil)
+						So(ann.ModificationTime, ShouldResemble, cl.Now().Add(-time.Hour))
+					})
+				})
+
+				Convey("comments", func() {
+					changeString := `{"comments":["woah", "man", "comments"]}`
+					Convey("basic", func() {
+						err := ann.add(c, strings.NewReader(changeString))
+						t := cl.Now()
+
+						So(err, ShouldBeNil)
+						So(ann.SnoozeTime, ShouldEqual, 0)
+						So(ann.Bugs, ShouldBeNil)
+
+						So(ann.Comments, ShouldResemble, []Comment{{"woah", "", t}, {"man", "", t}, {"comments", "", t}})
+						So(ann.ModificationTime, ShouldResemble, t)
+					})
+
+					Convey("comments error", func() {
+						err := ann.add(c, strings.NewReader("plz don't add me"))
+
+						So(err, ShouldNotBeNil)
+						So(ann.SnoozeTime, ShouldEqual, 0)
+						So(ann.Bugs, ShouldBeNil)
+						So(ann.Comments, ShouldBeNil)
 						So(ann.ModificationTime, ShouldResemble, cl.Now().Add(-time.Hour))
 					})
 				})
 			})
 
 			Convey("remove", func() {
+				t := cl.Now()
+				comments := []Comment{{"hello", "", t}, {"world", "", t}, {"hehe", "", t}}
 				ann.SnoozeTime = 100
 				ann.Bugs = []string{"https://crbug.com/123123", "bug2"}
+				ann.Comments = comments
 
 				Convey("time", func() {
 					changeS := `{"snoozeTime":true}`
@@ -130,6 +161,7 @@ func TestAnnotation(t *testing.T) {
 					So(err, ShouldBeNil)
 					So(ann.SnoozeTime, ShouldEqual, 0)
 					So(ann.Bugs, ShouldResemble, []string{"https://crbug.com/123123", "bug2"})
+					So(ann.Comments, ShouldResemble, comments)
 					So(ann.ModificationTime, ShouldResemble, cl.Now())
 				})
 
@@ -140,6 +172,7 @@ func TestAnnotation(t *testing.T) {
 
 						So(err, ShouldBeNil)
 						So(ann.SnoozeTime, ShouldEqual, 100)
+						So(ann.Comments, ShouldResemble, comments)
 						So(ann.Bugs, ShouldResemble, []string{"bug2"})
 						So(ann.ModificationTime, ShouldResemble, cl.Now())
 					})
@@ -150,6 +183,41 @@ func TestAnnotation(t *testing.T) {
 						So(err, ShouldNotBeNil)
 						So(ann.SnoozeTime, ShouldEqual, 100)
 						So(ann.Bugs, ShouldResemble, []string{"https://crbug.com/123123", "bug2"})
+						So(ann.Comments, ShouldResemble, comments)
+						So(ann.ModificationTime, ShouldResemble, cl.Now().Add(-time.Hour))
+					})
+				})
+
+				Convey("comments", func() {
+					Convey("basic", func() {
+						changeString := `{"comments":[1]}`
+						err := ann.remove(c, strings.NewReader(changeString))
+
+						So(err, ShouldBeNil)
+						So(ann.SnoozeTime, ShouldEqual, 100)
+						So(ann.Bugs, ShouldResemble, []string{"https://crbug.com/123123", "bug2"})
+						So(ann.Comments, ShouldResemble, []Comment{{"hello", "", t}, {"hehe", "", t}})
+						So(ann.ModificationTime, ShouldResemble, cl.Now())
+					})
+
+					Convey("bad format", func() {
+						err := ann.remove(c, strings.NewReader("don't do this"))
+
+						So(err, ShouldNotBeNil)
+						So(ann.SnoozeTime, ShouldEqual, 100)
+						So(ann.Bugs, ShouldResemble, []string{"https://crbug.com/123123", "bug2"})
+						So(ann.Comments, ShouldResemble, comments)
+						So(ann.ModificationTime, ShouldResemble, cl.Now().Add(-time.Hour))
+					})
+
+					Convey("invalid index", func() {
+						changeString := `{"comments":[3]}`
+						err := ann.remove(c, strings.NewReader(changeString))
+
+						So(err, ShouldNotBeNil)
+						So(ann.SnoozeTime, ShouldEqual, 100)
+						So(ann.Bugs, ShouldResemble, []string{"https://crbug.com/123123", "bug2"})
+						So(ann.Comments, ShouldResemble, comments)
 						So(ann.ModificationTime, ShouldResemble, cl.Now().Add(-time.Hour))
 					})
 				})

@@ -24,6 +24,7 @@
   setup(function() {
     element = fixture('basic');
     server = sinon.fakeServer.create();
+    element.alert = {};
   });
 
   teardown(function() {
@@ -125,37 +126,62 @@
         assert.include(element.$.bugsList.querySelector("a").href, 'foo/bar');
         done();
       });
+    });
 
-      test('render useful links', function(done) {
-        element.alert.links = [
-          {title: 'one', href: chromiumUrl},
-          {title: 'two', href: uberUrl}
-        ];
-        flush(function() {
-          let links = element.$.usefulLinks.querySelectorAll(".alert-link");
-          assert.equal(2, links.length);
-          assert.equal('one', links[0].innerHTML);
-        });
+    test('render useful links', function(done) {
+      element.alert = {links: [
+        {title: 'one', href: chromiumUrl},
+        {title: 'two', href: uberUrl}
+      ]};
+
+      assert.isTrue(element._haveLinks(element.alert));
+
+      flush(function() {
+        let links = element.$.usefulLinks.querySelectorAll(".alert-link");
+        assert.equal(2, links.length);
+        assert.equal('one', links[0].innerHTML);
+        done();
+      });
+    });
+
+    test('uberify useful links', function(done) {
+      element.alert = {links: [{title: '', href: chromiumUrl}]};
+      element.useUberify = true;
+      flush(function() {
+        assert.equal(uberUrl,
+          element.$.usefulLinks.querySelector(".alert-link").href);
+        done();
+      });
+    });
+
+    test('do not uberify useful links when uberify disabled', function(done) {
+      element.alert = {links: [{title: '', href: chromiumUrl}]};
+      element.useUberify = false;
+      flush(function() {
+        assert.equal(chromiumUrl,
+           element.$.usefulLinks.querySelector(".alert-link").href);
+        done();
+      });
+    });
+
+    test('clicking comments fires an event', function(done) {
+      element.addEventListener('comment', function() {
+        done();
       });
 
-      test('uberify useful links', function(done) {
-        element.alert.links = [{title: '', href: chromiumUrl}];
-        element.useUberify = true;
-        flush(function() {
-          assert.equal(uberUrl,
-            element.$.usefulLinks.querySelector(".alert-link").href);
-        });
-      });
+      element._comment();
+    });
 
-      test('do not uberify useful links when uberify disabled', function(done) {
-        element.alert.links = [{title: '', href: chromiumUrl}];
-        element.useUberify = false;
-        flush(function() {
-          assert.equal(chromiumUrl,
-             element.$.usefulLinks.querySelector(".alert-link").href);
-        });
+    test('renders number of comments', function(done) {
+      element.annotation = {
+        comments: [{'text': 'hehe'}, {'text': 'i'}, {'text': 'am'},
+          {'text': 'many'}, {'text': 'comments'}]
+      }
+      flush(function() {
+        assert.equal(5, element._numComments);
+        assert.equal("(5)", element.$.commentsLink.textContent.trim());
+        done();
       });
-
     });
   });
 })();

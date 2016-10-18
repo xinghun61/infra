@@ -30,6 +30,15 @@
        text-align: center;
        min-width: 110px;
        display: inline-block;
+       font-size: 0.9em;
+     }
+     .alert-controls-links {
+       padding: 0 10px;
+     }
+     .alert-controls-links a,
+     .alert-controls-links .link {
+       padding: 5px;
+       cursor: pointer;
      }
      .alert-expanded {
        color: #666;
@@ -58,9 +67,6 @@
      .alert-title-bar:hover {
        cursor: pointer;
      }
-     .examine-link {
-       padding: 0 10px;
-     }
      .file-bug-icon,
      .snooze-icon {
        color: #aaa;
@@ -87,7 +93,7 @@
        white-space: nowrap;
        overflow: hidden;
      }
-     #bugsList .bug paper-icon-button {
+     #bugsList paper-icon-button {
        color: #666;
        padding: 0;
        margin: 0 2px;
@@ -97,7 +103,7 @@
        transition: all .3s ease;
        border-radius: 50%;
      }
-     #bugsList .bug paper-icon-button:hover {
+     #bugsList paper-icon-button:hover {
        color: #222;
        background-color: #aaa;
      }
@@ -107,10 +113,6 @@
      }
      #collapse {
        transition: height 3s ease;
-     }
-     #link-bug,
-     #snooze {
-       font-size: 0.9em;
      }
      #ripple {
        pointer-events: none;
@@ -157,8 +159,11 @@
           </div>
           <div id="collapse" hidden$="[[_isHidden(annotation.opened, useCompactView)]]" class="alert-expanded layout horizontal wrap">
             <div class="alert-controls layout horizontal center flex-child">
-              <a href$="[[tree]]/examine/[[alert.key]]" class="examine-link" hidden$="[[examining]]">Examine</a>
-              <a href$="[[tree]]" class="examine-link" hidden$="[[!examining]]">[[tree]]</a>
+              <div class="layout vertical alert-controls-links">
+                <a href$="[[tree]]/examine/[[alert.key]]" hidden$="[[examining]]">Examine</a>
+                <a href$="[[tree]]" hidden$="[[!examining]]">[[tree]]</a>
+                <span class="link" on-tap="_comment" id="commentsLink"><iron-icon icon="question-answer"></iron-icon> ([[_numComments]])</span>
+              </div>
               <paper-button class="horizontal layout center" id="link-bug" on-tap="_linkBug" alt="Link a bug" raised noink>
                 <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
                 Link Bug
@@ -170,14 +175,12 @@
               </paper-button>
             </div>
             <div class="alert-info flex">
-              <template is="dom-if" if="[[_haveLinks(alert)]]">
-                <div id="usefulLinks">
-                  Useful Links:
-                  <template is="dom-repeat" items="[[alert.links]]" as="link">
-                    <a class="alert-link" target="_blank" href$="[[_uberifyIfEnabled(useUberify, link.href)]]">[[link.title]]</a>
-                  </template>
-                </div>
-              </template>
+              <div id="usefulLinks" hidden$="[[!_haveLinks(alert)]]">
+                Useful Links:
+                <template is="dom-repeat" items="[[alert.links]]" as="link">
+                  <a class="alert-link" target="_blank" href$="[[_uberifyIfEnabled(useUberify, link.href)]]">[[link.title]]</a>
+                </template>
+              </div>
               <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]" use-uberify="[[useUberify]]"></som-extension-build-failure>
             </div>
           </div>
@@ -240,6 +243,10 @@
           type: String,
           computed: '_formatTimestamp(alert.time)'
         },
+        _numComments: {
+          type: Number,
+          computed: '_computeNumComments(annotation.comments)',
+        },
         _snoozeText: {
           type: String,
           computed: '_computeSnoozeText(annotation.snoozed)',
@@ -289,8 +296,20 @@
         return 'alert' + (selected ? ' selected' : '');
       },
 
+      _comment: function(evt) {
+        this.fire('comment');
+        evt.preventDefault();
+      },
+
       _computeHasBugs: function(bugs) {
         return !!(bugs && bugs.length > 0);
+      },
+
+      _computeNumComments: function(comments) {
+        if (comments) {
+          return comments.length;
+        }
+        return 0;
       },
 
       _computeSnoozeText: function(snoozed) {
@@ -361,7 +380,7 @@
           return false;
         }
 
-        return opened ? false : true;
+        return !opened;
       },
     });
   })();
