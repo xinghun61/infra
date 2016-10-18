@@ -185,6 +185,7 @@
           </div>
           <paper-spinner id="fetchingAlerts" active="[[_fetchingAlerts]]"></paper-spinner>
         </paper-toolbar>
+        <som-annotations id="annotations" annotations="{{annotations}}" xsrf-token="{{xsrfToken}}"></som-annotations>
         <iron-pages attr-for-selected='id' selected="[[_selectedPage]]" class="flex layout vertical">
           <div id="alertsList" class="page-body">
             <div class="list-item">
@@ -199,7 +200,6 @@
                 </span>
               </div>
             </div>
-            <som-annotations id="annotations" annotations="{{annotations}}" xsrf-token="{{xsrfToken}}"></som-annotations>
             <som-bug-queue id="bugQueue" bug-queue-label="[[_bugQueueLabel]]" tree-display-name="[[_treeDisplayName]]"></som-bug-queue>
             <div id="alertsListInner">
               <h2 class="header">[[_treeDisplayName]] Failure Alerts (<a href="/help-som">Help?</a>)</h2>
