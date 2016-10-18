@@ -213,12 +213,12 @@ def _FilterSpam(query_ast):
   if not uses_spam:
     query_ast.conjunctions[0].conds.append(
         ast_pb2.MakeCond(
-            ast_pb2.QueryOp.EQ,
+            ast_pb2.QueryOp.NE,
             [tracker_pb2.FieldDef(
                 field_name='spam',
                 field_type=tracker_pb2.FieldTypes.BOOL_TYPE)
              ],
-        [], [0]))
+        [], []))
 
   return query_ast
 
