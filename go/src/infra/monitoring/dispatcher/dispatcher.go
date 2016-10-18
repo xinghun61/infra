@@ -273,8 +273,6 @@ func main() {
 
 	tsFlags := tsmon.NewFlags()
 	tsFlags.Target.TargetType = "task"
-	tsFlags.Target.TaskJobName = "alerts-dispatcher"
-	tsFlags.Target.TaskServiceName = "alerts-dispatcher"
 	tsFlags.Flush = "auto"
 
 	tsFlags.Register(flag.CommandLine)
