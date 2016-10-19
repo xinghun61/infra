@@ -1113,15 +1113,15 @@ class IssueServiceTest(unittest.TestCase):
     # Assumes one comment per issue.
     cids = [issue_id + 1000 for issue_id in issue_ids]
     self.services.issue.comment_tbl.Select(
-        self.cnxn, cols=['Comment.id'] + issue_svc.COMMENT_COLS[1:],
+        self.cnxn, cols=issue_svc.COMMENT_COLS,
         where=None, issue_id=issue_ids, order_by=[('created', [])]).AndReturn([
             (issue_id + 1000, issue_id, self.now, 789, 111L,
-             None, False, False, 'unused_commentcontent_id')
+             None, False, False, issue_id + 5000)
             for issue_id in issue_ids])
     self.services.issue.commentcontent_tbl.Select(
-        self.cnxn, cols=['comment_id', 'content', 'inbound_message'],
-        comment_id=[issue_id + 1000 for issue_id in issue_ids]).AndReturn([
-        (issue_id + 1000, 'content', None) for issue_id in issue_ids])
+        self.cnxn, cols=issue_svc.COMMENTCONTENT_COLS,
+        id=[issue_id + 5000 for issue_id in issue_ids]).AndReturn([
+        (issue_id + 5000, 'content', None) for issue_id in issue_ids])
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
@@ -1158,14 +1158,14 @@ class IssueServiceTest(unittest.TestCase):
     # Assumes one comment per issue.
     commentcontent_id = comment_id * 10
     self.services.issue.comment_tbl.Select(
-        self.cnxn, cols=['Comment.id'] + issue_svc.COMMENT_COLS[1:],
+        self.cnxn, cols=issue_svc.COMMENT_COLS,
         where=None, id=comment_id, order_by=[('created', [])]).AndReturn([
             (comment_id, int(comment_id / 100), self.now, 789, 111L,
              None, False, True, commentcontent_id)])
     self.services.issue.commentcontent_tbl.Select(
-        self.cnxn, cols=['comment_id', 'content', 'inbound_message'],
-        comment_id=[comment_id]).AndReturn([
-            (comment_id, 'content', None)])
+        self.cnxn, cols=issue_svc.COMMENTCONTENT_COLS,
+        id=[commentcontent_id]).AndReturn([
+            (commentcontent_id, 'content', None)])
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
@@ -1184,11 +1184,11 @@ class IssueServiceTest(unittest.TestCase):
   def SetUpGetComment_Missing(self, comment_id):
     # Assumes one comment per issue.
     self.services.issue.comment_tbl.Select(
-        self.cnxn, cols=['Comment.id'] + issue_svc.COMMENT_COLS[1:],
+        self.cnxn, cols=issue_svc.COMMENT_COLS,
         where=None, id=comment_id, order_by=[('created', [])]).AndReturn([])
     self.services.issue.commentcontent_tbl.Select(
-        self.cnxn, cols=['comment_id', 'content', 'inbound_message'],
-        comment_id=[]).AndReturn([])
+        self.cnxn, cols=issue_svc.COMMENTCONTENT_COLS,
+        id=[]).AndReturn([])
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
@@ -1219,17 +1219,18 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
 
   def SetUpInsertComment(self, comment_id, is_spam=False, is_description=False):
+    commentcontent_id = comment_id * 10
+    self.services.issue.commentcontent_tbl.InsertRow(
+        self.cnxn, content='content',
+        inbound_message=None, commit=True).AndReturn(commentcontent_id)
     self.services.issue.comment_tbl.InsertRow(
         self.cnxn, issue_id=78901, created=self.now, project_id=789,
         commenter_id=111L, deleted_by=None, is_spam=is_spam,
-        is_description=is_description, commit=True).AndReturn(comment_id)
-    commentcontent_id = comment_id * 10
-    self.services.issue.commentcontent_tbl.InsertRow(
-        self.cnxn, comment_id=comment_id, content='content',
-        inbound_message=None, commit=True).AndReturn(commentcontent_id)
-    # SOON(jrobbins): reverse statements above and remove UPDATE.
-    self.services.issue.comment_tbl.Update(
-        self.cnxn, {'commentcontent_id': commentcontent_id}, id=comment_id,
+        is_description=is_description, commentcontent_id=commentcontent_id,
+        commit=True).AndReturn(comment_id)
+    # SOON(jrobbins): remove UPDATE.
+    self.services.issue.commentcontent_tbl.Update(
+        self.cnxn, {'comment_id': comment_id}, id=commentcontent_id,
         commit=True)
 
     amendment_rows = []

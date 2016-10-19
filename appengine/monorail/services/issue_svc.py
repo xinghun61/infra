@@ -73,9 +73,10 @@ ISSUE2FIELDVALUE_COLS = [
     'derived']
 COMMENT_COLS = [
     'Comment.id', 'issue_id', 'created', 'Comment.project_id', 'commenter_id',
-    'deleted_by', 'Comment.is_spam', 'is_description', 'commentcontent_id']
+    'deleted_by', 'Comment.is_spam', 'is_description',
+    'commentcontent_id']  # Note: commentcontent_id must be last.
 COMMENTCONTENT_COLS = [
-    'CommentContent.id', 'comment_id', 'content', 'inbound_message']
+    'CommentContent.id', 'content', 'inbound_message']
 ABBR_COMMENT_COLS = ['Comment.id', 'commenter_id', 'deleted_by',
     'is_description']
 ATTACHMENT_COLS = [
@@ -1934,18 +1935,18 @@ class IssueService(object):
 
   ### Comments
 
-  def _UnpackComment(self, comment_row):
+  def _UnpackComment(self, comment_row, content_dict, inbound_message_dict):
     """Partially construct a Comment PB from a DB row."""
     (comment_id, issue_id, created, project_id, commenter_id,
-     deleted_by, is_spam, is_description, _commentcontent_id) = comment_row
+     deleted_by, is_spam, is_description, commentcontent_id) = comment_row
     comment = tracker_pb2.IssueComment()
     comment.id = comment_id
     comment.issue_id = issue_id
     comment.timestamp = created
     comment.project_id = project_id
     comment.user_id = commenter_id
-    comment.content = ''  # Set from the CommentContent row.
-    comment.inbound_message = ''  # Set from the CommentContent row.
+    comment.content = content_dict.get(commentcontent_id, '')
+    comment.inbound_message = inbound_message_dict.get(commentcontent_id, '')
     comment.deleted_by = deleted_by or 0
     comment.is_spam = bool(is_spam)
     comment.is_description = bool(is_description)
@@ -2018,18 +2019,18 @@ class IssueService(object):
     results = []  # keep objects in the same order as the rows
     results_dict = {}  # for fast access when joining.
 
+    content_dict = dict(
+        (commentcontent_id, content) for
+        commentcontent_id, content, _ in commentcontent_rows)
+    inbound_message_dict = dict(
+        (commentcontent_id, inbound_message) for
+        commentcontent_id, _, inbound_message in commentcontent_rows)
+
     for comment_row in comment_rows:
-      comment = self._UnpackComment(comment_row)
+      comment = self._UnpackComment(
+          comment_row, content_dict, inbound_message_dict)
       results.append(comment)
       results_dict[comment.id] = comment
-
-    for commentcontent_row in commentcontent_rows:
-      comment_id, content, inbound_message = commentcontent_row
-      try:
-        results_dict[comment_id].content = content
-        results_dict[comment_id].inbound_message = inbound_message
-      except KeyError:
-        logging.error('Found content for missing comment: %r', comment_id)
 
     for amendment_row in amendment_rows:
       amendment, comment_id = self._UnpackAmendment(amendment_row)
@@ -2060,11 +2061,10 @@ class IssueService(object):
     comment_rows = self.comment_tbl.Select(
         cnxn, cols=COMMENT_COLS, where=where,
         order_by=order_by, **kwargs)
-    # SOON(jrobbins): change this to look at Comment.commentcontent_id.
     cids = [row[0] for row in comment_rows]
+    commentcontent_ids = [row[-1] for row in comment_rows]
     content_rows = self.commentcontent_tbl.Select(
-        cnxn, cols=['comment_id', 'content', 'inbound_message'],
-        comment_id=cids)
+        cnxn, cols=COMMENTCONTENT_COLS, id=commentcontent_ids)
     amendment_rows = self.issueupdate_tbl.Select(
         cnxn, cols=ISSUEUPDATE_COLS, comment_id=cids)
     attachment_rows = self.attachment_tbl.Select(
@@ -2114,9 +2114,10 @@ class IssueService(object):
     order_by = [('created ASC', [])]
     comment_rows = self.comment_tbl.Select(
         cnxn, cols=COMMENT_COLS, order_by=order_by, id=comment_ids)
+    comment_ids = [row[0] for row in comment_rows]
+    commentcontent_ids = [row[-1] for row in comment_rows]
     content_rows = self.commentcontent_tbl.Select(
-        cnxn, cols=['comment_id', 'content', 'inbound_message'],
-        comment_id=comment_ids)
+        cnxn, cols=COMMENTCONTENT_COLS, id=commentcontent_ids)
     amendment_rows = self.issueupdate_tbl.Select(
         cnxn, cols=ISSUEUPDATE_COLS, comment_id=comment_ids)
     attachment_rows = self.attachment_tbl.Select(
@@ -2168,25 +2169,23 @@ class IssueService(object):
       comment: IssueComment PB to insert into the database.
       commit: set to False to avoid doing the commit for now.
     """
+    commentcontent_id = self.commentcontent_tbl.InsertRow(
+        cnxn, content=comment.content,
+        inbound_message=comment.inbound_message, commit=commit)
     comment_id = self.comment_tbl.InsertRow(
         cnxn, issue_id=comment.issue_id, created=comment.timestamp,
         project_id=comment.project_id,
         commenter_id=comment.user_id,
         deleted_by=comment.deleted_by or None,
         is_spam=comment.is_spam, is_description=comment.is_description,
+        commentcontent_id=commentcontent_id,
+        commit=commit)
+    # SOON(jrobbins): Delete this after we are sure that we will never
+    # roll back to a version that needs CommentContent.comment_id.
+    self.commentcontent_tbl.Update(
+        cnxn, {'comment_id': comment_id}, id=commentcontent_id,
         commit=commit)
     comment.id = comment_id
-
-    commentcontent_id = self.commentcontent_tbl.InsertRow(
-        cnxn, comment_id=comment_id, content=comment.content,
-        inbound_message=comment.inbound_message, commit=commit)
-
-    # SOON(jrobbins): Reverse the order of statements above to write the
-    # CommentContent row first and then use that ID when writing the
-    # Comment rows.  Then remove this update statement.
-    self.comment_tbl.Update(
-        cnxn, {'commentcontent_id': commentcontent_id}, id=comment_id,
-        commit=commit)
 
     amendment_rows = []
     for amendment in comment.amendments:
