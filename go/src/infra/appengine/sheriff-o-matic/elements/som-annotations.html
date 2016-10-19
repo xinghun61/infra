@@ -116,7 +116,8 @@
               </a> on [[_formatTimestamp(comment.time)]]
             </span>
             <span class="comment-text">[[comment.text]]</span>
-            <paper-icon-button icon="close" title="Remove" id="removeComment[[index]]" on-tap="_removeComment"></paper-icon-button>
+            <paper-icon-button icon="close" title="Remove" id="removeComment[[index]]"
+              hidden$="[[_computeHideDeleteComment(comment)]]" on-tap="_removeComment"></paper-icon-button>
           </li>
         </template>
       </ul>
@@ -194,6 +195,7 @@
             return this.$.snoozeTime;
           }
         },
+        user: String,
         xsrfToken: String,
       },
 
@@ -426,6 +428,10 @@
           return null;
         }
         return this.computeAnnotation(annotations, model);
+      },
+
+      _computeHideDeleteComment(comment) {
+        return comment.user != this.user;
       },
 
       _computeUsername(email) {
