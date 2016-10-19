@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"infra/monitoring/messages"
 	"infra/monorail"
 
 	"golang.org/x/net/context"
@@ -202,6 +203,21 @@ func postAlertsHandler(ctx *router.Context) {
 		return
 	}
 
+	// Do a sanity check.
+	alertsSummary := &messages.AlertsSummary{}
+	err = json.Unmarshal(data, alertsSummary)
+	if err != nil {
+		errStatus(c, w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if alertsSummary.Timestamp == 0 {
+		errStatus(c, w, http.StatusBadRequest,
+			"Couldn't decode into AlertsSummary or did not include a timestamp.")
+		return
+	}
+
+	// Now actually do decoding necessary for storage.
 	out := make(map[string]interface{})
 	err = json.Unmarshal(data, &out)
 

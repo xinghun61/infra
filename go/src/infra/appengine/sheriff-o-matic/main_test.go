@@ -217,9 +217,11 @@ func TestMain(t *testing.T) {
 					postAlertsHandler(&router.Context{
 						Context: c,
 						Writer:  w,
-						Request: makePostRequest(`{"thing":"FOOBAR"}`),
+						Request: makePostRequest(`{"timestamp": 12345.0}`),
 						Params:  makeParams("tree", "oak"),
 					})
+
+					So(w.Code, ShouldEqual, http.StatusOK)
 
 					r, err := ioutil.ReadAll(w.Body)
 					So(err, ShouldBeNil)
@@ -236,8 +238,8 @@ func TestMain(t *testing.T) {
 					rslt := make(map[string]interface{})
 					So(json.NewDecoder(bytes.NewReader(itm.Contents)).Decode(&rslt), ShouldBeNil)
 					So(rslt, ShouldResemble, map[string]interface{}{
-						"date":  "2016-02-03 04:05:06.000000007 +0000 UTC",
-						"thing": "FOOBAR",
+						"date":      "2016-02-03 04:05:06.000000007 +0000 UTC",
+						"timestamp": 12345.0,
 					})
 				})
 
@@ -251,6 +253,22 @@ func TestMain(t *testing.T) {
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`not valid json`),
+						Params:  makeParams("tree", "oak"),
+					})
+
+					So(w.Code, ShouldEqual, http.StatusBadRequest)
+				})
+
+				Convey("POST err, valid but wrong json", func() {
+					q := datastore.NewQuery("AlertsJSON")
+					results := []*AlertsJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldBeEmpty)
+
+					postAlertsHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makePostRequest(`{}`),
 						Params:  makeParams("tree", "oak"),
 					})
 
