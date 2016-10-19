@@ -58,7 +58,7 @@ var (
 - [{{.Summary}}]({{.ReviewURL}}) ({{.Author}})
 {{end}}
 
-## Bugs upsinceDated, by author
+## Bugs updated, by author
 {{range $author, $bugs := .Bugs -}}
 - {{$author}}:
   {{range $bug, $unused := $bugs -}}
@@ -307,7 +307,7 @@ func main() {
 		AppName: *appName,
 		Date:    *date,
 		NumBugs: len(fixed),
-		Since:   fmt.Sprintf("%s %s", *sinceHash, *sinceDate),
+		Since:   fmt.Sprintf("%s (%s)", *sinceHash, *sinceDate),
 		Authors: toNotify,
 		Commits: commits,
 		Bugs:    bugsByAuthor,
