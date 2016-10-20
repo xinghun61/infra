@@ -14,7 +14,7 @@ import (
 	"os"
 	"strings"
 
-	"infra/crimson/cmd/cmdhelper"
+	"infra/crimson/common/datautil"
 	crimson "infra/crimson/proto"
 )
 
@@ -120,7 +120,7 @@ func main() {
 	}
 	fmt.Fprintln(os.Stderr, "Importing finished.")
 
-	var csvFormat cmdhelper.FormatType
+	var csvFormat datautil.FormatType
 	csvFormat.Set("csv")
-	cmdhelper.PrintHostList(&hosts, csvFormat, skipHeader)
+	datautil.PrintHostList(&hosts, csvFormat, skipHeader)
 }

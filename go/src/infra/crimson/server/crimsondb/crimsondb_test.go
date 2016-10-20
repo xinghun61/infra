@@ -344,9 +344,33 @@ func TestInsertHost(t *testing.T) {
 						Ip:        "1.2.3.20",
 						BootClass: "linux"}}})
 
+			So(err, ShouldBeNil)
+
 			query, err := conn.PopOldestQuery()
 			So(err, ShouldBeNil)
-			expected := ("INSERT INTO host (site, hostname, mac_addr, ip, boot_class) " +
+			So(query.Query, ShouldEqual, "LOCK TABLES host WRITE")
+
+			query, err = conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected := "SELECT site, hostname, mac_addr, ip, boot_class FROM host WHERE (site = ? AND ip IN (?))"
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{"site0", "0x01020314"})
+
+			query, err = conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected = "SELECT site, hostname, mac_addr, ip, boot_class FROM host WHERE (site = ? AND mac_addr IN (?))"
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{"site0", "0x0123456789ab"})
+
+			query, err = conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected = "SELECT site, hostname, mac_addr, ip, boot_class FROM host WHERE (site = ? AND hostname IN (?))"
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{"site0", "hostname0"})
+
+			query, err = conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected = ("INSERT INTO host (site, hostname, mac_addr, ip, boot_class) " +
 				"VALUES (?, ?, ?, ?, ?)")
 			So(query.Query, ShouldEqual, expected)
 			So(query.Args, ShouldResemble,
@@ -356,6 +380,104 @@ func TestInsertHost(t *testing.T) {
 					"0x0123456789ab",
 					"0x01020314",
 					"linux"})
+
+			query, err = conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			So(query.Query, ShouldEqual, "UNLOCK TABLES")
+
+			// There must be no more queries.
+			_, err = conn.PopOldestQuery()
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("mustiple hosts generate the correct queries.", func() {
+			err := InsertHost(ctx,
+				&crimson.HostList{
+					Hosts: []*crimson.Host{
+						{
+							Site:      "site0",
+							Hostname:  "hostname0",
+							MacAddr:   "01:23:45:67:89:ab",
+							Ip:        "1.2.3.20",
+							BootClass: "linux",
+						},
+						{
+							Site:      "site0",
+							Hostname:  "hostname1",
+							MacAddr:   "01:23:45:67:89:ac",
+							Ip:        "1.2.3.21",
+							BootClass: "mac",
+						},
+						{
+							Site:      "site1",
+							Hostname:  "hostname0",
+							MacAddr:   "01:23:45:67:89:ad",
+							Ip:        "1.2.3.22",
+							BootClass: "win",
+						},
+					}})
+
+			So(err, ShouldBeNil)
+
+			query, err := conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			So(query.Query, ShouldEqual, "LOCK TABLES host WRITE")
+
+			query, err = conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected := "SELECT site, hostname, mac_addr, ip, boot_class FROM host WHERE (site = ? AND ip IN (?, ?)) OR (site = ? AND ip IN (?))"
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{
+				"site0", "0x01020314", "0x01020315", "site1", "0x01020316",
+			})
+
+			query, err = conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected = "SELECT site, hostname, mac_addr, ip, boot_class FROM host WHERE (site = ? AND mac_addr IN (?, ?)) OR (site = ? AND mac_addr IN (?))"
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{
+				"site0", "0x0123456789ab", "0x0123456789ac", "site1", "0x0123456789ad",
+			})
+
+			query, err = conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected = "SELECT site, hostname, mac_addr, ip, boot_class FROM host WHERE (site = ? AND hostname IN (?, ?)) OR (site = ? AND hostname IN (?))"
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble, []driver.Value{
+				"site0", "hostname0", "hostname1", "site1", "hostname0",
+			})
+
+			query, err = conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			expected = ("INSERT INTO host (site, hostname, mac_addr, ip, boot_class) " +
+				"VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)")
+			So(query.Query, ShouldEqual, expected)
+			So(query.Args, ShouldResemble,
+				[]driver.Value{
+					"site0",
+					"hostname0",
+					"0x0123456789ab",
+					"0x01020314",
+					"linux",
+					"site0",
+					"hostname1",
+					"0x0123456789ac",
+					"0x01020315",
+					"mac",
+					"site1",
+					"hostname0",
+					"0x0123456789ad",
+					"0x01020316",
+					"win",
+				})
+
+			query, err = conn.PopOldestQuery()
+			So(err, ShouldBeNil)
+			So(query.Query, ShouldEqual, "UNLOCK TABLES")
+
+			// There must be no more queries.
+			_, err = conn.PopOldestQuery()
+			So(err, ShouldNotBeNil)
 		})
 	})
 }
@@ -376,7 +498,7 @@ func TestSelectHost(t *testing.T) {
 			query, err := conn.PopOldestQuery()
 			So(err, ShouldBeNil)
 			expected := ("SELECT site, hostname, mac_addr, ip, boot_class " +
-				"FROM host\nWHERE site=?")
+				"FROM host\nWHERE site=?\nORDER BY ip")
 			So(query.Query, ShouldEqual, expected)
 			So(query.Args, ShouldResemble, []driver.Value{"site0"})
 		})
@@ -391,7 +513,7 @@ func TestSelectHost(t *testing.T) {
 			query, err := conn.PopOldestQuery()
 			So(err, ShouldBeNil)
 			expected := ("SELECT site, hostname, mac_addr, ip, boot_class " +
-				"FROM host\nWHERE site=?\nAND boot_class=?")
+				"FROM host\nWHERE site=?\nAND boot_class=?\nORDER BY ip")
 			So(query.Query, ShouldEqual, expected)
 			So(query.Args, ShouldResemble, []driver.Value{"site0", "cls"})
 		})
@@ -410,7 +532,7 @@ func TestSelectHost(t *testing.T) {
 			So(err, ShouldBeNil)
 			expected := ("SELECT site, hostname, mac_addr, ip, boot_class " +
 				"FROM host\nWHERE site=?\nAND hostname=?\nAND mac_addr=?\nAND ip=?" +
-				"\nAND boot_class=?")
+				"\nAND boot_class=?\nORDER BY ip")
 			So(query.Query, ShouldEqual, expected)
 			So(query.Args, ShouldResemble, []driver.Value{"site0", "hostname0",
 				"0x0123456789ab", "0x01172d43", "cls"})
@@ -426,7 +548,7 @@ func TestSelectHost(t *testing.T) {
 			query, err := conn.PopOldestQuery()
 			So(err, ShouldBeNil)
 			expected := ("SELECT site, hostname, mac_addr, ip, boot_class " +
-				"FROM host\nWHERE boot_class=?\nLIMIT ?")
+				"FROM host\nWHERE boot_class=?\nORDER BY ip\nLIMIT ?")
 			So(query.Query, ShouldEqual, expected)
 			So(query.Args, ShouldResemble, []driver.Value{"cls", int64(10)})
 		})
@@ -439,7 +561,7 @@ func TestSelectHost(t *testing.T) {
 			query, err := conn.PopOldestQuery()
 			So(err, ShouldBeNil)
 			expected := ("SELECT site, hostname, mac_addr, ip, boot_class " +
-				"FROM host\nLIMIT ?")
+				"FROM host\nORDER BY ip\nLIMIT ?")
 			So(query.Query, ShouldEqual, expected)
 			So(query.Args, ShouldResemble, []driver.Value{int64(10)})
 		})
@@ -455,7 +577,7 @@ func TestSelectHost(t *testing.T) {
 			query, err := conn.PopOldestQuery()
 			So(err, ShouldBeNil)
 			expected := ("SELECT site, hostname, mac_addr, ip, boot_class " +
-				"FROM host\nLIMIT ?")
+				"FROM host\nORDER BY ip\nLIMIT ?")
 			So(query.Query, ShouldEqual, expected)
 			So(query.Args, ShouldResemble, []driver.Value{int64(10)})
 
@@ -478,7 +600,7 @@ func TestSelectHost(t *testing.T) {
 			query, err := conn.PopOldestQuery()
 			So(err, ShouldBeNil)
 			expected := ("SELECT site, hostname, mac_addr, ip, boot_class " +
-				"FROM host\nLIMIT ?")
+				"FROM host\nORDER BY ip\nLIMIT ?")
 			So(query.Query, ShouldEqual, expected)
 			So(query.Args, ShouldResemble, []driver.Value{int64(10)})
 

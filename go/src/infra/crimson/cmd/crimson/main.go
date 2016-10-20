@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc"
 
 	"infra/crimson/cmd/cmdhelper"
+	"infra/crimson/common/datautil"
 	crimson "infra/crimson/proto"
 )
 
@@ -27,7 +28,7 @@ type commonFlags struct {
 	subcommands.CommandRunBase
 	authFlags   authcli.Flags
 	backendHost string
-	format      cmdhelper.FormatType
+	format      datautil.FormatType
 	skipHeader  bool
 }
 
@@ -87,8 +88,8 @@ func commonFlagVars(c *commonFlags) {
 	c.Flags.StringVar(&c.backendHost, "backend-host",
 		backendHost, "Host to talk to")
 	c.Flags.Var(&c.format, "format", "Output format: "+
-		cmdhelper.FormatTypeEnum.Choices())
-	c.format = cmdhelper.DefaultFormat
+		datautil.FormatTypeEnum.Choices())
+	c.format = datautil.DefaultFormat
 	c.Flags.BoolVar(&c.skipHeader, "skip-header", false, "Skip column names in the output")
 }
 
@@ -282,7 +283,7 @@ func (c *addVlanRun) Run(a subcommands.Application, args []string) int {
 			return 1
 		}
 	}
-	cmdhelper.PrintIPRange(ranges, c.format, c.skipHeader)
+	datautil.PrintIPRange(ranges, c.format, c.skipHeader)
 
 	for _, req := range ranges {
 		_, err := client.CreateIPRange(ctx, req)
@@ -313,7 +314,7 @@ func (c *queryVlanRun) Run(a subcommands.Application, args []string) int {
 		return 1
 	}
 
-	cmdhelper.PrintIPRange(results.Ranges, c.format, c.skipHeader)
+	datautil.PrintIPRange(results.Ranges, c.format, c.skipHeader)
 	return 0
 }
 
@@ -398,7 +399,7 @@ func (c *addHostRun) Run(a subcommands.Application, args []string) int {
 		return 1
 	}
 
-	errs := cmdhelper.CheckDuplicateHosts(hostList)
+	errs := datautil.CheckDuplicateHosts(hostList)
 
 	if len(errs) > 0 {
 		for _, e := range errs {
@@ -435,7 +436,7 @@ func (c *queryHostRun) Run(a subcommands.Application, args []string) int {
 		return 1
 	}
 
-	cmdhelper.PrintHostList(hostList, c.format, c.skipHeader)
+	datautil.PrintHostList(hostList, c.format, c.skipHeader)
 	return 0
 }
 

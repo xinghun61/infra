@@ -25,7 +25,7 @@ CREATE TABLE host (
   mac_addr varchar(14) NOT NULL,
   ip varchar(34) NOT NULL,
   boot_class varchar(20),
-  PRIMARY KEY (mac_addr)
+  PRIMARY KEY (site, mac_addr)
 ) ENGINE=INNODB;
 
 CREATE index host_site_hostname_idx ON host(site, hostname);
