@@ -384,6 +384,10 @@ func (hc *trackingHTTPClient) attemptReq(r *http.Request, v interface{}) (bool, 
 
 	defer resp.Body.Close()
 	status := resp.StatusCode
+	if status != http.StatusOK {
+		return false, status, 0, fmt.Errorf("Bad response code: %v", status)
+	}
+
 	if err = json.NewDecoder(resp.Body).Decode(v); err != nil {
 		errLog.Printf("Error decoding response: %v", err)
 		return false, status, 0, err
