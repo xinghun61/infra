@@ -78,6 +78,9 @@ class AtomPerson(messages.Message):
   name = messages.StringField(1, required=True)
   htmlLink = messages.StringField(2)
   kind = messages.StringField(3)
+  last_visit = messages.StringField(4)
+  email_bouncing = messages.BooleanField(5)
+  vacation_message = messages.StringField(6)
 
 
 class Attachment(messages.Message):

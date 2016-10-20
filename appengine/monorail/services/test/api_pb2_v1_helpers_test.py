@@ -201,6 +201,8 @@ class ApiV1HelpersTest(unittest.TestCase):
         user=fake.UserService())
     svcs.project.TestAddProject(
         'test-project', owner_ids=[2], project_id=12345)
+    svcs.user.TestAddUser('user@example.com', 111L)
+
     mar = mock.Mock()
     mar.cnxn = None
     mar.project_name = 'test-project'

@@ -11,6 +11,7 @@ import logging
 from framework import framework_constants
 from framework import framework_helpers
 from framework import permissions
+from framework import timestr
 from proto import api_pb2_v1
 from proto import project_pb2
 from proto import tracker_pb2
@@ -87,19 +88,22 @@ def convert_person(user_id, cnxn, services, trap_exception=False):
 
   if not user_id:
     return None
-  user_email = None
   try:
-    user_email = services.user.LookupUserEmail(cnxn, user_id)
+    user = services.user.GetUser(cnxn, user_id)
   except user_svc.NoSuchUserException as ex:
     if trap_exception:
       logging.warning(str(ex))
       return None
     else:
       raise ex
+  time_bucket, _ = timestr.GetHumanScaleDate(user.last_visit_timestamp)
   return api_pb2_v1.AtomPerson(
       kind='monorail#issuePerson',
-      name=user_email,
-      htmlLink='https://%s/u/%d' % (framework_helpers.GetHostPort(), user_id))
+      name=user.email,
+      htmlLink='https://%s/u/%d' % (framework_helpers.GetHostPort(), user_id),
+      last_visit=time_bucket,
+      email_bouncing=bool(user.email_bounce_timestamp),
+      vacation_message=user.vacation_message)
 
 
 def convert_issue_ids(issue_ids, mar, services):
