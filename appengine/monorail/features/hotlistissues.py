@@ -1,3 +1,4 @@
+
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is govered by a BSD-style
 # license that can be found in the LICENSE file or at
@@ -5,12 +6,27 @@
 
 """Classes that implement the hotlistissues page and related forms."""
 
+from third_party import ezt
+
+import settings
+
 from features import hotlist_views
 from features import features_bizobj
+from features import features_constants
 from framework import servlet
 from framework import permissions
+from framework import paginate
 from framework import framework_views
+from framework import framework_helpers
+from framework import table_view_helpers
+from framework import template_helpers
+from framework import urls
+from framework import xsrf
 from services import features_svc
+from tracker import tablecell
+from tracker import tracker_bizobj
+from tracker import tracker_helpers
+
 
 class HotlistIssues(servlet.Servlet):
   """HotlistIssues is a page that shows the issues of one hotlist."""
@@ -42,9 +58,72 @@ class HotlistIssues(servlet.Servlet):
       if mr.hotlist_id is None:
         self.abort(404, 'no hotlist specified')
 
+    with self.profiler.Phase('getting stars'):
+      starred_iid_set = set(self.services.issue_star.LookupStarredItemIDs(
+          mr.cnxn, mr.auth.user_id))
+
+    with self.profiler.Phase('computing col_spec'):
+      mr.ComputeColSpec(mr.hotlist)
+      # NOTE: ComputeColSpec takes config but only calls config.default_col_spec
+      # hotlists are not configs but have a default_col_spec
+
+    related_issues = {}
+    # TODO(jojwang): implement this, necessary for columns of
+    # BlockedOn/Blocking/MergedInto. {global issue_id: issue pb}
+
+    hotlist_issues = mr.hotlist.iid_rank_pairs
+    # list of HotlistIssues, not Issues
+
+    issues = self.services.issue.GetIssues(
+        mr.cnxn,
+        [hotlist_issue.issue_id for hotlist_issue in hotlist_issues])
+    with self.profiler.Phase('Getting config'):
+      hotlist_issues_project_ids = self.GetAllProjectsOfIssues(
+          [issue for issue in issues])
+      is_cross_project = len(hotlist_issues_project_ids) > 1
+      config_list = self.GetAllConfigsOfProjects(
+          mr.cnxn, hotlist_issues_project_ids)
+      harmonized_config = tracker_bizobj.HarmonizeConfigs(config_list)
+
+      issues_users_by_id = framework_views.MakeAllUserViews(
+          mr.cnxn, self.services.user,
+          tracker_bizobj.UsersInvolvedInIssues(issues or []))
+
+
+    pagination = paginate.ArtifactPagination(
+        mr, [issue.issue_id for issue in issues],
+        features_constants.DEFAULT_RESULTS_PER_PAGE,
+        urls.HOTLIST_ISSUES, len(issues))
+
+    with self.profiler.Phase('building table'):
+      page_data = self.GetTableViewData(
+          mr, issues, harmonized_config,
+          issues_users_by_id, starred_iid_set, related_issues)
+
+    with self.profiler.Phase('making page perms'):
+      owner_permissions = permissions.CanAdministerHotlist(
+          mr.auth.effective_ids, mr.hotlist)
+      editor_permissions = permissions.CanEditHotlist(
+          mr.auth.effective_ids, mr.hotlist)
+      page_perms = template_helpers.EZTItem(EditIssue=None)
+
     # Note: The HotlistView is created and returned in servlet.py
-    return {
-        }
+    page_data.update({'owner_permissions': owner_permissions,
+                      'editor_permissions': editor_permissions,
+                      'is_cross_project': is_cross_project,
+                      'pagination': pagination,
+                      'issue_tab_mode': 'issueList',
+                      'grid_mode': ezt.boolean(False),
+                      'set_star_token': xsrf.GenerateToken(
+                          mr.auth.user_id, '/u/%s/hotlsits/%d%s.do' % (
+                              mr.viewed_username, mr.hotlist_id,
+                              urls.ISSUE_SETSTAR_JSON)),
+                      'page_perms': page_perms,
+                      'colspec': mr.col_spec,})
+    return page_data
+  # TODO(jojwang): implement grid_mode and update page_date; grid_mode will not
+  # always be False
+  # TODO(jojwang): implement peek issue on hover, implement starring issues
 
   def _GetHotlist(self, mr):
     """Retrieve the current hotlist."""
@@ -52,6 +131,84 @@ class HotlistIssues(servlet.Servlet):
       return None
     try:
       hotlist = self.services.features.GetHotlist( mr.cnxn, mr.hotlist_id)
-      return hotlist
     except features_svc.NoSuchHotlistException:
       self.abort(404, 'hotlist not found')
+    return hotlist
+
+  def GetAllProjectsOfIssues(self, issues):
+    project_ids = set()
+    for issue in issues:
+      project_ids.add(issue.project_id)
+    return project_ids
+
+  def GetAllConfigsOfProjects(self, cnxn, project_ids):
+    config_dict = self.services.config.GetProjectConfigs(cnxn, project_ids)
+    config_list = [config_dict[project_id] for project_id in project_ids]
+    return config_list
+
+  def GetCellFactories(self):
+    return tablecell.CELL_FACTORIES
+
+  def GetTableViewData(
+      self, mr, issues, config, users_by_id,
+      starred_iid_set, related_issues):
+    """EZT template values to render a Table View of issues.
+
+    Args:
+      mr: commonly used info parsed from the request.
+      issues: list of Issue PBs to be displayed
+      config: The harmonized config for all ProjectIssueConfig PBs that have
+        issues in this hotlist
+      users_by_id: A dictionary of {user_id: UserView} for all the users
+        involved in the issues.
+      starred_iid_set: Set of issues that the user has starred
+      related_issues: dict {issue_id: issue} of pre-fetched related issues.
+
+    Returns:
+      Dictionary of page data for rendering of the Table View.
+    """
+    columns = mr.col_spec.split()
+    ordered_columns = [template_helpers.EZTItem(col_index=i, name=col)
+                       for i, col in enumerate(columns)]
+    lower_columns = mr.col_spec.lower().split()
+    lower_group_by = mr.group_by_spec.lower().split()
+    table_data = _MakeTableData(
+        issues, starred_iid_set, lower_columns, lower_group_by, users_by_id,
+        self.GetCellFactories(), related_issues, config)
+    column_values = table_view_helpers.ExtractUniqueValues(
+        lower_columns, issues, users_by_id, config)
+    unshown_columns = table_view_helpers.ComputeUnshownColumns(
+        issues, columns, config, features_constants.OTHER_BUILT_IN_COLS)
+    table_view_data = {
+        'table_data': table_data,
+        'column_values': column_values,
+        'panels': [template_helpers.EZTItem(ordered_columns=ordered_columns)],
+        'cursor': mr.cursor or mr.preview,
+        'preview': mr.preview,
+        'default_colspec': features_constants.DEFAULT_COL_SPEC,
+        'default_results_per_page': 10,
+        'csv_link': framework_helpers.FormatURL(mr, 'csv'),
+        'preview_on_hover': (
+            settings.enable_quick_edit and mr.auth.user_pb.preview_on_hover),
+        'unshown_columns': unshown_columns,
+        }
+
+    return table_view_data
+
+
+def _MakeTableData(issues, starred_iid_set, lower_columns,
+                   lower_group_by, users_by_id, cell_factories,
+                   related_issues, config):
+  table_data = table_view_helpers.MakeTableData(
+      issues, starred_iid_set, lower_columns, lower_group_by,
+      users_by_id, cell_factories, lambda issue: issue.issue_id,
+      related_issues, config)
+
+  for row, art in zip(table_data, issues):
+    row.local_id = art.local_id
+    row.project_name = art.project_name
+    row.issue_ref = '%s:%d' % (art.project_name, art.local_id)
+    row.issue_url = tracker_helpers.FormatRelativeIssueURL(
+        art.project_name, urls.ISSUE_DETAIL, id=art.local_id)
+
+  return table_data

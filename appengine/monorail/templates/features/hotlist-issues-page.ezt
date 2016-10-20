@@ -30,6 +30,33 @@
 </tbody>
 </table>
 
+<div id="colcontrol">
+
+  [include "../tracker/issue-list-controls-top.ezt"]
+
+  [include "../tracker/issue-hovercard.ezt"] [# TODO(jojwang): no hovercard appears right now]
+
+  <div id="cursorarea">
+  <table cellspacing="0" cellpadding="2" border="0" class="results striped" id="resultstable" width="100%">
+    [include "hotlist-issues-body.ezt"]
+  </table>
+  </div>
+
+  [include "../tracker/issue-list-controls-bottom.ezt"]
+  [for panels]
+    [include "../tracker/issue-list-menus.ezt"]
+  [end]
+</div>
+
+[include "../framework/footer-script.ezt"]
+[include "../tracker/issue-list-js.ezt"]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _onload();
+});
+</script>
+
 [#TODO(jojwang):make pretty]
 
 [include "../framework/master-footer.ezt"]
