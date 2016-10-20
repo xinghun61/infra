@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -33,11 +34,16 @@ const BootstrapStepName = "recipe bootstrap"
 // cmdCook checks out a repository at a revision and runs a recipe.
 var cmdCook = &subcommands.Command{
 	UsageLine: "cook -repository <repository URL> -revision <revision> -recipe <recipe>",
-	ShortDesc: "Checks out a repository and runs a recipe.",
-	LongDesc:  "Clones or fetches a repository, checks out a revision and runs a recipe",
+	ShortDesc: "bootstraps a swarmbucket job.",
+	LongDesc:  "Bootstraps a swarmbucket job.",
 	CommandRun: func() subcommands.CommandRun {
 		var c cookRun
 		fs := &c.Flags
+		fs.StringVar(
+			&c.RecipeEnginePath,
+			"recipe-engine-path",
+			"",
+			"Path to a https://github.com/luci/recipes-py checkout")
 		fs.StringVar(&c.RepositoryURL, "repository", "", "URL of a git repository to fetch")
 		fs.StringVar(
 			&c.Revision,
@@ -81,6 +87,12 @@ var cmdCook = &subcommands.Command{
 type cookRun struct {
 	subcommands.CommandRunBase
 
+	// RecipeEnginePath is a path to a https://github.com/luci/recipes-py
+	// checkout.
+	// If present, `recipes.py remote` is used to fetch the recipe.
+	// Not required. TODO(nodir): make it required.
+	RecipeEnginePath string
+
 	RepositoryURL        string
 	Revision             string
 	Recipe               string
@@ -95,7 +107,8 @@ type cookRun struct {
 	logdog cookLogDogParams
 }
 
-func (c *cookRun) validateFlags() error {
+// normalizeFlags validates and normalizes flags.
+func (c *cookRun) normalizeFlags() error {
 	// Validate Repository.
 	if c.RepositoryURL == "" {
 		return fmt.Errorf("-repository is required")
@@ -104,6 +117,7 @@ func (c *cookRun) validateFlags() error {
 	if err != nil {
 		return fmt.Errorf("invalid repository %q: %s", repoURL, err)
 	}
+
 	repoName := path.Base(repoURL.Path)
 	if repoName == "" {
 		return fmt.Errorf("invalid repository %q: no path", repoURL)
@@ -129,6 +143,17 @@ func (c *cookRun) validateFlags() error {
 	if c.CheckoutDir == "" {
 		c.CheckoutDir = repoName
 	}
+
+	// Normalize c.PythonPaths
+	for i, p := range c.PythonPaths {
+		p := filepath.FromSlash(p)
+		p, err := filepath.Abs(p)
+		if err != nil {
+			return fmt.Errorf("invalid python path %q: %s", p, err)
+		}
+		c.PythonPaths[i] = p
+	}
+
 	return nil
 }
 
@@ -145,15 +170,6 @@ func (c *cookRun) run(ctx context.Context, props map[string]interface{}) (recipe
 		}
 		defer os.RemoveAll(tempWorkdir)
 		c.Workdir = tempWorkdir
-	}
-
-	for i, p := range c.PythonPaths {
-		p := filepath.FromSlash(p)
-		p, err := filepath.Abs(p)
-		if err != nil {
-			return 0, err
-		}
-		c.PythonPaths[i] = p
 	}
 
 	propertiesFile, err := ioutil.TempFile("", "")
@@ -203,14 +219,96 @@ func (c *cookRun) run(ctx context.Context, props map[string]interface{}) (recipe
 	return 0, fmt.Errorf("failed to run recipe: %s", err)
 }
 
+// remoteRun runs `recipes.py remote` that checks out a repo, runs a recipe and
+// returns exit code.
+func (c *cookRun) remoteRun(ctx context.Context, props map[string]interface{}) (recipeExitCode int, err error) {
+	if c.RecipeEnginePath == "" {
+		panic("recipe engine path is unspecified")
+	}
+
+	recipeCmd := exec.Command(
+		"python",
+		filepath.Join(c.RecipeEnginePath, "recipes.py"),
+		"remote",
+		"--repository", c.RepositoryURL,
+		"--revision", c.Revision,
+		"--workdir", c.CheckoutDir, // this is not a workdir for recipe run!
+	)
+
+	// remote subcommand does not sniff whether repository is gitiles or generic
+	// git. Instead it accepts an explicit "--use-gitiles" flag.
+	// We are not told whether the repo is gitiles or not, so sniff it here.
+	if looksLikeGitiles(c.RepositoryURL) {
+		recipeCmd.Args = append(recipeCmd.Args, "--use-gitiles")
+	}
+
+	// Prepare a workdir for the recipe run.
+	workDir := c.Workdir
+	if workDir == "" {
+		var tempWorkdir string
+		if tempWorkdir, err = ioutil.TempDir("", "kitchen-"); err != nil {
+			return 0, err
+		}
+		defer os.RemoveAll(tempWorkdir)
+		workDir = tempWorkdir
+	}
+
+	// Pass properties in a file.
+	propertiesFile, err := ioutil.TempFile("", "")
+	if err != nil {
+		return 0, err
+	}
+	defer os.Remove(propertiesFile.Name())
+	if err := json.NewEncoder(propertiesFile).Encode(props); err != nil {
+		return 0, fmt.Errorf("could not write properties file: %s", err)
+	}
+
+	// Now add the arguments for the recipes.py that will be fetched.
+	recipeCmd.Args = append(recipeCmd.Args,
+		"--",
+		"run",
+		"--properties-file", propertiesFile.Name(),
+		"--workdir", workDir,
+		"--output-result-json", c.OutputResultJSONFile,
+	)
+	if c.Timestamps {
+		recipeCmd.Args = append(recipeCmd.Args, "--timestamps")
+	}
+	recipeCmd.Args = append(recipeCmd.Args, c.Recipe)
+
+	// Build our environment.
+	env := environ.System()
+	env.Set("PYTHONPATH", strings.Join(c.PythonPaths, string(os.PathListSeparator)))
+	recipeCmd.Env = env.Sorted()
+
+	// Bootstrap through LogDog Butler?
+	if c.logdog.active() {
+		return c.runWithLogdogButler(ctx, recipeCmd)
+	}
+
+	fmt.Printf("Running command %q %q in %q\n",
+		recipeCmd.Path, recipeCmd.Args, recipeCmd.Dir)
+
+	recipeCmd.Stdout = os.Stdout
+	recipeCmd.Stderr = os.Stderr
+
+	recipeCtxCmd := ctxcmd.CtxCmd{Cmd: recipeCmd}
+	err = recipeCtxCmd.Run(ctx)
+	if rv, has := ctxcmd.ExitCode(err); has {
+		return rv, nil
+	}
+	return 0, fmt.Errorf("failed to run recipe: %s", err)
+}
+
 func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
 	ctx := cli.GetContext(a, c)
 
+	// Process flags.
 	var err error
 	if len(args) != 0 {
 		err = fmt.Errorf("unexpected arguments %v\n", args)
 	} else {
-		err = c.validateFlags()
+		err = c.normalizeFlags()
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -218,6 +316,7 @@ func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
 		return 1
 	}
 
+	// Parse properties.
 	props, err := parseProperties(c.Properties, c.PropertiesFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not parse properties: %s", err)
@@ -274,7 +373,15 @@ func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
 		}
 	}
 
-	recipeExitCode, err := c.run(ctx, props)
+	// Run the recipe.
+	var recipeExitCode int
+	if c.RecipeEnginePath == "" {
+		// old code path
+		// TODO(nodir): remove
+		recipeExitCode, err = c.run(ctx, props)
+	} else {
+		recipeExitCode, err = c.remoteRun(ctx, props)
+	}
 	if err != nil {
 		bootstapSuccess = false
 		if err != context.Canceled {
@@ -323,4 +430,9 @@ func annotateTime(ctx context.Context) {
 
 func annotate(args ...string) {
 	fmt.Printf("@@@%s@@@\n", strings.Join(args, "@"))
+}
+
+func looksLikeGitiles(rawurl string) bool {
+	u, err := url.Parse(rawurl)
+	return err == nil && strings.HasSuffix(u.Host, ".googlesource.com")
 }
