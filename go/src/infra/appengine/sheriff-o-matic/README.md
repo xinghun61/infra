@@ -16,6 +16,9 @@ npm install -g web-component-tester
 npm install -g web-component-tester-istanbul
 ```
 
+If you run into EACCESS errors while running any of the above, you might want
+to check out npm's "[Fixing npm permissions](https://docs.npmjs.com/getting-started/fixing-npm-permissions)" page.
+
 ## Getting up and running
 
 After initial checkout, make sure you have all of the bower dependencies
@@ -47,12 +50,15 @@ To view test coverage report after running tests:
 google-chrome ./coverage/lcov-report/index.html
 ```
 
-To deploy:
+## Deploying a new release
 
 First create a new CL for the RELNOTES.md update. Then run:
 ```sh
 go run ../../tools/relnotes/relnotes.go -app sheriff-o-matic
 ```
+
+Note that you may need to install `GOOGLE_APPLICATION_CREDENTIALS` as
+described below in order to have relnotes work properly this way.
 
 Copy and paste the output into the top of `README.md` and make any manual edits
 if necessary. You can also use the optional flags `-since-date YYYY-MM-DD` or
