@@ -1,3 +1,43 @@
+# Release Notes sheriff-o-matic 2016-10-20
+
+- 14 commits, 7 bugs affected since c4f0ecc (2016-10-12T00:11:55.000Z)
+- 3 Authors:
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+  - martiniss@chromium.org
+
+## Changes in this release
+
+- [SoM: Add user back to som-annotations](https://chromium-review.googlesource.com/400843) (zhangtiff@google.com)
+- [[som] Actually parse the AlertsSummary posted by a-d to /alerts, return errors](https://chromium-review.googlesource.com/400092) (seanmccullough@chromium.org)
+- [SoM: Only delete your own comments.](https://chromium-review.googlesource.com/400017) (zhangtiff@google.com)
+- [SoM: Make annotations appear on the examine page again.](https://chromium-review.googlesource.com/400619) (zhangtiff@google.com)
+- [SoM: Add comment feature.](https://chromium-review.googlesource.com/397898) (zhangtiff@google.com)
+- [[som] Fix pubsub push handler to log errors and return OK](https://chromium-review.googlesource.com/397916) (seanmccullough@chromium.org)
+- [SoM: Make annotations work for stale masters.](https://chromium-review.googlesource.com/398320) (zhangtiff@google.com)
+- [[som] add milo pubsub push subscriber endpoint](https://chromium-review.googlesource.com/396958) (seanmccullough@chromium.org)
+- [[som] add domain verification file.](https://chromium-review.googlesource.com/396940) (seanmccullough@chromium.org)
+- [SoM: More responsive tweaks.](https://chromium-review.googlesource.com/396499) (zhangtiff@google.com)
+- [SoM: Some edits to the admin page and Playbook linking.](https://chromium-review.googlesource.com/395028) (zhangtiff@google.com)
+- [SOM: Make tests mock window.fetch](https://chromium-review.googlesource.com/394008) (martiniss@chromium.org)
+- [[som] PRR work: get test coverage to 80%](https://chromium-review.googlesource.com/395086) (seanmccullough@chromium.org)
+- [Bumping prod version](https://chromium-review.googlesource.com/394867) (martiniss@chromium.org)
+
+
+## Bugs updated, by author
+- martiniss@chromium.org:
+  -  [https://crbug.com/651497](https://crbug.com/651497)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/630455](https://crbug.com/630455)
+  -  [https://crbug.com/655286](https://crbug.com/655286)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/449694](https://crbug.com/449694)
+  -  [https://crbug.com/634397](https://crbug.com/634397)
+  -  [https://crbug.com/647362](https://crbug.com/647362)
+  -  [https://crbug.com/657172](https://crbug.com/657172)
+
 
 # Release Notes sheriff-o-matic 2016-10-06
 
@@ -45,5 +85,3 @@
   - [https://crbug.com/650358](https://crbug.com/650358)
 - zhangtiff@google.com
   - [https://crbug.com/647362](https://crbug.com/647362)
-  
-
