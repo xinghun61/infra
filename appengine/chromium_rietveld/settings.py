@@ -114,6 +114,10 @@ except Exception:
 # instances of the app.
 # See also codereview/common.py get_preferred_domain function.
 PREFERRED_DOMAIN_NAMES = {
+  'chromiumcodereview': {
+    None: 'codereview.chromium.org',
+    'webrtc': 'codereview.webrtc.org',
+  },
   'chromiumcodereview-hr': {
     None: 'codereview.chromium.org',
     'webrtc': 'codereview.webrtc.org',

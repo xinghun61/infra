@@ -151,7 +151,7 @@ class AccountInput(forms.TextInput):
     output = super(AccountInput, self).render(name, value, attrs)
     if models.Account.current_user_account is not None:
       # TODO(anatoli): move this into .js media for this form
-      data = {'name': name, 'url': reverse(account),
+      data = {'name': name, 'url': common.rewrite_url(reverse(account)),
               'multiple': 'true'}
       if self.attrs.get('multiple', True) == False:
         data['multiple'] = 'false'
@@ -1166,8 +1166,8 @@ def upload(request):
   else:
     msg = ('Issue %s. URL: %s' %
            (action,
-            request.build_absolute_uri(
-              reverse('show_bare_issue_number', args=[issue.key.id()]))))
+            common.rewrite_url(request.build_absolute_uri(
+              reverse('show_bare_issue_number', args=[issue.key.id()])))))
     if (form.cleaned_data.get('content_upload') or
         form.cleaned_data.get('separate_patches')):
       # Extend the response message: 2nd line is patchset id.
@@ -1648,7 +1648,7 @@ def notify_approvers_of_new_patchsets(request, issue):
   if issue.approvers_to_notify:
     latest_patchset = issue.most_recent_patchset_query().get()
     patchset_anchor = '#ps%d' % latest_patchset.key.id()
-    link_to_patchset = (
+    link_to_patchset = common.rewrite_url(
         request.build_absolute_uri(reverse(show, args=[issue.key.id()])) +
         patchset_anchor)
     new_patchset_msg = (
@@ -3565,10 +3565,10 @@ def _get_draft_details(request, comments):
   for c in comments:
     patch = c.patch_key.get()
     if (patch.key, c.left) != last_key:
-      url = request.build_absolute_uri(
+      url = common.rewrite_url(request.build_absolute_uri(
         reverse(diff, args=[request.issue.key.id(),
                             patch.patchset_key.id(),
-                            patch.filename]))
+                            patch.filename])))
       output.append('\n%s\nFile %s (%s):' % (url, patch.filename,
                                              c.left and "left" or "right"))
       last_key = (patch.key, c.left)
@@ -3588,12 +3588,12 @@ def _get_draft_details(request, comments):
             patching.ParsePatchToLines(patch.lines), c.left)
 
     context = linecache[last_key].get(c.lineno, '').strip()
-    url = request.build_absolute_uri(
+    url = common.rewrite_url(request.build_absolute_uri(
       '%s#%scode%d' % (reverse(diff, args=[request.issue.key.id(),
                                            patch.patchset_key.id(),
                                            patch.filename]),
                        c.left and "old" or "new",
-                       c.lineno))
+                       c.lineno)))
     output.append('\n%s\n%s:%d: %s\n%s' % (url, patch.filename, c.lineno,
                                            context, c.text.rstrip()))
   if modified_patches:
@@ -3705,7 +3705,8 @@ def make_message(request, issue, message, comments=None, send_mail=False,
       num_trimmed = len(context['files']) - 200
       del context['files'][200:]
       context['files'].append('[[ %d additional files ]]' % num_trimmed)
-    url = request.build_absolute_uri(reverse(show, args=[issue.key.id()]))
+    url = common.rewrite_url(
+        request.build_absolute_uri(reverse(show, args=[issue.key.id()])))
 
     reviewer_nicknames_list = [
         models.format_reviewer(r, issue.required_reviewers, partial(
@@ -3717,7 +3718,7 @@ def make_message(request, issue, message, comments=None, send_mail=False,
                              for cc_temp in cc)
     my_nickname = library.get_nickname(my_email, True, request)
     description = (issue.description or '').replace('\r\n', '\n')
-    home = request.build_absolute_uri(reverse(index))
+    home = common.rewrite_url(request.build_absolute_uri(reverse(index)))
     modified_added_count, modified_removed_count = _get_modified_counts(issue)
     context.update({'reviewer_nicknames': reviewer_nicknames,
                     'cc_nicknames': cc_nicknames,

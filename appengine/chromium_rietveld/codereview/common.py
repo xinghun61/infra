@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import urlparse
 
 from google.appengine.api import app_identity
 
@@ -23,10 +24,19 @@ IS_DEV = os.environ['SERVER_SOFTWARE'].startswith('Dev')  # Development server
 
 def get_preferred_domain(project=None, default_to_appid=True):
   """Returns preferred domain for a given project."""
-  try:
-    projects_prefs = settings.PREFERRED_DOMAIN_NAMES[settings.APP_ID]
-  except KeyError:
+  projects_prefs = settings.PREFERRED_DOMAIN_NAMES.get(settings.APP_ID, {})
+  preferred_domain = projects_prefs.get(project)
+  if not preferred_domain:
     if default_to_appid:
       return '%s.appspot.com' % app_identity.get_application_id()
-    return None
-  return projects_prefs.get(project, projects_prefs[None])
+    return projects_prefs.get(None)
+  return preferred_domain
+
+
+def rewrite_url(url):
+  """Returns a url using the preferred domain name for this app instance."""
+  parts = list(urlparse.urlsplit(url))
+  new_domain = get_preferred_domain(default_to_appid=False)
+  if new_domain:
+    parts[1] = new_domain
+  return urlparse.urlunsplit(parts)
