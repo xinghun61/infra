@@ -7,6 +7,7 @@
 
 import logging
 import os
+import time
 import urllib
 
 from third_party import ezt
@@ -272,9 +273,20 @@ class BouncedEmail(BounceNotificationHandler):
   # google_appengine/google/appengine/ext/webapp/mail_handlers.py
 
   def receive(self, bounce_message):
-    # TODO(jrobbins): Look up that user and set the
-    # bounce_email_timestamp for that user.
-    logging.info('Received bounce post ... [%s]', self.request)
-    logging.info('Bounce original: %s', bounce_message.original)
-    logging.info('Bounce notification: %s', bounce_message.notification)
-    logging.info('Bounce was sent to: %r', bounce_message.original.get('to'))
+    email = bounce_message.original.get('to')
+    logging.info('Bounce was sent to: %r', email)
+
+    app_config = webapp2.WSGIApplication.app.config
+    services = app_config['services']
+    cnxn = sql.MonorailConnection()
+
+    try:
+      user_id = services.user.LookupUserID(cnxn, email)
+      user = services.user.GetUser(cnxn, user_id)
+      user.email_bounce_timestamp = int(time.time())
+      services.user.UpdateUser(cnxn, user_id, user)
+    except user_svc.NoSuchIssueException:
+      logging.info('User %r not found, ignoring', email)
+      logging.info('Received bounce post ... [%s]', self.request)
+      logging.info('Bounce original: %s', bounce_message.original)
+      logging.info('Bounce notification: %s', bounce_message.notification)
