@@ -95,6 +95,6 @@ class TimeStrTest(unittest.TestCase):
     self.assertEquals(
         GetDate(2008, 1, 2, 15), ('Earlier this year', 'Jan 02, 2008'))
     self.assertEquals(
-        GetDate(2007, 12, 31, 15), ('Older', 'Dec 31, 2007'))
+        GetDate(2007, 12, 31, 15), ('Before this year', 'Dec 31, 2007'))
     self.assertEquals(
         GetDate(2008, 4, 11, 20, 49, 35), ('Future', 'Later'))

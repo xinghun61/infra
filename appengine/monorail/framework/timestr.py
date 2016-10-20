@@ -176,7 +176,8 @@ def GetHumanScaleDate(timestamp, now=None):
     if now_year == then_year:
       return 'Earlier this year', time.strftime(
           '%b %d, %Y', (time.localtime(timestamp)))
-    return 'Older', time.strftime('%b %d, %Y', (time.localtime(timestamp)))
+    return ('Before this year',
+            time.strftime('%b %d, %Y', (time.localtime(timestamp))))
   if delta > -MAX_CLOCK_SKEW_SEC:
     return 'Today', 'moments ago'
   # Only say something is in the future if it is more than just clock skew.

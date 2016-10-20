@@ -272,7 +272,7 @@ def GatherUpdatesData(
         pastmonth.append(entry)
       elif entry.date_bucket == 'Earlier this year':
         thisyear.append(entry)
-      elif entry.date_bucket == 'Older':
+      elif entry.date_bucket == 'Before this year':
         older.append(entry)
 
   new_after = None

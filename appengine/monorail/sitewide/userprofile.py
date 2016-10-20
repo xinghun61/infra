@@ -14,6 +14,7 @@ from framework import framework_helpers
 from framework import framework_views
 from framework import permissions
 from framework import servlet
+from framework import timestr
 from project import project_views
 from sitewide import sitewide_helpers
 
@@ -35,11 +36,11 @@ class UserProfile(AbstractUserPage):
 
   def GatherPageData(self, mr):
     """Build up a dictionary of data values to use when rendering the page."""
+    viewed_user = mr.viewed_user_auth.user_pb
     if self.services.usergroup.GetGroupSettings(
         mr.cnxn, mr.viewed_user_auth.user_id):
       url = framework_helpers.FormatAbsoluteURL(
-          mr, '/g/%s/' % mr.viewed_user_auth.user_pb.email,
-          include_project=False)
+          mr, '/g/%s/' % viewed_user.email, include_project=False)
       self.redirect(url, abort=True)  # Show group page instead.
 
     with self.profiler.Phase('GetUserProjects'):
@@ -71,13 +72,24 @@ class UserProfile(AbstractUserPage):
     is_user_starred = self._IsUserStarred(
         mr.cnxn, mr.auth.user_id, mr.viewed_user_auth.user_id)
 
+    if viewed_user.last_visit_timestamp:
+      last_visit_str, _details = timestr.GetHumanScaleDate(
+          viewed_user.last_visit_timestamp)
+    else:
+      last_visit_str = 'Never'
+
+    if viewed_user.email_bounce_timestamp:
+      last_bounce_str, _details = timestr.GetHumanScaleDate(
+          viewed_user.email_bounce_timestamp)
+    else:
+      last_bounce_str = None
+
     page_data = {
         'user_tab_mode': 'st2',
         'viewed_user_display_name': viewed_user_display_name,
-        'viewed_user_is_banned': ezt.boolean(
-            mr.viewed_user_auth.user_pb.banned),
+        'viewed_user_is_banned': ezt.boolean(viewed_user.banned),
         'viewed_user_ignore_action_limits': (
-            ezt.boolean(mr.viewed_user_auth.user_pb.ignore_action_limits)),
+            ezt.boolean(viewed_user.ignore_action_limits)),
         'owner_of_projects': [
             project_views.ProjectView(
                 p, starred=p.project_id in logged_in_starred_pids)
@@ -99,11 +111,13 @@ class UserProfile(AbstractUserPage):
         'starred_users': starred_users,
         'is_user_starred': ezt.boolean(is_user_starred),
         'viewing_user_page': ezt.boolean(True),
+        'last_visit_str': last_visit_str,
+        'last_bounce_str': last_bounce_str,
+        'vacation_message': viewed_user.vacation_message,
         }
 
     settings = framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
-        mr.auth.user_id, mr.viewed_user_auth.user_view,
-        mr.viewed_user_auth.user_pb)
+        mr.auth.user_id, mr.viewed_user_auth.user_view, viewed_user)
     page_data.update(settings)
 
     return page_data

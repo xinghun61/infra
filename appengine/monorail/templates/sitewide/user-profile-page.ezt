@@ -27,15 +27,34 @@
  [viewed_user_display_name]
 </h2>
 
+<p>
+  <b>Last visit:</b>
+  [last_visit_str]
+</p>
+
+[if-any last_bounce_str]
+  <p>
+    <b>Email to this user bounced:</b>
+    [last_bounce_str]
+  </p>
+[end]
+
+[if-any vacation_message]
+  <p>
+    <b>Vacation message:</b>
+    [vacation_message]
+  </p>
+[end]
+
 [if-any user_stars_enabled]
-<div>
+<p>
 <b>Starred developers:</b>
 [if-any starred_users]
 [for starred_users]
   [include "../framework/user-link.ezt" starred_users][if-index starred_users last][else], [end]
 [end]
 [else]<i>None</i>[end]
-</div>
+</p>
 [end]
 <br>
 
