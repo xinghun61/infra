@@ -22,7 +22,7 @@ ANDROID_DEVICE_FILE = os.path.join(os.path.expanduser('~'),
                                    'android_device_status.json')
 
 # Don't read a file older than this many seconds.
-ANDROID_DEVICE_FILE_STALENESS_S = 2 * 60 * 60 # 2 hour
+ANDROID_DEVICE_FILE_STALENESS_S = 2 * 60 # 2 minutes
 
 PORT_PATH_RE = re.compile(r'\d+\/\d+')
 
@@ -65,6 +65,10 @@ proc_count = ts_mon.GaugeMetric('dev/mobile/proc/count',
 metric_read_status = ts_mon.StringMetric(
     'dev/android_device_metric_read/status',
     description='status of the last metric read')
+
+metric_seconds_stale = ts_mon.FloatMetric(
+    'dev/android_device_metric_read/seconds_stale',
+    description='seconds since the status file was written')
 
 
 def get_device_statuses(device_file=ANDROID_DEVICE_FILE, now=None):
@@ -150,6 +154,9 @@ def _load_android_device_file(device_file, now):
     return []
 
   timestamp = json_data.get('timestamp', 0)
+  if timestamp > 0:
+    metric_seconds_stale.set(float(now - timestamp))
+
   if now >= timestamp + ANDROID_DEVICE_FILE_STALENESS_S:
     metric_read_status.set('stale_file')
     logging.error('Android device file %s is %ss stale (max %ss)',

@@ -24,6 +24,8 @@ class AndroidDeviceMetricTest(unittest.TestCase):
         DATA_DIR, 'invalid_files', 'not_dict_android_device_status.json')
     self.invalid_version_file = os.path.join(
         DATA_DIR, 'invalid_files', 'invalid_version_android_device_status.json')
+    self.invalid_ts_file = os.path.join(
+        DATA_DIR, 'invalid_files', 'invalid_ts_android_device_status.json')
     self.valid_file = os.path.join(
         DATA_DIR, 'valid_files', 'android_device_status.json')
     self.no_temp_file = os.path.join(
@@ -34,9 +36,14 @@ class AndroidDeviceMetricTest(unittest.TestCase):
     # A test device in the representative json file.
     self.device_id = '06c38708006afff3'
 
-  def _assert_read_status(self, should_equal='good'):
+  def _assert_read_status(self, should_equal='good', seconds_stale=None):
     read_status = android_device_metrics.metric_read_status.get()
     self.assertEqual(read_status, should_equal)
+
+    if seconds_stale is not None:
+      read_seconds_stale = android_device_metrics.metric_seconds_stale.get()
+      self.assertEqual(read_seconds_stale, seconds_stale)
+
 
   def _assert_all_none(self, device_id):
     fields = {'device_id': device_id}
@@ -75,13 +82,18 @@ class AndroidDeviceMetricTest(unittest.TestCase):
   def test_stale(self):
     with open(self.valid_file) as f:
       file_time = float(json.load(f)['timestamp'])
-    stale_time = (
-        10 + file_time + android_device_metrics.ANDROID_DEVICE_FILE_STALENESS_S)
+
+    delta = 10 + android_device_metrics.ANDROID_DEVICE_FILE_STALENESS_S
+    stale_time = delta + file_time
 
     android_device_metrics.get_device_statuses(
         self.valid_file, now=stale_time)
-    self._assert_read_status(should_equal='stale_file')
+    self._assert_read_status(should_equal='stale_file', seconds_stale=delta)
     self._assert_all_none(self.device_id)
+
+  def test_no_ts(self):
+    android_device_metrics.get_device_statuses(self.invalid_ts_file)
+    self.assertIsNone(android_device_metrics.metric_seconds_stale.get())
 
   def test_good(self):
     with open(self.valid_file) as f:
@@ -89,7 +101,7 @@ class AndroidDeviceMetricTest(unittest.TestCase):
 
     android_device_metrics.get_device_statuses(
         self.valid_file, now=file_time)
-    self._assert_read_status(should_equal='good')
+    self._assert_read_status(should_equal='good', seconds_stale=0)
 
     fields = {'device_id': self.device_id}
 
@@ -117,7 +129,7 @@ class AndroidDeviceMetricTest(unittest.TestCase):
 
     android_device_metrics.get_device_statuses(
         self.no_temp_file, now=file_time)
-    self._assert_read_status(should_equal='good')
+    self._assert_read_status(should_equal='good', seconds_stale=0)
 
     fields = {'device_id': self.device_id}
     self.assertIsNone(android_device_metrics.cpu_temp.get(fields=fields))
@@ -128,7 +140,7 @@ class AndroidDeviceMetricTest(unittest.TestCase):
 
     android_device_metrics.get_device_statuses(
         self.port_path_file, now=file_time)
-    self._assert_read_status(should_equal='good')
+    self._assert_read_status(should_equal='good', seconds_stale=0)
 
     fields = {'device_id': self.device_id}
     self.assertEqual(
