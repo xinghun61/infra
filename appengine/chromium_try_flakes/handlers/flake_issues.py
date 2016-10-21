@@ -17,7 +17,7 @@ from google.appengine.api import urlfetch
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
-from apiclient.errors import HttpError
+import apiclient.errors
 from findit import findit
 import gae_ts_mon
 from issue_tracker import issue_tracker_api, issue
@@ -222,8 +222,8 @@ class ProcessIssue(webapp2.RequestHandler):
   def _report_flakes_to_findit(flake, flaky_runs):
     try:
       findit.FindItAPI().flake(flake, flaky_runs)
-    except httplib.HTTPException:
-      logging.warning('Failed to send flakes to FindIt')
+    except (httplib.HTTPException, apiclient.errors.Error):
+      logging.warning('Failed to send flakes to FindIt', exc_info=True)
 
   @ndb.transactional
   def _update_issue(self, api, flake, new_flakes, now):
@@ -717,7 +717,7 @@ class OverrideIssueId(webapp2.RequestHandler):
       api = issue_tracker_api.IssueTrackerAPI('chromium')
       try:
         api.getIssue(issue_id)
-      except HttpError as e:
+      except apiclient.errors.HttpError as e:
         if e.resp.status != 404:
           raise
         self.response.set_status(404)

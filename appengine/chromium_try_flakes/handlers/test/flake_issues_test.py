@@ -807,6 +807,10 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     self.mock_findit.return_value.flake.side_effect = httplib.HTTPException()
     ProcessIssue._report_flakes_to_findit(None, None)
 
+    self.mock_findit.return_value.flake.side_effect = HttpError(
+        mock.Mock(status=503), '') 
+    ProcessIssue._report_flakes_to_findit(None, None)
+
 
 class CreateFlakyRunTestCase(testing.AppengineTestCase):
   app_module = main.app
