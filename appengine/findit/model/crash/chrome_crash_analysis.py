@@ -17,3 +17,8 @@ class ChromeCrashAnalysis(CrashAnalysis):
     super(ChromeCrashAnalysis, self).Reset()
     self.historical_metadata = None
     self.channel = None
+
+  @property
+  def customized_data(self):
+    return {'historical_metadata': self.historical_metadata,
+            'channel': self.channel}

@@ -33,3 +33,13 @@ class ChromeCrashAnalysisTest(CrashTestCase):
     analysis.Reset()
     self.assertIsNone(analysis.channel)
     self.assertIsNone(analysis.historical_metadata)
+
+  def testChromeCrashAnalysisCustomizedProperty(self):
+    analysis = ChromeCrashAnalysis()
+    analysis.historical_metadata = {'chrome_version': '50.0.1200.0',
+                                    'cpm': 0.5}
+    analysis.channel = 'canary'
+    self.assertEqual(analysis.customized_data,
+                     {'historical_metadata': {'chrome_version': '50.0.1200.0',
+                                              'cpm': 0.5},
+                      'channel': 'canary'})

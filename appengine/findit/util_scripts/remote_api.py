@@ -12,28 +12,10 @@ For detail on usage of Remote API, please refer to:
   https://cloud.google.com/appengine/docs/python/tools/remoteapi
 """
 
-import os
 import socket
-import sys
 
-
-_FINDIT_ROOT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir)
-_THIRD_PARTY_DIR = os.path.join(_FINDIT_ROOT_DIR, 'third_party')
-_APPNGINE_SDK_DIR = os.path.join(_FINDIT_ROOT_DIR, os.path.pardir,
-                                 os.path.pardir, os.path.pardir,
-                                 'google_appengine')
-
-
-# Add App Engine SDK dir to sys.path.
-sys.path.insert(1, _APPNGINE_SDK_DIR)
-sys.path.insert(1, _THIRD_PARTY_DIR)
-import dev_appserver
-dev_appserver.fix_sys_path()
-
-
-# Add Findit root dir to sys.path so that modules in Findit would be available.
-sys.path.insert(1, _FINDIT_ROOT_DIR)
-
+import script_util
+script_util.SetUpSystemPaths()
 
 from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
