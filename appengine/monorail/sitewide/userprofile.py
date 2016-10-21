@@ -73,14 +73,16 @@ class UserProfile(AbstractUserPage):
         mr.cnxn, mr.auth.user_id, mr.viewed_user_auth.user_id)
 
     if viewed_user.last_visit_timestamp:
-      last_visit_str, _details = timestr.GetHumanScaleDate(
-          viewed_user.last_visit_timestamp)
+      last_visit_str = timestr.FormatRelativeDate(
+          viewed_user.last_visit_timestamp, days_only=True)
+      last_visit_str = last_visit_str or 'Less than 2 days ago'
     else:
       last_visit_str = 'Never'
 
     if viewed_user.email_bounce_timestamp:
-      last_bounce_str, _details = timestr.GetHumanScaleDate(
-          viewed_user.email_bounce_timestamp)
+      last_bounce_str = timestr.FormatRelativeDate(
+          viewed_user.email_bounce_timestamp, days_only=True)
+      last_bounce_str = last_bounce_str or 'Less than 2 days ago'
     else:
       last_bounce_str = None
 

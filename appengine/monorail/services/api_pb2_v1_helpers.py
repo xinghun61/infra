@@ -7,6 +7,7 @@
 
 import datetime
 import logging
+import time
 
 from framework import framework_constants
 from framework import framework_helpers
@@ -96,12 +97,16 @@ def convert_person(user_id, cnxn, services, trap_exception=False):
       return None
     else:
       raise ex
-  time_bucket, _ = timestr.GetHumanScaleDate(user.last_visit_timestamp)
+
+  days_ago = None
+  if user.last_visit_timestamp:
+    secs_ago = int(time.time()) - user.last_visit_timestamp
+    days_ago = secs_ago / framework_constants.SECS_PER_DAY
   return api_pb2_v1.AtomPerson(
       kind='monorail#issuePerson',
       name=user.email,
       htmlLink='https://%s/u/%d' % (framework_helpers.GetHostPort(), user_id),
-      last_visit=time_bucket,
+      last_visit_days_ago=days_ago,
       email_bouncing=bool(user.email_bounce_timestamp),
       vacation_message=user.vacation_message)
 
