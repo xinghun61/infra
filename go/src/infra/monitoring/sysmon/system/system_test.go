@@ -94,13 +94,11 @@ func TestMetrics(t *testing.T) {
 			iface = "en0"
 		}
 
-		v, err := netUp.Get(c, iface)
+		_, err := netUp.Get(c, iface)
 		So(err, ShouldBeNil)
-		So(v, ShouldBeGreaterThan, 0)
 
-		v, err = netDown.Get(c, iface)
+		_, err = netDown.Get(c, iface)
 		So(err, ShouldBeNil)
-		So(v, ShouldBeGreaterThan, 0)
 	})
 
 	Convey("Process", t, func() {
