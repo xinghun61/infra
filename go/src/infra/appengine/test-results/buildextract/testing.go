@@ -6,9 +6,12 @@ package buildextract
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
+
+	"golang.org/x/net/context"
 )
 
 // TestingClient is provided for use by external packages tests.
@@ -29,7 +32,7 @@ var _ Interface = (*TestingClient)(nil)
 // GetMasterJSON returns the value in c.M for the supplied master.
 // If the master does not exist, the error will be StatusError with
 // StatusCode set to http.StatusNotFound.
-func (c *TestingClient) GetMasterJSON(master string) (io.ReadCloser, error) {
+func (c *TestingClient) GetMasterJSON(ctx context.Context, master string) (io.ReadCloser, error) {
 	b, ok := c.M[master]
 	if !ok {
 		return nil, &StatusError{
@@ -46,7 +49,7 @@ func (c *TestingClient) GetMasterJSON(master string) (io.ReadCloser, error) {
 // http.StatusNotFound.
 //
 // WARNING: The last argument is currently unsupported and is ignored.
-func (c *TestingClient) GetBuildsJSON(builder, master string, _ int) (io.ReadCloser, error) {
+func (c *TestingClient) GetBuildsJSON(ctx context.Context, builder, master string, _ int) (*BuildsData, error) {
 	m, ok := c.B[master]
 	if !ok {
 		return nil, &StatusError{
@@ -61,5 +64,6 @@ func (c *TestingClient) GetBuildsJSON(builder, master string, _ int) (io.ReadClo
 			Body:       []byte("not found"),
 		}
 	}
-	return ioutil.NopCloser(bytes.NewReader(b)), nil
+	result := &BuildsData{}
+	return result, json.Unmarshal(b, result)
 }

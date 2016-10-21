@@ -274,7 +274,7 @@ func removeDuplicates(list []string) []string {
 // getBuilderNames returns the builder names from Chrome
 // build extracts for the supplied master.
 func getBuilderNames(ctx context.Context, master string, client buildextract.Interface) ([]string, error) {
-	r, err := client.GetMasterJSON(master)
+	r, err := client.GetMasterJSON(ctx, master)
 	if err != nil {
 		logging.Fields{
 			logging.ErrorKey: err,
@@ -305,7 +305,7 @@ func getBuilderNames(ctx context.Context, master string, client buildextract.Int
 // getStepNames returns the step names for the supplied master
 // and builder from Chrome build extracts.
 func getStepNames(ctx context.Context, master string, builder string, client buildextract.Interface) ([]string, error) {
-	r, err := client.GetBuildsJSON(builder, master, 1)
+	data, err := client.GetBuildsJSON(ctx, builder, master, 1)
 	if err != nil {
 		if se, ok := err.(*buildextract.StatusError); ok {
 			if se.StatusCode == http.StatusNotFound {
@@ -320,21 +320,7 @@ func getStepNames(ctx context.Context, master string, builder string, client bui
 		}.Infof(ctx, "getStepNames")
 		return nil, err
 	}
-	defer r.Close()
 
-	data := struct {
-		Builds []struct {
-			Steps []struct {
-				Name string `json:"name"`
-			} `json:"steps"`
-		} `json:"builds"`
-	}{}
-	if err := json.NewDecoder(r).Decode(&data); err != nil {
-		logging.Fields{
-			logging.ErrorKey: err, "master": master, "builder": builder,
-		}.Errorf(ctx, "getStepNames: error unmarshaling JSON")
-		return nil, err
-	}
 	if len(data.Builds) == 0 {
 		logging.Fields{
 			"master":  master,

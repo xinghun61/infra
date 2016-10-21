@@ -5,13 +5,69 @@
 package buildextract
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
+	"github.com/golang/protobuf/proto"
+	milo "github.com/luci/luci-go/milo/api/proto"
 	. "github.com/smartystreets/goconvey/convey"
+	"golang.org/x/net/context"
 )
+
+type fakeClient struct {
+	MasterData map[string][]byte
+	BuildsData map[string]map[string][]byte
+}
+
+func (c *fakeClient) Call(ctx context.Context, serviceName, methodName string, in, out proto.Message, opts ...grpc.CallOption) error {
+	if serviceName != "milo.Buildbot" {
+		panic(fmt.Errorf("unkonwn serivce name %s", serviceName))
+	}
+	switch methodName {
+	case "GetCompressedMasterJSON":
+		iin := in.(*milo.MasterRequest)
+		iout := out.(*milo.CompressedMasterJSON)
+		gsbz := bytes.Buffer{}
+		gsw := gzip.NewWriter(&gsbz)
+		data, ok := c.MasterData[iin.Name]
+		if !ok {
+			return grpc.Errorf(codes.NotFound, "not found")
+		}
+		gsw.Write(data)
+		gsw.Close()
+		iout.Data = gsbz.Bytes()
+	case "GetBuildbotBuildsJSON":
+		iin := in.(*milo.BuildbotBuildsRequest)
+		iout := out.(*milo.BuildbotBuildsJSON)
+		d, ok := c.BuildsData[iin.Master][iin.Builder]
+		if !ok {
+			return grpc.Errorf(codes.NotFound, "not found")
+		}
+		result := &BuildsData{}
+		err := json.Unmarshal(d, result)
+		if err != nil {
+			return err
+		}
+		for _, b := range result.Builds {
+			bs, err := json.Marshal(b)
+			if err != nil {
+				return err
+			}
+			iout.Builds = append(iout.Builds, &milo.BuildbotBuildJSON{Data: bs})
+		}
+	default:
+		panic(fmt.Errorf("unknown method name %s", methodName))
+	}
+	return nil
+}
 
 func TestClient(t *testing.T) {
 	t.Parallel()
@@ -22,37 +78,22 @@ func TestClient(t *testing.T) {
 	}
 	buildsData := map[string]map[string][]byte{
 		"chromium.mac": {
-			"ios.simulator": []byte(`{ "hello": "world" }`),
+			"ios.simulator": []byte(`{"builds":[{"steps":[{"name":"baz"}]}]}`),
 		},
 	}
 
-	getChromiumMacMaster := func(w http.ResponseWriter, req *http.Request) {
-		w.Write(masterData["chromium.mac"])
+	fakepc := fakeClient{
+		MasterData: masterData,
+		BuildsData: buildsData,
 	}
-	getBuilds := func(w http.ResponseWriter, req *http.Request) {
-		m, b := req.FormValue("master"), req.FormValue("builder")
-		data, ok := buildsData[m][b]
-		if !ok {
-			http.Error(w, "not found", http.StatusNotFound)
-			return
-		}
-		w.Write(data)
-	}
-
-	mux := http.NewServeMux()
-	mux.Handle("/get_master/chromium.mac", http.HandlerFunc(getChromiumMacMaster))
-	mux.Handle("/get_builds", http.HandlerFunc(getBuilds))
-	srv := httptest.NewServer(mux)
 
 	Convey("Client", t, func() {
-		c := Client{
-			HTTPClient: &http.Client{},
-			BaseURL:    srv.URL,
-		}
+		c := Client{&fakepc}
+		ctx := context.Background()
 
 		Convey("exists", func() {
 			Convey("GetMasterJSON", func() {
-				data, err := c.GetMasterJSON("chromium.mac")
+				data, err := c.GetMasterJSON(ctx, "chromium.mac")
 				So(err, ShouldBeNil)
 				defer data.Close()
 				b, err := ioutil.ReadAll(data)
@@ -60,24 +101,21 @@ func TestClient(t *testing.T) {
 				So(b, ShouldResemble, []byte(`{ "life": 42 }`))
 			})
 			Convey("GetBuildsJSON", func() {
-				data, err := c.GetBuildsJSON("ios.simulator", "chromium.mac", 1)
+				data, err := c.GetBuildsJSON(ctx, "ios.simulator", "chromium.mac", 1)
 				So(err, ShouldBeNil)
-				defer data.Close()
-				b, err := ioutil.ReadAll(data)
-				So(err, ShouldBeNil)
-				So(b, ShouldResemble, []byte(`{ "hello": "world" }`))
+				So(data.Builds[0].Steps[0].Name, ShouldEqual, "baz")
 			})
 
 		})
 		Convey("does not exist", func() {
 			Convey("GetMasterJSON", func() {
-				_, err := c.GetMasterJSON("non-existent")
+				_, err := c.GetMasterJSON(ctx, "non-existent")
 				So(err, ShouldHaveSameTypeAs, &StatusError{})
 				So(err.(*StatusError).StatusCode, ShouldEqual, http.StatusNotFound)
 
 			})
 			Convey("GetBuildsJSON", func() {
-				_, err := c.GetBuildsJSON("non-existent", "chromium.mac", 1)
+				_, err := c.GetBuildsJSON(ctx, "non-existent", "chromium.mac", 1)
 				So(err, ShouldHaveSameTypeAs, &StatusError{})
 				So(err.(*StatusError).StatusCode, ShouldEqual, http.StatusNotFound)
 			})

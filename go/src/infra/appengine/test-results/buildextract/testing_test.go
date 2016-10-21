@@ -5,21 +5,29 @@
 package buildextract
 
 import (
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"golang.org/x/net/context"
 )
 
 func TestTestClient(t *testing.T) {
 	t.Parallel()
 
 	Convey("TestingClient", t, func() {
+		ctx := context.Background()
 		readAll := func(data io.ReadCloser) []byte {
 			defer data.Close()
 			b, err := ioutil.ReadAll(data)
+			So(err, ShouldBeNil)
+			return b
+		}
+		decodeData := func(data *BuildsData) []byte {
+			b, err := json.Marshal(data)
 			So(err, ShouldBeNil)
 			return b
 		}
@@ -32,32 +40,32 @@ func TestTestClient(t *testing.T) {
 				},
 				B: map[string]map[string][]byte{
 					"chromium.foo": {
-						"Ubuntu Linux": []byte(`{"canonical":"unity"}`),
+						"Ubuntu Linux": []byte(`{"builds":[{"steps":[{"name":"foo"}]}]}`),
 					},
 					"chromium.hello": {
-						"Windows 10": []byte(`{"qux":"baaz"}`),
+						"Windows 10": []byte(`{"builds":[{"steps":[{"name":"baz"}]}]}`),
 					},
 				},
 			}
 
 			Convey("GetMasterJSON", func() {
-				data, err := tc.GetMasterJSON("chromium.foo")
+				data, err := tc.GetMasterJSON(ctx, "chromium.foo")
 				So(err, ShouldBeNil)
 				So(string(readAll(data)), ShouldEqual, `{"bar":42}`)
 
-				data, err = tc.GetMasterJSON("chromium.hello")
+				data, err = tc.GetMasterJSON(ctx, "chromium.hello")
 				So(err, ShouldBeNil)
 				So(string(readAll(data)), ShouldEqual, `{"baz":9000}`)
 			})
 
 			Convey("GetBuildsJSON", func() {
-				data, err := tc.GetBuildsJSON("Ubuntu Linux", "chromium.foo", 10)
+				data, err := tc.GetBuildsJSON(ctx, "Ubuntu Linux", "chromium.foo", 10)
 				So(err, ShouldBeNil)
-				So(string(readAll(data)), ShouldEqual, `{"canonical":"unity"}`)
+				So(string(decodeData(data)), ShouldEqual, `{"builds":[{"steps":[{"name":"foo"}]}]}`)
 
-				data, err = tc.GetBuildsJSON("Windows 10", "chromium.hello", 10)
+				data, err = tc.GetBuildsJSON(ctx, "Windows 10", "chromium.hello", 10)
 				So(err, ShouldBeNil)
-				So(string(readAll(data)), ShouldEqual, `{"qux":"baaz"}`)
+				So(string(decodeData(data)), ShouldEqual, `{"builds":[{"steps":[{"name":"baz"}]}]}`)
 			})
 		})
 
@@ -65,13 +73,13 @@ func TestTestClient(t *testing.T) {
 			tc := &TestingClient{}
 
 			Convey("GetMasterJSON", func() {
-				_, err := tc.GetMasterJSON("chromium.foo")
+				_, err := tc.GetMasterJSON(ctx, "chromium.foo")
 				So(err, ShouldHaveSameTypeAs, &StatusError{})
 				So(err.(*StatusError).StatusCode, ShouldEqual, http.StatusNotFound)
 			})
 
 			Convey("GetBuildsJSON", func() {
-				_, err := tc.GetBuildsJSON("bax", "bar", 10)
+				_, err := tc.GetBuildsJSON(ctx, "bax", "bar", 10)
 				So(err, ShouldHaveSameTypeAs, &StatusError{})
 				So(err.(*StatusError).StatusCode, ShouldEqual, http.StatusNotFound)
 			})
@@ -88,17 +96,17 @@ func TestTestClient(t *testing.T) {
 			}
 
 			Convey("GetMasterJSON", func() {
-				_, err := tc.GetMasterJSON("chromium.hello")
+				_, err := tc.GetMasterJSON(ctx, "chromium.hello")
 				So(err, ShouldHaveSameTypeAs, &StatusError{})
 				So(err.(*StatusError).StatusCode, ShouldEqual, http.StatusNotFound)
 			})
 
 			Convey("GetBuildsJSON", func() {
-				_, err := tc.GetBuildsJSON("Ubuntu Linux", "chromium.foo", 10)
+				_, err := tc.GetBuildsJSON(ctx, "Ubuntu Linux", "chromium.foo", 10)
 				So(err, ShouldHaveSameTypeAs, &StatusError{})
 				So(err.(*StatusError).StatusCode, ShouldEqual, http.StatusNotFound)
 
-				_, err = tc.GetBuildsJSON("Windows 10", "chromium.hello", 10)
+				_, err = tc.GetBuildsJSON(ctx, "Windows 10", "chromium.hello", 10)
 				So(err, ShouldHaveSameTypeAs, &StatusError{})
 				So(err.(*StatusError).StatusCode, ShouldEqual, http.StatusNotFound)
 			})

@@ -238,3 +238,7 @@ import:
 - package: github.com/googleapis/gax-go
   version: master
   repo: https://chromium.googlesource.com/external/github.com/googleapis/gax-go.git
+- package: github.com/luci/luci-go
+  repo: https://chromium.googlesource.com/external/github.com/luci/luci-go.git
+  subpackages:
+  - milo/api/proto

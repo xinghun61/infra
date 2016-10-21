@@ -16,17 +16,24 @@
 package buildextract
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
-	"net/url"
-	"path"
-	"strconv"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/luci/luci-go/grpc/prpc"
+	milo "github.com/luci/luci-go/milo/api/proto"
+	"golang.org/x/net/context"
 )
 
-// BaseURL is the base URL of the Chrome build extract API.
-const BaseURL = "https://chrome-build-extract.appspot.com"
+// BaseURL is the base URL of the Milo API.
+const BaseURL = "luci-milo.appspot.com"
 
 // StatusError is returned when the HTTP roundtrip succeeds,
 // but the response's status code is not http.StatusOK.
@@ -46,62 +53,61 @@ func (e *StatusError) Error() string {
 // communicates with the live service.
 // See TestingClient for a client that can be used in external package tests.
 type Interface interface {
-	GetMasterJSON(master string) (io.ReadCloser, error)
-	GetBuildsJSON(builder, master string, numBuilds int) (io.ReadCloser, error)
+	GetMasterJSON(ctx context.Context, master string) (io.ReadCloser, error)
+	GetBuildsJSON(ctx context.Context, builder, master string, numBuilds int) (*BuildsData, error)
 }
 
 var _ Interface = (*Client)(nil)
 
-// Client is the HTTP client and configuration used to make requests.
+// Client is the PRPC client and configuration used to make requests.
 // Safe for concurrent use.
 type Client struct {
-	HTTPClient *http.Client
-	BaseURL    string
+	pc PRPCClient
+}
+type PRPCClient interface {
+	Call(ctx context.Context, serviceName, methodName string, in, out proto.Message, opts ...grpc.CallOption) error
 }
 
 // NewClient returns a Client initialized with the supplied
 // http.Client. The returned client is ready to make requests to the API.
 func NewClient(c *http.Client) *Client {
 	return &Client{
-		HTTPClient: c,
-		BaseURL:    BaseURL,
-	}
-}
-
-func (c *Client) doRequest(req *http.Request) (io.ReadCloser, error) {
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return nil, err
+		pc: &prpc.Client{
+			C:    c,
+			Host: BaseURL,
+		},
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		defer resp.Body.Close()
-		b, _ := ioutil.ReadAll(resp.Body) // Ignore error.
-		return nil, &StatusError{
-			StatusCode: resp.StatusCode,
-			Status:     resp.Status,
-			Body:       b,
-		}
-	}
-
-	return resp.Body, nil
 }
 
 // GetMasterJSON returns the masters data as JSON for the supplied arguments.
 //
 // If the returned error is non-nil, the caller is responsible for
 // closing the retured io.ReadCloser.
-func (c *Client) GetMasterJSON(master string) (io.ReadCloser, error) {
-	u, err := url.Parse(c.BaseURL)
+func (c *Client) GetMasterJSON(ctx context.Context, master string) (io.ReadCloser, error) {
+	req := &milo.MasterRequest{Name: master}
+	rsp := &milo.CompressedMasterJSON{}
+	err := c.pc.Call(ctx, "milo.Buildbot", "GetCompressedMasterJSON", req, rsp)
 	if err != nil {
+		if code := grpc.Code(err); code == codes.NotFound {
+			return nil, &StatusError{
+				StatusCode: http.StatusNotFound,
+				Body:       []byte("not found"),
+			}
+		}
 		return nil, err
 	}
-	u.Path = path.Join(u.Path, "/get_master", master)
+	return gzip.NewReader(bytes.NewReader(rsp.Data))
+}
 
-	return c.doRequest(&http.Request{
-		Method: "GET",
-		URL:    u,
-	})
+type Build struct {
+	Steps []struct {
+		Name string `json:"name"`
+	} `json:"steps"`
+}
+
+type BuildsData struct {
+	Builds []Build `json:"builds"`
 }
 
 // GetBuildsJSON returns the builds data as JSON for the supplied
@@ -109,21 +115,32 @@ func (c *Client) GetMasterJSON(master string) (io.ReadCloser, error) {
 //
 // If the returned error is non-nil, the caller is responsible for
 // closing the retured io.ReadCloser.
-func (c *Client) GetBuildsJSON(builder, master string, numBuilds int) (io.ReadCloser, error) {
-	u, err := url.Parse(c.BaseURL)
+func (c *Client) GetBuildsJSON(ctx context.Context, builder, master string, numBuilds int) (*BuildsData, error) {
+	req := &milo.BuildbotBuildsRequest{
+		Master:         master,
+		Builder:        builder,
+		Limit:          int32(numBuilds),
+		IncludeCurrent: false,
+	}
+	rsp := &milo.BuildbotBuildsJSON{}
+	err := c.pc.Call(ctx, "milo.Buildbot", "GetBuildbotBuildsJSON", req, rsp)
 	if err != nil {
+		if code := grpc.Code(err); code == codes.NotFound {
+			return nil, &StatusError{
+				StatusCode: http.StatusNotFound,
+				Body:       []byte("not found"),
+			}
+		}
 		return nil, err
 	}
-	u.Path = path.Join(u.Path, "/get_builds")
 
-	val := url.Values{}
-	val.Set("builder", builder)
-	val.Set("master", master)
-	val.Set("num_builds", strconv.Itoa(numBuilds))
-	u.RawQuery = val.Encode()
-
-	return c.doRequest(&http.Request{
-		Method: "GET",
-		URL:    u,
-	})
+	result := &BuildsData{}
+	result.Builds = make([]Build, len(rsp.Builds))
+	for i, b := range rsp.Builds {
+		err := json.Unmarshal(b.Data, &(result.Builds[i]))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return result, nil
 }
