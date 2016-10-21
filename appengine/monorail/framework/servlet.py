@@ -823,7 +823,7 @@ class Servlet(webapp2.RequestHandler):
   def _RecordVisitTime(self, mr, now=None):
     """Record the signed in user's last visit time, if possible."""
     now = now or int(time.time())
-    if not settings.read_only and mr.auth.user_pb:
+    if not settings.read_only and mr.auth.user_id:
       user_pb = mr.auth.user_pb
       if (user_pb.last_visit_timestamp <
           now - framework_constants.VISIT_RESOLUTION):

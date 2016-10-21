@@ -378,6 +378,9 @@ class UserService(object):
     Returns:
       Nothing.
     """
+    if not user_id:
+      raise NoSuchUserException('Cannot update anonymous user')
+
     delta = {
         'is_site_admin': user.is_site_admin,
         'notify_issue_change': user.notify_issue_change,
