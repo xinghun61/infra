@@ -205,6 +205,7 @@ class AbstractTwoLevelCache(object):
     if missed_keys and use_cache:
       memcache_hits, missed_keys = self._ReadFromMemcache(missed_keys)
       result_dict.update(memcache_hits)
+      self.cache.CacheAll(memcache_hits)
 
     while missed_keys:
       missed_batch = missed_keys[:self._FETCH_BATCH_SIZE]

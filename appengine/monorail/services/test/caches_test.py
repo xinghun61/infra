@@ -111,8 +111,7 @@ class AbstractTwoLevelCacheTest(unittest.TestCase):
 
     self.cnxn = 'fake connection'
     self.cache_manager = fake.CacheManager()
-    self.testable_cache = TestableTwoLevelCache(
-        self.cache_manager, 'issue', max_size=3)
+    self.testable_cache = TestableTwoLevelCache(self.cache_manager, 'issue')
 
   def testCacheItem(self):
     self.testable_cache.CacheItem(123, 'foo')
@@ -123,6 +122,21 @@ class AbstractTwoLevelCacheTest(unittest.TestCase):
     self.assertTrue(self.testable_cache.HasItem(123))
     self.assertFalse(self.testable_cache.HasItem(444))
     self.assertFalse(self.testable_cache.HasItem(999))
+
+  def testGetAll_FetchGetsItFromMemcache(self):
+    self.testable_cache.CacheItem(123, 'foo')
+    self.testable_cache.CacheItem(124, 'bar')
+    # Clear the RAM cache so that we find items in memcache.
+    self.testable_cache.cache.LocalInvalidateAll()
+    self.testable_cache.CacheItem(125, 'baz')
+    hits, misses = self.testable_cache.GetAll(
+        self.cnxn, [123, 124, 333, 444])
+    self.assertEqual({123: 'foo', 124: 'bar', 333: 333, 444: 444}, hits)
+    self.assertEqual([], misses)
+    # The RAM cache now has items found in memcache and DB.
+    self.assertItemsEqual(
+        [123, 124, 125, 333, 444],
+        self.testable_cache.cache.cache.keys())
 
   def testGetAll_FetchGetsItFromDB(self):
     self.testable_cache.CacheItem(123, 'foo')
