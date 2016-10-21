@@ -19,17 +19,7 @@ from project import project_views
 from sitewide import sitewide_helpers
 
 
-class AbstractUserPage(servlet.Servlet):
-  """Base class for UserProfile and UserUpdates pages."""
-
-  _PAGE_TEMPLATE = None
-
-  def GatherPageData(self, mr):
-    """Build up a dictionary of data values to use when rendering the page."""
-    raise NotImplementedError()
-
-
-class UserProfile(AbstractUserPage):
+class UserProfile(servlet.Servlet):
   """Shows a page of information about a user."""
 
   _PAGE_TEMPLATE = 'sitewide/user-profile-page.ezt'

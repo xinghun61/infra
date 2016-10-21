@@ -17,12 +17,12 @@ import logging
 from third_party import ezt
 
 from features import activities
+from framework import servlet
 from framework import urls
 from sitewide import sitewide_helpers
-from sitewide import userprofile
 
 
-class AbstractUserUpdatesPage(userprofile.AbstractUserPage):
+class AbstractUserUpdatesPage(servlet.Servlet):
   """Base class for user updates pages."""
 
   _PAGE_TEMPLATE = 'sitewide/user-updates-page.ezt'
