@@ -661,6 +661,10 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 		// FIXME: This is a very simplistic model, and we're throwing away a lot of the findit data.
 		// This data should really be a part of the regression range data.
 		for _, result := range finditResults {
+			if result.StepName != mergedBF.StepAtFault.Step.Name {
+				continue
+			}
+
 			mergedBF.SuspectedCLs = append(mergedBF.SuspectedCLs, result.SuspectedCLs...)
 		}
 

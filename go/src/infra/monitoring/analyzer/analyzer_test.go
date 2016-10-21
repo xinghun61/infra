@@ -465,6 +465,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 					Step("fake_step").Results(2).BuilderFaker,
 				finditData: []*messages.FinditResult{
 					{
+						StepName: "fake_step",
 						SuspectedCLs: []messages.SuspectCL{
 							{
 								RepoName:       "repo",
@@ -506,6 +507,91 @@ func TestBuilderStepAlerts(t *testing.T) {
 									RepoName:       "repo",
 									Revision:       "deadbeef",
 									CommitPosition: 1234,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				name:         "two build failures with findit",
+				master:       "fake.master",
+				builder:      "fake.builder",
+				recentBuilds: []int64{0},
+				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
+					Step("fake_step").Results(2).BuildFaker.
+					Step("other_step").Results(2).BuilderFaker,
+				finditData: []*messages.FinditResult{
+					{
+						StepName: "fake_step",
+						SuspectedCLs: []messages.SuspectCL{
+							{
+								RepoName:       "repo",
+								Revision:       "deadbeef",
+								CommitPosition: 1234,
+							},
+						},
+					},
+				},
+				buildsAtFault: []int{0, 0},
+				stepsAtFault:  []string{"fake_step", "other_step"},
+				wantAlerts: []messages.Alert{
+					{
+						Key:      "fake.master.fake.builder.fake_step.",
+						Title:    "fakeTitle",
+						Type:     messages.AlertBuildFailure,
+						Body:     "",
+						Severity: messages.NewFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{
+									Name: "fake.builder",
+									URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+								},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []*messages.RegressionRange{
+								{
+									Repo:      "test",
+									URL:       "http://test",
+									Revisions: []string{"291569"},
+									Positions: []string{"refs/heads/master@{#291569}"},
+								},
+							},
+							SuspectedCLs: []messages.SuspectCL{
+								{
+									RepoName:       "repo",
+									Revision:       "deadbeef",
+									CommitPosition: 1234,
+								},
+							},
+						},
+					},
+					{
+						Key:      "fake.master.fake.builder.other_step.",
+						Title:    "fakeTitle",
+						Type:     messages.AlertBuildFailure,
+						Body:     "",
+						Severity: messages.NewFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{
+									Name: "fake.builder",
+									URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+								},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []*messages.RegressionRange{
+								{
+									Repo:      "test",
+									URL:       "http://test",
+									Revisions: []string{"291569"},
+									Positions: []string{"refs/heads/master@{#291569}"},
 								},
 							},
 						},
