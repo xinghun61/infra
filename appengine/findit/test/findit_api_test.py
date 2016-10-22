@@ -4,6 +4,7 @@
 
 import json
 import mock
+import pickle
 import re
 
 import endpoints
@@ -14,16 +15,16 @@ from testing_utils import testing
 
 from common.waterfall import failure_type
 import findit_api
-from findit_api import FindItApi
+from model import analysis_status
+from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
-from model import analysis_status
 from waterfall import waterfall_config
 
 
 class FinditApiTest(testing.EndpointsTestCase):
-  api_service_cls = FindItApi
+  api_service_cls = findit_api.FindItApi
 
   def setUp(self):
     super(FinditApiTest, self).setUp()
@@ -706,10 +707,8 @@ class FinditApiTest(testing.EndpointsTestCase):
         expected_payload_json,
         json.loads(self.taskqueue_requests[0].get('payload')))
 
-  @mock.patch.object(
-      findit_api.flake_analysis_service,
-      'ScheduleAnalysisForFlake', return_value=None)
-  def testUnauthorizedRequestToAnalyzeFlake(self, _mocked_object):
+  @mock.patch.object(findit_api, '_AsyncProcessFlakeReport', return_value=None)
+  def testUnauthorizedRequestToAnalyzeFlake(self, mocked_func):
     self.mock_current_user(user_email='test@chromium.org', is_admin=False)
 
     flake = {
@@ -731,11 +730,11 @@ class FinditApiTest(testing.EndpointsTestCase):
         re.compile('.*401 Unauthorized.*',
                    re.MULTILINE | re.DOTALL),
         self.call_api, 'AnalyzeFlake', body=flake)
+    mocked_func.assert_not_called()
 
   @mock.patch.object(
-      findit_api.flake_analysis_service,
-      'ScheduleAnalysisForFlake', return_value=True)
-  def testAuthorizedRequestToAnalyzeFlake(self, _mocked_object):
+      findit_api, '_AsyncProcessFlakeReport', side_effect=Exception())
+  def testAuthorizedRequestToAnalyzeFlakeNotQueued(self, mocked_func):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
     flake = {
@@ -754,4 +753,41 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     response = self.call_api('AnalyzeFlake', body=flake)
     self.assertEqual(200, response.status_int)
-    self.assertTrue(response.json_body.get('analysis_triggered'))
+    self.assertFalse(response.json_body.get('queued'))
+    self.assertEqual(1, mocked_func.call_count)
+    self.assertEqual(0, len(self.taskqueue_requests))
+
+  def testAuthorizedRequestToAnalyzeFlakeQueued(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+
+    flake = {
+        'name': 'suite.test',
+        'is_step': False,
+        'bug_id': 123,
+        'build_steps': [
+            {
+                'master_name': 'm',
+                'builder_name': 'b',
+                'build_number': 456,
+                'step_name': 'name (with patch) on Windows-7-SP1',
+            }
+        ]
+    }
+
+    response = self.call_api('AnalyzeFlake', body=flake)
+    self.assertEqual(200, response.status_int)
+    self.assertTrue(response.json_body.get('queued'))
+    self.assertEqual(1, len(self.taskqueue_requests))
+    request, user_email, is_admin = pickle.loads(
+        self.taskqueue_requests[0]['payload'])
+    self.assertEqual('suite.test', request.name)
+    self.assertFalse(request.is_step)
+    self.assertEqual(123, request.bug_id)
+    self.assertEqual(1, len(request.build_steps))
+    self.assertEqual('m', request.build_steps[0].master_name)
+    self.assertEqual('b', request.build_steps[0].builder_name)
+    self.assertEqual(456, request.build_steps[0].build_number)
+    self.assertEqual('name (with patch) on Windows-7-SP1',
+                     request.build_steps[0].step_name)
+    self.assertEqual('test@chromium.org', user_email)
+    self.assertTrue(is_admin)

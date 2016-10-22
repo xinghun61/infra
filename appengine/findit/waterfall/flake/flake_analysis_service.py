@@ -169,11 +169,11 @@ def _CheckForNewAnalysis(request):
     return _MergeNewRequestIntoExistingOne(request, previous_request)
 
 
-def _IsAuthorizedUser(user_email):
-  """Returns True if the given user email account  is authorized for access."""
-  return user_email and (
+def IsAuthorizedUser(user_email, is_admin):
+  """Returns True if the given user email account is authorized for access."""
+  return is_admin or (user_email and (
       user_email in constants.WHITELISTED_APP_ACCOUNTS or
-      user_email.endswith('@google.com'))
+      user_email.endswith('@google.com')))
 
 
 def ScheduleAnalysisForFlake(request, user_email, is_admin, triggering_source):
@@ -192,7 +192,7 @@ def ScheduleAnalysisForFlake(request, user_email, is_admin, triggering_source):
   """
   assert len(request.build_steps), 'At least 1 build step is needed!'
 
-  if not is_admin and not _IsAuthorizedUser(user_email):
+  if not IsAuthorizedUser(user_email, is_admin):
     return None
   request.user_emails = [user_email]
 

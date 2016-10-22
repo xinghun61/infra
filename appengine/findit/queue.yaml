@@ -34,6 +34,14 @@ queue:
   retry_parameters:
     task_retry_limit: 0
 
+- name: waterfall-flake-analysis-request
+  mode: push
+  rate: 10/s
+  bucket_size: 100
+  max_concurrent_requests: 20
+  retry_parameters:
+    task_retry_limit: 0
+
 - name: crash-analysis-fracas-queue
   mode: push
   rate: 20/s

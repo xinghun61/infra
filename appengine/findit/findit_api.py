@@ -12,6 +12,7 @@ Current APIs include:
 
 import json
 import logging
+import pickle
 
 import endpoints
 from google.appengine.api import taskqueue
@@ -30,7 +31,6 @@ from model.wf_try_job import WfTryJob
 from waterfall import buildbot
 from waterfall import waterfall_config
 from waterfall.flake import flake_analysis_service
-from waterfall.flake import triggering_sources
 
 
 # This is used by the underlying ProtoRpc when creating names for the ProtoRPC
@@ -110,17 +110,27 @@ class _Build(messages.Message):
 
 
 class _FlakeAnalysis(messages.Message):
-  analysis_triggered = messages.BooleanField(1, required=True)
+  queued = messages.BooleanField(1, required=True)
 
 
-def _TriggerNewAnalysesOnDemand(builds):
-  """Pushes a task to run on the backend to trigger new analyses on demand."""
+def _AsyncProcessFailureAnalysisRequests(builds):
+  """Pushes a task on the backend to process requests of failure analysis."""
   target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
   payload = json.dumps({'builds': builds})
   taskqueue.add(
-      url=constants.WATERFALL_TRIGGER_ANALYSIS_URL,
+      url=constants.WATERFALL_PROCESS_FAILURE_ANALYSIS_REQUESTS_URL,
       payload=payload, target=target,
       queue_name=constants.WATERFALL_FAILURE_ANALYSIS_REQUEST_QUEUE)
+
+
+def _AsyncProcessFlakeReport(flake_analysis_request, user_email, is_admin):
+  """Pushes a task on the backend to process the flake report."""
+  target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
+  payload = pickle.dumps((flake_analysis_request, user_email, is_admin))
+  taskqueue.add(
+      url=constants.WATERFALL_PROCESS_FLAKE_ANALYSIS_REQUEST_URL,
+      payload=payload, target=target,
+      queue_name=constants.WATERFALL_FLAKE_ANALYSIS_REQUEST_QUEUE)
 
 
 # Create a Cloud Endpoints API.
@@ -279,7 +289,7 @@ class FindItApi(remote.Service):
     logging.info('%d build failure(s), while %d are supported',
                  len(request.builds), len(supported_builds))
     try:
-      _TriggerNewAnalysesOnDemand(supported_builds)
+      _AsyncProcessFailureAnalysisRequests(supported_builds)
     except Exception:  # pragma: no cover.
       # If we fail to post a task to the task queue, we ignore and wait for next
       # request.
@@ -294,6 +304,10 @@ class FindItApi(remote.Service):
     user_email = auth_util.GetUserEmail()
     is_admin = auth_util.IsCurrentUserAdmin()
 
+    if not flake_analysis_service.IsAuthorizedUser(user_email, is_admin):
+      raise endpoints.UnauthorizedException(
+          'No permission to run a new analysis! User is %s' % user_email)
+
     def CreateFlakeAnalysisRequest(flake):
       analysis_request = FlakeAnalysisRequest.Create(
           flake.name, flake.is_step, flake.bug_id)
@@ -303,13 +317,15 @@ class FindItApi(remote.Service):
                                       time_util.GetUTCNow())
       return analysis_request
 
-    logging.info('Flake: %s', CreateFlakeAnalysisRequest(request))
-    analysis_triggered = flake_analysis_service.ScheduleAnalysisForFlake(
-        CreateFlakeAnalysisRequest(request), user_email, is_admin,
-        triggering_sources.FINDIT_API)
+    flake_analysis_request = CreateFlakeAnalysisRequest(request)
+    logging.info('Flake report: %s', flake_analysis_request)
 
-    if analysis_triggered is None:
-      raise endpoints.UnauthorizedException(
-          'No permission for a new analysis! User is %s' % user_email)
+    try:
+      _AsyncProcessFlakeReport(flake_analysis_request, user_email, is_admin)
+      queued = True
+    except Exception:
+      # Ignore the report when fail to queue it for async processing.
+      queued = False
+      logging.exception('Failed to queue flake report for async processing')
 
-    return _FlakeAnalysis(analysis_triggered=analysis_triggered)
+    return _FlakeAnalysis(queued=queued)
