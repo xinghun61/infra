@@ -58,7 +58,7 @@ BUILDER_PARAMETER = 'builder_name'
 PARAM_PROPERTIES = 'properties'
 PARAM_SWARMING = 'swarming'
 PARAM_CHANGES = 'changes'
-DEFAULT_URL_FORMAT = 'https://{swarming_hostname}/user/task/{task_id}'
+DEFAULT_URL_FORMAT = 'https://{swarming_hostname}/task?id={task_id}'
 
 
 ################################################################################
