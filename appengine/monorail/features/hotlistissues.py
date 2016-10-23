@@ -85,10 +85,13 @@ class HotlistIssues(servlet.Servlet):
           mr.cnxn, hotlist_issues_project_ids)
       harmonized_config = tracker_bizobj.HarmonizeConfigs(config_list)
 
+    with self.profiler.Phase('Checking issue permissions'):
+      issues = self._FilterIssues(mr, issues)
+
+    with self.profiler.Phase('Making user views'):
       issues_users_by_id = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user,
           tracker_bizobj.UsersInvolvedInIssues(issues or []))
-
 
     pagination = paginate.ArtifactPagination(
         mr, [issue.issue_id for issue in issues],
@@ -145,6 +148,31 @@ class HotlistIssues(servlet.Servlet):
     config_dict = self.services.config.GetProjectConfigs(cnxn, project_ids)
     config_list = [config_dict[project_id] for project_id in project_ids]
     return config_list
+
+  def _FilterIssues(self, mr, issues):
+    """Return a list of issues that the user is allowed to view."""
+    allowed_issues = []
+    project_ids = self.GetAllProjectsOfIssues(issues)
+    issue_projects = self.services.project.GetProjects(mr.cnxn, project_ids)
+    configs_by_project_id = self.services.config.GetProjectConfigs(
+        mr.cnxn, project_ids)
+    perms_by_project_id = {
+        pid: permissions.GetPermissions(
+            mr.auth.user_pb, mr.auth.effective_ids, p)
+        for pid, p in issue_projects.items()}
+    for issue in issues:
+      issue_project = issue_projects[issue.project_id]
+      config = configs_by_project_id[issue.project_id]
+      perms = perms_by_project_id[issue.project_id]
+      granted_perms = tracker_bizobj.GetGrantedPerms(
+          issue, mr.auth.effective_ids, config)
+      permit_view = permissions.CanViewIssue(
+          mr.auth.effective_ids, perms,
+          issue_project, issue, granted_perms=granted_perms)
+      if permit_view:
+        allowed_issues.append(issue)
+
+    return allowed_issues
 
   def GetCellFactories(self):
     return tablecell.CELL_FACTORIES
