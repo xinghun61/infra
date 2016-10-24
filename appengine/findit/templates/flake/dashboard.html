@@ -1,75 +1,170 @@
 <!DOCTYPE html>
 <head>
-  <title>Flaky tests</title>
+  <title>Flaky Tests Dashboard</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
   <style type="text/css">
     .truncated {
-      width: 300px;
+      max-width: 500px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
   </style>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script>
+    /*parameters = {
+      'result_status': '{{ result_status_filter }}' == '-1' ? undefined : '{{ result_status_filter }}',
+      'triage': '{{ triage }}' == '1' ? undefined : '1',
+    };*/
+
+    function CreateUrl(parameters) {
+      var params = [];
+      for(var key in parameters) {
+        if (parameters[key] != undefined) {
+          params.push(key + '=' + parameters[key])
+        }
+      }
+
+      if (params.length == 0) {
+        return '/waterfall/list-flakes'
+      } else {
+        return '/waterfall/list-flakes?' + params.join('&');
+      }
+    };
+
+    function requestFilteredResults(e) {
+      parameters = {}
+      if ('{{ triage }}') {
+        parameters['triage'] = '1'
+        parameters['start_date'] = $('#start_date').val() == 'mm/dd/yyyy' ? undefined : $('#start_date').val();
+        parameters['end_date'] = $('#end_date').val() == 'mm/dd/yyyy' ? undefined : $('#end_date').val();
+      }
+      parameters['master_name'] = $('#master_name').val();
+      parameters['builder_name'] = $('#builder_name').val();
+      parameters['build_number'] = $('#build_number').val();
+      parameters['step_name'] = $('#step_name').val();
+      parameters['test_name'] = $('#test_name').val();
+      parameters['result_status'] = $('#result_status').val() == 'default' ? undefined : $('#result_status').val();
+
+      newUrl = CreateUrl(parameters);
+      window.location.replace(newUrl);
+      e.preventDefault();
+    };
+
+    function handleResultStatusChanged(e) {
+      requestFilteredResults(e);
+    };
+
+    function handleFilterResults(e) {
+      requestFilteredResults(e);
+    };
+
+    $(document).ready(function() {
+      if ('{{ result_status_filter }}' != '-1') {
+        $('#result_status').val('{{ result_status_filter }}');
+      }
+      $('#result_status').change(handleResultStatusChanged);
+      $('#filter_results').click(handleFilterResults);
+    });
+  </script>
 </head>
 <body>
-<h1> Flaky tests </h1>
+  <h1>Flaky Tests</h1>
+  <b>Filter by input parameters</b>
   <form method="get" action="/waterfall/list-flakes">
     <table>
       <tr>
         <td style="text-align:right">Master:</td>
-        <td><input type="text" name="master_name" id="master_name" size="150" placeholder="chromium.mac"/></td>
+        <td>
+          <input type="text" name="master_name" id="master_name" size="100" value="{{ master_name_filter }}"placeholder="chromium.mac"/>
+        </td>
       </tr>
       <tr>
         <td style="text-align:right">Builder:</td>
-        <td><input type="text" name="builder_name" id="builder_name" size="150" placeholder="Mac10.9 Tests"/></td>
+        <td>
+          <input type="text" name="builder_name" id="builder_name" size="100" value="{{ builder_name_filter }}"placeholder="Mac10.9 Tests"/>
+        </td>
       </tr>
       <tr>
         <td style="text-align:right">Build Number:</td>
-        <td><input type="text" name="build_number" id="build_number" size="150" placeholder="28133"/></td>
+        <td>
+          <input type="text" name="build_number" id="build_number" size="100" value="{{ build_number_filter }}" placeholder="28133"/>
+        </td>
       </tr>
       <tr>
         <td style="text-align:right">Step:</td>
-        <td><input type="text" name="step_name" id="step_name" size="150" placeholder="unit_tests on Mac-10.9"/></td>
+        <td>
+          <input type="text" name="step_name" id="step_name" size="100" value="{{ step_name_filter }}" placeholder="unit_tests on Mac-10.9"/>
+        </td>
       </tr>
       <tr>
         <td style="text-align:right">Test:</td>
-        <td><input type="text" name="test_name" id="test_name" size="150" placeholder="DesktopEngagementServiceTest.TestTimeoutDiscount"/></td>
+        <td>
+          <input type="text" name="test_name" id="test_name" size="100" value="{{ test_name_filter }}" placeholder="DesktopEngagementServiceTest.TestTimeoutDiscount"/>
+        </td>
       </tr>
     </table>
-    <input type="submit" value="Filter">
+    {% if triage %}
+    <br>
+    <form>
+      Start Date
+      <input type="date" id="start_date" value={{ start_date }}></input>
+      End Date
+      <input type="date" id="end_date" value={{ end_date }}></input>
+    </form>
+    {% endif %}
+    <input type="submit" value="Filter" id="filter_results">
+    <br>
   </form>
-<br><br><br>
-<table>
-<thead>
-  <tr>
-        <th>Request Time</th>
-        <th>Master</th>
-        <th>Builder</th>
+  <br>
+  <b>Analysis Results</b>
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>Analysis Request Time</th>
         <th>Build</th>
-        <th style="width:100px">Step</th>
-        <th style="width:300px">Test</th>
+        <th>Step</th>
+        <th>Test</th>
         <th>Status</th>
         <th>Suspected Build</th>
-        <th>Graph</th>
-  </tr>
-</thead>
-<tbody>
-  {% for master_flake_analysis in master_flake_analyses %}
-  <tr>
-    <td>  {{master_flake_analysis.request_time or ''}} </td>
-    <td>  {{master_flake_analysis.master_name}} </td>
-    <td>  {{master_flake_analysis.builder_name}} </td>
-    <td>  {{master_flake_analysis.build_number}} </td>
-    <td>  <div title="{{master_flake_analysis.step_name}}" class="truncated">{{master_flake_analysis.step_name}}</div> </td>
-    <td>  <div title="{{master_flake_analysis.test_name}}" class="truncated">{{master_flake_analysis.test_name}}</div> </td>
-    <td>  {{master_flake_analysis.status}} </td>
-    <td>  {{master_flake_analysis.suspected_build or ''}} </td>
-    <td>
-      <a href="/waterfall/check-flake?master_name={{master_flake_analysis.master_name}}&builder_name={{master_flake_analysis.builder_name}}&build_number={{master_flake_analysis.build_number}}&step_name={{master_flake_analysis.step_name}}&test_name={{master_flake_analysis.test_name}}">Link</a>
-    </td>
-  </tr>
-  {% endfor %}
-</tbody>
-</table>
+        <th>Analysis</th>
+        <th>
+          <select id="result_status">
+            <option value="default">Result Status</option>
+            <option value="0">Correct - Found</option>
+            <option value="10">Incorrect - Found</option>
+            <option value="20">Incorrect - Not Found</option>
+            <option value="30">Untriaged - Found</option>
+            <option value="40">Untriaged - Not Found</option>
+            <option value="50">Correct - Not Found</option>
+          </select>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for master_flake_analysis in master_flake_analyses %}
+      <tr>
+        <td>{{loop.index}}</td>
+        <td>{{ master_flake_analysis.request_time or '' }}</td>
+        <td>
+          {{ master_flake_analysis.master_name }}, {{ master_flake_analysis.builder_name }}, {{ master_flake_analysis.build_number }}
+        </td>
+        <td class="truncated">{{ master_flake_analysis.step_name }}</td>
+        <td class="truncated">{{ master_flake_analysis.test_name }}</td>
+        <td>{{ master_flake_analysis.status }}</td>
+        <td>
+          {% if master_flake_analysis.suspected_build %}
+            <a href="https://build.chromium.org/p/{{ master_flake_analysis.master_name }}/builders/{{ master_flake_analysis.builder_name }}/builds/{{ master_flake_analysis.suspected_build }}" target="_blank">{{ master_flake_analysis.suspected_build }}
+            </a>
+          {% endif %}
+        <td>
+          <a href="/waterfall/check-flake?master_name={{ master_flake_analysis.master_name }}&builder_name={{ master_flake_analysis.builder_name }}&build_number={{master_flake_analysis.build_number}}&step_name={{ master_flake_analysis.step_name }}&test_name={{ master_flake_analysis.test_name }}">Link</a>
+        </td>
+        <td>{{ master_flake_analysis.result_status }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </body>

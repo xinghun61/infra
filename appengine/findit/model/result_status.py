@@ -5,6 +5,7 @@
 
 # Represents status of the analysis result of a Chromium waterfall compile/test
 # failure or a Chrome crash.
+UNSPECIFIED = -1
 FOUND_CORRECT = 0
 FOUND_INCORRECT = 10
 NOT_FOUND_INCORRECT = 20
@@ -23,7 +24,7 @@ RESULT_STATUS_TO_DESCRIPTION = {
     FOUND_UNTRIAGED: 'Untriaged - Found',
     NOT_FOUND_UNTRIAGED: 'Untriaged - Not Found',
     NOT_FOUND_CORRECT: 'Correct - Not Found',
-    PARTIALLY_CORRECT_FOUND : 'Partially Correct - Found',
+    PARTIALLY_CORRECT_FOUND: 'Partially Correct - Found',
     FOUND_CORRECT_DUPLICATE: 'Correct(duplicate) - Found',
     FOUND_INCORRECT_DUPLICATE: 'Incorrect(duplicate) - Found'
 }

@@ -16,8 +16,9 @@ class TriageResult(ndb.Model):
   # The time this triage result was determined.
   triaged_time = ndb.DateTimeProperty(indexed=False, auto_now=True)
 
-  # The result of the analysis as correct or not. If not triaged, the value
-  # should be None. Other traige result codes are up to the child class to set.
+  # The result of the analysis as correct or not. If the analysis is not yet
+  # completed, then the value should be None. Other traige result codes are up
+  # to the child class to set.
   triage_result = ndb.IntegerProperty(default=None, indexed=True)
 
   # The version of findit that generated this result. Should primarily be
@@ -34,7 +35,7 @@ class TriageResult(ndb.Model):
 
 
 class TriagedModel(ndb.Model):
-  """The parent class for models that can have traige results."""
+  """The parent class for models that can have triage results."""
 
   def UpdateTriageResult(self, triage_result, suspect_info, user_name,
                          version_number=None):

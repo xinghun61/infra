@@ -8,6 +8,7 @@ import mock
 from common import constants
 from common.pipeline_wrapper import pipeline_handlers
 from model import analysis_status
+from model import result_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
@@ -873,3 +874,10 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, master_build_number, step_name, test_name)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
+
+  def testUpdateAnalysisUponCompletionFound(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspected_flake_build_number = 100
+    recursive_flake_pipeline._UpdateAnalysisStatusUponCompletion(
+        analysis, analysis_status.COMPLETED, None)
+    self.assertEqual(analysis.result_status, result_status.FOUND_UNTRIAGED)

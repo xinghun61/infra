@@ -6,6 +6,8 @@ import base64
 
 from google.appengine.ext import ndb
 
+from model import result_status
+from model import triage_status
 from model.base_analysis import BaseAnalysis
 from model.base_build_model import BaseBuildModel
 from model.flake.flake_swarming_task import FlakeSwarmingTaskData
@@ -66,6 +68,16 @@ class MasterFlakeAnalysis(
             master_name, builder_name, build_number, step_name, test_name),
         version=version)
 
+  def UpdateTriageResult(self, triage_result, suspect_info, user_name,
+                         version_number=None):
+    super(MasterFlakeAnalysis, self).UpdateTriageResult(
+        triage_result, suspect_info, user_name, version_number=version_number)
+
+    if triage_result == triage_status.TRIAGED_CORRECT:
+      self.result_status = result_status.FOUND_CORRECT
+    else:
+      self.result_status = result_status.FOUND_INCORRECT
+
   def Reset(self):
     super(MasterFlakeAnalysis, self).Reset()
     self.swarming_rerun_results = []
@@ -75,6 +87,7 @@ class MasterFlakeAnalysis(
     self.algorithm_parameters = None
     self.suspected_flake_build_number = None
     self.data_points = []
+    self.result_status = None
 
   # A list of dicts containing information about each swarming rerun's results
   # that were involved in this analysis. The contents of this list will be used
@@ -121,3 +134,7 @@ class MasterFlakeAnalysis(
   # Who triggered the analysis. Used for differentiating between manual and
   # automatic runs, and determining the most active users to gather feedback.
   triggering_user_email = ndb.StringProperty(default=None, indexed=False)
+
+  # Overall conclusion of analysis result for the flake. Found untriaged, Found
+  # Correct, etc. used to filter what is displayed on the check flake dashboard.
+  result_status = ndb.IntegerProperty(indexed=True)

@@ -35,6 +35,13 @@ indexes:
   - name: updated_time
     direction: desc
 
+- kind: MasterFlakeAnalysis
+  properties:
+  - name: result_status
+    direction: asc
+  - name: request_time
+    direction: desc
+
 # For fracas crash dashboard.
 - kind: FracasCrashAnalysis
   properties:

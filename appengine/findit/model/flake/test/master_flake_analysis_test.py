@@ -7,6 +7,8 @@ from datetime import datetime
 import unittest
 
 from model import analysis_status
+from model import result_status
+from model import triage_status
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
@@ -85,6 +87,18 @@ class MasterFlakeAnalysisTest(unittest.TestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     self.assertEqual('s', analysis.step_name)
     self.assertEqual('t', analysis.test_name)
+
+  def testMasterFlakeAnalysisUpdateTriageResultCorrect(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.UpdateTriageResult(
+        triage_status.TRIAGED_CORRECT, {'build_number': 100}, 'test')
+    self.assertEqual(analysis.result_status, result_status.FOUND_CORRECT)
+
+  def testMasterFlakeAnalysisUpdateTriageResultIncorrect(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.UpdateTriageResult(
+        triage_status.TRIAGED_INCORRECT, {'build_number': 100}, 'test')
+    self.assertEqual(analysis.result_status, result_status.FOUND_INCORRECT)
 
   def testReset(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')

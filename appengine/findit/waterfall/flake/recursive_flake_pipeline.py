@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging
 from datetime import timedelta
+import logging
 import random
 
 from common import appengine_util
@@ -12,6 +12,7 @@ from common import time_util
 from common.pipeline_wrapper import BasePipeline
 
 from model import analysis_status
+from model import result_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import waterfall_config
@@ -27,6 +28,11 @@ def _UpdateAnalysisStatusUponCompletion(master_flake_analysis, status, error):
 
   if error:
     master_flake_analysis.error = error
+
+  if master_flake_analysis.suspected_flake_build_number is not None:
+    master_flake_analysis.result_status = result_status.FOUND_UNTRIAGED
+  else:
+    master_flake_analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
 
   master_flake_analysis.put()
 
@@ -235,10 +241,11 @@ class NextBuildNumberPipeline(BasePipeline):
     master_flake_analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, master_build_number, step_name, test_name,
         version=version_number)
-    # Don't call another pipeline if we fail.
+
     flake_swarming_task = FlakeSwarmingTask.Get(
         master_name, builder_name, run_build_number, step_name, test_name)
 
+    # Don't call another pipeline if we fail.
     if flake_swarming_task.status == analysis_status.ERROR:
       # TODO(lijeffrey): Implement more detailed error detection and reporting,
       # such as timeouts, dead bots, etc.
