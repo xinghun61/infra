@@ -17,21 +17,7 @@ def RunSteps(api):
 
 
 def GenTests(api):
-  gerrit_kwargs={
-    'event.change.id':
-      'playground/gerrit-cq/normal'
-      '~master~Iff9c127b16841bc27728304a5ba2caff49ff11b5',
-    'event.change.number': 322360,
-    'event.change.url': 'https://chromium-review.googlesource.com/#/c/322360',
-    'event.patchSet.ref': 'refs/changes/60/322360/2',
-  }
   yield (
     api.test('try') +
-    api.properties.generic(
-        buildername='gerrit-test-cq-normal',
-        buildnumber=123,
-        mastername='tryserver.infra',
-        repository=REPO,
-        **gerrit_kwargs
-    )
+    api.properties.tryserver(gerrit_project='playground/gerrit-cq/normal')
   )

@@ -15,7 +15,7 @@
       "--gerrit_repo",
       "https://chromium.googlesource.com/playground/gerrit-cq/normal",
       "--gerrit_ref",
-      "refs/changes/60/322360/2",
+      "refs/changes/89/456789/12",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",

@@ -15,7 +15,7 @@
       "--gerrit_repo",
       "https://chrome-internal.googlesource.com/infra/infra_internal",
       "--gerrit_ref",
-      "refs/changes/11/338811/3",
+      "refs/changes/89/456789/12",
       "--apply_issue_email_file",
       "/creds/rietveld/client_email",
       "--apply_issue_key_file",

@@ -98,8 +98,8 @@ def GenTests(api):
 
   yield (
     api.test('basic_gerrit') +
-    api.properties.tryserver_gerrit(
-        full_project_name='infra/infra',
+    api.properties.tryserver(
+        gerrit_project='infra/infra',
         mastername='tryserver.infra',
         buildername='infra_tester') +
     diff('infra/stuff.py', 'go/src/infra/stuff.go')
@@ -152,9 +152,9 @@ def GenTests(api):
 
   yield (
     api.test('infra_internal_gerrit') +
-    api.properties.tryserver_gerrit(
-        full_project_name='infra/infra_internal',
-        gerrit_host='chrome-internal-review.googlesource.com',
+    api.properties.tryserver(
+        gerrit_project='infra/infra_internal',
+        gerrit_url='https://chrome-internal-review.googlesource.com',
         mastername='tryserver.infra',
         buildername='infra_tester') +
     diff('infra/stuff.py', 'go/src/infra/stuff.go')
