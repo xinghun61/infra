@@ -2,7 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from common import chromium_deps
+from common import chrome_dependency_fetcher
+from common import git_repository
 from common.dependency import DependencyRoll
 from crash import detect_regression_range
 from crash import findit_for_chromecrash
@@ -18,21 +19,27 @@ from crash.test.crash_testcase import CrashTestCase
 
 class FinditForChromeCrashTest(CrashTestCase):
 
+  chrome_dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
+      git_repository.GitRepository())
+
   def testFindCulpritForChromeCrashEmptyStacktrace(self):
-    def _MockGetChromeDependency(*_):
+    def _MockGetDependency(*_):
       return {}
 
     def _MockParse(*_):
       return Stacktrace()
 
-    self.mock(chromium_deps, 'GetChromeDependency', _MockGetChromeDependency)
+    findit_client = findit_for_chromecrash.FinditForChromeCrash(
+        git_repository.GitRepository())
+    self.mock(findit_client.dep_fetcher, 'GetDependency',
+              _MockGetDependency)
     self.mock(chromecrash_parser.ChromeCrashParser, 'Parse', _MockParse)
 
     expected_results = {'found': False}
     expected_tag = {'found_suspects': False,
                     'has_regression_range': False}
 
-    results, tag = findit_for_chromecrash.FinditForChromeCrash().FindCulprit(
+    results, tag = findit_client.FindCulprit(
         'signature', 'win', 'frame1\nframe2', '50.0.1234.0',
         [{'chrome_version': '50.0.1234.0', 'cpm': 0.6}]).ToDicts()
 
@@ -40,7 +47,7 @@ class FinditForChromeCrashTest(CrashTestCase):
     self.assertEqual(expected_tag, tag)
 
   def testFindCulpritForChromeCrash(self):
-    def _MockGetChromeDependency(*_):
+    def _MockGetDependency(*_):
       return {}
 
     def _MockParse(*_):
@@ -48,7 +55,7 @@ class FinditForChromeCrashTest(CrashTestCase):
       stack.append(CallStack(0))
       return stack
 
-    def _MockGetDEPSRollsDict(*_):
+    def _MockGetDependencyRollsDict(*_):
       return {'src/': DependencyRoll('src/', 'https://repo', '1', '2'),
               'src/add': DependencyRoll('src/add', 'https://repo1', None, '2'),
               'src/delete': DependencyRoll('src/delete', 'https://repo2',
@@ -68,9 +75,14 @@ class FinditForChromeCrashTest(CrashTestCase):
     def _MockProjectClassify(*_):
       return ''
 
-    self.mock(chromium_deps, 'GetChromeDependency', _MockGetChromeDependency)
+    findit_client = findit_for_chromecrash.FinditForChromeCrash(
+        git_repository.GitRepository())
+
+    self.mock(findit_client.dep_fetcher, 'GetDependency',
+              _MockGetDependency)
     self.mock(chromecrash_parser.ChromeCrashParser, 'Parse', _MockParse)
-    self.mock(chromium_deps, 'GetDEPSRollsDict', _MockGetDEPSRollsDict)
+    self.mock(findit_client.dep_fetcher, 'GetDependencyRollsDict',
+              _MockGetDependencyRollsDict)
     self.mock(findit_for_crash, 'FindItForCrash', _MockFindItForCrash)
 
     self.mock(ComponentClassifier, 'Classify', _MockComponentClassify)
@@ -79,7 +91,7 @@ class FinditForChromeCrashTest(CrashTestCase):
     expected_results = {'found': False}
     expected_tag = {'found_suspects': False}
 
-    results, tag = findit_for_chromecrash.FinditForChromeCrash().FindCulprit(
+    results, tag = findit_client.FindCulprit(
         'signature', 'win', 'frame1\nframe2', '50.0.1234.0',
         ['50.0.1233.0', '50.0.1234.0']).ToDicts()
 
@@ -104,7 +116,7 @@ class FinditForChromeCrashTest(CrashTestCase):
     self.assertEqual(expected_results, results)
     self.assertEqual(expected_tag, tag)
 
-    results, tag = findit_for_chromecrash.FinditForChromeCrash().FindCulprit(
+    results, tag = findit_client.FindCulprit(
         'signature', 'win', 'frame1\nframe2', '50.0.1234.0', None).ToDicts()
 
     expected_results = {

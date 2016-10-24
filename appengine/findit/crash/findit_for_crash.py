@@ -29,7 +29,9 @@ def GetDepsInCrashStack(crash_stack, crash_deps):
   return stack_deps
 
 
-def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps):
+# TODO(katesonia): Remove the repository argument after refatoring cl committed.
+def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps,
+                                       repository):
   """Gets a dict containing files touched by changelogs for deps in stack_deps.
 
   Regression ranges for each dep is determined by regression_deps_rolls.
@@ -40,6 +42,7 @@ def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps):
       regression range.
     stack_deps (dict): Represents all the dependencies shown in
       the crash stack.
+    repository (Repository): Repository to get changelogs from.
 
   Returns:
     A tuple (dep_to_file_to_changelogs, ignore_cls).
@@ -90,9 +93,9 @@ def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps):
 
     dep_roll = regression_deps_rolls[dep]
 
-    git_repository = GitRepository(dep_roll.repo_url, HttpClientAppengine())
-    changelogs = git_repository.GetChangeLogs(dep_roll.old_revision,
-                                              dep_roll.new_revision)
+    repository.repo_url = dep_roll.repo_url
+    changelogs = repository.GetChangeLogs(dep_roll.old_revision,
+                                          dep_roll.new_revision)
 
     for changelog in changelogs:
       if changelog.reverted_revision:
@@ -149,9 +152,10 @@ def GetStackInfosForFilesGroupedByDeps(stacktrace, stack_deps):
   return dep_to_file_to_stack_infos
 
 
+# TODO(katesonia): Remove the repository argument after refatoring cl committed.
 def FindMatchResults(dep_to_file_to_changelogs,
                      dep_to_file_to_stack_infos,
-                     stack_deps,
+                     stack_deps, repository,
                      ignore_cls=None):
   """Finds results by matching stacktrace and changelogs in regression range.
 
@@ -165,6 +169,7 @@ def FindMatchResults(dep_to_file_to_changelogs,
       frames, one stack info consist of a StackFrame and the callstack priority
       of it.
     stack_deps (dict): Represents all the dependencies shown in the crash stack.
+    repository (Repository): Repository to get changelogs and blame from.
     ignore_cls (set): Set of reverted revisions.
 
   Returns:
@@ -174,16 +179,15 @@ def FindMatchResults(dep_to_file_to_changelogs,
 
   for dep, file_to_stack_infos in dep_to_file_to_stack_infos.iteritems():
     file_to_changelogs = dep_to_file_to_changelogs[dep]
-    git_repository = GitRepository(stack_deps[dep].repo_url,
-                                   HttpClientAppengine())
+    repository.repo_url = stack_deps[dep].repo_url
 
     for crashed_file_path, stack_infos in file_to_stack_infos.iteritems():
       for touched_file_path, changelogs in file_to_changelogs.iteritems():
         if not crash_util.IsSameFilePath(crashed_file_path, touched_file_path):
           continue
 
-        blame = git_repository.GetBlame(crashed_file_path,
-                                        stack_deps[dep].revision)
+        blame = repository.GetBlame(crashed_file_path,
+                                    stack_deps[dep].revision)
 
         # Generate/update each result(changelog) in changelogs, blame is used
         # to calculate distance between touched lines and crashed lines in file.
@@ -193,7 +197,9 @@ def FindMatchResults(dep_to_file_to_changelogs,
   return match_results.values()
 
 
-def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps, top_n):
+# TODO(katesonia): Remove the repository argument after refatoring cl committed.
+def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps, top_n,
+                   repository):
   """Finds culprit results for crash.
 
   Args:
@@ -203,6 +209,7 @@ def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps, top_n):
     crashed_deps (dict of Dependencys): Represents all the dependencies of
       crashed revision.
     top_n (int): Top n frames of each stack to be analyzed.
+    repository (Repository): Repository to get changelogs and blame from.
 
   Returns:
     List of Results, sorted by confidence from highest to lowest.
@@ -224,13 +231,13 @@ def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps, top_n):
 
   # Get dep and file to changelogs, stack_info and blame dicts.
   dep_to_file_to_changelogs, ignore_cls = GetChangeLogsForFilesGroupedByDeps(
-      regression_deps_rolls, stack_deps)
+      regression_deps_rolls, stack_deps, repository)
   dep_to_file_to_stack_infos = GetStackInfosForFilesGroupedByDeps(
       stack_trace, stack_deps)
 
   results = FindMatchResults(dep_to_file_to_changelogs,
                              dep_to_file_to_stack_infos,
-                             stack_deps, ignore_cls)
+                             stack_deps, repository, ignore_cls)
 
   if not results:
     return []

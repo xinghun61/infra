@@ -4,7 +4,7 @@
 
 from testing_utils import testing
 
-from common import chromium_deps
+from common import chrome_dependency_fetcher
 from common.dependency import Dependency
 from common.diff import ChangeType
 from common.pipeline_wrapper import pipeline_handlers
@@ -15,7 +15,7 @@ class ExtractDEPSInfoPipelineTest(testing.AppengineTestCase):
   app_module = pipeline_handlers._APP
 
   def testExtractDEPSInfo(self):
-    def MockGetChromeDependency(revision, os_platform, _=False):
+    def MockGetDependency(_, revision, os_platform):
       self.assertEqual('unix', os_platform)
       if revision == 'rev2':
         return {
@@ -28,8 +28,6 @@ class ExtractDEPSInfoPipelineTest(testing.AppengineTestCase):
             'src/': Dependency('src/', 'https://url_src', 'rev2^', 'DEPS'),
             'src/dep1': Dependency('src/dep1', 'https://url_dep1', '7', 'DEPS'),
         }
-
-    self.mock(chromium_deps, 'GetChromeDependency', MockGetChromeDependency)
 
     failure_info = {
         'master_name': 'chromium.linux',
@@ -82,6 +80,8 @@ class ExtractDEPSInfoPipelineTest(testing.AppengineTestCase):
     }
 
     pipeline = ExtractDEPSInfoPipeline()
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+              'GetDependency', MockGetDependency)
     deps_info = pipeline.run(failure_info, change_logs)
     self.assertEqual(expected_deps_info, deps_info)
 

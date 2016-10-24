@@ -4,7 +4,8 @@
 
 import logging
 
-from common import chromium_deps
+from common import chrome_dependency_fetcher
+from common import git_repository
 from common.pipeline_wrapper import BasePipeline
 
 
@@ -44,7 +45,9 @@ def _GetOSPlatformName(master_name, builder_name):  # pragma: no cover
 def _GetDependencies(chromium_revision, os_platform):
   """Returns the dependencies used by the specified chromium revision."""
   deps = {}
-  for path, dependency in chromium_deps.GetChromeDependency(
+  dep_fetcher=chrome_dependency_fetcher.ChromeDependencyFetcher(
+      git_repository.GitRepository())
+  for path, dependency in dep_fetcher.GetDependency(
       chromium_revision, os_platform).iteritems():
     deps[path] = {
         'repo_url': dependency.repo_url,
@@ -54,7 +57,7 @@ def _GetDependencies(chromium_revision, os_platform):
   return deps
 
 
-def _DetectDEPSRolls(change_logs, os_platform):
+def _DetectDependencyRolls(change_logs, os_platform):
   """Detect DEPS rolls in the given CL change logs.
 
   Args:
@@ -76,13 +79,15 @@ def _DetectDEPSRolls(change_logs, os_platform):
     }
   """
   deps_rolls = {}
+  dep_fetcher=chrome_dependency_fetcher.ChromeDependencyFetcher(
+      git_repository.GitRepository())
   for revision, change_log in change_logs.iteritems():
     # Check DEPS roll only if the chromium DEPS file is changed by the CL.
     for touched_file in change_log['touched_files']:
       if touched_file['new_path'] == 'DEPS':
         # In git, r^ refers to the previous revision of r.
         old_revision = '%s^' % revision
-        rolls = chromium_deps.GetChromiumDEPSRolls(
+        rolls = dep_fetcher.GetDependencyRolls(
             old_revision, revision, os_platform)
         deps_rolls[revision] = [roll.ToDict() for roll in rolls]
         break
@@ -134,5 +139,5 @@ class ExtractDEPSInfoPipeline(BasePipeline):
 
     return {
         'deps': _GetDependencies(chromium_revision, os_platform),
-        'deps_rolls': _DetectDEPSRolls(change_logs, os_platform)
+        'deps_rolls': _DetectDependencyRolls(change_logs, os_platform)
     }

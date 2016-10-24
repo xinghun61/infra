@@ -11,8 +11,10 @@ from google.appengine.ext import ndb
 
 from common import appengine_util
 from common import constants
+from common import git_repository
 from common import pubsub_util
 from common import time_util
+from common.http_client_appengine import HttpClientAppengine
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
 from crash import findit_for_client
@@ -57,7 +59,9 @@ class CrashAnalysisPipeline(CrashBasePipeline):
     analysis.put()
 
     # Run the analysis.
-    result, tags = findit_for_client.FindCulprit(analysis)
+    result, tags = findit_for_client.FindCulprit(
+        analysis, git_repository.GitRepository(
+            http_client=HttpClientAppengine()))
 
     # Update analysis status and save the analysis result.
     analysis.completed_time = time_util.GetUTCNow()

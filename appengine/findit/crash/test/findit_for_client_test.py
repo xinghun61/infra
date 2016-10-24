@@ -7,6 +7,7 @@ import json
 
 from google.appengine.api import app_identity
 
+from common import git_repository
 from crash import detect_regression_range
 from crash import findit_for_client
 from crash import findit_for_chromecrash
@@ -215,12 +216,13 @@ class FinditForClientTest(CrashTestCase):
     analysis = FracasCrashAnalysis.Create({'signature': 'sig'})
     analysis.client_id = CrashClient.FRACAS
 
-    result, tags = findit_for_client.FindCulprit(analysis)
+    repository = git_repository.GitRepository()
+    result, tags = findit_for_client.FindCulprit(analysis, repository)
     self.assertEqual(result, expected_result)
     self.assertEqual(tags, expected_tags)
 
     analysis.client_id = 'unsupported_client'
-    result, tags = findit_for_client.FindCulprit(analysis)
+    result, tags = findit_for_client.FindCulprit(analysis, repository)
     self.assertEqual(result, expected_result)
     self.assertEqual(tags, expected_tags)
 

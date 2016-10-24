@@ -5,7 +5,6 @@
 import os
 
 from common import constants
-from common import chromium_deps
 from common.pipeline_wrapper import pipeline_handlers
 from common.waterfall import failure_type
 from model import analysis_status

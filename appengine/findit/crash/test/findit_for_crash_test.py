@@ -4,12 +4,13 @@
 
 from collections import defaultdict
 
+from common import git_repository
 from common.blame import Region
 from common.blame import Blame
 from common.change_log import ChangeLog
 from common.dependency import Dependency
 from common.dependency import DependencyRoll
-from common.git_repository import GitRepository
+from common.http_client_appengine import HttpClientAppengine
 from crash import findit_for_crash
 from crash.stacktrace import StackFrame
 from crash.stacktrace import CallStack
@@ -127,11 +128,11 @@ class FinditForCrashTest(CrashTestSuite):
     def _MockGetChangeLogs(*_):
       return [DUMMY_CHANGELOG1, DUMMY_CHANGELOG2, DUMMY_CHANGELOG3]
 
-    self.mock(GitRepository, 'GetChangeLogs', _MockGetChangeLogs)
+    self.mock(git_repository.GitRepository, 'GetChangeLogs', _MockGetChangeLogs)
 
     dep_file_to_changelogs, ignore_cls = (
         findit_for_crash.GetChangeLogsForFilesGroupedByDeps(
-            regression_deps_rolls, stack_deps))
+            regression_deps_rolls, stack_deps, git_repository.GitRepository()))
     dep_file_to_changelogs_json = defaultdict(lambda: defaultdict(list))
     for dep, file_to_changelogs in dep_file_to_changelogs.iteritems():
       for file_path, changelogs in file_to_changelogs.iteritems():
@@ -227,7 +228,7 @@ class FinditForCrashTest(CrashTestSuite):
     def _MockGetBlame(*_):
       return dummy_blame
 
-    self.mock(GitRepository, 'GetBlame', _MockGetBlame)
+    self.mock(git_repository.GitRepository, 'GetBlame', _MockGetBlame)
 
     stack_deps = {
         'src/': Dependency('src/', 'https://url_src', 'rev1', 'DEPS'),
@@ -246,13 +247,15 @@ class FinditForCrashTest(CrashTestSuite):
     }]
 
     match_results = findit_for_crash.FindMatchResults(
-            dep_file_to_changelogs, dep_file_to_stack_infos, stack_deps)
+            dep_file_to_changelogs, dep_file_to_stack_infos, stack_deps,
+            git_repository.GitRepository())
     self.assertEqual([result.ToDict() for result in match_results],
                      expected_match_results)
 
   def testFindItForCrashNoRegressionRange(self):
     self.assertEqual(
-        findit_for_crash.FindItForCrash(Stacktrace(), {}, {}, 7),
+        findit_for_crash.FindItForCrash(Stacktrace(), {}, {}, 7,
+                                        git_repository.GitRepository()),
         [])
 
   def testFindItForCrashNoMatchFound(self):
@@ -265,7 +268,8 @@ class FinditForCrashTest(CrashTestSuite):
     regression_deps_rolls = {'src/': DependencyRoll('src/', 'https://repo',
                                                     '1', '2')}
     self.assertEqual(findit_for_crash.FindItForCrash(
-        Stacktrace(), regression_deps_rolls, {}, 7), [])
+        Stacktrace(), regression_deps_rolls, {}, 7,
+        git_repository.GitRepository()), [])
 
   def testFindItForCrash(self):
 
@@ -312,7 +316,8 @@ class FinditForCrashTest(CrashTestSuite):
                                                     '1', '2')}
 
     results = findit_for_crash.FindItForCrash(Stacktrace(),
-                                              regression_deps_rolls, {}, 7)
+                                              regression_deps_rolls, {}, 7,
+                                              git_repository.GitRepository())
     self.assertEqual([result.ToDict() for result in results],
                      expected_match_results)
 
@@ -377,7 +382,8 @@ class FinditForCrashTest(CrashTestSuite):
                                                     '1', '2')}
 
     results = findit_for_crash.FindItForCrash(Stacktrace(),
-                                              regression_deps_rolls, {}, 7)
+                                              regression_deps_rolls, {}, 7,
+                                              git_repository.GitRepository())
 
     self.assertEqual([result.ToDict() for result in results],
                      expected_match_results)
@@ -412,4 +418,5 @@ class FinditForCrashTest(CrashTestSuite):
                                                     '1', '2')}
 
     self.assertEqual(findit_for_crash.FindItForCrash(
-        Stacktrace(), regression_deps_rolls, {}, 7), [])
+        Stacktrace(), regression_deps_rolls, {}, 7,
+        git_repository.GitRepository()), [])

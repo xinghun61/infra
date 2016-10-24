@@ -31,12 +31,26 @@ CACHE_EXPIRE_TIME_SECONDS = 24 * 60 * 60
 class GitRepository(Repository):
   """Represents a git repository on https://chromium.googlesource.com."""
 
-  def __init__(self, repo_url, http_client):
+  def __init__(self, repo_url=None, http_client=None):
     super(GitRepository, self).__init__()
-    self.repo_url = repo_url
-    if self.repo_url.endswith('/'):
-      self.repo_url = self.repo_url[:-1]
-    self.http_client = http_client
+    if repo_url and repo_url.endswith('/'):
+      self._repo_url = repo_url[:-1]
+    else:
+      self._repo_url = repo_url
+
+    self._http_client = http_client
+
+  @property
+  def repo_url(self):
+    return self._repo_url
+
+  @repo_url.setter
+  def repo_url(self, repo_url):
+    self._repo_url = repo_url
+
+  @property
+  def http_client(self):
+    return self._http_client
 
   @property
   def identifier(self):

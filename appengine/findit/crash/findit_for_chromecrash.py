@@ -5,7 +5,7 @@
 import logging
 from collections import namedtuple
 
-from common import chromium_deps
+from common import chrome_dependency_fetcher
 from crash import detect_regression_range
 from crash import findit_for_crash
 from crash.chromecrash_parser import ChromeCrashParser
@@ -157,7 +157,7 @@ class FinditForChromeCrash(object):
   """
   # TODO(wrengr): remove the dependency on CrashConfig entirely, by
   # passing the relevant data as arguments to this constructor.
-  def __init__(self):
+  def __init__(self, repository):
     crash_config = CrashConfig.Get()
     component_classifier_config = crash_config.component_classifier
 
@@ -173,6 +173,11 @@ class FinditForChromeCrash(object):
 
     # TODO(wrengr); fix ProjectClassifier so it doesn't depend on CrashConfig.
     self.project_classifier = ProjectClassifier()
+    # TODO(katesonia): Lift this to Findit superclass after refatoring cl
+    # committed.
+    self.repository = repository
+    self.dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
+        repository)
 
   # TODO(wrengr): since this is the only method of interest, it would
   # be better IMO to rename it to __call__ to reduce verbosity.
@@ -191,7 +196,7 @@ class FinditForChromeCrash(object):
     Returns:
       A Culprit object.
     """
-    crash_deps = chromium_deps.GetChromeDependency(crashed_version, platform)
+    crash_deps = self.dep_fetcher.GetDependency(crashed_version, platform)
     stacktrace = ChromeCrashParser().Parse(stack_trace, crash_deps, signature)
     if not stacktrace:
       logging.warning('Failed to parse the stacktrace %s', stack_trace)
@@ -204,11 +209,12 @@ class FinditForChromeCrash(object):
       last_good_version, first_bad_version = regression_range
       logging.info('Find regression range %s:%s', last_good_version,
                    first_bad_version)
-      regression_deps_rolls = chromium_deps.GetDEPSRollsDict(
+      regression_deps_rolls = self.dep_fetcher.GetDependencyRollsDict(
           last_good_version, first_bad_version, platform)
 
     suspected_cls = findit_for_crash.FindItForCrash(
-        stacktrace, regression_deps_rolls, crash_deps, self._fracas_top_n)
+        stacktrace, regression_deps_rolls, crash_deps, self._fracas_top_n,
+        self.repository)
 
     crash_stack = stacktrace.crash_stack
     suspected_project = self.project_classifier.Classify(

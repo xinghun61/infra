@@ -163,10 +163,10 @@ def GetRegressionRange(client_id, customized_data):
   return None
 
 
-def FindCulprit(analysis):
+def FindCulprit(analysis, repository):
   if (analysis.client_id == CrashClient.FRACAS or
       analysis.client_id == CrashClient.CRACAS):
-    return findit_for_chromecrash.FinditForChromeCrash().FindCulprit(
+    return findit_for_chromecrash.FinditForChromeCrash(repository).FindCulprit(
         analysis.signature, analysis.platform, analysis.stack_trace,
         analysis.crashed_version, analysis.regression_range)
   elif analysis.client_id == CrashClient.CLUSTERFUZZ: # pragma: no cover.

@@ -290,6 +290,14 @@ class GitRepositoryTest(testing.AppengineTestCase):
     self.git_repo = git_repository.GitRepository(self.repo_url,
                                                  self.http_client_for_git)
 
+  def testGitRepositoryPropertySetters(self):
+    http_client_for_git = HttpClientForGit()
+    git_repo = git_repository.GitRepository(http_client=http_client_for_git)
+    git_repo.repo_url = 'https://repo'
+    self.assertEqual(git_repo.repo_url, 'https://repo')
+
+    self.assertEqual(git_repo. http_client, http_client_for_git)
+
   def testExtractCommitPositionAndCodeReviewUrl(self):
     testcases = [
         {
@@ -566,3 +574,9 @@ class GitRepositoryTest(testing.AppengineTestCase):
     changelogs = self.git_repo.GetChangeLogs('0', '2')
 
     self.assertEqual(len(changelogs), 2)
+
+  def testGetWrappedGitRepositoryClass(self):
+    repo = git_repository.GitRepository('http://repo_url', HttpClientForGit())
+
+    self.assertEqual(repo.repo_url, 'http://repo_url')
+    self.assertTrue(isinstance(repo.http_client, HttpClientForGit))
