@@ -1,3 +1,18 @@
+# Release Notes sheriff-o-matic 2016-10-24
+
+- 4 commits, 0 bugs affected since 413e1cd (2016-10-20T23:13:42.000Z)
+- 3 Authors:
+  - seanmccullough@chromium.org
+  - martiniss@chromium.org
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [SOM: Remove stale alert severity](https://chromium-review.googlesource.com/401992) (martiniss@chromium.org)
+- [SOM: Fix alert severity titles](https://chromium-review.googlesource.com/401989) (martiniss@chromium.org)
+- [SoM: Updated release notes](https://chromium-review.googlesource.com/401011) (zhangtiff@google.com)
+- [[som] docs: make the deployment section have it's own header.](https://chromium-review.googlesource.com/401418) (seanmccullough@chromium.org)
+
 # Release Notes sheriff-o-matic 2016-10-20
 
 - 14 commits, 7 bugs affected since c4f0ecc (2016-10-12T00:11:55.000Z)
