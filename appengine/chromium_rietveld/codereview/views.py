@@ -1167,7 +1167,8 @@ def upload(request):
     msg = ('Issue %s. URL: %s' %
            (action,
             common.rewrite_url(request.build_absolute_uri(
-              reverse('show_bare_issue_number', args=[issue.key.id()])))))
+                reverse('show_bare_issue_number', args=[issue.key.id()])),
+                issue.project)))
     if (form.cleaned_data.get('content_upload') or
         form.cleaned_data.get('separate_patches')):
       # Extend the response message: 2nd line is patchset id.
@@ -1650,7 +1651,7 @@ def notify_approvers_of_new_patchsets(request, issue):
     patchset_anchor = '#ps%d' % latest_patchset.key.id()
     link_to_patchset = common.rewrite_url(
         request.build_absolute_uri(reverse(show, args=[issue.key.id()])) +
-        patchset_anchor)
+        patchset_anchor, issue.project)
     new_patchset_msg = (
         "The patchset sent to the CQ was uploaded after l-g-t-m from %s\n"
         "Link to the patchset: %s (title: \"%s\")" % (
@@ -3566,9 +3567,10 @@ def _get_draft_details(request, comments):
     patch = c.patch_key.get()
     if (patch.key, c.left) != last_key:
       url = common.rewrite_url(request.build_absolute_uri(
-        reverse(diff, args=[request.issue.key.id(),
-                            patch.patchset_key.id(),
-                            patch.filename])))
+          reverse(diff, args=[request.issue.key.id(),
+                              patch.patchset_key.id(),
+                              patch.filename])),
+          request.issue.project)
       output.append('\n%s\nFile %s (%s):' % (url, patch.filename,
                                              c.left and "left" or "right"))
       last_key = (patch.key, c.left)
@@ -3593,7 +3595,8 @@ def _get_draft_details(request, comments):
                                            patch.patchset_key.id(),
                                            patch.filename]),
                        c.left and "old" or "new",
-                       c.lineno)))
+                       c.lineno)),
+      request.issue.project)
     output.append('\n%s\n%s:%d: %s\n%s' % (url, patch.filename, c.lineno,
                                            context, c.text.rstrip()))
   if modified_patches:
@@ -3706,7 +3709,8 @@ def make_message(request, issue, message, comments=None, send_mail=False,
       del context['files'][200:]
       context['files'].append('[[ %d additional files ]]' % num_trimmed)
     url = common.rewrite_url(
-        request.build_absolute_uri(reverse(show, args=[issue.key.id()])))
+        request.build_absolute_uri(reverse(show, args=[issue.key.id()])),
+        issue.project)
 
     reviewer_nicknames_list = [
         models.format_reviewer(r, issue.required_reviewers, partial(
@@ -3718,7 +3722,8 @@ def make_message(request, issue, message, comments=None, send_mail=False,
                              for cc_temp in cc)
     my_nickname = library.get_nickname(my_email, True, request)
     description = (issue.description or '').replace('\r\n', '\n')
-    home = common.rewrite_url(request.build_absolute_uri(reverse(index)))
+    home = common.rewrite_url(request.build_absolute_uri(reverse(index)),
+                              issue.project)
     modified_added_count, modified_removed_count = _get_modified_counts(issue)
     context.update({'reviewer_nicknames': reviewer_nicknames,
                     'cc_nicknames': cc_nicknames,

@@ -33,10 +33,10 @@ def get_preferred_domain(project=None, default_to_appid=True):
   return preferred_domain
 
 
-def rewrite_url(url):
+def rewrite_url(url, project=None):
   """Returns a url using the preferred domain name for this app instance."""
   parts = list(urlparse.urlsplit(url))
-  new_domain = get_preferred_domain(default_to_appid=False)
+  new_domain = get_preferred_domain(project=project, default_to_appid=False)
   if new_domain:
     parts[1] = new_domain
   return urlparse.urlunsplit(parts)
