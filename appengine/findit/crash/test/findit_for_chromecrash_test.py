@@ -124,3 +124,9 @@ class FinditForChromeCrashTest(CrashTestCase):
 
     self.assertEqual(expected_results, results)
     self.assertEqual(expected_tag, tag)
+
+  def testFieldsProperty(self):
+    culprit = findit_for_chromecrash.Culprit('proj', ['Blink>API'], [],
+                                             ['50.0.1234.0', '50.0.1234.1'])
+    self.assertEqual(culprit.fields,
+                     ('project', 'components', 'cls', 'regression_range'))

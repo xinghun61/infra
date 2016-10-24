@@ -24,6 +24,10 @@ _DEFAULT_TOP_N = 7
 class Culprit(namedtuple('Culprit',
     ['project', 'components', 'cls', 'regression_range'])):
 
+  @property
+  def fields(self):
+    return self._fields
+
   # TODO(wrengr): better name for this method.
   def ToDicts(self):
     """Convert this object to a pair of anonymous dicts for JSON.
