@@ -213,19 +213,21 @@ def validate_build_parameters(builder_name, params):
     bad('unrecognized params: %r', params.keys())
 
 
-def should_use_canary_template(build, percentage):  # pragma: no cover
+def should_use_canary_template(build, percentage):
   """Returns True if a canary template should be used for the |build|.
 
   This function is determinstic.
   """
   if percentage == 0:
     return False
+  if percentage == 100:
+    return True
   identity = {
     'bucket': build.bucket,
-    'parametres': build.parameters,
+    'parameters': build.parameters,
   }
   digest = hashlib.sha1(json.dumps(identity, sort_keys=True)).digest()
-  return digest[0] < 256 * percentage / 100
+  return ord(digest[0]) < 256 * percentage / 100
 
 
 def _prepare_builder_config(swarming_cfg, builder_cfg, swarming_param):

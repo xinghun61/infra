@@ -637,7 +637,6 @@ class SwarmingTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
-
   def test_create_task_async_on_leased_build(self):
     build = model.Build(
       bucket='bucket',
@@ -756,6 +755,18 @@ class SwarmingTest(testing.AppengineTestCase):
       self.assertEqual(build.result, case.get('result'))
       self.assertEqual(build.failure_reason, case.get('failure_reason'))
       self.assertEqual(build.cancelation_reason, case.get('cancelation_reason'))
+
+  def test_should_use_canary_template(self):
+    build = model.Build(
+      bucket='master.tryserver.chromium.linux',
+      parameters={'properties': {'a': 'b'}}
+    )
+    self.assertFalse(swarming.should_use_canary_template(build, 0))
+    self.assertFalse(swarming.should_use_canary_template(build, 1))
+    self.assertFalse(swarming.should_use_canary_template(build, 60))
+    self.assertTrue(swarming.should_use_canary_template(build, 61))
+    self.assertTrue(swarming.should_use_canary_template(build, 99))
+    self.assertTrue(swarming.should_use_canary_template(build, 100))
 
 
 class SubNotifyTest(testing.AppengineTestCase):
