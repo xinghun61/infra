@@ -22,7 +22,8 @@ class UserHotlists(servlet.Servlet):
         mr.cnxn, self.services.user,
         features_bizobj.UsersInvolvedInHotlists(hotlists))
     views = [hotlist_views.HotlistView(
-        hotlist_pb, mr.auth.user_id, mr.viewed_user_auth.user_id, users_by_id)
+        hotlist_pb, mr.auth, mr.viewed_user_auth.user_id,
+        users_by_id)
         for hotlist_pb in hotlists]
     visible_hotlists = [view for view in views if view.visible]
     owner_of_hotlists = [hotlist_view for hotlist_view in visible_hotlists

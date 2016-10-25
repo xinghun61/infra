@@ -41,13 +41,12 @@ class HotlistView(template_helpers.PBProxy):
   """Wrapper class that makes it easier to display a hotlist via EZT."""
 
   def __init__(
-      self, hotlist_pb, logged_in_user_id=None, viewed_user_id=None,
-      users_by_id=None):
+      self, hotlist_pb, user_auth=None,
+      viewed_user_id=None, users_by_id=None):
     super(HotlistView, self).__init__(hotlist_pb)
 
-    # TODO(lukasperaza): pass user's effective IDs to CanViewHotlist instead
-    # of just the user's ID
-    self.visible = permissions.CanViewHotlist({logged_in_user_id}, hotlist_pb)
+    self.visible = permissions.CanViewHotlist(
+        user_auth.effective_ids, hotlist_pb)
     if not self.visible:
       return
 
@@ -70,5 +69,11 @@ class HotlistView(template_helpers.PBProxy):
       self.editors = [users_by_id[editor_id] for
                       editor_id in hotlist_pb.editor_ids]
     self.num_issues = len(hotlist_pb.iid_rank_pairs)
-    self.is_followed = ezt.boolean(logged_in_user_id in hotlist_pb.follower_ids)
+    self.is_followed = ezt.boolean(user_auth.user_id in hotlist_pb.follower_ids)
+    # TODO(jojwang): if hotlist follower's will not be used, perhaps change
+    # from is_followed to is_member or just use is_starred
     self.num_followers = len(hotlist_pb.follower_ids)
+    self.is_starred = ezt.boolean(False)
+    # TODO(jojwang): implement starring hotlists, do this in user_id
+    # context not effective_user_ids context, so user can star for only
+    # themselves

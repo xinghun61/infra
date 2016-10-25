@@ -545,7 +545,8 @@ class Servlet(webapp2.RequestHandler):
           mr.cnxn, self.services.user,
           features_bizobj.UsersInvolvedInHotlists([mr.hotlist]))
       hotlist_view = hotlist_views.HotlistView(
-          mr.hotlist, mr.auth.user_id, mr.viewed_user_auth.user_id, users_by_id)
+          mr.hotlist, mr.auth, mr.viewed_user_auth.user_id,
+          users_by_id)
       # TODO(jojwang): when friendly url is added, loop through hotlist_view's
       # friendly_url and url and decide if hotlist should have
       # view.url = view.friendly_url or view.url = the url with ID
