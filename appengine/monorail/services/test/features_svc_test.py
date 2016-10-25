@@ -466,4 +466,48 @@ class FeaturesServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.features_service.UpdateHotlist(
         self.cnxn, 456, summary='A better one-line summary')
+
+  def testGetHotlists(self):
+    hotlist1 = fake.Hotlist(hotlist_name='hotlist1', hotlist_id=123)
+    self.features_service.hotlist_2lc.CacheItem(123, hotlist1)
+    self.SetUpGetHotlists()
+    self.mox.ReplayAll()
+    hotlist_dict = self.features_service.GetHotlists(
+        self.cnxn, [123, 456])
+    self.mox.VerifyAll()
+    self.assertItemsEqual([123, 456], hotlist_dict.keys())
+    self.assertEqual('hotlist1', hotlist_dict[123].name)
+    self.assertEqual('hotlist2', hotlist_dict[456].name)
+
+  def SetUpUpdateHotlistRoles(
+      self, hotlist_id, owner_ids, editor_ids, follower_ids):
+
+    self.features_service.hotlist2user_tbl.Delete(
+        self.cnxn, hotlist_id=hotlist_id, role_name='owner', commit=False)
+    self.features_service.hotlist2user_tbl.Delete(
+        self.cnxn, hotlist_id=hotlist_id, role_name='editor', commit=False)
+    self.features_service.hotlist2user_tbl.Delete(
+        self.cnxn, hotlist_id=hotlist_id, role_name='follower', commit=False)
+
+    self.features_service.hotlist2user_tbl.InsertRows(
+        self.cnxn, ['hotlist_id', 'user_id', 'role_name'],
+        [(hotlist_id, user_id, 'owner') for user_id in owner_ids],
+        commit=False)
+    self.features_service.hotlist2user_tbl.InsertRows(
+        self.cnxn, ['hotlist_id', 'user_id', 'role_name'],
+        [(hotlist_id, user_id, 'editor') for user_id in editor_ids],
+        commit=False)
+    self.features_service.hotlist2user_tbl.InsertRows(
+        self.cnxn, ['hotlist_id', 'user_id', 'role_name'],
+        [(hotlist_id, user_id, 'follower') for user_id in follower_ids],
+        commit=False)
+
+    self.cnxn.Commit()
+
+  def testUpdateHotlistRoles(self):
+    self.SetUpGetHotlists()
+    self.SetUpUpdateHotlistRoles(456, [111L, 222L], [333L], [])
+    self.mox.ReplayAll()
+    self.features_service.UpdateHotlistRoles(
+        self.cnxn, 456, [111L, 222L], [333L], [])
     self.mox.VerifyAll()

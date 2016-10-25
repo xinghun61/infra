@@ -640,6 +640,41 @@ class FeaturesService(object):
     hotlist_dict = self.GetHotlists(cnxn, [hotlist_id], use_cache=use_cache)
     return hotlist_dict[hotlist_id]
 
+  def UpdateHotlistRoles(
+      self, cnxn, hotlist_id, owner_ids, editor_ids, follower_ids):
+    """"Store the hotlist's roles in the DB."""
+    # This will be a newly contructed object, not from the cache and not
+    # shared with any other thread.
+    hotlist = self.GetHotlist(cnxn, hotlist_id, use_cache=False)
+    if not hotlist:
+      raise NoSuchHotlistException()
+
+    self.hotlist2user_tbl.Delete(
+        cnxn, hotlist_id=hotlist_id, role_name='owner', commit=False)
+    self.hotlist2user_tbl.Delete(
+        cnxn, hotlist_id=hotlist_id, role_name='editor', commit=False)
+    self.hotlist2user_tbl.Delete(
+        cnxn, hotlist_id=hotlist_id, role_name='follower', commit=False)
+
+    self.hotlist2user_tbl.InsertRows(
+        cnxn, ['hotlist_id', 'user_id', 'role_name'],
+        [(hotlist_id, user_id, 'owner') for user_id in owner_ids],
+        commit=False)
+    self.hotlist2user_tbl.InsertRows(
+        cnxn, ['hotlist_id', 'user_id', 'role_name'],
+        [(hotlist_id, user_id, 'editor') for user_id in editor_ids],
+        commit=False)
+    self.hotlist2user_tbl.InsertRows(
+        cnxn, ['hotlist_id', 'user_id', 'role_name'],
+        [(hotlist_id, user_id, 'follower') for user_id in follower_ids],
+        commit=False)
+
+    cnxn.Commit()
+    self.hotlist_2lc.InvalidateKeys(cnxn, [hotlist_id])
+    hotlist.owner_ids = owner_ids
+    hotlist.editor_ids = editor_ids
+    hotlist.follower_ids = follower_ids
+
 
 class HotlistAlreadyExists(Exception):
   """Tried to create a hotlist with the same name as another hotlist

@@ -37,6 +37,15 @@ CONTRIBUTOR_ROLE = 'CONTRIBUTOR_ROLE'
 EDITOR_ROLE = 'EDITOR_ROLE'
 FOLLOWER_ROLE = 'FOLLOWER_ROLE'
 
+def Hotlist(
+    hotlist_name, hotlist_id, iid_rank_pairs=None,
+    is_private=False, owner_ids=None, editor_ids=None, follower_ids=None):
+  hotlist_id = hotlist_id or hash(hotlist_name)
+  return features_pb2.MakeHotlist(
+      hotlist_name, iid_rank_pairs=iid_rank_pairs, hotlist_id=hotlist_id,
+      is_private=is_private, owner_ids=owner_ids or [],
+      editor_ids=editor_ids or [], follower_ids=follower_ids or [])
+
 def Project(
     project_name='proj', project_id=None, state=project_pb2.ProjectState.LIVE,
     access=project_pb2.ProjectAccess.ANYONE, moved_to=None,

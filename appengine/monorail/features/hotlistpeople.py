@@ -5,6 +5,7 @@
 
 """Classes to implement the hotlistpeople page and related forms."""
 
+import logging
 import time
 
 from third_party import ezt
@@ -85,7 +86,9 @@ class HotlistPeopleList(servlet.Servlet):
           'User is not permitted to edit hotlist membership')
     if 'addbtn' in post_data:
       return self.ProcessAddMembers(mr, post_data)
-    # TODO(jojwang): add removebtn, changebtn, transferbtn
+    elif 'removebtn' in post_data:
+      return self.ProcessRemoveMembers(mr, post_data)
+    # TODO(jojwang): add changebtn, transferbtn
 
   def _MakeMemberViews(self, mr, member_ids):
     """Return a sorted list of MemberViews for display by EZT."""
@@ -110,14 +113,14 @@ class HotlistPeopleList(servlet.Servlet):
     new_member_ids = project_helpers.ParseUsernames(
         mr.cnxn, self.services.user, post_data.get('addmembers'))
     # add mr.error when email is invalid
-    # role = post_data['role']
+    role = post_data['role']
 
-    # TODO(jojwang): implement self.services.features.UpdateHotlistRoles
-    # owner_ids, editor_ids, follower_ids =
-    # hotlist_helpers.MembersWithGiven_ids(
-    #    mr.hotlist, new_member_ids, role)
-
+    (owner_ids, editor_ids, follower_ids) = hotlist_helpers.MembersWithGivenIDs(
+        mr.hotlist, new_member_ids, role)
     # TODO(jojwang): implement MAX_HOTLIST_PEOPLE
+
+    self.services.features.UpdateHotlistRoles(
+        mr.cnxn, mr.hotlist_id, owner_ids, editor_ids, follower_ids)
 
     if mr.errors.AnyErrors():
       add_members_str = post_data.get('addmembers', '')
@@ -131,9 +134,23 @@ class HotlistPeopleList(servlet.Servlet):
           new=','.join([str(u) for u in new_member_ids]),
           include_project=False)
 
-    # TODO(jojwang): ProcessRemoveMembers
-    # TODO(jojwang): ProcessChangeRoles
-    # TODO(jojwang): ProcessTransferOwnership
+  def ProcessRemoveMembers(self, mr, post_data):
+    """Process the user's request to remove members."""
+    remove_strs = post_data.getall('remove')
+    logging.info('remove_strs = %r', remove_strs)
+    remove_ids = set(
+        self.services.user.LookupUserIDs(mr.cnxn, remove_strs).values())
+    (owner_ids, editor_ids,
+     follower_ids) = hotlist_helpers.MembersWithoutGivenIDs(
+         mr.hotlist, remove_ids)
 
-# TODO(jojwang): add _MakeMemberViews(self, logged_in_user_id
-# users_by_id, member_ids, hotlists):
+    self.services.features.UpdateHotlistRoles(
+        mr.cnxn, mr.hotlist_id, owner_ids, editor_ids, follower_ids)
+
+    return framework_helpers.FormatAbsoluteURL(
+        mr, '/u/%s/hotlists/%s%s' % (
+              mr.auth.user_id, mr.hotlist_id, urls.HOTLIST_PEOPLE),
+          saved=1, ts=int(time.time()), include_project=False)
+
+  # TODO(jojwang): ProcessChangeRoles
+  # TODO(jojwang): ProcessTransferOwnership
