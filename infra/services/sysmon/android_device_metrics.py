@@ -42,6 +42,11 @@ batt_temp = ts_mon.FloatMetric('dev/mobile/battery/temperature',
                                description='battery temperature in deg C')
 batt_charge = ts_mon.FloatMetric('dev/mobile/battery/charge',
                                  description='percentage charge of battery')
+batt_current = ts_mon.FloatMetric('dev/mobile/battery/current',
+                                  description='current of the device, in micro '
+                                              'amps. Negative values indicate '
+                                              'charging, positive values '
+                                              'indicate discharging')
 dev_status = ts_mon.StringMetric('dev/mobile/status',
                                  description='operational state of device')
 dev_type = ts_mon.StringMetric('dev/mobile/type',
@@ -109,6 +114,7 @@ def get_device_statuses(device_file=ANDROID_DEVICE_FILE, now=None):
         (cpu_temp, cpu_temp_value),
         (batt_temp, battery_temp),
         (batt_charge, device.get('battery', {}).get('level')),
+        (batt_current, device.get('battery', {}).get('current')),
         (dev_os, build.get('build.id')),
         (dev_status, status),
         (dev_type, d_type),

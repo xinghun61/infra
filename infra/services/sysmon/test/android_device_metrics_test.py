@@ -49,6 +49,7 @@ class AndroidDeviceMetricTest(unittest.TestCase):
     fields = {'device_id': device_id}
 
     self.assertIsNone(android_device_metrics.batt_charge.get(fields=fields))
+    self.assertIsNone(android_device_metrics.batt_current.get(fields=fields))
     self.assertIsNone(android_device_metrics.batt_temp.get(fields=fields))
     self.assertIsNone(android_device_metrics.cpu_temp.get(fields=fields))
     self.assertIsNone(android_device_metrics.dev_os.get(fields=fields))
@@ -109,6 +110,8 @@ class AndroidDeviceMetricTest(unittest.TestCase):
         android_device_metrics.batt_charge.get(fields=fields), 100.0)
     self.assertEqual(android_device_metrics.batt_temp.get(fields=fields), 26.8)
     self.assertEqual(android_device_metrics.cpu_temp.get(fields=fields), 27)
+    self.assertEqual(
+        android_device_metrics.batt_current.get(fields=fields), -100)
     self.assertEqual(android_device_metrics.dev_os.get(fields=fields), 'KTU84P')
     self.assertEqual(
         android_device_metrics.dev_status.get(fields=fields), 'good')

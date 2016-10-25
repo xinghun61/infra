@@ -48,6 +48,7 @@ func (d *deviceStatus) GetStatus() string {
 
 type battery struct {
 	Level       float64 `json:"level"`
+	Current     float64 `json:"current"`
 	Temperature int     `json:"temperature"`
 }
 
