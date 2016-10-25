@@ -13,6 +13,7 @@ import settings
 
 from features import autolink
 from features import hotlistcreate
+from features import hotlistdetails
 from features import hotlistissues
 from features import hotlistpeople
 from features import cues
@@ -320,6 +321,7 @@ class ServletRegistry(object):
     self._SetupUserHotlistServlets({
         urls.HOTLIST_ISSUES: hotlistissues.HotlistIssues,
         urls.HOTLIST_PEOPLE: hotlistpeople.HotlistPeopleList,
+        urls.HOTLIST_DETAIL: hotlistdetails.HotlistDetails,
         })
 
     profile_redir = registerpages_helpers.MakeRedirectInScope(

@@ -47,7 +47,7 @@ def MakeMonorailRequest(*args, **kwargs):
 
 def GetRequestObjects(
     headers=None, path='/', params=None, payload=None, user_info=None,
-    project=None, method='GET', perms=None, services=None):
+    project=None, method='GET', perms=None, services=None, hotlist=None):
   """Make fake request and MonorailRequest objects for testing.
 
   Host param will override the 'Host' header, and has a default value of
@@ -63,6 +63,7 @@ def GetRequestObjects(
     method: 'GET' or 'POST'.
     perms: PermissionSet to use for this request.
     services: Connections to backends.
+    hotlist: optional Hotlist object for the current request
 
   Returns:
     A tuple of (http Request, monorailrequest.MonorailRequest()).
@@ -81,16 +82,18 @@ def GetRequestObjects(
     services = service_manager.Services(
         project=fake.ProjectService(),
         user=fake.UserService(),
-        usergroup=fake.UserGroupService())
+        usergroup=fake.UserGroupService(),
+        features=fake.FeaturesService())
     services.project.TestAddProject('proj')
+    services.features.TestAddHotlist('hotlist')
 
   request = webapp2.Request.blank(path, headers=headers, POST=post_items)
   mr = fake.MonorailRequest(
-      user_info=user_info, project=project, perms=perms, params=params)
+      user_info=user_info, project=project, perms=perms, params=params,
+      hotlist=hotlist)
   mr.ParseRequest(
       request, services, profiler.Profiler(), do_user_lookups=False)
   mr.auth.user_pb = user_pb2.MakeUser(0)
-
   return request, mr
 
 

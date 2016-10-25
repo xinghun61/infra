@@ -124,7 +124,8 @@ class MonorailConnection(object):
 class MonorailRequest(monorailrequest.MonorailRequest):
   """Subclass of MonorailRequest suitable for testing."""
 
-  def __init__(self, user_info=None, project=None, perms=None, **kwargs):
+  def __init__(self, user_info=None, project=None, perms=None,
+               hotlist=None, **kwargs):
     """Construct a test MonorailRequest.
 
     Typically, this is constructed via testing.helpers.GetRequestObjects,
@@ -147,7 +148,9 @@ class MonorailRequest(monorailrequest.MonorailRequest):
 
     self.perms = perms or permissions.ADMIN_PERMISSIONSET
     self.project = project
-
+    self.hotlist = hotlist
+    if hotlist is not None:
+      self.hotlist_id = hotlist.hotlist_id
 
 class UserGroupService(object):
   """Fake UserGroupService class for testing other code."""
@@ -1536,7 +1539,7 @@ class FeaturesService(object):
     """
     hotlist_pb = features_pb2.Hotlist()
     hotlist_pb.hotlist_id = hotlist_id or hash(name) % 100000
-    hotlist_pb.hotlist_name = name
+    hotlist_pb.name = name
     hotlist_pb.summary = summary
     hotlist_pb.is_private = is_private
     if description is not None:
@@ -1575,6 +1578,23 @@ class FeaturesService(object):
     self.TestAddHotlist(hotlist_name, summary=summary, owner_ids=owner_ids,
                         editor_ids=editor_ids,
                         description=description, is_private=is_private)
+
+  def UpdateHotlist(self, cnxn, hotlist_id, name=None, summary=None,
+                    description=None, is_private=None, default_col_spec=None):
+    hotlist = self.hotlists_by_id.get(hotlist_id)
+    if not hotlist:
+      raise features_svc.NoSuchHotlistException(
+          'Hotlist "%s" not found!' % hotlist_id)
+    if name is not None:
+      hotlist.name = name
+    if summary is not None:
+      hotlist.summary = summary
+    if description is not None:
+      hotlist.description = description
+    if is_private is not None:
+      hotlist.is_private = is_private
+    if default_col_spec is not None:
+      hotlist.default_col_spec = default_col_spec
 
   def LookupUserHotlists(self, cnxn, user_ids):
     """Return dict of {user_id: [hotlist_id, hotlist_id...]}."""

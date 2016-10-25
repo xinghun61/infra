@@ -1,0 +1,25 @@
+<h4>Hotlist details</h4>
+
+<div class="section">
+  Hotlist name:<br>
+  [initial_name]<br>
+
+  Hotlist summary:<br>
+  [initial_summary]<br>
+
+  Hotlist description:<br>
+  [initial_description]<br>
+</div>
+
+<h4>Hotlist defaults</h4>
+
+<div class="section">
+  Default columns shown in list view:<br>
+  [initial_default_col_spec]<br>
+</div>
+
+<h4>Hotlist access</h4>
+<div class="section">
+  <p>Who can view this hotlist: [if-any initial_is_private]Members only[else]Anyone on the internet[end]</p>
+  <p>Individual issues in the list can only be seen by users who can normally see them. The privacy status of an issue is considered when it is being displayed (or not displayed) in a hotlist.</p>
+</div>

@@ -38,6 +38,7 @@
         id = "hotlists-dropdown">Hotlist: [hotlist.name] <small>&#9660;</small></a>
       <a href="[viewed_user.profile_url]hotlists/[hotlist_id]" class="[is main_tab_mode "t2"]active[end]">Issues</a>
       <a href="[viewed_user.profile_url]hotlists/[hotlist_id]/people" class="[is main_tab_mode "t3"]active[end]">People</a>
+      <a href="[viewed_user.profile_url]hotlists/[hotlist_id]/details" class="[is main_tab_mode "t4"]active[end]">Details</a>
       </th>
     [end]
     [#TODO(jojwang): urls here wouldn't work for friendly url. consider creating hotlist_url variabl later]

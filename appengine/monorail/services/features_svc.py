@@ -508,6 +508,44 @@ class FeaturesService(object):
     hotlist.hotlist_id = self._InsertHotlist(cnxn, hotlist)
     return hotlist.hotlist_id
 
+  def UpdateHotlist(
+      self, cnxn, hotlist_id, name=None, summary=None, description=None,
+      is_private=None, default_col_spec=None):
+    """Update the DB with the given hotlist information."""
+    # Note: If something is None, it does not get changed to None,
+    # it just does not get updated.
+    hotlist = self.GetHotlist(cnxn, hotlist_id, use_cache=False)
+    if not hotlist:
+      raise NoSuchHotlistException()
+
+    delta = {}
+    if name is not None:
+      delta['name'] = name
+    if summary is not None:
+      delta['summary'] = summary
+    if description is not None:
+      delta['description'] = description
+    if is_private is not None:
+      delta['is_private'] = is_private
+    if default_col_spec is not None:
+      delta['default_col_spec'] = default_col_spec
+
+    self.hotlist_tbl.Update(cnxn, delta, id=hotlist_id)
+
+    self.hotlist_2lc.InvalidateKeys(cnxn, [hotlist_id])
+
+    # Update the hotlist PB in RAM
+    if name is not None:
+      hotlist.name = name
+    if summary is not None:
+      hotlist.summary = summary
+    if description is not None:
+      hotlist.description = description
+    if is_private is not None:
+      hotlist.is_private = is_private
+    if default_col_spec is not None:
+      hotlist.default_col_spec = default_col_spec
+
   def _InsertHotlist(self, cnxn, hotlist):
     """Insert the given hotlist into the database."""
     hotlist_id = self.hotlist_tbl.InsertRow(

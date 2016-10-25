@@ -84,6 +84,8 @@ class FeaturesServiceTest(unittest.TestCase):
         'hotlist2user_tbl']:
       setattr(self.features_service, table_var, self.MakeMockTable())
 
+      self.hotlist1 = None
+
   def tearDown(self):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
@@ -437,4 +439,31 @@ class FeaturesServiceTest(unittest.TestCase):
     ret = self.features_service.LookupHotlistIDs(
         self.cnxn, ['hot1'], [567])
     self.assertEqual(ret, {('hot1', 567) : 123})
+    self.mox.VerifyAll()
+
+  def SetUpGetHotlists(self):
+    hotlist_rows = [(456, 'hotlist2', 'test hotlist 2',
+                     'test hotlist', False, '')]
+    self.features_service.hotlist_tbl.Select(
+        self.cnxn, cols=features_svc.HOTLIST_COLS,
+        id=[456]).AndReturn(hotlist_rows)
+    self.features_service.hotlist2user_tbl.Select(
+        self.cnxn, cols=['hotlist_id', 'user_id', 'role_name'],
+        hotlist_id=[456]).AndReturn([])
+    self.features_service.hotlist2issue_tbl.Select(
+        self.cnxn, cols=['hotlist_id', 'issue_id', 'rank'],
+        hotlist_id=[456],
+        order_by=[('rank DESC', ''), ('issue_id', '')]).AndReturn([])
+
+  def SetUpUpdateHotlist(self, hotlist_id, delta):
+    self.features_service.hotlist_tbl.Update(
+        self.cnxn, delta, id=hotlist_id)
+
+  def testUpdateHotlist(self):
+    self.SetUpGetHotlists()
+    delta = {'summary': 'A better one-line summary'}
+    self.SetUpUpdateHotlist(456, delta)
+    self.mox.ReplayAll()
+    self.features_service.UpdateHotlist(
+        self.cnxn, 456, summary='A better one-line summary')
     self.mox.VerifyAll()

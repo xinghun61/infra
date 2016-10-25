@@ -1,0 +1,71 @@
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+[if-any read_only cant_administer_hotlist][include "read-only-hotlist-details-page.ezt"]
+[else]
+
+<form action="details.do" method="POST" autocomplete="off" enctype="multipart/form-data">
+  <input type="hidden" name="token" value="[form_token]">
+
+<h4>Hotlist details</h4>
+
+<div class="section">
+  Hotlist name:<br>
+  <input type="text" id="name" name="name" size="75" value="[initial_name]"><br>
+  <div class="fielderror">&nbsp;
+    <span id="namefeedback">[if-any errors.name][errors.name][end]</span>
+  </div>
+
+  Hotlist summary:<br>
+  <input type="text" id="summary" name="summary" size="75" value="[initial_summary]"><br>
+  <div class="fielderror">&nbsp;
+    <span id="summaryfeedback">[if-any errors.summary][errors.summary][end]</span>
+  </div>
+
+  Hotlist description:<br>
+  <textarea id="description" name="description" rows="20" cols="90" wrap="soft"
+  	    >[initial_description]</textarea><br>
+  <div class="fielderror">&nbsp;
+    <span id="descriptionfeedback">[if-any errors.description][errors.description][end]</span>
+  </div>
+</div>
+
+<h4>Hotlist defaults</h4>
+
+<div class="section">
+  Default columns shows in list view:<br/>
+  <input type="text" id="default_col_spec" name="default_col_spec" size="75" value="[initial_default_col_spec]"><br>
+  <div class="fielderror">&nbsp;
+    <span id="default_col_specfeedback">[if-any errors.default_col][errors.default_col][end]</span>
+  </div>
+
+  [# TODO(jojwang): add default issues per page]
+</div>
+
+<h4>Hotlist access</h4>
+
+<div class="section">
+  <select name="is_private" id="is_private">
+    <option disabled="disabled">Select an access level...</option>
+    <option value="no" [if-any initial_is_private][else]selected="selected"[end]>Anyone on the Internet</option>
+    <option value="yes" [if-any initial_is_private]selected="selected"[else][end]>Members only</option>
+  </select>
+  <p>Individual issues in the list can only be seen by users who can normally see them. The privacy status of an issue is considered when it is being displayed (or not displayed) in a hotlist.</p>
+</div>
+
+
+
+  <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit">
+</form>
+
+[include "../framework/footer-script.ezt"]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _onload();
+});
+</script>
+
+[end]
+
+[include "../framework/master-footer.ezt"]
