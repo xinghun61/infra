@@ -12,6 +12,7 @@ You'll need some extras that aren't in the default infra checkout.
 apt-get install nodejs
 apt-get install npm
 npm install -g bower
+npm install -g vulcanize
 npm install -g web-component-tester
 npm install -g web-component-tester-istanbul
 ```
