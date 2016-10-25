@@ -5,6 +5,7 @@
 from common import chrome_dependency_fetcher
 from common import git_repository
 from common.dependency import DependencyRoll
+from common.http_client_appengine import HttpClientAppengine
 from crash import detect_regression_range
 from crash import findit_for_chromecrash
 from crash import chromecrash_parser
@@ -20,7 +21,7 @@ from crash.test.crash_testcase import CrashTestCase
 class FinditForChromeCrashTest(CrashTestCase):
 
   chrome_dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
-      git_repository.GitRepository())
+      git_repository.GitRepository(http_client=HttpClientAppengine()))
 
   def testFindCulpritForChromeCrashEmptyStacktrace(self):
     def _MockGetDependency(*_):
@@ -30,7 +31,7 @@ class FinditForChromeCrashTest(CrashTestCase):
       return Stacktrace()
 
     findit_client = findit_for_chromecrash.FinditForChromeCrash(
-        git_repository.GitRepository())
+        git_repository.GitRepository(http_client=HttpClientAppengine()))
     self.mock(findit_client.dep_fetcher, 'GetDependency',
               _MockGetDependency)
     self.mock(chromecrash_parser.ChromeCrashParser, 'Parse', _MockParse)
@@ -76,7 +77,7 @@ class FinditForChromeCrashTest(CrashTestCase):
       return ''
 
     findit_client = findit_for_chromecrash.FinditForChromeCrash(
-        git_repository.GitRepository())
+        git_repository.GitRepository(http_client=HttpClientAppengine()))
 
     self.mock(findit_client.dep_fetcher, 'GetDependency',
               _MockGetDependency)
