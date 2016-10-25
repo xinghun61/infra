@@ -171,7 +171,7 @@ class GlobalsTest(auto_stub.TestCase):
     config.process_argparse_options(args)
     fake_monitor.assert_called_once_with(
         '/path/to/creds.p8.json', 'mytopic', 'myproject',
-        use_instrumented_http=True)
+        ca_certs=None, use_instrumented_http=True)
     self.assertIs(interface.state.global_monitor, singleton)
 
   @mock.patch('infra_libs.ts_mon.common.monitors.PubSubMonitor', autospec=True)

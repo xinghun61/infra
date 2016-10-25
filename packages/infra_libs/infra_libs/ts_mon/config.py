@@ -91,6 +91,11 @@ def add_argparse_options(parser):
       help='path to a pkcs8 json credential file. If set, overrides the value '
            'in --ts-mon-config-file')
   parser.add_argument(
+      '--ts-mon-ca-certs',
+      help='path to file containing root CA certificates for SSL server '
+           'certificate validation. If not set, a CA cert file bundled with '
+           'httplib2 is used.')
+  parser.add_argument(
       '--ts-mon-flush',
       choices=('manual', 'auto'), default='auto',
       help=('metric push behavior: manual (only send when flush() is called), '
@@ -234,7 +239,8 @@ def process_argparse_options(args):
       project = url.netloc
       topic = url.path.strip('/')
       interface.state.global_monitor = monitors.PubSubMonitor(
-          credentials, project, topic, use_instrumented_http=True)
+          credentials, project, topic, use_instrumented_http=True,
+          ca_certs=args.ts_mon_ca_certs)
     else:
       logging.error('ts_mon monitoring is disabled because credentials are not '
                     'available')

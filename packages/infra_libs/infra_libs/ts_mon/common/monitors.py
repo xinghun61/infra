@@ -163,7 +163,8 @@ class PubSubMonitor(Monitor):
     self._update_init_metrics(http_metrics.STATUS_OK)
     return True
 
-  def __init__(self, credsfile, project, topic, use_instrumented_http=True):
+  def __init__(self, credsfile, project, topic, use_instrumented_http=True,
+               ca_certs=None):
     """Process monitoring related command line flags and initialize api.
 
     Args:
@@ -172,6 +173,9 @@ class PubSubMonitor(Monitor):
       topic (str): the name of the Pub/Sub topic to publish to.
       use_instrumented_http (bool): whether to record monitoring metrics for
           HTTP requests made to the pubsub API.
+      ca_certs (str): path to file containing root CA certificates for SSL
+                      server certificate validation. If not set, a CA cert
+                      file bundled with httplib2 is used.
     """
     # Do not call self._check_initialize() in the constructor. This
     # class is constructed during app initialization on AppEngine, and
@@ -180,9 +184,9 @@ class PubSubMonitor(Monitor):
     self._use_instrumented_http = use_instrumented_http
     if use_instrumented_http:
       self._http = httplib2_utils.InstrumentedHttp(
-          'acq-mon-api-pubsub', timeout=self.TIMEOUT)
+          'acq-mon-api-pubsub', timeout=self.TIMEOUT, ca_certs=ca_certs)
     else:
-      self._http = httplib2.Http(timeout=self.TIMEOUT)
+      self._http = httplib2.Http(timeout=self.TIMEOUT, ca_certs=ca_certs)
     self._credsfile = credsfile
     self._topic = 'projects/%s/topics/%s' % (project, topic)
 
