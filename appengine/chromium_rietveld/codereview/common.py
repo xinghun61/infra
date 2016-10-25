@@ -27,9 +27,10 @@ def get_preferred_domain(project=None, default_to_appid=True):
   projects_prefs = settings.PREFERRED_DOMAIN_NAMES.get(settings.APP_ID, {})
   preferred_domain = projects_prefs.get(project)
   if not preferred_domain:
+    preferred_domain = projects_prefs.get(None)
+  if not preferred_domain:
     if default_to_appid:
-      return '%s.appspot.com' % app_identity.get_application_id()
-    return projects_prefs.get(None)
+      preferred_domain = '%s.appspot.com' % app_identity.get_application_id()
   return preferred_domain
 
 
