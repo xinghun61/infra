@@ -211,6 +211,15 @@ function expandDescriptionTemplate() {
 
 
 function preformatValues() {
+    // For all forms, defined in wizard.ezt.
+    if (document.forms[0].worked_before) {
+        var worked_before = document.forms[0].worked_before;
+        var post_label9 = $("post_label9");
+        if (worked_before.value == "Yes") {
+            post_label9.value = "Type-Bug-Regression";
+        }
+    }
+
     // For content.html
     if (document.forms[0].multiple_sites) {
         var affectsMultipleSites = (document.forms[0].multiple_sites.value == "Yes");
