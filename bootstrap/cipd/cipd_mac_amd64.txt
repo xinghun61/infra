@@ -11,4 +11,4 @@ infra/tools/protoc/mac-amd64    protobuf_version:v3.0.0
 # Node.js deployment.
 infra/nodejs/nodejs/mac-amd64   node_version:4.5.0
 
-infra/tools/authutil/mac-amd64  git_revision:342ee7e69e360c5e9188e19df321992fbd301572
+infra/tools/authutil/mac-amd64  git_revision:92db82258d3a6ea6f35f80588038372297b03eaf
