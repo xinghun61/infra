@@ -3,7 +3,16 @@
 # found in the LICENSE file.
 
 
+from collections import namedtuple
+
 # TODO(http://crbug.com/644476): this class needs a better name.
+class AnalysisInfo(namedtuple('AnalysisInfo',
+    ['min_distance', 'min_distance_frame'])):
+  __slots__ = ()
+
+
+# TODO(http://crbug.com/644476): this class needs a better name.
+# TODO(wrengr): subclass namedtuple, so most things are immutable.
 class Result(object):
   """Represents findit culprit result."""
 
@@ -15,7 +24,11 @@ class Result(object):
     self.reasons = reasons
     self.changed_files = changed_files
 
+    # TODO(wrengr): (a) make these two fields private/readonly
+    # TODO(wrengr): (b) zip them together.
+    # TODO(wrengr): replace "stack_info" pair with a namedtuple.
     self.file_to_stack_infos = {}
+    # TODO(wrengr): replace "analysis_info" dict with a namedtuple.
     self.file_to_analysis_info = {}
 
   def ToDict(self):
@@ -31,6 +44,12 @@ class Result(object):
         'confidence': self.confidence,
     }
 
+  # TODO(katesonia): This is unusable for logging because in all the
+  # cases that need logging it returns the empty string! We should print
+  # this out in a more useful way (e.g., how CrashConfig is printed)
+  # so that callers don't have to use |str(result.ToDict())| instead. If
+  # we want a method that does what this one does, we should give it a
+  # different name that indicates what it's actually printing out.
   def ToString(self):
     if not self.file_to_stack_infos:
       return ''
@@ -92,10 +111,10 @@ class MatchResult(Result):
           min_distance = distance
           min_distance_frame = frame
 
-    self.file_to_analysis_info[file_path] = {
-        'min_distance': min_distance,
-        'min_distance_frame': min_distance_frame,
-    }
+    self.file_to_analysis_info[file_path] = AnalysisInfo(
+        min_distance = min_distance,
+        min_distance_frame = min_distance_frame,
+    )
 
 
 def _DistanceBetweenLineRanges((start1, end1), (start2, end2)):
@@ -123,7 +142,7 @@ class MatchResults(dict):
 
   def __init__(self, ignore_cls=None):
     super(MatchResults, self).__init__()
-    self.ignore_cls = ignore_cls
+    self._ignore_cls = ignore_cls
 
   def GenerateMatchResults(self, file_path, dep_path,
                            stack_infos, changelogs, blame):
@@ -143,7 +162,7 @@ class MatchResults(dict):
       blame (Blame): Blame of the file.
     """
     for changelog in changelogs:
-      if self.ignore_cls and changelog.revision in self.ignore_cls:
+      if self._ignore_cls and changelog.revision in self._ignore_cls:
         continue
 
       if changelog.revision not in self:

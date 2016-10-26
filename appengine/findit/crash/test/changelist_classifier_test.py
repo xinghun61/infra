@@ -4,20 +4,22 @@
 
 from collections import defaultdict
 
-from common import git_repository
-from common.blame import Region
 from common.blame import Blame
+from common.blame import Region
 from common.change_log import ChangeLog
 from common.dependency import Dependency
 from common.dependency import DependencyRoll
+from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine
-from crash import findit_for_crash
-from crash.stacktrace import StackFrame
-from crash.stacktrace import CallStack
-from crash.stacktrace import Stacktrace
+from common import chrome_dependency_fetcher
+from common import git_repository
+from crash.crash_report import CrashReport
+from crash import changelist_classifier
 from crash.results import MatchResult
+from crash.stacktrace import CallStack
+from crash.stacktrace import StackFrame
+from crash.stacktrace import Stacktrace
 from crash.test.crash_test_suite import CrashTestSuite
-
 
 DUMMY_CHANGELOG1 = ChangeLog.FromDict({
     'author_name': 'r@chromium.org',
@@ -93,8 +95,20 @@ DUMMY_CHANGELOG3 = ChangeLog.FromDict({
     'reverted_revision': None
 })
 
+# TODO(wrengr): re crrev.com/2414523002: we need to have a specified
+# revision_range (even if the versions therein are None), because
+# ChangelistClassifier.__call__ will take it apart in order to call
+# GetDEPSRollsDict; if it can't then it will immediately return the
+# empty list of results, breaking many of the tests here. Of course,
+# taking revision_range apart isn't actually required for the tests,
+# since we mock GetDEPSRollsDict. So, really what we ought to do in the
+# long run is redesign things so that GetDEPSRollsDict takes the
+# CrashReport directly and pulls out the revision_range and platform
+# itself; that way ChangelistClassifier.__call__ needn't worry about it,
+# allowing us to clean up the tests here.
+DUMMY_REPORT = CrashReport(None, None, None, Stacktrace(), (None, None))
 
-class FinditForCrashTest(CrashTestSuite):
+class ChangelistClassifierTest(CrashTestSuite):
 
   def testGetDepsInCrashStack(self):
     crash_stack = CallStack(0)
@@ -108,8 +122,8 @@ class FinditForCrashTest(CrashTestSuite):
 
     expected_stack_deps = {'src/': crash_deps['src/']}
 
-    self.assertEqual(
-        findit_for_crash.GetDepsInCrashStack(crash_stack, crash_deps),
+    self.assertDictEqual(
+        changelist_classifier.GetDepsInCrashStack(crash_stack, crash_deps),
         expected_stack_deps)
 
   def testGetChangeLogsForFilesGroupedByDeps(self):
@@ -131,7 +145,7 @@ class FinditForCrashTest(CrashTestSuite):
     self.mock(git_repository.GitRepository, 'GetChangeLogs', _MockGetChangeLogs)
 
     dep_file_to_changelogs, ignore_cls = (
-        findit_for_crash.GetChangeLogsForFilesGroupedByDeps(
+        changelist_classifier.GetChangeLogsForFilesGroupedByDeps(
             regression_deps_rolls, stack_deps, git_repository.GitRepository()))
     dep_file_to_changelogs_json = defaultdict(lambda: defaultdict(list))
     for dep, file_to_changelogs in dep_file_to_changelogs.iteritems():
@@ -145,12 +159,11 @@ class FinditForCrashTest(CrashTestSuite):
             'f.cc': [DUMMY_CHANGELOG3.ToDict()]
         }
     }
-    self.assertEqual(dep_file_to_changelogs_json,
+    self.assertDictEqual(dep_file_to_changelogs_json,
                      expected_dep_file_to_changelogs_json)
-    self.assertEqual(ignore_cls, set(['1']))
+    self.assertSetEqual(ignore_cls, set(['1']))
 
   def testGetStackInfosForFilesGroupedByDeps(self):
-
     main_stack = CallStack(0)
     main_stack.extend(
         [StackFrame(0, 'src/', 'c(p* &d)', 'a.cc', 'src/a.cc', [177]),
@@ -182,7 +195,7 @@ class FinditForCrashTest(CrashTestSuite):
     }
 
     dep_file_to_stack_infos = (
-        findit_for_crash.GetStackInfosForFilesGroupedByDeps(
+        changelist_classifier.GetStackInfosForFilesGroupedByDeps(
             stacktrace, crashed_deps))
 
     self.assertEqual(len(dep_file_to_stack_infos),
@@ -225,10 +238,7 @@ class FinditForCrashTest(CrashTestSuite):
     dummy_blame.AddRegion(
         Region(6, 10, '1', 'b', 'b@chromium.org', 'Thu Jun 19 12:11:40 2015'))
 
-    def _MockGetBlame(*_):
-      return dummy_blame
-
-    self.mock(git_repository.GitRepository, 'GetBlame', _MockGetBlame)
+    self.mock(GitRepository, 'GetBlame', lambda *_: dummy_blame)
 
     stack_deps = {
         'src/': Dependency('src/', 'https://url_src', 'rev1', 'DEPS'),
@@ -246,30 +256,35 @@ class FinditForCrashTest(CrashTestSuite):
         'changed_files': None
     }]
 
-    match_results = findit_for_crash.FindMatchResults(
-            dep_file_to_changelogs, dep_file_to_stack_infos, stack_deps,
-            git_repository.GitRepository())
-    self.assertEqual([result.ToDict() for result in match_results],
-                     expected_match_results)
+    match_results = changelist_classifier.FindMatchResults(
+        dep_file_to_changelogs, dep_file_to_stack_infos, stack_deps,
+        git_repository.GitRepository())
+    self.assertListEqual([result.ToDict() for result in match_results],
+                         expected_match_results)
 
-  def testFindItForCrashNoRegressionRange(self):
-    self.assertEqual(
-        findit_for_crash.FindItForCrash(Stacktrace(), {}, {}, 7,
-                                        git_repository.GitRepository()),
-        [])
+  # TODO(http://crbug.com/659346): why do these mocks give coverage
+  # failures? That's almost surely hiding a bug in the tests themselves.
+  def testFindItForCrashNoRegressionRange(self): # pragma: no cover
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+        'GetDependencyRollsDict', lambda *_: {})
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+        'GetDependency', lambda *_: {})
+    cl_classifier = changelist_classifier.ChangelistClassifier(7,
+        git_repository.GitRepository())
+    # N.B., for this one test we really do want regression_range=None.
+    report = DUMMY_REPORT._replace(regression_range=None)
+    self.assertListEqual(cl_classifier(report), [])
 
   def testFindItForCrashNoMatchFound(self):
-
-    def _MockFindMatchResults(*_):
-      return []
-
-    self.mock(findit_for_crash, 'FindMatchResults', _MockFindMatchResults)
-
-    regression_deps_rolls = {'src/': DependencyRoll('src/', 'https://repo',
-                                                    '1', '2')}
-    self.assertEqual(findit_for_crash.FindItForCrash(
-        Stacktrace(), regression_deps_rolls, {}, 7,
-        git_repository.GitRepository()), [])
+    self.mock(changelist_classifier, 'FindMatchResults', lambda *_: [])
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+        'GetDependencyRollsDict',
+        lambda *_: {'src/': DependencyRoll('src/', 'https://repo', '1', '2')})
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+        'GetDependency', lambda *_: {})
+    cl_classifier = changelist_classifier.ChangelistClassifier(7,
+        git_repository.GitRepository())
+    self.assertListEqual(cl_classifier(DUMMY_REPORT), [])
 
   def testFindItForCrash(self):
 
@@ -295,8 +310,15 @@ class FinditForCrashTest(CrashTestSuite):
 
       return [match_result1, match_result2]
 
-    self.mock(findit_for_crash, 'FindMatchResults', _MockFindMatchResults)
-
+    self.mock(changelist_classifier, 'FindMatchResults', _MockFindMatchResults)
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+        'GetDependencyRollsDict',
+        lambda *_: {'src/': DependencyRoll('src/', 'https://repo', '1', '2')})
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+        'GetDependency', lambda *_: {})
+    cl_classifier = changelist_classifier.ChangelistClassifier(7,
+        git_repository.GitRepository())
+    results = cl_classifier(DUMMY_REPORT)
     expected_match_results = [
         {
             'reasons': [('TopFrameIndex', 1.0, 'Top frame is #0'),
@@ -311,15 +333,8 @@ class FinditForCrashTest(CrashTestSuite):
             'confidence': 1.0, 'revision': '1'
         },
     ]
-
-    regression_deps_rolls = {'src/': DependencyRoll('src/', 'https://repo',
-                                                    '1', '2')}
-
-    results = findit_for_crash.FindItForCrash(Stacktrace(),
-                                              regression_deps_rolls, {}, 7,
-                                              git_repository.GitRepository())
-    self.assertEqual([result.ToDict() for result in results],
-                     expected_match_results)
+    self.assertListEqual([result.ToDict() for result in results],
+                         expected_match_results)
 
   def testFinditForCrashFilterZeroConfidentResults(self):
     def _MockFindMatchResults(*_):
@@ -353,8 +368,16 @@ class FinditForCrashTest(CrashTestSuite):
 
       return [match_result1, match_result2, match_result3]
 
-    self.mock(findit_for_crash, 'FindMatchResults', _MockFindMatchResults)
+    self.mock(changelist_classifier, 'FindMatchResults', _MockFindMatchResults)
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+        'GetDependencyRollsDict',
+        lambda *_: {'src/': DependencyRoll('src/', 'https://repo', '1', '2')})
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+        'GetDependency', lambda *_: {})
 
+    cl_classifier = changelist_classifier.ChangelistClassifier(7,
+        git_repository.GitRepository())
+    results = cl_classifier(DUMMY_REPORT)
     expected_match_results = [
         {
             'author': 'r@chromium.org',
@@ -377,16 +400,8 @@ class FinditForCrashTest(CrashTestSuite):
             'url': 'https://repo.test/+/1'
         }
     ]
-
-    regression_deps_rolls = {'src/': DependencyRoll('src/', 'https://repo',
-                                                    '1', '2')}
-
-    results = findit_for_crash.FindItForCrash(Stacktrace(),
-                                              regression_deps_rolls, {}, 7,
-                                              git_repository.GitRepository())
-
-    self.assertEqual([result.ToDict() for result in results],
-                     expected_match_results)
+    self.assertListEqual([result.ToDict() for result in results],
+                         expected_match_results)
 
   def testFinditForCrashAllMatchResultsWithZeroConfidences(self):
     def _MockFindMatchResults(*_):
@@ -412,11 +427,13 @@ class FinditForCrashTest(CrashTestSuite):
 
       return [match_result1, match_result2]
 
-    self.mock(findit_for_crash, 'FindMatchResults', _MockFindMatchResults)
+    self.mock(changelist_classifier, 'FindMatchResults', _MockFindMatchResults)
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+        'GetDependencyRollsDict',
+        lambda *_: {'src/': DependencyRoll('src/', 'https://repo', '1', '2')})
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+        'GetDependency', lambda *_: {})
 
-    regression_deps_rolls = {'src/': DependencyRoll('src/', 'https://repo',
-                                                    '1', '2')}
-
-    self.assertEqual(findit_for_crash.FindItForCrash(
-        Stacktrace(), regression_deps_rolls, {}, 7,
-        git_repository.GitRepository()), [])
+    cl_classifier = changelist_classifier.ChangelistClassifier(7,
+        git_repository.GitRepository())
+    self.assertListEqual(cl_classifier(DUMMY_REPORT), [])

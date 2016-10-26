@@ -6,10 +6,9 @@ from collections import namedtuple
 import logging
 import re
 
-from crash.classifier import Classifier
+from crash.occurrence import RankByOccurrence
 
-
-# TODO(wrengr): write coverage tests the old version was lacking.
+# TODO(http://crbug.com/659346): write coverage tests.
 class Component(namedtuple('Component',
     ['component_name', 'path_regex', 'function_regex'])): # pragma: no cover
   """A representation of a "component" in Chromium.
@@ -38,7 +37,7 @@ class Component(namedtuple('Component',
     return self.function_regex.match(frame.function)
 
 
-class ComponentClassifier(Classifier):
+class ComponentClassifier(object):
   """Determines the component of a crash.
 
   For example: ['Blink>DOM', 'Blink>HTML'].
@@ -66,22 +65,31 @@ class ComponentClassifier(Classifier):
 
     return ''
 
+  # TODO(wrengr): refactor this into a method on Result which returns
+  # the cannonical frame (and documents why it's the one we return).
   def GetClassFromResult(self, result):
-    """Gets the component from a result.
+    """Determine which component is responsible for this result.
 
     Note that Findit assumes files that the culprit result touched come from
     the same component.
     """
     if result.file_to_stack_infos:
-      # A file in culprit result should always have its stack_info, namely a
-      # list of (frame, callstack_priority) pairs.
-      frame, _ = result.file_to_stack_infos.values()[0][0]
+      # file_to_stack_infos is a dict mapping file_path to stack_infos,
+      # where stack_infos is a list of (frame, callstack_priority)
+      # pairs. So |.values()| returns a list of the stack_infos in an
+      # arbitrary order; the first |[0]| grabs the "first" stack_infos;
+      # the second |[0]| grabs the first pair from the list; and the third
+      # |[0]| grabs the |frame| from the pair.
+      # TODO(wrengr): why is that the right frame to look at?
+      frame = result.file_to_stack_infos.values()[0][0][0]
       return self.GetClassFromStackFrame(frame)
 
     return ''
 
+  # TODO(http://crbug.com/657177): return the Component objects
+  # themselves, rather than strings naming them.
   def Classify(self, results, crash_stack):
-    """Classifies project of a crash.
+    """Classifies component of a crash.
 
     Args:
       results (list of Result): Culprit results.
@@ -90,4 +98,11 @@ class ComponentClassifier(Classifier):
     Returns:
       List of top 2 components.
     """
-    return self._Classify(results, crash_stack, self.top_n, 2)
+    # If |results| are available, we use the components from there since
+    # they're more reliable than the ones from the |crash_stack|.
+    if results:
+      classes = map(self.GetClassFromResult, results[:self.top_n])
+    else:
+      classes = map(self.GetClassFromStackFrame, crash_stack[:self.top_n])
+
+    return RankByOccurrence(classes, 2)

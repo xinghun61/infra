@@ -4,16 +4,16 @@
 
 from common import constants
 from common.pipeline_wrapper import pipeline_handlers
-from crash.classifier import Occurrence
-from crash.classifier import Classifier
-from crash.classifier import DefaultRankFunction
+from crash.occurrence import Occurrence
+from crash.occurrence import DefaultOccurrenceRanking
+from crash.occurrence import RankByOccurrence
 from crash.stacktrace import StackFrame
 from crash.stacktrace import CallStack
 from crash.results import Result
 from crash.test.crash_testcase import CrashTestCase
 
 
-class DummyClassifier(Classifier):
+class DummyClassifier(object):
 
   def GetClassFromStackFrame(self, frame):
     if frame.dep_path == 'src/':
@@ -21,11 +21,17 @@ class DummyClassifier(Classifier):
 
     return 'class_2'
 
-  def GetClassFromResult(self, result):  # pragma: no cover.
+  def GetClassFromResult(self, _result):  # pragma: no cover.
     return 'class_3'
 
   def Classify(self, results, crash_stack):
-    class_list = self._Classify(results, crash_stack, 4, 1)
+    top_n_frames = 4
+    if results:
+      classes = map(self.GetClassFromResult, results[:top_n_frames])
+    else:
+      classes = map(self.GetClassFromStackFrame, crash_stack[:top_n_frames])
+
+    class_list = RankByOccurrence(classes, 1)
     if class_list:
       return class_list[0]
 
@@ -34,10 +40,10 @@ class DummyClassifier(Classifier):
 
 class ClassifierTest(CrashTestCase):
 
-  def testDefaultRankFunction(self):
-    self.assertEqual(DefaultRankFunction(Occurrence('c1', [0])),
+  def testDefaultOccurrenceRanking(self):
+    self.assertEqual(DefaultOccurrenceRanking(Occurrence('c1', [0])),
         (-1, 0))
-    self.assertEqual(DefaultRankFunction(Occurrence('c1', [0, 1])),
+    self.assertEqual(DefaultOccurrenceRanking(Occurrence('c1', [0, 1])),
         (-float('inf'), 0))
 
   def testClassifyCrashStack(self):
@@ -72,5 +78,4 @@ class ClassifierTest(CrashTestCase):
 
     self.assertEqual(dummy_classifier.Classify([result], CallStack(0)),
                      'class_3')
-
 

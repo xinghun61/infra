@@ -45,7 +45,7 @@ class CrashTestSuite(StacktraceTestSuite):  # pragma: no cover.
     self._VerifyTwoResultEqual(match_result1, match_result2)
 
   def _VerifyTwoMatchResultsEqual(self, match_results1, match_results2):
-    self.assertEqual(match_results1.ignore_cls, match_results2.ignore_cls)
+    self.assertEqual(match_results1._ignore_cls, match_results2._ignore_cls)
 
     self.assertEqual(len(match_results1), len(match_results2))
     for revision1, match_result1 in match_results1.iteritems():

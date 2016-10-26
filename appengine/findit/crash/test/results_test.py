@@ -6,6 +6,7 @@ from common.blame import Region
 from common.blame import Blame
 from common.change_log import ChangeLog
 from crash.stacktrace import StackFrame
+from crash.results import AnalysisInfo
 from crash.results import Result
 from crash.results import MatchResult
 from crash.results import MatchResults
@@ -121,7 +122,7 @@ class ResultsTest(CrashTestSuite):
     stack_infos = [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7]), 0)]
 
     result.Update('a.cc', stack_infos, DUMMY_BLAME)
-    self.assertEqual(result.file_to_analysis_info['a.cc']['min_distance'], 0)
+    self.assertEqual(result.file_to_analysis_info['a.cc'].min_distance, 0)
 
     # Touched lines are before crashed lines.
     result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
@@ -129,7 +130,7 @@ class ResultsTest(CrashTestSuite):
     stack_infos = [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [3]), 0)]
 
     result.Update('a.cc', stack_infos, DUMMY_BLAME)
-    self.assertEqual(result.file_to_analysis_info['a.cc']['min_distance'], 3)
+    self.assertEqual(result.file_to_analysis_info['a.cc'].min_distance, 3)
 
     # Touched lines are after crashed lines.
     result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
@@ -137,7 +138,7 @@ class ResultsTest(CrashTestSuite):
     stack_infos = [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [10]), 0)]
 
     result.Update('a.cc', stack_infos, DUMMY_BLAME)
-    self.assertEqual(result.file_to_analysis_info['a.cc']['min_distance'], 2)
+    self.assertEqual(result.file_to_analysis_info['a.cc'].min_distance, 2)
 
   def testMatchResultUpdateWithEmptyBlame(self):
     result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
@@ -155,8 +156,8 @@ class ResultsTest(CrashTestSuite):
 
     result.Update('a.cc', stack_infos, DUMMY_BLAME)
     self.assertEqual(result.file_to_stack_infos['a.cc'], stack_infos)
-    self.assertEqual(result.file_to_analysis_info, {'a.cc': {
-        'min_distance': 0, 'min_distance_frame': frame1}})
+    self.assertEqual(result.file_to_analysis_info,
+        {'a.cc': AnalysisInfo(min_distance = 0, min_distance_frame = frame1)})
 
   def testMatchResultsGenerateMatchResults(self):
     match_results = MatchResults(ignore_cls=set(['2']))
@@ -178,8 +179,8 @@ class ResultsTest(CrashTestSuite):
         'b.cc': stack_infos2,
     }
     expected_match_result.file_to_analysis_info = {
-        'a.cc': {'min_distance': 0, 'min_distance_frame': frame1},
-        'b.cc': {'min_distance': 3, 'min_distance_frame': frame2},
+        'a.cc': AnalysisInfo(min_distance = 0, min_distance_frame = frame1),
+        'b.cc': AnalysisInfo(min_distance = 3, min_distance_frame = frame2),
     }
 
     expected_match_results = MatchResults(ignore_cls=set(['2']))

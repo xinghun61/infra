@@ -9,7 +9,8 @@ import logging
 from common import constants
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
-from crash import crash_pipeline
+from crash.crash_pipeline import FinditForClientID
+from crash.crash_report import CrashReport
 
 
 class CrashHandler(BaseHandler):
@@ -102,15 +103,9 @@ class CrashHandler(BaseHandler):
 
       logging.info('Crash data is %s', json.dumps(crash_data))
 
-      crash_pipeline.ScheduleNewAnalysisForCrash(
-          crash_data['crash_identifiers'],
-          crash_data['chrome_version'],
-          crash_data['signature'],
-          crash_data['client_id'],
-          crash_data['platform'],
-          crash_data['stack_trace'],
-          crash_data['customized_data'],
-          queue_name=constants.CRASH_ANALYSIS_QUEUE[crash_data['client_id']])
+      client_id = crash_data['client_id']
+      FinditForClientID(client_id).ScheduleNewAnalysis(crash_data,
+          queue_name=constants.CRASH_ANALYSIS_QUEUE[client_id])
     except (KeyError, ValueError):  # pragma: no cover.
       # TODO: save exception in datastore and create a page to show them.
       logging.exception('Failed to process crash message')

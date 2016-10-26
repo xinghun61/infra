@@ -3,18 +3,19 @@
 # found in the LICENSE file.
 
 import logging
+from collections import namedtuple
 
-from crash import classifier
+from crash.occurrence import RankByOccurrence
 from crash.type_enums import CallStackLanguageType
 from model.crash.crash_config import CrashConfig
 
-
-class ProjectClassifier(classifier.Classifier):
+class ProjectClassifier(object):
   """Determines the project of a crash - (project_name, project_path).
 
   For example: ('chromium', 'src/'), ('skia', 'src/skia/'), ...etc.
   """
 
+  # TODO(http://crbug.com/657177): remove dependency on CrashConfig.
   def __init__(self):
     super(ProjectClassifier, self).__init__()
     self.project_classifier_config = CrashConfig.Get().project_classifier
@@ -22,6 +23,7 @@ class ProjectClassifier(classifier.Classifier):
       self.project_classifier_config['host_directories'].sort(
           key=lambda host: -len(host.split('/')))
 
+  # TODO(http://crbug.com/657177): refactor this into a method on Project.
   def _GetProjectFromDepPath(self, dep_path):
     """Returns the project name from a dep path."""
     if not dep_path:
@@ -38,8 +40,9 @@ class ProjectClassifier(classifier.Classifier):
     # Unknown path, return the whole path as project name.
     return 'chromium-%s' % '_'.join(dep_path.split('/'))
 
+  # TODO(http://crbug.com/657177): refactor this into Project.MatchesStackFrame.
   def GetClassFromStackFrame(self, frame):
-    """Returns a tuple (project_name, project_path) of a StackFrame."""
+    """Determine which project is responsible for this frame."""
     for marker, name in self.project_classifier_config[
         'function_marker_to_project_name'].iteritems():
       if frame.function.startswith(marker):
@@ -52,12 +55,19 @@ class ProjectClassifier(classifier.Classifier):
 
     return self._GetProjectFromDepPath(frame.dep_path)
 
+  # TODO(wrengr): refactor this into a method on Result which returns
+  # the cannonical frame (and documents why it's the one we return).
   def GetClassFromResult(self, result):
-    """Returns (project_name, project_path) of a Result."""
+    """Determine which project is responsible for this result."""
     if result.file_to_stack_infos:
-      # A file in culprit result should always have its stack_info, namely a
-      # list of (frame, callstack_priority) pairs.
-      frame, _ = result.file_to_stack_infos.values()[0][0]
+      # file_to_stack_infos is a dict mapping file_path to stack_infos,
+      # where stack_infos is a list of (frame, callstack_priority)
+      # pairs. So |.values()| returns a list of the stack_infos in an
+      # arbitrary order; the first |[0]| grabs the "first" stack_infos;
+      # the second |[0]| grabs the first pair from the list; and the third
+      # |[0]| grabs the |frame| from the pair.
+      # TODO(wrengr): why is that the right frame to look at?
+      frame = result.file_to_stack_infos.values()[0][0][0]
       return self.GetClassFromStackFrame(frame)
 
     return ''
@@ -70,32 +80,42 @@ class ProjectClassifier(classifier.Classifier):
       crash_stack (CallStack): the callstack that caused the crash.
 
     Returns:
-      A tuple, project of the crash - (project_name, project_path).
+      The name of the most-suspected project; or the empty string on failure.
     """
     if not self.project_classifier_config:
-      logging.warning('Empty configuration for project classifier.')
-      return ''
+      logging.warning('ProjectClassifier.Classify: Empty configuration.')
+      return None
 
-    def _GetRankFunction(language_type):
-      if language_type == CallStackLanguageType.JAVA:
-        def _RankFunctionForJava(occurrence):
-          project_name = occurrence.name
-          return (len(occurrence),
-                  0 if 'chromium' in project_name else
-                  self.project_classifier_config[
-                      'non_chromium_project_rank_priority'][project_name])
+    rank_function = None
+    if crash_stack.language_type == CallStackLanguageType.JAVA:
+      def _RankFunctionForJava(occurrence):
+        # TODO(wrengr): why are we weighting by the length, instead of
+        # the negative length as we do in the DefaultOccurrenceRanging?
+        weight = len(occurrence)
+        project_name = occurrence.name
+        if 'chromium' in project_name:
+          index = 0
+        else:
+          index = self.project_classifier_config[
+              'non_chromium_project_rank_priority'][project_name]
+        return (weight, index)
 
-        return _RankFunctionForJava
+      rank_function = _RankFunctionForJava
 
-      return classifier.DefaultRankFunction
+    top_n_frames = self.project_classifier_config['top_n']
+    # If |results| are available, we use the projects from there since
+    # they're more reliable than the ones from the |crash_stack|.
+    if results:
+      classes = map(self.GetClassFromResult, results[:top_n_frames])
+    else:
+      classes = map(self.GetClassFromStackFrame, crash_stack[:top_n_frames])
 
-    # Set the max_classes to 1, so the returned projects only has one element.
-    projects = self._Classify(
-        results, crash_stack,
-        self.project_classifier_config['top_n'], 1,
-        rank_function=_GetRankFunction(crash_stack.language_type))
+    # Since we're only going to return the highest-ranked class, might
+    # as well set |max_classes| to 1.
+    projects = RankByOccurrence(classes, 1, rank_function=rank_function)
 
     if projects:
       return projects[0]
 
+    logging.warning('ProjectClassifier.Classify: no projects found.')
     return ''

@@ -2,18 +2,113 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 from collections import defaultdict
 
+from common import chrome_dependency_fetcher
 from common.diff import ChangeType
 from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine
 from crash import crash_util
-from crash.stacktrace import CallStack
-from crash.stacktrace import Stacktrace
 from crash.results import MatchResults
 from crash.scorers.aggregated_scorer import AggregatedScorer
 from crash.scorers.min_distance import MinDistance
 from crash.scorers.top_frame_index import TopFrameIndex
+from crash.stacktrace import CallStack
+from crash.stacktrace import Stacktrace
+
+# TODO(wrengr): make this a namedtuple.
+class ChangelistClassifier(object):
+  def __init__(self, repository,
+      top_n_frames, top_n_results=3, confidence_threshold=0.999):
+    """Args:
+      repository (Repository): the Git repository for getting CLs to classify.
+      top_n_frames (int): how many frames of each callstack to look at.
+      top_n_results (int): maximum number of results to return.
+      confidence_threshold (float): In [0,1], above which we only return
+        the first result.
+    """
+    self._repository = repository
+    self.top_n_frames = top_n_frames
+    self.top_n_results = top_n_results
+    self.confidence_threshold = confidence_threshold
+
+  def __str__(self): # pragma: no cover
+    return ('%s(top_n_frames=%d, top_n_results=%d, confidence_threshold=%g)'
+        % (self.__class__.__name__,
+           self.top_n_frames,
+           self.top_n_results,
+           self.confidence_threshold))
+
+  def __call__(self, report):
+    """Finds changelists suspected of being responsible for the crash report.
+
+    Args:
+      report (CrashReport): the report to be analyzed.
+
+    Returns:
+      List of Results, sorted by confidence from highest to lowest.
+    """
+    if not report.regression_range:
+      logging.warning('ChangelistClassifier.__call__: Missing regression range '
+          'for report: %s', str(report))
+      return []
+    last_good_version, first_bad_version = report.regression_range
+    logging.info('ChangelistClassifier.__call__: Regression range %s:%s',
+        last_good_version, first_bad_version)
+
+    # Restrict analysis to just the top n frames in each callstack.
+    # TODO(wrengr): move this to be a Stacktrace method?
+    stacktrace = Stacktrace([
+        CallStack(stack.priority,
+                  format_type=stack.format_type,
+                  language_type=stack.language_type,
+                  frame_list=stack[:self.top_n_frames])
+        for stack in report.stacktrace])
+
+    # We are only interested in the deps in crash stack (the callstack that
+    # caused the crash).
+    # TODO(wrengr): we may want to receive the crash deps as an argument,
+    # so that when this method is called via Findit.FindCulprit, we avoid
+    # doing redundant work creating it.
+    stack_deps = GetDepsInCrashStack(
+        report.stacktrace.crash_stack,
+        chrome_dependency_fetcher.ChromeDependencyFetcher(self._repository
+            ).GetDependency(report.crashed_version, report.platform))
+
+    # Get dep and file to changelogs, stack_info and blame dicts.
+    regression_deps_rolls = chrome_dependency_fetcher.ChromeDependencyFetcher(
+        self._repository).GetDependencyRollsDict(
+            last_good_version, first_bad_version, report.platform)
+    dep_to_file_to_changelogs, ignore_cls = GetChangeLogsForFilesGroupedByDeps(
+        regression_deps_rolls, stack_deps, self._repository)
+    dep_to_file_to_stack_infos = GetStackInfosForFilesGroupedByDeps(
+        stacktrace, stack_deps)
+
+    # TODO: argument order is inconsistent from others. Repository should
+    # be last argument.
+    results = FindMatchResults(dep_to_file_to_changelogs,
+                               dep_to_file_to_stack_infos,
+                               stack_deps, self._repository, ignore_cls)
+    if not results:
+      return []
+
+    # TODO(wrengr): we should be able to do this map/filter/sort in one pass.
+    # Set result.confidence, result.reasons and result.changed_files.
+    aggregated_scorer = AggregatedScorer([TopFrameIndex(), MinDistance()])
+    map(aggregated_scorer.Score, results)
+
+    # Filter all the 0 confidence results.
+    results = filter(lambda r: r.confidence != 0, results)
+    if not results:
+      return []
+
+    sorted_results = sorted(results, key=lambda r: -r.confidence)
+
+    max_results = (1 if sorted_results[0].confidence > self.confidence_threshold
+      else self.top_n_results)
+
+    return sorted_results[:max_results]
 
 
 def GetDepsInCrashStack(crash_stack, crash_deps):
@@ -35,7 +130,7 @@ def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps,
   """Gets a dict containing files touched by changelogs for deps in stack_deps.
 
   Regression ranges for each dep is determined by regression_deps_rolls.
-  Those changelogs got reverted should be returned in a ignore_cls set.
+  Changelogs which were reverted are returned in a reverted_cls set.
 
   Args:
     regression_deps_rolls (dict): Maps dep_path to DependencyRoll in
@@ -45,7 +140,7 @@ def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps,
     repository (Repository): Repository to get changelogs from.
 
   Returns:
-    A tuple (dep_to_file_to_changelogs, ignore_cls).
+    A tuple (dep_to_file_to_changelogs, reverted_cls).
 
     dep_to_file_to_changelogs (dict): Maps dep_path to a dict mapping file path
       to ChangeLogs that touched this file.
@@ -80,15 +175,16 @@ def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps,
         }
     }
 
-    ignore_cls (set): A set of reverted revisions.
+    reverted_cls (set): A set of reverted revisions.
   """
   dep_to_file_to_changelogs = defaultdict(lambda: defaultdict(list))
-  ignore_cls = set()
+  reverted_cls = set()
 
   for dep in stack_deps:
     # If a dep is not in regression range, than it cannot be the dep of
     # culprits.
-    if dep not in regression_deps_rolls:
+    dep_roll = regression_deps_rolls.get(dep)
+    if not dep_roll:
       continue
 
     dep_roll = regression_deps_rolls[dep]
@@ -98,10 +194,13 @@ def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps,
                                           dep_roll.new_revision)
 
     for changelog in changelogs:
+      # When someone reverts, we need to skip both the CL doing
+      # the reverting as well as the CL that got reverted. If
+      # |reverted_revision| is true, then this CL reverts another one,
+      # so we skip it and save the CL it reverts in |reverted_cls| to
+      # be filtered out later.
       if changelog.reverted_revision:
-        # Skip reverting cls and add reverted revisions to ignore_cls to later
-        # filter those reverted revisions.
-        ignore_cls.add(changelog.reverted_revision)
+        reverted_cls.add(changelog.reverted_revision)
         continue
 
       for touched_file in changelog.touched_files:
@@ -110,7 +209,7 @@ def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps,
 
         dep_to_file_to_changelogs[dep][touched_file.new_path].append(changelog)
 
-  return dep_to_file_to_changelogs, ignore_cls
+  return dep_to_file_to_changelogs, reverted_cls
 
 
 def GetStackInfosForFilesGroupedByDeps(stacktrace, stack_deps):
@@ -125,8 +224,8 @@ def GetStackInfosForFilesGroupedByDeps(stacktrace, stack_deps):
 
   Returns:
     A dict, maps dep path to a dict mapping file path to a list of stack
-    inforamtion of this file. A file may occur in several frames, one stack info
-    consist of a StackFrame and the callstack priority of it.
+    information of this file. A file may occur in several frames, one
+    stack info consist of a StackFrame and the callstack priority of it.
 
     For example:
     {
@@ -165,7 +264,7 @@ def FindMatchResults(dep_to_file_to_changelogs,
     dep_to_file_to_changelogs (dict): Maps dep_path to a dict mapping file path
       to ChangeLogs that touched this file.
     dep_to_file_to_stack_infos (dict): Maps dep path to a dict mapping file path
-      to a list of stack inforamtion of this file. A file may occur in several
+      to a list of stack information of this file. A file may occur in several
       frames, one stack info consist of a StackFrame and the callstack priority
       of it.
     stack_deps (dict): Represents all the dependencies shown in the crash stack.
@@ -195,66 +294,3 @@ def FindMatchResults(dep_to_file_to_changelogs,
             crashed_file_path, dep, stack_infos, changelogs, blame)
 
   return match_results.values()
-
-
-# TODO(katesonia): Remove the repository argument after refatoring cl committed.
-def FindItForCrash(stacktrace, regression_deps_rolls, crashed_deps, top_n,
-                   repository):
-  """Finds culprit results for crash.
-
-  Args:
-    stacktrace (Stactrace): Parsed Stactrace object.
-    regression_deps_rolls (dict): Maps dep_path to DependencyRoll in
-      regression range.
-    crashed_deps (dict of Dependencys): Represents all the dependencies of
-      crashed revision.
-    top_n (int): Top n frames of each stack to be analyzed.
-    repository (Repository): Repository to get changelogs and blame from.
-
-  Returns:
-    List of Results, sorted by confidence from highest to lowest.
-  """
-  if not regression_deps_rolls:
-    return []
-
-  # Findit will only analyze the top n frames in each callstacks.
-  stack_trace = Stacktrace([
-      CallStack(stack.priority,
-                format_type=stack.format_type,
-                language_type=stack.language_type,
-                frame_list=stack[:top_n])
-      for stack in stacktrace])
-
-  # We are only interested in the deps in crash stack (the callstack that
-  # caused the crash).
-  stack_deps = GetDepsInCrashStack(stack_trace.crash_stack, crashed_deps)
-
-  # Get dep and file to changelogs, stack_info and blame dicts.
-  dep_to_file_to_changelogs, ignore_cls = GetChangeLogsForFilesGroupedByDeps(
-      regression_deps_rolls, stack_deps, repository)
-  dep_to_file_to_stack_infos = GetStackInfosForFilesGroupedByDeps(
-      stack_trace, stack_deps)
-
-  results = FindMatchResults(dep_to_file_to_changelogs,
-                             dep_to_file_to_stack_infos,
-                             stack_deps, repository, ignore_cls)
-
-  if not results:
-    return []
-
-  aggregated_scorer = AggregatedScorer([TopFrameIndex(), MinDistance()])
-
-  # Set result.confidence, result.reasons and result.changed_files.
-  map(aggregated_scorer.Score, results)
-
-  # Filter all the 0 confidence results.
-  results = filter(lambda r: r.confidence != 0, results)
-  if not results:
-    return []
-
-  sorted_results = sorted(results, key=lambda r: -r.confidence)
-
-  if sorted_results[0].confidence > 0.999:
-    return sorted_results[:1]
-
-  return sorted_results[:3]

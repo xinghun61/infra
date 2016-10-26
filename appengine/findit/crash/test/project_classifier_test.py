@@ -74,10 +74,8 @@ class ProjectClassifierTest(CrashTestCase):
 
   def testClassifyResultsEmpty(self):
     classifier = ProjectClassifier()
-
     result = Result(self.GetDummyChangeLog(), '')
-    self.assertEqual(classifier.Classify([result], CallStack(0)),
-                     '')
+    self.assertEqual(classifier.Classify([result], CallStack(0)), '')
 
   def testClassifyRankFunction(self):
     classifier = ProjectClassifier()
@@ -120,16 +118,11 @@ class ProjectClassifierTest(CrashTestCase):
     self.assertEqual(classifier.Classify([], crash_stack),
                      'chromium')
 
+  # TODO(wrengr): what's the point of this? we're just testing that
+  # mocking does in fact mock.
   def testClassifyReturnsNone(self):
-    def _MockClassify(*_, **args):
-      self.assertIsNotNone(args)
-      return None
-
-    self.mock(ProjectClassifier, '_Classify', _MockClassify)
-
-    classifier = ProjectClassifier()
-    self.assertEqual(classifier.Classify([], CallStack(0)),
-                     '')
+    self.mock(ProjectClassifier, 'Classify', lambda *_: None)
+    self.assertIsNone(ProjectClassifier().Classify([], CallStack(0)))
 
   def testProjectClassifierDoNotHaveConfig(self):
     crash_config = CrashConfig.Get()
@@ -150,7 +143,7 @@ class ProjectClassifierTest(CrashTestCase):
         ]
     }
 
-    self.assertEqual(ProjectClassifier().Classify([result1], crash_stack), '')
+    self.assertIsNone(ProjectClassifier().Classify([result1], crash_stack))
 
   def testSortHosts(self):
     host_list = [

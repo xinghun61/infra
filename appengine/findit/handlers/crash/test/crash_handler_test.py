@@ -11,6 +11,7 @@ import webapp2
 import webtest
 
 from crash import crash_pipeline
+from crash.findit import Findit
 from crash.test.crash_testcase import CrashTestCase
 from handlers.crash import crash_handler
 
@@ -20,58 +21,44 @@ class CrashHandlerTest(CrashTestCase):
       ('/_ah/push-handlers/crash/fracas', crash_handler.CrashHandler),
   ], debug=True)
 
-  def _MockScheduleNewAnalysisForCrash(self, requested_crashes):
-    def Mocked_ScheduleNewAnalysisForCrash(*crash_data, **_):
-      requested_crashes.append(crash_data)
-    self.mock(crash_pipeline, 'ScheduleNewAnalysisForCrash',
-              Mocked_ScheduleNewAnalysisForCrash)
-
   def testAnalysisScheduled(self):
+    # We need to mock out the method on Findit itself (rather than using a
+    # subclass), since this method only gets called on objects we
+    # ourselves don't construct.
     requested_crashes = []
-    self._MockScheduleNewAnalysisForCrash(requested_crashes)
+    def _MockScheduleNewAnalysis(_self, crash_data, **_):
+      requested_crashes.append(crash_data)
+    self.mock(Findit, 'ScheduleNewAnalysis', _MockScheduleNewAnalysis)
+
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
-    client_id = 'fracas'
     channel = 'supported_channel'
     platform = 'supported_platform'
     signature = 'signature/here'
-    stack_trace = 'frame1\nframe2\nframe3'
     chrome_version = '50.2500.0.0'
-    historic_metadata = [{'chrome_version': '50.2500.0.0', 'cpm': 0.6}]
-
-    crash_identifiers = {
-        'chrome_version': chrome_version,
-        'signature': signature,
-        'channel': channel,
+    crash_data = {
+        'client_id': 'fracas',
         'platform': platform,
-        'process_type': 'renderer'
+        'signature': signature,
+        'stack_trace': 'frame1\nframe2\nframe3',
+        'chrome_version': chrome_version,
+        'crash_identifiers': {
+            'chrome_version': chrome_version,
+            'signature': signature,
+            'channel': channel,
+            'platform': platform,
+            'process_type': 'renderer',
+        },
+        'customized_data': {
+            'channel': channel,
+            'historical_metadata':
+                [{'chrome_version': chrome_version, 'cpm': 0.6}],
+        },
     }
 
     request_json_data = {
         'message': {
-            'data': base64.b64encode(json.dumps({
-                'customized_data': {
-                    'channel': 'supported_channel',
-                    'historical_metadata': [
-                        {
-                            'chrome_version': '50.2500.0.0',
-                            'cpm': 0.6
-                        },
-                    ]
-                },
-                'chrome_version': '50.2500.0.0',
-                'signature': 'signature/here',
-                'client_id': 'fracas',
-                'platform': 'supported_platform',
-                'crash_identifiers': {
-                    'chrome_version': '50.2500.0.0',
-                    'signature': 'signature/here',
-                    'channel': 'supported_channel',
-                    'platform': 'supported_platform',
-                    'process_type': 'renderer'
-                },
-                'stack_trace': 'frame1\nframe2\nframe3'
-            })),
+            'data': base64.b64encode(json.dumps(crash_data)),
             'message_id': 'id',
         },
         'subscription': 'subscription',
@@ -81,8 +68,4 @@ class CrashHandlerTest(CrashTestCase):
                             request_json_data)
 
     self.assertEqual(1, len(requested_crashes))
-    self.assertEqual(
-        (crash_identifiers, chrome_version, signature, client_id,
-         platform, stack_trace, {'channel': channel,
-                                 'historical_metadata': historic_metadata}),
-        requested_crashes[0])
+    self.assertEqual(crash_data, requested_crashes[0])

@@ -3,225 +3,160 @@
 # found in the LICENSE file.
 
 import logging
-from collections import namedtuple
+
+from google.appengine.ext import ndb
 
 from common import chrome_dependency_fetcher
 from crash import detect_regression_range
-from crash import findit_for_crash
+from crash.azalea import Azalea
+from crash.changelist_classifier import ChangelistClassifier
 from crash.chromecrash_parser import ChromeCrashParser
-from crash.project_classifier import ProjectClassifier
 from crash.component_classifier import Component
 from crash.component_classifier import ComponentClassifier
+from crash.crash_report import CrashReport
+from crash.culprit import NullCulprit
+from crash.findit import Findit
+from crash.project_classifier import ProjectClassifier
+from crash.type_enums import CrashClient
+from model.crash.cracas_crash_analysis import CracasCrashAnalysis
 from model.crash.crash_config import CrashConfig
+from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 # TODO(katesonia): Remove the default value after adding validity check to
 # config.
 _DEFAULT_TOP_N = 7
 
+# TODO(wrengr): [Note#1] in many places below we have to do some ugly
+# defaulting in case crash_data is missing certain keys. If we had
+# crash_data be a proper class, rather than an anonymous dict, then we
+# could clean all this up by having the properties themselves do the check
+# and return the default whenever keys are missing. This would also
+# let us do things like have regression_range be automatically computed
+# from historical_metadata (when historical_metadata is provided and
+# regression_range is not).
 
-# TODO(wrengr): move this to its own file, so it can be shared. When we do
-# so, we'll need to also pass in the 'solution' argument for the tag_dict.
-class Culprit(namedtuple('Culprit',
-    ['project', 'components', 'cls', 'regression_range'])):
+class FinditForChromeCrash(Findit):
+  """Find culprits for crash reports from the Chrome Crash server."""
 
-  @property
-  def fields(self):
-    return self._fields
+  @classmethod
+  def _ClientID(cls): # pragma: no cover
+    if cls is FinditForChromeCrash:
+      logging.warning('FinditForChromeCrash is abstract, '
+          'but someone constructed an instance and called _ClientID')
+    else:
+      logging.warning(
+          'FinditForChromeCrash subclass %s forgot to implement _ClientID',
+          cls.__name__)
+    raise NotImplementedError()
 
-  # TODO(wrengr): better name for this method.
-  def ToDicts(self):
-    """Convert this object to a pair of anonymous dicts for JSON.
+  # TODO(http://crbug.com/659354): remove the dependency on CrashConfig
+  # entirely, by passing the relevant data as arguments to this constructor.
+  def __init__(self, repository, pipeline_cls):
+    super(FinditForChromeCrash, self).__init__(repository, pipeline_cls)
+    component_classifier_config = CrashConfig.Get().component_classifier
 
-    Returns:
-      (analysis_result_dict, tag_dict)
-      The analysis result is a dict like below:
-      {
-          # Indicate if Findit found any suspects_cls, project,
-          # components or regression_range.
-          "found": true,
-          "suspected_project": "chromium-v8", # Which project is most suspected.
-          "feedback_url": "https://.."
-          "suspected_cls": [
-              {
-                  "revision": "commit-hash",
-                  "url": "https://chromium.googlesource.com/chromium/src/+/...",
-                  "review_url": "https://codereview.chromium.org/issue-number",
-                  "project_path": "third_party/pdfium",
-                  "author": "who@chromium.org",
-                  "time": "2015-08-17 03:38:16",
-                  "reason": "a plain string with '\n' as line break to expla..."
-                  "reason": [('MinDistance', 1, 'minimum distance is 0.'),
-                             ('TopFrame', 0.9, 'top frame is2nd frame.')],
-                  "changed_files": [
-                      {"file": "file_name1.cc",
-                       "blame_url": "https://...",
-                       "info": "minimum distance (LOC) 0, frame #2"},
-                      {"file": "file_name2.cc",
-                       "blame_url": "https://...",
-                       "info": "minimum distance (LOC) 20, frame #4"},
-                      ...
-                  ],
-                  "confidence": 0.60
-              },
-              ...,
-          ],
-          "regression_range": [  # Detected regression range.
-              "53.0.2765.0",
-              "53.0.2766.0"
-          ],
-          "suspected_components": [  # A list of crbug components to file bugs.
-              "Blink>JavaScript"
-          ]
-      }
+    self._stacktrace_parser = ChromeCrashParser()
 
-      The code review url might not always be available, because not all
-      commits go through code review. In that case, commit url should
-      be used instead.
+    # For how these two "top n" differ, see http://crbug.com/644476#c4
+    self._azalea = Azalea(
+        cl_classifier = ChangelistClassifier(
+            repository = repository,
+            top_n_frames = self.config.get('top_n', _DEFAULT_TOP_N)),
+        component_classifier = ComponentClassifier(
+            [Component(component_name, path_regex, function_regex)
+            for path_regex, function_regex, component_name
+            in component_classifier_config['path_function_component']],
+            component_classifier_config['top_n']),
+        project_classifier = ProjectClassifier())
 
-      The tag dict are allowed key/value pairs to tag the analysis result
-      for query and monitoring purpose on Findit side. For allowed keys,
-      please refer to crash_analysis.py and fracas_crash_analysis.py:
-        For results with normal culprit-finding algorithm: {
-            'found_suspects': True,
-            'has_regression_range': True,
-            'solution': 'core_algorithm',
-        }
-        For results using git blame without a regression range: {
-            'found_suspects': True,
-            'has_regression_range': False,
-            'solution': 'blame',
-        }
-        If nothing is found: {
-            'found_suspects': False,
-        }
-    """
-    cls_list = [result.ToDict() for result in self.cls]
+  def _InitializeAnalysis(self, model, crash_data):
+    super(FinditForChromeCrash, self)._InitializeAnalysis(model, crash_data)
+    # TODO(wrengr): see Note#1
+    model.regression_range = crash_data.get('regression_range', None)
+    customized_data = crash_data.get('customized_data', {})
+    model.channel = customized_data.get('channel', None)
+    model.historical_metadata = customized_data.get('historical_metadata', [])
 
-    # TODO(wrengr): reformulate the JSON stuff so we can drop fields which
-    # are empty; so that, in turn, we can get rid of the NullCulprit class.
-    return (
-        {
-          'found': (bool(self.project) or
-                    bool(self.components) or
-                    bool(cls_list) or
-                    bool(self.regression_range)),
-          'regression_range': self.regression_range,
-          'suspected_project': self.project,
-          'suspected_components': self.components,
-          'suspected_cls': cls_list,
-        },
-        {
-          'found_suspects': bool(cls_list),
-          'found_project': bool(self.project),
-          'found_components': bool(self.components),
-          'has_regression_range': bool(self.regression_range),
-          'solution': 'core_algorithm',
-        }
-      )
+  # TODO(wrengr): see Note#1, which would allow us to lift this
+  # implementation to the Findit base class.
+  @ndb.transactional
+  def _NeedsNewAnalysis(self, crash_data):
+    crash_identifiers = crash_data['crash_identifiers']
+    historical_metadata = crash_data['customized_data']['historical_metadata']
+    model = self.GetAnalysis(crash_identifiers)
+    # N.B., for mocking reasons, we must not call DetectRegressionRange
+    # directly, but rather must access it indirectly through the module.
+    new_regression_range = detect_regression_range.DetectRegressionRange(
+        historical_metadata)
+    if (model and not model.failed and
+        new_regression_range == model.regression_range):
+      logging.info('The analysis of %s has already been done.',
+                   repr(crash_identifiers))
+      return False
 
+    if not model:
+      model = self.CreateAnalysis(crash_identifiers)
 
-# TODO(wrengr): Either (a) reformulate the unit tests so that FindCulprit
-# can, in fact, return None; or else (b) reformulate the JSON stuff so
-# that the various fields are optional, so that we can just use
-# Culprit('', [], [], None) directly.
-class NullCulprit(object):
-  """A helper class so FindCulprit doesn't return None.
+    crash_data['regression_range'] = new_regression_range
+    self._InitializeAnalysis(model, crash_data)
+    model.put()
+    return True
 
-  This class is analogous to Culprit(None, [], [], None), except that the
-  result of the ToDicts method is more minimalistic."""
+  def CheckPolicy(self, crash_data):
+    crash_identifiers = crash_data['crash_identifiers']
+    platform = crash_data['platform']
+    # TODO(wrengr): see Note#1
+    channel = crash_data.get('customized_data', {}).get('channel', None)
+    # TODO(katesonia): Remove the default value after adding validity check to
+    # config.
+    if platform not in self.config.get(
+        'supported_platform_list_by_channel', {}).get(channel, []):
+      # Bail out if either the channel or platform is not supported yet.
+      logging.info('Analysis of channel %s, platform %s is not supported. '
+                   'No analysis is scheduled for %s',
+                   channel, platform, repr(crash_identifiers))
+      return None
 
-  def ToDicts(self):
-    return (
-        {'found': False},
-        {'found_suspects': False,
-         'has_regression_range': False}
-    )
+    signature = crash_data['signature']
+    # TODO(wrengr): can this blacklist stuff be lifted to the base class?
+    # TODO(katesonia): Remove the default value after adding validity check to
+    # config.
+    for blacklist_marker in self.config.get('signature_blacklist_markers', []):
+      if blacklist_marker in signature:
+        logging.info('%s signature is not supported. '
+                     'No analysis is scheduled for %s', blacklist_marker,
+                     repr(crash_identifiers))
+        return None
+
+    # TODO(wrengr): should we clone |crash_data| rather than mutating it?
+    crash_data['platform'] = self.RenamePlatform(platform)
+    return crash_data
 
 
-# TODO(wrengr): better name for this class. Given the "findit_for_*.py"
-# file names, one might suspect that each of those files implements
-# something analogous to this file, and hence we could make a superclass
-# to factor out the common bits. However, in truth, all those files
-# are unrelated and do completely different things.
-class FinditForChromeCrash(object):
-  """Process crashes from Chrome crash server and find culprits for them.
+# TODO(http://crbug.com/659346): we misplaced the coverage tests; find them!
+class FinditForCracas(FinditForChromeCrash): # pragma: no cover
+  @classmethod
+  def _ClientID(cls):
+    return CrashClient.CRACAS
 
-  Even though this class has only one method, it is helpful because it
-  allows us to cache things which should outlive each call to that method.
-  For example, we store a single ComponentClassifier object so that we
-  only compile the regexes for each Component object once, rather than
-  doing so on each call to FindCulprit. In addition, the class lets
-  us cache various configuration options so that we need not depend
-  on CrashConfig; thereby decoupling the analysis itself from UX concerns
-  about deciding how to run those analyses.
-  """
-  # TODO(wrengr): remove the dependency on CrashConfig entirely, by
-  # passing the relevant data as arguments to this constructor.
-  def __init__(self, repository):
-    crash_config = CrashConfig.Get()
-    component_classifier_config = crash_config.component_classifier
+  def CreateAnalysis(self, crash_identifiers):
+    # TODO: inline CracasCrashAnalysis.Create stuff here.
+    return CracasCrashAnalysis.Create(crash_identifiers)
 
-    # TODO(wrengr): why are these two different?
-    component_classifier_top_n = component_classifier_config['top_n']
-    self._fracas_top_n = crash_config.fracas.get('top_n', _DEFAULT_TOP_N)
+  def GetAnalysis(self, crash_identifiers):
+    # TODO: inline CracasCrashAnalysis.Get stuff here.
+    return CracasCrashAnalysis.Get(crash_identifiers)
 
-    self.component_classifier = ComponentClassifier(
-        [Component(component_name, path_regex, function_regex)
-          for path_regex, function_regex, component_name
-          in component_classifier_config['path_function_component']],
-        component_classifier_top_n)
 
-    # TODO(wrengr); fix ProjectClassifier so it doesn't depend on CrashConfig.
-    self.project_classifier = ProjectClassifier()
-    # TODO(katesonia): Lift this to Findit superclass after refatoring cl
-    # committed.
-    self.repository = repository
-    self.dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
-        repository)
+class FinditForFracas(FinditForChromeCrash):
+  @classmethod
+  def _ClientID(cls):
+    return CrashClient.FRACAS
 
-  # TODO(wrengr): since this is the only method of interest, it would
-  # be better IMO to rename it to __call__ to reduce verbosity.
-  def FindCulprit(self, signature, platform, stack_trace, crashed_version,
-                  regression_range):
-    """Finds culprits for a Chrome crash.
+  def CreateAnalysis(self, crash_identifiers):
+    # TODO: inline FracasCrashAnalysis.Create stuff here.
+    return FracasCrashAnalysis.Create(crash_identifiers)
 
-    Args:
-      signature (str): The signature of a crash on the Chrome crash server.
-      platform (str): The platform name, could be 'win', 'mac', 'linux',
-        'android', 'ios', etc.
-      stack_trace (str): A string containing the stack trace of a crash.
-      crashed_version (str): The version of Chrome in which the crash occurred.
-      regression_range (list or None): [good_version, bad_revision] or None.
-
-    Returns:
-      A Culprit object.
-    """
-    crash_deps = self.dep_fetcher.GetDependency(crashed_version, platform)
-    stacktrace = ChromeCrashParser().Parse(stack_trace, crash_deps, signature)
-    if not stacktrace:
-      logging.warning('Failed to parse the stacktrace %s', stack_trace)
-      # TODO(wrengr): refactor things so we don't need the NullCulprit class.
-      return NullCulprit()
-
-    # Get regression deps and crash deps.
-    regression_deps_rolls = {}
-    if regression_range:
-      last_good_version, first_bad_version = regression_range
-      logging.info('Find regression range %s:%s', last_good_version,
-                   first_bad_version)
-      regression_deps_rolls = self.dep_fetcher.GetDependencyRollsDict(
-          last_good_version, first_bad_version, platform)
-
-    suspected_cls = findit_for_crash.FindItForCrash(
-        stacktrace, regression_deps_rolls, crash_deps, self._fracas_top_n,
-        self.repository)
-
-    crash_stack = stacktrace.crash_stack
-    suspected_project = self.project_classifier.Classify(
-        suspected_cls, crash_stack)
-
-    suspected_components = self.component_classifier.Classify(
-        suspected_cls, crash_stack)
-
-    return Culprit(suspected_project, suspected_components, suspected_cls,
-        regression_range)
+  def GetAnalysis(self, crash_identifiers):
+    # TODO: inline FracasCrashAnalysis.Get stuff here.
+    return FracasCrashAnalysis.Get(crash_identifiers)

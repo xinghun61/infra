@@ -3,199 +3,198 @@
 # found in the LICENSE file.
 import copy
 import json
+import logging
 
 from google.appengine.api import app_identity
+from google.appengine.ext import ndb
+from webtest.app import AppError
 
+from common import chrome_dependency_fetcher
 from common.pipeline_wrapper import pipeline_handlers
 from crash import crash_pipeline
-from crash import findit_for_chromecrash
+from crash.culprit import Culprit
+from crash.findit_for_chromecrash import FinditForFracas
+from crash.type_enums import CrashClient
 from crash.test.crash_testcase import CrashTestCase
 from model import analysis_status
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
+
+def DummyCrashData(
+    version='1',
+    signature='signature',
+    platform='win',
+    stack_trace=None,
+    regression_range=None,
+    channel='canary',
+    historical_metadata=None,
+    crash_identifiers=True,
+    process_type='browser'):
+  if crash_identifiers is True: # pragma: no cover
+    crash_identifiers = {
+        'chrome_version': version,
+        'signature': signature,
+        'channel': channel,
+        'platform': platform,
+        'process_type': process_type,
+    }
+  return {
+      'crashed_version': version,
+      'signature': signature,
+      'platform': platform,
+      'stack_trace': stack_trace,
+      'regression_range': regression_range,
+      'crash_identifiers': crash_identifiers,
+      'customized_data': {
+          'historical_metadata': historical_metadata,
+          'channel': channel,
+      },
+  }
+
+
+class MockCulprit(object):
+  """Construct a fake culprit where |ToDicts| returns whatever we please."""
+
+  def __init__(self, mock_result, mock_tags):
+    self._result = mock_result
+    self._tags = mock_tags
+
+  def ToDicts(self): # pragma: no cover
+    return self._result, self._tags
 
 
 class CrashPipelineTest(CrashTestCase):
   app_module = pipeline_handlers._APP
 
-  def testNoAnalysisIfLastOneIsNotFailed(self):
-    chrome_version = '1'
-    signature = 'signature'
-    platform = 'win'
-    crash_identifiers = {
-      'chrome_version': chrome_version,
-      'signature': signature,
-      'channel': 'canary',
-      'platform': platform,
-      'process_type': 'browser',
-    }
-    for status in (analysis_status.PENDING, analysis_status.RUNNING,
-                   analysis_status.COMPLETED, analysis_status.SKIPPED):
-      analysis = FracasCrashAnalysis.Create(crash_identifiers)
-      analysis.status = status
-      analysis.put()
-      self.assertFalse(crash_pipeline._NeedsNewAnalysis(
-          crash_identifiers, chrome_version, signature, 'fracas',
-          platform, None, {'channel': 'canary'}))
-
-  def testAnalysisNeededIfLastOneFailed(self):
-    chrome_version = '1'
-    signature = 'signature'
-    platform = 'win'
-    crash_identifiers = {
-      'chrome_version': chrome_version,
-      'signature': signature,
-      'channel': 'canary',
-      'platform': platform,
-      'process_type': 'browser',
-    }
+  def testAnalysisAborted(self):
+    crash_identifiers = DummyCrashData()['crash_identifiers']
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
-    analysis.status = analysis_status.ERROR
-    analysis.put()
-    self.assertTrue(crash_pipeline._NeedsNewAnalysis(
-          crash_identifiers, chrome_version, signature, 'fracas',
-          platform, None, {'channel': 'canary'}))
-
-  def testAnalysisNeededIfNoAnalysisYet(self):
-    chrome_version = '1'
-    signature = 'signature'
-    platform = 'win'
-    crash_identifiers = {
-      'chrome_version': chrome_version,
-      'signature': signature,
-      'channel': 'canary',
-      'platform': platform,
-      'process_type': 'browser',
-    }
-    self.assertTrue(crash_pipeline._NeedsNewAnalysis(
-          crash_identifiers, chrome_version, signature, 'fracas',
-          platform, None, {'channel': 'canary'}))
-
-  def testUnsupportedChannelOrPlatformSkipped(self):
-    self.assertFalse(
-        crash_pipeline.ScheduleNewAnalysisForCrash(
-            {}, None, None, 'fracas', 'win',
-            None, {'channel': 'unsupported_channel',
-                   'historical_metadata': None}))
-    self.assertFalse(
-        crash_pipeline.ScheduleNewAnalysisForCrash(
-            {}, None, None, 'fracas', 'unsupported_platform',
-            None, {'channel': 'unsupported_channel',
-                   'historical_metadata': None}))
-
-  def testBlackListSignatureSipped(self):
-    self.assertFalse(
-        crash_pipeline.ScheduleNewAnalysisForCrash(
-            {}, None, 'Blacklist marker signature', 'fracas', 'win',
-            None, {'channel': 'canary',
-                   'historical_metadata': None}))
-
-  def testPlatformRename(self):
-    def _MockNeedsNewAnalysis(*args):
-      self.assertEqual(args,
-                       ({}, None, 'signature', 'fracas', 'unix', None,
-                        {'channel': 'canary'}))
-      return False
-
-    self.mock(crash_pipeline, '_NeedsNewAnalysis', _MockNeedsNewAnalysis)
-
-    crash_pipeline.ScheduleNewAnalysisForCrash(
-        {}, None, 'signature', 'fracas', 'linux',
-        None, {'channel': 'canary'})
-
-  def testNoAnalysisNeeded(self):
-    chrome_version = '1'
-    signature = 'signature'
-    platform = 'win'
-    channel = 'canary'
-    crash_identifiers = {
-      'chrome_version': chrome_version,
-      'signature': signature,
-      'channel': channel,
-      'platform': platform,
-      'process_type': 'browser',
-    }
-    analysis = FracasCrashAnalysis.Create(crash_identifiers)
-    analysis.status = analysis_status.COMPLETED
+    analysis.status = analysis_status.RUNNING
     analysis.put()
 
-    self.assertFalse(
-        crash_pipeline.ScheduleNewAnalysisForCrash(
-            crash_identifiers, chrome_version, signature, 'fracas',
-            platform, None, {'channel': channel,
-                             'historical_metadata': None}))
+    pipeline = crash_pipeline.CrashAnalysisPipeline(
+        CrashClient.FRACAS,
+        crash_identifiers)
+    pipeline._PutAbortedError()
+    analysis = FracasCrashAnalysis.Get(crash_identifiers)
+    self.assertEqual(analysis_status.ERROR, analysis.status)
 
+
+  # TODO: this function is a gross hack. We should figure out what the
+  # semantic goal really is here, so we can avoid doing such intricate
+  # and fragile mocking.
   def _TestRunningAnalysisForResult(self, analysis_result, analysis_tags):
+
+    # Mock out the part of PublishResultPipeline that would go over the wire.
     pubsub_publish_requests = []
     def Mocked_PublishMessagesToTopic(messages_data, topic):
       pubsub_publish_requests.append((messages_data, topic))
     self.mock(crash_pipeline.pubsub_util, 'PublishMessagesToTopic',
               Mocked_PublishMessagesToTopic)
 
+    MOCK_HOST = 'https://host.com'
+    self.mock(app_identity, 'get_default_version_hostname', lambda: MOCK_HOST)
+
+    testcase = self
+    MOCK_KEY = 'MOCK_KEY'
+
+    # TODO: We need to mock out the pipeline so that it doesn't go over
+    # the wire, and yet still exercises the code we're trying to unittest.
+    # TODO: since |FinditForClientID| automatically feeds
+    # CrashWrapperPipeline in to the Findit constructor; this mock
+    # probably won't work.
+    class _MockPipeline(crash_pipeline.CrashWrapperPipeline):
+      def start(self, **kwargs):
+        logging.info('Mock running on queue %s', kwargs['queue_name'])
+        analysis_pipeline = crash_pipeline.CrashAnalysisPipeline(
+            self._client_id, self._crash_identifiers)
+        analysis_pipeline.run()
+        analysis_pipeline.finalized()
+
+        testcase.mock(ndb.Key, 'urlsafe', lambda _self: MOCK_KEY)
+        publish_pipeline = crash_pipeline.PublishResultPipeline(
+            self._client_id, self._crash_identifiers)
+        publish_pipeline.run()
+        publish_pipeline.finalized()
+
+    # Mock out FindCulprit to track the number of times it's called and
+    # with which arguments. N.B., the pipeline will reconstruct Findit
+    # objects form their client_id, so we can't mock via subclassing,
+    # we must mock via |self.mock|.
+    mock_culprit = MockCulprit(analysis_result, analysis_tags)
     analyzed_crashes = []
-    class Mocked_FinditForChromeCrash(object):
-      def __init__(self, *_):
-        pass
-      def FindCulprit(self, *args):
-        analyzed_crashes.append(args)
-        return analysis_result, analysis_tags
-    self.mock(findit_for_chromecrash, 'FinditForChromeCrash',
-        Mocked_FinditForChromeCrash)
+    def _MockFindCulprit(_self, model):
+        analyzed_crashes.append(model)
+        return mock_culprit
+    self.mock(FinditForFracas, 'FindCulprit', _MockFindCulprit)
 
-    chrome_version = '1'
-    signature = 'signature'
-    platform = 'win'
-    channel = 'canary'
-    crash_identifiers = {
-      'chrome_version': chrome_version,
-      'signature': signature,
-      'channel': channel,
-      'platform': platform,
-      'process_type': 'browser',
-    }
-    stack_trace = 'frame1\nframe2\nframe3'
-    chrome_version = '50.2500.0.1'
-    historical_metadata = None
+    # The real |ParseStacktrace| calls |GetChromeDependency|, which
+    # eventually calls |GitRepository.GetSource| and hence goes over
+    # the wire. Since we mocked out |FindCulprit| to no longer call
+    # |ParseStacktrace|, it shouldn't matter what the real
+    # |ParseStacktrace| does. However, since mocking is fragile and it's
+    # hard to triage what actually went wrong if we do end up going over
+    # the wire, we mock this out too just to be safe.
+    def _MockParseStacktrace(_self, _model):
+      raise AssertionError("ParseStacktrace shouldn't ever be called. "
+          'That it was indicates some sort of problem with our mocking code.')
+    self.mock(FinditForFracas, 'ParseStacktrace', _MockParseStacktrace)
 
-    mock_host = 'https://host.com'
-    self.mock(app_identity, 'get_default_version_hostname', lambda: mock_host)
+    # More directly address the issue about |GetChromeDependency| going
+    # over the wire.
+    def _MockGetChromeDependency(_self, _revision, _platform):
+      raise AssertionError("GetChromeDependency shouldn't ever be called. "
+          'That it was indicates some sort of problem with our mocking code.')
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+        'GetDependency', _MockGetChromeDependency)
 
+    crash_data = DummyCrashData(
+        version = '50.2500.0.1',
+        stack_trace = 'frame1\nframe2\nframe3')
+    # A fake repository, needed by the Findit constructor. We should never
+    # go over the wire (e.g., in the call to ScheduleNewAnalysis below),
+    # and this helps ensure that. (The current version of the tests
+    # don't seem to need the repo at all, so None is a sufficient mock
+    # for now.)
+    mock_repository = None
     self.assertTrue(
-        crash_pipeline.ScheduleNewAnalysisForCrash(
-            crash_identifiers, chrome_version, signature, 'fracas',
-            platform, stack_trace,
-            {'channel': channel, 'historical_metadata': historical_metadata}))
+        FinditForFracas(mock_repository, _MockPipeline).ScheduleNewAnalysis(
+            crash_data))
 
-    self.execute_queued_tasks()
+    # The catch/re-raise is to clean up the callstack that's reported
+    # when things acciddentally go over the wire (and subsequently fail).
+    try:
+      self.execute_queued_tasks()
+    except AppError, e: # pragma: no cover
+      raise e
 
     self.assertEqual(1, len(pubsub_publish_requests))
 
     processed_analysis_result = copy.deepcopy(analysis_result)
     processed_analysis_result['feedback_url'] = (
-        mock_host + '/crash/fracas-result-feedback?'
-        'key=agx0ZXN0YmVkLXRlc3RyQQsSE0ZyYWNhc0NyYXNoQW5hbHlzaXMiKGU2ZWIyNj'
-        'A2OTBlYTAyMjVjNWNjYTM3ZTNjYTlmYWExOGVmYjVlM2UM')
+        '%s/crash/fracas-result-feedback?key=%s' % (MOCK_HOST, MOCK_KEY))
 
-    if 'suspected_cls' in processed_analysis_result:
-      for cl in processed_analysis_result['suspected_cls']:
-        cl['confidence'] = round(cl['confidence'], 2)
-        cl.pop('reason', None)
+    for cl in processed_analysis_result.get('suspected_cls', []):
+      cl['confidence'] = round(cl['confidence'], 2)
+      cl.pop('reason', None)
 
     expected_messages_data = [json.dumps({
-            'crash_identifiers': crash_identifiers,
-            'client_id': 'fracas',
+            'crash_identifiers': crash_data['crash_identifiers'],
+            'client_id': CrashClient.FRACAS,
             'result': processed_analysis_result,
         }, sort_keys=True)]
-    self.assertEqual(expected_messages_data, pubsub_publish_requests[0][0])
-
+    self.assertListEqual(expected_messages_data, pubsub_publish_requests[0][0])
     self.assertEqual(1, len(analyzed_crashes))
-    self.assertEqual(
-        (signature, platform, stack_trace, chrome_version, None),
-        analyzed_crashes[0])
+    analysis = analyzed_crashes[0]
+    self.assertTrue(isinstance(analysis, FracasCrashAnalysis))
+    self.assertEqual(crash_data['signature'], analysis.signature)
+    self.assertEqual(crash_data['platform'], analysis.platform)
+    self.assertEqual(crash_data['stack_trace'], analysis.stack_trace)
+    self.assertEqual(crash_data['crashed_version'], analysis.crashed_version)
+    self.assertEqual(crash_data['regression_range'], analysis.regression_range)
 
-    analysis = FracasCrashAnalysis.Get(crash_identifiers)
+    analysis = FracasCrashAnalysis.Get(crash_data['crash_identifiers'])
     self.assertEqual(analysis_result, analysis.result)
     return analysis
-
 
   def testRunningAnalysis(self):
     analysis_result = {
@@ -255,23 +254,3 @@ class CrashPipelineTest(CrashTestCase):
     self.assertTrue(analysis.has_regression_range)
     self.assertTrue(analysis.found_suspects)
     self.assertEqual('core', analysis.solution)
-
-  def testAnalysisAborted(self):
-    chrome_version = '1'
-    signature = 'signature'
-    platform = 'win'
-    crash_identifiers = {
-      'chrome_version': chrome_version,
-      'signature': signature,
-      'channel': 'canary',
-      'platform': platform,
-      'process_type': 'browser',
-    }
-    analysis = FracasCrashAnalysis.Create(crash_identifiers)
-    analysis.status = analysis_status.RUNNING
-    analysis.put()
-
-    pipeline = crash_pipeline.CrashAnalysisPipeline(crash_identifiers, 'fracas')
-    pipeline._SetErrorIfAborted(True)
-    analysis = FracasCrashAnalysis.Get(crash_identifiers)
-    self.assertEqual(analysis_status.ERROR, analysis.status)

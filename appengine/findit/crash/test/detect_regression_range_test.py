@@ -12,11 +12,9 @@ class DetectRegressionRangeTest(testing.AppengineTestCase):
   def _VerifyCasesForDetectRegressonRange(self, cases):
     for case, expected_result in cases:
       result = DetectRegressionRange(case)
-
-      self.assertEqual(result, expected_result, 'Detected spikes of %s should '
-                       'be %s, instead of %s' % (repr(case),
-                                                 expected_result,
-                                                 result))
+      self.assertEqual(result, expected_result,
+          'Detected spikes of %s should be %s, instead of %s'
+          % (repr(case), expected_result, result))
 
 
   # TODO(wrengr): make this test more comprehensive.

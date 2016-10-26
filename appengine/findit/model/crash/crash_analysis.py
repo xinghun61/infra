@@ -2,15 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
 import hashlib
 import json
 import logging
 
 from google.appengine.ext import ndb
 
+from common import appengine_util
+from crash.type_enums import CrashClient
 from model import analysis_status
 from model import triage_status
 
+# TODO(katesonia): Move this to fracas config.
+_FINDIT_FRACAS_FEEDBACK_URL_TEMPLATE = '%s/crash/fracas-result-feedback?key=%s'
 
 class CrashAnalysis(ndb.Model):
   """Base class to represent an analysis of a Chrome/Clusterfuzz crash."""
@@ -150,3 +155,35 @@ class CrashAnalysis(ndb.Model):
   @classmethod
   def Create(cls, crash_identifiers):
     return cls(key=cls._CreateKey(crash_identifiers))
+
+  def ToPublishableResult(self, crash_identifiers):
+    """Convert this datastore analysis into a publishable result.
+    
+    Args:
+      crash_identifiers (dict): ??
+
+    Returns:
+      A dict of the given |crash_identifiers|, this model's |client_id|,
+      and a publishable version of this model's |result|.
+    """
+    result = copy.deepcopy(self.result)
+    client_id = self.client_id
+
+    # TODO(katesonia): move this to ChromeCrashAnalysis
+    if (client_id == CrashClient.FRACAS or
+        client_id == CrashClient.CRACAS):
+      result['feedback_url'] = _FINDIT_FRACAS_FEEDBACK_URL_TEMPLATE % (
+          appengine_util.GetDefaultVersionHostname(), self.key.urlsafe())
+      if result['found']:
+        for cl in result['suspected_cls']:
+          cl['confidence'] = round(cl['confidence'], 2)
+          cl.pop('reason', None)
+    elif client_id == CrashClient.CLUSTERFUZZ:  # pragma: no cover.
+      # TODO(katesonia): Post process clusterfuzz model result if needed.
+      pass
+
+    return {
+        'crash_identifiers': crash_identifiers,
+        'client_id': client_id,
+        'result': result,
+    }
