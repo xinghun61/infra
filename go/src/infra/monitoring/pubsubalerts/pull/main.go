@@ -97,7 +97,7 @@ func main() {
 
 		handler := &sompubsub.BuildHandler{Store: sompubsub.NewInMemAlertStore()}
 		for _, b := range extract.Builds {
-			err := handler.HandleBuild(b)
+			err := handler.HandleBuild(ctx, b)
 			if err != nil {
 				log.Fatalf("error: %+v", err)
 			}

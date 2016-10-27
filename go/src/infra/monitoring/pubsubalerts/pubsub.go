@@ -9,6 +9,10 @@ import (
 	"net/url"
 
 	"infra/monitoring/messages"
+
+	"github.com/luci/gae/service/datastore"
+
+	"golang.org/x/net/context"
 )
 
 // AlertStatus is an enum type to denote the status of an alert.
@@ -25,32 +29,64 @@ const (
 	StatusInactive = "inactive"
 )
 
+// stringSet is a type alias for treating a map as a set.
+type stringSet map[string]struct{}
+
+func (bs stringSet) toPropertySlice() datastore.PropertySlice {
+	ret := datastore.PropertySlice{}
+	for b := range bs {
+		ret = append(ret, datastore.MkProperty(b))
+	}
+	return ret
+}
+
+func stringSetFromPropertySlice(ps datastore.PropertySlice) (stringSet, error) {
+	bs := make(stringSet, len(ps))
+	for _, bp := range ps {
+		v, err := bp.Project(datastore.PTString)
+		if err != nil {
+			return nil, err
+		}
+		bs[v.(string)] = struct{}{}
+	}
+	return bs, nil
+}
+
+// StoredBuild represents a build instance that can be persisted in datastore.
+type StoredBuild struct {
+	Master, BuilderName string
+	Number              int64
+}
+
 // StoredAlert represents stored alert data.
 type StoredAlert struct {
-	// The alert key. It is an opaque string, unique to an instance.
-	Key string
+	// The alert key.
+	ID int64 `gae:"$id"`
 	// The alert signature is unique to a particular combination of failure
 	// properties but is also otherwise opaque to users.
 	Signature string
 	// Status of the alert.
 	Status AlertStatus
 	// FailingBuilders is a map of builder names for currently failing builders.
-	FailingBuilders map[string]bool
+	FailingBuilders stringSet `gae:"-"`
 	// PassingBuilders is a map of builder names for builders that previously were failing but are now passing.
-	PassingBuilders map[string]bool
-	// FailingBuilds is an array of builds that failed over the lifetime of this alert.
-	FailingBuilds []*messages.Build
-	// PassingBuilds is an array of builds that started passing since the start of this alert.
-	PassingBuilds []*messages.Build
+	PassingBuilders stringSet `gae:"-"`
+
+	// TODO(seanmccullough): Make it so we can either store these or fetch them
+	// easily from Milo.
+	// FailingBuilds is an array of build URLs that failed over the lifetime of this alert.
+	FailingBuilds []StoredBuild
+	// PassingBuilds is an array of build URLs that started passing since the start of this alert.
+	PassingBuilds []StoredBuild
 }
 
 // AlertStore is expected to provide acces to a shared, persistent set of
 // alerts.
 type AlertStore interface {
-	ActiveAlertForSignature(sig string) *StoredAlert
-	ActiveAlertsForBuilder(builderName string) []*StoredAlert
-	NewAlert(step *messages.BuildStep) *StoredAlert
-	StoreAlert(sig string, alert *StoredAlert)
+	ActiveAlertForSignature(ctx context.Context, sig string) (*StoredAlert, error)
+	ActiveAlertsForBuilder(ctx context.Context, builderName string) ([]*StoredAlert, error)
+	NewAlert(ctx context.Context, step *messages.BuildStep) (*StoredAlert, error)
+	StoreAlert(ctx context.Context, alert *StoredAlert) error
 }
 
 // The same signature can appear in failures on multiple builders.
@@ -122,10 +158,14 @@ type BuildHandler struct {
 	Store AlertStore
 }
 
-func buildOrder(a, b *messages.Build) bool {
+func buildOrder(a, b StoredBuild) bool {
 	// TODO: something more robust. Master restarts break this comparison.
 	// Other properties to compare: time stamps, revision ranges.
 	return a.Number < b.Number
+}
+
+func storedBuild(b *messages.Build) StoredBuild {
+	return StoredBuild{Master: b.Master, BuilderName: b.BuilderName, Number: b.Number}
 }
 
 // HandleBuild is the main entry point for this analyzer. It is stateful via
@@ -133,21 +173,29 @@ func buildOrder(a, b *messages.Build) bool {
 // build events delivered out of order. That is, failing build events that are
 // delivered after passing build events in the actual build timeline will not
 // generate new alerts.
-func (b *BuildHandler) HandleBuild(build *messages.Build) error {
-	if build == nil {
+func (b *BuildHandler) HandleBuild(ctx context.Context, aBuild *messages.Build) error {
+	if aBuild == nil {
 		return fmt.Errorf("build parameter was nil")
 	}
 
-	failures, passes := analyzeSteps(build)
+	failures, passes := analyzeSteps(aBuild)
 
-	log.Printf("%d failures, %d passes in %s/%d:\n", len(failures), len(passes), build.BuilderName, build.Number)
+	log.Printf("%d failures, %d passes in %s/%d:\n", len(failures), len(passes), aBuild.BuilderName, aBuild.Number)
+
+	build := storedBuild(aBuild)
 	// Either create a new alert or attach this failure to an existing alert
 	// that matches this signature.
 	// TODO: Get/filter reasons for the failure.
 	for _, failure := range failures {
 		sig := alertSignature(failure.Step)
 
-		if alert := b.Store.ActiveAlertForSignature(sig); alert != nil {
+		alert, err := b.Store.ActiveAlertForSignature(ctx, sig)
+		if err != nil {
+			log.Printf("Error getting active alert for signature %s: %v", sig, err)
+			continue
+		}
+
+		if alert != nil {
 			// Now check to see if the failure has been supersceded by an ok build
 			// that arived prior to the arrival of this build event, but occurred
 			// after it logically (e.g. a late build failure event for currently
@@ -160,22 +208,38 @@ func (b *BuildHandler) HandleBuild(build *messages.Build) error {
 				}
 			}
 			log.Printf("Adding %s to %s\n", failure.Build.BuilderName, sig)
-			alert.FailingBuilders[failure.Build.BuilderName] = true
-			alert.FailingBuilds = append(alert.FailingBuilds, failure.Build)
+			alert.FailingBuilders[failure.Build.BuilderName] = struct{}{}
+			alert.FailingBuilds = append(alert.FailingBuilds, build)
 			if !superceeded {
 				alert.Status = StatusActive
 			}
-			b.Store.StoreAlert(sig, alert)
+			if err := b.Store.StoreAlert(ctx, alert); err != nil {
+				log.Printf("Error storing alert: %v", err)
+				return err
+			}
 		} else {
 			log.Printf("Creating a new alert for %s on %s\n", failure.Build.BuilderName, sig)
-			alert := b.Store.NewAlert(failure)
-			b.Store.StoreAlert(sig, alert)
+			alert, err := b.Store.NewAlert(ctx, failure)
+			if err != nil {
+				log.Printf("Error creating new alert: %v", err)
+				return err
+			}
+			if err := b.Store.StoreAlert(ctx, alert); err != nil {
+				log.Printf("Error storing new alert: %v", err)
+				return err
+			}
 		}
 	}
 
 	// Now remove the builder from any alerts on steps that passed in this build.
 	// Clear out alerts that no longer apply.
-	for _, alert := range b.Store.ActiveAlertsForBuilder(build.BuilderName) {
+	activeAlerts, err := b.Store.ActiveAlertsForBuilder(ctx, build.BuilderName)
+	if err != nil {
+		log.Printf("Error getting active alerts for builder %q: %v", build.BuilderName, err)
+		return err
+	}
+
+	for _, alert := range activeAlerts {
 		log.Printf("Checking if %s is still active for alert on %s\n", build.BuilderName, alert.Signature)
 		for _, passingStep := range passes {
 			superceeded := false
@@ -191,14 +255,17 @@ func (b *BuildHandler) HandleBuild(build *messages.Build) error {
 				if !superceeded {
 					log.Printf("Removing %s from failing builders on %s.\n", build.BuilderName, alert.Signature)
 					delete(alert.FailingBuilders, build.BuilderName)
-					alert.PassingBuilders[build.BuilderName] = true
+					alert.PassingBuilders[build.BuilderName] = struct{}{}
 					if len(alert.FailingBuilders) == 0 {
 						alert.Status = StatusInactive
 						log.Printf("Deactivating alert: %s\n", alert.Signature)
 					}
 				}
-				alert.PassingBuilds = append(alert.PassingBuilds, passingStep.Build)
-				b.Store.StoreAlert(alert.Signature, alert)
+				alert.PassingBuilds = append(alert.PassingBuilds, build)
+				if err := b.Store.StoreAlert(ctx, alert); err != nil {
+					log.Printf("Error storing alert: %v", err)
+					return err
+				}
 			}
 		}
 	}

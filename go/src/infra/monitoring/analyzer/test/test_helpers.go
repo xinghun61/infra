@@ -56,6 +56,7 @@ func (f *BuilderFaker) Build(buildNum int) *BuildFaker {
 		b = &messages.Build{Number: int64(buildNum)}
 		f.Builds[path] = b
 	}
+	b.Master = f.MasterName
 	b.BuilderName = f.BuilderName
 	ret.BuilderFaker = f
 	ret.Build = b

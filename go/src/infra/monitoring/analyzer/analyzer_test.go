@@ -1094,6 +1094,7 @@ func TestStepFailures(t *testing.T) {
 					{
 						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/stepCheck.master", t)},
 						Build: &messages.Build{
+							Master:      "stepCheck.master",
 							BuilderName: "fake.builder",
 							Steps: []messages.Step{
 								{

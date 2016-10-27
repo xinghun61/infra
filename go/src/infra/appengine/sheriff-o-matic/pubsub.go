@@ -64,7 +64,7 @@ func postMiloPubSubHandler(ctx *router.Context) {
 	miloPubSubHandler := &sompubsub.BuildHandler{Store: inMemAlerts}
 
 	for _, b := range extract.Builds {
-		if err := miloPubSubHandler.HandleBuild(b); err != nil {
+		if err := miloPubSubHandler.HandleBuild(c, b); err != nil {
 			logging.Errorf(c, "Could not handle build: %v", err)
 		}
 	}

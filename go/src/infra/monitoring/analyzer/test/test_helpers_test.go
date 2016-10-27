@@ -54,6 +54,7 @@ func TestBuilderFaker(t *testing.T) {
 		Step("fake_step").Results(2).BuildFaker.
 		Step("other step").Results(2).BuilderFaker
 	expected := &messages.Build{
+		Master:      "fake.master",
 		BuilderName: "fake.builder",
 		Number:      0,
 		Times:       []messages.EpochTime{0, 1},
