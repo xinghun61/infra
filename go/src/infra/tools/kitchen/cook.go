@@ -205,8 +205,7 @@ func (c *cookRun) run(ctx context.Context, props map[string]interface{}) (recipe
 		return c.runWithLogdogButler(ctx, recipeCmd)
 	}
 
-	fmt.Printf("Running command %q %q in %q\n",
-		recipeCmd.Path, recipeCmd.Args, recipeCmd.Dir)
+	printCommand(recipeCmd)
 
 	recipeCmd.Stdout = os.Stdout
 	recipeCmd.Stderr = os.Stderr
@@ -286,8 +285,7 @@ func (c *cookRun) remoteRun(ctx context.Context, props map[string]interface{}) (
 		return c.runWithLogdogButler(ctx, recipeCmd)
 	}
 
-	fmt.Printf("Running command %q %q in %q\n",
-		recipeCmd.Path, recipeCmd.Args, recipeCmd.Dir)
+	printCommand(recipeCmd)
 
 	recipeCmd.Stdout = os.Stdout
 	recipeCmd.Stderr = os.Stderr
@@ -435,4 +433,35 @@ func annotate(args ...string) {
 func looksLikeGitiles(rawurl string) bool {
 	u, err := url.Parse(rawurl)
 	return err == nil && strings.HasSuffix(u.Host, ".googlesource.com")
+}
+
+// printCommand prints cmd description to stdout and that it will be ran.
+// panics if cannot read current directory or cannot make a command's current
+// directory absolute.
+func printCommand(cmd *exec.Cmd) {
+	fmt.Printf("running %q\n", cmd.Args)
+	fmt.Printf("command path: %s\n", cmd.Path)
+
+	cd := cmd.Dir
+	if cd == "" {
+		var err error
+		cd, err = os.Getwd()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "could not read working directory: %s\n", err)
+			cd = ""
+		}
+	}
+	if cd != "" {
+		abs, err := filepath.Abs(cd)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "could not make path %q absolute: %s\n", cd, err)
+		} else {
+			fmt.Printf("current directory: %s\n", abs)
+		}
+	}
+
+	fmt.Println("env:")
+	for _, e := range cmd.Env {
+		fmt.Printf("\t%s\n", e)
+	}
 }

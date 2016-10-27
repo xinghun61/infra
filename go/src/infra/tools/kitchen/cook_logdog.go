@@ -293,6 +293,9 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc in
 	// We'll set up our own cancellation function to help ensure that the process
 	// is properly terminated regardless of any encountered errors.
 	ctx, cancelFunc := context.WithCancel(ctx)
+
+	printCommand(proc.Cmd)
+
 	if err = proc.Start(ctx); err != nil {
 		err = errors.Annotate(err).Reason("failed to start command").Err()
 		return
