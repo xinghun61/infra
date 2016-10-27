@@ -64,12 +64,10 @@ class FetchBuilderJsonTest(unittest.TestCase):
 
 
 class FindLKGRCandidateTest(unittest.TestCase):
-
-  def setUp(self):
-    self.status_stub = StatusGeneratorStub()
-    self.good = lkgr_lib.STATUS.SUCCESS
-    self.fail = lkgr_lib.STATUS.FAILURE
-    self.keyfunc = int
+  status_stub = StatusGeneratorStub()
+  good = lkgr_lib.STATUS.SUCCESS
+  fail = lkgr_lib.STATUS.FAILURE
+  keyfunc = lkgr_lib.SvnWrapper(None, None).keyfunc
 
   def testSimpleSucceeds(self):
     build_history = {'m1': {'b1': [(1, self.good, 1)]}}
@@ -189,3 +187,45 @@ class CheckLKGRLagTest(unittest.TestCase):
     res = lkgr_lib.CheckLKGRLag(self.lag(60 * 4), 10,
                                 self.allowed_lag, self.allowed_gap)
     self.assertTrue(res)
+
+
+class SvnWrapperTest(unittest.TestCase):
+  url = 'svn://my.svn.server/repo/trunk'
+
+  # TODO(agable): Test get_lag once I can import pymox
+
+  def testCheckRevSucceeds(self):
+    s = lkgr_lib.SvnWrapper(self.url, None)
+    res = s.check_rev(12345)
+    self.assertTrue(res)
+
+  def testCheckRevStringSucceeds(self):
+    s = lkgr_lib.SvnWrapper(self.url, None)
+    res = s.check_rev('12345')
+    self.assertTrue(res)
+
+  def testCheckRevFails(self):
+    s = lkgr_lib.SvnWrapper(self.url, None)
+    res = s.check_rev('deadbeef')
+    self.assertFalse(res)
+
+  def testCheckRevNOREVFails(self):
+    s = lkgr_lib.SvnWrapper(self.url, None)
+    res = s.check_rev(lkgr_lib.NOREV)
+    self.assertFalse(res)
+
+  def testKeyfuncSucceeds(self):
+    s = lkgr_lib.SvnWrapper(self.url, None)
+    res = s.keyfunc(12345)
+    self.assertEquals(res, 12345)
+
+  def testKeyfuncFails(self):
+    s = lkgr_lib.SvnWrapper(self.url, None)
+    res = s.keyfunc('deadbeef')
+    self.assertEquals(res, None)
+
+  def testSort(self):
+    s = lkgr_lib.SvnWrapper(self.url, None)
+    revs = [(4567, 'foo'), (2345, 'bar'), (6789, 'baz')]
+    res = s.sort(revs, keyfunc=lambda x: x[0])
+    self.assertEquals(res, [(2345, 'bar'), (4567, 'foo'), (6789, 'baz')])

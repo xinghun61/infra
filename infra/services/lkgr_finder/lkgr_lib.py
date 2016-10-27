@@ -64,7 +64,47 @@ NOREV = NOREV()
 ##################################################
 # VCS Wrappers
 ##################################################
-class GitWrapper(object):
+class VCSWrapper(object):
+  _status_path = None
+
+  @property
+  def status_path(self):  # pragma: no cover
+    """Return the url component for the appropriate page on the status app."""
+    return self._status_path
+
+  def check_rev(self, r):
+    """Return True if the input is a valid revisions for this VCS."""
+    raise NotImplementedError
+
+  def keyfunc(self, r):
+    """Key func to convert a revision to a sortable representation."""
+    raise NotImplementedError
+
+  def sort(self, revisions, keyfunc=None):
+    """Sort a set of revisions into ascending commit order."""
+    raise NotImplementedError
+
+  def get_lag(self, r):
+    """Return the lag between now and the commit time of the given rev."""
+    raise NotImplementedError
+
+  def get_gap(self, revisions, r):  # pragma: no cover
+    """Return the gap between the most recent of revisions and r."""
+    latest = self.sort(revisions)[-1]
+    return self.keyfunc(latest) - self.keyfunc(r)
+
+  @staticmethod
+  def new(vcs, url, path):  # pragma: no cover
+    """Factory function to return a GitWrapper or a SvnWrapper."""
+    if vcs == 'git':
+      return GitWrapper(url, path)
+    elif vcs == 'svn':
+      return SvnWrapper(url, path)
+    else:
+      raise NotImplementedError
+
+
+class GitWrapper(VCSWrapper):
   _status_path = '/git-lkgr'
   _GIT_HASH_RE = re.compile('^[a-fA-F0-9]{40}$')
   _GIT_POS_RE = re.compile('(\S+)@{#(\d+)}')
@@ -118,6 +158,40 @@ class GitWrapper(object):
   def get_gap(self, revisions, r):  # pragma: no cover
     latest = self.sort(revisions)[-1]
     return self.keyfunc(latest)[0] - self.keyfunc(r)[0]
+
+class SvnWrapper(VCSWrapper):
+  _status_path = '/lkgr'
+
+  def __init__(self, url, path):
+    self._url = url
+    LOGGER.debug('Talking to svn repository located at %s', self._url)
+
+  def check_rev(self, r):
+    try:
+      int(r)
+      return True
+    except (ValueError, TypeError):
+      return False
+
+  def keyfunc(self, r):
+    if self.check_rev(r):
+      return int(r)
+
+  def sort(self, revisions, keyfunc=None):
+    keyfunc = keyfunc or (lambda x: x)  # pragma: no cover
+    return sorted(revisions, key=lambda x: self.keyfunc(keyfunc(x)))
+
+  def get_lag(self, r):  # pragma: no cover
+    cmd = ['svn', 'log', '--non-interactive', '--xml', '-r', str(r), self._url]
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    stdout = process.communicate()[0]
+    if not process.returncode:
+      log = xml.fromstring(stdout)
+      date = log.find('logentry').find('date').text
+      if date:
+        dt = datetime.datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
+    return datetime.datetime.utcnow() - dt
 
 
 ##################################################
@@ -246,7 +320,7 @@ def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
   Args:
     build_data: json-formatted build data returned by buildbot.
     lkgr_builders: List of interesting builders.
-    repo (GitWrapper): repository in which the revision occurs.
+    repo (VCSWrapper): repository in which the revision occurs.
 
   Returns:
     A dict of the following form:
@@ -285,7 +359,7 @@ def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
           if prop[0] == 'got_src_revision':
             revision = prop[1]
             break
-          if prop[0] == 'got_revision_git':
+          if type(repo) is GitWrapper and prop[0] == 'got_revision_git':
             revision = prop[1]
             break
           if prop[0] == 'got_revision':
@@ -297,13 +371,14 @@ def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
             # The build failed too early or is still in early stage even before
             # chromium revision was tagged. If we allow 'revision' fallback it
             # will end up being non-chromium revision for non chromium projects.
+            # Or it may end up getting an SVN revision if the build is running.
             continue
         if not revision:
           revision = this_build_data.get(
               'sourceStamp', {}).get('revision', None)
         if not revision:
           continue
-        if len(str(revision)) < 40:
+        if type(repo) is GitWrapper and len(str(revision)) < 40:
           # Ignore stource stamps that don't contain a proper git hash. This
           # can happen if very old build numbers get into the build data.
           continue
@@ -472,17 +547,20 @@ def UpdateTag(new_lkgr, repo, dry):  # pragma: no cover
     LOGGER.error('Failed to push new lkgr tag.')
 
 
-def PostLKGR(status_url, lkgr, lkgr_alt, password_file, dry):  # pragma: no cover
+def PostLKGR(status_url, lkgr, lkgr_alt, vcs, password_file, dry):  # pragma: no cover
   """Posts the LKGR to the status_url.
 
   Args:
     status_url: the instance of chromium-status to post the lkgr to
     lkgr: the value of the new lkgr to post
     lkgr_alt: the keyfunc representation of the lkgr
+    vcs: 'svn' or 'git', determines the parameters to use in the post
     password_file: path to a password file containing the shared secret
     dry: if True, don't actually make the post request
   """
-  url = status_url + '/commits'
+  url = status_url + '/revisions'
+  if vcs == 'git':
+    url = status_url + '/commits'
   LOGGER.info('Posting to %s', url)
 
   try:
@@ -495,10 +573,15 @@ def PostLKGR(status_url, lkgr, lkgr_alt, password_file, dry):  # pragma: no cove
     return
 
   params = {
-      'hash': lkgr,
-      'position_ref': lkgr_alt[1],
-      'position_num': lkgr_alt[0],
+      'revision': lkgr,
+      'success': 1,
   }
+  if vcs == 'git':
+    params = {
+        'hash': lkgr,
+        'position_ref': lkgr_alt[1],
+        'position_num': lkgr_alt[0],
+    }
 
   if dry:
     LOGGER.debug('Dry-run: Not posting with params %s', params)

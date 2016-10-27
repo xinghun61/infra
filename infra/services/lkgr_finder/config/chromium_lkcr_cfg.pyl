@@ -1,5 +1,6 @@
 {
   'project': 'chromium_lkcr',
+  'source_vcs': 'git',
   'source_url': 'https://chromium.googlesource.com/chromium/src',
   'status_url': 'https://build.chromium.org/p/chromium/lkcr-status',
   'masters': {

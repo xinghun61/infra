@@ -1,5 +1,6 @@
 {
   'project': 'v8',
+  'source_vcs': 'git',
   'source_url': 'https://chromium.googlesource.com/v8/v8',
   'status_url': 'https://v8-status.appspot.com',
   'error_recipients': 'machenbach@google.com,hablich@google.com',

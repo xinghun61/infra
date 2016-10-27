@@ -1,5 +1,6 @@
 {
   'project': 'blink',
+  'source_vcs': 'git',
   'source_url': 'https://chromium.googlesource.com/chromium/src',
   'status_url': 'https://blink-status.appspot.com',
   'masters': {
