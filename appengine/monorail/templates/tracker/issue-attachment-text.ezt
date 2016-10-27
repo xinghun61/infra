@@ -1,6 +1,7 @@
 [define category_css]css/ph_detail.css[end]
 [define page_css]css/d_sb.css[end]
-[define title][filename] ([filesize])[end]
+[# Use raw format because filename will be escaped when title variable is used.]
+[define title][format "raw"][filename][end] ([filesize])[end]
 [include "../framework/master-header.ezt" "showtabs"]
 
 <link type="text/css" rel="stylesheet"

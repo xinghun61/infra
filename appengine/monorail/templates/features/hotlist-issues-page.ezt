@@ -1,4 +1,4 @@
-[define title]Hotlist[hotlist.name][end]
+[define title]Hotlist [hotlist.name][end]
 [define category_css]css/ph_list.css[end]
 [define category2_css]css/ph_detail.css[end]
 [include "../framework/master-header.ezt" "showtabs"]

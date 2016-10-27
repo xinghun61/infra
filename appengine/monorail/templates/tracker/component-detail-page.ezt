@@ -1,4 +1,5 @@
-[define title]Component [component_def.path][end]
+[# Use raw format because the title variable will be escaped when used.]
+[define title]Component [format "raw"][component_def.path][end][end]
 [define category_css]css/ph_detail.css[end]
 [include "../framework/master-header.ezt" "showtabs"]
 
