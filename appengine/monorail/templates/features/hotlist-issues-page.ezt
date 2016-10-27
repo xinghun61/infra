@@ -32,6 +32,15 @@
 
 <div id="colcontrol">
 
+  <span id="qq"><input type="hidden" id="searchq" name="q"
+                            value="[query]" autocomplete="off" ignore-dirty></span>
+       [if-any sortspec]<input type="hidden" id="sort" name="sort" value="[sortspec]">[end]
+       [if-any groupby]<input type="hidden" id="groupby" name="groupby" value="[groupby]">[end]
+       [if-any colspec]<span id="search_colspec"><input type="hidden" name="colspec" value="[colspec]"></span>[end]
+       <input type="hidden" id="hotlist_id" value="[hotlist_id]"></input>
+       [# TODO(jojwang): when friendly urls are implemented, change this to accomodate]
+  <input type="hidden"  id="can" value="[can]"></span>
+
   [include "../tracker/issue-list-controls-top.ezt"]
 
   [include "../tracker/issue-hovercard.ezt"] [# TODO(jojwang): no hovercard appears right now]

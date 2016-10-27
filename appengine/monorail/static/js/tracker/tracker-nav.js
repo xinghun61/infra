@@ -163,8 +163,11 @@ function TKR_addSort(colname, descending) {
     }
   }
 
-  var url = ('list?can='+ $('can').value + '&q=' +
-             TKR_getArtifactSearchField().value);
+  var isHotlist = window.location.href.includes('/hotlists/');
+  var url = isHotlist ? ($('hotlist_id').value + '?') : ('list?');
+  url  += ('can='+ $('can').value + '&q=' +
+      TKR_getArtifactSearchField().value);
+
   url += '&sort=' + specs.join('+');
   url += '&colspec=' + TKR_getColspecElement().value;
   TKR_go(url)
