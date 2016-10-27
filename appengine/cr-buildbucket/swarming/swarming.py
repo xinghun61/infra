@@ -330,7 +330,8 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
   task = format_obj(task_template, task_template_params)
 
   if builder_cfg.priority > 0:  # pragma: no branch
-    task['priority'] = builder_cfg.priority
+    # Swarming accepts priority as a string
+    task['priority'] = str(builder_cfg.priority)
 
   build_tags = dict(t.split(':', 1) for t in build.tags)
   build_tags['builder'] = builder_cfg.name

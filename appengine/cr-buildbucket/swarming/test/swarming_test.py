@@ -281,7 +281,7 @@ class SwarmingTest(testing.AppengineTestCase):
     del actual_task_def['pubsub_auth_token']
     expected_task_def = {
       'name': 'buildbucket-bucket-builder',
-      'priority': 108,
+      'priority': '108',
       'expiration_secs': '3600',
       'tags': [
         'buildbucket_bucket:bucket',
@@ -415,7 +415,7 @@ class SwarmingTest(testing.AppengineTestCase):
     del actual_task_def['pubsub_auth_token']
     expected_task_def = {
       'name': 'buildbucket-bucket-builder-canary',
-      'priority': 108,
+      'priority': '108',
       'expiration_secs': '3600',
       'tags': [
         'buildbucket_bucket:bucket',
