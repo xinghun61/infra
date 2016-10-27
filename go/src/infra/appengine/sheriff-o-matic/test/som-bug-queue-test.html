@@ -70,6 +70,34 @@
         done();
       });
     });
+
+    test('compute priority', function() {
+      let bugs = [
+        { summary: 'foo', status: 'bar', id: 123, labels: ['Pri-2'] },
+        { summary: 'baz', status: 'zippy', id: 456, labels: ['Pri-0'] },
+        { summary: 'baz', status: 'zippy', id: 456, labels: ['Pri-1'] },
+        { summary: 'baz', status: 'zippy', id: 456, labels: [] },
+      ];
+      assert.equal(2, element._computePriority(bugs[0]));
+      assert.equal(0, element._computePriority(bugs[1]));
+      assert.equal(1, element._computePriority(bugs[2]));
+      assert.equal('', element._computePriority(bugs[3]));
+    });
+
+    test('sort by priority', function() {
+      let bugs = [
+        { summary: 'this is', labels: ['Pri-2'] },
+        { summary: 'hello', labels: ['Pri-0'] },
+        { summary: 'world', labels: ['Pri-1'] },
+        { summary: 'ordered', labels: [] },
+      ];
+
+      let result = element._sortBugs(bugs);
+      assert.equal('hello', result[0].summary);
+      assert.equal('world', result[1].summary);
+      assert.equal('this is', result[2].summary);
+      assert.equal('ordered', result[3].summary);
+    });
   });
 })();
 </script>
