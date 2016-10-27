@@ -253,7 +253,8 @@ def _ProcessCommentByCond(cond, alias, user_alias):
   left_joins = [(
       '(Comment AS {alias} JOIN User AS {user_alias} '
       'ON {alias}.commenter_id = {user_alias}.user_id AND {email_cond}) '
-      'ON Issue.id = {alias}.issue_id'.format(
+      'ON Issue.id = {alias}.issue_id AND '
+      '{alias}.deleted_by IS NULL'.format(
           alias=alias, user_alias=user_alias, email_cond=email_cond_str),
       email_cond_args)]
   where = [_CompareAlreadyJoined(user_alias, cond.op, 'email')]
@@ -268,7 +269,9 @@ def _ProcessCommentByIDCond(cond, alias, _user_alias):
       alias, ast_pb2.QueryOp.EQ, field_type, 'commenter_id', field_values)
   left_joins = [(
       'Comment AS {alias} ON Issue.id = {alias}.issue_id AND '
-      '{commenter_cond}'.format(alias=alias, commenter_cond=commenter_cond_str),
+      '{commenter_cond} AND '
+      '{alias}.deleted_by IS NULL'.format(
+          alias=alias, commenter_cond=commenter_cond_str),
       commenter_cond_args)]
   where = [_CompareAlreadyJoined(alias, cond.op, 'commenter_id')]
 

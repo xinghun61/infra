@@ -384,7 +384,8 @@ class AST2SelectTest(unittest.TestCase):
         [('(Comment AS Cond1 JOIN User AS User1 '
           'ON Cond1.commenter_id = User1.user_id '
           'AND (LOWER(User1.email) LIKE %s)) '
-          'ON Issue.id = Cond1.issue_id', ['%example.com%'])],
+          'ON Issue.id = Cond1.issue_id AND Cond1.deleted_by IS NULL',
+          ['%example.com%'])],
         left_joins)
     self.assertEqual(
         [('User1.email IS NOT NULL', [])],
@@ -397,7 +398,7 @@ class AST2SelectTest(unittest.TestCase):
         cond, 'Cond1', 'User1')
     self.assertEqual(
         [('Comment AS Cond1 ON Issue.id = Cond1.issue_id AND '
-          'Cond1.commenter_id = %s',
+          'Cond1.commenter_id = %s AND Cond1.deleted_by IS NULL',
           [111L])],
         left_joins)
     self.assertEqual(
@@ -411,7 +412,7 @@ class AST2SelectTest(unittest.TestCase):
         cond, 'Cond1', 'User1')
     self.assertEqual(
         [('Comment AS Cond1 ON Issue.id = Cond1.issue_id AND '
-          'Cond1.commenter_id = %s',
+          'Cond1.commenter_id = %s AND Cond1.deleted_by IS NULL',
           [111L])],
         left_joins)
     self.assertEqual(

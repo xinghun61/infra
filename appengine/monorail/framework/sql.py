@@ -628,6 +628,7 @@ JOIN_RE_LIST = [
         r'^{table}{opt_alias} ON {tab_col} = {tab_col}'
         r'( AND {tab_col} = {tab_col})?'
         r'( AND {tab_col} = {placeholder})?'
+        r'( AND {tab_col} IS NULL)?'
         r'( AND \({tab_col} IS NULL'
         r' OR {tab_col} NOT IN \({multi_placeholder}\)\))?$'),
     _MakeRE(
@@ -649,7 +650,8 @@ JOIN_RE_LIST = [
     _MakeRE(
         r'^\({table} AS {table} JOIN User AS {table} '
         r'ON {tab_col} = {tab_col} AND {email_cond}\) '
-        r'ON Issue.id = {tab_col}'),
+        r'ON Issue.id = {tab_col}'
+        r'( AND {tab_col} IS NULL)?'),
     _MakeRE(
         r'^{table} AS {table} ON {tab_col} = {tab_col} '
         r'LEFT JOIN {table} AS {table} ON {tab_col} = {tab_col}'),
