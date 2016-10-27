@@ -84,6 +84,7 @@ import:
   version: master
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
+  - bigquery/v2
   - gensupport
   - google-api-go-generator
   - googleapi
@@ -186,6 +187,11 @@ import:
   - cmd/guru
   - cmd/oracle
   - cmd/stringer
+- package: golang.org/x/sync
+  version: master
+  repo: https://go.googlesource.com/sync.git
+  subpackages:
+  - errgroup
 - package: golang.org/x/sys
   version: master
   repo: https://go.googlesource.com/sys.git
@@ -238,7 +244,3 @@ import:
 - package: github.com/googleapis/gax-go
   version: master
   repo: https://chromium.googlesource.com/external/github.com/googleapis/gax-go.git
-- package: github.com/luci/luci-go
-  repo: https://chromium.googlesource.com/external/github.com/luci/luci-go.git
-  subpackages:
-  - milo/api/proto
