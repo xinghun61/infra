@@ -204,6 +204,7 @@ def ScheduleAnalysisForFlake(request, user_email, is_admin, triggering_source):
   version_number, build_step = _CheckForNewAnalysis(request)
   if version_number and build_step:
     # A new analysis is needed.
+    # TODO(lijeffrey): Add support for the force flag to trigger a rerun.
     logging.info('A new analysis is needed for: %s', build_step)
     analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
         build_step.wf_master_name, build_step.wf_builder_name,

@@ -6,7 +6,7 @@ import logging
 
 from common import time_util
 from common.pipeline_wrapper import BasePipeline
-from model.flake. flake_analysis_request import FlakeAnalysisRequest
+from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall.flake import flake_analysis_service

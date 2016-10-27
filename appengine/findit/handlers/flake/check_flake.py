@@ -5,13 +5,14 @@
 from google.appengine.api import users
 
 from common import auth_util
-from common import constants
 from common import time_util
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
 from model import analysis_status
 from model import triage_status
-from waterfall.flake import initialize_flake_pipeline
+from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from waterfall.flake import flake_analysis_service
 from waterfall.flake import triggering_sources
 
 
@@ -30,41 +31,103 @@ def _GetSuspectedFlakeAnalysisAndTriageResult(analysis):
 class CheckFlake(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
+  def _ValidateInput(self, master_name, builder_name, build_number, step_name,
+                     test_name, bug_id):
+    """Ensures the input is valid and generates an error otherwise.
+
+    Args:
+      master_name (str): The name of the master the flaky test was found on.
+      builder_name (str): The name of the builder the flaky test was found on.
+      build_number (str): The build number the flaky test was found on.
+      step_name (str): The step the flaky test was found on.
+      test_name (str): The name of the flaky test.
+      bug_id (str): The bug number associated with the flaky test.
+
+    Returns:
+      None if all input fields are valid, or an error dict otherwise.
+    """
+
+    if not master_name:
+      return self.CreateError('Master name must be specified', 400)
+
+    if not builder_name:
+      return self.CreateError('Builder name must be specified', 400)
+
+    if not build_number or not build_number.isdigit():
+      return self.CreateError('Build number must be specified as an int', 400)
+
+    if not step_name:
+      return self.CreateError('Step name must be specified', 400)
+
+    if not test_name:
+      return self.CreateError('Test name must be specified', 400)
+
+    if bug_id and not bug_id.isdigit():
+      return self.CreateError('Bug id (optional) must be an int', 400)
+
+    return None
+
   def HandleGet(self):
-    master_name = self.request.get('master_name').strip()
-    builder_name = self.request.get('builder_name').strip()
-    build_number = int(self.request.get('build_number', '0').strip())
-    step_name = self.request.get('step_name').strip()
-    test_name = self.request.get('test_name').strip()
+    master_name = self.request.get('master_name', '').strip()
+    builder_name = self.request.get('builder_name', '').strip()
+    build_number = self.request.get('build_number', '').strip()
+    step_name = self.request.get('step_name', '').strip()
+    test_name = self.request.get('test_name', '').strip()
+    bug_id = self.request.get('bug_id', '').strip()
+    # TODO(lijeffrey): Add support for force flag to trigger a rerun.
 
-    if not (master_name and builder_name and build_number and
-            step_name and test_name):  # pragma: no cover.
-      return self.CreateError(
-          'Invalid value of master/builder/build_number/step/test', 400)
+    error = self._ValidateInput(
+        master_name, builder_name, build_number, step_name, test_name, bug_id)
 
-    force = (auth_util.IsCurrentUserAdmin() and
-             self.request.get('force') == '1')
-    allow_new_analysis = self.IsCorpUserOrAdmin()
+    if error:  # pragma: no cover
+      return error
 
-    # TODO(lijeffrey): Use flake_analysis_service.ScheduleAnalysisForFlake.
+    build_number = int(build_number)
+    bug_id = int(bug_id) if bug_id else None
     user_email = auth_util.GetUserEmail()
-    analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
-        master_name, builder_name, build_number, step_name, test_name,
-        allow_new_analysis, force=force, manually_triggered=True,
-        user_email=user_email, triggering_source=triggering_sources.FINDIT_UI,
-        queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
+    is_admin = auth_util.IsCurrentUserAdmin()
 
-    if not analysis:  # pragma: no cover.
-      return {
-          'template': 'error.html',
-          'data': {
-              'error_message':
-                  ('You could schedule an analysis for flaky test only after '
-                   'you login with google.com account.'),
-              'login_url': self.GetLoginUrl(),
-          },
-          'return_code': 401,
-      }
+    request = FlakeAnalysisRequest.Create(test_name, False, bug_id)
+    request.AddBuildStep(master_name, builder_name, build_number, step_name,
+                         time_util.GetUTCNow())
+    scheduled = flake_analysis_service.ScheduleAnalysisForFlake(
+        request, user_email, is_admin, triggering_sources.FINDIT_UI)
+
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+
+    if not analysis:
+      if scheduled is None:
+        # User does not have permission to trigger, nor was any previous
+        # analysis triggered to view.
+        return {
+            'template': 'error.html',
+            'data': {
+                'error_message':
+                    ('You could schedule an analysis for flaky test only after '
+                     'you login with google.com account.'),
+                'login_url': self.GetLoginUrl(),
+            },
+            'return_code': 401,
+        }
+
+      # Check if a previous request has already covered this analysis so use the
+      # results from that analysis.
+      request = FlakeAnalysisRequest.GetVersion(key=test_name)
+
+      if request and request.analyses:
+        analysis = request.analyses[-1].get()
+      else:
+        return {
+            'template': 'error.html',
+            'data': {
+                'error_message': (
+                    'Flake analysis is not supported for this request. Either '
+                    'the build step may not be supported or the test is not '
+                    'swarmed.'),
+            },
+            'return_code': 401,
+        }
 
     suspected_flake = _GetSuspectedFlakeAnalysisAndTriageResult(analysis)
 
