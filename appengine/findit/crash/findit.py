@@ -12,7 +12,7 @@ from common import chrome_dependency_fetcher
 from common import constants
 from common import time_util
 from crash.crash_report import CrashReport
-from crash.culprit import NullCulprit
+from crash.culprit import Culprit
 from model import analysis_status
 from model.crash.crash_config import CrashConfig
 from model.crash.cracas_crash_analysis import CracasCrashAnalysis
@@ -26,8 +26,8 @@ from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 # TODO: this class depends on ndb stuff, and should therefore move to
 # cr-culprit-finder/service/predator as part of the big reorganization.
-# Also, this class should be renamed to "PredatorApp" (alas, "Azalea"
-# was renamed to "Predator").
+# This class should be renamed to avoid confustion between Findit and Predator.
+# Think of a good name (e.g.'PredatorApp') for this class.
 class Findit(object):
   def __init__(self, repository, pipeline_cls):
     """
@@ -42,7 +42,7 @@ class Findit(object):
     # TODO(http://crbug.com/659354): because self.client is volatile,
     # we need some way of updating the Azelea instance whenever the
     # config changes. How to do that cleanly?
-    self._azalea = None
+    self._predator = None
     self._stacktrace_parser = None
     self._pipeline_cls = pipeline_cls
 
@@ -278,11 +278,9 @@ class Findit(object):
     """Given a CrashAnalysis ndb.Model, return a Culprit."""
     stacktrace = self.ParseStacktrace(model)
     if stacktrace is None:
-      # TODO(http://crbug.com/659359): refactor things so we don't need
-      # the NullCulprit class.
-      return NullCulprit()
+      return Culprit('', [], [], None, None)
 
-    return self._azalea.FindCulprit(CrashReport(
+    return self._predator.FindCulprit(CrashReport(
         crashed_version = model.crashed_version,
         signature = model.signature,
         platform = model.platform,

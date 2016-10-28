@@ -8,14 +8,13 @@ from google.appengine.ext import ndb
 
 from common import chrome_dependency_fetcher
 from crash import detect_regression_range
-from crash.azalea import Azalea
 from crash.changelist_classifier import ChangelistClassifier
 from crash.chromecrash_parser import ChromeCrashParser
 from crash.component_classifier import Component
 from crash.component_classifier import ComponentClassifier
 from crash.crash_report import CrashReport
-from crash.culprit import NullCulprit
 from crash.findit import Findit
+from crash.predator import Predator
 from crash.project_classifier import ProjectClassifier
 from crash.type_enums import CrashClient
 from model.crash.cracas_crash_analysis import CracasCrashAnalysis
@@ -25,6 +24,7 @@ from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 # TODO(katesonia): Remove the default value after adding validity check to
 # config.
 _DEFAULT_TOP_N = 7
+
 
 # TODO(wrengr): [Note#1] in many places below we have to do some ugly
 # defaulting in case crash_data is missing certain keys. If we had
@@ -58,7 +58,7 @@ class FinditForChromeCrash(Findit):
     self._stacktrace_parser = ChromeCrashParser()
 
     # For how these two "top n" differ, see http://crbug.com/644476#c4
-    self._azalea = Azalea(
+    self._predator = Predator(
         cl_classifier = ChangelistClassifier(
             repository = repository,
             top_n_frames = self.config.get('top_n', _DEFAULT_TOP_N)),

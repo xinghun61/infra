@@ -5,8 +5,8 @@
 from crash.culprit import Culprit
 
 # TODO(http://crbug.com/659346): write coverage tests.
-class Azalea(object): # pragma: no cover
-  """The Main entry point into the Azalea library."""
+class Predator(object): # pragma: no cover
+  """The Main entry point into the Predator library."""
 
   def __init__(self, cl_classifier, component_classifier, project_classifier):
     self.cl_classifier = cl_classifier

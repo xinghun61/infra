@@ -218,9 +218,16 @@ class FinditForFracasTest(CrashTestCase):
     self.mock(ChromeCrashParser, 'Parse', lambda *_: Stacktrace())
 
     # TODO(wrengr): use NullCulprit instead
-    expected_results = {'found': False}
+    expected_results = {'found': False,
+                        'regression_range': None,
+                        'suspected_cls': [],
+                        'suspected_components': [],
+                        'suspected_project': ''}
     expected_tag = {'found_suspects': False,
-                    'has_regression_range': False}
+                    'found_components': False,
+                    'found_project': False,
+                    'has_regression_range': False,
+                    'solution': None}
 
     analysis = CrashAnalysis()
     analysis.signature = 'signature'

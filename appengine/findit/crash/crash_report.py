@@ -12,12 +12,12 @@ class CrashReport(namedtuple('CrashReport',
      'regression_range'])):
   """A reported crash we want to analyze.
 
-  This class comprises the inputs to the Azalea library; as distinguished
-  from the Culprit class, which comprises the outputs/results of Azalea's
+  This class comprises the inputs to the Predator library; as distinguished
+  from the Culprit class, which comprises the outputs/results of Predator's
   analyses. N.B., the appengine clients conflate input and output into
   a single CrashAnalysis(ndb.Model) class, but that's up to them; in
   the library we keep inputs and outputs entirely distinct.
-  
+
   Args:
     crashed_version (str): The version of Chrome in which the crash occurred.
     signature (str): The signature of the crash on the Chrome crash server.
