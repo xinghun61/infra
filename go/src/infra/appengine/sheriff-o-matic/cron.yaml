@@ -4,7 +4,11 @@ cron:
   schedule: every 1 minutes
 
 - description: Update bug queue
-  url: /_cron/refresh/bugqueue/chromium
+  url: /_cron/refresh/bugqueue/sheriff-chromium
+  schedule: every 1 minutes
+
+- description: Update bug queue
+  url: /_cron/refresh/bugqueue/infra-troopers
   schedule: every 1 minutes
 
 - description: Delete old annotations

@@ -375,15 +375,15 @@ func flushOldAnnotations(c context.Context) (int, error) {
 func getBugQueueHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
-	tree := p.ByName("tree")
+	label := p.ByName("label")
 
-	key := fmt.Sprintf(bugQueueCacheFormat, tree)
+	key := fmt.Sprintf(bugQueueCacheFormat, label)
 
 	item, err := memcache.GetKey(c, key)
 
 	if err == memcache.ErrCacheMiss {
-		logging.Debugf(c, "No bug queue data for %s in memcache, refreshing...", tree)
-		item, err = refreshBugQueue(c, tree)
+		logging.Debugf(c, "No bug queue data for %s in memcache, refreshing...", label)
+		item, err = refreshBugQueue(c, label)
 	}
 
 	if err != nil {
@@ -395,7 +395,7 @@ func getBugQueueHandler(ctx *router.Context) {
 	w.Write(item.Value())
 }
 
-func refreshBugQueue(c context.Context, tree string) (memcache.Item, error) {
+func refreshBugQueue(c context.Context, label string) (memcache.Item, error) {
 	// Get authenticated monorail client.
 	client, err := getOAuthClient(c)
 
@@ -410,7 +410,7 @@ func refreshBugQueue(c context.Context, tree string) (memcache.Item, error) {
 	req := &monorail.IssuesListRequest{
 		ProjectId: "chromium",
 		Can:       monorail.IssuesListRequest_OPEN,
-		Q:         fmt.Sprintf("label:Sheriff-%s", tree),
+		Label:     label,
 	}
 
 	before := clock.Now(c)
@@ -427,7 +427,7 @@ func refreshBugQueue(c context.Context, tree string) (memcache.Item, error) {
 		return nil, err
 	}
 
-	key := fmt.Sprintf(bugQueueCacheFormat, tree)
+	key := fmt.Sprintf(bugQueueCacheFormat, label)
 
 	item := memcache.NewItem(c, key).SetValue(bytes)
 
@@ -442,8 +442,8 @@ func refreshBugQueue(c context.Context, tree string) (memcache.Item, error) {
 
 func refreshBugQueueHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
-	tree := p.ByName("tree")
-	item, err := refreshBugQueue(c, tree)
+	label := p.ByName("label")
+	item, err := refreshBugQueue(c, label)
 
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
@@ -646,10 +646,10 @@ func init() {
 	r.POST("/api/v1/alerts/:tree", base(false), postAlertsHandler)
 	r.GET("/api/v1/annotations/", protected, getAnnotationsHandler)
 	r.POST("/api/v1/annotations/:annKey/:action", protected, postAnnotationsHandler)
-	r.GET("/api/v1/bugqueue/:tree", protected, getBugQueueHandler)
+	r.GET("/api/v1/bugqueue/:label", protected, getBugQueueHandler)
 	r.GET("/api/v1/revrange/:start/:end", basemw, getRevRangeHandler)
 	r.GET("/logos/:tree", protected, getTreeLogoHandler)
-	r.GET("/_cron/refresh/bugqueue/:tree", basemw, refreshBugQueueHandler)
+	r.GET("/_cron/refresh/bugqueue/:label", basemw, refreshBugQueueHandler)
 	r.GET("/_cron/annotations/flush_old/", basemw, flushOldAnnotationsHandler)
 	r.POST("/_/clientmon", basemw, postClientMonHandler)
 	r.POST("/_ah/push-handlers/milo", basemw, postMiloPubSubHandler)
