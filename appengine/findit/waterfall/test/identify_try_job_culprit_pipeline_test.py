@@ -9,11 +9,11 @@ from common.waterfall import failure_type
 from model import analysis_approach_type
 from model import analysis_status
 from model import result_status
-from model.base_build_model import BaseBuildModel
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
+from waterfall import build_util
 from waterfall import identify_try_job_culprit_pipeline
 from waterfall.identify_try_job_culprit_pipeline import(
     IdentifyTryJobCulpritPipeline)
@@ -924,7 +924,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     analysis.put()
     version = analysis.version
 
-    build_key = BaseBuildModel.CreateBuildId(
+    build_key = build_util.CreateBuildId(
         master_name, builder_name, build_number)
     suspected_cl = WfSuspectedCL.Create(repo_name, revision, commit_position)
     suspected_cl.approaches = [analysis_approach_type.HEURISTIC]

@@ -10,6 +10,7 @@ from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
+from waterfall import build_util
 from waterfall import buildbot
 from waterfall import waterfall_config
 
@@ -92,7 +93,7 @@ def _GenerateSwarmingTasksData(failure_result_map):
 
       for key in swarming_task_keys:
         task_dict = step_tasks_info[key]
-        referred_build_keys = key.split('/')
+        referred_build_keys = build_util.GetBuildInfoFromId(key)
         task = WfSwarmingTask.Get(*referred_build_keys, step_name=step_name)
         all_tests = _GetAllTestsForASwarmingTask(key, failure)
         task_dict['all_tests'] = all_tests
@@ -199,7 +200,7 @@ def _OrganizeTryJobResultByCulprits(try_job_culprits):
 
 
 def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info):
-  referred_build_keys = try_job_key.split('/')
+  referred_build_keys = build_util.GetBuildInfoFromId(try_job_key)
   try_job = WfTryJob.Get(*referred_build_keys)
 
   if not try_job or try_job.compile_results:
@@ -322,7 +323,7 @@ def _UpdateTryJobInfoBasedOnSwarming(step_tasks_info, try_jobs,
           task['task_info']['status']]
       try_job['tests'] = task.get('all_tests', [])
 
-      if not show_debug_info:  
+      if not show_debug_info:
         continue
       else:
         # TODO(lijeffrey): This is a hack to prevent unclassified failures
@@ -330,7 +331,7 @@ def _UpdateTryJobInfoBasedOnSwarming(step_tasks_info, try_jobs,
         # work categorizing failures and adding the ability to force trigger try
         # jobs independently should be considered.
         try_job['can_force'] = True
-    
+
     # Swarming task is completed or a manual try job rerun was triggered.
     # Group tests according to task result.
     if task.get('ref_name'):
@@ -403,7 +404,7 @@ def _GetAllTryJobResultsForTest(failure_result_map, tasks_info,
 
 def _GetTryJobResultForCompile(failure_result_map):
   try_job_key = failure_result_map['compile']
-  referred_build_keys = try_job_key.split('/')
+  referred_build_keys = build_util.GetBuildInfoFromId(try_job_key)
   culprit_info = defaultdict(lambda: defaultdict(list))
 
   try_job = WfTryJob.Get(*referred_build_keys)

@@ -185,3 +185,15 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
       self.assertEqual(expected_time,
                        build_util.GetBuildEndTime(
                            master_name, builder_name, build_number))
+
+  def testCreateBuildId(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    self.assertEqual(
+        build_util.CreateBuildId(master_name, builder_name, build_number),
+        'm/b/1')
+
+  def testGetBuildInfoFromId(self):
+    build_id = 'm/b/1'
+    self.assertEqual(build_util.GetBuildInfoFromId(build_id), ['m', 'b', '1'])

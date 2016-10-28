@@ -10,11 +10,11 @@ from google.appengine.ext import ndb
 from common import time_util
 from common.waterfall import failure_type
 from model import analysis_status
-from model.base_build_model import BaseBuildModel
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from model.wf_failure_group import WfFailureGroup
 from model.wf_try_job import WfTryJob
+from waterfall import build_util
 from waterfall import waterfall_config
 
 
@@ -265,7 +265,7 @@ def _NeedANewCompileTryJob(
   compile_failure = failure_info['failed_steps'].get('compile', {})
   if compile_failure:
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    analysis.failure_result_map['compile'] = BaseBuildModel.CreateBuildId(
+    analysis.failure_result_map['compile'] = build_util.CreateBuildId(
         master_name, builder_name, compile_failure['first_failure'])
     analysis.put()
 
@@ -279,7 +279,7 @@ def GetBuildKeyForBuildInfoInFailureResultMap(
     master_name, builder_name, build_number):
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   failure_result_map = analysis.failure_result_map
-  current_build_key = BaseBuildModel.CreateBuildId(
+  current_build_key = build_util.CreateBuildId(
       master_name, builder_name, build_number)
   for step_keys in failure_result_map.itervalues():
     for test_key in step_keys.itervalues():

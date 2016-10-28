@@ -62,3 +62,10 @@ def GetBuildEndTime(master_name, builder_name, build_number):
   build_info = buildbot.ExtractBuildInfo(
       master_name, builder_name, build_number, build.data)
   return build_info.build_end_time
+
+def CreateBuildId(master_name, builder_name, build_number):
+  return '%s/%s/%s' % (master_name, builder_name, build_number)
+
+
+def GetBuildInfoFromId(build_id):
+  return build_id.split('/')

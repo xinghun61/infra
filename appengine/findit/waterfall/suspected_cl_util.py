@@ -5,8 +5,8 @@
 from google.appengine.ext import ndb
 
 from common import time_util
-from model.base_build_model import BaseBuildModel
 from model.wf_suspected_cl import WfSuspectedCL
+from waterfall import build_util
 
 
 def GetCLInfo(cl_info_str):
@@ -41,7 +41,7 @@ def UpdateSuspectedCL(
   if cl_failure_type not in suspected_cl.failure_type:
     suspected_cl.failure_type.append(cl_failure_type)
 
-  build_key = BaseBuildModel.CreateBuildId(
+  build_key = build_util.CreateBuildId(
       master_name, builder_name, build_number)
   if build_key not in suspected_cl.builds:
     suspected_cl.builds[build_key] = {

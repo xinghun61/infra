@@ -17,16 +17,16 @@ from handlers import result_status
 from handlers.result_status import NO_TRY_JOB_REASON_MAP
 from model import analysis_approach_type
 from model import analysis_status
-from model.suspected_cl_confidence import SuspectedCLConfidence
 from model import result_status as analysis_result_status
 from model import suspected_cl_status
-from model.base_build_model import BaseBuildModel
 from model.result_status import RESULT_STATUS_TO_DESCRIPTION
+from model.suspected_cl_confidence import SuspectedCLConfidence
 from model.suspected_cl_status import CL_STATUS_TO_DESCRIPTION
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_try_job import WfTryJob
 from waterfall import build_failure_analysis_pipelines
+from waterfall import build_util
 from waterfall import buildbot
 from waterfall import waterfall_config
 
@@ -301,8 +301,8 @@ def _PrepareTryJobDataForCompileFailure(analysis):
           constants.COMPILE_STEP_NAME in analysis.failure_result_map):
     return try_job_data  # pragma: no cover.
 
-  referred_build_keys = analysis.failure_result_map[
-      constants.COMPILE_STEP_NAME].split('/')
+  referred_build_keys = build_util.GetBuildInfoFromId(
+      analysis.failure_result_map[constants.COMPILE_STEP_NAME])
   try_job = WfTryJob.Get(*referred_build_keys)
   if not try_job or not try_job.compile_results:
     return try_job_data  # pragma: no cover.
@@ -370,7 +370,7 @@ def _GetConfidenceScore(confidence, cl_build):
 
 def _GetAllSuspectedCLsAndCheckStatus(
     master_name, builder_name, build_number, analysis):
-  build_key = BaseBuildModel.CreateBuildId(
+  build_key = build_util.CreateBuildId(
       master_name, builder_name, build_number)
   suspected_cls = copy.deepcopy(analysis.suspected_cls)
   if not suspected_cls:

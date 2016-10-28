@@ -17,12 +17,12 @@ from handlers import result_status
 from model import analysis_approach_type
 from model import analysis_status
 from model import suspected_cl_status
-from model.base_build_model import BaseBuildModel
 from model.suspected_cl_confidence import ConfidenceInformation
 from model.suspected_cl_confidence import SuspectedCLConfidence
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_try_job import WfTryJob
+from waterfall import build_util
 from waterfall import buildbot
 from waterfall.test import wf_testcase
 
@@ -140,7 +140,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
       self.taskqueue_stub.FlushQueue(queue['name'])
 
     def MockedGetAllTryJobResults(master_name, builder_name, build_number, _):
-      build_key = BaseBuildModel.CreateBuildId(
+      build_key = build_util.CreateBuildId(
           master_name, builder_name, build_number)
       return SAMPLE_TRY_JOB_INFO.get(build_key, None)
     self.mock(handlers_util, 'GetAllTryJobResults', MockedGetAllTryJobResults)

@@ -15,9 +15,9 @@ from common.base_handler import BaseHandler
 from common.base_handler import Permission
 from model import result_status
 from model import suspected_cl_status
-from model.base_build_model import BaseBuildModel
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
+from waterfall import build_util
 from waterfall import buildbot
 from waterfall.suspected_cl_util import GetCLInfo
 
@@ -124,7 +124,7 @@ def _AppendTriageHistoryRecord(
 def _UpdateSuspectedCLAndAnalysis(
     master_name, builder_name, build_number, cl_info, cl_status, user_name):
   repo_name, revision  = GetCLInfo(cl_info)
-  build_key = BaseBuildModel.CreateBuildId(
+  build_key = build_util.CreateBuildId(
       master_name, builder_name, build_number)
 
   success = (
