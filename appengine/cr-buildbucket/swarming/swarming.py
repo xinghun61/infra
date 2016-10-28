@@ -359,13 +359,8 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
       task_properties.get('dimensions', []),
     ))
 
-  if builder_cfg.cipd_packages:  # pragma: no branch
-    cipd_input = task_properties.setdefault('cipd_input', {})
-    packages = cipd_input.get('packages', [])
-    for p in _to_swarming_cipd_packages(builder_cfg.cipd_packages):
-      if p not in packages:
-        packages.append(p)
-    cipd_input['packages'] = packages
+  _add_cipd_packages(builder_cfg, task_properties)
+  _add_named_caches(builder_cfg, task_properties)
 
   if builder_cfg.execution_timeout_secs > 0:
     task_properties['execution_timeout_secs'] = (
@@ -391,12 +386,40 @@ def _to_swarming_dimensions(dims):
   ]
 
 
-def _to_swarming_cipd_packages(packages):
-  """Converts CIPD packages from buildbucket format to swarming format."""
-  return [
-    {'package_name': p.package_name, 'path': p.path, 'version': p.version}
-    for p in packages
-  ]
+def _add_cipd_packages(builder_cfg, task_properties):
+  """Adds/replaces packages defined in the config to the task properties."""
+  cipd_input = task_properties.setdefault('cipd_input', {})
+  task_packages = {
+    p.get('package_name'): p
+    for p in cipd_input.get('packages', [])
+  }
+  for p in builder_cfg.cipd_packages:
+    task_packages[p.package_name] = {
+      'package_name': p.package_name,
+      'path': p.path,
+      'version': p.version,
+    }
+  cipd_input['packages'] = sorted(
+      task_packages.itervalues(),
+      key=lambda p: p.get('package_name')
+  )
+
+
+def _add_named_caches(builder_cfg, task_properties):
+  """Adds/replaces named caches defined in the config to the task properties."""
+  task_caches = {
+    c.get('name'): c
+    for c in task_properties.get('caches', [])
+  }
+  for c in builder_cfg.caches:
+    task_caches[c.name] = {
+      'name': c.name,
+      'path': c.path,
+    }
+  task_properties['caches'] = sorted(
+      task_caches.itervalues(),
+      key=lambda p: p.get('name'),
+  )
 
 
 @ndb.tasklet

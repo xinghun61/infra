@@ -12,6 +12,10 @@ from proto import project_config_pb2
 
 
 DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')
+# Copied from
+# https://github.com/luci/luci-py/blob/75de6021b50a73e140eacfb80760f8c25aa183ff/appengine/swarming/server/task_request.py#L101
+# Keep it synchronized.
+CACHE_NAME_RE = re.compile(ur'^[a-z0-9_]{1,4096}$')
 
 
 # Regular expressions below are copied from
@@ -135,6 +139,19 @@ def validate_dimensions(field_name, dimensions, ctx):
           known_keys.add(key)
 
 
+def validate_relative_path(path, ctx):
+  if not path:
+    ctx.error('path is required')
+  if '\\' in path:
+    ctx.error(
+        'path cannot contain \\. On Windows forward-slashes will be '
+        'replaced with back-slashes.')
+  if '..' in path.split('/'):
+    ctx.error('path cannot contain ".."')
+  if path.startswith('/'):
+    ctx.error('path cannot start with "/"')
+
+
 def validate_cipd_package_cfg(package, ctx):
   """Validates a CipdPackage message.
 
@@ -146,19 +163,7 @@ def validate_cipd_package_cfg(package, ctx):
   if not PACKAGE_NAME_RE.match(template):
     ctx.error('package_name must be a valid CIPD package name template')
 
-  if not package.path:
-    ctx.error(
-        'CIPD package path is required. Use "." to install to run dirname')
-  if '\\' in package.path:
-    ctx.error(
-        'CIPD package path cannot contain \\. On Windows forward-slashes '
-        'will be replaced with back-slashes.')
-  if '..' in package.path.split('/'):
-    ctx.error(
-        'CIPD package path cannot contain ".."')
-  if package.path.startswith('/'):
-    ctx.error(
-        'CIPD package path cannot start with "/"')
+  validate_relative_path(package.path, ctx)
 
   if not (INSTANCE_ID_RE.match(package.version) or
           TAG_KEY_RE.match(package.version.split(':', 1)[0]) or
@@ -234,11 +239,24 @@ def validate_builder_cfg(builder, ctx, final=True):
     with ctx.prefix('cipd_package #%d: ', i + 1):
       validate_cipd_package_cfg(p, ctx)
 
+  for i, c in enumerate(builder.caches):
+    with ctx.prefix('cache #%d: ', i + 1):
+      validate_cache_entry(c, ctx)
+
   with ctx.prefix('recipe: '):
     validate_recipe_cfg(builder.recipe, ctx, final=final)
 
   if builder.priority > 200:
     ctx.error('priority must be in [0, 200] range; got %d', builder.priority)
+
+
+def validate_cache_entry(entry, ctx):
+  if not entry.name:
+    ctx.error('name is required')
+  elif not CACHE_NAME_RE.match(entry.name):
+    ctx.error('name "%s" does not match %s', entry.name, CACHE_NAME_RE.pattern)
+
+  validate_relative_path(entry.path, ctx)
 
 
 def validate_cfg(swarming, ctx):

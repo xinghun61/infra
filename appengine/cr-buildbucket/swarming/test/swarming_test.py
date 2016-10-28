@@ -57,11 +57,21 @@ class SwarmingTest(testing.AppengineTestCase):
             repository='https://example.com/repo',
             name='recipe',
           ),
+          caches=[
+            project_config_pb2.Swarming.Builder.CacheEntry(
+                name='git_chromium',
+                path='git_cache',
+            ),
+            project_config_pb2.Swarming.Builder.CacheEntry(
+                name='build_chromium',
+                path='out',
+            ),
+          ],
           cipd_packages=[
             project_config_pb2.Swarming.Builder.CipdPackage(
               package_name='infra/test/foo/${platform}',
               path='third_party',
-              version='stable',
+              version='deadbeef',
             ),
           ],
         ),
@@ -112,14 +122,14 @@ class SwarmingTest(testing.AppengineTestCase):
         'cipd_input': {
           'packages': [
             {
-              'package_name': 'infra/test/foo/${platform}',
-              'path': 'third_party',
-              'version': 'stable',
-            },
-            {
               'package_name': 'infra/test/bar/${os_ver}',
               'path': '.',
               'version': 'latest',
+            },
+            {
+              'package_name': 'infra/test/foo/${platform}',
+              'path': 'third_party',
+              'version': 'stable',
             },
           ],
         },
@@ -311,13 +321,12 @@ class SwarmingTest(testing.AppengineTestCase):
           {'key': 'os', 'value': 'Linux'},
           {'key': 'pool', 'value': 'Chrome'},
         ]),
+        'caches': [
+          {'name': 'build_chromium', 'path': 'out'},
+          {'name': 'git_chromium', 'path': 'git_cache'},
+        ],
         'cipd_input': {
           'packages': [
-            {
-              'package_name': 'infra/test/foo/${platform}',
-              'path': 'third_party',
-              'version': 'stable',
-            },
             {
               'package_name': 'infra/test/bar/${os_ver}',
               'path': '.',
@@ -327,6 +336,11 @@ class SwarmingTest(testing.AppengineTestCase):
               'package_name': 'infra/test/baz',
               'path': '.',
               'version': 'lkgr',
+            },
+            {
+              'package_name': 'infra/test/foo/${platform}',
+              'path': 'third_party',
+              'version': 'deadbeef',
             },
           ],
         },
@@ -438,13 +452,12 @@ class SwarmingTest(testing.AppengineTestCase):
           {'key': 'os', 'value': 'Linux'},
           {'key': 'pool', 'value': 'Chrome'},
         ]),
+        'caches': [
+          {'name': 'build_chromium', 'path': 'out'},
+          {'name': 'git_chromium', 'path': 'git_cache'},
+        ],
         'cipd_input': {
           'packages': [
-            {
-              'package_name': 'infra/test/foo/${platform}',
-              'path': 'third_party',
-              'version': 'stable',
-            },
             {
               'package_name': 'infra/test/bar/${os_ver}',
               'path': '.',
@@ -454,6 +467,11 @@ class SwarmingTest(testing.AppengineTestCase):
               'package_name': 'infra/test/baz',
               'path': '.',
               'version': 'lkgr',
+            },
+            {
+              'package_name': 'infra/test/foo/${platform}',
+              'path': 'third_party',
+              'version': 'deadbeef',
             },
           ],
         }

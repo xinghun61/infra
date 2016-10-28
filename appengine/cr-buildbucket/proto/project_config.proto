@@ -74,6 +74,18 @@ message Swarming {
       optional string version = 3;
     }
 
+    // Describes a named cache that should be present on the bot.
+    // See also https://github.com/luci/luci-py/blob/3a2941345cf011a96bcd83d76328395323245bb5/appengine/swarming/swarming_rpcs.py#L166
+    message CacheEntry {
+      // Unique name of the cache. Required. Length is limited to 4096.
+      optional string name = 1;
+      // Relative path to the directory that will be linked to the named cache.
+      // Required.
+      // A path cannot be shared among multiple caches or CIPD installations.
+      // A task will fail if a file/dir with the same name already exists.
+      optional string path = 2;
+    }
+
     // Name of the builder. Will be propagated to "builder" build tag and
     // "buildername" recipe property.
     optional string name = 1;
@@ -95,6 +107,8 @@ message Swarming {
     optional uint32 priority = 5;
     // Maximum build execution time. Not to be confused with pending time.
     optional uint32 execution_timeout_secs = 7;
+    // Caches that should be present on the bot.
+    repeated CacheEntry caches = 9;
   }
 
   // Hostname of the swarming instance, e.g. "chromium-swarm.appspot.com".
