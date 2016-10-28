@@ -5,6 +5,7 @@
 package messages
 
 // FinditResult is the result of request to the findit server.
+// INTERNAL ONLY: For documentation of data format and fields, please check: https://docs.google.com/a/google.com/document/d/1u2O9iGroKKpL38SSK2E_krK29P5PeFI9fM_hgFkjGRc/edit?usp=sharing
 type FinditResult struct {
 	MasterURL                   string      `json:"master_url"`
 	BuilderName                 string      `json:"builder_name"`
@@ -15,11 +16,15 @@ type FinditResult struct {
 	FirstKnownFailedBuildNumber int64       `json:"first_known_failed_build_number"`
 	SuspectedCLs                []SuspectCL `json:"suspected_cls"`
 	AnalysisApproach            string      `json:"analysis_approach"`
+	TryJobStatus                string      `json:"try_job_status"`
+	IsFlakyTest                 bool        `json:"is_flaky_test"`
 }
 
 // SuspectCL is a CL which is suspected to have caused a failure.
 type SuspectCL struct {
-	RepoName       string `json:"repo_name"`
-	Revision       string `json:"revision"`
-	CommitPosition int64  `json:"commit_position,omitempty"`
+	RepoName         string `json:"repo_name"`
+	Revision         string `json:"revision"`
+	CommitPosition   int64  `json:"commit_position,omitempty"`
+	Confidence       int    `json:"confidence"`
+	AnalysisApproach string `json:"analysis_approach"`
 }

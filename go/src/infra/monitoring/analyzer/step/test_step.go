@@ -16,9 +16,19 @@ import (
 type testFailure struct {
 	// Could be more detailed about test failures. For instance, we could
 	// indicate expected vs. actual result.
+	//FIXME: Merge TestNames and Tests.
 	TestNames []string `json:"test_names"`
 	//FIXME: Rename to TestSuite (needs to be synchronized with SOM)
-	StepName string `json:"step"`
+	StepName string           `json:"step"`
+	Tests    []testWithResult `json:"tests"`
+}
+
+// testWithResult stores the information provided by Findit for a specific test,
+// for example if the test is flaky or is there a culprit for the test failure.
+type testWithResult struct {
+	TestName     string               `json:"test_name"`
+	IsFlaky      bool                 `json:"is_flaky"`
+	SuspectedCLs []messages.SuspectCL `json:"suspected_cls"`
 }
 
 func (t *testFailure) Signature() string {
@@ -59,8 +69,28 @@ func testFailureAnalyzer(reader client.Reader, fs []*messages.BuildStep) ([]mess
 	return results, nil
 }
 
+// tests is a slice of tests with Findit results.
+type tests []testWithResult
+
+func (slice tests) Len() int {
+	return len(slice)
+}
+
+func (slice tests) Less(i, j int) bool {
+	return (len(slice[i].SuspectedCLs) > 0 && len(slice[j].SuspectedCLs) == 0) || (slice[i].IsFlaky && !slice[j].IsFlaky)
+}
+
+func (slice tests) Swap(i, j int) {
+	slice[i], slice[j] = slice[j], slice[i]
+}
+
 func testAnalyzeFailure(reader client.Reader, f *messages.BuildStep) (messages.ReasonRaw, error) {
 	failedTests, err := getTestNames(reader, f)
+	if err != nil {
+		return nil, err
+	}
+
+	testsWithFinditResults, err := getFinditResultsForTests(reader, f, failedTests)
 	if err != nil {
 		return nil, err
 	}
@@ -68,30 +98,43 @@ func testAnalyzeFailure(reader client.Reader, f *messages.BuildStep) (messages.R
 	if failedTests != nil {
 		sortedNames := failedTests
 		sort.Strings(sortedNames)
+		sortedTests := tests(testsWithFinditResults)
+		sort.Sort(sortedTests)
 		return &testFailure{
 			TestNames: sortedNames,
 			StepName:  f.Step.Name,
+			Tests:     testsWithFinditResults,
 		}, nil
 	}
 
 	return nil, nil
 }
 
-func getTestNames(reader client.Reader, f *messages.BuildStep) ([]string, error) {
-	name := f.Step.Name
+func getStepName(name string) string {
+	stepName := name
 	s := strings.Split(name, " ")
-	failedTests := []string{}
 
 	// Android tests add Instrumentation test as a prefix to the step name :/
 	if len(s) > 2 && s[0] == "Instrumentation" && s[1] == "test" {
-		name = s[2]
+		stepName = s[2]
 		s = []string{name}
 	}
 	// Some test steps have names like "webkit_tests iOS(dbug)" so we look at the first
 	// term before the space, if there is one.
 	if !(strings.HasSuffix(s[0], "tests") || strings.HasSuffix(s[0], "test_apk")) {
+		return ""
+	}
+
+	return stepName
+}
+
+func getTestNames(reader client.Reader, f *messages.BuildStep) ([]string, error) {
+	name := getStepName(f.Step.Name)
+	if name == "" {
 		return nil, nil
 	}
+
+	failedTests := []string{}
 
 	testResults, err := reader.TestResults(f.Master, f.Build.BuilderName, name, f.Build.Number)
 	if err != nil {
@@ -133,6 +176,46 @@ func getTestNames(reader client.Reader, f *messages.BuildStep) ([]string, error)
 		failedTests = append(failedTests, ue...)
 	}
 	return failedTests, nil
+}
+
+// Read Findit results and get suspected cls or check if flaky for each test.
+func getFinditResultsForTests(reader client.Reader, f *messages.BuildStep, failedTests []string) ([]testWithResult, error) {
+	TestsWithFinditResults := []testWithResult{}
+
+	if failedTests == nil || len(failedTests) == 0 {
+		return nil, nil
+	}
+
+	name := getStepName(f.Step.Name)
+	if name == "" {
+		return nil, nil
+	}
+
+	finditResults, err := reader.Findit(f.Master, f.Build.BuilderName, f.Build.Number, []string{name})
+	if err != nil {
+		return nil, fmt.Errorf("while getting findit results: %s", err)
+	}
+	finditResultsMap := map[string]*messages.FinditResult{}
+	for _, result := range finditResults {
+		finditResultsMap[result.TestName] = result
+	}
+	for _, test := range failedTests {
+		testResult := testWithResult{
+			TestName:     test,
+			IsFlaky:      false,
+			SuspectedCLs: nil,
+		}
+		result, ok := finditResultsMap[test]
+		if ok {
+			testResult = testWithResult{
+				TestName:     test,
+				IsFlaky:      result.IsFlakyTest,
+				SuspectedCLs: result.SuspectedCLs,
+			}
+		}
+		TestsWithFinditResults = append(TestsWithFinditResults, testResult)
+	}
+	return TestsWithFinditResults, nil
 }
 
 // unexpected returns the set of expected xor actual.

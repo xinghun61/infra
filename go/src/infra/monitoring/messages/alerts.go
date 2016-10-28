@@ -147,6 +147,10 @@ type BuildFailure struct {
 	Reason           *Reason            `json:"reason"`
 	RegressionRanges []*RegressionRange `json:"regression_ranges"`
 	SuspectedCLs     []SuspectCL        `json:"suspected_cls"`
+	// Status of Findit analysis: RUNNING or FINISHED.
+	FinditStatus string `json:"findit_status"`
+	// Url to Findit result page.
+	FinditURL string `json:"findit_url"`
 }
 
 // BuildStep is a step which was run in a particular build. Useful for analyzing
@@ -206,10 +210,29 @@ type AlertedBuilder struct {
 
 // RegressionRange identifies the bounds of the location of a regression.
 type RegressionRange struct {
-	Repo      string   `json:"repo"`
-	URL       string   `json:"url"`
-	Revisions []string `json:"revisions"`
-	Positions []string `json:"positions"`
+	Repo string `json:"repo"`
+	URL  string `json:"url"`
+	// Revisions have the first and last revisions in the range,
+	// And RevisionsWithResults have the revisions that are suspected.
+	Revisions            []string                   `json:"revisions"`
+	Positions            []string                   `json:"positions"`
+	RevisionsWithResults []RevisionWithFinditResult `json:"revisions_with_results"`
+}
+
+// RevisionWithFinditResult saves information from Findit about a specific revision.
+type RevisionWithFinditResult struct {
+	Revision string `json:"revision"`
+
+	// A flag to determine if Findit finds it to be a culprit to some failures.
+	IsSuspect bool `json:"is_suspect"`
+
+	// A score calculated by Findit based on historical triaging results of the same type of suspected CLs.
+	// Only has value when IsSuspect is true.
+	Confidence int `json:"confidence"`
+
+	// Used to indicate how Findit finds this CL as a suspect.
+	// Only has a [value when IsSuspect is true.
+	AnalysisApproach string `json:"analysis_approach"`
 }
 
 // RevisionSummary summarizes some information about a revision.

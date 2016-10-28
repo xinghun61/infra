@@ -20,11 +20,12 @@ func TestTestStepFailureAlerts(t *testing.T) {
 	Convey("test TestFailureAnalyzer", t, func() {
 		Convey("analyze", func() {
 			tests := []struct {
-				name        string
-				failures    []*messages.BuildStep
-				testResults *messages.TestResults
-				wantResult  []messages.ReasonRaw
-				wantErr     error
+				name          string
+				failures      []*messages.BuildStep
+				testResults   *messages.TestResults
+				finditResults []*messages.FinditResult
+				wantResult    []messages.ReasonRaw
+				wantErr       error
 			}{
 				{
 					name:       "empty",
@@ -76,10 +77,36 @@ func TestTestStepFailureAlerts(t *testing.T) {
 							},
 						},
 					},
+					finditResults: []*messages.FinditResult{
+						{
+							TestName:    "test_a",
+							IsFlakyTest: false,
+							SuspectedCLs: []messages.SuspectCL{
+								{
+									RepoName:       "repo",
+									Revision:       "deadbeef",
+									CommitPosition: 1234,
+								},
+							},
+						},
+					},
 					wantResult: []messages.ReasonRaw{
 						&testFailure{
 							TestNames: []string{"test_a"},
 							StepName:  "something_tests",
+							Tests: []testWithResult{
+								{
+									TestName: "test_a",
+									IsFlaky:  false,
+									SuspectedCLs: []messages.SuspectCL{
+										{
+											RepoName:       "repo",
+											Revision:       "deadbeef",
+											CommitPosition: 1234,
+										},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -115,6 +142,52 @@ func TestTestStepFailureAlerts(t *testing.T) {
 						},
 					},
 				},
+				{
+					name: "test findit found flaky",
+					failures: []*messages.BuildStep{
+						{
+							Master: &messages.MasterLocation{URL: url.URL{
+								Scheme: "https",
+								Host:   "build.chromium.org",
+								Path:   "/p/fake.Master",
+							}},
+							Build: &messages.Build{
+								BuilderName: "fake_builder",
+							},
+							Step: &messages.Step{
+								Name: "something_tests",
+							},
+						},
+					},
+					testResults: &messages.TestResults{
+						Tests: map[string]interface{}{
+							"test_a": map[string]interface{}{
+								"expected": "PASS",
+								"actual":   "FAIL",
+							},
+						},
+					},
+					finditResults: []*messages.FinditResult{
+						{
+							TestName:     "test_a",
+							IsFlakyTest:  true,
+							SuspectedCLs: []messages.SuspectCL{},
+						},
+					},
+					wantResult: []messages.ReasonRaw{
+						&testFailure{
+							TestNames: []string{"test_a"},
+							StepName:  "something_tests",
+							Tests: []testWithResult{
+								{
+									TestName:     "test_a",
+									IsFlaky:      true,
+									SuspectedCLs: []messages.SuspectCL{},
+								},
+							},
+						},
+					},
+				},
 			}
 
 			mc := &test.MockReader{}
@@ -123,6 +196,7 @@ func TestTestStepFailureAlerts(t *testing.T) {
 				test := test
 				Convey(test.name, func() {
 					mc.TestResultsValue = test.testResults
+					mc.FinditResults = test.finditResults
 					gotResult, gotErr := testFailureAnalyzer(mc, test.failures)
 					So(gotErr, ShouldEqual, test.wantErr)
 					So(gotResult, ShouldResemble, test.wantResult)

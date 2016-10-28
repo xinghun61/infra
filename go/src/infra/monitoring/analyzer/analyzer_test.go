@@ -465,12 +465,18 @@ func TestBuilderStepAlerts(t *testing.T) {
 					Step("fake_step").Results(2).BuilderFaker,
 				finditData: []*messages.FinditResult{
 					{
-						StepName: "fake_step",
+						MasterURL:                   "https://build.chromium.org/p/fake.master",
+						BuilderName:                 "fake.builder",
+						BuildNumber:                 0,
+						FirstKnownFailedBuildNumber: 0,
+						TryJobStatus:                "FINISHED",
+						StepName:                    "fake_step",
 						SuspectedCLs: []messages.SuspectCL{
 							{
-								RepoName:       "repo",
-								Revision:       "deadbeef",
-								CommitPosition: 1234,
+								RepoName:         "test",
+								Revision:         "291569",
+								Confidence:       90,
+								AnalysisApproach: "HEURISTIC",
 							},
 						},
 					},
@@ -500,15 +506,26 @@ func TestBuilderStepAlerts(t *testing.T) {
 									URL:       "http://test",
 									Revisions: []string{"291569"},
 									Positions: []string{"refs/heads/master@{#291569}"},
+									RevisionsWithResults: []messages.RevisionWithFinditResult{
+										{
+											Revision:         "291569",
+											IsSuspect:        true,
+											Confidence:       90,
+											AnalysisApproach: "HEURISTIC",
+										},
+									},
 								},
 							},
 							SuspectedCLs: []messages.SuspectCL{
 								{
-									RepoName:       "repo",
-									Revision:       "deadbeef",
-									CommitPosition: 1234,
+									RepoName:         "test",
+									Revision:         "291569",
+									Confidence:       90,
+									AnalysisApproach: "HEURISTIC",
 								},
 							},
+							FinditStatus: "FINISHED",
+							FinditURL:    "https://findit-for-me.appspot.com/waterfall/build-failure?url=https://build.chromium.org/p/fake.master/builders/fake.builder/builds/0",
 						},
 					},
 				},
@@ -524,12 +541,18 @@ func TestBuilderStepAlerts(t *testing.T) {
 					Step("other_step").Results(2).BuilderFaker,
 				finditData: []*messages.FinditResult{
 					{
-						StepName: "fake_step",
+						MasterURL:                   "https://build.chromium.org/p/fake.master",
+						BuilderName:                 "fake.builder",
+						BuildNumber:                 0,
+						FirstKnownFailedBuildNumber: 0,
+						TryJobStatus:                "FINISHED",
+						StepName:                    "fake_step",
 						SuspectedCLs: []messages.SuspectCL{
 							{
-								RepoName:       "repo",
-								Revision:       "deadbeef",
-								CommitPosition: 1234,
+								RepoName:         "test",
+								Revision:         "291569",
+								Confidence:       90,
+								AnalysisApproach: "HEURISTIC",
 							},
 						},
 					},
@@ -559,15 +582,26 @@ func TestBuilderStepAlerts(t *testing.T) {
 									URL:       "http://test",
 									Revisions: []string{"291569"},
 									Positions: []string{"refs/heads/master@{#291569}"},
+									RevisionsWithResults: []messages.RevisionWithFinditResult{
+										{
+											Revision:         "291569",
+											IsSuspect:        true,
+											Confidence:       90,
+											AnalysisApproach: "HEURISTIC",
+										},
+									},
 								},
 							},
 							SuspectedCLs: []messages.SuspectCL{
 								{
-									RepoName:       "repo",
-									Revision:       "deadbeef",
-									CommitPosition: 1234,
+									RepoName:         "test",
+									Revision:         "291569",
+									Confidence:       90,
+									AnalysisApproach: "HEURISTIC",
 								},
 							},
+							FinditStatus: "FINISHED",
+							FinditURL:    "https://findit-for-me.appspot.com/waterfall/build-failure?url=https://build.chromium.org/p/fake.master/builders/fake.builder/builds/0",
 						},
 					},
 					{

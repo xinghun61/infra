@@ -666,6 +666,10 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 			}
 
 			mergedBF.SuspectedCLs = append(mergedBF.SuspectedCLs, result.SuspectedCLs...)
+			mergedBF.FinditStatus = result.TryJobStatus
+
+			buildURL := client.BuildURL(master, builderName, result.FirstKnownFailedBuildNumber).String()
+			mergedBF.FinditURL = fmt.Sprintf("https://findit-for-me.appspot.com/waterfall/build-failure?url=%s", buildURL)
 		}
 
 		mergedAlert.Extension = mergedBF
@@ -759,7 +763,6 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 
 		filteredFailures = append(filteredFailures, failure)
 	}
-
 	ret := []messages.Alert{}
 	type res struct {
 		f   *messages.BuildStep
@@ -814,7 +817,6 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 				continue
 			}
 		}
-
 		scannedFailures = append(scannedFailures, failure)
 		i := i
 		go func(f *messages.BuildStep) {
@@ -828,7 +830,34 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 				Severity:  messages.NewFailure,
 			}
 
+			// Read Findit results and add information to the revisions that Findit suspects.
 			regRanges := a.regrangeFinder(f.Build)
+
+			finditResults, _ := a.Reader.Findit(f.Master, f.Build.BuilderName, f.Build.Number, []string{})
+			finditSuspectedCLs := map[string][]*messages.SuspectCL{}
+			saveFinditResultInMap(finditResults, f.Step.Name, finditSuspectedCLs)
+
+			// Add Findit results to regression ranges.
+			// There are only the first and last revisions in regRange.Revisions,
+			// regRange.RevisionsWithResults will have more if Findit found some culprits within the range.
+			for _, regRange := range regRanges {
+				revisionsWithResults := []messages.RevisionWithFinditResult{}
+				repo := regRange.Repo
+				cls, ok := finditSuspectedCLs[repo]
+				if ok {
+					for _, cl := range cls {
+						revisionWithResult := messages.RevisionWithFinditResult{
+							Revision:         cl.Revision,
+							IsSuspect:        true,
+							AnalysisApproach: cl.AnalysisApproach,
+							Confidence:       cl.Confidence,
+						}
+						revisionsWithResults = append(revisionsWithResults, revisionWithResult)
+					}
+					// Sort the results to display
+					regRange.RevisionsWithResults = revisionsWithResults
+				}
+			}
 
 			for _, change := range f.Build.SourceStamp.Changes {
 				branch, pos, err := change.CommitPosition()
@@ -905,4 +934,14 @@ func trunc(s string) string {
 		return s
 	}
 	return s[:100]
+}
+
+func saveFinditResultInMap(finditResults []*messages.FinditResult, stepName string, finditSuspectedCLs map[string][]*messages.SuspectCL) {
+	for _, result := range finditResults {
+		for _, cl := range result.SuspectedCLs {
+			if result.StepName == stepName {
+				finditSuspectedCLs[cl.RepoName] = append(finditSuspectedCLs[cl.RepoName], &cl)
+			}
+		}
+	}
 }
