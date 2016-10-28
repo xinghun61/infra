@@ -1,6 +1,5 @@
 {
   'project': 'webrtc',
-  'source_vcs': 'git',
   'source_url': 'https://chromium.googlesource.com/external/webrtc',
   'status_url': 'https://webrtc-status.appspot.com',
   'allowed_lag': 3,
