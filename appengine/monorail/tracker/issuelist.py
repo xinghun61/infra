@@ -45,7 +45,6 @@ class IssueList(servlet.Servlet):
   _PAGE_TEMPLATE = 'tracker/issue-list-page.ezt'
   _ELIMINATE_BLANK_LINES = True
   _MAIN_TAB_MODE = servlet.Servlet.MAIN_TAB_ISSUES
-  _DEFAULT_RESULTS_PER_PAGE = tracker_constants.DEFAULT_RESULTS_PER_PAGE
 
   def GatherPageData(self, mr):
     """Build up a dictionary of data values to use when rendering the page.
@@ -79,7 +78,8 @@ class IssueList(servlet.Servlet):
 
     with self.profiler.Phase('starting frontend search pipeline'):
       pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-          mr, self.services, self.profiler, self._DEFAULT_RESULTS_PER_PAGE)
+          mr, self.services, self.profiler,
+          tracker_constants.DEFAULT_RESULTS_PER_PAGE)
 
     # Perform promises that require authentication information.
     with self.profiler.Phase('getting stars'):
@@ -308,7 +308,8 @@ class IssueList(servlet.Servlet):
         'preview': mr.preview,
         'default_colspec': tracker_constants.DEFAULT_COL_SPEC,
         'default_results_per_page': tracker_constants.DEFAULT_RESULTS_PER_PAGE,
-        'csv_link': framework_helpers.FormatURL(mr, 'csv'),
+        'csv_link': framework_helpers.FormatURL(
+            mr, 'csv', num=settings.max_artifact_search_results_per_page),
         'preview_on_hover': ezt.boolean(
             _ShouldPreviewOnHover(mr.auth.user_pb)),
         }

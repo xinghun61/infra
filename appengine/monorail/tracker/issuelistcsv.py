@@ -23,7 +23,6 @@ class IssueListCsv(issuelist.IssueList):
   """
 
   _PAGE_TEMPLATE = 'tracker/issue-list-csv.ezt'
-  _DEFAULT_RESULTS_PER_PAGE = settings.max_artifact_search_results_per_page
 
   def GatherPageData(self, mr):
     if not mr.auth.user_id:
