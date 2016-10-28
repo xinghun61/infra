@@ -78,6 +78,12 @@ var cmdCook = &subcommands.Command{
 			false,
 			"If true, print CURRENT_TIMESTAMP annotations.")
 
+		fs.BoolVar(
+			&c.AllowGitiles,
+			"allow-gitiles",
+			false,
+			"If true, kitchen will try to use Gitiles API to fetch a recipe.")
+
 		c.logdog.addFlags(fs)
 
 		return &c
@@ -92,6 +98,7 @@ type cookRun struct {
 	// If present, `recipes.py remote` is used to fetch the recipe.
 	// Not required. TODO(nodir): make it required.
 	RecipeEnginePath string
+	AllowGitiles     bool
 
 	RepositoryURL        string
 	Revision             string
@@ -237,7 +244,7 @@ func (c *cookRun) remoteRun(ctx context.Context, props map[string]interface{}) (
 	// remote subcommand does not sniff whether repository is gitiles or generic
 	// git. Instead it accepts an explicit "--use-gitiles" flag.
 	// We are not told whether the repo is gitiles or not, so sniff it here.
-	if looksLikeGitiles(c.RepositoryURL) {
+	if c.AllowGitiles && looksLikeGitiles(c.RepositoryURL) {
 		recipeCmd.Args = append(recipeCmd.Args, "--use-gitiles")
 	}
 
