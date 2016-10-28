@@ -85,7 +85,7 @@ func (slice tests) Swap(i, j int) {
 }
 
 func testAnalyzeFailure(reader client.Reader, f *messages.BuildStep) (messages.ReasonRaw, error) {
-	failedTests, err := getTestNames(reader, f)
+	suiteName, failedTests, err := getTestNames(reader, f)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func testAnalyzeFailure(reader client.Reader, f *messages.BuildStep) (messages.R
 		sort.Sort(sortedTests)
 		return &testFailure{
 			TestNames: sortedNames,
-			StepName:  f.Step.Name,
+			StepName:  suiteName,
 			Tests:     testsWithFinditResults,
 		}, nil
 	}
@@ -125,30 +125,38 @@ func getStepName(name string) string {
 		return ""
 	}
 
+	// Recipes add a suffix to steps of the OS that it's run on, when the test
+	// is swarmed. The step name is formatted like this: "<task title> on <OS>".
+	// Added in this code:
+	// https://chromium.googlesource.com/chromium/tools/build/+/9ef66559727c320b3263d7e82fb3fcd1b6a3bd55/scripts/slave/recipe_modules/swarming/api.py#846
+	if len(s) > 2 && s[1] == "on" {
+		stepName = s[0]
+	}
+
 	return stepName
 }
 
-func getTestNames(reader client.Reader, f *messages.BuildStep) ([]string, error) {
+func getTestNames(reader client.Reader, f *messages.BuildStep) (string, []string, error) {
 	name := getStepName(f.Step.Name)
 	if name == "" {
-		return nil, nil
+		return "", nil, nil
 	}
 
 	failedTests := []string{}
 
 	testResults, err := reader.TestResults(f.Master, f.Build.BuilderName, name, f.Build.Number)
 	if err != nil {
-		return failedTests, fmt.Errorf("Error fetching test results: %v", err)
+		return name, failedTests, fmt.Errorf("Error fetching test results: %v", err)
 	}
 
 	if len(testResults.Tests) == 0 {
-		return failedTests, fmt.Errorf("No test results for %v", f)
+		return name, failedTests, fmt.Errorf("No test results for %v", f)
 	}
 
 	for testName, testResults := range testResults.Tests {
 		res, ok := testResults.(map[string]interface{})
 		if !ok {
-			return nil, err
+			return "", nil, err
 		}
 
 		// If res is a simple top-level test result, just check it here.
@@ -170,12 +178,12 @@ func getTestNames(reader client.Reader, f *messages.BuildStep) ([]string, error)
 		// the actual results.
 		ue, err := traverseResults(testName, res)
 		if err != nil {
-			return nil, err
+			return "", nil, err
 		}
 
 		failedTests = append(failedTests, ue...)
 	}
-	return failedTests, nil
+	return name, failedTests, nil
 }
 
 // Read Findit results and get suspected cls or check if flaky for each test.

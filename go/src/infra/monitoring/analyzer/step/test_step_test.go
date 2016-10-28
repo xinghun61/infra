@@ -15,8 +15,6 @@ import (
 )
 
 func TestTestStepFailureAlerts(t *testing.T) {
-	t.Parallel()
-
 	Convey("test TestFailureAnalyzer", t, func() {
 		Convey("analyze", func() {
 			tests := []struct {
@@ -66,6 +64,64 @@ func TestTestStepFailureAlerts(t *testing.T) {
 							},
 							Step: &messages.Step{
 								Name: "something_tests",
+							},
+						},
+					},
+					testResults: &messages.TestResults{
+						Tests: map[string]interface{}{
+							"test_a": map[string]interface{}{
+								"expected": "PASS",
+								"actual":   "FAIL",
+							},
+						},
+					},
+					finditResults: []*messages.FinditResult{
+						{
+							TestName:    "test_a",
+							IsFlakyTest: false,
+							SuspectedCLs: []messages.SuspectCL{
+								{
+									RepoName:       "repo",
+									Revision:       "deadbeef",
+									CommitPosition: 1234,
+								},
+							},
+						},
+					},
+					wantResult: []messages.ReasonRaw{
+						&testFailure{
+							TestNames: []string{"test_a"},
+							StepName:  "something_tests",
+							Tests: []testWithResult{
+								{
+									TestName: "test_a",
+									IsFlaky:  false,
+									SuspectedCLs: []messages.SuspectCL{
+										{
+											RepoName:       "repo",
+											Revision:       "deadbeef",
+											CommitPosition: 1234,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					name: "test step failure with weird step name",
+					failures: []*messages.BuildStep{
+						{
+							Master: &messages.MasterLocation{URL: url.URL{
+								Scheme: "https",
+								Host:   "build.chromium.org",
+								Path:   "/p/fake.Master",
+							}},
+							Build: &messages.Build{
+								BuilderName: "fake_builder",
+							},
+							Step: &messages.Step{
+								Name: "something_tests on windows_7",
 							},
 						},
 					},
