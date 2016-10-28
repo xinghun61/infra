@@ -9,10 +9,10 @@ import textwrap
 from google.appengine.ext import ndb
 
 from common import time_util
-from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
 from common.rietveld import Rietveld
+from lib.gitiles.gitiles_repository import GitilesRepository
 from model import analysis_status as status
 from model.wf_analysis import WfAnalysis
 from model.wf_culprit import WfCulprit
@@ -92,7 +92,7 @@ def _GetCulpritInfo(repo_name, revision):
   """Returns commit position/time and code-review url of the given revision."""
   # TODO(stgao): get repo url at runtime based on the given repo name.
   # unused arg - pylint: disable=W0612,W0613
-  repo = GitRepository(
+  repo = GitilesRepository(
       'https://chromium.googlesource.com/chromium/src.git', HttpClient())
   change_log = repo.GetChangeLog(revision)
   return change_log.commit_position, change_log.code_review_url

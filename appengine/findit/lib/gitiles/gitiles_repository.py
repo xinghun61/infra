@@ -8,15 +8,15 @@ from datetime import timedelta
 import json
 import re
 
-from common import diff
-from common.blame import Blame
-from common.blame import Region
-from common.cache_decorator import Cached
-from common.cache_decorator import CompressedMemCacher
-from common.change_log import ChangeLog
-from common.change_log import FileChangeInfo
-from common.repository import Repository
-
+# TODO(http://crbug.com/660466): We should try to break dependencies.
+from lib.cache_decorator import Cached
+from lib.cache_decorator import CompressedMemCacher
+from lib.gitiles import diff
+from lib.gitiles.blame import Blame
+from lib.gitiles.blame import Region
+from lib.gitiles.change_log import ChangeLog
+from lib.gitiles.change_log import FileChangeInfo
+from lib.gitiles.git_repository import GitRepository
 
 COMMIT_POSITION_PATTERN = re.compile(
     '^Cr-Commit-Position: refs/heads/master@{#(\d+)}$', re.IGNORECASE)
@@ -28,11 +28,11 @@ TIMEZONE_PATTERN = re.compile('[-+]\d{4}$')
 CACHE_EXPIRE_TIME_SECONDS = 24 * 60 * 60
 
 
-class GitRepository(Repository):
-  """Represents a git repository on https://chromium.googlesource.com."""
+class GitilesRepository(GitRepository):
+  """Use Gitiles to access a repository on https://chromium.googlesource.com."""
 
   def __init__(self, repo_url=None, http_client=None):
-    super(GitRepository, self).__init__()
+    super(GitilesRepository, self).__init__()
     if repo_url and repo_url.endswith('/'):
       self._repo_url = repo_url[:-1]
     else:

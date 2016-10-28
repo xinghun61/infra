@@ -9,14 +9,23 @@ from testing_utils import testing
 
 from common import chrome_dependency_fetcher
 from common import deps_parser
-from common import git_repository
-from common import repository
 from common import retry_http_client
 from common import http_client_appengine
 from common.dependency import Dependency, DependencyRoll
+from lib.gitiles.git_repository import GitRepository
+from lib.gitiles import gitiles_repository
 
 
-class DummyGitRepository(repository.Repository):
+class MockGitilesRepository(GitRepository):
+  """A class for mocking GitilesRepository.
+
+  N.B., in order to use this class for mocking, every module we want to
+  test with a mock GitilesRepository must not import that class directly.
+  Instead they must import the gitiles_repository module and rely on
+  dynamic dispatch to resolve the GitilesRepository attribute. Otherwise
+  those modules will hold direct links to the real GitilesRepository
+  class, and so won't dispatch into this mock class for our unit tests."""
+
   RESPONSES = {}
 
   def __init__(self, *_):
@@ -30,15 +39,15 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
   DEPS_GIT = '.DEPS.git'
   DEPS = 'DEPS'
   deps_downloader = chrome_dependency_fetcher.DEPSDownloader(
-      DummyGitRepository())
+      MockGitilesRepository())
   chrome_dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
-      DummyGitRepository())
+      MockGitilesRepository())
 
   def testUseDEPS_GIT(self):
     revision = 'abc'
     expected_content = '.DEPS.git content'
 
-    DummyGitRepository.RESPONSES = {
+    MockGitilesRepository.RESPONSES = {
         self.DEPS_GIT: {
             revision: expected_content
         },
@@ -55,7 +64,7 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
     revision = 'abc'
     expected_content = 'DEPS test'
 
-    DummyGitRepository.RESPONSES = {
+    MockGitilesRepository.RESPONSES = {
         self.DEPS_GIT: {
             revision: '.DEPS.git content'
         },
@@ -64,7 +73,7 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
         },
     }
 
-    self.mock(git_repository, 'GitRepository', DummyGitRepository)
+    self.mock(gitiles_repository, 'GitilesRepository', MockGitilesRepository)
 
     content = self.deps_downloader.Load(
         'https://src.git', revision, 'DEPS')
@@ -74,13 +83,13 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
     revision = 'abc'
     expected_content = 'DEPS test'
 
-    DummyGitRepository.RESPONSES = {
+    MockGitilesRepository.RESPONSES = {
         self.DEPS: {
             revision: expected_content
         },
     }
 
-    self.mock(git_repository, 'GitRepository', DummyGitRepository)
+    self.mock(gitiles_repository, 'GitilesRepository', MockGitilesRepository)
 
     content = self.deps_downloader.Load(
         'https://src.git', revision, 'NONEXISTENT_DEPS')
@@ -90,7 +99,7 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
     revision = 'abc'
     expected_content = 'slave DEPS content'
 
-    DummyGitRepository.RESPONSES = {
+    MockGitilesRepository.RESPONSES = {
         self.DEPS_GIT: {
             revision: '.DEPS.git content'
         },
@@ -99,14 +108,14 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
         },
     }
 
-    self.mock(git_repository, 'GitRepository', DummyGitRepository)
+    self.mock(gitiles_repository, 'GitilesRepository', MockGitilesRepository)
 
     content = self.deps_downloader.Load(
         'https://src.git', revision, 'slave.DEPS')
     self.assertEqual(expected_content, content)
 
   def testFailedToPullDEPSFile(self):
-    DummyGitRepository.RESPONSES = {}
+    MockGitilesRepository.RESPONSES = {}
 
     self.assertRaisesRegexp(Exception, 'Failed to pull DEPS file.',
                             self.deps_downloader.Load,
@@ -120,7 +129,7 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
     self.mock(http_client_appengine.HttpClientAppengine, '_Get', _MockGet)
 
     deps_downloader = chrome_dependency_fetcher.DEPSDownloader(
-        git_repository.GitRepository(
+        gitiles_repository.GitilesRepository(
             http_client=http_client_appengine.HttpClientAppengine()))
     content = deps_downloader.Load(
         'http://chrome-internal', '50.0.1234.0', 'DEPS')
@@ -190,7 +199,7 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
       child2_dep.SetParent(root_dep)
       grand_child1.SetParent(child1_dep)
 
-    self.mock(git_repository, 'GitRepository', DummyGitRepository)
+    self.mock(gitiles_repository, 'GitilesRepository', MockGitilesRepository)
     self.mock(deps_parser, 'UpdateDependencyTree', DummyUpdateDependencyTree)
 
     dependency_dict = self.chrome_dep_fetcher.GetDependency(

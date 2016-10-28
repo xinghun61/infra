@@ -6,8 +6,7 @@
 
 import json
 
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
+from common.base_handler import BaseHandler, Permission
 from model import wf_config
 from waterfall import waterfall_config
 

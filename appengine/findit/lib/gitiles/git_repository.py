@@ -4,8 +4,8 @@
 
 
 # pylint: disable=E0711, W0613, R0201
-class Repository(object):  # pragma: no cover
-  """An interface for source code repository."""
+class GitRepository(object):  # pragma: no cover
+  """An interface for access to a Git repository."""
 
   def GetChangeLog(self, revision):
     """Returns the change log of the given revision."""

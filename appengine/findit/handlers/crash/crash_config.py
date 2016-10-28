@@ -8,8 +8,7 @@ import json
 
 from google.appengine.api import users
 
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
+from common.base_handler import BaseHandler, Permission
 from model.crash.crash_config import CrashConfig as CrashConfigModel
 
 

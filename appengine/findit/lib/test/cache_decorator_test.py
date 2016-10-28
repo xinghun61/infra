@@ -6,10 +6,9 @@ import pickle
 import zlib
 
 from google.appengine.api import memcache
-
 from testing_utils import testing
 
-from common import cache_decorator
+from lib import cache_decorator
 
 
 class _DummyCacher(cache_decorator.Cacher):

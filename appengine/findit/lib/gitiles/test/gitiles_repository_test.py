@@ -9,9 +9,11 @@ import re
 
 from testing_utils import testing
 
-from common import git_repository
+# TODO(http://crbug.com/660474): Nothing in ./lib should depend on things
+# in ./common
 from common import retry_http_client
-from common.change_log import ChangeLog
+from lib.gitiles import gitiles_repository
+from lib.gitiles.change_log import ChangeLog
 
 
 COMMIT_MESSAGE = ('Add popover for snapshot canvas log.\n\n'
@@ -287,12 +289,13 @@ class GitRepositoryTest(testing.AppengineTestCase):
     super(GitRepositoryTest, self).setUp()
     self.http_client_for_git = HttpClientForGit()
     self.repo_url = 'https://repo.test'
-    self.git_repo = git_repository.GitRepository(self.repo_url,
+    self.git_repo = gitiles_repository.GitilesRepository(self.repo_url,
                                                  self.http_client_for_git)
 
   def testGitRepositoryPropertySetters(self):
     http_client_for_git = HttpClientForGit()
-    git_repo = git_repository.GitRepository(http_client=http_client_for_git)
+    git_repo = gitiles_repository.GitilesRepository(
+        http_client=http_client_for_git)
     git_repo.repo_url = 'https://repo'
     self.assertEqual(git_repo.repo_url, 'https://repo')
 
@@ -352,12 +355,12 @@ class GitRepositoryTest(testing.AppengineTestCase):
       self.assertEqual(code_review_url, testcase['code_review_url'])
 
   def testEndingSlashInRepoUrl(self):
-    git_repo1 = git_repository.GitRepository(self.repo_url,
-                                             self.http_client_for_git)
+    git_repo1 = gitiles_repository.GitilesRepository(
+        self.repo_url, self.http_client_for_git)
     self.assertEqual(self.repo_url, git_repo1.repo_url)
 
-    git_repo2 = git_repository.GitRepository('%s/' % self.repo_url,
-                                             self.http_client_for_git)
+    git_repo2 = gitiles_repository.GitilesRepository(
+        '%s/' % self.repo_url, self.http_client_for_git)
     self.assertEqual(self.repo_url, git_repo2.repo_url)
 
   def testMalformattedJsonReponse(self):
@@ -489,8 +492,8 @@ class GitRepositoryTest(testing.AppengineTestCase):
               {'commit': '2'},
               {'commit': '1'}]
       }
-    self.mock(git_repository.GitRepository, '_SendRequestForJsonResponse',
-              _MockSendRequestForJsonResponse)
+    self.mock(gitiles_repository.GitilesRepository,
+        '_SendRequestForJsonResponse', _MockSendRequestForJsonResponse)
     expected_commits = ['3', '2', '1']
     actual_commits = self.git_repo.GetCommitsBetweenRevisions('0', '3')
     self.assertEqual(expected_commits, actual_commits)
@@ -498,8 +501,8 @@ class GitRepositoryTest(testing.AppengineTestCase):
   def testGetCommitsBetweenRevisionsWithEmptyData(self):
     def _MockSendRequestForJsonResponse(*_):
       return None
-    self.mock(git_repository.GitRepository, '_SendRequestForJsonResponse',
-              _MockSendRequestForJsonResponse)
+    self.mock(gitiles_repository.GitilesRepository,
+        '_SendRequestForJsonResponse', _MockSendRequestForJsonResponse)
     expected_commits = []
     actual_commits = self.git_repo.GetCommitsBetweenRevisions('0', '3')
     self.assertEqual(expected_commits, actual_commits)
@@ -512,8 +515,8 @@ class GitRepositoryTest(testing.AppengineTestCase):
               {'something_else': '2'}
           ]
       }
-    self.mock(git_repository.GitRepository, '_SendRequestForJsonResponse',
-              _MockSendRequestForJsonResponse)
+    self.mock(gitiles_repository.GitilesRepository,
+        '_SendRequestForJsonResponse', _MockSendRequestForJsonResponse)
     expected_commits = ['1']
     actual_commits = self.git_repo.GetCommitsBetweenRevisions('0', '3')
     self.assertEqual(expected_commits, actual_commits)
@@ -536,8 +539,8 @@ class GitRepositoryTest(testing.AppengineTestCase):
             ]
         }
 
-    self.mock(git_repository.GitRepository, '_SendRequestForJsonResponse',
-              _MockSendRequestForJsonResponse)
+    self.mock(gitiles_repository.GitilesRepository,
+        '_SendRequestForJsonResponse', _MockSendRequestForJsonResponse)
     expected_commits = ['3', '2', '1']
     actual_commits = self.git_repo.GetCommitsBetweenRevisions('0', '3', n=2)
     self.assertEqual(expected_commits, actual_commits)
@@ -547,8 +550,8 @@ class GitRepositoryTest(testing.AppengineTestCase):
       self.assertTrue(bool(kargs))
       return {'log': [json.loads(COMMIT_LOG[5:])]}
 
-    self.mock(git_repository.GitRepository, '_SendRequestForJsonResponse',
-              _MockSendRequestForJsonResponse)
+    self.mock(gitiles_repository.GitilesRepository,
+        '_SendRequestForJsonResponse', _MockSendRequestForJsonResponse)
 
     changelogs = self.git_repo.GetChangeLogs('0', '2')
 
@@ -568,15 +571,16 @@ class GitRepositoryTest(testing.AppengineTestCase):
 
       return {'log': [log1], 'next': 'next_page_commit'}
 
-    self.mock(git_repository.GitRepository, '_SendRequestForJsonResponse',
-              _MockSendRequestForJsonResponse)
+    self.mock(gitiles_repository.GitilesRepository,
+        '_SendRequestForJsonResponse', _MockSendRequestForJsonResponse)
 
     changelogs = self.git_repo.GetChangeLogs('0', '2')
 
     self.assertEqual(len(changelogs), 2)
 
   def testGetWrappedGitRepositoryClass(self):
-    repo = git_repository.GitRepository('http://repo_url', HttpClientForGit())
+    repo = gitiles_repository.GitilesRepository(
+        'http://repo_url', HttpClientForGit())
 
     self.assertEqual(repo.repo_url, 'http://repo_url')
     self.assertTrue(isinstance(repo.http_client, HttpClientForGit))

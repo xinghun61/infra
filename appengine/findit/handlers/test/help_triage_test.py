@@ -8,13 +8,13 @@ import webapp2
 
 from testing_utils import testing
 
-from common.git_repository import GitRepository
 from handlers import help_triage
+from lib.gitiles.gitiles_repository import GitilesRepository
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from waterfall import buildbot
-from waterfall.build_info import BuildInfo
 from waterfall import build_util
+from waterfall.build_info import BuildInfo
 
 
 EXPECTED_RESULTS_120 = {
@@ -169,7 +169,7 @@ class HelpTriageTest(testing.AppengineTestCase):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     self.mock(build_util, 'DownloadBuildData',
               self._MockDownloadBuildData)
-    self.mock(GitRepository, '_DownloadChangeLogData',
+    self.mock(GitilesRepository, '_DownloadChangeLogData',
               self._MockDownloadChangeLogData)
 
   def _CreateAnalysis(self, build_number, first_failure, last_pass=None):

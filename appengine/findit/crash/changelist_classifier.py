@@ -6,8 +6,6 @@ import logging
 from collections import defaultdict
 
 from common import chrome_dependency_fetcher
-from common.diff import ChangeType
-from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine
 from crash import crash_util
 from crash.results import MatchResults
@@ -16,6 +14,7 @@ from crash.scorers.min_distance import MinDistance
 from crash.scorers.top_frame_index import TopFrameIndex
 from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
+from lib.gitiles.diff import ChangeType
 
 # TODO(wrengr): make this a namedtuple.
 class ChangelistClassifier(object):

@@ -7,8 +7,8 @@ import os
 
 import logging
 
-from common import cache_decorator
 from common.http_client_appengine import HttpClientAppengine as HttpClient
+from lib import cache_decorator
 from waterfall import buildbot
 from waterfall import swarming_util
 

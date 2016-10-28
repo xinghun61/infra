@@ -4,8 +4,8 @@
 
 import datetime
 
-from common.git_repository import GitRepository
 from common.rietveld import Rietveld
+from lib.gitiles.gitiles_repository import GitilesRepository
 from model import analysis_status as status
 from model.wf_culprit import WfCulprit
 from waterfall import build_util
@@ -38,7 +38,7 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
           return 123
 
       return MockedChangeLog()
-    self.mock(GitRepository, 'GetChangeLog', Mocked_GetChangeLog)
+    self.mock(GitilesRepository, 'GetChangeLog', Mocked_GetChangeLog)
 
   def _MockBuildEndTime(self):
     def Mocked_GetBuildEndTime(*_):

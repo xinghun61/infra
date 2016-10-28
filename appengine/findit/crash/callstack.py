@@ -5,8 +5,7 @@
 import re
 
 from crash import parse_util
-from crash.type_enums import CallStackFormatType
-from crash.type_enums import CallStackLanguageType
+from crash.type_enums import CallStackFormatType, CallStackLanguageType
 
 # Used to parse a line into StackFrame of a Callstack.
 CALLSTACK_FORMAT_TO_PATTERN = {

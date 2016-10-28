@@ -4,8 +4,7 @@
 
 from google.appengine.ext import ndb
 
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
+from common.base_handler import BaseHandler, Permission
 
 
 def _FormatDatetime(dt):

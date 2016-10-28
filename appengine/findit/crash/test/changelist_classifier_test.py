@@ -4,15 +4,10 @@
 
 from collections import defaultdict
 
-from common.blame import Blame
-from common.blame import Region
-from common.change_log import ChangeLog
 from common.dependency import Dependency
 from common.dependency import DependencyRoll
-from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine
 from common import chrome_dependency_fetcher
-from common import git_repository
 from crash.crash_report import CrashReport
 from crash import changelist_classifier
 from crash.results import MatchResult
@@ -20,6 +15,10 @@ from crash.stacktrace import CallStack
 from crash.stacktrace import StackFrame
 from crash.stacktrace import Stacktrace
 from crash.test.crash_test_suite import CrashTestSuite
+from lib.gitiles.blame import Blame
+from lib.gitiles.blame import Region
+from lib.gitiles.change_log import ChangeLog
+from lib.gitiles.gitiles_repository import GitilesRepository
 
 DUMMY_CHANGELOG1 = ChangeLog.FromDict({
     'author_name': 'r@chromium.org',
@@ -142,11 +141,11 @@ class ChangelistClassifierTest(CrashTestSuite):
     def _MockGetChangeLogs(*_):
       return [DUMMY_CHANGELOG1, DUMMY_CHANGELOG2, DUMMY_CHANGELOG3]
 
-    self.mock(git_repository.GitRepository, 'GetChangeLogs', _MockGetChangeLogs)
+    self.mock(GitilesRepository, 'GetChangeLogs', _MockGetChangeLogs)
 
     dep_file_to_changelogs, ignore_cls = (
         changelist_classifier.GetChangeLogsForFilesGroupedByDeps(
-            regression_deps_rolls, stack_deps, git_repository.GitRepository()))
+            regression_deps_rolls, stack_deps, GitilesRepository()))
     dep_file_to_changelogs_json = defaultdict(lambda: defaultdict(list))
     for dep, file_to_changelogs in dep_file_to_changelogs.iteritems():
       for file_path, changelogs in file_to_changelogs.iteritems():
@@ -238,7 +237,7 @@ class ChangelistClassifierTest(CrashTestSuite):
     dummy_blame.AddRegion(
         Region(6, 10, '1', 'b', 'b@chromium.org', 'Thu Jun 19 12:11:40 2015'))
 
-    self.mock(GitRepository, 'GetBlame', lambda *_: dummy_blame)
+    self.mock(GitilesRepository, 'GetBlame', lambda *_: dummy_blame)
 
     stack_deps = {
         'src/': Dependency('src/', 'https://url_src', 'rev1', 'DEPS'),
@@ -258,7 +257,7 @@ class ChangelistClassifierTest(CrashTestSuite):
 
     match_results = changelist_classifier.FindMatchResults(
         dep_file_to_changelogs, dep_file_to_stack_infos, stack_deps,
-        git_repository.GitRepository())
+        GitilesRepository())
     self.assertListEqual([result.ToDict() for result in match_results],
                          expected_match_results)
 
@@ -270,7 +269,7 @@ class ChangelistClassifierTest(CrashTestSuite):
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependency', lambda *_: {})
     cl_classifier = changelist_classifier.ChangelistClassifier(7,
-        git_repository.GitRepository())
+        GitilesRepository())
     # N.B., for this one test we really do want regression_range=None.
     report = DUMMY_REPORT._replace(regression_range=None)
     self.assertListEqual(cl_classifier(report), [])
@@ -283,7 +282,7 @@ class ChangelistClassifierTest(CrashTestSuite):
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependency', lambda *_: {})
     cl_classifier = changelist_classifier.ChangelistClassifier(7,
-        git_repository.GitRepository())
+        GitilesRepository())
     self.assertListEqual(cl_classifier(DUMMY_REPORT), [])
 
   def testFindItForCrash(self):
@@ -317,7 +316,7 @@ class ChangelistClassifierTest(CrashTestSuite):
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependency', lambda *_: {})
     cl_classifier = changelist_classifier.ChangelistClassifier(7,
-        git_repository.GitRepository())
+        GitilesRepository())
     results = cl_classifier(DUMMY_REPORT)
     expected_match_results = [
         {
@@ -376,7 +375,7 @@ class ChangelistClassifierTest(CrashTestSuite):
         'GetDependency', lambda *_: {})
 
     cl_classifier = changelist_classifier.ChangelistClassifier(7,
-        git_repository.GitRepository())
+        GitilesRepository())
     results = cl_classifier(DUMMY_REPORT)
     expected_match_results = [
         {
@@ -435,5 +434,5 @@ class ChangelistClassifierTest(CrashTestSuite):
         'GetDependency', lambda *_: {})
 
     cl_classifier = changelist_classifier.ChangelistClassifier(7,
-        git_repository.GitRepository())
+        GitilesRepository())
     self.assertListEqual(cl_classifier(DUMMY_REPORT), [])

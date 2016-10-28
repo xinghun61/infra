@@ -8,7 +8,6 @@ import logging
 
 from common import appengine_util
 from common import constants
-from common import git_repository
 from common import pubsub_util
 from common import time_util
 from common.http_client_appengine import HttpClientAppengine
@@ -17,6 +16,7 @@ from common.pipeline_wrapper import pipeline
 from crash import findit_for_chromecrash
 from crash import findit_for_clusterfuzz
 from crash.type_enums import CrashClient
+from lib.gitiles import gitiles_repository
 from model import analysis_status
 from model.crash.crash_config import CrashConfig
 
@@ -52,7 +52,7 @@ def FinditForClientID(client_id): # pragma: no cover
         'unknown or unsupported client %s' % client_id)
 
   return cls(
-      git_repository.GitRepository(http_client=HttpClientAppengine()),
+      gitiles_repository.GitilesRepository(http_client=HttpClientAppengine()),
       CrashWrapperPipeline)
 
 

@@ -6,11 +6,11 @@ from collections import defaultdict
 import os
 import re
 
-from common.diff import ChangeType
-from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
-from waterfall import waterfall_config
+from lib.gitiles.diff import ChangeType
+from lib.gitiles.gitiles_repository import GitilesRepository
 from waterfall.failure_signal import FailureSignal
+from waterfall import waterfall_config
 
 
 def _IsSameFile(changed_src_file_path, file_path_in_log):
@@ -44,7 +44,7 @@ def _GetGitBlame(repo_info, touched_file_path):
   """
   if repo_info:
     repo_url = repo_info['repo_url']
-    git_repo = GitRepository(repo_url, HttpClient())
+    git_repo = GitilesRepository(repo_url, HttpClient())
     revision = repo_info['revision']
     return git_repo.GetBlame(touched_file_path, revision)
 
@@ -442,7 +442,7 @@ def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
     Tests if the same lines mentioned in failure log are changed within
     the DEPS roll, if so, return those line numbers.
   """
-  roll_repo = GitRepository(roll['repo_url'], HttpClient())
+  roll_repo = GitilesRepository(roll['repo_url'], HttpClient())
   old_revision = roll['old_revision']
   new_revision = roll['new_revision']
   old_change_log = roll_repo.GetChangeLog(old_revision)

@@ -2,15 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from common.blame import Region
-from common.blame import Blame
-from common.change_log import ChangeLog
-from crash.stacktrace import StackFrame
 from crash.results import AnalysisInfo
-from crash.results import Result
 from crash.results import MatchResult
 from crash.results import MatchResults
+from crash.results import Result
+from crash.stacktrace import StackFrame
 from crash.test.crash_test_suite import CrashTestSuite
+from lib.gitiles.blame import Blame
+from lib.gitiles.blame import Region
+from lib.gitiles.change_log import ChangeLog
 
 DUMMY_CHANGELOG1 = ChangeLog.FromDict({
     'author_name': 'r@chromium.org',

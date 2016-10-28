@@ -8,22 +8,22 @@ import logging
 
 from google.appengine.ext import ndb
 
-from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
 from common.waterfall import failure_type
+from lib.gitiles.gitiles_repository import GitilesRepository
 from model import analysis_approach_type
 from model import analysis_status
 from model import result_status
 from model.wf_analysis import WfAnalysis
-from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
+from model.wf_try_job import WfTryJob
+from waterfall import suspected_cl_util
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
-from waterfall import suspected_cl_util
 
 
-GIT_REPO = GitRepository(
+GIT_REPO = GitilesRepository(
     'https://chromium.googlesource.com/chromium/src.git', HttpClient())
 
 

@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(http://crbug.com/660466): We should try to break dependencies.
+
 """This module provides a decorator to cache the results of a function.
 
   Examples:

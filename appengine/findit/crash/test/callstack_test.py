@@ -5,8 +5,7 @@
 from common.dependency import Dependency
 from crash.callstack import StackFrame, CallStack
 from crash.test.stacktrace_test_suite import StacktraceTestSuite
-from crash.type_enums import CallStackFormatType
-from crash.type_enums import CallStackLanguageType
+from crash.type_enums import CallStackFormatType, CallStackLanguageType
 
 
 class CallStackTest(StacktraceTestSuite):

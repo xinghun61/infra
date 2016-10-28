@@ -4,8 +4,8 @@
 
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
-from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
+from lib.gitiles.gitiles_repository import GitilesRepository
 from model.wf_analysis import WfAnalysis
 from waterfall import buildbot
 from waterfall import build_util
@@ -38,8 +38,8 @@ def _AllFailedStepsPassed(passed_steps, current_failed_steps):
 
 def GetPossibleRevertInfoFromRevision(revision):
   """Parse message to get information of reverting and reverted cls."""
-  git_repo = GitRepository('https://chromium.googlesource.com/chromium/src.git',
-                           HttpClient())
+  git_repo = GitilesRepository(
+      'https://chromium.googlesource.com/chromium/src.git', HttpClient())
   change_log = git_repo.GetChangeLog(revision)
   if not change_log:  # pragma: no cover
     return {}

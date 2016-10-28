@@ -3,8 +3,7 @@
 # found in the LICENSE file.
 
 from common import appengine_util
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
+from common.base_handler import BaseHandler, Permission
 
 
 class Version(BaseHandler):

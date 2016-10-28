@@ -4,14 +4,13 @@
 
 import unittest
 
-from common import diff
-from common.diff import ChangeType
+from lib.gitiles.diff import ChangeType, IsKnownChangeType
 
 class DiffTest(unittest.TestCase):
   def testKnownChangeTypes(self):
     for change_type in [ChangeType.ADD, ChangeType.DELETE, ChangeType.MODIFY,
                         ChangeType.COPY, ChangeType.RENAME]:
-      self.assertTrue(diff.IsKnownChangeType(change_type))
+      self.assertTrue(IsKnownChangeType(change_type))
 
   def testUnknownChangeType(self):
-    self.assertFalse(diff.IsKnownChangeType('unknown change type'))
+    self.assertFalse(IsKnownChangeType('unknown change type'))

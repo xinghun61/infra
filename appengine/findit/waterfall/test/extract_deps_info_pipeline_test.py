@@ -6,8 +6,8 @@ from testing_utils import testing
 
 from common import chrome_dependency_fetcher
 from common.dependency import Dependency
-from common.diff import ChangeType
 from common.pipeline_wrapper import pipeline_handlers
+from lib.gitiles.diff import ChangeType
 from waterfall.extract_deps_info_pipeline import ExtractDEPSInfoPipeline
 
 

@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 from common import chrome_dependency_fetcher
-from common import git_repository
 from common.dependency import DependencyRoll
 from common.http_client_appengine import HttpClientAppengine
 from crash import chromecrash_parser
@@ -25,6 +24,7 @@ from crash.stacktrace import Stacktrace
 from crash.test.crash_pipeline_test import DummyCrashData
 from crash.test.crash_testcase import CrashTestCase
 from crash.type_enums import CrashClient
+from lib.gitiles import gitiles_repository
 from model import analysis_status
 from model.crash.crash_analysis import CrashAnalysis
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
@@ -77,7 +77,7 @@ def _FinditForFracas():
 class FinditForChromeCrashTest(CrashTestCase):
 
   chrome_dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
-      git_repository.GitRepository(http_client=HttpClientAppengine()))
+      gitiles_repository.GitilesRepository(http_client=HttpClientAppengine()))
 
   # TODO(wrengr): what was the purpose of this test? As written it's
   # just testing that mocking works. I'm guessing it was to check that
@@ -98,7 +98,7 @@ class FinditForChromeCrashTest(CrashTestCase):
     analysis.client_id = CrashClient.FRACAS
 
     findit_client = _FinditForChromeCrash(
-        git_repository.GitRepository(http_client=HttpClientAppengine()))
+        gitiles_repository.GitilesRepository(http_client=HttpClientAppengine()))
     result, tags = findit_client.FindCulprit(analysis).ToDicts()
     # TODO(wrengr): just test for the NullCulprit directly; instead of
     # going through |ToDicts|.

@@ -4,8 +4,7 @@
 
 import unittest
 
-from common.change_log import FileChangeInfo
-from common.change_log import ChangeLog
+from lib.gitiles.change_log import FileChangeInfo, ChangeLog
 
 class ChangeLogTest(unittest.TestCase):
   def testFileChangeinfo(self):

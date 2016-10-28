@@ -2,6 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO: In the new layout, this should move to the ./services or
+# ./services/waterfall_app directories, since it is only used by Waterfall.
+
+# TODO: we ought to abstract over the HTTP_CLIENT member (which is only
+# used by the Post method) by passing it to the constructor. That way
+# things are more losely coupled, improving modularity and reducing
+# fragility. In addition, for easier mocking, we may want to just have
+# the thing passed for HTTP_CLIENT to be ``callable``, rather than giving
+# a name to the method we use on that object.
+
 import logging
 import re
 import urlparse

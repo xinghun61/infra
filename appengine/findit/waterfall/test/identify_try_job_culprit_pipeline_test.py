@@ -4,15 +4,15 @@
 
 from testing_utils import testing
 
-from common.git_repository import GitRepository
 from common.waterfall import failure_type
+from lib.gitiles.gitiles_repository import GitilesRepository
 from model import analysis_approach_type
 from model import analysis_status
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
-from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
+from model.wf_try_job import WfTryJob
 from waterfall import build_util
 from waterfall import identify_try_job_culprit_pipeline
 from waterfall.identify_try_job_culprit_pipeline import(
@@ -36,7 +36,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
   def setUp(self):
     super(IdentifyTryJobCulpritPipelineTest, self).setUp()
 
-    self.mock(GitRepository, 'GetChangeLog', self._MockGetChangeLog)
+    self.mock(GitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
 
   def testGetFailedRevisionFromResultsDict(self):
     self.assertIsNone(

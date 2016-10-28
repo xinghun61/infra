@@ -8,8 +8,7 @@ from crash.callstack_filters import FilterInlineFunctionFrames
 from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
 from crash.stacktrace_parser import StacktraceParser
-from crash.type_enums import CallStackFormatType
-from crash.type_enums import CallStackLanguageType
+from crash.type_enums import CallStackFormatType, CallStackLanguageType
 
 
 FRACAS_CALLSTACK_START_PATTERN = re.compile(r'CRASHED \[(.*) @ 0x(.*)\]')

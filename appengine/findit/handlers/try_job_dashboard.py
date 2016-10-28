@@ -8,8 +8,7 @@ from datetime import timedelta
 import json
 
 from common import time_util
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
+from common.base_handler import BaseHandler, Permission
 from model.wf_try_job_data import WfTryJobData
 
 

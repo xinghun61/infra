@@ -4,12 +4,12 @@
 
 from datetime import datetime
 
-from common.blame import Blame
-from common.blame import Region
-from common.change_log import FileChangeInfo
-from common.diff import ChangeType
-from common.git_repository import GitRepository
 from common.waterfall import failure_type
+from lib.gitiles.blame import Blame
+from lib.gitiles.blame import Region
+from lib.gitiles.change_log import FileChangeInfo
+from lib.gitiles.diff import ChangeType
+from lib.gitiles.gitiles_repository import GitilesRepository
 from waterfall import build_failure_analysis
 from waterfall.failure_signal import FailureSignal
 from waterfall.test import wf_testcase
@@ -262,9 +262,9 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
   def _testCheckFileInDependencyRoll(
       self, file_path_in_log, rolls, expected_score, line_numbers,
       expected_hints=None):
-    self.mock(GitRepository, 'GetChangeLog', self._MockGetChangeLog)
-    self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
-    self.mock(GitRepository, 'GetCommitsBetweenRevisions',
+    self.mock(GitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
+    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(GitilesRepository, 'GetCommitsBetweenRevisions',
               self._MockGetCommitsBetweenRevisions)
     justification = build_failure_analysis._Justification()
     build_failure_analysis._CheckFileInDependencyRolls(
@@ -524,10 +524,10 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             ]
         }
     }
-    self.mock(GitRepository, 'GetChangeLog', self._MockGetChangeLog)
-    self.mock(GitRepository, 'GetCommitsBetweenRevisions',
+    self.mock(GitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
+    self.mock(GitilesRepository, 'GetCommitsBetweenRevisions',
               self._MockGetCommitsBetweenRevisions)
-    self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
     justification = build_failure_analysis._CheckFiles(
         FailureSignal.FromDict(failure_signal_json),
         change_log_json, deps_info)
@@ -1103,14 +1103,14 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'revision': '8'
     }
     file_path = 'a/b/c.cc'
-    self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
     blame = build_failure_analysis._GetGitBlame(repo_info, file_path)
     self.assertIsNotNone(blame)
 
   def testGetGitBlameEmpty(self):
     repo_info = {}
     file_path = 'a/b/c.cc'
-    self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
     blame = build_failure_analysis._GetGitBlame(repo_info, file_path)
     self.assertIsNone(blame)
 
@@ -1126,7 +1126,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     line_numbers = [2, 7, 8]
     commit_revision = '7'
-    self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
     changed_line_numbers = (
         build_failure_analysis._GetChangedLinesForChromiumRepo(
             repo_info, touched_file, line_numbers, commit_revision))
@@ -1145,7 +1145,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     line_numbers = [2, 7, 8]
     commit_revision = '9'
-    self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
     changed_line_numbers = (
         build_failure_analysis._GetChangedLinesForChromiumRepo(
             repo_info, touched_file, line_numbers, commit_revision))
@@ -1164,7 +1164,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     line_numbers = [15]
     commit_revision = '7'
-    self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
     changed_line_numbers = (
         build_failure_analysis._GetChangedLinesForChromiumRepo(
             repo_info, touched_file, line_numbers, commit_revision))
@@ -1183,7 +1183,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     line_numbers = [2, 7, 8]
     commit_revision = '7'
-    self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
     changed_line_numbers = (
         build_failure_analysis._GetChangedLinesForChromiumRepo(
             repo_info, touched_file, line_numbers, commit_revision))

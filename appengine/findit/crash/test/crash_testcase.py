@@ -7,8 +7,8 @@ import re
 
 from google.appengine.api import users
 
-from common.change_log import ChangeLog
 from common.findit_testcase import FinditTestCase
+from lib.gitiles.change_log import ChangeLog
 from model.crash.crash_config import CrashConfig
 
 

@@ -14,8 +14,7 @@ from google.appengine.api import users
 from testing_utils import testing
 
 from common import base_handler
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
+from common.base_handler import BaseHandler, Permission
 
 
 class PermissionLevelHandler(BaseHandler):
