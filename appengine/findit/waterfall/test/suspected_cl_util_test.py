@@ -404,3 +404,125 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
     }
     self.assertIsNone(suspected_cl_util.GetSuspectedCLConfidenceScore(
         self.cl_confidences, build))
+
+  def testGetSuspectedCLConfidenceScoreAndApproachNone(self):
+    confidence, approach = (
+        suspected_cl_util.GetSuspectedCLConfidenceScoreAndApproach(
+            self.cl_confidences, None, None))
+    self.assertIsNone(confidence)
+    self.assertIsNone(approach)
+
+  def testGetSuspectedCLConfidenceScoreAndApproachUseFirstBuild(self):
+    build = {
+        'failure_type': failure_type.COMPILE,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.TRY_JOB],
+        'top_score': 5
+    }
+
+    first_build = {
+        'failure_type': failure_type.COMPILE,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.TRY_JOB,
+                       analysis_approach_type.HEURISTIC],
+        'top_score': 5
+    }
+
+    confidence, approach = (
+        suspected_cl_util.GetSuspectedCLConfidenceScoreAndApproach(
+            self.cl_confidences, build, first_build))
+
+    self.assertEqual(
+        suspected_cl_util._RoundConfidentToInteger(
+            self.cl_confidences.compile_heuristic_try_job.confidence),
+            confidence)
+    self.assertEqual(
+        analysis_approach_type.TRY_JOB, approach)
+
+  def testGetSuspectedCLConfidenceScoreAndApproachUseNewStep(self):
+    build = {
+        'failure_type': failure_type.TEST,
+        'failures': {'a': [], 'b': []},
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.HEURISTIC],
+        'top_score': 5
+    }
+
+    first_build = {
+        'failure_type': failure_type.TEST,
+        'failures': {'a': ['t1']},
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.TRY_JOB,
+                       analysis_approach_type.HEURISTIC],
+        'top_score': 5
+    }
+
+    confidence, approach = (
+        suspected_cl_util.GetSuspectedCLConfidenceScoreAndApproach(
+            self.cl_confidences, build, first_build))
+
+    self.assertEqual(
+        suspected_cl_util._RoundConfidentToInteger(
+            self.cl_confidences.test_heuristic[1].confidence),
+            confidence)
+    self.assertEqual(
+        analysis_approach_type.HEURISTIC, approach)
+
+  def testGetSuspectedCLConfidenceScoreAndApproachUseNewTest(self):
+    build = {
+        'failure_type': failure_type.TEST,
+        'failures': {'a': ['t1', 't2']},
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.HEURISTIC],
+        'top_score': 5
+    }
+
+    first_build = {
+        'failure_type': failure_type.TEST,
+        'failures': {'a': ['t1']},
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.TRY_JOB,
+                       analysis_approach_type.HEURISTIC],
+        'top_score': 5
+    }
+
+    confidence, approach = (
+        suspected_cl_util.GetSuspectedCLConfidenceScoreAndApproach(
+            self.cl_confidences, build, first_build))
+
+    self.assertEqual(
+        suspected_cl_util._RoundConfidentToInteger(
+            self.cl_confidences.test_heuristic[1].confidence),
+            confidence)
+    self.assertEqual(
+        analysis_approach_type.HEURISTIC, approach)
+
+  def testGetSuspectedCLConfidenceScoreAndApproachUseLessTest(self):
+    build = {
+        'failure_type': failure_type.TEST,
+        'failures': {'a': ['t1']},
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.HEURISTIC],
+        'top_score': 5
+    }
+
+    first_build = {
+        'failure_type': failure_type.TEST,
+        'failures': {'a': ['t1', 't2']},
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.TRY_JOB,
+                       analysis_approach_type.HEURISTIC],
+        'top_score': 5
+    }
+
+    confidence, approach = (
+        suspected_cl_util.GetSuspectedCLConfidenceScoreAndApproach(
+            self.cl_confidences, build, first_build))
+
+    self.assertEqual(
+        suspected_cl_util._RoundConfidentToInteger(
+            self.cl_confidences.test_heuristic_try_job.confidence), confidence)
+    self.assertEqual(
+        analysis_approach_type.TRY_JOB, approach)

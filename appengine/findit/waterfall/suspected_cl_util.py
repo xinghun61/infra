@@ -60,39 +60,82 @@ def UpdateSuspectedCL(
 
   suspected_cl.put()
 
+
 def _RoundConfidentToInteger(confidence):
-  return round(confidence * 100)
+  return int(round(confidence * 100))
 
 
-def GetSuspectedCLConfidenceScore(confidences, cl_build):
-
-  if not confidences or not cl_build:
+def GetSuspectedCLConfidenceScore(confidences, cl_from_analyzed_build):
+  if not confidences or not cl_from_analyzed_build:
     return None
 
-  if cl_build['failure_type'] == failure_type.COMPILE:
-    if cl_build['approaches'] == [
-      analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB]:
+  if cl_from_analyzed_build['failure_type'] == failure_type.COMPILE:
+    if sorted(cl_from_analyzed_build['approaches']) == sorted([
+      analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB]):
       return _RoundConfidentToInteger(
           confidences.compile_heuristic_try_job.confidence)
-    elif cl_build['approaches'] == [analysis_approach_type.TRY_JOB]:
+    elif cl_from_analyzed_build['approaches'] == [
+        analysis_approach_type.TRY_JOB]:
       return _RoundConfidentToInteger(
           confidences.compile_try_job.confidence)
-    elif (cl_build['approaches'] == [analysis_approach_type.HEURISTIC] and
-            cl_build['top_score']):
+    elif (cl_from_analyzed_build['approaches'] == [
+        analysis_approach_type.HEURISTIC] and
+            cl_from_analyzed_build['top_score']):
       for confidences_info in confidences.compile_heuristic:
-        if confidences_info.score == cl_build['top_score']:
+        if confidences_info.score == cl_from_analyzed_build['top_score']:
           return _RoundConfidentToInteger(confidences_info.confidence)
     return None
   else:
-    if cl_build['approaches'] == [
-      analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB]:
+    if sorted(cl_from_analyzed_build['approaches']) == sorted([
+      analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB]):
       return _RoundConfidentToInteger(
           confidences.test_heuristic_try_job.confidence)
-    elif cl_build['approaches'] == [analysis_approach_type.TRY_JOB]:
+    elif cl_from_analyzed_build['approaches'] == [
+        analysis_approach_type.TRY_JOB]:
       return _RoundConfidentToInteger(confidences.test_try_job.confidence)
-    elif (cl_build['approaches'] == [analysis_approach_type.HEURISTIC] and
-            cl_build['top_score']):
+    elif (cl_from_analyzed_build['approaches'] == [
+        analysis_approach_type.HEURISTIC] and
+            cl_from_analyzed_build['top_score']):
       for confidences_info in confidences.test_heuristic:
-        if confidences_info.score == cl_build['top_score']:
+        if confidences_info.score == cl_from_analyzed_build['top_score']:
           return _RoundConfidentToInteger(confidences_info.confidence)
     return None
+
+
+def _HasNewFailures(current_failures, new_failures):
+  """Checks if there are any new failures in the current build."""
+  if current_failures == new_failures:
+    return False
+
+  for step, tests in current_failures.iteritems():
+    if not new_failures.get(step):  # New step.
+      return True
+
+    for test in tests:
+      if not test in new_failures[step]:  # New test.
+        return True
+
+  return False
+
+
+def GetSuspectedCLConfidenceScoreAndApproach(
+    confidences, cl_from_analyzed_build, cl_from_first_failed_build):
+  if not confidences or not cl_from_analyzed_build:
+    return None, None
+
+  if (cl_from_first_failed_build and not _HasNewFailures(
+          cl_from_analyzed_build.get('failures'),
+          cl_from_first_failed_build.get('failures'))):
+      # For non-first-time failures, the try job result is not recorded.
+      # If there is no new failures in current build, use first failed build to
+      # make sure the confidence score is correct.
+      cl_from_analyzed_build = cl_from_first_failed_build
+
+  confidence = GetSuspectedCLConfidenceScore(
+      confidences, cl_from_analyzed_build)
+  approach = (
+      analysis_approach_type.TRY_JOB if analysis_approach_type.TRY_JOB in
+      cl_from_analyzed_build['approaches'] else
+      analysis_approach_type.HEURISTIC)
+
+  return confidence, approach

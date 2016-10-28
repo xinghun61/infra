@@ -553,6 +553,11 @@ class FinditApiTest(testing.EndpointsTestCase):
             'total_run': 4,
             'SUCCESS': 2,
             'FAILURE': 2
+        },
+        'Unittest3.Subtest2': {
+            'total_run': 4,
+            'SUCCESS': 2,
+            'FAILURE': 2
         }
     }
     task.put()
@@ -562,6 +567,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     analysis.failure_result_map = {
         'b on platform': {
             'Unittest3.Subtest1': '/'.join([master_name, builder_name, '3']),
+            'Unittest3.Subtest2': '/'.join([master_name, builder_name, '3']),
         },
     }
     analysis.result = {
@@ -574,6 +580,12 @@ class FinditApiTest(testing.EndpointsTestCase):
                 'tests': [
                     {
                         'test_name': 'Unittest3.Subtest1',
+                        'first_failure': 3,
+                        'last_pass': 2,
+                        'suspected_cls': []
+                    },
+                    {
+                        'test_name': 'Unittest3.Subtest2',
                         'first_failure': 3,
                         'last_pass': 2,
                         'suspected_cls': []
@@ -596,6 +608,18 @@ class FinditApiTest(testing.EndpointsTestCase):
             'analysis_approach': 'HEURISTIC',
             'is_flaky_test': True,
             'try_job_status': 'FINISHED'
+        },
+        {
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'step_name': 'b on platform',
+            'is_sub_test': True,
+            'test_name': 'Unittest3.Subtest2',
+            'first_known_failed_build_number': 3,
+            'analysis_approach': 'HEURISTIC',
+            'is_flaky_test': True,
+            'try_job_status': 'FINISHED'
         }
     ]
 
@@ -605,7 +629,8 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(200, response.status_int)
     self.assertEqual(expected_results, response.json_body.get('results'))
 
-  @mock.patch.object(suspected_cl_util, 'GetSuspectedCLConfidenceScore')
+  @mock.patch.object(
+      suspected_cl_util, 'GetSuspectedCLConfidenceScoreAndApproach')
   def testTestLevelResultIsReturned(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -624,6 +649,7 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     task = WfSwarmingTask.Create(master_name, builder_name, 4, 'b on platform')
     task.parameters['ref_name'] = 'b'
+    task.status = analysis_status.COMPLETED
     task.put()
 
     try_job = WfTryJob.Create(master_name, builder_name, 4)
@@ -760,7 +786,7 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     suspected_cl_42 = WfSuspectedCL.Create('chromium', 'r4_2', 42)
     suspected_cl_42.builds = {
-        build_util.CreateBuildId(master_name, builder_name, 4): {
+        build_util.CreateBuildId(master_name, builder_name, 5): {
             'approaches': [analysis_approach_type.TRY_JOB]
         }
     }
@@ -768,6 +794,14 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     suspected_cl_21 = WfSuspectedCL.Create('chromium', 'r2_1', None)
     suspected_cl_21.builds = {
+      build_util.CreateBuildId(master_name, builder_name, 3): {
+            'approaches': [analysis_approach_type.HEURISTIC],
+            'top_score': 5
+        },
+      build_util.CreateBuildId(master_name, builder_name, 4): {
+            'approaches': [analysis_approach_type.HEURISTIC],
+            'top_score': 5
+        },
       build_util.CreateBuildId(master_name, builder_name, build_number): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'top_score': 5
@@ -775,10 +809,29 @@ class FinditApiTest(testing.EndpointsTestCase):
     }
     suspected_cl_21.put()
 
-    def confidence_side_effect(_, build_info):
-      if build_info.get('top_score'):
-        return 90
-      return 98
+    suspected_cl_410 = WfSuspectedCL.Create('chromium', 'r4_10', None)
+    suspected_cl_410.builds = {
+      build_util.CreateBuildId(master_name, builder_name, 4): {
+            'approaches': [analysis_approach_type.HEURISTIC,
+                           analysis_approach_type.TRY_JOB],
+            'top_score': 5
+        },
+      build_util.CreateBuildId(master_name, builder_name, build_number): {
+            'approaches': [analysis_approach_type.HEURISTIC],
+            'top_score': 5
+        }
+    }
+    suspected_cl_410.put()
+
+    def confidence_side_effect(_, build_info, first_build_info):
+      if (first_build_info and
+          first_build_info.get('approaches') == [
+              analysis_approach_type.HEURISTIC,
+              analysis_approach_type.TRY_JOB]):
+        return 100, analysis_approach_type.TRY_JOB
+      if build_info and build_info.get('top_score'):
+        return 90, analysis_approach_type.HEURISTIC
+      return 98, analysis_approach_type.TRY_JOB
 
     mock_fn.side_effect = confidence_side_effect
 
@@ -856,7 +909,8 @@ class FinditApiTest(testing.EndpointsTestCase):
                     'repo_name': 'chromium',
                     'revision': 'r4_10',
                     'commit_position': 410,
-                    'analysis_approach': 'TRY_JOB'
+                    'analysis_approach': 'TRY_JOB',
+                    'confidence': 100
                 }
             ],
             'analysis_approach': 'TRY_JOB',
@@ -994,3 +1048,21 @@ class FinditApiTest(testing.EndpointsTestCase):
                      request.build_steps[0].step_name)
     self.assertEqual('test@chromium.org', user_email)
     self.assertTrue(is_admin)
+
+  def testGetStatusAndCulpritFromTryJobSwarmingTaskIsRunning(self):
+    swarming_task = WfSwarmingTask.Create('m', 'b', 123, 'step')
+    swarming_task.put()
+    status, culprit = findit_api.FindItApi()._GetStatusAndCulpritFromTryJob(
+        None, swarming_task, None, 'step', None)
+    self.assertEqual(status, findit_api._TryJobStatus.RUNNING)
+    self.assertIsNone(culprit)
+
+
+  def testGetStatusAndCulpritFromTryJobTryJobFailed(self):
+    try_job = WfTryJob.Create('m', 'b', 123)
+    try_job.status = analysis_status.ERROR
+    try_job.put()
+    status, culprit = findit_api.FindItApi()._GetStatusAndCulpritFromTryJob(
+        try_job, None, None, None, None)
+    self.assertEqual(status, findit_api._TryJobStatus.FINISHED)
+    self.assertIsNone(culprit)
