@@ -74,7 +74,8 @@ def InitializeArtValues(services):
 
 
 def SortArtifacts(
-    mr, artifacts, config, accessors, username_cols=None, users_by_id=None):
+    mr, artifacts, config, accessors, username_cols=None, users_by_id=None,
+    tie_breakers=None):
   """Return a list of artifacts sorted by the user's sort specification.
 
   In the following, an "accessor" is a function(art) -> [field_value, ...].
@@ -90,6 +91,8 @@ def SortArtifacts(
         user names.
     users_by_id: optional dictionary {user_id: user_view,...} for all users
         who participate in the list of artifacts.
+    tie_breakers: list of column names to add to the end of the sort
+        spec if they are not already somewhere in the sort spec.
 
   Returns:
     A sorted list of artifacts.
@@ -104,7 +107,7 @@ def SortArtifacts(
   faster overall than doing multiple stable-sorts or doing one sort
   using a multi-field comparison function.
   """
-  sort_directives = ComputeSortDirectives(mr, config)
+  sort_directives = ComputeSortDirectives(mr, config, tie_breakers=tie_breakers)
 
   # Build a list of accessors that will extract sort keys from the issues.
   accessor_pairs = [
@@ -131,21 +134,23 @@ def SortArtifacts(
   return sorted(artifacts, key=SortKey)
 
 
-def ComputeSortDirectives(mr, config, tie_breaker='id'):
+def ComputeSortDirectives(mr, config, tie_breakers=None):
   """Return a list with sort directives to be used in sorting.
 
   Args:
     mr: commonly used info parsed from the request, including query.
     config: Project config PB instance that defines the sort order for
         labels and statuses in this project.
-    tie_breaker: column name to add to the end of the sort spec if it is
-        not already somewhere in the sort spec.
+    tie_breakers: list of column names to add to the end of the sort
+        spec if they are not already somewhere in the sort spec.
 
   Returns:
     A list of lower-case column names, each one may have a leading
     minus-sign.
   """
   # Prepend the end-user's sort spec to any project default sort spec.
+  if tie_breakers is None:
+    tie_breakers = ['id']
   sort_spec = '%s %s %s' % (
       mr.group_by_spec, mr.sort_spec, config.default_sort_spec)
   # Sort specs can have interfering sort orders, so remove any duplicates.
@@ -164,8 +169,9 @@ def ComputeSortDirectives(mr, config, tie_breaker='id'):
   if 'project' not in sort_directives:
     sort_directives.append('project')
 
-  if tie_breaker not in sort_directives:
-    sort_directives.append(tie_breaker)
+  for tie_breaker in tie_breakers:
+    if tie_breaker not in sort_directives:
+      sort_directives.append(tie_breaker)
 
   return sort_directives
 

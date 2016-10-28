@@ -12,6 +12,7 @@ tracker_bizobj.py.
 import collections
 import logging
 
+from features import features_constants
 from features import filterrules_helpers
 from framework import framework_bizobj
 from framework import sql
@@ -501,6 +502,8 @@ class FeaturesService(object):
       raise HotlistAlreadyExists()
 
     iid_rank_pairs = [(issue_id, 0) for issue_id in (issue_ids or [])]
+    if default_col_spec is None:
+      default_col_spec = features_constants.DEFAULT_COL_SPEC
     hotlist = features_pb2.MakeHotlist(
         name, iid_rank_pairs=iid_rank_pairs, summary=summary,
         description=description, is_private=is_private, owner_ids=owner_ids,

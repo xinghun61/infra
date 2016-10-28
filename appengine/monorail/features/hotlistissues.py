@@ -14,6 +14,7 @@ from features import hotlist_views
 from features import features_bizobj
 from features import features_constants
 from framework import servlet
+from framework import sorting
 from framework import permissions
 from framework import paginate
 from framework import framework_views
@@ -25,6 +26,7 @@ from framework import xsrf
 from services import features_svc
 from tracker import tablecell
 from tracker import tracker_bizobj
+from tracker import tracker_constants
 from tracker import tracker_helpers
 
 
@@ -74,33 +76,45 @@ class HotlistIssues(servlet.Servlet):
     hotlist_issues = mr.hotlist.iid_rank_pairs
     # list of HotlistIssues, not Issues
 
-    issues = self.services.issue.GetIssues(
+    issues_list = self.services.issue.GetIssues(
         mr.cnxn,
         [hotlist_issue.issue_id for hotlist_issue in hotlist_issues])
     with self.profiler.Phase('Getting config'):
       hotlist_issues_project_ids = self.GetAllProjectsOfIssues(
-          [issue for issue in issues])
+          [issue for issue in issues_list])
       is_cross_project = len(hotlist_issues_project_ids) > 1
       config_list = self.GetAllConfigsOfProjects(
           mr.cnxn, hotlist_issues_project_ids)
       harmonized_config = tracker_bizobj.HarmonizeConfigs(config_list)
 
-    with self.profiler.Phase('Checking issue permissions'):
-      issues = self._FilterIssues(mr, issues)
+    with self.profiler.Phase('Checking issue permissions and getting ranks'):
+      allowed_issues = self._FilterIssues(mr, issues_list)
+      issue_ranks = {
+          hotlist_issue.issue_id: hotlist_issue.rank
+          for hotlist_issue in hotlist_issues}
 
     with self.profiler.Phase('Making user views'):
       issues_users_by_id = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user,
-          tracker_bizobj.UsersInvolvedInIssues(issues or []))
+          tracker_bizobj.UsersInvolvedInIssues(allowed_issues or []))
+
+    with self.profiler.Phase('Sorting issues'):
+      sortable_fields = tracker_helpers.SORTABLE_FIELDS.copy()
+      sortable_fields.update(
+          {'rank': lambda issue: issue_ranks[issue.issue_id]})
+      sorted_issues = sorting.SortArtifacts(
+          mr, allowed_issues, harmonized_config, sortable_fields,
+          username_cols=tracker_constants.USERNAME_COLS,
+          users_by_id=issues_users_by_id, tie_breakers=['rank', 'id'])
 
     pagination = paginate.ArtifactPagination(
-        mr, [issue.issue_id for issue in issues],
+        mr, [issue.issue_id for issue in sorted_issues],
         features_constants.DEFAULT_RESULTS_PER_PAGE,
-        urls.HOTLIST_ISSUES, len(issues))
+        urls.HOTLIST_ISSUES, len(sorted_issues))
 
     with self.profiler.Phase('building table'):
       page_data = self.GetTableViewData(
-          mr, issues, harmonized_config,
+          mr, sorted_issues, harmonized_config,
           issues_users_by_id, starred_iid_set, related_issues)
 
     with self.profiler.Phase('making page perms'):

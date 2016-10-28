@@ -5,9 +5,9 @@
 
 """Some constants used in Monorail hotlist pages."""
 
-DEFAULT_COL_SPEC = 'Project ID Stars Owner Summary Modified'
+DEFAULT_COL_SPEC = 'Rank Project ID Stars Owner Summary Modified'
 DEFAULT_RESULTS_PER_PAGE = 100
 OTHER_BUILT_IN_COLS = ['Attachments', 'Stars', 'Opened', 'Closed', 'Modified',
-                       'Rank', 'BlockedOn', 'Blocking', 'Blocked', 'MergedInto',
+                       'BlockedOn', 'Blocking', 'Blocked', 'MergedInto',
                        'Reporter', 'Cc', 'Project', 'Component',
                        'OwnerModified', 'StatusModified', 'ComponentModified']

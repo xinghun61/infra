@@ -12,6 +12,7 @@ import mox
 from google.appengine.ext import testbed
 
 from features import filterrules_helpers
+from features import features_constants
 from framework import sql
 from services import features_svc
 from testing import fake
@@ -407,7 +408,8 @@ class FeaturesServiceTest(unittest.TestCase):
     # Inserting the hotlist returns the id.
     self.features_service.hotlist_tbl.InsertRow(
         self.cnxn, name='hot1', summary='hot 1', description='test hotlist',
-        is_private=False, default_col_spec='').AndReturn(123)
+        is_private=False,
+        default_col_spec=features_constants.DEFAULT_COL_SPEC).AndReturn(123)
 
     # Insert the issues: there are none.
     self.features_service.hotlist2issue_tbl.InsertRows(

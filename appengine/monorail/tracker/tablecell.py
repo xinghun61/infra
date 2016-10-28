@@ -14,6 +14,19 @@ from tracker import tracker_bizobj
 
 # pylint: disable=unused-argument
 
+class TableCellRank(table_view_helpers.TableCell):
+  """TableCell subclass specifically for showing issue rank."""
+
+  def __init__(
+      self, issue, col, users_by_id, non_col_labels, label_values,
+      _related_issues, _config):
+
+    issue_rank = 0
+    # TODO(jojwang): temporary issue_rank
+    # figure out how to access hotlistissue ranks
+
+    table_view_helpers.TableCell.__init__(
+        self, table_view_helpers.CELL_TYPE_ATTR, [issue_rank])
 
 class TableCellID(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue IDs."""
