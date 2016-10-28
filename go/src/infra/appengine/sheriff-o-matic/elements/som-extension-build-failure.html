@@ -77,18 +77,18 @@
       <div id="reasons">
         <div class="build-failures">
           <ul>
-            <template is="dom-repeat" items="[[extension.reason.failed_tests]]" as="failedTest">
+            <template is="dom-repeat" items="[[extension.reason.tests]]" as="test">
               <li id="test_results">
-                <a target="_blank" href$=[[_linkForTest(extension.reason,failedTest.test_name)]]>
-                  [[failedTest.test_name]]
+                <a target="_blank" href$=[[_linkForTest(extension.reason,test.test_name)]]>
+                  [[test.test_name]]
                 </a>
                 (
-                <a target="_blank" href$=[[_linkToCSForTest(failedTest.test_name)]]>
+                <a target="_blank" href$=[[_linkToCSForTest(test.test_name)]]>
                   Code Search
                 </a>
                 )
-                <template is="dom-if" if="[[_hasSuspect(failedTest)]]">
-                  <template is="dom-repeat" items="[[failedTest.suspected_cls]]" as="testCL">
+                <template is="dom-if" if="[[_hasSuspect(test)]]">
+                  <template is="dom-repeat" items="[[test.suspected_cls]]" as="testCL">
                     <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
                     <span class="suspect-cl-results">
                        Findit (<a target="_blank" href="https://sites.google.com/a/chromium.org/findit/home/findit-for-waterfall/how-to">?</a>)
@@ -99,7 +99,7 @@
                     </span>
                   </template>
                 </template>
-                <template is="dom-if" if="[[_isFlaky(failedTest)]]">
+                <template is="dom-if" if="[[_isFlaky(test)]]">
                   <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
                   <span class="suspect-cl-results">
                     Findit
@@ -252,12 +252,12 @@
         return cl.substring(0, 7);
       },
 
-      _isFlaky: function(failedTest) {
-        return failedTest && failedTest.is_flaky;
+      _isFlaky: function(test) {
+        return test && test.is_flaky;
       },
 
-      _hasSuspect: function(failedTest) {
-        return failedTest && failedTest.suspected_cls;
+      _hasSuspect: function(test) {
+        return test && test.suspected_cls;
       },
 
       _finditIsRunning: function(extension) {
