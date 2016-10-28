@@ -62,7 +62,7 @@ var cmdCook = &subcommands.Command{
 			&c.Workdir,
 			"workdir",
 			"",
-			"The working directory for recipe execution. Defaults to a temp dir.")
+			`The working directory for recipe execution. It must not exist or be empty. Defaults to "./kitchen-workdir."`)
 		fs.StringVar(&c.Properties, "properties", "",
 			"A json string containing the properties. Mutually exclusive with -properties-file.")
 		fs.StringVar(&c.PropertiesFile, "properties-file", "",
@@ -251,12 +251,15 @@ func (c *cookRun) remoteRun(ctx context.Context, props map[string]interface{}) (
 	// Prepare a workdir for the recipe run.
 	workDir := c.Workdir
 	if workDir == "" {
-		var tempWorkdir string
-		if tempWorkdir, err = ioutil.TempDir("", "kitchen-"); err != nil {
-			return 0, err
-		}
-		defer os.RemoveAll(tempWorkdir)
-		workDir = tempWorkdir
+		workDir = "kitchen-workdir"
+	}
+	if abs, err := filepath.Abs(workDir); err != nil {
+		return 0, fmt.Errorf("could not make workdir %q absolute: %s", workDir, err)
+	} else {
+		workDir = abs
+	}
+	if err := prepareWorkdir(workDir); err != nil {
+		return 0, err
 	}
 
 	// Pass properties in a file.
@@ -470,5 +473,21 @@ func printCommand(cmd *exec.Cmd) {
 	fmt.Println("env:")
 	for _, e := range cmd.Env {
 		fmt.Printf("\t%s\n", e)
+	}
+}
+
+func prepareWorkdir(workDir string) error {
+	switch entries, err := ioutil.ReadDir(workDir); {
+	case os.IsNotExist(err):
+		return os.Mkdir(workDir, 0777)
+
+	case err != nil:
+		return fmt.Errorf("could not read workdir %q: %s", workDir, err)
+
+	case len(entries) > 0:
+		return fmt.Errorf("workdir %q is not empty", workDir)
+
+	default:
+		return nil
 	}
 }
