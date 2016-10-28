@@ -48,7 +48,7 @@ var cmdCook = &subcommands.Command{
 		fs.StringVar(
 			&c.Revision,
 			"revision",
-			"FETCH_HEAD",
+			"HEAD",
 			"Git commit hash to check out.")
 		fs.StringVar(&c.Recipe, "recipe", "<recipe>", "Name of the recipe to run")
 		fs.Var(&c.PythonPaths, "python-path", "Python path to include. Can be specified multiple times.")
