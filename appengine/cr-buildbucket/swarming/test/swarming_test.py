@@ -774,18 +774,6 @@ class SwarmingTest(testing.AppengineTestCase):
       self.assertEqual(build.failure_reason, case.get('failure_reason'))
       self.assertEqual(build.cancelation_reason, case.get('cancelation_reason'))
 
-  def test_should_use_canary_template(self):
-    build = model.Build(
-      bucket='master.tryserver.chromium.linux',
-      parameters={'properties': {'a': 'b'}}
-    )
-    self.assertFalse(swarming.should_use_canary_template(build, 0))
-    self.assertFalse(swarming.should_use_canary_template(build, 1))
-    self.assertFalse(swarming.should_use_canary_template(build, 60))
-    self.assertTrue(swarming.should_use_canary_template(build, 61))
-    self.assertTrue(swarming.should_use_canary_template(build, 99))
-    self.assertTrue(swarming.should_use_canary_template(build, 100))
-
 
 class SubNotifyTest(testing.AppengineTestCase):
   def setUp(self):

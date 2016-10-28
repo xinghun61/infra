@@ -31,6 +31,7 @@ import datetime
 import hashlib
 import json
 import logging
+import random
 import string
 
 from components import auth
@@ -213,22 +214,13 @@ def validate_build_parameters(builder_name, params):
     bad('unrecognized params: %r', params.keys())
 
 
-def should_use_canary_template(build, percentage):
-  """Returns True if a canary template should be used for the |build|.
+# Mocked in tests.
+def should_use_canary_template(percentage):  # pragma: no cover
+  """Returns True if a canary template should be used.
 
-  This function is determinstic.
+  This function is non-determinstic.
   """
-  if percentage == 0:
-    return False
-  if percentage == 100:
-    return True
-  identity = {
-    'bucket': build.bucket,
-    'parameters': build.parameters,
-  }
-  digest = hashlib.sha1(json.dumps(identity, sort_keys=True)).digest()
-  return ord(digest[0]) < 256 * percentage / 100
-
+  return random.randint(0, 99) < percentage
 
 def _prepare_builder_config(swarming_cfg, builder_cfg, swarming_param):
   """Returns final version of builder config to use for |build|.
@@ -272,7 +264,7 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
   canary_required = bool(canary)
   if canary is None:
     canary = should_use_canary_template(
-        build, swarming_cfg.task_template_canary_percentage)
+        swarming_cfg.task_template_canary_percentage)
 
   builder_cfg = _prepare_builder_config(
       swarming_cfg, builder_cfg, swarming_param)
