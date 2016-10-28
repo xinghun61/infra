@@ -57,6 +57,9 @@ func init() {
 
 	r.GET("/revision_range", baseMW, revisionHandler)
 
+	r.GET("/test_flakiness", baseMW, testFlakinessHandler)
+	r.GET("/test_flakiness_groups", baseMW, testFlakinessGroupsHandler)
+
 	http.DefaultServeMux.Handle("/", r)
 }
 

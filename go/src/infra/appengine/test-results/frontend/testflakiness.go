@@ -1,0 +1,226 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+package frontend
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/luci/gae/impl/prod"
+	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/retry"
+	"github.com/luci/luci-go/server/router"
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2/google"
+	"golang.org/x/sync/errgroup"
+	bigquery "google.golang.org/api/bigquery/v2"
+)
+
+const teamsQuery = `
+  SELECT layout_test_team
+  FROM plx.google:chrome_infra.flaky_tests_with_layout_team_dir_info.all
+	GROUP BY layout_test_team;`
+
+const dirsQuery = `
+  SELECT layout_test_dir
+  FROM plx.google:chrome_infra.flaky_tests_with_layout_team_dir_info.all
+	GROUP BY layout_test_dir;`
+
+const bqProjectID = "test-results-hrd"
+
+// Flakiness represents infromation about a single flaky test.
+type Flakiness struct {
+	TestName        string  `json:"test_name"`
+	Flakiness       float32 `json:"flakiness"`
+	FalseRejections int32   `json:"false_rejections"`
+}
+
+// Group represents infromation about flakiness of a group of tests.
+type Group struct {
+	Name string `json:"name"`
+	Kind string `json:"kind"`
+}
+
+func writeError(ctx *router.Context, err error, funcName string, msg string) {
+	if err != nil {
+		logging.WithError(err).Errorf(ctx.Context, "%s: %s", funcName, msg)
+	} else {
+		logging.Errorf(ctx.Context, "%s: %s", funcName, msg)
+	}
+
+	http.Error(ctx.Writer, "Internal Server Error", http.StatusInternalServerError)
+}
+
+func writeResponse(ctx *router.Context, funcName string, data interface{}) {
+	res, err := json.Marshal(data)
+	if err != nil {
+		writeError(ctx, err, funcName, "failed to marshal JSON")
+		return
+	}
+
+	if _, err = ctx.Writer.Write(res); err != nil {
+		writeError(ctx, err, funcName, "failed to write HTTP response")
+	}
+}
+
+func getFlakinessData(ctx context.Context, group Group) ([]Flakiness, error) {
+	// TODO(sergiyb): Replace test data with actual implementation.
+	return []Flakiness{
+		{
+			TestName:        "foo",
+			Flakiness:       0.11,
+			FalseRejections: 45,
+		},
+		{
+			TestName:        "bar",
+			Flakiness:       0.03,
+			FalseRejections: 1,
+		},
+		{
+			TestName:        "baz",
+			Flakiness:       0.01,
+			FalseRejections: 0,
+		},
+	}, nil
+}
+
+func testFlakinessHandler(ctx *router.Context) {
+	name := ctx.Request.FormValue("groupName")
+	kind := ctx.Request.FormValue("groupKind")
+
+	if kind == "" {
+		writeError(ctx, nil, "testFlakinessHandler", "missing groupKind parameter")
+		return
+	}
+
+	if kind != "unknown-dir" && kind != "unknown-team" && name == "" {
+		writeError(ctx, nil, "testFlakinessHandler", "missing groupName parameter")
+		return
+	}
+
+	data, err := getFlakinessData(ctx.Context, Group{Name: name, Kind: kind})
+	if err != nil {
+		writeError(ctx, err, "testFlakinessHandler", "failed to get flakiness data")
+		return
+	}
+
+	writeResponse(ctx, "testFlakinessHandler", data)
+}
+
+func createBQService(ctx context.Context) (*bigquery.Service, error) {
+	hc, err := google.DefaultClient(prod.AEContext(ctx), bigquery.BigqueryScope)
+	if err != nil {
+		return nil, errors.Annotate(err).Reason("failed to create http client").Err()
+	}
+
+	bq, err := bigquery.New(hc)
+	if err != nil {
+		return nil, errors.Annotate(err).Reason("failed to create service object").Err()
+	}
+
+	return bq, nil
+}
+
+func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string) ([]*bigquery.TableRow, error) {
+	request := bq.Jobs.Query(bqProjectID, &bigquery.QueryRequest{
+		Query:     query,
+		TimeoutMs: 5000,
+	})
+
+	var response *bigquery.QueryResponse
+	err := retry.Retry(ctx, retry.Default, func() error {
+		var err error
+		response, err = request.Do()
+		return err
+	}, nil)
+
+	if err != nil {
+		return nil, errors.Annotate(err).Reason("failed to execute query").Err()
+	}
+
+	rows := make([]*bigquery.TableRow, 0, response.TotalRows)
+	rows = append(rows, response.Rows...)
+	jobID := response.JobReference.JobId
+	pageToken := response.PageToken
+	for pageToken != "" {
+		resultsRequest := bq.Jobs.GetQueryResults(bqProjectID, jobID)
+		resultsRequest.PageToken(pageToken)
+		var resultsResponse *bigquery.GetQueryResultsResponse
+		err := retry.Retry(ctx, retry.Default, func() error {
+			var err error
+			resultsResponse, err = resultsRequest.Do()
+			return err
+		}, nil)
+
+		if err != nil {
+			return nil, errors.Annotate(err).Reason("failed to retrive additional results").Err()
+		}
+
+		rows = append(rows, resultsResponse.Rows...)
+		pageToken = resultsResponse.PageToken
+	}
+
+	return rows, nil
+}
+
+func getGroupsForQuery(ctx context.Context, bq *bigquery.Service, query, kind, nilKind string) ([]Group, error) {
+	rows, err := executeBQQuery(ctx, bq, query)
+	if err != nil {
+		return nil, errors.Annotate(err).Reason("failed to execute query").Err()
+	}
+
+	var groups []Group
+	for _, row := range rows {
+		value := row.F[0].V
+		switch value := value.(type) {
+		case string:
+			groups = append(groups, Group{Name: value, Kind: kind})
+		case nil:
+			groups = append(groups, Group{Kind: nilKind})
+		default:
+			return nil, errors.New("query returned non-string non-nil value")
+		}
+	}
+
+	return groups, nil
+}
+
+func getFlakinessGroups(ctx context.Context, bq *bigquery.Service) ([]Group, error) {
+	var teamGroups, dirGroups []Group
+	var g errgroup.Group
+
+	g.Go(func() (err error) {
+		teamGroups, err = getGroupsForQuery(ctx, bq, teamsQuery, "team", "unknown-team")
+		return
+	})
+
+	g.Go(func() (err error) {
+		dirGroups, err = getGroupsForQuery(ctx, bq, dirsQuery, "dir", "unknown-dir")
+		return
+	})
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	return append(teamGroups, dirGroups...), nil
+}
+
+func testFlakinessGroupsHandler(ctx *router.Context) {
+	bq, err := createBQService(ctx.Context)
+	if err != nil {
+		writeError(ctx, err, "testFlakinessGroupsHandler", "failed create BigQuery client")
+		return
+	}
+
+	groups, err := getFlakinessGroups(ctx.Context, bq)
+	if err != nil {
+		writeError(ctx, err, "testFlakinessGroupsHandler", "failed to get flakiness groups")
+		return
+	}
+
+	writeResponse(ctx, "testFlakinessGroupsHandler", groups)
+}
