@@ -4,17 +4,45 @@
 
 import datetime
 
-from common import time_util
 from common.waterfall import failure_type
 from model import analysis_approach_type
 from model import suspected_cl_status
+from model.suspected_cl_confidence import ConfidenceInformation
+from model.suspected_cl_confidence import SuspectedCLConfidence
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import build_util
 from waterfall import suspected_cl_util
 from waterfall.test import wf_testcase
 
 
+SAMPLE_HEURISTIC_1 = ConfidenceInformation(
+    correct=100, total=100, confidence=1.0, score=5)
+
+SAMPLE_HEURISTIC_2 = ConfidenceInformation(
+    correct=90, total=100, confidence=0.9, score=4)
+
+SAMPLE_TRY_JOB = ConfidenceInformation(
+    correct=99, total=100, confidence=0.99, score=None)
+
+SAMPLE_HEURISTIC_TRY_JOB = ConfidenceInformation(
+    correct=98, total=100, confidence=0.98, score=None)
+
+
 class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
+
+  def setUp(self):
+    super(SuspectedCLUtilTest, self).setUp()
+
+    self.cl_confidences = SuspectedCLConfidence.Create()
+    self.cl_confidences.compile_heuristic = [
+        SAMPLE_HEURISTIC_1, SAMPLE_HEURISTIC_2]
+    self.cl_confidences.test_heuristic = [
+        SAMPLE_HEURISTIC_2, SAMPLE_HEURISTIC_1]
+    self.cl_confidences.compile_try_job = SAMPLE_TRY_JOB
+    self.cl_confidences.test_try_job = SAMPLE_TRY_JOB
+    self.cl_confidences.compile_heuristic_try_job = SAMPLE_HEURISTIC_TRY_JOB
+    self.cl_confidences.test_heuristic_try_job = SAMPLE_HEURISTIC_TRY_JOB
+    self.cl_confidences.Save()
 
   def testCreateWfSuspectedCL(self):
     approach = analysis_approach_type.HEURISTIC
@@ -240,3 +268,139 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
   def testGetCLInfo(self):
     self.assertEqual(['chromium', 'rev1'],
                      suspected_cl_util.GetCLInfo('chromium/rev1'))
+
+  def testGetConfidenceScoreTestHeuristic(self):
+    build = {
+        'failure_type': failure_type.TEST,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.HEURISTIC],
+        'top_score': 5
+    }
+
+    self.assertEqual(
+        suspected_cl_util._RoundConfidentToInteger(
+            self.cl_confidences.test_heuristic[1].confidence),
+        suspected_cl_util.GetSuspectedCLConfidenceScore(
+            self.cl_confidences, build))
+
+  def testGetConfidenceScoreCompileHeuristic(self):
+    build = {
+        'failure_type': failure_type.COMPILE,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.HEURISTIC],
+        'top_score': 4
+    }
+
+    self.assertEqual(
+        suspected_cl_util._RoundConfidentToInteger(
+            self.cl_confidences.compile_heuristic[1].confidence),
+        suspected_cl_util.GetSuspectedCLConfidenceScore(
+            self.cl_confidences, build))
+
+  def testGetConfidenceScoreTestTryJob(self):
+    build = {
+        'failure_type': failure_type.TEST,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.TRY_JOB],
+        'top_score': 5
+    }
+
+    self.assertEqual(
+        suspected_cl_util._RoundConfidentToInteger(
+            self.cl_confidences.test_try_job.confidence),
+        suspected_cl_util.GetSuspectedCLConfidenceScore(
+            self.cl_confidences, build))
+
+  def testGetConfidenceScoreCompileTryJob(self):
+    build = {
+        'failure_type': failure_type.COMPILE,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.TRY_JOB],
+        'top_score': 5
+    }
+
+    self.assertEqual(
+        suspected_cl_util._RoundConfidentToInteger(
+            self.cl_confidences.test_try_job.confidence),
+        suspected_cl_util.GetSuspectedCLConfidenceScore(
+            self.cl_confidences, build))
+
+  def testGetConfidenceScoreTestHeuristicTryJob(self):
+    build = {
+        'failure_type': failure_type.TEST,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.HEURISTIC,
+                       analysis_approach_type.TRY_JOB],
+        'top_score': 5
+    }
+
+    self.assertEqual(
+        suspected_cl_util._RoundConfidentToInteger(
+            self.cl_confidences.test_heuristic_try_job.confidence),
+        suspected_cl_util.GetSuspectedCLConfidenceScore(
+            self.cl_confidences, build))
+
+  def testGetConfidenceScoreCompileHeuristicTryJob(self):
+    build = {
+        'failure_type': failure_type.COMPILE,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.HEURISTIC,
+                       analysis_approach_type.TRY_JOB],
+        'top_score': 5
+    }
+
+    self.assertEqual(
+        suspected_cl_util._RoundConfidentToInteger(
+            self.cl_confidences.compile_heuristic_try_job.confidence),
+        suspected_cl_util.GetSuspectedCLConfidenceScore(
+            self.cl_confidences, build))
+
+  def testGetConfidenceScoreNone(self):
+    self.assertIsNone(
+        suspected_cl_util.GetSuspectedCLConfidenceScore(None, None))
+
+  def testGetConfidenceScoreUnexpected(self):
+    build = {
+        'failure_type': failure_type.COMPILE,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.HEURISTIC],
+        'top_score': 2
+    }
+
+    self.assertIsNone(suspected_cl_util.GetSuspectedCLConfidenceScore(
+        self.cl_confidences, build))
+
+  def testGetConfidenceScoreCompileNone(self):
+    build = {
+      'failure_type': failure_type.COMPILE,
+      'approaches': []
+    }
+    self.assertIsNone(suspected_cl_util.GetSuspectedCLConfidenceScore(
+        self.cl_confidences, build))
+
+  def testGetConfidenceScoreUnexpectedTest(self):
+    build = {
+        'failure_type': failure_type.TEST,
+        'failures': None,
+        'status': suspected_cl_status.CORRECT,
+        'approaches': [analysis_approach_type.HEURISTIC],
+        'top_score': 2
+    }
+
+    self.assertIsNone(suspected_cl_util.GetSuspectedCLConfidenceScore(
+        self.cl_confidences, build))
+
+  def testGetConfidenceScoreTestNone(self):
+    build = {
+      'failure_type': failure_type.TEST,
+      'approaches': []
+    }
+    self.assertIsNone(suspected_cl_util.GetSuspectedCLConfidenceScore(
+        self.cl_confidences, build))

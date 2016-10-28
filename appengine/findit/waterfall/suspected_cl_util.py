@@ -5,6 +5,8 @@
 from google.appengine.ext import ndb
 
 from common import time_util
+from common.waterfall import failure_type
+from model import analysis_approach_type
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import build_util
 
@@ -57,3 +59,40 @@ def UpdateSuspectedCL(
       build['approaches'].append(approach)
 
   suspected_cl.put()
+
+def _RoundConfidentToInteger(confidence):
+  return round(confidence * 100)
+
+
+def GetSuspectedCLConfidenceScore(confidences, cl_build):
+
+  if not confidences or not cl_build:
+    return None
+
+  if cl_build['failure_type'] == failure_type.COMPILE:
+    if cl_build['approaches'] == [
+      analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB]:
+      return _RoundConfidentToInteger(
+          confidences.compile_heuristic_try_job.confidence)
+    elif cl_build['approaches'] == [analysis_approach_type.TRY_JOB]:
+      return _RoundConfidentToInteger(
+          confidences.compile_try_job.confidence)
+    elif (cl_build['approaches'] == [analysis_approach_type.HEURISTIC] and
+            cl_build['top_score']):
+      for confidences_info in confidences.compile_heuristic:
+        if confidences_info.score == cl_build['top_score']:
+          return _RoundConfidentToInteger(confidences_info.confidence)
+    return None
+  else:
+    if cl_build['approaches'] == [
+      analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB]:
+      return _RoundConfidentToInteger(
+          confidences.test_heuristic_try_job.confidence)
+    elif cl_build['approaches'] == [analysis_approach_type.TRY_JOB]:
+      return _RoundConfidentToInteger(confidences.test_try_job.confidence)
+    elif (cl_build['approaches'] == [analysis_approach_type.HEURISTIC] and
+            cl_build['top_score']):
+      for confidences_info in confidences.test_heuristic:
+        if confidences_info.score == cl_build['top_score']:
+          return _RoundConfidentToInteger(confidences_info.confidence)
+    return None

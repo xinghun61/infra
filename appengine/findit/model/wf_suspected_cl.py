@@ -4,6 +4,7 @@
 
 from google.appengine.ext import ndb
 
+from model.base_build_model import BaseBuildModel
 from model.base_suspected_cl import BaseSuspectedCL
 
 
@@ -16,48 +17,40 @@ class WfSuspectedCL(BaseSuspectedCL):
   # The dict of builds in which the suspected CL caused some breakage.
   # The dict will look like:
   # {
-  #     'm1/b1/123': [
-  #         {
-  #             'failure_type': 'compile',
-  #             'failures': None,
-  #             'status': CORRECT,
-  #             'approaches': [HEURISTIC, TRY_JOB],
-  #             'top_score': 5,
-  #             'Confidence': 97.9
-  #         }
-  #     ],
-  #     'm2/b2/234': [
-  #         {
-  #             'failure_type': 'test',
-  #             'failures': {
-  #                 's1': ['t1', 't2']
-  #             },
-  #             'status': CORRECT,
-  #             'approachES': [HEURISTIC, TRY_JOB],
-  #             'top_score': None,
-  #             'Confidence': 80.0
+  #     'm1/b1/123': {
+  #         'failure_type': 'compile',
+  #         'failures': None,
+  #         'status': CORRECT,
+  #         'approaches': [HEURISTIC, TRY_JOB],
+  #         'top_score': 5
+  #     },
+  #     'm2/b2/234': {
+  #         'failure_type': 'test',
+  #         'failures': {
+  #             's1': ['t1', 't2']
   #         },
-  #         {
-  #             'failure_type': 'test',
-  #             'failures': {
-  #                 's1': ['t3']
-  #             },
-  #             'status': INCORRECT,
-  #             'approaches': [HEURISTIC],
-  #             'top_score': 2,
-  #             'Confidence': 50.5
+  #         'status': CORRECT,
+  #         'approachES': [HEURISTIC, TRY_JOB],
+  #         'top_score': None
+  #     },
+  #     {
+  #         'failure_type': 'test',
+  #         'failures': {
+  #             's1': ['t3']
   #         },
-  #         {
-  #             'failure_type': 'test',
-  #             'failures': {
-  #                 's2': []
-  #             },
-  #             'status': INCORRECT,
-  #             'approaches': [HEURISTIC],
-  #             'top_score': 1,
-  #             'Confidence': 30.7
-  #         }
-  #     ]
+  #         'status': INCORRECT,
+  #         'approaches': [HEURISTIC],
+  #         'top_score': 2
+  #     },
+  #     {
+  #         'failure_type': 'test',
+  #         'failures': {
+  #             's2': []
+  #         },
+  #         'status': INCORRECT,
+  #         'approaches': [HEURISTIC],
+  #         'top_score': 1
+  #     }
   # }
   builds = ndb.JsonProperty(indexed=False, compressed=True)
 
@@ -85,3 +78,8 @@ class WfSuspectedCL(BaseSuspectedCL):
     instance.commit_position = commit_position
     instance.builds = {}
     return instance
+
+  def GetBuildInfo(self, master_name, builder_name, build_number):
+    build_key = BaseBuildModel.CreateBuildId(
+        master_name, builder_name, build_number)
+    return self.builds.get(build_key)

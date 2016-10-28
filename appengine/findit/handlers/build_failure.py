@@ -15,7 +15,6 @@ from common.waterfall import failure_type
 from handlers import handlers_util
 from handlers import result_status
 from handlers.result_status import NO_TRY_JOB_REASON_MAP
-from model import analysis_approach_type
 from model import analysis_status
 from model import result_status as analysis_result_status
 from model import suspected_cl_status
@@ -28,6 +27,7 @@ from model.wf_try_job import WfTryJob
 from waterfall import build_failure_analysis_pipelines
 from waterfall import build_util
 from waterfall import buildbot
+from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
 
@@ -51,7 +51,7 @@ def _GetCLDict(analysis, cl_info):
   if not cl_info:
     return {}
 
-  cl_keys = cl_info.split('/')
+  cl_keys = suspected_cl_util.GetCLInfo(cl_info)
   repo_name = cl_keys[0]
   revision = cl_keys[1]
   for cl in analysis.suspected_cls:
@@ -331,43 +331,6 @@ def _PopulateHeuristicDataForCompileFailure(analysis, data):
       data['suspected_cls_by_heuristic'] = compile_failure['suspected_cls']
 
 
-def _PercentFormat(float_number):
-  if not float_number or not isinstance(float_number, float):
-    return None
-  return '%d%%' % (round(float_number * 100))
-
-
-def _GetConfidenceScore(confidence, cl_build):
-
-  if not confidence:
-    return None
-
-  if cl_build['failure_type'] == failure_type.COMPILE:
-    if cl_build['approaches'] == [
-        analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB]:
-      return _PercentFormat(confidence.compile_heuristic_try_job.confidence)
-    elif cl_build['approaches'] == [analysis_approach_type.TRY_JOB]:
-      return _PercentFormat(confidence.compile_try_job.confidence)
-    elif (cl_build['approaches'] == [analysis_approach_type.HEURISTIC] and
-          cl_build['top_score']):
-      for confidence_info in confidence.compile_heuristic:
-        if confidence_info.score == cl_build['top_score']:
-          return _PercentFormat(confidence_info.confidence)
-    return None
-  else:
-    if cl_build['approaches'] == [
-        analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB]:
-      return _PercentFormat(confidence.test_heuristic_try_job.confidence)
-    elif cl_build['approaches'] == [analysis_approach_type.TRY_JOB]:
-      return _PercentFormat(confidence.test_try_job.confidence)
-    elif (cl_build['approaches'] == [analysis_approach_type.HEURISTIC] and
-          cl_build['top_score']):
-      for confidence_info in confidence.test_heuristic:
-        if confidence_info.score == cl_build['top_score']:
-          return _PercentFormat(confidence_info.confidence)
-    return None
-
-
 def _GetAllSuspectedCLsAndCheckStatus(
     master_name, builder_name, build_number, analysis):
   build_key = build_util.CreateBuildId(
@@ -376,7 +339,7 @@ def _GetAllSuspectedCLsAndCheckStatus(
   if not suspected_cls:
     return []
 
-  cl_confidences = SuspectedCLConfidence.Get()
+  confidences = SuspectedCLConfidence.Get()
 
   for cl in suspected_cls:
     cl['status'] = _ANALYSIS_CL_STATUS_MAP.get(analysis.result_status, None)
@@ -389,7 +352,8 @@ def _GetAllSuspectedCLsAndCheckStatus(
     build = suspected_cl.builds.get(build_key)
     if build:
       cl['status'] = build['status']
-      cl['confidence'] = _GetConfidenceScore(cl_confidences, build)
+      cl['confidence'] = '%d%%' % (
+          suspected_cl_util.GetSuspectedCLConfidenceScore(confidences, build))
 
   return suspected_cls
 

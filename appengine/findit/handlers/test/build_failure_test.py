@@ -24,6 +24,7 @@ from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_try_job import WfTryJob
 from waterfall import build_util
 from waterfall import buildbot
+from waterfall import build_util
 from waterfall.test import wf_testcase
 
 # Root directory appengine/findit.
@@ -782,6 +783,9 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
         analysis, data)
     self.assertEqual(expected_data, data)
 
+  def _PercentFormat(self, float_number):
+    return '%d%%' % (round(float_number * 100))
+
   def testGetTryJobResultForCompileFailure(self):
     analysis = WfAnalysis.Create('m', 'b', 123)
     analysis.result = {
@@ -855,7 +859,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
             'commit_position': 122,
             'url': None,
             'status': suspected_cl_status.CORRECT,
-            'confidence': build_failure._PercentFormat(
+            'confidence': self._PercentFormat(
                 self.cl_confidences.compile_heuristic_try_job.confidence)
         }
     ]
@@ -910,120 +914,3 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, analysis)
     self.assertEqual(
         expected_suspected_cls, suspected_cls)
-
-  def testGetConfidenceScoreTestHeuristic(self):
-    build = {
-        'failure_type': failure_type.TEST,
-        'failures': None,
-        'status': suspected_cl_status.CORRECT,
-        'approaches': [analysis_approach_type.HEURISTIC],
-        'top_score': 5
-    }
-
-    self.assertEqual(
-        build_failure._PercentFormat(
-            self.cl_confidences.test_heuristic[1].confidence),
-        build_failure._GetConfidenceScore(self.cl_confidences, build))
-
-  def testGetConfidenceScoreCompileHeuristic(self):
-    build = {
-        'failure_type': failure_type.COMPILE,
-        'failures': None,
-        'status': suspected_cl_status.CORRECT,
-        'approaches': [analysis_approach_type.HEURISTIC],
-        'top_score': 4
-    }
-
-    self.assertEqual(
-        build_failure._PercentFormat(
-            self.cl_confidences.compile_heuristic[1].confidence),
-        build_failure._GetConfidenceScore(self.cl_confidences, build))
-
-  def testGetConfidenceScoreTestTryJob(self):
-    build = {
-        'failure_type': failure_type.TEST,
-        'failures': None,
-        'status': suspected_cl_status.CORRECT,
-        'approaches': [analysis_approach_type.TRY_JOB],
-        'top_score': 5
-    }
-
-    self.assertEqual(
-        build_failure._PercentFormat(
-            self.cl_confidences.test_try_job.confidence),
-        build_failure._GetConfidenceScore(self.cl_confidences, build))
-
-  def testGetConfidenceScoreCompileTryJob(self):
-    build = {
-        'failure_type': failure_type.COMPILE,
-        'failures': None,
-        'status': suspected_cl_status.CORRECT,
-        'approaches': [analysis_approach_type.TRY_JOB],
-        'top_score': 5
-    }
-
-    self.assertEqual(
-        build_failure._PercentFormat(
-            self.cl_confidences.test_try_job.confidence),
-        build_failure._GetConfidenceScore(self.cl_confidences, build))
-
-  def testGetConfidenceScoreTestHeuristicTryJob(self):
-    build = {
-        'failure_type': failure_type.TEST,
-        'failures': None,
-        'status': suspected_cl_status.CORRECT,
-        'approaches': [analysis_approach_type.HEURISTIC,
-                       analysis_approach_type.TRY_JOB],
-        'top_score': 5
-    }
-
-    self.assertEqual(
-        build_failure._PercentFormat(
-            self.cl_confidences.test_heuristic_try_job.confidence),
-        build_failure._GetConfidenceScore(self.cl_confidences, build))
-
-  def testGetConfidenceScoreNone(self):
-    self.assertIsNone(build_failure._GetConfidenceScore(None, None))
-
-  def testGetConfidenceScoreUnexpected(self):
-    build = {
-        'failure_type': failure_type.COMPILE,
-        'failures': None,
-        'status': suspected_cl_status.CORRECT,
-        'approaches': [analysis_approach_type.HEURISTIC],
-        'top_score': 2
-    }
-
-    self.assertIsNone(build_failure._GetConfidenceScore(
-        self.cl_confidences, build))
-
-  def testGetConfidenceScoreCompileNone(self):
-    build = {
-      'failure_type': failure_type.COMPILE,
-      'approaches': []
-    }
-    self.assertIsNone(build_failure._GetConfidenceScore(
-        self.cl_confidences, build))
-
-  def testGetConfidenceScoreUnexpectedTest(self):
-    build = {
-        'failure_type': failure_type.TEST,
-        'failures': None,
-        'status': suspected_cl_status.CORRECT,
-        'approaches': [analysis_approach_type.HEURISTIC],
-        'top_score': 2
-    }
-
-    self.assertIsNone(build_failure._GetConfidenceScore(
-        self.cl_confidences, build))
-
-  def testGetConfidenceScoreTestNone(self):
-    build = {
-      'failure_type': failure_type.TEST,
-      'approaches': []
-    }
-    self.assertIsNone(build_failure._GetConfidenceScore(
-        self.cl_confidences, build))
-
-  def testPercentFormatNone(self):
-    self.assertIsNone(build_failure._PercentFormat(None))

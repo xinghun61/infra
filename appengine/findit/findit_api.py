@@ -24,11 +24,16 @@ from common import auth_util
 from common import constants
 from common import time_util
 from common.waterfall import failure_type
+from model import analysis_approach_type
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from model.suspected_cl_confidence import SuspectedCLConfidence
 from model.wf_analysis import WfAnalysis
+from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
+from waterfall import build_util
 from waterfall import buildbot
+from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.flake import flake_analysis_service
 
@@ -55,15 +60,25 @@ class _BuildFailureCollection(messages.Message):
   builds = messages.MessageField(_BuildFailure, 1, repeated=True)
 
 
+class _AnalysisApproach(messages.Enum):
+  HEURISTIC = analysis_approach_type.HEURISTIC
+  TRY_JOB = analysis_approach_type.TRY_JOB
+
+
 class _SuspectedCL(messages.Message):
   repo_name = messages.StringField(1, required=True)
   revision = messages.StringField(2, required=True)
   commit_position = messages.IntegerField(3, variant=messages.Variant.INT32)
+  confidence = messages.IntegerField(4, variant=messages.Variant.INT32)
+  analysis_approach = messages.EnumField(_AnalysisApproach, 5)
 
 
-class _AnalysisApproach(messages.Enum):
-  HEURISTIC = 1
-  TRY_JOB = 2
+class _TryJobStatus(messages.Enum):
+  # Try job is pending or running. Can expect result from try job.
+  RUNNING = 1
+  # There is no try job, try job completed or try job finished with error.
+  # Result from try job is ready or no need to continue waiting for it.
+  FINISHED = 2
 
 
 class _BuildFailureAnalysisResult(messages.Message):
@@ -79,6 +94,8 @@ class _BuildFailureAnalysisResult(messages.Message):
       7, variant=messages.Variant.INT32)
   suspected_cls = messages.MessageField(_SuspectedCL, 8, repeated=True)
   analysis_approach = messages.EnumField(_AnalysisApproach, 9)
+  try_job_status = messages.EnumField(_TryJobStatus, 10)
+  is_flaky_test = messages.BooleanField(11, variant=messages.Variant.BOOL)
 
 
 class _BuildFailureAnalysisResultCollection(messages.Message):
@@ -139,16 +156,47 @@ def _AsyncProcessFlakeReport(flake_analysis_request, user_email, is_admin):
 class FindItApi(remote.Service):
   """FindIt API v1."""
 
+  def _GetConfidenceAndApproachForCL(
+      self, repo_name, revision, confidences, build, first_failure):
+    cl = WfSuspectedCL.Get(repo_name, revision)
+    if not cl:
+      return None, None
+
+    master_name = buildbot.GetMasterNameFromUrl(build.master_url)
+    builder_name = build.builder_name
+    current_build = build.build_number
+
+    # If the CL is found by a try job, only the first failure will be recorded.
+    # So we might need to go to the first failure to get CL information.
+    build_info = (cl.GetBuildInfo(master_name, builder_name, current_build) or
+                  cl.GetBuildInfo(master_name, builder_name, first_failure))
+
+    confidence = suspected_cl_util.GetSuspectedCLConfidenceScore(
+        confidences, build_info)
+
+    cl_approach = (
+      _AnalysisApproach.TRY_JOB if analysis_approach_type.TRY_JOB in
+      build_info['approaches'] else _AnalysisApproach.HEURISTIC)
+
+    return confidence, cl_approach
+
   def _GenerateBuildFailureAnalysisResult(
-      self, build, suspected_cls_in_result, step_name,
-      first_failure, test_name=None,
-      analysis_approach=_AnalysisApproach.HEURISTIC):
+      self, build, suspected_cls_in_result, step_name, first_failure, test_name,
+      analysis_approach, confidences, try_job_status, is_flaky_test):
+
     suspected_cls = []
     for suspected_cl in suspected_cls_in_result:
+      repo_name = suspected_cl['repo_name']
+      revision = suspected_cl['revision']
+      commit_position = suspected_cl['commit_position']
+      confidence, cl_approach = self._GetConfidenceAndApproachForCL(
+          repo_name, revision, confidences, build, first_failure)
+      cl_approach = cl_approach or analysis_approach
+
       suspected_cls.append(_SuspectedCL(
-          repo_name=suspected_cl['repo_name'],
-          revision=suspected_cl['revision'],
-          commit_position=suspected_cl['commit_position']))
+          repo_name=repo_name, revision=revision,
+          commit_position=commit_position, confidence=confidence,
+          analysis_approach=cl_approach))
 
     return _BuildFailureAnalysisResult(
         master_url=build.master_url,
@@ -159,13 +207,15 @@ class FindItApi(remote.Service):
         test_name=test_name,
         first_known_failed_build_number=first_failure,
         suspected_cls=suspected_cls,
-        analysis_approach=analysis_approach)
+        analysis_approach=analysis_approach,
+        try_job_status=try_job_status,
+        is_flaky_test=is_flaky_test)
 
-  def _GetCulpritFromTryJob(
+  def _GetStatusAndCulpritFromTryJob(
       self, try_job_map, build_failure_type, step_name, test_name=None):
     """Returns the culprit found by try-job for the given step or test."""
     if not try_job_map:
-      return None
+      return _TryJobStatus.FINISHED, None
 
     if test_name is None:
       try_job_key = try_job_map.get(step_name)
@@ -173,37 +223,60 @@ class FindItApi(remote.Service):
       try_job_key = try_job_map.get(step_name, {}).get(test_name)
 
     if not try_job_key:
-      return None
+      return _TryJobStatus.FINISHED, None
 
-    try_job = WfTryJob.Get(*try_job_key.split('/'))
-    if not try_job or not try_job.completed or try_job.failed:
-      return None
+    try_job = WfTryJob.Get(*build_util.GetBuildInfoFromId(try_job_key))
+    if not try_job or try_job.failed:
+      return _TryJobStatus.FINISHED, None
+
+    if not try_job.completed:
+      return _TryJobStatus.RUNNING, None
 
     if build_failure_type == failure_type.COMPILE:
       if not try_job.compile_results:  # pragma: no cover.
-        return None
-      return try_job.compile_results[-1].get('culprit', {}).get(step_name)
+        return _TryJobStatus.FINISHED, None
+      return (
+          _TryJobStatus.FINISHED,
+          try_job.compile_results[-1].get('culprit', {}).get(step_name))
 
     if not try_job.test_results:  # pragma: no cover.
-      return None
+      return _TryJobStatus.FINISHED, None
 
     if test_name is None:
       step_info = try_job.test_results[-1].get('culprit', {}).get(step_name)
       if not step_info or step_info.get('tests'):  # pragma: no cover.
         # TODO(chanli): For some steps like checkperms/sizes/etc, the culprit
         # finding try-job might have test-level results.
-        return None
-      return step_info
+        return _TryJobStatus.FINISHED, None
+      return _TryJobStatus.FINISHED, step_info
 
-    task = WfSwarmingTask.Get(*try_job_key.split('/'), step_name=step_name)
+    task = WfSwarmingTask.Get(*build_util.GetBuildInfoFromId(try_job_key),
+                              step_name=step_name)
     ref_name = (task.parameters.get('ref_name') if task and task.parameters
                 else None)
-    return try_job.test_results[-1].get('culprit', {}).get(
-        ref_name or step_name, {}).get('tests', {}).get(test_name)
+    return (
+        _TryJobStatus.FINISHED, try_job.test_results[-1].get('culprit', {}).get(
+            ref_name or step_name, {}).get('tests', {}).get(test_name))
+
+  def _CheckIsFlaky(self, try_job_map, step_name, test_name):
+    """Checks if the test is flaky."""
+    if not try_job_map or not test_name:
+      return False
+
+    try_job_key = try_job_map.get(step_name, {}).get(test_name)
+    if not try_job_key:
+      return False
+
+    swarming_task = WfSwarmingTask.Get(
+        *build_util.GetBuildInfoFromId(try_job_key), step_name=step_name)
+    if not swarming_task or not swarming_task.classified_tests:
+      return False
+
+    return test_name in swarming_task.classified_tests.get('flaky_tests', [])
 
   def _PopulateResult(
       self, results, build, try_job_map, build_failure_type,
-      heuristic_result, step_name, test_name=None):
+      heuristic_result, step_name, confidences, test_name=None):
     """Appends an analysis result for the given step or test.
 
     Try-job results are always given priority over heuristic results.
@@ -212,32 +285,42 @@ class FindItApi(remote.Service):
     suspected_cls = heuristic_result['suspected_cls']
     analysis_approach = _AnalysisApproach.HEURISTIC
 
-    # Check analysis result from try-job.
-    culprit = self._GetCulpritFromTryJob(
-        try_job_map, build_failure_type, step_name, test_name=test_name)
-    if culprit:
-      suspected_cls = [culprit]
-      analysis_approach = _AnalysisApproach.TRY_JOB
+    # Check if the test is flaky.
+    is_flaky_test = self._CheckIsFlaky(try_job_map, step_name, test_name)
 
-    if not suspected_cls:
+    if is_flaky_test:
+      suspected_cls = []
+      try_job_status = _TryJobStatus.FINISHED  # There will be no try job.
+    else:
+      # Check analysis result from try-job.
+      try_job_status, culprit = self._GetStatusAndCulpritFromTryJob(
+          try_job_map, build_failure_type, step_name, test_name=test_name)
+      if culprit:
+        suspected_cls = [culprit]
+        analysis_approach = _AnalysisApproach.TRY_JOB
+
+    if not is_flaky_test and not suspected_cls:
       return
 
     results.append(self._GenerateBuildFailureAnalysisResult(
         build, suspected_cls, step_name, heuristic_result['first_failure'],
-        test_name=test_name, analysis_approach=analysis_approach))
+        test_name, analysis_approach, confidences, try_job_status,
+        is_flaky_test))
 
-  def _GenerateResultsForBuild(self, build, heuristic_analysis, results):
+  def _GenerateResultsForBuild(
+      self, build, heuristic_analysis, results, confidences):
     for failure in heuristic_analysis.result['failures']:
       if failure.get('tests'):  # Test-level analysis.
         for test in failure['tests']:
           self._PopulateResult(
               results, build, heuristic_analysis.failure_result_map,
               heuristic_analysis.failure_type, test,
-              failure['step_name'], test_name=test['test_name'])
+              failure['step_name'], confidences, test_name=test['test_name'])
       else:
         self._PopulateResult(
             results, build, heuristic_analysis.failure_result_map,
-            heuristic_analysis.failure_type, failure, failure['step_name'])
+            heuristic_analysis.failure_type, failure, failure['step_name'],
+            confidences)
 
   @endpoints.method(
       _BuildFailureCollection, _BuildFailureAnalysisResultCollection,
@@ -256,6 +339,7 @@ class FindItApi(remote.Service):
     """
     results = []
     supported_builds = []
+    confidences = SuspectedCLConfidence.Get()
 
     for build in request.builds:
       master_name = buildbot.GetMasterNameFromUrl(build.master_url)
@@ -284,7 +368,8 @@ class FindItApi(remote.Service):
         # Bail out if the analysis failed or there is no result yet.
         continue
 
-      self._GenerateResultsForBuild(build, heuristic_analysis, results)
+      self._GenerateResultsForBuild(
+          build, heuristic_analysis, results, confidences)
 
     logging.info('%d build failure(s), while %d are supported',
                  len(request.builds), len(supported_builds))

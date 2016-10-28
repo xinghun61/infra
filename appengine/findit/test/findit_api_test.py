@@ -7,7 +7,6 @@ import mock
 import pickle
 import re
 
-import endpoints
 from google.appengine.api import taskqueue
 import webtest
 
@@ -15,11 +14,14 @@ from testing_utils import testing
 
 from common.waterfall import failure_type
 import findit_api
+from model import analysis_approach_type
 from model import analysis_status
-from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.wf_analysis import WfAnalysis
+from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
+from waterfall import build_util
+from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
 
@@ -220,9 +222,12 @@ class FinditApiTest(testing.EndpointsTestCase):
                     'repo_name': 'chromium',
                     'revision': 'git_hash',
                     'commit_position': 123,
+                    'analysis_approach': 'HEURISTIC'
                 }
             ],
             'analysis_approach': 'HEURISTIC',
+            'try_job_status': 'FINISHED',
+            'is_flaky_test': False
         },
     ]
 
@@ -339,14 +344,18 @@ class FinditApiTest(testing.EndpointsTestCase):
                     'repo_name': 'chromium',
                     'revision': 'git_hash1',
                     'commit_position': 234,
+                    'analysis_approach': 'HEURISTIC'
                 },
                 {
                     'repo_name': 'chromium',
                     'revision': 'git_hash2',
                     'commit_position': 288,
+                    'analysis_approach': 'HEURISTIC'
                 }
             ],
             'analysis_approach': 'HEURISTIC',
+            'is_flaky_test': False,
+            'try_job_status': 'FINISHED'
         }
     ]
 
@@ -430,9 +439,12 @@ class FinditApiTest(testing.EndpointsTestCase):
                     'repo_name': 'chromium',
                     'revision': 'r3',
                     'commit_position': 3,
+                    'analysis_approach': 'TRY_JOB'
                 },
             ],
             'analysis_approach': 'TRY_JOB',
+            'is_flaky_test': False,
+            'try_job_status': 'FINISHED'
         }
     ]
 
@@ -442,7 +454,159 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(200, response.status_int)
     self.assertEqual(expected_results, response.json_body.get('results'))
 
-  def testTestLevelResultIsReturned(self):
+  def testTryJobIsRunning(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 5
+
+    master_url = 'https://build.chromium.org/p/%s' % master_name
+    builds = {
+        'builds': [
+            {
+                'master_url': master_url,
+                'builder_name': builder_name,
+                'build_number': build_number
+            }
+        ]
+    }
+
+    try_job = WfTryJob.Create(master_name, builder_name, 3)
+    try_job.status = analysis_status.RUNNING
+    try_job.put()
+
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.status = analysis_status.COMPLETED
+    analysis.build_failure_type = failure_type.COMPILE
+    analysis.failure_result_map = {
+        'compile': '/'.join([master_name, builder_name, '3']),
+    }
+    analysis.result = {
+        'failures': [
+            {
+                'step_name': 'compile',
+                'first_failure': 3,
+                'last_pass': 1,
+                'suspected_cls': [
+                    {
+                        'build_number': 3,
+                        'repo_name': 'chromium',
+                        'revision': 'git_hash2',
+                        'commit_position': 288,
+                        'score': 1,
+                        'hints': {
+                            'modify d/e/f.cc': 1,
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+    analysis.put()
+
+    expected_results = [
+        {
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'step_name': 'compile',
+            'is_sub_test': False,
+            'first_known_failed_build_number': 3,
+            'suspected_cls': [
+                {
+                    'repo_name': 'chromium',
+                    'revision': 'git_hash2',
+                    'commit_position': 288,
+                    'analysis_approach': 'HEURISTIC'
+                },
+            ],
+            'analysis_approach': 'HEURISTIC',
+            'is_flaky_test': False,
+            'try_job_status': 'RUNNING'
+        }
+    ]
+
+    self._MockMasterIsSupported(supported=True)
+
+    response = self.call_api('AnalyzeBuildFailures', body=builds)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual(expected_results, response.json_body.get('results'))
+
+  def testTestIsFlaky(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 5
+
+    master_url = 'https://build.chromium.org/p/%s' % master_name
+    builds = {
+        'builds': [
+            {
+                'master_url': master_url,
+                'builder_name': builder_name,
+                'build_number': build_number
+            }
+        ]
+    }
+
+    task = WfSwarmingTask.Create(master_name, builder_name, 3, 'b on platform')
+    task.tests_statuses = {
+        'Unittest3.Subtest1': {
+            'total_run': 4,
+            'SUCCESS': 2,
+            'FAILURE': 2
+        }
+    }
+    task.put()
+
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.status = analysis_status.COMPLETED
+    analysis.failure_result_map = {
+        'b on platform': {
+            'Unittest3.Subtest1': '/'.join([master_name, builder_name, '3']),
+        },
+    }
+    analysis.result = {
+        'failures': [
+            {
+                'step_name': 'b on platform',
+                'first_failure': 3,
+                'last_pass': 2,
+                'suspected_cls': [],
+                'tests': [
+                    {
+                        'test_name': 'Unittest3.Subtest1',
+                        'first_failure': 3,
+                        'last_pass': 2,
+                        'suspected_cls': []
+                    }
+                ]
+            }
+        ]
+    }
+    analysis.put()
+
+    expected_results = [
+        {
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'step_name': 'b on platform',
+            'is_sub_test': True,
+            'test_name': 'Unittest3.Subtest1',
+            'first_known_failed_build_number': 3,
+            'analysis_approach': 'HEURISTIC',
+            'is_flaky_test': True,
+            'try_job_status': 'FINISHED'
+        }
+    ]
+
+    self._MockMasterIsSupported(supported=True)
+
+    response = self.call_api('AnalyzeBuildFailures', body=builds)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual(expected_results, response.json_body.get('results'))
+
+  @mock.patch.object(suspected_cl_util, 'GetSuspectedCLConfidenceScore')
+  def testTestLevelResultIsReturned(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 5
@@ -594,6 +758,30 @@ class FinditApiTest(testing.EndpointsTestCase):
     }
     analysis.put()
 
+    suspected_cl_42 = WfSuspectedCL.Create('chromium', 'r4_2', 42)
+    suspected_cl_42.builds = {
+        build_util.CreateBuildId(master_name, builder_name, 4): {
+            'approaches': [analysis_approach_type.TRY_JOB]
+        }
+    }
+    suspected_cl_42.put()
+
+    suspected_cl_21 = WfSuspectedCL.Create('chromium', 'r2_1', None)
+    suspected_cl_21.builds = {
+      build_util.CreateBuildId(master_name, builder_name, build_number): {
+            'approaches': [analysis_approach_type.HEURISTIC],
+            'top_score': 5
+        }
+    }
+    suspected_cl_21.put()
+
+    def confidence_side_effect(_, build_info):
+      if build_info.get('top_score'):
+        return 90
+      return 98
+
+    mock_fn.side_effect = confidence_side_effect
+
     expected_results = [
         {
             'master_url': master_url,
@@ -607,9 +795,13 @@ class FinditApiTest(testing.EndpointsTestCase):
                     'repo_name': 'chromium',
                     'revision': 'r4_2',
                     'commit_position': 42,
+                    'confidence': 98,
+                    'analysis_approach': 'TRY_JOB'
                 }
             ],
             'analysis_approach': 'TRY_JOB',
+            'is_flaky_test': False,
+            'try_job_status': 'FINISHED'
         },
         {
             'master_url': master_url,
@@ -623,9 +815,13 @@ class FinditApiTest(testing.EndpointsTestCase):
                 {
                     'repo_name': 'chromium',
                     'revision': 'r2_1',
+                    'confidence': 90,
+                    'analysis_approach': 'HEURISTIC'
                 }
             ],
             'analysis_approach': 'HEURISTIC',
+            'is_flaky_test': False,
+            'try_job_status': 'FINISHED'
         },
         {
             'master_url': master_url,
@@ -639,9 +835,13 @@ class FinditApiTest(testing.EndpointsTestCase):
                 {
                     'repo_name': 'chromium',
                     'revision': 'r2_1',
+                    'confidence': 90,
+                    'analysis_approach': 'HEURISTIC'
                 }
             ],
             'analysis_approach': 'HEURISTIC',
+            'is_flaky_test': False,
+            'try_job_status': 'FINISHED'
         },
         {
             'master_url': master_url,
@@ -656,9 +856,12 @@ class FinditApiTest(testing.EndpointsTestCase):
                     'repo_name': 'chromium',
                     'revision': 'r4_10',
                     'commit_position': 410,
+                    'analysis_approach': 'TRY_JOB'
                 }
             ],
             'analysis_approach': 'TRY_JOB',
+            'is_flaky_test': False,
+            'try_job_status': 'FINISHED'
         }
     ]
 
