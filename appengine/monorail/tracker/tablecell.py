@@ -17,23 +17,14 @@ from tracker import tracker_bizobj
 class TableCellRank(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue rank."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
-
-    issue_rank = 0
-    # TODO(jojwang): temporary issue_rank
-    # figure out how to access hotlistissue ranks
-
+  def __init__(self, issue, issue_rank=None, **_kw):
     table_view_helpers.TableCell.__init__(
         self, table_view_helpers.CELL_TYPE_ATTR, [issue_rank])
 
 class TableCellID(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue IDs."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
+  def __init__(self, issue, **_kw):
     table_view_helpers.TableCell.__init__(
         self, table_view_helpers.CELL_TYPE_ID, [str(issue.local_id)])
 
@@ -41,9 +32,7 @@ class TableCellID(table_view_helpers.TableCell):
 class TableCellStatus(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue status values."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
+  def __init__(self, issue, **_kws):
     values = []
     derived_values = []
     if issue.status:
@@ -62,9 +51,7 @@ class TableCellOwner(table_view_helpers.TableCell):
   # Make instances of this class render with whitespace:nowrap.
   NOWRAP = ezt.boolean(True)
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
+  def __init__(self, issue, users_by_id=None, **_kw):
     values = []
     derived_values = []
     if issue.owner_id:
@@ -83,9 +70,7 @@ class TableCellReporter(table_view_helpers.TableCell):
   # Make instances of this class render with whitespace:nowrap.
   NOWRAP = ezt.boolean(True)
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
+  def __init__(self, issue, users_by_id=None, **_kw):
     try:
       values = [users_by_id[issue.reporter_id].display_name]
     except KeyError:
@@ -99,9 +84,7 @@ class TableCellReporter(table_view_helpers.TableCell):
 class TableCellCc(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue Cc user names."""
 
-  def __init__(
-      self, issue, _col, users_by_id, _non_col_labels,
-      _label_values, _related_issues, _config):
+  def __init__(self, issue, users_by_id=None, **_kw):
     values = [users_by_id[cc_id].display_name
               for cc_id in issue.cc_ids]
 
@@ -116,9 +99,7 @@ class TableCellCc(table_view_helpers.TableCell):
 class TableCellAttachments(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue attachment count."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
+  def __init__(self, issue, **_kw):
     table_view_helpers.TableCell.__init__(
         self, table_view_helpers.CELL_TYPE_ATTR, [issue.attachment_count],
         align='right')
@@ -127,36 +108,28 @@ class TableCellAttachments(table_view_helpers.TableCell):
 class TableCellOpened(table_view_helpers.TableCellDate):
   """TableCell subclass specifically for showing issue opened date."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
+  def __init__(self, issue, **_kw):
     table_view_helpers.TableCellDate.__init__(self, issue.opened_timestamp)
 
 
 class TableCellClosed(table_view_helpers.TableCellDate):
   """TableCell subclass specifically for showing issue closed date."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
+  def __init__(self, issue, **_kw):
     table_view_helpers.TableCellDate.__init__(self, issue.closed_timestamp)
 
 
 class TableCellModified(table_view_helpers.TableCellDate):
   """TableCell subclass specifically for showing issue modified date."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
+  def __init__(self, issue, **_kw):
     table_view_helpers.TableCellDate.__init__(self, issue.modified_timestamp)
 
 
 class TableCellOwnerModified(table_view_helpers.TableCellDate):
   """TableCell subclass specifically for showing owner modified age."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
+  def __init__(self, issue, **_kw):
     table_view_helpers.TableCellDate.__init__(
         self, issue.owner_modified_timestamp, days_only=True)
 
@@ -164,9 +137,7 @@ class TableCellOwnerModified(table_view_helpers.TableCellDate):
 class TableCellStatusModified(table_view_helpers.TableCellDate):
   """TableCell subclass specifically for showing status modified age."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
+  def __init__(self, issue, **_kw):
     table_view_helpers.TableCellDate.__init__(
         self, issue.status_modified_timestamp, days_only=True)
 
@@ -174,9 +145,7 @@ class TableCellStatusModified(table_view_helpers.TableCellDate):
 class TableCellComponentModified(table_view_helpers.TableCellDate):
   """TableCell subclass specifically for showing component modified age."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
+  def __init__(self, issue, **_kw):
     table_view_helpers.TableCellDate.__init__(
         self, issue.component_modified_timestamp, days_only=True)
 
@@ -184,9 +153,7 @@ class TableCellComponentModified(table_view_helpers.TableCellDate):
 class TableCellBlockedOn(table_view_helpers.TableCell):
   """TableCell subclass for listing issues the current issue is blocked on."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      related_issues, _config):
+  def __init__(self, issue, related_issues=None, **_kw):
     ref_issues = [related_issues[iid] for iid in issue.blocked_on_iids
                   if iid in related_issues]
     default_pn = issue.project_name
@@ -203,9 +170,7 @@ class TableCellBlockedOn(table_view_helpers.TableCell):
 class TableCellBlocking(table_view_helpers.TableCell):
   """TableCell subclass for listing issues the current issue is blocking."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      related_issues, _config):
+  def __init__(self, issue, related_issues=None, **_kw):
     ref_issues = [related_issues[iid] for iid in issue.blocking_iids
                   if iid in related_issues]
     default_pn = issue.project_name
@@ -222,9 +187,7 @@ class TableCellBlocking(table_view_helpers.TableCell):
 class TableCellBlocked(table_view_helpers.TableCell):
   """TableCell subclass for showing whether an issue is blocked."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
+  def __init__(self, issue, **_kw):
     if issue.blocked_on_iids:
       value = 'Yes'
     else:
@@ -238,8 +201,7 @@ class TableCellMergedInto(table_view_helpers.TableCell):
   """TableCell subclass for showing whether an issue is blocked."""
 
   def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      related_issues, _config):
+      self, issue, related_issues=None, **_kw):
     if issue.merged_into:
       ref_issue = related_issues[issue.merged_into]
       ref = ref_issue.project_name, ref_issue.local_id
@@ -257,9 +219,7 @@ class TableCellMergedInto(table_view_helpers.TableCell):
 class TableCellComponent(table_view_helpers.TableCell):
   """TableCell subclass for showing components."""
 
-  def __init__(
-      self, issue, _col, _users_by_id, _non_col_labels,
-      _label_values, _related_issues, config):
+  def __init__(self, issue, config=None, **_kw):
     explicit_paths = []
     for component_id in issue.component_ids:
       cd = tracker_bizobj.FindComponentDefByID(component_id, config)
@@ -301,6 +261,7 @@ CELL_FACTORIES = {
     'ownermodified': TableCellOwnerModified,
     'statusmodified': TableCellStatusModified,
     'componentmodified': TableCellComponentModified,
+    'rank': TableCellRank,
     }
 
 

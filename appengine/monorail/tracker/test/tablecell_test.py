@@ -42,11 +42,26 @@ class TableCellUnitTest(unittest.TestCase):
         local_id=2, issue_id=100002, summary='Two')
     self.issue3 = MakeTestIssue(
         local_id=3, issue_id=100003, summary='Three')
+    self.table_cell_kws = {
+        'col': None,
+        'users_by_id': self.USERS_BY_ID,
+        'non_col_labels': [],
+        'label_values': {},
+        'related_issues': {},
+        'config': 'fake config',
+        }
+
+  def testTableCellRank(self):
+    table_cell_kws = self.table_cell_kws.copy()
+    table_cell_kws.update({'issue_rank': 3})
+    cell = tablecell.TableCellRank(
+        self.issue1, **table_cell_kws)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell.values[0].item, 3)
 
   def testTableCellID(self):
     cell = tablecell.TableCellID(
-        MakeTestIssue(4, 4, 'Four'), None, self.USERS_BY_ID, [], {}, {},
-        'fake config')
+        MakeTestIssue(4, 4, 'Four'), **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ID)
     # Note that the ID itself is accessed from the row, not the cell.
 
@@ -55,7 +70,7 @@ class TableCellUnitTest(unittest.TestCase):
     test_issue.owner_id=23456
 
     cell = tablecell.TableCellOwner(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        test_issue, **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values[0].item, 'Jason')
 
@@ -64,7 +79,7 @@ class TableCellUnitTest(unittest.TestCase):
     test_issue.owner_id=framework_constants.NO_USER_SPECIFIED
 
     cell = tablecell.TableCellOwner(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        test_issue, **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values, [])
 
@@ -73,7 +88,7 @@ class TableCellUnitTest(unittest.TestCase):
     test_issue.reporter_id=34567
 
     cell = tablecell.TableCellReporter(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        test_issue, **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values[0].item, 'Nathan')
 
@@ -82,22 +97,20 @@ class TableCellUnitTest(unittest.TestCase):
     test_issue.cc_ids = [23456, 34567]
 
     cell = tablecell.TableCellCc(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        test_issue, **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values[0].item, 'Jason')
     self.assertEqual(cell.values[1].item, 'Nathan')
 
   def testTableCellCcNoCcs(self):
     cell = tablecell.TableCellCc(
-        MakeTestIssue(4, 4, 'Four'),
-        None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        MakeTestIssue(4, 4, 'Four'), **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values, [])
 
   def testTableCellAttachmentsNone(self):
     cell = tablecell.TableCellAttachments(
-        MakeTestIssue(4, 4, 'Four'),
-        None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        MakeTestIssue(4, 4, 'Four'), **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values[0].item, 0)
 
@@ -106,7 +119,7 @@ class TableCellUnitTest(unittest.TestCase):
     test_issue.attachment_count = 2
 
     cell = tablecell.TableCellAttachments(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        test_issue, **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values[0].item, 2)
 
@@ -115,7 +128,7 @@ class TableCellUnitTest(unittest.TestCase):
     test_issue.opened_timestamp = 1200000000
 
     cell = tablecell.TableCellOpened(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        test_issue, **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 'Jan 2008')
 
@@ -124,13 +137,13 @@ class TableCellUnitTest(unittest.TestCase):
     test_issue.closed_timestamp = None
 
     cell = tablecell.TableCellClosed(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        test_issue, **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values, [])
 
     test_issue.closed_timestamp = 1200000000
     cell = tablecell.TableCellClosed(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        test_issue, **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 'Jan 2008')
 
@@ -139,13 +152,13 @@ class TableCellUnitTest(unittest.TestCase):
     test_issue.modified_timestamp = None
 
     cell = tablecell.TableCellModified(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        test_issue, **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values, [])
 
     test_issue.modified_timestamp = 1200000000
     cell = tablecell.TableCellModified(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        test_issue, **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 'Jan 2008')
 
@@ -153,12 +166,13 @@ class TableCellUnitTest(unittest.TestCase):
     test_issue = MakeTestIssue(4, 4, 'Four')
     test_issue.blocked_on_iids = [
         self.issue1.issue_id, self.issue2.issue_id, self.issue3.issue_id]
+    table_cell_kws = self.table_cell_kws.copy()
+    table_cell_kws['related_issues'] = {
+        self.issue1.issue_id: self.issue1, self.issue2.issue_id: self.issue2,
+        self.issue3.issue_id: self.issue3}
 
     cell = tablecell.TableCellBlockedOn(
-        test_issue,
-        None, self.USERS_BY_ID, [], {},
-        {self.issue1.issue_id: self.issue1, self.issue2.issue_id: self.issue2,
-         self.issue3.issue_id: self.issue3}, 'fake config')
+        test_issue, **table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values[0].item, '1')
     self.assertEqual(cell.values[1].item, '2')
@@ -166,8 +180,7 @@ class TableCellUnitTest(unittest.TestCase):
 
   def testTableCellBlockedOnNone(self):
     cell = tablecell.TableCellBlockedOn(
-        MakeTestIssue(4, 4, 'Four'),
-        None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        MakeTestIssue(4, 4, 'Four'), **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values, [])
 
@@ -175,12 +188,13 @@ class TableCellUnitTest(unittest.TestCase):
     test_issue = MakeTestIssue(4, 4, 'Four')
     test_issue.blocking_iids = [
         self.issue1.issue_id, self.issue2.issue_id, self.issue3.issue_id]
+    table_cell_kws = self.table_cell_kws.copy()
+    table_cell_kws['related_issues'] = {
+        self.issue1.issue_id: self.issue1, self.issue2.issue_id: self.issue2,
+        self.issue3.issue_id: self.issue3}
 
     cell = tablecell.TableCellBlocking(
-        test_issue,
-        None, self.USERS_BY_ID, [], {},
-        {self.issue1.issue_id: self.issue1, self.issue2.issue_id: self.issue2,
-         self.issue3.issue_id: self.issue3}, 'fake config')
+        test_issue, **table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values[0].item, '1')
     self.assertEqual(cell.values[1].item, '2')
@@ -189,7 +203,7 @@ class TableCellUnitTest(unittest.TestCase):
   def testTableCellBlockingNone(self):
     cell = tablecell.TableCellBlocking(
         MakeTestIssue(4, 4, 'Four'),
-        None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values, [])
 
@@ -198,31 +212,30 @@ class TableCellUnitTest(unittest.TestCase):
     test_issue.blocked_on_iids = [1, 2, 3]
 
     cell = tablecell.TableCellBlocked(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        test_issue, **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values[0].item, 'Yes')
 
   def testTableCellBlockedNotBlocked(self):
     cell = tablecell.TableCellBlocked(
-        MakeTestIssue(4, 4, 'Four'),
-        None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        MakeTestIssue(4, 4, 'Four'), **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values[0].item, 'No')
 
   def testTableCellMergedInto(self):
     test_issue = MakeTestIssue(4, 4, 'Four')
     test_issue.merged_into = self.issue3.issue_id
+    table_cell_kws = self.table_cell_kws.copy()
+    table_cell_kws['related_issues'] = {self.issue3.issue_id: self.issue3}
 
     cell = tablecell.TableCellMergedInto(
-        test_issue, None, self.USERS_BY_ID, [], {},
-        {self.issue3.issue_id: self.issue3}, 'fake config')
+        test_issue, **table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values[0].item, '3')
 
   def testTableCellMergedIntoNotMerged(self):
     cell = tablecell.TableCellMergedInto(
-        MakeTestIssue(4, 4, 'Four'),
-        None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+        MakeTestIssue(4, 4, 'Four'),**self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values, [])
 

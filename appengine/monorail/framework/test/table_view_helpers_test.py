@@ -53,12 +53,19 @@ class TableCellTest(unittest.TestCase):
         local_id=2, issue_id=100002, summary='Two')
     self.issue3 = MakeTestIssue(
         local_id=3, issue_id=100003, summary='Three')
+    self.table_cell_kws = {
+        'col': None,
+        'users_by_id': self.USERS_BY_ID,
+        'non_col_labels': [('lab', False)],
+        'label_values': {},
+        'related_issues': {},
+        'config': 'fake_config',
+        }
 
   def testTableCellSummary(self):
     """TableCellSummary stores the data given to it."""
     cell = table_view_helpers.TableCellSummary(
-        MakeTestIssue(4, 4, 'Lame default summary.'), None, self.USERS_BY_ID,
-        [('lab', False)], {}, {}, 'fake config')
+        MakeTestIssue(4, 4, 'Lame default summary.'), **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_SUMMARY)
     self.assertEqual(cell.values[0].item, 'Lame default summary.')
     self.assertEqual(cell.non_column_labels[0].value, 'lab')
@@ -66,8 +73,7 @@ class TableCellTest(unittest.TestCase):
   def testTableCellSummary_NoPythonEscaping(self):
     """TableCellSummary stores the summary without escaping it in python."""
     cell = table_view_helpers.TableCellSummary(
-        MakeTestIssue(4, 4, '<b>bold</b> "summary".'), None, self.USERS_BY_ID,
-        [('lab', False)], {}, {}, 'fake config')
+        MakeTestIssue(4, 4, '<b>bold</b> "summary".'), **self.table_cell_kws)
     self.assertEqual(cell.values[0].item,'<b>bold</b> "summary".')
 
   # TODO(jrobbins): TableCellProject, TableCellStars
@@ -398,7 +404,7 @@ class TableViewHelpersTest(unittest.TestCase):
     # a result is an table_view_helpers.TableRow object with a "cells" field
     # containing a list of table_view_helpers.TableCell objects.
     result = table_view_helpers.MakeRowData(
-        art, columns, {}, cell_factories, {}, self.config)
+        art, columns, {}, cell_factories, {}, self.config, {})
 
     self.assertEqual(len(columns), len(result.cells))
 

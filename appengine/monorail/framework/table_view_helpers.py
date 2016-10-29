@@ -239,7 +239,8 @@ def ExtractUniqueValues(columns, artifact_list, users_by_id, config):
 
 def MakeTableData(
     visible_results, starred_items, lower_columns, lower_group_by,
-    users_by_id, cell_factories, id_accessor, related_issues, config):
+    users_by_id, cell_factories, id_accessor, related_issues, config,
+    context_for_all_issues=None):
   """Return a list of list row objects for display by EZT.
 
   Args:
@@ -255,6 +256,10 @@ def MakeTableData(
         be in the starred items list.
     related_issues: dict {issue_id: issue} of pre-fetched related issues.
     config: ProjectIssueConfig PB for the current project.
+    context_for_all_issues: A dictionary of dictionaries containing values
+        passed in to cell factory functions to create TableCells. Dictionary
+        form: {issue_id: {'rank': issue_rank, 'issue_info': info_value, ..},
+        issue_id: {'rank': issue_rank}, ..}
 
   Returns:
     A list of TableRow objects, one for each visible result.
@@ -273,7 +278,7 @@ def MakeTableData(
   for idx, art in enumerate(visible_results):
     row = MakeRowData(
         art, lower_columns, users_by_id, factories_to_use, related_issues,
-        config)
+        config, context_for_all_issues)
     row.starred = ezt.boolean(id_accessor(art) in starred_items)
     row.idx = idx  # EZT does not have loop counters, so add idx.
     table_data.append(row)
@@ -284,7 +289,8 @@ def MakeTableData(
     # common case where no new group heading row is to be inserted.
     group = MakeRowData(
         art, [group_name.strip('-') for group_name in lower_group_by],
-        users_by_id, group_cell_factories, related_issues, config)
+        users_by_id, group_cell_factories, related_issues, config,
+        context_for_all_issues)
     for cell, group_name in zip(group.cells, lower_group_by):
       cell.group_name = group_name
     if group == current_group:
@@ -298,7 +304,8 @@ def MakeTableData(
 
 
 def MakeRowData(
-    art, columns, users_by_id, cell_factory_list, related_issues, config):
+    art, columns, users_by_id, cell_factory_list, related_issues, config,
+    context_for_all_issues):
   """Make a TableRow for use by EZT when rendering HTML table of results.
 
   Args:
@@ -310,10 +317,16 @@ def MakeRowData(
         objects for a given column.
     related_issues: dict {issue_id: issue} of pre-fetched related issues.
     config: ProjectIssueConfig PB for the current project.
+    context_for_all_issues: A dictionary of dictionaries containing values
+        passed in to cell factory functions to create TableCells. Dictionary
+        form: {issue_id: {'rank': issue_rank, 'issue_info': info_value, ..},
+        issue_id: {'rank': issue_rank}, ..}
 
   Returns:
     A TableRow object for use by EZT to render a table of results.
   """
+  if context_for_all_issues is None:
+    context_for_all_issues = {}
   ordered_row_data = []
   non_col_labels = []
   label_values = collections.defaultdict(list)
@@ -336,9 +349,16 @@ def MakeRowData(
   # Build up a list of TableCell objects for this row.
   for i, col in enumerate(columns):
     factory = cell_factory_list[i]
-    new_cell = factory(
-        art, col, users_by_id, non_col_labels, label_values, related_issues,
-        config)
+    kw = {
+        'col': col,
+        'users_by_id': users_by_id,
+        'non_col_labels': non_col_labels,
+        'label_values': label_values,
+        'related_issues': related_issues,
+        'config': config,
+        }
+    kw.update(context_for_all_issues.get(art.issue_id, {}))
+    new_cell = factory(art, **kw)
     new_cell.col_index = i
     ordered_row_data.append(new_cell)
 
@@ -449,18 +469,15 @@ def CompositeTableCell(columns_to_combine, cell_factories):
   """Cell factory that combines multiple cells in a combined column."""
 
   class FactoryClass(TableCell):
-    def __init__(self, art, _col, users_by_id,
-                 non_col_labels, label_values, related_issues, config):
+    def __init__(self, art, config=None, **kw):
       TableCell.__init__(self, CELL_TYPE_UNFILTERABLE, [])
 
       for sub_col in columns_to_combine:
+        kw['col'] = sub_col
         sub_factory = ChooseCellFactory(sub_col, cell_factories, config)
-        sub_cell = sub_factory(
-            art, sub_col, users_by_id, non_col_labels, label_values,
-            related_issues, config)
+        sub_cell = sub_factory(art, **kw)
         self.non_column_labels.extend(sub_cell.non_column_labels)
         self.values.extend(sub_cell.values)
-
   return FactoryClass
 
 
@@ -484,9 +501,7 @@ class CellItem(object):
 class TableCellKeyLabels(TableCell):
   """TableCell subclass specifically for showing user-defined label values."""
 
-  def __init__(
-      self, _art, col, _users_by_id, _non_col_labels,
-      label_values, _related_issues, _config):
+  def __init__(self, _art, col=None, label_values=None,  **_kw):
     label_value_pairs = label_values.get(col, [])
     explicit_values = [value for value, is_derived in label_value_pairs
                        if not is_derived]
@@ -499,10 +514,7 @@ class TableCellKeyLabels(TableCell):
 class TableCellProject(TableCell):
   """TableCell subclass for showing an artifact's project name."""
 
-  # pylint: disable=unused-argument
-  def __init__(
-      self, art, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
+  def __init__(self, art, **_kw):
     TableCell.__init__(
         self, CELL_TYPE_ATTR, [art.project_name])
 
@@ -510,10 +522,7 @@ class TableCellProject(TableCell):
 class TableCellStars(TableCell):
   """TableCell subclass for showing an artifact's star count."""
 
-  # pylint: disable=unused-argument
-  def __init__(
-      self, art, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
+  def __init__(self, art, **_kw):
     TableCell.__init__(
         self, CELL_TYPE_ATTR, [art.star_count], align='right')
 
@@ -521,10 +530,7 @@ class TableCellStars(TableCell):
 class TableCellSummary(TableCell):
   """TableCell subclass for showing an artifact's summary."""
 
-  # pylint: disable=unused-argument
-  def __init__(
-      self, art, col, users_by_id, non_col_labels, label_values,
-      _related_issues, _config):
+  def __init__(self, art, non_col_labels=None, **_kw):
     TableCell.__init__(
         self, CELL_TYPE_SUMMARY, [art.summary],
         non_column_labels=non_col_labels)
@@ -550,9 +556,7 @@ class TableCellDate(TableCell):
 class TableCellCustom(TableCell):
   """Abstract TableCell subclass specifically for showing custom fields."""
 
-  def __init__(
-      self, art, col, users_by_id, _non_col_labels,
-      _label_values, _related_issues, config):
+  def __init__(self, art, col=None, users_by_id=None, config=None, **_kw):
     explicit_values = []
     derived_values = []
     for fv in art.field_values:

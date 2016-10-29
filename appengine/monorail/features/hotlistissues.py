@@ -113,9 +113,13 @@ class HotlistIssues(servlet.Servlet):
         urls.HOTLIST_ISSUES, len(sorted_issues))
 
     with self.profiler.Phase('building table'):
+      context_for_all_issues = {issue.issue_id: {
+          'issue_rank': issue_ranks[issue.issue_id],}
+                                for issue in sorted_issues}
       page_data = self.GetTableViewData(
           mr, sorted_issues, harmonized_config,
-          issues_users_by_id, starred_iid_set, related_issues)
+          issues_users_by_id, starred_iid_set, related_issues,
+          context_for_all_issues)
 
     with self.profiler.Phase('making page perms'):
       owner_permissions = permissions.CanAdministerHotlist(
@@ -193,7 +197,7 @@ class HotlistIssues(servlet.Servlet):
 
   def GetTableViewData(
       self, mr, issues, config, users_by_id,
-      starred_iid_set, related_issues):
+      starred_iid_set, related_issues, context_for_all_issues):
     """EZT template values to render a Table View of issues.
 
     Args:
@@ -204,7 +208,11 @@ class HotlistIssues(servlet.Servlet):
       users_by_id: A dictionary of {user_id: UserView} for all the users
         involved in the issues.
       starred_iid_set: Set of issues that the user has starred
-      related_issues: dict {issue_id: issue} of pre-fetched related issues.
+        related_issues: dict {issue_id: issue} of pre-fetched related issues.
+      context_for_all_issues: A dictionary of dictionaries containing values
+        passed in to cell factory functions to create TableCells. Dictionary
+        form: {issue_id: {'rank': issue_rank, 'issue_info': info_value, ..},
+        issue_id: {'rank': issue_rank}, ..}
 
     Returns:
       Dictionary of page data for rendering of the Table View.
@@ -216,7 +224,7 @@ class HotlistIssues(servlet.Servlet):
     lower_group_by = mr.group_by_spec.lower().split()
     table_data = _MakeTableData(
         issues, starred_iid_set, lower_columns, lower_group_by, users_by_id,
-        self.GetCellFactories(), related_issues, config)
+        self.GetCellFactories(), related_issues, config, context_for_all_issues)
     column_values = table_view_helpers.ExtractUniqueValues(
         lower_columns, issues, users_by_id, config)
     unshown_columns = table_view_helpers.ComputeUnshownColumns(
@@ -240,11 +248,11 @@ class HotlistIssues(servlet.Servlet):
 
 def _MakeTableData(issues, starred_iid_set, lower_columns,
                    lower_group_by, users_by_id, cell_factories,
-                   related_issues, config):
+                   related_issues, config, context_for_all_issues):
   table_data = table_view_helpers.MakeTableData(
       issues, starred_iid_set, lower_columns, lower_group_by,
       users_by_id, cell_factories, lambda issue: issue.issue_id,
-      related_issues, config)
+      related_issues, config, context_for_all_issues)
 
   for row, art in zip(table_data, issues):
     row.local_id = art.local_id
