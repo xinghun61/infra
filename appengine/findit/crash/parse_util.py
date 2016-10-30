@@ -6,10 +6,6 @@ import logging
 import os
 import re
 
-from crash.type_enums import CallStackFormatType
-from crash.type_enums import CallStackLanguageType
-
-
 GENERATED_CODE_FILE_PATH_PATTERN = re.compile(r'.*out/[^/]+/gen/')
 THIRD_PARTY_FILE_PATH_MARKER = 'third_party'
 CHROMIUM_REPO_URL = 'https://chromium.googlesource.com/chromium/src.git'

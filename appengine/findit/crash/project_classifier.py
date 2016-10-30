@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import logging
-from collections import namedtuple
 
 from crash.occurrence import RankByOccurrence
 from crash.type_enums import CallStackLanguageType

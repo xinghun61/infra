@@ -15,8 +15,6 @@ from crash.crash_report import CrashReport
 from crash.culprit import Culprit
 from model import analysis_status
 from model.crash.crash_config import CrashConfig
-from model.crash.cracas_crash_analysis import CracasCrashAnalysis
-from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 # TODO(http://crbug.com/659346): since most of our unit tests are
 # FinditForFracas-specific, wrengr moved them to findit_for_chromecrash_test.py.
@@ -185,6 +183,7 @@ class Findit(object):
     # So, either we should do that, or else we should move this to be
     # a method on CrashAnalysis.
     model.client_id = self.client_id
+    model.regression_range = crash_data.get('regression_range', None)
 
     # Set progress properties.
     model.status = analysis_status.PENDING

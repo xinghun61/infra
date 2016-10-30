@@ -97,11 +97,7 @@ class CrashPipelineTest(CrashTestCase):
     testcase = self
     MOCK_KEY = 'MOCK_KEY'
 
-    # TODO: We need to mock out the pipeline so that it doesn't go over
-    # the wire, and yet still exercises the code we're trying to unittest.
-    # TODO: since |FinditForClientID| automatically feeds
-    # CrashWrapperPipeline in to the Findit constructor; this mock
-    # probably won't work.
+    # Mock out the wrapper pipeline, calling the other pipelines directly.
     class _MockPipeline(crash_pipeline.CrashWrapperPipeline):
       def start(self, **kwargs):
         logging.info('Mock running on queue %s', kwargs['queue_name'])

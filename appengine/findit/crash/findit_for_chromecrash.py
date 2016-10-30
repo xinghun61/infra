@@ -6,13 +6,11 @@ import logging
 
 from google.appengine.ext import ndb
 
-from common import chrome_dependency_fetcher
 from crash import detect_regression_range
 from crash.changelist_classifier import ChangelistClassifier
 from crash.chromecrash_parser import ChromeCrashParser
 from crash.component_classifier import Component
 from crash.component_classifier import ComponentClassifier
-from crash.crash_report import CrashReport
 from crash.findit import Findit
 from crash.predator import Predator
 from crash.project_classifier import ProjectClassifier
@@ -72,7 +70,6 @@ class FinditForChromeCrash(Findit):
   def _InitializeAnalysis(self, model, crash_data):
     super(FinditForChromeCrash, self)._InitializeAnalysis(model, crash_data)
     # TODO(wrengr): see Note#1
-    model.regression_range = crash_data.get('regression_range', None)
     customized_data = crash_data.get('customized_data', {})
     model.channel = customized_data.get('channel', None)
     model.historical_metadata = customized_data.get('historical_metadata', [])
