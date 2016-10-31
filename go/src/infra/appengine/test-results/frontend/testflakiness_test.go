@@ -25,6 +25,7 @@ type expectedRequest struct {
 	Query     string
 	PageToken string
 	Response  string
+	Params    string
 	Processed bool
 }
 
@@ -34,23 +35,30 @@ type fakeBQHandler struct {
 	Mutex            sync.Mutex
 }
 
-func parseQuery(body io.ReadCloser, c C) string {
+func parseQuery(body io.Reader, c C) (string, string) {
 	bodyBytes, err := ioutil.ReadAll(body)
 	c.So(err, ShouldBeNil)
 	if len(bodyBytes) == 0 {
-		return ""
+		return "", ""
 	}
 
 	var req bigquery.QueryRequest
 	err = json.Unmarshal(bodyBytes, &req)
 	c.So(err, ShouldBeNil)
 	c.So(req.TimeoutMs, ShouldEqual, 5000)
-	return req.Query
+
+	var params string
+	if len(req.QueryParameters) > 0 {
+		paramBytes, err := json.Marshal(req.QueryParameters)
+		c.So(err, ShouldBeNil)
+		params = string(paramBytes)
+	}
+	return req.Query, params
 }
 
 func (h *fakeBQHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
-	query := parseQuery(r.Body, h.C)
+	query, params := parseQuery(r.Body, h.C)
 	pageToken := r.URL.Query().Get("pageToken")
 
 	// Make sure that all modifications to ExpectedQueries are synchronized.
@@ -70,12 +78,16 @@ func (h *fakeBQHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if er.PageToken != pageToken {
 			continue
 		}
+		if er.Params != params {
+			continue
+		}
 		fmt.Fprintln(w, er.Response)
 		er.Processed = true
 		return
 	}
 
-	panic(fmt.Sprintf("Unexpected request: %#v %#v %#v", path, query, pageToken))
+	panic(fmt.Sprintf("Unexpected request: %#v %#v %#v %#v\nExpected: %#v", path,
+		query, params, pageToken, h.ExpectedRequests))
 }
 
 func TestGetFlakinessGroups(t *testing.T) {
@@ -124,6 +136,89 @@ func TestGetFlakinessGroups(t *testing.T) {
 }
 
 func TestGetFlakinessData(t *testing.T) {
-	// TODO(sergiyb): Add tests to getFlakinessData when it's implemented.
-	Convey("getFlakinessData", t, nil)
+	Convey("getFlakinessData", t, func(c C) {
+		handler := fakeBQHandler{
+			C: c,
+			ExpectedRequests: []expectedRequest{
+				{
+					Path: "/projects/test-results-hrd/queries",
+					Response: `{"totalRows": "2", "jobReference": {"jobId": "x"},
+					            "rows": [{"f": [{"v": "test1"}, {"v": "0.2"}]},
+											         {"f": [{"v": "test2"}, {"v": "0.14"}]}]}`,
+				},
+			},
+		}
+
+		server := httptest.NewServer(&handler)
+		bq, err := bigquery.New(&http.Client{})
+		So(err, ShouldBeNil)
+		bq.BasePath = server.URL + "/"
+		ctx := memory.Use(context.Background())
+
+		Convey("for tests in a dir", func() {
+			handler.ExpectedRequests[0].Query =
+				fmt.Sprintf(flakesQuery, "layout_test_dir = @groupname")
+			handler.ExpectedRequests[0].Params =
+				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
+					`"parameterValue":{"value":"foo"}}]`
+			data, err := getFlakinessData(ctx, bq, Group{Name: "foo", Kind: "dir"})
+			So(err, ShouldBeNil)
+			So(data, ShouldResemble, []Flakiness{
+				{TestName: "test1", Flakiness: 0.2},
+				{TestName: "test2", Flakiness: 0.14},
+			})
+		})
+
+		Convey("for tests in a team", func() {
+			handler.ExpectedRequests[0].Query =
+				fmt.Sprintf(flakesQuery, "layout_test_team = @groupname")
+			handler.ExpectedRequests[0].Params =
+				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
+					`"parameterValue":{"value":"foo"}}]`
+			_, err := getFlakinessData(ctx, bq, Group{Name: "foo", Kind: "team"})
+			So(err, ShouldBeNil)
+		})
+
+		Convey("for tests in unknown dir", func() {
+			handler.ExpectedRequests[0].Query =
+				fmt.Sprintf(flakesQuery, "layout_test_dir is None")
+			handler.ExpectedRequests[0].Params =
+				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
+					`"parameterValue":{}}]`
+			_, err := getFlakinessData(ctx, bq, Group{Kind: "unknown-dir"})
+			So(err, ShouldBeNil)
+		})
+
+		Convey("for tests owned by an unknown team", func() {
+			handler.ExpectedRequests[0].Query =
+				fmt.Sprintf(flakesQuery, "layout_test_team is None")
+			handler.ExpectedRequests[0].Params =
+				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
+					`"parameterValue":{}}]`
+			_, err := getFlakinessData(ctx, bq, Group{Kind: "unknown-team"})
+			So(err, ShouldBeNil)
+		})
+
+		Convey("for tests in a particular test suite", func() {
+			handler.ExpectedRequests[0].Query =
+				fmt.Sprintf(flakesQuery, "STARTS_WITH(test_name, @groupname + '.')")
+			handler.ExpectedRequests[0].Params =
+				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
+					`"parameterValue":{"value":"FooBar"}}]`
+			_, err := getFlakinessData(
+				ctx, bq, Group{Name: "FooBar", Kind: "test-suite"})
+			So(err, ShouldBeNil)
+		})
+
+		Convey("for tests containing a substring", func() {
+			handler.ExpectedRequests[0].Query =
+				fmt.Sprintf(flakesQuery, "STRPOS(test_name, @groupname) != 0")
+			handler.ExpectedRequests[0].Params =
+				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
+					`"parameterValue":{"value":"FooBar"}}]`
+			_, err := getFlakinessData(
+				ctx, bq, Group{Name: "FooBar", Kind: "substring"})
+			So(err, ShouldBeNil)
+		})
+	})
 }

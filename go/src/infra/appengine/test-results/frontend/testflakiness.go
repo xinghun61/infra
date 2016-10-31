@@ -6,7 +6,9 @@ package frontend
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/luci/gae/impl/prod"
 	"github.com/luci/luci-go/common/errors"
@@ -20,22 +22,30 @@ import (
 )
 
 const teamsQuery = `
-  SELECT layout_test_team
-  FROM plx.google:chrome_infra.flaky_tests_with_layout_team_dir_info.all
+	SELECT layout_test_team
+	FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
 	GROUP BY layout_test_team;`
 
 const dirsQuery = `
-  SELECT layout_test_dir
-  FROM plx.google:chrome_infra.flaky_tests_with_layout_team_dir_info.all
+	SELECT layout_test_dir
+	FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
 	GROUP BY layout_test_dir;`
+
+const flakesQuery = `
+	SELECT test_name, flakiness
+	FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
+	WHERE %s
+	ORDER BY flakiness DESC
+	LIMIT 1000;
+`
 
 const bqProjectID = "test-results-hrd"
 
 // Flakiness represents infromation about a single flaky test.
 type Flakiness struct {
 	TestName        string  `json:"test_name"`
-	Flakiness       float32 `json:"flakiness"`
-	FalseRejections int32   `json:"false_rejections"`
+	Flakiness       float64 `json:"flakiness"`
+	FalseRejections uint    `json:"false_rejections"`
 }
 
 // Group represents infromation about flakiness of a group of tests.
@@ -66,28 +76,66 @@ func writeResponse(ctx *router.Context, funcName string, data interface{}) {
 	}
 }
 
-func getFlakinessData(ctx context.Context, group Group) ([]Flakiness, error) {
-	// TODO(sergiyb): Replace test data with actual implementation.
-	return []Flakiness{
+func getFlakinessData(ctx context.Context, bq *bigquery.Service, group Group) ([]Flakiness, error) {
+	var filter string
+	switch group.Kind {
+	case "team":
+		// TODO(sergiyb): Change this when we have a way to detect which team owns a
+		// given test (other than layout test).
+		filter = "layout_test_team = @groupname"
+	case "dir":
+		filter = "layout_test_dir = @groupname"
+	case "unknown-team":
+		filter = "layout_test_team is None"
+	case "unknown-dir":
+		filter = "layout_test_dir is None"
+	case "test-suite":
+		filter = "STARTS_WITH(test_name, @groupname + '.')"
+	case "substring":
+		filter = "STRPOS(test_name, @groupname) != 0"
+	default:
+		return nil, errors.New("unknown group kind")
+	}
+
+	queryParams := []*bigquery.QueryParameter{
 		{
-			TestName:        "foo",
-			Flakiness:       0.11,
-			FalseRejections: 45,
+			Name:           "groupname",
+			ParameterType:  &bigquery.QueryParameterType{Type: "STRING"},
+			ParameterValue: &bigquery.QueryParameterValue{Value: group.Name},
 		},
-		{
-			TestName:        "bar",
-			Flakiness:       0.03,
-			FalseRejections: 1,
-		},
-		{
-			TestName:        "baz",
-			Flakiness:       0.01,
-			FalseRejections: 0,
-		},
-	}, nil
+	}
+	rows, err := executeBQQuery(
+		ctx, bq, fmt.Sprintf(flakesQuery, filter), queryParams)
+	if err != nil {
+		return nil, errors.Annotate(err).Reason("failed to execute query").Err()
+	}
+
+	data := make([]Flakiness, 0, len(rows))
+	for _, row := range rows {
+		name, ok := row.F[0].V.(string)
+		if !ok {
+			return nil, errors.New("query returned non-string test name column")
+		}
+
+		flakinessStr, ok := row.F[1].V.(string)
+		if !ok {
+			return nil, errors.New("query returned non-string value for flakiness column")
+		}
+
+		flakiness, err := strconv.ParseFloat(flakinessStr, 64)
+		if err != nil {
+			return nil, errors.Annotate(err).Reason("Failed to convert flakiness value to float").Err()
+		}
+
+		// TODO(sergiyb): Add number of false rejections per test.
+		data = append(data, Flakiness{TestName: name, Flakiness: flakiness})
+	}
+
+	return data, nil
 }
 
 func testFlakinessHandler(ctx *router.Context) {
+	// TODO(sergiyb): Add a layer of caching results using memcache.
 	name := ctx.Request.FormValue("groupName")
 	kind := ctx.Request.FormValue("groupKind")
 
@@ -101,7 +149,13 @@ func testFlakinessHandler(ctx *router.Context) {
 		return
 	}
 
-	data, err := getFlakinessData(ctx.Context, Group{Name: name, Kind: kind})
+	bq, err := createBQService(ctx.Context)
+	if err != nil {
+		writeError(ctx, err, "testFlakinessHandler", "failed create BigQuery client")
+		return
+	}
+
+	data, err := getFlakinessData(ctx.Context, bq, Group{Name: name, Kind: kind})
 	if err != nil {
 		writeError(ctx, err, "testFlakinessHandler", "failed to get flakiness data")
 		return
@@ -124,10 +178,13 @@ func createBQService(ctx context.Context) (*bigquery.Service, error) {
 	return bq, nil
 }
 
-func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string) ([]*bigquery.TableRow, error) {
+func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, params []*bigquery.QueryParameter) ([]*bigquery.TableRow, error) {
+	useLegacySQL := false
 	request := bq.Jobs.Query(bqProjectID, &bigquery.QueryRequest{
-		Query:     query,
-		TimeoutMs: 5000,
+		Query:           query,
+		TimeoutMs:       5000,
+		UseLegacySql:    &useLegacySQL,
+		QueryParameters: params,
 	})
 
 	var response *bigquery.QueryResponse
@@ -142,6 +199,9 @@ func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string) ([]
 	}
 
 	rows := make([]*bigquery.TableRow, 0, response.TotalRows)
+	// TODO(sergiyb): BigQuery may set JobComplete to false and not populate Rows
+	// array. We need to handle this correctly and use GetQueryResults to actually
+	// get results when the query is complete.
 	rows = append(rows, response.Rows...)
 	jobID := response.JobReference.JobId
 	pageToken := response.PageToken
@@ -167,7 +227,7 @@ func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string) ([]
 }
 
 func getGroupsForQuery(ctx context.Context, bq *bigquery.Service, query, kind, nilKind string) ([]Group, error) {
-	rows, err := executeBQQuery(ctx, bq, query)
+	rows, err := executeBQQuery(ctx, bq, query, nil)
 	if err != nil {
 		return nil, errors.Annotate(err).Reason("failed to execute query").Err()
 	}
@@ -210,6 +270,7 @@ func getFlakinessGroups(ctx context.Context, bq *bigquery.Service) ([]Group, err
 }
 
 func testFlakinessGroupsHandler(ctx *router.Context) {
+	// TODO(sergiyb): Add a layer of caching results using memcache.
 	bq, err := createBQService(ctx.Context)
 	if err != nil {
 		writeError(ctx, err, "testFlakinessGroupsHandler", "failed create BigQuery client")
