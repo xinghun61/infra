@@ -163,8 +163,6 @@ class FilePoller(Poller):
   endpoint = 'FILE'
   build_field_keys = ('builder', 'slave', 'result',
                       'project_id', 'subproject_tag')
-  step_field_keys = ('builder', 'slave', 'step_result',
-                     'project_id', 'subproject_tag')
 
   ### These metrics are sent when a build finishes.
   result_count = ts_mon.CounterMetric('buildbot/master/builders/results/count',
@@ -190,11 +188,6 @@ class FilePoller(Poller):
       'buildbot/master/builders/builds/pre_test_durations', bucketer=bucketer,
       description='Durations (in seconds) that builds spent before their '
                   '"before_tests" step')
-
-  ### This metric is sent when a step finishes.
-  step_results_count = ts_mon.CounterMetric(
-    'buildbot/master/builders/steps/results/count',
-    description='Count of step results, per builder')
 
   def poll(self):
     LOGGER.info('Collecting results from %s', self._url)
@@ -224,12 +217,7 @@ class FilePoller(Poller):
     # finished or when a step finished. We use the content of the json dict to
     # tell the difference.
 
-    if 'step_result' in data:  # generated when a step finishes
-      fields = self.fields({k: data.get(k, 'unknown')
-                            for k in self.step_field_keys})
-      self.step_results_count.increment(fields=fields)
-
-    else:  # otherwise it's generated after a build finishes
+    if 'step_result' not in data:  # We only care about builds
       fields = self.fields({k: data.get(k, 'unknown')
                             for k in self.build_field_keys})
       self.result_count.increment(fields)

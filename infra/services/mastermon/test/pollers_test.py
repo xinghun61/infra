@@ -217,13 +217,13 @@ class FilePollerTest(unittest.TestCase):
     result2 = {'builder': 'b1', 'slave': 's1',
                'result': 'r1', 'project_id': 'unknown',
                'subproject_tag': 'unknown'}
+    # Keep it for branch coverage.
     result3 = {'builder': 'b1', 'slave': 's1',
                'step_result': 'r1', 'project_id': 'chromium',
                'subproject_tag': 'unknown'}
     # Check that we've listed all the required metric fields.
     self.assertEqual(set(result1), set(pollers.FilePoller.build_field_keys))
     self.assertEqual(set(result2), set(pollers.FilePoller.build_field_keys))
-    self.assertEqual(set(result3), set(pollers.FilePoller.step_field_keys))
 
     data = [r.copy() for r in (result1, result2, result3)]
     data[0]['random'] = 'value'  # Extra field, should be ignored.
@@ -239,7 +239,6 @@ class FilePollerTest(unittest.TestCase):
 
       self.assertEqual(pollers.FilePoller.result_count.get(result1), 1)
       self.assertEqual(pollers.FilePoller.result_count.get(result2), 1)
-      self.assertEqual(pollers.FilePoller.step_results_count.get(result3), 1)
 
       self.assertFalse(os.path.isfile(filename))
       # Make sure the rotated file is still there - for debugging.
