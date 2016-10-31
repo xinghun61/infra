@@ -40,6 +40,8 @@ func init() {
 
 	gaemiddleware.InstallHandlers(r, baseMW)
 
+	r.GET("/", getMW, indexHandler)
+
 	r.GET("/testfile", getMW, getHandler)
 	r.GET("/testfile/", getMW, getHandler)
 	r.POST("/testfile/upload", baseMW.Extend(withParsedUploadForm), uploadHandler)

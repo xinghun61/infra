@@ -1,0 +1,53 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<dom-module id="test-results">
+  <template>
+    <style>
+      :host {
+        font-family: verdana, helvetica, sans-serif;
+      }
+      h1 {
+        margin-top: 0px;
+      }
+      ul {
+        list-style: none;
+      }
+      li {
+        padding: 5px 0;
+      }
+    </style>
+    <h1>Test Result Server</h1>
+    <h2>Dashboards</h2>
+    <div>
+      <ul>
+        <li>
+          <a href="/dashboards/overview.html">Overview</a>
+        </li>
+        <li>
+          <a href="/dashboards/flakiness_dashboard.html">Results</a>
+        </li>
+        <li>
+          <a href="/dashboards/treemap.html">Times</a>
+        </li>
+        <li>
+          <a href="/dashboards/builderstate.html">Load failures</a>
+        </li>
+      </>
+    </div>
+    <h2>JSON files</h2>
+    <div>
+      <ul>
+        <li>
+          <a href="/testfile?name=results.json">List of test files</a>
+        </li>
+        <li>
+          <a href="/testfile/uploadform">Upload test file</a>
+        </li>
+      </ul>
+    </div>
+  </template>
+  <script>
+    Polymer({
+      is: 'test-results',
+    });
+  </script>
+</dom-module>

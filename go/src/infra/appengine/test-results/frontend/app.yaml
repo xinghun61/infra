@@ -7,13 +7,12 @@ automatic_scaling:
   max_concurrent_requests: 4
 
 handlers:
-  - url: /favicon.ico
-    static_files: static/favicon.ico
-    upload: static/favicon.ico
-
   - url: /robots.txt
     static_files: static/robots.txt
     upload: static/robots.txt
+
+  - url: /images
+    static_dir: static/images
 
   - url: /stylesheets
     static_dir: static/stylesheets
@@ -21,14 +20,15 @@ handlers:
   - url: /dashboards
     static_dir: static/dashboards
 
+  - url: /components
+    static_dir: components
+
+  - url: /bower_components
+    static_dir: bower_components
+
   - url: /testfile/uploadform
     static_files: static/pages/uploadform.html
     upload: static/pages/uploadform.html
-    mime_type: text/html; charset=utf-8
-
-  - url: /
-    static_files: static/pages/menu.html
-    upload: static/pages/menu.html
     mime_type: text/html; charset=utf-8
 
   - url: /.*

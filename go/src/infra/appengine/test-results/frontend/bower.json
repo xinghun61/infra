@@ -1,0 +1,22 @@
+{
+  "name": "test-results",
+  "authors": [
+    "sergiyb@chromium.org",
+    "estaab@chromium.org"
+  ],
+  "description": "Test Results Server",
+  "main": "",
+  "license": "https://chromium.googlesource.com/infra/infra/+/master/LICENSE",
+  "homepage": "test-results.appspot.com",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer": "^1.7.0"
+  }
+}
