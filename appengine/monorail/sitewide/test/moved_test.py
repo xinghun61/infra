@@ -9,6 +9,7 @@ import unittest
 
 import webapp2
 
+from framework import monorailrequest
 from services import service_manager
 from sitewide import moved
 from testing import fake
@@ -22,6 +23,14 @@ class MovedTest(unittest.TestCase):
         project=fake.ProjectService())
     self.servlet = moved.ProjectMoved('req', 'res', services=self.services)
     self.old_project = 'old-project'
+
+  def testGatherPageData_NoProjectSpecified(self):
+    # Project was not included in URL, so raise exception, will cause 400.
+    _, mr = testing_helpers.GetRequestObjects(
+        path='/hosting/moved')
+
+    with self.assertRaises(monorailrequest.InputException):
+      self.servlet.GatherPageData(mr)
 
   def testGatherPageData_NoSuchProject(self):
     # Project doesn't exist, so 404 NOT FOUND.

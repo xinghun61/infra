@@ -35,14 +35,8 @@ class ProjectSearchTest(unittest.TestCase):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
 
-  def TestPipeline(
-      self, mr=None, expected_start=1, expected_last=None,
-      expected_len=None):
-    if not mr:
-      mr = testing_helpers.MakeMonorailRequest()
-
-    if expected_last is None and expected_len is not None:
-      expected_last = expected_len
+  def TestPipeline(self, expected_last, expected_len):
+    mr = testing_helpers.MakeMonorailRequest()
 
     mr.can = 1
     prof = profiler.Profiler()
@@ -50,11 +44,9 @@ class ProjectSearchTest(unittest.TestCase):
     pipeline = projectsearch.ProjectSearchPipeline(mr, self.services, prof)
     pipeline.SearchForIDs()
     pipeline.GetProjectsAndPaginate('fake cnxn', '/hosting/search')
-    self.assertEqual(expected_start, pipeline.pagination.start)
-    if expected_last is not None:
-      self.assertEqual(expected_last, pipeline.pagination.last)
-    if expected_len is not None:
-      self.assertEqual(expected_len, len(pipeline.visible_results))
+    self.assertEqual(1, pipeline.pagination.start)
+    self.assertEqual(expected_last, pipeline.pagination.last)
+    self.assertEqual(expected_len, len(pipeline.visible_results))
 
     return pipeline
 
@@ -65,8 +57,7 @@ class ProjectSearchTest(unittest.TestCase):
   def testZeroResults(self):
     self.SetUpZeroResults()
     self.mox.ReplayAll()
-    pipeline = self.TestPipeline(
-        expected_last=0, expected_len=0)
+    pipeline = self.TestPipeline(0, 0)
     self.mox.VerifyAll()
     self.assertListEqual([], pipeline.visible_results)
 
@@ -77,8 +68,7 @@ class ProjectSearchTest(unittest.TestCase):
   def testNonzeroResults(self):
     self.SetUpNonzeroResults()
     self.mox.ReplayAll()
-    pipeline = self.TestPipeline(
-        expected_last=3, expected_len=3)
+    pipeline = self.TestPipeline(3, 3)
     self.mox.VerifyAll()
     self.assertListEqual(
         [1, 2, 3], [p.project_id for p in pipeline.visible_results])
@@ -92,8 +82,7 @@ class ProjectSearchTest(unittest.TestCase):
     """Test more than one pagination page of results."""
     self.SetUpTwoPageResults()
     self.mox.ReplayAll()
-    pipeline = self.TestPipeline(
-        expected_last=100, expected_len=100)
+    pipeline = self.TestPipeline(100, 100)
     self.mox.VerifyAll()
     self.assertEqual(
         '/hosting/search?num=100&start=100', pipeline.pagination.next_url)

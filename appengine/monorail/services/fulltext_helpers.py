@@ -67,6 +67,7 @@ def _BuildFTSCondition(cond, fulltext_fields):
     elif fd.field_id and fd.field_type == tracker_pb2.FieldTypes.STR_TYPE:
       pattern = 'custom_' + str(fd.field_id) + ':"%s"'
     else:
+      pattern = 'pylint does not handle else-continue'
       continue  # This issue field is searched via SQL.
 
     for value in cond.str_values:

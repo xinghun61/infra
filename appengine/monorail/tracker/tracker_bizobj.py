@@ -186,7 +186,8 @@ def MakeFieldValue(
     fv.user_id = user_id
   elif date_value is not None:
     fv.date_value = date_value
-
+  else:
+    raise ValueError('Unexpected field value')
   return fv
 
 
@@ -1058,27 +1059,31 @@ def MergeFields(field_values, fields_add, fields_remove, field_defs):
   return merged_fvs, fvs_added, fvs_removed
 
 
-def SplitBlockedOnRanks(issue, target_id, split_above, open_ids):
+def SplitBlockedOnRanks(issue, target_iid, split_above, open_iids):
   """Splits issue relation rankings by some target issue's rank
 
   Args:
     issue: Issue PB for the issue considered.
-    target_id: the global ID of the issue to split rankings about.
+    target_iid: the global ID of the issue to split rankings about.
     split_above: False to split below the target issue, True to split above.
-    open_ids: a list of global IDs of open and visible issues blocking
+    open_iids: a list of global IDs of open and visible issues blocking
       the considered issue.
 
   Returns:
     A tuple (lower, higher) where both are lists of
-    [(blocker_id, rank),...] of issues in rank order. If split_above is False
+    [(blocker_iid, rank),...] of issues in rank order. If split_above is False
     the target issue is included in higher, otherwise it is included in lower
   """
-  issue_ranks = [issue_rank
-      for issue_rank in zip(issue.blocked_on_iids, issue.blocked_on_ranks)
-      if issue_rank[0] in open_ids]
+  issue_rank_pairs = [(dst_iid, rank)
+      for (dst_iid, rank) in zip(issue.blocked_on_iids, issue.blocked_on_ranks)
+      if dst_iid in open_iids]
   # blocked_on_iids is sorted high-to-low, we need low-to-high
-  issue_ranks.reverse()
+  issue_rank_pairs.reverse()
   offset = int(split_above)
-  for i, (dst_id, _) in enumerate(issue_ranks):
-    if dst_id == target_id:
-      return issue_ranks[:i+offset], issue_ranks[i+offset:]
+  for i, (dst_iid, _) in enumerate(issue_rank_pairs):
+    if dst_iid == target_iid:
+      return issue_rank_pairs[:i + offset], issue_rank_pairs[i + offset:]
+
+  logging.error('Target issue %r was not found in blocked_on_iids of %r',
+                target_iid, issue)
+  return issue_rank_pairs, []

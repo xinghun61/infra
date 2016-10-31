@@ -18,6 +18,7 @@ from services import fulltext_helpers
 
 TEXT_HAS = ast_pb2.QueryOp.TEXT_HAS
 NOT_TEXT_HAS = ast_pb2.QueryOp.NOT_TEXT_HAS
+GE = ast_pb2.QueryOp.GE
 
 
 class MockResult(object):
@@ -149,12 +150,30 @@ class FulltextHelpersTest(unittest.TestCase):
             special_prefix),
         fulltext_query)
 
+  def testBuildFTSCondition_IgnoredOperator(self):
+    query_cond = ast_pb2.MakeCond(
+        GE, [self.summary_fd], ['needle'], [])
+    fulltext_query_clause = fulltext_helpers._BuildFTSCondition(
+        query_cond, self.fulltext_fields)
+    self.assertEqual('', fulltext_query_clause)
+
   def testBuildFTSCondition_BuiltinField(self):
     query_cond = ast_pb2.MakeCond(
         TEXT_HAS, [self.summary_fd], ['needle'], [])
     fulltext_query_clause = fulltext_helpers._BuildFTSCondition(
         query_cond, self.fulltext_fields)
     self.assertEqual('(summary:"needle")', fulltext_query_clause)
+
+  def testBuildFTSCondition_NonStringField(self):
+    est_days_fd = tracker_pb2.FieldDef(
+      field_name='EstDays', field_id=123,
+      field_type=tracker_pb2.FieldTypes.INT_TYPE)
+    query_cond = ast_pb2.MakeCond(
+        TEXT_HAS, [est_days_fd], ['needle'], [])
+    fulltext_query_clause = fulltext_helpers._BuildFTSCondition(
+        query_cond, self.fulltext_fields)
+    # Ignore in FTS, this search condition is done in SQL.
+    self.assertEqual('', fulltext_query_clause)
 
   def testBuildFTSCondition_Negatation(self):
     query_cond = ast_pb2.MakeCond(

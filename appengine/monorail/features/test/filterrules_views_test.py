@@ -18,6 +18,11 @@ class RuleViewTest(unittest.TestCase):
     self.rule = tracker_pb2.FilterRule()
     self.rule.predicate = 'label:a label:b'
 
+  def testNone(self):
+    view = filterrules_views.RuleView(None, {})
+    self.assertEquals('', view.action_type)
+    self.assertEquals('', view.action_value)
+
   def testEmpty(self):
     view = filterrules_views.RuleView(self.rule, {})
     self.rule.predicate = ''

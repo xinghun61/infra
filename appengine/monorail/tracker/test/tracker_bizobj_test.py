@@ -122,6 +122,16 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual(
         set(), tracker_bizobj.GetGrantedPerms(issue, {111L}, config))
 
+  def testGetGrantedPerms_NothingGranted(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    fd = tracker_pb2.FieldDef(field_id=1)  # Nothing granted
+    config.field_defs = [fd]
+    fv = tracker_pb2.FieldValue(field_id=1, user_id=222L)
+    issue = tracker_pb2.Issue(field_values=[fv])
+    self.assertEqual(
+        set(),
+        tracker_bizobj.GetGrantedPerms(issue, {111L, 222L}, config))
+
   def testGetGrantedPerms_Normal(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     fd = tracker_pb2.FieldDef(field_id=1, grants_perm='Highlight')
@@ -202,6 +212,9 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual(1234567890, fv.date_value)
     self.assertEqual(True, fv.derived)
 
+    with self.assertRaises(ValueError):
+      tracker_bizobj.MakeFieldValue(1, None, None, None, None, True)
+
   def testGetFieldValueWithRawValue(self):
     class MockUser(object):
       def __init__(self):
@@ -268,7 +281,7 @@ class BizobjTest(unittest.TestCase):
       self.assertEqual('abc', val)
 
     # Test int type.
-    # Use int_type from the field_value.
+    # Use int_value from the field_value.
     val = tracker_bizobj.GetFieldValueWithRawValue(
         field_type=tracker_pb2.FieldTypes.INT_TYPE,
         users_by_id=users_by_id,
@@ -286,7 +299,7 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual(101, val)
 
     # Test str type.
-    # Use str_type from the field_value.
+    # Use str_value from the field_value.
     val = tracker_bizobj.GetFieldValueWithRawValue(
         field_type=tracker_pb2.FieldTypes.STR_TYPE,
         users_by_id=users_by_id,
@@ -302,6 +315,24 @@ class BizobjTest(unittest.TestCase):
         raw_value='test',
     )
     self.assertEqual('test', val)
+
+    # Test date type.
+    # Use date_value from the field_value.
+    val = tracker_bizobj.GetFieldValueWithRawValue(
+        field_type=tracker_pb2.FieldTypes.DATE_TYPE,
+        users_by_id=users_by_id,
+        field_value=MockFieldValue(date_value=1234567890),
+        raw_value=2345678901,
+    )
+    self.assertEqual('2009-02-13', val)
+    # Use the raw_value when field_value is not specified.
+    val = tracker_bizobj.GetFieldValueWithRawValue(
+        field_type=tracker_pb2.FieldTypes.DATE_TYPE,
+        users_by_id=users_by_id,
+        field_value=None,
+        raw_value='2016-10-30',
+    )
+    self.assertEqual('2016-10-30', val)
 
   def testFindComponentDef_Empty(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
@@ -414,6 +445,16 @@ class BizobjTest(unittest.TestCase):
     actual = tracker_bizobj.FindAncestorComponents(config, cd2)
     self.assertEqual([cd], actual)
 
+  def testGetIssueComponentsAndAncestors_NoSuchComponent(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    cd = tracker_pb2.ComponentDef(component_id=1, path='UI')
+    config.component_defs.append(cd)
+    cd2 = tracker_pb2.ComponentDef(component_id=2, path='UI>Splash')
+    config.component_defs.append(cd2)
+    issue = tracker_pb2.Issue(component_ids=[999])
+    actual = tracker_bizobj.GetIssueComponentsAndAncestors(issue, config)
+    self.assertEqual([], actual)
+
   def testGetIssueComponentsAndAncestors_AffectsNoComponents(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     cd = tracker_pb2.ComponentDef(component_id=1, path='UI')
@@ -463,6 +504,13 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual(1, cd.component_id)
     self.assertEqual([111L], cd.admin_ids)
     self.assertEqual([], cd.label_ids)
+
+  def testMakeSavedQuery_WithNone(self):
+    sq = tracker_bizobj.MakeSavedQuery(
+      None, 'my query', 2, 'priority:high')
+    self.assertEqual(None, sq.query_id)
+    self.assertEqual(None, sq.subscription_mode)
+    self.assertEqual([], sq.executes_in_project_ids)
 
   def testMakeSavedQuery(self):
     sq = tracker_bizobj.MakeSavedQuery(
@@ -612,6 +660,37 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual(['Mon', 'StartOfWeek', 'Tue', 'Wed', 'MidWeek', 'Thu',
                       'Fri', 'EndOfWeek'],
                      tracker_bizobj._CombineOrderedLists([a, b, c, d]))
+
+  def testAccumulateCombinedList_Empty(self):
+    combined_items = []
+    combined_keys = []
+    seen_keys_set = set()
+    tracker_bizobj._AccumulateCombinedList(
+        [], combined_items, combined_keys, seen_keys_set)
+    self.assertEqual([], combined_items)
+    self.assertEqual([], combined_keys)
+    self.assertEqual(set(), seen_keys_set)
+
+  def testAccumulateCombinedList_Normal(self):
+    combined_items = ['a', 'b', 'C']
+    combined_keys = ['a', 'b', 'c']  # Keys are always lowercased
+    seen_keys_set = set(['a', 'b', 'c'])
+    tracker_bizobj._AccumulateCombinedList(
+        ['b', 'x', 'C', 'd', 'a'], combined_items, combined_keys, seen_keys_set)
+    self.assertEqual(['a', 'b', 'x', 'C', 'd'], combined_items)
+    self.assertEqual(['a', 'b', 'x', 'c', 'd'], combined_keys)
+    self.assertEqual(set(['a', 'b', 'x', 'c', 'd']), seen_keys_set)
+
+  def testAccumulateCombinedList_NormalWithKeyFunction(self):
+    combined_items = ['A', 'B', 'C']
+    combined_keys = ['@a', '@b', '@c']
+    seen_keys_set = set(['@a', '@b', '@c'])
+    tracker_bizobj._AccumulateCombinedList(
+        ['B', 'X', 'c', 'D', 'A'], combined_items, combined_keys, seen_keys_set,
+        key=lambda s: '@' + s)
+    self.assertEqual(['A', 'B', 'X', 'C', 'D'], combined_items)
+    self.assertEqual(['@a', '@b', '@x', '@c', '@d'], combined_keys)
+    self.assertEqual(set(['@a', '@b', '@x', '@c', '@d']), seen_keys_set)
 
   def testGetBuiltInQuery(self):
     self.assertEqual(
@@ -868,6 +947,16 @@ class BizobjTest(unittest.TestCase):
             tracker_pb2.FieldID.COMPONENTS, '', [], []),
         tracker_bizobj.MakeComponentsAmendment([], [], config))
 
+  def testMakeComponentsAmendment_NotFound(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.component_defs = [
+        tracker_pb2.ComponentDef(component_id=1, path='UI'),
+        tracker_pb2.ComponentDef(component_id=2, path='DB')]
+    self.assertEqual(
+        tracker_bizobj.MakeAmendment(
+            tracker_pb2.FieldID.COMPONENTS, '', [], []),
+        tracker_bizobj.MakeComponentsAmendment([99], [999], config))
+
   def testMakeComponentsAmendment_Normal(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     config.component_defs = [
@@ -1092,7 +1181,7 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual([fv3], fvs_added)
     self.assertEqual([fv4], fvs_removed)
 
-  def testSplitBlockedOnRanks(self):
+  def testSplitBlockedOnRanks_Normal(self):
     issue = tracker_pb2.Issue()
     issue.blocked_on_iids = [78902, 78903, 78904]
     issue.blocked_on_ranks = [10, 20, 30]
@@ -1101,3 +1190,13 @@ class BizobjTest(unittest.TestCase):
     ret = tracker_bizobj.SplitBlockedOnRanks(
         issue, 78903, False, issue.blocked_on_iids)
     self.assertEqual(ret, (rank_rows[:1], rank_rows[1:]))
+
+  def testSplitBlockedOnRanks_BadTarget(self):
+    issue = tracker_pb2.Issue()
+    issue.blocked_on_iids = [78902, 78903, 78904]
+    issue.blocked_on_ranks = [10, 20, 30]
+    rank_rows = zip(issue.blocked_on_iids, issue.blocked_on_ranks)
+    rank_rows.reverse()
+    ret = tracker_bizobj.SplitBlockedOnRanks(
+        issue, 78999, False, issue.blocked_on_iids)
+    self.assertEqual(ret, (rank_rows, []))

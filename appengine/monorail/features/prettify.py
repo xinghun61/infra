@@ -41,7 +41,7 @@ class _SourceLine(object):
     self.num = num
     self.line = line
 
-  def __str__(self):
+  def __repr__(self):
     return '%d: %s' % (self.num, self.line)
 
 

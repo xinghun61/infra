@@ -74,12 +74,28 @@ class IssueOriginalTest(unittest.TestCase):
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/original?id=1&seq=1',
         project=self.proj)
+
+    # Someone without VIEW permission cannot view the inbound email.
     mr.perms = permissions.EMPTY_PERMISSIONSET
     self.assertRaises(permissions.PermissionException,
                       self.servlet.AssertBasePermission, mr)
+
+    # Contributors don't have VIEW_INBOUND_MESSAGES.
     mr.perms = permissions.CONTRIBUTOR_ACTIVE_PERMISSIONSET
     self.assertRaises(permissions.PermissionException,
                       self.servlet.AssertBasePermission, mr)
+
+    # Committers do have VIEW_INBOUND_MESSAGES.
+    mr.perms = permissions.COMMITTER_ACTIVE_PERMISSIONSET
+    self.servlet.AssertBasePermission(mr)
+
+    # But, a committer cannot use that if they cannot view the issue.
+    self.issue_1.labels.append('Restrict-View-Foo')
+    mr.perms = permissions.CONTRIBUTOR_ACTIVE_PERMISSIONSET
+    self.assertRaises(permissions.PermissionException,
+                      self.servlet.AssertBasePermission, mr)
+
+    # Project owners have VIEW_INBOUND_MESSAGES and bypass restrictions.
     mr.perms = permissions.OWNER_ACTIVE_PERMISSIONSET
     self.servlet.AssertBasePermission(mr)
 
