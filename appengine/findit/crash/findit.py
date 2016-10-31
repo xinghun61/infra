@@ -12,7 +12,6 @@ from common import chrome_dependency_fetcher
 from common import constants
 from common import time_util
 from crash.crash_report import CrashReport
-from crash.culprit import Culprit
 from model import analysis_status
 from model.crash.crash_config import CrashConfig
 
@@ -278,7 +277,7 @@ class Findit(object):
     """Given a CrashAnalysis ndb.Model, return a Culprit."""
     stacktrace = self.ParseStacktrace(model)
     if stacktrace is None:
-      return Culprit('', [], [], None, None)
+      return None
 
     return self._predator.FindCulprit(CrashReport(
         crashed_version = model.crashed_version,

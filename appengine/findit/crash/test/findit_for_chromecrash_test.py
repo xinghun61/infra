@@ -13,7 +13,6 @@ from crash.chromecrash_parser import ChromeCrashParser
 from crash.component_classifier import ComponentClassifier
 from crash.crash_report import CrashReport
 from crash.culprit import Culprit
-from crash.culprit import NullCulprit
 from crash.findit_for_chromecrash import FinditForChromeCrash
 from crash.findit_for_chromecrash import FinditForFracas
 from crash.findit import Findit
@@ -84,8 +83,7 @@ class FinditForChromeCrashTest(CrashTestCase):
   # we fail when the analysis is for the wrong client_id; but if so,
   # then we shouldn't need to mock FindCulprit...
   def testFindCulprit(self):
-    self.mock(FinditForChromeCrash, 'FindCulprit',
-        lambda self, *_: NullCulprit())
+    self.mock(FinditForChromeCrash, 'FindCulprit', lambda self, *_: None)
 
     # TODO(wrengr): would be less fragile to call
     # FinditForFracas.CreateAnalysis instead; though if I'm right about
@@ -99,12 +97,7 @@ class FinditForChromeCrashTest(CrashTestCase):
 
     findit_client = _FinditForChromeCrash(
         gitiles_repository.GitilesRepository(http_client=HttpClientAppengine()))
-    result, tags = findit_client.FindCulprit(analysis).ToDicts()
-    # TODO(wrengr): just test for the NullCulprit directly; instead of
-    # going through ``ToDicts``.
-    expected_result, expected_tags = NullCulprit().ToDicts()
-    self.assertDictEqual(result, expected_result)
-    self.assertDictEqual(tags, expected_tags)
+    self.assertIsNone(findit_client.FindCulprit(analysis))
 
 
 class FinditForFracasTest(CrashTestCase):
@@ -217,18 +210,6 @@ class FinditForFracasTest(CrashTestCase):
         'GetDependency', lambda *_: {})
     self.mock(ChromeCrashParser, 'Parse', lambda *_: Stacktrace())
 
-    # TODO(wrengr): use NullCulprit instead
-    expected_results = {'found': False,
-                        'regression_range': None,
-                        'suspected_cls': [],
-                        'suspected_components': [],
-                        'suspected_project': ''}
-    expected_tag = {'found_suspects': False,
-                    'found_components': False,
-                    'found_project': False,
-                    'has_regression_range': False,
-                    'solution': None}
-
     analysis = CrashAnalysis()
     analysis.signature = 'signature'
     analysis.platform = 'win'
@@ -236,10 +217,7 @@ class FinditForFracasTest(CrashTestCase):
     analysis.crashed_version = '50.0.1234.0'
     analysis.historical_metadata = [
         {'chrome_version': '51.0.1234.0', 'cpm': 0.6}]
-    results, tag = _FinditForChromeCrash().FindCulprit(analysis).ToDicts()
-
-    self.assertDictEqual(expected_results, results)
-    self.assertDictEqual(expected_tag, tag)
+    self.assertIsNone(_FinditForChromeCrash().FindCulprit(analysis))
 
   # TODO(http://crbug.com/659346): why do these mocks give coverage
   # failures? That's almost surely hiding a bug in the tests themselves.
@@ -278,7 +256,9 @@ class FinditForFracasTest(CrashTestCase):
     analysis.crashed_version = '50.0.1234.0'
     dummy_regression_range = ['50.0.1233.0', '50.0.1234.0']
     analysis.regression_range = dummy_regression_range
-    results, tag = _FinditForChromeCrash().FindCulprit(analysis).ToDicts()
+    culprit = _FinditForChromeCrash().FindCulprit(analysis)
+    self.assertIsNotNone(culprit, 'FindCulprit failed unexpectedly')
+    results, tag = culprit.ToDicts()
 
     expected_results = {
           'found': True,
@@ -311,7 +291,6 @@ class FinditForFracasTest(CrashTestCase):
           'suspected_project': '',
           'suspected_components': [],
           'suspected_cls': [],
-          'regression_range': None
     }
     expected_tag = {
           'found_suspects': False,

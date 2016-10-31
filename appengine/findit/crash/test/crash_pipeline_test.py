@@ -78,6 +78,24 @@ class CrashPipelineTest(CrashTestCase):
     analysis = FracasCrashAnalysis.Get(crash_identifiers)
     self.assertEqual(analysis_status.ERROR, analysis.status)
 
+  def testFindCulpritFails(self):
+    crash_identifiers = DummyCrashData()['crash_identifiers']
+    analysis = FracasCrashAnalysis.Create(crash_identifiers)
+    analysis.status = analysis_status.RUNNING
+    analysis.put()
+
+    self.mock(FinditForFracas, 'FindCulprit', lambda *_: None)
+    pipeline = crash_pipeline.CrashAnalysisPipeline(
+        CrashClient.FRACAS,
+        crash_identifiers)
+    pipeline.run()
+
+    analysis = FracasCrashAnalysis.Get(crash_identifiers)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)
+    self.assertFalse(analysis.result['found'])
+    self.assertFalse(analysis.found_suspects)
+    self.assertFalse(analysis.found_project)
+    self.assertFalse(analysis.found_components)
 
   # TODO: this function is a gross hack. We should figure out what the
   # semantic goal really is here, so we can avoid doing such intricate

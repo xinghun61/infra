@@ -92,78 +92,29 @@ class Culprit(namedtuple('Culprit',
             'found_suspects': False,
         }
     """
-    # TODO(http://crbug.com/644411): reformulate the JSON stuff so we
-    # can drop fields which are empty; so that, in turn, we can get rid
-    # of the NullCulprit class.
-    return (
-        {
-          'found': (bool(self.project) or
-                    bool(self.components) or
-                    bool(self.cls) or
-                    bool(self.regression_range)),
-          'regression_range': self.regression_range,
-          'suspected_project': self.project,
-          'suspected_components': self.components,
-          'suspected_cls': [cl.ToDict() for cl in self.cls],
-        },
-        {
-          'found_suspects': bool(self.cls),
-          'found_project': bool(self.project),
-          'found_components': bool(self.components),
-          'has_regression_range': bool(self.regression_range),
-          'solution': self.algorithm,
-        }
-      )
+    # TODO(wrengr): will this auto-dropping of unnecessary fields cause
+    # any issues for JSON serialization?
+    result = {}
+    result['found'] = (
+        bool(self.project) or
+        bool(self.components) or
+        bool(self.cls) or
+        bool(self.regression_range))
+    if self.regression_range:
+      result['regression_range'] = self.regression_range
+    if self.project is not None:
+      result['suspected_project'] = self.project
+    if self.components is not None:
+      result['suspected_components'] = self.components
+    if self.cls is not None:
+      result['suspected_cls'] = [cl.ToDict() for cl in self.cls]
 
+    tags = {
+      'found_suspects': bool(self.cls),
+      'has_regression_range': bool(self.regression_range),
+      'found_project': bool(self.project),
+      'found_components': bool(self.components),
+      'solution': self.algorithm,
+    }
 
-# TODO(http://crbug.com/659346): We do call this code from various
-# unittests, just not from culprit_test.py; so we need to add some extra
-# unittests there.
-# TODO(http://crbug.com/659359): eliminate the need for this class.
-class NullCulprit(object): # pragma: no cover
-  """The result of failing to identify the culprit of a crash report.
-
-  This class serves as a helper so that we can avoid returning None. It
-  has all the same properties and methods as the Culprit class, but
-  returns the empty string, the empty list, or None, as appropriate. The
-  main difference compared to using Culprit with all those falsy values
-  is that the result of the ToDicts method is more minimalistic.
-
-  Ideally we'd like to be able to refactor things to avoid the need
-  for this class. Mostly that means (1) refactoring the unittests to
-  allow ``Findit.FindCulprit`` to return None, and (2) reformulating
-  ``Culprit.ToDicts`` to create minimal dicts and reformulating the JSON
-  protocol to support that.
-  """
-  __slots__ = ()
-
-  @property
-  def fields(self):
-    raise NotImplementedError()
-
-  @property
-  def project(self):
-    return ''
-
-  @property
-  def components(self):
-    return []
-
-  @property
-  def cls(self):
-    return []
-
-  @property
-  def regression_range(self):
-    return None
-
-  @property
-  def algorithm(self):
-    return None
-
-  def ToDicts(self):
-    return (
-        {'found': False},
-        {'found_suspects': False,
-         'has_regression_range': False}
-    )
+    return result, tags

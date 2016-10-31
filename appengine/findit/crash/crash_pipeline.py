@@ -120,7 +120,18 @@ class CrashAnalysisPipeline(CrashBasePipeline):
     analysis.put()
 
     # Actually do the analysis.
-    result, tags = self._findit.FindCulprit(analysis).ToDicts()
+    culprit = self._findit.FindCulprit(analysis)
+    if culprit is not None:
+      result, tags = culprit.ToDicts()
+    else:
+      result = {'found': False}
+      tags = {
+          'found_suspects': False,
+          'found_project': False,
+          'found_components': False,
+          'has_regression_range': False,
+          'solution': None,
+      }
 
     # Update model's status to say we're done, and save the results.
     analysis.completed_time = time_util.GetUTCNow()
