@@ -260,10 +260,10 @@ class UploadBuildResult(forms.Form):
 
 class EditLocalBaseForm(forms.Form):
   subject = forms.CharField(max_length=MAX_SUBJECT,
-                            widget=forms.TextInput(attrs={'size': 60}))
+                            widget=forms.TextInput(attrs={'size': 72}))
   description = forms.CharField(required=False,
                                 max_length=MAX_DESCRIPTION,
-                                widget=forms.Textarea(attrs={'cols': 60}))
+                                widget=forms.Textarea(attrs={'cols': 72}))
   reviewers = forms.CharField(
       required=False,
       max_length=MAX_REVIEWERS,
