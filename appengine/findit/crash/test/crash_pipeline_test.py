@@ -52,7 +52,7 @@ def DummyCrashData(
 
 
 class MockCulprit(object):
-  """Construct a fake culprit where |ToDicts| returns whatever we please."""
+  """Construct a fake culprit where ``ToDicts`` returns whatever we please."""
 
   def __init__(self, mock_result, mock_tags):
     self._result = mock_result
@@ -115,7 +115,7 @@ class CrashPipelineTest(CrashTestCase):
     # Mock out FindCulprit to track the number of times it's called and
     # with which arguments. N.B., the pipeline will reconstruct Findit
     # objects form their client_id, so we can't mock via subclassing,
-    # we must mock via |self.mock|.
+    # we must mock via ``self.mock``.
     mock_culprit = MockCulprit(analysis_result, analysis_tags)
     analyzed_crashes = []
     def _MockFindCulprit(_self, model):
@@ -123,11 +123,11 @@ class CrashPipelineTest(CrashTestCase):
         return mock_culprit
     self.mock(FinditForFracas, 'FindCulprit', _MockFindCulprit)
 
-    # The real |ParseStacktrace| calls |GetChromeDependency|, which
-    # eventually calls |GitRepository.GetSource| and hence goes over
-    # the wire. Since we mocked out |FindCulprit| to no longer call
-    # |ParseStacktrace|, it shouldn't matter what the real
-    # |ParseStacktrace| does. However, since mocking is fragile and it's
+    # The real ``ParseStacktrace`` calls ``GetChromeDependency``,
+    # which eventually calls ``GitRepository.GetSource`` and hence
+    # goes over the wire. Since we mocked out ``FindCulprit`` to no
+    # longer call ``ParseStacktrace``, it shouldn't matter what the real
+    # ``ParseStacktrace`` does. However, since mocking is fragile and it's
     # hard to triage what actually went wrong if we do end up going over
     # the wire, we mock this out too just to be safe.
     def _MockParseStacktrace(_self, _model):
@@ -135,7 +135,7 @@ class CrashPipelineTest(CrashTestCase):
           'That it was indicates some sort of problem with our mocking code.')
     self.mock(FinditForFracas, 'ParseStacktrace', _MockParseStacktrace)
 
-    # More directly address the issue about |GetChromeDependency| going
+    # More directly address the issue about ``GetChromeDependency`` going
     # over the wire.
     def _MockGetChromeDependency(_self, _revision, _platform):
       raise AssertionError("GetChromeDependency shouldn't ever be called. "

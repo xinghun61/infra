@@ -163,8 +163,8 @@ class CrashAnalysis(ndb.Model):
       crash_identifiers (dict): ??
 
     Returns:
-      A dict of the given |crash_identifiers|, this model's |client_id|,
-      and a publishable version of this model's |result|.
+      A dict of the given ``crash_identifiers``, this model's
+      ``client_id``, and a publishable version of this model's ``result``.
     """
     result = copy.deepcopy(self.result)
     client_id = self.client_id

@@ -61,10 +61,10 @@ class ProjectClassifier(object):
     if result.file_to_stack_infos:
       # file_to_stack_infos is a dict mapping file_path to stack_infos,
       # where stack_infos is a list of (frame, callstack_priority)
-      # pairs. So |.values()| returns a list of the stack_infos in an
-      # arbitrary order; the first |[0]| grabs the "first" stack_infos;
-      # the second |[0]| grabs the first pair from the list; and the third
-      # |[0]| grabs the |frame| from the pair.
+      # pairs. So ``.values()`` returns a list of the stack_infos in an
+      # arbitrary order; the first ``[0]`` grabs the "first" stack_infos;
+      # the second ``[0]`` grabs the first pair from the list; and
+      # the third ``[0]`` grabs the ``frame`` from the pair.
       # TODO(wrengr): why is that the right frame to look at?
       frame = result.file_to_stack_infos.values()[0][0][0]
       return self.GetClassFromStackFrame(frame)
@@ -102,15 +102,15 @@ class ProjectClassifier(object):
       rank_function = _RankFunctionForJava
 
     top_n_frames = self.project_classifier_config['top_n']
-    # If |results| are available, we use the projects from there since
-    # they're more reliable than the ones from the |crash_stack|.
+    # If ``results`` are available, we use the projects from there since
+    # they're more reliable than the ones from the ``crash_stack``.
     if results:
       classes = map(self.GetClassFromResult, results[:top_n_frames])
     else:
       classes = map(self.GetClassFromStackFrame, crash_stack[:top_n_frames])
 
     # Since we're only going to return the highest-ranked class, might
-    # as well set |max_classes| to 1.
+    # as well set ``max_classes`` to 1.
     projects = RankByOccurrence(classes, 1, rank_function=rank_function)
 
     if projects:

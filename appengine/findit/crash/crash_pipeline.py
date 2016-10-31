@@ -24,15 +24,16 @@ def FinditForClientID(client_id): # pragma: no cover
   """Construct a Findit object from a client id string specifying the class.
 
   We cannot pass Findit objects to the various methods in
-  |crash.crash_pipeline|, because they are not JSON serializable. For now,
-  we just serialize Findit objects as their |client_id|, and then use this
-  function to reconstruct them. Alas, this means we will lose various
-  other information stored in the Findit object (i.e., stuff that comes
-  from CrashConfig); which could lead to some hard-to-diagnose coherency
-  bugs, since the new Findit object will be based on the CrashConfig at
-  the time it's constructed, which may be different than the CrashConfig
-  at the time the previous Findit object was constructed. In the future
-  we should fix all this to serialize Findit objects in a more robust way.
+  ``crash.crash_pipeline``, because they are not JSON serializable. For
+  now, we just serialize Findit objects as their ``client_id``, and then
+  use this function to reconstruct them. Alas, this means we will lose
+  various other information stored in the Findit object (i.e., stuff that
+  comes from CrashConfig); which could lead to some hard-to-diagnose
+  coherency bugs, since the new Findit object will be based on the
+  CrashConfig at the time it's constructed, which may be different
+  than the CrashConfig at the time the previous Findit object was
+  constructed. In the future we should fix all this to serialize Findit
+  objects in a more robust way.
   """
   assert isinstance(client_id, (str, unicode)), (
       'FinditForClientID: expected string or unicode, but got %s'
@@ -56,21 +57,21 @@ def FinditForClientID(client_id): # pragma: no cover
 
 # Some notes about the classes below, for people who are not
 # familiar with AppEngine. The thing that really kicks everything off
-# is |CrashWrapperPipeline.run|. However, an important thing to bear in
+# is ``CrashWrapperPipeline.run``. However, an important thing to bear in
 # mind is that whatever arguments are passed to that method will also
-# be passed to the |run| method on whatever objects it yields. Thus,
-# all the |run| methods across these different classes must have the same
-# type. In practice, we end up passing all the arguments to the
+# be passed to the ``run`` method on whatever objects it yields. Thus,
+# all the ``run`` methods across these different classes must have
+# the same type. In practice, we end up passing all the arguments to the
 # constructors, because we need to have the fields around for logging
-# (e.g., in |finalized|); thus, there's nothing that needs to be passed
-# to |run|. Another thing to bear in mind is that whatever objects
-# |CrashWrapperPipeline.run| yields must be JSON-serializable. The base
+# (e.g., in ``finalized``); thus, there's nothing that needs to be passed
+# to ``run``. Another thing to bear in mind is that whatever objects
+# ``CrashWrapperPipeline.run`` yields must be JSON-serializable. The base
 # class handles most of that for us, so the force of this constraint is
 # that all the arguments to the constructors for those classes must be
 # JSON-serializable. Thus, we cannot actually pass a Findit object to
-# the constructor, but rather must pass only the |client_id| (or whatever
+# the constructor, but rather must pass only the ``client_id`` (or whatever
 # JSON dict) and then reconstruct the Findit object from that. Moreover,
-# the |run| method and the |finalized| method will be run in different
+# the ``run`` method and the ``finalized`` method will be run in different
 # processes, so we will actually end up reconstructing the Findit object
 # twice. Thus, we shouldn't store anything in the pipeline objects outside
 # of what their constructors store.
@@ -95,8 +96,8 @@ class CrashAnalysisPipeline(CrashBasePipeline):
       self._PutAbortedError()
 
   # N.B., this method must be factored out for unittest reasons; since
-  # |finalized| takes no arguments (by AppEngine's spec) and |was_aborted|
-  # can't be altered directly.
+  # ``finalized`` takes no arguments (by AppEngine's spec) and
+  # ``was_aborted`` can't be altered directly.
   def _PutAbortedError(self):
     """Update the ndb.Model to indicate that this pipeline was aborted."""
     logging.error('Aborted analysis for %s', repr(self._crash_identifiers))
@@ -163,7 +164,7 @@ class CrashWrapperPipeline(BasePipeline):
   network errors, we don't want to have to redo the analysis in order
   to redo the publishing. We could try to cache the fact that analysis
   succeeded in the pipeline object itself, but we'd have to be careful
-  because the |run| and |finalized| methods are executed in different
+  because the ``run`` and ``finalized`` methods are executed in different
   processes.
   """
   def __init__(self, client_id, crash_identifiers):

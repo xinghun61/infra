@@ -131,8 +131,8 @@ class NullCulprit(object): # pragma: no cover
 
   Ideally we'd like to be able to refactor things to avoid the need
   for this class. Mostly that means (1) refactoring the unittests to
-  allow |Findit.FindCulprit| to return None, and (2) reformulating
-  |Culprit.ToDicts| to create minimal dicts and reformulating the JSON
+  allow ``Findit.FindCulprit`` to return None, and (2) reformulating
+  ``Culprit.ToDicts`` to create minimal dicts and reformulating the JSON
   protocol to support that.
   """
   __slots__ = ()
@@ -155,12 +155,10 @@ class NullCulprit(object): # pragma: no cover
 
   @property
   def regression_range(self):
-    # TODO(http://crbug.com/659359): or maybe return |(None,None)| instead...
     return None
 
   @property
   def algorithm(self):
-    # TODO(http://crbug.com/659359): or maybe return the empty string instead...
     return None
 
   def ToDicts(self):

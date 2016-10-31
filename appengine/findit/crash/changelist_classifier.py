@@ -194,8 +194,8 @@ def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps,
     for changelog in changelogs:
       # When someone reverts, we need to skip both the CL doing
       # the reverting as well as the CL that got reverted. If
-      # |reverted_revision| is true, then this CL reverts another one,
-      # so we skip it and save the CL it reverts in |reverted_cls| to
+      # ``reverted_revision`` is true, then this CL reverts another one,
+      # so we skip it and save the CL it reverts in ``reverted_cls`` to
       # be filtered out later.
       if changelog.reverted_revision:
         reverted_cls.add(changelog.reverted_revision)

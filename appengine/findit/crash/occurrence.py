@@ -6,7 +6,7 @@ class Occurrence(list):
   """A list of indices where something occurs in a list.
 
   The list of indices can be accessed directly, since this class is a
-  subclass of |list|. In addition to this list, we also have a |name|
+  subclass of ``list``. In addition to this list, we also have a ``name`
   property which specifies what thing is occurring in those positions. For
   our uses here, the name is a string denoting either a project name
   (e.g., 'chromium' or 'chromium-skia') or a component name (e.g.,
@@ -34,9 +34,9 @@ def GetOccurrences(names):
       in a dict.
 
   Returns:
-    A dict mapping each "name" in |names| to an Occurrence object,
+    A dict mapping each "name" in ``names`` to an Occurrence object,
     each of which contains a list of the indices where that name occurs
-    in |names|.
+    in ``names``.
   """
   occurrences = {}
   for index, name in enumerate(names or []):
@@ -59,8 +59,8 @@ def DefaultOccurrenceRanking(occurrence):
       occured in a sequence.
 
   Returns:
-    A pair of the weight/priority for this |occurrence|, and the index
-    of the first time its name appeared in the sequence the |occurrence|
+    A pair of the weight/priority for this ``occurrence``, and the index
+    of the first time its name appeared in the sequence the ``occurrence``
     came from.
   """
   # If the first two elements in the sequence are in this class, then
@@ -74,14 +74,14 @@ def DefaultOccurrenceRanking(occurrence):
 # TODO(wrengr): it'd be nice to have the ranking function decide how
 # much of the input sequence to look at, rather than the caller deciding
 # once and for all. Of course, doing that would mean having the
-# |Occurrence| class lazily traverse the sequence, with some sort of
+# ``Occurrence`` class lazily traverse the sequence, with some sort of
 # productivity guarantee.
 def RankByOccurrence(names, top_n, rank_function=None):
   """Rank the things occurring in a sequence according to some function.
 
   Given any sequence of "names", construct a concordance and return
   the few highest-ranking names according to a function for ranking
-  |Occurrence|s. N.B., this function is generic in the length of the
+  ``Occurrence``s. N.B., this function is generic in the length of the
   input sequence, so it's up to callers to truncate the sequence if
   they so desire.
 
@@ -92,10 +92,10 @@ def RankByOccurrence(names, top_n, rank_function=None):
     top_n (int): how many results to return.
     rank_function (callable): what rank value to give an occurrence. If
       you don't supply this argument, or if you provide a falsy value,
-      then we will fall back to using the |DefaultOccurrenceRanking|.
+      then we will fall back to using the ``DefaultOccurrenceRanking``.
 
   Returns:
-    A length-|top_n| list of "names" ordered by the |rank_function|.
+    A length-``top_n`` list of "names" ordered by the ``rank_function``.
   """
   if not rank_function:  # pragma: no cover.
     rank_function = DefaultOccurrenceRanking

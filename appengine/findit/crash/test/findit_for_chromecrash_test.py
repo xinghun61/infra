@@ -33,7 +33,7 @@ from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 # since we never actually call the method that uses it. But just to be
 # absolutely sure we don't go over the wire due to some mocking failure,
 # we'll use this dummy class instead. (In fact, since it's never used,
-# we don't even need to give a real class; |None| works just fine.)
+# we don't even need to give a real class; ``None`` works just fine.)
 MOCK_PIPELINE_CLS = None
 
 MOCK_REPOSITORY = None
@@ -48,7 +48,7 @@ class _FinditForChromeCrash(FinditForChromeCrash):
   def _ClientID(cls): # pragma: no cover
     """Avoid throwing a NotImplementedError.
 
-    Since this method is called from |FinditForChromeCrash.__init__|
+    Since this method is called from ``FinditForChromeCrash.__init__``
     in order to construct the Azalea object, we need to not throw
     exceptions since we want to be able to test the FinditForChromeCrash
     class itself.
@@ -59,12 +59,12 @@ class _FinditForChromeCrash(FinditForChromeCrash):
   def config(self):
     """Avoid returning None.
 
-    The default |Findit.config| will return None if the client
+    The default ``Findit.config`` will return None if the client
     id is not found in the CrashConfig. This in turn will cause
-    |FinditForChromeCrash.__init__| to crash, since NoneType doesn't
-    have a |get| method. In general it's fine for things to crash, since
+    ``FinditForChromeCrash.__init__`` to crash, since NoneType doesn't
+    have a ``get`` method. In general it's fine for things to crash, since
     noone should make instances of Findit subclasses which don't define
-    |_clientID|; but for this test suite, we want to permit instances
+    ``_clientID``; but for this test suite, we want to permit instances
     of FinditForChromeCrash, so that we can test that class directly.
     """
     return {}
@@ -101,7 +101,7 @@ class FinditForChromeCrashTest(CrashTestCase):
         gitiles_repository.GitilesRepository(http_client=HttpClientAppengine()))
     result, tags = findit_client.FindCulprit(analysis).ToDicts()
     # TODO(wrengr): just test for the NullCulprit directly; instead of
-    # going through |ToDicts|.
+    # going through ``ToDicts``.
     expected_result, expected_tags = NullCulprit().ToDicts()
     self.assertDictEqual(result, expected_result)
     self.assertDictEqual(tags, expected_tags)

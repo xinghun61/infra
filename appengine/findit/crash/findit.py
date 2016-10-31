@@ -33,7 +33,7 @@ class Findit(object):
       repository (Repository): the Git repository for getting CLs to classify.
       pipeline_cls (class): the class for constructing pipelines in
         ScheduleNewAnalysis. This will almost surely be
-        |crash.crash_pipeline.CrashWrapperPipeline|; but we must pass
+        ``crash.crash_pipeline.CrashWrapperPipeline``; but we must pass
         the class in as a parameter in order to break an import cycle.
     """
     self._repository = repository
@@ -48,7 +48,7 @@ class Findit(object):
   # instances of this class. We can in fact call class methods on
   # instances (not just on the class itself), so we could in principle
   # get by with just this method. However, a @classmethod is treated
-  # syntactically like a method, thus we'd need to have the |()| at the
+  # syntactically like a method, thus we'd need to have the ``()`` at the
   # end, unlike for a @property. Thus we have both the class method and
   # the property, in order to simulate a class property.
   @classmethod
@@ -56,7 +56,7 @@ class Findit(object):
     """Get the client id for this class.
 
     This class method is private. Unless you really need to access
-    this method directly for some reason, you should use the |client_id|
+    this method directly for some reason, you should use the ``client_id``
     property instead.
 
     Returns:
@@ -122,7 +122,7 @@ class Findit(object):
       crash_data (JSON): ??
 
     Returns:
-      If satisfied, we return the |crash_data| which may have had some
+      If satisfied, we return the ``crash_data`` which may have had some
       fields modified. Otherwise returns None.
     """
     return None
@@ -134,14 +134,14 @@ class Findit(object):
     return None
 
   def GetAnalysis(self, crash_identifiers): # pylint: disable=W0613
-    """Return the CrashAnalysis for the |crash_identifiers|, if one exists.
+    """Return the CrashAnalysis for the ``crash_identifiers``, if one exists.
 
     Args:
       crash_identifiers (JSON): ??
 
     Returns:
       If a CrashAnalysis ndb.Model already exists for the
-      |crash_identifiers|, then we return it. Otherwise, returns None.
+      ``crash_identifiers``, then we return it. Otherwise, returns None.
     """
     return None
 
@@ -149,7 +149,7 @@ class Findit(object):
   # TODO(http://crbug.com/659346): coverage tests for this class, not
   # just for FinditForFracas.
   def _InitializeAnalysis(self, model, crash_data): # pragma: no cover
-    """(Re)Initialize a CrashAnalysis ndb.Model, but do not |put()| it yet.
+    """(Re)Initialize a CrashAnalysis ndb.Model, but do not ``put()`` it yet.
 
     This method is only ever called from _NeedsNewAnalysis which is only
     ever called from ScheduleNewAnalysis. It is used for filling in the
@@ -161,15 +161,16 @@ class Findit(object):
     model.Reset()
 
     # Set the version.
-    # |handlers.crash.test.crash_handler_test.testAnalysisScheduled|
+    # ``handlers.crash.test.crash_handler_test.testAnalysisScheduled``
     # provides and expects this field to be called 'chrome_version',
-    # whereas everyone else (e.g., in |crash.test.crash_pipeline_test|
-    # the tests |testAnalysisNeededIfNoAnalysisYet|,
-    # |testRunningAnalysisNoSuspectsFound|, |testRunningAnalysis|,
-    # |testAnalysisNeededIfLastOneFailed|, |testRunningAnalysisWithSuspectsCls|)
-    # expects it to be called 'crashed_version'. The latter is the
-    # better/more general name, so the former needs to be changed in
-    # order to get rid of this defaulting ugliness.
+    # whereas everyone else (e.g., in ``crash.test.crash_pipeline_test``
+    # the tests ``testAnalysisNeededIfNoAnalysisYet``,
+    # ``testRunningAnalysisNoSuspectsFound``, ``testRunningAnalysis``,
+    # ``testAnalysisNeededIfLastOneFailed``,
+    # ``testRunningAnalysisWithSuspectsCls``) expects it to be called
+    # 'crashed_version'. The latter is the better/more general name,
+    # so the former needs to be changed in order to get rid of this
+    # defaulting ugliness.
     model.crashed_version = crash_data.get('crashed_version',
         crash_data.get('chrome_version', None))
 
@@ -201,7 +202,7 @@ class Findit(object):
     """Create a pipeline object to perform the analysis, and start it.
 
     If we can detect that the analysis doesn't need to be performed
-    (e.g., it was already performed, or the |crash_data| is empty so
+    (e.g., it was already performed, or the ``crash_data`` is empty so
     there's nothig we can do), then we will skip creating the pipeline
     at all.
 
@@ -224,7 +225,7 @@ class Findit(object):
       return False
 
     crash_identifiers = crash_data['crash_identifiers']
-    # N.B., we cannot pass |self| directly to the _pipeline_cls, because
+    # N.B., we cannot pass ``self`` directly to the _pipeline_cls, because
     # it is not JSON-serializable (and there's no way to make it such,
     # since JSON-serializability is defined by JSON-encoders rather than
     # as methods on the objects being encoded).
@@ -244,7 +245,7 @@ class Findit(object):
   # TODO(http://crbug.com/659346): coverage tests for this class, not
   # just for FinditForFracas.
   def ParseStacktrace(self, model): # pragma: no cover
-    """Parse a CrashAnalysis's |stack_trace| string into a Stacktrace object.
+    """Parse a CrashAnalysis's ``stack_trace`` string into a Stacktrace object.
 
     Args:
       model (CrashAnalysis): The model containing the stack_trace string
@@ -267,9 +268,9 @@ class Findit(object):
 
     return stacktrace
 
-  # TODO(wrengr): This is only called by |CrashAnalysisPipeline.run|;
+  # TODO(wrengr): This is only called by ``CrashAnalysisPipeline.run``;
   # we should be able to adjust things so that we only need to take in
-  # |crash_identifiers|, or a CrashReport, rather than taking in the
+  # ``crash_identifiers``, or a CrashReport, rather than taking in the
   # whole model. And/or, we should just inline this there.
   # TODO(http://crbug.com/659346): coverage tests for this class, not
   # just for FinditForFracas.

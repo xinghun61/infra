@@ -125,7 +125,7 @@ class FinditForChromeCrash(Findit):
                      repr(crash_identifiers))
         return None
 
-    # TODO(wrengr): should we clone |crash_data| rather than mutating it?
+    # TODO(wrengr): should we clone ``crash_data`` rather than mutating it?
     crash_data['platform'] = self.RenamePlatform(platform)
     return crash_data
 

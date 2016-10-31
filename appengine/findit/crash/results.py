@@ -46,7 +46,7 @@ class Result(object):
   # TODO(katesonia): This is unusable for logging because in all the
   # cases that need logging it returns the empty string! We should print
   # this out in a more useful way (e.g., how CrashConfig is printed)
-  # so that callers don't have to use |str(result.ToDict())| instead. If
+  # so that callers don't have to use ``str(result.ToDict())`` instead. If
   # we want a method that does what this one does, we should give it a
   # different name that indicates what it's actually printing out.
   def ToString(self):

@@ -30,7 +30,7 @@ class VersionedConfig(VersionedModel):
     return config_data or cls() if version is None else config_data
 
   def Update(self, user, is_admin, **kwargs):
-    """Applies |kwargs| dict to the entity and stores the entity if changed."""
+    """Apply ``kwargs`` dict to the entity and stores the entity if changed."""
     if not is_admin:
       raise Exception('Only admin could update config.')
 

@@ -15,7 +15,7 @@ from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 # since we never actually call the method that uses it. But just to be
 # absolutely sure we don't go over the wire due to some mocking failure,
 # we'll use this dummy class instead. (In fact, since it's never used,
-# we don't even need to give a real class; |None| works just fine.)
+# we don't even need to give a real class; ``None`` works just fine.)
 MOCK_PIPELINE_CLS = None
 
 MOCK_REPOSITORY = None
@@ -88,7 +88,7 @@ class FinditTest(CrashTestCase):
 
         N.B., if we did not override this method, then our overridden
         ``_NeedsNewAnalysis`` would never be called either."""
-        # TODO(wrengr): should we clone |crash_data| rather than mutating it?
+        # TODO(wrengr): should we clone ``crash_data`` rather than mutating it?
         crash_data['platform'] = self.RenamePlatform(crash_data['platform'])
         return crash_data
 

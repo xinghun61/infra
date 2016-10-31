@@ -76,10 +76,10 @@ class ComponentClassifier(object):
     if result.file_to_stack_infos:
       # file_to_stack_infos is a dict mapping file_path to stack_infos,
       # where stack_infos is a list of (frame, callstack_priority)
-      # pairs. So |.values()| returns a list of the stack_infos in an
-      # arbitrary order; the first |[0]| grabs the "first" stack_infos;
-      # the second |[0]| grabs the first pair from the list; and the third
-      # |[0]| grabs the |frame| from the pair.
+      # pairs. So ``.values()`` returns a list of the stack_infos in an
+      # arbitrary order; the first ``[0]`` grabs the "first" stack_infos;
+      # the second ``[0]`` grabs the first pair from the list; and
+      # the third ``[0]`` grabs the ``frame`` from the pair.
       # TODO(wrengr): why is that the right frame to look at?
       frame = result.file_to_stack_infos.values()[0][0][0]
       return self.GetClassFromStackFrame(frame)
@@ -98,8 +98,8 @@ class ComponentClassifier(object):
     Returns:
       List of top 2 components.
     """
-    # If |results| are available, we use the components from there since
-    # they're more reliable than the ones from the |crash_stack|.
+    # If ``results`` are available, we use the components from there since
+    # they're more reliable than the ones from the ``crash_stack``.
     if results:
       classes = map(self.GetClassFromResult, results[:self.top_n])
     else:
