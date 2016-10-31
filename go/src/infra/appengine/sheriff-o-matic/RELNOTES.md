@@ -1,3 +1,32 @@
+# Release Notes sheriff-o-matic 2016-10-31
+
+- 7 commits, 3 bugs affected since 4f461df (2016-10-24T22:38:54.000Z)
+- 5 Authors:
+  - zhangtiff@google.com
+  - chanli@google.com
+  - seanmccullough@chromium.org
+  - sergiyb@chromium.org
+  - martiniss@chromium.org
+
+## Changes in this release
+
+- [SoM: Make bug queue labels more general + some setup for Trooper tab.](https://chromium-review.googlesource.com/404938) (zhangtiff@google.com)
+- [[Som-Findit-integration] Quick fix to make sure the tests are displayed.](https://chromium-review.googlesource.com/404501) (chanli@google.com)
+- [[Som-Findit integration] Add more information from Findit to SoM](https://chromium-review.googlesource.com/402014) (chanli@google.com)
+- [[som] pubsub alerts: persist alerts using LUCI's datastore wrapper.](https://chromium-review.googlesource.com/400558) (seanmccullough@chromium.org)
+- [SoM: More information in the bug queue and sorting by priority.](https://chromium-review.googlesource.com/403454) (zhangtiff@google.com)
+- [Add instructions to install vulcanize into README.md](https://codereview.chromium.org/2451653002) (sergiyb@chromium.org)
+- [Updated release notes](https://chromium-review.googlesource.com/402248) (martiniss@chromium.org)
+
+
+## Bugs updated, by author
+- chanli@google.com:
+  -  [https://crbug.com/655234](https://crbug.com/655234)
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/655286](https://crbug.com/655286)
+- zhangtiff@google.com:
+  -  [https://crbug.com/637006](https://crbug.com/637006)
+
 # Release Notes sheriff-o-matic 2016-10-24
 
 - 4 commits, 0 bugs affected since 413e1cd (2016-10-20T23:13:42.000Z)
