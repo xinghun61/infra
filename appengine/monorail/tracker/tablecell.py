@@ -21,6 +21,7 @@ class TableCellRank(table_view_helpers.TableCell):
     table_view_helpers.TableCell.__init__(
         self, table_view_helpers.CELL_TYPE_ATTR, [issue_rank])
 
+
 class TableCellID(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue IDs."""
 
@@ -279,9 +280,7 @@ def TimeStringForCSV(timestamp):
 class TableCellSummaryCSV(table_view_helpers.TableCell):
   """TableCell subclass for showing issue summaries escaped for CSV."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related, _config):
+  def __init__(self, issue, non_col_labels=None, **_kw):
     escaped_summary = issue.summary.replace('"', '""')
     table_view_helpers.TableCell.__init__(
         self, table_view_helpers.CELL_TYPE_SUMMARY, [escaped_summary],
@@ -291,9 +290,7 @@ class TableCellSummaryCSV(table_view_helpers.TableCell):
 class TableCellAllLabels(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing all labels on an issue."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related, _config):
+  def __init__(self, issue, **_kw):
     values = []
     derived_values = []
     if issue.labels:
@@ -309,9 +306,7 @@ class TableCellAllLabels(table_view_helpers.TableCell):
 class TableCellOpenedCSV(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue opened date."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related, _config):
+  def __init__(self, issue, **_kw):
     date_str = TimeStringForCSV(issue.opened_timestamp)
 
     table_view_helpers.TableCell.__init__(
@@ -321,9 +316,7 @@ class TableCellOpenedCSV(table_view_helpers.TableCell):
 class TableCellOpenedTimestamp(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue opened timestamp."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related, _config):
+  def __init__(self, issue, **_kw):
     table_view_helpers.TableCell.__init__(
         self, table_view_helpers.CELL_TYPE_UNFILTERABLE,
         [issue.opened_timestamp])
@@ -332,9 +325,7 @@ class TableCellOpenedTimestamp(table_view_helpers.TableCell):
 class TableCellModifiedCSV(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue modified date."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related, _config):
+  def __init__(self, issue, **_kw):
     values = []
     if issue.modified_timestamp:
       values = [TimeStringForCSV(issue.modified_timestamp)]
@@ -346,9 +337,7 @@ class TableCellModifiedCSV(table_view_helpers.TableCell):
 class TableCellModifiedTimestamp(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue modified timestamp."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related, _config):
+  def __init__(self, issue, **_kw):
     table_view_helpers.TableCell.__init__(
         self, table_view_helpers.CELL_TYPE_UNFILTERABLE,
         [issue.modified_timestamp])
@@ -357,9 +346,7 @@ class TableCellModifiedTimestamp(table_view_helpers.TableCell):
 class TableCellClosedCSV(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue closed date."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related, _config):
+  def __init__(self, issue, **_kw):
     values = []
     if issue.closed_timestamp:
       values = [TimeStringForCSV(issue.closed_timestamp)]
@@ -371,9 +358,7 @@ class TableCellClosedCSV(table_view_helpers.TableCell):
 class TableCellClosedTimestamp(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue closed timestamp."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related, _config):
+  def __init__(self, issue, **_kw):
     table_view_helpers.TableCell.__init__(
         self, table_view_helpers.CELL_TYPE_UNFILTERABLE,
         [issue.closed_timestamp])
@@ -382,9 +367,7 @@ class TableCellClosedTimestamp(table_view_helpers.TableCell):
 class TableCellOwnerModifiedCSV(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing owner modified date."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related, _config):
+  def __init__(self, issue, **_kw):
     values = []
     if issue.modified_timestamp:
       values = [TimeStringForCSV(issue.owner_modified_timestamp)]
@@ -396,9 +379,7 @@ class TableCellOwnerModifiedCSV(table_view_helpers.TableCell):
 class TableCellOwnerModifiedTimestamp(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing owner modified timestamp."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related, _config):
+  def __init__(self, issue, **_kw):
     table_view_helpers.TableCell.__init__(
         self, table_view_helpers.CELL_TYPE_UNFILTERABLE,
         [issue.owner_modified_timestamp])
@@ -407,9 +388,7 @@ class TableCellOwnerModifiedTimestamp(table_view_helpers.TableCell):
 class TableCellStatusModifiedCSV(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing status modified date."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related, _config):
+  def __init__(self, issue, **_kw):
     values = []
     if issue.modified_timestamp:
       values = [TimeStringForCSV(issue.status_modified_timestamp)]
@@ -421,9 +400,7 @@ class TableCellStatusModifiedCSV(table_view_helpers.TableCell):
 class TableCellStatusModifiedTimestamp(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing status modified timestamp."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related, _config):
+  def __init__(self, issue, **_kw):
     table_view_helpers.TableCell.__init__(
         self, table_view_helpers.CELL_TYPE_UNFILTERABLE,
         [issue.status_modified_timestamp])
@@ -432,9 +409,7 @@ class TableCellStatusModifiedTimestamp(table_view_helpers.TableCell):
 class TableCellComponentModifiedCSV(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing component modified date."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related, _config):
+  def __init__(self, issue, **_kw):
     values = []
     if issue.modified_timestamp:
       values = [TimeStringForCSV(issue.component_modified_timestamp)]
@@ -446,9 +421,7 @@ class TableCellComponentModifiedCSV(table_view_helpers.TableCell):
 class TableCellComponentModifiedTimestamp(table_view_helpers.TableCell):
   """TableCell subclass for showing component modified timestamp."""
 
-  def __init__(
-      self, issue, col, users_by_id, non_col_labels, label_values,
-      _related, _config):
+  def __init__(self, issue, **_kw):
     table_view_helpers.TableCell.__init__(
         self, table_view_helpers.CELL_TYPE_UNFILTERABLE,
         [issue.component_modified_timestamp])

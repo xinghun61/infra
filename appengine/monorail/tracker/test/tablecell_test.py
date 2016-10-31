@@ -235,24 +235,18 @@ class TableCellUnitTest(unittest.TestCase):
 
   def testTableCellMergedIntoNotMerged(self):
     cell = tablecell.TableCellMergedInto(
-        MakeTestIssue(4, 4, 'Four'),**self.table_cell_kws)
+        MakeTestIssue(4, 4, 'Four'), **self.table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values, [])
 
 
 class TableCellCSVTest(unittest.TestCase):
 
-  USERS_BY_ID = {
-      23456: DisplayNameMock('Jason'),
-      34567: DisplayNameMock('Nathan'),
-      }
-
   def testTableCellOpenedTimestamp(self):
     test_issue = MakeTestIssue(4, 4, 'Four')
     test_issue.opened_timestamp = 1200000000
 
-    cell = tablecell.TableCellOpenedTimestamp(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    cell = tablecell.TableCellOpenedTimestamp(test_issue)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 1200000000)
 
@@ -260,14 +254,12 @@ class TableCellCSVTest(unittest.TestCase):
     test_issue = MakeTestIssue(4, 4, 'Four')
     test_issue.closed_timestamp = None
 
-    cell = tablecell.TableCellClosedTimestamp(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    cell = tablecell.TableCellClosedTimestamp(test_issue)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 0)
 
     test_issue.closed_timestamp = 1200000000
-    cell = tablecell.TableCellClosedTimestamp(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    cell = tablecell.TableCellClosedTimestamp(test_issue)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 1200000000)
 
@@ -275,14 +267,12 @@ class TableCellCSVTest(unittest.TestCase):
     test_issue = MakeTestIssue(4, 4, 'Four')
     test_issue.modified_timestamp = 0
 
-    cell = tablecell.TableCellModifiedTimestamp(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    cell = tablecell.TableCellModifiedTimestamp(test_issue)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 0)
 
     test_issue.modified_timestamp = 1200000000
-    cell = tablecell.TableCellModifiedTimestamp(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    cell = tablecell.TableCellModifiedTimestamp(test_issue)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 1200000000)
 
@@ -290,14 +280,12 @@ class TableCellCSVTest(unittest.TestCase):
     test_issue = MakeTestIssue(4, 4, 'Four')
     test_issue.owner_modified_timestamp = 0
 
-    cell = tablecell.TableCellOwnerModifiedTimestamp(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    cell = tablecell.TableCellOwnerModifiedTimestamp(test_issue)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 0)
 
     test_issue.owner_modified_timestamp = 1200000000
-    cell = tablecell.TableCellOwnerModifiedTimestamp(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    cell = tablecell.TableCellOwnerModifiedTimestamp(test_issue)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 1200000000)
 
@@ -305,14 +293,12 @@ class TableCellCSVTest(unittest.TestCase):
     test_issue = MakeTestIssue(4, 4, 'Four')
     test_issue.status_modified_timestamp = 0
 
-    cell = tablecell.TableCellStatusModifiedTimestamp(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    cell = tablecell.TableCellStatusModifiedTimestamp(test_issue)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 0)
 
     test_issue.status_modified_timestamp = 1200000000
-    cell = tablecell.TableCellStatusModifiedTimestamp(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    cell = tablecell.TableCellStatusModifiedTimestamp(test_issue)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 1200000000)
 
@@ -320,14 +306,12 @@ class TableCellCSVTest(unittest.TestCase):
     test_issue = MakeTestIssue(4, 4, 'Four')
     test_issue.component_modified_timestamp = 0
 
-    cell = tablecell.TableCellComponentModifiedTimestamp(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    cell = tablecell.TableCellComponentModifiedTimestamp(test_issue)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 0)
 
     test_issue.component_modified_timestamp = 1200000000
-    cell = tablecell.TableCellComponentModifiedTimestamp(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    cell = tablecell.TableCellComponentModifiedTimestamp(test_issue)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 1200000000)
 
@@ -339,7 +323,6 @@ class TableCellCSVTest(unittest.TestCase):
     test_issue.labels = labels
     test_issue.derived_labels = derived_labels
 
-    cell = tablecell.TableCellAllLabels(
-        test_issue, None, self.USERS_BY_ID, [], {}, {}, 'fake config')
+    cell = tablecell.TableCellAllLabels(test_issue)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual([v.item for v in cell.values], labels + derived_labels)
