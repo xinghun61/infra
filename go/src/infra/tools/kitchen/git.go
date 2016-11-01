@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/luci/luci-go/common/system/ctxcmd"
 	"golang.org/x/net/context"
 )
 
@@ -32,7 +31,7 @@ func cloneOrFetch(c context.Context, workdir, repoURL string) error {
 	}
 
 	// Is it a Git repo?
-	if err := git(workdir, "rev-parse").Run(c); err != nil {
+	if err := git(c, workdir, "rev-parse").Run(); err != nil {
 		if _, ok := err.(*exec.ExitError); !ok {
 			return err
 		}
@@ -53,7 +52,7 @@ func cloneOrFetch(c context.Context, workdir, repoURL string) error {
 	}
 
 	// Is origin's URL same?
-	originURLBytes, err := git(workdir, "config", "remote.origin.url").Output()
+	originURLBytes, err := git(c, workdir, "config", "remote.origin.url").Output()
 	if err != nil {
 		return err
 	}
@@ -87,18 +86,18 @@ func checkoutRepository(c context.Context, workdir, repository, revision string)
 }
 
 // git returns an *exec.Cmd for a git command, with Stderr redirected.
-func git(workDir string, args ...string) *ctxcmd.CtxCmd {
-	cmd := exec.Command("git", args...)
+func git(ctx context.Context, workDir string, args ...string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, "git", args...)
 	if workDir != "" {
 		cmd.Dir = workDir
 	}
 	cmd.Stderr = os.Stderr
-	return &ctxcmd.CtxCmd{Cmd: cmd}
+	return cmd
 }
 
 // runGit prints the git command, runs it, redirects Stdout and Stderr and returns an error.
 func runGit(c context.Context, workDir string, args ...string) error {
-	cmd := git(workDir, args...)
+	cmd := git(c, workDir, args...)
 	if workDir != "" {
 		absWorkDir, err := filepath.Abs(workDir)
 		if err != nil {
@@ -108,5 +107,5 @@ func runGit(c context.Context, workDir string, args ...string) error {
 	}
 	fmt.Printf("$ %s\n", strings.Join(cmd.Args, " "))
 	cmd.Stdout = os.Stdout
-	return cmd.Run(c)
+	return cmd.Run()
 }

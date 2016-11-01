@@ -17,6 +17,8 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"infra/tools/kitchen/proto"
+
+	"golang.org/x/net/context"
 )
 
 // readConfig reads and parses recipe config at cfgPath.
@@ -46,8 +48,8 @@ type recipeRun struct {
 	timestamps           bool   // Whether to print CURRENT_TIMESTAMP annotations.
 }
 
-// Command creates a exec.Cmd for running a recipe.
-func (r *recipeRun) Command() (*exec.Cmd, error) {
+// command creates a exec.Cmd for running a recipe.
+func (r *recipeRun) command(ctx context.Context) (*exec.Cmd, error) {
 	cfgPath := filepath.Join(r.repositoryPath, "infra/config/recipes.cfg")
 	cfg, err := readConfig(cfgPath)
 	if err != nil {
@@ -63,7 +65,7 @@ func (r *recipeRun) Command() (*exec.Cmd, error) {
 		return nil, fmt.Errorf("%q does not exist", recipesPy)
 	}
 
-	cmd := exec.Command(
+	cmd := exec.CommandContext(ctx,
 		"python", recipesPy,
 		"run",
 		"--properties-file", r.propertiesFile,

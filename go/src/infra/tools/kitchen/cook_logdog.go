@@ -20,8 +20,8 @@ import (
 	"github.com/luci/luci-go/common/config"
 	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/system/ctxcmd"
 	"github.com/luci/luci-go/common/system/environ"
+	"github.com/luci/luci-go/common/system/exitcode"
 	"github.com/luci/luci-go/logdog/client/annotee"
 	"github.com/luci/luci-go/logdog/client/annotee/annotation"
 	"github.com/luci/luci-go/logdog/client/butler"
@@ -36,6 +36,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 )
+
+type runCmdFunc func(ctx context.Context, env environ.Env) (*exec.Cmd, error)
 
 type cookLogDogParams struct {
 	host    string
@@ -153,12 +155,9 @@ func (p *cookLogDogParams) getPrefix(env environ.Env) (types.StreamName, error) 
 //	  - Optionally, hook its output streams up through an Annotee processor.
 //	  - Otherwise, wait for the process to finish.
 //	- Shut down the Butler instance.
-func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc int, err error) {
-	// Get our task's environment.
-	var env environ.Env
-	if cmd.Env != nil {
-		env = environ.New(cmd.Env)
-	} else {
+func (c *cookRun) runWithLogdogButler(ctx context.Context, fn runCmdFunc, env environ.Env) (rc int, err error) {
+	// If env is nil (production code), use the system enviornment.
+	if env == nil {
 		env = environ.System()
 	}
 
@@ -169,6 +168,28 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc in
 	log.Fields{
 		"prefix": prefix,
 	}.Infof(ctx, "Using LogDog prefix: %q", prefix)
+
+	// Augment our environment with Butler parameters.
+	bsEnv := bootstrap.Environment{
+		Project: config.ProjectName(c.logdog.project),
+		Prefix:  c.logdog.prefix,
+	}
+	bsEnv.Augment(env)
+
+	// Start our bootstrapped subprocess.
+	//
+	// We need to consume all of its streams prior to waiting for completion (see
+	// exec.Cmd).
+	//
+	// We'll set up our own cancellation function to help ensure that the process
+	// is properly terminated regardless of any encountered errors.
+	procCtx, procCancelFunc := context.WithCancel(ctx)
+	defer procCancelFunc()
+
+	proc, err := fn(procCtx, env)
+	if err != nil {
+		return 0, errors.Annotate(err).Reason("failed to build recipe comamnd").Err()
+	}
 
 	// Set up authentication.
 	authOpts := auth.Options{
@@ -257,19 +278,6 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc in
 		}
 	}()
 
-	// Wrap our incoming command in a CtxCmd.
-	proc := ctxcmd.CtxCmd{
-		Cmd: cmd,
-	}
-
-	// Augment our environment with Butler parameters.
-	bsEnv := bootstrap.Environment{
-		Project: config.ProjectName(c.logdog.project),
-		Prefix:  c.logdog.prefix,
-	}
-	bsEnv.Augment(env)
-	proc.Env = env.Sorted()
-
 	// Build pipes for our STDOUT and STDERR streams.
 	stdout, err := proc.StdoutPipe()
 	if err != nil {
@@ -286,29 +294,21 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc in
 	defer stderr.Close()
 
 	// Start our bootstrapped subprocess.
-	//
-	// We need to consume all of its streams prior to waiting for completion (see
-	// exec.Cmd).
-	//
-	// We'll set up our own cancellation function to help ensure that the process
-	// is properly terminated regardless of any encountered errors.
-	ctx, cancelFunc := context.WithCancel(ctx)
+	printCommand(proc)
 
-	printCommand(proc.Cmd)
-
-	if err = proc.Start(ctx); err != nil {
+	if err = proc.Start(); err != nil {
 		err = errors.Annotate(err).Reason("failed to start command").Err()
 		return
 	}
 	defer func() {
 		// If we've encountered an error, cancel our process.
 		if err != nil {
-			cancelFunc()
+			procCancelFunc()
 		}
 
 		// Run our command and collect its return code.
 		ierr := proc.Wait()
-		if waitRC, has := ctxcmd.ExitCode(ierr); has {
+		if waitRC, has := exitcode.Get(ierr); has {
 			rc = waitRC
 		} else {
 			ierr = errors.Annotate(ierr).Reason("failed to Wait() for process").Err()
@@ -380,11 +380,11 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, cmd *exec.Cmd) (rc in
 		wg.Add(2)
 
 		// Explicitly add these streams to the Butler.
-		if err = b.AddStream(stdout, *stdoutFlags.Properties()); err != nil {
+		if err = b.AddStream(stdout, stdoutFlags.Properties()); err != nil {
 			err = errors.Annotate(err).Reason("failed to add STDOUT stream to Butler").Err()
 			return
 		}
-		if err = b.AddStream(stderr, *stderrFlags.Properties()); err != nil {
+		if err = b.AddStream(stderr, stderrFlags.Properties()); err != nil {
 			err = errors.Annotate(err).Reason("failed to add STDERR stream to Butler").Err()
 			return
 		}

@@ -23,8 +23,8 @@ import (
 	"github.com/luci/luci-go/common/cli"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/flag/stringlistflag"
-	"github.com/luci/luci-go/common/system/ctxcmd"
 	"github.com/luci/luci-go/common/system/environ"
+	"github.com/luci/luci-go/common/system/exitcode"
 )
 
 // BootstrapStepName is the name of kitchen's step where it makes preparations
@@ -197,19 +197,27 @@ func (c *cookRun) run(ctx context.Context, props map[string]interface{}) (recipe
 		outputResultJSONFile: c.OutputResultJSONFile,
 		timestamps:           c.Timestamps,
 	}
-	recipeCmd, err := recipe.Command()
-	if err != nil {
-		return 0, err
+
+	cmdFunc := func(ctx context.Context, env environ.Env) (*exec.Cmd, error) {
+		recipeCmd, err := recipe.command(ctx)
+		if err != nil {
+			return nil, err
+		}
+		recipeCmd.Env = env.Sorted()
+		return recipeCmd, nil
 	}
 
-	// Build our environment.
 	env := environ.System()
 	env.Set("PYTHONPATH", strings.Join(c.PythonPaths, string(os.PathListSeparator)))
-	recipeCmd.Env = env.Sorted()
 
 	// Bootstrap through LogDog Butler?
 	if c.logdog.active() {
-		return c.runWithLogdogButler(ctx, recipeCmd)
+		return c.runWithLogdogButler(ctx, cmdFunc, env)
+	}
+
+	recipeCmd, err := cmdFunc(ctx, env)
+	if err != nil {
+		return 0, err
 	}
 
 	printCommand(recipeCmd)
@@ -217,9 +225,8 @@ func (c *cookRun) run(ctx context.Context, props map[string]interface{}) (recipe
 	recipeCmd.Stdout = os.Stdout
 	recipeCmd.Stderr = os.Stderr
 
-	recipeCtxCmd := ctxcmd.CtxCmd{Cmd: recipeCmd}
-	err = recipeCtxCmd.Run(ctx)
-	if rv, has := ctxcmd.ExitCode(err); has {
+	err = recipeCmd.Run()
+	if rv, has := exitcode.Get(err); has {
 		return rv, nil
 	}
 	return 0, fmt.Errorf("failed to run recipe: %s", err)
@@ -232,23 +239,16 @@ func (c *cookRun) remoteRun(ctx context.Context, props map[string]interface{}) (
 		panic("recipe engine path is unspecified")
 	}
 
-	recipeCmd := exec.Command(
-		"python",
-		filepath.Join(c.RecipeEnginePath, "recipes.py"),
-		"remote",
-		"--repository", c.RepositoryURL,
-		"--revision", c.Revision,
-		"--workdir", c.CheckoutDir, // this is not a workdir for recipe run!
-	)
-
-	// remote subcommand does not sniff whether repository is gitiles or generic
-	// git. Instead it accepts an explicit "--use-gitiles" flag.
-	// We are not told whether the repo is gitiles or not, so sniff it here.
-	if c.AllowGitiles && looksLikeGitiles(c.RepositoryURL) {
-		recipeCmd.Args = append(recipeCmd.Args, "--use-gitiles")
+	// Pass properties in a file.
+	propertiesFile, err := ioutil.TempFile("", "")
+	if err != nil {
+		return 0, err
+	}
+	defer os.Remove(propertiesFile.Name())
+	if err := json.NewEncoder(propertiesFile).Encode(props); err != nil {
+		return 0, fmt.Errorf("could not write properties file: %s", err)
 	}
 
-	// Prepare a workdir for the recipe run.
 	workDir := c.Workdir
 	if workDir == "" {
 		workDir = "kitchen-workdir"
@@ -262,47 +262,60 @@ func (c *cookRun) remoteRun(ctx context.Context, props map[string]interface{}) (
 		return 0, err
 	}
 
-	// Pass properties in a file.
-	propertiesFile, err := ioutil.TempFile("", "")
-	if err != nil {
-		return 0, err
-	}
-	defer os.Remove(propertiesFile.Name())
-	if err := json.NewEncoder(propertiesFile).Encode(props); err != nil {
-		return 0, fmt.Errorf("could not write properties file: %s", err)
-	}
+	cmdFunc := func(ctx context.Context, env environ.Env) (*exec.Cmd, error) {
+		recipeCmd := exec.CommandContext(
+			ctx,
+			"python",
+			filepath.Join(c.RecipeEnginePath, "recipes.py"),
+			"remote",
+			"--repository", c.RepositoryURL,
+			"--revision", c.Revision,
+			"--workdir", c.CheckoutDir, // this is not a workdir for recipe run!
+		)
+		recipeCmd.Env = env.Sorted()
 
-	// Now add the arguments for the recipes.py that will be fetched.
-	recipeCmd.Args = append(recipeCmd.Args,
-		"--",
-		"run",
-		"--properties-file", propertiesFile.Name(),
-		"--workdir", workDir,
-		"--output-result-json", c.OutputResultJSONFile,
-	)
-	if c.Timestamps {
-		recipeCmd.Args = append(recipeCmd.Args, "--timestamps")
+		// remote subcommand does not sniff whether repository is gitiles or generic
+		// git. Instead it accepts an explicit "--use-gitiles" flag.
+		// We are not told whether the repo is gitiles or not, so sniff it here.
+		if c.AllowGitiles && looksLikeGitiles(c.RepositoryURL) {
+			recipeCmd.Args = append(recipeCmd.Args, "--use-gitiles")
+		}
+
+		// Now add the arguments for the recipes.py that will be fetched.
+		recipeCmd.Args = append(recipeCmd.Args,
+			"--",
+			"run",
+			"--properties-file", propertiesFile.Name(),
+			"--workdir", workDir,
+			"--output-result-json", c.OutputResultJSONFile,
+		)
+		if c.Timestamps {
+			recipeCmd.Args = append(recipeCmd.Args, "--timestamps")
+		}
+		recipeCmd.Args = append(recipeCmd.Args, c.Recipe)
+		return recipeCmd, nil
 	}
-	recipeCmd.Args = append(recipeCmd.Args, c.Recipe)
 
 	// Build our environment.
 	env := environ.System()
 	env.Set("PYTHONPATH", strings.Join(c.PythonPaths, string(os.PathListSeparator)))
-	recipeCmd.Env = env.Sorted()
 
 	// Bootstrap through LogDog Butler?
 	if c.logdog.active() {
-		return c.runWithLogdogButler(ctx, recipeCmd)
+		return c.runWithLogdogButler(ctx, cmdFunc, env)
 	}
 
+	recipeCmd, err := cmdFunc(ctx, env)
+	if err != nil {
+		return 0, fmt.Errorf("failed to build recipe command: %s", err)
+	}
 	printCommand(recipeCmd)
 
 	recipeCmd.Stdout = os.Stdout
 	recipeCmd.Stderr = os.Stderr
 
-	recipeCtxCmd := ctxcmd.CtxCmd{Cmd: recipeCmd}
-	err = recipeCtxCmd.Run(ctx)
-	if rv, has := ctxcmd.ExitCode(err); has {
+	err = recipeCmd.Run()
+	if rv, has := exitcode.Get(err); has {
 		return rv, nil
 	}
 	return 0, fmt.Errorf("failed to run recipe: %s", err)
