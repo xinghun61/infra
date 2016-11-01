@@ -75,6 +75,7 @@ class BackendSearchPipeline(object):
     # The value None means that we still need to compute that value.
     self.result_iids = None  # Sorted issue IDs that match the query
     self.search_limit_reached = False  # True if search results limit is hit.
+    self.error = None
 
     self._MakePromises()
 
@@ -106,7 +107,7 @@ class BackendSearchPipeline(object):
   def SearchForIIDs(self):
     """Wait for the search Promises and store their results."""
     with self.profiler.Phase('WaitOnPromises'):
-      self.result_iids, self.search_limit_reached = (
+      self.result_iids, self.search_limit_reached, self.error = (
           self.result_iids_promise.WaitAndGetValue())
 
 
@@ -130,9 +131,10 @@ def SearchProjectCan(
     query_desc: descriptive string for debugging.
 
   Returns:
-    (issue_ids, capped) where issue_ids is a list of issue issue_ids that
-    satisfy the query, and capped is True if the number of results were
-    capped due to an implementation limit.
+    (issue_ids, capped, error) where issue_ids is a list of issue issue_ids
+    that satisfy the query, capped is True if the number of results were
+    capped due to an implementation limit, and error is any well-known error
+    (probably a query parsing error) encountered during search.
   """
   logging.info('searching projects %r for AST %r', project_ids, query_ast)
   start_time = time.time()
@@ -149,10 +151,14 @@ def SearchProjectCan(
     query_left_joins, query_where = ast2select.BuildSQLQuery(query_ast)
     left_joins.extend(query_left_joins)
     where.extend(query_where)
+  except ast2ast.MalformedQuery as e:
+    # TODO(jrobbins): inform the user that their query had invalid tokens.
+    logging.info('Invalid query tokens %s.\n %r\n\n', e.message, query_ast)
+    return [], False, e
   except ast2select.NoPossibleResults as e:
     # TODO(jrobbins): inform the user that their query was impossible.
     logging.info('Impossible query %s.\n %r\n\n', e.message, query_ast)
-    return [], False
+    return [], False, e
   logging.info('translated to left_joins %r', left_joins)
   logging.info('translated to where %r', where)
 
@@ -166,7 +172,7 @@ def SearchProjectCan(
         project_ids, conj, shard_id)
     if full_text_iids is not None:
       if not full_text_iids:
-        return [], False  # No match on free-text terms, so don't bother DB.
+        return [], False, None  # No match on fulltext, so don't bother DB.
       cond_str = 'Issue.id IN (%s)' % sql.PlaceHolders(full_text_iids)
       where.append((cond_str, full_text_iids))
 
@@ -198,7 +204,7 @@ def SearchProjectCan(
                query_desc, query_ast, len(issue_ids),
                int((time.time() - start_time) * 1000))
   capped = fts_capped or db_capped
-  return issue_ids, capped
+  return issue_ids, capped, None
 
 def _FilterSpam(query_ast):
   uses_spam = False
@@ -247,6 +253,8 @@ def _GetQueryResultIIDs(
       is returned if no issues match the query.
       Boolean that is set to True if the search results limit of this shard is
       hit.
+      An error (subclass of Exception) encountered during query processing. None
+      means that no error was encountered.
   """
   query_ast = _FilterSpam(query2ast.ParseUserQuery(
       user_query, canned_query, query2ast.BUILTIN_ISSUE_FIELDS,
@@ -262,11 +270,14 @@ def _GetQueryResultIIDs(
   if is_fulltext_query:
     expiration = framework_constants.FULLTEXT_MEMCACHE_EXPIRATION
 
-  result_iids, search_limit_reached = SearchProjectCan(
+  # Might raise ast2ast.MalformedQuery or ast2select.NoPossibleResults.
+  result_iids, search_limit_reached, error = SearchProjectCan(
       cnxn, services, query_project_ids, query_ast, shard_id,
       harmonized_config, sort_directives=sd, where=[slice_term],
       query_desc='getting query issue IDs')
   logging.info('Found %d result_iids', len(result_iids))
+  if error:
+    logging.warn('Got error %r', error)
 
   projects_str = ','.join(str(pid) for pid in sorted(query_project_ids))
   projects_str = projects_str or 'all'
@@ -303,4 +314,4 @@ def _GetQueryResultIIDs(
           key, invalidation_timestep,
           time=framework_constants.MEMCACHE_EXPIRATION)
 
-  return result_iids, search_limit_reached
+  return result_iids, search_limit_reached, error

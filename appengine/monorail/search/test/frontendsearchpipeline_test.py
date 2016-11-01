@@ -664,7 +664,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
       789, 111L, 2, processed_invalidations_up_to)
     self.mox.VerifyAll()
 
-  def testHandleBackendSearchResponse_Error(self):
+  def testHandleBackendSearchResponse_500(self):
     response_str = 'There was a problem processing the query.'
     rpc = testing_helpers.Blank(
       get_result=lambda: testing_helpers.Blank(
@@ -685,6 +685,36 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
       search_limit_reached, processed_invalidations_up_to, error_responses)
     self.assertEqual([], rpc_tuples)
     self.assertIn(2, error_responses)
+
+  def testHandleBackendSearchResponse_Error(self):
+    response_str = (
+      '})]\'\n'
+      '{'
+      ' "unfiltered_iids": [],'
+      ' "search_limit_reached": false,'
+      ' "error": "Invalid query"'
+      '}'
+      )
+    rpc = testing_helpers.Blank(
+      get_result=lambda: testing_helpers.Blank(
+          content=response_str, status_code=200))
+    rpc_tuple = (NOW, 2, rpc)
+    rpc_tuples = []  # Nothing should be added for this case.
+    filtered_iids = {}  # Search results should accumlate here, per-shard.
+    search_limit_reached = {}  # Booleans accumulate here, per-shard.
+    processed_invalidations_up_to = 12345
+
+    mr = testing_helpers.MakeMonorailRequest(path='/p/proj/issues/list?q=foo')
+    mr.me_user_id = 111L
+    error_responses = set()
+    frontendsearchpipeline._HandleBackendSearchResponse(
+      mr, ['proj'], rpc_tuple, rpc_tuples, 2, filtered_iids,
+      search_limit_reached, processed_invalidations_up_to, error_responses)
+    self.assertEqual([], rpc_tuples)
+    self.assertEqual({2: []}, filtered_iids)
+    self.assertEqual({2: False}, search_limit_reached)
+    self.assertEqual(set(), error_responses)
+
 
   def testHandleBackendSearchResponse_Normal(self):
     response_str = (

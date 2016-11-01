@@ -86,7 +86,7 @@ def _PreprocessIsOpenCond(
   elif cond.op == ast_pb2.QueryOp.NE:
     op = ast_pb2.QueryOp.EQ
   else:
-    raise ValueError('Open condidtion got nonsensical op %r' % cond.op)
+    raise MalformedQuery('Open condidtion got nonsensical op %r' % cond.op)
 
   return ast_pb2.Condition(
       op=op, field_defs=[query2ast.BUILTIN_ISSUE_FIELDS['status_id']],
@@ -101,7 +101,7 @@ def _PreprocessIsBlockedCond(
   elif cond.op == ast_pb2.QueryOp.NE:
     op = ast_pb2.QueryOp.IS_NOT_DEFINED
   else:
-    raise ValueError('Blocked condition got nonsensical op %r' % cond.op)
+    raise MalformedQuery('Blocked condition got nonsensical op %r' % cond.op)
 
   return ast_pb2.Condition(
       op=op, field_defs=[query2ast.BUILTIN_ISSUE_FIELDS['blockedon_id']])
@@ -115,7 +115,7 @@ def _PreprocessIsSpamCond(
   elif cond.op == ast_pb2.QueryOp.NE:
     int_values = [0]
   else:
-    raise ValueError('Spam condition got nonsensical op %r' % cond.op)
+    raise MalformedQuery('Spam condition got nonsensical op %r' % cond.op)
 
   return ast_pb2.Condition(
       op=ast_pb2.QueryOp.EQ,
@@ -168,7 +168,7 @@ def _GetIssueIDsFromLocalIdsCond(cnxn, cond, project_ids, services):
     if not project_name:
       if not default_project_name:
         # TODO(rmistry): Support the below.
-        raise ValueError(
+        raise MalformedQuery(
             'Searching for issues accross multiple/all projects without '
             'project prefixes is ambiguous and is currently not supported.')
       project_name = default_project_name
@@ -225,7 +225,7 @@ def _MakeKeyValueRegex(cond):
   """Return a regex to match the first token and remaining text separately."""
   keys, values = zip(*map(lambda x: x.split('-', 1), cond.str_values))
   if len(set(keys)) != 1:
-    raise ValueError(
+    raise MalformedQuery(
         "KeyValue query with multiple different keys: %r" % cond.str_values)
   all_values = '|'.join(map(re.escape, values))
   return re.compile(r'%s-.*\b(%s)\b.*' % (keys[0], all_values), re.I)
@@ -437,3 +437,7 @@ def _PreprocessCond(
   else:
     # We don't have a preprocessor for it.
     return cond
+
+
+class MalformedQuery(ValueError):
+  pass

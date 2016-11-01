@@ -822,6 +822,11 @@ def _HandleBackendSearchResponse(
     json_data = json.loads(json_content)
     unfiltered_iids[shard_key] = json_data['unfiltered_iids']
     search_limit_reached[shard_key] = json_data['search_limit_reached']
+    if json_data.get('error'):
+      # Don't raise an exception, just log, because these errors are more like
+      # 400s than 500s, and shouldn't be retried.
+      logging.error('Backend shard %r returned error "%r"' % (
+          shard_key, json_data.get('error')))
 
   except Exception as e:
     if duration_sec > FAIL_FAST_LIMIT_SEC:  # Don't log fail-fast exceptions.

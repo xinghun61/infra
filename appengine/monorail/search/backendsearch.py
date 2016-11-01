@@ -64,4 +64,5 @@ class BackendSearch(jsonfeed.InternalTask):
     return {
         'unfiltered_iids': pipeline.result_iids,
         'search_limit_reached': pipeline.search_limit_reached,
-        }
+        'error': pipeline.error,
+    }

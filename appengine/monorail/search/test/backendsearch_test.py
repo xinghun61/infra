@@ -41,7 +41,8 @@ class BackendSearchTest(unittest.TestCase):
     pipeline = testing_helpers.Blank(
         SearchForIIDs=lambda: None,
         result_iids=[],
-        search_limit_reached=False)
+        search_limit_reached=False,
+        error=None)
     self.mox.StubOutWithMock(backendsearchpipeline, 'BackendSearchPipeline')
     backendsearchpipeline.BackendSearchPipeline(
       self.mr, self.services, self.servlet.profiler, 100, ['proj'], 111L, 222L
@@ -52,6 +53,7 @@ class BackendSearchTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertEqual([], json_data['unfiltered_iids'])
     self.assertFalse(json_data['search_limit_reached'])
+    self.assertEqual(None, json_data['error'])
 
   def testHandleRequest_ResultsInOnePagainationPage(self):
     """Prefetch all result issues and return them."""
@@ -59,7 +61,8 @@ class BackendSearchTest(unittest.TestCase):
     pipeline = testing_helpers.Blank(
         SearchForIIDs=lambda: None,
         result_iids=allowed_iids,
-        search_limit_reached=False)
+        search_limit_reached=False,
+        error=None)
     self.mox.StubOutWithMock(backendsearchpipeline, 'BackendSearchPipeline')
     backendsearchpipeline.BackendSearchPipeline(
       self.mr, self.services, self.servlet.profiler, 100, ['proj'], 111L, 222L
@@ -73,6 +76,7 @@ class BackendSearchTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertEqual([1, 2, 3, 4, 5, 6, 7, 8], json_data['unfiltered_iids'])
     self.assertFalse(json_data['search_limit_reached'])
+    self.assertEqual(None, json_data['error'])
 
   def testHandleRequest_ResultsExceedPagainationPage(self):
     """Return all result issue IDs, but only prefetch the first page."""
@@ -80,7 +84,8 @@ class BackendSearchTest(unittest.TestCase):
     pipeline = testing_helpers.Blank(
         SearchForIIDs=lambda: None,
         result_iids=[1, 2, 3, 4, 5, 6, 7, 8],
-        search_limit_reached=False)
+        search_limit_reached=False,
+        error=None)
     self.mox.StubOutWithMock(backendsearchpipeline, 'BackendSearchPipeline')
     backendsearchpipeline.BackendSearchPipeline(
       self.mr, self.services, self.servlet.profiler, 100, ['proj'], 111L, 222L
@@ -95,3 +100,24 @@ class BackendSearchTest(unittest.TestCase):
     # All are IDs are returned to the frontend.
     self.assertEqual([1, 2, 3, 4, 5, 6, 7, 8], json_data['unfiltered_iids'])
     self.assertFalse(json_data['search_limit_reached'])
+    self.assertEqual(None, json_data['error'])
+
+  def testHandleRequest_QueryError(self):
+    """Handle the case where the search has no results."""
+    error = ValueError('Malformed query')
+    pipeline = testing_helpers.Blank(
+        SearchForIIDs=lambda: None,
+        result_iids=[],
+        search_limit_reached=False,
+        error=error)
+    self.mox.StubOutWithMock(backendsearchpipeline, 'BackendSearchPipeline')
+    backendsearchpipeline.BackendSearchPipeline(
+      self.mr, self.services, self.servlet.profiler, 100, ['proj'], 111L, 222L
+      ).AndReturn(pipeline)
+    self.mox.ReplayAll()
+
+    json_data = self.servlet.HandleRequest(self.mr)
+    self.mox.VerifyAll()
+    self.assertEqual([], json_data['unfiltered_iids'])
+    self.assertFalse(json_data['search_limit_reached'])
+    self.assertEqual(error, json_data['error'])

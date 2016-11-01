@@ -93,7 +93,7 @@ class BackendSearchPipelineTest(unittest.TestCase):
     be_pipeline = backendsearchpipeline.BackendSearchPipeline(
       self.mr, self.services, self.profiler, 100, ['proj'], 111L, 111L)
     be_pipeline.result_iids_promise = testing_helpers.Blank(
-      WaitAndGetValue=lambda: ([10002, 10052], False))
+      WaitAndGetValue=lambda: ([10002, 10052], False, None))
     be_pipeline.SearchForIIDs()
     self.mox.VerifyAll()
     self.assertEqual([10002, 10052], be_pipeline.result_iids)
@@ -145,11 +145,12 @@ class BackendSearchPipelineMethodsTest(unittest.TestCase):
       self.cnxn, mox.IsA(list), mox.IsA(list), mox.IsA(list),
       shard_id=2).AndReturn(([10002, 10052], False))
     self.mox.ReplayAll()
-    result, capped = backendsearchpipeline.SearchProjectCan(
+    result, capped, err = backendsearchpipeline.SearchProjectCan(
       self.cnxn, self.services, [789], query_ast, 2, self.config)
     self.mox.VerifyAll()
     self.assertEqual([10002, 10052], result)
     self.assertFalse(capped)
+    self.assertEqual(None, err)
 
   def testSearchProjectCan_DBCapped(self):
     query_ast = query2ast.ParseUserQuery(
@@ -166,11 +167,12 @@ class BackendSearchPipelineMethodsTest(unittest.TestCase):
       self.cnxn, mox.IsA(list), mox.IsA(list), mox.IsA(list),
       shard_id=2).AndReturn(([10002, 10052], True))
     self.mox.ReplayAll()
-    result, capped = backendsearchpipeline.SearchProjectCan(
+    result, capped, err = backendsearchpipeline.SearchProjectCan(
       self.cnxn, self.services, [789], query_ast, 2, self.config)
     self.mox.VerifyAll()
     self.assertEqual([10002, 10052], result)
     self.assertTrue(capped)
+    self.assertEqual(None, err)
 
   def testSearchProjectCan_FTSCapped(self):
     query_ast = query2ast.ParseUserQuery(
@@ -187,11 +189,12 @@ class BackendSearchPipelineMethodsTest(unittest.TestCase):
       self.cnxn, mox.IsA(list), mox.IsA(list), mox.IsA(list),
       shard_id=2).AndReturn(([10002, 10052], False))
     self.mox.ReplayAll()
-    result, capped = backendsearchpipeline.SearchProjectCan(
+    result, capped, err = backendsearchpipeline.SearchProjectCan(
       self.cnxn, self.services, [789], query_ast, 2, self.config)
     self.mox.VerifyAll()
     self.assertEqual([10002, 10052], result)
     self.assertTrue(capped)
+    self.assertEqual(None, err)
 
   def testGetQueryResultIIDs(self):
     sd = ['project', 'id']
@@ -206,14 +209,15 @@ class BackendSearchPipelineMethodsTest(unittest.TestCase):
       self.cnxn, self.services, [789], query_ast, 2, self.config,
       sort_directives=sd, where=[slice_term],
       query_desc='getting query issue IDs'
-      ).AndReturn(([10002, 10052], False))
+      ).AndReturn(([10002, 10052], False, None))
     self.mox.ReplayAll()
-    result_iids, limit_reached = backendsearchpipeline._GetQueryResultIIDs(
+    result, capped, err = backendsearchpipeline._GetQueryResultIIDs(
       self.cnxn, self.services, 'is:open', 'Priority:High',
       [789], self.config, sd, slice_term, 2, 12345)
     self.mox.VerifyAll()
-    self.assertEqual([10002, 10052], result_iids)
-    self.assertFalse(limit_reached)
+    self.assertEqual([10002, 10052], result)
+    self.assertFalse(capped)
+    self.assertEqual(None, err)
     self.assertEqual(
       ([10002, 10052], 12345),
       memcache.get('789;is:open;Priority:High;project id;2'))
@@ -232,14 +236,15 @@ class BackendSearchPipelineMethodsTest(unittest.TestCase):
       self.cnxn, self.services, [789], query_ast, 2, self.config,
       sort_directives=sd, where=[slice_term],
       query_desc='getting query issue IDs'
-      ).AndReturn(([10002, 10052], False))
+      ).AndReturn(([10002, 10052], False, None))
     self.mox.ReplayAll()
-    result_iids, limit_reached = backendsearchpipeline._GetQueryResultIIDs(
+    result, capped, err = backendsearchpipeline._GetQueryResultIIDs(
       self.cnxn, self.services, 'is:open', 'Priority:High is:spam',
       [789], self.config, sd, slice_term, 2, 12345)
     self.mox.VerifyAll()
-    self.assertEqual([10002, 10052], result_iids)
-    self.assertFalse(limit_reached)
+    self.assertEqual([10002, 10052], result)
+    self.assertFalse(capped)
+    self.assertEqual(None, err)
     self.assertEqual(
       ([10002, 10052], 12345),
       memcache.get('789;is:open;Priority:High is:spam;project id;2'))
