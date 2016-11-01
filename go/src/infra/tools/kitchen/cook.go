@@ -96,7 +96,7 @@ type cookRun struct {
 	// RecipeEnginePath is a path to a https://github.com/luci/recipes-py
 	// checkout.
 	// If present, `recipes.py remote` is used to fetch the recipe.
-	// Not required. TODO(nodir): make it required.
+	// Required.
 	RecipeEnginePath string
 	AllowGitiles     bool
 
@@ -116,6 +116,10 @@ type cookRun struct {
 
 // normalizeFlags validates and normalizes flags.
 func (c *cookRun) normalizeFlags() error {
+	if c.RecipeEnginePath == "" {
+		return fmt.Errorf("-recipe-engine-path is required")
+	}
+
 	// Validate Repository.
 	if c.RepositoryURL == "" {
 		return fmt.Errorf("-repository is required")
@@ -162,74 +166,6 @@ func (c *cookRun) normalizeFlags() error {
 	}
 
 	return nil
-}
-
-// run checks out a repo, runs a recipe and returns exit code.
-func (c *cookRun) run(ctx context.Context, props map[string]interface{}) (recipeExitCode int, err error) {
-	if err = checkoutRepository(ctx, c.CheckoutDir, c.RepositoryURL, c.Revision); err != nil {
-		return 0, err
-	}
-
-	if c.Workdir == "" {
-		var tempWorkdir string
-		if tempWorkdir, err = ioutil.TempDir("", "kitchen-"); err != nil {
-			return 0, err
-		}
-		defer os.RemoveAll(tempWorkdir)
-		c.Workdir = tempWorkdir
-	}
-
-	propertiesFile, err := ioutil.TempFile("", "")
-	if err != nil {
-		return 0, err
-	}
-	defer os.Remove(propertiesFile.Name())
-
-	if err := json.NewEncoder(propertiesFile).Encode(props); err != nil {
-		return 0, fmt.Errorf("could not write properties file: %s", err)
-	}
-
-	recipe := recipeRun{
-		repositoryPath:       c.CheckoutDir,
-		workDir:              c.Workdir,
-		recipe:               c.Recipe,
-		propertiesFile:       propertiesFile.Name(),
-		outputResultJSONFile: c.OutputResultJSONFile,
-		timestamps:           c.Timestamps,
-	}
-
-	cmdFunc := func(ctx context.Context, env environ.Env) (*exec.Cmd, error) {
-		recipeCmd, err := recipe.command(ctx)
-		if err != nil {
-			return nil, err
-		}
-		recipeCmd.Env = env.Sorted()
-		return recipeCmd, nil
-	}
-
-	env := environ.System()
-	env.Set("PYTHONPATH", strings.Join(c.PythonPaths, string(os.PathListSeparator)))
-
-	// Bootstrap through LogDog Butler?
-	if c.logdog.active() {
-		return c.runWithLogdogButler(ctx, cmdFunc, env)
-	}
-
-	recipeCmd, err := cmdFunc(ctx, env)
-	if err != nil {
-		return 0, err
-	}
-
-	printCommand(recipeCmd)
-
-	recipeCmd.Stdout = os.Stdout
-	recipeCmd.Stderr = os.Stderr
-
-	err = recipeCmd.Run()
-	if rv, has := exitcode.Get(err); has {
-		return rv, nil
-	}
-	return 0, fmt.Errorf("failed to run recipe: %s", err)
 }
 
 // remoteRun runs `recipes.py remote` that checks out a repo, runs a recipe and
@@ -395,14 +331,7 @@ func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
 	}
 
 	// Run the recipe.
-	var recipeExitCode int
-	if c.RecipeEnginePath == "" {
-		// old code path
-		// TODO(nodir): remove
-		recipeExitCode, err = c.run(ctx, props)
-	} else {
-		recipeExitCode, err = c.remoteRun(ctx, props)
-	}
+	recipeExitCode, err := c.remoteRun(ctx, props)
 	if err != nil {
 		bootstapSuccess = false
 		if err != context.Canceled {
