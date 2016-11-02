@@ -283,12 +283,12 @@ def FindMatchResults(dep_to_file_to_changelogs,
         if not crash_util.IsSameFilePath(crashed_file_path, touched_file_path):
           continue
 
-        blame = repository.GetBlame(crashed_file_path,
+        blame = repository.GetBlame(touched_file_path,
                                     stack_deps[dep].revision)
 
         # Generate/update each result(changelog) in changelogs, blame is used
         # to calculate distance between touched lines and crashed lines in file.
         match_results.GenerateMatchResults(
-            crashed_file_path, dep, stack_infos, changelogs, blame)
+            touched_file_path, dep, stack_infos, changelogs, blame)
 
   return match_results.values()
