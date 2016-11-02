@@ -1,0 +1,5 @@
+cron:
+- description: "Gerrit poll"
+  url: /gerrit-poller/poll
+  schedule: every 1 mins
+  target: gerrit-poller
