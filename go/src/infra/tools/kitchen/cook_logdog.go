@@ -156,8 +156,8 @@ func (p *cookLogDogParams) getPrefix(env environ.Env) (types.StreamName, error) 
 //	  - Otherwise, wait for the process to finish.
 //	- Shut down the Butler instance.
 func (c *cookRun) runWithLogdogButler(ctx context.Context, fn runCmdFunc, env environ.Env) (rc int, err error) {
-	// If env is nil (production code), use the system enviornment.
-	if env == nil {
+	// If env is empty (production code), use the system enviornment.
+	if env.Len() == 0 {
 		env = environ.System()
 	}
 

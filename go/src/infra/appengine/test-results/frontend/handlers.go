@@ -12,9 +12,8 @@ import (
 	"net/http"
 	"time"
 
-	"google.golang.org/appengine"
-
 	"github.com/luci/gae/service/datastore"
+	"github.com/luci/gae/service/info"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/router"
@@ -71,7 +70,7 @@ func init() {
 func templatesMiddleware() router.Middleware {
 	return templates.WithTemplates(&templates.Bundle{
 		Loader:    templates.FileSystemLoader("templates"),
-		DebugMode: appengine.IsDevAppServer(),
+		DebugMode: info.IsDevAppServer,
 		FuncMap: template.FuncMap{
 			"timeParams": func(t time.Time) string {
 				return t.Format(paramsTimeFormat)

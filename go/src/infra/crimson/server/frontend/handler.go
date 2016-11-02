@@ -25,7 +25,6 @@ import (
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
 	"golang.org/x/net/context"
-	"google.golang.org/appengine"
 	"google.golang.org/grpc/codes"
 
 	crimson "infra/crimson/proto"
@@ -41,7 +40,7 @@ var (
 
 	templateBundle = &templates.Bundle{
 		Loader:    templates.FileSystemLoader("templates"),
-		DebugMode: appengine.IsDevAppServer(),
+		DebugMode: info.IsDevAppServer,
 		DefaultArgs: func(c context.Context) (templates.Args, error) {
 			loginURL, err := auth.LoginURL(c, "/")
 			if err != nil {
