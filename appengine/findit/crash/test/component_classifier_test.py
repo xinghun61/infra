@@ -31,41 +31,35 @@ class CrashConfigComponentClassifier(ComponentClassifier):
 
 class ComponentClassifierTest(CrashTestCase):
 
+  def setUp(self):
+    super(ComponentClassifierTest, self).setUp()
+    # Only construct the cccc once, rather than making a new one every
+    # time we call a method on it.
+    self.cccc = CrashConfigComponentClassifier()
+
   def testGetClassFromStackFrame(self):
     frame = StackFrame(0, 'src/', 'func', 'comp1.cc', 'src/comp1.cc', [2])
-    self.assertEqual(
-        CrashConfigComponentClassifier().GetClassFromStackFrame(frame),
-        'Comp1>Dummy')
+    self.assertEqual(self.cccc.GetClassFromStackFrame(frame), 'Comp1>Dummy')
 
     frame = StackFrame(0, 'src/', 'func2', 'comp2.cc', 'src/comp2.cc', [32])
-    self.assertEqual(
-        CrashConfigComponentClassifier().GetClassFromStackFrame(frame),
-        'Comp2>Dummy')
+    self.assertEqual(self.cccc.GetClassFromStackFrame(frame), 'Comp2>Dummy')
 
     frame = StackFrame(0, 'src/', 'no_func', 'comp2.cc', 'src/comp2.cc', [32])
-    self.assertEqual(
-        CrashConfigComponentClassifier().GetClassFromStackFrame(frame),
-        '')
+    self.assertEqual(self.cccc.GetClassFromStackFrame(frame), '')
 
     frame = StackFrame(0, 'src/', 'func2', 'a.cc', 'src/a.cc', [6])
-    self.assertEqual(
-        CrashConfigComponentClassifier().GetClassFromStackFrame(frame),
-        '')
+    self.assertEqual(self.cccc.GetClassFromStackFrame(frame), '')
 
   def testGetClassFromResult(self):
     result = Result(self.GetDummyChangeLog(), 'src/')
-    self.assertEqual(
-        CrashConfigComponentClassifier().GetClassFromResult(result),
-        '')
+    self.assertEqual(self.cccc.GetClassFromResult(result), '')
 
     result.file_to_stack_infos = {
         'comp1.cc': [
             (StackFrame(0, 'src/', 'func', 'comp1.cc', 'src/comp1.cc', [2]), 0)
         ]
     }
-    self.assertEqual(
-        CrashConfigComponentClassifier().GetClassFromResult(result),
-        'Comp1>Dummy')
+    self.assertEqual(self.cccc.GetClassFromResult(result), 'Comp1>Dummy')
 
   def testClassifyCrashStack(self):
     crash_stack = CallStack(0)
@@ -75,7 +69,7 @@ class ComponentClassifierTest(CrashTestCase):
         StackFrame(2, 'src/', 'func2', 'comp2.cc', 'src/comp2.cc', [8])
     ])
 
-    self.assertEqual(CrashConfigComponentClassifier().Classify([], crash_stack),
+    self.assertEqual(self.cccc.Classify([], crash_stack),
                      ['Comp1>Dummy', 'Comp2>Dummy'])
 
   def testClassifyResults(self):
@@ -86,13 +80,14 @@ class ComponentClassifierTest(CrashTestCase):
         ]
     }
 
-    self.assertEqual(
-        CrashConfigComponentClassifier().Classify([result], CallStack(0)),
-        ['Comp1>Dummy'])
+    self.assertEqual(self.cccc.Classify([result], CallStack(0)),
+                     ['Comp1>Dummy'])
 
   def testClassifierDoNotHaveConfig(self):
     crash_config = CrashConfig.Get()
     crash_config.component_classifier = {}
+    # N.B., we must construct a new cccc here, becasue we changed CrashConfig.
+    self.cccc = CrashConfigComponentClassifier()
 
     crash_stack = CallStack(0)
     crash_stack.extend([
@@ -108,6 +103,4 @@ class ComponentClassifierTest(CrashTestCase):
         ]
     }
 
-    self.assertEqual(
-        CrashConfigComponentClassifier().Classify([result], crash_stack),
-        [])
+    self.assertEqual(self.cccc.Classify([result], crash_stack), [])
