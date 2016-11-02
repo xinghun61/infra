@@ -151,7 +151,7 @@ class AccountInput(forms.TextInput):
     output = super(AccountInput, self).render(name, value, attrs)
     if models.Account.current_user_account is not None:
       # TODO(anatoli): move this into .js media for this form
-      data = {'name': name, 'url': common.rewrite_url(reverse(account)),
+      data = {'name': name, 'url': reverse(account),
               'multiple': 'true'}
       if self.attrs.get('multiple', True) == False:
         data['multiple'] = 'false'
