@@ -1,53 +1,181 @@
+<link rel="import" href="../bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="../bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="test-results-flakiness.html">
+<link rel="import" href="test-results-home.html">
+
 <dom-module id="test-results">
   <template>
     <style>
+      app-toolbar {
+        background-color: var(--app-primary-color);
+        overflow: hidden;
+      }
       :host {
-        font-family: verdana, helvetica, sans-serif;
+        display: block;
+        --app-primary-color: #4c8bf5;
+        --app-secondary-color: black;
+        font-size: 13px;
+        font-family: 'Roboto', 'Noto', sans-serif;
+        line-height: 1.5;
+        min-height: 100vh;
+        background-color: #eee;
       }
-      h1 {
-        margin-top: 0px;
+      app-drawer {
+        --app-drawer-width: 160px;
       }
-      ul {
-        list-style: none;
+      app-header {
+        background-color: var(--app-primary-color);
+        color: #fff;
       }
-      li {
-        padding: 5px 0;
+      app-header iron-icon {
+        --paper-icon-button-ink-color: white;
+        margin-right: 20px;
+      }
+      div[title] {
+        @apply(--layout-flex);
+        font-weight: 400;
+      }
+      iron-pages {
+        margin: 20px;
+      }
+      #logo {
+        width: 112px;
+        margin: 0 auto;
+      }
+      .drawer-layout {
+        @apply(--layout-vertical);
+        height: 100%;
+        overflow: auto;
+      }
+      .drawer-layout iron-selector {
+        padding-top: 10px;
+      }
+      .drawer-list {
+        margin: 0;
+      }
+      .drawer-list a {
+        display: block;
+        padding: 0 16px;
+        line-height: 30px;
+        text-decoration: none;
+        color: var(--app-secondary-color);
+        font-weight: 300;
+        font-size: 1.05em;
+        outline: none;
+        border-bottom: none;
+      }
+      .drawer-list a.iron-selected {
+        color: black;
+        font-weight: bold;
+      }
+      .drawer-list a.subroute {
+        padding-left: 32px;
+      }
+      .drawer-toolbar {
+        flex-grow: 0;
+        flex-shrink: 0;
+      }
+      .drawer-splitter {
+        border-top: 1px solid #eee;
+        font-size: 0.8em;
+        font-weight: 400;
+        color: #888;
+        margin: 0 16px;
+        margin-top: 8px;
+        padding-top: 8px;
+        margin-bottom: -4px;
+        line-height: 30px;
+      }
+      .header-toolbar {
+        @apply(--layout-horizontal);
+        font-size: 1.8em;
       }
     </style>
-    <h1>Test Result Server</h1>
-    <h2>Dashboards</h2>
-    <div>
-      <ul>
-        <li>
-          <a href="/dashboards/overview.html">Overview</a>
-        </li>
-        <li>
-          <a href="/dashboards/flakiness_dashboard.html">Results</a>
-        </li>
-        <li>
-          <a href="/dashboards/treemap.html">Times</a>
-        </li>
-        <li>
-          <a href="/dashboards/builderstate.html">Load failures</a>
-        </li>
-      </>
-    </div>
-    <h2>JSON files</h2>
-    <div>
-      <ul>
-        <li>
-          <a href="/testfile?name=results.json">List of test files</a>
-        </li>
-        <li>
-          <a href="/testfile/uploadform">Upload test file</a>
-        </li>
-      </ul>
-    </div>
+    <app-location
+        route="{{route}}"
+        url-space-regex="(home|flakiness)">
+    </app-location>
+    <app-route
+        route="{{route}}"
+        pattern="/:page"
+        data="{{routeData}}"
+        tail="{{subroute}}">
+    </app-route>
+    <app-drawer-layout id="layout" fullbleed>
+      <!-- Drawer content -->
+      <app-drawer id="drawer" opened>
+        <div class="drawer-layout">
+          <app-toolbar class="drawer-toolbar">
+            <img id="logo" src="/images/chromium-logo-256.png">
+          </app-toolbar>
+          <iron-selector
+              selected="[[page]]"
+              attr-for-selected="name"
+              class="drawer-list"
+              role="navigation">
+            <a name="home" href="/home">Home</a>
+            <a name="flakiness" href="/flakiness">Flakiness</a>
+          </iron-selector>
+        </div>
+      </app-drawer>
+      <!-- Main content -->
+      <app-header-layout>
+        <app-header condenses reveals>
+          <app-toolbar class="header-toolbar">
+            <iron-icon icon="menu" drawer-toggle></iron-icon>
+            <div title>[[displayName]]</div>
+          </app-toolbar>
+        </app-header>
+      </app-header-layout>
+      <iron-pages role="main" selected="[[page]]" attr-for-selected="name">
+        <test-results-home name="home"></test-results-home>
+        <test-results-flakiness name="flakiness"></test-results-flakiness>
+      </iron-pages>
+    </app-drawer-layout>
   </template>
   <script>
-    Polymer({
-      is: 'test-results',
-    });
+    (function() {
+      'use strict';
+      Polymer({
+        is: 'test-results',
+        properties: {
+          page: {
+            type: String,
+            reflectToAttribute: true,
+            observer: '_pageChanged'
+          },
+          route: {
+            type: String,
+            observer: '_routeChanged',
+          },
+        },
+        _pageChanged: function(page) {
+          if (this.$.drawer.opened && this.$.layout.narrow) {
+            this.$.drawer.toggle();
+          }
+        },
+        _routeChanged: function(route) {
+          this.page = this.routeData.page || 'home';
+          switch (this.page) {
+            case 'flakiness':
+              this.displayName = 'Flakiness Detail';
+              break;
+            default:
+              this.displayName = 'Test Results Server';
+              break;
+          }
+        },
+      });
+    })();
   </script>
 </dom-module>

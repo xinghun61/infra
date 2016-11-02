@@ -1,0 +1,41 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<dom-module id="test-results-home">
+  <template>
+    <h2>Dashboards</h2>
+    <div>
+        <ul>
+            <li>
+                <a href="/dashboards/overview.html">Overview</a>
+            </li>
+            <li>
+                <a href="/dashboards/flakiness_dashboard.html">Results</a>
+            </li>
+            <li>
+                <a href="/dashboards/treemap.html">Times</a>
+            </li>
+            <li>
+                <a href="/dashboards/builderstate.html">Load failures</a>
+            </li>
+        </ul>
+    </div>
+    <h2>JSON files</h2>
+    <div>
+        <ul>
+            <li>
+                <a href="/testfile?name=results.json">List of test files</a>
+            </li>
+            <li>
+                <a href="/testfile/uploadform">Upload test file</a>
+            </li>
+        </ul>
+    </div>
+  </template>
+  <script>
+    (function() {
+      'use strict';
+      Polymer({
+        is: 'test-results-home',
+      });
+    })();
+  </script>
+</dom-module>

@@ -40,7 +40,9 @@ func init() {
 
 	gaemiddleware.InstallHandlers(r, baseMW)
 
-	r.GET("/", getMW, indexHandler)
+	r.GET("/", getMW, polymerHandler)
+	r.GET("/home", getMW, polymerHandler)
+	r.GET("/flakiness", getMW, polymerHandler)
 
 	r.GET("/testfile", getMW, getHandler)
 	r.GET("/testfile/", getMW, getHandler)

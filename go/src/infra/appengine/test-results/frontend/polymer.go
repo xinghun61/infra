@@ -10,8 +10,9 @@ import (
 	"github.com/luci/luci-go/server/templates"
 )
 
-// indexHandler is the HTTP handler for GET / requests.
-func indexHandler(ctx *router.Context) {
+// polymerHandler is the HTTP handler for requests to pages that are part of the
+// Polymer app.
+func polymerHandler(ctx *router.Context) {
 	templates.MustRender(ctx.Context, ctx.Writer, "pages/index.html", templates.Args{
 		"IsDevAppServer": info.IsDevAppServer(ctx.Context),
 	})
