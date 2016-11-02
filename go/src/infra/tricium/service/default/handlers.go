@@ -32,6 +32,7 @@ func landingPageHandler(w http.ResponseWriter, r *http.Request) {
 func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 
+	// TODO: Use common.AnalysisTask
 	// Add to the service queue.
 	e := map[string][]string{
 		"Name": {"Service Task"},
@@ -51,6 +52,13 @@ func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 
 func queueHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
+
+	// TODO(emso): Dedup service tasks.
+	// That is, check for already active runs for changes in the queue.
+	// If there is a run entry for a change that is not DONE then
+	// consider the task a dup and drop (with logging).
+
+	// TODO: Parse common.AnalysisTask entry in queue
 
 	// Create and add run entry
 	id, err := common.NewRun(ctx)

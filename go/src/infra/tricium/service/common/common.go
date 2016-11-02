@@ -17,6 +17,59 @@ import (
 	"google.golang.org/appengine/log"
 )
 
+// AnalysisTask includes information needed to start a new analysis task.
+// This include the context of a change and details needed for a change in
+// that context.
+type AnalysisTask struct {
+	Context ChangeContext
+	// This field should have a value if the context is Gerrit.
+	GerritChange GerritChangeDetails
+}
+
+// GerritChangeDetails includes information needed to analyse an updated patch set.
+type GerritChangeDetails struct {
+	Instance        string
+	Project         string
+	ChangeID        string
+	CurrentRevision string
+	GitRef          string
+	FileChanges     []FileChangeDetails
+}
+
+// FileChangeDetails includes information for a file change.
+// The status field corresponds to the FileInfo status field
+// used by Gerrit, where "A"=Added, "D"=Deleted, "R"=Renamed,
+// "C"=Copied, "W"=Rewritten, and "M"=Modified (same as not set).
+type FileChangeDetails struct {
+	Path   string
+	Status string
+}
+
+// FileChangesByPath is used to sort FileChangeDetails lexically on path name.
+type FileChangesByPath []FileChangeDetails
+
+func (f FileChangesByPath) Len() int           { return len(f) }
+func (f FileChangesByPath) Swap(i, j int)      { f[i], f[j] = f[j], f[i] }
+func (f FileChangesByPath) Less(i, j int) bool { return f[i].Path < f[j].Path }
+
+// ChangeContext enum
+type ChangeContext int
+
+const (
+	// GERRIT should be used to indicate that a change is from Gerrit.
+	GERRIT = 1 + iota
+	// Add new change contexts here.
+)
+
+var contexts = [...]string{
+	"GERRIT",
+	// Add name of new change context here.
+}
+
+func (ctx ChangeContext) String() string {
+	return contexts[ctx-1]
+}
+
 // RunKind enum
 type RunKind int
 
@@ -112,20 +165,17 @@ func StoreRunUpdates(ctx context.Context, key *datastore.Key, run *Run) error {
 	return nil
 }
 
-var basePage = template.Must(template.ParseFiles("templates/base.html"))
-var resultsPage = template.Must(template.ParseFiles("templates/results.html"))
-
 // ShowResultsPage executes the results page template
 func ShowResultsPage(ctx context.Context, w http.ResponseWriter, runs []Run) {
 	data := map[string]interface{}{
 		"Runs": runs,
 	}
-	executeTemplate(ctx, resultsPage, w, data)
+	executeTemplate(ctx, template.Must(template.ParseFiles("templates/results.html")), w, data)
 }
 
 // ShowBasePage executes the base page template
 func ShowBasePage(ctx context.Context, w http.ResponseWriter, d interface{}) {
-	executeTemplate(ctx, basePage, w, d)
+	executeTemplate(ctx, template.Must(template.ParseFiles("templates/base.html")), w, d)
 }
 
 func executeTemplate(ctx context.Context, t *template.Template, w http.ResponseWriter, d interface{}) {
