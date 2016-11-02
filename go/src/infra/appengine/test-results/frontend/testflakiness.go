@@ -10,7 +10,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/luci/gae/impl/prod"
+	"google.golang.org/appengine"
+
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/retry"
@@ -149,7 +150,7 @@ func testFlakinessHandler(ctx *router.Context) {
 		return
 	}
 
-	bq, err := createBQService(ctx.Context)
+	bq, err := createBQService(appengine.NewContext(ctx.Request))
 	if err != nil {
 		writeError(ctx, err, "testFlakinessHandler", "failed create BigQuery client")
 		return
@@ -164,8 +165,8 @@ func testFlakinessHandler(ctx *router.Context) {
 	writeResponse(ctx, "testFlakinessHandler", data)
 }
 
-func createBQService(ctx context.Context) (*bigquery.Service, error) {
-	hc, err := google.DefaultClient(prod.AEContext(ctx), bigquery.BigqueryScope)
+func createBQService(AECtx context.Context) (*bigquery.Service, error) {
+	hc, err := google.DefaultClient(AECtx, bigquery.BigqueryScope)
 	if err != nil {
 		return nil, errors.Annotate(err).Reason("failed to create http client").Err()
 	}
