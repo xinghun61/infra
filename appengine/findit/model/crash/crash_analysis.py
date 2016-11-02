@@ -158,7 +158,7 @@ class CrashAnalysis(ndb.Model):
 
   def ToPublishableResult(self, crash_identifiers):
     """Convert this datastore analysis into a publishable result.
-    
+
     Args:
       crash_identifiers (dict): ??
 
@@ -174,7 +174,7 @@ class CrashAnalysis(ndb.Model):
         client_id == CrashClient.CRACAS):
       result['feedback_url'] = _FINDIT_FRACAS_FEEDBACK_URL_TEMPLATE % (
           appengine_util.GetDefaultVersionHostname(), self.key.urlsafe())
-      if result['found']:
+      if result['found'] and 'suspected_cls' in result:
         for cl in result['suspected_cls']:
           cl['confidence'] = round(cl['confidence'], 2)
           cl.pop('reason', None)
@@ -182,6 +182,8 @@ class CrashAnalysis(ndb.Model):
       # TODO(katesonia): Post process clusterfuzz model result if needed.
       pass
 
+    logging.info('Publish result:\n%s',
+                 json.dumps(result, indent=4, sort_keys=True))
     return {
         'crash_identifiers': crash_identifiers,
         'client_id': client_id,

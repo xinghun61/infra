@@ -3,13 +3,14 @@
 # found in the LICENSE file.
 
 from collections import defaultdict
+import copy
 
 from common.dependency import Dependency
 from common.dependency import DependencyRoll
-from common.http_client_appengine import HttpClientAppengine
 from common import chrome_dependency_fetcher
-from crash.crash_report import CrashReport
 from crash import changelist_classifier
+from crash.crash_report import CrashReport
+from crash.results import AnalysisInfo
 from crash.results import MatchResult
 from crash.stacktrace import CallStack
 from crash.stacktrace import StackFrame
@@ -109,6 +110,44 @@ DUMMY_REPORT = CrashReport(None, None, None, Stacktrace(), (None, None))
 
 class ChangelistClassifierTest(CrashTestSuite):
 
+  def testSkipAddedAndDeletedRegressionRolls(self):
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+              'GetDependency', lambda *_: {})
+    dep_rolls = {
+        'src/dep': DependencyRoll('src/dep1', 'https://url_dep1', None, '9'),
+        'src/': DependencyRoll('src/', ('https://chromium.googlesource.com/'
+                                        'chromium/src.git'), '4', '5')
+    }
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+              'GetDependencyRollsDict', lambda *_: dep_rolls)
+
+    passed_in_regression_deps_rolls = []
+    def _MockGetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, *_):
+      passed_in_regression_deps_rolls.append(regression_deps_rolls)
+      return {}, None
+
+    self.mock(changelist_classifier, 'GetChangeLogsForFilesGroupedByDeps',
+              _MockGetChangeLogsForFilesGroupedByDeps)
+    self.mock(changelist_classifier, 'GetStackInfosForFilesGroupedByDeps',
+              lambda *_: {})
+    self.mock(changelist_classifier, 'FindMatchResults', lambda *_: None)
+
+    cl_classifier = changelist_classifier.ChangelistClassifier(
+        GitilesRepository(), 7)
+    cl_classifier(CrashReport(crashed_version = '5',
+                              signature = 'sig',
+                              platform = 'canary',
+                              stacktrace = Stacktrace([CallStack(0)]),
+                              regression_range = ['4', '5']))
+    expected_regression_deps_rolls = copy.deepcopy(dep_rolls)
+
+    # Regression of a dep added/deleted (old_revision/new_revision is None) can
+    # not be known for sure and this case rarely happens, so just filter them
+    # out.
+    del expected_regression_deps_rolls['src/dep']
+    self.assertEqual(passed_in_regression_deps_rolls[0],
+                     expected_regression_deps_rolls)
+
   def testGetDepsInCrashStack(self):
     crash_stack = CallStack(0)
     crash_stack.extend([
@@ -127,8 +166,7 @@ class ChangelistClassifierTest(CrashTestSuite):
 
   def testGetChangeLogsForFilesGroupedByDeps(self):
     regression_deps_rolls = {
-        'src/dep1': DependencyRoll('src/dep1', 'https://url_dep1', '7', '9'),
-        'src/dep2': DependencyRoll('src/dep2', 'repo_url', '3', None),
+        'src/dep': DependencyRoll('src/dep1', 'https://url_dep1', '7', '9'),
         'src/': DependencyRoll('src/', ('https://chromium.googlesource.com/'
                                         'chromium/src.git'), '4', '5')
     }
@@ -136,10 +174,14 @@ class ChangelistClassifierTest(CrashTestSuite):
     stack_deps = {
         'src/': Dependency('src/', 'https://url_src', 'rev1', 'DEPS'),
         'src/new': Dependency('src/new', 'https://new', 'rev2', 'DEPS'),
+        'src/dep': Dependency('src/dep', 'https://url_dep', 'rev', 'DEPS'),
     }
 
-    def _MockGetChangeLogs(*_):
-      return [DUMMY_CHANGELOG1, DUMMY_CHANGELOG2, DUMMY_CHANGELOG3]
+    def _MockGetChangeLogs(_, start_rev, end_rev):
+      if start_rev == '4' and end_rev == '5':
+        return [DUMMY_CHANGELOG1, DUMMY_CHANGELOG2, DUMMY_CHANGELOG3]
+
+      return []
 
     self.mock(GitilesRepository, 'GetChangeLogs', _MockGetChangeLogs)
 
@@ -295,7 +337,7 @@ class ChangelistClassifierTest(CrashTestSuite):
           'a.cc': [(frame1, 0), (frame2, 0)]
       }
       match_result1.file_to_analysis_info = {
-          'a.cc': {'min_distance': 0, 'min_distance_frame': frame1}
+          'a.cc': AnalysisInfo(min_distance=0, min_distance_frame=frame1)
       }
 
       match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
@@ -304,7 +346,7 @@ class ChangelistClassifierTest(CrashTestSuite):
           'f.cc': [(frame3, 0)]
       }
       match_result2.file_to_analysis_info = {
-          'a.cc': {'min_distance': 20, 'min_distance_frame': frame3}
+          'a.cc': AnalysisInfo(min_distance=20, min_distance_frame=frame3)
       }
 
       return [match_result1, match_result2]
@@ -344,7 +386,7 @@ class ChangelistClassifierTest(CrashTestSuite):
           'a.cc': [(frame1, 0), (frame2, 0)]
       }
       match_result1.file_to_analysis_info = {
-          'a.cc': {'min_distance': 1, 'min_distance_frame': frame1}
+          'a.cc': AnalysisInfo(min_distance=1, min_distance_frame=frame1)
       }
 
       match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
@@ -353,7 +395,7 @@ class ChangelistClassifierTest(CrashTestSuite):
           'f.cc': [(frame3, 0)]
       }
       match_result2.file_to_analysis_info = {
-          'f.cc': {'min_distance': 20, 'min_distance_frame': frame3}
+          'f.cc': AnalysisInfo(min_distance=20, min_distance_frame=frame3)
       }
 
       match_result3 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
@@ -362,7 +404,7 @@ class ChangelistClassifierTest(CrashTestSuite):
           'f.cc': [(frame4, 0)]
       }
       match_result3.file_to_analysis_info = {
-          'f.cc': {'min_distance': 60, 'min_distance_frame': frame4}
+          'f.cc': AnalysisInfo(min_distance=60, min_distance_frame=frame4)
       }
 
       return [match_result1, match_result2, match_result3]
@@ -411,7 +453,7 @@ class ChangelistClassifierTest(CrashTestSuite):
           'a.cc': [(frame1, 0), (frame2, 0)]
       }
       match_result1.file_to_analysis_info = {
-          'a.cc': {'min_distance': 1, 'min_distance_frame': frame1}
+          'a.cc': AnalysisInfo(min_distance=1, min_distance_frame=frame1)
       }
 
       match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
@@ -421,7 +463,7 @@ class ChangelistClassifierTest(CrashTestSuite):
       }
       match_result2.min_distance = 20
       match_result2.file_to_analysis_info = {
-          'f.cc': {'min_distance': 20, 'min_distance_frame': frame3}
+          'f.cc': AnalysisInfo(min_distance=20, min_distance_frame=frame3)
       }
 
       return [match_result1, match_result2]

@@ -71,13 +71,26 @@ class ChangelistClassifier(object):
     # doing redundant work creating it.
     stack_deps = GetDepsInCrashStack(
         report.stacktrace.crash_stack,
-        chrome_dependency_fetcher.ChromeDependencyFetcher(self._repository
-            ).GetDependency(report.crashed_version, report.platform))
+        chrome_dependency_fetcher.ChromeDependencyFetcher(
+            self._repository).GetDependency(report.crashed_version,
+                                            report.platform))
 
     # Get dep and file to changelogs, stack_info and blame dicts.
-    regression_deps_rolls = chrome_dependency_fetcher.ChromeDependencyFetcher(
+    dep_rolls = chrome_dependency_fetcher.ChromeDependencyFetcher(
         self._repository).GetDependencyRollsDict(
             last_good_version, first_bad_version, report.platform)
+
+    # Regression of a dep added/deleted (old_revision/new_revision is None) can
+    # not be known for sure and this case rarely happens, so just filter them
+    # out.
+    regression_deps_rolls = {}
+    for dep_path, dep_roll in dep_rolls.iteritems():
+      if not dep_roll.old_revision or not dep_roll.new_revision:
+        logging.info('Skip %s denpendency %s',
+                     'added' if dep_roll.new_revision else 'deleted', dep_path)
+        continue
+      regression_deps_rolls[dep_path] = dep_roll
+
     dep_to_file_to_changelogs, ignore_cls = GetChangeLogsForFilesGroupedByDeps(
         regression_deps_rolls, stack_deps, self._repository)
     dep_to_file_to_stack_infos = GetStackInfosForFilesGroupedByDeps(
@@ -190,6 +203,9 @@ def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps,
     repository.repo_url = dep_roll.repo_url
     changelogs = repository.GetChangeLogs(dep_roll.old_revision,
                                           dep_roll.new_revision)
+
+    if not changelogs:
+      continue
 
     for changelog in changelogs:
       # When someone reverts, we need to skip both the CL doing

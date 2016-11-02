@@ -262,8 +262,6 @@ class FinditForFracasTest(CrashTestCase):
 
     expected_results = {
           'found': True,
-          'suspected_project': '',
-          'suspected_components': [],
           'suspected_cls': [dummy_match_result.ToDict()],
           'regression_range': dummy_regression_range
     }
@@ -286,12 +284,7 @@ class FinditForFracasTest(CrashTestCase):
     analysis.crashed_version = '50.0.1234.0'
     results, tag = _FinditForChromeCrash().FindCulprit(analysis).ToDicts()
 
-    expected_results = {
-          'found': False,
-          'suspected_project': '',
-          'suspected_components': [],
-          'suspected_cls': [],
-    }
+    expected_results = {'found': False}
     expected_tag = {
           'found_suspects': False,
           'found_project': False,

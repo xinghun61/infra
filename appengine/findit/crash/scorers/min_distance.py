@@ -24,7 +24,7 @@ class MinDistance(Scorer):
   def GetMetric(self, result):
     min_distance = float('inf')
     for analysis_info in result.file_to_analysis_info.itervalues():
-      min_distance = min(min_distance, analysis_info['min_distance'])
+      min_distance = min(min_distance, analysis_info.min_distance)
 
     return min_distance
 
@@ -64,18 +64,18 @@ class MinDistance(Scorer):
 
     for file_path, analysis_info in result.file_to_analysis_info.iteritems():
       file_name = file_path.split('/')[-1]
-      frame = analysis_info['min_distance_frame']
+      frame = analysis_info.min_distance_frame
 
       # It is possible that a changelog doesn't show in the blame of a file,
       # in this case, treat the changelog as if it didn't change the file.
-      if analysis_info['min_distance'] == float('inf'):
+      if analysis_info.min_distance == float('inf'):
         continue
 
       index_to_changed_files[frame.index] = {
           'file': file_name,
           'blame_url': frame.BlameUrl(result.changelog.revision),
           'info': 'Minimum distance (LOC) %d, frame #%d' % (
-              analysis_info['min_distance'], frame.index)
+              analysis_info.min_distance, frame.index)
       }
 
     # Sort changed file by frame index.

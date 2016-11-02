@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 from crash.stacktrace import StackFrame
+from crash.results import AnalysisInfo
 from crash.results import Result
 from crash.results import MatchResult
 from crash.scorers.min_distance import MinDistance
@@ -14,7 +15,7 @@ class MinDistanceTest(ScorerTestSuite):
     dummy_changelog = self._GetDummyChangeLog()
     match_result = MatchResult(dummy_changelog, 'src/', '')
     match_result.file_to_analysis_info = {
-        'file': {'min_distance': 0, 'min_distance_frame': None}
+        'file': AnalysisInfo(min_distance=0, min_distance_frame=None)
     }
 
     self.assertEqual(MinDistance().GetMetric(match_result), 0)
@@ -42,7 +43,7 @@ class MinDistanceTest(ScorerTestSuite):
         'src/f.cc': [(frame, 0)]
     }
     result.file_to_analysis_info = {
-        'src/f.cc': {'min_distance': 0, 'min_distance_frame': frame}
+        'src/f.cc': AnalysisInfo(min_distance=0, min_distance_frame=frame)
     }
 
     self.assertEqual(MinDistance().ChangedFiles(result, 1),
@@ -60,7 +61,8 @@ class MinDistanceTest(ScorerTestSuite):
         'src/f.cc': [(frame, 0)]
     }
     result.file_to_analysis_info = {
-        'src/f.cc': {'min_distance': float('inf'), 'min_distance_frame': frame}
+        'src/f.cc': AnalysisInfo(min_distance=float('inf'),
+                                 min_distance_frame=frame)
     }
 
     self.assertIsNone(MinDistance().ChangedFiles(result, 0))
@@ -77,10 +79,10 @@ class MinDistanceTest(ScorerTestSuite):
         'src/f1.cc': [(frame1, 0)]
     }
     result.file_to_analysis_info = {
-        'src/f0.cc': {'min_distance': 0,
-                      'min_distance_frame': frame0},
-        'src/f1.cc': {'min_distance': float('inf'),
-                      'min_distance_frame': frame1},
+        'src/f0.cc': AnalysisInfo(min_distance=0,
+                                  min_distance_frame=frame0),
+        'src/f1.cc': AnalysisInfo(min_distance=float('inf'),
+                                  min_distance_frame=frame1),
     }
 
     self.assertEqual(MinDistance().ChangedFiles(result, 1),

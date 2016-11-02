@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from crash.stacktrace import StackFrame
+from crash.results import AnalysisInfo
 from crash.results import MatchResult
 from crash.scorers import aggregators
 from crash.scorers.aggregated_scorer import AggregatedScorer
@@ -21,10 +22,10 @@ class AggregatedScorerTest(ScorerTestSuite):
         'a.cc': [(frame, 0)]
     }
     result.file_to_analysis_info = {
-        'a.cc': {
-            'min_distance': 0,
-            'min_distance_frame': frame
-        }
+        'a.cc': AnalysisInfo(
+            min_distance=0,
+            min_distance_frame=frame
+        )
     }
 
     aggregator = AggregatedScorer([TopFrameIndex(), MinDistance()])
@@ -47,10 +48,10 @@ class AggregatedScorerTest(ScorerTestSuite):
         'a.cc': [(frame, 0)]
     }
     result.file_to_analysis_info = {
-        'a.cc': {
-            'min_distance': 0,
-            'min_distance_frame': frame
-        }
+        'a.cc': AnalysisInfo(
+            min_distance=0,
+            min_distance_frame=frame
+        )
     }
 
     aggregator = AggregatedScorer([TopFrameIndex(), MinDistance()])

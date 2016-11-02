@@ -4,14 +4,11 @@
 
 from collections import namedtuple
 
-# TODO(http://crbug.com/659346): We do call this code from various
-# unittests, just not from culprit_test.py; so we need to add some extra
-# unittests there.
+
 class Culprit(namedtuple('Culprit',
-    ['project', 'components', 'cls', 'regression_range', 'algorithm']
-    )): # pragma: no cover
+    ['project', 'components', 'cls', 'regression_range', 'algorithm'])):
   """The result of successfully identifying the culprit of a crash report.
-  
+
   Args:
     project (str): the most-suspected project
     components (list of str): the suspected crbug components.
@@ -101,12 +98,13 @@ class Culprit(namedtuple('Culprit',
         bool(self.cls) or
         bool(self.regression_range))
     if self.regression_range:
+      assert isinstance(self.regression_range, list)
       result['regression_range'] = self.regression_range
-    if self.project is not None:
+    if self.project:
       result['suspected_project'] = self.project
-    if self.components is not None:
+    if self.components:
       result['suspected_components'] = self.components
-    if self.cls is not None:
+    if self.cls:
       result['suspected_cls'] = [cl.ToDict() for cl in self.cls]
 
     tags = {
