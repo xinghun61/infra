@@ -49,8 +49,6 @@ func init() {
 
 	r.GET("/builders", baseMW, getBuildersHandler)
 	r.GET("/updatebuilders", baseMW, updateBuildersHandler)
-	r.GET("/builderstate", baseMW, getBuilderStateHandler)
-	r.GET("/updatebuilderstate", baseMW, updateBuilderStateHandler)
 
 	r.POST(
 		deleteKeysPath,

@@ -22,7 +22,6 @@ import (
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/router"
 
-	"infra/appengine/test-results/builderstate"
 	"infra/appengine/test-results/masters"
 	"infra/appengine/test-results/model"
 )
@@ -288,15 +287,6 @@ func updateFullResults(c context.Context, data io.Reader) error {
 
 	p := GetUploadParams(c)
 	wg := sync.WaitGroup{}
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := builderstate.Update(c, p.Master, p.Builder, p.TestType, time.Now().UTC()); err != nil {
-			// This isn't a fatal error; log at something less attention-seeking.
-			logging.WithError(err).Infof(c, "doFileUpload: full_results.json: builderstate update")
-		}
-	}()
 
 	wg.Add(1)
 	go func() {
