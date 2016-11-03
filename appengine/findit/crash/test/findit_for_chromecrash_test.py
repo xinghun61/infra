@@ -28,20 +28,13 @@ from model import analysis_status
 from model.crash.crash_analysis import CrashAnalysis
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
-# In production we'd use CrashWrapperPipeline. And that'd work fine here,
-# since we never actually call the method that uses it. But just to be
-# absolutely sure we don't go over the wire due to some mocking failure,
-# we'll use this dummy class instead. (In fact, since it's never used,
-# we don't even need to give a real class; ``None`` works just fine.)
-MOCK_PIPELINE_CLS = None
-
 MOCK_REPOSITORY = None
 
 class _FinditForChromeCrash(FinditForChromeCrash):
   # We allow overriding the default MOCK_REPOSITORY because one unittest
   # needs to.
   def __init__(self, repository=MOCK_REPOSITORY):
-    super(_FinditForChromeCrash, self).__init__(repository, MOCK_PIPELINE_CLS)
+    super(_FinditForChromeCrash, self).__init__(repository)
 
   @classmethod
   def _ClientID(cls): # pragma: no cover
@@ -70,7 +63,7 @@ class _FinditForChromeCrash(FinditForChromeCrash):
 
 def _FinditForFracas():
   """A helper to pass in the standard pipeline class."""
-  return FinditForFracas(MOCK_REPOSITORY, MOCK_PIPELINE_CLS)
+  return FinditForFracas(MOCK_REPOSITORY)
 
 
 class FinditForChromeCrashTest(CrashTestCase):
@@ -175,35 +168,6 @@ class FinditForFracasTest(CrashTestCase):
       analysis.status = status
       analysis.put()
       self.assertFalse(findit_client._NeedsNewAnalysis(crash_data))
-
-  def testScheduleNewAnalysisSkipsUnsupportedChannel(self):
-    self.assertFalse(_FinditForFracas().ScheduleNewAnalysis(DummyCrashData(
-        version = None,
-        signature = None,
-        crash_identifiers = {},
-        channel = 'unsupported_channel')))
-
-  def testScheduleNewAnalysisSkipsUnsupportedPlatform(self):
-    self.assertFalse(_FinditForFracas().ScheduleNewAnalysis(DummyCrashData(
-        version = None,
-        signature = None,
-        platform = 'unsupported_platform',
-        crash_identifiers = {})))
-
-  def testScheduleNewAnalysisSkipsBlackListSignature(self):
-    self.assertFalse(_FinditForFracas().ScheduleNewAnalysis(DummyCrashData(
-        version = None,
-        signature = 'Blacklist marker signature',
-        crash_identifiers = {})))
-
-  def testScheduleNewAnalysisSkipsIfAlreadyCompleted(self):
-    findit_client = _FinditForFracas()
-    crash_data = DummyCrashData()
-    crash_identifiers = crash_data['crash_identifiers']
-    analysis = findit_client.CreateAnalysis(crash_identifiers)
-    analysis.status = analysis_status.COMPLETED
-    analysis.put()
-    self.assertFalse(findit_client.ScheduleNewAnalysis(crash_data))
 
   def testFindCulpritForChromeCrashEmptyStacktrace(self):
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,

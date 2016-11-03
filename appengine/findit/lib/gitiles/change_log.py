@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(http://crbug.com/661822): convert this into a namedtuple.
 class FileChangeInfo(object):
   """Represents a file change (add/delete/modify/rename/copy/etc)."""
   def __init__(self, change_type, old_path, new_path):
@@ -22,6 +23,7 @@ class FileChangeInfo(object):
         info['change_type'], info['old_path'], info['new_path'])
 
 
+# TODO(http://crbug.com/661822): convert this into a namedtuple.
 class ChangeLog(object):
   """Represents the change log of a revision."""
 

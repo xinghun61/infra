@@ -49,8 +49,8 @@ class FinditForChromeCrash(Findit):
 
   # TODO(http://crbug.com/659354): remove the dependency on CrashConfig
   # entirely, by passing the relevant data as arguments to this constructor.
-  def __init__(self, repository, pipeline_cls):
-    super(FinditForChromeCrash, self).__init__(repository, pipeline_cls)
+  def __init__(self, repository):
+    super(FinditForChromeCrash, self).__init__(repository)
     component_classifier_config = CrashConfig.Get().component_classifier
 
     self._stacktrace_parser = ChromeCrashParser()

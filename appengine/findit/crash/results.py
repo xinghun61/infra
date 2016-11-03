@@ -11,7 +11,7 @@ class AnalysisInfo(namedtuple('AnalysisInfo',
 
 
 # TODO(http://crbug.com/644476): this class needs a better name.
-# TODO(wrengr): subclass namedtuple, so most things are immutable.
+# TODO(http://crbug.com/661822): convert this into a namedtuple.
 class Result(object):
   """Represents findit culprit result."""
 
@@ -25,9 +25,8 @@ class Result(object):
 
     # TODO(wrengr): (a) make these two fields private/readonly
     # TODO(wrengr): (b) zip them together.
-    # TODO(wrengr): replace "stack_info" pair with a namedtuple.
+    # TODO(http://crbug.com/661822): change stack_info pair to a namedtuple.
     self.file_to_stack_infos = {}
-    # TODO(wrengr): replace "analysis_info" dict with a namedtuple.
     self.file_to_analysis_info = {}
 
   def ToDict(self):

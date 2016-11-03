@@ -7,9 +7,11 @@ import json
 import logging
 
 from common import constants
+from common import appengine_util
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
-from crash.crash_pipeline import FinditForClientID
+from crash import crash_pipeline
+from crash.crash_pipeline import CrashWrapperPipeline
 from crash.crash_report import CrashReport
 
 
@@ -100,13 +102,56 @@ class CrashHandler(BaseHandler):
       logging.info('Processing message %s from subscription %s.',
                    pubsub_message['message_id'],
                    received_message['subscription'])
-
       logging.info('Crash data is %s', json.dumps(crash_data))
+      ScheduleNewAnalysis(crash_data)
 
-      client_id = crash_data['client_id']
-      FinditForClientID(client_id).ScheduleNewAnalysis(crash_data,
-          queue_name=constants.CRASH_ANALYSIS_QUEUE[client_id])
     except (KeyError, ValueError):  # pragma: no cover.
       # TODO: save exception in datastore and create a page to show them.
       logging.exception('Failed to process crash message')
       logging.info(self.request.body)
+
+
+# TODO(http://crbug.com/659346): we don't cover anything after the
+# call to _NeedsNewAnalysis.
+def ScheduleNewAnalysis(crash_data):
+  """Creates a pipeline object to perform the analysis, and start it.
+
+  If we can detect that the analysis doesn't need to be performed
+  (e.g., it was already performed, or the ``crash_data`` is empty so
+  there's nothig we can do), then we will skip creating the pipeline
+  at all.
+
+  Args:
+    crash_data (JSON): ??
+
+  Returns:
+    True if we started a new pipeline; False otherwise.
+  """
+  client_id = crash_data['client_id']
+  # N.B., must call FinditForClientID indirectly, for mock testing.
+  findit_client = crash_pipeline.FinditForClientID(client_id)
+
+  # Check policy and modify the crash_data as needed.
+  crash_data = findit_client.CheckPolicy(crash_data)
+  if crash_data is None:
+    return False
+
+  # Detect the regression range, and decide if we actually need to
+  # run a new anlaysis or not.
+  if not findit_client._NeedsNewAnalysis(crash_data):
+    return False
+
+  crash_identifiers = crash_data['crash_identifiers']
+  # N.B., we cannot pass ``self`` directly to the _pipeline_cls, because
+  # it is not JSON-serializable (and there's no way to make it such,
+  # since JSON-serializability is defined by JSON-encoders rather than
+  # as methods on the objects being encoded).
+  pipeline = CrashWrapperPipeline(client_id, crash_identifiers)
+  # Attribute defined outside __init__ - pylint: disable=W0201
+  pipeline.target = appengine_util.GetTargetNameForModule(
+      constants.CRASH_BACKEND[client_id])
+  queue_name = constants.CRASH_ANALYSIS_QUEUE[client_id]
+  pipeline.start(queue_name=queue_name)
+  logging.info('New %s analysis is scheduled for %s', client_id,
+               repr(crash_identifiers))
+  return True

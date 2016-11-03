@@ -15,8 +15,8 @@ class FinditForClusterfuzz(Findit): # pragma: no cover
   def _ClientID(cls):
     return CrashClient.CLUSTERFUZZ
 
-  def __init__(self, repository, pipeline_cls):
-    super(FinditForClusterfuzz, self).__init__(repository, pipeline_cls)
+  def __init__(self, repository):
+    super(FinditForClusterfuzz, self).__init__(repository)
     logging.info('Client %s is not supported by findit right now',
         self.client_id)
     raise NotImplementedError()

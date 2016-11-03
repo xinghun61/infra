@@ -26,14 +26,10 @@ from model.crash.crash_config import CrashConfig
 # This class should be renamed to avoid confustion between Findit and Predator.
 # Think of a good name (e.g.'PredatorApp') for this class.
 class Findit(object):
-  def __init__(self, repository, pipeline_cls):
+  def __init__(self, repository):
     """
     Args:
       repository (Repository): the Git repository for getting CLs to classify.
-      pipeline_cls (class): the class for constructing pipelines in
-        ScheduleNewAnalysis. This will almost surely be
-        ``crash.crash_pipeline.CrashWrapperPipeline``; but we must pass
-        the class in as a parameter in order to break an import cycle.
     """
     self._repository = repository
     # TODO(http://crbug.com/659354): because self.client is volatile,
@@ -41,7 +37,6 @@ class Findit(object):
     # config changes. How to do that cleanly?
     self._predator = None
     self._stacktrace_parser = None
-    self._pipeline_cls = pipeline_cls
 
   # This is a class method because it should be the same for all
   # instances of this class. We can in fact call class methods on
@@ -192,50 +187,6 @@ class Findit(object):
   @ndb.transactional
   def _NeedsNewAnalysis(self, crash_data):
     raise NotImplementedError()
-
-  # TODO(http://crbug.com/659345): try to break the cycle re pipeline_cls.
-  # TODO(http://crbug.com/659346): we don't cover anything after the
-  # call to _NeedsNewAnalysis.
-  def ScheduleNewAnalysis(self, crash_data,
-      queue_name=constants.DEFAULT_QUEUE): # pragma: no cover
-    """Create a pipeline object to perform the analysis, and start it.
-
-    If we can detect that the analysis doesn't need to be performed
-    (e.g., it was already performed, or the ``crash_data`` is empty so
-    there's nothig we can do), then we will skip creating the pipeline
-    at all.
-
-    Args:
-      crash_data (JSON): ??
-      queue_name (??): the name of the AppEngine queue we should start
-        the pipeline on.
-
-    Returns:
-      True if we started the pipeline; False otherwise.
-    """
-    # Check policy and tune arguments if needed.
-    crash_data = self.CheckPolicy(crash_data)
-    if crash_data is None:
-      return False
-
-    # Detect the regression range, and decide if we actually need to
-    # run a new anlaysis or not.
-    if not self._NeedsNewAnalysis(crash_data):
-      return False
-
-    crash_identifiers = crash_data['crash_identifiers']
-    # N.B., we cannot pass ``self`` directly to the _pipeline_cls, because
-    # it is not JSON-serializable (and there's no way to make it such,
-    # since JSON-serializability is defined by JSON-encoders rather than
-    # as methods on the objects being encoded).
-    analysis_pipeline = self._pipeline_cls(self.client_id, crash_identifiers)
-    # Attribute defined outside __init__ - pylint: disable=W0201
-    analysis_pipeline.target = appengine_util.GetTargetNameForModule(
-        constants.CRASH_BACKEND[self.client_id])
-    analysis_pipeline.start(queue_name=queue_name)
-    logging.info('New %s analysis is scheduled for %s', self.client_id,
-                 repr(crash_identifiers))
-    return True
 
   # TODO(wrengr): does the parser actually need the version, signature,
   # and platform? If not, then we should be able to just pass the string

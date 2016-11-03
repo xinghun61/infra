@@ -15,7 +15,7 @@ from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
 from lib.gitiles.diff import ChangeType
 
-# TODO(wrengr): make this a namedtuple.
+# TODO(http://crbug.com/661822): convert this into a namedtuple.
 class ChangelistClassifier(object):
   def __init__(self, repository,
       top_n_frames, top_n_results=3, confidence_threshold=0.999):

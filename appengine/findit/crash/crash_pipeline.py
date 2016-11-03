@@ -19,8 +19,8 @@ from lib.gitiles import gitiles_repository
 from model import analysis_status
 
 
-# TODO(http://crbug.com/659346): write complete coverage tests for this.
-def FinditForClientID(client_id): # pragma: no cover
+# TODO(http://crbug.com/659346): this needs complete coverage tests.
+def FinditForClientID(client_id):
   """Construct a Findit object from a client id string specifying the class.
 
   We cannot pass Findit objects to the various methods in
@@ -42,39 +42,49 @@ def FinditForClientID(client_id): # pragma: no cover
   # a dict; but that's buggy for some unknown reason.
   if client_id == CrashClient.FRACAS:
     cls = findit_for_chromecrash.FinditForFracas
-  elif client_id == CrashClient.CRACAS:
+  elif client_id == CrashClient.CRACAS: # pragma: no cover
     cls = findit_for_chromecrash.FinditForCracas
-  elif client_id == CrashClient.CLUSTERFUZZ:
+  elif client_id == CrashClient.CLUSTERFUZZ: # pragma: no cover
     cls = findit_for_clusterfuzz.FinditForClusterfuzz
-  else:
+  else: # pragma: no cover
     raise ValueError('FinditForClientID: '
         'unknown or unsupported client %s' % client_id)
 
-  return cls(
-      gitiles_repository.GitilesRepository(http_client=HttpClientAppengine()),
-      CrashWrapperPipeline)
+  return cls(gitiles_repository.GitilesRepository(
+      http_client=HttpClientAppengine()))
 
 
-# Some notes about the classes below, for people who are not
-# familiar with AppEngine. The thing that really kicks everything off
-# is ``CrashWrapperPipeline.run``. However, an important thing to bear in
-# mind is that whatever arguments are passed to that method will also
-# be passed to the ``run`` method on whatever objects it yields. Thus,
-# all the ``run`` methods across these different classes must have
-# the same type. In practice, we end up passing all the arguments to the
-# constructors, because we need to have the fields around for logging
-# (e.g., in ``finalized``); thus, there's nothing that needs to be passed
-# to ``run``. Another thing to bear in mind is that whatever objects
-# ``CrashWrapperPipeline.run`` yields must be JSON-serializable. The base
-# class handles most of that for us, so the force of this constraint is
-# that all the arguments to the constructors for those classes must be
-# JSON-serializable. Thus, we cannot actually pass a Findit object to
-# the constructor, but rather must pass only the ``client_id`` (or whatever
-# JSON dict) and then reconstruct the Findit object from that. Moreover,
-# the ``run`` method and the ``finalized`` method will be run in different
-# processes, so we will actually end up reconstructing the Findit object
-# twice. Thus, we shouldn't store anything in the pipeline objects outside
-# of what their constructors store.
+# Some notes about the classes below, for people who are not familiar
+# with AppEngine pipelines:
+#
+# The pipeline library is designed in a strange way which requires that
+# all the ``__init__`` and ``run`` methods in this file take the exact
+# same arguments. This arises from the interaction between a few
+# different constraints. First, for any given pipeline, its ``__init__``
+# and ``run`` must take the same arguments. Second, all the objects that
+# ``CrashWrapperPipeline.run`` yields must take the same arguments as that
+# ``run`` method itself. For more about all this, see:
+# https://github.com/GoogleCloudPlatform/appengine-pipelines/wiki/Python
+# For our use case, we pass all the important data to ``__init__``,
+# since we need it to be available in ``finalized``; thus we ignore the
+# arguments passed to ``run`` (which will be the same values that were
+# passed to ``__init__``).
+#
+# In addition, whatever objects ``CrashWrapperPipeline.run`` yields must
+# be JSON-serializable. The pipeline class handles most of the details,
+# so the force of this constraint is that whatever arguments we pass
+# to their ``__init__`` must themselves be JSON-serializable. Alas,
+# in Python, JSON-serializability isn't a property of classes themselves,
+# but rather a property of the JSON-encoder object used to do the
+# serialization. Thus, we cannot pass a ``Findit`` object directly to
+# any of the methods here, but rather must instead pass the ``client_id``
+# (or whatever JSON dict), and then reconstruct the ``Findit`` object
+# from that data.
+#
+# Moreover, the ``run`` and ``finalized`` methods are executed in separate
+# processes, so we'll actually end up reconstructing the ``Findit`` object
+# twice. This also means ``run`` can't store anything in the pipeline
+# object and expect it to still be available in the ``finalized`` method.
 
 class CrashBasePipeline(BasePipeline):
   def __init__(self, client_id, crash_identifiers):
@@ -91,8 +101,8 @@ class CrashBasePipeline(BasePipeline):
 
 
 class CrashAnalysisPipeline(CrashBasePipeline):
-  def finalized(self): # pragma: no cover
-    if self.was_aborted:
+  def finalized(self):
+    if self.was_aborted: # pragma: no cover
       self._PutAbortedError()
 
   # N.B., this method must be factored out for unittest reasons; since
@@ -105,9 +115,15 @@ class CrashAnalysisPipeline(CrashBasePipeline):
     analysis.status = analysis_status.ERROR
     analysis.put()
 
-  # TODO(http://crbug.com/659346): we misplaced the coverage test; find it!
-  # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self):
+  def run(self, *_args, **_kwargs):
+    """Call predator to do the analysis of the given crash.
+
+    N.B., due to the structure of AppEngine pipelines, this method must
+    accept the same arguments as are passed to ``__init__``; however,
+    because they were already passed to ``__init__`` there's no use in
+    recieving them here. Thus, we discard all the arguments to this method
+    (except for ``self``, naturally).
+    """
     # TODO(wrengr): shouldn't this method somehow call _NeedsNewAnalysis
     # to guard against race conditions?
     analysis = self._findit.GetAnalysis(self._crash_identifiers)
@@ -138,21 +154,29 @@ class CrashAnalysisPipeline(CrashBasePipeline):
     analysis.result = result
     for tag_name, tag_value in tags.iteritems():
       # TODO(http://crbug.com/602702): make it possible to add arbitrary tags.
-      if hasattr(analysis, tag_name):
+      # TODO(http://crbug.com/659346): we misplaced the coverage test; find it!
+      if hasattr(analysis, tag_name): # pragma: no cover
         setattr(analysis, tag_name, tag_value)
     analysis.status = analysis_status.COMPLETED
     analysis.put()
 
 
 class PublishResultPipeline(CrashBasePipeline):
-  # TODO(http://crbug.com/659346): we misplaced the coverage test; find it!
   def finalized(self):
-    if self.was_aborted:  # pragma: no cover.
+    if self.was_aborted: # pragma: no cover.
       logging.error('Failed to publish %s analysis result for %s',
                     repr(self._crash_identifiers), self.client_id)
 
-  # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self):
+  # TODO(http://crbug.com/659346): we misplaced the coverage test; find it!
+  def run(self, *_args, **_kwargs): # pragma: no cover
+    """Publish the results of our analysis back into the ndb.Model.
+
+    N.B., due to the structure of AppEngine pipelines, this method must
+    accept the same arguments as are passed to ``__init__``; however,
+    because they were already passed to ``__init__`` there's no use in
+    recieving them here. Thus, we discard all the arguments to this method
+    (except for ``self``, naturally).
+    """
     analysis = self._findit.GetAnalysis(self._crash_identifiers)
     result = analysis.ToPublishableResult(self._crash_identifiers)
     messages_data = [json.dumps(result, sort_keys=True)]
@@ -166,7 +190,8 @@ class PublishResultPipeline(CrashBasePipeline):
                  repr(self._crash_identifiers))
 
 
-class CrashWrapperPipeline(BasePipeline):
+# TODO(http://crbug.com/659346): we misplaced the coverage test; find it!
+class CrashWrapperPipeline(BasePipeline): # pragma: no cover
   """Fire off pipelines to (1) do the analysis and (2) publish results.
 
   The reason we have analysis and publishing as separate pipelines is
@@ -183,9 +208,15 @@ class CrashWrapperPipeline(BasePipeline):
     self._crash_identifiers = crash_identifiers
     self._client_id = client_id
 
-  # TODO(http://crbug.com/659346): write coverage tests.
-  # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self): # pragma: no cover
+  def run(self, *_args, **_kwargs):
+    """Fire off pipelines to run the analysis and publish its results.
+
+    N.B., due to the structure of AppEngine pipelines, this method must
+    accept the same arguments as are passed to ``__init__``; however,
+    because they were already passed to ``__init__`` there's no use in
+    recieving them here. Thus, we discard all the arguments to this method
+    (except for ``self``, naturally).
+    """
     run_analysis = yield CrashAnalysisPipeline(
         self._client_id, self._crash_identifiers)
     with pipeline.After(run_analysis):
