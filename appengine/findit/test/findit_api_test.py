@@ -684,6 +684,7 @@ class FinditApiTest(testing.EndpointsTestCase):
         'a': '/'.join([master_name, builder_name, '4']),
         'b on platform': {
             'Unittest1.Subtest1': '/'.join([master_name, builder_name, '3']),
+            'Unittest2.Subtest1': '/'.join([master_name, builder_name, '4']),
             'Unittest3.Subtest1': '/'.join([master_name, builder_name, '4']),
         },
     }

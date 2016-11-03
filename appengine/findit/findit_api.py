@@ -159,7 +159,7 @@ class FindItApi(remote.Service):
   """FindIt API v1."""
 
   def _GetConfidenceAndApproachForCL(
-      self, repo_name, revision, confidences, build, first_failure):
+      self, repo_name, revision, confidences, build, reference_build_key):
     cl = WfSuspectedCL.Get(repo_name, revision)
     if not cl:
       return None, None
@@ -171,13 +171,15 @@ class FindItApi(remote.Service):
     # If the CL is found by a try job, only the first failure will be recorded.
     # So we might need to go to the first failure to get CL information.
     build_info = cl.GetBuildInfo(master_name, builder_name, current_build)
-    first_build_info = cl.GetBuildInfo(master_name, builder_name, first_failure)
+    first_build_info = cl.GetBuildInfo(
+        *build_util.GetBuildInfoFromId(reference_build_key))
     return suspected_cl_util.GetSuspectedCLConfidenceScoreAndApproach(
         confidences, build_info, first_build_info)
 
   def _GenerateBuildFailureAnalysisResult(
       self, build, suspected_cls_in_result, step_name, first_failure, test_name,
-      analysis_approach, confidences, try_job_status, is_flaky_test):
+      analysis_approach, confidences, try_job_status, is_flaky_test,
+      reference_build_key):
 
     suspected_cls = []
     for suspected_cl in suspected_cls_in_result:
@@ -185,7 +187,7 @@ class FindItApi(remote.Service):
       revision = suspected_cl['revision']
       commit_position = suspected_cl['commit_position']
       confidence, cl_approach = self._GetConfidenceAndApproachForCL(
-          repo_name, revision, confidences, build, first_failure)
+          repo_name, revision, confidences, build, reference_build_key)
       if cl_approach:
         cl_approach = (
           _AnalysisApproach.HEURISTIC if
@@ -260,7 +262,7 @@ class FindItApi(remote.Service):
 
   def _PopulateResult(
       self, results, build, build_failure_type,heuristic_result, step_name,
-      confidences, swarming_task, try_job, test_name=None):
+      confidences, reference_build_key, swarming_task, try_job, test_name=None):
     """Appends an analysis result for the given step or test.
 
     Try-job results are always given priority over heuristic results.
@@ -290,7 +292,7 @@ class FindItApi(remote.Service):
     results.append(self._GenerateBuildFailureAnalysisResult(
         build, suspected_cls, step_name, heuristic_result['first_failure'],
         test_name, analysis_approach, confidences, try_job_status,
-        is_flaky_test))
+        is_flaky_test, reference_build_key))
 
   def _GetAllSwarmingTasks(self, failure_result_map):
     """Returns all swarming tasks related to one build.
@@ -374,7 +376,7 @@ class FindItApi(remote.Service):
       self, step_name, test_name, failure_result_map, swarming_tasks, try_jobs):
     """Gets swarming task and try job for the specific step/test."""
     if not failure_result_map:
-      return None, None
+      return None, None, None
 
     if test_name:
       try_job_key = failure_result_map.get(step_name, {}).get(test_name)
@@ -387,7 +389,7 @@ class FindItApi(remote.Service):
     # Get the try job for the step/test.
     try_job = try_jobs.get(try_job_key)
 
-    return swarming_task, try_job
+    return try_job_key, swarming_task, try_job
 
   def _GenerateResultsForBuild(
       self, build, heuristic_analysis, results, confidences):
@@ -401,21 +403,23 @@ class FindItApi(remote.Service):
       if failure.get('tests'):  # Test-level analysis.
         for test in failure['tests']:
           test_name = test['test_name']
-          swarming_task, try_job = self._GetSwarmingTaskAndTryJobForFailure(
-              step_name, test_name, heuristic_analysis.failure_result_map,
-              swarming_tasks, try_jobs)
+          reference_build_key, swarming_task, try_job = (
+              self._GetSwarmingTaskAndTryJobForFailure(
+                  step_name, test_name, heuristic_analysis.failure_result_map,
+                  swarming_tasks, try_jobs))
 
           self._PopulateResult(
               results, build, heuristic_analysis.failure_type, test,
-              step_name, confidences, swarming_task, try_job,
-              test_name=test_name)
+              step_name, confidences, reference_build_key, swarming_task,
+              try_job, test_name=test_name)
       else:
-        swarming_task, try_job = self._GetSwarmingTaskAndTryJobForFailure(
-            step_name, None, heuristic_analysis.failure_result_map,
-            swarming_tasks, try_jobs)
+        reference_build_key, swarming_task, try_job = (
+            self._GetSwarmingTaskAndTryJobForFailure(
+                step_name, None, heuristic_analysis.failure_result_map,
+                swarming_tasks, try_jobs))
         self._PopulateResult(
             results, build, heuristic_analysis.failure_type, failure,
-            step_name, confidences, swarming_task, try_job)
+            step_name, confidences, reference_build_key, swarming_task, try_job)
 
   @endpoints.method(
       _BuildFailureCollection, _BuildFailureAnalysisResultCollection,

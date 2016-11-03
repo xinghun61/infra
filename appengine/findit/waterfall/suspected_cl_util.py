@@ -120,12 +120,14 @@ def _HasNewFailures(current_failures, new_failures):
 
 def GetSuspectedCLConfidenceScoreAndApproach(
     confidences, cl_from_analyzed_build, cl_from_first_failed_build):
-  if not confidences or not cl_from_analyzed_build:
+  if not confidences or (
+      not cl_from_analyzed_build and not cl_from_first_failed_build):
     return None, None
 
-  if (cl_from_first_failed_build and not _HasNewFailures(
-          cl_from_analyzed_build.get('failures'),
-          cl_from_first_failed_build.get('failures'))):
+  if (cl_from_first_failed_build and (
+          not cl_from_analyzed_build or
+          not _HasNewFailures(cl_from_analyzed_build.get('failures'),
+                              cl_from_first_failed_build.get('failures')))):
       # For non-first-time failures, the try job result is not recorded.
       # If there is no new failures in current build, use first failed build to
       # make sure the confidence score is correct.
