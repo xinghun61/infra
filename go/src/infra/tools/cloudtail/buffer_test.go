@@ -63,25 +63,24 @@ func TestPushBuffer(t *testing.T) {
 			So(client.getCalls()[0].ts, ShouldResemble, testclock.TestRecentTimeUTC) // i.e. before Stop
 		})
 
-		Convey("Send a bunch of entries, wait for flush", func() {
+		Convey("Send an entry, wait for flush", func() {
 			cl := clock.Get(ctx).(testclock.TestClock)
+			cl.SetTimerCallback(func(d time.Duration, t clock.Timer) {
+				if testclock.HasTags(t, "flush-timer") {
+					cl.Add(d)
+				}
+			})
+
 			client := &fakeClient{ch: make(chan pushEntriesCall)}
 			buf := NewPushBuffer(PushBufferOptions{Client: client})
 			buf.Start(ctx)
 			buf.Send(ctx, Entry{})
-			cl.Add(time.Second)
-			buf.Send(ctx, Entry{})
 
-			// Spin time until flush is called.
-			done := false
-			for !done {
-				select {
-				case <-client.ch:
-					done = true
-				default:
-					cl.Add(time.Second)
-				}
-			}
+			// Wait until flush is called.
+			<-client.ch
+
+			// Make sure it happened by timer.
+			So(cl.Now().Sub(testclock.TestRecentTimeUTC), ShouldEqual, DefaultFlushTimeout)
 
 			So(buf.Stop(ctx), ShouldBeNil)
 			So(len(client.getCalls()), ShouldEqual, 1)
@@ -137,18 +136,16 @@ func TestPushBuffer(t *testing.T) {
 			So(len(client.calls), ShouldEqual, 6)
 		})
 
-		// TODO(vadimsh): This test occasionally hangs on go 1.7.
-		SkipConvey("Stop timeout works", func() {
+		Convey("Stop timeout works", func() {
 			withDeadline, _ := clock.WithTimeout(ctx, 20*time.Second)
 
-			// "Freeze" time after 21 sec to allow 'withDeadline' cancellation channel
-			// to wake up 'Stop' goroutine. Otherwise the retry loop can spin really
-			// fast (since the time is mocked) between 'buf.Send' and 'buf.Stop'.
 			cl.SetTimerCallback(func(d time.Duration, t clock.Timer) {
-				if clock.Now(ctx).Sub(testclock.TestRecentTimeUTC) < 21*time.Second {
-					if testclock.HasTags(t, "retry-timer") {
-						cl.Add(d)
-					}
+				// "Freeze" time after deadline is reached. Otherwise the retry loop can
+				// spin really fast (since the time is mocked) between 'buf.Send' and
+				// 'buf.Stop'.
+				runtime := clock.Now(ctx).Sub(testclock.TestRecentTimeUTC)
+				if runtime <= 20*time.Second && testclock.HasTags(t, "retry-timer") {
+					cl.Add(d)
 				}
 			})
 

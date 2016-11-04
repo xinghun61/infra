@@ -53,6 +53,9 @@ type PipeReader struct {
 	// Note that this happens before 'Run' returns, because 'Run' waits for data
 	// to be pushed to the PushBuffer.
 	OnEOF func()
+
+	// OnLineDropped is called whenever a line gets dropped due to full buffer.
+	OnLineDropped func()
 }
 
 // Run reads from the reader until EOF or until the context is closed.
@@ -113,6 +116,9 @@ func (r *PipeReader) Run(ctx context.Context) error {
 					droppedCounter.Add(ctx, 1, r.ClientID.LogID, r.ClientID.ResourceType, r.ClientID.ResourceID)
 					droppedReport++
 					droppedTotal++
+					if r.OnLineDropped != nil {
+						r.OnLineDropped()
+					}
 				}
 				logDropped(false)
 			}

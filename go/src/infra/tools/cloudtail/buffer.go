@@ -139,13 +139,18 @@ func (b *pushBufferImpl) Send(ctx context.Context, e Entry) {
 
 func (b *pushBufferImpl) Stop(ctx context.Context) error {
 	close(b.input) // panics if already closed
+
+	killer := make(chan struct{})
+	defer close(killer)
+
 	go func() {
 		select {
 		case <-ctx.Done(): // halt the flush on context cancellation
-		case <-b.output: // don't leak this goroutine on successful flush
+		case <-killer: // don't leak this goroutine on successful flush
 		}
 		close(b.stopCh)
 	}()
+
 	return <-b.output
 }
 
@@ -194,7 +199,7 @@ outer:
 			if !alive {
 				break outer
 			}
-			b.pending = append(b.pending, entry)
+			b.addToPending(ctx, entry)
 
 			// Grab all we have buffered there.
 			spin := true
@@ -202,11 +207,7 @@ outer:
 				select {
 				case entry, spin = <-b.input:
 					if entry != nil {
-						b.pending = append(b.pending, entry)
-						// Have enough data for a flush? Send it right now.
-						if len(b.pending) >= b.FlushThreshold {
-							b.flush(ctx) // drops them if the context is already canceled
-						}
+						b.addToPending(ctx, entry)
 					}
 				default:
 					spin = false
@@ -226,6 +227,14 @@ outer:
 
 	// The final flush.
 	b.flush(ctx)
+}
+
+// addToPending adds entry to pending buffer, flushing it if it's full.
+func (b *pushBufferImpl) addToPending(ctx context.Context, entry *Entry) {
+	b.pending = append(b.pending, entry)
+	if len(b.pending) >= b.FlushThreshold {
+		b.flush(ctx) // drops them if the context is already canceled
+	}
 }
 
 // mergeEntries uses parser's MergeLogLine to combine a bunch of sequential
