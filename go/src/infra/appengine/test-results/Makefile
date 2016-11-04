@@ -32,11 +32,19 @@ VERSION?= `git show --format='%h' --no-patch`$(dirty)
 
 deploy_staging_run:
 	appcfg.py -A test-results-test-hrd -V ${VERSION} update frontend/app.yaml
+	@echo
+	@echo "Deployed version is at https://${VERSION}-dot-test-results-test.appspot.com/"
+	@echo "Version management console is at https://pantheon.corp.google.com/appengine/versions?project=test-results-test-hrd"
+	@echo
 
 deploy_staging: build deploy_staging_run clean
 
 deploy_prod_run:
 	appcfg.py -A test-results-hrd -V ${VERSION} update frontend/app.yaml
+	@echo
+	@echo "Deployed version is at https://${VERSION}-dot-test-results.appspot.com/"
+	@echo "Version management console is at https://pantheon.corp.google.com/appengine/versions?project=test-results-hrd"
+	@echo
 
 deploy_prod: build deploy_prod_run clean
 
