@@ -2,61 +2,8 @@
  [include "../tracker/issue-list-headings.ezt"]
 [end]
 
-[if-any table_data]
- [for table_data]
-
-  [include "../framework/artifact-list-group-row.ezt" "issue" "issues"]
-
-  <tr class="ifOpened hoverTarget [is cursor table_data.issue_ref]cursor_on[else]cursor_off[end]" data-idx="[table_data.idx]">
-    <td class="rowwidgets nowrap">
-     [if-any read_only][else]
-      [if-any owner_permissions editor_permissions][if-any is_cross_project][else][# TODO(jrobbins): cross-project bulk edit]
-       <input type="checkbox" id="cb_[table_data.local_id]" class="checkRangeSelect">
-      [end][end]
-      [# TODO(jojwang): check for some permission to set star]
-       <a class="star" id="star-[table_data.project_name]-[table_data.local_id]"
-        style="color:[if-any table_data.starred]cornflowerblue[else]gray[end];"
-        title="[if-any table_data.starred]Un-s[else]S[end]tar this issue"
-        data-project-name="[table_data.project_name]" data-local-id="[table_data.local_id]">
-        [if-any table_data.starred]&#9733;[else]&#9734;[end]
-       </a>
-     [end]
-    </td>
-
-    [for table_data.cells]
-     [is table_data.cells.type "ID"]
-      <td class="id col_[table_data.cells.col_index]"
-          [# TODO(jrobbins): re-implement preview_on_hover in polymer.]
-          ><a href="[table_data.issue_url]">
-              [if-any is_cross_project][table_data.project_name]:[end][table_data.local_id]</a></td>
-     [end]
-
-     [is table_data.cells.type "summary"]
-      <td class="col_[table_data.cells.col_index]" width="100%"
-        >[include "../framework/artifact-list-cell-values.ezt"]
-          [include "../framework/artifact-list-non-column-labels.ezt"]
-      </td>
-     [end]
-
-     [is table_data.cells.type "attr"]
-      <td class="col_[table_data.cells.col_index][if-any table_data.cells.NOWRAP] nowrap[end]"
-            [if-any table_data.cells.align]align="[table_data.cells.align]"[end]
-            >[include "../framework/artifact-list-cell-values.ezt"]</td>
-     [end]
-
-     [is table_data.cells.type "unfilterable"]
-       <td class="col_[table_data.cells.col_index] [if-any table_data.cells.NOWRAP]nowrap[end]"
-         [if-any table_data.cells.align]align="[table_data.cells.align]"[end]
-         >[include "../framework/artifact-list-cell-values.ezt"]</td>
-     [end]
-    [end]
-   <td>&nbsp;</td>
-  </tr>
- [end]
-
-[else]
-
- <tr>
+[if-any table_data][else]
+<tr>
   <td colspan="40" class="id">
    <div style="padding: 3em; text-align: center">
        This hotlist currently has no issues.<br>
@@ -66,5 +13,62 @@
     </div>
    </td>
   </tr>
-
 [end]
+
+
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function(){
+  var tableData = [[]
+  [for table_data]
+    {
+    "cells" : [[]
+    [for table_data.cells]
+      {
+      "type": "[table_data.cells.type]",
+      "values": [[]
+      [for table_data.cells.values]
+        {
+        "item": "[format "js"][table_data.cells.values.item][end]",
+        "isDerived": "[table_data.cells.values.is_derived]",
+        }[if-index table_data.cells.values last][else],[end]
+      [end]
+      ],
+      "colIndex": "[table_data.cells.col_index]",
+      "align": "[table_data.cells.align]",
+      "noWrap": "[table_data.cells.NOWRAP]",
+      "nonColLabels": [[]
+      [for table_data.cells.non_column_labels]e
+        {
+        "value": "[format "js"][table_data.cells.non_column_labels.value][end]",
+        "isDerived": "[table_data.cells.non_column_labels.is_derived]",
+        }[if-index table_data.cells.non_column_labels last][else],[end]
+      [end]
+      ],
+      }[if-index table_data.cells last][else],[end]
+    [end]
+    ],
+    "issueRef": "[table_data.issue_ref]",
+    "idx": "[table_data.idx]",
+    "projectName": "[table_data.project_name]",
+    "localID": "[table_data.local_id]",
+    "isStarred": "[table_data.starred]",
+    "issueURL": "[table_data.issue_url]",
+    }[if-index table_data last][else],[end]
+  [end]
+  ];
+
+  var pageSettings = {
+  "cursor": "[cursor]",
+  "ownerPerm": "[owner_permissions]",
+  "editorPerm": "[editor_permissions]",
+  "isCrossProject": "[is_cross_project]",
+  "readOnly": "[read_only]",
+  };
+
+  renderHotlistTable(tableData, pageSettings);
+});
+</script>
+
+<script type="text/javascript" defer src="/static/js/tracker/render-hotlist-table.js?version=[app_version]" nonce="[nonce]"></script>
+

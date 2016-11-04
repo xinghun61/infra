@@ -1,0 +1,205 @@
+/* Copyright 2016 The Chromium Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file or at
+ * https://developers.google.com/open-source/licenses/bsd
+ */
+
+/**
+ * This file contains JS functions used in rendering a hotlistissues table
+ */
+
+
+/**
+ * Helper function to set several attributes of an element at once.
+ * @param {Element} el element that is getting the attributes
+ * @param {dict} attrs Dictionary of {attrName: attrValue, ..}
+ */
+function setAttributes(el, attrs) {
+  for (var key in attrs) {
+    el.setAttribute(key, attrs[key]);
+  }
+}
+
+// TODO(jojwang): readOnly is currently empty string, figure out what it should be
+// ("True"/"False" "yes"/"no"?).
+
+/**
+ * Helper function for creating a <td> element that contains the widgets of the row.
+ * @param {dict} tableRow dictionary {"projectName": "name", .. } of relevant row info.
+ * @param {} readONly.
+ * @param {boolean} ownerEditorPerm does current viewer have owner/editor permissions.
+ * @param {boolean} isCrossProject are issues in the table from more than one project.
+ * @return an element containing the widget elements
+ */
+function createWidgets(tableRow, readOnly, ownerEditorPerm, isCrossProject) {
+  var widgets = document.createElement("td");
+  widgets.setAttribute("class", "rowwidgets nowrap");
+  if (!readOnly) {
+    if (ownerEditorPerm) {
+      if (!isCrossProject) {
+        var checkbox = document.createElement("input");
+        setAttributes(checkbox, {"name": "checkRangeSelect",
+                                 "id": "cb_"+tableRow["localID"],
+                                 "type": "checkbox"});
+        widgets.appendChild(checkbox);
+      }
+    }
+    var star = document.createElement("a");
+    var starColor = tableRow["isStarred"] ? "cornflowerblue" : "gray";
+    var starred = tableRow["isStarred"] ? "Un-s" : "S" ;
+    setAttributes(star, {"name": "star",
+                         "id": "star-" + tableRow["projectName"] + tableRow["localID"],
+                         "style": "color:" + starColor,
+                         "title": starred + "tar this issue",
+                         "data-project-name": tableRow["projectName"],
+                         "data-local-id": tableRow["localID"]});
+    star.innerText = (tableRow["isStarred"] ? "\u2605" : "\u2606");
+    widgets.appendChild(star);
+  }
+  return widgets;
+}
+
+
+/**
+ * Helper function to set attributes and add Nodes for an ID cell.
+ * @param {Element} td element to be added to current row in table.
+ * @param {dict} tableRow dictionary {"projectName": "name", .. } of relevant row info.
+ * @param {boolean} isCrossProject are issues in the table from more than one project.
+*/
+function createIDCell(td, tableRow, isCrossProject) {
+  var aLink = document.createElement("a");
+  aLink.setAttribute("href", tableRow["issueURL"]);
+  var aLinkContent = (isCrossProject ? (tableRow["projectName"] + ":") : "" ) + tableRow["localID"];
+  aLink.innerText = aLinkContent;
+  td.appendChild(aLink);
+}
+
+
+/**
+ * Helper function to set attributes and add Nodes for an Summary cell.
+ * @param {Element} td element to be added to current row in table.
+ * @param {dict} cell dictionary {"projectName": "name", .. } of relevant cell info.
+*/
+function createSummaryCell(td, cell) {
+  td.setAttribute("width", "100%");
+  fillValues(td, cell["values"]);
+  fillNonColumnLabels(td, cell["nonColLabels"]);
+}
+
+
+/**
+ * Helper function to set attributes and add Nodes for an Summary cell.
+ * @param {Element} td element to be added to current row in table.
+ * @param {dict} cell dictionary {"type": "Summary", .. } of relevant cell info.
+*/
+function createAttrAndUnfiltCell(td, cell) {
+  if(cell["noWrap"] == "yes") {
+    td.className += " nowrap";
+  }
+  if(cell["align"]) {
+    td.setAttribute("align", cell["align"]);
+  }
+  fillValues(td, cell["values"]);
+}
+
+
+/**
+ * Helper function to fill a td element with a cell's non-column labels.
+ * @param {Element} td element to be added to current row in table.
+ * @param {list} labels list of dictionaries with relevant (key, value) for each label
+ */
+function fillNonColumnLabel(td, labels) {
+  labels.forEach( function(label) {
+    var aLabel = document.createElement("a");
+    setAttributes(aLabel, {"class": "label", "href": "list?q=label:" + label["value"]});
+    if (label["isDerived"]) {
+      var i = document.createElement("i");
+      i.innerText = label["value"];
+      aLabel.appendChild(i);
+    } else {
+      aLabel.innerText = label["value"];
+    }
+    td.appendChild(aLabel);
+  });
+}
+
+
+/**
+ * Helper function to fill a td element with a cell's value(s).
+ * @param {Element} td element to be added to current row in table.
+ * @param {list} values list of dictionaries with relevant (key, value) for each value
+ */
+function fillValues(td, values) {
+  if (values.length > 0) {
+    values.forEach( function(value, index, array) {
+      if (value["isDerived"]) {
+        var i = document.createElement("i");
+        if (index == array.length-1) {
+          i.innerText = value["item"];
+        } else {
+          i.innerText = (value["item"] + ",");
+        }
+        td.appendChild(i);
+      } else {
+        if (index == array.length-1) {
+          td.innerText = td.innerText + value["item"];
+        } else {
+          td.innerText = td.innerText + value["item"] + ",";
+        }
+      }
+    });
+  } else {
+    td.innerText = "---";
+  }
+}
+
+
+/**
+ * Helper function to create a table row.
+ * @param {dict} tableRow dictionary {"projectName": "name", .. } of relevant row info.
+ * @param {dict} pageSettings dict of relevant settings for the hotlist and user viewing the page.
+ */
+function renderHotlistRow(tableRow, pageSettings) {
+  var tr = document.createElement("tr");
+    if (pageSettings["cursor"] || tableRow["issueRef"]) {
+      tr.setAttribute("class", "ifOpened hoverTarget cursor_on");
+    } else {
+      tr.setAttribute("class", "ifOpened hoverTarget cursor_off");
+    }
+    tr.setAttribute("data-idx", tableRow["idx"]);
+    widgets = createWidgets(tableRow, pageSettings["readOnly"],
+                            ((pageSettings["ownerPerm"] == "True") || (pageSettings["editorPerm"] == "True")),
+                            (pageSettings["isCrossProject"] == "True"));
+    tr.appendChild(widgets);
+    tableRow["cells"].forEach(function(cell) {
+      var td = document.createElement("td");
+      td.setAttribute("class", "col_" + cell["colIndex"]);
+      if (cell["type"] == "ID") {
+        createIDCell(td, tableRow, (pageSettings["isCrossProject"] == "True"));
+      } else if (cell["type"] == "Summary") {
+        createSummaryCell(td, cell);
+      } else{
+        createAttrAndUnfiltCell(td, cell);
+      }
+      tr.appendChild(td);
+    });
+  return tr;
+}
+
+
+/**
+ * Builds the body of a hotlistissues table.
+ * @param {dict} tableData dict of relevant values from 'table_data'
+ * @param {dict} pageSettings dict of relevant settings for the hotlist and user viewing the page.
+ * @param
+ */
+function renderHotlistTable(tableData, pageSettings) {
+  var body = document.createElement("tbody");
+  var table = $('resultstable');
+  tableData.forEach(function(tableRow) {
+    body.appendChild(renderHotlistRow(tableRow, pageSettings));
+  });
+
+  table.appendChild(body)
+}
