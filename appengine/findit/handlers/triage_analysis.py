@@ -14,8 +14,8 @@ from google.appengine.api import users
 from google.appengine.ext import ndb
 import pytz.gae
 
-from common import time_util
 from common.base_handler import BaseHandler, Permission
+from lib import time_util
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from waterfall import buildbot

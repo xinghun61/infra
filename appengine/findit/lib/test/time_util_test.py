@@ -5,7 +5,7 @@
 import mock
 import unittest
 
-from common import time_util
+from lib import time_util
 from datetime import datetime
 from datetime import timedelta
 
@@ -37,7 +37,7 @@ class DiffTest(unittest.TestCase):
         time_util.FormatDatetime(datetime(2016, 1, 2, 1, 2, 3)),
         '2016-01-02 01:02:03 UTC')
 
-  @mock.patch('common.time_util.pytz')
+  @mock.patch('lib.time_util.pytz')
   def testGetDateTimeInTimezoneWithGivenDatetime(self, mocked_pytz_module):
     mocked_datetime = mock.MagicMock()
     mocked_datetime.astimezone.return_value = 'expected'
@@ -52,3 +52,13 @@ class DiffTest(unittest.TestCase):
     self.assertIsNone(time_util.FormatDuration(None, date1))
     self.assertIsNone(time_util.FormatDuration(date1, None))
     self.assertEqual('00:01:00', time_util.FormatDuration(date1, date2))
+
+  def testTimeZoneInfo(self):
+    naive_time = datetime(2016, 9, 1, 10, 0, 0)
+
+    tz = time_util.TimeZoneInfo('+0800')
+    self.assertEqual(tz.LocalToUTC(naive_time), datetime(2016, 9, 1, 2, 0, 0))
+
+    tz_negative = time_util.TimeZoneInfo('-0700')
+    self.assertEqual(tz_negative.LocalToUTC(naive_time),
+                     datetime(2016, 9, 1, 17, 0, 0))

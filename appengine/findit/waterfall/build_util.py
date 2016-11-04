@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from common import time_util
 from common.http_client_appengine import HttpClientAppengine as HttpClient
+from lib import time_util
 from model.wf_build import WfBuild
 from waterfall import buildbot
 from waterfall import lock_util

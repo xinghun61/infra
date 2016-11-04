@@ -66,3 +66,33 @@ def GetDatetimeInTimezone(timezone_name, date_time):
     A datetime.datetime of the given one in the specified timezone.
   """
   return date_time.astimezone(pytz.timezone(timezone_name))
+
+
+class TimeZoneInfo(object):
+  """Gets time zone info from string like: +0800.
+
+  The string is HHMM offset relative to UTC timezone."""
+
+  def __init__(self, offset_str):
+    self._utcoffset = self.GetOffsetFromStr(offset_str)
+
+  def GetOffsetFromStr(self, offset_str):
+    offset = int(offset_str[-4:-2]) * 60 + int(offset_str[-2:])
+    if offset_str[0] == '-':
+      offset = -offset
+    return timedelta(minutes=offset)
+
+  def LocalToUTC(self, naive_time):
+    """Localizes naive datetime and converts it to utc naive datetime.
+
+    Args:
+      naive_time(datetime): naive time in local time zone, for example '+0800'.
+
+    Return:
+      A naive datetime object in utc time zone.
+      For example:
+      For TimeZoneInfo('+0800'), and naive local time is
+      datetime(2016, 9, 1, 10, 0, 0), the returned result should be
+      datetime(2016, 9, 1, 2, 0, 0) in utc time.
+    """
+    return naive_time - self._utcoffset

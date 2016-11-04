@@ -5,9 +5,9 @@
 from google.appengine.api import users
 
 from common import auth_util
-from common import time_util
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
+from lib import time_util
 from model import analysis_status
 from model import triage_status
 from model.flake.flake_analysis_request import FlakeAnalysisRequest

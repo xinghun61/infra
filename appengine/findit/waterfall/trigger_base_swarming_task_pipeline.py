@@ -6,9 +6,9 @@ import copy
 import logging
 import time
 
-from common import time_util
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
+from lib import time_util
 from model import analysis_status
 from waterfall import swarming_util
 from waterfall import waterfall_config

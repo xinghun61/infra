@@ -6,10 +6,10 @@ from datetime import datetime
 from datetime import time
 from datetime import timedelta
 
-from common import time_util
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
 
+from lib import time_util
 from model import result_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 

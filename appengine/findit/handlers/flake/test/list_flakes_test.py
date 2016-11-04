@@ -6,9 +6,9 @@ import datetime
 import mock
 import webapp2
 
-from common import time_util
 from handlers.flake import list_flakes
 from handlers.flake.list_flakes import FilterMasterFlakeAnalysis
+from lib import time_util
 from model import analysis_status
 from model import result_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis

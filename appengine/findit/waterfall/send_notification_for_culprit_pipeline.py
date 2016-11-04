@@ -8,10 +8,10 @@ import textwrap
 
 from google.appengine.ext import ndb
 
-from common import time_util
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
 from common.rietveld import Rietveld
+from lib import time_util
 from lib.gitiles.gitiles_repository import GitilesRepository
 from model import analysis_status as status
 from model.wf_analysis import WfAnalysis

@@ -11,12 +11,14 @@ import re
 # TODO(http://crbug.com/660466): We should try to break dependencies.
 from lib.cache_decorator import Cached
 from lib.cache_decorator import CompressedMemCacher
+from lib.gitiles import commit_util
 from lib.gitiles import diff
 from lib.gitiles.blame import Blame
 from lib.gitiles.blame import Region
 from lib.gitiles.change_log import ChangeLog
 from lib.gitiles.change_log import FileChangeInfo
 from lib.gitiles.git_repository import GitRepository
+from lib.time_util import TimeZoneInfo
 
 COMMIT_POSITION_PATTERN = re.compile(
     '^Cr-Commit-Position: refs/heads/master@{#(\d+)}$', re.IGNORECASE)
@@ -31,6 +33,7 @@ CACHE_EXPIRE_TIME_SECONDS = 24 * 60 * 60
 class GitilesRepository(GitRepository):
   """Use Gitiles to access a repository on https://chromium.googlesource.com."""
 
+  # TODO(crbug.com/659449): Refactor the http_client to be required argument.
   def __init__(self, repo_url=None, http_client=None):
     super(GitilesRepository, self).__init__()
     if repo_url and repo_url.endswith('/'):
@@ -81,66 +84,13 @@ class GitilesRepository(GitRepository):
       return None
     return base64.b64decode(content)
 
-  def ExtractCommitPositionAndCodeReviewUrl(self, message):
-    """Returns the commit position and code review url in the commit message.
-
-    A "commit position" is something similar to SVN version ids; i.e.,
-    numeric identifiers which are issued in sequential order. The reason
-    we care about them is that they're easier for humans to read than
-    the hashes that Git uses internally for identifying commits. We
-    should never actually use them for *identifying* commits; they're
-    only for pretty printing to humans.
-
-    Returns:
-      (commit_position, code_review_url)
-    """
-    if not message:
-      return (None, None)
-
-    commit_position = None
-    code_review_url = None
-
-    # Commit position and code review url are in the last 5 lines.
-    lines = message.strip().split('\n')[-5:]
-    lines.reverse()
-
-    for line in lines:
-      if commit_position is None:
-        match = COMMIT_POSITION_PATTERN.match(line)
-        if match:
-          commit_position = int(match.group(1))
-
-      if code_review_url is None:
-        match = CODE_REVIEW_URL_PATTERN.match(line)
-        if match:
-          code_review_url = match.group(1)
-    return (commit_position, code_review_url)
-
-  def _NormalizeEmail(self, email):
-    """Normalizes the email from git repo.
-
-    Some email is like: test@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538.
-    """
-    parts = email.split('@')
-    return '@'.join(parts[0:2])
-
   def _GetDateTimeFromString(self, datetime_string,
                              date_format='%a %b %d %H:%M:%S %Y'):
     if TIMEZONE_PATTERN.findall(datetime_string):
       # Need to handle timezone conversion.
       naive_datetime_str, _, offset_str = datetime_string.rpartition(' ')
-      naive_datetime = datetime.strptime(naive_datetime_str,
-                                         date_format)
-      hour_offset = int(offset_str[-4:-2])
-      minute_offset = int(offset_str[-2:])
-      if(offset_str[0]) == '-':
-        hour_offset = -hour_offset
-        minute_offset = -minute_offset
-
-      time_delta = timedelta(hours=hour_offset, minutes=minute_offset)
-
-      utc_datetime = naive_datetime - time_delta
-      return utc_datetime
+      naive_datetime = datetime.strptime(naive_datetime_str, date_format)
+      return TimeZoneInfo(offset_str).LocalToUTC(naive_datetime)
 
     return datetime.strptime(datetime_string, date_format)
 
@@ -148,21 +98,9 @@ class GitilesRepository(GitRepository):
     url = '%s/+/%s' % (self.repo_url, revision)
     return url, self._SendRequestForJsonResponse(url)
 
-  def GetRevertedRevision(self, message):
-    """Parse message to get the reverted revision if there is one."""
-    lines = message.strip().splitlines()
-    if not lines[0].lower().startswith('revert'):
-      return None
-
-    for line in reversed(lines):  # pragma: no cover
-      # TODO: Handle cases where no reverted_revision in reverting message.
-      reverted_revision_match = REVERTED_REVISION_PATTERN.match(line)
-      if reverted_revision_match:
-        return reverted_revision_match.group(1)
-
   def _ParseChangeLogFromLogData(self, data):
     commit_position, code_review_url = (
-        self.ExtractCommitPositionAndCodeReviewUrl(data['message']))
+        commit_util.ExtractCommitPositionAndCodeReviewUrl(data['message']))
 
     touched_files = []
     for file_diff in data['tree_diff']:
@@ -175,14 +113,15 @@ class GitilesRepository(GitRepository):
 
     author_time = self._GetDateTimeFromString(data['author']['time'])
     committer_time = self._GetDateTimeFromString(data['committer']['time'])
-    reverted_revision = self.GetRevertedRevision(data['message'])
+    reverted_revision = commit_util.GetRevertedRevision(data['message'])
     url = '%s/+/%s' % (self.repo_url, data['commit'])
 
     return ChangeLog(
-        data['author']['name'], self._NormalizeEmail(data['author']['email']),
+        data['author']['name'],
+        commit_util.NormalizeEmail(data['author']['email']),
         author_time,
         data['committer']['name'],
-        self._NormalizeEmail(data['committer']['email']),
+        commit_util.NormalizeEmail(data['committer']['email']),
         committer_time, data['commit'], commit_position,
         data['message'], touched_files, url, code_review_url,
         reverted_revision)
@@ -250,7 +189,8 @@ class GitilesRepository(GitRepository):
       blame.AddRegion(
           Region(region['start'], region['count'], region['commit'],
                  region['author']['name'],
-                 self._NormalizeEmail(region['author']['email']), author_time))
+                 commit_util.NormalizeEmail(region['author']['email']),
+                 author_time))
 
     return blame
 

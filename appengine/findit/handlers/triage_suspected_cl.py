@@ -10,9 +10,9 @@ This handler will flag the suspected cl as correct or incorrect.
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
-from common import time_util
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
+from lib import time_util
 from model import result_status
 from model import suspected_cl_status
 from model.wf_analysis import WfAnalysis

@@ -6,7 +6,7 @@ import os
 
 from testing_utils import testing
 
-from common import time_util
+from lib import time_util
 
 
 class FinditTestCase(testing.AppengineTestCase):  # pragma: no cover.

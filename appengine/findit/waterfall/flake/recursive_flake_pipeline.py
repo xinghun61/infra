@@ -8,9 +8,8 @@ import random
 
 from common import appengine_util
 from common import constants
-from common import time_util
 from common.pipeline_wrapper import BasePipeline
-
+from lib import time_util
 from model import analysis_status
 from model import result_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask

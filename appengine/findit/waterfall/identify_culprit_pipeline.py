@@ -3,8 +3,8 @@
 # found in the LICENSE file.
 
 
-from common import time_util
 from common.pipeline_wrapper import BasePipeline
+from lib import time_util
 from model import analysis_approach_type
 from model import analysis_status
 from model import result_status

@@ -3,9 +3,9 @@
 # found in the LICENSE file.
 
 from common import appengine_util
-from common import time_util
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
+from lib import time_util
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline

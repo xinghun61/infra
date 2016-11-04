@@ -8,13 +8,13 @@ import logging
 
 from common import appengine_util
 from common import pubsub_util
-from common import time_util
 from common.http_client_appengine import HttpClientAppengine
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
 from crash import findit_for_chromecrash
 from crash import findit_for_clusterfuzz
 from crash.type_enums import CrashClient
+from lib import time_util
 from lib.gitiles import gitiles_repository
 from model import analysis_status
 

@@ -4,7 +4,7 @@
 
 from google.appengine.ext import ndb
 
-from common.time_util import GetUTCNow
+from lib.time_util import GetUTCNow
 from model.versioned_model import VersionedModel
 
 

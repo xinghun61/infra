@@ -5,7 +5,7 @@
 from google.appengine.ext import ndb
 
 from common import appengine_util
-from common import time_util
+from lib import time_util
 from model import triage_status
 
 

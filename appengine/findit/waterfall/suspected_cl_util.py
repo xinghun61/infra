@@ -4,8 +4,8 @@
 
 from google.appengine.ext import ndb
 
-from common import time_util
 from common.waterfall import failure_type
+from lib import time_util
 from model import analysis_approach_type
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import build_util

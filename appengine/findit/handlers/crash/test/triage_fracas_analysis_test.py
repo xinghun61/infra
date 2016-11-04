@@ -15,8 +15,8 @@ import webapp2
 
 from testing_utils import testing
 
-from common import time_util
 from handlers.crash import triage_fracas_analysis
+from lib import time_util
 from model import analysis_status
 from model import result_status
 from model import triage_status

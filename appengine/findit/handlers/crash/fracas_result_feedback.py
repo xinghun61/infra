@@ -8,9 +8,9 @@ from google.appengine.api import users
 from google.appengine.ext import ndb
 
 from common import constants
-from common import time_util
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
+from lib import time_util
 
 
 def _GetTriageHistory(analysis):

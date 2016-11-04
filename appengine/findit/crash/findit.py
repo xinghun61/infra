@@ -10,8 +10,8 @@ from google.appengine.ext import ndb
 from common import appengine_util
 from common import chrome_dependency_fetcher
 from common import constants
-from common import time_util
 from crash.crash_report import CrashReport
+from lib import time_util
 from model import analysis_status
 from model.crash.crash_config import CrashConfig
 
