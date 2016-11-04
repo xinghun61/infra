@@ -206,6 +206,21 @@ func TestMain(t *testing.T) {
 						So(w.Code, ShouldEqual, 200)
 						So(body, ShouldEqual, "hithere")
 					})
+
+					Convey("trooper alerts", func() {
+						getAlertsHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makeGetRequest(),
+							Params:  makeParams("tree", "trooper"),
+						})
+
+						r, err := ioutil.ReadAll(w.Body)
+						So(err, ShouldBeNil)
+						body := string(r)
+						So(w.Code, ShouldEqual, 200)
+						So(body, ShouldEqual, `{"alerts":[]}`)
+					})
 				})
 
 				Convey("POST", func() {
@@ -474,9 +489,28 @@ func TestMain(t *testing.T) {
 						return &http.Client{}, nil
 					}
 
-					_, err := refreshBugQueue(c, "tree")
+					_, err := refreshBugQueue(c, "label")
 					So(err, ShouldNotBeNil)
 					getOAuthClient = oldOAClient
+				})
+
+				Convey("get trooper queue", func() {
+					oldOAClient := getOAuthClient
+					getOAuthClient = func(c context.Context) (*http.Client, error) {
+						return &http.Client{}, nil
+					}
+
+					_, err := refreshBugQueue(c, "infra-troopers")
+					So(err, ShouldNotBeNil)
+					getOAuthClient = oldOAClient
+				})
+
+				Convey("get alternate email", func() {
+					e := getAlternateEmail("test@chromium.org")
+					So(e, ShouldEqual, "test@google.com")
+
+					e = getAlternateEmail("test@google.com")
+					So(e, ShouldEqual, "test@chromium.org")
 				})
 			})
 		})

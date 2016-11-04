@@ -56,7 +56,7 @@
           <a href="http://crbug.com/[[item.id]]" target="_blank">Bug [[item.id]]</a>
           ([[item.status]]<template is="dom-if" if="[[item.owner.name]]">,
           [[item.owner.name]]</template>)
-          <template is="dom-if" if="[[_computePriority(item)]])">
+          <template is="dom-if" if="[[_computePriority(item)]]">
             (P[[_computePriority(item)]])
           </template>
         </div>

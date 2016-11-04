@@ -63,6 +63,12 @@ var errStatus = func(c context.Context, w http.ResponseWriter, status int, msg s
 	w.Write([]byte(msg))
 }
 
+// TrooperAlert ... Extended alert struct type for use in the trooper tab.
+type TrooperAlert struct {
+	messages.Alert
+	Tree string `json:"tree"`
+}
+
 //// Handlers.
 func indexPage(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
@@ -156,16 +162,83 @@ func getTreesHandler(ctx *router.Context) {
 	w.Write(txt)
 }
 
+func getTrooperAlerts(c context.Context) ([]byte, error) {
+	q := datastore.NewQuery("Tree")
+	trees := []*Tree{}
+	datastore.GetAll(c, q, &trees)
+
+	result := make(map[string]interface{})
+	alerts := []*TrooperAlert{}
+
+	for _, t := range trees {
+		q := datastore.NewQuery("AlertsJSON")
+		q = q.Ancestor(datastore.MakeKey(c, "Tree", t.Name))
+		q = q.Order("-Date")
+		q = q.Limit(1)
+
+		alertsJSON := []*AlertsJSON{}
+		err := datastore.GetAll(c, q, &alertsJSON)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(alertsJSON) > 0 {
+			data := alertsJSON[0].Contents
+
+			alertsSummary := &messages.AlertsSummary{}
+
+			result["timestamp"] = alertsSummary.Timestamp
+			result["revision_summaries"] = alertsSummary.RevisionSummaries
+			result["date"] = alertsJSON[0].Date
+
+			err = json.Unmarshal(data, alertsSummary)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, a := range alertsSummary.Alerts {
+				if a.Type == messages.AlertInfraFailure {
+					newAlert := &TrooperAlert{a, t.Name}
+					alerts = append(alerts, newAlert)
+				}
+			}
+		}
+	}
+
+	result["alerts"] = alerts
+
+	out, err := json.Marshal(result)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
 func getAlertsHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	tree := p.ByName("tree")
+
+	if tree == "trooper" {
+		data, err := getTrooperAlerts(c)
+		if err != nil {
+			errStatus(c, w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+		return
+	}
+
+	results := []*AlertsJSON{}
 	q := datastore.NewQuery("AlertsJSON")
 	q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
 	q = q.Order("-Date")
 	q = q.Limit(1)
 
-	results := []*AlertsJSON{}
 	err := datastore.GetAll(c, q, &results)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
@@ -405,12 +478,20 @@ func refreshBugQueue(c context.Context, label string) (memcache.Item, error) {
 
 	mr := monorail.NewEndpointsClient(client, monorailEndpoint)
 
+	q := fmt.Sprintf("label:%s", label)
+	if label == "infra-troopers" {
+		user := auth.CurrentIdentity(c)
+		email := getAlternateEmail(user.Email())
+		q = fmt.Sprintf(`Infra=Troopers -has:owner OR owner:%s Infra=Troopers
+			OR owner:%s Infra=Troopers`, user.Email(), email)
+	}
+
 	// TODO(martiniss): make this look up request info based on Tree datastore
 	// object
 	req := &monorail.IssuesListRequest{
 		ProjectId: "chromium",
 		Can:       monorail.IssuesListRequest_OPEN,
-		Label:     label,
+		Q:         q,
 	}
 
 	before := clock.Now(c)
@@ -452,6 +533,21 @@ func refreshBugQueueHandler(ctx *router.Context) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(item.Value())
+}
+
+// Switches chromium.org emails for google.com emails and vice versa.
+// Note that chromium.org emails may be different from google.com emails.
+func getAlternateEmail(email string) string {
+	s := strings.Split(email, "@")
+	if len(s) != 2 {
+		return email
+	}
+
+	user, domain := s[0], s[1]
+	if domain == "chromium.org" {
+		return fmt.Sprintf("%s@google.com", user)
+	}
+	return fmt.Sprintf("%s@chromium.org", user)
 }
 
 func getCrRevJSON(c context.Context, pos string) (map[string]string, error) {

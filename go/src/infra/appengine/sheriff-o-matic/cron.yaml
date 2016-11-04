@@ -7,7 +7,7 @@ cron:
   url: /_cron/refresh/bugqueue/sheriff-chromium
   schedule: every 1 minutes
 
-- description: Update bug queue
+- description: Update trooper queue
   url: /_cron/refresh/bugqueue/infra-troopers
   schedule: every 1 minutes
 
