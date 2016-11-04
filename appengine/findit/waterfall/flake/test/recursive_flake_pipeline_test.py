@@ -163,7 +163,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  def testNextBuildPipelineForNewRecursionFirstFlake(self, _mocked_eta_func):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
+  def testNextBuildPipelineForNewRecursionFirstFlake(self, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -209,7 +211,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  def testNextBuildPipelineForNewRecursionFirstStable(self, _mocked_eta_func):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
+  def testNextBuildPipelineForNewRecursionFirstStable(self, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -253,7 +257,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  def testNextBuildPipelineForNewRecursionFlakeInARow(self, _mocked_eta_func):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
+  def testNextBuildPipelineForNewRecursionFlakeInARow(self, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -298,7 +304,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  def testNextBuildPipelineForNewRecursionStableInARow(self, _mocked_eta_func):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
+  def testNextBuildPipelineForNewRecursionStableInARow(self, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -343,8 +351,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  def testNextBuildPipelineForNewRecursionLessThanLastBuildNumber(
-      self, _mocked_eta_func):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
+  def testNextBuildPipelineForNewRecursionLessThanLastBuildNumber(self, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -394,7 +403,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  def testNextBuildPipelineForFailedSwarmingTask(self, _mocked_eta_func):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
+  def testNextBuildPipelineForFailedSwarmingTask(self, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -444,8 +455,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  def testNextBuildPipelineForNewRecursionStabledFlakedOut(
-      self, _mocked_eta_func):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
+  def testNextBuildPipelineForNewRecursionStabledFlakedOut(self, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -698,7 +710,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  def testNextBuildPipelineStabledOutFlakedOutFirstTime(self, _mocked_eta_func):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
+  def testNextBuildPipelineStabledOutFlakedOutFirstTime(self, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -881,3 +895,67 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     recursive_flake_pipeline._UpdateAnalysisStatusUponCompletion(
         analysis, analysis_status.COMPLETED, None)
     self.assertEqual(analysis.result_status, result_status.FOUND_UNTRIAGED)
+
+  @mock.patch(
+      'waterfall.flake.recursive_flake_pipeline.PostCommentToBugPipeline')
+  def testNotUpdateBugWithResultWithoutAttachedBug(self, mocked_pipeline):
+    master_name = 'm'
+    builder_name = 'b'
+    master_build_number = 100
+    step_name = 's'
+    test_name = 't'
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, master_build_number, step_name, test_name)
+    analysis.algorithm_parameters = {'update_monorail_bug': True}
+    self.assertFalse(
+        recursive_flake_pipeline._UpdateBugWithResult(analysis, None))
+    mocked_pipeline.assert_not_called()
+
+  @mock.patch(
+      'waterfall.flake.recursive_flake_pipeline.PostCommentToBugPipeline')
+  def testNotUpdateBugWithResultIfDisabled(self, mocked_pipeline):
+    master_name = 'm'
+    builder_name = 'b'
+    master_build_number = 100
+    step_name = 's'
+    test_name = 't'
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, master_build_number, step_name, test_name)
+    analysis.bug_id = 123
+    analysis.algorithm_parameters = {'update_monorail_bug': False}
+    self.assertFalse(
+        recursive_flake_pipeline._UpdateBugWithResult(analysis, None))
+    mocked_pipeline.assert_not_called()
+
+  @mock.patch(
+      'waterfall.flake.recursive_flake_pipeline.PostCommentToBugPipeline')
+  def testUpdateBugWithResultWithAttachedBug(self, mocked_pipeline):
+    mocked_target = mock.Mock()
+    mocked_pipeline.attach_mock(mocked_target, 'target')
+    master_name = 'm'
+    builder_name = 'b'
+    master_build_number = 100
+    step_name = 's'
+    test_name = 't'
+    algorithm_parameters = {
+        'update_monorail_bug': True,
+    }
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, master_build_number, step_name, test_name)
+    analysis.algorithm_parameters = algorithm_parameters
+    analysis.bug_id = 123
+    analysis.original_master_name = 'om'
+    analysis.original_builder_name = 'ob'
+    analysis.original_step_name = 'os'
+    self.assertTrue(
+        recursive_flake_pipeline._UpdateBugWithResult(analysis, 'queue'))
+    calls = mocked_pipeline.mock_calls
+    self.assertEqual(2, len(calls))
+
+    _, args, __ = calls[0]
+    bug_id, comment, labels = args
+    self.assertEqual(123, bug_id)
+    self.assertEqual(['AnalyzedByFindit'], labels)
+    self.assertTrue('om / ob / os' in comment)
+
+    self.assertEqual(mock.call().start(queue_name='queue'), calls[1])

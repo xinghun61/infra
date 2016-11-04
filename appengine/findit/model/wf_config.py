@@ -96,6 +96,8 @@ class FinditConfig(VersionedConfig):
   #     'upper_flake_threshold': 0.98,
   #     'max_flake_in_a_row': 4,
   #     'max_stable_in_a_row': 4,
-  #     'iterations_to_rerun': 100
+  #     'iterations_to_rerun': 100,
+  #     'max_build_numbers_to_look_back': 500,
+  #     'update_monorail_bug': False,
   # }
   check_flake_settings = ndb.JsonProperty(indexed=False, default={})

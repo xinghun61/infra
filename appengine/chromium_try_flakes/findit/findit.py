@@ -6,7 +6,7 @@
 
 import httplib2
 
-from endpoints import endpoints
+from endpoints_client import endpoints
 
 from google.appengine.api import app_identity
 

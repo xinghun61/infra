@@ -4,7 +4,7 @@
 
 """Provides API wrapper for the codesite issue tracker"""
 
-from endpoints import endpoints
+from endpoints_client import endpoints
 from issue_tracker.issue import Issue
 from issue_tracker.comment import Comment
 

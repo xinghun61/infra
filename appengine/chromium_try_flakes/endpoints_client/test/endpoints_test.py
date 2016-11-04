@@ -6,7 +6,7 @@ import mock
 import unittest
 
 from apiclient.errors import HttpError
-from endpoints import endpoints
+from endpoints_client import endpoints
 
 
 class EndpointsTestCase(unittest.TestCase):

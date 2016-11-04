@@ -10,6 +10,7 @@ from model import analysis_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.flake import initialize_flake_pipeline
 from waterfall.test import wf_testcase
+from waterfall.test_info import TestInfo
 
 
 class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
@@ -29,9 +30,10 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
 
+    test = TestInfo(
+        master_name, builder_name, build_number, step_name, test_name)
     need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
-        master_name, builder_name, build_number, step_name, test_name, None,
-        allow_new_analysis=False)
+        test, test, None, allow_new_analysis=False)
 
     self.assertFalse(need_analysis)
     self.assertIsNone(analysis)
@@ -43,9 +45,10 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
 
+    test = TestInfo(
+        master_name, builder_name, build_number, step_name, test_name)
     need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
-        master_name, builder_name, build_number, step_name, test_name, None,
-        allow_new_analysis=True)
+        test, test, None, allow_new_analysis=True)
 
     self.assertTrue(need_analysis)
     self.assertIsNotNone(analysis)
@@ -60,9 +63,10 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.ERROR)
 
+    test = TestInfo(
+        master_name, builder_name, build_number, step_name, test_name)
     need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
-        master_name, builder_name, build_number, step_name, test_name, None,
-        allow_new_analysis=True, force=True)
+        test, test, None, allow_new_analysis=True, force=True)
 
     self.assertTrue(need_analysis)
     self.assertIsNotNone(analysis)
@@ -79,9 +83,10 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
           master_name, builder_name, build_number,
           step_name, test_name, status=status)
 
+      test = TestInfo(
+          master_name, builder_name, build_number, step_name, test_name)
       need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
-          master_name, builder_name, build_number, step_name, test_name, None,
-          allow_new_analysis=True, force=True)
+          test, test, None, allow_new_analysis=True, force=True)
 
       self.assertFalse(need_analysis)
       self.assertIsNotNone(analysis)
@@ -95,9 +100,10 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
 
+    test = TestInfo(
+        master_name, builder_name, build_number, step_name, test_name)
     analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
-        master_name, builder_name, build_number,
-        step_name, test_name, allow_new_analysis=True, force=False,
+        test, test, bug_id=None, allow_new_analysis=True, force=False,
         queue_name=constants.DEFAULT_QUEUE)
 
     self.assertIsNotNone(analysis)
@@ -117,10 +123,10 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name, test_name,
         status=analysis_status.COMPLETED)
 
+    test = TestInfo(
+        master_name, builder_name, build_number, step_name, test_name)
     analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
-        master_name, builder_name, build_number,
-        step_name, test_name,
-        queue_name=constants.DEFAULT_QUEUE)
+        test, test, queue_name=constants.DEFAULT_QUEUE)
 
     self.assertFalse(mocked_pipeline.called)
     self.assertIsNotNone(analysis)

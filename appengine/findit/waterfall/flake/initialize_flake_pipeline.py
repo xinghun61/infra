@@ -15,8 +15,8 @@ from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 
 
 def _NeedANewAnalysis(
-    master_name, builder_name, build_number, step_name, test_name,
-    algorithm_parameters, allow_new_analysis=False, force=False,
+    normalized_test, original_test, algorithm_parameters,
+    bug_id=None, allow_new_analysis=False, force=False,
     user_email='', triggering_source=triggering_sources.FINDIT_PIPELINE):
   """Checks status of analysis for the test and decides if a new one is needed.
 
@@ -25,11 +25,12 @@ def _NeedANewAnalysis(
   save a MasterFlakeAnalysis entity to the datastore.
 
   Args:
-    master_name (str): The master name on Waterfall.
-    builder_name (str): The builder name on Waterfall.
-    build_number (int): The build number on Waterfall.
-    step_name (str): The step in which the flaky test is found.
-    test_name (str): The flaky test to be analyzed.
+    normalized_test (TestInfo): Info of the normalized flaky test after mapping
+       a CQ trybot step to a Waterfall buildbot step, striping prefix "PRE_"
+       from a gtest, etc.
+    original_test (TestInfo): Info of the original flaky test.
+    algorithm_parameters (dict): Algorithm parameters to run the analysis.
+    bug_id (int): The monorail bug id to update when analysis is done.
     allow_new_analysis (bool): Indicate whether a new analysis is allowed.
     force (bool): Indicate whether to force a rerun of current analysis.
     user_email (str): The user triggering this analysis.
@@ -41,26 +42,11 @@ def _NeedANewAnalysis(
     analysis (MasterFlakeAnalysis): The MasterFlakeAnalysis entity.
   """
   analysis = MasterFlakeAnalysis.GetVersion(
-      master_name, builder_name, build_number, step_name, test_name)
+      normalized_test.master_name, normalized_test.builder_name,
+      normalized_test.build_number, normalized_test.step_name,
+      normalized_test.test_name)
 
-  if not analysis:
-    if not allow_new_analysis:
-      return False, None
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number, step_name, test_name)
-    analysis.request_time = time_util.GetUTCNow()
-    analysis.status = analysis_status.PENDING
-    analysis.algorithm_parameters = algorithm_parameters
-    analysis.version = appengine_util.GetCurrentVersion()
-    analysis.triggering_user_email = user_email
-    analysis.triggering_source = triggering_source
-    _, saved = analysis.Save()
-    return saved, analysis
-  elif (analysis.status == analysis_status.PENDING or
-        analysis.status == analysis_status.RUNNING):
-    return False, analysis
-  elif allow_new_analysis and force and analysis.status in (
-      analysis_status.ERROR, analysis_status.COMPLETED):
+  def PopulateAnalysisInfo(analysis):
     analysis.Reset()
     analysis.request_time = time_util.GetUTCNow()
     analysis.status = analysis_status.PENDING
@@ -68,6 +54,29 @@ def _NeedANewAnalysis(
     analysis.version = appengine_util.GetCurrentVersion()
     analysis.triggering_user_email = user_email
     analysis.triggering_source = triggering_source
+    analysis.original_master_name = original_test.master_name
+    analysis.original_builder_name = original_test.builder_name
+    analysis.original_build_number = original_test.build_number
+    analysis.original_step_name = original_test.step_name
+    analysis.original_test_name = original_test.test_name
+    analysis.bug_id = bug_id
+
+  if not analysis:
+    if not allow_new_analysis:
+      return False, None
+    analysis = MasterFlakeAnalysis.Create(
+        normalized_test.master_name, normalized_test.builder_name,
+        normalized_test.build_number, normalized_test.step_name,
+        normalized_test.test_name)
+    PopulateAnalysisInfo(analysis)
+    _, saved = analysis.Save()
+    return saved, analysis
+  elif (analysis.status == analysis_status.PENDING or
+        analysis.status == analysis_status.RUNNING):
+    return False, analysis
+  elif allow_new_analysis and force and analysis.status in (
+      analysis_status.ERROR, analysis_status.COMPLETED):
+    PopulateAnalysisInfo(analysis)
     _, saved = analysis.Save()
     return saved, analysis
   else:
@@ -75,9 +84,9 @@ def _NeedANewAnalysis(
 
 
 def ScheduleAnalysisIfNeeded(
-    master_name, builder_name, build_number, step_name, test_name,
+    normalized_test, original_test, bug_id=None,
     allow_new_analysis=False, force=False, manually_triggered=False,
-    user_email='', triggering_source=triggering_sources.FINDIT_PIPELINE,
+    user_email=None, triggering_source=triggering_sources.FINDIT_PIPELINE,
     queue_name=constants.DEFAULT_QUEUE):
   """Schedules an analysis if needed and returns the MasterFlakeAnalysis.
 
@@ -85,11 +94,11 @@ def ScheduleAnalysisIfNeeded(
   the returned WfAnalysis will still have the result of last completed analysis.
 
   Args:
-    master_name (str): The master name of the failed test
-    builder_name (str): The builder name of the failed test
-    build_number (int): The build number of the failed test
-    step_name (str): The name of the test suite
-    test_name (str): The single test we are checking
+    normalized_test (TestInfo): Info of the normalized flaky test after mapping
+       a CQ trybot step to a Waterfall buildbot step, striping prefix "PRE_"
+       from a gtest, etc.
+    original_test (TestInfo): Info of the original flaky test.
+    bug_id (int): The monorail bug id to update when analysis is done.
     allow_new_analysis (bool): Indicate whether a new analysis is allowed.
     force (bool): Indicate whether to force a rerun of current analysis.
     manually_triggered (bool): True if the analysis was requested manually,
@@ -106,18 +115,18 @@ def ScheduleAnalysisIfNeeded(
   algorithm_parameters = waterfall_config.GetCheckFlakeSettings()
 
   need_new_analysis, analysis = _NeedANewAnalysis(
-      master_name, builder_name, build_number, step_name, test_name,
-      algorithm_parameters, allow_new_analysis, force,
-      user_email, triggering_source)
+      normalized_test, original_test, algorithm_parameters, bug_id=bug_id,
+      allow_new_analysis=allow_new_analysis, force=force, user_email=user_email,
+      triggering_source=triggering_source)
 
   if need_new_analysis:
     # _NeedANewAnalysis just created master_flake_analysis. Use the latest
     # version number and pass that along to the other pipelines for updating
     # results and data.
     logging.info(
-        'A new master flake analysis was successfully saved for %s/%s/%s/%s/%s '
-        'and will be captured in version %s', master_name, builder_name,
-        build_number, step_name, test_name, analysis.version_number)
+        'A new master flake analysis was successfully saved for %s (%s) and '
+        'will be captured in version %s', repr(normalized_test),
+        repr(original_test), analysis.version_number)
 
     max_build_numbers_to_look_back = algorithm_parameters.get(
         'max_build_numbers_to_look_back')
@@ -127,7 +136,7 @@ def ScheduleAnalysisIfNeeded(
         'stabled_out': False,
         'flaked_out': False,
         'last_build_number': max(
-            0, build_number - max_build_numbers_to_look_back),
+            0, normalized_test.build_number - max_build_numbers_to_look_back),
         'lower_boundary': None,
         'upper_boundary': None,
         'lower_boundary_result': None,
@@ -135,8 +144,10 @@ def ScheduleAnalysisIfNeeded(
     }
 
     pipeline_job = RecursiveFlakePipeline(
-        master_name, builder_name, build_number, step_name, test_name,
-        analysis.version_number, master_build_number=build_number,
+        normalized_test.master_name, normalized_test.builder_name,
+        normalized_test.build_number, normalized_test.step_name,
+        normalized_test.test_name, analysis.version_number,
+        master_build_number=normalized_test.build_number,
         flakiness_algorithm_results_dict=flakiness_algorithm_results_dict,
         manually_triggered=manually_triggered)
     pipeline_job.target = appengine_util.GetTargetNameForModule(

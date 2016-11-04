@@ -89,7 +89,8 @@ _MOCK_CHECK_FLAKE_SETTINGS = {
     'max_flake_in_a_row': 4,
     'max_stable_in_a_row': 4,
     'iterations_to_rerun': 100,
-    'max_build_numbers_to_look_back': 1000
+    'max_build_numbers_to_look_back': 1000,
+    'update_monorail_bug': True,
 }
 
 _MOCK_VERSION_NUMBER = 12
@@ -818,6 +819,16 @@ class ConfigTest(testing.AppengineTestCase):
             'iterations_to_rerun': 4,
             'max_build_numbers_to_look_back': 'a'  # Should be an int.
         }))
+    self.assertFalse(config._ValidateCheckFlakeSettings(
+        {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 100,
+            'max_build_numbers_to_look_back': 1000,
+            'update_monorail_bug': 'True',  # Should be a bool.
+        }))
     self.assertTrue(config._ValidateCheckFlakeSettings(
         {
             'lower_flake_threshold': 0.02,
@@ -825,5 +836,6 @@ class ConfigTest(testing.AppengineTestCase):
             'max_flake_in_a_row': 4,
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000
+            'max_build_numbers_to_look_back': 1000,
+            'update_monorail_bug': True,
         }))

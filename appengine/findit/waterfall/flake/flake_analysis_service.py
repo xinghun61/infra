@@ -8,6 +8,7 @@ from common import constants
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from waterfall.flake import initialize_flake_pipeline
 from waterfall.flake import step_mapper
+from waterfall.test_info import TestInfo
 
 
 def _CheckFlakeSwarmedAndSupported(request):
@@ -206,12 +207,18 @@ def ScheduleAnalysisForFlake(request, user_email, is_admin, triggering_source):
     # A new analysis is needed.
     # TODO(lijeffrey): Add support for the force flag to trigger a rerun.
     logging.info('A new analysis is needed for: %s', build_step)
-    analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
+    normalized_test = TestInfo(
         build_step.wf_master_name, build_step.wf_builder_name,
         build_step.wf_build_number, build_step.wf_step_name,
-        request.name, allow_new_analysis=True,
-        manually_triggered=manually_triggered, user_email=user_email,
-        triggering_source=triggering_source,
+        request.name)
+    original_test = TestInfo(
+        build_step.master_name, build_step.builder_name,
+        build_step.build_number, build_step.step_name,
+        request.name)
+    analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
+        normalized_test, original_test, bug_id=request.bug_id,
+        allow_new_analysis=True, manually_triggered=manually_triggered,
+        user_email=user_email, triggering_source=triggering_source,
         queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
     if analysis:
       # TODO: put this in a transaction.

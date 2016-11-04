@@ -16,8 +16,9 @@ class IssueTrackerAPITestCase(unittest.TestCase):
     self.client = mock.Mock()
     self.build_client = mock.Mock(return_value=self.client)
     self.patchers = [
-        mock.patch('endpoints.endpoints.build_client', self.build_client),
-        mock.patch('endpoints.endpoints.retry_request',
+        mock.patch(
+            'endpoints_client.endpoints.build_client', self.build_client),
+        mock.patch('endpoints_client.endpoints.retry_request',
                    lambda request: request.execute()),
     ]
     for patcher in self.patchers:

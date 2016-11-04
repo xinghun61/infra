@@ -80,6 +80,12 @@ class MasterFlakeAnalysis(
 
   def Reset(self):
     super(MasterFlakeAnalysis, self).Reset()
+    self.original_master_name = None
+    self.original_builder_name = None
+    self.original_build_number = None
+    self.original_step_name = None
+    self.original_test_name = None
+    self.bug_id = None
     self.swarming_rerun_results = []
     self.error = None
     self.correct_regression_range = None
@@ -88,6 +94,18 @@ class MasterFlakeAnalysis(
     self.suspected_flake_build_number = None
     self.data_points = []
     self.result_status = None
+
+  # The original build/step/test in which a flake actually occurred.
+  # A CQ trybot step has to be mapped to a Waterfall buildbot step.
+  # A gtest suite.PRE_PRE_test has to be normalized to suite.test.
+  original_master_name = ndb.StringProperty(indexed=True)
+  original_builder_name = ndb.StringProperty(indexed=True)
+  original_build_number = ndb.IntegerProperty(indexed=True)
+  original_step_name = ndb.StringProperty(indexed=True)
+  original_test_name = ndb.StringProperty(indexed=True)
+
+  # The bug id in which this flake is reported.
+  bug_id = ndb.IntegerProperty(indexed=True)
 
   # A list of dicts containing information about each swarming rerun's results
   # that were involved in this analysis. The contents of this list will be used

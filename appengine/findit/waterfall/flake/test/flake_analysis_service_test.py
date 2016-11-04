@@ -11,6 +11,7 @@ from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from waterfall.flake import flake_analysis_service
 from waterfall.flake import triggering_sources
 from waterfall.test import wf_testcase
+from waterfall.test_info import TestInfo
 
 
 class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
@@ -226,6 +227,9 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     mocked_analysis = mock.Mock(key='key')
     mocked_request = mock.Mock()
 
+    normalized_test = TestInfo('wf_m', 'wf_b', 100, 'wf_s', 'flake')
+    original_test = TestInfo('m', 'b', 80, 's', 'flake')
+
     with mock.patch.object(
         flake_analysis_service, '_CheckForNewAnalysis',
         side_effect=CheckForNewAnalysis) as (
@@ -240,7 +244,7 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
           request, user_email, True, triggering_source))
       mocked_CheckForNewAnalysis.assert_called_once_with(request)
       mocked_ScheduleAnalysisIfNeeded.assert_called_once_with(
-          'wf_m', 'wf_b', 100, 'wf_s', 'flake',
+          normalized_test, original_test, bug_id=123,
           allow_new_analysis=True, manually_triggered=False,
           user_email=user_email, triggering_source=triggering_source,
           queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
@@ -266,6 +270,8 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
       step.wf_step_name = 'wf_s'
       return 1, step
 
+    normalized_test = TestInfo('wf_m', 'wf_b', 100, 'wf_s', 'flake')
+    original_test = TestInfo('m', 'b', 80, 's', 'flake')
     with mock.patch.object(
         flake_analysis_service, '_CheckForNewAnalysis',
         side_effect=CheckForNewAnalysis) as (
@@ -279,7 +285,7 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
           request, user_email, True, triggering_sources.FINDIT_UI))
       mocked_CheckForNewAnalysis.assert_called_once_with(request)
       mocked_ScheduleAnalysisIfNeeded.assert_called_once_with(
-          'wf_m', 'wf_b', 100, 'wf_s', 'flake',
+          normalized_test, original_test, bug_id=123,
           allow_new_analysis=True, manually_triggered=False,
           user_email=user_email, triggering_source=triggering_source,
           queue_name=constants.WATERFALL_ANALYSIS_QUEUE)

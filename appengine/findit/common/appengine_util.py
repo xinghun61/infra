@@ -34,4 +34,3 @@ def GetTargetNameForModule(module_name, version=None):  # pragma: no cover.
   else:
     version = version or GetCurrentVersion()
     return '%s.%s' % (version, module_name)
-

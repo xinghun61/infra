@@ -93,11 +93,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
     response = self.test_app.get('/waterfall/check-flake', params={
-        'master_name': master_name,
-        'builder_name': builder_name,
-        'build_number': build_number,
-        'step_name': step_name,
-        'test_name': test_name,
+        'key': analysis.key.urlsafe(),
         'format': 'json'})
 
     expected_check_flake_result = {
@@ -158,7 +154,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     previous_analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number - 1, step_name, test_name)
     data_point = DataPoint()
-    data_point.build_number = int(build_number)
+    data_point.build_number = build_number - 1
     data_point.pass_rate = success_rate
     previous_analysis.data_points.append(data_point)
     previous_analysis.status = analysis_status.COMPLETED
@@ -184,11 +180,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'format': 'json'})
 
     expected_check_flake_result = {
-        'pass_rates': [[int(build_number), success_rate]],
+        'pass_rates': [[build_number - 1, success_rate]],
         'analysis_status': STATUS_TO_DESCRIPTION.get(previous_analysis.status),
         'master_name': master_name,
         'builder_name': builder_name,
-        'build_number': int(build_number),
+        'build_number': build_number - 1,
         'step_name': step_name,
         'test_name': test_name,
         'request_time': '2016-10-01 12:10:00 UTC',
