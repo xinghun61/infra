@@ -5,12 +5,16 @@
 
 """View classes to make it easy to display framework objects in EZT."""
 
+import logging
+import time
+
 from third_party import ezt
 
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import permissions
 from framework import template_helpers
+from framework import timestr
 from proto import user_pb2
 from services import client_config_svc
 import settings
@@ -70,7 +74,7 @@ class StatusView(object):
 class UserView(object):
   """Wrapper class to easily display basic user information in a template."""
 
-  def __init__(self, user):
+  def __init__(self, user, is_group=False):
     email = user.email or ''
     self.user_id = user.user_id
     self.email = email
@@ -93,6 +97,32 @@ class UserView(object):
     else:
       self.display_name = '%s...@%s' % (self.obscured_username, self.domain)
 
+    self.avail_message, self.avail_class = self.GetAvailablity(user, is_group)
+
+  def GetAvailablity(self, user, is_group):
+    """Return (str, str) that explains why the user might not be available."""
+    if user.banned:
+      return 'Banned', 'banned'
+    if user.vacation_message:
+      short_vacation = template_helpers.FitUnsafeText(user.vacation_message, 40)
+      return short_vacation, 'none'
+    if user.email_bounce_timestamp:
+      return 'Email to this user bounced', 'none'
+    # No availablity shown for user groups, or addresses that are
+    # likely to be mailing lists.
+    if is_group or (user.email and '-' in user.email):
+      return None, None
+    if not user.last_visit_timestamp:
+      return 'User never visited', 'never'
+    secs_ago = int(time.time()) - user.last_visit_timestamp
+    last_visit_str = timestr.FormatRelativeDate(
+        user.last_visit_timestamp, days_only=True)
+    if secs_ago > 30 * framework_constants.SECS_PER_DAY:
+      return 'Last visit > 30 days ago', 'none'
+    if secs_ago > 15 * framework_constants.SECS_PER_DAY:
+      return ('Last visit %s' % last_visit_str), 'unsure'
+    return None, None
+
   def RevealEmail(self):
     if not self.email:
       return
@@ -102,12 +132,14 @@ class UserView(object):
       self.profile_url = '/u/%s/' % self.email
 
 
-def MakeAllUserViews(cnxn, user_service, *list_of_user_id_lists):
+def MakeAllUserViews(
+    cnxn, user_service, *list_of_user_id_lists, **kw):
   """Make a dict {user_id: user_view, ...} for all user IDs given."""
   distinct_user_ids = set()
   distinct_user_ids.update(*list_of_user_id_lists)
+  group_ids = kw.get('group_ids', [])
   user_dict = user_service.GetUsersByIDs(cnxn, distinct_user_ids)
-  return {user_id: UserView(user_pb)
+  return {user_id: UserView(user_pb, is_group=user_id in group_ids)
           for user_id, user_pb in user_dict.iteritems()}
 
 

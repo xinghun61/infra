@@ -31,31 +31,31 @@
      [end]
 
      [if-any arg0]
-       <tr><th align="left">Owner:</th><td>
+       <tr><th align="left" class="vt">Owner:</th><td>
           [is issue.owner.username ""]
             [is issue.derived_owner.username ""]
              ----
             [else]
-              <i title="Derived">[include "../framework/user-link.ezt" issue.derived_owner]</i>
+              <i title="Derived">[include "../framework/user-link-availability.ezt" issue.derived_owner "Yes"]</i>
             [end]
           [else]
-           [include "../framework/user-link.ezt" issue.owner]
+           [include "../framework/user-link-availability.ezt" issue.owner "Yes"]
           [end]
          </td>
        </tr>
      [else]
-       <tr><td align="left" colspan="2" class="widemeta"><b>Owner:</b>
+       <tr><td align="left" colspan="2" class="vt widemeta"><b>Owner:</b>
           [is issue.owner.username ""]
             [is issue.derived_owner.username ""]
              ----
             [else]
               <div style="margin-left:1em">
-                <i title="Derived">[include "../framework/user-link.ezt" issue.derived_owner]</i>
+                <i title="Derived">[include "../framework/user-link-availability.ezt" issue.derived_owner "No"]</i>
               </div>
             [end]
           [else]
             <div style="margin-left:1em">
-             [include "../framework/user-link.ezt" issue.owner]
+             [include "../framework/user-link-availability.ezt" issue.owner "No"]
             </div>
           [end]
          </td>
@@ -73,17 +73,15 @@
       [if-any arg0]
         <tr><th class="vt" align="left">Cc:</th><td>
           [define join_char][end]
-          [if-any issue.cc][if-any issue.derived_cc][define join_char],[end][end][end]
-          [for issue.cc] [include "../framework/user-link.ezt" issue.cc][if-index issue.cc last][join_char][else],[end] [end]
-          [for issue.derived_cc] <i title="Derived">[include "../framework/user-link.ezt" issue.derived_cc]</i>[if-index issue.derived_cc last][else],[end] [end]
+          [for issue.cc][include "../framework/user-link-availability.ezt" issue.cc "No"][end]
+          [for issue.derived_cc]<i title="Derived">[include "../framework/user-link-availability.ezt" issue.derived_cc "No"]</i>[end]
         </td></tr>
       [else]
         <tr><td class="vt" align="left" colspan="2" class="widemeta"><b>Cc:</b>
           <div style="margin-left:1em">
             [define join_char][end]
-            [if-any issue.cc][if-any issue.derived_cc][define join_char],[end][end][end]
-            [for issue.cc] [include "../framework/user-link.ezt" issue.cc][if-index issue.cc last][join_char][else],[end] [end]
-            [for issue.derived_cc] <i title="Derived">[include "../framework/user-link.ezt" issue.derived_cc]</i>[if-index issue.derived_cc last][else],[end] [end]
+            [for issue.cc][include "../framework/user-link-availability.ezt" issue.cc "No"][end]
+            [for issue.derived_cc]<i title="Derived">[include "../framework/user-link-availability.ezt" issue.derived_cc "No"]</i>[end]
           </div>
         </td></tr>
       [end]

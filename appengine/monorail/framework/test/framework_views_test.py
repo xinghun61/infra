@@ -5,8 +5,10 @@
 
 """Unit tests for framework_views classes."""
 
+import time
 import unittest
 
+from framework import framework_constants
 from framework import framework_views
 from framework import monorailrequest
 from proto import project_pb2
@@ -85,6 +87,69 @@ class StatusViewTest(unittest.TestCase):
 
     view = framework_views.StatusView('SlammedBack', config)
     self.assertEquals('', view.docstring)
+
+
+class UserViewTest(unittest.TestCase):
+
+  def setUp(self):
+    self.user = user_pb2.User()
+
+  def testGetAvailablity_Banned(self):
+    self.user.banned = 'spamming'
+    user_view = framework_views.UserView(self.user)
+    self.assertEquals('Banned', user_view.avail_message)
+    self.assertEquals('banned', user_view.avail_class)
+
+  def testGetAvailablity_Vacation(self):
+    self.user.vacation_message = 'gone fishing'
+    user_view = framework_views.UserView(self.user)
+    self.assertEquals('gone fishing', user_view.avail_message)
+    self.assertEquals('none', user_view.avail_class)
+
+    self.user.vacation_message = (
+      'Gone fishing as really long time with lots of friends and reading '
+      'a long novel by a famous author.  I wont have internet access but '
+      'If you urgently need anything you can call Alice or Bob for most '
+      'things otherwise call Charlie.  Wish me luck! ')
+    user_view = framework_views.UserView(self.user)
+    self.assertTrue(len(user_view.avail_message) < 50)
+    self.assertEquals('none', user_view.avail_class)
+
+  def testGetAvailablity_Bouncing(self):
+    self.user.email_bounce_timestamp = 1234567890
+    user_view = framework_views.UserView(self.user)
+    self.assertEquals('Email to this user bounced', user_view.avail_message)
+    self.assertEquals('none', user_view.avail_class)
+
+  def testGetAvailablity_Groups(self):
+    user_view = framework_views.UserView(self.user, is_group=True)
+    self.assertEquals(None, user_view.avail_message)
+    self.assertEquals(None, user_view.avail_class)
+
+    self.user.email = 'likely-user-group@example.com'
+    user_view = framework_views.UserView(self.user)
+    self.assertEquals(None, user_view.avail_message)
+    self.assertEquals(None, user_view.avail_class)
+
+  def testGetAvailablity_NeverVisitied(self):
+    self.user.last_visit_timestamp = 0
+    user_view = framework_views.UserView(self.user)
+    self.assertEquals('User never visited', user_view.avail_message)
+    self.assertEquals('never', user_view.avail_class)
+
+  def testGetAvailablity_NotRecent(self):
+    now = int(time.time())
+    self.user.last_visit_timestamp = now - 20 * framework_constants.SECS_PER_DAY
+    user_view = framework_views.UserView(self.user)
+    self.assertEquals('Last visit 20 days ago', user_view.avail_message)
+    self.assertEquals('unsure', user_view.avail_class)
+
+  def testGetAvailablity_ReallyLongTime(self):
+    now = int(time.time())
+    self.user.last_visit_timestamp = now - 99 * framework_constants.SECS_PER_DAY
+    user_view = framework_views.UserView(self.user)
+    self.assertEquals('Last visit > 30 days ago', user_view.avail_message)
+    self.assertEquals('none', user_view.avail_class)
 
 
 class RevealEmailsToMembersTest(unittest.TestCase):

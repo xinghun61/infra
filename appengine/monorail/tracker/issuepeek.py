@@ -101,11 +101,14 @@ class IssuePeek(servlet.Servlet):
         mr, issue, comments, config)
 
     with self.profiler.Phase('making user proxies'):
+      involved_user_ids = tracker_bizobj.UsersInvolvedInIssues([issue])
+      group_ids = self.services.usergroup.DetermineWhichUserIDsAreGroups(
+          mr.cnxn, involved_user_ids)
+      comment_user_ids = tracker_bizobj.UsersInvolvedInCommentList(
+          descriptions + visible_comments)
       users_by_id = framework_views.MakeAllUserViews(
-          mr.cnxn, self.services.user,
-          tracker_bizobj.UsersInvolvedInIssues([issue]),
-          tracker_bizobj.UsersInvolvedInCommentList(
-              descriptions + visible_comments))
+          mr.cnxn, self.services.user, involved_user_ids,
+          comment_user_ids, group_ids=group_ids)
       framework_views.RevealAllEmailsToMembers(mr, users_by_id)
 
     (issue_view, description_views,

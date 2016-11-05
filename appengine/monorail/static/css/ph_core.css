@@ -837,3 +837,29 @@ html>body .goog-inline-block {
     color: #0000cc;
     text-decoration: none;
 }
+
+.userlink_avail {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.availability_none {
+    font-weight: bold;
+    color: #FF1744;
+}
+
+.availability_unsure {
+    font-weight: bold;
+    color: #EF6C00;
+}
+
+.availability_never {
+    font-weight: bold;
+    color: #6A1B9A;
+}
+
+.availability_banned {
+    font-weight: bold;
+    color: #000;
+}
+
