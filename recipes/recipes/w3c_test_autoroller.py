@@ -45,6 +45,7 @@ def RunSteps(api):
   def update_w3c_repo(name):
     script = blink_dir.join('Tools', 'Scripts', 'update-w3c-deps')
     args = [
+      '--verbose',
       '--auto-update',
       '--auth-refresh-token-json',
       '/creds/refresh_tokens/blink-w3c-test-autoroller',
