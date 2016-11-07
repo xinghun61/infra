@@ -23,6 +23,12 @@ handlers:
   static_files: static/common.css
   upload: static/common.css
 
+# icon
+- url: /favicon.ico
+  mime_type: image/x-icon
+  static_files: static/images/favicon.ico
+  upload: static/images/favicon.ico
+
 - url: /waterfall/flake
   static_files: templates/flake/flake.html
   upload: templates/flake/flake.html

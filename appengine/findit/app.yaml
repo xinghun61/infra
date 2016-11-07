@@ -26,6 +26,12 @@ handlers:
   static_files: static/common.css
   upload: static/common.css
 
+# icon
+- url: /favicon.ico
+  mime_type: image/x-icon
+  static_files: static/images/favicon.ico
+  upload: static/images/favicon.ico
+
 # Pipeline status UI handler.
 - url: /_ah/pipeline(/.*)?
   script: main.pipeline_status_application
