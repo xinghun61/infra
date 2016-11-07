@@ -61,8 +61,13 @@ class BackendSearch(jsonfeed.InternalTask):
                  len(pipeline.result_iids[:mr.start + mr.num]),
                  int(1000 * (time.time() - start)))
 
+    if pipeline.error:
+      error_message = pipeline.error.message
+    else:
+      error_message = None
+
     return {
         'unfiltered_iids': pipeline.result_iids,
         'search_limit_reached': pipeline.search_limit_reached,
-        'error': pipeline.error,
+        'error': error_message,
     }
