@@ -22,6 +22,26 @@ runOnLoad(function(){
   var tableData = [[]
   [for table_data]
     {
+    "group":
+    [if-any table_data.group][if-any table_data.group.cells]
+      {
+      "rowsInGroup": "[table_data.group.rows_in_group]",
+      "cells": [[]
+      [for table_data.group.cells]
+        {
+        "groupName": "[table_data.group.cells.group_name]",
+        "values": [[]
+        [for table_data.group.cells.values]
+          {
+          "item": [if-any table_data.group.cells.values.item]"[format "js"][table_data.group.cells.values.item][end]"[else]"None"[end],
+          }[if-index table_data.group.cells.values last][else],[end]
+        [end]
+        ],
+        }[if-index table_data.group.cells last][else],[end]
+      [end]
+      ],
+      },
+    [else]"no",[end][else]"no",[end]
     "cells" : [[]
     [for table_data.cells]
       {

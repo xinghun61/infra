@@ -68,6 +68,7 @@ function createWidgets(tableRow, readOnly, ownerEditorPerm, isCrossProject) {
  * @param {boolean} isCrossProject are issues in the table from more than one project.
 */
 function createIDCell(td, tableRow, isCrossProject) {
+  td.className += " id";
   var aLink = document.createElement("a");
   aLink.setAttribute("href", tableRow["issueURL"]);
   var aLinkContent = (isCrossProject ? (tableRow["projectName"] + ":") : "" ) + tableRow["localID"];
@@ -109,7 +110,7 @@ function createAttrAndUnfiltCell(td, cell) {
  * @param {Element} td element to be added to current row in table.
  * @param {list} labels list of dictionaries with relevant (key, value) for each label
  */
-function fillNonColumnLabel(td, labels) {
+function fillNonColumnLabels(td, labels) {
   labels.forEach( function(label) {
     var aLabel = document.createElement("a");
     setAttributes(aLabel, {"class": "label", "href": "list?q=label:" + label["value"]});
@@ -162,28 +163,74 @@ function fillValues(td, values) {
  */
 function renderHotlistRow(tableRow, pageSettings) {
   var tr = document.createElement("tr");
-    if (pageSettings["cursor"] || tableRow["issueRef"]) {
-      tr.setAttribute("class", "ifOpened hoverTarget cursor_on");
-    } else {
-      tr.setAttribute("class", "ifOpened hoverTarget cursor_off");
+  if (pageSettings["cursor"] || tableRow["issueRef"]) {
+    tr.setAttribute("class", "ifOpened hoverTarget cursor_on");
+  } else {
+    tr.setAttribute("class", "ifOpened hoverTarget cursor_off");
+  }
+  tr.setAttribute("data-idx", tableRow["idx"]);
+  widgets = createWidgets(tableRow, pageSettings["readOnly"],
+                          ((pageSettings["ownerPerm"] == "True") || (pageSettings["editorPerm"] == "True")),
+                          (pageSettings["isCrossProject"] == "True"));
+  tr.appendChild(widgets);
+  tableRow["cells"].forEach(function(cell) {
+    var td = document.createElement("td");
+    td.setAttribute("class", "col_" + cell["colIndex"]);
+    if (cell["type"] == "ID") {
+      createIDCell(td, tableRow, (pageSettings["isCrossProject"] == "True"));
+    } else if (cell["type"] == "summary") {
+      createSummaryCell(td, cell);
+    } else{
+      createAttrAndUnfiltCell(td, cell);
     }
-    tr.setAttribute("data-idx", tableRow["idx"]);
-    widgets = createWidgets(tableRow, pageSettings["readOnly"],
-                            ((pageSettings["ownerPerm"] == "True") || (pageSettings["editorPerm"] == "True")),
-                            (pageSettings["isCrossProject"] == "True"));
-    tr.appendChild(widgets);
-    tableRow["cells"].forEach(function(cell) {
-      var td = document.createElement("td");
-      td.setAttribute("class", "col_" + cell["colIndex"]);
-      if (cell["type"] == "ID") {
-        createIDCell(td, tableRow, (pageSettings["isCrossProject"] == "True"));
-      } else if (cell["type"] == "Summary") {
-        createSummaryCell(td, cell);
-      } else{
-        createAttrAndUnfiltCell(td, cell);
+    tr.appendChild(td);
+  });
+  spacing = document.createElement("td");
+  spacing.innerText = "\xa0";
+  tr.appendChild(spacing);
+  return tr;
+}
+
+
+/**
+ * Helper function to create the group header row
+ * @param {dict} group dict of relevant values for the current group
+ * @returns a <tr> element to be added to the current <tbody>
+ */
+function renderGroupRow(group) {
+  var tr = document.createElement("tr");
+  tr.setAttribute("class", "group_row");
+  var td = document.createElement("td");
+  setAttributes(td, {"colspan": "100", "class": "toggleHidden",});
+  var whenClosedImg = document.createElement("img");
+  setAttributes(whenClosedImg, {"class": "ifClosed", "src": "/static/images/plus.gif",});
+  td.appendChild(whenClosedImg);
+  var whenOpenImg = document.createElement("img");
+  setAttributes(whenOpenImg, {"class": "ifOpened", "src": "/static/images/minus.gif"});
+  td.appendChild(whenOpenImg);
+  tr.appendChild(td);
+
+  div = document.createElement("div");
+  div.innerText += group["rowsInGroup"];
+
+  div.innerText += (group["rowsInGroup"] == "1" ? " issue:": " issues:")
+
+  group["cells"].forEach(function(cell) {
+    var hasValue = false;
+    cell["values"].forEach(function(value) {
+      if (value["item"] !== "None") {
+        hasValue = true;
       }
-      tr.appendChild(td);
     });
+    if (hasValue) {
+      cell.values.forEach(function(value) {
+        div.innerText += (" " + cell["groupName"] + "=" + value["item"]);
+      });
+    } else {
+      div.innerText += (" -has:" + cell["groupName"]);
+    }
+  });
+  td.appendChild(div);
   return tr;
 }
 
@@ -192,14 +239,25 @@ function renderHotlistRow(tableRow, pageSettings) {
  * Builds the body of a hotlistissues table.
  * @param {dict} tableData dict of relevant values from 'table_data'
  * @param {dict} pageSettings dict of relevant settings for the hotlist and user viewing the page.
- * @param
  */
 function renderHotlistTable(tableData, pageSettings) {
-  var body = document.createElement("tbody");
+  var tbody;
   var table = $('resultstable');
   tableData.forEach(function(tableRow) {
-    body.appendChild(renderHotlistRow(tableRow, pageSettings));
+    if (tableRow["group"] !== "no"){
+      //add current tbody to table, need a new tbody with group row
+      if (typeof tbody !== 'undefined') {
+        table.appendChild(tbody);
+      }
+      tbody = document.createElement("tbody");
+      tbody.setAttribute("class", "opened");
+      tbody.appendChild(renderGroupRow(tableRow["group"]));
+    }
+    if (typeof tbody == 'undefined') {
+      tbody = document.createElement("tbody");
+    }
+    tbody.appendChild(renderHotlistRow(tableRow, pageSettings));
   });
 
-  table.appendChild(body)
+  table.appendChild(tbody)
 }
