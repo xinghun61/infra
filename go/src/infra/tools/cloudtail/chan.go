@@ -70,8 +70,8 @@ func drainChannel(ctx context.Context, src chan string, parser LogParser, buf Pu
 func computeInsertID(e *Entry) (string, error) {
 	hasher := sha1.New()
 	hasher.Write([]byte(e.TextPayload))
-	if e.StructPayload != nil {
-		if err := json.NewEncoder(hasher).Encode(e.StructPayload); err != nil {
+	if e.JsonPayload != nil {
+		if err := json.NewEncoder(hasher).Encode(e.JsonPayload); err != nil {
 			return "", err
 		}
 	}

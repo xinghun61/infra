@@ -11,7 +11,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	logging "google.golang.org/api/logging/v1beta3"
+	logging "google.golang.org/api/logging/v2"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -31,9 +31,7 @@ func TestClient(t *testing.T) {
 		}
 
 		requests := []*logging.WriteLogEntriesRequest{}
-		writeFunc := func(ctx context.Context, projID, logID string, req *logging.WriteLogEntriesRequest) error {
-			So(projID, ShouldEqual, "proj-id")
-			So(logID, ShouldEqual, "log-id")
+		writeFunc := func(ctx context.Context, req *logging.WriteLogEntriesRequest) error {
 			requests = append(requests, req)
 			return nil
 		}
@@ -53,16 +51,22 @@ func TestClient(t *testing.T) {
 		})
 		So(err, ShouldBeNil)
 		So(len(requests), ShouldEqual, 1)
-		So(requests[0].CommonLabels, ShouldResemble, map[string]string{
-			"compute.googleapis.com/resource_id":   "res-id",
-			"compute.googleapis.com/resource_type": "res-type",
+		So(requests[0].LogName, ShouldEqual, "projects/proj-id/logs/log-id")
+		So(requests[0].Labels, ShouldResemble, map[string]string{
+			"cloudtail/resource_id":   "res-id",
+			"cloudtail/resource_type": "res-type",
+		})
+		So(requests[0].Resource, ShouldResemble, &logging.MonitoredResource{
+			Type: "global",
+			Labels: map[string]string{
+				"project_id": "proj-id",
+			},
 		})
 		So(len(requests[0].Entries), ShouldEqual, 1)
-		So(requests[0].Entries[0].InsertId, ShouldEqual, "insert-id")
-		So(requests[0].Entries[0].TextPayload, ShouldEqual, "hi")
-		So(requests[0].Entries[0].Metadata, ShouldResemble, &logging.LogEntryMetadata{
+		So(requests[0].Entries[0], ShouldResemble, &logging.LogEntry{
+			InsertId:    "insert-id",
 			Severity:    "DEBUG",
-			ServiceName: "compute.googleapis.com",
+			TextPayload: "hi",
 			Timestamp:   "2015-10-02T15:00:00Z",
 		})
 	})

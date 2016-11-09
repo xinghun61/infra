@@ -79,7 +79,7 @@ func TestComputeInsertID(t *testing.T) {
 
 	Convey("JSON", t, func() {
 		id, err := computeInsertID(&Entry{
-			StructPayload: struct {
+			JsonPayload: struct {
 				A int
 				B int
 			}{10, 20},

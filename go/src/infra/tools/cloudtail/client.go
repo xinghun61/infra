@@ -8,13 +8,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"sync"
 	"time"
 
 	"golang.org/x/net/context"
 	"google.golang.org/api/googleapi"
-	cloudlog "google.golang.org/api/logging/v1beta3"
+	cloudlog "google.golang.org/api/logging/v2"
 
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/errors"
@@ -41,8 +42,8 @@ type Entry struct {
 	// TextPayload is the log entry payload, represented as a text string.
 	TextPayload string
 
-	// StructPayload is the log entry payload, represented as a JSONish structure.
-	StructPayload interface{}
+	// JsonPayload is the log entry payload, represented as a JSONish structure.
+	JsonPayload interface{}
 
 	// ParsedBy is the parser that parsed this line, or nil if it fell through to
 	// the default parser.
@@ -145,12 +146,38 @@ func NewClient(opts ClientOptions) (Client, error) {
 	client := &loggingClient{
 		opts:    opts,
 		service: service,
-		commonLabels: map[string]string{
-			"compute.googleapis.com/resource_id":   opts.ResourceID,
-			"compute.googleapis.com/resource_type": opts.ResourceType,
-		},
-		serviceName: "compute.googleapis.com",
+		logName: fmt.Sprintf("projects/%s/logs/%s", opts.ProjectID, url.QueryEscape(opts.LogID)),
 	}
+
+	if opts.ResourceType == DefaultResourceType {
+		// For "machine" resource types, abuse "gce_instance" resource to have at
+		// least some level of integration with Log Viewer.
+		client.resource = &cloudlog.MonitoredResource{
+			Type: "gce_instance",
+			Labels: map[string]string{
+				"project_id":  opts.ProjectID,
+				"instance_id": opts.ResourceID,
+			},
+		}
+		client.labels = map[string]string{
+			"compute.googleapis.com/resource_id":   opts.ResourceID,
+			"compute.googleapis.com/resource_type": "instance",
+		}
+	} else {
+		// For all other resource types just put stuff in "global" resource, but
+		// annotate logs with labels.
+		client.resource = &cloudlog.MonitoredResource{
+			Type: "global",
+			Labels: map[string]string{
+				"project_id": opts.ProjectID,
+			},
+		}
+		client.labels = map[string]string{
+			"cloudtail/resource_id":   opts.ResourceID,
+			"cloudtail/resource_type": opts.ResourceType,
+		}
+	}
+
 	if opts.Debug {
 		client.writeFunc = client.debugWriteFunc
 	} else {
@@ -161,7 +188,7 @@ func NewClient(opts ClientOptions) (Client, error) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type writeFunc func(ctx context.Context, projID, logID string, req *cloudlog.WriteLogEntriesRequest) error
+type writeFunc func(ctx context.Context, req *cloudlog.WriteLogEntriesRequest) error
 
 type loggingClient struct {
 	opts    ClientOptions
@@ -171,9 +198,10 @@ type loggingClient struct {
 	lock         sync.Mutex
 	backoffSleep time.Duration
 
-	// These are passed to Cloud Logging API as is.
-	commonLabels map[string]string
-	serviceName  string
+	// These are passed to Cloud Logging v2 API as is.
+	logName  string
+	labels   map[string]string
+	resource *cloudlog.MonitoredResource
 
 	// writeFunc is mocked in tests.
 	writeFunc writeFunc
@@ -181,30 +209,32 @@ type loggingClient struct {
 
 func (c *loggingClient) PushEntries(ctx context.Context, entries []*Entry) error {
 	req := cloudlog.WriteLogEntriesRequest{
-		CommonLabels: c.commonLabels,
-		Entries:      make([]*cloudlog.LogEntry, len(entries)),
+		Entries:  make([]*cloudlog.LogEntry, len(entries)),
+		LogName:  c.logName,
+		Labels:   c.labels,
+		Resource: c.resource,
 	}
 	for i, e := range entries {
-		metadata := &cloudlog.LogEntryMetadata{ServiceName: c.serviceName}
+		entry := &cloudlog.LogEntry{
+			InsertId:    e.InsertID,
+			Severity:    "DEFAULT",
+			TextPayload: e.TextPayload,
+			JsonPayload: e.JsonPayload,
+		}
 		if e.Severity != "" {
 			if err := e.Severity.Validate(); err != nil {
 				logging.Warningf(ctx, "invalid severity, ignoring: %s", e.Severity)
 			} else {
-				metadata.Severity = string(e.Severity)
+				entry.Severity = string(e.Severity)
 			}
 		}
 		if !e.Timestamp.IsZero() {
-			metadata.Timestamp = e.Timestamp.UTC().Format(time.RFC3339Nano)
+			entry.Timestamp = e.Timestamp.UTC().Format(time.RFC3339Nano)
 		}
-		req.Entries[i] = &cloudlog.LogEntry{
-			InsertId:      e.InsertID,
-			Metadata:      metadata,
-			TextPayload:   e.TextPayload,
-			StructPayload: e.StructPayload,
-		}
-		entriesCounter.Add(ctx, 1, c.opts.LogID, c.opts.ResourceType, c.opts.ResourceID, metadata.Severity)
+		req.Entries[i] = entry
+		entriesCounter.Add(ctx, 1, c.opts.LogID, c.opts.ResourceType, c.opts.ResourceID, entry.Severity)
 	}
-	if err := c.writeFunc(ctx, c.opts.ProjectID, c.opts.LogID, &req); err != nil {
+	if err := c.writeFunc(ctx, &req); err != nil {
 		writesCounter.Add(ctx, 1, c.opts.LogID, c.opts.ResourceType, c.opts.ResourceID, "failure")
 		return err
 	}
@@ -213,12 +243,12 @@ func (c *loggingClient) PushEntries(ctx context.Context, entries []*Entry) error
 	return nil
 }
 
-func (c *loggingClient) debugWriteFunc(ctx context.Context, projID, logID string, req *cloudlog.WriteLogEntriesRequest) error {
+func (c *loggingClient) debugWriteFunc(ctx context.Context, req *cloudlog.WriteLogEntriesRequest) error {
 	buf, err := json.MarshalIndent(req, "", "  ")
 	if err != nil {
 		return err
 	}
-	fmt.Printf("----------\nTo %s/%s:\n%s\n", projID, logID, string(buf))
+	fmt.Printf("----------\n%s\n", string(buf))
 	clock.Sleep(ctx, 30*time.Millisecond)
 	fmt.Println("----------")
 	if os.Getenv("CLOUDTAIL_DEBUG_EMULATE_429") != "" {
@@ -228,8 +258,8 @@ func (c *loggingClient) debugWriteFunc(ctx context.Context, projID, logID string
 	return nil
 }
 
-func (c *loggingClient) cloudLoggingWriteFunc(ctx context.Context, projID, logID string, req *cloudlog.WriteLogEntriesRequest) error {
-	_, err := c.service.Projects.Logs.Entries.Write(projID, logID, req).Context(ctx).Do()
+func (c *loggingClient) cloudLoggingWriteFunc(ctx context.Context, req *cloudlog.WriteLogEntriesRequest) error {
+	_, err := c.service.Entries.Write(req).Context(ctx).Do()
 	if err == nil {
 		c.lock.Lock()
 		c.backoffSleep = 0
