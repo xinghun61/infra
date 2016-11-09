@@ -470,7 +470,9 @@ func getBugQueueHandler(ctx *router.Context) {
 
 func refreshBugQueue(c context.Context, label string) (memcache.Item, error) {
 	// Get authenticated monorail client.
-	client, err := getOAuthClient(c)
+	ctx, _ := context.WithDeadline(c, clock.Now(c).Add(time.Second*30))
+
+	client, err := getOAuthClient(ctx)
 
 	if err != nil {
 		return nil, err
