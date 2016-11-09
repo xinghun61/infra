@@ -38,6 +38,7 @@ func (s *InMemAlertStore) newID() int64 {
 // NewAlert creates a new StoredAlert for a given BuildStep.
 func (s *InMemAlertStore) NewAlert(ctx context.Context, step *messages.BuildStep) (*StoredAlert, error) {
 	return &StoredAlert{
+		Master:          step.Master.Name(),
 		Signature:       alertSignature(step.Step),
 		Status:          StatusActive,
 		FailingBuilders: stringSet{step.Build.BuilderName: {}},
@@ -56,7 +57,7 @@ func (s *InMemAlertStore) ActiveAlertForSignature(ctx context.Context, sig strin
 }
 
 // ActiveAlertsForBuilder returns any active alerts associate with the builder.
-func (s *InMemAlertStore) ActiveAlertsForBuilder(ctx context.Context, builderName string) ([]*StoredAlert, error) {
+func (s *InMemAlertStore) ActiveAlertsForBuilder(ctx context.Context, masterName, builderName string) ([]*StoredAlert, error) {
 	ret := []*StoredAlert{}
 	keys := []string{}
 	for key := range s.StoredAlerts {

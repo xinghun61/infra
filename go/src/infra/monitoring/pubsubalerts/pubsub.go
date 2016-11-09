@@ -62,6 +62,8 @@ type StoredBuild struct {
 type StoredAlert struct {
 	// The alert key.
 	ID int64 `gae:"$id"`
+	// The master for the builders where this alert is occurring.
+	Master string
 	// The alert signature is unique to a particular combination of failure
 	// properties but is also otherwise opaque to users.
 	Signature string
@@ -84,7 +86,7 @@ type StoredAlert struct {
 // alerts.
 type AlertStore interface {
 	ActiveAlertForSignature(ctx context.Context, sig string) (*StoredAlert, error)
-	ActiveAlertsForBuilder(ctx context.Context, builderName string) ([]*StoredAlert, error)
+	ActiveAlertsForBuilder(ctx context.Context, masterName, builderName string) ([]*StoredAlert, error)
 	NewAlert(ctx context.Context, step *messages.BuildStep) (*StoredAlert, error)
 	StoreAlert(ctx context.Context, alert *StoredAlert) error
 }
@@ -233,7 +235,7 @@ func (b *BuildHandler) HandleBuild(ctx context.Context, aBuild *messages.Build) 
 
 	// Now remove the builder from any alerts on steps that passed in this build.
 	// Clear out alerts that no longer apply.
-	activeAlerts, err := b.Store.ActiveAlertsForBuilder(ctx, build.BuilderName)
+	activeAlerts, err := b.Store.ActiveAlertsForBuilder(ctx, build.Master, build.BuilderName)
 	if err != nil {
 		log.Printf("Error getting active alerts for builder %q: %v", build.BuilderName, err)
 		return err

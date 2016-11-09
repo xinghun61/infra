@@ -80,13 +80,14 @@ func testHandleBuild(newStore newStoreFunc, t *testing.T) {
 			So(err, ShouldEqual, nil)
 		}
 
-		alerts, _ := store.ActiveAlertsForBuilder(ctx, "fake.builder")
+		alerts, _ := store.ActiveAlertsForBuilder(ctx, "fake.master", "fake.builder")
 
 		So(len(alerts), ShouldEqual, 1)
 		So(len(alerts[0].FailingBuilders), ShouldEqual, 1)
 
 		expectedAlerts := []*StoredAlert{
 			{
+				Master:          "fake.master",
 				ID:              1,
 				Status:          StatusActive,
 				Signature:       "fake other step",
@@ -114,7 +115,7 @@ func testHandleBuild(newStore newStoreFunc, t *testing.T) {
 			So(err, ShouldEqual, nil)
 		}
 
-		alerts, _ := store.ActiveAlertsForBuilder(ctx, "fake.builder")
+		alerts, _ := store.ActiveAlertsForBuilder(ctx, "fake.master", "fake.builder")
 		So(len(alerts), ShouldEqual, 0)
 	})
 
@@ -136,12 +137,13 @@ func testHandleBuild(newStore newStoreFunc, t *testing.T) {
 			failingBuilds = append(failingBuilds, storedBuild(build))
 		}
 
-		alerts, _ := store.ActiveAlertsForBuilder(ctx, "fake.builder")
+		alerts, _ := store.ActiveAlertsForBuilder(ctx, "fake.master", "fake.builder")
 		So(len(alerts), ShouldEqual, 2)
 
 		expectedAlerts := []*StoredAlert{
 			{
 				ID:              1,
+				Master:          "fake.master",
 				Status:          StatusActive,
 				Signature:       "fake_step",
 				FailingBuilders: stringSet{"fake.builder": struct{}{}},
@@ -150,6 +152,7 @@ func testHandleBuild(newStore newStoreFunc, t *testing.T) {
 			},
 			{
 				ID:              2,
+				Master:          "fake.master",
 				Status:          StatusActive,
 				Signature:       "other step",
 				FailingBuilders: stringSet{"fake.builder": struct{}{}},
@@ -181,11 +184,12 @@ func testHandleBuild(newStore newStoreFunc, t *testing.T) {
 			failingBuilds = append(failingBuilds, storedBuild(build))
 		}
 
-		alerts, _ := store.ActiveAlertsForBuilder(ctx, "fake.builder")
+		alerts, _ := store.ActiveAlertsForBuilder(ctx, "fake.master", "fake.builder")
 		So(len(alerts), ShouldEqual, 1)
 
 		expectedAlerts := []*StoredAlert{
 			{
+				Master:          "fake.master",
 				ID:              2,
 				Status:          StatusActive,
 				Signature:       "other step",
@@ -218,11 +222,12 @@ func testHandleBuild(newStore newStoreFunc, t *testing.T) {
 			failingBuilds = append(failingBuilds, storedBuild(build))
 		}
 
-		alerts, _ := store.ActiveAlertsForBuilder(ctx, "fake.builder")
+		alerts, _ := store.ActiveAlertsForBuilder(ctx, "fake.master", "fake.builder")
 		So(len(alerts), ShouldEqual, 1)
 
 		expectedAlerts := []*StoredAlert{
 			{
+				Master:          "fake.master",
 				ID:              2,
 				Status:          StatusActive,
 				Signature:       "other step",
@@ -255,11 +260,12 @@ func testHandleBuild(newStore newStoreFunc, t *testing.T) {
 			failingBuilds = append(failingBuilds, storedBuild(build))
 		}
 
-		alerts, _ := store.ActiveAlertsForBuilder(ctx, "fake.builder")
+		alerts, _ := store.ActiveAlertsForBuilder(ctx, "fake.master", "fake.builder")
 		So(len(alerts), ShouldEqual, 2)
 
 		expectedAlerts := []*StoredAlert{
 			{
+				Master:          "fake.master",
 				ID:              1,
 				Status:          StatusActive,
 				Signature:       "other step",
@@ -268,6 +274,7 @@ func testHandleBuild(newStore newStoreFunc, t *testing.T) {
 				PassingBuilders: stringSet{},
 			},
 			{
+				Master:          "fake.master",
 				ID:              2,
 				Status:          StatusActive,
 				Signature:       "fake_step",

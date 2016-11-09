@@ -4,14 +4,19 @@ import (
 	"bytes"
 	"compress/zlib"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	testhelper "infra/monitoring/analyzer/test"
 	"infra/monitoring/messages"
 
+	"github.com/luci/gae/service/urlfetch"
 	"github.com/luci/luci-go/appengine/gaetesting"
+	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -137,5 +142,69 @@ func TestPostMiloPubSubHandler(t *testing.T) {
 
 		So(w.Code, ShouldEqual, http.StatusOK)
 	})
+}
 
+func TestGetPubSubAlertsHandler(t *testing.T) {
+	t.Parallel()
+	Convey("main", t, func() {
+		c := gaetesting.TestingContext()
+		w := httptest.NewRecorder()
+		c = auth.SetAuthenticator(c, []auth.Method(nil))
+		c = urlfetch.Set(c, http.DefaultTransport)
+
+		getPubSubAlertsHandler(&router.Context{
+			Context: c,
+			Writer:  w,
+			Request: makeGetRequest(),
+			Params:  makeParams("tree", "chromium"),
+		})
+
+		So(w.Code, ShouldEqual, 200)
+	})
+
+	Convey("error getting gatekeeper trees", t, func() {
+		c := gaetesting.TestingContext()
+		w := httptest.NewRecorder()
+		c = auth.SetAuthenticator(c, []auth.Method(nil))
+		c = urlfetch.Set(c, http.DefaultTransport)
+
+		oldGetGKTrees := getGatekeeperTrees
+
+		getGatekeeperTrees = func(c context.Context) (map[string]*messages.TreeMasterConfig, error) {
+			return nil, fmt.Errorf("failure")
+		}
+
+		getPubSubAlertsHandler(&router.Context{
+			Context: c,
+			Writer:  w,
+			Request: makeGetRequest(),
+			Params:  makeParams("tree", "chromium"),
+		})
+
+		getGatekeeperTrees = oldGetGKTrees
+		So(w.Code, ShouldEqual, 500)
+	})
+
+	Convey("unrecognized gatekeeper tree", t, func() {
+		c := gaetesting.TestingContext()
+		w := httptest.NewRecorder()
+		c = auth.SetAuthenticator(c, []auth.Method(nil))
+		c = urlfetch.Set(c, http.DefaultTransport)
+
+		oldGetGKTrees := getGatekeeperTrees
+
+		getGatekeeperTrees = func(c context.Context) (map[string]*messages.TreeMasterConfig, error) {
+			return map[string]*messages.TreeMasterConfig{"foo": nil}, nil
+		}
+
+		getPubSubAlertsHandler(&router.Context{
+			Context: c,
+			Writer:  w,
+			Request: makeGetRequest(),
+			Params:  makeParams("tree", "chromium"),
+		})
+
+		getGatekeeperTrees = oldGetGKTrees
+		So(w.Code, ShouldEqual, 404)
+	})
 }

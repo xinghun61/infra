@@ -736,6 +736,7 @@ func init() {
 	gaemiddleware.InstallHandlers(r, gaemiddleware.BaseProd())
 	r.GET("/api/v1/trees/", protected, getTreesHandler)
 	r.GET("/api/v1/alerts/:tree", protected, getAlertsHandler)
+	r.GET("/api/v1/pubsubalerts/:tree", protected, getPubSubAlertsHandler)
 
 	// Disallow cookies because this handler should not be accessible by regular
 	// users.

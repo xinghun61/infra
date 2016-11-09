@@ -72,6 +72,7 @@ func (s *PersistentAlertStore) StoreAlert(ctx context.Context, alert *StoredAler
 // NewAlert creates a new StoredAlert for a given BuildStep.
 func (s *PersistentAlertStore) NewAlert(ctx context.Context, step *messages.BuildStep) (*StoredAlert, error) {
 	sa := &StoredAlert{
+		Master:          step.Master.Name(),
 		Signature:       alertSignature(step.Step),
 		Status:          StatusActive,
 		FailingBuilders: stringSet{step.Build.BuilderName: {}},
@@ -107,12 +108,14 @@ func (s *PersistentAlertStore) ActiveAlertForSignature(ctx context.Context, sig 
 }
 
 // ActiveAlertsForBuilder returns any active alerts associate with the builder.
-func (s *PersistentAlertStore) ActiveAlertsForBuilder(ctx context.Context, builderName string) ([]*StoredAlert, error) {
-
-	// TODO: mastername too?
+func (s *PersistentAlertStore) ActiveAlertsForBuilder(ctx context.Context, masterName string, builderName string) ([]*StoredAlert, error) {
 	q := datastore.NewQuery(storedAlertKind).
 		Eq("Status", StatusActive).
-		Eq("FailingBuilders", builderName)
+		Eq("Master", masterName)
+
+	if builderName != "" {
+		q = q.Eq("FailingBuilders", builderName)
+	}
 
 	ret := []*StoredAlert{}
 	err := datastore.GetAll(ctx, q, &ret)
