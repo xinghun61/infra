@@ -39,11 +39,11 @@ func osInformation() (string, string, error) {
 		return "win", "unknown", fmt.Errorf("invalid WMI version string %s", cachedOSInfo.Version)
 	}
 
-	major, minor = versionParts[0], versionParts[1]
-	return "win", osVersion(major, minor, cachedOSInfo.ProductType), nil
+	major, minor := versionParts[0], versionParts[1]
+	return "win", getOSVersion(major, minor, cachedOSInfo.ProductType), nil
 }
 
-func osVersion(major, minor string, productType uint32) string {
+func getOSVersion(major, minor string, productType uint32) string {
 	// Versions are described in
 	// https://msdn.microsoft.com/en-us/library/windows/desktop/ms724832(v=vs.85).aspx
 	// Strings match Python's win32_ver in Lib/platform.py.
