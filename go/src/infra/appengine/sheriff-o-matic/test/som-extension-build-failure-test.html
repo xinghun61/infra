@@ -39,8 +39,8 @@
     test('renders links for test results', function(done) {
       element.extension = {
         reason: {
-          'test_names': [
-            'best_test',
+          'tests': [
+            {'test_name': 'best_test'},
           ],
           'step': 'webkit_tests',
         },
@@ -59,8 +59,8 @@
     test('renders links for code search', function(done) {
       element.extension = {
         reason: {
-          'test_names': [
-            'best_test',
+          'tests': [
+            {'test_name': 'best_test'},
           ],
         },
       };
@@ -76,12 +76,11 @@
     test('renders links for code search, java test', function(done) {
       element.extension = {
         reason: {
-          'test_names': [
-            'test.foo.bar.TestClass#testThatJavaHasTheBestNames',
+          'tests': [
+            {'test_name': 'test.foo.bar.TestClass#testThatJavaHasTheBestNames',},
           ],
         },
       };
-      element._uberify = (url) => { return url; };
       flush( () => {
         let item = element.$$('#test_results');
         assert.isNotNull(item);
@@ -95,19 +94,19 @@
     test('renders suspect CLs', function(done) {
       element.extension = {
         reason: {
-          'test_names': [
-            'best_test',
+          'tests': [
+            {'test_name': 'best_test'},
           ],
         },
         suspected_cls: [
-          {revision: '1234'},
+          {revision: '1234', confidence: 0},
         ],
       };
-      element._uberify = (url) => { return url; };
       flush(() => {
         let item = element.$$('#findit-results');
         assert.isNotNull(item);
-        assert.equal(item.children[1].href, 'https://crrev.com/1234');
+        assert.equal(item.getElementsByClassName('suspect-cl-link')[0].href,
+          'https://crrev.com/1234');
         done();
       });
     });
@@ -115,15 +114,15 @@
     test('removes duplicate suspect CLs', function() {
       element.extension = {
         reason: {
-          'test_names': [
-            'best_test',
+          'tests': [
+            {'test_name': 'best_test'},
           ],
         },
         suspected_cls: [
-          {revision: '1234'},
-          {revision: '1234'},
-          {revision: '12345'},
-          {revision: '1234'},
+          {revision: '1234', confidence: 0},
+          {revision: '1234', confidence: 0},
+          {revision: '12345', confidence: 0},
+          {revision: '1234', confidence: 0},
         ],
       };
 

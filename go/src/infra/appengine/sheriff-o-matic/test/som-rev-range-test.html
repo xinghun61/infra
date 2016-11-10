@@ -79,8 +79,8 @@
       flush( () => {
         assert.equal('chromium: 398901 - 398946',
             element.$$('div').textContent.trim());
-        assert.equal('fa3d958d\n          (dcastagna):\n          ' +
-            'gl: Test YV12 buffer drm import.',
+        assert.equal('fa3d958d\n          \n          (dcastagna):\n          '
+            + 'gl: Test YV12 buffer drm import.',
             element.$$('.commit').textContent.trim());
         assert.equal(true, element.$.collapse.opened);
         done();
