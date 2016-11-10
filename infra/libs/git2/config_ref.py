@@ -20,10 +20,11 @@ class ConfigRef(object):
 
   FILENAME = 'config.json'
 
-  def __init__(self, repo):
+  def __init__(self, repo, git_timeout=None):
     assert self.REF is not None
     self._ref = repo[self.REF]
     self._repo = repo
+    self._git_timeout=git_timeout
 
   # pylint: disable=W0212
   ref = property(lambda self: self._ref)
@@ -40,7 +41,8 @@ class ConfigRef(object):
       LOGGER.debug('Evaluating config at %s:%s', cur.hsh, self.FILENAME)
       try:
         data = self.repo.run('cat-file', 'blob',
-                             '%s:%s' % (cur.hsh, self.FILENAME))
+                             '%s:%s' % (cur.hsh, self.FILENAME),
+                             timeout=self._git_timeout)
         data = json.loads(data)
         if not isinstance(data, dict):
           LOGGER.error('Non-dict config: %r', data)

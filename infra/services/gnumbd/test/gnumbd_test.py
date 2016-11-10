@@ -62,7 +62,7 @@ def RunTest(test_name):
     try:
       sys.stderr = sys.stdout = open(os.devnull, 'w')
       local.reify()
-      success, synthesized_commits = gnumbd.inner_loop(local, cref, clock)
+      success, synthesized_commits = gnumbd.inner_loop(local, cref, clock=clock)
     except Exception:  # pragma: no cover
       import traceback
       ret.append(traceback.format_exc().splitlines())

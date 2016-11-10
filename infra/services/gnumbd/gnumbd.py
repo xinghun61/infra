@@ -258,7 +258,7 @@ def generate_footers_from_parent(new_parent, ref):
 # Core functionality
 ################################################################################
 
-def get_new_commits(real_ref, pending_tag, pending_tip):
+def get_new_commits(real_ref, pending_tag, pending_tip, git_timeout=None):
   """Return a list of new pending commits to process or None on an error.
 
   Mutates pending_tag under some circumstances, see below.
@@ -327,7 +327,8 @@ def get_new_commits(real_ref, pending_tag, pending_tip):
                    new_tag_val.hsh, real_ref.commit.hsh)
       return None
     new_commits = new_commits[i:]
-    pending_tag.repo.fast_forward_push({pending_tag: new_tag_val})
+    pending_tag.repo.fast_forward_push({pending_tag: new_tag_val},
+                                       timeout=git_timeout)
 
   if not new_commits:
     LOGGER.warn('Tag was lagging for %r by %d, but no new commits are pending',
@@ -338,7 +339,7 @@ def get_new_commits(real_ref, pending_tag, pending_tip):
 
 
 def process_ref(real_ref, pending_tag, new_commits, push_synth_extras,
-                clock=time):
+                git_timeout=None, clock=time):
   """Given a ``real_ref``, its corresponding ``pending_tag``, and a list of
   ``new_commits``, copy the ``new_commits`` to ``real_ref``, and advance
   ``pending_tag``
@@ -395,14 +396,14 @@ def process_ref(real_ref, pending_tag, new_commits, push_synth_extras,
   logging.info('Synthesized %d commits for %r', len(ret), real_ref)
   to_push = { real_ref: synth_commit, }
   to_push.update((repo[r.ref], synth_commit) for r in push_synth_extras)
-  repo.fast_forward_push(to_push)
+  repo.fast_forward_push(to_push, timeout=git_timeout)
 
-  repo.fast_forward_push({pending_tag: commit})
+  repo.fast_forward_push({pending_tag: commit}, timeout=git_timeout)
 
   return ret
 
 
-def process_repo(repo, cref, clock=time):
+def process_repo(repo, cref, git_timeout=None, clock=time):
   """Execute a single pass over a fetched Repo.
 
   Will call ``process_ref`` for every branch indicated by the enabled_refglobs
@@ -442,13 +443,16 @@ def process_repo(repo, cref, clock=time):
           continue
 
         if pending_tag.commit != pending_tip.commit:
-          new_commits = get_new_commits(real_ref, pending_tag, pending_tip)
+          new_commits = get_new_commits(real_ref, pending_tag, pending_tip,
+                                        git_timeout=git_timeout)
           if new_commits is None:
             success = False
           elif new_commits:
             commits = process_ref(
                 real_ref, pending_tag, new_commits,
-                push_synth_extra.get(real_ref.ref, []), clock)
+                push_synth_extra.get(real_ref.ref, []),
+                git_timeout=git_timeout,
+                clock=clock)
             synthesized_commits.extend(commits)
         else:
           if content_of(pending_tag.commit) != content_of(real_ref.commit):
@@ -468,12 +472,12 @@ def process_repo(repo, cref, clock=time):
   return success, synthesized_commits
 
 
-def inner_loop(repo, cref, clock=time):
+def inner_loop(repo, cref, git_timeout=None, clock=time):
   """Fetches the config ref and runs single iteration of processing.
 
   Returns:
     tuple (bool success status, list of synthesized commits).
   """
-  repo.fetch()
+  repo.fetch(timeout=git_timeout)
   cref.evaluate()
-  return process_repo(repo, cref, clock)
+  return process_repo(repo, cref, git_timeout=git_timeout, clock=clock)

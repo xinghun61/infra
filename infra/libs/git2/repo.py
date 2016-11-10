@@ -52,7 +52,7 @@ class Repo(object):
   url = property(lambda self: self._url)
   repo_path = property(lambda self: self._repo_path)
 
-  def reify(self, share_from=None):
+  def reify(self, share_from=None, timeout=None):
     """Ensures the local mirror of this Repo exists.
 
     Args:
@@ -126,7 +126,7 @@ class Repo(object):
       ensure_config(tmp_path)
       self.run(
           'fetch', stdout=sys.stdout, stderr=sys.stderr,
-          cwd=tmp_path, silent=True)
+          cwd=tmp_path, silent=True, timeout=timeout)
       os.rename(tmp_path, os.path.join(self.repos_dir, folder))
     else:
       ensure_config(rpath)
@@ -270,14 +270,16 @@ class Repo(object):
     return self.run(
         'hash-object', '-w', '-t', typ, '--stdin', indata=str(data)).strip()
 
-  def fetch(self):
+  def fetch(self, timeout=None):
     """Update all local repo state to match remote.
 
     Clears queue_fast_forward entries.
+    Args:
+      timeout (number): kill the process after this many seconds.
     """
     self._queued_refs = {}
     LOGGER.debug('fetching %r', self)
-    self.run('fetch', stdout=sys.stdout, stderr=sys.stderr)
+    self.run('fetch', stdout=sys.stdout, stderr=sys.stderr, timeout=timeout)
 
   def fast_forward_push(self, refs_and_commits,
                         include_err=False, timeout=None):

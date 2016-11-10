@@ -42,6 +42,13 @@ def parse_args(args):  # pragma: no cover
                             '(default: %(default)s)'))
   parser.add_argument('--json_output', metavar='PATH',
                       help='Path to write JSON with results of the run to')
+  parser.add_argument('--git_timeout', metavar='SEC', default=300, type=int,
+                      help='Timeout for individual git operations. '
+                      'Default %(default)s.')
+  parser.add_argument('--git_init_timeout', metavar='SEC', default=1800,
+                      type=int,
+                      help='Timeout for the initalization of the git repo. '
+                      'Default %(default)s.')
   parser.add_argument('repo', nargs=1, help='The url of the repo to act on.',
                       type=check_url)
   logs.add_argparse_options(parser)
@@ -71,12 +78,13 @@ def parse_args(args):  # pragma: no cover
 
 def main(args):  # pragma: no cover
   opts = parse_args(args)
-  cref = gnumbd.GnumbdConfigRef(opts.repo)
-  opts.repo.reify()
+  cref = gnumbd.GnumbdConfigRef(opts.repo, git_timeout=opts.git_timeout)
+  opts.repo.reify(timeout=opts.git_init_timeout)
 
   all_commits = []
   def outer_loop_iteration():
-    success, commits = gnumbd.inner_loop(opts.repo, cref)
+    success, commits = gnumbd.inner_loop(
+        opts.repo, cref, git_timeout=opts.git_timeout)
     all_commits.extend(commits)
     commits_counter.increment_by(len(commits))
     return success
