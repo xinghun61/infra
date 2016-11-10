@@ -5,7 +5,7 @@
 # Makefile to simplify some common actions.
 # Use 'make help' for a list of commands.
 
-.PHONY: help build clean test deploy_staging_run deploy_staging deploy_prod_run deploy_prod deploy_cron deploy_dispatch deploy_queues
+.PHONY: help build clean test devserver deploy_staging_run deploy_staging deploy_prod_run deploy_prod deploy_cron deploy_dispatch deploy_queues
 
 help:
 	@echo "Available commands:"
@@ -20,6 +20,9 @@ clean:
 
 test:
 	go test -race ./...
+
+devserver:
+	dev_appserver.py frontend/app.yaml
 
 # We can not use gae.py below because test-results is a mixed Python/Go app and
 # gae.py does not support that.
