@@ -23,10 +23,12 @@ type DecoratedCrimson struct {
 }
 
 func (s *DecoratedCrimson) CreateIPRange(c context.Context, req *IPRange) (rsp *IPRangeStatus, err error) {
+	var newCtx context.Context
 	if s.Prelude != nil {
-		c, err = s.Prelude(c, "CreateIPRange", req)
+		newCtx, err = s.Prelude(c, "CreateIPRange", req)
 	}
 	if err == nil {
+		c = newCtx
 		rsp, err = s.Service.CreateIPRange(c, req)
 	}
 	if s.Postlude != nil {
@@ -36,10 +38,12 @@ func (s *DecoratedCrimson) CreateIPRange(c context.Context, req *IPRange) (rsp *
 }
 
 func (s *DecoratedCrimson) ReadIPRange(c context.Context, req *IPRangeQuery) (rsp *IPRanges, err error) {
+	var newCtx context.Context
 	if s.Prelude != nil {
-		c, err = s.Prelude(c, "ReadIPRange", req)
+		newCtx, err = s.Prelude(c, "ReadIPRange", req)
 	}
 	if err == nil {
+		c = newCtx
 		rsp, err = s.Service.ReadIPRange(c, req)
 	}
 	if s.Postlude != nil {
@@ -49,10 +53,12 @@ func (s *DecoratedCrimson) ReadIPRange(c context.Context, req *IPRangeQuery) (rs
 }
 
 func (s *DecoratedCrimson) DeleteIPRange(c context.Context, req *IPRangeDeleteList) (rsp *IPRangeStatus, err error) {
+	var newCtx context.Context
 	if s.Prelude != nil {
-		c, err = s.Prelude(c, "DeleteIPRange", req)
+		newCtx, err = s.Prelude(c, "DeleteIPRange", req)
 	}
 	if err == nil {
+		c = newCtx
 		rsp, err = s.Service.DeleteIPRange(c, req)
 	}
 	if s.Postlude != nil {
@@ -62,10 +68,12 @@ func (s *DecoratedCrimson) DeleteIPRange(c context.Context, req *IPRangeDeleteLi
 }
 
 func (s *DecoratedCrimson) CreateHost(c context.Context, req *HostList) (rsp *HostStatus, err error) {
+	var newCtx context.Context
 	if s.Prelude != nil {
-		c, err = s.Prelude(c, "CreateHost", req)
+		newCtx, err = s.Prelude(c, "CreateHost", req)
 	}
 	if err == nil {
+		c = newCtx
 		rsp, err = s.Service.CreateHost(c, req)
 	}
 	if s.Postlude != nil {
@@ -75,10 +83,12 @@ func (s *DecoratedCrimson) CreateHost(c context.Context, req *HostList) (rsp *Ho
 }
 
 func (s *DecoratedCrimson) ReadHost(c context.Context, req *HostQuery) (rsp *HostList, err error) {
+	var newCtx context.Context
 	if s.Prelude != nil {
-		c, err = s.Prelude(c, "ReadHost", req)
+		newCtx, err = s.Prelude(c, "ReadHost", req)
 	}
 	if err == nil {
+		c = newCtx
 		rsp, err = s.Service.ReadHost(c, req)
 	}
 	if s.Postlude != nil {
@@ -88,10 +98,12 @@ func (s *DecoratedCrimson) ReadHost(c context.Context, req *HostQuery) (rsp *Hos
 }
 
 func (s *DecoratedCrimson) DeleteHost(c context.Context, req *HostDeleteList) (rsp *HostStatus, err error) {
+	var newCtx context.Context
 	if s.Prelude != nil {
-		c, err = s.Prelude(c, "DeleteHost", req)
+		newCtx, err = s.Prelude(c, "DeleteHost", req)
 	}
 	if err == nil {
+		c = newCtx
 		rsp, err = s.Service.DeleteHost(c, req)
 	}
 	if s.Postlude != nil {

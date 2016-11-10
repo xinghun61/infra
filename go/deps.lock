@@ -1,8 +1,8 @@
 hash: 5b9475709d60c3452dbdec8d21c69b1c7c726c3fcc7abeada976315422ae1660
-updated: 2016-11-09T20:01:28.740693621+11:00
+updated: 2016-11-10T09:06:26.639028424-08:00
 imports:
 - name: cloud.google.com/go
-  version: b4053c3bff6e22c56441b24738dc8431847a22e6
+  version: 6d604042a92b80b1a997c7f6249b12c3b37d1087
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -156,7 +156,7 @@ imports:
   subpackages:
   - encoding/json5
 - name: golang.org/x/build
-  version: 0e765f5afd1d2980792cbcd61dfbf9fb32c938fc
+  version: 01647ecae6d20af4d017f7ccd27cffcdf1f88716
   repo: https://go.googlesource.com/build.git
   subpackages:
   - gerrit
@@ -166,7 +166,7 @@ imports:
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: 40d3034e575b6eafbca34e64224da61de35ae04c
+  version: 9ef22118a4b25863aa94546daffbc0a18feaafb3
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
@@ -183,12 +183,12 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: 9a2e24c3733eddc63871eda99f253e2db29bd3b9
+  version: b699b7032584f0953262cb2788a0ca19bb494703
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - windows
 - name: golang.org/x/tools
-  version: 44b4c5d044d148f4248b0188ff5ea3e57cfedbc5
+  version: 5061f921c7c3e66b68ad903adf57da380c327b8c
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -227,12 +227,12 @@ imports:
   - urlfetch
   - user
 - name: google.golang.org/genproto
-  version: 9359a8d303c45e3212571b77610f1cefb0c6f3eb
+  version: f3350869260a1e80675c8d0e42f1f3a870db2b74
   repo: https://chromium.googlesource.com/external/github.com/google/go-genproto.git
   subpackages:
   - protobuf
 - name: google.golang.org/grpc
-  version: 396f8ba2a6b9039070f4ff97561f5e408828fccd
+  version: c0989007a1fa4d511385a434c3591a449bc8425f
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes

@@ -202,14 +202,16 @@ func convert(in *buildersFile) (*buildbucket.Swarming, error) {
 	commonProps := in.commonProperties()
 	commonProperties, commonPropertiesJ := encodeProperties(commonProps)
 	out := &buildbucket.Swarming{
-		CommonRecipe: &buildbucket.Swarming_Recipe{
-			Name:        proto.String(in.commonRecipe()),
-			Properties:  commonProperties,
-			PropertiesJ: commonPropertiesJ,
-			Repository:  recipeRepo,
+		BuilderDefaults: &buildbucket.Swarming_Builder{
+			Recipe: &buildbucket.Swarming_Recipe{
+				Name:        proto.String(in.commonRecipe()),
+				Properties:  commonProperties,
+				PropertiesJ: commonPropertiesJ,
+				Repository:  recipeRepo,
+			},
+			Dimensions:   mapToList(commonDims),
+			SwarmingTags: []string{"allow_milo:1"},
 		},
-		CommonDimensions:   mapToList(commonDims),
-		CommonSwarmingTags: []string{"allow_milo:1"},
 	}
 
 	for name, b := range in.Builders {
@@ -227,7 +229,7 @@ func convert(in *buildersFile) (*buildbucket.Swarming, error) {
 		props := mapDiff(b.Properties, commonProps)
 		properties, propertiesJ := encodeProperties(props)
 		recipeName := b.Recipe
-		if recipeName == out.CommonRecipe.GetName() {
+		if recipeName == out.BuilderDefaults.Recipe.GetName() {
 			recipeName = ""
 		}
 		out.Builders = append(out.Builders, &buildbucket.Swarming_Builder{
@@ -288,23 +290,7 @@ func writeConfig(w io.Writer, cfg *buildbucket.Swarming) error {
 		}
 	}
 
-	pstrlist("common_swarming_tags", cfg.CommonSwarmingTags)
-	pstrlist("common_dimensions", cfg.CommonDimensions)
-	p("common_recipe {")
-	indented.Level += 2
-	printRecipe(cfg.CommonRecipe)
-	indented.Level -= 2
-	p("}")
-
-	p("\n# Keep builders sorted by category, then name.")
-	builders := make(byCategoryThenName, len(cfg.Builders))
-	copy(builders, cfg.Builders)
-	sort.Sort(builders)
-
-	for _, b := range builders {
-		p("\nbuilders {")
-		indented.Level += 2
-
+	printBuilder := func(b *buildbucket.Swarming_Builder) {
 		pstr("category", b.GetCategory())
 		pstr("name", b.GetName())
 		pstrlist("swarming_tags", b.SwarmingTags)
@@ -321,7 +307,23 @@ func writeConfig(w io.Writer, cfg *buildbucket.Swarming) error {
 			indented.Level -= 2
 			p("}")
 		}
+	}
 
+	p("builder_defaults {")
+	indented.Level += 2
+	printBuilder(cfg.BuilderDefaults)
+	indented.Level -= 2
+	p("}")
+
+	p("\n# Keep builders sorted by category, then name.")
+	builders := make(byCategoryThenName, len(cfg.Builders))
+	copy(builders, cfg.Builders)
+	sort.Sort(builders)
+
+	for _, b := range builders {
+		p("\nbuilders {")
+		indented.Level += 2
+		printBuilder(b)
 		indented.Level -= 2
 		p("}")
 	}
