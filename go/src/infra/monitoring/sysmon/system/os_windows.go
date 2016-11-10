@@ -47,7 +47,7 @@ func getOSVersion(major, minor string, productType uint32) string {
 	// Versions are described in
 	// https://msdn.microsoft.com/en-us/library/windows/desktop/ms724832(v=vs.85).aspx
 	// Strings match Python's win32_ver in Lib/platform.py.
-	majorMinor = major + "." + minor
+	majorMinor := major + "." + minor
 	switch majorMinor {
 	case "5.0":
 		return "2000"
