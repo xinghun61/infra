@@ -18,7 +18,8 @@ from infra_libs import ts_mon
 
 
 # Return value of parse_args.
-Options = collections.namedtuple('Options', 'repo loop_opts json_output')
+Options = collections.namedtuple(
+    'Options', 'repo loop_opts json_output git_timeout git_init_timeout')
 
 commits_counter = ts_mon.CounterMetric('gnumbd/commit_count',
     description='Number of commits processed by gnumbd')
@@ -73,7 +74,8 @@ def parse_args(args):  # pragma: no cover
   ts_mon.process_argparse_options(opts)
   loop_opts = outer_loop.process_argparse_options(opts)
 
-  return Options(repo, loop_opts, opts.json_output)
+  return Options(repo, loop_opts, opts.json_output,
+                 opts.git_timeout, opts.git_init_timeout)
 
 
 def main(args):  # pragma: no cover
