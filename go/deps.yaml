@@ -244,3 +244,6 @@ import:
 - package: github.com/googleapis/gax-go
   version: master
   repo: https://chromium.googlesource.com/external/github.com/googleapis/gax-go.git
+- package: howett.net/plist
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/DHowett/go-plist.git

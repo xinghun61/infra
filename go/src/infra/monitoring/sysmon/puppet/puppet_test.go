@@ -20,7 +20,7 @@ import (
 func TestMetrics(t *testing.T) {
 	c := context.Background()
 	c, _ = tsmon.WithDummyInMemory(c)
-	c, _ = testclock.UseTime(c, time.Unix(1440132466+123, 0))
+	c, _ = testclock.UseTime(c, time.Unix(1440132466, 0).Add(123450*time.Millisecond))
 
 	Convey("Puppet last_run_summary.yaml metrics", t, func() {
 		file, err := ioutil.TempFile("", "sysmon-puppet-test")
@@ -143,7 +143,7 @@ func TestMetrics(t *testing.T) {
 			So(fv, ShouldEqual, 0)
 
 			fv, _ = age.Get(c)
-			So(fv, ShouldEqual, 123)
+			So(fv, ShouldEqual, 123.45)
 		})
 	})
 

@@ -293,13 +293,14 @@ func updateUnixTimeMetrics(c context.Context) error {
 }
 
 func updateOSInfoMetrics(c context.Context) error {
-	platform, _, version, err := host.PlatformInformation()
+	platform, version, err := osInformation()
 	if err != nil {
-		return err
+		logging.WithError(err).Errorf(c, "Failed to get platform information")
+		// Carry on since we still have a useful platform metric to report.
 	}
 
 	osName.Set(c, platform, "")
 	osVersion.Set(c, version, "")
 	osArch.Set(c, runtime.GOARCH)
-	return nil
+	return err
 }

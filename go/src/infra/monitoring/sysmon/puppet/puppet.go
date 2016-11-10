@@ -91,7 +91,7 @@ func update(c context.Context, path string) error {
 	}
 	for k, v := range data.Time {
 		if k == "last_run" {
-			age.Set(c, float64(clock.Now(c).Sub(time.Unix(int64(v), 0))/time.Second))
+			age.Set(c, float64(clock.Now(c).Sub(time.Unix(int64(v), 0)))/float64(time.Second))
 		} else if k != "total" {
 			times.Set(c, v, k)
 		}

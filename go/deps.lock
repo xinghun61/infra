@@ -1,8 +1,8 @@
-hash: a4ca33c1d70535b37d1a98ae458baecffdd7482c2001ba3a5ebc9063b375a4bd
-updated: 2016-10-27T14:36:13.494993079-07:00
+hash: 5b9475709d60c3452dbdec8d21c69b1c7c726c3fcc7abeada976315422ae1660
+updated: 2016-11-09T20:01:28.740693621+11:00
 imports:
 - name: cloud.google.com/go
-  version: 467d489a6c6e5091da3f41addef0563296157059
+  version: b4053c3bff6e22c56441b24738dc8431847a22e6
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -10,7 +10,7 @@ imports:
   - pubsub
   - storage
 - name: github.com/DATA-DOG/go-sqlmock
-  version: 05f39e9110c0ed1ec1834d06004693026a4d24f1
+  version: d4cd2ca2ad1cc2130bba385aab072218f131f636
   repo: https://chromium.googlesource.com/external/github.com/DATA-DOG/go-sqlmock.git
 - name: github.com/dustin/go-humanize
   version: bd88f87ad3a420f7bcf05e90566fd1ceb351fa7f
@@ -19,7 +19,7 @@ imports:
   version: 7dfdcf409020452e29b4babcbb22f984d2aa308a
   repo: https://chromium.googlesource.com/external/github.com/go-ole/go-ole.git
 - name: github.com/go-sql-driver/mysql
-  version: 2a6c6079c7eff49a7e9d641e109d922f124a3e4c
+  version: 8f6c67f0228a4a6a962008d6c3d1e694e4532e71
   repo: https://chromium.googlesource.com/external/github.com/go-sql-driver/mysql.git
 - name: github.com/golang/lint
   version: 3390df4df2787994aea98de825b964ac7944b817
@@ -27,17 +27,17 @@ imports:
   subpackages:
   - golint
 - name: github.com/golang/protobuf
-  version: 98fa357170587e470c5f27d3c3ea0947b71eb455
+  version: 4bd1920723d7b7c925de087aa32e2187708897f7
   repo: https://chromium.googlesource.com/external/github.com/golang/protobuf.git
   subpackages:
   - jsonpb
   - proto
   - protoc-gen-go
 - name: github.com/googleapis/gax-go
-  version: 4f7da601ca02aa546c5ef911a0b6595fdadf4e18
+  version: da06d194a00e19ce00d9011a13931c3f6f6887c7
   repo: https://chromium.googlesource.com/external/github.com/googleapis/gax-go.git
 - name: github.com/gopherjs/gopherjs
-  version: 6f5a3c4a73badf117936d7d61a046e2fab8e2adb
+  version: e34a5cd6a1bc7c4fde759f2d3039852fc68b5fcc
   repo: https://chromium.googlesource.com/external/github.com/gopherjs/gopherjs.git
   subpackages:
   - js
@@ -60,7 +60,7 @@ imports:
   version: 5e136deb9b893bbe6c8f23236ff4378b7a8a0dbb
   repo: https://chromium.googlesource.com/external/github.com/kisielk/gotool.git
 - name: github.com/klauspost/compress
-  version: 8df558b6cb6f9b445f9586446cfe7223e7d8bd6b
+  version: e3b7981a12dd3cab49afa1d3a50e715846f23732
   repo: https://chromium.googlesource.com/external/github.com/klauspost/compress.git
   subpackages:
   - zlib
@@ -118,7 +118,7 @@ imports:
   subpackages:
   - difflib
 - name: github.com/sergi/go-diff
-  version: 1d28411638c1e67fe1930830df207bef72496ae9
+  version: 552b4e9bbdca9e5adafd95ee98c822fdd11b330b
   repo: https://chromium.googlesource.com/external/github.com/sergi/go-diff.git
   subpackages:
   - diffmatchpatch
@@ -129,10 +129,10 @@ imports:
   version: bb4de0191aa41b5507caa14b0650cdbddcd9280b
   repo: https://chromium.googlesource.com/external/github.com/shirou/w32.git
 - name: github.com/smartystreets/assertions
-  version: 2063fd1cc7c975db70502811a34b06ad034ccdf2
+  version: cc1e98f7d3caee8feedb0468525b80a59556d6e5
   repo: https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
 - name: github.com/smartystreets/goconvey
-  version: 95a89808c3e7f231df92fcbecb0706f8d5cd9261
+  version: 019319c870f8f1d61dc9c34291abff5cd128b6e8
   repo: https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
   subpackages:
   - convey
@@ -156,23 +156,23 @@ imports:
   subpackages:
   - encoding/json5
 - name: golang.org/x/build
-  version: 9a45b14cf901382c583a232e899365f9ea889861
+  version: 0e765f5afd1d2980792cbcd61dfbf9fb32c938fc
   repo: https://go.googlesource.com/build.git
   subpackages:
   - gerrit
 - name: golang.org/x/mobile
-  version: d3620154ae458086d46f73179013fdf6ef9b0bc8
+  version: b8794a2669da6680501f9ebc6c555553dc46b1ee
   repo: https://go.googlesource.com/mobile.git
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: b336a971b799939dd16ae9b1df8334cb8b977c4d
+  version: 40d3034e575b6eafbca34e64224da61de35ae04c
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/oauth2
-  version: 25b4fb1468cb89700c7c060cb99f30581a61f5e3
+  version: d5040cddfc0da40b408c9a1da4728662435176a9
   repo: https://go.googlesource.com/oauth2.git
   subpackages:
   - google
@@ -183,12 +183,12 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: c200b10b5d5e122be351b67af224adc6128af5bf
+  version: 9a2e24c3733eddc63871eda99f253e2db29bd3b9
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - windows
 - name: golang.org/x/tools
-  version: 0db92ca630c08f00e3ba4b5abea93836ca04b42e
+  version: 44b4c5d044d148f4248b0188ff5ea3e57cfedbc5
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -201,7 +201,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: 037d03010933c9fa8e57559c1b7faeec971688d1
+  version: 6bc9e77383320b75dcd6810569b6d54b2e84019d
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
@@ -213,7 +213,7 @@ imports:
   - pubsub/v1
   - taskqueue/v1beta2
 - name: google.golang.org/appengine
-  version: 46239ca616842c00f41b8cbc6bbf2bd6ffbfcdad
+  version: c7b8227c83007befd67b324a64c969ebc1d7475d
   repo: https://chromium.googlesource.com/external/github.com/golang/appengine.git
   subpackages:
   - cmd/aedeploy
@@ -246,4 +246,7 @@ imports:
 - name: gopkg.in/yaml.v2
   version: a5b47d31c556af34a302ce5d659e6fea44d90de0
   repo: https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git
+- name: howett.net/plist
+  version: fd61394c0abc85ba629ff8471fa35d4309cd6609
+  repo: https://chromium.googlesource.com/external/github.com/DHowett/go-plist.git
 testImports: []
