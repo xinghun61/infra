@@ -15,6 +15,8 @@ Runs:<br>
   <th><b>ID</b></th>
   <th><b>Kind</b></th>
   <th><b>State</b></th>
+  <th><b>Context</b></th>
+  <th><b>URL</b></th>
 </tr>
 {{range .Runs}}
 <tr>
@@ -22,6 +24,8 @@ Runs:<br>
   <td>{{ .ID }}</td>
   <td>{{ .RunKind }}</td>
   <td>{{ .RunState }}</td>
+  <td>{{ .ChangeContext }}</td>
+  <td>{{ .ChangeURL }}</td>
 </tr>
 {{end}}
 </table>

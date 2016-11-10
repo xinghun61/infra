@@ -32,6 +32,7 @@ type GerritChangeDetails struct {
 	Project         string
 	ChangeID        string
 	CurrentRevision string
+	ChangeURL       string
 	GitRef          string
 	FileChanges     []FileChangeDetails
 }
@@ -57,17 +58,19 @@ type ChangeContext int
 
 const (
 	// GERRIT should be used to indicate that a change is from Gerrit.
-	GERRIT = 1 + iota
+	GERRIT ChangeContext = 1 + iota
 	// Add new change contexts here.
 )
 
 var contexts = [...]string{
+	"",
 	"GERRIT",
 	// Add name of new change context here.
 }
 
+// TODO(emso): Panics if ctx is out of bounds. Consider using https://godoc.org/golang.org/x/tools/cmd/stringer instead.
 func (ctx ChangeContext) String() string {
-	return contexts[ctx-1]
+	return contexts[ctx]
 }
 
 // RunKind enum
@@ -81,12 +84,13 @@ const (
 )
 
 var kinds = [...]string{
+	"",
 	"TEST",
 	"LIVE",
 }
 
 func (kind RunKind) String() string {
-	return kinds[kind-1]
+	return kinds[kind]
 }
 
 // RunState enum
@@ -102,26 +106,29 @@ const (
 )
 
 var states = [...]string{
+	"",
 	"RECEIVED",
 	"LAUNCHED",
 	"DONE",
 }
 
 func (state RunState) String() string {
-	return states[state-1]
+	return states[state]
 }
 
 // Run represents a run of one or more analyses on a change.
 type Run struct {
-	ID       int64
-	Received time.Time
-	RunKind  RunKind
-	RunState RunState
+	ID            int64
+	Received      time.Time
+	RunKind       RunKind
+	RunState      RunState
+	ChangeContext ChangeContext
+	ChangeURL     string
 }
 
 // NewRun creates a new run entry with a newly created ID and adds it to
 // internal storage for tracking. The created ID is returned.
-func NewRun(ctx context.Context) (int64, error) {
+func NewRun(ctx context.Context, cctx ChangeContext, curl string) (int64, error) {
 	// Create ID for run.
 	id, err := CreateNextRunID(ctx)
 	if err != nil {
@@ -134,6 +141,10 @@ func NewRun(ctx context.Context) (int64, error) {
 		Received: time.Now(),
 		RunKind:  TEST, //  TODO(emso): update this to LIVE
 		RunState: RECEIVED,
+	}
+	if cctx == GERRIT {
+		run.ChangeContext = GERRIT
+		run.ChangeURL = curl
 	}
 	return id, StoreRunUpdates(ctx, key, run)
 }
@@ -158,6 +169,7 @@ func GetRun(ctx context.Context, key *datastore.Key) (*Run, error) {
 
 // StoreRunUpdates stores the given run object. This will overwrite any
 // previous run object with the same key.
+// TODO(emso): Remove this abstraction around the datastore put call.
 func StoreRunUpdates(ctx context.Context, key *datastore.Key, run *Run) error {
 	if _, err := datastore.Put(ctx, key, run); err != nil {
 		return err
@@ -194,6 +206,7 @@ type counter struct {
 func CreateNextRunID(ctx context.Context) (int64, error) {
 	key := datastore.NewKey(ctx, "Counter", "RunCounter", 0, nil)
 	counter := new(counter)
+	// TODO(emso): Use datastore generated IDs and remove this transaction.
 	err := datastore.RunInTransaction(ctx, func(ctx context.Context) error {
 		if err := datastore.Get(ctx, key, counter); err != datastore.ErrNoSuchEntity {
 			return err

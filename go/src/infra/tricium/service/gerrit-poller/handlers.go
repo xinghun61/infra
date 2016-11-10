@@ -173,7 +173,7 @@ func pollHandler(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 		// Convert to analysis tasks and enqueue.
-		tasks := convertToAnalysisTasks(uc)
+		tasks := convertToAnalysisTasks(p, uc)
 		return enqueueChangesAsServiceTasks(ctx, tasks)
 	}, nil); err != nil {
 		common.ReportServerError(ctx, w, err)
@@ -203,7 +203,7 @@ func updateTracking(ctx context.Context, p *GerritProject, changes []gerrit.Chan
 				}
 			}
 		} else {
-			log.Infof(ctx, "Getting tracked changes failed (2): %v", err)
+			log.Infof(ctx, "Getting tracked changes failed: %v", err)
 			return diff, err
 		}
 	}
@@ -279,7 +279,7 @@ func updateTracking(ctx context.Context, p *GerritProject, changes []gerrit.Chan
 
 // convertToAnalysisTasks converts the given list of changes to analysis tasks to
 // be added to the service queue.
-func convertToAnalysisTasks(changes []gerrit.ChangeInfo) []*common.AnalysisTask {
+func convertToAnalysisTasks(p *GerritProject, changes []gerrit.ChangeInfo) []*common.AnalysisTask {
 	var tasks []*common.AnalysisTask
 	for _, c := range changes {
 		var fc []common.FileChangeDetails
@@ -293,6 +293,7 @@ func convertToAnalysisTasks(changes []gerrit.ChangeInfo) []*common.AnalysisTask 
 		// Sorting files to account for random enumeration in go maps.
 		// This is to get consistent behavior for the same input.
 		sort.Sort(common.FileChangesByPath(fc))
+		rev := c.Revisions[c.CurrentRevision]
 		tasks = append(tasks, &common.AnalysisTask{
 			Context: common.GERRIT,
 			GerritChange: common.GerritChangeDetails{
@@ -300,7 +301,10 @@ func convertToAnalysisTasks(changes []gerrit.ChangeInfo) []*common.AnalysisTask 
 				Project:         c.Project,
 				ChangeID:        c.ChangeID,
 				CurrentRevision: c.CurrentRevision,
-				FileChanges:     fc,
+				ChangeURL: fmt.Sprintf("%s/c/%d/%d", p.Instance, c.ChangeNumber,
+					rev.PatchSetNumber),
+				GitRef:      rev.Ref,
+				FileChanges: fc,
 			},
 		})
 	}
@@ -359,12 +363,14 @@ func enqueueChangesAsServiceTasks(ctx context.Context, tasks []*common.AnalysisT
 	for _, task := range tasks {
 		// TODO(emso): Improve this encoding.
 		u := url.Values{}
-		u.Add("Context", task.Context.String())
+		u.Add("Context", strconv.Itoa(int(task.Context)))
 		c := &task.GerritChange
 		u.Add("Instance", c.Instance)
 		u.Add("Project", c.Project)
 		u.Add("ChangeID", c.ChangeID)
 		u.Add("Revision", c.CurrentRevision)
+		u.Add("ChangeURL", c.ChangeURL)
+		u.Add("GitRef", c.GitRef)
 		for _, file := range c.FileChanges {
 			u.Add("File", fmt.Sprintf("%s:%s", file.Path, file.Status))
 		}
@@ -372,6 +378,7 @@ func enqueueChangesAsServiceTasks(ctx context.Context, tasks []*common.AnalysisT
 		if _, err := taskqueue.Add(ctx, t, "service-queue"); err != nil {
 			return err
 		}
+		log.Infof(ctx, "Converted analysis task %v to %v", task, u)
 	}
 	return nil
 }

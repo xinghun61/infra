@@ -43,7 +43,14 @@ func queueHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO(emso): Process request (merge configs, compute workflow) and launch workflow
+	// TODO(emso): Get merged config from luci-config and
+	// compute workflow using metafile info provided in the task.
+
+	// TODO(emso): Create change details from information provided in the task,
+	// this data will be consumed by the first task of the workflow.
+
+	// TODO(emso): Launch workflow via SwarmBucket providing the workflow config and
+	// change details as build properties.
 
 	// Register that this run is now launched
 	run.RunState = common.LAUNCHED
