@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"StackExchange/wmi"
+	"github.com/StackExchange/wmi"
 )
 
 // Win32_OperatingSystem contains fields from the WMI class with the same name:
