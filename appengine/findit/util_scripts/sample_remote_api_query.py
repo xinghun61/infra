@@ -4,7 +4,8 @@
 
 """An example of using Remote API to query datastore on live App Engine."""
 
-import remote_api  # During importing, sys.path will be setup appropriately.
+# During importing, sys.path will be setup appropriately.
+import remote_api # pylint: disable=W
 from model.wf_step import WfStep
 
 

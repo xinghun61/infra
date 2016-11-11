@@ -6,12 +6,13 @@
 
 import os
 
-import remote_api
+import remote_api  # pylint: disable=W
 
 _DEFAULT_BATCH_SIZE = 1000
 
 
-def ProjectEntity(entity, fields):
+# TODO(crbug.com/662540): Add unittests.
+def ProjectEntity(entity, fields):  # pragma: no cover.
   """Projects fields from entity. Returns dict."""
   entity_info = {}
   for field in fields:
@@ -23,12 +24,13 @@ def ProjectEntity(entity, fields):
   return entity_info
 
 
+# TODO(crbug.com/662540): Add unittests.
 def Iterate(query,
             fields,
             app_id,
             filter_func=None,
             batch_size=_DEFAULT_BATCH_SIZE,
-            batch_run=False):
+            batch_run=False):  # pragma: no cover.
   """Iterates entities queried by query.
 
   Args:

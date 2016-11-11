@@ -25,16 +25,19 @@ _FEEDBACK_URL_TEMPLATE = 'host/crash/fracas-result-feedback?key=%s'
 GIT_HASH_PATTERN = re.compile(r'^[0-9a-fA-F]{40}$')
 
 
-def GenerateFileName(*args):
+# TODO(crbug.com/662540): Add unittests.
+def GenerateFileName(*args):  # pragma: no cover
   """Encodes args and returns the generated result file."""
   return hashlib.md5(pickle.dumps(args)).hexdigest()
 
 
-def IsGitHash(revision):
+# TODO(crbug.com/662540): Add unittests.
+def IsGitHash(revision):  # pragma: no cover
   return GIT_HASH_PATTERN.match(str(revision)) or revision.lower() == 'master'
 
 
-def ParseGitHash(revision):
+# TODO(crbug.com/662540): Add unittests.
+def ParseGitHash(revision):  # pragma: no cover
   """Gets git hash of a revision."""
   if IsGitHash(revision):
     return revision
@@ -49,7 +52,8 @@ def ParseGitHash(revision):
     return None
 
 
-def EnsureDirExists(path):
+# TODO(crbug.com/662540): Add unittests.
+def EnsureDirExists(path):  # pragma: no cover
   directory = os.path.dirname(path)
   if os.path.exists(directory):
     return
@@ -57,14 +61,16 @@ def EnsureDirExists(path):
   os.makedirs(directory)
 
 
-def FlushResult(result, result_path):
+# TODO(crbug.com/662540): Add unittests.
+def FlushResult(result, result_path):  # pragma: no cover
   logging.info('\nFlushing results to %s', result_path)
   EnsureDirExists(result_path)
   with open(result_path, 'wb') as f:
     pickle.dump(result, f)
 
 
-def PrintDelta(deltas, crash_num):
+# TODO(crbug.com/662540): Add unittests.
+def PrintDelta(deltas, crash_num):  # pragma: no cover
   logging.info(('\n+++++++++++++++++++++'
                 '\nDelta on %d crashes '
                 '\n+++++++++++++++++++++'), crash_num)
@@ -79,7 +85,9 @@ def PrintDelta(deltas, crash_num):
                  str(delta))
 
 
-def WriteDeltaToCSV(deltas, crash_num, git_hash1, git_hash2, file_path):
+# TODO(crbug.com/662540): Add unittests.
+def WriteDeltaToCSV(deltas, crash_num,
+                    git_hash1, git_hash2, file_path):  # pragma: no cover
   EnsureDirExists(file_path)
   def _EncodeStr(string):
     return string.replace('\"', '\'') if string else ''

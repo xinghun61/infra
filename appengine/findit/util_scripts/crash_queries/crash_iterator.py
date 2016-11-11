@@ -22,7 +22,8 @@ COMMON_CRASH_FIELDS = ['crashed_version', 'stack_trace', 'signature',
 
 # TODO(katesonia): Switch to use fuction of objects encapsulating CrashClients,
 # after the refactoring is done.
-def GetAnalysisClassForClient(client_id):
+# TODO(crbug.com/662540): Add unittests.
+def GetAnalysisClassForClient(client_id):  # pragma: no cover.
   if client_id == CrashClient.FRACAS:
     return FracasCrashAnalysis
   elif client_id == CrashClient.CRACAS:
@@ -34,8 +35,9 @@ def GetAnalysisClassForClient(client_id):
   return None
 
 
+# TODO(crbug.com/662540): Add unittests.
 def GetQueryForClient(client_id, property_values, start_date, end_date,
-                      datetime_pattern='%Y-%m-%d'):
+                      datetime_pattern='%Y-%m-%d'):  # pragma: no cover.
   if property_values is None:
     property_values = {}
 
@@ -51,6 +53,7 @@ def GetQueryForClient(client_id, property_values, start_date, end_date,
       cls.requested_time < end_date)
 
 
+# TODO(crbug.com/662540): Add unittests.
 def IterateCrashes(client_id,
                    app_id,
                    fields=None,
@@ -58,7 +61,7 @@ def IterateCrashes(client_id,
                    start_date=_A_YEAR_AGO,
                    end_date=_TODAY,
                    batch_size=_DEFAULT_BATCH_SIZE,
-                   batch_run=False):
+                   batch_run=False):  # pragma: no cover.
   """Genrates query to query crashes and iterates crashes.
 
   Args:

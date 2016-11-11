@@ -16,7 +16,8 @@ AZALEA_RESULTS_DIRECTORY = os.path.join(os.path.dirname(__file__),
 DELTA_TEST_DIRECTORY = os.path.dirname(__file__)
 
 
-class Delta(object):
+# TODO(crbug.com/662540): Add unittests.
+class Delta(object):  # pragma: no cover.
   """Stands for delta between two results.
 
   Note, the 2 results should be the same kind and have the same structure.
@@ -80,7 +81,8 @@ class Delta(object):
     return self.__bool__()
 
 
-def GetDeltasFromTwoSetsOfResults(set1, set2):
+# TODO(crbug.com/662540): Add unittests.
+def GetDeltasFromTwoSetsOfResults(set1, set2):  # pragma: no cover.
   """Gets delta from two sets of results.
 
   Set1 and set2 are dicts mapping id to result.
@@ -103,7 +105,9 @@ def GetDeltasFromTwoSetsOfResults(set1, set2):
   return deltas
 
 
-def GetResults(crashes, client_id, git_hash, result_path, verbose=False):
+# TODO(crbug.com/662540): Add unittests.
+def GetResults(crashes, client_id, git_hash, result_path,
+               verbose=False):  # pragma: no cover.
   """Returns an evaluator function to compute delta between 2 findit githashes.
 
   Args:
@@ -153,10 +157,11 @@ def GetResults(crashes, client_id, git_hash, result_path, verbose=False):
   return {}
 
 
+# TODO(crbug.com/662540): Add unittests.
 def DeltaEvaluator(git_hash1, git_hash2,
                    client_id, app_id,
                    start_date, end_date, batch_size,
-                   property_values=None, verbose=False):
+                   property_values=None, verbose=False):  # pragma: no cover.
   """Evaluates delta between git_hash1 and git_hash2 on a set of Testcases.
 
   Args:
