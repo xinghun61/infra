@@ -30,17 +30,19 @@ def _UpdateBugWithResult(analysis, queue_name):
     return False
 
   comment = textwrap.dedent("""
-  Findit has generated the flakiness trend for this flake in the config
-  "%s / %s / %s" by rerunning the test on Swarming with build artifacts from
-  Waterfall. Please visit
+  Findit has generated the flakiness trend for this flake in the test config
+  "%s / %s / %s" by rerunning the test %s times on Swarming with build artifacts
+  from Waterfall. Please visit
     https://findit-for-me.appspot.com/waterfall/check-flake?key=%s\n
   Automatically posted by the findit-for-me app (https://goo.gl/YTKnaU).
-  Feedback are welcome using component Tools>Test>FindIt>Flakiness !""") % (
+  This feature is in alpha version. Feedback is welcome using component
+  Tools>Test>FindIt>Flakiness !""") % (
       analysis.original_master_name, analysis.original_builder_name,
-      analysis.original_step_name, analysis.key.urlsafe())
+      analysis.original_step_name,
+      analysis.algorithm_parameters.get('iterations_to_rerun'),
+      analysis.key.urlsafe())
   labels = ['AnalyzedByFindit']
-  pipeline = PostCommentToBugPipeline(
-      analysis.bug_id, comment, labels)
+  pipeline = PostCommentToBugPipeline(analysis.bug_id, comment, labels)
   pipeline.target = appengine_util.GetTargetNameForModule(
       constants.WATERFALL_BACKEND)
   pipeline.start(queue_name=queue_name)
