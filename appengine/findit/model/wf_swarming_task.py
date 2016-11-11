@@ -7,37 +7,14 @@ from collections import defaultdict
 from google.appengine.ext import ndb
 
 from model.base_build_model import BaseBuildModel
-from model import analysis_status
+from model.base_swarming_task import BaseSwarmingTask
 
 
-class WfSwarmingTask(BaseBuildModel):
+class WfSwarmingTask(BaseBuildModel, BaseSwarmingTask):
   """Represents a swarming task for a failed step.
 
   'Wf' is short for waterfall.
   """
-  # The id of the Swarming task scheduled or running on Swarming Server.
-  task_id = ndb.StringProperty(indexed=False)
-
-  # A dict to keep track of running information for each test:
-  # number of total runs, number of each status (such as 'SUCCESS' or 'FAILED')
-  tests_statuses = ndb.JsonProperty(indexed=False, compressed=True)
-
-  # The status of the swarming task.
-  status = ndb.IntegerProperty(
-      default=analysis_status.PENDING, indexed=False)
-
-  # The revision of the failed build.
-  build_revision = ndb.StringProperty(indexed=False)
-
-  # Time when the task is created.
-  created_time = ndb.DateTimeProperty(indexed=True)
-  # Time when the task is started.
-  started_time = ndb.DateTimeProperty(indexed=False)
-  # Time when the task is completed.
-  completed_time = ndb.DateTimeProperty(indexed=False)
-
-  # parameters need to be stored and analyzed later.
-  parameters = ndb.JsonProperty(indexed=False, compressed=True)
 
   @property
   def classified_tests(self):

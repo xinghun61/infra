@@ -17,8 +17,7 @@ class BaseSwarmingTask(ndb.Model):
   tests_statuses = ndb.JsonProperty(indexed=False, compressed=True)
 
   # The status of the swarming task.
-  status = ndb.IntegerProperty(
-      default=analysis_status.PENDING, indexed=False)
+  status = ndb.IntegerProperty(default=analysis_status.PENDING, indexed=False)
 
   # An error dict containing an error code and message should this task fail
   # unexpectedly. For example:

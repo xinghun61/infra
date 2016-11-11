@@ -4,8 +4,6 @@
 
 import logging
 
-from collections import defaultdict
-
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
@@ -44,16 +42,8 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     number of succeeded runs and number of failed runs.
     """
 
-    tests_statuses = defaultdict(lambda: defaultdict(int))
-
-    if not output_json:
-      return tests_statuses
-
-    for iteration in output_json.get('per_iteration_data'):
-      for name, test_runs in iteration.iteritems():
-        tests_statuses[name]['total_run'] += len(test_runs)
-        for test_run in test_runs:
-          tests_statuses[name][test_run['status']] += 1
+    tests_statuses = super(ProcessFlakeSwarmingTaskResultPipeline,
+                           self)._CheckTestsRunStatuses(output_json)
 
     # Should query by test name, because some test has dependencies which
     # are also run, like TEST and PRE_TEST in browser_tests.
@@ -70,7 +60,7 @@ class ProcessFlakeSwarmingTaskResultPipeline(
         version=version_number)
     logging.info(
         'Updating MasterFlakeAnalysis data %s/%s/%s/%s/%s',
-        master_name, builder_name, build_number, step_name, test_name)
+        master_name, builder_name, master_build_number, step_name, test_name)
     logging.info('MasterFlakeAnalysis %s version %s',
                  master_flake_analysis, master_flake_analysis.version_number)
 
@@ -91,6 +81,7 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     # requested) and update results['cache_hit'] accordingly.
     master_flake_analysis.swarming_rerun_results.append(results)
     master_flake_analysis.put()
+
     return tests_statuses
 
   def _GetArgs(self, master_name, builder_name, build_number,
@@ -102,8 +93,9 @@ class ProcessFlakeSwarmingTaskResultPipeline(
             master_build_number, test_name, version_number)
 
   # Unused Argument - pylint: disable=W0612,W0613
+  # Arguments number differs from overridden method - pylint: disable=W0221
   def _GetSwarmingTask(self, master_name, builder_name, build_number,
                        step_name, master_build_number, test_name, _):
-    # Get the appropriate kind of Swarming Task (Flake).
-    return FlakeSwarmingTask.Get(master_name, builder_name,
-                                 build_number, step_name, test_name)
+    # Gets the appropriate kind of swarming task (FlakeSwarmingTask).
+    return FlakeSwarmingTask.Get(master_name, builder_name, build_number,
+                                 step_name, test_name)
