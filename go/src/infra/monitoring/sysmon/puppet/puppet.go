@@ -6,6 +6,7 @@ package puppet
 
 import (
 	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/luci/luci-go/common/clock"
@@ -39,6 +40,9 @@ var (
 	age = metric.NewFloat("puppet/age",
 		"Time since last run",
 		nil)
+	isCanary = metric.NewBool("puppet/is_canary",
+		"Whether Puppet installs canary versions of CIPD packages on this machine",
+		nil)
 )
 
 type lastRunData struct {
@@ -58,16 +62,24 @@ func Register() {
 		path, err := lastRunFile()
 		if err != nil {
 			logging.Warningf(c, "Failed to get puppet last_run_summary.yaml path: %v", err)
-			return
+		} else {
+			if err := updateLastRunStats(c, path); err != nil {
+				logging.Warningf(c, "Failed to update puppet metrics: %v", err)
+			}
 		}
 
-		if err := update(c, path); err != nil {
-			logging.Warningf(c, "Failed to update puppet metrics: %v", err)
+		path, err = isPuppetCanaryFile()
+		if err != nil {
+			logging.Warningf(c, "Failed to get is_puppet_canary path: %v", err)
+			return
+		}
+		if err := updateIsCanary(c, path); err != nil {
+			logging.Warningf(c, "Failed to update canary metric: %v", err)
 		}
 	})
 }
 
-func update(c context.Context, path string) error {
+func updateLastRunStats(c context.Context, path string) error {
 	raw, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
@@ -97,5 +109,11 @@ func update(c context.Context, path string) error {
 		}
 	}
 
+	return nil
+}
+
+func updateIsCanary(c context.Context, path string) error {
+	_, err := os.Stat(path)
+	isCanary.Set(c, err == nil)
 	return nil
 }

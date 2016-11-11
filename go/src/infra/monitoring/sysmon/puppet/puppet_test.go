@@ -30,7 +30,7 @@ func TestMetrics(t *testing.T) {
 		defer os.Remove(file.Name())
 
 		Convey("with an empty file", func() {
-			So(update(c, file.Name()), ShouldBeNil)
+			So(updateLastRunStats(c, file.Name()), ShouldBeNil)
 			cv, err := configVersion.Get(c)
 			So(err, ShouldBeNil)
 			So(cv, ShouldEqual, 0)
@@ -41,19 +41,19 @@ func TestMetrics(t *testing.T) {
 		})
 
 		Convey("with a missing file", func() {
-			So(update(c, "file does not exist"), ShouldNotBeNil)
+			So(updateLastRunStats(c, "file does not exist"), ShouldNotBeNil)
 		})
 
 		Convey("with an invalid file", func() {
 			file.Write([]byte("\""))
 			file.Sync()
-			So(update(c, file.Name()), ShouldNotBeNil)
+			So(updateLastRunStats(c, file.Name()), ShouldNotBeNil)
 		})
 
 		Convey("with a file containing an array", func() {
 			file.Write([]byte("- one\n- two\n"))
 			file.Sync()
-			So(update(c, file.Name()), ShouldNotBeNil)
+			So(updateLastRunStats(c, file.Name()), ShouldNotBeNil)
 		})
 
 		Convey("metrics", func() {
@@ -89,7 +89,7 @@ func TestMetrics(t *testing.T) {
     success: 2
     total: 3`))
 			file.Sync()
-			So(update(c, file.Name()), ShouldBeNil)
+			So(updateLastRunStats(c, file.Name()), ShouldBeNil)
 
 			iv, _ := configVersion.Get(c)
 			So(iv, ShouldEqual, 1440131220)
@@ -147,4 +147,25 @@ func TestMetrics(t *testing.T) {
 		})
 	})
 
+	Convey("Puppet is_canary metric", t, func() {
+		Convey("with a missing file", func() {
+			So(updateIsCanary(c, "file does not exist"), ShouldBeNil)
+			v, err := isCanary.Get(c)
+			So(err, ShouldBeNil)
+			So(v, ShouldBeFalse)
+		})
+
+		Convey("with a present file", func() {
+			file, err := ioutil.TempFile("", "sysmon-puppet-test")
+			So(err, ShouldBeNil)
+
+			defer file.Close()
+			defer os.Remove(file.Name())
+
+			So(updateIsCanary(c, file.Name()), ShouldBeNil)
+			v, err := isCanary.Get(c)
+			So(err, ShouldBeNil)
+			So(v, ShouldBeTrue)
+		})
+	})
 }
