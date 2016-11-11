@@ -15,15 +15,18 @@ import cloudstorage as gcs
 from waterfall.build_info import BuildInfo
 
 
-_MASTER_URL_PATTERN = re.compile(r'^https?://build\.chromium\.org/p/([^/]+)'
-                                 '(/.*)?$')
+_HOST_NAME_PATTERN = r'build\.chromium\.org|uberchromegw\.corp\.google\.com'
 
-_BUILD_URL_PATTERN = re.compile(r'^https?://build\.chromium\.org/p/([^/]+)/'
-                                'builders/([^/]+)/builds/([\d]+)(/.*)?$')
+_MASTER_URL_PATTERN = re.compile(r'^https?://(?:%s)/[pi]/([^/]+)(/.*)?$' %
+                                 _HOST_NAME_PATTERN)
 
-_STEP_URL_PATTERN = re.compile(r'^https?://build\.chromium\.org/p/([^/]+)/'
-                               'builders/([^/]+)/builds/([\d]+)/steps/'
-                               '([^/]+)(/.*)?$')
+_BUILD_URL_PATTERN = re.compile(r'^https?://(?:%s)/[pi]/([^/]+)/builders/'
+                                '([^/]+)/builds/([\d]+)(/.*)?$' %
+                                _HOST_NAME_PATTERN)
+
+_STEP_URL_PATTERN = re.compile(r'^https?://(?:%s)/[pi]/([^/]+)/builders/'
+                               '([^/]+)/builds/([\d]+)/steps/([^/]+)(/.*)?$' %
+                               _HOST_NAME_PATTERN)
 
 # These values are buildbot constants used for Build and BuildStep.
 # This line was copied from buildbot/master/buildbot/status/results.py.

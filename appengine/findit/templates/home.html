@@ -3,13 +3,90 @@
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <title>Findit</title>
   <meta charset="utf-8">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script>
+  $(document).ready(function() {
+      var testUrlRegexOnBuildbot = /^https?\:\/\/build\.chromium\.org\/p\/([^\/]+)\/builders\/([^\/]+)\/builds\/([\d]+)\/steps\/([^\/]+)\/logs\/([^\/]+)$/;
+      var testUrlRegexOnUberProxy = /^https?\:\/\/uberchromegw\.corp\.google\.com\/i\/([^\/]+)\/builders\/([^\/]+)\/builds\/([\d]+)\/steps\/([^\/]+)\/logs\/([^\/]+)$/;
+
+    $('#test-url').on("change paste keyup", function() {
+      var url = $('#test-url').val().trim();
+      if (!url)
+        return;
+
+      url = decodeURI(url);
+      var groups = url.match(testUrlRegexOnBuildbot);
+      if (!groups)
+        groups = url.match(testUrlRegexOnUberProxy);
+      if (!groups)
+        return;
+
+      $('#master_name').val(groups[1]);
+      $('#builder_name').val(groups[2]);
+      $('#build_number').val(groups[3]);
+      $('#step_name').val(groups[4]);
+      $('#test_name').val(groups[5]);
+    });
+  });
+  </script>
 </head>
 <body>
-  <h3>Compile or test failures in Chromium waterfall</h3>
-  <form method="get" action="/waterfall/build-failure">
-    URL to the failed build cycle:
+  <ul>
+    <li> <b>What's the flaky Swarmed gtest?</b> (<a href="/waterfall/list-flakes">previous analyses</a>)
+      <br>
+      <br>
+      <div>
+        <form method="get" action="/waterfall/check-flake">
+          <div style="margin-left:30px">
+            URL to the test log: <input type="text" id="test-url" placeholder="https://build.chromium.org/p/chromium.mac/builders/Mac10.11%20Tests/builds/3379/steps/browser_tests%20on%20Mac-10.11/logs/WorkerDevToolsSanityTest.PauseInSharedWorkerInitialization" size="200"/>
+          </div>
+          Or:
+          <div style="margin-left:30px">
+            <table>
+              <tr>
+                <td style="text-align:right">Master:</td>
+                <td><input type="text" name="master_name" id="master_name" size="100" placeholder="chromium.mac"/></td>
+              </tr>
+              <tr>
+                <td style="text-align:right">Builder:</td>
+                <td><input type="text" name="builder_name" id="builder_name" size="100" placeholder="Mac10.11 Tests"/></td>
+              </tr>
+              <tr>
+                <td style="text-align:right">Build:</td>
+                <td><input type="text" name="build_number" id="build_number" size="100" placeholder="3379 (The build number)"/></td>
+              </tr>
+              <tr>
+                <td style="text-align:right">Step:</td>
+                <td><input type="text" name="step_name" id="step_name" size="100" placeholder="browser_tests on Mac-10.11 (Should be the full step name on build page)"/></td>
+              </tr>
+              <tr>
+                <td style="text-align:right">Test:</td>
+                <td><input type="text" name="test_name" id="test_name" size="100" placeholder="WorkerDevToolsSanityTest.PauseInSharedWorkerInitialization"/></td>
+              </tr>
+            </table>
+          </div>
+          <br>
+          Bug (optional): <input type="text" name="bug_id" id="bug_id" size="100" placeholder="123456 (Bug number on Monorail for Findit to notify with findings)"/><br>
+          <br>
+          <input type="submit" value="Find Regression Range">
+        </form>
+      </div>
+    </li>
     <br>
-    <input type="text" name="url" id="url" size="200" placeholder="https://build.chromium.org/p/chromium.linux/builders/Linux%20Builder/builds/63971"><br>
-    <input type="submit" value="Find it">
-  </form>
+    <br>
+    <br>
+    <br>
+    <li> <b>What's the failed Waterfall build?</b> (<a href="/waterfall/list-analyses">previous analyses</a>)
+      <br>
+      <br>
+      <div>
+        <form method="get" action="/waterfall/build-failure">
+          URL to the build:
+          <input type="text" name="url" id="build-url" size="200" placeholder="https://build.chromium.org/p/chromium.linux/builders/Linux%20Builder/builds/63971"><br>
+          <br>
+          <input type="submit" value="Find Culprit">
+        </form>
+      </div>
+    </li>
+  </ul>
 </body>

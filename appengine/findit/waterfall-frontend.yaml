@@ -29,10 +29,6 @@ handlers:
   static_files: static/images/favicon.ico
   upload: static/images/favicon.ico
 
-- url: /waterfall/flake
-  static_files: templates/flake/flake.html
-  upload: templates/flake/flake.html
-
 # Pipeline status UI handler.
 - url: /_ah/pipeline(/.*)?
   script: main.pipeline_status_application

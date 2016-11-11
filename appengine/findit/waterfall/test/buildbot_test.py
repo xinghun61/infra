@@ -84,6 +84,8 @@ class BuildBotTest(unittest.TestCase):
         ('http://build.chromium.org/p/chromium.win/builders/'
          'Win7%20Tests%20%281%29/builds/33911'): (
              'chromium.win', 'Win7 Tests (1)', 33911),
+        'https://uberchromegw.corp.google.com/i/m/builders/Linux/builds/234':
+            ('m', 'Linux', 234),
     }
 
     for url, expected_result in cases.iteritems():
