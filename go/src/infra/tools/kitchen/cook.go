@@ -77,12 +77,17 @@ var cmdCook = &subcommands.Command{
 			"timestamps",
 			false,
 			"If true, print CURRENT_TIMESTAMP annotations.")
-
 		fs.BoolVar(
 			&c.AllowGitiles,
 			"allow-gitiles",
 			false,
 			"If true, kitchen will try to use Gitiles API to fetch a recipe.")
+		fs.StringVar(
+			&c.CacheDir,
+			"cache-dir",
+			"",
+			"Directory with caches. If not empty, slashes will be converted to OS-native separators, "+
+				"it will be made absolute and passed to recipe as cache_dir property.")
 
 		c.logdog.addFlags(fs)
 
@@ -110,6 +115,7 @@ type cookRun struct {
 	OutputResultJSONFile string
 	Timestamps           bool
 	PythonPaths          stringlistflag.Flag
+	CacheDir             string
 
 	logdog cookLogDogParams
 }
@@ -290,7 +296,18 @@ func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
 	if props == nil {
 		props = map[string]interface{}{}
 	}
+	// TODO(nodir): remove path_config crbug.com/662586
 	props["path_config"] = "swarmbucket"
+
+	if c.CacheDir != "" {
+		cacheDir := filepath.FromSlash(c.CacheDir)
+		cacheDir, err := filepath.Abs(cacheDir)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "could not make cache dir absolute: %s", err)
+			return 1
+		}
+		props["cache_dir"] = cacheDir
+	}
 
 	// If we're not using LogDog, send out annotations.
 	bootstapSuccess := true
