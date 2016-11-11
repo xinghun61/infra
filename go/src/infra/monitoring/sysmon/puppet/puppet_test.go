@@ -168,4 +168,40 @@ func TestMetrics(t *testing.T) {
 			So(v, ShouldBeTrue)
 		})
 	})
+
+	Convey("Puppet exit_status metric", t, func() {
+		Convey("with a missing file", func() {
+			err := updateExitStatus(c, []string{"file does not exist"})
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("with a present file", func() {
+			file, err := ioutil.TempFile("", "sysmon-puppet-test")
+			So(err, ShouldBeNil)
+
+			Convey("containing a valid number", func() {
+				file.Write([]byte("42"))
+				file.Sync()
+				So(updateExitStatus(c, []string{file.Name()}), ShouldBeNil)
+				v, err := exitStatus.Get(c)
+				So(err, ShouldBeNil)
+				So(v, ShouldEqual, 42)
+			})
+
+			Convey("containing an invalid number", func() {
+				file.Write([]byte("not a number"))
+				file.Sync()
+				So(updateExitStatus(c, []string{file.Name()}), ShouldNotBeNil)
+			})
+
+			Convey("second in the list", func() {
+				file.Write([]byte("42"))
+				file.Sync()
+				So(updateExitStatus(c, []string{"does not exist", file.Name()}), ShouldBeNil)
+				v, err := exitStatus.Get(c)
+				So(err, ShouldBeNil)
+				So(v, ShouldEqual, 42)
+			})
+		})
+	})
 }

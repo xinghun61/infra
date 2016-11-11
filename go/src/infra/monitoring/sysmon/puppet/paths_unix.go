@@ -13,3 +13,7 @@ func lastRunFile() (string, error) {
 func isPuppetCanaryFile() (string, error) {
 	return "/var/lib/is_puppet_canary", nil
 }
+
+func exitStatusFiles() []string {
+	return []string{"/var/log/puppet/puppet_exit_status.txt"}
+}

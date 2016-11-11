@@ -5,8 +5,10 @@
 package puppet
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/luci/luci-go/common/clock"
@@ -21,6 +23,9 @@ import (
 var (
 	configVersion = metric.NewInt("puppet/version/config",
 		"The version of the puppet configuration.  By default this is the time that the configuration was parsed",
+		nil)
+	exitStatus = metric.NewInt("puppet/exit_status",
+		"Exit status of the previous puppet agent run.",
 		nil)
 	puppetVersion = metric.NewString("puppet/version/puppet",
 		"Version of puppet client installed.",
@@ -71,10 +76,14 @@ func Register() {
 		path, err = isPuppetCanaryFile()
 		if err != nil {
 			logging.Warningf(c, "Failed to get is_puppet_canary path: %v", err)
-			return
+		} else {
+			if err := updateIsCanary(c, path); err != nil {
+				logging.Warningf(c, "Failed to update puppet canary metric: %v", err)
+			}
 		}
-		if err := updateIsCanary(c, path); err != nil {
-			logging.Warningf(c, "Failed to update canary metric: %v", err)
+
+		if err := updateExitStatus(c, exitStatusFiles()); err != nil {
+			logging.Warningf(c, "Failed to update puppet exit status metric: %v", err)
 		}
 	})
 }
@@ -116,4 +125,23 @@ func updateIsCanary(c context.Context, path string) error {
 	_, err := os.Stat(path)
 	isCanary.Set(c, err == nil)
 	return nil
+}
+
+func updateExitStatus(c context.Context, paths []string) error {
+	for _, path := range paths {
+		raw, err := ioutil.ReadFile(path)
+		if err != nil {
+			continue // Try other paths in the list
+		}
+
+		status, err := strconv.ParseInt(string(raw), 10, 64)
+		if err != nil {
+			return fmt.Errorf("file %s does not contain a number: %s", path, err)
+		}
+
+		exitStatus.Set(c, status)
+		return nil
+	}
+
+	return fmt.Errorf("no files found: %s", paths)
 }

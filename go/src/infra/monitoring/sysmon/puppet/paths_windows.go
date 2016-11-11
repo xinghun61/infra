@@ -46,3 +46,10 @@ func commonAppdataPath() (string, error) {
 	}
 	return path, err
 }
+
+func exitStatusFiles() []string {
+	return []string{
+		`C:\chrome-infra-logs\puppet_exit_status.txt`,
+		`E:\chrome-infra-logs\puppet_exit_status.txt`,
+	}
+}
