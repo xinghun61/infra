@@ -53,8 +53,6 @@ includes:
 libraries:
 - name: endpoints
   version: "1.0"
-- name: jinja2
-  version: "2.6"
 - name: pycrypto
   version: "2.6"
 - name: webapp2
@@ -72,7 +70,8 @@ skip_files:
 - ^(.*/)?.*\.md
 - ^(.*/)?.*~
 - ^(.*/)?\..*
-- ^(.*/)?test.*
+- ^(.*/)?.*_test\.py
+- ^(.*/)?test/.*
 - ^(.*/)?[A-Z]+
 - ^(.*/)?[A-Z]+\.[a-z]+
 - ^tools.*

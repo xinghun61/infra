@@ -400,7 +400,7 @@ class RepoService(object):
     return self.cas_service.generate_fetch_url(
         DIGEST_ALGO, instance.instance_id)
 
-  def get_client_binary_info(self, instance):
+  def get_client_binary_info(self, instance, filename=None):
     """Returns URL to the client binary, its SHA1 hash and size.
 
     Used to get a direct URL to a client executable file. The file itself is
@@ -410,6 +410,9 @@ class RepoService(object):
     Args:
       instance: PackageInstance entity corresponding to some registered and
           processed cipd client package.
+      filename: if given, will be used to construct Content-Disposition header
+          returned when fetching the binary. User agents are expected to name
+          the downloaded file after the name specified here.
 
     Returns:
       Tuple (ClientBinaryInfo, error message) where:
@@ -434,7 +437,8 @@ class RepoService(object):
     assert isinstance(data['size'], (int, long))
     assert data['hash_algo'] == 'SHA1'
     assert cas.is_valid_hash_digest('SHA1', data['hash_digest'])
-    fetch_url = self.cas_service.generate_fetch_url('SHA1', data['hash_digest'])
+    fetch_url = self.cas_service.generate_fetch_url(
+        'SHA1', data['hash_digest'], filename=filename)
     return ClientBinaryInfo(
         sha1=data['hash_digest'],
         size=data['size'],

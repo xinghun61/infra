@@ -7,7 +7,6 @@
 # pylint: disable=unused-argument
 
 import datetime
-import hashlib
 import StringIO
 
 from testing_utils import testing
@@ -96,6 +95,16 @@ class CASServiceImplTest(testing.AppengineTestCase):
       'PEM private key',
       'GET\n\n\n1416448587\n/bucket/real/SHA1/' + 'a'*40
     )], calls)
+
+    # Content disposition header works too.
+    url = service.generate_fetch_url('SHA1', 'a' * 40, filename='abc')
+    self.assertEqual(
+        'https://storage.googleapis.com/bucket/real/SHA1/'
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?'
+        'GoogleAccessId=account%40email.com&'
+        'Expires=1416448587&'
+        'Signature=%2Bsignature%2B&'
+        'response-content-disposition=attachment%3B+filename%3D%22abc%22', url)
 
   def test_is_object_present(self):
     service = impl.CASService('/bucket/real', '/bucket/temp')

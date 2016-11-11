@@ -10,11 +10,15 @@ from . import processing
 from . import reader
 
 
+# All client flavors are under this path.
+CIPD_CLIENT_PREFIX = 'infra/tools/cipd/'
+
+
 # Package name suffix -> location of cipd binary file.
 CIPD_CLIENT_PACKAGES = {
-  'infra/tools/cipd/linux-': 'cipd',
-  'infra/tools/cipd/mac-': 'cipd',
-  'infra/tools/cipd/windows-': 'cipd.exe',
+  CIPD_CLIENT_PREFIX + 'linux-': 'cipd',
+  CIPD_CLIENT_PREFIX + 'mac-': 'cipd',
+  CIPD_CLIENT_PREFIX + 'windows-': 'cipd.exe',
 }
 
 

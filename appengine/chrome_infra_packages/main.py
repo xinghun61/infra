@@ -113,6 +113,7 @@ def create_endpoints_app():
 def create_frontend_app():
   """Returns WSGI app that serves HTML pages."""
   routes = [webapp2.Route(r'/', MainHandler)]
+  routes.extend(cipd.get_frontend_routes())
   return webapp2.WSGIApplication(routes, debug=utils.is_local_dev_server())
 
 

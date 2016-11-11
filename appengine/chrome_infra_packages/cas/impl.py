@@ -55,7 +55,6 @@ from cloudstorage import errors
 from cloudstorage import storage_api
 
 from components import auth
-from components import datastore_utils
 from components import decorators
 from components import utils
 
@@ -158,7 +157,7 @@ class CASService(object):
     return self._is_gs_file_present(
         self._verified_gs_path(hash_algo, hash_digest))
 
-  def generate_fetch_url(self, hash_algo, hash_digest):
+  def generate_fetch_url(self, hash_algo, hash_digest, filename=None):
     """Returns a signed URL that can be used to fetch an object.
 
     See https://developers.google.com/storage/docs/accesscontrol#Signed-URLs
@@ -179,12 +178,22 @@ class CASService(object):
     ])
     signature = self._rsa_sign(self._service_account_key.private_key, to_sign)
 
-    # Generate the final URL.
-    query_params = urllib.urlencode([
+    params = [
       ('GoogleAccessId', self._service_account_key.client_email),
       ('Expires', expires),
       ('Signature', signature),
-    ])
+    ]
+
+    # Oddly, response-content-disposition is not signed and can be slapped onto
+    # existing signed URL.
+    if filename:
+      assert '"' not in filename, filename
+      params.append((
+          'response-content-disposition',
+          'attachment; filename="%s"' % filename))
+
+    # Generate the final URL.
+    query_params = urllib.urlencode(params)
     assert gs_path.startswith('/'), gs_path
     return 'https://storage.googleapis.com%s?%s' % (gs_path, query_params)
 

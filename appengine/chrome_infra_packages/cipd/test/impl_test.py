@@ -456,12 +456,14 @@ class TestRepoService(testing.AppengineTestCase):
     instance = self.service.get_instance(
         package_name='infra/tools/cipd/linux-amd64',
         instance_id=digest)
-    info, error_msg = self.service.get_client_binary_info(instance)
+    info, error_msg = self.service.get_client_binary_info(
+        instance, filename='boo')
     expected = impl.ClientBinaryInfo(
         sha1='5a72c1535f8d132c341585207504d94e68ef8a9d',
         size=21,
         fetch_url=(
-            'https://signed-url/SHA1/5a72c1535f8d132c341585207504d94e68ef8a9d'))
+            'https://signed-url/SHA1/5a72c1535f8d132c341585207504d94e68ef8a9d'
+            '?filename=boo'))
     self.assertIsNone(error_msg)
     self.assertEqual(expected, info)
 
@@ -796,8 +798,11 @@ class MockedCASService(object):
   def is_fetch_configured(self):
     return True
 
-  def generate_fetch_url(self, algo, digest):
-    return 'https://signed-url/%s/%s' % (algo, digest)
+  def generate_fetch_url(self, algo, digest, filename=None):
+    r = 'https://signed-url/%s/%s' % (algo, digest)
+    if filename:
+      r += '?filename=%s' % filename
+    return r
 
   def is_object_present(self, algo, digest):
     return (algo, digest) in self.uploaded
