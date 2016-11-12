@@ -495,14 +495,16 @@ func TestMain(t *testing.T) {
 				})
 
 				Convey("get trooper queue", func() {
-					oldOAClient := getOAuthClient
-					getOAuthClient = func(c context.Context) (*http.Client, error) {
-						return &http.Client{}, nil
-					}
+					getBugQueueHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makeGetRequest(),
+						Params:  makeParams("label", "infra-troopers"),
+					})
 
-					_, err := refreshBugQueue(c, "infra-troopers")
-					So(err, ShouldNotBeNil)
-					getOAuthClient = oldOAClient
+					_, err := ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					So(w.Code, ShouldEqual, 200)
 				})
 
 				Convey("get alternate email", func() {

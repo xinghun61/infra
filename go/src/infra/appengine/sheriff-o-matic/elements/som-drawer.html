@@ -64,7 +64,7 @@
 
       <h2><iron-icon icon="settings"></iron-icon>Settings</h2>
       <div class="vertical layout">
-        <paper-checkbox checked="{{showInfraFailures}}">Show infra failures</paper-checkbox>
+        <paper-checkbox checked="{{showInfraFailures}}" hidden$=[[_isTrooperPage]]>Show infra failures</paper-checkbox>
         <paper-checkbox checked="{{useCompactView}}">Use compact alerts view</paper-checkbox>
         <paper-checkbox checked="{{useUberify}}">Use uberchromegw</paper-checkbox>
       </div>
@@ -79,6 +79,11 @@
 
       properties: {
         defaultTree: String,
+        _isTrooperPage: {
+          type: Boolean,
+          computed: '_computeIsTrooperPage(tree)',
+          value: false,
+        },
         tree: String,
         path: {
            type: String,
@@ -110,6 +115,10 @@
           type: Boolean,
           notify: true,
         },
+      },
+
+      _computeIsTrooperPage: function(tree) {
+        return tree === 'trooper';
       },
 
       _computeStaticPageList(staticPages) {

@@ -19,7 +19,7 @@
         margin: 0 1em;
       }
       h2 {
-        font-size: 18px;
+        font-size: 22px;
         font-weight: bold;
         padding: 0.5em 0.5em 0.2em;
         margin: 1em 0.5em 0.5em;
@@ -44,7 +44,8 @@
         last-response="{{_bugQueueJson}}"
         debounce-duration="300"></iron-ajax>
     <div id="main" hidden$="[[_hideBugQueue]]">
-      <h2>[[treeDisplayName]] Bug Queue (<a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriffing-bug-queues" target="_blank">Help?</a>)</h2>
+      <h2 hidden$="[[_isTrooperQueue]]">[[treeDisplayName]] Bug Queue (<a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriffing-bug-queues" target="_blank">Help?</a>)</h2>
+      <h2 hidden$="[[!_isTrooperQueue]]">Trooper Queue (<a href="http://go/trooper-queue" target="_blank">View in Monorail</a>)</h2>
       <div id="error" hidden$="[[_haveNoErrors(_bugQueueJsonError)]]">
         Error fetching bug queue: [[_bugQueueJsonError.error]]
       </div>
@@ -85,16 +86,21 @@
         },
         _bugsLoaded: {
           type: Boolean,
-          value: function () { return false; },
+          value: false,
         },
         _hideBugQueue: {
           type:Boolean,
-          value: function () { return true; },
+          value: true,
           computed: '_computeHideBugQueue(bugQueueLabel)',
+        },
+        _isTrooperQueue: {
+          type: Boolean,
+          value: false,
+          computed: '_computeIsTrooperQueue(bugQueueLabel)',
         },
         _showNoBugs: {
           type: Boolean,
-          value: function () { return false; },
+          value: false,
           computed: '_computeShowNoBugs(_bugQueueJson, _bugsLoaded, _bugQueueJsonError)',
         },
       },
@@ -113,7 +119,11 @@
         return !bugQueueLabel || bugQueueLabel === '';
       },
 
-      _computePriority: function (bug) {
+      _computeIsTrooperQueue: function(bugQueueLabel) {
+        return bugQueueLabel === 'infra-troopers';
+      },
+
+      _computePriority: function(bug) {
         if (!bug || !bug.labels) {
           return '';
         }

@@ -105,7 +105,7 @@
         border-left: 1px solid #ddd;
         padding: 1em;
       }
-      .severity-title {
+      .category-title {
         padding: 0.5em 0.5em 0.2em;
         margin: 1em 0.5em;
         background-color: #eee;
@@ -190,7 +190,7 @@
           <div id="alertsList" class="page-body">
             <div class="list-item">
               <som-tree-status tree="[[_tree]]" id="treeStatus"></som-tree-status>
-              <div class="notification">
+              <div class="notification" hidden$="[[_isTrooperPage]]">
                 Start at the top and try to clear all the alerts. For additional guidance, see:
                 <span hidden="[[!_helpLink]]">
                   <a href="[[_helpLink]]" target="_blank">[[_treeDisplayName]] Help</a>
@@ -198,6 +198,11 @@
                 <span hidden="[[_helpLink]]">
                   <a href="/help-som">The Help Page</a>
                 </span>
+              </div>
+              <div class="notification" hidden$="[[!_isTrooperPage]]">
+                Troopers, don't forget to check <a href="http://go/trooper-pagers" target="_blank">go/trooper-pagers</a>
+                and <a href="http://go/trooper-alerts" target="_blank">go/trooper-alerts</a> as well.
+                For additional guidance, see: <a href="http://go/trooper" target="_blank">The Trooper Playbook</a>
               </div>
             </div>
             <som-bug-queue id="bugQueue" bug-queue-label="[[_bugQueueLabel]]" tree-display-name="[[_treeDisplayName]]"></som-bug-queue>
@@ -211,9 +216,9 @@
                   <img src="/images/jparent-jump.gif" alt="Julie Jumping" title="Julie Jumping">
                 </div>
               </template>
-              <template is="dom-repeat" items="[[_computeSeverities(_alerts)]]" as="sev">
-                <div class="severity-title layout horizontal justified">
-                  <h3 class="self-center">[[_getSeverityTitle(sev)]]:</h3>
+              <template is="dom-repeat" items="[[_computeCategories(_alerts, _isTrooperPage)]]" as="cat">
+                <div class="category-title layout horizontal justified">
+                  <h3 class="self-center">[[_getCategoryTitle(cat, _isTrooperPage)]]:</h3>
                   <template is="dom-if" if="[[useCompactView]]">
                     <div class="self-center end section-buttons">
                       <paper-button raised on-tap="collapseAll">
@@ -225,7 +230,7 @@
                     </div>
                   </template>
                 </div>
-                <template is="dom-repeat" items="[[_alertsWithSeverity(_alerts, sev)]]" as="alert">
+                <template is="dom-repeat" items="[[_alertsWithCategory(_alerts, cat, _isTrooperPage)]]" as="alert">
                   <div class="list-item" tabindex$="[[tabIndex]]">
                     <som-alert-item
                         alert="{{alert}}"
@@ -282,12 +287,12 @@
       properties: {
         _activeRequests: {
           type: Number,
-          value: function() { return 0; },
+          value: 0,
         },
         _alerts: {
           type: Array,
           value: function() { return []; },
-          computed: '_computeAlerts(_alertsData.*, annotations, showInfraFailures)',
+          computed: '_computeAlerts(_alertsData.*, annotations, showInfraFailures, _isTrooperPage)',
         },
         // Map of stream to data, timestamp of latest updated data.
         _alertsData: {
@@ -319,12 +324,17 @@
         },
         _fetchedAlerts: {
           type: Boolean,
-          value: function() { return false; },
+          value: false,
         },
         _hideJulie: {
           type: Boolean,
           computed: '_computeHideJulie(_alerts, _fetchedAlerts, _fetchingAlerts, _fetchAlertsError, _tree)',
-          value: function() { return true; },
+          value: true,
+        },
+        _isTrooperPage: {
+          type: Boolean,
+          computed: '_computeIsTrooperPage(_tree)',
+          value: false,
         },
         logoutUrl: String,
         _path: {
@@ -423,6 +433,10 @@
           return trees[tree].help_link;
         }
         return '';
+      },
+
+      _computeIsTrooperPage: function(tree) {
+        return tree === 'trooper';
       },
 
       _computeTree: function(path) {
@@ -585,7 +599,7 @@
         return activeRequests !== 0;
       },
 
-      _computeAlerts: function(alertsData, annotations, showInfraFailures) {
+      _computeAlerts: function(alertsData, annotations, showInfraFailures, isTrooperPage) {
         if (!alertsData || !alertsData.base) {
           return [];
         }
@@ -597,7 +611,7 @@
           if (!alerts) {
             continue;
           }
-          if (!showInfraFailures) {
+          if (!isTrooperPage && !showInfraFailures) {
             alerts = alerts.filter(function(alert) {
               return alert.type !== 'infra-failure';
             });
@@ -644,27 +658,37 @@
         return alerts.length > 0;
       },
 
-      ////////////////////// Severity ///////////////////////////
+      ////////////////////// Alert Categories ///////////////////////////
 
-      _alertsWithSeverity: function(alerts, severity) {
+      _alertsWithCategory: function(alerts, category, isTrooperPage) {
         return alerts.filter(function(alert) {
-          return alert.severity == severity;
+          if (isTrooperPage) {
+            return alert.tree == category;
+          }
+          return alert.severity == category;
         });
       },
 
 
-      _computeSeverities: function(alerts) {
-        let severities = [];
+      _computeCategories: function(alerts, isTrooperPage) {
+        let categories = [];
         alerts.forEach(function(alert) {
-          if (!severities.includes(alert.severity)) {
-            severities.push(alert.severity);
+          let cat = alert.severity;
+          if (isTrooperPage) {
+            cat = alert.tree;
+          }
+          if (!categories.includes(cat)) {
+            categories.push(cat);
           }
         });
 
-        return severities;
+        return categories;
       },
 
-      _getSeverityTitle: function(severity) {
+      _getCategoryTitle: function(category, isTrooperPage) {
+        if (isTrooperPage) {
+          return this._computeTreeDisplayName(category, this._trees);
+        }
         return {
           0: 'Tree closers',
           1: 'Stale masters',
@@ -674,7 +698,7 @@
           5: 'New failures',
           6: 'Idle builders',
           7: 'Offline builders',
-        }[severity];
+        }[category];
       },
 
       ////////////////////// Annotations ///////////////////////////
@@ -685,7 +709,8 @@
         }
 
         this.mutateLocalState((newState) => {
-          this._alertsWithSeverity(this._alerts, evt.model.dataHost.dataHost.sev).forEach((alr) => {
+          let cat = evt.model.dataHost.dataHost.cat;
+          this._alertsWithCategory(this._alerts, cat, this._isTrooperPage).forEach((alr) => {
             newState[alr.key] = Object.assign(newState[alr.key] || {}, {opened: false});
           })
         });
@@ -697,7 +722,8 @@
         }
 
         this.mutateLocalState((newState) => {
-          this._alertsWithSeverity(this._alerts, evt.model.dataHost.dataHost.sev).forEach((alr) => {
+          let cat = evt.model.dataHost.dataHost.cat;
+          this._alertsWithCategory(this._alerts, cat, this._isTrooperPage).forEach((alr) => {
             newState[alr.key] = Object.assign(newState[alr.key] || {}, {opened: true});
           })
         });

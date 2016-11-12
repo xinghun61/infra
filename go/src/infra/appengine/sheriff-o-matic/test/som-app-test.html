@@ -106,11 +106,11 @@
     });
   });
 
-  suite('severity', function() {
+  suite('categories', function() {
     test('renders severity groups', function(done) {
       element.set(['_alertsData', 'test'], [{
-          "key": "something",
-          "severity": 2,
+          'key': 'something',
+          'severity': 2,
       }]);
       element._alertsTimes = {
         test: new Date()
@@ -118,8 +118,26 @@
 
       flush(function() {
         assert.equal(
-            element.$$('.severity-title').textContent.trim(),
-            element._getSeverityTitle(2) + ':');
+            element.$$('.category-title').textContent.trim(),
+            element._getCategoryTitle(2) + ':');
+        done();
+      });
+    });
+
+    test('renders tree groups for troopers', function(done) {
+      element._path = '/trooper';
+      element.set(['_alertsData', 'test'], [{
+          'key': 'something',
+          'severity': 2,
+          'tree': 'test',
+      }]);
+      element._alertsTimes = {
+        test: new Date()
+      };
+
+      flush(function() {
+        assert.equal(
+            element.$$('.category-title').textContent.trim(), 'test:');
         done();
       });
     });
