@@ -298,7 +298,7 @@ class GitRepositoryTest(testing.AppengineTestCase):
         http_client=http_client_for_git)
     git_repo.repo_url = 'https://repo'
     self.assertEqual(git_repo.repo_url, 'https://repo')
-    self.assertEqual(git_repo. http_client, http_client_for_git)
+    self.assertEqual(git_repo.http_client, http_client_for_git)
 
   def testEndingSlashInRepoUrl(self):
     git_repo1 = gitiles_repository.GitilesRepository(

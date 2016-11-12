@@ -230,7 +230,6 @@ class LocalGitParsersTest(unittest.TestCase):
     for changelog, expected_changelog in zip(changelogs, expected_changelogs):
       self.assertEqual(changelog.ToDict(), expected_changelog.ToDict())
 
-
   def testGitChangeLogsParserParseEmptyOutput(self):
     self.assertIsNone(local_git_parsers.GitChangeLogsParser()(None, 'repo'))
 
