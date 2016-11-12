@@ -3,12 +3,13 @@
 # found in the LICENSE file.
 
 from collections import namedtuple
+from collections import defaultdict
 import logging
 import re
 
 from crash.component import Component
 from crash.occurrence import RankByOccurrence
-
+from lib.gitiles.diff import ChangeType
 
 class ComponentClassifier(object):
   """Determines the component of a crash.
@@ -79,3 +80,36 @@ class ComponentClassifier(object):
       classes = map(self.GetClassFromStackFrame, crash_stack[:self.top_n])
 
     return RankByOccurrence(classes, 2)
+
+  # TODO(ymzhang): use component of new path as default. RENAME might
+  # need to return two (old path new path may have different components)
+  def GetClassFromFileChangeInfo(self, file_change_info):
+    """Determine which component is responsible for a touched file."""
+    if not file_change_info:
+      return None
+
+    for component in self.components:
+      if (file_change_info.change_type == ChangeType.DELETE):
+        if component.MatchesFile(file_change_info.old_path):
+          return component.component_name
+      else:
+        if component.MatchesFile(file_change_info.new_path):
+          return component.component_name
+
+    return ''
+
+  def ClassifyChangeLog(self, change_log, top_n=2):
+    """ Classifies components of a change log.
+
+     Args:
+       change_log: a change log
+       top_n: number of components assigned to this change log, default is 2
+
+     Returns:
+       List of components
+     """
+    if not change_log:
+      return None
+
+    classes = map(self.GetClassFromFileChangeInfo, change_log.touched_files)
+    return RankByOccurrence(classes, top_n, rank_function=lambda x:-len(x))

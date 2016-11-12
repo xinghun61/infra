@@ -35,3 +35,6 @@ class Component(namedtuple('Component',
       return True
     return self.function_regex.match(frame.function)
 
+  def MatchesFile(self, file_path):
+    """Return true if this component matches file path."""
+    return self.path_regex.match(file_path)
