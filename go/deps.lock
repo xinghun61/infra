@@ -1,8 +1,8 @@
 hash: 5b9475709d60c3452dbdec8d21c69b1c7c726c3fcc7abeada976315422ae1660
-updated: 2016-11-10T09:06:26.639028424-08:00
+updated: 2016-11-14T11:09:09.819406425-08:00
 imports:
 - name: cloud.google.com/go
-  version: 6d604042a92b80b1a997c7f6249b12c3b37d1087
+  version: 0f372ebbccc329fbaf558bd7bb7efae93cb8a504
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -98,7 +98,7 @@ imports:
   - cmd/covg
   - cmd/pcg
 - name: github.com/maruel/subcommands
-  version: a4141cc8723941ce5b7a9ab87b77f397a80e2be6
+  version: 87b8243e250894438041f34f7af5d1f0a2d73bb9
   repo: https://chromium.googlesource.com/external/github.com/maruel/subcommands.git
 - name: github.com/maruel/ut
   version: a9c9f15ccfa6f8b90182a53df32f4745586fbae3
@@ -129,7 +129,7 @@ imports:
   version: bb4de0191aa41b5507caa14b0650cdbddcd9280b
   repo: https://chromium.googlesource.com/external/github.com/shirou/w32.git
 - name: github.com/smartystreets/assertions
-  version: cc1e98f7d3caee8feedb0468525b80a59556d6e5
+  version: e60cfa771e3f4d18723a4119f1833898c9c62066
   repo: https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
 - name: github.com/smartystreets/goconvey
   version: 019319c870f8f1d61dc9c34291abff5cd128b6e8
@@ -156,7 +156,7 @@ imports:
   subpackages:
   - encoding/json5
 - name: golang.org/x/build
-  version: 01647ecae6d20af4d017f7ccd27cffcdf1f88716
+  version: 98922e10410a35e9cbd428f62f7549efa4eb7b77
   repo: https://go.googlesource.com/build.git
   subpackages:
   - gerrit
@@ -166,7 +166,7 @@ imports:
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: 9ef22118a4b25863aa94546daffbc0a18feaafb3
+  version: 8566e9372a500d1344adb9fdfd943c4354ef4aa2
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
@@ -188,7 +188,7 @@ imports:
   subpackages:
   - windows
 - name: golang.org/x/tools
-  version: 5061f921c7c3e66b68ad903adf57da380c327b8c
+  version: 5e2ae75eb72a62985e086eed33a5982a929e4fff
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -201,7 +201,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: 6bc9e77383320b75dcd6810569b6d54b2e84019d
+  version: a53f28dc539c26b08a77fc5ae954e02917686ef4
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
@@ -232,7 +232,7 @@ imports:
   subpackages:
   - protobuf
 - name: google.golang.org/grpc
-  version: c0989007a1fa4d511385a434c3591a449bc8425f
+  version: 0d9891286aca15aeb2b0a73be9f5946c3cfefa85
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
