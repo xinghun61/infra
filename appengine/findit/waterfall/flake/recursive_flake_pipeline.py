@@ -322,18 +322,17 @@ def get_next_run(master_flake_analysis, flakiness_algorithm_results_dict):
   elif (last_result < lower_flake_threshold or
         last_result > upper_flake_threshold):  # Stable result.
     flakiness_algorithm_results_dict['stable_in_a_row'] += 1
-    if (flakiness_algorithm_results_dict['stable_in_a_row'] >
+
+    # Only cares cases when a test changes from stable to flaky,
+    # not the opposite.
+    if (flakiness_algorithm_results_dict['flaked_out'] and
+        flakiness_algorithm_results_dict['stable_in_a_row'] >
         max_stable_in_a_row):  # Identified a stable region.
       flakiness_algorithm_results_dict['stabled_out'] = True
-    if (flakiness_algorithm_results_dict['stabled_out'] and
-        not flakiness_algorithm_results_dict['flaked_out']):
-      # Identified a candidate for the upper boundary.
-      # Earliest stable point to the right of a flaky region.
-      flakiness_algorithm_results_dict['upper_boundary'] = cur_run
-      flakiness_algorithm_results_dict['lower_boundary'] = None
-    elif (flakiness_algorithm_results_dict['flaked_out'] and
-          not flakiness_algorithm_results_dict['stabled_out'] and
-          not flakiness_algorithm_results_dict['lower_boundary']):
+
+    if (flakiness_algorithm_results_dict['flaked_out'] and
+        not flakiness_algorithm_results_dict['stabled_out'] and
+        not flakiness_algorithm_results_dict['lower_boundary']):
       # Identified a candidate for the lower boundary.
       # Latest stable point to the left of a flaky region.
       flakiness_algorithm_results_dict['lower_boundary'] = cur_run
@@ -344,22 +343,17 @@ def get_next_run(master_flake_analysis, flakiness_algorithm_results_dict):
   else:
     # Flaky result.
     flakiness_algorithm_results_dict['flakes_in_a_row'] += 1
+
     if (flakiness_algorithm_results_dict['flakes_in_a_row'] >
         max_flake_in_a_row):  # Identified a flaky region.
       flakiness_algorithm_results_dict['flaked_out'] = True
+
     if (flakiness_algorithm_results_dict['flaked_out'] and
         not flakiness_algorithm_results_dict['stabled_out']):
       # Identified a candidate for the upper boundary.
       # Earliest flaky point to the right of a stable region.
       flakiness_algorithm_results_dict['upper_boundary'] = cur_run
       flakiness_algorithm_results_dict['lower_boundary'] = None
-    elif (flakiness_algorithm_results_dict['stabled_out'] and
-          not flakiness_algorithm_results_dict['flaked_out'] and
-          not flakiness_algorithm_results_dict['lower_boundary']):
-      # Identified a candidate for the lower boundary.
-      # Latest flaky point to the left of a stable region.
-      flakiness_algorithm_results_dict['lower_boundary'] = cur_run
-      flakiness_algorithm_results_dict['lower_boundary_result'] = 'FLAKE'
     flakiness_algorithm_results_dict['stable_in_a_row'] = 0
     step_size = flakiness_algorithm_results_dict['flakes_in_a_row'] + 1
     return cur_run - step_size

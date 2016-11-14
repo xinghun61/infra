@@ -275,7 +275,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'flakes_in_a_row': 0,
         'stable_in_a_row': 4,
         'stabled_out': False,
-        'flaked_out': False,
+        'flaked_out': True,
         'last_build_number': 0,
         'lower_boundary': None,
         'upper_boundary': None,
@@ -304,7 +304,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_build_number, build_number, step_name,
         test_name, analysis.version_number, test_result_future,
         flakiness_algorithm_results_dict)
-    self.assertEquals(flakiness_algorithm_results_dict['stabled_out'], True)
+    self.assertTrue(flakiness_algorithm_results_dict['stabled_out'])
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
@@ -546,41 +546,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                      build_number)
     self.assertEqual(flakiness_algorithm_results_dict['lower_boundary_result'],
                      'STABLE')
-
-  def testGetNextRunSetFlakeLowerBoundary(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    data_point = DataPoint()
-    data_point.pass_rate = .5
-    data_point.build_number = 100
-    analysis.data_points.append(data_point)
-    analysis.put()
-
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 0,
-        'stabled_out': True,
-        'flaked_out': False,
-        'last_build_number': 0,
-        'lower_boundary': None,
-        'upper_boundary': None,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0
-    }
-    get_next_run(analysis, flakiness_algorithm_results_dict)
-    self.assertEqual(flakiness_algorithm_results_dict['lower_boundary'],
-                     build_number)
-    self.assertEqual(flakiness_algorithm_results_dict['lower_boundary_result'],
-                     'FLAKE')
 
   def testSequentialNextRunFirstTime(self):
     master_name = 'm'
