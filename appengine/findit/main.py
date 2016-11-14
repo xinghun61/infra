@@ -9,6 +9,7 @@ from common.pipeline_wrapper import pipeline_handlers
 from common.pipeline_wrapper import pipeline_status_ui
 from findit_api import FindItApi
 from handlers import build_failure
+from handlers import calculate_confidence_scores
 from handlers import check_duplicate_failures
 from handlers import config
 from handlers import culprit
@@ -68,6 +69,8 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/build-failure', build_failure.BuildFailure),
     ('/list-analyses', list_analyses.ListAnalyses),
     ('/waterfall/build-failure', build_failure.BuildFailure),
+    ('/waterfall/calculate-confidence-scores',
+     calculate_confidence_scores.CalculateConfidenceScores),
     ('/waterfall/check-duplicate-failures',
      check_duplicate_failures.CheckDuplicateFailures),
     ('/waterfall/check-flake', check_flake.CheckFlake),

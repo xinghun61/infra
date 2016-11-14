@@ -1,1 +1,4 @@
 cron:
+- description: Sunday morning calculate confidence
+  url: /waterfall/calculate-confidence-scores
+  schedule: every sunday 09:00

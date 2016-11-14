@@ -8,7 +8,6 @@
 
 import argparse
 from collections import defaultdict
-import copy
 import datetime
 import json
 import os
@@ -19,8 +18,8 @@ sys.path.insert(1, _REMOTE_API_DIR)
 
 import remote_api
 
-from common import time_util
 from common.waterfall import failure_type
+from lib import time_util
 from model import analysis_approach_type
 from model import suspected_cl_status
 from model.suspected_cl_confidence import SuspectedCLConfidence
