@@ -10,13 +10,14 @@ from testing_utils import testing
 
 class ScriptUtilTest(testing.AppengineTestCase):
 
+  # TODO(katesonia): Figure out a good way to work around cache.
   def testGetLocalGitCommandOutput(self):
     class _MockProcess(object):
       def __init__(self, command, *_):
         self.command = command
 
       def communicate(self, *_):
-        return self.command, 'dummy'
+        return self.command, 'error'
 
       @property
       def returncode(self):

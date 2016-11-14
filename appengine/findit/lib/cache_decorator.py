@@ -47,6 +47,7 @@ import zlib
 from google.appengine.api import memcache
 
 
+# TODO(katesonia): Change this to a better name, e.g. Cache.
 class Cacher(object):
   """An interface to cache and retrieve data.
 

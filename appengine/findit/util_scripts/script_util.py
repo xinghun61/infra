@@ -9,6 +9,9 @@ import os
 import subprocess
 import sys
 
+from lib.cache_decorator import Cached
+from local_cache import LocalCacher  # pylint: disable=W
+
 
 def SetUpSystemPaths():  # pragma: no cover
   """Sets system paths so as to import modules in findit, third_party and
@@ -29,8 +32,8 @@ def SetUpSystemPaths():  # pragma: no cover
   sys.path.insert(1, findit_root_dir)
 
 
-# TODO(katesonia): Add local cache for this function.
-def GetCommandOutput(command):
+@Cached(namespace='Command-output', cacher=LocalCacher())
+def GetCommandOutput(command):  # pragma: no cover
   """Gets the output stream of executable command.
 
   Args:
