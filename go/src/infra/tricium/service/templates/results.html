@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <title>Tricium</title>
-<style>
-  body {
-    font-family: sans-serif;
-  }
-</style>
+<head>
+  <link rel="stylesheet" type="text/css" href="/static/style.css"/>
+</head>
 <body>
-== T R I C I U M (Under Construction) ==
-<hr size="1">
-Runs:<br>
-<table>
+<p class="header">Tricium</p>
+<fieldset class="menu">
+<a class="menu-item" href="/">Start</a>
+<a class="menu-item" href="/results">Results</a>
+</fieldset>
+<div style="overflow-x:auto">
+<table class="results">
 <tr>
   <th><b>Received</b></th>
   <th><b>ID</b></th>
@@ -25,8 +26,9 @@ Runs:<br>
   <td>{{ .RunKind }}</td>
   <td>{{ .RunState }}</td>
   <td>{{ .ChangeContext }}</td>
-  <td>{{ .ChangeURL }}</td>
+  <td><a href="{{ .ChangeURL }}">{{ .ChangeURL }}</a></td>
 </tr>
 {{end}}
 </table>
+</div>
 </body>

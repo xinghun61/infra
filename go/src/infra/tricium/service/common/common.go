@@ -185,9 +185,15 @@ func ShowResultsPage(ctx context.Context, w http.ResponseWriter, runs []Run) {
 	executeTemplate(ctx, template.Must(template.ParseFiles("templates/results.html")), w, data)
 }
 
-// ShowBasePage executes the base page template
-func ShowBasePage(ctx context.Context, w http.ResponseWriter, d interface{}) {
-	executeTemplate(ctx, template.Must(template.ParseFiles("templates/base.html")), w, d)
+// ShowBasePage executes the base page template.
+// This is the service landing page showing navigation links, a form for
+// Gerrit analysis requests, and a status message (provided as an argument).
+func ShowBasePage(ctx context.Context, w http.ResponseWriter, m string) {
+	u := map[string]interface{}{
+		"GerritContext": strconv.Itoa(int(GERRIT)),
+		"StatusMsg":     m,
+	}
+	executeTemplate(ctx, template.Must(template.ParseFiles("templates/base.html")), w, u)
 }
 
 func executeTemplate(ctx context.Context, t *template.Template, w http.ResponseWriter, d interface{}) {

@@ -15,16 +15,7 @@ import (
 )
 
 func init() {
-	http.HandleFunc("/workflow-listener/status", statusPageHandler)
 	http.HandleFunc("/workflow-listener/queue-handler", queueHandler)
-}
-
-func statusPageHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO(emso): Add workflow listener stats
-	d := map[string]interface{}{
-		"Msg": "Status of the Workflow Listener ...",
-	}
-	common.ShowBasePage(appengine.NewContext(r), w, d)
 }
 
 func queueHandler(w http.ResponseWriter, r *http.Request) {

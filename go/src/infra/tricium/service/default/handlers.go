@@ -24,32 +24,42 @@ func init() {
 }
 
 func landingPageHandler(w http.ResponseWriter, r *http.Request) {
-	d := map[string]interface{}{
-		"Msg":             "This service is under construction ...",
-		"ShowRequestForm": true,
-	}
-	common.ShowBasePage(appengine.NewContext(r), w, d)
+	common.ShowBasePage(appengine.NewContext(r), w, "This service is under construction.")
 }
 
 func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 
-	// TODO: Use common.AnalysisTask
-	// Add to the service queue.
-	e := map[string][]string{
-		"Name": {"Service Task"},
+	// Verify form values.
+	cctx := r.FormValue("Context")
+	curl := r.FormValue("ChangeURL")
+	cinst := r.FormValue("Instance")
+	cproj := r.FormValue("Project")
+	cid := r.FormValue("ChangeID")
+	crev := r.FormValue("Revision")
+	cref := r.FormValue("GitRef")
+	if cctx == "" || curl == "" || cinst == "" || cproj == "" || cid == "" || crev == "" || cref == "" {
+		common.ReportServerError(ctx, w, fmt.Errorf("missing required information"))
+		return
 	}
-	t := taskqueue.NewPOSTTask("/queue-handler", e)
+
+	// Add to the service queue.
+	u := url.Values{}
+	u.Add("Context", cctx)
+	u.Add("ChangeURL", curl)
+	u.Add("Instance", cinst)
+	u.Add("Project", cproj)
+	u.Add("ChangeID", cid)
+	u.Add("Revision", crev)
+	u.Add("GitRef", cref)
+	t := taskqueue.NewPOSTTask("/queue-handler", u)
 	if _, err := taskqueue.Add(ctx, t, "service-queue"); err != nil {
 		common.ReportServerError(ctx, w, err)
 		return
 	}
 
-	// Show request added page.
-	d := map[string]interface{}{
-		"Msg": "Dummy analysis request sent.",
-	}
-	common.ShowBasePage(appengine.NewContext(r), w, d)
+	// Return the landing page with a status message.
+	common.ShowBasePage(appengine.NewContext(r), w, "Analysis request sent.")
 }
 
 // TODO(emso): Add authentication checks.

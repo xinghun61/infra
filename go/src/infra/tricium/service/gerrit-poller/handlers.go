@@ -66,16 +66,7 @@ func (c byUpdatedTime) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
 func (c byUpdatedTime) Less(i, j int) bool { return c[i].Updated.Time().Before(c[i].Updated.Time()) }
 
 func init() {
-	http.HandleFunc("/gerrit-poller/status", statusPageHandler)
 	http.HandleFunc("/gerrit-poller/poll", pollHandler)
-}
-
-func statusPageHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO(emso): Add Gerrit poller stats
-	d := map[string]interface{}{
-		"Msg": "Status of the Gerrit Poller ...",
-	}
-	common.ShowBasePage(appengine.NewContext(r), w, d)
 }
 
 // pollHandler queries Gerrit for changes since the last poll.

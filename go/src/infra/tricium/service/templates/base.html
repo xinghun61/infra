@@ -1,20 +1,48 @@
 <!DOCTYPE html>
 <title>Tricium</title>
-<style>
-  body {
-    font-family: sans-serif;
-  }
-</style>
+<head>
+  <link rel="stylesheet" type="text/css" href="/static/style.css"/>
+</head>
 <body>
-== T R I C I U M (Under Construction) ==
-<hr size="1">
-{{.Msg}}
-<hr size="1">
-{{if .ShowRequestForm}}
+<p class="header">Tricium</p>
+<fieldset class="menu">
+<a class="menu-item" href="/">Start</a>
+<a class="menu-item" href="/results">Results</a>
+</fieldset>
+<!-- Gerrit analysis form, filling in example values from a test repository for easier testing -->
+  <!-- TODO(emso): replace values with placeholder values -->
 <form action="/analyze" method="post">
-    <div><input type="submit" value="Dummy Analysis Request"></div>
+  <div class="fieldSet">
+  <fieldset>
+    <legend>Gerrit Patchset</legend>
+    <i>(Example values filled in. Replace with corresponding values for your change.)</i>
+    <input type="hidden" name="Context" value="{{.GerritContext}}"/>
+    <p>
+    <label class="field" for="Instance">Instance:</label>
+    <input type="url" name="Instance" size="50" class="textbox-400"
+      value="https://chromium-review.googlesource.com" required/>
+    <p>
+    <label class="field" for="Project">Project:</label>
+    <input type="text" name="Project" size="50" class="textbox-400"
+      value="playground/gerrit-tricium" required/>
+    <p>
+    <label class="field" for="ChangeID">ChangeID:</label>
+    <input type="text" name="ChangeID" size="50" class="textbox-400"
+      value="If4b96037ad1c870e2b1c0b94b1b8a8f18955730a" required/>
+    <p>
+    <label class="field" for="Revision">Revision:</label>
+    <input type="text" name="Revision" size="50" class="textbox-400"
+      value="3304e69468403c05c1824af809746ced364b09f5" required/>
+    <p>
+    <label class="field" for="GitRef">GitRef:</label>
+    <input type="text" name="GitRef" size="50" class="textbox-400"
+      value="refs/changes/18/400218/17" required/>
+    <p><label class="field" for="ChangeURL">ChangeURL:</label>
+    <input type="url" name="ChangeURL" size="50" class="textbox-400"
+      value="https://chromium-review.googlesource.com/c/400218/17" required/>
+  </fieldset>
+  <input class="button" type="submit" value="Analyze">
+  </div>
 </form>
-{{end}}
-<hr size="1">
-[<a href="/results">Results</a>]
+<p class="status">{{.StatusMsg}}</p>
 </body>

@@ -15,16 +15,7 @@ import (
 )
 
 func init() {
-	http.HandleFunc("/workflow-launcher/status", statusPageHandler)
 	http.HandleFunc("/workflow-launcher/queue-handler", queueHandler)
-}
-
-func statusPageHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO(emso): Add workflow launcher stats
-	d := map[string]interface{}{
-		"Msg": "Status of the Workflow Launcher ...",
-	}
-	common.ShowBasePage(appengine.NewContext(r), w, d)
 }
 
 func queueHandler(w http.ResponseWriter, r *http.Request) {

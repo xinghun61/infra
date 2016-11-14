@@ -23,8 +23,5 @@ func validateHandler(w http.ResponseWriter, r *http.Request) {
 	// get the service config if needed from luci-config, merge configs, validate
 	// the merged config. Return merged config together with validation results
 	// in the response.
-	d := map[string]interface{}{
-		"Msg": "Status of the validator ...",
-	}
-	common.ShowBasePage(appengine.NewContext(r), w, d)
+	common.ShowBasePage(appengine.NewContext(r), w, "Status of validation ...")
 }
