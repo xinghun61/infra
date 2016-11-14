@@ -419,6 +419,8 @@ class FetchClientBinaryResponse(messages.Message):
     size = messages.IntegerField(2, required=True)
     # A signed url to fetch the binary file from.
     fetch_url = messages.StringField(3, required=True)
+    # The file name of the actual extracted binary
+    file_name = messages.StringField(4, required=True)
 
   status = messages.EnumField(Status, 1, required=True)
   error_message = messages.StringField(2, required=False)
@@ -1171,7 +1173,8 @@ class PackageRepositoryApi(remote.Service):
         client_binary=FetchClientBinaryResponse.ClientBinary(
             sha1=client_info.sha1,
             size=client_info.size,
-            fetch_url=client_info.fetch_url))
+            fetch_url=client_info.fetch_url,
+            file_name=client.get_cipd_client_filename(package_name)))
 
 
   # Counter methods.

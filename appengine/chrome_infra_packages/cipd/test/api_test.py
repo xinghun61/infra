@@ -657,6 +657,7 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
         'fetch_url': 'https://client_url',
         'sha1': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
         'size': '123',
+        'file_name': 'cipd',
       },
       'instance': {
         'instance_id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
