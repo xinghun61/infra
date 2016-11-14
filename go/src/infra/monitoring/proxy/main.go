@@ -11,15 +11,16 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"runtime"
 	"sync"
 	"time"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/clock"
+	"github.com/luci/luci-go/common/cloudlogging"
 	luciErrors "github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/logging/cloudlog"
 	"github.com/luci/luci-go/common/logging/gologger"
 	"github.com/luci/luci-go/common/sync/parallel"
 	"github.com/luci/luci-go/common/tsmon"
@@ -81,7 +82,7 @@ func (c *config) addFlags(fs *flag.FlagSet) {
 
 func (c *config) createAuthenticatedClient(ctx context.Context) (*http.Client, error) {
 	scopes := []string{}
-	scopes = append(scopes, cloudLoggingScopes...)
+	scopes = append(scopes, cloudlogging.CloudLoggingScopes...)
 	scopes = append(scopes, pubsubScopes...)
 
 	mode := auth.SilentLogin
@@ -292,26 +293,25 @@ func (a *application) proxySingleMessage(ctx context.Context, msg *pubsub.Messag
 
 // mainImpl is the main execution function.
 func mainImpl(args []string) int {
-	// Use all of teh corez.
-	if os.Getenv("GOMAXPROCS") == "" {
-		runtime.GOMAXPROCS(runtime.NumCPU())
-	}
-
 	// Install a console logger by default.
 	ctx := context.Background()
 	ctx = gologger.StdConfig.Use(ctx)
 
-	loggerConfig := newLoggerConfig() // Internal logging config (cloud logging).
+	clConfig := cloudlogging.ClientOptions{
+		LogID: "monitoring_proxy",
+	}
 	logConfig := log.Config{Level: log.Debug}
 	config := config{}
+
 	tsmonConfig := tsmon.NewFlags()
 	tsmonConfig.Flush = "auto"
 	tsmonConfig.Target.TargetType = "task"
 	tsmonConfig.Target.TaskServiceName = "monitoring_proxy"
+	clConfig.Populate()
 
 	fs := flag.CommandLine
 	config.addFlags(fs)
-	loggerConfig.addFlags(fs)
+	clConfig.AddFlags(fs)
 	logConfig.AddFlags(fs)
 	tsmonConfig.Register(fs)
 	fs.Parse(args)
@@ -326,8 +326,6 @@ func mainImpl(args []string) int {
 		tsmonConfig.Target.TaskJobName = config.pubsub.subscription
 	}
 
-	// TODO(dnj): Fix this once LUCI logging CL lands.
-	ctx = log.SetLevel(ctx, logConfig.Level)
 	ctx = logConfig.Set(ctx)
 
 	// Load authenticated client.
@@ -337,12 +335,17 @@ func mainImpl(args []string) int {
 		return 1
 	}
 
-	// Setup local logging configuration.
-	ctx, logFlushFunc, err := loggerConfig.use(ctx, client)
-	if err == nil {
-		defer logFlushFunc()
+	// Setup cloud logging.
+	clClient, err := cloudlogging.NewClient(clConfig, client)
+	if err != nil {
+		log.WithError(err).Warningf(ctx, "Failed to setup cloud logging")
 	} else {
-		log.Warningf(log.SetError(ctx, err), "Failed to setup cloud logging.")
+		// Buffer log entries, flush before exiting.
+		buf := cloudlogging.NewBuffer(ctx, cloudlogging.BufferOptions{}, clClient)
+		defer buf.StopAndFlush()
+
+		// Replace the console logger.
+		ctx = cloudlog.Use(ctx, cloudlog.Config{}, buf)
 	}
 
 	app := newApplication(config)
