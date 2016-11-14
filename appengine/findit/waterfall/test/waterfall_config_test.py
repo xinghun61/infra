@@ -144,6 +144,7 @@ class MastersTest(wf_testcase.WaterfallTestCase):
             'max_flake_in_a_row': 4,
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000
+            'max_build_numbers_to_look_back': 1000,
+            'use_nearby_neighbor': True
         },
         waterfall_config.GetCheckFlakeSettings())

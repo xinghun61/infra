@@ -113,6 +113,7 @@ def ScheduleAnalysisIfNeeded(
     None if no analysis was scheduled and the user has no permission to.
   """
   algorithm_parameters = waterfall_config.GetCheckFlakeSettings()
+  use_nearby_neighbor = algorithm_parameters.get('use_nearby_neighbor', False)
 
   need_new_analysis, analysis = _NeedANewAnalysis(
       normalized_test, original_test, algorithm_parameters, bug_id=bug_id,
@@ -149,7 +150,8 @@ def ScheduleAnalysisIfNeeded(
         normalized_test.test_name, analysis.version_number,
         master_build_number=normalized_test.build_number,
         flakiness_algorithm_results_dict=flakiness_algorithm_results_dict,
-        manually_triggered=manually_triggered)
+        manually_triggered=manually_triggered,
+        use_nearby_neighbor=use_nearby_neighbor)
     pipeline_job.target = appengine_util.GetTargetNameForModule(
         constants.WATERFALL_BACKEND)
     pipeline_job.StartOffPSTPeakHours(queue_name=queue_name)

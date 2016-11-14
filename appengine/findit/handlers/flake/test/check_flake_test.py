@@ -303,5 +303,3 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         CheckFlake()._ValidateInput(
             'm', 'b', '1', 's', 't', 'a').get('data', {}).get('error_message'),
         'Bug id (optional) must be an int')
-
-

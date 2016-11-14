@@ -90,6 +90,7 @@ _MOCK_CHECK_FLAKE_SETTINGS = {
     'max_stable_in_a_row': 4,
     'iterations_to_rerun': 100,
     'max_build_numbers_to_look_back': 1000,
+    'use_nearby_neighbor': True,
     'update_monorail_bug': True,
 }
 
@@ -772,7 +773,8 @@ class ConfigTest(testing.AppengineTestCase):
             'max_flake_in_a_row': 4,
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000
+            'max_build_numbers_to_look_back': 1000,
+            'use_nearby_neighbor': True
         }))
     self.assertFalse(config._ValidateCheckFlakeSettings(
         {
@@ -781,7 +783,8 @@ class ConfigTest(testing.AppengineTestCase):
             'max_flake_in_a_row': 4,
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000
+            'max_build_numbers_to_look_back': 1000,
+            'use_nearby_neighbor': True
         }))
     self.assertFalse(config._ValidateCheckFlakeSettings(
         {
@@ -790,7 +793,8 @@ class ConfigTest(testing.AppengineTestCase):
             'max_flake_in_a_row': [],  # Should be an int.
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000
+            'max_build_numbers_to_look_back': 1000,
+            'use_nearby_neighbor': True
         }))
     self.assertFalse(config._ValidateCheckFlakeSettings(
         {
@@ -799,7 +803,8 @@ class ConfigTest(testing.AppengineTestCase):
             'max_flake_in_a_row': 4,
             'max_stable_in_a_row': {},  # Should be an int.
             'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000
+            'max_build_numbers_to_look_back': 1000,
+            'use_nearby_neighbor': True
         }))
     self.assertFalse(config._ValidateCheckFlakeSettings(
         {
@@ -808,7 +813,8 @@ class ConfigTest(testing.AppengineTestCase):
             'max_flake_in_a_row': 4,
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 3.2,  # Should be an int.
-            'max_build_numbers_to_look_back': 1000
+            'max_build_numbers_to_look_back': 1000,
+            'use_nearby_neighbor': True
         }))
     self.assertFalse(config._ValidateCheckFlakeSettings(
         {
@@ -817,7 +823,18 @@ class ConfigTest(testing.AppengineTestCase):
             'max_flake_in_a_row': 4,
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 4,
-            'max_build_numbers_to_look_back': 'a'  # Should be an int.
+            'max_build_numbers_to_look_back': 'a',  # Should be an int.
+            'use_nearby_neighbor': True
+        }))
+    self.assertFalse(config._ValidateCheckFlakeSettings(
+        {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 4,
+            'max_build_numbers_to_look_back': 100,
+            'use_nearby_neighbor': []  # Should be a bool.
         }))
     self.assertFalse(config._ValidateCheckFlakeSettings(
         {
@@ -837,5 +854,6 @@ class ConfigTest(testing.AppengineTestCase):
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 100,
             'max_build_numbers_to_look_back': 1000,
+            'use_nearby_neighbor': True,
             'update_monorail_bug': True,
         }))

@@ -101,6 +101,119 @@ def _GetETAToStartAnalysis(manually_triggered):
   return time_util.GetDatetimeInTimezone('UTC', eta)
 
 
+def _IsSwarmingTaskSufficientForCacheHit(
+    flake_swarming_task, number_of_iterations):
+  """Determines whether or not a swarming task is sufficient for a cache hit.
+
+  Args:
+    flake_swarming_task (FlakeSwarmingTask): The task to be examined.
+    number_of_iterations (int): The minimum number of iterations
+      flake_swarming_task needs to have run in order to count as a cache hit.
+
+  Returns:
+    A bool whether or not flake_swarming_task is sufficient to be a cache hit.
+  """
+  # Swarming task must exist.
+  if not flake_swarming_task:
+    return False
+
+  # Cached swarming task's numbers must be thorough enough.
+  if flake_swarming_task.tries < number_of_iterations:
+    return False
+
+  # Cached swarming task must either be scheduled, in progress, or completed.
+  return flake_swarming_task.status in [analysis_status.PENDING,
+                                        analysis_status.RUNNING,
+                                        analysis_status.COMPLETED]
+
+
+def _GetBestBuildNumberToRun(
+    master_name, builder_name, preferred_run_build_number, step_name, test_name,
+    step_size, number_of_iterations):
+  """Finds the optimal nearby swarming task build number to use for a cache hit.
+
+  Builds are searched back looking for something either already completed or in
+  progress. Completed builds are returned immediately, whereas for those in
+  progress the closer the build number is to the original, the higher priority
+  it is given.
+
+  Args:
+    master_name (str): The name of the master for this flake analysis.
+    builder_name (str): The name of the builder for this flake analysis.
+    preferred_run_build_number (int): The originally-requested build number to
+      run the swarming task on.
+    step_name (str): The name of the step to run swarming on.
+    test_name (str): The name of the test to run swarming on.
+    step_size (int): The distance of the last preferred build number that was
+      called on this analysis. Used for determining the lookback threshold.
+    number_of_iterations (int): The number of iterations being requested for
+      the swarming task that is to be performed. Used to determine a sufficient
+      cache hit.
+
+  Returns:
+    build_number (int): The best build number to analyze for this iteration of
+      the flake analysis.
+  """
+  # Looks forward or backward up to half of step_size.
+  possibly_cached_build_numbers = _GetListOfNearbyBuildNumbers(
+      preferred_run_build_number, step_size / 2)
+  candidate_build_number = None
+  candidate_flake_swarming_task_status = None
+
+  for build_number in possibly_cached_build_numbers:
+    cached_flake_swarming_task = FlakeSwarmingTask.Get(
+        master_name, builder_name, build_number, step_name, test_name)
+    sufficient = _IsSwarmingTaskSufficientForCacheHit(
+        cached_flake_swarming_task, number_of_iterations)
+
+    if sufficient:
+      if cached_flake_swarming_task.status == analysis_status.COMPLETED:
+        # Found a nearby swarming task that's already done.
+        return build_number
+
+      # Keep searching, but keeping this candidate in mind. Pending tasks are
+      # considered, but running tasks are given higher priority.
+      # TODO (lijeffrey): A further optimization can be to pick the swarming
+      # task with the earliest ETA.
+      if (candidate_build_number is None or
+          (candidate_flake_swarming_task_status == analysis_status.PENDING and
+           cached_flake_swarming_task.status == analysis_status.RUNNING)):
+        # Either no previous candidate or a better candidate was found.
+        candidate_build_number = build_number
+        candidate_flake_swarming_task_status = cached_flake_swarming_task.status
+
+  # No cached build nearby deemed adequate could be found.
+  return candidate_build_number or preferred_run_build_number
+
+
+def _GetListOfNearbyBuildNumbers(preferred_run_build_number, maximum_threshold):
+  """Gets a list of numbers within range near preferred_run_build_number.
+
+  Args:
+    preferred_run_build_number (int): Assumed to be a positive number.
+    maximum_threshold (int): A non-negative number for how far in either
+    direction to look.
+
+  Returns:
+    A list of nearby numbers within maximum_threshold before and after
+    preferred_run_build_number, ordered by closest to farthest. For example, if
+    preferred_run_build_number is 1000 and maximum_threshold is 2, return
+    [1000, 999, 1001, 998, 1002].
+  """
+  if maximum_threshold >= preferred_run_build_number:
+    # Build numbers are always assumed to start from 1, so don't include
+    # anything before that.
+    return range(1, preferred_run_build_number + maximum_threshold + 1)
+
+  nearby_build_numbers = [preferred_run_build_number]
+
+  for i in range(1, maximum_threshold + 1):
+    nearby_build_numbers.append(preferred_run_build_number - i)
+    nearby_build_numbers.append(preferred_run_build_number + i)
+
+  return nearby_build_numbers
+
+
 class RecursiveFlakePipeline(BasePipeline):
 
   def __init__(self, *args, **kwargs):
@@ -113,15 +226,18 @@ class RecursiveFlakePipeline(BasePipeline):
     self.start(*args, **kwargs)
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, run_build_number, step_name,
-          test_name, version_number, master_build_number,
-          flakiness_algorithm_results_dict, manually_triggered=False):
+  def run(self, master_name, builder_name, preferred_run_build_number,
+          step_name, test_name, version_number, master_build_number,
+          flakiness_algorithm_results_dict, manually_triggered=False,
+          use_nearby_neighbor=False, step_size=0):
     """Pipeline to determine the regression range of a flaky test.
 
     Args:
       master_name (str): The master name.
       builder_name (str): The builder name.
-      run_build_number (int): The build number of the current swarming rerun.
+      preferred_run_build_number (int): The build number the check flake
+        algorithm should perform a swarming rerun on, but may be overridden to
+        use the results of a nearby neighbor if use_nearby_neighbor is True.
       step_name (str): The step name.
       test_name (str): The test name.
       version_number (int): The version to save analysis results and data to.
@@ -129,8 +245,15 @@ class RecursiveFlakePipeline(BasePipeline):
       flakiness_algorithm_results_dict (dict): A dictionary used by
         NextBuildNumberPipeline
       manually_triggered (bool): True if the analysis is from manual request,
-          like by a Chromium sheriff.
-
+        like by a Chromium sheriff.
+      use_nearby_neighbor (bool): Whether the optimization for using the
+        swarming results of a nearby build number, if available, should be used
+        in place of triggering a new swarming task on
+        preferred_run_build_number.
+      step_size (int): The difference in build numbers since the last call to
+        RecursiveFlakePipeline to determine the bounds for how far a nearby
+        build's swarming task results should be used. Only relevant if
+        use_nearby_neighbor is True.
     Returns:
       A dict of lists for reliable/flaky tests.
     """
@@ -148,17 +271,28 @@ class RecursiveFlakePipeline(BasePipeline):
       flake_analysis.start_time = time_util.GetUTCNow()
       flake_analysis.put()
 
+    # TODO(lijeffrey): Allow custom parameters supplied by user.
+    iterations = waterfall_config.GetCheckFlakeSettings().get(
+        'iterations_to_rerun')
+    actual_run_build_number = _GetBestBuildNumberToRun(
+        master_name, builder_name, preferred_run_build_number, step_name,
+        test_name, step_size, iterations) if use_nearby_neighbor else (
+            preferred_run_build_number)
+
     # Call trigger pipeline (flake style).
     task_id = yield TriggerFlakeSwarmingTaskPipeline(
-        master_name, builder_name, run_build_number, step_name, [test_name])
+        master_name, builder_name, actual_run_build_number, step_name,
+        [test_name])
     # Pass the trigger pipeline into a process pipeline.
     test_result_future = yield ProcessFlakeSwarmingTaskResultPipeline(
-        master_name, builder_name, run_build_number,
+        master_name, builder_name, actual_run_build_number,
         step_name, task_id, master_build_number, test_name, version_number)
     yield NextBuildNumberPipeline(
-        master_name, builder_name, master_build_number, run_build_number,
-        step_name, test_name, version_number, test_result_future,
-        flakiness_algorithm_results_dict, manually_triggered=manually_triggered)
+        master_name, builder_name, master_build_number,
+        actual_run_build_number, step_name, test_name, version_number,
+        test_result_future, flakiness_algorithm_results_dict,
+        use_nearby_neighbor=use_nearby_neighbor,
+        manually_triggered=manually_triggered)
 
 
 def get_next_run(master_flake_analysis, flakiness_algorithm_results_dict):
@@ -262,7 +396,7 @@ class NextBuildNumberPipeline(BasePipeline):
   def run(self, master_name, builder_name, master_build_number,
           run_build_number, step_name, test_name, version_number,
           test_result_future, flakiness_algorithm_results_dict,
-          manually_triggered=False):
+          use_nearby_neighbor=False, manually_triggered=False):
 
     # Get MasterFlakeAnalysis success list corresponding to parameters.
     master_flake_analysis = MasterFlakeAnalysis.GetVersion(
@@ -276,6 +410,8 @@ class NextBuildNumberPipeline(BasePipeline):
     if flake_swarming_task.status == analysis_status.ERROR:
       # TODO(lijeffrey): Implement more detailed error detection and reporting,
       # such as timeouts, dead bots, etc.
+      # TODO(lijeffrey): Another neighboring swarming task may be needed in this
+      # one's place instead of failing altogether.
       error = {
           'error': 'Swarming task failed',
           'message': 'Swarming task failed'
@@ -284,7 +420,7 @@ class NextBuildNumberPipeline(BasePipeline):
           master_flake_analysis, analysis_status.ERROR, error)
       return
 
-    # Figure out what build_number we should call, if any
+    # Figure out what build_number to trigger a swarming rerun on next, if any.
     if (flakiness_algorithm_results_dict['stabled_out'] and
         flakiness_algorithm_results_dict['flaked_out']):
       next_run = sequential_next_run(
@@ -293,24 +429,23 @@ class NextBuildNumberPipeline(BasePipeline):
       next_run = get_next_run(
           master_flake_analysis, flakiness_algorithm_results_dict)
 
-    if next_run < flakiness_algorithm_results_dict['last_build_number']:
-      next_run = 0
-    elif next_run >= master_build_number:
-      next_run = 0
-
-    if next_run:
-      pipeline_job = RecursiveFlakePipeline(
-          master_name, builder_name, next_run, step_name, test_name,
-          version_number, master_build_number,
-          flakiness_algorithm_results_dict=flakiness_algorithm_results_dict,
-          manually_triggered=manually_triggered)
-      # pylint: disable=W0201
-      pipeline_job.target = appengine_util.GetTargetNameForModule(
-          constants.WATERFALL_BACKEND)
-      pipeline_job.StartOffPSTPeakHours(
-          queue_name=self.queue_name or constants.DEFAULT_QUEUE)
-    else:
+    if (next_run < flakiness_algorithm_results_dict['last_build_number'] or
+        next_run >= master_build_number):
+       # Finished.
       _UpdateAnalysisStatusUponCompletion(
           master_flake_analysis, analysis_status.COMPLETED, None)
       _UpdateBugWithResult(
           master_flake_analysis, self.queue_name or constants.DEFAULT_QUEUE)
+      return
+
+    pipeline_job = RecursiveFlakePipeline(
+        master_name, builder_name, next_run, step_name, test_name,
+        version_number, master_build_number,
+        flakiness_algorithm_results_dict=flakiness_algorithm_results_dict,
+        manually_triggered=manually_triggered,
+        use_nearby_neighbor=use_nearby_neighbor,
+        step_size=(run_build_number - next_run))
+    pipeline_job.target = appengine_util.GetTargetNameForModule(
+        constants.WATERFALL_BACKEND)
+    pipeline_job.StartOffPSTPeakHours(
+        queue_name=self.queue_name or constants.DEFAULT_QUEUE)

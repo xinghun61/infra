@@ -6,7 +6,8 @@
 
 import json
 
-from common.base_handler import BaseHandler, Permission
+from common.base_handler import BaseHandler
+from common.base_handler import Permission
 from model import wf_config
 from waterfall import waterfall_config
 
@@ -192,6 +193,7 @@ def _ValidateCheckFlakeSettings(settings):
           isinstance(settings.get('max_stable_in_a_row'), int) and
           isinstance(settings.get('iterations_to_rerun'), int) and
           isinstance(settings.get('max_build_numbers_to_look_back'), int) and
+          isinstance(settings.get('use_nearby_neighbor'), bool) and
           isinstance(settings.get('update_monorail_bug'), bool))
 
 

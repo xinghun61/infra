@@ -32,11 +32,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
   def _CreateAndSaveFlakeSwarmingTask(
-      self, master_name, builder_name, build_number,
-      step_name, test_name, status):
+      self, master_name, builder_name, build_number, step_name, test_name,
+      status=analysis_status.PENDING, number_of_iterations=0):
     flake_swarming_task = FlakeSwarmingTask.Create(
         master_name, builder_name, build_number, step_name, test_name)
     flake_swarming_task.status = status
+    flake_swarming_task.tries = number_of_iterations
     flake_swarming_task.put()
 
   def _GenerateDataPoints(self, pass_rates, build_numbers):
@@ -151,12 +152,14 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                        build_number, step_name, test_name,
                        analysis.version_number, test_result_future,
                        flakiness_algorithm_results_dict],
-        expected_kwargs={'manually_triggered': False})
+        expected_kwargs={'use_nearby_neighbor': False,
+                         'manually_triggered': False})
 
     rfp = RecursiveFlakePipeline(
         master_name, builder_name, build_number, step_name, test_name,
         analysis.version_number, master_build_number,
-        flakiness_algorithm_results_dict=flakiness_algorithm_results_dict)
+        flakiness_algorithm_results_dict=flakiness_algorithm_results_dict,
+        use_nearby_neighbor=False, step_size=0)
 
     rfp.start(queue_name=queue_name)
     self.execute_queued_tasks()
@@ -232,14 +235,15 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary_result': None,
         'sequential_run_index': 0
     }
+
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
+        test_name, status=analysis_status.PENDING)
+
     self._CreateAndSaveFlakeSwarmingTask(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED
-    )
+        test_name, status=analysis_status.COMPLETED)
+
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
     data_point = DataPoint()
@@ -279,14 +283,14 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'sequential_run_index': 0
 
     }
+
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
+        test_name, status=analysis_status.PENDING)
     self._CreateAndSaveFlakeSwarmingTask(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED
-    )
+        test_name, status=analysis_status.COMPLETED)
+
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
     data_point = DataPoint()
@@ -326,14 +330,15 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'sequential_run_index': 0
 
     }
+
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
+        test_name, status=analysis_status.PENDING)
+
     self._CreateAndSaveFlakeSwarmingTask(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED
-    )
+        test_name, status=analysis_status.COMPLETED)
+
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
     data_point = DataPoint()
@@ -732,14 +737,14 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'sequential_run_index': 0
 
     }
+
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
+        test_name, status=analysis_status.PENDING)
     self._CreateAndSaveFlakeSwarmingTask(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED
-    )
+        test_name, status=analysis_status.COMPLETED)
+
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
     data_point = DataPoint()
@@ -895,6 +900,193 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     recursive_flake_pipeline._UpdateAnalysisStatusUponCompletion(
         analysis, analysis_status.COMPLETED, None)
     self.assertEqual(analysis.result_status, result_status.FOUND_UNTRIAGED)
+
+  def testGetListOfNearbyBuildNumbers(self):
+    self.assertEqual(
+        [1],
+        recursive_flake_pipeline._GetListOfNearbyBuildNumbers(1, 0))
+    self.assertEqual(
+        [1],
+        recursive_flake_pipeline._GetListOfNearbyBuildNumbers(1, -1))
+    self.assertEqual(
+        [1, 2],
+        recursive_flake_pipeline._GetListOfNearbyBuildNumbers(1, 1))
+    self.assertEqual(
+        [1, 2, 3],
+        recursive_flake_pipeline._GetListOfNearbyBuildNumbers(1, 2))
+    self.assertEqual(
+        [2, 1, 3],
+        recursive_flake_pipeline._GetListOfNearbyBuildNumbers(2, 1))
+    self.assertEqual(
+        [100, 99, 101, 98, 102, 97, 103, 96, 104, 95, 105],
+        recursive_flake_pipeline._GetListOfNearbyBuildNumbers(100, 5))
+
+  def testIsSwarmingTaskSufficientNoSwarmingTasks(self):
+    self.assertFalse(
+        recursive_flake_pipeline._IsSwarmingTaskSufficientForCacheHit(
+            None, 100))
+
+  def testIsSwarmingTaskSufficientForCacheHitInsufficientIterations(self):
+    desired_iterations = 200
+    flake_swarming_task = FlakeSwarmingTask.Create(
+        'm', 'b', 12345, 's', 't')
+    flake_swarming_task.tries = 100
+    flake_swarming_task.status = analysis_status.COMPLETED
+    self.assertFalse(
+        recursive_flake_pipeline._IsSwarmingTaskSufficientForCacheHit(
+            flake_swarming_task, desired_iterations))
+
+  def testIsSwarmingTaskSufficientForCacheHitError(self):
+    desired_iterations = 100
+    flake_swarming_task = FlakeSwarmingTask.Create(
+        'm', 'b', 12345, 's', 't')
+    flake_swarming_task.tries = 200
+    flake_swarming_task.status = analysis_status.ERROR
+    self.assertFalse(
+        recursive_flake_pipeline._IsSwarmingTaskSufficientForCacheHit(
+            flake_swarming_task, desired_iterations))
+
+  def testIsSwarmingTaskSufficientForCacheHitPending(self):
+    desired_iterations = 100
+    flake_swarming_task = FlakeSwarmingTask.Create(
+        'm', 'b', 12345, 's', 't')
+    flake_swarming_task.tries = desired_iterations
+    flake_swarming_task.status = analysis_status.PENDING
+    self.assertTrue(
+        recursive_flake_pipeline._IsSwarmingTaskSufficientForCacheHit(
+            flake_swarming_task, desired_iterations))
+
+  def testIsSwarmingTaskSufficientForCacheHitRunning(self):
+    desired_iterations = 100
+    flake_swarming_task = FlakeSwarmingTask.Create(
+        'm', 'b', 12345, 's', 't')
+    flake_swarming_task.tries = desired_iterations
+    flake_swarming_task.status = analysis_status.RUNNING
+    self.assertTrue(
+        recursive_flake_pipeline._IsSwarmingTaskSufficientForCacheHit(
+            flake_swarming_task, desired_iterations))
+
+  def testIsSwarmingTaskSufficientForCacheHitCompleted(self):
+    desired_iterations = 100
+    flake_swarming_task = FlakeSwarmingTask.Create(
+        'm', 'b', 12345, 's', 't')
+    flake_swarming_task.tries = desired_iterations
+    flake_swarming_task.status = analysis_status.COMPLETED
+    self.assertTrue(
+        recursive_flake_pipeline._IsSwarmingTaskSufficientForCacheHit(
+            flake_swarming_task, desired_iterations))
+
+  def testGetBestBuildNumberToRunWithStepSizeZero(self):
+    self.assertEqual(
+        12345,
+        recursive_flake_pipeline._GetBestBuildNumberToRun(
+            'm', 'b', 12345, 's', 't', 0, 100))
+
+  def testGetBestBuildNumberToRunWithNoNearbyNeighbors(self):
+    self.assertEqual(
+        12345,
+        recursive_flake_pipeline._GetBestBuildNumberToRun(
+            'm', 'b', 12345, 's', 't', 10, 100))
+
+  def testGetBestBuildNumberToRunWithNearbyNeighborRunnning(self):
+    master_name = 'm'
+    builder_name = 'b'
+    preferred_run_build_number = 1000
+    cached_build_number = 997
+    step_name = 's'
+    test_name = 't'
+    number_of_iterations = 100
+    step_size = 10
+
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, cached_build_number, step_name, test_name,
+        status=analysis_status.RUNNING, number_of_iterations=100)
+
+    self.assertEqual(
+        recursive_flake_pipeline._GetBestBuildNumberToRun(
+            master_name, builder_name, preferred_run_build_number, step_name,
+            test_name, step_size, number_of_iterations),
+        cached_build_number)
+
+  def testGetBestBuildNumberToRunWithNearbyNeighborCompleted(self):
+    # Completed build should take precendence over running build, even if it's
+    # farther away.
+    master_name = 'm'
+    builder_name = 'b'
+    preferred_run_build_number = 1000
+    running_cached_build_number = 997
+    completed_cached_build_number = 996
+    step_name = 's'
+    test_name = 't'
+    number_of_iterations = 100
+    step_size = 10
+
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, running_cached_build_number, step_name,
+        test_name, status=analysis_status.RUNNING, number_of_iterations=100)
+
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, completed_cached_build_number, step_name,
+        test_name, status=analysis_status.COMPLETED, number_of_iterations=100)
+
+    self.assertEqual(
+        recursive_flake_pipeline._GetBestBuildNumberToRun(
+            master_name, builder_name, preferred_run_build_number, step_name,
+            test_name, step_size, number_of_iterations),
+        completed_cached_build_number)
+
+  def testGetBestBuildNumberToRunWithMultipleInProgress(self):
+    # Completed builds should take precendence over running build, even if it's
+    # farther away.
+    master_name = 'm'
+    builder_name = 'b'
+    preferred_run_build_number = 1000
+    running_cached_build_number_1 = 997
+    running_cached_build_number_2 = 996
+    step_name = 's'
+    test_name = 't'
+    number_of_iterations = 100
+    step_size = 10
+
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, running_cached_build_number_1, step_name,
+        test_name, status=analysis_status.RUNNING, number_of_iterations=100)
+
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, running_cached_build_number_2, step_name,
+        test_name, status=analysis_status.RUNNING, number_of_iterations=100)
+
+    self.assertEqual(
+        recursive_flake_pipeline._GetBestBuildNumberToRun(
+            master_name, builder_name, preferred_run_build_number, step_name,
+            test_name, step_size, number_of_iterations),
+        running_cached_build_number_1)
+
+  def testGetBestBuildNumberToRunPendingAndRunning(self):
+    # Running builds should take precedence over pending builds.
+    master_name = 'm'
+    builder_name = 'b'
+    preferred_run_build_number = 1000
+    running_cached_build_number_1 = 997
+    running_cached_build_number_2 = 996
+    step_name = 's'
+    test_name = 't'
+    number_of_iterations = 100
+    step_size = 10
+
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, running_cached_build_number_1, step_name,
+        test_name, status=analysis_status.PENDING, number_of_iterations=100)
+
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, running_cached_build_number_2, step_name,
+        test_name, status=analysis_status.RUNNING, number_of_iterations=100)
+
+    self.assertEqual(
+        recursive_flake_pipeline._GetBestBuildNumberToRun(
+            master_name, builder_name, preferred_run_build_number, step_name,
+            test_name, step_size, number_of_iterations),
+        running_cached_build_number_2)
 
   @mock.patch(
       'waterfall.flake.recursive_flake_pipeline.PostCommentToBugPipeline')

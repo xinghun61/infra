@@ -13,10 +13,10 @@ from model.wf_config import FinditConfig
 _DEFAULT_STEPS_FOR_MASTERS_RULES = {
     'supported_masters': {
         'm': {
-            'check_global': True
+            'check_global': True,
         },
         'm3': {
-            'check_global': True
+            'check_global': True,
         },
         'master1': {
             # supported_steps override global.
@@ -24,22 +24,22 @@ _DEFAULT_STEPS_FOR_MASTERS_RULES = {
             'unsupported_steps': ['unsupported_step1',
                                   'unsupported_step2',
                                   'unsupported_step3'],
-            'check_global': True
+            'check_global': True,
         },
         'master2': {
             # Only supports step4 and step5 regardless of global.
             'supported_steps': ['step4', 'step5'],
-            'check_global': False
+            'check_global': False,
         },
         'master3': {
             # Supports everything not blacklisted in global.
-            'check_global': True
+            'check_global': True,
         },
     },
     'global': {
         # Blacklists all listed steps for all masters unless overridden.
         'unsupported_steps': ['unsupported_step6', 'unsupported_step7'],
-    }
+    },
 }
 
 
@@ -55,20 +55,20 @@ _DEFAULT_TRY_BOT_MAPPING = {
         'builder2': {
             'mastername': 'tryserver2',
             'buildername': 'trybot2',
-            'not_run_tests': True
+            'not_run_tests': True,
         },
         'builder3': {
             'mastername': 'tryserver2',
             'buildername': 'trybot2',
-            'not_run_tests': False
+            'not_run_tests': False,
         },
     },
     'm': {
         'b': {
             'mastername': 'tryserver.master',
             'buildername': 'tryserver.builder',
-        }
-    }
+        },
+    },
 }
 
 
@@ -76,7 +76,7 @@ _DEFAULT_TRY_JOB_SETTINGS = {
     'server_query_interval_seconds': 60,
     'job_timeout_hours': 5,
     'allowed_response_error_times': 5,
-    'max_seconds_look_back_for_group': 86400
+    'max_seconds_look_back_for_group': 86400,
 }
 
 
@@ -97,7 +97,7 @@ _DEFAULT_SWARMING_SETTINGS = {
 _DEFAULT_DOWNLOAD_BUILD_DATA_SETTINGS = {
     'download_interval_seconds': 10,
     'memcache_master_download_expiration_seconds': 3600,
-    'use_chrome_build_extract': True
+    'use_chrome_build_extract': True,
 }
 
 
@@ -113,7 +113,8 @@ _DEFAULT_CHECK_FLAKE_SETTINGS = {
     'max_flake_in_a_row': 4,
     'max_stable_in_a_row': 4,
     'iterations_to_rerun': 100,
-    'max_build_numbers_to_look_back': 1000
+    'max_build_numbers_to_look_back': 1000,
+    'use_nearby_neighbor': True,
 }
 
 
@@ -124,7 +125,7 @@ DEFAULT_CONFIG_DATA = {
     'swarming_settings': _DEFAULT_SWARMING_SETTINGS,
     'download_build_data_settings': _DEFAULT_DOWNLOAD_BUILD_DATA_SETTINGS,
     'action_settings': _DEFAULT_ACTION_SETTINGS,
-    'check_flake_settings': _DEFAULT_CHECK_FLAKE_SETTINGS
+    'check_flake_settings': _DEFAULT_CHECK_FLAKE_SETTINGS,
 }
 
 
