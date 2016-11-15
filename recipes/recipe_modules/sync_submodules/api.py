@@ -45,7 +45,7 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
           extra submodules.
     """
 
-    if extra_submodules is None:  # pragma: nocover
+    if extra_submodules is None:
       extra_submodules = []
 
     # remote_run creates a temporary directory for our pwd, but that means big

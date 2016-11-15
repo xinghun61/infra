@@ -153,7 +153,9 @@
       "RECIPE_MODULE[infra::sync_submodules]/resources/deps2submodules.py",
       "--path-prefix",
       "src/",
-      "DEPS"
+      "DEPS",
+      "--extra-submodule",
+      "src/out=https://www.example.com"
     ],
     "cwd": "[HACK]/foo_builder",
     "name": "deps2submodules"
