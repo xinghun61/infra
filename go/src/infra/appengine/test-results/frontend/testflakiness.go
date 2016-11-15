@@ -10,8 +10,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"google.golang.org/appengine"
-
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/retry"
@@ -20,6 +18,7 @@ import (
 	"golang.org/x/oauth2/google"
 	"golang.org/x/sync/errgroup"
 	bigquery "google.golang.org/api/bigquery/v2"
+	"google.golang.org/appengine"
 )
 
 const teamsQuery = `
@@ -32,21 +31,51 @@ const dirsQuery = `
 	FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
 	GROUP BY layout_test_dir;`
 
+const suitesQuery = `
+  SELECT regexp_extract(test_name, r'^([^\.\/]+)\.[^\/]+(?:\/[^\.]+)?$') as suite
+  FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
+  GROUP BY suite
+  HAVING suite is not Null;`
+
 const flakesQuery = `
-	SELECT test_name, flakiness
+	SELECT test_name, normalized_step_name, flakiness
 	FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
 	WHERE %s
 	ORDER BY flakiness DESC
-	LIMIT 1000;
-`
+	LIMIT 1000;`
 
 const bqProjectID = "test-results-hrd"
 
+// Different kinds of groups to be used for Group struct below.
+const (
+	// Represents group of tests owned a team with specified name.
+	TeamKind = "team"
+
+	// Represents groups of tests in a diretory in the source code with path
+	// specified as name.
+	DirKind = "dir"
+
+	// Represents group of tests not owned by any team.
+	UnknownTeamKind = "unknown-team"
+
+	// Represents group of tests for which we do not know the containing
+	// directory.
+	UnknownDirKind = "unknown-dir"
+
+	// Represents a group of tests belonging to the test suite with specified
+	// name.
+	TestSuiteKind = "test-suite"
+
+	// Represents a group of tests containing substring specified as name.
+	SearchKind = "search"
+)
+
 // Flakiness represents infromation about a single flaky test.
 type Flakiness struct {
-	TestName        string  `json:"test_name"`
-	Flakiness       float64 `json:"flakiness"`
-	FalseRejections uint    `json:"false_rejections"`
+	TestName           string  `json:"test_name"`
+	Flakiness          float64 `json:"flakiness"`
+	NormalizedStepName string  `json:"normalized_step_name"`
+	FalseRejections    uint    `json:"false_rejections"`
 }
 
 // Group represents infromation about flakiness of a group of tests.
@@ -56,12 +85,12 @@ type Group struct {
 }
 
 func writeError(ctx *router.Context, err error, funcName string, msg string) {
-	if err != nil {
-		logging.WithError(err).Errorf(ctx.Context, "%s: %s", funcName, msg)
-	} else {
-		logging.Errorf(ctx.Context, "%s: %s", funcName, msg)
+	reason := fmt.Sprintf("%s: %s", funcName, msg)
+	if err == nil {
+		err = errors.New(reason)
 	}
 
+	errors.Log(ctx.Context, errors.Annotate(err).Reason(reason).Err())
 	http.Error(ctx.Writer, "Internal Server Error", http.StatusInternalServerError)
 }
 
@@ -80,22 +109,22 @@ func writeResponse(ctx *router.Context, funcName string, data interface{}) {
 func getFlakinessData(ctx context.Context, bq *bigquery.Service, group Group) ([]Flakiness, error) {
 	var filter string
 	switch group.Kind {
-	case "team":
+	case TeamKind:
 		// TODO(sergiyb): Change this when we have a way to detect which team owns a
 		// given test (other than layout test).
 		filter = "layout_test_team = @groupname"
-	case "dir":
+	case DirKind:
 		filter = "layout_test_dir = @groupname"
-	case "unknown-team":
-		filter = "layout_test_team is None"
-	case "unknown-dir":
-		filter = "layout_test_dir is None"
-	case "test-suite":
-		filter = "STARTS_WITH(test_name, @groupname + '.')"
-	case "substring":
-		filter = "STRPOS(test_name, @groupname) != 0"
+	case UnknownTeamKind:
+		filter = "layout_test_team is Null"
+	case UnknownDirKind:
+		filter = "layout_test_dir is Null"
+	case TestSuiteKind:
+		filter = "starts_with(test_name, concat(@groupname, '.'))"
+	case SearchKind:
+		filter = "strpos(test_name, @groupname) != 0"
 	default:
-		return nil, errors.New("unknown group kind")
+		return nil, errors.New("unknown group kind " + group.Kind)
 	}
 
 	queryParams := []*bigquery.QueryParameter{
@@ -118,7 +147,12 @@ func getFlakinessData(ctx context.Context, bq *bigquery.Service, group Group) ([
 			return nil, errors.New("query returned non-string test name column")
 		}
 
-		flakinessStr, ok := row.F[1].V.(string)
+		normalizedStepName, ok := row.F[1].V.(string)
+		if !ok {
+			return nil, errors.New("query returned non-string value for normalized_step_name column")
+		}
+
+		flakinessStr, ok := row.F[2].V.(string)
 		if !ok {
 			return nil, errors.New("query returned non-string value for flakiness column")
 		}
@@ -129,7 +163,11 @@ func getFlakinessData(ctx context.Context, bq *bigquery.Service, group Group) ([
 		}
 
 		// TODO(sergiyb): Add number of false rejections per test.
-		data = append(data, Flakiness{TestName: name, Flakiness: flakiness})
+		data = append(data, Flakiness{
+			TestName:           name,
+			NormalizedStepName: normalizedStepName,
+			Flakiness:          flakiness,
+		})
 	}
 
 	return data, nil
@@ -145,18 +183,19 @@ func testFlakinessHandler(ctx *router.Context) {
 		return
 	}
 
-	if kind != "unknown-dir" && kind != "unknown-team" && name == "" {
+	if kind != UnknownDirKind && kind != UnknownTeamKind && name == "" {
 		writeError(ctx, nil, "testFlakinessHandler", "missing groupName parameter")
 		return
 	}
 
-	bq, err := createBQService(appengine.NewContext(ctx.Request))
+	aeCtx := appengine.NewContext(ctx.Request)
+	bq, err := createBQService(aeCtx)
 	if err != nil {
 		writeError(ctx, err, "testFlakinessHandler", "failed create BigQuery client")
 		return
 	}
 
-	data, err := getFlakinessData(ctx.Context, bq, Group{Name: name, Kind: kind})
+	data, err := getFlakinessData(aeCtx, bq, Group{Name: name, Kind: kind})
 	if err != nil {
 		writeError(ctx, err, "testFlakinessHandler", "failed to get flakiness data")
 		return
@@ -180,10 +219,11 @@ func createBQService(AECtx context.Context) (*bigquery.Service, error) {
 }
 
 func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, params []*bigquery.QueryParameter) ([]*bigquery.TableRow, error) {
+	logging.Infof(ctx, "Executing query `%s` with params %#v", query, params)
+
 	useLegacySQL := false
 	request := bq.Jobs.Query(bqProjectID, &bigquery.QueryRequest{
 		Query:           query,
-		TimeoutMs:       5000,
 		UseLegacySql:    &useLegacySQL,
 		QueryParameters: params,
 	})
@@ -199,13 +239,40 @@ func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, par
 		return nil, errors.Annotate(err).Reason("failed to execute query").Err()
 	}
 
-	rows := make([]*bigquery.TableRow, 0, response.TotalRows)
-	// TODO(sergiyb): BigQuery may set JobComplete to false and not populate Rows
-	// array. We need to handle this correctly and use GetQueryResults to actually
-	// get results when the query is complete.
-	rows = append(rows, response.Rows...)
+	var rows []*bigquery.TableRow
+	var pageToken string
 	jobID := response.JobReference.JobId
-	pageToken := response.PageToken
+	if response.JobComplete {
+		// Query returned results immediately.
+		rows = make([]*bigquery.TableRow, 0, response.TotalRows)
+		rows = append(rows, response.Rows...)
+		pageToken = response.PageToken
+	} else {
+		// Query is still running. Wait for results.
+		// TODO(sergiyb): Should we ever give up? After this is converted to an
+		// hourly cron job, add 30 minutes timeout here.
+		for {
+			resultsRequest := bq.Jobs.GetQueryResults(bqProjectID, jobID)
+			var resultsResponse *bigquery.GetQueryResultsResponse
+			err := retry.Retry(ctx, retry.Default, func() error {
+				var err error
+				resultsResponse, err = resultsRequest.Do()
+				return err
+			}, nil)
+
+			if err != nil {
+				return nil, errors.Annotate(err).Reason("failed to retrive results").Err()
+			}
+
+			if resultsResponse.JobComplete {
+				rows = make([]*bigquery.TableRow, 0, resultsResponse.TotalRows)
+				rows = append(rows, resultsResponse.Rows...)
+				pageToken = resultsResponse.PageToken
+			}
+		}
+	}
+
+	// Get additional results if any.
 	for pageToken != "" {
 		resultsRequest := bq.Jobs.GetQueryResults(bqProjectID, jobID)
 		resultsRequest.PageToken(pageToken)
@@ -240,7 +307,10 @@ func getGroupsForQuery(ctx context.Context, bq *bigquery.Service, query, kind, n
 		case string:
 			groups = append(groups, Group{Name: value, Kind: kind})
 		case nil:
-			groups = append(groups, Group{Kind: nilKind})
+			if nilKind == "" {
+				return nil, errors.New("Unexpected NULL value for a group")
+			}
+			groups = append(groups, Group{Name: nilKind, Kind: nilKind})
 		default:
 			return nil, errors.New("query returned non-string non-nil value")
 		}
@@ -250,16 +320,21 @@ func getGroupsForQuery(ctx context.Context, bq *bigquery.Service, query, kind, n
 }
 
 func getFlakinessGroups(ctx context.Context, bq *bigquery.Service) ([]Group, error) {
-	var teamGroups, dirGroups []Group
+	var teamGroups, dirGroups, suiteGroups []Group
 	var g errgroup.Group
 
 	g.Go(func() (err error) {
-		teamGroups, err = getGroupsForQuery(ctx, bq, teamsQuery, "team", "unknown-team")
+		teamGroups, err = getGroupsForQuery(ctx, bq, teamsQuery, TeamKind, UnknownTeamKind)
 		return
 	})
 
 	g.Go(func() (err error) {
-		dirGroups, err = getGroupsForQuery(ctx, bq, dirsQuery, "dir", "unknown-dir")
+		dirGroups, err = getGroupsForQuery(ctx, bq, dirsQuery, DirKind, UnknownDirKind)
+		return
+	})
+
+	g.Go(func() (err error) {
+		suiteGroups, err = getGroupsForQuery(ctx, bq, suitesQuery, TestSuiteKind, "")
 		return
 	})
 
@@ -267,18 +342,20 @@ func getFlakinessGroups(ctx context.Context, bq *bigquery.Service) ([]Group, err
 		return nil, err
 	}
 
-	return append(teamGroups, dirGroups...), nil
+	return append(teamGroups, append(dirGroups, suiteGroups...)...), nil
 }
 
 func testFlakinessGroupsHandler(ctx *router.Context) {
+	aeCtx := appengine.NewContext(ctx.Request)
+
 	// TODO(sergiyb): Add a layer of caching results using memcache.
-	bq, err := createBQService(ctx.Context)
+	bq, err := createBQService(aeCtx)
 	if err != nil {
 		writeError(ctx, err, "testFlakinessGroupsHandler", "failed create BigQuery client")
 		return
 	}
 
-	groups, err := getFlakinessGroups(ctx.Context, bq)
+	groups, err := getFlakinessGroups(aeCtx, bq)
 	if err != nil {
 		writeError(ctx, err, "testFlakinessGroupsHandler", "failed to get flakiness groups")
 		return

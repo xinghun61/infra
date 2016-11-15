@@ -42,6 +42,7 @@ func init() {
 	r.GET("/", getMW, polymerHandler)
 	r.GET("/home", getMW, polymerHandler)
 	r.GET("/flakiness", getMW, polymerHandler)
+	r.GET("/flakiness/*path", getMW, polymerHandler)
 
 	r.GET("/testfile", getMW, getHandler)
 	r.GET("/testfile/", getMW, getHandler)

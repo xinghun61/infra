@@ -103,7 +103,7 @@
     </style>
     <app-location
         route="{{route}}"
-        url-space-regex="^/(home|flakiness)$">
+        url-space-regex="^/(home|flakiness.*)?$">
     </app-location>
     <app-route
         route="{{route}}"
@@ -139,7 +139,9 @@
       </app-header-layout>
       <iron-pages role="main" selected="[[page]]" attr-for-selected="name">
         <test-results-home name="home"></test-results-home>
-        <test-results-flakiness name="flakiness"></test-results-flakiness>
+        <test-results-flakiness
+          name="flakiness"
+          route="{{subroute}}"></test-results-flakiness>
       </iron-pages>
     </app-drawer-layout>
   </template>

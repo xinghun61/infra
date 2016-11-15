@@ -45,7 +45,6 @@ func parseQuery(body io.Reader, c C) (string, string) {
 	var req bigquery.QueryRequest
 	err = json.Unmarshal(bodyBytes, &req)
 	c.So(err, ShouldBeNil)
-	c.So(req.TimeoutMs, ShouldEqual, 5000)
 
 	var params string
 	if len(req.QueryParameters) > 0 {
@@ -100,13 +99,25 @@ func TestGetFlakinessGroups(t *testing.T) {
 				{
 					Path:  "/projects/test-results-hrd/queries",
 					Query: teamsQuery,
-					Response: `{"totalRows": "2", "jobReference": {"jobId": "x"},
+					Response: `{"totalRows": "2",
+											"jobReference": {"jobId": "x"},
+											"jobComplete": true,
 											"rows": [{"f": [{"v": "team1"}]}, {"f": [{}]}]}`,
 				},
 				{
 					Path:  "/projects/test-results-hrd/queries",
+					Query: suitesQuery,
+					Response: `{"totalRows": "1",
+											"jobReference": {"jobId": "x"},
+											"jobComplete": true,
+											"rows": [{"f": [{"v": "MySuite"}]}]}`,
+				},
+				{
+					Path:  "/projects/test-results-hrd/queries",
 					Query: dirsQuery,
-					Response: `{"totalRows": "3", "jobReference": {"jobId": "y"},
+					Response: `{"totalRows": "3",
+											"jobReference": {"jobId": "y"},
+											"jobComplete": true,
 											"pageToken": "zz",
 											"rows": [{"f": [{"v": "dir1"}]}, {"f": [{}]}]}`,
 				},
@@ -127,11 +138,12 @@ func TestGetFlakinessGroups(t *testing.T) {
 
 		groups, err := getFlakinessGroups(ctx, bq)
 		So(err, ShouldBeNil)
-		So(Group{Name: "team1", Kind: "team"}, ShouldBeIn, groups)
-		So(Group{Kind: "unknown-team"}, ShouldBeIn, groups)
-		So(Group{Name: "dir1", Kind: "dir"}, ShouldBeIn, groups)
-		So(Group{Name: "dir2", Kind: "dir"}, ShouldBeIn, groups)
-		So(Group{Kind: "unknown-dir"}, ShouldBeIn, groups)
+		So(Group{Name: "team1", Kind: TeamKind}, ShouldBeIn, groups)
+		So(Group{Name: UnknownTeamKind, Kind: UnknownTeamKind}, ShouldBeIn, groups)
+		So(Group{Name: "MySuite", Kind: TestSuiteKind}, ShouldBeIn, groups)
+		So(Group{Name: "dir1", Kind: DirKind}, ShouldBeIn, groups)
+		So(Group{Name: "dir2", Kind: DirKind}, ShouldBeIn, groups)
+		So(Group{Name: UnknownDirKind, Kind: UnknownDirKind}, ShouldBeIn, groups)
 	})
 }
 
@@ -142,9 +154,21 @@ func TestGetFlakinessData(t *testing.T) {
 			ExpectedRequests: []expectedRequest{
 				{
 					Path: "/projects/test-results-hrd/queries",
-					Response: `{"totalRows": "2", "jobReference": {"jobId": "x"},
-					            "rows": [{"f": [{"v": "test1"}, {"v": "0.2"}]},
-											         {"f": [{"v": "test2"}, {"v": "0.14"}]}]}`,
+					Response: `{"totalRows": "2",
+											"jobReference": {"jobId": "x"},
+											"jobComplete": true,
+											"rows": [
+												{"f": [
+													{"v": "test1"},
+													{"v": "unittests"},
+													{"v": "0.2"}
+												]},
+												{"f": [
+													{"v": "test2"},
+													{"v": "unittests"},
+													{"v": "0.14"}
+												]}
+											]}`,
 				},
 			},
 		}
@@ -161,11 +185,11 @@ func TestGetFlakinessData(t *testing.T) {
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"foo"}}]`
-			data, err := getFlakinessData(ctx, bq, Group{Name: "foo", Kind: "dir"})
+			data, err := getFlakinessData(ctx, bq, Group{Name: "foo", Kind: DirKind})
 			So(err, ShouldBeNil)
 			So(data, ShouldResemble, []Flakiness{
-				{TestName: "test1", Flakiness: 0.2},
-				{TestName: "test2", Flakiness: 0.14},
+				{TestName: "test1", NormalizedStepName: "unittests", Flakiness: 0.2},
+				{TestName: "test2", NormalizedStepName: "unittests", Flakiness: 0.14},
 			})
 		})
 
@@ -175,49 +199,49 @@ func TestGetFlakinessData(t *testing.T) {
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"foo"}}]`
-			_, err := getFlakinessData(ctx, bq, Group{Name: "foo", Kind: "team"})
+			_, err := getFlakinessData(ctx, bq, Group{Name: "foo", Kind: TeamKind})
 			So(err, ShouldBeNil)
 		})
 
 		Convey("for tests in unknown dir", func() {
 			handler.ExpectedRequests[0].Query =
-				fmt.Sprintf(flakesQuery, "layout_test_dir is None")
+				fmt.Sprintf(flakesQuery, "layout_test_dir is Null")
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{}}]`
-			_, err := getFlakinessData(ctx, bq, Group{Kind: "unknown-dir"})
+			_, err := getFlakinessData(ctx, bq, Group{Kind: UnknownDirKind})
 			So(err, ShouldBeNil)
 		})
 
 		Convey("for tests owned by an unknown team", func() {
 			handler.ExpectedRequests[0].Query =
-				fmt.Sprintf(flakesQuery, "layout_test_team is None")
+				fmt.Sprintf(flakesQuery, "layout_test_team is Null")
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{}}]`
-			_, err := getFlakinessData(ctx, bq, Group{Kind: "unknown-team"})
+			_, err := getFlakinessData(ctx, bq, Group{Kind: UnknownTeamKind})
 			So(err, ShouldBeNil)
 		})
 
 		Convey("for tests in a particular test suite", func() {
 			handler.ExpectedRequests[0].Query =
-				fmt.Sprintf(flakesQuery, "STARTS_WITH(test_name, @groupname + '.')")
+				fmt.Sprintf(flakesQuery, "starts_with(test_name, concat(@groupname, '.'))")
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"FooBar"}}]`
 			_, err := getFlakinessData(
-				ctx, bq, Group{Name: "FooBar", Kind: "test-suite"})
+				ctx, bq, Group{Name: "FooBar", Kind: TestSuiteKind})
 			So(err, ShouldBeNil)
 		})
 
 		Convey("for tests containing a substring", func() {
 			handler.ExpectedRequests[0].Query =
-				fmt.Sprintf(flakesQuery, "STRPOS(test_name, @groupname) != 0")
+				fmt.Sprintf(flakesQuery, "strpos(test_name, @groupname) != 0")
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"FooBar"}}]`
 			_, err := getFlakinessData(
-				ctx, bq, Group{Name: "FooBar", Kind: "substring"})
+				ctx, bq, Group{Name: "FooBar", Kind: SearchKind})
 			So(err, ShouldBeNil)
 		})
 	})

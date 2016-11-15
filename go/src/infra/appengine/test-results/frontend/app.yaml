@@ -20,8 +20,8 @@ handlers:
   - url: /dashboards
     static_dir: static/dashboards
 
-  - url: /components
-    static_dir: components
+  - url: /src
+    static_dir: src
 
   - url: /bower_components
     static_dir: bower_components

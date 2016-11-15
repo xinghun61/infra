@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <title>test-results-flakiness</title>
+
+  <script src="../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <script src="../bower_components/web-component-tester/browser.js"></script>
+
+  <!-- Import the element to test -->
+  <link rel="import" href="../src/test-results-flakiness.html">
+</head>
+<body>
+
+  <test-fixture id="test-results-flakiness-fixture">
+    <template>
+      <test-results-flakiness></test-results-flakiness>
+    </template>
+  </test-fixture>
+
+  <script>
+    (function() {
+      'use strict';
+      suite('<test-results-flakiness>', function() {
+        let fix;
+
+        setup(function() {
+          fix = fixture('test-results-flakiness-fixture');
+
+          stub('iron-ajax', {
+            generateRequest: function() {
+              if (this.url == '/test_flakiness_groups') {
+                this._setLastResponse([
+                  {name: 'foo/bar/zee', kind: 'dir'},
+                  {name: 'DOM', kind: 'team'},
+                  {name: 'unknown-team', kind: 'unknown-team'},
+                  {name: 'unknown-dir', kind: 'unknown-dir'},
+                  {name: 'FooBar', kind: 'test-suite'},
+                ]);
+              } else if (this.url == '/test_flakiness') {
+                this._setLastResponse([
+                  {
+                    test_name: 'foo/bar/zee/test.html',
+                    flakiness: 0.01345,
+                    normalized_step_name: 'test_unittests',
+                    false_rejections: 0
+                  }
+                ]);
+              }
+            }
+          });
+
+        });
+
+        test('loads suggestions for omnibox', function(done) {
+          fix.route = {path: '/'};
+          assert.isUndefined(fix._group);
+          assert.equal(fix.$.omnibox.value, '');
+          assert.deepEqual(
+              fix.$.omnibox.items,
+              [
+                {label: 'Directory "foo/bar/zee"', value: 1},
+                {label: 'Team "DOM"', value: 2},
+                {label: 'Test Suite "FooBar"', value: 5},
+                {label: 'Tests with unknown directory', value: 4},
+                {label: 'Tests with unknown owner', value: 3},
+              ]
+          );
+          done();
+        });
+
+        test('loads data for selected group', function(done) {
+          fix.route = {path: '/dir/foo/bar/zee'};
+          flush(function() {
+            // Correctly parses selected group.
+            assert.equal(fix._group.kind, 'dir');
+            assert.equal(fix._group.name, 'foo/bar/zee');
+
+            // Updates selected value in omnibox.
+            assert.equal(fix.$.omnibox.value, 1);
+
+            // Populates tests table with correct data and links.
+            assert.equal(fix.$.tests.querySelectorAll('.grid-row').length, 1)
+            assert.equal(
+                fix.$.tests.querySelector('.grid-row-link').href.substr(-94),
+                '/dashboards/flakiness_dashboard.html#' +
+                'testType=test_unittests&tests=foo%2Fbar%2Fzee%2Ftest.html')
+            assert.equal(
+                fix.$.tests.querySelector('.grid-row .test-name').innerText,
+                'foo/bar/zee/test.html')
+            assert.equal(
+                fix.$.tests.querySelector('.grid-row .test-stats').innerText,
+                '1.34%')
+            done();
+          });
+        });
+      });
+    })();
+  </script>
+
+</body>
+</html>

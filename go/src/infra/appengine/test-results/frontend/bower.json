@@ -22,6 +22,11 @@
     "app-route": "polymerelements/app-route#^0.9.1",
     "iron-icons": "^1.1.3",
     "iron-pages": "^1.0.0",
-    "iron-selector": "^1.5.2"
+    "iron-selector": "^1.5.2",
+    "vaadin-combo-box": "^1.1.5",
+    "iron-ajax": "^1.4.3"
+  },
+  "devDependencies": {
+    "web-component-tester": "^5.0.0"
   }
 }

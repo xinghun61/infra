@@ -25,11 +25,11 @@
   function loadNonVulcanized() {
     var link = document.createElement('link');
     link.rel = 'import';
-    link.href = 'components/test-results.html';
+    link.href = 'src/test-results.html';
     document.head.appendChild(link);
   }
 </script>
-<link rel="import" href="/components/test-results.vulcanized.html" onerror="loadNonVulcanized()">
+<link rel="import" href="/src/test-results.vulcanized.html" onerror="loadNonVulcanized()">
 
 {{- if not .IsDevAppServer}}
 <script>
