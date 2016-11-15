@@ -163,7 +163,7 @@
             path="{{_path}}"
             static-pages="[[_staticPages]]"
             show-infra-failures="{{showInfraFailures}}"
-            use-uberify="{{useUberify}}"
+            link-style="{{linkStyle}}"
             trees="{{_trees}}"
             use-compact-view="{{useCompactView}}"
             ></som-drawer>
@@ -238,7 +238,7 @@
                         tree="[[_tree]]"
                         selected="[[selected]]"
                         annotation="[[computeAnnotation(annotations, alert)]]"
-                        use-uberify="[[useUberify]]"
+                        link-style="[[linkStyle]]"
                         on-annotation-change="_handleAnnotation"
                         on-comment="_handleComment"
                         on-link-bug="_handleLinkBug"
@@ -257,14 +257,14 @@
                   alert="{{_examinedAlert}}"
                   tree="[[_tree]]"
                   annotation="[[computeAnnotation(annotations, _examinedAlert)]]"
-                  use-uberify="[[useUberify]]"
+                  link-style="[[linkStyle]]"
                   on-annotation-change="_handleAnnotation"
                   on-comment="_handleComment"
                   on-link-bug="_handleLinkBug"
                   on-snooze="_handleSnooze"
                   examining
               ></som-alert-item>
-              <som-examine alert="[[_examinedAlert]]" use-uberify="[[useUberify]]" class="flex layout vertical"></som-examine>
+              <som-examine alert="[[_examinedAlert]]" link-style="[[linkStyle]]" class="flex layout vertical"></som-examine>
             </div>
           </template>
           <som-help id="helpSOM" class="page-body"></som-help>
@@ -395,7 +395,7 @@
         },
         user: String,
         useCompactView: Boolean,
-        useUberify: Boolean,
+        linkStyle: String,
         xsrfToken: String,
       },
 

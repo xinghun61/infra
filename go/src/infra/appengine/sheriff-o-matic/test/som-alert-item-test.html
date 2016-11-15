@@ -146,8 +146,8 @@
 
     test('uberify useful links', function(done) {
       element.alert = {links: [{title: '', href: chromiumUrl}]};
-      element.useUberify = true;
-      flush(function() {
+      element.linkStyle = 'uber'; 
+     flush(function() {
         assert.equal(uberUrl,
           element.$.usefulLinks.querySelector(".alert-link").href);
         done();
@@ -156,7 +156,7 @@
 
     test('do not uberify useful links when uberify disabled', function(done) {
       element.alert = {links: [{title: '', href: chromiumUrl}]};
-      element.useUberify = false;
+      element.linkStyle = 'buildbot';
       flush(function() {
         assert.equal(chromiumUrl,
            element.$.usefulLinks.querySelector(".alert-link").href);

@@ -4,6 +4,8 @@
 <link rel="import" href="../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="../bower_components/paper-menu/paper-menu.html">
+<link rel="import" href="../bower_components/paper-radio-button/paper-radio-button.html">
+<link rel="import" href="../bower_components/paper-radio-group/paper-radio-group.html">
 <link rel="import" href="../elements/som-settings.html">
 
 <dom-module id="som-drawer">
@@ -23,9 +25,13 @@
         width: 25px;
         height: 25px;
       }
-      paper-checkbox {
+      paper-checkbox, paper-radio-button {
         padding-left: 30px;
         padding-bottom: 10px;
+      }
+      label {
+        padding-top: 1em;
+        padding-left: 30px;
       }
       paper-item {
         padding-left: 42px;
@@ -47,7 +53,7 @@
     ></iron-ajax>
     <som-settings
         show-infra-failures="{{showInfraFailures}}"
-        use-uberify="{{useUberify}}"
+        link-style="{{linkStyle}}"
         use-compact-view="{{useCompactView}}"
         default-tree="{{defaultTree}}"
     ></som-settings>
@@ -66,7 +72,12 @@
       <div class="vertical layout">
         <paper-checkbox checked="{{showInfraFailures}}" hidden$=[[_isTrooperPage]]>Show infra failures</paper-checkbox>
         <paper-checkbox checked="{{useCompactView}}">Use compact alerts view</paper-checkbox>
-        <paper-checkbox checked="{{useUberify}}">Use uberchromegw</paper-checkbox>
+        <label id="linkStyleLabel">Builder links:</label>
+        <paper-radio-group selected="{{linkStyle}}" aria-labeled-by="linkStyleLabel" selectedAttribute="name">
+          <paper-radio-button name="uber">Link to uberchromegw</paper-radio-button>
+          <paper-radio-button name="milo">Link to luci-milo</paper-radio-button>
+          <paper-radio-button name="buildbot">Link to buildbot</paper-radio-button>
+        </paper-radio-group>
       </div>
     </paper-menu>
   </template>
@@ -111,10 +122,10 @@
           type: Boolean,
           notify: true,
         },
-        useUberify: {
-          type: Boolean,
+        linkStyle: {
+          type: String,
           notify: true,
-        },
+        }
       },
 
       _computeIsTrooperPage: function(tree) {

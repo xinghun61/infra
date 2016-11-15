@@ -1,0 +1,33 @@
+<script>
+    LinkifyBehavior = {
+      _miloify: function(url) {
+        let u = new URL(url);
+        if (u.hostname.includes('chromium.org')) {
+          u.hostname = 'luci-milo.appspot.com';
+          u.pathname = u.pathname.replace('/p/', '/buildbot/');
+          u.pathname = u.pathname.replace('/builders/', '/');
+        }
+        u.protocol = 'https:';
+        return u.toString();
+      },
+
+      _uberify: function(url) {
+        let u = new URL(url);
+        if (u.hostname.includes('chromium.org')) {
+          u.hostname = 'uberchromegw.corp.google.com';
+          u.pathname = u.pathname.replace('/p/', '/i/');
+        }
+        u.protocol = 'https:';
+        return u.toString();
+      },
+
+      _linkify: function(linkStyle, url) {
+        if (linkStyle === 'uber') {
+          return this._uberify(url);
+        } else if (linkStyle == 'milo') {
+          return this._miloify(url);
+        }
+        return url;
+      }
+    };
+</script>

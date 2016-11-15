@@ -13,9 +13,9 @@
       name="useCompactView"
       value="{{useCompactView}}"></iron-localstorage>
     <iron-localstorage
-      name="useUberify"
-      value="{{useUberify}}"
-      on-iron-localstorage-load-empty="_initializeTrue"></iron-localstorage>
+      name="linkStyle"
+      value="{{linkStyle}}"
+      on-iron-localstorage-load-empty="_initializeUber"></iron-localstorage>
   </template>
   <script>
   (function() {
@@ -37,14 +37,14 @@
           type: Boolean,
           notify: true,
         },
-        useUberify: {
-          type: Boolean,
+        linkStyle: {
+          type: String,
           notify: true,
         },
       },
 
-      _initializeTrue: function (evt) {
-        evt.target.value = true;
+      _initializeUber: function (evt) {
+        evt.target.value = 'uber';
       },
     });
   })();
