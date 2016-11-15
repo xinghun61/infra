@@ -168,6 +168,7 @@
           }
         },
         _bugModel: Object,
+        bugQueueLabel: String,
         _commentsModel: Object,
         _commentsModelAnnotation: {
           type: Object,
@@ -307,8 +308,9 @@
 
       handleLinkBug: function(evt) {
         this._bugModel = evt.target.alert;
-        this.$.fileBugLink.href = 'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=&summary='
-          + this._bugModel.title + '&comment=' + encodeURIComponent(this._commentForBug(this._bugModel));
+        this.$.fileBugLink.href = 'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels='
+          + this.bugQueueLabel + '&summary=' + this._bugModel.title + '&comment='
+          + encodeURIComponent(this._commentForBug(this._bugModel));
         this._filedBug = false;
         this._bugErrorMessage = '';
         this.$.bugDialog.open();

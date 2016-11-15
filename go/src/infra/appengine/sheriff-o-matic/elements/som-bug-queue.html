@@ -116,7 +116,8 @@
 
       _computeHideBugQueue: function(bugQueueLabel) {
         // No loading or empty message is shown unless a bug queue exists.
-        return !bugQueueLabel || bugQueueLabel === '';
+        return !bugQueueLabel || bugQueueLabel === ''
+          || bugQueueLabel === 'Performance-Sheriff-BotHealth';
       },
 
       _computeIsTrooperQueue: function(bugQueueLabel) {

@@ -185,7 +185,8 @@
           </div>
           <paper-spinner id="fetchingAlerts" active="[[_fetchingAlerts]]"></paper-spinner>
         </paper-toolbar>
-        <som-annotations id="annotations" annotations="{{annotations}}" user="{{user}}" xsrf-token="{{xsrfToken}}"></som-annotations>
+        <som-annotations id="annotations" annotations="{{annotations}}" bug-queue-label="[[_bugQueueLabel]]"
+          user="{{user}}" xsrf-token="{{xsrfToken}}"></som-annotations>
         <iron-pages attr-for-selected='id' selected="[[_selectedPage]]" class="flex layout vertical">
           <div id="alertsList" class="page-body">
             <div class="list-item">
