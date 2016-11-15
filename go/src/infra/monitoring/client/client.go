@@ -150,10 +150,6 @@ func (r *reader) Build(master *messages.MasterLocation, builder string, buildNum
 	expvars.Add("Build", 1)
 	defer expvars.Add("Build", -1)
 	code, err := r.hc.getJSON(URL, build)
-	if err != nil {
-		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
-		return nil, err
-	}
 
 	if code == 404 {
 		// FIXME: Don't directly poll so many builders.
@@ -166,6 +162,11 @@ func (r *reader) Build(master *messages.MasterLocation, builder string, buildNum
 			return nil, err
 		}
 		return build, nil
+	}
+
+	if err != nil {
+		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
+		return nil, err
 	}
 
 	return build, nil
@@ -228,11 +229,6 @@ func (r *reader) BuildExtract(masterURL *messages.MasterLocation) (*messages.Bui
 	defer expvars.Add("BuildExtract", -1)
 	code, err := r.hc.getJSON(URL, ret)
 
-	if err != nil {
-		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
-		return nil, err
-	}
-
 	if code == 404 {
 		// FIXME: Don't directly poll so many builders.
 		URL = fmt.Sprintf("%s/json", masterURL.String())
@@ -244,6 +240,12 @@ func (r *reader) BuildExtract(masterURL *messages.MasterLocation) (*messages.Bui
 		}
 		return ret, nil
 	}
+
+	if err != nil {
+		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
+		return nil, err
+	}
+
 	return ret, nil
 }
 
