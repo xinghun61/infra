@@ -628,7 +628,10 @@
           let aAnn = this.computeAnnotation(annotations, a);
           let bAnn = this.computeAnnotation(annotations, b);
 
-          if (aAnn.snoozed == bAnn.snoozed) {
+          let aHasBugs = aAnn.bugs && aAnn.bugs.length > 0;
+          let bHasBugs = bAnn.bugs && bAnn.bugs.length > 0;
+
+          if (aAnn.snoozed == bAnn.snoozed && aHasBugs == bHasBugs) {
             if(a.severity != b.severity) {
               return a.severity - b.severity;
             }
@@ -639,6 +642,8 @@
               return 1;
             }
             return 0;
+          } else if (aAnn.snoozed == bAnn.snoozed) {
+            return aHasBugs ? 1 : -1;
           }
 
           return aAnn.snoozed ? 1 : -1;

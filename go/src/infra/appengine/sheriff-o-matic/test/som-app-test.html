@@ -201,8 +201,10 @@
         test: [
           {extension: { builders: [{name: 'a'}], reasons: [ {step: 'a'} ]},
             key: 'test'},
-          {extension: { builders: [{name: 'b'}], reasons: [ {step: 'b'} ]} },
+          {extension: { builders: [{name: 'b'}], reasons: [ {step: 'b'} ]},
+            key: 'hello'},
           {extension: { builders: [{name: 'c'}], reasons: [ {step: 'c'} ]} },
+          {extension: { builders: [{name: 'd'}], reasons: [ {step: 'd'} ]} },
         ]
       };
 
@@ -211,13 +213,21 @@
       }, {
         'test': {
           snoozeTime: Date.now() + 1000000,
-        }
+        },
+        'hello': {
+          bugs: ['test'],
+        },
       });
 
-      assert.equal('b', sortedAlerts[0].extension.builders[0].name);
-      assert.equal('c', sortedAlerts[1].extension.builders[0].name);
+
+      assert.equal('c', sortedAlerts[0].extension.builders[0].name);
+      assert.equal('d', sortedAlerts[1].extension.builders[0].name);
+
+      // b has a bug so it goes between c/d (no annotations) and a (snoozed).
+      assert.equal('b', sortedAlerts[2].extension.builders[0].name);
+
       // a is snoozed, goes to the bottom.
-      assert.equal('a', sortedAlerts[2].extension.builders[0].name);
+      assert.equal('a', sortedAlerts[3].extension.builders[0].name);
     });
   });
 
