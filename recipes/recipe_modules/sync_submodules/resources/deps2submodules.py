@@ -66,6 +66,42 @@ def CollateDeps(deps_content):
   return submods
 
 
+def AddExtraSubmodules(deps, extra_submodules):
+  """
+  Adds extra submodules to the list of deps.
+
+  extra_submodules is a list of 'path=url' strings, where path is relative to
+  the parent directory, and url is the URL of a git repository.
+  """
+  for extra_submodule in extra_submodules:
+    path, url = extra_submodule.split('=', 2)
+
+    sha1 = ResolveRef(url, 'refs/heads/master')
+    if sha1 is None:
+      continue
+
+    deps[path] = (['all'], url, sha1)
+
+  return deps
+
+
+def ResolveRef(url, ref):
+  """
+  Queries a remote git repository at url for the sha1 hash of the given ref.
+  """
+  if ref.startswith('origin/'):
+    ref = ref[7:]
+
+  output = subprocess.check_output(['git', 'ls-remote', url, ref])
+  match = SHA1_REF_RE.match(output)
+  if not match:
+    logging.warning('Could not resolve ref %s for %s', ref, url)
+    return None
+  sha1 = match.group(1)
+  logging.info('Resolved %s for %s to %s', ref, url, sha1)
+  return sha1
+
+
 def WriteGitmodules(submods):
   """
   Take the output of CollateDeps, use it to write a .gitmodules file and
@@ -91,16 +127,9 @@ def WriteGitmodules(submods):
 
       # Resolve the ref to a sha1 hash.
       if not SHA1_RE.match(sha1):
-        if sha1.startswith('origin/'):
-          sha1 = sha1[7:]
-
-        output = subprocess.check_output(['git', 'ls-remote', url, sha1])
-        match = SHA1_REF_RE.match(output)
-        if not match:
-          logging.warning('Could not resolve ref %s for %s', sha1, url)
+        sha1 = ResolveRef(url, sha1)
+        if sha1 is None:
           continue
-        logging.info('Resolved %s for %s to %s', sha1, url, match.group(1))
-        sha1 = match.group(1)
 
       logging.info('Added submodule %s revision %s', name, sha1)
       adds[name] = sha1
@@ -136,16 +165,21 @@ def main():
                       "specify dependencies in the repo's parent directory, "
                       'so the default here is to ignore anything outside the '
                       "current directory's basename")
+  parser.add_argument('--extra-submodule',
+                      action='append', default=[],
+                      help='path and URL of an extra submodule to add, '
+                      'separated by an equals sign')
   parser.add_argument('deps_file', default='DEPS', nargs='?')
   options = parser.parse_args()
 
   if not options.path_prefix.endswith('/'):
     parser.error("--path-prefix '%s' must end with a '/'" % options.path_prefix)
 
-  adds = WriteGitmodules(
-      SanitizeDeps(
-          CollateDeps(GetDepsContent(options.deps_file)),
-          options.path_prefix))
+  deps = CollateDeps(GetDepsContent(options.deps_file))
+  deps = AddExtraSubmodules(deps, options.extra_submodule)
+  deps = SanitizeDeps(deps, options.path_prefix)
+
+  adds = WriteGitmodules(deps)
   RemoveObsoleteSubmodules()
   for submod_path, submod_sha1 in adds.iteritems():
     subprocess.check_call(['git', 'update-index', '--add',
