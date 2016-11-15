@@ -21,13 +21,14 @@ ANDROID_NDK_PATH = os.path.join(
     os.path.abspath(os.path.dirname(__file__)), '.vendor', 'pkg', 'gomobile',
     'android-ndk-r12b')
 
-# Used for mapping GOARCH values to NDK toolsets.
+# Used for mapping GOARCH values to (NDK toolset directory, compiler name)
 ANDROID_TOOLSETS = {
-  'arm': 'arm',
-  'arm64': 'aarch64',
-  '386': 'x86',
-  'amd64': 'x86_64',
+  'arm': ('arm', 'arm-linux-androideabi-clang'),
+  'arm64': ('arm64', 'aarch64-linux-android-clang'),
+  '386': ('x86', 'i686-linux-android-clang'),
+  'amd64': ('x86_64', 'x86_64-linux-android-clang'),
 }
+
 
 
 def _get_android_env(env):
@@ -41,17 +42,17 @@ def _get_android_env(env):
     raise Exception(
         'Specified arch not currently supported on android: %s' % arch)
 
-  toolset = ANDROID_TOOLSETS[arch]
+  toolset_dir, compiler = ANDROID_TOOLSETS[arch]
 
   # Needed when cross-compiling uses of cgo.
   env['CGO_ENABLED'] = '1'
   env['CC'] = os.path.join(
-      ANDROID_NDK_PATH, arch, 'bin', '%s-linux-androideabi-clang' % toolset)
+      ANDROID_NDK_PATH, toolset_dir, 'bin', compiler)
   env['CXX'] = os.path.join(
-      ANDROID_NDK_PATH, arch, 'bin', '%s-linux-androideabi-clang++' % toolset)
+      ANDROID_NDK_PATH, toolset_dir, 'bin', compiler + '++')
 
   # Compiler/linker needs access to android system headers in the NDK.
-  sysroot_path = os.path.join(ANDROID_NDK_PATH, arch, 'sysroot')
+  sysroot_path = os.path.join(ANDROID_NDK_PATH, toolset_dir, 'sysroot')
   env['CGO_CFLAGS'] = '-I %s/usr/include --sysroot %s' % (
       sysroot_path, sysroot_path)
   env['CGO_LDFLAGS'] = '-L %s/usr/lib --sysroot %s' % (
