@@ -5,12 +5,14 @@
 
 """Unit tests for issuelist module."""
 
+import time
 import unittest
 
 from framework import framework_constants
 from framework import table_view_helpers
 from proto import tracker_pb2
 from testing import fake
+from testing import testing_helpers
 from tracker import tablecell
 
 
@@ -18,6 +20,7 @@ class DisplayNameMock(object):
 
   def __init__(self, name):
     self.display_name = name
+    self.user = None
 
 
 def MakeTestIssue(local_id, issue_id, summary):
@@ -162,6 +165,35 @@ class TableCellUnitTest(unittest.TestCase):
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 'Jan 2008')
 
+  def testTableCellOwnerLastVisit(self):
+    test_issue = MakeTestIssue(4, 4, 'Four')
+    test_issue.owner_id = None
+
+    cell = tablecell.TableCellOwnerLastVisit(
+        test_issue, **self.table_cell_kws)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
+    self.assertEqual(cell.values, [])
+
+    test_issue.owner_id = 23456
+    self.USERS_BY_ID[23456].user = testing_helpers.Blank(last_visit_timestamp=0)
+    cell = tablecell.TableCellOwnerLastVisit(
+        test_issue, **self.table_cell_kws)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
+    self.assertEqual(cell.values, [])
+
+    self.USERS_BY_ID[23456].user.last_visit_timestamp = int(time.time())
+    cell = tablecell.TableCellOwnerLastVisit(
+        test_issue, **self.table_cell_kws)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
+    self.assertEqual(cell.values[0].item, 'Today')
+
+    self.USERS_BY_ID[23456].user.last_visit_timestamp = (
+        int(time.time()) - 25 * framework_constants.SECS_PER_HOUR)
+    cell = tablecell.TableCellOwnerLastVisit(
+        test_issue, **self.table_cell_kws)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
+    self.assertEqual(cell.values[0].item, 'Yesterday')
+
   def testTableCellBlockedOn(self):
     test_issue = MakeTestIssue(4, 4, 'Four')
     test_issue.blocked_on_iids = [
@@ -242,6 +274,10 @@ class TableCellUnitTest(unittest.TestCase):
 
 class TableCellCSVTest(unittest.TestCase):
 
+  USERS_BY_ID = {
+      23456: DisplayNameMock('Jason'),
+      }
+
   def testTableCellOpenedTimestamp(self):
     test_issue = MakeTestIssue(4, 4, 'Four')
     test_issue.opened_timestamp = 1200000000
@@ -314,6 +350,29 @@ class TableCellCSVTest(unittest.TestCase):
     cell = tablecell.TableCellComponentModifiedTimestamp(test_issue)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(cell.values[0].item, 1200000000)
+
+  def testTableCellOwnerLastVisitDaysAgo(self):
+    test_issue = MakeTestIssue(4, 4, 'Four')
+    test_issue.owner_id = None
+
+    cell = tablecell.TableCellOwnerLastVisitDaysAgo(
+        test_issue, users_by_id=self.USERS_BY_ID)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
+    self.assertEqual(None, cell.values[0].item)
+
+    test_issue.owner_id = 23456
+    self.USERS_BY_ID[23456].user = testing_helpers.Blank(last_visit_timestamp=0)
+    cell = tablecell.TableCellOwnerLastVisitDaysAgo(
+        test_issue, users_by_id=self.USERS_BY_ID)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
+    self.assertEqual(None, cell.values[0].item)
+
+    self.USERS_BY_ID[23456].user.last_visit_timestamp = (
+        int(time.time()) - 25 * 60 * 60)
+    cell = tablecell.TableCellOwnerLastVisitDaysAgo(
+        test_issue, users_by_id=self.USERS_BY_ID)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
+    self.assertEqual(1, cell.values[0].item)
 
   def testTableCellAllLabels(self):
     labels = ['A', 'B', 'C', 'D-E', 'F-G']

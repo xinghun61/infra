@@ -75,6 +75,7 @@ class UserView(object):
   """Wrapper class to easily display basic user information in a template."""
 
   def __init__(self, user, is_group=False):
+    self.user = user
     email = user.email or ''
     self.user_id = user.user_id
     self.email = email

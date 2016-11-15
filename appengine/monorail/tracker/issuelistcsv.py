@@ -73,6 +73,7 @@ _CSV_COLS_TO_REPLACE = {
     'ownermodified': ['OwnerModified', 'OwnerModifiedTimestamp'],
     'statusmodified': ['StatusModified', 'StatusModifiedTimestamp'],
     'componentmodified': ['ComponentModified', 'ComponentModifiedTimestamp'],
+    'ownerlastvisit': ['OwnerLastVisit', 'OwnerLastVisitDaysAgo'],
     }
 
 

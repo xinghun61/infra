@@ -9,6 +9,7 @@ import logging
 import time
 from third_party import ezt
 
+from framework import framework_constants
 from framework import table_view_helpers
 from tracker import tracker_bizobj
 
@@ -151,6 +152,18 @@ class TableCellComponentModified(table_view_helpers.TableCellDate):
         self, issue.component_modified_timestamp, days_only=True)
 
 
+class TableCellOwnerLastVisit(table_view_helpers.TableCellDate):
+  """TableCell subclass specifically for showing owner last visit days ago."""
+
+  def __init__(self, issue, users_by_id=None, **_kw):
+    owner_view = users_by_id.get(issue.owner_id or issue.derived_owner_id)
+    last_visit = None
+    if owner_view:
+      last_visit = owner_view.user.last_visit_timestamp
+    table_view_helpers.TableCellDate.__init__(
+        self, last_visit, days_only=True)
+
+
 class TableCellBlockedOn(table_view_helpers.TableCell):
   """TableCell subclass for listing issues the current issue is blocked on."""
 
@@ -262,6 +275,7 @@ CELL_FACTORIES = {
     'ownermodified': TableCellOwnerModified,
     'statusmodified': TableCellStatusModified,
     'componentmodified': TableCellComponentModified,
+    'ownerlastvisit': TableCellOwnerLastVisit,
     'rank': TableCellRank,
     }
 
@@ -427,6 +441,19 @@ class TableCellComponentModifiedTimestamp(table_view_helpers.TableCell):
         [issue.component_modified_timestamp])
 
 
+class TableCellOwnerLastVisitDaysAgo(table_view_helpers.TableCell):
+  """TableCell subclass specifically for showing owner last visit days ago."""
+
+  def __init__(self, issue, users_by_id=None, **_kw):
+    owner_view = users_by_id.get(issue.owner_id or issue.derived_owner_id)
+    last_visit_days_ago = None
+    if owner_view and owner_view.user.last_visit_timestamp:
+      secs_ago = int(time.time()) - owner_view.user.last_visit_timestamp
+      last_visit_days_ago = secs_ago / framework_constants.SECS_PER_DAY
+    table_view_helpers.TableCell.__init__(
+        self, table_view_helpers.CELL_TYPE_UNFILTERABLE, [last_visit_days_ago])
+
+
 # Maps column names to factories/constructors that make table cells.
 # Uses the defaults in issuelist.py but changes the factory for the
 # summary cell to properly escape the data for CSV files.
@@ -446,4 +473,5 @@ CSV_CELL_FACTORIES.update({
     'statusmodifiedtimestamp': TableCellStatusModifiedTimestamp,
     'componentmodified': TableCellComponentModifiedCSV,
     'componentmodifiedtimestamp': TableCellComponentModifiedTimestamp,
+    'ownerlastvisitdaysago': TableCellOwnerLastVisitDaysAgo,
     })
