@@ -153,7 +153,7 @@ def FindMatchingWaterfallStep(build_step):  # pragma: no cover.
   # Query Swarming for isolated data.
   step_isolated_data = swarming_util.GetIsolatedDataForStep(
       build_step.master_name, build_step.builder_name, build_step.build_number,
-      build_step.step_name, http_client)
+      build_step.step_name, http_client, only_failure=False)
   build_step.swarmed = len(step_isolated_data) > 0
 
   if build_step.swarmed:

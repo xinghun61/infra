@@ -288,9 +288,18 @@ def GetIsolatedDataForFailedBuild(
 
 
 def GetIsolatedDataForStep(
-    master_name, builder_name, build_number, step_name,
-    http_client):
-  """Returns the isolated data for a specific step."""
+    master_name, builder_name, build_number, step_name, http_client,
+    only_failure=True):
+  """Returns the isolated data for a specific step.
+
+  Args:
+    master_name(str): Value of the master tag.
+    builder_name(str): Value of the buildername tag.
+    build_number(int): Value of the buildnumber tag.
+    step_name(str): Value of the stepname tag.
+    http_client(RetryHttpClient): The http client to send HTTPs requests.
+    only_failure(bool): A flag to determine if only failure info is needed.
+  """
   step_isolated_data = []
   data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
                                      http_client, {'stepname': step_name})
@@ -298,9 +307,13 @@ def GetIsolatedDataForStep(
     return step_isolated_data
 
   for item in data:
-    if item['failure'] and not item['internal_failure']:
-      # Only retrieves test results from tasks which have failures and
-      # the failure should not be internal infrastructure failure.
+    if only_failure:
+      if item['failure'] and not item['internal_failure']:
+        # Only retrieves test results from tasks which have failures and
+        # the failure should not be internal infrastructure failure.
+        isolated_data = _GenerateIsolatedData(item['outputs_ref'])
+        step_isolated_data.append(isolated_data)
+    else:
       isolated_data = _GenerateIsolatedData(item['outputs_ref'])
       step_isolated_data.append(isolated_data)
 

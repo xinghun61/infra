@@ -281,13 +281,6 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
             'first_failure': 0,
             'list_isolated_data': [
                 {
-                    'digest': 'isolatedhashunittests',
-                    'namespace': 'default-gzip',
-                    'isolatedserver': (
-                        waterfall_config.GetSwarmingSettings().get(
-                            'isolated_server'))
-                },
-                {
                     'digest': 'isolatedhashunittests1',
                     'namespace': 'default-gzip',
                     'isolatedserver': (
@@ -366,6 +359,33 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         }
     ]
     self.assertEqual(expected_data, data)
+
+  def testGetIsolatedDataForStepNotOnlyFailure(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    step_name = 'unit_tests'
+
+    self.http_client._SetResponseForGetRequestSwarmingList(
+        master_name, builder_name, build_number, step_name)
+    data = swarming_util.GetIsolatedDataForStep(
+        master_name, builder_name, build_number, step_name,
+        self.http_client, only_failure=False)
+    expected_data = [
+        {
+            'digest': 'isolatedhashunittests',
+            'namespace': 'default-gzip',
+            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
+                'isolated_server')
+        },
+        {
+            'digest': 'isolatedhashunittests1',
+            'namespace': 'default-gzip',
+            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
+              'isolated_server')
+        }
+    ]
+    self.assertEqual(sorted(expected_data), sorted(data))
 
   def testGetIsolatedDataForStepFailed(self):
     master_name = 'm'
