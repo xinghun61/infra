@@ -18,7 +18,11 @@ const (
 // Load is an implementation of datastore.PropertyLoadSaver that converts
 // a slices of builder names to a maps of builder name to bool.
 func (sa *StoredAlert) Load(m datastore.PropertyMap) error {
-	pbs, err := stringSetFromPropertySlice(m["PassingBuilders"].Slice())
+	ps, ok := m["PassingBuilders"]
+	if !ok {
+		return fmt.Errorf("Couldn't get PassingBuilders from PropertyMap: %+v", m)
+	}
+	pbs, err := stringSetFromPropertySlice(ps.Slice())
 	if err != nil {
 		return err
 	}
@@ -26,7 +30,11 @@ func (sa *StoredAlert) Load(m datastore.PropertyMap) error {
 	sa.PassingBuilders = pbs
 	delete(m, "PassingBuilders")
 
-	fbs, err := stringSetFromPropertySlice(m["FailingBuilders"].Slice())
+	fs, ok := m["FailingBuilders"]
+	if !ok {
+		return fmt.Errorf("Couldn't get FailingBuilders from PropertyMap: %+v", m)
+	}
+	fbs, err := stringSetFromPropertySlice(fs.Slice())
 	if err != nil {
 		return err
 	}
