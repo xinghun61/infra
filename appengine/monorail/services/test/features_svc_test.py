@@ -468,6 +468,27 @@ class FeaturesServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.features_service.UpdateHotlist(
         self.cnxn, 456, summary='A better one-line summary')
+    self.mox.VerifyAll()
+
+  def SetUpUpdateHotlistIssues(self, hotlist_id, relations_to_change):
+    self.features_service.hotlist2issue_tbl.Delete(
+        self.cnxn, hotlist_id=hotlist_id,
+        issue_id=relations_to_change.keys(), commit=False)
+    insert_rows = [
+        (hotlist_id, issue_id, relations_to_change[
+            issue_id]) for issue_id in relations_to_change.keys()]
+    self.features_service.hotlist2issue_tbl.InsertRows(
+        self.cnxn, cols=features_svc.HOTLIST2ISSUE_COLS,
+        row_values=insert_rows, commit=True)
+
+  def testUpdateHotlistIssues(self):
+    self.SetUpGetHotlists()
+    relations_to_change = {11: 112, 33: 332, 55: 552}
+    self.SetUpUpdateHotlistIssues(456, relations_to_change)
+    self.mox.ReplayAll()
+    self.features_service.UpdateHotlistIssues(
+        self.cnxn, 456, relations_to_change)
+    self.mox.VerifyAll()
 
   def testGetHotlists(self):
     hotlist1 = fake.Hotlist(hotlist_name='hotlist1', hotlist_id=123)

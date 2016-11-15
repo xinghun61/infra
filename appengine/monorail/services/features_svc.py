@@ -549,6 +549,37 @@ class FeaturesService(object):
     if default_col_spec is not None:
       hotlist.default_col_spec = default_col_spec
 
+  def UpdateHotlistIssues(
+      self, cnxn, hotlist_id, relations_to_change, commit=True):
+    """Updates rankings of hotlistissues.
+    Args:
+      cnxn: connection to SQL database.
+      hotlist_id: the ID of the hotlist to update
+      relations_to_change: This should be a dictionary of {issue_id: rank,...}
+        of relations that need to be changed.
+      commit: set to False to skip the DB commit and do it in the caller.
+    """
+    hotlist = self.GetHotlist(cnxn, hotlist_id, use_cache=False)
+    if not hotlist:
+      raise NoSuchHotlistException()
+
+    issue_ids = relations_to_change.keys()
+    self.hotlist2issue_tbl.Delete(
+        cnxn, hotlist_id=hotlist_id, issue_id=issue_ids, commit=False)
+    insert_rows = [
+        (hotlist_id, issue_id, relations_to_change[
+            issue_id]) for issue_id in issue_ids]
+    self.hotlist2issue_tbl.InsertRows(
+        cnxn, cols=HOTLIST2ISSUE_COLS , row_values=insert_rows, commit=commit)
+
+    # TODO(jojwang): call some InvalidateKeys method?
+
+    # Update the hotlist PB in RAM
+    rank_pairs = hotlist.iid_rank_pairs
+    for hotlist_issue in rank_pairs:
+      if hotlist_issue.issue_id in relations_to_change:
+        hotlist_issue.rank = relations_to_change[hotlist_issue.issue_id]
+
   def _InsertHotlist(self, cnxn, hotlist):
     """Insert the given hotlist into the database."""
     hotlist_id = self.hotlist_tbl.InsertRow(

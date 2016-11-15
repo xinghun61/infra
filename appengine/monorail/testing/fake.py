@@ -1529,7 +1529,7 @@ class FeaturesService(object):
 
   def TestAddHotlist(self, name, summary='', owner_ids=None, editor_ids=None,
                      follower_ids=None, description=None, hotlist_id=None,
-                     is_private=False):
+                     is_private=False, iid_rank_pairs=None):
     """Add a hotlist to the fake FeaturesService object.
 
     Args:
@@ -1542,6 +1542,7 @@ class FeaturesService(object):
       description: The description string for this hotlist
       hotlist_id: A unique integer identifier for the created hotlist
       is_private: A boolean indicating whether the hotlist is private/public
+      iid_rank_pairs: a list of tuples [(issue_id, rank),...]
 
     Returns:
       A populated hotlist PB.
@@ -1557,6 +1558,11 @@ class FeaturesService(object):
     self.TestAddHotlistMembers(owner_ids, hotlist_pb, OWNER_ROLE)
     self.TestAddHotlistMembers(follower_ids, hotlist_pb, FOLLOWER_ROLE)
     self.TestAddHotlistMembers(editor_ids, hotlist_pb, EDITOR_ROLE)
+
+    if iid_rank_pairs is not None:
+      for(issue_id, rank) in iid_rank_pairs:
+        hotlist_pb.iid_rank_pairs.append(
+            features_pb2.Hotlist.HotlistIssue(issue_id=issue_id, rank=rank))
 
     self.test_hotlists[name] = hotlist_pb
     self.hotlists_by_id[hotlist_pb.hotlist_id] = hotlist_pb
@@ -1584,9 +1590,10 @@ class FeaturesService(object):
     """Create and store a Hotlist with the given attributes."""
     if hotlist_name in self.test_hotlists:
       raise features_svc.HotlistAlreadyExists()
+    iid_rank_pairs = [(issue_id, 0) for issue_id in (issue_ids or [])]
     self.TestAddHotlist(hotlist_name, summary=summary, owner_ids=owner_ids,
-                        editor_ids=editor_ids,
-                        description=description, is_private=is_private)
+                        editor_ids=editor_ids, description=description,
+                        is_private=is_private, iid_rank_pairs=iid_rank_pairs)
 
   def UpdateHotlist(self, cnxn, hotlist_id, name=None, summary=None,
                     description=None, is_private=None, default_col_spec=None):
@@ -1604,6 +1611,16 @@ class FeaturesService(object):
       hotlist.is_private = is_private
     if default_col_spec is not None:
       hotlist.default_col_spec = default_col_spec
+
+  def UpdateHotlistIssues(
+      self, cnxn, hotlist_id, relations_to_change, commit=True):
+    hotlist = self.hotlists_by_id.get(hotlist_id)
+    if not hotlist:
+      raise features_svc.NoSuchHotlistException(
+          'Hotlist "%s" not found!' % hotlist_id)
+    for hotlist_issue in hotlist.iid_rank_pairs:
+      if hotlist_issue.issue_id in relations_to_change:
+        hotlist_issue.rank = relations_to_change[hotlist_issue.issue_id]
 
   def LookupUserHotlists(self, cnxn, user_ids):
     """Return dict of {user_id: [hotlist_id, hotlist_id...]}."""
