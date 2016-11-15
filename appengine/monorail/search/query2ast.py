@@ -134,6 +134,7 @@ _DATE_FIELDS = (
     'modified',
     'opened',
     'ownermodified',
+    'ownerlastvisit',
     'statusmodified',
     'componentmodified',
     )

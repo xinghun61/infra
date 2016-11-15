@@ -248,6 +248,22 @@ class AST2SelectTest(unittest.TestCase):
           [111L, 111L])],
         where)
 
+  def testProcessOwnerLastVisitCond(self):
+    fd = BUILTIN_ISSUE_FIELDS['ownerlastvisit']
+    NOW = 1234567890
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.LT, [fd], [], [NOW])
+    left_joins, where = ast2select._ProcessOwnerLastVisitCond(
+        cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('User AS Cond1 ON (Issue.owner_id = Cond1.user_id OR '
+          'Issue.derived_owner_id = Cond1.user_id)',
+          [])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.last_visit_timestamp < %s',
+          [NOW])],
+        where)
+
   def testProcessReporterCond(self):
     fd = BUILTIN_ISSUE_FIELDS['reporter']
     cond = ast_pb2.MakeCond(

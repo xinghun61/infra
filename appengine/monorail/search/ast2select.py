@@ -127,8 +127,8 @@ def _ProcessOwnerCond(cond, alias, _user_alias):
   """Convert an owner:substring cond to SQL."""
   left_joins = [(
       'User AS {alias} ON (Issue.owner_id = {alias}.user_id '
-      'OR Issue.derived_owner_id = {alias}.user_id)'.format(
-          alias=alias), [])]
+      'OR Issue.derived_owner_id = {alias}.user_id)'.format(alias=alias),
+      [])]
   where = [_Compare(alias, cond.op, tracker_pb2.FieldTypes.STR_TYPE, 'email',
                     cond.str_values)]
 
@@ -154,6 +154,18 @@ def _ProcessOwnerIDCond(cond, _alias, _user_alias):
          explicit_args + derived_args)]
 
   return [], where
+
+
+def _ProcessOwnerLastVisitCond(cond, alias, _user_alias):
+  """Convert an owner_last_visit<timestamp cond to SQL."""
+  left_joins = [(
+      'User AS {alias} '
+      'ON (Issue.owner_id = {alias}.user_id OR '
+      'Issue.derived_owner_id = {alias}.user_id)'.format(alias=alias),
+      [])]
+  where = [_Compare(alias, cond.op, tracker_pb2.FieldTypes.INT_TYPE,
+                    'last_visit_timestamp', cond.int_values)]
+  return left_joins, where
 
 
 def _ProcessReporterCond(cond, alias, _user_alias):
@@ -399,6 +411,7 @@ def _ProcessAttachmentCond(cond, alias, _user_alias):
 _PROCESSORS = {
     'owner': _ProcessOwnerCond,
     'owner_id': _ProcessOwnerIDCond,
+    'ownerlastvisit': _ProcessOwnerLastVisitCond,
     'reporter': _ProcessReporterCond,
     'reporter_id': _ProcessReporterIDCond,
     'cc': _ProcessCcCond,
