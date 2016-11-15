@@ -269,6 +269,48 @@
     "cmd": [
       "python",
       "-u",
+      "[SLAVE_BUILD]/infra/build/build.py",
+      "--builder",
+      "infra-continuous-precise-64"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "android"
+    },
+    "name": "cipd - build packages [GOOS:android GOARCH:amd64]"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[SLAVE_BUILD]/infra/build/build.py",
+      "--no-rebuild",
+      "--upload",
+      "--service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--builder",
+      "infra-continuous-precise-64",
+      "--tags",
+      "buildbot_build:chromium.infra/infra-continuous-precise-64/123",
+      "git_repository:https://chromium.googlesource.com/infra/infra",
+      "git_revision:5e03a58dc0850e5137a8ebbce29610670c756aed"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "android"
+    },
+    "name": "cipd - upload packages [GOOS:android GOARCH:amd64]",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output (invalid)@null@@@",
+      "@@@STEP_LOG_END@json.output (invalid)@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\npath = sys.argv[1]\nif os.path.exists(path):\n  for p in (os.path.join(path, x) for x in os.listdir(path)):\n    if os.path.isdir(p):\n      chromium_utils.RemoveDirectory(p)\n    else:\n      os.unlink(p)\n",
       "[SLAVE_BUILD]/infra/go/bin"
     ],
