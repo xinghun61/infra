@@ -118,7 +118,7 @@ func TestMasterAlerts(t *testing.T) {
 					Severity:  messages.StaleMaster,
 					Body:      "0h 20m elapsed since last update.",
 					Time:      messages.TimeToEpochTime(time.Unix(100, 0).Add(20 * time.Minute)),
-					Links:     []messages.Link{{"Master", urlParse("https://build.chromium.org/p/fake.master", t).String()}},
+					Links:     []messages.Link{{Title: "Master", Href: urlParse("https://build.chromium.org/p/fake.master", t).String()}},
 					StartTime: messages.EpochTime(100),
 				},
 			},
@@ -386,7 +386,6 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 }
 
 func TestBuilderStepAlerts(t *testing.T) {
-	t.Parallel()
 
 	Convey("test BuilderStepAlerts", t, func() {
 		regrange.URLToNameMapping = map[string]string{
@@ -1099,7 +1098,6 @@ func TestMergeAlertsByReason(t *testing.T) {
 }
 
 func TestStepFailures(t *testing.T) {
-	t.Parallel()
 
 	Convey("test StepFailures", t, func() {
 		tests := []struct {
@@ -1170,7 +1168,6 @@ func TestStepFailures(t *testing.T) {
 }
 
 func TestStepFailureAlerts(t *testing.T) {
-	t.Parallel()
 
 	Convey("test StepFailureAlerts", t, func() {
 		tests := []struct {

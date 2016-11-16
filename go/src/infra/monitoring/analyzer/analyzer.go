@@ -138,7 +138,7 @@ func (a *Analyzer) MasterAlerts(master *messages.MasterLocation, be *messages.Bu
 			StartTime: messages.TimeToEpochTime(be.CreatedTimestamp.Time()),
 			Severity:  messages.StaleMaster,
 			Time:      messages.TimeToEpochTime(a.Now()),
-			Links:     []messages.Link{{"Master", master.URL.String()}},
+			Links:     []messages.Link{{Title: "Master", Href: master.URL.String()}},
 			Type:      messages.AlertStaleMaster,
 			// No extension for now.
 		})
@@ -308,9 +308,9 @@ func (a *Analyzer) builderAlerts(tree string, master *messages.MasterLocation, b
 	}
 	elapsed := a.Now().Sub(lastUpdated.Time())
 	links := []messages.Link{
-		{"Builder", client.BuilderURL(master, builderName).String()},
-		{"Last build", client.BuildURL(master, builderName, lastBuild.Number).String()},
-		{"Last build step", client.StepURL(master, builderName, lastStep, lastBuild.Number).String()},
+		{Title: "Builder", Href: client.BuilderURL(master, builderName).String()},
+		{Title: "Last build", Href: client.BuildURL(master, builderName, lastBuild.Number).String()},
+		{Title: "Last build step", Href: client.StepURL(master, builderName, lastStep, lastBuild.Number).String()},
 	}
 
 	switch b.State {
@@ -555,8 +555,16 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 	// once we've scanned everything.
 	stepAlertsByKey := map[string][]messages.Alert{}
 
-	latestBuild := recentBuildIDs[0]
-	importantFailures, err := a.stepFailures(master, builderName, latestBuild)
+	importantFailures, err := a.findImportantFailures(master, builderName, recentBuildIDs)
+	importantAlerts, err := a.stepFailureAlerts(tree, importantFailures)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	importantKeys := stringset.New(0)
+	for _, alr := range importantAlerts {
+		importantKeys.Add(alr.Key)
+	}
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -569,18 +577,13 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 	for i, f := range importantFailures {
 		stepNames[i] = f.Step.Name
 	}
-	finditResults, err := a.Reader.Findit(master, builderName, latestBuild, stepNames)
+
+	// NOTE: we only use the most recent build ID now, because currently the only
+	// time we would need to check multiple builds is for official builds, which
+	// right now are internal and not supported by findit.
+	finditResults, err := a.Reader.Findit(master, builderName, recentBuildIDs[0], stepNames)
 	if err != nil {
 		return nil, []error{fmt.Errorf("while getting findit results: %s", err)}
-	}
-
-	importantAlerts, err := a.stepFailureAlerts(tree, importantFailures)
-	if err != nil {
-		return nil, []error{err}
-	}
-	importantKeys := stringset.New(0)
-	for _, alr := range importantAlerts {
-		importantKeys.Add(alr.Key)
 	}
 
 	for _, buildNum := range recentBuildIDs {
@@ -701,6 +704,23 @@ func uniques(s []string) []string {
 	}
 	sort.Strings(ret)
 	return ret
+}
+
+func (a *Analyzer) findImportantFailures(master *messages.MasterLocation, builderName string, recentBuildIDs []int64) ([]*messages.BuildStep, error) {
+	if !strings.HasPrefix(master.Name(), "official") {
+		latestBuild := recentBuildIDs[0]
+		importantFailures, err := a.stepFailures(master, builderName, latestBuild)
+		if err != nil {
+			return nil, err
+		}
+		if len(importantFailures) == 0 {
+			return nil, nil
+		}
+
+		return importantFailures, nil
+	}
+
+	return a.officialImportantFailures(master, builderName, recentBuildIDs)
 }
 
 // stepFailures returns the steps that have failed recently on builder builderName.
