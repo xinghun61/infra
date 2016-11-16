@@ -1,0 +1,190 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
+      "[HACK]/foo_builder",
+      "511"
+    ],
+    "name": "makedirs checkout",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
+      "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
+      "@@@STEP_LOG_LINE@python.inline@mode = int(sys.argv[2])@@@",
+      "@@@STEP_LOG_LINE@python.inline@if not os.path.isdir(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  if os.path.exists(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@    print \"%s exists but is not a dir\" % path@@@",
+      "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
+      "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "cache",
+      "populate",
+      "--cache-dir=[GIT_CACHE]",
+      "--ignore-locks",
+      "https://chromium.googlesource.com/chromium/src"
+    ],
+    "cwd": "[HACK]/foo_builder",
+    "name": "git cache"
+  },
+  {
+    "cmd": [
+      "git",
+      "cache",
+      "exists",
+      "--cache-dir=[GIT_CACHE]",
+      "--quiet",
+      "https://chromium.googlesource.com/chromium/src"
+    ],
+    "cwd": "[HACK]/foo_builder",
+    "name": "git cache (2)",
+    "stdout": "/path/to/tmp/"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
+      "--path",
+      "[HACK]/foo_builder",
+      "--url",
+      "/foo"
+    ],
+    "name": "git setup"
+  },
+  {
+    "cmd": [
+      "git",
+      "retry",
+      "fetch",
+      "origin",
+      "master"
+    ],
+    "cwd": "[HACK]/foo_builder",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
+    },
+    "name": "git fetch"
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "-f",
+      "FETCH_HEAD"
+    ],
+    "cwd": "[HACK]/foo_builder",
+    "name": "git checkout"
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "[HACK]/foo_builder",
+    "name": "read revision",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-f",
+      "-d",
+      "-x"
+    ],
+    "cwd": "[HACK]/foo_builder",
+    "name": "git clean"
+  },
+  {
+    "cmd": [
+      "git",
+      "remote",
+      "remove",
+      "destination_repo"
+    ],
+    "cwd": "[HACK]/foo_builder",
+    "name": "git remote"
+  },
+  {
+    "cmd": [
+      "git",
+      "remote",
+      "add",
+      "destination_repo",
+      "https://chromium.googlesource.com/chromium/src/codesearch"
+    ],
+    "cwd": "[HACK]/foo_builder",
+    "name": "git remote (2)"
+  },
+  {
+    "cmd": [
+      "git",
+      "fetch",
+      "destination_repo",
+      "+refs/heads/master"
+    ],
+    "cwd": "[HACK]/foo_builder",
+    "name": "git fetch (2)"
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "FETCH_HEAD^"
+    ],
+    "cwd": "[HACK]/foo_builder",
+    "name": "git rev-parse",
+    "stdout": "/path/to/tmp/"
+  },
+  {
+    "cmd": [
+      "python",
+      "RECIPE_MODULE[infra::sync_submodules]/resources/deps2submodules.py",
+      "--path-prefix",
+      "src/",
+      "DEPS",
+      "--extra-submodule",
+      "src/foo=https://www.foo.com",
+      "--extra-submodule",
+      "src/bar=http://www.bar.com"
+    ],
+    "cwd": "[HACK]/foo_builder",
+    "name": "deps2submodules"
+  },
+  {
+    "cmd": [
+      "git",
+      "commit",
+      "-m",
+      "Update submodule references.\n\nThis is an artificial commit to make dependencies specified in the DEPS file\nvisible to Codesearch.\nThis commit does not exist in the underlying repository."
+    ],
+    "cwd": "[HACK]/foo_builder",
+    "name": "git commit"
+  },
+  {
+    "cmd": [
+      "git",
+      "push",
+      "destination_repo",
+      "+HEAD:refs/heads/master"
+    ],
+    "cwd": "[HACK]/foo_builder",
+    "name": "git push"
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]

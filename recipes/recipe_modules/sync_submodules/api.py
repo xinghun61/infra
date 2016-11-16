@@ -41,11 +41,11 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
       dest: URL of the git repository to push to.
       source_ref: git ref in the source repository to checkout.
       dest_ref: git ref in the destination repository to push to.
-      extra_submodules: a list of (path, URL) tuples.  These are added as
-          extra submodules.
+      extra_submodules: a list of "path=URL" strings.  These are added as extra
+          submodules.
     """
 
-    if extra_submodules is None:
+    if extra_submodules is None:  # pragma: nocover
       extra_submodules = []
 
     # remote_run creates a temporary directory for our pwd, but that means big
@@ -101,8 +101,8 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
         '--path-prefix', '%s/' % Humanish(source),
         'DEPS',
     ]
-    for path, url in extra_submodules:
-      deps2submodules_cmd.extend(['--extra-submodule', '%s=%s' % (path, url)])
+    for extra_submodule in extra_submodules:
+      deps2submodules_cmd.extend(['--extra-submodule', extra_submodule])
     self.m.step('deps2submodules', deps2submodules_cmd, cwd=checkout_dir)
 
     # Commit and push to the destination ref.
