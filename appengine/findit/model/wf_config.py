@@ -6,7 +6,7 @@
 
 from google.appengine.ext import ndb
 
-from model.versioned_config import VersionedConfig
+from gae_libs.model.versioned_config import VersionedConfig
 
 
 class FinditConfig(VersionedConfig):

@@ -7,7 +7,7 @@ import mock
 import os
 import unittest
 
-from common.retry_http_client import RetryHttpClient
+from libs.http.retry_http_client import RetryHttpClient
 from waterfall import buildbot
 
 

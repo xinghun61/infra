@@ -9,7 +9,7 @@ import re
 from google.appengine.ext import ndb
 
 from crash.type_enums import CrashClient
-from model.versioned_config import VersionedConfig
+from gae_libs.model.versioned_config import VersionedConfig
 
 
 class CrashConfig(VersionedConfig):

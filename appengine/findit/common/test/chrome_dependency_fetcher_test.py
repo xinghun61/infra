@@ -9,11 +9,11 @@ from testing_utils import testing
 
 from common import chrome_dependency_fetcher
 from common import deps_parser
-from common import retry_http_client
 from common import http_client_appengine
 from common.dependency import Dependency, DependencyRoll
 from lib.gitiles.git_repository import GitRepository
 from lib.gitiles import gitiles_repository
+from libs.http import retry_http_client
 
 
 class MockGitilesRepository(GitRepository):

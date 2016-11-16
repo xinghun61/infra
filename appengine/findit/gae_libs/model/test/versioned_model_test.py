@@ -7,7 +7,7 @@ from google.appengine.ext import ndb
 
 from testing_utils import testing
 
-from model.versioned_model import VersionedModel
+from gae_libs.model.versioned_model import VersionedModel
 
 
 class _Entity(VersionedModel):

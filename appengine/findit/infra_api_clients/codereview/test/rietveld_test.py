@@ -6,8 +6,8 @@ import textwrap
 
 from testing_utils import testing
 
-from common import retry_http_client
-from common.rietveld import Rietveld
+from infra_api_clients.codereview.rietveld import Rietveld
+from libs.http import retry_http_client
 
 
 class DummyHttpClient(retry_http_client.RetryHttpClient):

@@ -8,7 +8,7 @@ import logging
 from google.appengine.api import urlfetch
 
 from common import auth_util
-from common.retry_http_client import RetryHttpClient
+from libs.http.retry_http_client import RetryHttpClient
 
 
 # TODO(katesonia): Move this to config.

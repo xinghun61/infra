@@ -6,7 +6,7 @@ import urllib
 
 from testing_utils import testing
 
-from common import retry_http_client
+from libs.http import retry_http_client
 
 
 class DummyHttpClient(retry_http_client.RetryHttpClient):

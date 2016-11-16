@@ -8,7 +8,7 @@ import logging
 
 from google.appengine.ext import ndb
 
-from model.versioned_model import VersionedModel
+from gae_libs.model.versioned_model import VersionedModel
 
 
 class VersionedConfig(VersionedModel):

@@ -6,7 +6,7 @@ from google.appengine.ext import ndb
 from google.appengine.api import users
 from testing_utils import testing
 
-from model.versioned_config import VersionedConfig
+from gae_libs.model.versioned_config import VersionedConfig
 
 
 class _Config(VersionedConfig):

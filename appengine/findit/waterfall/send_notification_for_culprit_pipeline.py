@@ -10,7 +10,7 @@ from google.appengine.ext import ndb
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
-from common.rietveld import Rietveld
+from infra_api_clients.codereview.rietveld import Rietveld
 from lib import time_util
 from lib.gitiles.gitiles_repository import GitilesRepository
 from model import analysis_status as status

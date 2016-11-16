@@ -6,12 +6,12 @@ import base64
 
 from google.appengine.ext import ndb
 
+from gae_libs.model.versioned_model import VersionedModel
 from model import result_status
 from model import triage_status
 from model.base_analysis import BaseAnalysis
 from model.base_build_model import BaseBuildModel
 from model.flake.flake_swarming_task import FlakeSwarmingTaskData
-from model.versioned_model import VersionedModel
 from model.base_triaged_model import TriagedModel
 
 

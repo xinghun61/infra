@@ -14,7 +14,7 @@ from google.appengine.api.urlfetch_errors import DownloadError
 from google.appengine.api.urlfetch_errors import ConnectionClosedError
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
-from common.retry_http_client import RetryHttpClient
+from libs.http.retry_http_client import RetryHttpClient
 from model.wf_config import FinditConfig
 from model.wf_step import WfStep
 from waterfall import swarming_util

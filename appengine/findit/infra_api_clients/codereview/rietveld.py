@@ -16,14 +16,14 @@ import logging
 import re
 import urlparse
 
-from common.codereview import CodeReview
+from infra_api_clients.codereview import codereview
 from common.http_client_appengine import HttpClientAppengine
 
 
 _RIETVELD_ISSUE_NUMBER_RE = re.compile('^/(\d+)/?.*')
 
 
-class Rietveld(CodeReview):
+class Rietveld(codereview.CodeReview):
   """The implementation of CodeReview interface for Rietveld."""
   HTTP_CLIENT = HttpClientAppengine(follow_redirects=False)
 

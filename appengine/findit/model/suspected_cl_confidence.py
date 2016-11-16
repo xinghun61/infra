@@ -4,8 +4,8 @@
 
 from google.appengine.ext import ndb
 
+from gae_libs.model.versioned_model import VersionedModel
 from lib.time_util import GetUTCNow
-from model.versioned_model import VersionedModel
 
 
 class ConfidenceInformation(ndb.Model):

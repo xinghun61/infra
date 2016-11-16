@@ -4,7 +4,7 @@
 
 import datetime
 
-from common.rietveld import Rietveld
+from infra_api_clients.codereview.rietveld import Rietveld
 from lib.gitiles.gitiles_repository import GitilesRepository
 from model import analysis_status as status
 from model.wf_culprit import WfCulprit

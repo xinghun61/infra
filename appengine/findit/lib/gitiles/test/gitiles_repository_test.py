@@ -9,11 +9,9 @@ import re
 
 from testing_utils import testing
 
-# TODO(http://crbug.com/660474): Nothing in ./lib should depend on things
-# in ./common
-from common import retry_http_client
 from lib.gitiles import gitiles_repository
 from lib.gitiles.change_log import ChangeLog
+from libs.http import retry_http_client
 
 
 COMMIT_MESSAGE = ('Add popover for snapshot canvas log.\n\n'
