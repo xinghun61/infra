@@ -37,18 +37,18 @@ func getDeviceAffinity(step *messages.Step) (bool, int, error) {
 	return false, 0, nil
 }
 
-type perfDeviceFailure struct {
+type deviceFailure struct {
 	Builder string
 	Devices []int
 }
 
-func (p *perfDeviceFailure) Signature() string {
+func (p *deviceFailure) Signature() string {
 	return fmt.Sprintf("%s/%s", p.Builder, p.devicesStr())
 }
 
 // devicesStr is a string representation of the device affinities which have
 // failed.
-func (p *perfDeviceFailure) devicesStr() string {
+func (p *deviceFailure) devicesStr() string {
 	sort.Ints(p.Devices)
 	devicesStr := make([]string, len(p.Devices))
 	for i, device := range p.Devices {
@@ -58,15 +58,15 @@ func (p *perfDeviceFailure) devicesStr() string {
 	return strings.Join(devicesStr, ", ")
 }
 
-func (p *perfDeviceFailure) Kind() string {
+func (p *deviceFailure) Kind() string {
 	return "perf-device"
 }
 
-func (p *perfDeviceFailure) Severity() messages.Severity {
+func (p *deviceFailure) Severity() messages.Severity {
 	return messages.InfraFailure
 }
 
-func (p *perfDeviceFailure) Title(bses []*messages.BuildStep) string {
+func (p *deviceFailure) Title(bses []*messages.BuildStep) string {
 	if len(bses) == 0 {
 		return fmt.Sprintf("device affinity %s broken", p.devicesStr())
 	}
@@ -75,15 +75,22 @@ func (p *perfDeviceFailure) Title(bses []*messages.BuildStep) string {
 	return fmt.Sprintf("device affinity %s is broken on %s/%s, affecting %d tests", p.devicesStr(), f.Master.Name(), p.Builder, len(bses))
 }
 
-// perfFailureAnalyzer looks for perf device failures.
-func perfDeviceAnalyzer(reader client.Reader, failures []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
+// deviceAnalyzer looks for perf device failures.
+func deviceAnalyzer(reader client.Reader, failures []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
 	if len(failures) == 0 {
 		return []messages.ReasonRaw{}, nil
 	}
 
 	isStepFailure := make(map[string]bool)
 	for _, failure := range failures {
-		isStepFailure[failure.Step.Name] = true
+		ok, err := failure.Step.IsOK()
+		if err != nil {
+			continue
+		}
+
+		if !ok {
+			isStepFailure[failure.Step.Name] = true
+		}
 	}
 
 	isAffinityFailure := make(map[string]bool)
@@ -108,7 +115,7 @@ func perfDeviceAnalyzer(reader client.Reader, failures []*messages.BuildStep) ([
 	results := make([]messages.ReasonRaw, len(failures))
 	deviceHasFailure := map[int]bool{}
 
-	devFailure := &perfDeviceFailure{
+	devFailure := &deviceFailure{
 		Builder: failures[0].Build.BuilderName,
 		Devices: []int{},
 	}

@@ -28,7 +28,6 @@ const (
 	StepCompletedRun = "completed run"
 
 	// Step result values.
-	resOK           = float64(1)
 	resInfraFailure = float64(4)
 )
 
@@ -738,19 +737,14 @@ func (a *Analyzer) stepFailures(master *messages.MasterLocation, builderName str
 		if !s.IsFinished || len(s.Results) == 0 {
 			continue
 		}
-		// Because Results in the json data is a homogeneous array, the unmarshaler
-		// doesn't have any type information to assert about it. We have to do
-		// some ugly runtime type assertion ourselves.
-		if r, ok := s.Results[0].(float64); ok {
-			if r <= resOK {
-				// This 0/1 check seems to be a convention or heuristic. A 0 or 1
-				// result is apparently "ok", accoring to the original python code.
-				continue
-			}
-		} else {
-			errLog.Printf("Couldn't unmarshal first step result into a float64: %v", s.Results[0])
-		}
 
+		ok, err := s.IsOK()
+		if err != nil {
+			errLog.Printf(err.Error())
+		}
+		if ok {
+			continue
+		}
 		// We have a failure of some kind, so queue it up to check later.
 
 		// Done so below reference doesn't point to the last element in this loop
@@ -800,7 +794,8 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 			// Check results to see if it's an array of [4]
 			// That's a purple failure, which should go to infra/trooper.
 			// TODO(martiniss): move this logic into package step
-			if r, ok := failure.Step.Results[0].(float64); ok && r == resInfraFailure {
+			r, _ := failure.Step.Result()
+			if r == messages.ResultInfraFailure {
 				infoLog.Printf("INFRA FAILURE: %s/%s/%s", failure.Master.Name(), failure.Build.BuilderName, failure.Step.Name)
 				bf := messages.BuildFailure{
 					Builders: []messages.AlertedBuilder{
