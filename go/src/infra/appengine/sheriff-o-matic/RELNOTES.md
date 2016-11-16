@@ -1,3 +1,43 @@
+# Release Notes sheriff-o-matic 2016-11-15
+
+- 13 commits, 8 bugs affected since a528c38 (2016-10-31T23:41:05.000Z)
+- 4 Authors:
+  - seanmccullough@chromium.org
+  - zhangtiff@google.com
+  - martiniss@chromium.org
+  - chanli@google.com
+
+## Changes in this release
+
+- [[som] Add an option to render links pointing to Milo for builds](https://chromium-review.googlesource.com/411920) (seanmccullough@chromium.org)
+- [SoM: Sort alerts based on bugs.](https://chromium-review.googlesource.com/411357) (zhangtiff@google.com)
+- [SoM: Fix collapse/expand all.](https://chromium-review.googlesource.com/411456) (zhangtiff@google.com)
+- [SoM: Add bug queue labels to filed bugs.](https://chromium-review.googlesource.com/411262) (zhangtiff@google.com)
+- [SoM: Polish for trooper tab.](https://chromium-review.googlesource.com/410038) (zhangtiff@google.com)
+- [SoM: Autofocus on comments box.](https://chromium-review.googlesource.com/410242) (zhangtiff@google.com)
+- [SoM: Fix frontend tests.](https://chromium-review.googlesource.com/406487) (zhangtiff@google.com)
+- [SOM: Bump timeout when talking to monorail](https://chromium-review.googlesource.com/409633) (martiniss@chromium.org)
+- [[som] prep to generate alerts feed from pubsub persistent store](https://chromium-review.googlesource.com/405781) (seanmccullough@chromium.org)
+- [SoM: Set up server for trooper tab.](https://chromium-review.googlesource.com/406681) (zhangtiff@google.com)
+- [[Findit] change the how-to page for findit to go link.](https://chromium-review.googlesource.com/407558) (chanli@google.com)
+- [SoM: Update help page to include comments.](https://chromium-review.googlesource.com/407610) (zhangtiff@google.com)
+- [Update relnotes for SOM](https://chromium-review.googlesource.com/405827) (martiniss@chromium.org)
+
+## Bugs updated, by author
+- martiniss@chromium.org:
+  -  [https://crbug.com/655234](https://crbug.com/655234)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/655286](https://crbug.com/655286)
+  -  [https://crbug.com/655296](https://crbug.com/655296)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/637006](https://crbug.com/637006)
+  -  [https://crbug.com/651736](https://crbug.com/651736)
+  -  [https://crbug.com/663772](https://crbug.com/663772)
+  -  [https://crbug.com/664169](https://crbug.com/664169)
+  -  [https://crbug.com/664596](https://crbug.com/664596)
+
 # Release Notes sheriff-o-matic 2016-10-31
 
 - 7 commits, 3 bugs affected since 4f461df (2016-10-24T22:38:54.000Z)
