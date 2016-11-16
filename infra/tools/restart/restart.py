@@ -82,20 +82,29 @@ See: go/chrome-infra-doc-cros for more information.
 
 def add_argparse_options(parser):
   parser.add_argument(
-      'masters', type=str, nargs='+',
+      'masters', nargs='*',
       help='Master(s) to restart. "master." prefix can be omitted.')
+  parser.add_argument(
+      '-x', '--masters-regex', default='',
+      help='Regex for names of masters to restart. Result of regex will be '
+           'concatentated with any masters provided at the end of the command. '
+           '"master." prefix can be omitted.')
   parser.add_argument(
       '-m', '--minutes-in-future', default=15, type=int,
       help='how many minutes in the future to schedule the restart. '
            'use 0 for "now." default %(default)d')
   parser.add_argument(
+      '-o', '--rolling', default=0, type=int,
+      help='Do a rolling restart with specified number of minutes between '
+           'each master.')
+  parser.add_argument(
       '--eod', action='store_true',
       help='schedules restart for 6:30PM Google Standard Time.')
   parser.add_argument(
-      '-b', '--bug', default=None, type=str,
+      '-b', '--bug', default=None,
       help='Bug containing master restart request.')
   parser.add_argument(
-      '-r', '--reviewer', action='append', type=str,
+      '-r', '--reviewer', action='append',
       help=('Reviewer (ldap or ldap@google.com) to TBR the CL to. '
             'If not specified, chooses a random reviewer from OWNERS file'))
   parser.add_argument(
@@ -110,11 +119,45 @@ def add_argparse_options(parser):
       help='which desired state to put the buildbot master in '
            '(default %(default)s)')
   parser.add_argument(
-      '-e', '--reason', type=str, default='',
+      '-e', '--reason', default='',
       help='reason for restarting the master')
 
 
+def get_master_names(desired_master_state, name_regex):
+  """Returns masters found in <desired_master_state> that match <name_regex>.
+
+  Args:
+    desired_master_state: A "desired_master_state" object, e.g. as returned by
+        desired_state_parser
+
+  Returns:
+    [str1, str2, ...] All masters found in <desired_master_state>
+  """
+  # Modify regex to allow for optional "master." prefix
+  name_regex = r'(master\.)?' + name_regex
+  master_matcher = re.compile(name_regex)
+  return [m for m in desired_master_state["master_states"].keys()
+                 if master_matcher.match(m)]
+
 def get_restart_spec(name, restart_time):
+  """Creates a new RestartSpec for master named <name> at <restart_time>.
+
+  _MASTER_CONFIGS is consulted to see if there is a "message" and/or "eod" value
+  for the given master. If those config settings aren't found, defaults are
+  used.
+
+  If the <name> provided does not start with "master.", then it will be added
+  in the resulting RestartSpec
+
+  Args:
+    name: (string) name of master to create a RestartSpec for. "master."
+        prefix is optional, but will be present in the returned RestartSpec
+        object.
+    restart_time: (datetime.datetime) When to schedule the restart.
+
+  Returns:
+    RestartSpec object
+  """
   def _trim_prefix(v, prefix):
     if v.startswith(prefix):
       return v[len(prefix):]
@@ -225,15 +268,16 @@ def commit(
 
   print
   print 'Actions for the following masters:'
+  max_name_len = max(len(s.name) for s in specs)
   for s in specs:
     delta = s.restart_time - datetime.datetime.utcnow()
     restart_time_str = zulu.to_zulu_string(s.restart_time)
     local_time = s.restart_time.replace(tzinfo=dateutil.tz.tzutc())
     local_time = local_time.astimezone(dateutil.tz.tzlocal())
 
-    print '\t- %s %s in %d minutes (UTC: %s, Local: %s)' % (
-      action, s.name, delta.total_seconds() / 60, restart_time_str,
-      local_time)
+    print '\t- %s %-*s in %d minutes (UTC: %s, Local: %s)' % (
+      action, max_name_len, s.name, delta.total_seconds() / 60,
+      restart_time_str, local_time)
 
   for s in specs:
     if not s.message:
@@ -243,11 +287,11 @@ def commit(
     print s.message
   print
 
-  print "This will upload a CL for master_manager.git, TBR %s, and " % tbr_whom
+  print 'This will upload a CL for master_manager.git, TBR %s, and ' % tbr_whom
   if no_commit:
-    print "wait for you to manually commit."
+    print 'wait for you to manually commit.'
   else:
-    print "commit the CL through the CQ."
+    print 'commit the CL through the CQ.'
   print
 
   if not force:
@@ -278,16 +322,16 @@ def commit(
   subprocess.check_call(upload_cmd, cwd=target)
 
 
-def run(masters, restart_time, reviewers, bug, force, no_commit,
-        desired_state, reason):
-  """Restart all the masters in the list of masters.
-
-  Schedules the restart for restart_time.
+def run(masters, masters_regex, restart_time, rolling, reviewers, bug, force,
+        no_commit, desired_state, reason):
+  """Schedules a restart of each master in <masters> and <masters_regex>.
 
   Args:
     masters - a list(str) of masters to restart
+    masters_regex - a regex string of master names to restart
     restart_time - a datetime in UTC of when to restart them. If None, restart
                    at a predefined "end of day".
+    rolling - delay (in mins) to add between restart time of each master
     reviewers - a list(str) of reviewers for the CL (may be empty)
     bug - an integer bug number to include in the review or None
     force - a bool which causes commit not to prompt if true
@@ -296,33 +340,15 @@ def run(masters, restart_time, reviewers, bug, force, no_commit,
                     to put the buildbot in
     reason - a short message saying why the master is being restarted
   """
-  masters = [get_restart_spec(m, restart_time) for m in sorted(set(masters))]
-
-  reason = reason.strip()
-  if not reason:
-    default_reason = ''
-    if bug:
-      default_reason = 'Restart for https://crbug.com/%s' % bug
-    prompt = 'Please provide a reason for this restart'
-    if default_reason:
-      prompt += ' [%s]: ' % default_reason
-    else:
-      prompt += ': '
-    reason = raw_input(prompt).strip()
-    if not reason:
-      if default_reason:
-        reason = default_reason
-      else:
-        print 'No reason provided, exiting'
-        return 0
 
   # Step 1: Acquire a clean master state checkout.
   # This repo is too small to consider caching.
   with get_master_state_checkout() as master_state_dir:
+
+    # Step 2: Modify the master state json file.
     master_state_json = os.path.join(
         master_state_dir, 'desired_master_state.json')
 
-    # Step 2: make modifications to the master state json.
     LOGGER.info('Reading %s' % master_state_json)
     with open(master_state_json, 'r') as f:
       desired_master_state = json.load(f)
@@ -332,9 +358,45 @@ def run(masters, restart_time, reviewers, bug, force, no_commit,
     try:
       desired_state_parser.validate_desired_master_state(desired_master_state)
     except desired_state_parser.InvalidDesiredMasterState:
-      LOGGER.exception("Failed to validate current master state JSON.")
+      LOGGER.exception('Failed to validate current master state JSON.')
       return 1
 
+    if masters_regex:
+      masters.extend(get_master_names(desired_master_state,
+                                      name_regex=masters_regex))
+
+    masters = sorted(set(masters))
+
+    if rolling:
+      rolling_offsets = range(0, len(masters)*rolling, rolling)
+      rolling_restarts = [restart_time + datetime.timedelta(minutes=offset)
+                          for offset in rolling_offsets]
+      masters = [get_restart_spec(master, time)
+                 for master, time in zip(masters, rolling_restarts)]
+    else:
+      masters = [get_restart_spec(m, restart_time) for m in masters]
+
+    # <masters> is now a list of <RestartSpec>s
+
+    reason = reason.strip()
+    if not reason:
+      default_reason = ''
+      if bug:
+        default_reason = 'Restart for https://crbug.com/%s' % bug
+      prompt = 'Please provide a reason for this restart'
+      if default_reason:
+        prompt += ' [%s]: ' % default_reason
+      else:
+        prompt += ': '
+      reason = raw_input(prompt).strip()
+      if not reason:
+        if default_reason:
+          reason = default_reason
+        else:
+          print 'No reason provided, exiting'
+          return 0
+
+    # Update desired_master_state according to list of RestartSpecs in <masters>
     master_states = desired_master_state.get('master_states', {})
     entries = 0
     for master in masters:
