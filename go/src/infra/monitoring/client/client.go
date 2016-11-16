@@ -281,6 +281,11 @@ type finditAPIResponse struct {
 }
 
 func (r *reader) Findit(master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
+	// TODO(martiniss): Remove once perf is supported by findit
+	if strings.Contains(master.Name(), "perf") {
+		return []*messages.FinditResult{}, nil
+	}
+
 	data := map[string]interface{}{
 		"builds": []map[string]interface{}{
 			{
