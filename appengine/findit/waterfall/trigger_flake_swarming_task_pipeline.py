@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from model.flake.flake_swarming_task import FlakeSwarmingTask
+from waterfall import monitoring
 from waterfall import waterfall_config
 from waterfall.trigger_base_swarming_task_pipeline import(
     TriggerBaseSwarmingTaskPipeline)
@@ -37,3 +38,7 @@ class TriggerFlakeSwarmingTaskPipeline(TriggerBaseSwarmingTaskPipeline):
 
   def _GetIterationsToRerun(self):
     return waterfall_config.GetCheckFlakeSettings().get('iterations_to_rerun')
+
+  def _OnTaskTriggered(self):
+    monitoring.swarming_tasks.increment(
+        {'operation': 'trigger', 'category': 'deflake'})

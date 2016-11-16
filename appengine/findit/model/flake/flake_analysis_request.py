@@ -60,6 +60,11 @@ class BuildStep(ndb.Model):
     return None not in (self.wf_master_name, self.wf_builder_name,
                         self.wf_build_number, self.wf_step_name)
 
+  @property
+  def on_cq(self):
+    """Returns True if the build step of the flake is on Commit Queue."""
+    return self.master_name.startswith('tryserver.')
+
 
 class FlakeAnalysisRequest(VersionedModel):
   """Represents a request to analyze a flake.
@@ -128,3 +133,8 @@ class FlakeAnalysisRequest(VersionedModel):
     self.user_emails = other.user_emails
     self.build_steps = other.build_steps
     self.analyses = other.analyses
+
+  @property
+  def on_cq(self):
+    """Returns True if the flake is on Commit Queue."""
+    return any(step.on_cq for step in self.build_steps)

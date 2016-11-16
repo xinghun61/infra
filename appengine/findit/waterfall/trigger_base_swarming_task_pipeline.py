@@ -88,6 +88,10 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     raise NotImplementedError(
         '_CreateSwarmingTask should be implemented in child class')
 
+  def _OnTaskTriggered(self):
+    """A hook function called after the Swarming task is actually triggered."""
+    pass
+
   def _NeedANewSwarmingTask(self, *args):
     swarming_task = self._GetSwarmingTask(*args)
     if not swarming_task:
@@ -184,4 +188,8 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
       logging.info('A Swarming task was triggered:%s', task_id)
 
     swarming_task.put()
+
+    # Call the hook function after the task is triggered.
+    self._OnTaskTriggered()
+
     return task_id

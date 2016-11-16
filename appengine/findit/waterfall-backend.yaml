@@ -14,19 +14,14 @@ handlers:
   static_files: robots.txt
   upload: robots.txt
 
-# Handler for the analysis requests of failures on Waterfall.
-- url: /waterfall/process-failure-analysis-requests
-  script: main.waterfall_backend_web_application
-  secure: always
-
-# Handler for the flake reports from chromium-try-flakes.
-- url: /waterfall/process-flake-analysis-request
-  script: main.waterfall_backend_web_application
-  secure: always
-
 # Pipeline handler.
 - url: /_ah/pipeline(/.*)?
   script: main.pipeline_backend_application
+  secure: always
+
+# All other handlers.
+- url: /.*
+  script: main.waterfall_backend_web_application
   secure: always
 
 skip_files:

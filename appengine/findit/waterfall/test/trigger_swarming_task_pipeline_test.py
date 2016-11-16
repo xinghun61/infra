@@ -59,3 +59,6 @@ class TriggerSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         expected_iterations,
         TriggerSwarmingTaskPipeline()._GetIterationsToRerun())
+
+  def testOnTaskTriggered(self):
+    TriggerSwarmingTaskPipeline()._OnTaskTriggered()

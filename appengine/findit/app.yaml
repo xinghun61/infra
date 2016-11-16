@@ -46,6 +46,9 @@ handlers:
   script: main.default_web_application
   secure: always
 
+includes:
+- first_party/gae_ts_mon  # handles /internal/cron/ts_mon/send
+
 skip_files:
 - ^(.*/)?#.*#$
 - ^(.*/)?.*~$

@@ -64,3 +64,15 @@ class FlakeAnalysisRequestTest(FinditTestCase):
     self.assertEqual(request2.user_emails, request1.user_emails)
     self.assertEqual(request2.build_steps, request1.build_steps)
     self.assertEqual(request2.analyses, request1.analyses)
+
+  def testCQFlake(self):
+    request = FlakeAnalysisRequest.Create('flaky_test', False, 123)
+    request.AddBuildStep(
+        'tryserver.chromium.linux', 'b1', 1, 's', datetime(2016, 11, 14))
+    self.assertTrue(request.on_cq)
+
+  def testWaterfallFlake(self):
+    request = FlakeAnalysisRequest.Create('flaky_test', False, 123)
+    request.AddBuildStep(
+        'chromium.linux', 'b1', 1, 's', datetime(2016, 11, 14))
+    self.assertFalse(request.on_cq)

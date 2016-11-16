@@ -6,6 +6,7 @@ import logging
 
 from common import constants
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from waterfall import monitoring
 from waterfall.flake import initialize_flake_pipeline
 from waterfall.flake import step_mapper
 from waterfall.test_info import TestInfo
@@ -194,10 +195,14 @@ def ScheduleAnalysisForFlake(request, user_email, is_admin, triggering_source):
   assert len(request.build_steps), 'At least 1 build step is needed!'
 
   if not IsAuthorizedUser(user_email, is_admin):
+    logging.info('user:%s, admin:%s', user_email, is_admin)
     return None
   request.user_emails = [user_email]
 
   manually_triggered = user_email.endswith('@google.com')
+
+  trigger_action = 'manual' if manually_triggered else 'auto'
+  flake_source = 'cq' if request.on_cq else 'waterfall'
 
   for build_step in request.build_steps:
     step_mapper.FindMatchingWaterfallStep(build_step)
@@ -228,10 +233,20 @@ def ScheduleAnalysisForFlake(request, user_email, is_admin, triggering_source):
       request.put()
       logging.info('A new analysis was triggered successfully: %s',
                    analysis.key)
+      monitoring.flakes.increment({
+          'operation': 'analyze',
+          'trigger': trigger_action,
+          'source': flake_source,
+      })
       return True
     else:
       logging.error('But new analysis was not triggered!')
   else:
     logging.info('No new analysis is needed: %s', request)
 
+  monitoring.flakes.increment({
+      'operation': 'skip',
+      'trigger': trigger_action,
+      'source': flake_source,
+  })
   return False

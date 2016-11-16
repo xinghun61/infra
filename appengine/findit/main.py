@@ -5,6 +5,8 @@
 import endpoints
 import webapp2
 
+import gae_ts_mon
+
 from common.pipeline_wrapper import pipeline_handlers
 from common.pipeline_wrapper import pipeline_status_ui
 from findit_api import FindItApi
@@ -43,6 +45,7 @@ default_web_pages_handler_mappings = [
 ]
 default_web_application = webapp2.WSGIApplication(
     default_web_pages_handler_mappings, debug=False)
+gae_ts_mon.initialize(default_web_application)
 
 
 # Cloud Endpoint apis in the default module.
@@ -58,10 +61,12 @@ pipeline_status_handler_mappings = [
 ]
 pipeline_status_application = webapp2.WSGIApplication(
     pipeline_status_handler_mappings, debug=False)
+gae_ts_mon.initialize(pipeline_status_application)
 
 
 # For appengine pipeline running on backend modules.
 pipeline_backend_application = pipeline_handlers._APP
+gae_ts_mon.initialize(pipeline_backend_application)
 
 
 # "waterfall-frontend" module.
@@ -93,6 +98,7 @@ waterfall_frontend_web_pages_handler_mappings = [
 ]
 waterfall_frontend_web_application = webapp2.WSGIApplication(
     waterfall_frontend_web_pages_handler_mappings, debug=False)
+gae_ts_mon.initialize(waterfall_frontend_web_application)
 
 
 # "waterfall-backend" module.
@@ -104,6 +110,7 @@ waterfall_backend_web_pages_handler_mappings = [
 ]
 waterfall_backend_web_application = webapp2.WSGIApplication(
     waterfall_backend_web_pages_handler_mappings, debug=False)
+gae_ts_mon.initialize(waterfall_backend_web_application)
 
 
 # "crash-frontend" module.

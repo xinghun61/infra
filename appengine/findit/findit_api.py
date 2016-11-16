@@ -20,6 +20,8 @@ from google.appengine.api import taskqueue
 from protorpc import messages
 from protorpc import remote
 
+import gae_ts_mon
+
 from common import appengine_util
 from common import auth_util
 from common import constants
@@ -421,6 +423,7 @@ class FindItApi(remote.Service):
             results, build, heuristic_analysis.failure_type, failure,
             step_name, confidences, reference_build_key, swarming_task, try_job)
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints.method(
       _BuildFailureCollection, _BuildFailureAnalysisResultCollection,
       path='buildfailure', name='buildfailure')
@@ -482,6 +485,7 @@ class FindItApi(remote.Service):
 
     return _BuildFailureAnalysisResultCollection(results=results)
 
+  @gae_ts_mon.instrument_endpoint()
   @endpoints.method(_Flake, _FlakeAnalysis, path='flake', name='flake')
   def AnalyzeFlake(self, request):
     """Analyze a flake on Commit Queue. Currently only supports flaky tests."""

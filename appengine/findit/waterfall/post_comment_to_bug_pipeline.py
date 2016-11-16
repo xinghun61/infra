@@ -7,6 +7,7 @@ import logging
 from issue_tracker import IssueTrackerAPI
 
 from common.pipeline_wrapper import BasePipeline
+from waterfall import monitoring
 
 
 def _GetIssue(bug_id, issue_tracker):
@@ -42,6 +43,8 @@ class PostCommentToBugPipeline(BasePipeline):
 
     for label in labels:
       issue.labels.append(label)
+
+    monitoring.issues.increment({'operation': 'update', 'category': 'flake'})
 
     issue_tracker.update(issue, comment, send_email=True)
     logging.info('Bug %s/%s was updated.', project_name, bug_id)

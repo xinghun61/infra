@@ -6,6 +6,8 @@ from google.appengine.api import users
 
 import copy
 
+import gae_ts_mon
+
 from common.findit_testcase import FinditTestCase
 from model.wf_config import FinditConfig
 
@@ -152,3 +154,4 @@ class WaterfallTestCase(FinditTestCase):  # pragma: no cover.
     super(WaterfallTestCase, self).setUp()
     self.UpdateUnitTestConfigSettings()
     self.maxDiff = None
+    gae_ts_mon.reset_for_unittest(disable=True)
