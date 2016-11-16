@@ -8,8 +8,9 @@ from model.wf_swarming_task import WfSwarmingTask
 
 
 class WfSwarmingTaskTest(unittest.TestCase):
+
   def testClassifiedTests(self):
-    task =  WfSwarmingTask.Create('m', 'b', 121, 'browser_tests')
+    task = WfSwarmingTask.Create('m', 'b', 121, 'browser_tests')
     task.tests_statuses = {
         'TestSuite1.test1': {
             'total_run': 2,
@@ -43,3 +44,12 @@ class WfSwarmingTaskTest(unittest.TestCase):
     self.assertEqual(expected_classified_tests, task.classified_tests)
     self.assertEqual(expected_classified_tests['reliable_tests'],
                      task.reliable_tests)
+
+  def testStepName(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    expected_step_name = 's'
+    task = WfSwarmingTask.Create(
+        master_name, builder_name, build_number, expected_step_name)
+    self.assertEqual(expected_step_name, task.step_name)

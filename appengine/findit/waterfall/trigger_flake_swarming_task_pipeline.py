@@ -15,6 +15,10 @@ class TriggerFlakeSwarmingTaskPipeline(TriggerBaseSwarmingTaskPipeline):
   gtest filter.
   """
 
+  def _GetArgs(self, master_name, builder_name, build_number, step_name, tests):
+    test_name = tests[0]  # Only one test per pipeline.
+    return (master_name, builder_name, build_number, step_name, test_name)
+
   # pylint: disable=arguments-differ
   def _GetSwarmingTask(self, master_name, builder_name, build_number,
                        step_name, test_name):
@@ -33,7 +37,3 @@ class TriggerFlakeSwarmingTaskPipeline(TriggerBaseSwarmingTaskPipeline):
 
   def _GetIterationsToRerun(self):
     return waterfall_config.GetCheckFlakeSettings().get('iterations_to_rerun')
-
-  def _GetArgs(self, master_name, builder_name, build_number, step_name, tests):
-    test_name = tests[0]  # Only one test per pipeline.
-    return (master_name, builder_name, build_number, step_name, test_name)
