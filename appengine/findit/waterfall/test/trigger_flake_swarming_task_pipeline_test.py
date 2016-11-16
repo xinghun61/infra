@@ -16,7 +16,6 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 123
     step_name = 's'
     tests = ['t']
-
     self.assertEqual(
         (master_name, builder_name, build_number, step_name, tests[0]),
         TriggerFlakeSwarmingTaskPipeline()._GetArgs(
@@ -34,7 +33,6 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
 
     task = TriggerFlakeSwarmingTaskPipeline()._GetSwarmingTask(
         master_name, builder_name, build_number, step_name, test_name)
-
     self.assertEqual(master_name, task.master_name)
     self.assertEqual(builder_name, task.builder_name)
     self.assertEqual(build_number, task.build_number)

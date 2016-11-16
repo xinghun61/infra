@@ -44,9 +44,11 @@ class ProcessFlakeSwarmingTaskResultPipeline(
 
     tests_statuses = super(ProcessFlakeSwarmingTaskResultPipeline,
                            self)._CheckTestsRunStatuses(output_json)
-
     # Should query by test name, because some test has dependencies which
     # are also run, like TEST and PRE_TEST in browser_tests.
+    tests_statuses = super(ProcessFlakeSwarmingTaskResultPipeline,
+                           self)._CheckTestsRunStatuses(output_json)
+
     tries = tests_statuses.get(test_name, {}).get('total_run', 0)
     successes = tests_statuses.get(test_name, {}).get('SUCCESS', 0)
 
@@ -61,6 +63,7 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     logging.info(
         'Updating MasterFlakeAnalysis data %s/%s/%s/%s/%s',
         master_name, builder_name, master_build_number, step_name, test_name)
+
     logging.info('MasterFlakeAnalysis %s version %s',
                  master_flake_analysis, master_flake_analysis.version_number)
 

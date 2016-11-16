@@ -4,10 +4,16 @@
 
 import collections
 import json
+import mock
 import os
 import urllib
 import zlib
 
+from google.appengine.api.urlfetch_errors import DeadlineExceededError
+from google.appengine.api.urlfetch_errors import DownloadError
+from google.appengine.api.urlfetch_errors import ConnectionClosedError
+
+from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.retry_http_client import RetryHttpClient
 from model.wf_config import FinditConfig
 from model.wf_step import WfStep
@@ -165,6 +171,12 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(task_request_json, task_request.Serialize())
 
+  @mock.patch.object(swarming_util, '_SendRequestToServer',
+                     return_value=(None, {'code': 1, 'message': 'error'}))
+  def testGetSwarmingTaskRequestError(self, _):
+    self.assertIsNone(
+        swarming_util.GetSwarmingTaskRequest('task_id1', HttpClient()))
+
   def testTriggerSwarmingTask(self):
     request = SwarmingTaskRequest()
     request.expiration_secs = 2
@@ -207,13 +219,23 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         'user': 'user',
     }
 
-    task_id = swarming_util.TriggerSwarmingTask(
+    task_id, error = swarming_util.TriggerSwarmingTask(
         request, self.logged_http_client)
     self.assertEqual('1', task_id)
+    self.assertIsNone(error)
 
     method, data, _ = self.logged_http_client.GetRequest(url)
     self.assertEqual('post', method)
     self.assertEqual(expected_task_request_json, json.loads(data))
+
+  @mock.patch.object(swarming_util, '_SendRequestToServer',
+                     return_value=(None, {'code': 1, 'message': 'error'}))
+  def testTriggerSwarmingTaskError(self, _):
+    request = SwarmingTaskRequest()
+    task_id, error = swarming_util.TriggerSwarmingTask(
+        request, HttpClient())
+    self.assertIsNone(task_id)
+    self.assertIsNotNone(error)
 
   def testGetIsolatedDataForFailedBuild(self):
     master_name = 'm'
@@ -375,12 +397,13 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.http_client._SetResponseForGetRequestIsolated(
         'https://%s/default-gzip/shard1' % isolated_storage_url, 'shard1')
 
-    result = swarming_util._DownloadTestResults(
+    result, error = swarming_util._DownloadTestResults(
         isolated_data, self.http_client)
 
     expected_result = json.loads(zlib.decompress(
         self.http_client._GetData('isolated', 'shard1')))
     self.assertEqual(expected_result, result)
+    self.assertIsNone(error)
 
   def testDownloadTestResultsFailedForSecondHash(self):
     isolated_data = {
@@ -390,10 +413,11 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
             'isolated_server')
     }
 
-    result = swarming_util._DownloadTestResults(
+    result, error = swarming_util._DownloadTestResults(
         isolated_data, self.http_client)
 
     self.assertIsNone(result)
+    self.assertIsNotNone(error)
 
   def testDownloadTestResultsFailedForParsingSecondHash(self):
     isolated_data = {
@@ -404,10 +428,11 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     self.http_client._SetResponseForPostRequest('not found')
-    result = swarming_util._DownloadTestResults(
+    result, error = swarming_util._DownloadTestResults(
         isolated_data, self.http_client)
 
     self.assertIsNone(result)
+    self.assertIsNone(error)
 
   def testDownloadTestResultsFailedForFileUrl(self):
     isolated_data = {
@@ -417,10 +442,11 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
             'isolated_server')
     }
     self.http_client._SetResponseForPostRequest('shard1_isolated')
-    result = swarming_util._DownloadTestResults(
+    result, error = swarming_util._DownloadTestResults(
         isolated_data, self.http_client)
 
     self.assertIsNone(result)
+    self.assertIsNotNone(error)
 
   def testDownloadTestResultsFailedForFile(self):
     isolated_data = {
@@ -431,10 +457,11 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     }
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
-    result = swarming_util._DownloadTestResults(
+    result, error = swarming_util._DownloadTestResults(
         isolated_data, self.http_client)
 
     self.assertIsNone(result)
+    self.assertIsNone(error)
 
   def testRetrieveShardedTestResultsFromIsolatedServer(self):
     isolated_data = [
@@ -524,7 +551,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
     self.http_client._SetResponseForGetRequestSwarmingResult(task_id)
 
-    data = swarming_util.GetSwarmingTaskResultById(
+    data, error = swarming_util.GetSwarmingTaskResultById(
         task_id, self.http_client)
 
     expected_outputs_ref = {
@@ -536,6 +563,15 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual('COMPLETED', data['state'])
     self.assertEqual(expected_outputs_ref, data['outputs_ref'])
+    self.assertIsNone(error)
+
+  @mock.patch.object(swarming_util, '_SendRequestToServer',
+                     return_value=(None, {'code': 1, 'message': 'error'}))
+  def testGetSwarmingTaskResultByIdError(self, _):
+    data, error = swarming_util.GetSwarmingTaskResultById(
+        'task_id', HttpClient())
+    self.assertEqual({}, data)
+    self.assertIsNotNone(error)
 
   def testGetSwarmingTaskFailureLog(self):
     outputs_ref = {
@@ -552,12 +588,13 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
             waterfall_config.GetSwarmingSettings().get('isolated_storage_url')),
         'shard1')
 
-    result = swarming_util.GetSwarmingTaskFailureLog(
+    result, error = swarming_util.GetSwarmingTaskFailureLog(
         outputs_ref, self.http_client)
 
     expected_result = json.loads(zlib.decompress(
         self.http_client._GetData('isolated', 'shard1')))
     self.assertEqual(expected_result, result)
+    self.assertIsNone(error)
 
   def testRetrieveOutputJsonFileGetDirectly(self):
     output_json_content = ('{"content": "eJyrVkpLzMwpLUotVrKKVgpJLS4xV'
@@ -583,3 +620,25 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   def testFetchOutputJsonInfoFromIsolatedServerReturnNone(self):
     self.assertIsNone(swarming_util._FetchOutputJsonInfoFromIsolatedServer(
         None, self.http_client))
+
+  @mock.patch.object(
+      RetryHttpClient, 'Get', side_effect=ConnectionClosedError())
+  def testSendRequestToServerConnectionClosedError(self, _):
+    content, error = swarming_util._SendRequestToServer('url', HttpClient())
+    self.assertIsNone(content)
+    self.assertEqual(
+        error['code'], swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)
+
+  @mock.patch.object(
+      RetryHttpClient, 'Get', side_effect=DeadlineExceededError())
+  def testSendRequestToServerDeadlineExceededError(self, _):
+    content, error = swarming_util._SendRequestToServer('url', HttpClient())
+    self.assertIsNone(content)
+    self.assertEqual(
+        error['code'], swarming_util.URLFETCH_DEADLINE_EXCEEDED_ERROR)
+
+  @mock.patch.object(RetryHttpClient, 'Get', side_effect=DownloadError())
+  def testSendRequestToServerDownloadError(self, _):
+    content, error = swarming_util._SendRequestToServer('url', HttpClient())
+    self.assertIsNone(content)
+    self.assertEqual(error['code'], swarming_util.URLFETCH_DOWNLOAD_ERROR)

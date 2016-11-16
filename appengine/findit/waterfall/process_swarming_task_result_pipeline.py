@@ -44,5 +44,4 @@ class ProcessSwarmingTaskResultPipeline(ProcessBaseSwarmingTaskResultPipeline):
     task = self._GetSwarmingTask(*call_args)
     task_id = task.task_id
     step_name_no_platform = self._MonitorSwarmingTask(task_id, *call_args)
-
     return step_name, (step_name_no_platform, task.reliable_tests)

@@ -101,7 +101,7 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     new_request_json = {}
     def MockedTriggerSwarmingTask(new_request, *_):
       new_request_json.update(new_request.Serialize())
-      return 'new_task_id'
+      return 'new_task_id', None
     self.mock(swarming_util, 'TriggerSwarmingTask', MockedTriggerSwarmingTask)
 
     def MockedGetSwarmingTaskName(*_):

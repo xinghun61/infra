@@ -1,4 +1,9 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
 import datetime
+import mock
 
 from model import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
@@ -106,7 +111,11 @@ _SWARMING_TASK_RESULTS = {
     'task_id2': {
         'state': 'TIMED_OUT',
         'outputs_ref': None
-    }
+    },
+    'task_id3': {
+        'state': 'COMPLETED',
+        'exit_code': '2',  # Swarming task failed.
+    },
 }
 
 
@@ -123,7 +132,7 @@ _EXPECTED_TESTS_STATUS = {
     'TestSuite1.test3': {
         'total_run': 6,
         'FAILURE': 6
-    }
+    },
 }
 
 
@@ -136,7 +145,10 @@ _EXPECTED_CLASSIFIED_TESTS = {
 class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
   def _MockedGetSwarmingTaskResultById(self, task_id, _):
-    return _SWARMING_TASK_RESULTS[task_id]
+    return _SWARMING_TASK_RESULTS[task_id], None
+
+  def _MockedGetSwarmingTaskFailureLog(self, *_):
+    return _SAMPLE_FAILURE_LOG, None
 
   def setUp(self):
     super(ProcessBaseSwarmingTaskResultPipelineTest, self).setUp()
@@ -231,3 +243,90 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.ERROR, task.status)
     self.assertEqual({}, task.tests_statuses)
     self.assertEqual({}, task.classified_tests)
+
+  @mock.patch.object(swarming_util, 'GetSwarmingTaskResultById',
+                     return_value=({}, {'code': 1, 'message': 'error'}))
+  def testMonitorSwarmingTaskGetSwarmingTaskResultIdError(self, _):
+    task = WfSwarmingTask.Create(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name)
+    task.task_id = 'task_id2'
+    task.put()
+
+    pipeline = ProcessSwarmingTaskResultPipeline()
+    pipeline.run(
+        self.master_name, self.builder_name, self.build_number, self.step_name)
+
+    self.assertEqual(analysis_status.ERROR, task.status)
+    self.assertEqual(task.error, {'code': 1, 'message': 'error'})
+
+  @mock.patch.object(swarming_util, 'GetSwarmingTaskFailureLog',
+                     return_value=(None, {'code': 1, 'message': 'error'}))
+  def testMonitorSwarmingTaskGetSwarmingTaskFailureLogError(self, _):
+    task = WfSwarmingTask.Create(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name)
+    task.task_id = 'task_id1'
+    task.put()
+
+    pipeline = ProcessSwarmingTaskResultPipeline()
+    pipeline.run(
+        self.master_name, self.builder_name, self.build_number, self.step_name)
+
+    self.assertEqual(analysis_status.ERROR, task.status)
+    self.assertEqual(task.error, {'code': 1, 'message': 'error'})
+
+  def testMonitorSwarmingTaskWhereTaskFailed(self):
+    task = WfSwarmingTask.Create(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name)
+    task.task_id = 'task_id3'
+    task.put()
+
+    pipeline = ProcessSwarmingTaskResultPipeline()
+    pipeline.run(
+        self.master_name, self.builder_name, self.build_number, self.step_name)
+
+    self.assertEqual(analysis_status.ERROR, task.status)
+    self.assertEqual(
+        task.error,
+        {
+            'code': swarming_util.TASK_FAILED,
+            'message': swarming_util.EXIT_CODE_DESCRIPTIONS[
+                swarming_util.TASK_FAILED]
+        })
+
+  def testProcessSwarmingTaskResultPipeline(self):
+    # End to end test.
+    self.mock(swarming_util, 'GetSwarmingTaskFailureLog',
+              self._MockedGetSwarmingTaskFailureLog)
+
+    task = WfSwarmingTask.Create(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name)
+    task.task_id = 'task_id1'
+    task.put()
+
+    pipeline = ProcessSwarmingTaskResultPipeline()
+    step_name, task_info = pipeline.run(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name)
+
+    self.assertEqual(self.step_name, step_name)
+    self.assertEqual('abc_tests', task_info[0])
+    self.assertEqual(
+        _EXPECTED_CLASSIFIED_TESTS['reliable_tests'], task_info[1])
+
+    task = WfSwarmingTask.Get(
+        self.master_name, self.builder_name, self.build_number, self.step_name)
+
+    self.assertEqual(analysis_status.COMPLETED, task.status)
+    self.assertEqual(_EXPECTED_TESTS_STATUS, task.tests_statuses)
+    self.assertEqual(
+        _EXPECTED_CLASSIFIED_TESTS, task.classified_tests)
+    self.assertEqual(datetime.datetime(2016, 2, 10, 18, 32, 6, 538220),
+                     task.created_time)
+    self.assertEqual(datetime.datetime(2016, 2, 10, 18, 32, 9, 90550),
+                     task.started_time)
+    self.assertEqual(datetime.datetime(2016, 2, 10, 18, 33, 9),
+                     task.completed_time)

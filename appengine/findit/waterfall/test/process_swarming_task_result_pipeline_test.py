@@ -17,7 +17,7 @@ from waterfall.test import wf_testcase
 class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
   def _MockedGetSwarmingTaskResultById(self, task_id, _):
-    return base_test._SWARMING_TASK_RESULTS[task_id]
+    return base_test._SWARMING_TASK_RESULTS[task_id], None
 
   def setUp(self):
     super(ProcessSwarmingTaskResultPipelineTest, self).setUp()
@@ -29,7 +29,7 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
               self._MockedGetSwarmingTaskResultById)
 
   def _MockedGetSwarmingTaskFailureLog(self, *_):
-    return base_test._SAMPLE_FAILURE_LOG
+    return base_test._SAMPLE_FAILURE_LOG, None
 
   def testProcessSwarmingTaskResultPipeline(self):
     # End to end test.
@@ -65,3 +65,27 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
                      task.started_time)
     self.assertEqual(datetime.datetime(2016, 2, 10, 18, 33, 9),
                      task.completed_time)
+
+  def testProcessSwarmingTaskResultPipelineTaskNotRunning(self):
+
+    task = WfSwarmingTask.Create(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name)
+    task.task_id = 'task_id2'
+    task.put()
+
+    pipeline = ProcessSwarmingTaskResultPipeline()
+    step_name, task_info = pipeline.run(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name)
+
+    self.assertEqual(self.step_name, step_name)
+    self.assertIsNone(task_info[0])
+    self.assertEqual([], task_info[1])
+
+    task = WfSwarmingTask.Get(
+        self.master_name, self.builder_name, self.build_number, self.step_name)
+
+    self.assertEqual(analysis_status.ERROR, task.status)
+    self.assertEqual({}, task.tests_statuses)
+    self.assertEqual({}, task.classified_tests)

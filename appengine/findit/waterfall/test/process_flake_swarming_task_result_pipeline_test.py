@@ -18,7 +18,7 @@ from waterfall.test import wf_testcase
 class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
   def _MockedGetSwarmingTaskResultById(self, task_id, _):
-    return base_test._SWARMING_TASK_RESULTS[task_id]
+    return base_test._SWARMING_TASK_RESULTS[task_id], None
 
   def setUp(self):
     super(ProcessFlakeSwarmingTaskResultPipelineTest, self).setUp()
@@ -86,7 +86,7 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(analysis.data_points[-1].pass_rate < 0)
 
   def _MockedGetSwarmingTaskFailureLog(self, *_):
-    return base_test._SAMPLE_FAILURE_LOG
+    return base_test._SAMPLE_FAILURE_LOG, None
 
   def testProcessFlakeSwarmingTaskResultPipeline(self):
     # End to end test.
