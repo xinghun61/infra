@@ -96,6 +96,12 @@ solutions = [
         ['gclient', 'sync', '--nohooks', '--noprehooks'],
         cwd=path)
 
+  def mktempfile(self, content):
+    with tempfile.NamedTemporaryFile(delete=False) as fd:
+      path = fd.name
+      fd.write(content)
+    return path
+
   @staticmethod
   def _destroy_directory(d):
     LOGGER.debug('Destorying directory: %s', d)
