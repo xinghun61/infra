@@ -152,7 +152,13 @@ class BaseHandler(webapp2.RequestHandler):
 
   def GetLoginUrl(self):
     """Returns the login url."""
-    return users.create_login_url(self.request.referer or self.request.uri)
+    if self.request.method == 'GET':
+      # For GET, all parameters are included in the URL.
+      return users.create_login_url(self.request.url)
+    else:
+      # For others like POST, the parameters could be in the body and include
+      # file, etc. Thus return to the original page if available.
+      return users.create_login_url(self.request.referrer)
 
   def _Handle(self, handler_func):
     try:
