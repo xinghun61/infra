@@ -236,9 +236,6 @@
 </table>
 [end]
 
-</div>
-</div>
-
 [if-any perms._EditOtherUsers]
 <h3 style="clear:both">Edit user</h3>
  <form action="edit.do" method="POST">
@@ -258,6 +255,9 @@
 
  </form>
 [end]
+
+</div>
+</div>
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {

@@ -56,6 +56,15 @@
  <br>
 </div>
 
+<h4>Availability</h4>
+<div style="margin:0 0 2em 2em">
+ Vacation message:
+ <input type="text" size="50" name="vacation_message" id="vacation_message"
+        value="[settings_user_pb.vacation_message]"
+        [if-any read_only]disabled="disabled"[end] >
+</div>
+
+
 [if-any perms._EditOtherUsers]
   <h4>Banned for abuse</h4>
   <div style="margin:0 0 2em 2em">
