@@ -27,30 +27,28 @@ PROJECT_ID = 'chrome-infra-logs'
 # We put everything under this service name.
 SERVICE_NAME = 'compute.googleapis.com'
 # All of the relevent tables are in this dataset.
-DATASET_ID = 'build_logs'
+DATASET_ID = 'logs'
 
 CACHE_FILE = os.path.join(
     os.path.expanduser('~'), '.config', 'chrome_infra', 'auth',
     'cloud_logging.json')
 
 CAT_QUERY = """
-SELECT metadata.timestamp, textPayload, metadata.labels.value
+SELECT timestamp, textPayload, labels.cloudtail_resource_id
 FROM TABLE_DATE_RANGE(
-    build_logs.%s_,
-    DATE_ADD(CURRENT_TIMESTAMP(), %d, 'DAY'),
-    DATE_ADD(CURRENT_TIMESTAMP(), %d, 'DAY')),
-WHERE metadata.labels.key = "compute.googleapis.com/resource_id"
-"""
+    %s.%%s_,
+    DATE_ADD(CURRENT_TIMESTAMP(), %%d, 'DAY'),
+    DATE_ADD(CURRENT_TIMESTAMP(), %%d, 'DAY')),
+""" % DATASET_ID
 
 LIST_QUERY = """
-SELECT metadata.labels.value
+SELECT labels.cloudtail_resource_id
 FROM TABLE_DATE_RANGE(
-    build_logs.%s_,
-    DATE_ADD(CURRENT_TIMESTAMP(), %d, 'DAY'),
-    DATE_ADD(CURRENT_TIMESTAMP(), %d, 'DAY')),
-WHERE metadata.labels.key = "compute.googleapis.com/resource_id"
-GROUP BY metadata.labels.value
-"""
+    %s.%%s_,
+    DATE_ADD(CURRENT_TIMESTAMP(), %%d, 'DAY'),
+    DATE_ADD(CURRENT_TIMESTAMP(), %%d, 'DAY')),
+GROUP BY labels.cloudtail_resource_id
+""" % DATASET_ID
 
 
 class LogQuery(object):
@@ -118,9 +116,9 @@ class LogQuery(object):
         'NOTE: All times are in local system time (%g hour(s)).' % -offset)
     q = CAT_QUERY % (log_name, self.days_from, self.days_until)
     if resource_id:
-      q += '\n AND metadata.labels.value = "%s"' % resource_id
+      q += '\n WHERE labels.cloudtail_resource_id = "%s"' % resource_id
     # ORDER BY always comes after WHERE
-    q += ' ORDER BY metadata.timestamp DESC'
+    q += ' ORDER BY timestamp DESC'
     # LIMIT has to be the last thing in the query.
     q += ' LIMIT %d' % limit
     LOGGER.debug(q)

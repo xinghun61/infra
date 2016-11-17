@@ -30,7 +30,7 @@ class LogQueryTests(unittest.TestCase):
     self.lq._bq.jobs().query.return_value = job_result
     self.lq.cat(['some_resource'])
     q = log.CAT_QUERY % ('some_resource', -2, 0)
-    q += ' ORDER BY metadata.timestamp DESC LIMIT 2000'
+    q += ' ORDER BY timestamp DESC LIMIT 2000'
     self.lq._bq.jobs().query.assert_called_with(
         body={
             'query': q,
@@ -51,8 +51,8 @@ class LogQueryTests(unittest.TestCase):
     self.lq._bq.jobs().query.return_value = job_result
     self.lq.cat(['some_resource', 'some_target'])
     q = log.CAT_QUERY % ('some_resource', -2, 0)
-    q += '\n AND metadata.labels.value = "some_target"'
-    q += ' ORDER BY metadata.timestamp DESC LIMIT 2000'
+    q += '\n WHERE labels.cloudtail_resource_id = "some_target"'
+    q += ' ORDER BY timestamp DESC LIMIT 2000'
     self.lq._bq.jobs().query.assert_called_with(
         body={
             'query': q,
@@ -82,7 +82,7 @@ class LogQueryTests(unittest.TestCase):
     self.lq.cat(['some_resource'])
 
     q = log.CAT_QUERY % ('some_resource', -2, 0)
-    q += ' ORDER BY metadata.timestamp DESC LIMIT 2000'
+    q += ' ORDER BY timestamp DESC LIMIT 2000'
     self.lq._bq.jobs().query.assert_called_with(
         body={
             'query': q,
@@ -104,7 +104,7 @@ class LogQueryTests(unittest.TestCase):
     }
     self.lq.list_logs(None)
     self.lq._bq.tables().list.assert_called_with(
-        projectId=log.PROJECT_ID, datasetId='build_logs',
+        projectId=log.PROJECT_ID, datasetId='logs',
         pageToken=None, maxResults=1000
     )
 
