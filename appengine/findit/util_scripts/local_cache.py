@@ -33,8 +33,7 @@ class LocalCacher(Cacher):
         with open(path) as f:
           return pickle.loads(zlib.decompress(f.read()))
       except Exception as error:  # pragma: no cover.
-        logging.exception('Failed loading cache: %s', error)
-        return None
+        raise Exception('Failed loading cache: %s' % error)
 
   def Set(self, key, data, expire_time=0):  # pylint: disable=W
     with LocalCacher.lock:
@@ -42,4 +41,4 @@ class LocalCacher(Cacher):
         with open(os.path.join(self.cache_dir, key), 'wb') as f:
           f.write(zlib.compress(pickle.dumps(data)))
       except Exception as e:  # pragma: no cover.
-        logging.exception('Failed setting cache for key %s: %s', key, e)
+        raise Exception('Failed setting cache for key %s: %s' % (key, e))

@@ -7,9 +7,9 @@
 import argparse
 from datetime import date
 from datetime import timedelta
-import pickle
 import logging
 import os
+import pickle
 import sys
 
 _SCRIPT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
@@ -19,7 +19,6 @@ sys.path.insert(1, _SCRIPT_DIR)
 import script_util
 script_util.SetUpSystemPaths()
 
-from crash.type_enums import CrashClient
 from crash_queries.delta_test import delta_test
 from crash_queries.delta_test import delta_util
 
@@ -125,35 +124,34 @@ def RunDeltaTest():
 
   delta_result_prefix = '%s_%s_%s..%s.delta' % (git_hash1[:7], git_hash2[:7],
                                                 args.since, args.until)
-  delta_csv_path = os.path.join(
-      DELTA_RESULTS_DIRECTORY, '%s.csv' % delta_result_prefix)
-  delta_path = os.path.join(
-      DELTA_RESULTS_DIRECTORY, '.%s' % delta_result_prefix)
+  delta_csv_path = os.path.join(DELTA_RESULTS_DIRECTORY,
+                                '%s.csv' % delta_result_prefix)
+  delta_path = os.path.join(DELTA_RESULTS_DIRECTORY,
+                            delta_result_prefix)
 
   # Check if delta results already existed.
   if os.path.exists(delta_csv_path):
-    logging.info('Delta results existed in\n%s', delta_csv_path)
+    print 'Delta results existed in\n%s' % delta_csv_path
     if not os.path.exists(delta_path):
-      logging.info('Cannot print out delta results, '
-                   'please open %s to see the results.')
+      print 'Cannot print out delta results, please open %s to see the results.'
       return
 
     with open(delta_path) as f:
       deltas, crash_num = pickle.load(f)
   else:
-    logging.info('Running delta test...')
+    print 'Running delta test...'
     # Get delta of results between git_hash1 and git_hash2.
     deltas, crash_num = delta_test.DeltaEvaluator(
         git_hash1, git_hash2, args.client, args.app,
         start_date=args.since, end_date=args.until,
         batch_size=args.batch, verbose=args.verbose)
     delta_util.FlushResult([deltas, crash_num], delta_path)
-    delta_util.WriteDeltaToCSV(deltas, crash_num,
+    delta_util.WriteDeltaToCSV(deltas, crash_num, args.app,
                                git_hash1, git_hash2, delta_csv_path)
 
   # Print delta results to users.
-  logging.info('\n========================= Summary =========================')
-  delta_util.PrintDelta(deltas, crash_num)
+  print '\n========================= Summary ========================='
+  delta_util.PrintDelta(deltas, crash_num, args.app)
 
 
 if __name__ == '__main__':

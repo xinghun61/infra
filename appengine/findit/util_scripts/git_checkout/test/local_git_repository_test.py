@@ -238,5 +238,5 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
     output = script_util.GetCommandOutput('command')
     self.assertEqual(output, 'command')
 
-    output = script_util.GetCommandOutput('dummy')
-    self.assertEqual(output, None)
+    self.assertRaisesRegexp(Exception, 'Error running command dummy: error',
+                            script_util.GetCommandOutput, 'dummy')

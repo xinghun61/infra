@@ -10,14 +10,10 @@ from crash.type_enums import CrashClient
 import iterator
 from model.crash.cracas_crash_analysis import CracasCrashAnalysis
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
-import remote_api
 
 _DEFAULT_BATCH_SIZE = 1000
 _TODAY = date.today().strftime('%Y-%m-%d')
 _A_YEAR_AGO = (date.today() - timedelta(days=365)).strftime('%Y-%m-%d')
-
-COMMON_CRASH_FIELDS = ['crashed_version', 'stack_trace', 'signature',
-                       'platform', 'client_id', 'customized_data']
 
 
 # TODO(katesonia): Switch to use fuction of objects encapsulating CrashClients,
@@ -80,13 +76,11 @@ def IterateCrashes(client_id,
 
     An example is available in crash_printer/print_crash.py.
   """
-  if fields is None:
-    fields = COMMON_CRASH_FIELDS
-
   if property_values is None:
     property_values = {}
 
   query = GetQueryForClient(client_id, property_values, start_date, end_date)
-  for crash in iterator.Iterate(query, fields, app_id, batch_size=batch_size,
+  for crash in iterator.Iterate(query, app_id, fields=fields,
+                                batch_size=batch_size,
                                 batch_run=batch_run):
     yield crash

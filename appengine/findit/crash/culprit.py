@@ -98,7 +98,6 @@ class Culprit(namedtuple('Culprit',
         bool(self.cls) or
         bool(self.regression_range))
     if self.regression_range:
-      assert isinstance(self.regression_range, list)
       result['regression_range'] = self.regression_range
     if self.project:
       result['suspected_project'] = self.project

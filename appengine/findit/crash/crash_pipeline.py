@@ -19,8 +19,8 @@ from lib.gitiles import gitiles_repository
 from model import analysis_status
 
 
-# TODO(http://crbug.com/659346): this needs complete coverage tests.
-def FinditForClientID(client_id):
+# TODO(http://crbug.com/659346): write complete coverage tests for this.
+def FinditForClientID(client_id, repository): # pragma: no cover
   """Construct a Findit object from a client id string specifying the class.
 
   We cannot pass Findit objects to the various methods in
@@ -50,8 +50,7 @@ def FinditForClientID(client_id):
     raise ValueError('FinditForClientID: '
         'unknown or unsupported client %s' % client_id)
 
-  return cls(gitiles_repository.GitilesRepository(
-      http_client=HttpClientAppengine()))
+  return cls(repository)
 
 
 # Some notes about the classes below, for people who are not familiar
@@ -90,7 +89,9 @@ class CrashBasePipeline(BasePipeline):
   def __init__(self, client_id, crash_identifiers):
     super(CrashBasePipeline, self).__init__(client_id, crash_identifiers)
     self._crash_identifiers = crash_identifiers
-    self._findit = FinditForClientID(client_id)
+    self._findit = FinditForClientID(
+        client_id,
+        gitiles_repository.GitilesRepository(http_client=HttpClientAppengine()))
 
   @property
   def client_id(self): # pragma: no cover

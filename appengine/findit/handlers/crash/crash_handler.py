@@ -10,9 +10,10 @@ from common import constants
 from common import appengine_util
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
+from common.http_client_appengine import HttpClientAppengine
 from crash import crash_pipeline
-from crash.crash_pipeline import CrashWrapperPipeline
 from crash.crash_report import CrashReport
+from lib.gitiles.gitiles_repository import GitilesRepository
 
 
 class CrashHandler(BaseHandler):
@@ -128,8 +129,9 @@ def ScheduleNewAnalysis(crash_data):
     True if we started a new pipeline; False otherwise.
   """
   client_id = crash_data['client_id']
+  repository = GitilesRepository(http_client=HttpClientAppengine())
   # N.B., must call FinditForClientID indirectly, for mock testing.
-  findit_client = crash_pipeline.FinditForClientID(client_id)
+  findit_client = crash_pipeline.FinditForClientID(client_id, repository)
 
   # Check policy and modify the crash_data as needed.
   crash_data = findit_client.CheckPolicy(crash_data)
@@ -146,7 +148,7 @@ def ScheduleNewAnalysis(crash_data):
   # it is not JSON-serializable (and there's no way to make it such,
   # since JSON-serializability is defined by JSON-encoders rather than
   # as methods on the objects being encoded).
-  pipeline = CrashWrapperPipeline(client_id, crash_identifiers)
+  pipeline = crash_pipeline.CrashWrapperPipeline(client_id, crash_identifiers)
   # Attribute defined outside __init__ - pylint: disable=W0201
   pipeline.target = appengine_util.GetTargetNameForModule(
       constants.CRASH_BACKEND[client_id])

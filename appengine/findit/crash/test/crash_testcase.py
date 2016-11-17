@@ -8,6 +8,7 @@ import re
 from google.appengine.api import users
 
 from common.findit_testcase import FinditTestCase
+from libs.http import retry_http_client
 from lib.gitiles.change_log import ChangeLog
 from model.crash.crash_config import CrashConfig
 
@@ -81,6 +82,21 @@ DUMMY_CHANGELOG = ChangeLog.FromDict({
 })
 
 
+class MockHttpClient(retry_http_client.RetryHttpClient):  # pragma: no cover.
+
+  def __init__(self):
+    super(MockHttpClient, self).__init__()
+
+  def _Get(self, url, *_):
+    pass
+
+  def _Post(self, *_):
+    pass
+
+  def _Put(self, *_):
+    pass
+
+
 class CrashTestCase(FinditTestCase):  # pragma: no cover.
 
   def setUp(self):
@@ -90,3 +106,6 @@ class CrashTestCase(FinditTestCase):  # pragma: no cover.
 
   def GetDummyChangeLog(self):
     return DUMMY_CHANGELOG
+
+  def GetMockHttpClient(self):
+    return MockHttpClient()

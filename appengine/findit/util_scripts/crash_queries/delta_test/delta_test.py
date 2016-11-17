@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import json
-import logging
 import os
 import pickle
 import subprocess
@@ -11,9 +10,13 @@ import subprocess
 from crash_queries import crash_iterator
 from crash_queries.delta_test import delta_util
 
-AZALEA_RESULTS_DIRECTORY = os.path.join(os.path.dirname(__file__),
-                                        'azalea_results')
+PREDATOR_RESULTS_DIRECTORY = os.path.join(os.path.dirname(__file__),
+                                          'predator_results')
 DELTA_TEST_DIRECTORY = os.path.dirname(__file__)
+CRASH_FIELDS = ['crashed_version', 'stack_trace', 'signature',
+                'platform', 'client_id', 'regression_range',
+                'customized_data', 'historical_metadata']
+
 
 
 # TODO(crbug.com/662540): Add unittests.
@@ -23,12 +26,11 @@ class Delta(object):  # pragma: no cover.
   Note, the 2 results should be the same kind and have the same structure.
   """
 
-  def __init__(self, result1, result2, fields):
+  def __init__(self, result1, result2):
     self._result1 = result1
     self._result2 = result2
-    self._fields = fields
-    self._delta_dict = {}
-    self._delta_str_dict = {}
+    self._delta_dict = None
+    self._delta_str_dict = None
 
   @property
   def delta_dict(self):
@@ -46,14 +48,16 @@ class Delta(object):  # pragma: no cover.
     if self._delta_dict:
       return self._delta_dict
 
-    for field in self._fields:
-      value1 = getattr(self._result1, field)
-      value2 = getattr(self._result2, field)
+    self._delta_dict = {}
+    result1 = self._result1.ToDicts()[0] if self._result1 else {'found': False}
+    result2 = self._result2.ToDicts()[0] if self._result2 else {'found': False}
+    keys = (set(result1.keys()) if result1 else set() |
+            set(result2.keys()) if result2 else set())
+    for key in keys:
+      value1 = result1.get(key)
+      value2 = result2.get(key)
       if value1 != value2:
-        if hasattr(value1, 'ToDict') and callable(value1.ToDict):
-          value1 = value1.ToDict()
-          value2 = value2.ToDict()
-        self._delta_dict[field] = (value1, value2)
+        self._delta_dict[key] = (value1, value2)
 
     return self._delta_dict
 
@@ -63,8 +67,22 @@ class Delta(object):  # pragma: no cover.
     if self._delta_str_dict:
       return self._delta_str_dict
 
+    self._delta_str_dict = {}
     for key, (value1, value2) in self.delta_dict.iteritems():
-      self._delta_str_dict[key] = '%s: %s, %s' % (key, value1, value2)
+      if key == 'suspected_cls':
+        for value in [value1, value2]:
+          if not value:
+            continue
+
+          for cl in value:
+            cl['confidence'] = round(cl['confidence'], 2)
+            cl.pop('reasons', None)
+
+        value1 = json.dumps(value1, indent=4, sort_keys=True)
+        value2 = json.dumps(value2, indent=4, sort_keys=True)
+
+      self._delta_str_dict[key] = '%s 1: %s\n%s 2: %s\n' % (key, value1,
+                                                            key, value2)
 
     return self._delta_str_dict
 
@@ -98,7 +116,10 @@ def GetDeltasFromTwoSetsOfResults(set1, set2):  # pragma: no cover.
       continue
 
     result2 = set2[result_id]
-    delta = Delta(result1, result2, result1.fields)
+    if not result1 and not result2:
+      continue
+
+    delta = Delta(result1, result2)
     if delta:
       deltas[result_id] = delta
 
@@ -106,13 +127,14 @@ def GetDeltasFromTwoSetsOfResults(set1, set2):  # pragma: no cover.
 
 
 # TODO(crbug.com/662540): Add unittests.
-def GetResults(crashes, client_id, git_hash, result_path,
+def GetResults(crashes, client_id, app_id, git_hash, result_path,
                verbose=False):  # pragma: no cover.
   """Returns an evaluator function to compute delta between 2 findit githashes.
 
   Args:
     crashes (list): A list of crash infos.
     client_id (str): Possible values - fracas/cracas/clustefuzz.
+    app_id (str): Appengine app id to query.
     git_hash (str): A git hash of findit repository.
     result_path (str): file path for subprocess to write results on.
     verbose (bool): If True, print all the findit results.
@@ -125,9 +147,9 @@ def GetResults(crashes, client_id, git_hash, result_path,
     return {}
 
   if verbose:
-    logging.info('\n\n***************************')
-    logging.info('Switching to git %s', git_hash)
-    logging.info('***************************\n\n')
+    print '***************************'
+    print 'Switching to git %s' % git_hash
+    print '***************************\n\n'
 
   with open(os.devnull, 'w') as null_handle:
     subprocess.check_call(
@@ -137,7 +159,7 @@ def GetResults(crashes, client_id, git_hash, result_path,
         shell=True)
 
   if not os.path.exists(result_path):
-    args = ['python', 'run-predator.py', result_path, '--client', client_id]
+    args = ['python', 'run-predator.py', result_path, client_id, app_id]
     if verbose:
       args.append('--verbose')
     p = subprocess.Popen(args, stdin=subprocess.PIPE)
@@ -145,10 +167,10 @@ def GetResults(crashes, client_id, git_hash, result_path,
     # corresponding cache file instead.
     p.communicate(input=json.dumps(crashes))
   else:
-    logging.info('\nLoading results from %s', result_path)
+    print '\nLoading results from', result_path
 
   if not os.path.exists(result_path):
-    logging.error('Failed to get results.')
+    print 'Failed to get results.'
     return {}
 
   with open(result_path) as f:
@@ -190,6 +212,7 @@ def DeltaEvaluator(git_hash1, git_hash2,
     crash_count = 0
     for index, crashes in enumerate(
         crash_iterator.IterateCrashes(client_id, app_id,
+                                      fields=CRASH_FIELDS,
                                       property_values=property_values,
                                       start_date=start_date,
                                       end_date=end_date,
@@ -199,14 +222,19 @@ def DeltaEvaluator(git_hash1, git_hash2,
       results = []
       for git_hash in [git_hash1, git_hash2]:
         result_path = os.path.join(
-            AZALEA_RESULTS_DIRECTORY, delta_util.GenerateFileName(
+            PREDATOR_RESULTS_DIRECTORY, delta_util.GenerateFileName(
                 client_id, property_values, start_date, end_date,
                 batch_size, index, git_hash))
-        results.append(GetResults(crashes, client_id, git_hash, result_path,
+        results.append(GetResults(crashes, client_id, app_id,
+                                  git_hash, result_path,
                                   verbose=verbose))
 
       crash_count += len(crashes)
-      deltas.update(GetDeltasFromTwoSetsOfResults(*results))
+      batch_deltas = GetDeltasFromTwoSetsOfResults(*results)
+      # Print deltas of the current batch.
+      print '========= Delta of this batch ========='
+      delta_util.PrintDelta(batch_deltas, len(crashes), app_id)
+      deltas.update(batch_deltas)
 
     return deltas, crash_count
   finally:

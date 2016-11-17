@@ -20,14 +20,14 @@ def ProjectEntity(entity, fields):  # pragma: no cover.
       entity_info[field] = getattr(entity, field)
     else:
       entity_info[field] = None
-  entity_info['id'] = entity.key.id()
+  entity_info['id'] = entity.key.urlsafe()
   return entity_info
 
 
 # TODO(crbug.com/662540): Add unittests.
 def Iterate(query,
-            fields,
             app_id,
+            fields=None,
             filter_func=None,
             batch_size=_DEFAULT_BATCH_SIZE,
             batch_run=False):  # pragma: no cover.
@@ -35,10 +35,10 @@ def Iterate(query,
 
   Args:
     query (ndb.Query): The query to fetch entities.
-    fields (list): Field names of an entity to be projected to a dict.
-      If a given field name is not available, it is set to None.
-      'id' is always added by default as an integer.
     app_id (str): App engine app id.
+    fields (list): Field names of an datastore model entity to be projected
+      to a dict. If None provided, return the entities instead of projected
+      dict.
     filter_func (function): A function that does in memory filtering.
     batch_size (int): The number of entities to query at one time.
     batch_run (bool): If True, iterate batches of entities, if
@@ -58,7 +58,9 @@ def Iterate(query,
     if filter_func:
       entities = filter_func(entities)
 
-    entities = [ProjectEntity(entity, fields) for entity in entities]
+    if fields:
+      entities = [ProjectEntity(entity, fields) for entity in entities]
+
     if batch_run:
       yield entities
     else:

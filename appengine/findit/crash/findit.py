@@ -207,8 +207,7 @@ class Findit(object):
     stacktrace = self._stacktrace_parser.Parse(
         model.stack_trace,
         chrome_dependency_fetcher.ChromeDependencyFetcher(
-            self._repository
-            ).GetDependency(
+            self._repository).GetDependency(
                 model.crashed_version,
                 model.platform),
         model.signature)

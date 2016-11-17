@@ -4,8 +4,9 @@
 
 import subprocess
 
-import script_util
 from testing_utils import testing
+
+import script_util
 
 
 class ScriptUtilTest(testing.AppengineTestCase):
@@ -27,5 +28,5 @@ class ScriptUtilTest(testing.AppengineTestCase):
     output = script_util.GetCommandOutput('command')
     self.assertEqual(output, 'command')
 
-    output = script_util.GetCommandOutput('dummy')
-    self.assertEqual(output, None)
+    self.assertRaisesRegexp(Exception, 'Error running command dummy: error',
+                            script_util.GetCommandOutput, 'dummy')

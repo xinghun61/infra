@@ -292,13 +292,13 @@ def FindMatchResults(dep_to_file_to_changelogs,
 
   for dep, file_to_stack_infos in dep_to_file_to_stack_infos.iteritems():
     file_to_changelogs = dep_to_file_to_changelogs[dep]
-    repository.repo_url = stack_deps[dep].repo_url
 
     for crashed_file_path, stack_infos in file_to_stack_infos.iteritems():
       for touched_file_path, changelogs in file_to_changelogs.iteritems():
         if not crash_util.IsSameFilePath(crashed_file_path, touched_file_path):
           continue
 
+        repository.repo_url = stack_deps[dep].repo_url
         blame = repository.GetBlame(touched_file_path,
                                     stack_deps[dep].revision)
 

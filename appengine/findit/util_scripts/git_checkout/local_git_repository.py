@@ -82,18 +82,18 @@ class LocalGitRepository(GitRepository):
 
   def _CloneOrUpdateRepoIfNeeded(self):
     """Clones repo, or update it if it didn't got updated before."""
-    if self.repo_url in LocalGitRepository._updated_repos:
-      return
-
     with LocalGitRepository.lock:
+      if self.repo_url in LocalGitRepository._updated_repos:
+        return
+
       # Clone the repo if needed.
       if not os.path.exists(self.real_repo_path):
         try:
           subprocess.check_call(['git', 'clone',
                                  self.repo_url, self.real_repo_path])
         except subprocess.CalledProcessError as e:  # pragma: no cover.
-          logging.error('Exception while cloning %s: %s', self.repo_url, e)
-          return
+          raise Exception(
+              'Exception while cloning %s: %s' % (self.repo_url, e))
       # Update repo if it's already cloned.
       else:
         try:
@@ -103,8 +103,8 @@ class LocalGitRepository(GitRepository):
                 'cd %s && git pull' % self.real_repo_path,
                 stdout=null_handle, stderr=null_handle, shell=True)
         except subprocess.CalledProcessError as e:  # pragma: no cover.
-          logging.error('Exception while updating %s: %s', self.repo_path, e)
-          return
+          raise Exception(
+              'Exception while updating %s: %s' % (self.repo_path, e))
 
       LocalGitRepository._updated_repos.add(self.repo_url)
 
@@ -143,8 +143,8 @@ class LocalGitRepository(GitRepository):
 
   def GetBlame(self, path, revision):
     """Returns blame of the file at ``path`` of the given revision."""
-    command = 'git blame --incremental %s %s' % (
-        path, ConvertRemoteCommitToLocal(revision))
+    command = 'git blame --incremental %s -- %s' % (
+        ConvertRemoteCommitToLocal(revision), path)
     output = script_util.GetCommandOutput(self._GetFinalCommand(command))
     return self.blame_parser(output, path, revision)
 

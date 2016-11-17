@@ -92,7 +92,7 @@ class CrashHandlerTest(CrashTestCase):
         return False
 
     self.mock(crash_pipeline, 'FinditForClientID',
-        lambda _client_id: _MockFindit())
+        lambda _client_id, repository: _MockFindit())
     self.assertFalse(crash_handler.ScheduleNewAnalysis(original_crash_data))
 
   def testScheduleNewAnalysisSkipsUnsupportedChannel(self):
@@ -245,11 +245,6 @@ class CrashHandlerTest(CrashTestCase):
         client_id = CrashClient.FRACAS,
         version = '50.2500.0.1',
         stack_trace = 'frame1\nframe2\nframe3')
-    # A fake repository, needed by the Findit constructor. We should never
-    # go over the wire (e.g., in the call to ScheduleNewAnalysis below),
-    # and this helps ensure that.
-    self.mock(gitiles_repository, 'GitilesRepository',
-        lambda *_args, **_kwargs: None)
     self.assertTrue(crash_handler.ScheduleNewAnalysis(crash_data))
 
     # The catch/re-raise is to clean up the callstack that's reported
