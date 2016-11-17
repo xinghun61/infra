@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents.min.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="/elements/som-formatted-text.html">
+<test-fixture id="basic">
+  <template>
+    <som-formatted-text></som-formatted-text>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('text fragments catch URL', function() {
+      let link = 'http://build.chromium.org/p/chromium.chrome/builders/Google%20Chrome%20Linux%20x64/builds/13369';
+      let text = 'Tree is closed: ';
+      let fragments = element._computeTextFragments(text + link);
+
+      assert.equal(2, fragments.length);
+
+      assert.equal(text, fragments[0].text);
+
+      assert.equal('build.chromium.org/p/chromium.chrome/builders/Google%20Chrome%20Linux%20x64/builds/13369', fragments[1].linkText);
+      assert.equal(link, fragments[1].link);
+    });
+
+    test('text fragments catch email', function() {
+      let email = 'test@email.com';
+      let text = 'Tree is closed: ';
+      let fragments = element._computeTextFragments(text + email);
+
+      assert.equal(2, fragments.length);
+
+      assert.equal(text, fragments[0].text);
+
+      assert.equal('test', fragments[1].linkText);
+      assert.equal('mailto:' + email, fragments[1].link);
+    });
+
+    test('text fragments catch email list', function() {
+      // A list of emails delimited by commas is a common case that this tests.
+      let usernames = ['tiff', 'joe', 'bob', 'i.have.dots'];
+      let domains = ['chromium.org', 'google.com', 'intel.com', 'test.rocks'];
+      let testMessage = '';
+      for (let i in usernames) {
+        testMessage += usernames[i] + '@' + domains[i] + ',';
+      }
+
+      let fragments = element._computeTextFragments(testMessage);
+
+      // Each of the commas ends up being a separate fragment
+      assert.equal(usernames.length * 2, fragments.length);
+
+      for (let i in usernames) {
+        let email = usernames[i] + '@' + domains[i];
+        assert.equal(usernames[i], fragments[i * 2].linkText);
+        assert.equal('mailto:' + email, fragments[i * 2].link);
+      }
+    });
+  });
+})();
+</script>
