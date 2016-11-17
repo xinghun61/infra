@@ -294,6 +294,7 @@
           type: Array,
           value: function() { return []; },
           computed: '_computeAlerts(_alertsData.*, annotations, showInfraFailures, _isTrooperPage)',
+          observer: '_alertsChanged',
         },
         // Map of stream to data, timestamp of latest updated data.
         _alertsData: {
@@ -421,6 +422,14 @@
       },
 
       ////////////////////// Alerts and path ///////////////////////////
+
+      _alertsChanged: function(alerts) {
+        if (alerts && alerts.length > 0) {
+          document.title = '(' + alerts.length + ') Sheriff-o-Matic';
+        } else {
+          document.title = 'Sheriff-o-Matic';
+        }
+      },
 
       _computeBugQueueLabel: function(tree, trees) {
         if (tree in trees) {
