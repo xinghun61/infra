@@ -296,9 +296,6 @@ func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
 	if props == nil {
 		props = map[string]interface{}{}
 	}
-	// TODO(nodir): remove path_config crbug.com/662586
-	props["path_config"] = "swarmbucket"
-
 	if c.CacheDir != "" {
 		cacheDir := filepath.FromSlash(c.CacheDir)
 		cacheDir, err := filepath.Abs(cacheDir)
