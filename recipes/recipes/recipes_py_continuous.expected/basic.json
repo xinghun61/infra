@@ -57,7 +57,7 @@
       "--platform",
       "linux-amd64",
       "--dest-directory",
-      "[SLAVE_BUILD]/cipd",
+      "[START_DIR]/cipd",
       "--json-output",
       "/path/to/tmp/json"
     ],
@@ -65,7 +65,7 @@
     "~followup_annotations": [
       "@@@STEP_TEXT@cipd instance_id: 40-chars-fake-of-the-package-instance_id@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"executable\": \"[SLAVE_BUILD]/cipd/cipd\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"executable\": \"[START_DIR]/cipd/cipd\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"instance_id\": \"40-chars-fake-of-the-package-instance_id\"@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -73,10 +73,10 @@
   },
   {
     "cmd": [
-      "[SLAVE_BUILD]/cipd/cipd",
+      "[START_DIR]/cipd/cipd",
       "create",
       "--pkg-def",
-      "[SLAVE_BUILD]/recipes-py/infra/cipd/recipes-py.yaml",
+      "[START_DIR]/recipes-py/infra/cipd/recipes-py.yaml",
       "--json-output",
       "/path/to/tmp/json",
       "--service-account-json",

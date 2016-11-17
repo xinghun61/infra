@@ -62,7 +62,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]/infra",
+    "cwd": "[START_DIR]/infra",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -72,7 +72,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/go/env.py",
+      "[START_DIR]/infra/go/env.py",
       "go",
       "version"
     ],
@@ -82,7 +82,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/go/env.py",
+      "[START_DIR]/infra/go/env.py",
       "go",
       "build",
       "github.com/luci/gae/..."
@@ -93,7 +93,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/go/env.py",
+      "[START_DIR]/infra/go/env.py",
       "go",
       "test",
       "github.com/luci/gae/..."

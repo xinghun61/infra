@@ -118,7 +118,7 @@
       "clean",
       "-dffx"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "name": "git clean"
   },
   {
@@ -130,7 +130,7 @@
       "-D",
       "--nohooks"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -139,7 +139,7 @@
   {
     "cmd": [
       "touch",
-      "[SLAVE_BUILD]/src/chrome/test/data/webui/i18n_process_css_test.html"
+      "[START_DIR]/src/chrome/test/data/webui/i18n_process_css_test.html"
     ],
     "name": "touch chrome/test/data/webui/i18n_process_css_test.html"
   },
@@ -153,7 +153,7 @@
       "--verbose",
       "--progress",
       "--src-dir",
-      "[SLAVE_BUILD]/src"
+      "[START_DIR]/src"
     ],
     "cwd": "[TMP_BASE]/export_tarball_tmp_1",
     "name": "export_tarball"
@@ -235,7 +235,7 @@
       "--verbose",
       "--progress",
       "--src-dir",
-      "[SLAVE_BUILD]/src"
+      "[START_DIR]/src"
     ],
     "cwd": "[TMP_BASE]/export_tarball_tmp_2",
     "name": "export_tarball (2)"
@@ -312,7 +312,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copytree(sys.argv[1], sys.argv[2], symlinks=bool(sys.argv[3]))\n",
-      "[SLAVE_BUILD]/src",
+      "[START_DIR]/src",
       "[TMP_BASE]/tmp_tmp_3/src",
       "1"
     ],
@@ -876,7 +876,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copytree(sys.argv[1], sys.argv[2], symlinks=bool(sys.argv[3]))\n",
-      "[SLAVE_BUILD]/src",
+      "[START_DIR]/src",
       "[TMP_BASE]/tmp_tmp_5/src",
       "1"
     ],

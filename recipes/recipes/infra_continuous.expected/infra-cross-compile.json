@@ -56,7 +56,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]/infra",
+    "cwd": "[START_DIR]/infra",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -71,23 +71,23 @@
       "--jobs",
       "1"
     ],
-    "cwd": "[SLAVE_BUILD]/infra",
+    "cwd": "[START_DIR]/infra",
     "name": "infra python tests"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/glyco/tests/run_all_tests.py"
+      "[START_DIR]/infra/glyco/tests/run_all_tests.py"
     ],
-    "cwd": "[SLAVE_BUILD]/infra",
+    "cwd": "[START_DIR]/infra",
     "name": "Glyco tests"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/go/env.py",
+      "[START_DIR]/infra/go/env.py",
       "go",
       "version"
     ],
@@ -97,9 +97,9 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/go/env.py",
+      "[START_DIR]/infra/go/env.py",
       "python",
-      "[SLAVE_BUILD]/infra/go/test.py"
+      "[START_DIR]/infra/go/test.py"
     ],
     "name": "infra go tests"
   },
@@ -107,7 +107,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/build/build.py",
+      "[START_DIR]/infra/build/build.py",
       "--builder",
       "infra-continuous-precise-64"
     ],
@@ -117,7 +117,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/build/test_packages.py"
+      "[START_DIR]/infra/build/test_packages.py"
     ],
     "name": "cipd - test packages integrity"
   },
@@ -125,7 +125,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/build/build.py",
+      "[START_DIR]/infra/build/build.py",
       "--no-rebuild",
       "--upload",
       "--service-account-json",
@@ -161,7 +161,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/build/build.py",
+      "[START_DIR]/infra/build/build.py",
       "--builder",
       "infra-continuous-precise-64"
     ],
@@ -175,7 +175,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/build/build.py",
+      "[START_DIR]/infra/build/build.py",
       "--no-rebuild",
       "--upload",
       "--service-account-json",
@@ -215,7 +215,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/build/build.py",
+      "[START_DIR]/infra/build/build.py",
       "--builder",
       "infra-continuous-precise-64"
     ],
@@ -229,7 +229,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/build/build.py",
+      "[START_DIR]/infra/build/build.py",
       "--no-rebuild",
       "--upload",
       "--service-account-json",
@@ -269,7 +269,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/build/build.py",
+      "[START_DIR]/infra/build/build.py",
       "--builder",
       "infra-continuous-precise-64"
     ],
@@ -283,7 +283,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/build/build.py",
+      "[START_DIR]/infra/build/build.py",
       "--no-rebuild",
       "--upload",
       "--service-account-json",
@@ -312,7 +312,7 @@
       "python",
       "-u",
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\npath = sys.argv[1]\nif os.path.exists(path):\n  for p in (os.path.join(path, x) for x in os.listdir(path)):\n    if os.path.isdir(p):\n      chromium_utils.RemoveDirectory(p)\n    else:\n      os.unlink(p)\n",
-      "[SLAVE_BUILD]/infra/go/bin"
+      "[START_DIR]/infra/go/bin"
     ],
     "name": "rmcontents clean go bin",
     "~followup_annotations": [
@@ -334,7 +334,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/go/env.py",
+      "[START_DIR]/infra/go/env.py",
       "go",
       "install",
       "github.com/luci/luci-go/client/cmd/..."
@@ -346,7 +346,7 @@
       "python",
       "-u",
       "\nimport json, os, sys\nif os.path.exists(sys.argv[1]) and os.path.isdir(sys.argv[1]):\n  with open(sys.argv[2], 'w') as f:\n    json.dump(os.listdir(sys.argv[1]), f)\n",
-      "[SLAVE_BUILD]/infra/go/bin",
+      "[START_DIR]/infra/go/bin",
       "/path/to/tmp/json"
     ],
     "name": "listdir listing go bin",
@@ -371,8 +371,8 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/upload_to_google_storage.py",
       "-b",
       "chromium-luci",
-      "[SLAVE_BUILD]/infra/go/bin/file 1",
-      "[SLAVE_BUILD]/infra/go/bin/file 2"
+      "[START_DIR]/infra/go/bin/file 1",
+      "[START_DIR]/infra/go/bin/file 2"
     ],
     "env": {
       "DEPOT_TOOLS_GSUTIL_BIN_DIR": "[CACHE]/gsutil"
@@ -384,7 +384,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "[SLAVE_BUILD]/infra/go/bin/file 1.sha1",
+      "[START_DIR]/infra/go/bin/file 1.sha1",
       "/path/to/tmp/"
     ],
     "name": "file 1 sha1",
@@ -397,7 +397,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "[SLAVE_BUILD]/infra/go/bin/file 2.sha1",
+      "[START_DIR]/infra/go/bin/file 2.sha1",
       "/path/to/tmp/"
     ],
     "name": "file 2 sha1",

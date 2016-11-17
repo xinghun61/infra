@@ -69,7 +69,7 @@
       "-m",
       "Committed patch"
     ],
-    "cwd": "[SLAVE_BUILD]/infra_internal",
+    "cwd": "[START_DIR]/infra_internal",
     "name": "commit git patch"
   },
   {
@@ -79,7 +79,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]/infra_internal",
+    "cwd": "[START_DIR]/infra_internal",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -93,7 +93,7 @@
       "HEAD",
       "HEAD~"
     ],
-    "cwd": "[SLAVE_BUILD]/infra_internal",
+    "cwd": "[START_DIR]/infra_internal",
     "name": "get change list",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
@@ -111,14 +111,14 @@
       "--jobs",
       "1"
     ],
-    "cwd": "[SLAVE_BUILD]/infra_internal",
+    "cwd": "[START_DIR]/infra_internal",
     "name": "python tests"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra_internal/go/env.py"
+      "[START_DIR]/infra_internal/go/env.py"
     ],
     "name": "go bootstrap"
   },
@@ -126,9 +126,9 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra_internal/go/env.py",
+      "[START_DIR]/infra_internal/go/env.py",
       "python",
-      "[SLAVE_BUILD]/infra_internal/go/test.py"
+      "[START_DIR]/infra_internal/go/test.py"
     ],
     "name": "go tests"
   },

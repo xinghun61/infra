@@ -104,7 +104,7 @@
       "user.name",
       "Rebaseline Bot"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "name": "git config"
   },
   {
@@ -114,20 +114,20 @@
       "user.email",
       "blink-rebaseline-bot@chromium.org"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "name": "git config (2)"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/src/third_party/WebKit/Tools/Scripts/webkit-patch",
+      "[START_DIR]/src/third_party/WebKit/Tools/Scripts/webkit-patch",
       "auto-rebaseline",
       "--verbose",
       "--auth-refresh-token-json",
       "/creds/refresh_tokens/blink_rebaseline_bot_rietveld"
     ],
-    "cwd": "[SLAVE_BUILD]/src/third_party/WebKit",
+    "cwd": "[START_DIR]/src/third_party/WebKit",
     "name": "webkit-patch auto-rebaseline"
   },
   {

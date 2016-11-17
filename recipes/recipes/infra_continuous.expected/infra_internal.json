@@ -56,7 +56,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]/infra_internal",
+    "cwd": "[START_DIR]/infra_internal",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -71,14 +71,14 @@
       "--jobs",
       "1"
     ],
-    "cwd": "[SLAVE_BUILD]/infra_internal",
+    "cwd": "[START_DIR]/infra_internal",
     "name": "infra python tests"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra_internal/go/env.py",
+      "[START_DIR]/infra_internal/go/env.py",
       "go",
       "version"
     ],
@@ -88,9 +88,9 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra_internal/go/env.py",
+      "[START_DIR]/infra_internal/go/env.py",
       "python",
-      "[SLAVE_BUILD]/infra_internal/go/test.py"
+      "[START_DIR]/infra_internal/go/test.py"
     ],
     "name": "infra go tests"
   },
@@ -98,7 +98,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra_internal/build/build.py",
+      "[START_DIR]/infra_internal/build/build.py",
       "--builder",
       "infra-internal-continuous"
     ],
@@ -108,7 +108,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra_internal/build/test_packages.py"
+      "[START_DIR]/infra_internal/build/test_packages.py"
     ],
     "name": "cipd - test packages integrity"
   },
@@ -116,7 +116,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra_internal/build/build.py",
+      "[START_DIR]/infra_internal/build/build.py",
       "--no-rebuild",
       "--upload",
       "--service-account-json",

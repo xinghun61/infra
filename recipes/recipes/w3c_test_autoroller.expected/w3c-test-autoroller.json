@@ -104,7 +104,7 @@
       "user.name",
       "Blink W3C Test Autoroller"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "name": "set git config user.name"
   },
   {
@@ -114,7 +114,7 @@
       "user.email",
       "blink-w3c-test-autoroller@chromium.org"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "name": "set git config user.email"
   },
   {
@@ -123,7 +123,7 @@
       "checkout",
       "origin/master"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "name": "git checkout"
   },
   {
@@ -133,7 +133,7 @@
       "-D",
       "update_wpt"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "name": "git branch"
   },
   {
@@ -142,7 +142,7 @@
       "new-branch",
       "update_wpt"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "env": {
       "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
     },
@@ -152,14 +152,14 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/src/third_party/WebKit/Tools/Scripts/update-w3c-deps",
+      "[START_DIR]/src/third_party/WebKit/Tools/Scripts/update-w3c-deps",
       "--verbose",
       "--auto-update",
       "--auth-refresh-token-json",
       "/creds/refresh_tokens/blink-w3c-test-autoroller",
       "wpt"
     ],
-    "cwd": "[SLAVE_BUILD]/src/third_party/WebKit",
+    "cwd": "[START_DIR]/src/third_party/WebKit",
     "name": "update wpt"
   },
   {
@@ -168,7 +168,7 @@
       "checkout",
       "origin/master"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "name": "git checkout (2)"
   },
   {
@@ -178,7 +178,7 @@
       "-D",
       "update_wpt"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "name": "git branch (2)"
   },
   {
@@ -187,7 +187,7 @@
       "checkout",
       "origin/master"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "name": "git checkout (3)"
   },
   {
@@ -197,7 +197,7 @@
       "-D",
       "update_css"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "name": "git branch (3)"
   },
   {
@@ -206,7 +206,7 @@
       "new-branch",
       "update_css"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "env": {
       "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
     },
@@ -216,14 +216,14 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/src/third_party/WebKit/Tools/Scripts/update-w3c-deps",
+      "[START_DIR]/src/third_party/WebKit/Tools/Scripts/update-w3c-deps",
       "--verbose",
       "--auto-update",
       "--auth-refresh-token-json",
       "/creds/refresh_tokens/blink-w3c-test-autoroller",
       "css"
     ],
-    "cwd": "[SLAVE_BUILD]/src/third_party/WebKit",
+    "cwd": "[START_DIR]/src/third_party/WebKit",
     "name": "update css"
   },
   {
@@ -232,7 +232,7 @@
       "checkout",
       "origin/master"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "name": "git checkout (4)"
   },
   {
@@ -242,7 +242,7 @@
       "-D",
       "update_css"
     ],
-    "cwd": "[SLAVE_BUILD]/src",
+    "cwd": "[START_DIR]/src",
     "name": "git branch (4)"
   },
   {

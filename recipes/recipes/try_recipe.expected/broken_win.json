@@ -59,7 +59,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]\\build\\scripts\\slave\\recipes.py",
+      "[START_DIR]\\build\\scripts\\slave\\recipes.py",
       "fetch"
     ],
     "name": "fetch recipe engine deps",
@@ -73,7 +73,7 @@
       "python",
       "-u",
       "\nimport shutil, sys, os\nshutil.rmtree(sys.argv[1], ignore_errors=True)\n",
-      "[SLAVE_BUILD]\\build\\scripts\\slave\\.recipe_deps"
+      "[START_DIR]\\build\\scripts\\slave\\.recipe_deps"
     ],
     "name": "remove repo workaround for http://crbug.com/589201",
     "~followup_annotations": [
@@ -87,7 +87,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]\\build\\scripts\\slave\\recipes.py",
+      "[START_DIR]\\build\\scripts\\slave\\recipes.py",
       "fetch"
     ],
     "name": "fetch recipe engine deps from scratch."
@@ -113,12 +113,12 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]\\build\\scripts\\tools\\annotee_indenter.py",
+      "[START_DIR]\\build\\scripts\\tools\\annotee_indenter.py",
       "--base-level",
       "1",
       "--use-python-executable",
       "--",
-      "[SLAVE_BUILD]\\build\\scripts\\slave\\recipes.py",
+      "[START_DIR]\\build\\scripts\\slave\\recipes.py",
       "run",
       "--properties-file",
       "{\"buildername\": \"recipe_try\", \"buildnumber\": 571, \"mastername\": \"tryserver.infra\", \"prop1\": \"value1\", \"prop2\": \"value2\", \"slavename\": \"TestSlavename\", \"try_level\": 1}",

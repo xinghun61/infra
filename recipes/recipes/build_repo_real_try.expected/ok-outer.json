@@ -54,7 +54,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
+      "[START_DIR]/build/scripts/slave/recipes.py",
       "run",
       "--properties-file",
       "{\"actual_run\": \"True\", \"buildername\": \"build_repo_real\", \"buildnumber\": 571, \"mastername\": \"chromium.infra\", \"slavename\": \"TestSlavename\"}",
@@ -67,7 +67,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
+      "[START_DIR]/build/scripts/slave/recipes.py",
       "run",
       "--properties-file",
       "{\"actual_run\": \"True\", \"buildername\": \"build_repo_real\", \"buildnumber\": 571, \"issue\": \"1662543002\", \"mastername\": \"chromium.infra\", \"patch_project\": \"build\", \"patch_storage\": \"rietveld\", \"patchset\": \"1\", \"reason\": \"CQ\", \"rietveld\": \"https://codereview.chromium.org\", \"slavename\": \"TestSlavename\"}",

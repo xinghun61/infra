@@ -56,7 +56,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]\\gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]\\infra",
+    "cwd": "[START_DIR]\\infra",
     "env": {
       "PATH": "%(PATH)s;RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -67,7 +67,7 @@
       "python",
       "-u",
       "RECIPE_MODULE[recipe_engine::shutil]\\resources\\rmtree.py",
-      "[SLAVE_BUILD]\\infra\\go\\bin"
+      "[START_DIR]\\infra\\go\\bin"
     ],
     "name": "clean go bin"
   },
@@ -75,7 +75,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]\\infra\\go\\env.py",
+      "[START_DIR]\\infra\\go\\env.py",
       "go",
       "version"
     ],
@@ -85,7 +85,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]\\infra\\go\\env.py",
+      "[START_DIR]\\infra\\go\\env.py",
       "go",
       "install",
       "github.com/luci/luci-go/client/cmd/..."
@@ -99,7 +99,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]\\upload_to_google_storage.py",
       "-b",
       "chromium-luci",
-      "[SLAVE_BUILD]\\infra\\go\\bin\\isolate"
+      "[START_DIR]\\infra\\go\\bin\\isolate"
     ],
     "env": {
       "DEPOT_TOOLS_GSUTIL_BIN_DIR": "[CACHE]\\gsutil"
@@ -111,7 +111,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "[SLAVE_BUILD]\\infra\\go\\bin\\isolate.sha1",
+      "[START_DIR]\\infra\\go\\bin\\isolate.sha1",
       "/path/to/tmp/"
     ],
     "name": "isolate sha1",
@@ -129,7 +129,7 @@
       "----",
       "cp",
       "gs://chrome-dumpfiles/ykffaza5vm",
-      "[SLAVE_BUILD]\\infra\\go\\perf_data\\test.isolate"
+      "[START_DIR]\\infra\\go\\perf_data\\test.isolate"
     ],
     "name": "gsutil download test.isolate"
   },
@@ -138,12 +138,12 @@
       "python",
       "-u",
       "\nimport os, sys\nprint os.stat(sys.argv[1]).st_size if os.path.exists(sys.argv[1]) else -1\n",
-      "[SLAVE_BUILD]\\infra\\go\\perf_data\\blink_heap_unittests"
+      "[START_DIR]\\infra\\go\\perf_data\\blink_heap_unittests"
     ],
     "name": "get huge file size",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_TEXT@file [SLAVE_BUILD]\\infra\\go\\perf_data\\blink_heap_unittests does not exist@@@",
+      "@@@STEP_TEXT@file [START_DIR]\\infra\\go\\perf_data\\blink_heap_unittests does not exist@@@",
       "@@@STEP_LOG_LINE@python.inline@@@@",
       "@@@STEP_LOG_LINE@python.inline@import os, sys@@@",
       "@@@STEP_LOG_LINE@python.inline@print os.stat(sys.argv[1]).st_size if os.path.exists(sys.argv[1]) else -1@@@",
@@ -160,7 +160,7 @@
       "----",
       "cp",
       "gs://chrome-dumpfiles/yirqavzhxm",
-      "[SLAVE_BUILD]\\infra\\go\\perf_data\\blink_heap_unittests"
+      "[START_DIR]\\infra\\go\\perf_data\\blink_heap_unittests"
     ],
     "name": "gsutil download huge test file"
   },
@@ -183,23 +183,23 @@
       "--format=%ct %cI %H",
       "-s"
     ],
-    "cwd": "[SLAVE_BUILD]\\infra",
+    "cwd": "[START_DIR]\\infra",
     "name": "get commit info",
     "stdout": "/path/to/tmp/"
   },
   {
     "cmd": [
-      "[SLAVE_BUILD]\\infra\\go\\bin\\isolate",
+      "[START_DIR]\\infra\\go\\bin\\isolate",
       "archive",
       "--verbose",
       "-isolate-server",
       "fake",
       "-isolate",
-      "[SLAVE_BUILD]\\infra\\go\\perf_data\\test.isolate",
+      "[START_DIR]\\infra\\go\\perf_data\\test.isolate",
       "-isolated",
-      "[SLAVE_BUILD]\\infra\\go\\perf_data\\result.isolated"
+      "[START_DIR]\\infra\\go\\perf_data\\result.isolated"
     ],
-    "cwd": "[SLAVE_BUILD]\\infra\\go\\perf_data",
+    "cwd": "[START_DIR]\\infra\\go\\perf_data",
     "name": "isolate perf",
     "~followup_annotations": [
       "@@@STEP_TEXT@Took    1.5 seconds on rev 0123456789abcdeffedcba987654321012345678 committed at 2016-10-13T18:02:17+02:00@@@"

@@ -67,7 +67,7 @@
       "-m",
       "Committed patch"
     ],
-    "cwd": "[SLAVE_BUILD]/infra",
+    "cwd": "[START_DIR]/infra",
     "name": "commit git patch"
   },
   {
@@ -77,7 +77,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[SLAVE_BUILD]/infra",
+    "cwd": "[START_DIR]/infra",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -91,7 +91,7 @@
       "HEAD",
       "HEAD~"
     ],
-    "cwd": "[SLAVE_BUILD]/infra",
+    "cwd": "[START_DIR]/infra",
     "name": "get change list",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
@@ -108,14 +108,14 @@
       "--jobs",
       "1"
     ],
-    "cwd": "[SLAVE_BUILD]/infra",
+    "cwd": "[START_DIR]/infra",
     "name": "python tests"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/recipes/recipes.py",
+      "[START_DIR]/infra/recipes/recipes.py",
       "simulation_test",
       "test"
     ],
@@ -125,7 +125,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/recipes/recipes.py",
+      "[START_DIR]/infra/recipes/recipes.py",
       "lint"
     ],
     "name": "recipe lint"
@@ -134,7 +134,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/go/env.py"
+      "[START_DIR]/infra/go/env.py"
     ],
     "name": "go bootstrap"
   },
@@ -142,9 +142,9 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/go/env.py",
+      "[START_DIR]/infra/go/env.py",
       "python",
-      "[SLAVE_BUILD]/infra/go/test.py"
+      "[START_DIR]/infra/go/test.py"
     ],
     "name": "go tests"
   },
@@ -155,7 +155,7 @@
       "appengine/chromium_rietveld",
       "test"
     ],
-    "cwd": "[SLAVE_BUILD]/infra",
+    "cwd": "[START_DIR]/infra",
     "name": "rietveld tests"
   },
   {

@@ -59,7 +59,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
+      "[START_DIR]/build/scripts/slave/recipes.py",
       "fetch"
     ],
     "name": "fetch recipe engine deps"
@@ -85,12 +85,12 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/build/scripts/tools/annotee_indenter.py",
+      "[START_DIR]/build/scripts/tools/annotee_indenter.py",
       "--base-level",
       "2",
       "--use-python-executable",
       "--",
-      "[SLAVE_BUILD]/build/scripts/slave/recipes.py",
+      "[START_DIR]/build/scripts/slave/recipes.py",
       "run",
       "--properties-file",
       "{\"buildername\": \"recipe_try\", \"buildnumber\": 571, \"mastername\": \"tryserver.infra\", \"slavename\": \"TestSlavename\", \"try_level\": 2, \"try_props\": \"eNqrViooyi8wVLJSUCpLzClNNVTSUQALGcGFjJRqAeKlC4s=\", \"try_recipe\": \"infra/build_repo_real_try\"}",
