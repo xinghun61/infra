@@ -9,6 +9,7 @@ import datetime
 import time
 import unittest
 
+from framework import sql
 from proto import ast_pb2
 from proto import tracker_pb2
 from search import ast2select
@@ -45,10 +46,12 @@ class AST2SelectTest(unittest.TestCase):
         [('User AS Cond0 ON (Issue.owner_id = Cond0.user_id '
           'OR Issue.derived_owner_id = Cond0.user_id)', [])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('(LOWER(Cond0.email) LIKE %s)', ['%example.com%']),
          ('Issue.reporter_id = %s', [111L])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testBlockingIDCond_SingleValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blocking_id']
@@ -64,9 +67,11 @@ class AST2SelectTest(unittest.TestCase):
             'Cond1.kind = %s AND Cond1.issue_id = %s',
             ['blockedon', expected])],
           left_joins)
+      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
       self.assertEqual(
           [('Cond1.dst_issue_id IS NOT NULL', [])],
           where)
+      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testBlockingIDCond_NegatedSingleValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blocking_id']
@@ -82,9 +87,11 @@ class AST2SelectTest(unittest.TestCase):
             'Cond1.kind = %s AND Cond1.issue_id = %s',
             ['blockedon', expected])],
           left_joins)
+      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
       self.assertEqual(
           [('Cond1.dst_issue_id IS NULL', [])],
           where)
+      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testBlockingIDCond_MultiValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blocking_id']
@@ -101,9 +108,11 @@ class AST2SelectTest(unittest.TestCase):
             'Cond1.kind = %s AND Cond1.issue_id IN (%s,%s,%s)',
             ['blockedon'] + expected)],
           left_joins)
+      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
       self.assertEqual(
           [('Cond1.dst_issue_id IS NOT NULL', [])],
           where)
+      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testBlockingIDCond_NegatedMultiValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blocking_id']
@@ -120,9 +129,11 @@ class AST2SelectTest(unittest.TestCase):
             'Cond1.kind = %s AND Cond1.issue_id IN (%s,%s,%s)',
             ['blockedon'] + expected)],
           left_joins)
+      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
       self.assertEqual(
           [('Cond1.dst_issue_id IS NULL', [])],
           where)
+      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testBlockedOnIDCond_SingleValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
@@ -138,9 +149,11 @@ class AST2SelectTest(unittest.TestCase):
             'Cond1.kind = %s AND Cond1.dst_issue_id = %s',
             ['blockedon', expected])],
           left_joins)
+      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
       self.assertEqual(
           [('Cond1.issue_id IS NOT NULL', [])],
           where)
+      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testBlockedOnIDCond_NegatedSingleValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
@@ -156,9 +169,11 @@ class AST2SelectTest(unittest.TestCase):
             'Cond1.kind = %s AND Cond1.dst_issue_id = %s',
             ['blockedon', expected])],
           left_joins)
+      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
       self.assertEqual(
           [('Cond1.issue_id IS NULL', [])],
           where)
+      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testBlockedIDCond_MultiValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
@@ -175,9 +190,11 @@ class AST2SelectTest(unittest.TestCase):
             'Cond1.kind = %s AND Cond1.dst_issue_id IN (%s,%s,%s)',
             ['blockedon'] + expected)],
           left_joins)
+      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
       self.assertEqual(
           [('Cond1.issue_id IS NOT NULL', [])],
           where)
+      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testBlockedIDCond_NegatedMultiValue(self):
     fd = BUILTIN_ISSUE_FIELDS['blockedon_id']
@@ -194,9 +211,11 @@ class AST2SelectTest(unittest.TestCase):
             'Cond1.kind = %s AND Cond1.dst_issue_id IN (%s,%s,%s)',
             ['blockedon'] + expected)],
           left_joins)
+      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
       self.assertEqual(
           [('Cond1.issue_id IS NULL', [])],
           where)
+      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testHasBlockedCond(self):
     for op, expected in ((ast_pb2.QueryOp.IS_DEFINED, 'IS NOT NULL'),
@@ -210,7 +229,9 @@ class AST2SelectTest(unittest.TestCase):
           [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
             'Cond1.kind = %s', ['blockedon'])],
           left_joins)
+      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
       self.assertEqual([('Cond1.issue_id %s' % expected, [])], where)
+      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testHasBlockingCond(self):
     for op, expected in ((ast_pb2.QueryOp.IS_DEFINED, 'IS NOT NULL'),
@@ -223,7 +244,9 @@ class AST2SelectTest(unittest.TestCase):
           [('IssueRelation AS Cond1 ON Issue.id = Cond1.dst_issue_id AND '
             'Cond1.kind = %s', ['blockedon'])],
           left_joins)
+      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
       self.assertEqual([('Cond1.dst_issue_id %s' % expected, [])], where)
+      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessOwnerCond(self):
     fd = BUILTIN_ISSUE_FIELDS['owner']
@@ -234,9 +257,11 @@ class AST2SelectTest(unittest.TestCase):
         [('User AS Cond1 ON (Issue.owner_id = Cond1.user_id '
           'OR Issue.derived_owner_id = Cond1.user_id)', [])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('(LOWER(Cond1.email) LIKE %s)', ['%example.com%'])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessOwnerIDCond(self):
     fd = BUILTIN_ISSUE_FIELDS['owner_id']
@@ -247,6 +272,7 @@ class AST2SelectTest(unittest.TestCase):
         [('(Issue.owner_id = %s OR Issue.derived_owner_id = %s)',
           [111L, 111L])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessOwnerLastVisitCond(self):
     fd = BUILTIN_ISSUE_FIELDS['ownerlastvisit']
@@ -259,10 +285,12 @@ class AST2SelectTest(unittest.TestCase):
           'Issue.derived_owner_id = Cond1.user_id)',
           [])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('Cond1.last_visit_timestamp < %s',
           [NOW])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessReporterCond(self):
     fd = BUILTIN_ISSUE_FIELDS['reporter']
@@ -272,9 +300,11 @@ class AST2SelectTest(unittest.TestCase):
     self.assertEqual(
         [('User AS Cond1 ON Issue.reporter_id = Cond1.user_id', [])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('(LOWER(Cond1.email) LIKE %s)', ['%example.com%'])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessReporterIDCond(self):
     fd = BUILTIN_ISSUE_FIELDS['reporter_id']
@@ -285,6 +315,7 @@ class AST2SelectTest(unittest.TestCase):
     self.assertEqual(
         [('Issue.reporter_id = %s', [111L])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessCcCond_SinglePositive(self):
     fd = BUILTIN_ISSUE_FIELDS['cc']
@@ -297,9 +328,11 @@ class AST2SelectTest(unittest.TestCase):
           'ON Issue.id = Cond1.issue_id AND Issue.shard = Cond1.issue_shard',
           ['%example.com%'])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('User1.email IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessCcCond_MultiplePositive(self):
     fd = BUILTIN_ISSUE_FIELDS['cc']
@@ -313,9 +346,11 @@ class AST2SelectTest(unittest.TestCase):
           'ON Issue.id = Cond1.issue_id AND Issue.shard = Cond1.issue_shard',
           ['%.com%', '%.org%'])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('User1.email IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessCcCond_SingleNegative(self):
     fd = BUILTIN_ISSUE_FIELDS['cc']
@@ -328,9 +363,11 @@ class AST2SelectTest(unittest.TestCase):
           'ON Issue.id = Cond1.issue_id AND Issue.shard = Cond1.issue_shard',
           ['%example.com%'])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('User1.email IS NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessCcCond_Multiplenegative(self):
     fd = BUILTIN_ISSUE_FIELDS['cc']
@@ -344,9 +381,11 @@ class AST2SelectTest(unittest.TestCase):
           'ON Issue.id = Cond1.issue_id AND Issue.shard = Cond1.issue_shard',
           ['%.com%', '%.org%'])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('User1.email IS NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessCcIDCond(self):
     fd = BUILTIN_ISSUE_FIELDS['cc_id']
@@ -358,9 +397,11 @@ class AST2SelectTest(unittest.TestCase):
           'Cond1.cc_id = %s',
          [111L])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('Cond1.cc_id IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessStarredByCond(self):
     fd = BUILTIN_ISSUE_FIELDS['starredby']
@@ -373,9 +414,11 @@ class AST2SelectTest(unittest.TestCase):
           'ON Cond1.user_id = User1.user_id AND (LOWER(User1.email) LIKE %s)) '
           'ON Issue.id = Cond1.issue_id', ['%example.com%'])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('User1.email IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessStarredByIDCond(self):
     fd = BUILTIN_ISSUE_FIELDS['starredby_id']
@@ -386,9 +429,11 @@ class AST2SelectTest(unittest.TestCase):
         [('IssueStar AS Cond1 ON Issue.id = Cond1.issue_id '
           'AND Cond1.user_id = %s', [111L])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('Cond1.user_id IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessCommentByCond(self):
     fd = BUILTIN_ISSUE_FIELDS['commentby']
@@ -403,9 +448,11 @@ class AST2SelectTest(unittest.TestCase):
           'ON Issue.id = Cond1.issue_id AND Cond1.deleted_by IS NULL',
           ['%example.com%'])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('User1.email IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessCommentByIDCond_EqualsUserID(self):
     fd = BUILTIN_ISSUE_FIELDS['commentby_id']
@@ -417,9 +464,28 @@ class AST2SelectTest(unittest.TestCase):
           'Cond1.commenter_id = %s AND Cond1.deleted_by IS NULL',
           [111L])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('Cond1.commenter_id IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+
+  def testProcessCommentByIDCond_QuickOr(self):
+    fd = BUILTIN_ISSUE_FIELDS['commentby_id']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L, 222L])
+    left_joins, where = ast2select._ProcessCommentByIDCond(
+        cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('Comment AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.commenter_id IN (%s,%s) '
+          'AND Cond1.deleted_by IS NULL',
+          [111L, 222L])],
+        left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+    self.assertEqual(
+        [('Cond1.commenter_id IS NOT NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessCommentByIDCond_NotEqualsUserID(self):
     fd = BUILTIN_ISSUE_FIELDS['commentby_id']
@@ -431,9 +497,11 @@ class AST2SelectTest(unittest.TestCase):
           'Cond1.commenter_id = %s AND Cond1.deleted_by IS NULL',
           [111L])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('Cond1.commenter_id IS NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessStatusIDCond(self):
     fd = BUILTIN_ISSUE_FIELDS['status_id']
@@ -443,6 +511,7 @@ class AST2SelectTest(unittest.TestCase):
     self.assertEqual(
         [('(Issue.status_id = %s OR Issue.derived_status_id = %s)', [2, 2])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessLabelIDCond_NoValue(self):
     fd = BUILTIN_ISSUE_FIELDS['label_id']
@@ -459,9 +528,11 @@ class AST2SelectTest(unittest.TestCase):
           'Issue.shard = Cond1.issue_shard AND '
           'Cond1.label_id = %s', [1])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('Cond1.label_id IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessLabelIDCond_MultipleValue(self):
     fd = BUILTIN_ISSUE_FIELDS['label_id']
@@ -472,9 +543,11 @@ class AST2SelectTest(unittest.TestCase):
           'Issue.shard = Cond1.issue_shard AND '
           'Cond1.label_id IN (%s,%s)', [1, 2])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('Cond1.label_id IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessLabelIDCond_NegatedNoValue(self):
     fd = BUILTIN_ISSUE_FIELDS['label_id']
@@ -492,9 +565,11 @@ class AST2SelectTest(unittest.TestCase):
           'Issue.shard = Cond1.issue_shard AND '
           'Cond1.label_id = %s', [1])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('Cond1.label_id IS NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessLabelIDCond_NegatedMultipleValue(self):
     fd = BUILTIN_ISSUE_FIELDS['label_id']
@@ -505,9 +580,11 @@ class AST2SelectTest(unittest.TestCase):
           'Issue.shard = Cond1.issue_shard AND '
           'Cond1.label_id IN (%s,%s)', [1, 2])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('Cond1.label_id IS NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessComponentIDCond(self):
     fd = BUILTIN_ISSUE_FIELDS['component_id']
@@ -519,9 +596,11 @@ class AST2SelectTest(unittest.TestCase):
           'Issue.shard = Cond1.issue_shard AND '
           'Cond1.component_id = %s', [101])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('Cond1.component_id IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessCustomFieldCond_IntType(self):
     fd = tracker_pb2.FieldDef(
@@ -537,9 +616,11 @@ class AST2SelectTest(unittest.TestCase):
           'Cond1.field_id = %s AND '
           'Cond1.int_value = %s', [1, val])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('Cond1.field_id IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessCustomFieldCond_StrType(self):
     fd = tracker_pb2.FieldDef(
@@ -555,9 +636,11 @@ class AST2SelectTest(unittest.TestCase):
           'Cond1.field_id = %s AND '
           'Cond1.str_value = %s', [1, val])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('Cond1.field_id IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessCustomFieldCond_UserType_ByID(self):
     fd = tracker_pb2.FieldDef(
@@ -573,9 +656,11 @@ class AST2SelectTest(unittest.TestCase):
           'Cond1.field_id = %s AND '
           'Cond1.user_id = %s', [1, val])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('Cond1.field_id IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessCustomFieldCond_UserType_ByEmail(self):
     fd = tracker_pb2.FieldDef(
@@ -592,9 +677,11 @@ class AST2SelectTest(unittest.TestCase):
           'Issue.shard = Cond1.issue_shard AND '
           'Cond1.field_id = %s', [1])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('Cond1.field_id IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessCustomFieldCond_DateType(self):
     fd = tracker_pb2.FieldDef(
@@ -610,9 +697,11 @@ class AST2SelectTest(unittest.TestCase):
           'Cond1.field_id = %s AND '
           'Cond1.date_value = %s', [1, val])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('Cond1.field_id IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessAttachmentCond_HasAttachment(self):
     fd = BUILTIN_ISSUE_FIELDS['attachment']
@@ -625,6 +714,7 @@ class AST2SelectTest(unittest.TestCase):
           'Issue.attachment_count != %s)',
           [0])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.IS_NOT_DEFINED, [fd], [], [])
     left_joins, where = ast2select._ProcessAttachmentCond(
@@ -635,6 +725,7 @@ class AST2SelectTest(unittest.TestCase):
           'Issue.attachment_count = %s)',
           [0])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testProcessAttachmentCond_TextHas(self):
     fd = BUILTIN_ISSUE_FIELDS['attachment']
@@ -646,9 +737,11 @@ class AST2SelectTest(unittest.TestCase):
           'Cond1.deleted = %s',
           [False])],
         left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('(Cond1.filename LIKE %s)', ['%jpg%'])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
   def testCompare_IntTypes(self):
     val_type = tracker_pb2.FieldTypes.INT_TYPE

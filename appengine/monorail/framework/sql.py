@@ -628,6 +628,7 @@ JOIN_RE_LIST = [
         r'^{table}{opt_alias} ON {tab_col} = {tab_col}'
         r'( AND {tab_col} = {tab_col})?'
         r'( AND {tab_col} = {placeholder})?'
+        r'( AND {tab_col} IN \({multi_placeholder}\))?'
         r'( AND {tab_col} IS NULL)?'
         r'( AND \({tab_col} IS NULL'
         r' OR {tab_col} NOT IN \({multi_placeholder}\)\))?$'),
