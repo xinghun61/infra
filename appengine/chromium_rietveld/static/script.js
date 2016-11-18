@@ -1686,6 +1686,9 @@ function M_switchQuotedText(cid, bid, lineno, side) {
  * @param {Event} evt The event object for this double-click event
  */
 function M_handleTableDblClick(evt) {
+  if (evt.metaKey) {
+    return;
+  }
   if (!logged_in) {
     if (!login_warned) {
       login_warned = true;
