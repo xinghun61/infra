@@ -322,6 +322,56 @@ def commit(
   subprocess.check_call(upload_cmd, cwd=target)
 
 
+def _configure_git_name_and_email(cwd):
+  try:
+    name = subprocess.check_output(['git', 'config', 'user.name'],
+                                   cwd=cwd).strip()
+  except subprocess.CalledProcessError:
+    name = ''
+  if not name:
+    print
+    print 'No default name configured in git. Hint: '
+    print '   $ git config --global user.name "My Name"'
+    name = raw_input('Please provide your name: ').strip()
+    if not name:
+      return False
+    subprocess.call(['git', 'config', '--local', 'user.name', name], cwd=cwd)
+
+  try:
+    email = subprocess.check_output(['git', 'config', 'user.email'],
+                                    cwd=cwd).strip()
+  except subprocess.CalledProcessError:
+    email = ''
+  if not email:
+    print
+    print 'No default email configured in git. Hint: '
+    print '   $ git config --global user.email my@email.com'
+  if not email.endswith('@google.com'):
+    print
+    print 'Master restart requires @google.com email.'
+    print 'Currently configured git user is "%s <%s>"' % (name, email)
+    prompt = 'Please provide username or full email in google.com domain'
+    if '@' in email:
+      default_email = email.split('@')[0] + '@google.com'
+      prompt += ' [%s]: ' % default_email
+    else:
+      default_email = None
+      prompt += ': '
+    s = raw_input(prompt).strip()
+    if '@' in s:
+      email = s
+    elif s:
+      email = s + '@google.com'
+    else:
+      email = default_email
+    if not email or not email.endswith('@google.com'):
+      print 'no email provided or not a @google.com email'
+      return False
+    subprocess.call(['git', 'config', '--local', 'user.email', email], cwd=cwd)
+  print
+  print 'Configured git to use "%s <%s>" as author.' % (name, email)
+  return True
+
 def run(masters, masters_regex, restart_time, rolling, reviewers, bug, force,
         no_commit, desired_state, reason):
   """Schedules a restart of each master in <masters> and <masters_regex>.
@@ -344,6 +394,9 @@ def run(masters, masters_regex, restart_time, rolling, reviewers, bug, force,
   # Step 1: Acquire a clean master state checkout.
   # This repo is too small to consider caching.
   with get_master_state_checkout() as master_state_dir:
+    # Step 1.5: make sure email of committer is @google.com.
+    if not _configure_git_name_and_email(master_state_dir):
+      return 0
 
     # Step 2: Modify the master state json file.
     master_state_json = os.path.join(
