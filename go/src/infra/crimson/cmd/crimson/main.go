@@ -520,9 +520,9 @@ func main() {
 		Title: "Crimson DB Command-line Interface",
 		Commands: []*subcommands.Command{
 			subcommands.CmdHelp,
-			authcli.SubcommandInfo(opts, "info"),
-			authcli.SubcommandLogin(opts, "login"),
-			authcli.SubcommandLogout(opts, "logout"),
+			authcli.SubcommandInfo(opts, "info", false),
+			authcli.SubcommandLogin(opts, "login", false),
+			authcli.SubcommandLogout(opts, "logout", false),
 			cmdCreateVlan,
 			cmdQueryVlan,
 			cmdDeleteVlan,

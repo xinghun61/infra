@@ -449,9 +449,9 @@ var application = &cli.Application{
 		cmdTail,
 
 		// Authentication related commands.
-		authcli.SubcommandInfo(authOptions, "whoami"),
-		authcli.SubcommandLogin(authOptions, "login"),
-		authcli.SubcommandLogout(authOptions, "logout"),
+		authcli.SubcommandInfo(authOptions, "whoami", false),
+		authcli.SubcommandLogin(authOptions, "login", false),
+		authcli.SubcommandLogout(authOptions, "logout", false),
 	},
 }
 
