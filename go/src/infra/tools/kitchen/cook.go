@@ -87,7 +87,13 @@ var cmdCook = &subcommands.Command{
 			"cache-dir",
 			"",
 			"Directory with caches. If not empty, slashes will be converted to OS-native separators, "+
-				"it will be made absolute and passed to recipe as cache_dir property.")
+				"it will be made absolute and passed to the recipe.")
+		fs.StringVar(
+			&c.TempDir,
+			"temp-dir",
+			"",
+			"Temporary directory. If not empty, slashes will be converted to OS-native separators, "+
+				"it will be made absolute and passed to the recipe.")
 
 		c.logdog.addFlags(fs)
 
@@ -116,6 +122,7 @@ type cookRun struct {
 	Timestamps           bool
 	PythonPaths          stringlistflag.Flag
 	CacheDir             string
+	TempDir              string
 
 	logdog cookLogDogParams
 }
@@ -263,6 +270,34 @@ func (c *cookRun) remoteRun(ctx context.Context, props map[string]interface{}) (
 	return 0, fmt.Errorf("failed to run recipe: %s", err)
 }
 
+// pathModuleProperties returns properties for the "recipe_engine/path" module.
+func (c *cookRun) pathModuleProperties() (map[string]string, error) {
+	prepare := func(p string) (string, error) {
+		p = filepath.FromSlash(p)
+		var err error
+		p, err = filepath.Abs(p)
+		if err != nil {
+			return "", fmt.Errorf("could not make cache dir absolute: %s", err)
+		}
+		return p, nil
+	}
+
+	props := map[string]string{}
+	if p, err := prepare(c.CacheDir); err != nil {
+		return nil, err
+	} else {
+		props["cache_dir"] = p
+	}
+
+	if p, err := prepare(c.TempDir); err != nil {
+		return nil, err
+	} else {
+		props["temp_dir"] = p
+	}
+
+	return props, nil
+}
+
 func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
 	ctx := cli.GetContext(a, c)
 
@@ -296,14 +331,12 @@ func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
 	if props == nil {
 		props = map[string]interface{}{}
 	}
-	if c.CacheDir != "" {
-		cacheDir := filepath.FromSlash(c.CacheDir)
-		cacheDir, err := filepath.Abs(cacheDir)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "could not make cache dir absolute: %s", err)
-			return 1
-		}
-		props["cache_dir"] = cacheDir
+	// Configure paths that the recipe will use.
+	if pathProps, err := c.pathModuleProperties(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	} else if len(pathProps) > 0 {
+		props["$recipe_engine/path"] = pathProps
 	}
 
 	// If we're not using LogDog, send out annotations.
