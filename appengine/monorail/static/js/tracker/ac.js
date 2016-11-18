@@ -778,7 +778,7 @@ function ac_checkCompletions() {
 }
 
 /**
- * maintains the the completion list GUI.
+ * maintains the completion list GUI.
  * @private
  */
 function ac_updateCompletionList(show) {

@@ -168,7 +168,7 @@ def _ParseOneFieldValue(cnxn, user_service, fd, val_str):
 
 
 def ParseFieldValues(cnxn, user_service, field_val_strs, config):
-  """Return a list of FieldValue PBs based on the the given dict of strings."""
+  """Return a list of FieldValue PBs based on the given dict of strings."""
   field_values = []
   for fd in config.field_defs:
     if fd.field_id not in field_val_strs:

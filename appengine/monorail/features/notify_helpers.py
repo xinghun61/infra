@@ -34,7 +34,7 @@ from tracker import tracker_bizobj
 MAX_EMAIL_BODY_SIZE = 40 * 1024
 
 # When sending change notification emails, choose the reply-to header and
-# footer message based on three levels of the the recipient's permissions
+# footer message based on three levels of the recipient's permissions
 # for that issue.
 REPLY_NOT_ALLOWED = 'REPLY_NOT_ALLOWED'
 REPLY_MAY_COMMENT = 'REPLY_MAY_COMMENT'

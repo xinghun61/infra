@@ -37,7 +37,7 @@ class ReindexQueueCron(jsonfeed.InternalTask):
   """JSON servlet that reindexes some issues each minute, as needed."""
 
   def HandleRequest(self, mr):
-    """Reindex issues that are listed in the the reindex table."""
+    """Reindex issues that are listed in the reindex table."""
     num_reindexed = self.services.issue.ReindexIssues(
         mr.cnxn, tracker_constants.MAX_ISSUES_TO_REINDEX_PER_MINUTE,
         self.services.user)

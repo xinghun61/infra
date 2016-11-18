@@ -44,7 +44,7 @@ class GridViewHelpersTest(unittest.TestCase):
         'modified': 'some function that is not called',
         }
 
-    # Verify that status headings are sorted according the the status
+    # Verify that status headings are sorted according to the status
     # values defined in the config.
     col_name = 'status'
     headings = ['Duplicate', 'Limbo', 'New', 'OnHold', 'Accepted', 'Fixed']
@@ -62,7 +62,7 @@ class GridViewHelpersTest(unittest.TestCase):
     self.assertEqual(sorted_headings,
                      [1, 2, 3, 4, 5])
 
-    # Verify that label value headings are sorted according the the labels
+    # Verify that label value headings are sorted according to the labels
     # values defined in the config.
     col_name = 'priority'
     headings = ['Medium', 'High', 'Low', 'dont-care']
