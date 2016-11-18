@@ -52,15 +52,19 @@ class FracasResultFeedback(BaseHandler):
         'version': analysis.crashed_version,
         'channel': analysis.channel,
         'platform': analysis.platform,
-        'regression_range': analysis.result.get('regression_range'),
+        'regression_range': analysis.result.get(
+            'regression_range') if analysis.result else None,
         'culprit_regression_range': analysis.culprit_regression_range,
         'historical_metadata': analysis.historical_metadata,
         'stack_trace': analysis.stack_trace,
-        'suspected_cls': analysis.result.get('suspected_cls'),
+        'suspected_cls': analysis.result.get(
+            'suspected_cls') if analysis.result else None ,
         'culprit_cls': analysis.culprit_cls,
-        'suspected_project': analysis.result.get('suspected_project'),
+        'suspected_project': analysis.result.get(
+            'suspected_project') if analysis.result else None,
         'culprit_project': analysis.culprit_project,
-        'suspected_components': analysis.result.get('suspected_components'),
+        'suspected_components': analysis.result.get(
+            'suspected_components') if analysis.result else None,
         'culprit_components': analysis.culprit_components,
         'request_time': time_util.FormatDatetime(analysis.requested_time),
         'analysis_completed': analysis.completed,

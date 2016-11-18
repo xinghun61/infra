@@ -57,7 +57,7 @@
     var culprit_cls = {{culprit_cls | tojson | safe}};
     var culprit_project = '{{culprit_project}}' == 'None' ? undefined : '{{culprit_project}}';
     var culprit_components = {{culprit_components | tojson | safe}};
-    
+
     var note = '{{note}}' == 'None' ? undefined : '{{note}}';
 
 
@@ -267,7 +267,7 @@
     {% if analysis_completed %}
       <br><br>
       {% if analysis_failed %}
-      <span class="error">No result because of some error in analysis!</span>
+      <span class="error">No result because of some error in analysis!<br></span>
       {% else %}
       <b> Suspected cls: </b>
         {% if suspected_cls %}

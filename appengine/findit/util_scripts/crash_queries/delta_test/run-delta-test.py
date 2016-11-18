@@ -35,21 +35,23 @@ CHROMIUM_REPO = 'https://chromium.googlesource.com/chromium/src'
 
 
 def RunDeltaTest():
-  """Runs delta testing between 2 different Findit versions."""
+  """Runs delta testing between two different Predator versions."""
   argparser = argparse.ArgumentParser(
-      description='Run delta test between 2 findit versions.')
+      description='Run delta test between two Predator revisions. Note, since '
+      'the delta test needs to switch on different revisions of predator repo, '
+      'please commit any local change before running delta test, and do not '
+      ' make any new changes while running the delta test.')
 
   argparser.add_argument(
       '--revisions',
       '-r',
       nargs='+',
       default=['HEAD^', 'HEAD'],
-      help=('2 findit revisions to be compared. It can take '
-            '1 or 2 revisions.\n'
-            '(1)-r rev1 rev2: compare rev1 and rev2\n'
-            '(2)-r rev: compare rev and current HEAD\n'
-            '(3)no revisions provided, default to compare '
-            'HEAD^ and HEAD'))
+      help=('The Predator revisions to be compared. It can take '
+            'one or two revisions seperated by empty spaces.\n'
+            '(1) -r rev1 rev2: compare rev1 and rev2\n'
+            '(2) -r rev: compare rev and current HEAD\n'
+            '(3) no revisions provided, default to compare HEAD^ and HEAD'))
 
   argparser.add_argument(
       '--client',
@@ -140,6 +142,8 @@ def RunDeltaTest():
       deltas, crash_num = pickle.load(f)
   else:
     print 'Running delta test...'
+    print ('WARNING: Please commit any local change before running delta test, '
+           'and do not make any new changes while running the delta test.')
     # Get delta of results between git_hash1 and git_hash2.
     deltas, crash_num = delta_test.DeltaEvaluator(
         git_hash1, git_hash2, args.client, args.app,

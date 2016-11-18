@@ -146,11 +146,9 @@ def GetResults(crashes, client_id, app_id, git_hash, result_path,
   if not crashes:
     return {}
 
-  if verbose:
-    print '***************************'
-    print 'Switching to git %s' % git_hash
-    print '***************************\n\n'
-
+  print '***************************'
+  print 'Switching to git %s' % git_hash
+  print '***************************'
   with open(os.devnull, 'w') as null_handle:
     subprocess.check_call(
         'cd %s; git checkout %s' % (DELTA_TEST_DIRECTORY, git_hash),
