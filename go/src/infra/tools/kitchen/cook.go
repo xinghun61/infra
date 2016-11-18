@@ -272,27 +272,21 @@ func (c *cookRun) remoteRun(ctx context.Context, props map[string]interface{}) (
 
 // pathModuleProperties returns properties for the "recipe_engine/path" module.
 func (c *cookRun) pathModuleProperties() (map[string]string, error) {
-	prepare := func(p string) (string, error) {
-		p = filepath.FromSlash(p)
-		var err error
-		p, err = filepath.Abs(p)
-		if err != nil {
-			return "", fmt.Errorf("could not make cache dir absolute: %s", err)
+	paths := []struct{ name, path string }{
+		{"cache_dir", c.CacheDir},
+		{"temp_dir", c.TempDir},
+	}
+	props := make(map[string]string, len(paths))
+	for _, p := range paths {
+		if p.path == "" {
+			continue
 		}
-		return p, nil
-	}
-
-	props := map[string]string{}
-	if p, err := prepare(c.CacheDir); err != nil {
-		return nil, err
-	} else {
-		props["cache_dir"] = p
-	}
-
-	if p, err := prepare(c.TempDir); err != nil {
-		return nil, err
-	} else {
-		props["temp_dir"] = p
+		native := filepath.FromSlash(p.path)
+		abs, err := filepath.Abs(native)
+		if err != nil {
+			return nil, fmt.Errorf("could not make dir %q absolute: %s", native, err)
+		}
+		props[p.name] = abs
 	}
 
 	return props, nil
