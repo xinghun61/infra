@@ -1,38 +1,29 @@
 {
   "tryserver.blink": {
     "builders": {
-      "linux_precise_blink_compile_dbg": {
+      "linux_trusty_blink_compile_dbg": {
         "analyze_mode": "compile", 
         "bot_ids": [
           {
-            "buildername": "WebKit Linux (dbg)", 
+            "buildername": "WebKit Linux Trusty (dbg)", 
             "mastername": "chromium.webkit"
           }
         ]
       }, 
-      "linux_precise_blink_compile_rel": {
+      "linux_trusty_blink_compile_rel": {
         "analyze_mode": "compile", 
         "bot_ids": [
           {
-            "buildername": "WebKit Linux", 
+            "buildername": "WebKit Linux Trusty", 
             "mastername": "chromium.webkit"
           }
         ]
       }, 
-      "linux_precise_blink_dbg": {
+      "linux_trusty_blink_dbg": {
         "analyze_mode": null, 
         "bot_ids": [
           {
-            "buildername": "WebKit Linux (dbg)", 
-            "mastername": "chromium.webkit"
-          }
-        ]
-      }, 
-      "linux_precise_blink_rel": {
-        "analyze_mode": null, 
-        "bot_ids": [
-          {
-            "buildername": "WebKit Linux", 
+            "buildername": "WebKit Linux Trusty (dbg)", 
             "mastername": "chromium.webkit"
           }
         ]
