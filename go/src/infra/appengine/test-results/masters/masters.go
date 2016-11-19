@@ -47,6 +47,16 @@ var Known = []*Master{
 		Groups:     []string{"@ToT Chromium"},
 	},
 	{
+		Name:       "ChromiumMemory",
+		Identifier: "chromium.memory",
+		Groups:     []string{},
+	},
+	{
+		Name:       "ChromiumMemoryFull",
+		Identifier: "chromium.memory.full",
+		Groups:     []string{},
+	},
+	{
 		Name:       "chromium.swarm",
 		Identifier: "chromium.swarm",
 		Groups:     []string{"ThisIsUnused"},
@@ -70,6 +80,16 @@ var Known = []*Master{
 		Name:       "V8",
 		Identifier: "client.v8",
 		Groups:     []string{"@ToT V8"},
+	},
+	{
+		Name:       "V8FYI",
+		Identifier: "client.v8.fyi",
+		Groups:     []string{},
+	},
+	{
+		Name:       "V8TryServer",
+		Identifier: "tryserver.v8",
+		Groups:     []string{},
 	},
 	{
 		Name:       "WebRTC",
