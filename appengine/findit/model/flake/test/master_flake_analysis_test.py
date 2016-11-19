@@ -137,3 +137,20 @@ class MasterFlakeAnalysisTest(unittest.TestCase):
       analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
       analysis.algorithm_parameters = algorithm_parameters
       self.assertEqual(expected_rerun, analysis.iterations_to_rerun)
+
+  def testGetBuildConfigurationFromKey(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+
+    key = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number, step_name, test_name).key
+
+    self.assertEqual(
+        (None, None),
+        MasterFlakeAnalysis.GetBuildConfigurationFromKey(None))
+    self.assertEqual(
+        (master_name, builder_name),
+        MasterFlakeAnalysis.GetBuildConfigurationFromKey(key))

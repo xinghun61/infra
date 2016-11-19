@@ -11,8 +11,8 @@ from model import result_status
 from model import triage_status
 from model.base_analysis import BaseAnalysis
 from model.base_build_model import BaseBuildModel
-from model.flake.flake_swarming_task import FlakeSwarmingTaskData
 from model.base_triaged_model import TriagedModel
+from model.flake.flake_swarming_task import FlakeSwarmingTaskData
 
 
 class DataPoint(ndb.Model):
@@ -50,6 +50,17 @@ class MasterFlakeAnalysis(
     encoded_test_name = base64.urlsafe_b64encode(test_name)
     return '%s/%s/%s/%s/%s' % (
         master_name, builder_name, build_number, step_name, encoded_test_name)
+
+  @staticmethod
+  def GetBuildConfigurationFromKey(master_flake_analysis_key):
+    """Extracts master_name and builder_name from key."""
+    if not master_flake_analysis_key:
+      return None, None
+
+    components = master_flake_analysis_key.pairs()[0][1].split('/')
+    master_name = components[0]
+    builder_name = components[1]
+    return master_name, builder_name
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod

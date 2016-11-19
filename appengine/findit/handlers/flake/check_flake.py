@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
@@ -101,7 +103,7 @@ class CheckFlake(BaseHandler):
           request, user_email, is_admin, triggering_sources.FINDIT_UI)
 
       analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
+          master_name, builder_name, build_number, step_name, test_name)
 
       if not analysis:
         if scheduled is None:
@@ -122,9 +124,7 @@ class CheckFlake(BaseHandler):
         # the results from that analysis.
         request = FlakeAnalysisRequest.GetVersion(key=test_name)
 
-        if request and request.analyses:
-          analysis = request.analyses[-1].get()
-        else:
+        if not request:
           return {
               'template': 'error.html',
               'data': {
@@ -134,6 +134,19 @@ class CheckFlake(BaseHandler):
                       'swarmed.'),
               },
               'return_code': 400,
+          }
+
+        analysis = request.FindMatchingAnalysisForConfiguration(
+            master_name, builder_name)
+
+        if not analysis:  # pragma: no cover
+          logging.error('Flake analysis was deleted unexpectedly!')
+          return {
+              'template': 'error.html',
+              'data': {
+                  'error_message': 'Flake analysis was deleted unexpectedly!',
+              },
+              'return_code': 400
           }
 
     suspected_flake = _GetSuspectedFlakeAnalysisAndTriageResult(analysis)

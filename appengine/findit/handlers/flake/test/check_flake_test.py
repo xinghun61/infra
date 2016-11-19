@@ -15,6 +15,7 @@ from handlers.flake import check_flake
 from handlers.flake.check_flake import CheckFlake
 from model import analysis_status
 from model.analysis_status import STATUS_TO_DESCRIPTION
+from model.flake.flake_analysis_request import BuildStep
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
@@ -166,8 +167,13 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     previous_analysis.Save()
 
     previous_request = FlakeAnalysisRequest.Create(test_name, False, None)
-    previous_request.AddBuildStep(
+    build_step = BuildStep.Create(
         master_name, builder_name, build_number, step_name, None)
+    build_step.wf_master_name = build_step.master_name
+    build_step.wf_builder_name = build_step.builder_name
+    build_step.wf_build_number = build_step.build_number
+    build_step.wf_step_name = build_step.step_name
+    previous_request.build_steps.append(build_step)
     previous_request.analyses.append(previous_analysis.key)
     previous_request.Save()
 
@@ -218,7 +224,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name, None)
     previous_request.swarmed = False
     previous_request.supported = False
-    previous_request.Save()
 
     self.assertRaisesRegexp(
         webtest.app.AppError,

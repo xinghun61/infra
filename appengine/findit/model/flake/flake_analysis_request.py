@@ -138,3 +138,30 @@ class FlakeAnalysisRequest(VersionedModel):
   def on_cq(self):
     """Returns True if the flake is on Commit Queue."""
     return any(step.on_cq for step in self.build_steps)
+
+  def _GetNormalizedConfigurationNames(self, master_name, builder_name):
+    for build_step in self.build_steps:
+      if ((build_step.master_name == master_name and
+           build_step.builder_name == builder_name) or
+          (build_step.wf_master_name == master_name and
+           build_step.wf_builder_name == builder_name)):
+        return build_step.wf_master_name, build_step.wf_builder_name
+    return None, None
+
+  def FindMatchingAnalysisForConfiguration(self, master_name, builder_name):
+    # Returns the analysis that corresponds to the requested master and builder.
+    normalized_master_name, normalized_builder_name = (
+        self._GetNormalizedConfigurationNames(master_name, builder_name))
+
+    if not normalized_master_name or not normalized_builder_name:
+      return None
+
+    for analysis_key in self.analyses:
+      analysis_master_name, analysis_builder_name = (
+          MasterFlakeAnalysis.GetBuildConfigurationFromKey(analysis_key))
+
+      if (analysis_master_name == normalized_master_name and
+          analysis_builder_name == normalized_builder_name):
+        return analysis_key.get()
+
+    return None

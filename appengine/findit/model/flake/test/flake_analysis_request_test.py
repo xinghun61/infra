@@ -3,9 +3,9 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import mock
 
 from common.findit_testcase import FinditTestCase
-from model import analysis_status
 from model.flake.flake_analysis_request import BuildStep
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
@@ -76,3 +76,61 @@ class FlakeAnalysisRequestTest(FinditTestCase):
     request.AddBuildStep(
         'chromium.linux', 'b1', 1, 's', datetime(2016, 11, 14))
     self.assertFalse(request.on_cq)
+
+  def testGetNormalizedConfigurationNames(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    reported_time = datetime(2016, 11, 16)
+    request = FlakeAnalysisRequest.Create(test_name, False, 123)
+    build_step = BuildStep.Create(
+        master_name, builder_name, build_number, step_name, reported_time)
+    build_step.wf_master_name = master_name
+    build_step.wf_builder_name = builder_name
+    build_step.wf_build_number = build_number
+    build_step.wf_step_name = step_name
+    request.build_steps.append(build_step)
+    self.assertEqual((None, None), request._GetNormalizedConfigurationNames(
+        'm2', 'b2'))
+    self.assertEqual(
+        (master_name, builder_name),
+        request._GetNormalizedConfigurationNames(master_name, builder_name))
+
+  @mock.patch.object(FlakeAnalysisRequest, '_GetNormalizedConfigurationNames',
+                     return_value=(None, None))
+  def testFindMatchingAnalysisNoMatchingConfiguration(self, _):
+    request = FlakeAnalysisRequest.Create('test', False, 123)
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 'test')
+    analysis.Save()
+    request.analyses.append(analysis.key)
+    request.Save()
+
+    self.assertIsNone(
+        request.FindMatchingAnalysisForConfiguration('m', 'b'))
+
+  @mock.patch.object(FlakeAnalysisRequest, '_GetNormalizedConfigurationNames',
+                     return_value=('m1', 'b1'))
+  def testFindMatchingAnalysisForWrongConfiguration(self, _):
+    request = FlakeAnalysisRequest.Create('test', False, 123)
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 'test')
+    analysis.Save()
+    request.analyses.append(analysis.key)
+    request.Save()
+
+    self.assertIsNone(
+        request.FindMatchingAnalysisForConfiguration('m', 'b'))
+
+  @mock.patch.object(FlakeAnalysisRequest, '_GetNormalizedConfigurationNames',
+                     return_value=('m', 'b'))
+  def testFindMatchingAnalysisForConfiguration(self, _):
+    request = FlakeAnalysisRequest.Create('test', False, 123)
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 'test')
+    analysis.Save()
+    request.analyses.append(analysis.key)
+    request.Save()
+
+    self.assertEqual(
+        analysis,
+        request.FindMatchingAnalysisForConfiguration('m', 'b'))
