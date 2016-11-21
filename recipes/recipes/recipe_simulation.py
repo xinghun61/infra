@@ -32,7 +32,7 @@ def RunSteps(api, project_under_test, auth_with_account):
     api.luci_config.c.auth_token = api.service_account.get_token(
         auth_with_account)
 
-  root_dir = api.path['slave_build']
+  root_dir = api.path['start_dir']
   cache_dir = root_dir.join('_cache_dir')
 
   c = api.gclient.make_config(CACHE_DIR=cache_dir)

@@ -26,7 +26,7 @@
       "git",
       "cache",
       "populate",
-      "--cache-dir=[GIT_CACHE]",
+      "--cache-dir=[CACHE]/git",
       "--ignore-locks",
       "https://chromium.googlesource.com/chromium/src"
     ],
@@ -38,7 +38,7 @@
       "git",
       "cache",
       "exists",
-      "--cache-dir=[GIT_CACHE]",
+      "--cache-dir=[CACHE]/git",
       "--quiet",
       "https://chromium.googlesource.com/chromium/src"
     ],

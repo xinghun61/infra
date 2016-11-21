@@ -24,12 +24,12 @@ def RunSteps(api):
   api.gclient.runhooks()
 
   api.python('master manager configuration test',
-             api.path['slave_build'].join('infra', 'run.py'),
+             api.path['start_dir'].join('infra', 'run.py'),
              ['infra.services.master_manager_launcher',
               '--verify',
               '--ts-mon-endpoint=none',
               '--json-file',
-             api.path['slave_build'].join(
+             api.path['start_dir'].join(
                  'infra-data-master-manager',
                  'desired_master_state.json')])
 

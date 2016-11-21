@@ -26,7 +26,7 @@
       "python",
       "-u",
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
-      "[SLAVE_BUILD]\\conda_staging_dir"
+      "[START_DIR]\\conda_staging_dir"
     ],
     "name": "rmtree cleaning staging dir",
     "~followup_annotations": [
@@ -60,7 +60,7 @@
       "/AddToPath=0",
       "/RegisterPython=0",
       "/S",
-      "/D=[SLAVE_BUILD]\\conda_staging_dir"
+      "/D=[START_DIR]\\conda_staging_dir"
     ],
     "env": {
       "PYTHONPATH": ""
@@ -88,7 +88,7 @@
   },
   {
     "cmd": [
-      "[SLAVE_BUILD]\\conda_staging_dir\\Scripts\\conda.exe",
+      "[START_DIR]\\conda_staging_dir\\Scripts\\conda.exe",
       "install",
       "matplotlib",
       "--yes"
@@ -100,7 +100,7 @@
   },
   {
     "cmd": [
-      "[SLAVE_BUILD]\\conda_staging_dir\\Scripts\\conda.exe",
+      "[START_DIR]\\conda_staging_dir\\Scripts\\conda.exe",
       "install",
       "numpy",
       "--yes"
@@ -112,7 +112,7 @@
   },
   {
     "cmd": [
-      "[SLAVE_BUILD]\\conda_staging_dir\\Scripts\\conda.exe",
+      "[START_DIR]\\conda_staging_dir\\Scripts\\conda.exe",
       "install",
       "scipy",
       "--yes"
@@ -124,7 +124,7 @@
   },
   {
     "cmd": [
-      "[SLAVE_BUILD]\\conda_staging_dir\\Scripts\\conda.exe",
+      "[START_DIR]\\conda_staging_dir\\Scripts\\conda.exe",
       "clean",
       "--tarballs",
       "--index-cache",
@@ -141,7 +141,7 @@
       "python",
       "-u",
       "RECIPE_MODULE[build::conda]\\resources\\butcher_conda.py",
-      "[SLAVE_BUILD]\\conda_staging_dir"
+      "[START_DIR]\\conda_staging_dir"
     ],
     "name": "make conda env location independent"
   },
@@ -150,11 +150,11 @@
       "[START_DIR]\\cipd\\cipd",
       "pkg-build",
       "--in",
-      "[SLAVE_BUILD]\\conda_staging_dir",
+      "[START_DIR]\\conda_staging_dir",
       "--name",
       "infra/conda_python/scientific/windows-amd64",
       "--out",
-      "[SLAVE_BUILD]\\conda_python.cipd",
+      "[START_DIR]\\conda_python.cipd",
       "--json-output",
       "/path/to/tmp/json",
       "--install-mode",
@@ -175,7 +175,7 @@
     "cmd": [
       "[START_DIR]\\cipd\\cipd",
       "pkg-register",
-      "[SLAVE_BUILD]\\conda_python.cipd",
+      "[START_DIR]\\conda_python.cipd",
       "--json-output",
       "/path/to/tmp/json",
       "--service-account-json",
@@ -203,7 +203,7 @@
       "python",
       "-u",
       "\nimport os\nimport sys\nos.remove(sys.argv[1])\n",
-      "[SLAVE_BUILD]\\conda_python.cipd"
+      "[START_DIR]\\conda_python.cipd"
     ],
     "name": "remove *.cipd file",
     "~followup_annotations": [
@@ -219,7 +219,7 @@
       "python",
       "-u",
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
-      "[SLAVE_BUILD]\\conda_staging_dir"
+      "[START_DIR]\\conda_staging_dir"
     ],
     "name": "rmtree removing conda",
     "~followup_annotations": [

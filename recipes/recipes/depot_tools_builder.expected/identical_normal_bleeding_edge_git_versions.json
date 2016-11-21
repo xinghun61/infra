@@ -8,7 +8,7 @@
       "python",
       "-u",
       "\nimport os, sys\nfrom common import chromium_utils # Error? See https://crbug.com/584783.\n\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
-      "[SLAVE_BUILD]/depot_tools"
+      "[START_DIR]/depot_tools"
     ],
     "name": "clean workspace.rmtree rm depot_tools",
     "~followup_annotations": [
@@ -28,7 +28,7 @@
       "python",
       "-u",
       "\nimport os\nimport sys\nos.remove(sys.argv[1])\n",
-      "[SLAVE_BUILD]/depot_tools.zip"
+      "[START_DIR]/depot_tools.zip"
     ],
     "name": "clean workspace.rm depot_tools.zip",
     "~followup_annotations": [
@@ -43,7 +43,7 @@
   {
     "cmd": [
       "mkdir",
-      "[SLAVE_BUILD]/depot_tools"
+      "[START_DIR]/depot_tools"
     ],
     "name": "clean workspace.mk depot_tools",
     "~followup_annotations": [
@@ -61,9 +61,9 @@
       "--single-branch",
       "-n",
       "https://chromium.googlesource.com/chromium/tools/depot_tools.git",
-      "[SLAVE_BUILD]/depot_tools"
+      "[START_DIR]/depot_tools"
     ],
-    "cwd": "[SLAVE_BUILD]/depot_tools",
+    "cwd": "[START_DIR]/depot_tools",
     "name": "clone + checkout.git clone",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
@@ -77,7 +77,7 @@
       "core.autocrlf",
       "false"
     ],
-    "cwd": "[SLAVE_BUILD]/depot_tools",
+    "cwd": "[START_DIR]/depot_tools",
     "name": "clone + checkout.set autocrlf",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -90,7 +90,7 @@
       "core.filemode",
       "false"
     ],
-    "cwd": "[SLAVE_BUILD]/depot_tools",
+    "cwd": "[START_DIR]/depot_tools",
     "name": "clone + checkout.set filemode",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -103,7 +103,7 @@
       "core.symlinks",
       "false"
     ],
-    "cwd": "[SLAVE_BUILD]/depot_tools",
+    "cwd": "[START_DIR]/depot_tools",
     "name": "clone + checkout.set symlinks",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -115,7 +115,7 @@
       "checkout",
       "origin/master"
     ],
-    "cwd": "[SLAVE_BUILD]/depot_tools",
+    "cwd": "[START_DIR]/depot_tools",
     "name": "clone + checkout.git checkout",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -128,7 +128,7 @@
       "--hard",
       "deadbeef"
     ],
-    "cwd": "[SLAVE_BUILD]/depot_tools",
+    "cwd": "[START_DIR]/depot_tools",
     "name": "clone + checkout.git reset",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -141,7 +141,7 @@
       "expire",
       "--all"
     ],
-    "cwd": "[SLAVE_BUILD]/depot_tools",
+    "cwd": "[START_DIR]/depot_tools",
     "name": "clone + checkout.git reflog",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -154,7 +154,7 @@
       "--aggressive",
       "--prune=all"
     ],
-    "cwd": "[SLAVE_BUILD]/depot_tools",
+    "cwd": "[START_DIR]/depot_tools",
     "name": "clone + checkout.git gc",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -167,7 +167,7 @@
       "RECIPE_MODULE[build::zip]/resources/zip.py"
     ],
     "name": "zip it up",
-    "stdin": "{\"entries\": [{\"path\": \"[SLAVE_BUILD]/depot_tools\", \"type\": \"dir\"}], \"output\": \"[SLAVE_BUILD]/depot_tools.zip\", \"root\": \"[SLAVE_BUILD]/depot_tools\"}"
+    "stdin": "{\"entries\": [{\"path\": \"[START_DIR]/depot_tools\", \"type\": \"dir\"}], \"output\": \"[START_DIR]/depot_tools.zip\", \"root\": \"[START_DIR]/depot_tools\"}"
   },
   {
     "cmd": [
@@ -180,7 +180,7 @@
       "cp",
       "-a",
       "public-read",
-      "[SLAVE_BUILD]/depot_tools.zip",
+      "[START_DIR]/depot_tools.zip",
       "gs://chrome-infra/depot_tools.zip"
     ],
     "name": "gsutil upload",
@@ -202,7 +202,7 @@
       "html",
       "-a",
       "public-read",
-      "[SLAVE_BUILD]/depot_tools/man/html",
+      "[START_DIR]/depot_tools/man/html",
       "gs://chrome-infra-docs/flat/depot_tools/docs/"
     ],
     "name": "gsutil upload docs"
@@ -234,7 +234,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "[SLAVE_BUILD]/depot_tools/bootstrap/win/git_version.txt",
+      "[START_DIR]/depot_tools/bootstrap/win/git_version.txt",
       "/path/to/tmp/"
     ],
     "name": "read git version",
@@ -247,7 +247,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "[SLAVE_BUILD]/depot_tools/bootstrap/win/git_version_bleeding_edge.txt",
+      "[START_DIR]/depot_tools/bootstrap/win/git_version_bleeding_edge.txt",
       "/path/to/tmp/"
     ],
     "name": "read git version (bleeding_edge)",

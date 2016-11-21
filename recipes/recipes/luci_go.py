@@ -24,7 +24,7 @@ def _run_presubmit(api, patch_root, bot_update_step):
   presubmit_cmd = [
     'python',  # env.py will replace with this its sys.executable.
     api.presubmit.presubmit_support_path,
-    '--root', api.path['slave_build'].join(patch_root),
+    '--root', api.path['start_dir'].join(patch_root),
     '--commit',
     '--verbose', '--verbose',
     '--issue', api.properties['issue'],
@@ -46,7 +46,7 @@ def _commit_change(api, patch_root):
           '-c', 'user.name=The Commit Bot',
           'commit', '-a', '-m', 'Committed patch',
           name='commit git patch',
-          cwd=api.path['slave_build'].join(patch_root))
+          cwd=api.path['start_dir'].join(patch_root))
 
 
 def RunSteps(api):

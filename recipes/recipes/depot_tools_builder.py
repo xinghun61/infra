@@ -31,8 +31,8 @@ PROPERTIES = {
 
 def RunSteps(api, revision):
   # prepare the output dir and zip paths
-  api.path['checkout'] = api.path['slave_build'].join('depot_tools')
-  zip_out = api.path['slave_build'].join('depot_tools.zip')
+  api.path['checkout'] = api.path['start_dir'].join('depot_tools')
+  zip_out = api.path['start_dir'].join('depot_tools.zip')
 
   with api.step.nest('clean workspace'):
     api.file.rmtree('rm depot_tools', api.path['checkout'])

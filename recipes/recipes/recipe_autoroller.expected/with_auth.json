@@ -96,7 +96,7 @@
       "cache",
       "populate",
       "-c",
-      "[GIT_CACHE]",
+      "[CACHE]/git",
       "https://repo.repo/build"
     ],
     "cwd": "[CACHE]/recipe_autoroller/build",
@@ -115,7 +115,7 @@
       "exists",
       "--quiet",
       "--cache-dir",
-      "[GIT_CACHE]",
+      "[CACHE]/git",
       "https://repo.repo/build"
     ],
     "cwd": "[CACHE]/recipe_autoroller/build",

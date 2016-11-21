@@ -64,7 +64,7 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
     self.m.path['checkout'] = checkout_dir
 
     # Populate the git cache, get the path to the mirror.
-    git_cache = self.m.path['git_cache']
+    git_cache = self.m.infra_paths.default_git_cache_dir
     self.m.git(
         'cache', 'populate', '--cache-dir=%s' % git_cache, '--ignore-locks',
         source)

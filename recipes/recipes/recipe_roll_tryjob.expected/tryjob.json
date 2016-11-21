@@ -68,7 +68,7 @@
       "python",
       "-u",
       "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
-      "[SLAVE_BUILD]/build",
+      "[START_DIR]/build",
       "511"
     ],
     "name": "makedirs build directory",
@@ -91,13 +91,13 @@
       "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec",
-      "cache_dir = '[SLAVE_BUILD]/__cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://repo.repo/build'}]",
+      "cache_dir = '[START_DIR]/__cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://repo.repo/build'}]",
       "--patch_root",
       "build",
       "--revision_mapping_file",
       "{}",
       "--git-cache-dir",
-      "[SLAVE_BUILD]/__cache_dir",
+      "[START_DIR]/__cache_dir",
       "--issue",
       "12345678",
       "--patchset",
@@ -110,7 +110,7 @@
       "build@HEAD",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]/build",
+    "cwd": "[START_DIR]/build",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -137,7 +137,7 @@
       "python",
       "-u",
       "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
-      "[SLAVE_BUILD]/recipe_engine",
+      "[START_DIR]/recipe_engine",
       "511"
     ],
     "name": "makedirs recipe_engine directory",
@@ -160,13 +160,13 @@
       "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec",
-      "cache_dir = '[SLAVE_BUILD]/__cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'recipe_engine', 'url': 'https://repo.repo/recipe_engine'}]",
+      "cache_dir = '[START_DIR]/__cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'recipe_engine', 'url': 'https://repo.repo/recipe_engine'}]",
       "--patch_root",
       "recipe_engine",
       "--revision_mapping_file",
       "{}",
       "--git-cache-dir",
-      "[SLAVE_BUILD]/__cache_dir",
+      "[START_DIR]/__cache_dir",
       "--rietveld_server",
       "https://fake.code.review",
       "--output_json",
@@ -175,7 +175,7 @@
       "recipe_engine@HEAD",
       "--output_manifest"
     ],
-    "cwd": "[SLAVE_BUILD]/recipe_engine",
+    "cwd": "[START_DIR]/recipe_engine",
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -201,12 +201,12 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/build/build/recipes.py",
+      "[START_DIR]/build/build/recipes.py",
       "--use-bootstrap",
       "-O",
-      "recipe_engine=[SLAVE_BUILD]/recipe_engine/recipe_engine",
+      "recipe_engine=[START_DIR]/recipe_engine/recipe_engine",
       "--package",
-      "[SLAVE_BUILD]/build/build/infra/config/recipes.cfg",
+      "[START_DIR]/build/build/infra/config/recipes.cfg",
       "simulation_test"
     ],
     "name": "build tests",

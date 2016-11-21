@@ -73,7 +73,7 @@
       "-m",
       "Committed patch"
     ],
-    "cwd": "[SLAVE_BUILD]/infra/go/src/github.com/luci/gae",
+    "cwd": "[START_DIR]/infra/go/src/github.com/luci/gae",
     "name": "commit git patch"
   },
   {
@@ -107,7 +107,7 @@
       "python",
       "RECIPE_PACKAGE_REPO[depot_tools]/presubmit_support.py",
       "--root",
-      "[SLAVE_BUILD]/infra/go/src/github.com/luci/gae",
+      "[START_DIR]/infra/go/src/github.com/luci/gae",
       "--commit",
       "--verbose",
       "--verbose",
