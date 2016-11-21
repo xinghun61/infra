@@ -1317,7 +1317,7 @@ func TestStepFailureAlerts(t *testing.T) {
 			test := test
 			Convey(test.name, func() {
 				mc.TestResultsValue = &test.testResults
-				alerts, err := a.stepFailureAlerts("tree", test.failures)
+				alerts, err := a.stepFailureAlerts("tree", test.failures, []*messages.FinditResult{})
 				So(alerts, ShouldResemble, test.alerts)
 				So(err, ShouldResemble, test.err)
 			})

@@ -555,7 +555,8 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 	stepAlertsByKey := map[string][]messages.Alert{}
 
 	importantFailures, err := a.findImportantFailures(master, builderName, recentBuildIDs)
-	importantAlerts, err := a.stepFailureAlerts(tree, importantFailures)
+
+	importantAlerts, err := a.stepFailureAlerts(tree, importantFailures, []*messages.FinditResult{})
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -571,18 +572,18 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 		return nil, errs
 	}
 
-	// Get findit results
+	// Get findit results for latestBuild.
 	stepNames := make([]string, len(importantFailures))
 	for i, f := range importantFailures {
 		stepNames[i] = f.Step.Name
 	}
-
+	latestBuild := recentBuildIDs[0]
 	// NOTE: we only use the most recent build ID now, because currently the only
 	// time we would need to check multiple builds is for official builds, which
 	// right now are internal and not supported by findit.
-	finditResults, err := a.Reader.Findit(master, builderName, recentBuildIDs[0], stepNames)
+	finditResults, err := a.Reader.Findit(master, builderName, latestBuild, stepNames)
 	if err != nil {
-		return nil, []error{fmt.Errorf("while getting findit results: %s", err)}
+		errLog.Printf("while getting findit results for build: %s", err)
 	}
 
 	for _, buildNum := range recentBuildIDs {
@@ -595,7 +596,19 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 			break
 		}
 
-		as, err := a.stepFailureAlerts(tree, failures)
+		fResults := []*messages.FinditResult{}
+		if buildNum == latestBuild {
+			fResults = finditResults
+		} else {
+			// Get findit results for other build.
+			f, err := a.Reader.Findit(master, builderName, buildNum, []string{})
+			if err != nil {
+				errLog.Printf("while getting findit results for build: %s", err)
+			} else {
+				fResults = f
+			}
+		}
+		as, err := a.stepFailureAlerts(tree, failures, fResults)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -761,7 +774,7 @@ func (a *Analyzer) stepFailures(master *messages.MasterLocation, builderName str
 
 // stepFailureAlerts returns alerts generated from step failures. It applies filtering
 // logic specified in the gatekeeper config to ignore some failures.
-func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep) ([]messages.Alert, error) {
+func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep, finditResults []*messages.FinditResult) ([]messages.Alert, error) {
 	filteredFailures := []*messages.BuildStep{}
 
 	for _, failure := range failures {
@@ -845,32 +858,32 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 				Severity:  messages.NewFailure,
 			}
 
-			// Read Findit results and add information to the revisions that Findit suspects.
 			regRanges := a.regrangeFinder(f.Build)
+			// Read Findit results and add information to the revisions that Findit suspects.
+			if len(finditResults) != 0 {
+				finditSuspectedCLs := map[string][]*messages.SuspectCL{}
+				saveFinditResultInMap(finditResults, f.Step.Name, finditSuspectedCLs)
 
-			finditResults, _ := a.Reader.Findit(f.Master, f.Build.BuilderName, f.Build.Number, []string{})
-			finditSuspectedCLs := map[string][]*messages.SuspectCL{}
-			saveFinditResultInMap(finditResults, f.Step.Name, finditSuspectedCLs)
-
-			// Add Findit results to regression ranges.
-			// There are only the first and last revisions in regRange.Revisions,
-			// regRange.RevisionsWithResults will have more if Findit found some culprits within the range.
-			for _, regRange := range regRanges {
-				revisionsWithResults := []messages.RevisionWithFinditResult{}
-				repo := regRange.Repo
-				cls, ok := finditSuspectedCLs[repo]
-				if ok {
-					for _, cl := range cls {
-						revisionWithResult := messages.RevisionWithFinditResult{
-							Revision:         cl.Revision,
-							IsSuspect:        true,
-							AnalysisApproach: cl.AnalysisApproach,
-							Confidence:       cl.Confidence,
+				// Add Findit results to regression ranges.
+				// There are only the first and last revisions in regRange.Revisions,
+				// regRange.RevisionsWithResults will have more if Findit found some culprits within the range.
+				for _, regRange := range regRanges {
+					revisionsWithResults := []messages.RevisionWithFinditResult{}
+					repo := regRange.Repo
+					cls, ok := finditSuspectedCLs[repo]
+					if ok {
+						for _, cl := range cls {
+							revisionWithResult := messages.RevisionWithFinditResult{
+								Revision:         cl.Revision,
+								IsSuspect:        true,
+								AnalysisApproach: cl.AnalysisApproach,
+								Confidence:       cl.Confidence,
+							}
+							revisionsWithResults = append(revisionsWithResults, revisionWithResult)
 						}
-						revisionsWithResults = append(revisionsWithResults, revisionWithResult)
+						// Sort the results to display
+						regRange.RevisionsWithResults = revisionsWithResults
 					}
-					// Sort the results to display
-					regRange.RevisionsWithResults = revisionsWithResults
 				}
 			}
 
