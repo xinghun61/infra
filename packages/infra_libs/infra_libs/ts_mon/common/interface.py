@@ -115,8 +115,11 @@ def _generate_proto_new():
   """Generate MetricsPayload for global_monitor.send()."""
   proto = new_metrics_pb2.MetricsPayload()
 
-  collection_by_target = {}
-  data_set_by_name = {}
+  # Key: Target, value: MetricsCollection.
+  collections = {}
+
+  # Key: (Target, metric name) tuple, value: MetricsDataSet.
+  data_sets = {}
 
   count = 0
   for (target, metric, start_time, end_time, fields_values
@@ -125,21 +128,21 @@ def _generate_proto_new():
       if count >= METRICS_DATA_LENGTH_LIMIT:
         yield proto
         proto = new_metrics_pb2.MetricsPayload()
-        collection_by_target.clear()
-        data_set_by_name.clear()
+        collections.clear()
+        data_sets.clear()
         count = 0
 
-      if target not in collection_by_target:
-        collection_by_target[target] = proto.metrics_collection.add()
-        target._populate_target_pb_new(collection_by_target[target])
-      collection_pb = collection_by_target[target]
+      if target not in collections:
+        collections[target] = proto.metrics_collection.add()
+        target._populate_target_pb_new(collections[target])
+      collection = collections[target]
 
-      if metric.name not in data_set_by_name:
-        data_set_by_name[metric.name] = collection_pb.metrics_data_set.add()
-        metric._populate_data_set(data_set_by_name[metric.name], fields)
+      key = (target, metric.name)
+      if key not in data_sets:
+        data_sets[key] = collection.metrics_data_set.add()
+        metric._populate_data_set(data_sets[key], fields)
 
-      metric._populate_data(data_set_by_name[metric.name], start_time,
-                            end_time, fields, value)
+      metric._populate_data(data_sets[key], start_time, end_time, fields, value)
 
       count += 1
 

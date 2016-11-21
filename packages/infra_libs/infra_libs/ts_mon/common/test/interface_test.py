@@ -160,6 +160,43 @@ class GlobalsTest(unittest.TestCase):
     self.assertEquals(2, interface.state.global_monitor.send.call_count)
     self.assertListEqual([1000, 1], data_lengths)
 
+  def test_flush_different_target_fields(self):
+    interface.state.global_monitor = stubs.MockMonitor()
+    interface.state.target = targets.TaskTarget('s', 'j', 'r', 'h')
+    metric = metrics.GaugeMetric('m')
+
+    metric.set(123)
+    metric.set(456, target_fields={'service_name': 'foo'})
+    interface.flush()
+
+    interface.state.global_monitor.send.assert_called_once()
+    proto = interface.state.global_monitor.send.call_args[0][0]
+    self.assertEqual(2, len(proto.data))
+    self.assertEqual(123, proto.data[0].gauge)
+    self.assertEqual(456, proto.data[1].gauge)
+    self.assertEqual('s', proto.data[0].task.service_name)
+    self.assertEqual('foo', proto.data[1].task.service_name)
+
+  def test_flush_different_target_fields_new(self):
+    interface.state.metric_name_prefix = '/infra/test/'
+    interface.state.global_monitor = stubs.MockMonitor()
+    interface.state.target = targets.TaskTarget('s', 'j', 'r', 'h')
+    interface.state.use_new_proto = True
+    metric = metrics.GaugeMetric('m')
+
+    metric.set(123)
+    metric.set(456, target_fields={'service_name': 'foo'})
+    interface.flush()
+
+    interface.state.global_monitor.send.assert_called_once()
+    proto = interface.state.global_monitor.send.call_args[0][0]
+    col = proto.metrics_collection
+    self.assertEqual(2, len(col))
+    self.assertEqual(123, col[0].metrics_data_set[0].data[0].int64_value)
+    self.assertEqual(456, col[1].metrics_data_set[0].data[0].int64_value)
+    self.assertEqual('s', col[0].task.service_name)
+    self.assertEqual('foo', col[1].task.service_name)
+
   def test_send_modifies_metric_values(self):
     interface.state.global_monitor = stubs.MockMonitor()
     interface.state.target = stubs.MockTarget()

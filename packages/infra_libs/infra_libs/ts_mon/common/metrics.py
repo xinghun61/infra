@@ -551,8 +551,8 @@ class DistributionMetric(Metric):
       pb.linear_buckets.offset = 0.0
       pb.linear_buckets.num_finite_buckets = value.bucketer.num_finite_buckets
 
-    # Copy the distribution bucket values.  Only include the finite buckets, not
-    # the overflow buckets on each end.
+    # Copy the distribution bucket values.  Include the overflow buckets on
+    # either end.
     pb.bucket_count.extend(
         value.buckets.get(i, 0) for i in
         xrange(0, value.bucketer.total_buckets))
