@@ -21,6 +21,7 @@ from features import filterrules
 from features import userhotlists
 from features import inboundemail
 from features import notify
+from features import rerankhotlist
 from features import savedqueries
 from features import spammodel
 from features import stars
@@ -322,6 +323,7 @@ class ServletRegistry(object):
         urls.HOTLIST_ISSUES: hotlistissues.HotlistIssues,
         urls.HOTLIST_PEOPLE: hotlistpeople.HotlistPeopleList,
         urls.HOTLIST_DETAIL: hotlistdetails.HotlistDetails,
+        urls.HOTLIST_RERANK_JSON: rerankhotlist.RerankHotlistIssue,
         })
 
     profile_redir = registerpages_helpers.MakeRedirectInScope(

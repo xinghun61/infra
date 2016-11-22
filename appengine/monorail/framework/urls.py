@@ -74,6 +74,7 @@ HOTLISTS = '/hotlists'
 HOTLIST_ISSUES = ''
 HOTLIST_PEOPLE = '/people'
 HOTLIST_DETAIL = '/details'
+HOTLIST_RERANK_JSON = '/rerank'
 
 # URLs of issue tracker project pages
 ISSUE_LIST = '/issues/list'

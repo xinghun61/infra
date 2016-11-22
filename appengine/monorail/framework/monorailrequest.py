@@ -543,6 +543,9 @@ class MonorailRequest(object):
           webapp2.abort(404, 'invalid project')
 
   def _LookupHotlist(self, services, prof):
+    # TODO(jojwang): GetHotlist returns an exception if hotlist is not found.
+    # add try-except or use a different function to retrieve hotlists that
+    # does not return an exception.
     """Get information about the current hotlist (if any) from the request."""
     with prof.Phase('get current hotlist, if any'):
       if not self.hotlist_id:

@@ -73,6 +73,10 @@ def InitializeArtValues(services):
       'issue', max_size=settings.issue_cache_max_size)
 
 
+def InvalidateArtValuesKeys(cnxn, keys):
+  art_values_cache.InvalidateKeys(cnxn, keys)
+
+
 def SortArtifacts(
     mr, artifacts, config, accessors, username_cols=None, users_by_id=None,
     tie_breakers=None):

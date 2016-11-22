@@ -46,7 +46,7 @@
   [include "../tracker/issue-hovercard.ezt"] [# TODO(jojwang): no hovercard appears right now]
 
   <div id="cursorarea">
-  <table cellspacing="0" cellpadding="2" border="0" class="results striped" id="resultstable" width="100%">
+  <table cellspacing="0" cellpadding="2" border="0" class="results striped drag_container" id="resultstable" width="100%">
     [include "hotlist-issues-body.ezt"]
   </table>
   </div>

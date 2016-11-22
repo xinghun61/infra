@@ -83,7 +83,10 @@ class JsonFeed(servlet.Servlet):
 
   # pylint: disable=unused-argument
   # pylint: disable=arguments-differ
-  def get(self, project_name=None, viewed_username=None):
+  # Note: unused arguments necessary because they are specified in
+  # registerpages.py as an extra URL validation step even though we
+  # do our own URL parsing in monorailrequest.py
+  def get(self, project_name=None, viewed_username=None, hotlist_id=None):
     """Collect page-specific and generic info, then render the page.
 
     Args:
@@ -91,12 +94,14 @@ class JsonFeed(servlet.Servlet):
         but we also parse it out in our code.
       viewed_username: string user email parsed from the URL by webapp2,
         but we also parse it out in our code.
+      hotlist_id: string hotlist id parsed from the URL by webapp2,
+        but we also parse it out in our code.
     """
     self._DoRequestHandling(self.mr.request, self.mr)
 
   # pylint: disable=unused-argument
   # pylint: disable=arguments-differ
-  def post(self, project_name=None, viewed_username=None):
+  def post(self, project_name=None, viewed_username=None, hotlist_id=None):
     """Parse the request, check base perms, and call form-specific code."""
     self._DoRequestHandling(self.mr.request, self.mr)
 

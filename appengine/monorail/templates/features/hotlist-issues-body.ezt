@@ -58,7 +58,7 @@ runOnLoad(function(){
       "align": "[table_data.cells.align]",
       "noWrap": "[table_data.cells.NOWRAP]",
       "nonColLabels": [[]
-      [for table_data.cells.non_column_labels]e
+      [for table_data.cells.non_column_labels]
         {
         "value": "[format "js"][table_data.cells.non_column_labels.value][end]",
         "isDerived": "[table_data.cells.non_column_labels.is_derived]",
@@ -72,6 +72,7 @@ runOnLoad(function(){
     "idx": "[table_data.idx]",
     "projectName": "[table_data.project_name]",
     "localID": "[table_data.local_id]",
+    "issueID": "[table_data.issue_id]",
     "isStarred": "[table_data.starred]",
     "issueURL": "[table_data.issue_url]",
     }[if-index table_data last][else],[end]
@@ -84,9 +85,13 @@ runOnLoad(function(){
   "editorPerm": "[editor_permissions]",
   "isCrossProject": "[is_cross_project]",
   "readOnly": "[read_only]",
+  "allowRerank": "[allow_rerank]"
   };
 
   renderHotlistTable(tableData, pageSettings);
+  [if-any allow_rerank]
+  activateDragDrop(tableData, pageSettings, "[hotlist_id]");
+  [end]
 });
 </script>
 
