@@ -41,6 +41,15 @@
         text-decoration: none;
         color: #fff;
      }
+     .header {
+       color: #000;
+     }
+     .section {
+       padding-bottom: 1em;
+     }
+     div.section:last-of-type {
+       padding-bottom: 0;
+     }
      .infra-failure a {
        color: #fff;
      }
@@ -61,66 +70,88 @@
      }
     </style>
     <div>
-      <template is="dom-if" if="[[_haveBuilders(extension)]]">
-        <div id="builders">
-          Builders this step failed on:
-          <template is="dom-repeat" items="[[extension.builders]]" as="builder">
-            <span class$="[[_classForBuilder(builder)]]">
-              <a target="_blank" href$="[[_linkify(linkStyle, builder.url)]]" title$="Failing for the last [[_failureCount(builder)]] build(s): [[builder.first_failure]] - [[builder.latest_failure]].">
-                  [[builder.name]]
-                  [[_failureCount(builder)]]
-              </a>
-            </span>
-          </template>
-        </div>
-      </template>
-      <div id="reasons">
-        <div class="build-failures">
-          <ul>
-            <template is="dom-repeat" items="[[extension.reason.tests]]" as="test">
-              <li id="test_results">
-                <a target="_blank" href$=[[_linkForTest(extension.reason,test.test_name)]]>
-                  [[test.test_name]]
-                </a>
-                (
-                <a target="_blank" href$=[[_linkToCSForTest(test.test_name)]]>
-                  Code Search
-                </a>
-                )
-                <template is="dom-if" if="[[_hasSuspect(test)]]">
-                  <template is="dom-repeat" items="[[test.suspected_cls]]" as="testCL">
-                    <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
-                    <span class="suspect-cl-results">
-                       Findit (<a target="_blank" href="http://go/findit-manual">?</a>)
-                       [[_finditApproach(testCL)]]
-                      <a href$="https://chromium.googlesource.com/chromium/src/+/[[testCL.revision]]" target="_blank">
-                          [[_textForCL(testCL.revision)]]
-                      </a>
-                    </span>
-                  </template>
-                </template>
-                <template is="dom-if" if="[[_isFlaky(test)]]">
-                  <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
-                  <span class="suspect-cl-results">
-                    Findit
-                    (<a target="_blank" href="http://go/findit-manual">?</a>)
-                    results: Flaky
-                  </span>
-                </template>
-              </li>
-            </template>
-          </ul>
-        </div>
-      </div>
-      <div id="regression-ranges">
-        <template is="dom-repeat" items="[[extension.regression_ranges]]" as="regressionRange" filter="_showRegressionRange">
+      <div id="builders" class="section layout horizontal center">
+        <template is="dom-if" if="[[_haveBuilders(extension)]]">
+          <div class="header">
+            Builders this step failed on:
+          </div>
           <div>
-            <som-rev-range range="[[regressionRange]]"></som-rev-range>
+            <template is="dom-repeat" items="[[extension.builders]]" as="builder">
+              <span class$="[[_classForBuilder(builder)]]">
+                <a target="_blank" href$="[[_linkify(linkStyle, builder.url)]]" title$="Failing for the last [[_failureCount(builder)]] build(s): [[builder.first_failure]] - [[builder.latest_failure]].">
+                    [[builder.name]]
+                    [[_failureCount(builder)]]
+                </a>
+              </span>
+            </template>
           </div>
         </template>
       </div>
-      <div id="suspected-cls">
-        <div id="findit-results">
+      <div class="section">
+        <template is="dom-if" if="[[!_haveTests(extension.reason.tests)]]">
+          No test result data available.
+        </template>
+        <template is="dom-if" if="[[_haveTests(extension.reason.tests)]]">
+          <div class="header">
+            [[_testText(extension.reason.tests)]]:
+          </div>
+          <div id="reasons">
+            <div class="build-failures">
+              <ul>
+                <template is="dom-repeat" items="[[extension.reason.tests]]" as="test" sort="_sortTests">
+                  <li id="test_results">
+                    <a target="_blank" href$=[[_linkForTest(extension.reason,test.test_name)]]>
+                      [[test.test_name]]
+                    </a>
+                    (
+                    <a target="_blank" href$=[[_linkToCSForTest(test.test_name)]]>
+                      Code Search
+                    </a>
+                    )
+                    <template is="dom-if" if="[[_hasSuspect(test)]]">
+                      <template is="dom-repeat" items="[[test.suspected_cls]]" as="testCL">
+                        <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
+                        <span class="suspect-cl-results">
+                           Findit (<a target="_blank" href="http://go/findit-manual">?</a>)
+                           [[_finditApproach(testCL)]]
+                          <a href$="https://chromium.googlesource.com/chromium/src/+/[[testCL.revision]]" target="_blank">
+                              [[_textForCL(testCL.revision)]]
+                          </a>
+                        </span>
+                      </template>
+                    </template>
+                    <template is="dom-if" if="[[_isFlaky(test)]]">
+                      <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
+                      <span class="suspect-cl-results">
+                        Findit
+                        (<a target="_blank" href="http://go/findit-manual">?</a>)
+                        results: Flaky
+                      </span>
+                    </template>
+                  </li>
+                </template>
+              </ul>
+            </div>
+          </div>
+        </template>
+      </div>
+      <div id="regression-ranges" class="section">
+        <template is="dom-if" if="[[!_haveRegressionRanges(extension.regression_ranges)]]">
+          No regression range information available.
+        </template>
+        <template is="dom-if" if="[[_haveRegressionRanges(extension.regression_ranges)]]">
+          <div class="header">
+            Regression ranges:
+          </div>
+          <template is="dom-repeat" items="[[extension.regression_ranges]]" as="regressionRange" filter="_showRegressionRange">
+            <div>
+              <som-rev-range range="[[regressionRange]]"></som-rev-range>
+            </div>
+          </template>
+        </template>
+      </div>
+      <template is="dom-if" if="[[_haveFinditData(extension)]]">
+        <div id="findit-results" class="section">
           <template is="dom-if" if="[[_finditIsRunning(extension)]]">
             <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
             <strong class="suspect-cl-results">
@@ -147,7 +178,7 @@
             </template>
           </template>
         </div>
-      </div>
+      </template>
     </div>
   </template>
   <script>
@@ -211,8 +242,41 @@
         return Object.values(revisions);
       },
 
+      _finditIsRunning: function(extension) {
+        return extension && extension.findit_status == 'RUNNING' && !this._haveSuspectCLs(extension);
+      },
+
+      _finditApproach: function(cl) {
+        if (cl.analysis_approach == 'HEURISTIC') {
+          return ' suspects CL ';
+        } else {
+          return ' found culprit ';
+        }
+      },
+
+      _finditConfidence: function(cl) {
+        return cl.confidence.toString();
+      },
+
+      _haveFinditData: function(extension) {
+        return this._haveSuspectCLs(extension) || this._haveRegressionRanges(extension);
+      },
+
       _haveSuspectCLs: function(extension) {
         return extension && extension.suspected_cls;
+      },
+
+      _haveRegressionRanges: function(regression_ranges) {
+        return regression_ranges && regression_ranges.length > 0;
+
+      },
+
+      _haveTests: function(tests) {
+        return tests && tests.length > 0;
+      },
+
+      _isFlaky: function(test) {
+        return test && test.is_flaky;
       },
 
       _linkForTest: function(reason, testName) {
@@ -248,32 +312,25 @@
             range.repo != 'v8';
       },
 
+      _sortTests: function(a, b) {
+        return a.test_name.localeCompare(b.test_name);
+      },
+
+      _testText: function(tests) {
+        let len = tests.length;
+
+        if (len == 1) {
+          return "1 test failed";
+        }
+        return len.toString() + " tests failed";
+      },
+
       _textForCL: function(cl) {
         return cl.substring(0, 7);
       },
 
-      _isFlaky: function(test) {
-        return test && test.is_flaky;
-      },
-
       _hasSuspect: function(test) {
         return test && test.suspected_cls;
-      },
-
-      _finditIsRunning: function(extension) {
-        return extension && extension.findit_status == 'RUNNING' && !this._haveSuspectCLs(extension);
-      },
-
-      _finditApproach: function(cl) {
-        if (cl.analysis_approach == 'HEURISTIC') {
-          return ' suspects CL ';
-        } else {
-          return ' found culprit ';
-        }
-      },
-
-      _finditConfidence: function(cl) {
-        return cl.confidence.toString();
       },
     });
   })();

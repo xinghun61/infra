@@ -17,16 +17,31 @@
         font-size: 9pt;
         margin: 1em;
       }
-       .suspect-cl {
-         color: #FF8C00;
-         font-weight: bold;
-       }
+      .suspect-cl {
+        color: #FF8C00;
+        font-weight: bold;
+      }
+      .collapse {
+        cursor: pointer;
+      }
+      .header {
+        color: #FFFFFF;
+      }
+      .padding-right {
+        padding-right: 0.5em;
+      }
     </style>
-    <div on-tap="_toggleCollapse">
-      [[range.repo]]: <a target="_blank" href$="[[_regressionRangeLink(range)]]">[[_regressionRange(range)]]</a>
-      <iron-icon icon="[[_iconName]]"></iron-icon>
+    <div class="layout horizontal center">
+      <span class="padding-right">
+        [[range.repo]]: 
+      </span>
+      <a class="padding-right" target="_blank" href$="[[_regressionRangeLink(range)]]">[[_regressionRange(range)]]</a>
+      <div class="collapse layout horizontal center" on-tap="_toggleCollapse">
+        Click to see [[_collapseMessage]] information.
+        <iron-icon icon="[[_iconName]]"></iron-icon>
+      </div>
     </div>
-    <iron-collapse id="collapse" class="rev-list">
+    <iron-collapse id="collapse" class="rev-list" no-animation>
       <template is="dom-repeat" items="[[_revs]]" as="rev">
         <div class="commit">
           <a href$="https://chromium.googlesource.com/chromium/src/+/[[rev.commit]]" target="_blank">
@@ -51,6 +66,10 @@
           type: Object,
           value: null
         },
+        _collapseMessage: {
+          type: String,
+          value: 'more',
+        },
         _revs: {
           type: Array,
           value: null
@@ -61,30 +80,35 @@
         },
       },
 
-     _toggleCollapse: function() {
-       if (!this._revs) {
-         let start = this._regressionStart(this.range);
-         let end = this._regressionEnd(this.range);
-         let url = `/api/v1/revrange/${start}/${end}`;
-         this.$.loadingMessage.hidden = false;
-         fetch(url).then((resp) => {
-           resp.text().then((bodyJson) => {
-             // remove the )]}' on the first line.
-             bodyJson = bodyJson.substr(')]}\'\n'.length);
-             let body = JSON.parse(bodyJson);
-             this._revs = body.log;
-             this.$.loadingMessage.hidden = true;
-           }, (reject) => {
-             console.error(reject);
-           });
+      ready: function() {
+        this._fetchData();
+      },
+
+     _fetchData: function() {
+       let start = this._regressionStart(this.range);
+       let end = this._regressionEnd(this.range);
+       let url = `/api/v1/revrange/${start}/${end}`;
+       this.$.loadingMessage.hidden = false;
+       fetch(url).then((resp) => {
+         resp.text().then((bodyJson) => {
+           // remove the )]}' on the first line.
+           bodyJson = bodyJson.substr(')]}\'\n'.length);
+           let body = JSON.parse(bodyJson);
+           this._revs = body.log;
+           this.$.loadingMessage.hidden = true;
          }, (reject) => {
            console.error(reject);
          });
-       }
+       }, (reject) => {
+         console.error(reject);
+       });
+     },
 
+     _toggleCollapse: function() {
        this.$.collapse.toggle();
        this._iconName = this.$.collapse.opened ? 'icons:unfold-less' :
            'icons:unfold-more';
+       this._collapseMessage = this.$.collapse.opened ? 'less' : 'more';
      },
 
      _shortHash: function(hash) {
