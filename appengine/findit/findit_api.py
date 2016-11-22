@@ -173,7 +173,7 @@ class FindItApi(remote.Service):
     # If the CL is found by a try job, only the first failure will be recorded.
     # So we might need to go to the first failure to get CL information.
     build_info = cl.GetBuildInfo(master_name, builder_name, current_build)
-    first_build_info = cl.GetBuildInfo(
+    first_build_info = None if not reference_build_key else cl.GetBuildInfo(
         *build_util.GetBuildInfoFromId(reference_build_key))
     return suspected_cl_util.GetSuspectedCLConfidenceScoreAndApproach(
         confidences, build_info, first_build_info)
@@ -409,7 +409,6 @@ class FindItApi(remote.Service):
               self._GetSwarmingTaskAndTryJobForFailure(
                   step_name, test_name, heuristic_analysis.failure_result_map,
                   swarming_tasks, try_jobs))
-
           self._PopulateResult(
               results, build, heuristic_analysis.failure_type, test,
               step_name, confidences, reference_build_key, swarming_task,
