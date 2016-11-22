@@ -216,6 +216,7 @@ imports:
   - logging/v1beta3
   - option
   - pubsub/v1
+  - support/bundler
   - taskqueue/v1beta2
 - name: google.golang.org/appengine
   version: ca59ef35f409df61fa4a5f8290ff289b37eccfb8
