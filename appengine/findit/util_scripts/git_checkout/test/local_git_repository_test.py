@@ -90,6 +90,7 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
             'modify', 'src/a/b.py', 'src/a/b.py')],
         'https://repo/path/+/revision', None, None)
     self.mock(script_util, 'GetCommandOutput', lambda *_: output)
+    # TODO: compare the objects directly, rather than via ToDict
     self.assertEqual(self.local_repo.GetChangeLog('revision').ToDict(),
                      expected_changelog.ToDict())
 

@@ -27,10 +27,10 @@ class CallStackTest(StacktraceTestSuite):
     frame = StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [])
     self.assertEqual(frame.BlameUrl('1'), None)
 
-    frame.repo_url = 'https://repo_url'
+    frame = frame._replace(repo_url = 'https://repo_url')
     self.assertEqual(frame.BlameUrl('1'), 'https://repo_url/+blame/1/f.cc')
 
-    frame.crashed_line_numbers = [9, 10]
+    frame = frame._replace(crashed_line_numbers = [9, 10])
     self.assertEqual(frame.BlameUrl('1'), 'https://repo_url/+blame/1/f.cc#9')
 
   def testFrameListInitCallStack(self):

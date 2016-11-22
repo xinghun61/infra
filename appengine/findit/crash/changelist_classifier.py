@@ -4,6 +4,7 @@
 
 import logging
 from collections import defaultdict
+from collections import namedtuple
 
 from common import chrome_dependency_fetcher
 from crash import crash_util
@@ -15,9 +16,11 @@ from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
 from lib.gitiles.diff import ChangeType
 
-# TODO(http://crbug.com/661822): convert this into a namedtuple.
-class ChangelistClassifier(object):
-  def __init__(self, repository,
+class ChangelistClassifier(namedtuple('ChangelistClassifier',
+    ['repository', 'top_n_frames', 'top_n_results', 'confidence_threshold'])):
+  __slots__ = ()
+
+  def __new__(cls, repository,
       top_n_frames, top_n_results=3, confidence_threshold=0.999):
     """Args:
       repository (Repository): the Git repository for getting CLs to classify.
@@ -26,10 +29,8 @@ class ChangelistClassifier(object):
       confidence_threshold (float): In [0,1], above which we only return
         the first result.
     """
-    self._repository = repository
-    self.top_n_frames = top_n_frames
-    self.top_n_results = top_n_results
-    self.confidence_threshold = confidence_threshold
+    return super(cls, ChangelistClassifier).__new__(cls,
+        repository, top_n_frames, top_n_results, confidence_threshold)
 
   def __str__(self): # pragma: no cover
     return ('%s(top_n_frames=%d, top_n_results=%d, confidence_threshold=%g)'
@@ -72,12 +73,12 @@ class ChangelistClassifier(object):
     stack_deps = GetDepsInCrashStack(
         report.stacktrace.crash_stack,
         chrome_dependency_fetcher.ChromeDependencyFetcher(
-            self._repository).GetDependency(report.crashed_version,
-                                            report.platform))
+            self.repository).GetDependency(report.crashed_version,
+                                           report.platform))
 
     # Get dep and file to changelogs, stack_info and blame dicts.
     dep_rolls = chrome_dependency_fetcher.ChromeDependencyFetcher(
-        self._repository).GetDependencyRollsDict(
+        self.repository).GetDependencyRollsDict(
             last_good_version, first_bad_version, report.platform)
 
     # Regression of a dep added/deleted (old_revision/new_revision is None) can
@@ -92,7 +93,7 @@ class ChangelistClassifier(object):
       regression_deps_rolls[dep_path] = dep_roll
 
     dep_to_file_to_changelogs, ignore_cls = GetChangeLogsForFilesGroupedByDeps(
-        regression_deps_rolls, stack_deps, self._repository)
+        regression_deps_rolls, stack_deps, self.repository)
     dep_to_file_to_stack_infos = GetStackInfosForFilesGroupedByDeps(
         stacktrace, stack_deps)
 
@@ -100,7 +101,7 @@ class ChangelistClassifier(object):
     # be last argument.
     results = FindMatchResults(dep_to_file_to_changelogs,
                                dep_to_file_to_stack_infos,
-                               stack_deps, self._repository, ignore_cls)
+                               stack_deps, self.repository, ignore_cls)
     if not results:
       return []
 

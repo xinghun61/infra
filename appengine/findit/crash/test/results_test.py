@@ -6,6 +6,7 @@ from crash.results import AnalysisInfo
 from crash.results import MatchResult
 from crash.results import MatchResults
 from crash.results import Result
+from crash.results import StackInfo
 from crash.stacktrace import StackFrame
 from crash.test.crash_test_suite import CrashTestSuite
 from lib.gitiles.blame import Blame
@@ -110,7 +111,9 @@ class ResultsTest(CrashTestSuite):
     self.assertEqual(result.ToString(), expected_result_str)
 
     result.file_to_stack_infos = {
-        'a.cc': [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', []), 0)]
+        'a.cc': [StackInfo(
+            frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', []),
+            priority = 0)]
     }
     expected_result_str = 'Changed file a.cc crashed in frame #0'
 
@@ -119,7 +122,9 @@ class ResultsTest(CrashTestSuite):
   def testMatchResultUpdate(self):
     # Touched lines have intersection with crashed lines.
     result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
-    stack_infos = [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7]), 0)]
+    stack_infos = [StackInfo(
+        frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7]),
+        priority = 0)]
 
     result.Update('a.cc', stack_infos, DUMMY_BLAME)
     self.assertEqual(result.file_to_analysis_info['a.cc'].min_distance, 0)
@@ -127,7 +132,9 @@ class ResultsTest(CrashTestSuite):
     # Touched lines are before crashed lines.
     result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
 
-    stack_infos = [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [3]), 0)]
+    stack_infos = [StackInfo(
+        frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [3]),
+        priority = 0)]
 
     result.Update('a.cc', stack_infos, DUMMY_BLAME)
     self.assertEqual(result.file_to_analysis_info['a.cc'].min_distance, 3)
@@ -135,14 +142,18 @@ class ResultsTest(CrashTestSuite):
     # Touched lines are after crashed lines.
     result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
 
-    stack_infos = [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [10]), 0)]
+    stack_infos = [StackInfo(
+        frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [10]),
+        priority = 0)]
 
     result.Update('a.cc', stack_infos, DUMMY_BLAME)
     self.assertEqual(result.file_to_analysis_info['a.cc'].min_distance, 2)
 
   def testMatchResultUpdateWithEmptyBlame(self):
     result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
-    stack_infos = [(StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7]), 0)]
+    stack_infos = [StackInfo(
+        frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7]),
+        priority = 0)]
 
     result.Update('a.cc', stack_infos, None)
     self.assertEqual(result.file_to_stack_infos['a.cc'], stack_infos)
@@ -152,7 +163,7 @@ class ResultsTest(CrashTestSuite):
     result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
     frame1 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7])
     frame2 = StackFrame(2, 'src/', 'func', 'a.cc', 'src/a.cc', [20])
-    stack_infos = [(frame1, 0), (frame2, 0)]
+    stack_infos = [StackInfo(frame1, 0), StackInfo(frame2, 0)]
 
     result.Update('a.cc', stack_infos, DUMMY_BLAME)
     self.assertEqual(result.file_to_stack_infos['a.cc'], stack_infos)
@@ -163,8 +174,8 @@ class ResultsTest(CrashTestSuite):
     match_results = MatchResults(ignore_cls=set(['2']))
     frame1 = StackFrame(0, 'src/',  'func', 'a.cc', 'src/a.cc', [7])
     frame2 = StackFrame(1, 'src/',  'func', 'b.cc', 'src/b.cc', [11])
-    stack_infos1 = [(frame1, 0)]
-    stack_infos2 = [(frame2, 0)]
+    stack_infos1 = [StackInfo(frame1, 0)]
+    stack_infos2 = [StackInfo(frame2, 0)]
     match_results.GenerateMatchResults('a.cc', 'src/', stack_infos1,
                                        [DUMMY_CHANGELOG1, DUMMY_CHANGELOG2],
                                        DUMMY_BLAME)

@@ -75,12 +75,12 @@ class LocalGitParsersTest(unittest.TestCase):
 
   def testGitBlameParserDummyOutput(self):
     blame_result = self.blame_parser('Dummy',
-                                                      'src/core/SkFont.h',
-                                                      'rev')
+                                     'src/core/SkFont.h',
+                                     'rev')
     self.assertIsNone(blame_result)
 
   def testGetFileChangeInfo(self):
-    self.assertIsNone(local_git_parsers.GetFileChangeInfo('change type',
+    self.assertIsNone(local_git_parsers.GetFileChangeInfo('unknown change type',
                                                           None, None))
 
   def testGitChangeLogParser(self):

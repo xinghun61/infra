@@ -10,8 +10,17 @@ class AnalysisInfo(namedtuple('AnalysisInfo',
   __slots__ = ()
 
 
+# TODO(wrengr): it's not clear why the ``priority`` is stored at all,
+# given that every use in this file discards it. ``Result.file_to_stack_infos``
+# should just store pointers directly to the frames themselves rather
+# than needing this intermediate object.
 # TODO(http://crbug.com/644476): this class needs a better name.
-# TODO(http://crbug.com/661822): convert this into a namedtuple.
+class StackInfo(namedtuple('StackInfo', ['frame', 'priority'])):
+  """Pair of a frame and the ``priority`` of the ``CallStack`` it came from."""
+  __slots__ = ()
+
+
+# TODO(http://crbug.com/644476): this class needs a better name.
 class Result(object):
   """Represents findit culprit result."""
 
@@ -25,7 +34,6 @@ class Result(object):
 
     # TODO(wrengr): (a) make these two fields private/readonly
     # TODO(wrengr): (b) zip them together.
-    # TODO(http://crbug.com/661822): change stack_info pair to a namedtuple.
     self.file_to_stack_infos = {}
     self.file_to_analysis_info = {}
 
@@ -83,8 +91,8 @@ class MatchResult(Result):
 
     Args:
       file_path (str): File path of the crashed file.
-      stack_infos (list): List of (frame, stack_priority), represents frames of
-        this file and the callstack priorities of those frames.
+      stack_infos (list of StackInfo): List of the frames of this file
+        together with their callstack priorities.
       blame (Blame): Blame oject of this file.
     """
     self.file_to_stack_infos[file_path] = stack_infos

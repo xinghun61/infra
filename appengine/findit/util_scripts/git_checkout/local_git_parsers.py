@@ -4,6 +4,7 @@
 
 """Parse output of local git commands into Gitile response format."""
 
+from collections import namedtuple
 from collections import defaultdict
 from datetime import datetime
 import re
@@ -13,6 +14,7 @@ from lib.gitiles import commit_util
 from lib.gitiles.blame import Blame
 from lib.gitiles.blame import Region
 from lib.gitiles.change_log import ChangeLog
+from lib.gitiles.change_log import FileChangeInfo
 from lib.gitiles.diff import ChangeType
 
 REGION_START_COUNT_PATTERN = re.compile(r'^(\S+) \d+ (\d+) (\d+)')
@@ -48,6 +50,12 @@ INITIAL_TO_CHANGE_TYPE = {
     'C': ChangeType.COPY,
     'R': ChangeType.RENAME
 }
+
+
+class RegionInfo(namedtuple('RegionInfo', ['start', 'count', 'revision'])):
+  __slots__ = ()
+  def __new__(cls, start, count, revision):
+    return super(cls, RegionInfo).__new__(cls, int(start), int(count), revision)
 
 
 class GitParser(object):
@@ -95,47 +103,49 @@ class GitBlameParser(GitParser):
       if match:
         if region_info:
           blame.AddRegion(
-              Region(region_info['start'],
-                     region_info['count'],
-                     region_info['revision'],
-                     commit_info[region_info['revision']]['author_name'],
-                     commit_info[region_info['revision']]['author_email'],
-                     commit_info[region_info['revision']]['author_time']))
+              Region(region_info.start,
+                     region_info.count,
+                     region_info.revision,
+                     commit_info[region_info.revision]['author_name'],
+                     commit_info[region_info.revision]['author_email'],
+                     commit_info[region_info.revision]['author_time']))
 
-        region_info = {'start': int(match.group(2)),
-                       'count': int(match.group(3)),
-                       'revision': match.group(1)}
+        region_info = RegionInfo(
+            start = int(match.group(2)),
+            count = int(match.group(3)),
+            revision = match.group(1))
+
       elif region_info:
         # Sample: author test@google.com.
         if AUTHOR_NAME_PATTERN.match(line):
-          commit_info[region_info['revision']]['author_name'] = (
+          commit_info[region_info.revision]['author_name'] = (
               AUTHOR_NAME_PATTERN.match(line).group(1))
         # Sample: author-mail <test@google.com@2eff-a529-9590-31e7-b00076f81>.
         elif AUTHOR_MAIL_PATTERN.match(line):
-          commit_info[region_info['revision']]['author_email'] = (
+          commit_info[region_info.revision]['author_email'] = (
               commit_util.NormalizeEmail(
                   AUTHOR_MAIL_PATTERN.match(line).group(1).replace(
                       '<', '').replace('>', '')))
         # Sample: author-time 1311863160.
         elif AUTHOR_TIME_PATTERN.match(line):
-          commit_info[region_info['revision']]['author_time'] = (
+          commit_info[region_info.revision]['author_time'] = (
               AUTHOR_TIME_PATTERN.match(line).group(1))
         # Sample: author-tz +0800.
         elif AUTHOR_TIMEZONE_PATTERN.match(line):
           time_zone = time_util.TimeZoneInfo(
               AUTHOR_TIMEZONE_PATTERN.match(line).group(1))
-          commit_info[region_info['revision']]['author_time'] = (
+          commit_info[region_info.revision]['author_time'] = (
               time_zone.LocalToUTC(datetime.fromtimestamp(
-                  int(commit_info[region_info['revision']]['author_time']))))
+                  int(commit_info[region_info.revision]['author_time']))))
 
     if region_info:
       blame.AddRegion(
-          Region(region_info['start'],
-                 region_info['count'],
-                 region_info['revision'],
-                 commit_info[region_info['revision']]['author_name'],
-                 commit_info[region_info['revision']]['author_email'],
-                 commit_info[region_info['revision']]['author_time']))
+          Region(region_info.start,
+                 region_info.count,
+                 region_info.revision,
+                 commit_info[region_info.revision]['author_name'],
+                 commit_info[region_info.revision]['author_email'],
+                 commit_info[region_info.revision]['author_time']))
 
     return blame if blame else None
 
@@ -147,35 +157,22 @@ def GetChangeType(initial):
 
 def GetFileChangeInfo(change_type, path1, path2):
   """Set old/new path and old/new mode."""
-  if change_type.lower() == ChangeType.MODIFY:
-    return {
-        'change_type': change_type,
-        'old_path': path1,
-        'new_path': path1
-    }
+  change_type = change_type.lower()
+  if change_type == ChangeType.MODIFY:
+    return FileChangeInfo.Modify(path1)
 
-  if change_type.lower() == ChangeType.ADD:
-    # Stay the same as gitile.
-    return {
-        'change_type': change_type,
-        'old_path': None,
-        'new_path': path1
-    }
+  if change_type == ChangeType.ADD:
+    return FileChangeInfo.Add(path1)
 
-  if change_type.lower() == ChangeType.DELETE:
-    return {
-        'change_type': change_type,
-        'old_path': path1,
-        'new_path': None
-    }
+  if change_type == ChangeType.DELETE:
+    return FileChangeInfo.Delete(path1)
 
-  if (change_type.lower() == ChangeType.RENAME or
-      change_type.lower() == ChangeType.COPY):
-    return {
-        'change_type': change_type,
-        'old_path': path1,
-        'new_path': path2
-    }
+  if change_type == ChangeType.RENAME:
+    return FileChangeInfo.Rename(path1, path2)
+
+  # TODO(http://crbug.com/659346): write coverage test for this branch
+  if change_type.lower() == ChangeType.COPY: # pragma: no cover
+    return FileChangeInfo.Copy(path1, path2)
 
   return None
 

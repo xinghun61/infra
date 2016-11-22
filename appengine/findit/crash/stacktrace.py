@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import namedtuple
 import logging
 import re
 
@@ -22,7 +23,9 @@ CALLSTACK_FORMAT_TO_PATTERN = {
 FRAME_INDEX_PATTERN = re.compile(r'\s*#(\d+)\s.*')
 
 
-class StackFrame(object):
+class StackFrame(namedtuple('StackFrame',
+    ['index', 'dep_path', 'function', 'file_path', 'raw_file_path',
+    'crashed_line_numbers', 'repo_url'])):
   """Represents a frame in a stacktrace.
 
   Attributes:
@@ -39,16 +42,13 @@ class StackFrame(object):
     crashed_line_numbers (list): Line numbers of the file that caused the crash.
     repo_url (str): Repo url of this frame.
   """
-  def __init__(self, index, dep_path, function,
-               file_path, raw_file_path, crashed_line_numbers,
-               repo_url=None):
-    self.index = index
-    self.dep_path = dep_path
-    self.function = function
-    self.file_path = file_path
-    self.raw_file_path = raw_file_path
-    self.crashed_line_numbers = crashed_line_numbers
-    self.repo_url = repo_url
+  __slots__ = ()
+
+  def __new__(cls, index, dep_path, function, file_path, raw_file_path,
+              crashed_line_numbers, repo_url=None):
+    return super(cls, StackFrame).__new__(cls,
+        index, dep_path, function, file_path, raw_file_path,
+        crashed_line_numbers, repo_url)
 
   def ToString(self):
     frame_str = '#%d in %s @ %s' % (self.index, self.function, self.file_path)
