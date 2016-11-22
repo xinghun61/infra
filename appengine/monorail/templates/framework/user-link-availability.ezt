@@ -1,5 +1,5 @@
 [# arg0: The UserView to display.
-   arg1: "Yes" to show reason as visible text on the page.
+   arg1: "Yes" to show a shortened reason as visible text on the page.
 ]
 <div class="userlink_avail" title="[arg0.display_name][if-any arg0.avail_message]:
 [arg0.avail_message][end]">
@@ -11,6 +11,8 @@
 </div>
 [is arg1 "Yes"]
  [if-any arg0.avail_message]
-  <div class="availability_[arg0.avail_class]">[arg0.avail_message]</div>
+  <div class="availability_[arg0.avail_class]" title="[arg0.display_name]:
+[arg0.avail_message]"
+  >[arg0.avail_message_short]</div>
  [end]
 [end]

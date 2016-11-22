@@ -99,14 +99,15 @@ class UserView(object):
       self.display_name = '%s...@%s' % (self.obscured_username, self.domain)
 
     self.avail_message, self.avail_class = self.GetAvailablity(user, is_group)
+    self.avail_message_short = template_helpers.FitUnsafeText(
+        self.avail_message, 35)
 
   def GetAvailablity(self, user, is_group):
     """Return (str, str) that explains why the user might not be available."""
     if user.banned:
       return 'Banned', 'banned'
     if user.vacation_message:
-      short_vacation = template_helpers.FitUnsafeText(user.vacation_message, 40)
-      return short_vacation, 'none'
+      return user.vacation_message, 'none'
     if user.email_bounce_timestamp:
       return 'Email to this user bounced', 'none'
     # No availablity shown for user groups, or addresses that are

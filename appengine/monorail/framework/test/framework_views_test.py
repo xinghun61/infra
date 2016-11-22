@@ -112,13 +112,15 @@ class UserViewTest(unittest.TestCase):
       'If you urgently need anything you can call Alice or Bob for most '
       'things otherwise call Charlie.  Wish me luck! ')
     user_view = framework_views.UserView(self.user)
-    self.assertTrue(len(user_view.avail_message) < 50)
+    self.assertTrue(len(user_view.avail_message) >= 50)
+    self.assertTrue(len(user_view.avail_message_short) < 50)
     self.assertEquals('none', user_view.avail_class)
 
   def testGetAvailablity_Bouncing(self):
     self.user.email_bounce_timestamp = 1234567890
     user_view = framework_views.UserView(self.user)
     self.assertEquals('Email to this user bounced', user_view.avail_message)
+    self.assertEquals(user_view.avail_message_short, user_view.avail_message)
     self.assertEquals('none', user_view.avail_class)
 
   def testGetAvailablity_Groups(self):
