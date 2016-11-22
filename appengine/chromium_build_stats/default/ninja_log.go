@@ -86,6 +86,8 @@ You need to <a href="{{.Login}}">login</a> to upload .ninja_log file.
 Platform: {{.Metadata.Platform}}
 Cmdline: {{.Metadata.Cmdline}}
 Exit:{{.Metadata.Exit}}
+{{if .Metadata.Error}}Error: {{.Metadata.Error}}
+{{.Metadata.Raw}}{{end}}
 <hr />
 <table border=1>
 <tr>

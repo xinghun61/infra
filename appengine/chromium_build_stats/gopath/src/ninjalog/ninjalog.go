@@ -92,6 +92,11 @@ type Metadata struct {
 
 	// CompilerProxyInfo is a path name of associated compiler_proxy.INFO log.
 	CompilerProxyInfo string `json:"compiler_proxy_info"`
+
+	// Raw is raw string for metadata.
+	Raw string
+	// Error is error message of parsing metadata.
+	Error string
 }
 
 // NinjaLog is parsed data of ninja_log file.
@@ -159,8 +164,9 @@ func Parse(fname string, r io.Reader) (*NinjaLog, error) {
 		return nlog, nil
 	}
 	lineno++
-	if err := parseMetadata(scanner.Bytes(), &nlog.Metadata); err != nil {
-		return nil, fmt.Errorf("error at %d: %v", lineno, err)
+	nlog.Metadata.Raw = scanner.Text()
+	if err := parseMetadata([]byte(nlog.Metadata.Raw), &nlog.Metadata); err != nil {
+		nlog.Metadata.Error = fmt.Sprintf("error at %d: %v", lineno, err)
 	}
 	return nlog, nil
 }
