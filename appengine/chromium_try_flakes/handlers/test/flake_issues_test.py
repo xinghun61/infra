@@ -670,6 +670,80 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     self.assertNotIn('stale-flakes-reports@google.com', issue.cc)
 
   @mock_datetime_utc(2015, 12, 8, 15, 0, 0)
+  def test_follows_deduplication_chain_when_checking_staleness(self):
+    issue1 = self.mock_api.create(MockIssue({}))
+    issue1.open = False
+    issue1.status = 'Duplicate'
+
+    issue2 = self.mock_api.create(MockIssue({}))
+    issue2.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
+    issue2.comments = [
+        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 1), 'app@ae.org',
+                    '"foo.bar" is flaky\n\nmore text...'),
+    ]
+    issue2.labels = ['Sheriff-Chromium']
+
+    issue1.merged_into = issue2.id
+
+    self.test_app.post('/issues/update-if-stale/%s' % issue1.id)
+    self.assertNotIn('stale-flakes-reports@google.com', issue1.cc)
+    self.assertIn('stale-flakes-reports@google.com', issue2.cc)
+
+  @mock_datetime_utc(2015, 12, 8, 15, 0, 0)
+  def test_updates_deduped_issue_id_in_flakes_when_checking_staleness(self):
+    issue1 = self.mock_api.create(MockIssue({}))
+    issue1.open = False
+    issue1.status = 'Duplicate'
+
+    issue2 = self.mock_api.create(MockIssue({}))
+    issue2.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
+    issue2.comments = [
+        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 1), 'app@ae.org',
+                    '"foo.bar" is flaky\n\nmore text...'),
+    ]
+
+    issue1.merged_into = issue2.id
+
+    flake = self._create_flake()
+    flake.issue_id = issue1.id
+    flake_key = flake.put()
+
+    self.test_app.post('/issues/update-if-stale/%s' % issue1.id)
+    self.assertEqual(flake_key.get().issue_id, issue2.id)
+
+  def test_handles_dedup_loop_when_checking_staleness(self):
+    issue1 = self.mock_api.create(MockIssue({}))
+    issue2 = self.mock_api.create(MockIssue({}))
+
+    issue1.open = False
+    issue1.status = 'Duplicate'
+    issue1.merged_into = issue2.id
+
+    issue2.open = False
+    issue2.status = 'Duplicate'
+    issue2.merged_into = issue1.id
+
+    flake = self._create_flake()
+    flake.issue_id = issue1.id
+    flake_key = flake.put()
+
+    self.test_app.post('/issues/update-if-stale/%s' % issue1.id)
+    self.assertEqual(flake_key.get().issue_id, 0)
+
+  def test_handles_self_loop_when_checking_staleness(self):
+    issue = self.mock_api.create(MockIssue({}))
+    issue.open = False
+    issue.status = 'Duplicate'
+    issue.merged_into = issue.id
+
+    flake = self._create_flake()
+    flake.issue_id = issue.id
+    flake_key = flake.put()
+
+    self.test_app.post('/issues/update-if-stale/%s' % issue.id)
+    self.assertEqual(flake_key.get().issue_id, 0)
+
+  @mock_datetime_utc(2015, 12, 8, 15, 0, 0)
   def test_removes_closed_issue_id_from_old_flakes(self):
     issue = self.mock_api.create(MockIssue({}))
     issue.updated = datetime.datetime(2015, 12, 3, 15, 0, 0)

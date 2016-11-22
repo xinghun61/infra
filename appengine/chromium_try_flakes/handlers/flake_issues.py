@@ -225,37 +225,54 @@ class ProcessIssue(webapp2.RequestHandler):
     except (httplib.HTTPException, apiclient.errors.Error):
       logging.warning('Failed to send flakes to FindIt', exc_info=True)
 
+  @staticmethod
+  def follow_duplication_chain(api, starting_issue_id):
+    """Finds last merged-into issue in the deduplication chain.
+
+    Args:
+      api: Issue Tracker API object.
+      starting_issue_id: ID of the issue to start with.
+
+    Returns:
+      Issue object for the last issue in the chain (can be the same issue as
+      passed in if it is not marked as Duplicate) or None if duplication loop is
+      detected.
+    """
+    seen_issues = set()
+    flake_issue = api.getIssue(starting_issue_id)
+    while flake_issue.status == 'Duplicate':
+      seen_issues.add(flake_issue.id)
+      if flake_issue.merged_into in seen_issues:
+        logging.info('Detected issue duplication loop: %s.', seen_issues)
+        return None
+      flake_issue = api.getIssue(flake_issue.merged_into)
+
+    return flake_issue
+
   @ndb.transactional
   def _update_issue(self, api, flake, new_flakes, now):
     """Updates an issue on the issue tracker."""
-    flake_issue = api.getIssue(flake.issue_id)
+    flake_issue = self.follow_duplication_chain(api, flake.issue_id)
 
-    # Handle cases when an issue has been closed. We need to do this in a loop
-    # because we might move onto another issue.
-    seen_issues = set()
-    while not flake_issue.open:
-      if flake_issue.status == 'Duplicate':
-        # If the issue was marked as duplicate, we update the issue ID stored in
-        # datastore to the one it was merged into and continue working with the
-        # new issue.
-        seen_issues.add(flake_issue.id)
-        if flake_issue.merged_into not in seen_issues:
-          flake.issue_id = flake_issue.merged_into
-          flake_issue = api.getIssue(flake.issue_id)
-        else:
-          logging.info('Detected issue duplication loop: %s. Re-creating an '
-                       'issue for the flake %s.', seen_issues, flake.name)
-          self._recreate_issue_for_flake(flake)
-          return
-      else:  # Fixed, WontFix, Verified, Archived, custom status
-        # If the issue was closed, we do not update it. This allows changes made
-        # to reduce flakiness to propagate and take effect. If after
-        # DAYS_TO_REOPEN_ISSUE days we still detect flakiness, we will create a
-        # new issue.
-        recent_cutoff = now - datetime.timedelta(days=DAYS_TO_REOPEN_ISSUE)
-        if flake_issue.updated < recent_cutoff:
-          self._recreate_issue_for_flake(flake)
-        return
+    if flake_issue is None:
+      # If the issue duplication loop was detected, we re-create the issue.
+      self._recreate_issue_for_flake(flake)
+      return
+
+    if flake_issue.id != flake.issue_id:
+      # Update the issue ID stored in datastore to avoid following deduplication
+      # chain next time.
+      flake.issue_id = flake_issue.id
+
+    if not flake_issue.open:
+      # If the issue was closed, we do not update it. This allows changes made
+      # to reduce flakiness to propagate and take effect. If after
+      # DAYS_TO_REOPEN_ISSUE days we still detect flakiness, we will create a
+      # new issue.
+      recent_cutoff = now - datetime.timedelta(days=DAYS_TO_REOPEN_ISSUE)
+      if flake_issue.updated < recent_cutoff:
+        self._recreate_issue_for_flake(flake)
+      return
 
     # Make sure issue is in the appropriate bug queue as flakiness is ongoing as
     # the sheriffs are supposed to disable flaky tests. For steps, only return
@@ -398,19 +415,33 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
       flake.issue_id = 0
       flake.put()
 
+  def _update_all_flakes_with_new_issue_id(self, old_issue_id, new_issue_id):
+    for flake in Flake.query(Flake.issue_id == old_issue_id):
+      logging.info(
+          'Updating issue_id from %s to %s', old_issue_id, new_issue_id)
+      flake.issue_id = new_issue_id
+      flake.put()
+
   def post(self, issue_id):
     """Check if an issue is stale and report it back to appropriate queue.
 
     Check if the issue is stale, i.e. has not been updated by anyone else than
     this app in the last DAYS_TILL_STALE days, and if this is the case, then
-    move it back to the appropriate queue. Also if the issue is stale for 7
-    days, report it to stale-flakes-reports@google.com to investigate why it is
-    not being processed despite being in the appropriate queue.
+    move it back to the appropriate queue. Also if the issue is stale for
+    NUM_DAYS_IGNORED_IN_QUEUE_FOR_STALENESS days, report it to
+    stale-flakes-reports@google.com to investigate why it is not being processed
+    despite being in the appropriate queue.
     """
     issue_id = int(issue_id)
     api = issue_tracker_api.IssueTrackerAPI('chromium')
-    flake_issue = api.getIssue(issue_id)
+    flake_issue = ProcessIssue.follow_duplication_chain(api, issue_id)
     now = datetime.datetime.utcnow()
+
+    if not flake_issue:
+      # If we've detected deduplication loop, then just remove issue from all
+      # affected flakes and ignore it.
+      self._remove_issue_from_flakes(issue_id)
+      return
 
     if not flake_issue.open:
       # Remove issue_id from all flakes unless it has recently been updated. We
@@ -420,6 +451,10 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
       if flake_issue.updated < recent_cutoff:
         self._remove_issue_from_flakes(issue_id)
       return
+
+    if flake_issue.id != issue_id:
+      self._update_all_flakes_with_new_issue_id(issue_id, flake_issue.id)
+      issue_id = flake_issue.id
 
     # Parse the flake name from the first comment (which we post ourselves).
     comments = sorted(api.getComments(issue_id), key=lambda c: c.created)
