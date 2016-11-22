@@ -179,6 +179,11 @@ class PublishResultPipeline(CrashBasePipeline):
     (except for ``self``, naturally).
     """
     analysis = self._findit.GetAnalysis(self._crash_identifiers)
+    if analysis.failed:
+      logging.info('Can\'t publish result to %s because analysis failed:\n%s',
+                   self.client_id, repr(self._crash_identifiers))
+      return
+
     result = analysis.ToPublishableResult(self._crash_identifiers)
     messages_data = [json.dumps(result, sort_keys=True)]
 
