@@ -18,7 +18,7 @@ clean:
 	rm elements/som-app.vulcanized.html
 
 test: deps
-	go test
+	cd som && go test
 	xvfb-run -a $(WCT_PATH)
 
 
