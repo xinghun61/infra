@@ -12,11 +12,12 @@ from proto import user_pb2
 
 # Default columns shown on issue list page, and other built-in cols.
 DEFAULT_COL_SPEC = 'ID Type Status Priority Milestone Owner Summary'
-OTHER_BUILT_IN_COLS = ['Attachments', 'Stars', 'Opened', 'Closed', 'Modified',
-                       'BlockedOn', 'Blocking', 'Blocked', 'MergedInto',
-                       'Reporter', 'Cc', 'Project', 'Component',
-                       'OwnerModified', 'StatusModified', 'ComponentModified',
-                       'OwnerLastVisit']
+OTHER_BUILT_IN_COLS = [
+    'AllLabels', 'Attachments', 'Stars', 'Opened', 'Closed', 'Modified',
+    'BlockedOn', 'Blocking', 'Blocked', 'MergedInto',
+    'Reporter', 'Cc', 'Project', 'Component',
+    'OwnerModified', 'StatusModified', 'ComponentModified',
+    'OwnerLastVisit']
 
 # These are label prefixes that would conflict with built-in column names.
 # E.g., no issue should have a *label* id-1234 or status-foo because any
@@ -29,7 +30,7 @@ RESERVED_PREFIXES = [
     'hotlist', 'rank', 'explicit_status', 'derived_status', 'explicit_owner',
     'derived_owner', 'explicit_cc', 'derived_cc', 'explicit_label',
     'derived_label', 'last_comment_by', 'exact_component',
-    'explicit_component', 'derived_component']
+    'explicit_component', 'derived_component', 'alllabels']
 
 # These columns are sorted as user names.
 USERNAME_COLS = ['owner', 'reporter', 'cc']

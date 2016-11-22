@@ -1,3 +1,3 @@
 [if-any table_data.cells.values][for table_data.cells.values]
-[if-any table_data.cells.values.is_derived]<i>[end][table_data.cells.values.item][if-any table_data.cells.values.is_derived]</i>[end][if-index table_data.cells.values last][else], [end]
+[if-any table_data.cells.values.is_derived]<i>[end][table_data.cells.values.item][if-any table_data.cells.values.is_derived]</i>[end][if-index table_data.cells.values last][else], <wbr>[end]
 [end][else]----[end]

@@ -271,6 +271,18 @@ class TableCellUnitTest(unittest.TestCase):
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values, [])
 
+  def testTableCellAllLabels(self):
+    labels = ['A', 'B', 'C', 'D-E', 'F-G']
+    derived_labels = ['W', 'X', 'Y-Z']
+
+    test_issue = MakeTestIssue(4, 4, 'Four')
+    test_issue.labels = labels
+    test_issue.derived_labels = derived_labels
+
+    cell = tablecell.TableCellAllLabels(test_issue)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual([v.item for v in cell.values], labels + derived_labels)
+
 
 class TableCellCSVTest(unittest.TestCase):
 
@@ -373,15 +385,3 @@ class TableCellCSVTest(unittest.TestCase):
         test_issue, users_by_id=self.USERS_BY_ID)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_UNFILTERABLE)
     self.assertEqual(1, cell.values[0].item)
-
-  def testTableCellAllLabels(self):
-    labels = ['A', 'B', 'C', 'D-E', 'F-G']
-    derived_labels = ['W', 'X', 'Y-Z']
-
-    test_issue = MakeTestIssue(4, 4, 'Four')
-    test_issue.labels = labels
-    test_issue.derived_labels = derived_labels
-
-    cell = tablecell.TableCellAllLabels(test_issue)
-    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
-    self.assertEqual([v.item for v in cell.values], labels + derived_labels)

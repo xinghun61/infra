@@ -429,8 +429,8 @@ class TableCell(object):
   """Helper class to represent a table cell when rendering using EZT."""
 
   # Should instances of this class be rendered with whitespace:nowrap?
-  # Subclasses can override this constant, e.g., issuelist TableCellOwner.
-  NOWRAP = ezt.boolean(False)
+  # Subclasses can override this constant.
+  NOWRAP = ezt.boolean(True)
 
   def __init__(self, cell_type, explicit_values,
                derived_values=None, non_column_labels=None, align='',
@@ -585,7 +585,7 @@ class TableCellCustomInt(TableCellCustom):
 
 class TableCellCustomStr(TableCellCustom):
   """TableCell subclass specifically for showing custom str fields."""
-  pass
+  NOWRAP = ezt.boolean(False)
 
 
 class TableCellCustomUser(TableCellCustom):
@@ -595,8 +595,7 @@ class TableCellCustomUser(TableCellCustom):
 
 class TableCellCustomDate(TableCellCustom):
   """TableCell subclass specifically for showing custom date fields."""
-  NOWRAP = ezt.boolean(True)
-
+  pass
 
 class TableCellCustomBool(TableCellCustom):
   """TableCell subclass specifically for showing custom int fields."""

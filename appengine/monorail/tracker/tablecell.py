@@ -50,9 +50,6 @@ class TableCellStatus(table_view_helpers.TableCell):
 class TableCellOwner(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue owner name."""
 
-  # Make instances of this class render with whitespace:nowrap.
-  NOWRAP = ezt.boolean(True)
-
   def __init__(self, issue, users_by_id=None, **_kw):
     values = []
     derived_values = []
@@ -68,9 +65,6 @@ class TableCellOwner(table_view_helpers.TableCell):
 
 class TableCellReporter(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue reporter name."""
-
-  # Make instances of this class render with whitespace:nowrap.
-  NOWRAP = ezt.boolean(True)
 
   def __init__(self, issue, users_by_id=None, **_kw):
     try:
@@ -251,6 +245,22 @@ class TableCellComponent(table_view_helpers.TableCell):
         derived_values=derived_paths)
 
 
+class TableCellAllLabels(table_view_helpers.TableCell):
+  """TableCell subclass specifically for showing all labels on an issue."""
+
+  def __init__(self, issue, **_kw):
+    values = []
+    derived_values = []
+    if issue.labels:
+      values = issue.labels[:]
+    if issue.derived_labels:
+      derived_values = issue.derived_labels[:]
+
+    table_view_helpers.TableCell.__init__(
+        self, table_view_helpers.CELL_TYPE_ATTR, values,
+        derived_values=derived_values)
+
+
 # This maps column names to factories/constructors that make table cells.
 # Subclasses can override this mapping, so any additions to this mapping
 # should also be added to subclasses.
@@ -277,6 +287,7 @@ CELL_FACTORIES = {
     'componentmodified': TableCellComponentModified,
     'ownerlastvisit': TableCellOwnerLastVisit,
     'rank': TableCellRank,
+    'alllabels': TableCellAllLabels,
     }
 
 
@@ -299,22 +310,6 @@ class TableCellSummaryCSV(table_view_helpers.TableCell):
     table_view_helpers.TableCell.__init__(
         self, table_view_helpers.CELL_TYPE_SUMMARY, [escaped_summary],
         non_column_labels=non_col_labels)
-
-
-class TableCellAllLabels(table_view_helpers.TableCell):
-  """TableCell subclass specifically for showing all labels on an issue."""
-
-  def __init__(self, issue, **_kw):
-    values = []
-    derived_values = []
-    if issue.labels:
-      values = issue.labels[:]
-    if issue.derived_labels:
-      derived_values = issue.derived_labels[:]
-
-    table_view_helpers.TableCell.__init__(
-        self, table_view_helpers.CELL_TYPE_ATTR, values,
-        derived_values=derived_values)
 
 
 class TableCellOpenedCSV(table_view_helpers.TableCell):
@@ -460,7 +455,6 @@ class TableCellOwnerLastVisitDaysAgo(table_view_helpers.TableCell):
 CSV_CELL_FACTORIES = CELL_FACTORIES.copy()
 CSV_CELL_FACTORIES.update({
     'summary': TableCellSummaryCSV,
-    'alllabels': TableCellAllLabels,
     'opened': TableCellOpenedCSV,
     'openedtimestamp': TableCellOpenedTimestamp,
     'closed': TableCellClosedCSV,
