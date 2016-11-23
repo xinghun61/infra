@@ -65,8 +65,8 @@ func getBugQueueHandler(ctx *router.Context) {
 	if label == "infra-troopers" {
 		user := auth.CurrentIdentity(c)
 		email := getAlternateEmail(user.Email())
-		q := fmt.Sprintf(`Infra=Troopers -has:owner OR Infra=Troopers owner:%s
-			OR owner:%s Infra=Troopers`, user.Email(), email)
+		q := fmt.Sprintf("Infra=Troopers -has:owner OR Infra=Troopers owner:%s"+
+			" OR owner:%s Infra=Troopers", user.Email(), email)
 
 		bugs, err := getBugsFromMonorail(c, q)
 
