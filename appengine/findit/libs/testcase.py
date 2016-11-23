@@ -7,9 +7,38 @@ import os
 from testing_utils import testing
 
 from lib import time_util
+from libs.http import retry_http_client
 
 
-class FinditTestCase(testing.AppengineTestCase):  # pragma: no cover.
+class MockHttpClient(retry_http_client.RetryHttpClient):  # pragma: no cover.
+
+  def __init__(self, response_for_url=None):
+    super(MockHttpClient, self).__init__()
+    if response_for_url is None:
+      self.response_for_url = {}
+
+  def SetResponseForUrl(self, url, response):
+    self.response_for_url[url] = response
+
+  def GetBackoff(self, *_):
+    """Override to avoid sleep."""
+    return 0
+
+  def _Get(self, url, *_):
+    response = self.response_for_url.get(url)
+    if response is None:
+      return 404, 'Not Found'
+    else:
+      return 200, response
+
+  def _Post(self, *_):
+    pass
+
+  def _Put(self, *_):
+    pass
+
+
+class TestCase(testing.AppengineTestCase):  # pragma: no cover.
   # Setup the customized queues.
   taskqueue_stub_root_path = os.path.join(
     os.path.dirname(__file__), os.path.pardir)
@@ -42,3 +71,7 @@ class FinditTestCase(testing.AppengineTestCase):  # pragma: no cover.
   def MockUTCNowWithTimezone(self, mocked_utcnow):
     """Mocks utcnow with the given value for testing."""
     self.mock(time_util, 'GetUTCNowWithTimezone', lambda: mocked_utcnow)
+
+  def GetMockHttpClient(self, response_for_url=None):
+    """Return mocked http client class."""
+    return MockHttpClient(response_for_url)

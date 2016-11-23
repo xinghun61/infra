@@ -8,7 +8,7 @@ import copy
 
 import gae_ts_mon
 
-from common.findit_testcase import FinditTestCase
+from libs.testcase import TestCase
 from model.wf_config import FinditConfig
 
 
@@ -131,7 +131,7 @@ DEFAULT_CONFIG_DATA = {
 }
 
 
-class WaterfallTestCase(FinditTestCase):  # pragma: no cover.
+class WaterfallTestCase(TestCase):  # pragma: no cover.
 
   def UpdateUnitTestConfigSettings(self, config_property=None,
                                    override_data=None):

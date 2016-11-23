@@ -6,7 +6,7 @@ import re
 
 from google.appengine.api import users
 
-from common.findit_testcase import FinditTestCase
+from crash.test.crash_testcase import CrashTestCase
 from crash.type_enums import CrashClient
 from model.crash.crash_config import CrashConfig
 
@@ -49,7 +49,7 @@ CONFIG_DATA = {
 }
 
 
-class CrashAnalysisTest(FinditTestCase):
+class CrashAnalysisTest(CrashTestCase):
 
   def setUp(self):
     super(CrashAnalysisTest, self).setUp()

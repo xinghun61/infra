@@ -5,13 +5,13 @@
 from datetime import datetime
 import mock
 
-from common.findit_testcase import FinditTestCase
+from libs.testcase import TestCase
 from model.flake.flake_analysis_request import BuildStep
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
 
-class FlakeAnalysisRequestTest(FinditTestCase):
+class FlakeAnalysisRequestTest(TestCase):
 
   def testStripMasterPrefix(self):
     cases = {

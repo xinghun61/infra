@@ -4,8 +4,10 @@
 
 from testing_utils import testing
 
+from crash.test.crash_testcase import CrashTestCase
 
-class StacktraceTestSuite(testing.AppengineTestCase):  #pragma: no cover.
+
+class StacktraceTestSuite(CrashTestCase):  #pragma: no cover.
 
   def _VerifyTwoStackFramesEqual(self, frame1, frame2):
     self.assertEqual(str(frame1), str(frame2))

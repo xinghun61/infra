@@ -12,6 +12,7 @@ from testing_utils import testing
 from lib.gitiles import gitiles_repository
 from lib.gitiles.change_log import ChangeLog
 from libs.http import retry_http_client
+from libs.testcase import TestCase
 
 
 COMMIT_MESSAGE = ('Add popover for snapshot canvas log.\n\n'
@@ -254,49 +255,21 @@ DUMMY_CHANGELOG_JSON = {
 }
 
 
-class HttpClientForGit(retry_http_client.RetryHttpClient):
-
-  def __init__(self):
-    super(HttpClientForGit, self).__init__()
-    self.response_for_url = {}
-
-  def SetResponseForUrl(self, url, response):
-    self.response_for_url[url] = response
-
-  def GetBackoff(self, *_):  # pragma: no cover
-    """Override to avoid sleep."""
-    return 0
-
-  def _Get(self, url, *_):
-    response = self.response_for_url.get(url)
-    if response is None:
-      return 404, 'Not Found'
-    else:
-      return 200, response
-
-  def _Post(self, *_):  # pragma: no cover
-    pass
-
-  def _Put(self, *_):  # pragma: no cover
-    pass
-
-
-class GitRepositoryTest(testing.AppengineTestCase):
+class GitRepositoryTest(TestCase):
 
   def setUp(self):
     super(GitRepositoryTest, self).setUp()
-    self.http_client_for_git = HttpClientForGit()
+    self.http_client_for_git = self.GetMockHttpClient()
     self.repo_url = 'https://repo.test'
-    self.git_repo = gitiles_repository.GitilesRepository(self.repo_url,
-                                                 self.http_client_for_git)
+    self.git_repo = gitiles_repository.GitilesRepository(
+        self.repo_url, self.http_client_for_git)
 
   def testGitRepositoryPropertySetters(self):
-    http_client_for_git = HttpClientForGit()
     git_repo = gitiles_repository.GitilesRepository(
-        http_client=http_client_for_git)
+        http_client=self.http_client_for_git)
     git_repo.repo_url = 'https://repo'
     self.assertEqual(git_repo.repo_url, 'https://repo')
-    self.assertEqual(git_repo.http_client, http_client_for_git)
+    self.assertEqual(git_repo.http_client, self.http_client_for_git)
 
   def testEndingSlashInRepoUrl(self):
     git_repo1 = gitiles_repository.GitilesRepository(
@@ -473,7 +446,6 @@ class GitRepositoryTest(testing.AppengineTestCase):
 
   def testGetWrappedGitRepositoryClass(self):
     repo = gitiles_repository.GitilesRepository(
-        'http://repo_url', HttpClientForGit())
+        'http://repo_url', self.http_client_for_git)
 
     self.assertEqual(repo.repo_url, 'http://repo_url')
-    self.assertTrue(isinstance(repo.http_client, HttpClientForGit))
