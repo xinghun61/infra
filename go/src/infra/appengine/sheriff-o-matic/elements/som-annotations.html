@@ -234,11 +234,49 @@
           data: change,
         }
 
-        return window.fetch('/api/v1/annotations/' + encodeURIComponent(key) + '/' + type, {
-          body: JSON.stringify(data),
-          method: 'POST',
-          credentials: 'include',
-        }).then(jsonParsePromise).then(this._postResponse.bind(this));
+        return this.postJSON('/api/v1/annotations/' + encodeURIComponent(key) + '/' + type, change)
+          .then(jsonParsePromise).then(this._postResponse.bind(this));
+      },
+
+      // FIXME: Move to common behavior if other code does POST requests.
+      postJSON: function(url, data, options) {
+        options = Object.assign({
+          body: JSON.stringify({
+            xsrf_token: this.xsrfToken,
+            data: data,
+          }),
+          method:'POST',
+          credentials: 'include'
+        }, options || {});
+
+        return new Promise((resolve, reject) => {
+          window.fetch(url, options).then((value) => {
+            if (!value.ok) {
+              value.text().then((txt) => {
+                if (!(value.status == 403 && txt.includes("token expired"))) {
+                  reject(txt);
+                  return;
+                }
+
+                // We need to refresh our XSRF token!
+                window.fetch('/api/v1/xsrf_token', {credentials: 'include'}).then((respData) => {
+                  return respData.json();
+                }).then((jsonData) => {
+                  this.xsrfToken = jsonData['token'];
+                  options.body = JSON.stringify({
+                    xsrf_token: this.xsrfToken,
+                    data: data,
+                  });
+                  window.fetch(url, options).then(resolve, reject);
+                });
+              });
+              return;
+            }
+
+            resolve(value);
+          }, reject);
+        })
+
       },
 
       _computeAnnotations: function(annotationsJson, localState) {

@@ -335,6 +335,27 @@ func noopHandler(ctx *router.Context) {
 	return
 }
 
+func getXSRFToken(ctx *router.Context) {
+	c, w := ctx.Context, ctx.Writer
+
+	tok, err := xsrf.Token(c)
+	if err != nil {
+		logging.Errorf(c, "while getting xrsf token: %s", err)
+	}
+
+	data := map[string]string{
+		"token": tok,
+	}
+	txt, err := json.Marshal(data)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(txt)
+}
+
 //// Routes.
 func init() {
 
@@ -350,6 +371,7 @@ func init() {
 	r.GET("/api/v1/alerts/:tree", protected, getAlertsHandler)
 	r.GET("/api/v1/pubsubalerts/:tree", protected, getPubSubAlertsHandler)
 	r.GET("/api/v1/restarts/:tree", protected, getRestartingMastersHandler)
+	r.GET("/api/v1/xsrf_token", protected, getXSRFToken)
 
 	// Disallow cookies because this handler should not be accessible by regular
 	// users.
