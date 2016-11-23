@@ -1,3 +1,23 @@
+# Release Notes sheriff-o-matic 2016-11-22
+
+- 5 commits, 1 bugs affected since 3a10459 (2016-11-16T00:11:55.000Z)
+- 3 Authors:
+  - zhangtiff@google.com
+  - martiniss@chromium.org
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [SOM: UI tweaks](https://chromium-review.googlesource.com/409615) (martiniss@chromium.org)
+- [SOM: Fix `make test` after go files moved.](https://chromium-review.googlesource.com/413666) (martiniss@chromium.org)
+- [[som] Split main.go into multiple files.](https://chromium-review.googlesource.com/412904) (seanmccullough@chromium.org)
+- [SoM: Make alert count visible in page title.](https://chromium-review.googlesource.com/412302) (zhangtiff@google.com)
+- [SoM: Format comments to link URLs and emails.](https://chromium-review.googlesource.com/412148) (zhangtiff@google.com)
+
+## Bugs updated, by author
+- zhangtiff@google.com:
+  -  [https://crbug.com/464757](https://crbug.com/464757)
+
 # Release Notes sheriff-o-matic 2016-11-15
 
 - 13 commits, 8 bugs affected since a528c38 (2016-10-31T23:41:05.000Z)
