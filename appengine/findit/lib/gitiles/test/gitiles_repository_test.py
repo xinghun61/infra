@@ -9,10 +9,10 @@ import re
 
 from testing_utils import testing
 
+from gae_libs.testcase import TestCase
 from lib.gitiles import gitiles_repository
 from lib.gitiles.change_log import ChangeLog
 from libs.http import retry_http_client
-from libs.testcase import TestCase
 
 
 COMMIT_MESSAGE = ('Add popover for snapshot canvas log.\n\n'

@@ -8,7 +8,7 @@ import copy
 
 import gae_ts_mon
 
-from libs.testcase import TestCase
+from gae_libs.testcase import TestCase
 from model.wf_config import FinditConfig
 
 

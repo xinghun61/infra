@@ -7,8 +7,8 @@ import re
 
 from google.appengine.api import users
 
+from gae_libs.testcase import TestCase
 from libs.http import retry_http_client
-from libs.testcase import TestCase
 from lib.gitiles.change_log import ChangeLog
 from model.crash.crash_config import CrashConfig
 

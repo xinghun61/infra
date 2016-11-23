@@ -5,7 +5,7 @@
 from datetime import datetime
 import mock
 
-from libs.testcase import TestCase
+from gae_libs.testcase import TestCase
 from model.flake.flake_analysis_request import BuildStep
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
