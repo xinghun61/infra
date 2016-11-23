@@ -3,10 +3,8 @@ package som
 import (
 	"bytes"
 	"compress/zlib"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"infra/monitoring/messages"
@@ -15,7 +13,6 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/luci/gae/service/memcache"
-	"github.com/luci/gae/service/urlfetch"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/router"
 )
@@ -138,7 +135,7 @@ var getGatekeeperTrees = func(c context.Context) (map[string]*messages.TreeMaste
 
 	var b []byte
 	if err == memcache.ErrCacheMiss {
-		b, err = refreshGatekeeperTrees(c)
+		b, err = getGitiles(c, gkTreesURL)
 		item = memcache.NewItem(c, gatekeeperTreesKey).SetValue(b)
 		err = memcache.Set(c, item)
 	}
@@ -154,26 +151,4 @@ var getGatekeeperTrees = func(c context.Context) (map[string]*messages.TreeMaste
 	}
 
 	return ret, nil
-}
-
-func refreshGatekeeperTrees(c context.Context) ([]byte, error) {
-	client := &http.Client{Transport: urlfetch.Get(c)}
-
-	resp, err := client.Get(gkTreesURL)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP status code %d from %s", resp.StatusCode, resp.Request.URL)
-	}
-
-	reader := base64.NewDecoder(base64.StdEncoding, resp.Body)
-	b, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
 }

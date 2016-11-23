@@ -8,12 +8,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 
 	testhelper "infra/monitoring/analyzer/test"
 	"infra/monitoring/messages"
 
+	"github.com/luci/gae/impl/dummy"
+	"github.com/luci/gae/service/info"
 	"github.com/luci/gae/service/urlfetch"
 	"github.com/luci/luci-go/appengine/gaetesting"
 	"github.com/luci/luci-go/server/auth"
@@ -21,6 +24,17 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+type giMock struct {
+	info.RawInterface
+	token  string
+	expiry time.Time
+	err    error
+}
+
+func (gi giMock) AccessToken(scopes ...string) (token string, expiry time.Time, err error) {
+	return gi.token, gi.expiry, gi.err
+}
 
 func TestPostMiloPubSubHandler(t *testing.T) {
 	Convey("bad push request", t, func() {
@@ -149,8 +163,38 @@ func TestGetPubSubAlertsHandler(t *testing.T) {
 	Convey("main", t, func() {
 		c := gaetesting.TestingContext()
 		w := httptest.NewRecorder()
-		c = auth.SetAuthenticator(c, []auth.Method(nil))
-		c = urlfetch.Set(c, http.DefaultTransport)
+		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
+			return giMock{dummy.Info(), "", time.Now(), nil}
+		})
+
+		c = urlfetch.Set(c, &mockGitilesTransport{
+			map[string]string{
+				"https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/gatekeeper_trees.json?format=text": `{    "chromium": {
+        "build-db": "waterfall_build_db.json",
+        "masters": {
+            "https://build.chromium.org/p/chromium": ["*"],
+            "https://build.chromium.org/p/chromium.android": [
+              "Android N5X Swarm Builder"
+            ],
+            "https://build.chromium.org/p/chromium.chrome": ["*"],
+            "https://build.chromium.org/p/chromium.chromiumos": ["*"],
+            "https://build.chromium.org/p/chromium.gpu": ["*"],
+            "https://build.chromium.org/p/chromium.infra.cron": ["*"],
+            "https://build.chromium.org/p/chromium.linux": ["*"],
+            "https://build.chromium.org/p/chromium.mac": ["*"],
+            "https://build.chromium.org/p/chromium.memory": ["*"],
+            "https://build.chromium.org/p/chromium.webkit": ["*"],
+            "https://build.chromium.org/p/chromium.win": ["*"]
+        },
+        "open-tree": true,
+        "password-file": "/creds/gatekeeper/chromium_status_password",
+        "revision-properties": "got_revision_cp",
+        "set-status": true,
+        "status-url": "https://chromium-status.appspot.com",
+        "track-revisions": true
+    }}`,
+			},
+		})
 
 		getPubSubAlertsHandler(&router.Context{
 			Context: c,
@@ -159,6 +203,7 @@ func TestGetPubSubAlertsHandler(t *testing.T) {
 			Params:  makeParams("tree", "chromium"),
 		})
 
+		Printf("Body: %+v", string(w.Body.Bytes()))
 		So(w.Code, ShouldEqual, 200)
 	})
 

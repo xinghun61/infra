@@ -349,6 +349,7 @@ func init() {
 	r.GET("/api/v1/trees/", protected, getTreesHandler)
 	r.GET("/api/v1/alerts/:tree", protected, getAlertsHandler)
 	r.GET("/api/v1/pubsubalerts/:tree", protected, getPubSubAlertsHandler)
+	r.GET("/api/v1/restarts/:tree", protected, getRestartingMastersHandler)
 
 	// Disallow cookies because this handler should not be accessible by regular
 	// users.

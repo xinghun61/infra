@@ -20,7 +20,10 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
+	"github.com/luci/gae/impl/dummy"
 	"github.com/luci/gae/service/datastore"
+	"github.com/luci/gae/service/info"
+	"github.com/luci/gae/service/urlfetch"
 	"github.com/luci/luci-go/appengine/gaetesting"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/clock/testclock"
@@ -208,6 +211,18 @@ func TestMain(t *testing.T) {
 					})
 
 					Convey("trooper alerts", func() {
+						ta := datastore.GetTestable(c)
+
+						datastore.Put(c, &Tree{
+							Name: "chromium",
+						})
+						datastore.Put(c, &AlertsJSON{
+							ID:       1,
+							Tree:     datastore.MakeKey(c, "Tree", "chromium"),
+							Contents: []byte("{}"),
+						})
+						ta.CatchupIndexes()
+
 						getAlertsHandler(&router.Context{
 							Context: c,
 							Writer:  w,
@@ -219,7 +234,7 @@ func TestMain(t *testing.T) {
 						So(err, ShouldBeNil)
 						body := string(r)
 						So(w.Code, ShouldEqual, 200)
-						So(body, ShouldEqual, `{"alerts":[]}`)
+						So(body, ShouldEqual, `{"alerts":[],"date":"0001-01-01T00:00:00Z","revision_summaries":null,"timestamp":0}`)
 					})
 				})
 
@@ -456,6 +471,82 @@ func TestMain(t *testing.T) {
 				})
 			})
 
+			Convey("/restarts", func() {
+				c := gaetesting.TestingContext()
+				w := httptest.NewRecorder()
+				c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
+					return giMock{dummy.Info(), "", time.Now(), nil}
+				})
+
+				c = urlfetch.Set(c, &mockGitilesTransport{
+					map[string]string{
+						"https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/gatekeeper_trees.json?format=text": `{    "chromium": {
+        "build-db": "waterfall_build_db.json",
+        "masters": {
+            "https://build.chromium.org/p/chromium": ["*"],
+            "https://build.chromium.org/p/chromium.android": [
+              "Android N5X Swarm Builder"
+            ],
+            "https://build.chromium.org/p/chromium.chrome": ["*"],
+            "https://build.chromium.org/p/chromium.chromiumos": ["*"],
+            "https://build.chromium.org/p/chromium.gpu": ["*"],
+            "https://build.chromium.org/p/chromium.infra.cron": ["*"],
+            "https://build.chromium.org/p/chromium.linux": ["*"],
+            "https://build.chromium.org/p/chromium.mac": ["*"],
+            "https://build.chromium.org/p/chromium.memory": ["*"],
+            "https://build.chromium.org/p/chromium.webkit": ["*"],
+            "https://build.chromium.org/p/chromium.win": ["*"]
+        },
+        "open-tree": true,
+        "password-file": "/creds/gatekeeper/chromium_status_password",
+        "revision-properties": "got_revision_cp",
+        "set-status": true,
+        "status-url": "https://chromium-status.appspot.com",
+        "track-revisions": true
+    }}`,
+						"https://chrome-internal.googlesource.com/infradata/master-manager/+/master/desired_master_state.json?format=text": `
+{
+	"master_states":{
+  	"master.chromium":[
+	     {
+	       "desired_state":"offline",
+	       "transition_time_utc":"2015-11-19T16:47:00Z"
+	     },
+	     {
+	       "desired_state":"running",
+	       "transition_time_utc":"2016-11-19T02:30:00.0Z"
+	     }
+	  ]
+	}
+}`,
+					},
+				})
+
+				getRestartingMastersHandler(&router.Context{
+					Context: c,
+					Writer:  w,
+					Request: makeGetRequest(),
+					Params:  makeParams("tree", "chromium"),
+				})
+
+				_, err := ioutil.ReadAll(w.Body)
+				So(err, ShouldBeNil)
+				So(w.Code, ShouldEqual, 200)
+
+				w = httptest.NewRecorder()
+				getRestartingMastersHandler(&router.Context{
+					Context: c,
+					Writer:  w,
+					Request: makeGetRequest(),
+					Params:  makeParams("tree", "non-existent"),
+				})
+
+				b, err := ioutil.ReadAll(w.Body)
+				So(err, ShouldBeNil)
+				So(w.Code, ShouldEqual, 404)
+				So(string(b), ShouldEqual, "Unrecognized tree name")
+			})
+
 			Convey("/bugqueue", func() {
 				// Bug queue is weird to test because it relies on network requests.
 				Convey("get bug queue handler", func() {
@@ -516,6 +607,7 @@ func TestMain(t *testing.T) {
 				})
 			})
 		})
+
 		Convey("cron", func() {
 			Convey("flushOldAnnotations", func() {
 				getAllAnns := func() []*Annotation {
