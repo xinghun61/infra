@@ -73,6 +73,14 @@
       <a href="http://code.google.com/p/monorail/wiki/FilterRules">Learn more</a>
     [end]
 
+    [# Teach users that color blocks mean that an issue participant may not be available.]
+    [is cue "availibility_msgs"]
+      <b>Note:</b>
+      Color blocks (like <span class="availability_unsure" style="padding:0">&#9608;</span> or
+      <span class="availability_never" style="padding:0">&#9608;</span>)
+      mean that a user may not be available.  Tooltip shows the reason.
+    [end]
+
     [# Cue card to teach users that full-text indexing takes time.]
     [is cue "stale_fulltext"]
       <b>Note:</b>

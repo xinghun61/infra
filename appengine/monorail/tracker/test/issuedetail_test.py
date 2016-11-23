@@ -161,10 +161,25 @@ class IssueDetailTest(unittest.TestCase):
         '&copied_to_project=' + copied_to_project_name +
         '&cursor=proj%3A123&q=term'))
 
-  def testGatherHelpData(self):
+  def testGatherHelpData_Anon(self):
     servlet = issuedetail.IssueDetail('req', 'res', services=self.services)
     mr = testing_helpers.MakeMonorailRequest()
+    mr.auth.user_id = 0
 
+    # Anon users do not see dismissable cues.
+    help_data = servlet.GatherHelpData(mr, {})
+    self.assertEqual(None, help_data['cue'])
+
+  def testGatherHelpData_SignedIn(self):
+    servlet = issuedetail.IssueDetail('req', 'res', services=self.services)
+    mr = testing_helpers.MakeMonorailRequest()
+    mr.auth.user_id = 111L
+
+    # User needs to click through the privacy dialog.
+    help_data = servlet.GatherHelpData(mr, {})
+    self.assertEqual('privacy_click_through', help_data['cue'])
+
+    mr.auth.user_pb.dismissed_cues = ['privacy_click_through']
     # User did not jump to an issue, no query at all.
     help_data = servlet.GatherHelpData(mr, {})
     self.assertEqual(None, help_data['cue'])
@@ -179,6 +194,17 @@ class IssueDetailTest(unittest.TestCase):
     help_data = servlet.GatherHelpData(mr, {})
     self.assertEqual('search_for_numbers', help_data['cue'])
     self.assertEqual(123, help_data['jump_local_id'])
+
+    # User is viewing an issue with an unavailable owner.
+    mr.query = ''
+    issue_view = testing_helpers.Blank(
+        owner=testing_helpers.Blank(avail_message='On vacation'),
+        derived_owner=testing_helpers.Blank(avail_message=''),
+        cc=[testing_helpers.Blank(avail_message='')],
+        derived_cc=[testing_helpers.Blank(avail_message='')])
+    page_data = {'issue': issue_view}
+    help_data = servlet.GatherHelpData(mr, page_data)
+    self.assertEqual('availibility_msgs', help_data['cue'])
 
 
 class IssueDetailFunctionsTest(unittest.TestCase):

@@ -341,12 +341,12 @@ class IssueDetail(issuepeek.IssuePeek):
         'spam_verdict_history': spam_verdict_history,
     }
 
-  def GatherHelpData(self, mr, _page_data):
+  def GatherHelpData(self, mr, page_data):
     """Return a dict of values to drive on-page user help.
 
     Args:
       mr: commonly used info parsed from the request.
-      _page_data: Dictionary of base and page template data.
+      page_data: Dictionary of base and page template data.
 
     Returns:
       A dict of values to drive on-page user help, to be added to page_data.
@@ -357,15 +357,25 @@ class IssueDetail(issuepeek.IssuePeek):
     # If so, display a "did you mean to search?" cue card.
     jump_local_id = None
     cue = None
-    if (tracker_constants.JUMP_RE.match(mr.query) and
-        mr.auth.user_pb and
-        'search_for_numbers' not in mr.auth.user_pb.dismissed_cues):
-      jump_local_id = int(mr.query)
-      cue = 'search_for_numbers'
+    any_availibility_message = False
+    iv = page_data.get('issue')
+    if iv:
+      participant_views = (
+          [iv.owner, iv.derived_owner] +iv.cc + iv.derived_cc)
+      any_availibility_message = any(
+          (pv and pv.avail_message) for pv in participant_views)
 
-    if (mr.auth.user_id and
-        'privacy_click_through' not in mr.auth.user_pb.dismissed_cues):
-      cue = 'privacy_click_through'
+    if mr.auth.user_id:  # Only signed in users get cues.
+      dismissed_cues = mr.auth.user_pb.dismissed_cues
+      if 'privacy_click_through' not in dismissed_cues:
+        cue = 'privacy_click_through'
+      elif ('search_for_numbers' not in dismissed_cues and
+            tracker_constants.JUMP_RE.match(mr.query)):
+        jump_local_id = int(mr.query)
+        cue = 'search_for_numbers'
+      elif ('availibility_msgs' not in dismissed_cues and
+            any_availibility_message):
+        cue = 'availibility_msgs'
 
     return {
         'is_privileged_domain_user': ezt.boolean(is_privileged_domain_user),
