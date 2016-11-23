@@ -58,7 +58,7 @@ def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
     sortable_fields.update(
         {'rank': lambda issue: issue_ranks[issue.issue_id]})
     if not mr.sort_spec:
-      mr.sort_spec = '-rank'
+      mr.sort_spec = 'rank'
     sorted_issues = sorting.SortArtifacts(
         mr, allowed_issues, harmonized_config, sortable_fields,
         username_cols=tracker_constants.USERNAME_COLS,

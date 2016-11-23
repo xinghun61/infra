@@ -68,8 +68,8 @@ class HotlistIssues(servlet.Servlet):
           mr.auth.effective_ids, mr.hotlist)
       page_perms = template_helpers.EZTItem(EditIssue=None)
 
-    allow_rerank = (not mr.group_by_spec and mr.sort_spec.startswith((
-        'rank', '-rank')) and (owner_permissions or editor_permissions))
+    allow_rerank = (not mr.group_by_spec and mr.sort_spec.startswith(
+        'rank') and (owner_permissions or editor_permissions))
 
     # Note: The HotlistView is created and returned in servlet.py
     page_data.update({'owner_permissions': owner_permissions,

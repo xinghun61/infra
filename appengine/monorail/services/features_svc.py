@@ -572,7 +572,7 @@ class FeaturesService(object):
     self.hotlist2issue_tbl.InsertRows(
         cnxn, cols=HOTLIST2ISSUE_COLS , row_values=insert_rows, commit=commit)
 
-    # TODO(jojwang): call some InvalidateKeys method?
+    self.hotlist_2lc.InvalidateKeys(cnxn, [hotlist_id])
 
     # Update the hotlist PB in RAM
     rank_pairs = hotlist.iid_rank_pairs
