@@ -161,12 +161,14 @@ func TestGetFlakinessData(t *testing.T) {
 												{"f": [
 													{"v": "test1"},
 													{"v": "unittests"},
-													{"v": "0.2"}
+													{"v": "0.2"},
+													{"v": "21232"}
 												]},
 												{"f": [
 													{"v": "test2"},
 													{"v": "unittests"},
-													{"v": "0.14"}
+													{"v": "0.14"},
+													{"v": "4562"}
 												]}
 											]}`,
 				},
@@ -188,8 +190,18 @@ func TestGetFlakinessData(t *testing.T) {
 			data, err := getFlakinessData(ctx, bq, Group{Name: "foo", Kind: DirKind})
 			So(err, ShouldBeNil)
 			So(data, ShouldResemble, []Flakiness{
-				{TestName: "test1", NormalizedStepName: "unittests", Flakiness: 0.2},
-				{TestName: "test2", NormalizedStepName: "unittests", Flakiness: 0.14},
+				{
+					TestName:           "test1",
+					NormalizedStepName: "unittests",
+					Flakiness:          0.2,
+					Runs:               21232,
+				},
+				{
+					TestName:           "test2",
+					NormalizedStepName: "unittests",
+					Flakiness:          0.14,
+					Runs:               4562,
+				},
 			})
 		})
 

@@ -92,12 +92,14 @@
         <div class="grid-header">
           <div class="test-name">Test Name</div>
           <div class="test-stats">Flakiness</div>
+          <div class="test-stats">Total Runs</div>
         </div>
         <template is="dom-repeat" items="[[_data]]" as="test">
           <a class="grid-row-link" href="[[_getTestResultsUrl(test)]]">
             <div class="grid-row">
               <div class="test-name">[[test.test_name]]</div>
               <div class="test-stats">[[_showPercentage(test.flakiness)]]%</div>
+              <div class="test-stats">[[test.runs]]</div>
             </div>
           </a>
         </template>
