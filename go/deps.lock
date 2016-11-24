@@ -1,16 +1,21 @@
-hash: 5b9475709d60c3452dbdec8d21c69b1c7c726c3fcc7abeada976315422ae1660
-updated: 2016-11-18T10:42:42.805705911-08:00
+hash: 93108208ade77a9d6da73f581f410ce30726ef3e8ecdf61441bcf58d39426902
+updated: 2016-11-23T20:55:11.020776457-08:00
 imports:
 - name: cloud.google.com/go
-  version: 5aca3b7200b228d4b47e9e511f1d77ac270855ff
+  version: 5eaf111e5069f953c4365a8e93cc23f674630c93
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
   - compute/metadata
   - pubsub
   - storage
+- name: github.com/bradfitz/gomemcache
+  version: fb1f79c6b65acda83063cbc69f6bba1522558bfc
+  repo: https://chromium.googlesource.com/external/github.com/bradfitz/gomemcache.git
+  subpackages:
+  - memcache
 - name: github.com/DATA-DOG/go-sqlmock
-  version: d4cd2ca2ad1cc2130bba385aab072218f131f636
+  version: 600aa16d3e2704d891bd475df6c48d7a539d71bb
   repo: https://chromium.googlesource.com/external/github.com/DATA-DOG/go-sqlmock.git
 - name: github.com/dustin/go-humanize
   version: bd88f87ad3a420f7bcf05e90566fd1ceb351fa7f
@@ -54,7 +59,7 @@ imports:
   version: c2c54e542fb797ad986b31721e1baedf214ca413
   repo: https://chromium.googlesource.com/external/github.com/kardianos/osext.git
 - name: github.com/kisielk/errcheck
-  version: 5b29f57a6f51b05cd8af8b345e728d7089123ab4
+  version: db0ca22445717d1b2c51ac1034440e0a2a2de645
   repo: https://chromium.googlesource.com/external/github.com/kisielk/errcheck.git
 - name: github.com/kisielk/gotool
   version: 5e136deb9b893bbe6c8f23236ff4378b7a8a0dbb
@@ -156,12 +161,12 @@ imports:
   subpackages:
   - encoding/json5
 - name: golang.org/x/build
-  version: 058d87cc8772b62b2e2fd94cae50d864cdd95f44
+  version: 4f62cec36813742c0acea7f0f3922fdff3dd475c
   repo: https://go.googlesource.com/build.git
   subpackages:
   - gerrit
 - name: golang.org/x/mobile
-  version: b8794a2669da6680501f9ebc6c555553dc46b1ee
+  version: aa9922ad4c79ee8a56cd45bf433f2aa943712b09
   repo: https://go.googlesource.com/mobile.git
   subpackages:
   - cmd/gomobile
@@ -183,12 +188,12 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: b699b7032584f0953262cb2788a0ca19bb494703
+  version: 30237cf4eefd639b184d1f2cb77a581ea0be8947
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - windows
 - name: golang.org/x/tools
-  version: 8b84dae17391c154ca50b0162662aa1fc9ff84c2
+  version: 167995c67fa45f3a7fc8dab62bb872212e397c11
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -201,7 +206,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: e4c04685e5d7db47ff294aa9e514b3a638c431c9
+  version: c8d75a8ec737f9b8b1ed2676c28feedbe21f543f
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
@@ -232,7 +237,7 @@ imports:
   subpackages:
   - protobuf
 - name: google.golang.org/grpc
-  version: b13ef794997191ec801db90a42c50034df91850a
+  version: eca2ad68af4d7bf894ada6bd263133f069a441d5
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes

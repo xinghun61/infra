@@ -247,3 +247,8 @@ import:
 - package: howett.net/plist
   version: master
   repo: https://chromium.googlesource.com/external/github.com/DHowett/go-plist.git
+- package: github.com/bradfitz/gomemcache
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/bradfitz/gomemcache.git
+  subpackages:
+  - memcache
