@@ -10,6 +10,7 @@ import webapp2
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'third_party'))
 
+from google.appengine.api import app_identity
 from handlers.cron_dispatch import CronDispatch
 from handlers.index import Index
 from handlers.post_comment import PostComment
@@ -29,6 +30,9 @@ handlers = [
   (r'/override_issue_id', flake_issues.OverrideIssueId),
 ]
 
+def is_monitoring_enabled():
+  return not app_identity.get_application_id().endswith('-staging')
+
 app = webapp2.WSGIApplication(handlers, debug=True)
-gae_ts_mon.initialize(app)
+gae_ts_mon.initialize(app, is_enabled_fn=is_monitoring_enabled)
 gae_event_mon.initialize('flakiness_pipeline')
