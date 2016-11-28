@@ -183,6 +183,12 @@ func getTestNames(reader client.Reader, f *messages.BuildStep) (string, []string
 
 		failedTests = append(failedTests, ue...)
 	}
+
+	if len(failedTests) > 40 {
+		// FIXME: Log this
+		failedTests = append(failedTests[:40], "...... too many results, data snipped....")
+	}
+
 	return name, failedTests, nil
 }
 
