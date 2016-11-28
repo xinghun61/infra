@@ -134,7 +134,6 @@ func getRestartingMastersHandler(ctx *router.Context) {
 
 	tree := p.ByName("tree")
 
-	// Get from memecache first.
 	masters, err := getRestartingMasters(c, tree)
 	if err == ErrUnrecognizedTree {
 		errStatus(c, w, http.StatusNotFound, err.Error())
@@ -165,7 +164,7 @@ type masterState struct {
 }
 
 func getRestartingMasters(c context.Context, treeName string) (map[string]masterState, error) {
-	item, err := memcache.GetKey(c, gatekeeperTreesKey)
+	item, err := memcache.GetKey(c, masterStateKey)
 	if err != nil && err != memcache.ErrCacheMiss {
 		return nil, err
 	}
@@ -173,8 +172,13 @@ func getRestartingMasters(c context.Context, treeName string) (map[string]master
 	var b []byte
 	if err == memcache.ErrCacheMiss {
 		b, err = getGitiles(c, masterStateURL)
+		if err != nil {
+			return nil, err
+		}
 		item = memcache.NewItem(c, masterStateKey).SetValue(b).SetExpiration(5 * time.Minute)
-		err = memcache.Set(c, item)
+		if err = memcache.Set(c, item); err != nil {
+			return nil, err
+		}
 	}
 
 	if err != nil {

@@ -19,6 +19,7 @@
 <link rel="import" href="../elements/som-bug-queue.html">
 <link rel="import" href="../elements/som-drawer.html">
 <link rel="import" href="../elements/som-examine.html">
+<link rel="import" href="../elements/som-master-restarts.html">
 <link rel="import" href="../elements/som-tree-status.html">
 <link rel="import" href="../elements/pages/som-help.html">
 <link rel="import" href="../elements/pages/som-rotation-calendar.html">
@@ -191,6 +192,7 @@
           <div id="alertsList" class="page-body">
             <div class="list-item">
               <som-tree-status tree="[[_tree]]" id="treeStatus"></som-tree-status>
+              <som-master-restarts tree="[[_tree]]" id="masterRestarts"></som-master-restarts>
               <div class="notification" hidden$="[[_isTrooperPage]]">
                 Start at the top and try to clear all the alerts. For additional guidance, see:
                 <span hidden="[[!_helpLink]]">
@@ -412,6 +414,7 @@
         }
         this.$.annotations.fetch();
         this.$.bugQueue.refresh();
+        this.$.masterRestarts.refresh();
         this.$.treeStatus.refresh();
         this._alertsGroupsChanged(this._alertsGroups);
       },

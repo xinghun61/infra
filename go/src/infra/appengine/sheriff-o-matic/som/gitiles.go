@@ -11,6 +11,7 @@ import (
 	"github.com/luci/gae/service/urlfetch"
 	"github.com/luci/luci-go/appengine/gaeauth/client"
 	"github.com/luci/luci-go/common/auth"
+	"github.com/luci/luci-go/common/logging"
 )
 
 var (
@@ -22,6 +23,7 @@ var (
 func getGitiles(c context.Context, URL string) ([]byte, error) {
 	token, err := client.GetAccessToken(c, []string{gitilesScope})
 	if err != nil {
+		logging.Errorf(c, "getting access token: %v", err)
 		return nil, err
 	}
 
@@ -34,6 +36,7 @@ func getGitiles(c context.Context, URL string) ([]byte, error) {
 
 	resp, err := client.Get(URL)
 	if err != nil {
+		logging.Errorf(c, "getting URL: %v", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
