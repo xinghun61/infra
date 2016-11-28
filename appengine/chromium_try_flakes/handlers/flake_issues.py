@@ -8,8 +8,13 @@ import datetime
 import httplib
 import json
 import logging
+import os
+import sys
 import urllib2
 import webapp2
+
+sys.path.insert(0, os.path.join(
+  os.path.dirname(os.path.dirname(__file__)), 'third_party'))
 
 from google.appengine.api import app_identity
 from google.appengine.api import taskqueue

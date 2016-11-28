@@ -4,19 +4,15 @@
 
 import gae_ts_mon
 import gae_event_mon
-import os
-import sys
 import webapp2
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'third_party'))
-
 from google.appengine.api import app_identity
+from handlers import flake_issues
+from handlers.all_flake_occurrences import AllFlakeOccurrences
 from handlers.cron_dispatch import CronDispatch
 from handlers.index import Index
 from handlers.post_comment import PostComment
-from handlers.all_flake_occurrences import AllFlakeOccurrences
 from handlers.search import Search
-from handlers import flake_issues
 
 handlers = [
   (r'/', Index),

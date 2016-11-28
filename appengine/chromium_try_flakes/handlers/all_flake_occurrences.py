@@ -2,16 +2,21 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
+import logging
+import os
+import sys
+import time
+import webapp2
+
 from google.appengine.ext import ndb
 from google.appengine.ext.webapp import template
 
-from model.flake import Flake
+sys.path.insert(0, os.path.join(
+  os.path.dirname(os.path.dirname(__file__)), 'third_party'))
 
-import datetime
-import logging
+from model.flake import Flake
 from test_results.util import normalize_test_type
-import time
-import webapp2
 
 
 MAX_GROUP_DISTANCE = datetime.timedelta(days=3)

@@ -3,12 +3,17 @@
 # found in the LICENSE file.
 
 import datetime
-import dateutil.parser
-import logging
 import json
+import logging
+import os
+import sys
 import time
 import urllib2
 
+sys.path.insert(0, os.path.join(
+  os.path.dirname(os.path.dirname(__file__)), 'third_party'))
+
+import dateutil.parser
 import gae_ts_mon
 from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch

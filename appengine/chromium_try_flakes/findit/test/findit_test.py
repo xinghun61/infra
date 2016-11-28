@@ -7,10 +7,9 @@ import mock
 
 from google.appengine.datastore import datastore_stub_util
 
-import main  # Fiddles sys.path so must come first.
-
 import gae_ts_mon
 from findit import findit
+import main
 from model.build_run import BuildRun, PatchsetBuilderRuns
 from model.flake import Flake, FlakyRun, FlakeOccurrence
 from testing_utils import testing
