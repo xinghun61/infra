@@ -240,7 +240,10 @@ class ProcessIssue(webapp2.RequestHandler):
     """
     seen_issues = set()
     flake_issue = api.getIssue(starting_issue_id)
-    while flake_issue.status == 'Duplicate':
+    # We need to check both status and merged_into, since it's possible to
+    # create an issue with Duplicate status but without merged_into field set
+    # and vice versa (see http://crbug.com/669054 and http://crbug.com/669056).
+    while flake_issue.status == 'Duplicate' and flake_issue.merged_into:
       seen_issues.add(flake_issue.id)
       if flake_issue.merged_into in seen_issues:
         logging.info('Detected issue duplication loop: %s.', seen_issues)

@@ -533,6 +533,24 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
 
     self.assertEqual(flake_key.get().issue_id, issue3.id)
 
+  def test_handles_ignores_duplicate_issues_without_merged_into(self):
+    issue = self.mock_api.create(MockIssue({}))
+    issue.open = False
+    issue.status = 'Duplicate'
+
+    now = datetime.datetime.utcnow()
+    flake = self._create_flake()
+    flake.issue_id = issue.id
+    flake.issue_last_updated = now - datetime.timedelta(days=2)
+    flake.num_reported_flaky_runs = 0
+    flake_key = flake.put()
+
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+      self.assertEqual(200, response.status_int)
+
+    self.assertEqual(flake_key.get().issue_id, issue.id)
+
   def test_detects_duplication_loop_and_recreates_issue(self):
     issue1 = self.mock_api.create(MockIssue({}))
     issue2 = self.mock_api.create(MockIssue({}))
