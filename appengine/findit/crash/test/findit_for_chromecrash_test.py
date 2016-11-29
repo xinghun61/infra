@@ -69,7 +69,7 @@ def _FinditForFracas():
 class FinditForChromeCrashTest(CrashTestCase):
 
   chrome_dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
-      gitiles_repository.GitilesRepository(http_client=HttpClientAppengine()))
+      gitiles_repository.GitilesRepository(HttpClientAppengine()))
 
   # TODO(wrengr): what was the purpose of this test? As written it's
   # just testing that mocking works. I'm guessing it was to check that
@@ -89,7 +89,7 @@ class FinditForChromeCrashTest(CrashTestCase):
     analysis.client_id = CrashClient.FRACAS
 
     findit_client = _FinditForChromeCrash(
-        gitiles_repository.GitilesRepository(http_client=HttpClientAppengine()))
+        gitiles_repository.GitilesRepository(HttpClientAppengine()))
     self.assertIsNone(findit_client.FindCulprit(analysis))
 
 

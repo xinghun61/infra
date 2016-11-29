@@ -93,7 +93,7 @@ def _GetCulpritInfo(repo_name, revision):
   # TODO(stgao): get repo url at runtime based on the given repo name.
   # unused arg - pylint: disable=W0612,W0613
   repo = GitilesRepository(
-      'https://chromium.googlesource.com/chromium/src.git', HttpClient())
+      HttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
   change_log = repo.GetChangeLog(revision)
   return change_log.commit_position, change_log.code_review_url
 

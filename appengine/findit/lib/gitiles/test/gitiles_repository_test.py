@@ -262,22 +262,21 @@ class GitRepositoryTest(TestCase):
     self.http_client_for_git = self.GetMockHttpClient()
     self.repo_url = 'https://repo.test'
     self.git_repo = gitiles_repository.GitilesRepository(
-        self.repo_url, self.http_client_for_git)
+        self.http_client_for_git, self.repo_url)
 
   def testGitRepositoryPropertySetters(self):
-    git_repo = gitiles_repository.GitilesRepository(
-        http_client=self.http_client_for_git)
+    git_repo = gitiles_repository.GitilesRepository(self.http_client_for_git)
     git_repo.repo_url = 'https://repo'
     self.assertEqual(git_repo.repo_url, 'https://repo')
     self.assertEqual(git_repo.http_client, self.http_client_for_git)
 
   def testEndingSlashInRepoUrl(self):
     git_repo1 = gitiles_repository.GitilesRepository(
-        self.repo_url, self.http_client_for_git)
+        self.http_client_for_git, self.repo_url)
     self.assertEqual(self.repo_url, git_repo1.repo_url)
 
     git_repo2 = gitiles_repository.GitilesRepository(
-        '%s/' % self.repo_url, self.http_client_for_git)
+        self.http_client_for_git, '%s/' % self.repo_url)
     self.assertEqual(self.repo_url, git_repo2.repo_url)
 
   def testMalformattedJsonReponse(self):
@@ -446,6 +445,5 @@ class GitRepositoryTest(TestCase):
 
   def testGetWrappedGitRepositoryClass(self):
     repo = gitiles_repository.GitilesRepository(
-        'http://repo_url', self.http_client_for_git)
-
+        self.http_client_for_git, 'http://repo_url')
     self.assertEqual(repo.repo_url, 'http://repo_url')

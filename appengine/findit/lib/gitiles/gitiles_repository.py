@@ -33,8 +33,7 @@ CACHE_EXPIRE_TIME_SECONDS = 24 * 60 * 60
 class GitilesRepository(GitRepository):
   """Use Gitiles to access a repository on https://chromium.googlesource.com."""
 
-  # TODO(crbug.com/659449): Refactor the http_client to be required argument.
-  def __init__(self, repo_url=None, http_client=None):
+  def __init__(self, http_client, repo_url=None):
     super(GitilesRepository, self).__init__()
     if repo_url and repo_url.endswith('/'):
       self._repo_url = repo_url[:-1]

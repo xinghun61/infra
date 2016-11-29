@@ -24,7 +24,7 @@ from waterfall.send_notification_for_culprit_pipeline import (
 
 
 GIT_REPO = GitilesRepository(
-    'https://chromium.googlesource.com/chromium/src.git', HttpClient())
+    HttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
 
 
 def _GetResultAnalysisStatus(analysis, result):

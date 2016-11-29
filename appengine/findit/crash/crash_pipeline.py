@@ -91,7 +91,7 @@ class CrashBasePipeline(BasePipeline):
     self._crash_identifiers = crash_identifiers
     self._findit = FinditForClientID(
         client_id,
-        gitiles_repository.GitilesRepository(http_client=HttpClientAppengine()))
+        gitiles_repository.GitilesRepository(HttpClientAppengine()))
 
   @property
   def client_id(self): # pragma: no cover

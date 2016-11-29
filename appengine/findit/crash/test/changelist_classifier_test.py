@@ -110,6 +110,11 @@ DUMMY_REPORT = CrashReport(None, None, None, Stacktrace(), (None, None))
 
 class ChangelistClassifierTest(CrashTestSuite):
 
+  def setUp(self):
+    super(ChangelistClassifierTest, self).setUp()
+    self.changelist_classifier = changelist_classifier.ChangelistClassifier(
+        GitilesRepository(self.GetMockHttpClient()), 7)
+
   def testSkipAddedAndDeletedRegressionRolls(self):
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
               'GetDependency', lambda *_: {})
@@ -132,13 +137,11 @@ class ChangelistClassifierTest(CrashTestSuite):
               lambda *_: {})
     self.mock(changelist_classifier, 'FindMatchResults', lambda *_: None)
 
-    cl_classifier = changelist_classifier.ChangelistClassifier(
-        GitilesRepository(), 7)
-    cl_classifier(CrashReport(crashed_version = '5',
-                              signature = 'sig',
-                              platform = 'canary',
-                              stacktrace = Stacktrace([CallStack(0)]),
-                              regression_range = ['4', '5']))
+    self.changelist_classifier(CrashReport(crashed_version = '5',
+                               signature = 'sig',
+                               platform = 'canary',
+                               stacktrace = Stacktrace([CallStack(0)]),
+                               regression_range = ['4', '5']))
     expected_regression_deps_rolls = copy.deepcopy(dep_rolls)
 
     # Regression of a dep added/deleted (old_revision/new_revision is None) can
@@ -187,7 +190,8 @@ class ChangelistClassifierTest(CrashTestSuite):
 
     dep_file_to_changelogs, ignore_cls = (
         changelist_classifier.GetChangeLogsForFilesGroupedByDeps(
-            regression_deps_rolls, stack_deps, GitilesRepository()))
+            regression_deps_rolls, stack_deps,
+            GitilesRepository(self.GetMockHttpClient())))
     dep_file_to_changelogs_json = defaultdict(lambda: defaultdict(list))
     for dep, file_to_changelogs in dep_file_to_changelogs.iteritems():
       for file_path, changelogs in file_to_changelogs.iteritems():
@@ -299,7 +303,7 @@ class ChangelistClassifierTest(CrashTestSuite):
 
     match_results = changelist_classifier.FindMatchResults(
         dep_file_to_changelogs, dep_file_to_stack_infos, stack_deps,
-        GitilesRepository())
+        GitilesRepository(self.GetMockHttpClient()))
     self.assertListEqual([result.ToDict() for result in match_results],
                          expected_match_results)
 
@@ -310,11 +314,9 @@ class ChangelistClassifierTest(CrashTestSuite):
         'GetDependencyRollsDict', lambda *_: {})
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependency', lambda *_: {})
-    cl_classifier = changelist_classifier.ChangelistClassifier(7,
-        GitilesRepository())
     # N.B., for this one test we really do want regression_range=None.
     report = DUMMY_REPORT._replace(regression_range=None)
-    self.assertListEqual(cl_classifier(report), [])
+    self.assertListEqual(self.changelist_classifier(report), [])
 
   def testFindItForCrashNoMatchFound(self):
     self.mock(changelist_classifier, 'FindMatchResults', lambda *_: [])
@@ -323,9 +325,7 @@ class ChangelistClassifierTest(CrashTestSuite):
         lambda *_: {'src/': DependencyRoll('src/', 'https://repo', '1', '2')})
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependency', lambda *_: {})
-    cl_classifier = changelist_classifier.ChangelistClassifier(7,
-        GitilesRepository())
-    self.assertListEqual(cl_classifier(DUMMY_REPORT), [])
+    self.assertListEqual(self.changelist_classifier(DUMMY_REPORT), [])
 
   def testFindItForCrash(self):
 
@@ -357,9 +357,7 @@ class ChangelistClassifierTest(CrashTestSuite):
         lambda *_: {'src/': DependencyRoll('src/', 'https://repo', '1', '2')})
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependency', lambda *_: {})
-    cl_classifier = changelist_classifier.ChangelistClassifier(7,
-        GitilesRepository())
-    results = cl_classifier(DUMMY_REPORT)
+    results = self.changelist_classifier(DUMMY_REPORT)
     expected_match_results = [
         {
             'reasons': [('TopFrameIndex', 1.0, 'Top frame is #0'),
@@ -416,9 +414,7 @@ class ChangelistClassifierTest(CrashTestSuite):
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependency', lambda *_: {})
 
-    cl_classifier = changelist_classifier.ChangelistClassifier(7,
-        GitilesRepository())
-    results = cl_classifier(DUMMY_REPORT)
+    results = self.changelist_classifier(DUMMY_REPORT)
     expected_match_results = [
         {
             'author': 'r@chromium.org',
@@ -475,6 +471,4 @@ class ChangelistClassifierTest(CrashTestSuite):
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependency', lambda *_: {})
 
-    cl_classifier = changelist_classifier.ChangelistClassifier(7,
-        GitilesRepository())
-    self.assertListEqual(cl_classifier(DUMMY_REPORT), [])
+    self.assertListEqual(self.changelist_classifier(DUMMY_REPORT), [])

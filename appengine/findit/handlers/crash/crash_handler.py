@@ -129,7 +129,7 @@ def ScheduleNewAnalysis(crash_data):
     True if we started a new pipeline; False otherwise.
   """
   client_id = crash_data['client_id']
-  repository = GitilesRepository(http_client=HttpClientAppengine())
+  repository = GitilesRepository(HttpClientAppengine())
   # N.B., must call FinditForClientID indirectly, for mock testing.
   findit_client = crash_pipeline.FinditForClientID(client_id, repository)
 

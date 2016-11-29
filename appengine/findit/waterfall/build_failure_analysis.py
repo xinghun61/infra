@@ -44,7 +44,7 @@ def _GetGitBlame(repo_info, touched_file_path):
   """
   if repo_info:
     repo_url = repo_info['repo_url']
-    git_repo = GitilesRepository(repo_url, HttpClient())
+    git_repo = GitilesRepository(HttpClient(), repo_url)
     revision = repo_info['revision']
     return git_repo.GetBlame(touched_file_path, revision)
 
@@ -442,7 +442,7 @@ def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
     Tests if the same lines mentioned in failure log are changed within
     the DEPS roll, if so, return those line numbers.
   """
-  roll_repo = GitilesRepository(roll['repo_url'], HttpClient())
+  roll_repo = GitilesRepository(HttpClient(), roll['repo_url'])
   old_revision = roll['old_revision']
   new_revision = roll['new_revision']
   old_change_log = roll_repo.GetChangeLog(old_revision)

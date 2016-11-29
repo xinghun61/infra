@@ -39,7 +39,7 @@ def _AllFailedStepsPassed(passed_steps, current_failed_steps):
 def GetPossibleRevertInfoFromRevision(revision):
   """Parse message to get information of reverting and reverted cls."""
   git_repo = GitilesRepository(
-      'https://chromium.googlesource.com/chromium/src.git', HttpClient())
+      HttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
   change_log = git_repo.GetChangeLog(revision)
   if not change_log:  # pragma: no cover
     return {}

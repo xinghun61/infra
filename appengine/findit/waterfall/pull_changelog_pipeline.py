@@ -13,7 +13,7 @@ class PullChangelogPipeline(BasePipeline):
 
   # TODO: for files in dependencies(blink, v8, skia, etc), use blame first.
   GIT_REPO = GitilesRepository(
-      'https://chromium.googlesource.com/chromium/src.git', HttpClient())
+      HttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, failure_info):
