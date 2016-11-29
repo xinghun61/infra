@@ -40,12 +40,29 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     new_request.idempotent = False
 
     # Set the gtest_filter to run the given tests only.
-    new_request.extra_args.append('--gtest_repeat=%s' % iterations)
-    new_request.extra_args.append('--test-launcher-retry-limit=0')
+    # Remove existing test filter first.
     new_request.extra_args = [
-        a for a in new_request.extra_args if not a.startswith('--gtest_filter')
+        a for a in new_request.extra_args if (
+            not a.startswith('--gtest_filter') and
+            not a.startswith('--test-launcher-filter-file'))
     ]
     new_request.extra_args.append('--gtest_filter=%s' % ':'.join(tests))
+    new_request.extra_args.append('--gtest_repeat=%s' % iterations)
+    new_request.extra_args.append('--test-launcher-retry-limit=0')
+
+    # Also rerun disabled tests. Scenario: the test was disabled before Findit
+    # runs any analysis. One possible case:
+    #   1. A gtest became flaky on CQ, but Findit was not automatically
+    #      triggered to run any analysis because:
+    #      * the test is not flaky enough
+    #      * chromium-try-flakes has filed/updated too many bugs
+    #   2. The test got disabled, but no culprit was identified.
+    #   3. Some developer starts the investigation and requests Findit to
+    #      analyze the flaky test.
+    #   4. Findit picks the latest Waterfall build of the matching configuration
+    #      for the CQ build in which the flaky test is found.
+    #   5. In the picked Waterfall build, the test is already disabled.
+    new_request.extra_args.append('--gtest_also_run_disabled_tests')
 
     # Remove the env setting for sharding.
     sharding_settings = ['GTEST_SHARD_INDEX', 'GTEST_TOTAL_SHARDS']
