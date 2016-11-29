@@ -361,9 +361,10 @@ class IssueDetail(issuepeek.IssuePeek):
     iv = page_data.get('issue')
     if iv:
       participant_views = (
-          [iv.owner, iv.derived_owner] +iv.cc + iv.derived_cc)
+          [iv.owner, iv.derived_owner] + iv.cc + iv.derived_cc)
       any_availibility_message = any(
-          (pv and pv.avail_message) for pv in participant_views)
+          pv.avail_message for pv in participant_views
+          if pv and pv.user_id)
 
     if mr.auth.user_id:  # Only signed in users get cues.
       dismissed_cues = mr.auth.user_pb.dismissed_cues

@@ -198,13 +198,24 @@ class IssueDetailTest(unittest.TestCase):
     # User is viewing an issue with an unavailable owner.
     mr.query = ''
     issue_view = testing_helpers.Blank(
-        owner=testing_helpers.Blank(avail_message='On vacation'),
-        derived_owner=testing_helpers.Blank(avail_message=''),
-        cc=[testing_helpers.Blank(avail_message='')],
-        derived_cc=[testing_helpers.Blank(avail_message='')])
+        owner=testing_helpers.Blank(user_id=111L, avail_message='On vacation'),
+        derived_owner=testing_helpers.Blank(user_id=0L, avail_message=''),
+        cc=[testing_helpers.Blank(user_id=222L, avail_message='')],
+        derived_cc=[testing_helpers.Blank(user_id=333L, avail_message='')])
     page_data = {'issue': issue_view}
     help_data = servlet.GatherHelpData(mr, page_data)
     self.assertEqual('availibility_msgs', help_data['cue'])
+
+    # User is viewing an issue with all participants available.
+    # No help cue is shown.
+    issue_view = testing_helpers.Blank(
+        owner=testing_helpers.Blank(user_id=0L, avail_message='Never visited'),
+        derived_owner=testing_helpers.Blank(user_id=0L, avail_message=''),
+        cc=[testing_helpers.Blank(user_id=222L, avail_message='')],
+        derived_cc=[testing_helpers.Blank(user_id=333L, avail_message='')])
+    page_data = {'issue': issue_view}
+    help_data = servlet.GatherHelpData(mr, page_data)
+    self.assertEqual(None, help_data['cue'])
 
 
 class IssueDetailFunctionsTest(unittest.TestCase):
