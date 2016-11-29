@@ -986,5 +986,5 @@ def _SortIssues(mr, issues, config, users_by_id):
   """
   issues = sorting.SortArtifacts(
       mr, issues, config, tracker_helpers.SORTABLE_FIELDS,
-      username_cols=tracker_constants.USERNAME_COLS, users_by_id=users_by_id)
+      tracker_helpers.SORTABLE_FIELDS_POSTPROCESSORS, users_by_id=users_by_id)
   return issues

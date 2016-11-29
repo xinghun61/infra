@@ -32,9 +32,6 @@ RESERVED_PREFIXES = [
     'derived_label', 'last_comment_by', 'exact_component',
     'explicit_component', 'derived_component', 'alllabels']
 
-# These columns are sorted as user names.
-USERNAME_COLS = ['owner', 'reporter', 'cc']
-
 # The columns are useless in the grid view, so don't offer them.
 NOT_USED_IN_GRID_AXES = ['Summary', 'ID', 'Opened', 'Closed', 'Modified']
 

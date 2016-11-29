@@ -47,10 +47,10 @@ _SOFT_QUOTA_LEEWAY = 1024 * 1024
 SORTABLE_FIELDS = {
     'project': lambda issue: issue.project_name,
     'id': lambda issue: issue.local_id,
-    'owner': tracker_bizobj.GetOwnerId,
-    'reporter': lambda issue: issue.reporter_id,
+    'owner': tracker_bizobj.GetOwnerId,  # And postprocessor
+    'reporter': lambda issue: issue.reporter_id,  # And postprocessor
     'component': lambda issue: issue.component_ids,
-    'cc': tracker_bizobj.GetCcIds,
+    'cc': tracker_bizobj.GetCcIds,  # And postprocessor
     'summary': lambda issue: issue.summary.lower(),
     'stars': lambda issue: issue.star_count,
     'attachments': lambda issue: issue.attachment_count,
@@ -64,8 +64,18 @@ SORTABLE_FIELDS = {
     'ownermodified': lambda issue: issue.owner_modified_timestamp,
     'statusmodified': lambda issue: issue.status_modified_timestamp,
     'componentmodified': lambda issue: issue.component_modified_timestamp,
+    'ownerlastvisit': tracker_bizobj.GetOwnerId,  # And postprocessor
     }
 
+# Some fields take a user ID from the issue and then use that to index
+# into a dictionary of user views, and then get a field of the user view
+# as the value to sort key.
+SORTABLE_FIELDS_POSTPROCESSORS = {
+    'owner': lambda user_view: user_view.email,
+    'reporter': lambda user_view: user_view.email,
+    'cc': lambda user_view: user_view.email,
+    'ownerlastvisit': lambda user_view: -user_view.user.last_visit_timestamp,
+    }
 
 # Namedtuples that hold data parsed from post_data.
 ParsedComponents = collections.namedtuple(

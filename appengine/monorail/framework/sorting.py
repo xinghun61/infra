@@ -78,7 +78,7 @@ def InvalidateArtValuesKeys(cnxn, keys):
 
 
 def SortArtifacts(
-    mr, artifacts, config, accessors, username_cols=None, users_by_id=None,
+    mr, artifacts, config, accessors, postprocessors, users_by_id=None,
     tie_breakers=None):
   """Return a list of artifacts sorted by the user's sort specification.
 
@@ -89,10 +89,9 @@ def SortArtifacts(
     artifacts: an unsorted list of project artifact PBs.
     config: Project config PB instance that defines the sort order for
         labels and statuses in this project.
-    accessors: dictionary of (column_name -> accessor) to get values
-        from the artifacts.
-    username_cols: optional list of lowercase column names that will show
-        user names.
+    accessors: dict {column_name: accessor} to get values from the artifacts.
+    postprocessors: dict {column_name: postprocessor} to get user emails
+        and timestamps.
     users_by_id: optional dictionary {user_id: user_view,...} for all users
         who participate in the list of artifacts.
     tie_breakers: list of column names to add to the end of the sort
@@ -116,7 +115,7 @@ def SortArtifacts(
   # Build a list of accessors that will extract sort keys from the issues.
   accessor_pairs = [
       (sd, _MakeCombinedSortKeyAccessor(
-          sd, config, accessors, username_cols, users_by_id))
+          sd, config, accessors, postprocessors, users_by_id))
       for sd in sort_directives]
 
   def SortKey(art):
@@ -181,7 +180,7 @@ def ComputeSortDirectives(mr, config, tie_breakers=None):
 
 
 def _MakeCombinedSortKeyAccessor(
-    sort_directive, config, accessors, username_cols, users_by_id):
+    sort_directive, config, accessors, postprocessors, users_by_id):
   """Return an accessor that extracts a sort key for a UI table column.
 
   Args:
@@ -191,7 +190,8 @@ def _MakeCombinedSortKeyAccessor(
         labels and statuses in this project.
     accessors: dictionary of (column_name -> accessor) to get values
         from the artifacts.
-    username_cols: list of lowercase names of columns that contain user names.
+    postprocessors: dict {column_name: postprocessor} to get user emails
+        and timestamps.
     users_by_id: dictionary {user_id: user_view,...} for all users
         who participate in the list of artifacts (e.g., owners, reporters, cc).
 
@@ -216,7 +216,7 @@ def _MakeCombinedSortKeyAccessor(
   wk_labels = [wkl.label for wkl in config.well_known_labels]
   accessors = [
       _MakeSingleSortKeyAccessor(
-          col_name, config, accessors, username_cols, users_by_id, wk_labels)
+          col_name, config, accessors, postprocessors, users_by_id, wk_labels)
       for col_name in combined_col_name.split('/')]
 
   # The most common case is that we sort on a single column, like "priority".
@@ -251,7 +251,7 @@ def _MaybeMakeDescending(accessor, descending):
 
 
 def _MakeSingleSortKeyAccessor(
-    col_name, config, accessors, username_cols, users_by_id, wk_labels):
+    col_name, config, accessors, postprocessors, users_by_id, wk_labels):
   """Return an accessor function for a single simple UI column."""
   # Case 1. Handle built-in fields: status, component.
   if col_name == 'status':
@@ -265,9 +265,10 @@ def _MakeSingleSortKeyAccessor(
 
   # Case 2. Any other defined accessor functions.
   if col_name in accessors:
-    if username_cols and col_name in username_cols:
-      # sort users by email address rather than user ids.
-      return _UserEditNameAccessor(users_by_id, accessors[col_name])
+    if postprocessors and col_name in postprocessors:
+      # sort users by email address or timestamp rather than user ids.
+      return _MakeAccessorWithPostProcessor(
+          users_by_id, accessors[col_name], postprocessors[col_name])
     else:
       return accessors[col_name]
 
@@ -305,13 +306,14 @@ def _PrecomputeSortIndexes(values, col_name):
   return indexes
 
 
-def _UserEditNameAccessor(users_by_id, base_accessor):
-  """Make an accessor that returns a list of user edit names for sorting.
+def _MakeAccessorWithPostProcessor(users_by_id, base_accessor, postprocessor):
+  """Make an accessor that returns a list of user_view properties for sorting.
 
   Args:
     users_by_id: dictionary {user_id: user_view, ...} for all participants
         in the entire list of artifacts.
     base_accessor: an accessor function f(artifact) -> user_id.
+    postprocessor: function f(user_view) -> single sortable value.
 
   Returns:
     An accessor f(artifact) -> value that can be used in sorting
@@ -322,12 +324,12 @@ def _UserEditNameAccessor(users_by_id, base_accessor):
     """Return a user edit name for the given artifact's base_accessor."""
     id_or_id_list = base_accessor(art)
     if isinstance(id_or_id_list, list):
-      emails = [users_by_id[user_id].email
+      values = [postprocessor(users_by_id[user_id])
                 for user_id in id_or_id_list]
     else:
-      emails = [users_by_id[id_or_id_list].email]
+      values = [postprocessor(users_by_id[id_or_id_list])]
 
-    return sorted(emails) or MAX_STRING
+    return sorted(values) or MAX_STRING
 
   return Accessor
 

@@ -66,16 +66,17 @@ class SortingTest(unittest.TestCase):
       'buildincol', self.config, {'buildincol': 'accessor'}, [], {}, [])
     self.assertEqual('accessor', accessor)
 
-  def testMakeSingleSortKeyAccessor_OtherBuiltInUserColunms(self):
+  def testMakeSingleSortKeyAccessor_WithPostProcessor(self):
     """Sorting a built-in user column should create a user accessor."""
-    self.mox.StubOutWithMock(sorting, '_UserEditNameAccessor')
+    self.mox.StubOutWithMock(sorting, '_MakeAccessorWithPostProcessor')
     users_by_id = {111L: 'fake user'}
-    sorting._UserEditNameAccessor(users_by_id, 'owner accessor')
+    sorting._MakeAccessorWithPostProcessor(
+        users_by_id, 'mock owner accessor', 'mock postprocessor')
     self.mox.ReplayAll()
 
     sorting._MakeSingleSortKeyAccessor(
-      'owner', self.config, {'owner': 'owner accessor'},
-      ['owner'], users_by_id, [])
+      'owner', self.config, {'owner': 'mock owner accessor'},
+      {'owner': 'mock postprocessor'}, users_by_id, [])
     self.mox.VerifyAll()
 
   def testIndexOrLexical(self):

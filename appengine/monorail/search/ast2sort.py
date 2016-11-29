@@ -192,6 +192,17 @@ def _ProcessBlockingSD(fmt):
   return left_joins, order_by
 
 
+def _ProcessOwnerLastVisitSD(fmt):
+  """Convert a 'ownerlastvisit' sort directive into SQL."""
+  left_joins = [
+      (fmt('User AS {alias} ON (Issue.owner_id = {alias}.user_id OR '
+           'Issue.derived_owner_id = {alias}.user_id)'), [])]
+  order_by = [
+      (fmt('ISNULL({alias}.last_visit_timestamp) {sort_dir}'), []),
+      (fmt('{alias}.last_visit_timestamp {sort_dir}'), [])]
+  return left_joins, order_by
+
+
 def _ProcessCustomAndLabelSD(
     sd, harmonized_labels, harmonized_fields, alias, sort_dir, fmt):
   """Convert a label or custom field sort directive into SQL."""
@@ -305,6 +316,7 @@ _PROCESSORS = {
     'blocked': _ProcessBlockedSD,
     'blockedon': _ProcessBlockedOnSD,
     'blocking': _ProcessBlockingSD,
+    'ownerlastvisit': _ProcessOwnerLastVisitSD,
     }
 
 
