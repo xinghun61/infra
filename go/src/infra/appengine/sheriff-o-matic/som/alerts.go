@@ -195,29 +195,39 @@ func getRestartingMasters(c context.Context, treeName string) (map[string]master
 		return nil, err
 	}
 
-	treeCfg, ok := trees[treeName]
-	if !ok {
-		return nil, ErrUnrecognizedTree
+	cfgs := []*messages.TreeMasterConfig{}
+
+	if treeName != "trooper" {
+		cfg, ok := trees[treeName]
+		if !ok {
+			return nil, ErrUnrecognizedTree
+		}
+		cfgs = append(cfgs, cfg)
+	} else {
+		for _, cfg := range trees {
+			cfgs = append(cfgs, cfg)
+		}
 	}
 
 	now := time.Now().UTC()
 
 	ret := map[string]masterState{}
-	for masterLoc := range treeCfg.Masters {
-		for _, ds := range ms.MasterStates["master."+masterLoc.Name()] {
-			tt, err := time.Parse(time.RFC3339Nano, ds.TransitionTime)
-			if err != nil {
-				return nil, err
-			}
+	for _, treeCfg := range cfgs {
+		for masterLoc := range treeCfg.Masters {
+			for _, ds := range ms.MasterStates["master."+masterLoc.Name()] {
+				tt, err := time.Parse(time.RFC3339Nano, ds.TransitionTime)
+				if err != nil {
+					return nil, err
+				}
 
-			// TODO: make this warning window configurable. This logic will include a
-			// master if it is scheduled to restart at any time later than two
-			// hours ago. This handles both recent and future restarts.
-			if now.Sub(tt) < 2*time.Hour {
-				ret[masterLoc.Name()] = ds
+				// TODO: make this warning window configurable. This logic will include a
+				// master if it is scheduled to restart at any time later than two
+				// hours ago. This handles both recent and future restarts.
+				if now.Sub(tt) < 2*time.Hour {
+					ret[masterLoc.Name()] = ds
+				}
 			}
 		}
 	}
-
 	return ret, nil
 }
