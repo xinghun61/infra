@@ -5,7 +5,10 @@
 # Makefile to simplify some common actions.
 # Use 'make help' for a list of commands.
 
-.PHONY: help build clean test devserver deploy_staging_run deploy_staging deploy_prod_run deploy_prod deploy_cron deploy_dispatch deploy_queues
+.PHONY: help build clean test devserver deploy_staging_run deploy_staging	\
+	deploy_prod_run deploy_prod deploy_cron_prod deploy_dispatch_prod				\
+	deploy_queues_prod deploy_cron_staging deploy_dispatch_staging					\
+	deploy_queues_staging
 
 help:
 	@echo "Available commands:"
@@ -51,11 +54,20 @@ deploy_prod_run:
 
 deploy_prod: build deploy_prod_run clean
 
-deploy_cron:
+deploy_cron_prod:
 	appcfg.py -A test-results-hrd -V ${VERSION} update_cron .
 
-deploy_dispatch:
+deploy_dispatch_prod:
 	appcfg.py -A test-results-hrd -V ${VERSION} update_dispatch .
 
-deploy_queues:
+deploy_queues_prod:
 	appcfg.py -A test-results-hrd -V ${VERSION} update_queues .
+
+deploy_cron_staging:
+	appcfg.py -A test-results-test-hrd -V ${VERSION} update_cron .
+
+deploy_dispatch_staging:
+	appcfg.py -A test-results-test-hrd -V ${VERSION} update_dispatch .
+
+deploy_queues_staging:
+	appcfg.py -A test-results-test-hrd -V ${VERSION} update_queues .
