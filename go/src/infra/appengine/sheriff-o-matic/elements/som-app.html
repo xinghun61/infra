@@ -643,10 +643,18 @@
           let aHasBugs = aAnn.bugs && aAnn.bugs.length > 0;
           let bHasBugs = bAnn.bugs && bAnn.bugs.length > 0;
 
-          if (aAnn.snoozed == bAnn.snoozed && aHasBugs == bHasBugs) {
-            if(a.severity != b.severity) {
-              return a.severity - b.severity;
+          if (a.severity != b.severity) {
+            // Note: 3 is the severity number for Infra Failures.
+            // We want these at the bottom of the severities for sheriffs.
+            if (a.severity == 3) {
+              return 1;
+            } else if (b.severity == 3) {
+              return -1;
             }
+            return a.severity - b.severity;
+          }
+
+          if (aAnn.snoozed == bAnn.snoozed && aHasBugs == bHasBugs) {
             if (a.title < b.title) {
               return -1;
             }
