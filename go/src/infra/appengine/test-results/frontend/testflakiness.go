@@ -268,6 +268,7 @@ func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, par
 				rows = make([]*bigquery.TableRow, 0, resultsResponse.TotalRows)
 				rows = append(rows, resultsResponse.Rows...)
 				pageToken = resultsResponse.PageToken
+				break
 			}
 		}
 	}
