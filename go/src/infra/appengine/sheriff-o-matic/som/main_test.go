@@ -234,7 +234,22 @@ func TestMain(t *testing.T) {
 						So(err, ShouldBeNil)
 						body := string(r)
 						So(w.Code, ShouldEqual, 200)
-						So(body, ShouldEqual, `{"alerts":[],"date":"0001-01-01T00:00:00Z","revision_summaries":null,"timestamp":0}`)
+						So(body, ShouldEqual, `{"alerts":[],"date":"0001-01-01T00:00:00Z","revision_summaries":null,"swarming":{"dead":null,"quarantined":null,"errors":["auth: the library is not properly configured"]},"timestamp":0}`)
+					})
+
+					Convey("getSwarmingAlerts", func() {
+						// HACK:
+						oldOAClient := getOAuthClient
+						getOAuthClient = func(c context.Context) (*http.Client, error) {
+							return &http.Client{}, nil
+						}
+
+						sa := getSwarmingAlerts(c)
+
+						getOAuthClient = oldOAClient
+						So(sa, ShouldResemble, &swarmingAlerts{
+							Error: []string{"googleapi: Error 403: , forbidden", "googleapi: Error 403: , forbidden"},
+						})
 					})
 				})
 

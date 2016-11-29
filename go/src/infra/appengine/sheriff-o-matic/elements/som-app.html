@@ -20,6 +20,7 @@
 <link rel="import" href="../elements/som-drawer.html">
 <link rel="import" href="../elements/som-examine.html">
 <link rel="import" href="../elements/som-master-restarts.html">
+<link rel="import" href="../elements/som-swarming-bots.html">
 <link rel="import" href="../elements/som-tree-status.html">
 <link rel="import" href="../elements/pages/som-help.html">
 <link rel="import" href="../elements/pages/som-rotation-calendar.html">
@@ -251,6 +252,10 @@
                   </div>
                 </template>
               </template>
+              <template is="dom-if" if="[[_showSwarmingAlerts]]">
+                <h2 class="header">Swarming Bots (<a target="_blank" href="https://chrome-internal.googlesource.com/infra/infra_internal/+/master/doc/troopers/playbook.md#Swarming">Help?</a>)</h2>
+                <som-swarming-bots bots="[[_swarmingAlerts]]"></som-swarming-bots>
+              </template>
             </div>
           </div>
           <template is="dom-if" if="[[_examinedAlert]]">
@@ -361,6 +366,14 @@
           value: false,
         },
         showInfraFailures: Boolean,
+        _showSwarmingAlerts: {
+          type: Boolean,
+          computed: '_computeShowSwarmingAlerts(_swarmingAlerts)',
+        },
+        _swarmingAlerts: {
+          type: Object,
+          value: function() { return {}; },
+        },
         _trees: Object,
         _tree: {
           type: String,
@@ -450,6 +463,10 @@
 
       _computeIsTrooperPage: function(tree) {
         return tree === 'trooper';
+      },
+
+      _computeShowSwarmingAlerts: function(swarming) {
+        return swarming && (swarming.dead || swarming.quarantined);
       },
 
       _computeTree: function(path) {
@@ -594,6 +611,7 @@
                 + error;
             }).then((json) => {
               if (json) {
+                this.set('_swarmingAlerts', json.swarming);
                 this.set(['_alertsData', this._alertGroupVarName(group)],
                   json.alerts);
                 this.set(['_alertsTimes', this._alertGroupVarName(group)],
