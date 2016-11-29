@@ -220,8 +220,8 @@
   </div>
   <br>
   <div>
-    <b>Statistics:</b><br>
-    Rerun of the test per build: {{ iterations_to_rerun }}<br>
+    <b>Metadata:</b><br>
+    Test rerun: {{ iterations_to_rerun }} times<br>
     {% if request_time %}
     Request time: {{ request_time }}<br>
     {% endif %}
@@ -231,15 +231,15 @@
     {% if duration %}
     Duration: {{ duration }}<br>
     {% endif %}
-    Number of Swarm tasks: {{ task_number }}
+    Total Swarm tasks: {{ task_number }}
   </div>
   <br>
   <div id="triage_flake">
     {% if suspected_flake %}
-      <b>Feedback on Flake Analysis result:</b>
+      <b>Feedback:</b>
       <table class="triage-table">
         <tr>
-          <th class="triage-header">Suspected Flake Build Number</th>
+          <th class="triage-header" title="The test became flaky at this build">Suspected Build</th>
           <th class="triage-header">Feedback</th>
         </tr>
         <tr>
