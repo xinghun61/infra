@@ -1,3 +1,40 @@
+# Release Notes sheriff-o-matic 2016-11-29
+
+- 9 commits, 6 bugs affected since 663ee6b (2016-11-23T00:29:41.000Z)
+- 4 Authors:
+  - seanmccullough@chromium.org
+  - zhangtiff@google.com
+  - martiniss@chromium.org
+  - sergiyb@chromium.org
+
+## Changes in this release
+
+- [[som] Display dead and quarantined swarming bots on /trooper](https://chromium-review.googlesource.com/414570) (seanmccullough@chromium.org)
+- [[som] Show all pending and recent master restarts on /trooper](https://chromium-review.googlesource.com/414231) (seanmccullough@chromium.org)
+- [SoM: Make severity sections for alerts stay in place.](https://chromium-review.googlesource.com/414525) (zhangtiff@google.com)
+- [[som] UI for master restart notice](https://chromium-review.googlesource.com/414564) (seanmccullough@chromium.org)
+- [SOM: Refresh xsrf token on post error](https://chromium-review.googlesource.com/414428) (martiniss@chromium.org)
+- [SoM: Fix trooper bug query.](https://chromium-review.googlesource.com/414291) (zhangtiff@google.com)
+- [[som] server-side support for displaying master restarts](https://chromium-review.googlesource.com/413906) (seanmccullough@chromium.org)
+- [Add info about contributing to infra to SoM help page](https://chromium-review.googlesource.com/412785) (sergiyb@chromium.org)
+- [SoM: Updated release notes for 11/22](https://chromium-review.googlesource.com/413550) (zhangtiff@google.com)
+
+
+## Bugs updated, by author
+- martiniss@chromium.org:
+  -  [https://crbug.com/665617](https://crbug.com/665617)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/665708](https://crbug.com/665708)
+  -  [https://crbug.com/666084](https://crbug.com/666084)
+
+- sergiyb@chromium.org:
+  -  [https://crbug.com/659855](https://crbug.com/659855)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/637006](https://crbug.com/637006)
+  -  [https://crbug.com/667985](https://crbug.com/667985)
+
 # Release Notes sheriff-o-matic 2016-11-22
 
 - 5 commits, 1 bugs affected since 3a10459 (2016-11-16T00:11:55.000Z)
