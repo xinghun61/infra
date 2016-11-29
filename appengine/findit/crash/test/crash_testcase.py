@@ -5,6 +5,7 @@
 import copy
 import re
 
+import gae_ts_mon
 from google.appengine.api import users
 
 from gae_libs.testcase import TestCase
@@ -89,6 +90,7 @@ class CrashTestCase(TestCase):  # pragma: no cover.
     super(CrashTestCase, self).setUp()
     CrashConfig.Get().Update(
         users.User(email='admin@chromium.org'), True, **DEFAULT_CONFIG_DATA)
+    gae_ts_mon.reset_for_unittest(disable=True)
 
   def GetDummyChangeLog(self):
     return DUMMY_CHANGELOG

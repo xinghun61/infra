@@ -6,6 +6,8 @@ import copy
 import json
 import logging
 
+from crash import monitoring
+
 from common import appengine_util
 from common import pubsub_util
 from common.http_client_appengine import HttpClientAppengine
@@ -158,6 +160,12 @@ class CrashAnalysisPipeline(CrashBasePipeline):
       # TODO(http://crbug.com/659346): we misplaced the coverage test; find it!
       if hasattr(analysis, tag_name): # pragma: no cover
         setattr(analysis, tag_name, tag_value)
+
+      if hasattr(monitoring, tag_name):
+        metric = getattr(monitoring, tag_name)
+        metric.increment({tag_name: tag_value,
+                          'client_id': self.client_id})
+
     analysis.status = analysis_status.COMPLETED
     analysis.put()
 
