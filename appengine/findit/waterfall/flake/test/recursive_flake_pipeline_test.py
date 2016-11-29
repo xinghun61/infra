@@ -33,11 +33,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
   def _CreateAndSaveFlakeSwarmingTask(
       self, master_name, builder_name, build_number, step_name, test_name,
-      status=analysis_status.PENDING, number_of_iterations=0):
+      status=analysis_status.PENDING, number_of_iterations=0, error=None):
     flake_swarming_task = FlakeSwarmingTask.Create(
         master_name, builder_name, build_number, step_name, test_name)
     flake_swarming_task.status = status
     flake_swarming_task.tries = number_of_iterations
+    flake_swarming_task.error = error
     flake_swarming_task.put()
 
   def _GenerateDataPoints(self, pass_rates, build_numbers):
@@ -418,6 +419,10 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     test_result_future = 'trf'
+    swarming_task_error = {
+        'code': 1,
+        'message': 'some failure message',
+    }
     flakiness_algorithm_results_dict = {
         'flakes_in_a_row': 0,
         'stable_in_a_row': 0,
@@ -436,7 +441,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     )
     self._CreateAndSaveFlakeSwarmingTask(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.ERROR
+        test_name, status=analysis_status.ERROR, error=swarming_task_error
     )
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
@@ -457,6 +462,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_build_number, build_number, step_name, test_name, 1,
         test_result_future, flakiness_algorithm_results_dict)
     self.assertFalse(queue_name['x'])
+    self.assertEqual(swarming_task_error, analysis.error)
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
@@ -865,6 +871,17 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     recursive_flake_pipeline._UpdateAnalysisStatusUponCompletion(
         analysis, analysis_status.COMPLETED, None)
     self.assertEqual(analysis.result_status, result_status.FOUND_UNTRIAGED)
+
+  def testUpdateAnalysisUponCompletionError(self):
+    expected_error = {
+        'code': 1,
+        'message': 'some error message'
+    }
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspected_flake_build_number = 100
+    recursive_flake_pipeline._UpdateAnalysisStatusUponCompletion(
+        analysis, analysis_status.COMPLETED, expected_error)
+    self.assertEqual(expected_error, analysis.error)
 
   def testGetListOfNearbyBuildNumbers(self):
     self.assertEqual(

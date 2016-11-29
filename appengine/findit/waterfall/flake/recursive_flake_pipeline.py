@@ -402,14 +402,14 @@ class NextBuildNumberPipeline(BasePipeline):
 
     # Don't call another pipeline if we fail.
     if flake_swarming_task.status == analysis_status.ERROR:
-      # TODO(lijeffrey): Implement more detailed error detection and reporting,
-      # such as timeouts, dead bots, etc.
+      # Report the last flake swarming task's error that it encountered.
       # TODO(lijeffrey): Another neighboring swarming task may be needed in this
       # one's place instead of failing altogether.
-      error = {
+      error = flake_swarming_task.error or {
           'error': 'Swarming task failed',
-          'message': 'Swarming task failed'
+          'message': 'The last swarming task did not complete as expected'
       }
+
       _UpdateAnalysisStatusUponCompletion(
           master_flake_analysis, analysis_status.ERROR, error)
       return
