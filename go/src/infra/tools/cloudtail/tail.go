@@ -132,7 +132,7 @@ func (tailer *Tailer) Run(ctx context.Context) {
 		defer close(source)
 
 		poller := filePoller{path: tailer.opts.Path}
-		poller.Init(tailer.opts.SeekToEnd, tailer.opts.ReadBufferLen)
+		poller.Init(ctx, tailer.opts.SeekToEnd, tailer.opts.ReadBufferLen)
 		defer poller.Close()
 		if tailer.opts.initializedSignal != nil {
 			close(tailer.opts.initializedSignal)
@@ -234,13 +234,13 @@ type filePoller struct {
 }
 
 // Init prepares poller for operations.
-func (p *filePoller) Init(seekToEnd bool, readBufferLen int) {
+func (p *filePoller) Init(ctx context.Context, seekToEnd bool, readBufferLen int) {
 	p.buf = make([]byte, readBufferLen)
 
 	// Ignore errors here (e.g. file is missing). They are discovered and
 	// reported in 'Poll'. The polling loop is more smart with respect to error
 	// handling.
-	if p.reopen() == nil && seekToEnd {
+	if p.reopen(ctx) == nil && seekToEnd {
 		offset, err := p.file.Seek(0, os.SEEK_END)
 		if err == nil {
 			p.offset = offset
@@ -287,7 +287,7 @@ func (p *filePoller) Poll(ctx context.Context, checkExistence bool, sink chan st
 	}
 
 	if p.file == nil {
-		if err := p.reopen(); err != nil {
+		if err := p.reopen(ctx); err != nil {
 			return err
 		}
 	}
@@ -299,10 +299,11 @@ func (p *filePoller) Close() {
 	p.reset()
 }
 
-func (p *filePoller) reopen() error {
+func (p *filePoller) reopen(ctx context.Context) error {
 	if p.file != nil {
 		return fmt.Errorf("file is already open")
 	}
+	logging.Debugf(ctx, "Opening the file for tailing: %s", p.path)
 	f, err := internal.OpenForSharedRead(p.path)
 	if err != nil {
 		return err
@@ -447,6 +448,7 @@ func signalOnChanges(ctx context.Context, path string, interval time.Duration) (
 					spamLog("fsnotify: failed to add watcher - %s, polling", err)
 				} else {
 					added = true
+					logging.Debugf(ctx, "Added file system watch: %s", path)
 				}
 			}
 			var timeout <-chan clock.TimerResult
@@ -469,7 +471,8 @@ func signalOnChanges(ctx context.Context, path string, interval time.Duration) (
 			case ev := <-watcher.Events:
 				if ev.Op == fsnotify.Rename || ev.Op == fsnotify.Remove {
 					added = false
-					spamLog("fsnotify: file is gone, polling")
+					logging.Debugf(ctx, "The file is gone, removing the watch: %s", ev)
+					watcher.Remove(path)
 					out <- statCheck
 				} else {
 					out <- normalCheck

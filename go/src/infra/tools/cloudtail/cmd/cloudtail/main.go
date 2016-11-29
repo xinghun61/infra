@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"runtime"
@@ -51,6 +52,7 @@ type commonOptions struct {
 	tsmonFlags    tsmon.Flags
 	localLogLevel logging.Level
 	flushTimeout  time.Duration
+	bufferingTime time.Duration
 	debug         bool
 
 	projectID    string
@@ -75,6 +77,8 @@ func (opts *commonOptions) registerFlags(f *flag.FlagSet, defaultAutoFlush bool)
 		"The logging level of local logger (for cloudtail own logs): debug, info, warning, error")
 	f.DurationVar(&opts.flushTimeout, "flush-timeout", 5*time.Second,
 		"How long to wait for all pending data to be flushed when exiting")
+	f.DurationVar(&opts.bufferingTime, "buffering-time", cloudtail.DefaultFlushTimeout,
+		"How long to buffer a log line before flushing it (larger values improve batching at the cost of latency)")
 	f.BoolVar(&opts.debug, "debug", false,
 		"If set, will print Cloud Logging calls to stdout instead of sending them")
 
@@ -142,7 +146,8 @@ func (opts *commonOptions) processFlags(ctx context.Context) (context.Context, s
 
 	// Buffer.
 	buffer := cloudtail.NewPushBuffer(cloudtail.PushBufferOptions{
-		Client: client,
+		Client:       client,
+		FlushTimeout: opts.bufferingTime,
 	})
 
 	return ctx, state{id, client, buffer}, nil
@@ -312,19 +317,26 @@ func (c *pipeRun) Run(a subcommands.Application, args []string) int {
 	}
 	defer tsmon.Shutdown(ctx)
 
+	// We need to wrap stdin in a io.Pipe to be able to prematurely abort reads on
+	// SIGINT. There seem to be no reliable way of aborting pending os.Stdin read
+	// on Linux. Closing the file descriptor doesn't work. So on SIGINT we keep
+	// the blocked stdin read hanging in the goroutine, but forcefully close the
+	// write end of the pipe to shutdown cloudtail.PipeReader below. Eventually
+	// stdin read unblocks, finds a closed io.Pipe and aborts the goroutine.
+	pipeR, pipeW := io.Pipe()
+	go func() {
+		defer pipeW.Close()
+		io.Copy(pipeW, os.Stdin)
+	}()
+	catchCtrlC(pipeW.Close)
+
 	pipeReader := cloudtail.PipeReader{
 		ClientID:       state.id,
-		Source:         os.Stdin,
+		Source:         pipeR,
 		PushBuffer:     state.buffer,
 		Parser:         cloudtail.StdParser(),
 		LineBufferSize: c.lineBufferSize,
 	}
-
-	// Just close the pipe when receiving SIGINT, otherwise PipeReader can be
-	// stuck reading from it. Note that the other end of the pipe can catch
-	// SIGPIPE, but it's expected behavior when prematurely terminating the
-	// reading end of the pipe (e.g. it happens on SIGKILL too).
-	catchCtrlC(os.Stdin.Close)
 
 	// On EOF (which also happens on SIGINT) start a countdown that will abort
 	// the context and unblock everything even if some data wasn't sent.

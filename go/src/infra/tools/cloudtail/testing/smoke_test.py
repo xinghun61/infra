@@ -9,6 +9,7 @@ fast enough, even if stuck retrying HTTP 429 errors.
 import contextlib
 import json
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -21,6 +22,47 @@ SRC_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BINARY = os.path.join(SRC_PATH, 'cmd', 'cloudtail', 'cloudtail')
 
 
+class Buffer(object):
+  def __init__(self):
+    self.lock = threading.Lock()
+    self.buf = []
+
+  def append(self, itm):
+    with self.lock:
+      self.buf.append(itm)
+
+  def collect(self):
+    with self.lock:
+      out, self.buf = self.buf, []
+      return out
+
+  def wait(self):
+    while True:
+      out = self.collect()
+      if out:
+        return out
+      time.sleep(0.1)
+
+
+class LogFile(object):
+  def __init__(self, path):
+    self.path = path
+    self.f = open(self.path, 'wt')
+
+  def close(self):
+    self.f.close()
+
+  def write(self, line):
+    self.f.write(line + '\n')
+    self.f.flush()
+    os.fsync(self.f.fileno())
+
+  def rotate(self, suffix):
+    self.f.close()
+    os.rename(self.path, self.path+suffix)
+    self.f = open(self.path, 'wt')
+
+
 def build():
   print 'Building %s...' % BINARY
   if os.path.exists(BINARY):
@@ -29,18 +71,20 @@ def build():
 
 
 def cloudtail(*args, **kwargs):
+  fast_flush = kwargs.pop('fast_flush', False)
   args = list(args)
-  args.extend(['-local-log-level', 'debug', '-debug', '-project-id', 'fake'])
+  args.extend(['-local-log-level', 'debug', '-project-id', 'fake', '-debug'])
+  if fast_flush:
+    args.extend(['-buffering-time', '1ms'])
   print 'Running cloudtail %s' % ' '.join(args)
-  return subprocess.Popen([BINARY] + args, **kwargs)
+  return subprocess.Popen([BINARY] + args, bufsize=1, **kwargs)
 
 
 def parse_debug_out(out):
   entries = []
 
   def flush(buf):
-    assert buf[0].startswith('To ')
-    obj = json.loads('\n'.join(buf[1:]))
+    obj = json.loads(''.join(buf))
     entries.extend(e['textPayload'] for e in obj['entries'])
 
   buf = None
@@ -75,11 +119,11 @@ def timeout(t):
 
 
 def reader_thread(stream):
-  buf = []
+  buf = Buffer()
 
   def run():
     while True:
-      out = stream.read()
+      out = stream.readline()
       if not out:
         break
       buf.append(out)
@@ -146,7 +190,7 @@ def test_pipe_send_one_line_and_wait(assert_all_sent=True):
 
   # Ensure the line was sent.
   if assert_all_sent:
-    entries = parse_debug_out(''.join(out))
+    entries = parse_debug_out(''.join(out.collect()))
     assert entries == ['hi!']
 
 
@@ -181,7 +225,7 @@ def test_pipe_steady_rate_until_eof(assert_all_sent=True):
 
   # Make sure all lines were sent.
   if assert_all_sent:
-    entries = parse_debug_out(''.join(out))
+    entries = parse_debug_out(''.join(out.collect()))
     assert len(entries) == i, len(entries)
     assert proc.returncode == 0, proc.returncode
 
@@ -207,7 +251,7 @@ def test_pipe_steady_rate_and_sigint(assert_all_sent=True):
 
   # Make sure all lines were sent.
   if assert_all_sent:
-    entries = parse_debug_out(''.join(out))
+    entries = parse_debug_out(''.join(out.collect()))
     assert len(entries) == i, len(entries)
     assert proc.returncode == 0, proc.returncode
 
@@ -237,9 +281,43 @@ def test_tail_steady_rate(assert_all_sent=True):
     proc.stdout.close()
 
   if assert_all_sent:
-    entries = parse_debug_out(''.join(out))
+    entries = parse_debug_out(''.join(out.collect()))
     assert len(entries) == i, len(entries)
     assert proc.returncode == 0, proc.returncode
+
+
+def test_tail_rotation():
+  try:
+    base_dir = tempfile.mkdtemp('cloudtail_test')
+    log_file = LogFile(os.path.join(base_dir, 'log'))
+
+    proc = cloudtail(
+        'tail', '-path', log_file.path, stdout=subprocess.PIPE, fast_flush=True)
+    reader, out = reader_thread(proc.stdout)
+
+    # Give it some time to start watching the file.
+    print 'Waiting for tailer to initialize itself'
+    time.sleep(2)
+
+    # To emulate a shortage of inotify watches:
+    # sudo sysctl fs.inotify.max_user_watches=100
+    for i in xrange(0, 200):
+      print 'Attempt %d' % i
+      with timeout(10):
+        log_file.write('Hello!')
+        out.wait()  # make sure cloudtail consumed the log line
+        log_file.rotate(str(i))
+
+    print 'Stopping cloudtail'
+    os.kill(proc.pid, signal.SIGINT)
+    with timeout(10):
+      reader.join(timeout=10)
+      proc.wait()
+    proc.stdout.close()
+
+  finally:
+    log_file.close()
+    shutil.rmtree(base_dir)
 
 
 def main():
@@ -260,6 +338,7 @@ def main():
   test_pipe_steady_rate_until_eof()
   test_pipe_steady_rate_and_sigint()
   test_tail_steady_rate()
+  test_tail_rotation()
 
   print
   print '-'*80
