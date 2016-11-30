@@ -109,8 +109,21 @@ class PermissionTest(testing.AppengineTestCase):
     PermissionLevelHandler.PERMISSION_LEVEL = 80000  # An unknown permission.
     self._VerifyUnauthorizedAccess('test@google.com')
 
+  def testLoginLinkForGetButForceToUseReferer(self):
+    PermissionLevelHandler.PERMISSION_LEVEL = Permission.CORP_USER
+    PermissionLevelHandler.LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = False
+    referer_url = 'http://localhost/referer'
+    login_url = ('https://www.google.com/accounts/Login?continue=%s' %
+                 urllib.quote(referer_url))
+    self.assertRaisesRegexp(
+        webtest.app.AppError,
+        re.compile('.*401 Unauthorized.*%s.*' % re.escape(login_url),
+                   re.MULTILINE | re.DOTALL),
+        self.test_app.get, '/permission', headers={'referer': referer_url})
+
   def testLoginLinkForGetWithReferer(self):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.CORP_USER
+    PermissionLevelHandler.LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = True
     referer_url = 'http://localhost/referer'
     login_url = ('https://www.google.com/accounts/Login?continue=%s' %
                  urllib.quote('http://localhost/permission'))
@@ -122,6 +135,7 @@ class PermissionTest(testing.AppengineTestCase):
 
   def testLoginLinkForGetWithoutReferer(self):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.CORP_USER
+    PermissionLevelHandler.LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = True
     login_url = ('https://www.google.com/accounts/Login?continue=%s' %
                  urllib.quote('http://localhost/permission'))
     self.assertRaisesRegexp(
@@ -132,6 +146,7 @@ class PermissionTest(testing.AppengineTestCase):
 
   def testLoginLinkForPostWithReferer(self):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.CORP_USER
+    PermissionLevelHandler.LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = True
     referer_url = 'http://localhost/referer'
     login_url = ('https://www.google.com/accounts/Login?continue=%s' %
                  urllib.quote(referer_url))
@@ -140,17 +155,6 @@ class PermissionTest(testing.AppengineTestCase):
         re.compile('.*401 Unauthorized.*%s.*' % re.escape(login_url),
                    re.MULTILINE | re.DOTALL),
         self.test_app.post, '/permission', headers={'referer': referer_url})
-
-  def testLoginLinkWithRequestedUrl(self):
-    PermissionLevelHandler.PERMISSION_LEVEL = Permission.CORP_USER
-    request_url = '/permission'
-    login_url = ('https://www.google.com/accounts/Login?continue=%s' %
-                 urllib.quote('http://localhost/permission'))
-    self.assertRaisesRegexp(
-        webtest.app.AppError,
-        re.compile('.*401 Unauthorized.*%s.*' % re.escape(login_url),
-                   re.MULTILINE | re.DOTALL),
-        self.test_app.get, request_url)
 
 
 class UnImplementedHandler(BaseHandler):

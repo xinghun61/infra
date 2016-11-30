@@ -36,6 +36,7 @@ def _UpdateSuspectedFlakeAnalysis(
 
 class TriageFlakeAnalysis(BaseHandler):
   PERMISSION_LEVEL = Permission.CORP_USER
+  LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = False
 
   def HandleGet(self):  # pragma: no cover
     """Sets the manual triage result for the suspected flake analysis."""

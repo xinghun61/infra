@@ -38,6 +38,9 @@ class BaseHandler(webapp2.RequestHandler):
   # Subclass needs to overwrite it explicitly to give wider access.
   PERMISSION_LEVEL = Permission.ADMIN
 
+  # By default, redirect to destination page after login for GET requests.
+  LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = True
+
   def _HasPermission(self):
     if (self.request.headers.get('X-AppEngine-QueueName') or
         self.request.headers.get('X-AppEngine-Cron')):
@@ -152,12 +155,13 @@ class BaseHandler(webapp2.RequestHandler):
 
   def GetLoginUrl(self):
     """Returns the login url."""
-    if self.request.method == 'GET':
-      # For GET, all parameters are included in the URL.
+    # For GET, all parameters are included in the URL. So it is safe to redirect
+    # to the destination page. However, for POST, the parameters could be in the
+    # body and include files, so it is better to redirect to the original page.
+    if (self.request.method == 'GET' and
+        self.LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET):
       return users.create_login_url(self.request.url)
     else:
-      # For others like POST, the parameters could be in the body and include
-      # file, etc. Thus return to the original page if available.
       return users.create_login_url(self.request.referrer)
 
   def _Handle(self, handler_func):
