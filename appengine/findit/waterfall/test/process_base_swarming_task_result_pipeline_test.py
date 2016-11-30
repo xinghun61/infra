@@ -116,6 +116,10 @@ _SWARMING_TASK_RESULTS = {
         'state': 'COMPLETED',
         'exit_code': '2',  # Swarming task failed.
     },
+  'task_id4': {
+    'state': 'COMPLETED',
+    'exit_code': '1',
+  },
 }
 
 
@@ -294,6 +298,25 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
             'code': swarming_util.TASK_FAILED,
             'message': swarming_util.EXIT_CODE_DESCRIPTIONS[
                 swarming_util.TASK_FAILED]
+        })
+
+  def testMonitorSwarmingTaskWhereNoTaskOutputs(self):
+    task = WfSwarmingTask.Create(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name)
+    task.task_id = 'task_id4'
+    task.put()
+
+    pipeline = ProcessSwarmingTaskResultPipeline()
+    pipeline.run(
+        self.master_name, self.builder_name, self.build_number, self.step_name)
+
+    self.assertEqual(analysis_status.ERROR, task.status)
+    self.assertEqual(
+        task.error,
+        {
+            'code': swarming_util.NO_TASK_OUTPUTS,
+            'message': 'outputs_ref is None'
         })
 
   def testProcessSwarmingTaskResultPipeline(self):

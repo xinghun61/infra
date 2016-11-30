@@ -48,6 +48,10 @@ URLFETCH_CONNECTION_CLOSED_ERROR = 120
 EXCEEDED_MAX_RETRIES_ERROR = 210
 
 
+# Outputs_ref is None.
+NO_TASK_OUTPUTS = 300
+
+
 # Other/miscellaneous error codes.
 UNKNOWN = 1000
 
@@ -269,7 +273,7 @@ def GetIsolatedDataForFailedBuild(
       # Only retrieves test results from tasks which have failures and
       # the failure should not be internal infrastructure failure.
       swarming_step_name = GetTagValue(item['tags'], tag_name)
-      if swarming_step_name in failed_steps:
+      if swarming_step_name in failed_steps and item.get('outputs_ref'):
         isolated_data = _GenerateIsolatedData(item['outputs_ref'])
         build_isolated_data[swarming_step_name].append(isolated_data)
 

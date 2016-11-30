@@ -79,7 +79,6 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         'server_query_interval_seconds')
     task_started = False
     task_completed = False
-    tests_statuses = {}
     step_name_no_platform = None
     task = self._GetSwarmingTask(*call_args)
 
@@ -107,6 +106,18 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         if (task_state == swarming_util.STATE_COMPLETED and
             int(exit_code) != swarming_util.TASK_FAILED):
           outputs_ref = data.get('outputs_ref')
+
+          # If swarming task aborted because of errors in request arguments,
+          # it's possible that there is no outputs_ref.
+          if not outputs_ref:
+            task.status = analysis_status.ERROR
+            task.error = {
+              'code': swarming_util.NO_TASK_OUTPUTS,
+              'message': 'outputs_ref is None'
+            }
+            task.put()
+            break
+
           output_json, error = swarming_util.GetSwarmingTaskFailureLog(
               outputs_ref, self.HTTP_CLIENT)
 
