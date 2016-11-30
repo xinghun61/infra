@@ -351,12 +351,15 @@ class IssueDetail(issuepeek.IssuePeek):
     Returns:
       A dict of values to drive on-page user help, to be added to page_data.
     """
+    cue = None
+    dismissed = []
+    if mr.auth.user_pb:
+      dismissed = mr.auth.user_pb.dismissed_cues
     is_privileged_domain_user = framework_bizobj.IsPriviledgedDomainUser(
         mr.auth.user_pb.email)
     # Check if the user's query is just the ID of an existing issue.
     # If so, display a "did you mean to search?" cue card.
     jump_local_id = None
-    cue = None
     any_availibility_message = False
     iv = page_data.get('issue')
     if iv:
@@ -366,17 +369,16 @@ class IssueDetail(issuepeek.IssuePeek):
           pv.avail_message for pv in participant_views
           if pv and pv.user_id)
 
-    if mr.auth.user_id:  # Only signed in users get cues.
-      dismissed_cues = mr.auth.user_pb.dismissed_cues
-      if 'privacy_click_through' not in dismissed_cues:
-        cue = 'privacy_click_through'
-      elif ('search_for_numbers' not in dismissed_cues and
-            tracker_constants.JUMP_RE.match(mr.query)):
-        jump_local_id = int(mr.query)
-        cue = 'search_for_numbers'
-      elif ('availibility_msgs' not in dismissed_cues and
-            any_availibility_message):
-        cue = 'availibility_msgs'
+    if (mr.auth.user_id and
+        'privacy_click_through' not in dismissed):
+      cue = 'privacy_click_through'
+    elif (tracker_constants.JUMP_RE.match(mr.query) and
+          'search_for_numbers' not in dismissed):
+      jump_local_id = int(mr.query)
+      cue = 'search_for_numbers'
+    elif (any_availibility_message and
+          'availibility_msgs' not in dismissed):
+      cue = 'availibility_msgs'
 
     return {
         'is_privileged_domain_user': ezt.boolean(is_privileged_domain_user),

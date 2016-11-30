@@ -101,6 +101,13 @@
        Grid mode automatically switches to displaying IDs when there are many results.
     [end]
 
+    [# Cue cards to explain ownermodified, statusmodified, and componentmodified.]
+    [is cue "issue_timestamps"]
+       <b>Note:</b>
+       ownermodified, statusmodified, and componentmodified are the times at which
+       an issue's owner, status or component were changed.
+    [end]
+
    </span>
     [# Link to dismiss the cue card.]
     [if-any logged_in_user]

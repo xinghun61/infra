@@ -341,19 +341,30 @@ class IssueList(servlet.Servlet):
     except query2ast.InvalidQueryError:
       is_fulltext_query = False
 
-    if mr.mode == 'grid' and mr.cells == 'tiles':
-      if len(page_data.get('results', [])) > settings.max_tiles_in_grid:
-        if 'showing_ids_instead_of_tiles' not in dismissed:
-          cue = 'showing_ids_instead_of_tiles'
+    query_plus_col_spec = '%r %r' % (
+        mr.query and mr.query.lower(), mr.col_spec and mr.col_spec.lower())
+    uses_timestamp_term = any(
+      col_name in query_plus_col_spec
+      for col_name in ('ownermodified', 'statusmodified', 'componentmodified'))
 
-    if self.CheckPerm(mr, permissions.EDIT_ISSUE):
-      if ('italics_mean_derived' not in dismissed and
-          _AnyDerivedValues(page_data.get('table_data', []))):
-        cue = 'italics_mean_derived'
-      elif 'dit_keystrokes' not in dismissed and mr.mode != 'grid':
-        cue = 'dit_keystrokes'
-      elif 'stale_fulltext' not in dismissed and is_fulltext_query:
-        cue = 'stale_fulltext'
+    if (mr.mode == 'grid' and mr.cells == 'tiles' and
+        len(page_data.get('results', [])) > settings.max_tiles_in_grid and
+        'showing_ids_instead_of_tiles' not in dismissed):
+      cue = 'showing_ids_instead_of_tiles'
+    elif (_AnyDerivedValues(page_data.get('table_data', [])) and
+          'italics_mean_derived' not in dismissed):
+      cue = 'italics_mean_derived'
+    elif (uses_timestamp_term and
+          'issue_timestamps' not in dismissed):
+      cue = 'issue_timestamps'
+    # Note that the following are only offered to signed in users because
+    # otherwise the first one would appear all the time to anon users.
+    elif (mr.auth.user_id and mr.mode != 'grid' and
+          'dit_keystrokes' not in dismissed):
+      cue = 'dit_keystrokes'
+    elif (mr.auth.user_id and is_fulltext_query and
+          'stale_fulltext' not in dismissed):
+      cue = 'stale_fulltext'
 
     return {
         'cue': cue,

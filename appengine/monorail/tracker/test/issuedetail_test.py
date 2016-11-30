@@ -166,7 +166,8 @@ class IssueDetailTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest()
     mr.auth.user_id = 0
 
-    # Anon users do not see dismissable cues.
+    # Anon users do not see dismissable cues unless there is something relevant
+    # in the page_data to trigger it.
     help_data = servlet.GatherHelpData(mr, {})
     self.assertEqual(None, help_data['cue'])
 

@@ -72,16 +72,13 @@ class IssueListUnitTest(unittest.TestCase):
 
     page_data = {'table_data': []}
 
-    # Owners and members see a cue to try "?" to see keyboard shortcuts.
-    mr.perms = permissions.OWNER_ACTIVE_PERMISSIONSET
-    help_data = servlet.GatherHelpData(mr, page_data)
-    self.assertEqual('dit_keystrokes', help_data['cue'])
-    mr.perms = permissions.COMMITTER_ACTIVE_PERMISSIONSET
+    # Signed in users see a cue to try "?" to see keyboard shortcuts.
+    mr.auth.user_id = 111L
     help_data = servlet.GatherHelpData(mr, page_data)
     self.assertEqual('dit_keystrokes', help_data['cue'])
 
-    # Non-members do not see the cue.
-    mr.perms = permissions.USER_PERMISSIONSET
+    # Anon users do not see the cue.
+    mr.auth.user_id = 0L
     help_data = servlet.GatherHelpData(mr, page_data)
     self.assertEqual(None, help_data['cue'])
 
@@ -99,22 +96,11 @@ class IssueListUnitTest(unittest.TestCase):
         'table_data': [table_view_helpers.TableRow([cell])]
         }
 
-    # Owners and members see a cue about italics, iff there are any
+    # Users see a cue about italics, iff there are any
     # derived values shown in the list.
-    mr.perms = permissions.OWNER_ACTIVE_PERMISSIONSET
     help_data = servlet.GatherHelpData(mr, page_data_with_derived)
     self.assertEqual('italics_mean_derived', help_data['cue'])
     help_data = servlet.GatherHelpData(mr, page_data)
-    self.assertNotEqual('italics_mean_derived', help_data['cue'])
-    mr.perms = permissions.COMMITTER_ACTIVE_PERMISSIONSET
-    help_data = servlet.GatherHelpData(mr, page_data_with_derived)
-    self.assertEqual('italics_mean_derived', help_data['cue'])
-    help_data = servlet.GatherHelpData(mr, page_data)
-    self.assertNotEqual('italics_mean_derived', help_data['cue'])
-
-    # Non-members do not see the cue.
-    mr.perms = permissions.USER_PERMISSIONSET
-    help_data = servlet.GatherHelpData(mr, page_data_with_derived)
     self.assertNotEqual('italics_mean_derived', help_data['cue'])
 
 

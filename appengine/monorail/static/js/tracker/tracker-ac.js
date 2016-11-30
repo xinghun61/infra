@@ -441,11 +441,11 @@ function TKR_setUpSearchStore(
   TKR_addACDateItems(searchWords, docDict, 'opened', 'Opened');
   TKR_addACDateItems(searchWords, docDict, 'modified', 'Modified');
   TKR_addACDateItems(searchWords, docDict, 'closed', 'Closed');
-  TKR_addACDateItems(searchWords, docDict, 'ownermodified', 'Owner modified');
+  TKR_addACDateItems(searchWords, docDict, 'ownermodified', 'Owner field modified');
   TKR_addACDateItems(searchWords, docDict, 'ownerlastvisit', 'Owner last visit');
-  TKR_addACDateItems(searchWords, docDict, 'statusmodified', 'Status modified');
+  TKR_addACDateItems(searchWords, docDict, 'statusmodified', 'Status field modified');
   TKR_addACDateItems(
-      searchWords, docDict, 'componentmodified', 'Component modified');
+      searchWords, docDict, 'componentmodified', 'Component field modified');
 
   TKR_projectQueryStore = new _AC_SimpleStore(searchWords);
   TKR_projectQueryStore.docstrings = docDict;
