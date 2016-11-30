@@ -240,7 +240,7 @@ type sendRun struct {
 	text     string
 }
 
-func (c *sendRun) Run(a subcommands.Application, args []string) int {
+func (c *sendRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
 	if len(args) != 0 {
 		fmt.Fprintf(os.Stderr, "Cloudtail send doesn't accept positional command line arguments %q\n", args)
 		return 1
@@ -304,7 +304,7 @@ type pipeRun struct {
 	lineBufferSize int
 }
 
-func (c *pipeRun) Run(a subcommands.Application, args []string) int {
+func (c *pipeRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
 	if len(args) != 0 {
 		fmt.Fprintf(os.Stderr, "Cloudtail pipe doesn't accept positional command line arguments %q\n", args)
 		return 1
@@ -388,7 +388,7 @@ type tailRun struct {
 	path string
 }
 
-func (c *tailRun) Run(a subcommands.Application, args []string) int {
+func (c *tailRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
 	if len(args) != 0 {
 		fmt.Fprintf(os.Stderr, "Cloudtail tail doesn't accept positional command line arguments %q\n", args)
 		return 1

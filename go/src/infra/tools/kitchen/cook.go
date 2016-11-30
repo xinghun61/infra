@@ -292,7 +292,7 @@ func (c *cookRun) pathModuleProperties() (map[string]string, error) {
 	return props, nil
 }
 
-func (c *cookRun) Run(a subcommands.Application, args []string) (exitCode int) {
+func (c *cookRun) Run(a subcommands.Application, args []string, _ subcommands.Env) (exitCode int) {
 	ctx := cli.GetContext(a, c)
 
 	// Process flags.

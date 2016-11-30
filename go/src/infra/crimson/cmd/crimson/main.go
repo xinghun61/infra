@@ -262,7 +262,7 @@ func ipRangeFromDhcpConfig(c *addVlanRun) ([]*crimson.IPRange, error) {
 	return ranges, nil
 }
 
-func (c *addVlanRun) Run(a subcommands.Application, args []string) int {
+func (c *addVlanRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
 	ctx := cli.GetContext(a, c)
 	client := c.newCrimsonClient(ctx)
 
@@ -296,7 +296,7 @@ func (c *addVlanRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func (c *queryVlanRun) Run(a subcommands.Application, args []string) int {
+func (c *queryVlanRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
 	ctx := cli.GetContext(a, c)
 	client := c.newCrimsonClient(ctx)
 
@@ -318,7 +318,7 @@ func (c *queryVlanRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func (c *deleteVlanRun) Run(a subcommands.Application, args []string) int {
+func (c *deleteVlanRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
 	ctx := cli.GetContext(a, c)
 	client := c.newCrimsonClient(ctx)
 
@@ -389,7 +389,7 @@ func hostListFromRangeFromArgs(c *addHostRun) (*crimson.HostList, error) {
 	return hostListFromFile(c.inputFileCSV)
 }
 
-func (c *addHostRun) Run(a subcommands.Application, args []string) int {
+func (c *addHostRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
 	ctx := cli.GetContext(a, c)
 	client := c.newCrimsonClient(ctx)
 
@@ -417,7 +417,7 @@ func (c *addHostRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func (c *queryHostRun) Run(a subcommands.Application, args []string) int {
+func (c *queryHostRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
 	ctx := cli.GetContext(a, c)
 	client := c.newCrimsonClient(ctx)
 
@@ -468,7 +468,7 @@ func hostDeleteListFromArgs(c *deleteHostRun) (*crimson.HostDeleteList, error) {
 	return hdl, nil
 }
 
-func (c *deleteHostRun) Run(a subcommands.Application, args []string) int {
+func (c *deleteHostRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
 	var hostList *crimson.HostDeleteList
 	var err error
 
