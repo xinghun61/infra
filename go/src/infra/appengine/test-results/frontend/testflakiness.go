@@ -216,8 +216,8 @@ func testFlakinessHandler(ctx *router.Context) {
 	writeResponse(ctx, "testFlakinessHandler", data)
 }
 
-func createBQService(AECtx context.Context) (*bigquery.Service, error) {
-	hc, err := google.DefaultClient(AECtx, bigquery.BigqueryScope)
+func createBQService(aeCtx context.Context) (*bigquery.Service, error) {
+	hc, err := google.DefaultClient(aeCtx, bigquery.BigqueryScope)
 	if err != nil {
 		return nil, errors.Annotate(err).Reason("failed to create http client").Err()
 	}
@@ -235,6 +235,7 @@ func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, par
 
 	useLegacySQL := false
 	request := bq.Jobs.Query(bqProjectID, &bigquery.QueryRequest{
+		TimeoutMs:       30 * 60 * 1000, // 30 minutes
 		Query:           query,
 		UseLegacySql:    &useLegacySQL,
 		QueryParameters: params,
@@ -251,38 +252,14 @@ func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, par
 		return nil, errors.Annotate(err).Reason("failed to execute query").Err()
 	}
 
-	var rows []*bigquery.TableRow
-	var pageToken string
 	jobID := response.JobReference.JobId
-	if response.JobComplete {
-		// Query returned results immediately.
-		rows = make([]*bigquery.TableRow, 0, response.TotalRows)
-		rows = append(rows, response.Rows...)
-		pageToken = response.PageToken
-	} else {
-		// Query is still running. Wait for results.
-		// TODO(sergiyb): Should we ever give up? After this is converted to an
-		// hourly cron job, add 30 minutes timeout here.
-		for {
-			resultsRequest := bq.Jobs.GetQueryResults(bqProjectID, jobID)
-			var resultsResponse *bigquery.GetQueryResultsResponse
-			err := retry.Retry(ctx, retry.Default, func() error {
-				var err error
-				resultsResponse, err = resultsRequest.Do()
-				return err
-			}, nil)
-
-			if err != nil {
-				return nil, errors.Annotate(err).Reason("failed to retrive results").Err()
-			}
-
-			if resultsResponse.JobComplete {
-				rows = make([]*bigquery.TableRow, 0, resultsResponse.TotalRows)
-				rows = append(rows, resultsResponse.Rows...)
-				pageToken = resultsResponse.PageToken
-			}
-		}
+	if !response.JobComplete {
+		return nil, errors.New("timed out while executing BQ query")
 	}
+
+	rows := make([]*bigquery.TableRow, 0, response.TotalRows)
+	rows = append(rows, response.Rows...)
+	pageToken := response.PageToken
 
 	// Get additional results if any.
 	for pageToken != "" {

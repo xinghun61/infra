@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/luci/gae/impl/memory"
+	"github.com/luci/luci-go/server/router"
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/net/context"
 	bigquery "google.golang.org/api/bigquery/v2"
@@ -87,6 +88,37 @@ func (h *fakeBQHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	panic(fmt.Sprintf("Unexpected request: %#v %#v %#v %#v\nExpected: %#v", path,
 		query, params, pageToken, h.ExpectedRequests))
+}
+
+func TestWriteErrorAndResponse(t *testing.T) {
+	t.Parallel()
+
+	Convey("writeError and writeResponse", t, func() {
+		rec := httptest.NewRecorder()
+		ctx := &router.Context{
+			Context: memory.Use(context.Background()),
+			Writer:  rec,
+		}
+
+		Convey("writeError", func() {
+			writeError(ctx, nil, "testFunc", "test message")
+
+			So(rec.Result().StatusCode, ShouldEqual, http.StatusInternalServerError)
+			So(rec.Body.String(), ShouldEqual, "Internal Server Error\n")
+		})
+
+		Convey("writeResponse", func() {
+			type TestType struct {
+				X string `json:"x"`
+				Y string `json:"y,omitempty"`
+			}
+
+			writeResponse(ctx, "testFunc", TestType{X: "y", Y: ""})
+
+			So(rec.Result().StatusCode, ShouldEqual, http.StatusOK)
+			So(rec.Body.String(), ShouldEqual, "{\"x\":\"y\"}")
+		})
+	})
 }
 
 func TestGetFlakinessGroups(t *testing.T) {
