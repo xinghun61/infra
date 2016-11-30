@@ -44,7 +44,7 @@ class GlobalsTest(unittest.TestCase):
 
     # pylint: disable=unused-argument
     def serialize_to(pb, start_time, fields, value, target):
-      pb.data.add().name = 'foo'
+      pb.name = 'foo'
 
     fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
     fake_metric.name = 'fake'
@@ -64,6 +64,26 @@ class GlobalsTest(unittest.TestCase):
 
     interface.flush()
     interface.state.global_monitor.send.assert_not_called()
+
+  def test_flush_corrupt_metric(self):
+    """Test that a corrupt metric does not affect flushing other metrics."""
+    interface.state.global_monitor = stubs.MockMonitor()
+
+    good_metric = metrics.GaugeMetric('good_metric')
+    bad_metric = metrics.GaugeMetric('bad_metric')
+    interface.register(good_metric)
+    interface.register(bad_metric)
+    good_metric.set(1, fields={'valid_field': 1})
+    bad_metric.set(2, fields={'invalid_field': mock.Mock()})
+
+    with self.assertRaises(errors.MonitoringFailedToFlushAllMetricsError) as e:
+      interface.flush()
+    self.assertEqual(1, e.exception.error_count)
+
+    interface.state.global_monitor.send.assert_called_once()
+    proto = interface.state.global_monitor.send.call_args[0][0]
+    self.assertEqual(1, len(proto.data))
+    self.assertEqual('good_metric', proto.data[0].name)
 
   def test_flush_new(self):
     interface.state.metric_name_prefix = '/infra/test/'
@@ -112,7 +132,7 @@ class GlobalsTest(unittest.TestCase):
 
     # pylint: disable=unused-argument
     def serialize_to(pb, start_time, fields, value, target):
-      pb.data.add().name = 'foo'
+      pb.name = 'foo'
 
     # We can't use the mock's call_args_list here because the same object is
     # reused as the argument to both calls and cleared inbetween.
@@ -203,7 +223,7 @@ class GlobalsTest(unittest.TestCase):
 
     # pylint: disable=unused-argument
     def serialize_to(pb, start_time, fields, value, target):
-      pb.data.add().name = 'foo'
+      pb.name = 'foo'
 
     fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
     fake_metric.name = 'fake'

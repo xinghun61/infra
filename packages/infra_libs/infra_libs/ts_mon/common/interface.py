@@ -36,6 +36,7 @@ import logging
 import random
 import threading
 import time
+import traceback
 
 from infra_libs.ts_mon.common import errors
 from infra_libs.ts_mon.common import metric_store
@@ -154,16 +155,28 @@ def _generate_proto():
   """Generate MetricsCollection for global_monitor.send()."""
   proto = metrics_pb2.MetricsCollection()
 
+  error_count = 0
   for target, metric, start_time, _, fields_values in state.store.get_all():
     for fields, value in fields_values.iteritems():
       if len(proto.data) >= METRICS_DATA_LENGTH_LIMIT:
         yield proto
         proto = metrics_pb2.MetricsCollection()
 
-      metric.serialize_to(proto, start_time, fields, value, target)
+      try:
+        metrics_pb = metrics_pb2.MetricsData()
+        metric.serialize_to(metrics_pb, start_time, fields, value, target)
+      except errors.MonitoringError:
+        error_count += 1
+        logging.exception('Failed to serialize a metric.')
+        continue
+
+      proto.data.add().CopyFrom(metrics_pb)
 
   if len(proto.data) > 0:
     yield proto
+
+  if error_count:
+    raise errors.MonitoringFailedToFlushAllMetricsError(error_count)
 
 
 def register(metric):

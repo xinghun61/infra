@@ -78,7 +78,7 @@ class MetricTest(TestBase):
     m = metrics.StringMetric('test')
     m.set('val')
     p = metrics_pb2.MetricsCollection()
-    m.serialize_to(p, 1234, (('bar', 1), ('baz', False)), m.get(), t)
+    m.serialize_to(p.data.add(), 1234, (('bar', 1), ('baz', False)), m.get(), t)
     return str(p).splitlines()
 
   def test_serialize_with_description(self):
@@ -86,7 +86,7 @@ class MetricTest(TestBase):
     m = metrics.StringMetric('test', description='a custom description')
     m.set('val')
     p = metrics_pb2.MetricsCollection()
-    m.serialize_to(p, 1234, (('bar', 1), ('baz', False)), m.get(), t)
+    m.serialize_to(p.data.add(), 1234, (('bar', 1), ('baz', False)), m.get(), t)
     return str(p).splitlines()
 
   def test_serialize_with_units(self):
@@ -94,7 +94,7 @@ class MetricTest(TestBase):
     m = metrics.GaugeMetric('test', units=metrics.MetricsDataUnits.SECONDS)
     m.set(1)
     p = metrics_pb2.MetricsCollection()
-    m.serialize_to(p, 1234, (('bar', 1), ('baz', False)), m.get(), t)
+    m.serialize_to(p.data.add(), 1234, (('bar', 1), ('baz', False)), m.get(), t)
     self.assertEquals(p.data[0].units, metrics.MetricsDataUnits.SECONDS)
     return str(p).splitlines()
 
@@ -362,9 +362,9 @@ class CounterMetricTest(TestBase):
     t = targets.DeviceTarget('reg', 'role', 'net', 'host')
     m = metrics.CounterMetric('test', fields={'foo': 'bar'})
     m.increment()
-    p = metrics_pb2.MetricsCollection()
+    p = metrics_pb2.MetricsData()
     m.serialize_to(p, 1234, (), m.get(), t)
-    self.assertEquals(1234000000, p.data[0].start_timestamp_us)
+    self.assertEquals(1234000000, p.start_timestamp_us)
 
   def test_is_cumulative(self):
     m = metrics.CounterMetric('test')
@@ -449,9 +449,9 @@ class CumulativeMetricTest(TestBase):
     t = targets.DeviceTarget('reg', 'role', 'net', 'host')
     m = metrics.CumulativeMetric('test', fields={'foo': 'bar'})
     m.set(3.14)
-    p = metrics_pb2.MetricsCollection()
+    p = metrics_pb2.MetricsData()
     m.serialize_to(p, 1234, (), m.get(), t)
-    self.assertEquals(1234000000, p.data[0].start_timestamp_us)
+    self.assertEquals(1234000000, p.start_timestamp_us)
 
   def test_is_cumulative(self):
     m = metrics.CumulativeMetric('test')
@@ -736,9 +736,9 @@ class DistributionMetricTest(TestBase):
     m.add(1)
     m.add(5)
     m.add(25)
-    p = metrics_pb2.MetricsCollection()
+    p = metrics_pb2.MetricsData()
     m.serialize_to(p, 1234, (), m.get(), t)
-    self.assertEquals(1234000000, p.data[0].start_timestamp_us)
+    self.assertEquals(1234000000, p.start_timestamp_us)
 
   def test_is_cumulative(self):
     cd = metrics.CumulativeDistributionMetric('test')

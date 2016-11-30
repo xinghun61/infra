@@ -134,17 +134,16 @@ class Metric(object):
     self._populate_fields_new(data, fields)
     self._populate_value_new(data, value)
 
-  def serialize_to(self, collection_pb, start_time, fields, value, target):
+  def serialize_to(self, metric_pb, start_time, fields, value, target):
     """Generate metrics_pb2.MetricsData messages for this metric.
 
     Args:
-      collection_pb (metrics_pb2.MetricsCollection): protocol buffer into which
-        to add the current metric values.
+      metric_pb (metrics_pb2.MetricsData): protocol buffer into which
+        to serialize the current metric values.
       start_time (int): timestamp in microseconds since UNIX epoch.
       target (Target): a Target to use.
     """
 
-    metric_pb = collection_pb.data.add()
     metric_pb.metric_name_prefix = interface.state.metric_name_prefix
     metric_pb.name = self._name
     if self._description is not None:
