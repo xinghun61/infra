@@ -13,6 +13,7 @@ from lib.gitiles.change_log import ChangeLog
 from model import analysis_status
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
+
 def DummyCrashData(
     client_id=None,
     version='1',

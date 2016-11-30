@@ -5,8 +5,6 @@
 import copy
 from datetime import datetime
 
-from google.appengine.api import app_identity
-
 from crash.type_enums import CrashClient
 from crash.test.crash_testcase import CrashTestCase
 from model import analysis_status
@@ -106,69 +104,3 @@ class CrashAnalysisTest(CrashTestCase):
     analysis.put()
     self.assertIsNotNone(analysis)
     self.assertEqual(CrashAnalysis.Get(crash_identifiers), analysis)
-
-  def testGetPublishableResulFoundTrue(self):
-    mock_host = 'https://host.com'
-    self.mock(app_identity, 'get_default_version_hostname', lambda: mock_host)
-
-    analysis_result = {
-        'found': True,
-        'suspected_cls': [
-            {'confidence': 0.21434,
-             'reason': ['reason1', 'reason2'],
-             'other': 'data'}
-        ],
-        'other_data': 'data',
-    }
-
-    processed_analysis_result = copy.deepcopy(analysis_result)
-    processed_analysis_result['feedback_url'] = (
-        mock_host + '/crash/fracas-result-feedback?'
-        'key=agx0ZXN0YmVkLXRlc3RyQQsSE0ZyYWNhc0NyYXNoQW5hbHlzaXMiKDMzNTY5MDU3'
-        'M2ZlYTFlZGZhMjViOTVjZmI4OGZhODFlNDk0YTEyODkM')
-
-    for cl in processed_analysis_result['suspected_cls']:
-      cl['confidence'] = round(cl['confidence'], 2)
-      cl.pop('reason', None)
-
-    crash_identifiers = {'signature': 'sig'}
-    expected_messages_data = {
-        'crash_identifiers': crash_identifiers,
-        'client_id': CrashClient.FRACAS,
-        'result': processed_analysis_result,
-    }
-
-    analysis = FracasCrashAnalysis.Create(crash_identifiers)
-    analysis.client_id = CrashClient.FRACAS
-    analysis.result = analysis_result
-
-    self.assertDictEqual(analysis.ToPublishableResult(crash_identifiers),
-        expected_messages_data)
-
-  def testToPublishableResultFoundFalse(self):
-    mock_host = 'https://host.com'
-    self.mock(app_identity, 'get_default_version_hostname', lambda: mock_host)
-
-    analysis_result = {
-        'found': False,
-    }
-
-    processed_analysis_result = copy.deepcopy(analysis_result)
-    processed_analysis_result['feedback_url'] = (
-        mock_host + '/crash/fracas-result-feedback?'
-        'key=agx0ZXN0YmVkLXRlc3RyQQsSE0ZyYWNhc0NyYXNoQW5hbHlzaXMiKDMzNTY5MDU3'
-        'M2ZlYTFlZGZhMjViOTVjZmI4OGZhODFlNDk0YTEyODkM')
-
-    crash_identifiers = {'signature': 'sig'}
-    expected_messages_data = {
-        'crash_identifiers': crash_identifiers,
-        'client_id': CrashClient.FRACAS,
-        'result': processed_analysis_result,
-    }
-
-    analysis = FracasCrashAnalysis.Create(crash_identifiers)
-    analysis.client_id = CrashClient.FRACAS
-    analysis.result = analysis_result
-
-    self.assertDictEqual(analysis.ToPublishableResult(crash_identifiers),
-        expected_messages_data)

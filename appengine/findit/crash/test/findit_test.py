@@ -5,6 +5,8 @@
 import copy
 import logging
 
+from google.appengine.api import app_identity
+
 from crash.findit import Findit
 from crash.type_enums import CrashClient
 from crash.test.crash_pipeline_test import DummyCrashData
@@ -31,17 +33,29 @@ class UnsupportedClient(Findit): # pylint: disable=W0223
     self._client_id = client_id
 
 
+class MockFindit(Findit):  # pylint: disable = W
+  """Overwrite abstract method of Findit for testing."""
+
+  def __init__(self):
+    super(MockFindit, self).__init__(MOCK_REPOSITORY)
+
+  @classmethod
+  def _ClientID(cls):
+    return CrashClient.FRACAS
+
+  def ProcessResultForPublishing(self, result, key):
+    return result
+
+
 class FinditTest(CrashTestCase):
 
-  def testPlatformRename(self):
-    class _MockFindit(Findit): # pylint: disable=W0223
-      @classmethod
-      def _ClientID(cls):
-        return CrashClient.FRACAS
+  def setUp(self):
+    super(FinditTest, self).setUp()
+    self.findit = MockFindit()
 
+  def testPlatformRename(self):
     self.assertEqual(
-        _MockFindit(MOCK_REPOSITORY).RenamePlatform('linux'),
-        'unix')
+        self.findit.RenamePlatform('linux'), 'unix')
 
   def testCheckPolicyUnsupportedClient(self):
     self.assertIsNone(UnsupportedClient().CheckPolicy(DummyCrashData(
@@ -65,3 +79,51 @@ class FinditTest(CrashTestCase):
         UnsupportedClient('Unsupported_client').GetAnalysis(crash_identifiers),
         'Unsupported client unexpectedly got analysis %s via identifiers %s'
         % (analysis, crash_identifiers))
+
+  def testGetPublishableResultFoundTrue(self):
+    analysis_result = {
+        'found': True,
+        'suspected_cls': [
+            {'confidence': 0.21434,
+             'reason': ['reason1', 'reason2'],
+             'other': 'data'}
+        ],
+        'other_data': 'data',
+    }
+
+    processed_analysis_result = copy.deepcopy(analysis_result)
+    for cl in processed_analysis_result['suspected_cls']:
+      cl['confidence'] = round(cl['confidence'], 2)
+      cl.pop('reason', None)
+
+    crash_identifiers = {'signature': 'sig'}
+    expected_processed_result = {
+        'crash_identifiers': crash_identifiers,
+        'client_id': self.findit.client_id,
+        'result': processed_analysis_result,
+    }
+
+    analysis = FracasCrashAnalysis.Create(crash_identifiers)
+    analysis.result = analysis_result
+
+    self.assertDictEqual(self.findit.GetPublishableResult(crash_identifiers,
+                                                          analysis),
+                         expected_processed_result)
+
+  def testGetPublishableResultFoundFalse(self):
+    analysis_result = {
+        'found': False,
+    }
+    crash_identifiers = {'signature': 'sig'}
+    expected_processed_result = {
+        'crash_identifiers': crash_identifiers,
+        'client_id': self.findit.client_id,
+        'result': copy.deepcopy(analysis_result),
+    }
+
+    analysis = FracasCrashAnalysis.Create(crash_identifiers)
+    analysis.result = analysis_result
+
+    self.assertDictEqual(self.findit.GetPublishableResult(crash_identifiers,
+                                                          analysis),
+                         expected_processed_result)

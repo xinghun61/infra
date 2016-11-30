@@ -2,11 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
+
 from common import chrome_dependency_fetcher
 from common.dependency import DependencyRoll
 from common.http_client_appengine import HttpClientAppengine
 from crash import chromecrash_parser
 from crash import detect_regression_range
+from crash import findit
 from crash import findit_for_chromecrash
 from crash.changelist_classifier import ChangelistClassifier
 from crash.chromecrash_parser import ChromeCrashParser
@@ -15,7 +18,6 @@ from crash.crash_report import CrashReport
 from crash.culprit import Culprit
 from crash.findit_for_chromecrash import FinditForChromeCrash
 from crash.findit_for_chromecrash import FinditForFracas
-from crash.findit import Findit
 from crash.project_classifier import ProjectClassifier
 from crash.results import MatchResult
 from crash.stacktrace import CallStack
@@ -30,7 +32,7 @@ from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 MOCK_REPOSITORY = None
 
-class _FinditForChromeCrash(FinditForChromeCrash):
+class _FinditForChromeCrash(FinditForChromeCrash):  # pylint: disable = W
   # We allow overriding the default MOCK_REPOSITORY because one unittest
   # needs to.
   def __init__(self, repository=MOCK_REPOSITORY):
@@ -60,6 +62,7 @@ class _FinditForChromeCrash(FinditForChromeCrash):
     of FinditForChromeCrash, so that we can test that class directly.
     """
     return {}
+
 
 def _FinditForFracas():
   """A helper to pass in the standard pipeline class."""
@@ -259,3 +262,31 @@ class FinditForFracasTest(CrashTestCase):
 
     self.assertDictEqual(expected_results, results)
     self.assertDictEqual(expected_tag, tag)
+
+  @mock.patch('google.appengine.ext.ndb.Key.urlsafe')
+  @mock.patch('common.appengine_util.GetDefaultVersionHostname')
+  def testProcessResultForPublishing(self, mocked_get_default_host,
+                                     mocked_urlsafe):
+    mocked_host = 'http://host'
+    mocked_get_default_host.return_value = mocked_host
+    urlsafe_key = 'abcde'
+    mocked_urlsafe.return_value = urlsafe_key
+
+    crash_identifiers = {'signature': 'sig'}
+    analysis = FracasCrashAnalysis.Create(crash_identifiers)
+    analysis.result = {'other': 'data'}
+    findit_object = FinditForFracas(None)
+    expected_processed_result = {
+        'client_id': findit_object.client_id,
+        'crash_identifiers': {'signature': 'sig'},
+        'result': {
+            'feedback_url': (
+                findit_for_chromecrash._FRACAS_FEEDBACK_URL_TEMPLATE % (
+                    mocked_host, urlsafe_key)),
+            'other': 'data'
+        }
+    }
+
+    self.assertDictEqual(findit_object.GetPublishableResult(crash_identifiers,
+                                                            analysis),
+                         expected_processed_result)

@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import copy
+import json
 import logging
 
 from google.appengine.ext import ndb
@@ -216,6 +217,41 @@ class Findit(object):
       return None
 
     return stacktrace
+
+  def ProcessResultForPublishing(self, result, key):
+    """Client specific processing of result data for publishing."""
+    raise NotImplementedError()
+
+  def GetPublishableResult(self, crash_identifiers, analysis):
+    """Convert a culprit result into a publishable result for client.
+
+    Note, this function must be called by a concrete subclass of CrashAnalysis
+    which implements the ProcessResultForPublishing method.
+
+    Args:
+      crash_identifiers (dict): Dict containing identifiers that can uniquely
+        identify CrashAnalysis entity.
+      analysis (CrashAnalysis model): Model containing culprit result and other
+        analysis information.
+
+    Returns:
+      A dict of the given ``crash_identifiers``, this model's
+      ``client_id``, and a publishable version of this model's ``result``.
+    """
+    result = copy.deepcopy(analysis.result)
+    if result.get('found') and 'suspected_cls' in result:
+      for cl in result['suspected_cls']:
+        cl['confidence'] = round(cl['confidence'], 2)
+        cl.pop('reason', None)
+
+    result = self.ProcessResultForPublishing(result, analysis.key.urlsafe())
+    logging.info('Publish result:\n%s',
+                 json.dumps(result, indent=4, sort_keys=True))
+    return {
+        'crash_identifiers': crash_identifiers,
+        'client_id': self.client_id,
+        'result': result,
+    }
 
   # TODO(wrengr): This is only called by ``CrashAnalysisPipeline.run``;
   # we should be able to adjust things so that we only need to take in
