@@ -33,9 +33,10 @@
       };
 
       flush( () => {
-        assert.equal('chromium: 398901 - 398946',
+        assert.equal('chromium: \n      \n      398901 - 398946\n      ' +
+            '\n        Click to see more information.',
             element.$$('div').textContent.trim());
-        assert.equal(true, element.$.loadingMessage.hidden);
+        assert.equal(false, element.$.loadingMessage.hidden);
         assert.equal(false, element.$.collapse.opened);
         done();
       });
@@ -77,7 +78,8 @@
       assert.equal(true, element.$.collapse.opened);
 
       flush( () => {
-        assert.equal('chromium: 398901 - 398946',
+        assert.equal('chromium: \n      \n      398901 - 398946\n      '+
+            '\n        Click to see less information.',
             element.$$('div').textContent.trim());
         assert.equal('fa3d958d\n          \n          (dcastagna):\n          '
             + 'gl: Test YV12 buffer drm import.',

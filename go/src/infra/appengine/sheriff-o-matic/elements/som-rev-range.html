@@ -120,7 +120,7 @@
      },
 
      _regressionStart: function(range) {
-        if (range && (!range.positions || range.positions.length == 0)) {
+        if (!range || (!range.positions || range.positions.length == 0)) {
           return '';
         }
 
@@ -128,7 +128,7 @@
      },
 
      _regressionEnd: function(range) {
-        if (!range.positions || range.positions.length == 0) {
+        if (!range || (!range.positions || range.positions.length == 0)) {
           return '';
         }
 
