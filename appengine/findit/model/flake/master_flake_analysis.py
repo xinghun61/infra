@@ -18,6 +18,7 @@ from model.flake.flake_swarming_task import FlakeSwarmingTaskData
 class DataPoint(ndb.Model):
   build_number = ndb.IntegerProperty(indexed=False)
   pass_rate = ndb.FloatProperty(indexed=False)
+  task_id = ndb.StringProperty(indexed=False)
 
 
 class MasterFlakeAnalysis(

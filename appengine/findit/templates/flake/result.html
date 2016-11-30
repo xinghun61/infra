@@ -68,9 +68,9 @@
         var rate = (value[1] * 100).toFixed(0);
         // -1 means that the test doesn't exist or is disabled at the build.
         if (rate < 0) {
-          not_run_data.push([value[0], 100]);
+          not_run_data.push([value[0], 100, value[2]]);
         } else {
-          run_data.push([value[0], rate]);
+          run_data.push([value[0], rate, value[2]]);
         }
       });
 
@@ -143,10 +143,17 @@
       }).appendTo("body");
 
       function showTooltipForDataPoint(item) {
-        var buildNumber = item.datapoint[0];
-        var passRate = item.datapoint[1];
+        var itemData = item.series.data[item.dataIndex];
+        var buildNumber = itemData[0];
+        var passRate = itemData[1];
+        var taskUrl = itemData[2];
 
-        $("#tooltip").html('Build #: <a href="https://build.chromium.org/p/' + findit.masterName + '/builders/' + findit.builderName + '/builds/' + buildNumber + '" target="_blank">' + buildNumber + "</a><br> Pass rate: " + passRate + '%').css({top: item.pageY + 5, left: item.pageX + 5}).show();
+        var tooltipStr = 'Build #: <a href="https://build.chromium.org/p/' + findit.masterName + '/builders/' + findit.builderName + '/builds/' + buildNumber + '" target="_blank">' + buildNumber + '</a><br> Pass rate: ' + passRate + '%';
+        if (taskUrl) {
+          tooltipStr += '<br>Task: <a href="' + taskUrl +'" target="_blank">link</a>';
+        }
+
+        $("#tooltip").html(tooltipStr).css({top: item.pageY + 5, left: item.pageX + 5}).show();
       }
 
       var dataPointSelected = false;

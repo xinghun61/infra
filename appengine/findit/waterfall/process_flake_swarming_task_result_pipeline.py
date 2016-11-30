@@ -42,8 +42,6 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     number of succeeded runs and number of failed runs.
     """
 
-    tests_statuses = super(ProcessFlakeSwarmingTaskResultPipeline,
-                           self)._CheckTestsRunStatuses(output_json)
     # Should query by test name, because some test has dependencies which
     # are also run, like TEST and PRE_TEST in browser_tests.
     tests_statuses = super(ProcessFlakeSwarmingTaskResultPipeline,
@@ -67,16 +65,17 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     logging.info('MasterFlakeAnalysis %s version %s',
                  master_flake_analysis, master_flake_analysis.version_number)
 
-    data_point = DataPoint()
-    data_point.build_number = build_number
-    data_point.pass_rate = pass_rate
-    master_flake_analysis.data_points.append(data_point)
-
     flake_swarming_task = FlakeSwarmingTask.Get(
         master_name, builder_name, build_number, step_name, test_name)
     flake_swarming_task.tries = tries
     flake_swarming_task.successes = successes
     flake_swarming_task.put()
+
+    data_point = DataPoint()
+    data_point.build_number = build_number
+    data_point.pass_rate = pass_rate
+    data_point.task_id = flake_swarming_task.task_id
+    master_flake_analysis.data_points.append(data_point)
 
     results = flake_swarming_task.GetFlakeSwarmingTaskData()
     # TODO(lijeffrey): Determine whether or not this flake swarming task
