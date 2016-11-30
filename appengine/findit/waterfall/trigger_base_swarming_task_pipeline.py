@@ -29,7 +29,6 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
                                     builder_name, build_number, step_name,
                                     tests, iterations):
     """Returns a SwarmingTaskRequest instance to run the given tests only."""
-
     # Make a copy of the referred request and drop or overwrite some fields.
     new_request = copy.deepcopy(ref_request)
     new_request.name = self._GetSwarmingTaskName(ref_task_id)
@@ -47,8 +46,24 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
             not a.startswith('--test-launcher-filter-file'))
     ]
     new_request.extra_args.append('--gtest_filter=%s' % ':'.join(tests))
+
+    # On Android, --gtest_repeat is only supported for gtest, but not for other
+    # test types. E.g. instrumentation tests currently support it via
+    # --test-repeat.
+    #
+    # Here we blindly treat all tests on Android as gtest, and let other test
+    # types fail out, because it is hard to distinguish them programmatically
+    # while the majority is gtest.
+    #
+    # https://crbug.com/669632 tracks the effort to unify the command switches
+    # of the Android test runner that are used here.
     new_request.extra_args.append('--gtest_repeat=%s' % iterations)
-    new_request.extra_args.append('--test-launcher-retry-limit=0')
+
+    ref_os = swarming_util.GetTagValue(ref_request.tags, 'os') or ''
+    if ref_os.lower() == 'android':  # Workaround. pragma: no cover.
+      new_request.extra_args.append('--num_retries=0')
+    else:
+      new_request.extra_args.append('--test-launcher-retry-limit=0')
 
     # Also rerun disabled tests. Scenario: the test was disabled before Findit
     # runs any analysis. One possible case:
@@ -62,6 +77,9 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     #   4. Findit picks the latest Waterfall build of the matching configuration
     #      for the CQ build in which the flaky test is found.
     #   5. In the picked Waterfall build, the test is already disabled.
+    #
+    # Note: test runner on Android ignores this flag because it is not supported
+    # yet even though it exists.
     new_request.extra_args.append('--gtest_also_run_disabled_tests')
 
     # Remove the env setting for sharding.
