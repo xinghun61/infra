@@ -61,7 +61,7 @@ def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
       mr.sort_spec = 'rank'
     sorted_issues = sorting.SortArtifacts(
         mr, allowed_issues, harmonized_config, sortable_fields,
-        tracker_helpers.tracker_helpers.SORTABLE_FIELDS_POSTPROCESSORS,
+        tracker_helpers.SORTABLE_FIELDS_POSTPROCESSORS,
         users_by_id=issues_users_by_id, tie_breakers=['rank', 'id'])
 
   with profiler.Phase("getting related issues"):
