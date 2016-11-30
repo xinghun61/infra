@@ -1590,7 +1590,8 @@ class FeaturesService(object):
     """Create and store a Hotlist with the given attributes."""
     if hotlist_name in self.test_hotlists:
       raise features_svc.HotlistAlreadyExists()
-    iid_rank_pairs = [(issue_id, 0) for issue_id in (issue_ids or [])]
+    iid_rank_pairs = [
+        (issue_id, rank*100) for rank, issue_id in enumerate(issue_ids or [])]
     self.TestAddHotlist(hotlist_name, summary=summary, owner_ids=owner_ids,
                         editor_ids=editor_ids, description=description,
                         is_private=is_private, iid_rank_pairs=iid_rank_pairs)

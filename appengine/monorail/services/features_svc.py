@@ -501,7 +501,8 @@ class FeaturesService(object):
     if self.LookupHotlistIDs(cnxn, [name], owner_ids):
       raise HotlistAlreadyExists()
 
-    iid_rank_pairs = [(issue_id, 0) for issue_id in (issue_ids or [])]
+    iid_rank_pairs = [
+        (issue_id, rank*100) for rank, issue_id in enumerate(issue_ids or [])]
     if default_col_spec is None:
       default_col_spec = features_constants.DEFAULT_COL_SPEC
     hotlist = features_pb2.MakeHotlist(
