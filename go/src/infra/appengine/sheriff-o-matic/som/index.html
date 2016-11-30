@@ -7,12 +7,13 @@
 <script src="bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
 
 <script>
+window.xsrfToken = '{{.XsrfToken}}';
+
 function loadNonVulcanized() {
   var link = document.createElement('link');
   link.rel = 'import';
   link.href = 'elements/som-app.html';
   document.documentElement.appendChild(link);
-  window.xsrfToken = '{{.XsrfToken}}';
 }
 </script>
 <link rel="import" href="elements/som-app.vulcanized.html" onerror="loadNonVulcanized()">
