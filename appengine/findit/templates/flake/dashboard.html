@@ -152,8 +152,8 @@
         <td>
           {{ master_flake_analysis.master_name }}, {{ master_flake_analysis.builder_name }}, {{ master_flake_analysis.build_number }}
         </td>
-        <td class="truncated">{{ master_flake_analysis.step_name }}</td>
-        <td class="truncated">{{ master_flake_analysis.test_name }}</td>
+        <td class="truncated" title="{{ master_flake_analysis.step_name }}">{{ master_flake_analysis.step_name }}</td>
+        <td class="truncated" title="{{ master_flake_analysis.test_name }}">{{ master_flake_analysis.test_name }}</td>
         <td>{{ master_flake_analysis.status }}</td>
         <td>
           {% if master_flake_analysis.suspected_build %}
