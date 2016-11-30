@@ -1014,3 +1014,11 @@ ALTER TABLE User
     ADD COLUMN last_visit_timestamp INT,
     ADD COLUMN email_bounce_timestamp INT,
     ADD COLUMN vacation_message VARCHAR(80);
+
+================================================================
+2016-11-30: Drop unique key constraint on CommentContent.comment_id.
+This is a prerequiste for deleting the code that sets a value for
+that column.  This resolves one TODO from 2016-09-21.  Later the
+column itself can be dropped, which is the other TODO from 2016-09-21.
+
+ALTER TABLE CommentContent DROP INDEX comment_id;
