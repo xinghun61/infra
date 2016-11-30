@@ -169,7 +169,7 @@
         done();
       });
 
-      element._comment();
+      element._comment({preventDefault: function() {}});
     });
 
     test('renders number of comments', function(done) {
