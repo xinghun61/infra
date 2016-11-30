@@ -105,6 +105,36 @@ class GlobalsTest(unittest.TestCase):
     data_set = proto.metrics_collection[0].metrics_data_set[0]
     self.assertEqual('/infra/test/counter', data_set.metric_name)
 
+  def test_flush_corrupt_metric_new(self):
+    """Test that a corrupt metric does not affect flushing other metrics."""
+    interface.state.global_monitor = stubs.MockMonitor()
+    interface.state.use_new_proto = True
+
+    bad_metric = metrics.GaugeMetric('bad_metric')
+    partially_good_metric = metrics.GaugeMetric('partially_good_metric')
+    interface.register(bad_metric)
+    interface.register(partially_good_metric)
+    bad_metric.set(1, fields={'bad_field_1': mock.Mock()})
+    partially_good_metric.set(2, fields={'good_field': 22})
+    partially_good_metric.set(3, fields={'bad_field_2': mock.Mock()})
+
+    with self.assertRaises(errors.MonitoringFailedToFlushAllMetricsError) as e:
+      interface.flush()
+    self.assertEqual(2, e.exception.error_count)
+
+    interface.state.global_monitor.send.assert_called_once()
+    proto = interface.state.global_monitor.send.call_args[0][0]
+    self.assertEqual(1, len(proto.metrics_collection))
+    self.assertEqual(1, len(proto.metrics_collection[0].metrics_data_set))
+
+    data_set = proto.metrics_collection[0].metrics_data_set[0]
+    self.assertEqual(1, len(data_set.data))
+
+    data = data_set.data[0]
+    self.assertEqual(2, data.int64_value)
+    self.assertEqual(1, len(data.field))
+    self.assertEqual('good_field', data.field[0].name)
+
   def test_flush_empty_new(self):
     interface.state.metric_name_prefix = '/infra/test/'
     interface.state.global_monitor = stubs.MockMonitor()

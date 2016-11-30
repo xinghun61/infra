@@ -119,15 +119,14 @@ class Metric(object):
     self._populate_value_type(data_set)
     self._populate_field_descriptors(data_set, fields)
 
-  def _populate_data(self, data_set, start_time, end_time, fields, value):
-    """Add a new metrics_pb2.MetricsData to data_set
+  def _populate_data(self, data, start_time, end_time, fields, value):
+    """Populate a new metrics_pb2.MetricsData.
 
     Args:
-      data_set (new_metrics_pb2.MetricsDataSet): protocol buffer into
-        which to add the current metric values.
+      data_ (new_metrics_pb2.MetricsData): protocol buffer into
+        which to populate the current metric values.
       start_time (int): timestamp in microseconds since UNIX epoch.
     """
-    data = data_set.data.add()
     data.start_timestamp.seconds = int(start_time)
     data.end_timestamp.seconds = int(end_time)
 

@@ -123,6 +123,7 @@ def _generate_proto_new():
   data_sets = {}
 
   count = 0
+  error_count = 0
   for (target, metric, start_time, end_time, fields_values
        ) in state.store.get_all():
     for fields, value in fields_values.iteritems():
@@ -139,16 +140,32 @@ def _generate_proto_new():
       collection = collections[target]
 
       key = (target, metric.name)
-      if key not in data_sets:
-        data_sets[key] = collection.metrics_data_set.add()
-        metric._populate_data_set(data_sets[key], fields)
+      new_data_set = None
+      try:
+        if key not in data_sets:
+            new_data_set = new_metrics_pb2.MetricsDataSet()
+            metric._populate_data_set(new_data_set, fields)
 
-      metric._populate_data(data_sets[key], start_time, end_time, fields, value)
+        data = new_metrics_pb2.MetricsData()
+        metric._populate_data(data, start_time, end_time, fields, value)
+      except errors.MonitoringError:
+        logging.exception('Failed to serialize a metric.')
+        error_count += 1
+        continue
 
+      # All required data protos have been successfully populated. Now we can
+      # insert them in serialized proto and bookeeping data structures.
+      if new_data_set is not None:
+        collection.metrics_data_set.add().CopyFrom(new_data_set)
+        data_sets[key] = collection.metrics_data_set[-1]
+      data_sets[key].data.add().CopyFrom(data)
       count += 1
 
   if count > 0:
     yield proto
+
+  if error_count:
+    raise errors.MonitoringFailedToFlushAllMetricsError(error_count)
 
 
 def _generate_proto():

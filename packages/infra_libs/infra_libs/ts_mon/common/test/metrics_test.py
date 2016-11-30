@@ -173,11 +173,11 @@ class MetricTest(TestBase):
 
   def test_populate_data(self):
     m = metrics.CounterMetric('test')
-    data_set = new_metrics_pb2.MetricsDataSet()
-    m._populate_data(data_set, 100.4, 1000.6, {}, 5)
+    data = new_metrics_pb2.MetricsData()
+    m._populate_data(data, 100.4, 1000.6, {}, 5)
 
-    self.assertEqual(100, data_set.data[0].start_timestamp.seconds)
-    self.assertEqual(1000, data_set.data[0].end_timestamp.seconds)
+    self.assertEqual(100, data.start_timestamp.seconds)
+    self.assertEqual(1000, data.end_timestamp.seconds)
 
   def test_populate_field_descriptor(self):
     data_set_pb = new_metrics_pb2.MetricsDataSet()
