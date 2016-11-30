@@ -32,8 +32,23 @@
         border-bottom: 1px solid #ddd;
         margin: 0 1em;
       }
+      .bug-label {
+        font-size: 0.8em;
+        text-decoration: none;
+        color: #008000;
+      }
+      .bug-label:hover,
+      .summary:hover {
+        text-decoration: underline;
+      }
       .summary {
         font-weight: bold;
+        color: #222;
+        text-decoration: none;
+      }
+      .summary-box {
+        text-overflow: ellipsis;
+        max-width: 90%;
       }
     </style>
     <iron-ajax
@@ -51,14 +66,20 @@
       </div>
       <div id="loadingBugs" hidden$="[[!_showBugsLoading(_bugsLoaded, _bugQueueJsonError)]]"><paper-spinner active="[[!_bugsLoaded]]"></paper-spinner> Loading Bug Queue... </div>
       <div id="noBugs" hidden$="[[!_showNoBugs]]">No bugs in the queue!</div>
-      <template is="dom-repeat" items="[[_sortBugs(_bugQueueJson.items)]]" as="item">
+      <template is="dom-repeat" items="[[_sortBugs(_bugQueueJson.items)]]" as="bug">
         <div class="bug">
-          <div class="summary">[[item.summary]]</div>
-          <a href="http://crbug.com/[[item.id]]" target="_blank">Bug [[item.id]]</a>
-          ([[item.status]]<template is="dom-if" if="[[item.owner.name]]">,
-          [[item.owner.name]]</template>)
-          <template is="dom-if" if="[[_computePriority(item)]]">
-            (P[[_computePriority(item)]])
+          <div class="summary-box">
+            <a href="http://crbug.com/[[bug.id]]" target="_blank" title="[[bug.summary]]" class="summary">[[bug.summary]]</a>
+            <template is="dom-repeat" items="[[_filterBugLabels(bug.labels)]]" as="label">
+              <a href="https://bugs.chromium.org/p/chromium/issues/list?q=label:[[label]]"
+                class="bug-label" target="_blank">[[label]]</a>
+            </template>
+          </div>
+          <a href="http://crbug.com/[[bug.id]]" target="_blank">Bug [[bug.id]]</a>
+          ([[bug.status]]<template is="dom-if" if="[[bug.owner.name]]">,
+          [[bug.owner.name]]</template>)
+          <template is="dom-if" if="[[_hasPriority(bug)]]">
+            (Pri-[[_computePriority(bug)]])
           </template>
         </div>
       </template>
@@ -148,6 +169,20 @@
         this._bugQueueJsonError = null;
         this._bugsLoaded = false;
         this.refresh();
+      },
+
+      _filterBugLabels: function(labels) {
+        if (!labels) {
+          return [];
+        }
+        return labels.filter((label) => {
+          return label.toLowerCase() != this.bugQueueLabel.toLowerCase()
+            && !label.match(/^Pri-(\d)$/);
+        });
+      },
+
+      _hasPriority: function(bug) {
+        return this._computePriority(bug) !== '';
       },
 
       _haveNoBugs: function(json) {
