@@ -6,6 +6,7 @@ import base64
 from collections import defaultdict
 import json
 import logging
+import time
 import urllib
 import zlib
 
@@ -69,55 +70,112 @@ EXIT_CODE_DESCRIPTIONS = {
 }
 
 
+def _GetBackoffSeconds(retry_backoff, tries, maximum_retry_interval):
+  """Returns how many seconds to wait before next retry.
+
+  Params:
+    retry_backoff (int): The base backoff in seconds.
+    tries (int): Indicates how many tries have been done.
+    maximum_retry_interval (int): The upper limit in seconds of how long to wait
+      between retries.
+  """
+  return min(retry_backoff * (2 ** (tries - 1)), maximum_retry_interval)
+
+
 def _SendRequestToServer(url, http_client, post_data=None):
-  """Sends GET/POST request to arbitrary url and returns response content."""
+  """Sends GET/POST request to arbitrary url and returns response content.
+
+  Because the Swarming and Isolated servers that _SendRequestToServer tries to
+  contact are prone to outages, exceptions trying to reach them may occur thus
+  this method should retry. We want to monitor and document these occurrences
+  even if the request eventually succeeds after retrying, with the last error
+  encountered being the one that is reported.
+
+  Args:
+    url (str): The url to send the request to.
+    http_client (HttpClient): The httpclient object with which to make the
+      server calls.
+    post_data (dict): Data/params to send with the request, if any.
+    swarming_task (WfSwarmingTask, FlakeSwarmingTask): An optional swarming
+      task with which to capture errors.
+
+  Returns:
+    content (dict), error (dict): The content from the server and the last error
+    encountered trying to retrieve it.
+  """
   headers = {'Authorization': 'Bearer ' + auth_util.GetAuthToken()}
+  swarming_settings = waterfall_config.GetSwarmingSettings()
+  should_retry = swarming_settings.get('should_retry_server')
+  timeout_seconds = (
+      swarming_settings.get('server_retry_timeout_hours') * 60 * 60)
+  maximum_retry_interval = swarming_settings.get(
+      'maximum_server_contact_retry_interval_seconds')
+  deadline = time.time() + timeout_seconds
+  retry_backoff = 60
+  tries = 1
   error = None
 
-  try:
-    if post_data:
-      post_data = json.dumps(post_data, sort_keys=True, separators=(',', ':'))
-      headers['Content-Type'] = 'application/json; charset=UTF-8'
-      headers['Content-Length'] = len(post_data)
-      status_code, content = http_client.Post(url, post_data, headers=headers)
+  if post_data:
+    post_data = json.dumps(post_data, sort_keys=True, separators=(',', ':'))
+    headers['Content-Type'] = 'application/json; charset=UTF-8'
+    headers['Content-Length'] = len(post_data)
+
+  while True:
+    try:
+      if post_data:
+        status_code, content = http_client.Post(url, post_data, headers=headers)
+      else:
+        status_code, content = http_client.Get(url, headers=headers)
+    except ConnectionClosedError as e:
+      error = {
+          'code': URLFETCH_CONNECTION_CLOSED_ERROR,
+          'message': e.message
+      }
+    except DeadlineExceededError as e:
+      error = {
+          'code': URLFETCH_DEADLINE_EXCEEDED_ERROR,
+          'message': e.message
+      }
+    except DownloadError as e:
+      error = {
+          'code': URLFETCH_DOWNLOAD_ERROR,
+          'message': e.message
+      }
+    except Exception as e:  # pragma: no cover
+      error = {
+          'code': UNKNOWN,
+          'message': e.message
+      }
+
+    if error or status_code != 200:
+      # The retry upon 50x (501 excluded) is automatically handled in the
+      # underlying http_client.
+      # By default, it retries 5 times with exponential backoff.
+      error = error or {
+          'code': EXCEEDED_MAX_RETRIES_ERROR,
+          'message': 'Max retries exceeded trying to reach %s' % url
+      }
+      logging.error(error['message'])
     else:
-      status_code, content = http_client.Get(url, headers=headers)
-  except ConnectionClosedError as e:
-    error = {
-        'code': URLFETCH_CONNECTION_CLOSED_ERROR,
-        'message': e.message
-    }
-  except DeadlineExceededError as e:
-    error = {
-        'code': URLFETCH_DEADLINE_EXCEEDED_ERROR,
-        'message': e.message
-    }
-  except DownloadError as e:
-    error = {
-        'code': URLFETCH_DOWNLOAD_ERROR,
-        'message': e.message
-    }
-  except Exception as e:  # pragma: no cover
-    error = {
-        'code': UNKNOWN,
-        'message': e.message
-    }
-    # Still raise an exception here for cases not encountered before in order
-    # to see what went wrong in the logs.
-    raise e
+      # Even if the call is successful, still return the last error encountered.
+      return content, error
 
-  if error or status_code != 200:
-    # The retry upon 50x (501 excluded) is automatically handled in the
-    # underlying http_client.
-    # By default, it retries 5 times with exponential backoff.
-    error = error or {
-        'code': EXCEEDED_MAX_RETRIES_ERROR,
-        'message': 'Max retries exceeded trying to reach %s' % url
-    }
-    logging.error(error['message'])
-    return None, error
+    if should_retry and time.time() < deadline:  # pragma: no cover
+      # Wait, then retry if applicable.
+      wait_time = _GetBackoffSeconds(
+          retry_backoff, tries, maximum_retry_interval)
+      logging.info('Retrying connection to %s in %d seconds', url, wait_time)
+      time.sleep(wait_time)
+      tries += 1
+    else:
+      if should_retry:
+        # Indicate in the error that the retry timeout was reached.
+        error['retry_timeout'] = True
+      break
 
-  return content, None
+  logging.error('Failed to get an adequate response from %s. No data could be '
+                'retrieved', url)
+  return None, error
 
 
 def GetSwarmingTaskRequest(task_id, http_client):
@@ -158,7 +216,6 @@ def TriggerSwarmingTask(request, http_client):
   response_data, error = _SendRequestToServer(
       url, http_client, request.Serialize())
 
-  # TODO(lijeffrey): Handle error in calling functions.
   if not error:
     return json.loads(response_data)['task_id'], None
 

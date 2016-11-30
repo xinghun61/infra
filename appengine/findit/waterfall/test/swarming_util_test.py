@@ -382,7 +382,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
             'digest': 'isolatedhashunittests1',
             'namespace': 'default-gzip',
             'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-              'isolated_server')
+                'isolated_server')
         }
     ]
     self.assertEqual(sorted(expected_data), sorted(data))
@@ -662,3 +662,23 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     content, error = swarming_util._SendRequestToServer('url', HttpClient())
     self.assertIsNone(content)
     self.assertEqual(error['code'], swarming_util.URLFETCH_DOWNLOAD_ERROR)
+
+  def testGetBackoffSeconds(self):
+    self.assertEqual(1, swarming_util._GetBackoffSeconds(1, 1, 1))
+    self.assertEqual(2, swarming_util._GetBackoffSeconds(1, 2, 100))
+    self.assertEqual(100, swarming_util._GetBackoffSeconds(1, 8, 100))
+
+  @mock.patch.object(
+      RetryHttpClient, 'Get', side_effect=ConnectionClosedError())
+  def testSendRequestToServerRetryTimeout(self, _):
+    override_swarming_settings = {
+        'should_retry_server': True,
+        'server_retry_timeout_hours': -1
+    }
+    self.UpdateUnitTestConfigSettings(
+        'swarming_settings', override_swarming_settings)
+    content, error = swarming_util._SendRequestToServer('url', HttpClient())
+    self.assertIsNone(content)
+    self.assertEqual(
+        error['code'], swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)
+    self.assertTrue(error['retry_timeout'])

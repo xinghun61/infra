@@ -167,7 +167,11 @@ def _ValidateSwarmingSettings(settings):
           isinstance(settings.get('iterations_to_rerun'), int) and
           isinstance(
               settings.get('get_swarming_task_id_timeout_seconds'), int) and
-          isinstance(settings.get('get_swarming_task_id_wait_seconds'), int))
+          isinstance(settings.get('get_swarming_task_id_wait_seconds'), int) and
+          isinstance(settings.get('server_retry_timeout_hours'), int) and
+          isinstance(settings.get(
+              'maximum_server_contact_retry_interval_seconds'), int) and
+          isinstance(settings.get('should_retry_server'), bool))
 
 
 def _ValidateDownloadBuildDataSettings(settings):

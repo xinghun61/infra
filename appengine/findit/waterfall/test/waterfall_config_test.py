@@ -100,7 +100,10 @@ class MastersTest(wf_testcase.WaterfallTestCase):
             'isolated_storage_url': 'isolateserver.storage.googleapis.com',
             'iterations_to_rerun': 10,
             'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_seconds': 10
+            'get_swarming_task_id_wait_seconds': 10,
+            'server_retry_timeout_hours': 2,
+            'maximum_server_contact_retry_interval_seconds': 5 * 60,
+            'should_retry_server': False,
         },
         waterfall_config.GetSwarmingSettings())
 

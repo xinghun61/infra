@@ -87,11 +87,15 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
           task_id, self.HTTP_CLIENT)
 
       if error:
-        # An error occurred when trying to contact the swarming server.
-        task.status = analysis_status.ERROR
+        # An error occurred at some point when trying to retrieve data from
+        # the swarming server, even if eventually successful.
         task.error = error
         task.put()
-        break
+
+        if not data:
+          # Even after retry, no data was recieved.
+          task.status = analysis_status.ERROR
+          break
 
       task_state = data['state']
       exit_code = (data.get('exit_code') if
@@ -112,8 +116,8 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
           if not outputs_ref:
             task.status = analysis_status.ERROR
             task.error = {
-              'code': swarming_util.NO_TASK_OUTPUTS,
-              'message': 'outputs_ref is None'
+                'code': swarming_util.NO_TASK_OUTPUTS,
+                'message': 'outputs_ref is None'
             }
             task.put()
             break
@@ -121,11 +125,14 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
           output_json, error = swarming_util.GetSwarmingTaskFailureLog(
               outputs_ref, self.HTTP_CLIENT)
 
+          task.status = analysis_status.COMPLETED
+
           if error:
-            task.status = analysis_status.ERROR
             task.error = error
-          else:
-            task.status = analysis_status.COMPLETED
+
+            if not output_json:
+              # Retry was ultimately unsuccessful.
+              task.status = analysis_status.ERROR
 
           tests_statuses = self._CheckTestsRunStatuses(output_json, *call_args)
           task.tests_statuses = tests_statuses

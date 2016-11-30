@@ -68,7 +68,10 @@ _MOCK_SWARMING_SETTINGS = {
     'isolated_storage_url': 'isolateserver.storage.googleapis.com',
     'iterations_to_rerun': 10,
     'get_swarming_task_id_timeout_seconds': 5 * 60,  # 5 minutes.
-    'get_swarming_task_id_wait_seconds': 10
+    'get_swarming_task_id_wait_seconds': 10,
+    'server_retry_timeout_hours': 2,
+    'maximum_server_contact_retry_interval_seconds': 5 * 60,  # 5 minutes.
+    'should_retry_server': False,  # No retry for unit testing.
 }
 
 
@@ -626,6 +629,48 @@ class ConfigTest(testing.AppengineTestCase):
         'get_swarming_task_id_timeout_seconds': 300,
         'get_swarming_task_id_wait_seconds': []  # Should be an int.
     }))
+    self.assertFalse(config._ValidateSwarmingSettings({
+        'server_host': 'chromium-swarm.appspot.com',
+        'default_request_priority': 150,
+        'request_expiration_hours': 20,
+        'server_query_interval_seconds': 60,
+        'task_timeout_hours': 23,
+        'isolated_server': 'https://isolateserver.appspot.com',
+        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+        'iterations_to_rerun': 1,
+        'get_swarming_task_id_timeout_seconds': 300,
+        'get_swarming_task_id_wait_secondds': 10,
+        'server_retry_timeout_hours': {}  # Should be an int.
+    }))
+    self.assertFalse(config._ValidateSwarmingSettings({
+        'server_host': 'chromium-swarm.appspot.com',
+        'default_request_priority': 150,
+        'request_expiration_hours': 20,
+        'server_query_interval_seconds': 60,
+        'task_timeout_hours': 23,
+        'isolated_server': 'https://isolateserver.appspot.com',
+        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+        'iterations_to_rerun': 1,
+        'get_swarming_task_id_timeout_seconds': 300,
+        'get_swarming_task_id_wait_secondds': 10,
+        'server_retry_timeout_hours': 1,
+        'maximum_server_contact_retry_interval_seconds': ''  # Should be an int.
+    }))
+    self.assertFalse(config._ValidateSwarmingSettings({
+        'server_host': 'chromium-swarm.appspot.com',
+        'default_request_priority': 150,
+        'request_expiration_hours': 20,
+        'server_query_interval_seconds': 60,
+        'task_timeout_hours': 23,
+        'isolated_server': 'https://isolateserver.appspot.com',
+        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+        'iterations_to_rerun': 1,
+        'get_swarming_task_id_timeout_seconds': 300,
+        'get_swarming_task_id_wait_secondds': 10,
+        'server_retry_timeout_hours': 1,
+        'maximum_server_contact_retry_interval_seconds': 2,
+        'should_retry_server': 3  # Should be a bool.
+    }))
     self.assertTrue(config._ValidateSwarmingSettings({
         'server_host': 'chromium-swarm.appspot.com',
         'default_request_priority': 150,
@@ -636,7 +681,10 @@ class ConfigTest(testing.AppengineTestCase):
         'isolated_storage_url': 'isolateserver.storage.googleapis.com',
         'iterations_to_rerun': 10,
         'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_seconds': 10
+        'get_swarming_task_id_wait_seconds': 10,
+        'server_retry_timeout_hours': 1,
+        'maximum_server_contact_retry_interval_seconds': 1,
+        'should_retry_server': False,
     }))
 
   def testValidateDownloadBuildDataSettings(self):
