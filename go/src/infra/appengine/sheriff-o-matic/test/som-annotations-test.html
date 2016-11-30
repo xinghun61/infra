@@ -13,7 +13,6 @@
 (function() {
   'use strict';
   var element;
-  var server;
   var responseHeaders = {
       json: {'Content-Type': 'application/json'},
       text: {'Content-Type': 'text/html'},
@@ -25,10 +24,7 @@
     element = fixture('basic');
     sinon.stub(window, 'fetch');
   });
-
   teardown(function() {
-    server.restore();
-
     window.fetch.restore();
   });
 
@@ -65,7 +61,7 @@
       });
 
       window.fetch.returns(Promise.resolve(res));
-
+      element.xsrfToken = 'xr';
       let promise = element.sendAnnotation("bestkey", "type", {
         foo: "bar"
       });
@@ -107,7 +103,7 @@
         headers: {
           'Content-type': 'application/json',
         }
-      });
+      }));
       let res3 = new window.Response('resp', { status: 200 });
 
       window.fetch.onCall(0).returns(Promise.resolve(res1));
@@ -117,6 +113,7 @@
       let promise = element.postJSON('/url', {
         foo: "bar"
       });
+
       flush(() => {
         assert.equal(window.fetch.callCount, 3);
         let args = window.fetch.firstCall.args;
@@ -140,7 +137,7 @@
 
         args = window.fetch.thirdCall.args;
         assert.equal(args[0], '/url');
-        let parsed = args[1];
+        parsed = args[1];
         assert.isDefined(parsed.body);
         parsed.body = JSON.parse(parsed.body);
         assert.deepEqual(parsed, {
@@ -368,6 +365,5 @@
       });
     });
   });
-
 })();
 </script>
