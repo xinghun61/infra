@@ -94,8 +94,8 @@ func queueHandler(w http.ResponseWriter, r *http.Request) {
 	u.Add("ChangeID", r.FormValue("ChangeID"))
 	u.Add("Revision", r.FormValue("Revision"))
 	u.Add("GitRef", r.FormValue("GitRef"))
-	t := taskqueue.NewPOSTTask("/workflow-launcher/queue-handler", u)
-	if _, err := taskqueue.Add(ctx, t, "workflow-launcher-queue"); err != nil {
+	t := taskqueue.NewPOSTTask("/launcher/queue-handler", u)
+	if _, err := taskqueue.Add(ctx, t, "launcher-queue"); err != nil {
 		common.ReportServerError(ctx, w, err)
 		return
 	}

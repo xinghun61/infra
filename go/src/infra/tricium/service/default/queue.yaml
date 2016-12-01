@@ -2,10 +2,10 @@ queue:
 - name: service-queue
   mode: push
   rate: 1/s
-- name: workflow-launcher-queue
+- name: launcher-queue
   mode: push
   rate: 1/s
-- name: workflow-listener-queue
+- name: driver-queue
   mode: push
   rate: 1/s
 - name: reporter-queue

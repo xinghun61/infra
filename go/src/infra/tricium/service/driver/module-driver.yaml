@@ -1,11 +1,13 @@
 application: chrome-infra-tricium-dev
-module: workflow-listener
+module: driver
 runtime: go
 api_version: go1
 
 handlers:
-- url: /workflow-listener/queue-handler
+
+- url: /driver/queue-handler
   script: _go_app
   login: admin
+
 - url: /.*
   script: _go_app

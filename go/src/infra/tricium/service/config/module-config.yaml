@@ -1,10 +1,18 @@
 application: chrome-infra-tricium-dev
-module: validator
+module: config
 runtime: go
 api_version: go1
 
 handlers:
+
+- url: /projects
+  script: _go_app
+
+- url: /generate
+  script: _go_app
+
 - url: /validate
   script: _go_app
+
 - url: /.*
   script: _go_app

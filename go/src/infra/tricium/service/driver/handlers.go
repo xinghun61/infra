@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package handlers implements HTTP handlers to the workflow-listener module.
+// Package handlers implements HTTP handlers to the driver module.
 package handlers
 
 import (
@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	http.HandleFunc("/workflow-listener/queue-handler", queueHandler)
+	http.HandleFunc("/driver/queue-handler", queueHandler)
 }
 
 func queueHandler(w http.ResponseWriter, r *http.Request) {

@@ -67,8 +67,7 @@ func queueHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Enqueue Gerrit reporter task
 	e := map[string][]string{
-		"Name": {"Gerrit Reporter Task"},
-		"ID":   {strID},
+		"ID": {strID},
 	}
 	t := taskqueue.NewPOSTTask("/gerrit-reporter/queue-handler", e)
 	if _, e := taskqueue.Add(ctx, t, "gerrit-reporter-queue"); e != nil {

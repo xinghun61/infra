@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package handlers implements HTTP handlers for the workflow-launcher module.
+// Package handlers implements HTTP handlers for the launcher module.
 package handlers
 
 import (
@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	http.HandleFunc("/workflow-launcher/queue-handler", queueHandler)
+	http.HandleFunc("/launcher/queue-handler", queueHandler)
 }
 
 func queueHandler(w http.ResponseWriter, r *http.Request) {
@@ -54,11 +54,10 @@ func queueHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Enqueue workflow listener task
 	e := map[string][]string{
-		"Name": {"Workflow Listener Task"},
-		"ID":   {strID},
+		"ID": {strID},
 	}
-	t := taskqueue.NewPOSTTask("/workflow-listener/queue-handler", e)
-	if _, e := taskqueue.Add(ctx, t, "workflow-listener-queue"); e != nil {
+	t := taskqueue.NewPOSTTask("/driver/queue-handler", e)
+	if _, e := taskqueue.Add(ctx, t, "driver-queue"); e != nil {
 		common.ReportServerError(ctx, w, err)
 		return
 	}
