@@ -269,7 +269,7 @@ func TestGetFlakinessData(t *testing.T) {
 
 		Convey("for tests in a particular test suite", func() {
 			handler.ExpectedRequests[0].Query =
-				fmt.Sprintf(flakesQuery, "starts_with(test_name, concat(@groupname, '.'))")
+				fmt.Sprintf(flakesQuery, "regexp_contains(test_name, concat('^', @groupname, '[.#]'))")
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"FooBar"}}]`

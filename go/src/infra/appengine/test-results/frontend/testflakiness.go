@@ -22,27 +22,30 @@ import (
 )
 
 const teamsQuery = `
-	SELECT layout_test_team
-	FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
-	GROUP BY layout_test_team;`
+  SELECT layout_test_team
+  FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
+  GROUP BY layout_test_team;`
 
 const dirsQuery = `
-	SELECT layout_test_dir
-	FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
-	GROUP BY layout_test_dir;`
+  SELECT layout_test_dir
+  FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
+  GROUP BY layout_test_dir;`
 
 const suitesQuery = `
-  SELECT regexp_extract(test_name, r'^([^\.\/]+)\.[^\/]+(?:\/[^\.]+)?$') as suite
+  SELECT
+    if(regexp_contains(test_name, r'^org\..*#.*$'),
+       regexp_extract(test_name, r'^(org\..*)#.*$'),
+       regexp_extract(test_name, r'^([^\.\/]+)\.[^\/]+(?:\/[^\.]+)?$')) as suite
   FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
   GROUP BY suite
   HAVING suite is not Null;`
 
 const flakesQuery = `
-	SELECT test_name, normalized_step_name, flakiness, runs
-	FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
-	WHERE %s
-	ORDER BY flakiness DESC
-	LIMIT 1000;`
+  SELECT test_name, normalized_step_name, flakiness, runs
+  FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
+  WHERE %s
+  ORDER BY flakiness DESC
+  LIMIT 1000;`
 
 const bqProjectID = "test-results-hrd"
 
@@ -121,7 +124,7 @@ func getFlakinessData(ctx context.Context, bq *bigquery.Service, group Group) ([
 	case UnknownDirKind:
 		filter = "layout_test_dir is Null"
 	case TestSuiteKind:
-		filter = "starts_with(test_name, concat(@groupname, '.'))"
+		filter = "regexp_contains(test_name, concat('^', @groupname, '[.#]'))"
 	case SearchKind:
 		filter = "strpos(test_name, @groupname) != 0"
 	default:
