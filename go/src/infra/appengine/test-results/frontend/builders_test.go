@@ -5,12 +5,20 @@
 package frontend
 
 import (
-	"infra/appengine/test-results/buildextract"
-	"infra/appengine/test-results/masters"
+	"encoding/json"
+	"infra/appengine/test-results/model"
+	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	"github.com/luci/gae/impl/memory"
+	"github.com/luci/gae/service/datastore"
+	"github.com/luci/luci-go/common/clock/testclock"
+	"github.com/luci/luci-go/server/router"
 	"golang.org/x/net/context"
+
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -37,140 +45,115 @@ func TestCleanTestType(t *testing.T) {
 	})
 }
 
-func TestBuilders(t *testing.T) {
+func TestBuildersHandler(t *testing.T) {
 	t.Parallel()
 
-	Convey("builders", t, func() {
-		Convey("getBuilderData", func() {
-			Convey("normal", func() {
-				tClient := &buildextract.TestingClient{
-					M: map[string][]byte{
-						"chromium.webkit": []byte(`{
-								"builders": {
-									"WebKit Win": null,
-									"WebKit Linux": null,
-									"WebKit Mac": null,
-									"WebKit Empty": null
-								}
-							}`),
-					},
-					B: map[string]map[string][]byte{
-						"chromium.webkit": {
-							"WebKit Linux": []byte(`{
-								"builds": [
-									{
-										"steps": [
-											{"name": "foo_tests_only"},
-											{"name": "webkit_tests"},
-											{"name": "browser_tests"},
-											{"name": "mini_installer_test"},
-											{"name": "archive_test_results"},
-											{"name": "duplicate_builders_test"},
-											{"name": "duplicate_builders_test"},
-											{"name": "compile"},
-											{"name": "Upload to test-results [swarming_gtest_tests]"}
-										]
-									}
-								]
-							}`),
-							"WebKit Win": []byte(`{
-								"builds": [
-									{
-										"steps": [
-											{"name": "foo_tests_ignore"},
-											{"name": "webkit_tests"},
-											{"name": "mini_installer_test"},
-											{"name": "archive_test_results"},
-											{"name": "compile"}
-										]
-									}
-								]
-							}`),
-							"WebKit Mac": []byte(`{
-								"builds": [
-									{
-										"steps": [
-											{"name": "foo_tests_perf"},
-											{"name": "browser_tests"},
-											{"name": "mini_installer_test"},
-											{"name": "archive_test_results"},
-											{"name": "compile"}
-										]
-									}
-								]
-							}`),
-							"WebKit Empty": []byte(`{
-								"builds": []
-							}`),
-						},
-					},
-				}
+	Convey("Test loading and serving of builder data.", t, func() {
+		ctx := memory.Use(context.Background())
 
-				expected := BuilderData{
-					Masters: []Master{{
-						Tests: map[string]Test{
-							"browser_tests":           {Builders: []string{"WebKit Linux", "WebKit Mac"}},
-							"mini_installer_test":     {Builders: []string{"WebKit Linux", "WebKit Mac", "WebKit Win"}},
-							"webkit_tests":            {Builders: []string{"WebKit Linux", "WebKit Win"}},
-							"swarming_gtest_tests":    {Builders: []string{"WebKit Linux"}},
-							"duplicate_builders_test": {Builders: []string{"WebKit Linux"}},
-						},
-						Identifier: "chromium.webkit",
-						Name:       "ChromiumWebKit",
-						Groups:     []string{"@ToT Chromium", "@ToT Blink"},
-					}},
-					NoUploadTestTypes: noUploadTestSteps,
-				}
+		// Round our test time to microseconds since that's datastore's resolution.
+		now := testclock.TestRecentTimeUTC.Round(time.Microsecond)
+		ctx, _ = testclock.UseTime(ctx, now)
 
-				data, err := getBuilderData(context.Background(), []*masters.Master{{
-					Identifier: "chromium.webkit",
-					Name:       "ChromiumWebKit",
-					Groups:     []string{"@ToT Chromium", "@ToT Blink"},
-				}}, tClient)
+		tfs := []model.TestFile{
+			{
+				ID:       1,
+				Name:     "results.json",
+				Master:   "tryserver.testing",
+				Builder:  "testing_chromium_rel_ng",
+				TestType: "browser_tests",
+				LastMod:  now.AddDate(0, 0, -2),
+			},
+			{
+				ID:       5,
+				Name:     "results.json",
+				Master:   "tryserver.testing",
+				Builder:  "testing_android_rel_ng",
+				TestType: "browser_tests",
+				LastMod:  now.AddDate(0, 0, -2),
+			},
+			{
+				ID:       2,
+				Name:     "results.json",
+				Master:   "testing",
+				Builder:  "Testing Tests",
+				TestType: "browser_tests",
+				LastMod:  now,
+			},
+			{
+				ID:       3,
+				Name:     "results.json",
+				Master:   "testing",
+				Builder:  "Stale Testing Tests",
+				TestType: "browser_tests",
+				LastMod:  now.AddDate(0, 0, -8),
+			},
+			{
+				ID:       4,
+				Name:     "results-small.json",
+				Master:   "testing",
+				Builder:  "Testing Tests",
+				TestType: "browser_tests",
+				LastMod:  now.UTC(),
+			},
+		}
+		So(datastore.Put(ctx, tfs), ShouldBeNil)
 
-				So(err, ShouldBeNil)
-				So(data, ShouldResemble, expected)
-			})
+		datastore.GetTestable(ctx).Consistent(true)
+		datastore.GetTestable(ctx).AutoIndex(true)
+		datastore.GetTestable(ctx).CatchupIndexes()
 
-			Convey("error handling", func() {
-				tClient := &buildextract.TestingClient{
-					M: map[string][]byte{
-						"chromium.gpu": []byte(`{
-							"builders": {
-								"Win GPU": null,
-								"Win Empty": null
-							}
-						}`),
-					},
-					B: map[string]map[string][]byte{
-						"chromium.gpu": {
-							"Win Empty": []byte(`{
-								"builds": [
-									{ "steps": [] }
-								]
-							}`),
-							"Win GPU": []byte(`{
-								"builds": [
-									{ "steps": [] }
-								]
-							}`),
-						},
-					},
-				}
+		withTestingContext := func(c *router.Context, next router.Handler) {
+			c.Context = ctx
+			next(c)
+		}
 
-				_, err := getBuilderData(context.Background(), []*masters.Master{{
-					Identifier: "chromium.webkit",
-					Name:       "ChromiumWebKit",
-				}}, tClient)
-				So(err, ShouldHaveSameTypeAs, &buildextract.StatusError{})
-				So(err.(*buildextract.StatusError).StatusCode, ShouldEqual, http.StatusNotFound)
+		Convey("getRecentTests", func() {
+			tests, err := getRecentTests(ctx, 1)
+			So(err, ShouldBeNil)
+			expected := map[testTriple]struct{}{{
+				Master:   "testing",
+				Builder:  "Testing Tests",
+				TestType: "browser_tests",
+			}: struct{}{}}
+			So(tests, ShouldResemble, expected)
+		})
 
-				_, err = getBuilderData(context.Background(), []*masters.Master{{
-					Identifier: "chromium.gpu",
-					Name:       "ChromiumGPU",
-				}}, tClient)
-				So(err, ShouldBeNil)
-			})
+		Convey("getBuildersHandler", func() {
+			r := router.New()
+			r.GET("/builders", router.NewMiddlewareChain(withTestingContext),
+				getBuildersHandler)
+			srv := httptest.NewServer(r)
+			client := &http.Client{}
+
+			resp, err := client.Get(srv.URL + "/builders")
+			So(err, ShouldBeNil)
+			defer resp.Body.Close()
+			b, err := ioutil.ReadAll(resp.Body)
+			So(err, ShouldBeNil)
+			expected := []Master{
+				{
+					Name:       "testing",
+					Identifier: "testing",
+					Tests: map[string]*Test{
+						"browser_tests": {
+							Builders: []string{
+								"Testing Tests"}}},
+				},
+				{
+					Name:       "tryserver.testing",
+					Identifier: "tryserver.testing",
+					Tests: map[string]*Test{
+						"browser_tests": {
+							Builders: []string{
+								"testing_android_rel_ng",
+								"testing_chromium_rel_ng"}}},
+				},
+			}
+			actual := BuilderData{}
+			So(json.Unmarshal(b, &actual), ShouldBeNil)
+			So(actual.NoUploadTestTypes, ShouldResemble, noUploadTestSteps)
+			So(actual.Masters, ShouldResemble, expected)
 		})
 	})
 }

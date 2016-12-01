@@ -79,3 +79,12 @@ indexes:
   - name: test_type
   - name: date
     direction: desc
+
+- kind: TestFile
+  properties:
+  - name: name
+  - name: date
+    direction: desc
+  - name: builder
+  - name: master
+  - name: test_type

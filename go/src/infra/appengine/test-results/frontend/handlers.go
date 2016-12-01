@@ -49,7 +49,6 @@ func init() {
 	r.POST("/testfile/upload", baseMW.Extend(withParsedUploadForm), uploadHandler)
 
 	r.GET("/builders", baseMW, getBuildersHandler)
-	r.GET("/updatebuilders", baseMW, updateBuildersHandler)
 
 	r.POST(
 		deleteKeysPath,

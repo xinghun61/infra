@@ -7,23 +7,23 @@ package frontend
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"regexp"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
-	"golang.org/x/net/context"
-
+	"github.com/luci/gae/service/datastore"
 	"github.com/luci/gae/service/memcache"
-	"github.com/luci/gae/service/urlfetch"
+	"github.com/luci/luci-go/common/clock"
+	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/router"
+	"golang.org/x/net/context"
 
-	"infra/appengine/test-results/buildextract"
-	"infra/appengine/test-results/masters"
+	"infra/appengine/test-results/model"
 )
 
 // BuilderData is the data returned from the GET "/builders"
@@ -35,10 +35,10 @@ type BuilderData struct {
 
 // Master represents information about a build master.
 type Master struct {
-	Name       string          `json:"name"`
-	Identifier string          `json:"url_name"`
-	Groups     []string        `json:"groups"`
-	Tests      map[string]Test `json:"tests"`
+	Name       string           `json:"name"`
+	Identifier string           `json:"url_name"`
+	Groups     []string         `json:"groups"`
+	Tests      map[string]*Test `json:"tests"`
 }
 
 // Test represents information about Tests in a master.
@@ -71,36 +71,128 @@ var noUploadTestSteps = []string{
 	"webkit_python_tests",
 }
 
-func makeBuildExtractClient(ctx context.Context) *buildextract.Client {
-	return buildextract.NewClient(&http.Client{
-		Transport: urlfetch.Get(ctx),
-	})
+// testTriple is used to de-dup (builder, master, test) triples.
+type testTriple struct {
+	Builder  string
+	Master   string
+	TestType string
 }
 
+// getRecentTests gets a set of (builder, master, test) triples with upload activity
+// in the last `days` days.
+func getRecentTests(c context.Context, days int) (map[testTriple]struct{}, error) {
+	daysAgo := clock.Now(c).UTC().AddDate(0, 0, -days)
+	tfp := model.TestFileParams{
+		Name: "results.json",
+	}
+	q := tfp.Query()
+	q = q.Gt("date", daysAgo)
+	q = q.Project("master", "builder", "test_type").Distinct(true)
+	// We can revisit this limit if we start uploading significantly more data.
+	q = q.Limit(10000)
+
+	tt := make(map[testTriple]struct{})
+	err := datastore.Run(c, q, func(tf *model.TestFile) {
+		// We only expect Master, Builder, and TestType to be set since we're
+		// doing a projection query, but for some reason these other fields are
+		// still populated. This doesn't matter since we discard them here but
+		// it might affect other users.
+		// TODO(estaab): Create a small repro case and file a bug in luci/gae.
+		tt[testTriple{
+			Builder:  tf.Builder,
+			Master:   tf.Master,
+			TestType: tf.TestType}] = struct{}{}
+	})
+	logging.Infof(c, "Found %v (master, builder, test type) triples.", len(tt))
+
+	if err != nil {
+		logging.WithError(err).Errorf(c, "GetAll failed for query: %+v", q)
+		return nil, err
+	}
+	if len(tt) == 0 {
+		e := fmt.Sprintf("no TestFile found for query: %+v", q)
+		logging.Errorf(c, e)
+		return nil, errors.New(e)
+	}
+
+	return tt, nil
+}
+
+// getBuilderData loads recently uploaded test types from datastore.
+func getBuilderData(c context.Context) (*BuilderData, error) {
+	triples, err := getRecentTests(c, 7)
+	if err != nil {
+		return nil, err
+	}
+
+	// Place triples into builder data.
+	nameToMaster := make(map[string]*Master)
+	for triple := range triples {
+		m, ok := nameToMaster[triple.Master]
+		if !ok {
+			m = &Master{
+				Name:       triple.Master,
+				Identifier: triple.Master,
+				Tests:      make(map[string]*Test),
+			}
+			nameToMaster[triple.Master] = m
+		}
+		test, ok := m.Tests[triple.TestType]
+		if !ok {
+			test = &Test{
+				Builders: make([]string, 0, 10),
+			}
+			m.Tests[triple.TestType] = test
+		}
+		test.Builders = append(test.Builders, triple.Builder)
+	}
+
+	// Sort lists to make debugging easier.
+	for _, m := range nameToMaster {
+		for _, t := range m.Tests {
+			sort.Strings(t.Builders)
+		}
+	}
+	names := make([]string, 0, len(nameToMaster))
+	for n := range nameToMaster {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+
+	bd := BuilderData{
+		NoUploadTestTypes: noUploadTestSteps,
+	}
+	bd.Masters = make([]Master, 0, len(nameToMaster))
+	for _, n := range names {
+		bd.Masters = append(bd.Masters, *nameToMaster[n])
+	}
+
+	return &bd, nil
+}
+
+// getBuildersHandler serves json of all known tests, builders, and masters.
 func getBuildersHandler(ctx *router.Context) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
-	var res []byte
-	item, err := memcache.GetKey(c, buildbotMemcacheKey)
 
+	item, err := memcache.GetKey(c, buildbotMemcacheKey)
+	var res []byte
 	switch err {
 	case memcache.ErrCacheMiss:
-		start := time.Now()
-		data, err := getBuilderData(c, masters.Known, makeBuildExtractClient(c))
+		logging.Infof(c, "Builder data not in memcache so loading from datastore.")
+		bd, err := getBuilderData(c)
 		if err != nil {
-			logging.WithError(err).Errorf(c, "getBuildersHandler: getBuilderData")
+			logging.WithError(err).Errorf(c, "Failed to get known tests from datastore")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		logging.Fields{"duration": time.Since(start)}.Infof(c, "getBuildersHandler: getBuilderData")
-
-		res, err = json.Marshal(&data)
+		res, err = json.Marshal(&bd)
 		if err != nil {
-			logging.WithError(err).Errorf(c, "getBuildersHandler: marshal JSON")
+			logging.WithError(err).Errorf(c, "Failed to marshal json")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		item.SetValue(res)
+		item.SetValue(res).SetExpiration(time.Hour)
 		if err := memcache.Set(c, item); err != nil {
 			// Log this error but do not return to the client because it is not critical
 			// for this handler.
@@ -111,6 +203,7 @@ func getBuildersHandler(ctx *router.Context) {
 		}
 
 	case nil:
+		logging.Infof(c, "Loaded builder data from memcache.")
 		res = item.Value()
 
 	default:
@@ -122,6 +215,8 @@ func getBuildersHandler(ctx *router.Context) {
 	var out io.Reader = bytes.NewReader(res)
 	if c := r.FormValue("callback"); callbackNameRx.MatchString(c) {
 		out = wrapCallback(out, c)
+	} else {
+		w.Header().Add("Content-Type", "application/json")
 	}
 
 	n, err := io.Copy(w, out)
@@ -132,212 +227,6 @@ func getBuildersHandler(ctx *router.Context) {
 			"n":              n,
 		}.Errorf(c, "getBuildersHandler: error writing HTTP response")
 	}
-}
-
-func updateBuildersHandler(ctx *router.Context) {
-	c, w := ctx.Context, ctx.Writer
-
-	start := time.Now()
-	data, err := getBuilderData(c, masters.Known, makeBuildExtractClient(c))
-	if err != nil {
-		logging.WithError(err).Errorf(c, "updateBuildersHandler: getBuilderData")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	logging.Fields{"duration": time.Since(start)}.Infof(c, "updateBuildersHandler: getBuilderData")
-
-	b, err := json.Marshal(&data)
-	if err != nil {
-		logging.WithError(err).Errorf(c, "updateBuildersHandler: unmarshal JSON")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	item := memcache.NewItem(c, buildbotMemcacheKey)
-	item.SetValue(b)
-
-	if err := memcache.Set(c, item); err != nil {
-		logging.WithError(err).Errorf(c, "updateBuildersHandler: set memcache")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	n, err := io.WriteString(w, "OK")
-
-	if err != nil {
-		logging.Fields{
-			logging.ErrorKey: err,
-			"n":              n,
-		}.Errorf(c, "updateBuildersHandler: error writing HTTP response")
-	}
-}
-
-func getBuilderData(ctx context.Context, list []*masters.Master, client buildextract.Interface) (BuilderData, error) {
-	builderData := BuilderData{
-		NoUploadTestTypes: noUploadTestSteps,
-	}
-
-	// Overview:
-	// - For each master, start a goroutine that fetches
-	//   the builder names for that master.
-	// - For each of the builder names, fetch the step names
-	//   for that master+builder combination.
-	// - Once the step names for a master+builder combination
-	//   arrive, update the Tests map on the master.
-	// - Finally sort all the Builders fields in increasing order
-	//   and remove duplicates.
-
-	type result struct {
-		Master Master
-		Err    error
-	}
-	results := make(chan result, len(list))
-	wg := sync.WaitGroup{}
-	wg.Add(len(list))
-
-	for _, master := range list {
-		m := Master{
-			Name:       master.Name,
-			Identifier: master.Identifier,
-			Groups:     master.Groups,
-			Tests:      make(map[string]Test),
-		}
-
-		go func() {
-			defer wg.Done()
-			builders, err := getBuilderNames(ctx, m.Identifier, client)
-			if err != nil {
-				results <- result{Err: err}
-				return
-			}
-
-			if len(builders) == 0 {
-				return
-			}
-
-			for _, b := range builders {
-				stepNames, err := getStepNames(ctx, m.Identifier, b, client)
-				if err != nil {
-					results <- result{Err: err}
-					return
-				}
-				for _, s := range stepNames {
-					t, ok := m.Tests[s]
-					if !ok {
-						t = Test{}
-					}
-					t.Builders = append(t.Builders, b)
-					m.Tests[s] = t
-				}
-			}
-
-			results <- result{Master: m}
-		}()
-	}
-
-	wg.Wait()
-	close(results)
-	for res := range results {
-		if res.Err != nil {
-			logging.WithError(res.Err).Errorf(ctx, "getBuilderData")
-			return BuilderData{}, res.Err
-		}
-		builderData.Masters = append(builderData.Masters, res.Master)
-	}
-
-	for _, m := range builderData.Masters {
-		for key, test := range m.Tests {
-			builders := sort.StringSlice(removeDuplicates(test.Builders))
-			sort.Sort(builders)
-			test.Builders = []string(builders)
-			m.Tests[key] = test
-		}
-	}
-
-	return builderData, nil
-}
-
-func removeDuplicates(list []string) []string {
-	var ret []string
-	seen := make(map[string]bool)
-
-	for _, s := range list {
-		if !seen[s] {
-			seen[s] = true
-			ret = append(ret, s)
-		}
-	}
-
-	return ret
-}
-
-// getBuilderNames returns the builder names from Chrome
-// build extracts for the supplied master.
-func getBuilderNames(ctx context.Context, master string, client buildextract.Interface) ([]string, error) {
-	r, err := client.GetMasterJSON(ctx, master)
-	if err != nil {
-		logging.Fields{
-			logging.ErrorKey: err,
-			"master":         master,
-		}.Errorf(ctx, "getBuilderNames: GetMasterJSON")
-		return nil, err
-	}
-	defer r.Close()
-
-	data := struct {
-		Builders map[string]struct{} `json:"builders"`
-	}{}
-	if err := json.NewDecoder(r).Decode(&data); err != nil {
-		logging.Fields{
-			logging.ErrorKey: err,
-			"master":         master,
-		}.Errorf(ctx, "getBuilderNames: unmarshal JSON")
-		return nil, err
-	}
-
-	builders := make([]string, 0, len(data.Builders))
-	for b := range data.Builders {
-		builders = append(builders, b)
-	}
-	return builders, nil
-}
-
-// getStepNames returns the step names for the supplied master
-// and builder from Chrome build extracts.
-func getStepNames(ctx context.Context, master string, builder string, client buildextract.Interface) ([]string, error) {
-	data, err := client.GetBuildsJSON(ctx, builder, master, 1)
-	if err != nil {
-		if se, ok := err.(*buildextract.StatusError); ok {
-			if se.StatusCode == http.StatusNotFound {
-				logging.Fields{
-					"master": master, "builder": builder,
-				}.Infof(ctx, "getStepNames: builds JSON not found")
-				return nil, nil
-			}
-		}
-		logging.Fields{
-			logging.ErrorKey: err, "master": master, "builder": builder,
-		}.Infof(ctx, "getStepNames")
-		return nil, err
-	}
-
-	if len(data.Builds) == 0 {
-		logging.Fields{
-			"master":  master,
-			"builder": builder,
-		}.Infof(ctx, "builders: empty build list")
-		return nil, nil // Intentional: error is nil, simply skip this data.
-	}
-
-	var res []string
-	for _, step := range data.Builds[0].Steps {
-		name, ok := cleanTestStep(step.Name)
-		if !ok {
-			continue
-		}
-		res = append(res, name)
-	}
-	return res, nil
 }
 
 var ignoreTestNameRx = regexp.MustCompile(`_only|_ignore|_perf$`)
