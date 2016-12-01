@@ -14,10 +14,13 @@ from model import result_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
 
+PAGE_SIZE = 100
+
+
 def FilterMasterFlakeAnalysis(
     master_flake_analysis_query, master_name=None, builder_name=None,
     build_number=None, step_name=None, test_name=None, start_date=None,
-    end_date=None, status_code=result_status.UNSPECIFIED):
+    end_date=None, status_code=result_status.UNSPECIFIED, offset=0):
   if master_name:
     master_flake_analysis_query = master_flake_analysis_query.filter(
         MasterFlakeAnalysis.master_name == master_name)
@@ -44,7 +47,12 @@ def FilterMasterFlakeAnalysis(
         MasterFlakeAnalysis.result_status == status_code)
 
   master_flake_analysis_query.order(-MasterFlakeAnalysis.request_time)
-  return master_flake_analysis_query.fetch()
+
+  # TODO(lijeffrey): use cursor instead of offset.
+  analyses, _, more = master_flake_analysis_query.fetch_page(
+      PAGE_SIZE, offset=offset)
+
+  return analyses, more
 
 
 class ListFlakes(BaseHandler):
@@ -79,14 +87,15 @@ class ListFlakes(BaseHandler):
     step_name = self.request.get('step_name').strip()
     test_name = self.request.get('test_name').strip()
     triage = self.request.get('triage') == '1'
+    offset = int(self.request.get('offset', '0').strip())
 
     # Only allow querying by start/end dates for admins during triage to avoid
     # overcomplicating the UI for other users.
     start_date, end_date = self._GetStartAndEndDates(triage)
 
-    master_flake_analyses = FilterMasterFlakeAnalysis(
+    master_flake_analyses, more = FilterMasterFlakeAnalysis(
         MasterFlakeAnalysis.query(), master_name, builder_name, build_number,
-        step_name, test_name, start_date, end_date, status_code)
+        step_name, test_name, start_date, end_date, status_code, offset)
 
     data = {
         'master_flake_analyses': [],
@@ -95,7 +104,10 @@ class ListFlakes(BaseHandler):
         'builder_name_filter': builder_name,
         'build_number_filter': build_number,
         'step_name_filter': step_name,
-        'test_name_filter': test_name
+        'test_name_filter': test_name,
+        'page_size': PAGE_SIZE,
+        'offset': offset,
+        'more': more,
     }
 
     if triage:  # pragma: no cover

@@ -11,15 +11,45 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .previous, .next {
+      color: #0645AD;
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      border-bottom:1px solid #0645AD;
+      cursor: pointer;
+    }
+    .disabled {
+      color: #d3d3d3;
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      border-bottom:1px solid #d3d3d3;
+      cursor: pointer;
+    }
   </style>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
   <script>
-    /*parameters = {
-      'result_status': '{{ result_status_filter }}' == '-1' ? undefined : '{{ result_status_filter }}',
-      'triage': '{{ triage }}' == '1' ? undefined : '1',
-    };*/
+    function getParameters() {
+      parameters = {}
+      if ('{{ triage }}') {
+        parameters['triage'] = '1'
+        parameters['start_date'] = $('#start_date').val() == 'mm/dd/yyyy' ? undefined : $('#start_date').val();
+        parameters['end_date'] = $('#end_date').val() == 'mm/dd/yyyy' ? undefined : $('#end_date').val();
+      }
+      parameters['master_name'] = $('#master_name').val();
+      parameters['builder_name'] = $('#builder_name').val();
+      parameters['build_number'] = $('#build_number').val();
+      parameters['step_name'] = $('#step_name').val();
+      parameters['test_name'] = $('#test_name').val();
+      parameters['result_status'] = $('#result_status').val() == 'default' ? undefined : $('#result_status').val();
+      parameters['offset'] = {{ offset }};
+      return parameters
+    }
 
-    function CreateUrl(parameters) {
+    function createUrl(parameters) {
       var params = [];
       for(var key in parameters) {
         if (parameters[key] != undefined) {
@@ -34,20 +64,26 @@
       }
     };
 
-    function requestFilteredResults(e) {
-      parameters = {}
-      if ('{{ triage }}') {
-        parameters['triage'] = '1'
-        parameters['start_date'] = $('#start_date').val() == 'mm/dd/yyyy' ? undefined : $('#start_date').val();
-        parameters['end_date'] = $('#end_date').val() == 'mm/dd/yyyy' ? undefined : $('#end_date').val();
+    function loadPrevious() {
+      new_offset = {{ offset }} - {{ page_size }};
+      if (new_offset < 0) {
+        new_offset = 0
       }
-      parameters['master_name'] = $('#master_name').val();
-      parameters['builder_name'] = $('#builder_name').val();
-      parameters['build_number'] = $('#build_number').val();
-      parameters['step_name'] = $('#step_name').val();
-      parameters['test_name'] = $('#test_name').val();
-      parameters['result_status'] = $('#result_status').val() == 'default' ? undefined : $('#result_status').val();
+      parameters = getParameters();
+      parameters['offset'] = new_offset;
+      var newUrl = createUrl(parameters);
+      window.location.replace(newUrl);
+    }
 
+    function loadNext() {
+      parameters = getParameters();
+      parameters['offset'] = {{ offset }} + {{ page_size }};
+      var newUrl = createUrl(parameters);
+      window.location.replace(newUrl);
+    }
+
+    function requestFilteredResults(e) {
+      parameters = getParameters()
       newUrl = CreateUrl(parameters);
       window.location.replace(newUrl);
       e.preventDefault();
@@ -62,11 +98,29 @@
     };
 
     $(document).ready(function() {
+      $('#previous-button').click(loadPrevious);
+      $('#next-button').click(loadNext);
+
       if ('{{ result_status_filter }}' != '-1') {
         $('#result_status').val('{{ result_status_filter }}');
       }
       $('#result_status').change(handleResultStatusChanged);
       $('#filter_results').click(handleFilterResults);
+
+      if ('{{ more }}' == 'True') {
+        $('#next-button').removeAttr('disabled');
+      } else {
+        $('#next-button').attr('disabled', 'disabled');
+        $('#next-button').addClass('disabled');     
+      }
+
+      if ({{ offset }} < 1) {
+        $('#previous-button').attr('disabled', 'disabled');
+        $('#previous-button').addClass('disabled');        
+      } else {
+        $('#previous-button').removeAttr('disabled');
+      }
+
     });
   </script>
 </head>
@@ -168,4 +222,8 @@
       {% endfor %}
     </tbody>
   </table>
+  <div>
+    <button id="previous-button" class="previous">previous</button>
+    <button id="next-button" class="next">next</button>
+  </div>
 </body>

@@ -101,7 +101,7 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
 
   def testFilterMasterName(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result = FilterMasterFlakeAnalysis(
+    result, _= FilterMasterFlakeAnalysis(
         master_flake_analysis_query, master_name=self.master_name1)
 
     self.assertEqual(len(result), 1)
@@ -109,49 +109,49 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
 
   def testFilterBuilderName(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result = FilterMasterFlakeAnalysis(
+    result, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, builder_name=self.builder_name1)
     self.assertEqual(len(result), 1)
     self.assertTrue(result == [self.master_flake_analysis1])
 
   def testFilterBuildNumber(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result = FilterMasterFlakeAnalysis(
+    result, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, build_number=self.build_number1)
     self.assertEqual(len(result), 1)
     self.assertTrue(result == [self.master_flake_analysis1])
 
   def testFilterStepName(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result = FilterMasterFlakeAnalysis(
+    result, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, step_name=self.step_name1)
     self.assertEqual(len(result), 1)
     self.assertTrue(result == [self.master_flake_analysis1])
 
   def testFilterTestName(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result = FilterMasterFlakeAnalysis(
+    result, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, test_name=self.test_name2)
     self.assertEqual(len(result), 1)
     self.assertTrue(result == [self.master_flake_analysis2])
 
   def testFilterResultStatus(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result = FilterMasterFlakeAnalysis(
+    result, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, status_code=result_status.FOUND_UNTRIAGED)
     self.assertEqual(len(result), 1)
     self.assertTrue(result == [self.master_flake_analysis1])
 
   def testFilterStartDate(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result = FilterMasterFlakeAnalysis(
+    result, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, start_date=self.request_time2)
     self.assertEqual(len(result), 1)
     self.assertTrue(result == [self.master_flake_analysis2])
 
   def testFilterEndDate(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result = FilterMasterFlakeAnalysis(
+    result, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, end_date=self.request_time2)
     self.assertEqual(len(result), 2)
     self.assertTrue(result == [self.master_flake_analysis1,
@@ -159,7 +159,7 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
 
   def testFilterMultipleMasterName(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result = FilterMasterFlakeAnalysis(
+    result, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, master_name=self.master_name2)
     self.assertEqual(len(result), 2)
     self.assertTrue(result == [self.master_flake_analysis3,
@@ -167,7 +167,7 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
 
   def testFilterMultipleBuilderName(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result = FilterMasterFlakeAnalysis(
+    result, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, builder_name=self.builder_name2)
     self.assertEqual(len(result), 2)
     self.assertTrue(result == [self.master_flake_analysis3,
@@ -175,7 +175,7 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
 
   def testFilterMultipleBuildNumber(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result = FilterMasterFlakeAnalysis(
+    result, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, build_number=self.build_number2)
     self.assertEqual(len(result), 2)
     self.assertTrue(result == [self.master_flake_analysis3,
@@ -183,7 +183,7 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
 
   def testFilterMultipleStepName(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result = FilterMasterFlakeAnalysis(
+    result, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, step_name=self.step_name2)
     self.assertEqual(len(result), 2)
     self.assertTrue(result == [self.master_flake_analysis3,
@@ -191,7 +191,7 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
 
   def testFilterMultipleTestName(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result = FilterMasterFlakeAnalysis(
+    result, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, test_name=self.test_name1)
     self.assertEqual(len(result), 2)
     self.assertTrue(result == [self.master_flake_analysis1,
@@ -228,6 +228,9 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
         'step_name_filter': '',
         'test_name_filter': '',
         'result_status_filter': result_status.UNSPECIFIED,
+        'page_size': list_flakes.PAGE_SIZE,
+        'offset': 0,
+        'more': False,
     }
 
     self.assertEquals(response.json_body, expected_result)
