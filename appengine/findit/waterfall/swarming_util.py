@@ -8,6 +8,7 @@ import json
 import logging
 import time
 import urllib
+from urlparse import urlparse
 import zlib
 
 from google.appengine.api.urlfetch_errors import DeadlineExceededError
@@ -17,6 +18,7 @@ from google.appengine.ext import ndb
 
 from common import auth_util
 from model.wf_step import WfStep
+from waterfall import monitoring
 from waterfall import waterfall_config
 from waterfall.swarming_task_request import SwarmingTaskRequest
 
@@ -82,6 +84,13 @@ def _GetBackoffSeconds(retry_backoff, tries, maximum_retry_interval):
   return min(retry_backoff * (2 ** (tries - 1)), maximum_retry_interval)
 
 
+def _OnConnectionFailed(url, exception_type):
+  host = urlparse(url).hostname
+  assert host
+  monitoring.outgoing_http_errors.increment(
+      {'host': host, 'exception': exception_type})
+
+
 def _SendRequestToServer(url, http_client, post_data=None):
   """Sends GET/POST request to arbitrary url and returns response content.
 
@@ -96,8 +105,6 @@ def _SendRequestToServer(url, http_client, post_data=None):
     http_client (HttpClient): The httpclient object with which to make the
       server calls.
     post_data (dict): Data/params to send with the request, if any.
-    swarming_task (WfSwarmingTask, FlakeSwarmingTask): An optional swarming
-      task with which to capture errors.
 
   Returns:
     content (dict), error (dict): The content from the server and the last error
@@ -131,21 +138,28 @@ def _SendRequestToServer(url, http_client, post_data=None):
           'code': URLFETCH_CONNECTION_CLOSED_ERROR,
           'message': e.message
       }
+      _OnConnectionFailed(url, 'ConnectionClosedError')
     except DeadlineExceededError as e:
       error = {
           'code': URLFETCH_DEADLINE_EXCEEDED_ERROR,
           'message': e.message
       }
+      _OnConnectionFailed(url, 'DeadlineExceededError')
     except DownloadError as e:
       error = {
           'code': URLFETCH_DOWNLOAD_ERROR,
           'message': e.message
       }
+      _OnConnectionFailed(url, 'DownloadError')
     except Exception as e:  # pragma: no cover
+      logging.error(
+          'An unknown exception occurred that need to be monitored: %s',
+          e.message)
       error = {
           'code': UNKNOWN,
           'message': e.message
       }
+      _OnConnectionFailed(url, 'Unknown Exception')
 
     if error or status_code != 200:
       # The retry upon 50x (501 excluded) is automatically handled in the

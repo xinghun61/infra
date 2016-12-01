@@ -644,7 +644,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       RetryHttpClient, 'Get', side_effect=ConnectionClosedError())
   def testSendRequestToServerConnectionClosedError(self, _):
-    content, error = swarming_util._SendRequestToServer('url', HttpClient())
+    content, error = swarming_util._SendRequestToServer(
+        'http://www.someurl.url', HttpClient())
     self.assertIsNone(content)
     self.assertEqual(
         error['code'], swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)
@@ -652,14 +653,16 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       RetryHttpClient, 'Get', side_effect=DeadlineExceededError())
   def testSendRequestToServerDeadlineExceededError(self, _):
-    content, error = swarming_util._SendRequestToServer('url', HttpClient())
+    content, error = swarming_util._SendRequestToServer(
+        'http://www.someurl.com', HttpClient())
     self.assertIsNone(content)
     self.assertEqual(
         error['code'], swarming_util.URLFETCH_DEADLINE_EXCEEDED_ERROR)
 
   @mock.patch.object(RetryHttpClient, 'Get', side_effect=DownloadError())
   def testSendRequestToServerDownloadError(self, _):
-    content, error = swarming_util._SendRequestToServer('url', HttpClient())
+    content, error = swarming_util._SendRequestToServer(
+        'http://www.someurl.com', HttpClient())
     self.assertIsNone(content)
     self.assertEqual(error['code'], swarming_util.URLFETCH_DOWNLOAD_ERROR)
 
@@ -677,7 +680,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     }
     self.UpdateUnitTestConfigSettings(
         'swarming_settings', override_swarming_settings)
-    content, error = swarming_util._SendRequestToServer('url', HttpClient())
+    content, error = swarming_util._SendRequestToServer(
+        'http://www.someurl.com', HttpClient())
     self.assertIsNone(content)
     self.assertEqual(
         error['code'], swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)
