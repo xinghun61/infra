@@ -66,7 +66,7 @@ func indexPage(ctx *router.Context) {
 	user := auth.CurrentIdentity(c)
 
 	if user.Kind() == identity.Anonymous {
-		url, err := auth.LoginURL(c, "/")
+		url, err := auth.LoginURL(c, p.ByName("path"))
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf(
 				"You must login. Additionally, an error was encountered while serving this request: %s", err.Error()))
