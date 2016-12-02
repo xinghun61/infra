@@ -240,7 +240,7 @@ type sendRun struct {
 	text     string
 }
 
-func (c *sendRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
+func (c *sendRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	if len(args) != 0 {
 		fmt.Fprintf(os.Stderr, "Cloudtail send doesn't accept positional command line arguments %q\n", args)
 		return 1
@@ -250,7 +250,7 @@ func (c *sendRun) Run(a subcommands.Application, args []string, _ subcommands.En
 		return 1
 	}
 
-	ctx, state, err := c.commonOptions.processFlags(cli.GetContext(a, c))
+	ctx, state, err := c.commonOptions.processFlags(cli.GetContext(a, c, env))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		return 1
@@ -304,13 +304,13 @@ type pipeRun struct {
 	lineBufferSize int
 }
 
-func (c *pipeRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
+func (c *pipeRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	if len(args) != 0 {
 		fmt.Fprintf(os.Stderr, "Cloudtail pipe doesn't accept positional command line arguments %q\n", args)
 		return 1
 	}
 
-	ctx, state, err := c.commonOptions.processFlags(cli.GetContext(a, c))
+	ctx, state, err := c.commonOptions.processFlags(cli.GetContext(a, c, env))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
@@ -388,7 +388,7 @@ type tailRun struct {
 	path string
 }
 
-func (c *tailRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
+func (c *tailRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	if len(args) != 0 {
 		fmt.Fprintf(os.Stderr, "Cloudtail tail doesn't accept positional command line arguments %q\n", args)
 		return 1
@@ -398,7 +398,7 @@ func (c *tailRun) Run(a subcommands.Application, args []string, _ subcommands.En
 		return 1
 	}
 
-	ctx, state, err := c.commonOptions.processFlags(cli.GetContext(a, c))
+	ctx, state, err := c.commonOptions.processFlags(cli.GetContext(a, c, env))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
@@ -451,6 +451,13 @@ var application = &cli.Application{
 	Context: func(ctx context.Context) context.Context {
 		return gologger.StdConfig.Use(ctx)
 	},
+	EnvVars: map[string]subcommands.EnvVarDefinition{
+		"CLOUDTAIL_DEBUG_EMULATE_429": {
+			Advanced:  true,
+			ShortDesc: "DEBUG/TEST: Non-empty values emulate a server response of 'Too Many Requests'.",
+		},
+	},
+
 	Commands: []*subcommands.Command{
 		subcommands.CmdHelp,
 		version.SubcommandVersion,

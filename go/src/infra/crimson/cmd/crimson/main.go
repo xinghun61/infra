@@ -262,8 +262,8 @@ func ipRangeFromDhcpConfig(c *addVlanRun) ([]*crimson.IPRange, error) {
 	return ranges, nil
 }
 
-func (c *addVlanRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
-	ctx := cli.GetContext(a, c)
+func (c *addVlanRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
+	ctx := cli.GetContext(a, c, env)
 	client := c.newCrimsonClient(ctx)
 
 	var ranges []*crimson.IPRange
@@ -296,8 +296,8 @@ func (c *addVlanRun) Run(a subcommands.Application, args []string, _ subcommands
 	return 0
 }
 
-func (c *queryVlanRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
-	ctx := cli.GetContext(a, c)
+func (c *queryVlanRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
+	ctx := cli.GetContext(a, c, env)
 	client := c.newCrimsonClient(ctx)
 
 	req := &crimson.IPRangeQuery{
@@ -318,8 +318,8 @@ func (c *queryVlanRun) Run(a subcommands.Application, args []string, _ subcomman
 	return 0
 }
 
-func (c *deleteVlanRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
-	ctx := cli.GetContext(a, c)
+func (c *deleteVlanRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
+	ctx := cli.GetContext(a, c, env)
 	client := c.newCrimsonClient(ctx)
 
 	req := &crimson.IPRangeDeleteList{
@@ -389,8 +389,8 @@ func hostListFromRangeFromArgs(c *addHostRun) (*crimson.HostList, error) {
 	return hostListFromFile(c.inputFileCSV)
 }
 
-func (c *addHostRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
-	ctx := cli.GetContext(a, c)
+func (c *addHostRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
+	ctx := cli.GetContext(a, c, env)
 	client := c.newCrimsonClient(ctx)
 
 	hostList, err := hostListFromRangeFromArgs(c)
@@ -417,8 +417,8 @@ func (c *addHostRun) Run(a subcommands.Application, args []string, _ subcommands
 	return 0
 }
 
-func (c *queryHostRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
-	ctx := cli.GetContext(a, c)
+func (c *queryHostRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
+	ctx := cli.GetContext(a, c, env)
 	client := c.newCrimsonClient(ctx)
 
 	req := &crimson.HostQuery{
@@ -468,7 +468,7 @@ func hostDeleteListFromArgs(c *deleteHostRun) (*crimson.HostDeleteList, error) {
 	return hdl, nil
 }
 
-func (c *deleteHostRun) Run(a subcommands.Application, args []string, _ subcommands.Env) int {
+func (c *deleteHostRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	var hostList *crimson.HostDeleteList
 	var err error
 
@@ -482,7 +482,7 @@ func (c *deleteHostRun) Run(a subcommands.Application, args []string, _ subcomma
 		return 1
 	}
 
-	ctx := cli.GetContext(a, c)
+	ctx := cli.GetContext(a, c, env)
 	client := c.newCrimsonClient(ctx)
 
 	_, err = client.DeleteHost(ctx, hostList)
