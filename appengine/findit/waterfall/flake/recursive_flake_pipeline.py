@@ -319,18 +319,30 @@ def get_next_run(master_flake_analysis, flakiness_algorithm_results_dict):
     flakiness_algorithm_results_dict['lower_boundary'] = lower_boundary
     flakiness_algorithm_results_dict['sequential_run_index'] += 1
     return lower_boundary + 1
+
   elif (last_result < lower_flake_threshold or
         last_result > upper_flake_threshold):  # Stable result.
     flakiness_algorithm_results_dict['stable_in_a_row'] += 1
 
-    # Only cares cases when a test changes from stable to flaky,
-    # not the opposite.
-    if (flakiness_algorithm_results_dict['flaked_out'] and
-        flakiness_algorithm_results_dict['stable_in_a_row'] >
-        max_stable_in_a_row):  # Identified a stable region.
-      flakiness_algorithm_results_dict['stabled_out'] = True
+    if flakiness_algorithm_results_dict['flakes_first'] == 0:
+      # First task is not flaky, makes flakes_first invalid.
+      flakiness_algorithm_results_dict['flakes_first'] = None
 
-    if (flakiness_algorithm_results_dict['flaked_out'] and
+    # TODO (chanli): Narrow down the stable region and flake region.
+    if (flakiness_algorithm_results_dict['stable_in_a_row'] >
+        max_stable_in_a_row):
+      flakiness_algorithm_results_dict['stabled_out'] = True
+      # Flake region is also found, ready for sequential search.
+      if (flakiness_algorithm_results_dict['flaked_out'] or
+          flakiness_algorithm_results_dict['flakes_first']):
+        lower_boundary = flakiness_algorithm_results_dict['lower_boundary']
+        flakiness_algorithm_results_dict['sequential_run_index'] += 1
+        return lower_boundary + 1
+      else:  # Already stabled_out but not flaked_out, no findings.
+        return -1
+
+    if ((flakiness_algorithm_results_dict['flaked_out'] or
+         flakiness_algorithm_results_dict['flakes_first']) and
         not flakiness_algorithm_results_dict['stabled_out'] and
         not flakiness_algorithm_results_dict['lower_boundary']):
       # Identified a candidate for the lower boundary.
@@ -340,15 +352,21 @@ def get_next_run(master_flake_analysis, flakiness_algorithm_results_dict):
     flakiness_algorithm_results_dict['flakes_in_a_row'] = 0
     step_size = flakiness_algorithm_results_dict['stable_in_a_row'] + 1
     return cur_run - step_size
+
   else:
     # Flaky result.
     flakiness_algorithm_results_dict['flakes_in_a_row'] += 1
+
+    if flakiness_algorithm_results_dict['stables_first'] == 0:
+      # No stables yet.
+      flakiness_algorithm_results_dict['flakes_first'] += 1
 
     if (flakiness_algorithm_results_dict['flakes_in_a_row'] >
         max_flake_in_a_row):  # Identified a flaky region.
       flakiness_algorithm_results_dict['flaked_out'] = True
 
-    if (flakiness_algorithm_results_dict['flaked_out'] and
+    if ((flakiness_algorithm_results_dict['flaked_out'] or
+         flakiness_algorithm_results_dict['flakes_first']) and
         not flakiness_algorithm_results_dict['stabled_out']):
       # Identified a candidate for the upper boundary.
       # Earliest flaky point to the right of a stable region.
@@ -377,7 +395,7 @@ def sequential_next_run(
           flakiness_algorithm_results_dict['lower_boundary'] +
           flakiness_algorithm_results_dict['sequential_run_index'])
       master_flake_analysis.put()
-      return 0
+      return -1
   flakiness_algorithm_results_dict['sequential_run_index'] += 1
   return (flakiness_algorithm_results_dict['lower_boundary'] +
           flakiness_algorithm_results_dict['sequential_run_index'])
@@ -415,14 +433,12 @@ class NextBuildNumberPipeline(BasePipeline):
       return
 
     # Figure out what build_number to trigger a swarming rerun on next, if any.
-    if (flakiness_algorithm_results_dict['stabled_out'] and
-        flakiness_algorithm_results_dict['flaked_out']):
+    if flakiness_algorithm_results_dict['stabled_out']:
       next_run = sequential_next_run(
           master_flake_analysis, flakiness_algorithm_results_dict)
     else:
       next_run = get_next_run(
           master_flake_analysis, flakiness_algorithm_results_dict)
-
     if (next_run < flakiness_algorithm_results_dict['last_build_number'] or
         next_run >= master_build_number):
        # Finished.

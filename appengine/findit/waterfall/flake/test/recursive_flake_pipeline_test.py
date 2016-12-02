@@ -121,8 +121,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary': None,
         'upper_boundary': None,
         'lower_boundary_result': None,
-        'sequential_run_index': 0
-
+        'sequential_run_index': 0,
+        'flakes_first': 0,
+        'stables_first': 0
     }
 
     analysis = MasterFlakeAnalysis.Create(
@@ -186,8 +187,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary': None,
         'upper_boundary': None,
         'lower_boundary_result': None,
-        'sequential_run_index': 0
-
+        'sequential_run_index': 0,
+        'flakes_first': 0,
+        'stables_first': 0
     }
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
@@ -234,7 +236,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary': None,
         'upper_boundary': None,
         'lower_boundary_result': None,
-        'sequential_run_index': 0
+        'sequential_run_index': 0,
+        'flakes_first': 0,
+        'stables_first': 0
     }
 
     self._CreateAndSaveMasterFlakeAnalysis(
@@ -264,7 +268,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
   @mock.patch.object(
       recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
-  def testNextBuildPipelineForNewRecursionFlakeInARow(self, *_):
+  def testNextBuildPipelineForNewRecursionStableInARow(self, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -278,11 +282,63 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'stabled_out': False,
         'flaked_out': True,
         'last_build_number': 0,
-        'lower_boundary': None,
-        'upper_boundary': None,
+        'lower_boundary': 40,
+        'upper_boundary': 30,
         'lower_boundary_result': None,
-        'sequential_run_index': 0
+        'sequential_run_index': 0,
+        'flakes_first': None,
+        'stables_first': 4
 
+    }
+
+    self._CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.PENDING)
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.COMPLETED)
+
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = 0
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
+    analysis.put()
+
+    NextBuildNumberPipeline.run(
+        NextBuildNumberPipeline(), master_name, builder_name,
+        master_build_number, build_number, step_name,
+        test_name, analysis.version_number, test_result_future,
+        flakiness_algorithm_results_dict)
+    self.assertTrue(flakiness_algorithm_results_dict['stabled_out'])
+    self.assertEqual(
+        flakiness_algorithm_results_dict['sequential_run_index'], 1)
+
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
+  @mock.patch.object(
+      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
+  def testNextBuildPipelineForNewRecursionStableOutWithoutFlakeout(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    master_build_number = 100
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    test_result_future = 'trf'
+    flakiness_algorithm_results_dict = {
+        'flakes_in_a_row': 0,
+        'stable_in_a_row': 4,
+        'stabled_out': False,
+        'flaked_out': False,
+        'last_build_number': 0,
+        'lower_boundary': 40,
+        'upper_boundary': 30,
+        'lower_boundary_result': None,
+        'sequential_run_index': 0,
+        'flakes_first': None,
+        'stables_first': 4
     }
 
     self._CreateAndSaveMasterFlakeAnalysis(
@@ -311,7 +367,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
   @mock.patch.object(
       recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
-  def testNextBuildPipelineForNewRecursionStableInARow(self, *_):
+  def testNextBuildPipelineForNewRecursionFlakeInARow(self, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -328,7 +384,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary': None,
         'upper_boundary': None,
         'lower_boundary_result': None,
-        'sequential_run_index': 0
+        'sequential_run_index': 0,
+        'flakes_first': 4,
+        'stables_first': None
 
     }
 
@@ -376,7 +434,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary': None,
         'upper_boundary': None,
         'lower_boundary_result': None,
-        'sequential_run_index': 0
+        'sequential_run_index': 0,
+        'flakes_first': 0,
+        'stables_first': 0
     }
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
@@ -432,7 +492,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary': None,
         'upper_boundary': None,
         'lower_boundary_result': None,
-        'sequential_run_index': 0
+        'sequential_run_index': 0,
+        'flakes_first': 0,
+        'stables_first': 0
 
     }
     self._CreateAndSaveMasterFlakeAnalysis(
@@ -468,7 +530,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
   @mock.patch.object(
       recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
-  def testNextBuildPipelineForNewRecursionStabledFlakedOut(self, *_):
+  def testNextBuildPipelineAllStable(self, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -478,15 +540,17 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     test_result_future = 'trf'
     queue_name = constants.DEFAULT_QUEUE
     flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 4,
-        'stable_in_a_row': 0,
-        'stabled_out': True,
+        'flakes_in_a_row': 0,
+        'stable_in_a_row': 4,
+        'stabled_out': False,
         'flaked_out': False,
         'last_build_number': 0,
         'lower_boundary': 200,
         'upper_boundary': 210,
         'lower_boundary_result': 'FLAKE',
-        'sequential_run_index': 0
+        'sequential_run_index': 0,
+        'flakes_first': 0,
+        'stables_first': 4
     }
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
@@ -499,7 +563,62 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
     data_point = DataPoint()
-    data_point.pass_rate = .5
+    data_point.pass_rate = 1
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
+    analysis.put()
+
+    queue_name = {'x': False}
+    def my_mocked_run(*_, **__):
+      queue_name['x'] = True  # pragma: no cover
+
+    self.mock(
+        recursive_flake_pipeline.RecursiveFlakePipeline, 'start', my_mocked_run)
+    NextBuildNumberPipeline.run(
+        NextBuildNumberPipeline(), master_name, builder_name,
+        master_build_number, build_number, step_name, test_name,
+        analysis.version_number, test_result_future,
+        flakiness_algorithm_results_dict)
+    self.assertFalse(queue_name['x'])
+
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
+  @mock.patch.object(
+      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
+  def testNextBuildPipelineFlakesFirst(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    master_build_number = 100
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    test_result_future = 'trf'
+    queue_name = constants.DEFAULT_QUEUE
+    flakiness_algorithm_results_dict = {
+        'flakes_in_a_row': 0,
+        'stable_in_a_row': 4,
+        'stabled_out': False,
+        'flaked_out': False,
+        'last_build_number': 0,
+        'lower_boundary': 6,
+        'upper_boundary': 3,
+        'lower_boundary_result': None,
+        'sequential_run_index': 0,
+        'flakes_first': 2,
+        'stables_first': None
+    }
+    self._CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.PENDING
+    )
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.COMPLETED
+    )
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = 1
     data_point.build_number = 100
     analysis.data_points.append(data_point)
     analysis.put()
@@ -516,6 +635,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         analysis.version_number, test_result_future,
         flakiness_algorithm_results_dict)
     self.assertTrue(queue_name['x'])
+    self.assertTrue(flakiness_algorithm_results_dict['stabled_out'])
 
   def testGetNextRunSetStableLowerBoundary(self):
     master_name = 'm'
@@ -544,7 +664,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary': None,
         'upper_boundary': 120,
         'lower_boundary_result': None,
-        'sequential_run_index': 0
+        'sequential_run_index': 0,
+        'flakes_first': 4,
+        'stables_first': None
     }
 
     get_next_run(analysis, flakiness_algorithm_results_dict)
@@ -552,6 +674,41 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                      build_number)
     self.assertEqual(flakiness_algorithm_results_dict['lower_boundary_result'],
                      'STABLE')
+
+  def testGetNextRunFlakeAfterStable(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    self._CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.PENDING
+    )
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.pass_rate = 0.7
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
+    analysis.put()
+
+    flakiness_algorithm_results_dict = {
+        'flakes_in_a_row': 0,
+        'stable_in_a_row': 2,
+        'stabled_out': False,
+        'flaked_out': False,
+        'last_build_number': 0,
+        'lower_boundary': None,
+        'upper_boundary': 120,
+        'lower_boundary_result': None,
+        'sequential_run_index': 0,
+        'flakes_first': None,
+        'stables_first': None
+    }
+
+    get_next_run(analysis, flakiness_algorithm_results_dict)
+    self.assertEqual(flakiness_algorithm_results_dict['stable_in_a_row'], 0)
 
   def testSequentialNextRunFirstTime(self):
     master_name = 'm'
@@ -580,7 +737,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary': 100,
         'upper_boundary': 110,
         'lower_boundary_result': 'STABLE',
-        'sequential_run_index': 0
+        'sequential_run_index': 0,
+        'flakes_first': 0,
+        'stables_first': 0
     }
     next_run = sequential_next_run(analysis, flakiness_algorithm_results_dict)
     self.assertEqual(next_run, 101)
@@ -612,10 +771,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary': 100,
         'upper_boundary': 110,
         'lower_boundary_result': 'STABLE',
-        'sequential_run_index': 1
+        'sequential_run_index': 1,
+        'flakes_first': 0,
+        'stables_first': 0
     }
     next_run = sequential_next_run(analysis, flakiness_algorithm_results_dict)
-    self.assertEqual(next_run, False)
+    self.assertEqual(next_run, -1)
     self.assertEqual(analysis.suspected_flake_build_number, 101)
 
   def testSequentialFoundBorderStable(self):
@@ -645,10 +806,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary': 100,
         'upper_boundary': 110,
         'lower_boundary_result': 'FLAKE',
-        'sequential_run_index': 1
+        'sequential_run_index': 1,
+        'flakes_first': 0,
+        'stables_first': 0
     }
     next_run = sequential_next_run(analysis, flakiness_algorithm_results_dict)
-    self.assertEqual(next_run, False)
+    self.assertEqual(next_run, -1)
     self.assertEqual(analysis.suspected_flake_build_number, 101)
 
   def testSequentialDidntFindBorderStable(self):
@@ -678,7 +841,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary': 100,
         'upper_boundary': 110,
         'lower_boundary_result': 'STABLE',
-        'sequential_run_index': 1
+        'sequential_run_index': 1,
+        'flakes_first': 0,
+        'stables_first': 0
     }
     next_run = sequential_next_run(analysis, flakiness_algorithm_results_dict)
     self.assertEqual(next_run, 102)
@@ -705,7 +870,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary': 100,
         'upper_boundary': 110,
         'lower_boundary_result': None,
-        'sequential_run_index': 0
+        'sequential_run_index': 0,
+        'flakes_first': 0,
+        'stables_first': 0
 
     }
 
@@ -747,12 +914,39 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'upper_boundary': None,
         'lower_boundary_result': None,
         'sequential_run_index': 0,
+        'flakes_first': None,
+        'stables_first': 2
     }
 
     next_run = get_next_run(master, flakiness_algorithm_results_dict)
     self.assertEqual(81, next_run)
     self.assertTrue(flakiness_algorithm_results_dict['stabled_out'])
     self.assertTrue(flakiness_algorithm_results_dict['flaked_out'])
+    self.assertEqual(80, flakiness_algorithm_results_dict['lower_boundary'])
+    self.assertEqual('STABLE',
+                     flakiness_algorithm_results_dict['lower_boundary_result'])
+
+  def testNextBuildFlakesFirstThenStabledOut(self):
+    master = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
+    master.data_points = self._GenerateDataPoints(
+        pass_rates=[0.8, 1.0], build_numbers=[100, 80])
+
+    flakiness_algorithm_results_dict = {
+        'flakes_in_a_row': 1,
+        'stable_in_a_row': 0,
+        'stabled_out': False,
+        'flaked_out': False,
+        'last_build_number': 0,
+        'lower_boundary': None,
+        'upper_boundary': 100,
+        'lower_boundary_result': None,
+        'sequential_run_index': 0,
+        'flakes_first': 1,
+        'stables_first': None
+    }
+
+    next_run = get_next_run(master, flakiness_algorithm_results_dict)
+    self.assertEqual(78, next_run)
     self.assertEqual(80, flakiness_algorithm_results_dict['lower_boundary'])
     self.assertEqual('STABLE',
                      flakiness_algorithm_results_dict['lower_boundary_result'])
@@ -771,6 +965,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'upper_boundary': None,
         'lower_boundary_result': None,
         'sequential_run_index': 0,
+        'flakes_first': 3,
+        'stables_first': None
     }
 
     next_run = get_next_run(master, flakiness_algorithm_results_dict)
@@ -798,7 +994,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary': None,
         'upper_boundary': None,
         'lower_boundary_result': None,
-        'sequential_run_index': 0
+        'sequential_run_index': 0,
+        'flakes_first': None,
+        'stables_first': 3
     }
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, master_build_number, step_name,
@@ -841,7 +1039,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'lower_boundary': None,
         'upper_boundary': None,
         'lower_boundary_result': None,
-        'sequential_run_index': 0
+        'sequential_run_index': 0,
+        'flakes_first': None,
+        'stables_first': 3
     }
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, master_build_number, step_name, test_name)

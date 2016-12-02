@@ -141,7 +141,9 @@ def ScheduleAnalysisIfNeeded(
         'lower_boundary': None,
         'upper_boundary': None,
         'lower_boundary_result': None,
-        'sequential_run_index': 0
+        'sequential_run_index': 0,
+        'stables_first': 0,
+        'flakes_first': 0
     }
 
     pipeline_job = RecursiveFlakePipeline(
