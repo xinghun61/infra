@@ -323,19 +323,27 @@ def get_next_run(master_flake_analysis, flakiness_algorithm_results_dict):
   elif (last_result < lower_flake_threshold or
         last_result > upper_flake_threshold):  # Stable result.
     flakiness_algorithm_results_dict['stable_in_a_row'] += 1
+    flakiness_algorithm_results_dict['stables_happened'] = True
 
     if flakiness_algorithm_results_dict['flakes_first'] == 0:
       # First task is not flaky, makes flakes_first invalid.
       flakiness_algorithm_results_dict['flakes_first'] = None
 
-    # TODO (chanli): Narrow down the stable region and flake region.
+    # TODO (chanli): Pin point a stable build rather than looking for stable
+    # region to further narrow down the range for sequential search.
+    # crbug.com/670888
     if (flakiness_algorithm_results_dict['stable_in_a_row'] >
         max_stable_in_a_row):
       flakiness_algorithm_results_dict['stabled_out'] = True
       # Flake region is also found, ready for sequential search.
       if (flakiness_algorithm_results_dict['flaked_out'] or
           flakiness_algorithm_results_dict['flakes_first']):
-        lower_boundary = flakiness_algorithm_results_dict['lower_boundary']
+        if flakiness_algorithm_results_dict['lower_boundary']:
+          lower_boundary = flakiness_algorithm_results_dict['lower_boundary']
+        else:
+          lower_boundary = master_flake_analysis.data_points[
+            -flakiness_algorithm_results_dict['stable_in_a_row']].build_number
+          flakiness_algorithm_results_dict['lower_boundary'] = lower_boundary
         flakiness_algorithm_results_dict['sequential_run_index'] += 1
         return lower_boundary + 1
       else:  # Already stabled_out but not flaked_out, no findings.
@@ -357,7 +365,7 @@ def get_next_run(master_flake_analysis, flakiness_algorithm_results_dict):
     # Flaky result.
     flakiness_algorithm_results_dict['flakes_in_a_row'] += 1
 
-    if flakiness_algorithm_results_dict['stables_first'] == 0:
+    if not flakiness_algorithm_results_dict['stables_happened']:
       # No stables yet.
       flakiness_algorithm_results_dict['flakes_first'] += 1
 

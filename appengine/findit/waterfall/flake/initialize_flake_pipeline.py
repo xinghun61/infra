@@ -142,7 +142,7 @@ def ScheduleAnalysisIfNeeded(
         'upper_boundary': None,
         'lower_boundary_result': None,
         'sequential_run_index': 0,
-        'stables_first': 0,
+        'stables_happened': False,
         'flakes_first': 0
     }
 
