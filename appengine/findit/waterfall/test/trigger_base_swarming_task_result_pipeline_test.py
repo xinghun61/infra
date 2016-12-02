@@ -143,12 +143,15 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
             'inputs_ref': {'a': 1},
             'io_timeout_secs': 1200,
         },
-        'tags': ['purpose:deflake', 'ref_master:%s' % master_name,
-                 'ref_buildername:%s' % builder_name,
-                 'ref_buildnumber:%s' % build_number,
-                 'ref_stepname:%s' % step_name,
-                 'ref_task_id:1',
-                 'ref_name:a_tests'],
+        'tags': [
+            'ref_master:%s' % master_name,
+            'ref_buildername:%s' % builder_name,
+            'ref_buildnumber:%s' % build_number,
+            'ref_stepname:%s' % step_name,
+            'ref_task_id:1',
+            'ref_name:a_tests',
+            'purpose:identify-flake',
+        ],
         'user': '',
     }
 

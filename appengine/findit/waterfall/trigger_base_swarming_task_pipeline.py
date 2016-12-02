@@ -22,7 +22,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
   """
 
   def _GetSwarmingTaskName(self, ref_task_id):  # pragma: no cover.
-    return 'findit/deflake/ref_task_id/%s/%s' % (
+    return 'findit/ref_task_id/%s/%s' % (
         ref_task_id, time_util.GetUTCNow().strftime('%Y-%m-%d %H:%M:%S %f'))
 
   def _CreateNewSwarmingTaskRequest(self, ref_task_id, ref_request, master_name,
@@ -91,7 +91,6 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     # Reset tags for searching and monitoring.
     ref_name = swarming_util.GetTagValue(ref_request.tags, 'name')
     new_request.tags = []
-    new_request.tags.append('purpose:deflake')
     new_request.tags.append('ref_master:%s' % master_name)
     new_request.tags.append('ref_buildername:%s' % builder_name)
     new_request.tags.append('ref_buildnumber:%s' % build_number)
@@ -99,7 +98,15 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     new_request.tags.append('ref_task_id:%s' % ref_task_id)
     new_request.tags.append('ref_name:%s' % ref_name)
 
+    # Add additional tags.
+    for tag in self._GetAdditionalTags():
+      new_request.tags.append(tag)
+
     return new_request
+
+  def _GetAdditionalTags(self):
+    """Returns additional tags for the Swarming task."""
+    return []
 
   def _GetArgs(self, master_name, builder_name, build_number, step_name, tests):
     # Returns an array you can pass into _GetSwarmingTask, _CreateSwarmingTask,

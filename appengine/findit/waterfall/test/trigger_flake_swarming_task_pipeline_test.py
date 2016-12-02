@@ -62,6 +62,3 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         expected_iterations,
         TriggerFlakeSwarmingTaskPipeline()._GetIterationsToRerun())
-
-  def testOnTaskTriggered(self):
-    TriggerFlakeSwarmingTaskPipeline()._OnTaskTriggered()
