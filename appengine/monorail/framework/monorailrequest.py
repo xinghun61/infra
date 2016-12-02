@@ -551,7 +551,7 @@ class MonorailRequest(object):
       if not self.hotlist_id:
         logging.info('no hotlist_id, so no hotlist')
       else:
-        self.hotlist = services.features.GetHotlist(
+        self.hotlist = services.features.GetHotlistByID(
             self.cnxn, self.hotlist_id)
         if not self.hotlist:
           webapp2.abort(404, 'invalid hotlist')

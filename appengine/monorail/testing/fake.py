@@ -1641,6 +1641,8 @@ class FeaturesService(object):
       hotlist = self.hotlists_by_id.get(hotlist_id)
       if hotlist:
         result[hotlist_id] = hotlist
+      else:
+        raise features_svc.NoSuchHotlistException()
     return result
 
   def GetHotlistsByUserID(self, cnxn, user_id, use_cache=True):
@@ -1655,6 +1657,21 @@ class FeaturesService(object):
     hotlist_id_dict = self.GetHotlists(cnxn, [hotlist_id], use_cache=use_cache)
     return hotlist_id_dict.get(hotlist_id)
 
+  def GetHotlistsByID(self, cnxn, hotlist_ids, use_cache=True):
+    hotlists_dict = {}
+    missed_ids = []
+    for hotlist_id in hotlist_ids:
+      hotlist = self.hotlists_by_id.get(hotlist_id)
+      if hotlist:
+        hotlists_dict[hotlist_id] = hotlist
+      else:
+        missed_ids.append(hotlist_id)
+    return hotlists_dict, missed_ids
+
+  def GetHotlistByID(self, cnxn, hotlist_id, use_cache=True):
+    hotlists_dict, _ = self.GetHotlistsByID(
+        cnxn, [hotlist_id], use_cache=use_cache)
+    return hotlists_dict[hotlist_id]
   # end of Hotlist functions
 
   def ExpungeSavedQueriesExecuteInProject(self, _cnxn, project_id):

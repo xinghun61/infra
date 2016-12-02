@@ -675,6 +675,28 @@ class FeaturesService(object):
     hotlist_dict = self.GetHotlists(cnxn, [hotlist_id], use_cache=use_cache)
     return hotlist_dict[hotlist_id]
 
+  def GetHotlistsByID(self, cnxn, hotlist_ids, use_cache=True):
+    """Load all the Hotlist PBs for the given hotlists.
+
+    Args:
+      cnxn: connection to SQL database.
+      hotlist_ids: list of hotlist ids.
+      use_cache: specifiy False to force database query.
+
+    Returns:
+      A dict mapping ids to the corresponding Hotlist protocol buffers and
+      a list of any hotlist_ids that were not found.
+    """
+    hotlists_dict, missed_ids = self.hotlist_2lc.GetAll(
+        cnxn, hotlist_ids, use_cache=use_cache)
+    return hotlists_dict, missed_ids
+
+  def GetHotlistByID(self, cnxn, hotlist_id, use_cache=True):
+    """Load the specified hotlist from the database, None if does not exist."""
+    hotlist_dict, _ = self.GetHotlistsByID(
+        cnxn, [hotlist_id], use_cache=use_cache)
+    return hotlist_dict.get(hotlist_id)
+
   def UpdateHotlistRoles(
       self, cnxn, hotlist_id, owner_ids, editor_ids, follower_ids):
     """"Store the hotlist's roles in the DB."""

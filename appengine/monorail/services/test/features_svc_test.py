@@ -9,6 +9,7 @@ import unittest
 
 import mox
 
+from google.appengine.api import memcache
 from google.appengine.ext import testbed
 
 from features import filterrules_helpers
@@ -85,9 +86,8 @@ class FeaturesServiceTest(unittest.TestCase):
         'hotlist2user_tbl']:
       setattr(self.features_service, table_var, self.MakeMockTable())
 
-      self.hotlist1 = None
-
   def tearDown(self):
+    memcache.flush_all()
     self.mox.UnsetStubs()
     self.mox.ResetAll()
 
@@ -443,18 +443,18 @@ class FeaturesServiceTest(unittest.TestCase):
     self.assertEqual(ret, {('hot1', 567) : 123})
     self.mox.VerifyAll()
 
-  def SetUpGetHotlists(self):
-    hotlist_rows = [(456, 'hotlist2', 'test hotlist 2',
+  def SetUpGetHotlists(self, hotlist_id):
+    hotlist_rows = [(hotlist_id, 'hotlist2', 'test hotlist 2',
                      'test hotlist', False, '')]
     self.features_service.hotlist_tbl.Select(
         self.cnxn, cols=features_svc.HOTLIST_COLS,
-        id=[456]).AndReturn(hotlist_rows)
+        id=[hotlist_id]).AndReturn(hotlist_rows)
     self.features_service.hotlist2user_tbl.Select(
         self.cnxn, cols=['hotlist_id', 'user_id', 'role_name'],
-        hotlist_id=[456]).AndReturn([])
+        hotlist_id=[hotlist_id]).AndReturn([])
     self.features_service.hotlist2issue_tbl.Select(
         self.cnxn, cols=['hotlist_id', 'issue_id', 'rank'],
-        hotlist_id=[456],
+        hotlist_id=[hotlist_id],
         order_by=[('rank DESC', ''), ('issue_id', '')]).AndReturn([])
 
   def SetUpUpdateHotlist(self, hotlist_id, delta):
@@ -462,7 +462,7 @@ class FeaturesServiceTest(unittest.TestCase):
         self.cnxn, delta, id=hotlist_id)
 
   def testUpdateHotlist(self):
-    self.SetUpGetHotlists()
+    self.SetUpGetHotlists(456)
     delta = {'summary': 'A better one-line summary'}
     self.SetUpUpdateHotlist(456, delta)
     self.mox.ReplayAll()
@@ -482,7 +482,7 @@ class FeaturesServiceTest(unittest.TestCase):
         row_values=insert_rows, commit=True)
 
   def testUpdateHotlistIssues(self):
-    self.SetUpGetHotlists()
+    self.SetUpGetHotlists(456)
     relations_to_change = {11: 112, 33: 332, 55: 552}
     self.SetUpUpdateHotlistIssues(456, relations_to_change)
     self.mox.ReplayAll()
@@ -493,7 +493,7 @@ class FeaturesServiceTest(unittest.TestCase):
   def testGetHotlists(self):
     hotlist1 = fake.Hotlist(hotlist_name='hotlist1', hotlist_id=123)
     self.features_service.hotlist_2lc.CacheItem(123, hotlist1)
-    self.SetUpGetHotlists()
+    self.SetUpGetHotlists(456)
     self.mox.ReplayAll()
     hotlist_dict = self.features_service.GetHotlists(
         self.cnxn, [123, 456])
@@ -501,6 +501,19 @@ class FeaturesServiceTest(unittest.TestCase):
     self.assertItemsEqual([123, 456], hotlist_dict.keys())
     self.assertEqual('hotlist1', hotlist_dict[123].name)
     self.assertEqual('hotlist2', hotlist_dict[456].name)
+
+  def testGetHotlistsByID(self):
+    hotlist1 = fake.Hotlist(hotlist_name='hotlist1', hotlist_id=123)
+    self.features_service.hotlist_2lc.CacheItem(123, hotlist1)
+    # NOTE: The setup function must take a hotlist_id that is different
+    # from what was used in previous tests, otherwise the methods in the
+    # setup function will never get called.
+    self.SetUpGetHotlists(456)
+    self.mox.ReplayAll()
+    _, actual_missed = self.features_service.GetHotlistsByID(
+        self.cnxn, [123, 456])
+    self.mox.VerifyAll()
+    self.assertEqual(actual_missed, [])
 
   def SetUpUpdateHotlistRoles(
       self, hotlist_id, owner_ids, editor_ids, follower_ids):
@@ -528,7 +541,7 @@ class FeaturesServiceTest(unittest.TestCase):
     self.cnxn.Commit()
 
   def testUpdateHotlistRoles(self):
-    self.SetUpGetHotlists()
+    self.SetUpGetHotlists(456)
     self.SetUpUpdateHotlistRoles(456, [111L, 222L], [333L], [])
     self.mox.ReplayAll()
     self.features_service.UpdateHotlistRoles(
