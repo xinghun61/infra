@@ -1,0 +1,27 @@
+[include "../framework/master-header.ezt" "showusertabs" "t1"]
+
+<div id="colcontrol">
+<h2>Reset bouncing email</h2>
+
+[if-any last_bounce_str]
+  <p>
+    <b>Email to this user bounced:</b>
+    [last_bounce_str]
+  </p>
+[end]
+
+
+<p>If you believe that email sent to this user will no longer bounce,
+   press the button below to clear the email bouncing status.</p>
+
+<form action="clearBouncing.do" method="POST">
+  <input type="hidden" name="token" value="[form_token]">
+  <input id="submit_btn" type="submit" name="btn"
+         value="Clear bouncing status">
+</form>
+
+</div>
+
+
+[include "../framework/footer-script.ezt"]
+[include "../framework/master-footer.ezt"]

@@ -63,6 +63,7 @@ from sitewide import projectcreate
 from sitewide import userprofile
 from sitewide import userprojects
 from sitewide import usersettings
+from sitewide import userclearbouncing
 from sitewide import userupdates
 
 from tracker import componentcreate
@@ -314,6 +315,7 @@ class ServletRegistry(object):
 
     self._SetupUserServlets({
         urls.USER_PROFILE: userprofile.UserProfile,
+        urls.USER_CLEAR_BOUNCING: userclearbouncing.UserClearBouncing,
         urls.USER_UPDATES_PROJECTS: userupdates.UserUpdatesProjects,
         urls.USER_UPDATES_DEVELOPERS: userupdates.UserUpdatesDevelopers,
         urls.USER_UPDATES_MINE: userupdates.UserUpdatesIndividual,

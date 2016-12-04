@@ -33,6 +33,7 @@ CUES_JSON = '/hosting/cues'
 # URLs of user pages, relative to either /u/userid or /u/username
 # TODO(jrobbins): Add /u/userid as the canonical URL in metadata.
 USER_PROFILE = '/'
+USER_CLEAR_BOUNCING = '/clearBouncing'
 
 # URLs for User Updates pages
 USER_UPDATES_PROJECTS = '/updates/projects'

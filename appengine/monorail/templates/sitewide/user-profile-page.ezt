@@ -36,6 +36,12 @@
   <p>
     <b>Email to this user bounced:</b>
     [last_bounce_str]
+    [define offer_clear_bouncing]No[end]
+    [if-any viewing_self][define offer_clear_bouncing]Yes[end][end]
+    [if-any perms._EditOtherUsers][define offer_clear_bouncing]Yes[end][end]
+    [is offer_clear_bouncing "Yes"]
+      <a href="[viewed_user.profile_url]clearBouncing" style="margin-left:2em">Clear</a>
+    [end]
   </p>
 [end]
 
