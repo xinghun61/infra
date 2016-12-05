@@ -1613,7 +1613,7 @@ class FeaturesService(object):
     if default_col_spec is not None:
       hotlist.default_col_spec = default_col_spec
 
-  def UpdateHotlistIssues(
+  def UpdateHotlistIssuesRankings(
       self, cnxn, hotlist_id, relations_to_change, commit=True):
     hotlist = self.hotlists_by_id.get(hotlist_id)
     if not hotlist:

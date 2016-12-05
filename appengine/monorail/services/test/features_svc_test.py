@@ -6,7 +6,6 @@
 """Unit tests for features_svc module."""
 
 import unittest
-
 import mox
 
 from google.appengine.api import memcache
@@ -470,7 +469,7 @@ class FeaturesServiceTest(unittest.TestCase):
         self.cnxn, 456, summary='A better one-line summary')
     self.mox.VerifyAll()
 
-  def SetUpUpdateHotlistIssues(self, hotlist_id, relations_to_change):
+  def SetUpUpdateHotlistIssuesRankings(self, hotlist_id, relations_to_change):
     self.features_service.hotlist2issue_tbl.Delete(
         self.cnxn, hotlist_id=hotlist_id,
         issue_id=relations_to_change.keys(), commit=False)
@@ -481,12 +480,12 @@ class FeaturesServiceTest(unittest.TestCase):
         self.cnxn, cols=features_svc.HOTLIST2ISSUE_COLS,
         row_values=insert_rows, commit=True)
 
-  def testUpdateHotlistIssues(self):
+  def testUpdateHotlistIssuesRankings(self):
     self.SetUpGetHotlists(456)
     relations_to_change = {11: 112, 33: 332, 55: 552}
-    self.SetUpUpdateHotlistIssues(456, relations_to_change)
+    self.SetUpUpdateHotlistIssuesRankings(456, relations_to_change)
     self.mox.ReplayAll()
-    self.features_service.UpdateHotlistIssues(
+    self.features_service.UpdateHotlistIssuesRankings(
         self.cnxn, 456, relations_to_change)
     self.mox.VerifyAll()
 
@@ -546,4 +545,23 @@ class FeaturesServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.features_service.UpdateHotlistRoles(
         self.cnxn, 456, [111L, 222L], [333L], [])
+    self.mox.VerifyAll()
+
+  def SetUpUpdateHotlistIssues(self, cnxn, hotlist_id, remove, added_pairs):
+    self.features_service.hotlist2issue_tbl.Delete(
+        cnxn, hotlist_id=hotlist_id, issue_id=remove, commit=False)
+    insert_rows = [(hotlist_id, issue_id,
+        rank) for (issue_id, rank) in added_pairs]
+    self.features_service.hotlist2issue_tbl.InsertRows(
+        cnxn, cols=features_svc.HOTLIST2ISSUE_COLS,
+        row_values=insert_rows, commit=False)
+
+  def testUpdateHotlistIssues(self):
+    self.SetUpGetHotlists(456)
+    self.SetUpUpdateHotlistIssues(
+        self. cnxn, 456, [555L], [(111L, 100), (222L, 200), (333L, 300)])
+    self.mox.ReplayAll()
+    self.features_service.UpdateHotlistIssues(
+        self.cnxn, 456, [555L],
+        [(111L, 100), (222L, 200), (333L, 300)], commit=False)
     self.mox.VerifyAll()

@@ -19,78 +19,81 @@
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function(){
-  var tableData = [[]
-  [for table_data]
-    {
-    "group":
-    [if-any table_data.group][if-any table_data.group.cells]
+  [if-any table_data]
+    var tableData = [[]
+    [for table_data]
       {
-      "rowsInGroup": "[table_data.group.rows_in_group]",
-      "cells": [[]
-      [for table_data.group.cells]
+      "group":
+      [if-any table_data.group][if-any table_data.group.cells]
         {
-        "groupName": "[table_data.group.cells.group_name]",
-        "values": [[]
-        [for table_data.group.cells.values]
+        "rowsInGroup": "[table_data.group.rows_in_group]",
+        "cells": [[]
+        [for table_data.group.cells]
           {
-          "item": [if-any table_data.group.cells.values.item]"[format "js"][table_data.group.cells.values.item][end]"[else]"None"[end],
-          }[if-index table_data.group.cells.values last][else],[end]
+          "groupName": "[table_data.group.cells.group_name]",
+          "values": [[]
+          [for table_data.group.cells.values]
+            {
+            "item": [if-any table_data.group.cells.values.item]"[format "js"][table_data.group.cells.values.item][end]"[else]"None"[end],
+            }[if-index table_data.group.cells.values last][else],[end]
+          [end]
+          ],
+          }[if-index table_data.group.cells last][else],[end]
         [end]
         ],
-        }[if-index table_data.group.cells last][else],[end]
-      [end]
-      ],
-      },
-    [else]"no",[end][else]"no",[end]
-    "cells" : [[]
-    [for table_data.cells]
-      {
-      "type": "[table_data.cells.type]",
-      "values": [[]
-      [for table_data.cells.values]
+        },
+      [else]"no",[end][else]"no",[end]
+      "cells" : [[]
+      [for table_data.cells]
         {
-        "item": "[format "js"][table_data.cells.values.item][end]",
-        "isDerived": "[table_data.cells.values.is_derived]",
-        }[if-index table_data.cells.values last][else],[end]
+        "type": "[table_data.cells.type]",
+        "values": [[]
+        [for table_data.cells.values]
+          {
+          "item": "[format "js"][table_data.cells.values.item][end]",
+          "isDerived": "[table_data.cells.values.is_derived]",
+          }[if-index table_data.cells.values last][else],[end]
+        [end]
+        ],
+        "colIndex": "[table_data.cells.col_index]",
+        "align": "[table_data.cells.align]",
+        "noWrap": "[table_data.cells.NOWRAP]",
+        "nonColLabels": [[]
+        [for table_data.cells.non_column_labels]
+          {
+          "value": "[format "js"][table_data.cells.non_column_labels.value][end]",
+          "isDerived": "[table_data.cells.non_column_labels.is_derived]",
+          }[if-index table_data.cells.non_column_labels last][else],[end]
+        [end]
+        ],
+        }[if-index table_data.cells last][else],[end]
       [end]
       ],
-      "colIndex": "[table_data.cells.col_index]",
-      "align": "[table_data.cells.align]",
-      "noWrap": "[table_data.cells.NOWRAP]",
-      "nonColLabels": [[]
-      [for table_data.cells.non_column_labels]
-        {
-        "value": "[format "js"][table_data.cells.non_column_labels.value][end]",
-        "isDerived": "[table_data.cells.non_column_labels.is_derived]",
-        }[if-index table_data.cells.non_column_labels last][else],[end]
-      [end]
-      ],
-      }[if-index table_data.cells last][else],[end]
+      "issueRef": "[table_data.issue_ref]",
+      "idx": "[table_data.idx]",
+      "projectName": "[table_data.project_name]",
+      "localID": "[table_data.local_id]",
+      "issueID": "[table_data.issue_id]",
+      "isStarred": "[table_data.starred]",
+      "issueURL": "[table_data.issue_url]",
+      }[if-index table_data last][else],[end]
     [end]
-    ],
-    "issueRef": "[table_data.issue_ref]",
-    "idx": "[table_data.idx]",
-    "projectName": "[table_data.project_name]",
-    "localID": "[table_data.local_id]",
-    "issueID": "[table_data.issue_id]",
-    "isStarred": "[table_data.starred]",
-    "issueURL": "[table_data.issue_url]",
-    }[if-index table_data last][else],[end]
-  [end]
-  ];
+    ];
 
-  var pageSettings = {
-  "cursor": "[cursor]",
-  "ownerPerm": "[owner_permissions]",
-  "editorPerm": "[editor_permissions]",
-  "isCrossProject": "[is_cross_project]",
-  "readOnly": "[read_only]",
-  "allowRerank": "[allow_rerank]"
-  };
+    var pageSettings = {
+    "cursor": "[cursor]",
+    "ownerPerm": "[owner_permissions]",
+    "editorPerm": "[editor_permissions]",
+    "isCrossProject": "[is_cross_project]",
+    "readOnly": "[read_only]",
+    "allowRerank": "[allow_rerank]"
+    };
 
-  renderHotlistTable(tableData, pageSettings);
-  [if-any allow_rerank]
-  activateDragDrop(tableData, pageSettings, "[hotlist_id]");
+    renderHotlistTable(tableData, pageSettings);
+    [if-any allow_rerank]
+    activateDragDrop(tableData, pageSettings, "[hotlist_id]");
+    [end]
+  [else]
   [end]
 });
 </script>

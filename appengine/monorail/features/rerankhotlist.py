@@ -38,7 +38,7 @@ class RerankHotlistIssue(jsonfeed.JsonFeed):
       relations_to_change = dict(
           (issue_id, rank) for issue_id, rank in changed_ranks)
 
-      self.services.features.UpdateHotlistIssues(
+      self.services.features.UpdateHotlistIssuesRankings(
           mr.cnxn, mr.hotlist_id, relations_to_change)
 
       hotlist_issues = self.services.features.GetHotlist(

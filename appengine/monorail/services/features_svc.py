@@ -551,8 +551,49 @@ class FeaturesService(object):
       hotlist.default_col_spec = default_col_spec
 
   def UpdateHotlistIssues(
+      self, cnxn, hotlist_id, remove, added_pairs, commit=True):
+    """Updates a hotlist's list of hotlistissues.
+
+    Args:
+      cnxn: connection to SQL database.
+      hotlist_id: the ID of the hotlist to update
+      remove: a list of issue_ids for be removed
+      added_pairs: a list of (issue_id, pairs) for issues to be added
+    """
+    hotlist = self.GetHotlist(cnxn, hotlist_id, use_cache=False)
+    if not hotlist:
+      raise NoSuchHotlistException()
+
+    self.hotlist2issue_tbl.Delete(
+        cnxn, hotlist_id=hotlist_id, issue_id=remove, commit=False)
+    insert_rows = [
+        (hotlist_id, issue_id, rank)
+        for (issue_id, rank) in added_pairs]
+    self.hotlist2issue_tbl.InsertRows(
+        cnxn, cols=HOTLIST2ISSUE_COLS, row_values=insert_rows, commit=commit)
+    self.hotlist_2lc.InvalidateKeys(cnxn, [hotlist_id])
+
+    # removing an issue that was never in the hotlist would not cause any
+    # problems.
+    iid_rank_pairs = [
+        iid_rank_pair for iid_rank_pair in hotlist.iid_rank_pairs if
+        iid_rank_pair.issue_id not in remove]
+
+    # adding new Hotlistissues, ignoring pairs where issue_id is already in
+    # hotlist's iid_rank_pairs
+    current_issues_ids = {
+        iid_rank_pair.issue_id for iid_rank_pair in hotlist.iid_rank_pairs}
+    new_hotlist_issues = [
+        features_pb2.MakeHotlistIssue(issue_id, rank)
+        for (issue_id, rank) in added_pairs
+        if issue_id not in current_issues_ids]
+    iid_rank_pairs.extend(new_hotlist_issues)
+    hotlist.iid_rank_pairs = iid_rank_pairs
+
+  def UpdateHotlistIssuesRankings(
       self, cnxn, hotlist_id, relations_to_change, commit=True):
     """Updates rankings of hotlistissues.
+
     Args:
       cnxn: connection to SQL database.
       hotlist_id: the ID of the hotlist to update

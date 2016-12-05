@@ -36,21 +36,18 @@ function createWidgets(tableRow, readOnly, ownerEditorPerm, isCrossProject) {
   var widgets = document.createElement('td');
   widgets.setAttribute('class', 'rowwidgets nowrap');
 
-  // TODO(jojwang): put gripper on the same line as the other widgets
-  var gripper = document.createElement('div');
+  var gripper = document.createElement('a');
   gripper.setAttribute('class', 'gripper');
   gripper.innerText = '\u2059';
   widgets.appendChild(gripper);
 
   if (!readOnly) {
     if (ownerEditorPerm) {
-      if (!isCrossProject) {
         var checkbox = document.createElement('input');
         setAttributes(checkbox, {'name': 'checkRangeSelect',
                                  'id': 'cb_'+tableRow['localID'],
                                  'type': 'checkbox'});
         widgets.appendChild(checkbox);
-      }
     }
     var star = document.createElement('a');
     var starColor = tableRow['isStarred'] ? 'cornflowerblue' : 'gray';
