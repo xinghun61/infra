@@ -1228,10 +1228,6 @@ class IssueServiceTest(unittest.TestCase):
         commenter_id=111L, deleted_by=None, is_spam=is_spam,
         is_description=is_description, commentcontent_id=commentcontent_id,
         commit=True).AndReturn(comment_id)
-    # SOON(jrobbins): remove UPDATE.
-    self.services.issue.commentcontent_tbl.Update(
-        self.cnxn, {'comment_id': comment_id}, id=commentcontent_id,
-        commit=True)
 
     amendment_rows = []
     self.services.issue.issueupdate_tbl.InsertRows(

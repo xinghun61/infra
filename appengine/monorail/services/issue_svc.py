@@ -2180,11 +2180,6 @@ class IssueService(object):
         is_spam=comment.is_spam, is_description=comment.is_description,
         commentcontent_id=commentcontent_id,
         commit=commit)
-    # SOON(jrobbins): Delete this after we are sure that we will never
-    # roll back to a version that needs CommentContent.comment_id.
-    self.commentcontent_tbl.Update(
-        cnxn, {'comment_id': comment_id}, id=commentcontent_id,
-        commit=commit)
     comment.id = comment_id
 
     amendment_rows = []
