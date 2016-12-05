@@ -1,0 +1,29 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.  Use of this source
+// code is governed by a BSD-style license that can be found in the LICENSE
+// file.
+
+syntax = "proto3";
+
+package tricium;
+
+// Specification of a command.
+message Cmd {
+  // Executable binary.
+  string exec = 1;
+
+  // Arguments in order.
+  repeated string arg = 2;
+}
+
+// CIPD package.
+message CipdPackage {
+  // CIPD package name.
+  string package_name = 1;
+
+  // Path to directory, relative to the working directory, where to install
+  // package. Cannot be empty or start with a slash.
+  string path = 2;
+
+  // Package version.
+  string version = 3;
+}

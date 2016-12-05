@@ -6,259 +6,199 @@ syntax = "proto3";
 
 package tricium;
 
-// == Tricium task configuration ==
+import "infra/tricium/proto/data.proto";
+import "infra/tricium/proto/common.proto";
 
-// The global configuration lists available task definitions, of
-// which some may miss project-specific implementations.
-message ServiceConfig {
-  repeated TaskDef task_def = 1;
-}
-
-// A project-specific configuration lists tasks to be used for a project,
-// these tasks are either defined in the global configuration or in the
-// project configuration.
+// The Tricium service configuration.
 //
-// NB! A selection of a globally defined task may require that a
-// project-specific implementation be provided.
-message ProjectConfig {
-  repeated TaskDef task_def = 1;
-  repeated Task task = 2;
+// Listing supported platforms and analyzers shared between projects connected
+// to Tricium.
+message ServiceConfig {
+  // Supported platforms.
+  repeated Platform platform = 1;
+
+  // List of shared analyzers.
+  repeated Analyzer analyzer = 2;
 }
 
-message TaskDef {
-  // Possible states of a task.
-  // Enclosing the enum in a message to include 'State' in constants in
-  // generated code.
-  message State {
-    enum Value {
-      ENABLED = 0; // default
-      DISABLED = 1;
-    }
+// The Tricium project configuration.
+//
+// Specifies details needed to connect a project to Tricium, adds project
+// specific analyzers and implementations, and selects analyzer
+// implementations.
+message ProjectConfig {
+  // The project name,
+  string name = 1;
+
+  // Details of the repository connected to the project. This should be the
+  // repository hosting the files that should be analyzed for this project.
+  RepoDetails repo_details = 2;
+
+  // Access control rules for the project.
+  repeated Acl acls = 3;
+
+  // Project-specific analyzer details. This includes project-specific analyzer
+  // implementations and full project-specific analyzer specifications.
+  repeated Analyzer analyzer = 4;
+
+  // Selection of analyzer implementations to run for this project.
+  repeated Selection selection = 5;
+}
+
+// Repository details for a project.
+message RepoDetails {
+  // Supported kinds of repositories.
+  enum Kind {
+    GIT = 0;
   }
 
-  // The name of the task.
-  // This name will be used to connect this task definition to task uses (Task).
-  string name = 1; // Required.
+  // The kind of repository.
+  Kind kind = 1;
 
-  // The data dependency of this task.
-  Data.Type needs = 2; // Required.
+  // If repository kind is GIT then provide Git details.
+  GitRepoDetails git_details = 2;
+}
 
-  // Data provided by this task.
-  Data.Type provides = 3; // Required.
+// Git repository details.
+message GitRepoDetails {
+  // URL to repository.
+  string repository = 1;
 
-  // Glob filtering on file paths in a list of files to analyze.
+  // Default ref to use to get files to analyze.
+  string ref = 2;
+}
+
+// Access control rules.
+message Acl {
+  // Roles relevant to Tricium.
+  enum Role {
+   // Can read progress/results.
+   READER = 0;
+   // Can request analysis.
+   REQUESTER = 1;
+  }
+
+  // Role of a group or identity.
+  Role role = 1;
+
+  // Name of group, as defined in the auth service. Specify either group or
+  // identity, not both.
+  string group = 2;
+
+  // Identity, as defined by the auth service. Can be either an email address
+  // or an indentity string, for instance, "anonymous:anonymous" for anonymous
+  // users. Specify either group or identity, not both.
+  string identity = 3;
+}
+
+// Specification of a platform configuration.
+message Platform {
+  // The name use to refer to this platform configuration.
+  string name = 1;
+
+ // Swarming dimensions of the form “key:value”, with keys and values mapping
+ // to valid swarming keys/values.
+ repeated string dimensions = 2;
+}
+
+// Selection of analyzer implementations to run for a project.
+message Selection {
+  // Name of analyzer to run.
+  string analyzer = 1;
+
+  // Name of platform configuration to run analyzer on.
+  string platform = 2;
+
+  // Analyzer configuration to use on this platform.
+  repeated Config config = 3;
+}
+
+// Analyzer specification.
+message Analyzer {
+  // Name of analyzer. This name is used to select the analyzer and is used
+  // when reporting results for the analyzer. This name should be unique among
+  // Tricium analyzers.
+  string name = 1;
+
+  // Tricium data needed by this analyzer.
+  Data.Type needs = 2;
+
+  // Tricium data provided by this analyzer.
+  Data.Type provides = 3;
+
+  // Paths to run this analyzer on, defined as a glob.
   repeated string path_filter = 4; // Default: "*"
 
-  // The implementation of this task.
-  // If left blank, task uses must provide an implementation.
-  TaskImpl impl = 5;
+  // Email to the owner of this analyzer.
+  string owner = 6;
 
-  // The state of this task (enabled, disabled). The default is enabled.
-  State.Value state = 6; // Default: State.Value.Enabled
+   // Monorail bug component for bug filing.
+  string component = 7;
+
+  // Analyzer configuration. These configuration options enable projects to
+  // customize how an analyzer implementation analyzes their files.  It's
+  // common for analyzers to provide a list of possible checks which can be
+  // configured via a command line flag or similar. This field provides a way
+  // to expose such flags as configuration options.
+  ConfigDef config_def = 8;
+
+  // Analyzer implementations. An analyzer may run on many platforms and this
+  // may require many different implementations of the analyzer. An
+  // implementation may be shared between several platforms if possible.
+  repeated Impl impl = 9;
 }
 
-message Task {
-  // The name of the task to use.
-  // This name must corresond to a defined task to be valid.
-  string name = 1; // Required.
-  repeated Config config = 2;
-  repeated Platform platform = 3; // Default: Linux/Intel64
-
-  // Optional if the corresponding task definition has an implementation
-  // (impl field). If there is an implementation present in
-  // the definition, then this field can still be included to override it.
-  TaskImpl impl = 4;
-}
-
-message TaskImpl {
-  // Email to the owner of this task implementation.
-  string owner = 1; // Required.
-
-  // Name of the Monorail bug component for this implementation.
-  string component = 2; // Required.
-
-  // Definition of configurtions that task uses should be able to use.
-  ConfigDef config_def = 3;
-
-  // Recipe with the implementation.
-  Recipe recipe = 4; // Required.
-
-  // Platforms supported by the recipe with the implementation.
-  repeated Platform platform = 5; // Default: Linux/Intel64
-}
-
-// Tricium data types.
-//
-// Any data type that needs to be included in inter-task/worker
-// communication should be mapped to a build property.
-message Data {
-
-  // All available data types should be listed in this enum and have a
-  // corresponding message definition nested in this Data message.
-  enum Type {
-    NONE = 0;
-    REPO_DETAILS = 1;
-    CHANGE_DETAILS = 2;
-    FILES = 3;
-    CLANG_DETAILS = 4;
-    RESULTS = 5;
-  }
-
-  // For a code search integration, the whole code base of a project
-  // will be analyzed in one go, hence there is a need to capture repo
-  // information rather than change information.
-  //
-  // BUILD PROPERTY: tricium.data.repo_details
-  message RepoDetails {
-    string repository = 1;
-
-    // TODO(emso): Add more fields.
-    // Leaving this mostly empty for now, code search integration is further
-    // down the road, after code review.
-  }
-
-  // For code review integration, part of the code base included in
-  // a change is analyzed, hence there is a need to capture change
-  // information in the context of the repo being changed.
-  //
-  // In addition, there may be more than one code review exposing change
-  // information slightly differently. To preserve tool information,
-  // there is a change context oneof field allowing for one kind of change
-  // context entry per change.
-  //
-  // BUILD PROPERTY: tricium.data.change_details
-  message ChangeDetails {
-    // POSSIBLE EXTENSION: More change contexts.
-    enum ChangeContext {
-      GERRIT = 0;
-    }
-    ChangeContext context = 1;
-
-    // A Gerrit change should accompanied by this field.
-    GerritChange gerrit_change = 2;
-  }
-
-  message GerritChange {
-    // Data corresponding to that provided by a Patchset Created
-    // event in Gerrit.
-    // TODO(emso): Fill in missing fields.
-  }
-
-  // BUILD PROPERTY: tricium.data.files
-  message Files {
-    // Reference to isolated files. Should contain the files to analyze.
-    // Isolated files should be laid out with the same file system
-    // structure as in the repository, with the root of the isolate
-    // filesystem mapped to the root of the repository.
-    IsolatedRef isolated_ref = 1;
-
-    // List of isolated files together with modification information.
-    repeated File file = 2;
-  }
-
-  message File {
-    enum Modification {
-      ADD = 0;
-      EDIT = 1;
-      DELETE = 2;
-    }
-
-    // Path from the root of the project repository.
-    string path = 1;
-
-    // For files in a change, include information of the modification.
-    Modification mod = 2;
-  }
-
-  // BUILD PROPERTY: tricium.data.clang_details
-  message ClangDetails {
-    // Reference to isolated files. Should contain the clang compilation
-    // database and files needed to compile cpp files among the files to
-    // analyze.
-    IsolatedRef isolated_ref = 1;
-
-    // Path to the compilation database in the isolate. Typically,
-    // this should be in the build root.
-    string compilation_db = 2;
-
-    // List of files needed to compile cpp files among the files to analyze.
-    repeated File comp_dep_file = 3;
-  }
-
-  // The results from running a Tricium task. Results are streamed
-  // out of a task and propagated via LogDog, and are not used for
-  // inter-task communication, hence no need for a build property mapping.
-  message Results {
-    // Zero or more results found as comments, either inline comments
-    // or change comments (comments without line positions).
-    repeated Comment comment = 1;
-
-    // POSSIBLE EXTENSION: More kinds of results here, for instance,
-    // coverage.
-  }
-
-  message Comment {
-    // Similar content as that needed to provide robot comments in Gerrit,
-    // go/robot-comments-in-gerrit.
-    // TODO(emso): Fill in missing fields.
-    string msg = 1;
-  }
-}
-
-// Tricium workflow configuration.
-//
-// Workflow configurations are generated by Tricium based on a merged
-// configuration, of the global Tricium configuration and the project-specific
-// configuration, and the file paths to be analyzed.
-message Workflow {
-  repeated Worker worker = 1;
-}
-
-// Workers correspond to nodes in a Tricium workflow.
-message Worker {
-  string name = 1;
-  repeated Task next = 2;
-  repeated Config config = 3;
-  Recipe recipe = 4;
-  repeated Platform platform = 5;
-}
-
-// Tricium utilitise.
-
+// Definition of an analyzer configuration, e.g., ClangTidy is configured with
+// a ‘checks’ flag.
 message ConfigDef {
-  string name = 1; // Required.
+  // Name of configuration option.
+  string name = 1;
+
+  // Default value for the config, e.g., checks=”all”.
   string default = 2;
 }
 
-message Config {
-  string name = 1; // Required.
-  string value = 2; // Required.
+// Analyzer implementation for one or more platforms. Implementation can be
+// recipe-based or binary-based.
+message Impl {
+  // The platforms this implementation applies to.
+  repeated Platform platform = 1;
+
+  // Cipd packages needed by this implementation.
+  repeated CipdPackage cipd_package = 2;
+
+  // Recipe for recipe-based implementation. Either recipe or cmd, not both.
+  Recipe recipe = 3;
+
+  // Command for binary-based implementation. Either recipe or cmd, not both.
+  Cmd cmd = 4;
+
+  // Deadline for execution of corresponding worker (in minutes). Note that
+  // this deadline includes the launch of a swarming task for the corresponding
+  // worker, and collection of results from that worker.
+  int32 deadline = 5;
 }
 
+// Specification of how to find a recipe.
 message Recipe {
   // Repository URL of the recipe package.
-  string repository = 1; // Required.
+  string repository = 1;
 
-  // Name of the recipe to run.
-  string name = 2; // Required.
+  // Path to recipe in the repository.
+  string path = 2;
+
+  // Revision to use.
+  string revision = 3;
+
+  // A json string containing properties for the recipe.
+  string properties = 4;
 }
 
-message Platform {
-  enum OS {
-    LINUX = 0;
-    WIN = 1; // Synonyms: cygwin
-    MAC = 2; // Synonyms: darwin
-  }
-  enum Arch {
-    INTEL_32 = 0;
-    INTEL_64 = 1;
-  }
-  OS os = 1; // Required.
-  Arch arch = 2; // Required.
-}
+// Analyzer configuration used when selecting an analyzer implementation.
+message Config {
+  // The name of the configuration option.
+  string name = 1;
 
-// Isolated reference.
-message IsolatedRef {
-  string isolated_server = 1;
-  string isolated_hash = 2;
+  // Value of the configuration.
+  string value = 2;
 }

@@ -2,27 +2,6 @@
 // source: infra/tricium/proto/tricium.proto
 // DO NOT EDIT!
 
-/*
-Package tricium is a generated protocol buffer package.
-
-It is generated from these files:
-	infra/tricium/proto/tricium.proto
-
-It has these top-level messages:
-	ServiceConfig
-	ProjectConfig
-	TaskDef
-	Task
-	TaskImpl
-	Data
-	Workflow
-	Worker
-	ConfigDef
-	Config
-	Recipe
-	Platform
-	IsolatedRef
-*/
 package tricium
 
 import proto "github.com/golang/protobuf/proto"
@@ -34,708 +13,428 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
-
-type TaskDef_State_Value int32
+// Supported kinds of repositories.
+type RepoDetails_Kind int32
 
 const (
-	TaskDef_State_ENABLED  TaskDef_State_Value = 0
-	TaskDef_State_DISABLED TaskDef_State_Value = 1
+	RepoDetails_GIT RepoDetails_Kind = 0
 )
 
-var TaskDef_State_Value_name = map[int32]string{
-	0: "ENABLED",
-	1: "DISABLED",
+var RepoDetails_Kind_name = map[int32]string{
+	0: "GIT",
 }
-var TaskDef_State_Value_value = map[string]int32{
-	"ENABLED":  0,
-	"DISABLED": 1,
+var RepoDetails_Kind_value = map[string]int32{
+	"GIT": 0,
 }
 
-func (x TaskDef_State_Value) String() string {
-	return proto.EnumName(TaskDef_State_Value_name, int32(x))
+func (x RepoDetails_Kind) String() string {
+	return proto.EnumName(RepoDetails_Kind_name, int32(x))
 }
-func (TaskDef_State_Value) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{2, 0, 0} }
+func (RepoDetails_Kind) EnumDescriptor() ([]byte, []int) { return fileDescriptor2, []int{2, 0} }
 
-// All available data types should be listed in this enum and have a
-// corresponding message definition nested in this Data message.
-type Data_Type int32
+// Roles relevant to Tricium.
+type Acl_Role int32
 
 const (
-	Data_NONE           Data_Type = 0
-	Data_REPO_DETAILS   Data_Type = 1
-	Data_CHANGE_DETAILS Data_Type = 2
-	Data_FILES          Data_Type = 3
-	Data_CLANG_DETAILS  Data_Type = 4
-	Data_RESULTS        Data_Type = 5
+	// Can read progress/results.
+	Acl_READER Acl_Role = 0
+	// Can request analysis.
+	Acl_REQUESTER Acl_Role = 1
 )
 
-var Data_Type_name = map[int32]string{
-	0: "NONE",
-	1: "REPO_DETAILS",
-	2: "CHANGE_DETAILS",
-	3: "FILES",
-	4: "CLANG_DETAILS",
-	5: "RESULTS",
+var Acl_Role_name = map[int32]string{
+	0: "READER",
+	1: "REQUESTER",
 }
-var Data_Type_value = map[string]int32{
-	"NONE":           0,
-	"REPO_DETAILS":   1,
-	"CHANGE_DETAILS": 2,
-	"FILES":          3,
-	"CLANG_DETAILS":  4,
-	"RESULTS":        5,
+var Acl_Role_value = map[string]int32{
+	"READER":    0,
+	"REQUESTER": 1,
 }
 
-func (x Data_Type) String() string {
-	return proto.EnumName(Data_Type_name, int32(x))
+func (x Acl_Role) String() string {
+	return proto.EnumName(Acl_Role_name, int32(x))
 }
-func (Data_Type) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{5, 0} }
+func (Acl_Role) EnumDescriptor() ([]byte, []int) { return fileDescriptor2, []int{4, 0} }
 
-// POSSIBLE EXTENSION: More change contexts.
-type Data_ChangeDetails_ChangeContext int32
-
-const (
-	Data_ChangeDetails_GERRIT Data_ChangeDetails_ChangeContext = 0
-)
-
-var Data_ChangeDetails_ChangeContext_name = map[int32]string{
-	0: "GERRIT",
-}
-var Data_ChangeDetails_ChangeContext_value = map[string]int32{
-	"GERRIT": 0,
-}
-
-func (x Data_ChangeDetails_ChangeContext) String() string {
-	return proto.EnumName(Data_ChangeDetails_ChangeContext_name, int32(x))
-}
-func (Data_ChangeDetails_ChangeContext) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor0, []int{5, 1, 0}
-}
-
-type Data_File_Modification int32
-
-const (
-	Data_File_ADD    Data_File_Modification = 0
-	Data_File_EDIT   Data_File_Modification = 1
-	Data_File_DELETE Data_File_Modification = 2
-)
-
-var Data_File_Modification_name = map[int32]string{
-	0: "ADD",
-	1: "EDIT",
-	2: "DELETE",
-}
-var Data_File_Modification_value = map[string]int32{
-	"ADD":    0,
-	"EDIT":   1,
-	"DELETE": 2,
-}
-
-func (x Data_File_Modification) String() string {
-	return proto.EnumName(Data_File_Modification_name, int32(x))
-}
-func (Data_File_Modification) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{5, 4, 0} }
-
-type Platform_OS int32
-
-const (
-	Platform_LINUX Platform_OS = 0
-	Platform_WIN   Platform_OS = 1
-	Platform_MAC   Platform_OS = 2
-)
-
-var Platform_OS_name = map[int32]string{
-	0: "LINUX",
-	1: "WIN",
-	2: "MAC",
-}
-var Platform_OS_value = map[string]int32{
-	"LINUX": 0,
-	"WIN":   1,
-	"MAC":   2,
-}
-
-func (x Platform_OS) String() string {
-	return proto.EnumName(Platform_OS_name, int32(x))
-}
-func (Platform_OS) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{11, 0} }
-
-type Platform_Arch int32
-
-const (
-	Platform_INTEL_32 Platform_Arch = 0
-	Platform_INTEL_64 Platform_Arch = 1
-)
-
-var Platform_Arch_name = map[int32]string{
-	0: "INTEL_32",
-	1: "INTEL_64",
-}
-var Platform_Arch_value = map[string]int32{
-	"INTEL_32": 0,
-	"INTEL_64": 1,
-}
-
-func (x Platform_Arch) String() string {
-	return proto.EnumName(Platform_Arch_name, int32(x))
-}
-func (Platform_Arch) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{11, 1} }
-
-// The global configuration lists available task definitions, of
-// which some may miss project-specific implementations.
+// The Tricium service configuration.
+//
+// Listing supported platforms and analyzers shared between projects connected
+// to Tricium.
 type ServiceConfig struct {
-	TaskDef []*TaskDef `protobuf:"bytes,1,rep,name=task_def,json=taskDef" json:"task_def,omitempty"`
+	// Supported platforms.
+	Platform []*Platform `protobuf:"bytes,1,rep,name=platform" json:"platform,omitempty"`
+	// List of shared analyzers.
+	Analyzer []*Analyzer `protobuf:"bytes,2,rep,name=analyzer" json:"analyzer,omitempty"`
 }
 
 func (m *ServiceConfig) Reset()                    { *m = ServiceConfig{} }
 func (m *ServiceConfig) String() string            { return proto.CompactTextString(m) }
 func (*ServiceConfig) ProtoMessage()               {}
-func (*ServiceConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (*ServiceConfig) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
 
-func (m *ServiceConfig) GetTaskDef() []*TaskDef {
-	if m != nil {
-		return m.TaskDef
-	}
-	return nil
-}
-
-// A project-specific configuration lists tasks to be used for a project,
-// these tasks are either defined in the global configuration or in the
-// project configuration.
-//
-// NB! A selection of a globally defined task may require that a
-// project-specific implementation be provided.
-type ProjectConfig struct {
-	TaskDef []*TaskDef `protobuf:"bytes,1,rep,name=task_def,json=taskDef" json:"task_def,omitempty"`
-	Task    []*Task    `protobuf:"bytes,2,rep,name=task" json:"task,omitempty"`
-}
-
-func (m *ProjectConfig) Reset()                    { *m = ProjectConfig{} }
-func (m *ProjectConfig) String() string            { return proto.CompactTextString(m) }
-func (*ProjectConfig) ProtoMessage()               {}
-func (*ProjectConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
-
-func (m *ProjectConfig) GetTaskDef() []*TaskDef {
-	if m != nil {
-		return m.TaskDef
-	}
-	return nil
-}
-
-func (m *ProjectConfig) GetTask() []*Task {
-	if m != nil {
-		return m.Task
-	}
-	return nil
-}
-
-type TaskDef struct {
-	// The name of the task.
-	// This name will be used to connect this task definition to task uses (Task).
-	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// The data dependency of this task.
-	Needs Data_Type `protobuf:"varint,2,opt,name=needs,enum=tricium.Data_Type" json:"needs,omitempty"`
-	// Data provided by this task.
-	Provides Data_Type `protobuf:"varint,3,opt,name=provides,enum=tricium.Data_Type" json:"provides,omitempty"`
-	// Glob filtering on file paths in a list of files to analyze.
-	PathFilter []string `protobuf:"bytes,4,rep,name=path_filter,json=pathFilter" json:"path_filter,omitempty"`
-	// The implementation of this task.
-	// If left blank, task uses must provide an implementation.
-	Impl *TaskImpl `protobuf:"bytes,5,opt,name=impl" json:"impl,omitempty"`
-	// The state of this task (enabled, disabled). The default is enabled.
-	State TaskDef_State_Value `protobuf:"varint,6,opt,name=state,enum=tricium.TaskDef_State_Value" json:"state,omitempty"`
-}
-
-func (m *TaskDef) Reset()                    { *m = TaskDef{} }
-func (m *TaskDef) String() string            { return proto.CompactTextString(m) }
-func (*TaskDef) ProtoMessage()               {}
-func (*TaskDef) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
-
-func (m *TaskDef) GetImpl() *TaskImpl {
-	if m != nil {
-		return m.Impl
-	}
-	return nil
-}
-
-// Possible states of a task.
-// Enclosing the enum in a message to include 'State' in constants in
-// generated code.
-type TaskDef_State struct {
-}
-
-func (m *TaskDef_State) Reset()                    { *m = TaskDef_State{} }
-func (m *TaskDef_State) String() string            { return proto.CompactTextString(m) }
-func (*TaskDef_State) ProtoMessage()               {}
-func (*TaskDef_State) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2, 0} }
-
-type Task struct {
-	// The name of the task to use.
-	// This name must corresond to a defined task to be valid.
-	Name     string      `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Config   []*Config   `protobuf:"bytes,2,rep,name=config" json:"config,omitempty"`
-	Platform []*Platform `protobuf:"bytes,3,rep,name=platform" json:"platform,omitempty"`
-	// Optional if the corresponding task definition has an implementation
-	// (impl field). If there is an implementation present in
-	// the definition, then this field can still be included to override it.
-	Impl *TaskImpl `protobuf:"bytes,4,opt,name=impl" json:"impl,omitempty"`
-}
-
-func (m *Task) Reset()                    { *m = Task{} }
-func (m *Task) String() string            { return proto.CompactTextString(m) }
-func (*Task) ProtoMessage()               {}
-func (*Task) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
-
-func (m *Task) GetConfig() []*Config {
-	if m != nil {
-		return m.Config
-	}
-	return nil
-}
-
-func (m *Task) GetPlatform() []*Platform {
+func (m *ServiceConfig) GetPlatform() []*Platform {
 	if m != nil {
 		return m.Platform
 	}
 	return nil
 }
 
-func (m *Task) GetImpl() *TaskImpl {
+func (m *ServiceConfig) GetAnalyzer() []*Analyzer {
 	if m != nil {
-		return m.Impl
+		return m.Analyzer
 	}
 	return nil
 }
 
-type TaskImpl struct {
-	// Email to the owner of this task implementation.
-	Owner string `protobuf:"bytes,1,opt,name=owner" json:"owner,omitempty"`
-	// Name of the Monorail bug component for this implementation.
-	Component string `protobuf:"bytes,2,opt,name=component" json:"component,omitempty"`
-	// Definition of configurtions that task uses should be able to use.
-	ConfigDef *ConfigDef `protobuf:"bytes,3,opt,name=config_def,json=configDef" json:"config_def,omitempty"`
-	// Recipe with the implementation.
-	Recipe *Recipe `protobuf:"bytes,4,opt,name=recipe" json:"recipe,omitempty"`
-	// Platforms supported by the recipe with the implementation.
-	Platform []*Platform `protobuf:"bytes,5,rep,name=platform" json:"platform,omitempty"`
+// The Tricium project configuration.
+//
+// Specifies details needed to connect a project to Tricium, adds project
+// specific analyzers and implementations, and selects analyzer
+// implementations.
+type ProjectConfig struct {
+	// The project name,
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// Details of the repository connected to the project. This should be the
+	// repository hosting the files that should be analyzed for this project.
+	RepoDetails *RepoDetails `protobuf:"bytes,2,opt,name=repo_details,json=repoDetails" json:"repo_details,omitempty"`
+	// Access control rules for the project.
+	Acls []*Acl `protobuf:"bytes,3,rep,name=acls" json:"acls,omitempty"`
+	// Project-specific analyzer details. This includes project-specific analyzer
+	// implementations and full project-specific analyzer specifications.
+	Analyzer []*Analyzer `protobuf:"bytes,4,rep,name=analyzer" json:"analyzer,omitempty"`
+	// Selection of analyzer implementations to run for this project.
+	Selection []*Selection `protobuf:"bytes,5,rep,name=selection" json:"selection,omitempty"`
 }
 
-func (m *TaskImpl) Reset()                    { *m = TaskImpl{} }
-func (m *TaskImpl) String() string            { return proto.CompactTextString(m) }
-func (*TaskImpl) ProtoMessage()               {}
-func (*TaskImpl) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (m *ProjectConfig) Reset()                    { *m = ProjectConfig{} }
+func (m *ProjectConfig) String() string            { return proto.CompactTextString(m) }
+func (*ProjectConfig) ProtoMessage()               {}
+func (*ProjectConfig) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
 
-func (m *TaskImpl) GetConfigDef() *ConfigDef {
+func (m *ProjectConfig) GetRepoDetails() *RepoDetails {
+	if m != nil {
+		return m.RepoDetails
+	}
+	return nil
+}
+
+func (m *ProjectConfig) GetAcls() []*Acl {
+	if m != nil {
+		return m.Acls
+	}
+	return nil
+}
+
+func (m *ProjectConfig) GetAnalyzer() []*Analyzer {
+	if m != nil {
+		return m.Analyzer
+	}
+	return nil
+}
+
+func (m *ProjectConfig) GetSelection() []*Selection {
+	if m != nil {
+		return m.Selection
+	}
+	return nil
+}
+
+// Repository details for a project.
+type RepoDetails struct {
+	// The kind of repository.
+	Kind RepoDetails_Kind `protobuf:"varint,1,opt,name=kind,enum=tricium.RepoDetails_Kind" json:"kind,omitempty"`
+	// If repository kind is GIT then provide Git details.
+	GitDetails *GitRepoDetails `protobuf:"bytes,2,opt,name=git_details,json=gitDetails" json:"git_details,omitempty"`
+}
+
+func (m *RepoDetails) Reset()                    { *m = RepoDetails{} }
+func (m *RepoDetails) String() string            { return proto.CompactTextString(m) }
+func (*RepoDetails) ProtoMessage()               {}
+func (*RepoDetails) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{2} }
+
+func (m *RepoDetails) GetGitDetails() *GitRepoDetails {
+	if m != nil {
+		return m.GitDetails
+	}
+	return nil
+}
+
+// Git repository details.
+type GitRepoDetails struct {
+	// URL to repository.
+	Repository string `protobuf:"bytes,1,opt,name=repository" json:"repository,omitempty"`
+	// Default ref to use to get files to analyze.
+	Ref string `protobuf:"bytes,2,opt,name=ref" json:"ref,omitempty"`
+}
+
+func (m *GitRepoDetails) Reset()                    { *m = GitRepoDetails{} }
+func (m *GitRepoDetails) String() string            { return proto.CompactTextString(m) }
+func (*GitRepoDetails) ProtoMessage()               {}
+func (*GitRepoDetails) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{3} }
+
+// Access control rules.
+type Acl struct {
+	// Role of a group or identity.
+	Role Acl_Role `protobuf:"varint,1,opt,name=role,enum=tricium.Acl_Role" json:"role,omitempty"`
+	// Name of group, as defined in the auth service. Specify either group or
+	// identity, not both.
+	Group string `protobuf:"bytes,2,opt,name=group" json:"group,omitempty"`
+	// Identity, as defined by the auth service. Can be either an email address
+	// or an indentity string, for instance, "anonymous:anonymous" for anonymous
+	// users. Specify either group or identity, not both.
+	Identity string `protobuf:"bytes,3,opt,name=identity" json:"identity,omitempty"`
+}
+
+func (m *Acl) Reset()                    { *m = Acl{} }
+func (m *Acl) String() string            { return proto.CompactTextString(m) }
+func (*Acl) ProtoMessage()               {}
+func (*Acl) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{4} }
+
+// Specification of a platform configuration.
+type Platform struct {
+	// The name use to refer to this platform configuration.
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// Swarming dimensions on the form “key:value”, with keys and values mapping
+	// to valid swarming keys/values.
+	Dimensions []string `protobuf:"bytes,2,rep,name=dimensions" json:"dimensions,omitempty"`
+}
+
+func (m *Platform) Reset()                    { *m = Platform{} }
+func (m *Platform) String() string            { return proto.CompactTextString(m) }
+func (*Platform) ProtoMessage()               {}
+func (*Platform) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{5} }
+
+// Selection of analyzer implementations to run for a project.
+type Selection struct {
+	// Name of analyzer to run.
+	Analyzer string `protobuf:"bytes,1,opt,name=analyzer" json:"analyzer,omitempty"`
+	// Name of platform configuration to run analyzer on.
+	Platform string `protobuf:"bytes,2,opt,name=platform" json:"platform,omitempty"`
+	// Analyzer configuration to use on this platform.
+	Config []*Config `protobuf:"bytes,3,rep,name=config" json:"config,omitempty"`
+}
+
+func (m *Selection) Reset()                    { *m = Selection{} }
+func (m *Selection) String() string            { return proto.CompactTextString(m) }
+func (*Selection) ProtoMessage()               {}
+func (*Selection) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{6} }
+
+func (m *Selection) GetConfig() []*Config {
+	if m != nil {
+		return m.Config
+	}
+	return nil
+}
+
+// Analyzer specification.
+type Analyzer struct {
+	// Name of analyzer. This name is used to select the analyzer and is used
+	// when reporting results for the analyzer. This name should be unique among
+	// Tricium analyzers.
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// Tricium data needed by this analyzer.
+	Needs Data_Type `protobuf:"varint,2,opt,name=needs,enum=tricium.Data_Type" json:"needs,omitempty"`
+	// Tricium data provided by this analyzer.
+	Provides Data_Type `protobuf:"varint,3,opt,name=provides,enum=tricium.Data_Type" json:"provides,omitempty"`
+	// Paths to run this analyzer on, defined as a glob.
+	PathFilter []string `protobuf:"bytes,4,rep,name=path_filter,json=pathFilter" json:"path_filter,omitempty"`
+	// Email to the owner of this analyzer.
+	Owner string `protobuf:"bytes,6,opt,name=owner" json:"owner,omitempty"`
+	// Monorail bug component for bug filing.
+	Component string `protobuf:"bytes,7,opt,name=component" json:"component,omitempty"`
+	// Analyzer configuration. These configuration options enable projects to
+	// customize how an analyzer implementation analyzes their files.  It's
+	// common for analyzers to provide a list of possible checks which can be
+	// configured via a command line flag or similar. This field provides a way
+	// to expose such flags as configuration options.
+	ConfigDef *ConfigDef `protobuf:"bytes,8,opt,name=config_def,json=configDef" json:"config_def,omitempty"`
+	// Analyzer implementations. An analyzer may run on many platforms and this
+	// may require many different implementations of the analyzer. An
+	// implementation may be shared between several platforms if possible.
+	Impl []*Impl `protobuf:"bytes,9,rep,name=impl" json:"impl,omitempty"`
+}
+
+func (m *Analyzer) Reset()                    { *m = Analyzer{} }
+func (m *Analyzer) String() string            { return proto.CompactTextString(m) }
+func (*Analyzer) ProtoMessage()               {}
+func (*Analyzer) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{7} }
+
+func (m *Analyzer) GetConfigDef() *ConfigDef {
 	if m != nil {
 		return m.ConfigDef
 	}
 	return nil
 }
 
-func (m *TaskImpl) GetRecipe() *Recipe {
+func (m *Analyzer) GetImpl() []*Impl {
 	if m != nil {
-		return m.Recipe
+		return m.Impl
 	}
 	return nil
 }
 
-func (m *TaskImpl) GetPlatform() []*Platform {
-	if m != nil {
-		return m.Platform
-	}
-	return nil
-}
-
-// Tricium data types.
-//
-// Any data type that needs to be included in inter-task/worker
-// communication should be mapped to a build property.
-type Data struct {
-}
-
-func (m *Data) Reset()                    { *m = Data{} }
-func (m *Data) String() string            { return proto.CompactTextString(m) }
-func (*Data) ProtoMessage()               {}
-func (*Data) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
-
-// For a code search integration, the whole code base of a project
-// will be analyzed in one go, hence there is a need to capture repo
-// information rather than change information.
-//
-// BUILD PROPERTY: tricium.data.repo_details
-type Data_RepoDetails struct {
-	Repository string `protobuf:"bytes,1,opt,name=repository" json:"repository,omitempty"`
-}
-
-func (m *Data_RepoDetails) Reset()                    { *m = Data_RepoDetails{} }
-func (m *Data_RepoDetails) String() string            { return proto.CompactTextString(m) }
-func (*Data_RepoDetails) ProtoMessage()               {}
-func (*Data_RepoDetails) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5, 0} }
-
-// For code review integration, part of the code base included in
-// a change is analyzed, hence there is a need to capture change
-// information in the context of the repo being changed.
-//
-// In addition, there may be more than one code review exposing change
-// information slightly differently. To preserve tool information,
-// there is a change context oneof field allowing for one kind of change
-// context entry per change.
-//
-// BUILD PROPERTY: tricium.data.change_details
-type Data_ChangeDetails struct {
-	Context Data_ChangeDetails_ChangeContext `protobuf:"varint,1,opt,name=context,enum=tricium.Data_ChangeDetails_ChangeContext" json:"context,omitempty"`
-	// A Gerrit change should accompanied by this field.
-	GerritChange *Data_GerritChange `protobuf:"bytes,2,opt,name=gerrit_change,json=gerritChange" json:"gerrit_change,omitempty"`
-}
-
-func (m *Data_ChangeDetails) Reset()                    { *m = Data_ChangeDetails{} }
-func (m *Data_ChangeDetails) String() string            { return proto.CompactTextString(m) }
-func (*Data_ChangeDetails) ProtoMessage()               {}
-func (*Data_ChangeDetails) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5, 1} }
-
-func (m *Data_ChangeDetails) GetGerritChange() *Data_GerritChange {
-	if m != nil {
-		return m.GerritChange
-	}
-	return nil
-}
-
-type Data_GerritChange struct {
-}
-
-func (m *Data_GerritChange) Reset()                    { *m = Data_GerritChange{} }
-func (m *Data_GerritChange) String() string            { return proto.CompactTextString(m) }
-func (*Data_GerritChange) ProtoMessage()               {}
-func (*Data_GerritChange) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5, 2} }
-
-// BUILD PROPERTY: tricium.data.files
-type Data_Files struct {
-	// Reference to isolated files. Should contain the files to analyze.
-	// Isolated files should be laid out with the same file system
-	// structure as in the repository, with the root of the isolate
-	// filesystem mapped to the root of the repository.
-	IsolatedRef *IsolatedRef `protobuf:"bytes,1,opt,name=isolated_ref,json=isolatedRef" json:"isolated_ref,omitempty"`
-	// List of isolated files together with modification information.
-	File []*Data_File `protobuf:"bytes,2,rep,name=file" json:"file,omitempty"`
-}
-
-func (m *Data_Files) Reset()                    { *m = Data_Files{} }
-func (m *Data_Files) String() string            { return proto.CompactTextString(m) }
-func (*Data_Files) ProtoMessage()               {}
-func (*Data_Files) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5, 3} }
-
-func (m *Data_Files) GetIsolatedRef() *IsolatedRef {
-	if m != nil {
-		return m.IsolatedRef
-	}
-	return nil
-}
-
-func (m *Data_Files) GetFile() []*Data_File {
-	if m != nil {
-		return m.File
-	}
-	return nil
-}
-
-type Data_File struct {
-	// Path from the root of the project repository.
-	Path string `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
-	// For files in a change, include information of the modification.
-	Mod Data_File_Modification `protobuf:"varint,2,opt,name=mod,enum=tricium.Data_File_Modification" json:"mod,omitempty"`
-}
-
-func (m *Data_File) Reset()                    { *m = Data_File{} }
-func (m *Data_File) String() string            { return proto.CompactTextString(m) }
-func (*Data_File) ProtoMessage()               {}
-func (*Data_File) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5, 4} }
-
-// BUILD PROPERTY: tricium.data.clang_details
-type Data_ClangDetails struct {
-	// Reference to isolated files. Should contain the clang compilation
-	// database and files needed to compile cpp files among the files to
-	// analyze.
-	IsolatedRef *IsolatedRef `protobuf:"bytes,1,opt,name=isolated_ref,json=isolatedRef" json:"isolated_ref,omitempty"`
-	// Path to the compilation database in the isolate. Typically,
-	// this should be in the build root.
-	CompilationDb string `protobuf:"bytes,2,opt,name=compilation_db,json=compilationDb" json:"compilation_db,omitempty"`
-	// List of files needed to compile cpp files among the files to analyze.
-	CompDepFile []*Data_File `protobuf:"bytes,3,rep,name=comp_dep_file,json=compDepFile" json:"comp_dep_file,omitempty"`
-}
-
-func (m *Data_ClangDetails) Reset()                    { *m = Data_ClangDetails{} }
-func (m *Data_ClangDetails) String() string            { return proto.CompactTextString(m) }
-func (*Data_ClangDetails) ProtoMessage()               {}
-func (*Data_ClangDetails) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5, 5} }
-
-func (m *Data_ClangDetails) GetIsolatedRef() *IsolatedRef {
-	if m != nil {
-		return m.IsolatedRef
-	}
-	return nil
-}
-
-func (m *Data_ClangDetails) GetCompDepFile() []*Data_File {
-	if m != nil {
-		return m.CompDepFile
-	}
-	return nil
-}
-
-// The results from running a Tricium task. Results are streamed
-// out of a task and propagated via LogDog, and are not used for
-// inter-task communication, hence no need for a build property mapping.
-type Data_Results struct {
-	// Zero or more results found as comments, either inline comments
-	// or change comments (comments without line positions).
-	Comment []*Data_Comment `protobuf:"bytes,1,rep,name=comment" json:"comment,omitempty"`
-}
-
-func (m *Data_Results) Reset()                    { *m = Data_Results{} }
-func (m *Data_Results) String() string            { return proto.CompactTextString(m) }
-func (*Data_Results) ProtoMessage()               {}
-func (*Data_Results) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5, 6} }
-
-func (m *Data_Results) GetComment() []*Data_Comment {
-	if m != nil {
-		return m.Comment
-	}
-	return nil
-}
-
-type Data_Comment struct {
-	// Similar content as that needed to provide robot comments in Gerrit,
-	// go/robot-comments-in-gerrit.
-	// TODO(emso): Fill in missing fields.
-	Msg string `protobuf:"bytes,1,opt,name=msg" json:"msg,omitempty"`
-}
-
-func (m *Data_Comment) Reset()                    { *m = Data_Comment{} }
-func (m *Data_Comment) String() string            { return proto.CompactTextString(m) }
-func (*Data_Comment) ProtoMessage()               {}
-func (*Data_Comment) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5, 7} }
-
-// Tricium workflow configuration.
-//
-// Workflow configurations are generated by Tricium based on a merged
-// configuration, of the global Tricium configuration and the project-specific
-// configuration, and the file paths to be analyzed.
-type Workflow struct {
-	Worker []*Worker `protobuf:"bytes,1,rep,name=worker" json:"worker,omitempty"`
-}
-
-func (m *Workflow) Reset()                    { *m = Workflow{} }
-func (m *Workflow) String() string            { return proto.CompactTextString(m) }
-func (*Workflow) ProtoMessage()               {}
-func (*Workflow) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
-
-func (m *Workflow) GetWorker() []*Worker {
-	if m != nil {
-		return m.Worker
-	}
-	return nil
-}
-
-// Workers correspond to nodes in a Tricium workflow.
-type Worker struct {
-	Name     string      `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Next     []*Task     `protobuf:"bytes,2,rep,name=next" json:"next,omitempty"`
-	Config   []*Config   `protobuf:"bytes,3,rep,name=config" json:"config,omitempty"`
-	Recipe   *Recipe     `protobuf:"bytes,4,opt,name=recipe" json:"recipe,omitempty"`
-	Platform []*Platform `protobuf:"bytes,5,rep,name=platform" json:"platform,omitempty"`
-}
-
-func (m *Worker) Reset()                    { *m = Worker{} }
-func (m *Worker) String() string            { return proto.CompactTextString(m) }
-func (*Worker) ProtoMessage()               {}
-func (*Worker) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
-
-func (m *Worker) GetNext() []*Task {
-	if m != nil {
-		return m.Next
-	}
-	return nil
-}
-
-func (m *Worker) GetConfig() []*Config {
-	if m != nil {
-		return m.Config
-	}
-	return nil
-}
-
-func (m *Worker) GetRecipe() *Recipe {
-	if m != nil {
-		return m.Recipe
-	}
-	return nil
-}
-
-func (m *Worker) GetPlatform() []*Platform {
-	if m != nil {
-		return m.Platform
-	}
-	return nil
-}
-
+// Definition of an analyzer configuration, e.g., ClangTidy is configured with
+// a ‘checks’ flag.
 type ConfigDef struct {
-	Name    string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// Name of configuration option.
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// Default value for the config, e.g., checks=”all”.
 	Default string `protobuf:"bytes,2,opt,name=default" json:"default,omitempty"`
 }
 
 func (m *ConfigDef) Reset()                    { *m = ConfigDef{} }
 func (m *ConfigDef) String() string            { return proto.CompactTextString(m) }
 func (*ConfigDef) ProtoMessage()               {}
-func (*ConfigDef) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
+func (*ConfigDef) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{8} }
 
+// Analyzer implementation for one or more platforms. Implementation can be
+// recipe-based or binary-based.
+type Impl struct {
+	// The platforms this implementation applies to.
+	Platform []*Platform `protobuf:"bytes,1,rep,name=platform" json:"platform,omitempty"`
+	// Cipd packages needed by this implementation.
+	CipdPackage []*CipdPackage `protobuf:"bytes,2,rep,name=cipd_package,json=cipdPackage" json:"cipd_package,omitempty"`
+	// Recipe for recipe-based implementation. Either recipe or cmd, not both.
+	Recipe *Recipe `protobuf:"bytes,3,opt,name=recipe" json:"recipe,omitempty"`
+	// Command for binary-based implementation. Either recipe or cmd, not both.
+	Cmd *Cmd `protobuf:"bytes,4,opt,name=cmd" json:"cmd,omitempty"`
+	// Deadline for execution of corresponding worker (in minutes). Note that
+	// this deadline includes the launch of a swarming task for the corresponding
+	// worker, and collection of results from that worker.
+	Deadline int32 `protobuf:"varint,5,opt,name=deadline" json:"deadline,omitempty"`
+}
+
+func (m *Impl) Reset()                    { *m = Impl{} }
+func (m *Impl) String() string            { return proto.CompactTextString(m) }
+func (*Impl) ProtoMessage()               {}
+func (*Impl) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{9} }
+
+func (m *Impl) GetPlatform() []*Platform {
+	if m != nil {
+		return m.Platform
+	}
+	return nil
+}
+
+func (m *Impl) GetCipdPackage() []*CipdPackage {
+	if m != nil {
+		return m.CipdPackage
+	}
+	return nil
+}
+
+func (m *Impl) GetRecipe() *Recipe {
+	if m != nil {
+		return m.Recipe
+	}
+	return nil
+}
+
+func (m *Impl) GetCmd() *Cmd {
+	if m != nil {
+		return m.Cmd
+	}
+	return nil
+}
+
+// Specification of how to find a recipe.
+type Recipe struct {
+	// Repository URL of the recipe package.
+	Repository string `protobuf:"bytes,1,opt,name=repository" json:"repository,omitempty"`
+	// Path to recipe in the repository.
+	Path string `protobuf:"bytes,2,opt,name=path" json:"path,omitempty"`
+	// Revision to use.
+	Revision string `protobuf:"bytes,3,opt,name=revision" json:"revision,omitempty"`
+	// Colon-separated build properties to set for the recipe.
+	Properties string `protobuf:"bytes,4,opt,name=properties" json:"properties,omitempty"`
+}
+
+func (m *Recipe) Reset()                    { *m = Recipe{} }
+func (m *Recipe) String() string            { return proto.CompactTextString(m) }
+func (*Recipe) ProtoMessage()               {}
+func (*Recipe) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{10} }
+
+// Analyzer configuration used when selecting an analyzer implementation.
 type Config struct {
-	Name  string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// The name of the configuration option.
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// Value of the configuration.
 	Value string `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
 }
 
 func (m *Config) Reset()                    { *m = Config{} }
 func (m *Config) String() string            { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()               {}
-func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
-
-type Recipe struct {
-	// Repository URL of the recipe package.
-	Repository string `protobuf:"bytes,1,opt,name=repository" json:"repository,omitempty"`
-	// Name of the recipe to run.
-	Name string `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
-}
-
-func (m *Recipe) Reset()                    { *m = Recipe{} }
-func (m *Recipe) String() string            { return proto.CompactTextString(m) }
-func (*Recipe) ProtoMessage()               {}
-func (*Recipe) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
-
-type Platform struct {
-	Os   Platform_OS   `protobuf:"varint,1,opt,name=os,enum=tricium.Platform_OS" json:"os,omitempty"`
-	Arch Platform_Arch `protobuf:"varint,2,opt,name=arch,enum=tricium.Platform_Arch" json:"arch,omitempty"`
-}
-
-func (m *Platform) Reset()                    { *m = Platform{} }
-func (m *Platform) String() string            { return proto.CompactTextString(m) }
-func (*Platform) ProtoMessage()               {}
-func (*Platform) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
-
-// Isolated reference.
-type IsolatedRef struct {
-	IsolatedServer string `protobuf:"bytes,1,opt,name=isolated_server,json=isolatedServer" json:"isolated_server,omitempty"`
-	IsolatedHash   string `protobuf:"bytes,2,opt,name=isolated_hash,json=isolatedHash" json:"isolated_hash,omitempty"`
-}
-
-func (m *IsolatedRef) Reset()                    { *m = IsolatedRef{} }
-func (m *IsolatedRef) String() string            { return proto.CompactTextString(m) }
-func (*IsolatedRef) ProtoMessage()               {}
-func (*IsolatedRef) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
+func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{11} }
 
 func init() {
 	proto.RegisterType((*ServiceConfig)(nil), "tricium.ServiceConfig")
 	proto.RegisterType((*ProjectConfig)(nil), "tricium.ProjectConfig")
-	proto.RegisterType((*TaskDef)(nil), "tricium.TaskDef")
-	proto.RegisterType((*TaskDef_State)(nil), "tricium.TaskDef.State")
-	proto.RegisterType((*Task)(nil), "tricium.Task")
-	proto.RegisterType((*TaskImpl)(nil), "tricium.TaskImpl")
-	proto.RegisterType((*Data)(nil), "tricium.Data")
-	proto.RegisterType((*Data_RepoDetails)(nil), "tricium.Data.RepoDetails")
-	proto.RegisterType((*Data_ChangeDetails)(nil), "tricium.Data.ChangeDetails")
-	proto.RegisterType((*Data_GerritChange)(nil), "tricium.Data.GerritChange")
-	proto.RegisterType((*Data_Files)(nil), "tricium.Data.Files")
-	proto.RegisterType((*Data_File)(nil), "tricium.Data.File")
-	proto.RegisterType((*Data_ClangDetails)(nil), "tricium.Data.ClangDetails")
-	proto.RegisterType((*Data_Results)(nil), "tricium.Data.Results")
-	proto.RegisterType((*Data_Comment)(nil), "tricium.Data.Comment")
-	proto.RegisterType((*Workflow)(nil), "tricium.Workflow")
-	proto.RegisterType((*Worker)(nil), "tricium.Worker")
-	proto.RegisterType((*ConfigDef)(nil), "tricium.ConfigDef")
-	proto.RegisterType((*Config)(nil), "tricium.Config")
-	proto.RegisterType((*Recipe)(nil), "tricium.Recipe")
+	proto.RegisterType((*RepoDetails)(nil), "tricium.RepoDetails")
+	proto.RegisterType((*GitRepoDetails)(nil), "tricium.GitRepoDetails")
+	proto.RegisterType((*Acl)(nil), "tricium.Acl")
 	proto.RegisterType((*Platform)(nil), "tricium.Platform")
-	proto.RegisterType((*IsolatedRef)(nil), "tricium.IsolatedRef")
-	proto.RegisterEnum("tricium.TaskDef_State_Value", TaskDef_State_Value_name, TaskDef_State_Value_value)
-	proto.RegisterEnum("tricium.Data_Type", Data_Type_name, Data_Type_value)
-	proto.RegisterEnum("tricium.Data_ChangeDetails_ChangeContext", Data_ChangeDetails_ChangeContext_name, Data_ChangeDetails_ChangeContext_value)
-	proto.RegisterEnum("tricium.Data_File_Modification", Data_File_Modification_name, Data_File_Modification_value)
-	proto.RegisterEnum("tricium.Platform_OS", Platform_OS_name, Platform_OS_value)
-	proto.RegisterEnum("tricium.Platform_Arch", Platform_Arch_name, Platform_Arch_value)
+	proto.RegisterType((*Selection)(nil), "tricium.Selection")
+	proto.RegisterType((*Analyzer)(nil), "tricium.Analyzer")
+	proto.RegisterType((*ConfigDef)(nil), "tricium.ConfigDef")
+	proto.RegisterType((*Impl)(nil), "tricium.Impl")
+	proto.RegisterType((*Recipe)(nil), "tricium.Recipe")
+	proto.RegisterType((*Config)(nil), "tricium.Config")
+	proto.RegisterEnum("tricium.RepoDetails_Kind", RepoDetails_Kind_name, RepoDetails_Kind_value)
+	proto.RegisterEnum("tricium.Acl_Role", Acl_Role_name, Acl_Role_value)
 }
 
-func init() { proto.RegisterFile("infra/tricium/proto/tricium.proto", fileDescriptor0) }
+func init() { proto.RegisterFile("infra/tricium/proto/tricium.proto", fileDescriptor2) }
 
-var fileDescriptor0 = []byte{
-	// 1058 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xb4, 0x56, 0x6d, 0x6f, 0xdb, 0x54,
-	0x14, 0x9e, 0x13, 0xe7, 0xed, 0xe4, 0x65, 0xd9, 0x55, 0x41, 0x91, 0x37, 0x31, 0x6a, 0x18, 0x14,
-	0xa6, 0xa6, 0x22, 0x45, 0x43, 0x20, 0x24, 0x14, 0x62, 0xd3, 0x45, 0xca, 0xd2, 0xea, 0x3a, 0xa3,
-	0x48, 0x7c, 0x88, 0x5c, 0xe7, 0xa6, 0x31, 0x4b, 0x6c, 0xcb, 0xbe, 0x6d, 0x99, 0xc4, 0x1f, 0xe1,
-	0x1b, 0x12, 0x12, 0x3f, 0x80, 0x5f, 0xc0, 0x37, 0xc4, 0xbf, 0xe2, 0xdc, 0xeb, 0x6b, 0x37, 0x69,
-	0xb3, 0x4d, 0x9a, 0xb4, 0x6f, 0xf7, 0xbc, 0xfa, 0x3e, 0xe7, 0x3e, 0xe7, 0x1c, 0xc3, 0xae, 0x1f,
-	0xcc, 0x63, 0xf7, 0x80, 0xc7, 0xbe, 0xe7, 0x5f, 0xac, 0x0e, 0xa2, 0x38, 0xe4, 0x61, 0x26, 0x75,
-	0xa5, 0x44, 0x2a, 0x4a, 0x34, 0xbf, 0x85, 0xa6, 0xc3, 0xe2, 0x4b, 0xdf, 0x63, 0x83, 0x30, 0x98,
-	0xfb, 0xe7, 0xe4, 0x31, 0x54, 0xb9, 0x9b, 0xbc, 0x98, 0xce, 0xd8, 0xbc, 0xa3, 0x7d, 0x58, 0xdc,
-	0xab, 0xf7, 0xda, 0xdd, 0x2c, 0x76, 0x82, 0x06, 0x8b, 0xcd, 0x69, 0x85, 0xa7, 0x07, 0x73, 0x0a,
-	0xcd, 0x93, 0x38, 0xfc, 0x85, 0x79, 0xfc, 0x2d, 0xa2, 0xc9, 0x2e, 0xe8, 0xe2, 0xd8, 0x29, 0x48,
-	0xc7, 0xe6, 0x86, 0x23, 0x95, 0x26, 0xf3, 0x8f, 0x02, 0x54, 0x54, 0x1c, 0x21, 0xa0, 0x07, 0xee,
-	0x8a, 0x61, 0x5e, 0x6d, 0xaf, 0x46, 0xe5, 0x99, 0xec, 0x41, 0x29, 0x60, 0x6c, 0x96, 0x60, 0x0e,
-	0x6d, 0xaf, 0xd5, 0x23, 0x79, 0x0e, 0xcb, 0xe5, 0x6e, 0x77, 0xf2, 0x32, 0x62, 0x34, 0x75, 0x20,
-	0x5d, 0xa8, 0x22, 0xf4, 0x4b, 0x7f, 0xc6, 0x92, 0x4e, 0xf1, 0x95, 0xce, 0xb9, 0x0f, 0x79, 0x08,
-	0xf5, 0xc8, 0xe5, 0x8b, 0xe9, 0xdc, 0x5f, 0x72, 0x16, 0x77, 0x74, 0xbc, 0x63, 0x8d, 0x82, 0x50,
-	0xfd, 0x20, 0x35, 0xe4, 0x11, 0xe8, 0xfe, 0x2a, 0x5a, 0x76, 0x4a, 0x98, 0xac, 0xde, 0xbb, 0xb7,
-	0x71, 0xfb, 0x21, 0x1a, 0xa8, 0x34, 0x93, 0x1e, 0x94, 0x12, 0xee, 0x72, 0xd6, 0x29, 0xcb, 0x8f,
-	0x3e, 0xb8, 0x59, 0x8e, 0xae, 0x23, 0xac, 0xdd, 0x1f, 0xdd, 0xe5, 0x05, 0xde, 0x55, 0xba, 0x1a,
-	0x8f, 0xa1, 0x24, 0xb5, 0xa6, 0x09, 0x25, 0x69, 0x20, 0x75, 0xa8, 0xd8, 0xe3, 0xfe, 0xf7, 0x23,
-	0xdb, 0x6a, 0xdf, 0x21, 0x0d, 0xa8, 0x5a, 0x43, 0x27, 0x95, 0x34, 0xf3, 0x77, 0x0d, 0x74, 0x91,
-	0x6b, 0x6b, 0x7d, 0x3e, 0x85, 0xb2, 0x27, 0x5f, 0x46, 0x15, 0xf9, 0x6e, 0xfe, 0xf9, 0xf4, 0xc1,
-	0xa8, 0x32, 0x93, 0x7d, 0x2c, 0xcf, 0xd2, 0xe5, 0xf3, 0x30, 0x5e, 0x61, 0x79, 0x8a, 0x1b, 0x88,
-	0x4e, 0x94, 0x81, 0xe6, 0x2e, 0x39, 0x78, 0xfd, 0xb5, 0xe0, 0xcd, 0xff, 0x34, 0xa8, 0x66, 0x2a,
-	0xb2, 0x03, 0xa5, 0xf0, 0x2a, 0xc0, 0x5a, 0xa6, 0x17, 0x4c, 0x05, 0xf2, 0x00, 0x6a, 0x5e, 0xb8,
-	0x8a, 0xc2, 0x80, 0x05, 0x5c, 0xbe, 0x62, 0x8d, 0x5e, 0x2b, 0xc8, 0x17, 0x00, 0xe9, 0x05, 0x25,
-	0xa3, 0x8a, 0xf2, 0x6b, 0xe4, 0x06, 0x06, 0xc1, 0xa9, 0x9a, 0x97, 0x1d, 0x05, 0xe4, 0x98, 0x79,
-	0x7e, 0xc4, 0xd4, 0xe5, 0xae, 0x21, 0x53, 0xa9, 0xa6, 0xca, 0xbc, 0x01, 0xb9, 0xf4, 0x46, 0xc8,
-	0xe6, 0xbf, 0x65, 0xd0, 0x05, 0x51, 0x8c, 0x7d, 0xa8, 0x53, 0x16, 0x85, 0x16, 0xe3, 0xae, 0xbf,
-	0x4c, 0xc8, 0x07, 0x00, 0x31, 0x8a, 0x89, 0xcf, 0xc3, 0xf8, 0xa5, 0xc2, 0xb6, 0xa6, 0x31, 0xfe,
-	0xd6, 0xa0, 0x39, 0x58, 0xb8, 0xc1, 0x39, 0xcb, 0x22, 0x06, 0x50, 0xc1, 0xeb, 0x72, 0xf6, 0x2b,
-	0x97, 0xee, 0xad, 0xde, 0x67, 0x9b, 0x4c, 0xdc, 0xf0, 0x56, 0xd2, 0x20, 0x0d, 0xa0, 0x59, 0x24,
-	0xf9, 0x0e, 0x9a, 0xe7, 0x2c, 0x8e, 0x7d, 0x3e, 0xf5, 0xa4, 0x83, 0xac, 0x5d, 0xbd, 0x67, 0x6c,
-	0xa6, 0x3a, 0x92, 0x2e, 0x69, 0x0a, 0xda, 0x38, 0x5f, 0x93, 0xcc, 0xfb, 0xd9, 0xb5, 0x54, 0x6a,
-	0x02, 0x50, 0x3e, 0xb2, 0x29, 0x1d, 0x4e, 0xda, 0x77, 0x8c, 0x16, 0x34, 0xd6, 0x43, 0x8d, 0x05,
-	0x94, 0x90, 0xf6, 0xd8, 0x16, 0x5f, 0x41, 0xc3, 0x4f, 0x42, 0xac, 0x09, 0x9b, 0x4d, 0x63, 0xd9,
-	0xe4, 0xe2, 0xab, 0x3b, 0xf9, 0x57, 0x87, 0xca, 0x48, 0xf1, 0x51, 0xea, 0xfe, 0xb5, 0x40, 0x3e,
-	0x01, 0x1d, 0x5b, 0x89, 0x29, 0x1e, 0xde, 0xe8, 0x3d, 0x91, 0x9b, 0x4a, 0xbb, 0xf1, 0x1b, 0xe8,
-	0x42, 0x12, 0x6c, 0x16, 0xcd, 0x96, 0xb1, 0x59, 0x9c, 0x91, 0x0d, 0xc5, 0x55, 0x38, 0x53, 0xbd,
-	0xfe, 0xf0, 0x76, 0x8a, 0xee, 0xb3, 0x70, 0xe6, 0xcf, 0x7d, 0xcf, 0xe5, 0x7e, 0x18, 0x50, 0xe1,
-	0x6b, 0xee, 0x43, 0x63, 0x5d, 0x49, 0x2a, 0x50, 0xec, 0x5b, 0xa2, 0x89, 0xaa, 0xa0, 0xdb, 0x16,
-	0x62, 0xd5, 0x04, 0x6e, 0xcb, 0x1e, 0xd9, 0x13, 0xbb, 0x5d, 0x30, 0xfe, 0xd2, 0xa0, 0x31, 0x58,
-	0x22, 0xe4, 0xec, 0xad, 0xde, 0x1a, 0xef, 0x23, 0x68, 0x09, 0x1a, 0xfb, 0x4b, 0xf9, 0xdd, 0xe9,
-	0xec, 0x4c, 0x91, 0xbb, 0xb9, 0xa6, 0xb5, 0xce, 0xc8, 0x13, 0x90, 0x0a, 0xa4, 0x77, 0x34, 0x95,
-	0xf5, 0x29, 0xbe, 0xb2, 0x3e, 0x75, 0xe1, 0x68, 0xb1, 0x48, 0x08, 0xc6, 0x37, 0x50, 0xa1, 0x2c,
-	0xb9, 0x58, 0xf2, 0x84, 0x1c, 0x08, 0x3a, 0xad, 0x56, 0xa2, 0x7f, 0xd2, 0x91, 0xfb, 0xde, 0x0d,
-	0x3a, 0xa5, 0x46, 0x9a, 0x79, 0x19, 0xf7, 0xa1, 0xa2, 0x74, 0xa4, 0x8d, 0x15, 0x4d, 0xce, 0x55,
-	0x91, 0xc5, 0xd1, 0x74, 0x71, 0x9a, 0xe0, 0x24, 0x14, 0xf5, 0x19, 0x1f, 0x8f, 0x6d, 0xac, 0x54,
-	0x1b, 0x1a, 0xd4, 0x3e, 0x39, 0x9e, 0x5a, 0xf6, 0xa4, 0x3f, 0x1c, 0x39, 0x58, 0x31, 0x02, 0xad,
-	0xc1, 0xd3, 0xfe, 0xf8, 0xc8, 0xce, 0x75, 0x05, 0x52, 0x43, 0x86, 0x0c, 0x47, 0xb6, 0xd3, 0x2e,
-	0x92, 0x7b, 0xc8, 0xac, 0x11, 0x9a, 0x73, 0xab, 0x2e, 0xe6, 0x17, 0xb5, 0x9d, 0xe7, 0xa3, 0x89,
-	0xd3, 0x2e, 0x99, 0x87, 0x50, 0x3d, 0x0d, 0xe3, 0x17, 0xf3, 0x65, 0x78, 0x25, 0xba, 0xf5, 0x0a,
-	0xcf, 0x72, 0x2a, 0x6c, 0x0e, 0xa8, 0x53, 0xa9, 0xa6, 0xca, 0x6c, 0xfe, 0xa3, 0x41, 0x39, 0x55,
-	0x6d, 0x1d, 0x74, 0xb8, 0x4b, 0x02, 0xd1, 0x50, 0xdb, 0x77, 0x89, 0x30, 0xad, 0xcd, 0xc2, 0xe2,
-	0xeb, 0x67, 0xe1, 0xbb, 0x9a, 0x20, 0x5f, 0x43, 0x2d, 0x9f, 0x58, 0x5b, 0x41, 0x74, 0xa0, 0x82,
-	0x63, 0xce, 0xc5, 0x57, 0x55, 0x64, 0xc9, 0x44, 0xb3, 0x07, 0x65, 0xb5, 0x61, 0xb7, 0xc5, 0xe1,
-	0x64, 0xbd, 0x14, 0x6b, 0x42, 0x45, 0xa5, 0x02, 0xae, 0xf6, 0x72, 0x7a, 0xdf, 0x37, 0x8d, 0xa8,
-	0x3c, 0x67, 0xe1, 0x3a, 0xa7, 0xf9, 0x27, 0x8e, 0xee, 0x0c, 0x03, 0xf9, 0x18, 0x0a, 0x61, 0xa2,
-	0x86, 0xd5, 0xce, 0x2d, 0x88, 0xdd, 0x63, 0x87, 0xa2, 0x9d, 0x7c, 0x0e, 0xba, 0x1b, 0x7b, 0x0b,
-	0xd5, 0x9f, 0xef, 0xdf, 0xf6, 0xeb, 0xa3, 0x95, 0x4a, 0x1f, 0x73, 0x17, 0x0a, 0xc7, 0x8e, 0x20,
-	0xcd, 0x68, 0x38, 0x7e, 0xfe, 0x13, 0xb2, 0x0c, 0x1b, 0xf3, 0x74, 0x38, 0x46, 0x72, 0xe1, 0xe1,
-	0x59, 0x7f, 0xd0, 0x2e, 0xe0, 0xf2, 0xd3, 0x45, 0x80, 0x58, 0x77, 0xc3, 0xf1, 0xc4, 0x1e, 0x4d,
-	0x0f, 0x7b, 0xe9, 0xf2, 0x4b, 0xa5, 0x27, 0x5f, 0xe2, 0xf2, 0xfb, 0x19, 0xea, 0x6b, 0x1d, 0x88,
-	0x2f, 0x77, 0x37, 0xef, 0xd6, 0x04, 0x7f, 0x6b, 0xf2, 0x65, 0xd3, 0xca, 0xd4, 0x8e, 0xd4, 0x92,
-	0x8f, 0xa0, 0x99, 0x3b, 0x2e, 0xdc, 0x64, 0xa1, 0xa0, 0xe7, 0xbd, 0xfe, 0x14, 0x75, 0x67, 0x65,
-	0xf9, 0xaf, 0x74, 0xf8, 0x7f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xdf, 0x9e, 0x16, 0xcf, 0x50, 0x09,
-	0x00, 0x00,
+var fileDescriptor2 = []byte{
+	// 775 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x94, 0x55, 0x4d, 0x6f, 0xe4, 0x34,
+	0x18, 0xde, 0x74, 0x32, 0xd3, 0xc9, 0x3b, 0x6d, 0xb7, 0x6b, 0x55, 0x22, 0x54, 0xa8, 0x4c, 0x23,
+	0x21, 0xe6, 0xb2, 0xb3, 0x50, 0x0e, 0x0b, 0x17, 0xa4, 0xd2, 0x0e, 0xab, 0x15, 0x97, 0xe2, 0x96,
+	0x73, 0x15, 0xe2, 0x37, 0x83, 0x59, 0xc7, 0xb6, 0x1c, 0x77, 0x60, 0xb8, 0x71, 0xe2, 0x87, 0xf0,
+	0x93, 0xf8, 0x01, 0xfc, 0x15, 0x64, 0xc7, 0xf9, 0xd8, 0x6a, 0x54, 0xb4, 0x37, 0x3f, 0x7e, 0x1e,
+	0xbf, 0x79, 0x3f, 0x1e, 0x3b, 0x70, 0xce, 0x65, 0x69, 0xf2, 0x57, 0xd6, 0xf0, 0x82, 0x3f, 0x54,
+	0xaf, 0xb4, 0x51, 0x56, 0xb5, 0x68, 0xe9, 0x11, 0xd9, 0x0f, 0xf0, 0xf4, 0x6c, 0x97, 0x96, 0xe5,
+	0x36, 0x6f, 0x84, 0xa7, 0xf3, 0x5d, 0x7c, 0xa1, 0xaa, 0x4a, 0xc9, 0x46, 0x91, 0x55, 0x70, 0x78,
+	0x8b, 0x66, 0xc3, 0x0b, 0xbc, 0x52, 0xb2, 0xe4, 0x6b, 0xf2, 0x12, 0xa6, 0x5a, 0xe4, 0xb6, 0x54,
+	0xa6, 0x4a, 0xa3, 0xf9, 0x68, 0x31, 0xbb, 0x78, 0xb1, 0x6c, 0xbf, 0x7e, 0x13, 0x08, 0xda, 0x49,
+	0x9c, 0x3c, 0x97, 0xb9, 0xd8, 0xfe, 0x81, 0x26, 0xdd, 0x7b, 0x24, 0xbf, 0x0c, 0x04, 0xed, 0x24,
+	0xd9, 0xbf, 0x11, 0x1c, 0xde, 0x18, 0xf5, 0x2b, 0x16, 0x36, 0x7c, 0x8f, 0x40, 0x2c, 0xf3, 0x0a,
+	0xd3, 0x68, 0x1e, 0x2d, 0x12, 0xea, 0xd7, 0xe4, 0x35, 0x1c, 0x18, 0xd4, 0xea, 0x9e, 0xa1, 0xcd,
+	0xb9, 0xa8, 0xd3, 0xbd, 0x79, 0xb4, 0x98, 0x5d, 0x9c, 0x74, 0x81, 0x29, 0x6a, 0x75, 0xdd, 0x70,
+	0x74, 0x66, 0x7a, 0x40, 0xe6, 0x10, 0xe7, 0x85, 0xa8, 0xd3, 0x91, 0xcf, 0xe4, 0xa0, 0xcf, 0xa4,
+	0x10, 0xd4, 0x33, 0xef, 0xe5, 0x1b, 0xff, 0x6f, 0xbe, 0xe4, 0x0b, 0x48, 0x6a, 0x14, 0x58, 0x58,
+	0xae, 0x64, 0x3a, 0xf6, 0x7a, 0xd2, 0xe9, 0x6f, 0x5b, 0x86, 0xf6, 0xa2, 0xec, 0xaf, 0x08, 0x66,
+	0x83, 0xfc, 0xc8, 0x4b, 0x88, 0xdf, 0x71, 0xc9, 0x7c, 0x7d, 0x47, 0x17, 0x1f, 0xef, 0xaa, 0x61,
+	0xf9, 0x03, 0x97, 0x8c, 0x7a, 0x19, 0xf9, 0x1a, 0x66, 0x6b, 0x6e, 0x1f, 0x55, 0xfe, 0x51, 0x77,
+	0xea, 0x0d, 0xb7, 0xc3, 0xe2, 0x61, 0xcd, 0x6d, 0x58, 0x67, 0xcf, 0x21, 0x76, 0x71, 0xc8, 0x3e,
+	0x8c, 0xde, 0xbc, 0xbd, 0x3b, 0x7e, 0x96, 0x7d, 0x07, 0x47, 0xef, 0xcb, 0xc9, 0x19, 0x80, 0xeb,
+	0x56, 0xcd, 0xad, 0x32, 0xdb, 0xd0, 0xf1, 0xc1, 0x0e, 0x39, 0x86, 0x91, 0xc1, 0xd2, 0x7f, 0x34,
+	0xa1, 0x6e, 0x99, 0xfd, 0x19, 0xc1, 0xe8, 0xb2, 0x10, 0xe4, 0x33, 0x88, 0x8d, 0x12, 0x18, 0xaa,
+	0x78, 0x31, 0x6c, 0xec, 0x92, 0x2a, 0x81, 0xd4, 0xd3, 0xe4, 0x04, 0xc6, 0x6b, 0xa3, 0x1e, 0x74,
+	0x08, 0xd1, 0x00, 0x72, 0x0a, 0x53, 0xce, 0x50, 0x5a, 0x6e, 0xb7, 0xe9, 0xc8, 0x13, 0x1d, 0xce,
+	0xce, 0x21, 0x76, 0xe7, 0x09, 0xc0, 0x84, 0xae, 0x2e, 0xaf, 0x57, 0xf4, 0xf8, 0x19, 0x39, 0x84,
+	0x84, 0xae, 0x7e, 0xfc, 0x69, 0x75, 0x7b, 0xb7, 0xa2, 0xc7, 0x51, 0xf6, 0x2d, 0x4c, 0x5b, 0xe3,
+	0xed, 0x74, 0xcb, 0x19, 0x00, 0xe3, 0x15, 0xca, 0x9a, 0x2b, 0x59, 0x7b, 0x13, 0x26, 0x74, 0xb0,
+	0x93, 0x09, 0x48, 0xba, 0x49, 0xb9, 0x5c, 0xba, 0xf9, 0x37, 0x41, 0xfa, 0x61, 0x9f, 0x0e, 0xac,
+	0xdf, 0x14, 0xd0, 0xfb, 0xfc, 0x73, 0x98, 0x14, 0xde, 0xb0, 0xc1, 0x5b, 0xcf, 0xbb, 0x16, 0x34,
+	0x3e, 0xa6, 0x81, 0xce, 0xfe, 0xde, 0x83, 0x69, 0x6b, 0xa4, 0x9d, 0xe9, 0x2e, 0x60, 0x2c, 0x11,
+	0x59, 0x33, 0xdb, 0xa3, 0x81, 0x9d, 0xae, 0xdd, 0xbd, 0xbd, 0xdb, 0x6a, 0xa4, 0x8d, 0x80, 0x2c,
+	0x61, 0xaa, 0x8d, 0xda, 0x70, 0x86, 0xb5, 0xef, 0xdb, 0x6e, 0x71, 0xa7, 0x21, 0x9f, 0xc2, 0x4c,
+	0xe7, 0xf6, 0x97, 0xfb, 0x92, 0x0b, 0x1b, 0xec, 0x9d, 0x50, 0x70, 0x5b, 0xdf, 0xfb, 0x1d, 0x37,
+	0x1e, 0xf5, 0x9b, 0x44, 0x93, 0x4e, 0x9a, 0xf1, 0x78, 0x40, 0x3e, 0x81, 0xa4, 0x50, 0x95, 0x56,
+	0x12, 0xa5, 0x4d, 0xf7, 0x3d, 0xd3, 0x6f, 0x90, 0x2f, 0x01, 0x9a, 0xca, 0xee, 0x19, 0x96, 0xe9,
+	0xd4, 0xfb, 0x91, 0x3c, 0x2a, 0xfe, 0x1a, 0x4b, 0x77, 0x24, 0x2c, 0xc9, 0x39, 0xc4, 0xbc, 0xd2,
+	0x22, 0x4d, 0x7c, 0xa7, 0x0e, 0x3b, 0xf1, 0xdb, 0x4a, 0x0b, 0xea, 0xa9, 0xec, 0x1b, 0x48, 0xba,
+	0xa3, 0x3b, 0xbb, 0x94, 0xc2, 0x3e, 0xc3, 0x32, 0x7f, 0x10, 0x36, 0x8c, 0xa2, 0x85, 0xd9, 0x3f,
+	0x11, 0xc4, 0x2e, 0xd2, 0x87, 0xbe, 0x54, 0xaf, 0xe1, 0xa0, 0xe0, 0x9a, 0xdd, 0xeb, 0xbc, 0x78,
+	0x97, 0xaf, 0x31, 0xbc, 0x56, 0xfd, 0xa3, 0x72, 0xc5, 0x35, 0xbb, 0x69, 0x38, 0x3a, 0x2b, 0x7a,
+	0xe0, 0x46, 0x6f, 0xb0, 0xe0, 0x1a, 0xfd, 0x10, 0x86, 0xa3, 0xa7, 0x7e, 0x9b, 0x06, 0x9a, 0x9c,
+	0xc1, 0xa8, 0xa8, 0x58, 0x1a, 0x7b, 0x55, 0xff, 0xf8, 0x5c, 0x55, 0x8c, 0x3a, 0xc2, 0xf9, 0x8b,
+	0x61, 0xce, 0x04, 0x97, 0x98, 0x8e, 0xe7, 0xd1, 0x62, 0x4c, 0x3b, 0x9c, 0xfd, 0x0e, 0x13, 0xda,
+	0x46, 0x79, 0xfa, 0x92, 0x12, 0x88, 0xdd, 0x48, 0x43, 0x5b, 0xfc, 0xda, 0x45, 0x36, 0xb8, 0xe1,
+	0xce, 0xef, 0xed, 0x0d, 0x6b, 0xb1, 0x8b, 0xa7, 0x8d, 0xd2, 0x68, 0x2c, 0xc7, 0xda, 0x27, 0xe7,
+	0x4c, 0xd1, 0xed, 0x64, 0x17, 0x30, 0x79, 0xe2, 0x29, 0x3e, 0x81, 0xf1, 0x26, 0x17, 0x0f, 0xd8,
+	0xde, 0x68, 0x0f, 0x7e, 0x9e, 0xf8, 0x9f, 0xc7, 0x57, 0xff, 0x05, 0x00, 0x00, 0xff, 0xff, 0xf4,
+	0x8b, 0xfb, 0x15, 0xac, 0x06, 0x00, 0x00,
 }

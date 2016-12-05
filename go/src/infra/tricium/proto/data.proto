@@ -1,0 +1,139 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+
+package tricium;
+
+// Tricium data types.
+//
+// Any data type provided or needed by a Tricium analyzer.
+message Data {
+
+  // Available data types should be listed in this enum and have a
+  // corresponding Data message.
+  enum Type {
+    NONE = 0;
+    GIT_FILE_DETAILS = 1;
+    FILES = 2;
+    CLANG_DETAILS = 3;
+    RESULTS = 4;
+  }
+
+
+  // Details for retrieval of file content from a Git repository.
+  //
+  // ISOLATED PATH: tricium/data/git_file_details.json
+  message GitFileDetails {
+    string repository = 1;
+    string ref = 2;
+    repeated string path = 3;
+  }
+
+
+  // List of paths included in the isolated input.
+  //
+  // Files in the isolate should be laid out with the same file system
+  // structure as in the repository, with the root of the isolate input mapped
+  // to the root of the repository.
+  //
+  // ISOLATED PATH: tricium/data/files.json
+  message Files {
+    // Path to files from the root of the isolated input.
+    repeated string path = 1;
+  }
+
+
+  // Details needed to replay a clang compilation.
+  //
+  // Any included path should correspond to a file in the isolated input.
+  //
+  // ISOLATED PATH: tricium/data/clang_details.json
+  message ClangDetails {
+    // Path to the compilation database. Typically, in the build root.
+    string compilation_db = 1;
+
+    // Paths to files needed to compile cpp files to analyze.
+    repeated string comp_dep_path = 2;
+  }
+
+
+  // Results from running a Tricium analyzer.
+  //
+  // Results are returned to the Tricium service via isolated output from
+  // swarming tasks executing Tricium workers.
+  //
+  // ISOLATED PATH: tricium/data/results.json
+  message Results {
+    // Zero or more results found as comments, either inline comments or change
+    // comments (comments without line positions). 
+    repeated Comment comment = 1;
+
+    // POSSIBLE EXTENSION: More kinds of results here, for instance, coverage.
+  }
+
+
+  // Results.Comment, results as comments.
+  //
+  // Similar content as that needed to provide robot comments in Gerrit,
+  // go/robot-comments-in-gerrit.
+  message Comment {
+    // Category of the result, encoded as a path with the analyzer name as the
+    // root, annotated with the platform, followed by an arbitrary number of
+    // subcategories, e.g., ‘ClangTidy_${platform}/llvm-header-guard’.
+    string category = 1;
+
+    // Comment message.  This should be a short message suitable as a code
+    // review comment.
+    string message = 2;
+
+    // URL to more information.  Use this field to keep the message of the
+    // comment short.
+    string url = 3;
+
+    // Path to the file this comment is for.
+    string path = 4;
+
+    // Position information. This information can be left out if the comment
+    // is on file level.  If position is given, then at least the start line
+    // should be included.
+    int32 start_line = 5;
+    int32 end_line = 6;
+    int32 start_char = 7;
+    int32 end_char = 8;
+
+    // Suggested fixes for the identified issue.
+    repeated Suggestion suggestion = 9;
+  }
+
+  // Suggested fix.
+  //
+  // A fix may include replacements in any file in the same repo as the file of
+  // the corresponding comment.
+  message Suggestion {
+    // A brief description of the suggested fix.
+    string description = 1;
+
+    // The fix as a list of replacements.
+    repeated Replacement replacement = 2;
+  }
+
+  // A suggested replacement.
+  //
+  // The replacement should be for one continuous section of a file.
+  message Replacement {
+
+    // Path to file for this replacement.
+    string path = 1;
+
+    // A replacement string.
+    string replacement = 2;
+
+    // A continuous section of the file to replace.
+    int32 start_line = 3;
+    int32 end_line = 4;
+    int32 start_char = 5;
+    int32 end_char = 5;
+  }
+}

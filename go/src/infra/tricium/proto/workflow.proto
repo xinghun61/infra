@@ -1,0 +1,48 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.  Use of this source
+// code is governed by a BSD-style license that can be found in the LICENSE
+// file.
+
+syntax = "proto3";
+
+package tricium;
+
+import "infra/tricium/proto/data.proto";
+import "infra/tricium/proto/common.proto";
+
+// Tricium workflow configuration.
+//
+// Workflow configurations are typically generated from a Tricium configuration.
+message Workflow {
+  repeated Worker worker = 1;
+}
+
+// A Tricium worker includes the details needed to execute an analyzer on a
+// specific platform as swarming task.
+message Worker {
+  // Name of worker is a mangled name from the analyzer name and the platform,
+  // e.g, ‘GitFileIsolator_linux’.
+  string name = 1;
+
+  // Includes data dependencies for runtime type checking.
+  Data.Type needs = 2;
+  Data.Type provides = 3;
+
+  // Workers to run after this one.
+  repeated string next = 4;
+
+  // Swarming dimensions for execution of the worker. These should be on the
+  // form "key:value", using keys and values known to the swarming service.
+  repeated string dimensions = 5;
+
+  // List of cipd packages needed on the swarming task use to execute the
+  // worker.
+  repeated CipdPackage cipd_package = 6;
+
+  // Command use to execute the worker.
+  Cmd cmd = 7;
+
+  // Deadline for execution of the worker in minutes.  Note that this time
+  // should include the overhead of triggering the corresponding swarming task
+  // and to collect result from it.
+  int32 deadline = 8;
+}
