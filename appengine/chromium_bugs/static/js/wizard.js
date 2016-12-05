@@ -148,6 +148,7 @@ var originalDescriptionParts = [
     ("Chrome version: $CHROMEVERSION  Channel: $CHANNEL\n" +
      "OS Version: $OSVERSION\n"  +
      "Flash Version: $FLASHVERSION"),
+    "Contents of chrome://gpu: \n$CHROME_GPU",
     "$OTHER_COMMENTS"
     ];
 var descriptionParts = originalDescriptionParts.slice(0);  // Copy the whole array.
