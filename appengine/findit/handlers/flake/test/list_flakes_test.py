@@ -6,6 +6,8 @@ import datetime
 import mock
 import webapp2
 
+from google.appengine.datastore.datastore_query import Cursor
+
 from handlers.flake import list_flakes
 from handlers.flake.list_flakes import FilterMasterFlakeAnalysis
 from lib import time_util
@@ -19,6 +21,13 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
   app_module = webapp2.WSGIApplication([
       ('/waterfall/list-flakes', list_flakes.ListFlakes),
   ], debug=True)
+
+  def _MockCursor(self):
+    self.mock(list_flakes, 'PAGE_SIZE', 1)
+    master_flake_analysis_query = MasterFlakeAnalysis.query()
+    result1, cursor1, _ = FilterMasterFlakeAnalysis(
+        master_flake_analysis_query, cursor=Cursor())
+    return result1, cursor1
 
   def _CreateAndSaveMasterFlakeAnalysis(
       self, master_name, builder_name, build_number,
@@ -58,6 +67,7 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
     self.master_flake_analysis3 = self._CreateAndSaveMasterFlakeAnalysis(
         self.master_name2, self.builder_name2, self.build_number2,
         self.step_name2, self.test_name1, self.request_time1)
+    self.result, self.cursor = self._MockCursor()
 
   def testGetStartAndEndDatesNotInTriageMode(self):
     self.assertEqual(
@@ -99,113 +109,61 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(start_date, mock_midnight_start)
     self.assertEqual(end_date, mock_midnight_end)
 
-  def testFilterMasterName(self):
-    master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result, _= FilterMasterFlakeAnalysis(
-        master_flake_analysis_query, master_name=self.master_name1)
-
-    self.assertEqual(len(result), 1)
-    self.assertTrue(result == [self.master_flake_analysis1])
-
-  def testFilterBuilderName(self):
-    master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result, _ = FilterMasterFlakeAnalysis(
-        master_flake_analysis_query, builder_name=self.builder_name1)
-    self.assertEqual(len(result), 1)
-    self.assertTrue(result == [self.master_flake_analysis1])
-
-  def testFilterBuildNumber(self):
-    master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result, _ = FilterMasterFlakeAnalysis(
-        master_flake_analysis_query, build_number=self.build_number1)
-    self.assertEqual(len(result), 1)
-    self.assertTrue(result == [self.master_flake_analysis1])
-
   def testFilterStepName(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result, _ = FilterMasterFlakeAnalysis(
+    result, _, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, step_name=self.step_name1)
     self.assertEqual(len(result), 1)
     self.assertTrue(result == [self.master_flake_analysis1])
 
   def testFilterTestName(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result, _ = FilterMasterFlakeAnalysis(
+    result, _, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, test_name=self.test_name2)
     self.assertEqual(len(result), 1)
     self.assertTrue(result == [self.master_flake_analysis2])
 
   def testFilterResultStatus(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result, _ = FilterMasterFlakeAnalysis(
+    result, _, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, status_code=result_status.FOUND_UNTRIAGED)
     self.assertEqual(len(result), 1)
     self.assertTrue(result == [self.master_flake_analysis1])
 
   def testFilterStartDate(self):
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result, _ = FilterMasterFlakeAnalysis(
+    result, _, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, start_date=self.request_time2)
     self.assertEqual(len(result), 1)
     self.assertTrue(result == [self.master_flake_analysis2])
 
   def testFilterEndDate(self):
+    self.mock(list_flakes, 'PAGE_SIZE', 10)
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result, _ = FilterMasterFlakeAnalysis(
+    result, _, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, end_date=self.request_time2)
     self.assertEqual(len(result), 2)
-    self.assertTrue(result == [self.master_flake_analysis1,
-                               self.master_flake_analysis3])
-
-  def testFilterMultipleMasterName(self):
-    master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result, _ = FilterMasterFlakeAnalysis(
-        master_flake_analysis_query, master_name=self.master_name2)
-    self.assertEqual(len(result), 2)
-    self.assertTrue(result == [self.master_flake_analysis3,
-                               self.master_flake_analysis2])
-
-  def testFilterMultipleBuilderName(self):
-    master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result, _ = FilterMasterFlakeAnalysis(
-        master_flake_analysis_query, builder_name=self.builder_name2)
-    self.assertEqual(len(result), 2)
-    self.assertTrue(result == [self.master_flake_analysis3,
-                               self.master_flake_analysis2])
-
-  def testFilterMultipleBuildNumber(self):
-    master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result, _ = FilterMasterFlakeAnalysis(
-        master_flake_analysis_query, build_number=self.build_number2)
-    self.assertEqual(len(result), 2)
-    self.assertTrue(result == [self.master_flake_analysis3,
-                               self.master_flake_analysis2])
+    self.assertEqual(sorted(result), sorted(
+        [self.master_flake_analysis1, self.master_flake_analysis3]))
 
   def testFilterMultipleStepName(self):
+    self.mock(list_flakes, 'PAGE_SIZE', 10)
     master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result, _ = FilterMasterFlakeAnalysis(
+    result, _, _ = FilterMasterFlakeAnalysis(
         master_flake_analysis_query, step_name=self.step_name2)
     self.assertEqual(len(result), 2)
-    self.assertTrue(result == [self.master_flake_analysis3,
-                               self.master_flake_analysis2])
+    self.assertEqual(sorted(result), sorted(
+        [self.master_flake_analysis3, self.master_flake_analysis2]))
 
-  def testFilterMultipleTestName(self):
-    master_flake_analysis_query = MasterFlakeAnalysis.query()
-    result, _ = FilterMasterFlakeAnalysis(
-        master_flake_analysis_query, test_name=self.test_name1)
-    self.assertEqual(len(result), 2)
-    self.assertTrue(result == [self.master_flake_analysis1,
-                               self.master_flake_analysis3])
+  @mock.patch.object(list_flakes, 'FilterMasterFlakeAnalysis')
+  def testNormalFlowWithFilter(self, mocked_fn):
+    analyses = [self.master_flake_analysis1]
+    more = True
+    mocked_fn.return_value = analyses, self.cursor, more
 
-  def testNormalFlow(self):
-    response = self.test_app.get('/waterfall/list-flakes')
-    self.assertEquals(200, response.status_int)
-
-  def testNormalFlowWithFilter(self):
     response = self.test_app.get(
         '/waterfall/list-flakes',
-        params={'build_number': self.build_number1,
-                'format': 'json'}
+        params={'step_name': self.step_name1, 'format': 'json'}
     )
     expected_result = {
         'master_flake_analyses': [
@@ -217,20 +175,74 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
                 'test_name': self.test_name1,
                 'status': 'Completed',
                 'result_status': result_status.RESULT_STATUS_TO_DESCRIPTION[
-                    self.result_status1],
+                  self.result_status1],
                 'suspected_build': None,
                 'request_time': '2016-10-01 00:00:00 UTC'
             }
         ],
-        'master_name_filter': '',
-        'builder_name_filter': '',
-        'build_number_filter': self.build_number1,
-        'step_name_filter': '',
+        'step_name_filter': self.step_name1,
         'test_name_filter': '',
         'result_status_filter': result_status.UNSPECIFIED,
-        'page_size': list_flakes.PAGE_SIZE,
-        'offset': 0,
-        'more': False,
+        'prev_cursor': "",
+        'cursor': self.cursor.urlsafe(),
+        'more': more,
+    }
+    self.assertEquals(response.json_body, expected_result)
+    self.assertEquals(200, response.status_int)
+
+  def testFilterMultipleTestName(self):
+    self.mock(list_flakes, 'PAGE_SIZE', 10)
+    master_flake_analysis_query = MasterFlakeAnalysis.query()
+    result, _, _ = FilterMasterFlakeAnalysis(
+        master_flake_analysis_query, test_name=self.test_name1)
+    self.assertEqual(len(result), 2)
+    self.assertEqual(sorted(result), sorted(
+        [self.master_flake_analysis3, self.master_flake_analysis1]))
+
+  def testFetchPages(self):
+    master_flake_analysis_query = MasterFlakeAnalysis.query()
+    result2, _, more2 = FilterMasterFlakeAnalysis(
+        master_flake_analysis_query, cursor=self.cursor, direction='previous')
+    self.assertEqual(len(result2), 1)
+    self.assertEqual(self.result, result2)
+    self.assertFalse(more2)
+
+  def testNormalFlow(self):
+    response = self.test_app.get('/waterfall/list-flakes')
+    self.assertEquals(200, response.status_int)
+
+  @mock.patch.object(list_flakes, 'FilterMasterFlakeAnalysis')
+  def testNormalFlowWithFilterPrevious(self, mocked_fn):
+    analyses = [self.master_flake_analysis1]
+    more = False
+    mocked_fn.return_value = analyses, self.cursor, more
+
+    response = self.test_app.get(
+        '/waterfall/list-flakes',
+        params={'step_name': self.step_name1,
+                'format': 'json', 'direction': 'previous'}
+    )
+    expected_result = {
+        'master_flake_analyses': [
+            {
+                'master_name': self.master_name1,
+                'builder_name': self.builder_name1,
+                'build_number': self.build_number1,
+                'step_name': self.step_name1,
+                'test_name': self.test_name1,
+                'status': 'Completed',
+                'result_status': result_status.RESULT_STATUS_TO_DESCRIPTION[
+                  self.result_status1],
+                'suspected_build': None,
+                'request_time': '2016-10-01 00:00:00 UTC'
+            }
+        ],
+        'step_name_filter': self.step_name1,
+        'test_name_filter': '',
+        'result_status_filter': result_status.UNSPECIFIED,
+        'prev_cursor': '',
+        'cursor': '',
+        'more': more,
     }
 
     self.assertEquals(response.json_body, expected_result)

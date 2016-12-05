@@ -39,20 +39,16 @@
         parameters['start_date'] = $('#start_date').val() == 'mm/dd/yyyy' ? undefined : $('#start_date').val();
         parameters['end_date'] = $('#end_date').val() == 'mm/dd/yyyy' ? undefined : $('#end_date').val();
       }
-      parameters['master_name'] = $('#master_name').val();
-      parameters['builder_name'] = $('#builder_name').val();
-      parameters['build_number'] = $('#build_number').val();
       parameters['step_name'] = $('#step_name').val();
       parameters['test_name'] = $('#test_name').val();
       parameters['result_status'] = $('#result_status').val() == 'default' ? undefined : $('#result_status').val();
-      parameters['offset'] = {{ offset }};
       return parameters
     }
 
     function createUrl(parameters) {
       var params = [];
       for(var key in parameters) {
-        if (parameters[key] != undefined) {
+        if (parameters[key] != undefined && parameters[key] != '') {
           params.push(key + '=' + parameters[key])
         }
       }
@@ -64,28 +60,25 @@
       }
     };
 
-    function loadPrevious() {
-      new_offset = {{ offset }} - {{ page_size }};
-      if (new_offset < 0) {
-        new_offset = 0
+    function loadPage(obj) {
+      parameters = getParameters();
+      if (obj.attr('class') == 'previous') {
+        parameters['cursor'] = '{{ prev_cursor }}';
+        parameters['direction'] = 'previous';
+      } else if (obj.attr('class') == 'next') {
+        parameters['cursor'] = '{{ cursor }}';
+        parameters['direction'] = 'next';
+      } else {
+        return;
       }
-      parameters = getParameters();
-      parameters['offset'] = new_offset;
       var newUrl = createUrl(parameters);
-      window.location.replace(newUrl);
-    }
-
-    function loadNext() {
-      parameters = getParameters();
-      parameters['offset'] = {{ offset }} + {{ page_size }};
-      var newUrl = createUrl(parameters);
-      window.location.replace(newUrl);
+      window.location.assign(newUrl);
     }
 
     function requestFilteredResults(e) {
       parameters = getParameters()
-      newUrl = CreateUrl(parameters);
-      window.location.replace(newUrl);
+      newUrl = createUrl(parameters);
+      window.location.assign(newUrl);
       e.preventDefault();
     };
 
@@ -98,8 +91,9 @@
     };
 
     $(document).ready(function() {
-      $('#previous-button').click(loadPrevious);
-      $('#next-button').click(loadNext);
+      $(document).on('click', '.previous, .next', function() {
+        loadPage($(this));
+      });
 
       if ('{{ result_status_filter }}' != '-1') {
         $('#result_status').val('{{ result_status_filter }}');
@@ -107,18 +101,19 @@
       $('#result_status').change(handleResultStatusChanged);
       $('#filter_results').click(handleFilterResults);
 
-      if ('{{ more }}' == 'True') {
-        $('#next-button').removeAttr('disabled');
+      if ('{{ cursor }}' == '') {
+        $('.next').attr('disabled', 'disabled');
+        $('.next').addClass('disabled');
       } else {
-        $('#next-button').attr('disabled', 'disabled');
-        $('#next-button').addClass('disabled');     
+        $('#next-button_bottom').removeAttr('disabled');
+        $('#next-button_top').removeAttr('disabled');
       }
 
-      if ({{ offset }} < 1) {
-        $('#previous-button').attr('disabled', 'disabled');
-        $('#previous-button').addClass('disabled');        
+      if ('{{ prev_cursor }}' == '') {
+        $('.previous').attr('disabled', 'disabled');
+        $('.previous').addClass('disabled');
       } else {
-        $('#previous-button').removeAttr('disabled');
+        $('#.previous').removeAttr('disabled');
       }
 
     });
@@ -129,24 +124,6 @@
   <b>Filter by input parameters</b>
   <form method="get" action="/waterfall/list-flakes">
     <table>
-      <tr>
-        <td style="text-align:right">Master:</td>
-        <td>
-          <input type="text" name="master_name" id="master_name" size="100" value="{{ master_name_filter }}"placeholder="chromium.mac"/>
-        </td>
-      </tr>
-      <tr>
-        <td style="text-align:right">Builder:</td>
-        <td>
-          <input type="text" name="builder_name" id="builder_name" size="100" value="{{ builder_name_filter }}"placeholder="Mac10.9 Tests"/>
-        </td>
-      </tr>
-      <tr>
-        <td style="text-align:right">Build Number:</td>
-        <td>
-          <input type="text" name="build_number" id="build_number" size="100" value="{{ build_number_filter }}" placeholder="28133"/>
-        </td>
-      </tr>
       <tr>
         <td style="text-align:right">Step:</td>
         <td>
@@ -174,6 +151,11 @@
   </form>
   <br>
   <b>Analysis Results</b>
+  <div>
+    <button class="previous">Previous</button>
+    <button class="next">Next</button>
+  </div>
+  <br>
   <table>
     <thead>
       <tr>
@@ -223,7 +205,7 @@
     </tbody>
   </table>
   <div>
-    <button id="previous-button" class="previous">previous</button>
-    <button id="next-button" class="next">next</button>
+    <button class="previous">Previous</button>
+    <button class="next">Next</button>
   </div>
 </body>

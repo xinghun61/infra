@@ -6,9 +6,10 @@ from datetime import datetime
 from datetime import time
 from datetime import timedelta
 
+from google.appengine.datastore.datastore_query import Cursor
+
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
-
 from lib import time_util
 from model import result_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
@@ -18,18 +19,9 @@ PAGE_SIZE = 100
 
 
 def FilterMasterFlakeAnalysis(
-    master_flake_analysis_query, master_name=None, builder_name=None,
-    build_number=None, step_name=None, test_name=None, start_date=None,
-    end_date=None, status_code=result_status.UNSPECIFIED, offset=0):
-  if master_name:
-    master_flake_analysis_query = master_flake_analysis_query.filter(
-        MasterFlakeAnalysis.master_name == master_name)
-  if builder_name:
-    master_flake_analysis_query = master_flake_analysis_query.filter(
-        MasterFlakeAnalysis.builder_name == builder_name)
-  if build_number:
-    master_flake_analysis_query = master_flake_analysis_query.filter(
-        MasterFlakeAnalysis.build_number == build_number)
+    master_flake_analysis_query, step_name=None, test_name=None,
+    start_date=None, end_date=None, status_code=result_status.UNSPECIFIED,
+    cursor=None, direction='next'):
   if step_name:
     master_flake_analysis_query = master_flake_analysis_query.filter(
         MasterFlakeAnalysis.step_name == step_name)
@@ -46,13 +38,25 @@ def FilterMasterFlakeAnalysis(
     master_flake_analysis_query = master_flake_analysis_query.filter(
         MasterFlakeAnalysis.result_status == status_code)
 
-  master_flake_analysis_query.order(-MasterFlakeAnalysis.request_time)
+  master_flake_analysis_query_older = master_flake_analysis_query.order(
+      -MasterFlakeAnalysis.request_time)
 
-  # TODO(lijeffrey): use cursor instead of offset.
-  analyses, _, more = master_flake_analysis_query.fetch_page(
-      PAGE_SIZE, offset=offset)
+  # If filters by step_name and/or test_name, don't do paging.
+  if step_name or test_name:
+    analyses = master_flake_analysis_query_older.fetch()
+    return analyses, None, False
 
-  return analyses, more
+  if direction.lower() == 'previous':
+    master_flake_analysis_query_newer = master_flake_analysis_query.order(
+        MasterFlakeAnalysis.request_time)
+    analyses, next_cursor, more = master_flake_analysis_query_newer.fetch_page(
+        PAGE_SIZE, start_cursor=cursor.reversed())
+    analyses.reverse()
+  else:
+    analyses, next_cursor, more = master_flake_analysis_query_older.fetch_page(
+        PAGE_SIZE, start_cursor=cursor)
+
+  return analyses, next_cursor, more
 
 
 class ListFlakes(BaseHandler):
@@ -79,34 +83,36 @@ class ListFlakes(BaseHandler):
   def HandleGet(self):
     status_code = int(
         self.request.get('result_status', result_status.UNSPECIFIED))
-    master_name = self.request.get('master_name').strip()
-    builder_name = self.request.get('builder_name').strip()
-    build_number = self.request.get('build_number').strip()
-    if build_number:
-      build_number = int(build_number)
     step_name = self.request.get('step_name').strip()
     test_name = self.request.get('test_name').strip()
     triage = self.request.get('triage') == '1'
-    offset = int(self.request.get('offset', '0').strip())
+    cursor = Cursor(urlsafe=self.request.get('cursor'))
+    direction = self.request.get('direction').strip()
 
     # Only allow querying by start/end dates for admins during triage to avoid
     # overcomplicating the UI for other users.
     start_date, end_date = self._GetStartAndEndDates(triage)
 
-    master_flake_analyses, more = FilterMasterFlakeAnalysis(
-        MasterFlakeAnalysis.query(), master_name, builder_name, build_number,
-        step_name, test_name, start_date, end_date, status_code, offset)
+    master_flake_analyses, next_cursor, more = FilterMasterFlakeAnalysis(
+        MasterFlakeAnalysis.query(), step_name, test_name, start_date, end_date,
+        status_code, cursor, direction)
+
+    next_cursor = next_cursor.urlsafe() if next_cursor else ''
+    used_cursor = cursor.urlsafe() if cursor else ''
+    if direction == 'previous':
+      prev_cursor = next_cursor if more else ''
+      cursor = used_cursor
+    else:
+      prev_cursor = used_cursor
+      cursor = next_cursor if more else ''
 
     data = {
         'master_flake_analyses': [],
         'result_status_filter': status_code,
-        'master_name_filter': master_name,
-        'builder_name_filter': builder_name,
-        'build_number_filter': build_number,
         'step_name_filter': step_name,
         'test_name_filter': test_name,
-        'page_size': PAGE_SIZE,
-        'offset': offset,
+        'prev_cursor': prev_cursor,
+        'cursor': cursor,
         'more': more,
     }
 
@@ -129,11 +135,6 @@ class ListFlakes(BaseHandler):
           'result_status': result_status.RESULT_STATUS_TO_DESCRIPTION.get(
               master_flake_analysis.result_status)
       })
-
-    # TODO (stgao): use index instead of in-memory sort.
-    # Index doesn't work for now, possibly due to legacy data.
-    data['master_flake_analyses'].sort(
-        key=lambda e: e['request_time'], reverse=True)
 
     return {
         'template': 'flake/dashboard.html',

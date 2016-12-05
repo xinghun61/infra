@@ -35,8 +35,68 @@ indexes:
   - name: updated_time
     direction: desc
 
+# For MasterFlakeAnalysis
 - kind: MasterFlakeAnalysis
   properties:
+  - name: result_status
+    direction: asc
+  - name: request_time
+    direction: desc
+
+- kind: MasterFlakeAnalysis
+  properties:
+  - name: result_status
+    direction: asc
+  - name: request_time
+    direction: asc
+
+- kind: MasterFlakeAnalysis
+  properties:
+  - name: step_name
+    direction: asc
+  - name: request_time
+    direction: desc
+
+- kind: MasterFlakeAnalysis
+  properties:
+  - name: test_name
+    direction: asc
+  - name: request_time
+    direction: desc
+
+- kind: MasterFlakeAnalysis
+  properties:
+  - name: step_name
+    direction: asc
+  - name: result_status
+    direction: asc
+  - name: request_time
+    direction: desc
+
+- kind: MasterFlakeAnalysis
+  properties:
+  - name: test_name
+    direction: asc
+  - name: result_status
+    direction: asc
+  - name: request_time
+    direction: desc
+
+- kind: MasterFlakeAnalysis
+  properties:
+  - name: step_name
+    direction: asc
+  - name: test_name
+    direction: asc
+  - name: request_time
+    direction: desc
+
+- kind: MasterFlakeAnalysis
+  properties:
+  - name: step_name
+    direction: asc
+  - name: test_name
+    direction: asc
   - name: result_status
     direction: asc
   - name: request_time
