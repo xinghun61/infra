@@ -23,7 +23,7 @@ from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 # TODO(katesonia): Remove the default value after adding validity check to
 # config.
 _DEFAULT_TOP_N = 7
-_FRACAS_FEEDBACK_URL_TEMPLATE = '%s/crash/fracas-result-feedback?key=%s'
+_FRACAS_FEEDBACK_URL_TEMPLATE = 'https://%s/crash/fracas-result-feedback?key=%s'
 
 # TODO(wrengr): [Note#1] in many places below we have to do some ugly
 # defaulting in case crash_data is missing certain keys. If we had

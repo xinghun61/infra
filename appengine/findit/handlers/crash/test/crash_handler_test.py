@@ -188,7 +188,7 @@ class CrashHandlerTest(CrashTestCase):
     self.mock(crash_pipeline.pubsub_util, 'PublishMessagesToTopic',
               Mocked_PublishMessagesToTopic)
 
-    MOCK_HOST = 'https://host.com'
+    MOCK_HOST = 'host.com'
     self.mock(app_identity, 'get_default_version_hostname', lambda: MOCK_HOST)
 
     testcase = self
@@ -258,7 +258,8 @@ class CrashHandlerTest(CrashTestCase):
 
     processed_analysis_result = copy.deepcopy(analysis_result)
     processed_analysis_result['feedback_url'] = (
-        '%s/crash/fracas-result-feedback?key=%s' % (MOCK_HOST, MOCK_KEY))
+        'https://%s/crash/fracas-result-feedback?key=%s' % (MOCK_HOST,
+                                                            MOCK_KEY))
 
     for cl in processed_analysis_result.get('suspected_cls', []):
       cl['confidence'] = round(cl['confidence'], 2)
