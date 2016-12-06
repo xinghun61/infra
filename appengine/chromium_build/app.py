@@ -1079,6 +1079,11 @@ URLS = [
     'maxage': 15*60,  # 15 mins
   },
   {
+    'remoteurl': 'http://build.chromium.org/p/chromium/current_trooper.txt',
+    'localpath': 'chromium/current_trooper.txt',
+    'maxage': 15*60,  # 15 mins
+  },
+  {
     'remoteurl': 'http://build.chromium.org/p/chromium/sheriff.js',
     'localpath': 'chromium/sheriff.js',
     'maxage': 15*60,  # 15 mins
