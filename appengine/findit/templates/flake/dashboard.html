@@ -40,7 +40,7 @@
         parameters['end_date'] = $('#end_date').val() == 'mm/dd/yyyy' ? undefined : $('#end_date').val();
       }
       parameters['step_name'] = $('#step_name').val();
-      parameters['test_name'] = $('#test_name').val();
+      parameters['test_name'] = encodeURI($('#test_name').val());
       parameters['result_status'] = $('#result_status').val() == 'default' ? undefined : $('#result_status').val();
       return parameters
     }
@@ -49,7 +49,7 @@
       var params = [];
       for(var key in parameters) {
         if (parameters[key] != undefined && parameters[key] != '') {
-          params.push(key + '=' + parameters[key])
+          params.push(key + '=' + parameters[key]);
         }
       }
 
@@ -197,7 +197,7 @@
             </a>
           {% endif %}
         <td>
-          <a href="/waterfall/check-flake?master_name={{ master_flake_analysis.master_name }}&builder_name={{ master_flake_analysis.builder_name }}&build_number={{master_flake_analysis.build_number}}&step_name={{ master_flake_analysis.step_name }}&test_name={{ master_flake_analysis.test_name }}">Link</a>
+          <a href="/waterfall/check-flake?key={{ master_flake_analysis.key }}">Link</a>
         </td>
         <td>{{ master_flake_analysis.result_status }}</td>
       </tr>

@@ -158,6 +158,7 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(list_flakes, 'FilterMasterFlakeAnalysis')
   def testNormalFlowWithFilter(self, mocked_fn):
     analyses = [self.master_flake_analysis1]
+    analysis_key = self.master_flake_analysis1.key.urlsafe()
     more = True
     mocked_fn.return_value = analyses, self.cursor, more
 
@@ -168,6 +169,7 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
     expected_result = {
         'master_flake_analyses': [
             {
+                'key': analysis_key,
                 'master_name': self.master_name1,
                 'builder_name': self.builder_name1,
                 'build_number': self.build_number1,
@@ -214,6 +216,7 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(list_flakes, 'FilterMasterFlakeAnalysis')
   def testNormalFlowWithFilterPrevious(self, mocked_fn):
     analyses = [self.master_flake_analysis1]
+    analysis_key = self.master_flake_analysis1.key.urlsafe()
     more = False
     mocked_fn.return_value = analyses, self.cursor, more
 
@@ -225,6 +228,7 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
     expected_result = {
         'master_flake_analyses': [
             {
+                'key': analysis_key,
                 'master_name': self.master_name1,
                 'builder_name': self.builder_name1,
                 'build_number': self.build_number1,

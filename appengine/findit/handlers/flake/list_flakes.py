@@ -123,6 +123,7 @@ class ListFlakes(BaseHandler):
 
     for master_flake_analysis in master_flake_analyses:
       data['master_flake_analyses'].append({
+          'key': master_flake_analysis.key.urlsafe(),
           'master_name': master_flake_analysis.master_name,
           'builder_name': master_flake_analysis.builder_name,
           'build_number': master_flake_analysis.build_number,
