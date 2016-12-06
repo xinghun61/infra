@@ -210,6 +210,10 @@
               </div>
             </div>
             <som-bug-queue id="bugQueue" bug-queue-label="[[_bugQueueLabel]]" tree-display-name="[[_treeDisplayName]]"></som-bug-queue>
+            <template is="dom-if" if="[[_showSwarmingAlerts]]">
+              <h2 class="header">Swarming Bots (<a target="_blank" href="https://chrome-internal.googlesource.com/infra/infra_internal/+/master/doc/troopers/playbook.md#Swarming">Help?</a>)</h2>
+              <som-swarming-bots bots="[[_swarmingAlerts]]"></som-swarming-bots>
+            </template>
             <div id="alertsListInner">
               <h2 class="header">[[_treeDisplayName]] Failure Alerts (<a href="/help-som">Help?</a>)</h2>
               <div id="fetchAlertsError" hidden=[[!_fetchAlertsError]]>[[_fetchAlertsError]]</div>
@@ -251,10 +255,6 @@
                     ></som-alert-item>
                   </div>
                 </template>
-              </template>
-              <template is="dom-if" if="[[_showSwarmingAlerts]]">
-                <h2 class="header">Swarming Bots (<a target="_blank" href="https://chrome-internal.googlesource.com/infra/infra_internal/+/master/doc/troopers/playbook.md#Swarming">Help?</a>)</h2>
-                <som-swarming-bots bots="[[_swarmingAlerts]]"></som-swarming-bots>
               </template>
             </div>
           </div>
@@ -368,7 +368,7 @@
         showInfraFailures: Boolean,
         _showSwarmingAlerts: {
           type: Boolean,
-          computed: '_computeShowSwarmingAlerts(_swarmingAlerts)',
+          computed: '_computeShowSwarmingAlerts(_swarmingAlerts, _isTrooperPage)',
         },
         _swarmingAlerts: {
           type: Object,
@@ -466,8 +466,9 @@
         return tree === 'trooper';
       },
 
-      _computeShowSwarmingAlerts: function(swarming) {
-        return swarming && (swarming.dead || swarming.quarantined);
+      _computeShowSwarmingAlerts: function(swarming, isTrooperPage) {
+        return isTrooperPage && swarming
+          && (swarming.dead || swarming.quarantined);
       },
 
       _computeTree: function(path) {
