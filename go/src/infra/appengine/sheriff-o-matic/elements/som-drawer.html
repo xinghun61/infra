@@ -13,7 +13,7 @@
     <style>
       h2 {
         box-sizing: border-box;
-        font-size: 24px;
+        font-size: 20px;
         font-weight: bold;
         padding: 0 5px 5px;
         width: 95%;
@@ -22,8 +22,8 @@
       }
       h2 iron-icon {
         padding-right: 5px;
-        width: 25px;
-        height: 25px;
+        width: 20px;
+        height: 20px;
       }
       paper-checkbox, paper-radio-button {
         padding-left: 30px;
@@ -31,11 +31,14 @@
       }
       label {
         padding-top: 1em;
-        padding-left: 30px;
+        padding-left: 20px;
+      }
+      ul {
+        padding-left: 50px;
       }
       paper-item {
-        padding-left: 42px;
-        font-size: 22px;
+        padding-left: 37px;
+        font-size: 20px;
         -webkit-transition: background .3s ease;
         transition: background .3s ease;
       }
@@ -50,6 +53,20 @@
         handle-as="json"
         verbose
         last-response="{{_treeList}}"
+    ></iron-ajax>
+    <iron-ajax
+        id="fetchTrooper"
+        auto
+        url="https://build.chromium.org/p/chromium/current_trooper.txt"
+        handle-as="text"
+        last-response="{{_trooper}}"
+    ></iron-ajax>
+    <iron-ajax
+        id="fetchSheriffs"
+        auto
+        url="https://build.chromium.org/p/chromium/all_rotations.js"
+        handle-as="json"
+        last-response="{{_sheriffRotations}}"
     ></iron-ajax>
     <som-settings
         show-infra-failures="{{showInfraFailures}}"
@@ -67,19 +84,38 @@
       <template is="dom-repeat" items="[[_staticPageList]]" as="page">
         <paper-item value="[[page.name]]" on-tap="_onSelected">[[page.displayText]]</paper-item>
       </template>
-
-      <h2><iron-icon icon="settings"></iron-icon>Settings</h2>
-      <div class="vertical layout">
-        <paper-checkbox checked="{{showInfraFailures}}" hidden$=[[_isTrooperPage]]>Show infra failures</paper-checkbox>
-        <paper-checkbox checked="{{useCompactView}}">Use compact alerts view</paper-checkbox>
-        <label id="linkStyleLabel">Builder links:</label>
-        <paper-radio-group selected="{{linkStyle}}" aria-labeled-by="linkStyleLabel" selectedAttribute="name">
-          <paper-radio-button name="uber">Link to uberchromegw</paper-radio-button>
-          <paper-radio-button name="milo">Link to luci-milo</paper-radio-button>
-          <paper-radio-button name="buildbot">Link to buildbot</paper-radio-button>
-        </paper-radio-group>
-      </div>
     </paper-menu>
+
+    <h2><iron-icon icon="perm-phone-msg"></iron-icon>Current On Calls</h2>
+
+    <div class="vertical layout">
+      <label>Trooper (<a href="http://go/bugatrooper" target="_blank">go/bugatrooper</a>)</label>
+      <ul id="currentTroopers">
+        <li>[[_trooper]]</li>
+      </ul>
+
+      <template is="dom-if" if="[[_sheriffs]]">
+        <label>[[_computeTreeDisplayName(tree, trees)]] Sheriffs</label>
+        <ul id="currentSheriffs">
+          <template is="dom-repeat" items="[[_sheriffs]]" as="sheriff">
+            <li>[[sheriff.username]] <small>(ends [[_formatDate(sheriff.endDate)]] PST)</small></li>
+          </template>
+        </ul>
+      </template>
+    </div>
+
+    <h2><iron-icon icon="settings"></iron-icon>Settings</h2>
+    <div class="vertical layout">
+      <paper-checkbox checked="{{showInfraFailures}}" hidden$=[[_isTrooperPage]]>Show infra failures</paper-checkbox>
+      <paper-checkbox checked="{{useCompactView}}">Use compact alerts view</paper-checkbox>
+      <label id="linkStyleLabel">Builder links:</label>
+      <paper-radio-group selected="{{linkStyle}}" aria-labeled-by="linkStyleLabel" selectedAttribute="name">
+        <paper-radio-button name="uber">Link to uberchromegw</paper-radio-button>
+        <paper-radio-button name="milo">Link to luci-milo</paper-radio-button>
+        <paper-radio-button name="buildbot">Link to buildbot</paper-radio-button>
+      </paper-radio-group>
+    </div>
+
   </template>
   <script>
   (function() {
@@ -89,16 +125,36 @@
       is: 'som-drawer',
 
       properties: {
+        _currentDate: {
+          type: String,
+          value: function () {
+            return (new Date()).toISOString().substring(0, 10);
+          },
+        },
         defaultTree: String,
         _isTrooperPage: {
           type: Boolean,
           computed: '_computeIsTrooperPage(tree)',
           value: false,
         },
-        tree: String,
         path: {
            type: String,
            notify: true,
+        },
+        _rotations: {
+          type: Object,
+          value: {
+            'android': 'android',
+            'chromium': 'chrome',
+            'chromiumos': 'chromeosgardener',
+            'chromium.perf': 'perfbot',
+          },
+        },
+        _sheriffRotations: Object,
+        _sheriffs: {
+          type: Array,
+          computed: '_computeSheriffs(tree, _sheriffRotations, _rotations)',
+          value: null,
         },
         showInfraFailures: {
           type: Boolean,
@@ -109,10 +165,12 @@
           computed: '_computeStaticPageList(staticPages)',
           value: function() { return []; },
         },
+        tree: String,
         _treeList: {
            type: Array,
            value: function() { return []; },
         },
+        _trooper: String,
         trees: {
           type: Object,
           notify: true,
@@ -128,8 +186,74 @@
         }
       },
 
+      refresh: function () {
+        this.$.fetchTrooper.generateRequest();
+        this.$.fetchSheriffs.generateRequest();
+      },
+
       _computeIsTrooperPage: function(tree) {
         return tree === 'trooper';
+      },
+
+      // Gets current tree sheriffs from file at:
+      // http://chromium-build.appspot.com/p/chromium/all_rotations.js
+      _computeSheriffs(tree, sheriffData, rotations) {
+        if (!tree || !sheriffData || !(tree in rotations)) {
+          return null;
+        }
+        let rotation = rotations[tree];
+        let i = sheriffData['rotations'].indexOf(rotation);
+
+        let date = new Date();
+        let datestamp = this._formatDate(date);
+
+        let dateData = sheriffData['calendar'].filter(function(obj) {
+          return obj.date == datestamp;
+        })[0];
+
+        let sheriffs = dateData['participants'][i];
+
+        let sheriffMap = sheriffs.reduce((map, s) => {
+          map[s] = date;
+          return map;
+        }, {});
+
+        // Keep looping through dates until the current sheriffs no long have
+        // shifts.
+        let flag = true;
+        let dayMs = 24 * 60 * 60 * 1000;
+        while (flag) {
+          flag = false;
+
+          // If the day is a Friday, then we add more days to account for the
+          // weekend.
+          if (date.getDay() == 5) {
+            date = new Date(date.getTime() + dayMs * 3);
+          } else {
+            date = new Date(date.getTime() + dayMs);
+          }
+          datestamp = this._formatDate(date);
+          dateData = sheriffData['calendar'].filter(function(obj) {
+            return obj.date == datestamp;
+          })[0];
+          if (dateData) {
+            let nextSheriffs = dateData['participants'][i];
+
+            let intersection = sheriffs.filter(function(s) {
+              return nextSheriffs.indexOf(s) != -1;
+            });
+
+            intersection.forEach((s) => {
+              flag = true;
+              sheriffMap[s] = date;
+            });
+          }
+        }
+
+        let result = Object.keys(sheriffMap).map((key) => {
+          return {'username': key, 'endDate': sheriffMap[key]};
+        });
+        return result;
       },
 
       _computeStaticPageList(staticPages) {
@@ -140,6 +264,13 @@
           pageList.push(page);
         }
         return pageList;
+      },
+
+      _computeTreeDisplayName: function(tree, trees) {
+        if (tree in trees) {
+          return trees[tree].display_name;
+        }
+        return tree;
       },
 
       _computeTrees(treeList) {
@@ -156,6 +287,10 @@
           }
         }
         return trees;
+      },
+
+      _formatDate(date) {
+        return date.toISOString().substring(0, 10);
       },
 
       _onSelected: function(evt) {

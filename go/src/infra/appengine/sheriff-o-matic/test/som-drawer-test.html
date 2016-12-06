@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents.min.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="/elements/som-drawer.html">
+<test-fixture id="basic">
+  <template>
+    <som-drawer></som-drawer>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+    var server;
+    var responseHeaders = {
+        json: {'Content-Type': 'application/json'},
+        text: {'Content-Type': 'text/html'},
+    };
+
+    setup(function() {
+      element = fixture('basic');
+      server = sinon.fakeServer.create();
+
+      server.respondWith(
+        'GET',
+        '/api/v1/trees/', [
+          200,
+          responseHeaders.json,
+          [{"name":"chromium", "display_name":"Chromium"}]
+        ]
+      );
+    });
+
+    teardown(function() {
+      server.restore();
+    });
+
+    test('renders current trooper', function(done) {
+      element._trooper = 'faketrooper';
+      flush(function () {
+        assert.equal('faketrooper',
+          element.$.currentTroopers.childNodes[0].text);
+        done();
+      });
+    });
+
+    test('gets current trooper', function(done) {
+      server.respondWith(
+        'GET',
+        'https://build.chromium.org/p/chromium/current_trooper.txt', [
+          200,
+          responseHeaders.text,
+          'helloworld'
+        ]
+      );
+
+      element.refresh();
+
+      flush(function () {
+        assert.equal('helloworld', element._trooper);
+        done();
+      });
+    });
+
+    test('computes sheriffs from JSON', function(done) {
+      // TODO(zhangtiff): Figure out a better way to test dates.
+      let date = new Date();
+      let dateString = date.toISOString().substring(0, 10);
+
+      element.tree = 'chromium';
+      element._sheriffRotations = {
+        'rotations': ['chrome'],
+        'calendar': [
+          {'date': 'fakedate', 'participants': ['no one']},
+          {'date': dateString, 'participants': ['someone']}
+        ],
+      };
+      flush(function () {
+        assert.equal(1, element._sheriffs.length);
+        assert.equal({
+          'username': 'someone',
+          'endDate': date,
+        }, element._sheriffs[0]);
+        done();
+      });
+    });
+  });
+})();
+</script>
