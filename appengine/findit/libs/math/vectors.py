@@ -31,7 +31,7 @@ def vsum(vs, shape=None):
 
   # It'd be better to vectorize the implementation of Shewchuk's
   # algorithm directly, so we can avoid needing to traverse ``vs``
-  # repeatedly. However, this is deemed to have too high a maintinence
+  # repeatedly. However, this is deemed to have too high a maintenance
   # cost for the performance benefit.
   total = np.zeros(shape)
   it = np.nditer(total, flags=['multi_index'], op_flags=['writeonly'])
