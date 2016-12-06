@@ -101,24 +101,24 @@ class PeopleList(servlet.Servlet):
         'is_hotlist': ezt.boolean(False),
         }
 
-  def GatherHelpData(self, mr, _page_data):
+  def GatherHelpData(self, mr, page_data):
     """Return a dict of values to drive on-page user help.
 
     Args:
       mr: common information parsed from the HTTP request.
-      _page_data: Dictionary of base and page template data.
+      page_data: Dictionary of base and page template data.
 
     Returns:
       A dict of values to drive on-page user help, to be added to page_data.
     """
-    cue = None
+    help_data = super(PeopleList, self).GatherHelpData(mr, page_data)
     if (mr.auth.user_id and
         not framework_bizobj.UserIsInProject(
             mr.project, mr.auth.effective_ids) and
         'how_to_join_project' not in mr.auth.user_pb.dismissed_cues):
-      cue = 'how_to_join_project'
+      help_data['cue'] = 'how_to_join_project'
 
-    return {'cue': cue}
+    return help_data
 
   def _MakeMemberViews(
       self, logged_in_user_id, users_by_id, member_ids, project,

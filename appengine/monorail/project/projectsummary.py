@@ -43,17 +43,17 @@ class ProjectSummary(servlet.Servlet):
 
     return page_data
 
-  def GatherHelpData(self, mr, _page_data):
+  def GatherHelpData(self, mr, page_data):
     """Return a dict of values to drive on-page user help.
 
     Args:
       mr: common information parsed from the HTTP request.
-      _page_data: Dictionary of base and page template data.
+      page_data: Dictionary of base and page template data.
 
     Returns:
       A dict of values to drive on-page user help, to be added to page_data.
     """
-    cue = None
+    help_data = super(ProjectSummary, self).GatherHelpData(mr, page_data)
     dismissed = mr.auth.user_pb.dismissed_cues
     project = mr.project
 
@@ -63,8 +63,6 @@ class ProjectSummary(servlet.Servlet):
             and len(framework_bizobj.AllProjectMembers(project)) > 1
             and not self.services.project.GetProjectCommitments(
                 mr.cnxn, mr.project_id).commitments):
-        cue = 'document_team_duties'
+        help_data['cue'] = 'document_team_duties'
 
-    return {
-        'cue': cue,
-        }
+    return help_data

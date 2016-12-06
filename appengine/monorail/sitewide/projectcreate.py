@@ -75,16 +75,17 @@ class ProjectCreate(servlet.Servlet):
         'available_access_levels': available_access_levels,
         }
 
-  def GatherHelpData(self, mr, _page_data):
+  def GatherHelpData(self, mr, page_data):
     """Return a dict of values to drive on-page user help.
 
     Args:
       mr: common information parsed from the HTTP request.
-      _page_data: Dictionary of base and page template data.
+      page_data: Dictionary of base and page template data.
 
     Returns:
       A dict of values to drive on-page user help, to be added to page_data.
     """
+    help_data = super(ProjectCreate, self).GatherHelpData(mr, page_data)
     cue_remaining_projects = None
 
     (_period, _soft, _hard,
@@ -98,10 +99,10 @@ class ProjectCreate(servlet.Servlet):
           and actionlimit_pb.lifetime_count < life_max):
         cue_remaining_projects = life_max - actionlimit_pb.lifetime_count
 
-    return {
-        'cue': None,
+    help_data.update({
         'cue_remaining_projects': cue_remaining_projects,
-        }
+        })
+    return help_data
 
   def ProcessFormData(self, mr, post_data):
     """Process the posted form."""

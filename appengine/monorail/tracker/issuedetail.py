@@ -351,7 +351,7 @@ class IssueDetail(issuepeek.IssuePeek):
     Returns:
       A dict of values to drive on-page user help, to be added to page_data.
     """
-    cue = None
+    help_data = super(IssueDetail, self).GatherHelpData(mr, page_data)
     dismissed = []
     if mr.auth.user_pb:
       dismissed = mr.auth.user_pb.dismissed_cues
@@ -371,20 +371,20 @@ class IssueDetail(issuepeek.IssuePeek):
 
     if (mr.auth.user_id and
         'privacy_click_through' not in dismissed):
-      cue = 'privacy_click_through'
+      help_data['cue'] = 'privacy_click_through'
     elif (tracker_constants.JUMP_RE.match(mr.query) and
           'search_for_numbers' not in dismissed):
       jump_local_id = int(mr.query)
-      cue = 'search_for_numbers'
+      help_data['cue'] = 'search_for_numbers'
     elif (any_availibility_message and
           'availibility_msgs' not in dismissed):
-      cue = 'availibility_msgs'
+      help_data['cue'] = 'availibility_msgs'
 
-    return {
+    help_data.update({
         'is_privileged_domain_user': ezt.boolean(is_privileged_domain_user),
         'jump_local_id': jump_local_id,
-        'cue': cue,
-        }
+        })
+    return help_data
 
   # TODO(sheyang): Support comments incremental loading in API
   def _PaginatePartialComments(self, mr, issue):

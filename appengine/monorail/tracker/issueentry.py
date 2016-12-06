@@ -169,27 +169,27 @@ class IssueEntry(servlet.Servlet):
 
     return page_data
 
-  def GatherHelpData(self, mr, _page_data):
+  def GatherHelpData(self, mr, page_data):
     """Return a dict of values to drive on-page user help.
 
     Args:
       mr: commonly used info parsed from the request.
-      _page_data: Dictionary of base and page template data.
+      page_data: Dictionary of base and page template data.
 
     Returns:
       A dict of values to drive on-page user help, to be added to page_data.
     """
+    help_data = super(IssueEntry, self).GatherHelpData(mr, page_data)
     is_privileged_domain_user = framework_bizobj.IsPriviledgedDomainUser(
         mr.auth.user_pb.email)
-    cue = None
-    if (mr.auth.user_id and 
+    if (mr.auth.user_id and
         'privacy_click_through' not in mr.auth.user_pb.dismissed_cues):
-      cue = 'privacy_click_through'
+      help_data['cue'] = 'privacy_click_through'
 
-    return {
+    help_data.update({
         'is_privileged_domain_user': ezt.boolean(is_privileged_domain_user),
-        'cue': cue,
-        }
+        })
+    return help_data
 
   def ProcessFormData(self, mr, post_data):
     """Process the issue entry form.

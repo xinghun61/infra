@@ -325,7 +325,7 @@ class IssueList(servlet.Servlet):
     Returns:
       A dict of values to drive on-page user help, to be added to page_data.
     """
-    cue = None
+    help_data = super(IssueList, self).GatherHelpData(mr, page_data)
     dismissed = []
     if mr.auth.user_pb:
       dismissed = mr.auth.user_pb.dismissed_cues
@@ -350,26 +350,23 @@ class IssueList(servlet.Servlet):
     if (mr.mode == 'grid' and mr.cells == 'tiles' and
         len(page_data.get('results', [])) > settings.max_tiles_in_grid and
         'showing_ids_instead_of_tiles' not in dismissed):
-      cue = 'showing_ids_instead_of_tiles'
+      help_data['cue'] = 'showing_ids_instead_of_tiles'
     elif (_AnyDerivedValues(page_data.get('table_data', [])) and
           'italics_mean_derived' not in dismissed):
-      cue = 'italics_mean_derived'
+      help_data['cue'] = 'italics_mean_derived'
     elif (uses_timestamp_term and
           'issue_timestamps' not in dismissed):
-      cue = 'issue_timestamps'
+      help_data['cue'] = 'issue_timestamps'
     # Note that the following are only offered to signed in users because
     # otherwise the first one would appear all the time to anon users.
     elif (mr.auth.user_id and mr.mode != 'grid' and
           'dit_keystrokes' not in dismissed):
-      cue = 'dit_keystrokes'
+      help_data['cue'] = 'dit_keystrokes'
     elif (mr.auth.user_id and is_fulltext_query and
           'stale_fulltext' not in dismissed):
-      cue = 'stale_fulltext'
+      help_data['cue'] = 'stale_fulltext'
 
-    return {
-        'cue': cue,
-        }
-
+    return help_data
 
 def _AnyDerivedValues(table_data):
   """Return True if any value in the given table_data was derived."""
