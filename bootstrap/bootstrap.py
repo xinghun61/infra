@@ -266,8 +266,8 @@ def activate_env(env, deps, quiet=False, run_within_virtualenv=False):
 def main(args):
   parser = argparse.ArgumentParser()
   parser.add_argument('--deps-file', '--deps_file', action='append',
-                      required=True,
-                      help='Path to deps.pyl file (may be used multiple times)')
+                      help='Path to deps.pyl file (may be used multiple times, '
+                      'default: bootstrap/deps.pyl)')
   parser.add_argument('-q', '--quiet', action='store_true', default=False,
                       help='Supress all output')
   parser.add_argument('-r', '--run-within-virtualenv', action='store_true',
@@ -277,6 +277,7 @@ def main(args):
                       help='Path to place environment (default: %(default)s)',
                       default='ENV')
   opts = parser.parse_args(args)
+  opts.deps_file = opts.deps_file or [os.path.join(ROOT, 'bootstrap/deps.pyl')]
 
   deps = merge_deps(opts.deps_file)
   activate_env(opts.env_path, deps, opts.quiet, opts.run_within_virtualenv)
