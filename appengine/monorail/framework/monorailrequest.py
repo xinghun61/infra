@@ -683,7 +683,6 @@ def _ParsePathIdentifiers(path):
 
   # Strip off any query params
   split_path = path.lstrip('/').split('?')[0].split('/')
-
   if len(split_path) >= 2:
     if split_path[0] == 'p':
       project_name = split_path[1]
@@ -692,7 +691,7 @@ def _ParsePathIdentifiers(path):
       if len(split_path) >= 4 and split_path[2] == 'hotlists':
         #TODO(jojwang): when friendly url, check if hotlist name or id
         try:
-          hotlist_id = int(urllib.unquote(split_path[3]))
+          hotlist_id = int(urllib.unquote(split_path[3].split('.')[0]))
         except ValueError:
           raise InputException('Could not parse hotlist id')
     if split_path[0] == 'g':

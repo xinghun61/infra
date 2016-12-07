@@ -564,11 +564,21 @@ class FeaturesService(object):
     if not hotlist:
       raise NoSuchHotlistException()
 
+    # adding new Hotlistissues, ignoring pairs where issue_id is already in
+    # hotlist's iid_rank_pairs
+    current_issues_ids = {
+        iid_rank_pair.issue_id for iid_rank_pair in hotlist.iid_rank_pairs}
+
     self.hotlist2issue_tbl.Delete(
-        cnxn, hotlist_id=hotlist_id, issue_id=remove, commit=False)
+        cnxn, hotlist_id=hotlist_id,
+        issue_id=[remove_id for remove_id in remove
+                  if remove_id in current_issues_ids],
+        commit=False)
+
     insert_rows = [
         (hotlist_id, issue_id, rank)
-        for (issue_id, rank) in added_pairs]
+        for (issue_id, rank) in added_pairs
+        if issue_id not in current_issues_ids]
     self.hotlist2issue_tbl.InsertRows(
         cnxn, cols=HOTLIST2ISSUE_COLS, row_values=insert_rows, commit=commit)
     self.hotlist_2lc.InvalidateKeys(cnxn, [hotlist_id])
@@ -579,10 +589,6 @@ class FeaturesService(object):
         iid_rank_pair for iid_rank_pair in hotlist.iid_rank_pairs if
         iid_rank_pair.issue_id not in remove]
 
-    # adding new Hotlistissues, ignoring pairs where issue_id is already in
-    # hotlist's iid_rank_pairs
-    current_issues_ids = {
-        iid_rank_pair.issue_id for iid_rank_pair in hotlist.iid_rank_pairs}
     new_hotlist_issues = [
         features_pb2.MakeHotlistIssue(issue_id, rank)
         for (issue_id, rank) in added_pairs

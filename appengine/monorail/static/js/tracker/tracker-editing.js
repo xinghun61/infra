@@ -895,8 +895,7 @@ function TKR_highlightExclusiveLabelPrefixConflicts() {
     var textFields = TKR_usedPrefixes[prefix];
     if (textFields == undefined || textFields.length == 0) {
       delete TKR_usedPrefixes[prefix];
-    }
-    else if (textFields.length > 1 &&
+    } else if (textFields.length > 1 &&
         FindInArray(TKR_exclPrefixes, prefix) != -1) {
       conflicts.push(prefix);
       for (var i = 0; i < textFields.length; i++) {
@@ -987,11 +986,9 @@ function TKR_updateConfirmBeforeSubmit() {
   });
   if (TKR_novelStatuses.length > 0 && TKR_novelLabels.length > 0) {
     msg = severity + ': You are using an ' + novelWord + ' status and ' + novelWord + ' label(s): ' + labels.join(', ') + '.'; // TODO: i18n
-  }
-  else if (TKR_novelStatuses.length > 0) {
+  } else if (TKR_novelStatuses.length > 0) {
     msg = severity + ': You are using an ' + novelWord + ' status value.';
-  }
-  else if (TKR_novelLabels.length > 0) {
+  } else if (TKR_novelLabels.length > 0) {
     msg = severity + ': You are using ' + novelWord + ' label(s): ' + labels.join(', ') + '.';
   }
 
@@ -1043,6 +1040,15 @@ function TKR_handleListActions(actionsMenu) {
     case 'unflagspam':
       TKR_flagSpam(false);
       break;
+    case 'addissues':
+      _showID('addissuesspec');
+      break;
+    case 'removeissues':
+      HTL_removeIssues();
+      break;
+    case 'issuesperpage':
+      break;
+
   }
   actionsMenu.value = 'moreactions';
 }
@@ -1104,8 +1110,7 @@ function TKR_flagSpam(isSpam) {
 
     var form = $('bulkspam');
     form.submit();
-  }
-  else {
+  } else {
     alert('Please select some issues to flag as spam');
   }
 }
@@ -1127,8 +1132,7 @@ function TKR_HandleBulkEdit() {
     var selectedLocalIDString = selectedLocalIDs.join(',');
     var url = 'bulkedit?ids=' + selectedLocalIDString;
     TKR_go(url + _ctxArgs);
-  }
-  else {
+  } else {
     alert('Please select some issues to edit');
   }
 }
@@ -1430,4 +1434,31 @@ function TKR_trimCommas() {
   if (ccField) {
     ccField.value = ccField.value.replace(/,\s*$/, '');
    }
+}
+
+
+/**
+ * Identify which issues have been checkedboxed for removal from hotlist.
+ */
+function HTL_removeIssues() {
+  var selectedLocalIDs = [];
+  for (var i = 0; i < issueRefs.length; i++) {
+    var checkbox = document.getElementById('cb_' + issueRefs[i]['id']);
+    if (checkbox && checkbox.checked) {
+      selectedLocalIDs.push(issueRefs[i]['project_name']+':'+issueRefs[i]['id']);
+    }
+  }
+  if (selectedLocalIDs.length > 0) {
+    if (!confirm('Remove all selected issues?')) {
+      return;
+    }
+    var selectedLocalIDString = selectedLocalIDs.join(',');
+    $('bulk_remove_local_ids').value = selectedLocalIDString;
+    $('bulk_remove_value').value = 'true';
+
+    var form = $('bulkremoveissues');
+    form.submit();
+  } else {
+    alert('Please select some issues to remove');
+  }
 }

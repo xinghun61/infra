@@ -165,6 +165,10 @@ class IssueList(servlet.Servlet):
             mr.auth.user_id, '/p/%s%s.do' % (
                 mr.project_name, urls.ISSUE_SETSTAR_JSON)),
         'search_error_message': search_error_message,
+        # last three are needed by templates for hotlists
+        'owner_permissions': ezt.boolean(False),
+        'editor_permissions': ezt.boolean(False),
+        'remove_issues_token': '',
     })
 
     return page_data

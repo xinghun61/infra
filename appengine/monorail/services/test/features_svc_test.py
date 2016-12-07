@@ -547,9 +547,9 @@ class FeaturesServiceTest(unittest.TestCase):
         self.cnxn, 456, [111L, 222L], [333L], [])
     self.mox.VerifyAll()
 
-  def SetUpUpdateHotlistIssues(self, cnxn, hotlist_id, remove, added_pairs):
+  def SetUpUpdateHotlistIssues(self, cnxn, hotlist_id, _remove, added_pairs):
     self.features_service.hotlist2issue_tbl.Delete(
-        cnxn, hotlist_id=hotlist_id, issue_id=remove, commit=False)
+        cnxn, hotlist_id=hotlist_id, issue_id=[], commit=False)
     insert_rows = [(hotlist_id, issue_id,
         rank) for (issue_id, rank) in added_pairs]
     self.features_service.hotlist2issue_tbl.InsertRows(

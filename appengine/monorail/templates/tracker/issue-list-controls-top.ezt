@@ -47,12 +47,13 @@
     <input type="hidden" name="q" value="[query]">
     <input type="hidden" name="sort" value="[sortspec]">
     <input type="hidden" id="groupbyspec" name="groupby" value="[groupby]">
-    <span id="columnspec" style="display:none; font-size:90%"><span>Columns:
-     </span><span id="colspec_field"><input type="text" size="60" name="colspec"
+    <span id="columnspec" style="display:none; font-size:90%">
+      <span>Columns:</span>
+      <span id="colspec_field"><input type="text" size="60" name="colspec"
                    value="[colspec]"></span>
-            <input type="submit" name="nobtn" value="Update">
-     [# TODO(jrobbins): <a href="TODO">Learn more</a> ]
-     </span>
+      <input type="submit" name="nobtn" value="Update">
+      [# TODO(jrobbins): <a href="TODO">Learn more</a> ]
+    </span>
    </form>
 </div>
 
@@ -60,6 +61,18 @@
   <input type="hidden" name="token" value="[flag_spam_token]">
   <input type="hidden" id="bulk_spam_ids" name="ids">
   <input type="hidden" id="bulk_spam_value" name="spam" value="true">
+</form>
+
+<form id='bulkremoveissues' method="POST" action="[hotlist_id].do">
+<input type="hidden" name="token" value="[remove_issues_token]">
+  <input type="hidden" id="bulk_remove_local_ids" name="remove_local_ids">
+  <input type ="hidden" id="bulk_remove_value" name = "remove" value="false">
+  <span id="addissuesspec" style="display:none; font-size:90%">
+    <span>Issues:</span>
+    <span id="issues_field"><input type="text" size="60" name="add_local_ids"
+                   value=""></span>
+    <input type="submit" name="nobtn" value="Add Issues">
+  </span>
 </form>
 
 <script type="text/javascript" nonce="[nonce]">

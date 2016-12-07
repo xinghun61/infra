@@ -8,25 +8,18 @@
 from third_party import ezt
 
 import settings
+import time
 
 from features import features_constants
-from features import hotlist_views
 from features import hotlist_helpers
 from framework import servlet
 from framework import sorting
 from framework import permissions
-from framework import paginate
-from framework import framework_views
 from framework import framework_helpers
-from framework import table_view_helpers
 from framework import template_helpers
 from framework import urls
 from framework import xsrf
 from services import features_svc
-from tracker import tablecell
-from tracker import tracker_bizobj
-from tracker import tracker_constants
-from tracker import tracker_helpers
 
 
 class HotlistIssues(servlet.Servlet):
@@ -122,7 +115,47 @@ class HotlistIssues(servlet.Servlet):
         'csv_link': framework_helpers.FormatURL(mr, 'csv'),
         'preview_on_hover': (
             settings.enable_quick_edit and mr.auth.user_pb.preview_on_hover),
+        'remove_issues_token': xsrf.GenerateToken(
+            mr.auth.user_id,
+            '/u/%s/hotlists/%s.do' % (mr.auth.user_id, mr.hotlist_id))
         }
     table_view_data.update(table_related_dict)
 
     return table_view_data
+
+  def ProcessFormData(self, mr, post_data):
+    sorting.InvalidateArtValuesKeys(
+        mr.cnxn,
+        [hotlist_issue.issue_id for hotlist_issue
+         in mr.hotlist.iid_rank_pairs])
+
+    if post_data.get('remove') == 'true':
+      project_and_local_ids = post_data.get('remove_local_ids')
+    else:
+      project_and_local_ids = post_data.get('add_local_ids')
+
+    issue_refs_tuples = [(pair.split(':')[0].strip(),
+                          int(pair.split(':')[1].strip()))
+                         for pair in project_and_local_ids.split(',')]
+    project_names = {project_name for (project_name, _) in issue_refs_tuples}
+    projects_dict = self.services.project.GetProjectsByName(
+        mr.cnxn, project_names)
+
+    selected_iids = self.services.issue.ResolveIssueRefs(
+        mr.cnxn, projects_dict, mr.project_name, issue_refs_tuples)
+
+    if post_data.get('remove') == 'true':
+      self.services.features.UpdateHotlistIssues(
+          mr.cnxn, mr.hotlist_id, selected_iids, [])
+    else:
+      iid_rank_pairs_sorted = sorted(
+          mr.hotlist.iid_rank_pairs, key=lambda pair: pair.rank)
+      rank_base = iid_rank_pairs_sorted[-1].rank + 10
+      added_pairs =  [(issue_id, rank_base + multiplier*10)
+                     for (multiplier, issue_id) in enumerate(selected_iids)]
+      self.services.features.UpdateHotlistIssues(
+          mr.cnxn, mr.hotlist_id, [], added_pairs)
+
+    return framework_helpers.FormatAbsoluteURL(
+          mr, '/u/%s/hotlists/%s' % (mr.auth.user_id, mr.hotlist_id),
+          saved=1, ts=int(time.time()), include_project=False)
