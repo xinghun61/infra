@@ -58,50 +58,56 @@ func getBugQueueHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	label := p.ByName("label")
+	key := fmt.Sprintf(bugQueueCacheFormat, label)
 
-	result := []byte{}
+	item, err := memcache.GetKey(c, key)
 
-	// Get all bugs in the label owned by the current user.
-	if label == "infra-troopers" {
-		user := auth.CurrentIdentity(c)
-		email := getAlternateEmail(user.Email())
-		q := fmt.Sprintf("Infra=Troopers -has:owner OR Infra=Troopers owner:%s"+
-			" OR owner:%s Infra=Troopers", user.Email(), email)
-
-		bugs, err := getBugsFromMonorail(c, q)
-
-		out, err := json.Marshal(bugs)
-		if err != nil {
-			errStatus(c, w, http.StatusInternalServerError, err.Error())
-			return
-		}
-
-		result = out
-	} else {
-		key := fmt.Sprintf(bugQueueCacheFormat, label)
-
-		item, err := memcache.GetKey(c, key)
-
-		if err == memcache.ErrCacheMiss {
-			logging.Debugf(c, "No bug queue data for %s in memcache, refreshing...", label)
-			item, err = refreshBugQueue(c, label)
-		}
-
-		if err != nil {
-			errStatus(c, w, http.StatusInternalServerError, err.Error())
-			return
-		}
-
-		result = item.Value()
+	if err == memcache.ErrCacheMiss {
+		logging.Debugf(c, "No bug queue data for %s in memcache, refreshing...", label)
+		item, err = refreshBugQueue(c, label)
 	}
+
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	result := item.Value()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(result)
 }
 
+func getOwnedBugsHandler(ctx *router.Context) {
+	c, w, p := ctx.Context, ctx.Writer, ctx.Params
+
+	label := p.ByName("label")
+
+	user := auth.CurrentIdentity(c)
+	email := getAlternateEmail(user.Email())
+	q := fmt.Sprintf("label:%[1]s owner:%s OR owner:%s label:%[1]s", label, user.Email(), email)
+
+	bugs, err := getBugsFromMonorail(c, q)
+
+	out, err := json.Marshal(bugs)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(out)
+}
+
 // Makes a request to Monorail for bugs in a label and caches the results.
 func refreshBugQueue(c context.Context, label string) (memcache.Item, error) {
 	q := fmt.Sprintf("label:%s", label)
+
+	// We may eventually want to make this an option that's configurable per bug
+	// queue.
+	if label == "infra-troopers" {
+		q = fmt.Sprintf("%s -has:owner", q)
+	}
 
 	res, err := getBugsFromMonorail(c, q)
 	if err != nil {

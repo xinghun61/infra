@@ -379,6 +379,7 @@ func init() {
 	r.GET("/api/v1/annotations/", protected, getAnnotationsHandler)
 	r.POST("/api/v1/annotations/:annKey/:action", protected, postAnnotationsHandler)
 	r.GET("/api/v1/bugqueue/:label", protected, getBugQueueHandler)
+	r.GET("/api/v1/bugqueue/:label/owned/", protected, getOwnedBugsHandler)
 	r.GET("/api/v1/revrange/:start/:end", basemw, getRevRangeHandler)
 	r.GET("/logos/:tree", protected, getTreeLogoHandler)
 

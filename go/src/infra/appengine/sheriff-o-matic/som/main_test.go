@@ -600,8 +600,8 @@ func TestMain(t *testing.T) {
 					getOAuthClient = oldOAClient
 				})
 
-				Convey("get trooper queue", func() {
-					getBugQueueHandler(&router.Context{
+				Convey("get owned bugs", func() {
+					getOwnedBugsHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makeGetRequest(),
