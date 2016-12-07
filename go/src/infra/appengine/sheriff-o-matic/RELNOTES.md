@@ -1,3 +1,33 @@
+# Release Notes sheriff-o-matic 2016-12-06
+
+- 7 commits, 3 bugs affected since 6131c01 (2016-11-29T23:49:37Z)
+- 3 Authors:
+  - zhangtiff@google.com
+  - martiniss@chromium.org
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [SoM: Display current trooper and sheriffs on sidebar.](https://chromium-review.googlesource.com/416506) (zhangtiff@google.com)
+- [SOM: redirect to original page when asked to login](https://chromium-review.googlesource.com/416372) (martiniss@chromium.org)
+- [[som] set window.xsrfToken when running vulcanized](https://chromium-review.googlesource.com/414577) (seanmccullough@chromium.org)
+- [[som] Fix syntax error in som-annotations-test.](https://chromium-review.googlesource.com/415268) (seanmccullough@chromium.org)
+- [SoM: Improve bug queue labels](https://chromium-review.googlesource.com/414990) (zhangtiff@google.com)
+- [[som] Fix broken behavior/test in <som-rev-range>.](https://chromium-review.googlesource.com/415265) (seanmccullough@chromium.org)
+- [[som] Fix som-alert-item test](https://chromium-review.googlesource.com/415364) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- martiniss@chromium.org:
+  -  [https://crbug.com/662283](https://crbug.com/662283)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/669987](https://crbug.com/669987)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/666169](https://crbug.com/666169)
+
+
 # Release Notes sheriff-o-matic 2016-11-29
 
 - 9 commits, 6 bugs affected since 663ee6b (2016-11-23T00:29:41.000Z)
