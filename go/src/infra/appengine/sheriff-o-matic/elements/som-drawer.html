@@ -205,6 +205,10 @@
         let i = sheriffData['rotations'].indexOf(rotation);
 
         let date = new Date();
+
+        // Date() is UTC by default. Convert to PST.
+        date.setHours(date.getHours() - 8);
+
         let datestamp = this._formatDate(date);
 
         let dateData = sheriffData['calendar'].filter(function(obj) {
