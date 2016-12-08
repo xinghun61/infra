@@ -4,7 +4,7 @@
 
 from collections import namedtuple
 
-from lib.gitiles.diff import ChangeType
+from libs.gitiles.diff import ChangeType
 
 # TODO(wrengr): it'd be better to have a class hierarchy here, so we can
 # avoid playing around with None, and so the change_type can be stored

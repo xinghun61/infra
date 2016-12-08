@@ -9,7 +9,7 @@ import webapp2
 from testing_utils import testing
 
 from handlers import help_triage
-from lib.gitiles.gitiles_repository import GitilesRepository
+from libs.gitiles.gitiles_repository import GitilesRepository
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from waterfall import buildbot

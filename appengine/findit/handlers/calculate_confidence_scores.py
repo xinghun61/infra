@@ -10,7 +10,7 @@ from google.appengine.ext import ndb
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
 from common.waterfall import failure_type
-from lib import time_util
+from libs import time_util
 from model import analysis_approach_type
 from model import suspected_cl_status
 from model.suspected_cl_confidence import SuspectedCLConfidence

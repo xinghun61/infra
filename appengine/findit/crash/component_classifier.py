@@ -9,7 +9,8 @@ import re
 
 from crash.component import Component
 from crash.occurrence import RankByOccurrence
-from lib.gitiles.diff import ChangeType
+from libs.gitiles.diff import ChangeType
+
 
 class ComponentClassifier(object):
   """Determines the component of a crash.

@@ -9,7 +9,7 @@ from crash.findit_for_chromecrash import FinditForFracas
 from crash.results import Result
 from crash.test.crash_testcase import CrashTestCase
 from crash.type_enums import CrashClient
-from lib.gitiles.change_log import ChangeLog
+from libs.gitiles.change_log import ChangeLog
 from model import analysis_status
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 

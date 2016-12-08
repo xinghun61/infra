@@ -9,9 +9,9 @@ from crash.results import Result
 from crash.results import StackInfo
 from crash.stacktrace import StackFrame
 from crash.test.crash_test_suite import CrashTestSuite
-from lib.gitiles.blame import Blame
-from lib.gitiles.blame import Region
-from lib.gitiles.change_log import ChangeLog
+from libs.gitiles.blame import Blame
+from libs.gitiles.blame import Region
+from libs.gitiles.change_log import ChangeLog
 
 DUMMY_CHANGELOG1 = ChangeLog.FromDict({
     'author_name': 'r@chromium.org',

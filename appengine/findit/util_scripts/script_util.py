@@ -43,7 +43,7 @@ SetUpSystemPaths()
 
 # The lib is in predator/ root dir, and can be imported only when sys.path gets
 # set up.
-from lib.cache_decorator import Cached
+from libs.cache_decorator import Cached
 from local_cache import LocalCache  # pylint: disable=W
 
 

@@ -4,7 +4,7 @@
 
 from google.appengine.ext import ndb
 
-from lib import time_util
+from libs import time_util
 
 
 class BaseSuspectedCL(ndb.Model):

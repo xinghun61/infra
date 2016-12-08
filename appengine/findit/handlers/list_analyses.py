@@ -6,7 +6,7 @@ import datetime
 from google.appengine.ext import ndb
 
 from common.base_handler import BaseHandler, Permission
-from lib import time_util
+from libs import time_util
 from model.wf_analysis import WfAnalysis
 from model import result_status
 

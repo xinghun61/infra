@@ -25,7 +25,7 @@ from crash.stacktrace import Stacktrace
 from crash.test.crash_pipeline_test import DummyCrashData
 from crash.test.crash_testcase import CrashTestCase
 from crash.type_enums import CrashClient
-from lib.gitiles import gitiles_repository
+from libs.gitiles import gitiles_repository
 from model import analysis_status
 from model.crash.crash_analysis import CrashAnalysis
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis

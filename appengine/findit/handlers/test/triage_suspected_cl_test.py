@@ -10,7 +10,7 @@ from testing_utils import testing
 import webapp2
 
 from handlers import triage_suspected_cl
-from lib import time_util
+from libs import time_util
 from model import analysis_approach_type
 from model import result_status
 from model import suspected_cl_status

@@ -11,8 +11,8 @@ import textwrap
 from testing_utils import testing
 
 from git_checkout import local_git_repository
-from lib.gitiles import blame
-from lib.gitiles import change_log
+from libs.gitiles import blame
+from libs.gitiles import change_log
 import script_util
 
 

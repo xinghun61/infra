@@ -13,7 +13,6 @@ import webapp2
 from webtest.app import AppError
 
 from common import chrome_dependency_fetcher
-from lib.gitiles import gitiles_repository
 from crash import crash_pipeline
 from crash.findit import Findit
 from crash.findit_for_chromecrash import FinditForFracas
@@ -21,6 +20,7 @@ from crash.test.crash_pipeline_test import DummyCrashData
 from crash.test.crash_testcase import CrashTestCase
 from crash.type_enums import CrashClient
 from handlers.crash import crash_handler
+from libs.gitiles import gitiles_repository
 from model import analysis_status
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 

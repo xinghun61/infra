@@ -10,8 +10,8 @@ from crash.component_classifier import ComponentClassifier
 from crash.results import Result
 from crash.test.crash_testcase import CrashTestCase
 from model.crash.crash_config import CrashConfig
-from lib.gitiles.change_log import ChangeLog
-from lib.gitiles.change_log import FileChangeInfo
+from libs.gitiles.change_log import ChangeLog
+from libs.gitiles.change_log import FileChangeInfo
 
 
 # N.B., the call to Get() in CrashConfigComponentClassifier.__init__

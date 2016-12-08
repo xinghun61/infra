@@ -11,7 +11,7 @@ import webapp2
 from testing_utils import testing
 
 from handlers.crash import fracas_result_feedback
-from lib import time_util
+from libs import time_util
 from model import analysis_status
 from model import triage_status
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis

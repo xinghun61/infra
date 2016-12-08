@@ -16,7 +16,7 @@ from common.pipeline_wrapper import pipeline
 from crash import findit_for_chromecrash
 from crash import findit_for_clusterfuzz
 from crash.type_enums import CrashClient
-from lib import time_util
+from libs import time_util
 from gae_libs.gitiles import cached_gitiles_repository
 from model import analysis_status
 

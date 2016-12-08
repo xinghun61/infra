@@ -5,8 +5,8 @@
 from gae_libs.caches import CompressedMemCache
 from gae_libs.caches import PickledMemCache
 
-from lib.cache_decorator import Cached
-from lib.gitiles.gitiles_repository import GitilesRepository
+from libs.cache_decorator import Cached
+from libs.gitiles.gitiles_repository import GitilesRepository
 
 CACHE_EXPIRE_TIME_SECONDS = 24 * 60 * 60
 

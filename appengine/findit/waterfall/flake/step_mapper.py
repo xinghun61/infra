@@ -9,7 +9,7 @@ import logging
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from gae_libs import caches
-from lib import cache_decorator
+from libs import cache_decorator
 from waterfall import buildbot
 from waterfall import swarming_util
 

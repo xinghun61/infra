@@ -10,8 +10,8 @@ import re
 from testing_utils import testing
 
 from gae_libs.testcase import TestCase
-from lib.gitiles import gitiles_repository
-from lib.gitiles.change_log import ChangeLog
+from libs.gitiles import gitiles_repository
+from libs.gitiles.change_log import ChangeLog
 from libs.http import retry_http_client
 
 

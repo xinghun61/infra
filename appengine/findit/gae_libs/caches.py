@@ -8,7 +8,7 @@ import zlib
 
 from google.appengine.api import memcache
 
-from lib.cache import Cache
+from libs.cache import Cache
 
 
 class PickledMemCache(Cache):

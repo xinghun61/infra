@@ -8,7 +8,7 @@ import logging
 from google.appengine.ext import ndb
 
 from common.waterfall import failure_type
-from lib import time_util
+from libs import time_util
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild

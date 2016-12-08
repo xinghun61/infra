@@ -9,13 +9,13 @@ from collections import defaultdict
 from datetime import datetime
 import re
 
-from lib import time_util
-from lib.gitiles import commit_util
-from lib.gitiles.blame import Blame
-from lib.gitiles.blame import Region
-from lib.gitiles.change_log import ChangeLog
-from lib.gitiles.change_log import FileChangeInfo
-from lib.gitiles.diff import ChangeType
+from libs import time_util
+from libs.gitiles import commit_util
+from libs.gitiles.blame import Blame
+from libs.gitiles.blame import Region
+from libs.gitiles.change_log import ChangeLog
+from libs.gitiles.change_log import FileChangeInfo
+from libs.gitiles.diff import ChangeType
 
 REGION_START_COUNT_PATTERN = re.compile(r'^(\S+) \d+ (\d+) (\d+)')
 

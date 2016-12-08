@@ -5,7 +5,7 @@
 import mock
 import unittest
 
-from lib import time_util
+from libs import time_util
 from datetime import datetime
 from datetime import timedelta
 
@@ -37,7 +37,7 @@ class DiffTest(unittest.TestCase):
         time_util.FormatDatetime(datetime(2016, 1, 2, 1, 2, 3)),
         '2016-01-02 01:02:03 UTC')
 
-  @mock.patch('lib.time_util.pytz')
+  @mock.patch('libs.time_util.pytz')
   def testGetDateTimeInTimezoneWithGivenDatetime(self, mocked_pytz_module):
     mocked_datetime = mock.MagicMock()
     mocked_datetime.astimezone.return_value = 'expected'

@@ -5,11 +5,11 @@
 from datetime import datetime
 
 from common.waterfall import failure_type
-from lib.gitiles.blame import Blame
-from lib.gitiles.blame import Region
-from lib.gitiles.change_log import FileChangeInfo
-from lib.gitiles.diff import ChangeType
-from lib.gitiles.gitiles_repository import GitilesRepository
+from libs.gitiles.blame import Blame
+from libs.gitiles.blame import Region
+from libs.gitiles.change_log import FileChangeInfo
+from libs.gitiles.diff import ChangeType
+from libs.gitiles.gitiles_repository import GitilesRepository
 from waterfall import build_failure_analysis
 from waterfall.failure_signal import FailureSignal
 from waterfall.test import wf_testcase

@@ -10,7 +10,7 @@ from google.appengine.datastore.datastore_query import Cursor
 
 from handlers.flake import list_flakes
 from handlers.flake.list_flakes import FilterMasterFlakeAnalysis
-from lib import time_util
+from libs import time_util
 from model import analysis_status
 from model import result_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis

@@ -4,7 +4,8 @@
 
 import unittest
 
-from lib.gitiles.blame import Blame, Region
+from libs.gitiles.blame import Blame, Region
+
 
 class BlameTest(unittest.TestCase):
   REGION1 = Region(1, 5, 'abc', 'a', 'a@email.com', '2014-08-14 19:38:42')

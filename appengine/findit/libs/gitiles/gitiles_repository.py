@@ -8,14 +8,14 @@ from datetime import timedelta
 import json
 import re
 
-from lib.gitiles import commit_util
-from lib.gitiles import diff
-from lib.gitiles.blame import Blame
-from lib.gitiles.blame import Region
-from lib.gitiles.change_log import ChangeLog
-from lib.gitiles.change_log import FileChangeInfo
-from lib.gitiles.git_repository import GitRepository
-from lib.time_util import TimeZoneInfo
+from libs.gitiles import commit_util
+from libs.gitiles import diff
+from libs.gitiles.blame import Blame
+from libs.gitiles.blame import Region
+from libs.gitiles.change_log import ChangeLog
+from libs.gitiles.change_log import FileChangeInfo
+from libs.gitiles.git_repository import GitRepository
+from libs.time_util import TimeZoneInfo
 
 COMMIT_POSITION_PATTERN = re.compile(
     '^Cr-Commit-Position: refs/heads/master@{#(\d+)}$', re.IGNORECASE)

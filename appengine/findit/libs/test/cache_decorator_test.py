@@ -7,8 +7,8 @@ import zlib
 
 from testing_utils import testing
 
-from lib import cache
-from lib import cache_decorator
+from libs import cache
+from libs import cache_decorator
 
 
 class _DummyCache(cache.Cache):

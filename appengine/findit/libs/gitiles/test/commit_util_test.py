@@ -8,7 +8,7 @@ from testing_utils import testing
 import textwrap
 import urllib2
 
-from lib.gitiles import commit_util
+from libs.gitiles import commit_util
 
 
 class CodeReviewUtilTest(testing.AppengineTestCase):

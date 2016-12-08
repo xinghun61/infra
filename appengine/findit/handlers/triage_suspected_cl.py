@@ -12,7 +12,7 @@ from google.appengine.ext import ndb
 
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
-from lib import time_util
+from libs import time_util
 from model import result_status
 from model import suspected_cl_status
 from model.wf_analysis import WfAnalysis

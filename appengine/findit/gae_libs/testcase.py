@@ -6,7 +6,7 @@ import os
 
 from testing_utils import testing
 
-from lib import time_util
+from libs import time_util
 from libs.http import retry_http_client
 
 

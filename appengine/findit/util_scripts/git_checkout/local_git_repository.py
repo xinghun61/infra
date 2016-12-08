@@ -9,7 +9,7 @@ import subprocess
 import threading
 
 from git_checkout import local_git_parsers
-from lib.gitiles.git_repository import GitRepository
+from libs.gitiles.git_repository import GitRepository
 import script_util
 
 _CHANGELOG_FORMAT_STRING = ('commit %H%n'

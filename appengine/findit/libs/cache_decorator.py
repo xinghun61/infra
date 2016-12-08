@@ -36,8 +36,8 @@
 
 import functools
 import hashlib
-import inspect
 import logging
+import inspect
 import pickle
 
 

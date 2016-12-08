@@ -5,7 +5,7 @@
 from testing_utils import testing
 
 from common.waterfall import failure_type
-from lib.gitiles.gitiles_repository import GitilesRepository
+from libs.gitiles.gitiles_repository import GitilesRepository
 from model import analysis_approach_type
 from model import analysis_status
 from model import result_status

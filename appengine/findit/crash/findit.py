@@ -12,9 +12,10 @@ from common import appengine_util
 from common import chrome_dependency_fetcher
 from common import constants
 from crash.crash_report import CrashReport
-from lib import time_util
+from libs import time_util
 from model import analysis_status
 from model.crash.crash_config import CrashConfig
+
 
 # TODO(http://crbug.com/659346): since most of our unit tests are
 # FinditForFracas-specific, wrengr moved them to findit_for_chromecrash_test.py.

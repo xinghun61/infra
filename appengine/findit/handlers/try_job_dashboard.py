@@ -9,7 +9,7 @@ import json
 
 from common.base_handler import BaseHandler, Permission
 from model.wf_try_job_data import WfTryJobData
-from lib import time_util
+from libs import time_util
 
 
 NOT_AVAILABLE = 'N/A'

@@ -7,8 +7,8 @@ import os
 import re
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
-from lib.gitiles.diff import ChangeType
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from libs.gitiles.diff import ChangeType
 from waterfall.failure_signal import FailureSignal
 from waterfall import waterfall_config
 

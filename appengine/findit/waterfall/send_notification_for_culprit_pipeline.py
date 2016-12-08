@@ -12,7 +12,7 @@ from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from infra_api_clients.codereview.rietveld import Rietveld
-from lib import time_util
+from libs import time_util
 from model import analysis_status as status
 from model.wf_analysis import WfAnalysis
 from model.wf_culprit import WfCulprit

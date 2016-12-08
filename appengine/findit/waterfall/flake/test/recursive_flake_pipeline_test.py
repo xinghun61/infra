@@ -62,7 +62,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     mocked_utc_now = datetime(2016, 9, 04, 20, 0, 0, 0)
     self.MockUTCNow(mocked_utc_now)
     self.MockUTCNowWithTimezone(mocked_utc_now)
-    with mock.patch('lib.time_util.GetDatetimeInTimezone') as timezone_func:
+    with mock.patch('libs.time_util.GetDatetimeInTimezone') as timezone_func:
       timezone_func.side_effect = [mocked_pst_now, None]
       self.assertEqual(mocked_utc_now,
                        recursive_flake_pipeline._GetETAToStartAnalysis(False))
@@ -73,7 +73,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     mocked_utc_now = datetime(2016, 9, 20, 8, 0, 0, 0)
     self.MockUTCNow(mocked_utc_now)
     self.MockUTCNowWithTimezone(mocked_utc_now)
-    with mock.patch('lib.time_util.GetDatetimeInTimezone') as timezone_func:
+    with mock.patch('libs.time_util.GetDatetimeInTimezone') as timezone_func:
       timezone_func.side_effect = [mocked_pst_now, None]
       self.assertEqual(mocked_utc_now,
                        recursive_flake_pipeline._GetETAToStartAnalysis(False))
@@ -88,7 +88,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     mocked_utc_eta = datetime(2016, 9, 21, 1, 0, 0, 0)  # Without delay.
     self.MockUTCNow(mocked_utc_now)
     self.MockUTCNowWithTimezone(mocked_utc_now)
-    with mock.patch('lib.time_util.GetDatetimeInTimezone') as (
+    with mock.patch('libs.time_util.GetDatetimeInTimezone') as (
         timezone_func), mock.patch('random.randint') as random_func:
       timezone_func.side_effect = [mocked_pst_now, mocked_utc_eta]
       random_func.side_effect = [seconds_delay, None]

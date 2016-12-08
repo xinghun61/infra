@@ -4,7 +4,7 @@
 
 
 from common.pipeline_wrapper import BasePipeline
-from lib import time_util
+from libs import time_util
 from model import analysis_approach_type
 from model import analysis_status
 from model import result_status

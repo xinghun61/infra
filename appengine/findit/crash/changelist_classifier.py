@@ -14,7 +14,8 @@ from crash.scorers.min_distance import MinDistance
 from crash.scorers.top_frame_index import TopFrameIndex
 from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
-from lib.gitiles.diff import ChangeType
+from libs.gitiles.diff import ChangeType
+
 
 class ChangelistClassifier(namedtuple('ChangelistClassifier',
     ['repository', 'top_n_frames', 'top_n_results', 'confidence_threshold'])):

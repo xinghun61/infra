@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
-from lib import time_util
+from libs import time_util
 from model.wf_build import WfBuild
 from waterfall import buildbot
 from waterfall import lock_util

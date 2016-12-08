@@ -6,7 +6,7 @@ import logging
 
 from common import appengine_util
 from common import constants
-from lib import time_util
+from libs import time_util
 from model import analysis_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import waterfall_config

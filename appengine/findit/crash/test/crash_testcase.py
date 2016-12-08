@@ -9,8 +9,8 @@ import gae_ts_mon
 from google.appengine.api import users
 
 from gae_libs.testcase import TestCase
+from libs.gitiles.change_log import ChangeLog
 from libs.http import retry_http_client
-from lib.gitiles.change_log import ChangeLog
 from model.crash.crash_config import CrashConfig
 
 

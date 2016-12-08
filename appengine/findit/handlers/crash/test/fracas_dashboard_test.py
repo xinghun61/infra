@@ -13,7 +13,7 @@ import webapp2
 from testing_utils import testing
 
 from handlers.crash import fracas_dashboard
-from lib import time_util
+from libs import time_util
 from model import analysis_status
 from model import result_status
 from model import triage_status

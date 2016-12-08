@@ -4,7 +4,9 @@
 
 import unittest
 
-from lib.gitiles.diff import ChangeType, IsKnownChangeType
+from libs.gitiles.diff import ChangeType
+from libs.gitiles.diff import IsKnownChangeType
+
 
 class DiffTest(unittest.TestCase):
   def testKnownChangeTypes(self):

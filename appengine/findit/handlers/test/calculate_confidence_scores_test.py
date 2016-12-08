@@ -10,7 +10,7 @@ import webapp2
 
 from common.waterfall import failure_type
 from handlers import calculate_confidence_scores
-from lib import time_util
+from libs import time_util
 from model import analysis_approach_type
 from model import suspected_cl_status
 from model.suspected_cl_confidence import ConfidenceInformation

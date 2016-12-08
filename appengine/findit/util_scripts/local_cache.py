@@ -8,7 +8,7 @@ import pickle
 import threading
 import zlib
 
-from lib.cache import Cache
+from libs.cache import Cache
 
 CACHE_DIR = os.path.join(os.path.expanduser('~'), '.predator', 'cache')
 

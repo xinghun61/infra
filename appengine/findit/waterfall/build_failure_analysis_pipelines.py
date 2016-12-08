@@ -8,7 +8,7 @@ from google.appengine.ext import ndb
 
 from common import appengine_util
 from common import constants
-from lib import time_util
+from libs import time_util
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline

@@ -10,7 +10,7 @@ import textwrap
 from common import appengine_util
 from common import constants
 from common.pipeline_wrapper import BasePipeline
-from lib import time_util
+from libs import time_util
 from model import analysis_status
 from model import result_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
@@ -463,7 +463,9 @@ class NextBuildNumberPipeline(BasePipeline):
         manually_triggered=manually_triggered,
         use_nearby_neighbor=use_nearby_neighbor,
         step_size=(run_build_number - next_run))
-    pipeline_job.target = appengine_util.GetTargetNameForModule(
-        constants.WATERFALL_BACKEND)
+    # Disable attribute 'target' defined outside __init__ pylint warning,
+    # because pipeline generates its own __init__ based on run function.
+    pipeline_job.target = (  # pylint: disable=W0201
+        appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
     pipeline_job.StartOffPSTPeakHours(
         queue_name=self.queue_name or constants.DEFAULT_QUEUE)

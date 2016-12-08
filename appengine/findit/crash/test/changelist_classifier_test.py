@@ -16,10 +16,10 @@ from crash.stacktrace import CallStack
 from crash.stacktrace import StackFrame
 from crash.stacktrace import Stacktrace
 from crash.test.crash_test_suite import CrashTestSuite
-from lib.gitiles.blame import Blame
-from lib.gitiles.blame import Region
-from lib.gitiles.change_log import ChangeLog
-from lib.gitiles.gitiles_repository import GitilesRepository
+from libs.gitiles.blame import Blame
+from libs.gitiles.blame import Region
+from libs.gitiles.change_log import ChangeLog
+from libs.gitiles.gitiles_repository import GitilesRepository
 
 DUMMY_CHANGELOG1 = ChangeLog.FromDict({
     'author_name': 'r@chromium.org',

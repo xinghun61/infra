@@ -26,7 +26,7 @@ from common import appengine_util
 from common import auth_util
 from common import constants
 from common.waterfall import failure_type
-from lib import time_util
+from libs import time_util
 from model import analysis_approach_type
 from model import analysis_status
 from model.flake.flake_analysis_request import FlakeAnalysisRequest

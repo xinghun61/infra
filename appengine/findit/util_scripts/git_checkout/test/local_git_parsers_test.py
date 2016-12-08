@@ -16,8 +16,8 @@ import script_util
 script_util.SetUpSystemPaths()
 
 from git_checkout import local_git_parsers
-from lib.gitiles import blame
-from lib.gitiles import change_log
+from libs.gitiles import blame
+from libs.gitiles import change_log
 
 
 class LocalGitParsersTest(unittest.TestCase):
