@@ -253,3 +253,8 @@ import:
   repo: https://chromium.googlesource.com/external/github.com/bradfitz/gomemcache.git
   subpackages:
   - memcache
+- package: github.com/google/go-querystring
+  repo: https://chromium.googlesource.com/external/github.com/google/go-querystring.git
+  version: master
+  subpackages:
+  - query
