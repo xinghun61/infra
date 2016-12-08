@@ -10,6 +10,7 @@ import textwrap
 from common import appengine_util
 from common import constants
 from common.pipeline_wrapper import BasePipeline
+from common.pipeline_wrapper import pipeline
 from libs import time_util
 from model import analysis_status
 from model import result_status
@@ -21,6 +22,9 @@ from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
 from waterfall.trigger_flake_swarming_task_pipeline import (
     TriggerFlakeSwarmingTaskPipeline)
+
+
+_NO_BUILD_NUMBER = -1
 
 
 def _UpdateBugWithResult(analysis, queue_name):
@@ -42,21 +46,23 @@ def _UpdateBugWithResult(analysis, queue_name):
       analysis.algorithm_parameters.get('iterations_to_rerun'),
       analysis.key.urlsafe())
   labels = ['AnalyzedByFindit']
-  pipeline = PostCommentToBugPipeline(analysis.bug_id, comment, labels)
-  pipeline.target = appengine_util.GetTargetNameForModule(
+  comment_pipeline = PostCommentToBugPipeline(analysis.bug_id, comment, labels)
+  comment_pipeline.target = appengine_util.GetTargetNameForModule(
       constants.WATERFALL_BACKEND)
-  pipeline.start(queue_name=queue_name)
+  comment_pipeline.start(queue_name=queue_name)
   return True
 
 
-def _UpdateAnalysisStatusUponCompletion(master_flake_analysis, status, error):
+def _UpdateAnalysisStatusUponCompletion(
+    master_flake_analysis, suspected_build, status, error):
   master_flake_analysis.end_time = time_util.GetUTCNow()
   master_flake_analysis.status = status
 
   if error:
     master_flake_analysis.error = error
 
-  if master_flake_analysis.suspected_flake_build_number is not None:
+  if suspected_build != -1:
+    master_flake_analysis.suspected_flake_build_number = suspected_build
     master_flake_analysis.result_status = result_status.FOUND_UNTRIAGED
   else:
     master_flake_analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
@@ -227,9 +233,8 @@ class RecursiveFlakePipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, preferred_run_build_number,
-          step_name, test_name, version_number, master_build_number,
-          flakiness_algorithm_results_dict, manually_triggered=False,
-          use_nearby_neighbor=False, step_size=0):
+          step_name, test_name, version_number, triggering_build_number,
+          manually_triggered=False, use_nearby_neighbor=False, step_size=0):
     """Pipeline to determine the regression range of a flaky test.
 
     Args:
@@ -241,9 +246,8 @@ class RecursiveFlakePipeline(BasePipeline):
       step_name (str): The step name.
       test_name (str): The test name.
       version_number (int): The version to save analysis results and data to.
-      master_build_number (int): The build number of the Master_Flake_analysis.
-      flakiness_algorithm_results_dict (dict): A dictionary used by
-        NextBuildNumberPipeline
+      triggering_build_number (int): The build number triggered this
+          Master_Flake_analysis.
       manually_triggered (bool): True if the analysis is from manual request,
         like by a Chromium sheriff.
       use_nearby_neighbor (bool): Whether the optimization for using the
@@ -258,11 +262,12 @@ class RecursiveFlakePipeline(BasePipeline):
       A dict of lists for reliable/flaky tests.
     """
     flake_analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, master_build_number, step_name, test_name,
-        version=version_number)
+        master_name, builder_name, triggering_build_number, step_name,
+        test_name, version=version_number)
     logging.info(
         'Running RecursiveFlakePipeline on MasterFlakeAnalysis %s/%s/%s/%s/%s',
-        master_name, builder_name, master_build_number, step_name, test_name)
+        master_name, builder_name, triggering_build_number, step_name,
+        test_name)
     logging.info(
         'MasterFlakeAnalysis %s version %s', flake_analysis, version_number)
 
@@ -283,148 +288,123 @@ class RecursiveFlakePipeline(BasePipeline):
     task_id = yield TriggerFlakeSwarmingTaskPipeline(
         master_name, builder_name, actual_run_build_number, step_name,
         [test_name])
-    # Pass the trigger pipeline into a process pipeline.
-    test_result_future = yield ProcessFlakeSwarmingTaskResultPipeline(
-        master_name, builder_name, actual_run_build_number,
-        step_name, task_id, master_build_number, test_name, version_number)
-    yield NextBuildNumberPipeline(
-        master_name, builder_name, master_build_number,
-        actual_run_build_number, step_name, test_name, version_number,
-        test_result_future, flakiness_algorithm_results_dict,
-        use_nearby_neighbor=use_nearby_neighbor,
-        manually_triggered=manually_triggered)
+
+    with pipeline.InOrder():
+      yield ProcessFlakeSwarmingTaskResultPipeline(
+          master_name, builder_name, actual_run_build_number, step_name,
+          task_id, triggering_build_number, test_name, version_number)
+      yield NextBuildNumberPipeline(
+          master_name, builder_name, triggering_build_number,
+          actual_run_build_number, step_name, test_name, version_number,
+          use_nearby_neighbor=use_nearby_neighbor,
+          manually_triggered=manually_triggered)
 
 
-def get_next_run(master_flake_analysis, flakiness_algorithm_results_dict):
+def _IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
+  return (
+      pass_rate < lower_flake_threshold or pass_rate > upper_flake_threshold)
+
+
+def _GetNextBuildNumber(data_points, flake_settings):
+  """Finds the next build to be checked flakiness on, or gets final result.
+
+  Args:
+    data_points (list): A list of data points of already-completed tasks
+        for this analysis. Data_points are sorted by build_numbers in descending
+        order.
+    flake_settings (dict): A dict of parameters for algorithms.
+
+  Returns:
+    (next_build_number, suspected_build): The next build number to check
+        and suspected build number that the flakiness was introduced in.
+        If needs to check next_build_number, suspected_build will be -1;
+        If finds the suspected_build, next_build_number will be -1;
+        If no findings evertually, both will be -1.
+  """
   # A description of this algorithm can be found at:
   # https://docs.google.com/document/d/1wPYFZ5OT998Yn7O8wGDOhgfcQ98mknoX13AesJaS6ig/edit
   # Get the last result.
-  last_result = master_flake_analysis.data_points[-1].pass_rate
-  cur_run = min([d.build_number for d in master_flake_analysis.data_points])
-  flake_settings = waterfall_config.GetCheckFlakeSettings()
   lower_flake_threshold = flake_settings.get('lower_flake_threshold')
   upper_flake_threshold = flake_settings.get('upper_flake_threshold')
   max_stable_in_a_row = flake_settings.get('max_stable_in_a_row')
   max_flake_in_a_row = flake_settings.get('max_flake_in_a_row')
 
-  if last_result < 0:  # Test doesn't exist in the current build number.
-    flakiness_algorithm_results_dict['stable_in_a_row'] += 1
-    flakiness_algorithm_results_dict['stabled_out'] = True
-    flakiness_algorithm_results_dict['flaked_out'] = True
-    flakiness_algorithm_results_dict['lower_boundary_result'] = 'STABLE'
+  stables_in_a_row = 0
+  flakes_in_a_row = 0
+  stables_happened = False
+  flakes_first = 0
+  flaked_out = False
+  next_build_number = 0
 
-    lower_boundary = master_flake_analysis.data_points[
-        -flakiness_algorithm_results_dict['stable_in_a_row']].build_number
+  for i in xrange(len(data_points)):
+    pass_rate = data_points[i].pass_rate
+    build_number = data_points[i].build_number
+    if pass_rate < 0:   # Test doesn't exist in this build.
+      if flaked_out or flakes_first:
+        stables_in_a_row += 1
+        lower_boundary = data_points[i - stables_in_a_row + 1].build_number
+        return lower_boundary + 1, _NO_BUILD_NUMBER
+      else:  # No flaky region has been identified, no findings.
+        return _NO_BUILD_NUMBER, _NO_BUILD_NUMBER
 
-    flakiness_algorithm_results_dict['lower_boundary'] = lower_boundary
-    flakiness_algorithm_results_dict['sequential_run_index'] += 1
-    return lower_boundary + 1
+    elif _IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
+      stables_in_a_row += 1
+      flakes_in_a_row = 0
+      stables_happened = True
+      # TODO (crbug.com/670888): Pin point a stable build rather than looking
+      # for stable region to further narrow down the sequential search range.
+      if stables_in_a_row <= max_stable_in_a_row:
+        # No stable region yet, keep searching.
+        next_build_number = build_number - 1
+        continue
 
-  elif (last_result < lower_flake_threshold or
-        last_result > upper_flake_threshold):  # Stable result.
-    flakiness_algorithm_results_dict['stable_in_a_row'] += 1
-    flakiness_algorithm_results_dict['stables_happened'] = True
+      # Stable region found.
+      if not flaked_out and not flakes_first:
+        # Already stabled_out but no flake region yet, no findings.
+        return _NO_BUILD_NUMBER, _NO_BUILD_NUMBER
 
-    if flakiness_algorithm_results_dict['flakes_first'] == 0:
-      # First task is not flaky, makes flakes_first invalid.
-      flakiness_algorithm_results_dict['flakes_first'] = None
-
-    # TODO (chanli): Pin point a stable build rather than looking for stable
-    # region to further narrow down the range for sequential search.
-    # crbug.com/670888
-    if (flakiness_algorithm_results_dict['stable_in_a_row'] >
-        max_stable_in_a_row):
-      flakiness_algorithm_results_dict['stabled_out'] = True
       # Flake region is also found, ready for sequential search.
-      if (flakiness_algorithm_results_dict['flaked_out'] or
-          flakiness_algorithm_results_dict['flakes_first']):
-        if flakiness_algorithm_results_dict['lower_boundary']:
-          lower_boundary = flakiness_algorithm_results_dict['lower_boundary']
-        else:
-          lower_boundary = master_flake_analysis.data_points[
-            -flakiness_algorithm_results_dict['stable_in_a_row']].build_number
-          flakiness_algorithm_results_dict['lower_boundary'] = lower_boundary
-        flakiness_algorithm_results_dict['sequential_run_index'] += 1
-        return lower_boundary + 1
-      else:  # Already stabled_out but not flaked_out, no findings.
-        return -1
+      lower_boundary_index = i - stables_in_a_row + 1
+      lower_boundary = data_points[lower_boundary_index].build_number
+      previous_build = data_points[lower_boundary_index - 1].build_number
+      if previous_build == lower_boundary + 1:
+        # Sequential search is Done.
+        return _NO_BUILD_NUMBER, previous_build
+      # Continue sequential search.
+      return lower_boundary + 1, _NO_BUILD_NUMBER
 
-    if ((flakiness_algorithm_results_dict['flaked_out'] or
-         flakiness_algorithm_results_dict['flakes_first']) and
-        not flakiness_algorithm_results_dict['stabled_out'] and
-        not flakiness_algorithm_results_dict['lower_boundary']):
-      # Identified a candidate for the lower boundary.
-      # Latest stable point to the left of a flaky region.
-      flakiness_algorithm_results_dict['lower_boundary'] = cur_run
-      flakiness_algorithm_results_dict['lower_boundary_result'] = 'STABLE'
-    flakiness_algorithm_results_dict['flakes_in_a_row'] = 0
-    step_size = flakiness_algorithm_results_dict['stable_in_a_row'] + 1
-    return cur_run - step_size
+    else:  # Flaky result.
+      flakes_in_a_row += 1
+      stables_in_a_row = 0
 
-  else:
-    # Flaky result.
-    flakiness_algorithm_results_dict['flakes_in_a_row'] += 1
+      if not stables_happened:
+        # No stables yet.
+        flakes_first += 1
 
-    if not flakiness_algorithm_results_dict['stables_happened']:
-      # No stables yet.
-      flakiness_algorithm_results_dict['flakes_first'] += 1
+      if flakes_in_a_row > max_flake_in_a_row:  # Identified a flaky region.
+        flaked_out = True
 
-    if (flakiness_algorithm_results_dict['flakes_in_a_row'] >
-        max_flake_in_a_row):  # Identified a flaky region.
-      flakiness_algorithm_results_dict['flaked_out'] = True
+      next_build_number = build_number - flakes_in_a_row
 
-    if ((flakiness_algorithm_results_dict['flaked_out'] or
-         flakiness_algorithm_results_dict['flakes_first']) and
-        not flakiness_algorithm_results_dict['stabled_out']):
-      # Identified a candidate for the upper boundary.
-      # Earliest flaky point to the right of a stable region.
-      flakiness_algorithm_results_dict['upper_boundary'] = cur_run
-      flakiness_algorithm_results_dict['lower_boundary'] = None
-    flakiness_algorithm_results_dict['stable_in_a_row'] = 0
-    step_size = flakiness_algorithm_results_dict['flakes_in_a_row'] + 1
-    return cur_run - step_size
-
-
-def sequential_next_run(
-    master_flake_analysis, flakiness_algorithm_results_dict):
-  last_result = master_flake_analysis.data_points[-1].pass_rate
-  last_result_status = 'FLAKE'
-  flake_settings = waterfall_config.GetCheckFlakeSettings()
-  lower_flake_threshold = flake_settings.get('lower_flake_threshold')
-  upper_flake_threshold = flake_settings.get('upper_flake_threshold')
-
-  if (last_result < lower_flake_threshold or
-      last_result > upper_flake_threshold):
-    last_result_status = 'STABLE'
-  if flakiness_algorithm_results_dict['sequential_run_index'] > 0:
-    if (last_result_status !=
-        flakiness_algorithm_results_dict['lower_boundary_result']):
-      master_flake_analysis.suspected_flake_build_number = (
-          flakiness_algorithm_results_dict['lower_boundary'] +
-          flakiness_algorithm_results_dict['sequential_run_index'])
-      master_flake_analysis.put()
-      return -1
-  flakiness_algorithm_results_dict['sequential_run_index'] += 1
-  return (flakiness_algorithm_results_dict['lower_boundary'] +
-          flakiness_algorithm_results_dict['sequential_run_index'])
+  return next_build_number, _NO_BUILD_NUMBER
 
 
 class NextBuildNumberPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   # Unused argument - pylint: disable=W0613
-  def run(self, master_name, builder_name, master_build_number,
-          run_build_number, step_name, test_name, version_number,
-          test_result_future, flakiness_algorithm_results_dict,
-          use_nearby_neighbor=False, manually_triggered=False):
+  def run(
+      self, master_name, builder_name, triggering_build_number,
+       current_build_number, step_name, test_name, version_number,
+      use_nearby_neighbor=False, manually_triggered=False):
 
     # Get MasterFlakeAnalysis success list corresponding to parameters.
     master_flake_analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, master_build_number, step_name, test_name,
-        version=version_number)
+        master_name, builder_name, triggering_build_number, step_name,
+        test_name, version=version_number)
 
     flake_swarming_task = FlakeSwarmingTask.Get(
-        master_name, builder_name, run_build_number, step_name, test_name)
+        master_name, builder_name, current_build_number, step_name, test_name)
 
     # Don't call another pipeline if we fail.
     if flake_swarming_task.status == analysis_status.ERROR:
@@ -437,32 +417,37 @@ class NextBuildNumberPipeline(BasePipeline):
       }
 
       _UpdateAnalysisStatusUponCompletion(
-          master_flake_analysis, analysis_status.ERROR, error)
+          master_flake_analysis, None, analysis_status.ERROR, error)
       return
 
+    flake_settings = waterfall_config.GetCheckFlakeSettings()
+    data_points = sorted(
+        master_flake_analysis.data_points, key=lambda k: k.build_number,
+        reverse=True)
     # Figure out what build_number to trigger a swarming rerun on next, if any.
-    if flakiness_algorithm_results_dict['stabled_out']:
-      next_run = sequential_next_run(
-          master_flake_analysis, flakiness_algorithm_results_dict)
-    else:
-      next_run = get_next_run(
-          master_flake_analysis, flakiness_algorithm_results_dict)
-    if (next_run < flakiness_algorithm_results_dict['last_build_number'] or
-        next_run >= master_build_number):
+    next_build_number, suspected_build = _GetNextBuildNumber(
+        data_points, flake_settings)
+
+    max_build_numbers_to_look_back = flake_settings.get(
+        'max_build_numbers_to_look_back')
+    last_build_number = max(
+        0, triggering_build_number - max_build_numbers_to_look_back)
+    if (next_build_number < last_build_number or
+        next_build_number >= triggering_build_number):
        # Finished.
       _UpdateAnalysisStatusUponCompletion(
-          master_flake_analysis, analysis_status.COMPLETED, None)
+          master_flake_analysis, suspected_build, analysis_status.COMPLETED,
+          None)
       _UpdateBugWithResult(
           master_flake_analysis, self.queue_name or constants.DEFAULT_QUEUE)
       return
 
     pipeline_job = RecursiveFlakePipeline(
-        master_name, builder_name, next_run, step_name, test_name,
-        version_number, master_build_number,
-        flakiness_algorithm_results_dict=flakiness_algorithm_results_dict,
+        master_name, builder_name, next_build_number, step_name, test_name,
+        version_number, triggering_build_number,
         manually_triggered=manually_triggered,
         use_nearby_neighbor=use_nearby_neighbor,
-        step_size=(run_build_number - next_run))
+        step_size=(current_build_number - next_build_number))
     # Disable attribute 'target' defined outside __init__ pylint warning,
     # because pipeline generates its own __init__ based on run function.
     pipeline_job.target = (  # pylint: disable=W0201

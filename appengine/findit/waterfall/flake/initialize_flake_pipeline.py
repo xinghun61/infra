@@ -129,29 +129,11 @@ def ScheduleAnalysisIfNeeded(
         'will be captured in version %s', repr(normalized_test),
         repr(original_test), analysis.version_number)
 
-    max_build_numbers_to_look_back = algorithm_parameters.get(
-        'max_build_numbers_to_look_back')
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 0,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': max(
-            0, normalized_test.build_number - max_build_numbers_to_look_back),
-        'lower_boundary': None,
-        'upper_boundary': None,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'stables_happened': False,
-        'flakes_first': 0
-    }
-
     pipeline_job = RecursiveFlakePipeline(
         normalized_test.master_name, normalized_test.builder_name,
         normalized_test.build_number, normalized_test.step_name,
         normalized_test.test_name, analysis.version_number,
         master_build_number=normalized_test.build_number,
-        flakiness_algorithm_results_dict=flakiness_algorithm_results_dict,
         manually_triggered=manually_triggered,
         use_nearby_neighbor=use_nearby_neighbor)
     pipeline_job.target = appengine_util.GetTargetNameForModule(

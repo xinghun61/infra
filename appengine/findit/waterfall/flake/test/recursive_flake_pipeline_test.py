@@ -13,11 +13,11 @@ from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.flake import recursive_flake_pipeline
-from waterfall.flake.recursive_flake_pipeline import get_next_run
+from waterfall.flake.recursive_flake_pipeline import _GetNextBuildNumber
 from waterfall.flake.recursive_flake_pipeline import NextBuildNumberPipeline
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
-from waterfall.flake.recursive_flake_pipeline import sequential_next_run
 from waterfall.test import wf_testcase
+from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
 
 class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
@@ -108,23 +108,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     run_build_number = 100
     step_name = 's'
     test_name = 't'
-    test_result_future = 'test_result_future'
     queue_name = constants.DEFAULT_QUEUE
     task_id = 'task_id'
-
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 0,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': 0,
-        'lower_boundary': None,
-        'upper_boundary': None,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': 0,
-        'stables_happened': 0
-    }
 
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, master_build_number, step_name, test_name)
@@ -152,15 +137,13 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         '',
         expected_args=[master_name, builder_name, master_build_number,
                        build_number, step_name, test_name,
-                       analysis.version_number, test_result_future,
-                       flakiness_algorithm_results_dict],
+                       analysis.version_number],
         expected_kwargs={'use_nearby_neighbor': False,
                          'manually_triggered': False})
 
     rfp = RecursiveFlakePipeline(
         master_name, builder_name, build_number, step_name, test_name,
         analysis.version_number, master_build_number,
-        flakiness_algorithm_results_dict=flakiness_algorithm_results_dict,
         use_nearby_neighbor=False, step_size=0)
 
     rfp.start(queue_name=queue_name)
@@ -177,20 +160,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 100
     step_name = 's'
     test_name = 't'
-    test_result_future = 'trf'
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 0,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': 0,
-        'lower_boundary': None,
-        'upper_boundary': None,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': 0,
-        'stables_happened': False
-    }
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.PENDING
@@ -208,237 +177,33 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis.data_points.append(data_point)
     analysis.put()
 
+    queue_name = {'x': False}
+    def my_mocked_run(*_, **__):
+      queue_name['x'] = True  # pragma: no cover
+
+    self.mock(
+      recursive_flake_pipeline.RecursiveFlakePipeline, 'start', my_mocked_run)
+
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name, test_name,
-        analysis.version_number, test_result_future,
-        flakiness_algorithm_results_dict)
-    self.assertEquals(flakiness_algorithm_results_dict['flakes_in_a_row'], 1)
+        analysis.version_number)
+    self.assertTrue(queue_name['x'])
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
   @mock.patch.object(
       recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
-  def testNextBuildPipelineForNewRecursionFirstStable(self, *_):
+  @mock.patch(
+      'waterfall.flake.recursive_flake_pipeline.RecursiveFlakePipeline')
+  def testNextBuildPipelineForNewRecursionLessThanLastBuildNumber(
+      self, mocked_pipeline, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
     build_number = 100
     step_name = 's'
     test_name = 't'
-    test_result_future = 'trf'
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 0,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': 0,
-        'lower_boundary': None,
-        'upper_boundary': None,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': 0,
-        'stables_happened': False
-    }
-
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING)
-
-    self._CreateAndSaveFlakeSwarmingTask(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED)
-
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    data_point = DataPoint()
-    data_point.pass_rate = 0
-    data_point.build_number = 100
-    analysis.data_points.append(data_point)
-    analysis.put()
-
-    NextBuildNumberPipeline.run(
-        NextBuildNumberPipeline(), master_name, builder_name,
-        master_build_number, build_number, step_name,
-        test_name, analysis.version_number, test_result_future,
-        flakiness_algorithm_results_dict)
-    self.assertEquals(flakiness_algorithm_results_dict['stable_in_a_row'], 1)
-
-  @mock.patch.object(
-      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  @mock.patch.object(
-      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
-  def testNextBuildPipelineForNewRecursionStabledOurAfterFlakiness(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    master_build_number = 100
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    test_result_future = 'trf'
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 4,
-        'stabled_out': False,
-        'flaked_out': True,
-        'last_build_number': 0,
-        'lower_boundary': None,
-        'upper_boundary': 30,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': None,
-        'stables_happened': True
-
-    }
-
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING)
-    self._CreateAndSaveFlakeSwarmingTask(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED)
-
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    analysis.data_points = self._GenerateDataPoints(
-        pass_rates=[0.5, 1.0, 1.0, 1.0, 1.0, 1.0],
-        build_numbers=[100, 80, 70, 60, 50, 40])
-    analysis.put()
-
-    NextBuildNumberPipeline.run(
-        NextBuildNumberPipeline(), master_name, builder_name,
-        master_build_number, build_number, step_name,
-        test_name, analysis.version_number, test_result_future,
-        flakiness_algorithm_results_dict)
-    self.assertTrue(flakiness_algorithm_results_dict['stabled_out'])
-    self.assertEqual(
-        flakiness_algorithm_results_dict['sequential_run_index'], 1)
-    self.assertEqual(
-        flakiness_algorithm_results_dict['lower_boundary'], 80)
-
-  @mock.patch.object(
-      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  @mock.patch.object(
-      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
-  def testNextBuildPipelineForNewRecursionStableOutWithoutFlakeout(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    master_build_number = 100
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    test_result_future = 'trf'
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 4,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': 0,
-        'lower_boundary': 40,
-        'upper_boundary': 30,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': None,
-        'stables_happened': True
-    }
-
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING)
-    self._CreateAndSaveFlakeSwarmingTask(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED)
-
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    data_point = DataPoint()
-    data_point.pass_rate = 0
-    data_point.build_number = 100
-    analysis.data_points.append(data_point)
-    analysis.put()
-
-    NextBuildNumberPipeline.run(
-        NextBuildNumberPipeline(), master_name, builder_name,
-        master_build_number, build_number, step_name,
-        test_name, analysis.version_number, test_result_future,
-        flakiness_algorithm_results_dict)
-    self.assertTrue(flakiness_algorithm_results_dict['stabled_out'])
-
-  @mock.patch.object(
-      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  @mock.patch.object(
-      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
-  def testNextBuildPipelineForNewRecursionFlakeInARow(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    master_build_number = 100
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    test_result_future = 'trf'
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 4,
-        'stable_in_a_row': 0,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': 0,
-        'lower_boundary': None,
-        'upper_boundary': None,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': 4,
-        'stables_happened': True
-
-    }
-
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING)
-
-    self._CreateAndSaveFlakeSwarmingTask(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED)
-
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    data_point = DataPoint()
-    data_point.pass_rate = .5
-    data_point.build_number = 100
-    analysis.data_points.append(data_point)
-    analysis.put()
-
-    NextBuildNumberPipeline.run(
-        NextBuildNumberPipeline(), master_name, builder_name,
-        master_build_number, build_number, step_name,
-        test_name, analysis.version_number, test_result_future,
-        flakiness_algorithm_results_dict)
-    self.assertEquals(flakiness_algorithm_results_dict['flaked_out'], True)
-
-  @mock.patch.object(
-      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  @mock.patch.object(
-      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
-  def testNextBuildPipelineForNewRecursionLessThanLastBuildNumber(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    master_build_number = 100
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    test_result_future = 'trf'
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 0,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': 200,
-        'lower_boundary': None,
-        'upper_boundary': None,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': 0,
-        'stables_happened': False
-    }
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.PENDING
@@ -455,48 +220,28 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis.data_points.append(data_point)
     analysis.put()
 
-    queue_name = {'x': False}
-    def my_mocked_run(*_, **__):
-      queue_name['x'] = True  # pragma: no cover
-
-    self.mock(
-        recursive_flake_pipeline.RecursiveFlakePipeline, 'start', my_mocked_run)
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
         master_build_number, build_number, step_name, test_name,
-        analysis.version_number, test_result_future,
-        flakiness_algorithm_results_dict)
-    self.assertFalse(queue_name['x'])
+        analysis.version_number)
+    mocked_pipeline.assert_not_called()
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
   @mock.patch.object(
       recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
-  def testNextBuildPipelineForFailedSwarmingTask(self, *_):
+  @mock.patch(
+      'waterfall.flake.recursive_flake_pipeline.RecursiveFlakePipeline')
+  def testNextBuildPipelineForFailedSwarmingTask(self, mocked_pipeline, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
     build_number = 100
     step_name = 's'
     test_name = 't'
-    test_result_future = 'trf'
     swarming_task_error = {
         'code': 1,
         'message': 'some failure message',
-    }
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 0,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': 0,
-        'lower_boundary': None,
-        'upper_boundary': None,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': 0,
-        'stables_happened': False
-
     }
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
@@ -514,131 +259,13 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis.data_points.append(data_point)
     analysis.put()
 
-    queue_name = {'x': False}
-    def my_mocked_run(*_, **__):
-      queue_name['x'] = True  # pragma: no cover
-
-    self.mock(
-        recursive_flake_pipeline.RecursiveFlakePipeline, 'start', my_mocked_run)
     NextBuildNumberPipeline.run(
         NextBuildNumberPipeline(), master_name, builder_name,
-        master_build_number, build_number, step_name, test_name, 1,
-        test_result_future, flakiness_algorithm_results_dict)
-    self.assertFalse(queue_name['x'])
+        master_build_number, build_number, step_name, test_name, 1)
+    mocked_pipeline.assert_not_called()
     self.assertEqual(swarming_task_error, analysis.error)
 
-  @mock.patch.object(
-      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  @mock.patch.object(
-      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
-  def testNextBuildPipelineAllStable(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    master_build_number = 100
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    test_result_future = 'trf'
-    queue_name = constants.DEFAULT_QUEUE
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 4,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': 0,
-        'lower_boundary': 200,
-        'upper_boundary': 210,
-        'lower_boundary_result': 'FLAKE',
-        'sequential_run_index': 0,
-        'flakes_first': 0,
-        'stables_happened': True
-    }
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
-    self._CreateAndSaveFlakeSwarmingTask(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED
-    )
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    data_point = DataPoint()
-    data_point.pass_rate = 1
-    data_point.build_number = 100
-    analysis.data_points.append(data_point)
-    analysis.put()
-
-    queue_name = {'x': False}
-    def my_mocked_run(*_, **__):
-      queue_name['x'] = True  # pragma: no cover
-
-    self.mock(
-        recursive_flake_pipeline.RecursiveFlakePipeline, 'start', my_mocked_run)
-    NextBuildNumberPipeline.run(
-        NextBuildNumberPipeline(), master_name, builder_name,
-        master_build_number, build_number, step_name, test_name,
-        analysis.version_number, test_result_future,
-        flakiness_algorithm_results_dict)
-    self.assertFalse(queue_name['x'])
-
-  @mock.patch.object(
-      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  @mock.patch.object(
-      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
-  def testNextBuildPipelineFlakesFirst(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    master_build_number = 100
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    test_result_future = 'trf'
-    queue_name = constants.DEFAULT_QUEUE
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 4,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': 0,
-        'lower_boundary': 6,
-        'upper_boundary': 3,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': 2,
-        'stables_happened': True
-    }
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
-    self._CreateAndSaveFlakeSwarmingTask(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED
-    )
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    data_point = DataPoint()
-    data_point.pass_rate = 1
-    data_point.build_number = 100
-    analysis.data_points.append(data_point)
-    analysis.put()
-
-    queue_name = {'x': False}
-    def my_mocked_run(*_, **__):
-      queue_name['x'] = True  # pragma: no cover
-
-    self.mock(
-        recursive_flake_pipeline.RecursiveFlakePipeline, 'start', my_mocked_run)
-    NextBuildNumberPipeline.run(
-        NextBuildNumberPipeline(), master_name, builder_name,
-        master_build_number, build_number, step_name, test_name,
-        analysis.version_number, test_result_future,
-        flakiness_algorithm_results_dict)
-    self.assertTrue(queue_name['x'])
-    self.assertTrue(flakiness_algorithm_results_dict['stabled_out'])
-
-  def testGetNextRunSetStableLowerBoundary(self):
+  def testGetNextRunSetStableAfterFlaky(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -648,33 +275,13 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.PENDING
     )
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    data_point = DataPoint()
-    data_point.pass_rate = 1
-    data_point.build_number = 100
-    analysis.data_points.append(data_point)
-    analysis.put()
+    data_points = self._GenerateDataPoints(
+        pass_rates=[0.8, 1.0], build_numbers=[100, 80])
 
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 4,
-        'stable_in_a_row': 0,
-        'stabled_out': False,
-        'flaked_out': True,
-        'last_build_number': 0,
-        'lower_boundary': None,
-        'upper_boundary': 120,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': 4,
-        'stables_happened': True
-    }
-
-    get_next_run(analysis, flakiness_algorithm_results_dict)
-    self.assertEqual(flakiness_algorithm_results_dict['lower_boundary'],
-                     build_number)
-    self.assertEqual(flakiness_algorithm_results_dict['lower_boundary_result'],
-                     'STABLE')
+    next_run, result = _GetNextBuildNumber(
+        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+    self.assertEqual(-1, result)
+    self.assertEqual(next_run, 79)
 
   def testGetNextRunFlakeAfterStable(self):
     master_name = 'm'
@@ -686,30 +293,70 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.PENDING
     )
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    data_point = DataPoint()
-    data_point.pass_rate = 0.7
-    data_point.build_number = 100
-    analysis.data_points.append(data_point)
-    analysis.put()
+    data_points = self._GenerateDataPoints(
+        pass_rates=[1.0, 0.8], build_numbers=[100, 80])
 
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 2,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': 0,
-        'lower_boundary': None,
-        'upper_boundary': 120,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': None,
-        'stables_happened': True
-    }
+    next_run, result = _GetNextBuildNumber(
+        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+    self.assertEqual(-1, result)
+    self.assertEqual(next_run, 79)
 
-    get_next_run(analysis, flakiness_algorithm_results_dict)
-    self.assertEqual(flakiness_algorithm_results_dict['stable_in_a_row'], 0)
+  def testGetNextRunNoTestAfterStable(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    self._CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.PENDING
+    )
+    data_points = self._GenerateDataPoints(
+        pass_rates=[1.0, -1], build_numbers=[100, 80])
+
+    next_run, result = _GetNextBuildNumber(
+        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+    self.assertEqual(-1, result)
+    self.assertEqual(next_run, -1)
+
+
+  def testGetNextRunFlakedOut(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    self._CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.PENDING
+    )
+    data_points = self._GenerateDataPoints(
+        pass_rates=[0.6, 0.7, 0.5, 0.6, 0.7],
+        build_numbers=[100, 99, 97, 94, 90])
+
+    next_run, result = _GetNextBuildNumber(
+        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+    self.assertEqual(-1, result)
+    self.assertEqual(next_run, 85)
+
+  def testSequentialNextRunReady(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    self._CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.PENDING
+    )
+    data_points = self._GenerateDataPoints(
+        pass_rates=[0.6, 0.8, 0.7, 1.0, 1.0, 1.0, 1.0, 1.0],
+        build_numbers=[100, 99, 97, 94, 93, 92, 91, 90])
+
+    next_run, result = _GetNextBuildNumber(
+        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+    self.assertEqual(-1, result)
+    self.assertEqual(next_run, 95)
 
   def testSequentialNextRunFirstTime(self):
     master_name = 'm'
@@ -721,31 +368,16 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.PENDING
     )
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    data_point = DataPoint()
-    data_point.pass_rate = .5
-    data_point.build_number = 100
-    analysis.data_points.append(data_point)
-    analysis.put()
+    data_points = self._GenerateDataPoints(
+        pass_rates=[0.6, 0.8, 0.7, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        build_numbers=[100, 99, 97, 95, 94, 93, 92, 91, 90])
 
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 0,
-        'stabled_out': True,
-        'flaked_out': True,
-        'last_build_number': 0,
-        'lower_boundary': 100,
-        'upper_boundary': 110,
-        'lower_boundary_result': 'STABLE',
-        'sequential_run_index': 0,
-        'flakes_first': 0,
-        'stables_happened': False
-    }
-    next_run = sequential_next_run(analysis, flakiness_algorithm_results_dict)
-    self.assertEqual(next_run, 101)
+    next_run, result = _GetNextBuildNumber(
+        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+    self.assertEqual(-1, result)
+    self.assertEqual(next_run, 96)
 
-  def testSequentialFoundBorderFlake(self):
+  def testSequentialNextRunFoundFlaky(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -755,32 +387,17 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.PENDING
     )
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    data_point = DataPoint()
-    data_point.pass_rate = .5
-    data_point.build_number = 100
-    analysis.data_points.append(data_point)
-    analysis.put()
+    data_points = self._GenerateDataPoints(
+        pass_rates=[0.6, 0.8, 0.7, 0.8, 1.0, 1.0, 1.0, 1.0, 1.0],
+        build_numbers=[100, 99, 97, 95, 94, 93, 92, 91, 90])
 
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 0,
-        'stabled_out': True,
-        'flaked_out': True,
-        'last_build_number': 0,
-        'lower_boundary': 100,
-        'upper_boundary': 110,
-        'lower_boundary_result': 'STABLE',
-        'sequential_run_index': 1,
-        'flakes_first': 0,
-        'stables_happened': False
-    }
-    next_run = sequential_next_run(analysis, flakiness_algorithm_results_dict)
+    next_run, result = _GetNextBuildNumber(
+        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+    self.assertEqual(result, 95)
     self.assertEqual(next_run, -1)
-    self.assertEqual(analysis.suspected_flake_build_number, 101)
 
-  def testSequentialFoundBorderStable(self):
+
+  def testSequentialNextRunDone(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -790,238 +407,32 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.PENDING
     )
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    data_point = DataPoint()
-    data_point.pass_rate = 1
-    data_point.build_number = 100
-    analysis.data_points.append(data_point)
-    analysis.put()
+    data_points = self._GenerateDataPoints(
+        pass_rates=[0.6, 0.8, 0.7, 0.8, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        build_numbers=[100, 99, 97, 96, 95, 94, 93, 92, 91, 90])
 
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 0,
-        'stabled_out': True,
-        'flaked_out': True,
-        'last_build_number': 0,
-        'lower_boundary': 100,
-        'upper_boundary': 110,
-        'lower_boundary_result': 'FLAKE',
-        'sequential_run_index': 1,
-        'flakes_first': 0,
-        'stables_happened': False
-    }
-    next_run = sequential_next_run(analysis, flakiness_algorithm_results_dict)
+    next_run, result = _GetNextBuildNumber(
+        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+    self.assertEqual(result, 96)
     self.assertEqual(next_run, -1)
-    self.assertEqual(analysis.suspected_flake_build_number, 101)
-
-  def testSequentialDidntFindBorderStable(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    data_point = DataPoint()
-    data_point.pass_rate = 1
-    data_point.build_number = 100
-    analysis.data_points.append(data_point)
-    analysis.put()
-
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 0,
-        'stabled_out': True,
-        'flaked_out': True,
-        'last_build_number': 0,
-        'lower_boundary': 100,
-        'upper_boundary': 110,
-        'lower_boundary_result': 'STABLE',
-        'sequential_run_index': 1,
-        'flakes_first': 0,
-        'stables_happened': False
-    }
-    next_run = sequential_next_run(analysis, flakiness_algorithm_results_dict)
-    self.assertEqual(next_run, 102)
-    self.assertEqual(analysis.suspected_flake_build_number, None)
-
-  @mock.patch.object(
-      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  @mock.patch.object(
-      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
-  def testNextBuildPipelineStabledOutFlakedOutFirstTime(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    master_build_number = 100
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    test_result_future = 'trf'
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 0,
-        'stabled_out': True,
-        'flaked_out': True,
-        'last_build_number': 0,
-        'lower_boundary': 100,
-        'upper_boundary': 110,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': 0,
-        'stables_happened': False
-
-    }
-
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING)
-    self._CreateAndSaveFlakeSwarmingTask(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED)
-
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    data_point = DataPoint()
-    data_point.pass_rate = 1
-    data_point.build_number = 100
-    analysis.data_points.append(data_point)
-    analysis.put()
-
-    NextBuildNumberPipeline.run(
-        NextBuildNumberPipeline(), master_name, builder_name,
-        master_build_number, build_number, step_name, test_name,
-        analysis.version_number, test_result_future,
-        flakiness_algorithm_results_dict)
-    self.assertEquals(
-        flakiness_algorithm_results_dict['sequential_run_index'], 1)
 
   def testNextBuildWhenTestNotExistingAfterStableInARow(self):
-    master = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
-    master.data_points = self._GenerateDataPoints(
+    data_points = self._GenerateDataPoints(
         pass_rates=[0.8, 1.0, 1.0, -1], build_numbers=[100, 80, 70, 60])
 
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 2,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': 0,
-        'lower_boundary': None,
-        'upper_boundary': None,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': None,
-        'stables_happened': True
-    }
-
-    next_run = get_next_run(master, flakiness_algorithm_results_dict)
+    next_run, result = _GetNextBuildNumber(
+        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+    self.assertEqual(-1, result)
     self.assertEqual(81, next_run)
-    self.assertTrue(flakiness_algorithm_results_dict['stabled_out'])
-    self.assertTrue(flakiness_algorithm_results_dict['flaked_out'])
-    self.assertEqual(80, flakiness_algorithm_results_dict['lower_boundary'])
-    self.assertEqual('STABLE',
-                     flakiness_algorithm_results_dict['lower_boundary_result'])
-
-  def testNextBuildFlakesFirstThenStabledOut(self):
-    master = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
-    master.data_points = self._GenerateDataPoints(
-        pass_rates=[0.8, 1.0], build_numbers=[100, 80])
-
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 1,
-        'stable_in_a_row': 0,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': 0,
-        'lower_boundary': None,
-        'upper_boundary': 100,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': 1,
-        'stables_happened': True
-    }
-
-    next_run = get_next_run(master, flakiness_algorithm_results_dict)
-    self.assertEqual(78, next_run)
-    self.assertEqual(80, flakiness_algorithm_results_dict['lower_boundary'])
-    self.assertEqual('STABLE',
-                     flakiness_algorithm_results_dict['lower_boundary_result'])
 
   def testNextBuildWhenTestNotExistingAfterFlakeInARow(self):
-    master = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
-    master.data_points = self._GenerateDataPoints(
+    data_points = self._GenerateDataPoints(
         pass_rates=[0.8, 0.7, 0.75, -1], build_numbers=[100, 80, 70, 60])
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 3,
-        'stable_in_a_row': 0,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': 0,
-        'lower_boundary': None,
-        'upper_boundary': None,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': 3,
-        'stables_happened': True
-    }
 
-    next_run = get_next_run(master, flakiness_algorithm_results_dict)
+    next_run, result = _GetNextBuildNumber(
+        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+    self.assertEqual(-1, result)
     self.assertEqual(61, next_run)
-    self.assertTrue(flakiness_algorithm_results_dict['stabled_out'])
-    self.assertTrue(flakiness_algorithm_results_dict['flaked_out'])
-    self.assertEqual(60, flakiness_algorithm_results_dict['lower_boundary'])
-    self.assertEqual('STABLE',
-                     flakiness_algorithm_results_dict['lower_boundary_result'])
-
-  def testNextBuildNumberIsLargerThanStartingBuildNumber(self):
-    master_name = 'm'
-    builder_name = 'b'
-    master_build_number = 100
-    build_number = 60
-    step_name = 's'
-    test_name = 't'
-    test_result_future = 'trf'
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 3,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': 0,
-        'lower_boundary': None,
-        'upper_boundary': None,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': None,
-        'stables_happened': True
-    }
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, master_build_number, step_name,
-        test_name, status=analysis_status.RUNNING)
-    self._CreateAndSaveFlakeSwarmingTask(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED)
-
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, master_build_number, step_name, test_name)
-    analysis.data_points = self._GenerateDataPoints(
-        pass_rates=[1.0, 1.0, 1.0, -1], build_numbers=[100, 80, 70, 60])
-    analysis.put()
-
-    pipeline = NextBuildNumberPipeline()
-    pipeline.run(
-        master_name, builder_name,
-        master_build_number, build_number, step_name, test_name,
-        analysis.version_number, test_result_future,
-        flakiness_algorithm_results_dict)
-
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, master_build_number, step_name, test_name)
-    self.assertEqual(analysis_status.COMPLETED, analysis.status)
 
   def testNextBuildNumberIsSmallerThanLastBuildNumber(self):
     master_name = 'm'
@@ -1030,24 +441,11 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 60
     step_name = 's'
     test_name = 't'
-    test_result_future = 'trf'
-    flakiness_algorithm_results_dict = {
-        'flakes_in_a_row': 0,
-        'stable_in_a_row': 3,
-        'stabled_out': False,
-        'flaked_out': False,
-        'last_build_number': 59,
-        'lower_boundary': None,
-        'upper_boundary': None,
-        'lower_boundary_result': None,
-        'sequential_run_index': 0,
-        'flakes_first': None,
-        'stables_happened': True
-    }
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, master_build_number, step_name, test_name)
     analysis.data_points = self._GenerateDataPoints(
-        pass_rates=[1.0, 1.0, 1.0, 1.0], build_numbers=[100, 80, 70, 60])
+        pass_rates=[1.0, 1.0, 1.0, 1.0, 1.0],
+        build_numbers=[100, 99, 98, 97, 96])
     analysis.status = analysis_status.RUNNING
     analysis.Save()
 
@@ -1057,10 +455,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline = NextBuildNumberPipeline()
     pipeline.run(
-        master_name, builder_name,
-        master_build_number, build_number, step_name, test_name,
-        analysis.version_number, test_result_future,
-        flakiness_algorithm_results_dict)
+        master_name, builder_name, master_build_number, build_number, step_name,
+        test_name, analysis.version_number)
 
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, master_build_number, step_name, test_name)
@@ -1068,9 +464,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
   def testUpdateAnalysisUponCompletionFound(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.suspected_flake_build_number = 100
     recursive_flake_pipeline._UpdateAnalysisStatusUponCompletion(
-        analysis, analysis_status.COMPLETED, None)
+        analysis, 100, analysis_status.COMPLETED, None)
+    self.assertEqual(analysis.suspected_flake_build_number, 100)
     self.assertEqual(analysis.result_status, result_status.FOUND_UNTRIAGED)
 
   def testUpdateAnalysisUponCompletionError(self):
@@ -1079,10 +475,10 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'message': 'some error message'
     }
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.suspected_flake_build_number = 100
     recursive_flake_pipeline._UpdateAnalysisStatusUponCompletion(
-        analysis, analysis_status.COMPLETED, expected_error)
+        analysis, 100, analysis_status.COMPLETED, expected_error)
     self.assertEqual(expected_error, analysis.error)
+    self.assertEqual(analysis.suspected_flake_build_number, 100)
 
   def testGetListOfNearbyBuildNumbers(self):
     self.assertEqual(
