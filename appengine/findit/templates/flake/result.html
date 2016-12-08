@@ -55,6 +55,28 @@
     findit.regressedBuildNumber = {{ suspected_flake.build_number or -1 }};
     findit.passRates = {{ pass_rates | tojson | safe }};
 
+    function getTriageParameters(triageResult) {
+      parameters = {}
+      parameters['key'] = "{{ key }}";
+      parameters['triage_result'] = triageResult;
+      return parameters
+    }
+
+    function createTriageUrl(parameters) {
+      var params = [];
+      for(var key in parameters) {
+        if (parameters[key] != undefined) {
+          params.push(key + '=' + parameters[key])
+        }
+      }
+
+      if (params.length == 0) {
+        return '/waterfall/triage-flake-analysis'
+      } else {
+        return '/waterfall/triage-flake-analysis?' + params.join('&');
+      }
+    };
+
     function DrawFlakeTrend() {
       if (findit.passRates.length == 0) {
         $('#flake-data').html('No data available yet.');
@@ -184,7 +206,7 @@
     }
 
     function triageSuspectedFlake(e) {
-      $.getJSON('/waterfall/triage-flake-analysis?flake_info=' + e.name + '&triage_result=' + e.value, function(data) {
+      $.getJSON(createTriageUrl(getTriageParameters(e.value)), function(data) {
         if (! data['success']) {
           alert('Failed to update datastore. Please refresh and try again.');
         } else {
@@ -252,17 +274,16 @@
         <tr>
           <td class="triage-cell"><a href="https://build.chromium.org/p/{{ master_name }}/builders/{{ builder_name }}/builds/{{ suspected_flake.build_number }}" target="_blank">{{ suspected_flake.build_number }}</a></a></td>
           <td class="triage-cell">
-            {% set flake_info = master_name + '/' + builder_name + '/' + build_number | string + '/' + step_name + '/' + test_name + '/' + version_number | string + '/' + suspected_flake.build_number | string %}
-              {% if suspected_flake.triage_result == 1 %}
-                <input type="radio" name="{{ flake_info }}" value="2" onchange="triageSuspectedFlake(this)">Correct &nbsp;&nbsp;
-                <input type="radio" name="{{ flake_info }}" value="1" checked="checked"onchange= "triageSuspectedFlake(this)">Incorrect
-              {% elif suspected_flake.triage_result == 2 %}
-                <input type="radio" name="{{ flake_info }}" value="2" checked="checked" onchange="triageSuspectedFlake(this)">Correct &nbsp;&nbsp;
-                <input type="radio" name="{{ flake_info }}" value="1" onchange= "triageSuspectedFlake(this)">Incorrect
-              {% else %}
-                <input type="radio" name="{{ flake_info }}" value="2" onchange="triageSuspectedFlake(this)">Correct &nbsp;&nbsp;
-                <input type="radio" name="{{ flake_info }}" value="1" onchange= "triageSuspectedFlake(this)">Incorrect
-              {% endif %}
+            {% if suspected_flake.triage_result == 1 %}
+              <input type="radio" name="triage-radio-button" value="2" onchange="triageSuspectedFlake(this)">Correct &nbsp;&nbsp;
+              <input type="radio" name="triage-radio-button" value="1" checked="checked" onchange= "triageSuspectedFlake(this)">Incorrect
+            {% elif suspected_flake.triage_result == 2 %}
+              <input type="radio" name="triage-radio-button" value="2" checked="checked" onchange="triageSuspectedFlake(this)">Correct &nbsp;&nbsp;
+              <input type="radio" name="triage-radio-button" value="1" onchange="triageSuspectedFlake(this)">Incorrect
+            {% else %}
+              <input type="radio" name="triage-radio-button" value="2" onchange="triageSuspectedFlake(this)">Correct &nbsp;&nbsp;
+              <input type="radio" name="triage-radio-button" value="1" onchange="triageSuspectedFlake(this)">Incorrect
+            {% endif %}
           </td>
         </tr>
       </table>

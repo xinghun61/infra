@@ -155,6 +155,7 @@ class CheckFlake(BaseHandler):
     suspected_flake = _GetSuspectedFlakeAnalysisAndTriageResult(analysis)
 
     data = {
+        'key': analysis.key.urlsafe(),
         'master_name': analysis.master_name,
         'builder_name': analysis.builder_name,
         'build_number': analysis.build_number,

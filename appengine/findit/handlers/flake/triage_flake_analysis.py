@@ -7,29 +7,29 @@
 This handler will mark the suspected flake result as correct or incorrect.
 """
 
+from google.appengine.ext import ndb
 from google.appengine.api import users
 
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
+from model import analysis_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
 
-def _UpdateSuspectedFlakeAnalysis(
-    master_name, builder_name, build_number, step_name, test_name,
-    version_number, suspected_build_number, triage_result, user_name):
-  master_flake_analysis = MasterFlakeAnalysis.GetVersion(
-      master_name, builder_name, build_number, step_name, test_name,
-      version_number)
+def _UpdateSuspectedFlakeAnalysis(key_urlsafe, triage_result, user_name):
+  master_flake_analysis = ndb.Key(urlsafe=key_urlsafe).get()
 
-  if not master_flake_analysis:  # pragma: no cover
-    return False
+  assert master_flake_analysis
+  assert master_flake_analysis.status == analysis_status.COMPLETED
+  assert master_flake_analysis.suspected_flake_build_number is not None
 
   suspect_info = {
-      'build_number': suspected_build_number
+      'build_number': master_flake_analysis.suspected_flake_build_number
   }
 
   master_flake_analysis.UpdateTriageResult(
-      triage_result, suspect_info, user_name, version_number)
+      triage_result, suspect_info, user_name,
+      master_flake_analysis.version_number)
   master_flake_analysis.put()
   return True
 
@@ -40,16 +40,10 @@ class TriageFlakeAnalysis(BaseHandler):
 
   def HandleGet(self):  # pragma: no cover
     """Sets the manual triage result for the suspected flake analysis."""
-    flake_info = self.request.get('flake_info')
-    (master_name, builder_name, build_number, step_name, test_name,
-     version_number, suspected_build_number) = flake_info.split('/')
+    key_urlsafe = self.request.get('key').strip()
     triage_result = self.request.get('triage_result')
 
-    if not (master_name and builder_name and build_number and step_name and
-            test_name and version_number and suspected_build_number and
-            str(triage_result)):
-      # All fields needed for getting master_flake_analysis must be provided in
-      # order to update triage results.
+    if not key_urlsafe or triage_result is None:
       return {'data': {'success': False}}
 
     # As the permission level is CORP_USER, we could assume the current user
@@ -57,9 +51,7 @@ class TriageFlakeAnalysis(BaseHandler):
     user_name = users.get_current_user().email().split('@')[0]
 
     success = _UpdateSuspectedFlakeAnalysis(
-        master_name, builder_name, build_number, step_name, test_name,
-        int(version_number), suspected_build_number, int(triage_result),
-        user_name)
+        key_urlsafe, int(triage_result), user_name)
 
     return {'data': {'success': success}}
 

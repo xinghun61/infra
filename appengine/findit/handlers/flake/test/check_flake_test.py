@@ -101,6 +101,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     task_url = '%s/task?id=%s' % (
       check_flake.SWARMING_TASK_BASE_URL, data_point.task_id)
     expected_check_flake_result = {
+        'key': analysis.key.urlsafe(),
         'pass_rates': [[int(build_number), success_rate, task_url]],
         'analysis_status': STATUS_TO_DESCRIPTION.get(analysis.status),
         'master_name': master_name,
@@ -189,6 +190,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'format': 'json'})
 
     expected_check_flake_result = {
+        'key': previous_analysis.key.urlsafe(),
         'pass_rates': [[build_number - 1, success_rate, None]],
         'analysis_status': STATUS_TO_DESCRIPTION.get(previous_analysis.status),
         'master_name': master_name,
