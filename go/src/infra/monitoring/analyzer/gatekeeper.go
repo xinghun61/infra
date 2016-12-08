@@ -1,6 +1,10 @@
 package analyzer
 
 import (
+	"golang.org/x/net/context"
+
+	"github.com/luci/luci-go/common/logging"
+
 	"infra/monitoring/messages"
 )
 
@@ -13,11 +17,11 @@ type GatekeeperRules struct {
 
 // NewGatekeeperRules returns a new instance of GatekeeperRules initialized
 // with cfg.
-func NewGatekeeperRules(cfgs []*messages.GatekeeperConfig, treeCfgs map[string][]messages.TreeMasterConfig) *GatekeeperRules {
+func NewGatekeeperRules(ctx context.Context, cfgs []*messages.GatekeeperConfig, treeCfgs map[string][]messages.TreeMasterConfig) *GatekeeperRules {
 	for _, cfg := range cfgs {
 		for master, masterCfgs := range cfg.Masters {
 			if len(masterCfgs) != 1 {
-				errLog.Printf("Multiple configs for master: %s", master)
+				logging.Errorf(ctx, "Multiple configs for master: %s", master)
 			}
 		}
 	}
@@ -45,10 +49,10 @@ func (r *GatekeeperRules) getAllowedBuilders(tree string, master *messages.Maste
 
 // WouldCloseTree returns true if a step failure on given builder/master would
 // cause it to close the tree.
-func (r *GatekeeperRules) WouldCloseTree(master *messages.MasterLocation, builder, step string) bool {
+func (r *GatekeeperRules) WouldCloseTree(ctx context.Context, master *messages.MasterLocation, builder, step string) bool {
 	mcs, ok := r.findMaster(master)
 	if !ok {
-		errLog.Printf("Missing master cfg: %s", master)
+		logging.Errorf(ctx, "Missing master cfg: %s", master)
 		return false
 	}
 	mc := mcs[0]
@@ -91,10 +95,10 @@ func contains(arr []string, s string) bool {
 }
 
 // ExcludeBuilder returns true if a builder should be ignored.
-func (r *GatekeeperRules) ExcludeBuilder(tree string, master *messages.MasterLocation, builder string) bool {
+func (r *GatekeeperRules) ExcludeBuilder(ctx context.Context, tree string, master *messages.MasterLocation, builder string) bool {
 	mcs, ok := r.findMaster(master)
 	if !ok {
-		errLog.Printf("Can't filter unknown master %s (tree %s)", master, tree)
+		logging.Errorf(ctx, "Can't filter unknown master %s (tree %s)", master, tree)
 		return false
 	}
 	mc := mcs[0]
@@ -114,14 +118,14 @@ func (r *GatekeeperRules) ExcludeBuilder(tree string, master *messages.MasterLoc
 }
 
 // ExcludeFailure returns true if a step failure whould be ignored.
-func (r *GatekeeperRules) ExcludeFailure(tree string, master *messages.MasterLocation, builder, step string) bool {
-	if r.ExcludeBuilder(tree, master, builder) {
+func (r *GatekeeperRules) ExcludeFailure(ctx context.Context, tree string, master *messages.MasterLocation, builder, step string) bool {
+	if r.ExcludeBuilder(ctx, tree, master, builder) {
 		return true
 	}
 
 	mcs, ok := r.findMaster(master)
 	if !ok {
-		errLog.Printf("Can't filter unknown master %s (tree %s)", master, tree)
+		logging.Errorf(ctx, "Can't filter unknown master %s (tree %s)", master, tree)
 		return false
 	}
 	mc := mcs[0]
@@ -143,7 +147,7 @@ func (r *GatekeeperRules) ExcludeFailure(tree string, master *messages.MasterLoc
 	bc, ok := mc.Builders[builder]
 	if !ok {
 		if bc, ok = mc.Builders["*"]; !ok {
-			errLog.Printf("Unknown %s builder %s", master, builder)
+			logging.Errorf(ctx, "Unknown %s builder %s", master, builder)
 			return true
 		}
 	}

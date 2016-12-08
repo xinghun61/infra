@@ -414,7 +414,7 @@ func run(ctx context.Context, transport http.RoundTripper, cycle, duration time.
 		}
 	}
 
-	a.Gatekeeper = analyzer.NewGatekeeperRules(gks, gkts)
+	a.Gatekeeper = analyzer.NewGatekeeperRules(ctx, gks, gkts)
 
 	a.MasterOnly = *masterOnly
 	a.BuilderOnly = *builderOnly

@@ -8,8 +8,6 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
-	"log"
-	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -23,6 +21,7 @@ import (
 	"infra/monitoring/messages"
 
 	"github.com/luci/luci-go/common/data/stringset"
+	"github.com/luci/luci-go/common/logging"
 )
 
 const (
@@ -34,8 +33,6 @@ const (
 )
 
 var (
-	errLog  = log.New(os.Stderr, "", log.Lshortfile|log.Ltime)
-	infoLog = log.New(os.Stdout, "", log.Lshortfile|log.Ltime)
 	expvars = expvar.NewMap("analyzer")
 )
 
@@ -138,7 +135,7 @@ func (a *Analyzer) MasterAlerts(ctx context.Context, master *messages.MasterLoca
 	}
 	if elapsed < 0 {
 		// Add this to the alerts returned, rather than just log it?
-		errLog.Printf("Master %s timestamp is newer than current time (%s): %s old.", master, a.Now(), elapsed)
+		logging.Errorf(ctx, "Master %s timestamp is newer than current time (%s): %s old.", master, a.Now(), elapsed)
 	}
 
 	return ret
@@ -184,13 +181,13 @@ func (a *Analyzer) BuilderAlerts(ctx context.Context, tree string, master *messa
 		r := <-c
 		if len(r.err) != 0 {
 			// TODO: add a special alert for this too?
-			errLog.Printf("Error getting alerts for builder %s: %v", builderName, r.err)
+			logging.Errorf(ctx, "Error getting alerts for builder %s: %v", builderName, r.err)
 		} else {
 			ret = append(ret, r.alerts...)
 		}
 	}
 
-	ret = a.mergeAlertsByReason(ret)
+	ret = a.mergeAlertsByReason(ctx, ret)
 
 	return ret
 }
@@ -242,7 +239,7 @@ func (a *Analyzer) lastBuilds(ctx context.Context, master *messages.MasterLocati
 	// Check for stale/idle/offline builders.  Latest build is the first in the list.
 
 	for i, buildNum := range recentBuildIDs {
-		infoLog.Printf("Checking last %s/%s build ID: %d", master.Name(), builderName, buildNum)
+		logging.Infof(ctx, "Checking last %s/%s build ID: %d", master.Name(), builderName, buildNum)
 
 		var build *messages.Build
 		build, err = client.Build(ctx, master, builderName, buildNum)
@@ -287,7 +284,7 @@ func (a *Analyzer) builderAlerts(ctx context.Context, tree string, master *messa
 		return nil, errs
 	}
 
-	if a.Gatekeeper.ExcludeBuilder(tree, master, builderName) {
+	if a.Gatekeeper.ExcludeBuilder(ctx, tree, master, builderName) {
 		return nil, nil
 	}
 
@@ -347,11 +344,11 @@ func (a *Analyzer) builderAlerts(ctx context.Context, tree string, master *messa
 			})
 		}
 	default:
-		errLog.Printf("Unknown %s.%s builder state: %s", master.Name(), builderName, b.State)
+		logging.Errorf(ctx, "Unknown %s.%s builder state: %s", master.Name(), builderName, b.State)
 	}
 
 	// Check for alerts on the most recent complete build
-	infoLog.Printf("Checking %d most recent builds for alertable step failures: %s/%s", len(recentBuildIDs), master.Name(), builderName)
+	logging.Infof(ctx, "Checking %d most recent builds for alertable step failures: %s/%s", len(recentBuildIDs), master.Name(), builderName)
 
 	mostRecentComplete := 0
 	for i, id := range recentBuildIDs {
@@ -369,13 +366,13 @@ func (a *Analyzer) builderAlerts(ctx context.Context, tree string, master *messa
 // mergeAlertsByReason merges alerts for step failures occurring across multiple builders into
 // one alert with multiple builders indicated.
 // FIXME: Move the regression range logic into package regrange
-func (a *Analyzer) mergeAlertsByReason(alerts []messages.Alert) []messages.Alert {
+func (a *Analyzer) mergeAlertsByReason(ctx context.Context, alerts []messages.Alert) []messages.Alert {
 	mergedAlerts := []messages.Alert{}
 	byReason := map[string][]messages.Alert{}
 	for _, alert := range alerts {
 		bf, ok := alert.Extension.(messages.BuildFailure)
 		if !ok {
-			infoLog.Printf("%s failed, but isn't a builder-failure: %s", alert.Key, alert.Type)
+			logging.Infof(ctx, "%s failed, but isn't a builder-failure: %s", alert.Key, alert.Type)
 			// Not a builder failure, so don't bother trying to group it by step name.
 			mergedAlerts = append(mergedAlerts, alert)
 			continue
@@ -406,7 +403,7 @@ func (a *Analyzer) mergeAlertsByReason(alerts []messages.Alert) []messages.Alert
 
 		mergedBF := merged.Extension.(messages.BuildFailure)
 		if len(mergedBF.Builders) > 1 {
-			errLog.Printf("Alert shouldn't have multiple builders before merging by reason: %+v", reason)
+			logging.Errorf(ctx, "Alert shouldn't have multiple builders before merging by reason: %+v", reason)
 		}
 
 		stepsAtFault := make([]*messages.BuildStep, len(stepAlerts))
@@ -430,7 +427,7 @@ func (a *Analyzer) mergeAlertsByReason(alerts []messages.Alert) []messages.Alert
 		for _, alert := range stepAlerts { // stepAlerts[1:]? already have [0] in mergedBf
 			bf := alert.Extension.(messages.BuildFailure)
 			if len(bf.Builders) > 1 {
-				errLog.Printf("Alert shouldn't have multiple builders before merging by reason: %+v", reason)
+				logging.Errorf(ctx, "Alert shouldn't have multiple builders before merging by reason: %+v", reason)
 			}
 			if bf.TreeCloser {
 				mergedBF.TreeCloser = true
@@ -578,7 +575,7 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 	// right now are internal and not supported by findit.
 	finditResults, err := client.Findit(ctx, master, builderName, latestBuild, stepNames)
 	if err != nil {
-		errLog.Printf("while getting findit results for build: %s", err)
+		logging.Errorf(ctx, "while getting findit results for build: %s", err)
 	}
 
 	for _, buildNum := range recentBuildIDs {
@@ -598,7 +595,7 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 			// Get findit results for other build.
 			f, err := client.Findit(ctx, master, builderName, buildNum, []string{})
 			if err != nil {
-				errLog.Printf("while getting findit results for build: %s", err)
+				logging.Errorf(ctx, "while getting findit results for build: %s", err)
 			} else {
 				fResults = f
 			}
@@ -621,26 +618,26 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 		mergedAlert := keyedAlerts[0] // Merge everything into the first one
 		mergedBF, ok := mergedAlert.Extension.(messages.BuildFailure)
 		if !ok {
-			errLog.Printf("Couldn't cast extension as BuildFailure: %s", mergedAlert.Type)
+			logging.Errorf(ctx, "Couldn't cast extension as BuildFailure: %s", mergedAlert.Type)
 		}
 
 		firstFailingBuild := mergedBF
 		for _, alr := range keyedAlerts[1:] {
 			if alr.Title != mergedAlert.Title {
 				// Sanity checking.
-				errLog.Printf("Merging alerts with same key (%q), different title: (%q vs %q)", key, alr.Title, mergedAlert.Title)
+				logging.Errorf(ctx, "Merging alerts with same key (%q), different title: (%q vs %q)", key, alr.Title, mergedAlert.Title)
 				continue
 			}
 			bf, ok := alr.Extension.(messages.BuildFailure)
 			if !ok {
-				errLog.Printf("Couldn't cast a %q extension as BuildFailure", alr.Type)
+				logging.Errorf(ctx, "Couldn't cast a %q extension as BuildFailure", alr.Type)
 				continue
 			}
 			// At this point, there should only be one builder per failure because
 			// alert keys include the builder name.  We merge builders by step failure
 			// in another pass, after this function is called.
 			if len(bf.Builders) != 1 {
-				errLog.Printf("bf.Builders len is not 1: %d", len(bf.Builders))
+				logging.Errorf(ctx, "bf.Builders len is not 1: %d", len(bf.Builders))
 			}
 			firstBuilder := bf.Builders[0]
 			mergedBuilder := mergedBF.Builders[0]
@@ -735,7 +732,7 @@ func (a *Analyzer) stepFailures(ctx context.Context, master *messages.MasterLoca
 	var err error // To avoid re-scoping b in the nested conditional below with a :=.
 	b, err := client.Build(ctx, master, builderName, bID)
 	if err != nil || b == nil {
-		errLog.Printf("Error fetching build %s/%s/%d: %v", master, builderName, bID, err)
+		logging.Errorf(ctx, "Error fetching build %s/%s/%d: %v", master, builderName, bID, err)
 		return nil, err
 	}
 
@@ -748,7 +745,7 @@ func (a *Analyzer) stepFailures(ctx context.Context, master *messages.MasterLoca
 
 		ok, err := s.IsOK()
 		if err != nil {
-			errLog.Printf(err.Error())
+			logging.Errorf(ctx, err.Error())
 		}
 		if ok {
 			continue
@@ -779,7 +776,7 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 		}
 
 		// Check the gatekeeper configs to see if this is ignorable.
-		if a.Gatekeeper.ExcludeFailure(tree, failure.Master, failure.Build.BuilderName, failure.Step.Name) {
+		if a.Gatekeeper.ExcludeFailure(ctx, tree, failure.Master, failure.Build.BuilderName, failure.Step.Name) {
 			continue
 		}
 
@@ -804,7 +801,7 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 			// TODO(martiniss): move this logic into package step
 			r, _ := failure.Step.Result()
 			if r == messages.ResultInfraFailure {
-				infoLog.Printf("INFRA FAILURE: %s/%s/%s", failure.Master.Name(), failure.Build.BuilderName, failure.Step.Name)
+				logging.Infof(ctx, "INFRA FAILURE: %s/%s/%s", failure.Master.Name(), failure.Build.BuilderName, failure.Step.Name)
 				bf := messages.BuildFailure{
 					Builders: []messages.AlertedBuilder{
 						{
@@ -815,7 +812,7 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 							LatestFailure: failure.Build.Number,
 						},
 					},
-					TreeCloser:  a.Gatekeeper.WouldCloseTree(failure.Master, failure.Build.BuilderName, failure.Step.Name),
+					TreeCloser:  a.Gatekeeper.WouldCloseTree(ctx, failure.Master, failure.Build.BuilderName, failure.Step.Name),
 					Reason:      &messages.Reason{Raw: reasons[i]},
 					StepAtFault: failure,
 				}
@@ -885,7 +882,7 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 			for _, change := range f.Build.SourceStamp.Changes {
 				branch, pos, err := change.CommitPosition()
 				if err != nil {
-					errLog.Printf("while getting commit position for %v: %s", change, err)
+					logging.Errorf(ctx, "while getting commit position for %v: %s", change, err)
 					continue
 				}
 				a.rslck.Lock()
@@ -914,7 +911,7 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 						LatestFailure: f.Build.Number,
 					},
 				},
-				TreeCloser:       a.Gatekeeper.WouldCloseTree(f.Master, f.Build.BuilderName, f.Step.Name),
+				TreeCloser:       a.Gatekeeper.WouldCloseTree(ctx, f.Master, f.Build.BuilderName, f.Step.Name),
 				RegressionRanges: regRanges,
 				StepAtFault:      f,
 			}

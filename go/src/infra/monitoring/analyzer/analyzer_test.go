@@ -1094,11 +1094,13 @@ func TestMergeAlertsByReason(t *testing.T) {
 			},
 		}
 
+		ctx := context.Background()
+
 		a := newTestAnalyzer(0, 10)
 		for _, test := range tests {
 			test := test
 			Convey(test.name, func() {
-				got := a.mergeAlertsByReason(test.in)
+				got := a.mergeAlertsByReason(ctx, test.in)
 				So(got, ShouldResemble, test.want)
 			})
 		}
@@ -1475,8 +1477,9 @@ func TestLatestBuildStep(t *testing.T) {
 }
 
 func TestWouldCloseTree(t *testing.T) {
+	ctx := context.Background()
 	Convey("gatekepeer", t, func() {
-		gkr := NewGatekeeperRules([]*messages.GatekeeperConfig{
+		gkr := NewGatekeeperRules(ctx, []*messages.GatekeeperConfig{
 			{
 				Masters: map[string][]messages.MasterConfig{
 					"https://build.chromium.org/p/fake.master": {{
@@ -1501,8 +1504,8 @@ func TestWouldCloseTree(t *testing.T) {
 		})
 
 		loc := &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)}
-		So(gkr.WouldCloseTree(loc, "fake.builder", "fake.step"), ShouldEqual, true)
-		So(gkr.WouldCloseTree(loc, "other.builder", "fake.step"), ShouldEqual, false)
+		So(gkr.WouldCloseTree(ctx, loc, "fake.builder", "fake.step"), ShouldEqual, true)
+		So(gkr.WouldCloseTree(ctx, loc, "other.builder", "fake.step"), ShouldEqual, false)
 	})
 }
 
@@ -1655,10 +1658,12 @@ func TestExcludeFailure(t *testing.T) {
 		},
 	}
 
+	ctx := context.Background()
+
 	a := newTestAnalyzer(0, 10)
 	for _, test := range tests {
-		a.Gatekeeper = NewGatekeeperRules([]*messages.GatekeeperConfig{&test.gk}, test.gkt)
-		got := a.Gatekeeper.ExcludeFailure(test.tree, &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.step)
+		a.Gatekeeper = NewGatekeeperRules(ctx, []*messages.GatekeeperConfig{&test.gk}, test.gkt)
+		got := a.Gatekeeper.ExcludeFailure(ctx, test.tree, &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.step)
 		if got != test.want {
 			t.Errorf("%s failed. Got: %+v, want: %+v", test.name, got, test.want)
 		}
