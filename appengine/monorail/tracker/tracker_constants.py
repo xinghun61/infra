@@ -33,7 +33,10 @@ RESERVED_PREFIXES = [
     'explicit_component', 'derived_component', 'alllabels']
 
 # The columns are useless in the grid view, so don't offer them.
-NOT_USED_IN_GRID_AXES = ['Summary', 'ID', 'Opened', 'Closed', 'Modified']
+NOT_USED_IN_GRID_AXES = [
+    'Summary', 'ID', 'Opened', 'Closed', 'Modified',
+    'OwnerModified', 'StatusModified', 'ComponentModified',
+    'OwnerLastVisit', 'AllLabels']
 
 # Issues per page in the issue list
 DEFAULT_RESULTS_PER_PAGE = 100
