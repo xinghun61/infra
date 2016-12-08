@@ -303,14 +303,19 @@ class Servlet(webapp2.RequestHandler):
       self.abort(400, msg)
     except permissions.PermissionException as e:
       logging.warning('Trapped PermissionException %s', e)
+      logging.warning('mr.auth.user_id is %s', self.mr.auth.user_id)
+      logging.warning('mr.auth.effective_ids is %s', self.mr.auth.effective_ids)
+      logging.warning('mr.perms is %s', self.mr.perms)
       if not self.mr.auth.user_id:
         # If not logged in, let them log in
         url = _SafeCreateLoginURL(self.mr)
         self.redirect(url, abort=True)
       else:
         # Display the missing permissions template.
-        self.response.status = httplib.FORBIDDEN
-        page_data = {'reason': e.message}
+        page_data = {
+            'reason': e.message,
+            'http_response_code': httplib.FORBIDDEN,
+            }
         with self.profiler.Phase('gather base data'):
           page_data.update(self.GatherBaseData(self.mr, nonce))
         self._AddHelpDebugPageData(page_data)

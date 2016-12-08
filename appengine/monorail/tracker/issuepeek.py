@@ -54,6 +54,7 @@ class IssuePeek(servlet.Servlet):
         allow_viewing_deleted=self._ALLOW_VIEWING_DELETED,
         granted_perms=granted_perms)
     if not permit_view:
+      logging.warning('Issue is %r', issue)
       raise permissions.PermissionException(
           'User is not allowed to view this issue')
 
