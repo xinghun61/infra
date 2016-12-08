@@ -188,6 +188,15 @@ func TestMetrics(t *testing.T) {
 				So(v, ShouldEqual, 42)
 			})
 
+			Convey(`containing a valid number and a \n`, func() {
+				file.Write([]byte("42\n"))
+				file.Sync()
+				So(updateExitStatus(c, []string{file.Name()}), ShouldBeNil)
+				v, err := exitStatus.Get(c)
+				So(err, ShouldBeNil)
+				So(v, ShouldEqual, 42)
+			})
+
 			Convey("containing an invalid number", func() {
 				file.Write([]byte("not a number"))
 				file.Sync()

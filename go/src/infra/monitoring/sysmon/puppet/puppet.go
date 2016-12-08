@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/luci/luci-go/common/clock"
@@ -134,7 +135,7 @@ func updateExitStatus(c context.Context, paths []string) error {
 			continue // Try other paths in the list
 		}
 
-		status, err := strconv.ParseInt(string(raw), 10, 64)
+		status, err := strconv.ParseInt(strings.TrimSpace(string(raw)), 10, 64)
 		if err != nil {
 			return fmt.Errorf("file %s does not contain a number: %s", path, err)
 		}
