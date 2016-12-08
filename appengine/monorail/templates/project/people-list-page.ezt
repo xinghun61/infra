@@ -55,7 +55,11 @@
       </tr>
 
       [for pagination.visible_results]
+       [if-any is_hotlist]
         [include "people-list-row-part.ezt" "hotlist"]
+       [else]
+        [include "people-list-row-part.ezt" "project"]
+       [end]
       [end]
 
    [else]
