@@ -22,14 +22,19 @@ import (
 
 func main() {
 	fs := flag.NewFlagSet("", flag.ExitOnError)
+
 	tsmonFlags := tsmon.NewFlags()
 	tsmonFlags.Flush = "auto"
 	tsmonFlags.Register(fs)
+
+	loggingConfig := logging.Config{Level: logging.Info}
+	loggingConfig.AddFlags(fs)
+
 	fs.Parse(os.Args[1:])
 
 	c := context.Background()
 	c = gologger.StdConfig.Use(c)
-	c = logging.SetLevel(c, logging.Info)
+	c = loggingConfig.Set(c)
 
 	if err := tsmon.InitializeFromFlags(c, &tsmonFlags); err != nil {
 		panic(fmt.Sprintf("Failed to initialize tsmon: %s", err))
