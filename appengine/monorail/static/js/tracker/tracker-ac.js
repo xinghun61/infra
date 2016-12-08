@@ -435,6 +435,8 @@ function TKR_setUpSearchStore(
                 'Blocked on the specified issues');
   TKR_addACItem(searchWords, docDict, 'blocking:1',
                 'Blocking the specified issues');
+  TKR_addACItem(searchWords, docDict, 'is:ownerbouncing',
+                'Issues with owners we cannot contact');
   TKR_addACItem(searchWords, docDict, 'is:spam', 'Issues classified as spam');
   // We do not suggest -is:spam because it is implicit.
 

@@ -292,6 +292,24 @@ class AST2SelectTest(unittest.TestCase):
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
+  def testProcessIsOwnerBouncing(self):
+    fd = BUILTIN_ISSUE_FIELDS['ownerbouncing']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [])
+    left_joins, where = ast2select._ProcessIsOwnerBouncing(
+        cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('User AS Cond1 ON (Issue.owner_id = Cond1.user_id OR '
+          'Issue.derived_owner_id = Cond1.user_id)',
+          [])],
+        left_joins)
+    self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+    self.assertEqual(
+        [('(Cond1.email_bounce_timestamp IS NOT NULL AND'
+          ' Cond1.email_bounce_timestamp != %s)',
+          [0])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+
   def testProcessReporterCond(self):
     fd = BUILTIN_ISSUE_FIELDS['reporter']
     cond = ast_pb2.MakeCond(

@@ -116,6 +116,7 @@ _ISSUE_FIELDS_LIST = [
     ('mergedinto', NUM),
     ('open', BOOL),
     ('owner', TXT),
+    ('ownerbouncing', BOOL),
     ('owner_id', NUM),
     ('project', TXT),
     ('reporter', TXT),
@@ -302,7 +303,8 @@ def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
     op = NEGATED_OPS.get(op, op)
     prefix = prefix[1:]
 
-  if prefix == 'is' and unquoted_value in ['open', 'blocked', 'spam']:
+  if prefix == 'is' and unquoted_value in [
+      'open', 'blocked', 'spam', 'ownerbouncing']:
     return ast_pb2.MakeCond(
         NE if negate else EQ, fields[unquoted_value], [], [])
 

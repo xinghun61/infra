@@ -157,7 +157,7 @@ def _ProcessOwnerIDCond(cond, _alias, _user_alias):
 
 
 def _ProcessOwnerLastVisitCond(cond, alias, _user_alias):
-  """Convert an owner_last_visit<timestamp cond to SQL."""
+  """Convert an ownerlastvisit<timestamp cond to SQL."""
   left_joins = [(
       'User AS {alias} '
       'ON (Issue.owner_id = {alias}.user_id OR '
@@ -165,6 +165,23 @@ def _ProcessOwnerLastVisitCond(cond, alias, _user_alias):
       [])]
   where = [_Compare(alias, cond.op, tracker_pb2.FieldTypes.INT_TYPE,
                     'last_visit_timestamp', cond.int_values)]
+  return left_joins, where
+
+
+def _ProcessIsOwnerBouncing(cond, alias, _user_alias):
+  """Convert an is:ownerbouncing cond to SQL."""
+  left_joins = [(
+      'User AS {alias} '
+      'ON (Issue.owner_id = {alias}.user_id OR '
+      'Issue.derived_owner_id = {alias}.user_id)'.format(alias=alias),
+      [])]
+  if cond.op == ast_pb2.QueryOp.EQ:
+    op = ast_pb2.QueryOp.IS_DEFINED
+  else:
+    op = ast_pb2.QueryOp.IS_NOT_DEFINED
+
+  where = [_Compare(alias, op, tracker_pb2.FieldTypes.INT_TYPE,
+                    'email_bounce_timestamp', [])]
   return left_joins, where
 
 
@@ -412,6 +429,7 @@ _PROCESSORS = {
     'owner': _ProcessOwnerCond,
     'owner_id': _ProcessOwnerIDCond,
     'ownerlastvisit': _ProcessOwnerLastVisitCond,
+    'ownerbouncing': _ProcessIsOwnerBouncing,
     'reporter': _ProcessReporterCond,
     'reporter_id': _ProcessReporterIDCond,
     'cc': _ProcessCcCond,
