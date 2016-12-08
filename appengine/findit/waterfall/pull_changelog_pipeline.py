@@ -5,14 +5,14 @@
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
-from lib.gitiles.gitiles_repository import GitilesRepository
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 
 
 class PullChangelogPipeline(BasePipeline):
   """A pipeline to pull change log of CLs."""
 
   # TODO: for files in dependencies(blink, v8, skia, etc), use blame first.
-  GIT_REPO = GitilesRepository(
+  GIT_REPO = CachedGitilesRepository(
       HttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
 
   # Arguments number differs from overridden method - pylint: disable=W0221

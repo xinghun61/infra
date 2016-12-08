@@ -15,9 +15,9 @@ import local_cache
 
 class LocalCacheTest(testing.AppengineTestCase):
 
-  def testLocalCacher(self):
+  def testLocalCache(self):
     fake_dir = 'fake_dir'
-    cacher = local_cache.LocalCacher(cache_dir=fake_dir)
+    cacher = local_cache.LocalCache(cache_dir=fake_dir)
     def _MockPathExists(path, *_):
       return False if path == os.path.join(
           fake_dir, 'uncached_key') else True

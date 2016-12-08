@@ -13,7 +13,7 @@ from common.base_handler import Permission
 from common.http_client_appengine import HttpClientAppengine
 from crash import crash_pipeline
 from crash.crash_report import CrashReport
-from lib.gitiles.gitiles_repository import GitilesRepository
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 
 
 class CrashHandler(BaseHandler):
@@ -119,7 +119,7 @@ def ScheduleNewAnalysis(crash_data):
 
   If we can detect that the analysis doesn't need to be performed
   (e.g., it was already performed, or the ``crash_data`` is empty so
-  there's nothig we can do), then we will skip creating the pipeline
+  there's nothing we can do), then we will skip creating the pipeline
   at all.
 
   Args:
@@ -129,7 +129,7 @@ def ScheduleNewAnalysis(crash_data):
     True if we started a new pipeline; False otherwise.
   """
   client_id = crash_data['client_id']
-  repository = GitilesRepository(HttpClientAppengine())
+  repository = CachedGitilesRepository(HttpClientAppengine())
   # N.B., must call FinditForClientID indirectly, for mock testing.
   findit_client = crash_pipeline.FinditForClientID(client_id, repository)
 

@@ -8,13 +8,14 @@ import os
 import logging
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
+from gae_libs import caches
 from lib import cache_decorator
 from waterfall import buildbot
 from waterfall import swarming_util
 
 
 @cache_decorator.Cached(
-    namespace='trybots', cacher=cache_decorator.CompressedMemCacher())
+    namespace='trybots', cache=caches.CompressedMemCache())
 def _LoadTrybots():  # pragma: no cover.
   """Returns the mapping of Commit Queue trybots to Waterfall buildbots."""
   with open(os.path.join(os.path.dirname(__file__), 'trybots.json'), 'r') as f:

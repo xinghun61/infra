@@ -5,13 +5,13 @@
 import pickle
 import zlib
 
-from google.appengine.api import memcache
 from testing_utils import testing
 
+from lib import cache
 from lib import cache_decorator
 
 
-class _DummyCacher(cache_decorator.Cacher):
+class _DummyCache(cache.Cache):
   def __init__(self, cached_data):
     self.cached_data = cached_data
 
@@ -27,41 +27,6 @@ def _DummyKeyGenerator(func, *_):
 
 
 class CacheDecoratorTest(testing.AppengineTestCase):
-  def testPickledMemCacher(self):
-    cacher = cache_decorator.PickledMemCacher()
-    cacher.Set('a', 'd')
-    self.assertEquals('d', cacher.Get('a'))
-
-  def _MockPickleAndZlib(self):
-    def Func(string, *_, **__):
-      return string
-    self.mock(pickle, 'dumps', Func)
-    self.mock(pickle, 'loads', Func)
-    self.mock(zlib, 'compress', Func)
-    self.mock(zlib, 'decompress', Func)
-
-  def testCachingSmallDataInCompressedMemCacher(self):
-    self._MockPickleAndZlib()
-    cacher = cache_decorator.CompressedMemCacher()
-    data = 'A' * 1024 # A string of size 1KB.
-    cacher.Set('a', data)
-    self.assertEquals(data, cacher.Get('a'))
-
-  def testCachingLargeDataInCompressedMemCacher(self):
-    self._MockPickleAndZlib()
-    cacher = cache_decorator.CompressedMemCacher()
-    data = 'A' * (1024 * 1024 * 2)  # A string of size 2MB.
-    cacher.Set('a', data)
-    self.assertEquals(data, cacher.Get('a'))
-
-  def testMissingSubPieceOfLargeDataInCompressedMemCacher(self):
-    self._MockPickleAndZlib()
-    cacher = cache_decorator.CompressedMemCacher()
-    data = 'A' * (1024 * 1024 * 2)  # A string of size 2MB.
-    cacher.Set('a', data)
-    memcache.delete('a-0')
-    self.assertEquals(None, cacher.Get('a'))
-
   def testDefaultKeyGenerator(self):
     expected_params = {
         'id1': 'fi',
@@ -95,47 +60,47 @@ class CacheDecoratorTest(testing.AppengineTestCase):
     self.assertEqual(expected_key, key)
 
   def testCachedDecoratorWhenResultIsAlreadyCached(self):
-    cacher = _DummyCacher({'n-Func': 1})
+    dummy_cache = _DummyCache({'n-Func': 1})
 
     @cache_decorator.Cached(
-        namespace='n', key_generator=_DummyKeyGenerator, cacher=cacher)
+        namespace='n', key_generator=_DummyKeyGenerator, cache=dummy_cache)
     def Func():
       return 2  # pragma: no cover.
 
     self.assertEqual(1, Func())
-    self.assertEqual({'n-Func': 1}, cacher.cached_data)
+    self.assertEqual({'n-Func': 1}, dummy_cache.cached_data)
 
   def testCachedDecoratorWhenResultIsNotCachedYet(self):
-    cacher = _DummyCacher({})
+    dummy_cache = _DummyCache({})
 
     @cache_decorator.Cached(
-        namespace='n', key_generator=_DummyKeyGenerator, cacher=cacher)
+        namespace='n', key_generator=_DummyKeyGenerator, cache=dummy_cache)
     def Func():
       return 2
 
     self.assertEqual(2, Func())
-    self.assertEqual({'n-Func': 2}, cacher.cached_data)
+    self.assertEqual({'n-Func': 2}, dummy_cache.cached_data)
 
   def testCachedDecoratorWhenResultShouldNotBeCached(self):
-    cacher = _DummyCacher({})
+    dummy_cache = _DummyCache({})
 
     results = [None, 0, [], {}, '']
 
     @cache_decorator.Cached(
-        namespace='n', key_generator=_DummyKeyGenerator, cacher=cacher)
+        namespace='n', key_generator=_DummyKeyGenerator, cache=dummy_cache)
     def Func():
       return results.pop()
 
     self.assertEqual('', Func())
-    self.assertEqual({}, cacher.cached_data)
+    self.assertEqual({}, dummy_cache.cached_data)
     self.assertEqual({}, Func())
-    self.assertEqual({}, cacher.cached_data)
+    self.assertEqual({}, dummy_cache.cached_data)
     self.assertEqual([], Func())
-    self.assertEqual({}, cacher.cached_data)
+    self.assertEqual({}, dummy_cache.cached_data)
     self.assertEqual(0, Func())
-    self.assertEqual({}, cacher.cached_data)
+    self.assertEqual({}, dummy_cache.cached_data)
     self.assertIsNone(Func())
-    self.assertEqual({}, cacher.cached_data)
+    self.assertEqual({}, dummy_cache.cached_data)
 
   def testCachedDecoratorWithMethodInAClass(self):
     class A(object):
@@ -148,7 +113,7 @@ class CacheDecoratorTest(testing.AppengineTestCase):
       def identifier(self):
         return self.url
 
-      @cache_decorator.Cached()
+      @cache_decorator.Cached(cache=_DummyCache({}))
       def Func(self, path):
         self.runs += 1
         return self.url + '/' + path

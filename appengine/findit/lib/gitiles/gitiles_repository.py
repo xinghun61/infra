@@ -8,9 +8,6 @@ from datetime import timedelta
 import json
 import re
 
-# TODO(http://crbug.com/660466): We should try to break dependencies.
-from lib.cache_decorator import Cached
-from lib.cache_decorator import CompressedMemCacher
 from lib.gitiles import commit_util
 from lib.gitiles import diff
 from lib.gitiles.blame import Blame
@@ -58,8 +55,6 @@ class GitilesRepository(GitRepository):
   def identifier(self):
     return self.repo_url
 
-  @Cached(namespace='Gitiles-json-view', expire_time=CACHE_EXPIRE_TIME_SECONDS,
-          cacher=CompressedMemCacher())
   def _SendRequestForJsonResponse(self, url, params=None):
     if params is None:  # pragma: no cover
       params = {}
@@ -76,7 +71,6 @@ class GitilesRepository(GitRepository):
 
     return json.loads(content[len(prefix):])
 
-  @Cached(namespace='Gitiles-text-view', expire_time=CACHE_EXPIRE_TIME_SECONDS)
   def _SendRequestForTextResponse(self, url):
     status_code, content = self.http_client.Get(url, {'format': 'text'})
     if status_code != 200:

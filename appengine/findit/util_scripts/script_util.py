@@ -44,7 +44,7 @@ SetUpSystemPaths()
 # The lib is in predator/ root dir, and can be imported only when sys.path gets
 # set up.
 from lib.cache_decorator import Cached
-from local_cache import LocalCacher  # pylint: disable=W
+from local_cache import LocalCache  # pylint: disable=W
 
 
 def SignalWorkerThreads():  # pragma: no cover
@@ -125,7 +125,7 @@ def RunTasks(tasks):  # pragma: no cover
     result_semaphore.acquire()
 
 
-@Cached(namespace='Command-output', cacher=LocalCacher())
+@Cached(namespace='Command-output', cache=LocalCache())
 def GetCommandOutput(command):  # pragma: no cover
   """Gets the output stream of executable command.
 

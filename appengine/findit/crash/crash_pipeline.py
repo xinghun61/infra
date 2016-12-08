@@ -17,7 +17,7 @@ from crash import findit_for_chromecrash
 from crash import findit_for_clusterfuzz
 from crash.type_enums import CrashClient
 from lib import time_util
-from lib.gitiles import gitiles_repository
+from gae_libs.gitiles import cached_gitiles_repository
 from model import analysis_status
 
 
@@ -93,7 +93,8 @@ class CrashBasePipeline(BasePipeline):
     self._crash_identifiers = crash_identifiers
     self._findit = FinditForClientID(
         client_id,
-        gitiles_repository.GitilesRepository(HttpClientAppengine()))
+        cached_gitiles_repository.CachedGitilesRepository(
+            HttpClientAppengine()))
 
   @property
   def client_id(self): # pragma: no cover

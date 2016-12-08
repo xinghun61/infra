@@ -8,23 +8,24 @@ import pickle
 import threading
 import zlib
 
-from lib.cache_decorator import Cacher
+from lib.cache import Cache
 
 CACHE_DIR = os.path.join(os.path.expanduser('~'), '.predator', 'cache')
 
 
-class LocalCacher(Cacher):
+class LocalCache(Cache):
   """Cacher that uses local files to cache data."""
   lock = threading.Lock()
 
   def __init__(self, cache_dir=CACHE_DIR):
     self.cache_dir = cache_dir
-    with LocalCacher.lock:
-      if not os.path.exists(cache_dir): # pragma: no cover.
-        os.makedirs(cache_dir)
+    try:  # pragma: no cover.
+      os.makedirs(cache_dir)
+    except Exception:
+      pass
 
   def Get(self, key):
-    with LocalCacher.lock:
+    with LocalCache.lock:
       path = os.path.join(self.cache_dir, key)
       if not os.path.exists(path):
         return None
@@ -36,7 +37,7 @@ class LocalCacher(Cacher):
         raise Exception('Failed loading cache: %s' % error)
 
   def Set(self, key, data, expire_time=0):  # pylint: disable=W
-    with LocalCacher.lock:
+    with LocalCache.lock:
       try:
         with open(os.path.join(self.cache_dir, key), 'wb') as f:
           f.write(zlib.compress(pickle.dumps(data)))

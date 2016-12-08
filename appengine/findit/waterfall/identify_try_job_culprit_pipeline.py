@@ -11,7 +11,7 @@ from google.appengine.ext import ndb
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
 from common.waterfall import failure_type
-from lib.gitiles.gitiles_repository import GitilesRepository
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from model import analysis_approach_type
 from model import analysis_status
 from model import result_status
@@ -23,7 +23,7 @@ from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 
 
-GIT_REPO = GitilesRepository(
+GIT_REPO = CachedGitilesRepository(
     HttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
 
 
