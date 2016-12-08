@@ -1399,21 +1399,6 @@ def upload_complete(request, patchset_id=None):
   return HttpTextResponse('OK')
 
 
-def _get_target_ref(form, issue_key, project):
-  target_ref = form.cleaned_data.get('target_ref', None)
-  # The following is a hack to ensure that all target_refs for chromium and v8
-  # start with 'refs/pending/'. More context here:
-  # https://code.google.com/p/chromium/issues/detail?id=435702#c10
-  # TODO(rmistry): Remove the below hack when the logged warning stops showing
-  # up.
-  if (target_ref and not target_ref.startswith('refs/pending/') and
-      project in ('chromium', 'v8')):
-    target_ref = target_ref.replace('refs/', 'refs/pending/')
-    logging.warn('Issue %d for %s did not start with refs/pending/',
-                 issue_key.id(), project)
-  return target_ref
-
-
 def _make_new(request, form):
   """Creates new issue and fill relevant fields from given form data.
 
@@ -1449,7 +1434,7 @@ def _make_new(request, form):
   issue_key = ndb.Key(models.Issue, first_issue_id)
 
   project = form.cleaned_data['project']
-  target_ref = _get_target_ref(form, issue_key, project)
+  target_ref = form.cleaned_data.get('target_ref', None)
   cq_dry_run = form.cleaned_data.get('cq_dry_run', False)
   cq_dry_run_triggered_by = account.email if cq_dry_run else ''
 
@@ -1618,7 +1603,7 @@ def _add_patchset_from_form(request, issue, form, message_key='message',
   issue.commit = False
   # The project name might have changed when rebasing to ToT.
   issue.project = form.cleaned_data.get('project', issue.project)
-  issue.target_ref = _get_target_ref(form, issue.key, issue.project)
+  issue.target_ref = form.cleaned_data.get('target_ref', None)
   issue.cq_dry_run = form.cleaned_data.get('cq_dry_run', False)
   issue.cq_dry_run_last_triggered_by = account.email if issue.cq_dry_run else ''
   if issue.cq_dry_run:
